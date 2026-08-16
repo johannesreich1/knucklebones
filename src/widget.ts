@@ -4,7 +4,8 @@
 import './styles/main.css';
 import './styles/widget-embed.css';
 import { MARKUP } from './markup';
-import { boot, hooks } from './app';
+import { boot } from './boot';
+import { hooks } from './hooks';
 
 document.getElementById('kbroot')!.insertAdjacentHTML('afterbegin', MARKUP);
 boot(true);

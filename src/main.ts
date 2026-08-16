@@ -2,7 +2,8 @@
 import './styles/page.css';
 import './styles/main.css';
 import { MARKUP } from './markup';
-import { boot, hooks } from './app';
+import { boot } from './boot';
+import { hooks } from './hooks';
 
 document.body.insertAdjacentHTML('afterbegin', MARKUP);
 boot(false);
