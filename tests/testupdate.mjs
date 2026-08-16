@@ -3,7 +3,7 @@
 // NOTE: mutates ./pwa in place — run ./build.sh afterwards to restore it.
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
-import { execSync } from 'child_process';
+import { readFileSync, writeFileSync } from 'fs';
 const browser = await chromium.launch();
 const problems = [], errs = [];
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -17,9 +17,12 @@ const sw1 = await p.evaluate(async () => !!(await navigator.serviceWorker.ready.
 const tag1 = await p.evaluate(() => document.getElementById('buildTag').textContent);
 
 // simulate a fresh deploy: server files change under the running app
+// (in-process replace, not sed — GNU and BSD sed disagree on -i syntax)
 const hash = tag1.split(' ')[1];
-execSync(`sed -i 's/build ${hash}</build NEWDEPLOY</' ./pwa/index.html`);
-execSync(`sed -i "s/const VERSION = '.*';/const VERSION = 'kb-newdeploy';/" ./pwa/sw.js`);
+const patch = (file, from, to) =>
+  writeFileSync(file, readFileSync(file, 'utf8').replace(from, to));
+patch('./pwa/index.html', `build ${hash}<`, 'build NEWDEPLOY<');
+patch('./pwa/sw.js', /const VERSION = '.*';/, "const VERSION = 'kb-newdeploy';");
 
 await p.reload(); await p.waitForTimeout(1200);          // ONE relaunch
 const tag2 = await p.evaluate(() => document.getElementById('buildTag').textContent);

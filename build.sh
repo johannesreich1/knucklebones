@@ -28,10 +28,12 @@ cp "$SRC" native/www/index.html       # Capacitor web assets
 
 # --- bump the service worker cache key off the source's own hash ---
 # Without a bump, installed copies keep serving the previous build forever.
-HASH=$(md5sum "$SRC" | cut -c1-8)
-sed -i "s/^const VERSION = '.*';/const VERSION = 'kb-$HASH';/" pwa/sw.js
+HASH=$( (md5sum "$SRC" 2>/dev/null || md5 -q "$SRC") | cut -c1-8 )
+# BSD sed (macOS) needs -i '' where GNU sed takes bare -i
+if sed --version >/dev/null 2>&1; then SEDI=(sed -i); else SEDI=(sed -i ''); fi
+"${SEDI[@]}" "s/^const VERSION = '.*';/const VERSION = 'kb-$HASH';/" pwa/sw.js
 # stamp the visible build tag in the shipped copies (the source keeps "dev")
-sed -i "s/build dev</build $HASH</" pwa/index.html native/www/index.html knucklebones-neon.html
+"${SEDI[@]}" "s/build dev</build $HASH</" pwa/index.html native/www/index.html knucklebones-neon.html
 echo "service worker cache key: kb-$HASH"
 
 # --- regenerate the inline widget fragment + its test harness ---
