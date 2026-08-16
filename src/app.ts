@@ -1,575 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<meta name="theme-color" content="#05060e">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Knucklebones">
-<meta name="description" content="Knucklebones — neon dice duel. Column multipliers, destruction, CPU or pass-and-play.">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="apple-touch-icon" href="icon-180.png">
-<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
-<title>KNUCKLEBONES — Neon</title>
-<style>
-/* ============ TOKENS ============ */
-:root{
-  --bg:#05060e;
-  --cy:#28e8ff;      /* player */
-  --cy-d:#0b8fb0;
-  --mg:#ff2fa0;      /* cpu */
-  --mg-d:#a81163;
-  --gold:#ffd166;
-  --txt:#e9f1ff;
-  --dim:#7c88a8;
-  --cell:62px;
-  --gap:6px;
-  --r:14px;
-}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{height:100%;margin:0;padding:0}
-body{
-  background:var(--bg);color:var(--txt);
-  font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  -webkit-font-smoothing:antialiased;
-  touch-action:manipulation;overscroll-behavior:none;
-  -webkit-user-select:none;user-select:none;
-  overflow:hidden;font-variant-numeric:tabular-nums;
-}
-
-/* ============ BACKDROP ============ */
-#bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:
-  radial-gradient(120% 80% at 50% -10%, #17123a 0%, transparent 60%),
-  radial-gradient(110% 70% at 50% 110%, #04263a 0%, transparent 60%),
-  var(--bg);}
-#bg::before{content:"";position:absolute;inset:-30%;
-  background:
-    radial-gradient(closest-side,rgba(255,47,160,.42),transparent 70%) 20% 16%/64% 48% no-repeat,
-    radial-gradient(closest-side,rgba(40,232,255,.36),transparent 70%) 80% 86%/66% 50% no-repeat,
-    radial-gradient(closest-side,rgba(126,60,255,.30),transparent 70%) 62% 42%/52% 40% no-repeat;
-  filter:blur(34px);animation:drift 18s ease-in-out infinite alternate;}
-#bg::after{content:"";position:absolute;inset:0;
-  background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
-                   linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
-  background-size:34px 34px;
-  -webkit-mask-image:radial-gradient(120% 75% at 50% 50%,#000 25%,transparent 78%);
-  mask-image:radial-gradient(120% 75% at 50% 50%,#000 25%,transparent 78%);opacity:.5}
-@keyframes drift{from{transform:translate3d(-3%,-2%,0) scale(1)}to{transform:translate3d(4%,3%,0) scale(1.12)}}
-#vig{position:fixed;inset:0;z-index:1;pointer-events:none;
-  box-shadow:inset 0 0 140px 40px rgba(0,0,0,.85)}
-
-/* ============ APP SHELL ============ */
-#app{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;
-  padding:calc(env(safe-area-inset-top,0px) + 6px) 10px calc(env(safe-area-inset-bottom,0px) + 6px);
-  max-width:520px;margin:0 auto;}
-
-/* HUD */
-.hud{display:flex;align-items:center;gap:8px;height:34px;flex:0 0 auto}
-.hud .sp{flex:1}
-.rec{font-size:10px;letter-spacing:.14em;color:var(--dim);white-space:nowrap;
-  border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:3px 8px;background:rgba(255,255,255,.03)}
-@media (max-width:359px){
-  .rec{font-size:9px;padding:3px 6px;letter-spacing:.08em}
-  .ico{width:27px;height:27px;border-radius:9px;font-size:12px}
-  .hud{gap:6px}
-}
-.rec b{color:var(--cy);font-weight:800}
-.rec i{color:var(--mg);font-style:normal;font-weight:800}
-.ico{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;
-  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
-  color:var(--txt);font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
-.ico:active{transform:scale(.9);background:rgba(255,255,255,.12)}
-
-/* TABLE */
-.table{flex:1;display:flex;flex-direction:column;min-height:0}
-.side{flex:1 1 0;display:flex;flex-direction:column;min-height:0;justify-content:center;gap:5px}
-.table.swap .side{animation:swapIn .42s cubic-bezier(.25,.9,.3,1)}
-@keyframes swapIn{0%{opacity:0;transform:translateY(var(--sd,14px)) scale(.96)}100%{opacity:1;transform:none}}
-.side.top{--sd:-16px}
-.side.bot{--sd:16px}
-
-/* nameplate */
-.plate{display:flex;align-items:center;gap:7px;padding:0 3px;height:24px;flex:0 0 auto}
-.plate .dot{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);flex:0 0 auto}
-.plate .nm{font-size:11.5px;font-weight:800;letter-spacing:.16em;color:var(--txt);opacity:.9}
-.plate .tag{font-size:9px;letter-spacing:.12em;color:var(--dim);border:1px solid rgba(255,255,255,.12);
-  border-radius:99px;padding:2px 6px}
-.plate .sp{flex:1}
-.plate .tot{font-size:20px;font-weight:900;letter-spacing:.02em;color:var(--c);
-  text-shadow:0 0 16px var(--c);min-width:34px;text-align:right;transition:transform .18s}
-.plate.bump .tot{transform:scale(1.28)}
-/* colour follows the PLAYER, not the half of the screen they're sitting in,
-   so the boards can swap places on hand-off without the palette moving */
-.side[data-owner="1"]{--c:var(--cy)}
-.side[data-owner="0"]{--c:var(--mg)}
-
-/* turn glow on active plate */
-.plate.active{position:relative}
-.plate.active .nm{opacity:1}
-.plate.active::before{content:"";position:absolute;left:-6px;right:-6px;top:-3px;bottom:-3px;
-  border-radius:12px;background:linear-gradient(90deg,color-mix(in srgb,var(--c) 22%,transparent),transparent 70%);
-  animation:breathe 2.2s ease-in-out infinite}
-@keyframes breathe{0%,100%{opacity:.45}50%{opacity:1}}
-
-/* board */
-.boardwrap{flex:0 0 auto;display:flex;justify-content:center}
-.board{display:grid;grid-template-columns:repeat(3,var(--cell));gap:var(--gap);position:relative}
-.col{display:grid;grid-template-rows:repeat(3,var(--cell));gap:var(--gap);position:relative;
-  border-radius:calc(var(--r) + 4px);cursor:pointer}
-.slot{width:var(--cell);height:var(--cell);border-radius:var(--r);
-  background:rgba(255,255,255,.028);
-  border:1px solid rgba(255,255,255,.07);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
-  display:grid;place-items:center;position:relative}
-.side[data-owner="0"] .slot{border-color:rgba(255,47,160,.13)}
-.side[data-owner="1"] .slot{border-color:rgba(40,232,255,.13)}
-
-/* legal target */
-.col.legal::after{content:"";position:absolute;inset:-4px;border-radius:calc(var(--r) + 6px);
-  border:1.5px dashed color-mix(in srgb,var(--c) 65%,transparent);
-  animation:pulse 1.4s ease-in-out infinite;pointer-events:none}
-@keyframes pulse{0%,100%{opacity:.35;transform:scale(.985)}50%{opacity:.95;transform:scale(1)}}
-/* opposing column that your current die would smash */
-.col.danger::before{content:"";position:absolute;inset:-4px;border-radius:calc(var(--r) + 6px);
-  border:1.5px solid rgba(255,209,102,.9);box-shadow:0 0 16px rgba(255,209,102,.32);
-  animation:pulse 1.1s ease-in-out infinite;pointer-events:none}
-.col.press{transform:scale(.97);transition:transform .08s}
-.col.nope{animation:nope .32s}
-@keyframes nope{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
-
-/* ============ DICE ============ */
-.die{width:100%;height:100%;border-radius:var(--r);position:relative;
-  display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
-  padding:calc(var(--cell)*.155);
-  background:
-    linear-gradient(158deg,rgba(255,255,255,.22),rgba(255,255,255,.04) 42%,rgba(0,0,0,.28));
-  border:1px solid color-mix(in srgb,var(--dc) 55%,transparent);
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,.34),
-    inset 0 -6px 12px rgba(0,0,0,.35),
-    0 5px 14px rgba(0,0,0,.55),
-    0 0 14px color-mix(in srgb,var(--dc) 32%,transparent);
-  --dc:#9fb2d8;}
-.die.p1{--dc:var(--cy)}
-.die.p2{--dc:var(--mg)}
-.pip{width:78%;height:78%;border-radius:50%;align-self:center;justify-self:center;
-  background:radial-gradient(circle at 35% 30%,#fff,var(--dc) 78%);
-  box-shadow:0 0 6px color-mix(in srgb,var(--dc) 85%,transparent),0 0 14px color-mix(in srgb,var(--dc) 45%,transparent);
-  opacity:0;transform:scale(.3);transition:opacity .12s,transform .12s}
-.pip.on{opacity:1;transform:scale(1)}
-.die.m2{--dc:var(--gold);border-color:color-mix(in srgb,var(--gold) 70%,transparent);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 5px 14px rgba(0,0,0,.55),0 0 18px rgba(255,209,102,.5)}
-.die.m3{--dc:#ff8a3d;border-color:rgba(255,138,61,.85);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 5px 16px rgba(0,0,0,.55),0 0 26px rgba(255,138,61,.75);
-  animation:hot 1.5s ease-in-out infinite}
-@keyframes hot{0%,100%{filter:brightness(1)}50%{filter:brightness(1.22)}}
-.die.settle{animation:settle .3s cubic-bezier(.2,1.3,.4,1)}
-@keyframes settle{0%{transform:scale(.72)}60%{transform:scale(1.07)}100%{transform:scale(1)}}
-.die.dying{animation:dying .34s ease-in forwards}
-@keyframes dying{0%{transform:scale(1) rotate(0)}30%{transform:scale(1.24) rotate(6deg);filter:brightness(2.4)}
- 100%{transform:scale(.2) rotate(-24deg);opacity:0;filter:brightness(3)}}
-
-/* ============ COLUMN CHIPS ============ */
-/* Chip rows sit tight in normal play. The tutorial adds a 15px lane above each,
-   where its +N / −N preview pills float without touching the turn text or dice. */
-.cols{display:grid;grid-template-columns:repeat(3,var(--cell));gap:var(--gap);
-  justify-content:center;flex:0 0 auto;margin:4px auto 0}
-.tut .cols{margin:15px auto 0}
-.chip{height:20px;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:3px;
-  font-size:12px;font-weight:800;color:var(--dim);
-  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);position:relative;transition:.2s}
-.chip.has{color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
-  background:color-mix(in srgb,var(--c) 9%,transparent);text-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}
-.chip .mx{font-size:9px;opacity:.9;color:var(--gold)}
-.chip .dl{position:absolute;left:50%;top:-15px;font-size:10.5px;font-weight:900;padding:1px 5px;border-radius:99px;
-  opacity:0;transform:translate(-50%,4px);transition:.18s;pointer-events:none;white-space:nowrap;line-height:1.25}
-.chip .dl.show{opacity:1;transform:translate(-50%,0)}
-/* gain chip follows the active player's colour (--c comes from the .side) */
-.chip .dl.gain{color:#0a0410;background:var(--c);
-  box-shadow:0 0 12px color-mix(in srgb,var(--c) 62%,transparent)}
-.chip .dl.kill{color:#300;background:var(--gold);box-shadow:0 0 12px rgba(255,209,102,.7)}
-
-/* ============ CENTER STAGE ============ */
-.center{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:5px;padding:5px 0;position:relative}
-.center::before,.center::after{content:"";position:absolute;left:6%;right:6%;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent)}
-.center::before{top:0}.center::after{bottom:0}
-#dieStage{width:calc(var(--cell)*.92);height:calc(var(--cell)*.92);position:relative;--cell2:calc(var(--cell)*.92)}
-#dieStage .die{--cell:var(--cell2)}
-#dieStage.rolling .die{animation:rollspin .42s linear infinite}
-@keyframes rollspin{0%{transform:rotate(0) scale(1)}25%{transform:rotate(90deg) scale(1.06)}
- 50%{transform:rotate(180deg) scale(1)}75%{transform:rotate(270deg) scale(1.06)}100%{transform:rotate(360deg) scale(1)}}
-#dieStage.pop .die{animation:popin .3s cubic-bezier(.2,1.5,.4,1)}
-@keyframes popin{0%{transform:scale(.5) rotate(-30deg)}100%{transform:scale(1) rotate(0)}}
-.status{font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--dim);text-transform:uppercase;
-  min-height:14px;text-align:center;transition:color .2s}
-.status.me{color:var(--cy);text-shadow:0 0 12px rgba(40,232,255,.5)}
-.status.ai{color:var(--mg);text-shadow:0 0 12px rgba(255,47,160,.5)}
-.dots::after{content:"";animation:dots 1.2s steps(4,end) infinite}
-@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
-
-/* turn clock (two-player only). Space is always reserved so the board never
-   jumps when it appears. */
-.timer{height:12px;display:flex;align-items:center;gap:6px;visibility:hidden;
-  --tc:var(--tcbase,var(--cy))}
-.timer.on{visibility:visible}
-.timer .track{width:118px;height:3px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
-.timer .bar{display:block;height:100%;width:100%;border-radius:99px;background:var(--tc,var(--cy));
-  box-shadow:0 0 8px var(--tc,var(--cy));transition:width .1s linear}
-.timer b{font-size:10.5px;font-weight:900;color:var(--tc,var(--cy));min-width:10px;text-align:left}
-.timer.warn{--tc:#ff8a3d}
-.timer.warn .bar{box-shadow:0 0 10px #ff8a3d}
-
-/* floating score numbers: earned points rise from the column just played */
-.pts{position:absolute;z-index:60;font-size:19px;font-weight:900;pointer-events:none;
-  white-space:nowrap;transform:translate(-50%,0);
-  text-shadow:0 0 10px currentColor,0 2px 8px rgba(0,0,0,.8)}
-.land .pts{font-size:15px}
-
-/* ============ FX ============ */
-#fx{position:fixed;inset:0;z-index:50;pointer-events:none;overflow:hidden}
-.particle{position:absolute;width:7px;height:7px;border-radius:50%;transform:translate(-50%,-50%)}
-.flash{position:fixed;inset:0;z-index:45;pointer-events:none;background:#fff;opacity:0}
-
-/* ============ OVERLAYS ============ */
-.ov{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:14px;padding:26px;background:rgba(4,5,12,.86);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
-  opacity:0;pointer-events:none;visibility:hidden;transition:opacity .28s,visibility 0s .28s}
-.ov.on{opacity:1;pointer-events:auto;visibility:visible;transition:opacity .28s}
-#ovStart{overflow-y:auto;justify-content:flex-start}
-#ovStart::before,#ovStart::after{content:"";margin:auto;flex:0 0 auto}
-.ov h1{margin:0;font-size:29px;letter-spacing:.2em;font-weight:900;text-align:center;
-  background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 0 22px rgba(40,232,255,.35))}
-.ov .sub{font-size:11.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:-8px;text-align:center}
-.btn{min-width:210px;padding:14px 20px;border-radius:14px;border:1px solid rgba(255,255,255,.14);
-  background:rgba(255,255,255,.05);color:var(--txt);font-size:13.5px;font-weight:800;letter-spacing:.16em;
-  text-transform:uppercase;cursor:pointer;transition:.15s;font-family:inherit}
-.btn:active{transform:scale(.96)}
-.btn.primary{background:linear-gradient(100deg,var(--cy),#7ad6ff 40%,var(--mg));color:#04101a;border:none;
-  box-shadow:0 10px 30px rgba(40,232,255,.28),0 0 0 1px rgba(255,255,255,.12) inset}
-[hidden]{display:none!important}
-.seg{display:flex;gap:8px}
-#modeSeg button[data-m="duo"].on{background:linear-gradient(100deg,var(--mg),#ff96cf);
-  box-shadow:0 6px 18px rgba(255,47,160,.32)}
-.seg button{flex:1;padding:11px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
-  background:rgba(255,255,255,.04);color:var(--dim);font-size:11.5px;font-weight:800;letter-spacing:.13em;
-  cursor:pointer;font-family:inherit;transition:.15s}
-.seg button.on{color:#04101a;background:linear-gradient(100deg,var(--cy),#8fe0ff);border-color:transparent;
-  box-shadow:0 6px 18px rgba(40,232,255,.3)}
-.lbl{font-size:10px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
-.card{width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px}
-.rules{max-width:360px;font-size:13.5px;line-height:1.6;color:#c6d3ee;overflow:auto;max-height:62vh;
-  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:16px 18px}
-.rules h3{margin:0 0 8px;font-size:12px;letter-spacing:.18em;color:var(--cy);text-transform:uppercase}
-.rules p{margin:0 0 12px}
-.rules b{color:var(--gold)}
-.rules .k{color:var(--mg);font-weight:800}
-.scoreline{display:flex;align-items:center;justify-content:center;gap:16px;font-size:15px;font-weight:800;letter-spacing:.08em}
-.scoreline .you{color:var(--cy);text-shadow:0 0 14px rgba(40,232,255,.5);font-size:32px;font-weight:900}
-.scoreline .cpu{color:var(--mg);text-shadow:0 0 14px rgba(255,47,160,.5);font-size:32px;font-weight:900}
-.scoreline .vs{color:var(--dim);font-size:12px;letter-spacing:.2em}
-.scoreline .sc{display:flex;flex-direction:column;align-items:center;gap:1px}
-.scoreline .sc em{font-style:normal;font-size:9.5px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
-/* NOTE: background-IMAGE, not the background shorthand — the shorthand resets
-   background-clip:text and the title would render as a solid gradient block. */
-#endTitle.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
-  filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
-#endTitle.lose{background-image:linear-gradient(100deg,var(--mg),#fff 55%,#ff8a3d);
-  filter:drop-shadow(0 0 26px rgba(255,47,160,.45))}
-#endTitle.draw{background-image:linear-gradient(100deg,#9fb2d8,#fff 50%,#9fb2d8);
-  filter:drop-shadow(0 0 22px rgba(159,178,216,.35))}
-.tiny{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-align:center}
-
-/* ---- face-to-face seating (portrait duo) ----
-   The two halves stay put; only orientation-sensitive content on the top half
-   is turned for the player sitting opposite. Dice pips are 180°-symmetric, so
-   the dice themselves never rotate — which also keeps every placement/destroy
-   animation untouched. */
-html.face:not(.land) #sideTop .plate{transform:rotate(180deg)}
-html.face:not(.land) #sideTop .chip{transform:rotate(180deg)}
-html.face:not(.land) #sideTop .die .num{transform:rotate(180deg)}
-html.face:not(.land) .die.p2flip .num{transform:rotate(180deg)}
-/* the idle half steps back; the active half is the bright one */
-.face .side{transition:opacity .35s,filter .35s}
-.face .side.idle{opacity:.5;filter:saturate(.55) brightness(.82)}
-/* the centre stage turns toward whoever is playing — the hand-off signal */
-#dieStage,.status,.timer{transition:transform .3s}
-html.face.p2turn:not(.land) #dieStage,
-html.face.p2turn:not(.land) .status,
-html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
-
-/* ---- tutorial coach ---- */
-#coach{position:absolute;left:10px;right:10px;top:46px;z-index:70;cursor:pointer;
-  background:rgba(6,8,18,.93);border:1px solid color-mix(in srgb,var(--cy) 45%,transparent);
-  border-radius:14px;padding:10px 14px;
-  box-shadow:0 8px 30px rgba(0,0,0,.5),0 0 18px rgba(40,232,255,.14);
-  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
-#coach .cmsg{font-size:12.5px;line-height:1.5;color:var(--txt)}
-#coach .cmsg b{color:var(--gold)}
-#coach .chint{margin-top:6px;font-size:9.5px;letter-spacing:.2em;color:var(--cy);
-  text-transform:uppercase;animation:breathe 1.8s ease-in-out infinite}
-.land #coach{left:auto;right:12px;top:34px;max-width:300px}
-
-/* ---- hand-off card (pass the phone) ---- */
-#ovPass{gap:10px;background:rgba(4,5,12,.93);cursor:pointer}
-#ovPass .glow{position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(60% 40% at 50% 50%,color-mix(in srgb,var(--pc) 24%,transparent),transparent 72%)}
-#ovPass .who{font-size:34px;font-weight:900;letter-spacing:.16em;color:var(--pc);
-  text-shadow:0 0 30px color-mix(in srgb,var(--pc) 65%,transparent);text-align:center;line-height:1.05}
-#ovPass .hint{font-size:11.5px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase}
-#ovPass .swapicon{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;margin-bottom:2px;
-  border:1.5px solid color-mix(in srgb,var(--pc) 45%,transparent);color:var(--pc);font-size:24px;
-  box-shadow:0 0 26px color-mix(in srgb,var(--pc) 28%,transparent);animation:spinhint 2.6s ease-in-out infinite}
-@keyframes spinhint{0%,70%,100%{transform:rotate(0)}85%{transform:rotate(180deg)}}
-#ovPass .tapline{margin-top:6px;font-size:13px;font-weight:800;letter-spacing:.2em;color:var(--txt);
-  text-transform:uppercase;animation:breathe 1.8s ease-in-out infinite}
-#ovPass .mini{display:flex;gap:14px;align-items:center;font-size:12px;letter-spacing:.12em;color:var(--dim)}
-#ovPass .mini b{font-size:20px;font-weight:900}
-#ovPass .mini .a{color:var(--cy)}#ovPass .mini .b{color:var(--mg)}
-#passQuit{position:absolute;top:calc(env(safe-area-inset-top,0px) + 8px);right:10px}
-.ico{font-family:inherit;padding:0;-webkit-appearance:none;appearance:none}
-.ico:focus-visible,.btn:focus-visible,.seg button:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
-.dicerow{display:flex;gap:8px;justify-content:center;margin-bottom:2px}
-.dicerow .die{width:34px;height:34px;--cell:34px;border-radius:10px}
-
-/* ============ NUMERALS INSTEAD OF PIPS ============
-   Pips are charming but hard work for some players; this is a per-device toggle. */
-.die .num{display:none;position:absolute;inset:0;align-items:center;justify-content:center;
-  font-size:calc(var(--cell)*.52);font-weight:900;color:var(--dc);
-  text-shadow:0 0 12px color-mix(in srgb,var(--dc) 80%,transparent);pointer-events:none}
-.numerals .die .pip{display:none}
-.numerals .die .num{display:flex}
-
-/* ============ LANDSCAPE ============
-   Boards sit side by side and each game-column becomes a horizontal row, so a
-   column still physically faces its opposite number. The .land class is set by
-   fit() rather than a media query, so JS and CSS always agree on the breakpoint. */
-.land #app{max-width:none;padding:4px 8px}
-.land .table{flex-direction:row;align-items:center;justify-content:center;gap:4px}
-.land .side{flex:0 0 auto;display:grid;align-items:center;gap:4px;
-  grid-template-columns:auto auto;grid-template-areas:"plate plate" "board chips"}
-.land .side.bot{grid-template-areas:"plate plate" "chips board"}
-.land .plate{grid-area:plate;height:20px}
-.land .plate .tot{font-size:17px;min-width:28px}
-.land .plate .nm{font-size:10px;letter-spacing:.12em}
-.land .boardwrap{grid-area:board}
-.land .cols{grid-area:chips;margin:0;grid-template-columns:none;grid-template-rows:repeat(3,var(--cell))}
-.land .board{grid-template-columns:none;grid-template-rows:repeat(3,var(--cell))}
-.land .col{grid-template-rows:none;grid-template-columns:repeat(3,var(--cell))}
-.land .chip{width:30px;height:var(--cell);flex-direction:column;gap:1px;font-size:11px}
-.land .chip .dl{position:static;transform:none;padding:0 3px;font-size:9.5px;border-radius:6px}
-.land .chip .dl.show{transform:none}
-.land .center{flex:0 0 auto;padding:0 6px;gap:6px}
-.land .center::before,.land .center::after{display:none}
-.land .timer .track{width:84px}
-.land .status{font-size:9.5px;letter-spacing:.08em;max-width:104px;line-height:1.35;white-space:normal}
-.land .hud{height:28px}
-.land .col.nope{animation:nopeY .32s}
-@keyframes nopeY{0%,100%{transform:translateY(0)}20%{transform:translateY(-6px)}40%{transform:translateY(6px)}60%{transform:translateY(-4px)}80%{transform:translateY(3px)}}
-
-/* ============ REDUCED MOTION ============
-   Honour the OS setting: kill the ambient loops and shorten the rest. JS also
-   checks this and skips particles, shake and flash. */
-@media (prefers-reduced-motion: reduce){
-  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;
-    transition-duration:.06s!important}
-  #bg::before{animation:none}
-  .col.legal::after,.col.danger::before{animation:none;opacity:.8}
-  .die.m3{animation:none}
-}
-</style>
-</head>
-<body oncontextmenu="return false">
-<div id="bg"></div><div id="vig"></div>
-
-<div id="app">
-  <div class="hud">
-    <div class="rec" id="rec">W <b>0</b> · L <i>0</i></div>
-    <div class="sp"></div>
-    <button class="ico" id="btnSettings" aria-label="Settings" style="font-size:15px">⚙</button>
-    <button class="ico" id="btnMenu" aria-label="Menu">≡</button>
-  </div>
-
-  <div id="coach" hidden>
-    <div class="cmsg" id="coachMsg" aria-live="polite"></div>
-    <div class="chint" id="coachHint">Tap to continue</div>
-  </div>
-
-  <div class="table" id="tableEl">
-    <!-- far side of the table -->
-    <section class="side top" id="sideTop" data-owner="0">
-      <div class="plate" id="plateTop">
-        <span class="dot"></span><span class="nm" id="nameTop">CPU</span>
-        <span class="tag" id="tagTop">HARD</span>
-        <span class="sp"></span><span class="tot" id="totTop">0</span>
-      </div>
-      <div class="boardwrap"><div class="board" id="topBoard"></div></div>
-      <div class="cols" id="topCols"></div>
-    </section>
-
-    <!-- CENTER -->
-    <section class="center">
-      <div id="dieStage" role="img" aria-label="No die rolled yet"></div>
-      <div class="status" id="status" role="status" aria-live="polite">Tap play to start</div>
-      <div class="timer" id="timerWrap" aria-hidden="true">
-        <span class="track"><span class="bar" id="timerBar"></span></span><b id="timerNum"></b>
-      </div>
-    </section>
-
-    <!-- near side of the table (always whoever is holding the phone) -->
-    <section class="side bot" id="sideBot" data-owner="1">
-      <div class="cols" id="botCols"></div>
-      <div class="boardwrap"><div class="board" id="botBoard"></div></div>
-      <div class="plate" id="plateBot">
-        <span class="dot"></span><span class="nm" id="nameBot">YOU</span>
-        <span class="tag" id="tagBot" hidden></span>
-        <span class="sp"></span><span class="tot" id="totBot">0</span>
-      </div>
-    </section>
-  </div>
-</div>
-
-<div id="fx"></div>
-<div class="flash" id="flash"></div>
-
-<!-- Shown only when scripts are blocked. The line below removes it the instant
-     JS is allowed to run, so a real browser never sees it. -->
-<div class="ov on" id="ovNoJs" style="z-index:200">
-  <h1 style="font-size:21px">SCRIPTS BLOCKED</h1>
-  <div class="sub">This preview can't run the game</div>
-  <div class="rules" style="max-width:330px">
-    <p>The board draws fine, but the viewer you're in doesn't allow JavaScript — so
-       nothing responds when you tap.</p>
-    <p><b>Download this file and open it in Safari or Chrome.</b> It's completely
-       self-contained: no internet needed once it's open.</p>
-    <p style="color:var(--dim);font-size:12px;margin:0">On iPhone: tap the file → share icon → <i>Open in Safari</i>.
-       On Android: save it, then open it from Files with Chrome.</p>
-  </div>
-</div>
-<script>document.getElementById('ovNoJs').remove();</script>
-
-<!-- START -->
-<div class="ov on" id="ovStart">
-  <div class="dicerow" id="startDice"></div>
-  <h1>KNUCKLEBONES</h1>
-  <div class="sub">Neon Edition</div>
-  <div class="card">
-    <div class="lbl">Mode</div>
-    <div class="seg" id="modeSeg">
-      <button data-m="cpu" class="on">VS CPU</button>
-      <button data-m="duo">2 PLAYERS</button>
-    </div>
-  </div>
-  <div class="card" id="diffCard">
-    <div class="lbl">CPU level</div>
-    <div class="seg" id="diffSeg">
-      <button data-d="easy">EASY</button>
-      <button data-d="medium">NORMAL</button>
-      <button data-d="hard" class="on">HARD</button>
-    </div>
-  </div>
-  <div class="card" id="seatCard" hidden>
-    <div class="lbl">Sitting</div>
-    <div class="seg" id="seatSeg">
-      <button data-seat="pass">PASS PHONE</button>
-      <button data-seat="face">FACE TO FACE</button>
-    </div>
-  </div>
-  <div class="card" id="timerCard" hidden>
-    <div class="lbl">Turn timer</div>
-    <div class="seg" id="timerSeg">
-      <button data-t="10" class="on">10 SEC</button>
-      <button data-t="20">20 SEC</button>
-      <button data-t="0">OFF</button>
-    </div>
-  </div>
-  <div class="tiny" id="duoNote" hidden>One phone, passed back and forth</div>
-  <div class="tiny" id="statLine" hidden></div>
-  <button class="btn primary" id="btnResume" hidden>Resume game</button>
-  <button class="btn primary" id="btnPlay">Play</button>
-  <button class="btn" id="btnTut">Tutorial</button>
-  <button class="btn" id="btnHow">How to play</button>
-  <div class="tiny" id="buildTag" style="opacity:.55">build dev</div>
-</div>
-
-<!-- RULES -->
-<div class="ov" id="ovRules">
-  <h1 style="font-size:20px">HOW TO PLAY</h1>
-  <div class="rules">
-    <h3>Goal</h3>
-    <p>Fill your 3×3 grid with dice. When <b>either</b> grid is full the game ends — highest total wins.</p>
-    <h3>Placing</h3>
-    <p>You roll a die, then tap one of <b>your</b> columns to drop it in. You can't choose the roll, only where it lands.</p>
-    <h3>Column multipliers</h3>
-    <p>Matching dice in the same column multiply. Two 4s in a column = <b>4×2×2 = 16</b>, not 8. Three 4s = <b>4×3×3 = 36</b>.</p>
-    <h3 style="color:var(--mg)">Destruction</h3>
-    <p>Place a die and <span class="k">every matching die in the opponent's facing column is destroyed</span>. Columns line up vertically — your left column faces their left column.</p>
-    <h3>Reading the board</h3>
-    <p>The chips beside each column show its running score, and <b>×2</b>/<b>×3</b> marks a multiplied stack. Working out the best placement is the game — but the <b>tutorial</b> plays a guided round with point previews on every column.</p>
-    <h3>Two players</h3>
-    <p>Pick <b>2 PLAYERS</b> to share one phone, then choose how you sit. <b>Pass phone</b>: a pass card appears between turns and the grids swap so whoever is playing is on the bottom. <b>Face to face</b>: lay the phone flat between you — the top half is turned for Player 2, turns switch on their own, and the bright half with the rotating centre die shows who's up.</p>
-  </div>
-  <button class="btn primary" id="btnCloseRules">Got it</button>
-</div>
-
-<!-- HAND-OFF -->
-<div class="ov" id="ovPass">
-  <div class="glow"></div>
-  <div class="swapicon">⇅</div>
-  <div class="who" id="passWho">PLAYER 2</div>
-  <div class="hint">Pass the phone</div>
-  <div class="mini"><b class="a" id="passP1">0</b><span>—</span><b class="b" id="passP2">0</b></div>
-  <div class="tapline">Tap anywhere when ready</div>
-  <button class="ico" id="passQuit" aria-label="Quit to menu">≡</button>
-</div>
-
-<!-- SETTINGS -->
-<div class="ov" id="ovSettings">
-  <h1 style="font-size:20px">SETTINGS</h1>
-  <div class="card">
-    <div class="lbl">Sound</div>
-    <div class="seg" id="sndSeg">
-      <button data-s="1">ON</button>
-      <button data-s="0">OFF</button>
-    </div>
-  </div>
-  <div class="card">
-    <div class="lbl">Dice faces</div>
-    <div class="seg" id="faceSeg">
-      <button data-f="pips">PIPS</button>
-      <button data-f="nums">NUMBERS</button>
-    </div>
-  </div>
-  <button class="btn" id="btnHow2">How to play</button>
-  <button class="btn" id="btnResetStats">Reset record</button>
-  <button class="btn primary" id="btnCloseSettings">Done</button>
-</div>
-
-<!-- END -->
-<div class="ov" id="ovEnd">
-  <h1 id="endTitle">VICTORY</h1>
-  <div class="sub" id="endSub">You out-rolled the machine</div>
-  <div class="scoreline">
-    <span class="sc"><span class="you" id="endYou">0</span><em id="endYouLbl">You</em></span>
-    <span class="vs">VS</span>
-    <span class="sc"><span class="cpu" id="endCpu">0</span><em id="endCpuLbl">CPU</em></span>
-  </div>
-  <div class="tiny" id="endRec">SESSION 0–0</div>
-  <button class="btn primary" id="btnAgain">Play again</button>
-  <button class="btn" id="btnMenu2">Change difficulty</button>
-</div>
-
-<script>
-"use strict";
+// @ts-nocheck — moved verbatim from knucklebones.html (milestone A).
+// Milestone B dissolves this file into typed modules; the ts-nocheck ratchets
+// away with it. Do not add new code here.
 /* ===================== CONSTANTS ===================== */
 const AI = 0, ME = 1;
 const PIPS = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
 const $ = s => document.querySelector(s);
+
+/* ===================== EMBED MODE =====================
+   false: the page owns the viewport (standalone / PWA / native).
+   true : the game lives inside #kbroot on someone else's page (widget build).
+   Every difference between the two ships as a branch here or a CSS override in
+   widget-embed.css — never as a post-build text transformation. */
+let EMBED = false;
+const kbroot = () => document.getElementById('kbroot');
+function rootRect(){ return kbroot().getBoundingClientRect(); }
 
 /* ===================== STATE ===================== */
 /* Player indices are fixed identities: 1 = cyan (you / Player 1), 0 = magenta
@@ -1071,6 +515,7 @@ function showHints(){
 function burst(x,y,color,n){
   if(REDUCED) return;
   const fx=$('#fx');
+  if(EMBED){ const rr=rootRect(); x-=rr.left; y-=rr.top; }
   n=n||16;
   for(let i=0;i<n;i++){
     const p=document.createElement('i');
@@ -1333,14 +778,15 @@ async function flyDie(who,col,die){
   const to=target.getBoundingClientRect();
   const ghost=makeDie(die,who);
   if(faceRotated(who)) ghost.classList.add('p2flip');
-  ghost.style.position='fixed';
-  ghost.style.left=from.left+'px';
-  ghost.style.top=from.top+'px';
+  ghost.style.position=EMBED?'absolute':'fixed';
+  const gx=EMBED?rootRect():{left:0,top:0};
+  ghost.style.left=(from.left-gx.left)+'px';
+  ghost.style.top=(from.top-gx.top)+'px';
   ghost.style.width=from.width+'px';
   ghost.style.height=from.height+'px';
   ghost.style.setProperty('--cell',from.width+'px');
   ghost.style.zIndex='60';
-  document.body.appendChild(ghost);
+  (EMBED?kbroot():document.body).appendChild(ghost);
   src.style.opacity='0';
   const dx=(to.left+to.width/2)-(from.left+from.width/2);
   const dy=(to.top+to.height/2)-(from.top+from.height/2);
@@ -1514,7 +960,7 @@ function hide(sel){ $(sel).classList.remove('on'); }
 
 /* ===================== LAYOUT FIT ===================== */
 function fit(){
-  const app=$('#app');
+  const app=EMBED?kbroot():$('#app');
   const w=app.clientWidth, h=app.clientHeight;
   const land = w>h && h<560;                 // short and wide: phone on its side
   document.documentElement.classList.toggle('land', land);
@@ -1600,7 +1046,8 @@ function commitColumn(col){
 }
 
 /* ===================== BOOT ===================== */
-function boot(){
+export function boot(embed){
+  EMBED=!!embed;
   loadStats();
   buildBoards();
   fit();
@@ -1685,6 +1132,7 @@ function boot(){
 
   // desktop: 1/2/3 place, Enter starts / replays
   document.addEventListener('keydown',e=>{
+    if(EMBED && !kbroot()) return;   // widget removed from the host page
     if(e.key==='1'||e.key==='2'||e.key==='3'){
       const c=+e.key-1, who=S.turn;
       if(S.phase==='choose' && !S.busy && (S.mode==='duo' || who===ME)){
@@ -1699,11 +1147,12 @@ function boot(){
   window.addEventListener('resize',fit);
   window.addEventListener('orientationchange',()=>setTimeout(fit,120));
   if(window.ResizeObserver) new ResizeObserver(fit).observe($('#app'));
-  document.addEventListener('gesturestart',e=>e.preventDefault());
+  if(EMBED) kbroot().addEventListener('contextmenu',e=>e.preventDefault());
+  else document.addEventListener('gesturestart',e=>e.preventDefault());
 
   // Offline support. Only registers from http(s); opening the file directly
   // still plays, it just can't install.
-  if('serviceWorker' in navigator && location.protocol.indexOf('http')===0){
+  if(!EMBED && 'serviceWorker' in navigator && location.protocol.indexOf('http')===0){
     window.addEventListener('load',()=>{
       navigator.serviceWorker.register('sw.js').then(reg=>{
         // nudge iOS to look for a fresh version whenever the app comes back
@@ -1714,13 +1163,12 @@ function boot(){
     });
   }
 }
-boot();
 
 /* ---- test hooks (harmless in normal play) ---- */
-window.__kb = { S, colScore, boardTotal, search, searchRoot, aiChoose, newGame, place, isFull,
+/* ---- test hooks (harmless in normal play; suites drive the game through these) ---- */
+export function hooks(){
+  return { S, colScore, boardTotal, search, searchRoot, aiChoose, newGame, place, isFull,
                 applyMove, cloneSt, riskOf, getW:()=>RISK_W, setW:w=>{RISK_W=w}, nodes:()=>NODES,
                 sideKey, applySides, renderAll, showHints, setStageDie, setStatus, setActivePlate, nameOf,
                 loadGame, saveGame, clearGame, resumeGame, burst, reduced:REDUCED, fit };
-</script>
-</body>
-</html>
+}

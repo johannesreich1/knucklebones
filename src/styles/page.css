@@ -1,0 +1,11 @@
+/* Rules that style the host page itself — standalone/PWA build only.
+   The widget build must not restyle whatever page embeds it. */
+html,body{height:100%;margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--txt);
+  font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;
+  touch-action:manipulation;overscroll-behavior:none;
+  -webkit-user-select:none;user-select:none;
+  overflow:hidden;font-variant-numeric:tabular-nums;
+}

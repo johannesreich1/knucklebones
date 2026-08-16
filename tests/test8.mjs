@@ -1,6 +1,6 @@
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
-const F = 'file://' + process.cwd() + '/knucklebones.html';
+const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
 const browser = await chromium.launch();
 const problems = [], errs = [];
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };

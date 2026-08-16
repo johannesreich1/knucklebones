@@ -9,7 +9,7 @@
      together with a new VERSION anyway.
    - Install fetches bypass the HTTP cache (cache:'reload') so hosts with
      aggressive caching can't freeze an old copy into a new cache. */
-const VERSION = 'kb-8c3286d0';
+const VERSION = 'kb-dev';
 const ASSETS = [
   './',
   './index.html',

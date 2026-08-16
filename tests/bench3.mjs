@@ -2,7 +2,7 @@ import pkg from 'playwright';
 const { chromium } = pkg;
 const b = await chromium.launch();
 const p = await b.newPage();
-await p.goto('file://' + process.cwd() + '/knucklebones.html');
+await p.goto('file://' + process.cwd() + '/knucklebones-neon.html');
 await p.waitForTimeout(400);
 const r = await p.evaluate(() => {
   // two implementations of the same function, timed head to head in one page

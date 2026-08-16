@@ -6,7 +6,7 @@ const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, 
 const page = await ctx.newPage();
 page.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
 page.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
-await page.goto('file://' + process.cwd() + '/knucklebones.html');
+await page.goto('file://' + process.cwd() + '/knucklebones-neon.html');
 await page.waitForTimeout(400);
 
 const snap = () => page.evaluate(() => {

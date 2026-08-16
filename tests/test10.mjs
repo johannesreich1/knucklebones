@@ -1,6 +1,6 @@
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
-const F = 'file://' + process.cwd() + '/knucklebones.html';
+const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
 const browser = await chromium.launch();
 const problems = [], errs = [], out = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -130,8 +130,9 @@ s = await waitChoose();
 check(s.tut && s.tut.turnNo === 3 && /whole game/.test(s.coachMsg), 'wrap-up lesson missing', s);
 check(s.tut.restrict === null, 'free play still restricted', s.tut);
 
-// finish the round
-for (let i = 0; i < 300; i++) {
+// finish the round. The budget is generous on purpose: free play is random,
+// and a destruction-heavy endgame can run well past the typical ~20s.
+for (let i = 0; i < 900; i++) {
   s = await snap();
   if (s.phase === 'over') break;
   if (s.phase === 'choose' && s.turn === 1) {
