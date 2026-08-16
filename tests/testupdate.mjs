@@ -19,9 +19,13 @@ const tag1 = await p.evaluate(() => document.getElementById('buildTag').textCont
 // simulate a fresh deploy: server files change under the running app
 // (in-process replace, not sed — GNU and BSD sed disagree on -i syntax)
 const hash = tag1.split(' ')[1];
-const patch = (file, from, to) =>
-  writeFileSync(file, readFileSync(file, 'utf8').replace(from, to));
-patch('./pwa/index.html', `build ${hash}<`, 'build NEWDEPLOY<');
+const patch = (file, from, to) => {
+  const t = readFileSync(file, 'utf8');
+  const n = t.replace(from, to);
+  if (n === t) { console.error(`PATCH FAILED: ${from} not found in ${file}`); process.exit(1); }
+  writeFileSync(file, n);
+};
+patch('./pwa/index.html', `data-build="${hash}"`, 'data-build="NEWDEPLOY"');
 patch('./pwa/sw.js', /const VERSION = '.*';/, "const VERSION = 'kb-newdeploy';");
 
 await p.reload(); await p.waitForTimeout(1200);          // ONE relaunch

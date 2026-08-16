@@ -50,7 +50,7 @@ function waitForPort(port, tries = 50) {
   });
 }
 
-execSync('./build.sh', { stdio: 'inherit' }); // test6 needs harness.html, served suites need pwa/index.html
+execSync('node build.mjs', { stdio: 'inherit' }); // test6 needs harness.html, served suites need pwa/index.html
 
 for (const t of FILE_SUITES) judge(t, await run('node', [`tests/${t}.mjs`]), clean);
 
@@ -65,7 +65,7 @@ try {
 } finally {
   server.kill();
 }
-execSync('./build.sh', { stdio: 'ignore' }); // testupdate mutated pwa/ — restore it
+execSync('node build.mjs', { stdio: 'ignore' }); // testupdate mutated pwa/ — restore it
 
 console.log(failed ? `\n${failed} suite(s) FAILED` : '\nall suites green');
 process.exit(failed ? 1 : 0);

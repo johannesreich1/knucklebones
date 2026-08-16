@@ -18,6 +18,9 @@ import { resumeGame, toMenu, syncSettingsUI, updateResumeButton, updateStatLine 
 export function boot(embed){
   setEmbed(!!embed);
   loadStats();
+  // the deploy-truth tag: stamped on <html> by build.mjs (stays "dev" in dev
+  // and in the widget, which deliberately has no data-build)
+  $('#buildTag').textContent = 'build ' + (document.documentElement.dataset.build || 'dev');
   buildBoards();
   fit();
   applySides();

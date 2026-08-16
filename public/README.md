@@ -3,8 +3,9 @@
 Everything here is static. No build step, no server code, no dependencies.
 
 ```
-index.html                 the whole game
-sw.js                      service worker (offline cache)
+index.html                 the page (build tag stamped on <html data-build>)
+assets/                    the game's hashed JS/CSS chunks
+sw.js                      service worker (network-first page, precached assets)
 manifest.webmanifest       app metadata
 icon-180/192/512.png       home-screen icons
 icon-maskable-512.png      Android adaptive icon

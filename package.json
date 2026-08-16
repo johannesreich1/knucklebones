@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "./build.sh",
+    "dev": "vite",
+    "build": "node build.mjs",
     "serve": "python3 tests/serve.py",
     "test": "node tests/run-all.mjs"
   },
