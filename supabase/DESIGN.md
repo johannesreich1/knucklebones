@@ -1,11 +1,14 @@
 # Stage 3 — Backend design (Supabase)
 
-Status: **DEPLOYED and e2e-verified** (2026-08-16) on project
-`euzjcejbkxvqfrttgaxu`. Schema lives in `supabase/migrations/`, functions in
-`supabase/functions/`. Live verification: RLS isolation, forged-write denial,
-seed → replay → stored-score round-trip, double-submit 409, tampered game 422,
-anon leaderboard (see `tests/e2e-ranked.mjs`). Remaining: client integration
-(auth UI, ranked mode wiring), covered by the client-integration phase.
+Status: **SUPERSEDED IN PART by the PvP pivot (2026-08-16)** — the owner's
+decision: solo/AI games are never ranked; ranked = online PvP only, with bot
+backfill behind generated usernames. Elo ladder; bot games count for humans,
+bots never listed. The deployed reality is migrations 0003-0007 +
+supabase/functions/{pvp-join,pvp-move,pvp-claim}, all live and e2e-verified
+(tests/e2e-pvp.mjs: full human-vs-human match with zero-sum Elo, bot match,
+seed secrecy, rating-tamper denial, out-of-turn/illegal-move rejection).
+The sections below describe the original solo-ranked design and remain as
+rationale for the shared-core replay approach the PvP authority reuses.
 
 ## Principles
 

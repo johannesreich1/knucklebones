@@ -1,0 +1,116 @@
+// pvp-move: the single authority for match progress. Validates the caller's
+// move against the server-rebuilt state (turn, legality, seed-stream die),
+// writes the move log, detects the end, applies Elo — and when the opponent
+// is a bot, computes and records its reply in the same request.
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import { AI, ME, isFull, boardTotal, legalCols, applyMove, type Player } from "./core/rules.ts";
+import { rebuild, type MatchState } from "./core/match.ts";
+import { eloDelta, type MatchScore } from "./core/elo.ts";
+import { searchRoot, setRiskW, getRiskW } from "./core/ai.ts";
+
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, apikey, content-type",
+};
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...CORS } });
+
+const MATCH_COLS = "id, p1, p2, status, turn, winner, p1_score, p2_score, next_die, last_move_at";
+
+async function loadState(svc: SupabaseClient, matchId: string): Promise<MatchState | null> {
+  const { data: moves } = await svc.from("match_moves").select("idx, who, col").eq("match_id", matchId);
+  const { data: seedRow } = await svc.from("match_seeds").select("seed").eq("match_id", matchId).single();
+  if (!seedRow) return null;
+  return rebuild(seedRow.seed, moves ?? []);
+}
+
+/* end of match: scores, winner, Elo for both sides (bots included — their
+   hidden rating drifting toward true strength improves future pairings) */
+async function finish(svc: SupabaseClient, match: any, s: MatchState, status: "done" | "forfeit", forfeitWinner?: Player) {
+  const p1Score = boardTotal(s.st[ME]), p2Score = boardTotal(s.st[AI]);
+  const p1Result: MatchScore = status === "forfeit"
+    ? (forfeitWinner === ME ? 1 : 0)
+    : (p1Score > p2Score ? 1 : p1Score < p2Score ? 0 : 0.5);
+  const { data: profs } = await svc.from("profiles").select("id, rating").in("id", [match.p1, match.p2]);
+  const r1 = profs!.find((p: any) => p.id === match.p1)!.rating;
+  const r2 = profs!.find((p: any) => p.id === match.p2)!.rating;
+  const d1 = eloDelta(r1, r2, p1Result);
+  const d2 = eloDelta(r2, r1, (1 - p1Result) as MatchScore);
+  await svc.from("profiles").update({ rating: r1 + d1 }).eq("id", match.p1);
+  await svc.from("profiles").update({ rating: r2 + d2 }).eq("id", match.p2);
+  const winner = p1Result === 1 ? match.p1 : p1Result === 0 ? match.p2 : null;
+  const { data: updated } = await svc.from("matches").update({
+    status, winner, p1_score: p1Score, p2_score: p2Score,
+    p1_rating_delta: d1, p2_rating_delta: d2,
+    next_die: null, finished_at: new Date().toISOString(), last_move_at: new Date().toISOString(),
+  }).eq("id", match.id).select(MATCH_COLS).single();
+  return updated;
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
+  if (req.method !== "POST") return json({ error: "method-not-allowed" }, 405);
+
+  const supaUrl = Deno.env.get("SUPABASE_URL")!;
+  const authed = createClient(supaUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+    global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
+  });
+  const { data: { user } } = await authed.auth.getUser();
+  if (!user) return json({ error: "unauthorized" }, 401);
+
+  let body: any;
+  try { body = await req.json(); } catch { return json({ error: "bad-json" }, 400); }
+  const { match_id, col } = body ?? {};
+  if (typeof match_id !== "string" || !Number.isInteger(col)) return json({ error: "bad-request" }, 400);
+
+  const svc = createClient(supaUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const { data: match } = await svc.from("matches").select(MATCH_COLS).eq("id", match_id).maybeSingle();
+  if (!match || (match.p1 !== user.id && match.p2 !== user.id)) return json({ error: "no-match" }, 404);
+  if (match.status !== "active") return json({ error: "match-over" }, 409);
+  const myIdx: Player = match.p1 === user.id ? ME : AI;
+  if (match.turn !== myIdx) return json({ error: "not-your-turn" }, 409);
+
+  let s = await loadState(svc, match_id);
+  if (!s || s.over || s.turn !== myIdx) return json({ error: "corrupt-state" }, 500);
+  if (!legalCols(s.st[myIdx]).includes(col)) return json({ error: "illegal-move" }, 422);
+
+  // the move log's primary key (match_id, idx) makes concurrent submits lose cleanly
+  const { error: insErr } = await svc.from("match_moves")
+    .insert({ match_id, idx: s.moveCount, who: myIdx, col });
+  if (insErr) return json({ error: "race-lost" }, 409);
+  applyMove(s.st, myIdx, col, s.nextDie);
+
+  if (isFull(s.st[myIdx])) {
+    const updated = await finish(svc, match, s, "done");
+    return json({ match: updated });
+  }
+
+  // opponent's turn; if it's a bot, it answers within this request
+  const oppId = myIdx === ME ? match.p2 : match.p1;
+  const { data: oppProf } = await svc.from("profiles").select("is_bot").eq("id", oppId).single();
+  let botMove: { col: number } | null = null;
+  s = (await loadState(svc, match_id))!;   // re-derive next die cleanly from the log
+  if (oppProf?.is_bot && !s.over) {
+    const botIdx = (1 - myIdx) as Player;  // vs a human p1, the bot is always index 0
+    const w = getRiskW(); setRiskW(0.9);   // medium strength: beatable, not trivial
+    const botCol = searchRoot(s.st, botIdx, s.nextDie, 2).c;
+    setRiskW(w);
+    const { error: botErr } = await svc.from("match_moves")
+      .insert({ match_id, idx: s.moveCount, who: botIdx, col: botCol });
+    if (!botErr) {
+      applyMove(s.st, botIdx, botCol, s.nextDie);
+      botMove = { col: botCol };
+      if (isFull(s.st[botIdx])) {
+        const updated = await finish(svc, match, s, "done");
+        return json({ match: updated, bot_move: botMove });
+      }
+      s = (await loadState(svc, match_id))!;
+    }
+  }
+
+  const { data: updated } = await svc.from("matches").update({
+    turn: s.turn, next_die: s.nextDie, last_move_at: new Date().toISOString(),
+  }).eq("id", match_id).select(MATCH_COLS).single();
+  return json({ match: updated, bot_move: botMove });
+});

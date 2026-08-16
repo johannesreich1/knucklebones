@@ -1,29 +1,27 @@
-# Edge Functions
+# Edge Functions (PvP)
 
-- `ranked-start` — issues a server-side dice seed (row in `ranked_sessions`)
-- `ranked-submit` — replays the submitted move list against that seed via the
-  shared game core and stores the score IT computes; every deviation → 422
+- `pvp-join` — matchmaking: pair with the longest-waiting human, or (when the
+  client sends `allow_bot: true` after waiting) start a match against a pooled
+  bot. Idempotent — rejoining returns your active match.
+- `pvp-move` — THE match authority: validates each move against the
+  server-rebuilt state (turn, legality, seed-stream die), writes the move log,
+  detects the end, applies Elo; computes the bot's reply in-request when the
+  opponent is a bot.
+- `pvp-claim` — forfeit win when the opponent has been silent >60s on their turn.
+
+Anti-cheat model: clients submit only `{match_id, col}` — there is no field to
+lie in. Dice derive from a seed stored in the service-only `match_seeds` table;
+scores/Elo are computed from the server-written move log; `profiles.rating` is
+not client-writable (column-level grant: `nickname` only).
 
 ## Deploying
 
-The submit function imports `./core/replay.ts` (which pulls in
-`./core/rules.ts`, `./core/dice.ts`, `./config.ts`). Those files are **not
-duplicated here** — they are `src/core/*` and `src/config.ts`, uploaded
-verbatim next to `index.ts` at deploy time. One rules implementation,
-client and server.
+`pvp-move`/`pvp-claim` import `./core/*` — those files are `src/config.ts` and
+`src/core/{rules,dice,match,elo,ai}.ts`, uploaded VERBATIM next to `index.ts`
+at deploy time (one rules implementation, client and server). Deploys so far
+go through the Supabase MCP (`deploy_edge_function`); if deploys move to the
+CLI, a sync step must copy those files first — never hand-edit copies.
 
-Deploys so far go through the Supabase MCP (`deploy_edge_function`) with the
-file set:
-
-```
-ranked-submit/
-├── index.ts        (this repo: supabase/functions/ranked-submit/index.ts)
-├── config.ts       (this repo: src/config.ts)
-└── core/
-    ├── rules.ts    (this repo: src/core/rules.ts)
-    ├── dice.ts     (this repo: src/core/dice.ts)
-    └── replay.ts   (this repo: src/core/replay.ts)
-```
-
-If deploys move to the Supabase CLI later, a sync step must copy those files
-before `supabase functions deploy` — never hand-edit copies.
+Two legacy functions from the superseded solo-ranked design may still be
+deployed (`ranked-start`, `ranked-submit`) — their tables are gone and they
+should be deleted in the dashboard.
