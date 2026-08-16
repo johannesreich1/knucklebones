@@ -1,0 +1,18 @@
+/* Online screens — same design language as the game's overlays. Loaded only
+   with the lazy online chunk. */
+#ovOnline .panel{width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px}
+#ovOnline input{padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.05);color:var(--txt);font-size:14px;font-family:inherit;outline:none}
+#ovOnline input:focus-visible{outline:2px solid var(--cy);outline-offset:1px}
+#ovOnline .err{min-height:16px;font-size:11px;letter-spacing:.08em;color:#ff8a3d;text-align:center}
+#ovOnline .who{font-size:13px;letter-spacing:.12em;text-align:center;color:var(--txt)}
+#ovOnline .who b{color:var(--cy)}
+#ovOnline .who .rt{color:var(--gold);font-weight:800}
+#ovOnline .lb{max-height:52vh;overflow:auto;display:flex;flex-direction:column;gap:4px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:10px}
+#ovOnline .lb .row{display:flex;gap:8px;align-items:center;font-size:13px;padding:4px 6px}
+#ovOnline .lb .row .rank{color:var(--dim);min-width:24px;text-align:right}
+#ovOnline .lb .row .nm{flex:1;font-weight:800}
+#ovOnline .lb .row .rt{color:var(--gold);font-weight:900}
+#ovOnline .lb .row .ws{color:var(--dim);font-size:11px}
+#ovOnline .lb .row.me .nm{color:var(--cy)}

@@ -94,6 +94,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   <div class="tiny" id="statLine" hidden></div>
   <button class="btn primary" id="btnResume" hidden>Resume game</button>
   <button class="btn primary" id="btnPlay">Play</button>
+  <button class="btn" id="btnOnline">Online</button>
   <button class="btn" id="btnTut">Tutorial</button>
   <button class="btn" id="btnHow">How to play</button>
   <div class="tiny" id="buildTag" style="opacity:.55">build dev</div>

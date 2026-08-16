@@ -22,3 +22,9 @@ export const CLASSIC: BoardSpec = { cols: 3, rows: 3 };
 /* Six-sided dice. The scoring formula (value × count²) and the AI's expectation
    averages both derive from this. */
 export const DICE_FACES = 6;
+
+/* Supabase project — both values are public BY DESIGN (the publishable key is
+   made to ship in clients; row security lives in RLS + Edge Functions).
+   The online module lazy-loads; nothing here touches the offline boot path. */
+export const SUPABASE_URL = 'https://euzjcejbkxvqfrttgaxu.supabase.co';
+export const SUPABASE_KEY = 'sb_publishable_xu398Mifx_w42hnJzcD2GA_lxRfVS43';

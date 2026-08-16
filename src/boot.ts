@@ -95,6 +95,10 @@ export function boot(embed){
   tap($('#btnMenu2'),()=>{ Sfx.tap(); hide('#ovEnd'); updateResumeButton(); show('#ovStart'); });
   tap($('#btnMenu'),()=>{ Sfx.tap(); toMenu(); });
   tap($('#btnHow'),()=>{ Sfx.tap(); show('#ovRules'); });
+  // online module (auth, ladder, account) is lazy: the offline game's boot
+  // path must never load supabase-js or anything that talks to a backend
+  tap($('#btnOnline'),()=>{ Sfx.unlock(); Sfx.tap();
+    import('./online/ui.ts').then(m=>m.openOnline()); });
   tap($('#btnCloseRules'),()=>{ Sfx.tap(); hide('#ovRules'); });
 
   // desktop: 1/2/3 place, Enter starts / replays

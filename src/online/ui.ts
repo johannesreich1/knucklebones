@@ -1,0 +1,145 @@
+// The online overlay: auth, menu, leaderboard, account. Injects its own
+// markup on first open — the offline game never carries this DOM. Match play
+// itself (queue + live board) is the next slice and hooks in at btnPlayOnline.
+import './online.css';
+import { $, show, hide } from '../ui/dom.ts';
+import { Sfx } from '../ui/audio.ts';
+import { signUp, signIn, signOut, currentUser, myProfile, rename, leaderboard, deleteAccount } from './session.ts';
+
+const OVERLAY = `
+<div class="ov" id="ovOnline">
+  <h1 style="font-size:20px">ONLINE</h1>
+
+  <div class="panel" id="onAuth" hidden>
+    <div class="lbl">Sign in or create account</div>
+    <input id="onEmail" type="email" autocomplete="email" placeholder="email">
+    <input id="onPass" type="password" autocomplete="current-password" placeholder="password (8+)">
+    <div class="err" id="onAuthErr"></div>
+    <button class="btn primary" id="btnSignIn">Sign in</button>
+    <button class="btn" id="btnSignUp">Create account</button>
+  </div>
+
+  <div class="panel" id="onMenu" hidden>
+    <div class="who" id="onWho"></div>
+    <button class="btn primary" id="btnPlayOnline">Play online</button>
+    <button class="btn" id="btnLeaderboard">Leaderboard</button>
+    <button class="btn" id="btnAccount">Account</button>
+  </div>
+
+  <div class="panel" id="onBoard" hidden>
+    <div class="lbl">Elo ladder</div>
+    <div class="lb" id="onBoardList"></div>
+    <button class="btn" id="btnBoardBack">Back</button>
+  </div>
+
+  <div class="panel" id="onAccount" hidden>
+    <div class="lbl">Nickname</div>
+    <input id="onNick" maxlength="16" autocomplete="off">
+    <div class="err" id="onAccErr"></div>
+    <button class="btn" id="btnRename">Save name</button>
+    <button class="btn" id="btnSignOut">Sign out</button>
+    <button class="btn" id="btnDeleteAcc">Delete account</button>
+    <button class="btn" id="btnAccBack">Back</button>
+  </div>
+
+  <button class="btn" id="btnOnlineClose">Close</button>
+</div>`;
+
+const esc = (s: string) => s.replace(/[&<>"']/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+
+function panel(which: 'onAuth' | 'onMenu' | 'onBoard' | 'onAccount'): void {
+  for (const id of ['onAuth', 'onMenu', 'onBoard', 'onAccount']) $('#' + id).hidden = id !== which;
+}
+
+async function showMenu(): Promise<void> {
+  const p = await myProfile();
+  $('#onWho').innerHTML = p
+    ? `Signed in as <b>${esc(p.nickname)}</b> · <span class="rt">${p.rating}</span>`
+    : 'Signed in';
+  panel('onMenu');
+}
+
+async function showBoard(): Promise<void> {
+  panel('onBoard');
+  const list = $('#onBoardList');
+  list.textContent = 'Loading…';
+  const [rows, me] = await Promise.all([leaderboard(50), myProfile()]);
+  list.innerHTML = rows.length ? '' : '<div class="row">No ranked games yet — be the first!</div>';
+  rows.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.className = 'row' + (me && r.nickname === me.nickname ? ' me' : '');
+    div.innerHTML = `<span class="rank">${i + 1}</span><span class="nm">${esc(r.nickname)}</span>` +
+      `<span class="ws">${r.wins}W/${r.games}</span><span class="rt">${r.rating}</span>`;
+    list.appendChild(div);
+  });
+}
+
+let bound = false;
+function bind(): void {
+  if (bound) return;
+  bound = true;
+  document.body.insertAdjacentHTML('beforeend', OVERLAY);
+
+  const authErr = (m: string | null) => { $('#onAuthErr').textContent = m ?? ''; };
+  $('#btnSignIn').addEventListener('click', async () => {
+    Sfx.tap(); authErr(null);
+    const err = await signIn(($('#onEmail') as HTMLInputElement).value.trim(), ($('#onPass') as HTMLInputElement).value);
+    if (err) return authErr(err);
+    await showMenu();
+  });
+  $('#btnSignUp').addEventListener('click', async () => {
+    Sfx.tap(); authErr(null);
+    const err = await signUp(($('#onEmail') as HTMLInputElement).value.trim(), ($('#onPass') as HTMLInputElement).value);
+    authErr(err ?? 'Account created — check your email to confirm, then sign in.');
+  });
+
+  $('#btnLeaderboard').addEventListener('click', () => { Sfx.tap(); void showBoard(); });
+  $('#btnBoardBack').addEventListener('click', () => { Sfx.tap(); void showMenu(); });
+
+  $('#btnAccount').addEventListener('click', async () => {
+    Sfx.tap();
+    const p = await myProfile();
+    ($('#onNick') as HTMLInputElement).value = p?.nickname ?? '';
+    $('#onAccErr').textContent = '';
+    panel('onAccount');
+  });
+  $('#btnAccBack').addEventListener('click', () => { Sfx.tap(); void showMenu(); });
+  $('#btnRename').addEventListener('click', async () => {
+    Sfx.tap();
+    const err = await rename(($('#onNick') as HTMLInputElement).value.trim());
+    $('#onAccErr').textContent = err ?? 'Saved.';
+  });
+  $('#btnSignOut').addEventListener('click', async () => { Sfx.tap(); await signOut(); panel('onAuth'); });
+
+  let armed = 0;
+  $('#btnDeleteAcc').addEventListener('click', async () => {
+    Sfx.tap();
+    const b = $('#btnDeleteAcc');
+    if (Date.now() - armed < 3000) {
+      const err = await deleteAccount();
+      if (err) { $('#onAccErr').textContent = err; return; }
+      b.textContent = 'Delete account'; armed = 0;
+      panel('onAuth');
+    } else {
+      armed = Date.now(); b.textContent = 'Tap again to delete EVERYTHING';
+      setTimeout(() => { if (armed && Date.now() - armed >= 2900) { b.textContent = 'Delete account'; armed = 0; } }, 3000);
+    }
+  });
+
+  // match play arrives in the next slice; keep the button honest until then
+  $('#btnPlayOnline').addEventListener('click', () => {
+    Sfx.tap();
+    $('#onWho').innerHTML = 'Matchmaking ships in the next update — the ladder is already real.';
+  });
+
+  $('#btnOnlineClose').addEventListener('click', () => { Sfx.tap(); hide('#ovOnline'); });
+}
+
+/* entry point, dynamically imported from boot */
+export async function openOnline(): Promise<void> {
+  bind();
+  show('#ovOnline');
+  if (await currentUser()) await showMenu();
+  else panel('onAuth');
+}
