@@ -160,7 +160,7 @@ export async function nextTurn(){
   }
 }
 
-async function flyDie(who,col,die){
+export async function flyDie(who,col,die){
   const stage=$('#dieStage');
   const src=stage.firstElementChild;
   if(!src) return;
@@ -192,7 +192,7 @@ async function flyDie(who,col,die){
   ghost.remove();
 }
 
-async function destroyAt(who,col,die){
+export async function destroyAt(who,col,die){
   // who = owner of the dice being destroyed
   const b=S.boards[who];
   const victims=[];

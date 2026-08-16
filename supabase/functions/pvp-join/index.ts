@@ -37,11 +37,20 @@ Deno.serve(async (req: Request) => {
 
   const svc = createClient(supaUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+  const names = async (a: string, b: string) => {
+    const { data } = await svc.from("profiles").select("id, nickname").in("id", [a, b]);
+    const nick = (id: string) => data?.find((p: any) => p.id === id)?.nickname ?? "???";
+    return { p1: nick(a), p2: nick(b) };
+  };
+
   // rejoin an active match if one exists (reconnects, page reloads)
   const { data: active } = await svc.from("matches")
     .select("id, p1, p2, status, turn, next_die, last_move_at")
     .eq("status", "active").or(`p1.eq.${uid},p2.eq.${uid}`).limit(1).maybeSingle();
-  if (active) return json({ status: "matched", rejoined: true, match: active, you: active.p1 === uid ? 1 : 0 });
+  if (active) {
+    return json({ status: "matched", rejoined: true, match: active,
+                  you: active.p1 === uid ? 1 : 0, names: await names(active.p1, active.p2) });
+  }
 
   // opportunistic hygiene: drop stale queue entries
   await svc.from("matchmaking_queue").delete()
@@ -69,7 +78,7 @@ Deno.serve(async (req: Request) => {
       .delete().eq("player_id", partner.player_id).select("player_id");
     if (claimed && claimed.length === 1) {
       const match = await startMatch(partner.player_id, uid);  // they waited: they start
-      if (match) return json({ status: "matched", match, you: 0 });
+      if (match) return json({ status: "matched", match, you: 0, names: await names(match.p1, match.p2) });
     }
   }
 
@@ -83,7 +92,7 @@ Deno.serve(async (req: Request) => {
     if (free.length) {
       const bot = free[Math.floor(Math.random() * free.length)];
       const match = await startMatch(uid, bot);               // human always starts vs a bot
-      if (match) return json({ status: "matched", match, you: 1 });
+      if (match) return json({ status: "matched", match, you: 1, names: await names(match.p1, match.p2) });
     }
   }
   return json({ status: "queued" });

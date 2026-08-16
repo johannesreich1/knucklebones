@@ -16,7 +16,7 @@ const CORS = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...CORS } });
 
-const MATCH_COLS = "id, p1, p2, status, turn, winner, p1_score, p2_score, next_die, last_move_at";
+const MATCH_COLS = "id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at";
 
 async function loadState(svc: SupabaseClient, matchId: string): Promise<MatchState | null> {
   const { data: moves } = await svc.from("match_moves").select("idx, who, col").eq("match_id", matchId);
@@ -76,34 +76,36 @@ Deno.serve(async (req: Request) => {
   if (!legalCols(s.st[myIdx]).includes(col)) return json({ error: "illegal-move" }, 422);
 
   // the move log's primary key (match_id, idx) makes concurrent submits lose cleanly
+  const myDie = s.nextDie;
   const { error: insErr } = await svc.from("match_moves")
-    .insert({ match_id, idx: s.moveCount, who: myIdx, col });
+    .insert({ match_id, idx: s.moveCount, who: myIdx, col, die: myDie });
   if (insErr) return json({ error: "race-lost" }, 409);
-  applyMove(s.st, myIdx, col, s.nextDie);
+  applyMove(s.st, myIdx, col, myDie);
 
   if (isFull(s.st[myIdx])) {
     const updated = await finish(svc, match, s, "done");
-    return json({ match: updated });
+    return json({ match: updated, your_die: myDie });
   }
 
   // opponent's turn; if it's a bot, it answers within this request
   const oppId = myIdx === ME ? match.p2 : match.p1;
   const { data: oppProf } = await svc.from("profiles").select("is_bot").eq("id", oppId).single();
-  let botMove: { col: number } | null = null;
+  let botMove: { col: number; die: number } | null = null;
   s = (await loadState(svc, match_id))!;   // re-derive next die cleanly from the log
   if (oppProf?.is_bot && !s.over) {
     const botIdx = (1 - myIdx) as Player;  // vs a human p1, the bot is always index 0
+    const botDie = s.nextDie;
     const w = getRiskW(); setRiskW(0.9);   // medium strength: beatable, not trivial
-    const botCol = searchRoot(s.st, botIdx, s.nextDie, 2).c;
+    const botCol = searchRoot(s.st, botIdx, botDie, 2).c;
     setRiskW(w);
     const { error: botErr } = await svc.from("match_moves")
-      .insert({ match_id, idx: s.moveCount, who: botIdx, col: botCol });
+      .insert({ match_id, idx: s.moveCount, who: botIdx, col: botCol, die: botDie });
     if (!botErr) {
-      applyMove(s.st, botIdx, botCol, s.nextDie);
-      botMove = { col: botCol };
+      applyMove(s.st, botIdx, botCol, botDie);
+      botMove = { col: botCol, die: botDie };
       if (isFull(s.st[botIdx])) {
         const updated = await finish(svc, match, s, "done");
-        return json({ match: updated, bot_move: botMove });
+        return json({ match: updated, your_die: myDie, bot_move: botMove });
       }
       s = (await loadState(svc, match_id))!;
     }
@@ -112,5 +114,5 @@ Deno.serve(async (req: Request) => {
   const { data: updated } = await svc.from("matches").update({
     turn: s.turn, next_die: s.nextDie, last_move_at: new Date().toISOString(),
   }).eq("id", match_id).select(MATCH_COLS).single();
-  return json({ match: updated, bot_move: botMove });
+  return json({ match: updated, your_die: myDie, bot_move: botMove });
 });

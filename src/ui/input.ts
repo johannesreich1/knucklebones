@@ -8,6 +8,11 @@ import { S } from '../state.ts';
 import { ownerOf } from './dom.ts';
 import { Sfx } from './audio.ts';
 import { place } from '../flow/game.ts';
+
+/* Online matches route placements to the server instead of the local machine.
+   Everything else about input (gesture, gating, sfx) stays identical. */
+let placeHandler = place;
+export function setPlaceHandler(h){ placeHandler = h || place; }
 /* ===================== INPUT BINDING =====================
    Embedded webviews are inconsistent about synthesising `click` from a touch.
    Bind pointerdown / touchstart / click and de-duplicate, so a tap registers
@@ -68,5 +73,5 @@ export function commitColumn(col){
     col.classList.add('nope'); setTimeout(()=>col.classList.remove('nope'),340); Sfx.tap(); return;
   }
   Sfx.tap();
-  place(who,c);
+  placeHandler(who,c);
 }

@@ -4,7 +4,8 @@
 import './online.css';
 import { $, show, hide } from '../ui/dom.ts';
 import { Sfx } from '../ui/audio.ts';
-import { signUp, signIn, signOut, currentUser, myProfile, rename, leaderboard, deleteAccount } from './session.ts';
+import { signUp, signIn, signOut, currentUser, myProfile, rename, leaderboard, deleteAccount, join } from './session.ts';
+import { enterMatch, setFinishHandler } from './play.ts';
 
 const OVERLAY = `
 <div class="ov" id="ovOnline">
@@ -24,6 +25,12 @@ const OVERLAY = `
     <button class="btn primary" id="btnPlayOnline">Play online</button>
     <button class="btn" id="btnLeaderboard">Leaderboard</button>
     <button class="btn" id="btnAccount">Account</button>
+  </div>
+
+  <div class="panel" id="onQueue" hidden>
+    <div class="lbl">Matchmaking</div>
+    <div class="who" id="onQueueMsg">Looking for an opponent…</div>
+    <button class="btn" id="btnQueueCancel">Cancel</button>
   </div>
 
   <div class="panel" id="onBoard" hidden>
@@ -48,8 +55,8 @@ const OVERLAY = `
 const esc = (s: string) => s.replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
-function panel(which: 'onAuth' | 'onMenu' | 'onBoard' | 'onAccount'): void {
-  for (const id of ['onAuth', 'onMenu', 'onBoard', 'onAccount']) $('#' + id).hidden = id !== which;
+function panel(which: 'onAuth' | 'onMenu' | 'onQueue' | 'onBoard' | 'onAccount'): void {
+  for (const id of ['onAuth', 'onMenu', 'onQueue', 'onBoard', 'onAccount']) $('#' + id).hidden = id !== which;
 }
 
 async function showMenu(): Promise<void> {
@@ -127,10 +134,33 @@ function bind(): void {
     }
   });
 
-  // match play arrives in the next slice; keep the button honest until then
-  $('#btnPlayOnline').addEventListener('click', () => {
+  // matchmaking: poll join; offer the bot pool once the wait gets boring
+  let queueAbort = false;
+  $('#btnPlayOnline').addEventListener('click', async () => {
     Sfx.tap();
-    $('#onWho').innerHTML = 'Matchmaking ships in the next update — the ladder is already real.';
+    panel('onQueue');
+    queueAbort = false;
+    const started = Date.now();
+    while (!queueAbort) {
+      const waited = Date.now() - started;
+      $('#onQueueMsg').textContent = waited > 7000
+        ? 'Looking for an opponent… inviting anyone available'
+        : 'Looking for an opponent…';
+      const res = await join(waited > 7000);
+      if (queueAbort) break;
+      if (res?.status === 'matched') {
+        await enterMatch(res);
+        return;
+      }
+      await new Promise(r => setTimeout(r, 2500));
+    }
+  });
+  $('#btnQueueCancel').addEventListener('click', () => { Sfx.tap(); queueAbort = true; void showMenu(); });
+
+  // back from a finished match: reopen the overlay on the menu with the result
+  setFinishHandler((summary) => {
+    show('#ovOnline');
+    void showMenu().then(() => { $('#onWho').innerHTML = esc(summary) + '<br>' + $('#onWho').innerHTML; });
   });
 
   $('#btnOnlineClose').addEventListener('click', () => { Sfx.tap(); hide('#ovOnline'); });

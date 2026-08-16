@@ -58,30 +58,35 @@ export async function leaderboard(limit = 50): Promise<LeaderboardRow[]> {
 
 /* ---- PvP match API (thin wrappers over the Edge Functions) ---- */
 async function call<T>(fn: string, body: object): Promise<{ status: number; data: T | null }> {
-  const { data: { session } } = await supa().auth.getSession();
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${session?.access_token ?? ''}`,
-    },
-    body: JSON.stringify(body),
-  });
-  let data: T | null = null;
-  try { data = await res.json(); } catch { /* empty */ }
-  return { status: res.status, data };
+  try {
+    const { data: { session } } = await supa().auth.getSession();
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/${fn}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${session?.access_token ?? ''}`,
+      },
+      body: JSON.stringify(body),
+    });
+    let data: T | null = null;
+    try { data = await res.json(); } catch { /* empty body */ }
+    return { status: res.status, data };
+  } catch {
+    // transient network failure: status 0 — callers retry or resync, never crash
+    return { status: 0, data: null };
+  }
 }
 
 export type JoinResult =
-  | { status: 'matched'; match: MatchRow; you: 0 | 1; rejoined?: boolean }
+  | { status: 'matched'; match: MatchRow; you: 0 | 1; rejoined?: boolean; names: { p1: string; p2: string } }
   | { status: 'queued' };
 export async function join(allowBot: boolean): Promise<JoinResult | null> {
   const r = await call<JoinResult>('pvp-join', { allow_bot: allowBot });
   return r.status === 200 ? r.data : null;
 }
 
-export interface MoveResult { match: MatchRow; bot_move?: { col: number } | null; error?: string; }
+export interface MoveResult { match: MatchRow; your_die?: number; bot_move?: { col: number; die: number } | null; error?: string; }
 export async function move(matchId: string, col: number): Promise<{ status: number; data: MoveResult | null }> {
   return call<MoveResult>('pvp-move', { match_id: matchId, col });
 }
