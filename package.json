@@ -1,0 +1,12 @@
+{
+  "name": "knucklebones-neon",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "./build.sh",
+    "serve": "python3 tests/serve.py"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}
