@@ -2,9 +2,9 @@
 // strictness ratchet. New code goes in typed modules, not here.
 // The two-player turn clock. Pure countdown + display; what happens on
 // expiry is injected by the flow (no upward dependency).
-import { S } from '../state';
-import { $ } from '../ui/dom';
-import { colorOf } from '../ui/identity';
+import { S } from '../state.ts';
+import { $ } from '../ui/dom.ts';
+import { colorOf } from '../ui/identity.ts';
 /* ===================== TURN CLOCK (two-player only) =====================
    Runs only while a human is choosing, never during the hand-off card. On
    expiry it drops the die into a random legal column so a walk-away can't

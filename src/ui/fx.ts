@@ -1,10 +1,10 @@
 // Juice: particles, floating score numbers, shake, flash. All of it honours
 // prefers-reduced-motion (informative feedback degrades to a plain fade;
 // decoration is skipped outright).
-import { SPEC, type Player } from '../core/rules';
-import { S } from '../state';
-import { $, colEl, slotEl, slotIdx, faceRotated } from './dom';
-import { isEmbed, rootRect } from './embed';
+import { SPEC, type Player } from '../core/rules.ts';
+import { S } from '../state.ts';
+import { $, colEl, slotEl, slotIdx, faceRotated } from './dom.ts';
+import { isEmbed, rootRect } from './embed.ts';
 
 export const REDUCED: boolean = (() => {
   try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }

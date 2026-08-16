@@ -1,8 +1,8 @@
 // The die as a component: one factory returns a fully-styled element, usable
 // on the board, the centre stage, the title screen and the widget alike.
-import { ME, type Player } from '../core/rules';
-import { $ } from './dom';
-import { nameOf } from './identity';
+import { ME, type Player } from '../core/rules.ts';
+import { $ } from './dom.ts';
+import { nameOf } from './identity.ts';
 
 /* Pip positions on the die FACE's own 3×3 grid, per value. This is dice
    anatomy, not board shape — a 4-column game mode still rolls these dice. */

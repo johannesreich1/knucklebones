@@ -1,9 +1,9 @@
 // Persistence: stats/preferences and the in-progress game save.
 // Storage is unavailable in some embeds (sandboxed iframes, private modes).
 // Every access is guarded: the game simply forgets between sessions there.
-import { DICE_FACES } from './config';
-import { SPEC, isFull, type Board, type Player } from './core/rules';
-import { S, DIFFS, MODES, TIMERS, SEATS, oneOf, type Mode, type Diff, type Seat } from './state';
+import { DICE_FACES } from './config.ts';
+import { SPEC, isFull, type Board, type Player } from './core/rules.ts';
+import { S, DIFFS, MODES, TIMERS, SEATS, oneOf, type Mode, type Diff, type Seat } from './state.ts';
 
 const Store = {
   KEY: 'knucklebones.v1',

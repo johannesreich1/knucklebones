@@ -2,10 +2,10 @@
 // strictness ratchet. New code goes in typed modules, not here.
 // fit(): pick the cell size (and the .land breakpoint) from whichever box the
 // game occupies. JS owns the breakpoint so CSS and logic always agree.
-import { SPEC } from '../core/rules';
-import { S } from '../state';
-import { $ } from './dom';
-import { isEmbed, kbroot } from './embed';
+import { SPEC } from '../core/rules.ts';
+import { S } from '../state.ts';
+import { $ } from './dom.ts';
+import { isEmbed, kbroot } from './embed.ts';
 export function fit(){
   const app=isEmbed()?kbroot():$('#app');
   const w=app.clientWidth, h=app.clientHeight;

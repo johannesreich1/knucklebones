@@ -2,10 +2,10 @@
 // strictness ratchet. New code goes in typed modules, not here.
 // The guided first game: scripted rolls, scripted CPU, one lesson per
 // player turn. Deterministic, so the whole flow is testable.
-import { ME } from '../core/rules';
-import { S } from '../state';
-import { $ } from '../ui/dom';
-import { Sfx } from '../ui/audio';
+import { ME } from '../core/rules.ts';
+import { S } from '../state.ts';
+import { $ } from '../ui/dom.ts';
+import { Sfx } from '../ui/audio.ts';
 /* ===================== TUTORIAL =====================
    A guided first game. Rolls and CPU moves are scripted so every lesson is
    guaranteed to happen: the player always draws a second 4 for the multiplier

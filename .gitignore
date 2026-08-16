@@ -13,3 +13,4 @@ harness.html
 # test artifacts
 *.png
 !public/icon-*.png
+.env

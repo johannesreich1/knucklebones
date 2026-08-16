@@ -1,19 +1,19 @@
 // @ts-nocheck -- moved verbatim from the monolith; typed in the milestone-D
 // strictness ratchet. New code goes in typed modules, not here.
 // Wire the DOM to the game: one boot per entry point.
-import { SPEC } from './core/rules';
-import { AI, ME, S } from './state';
-import { loadStats, saveStats } from './persist';
-import { Sfx } from './ui/audio';
-import { setEmbed, isEmbed, kbroot } from './ui/embed';
-import { $, show, hide, colEl } from './ui/dom';
-import { makeDie } from './ui/die';
-import { buildBoards, applySides, updateRecord } from './ui/render';
-import { fit } from './ui/layout';
-import { tap, boardDown, boardUp, clearPress, commitColumn } from './ui/input';
-import { coachTap } from './flow/tutorial';
-import { newGame, passTap } from './flow/game';
-import { resumeGame, toMenu, syncSettingsUI, updateResumeButton, updateStatLine } from './flow/menu';
+import { SPEC } from './core/rules.ts';
+import { AI, ME, S } from './state.ts';
+import { loadStats, saveStats } from './persist.ts';
+import { Sfx } from './ui/audio.ts';
+import { setEmbed, isEmbed, kbroot } from './ui/embed.ts';
+import { $, show, hide, colEl } from './ui/dom.ts';
+import { makeDie } from './ui/die.ts';
+import { buildBoards, applySides, updateRecord } from './ui/render.ts';
+import { fit } from './ui/layout.ts';
+import { tap, boardDown, boardUp, clearPress, commitColumn } from './ui/input.ts';
+import { coachTap } from './flow/tutorial.ts';
+import { newGame, passTap } from './flow/game.ts';
+import { resumeGame, toMenu, syncSettingsUI, updateResumeButton, updateStatLine } from './flow/menu.ts';
 /* ===================== BOOT ===================== */
 export function boot(embed){
   setEmbed(!!embed);

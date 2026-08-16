@@ -1,6 +1,6 @@
 // Synth SFX on Web Audio — no samples, no assets. Muted by S.sound; the
 // context unlocks on the first user gesture (Sfx.unlock from a tap handler).
-import { S } from '../state';
+import { S } from '../state.ts';
 
 export const Sfx = (() => {
   let ctx: AudioContext | null = null;

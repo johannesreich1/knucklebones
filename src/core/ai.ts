@@ -4,11 +4,11 @@
 // against an 18ms budget, so slowing anything here quietly weakens the CPU on
 // mid-range phones. Benchmark with tests/bench3.mjs before changing (and skip
 // the first JIT-cold run when reading its numbers).
-import { DICE_FACES } from '../config';
+import { DICE_FACES } from '../config.ts';
 import {
   AI, ME, SPEC, type GameState, type Player,
   cloneSt, applyMove, legalCols, boardTotal, countOf, isFull,
-} from './rules';
+} from './rules.ts';
 
 let NODES = 0;
 const BUDGET = 500000;                  // node cap: search degrades, never hangs

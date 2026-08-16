@@ -1,6 +1,6 @@
 // Names and colours follow the PLAYER identity, never the screen half.
-import { ME, type Player } from '../core/rules';
-import { S } from '../state';
+import { ME, type Player } from '../core/rules.ts';
+import { S } from '../state.ts';
 
 export function nameOf(who: Player): string {
   if (S.mode === 'duo') return who === ME ? 'PLAYER 1' : 'PLAYER 2';

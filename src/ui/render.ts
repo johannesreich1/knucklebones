@@ -2,11 +2,11 @@
 // strictness ratchet. New code goes in typed modules, not here.
 // Painting the table: boards, dice, scores, plates, status line and the
 // tutorial-only strategy hints. State in, DOM out -- game logic stays out.
-import { AI, ME, SPEC, colScore, boardTotal, counts, countOf } from '../core/rules';
-import { S, DIFF_LABEL } from '../state';
-import { $, sideKey, slotEl, slotIdx, colEl, chipEl } from './dom';
-import { nameOf } from './identity';
-import { makeDie } from './die';
+import { AI, ME, SPEC, colScore, boardTotal, counts, countOf } from '../core/rules.ts';
+import { S, DIFF_LABEL } from '../state.ts';
+import { $, sideKey, slotEl, slotIdx, colEl, chipEl } from './dom.ts';
+import { nameOf } from './identity.ts';
+import { makeDie } from './die.ts';
 /* ===================== DOM BUILD ===================== */
 export function buildBoards(){
   for(const side of ['top','bot']){

@@ -3,9 +3,9 @@
 // in widget-embed.css. Nothing is patched after the fact.
 import './styles/main.css';
 import './styles/widget-embed.css';
-import { MARKUP } from './markup';
-import { boot } from './boot';
-import { hooks } from './hooks';
+import { MARKUP } from './markup.ts';
+import { boot } from './boot.ts';
+import { hooks } from './hooks.ts';
 
 document.getElementById('kbroot')!.insertAdjacentHTML('afterbegin', MARKUP);
 boot(true);

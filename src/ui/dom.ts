@@ -1,8 +1,8 @@
 // DOM geography: which element is where, given that the two players can swap
 // screen halves. EVERY lookup goes through sideKey()/S.bottom — never assume
 // P1 is at the bottom (pass mode swaps halves, face mode doesn't).
-import { SPEC, AI, type Player } from '../core/rules';
-import { S } from '../state';
+import { SPEC, AI, type Player } from '../core/rules.ts';
+import { S } from '../state.ts';
 
 export const $ = (s: string) => document.querySelector(s) as HTMLElement;
 

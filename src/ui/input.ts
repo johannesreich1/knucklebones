@@ -3,11 +3,11 @@
 // Input: tap binding that survives inconsistent webviews, and the
 // press-then-release-on-the-same-column placement gesture (slide off to
 // cancel). commitColumn is the single gate every input path funnels through.
-import { ME, SPEC } from '../core/rules';
-import { S } from '../state';
-import { ownerOf } from './dom';
-import { Sfx } from './audio';
-import { place } from '../flow/game';
+import { ME, SPEC } from '../core/rules.ts';
+import { S } from '../state.ts';
+import { ownerOf } from './dom.ts';
+import { Sfx } from './audio.ts';
+import { place } from '../flow/game.ts';
 /* ===================== INPUT BINDING =====================
    Embedded webviews are inconsistent about synthesising `click` from a touch.
    Bind pointerdown / touchstart / click and de-duplicate, so a tap registers

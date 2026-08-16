@@ -52,6 +52,9 @@ function waitForPort(port, tries = 50) {
 
 execSync('node build.mjs', { stdio: 'inherit' }); // test6 needs harness.html, served suites need pwa/index.html
 
+// the seeded-dice determinism gate (pure Node, no browser)
+judge('dice', await run('node', ['--experimental-strip-types', 'tests/dice.test.ts']), clean);
+
 for (const t of FILE_SUITES) judge(t, await run('node', [`tests/${t}.mjs`]), clean);
 
 // bench3 is a benchmark, not a pass/fail suite — but its helper-vs-inline

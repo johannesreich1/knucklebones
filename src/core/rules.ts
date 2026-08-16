@@ -1,7 +1,7 @@
 // The rules of Knucklebones — pure functions over plain data. No DOM, no
 // timers, no randomness: this module must run identically in the browser and
 // on a server (score validation replays games through exactly this code).
-import { CLASSIC, DICE_FACES, type BoardSpec } from '../config';
+import { CLASSIC, DICE_FACES, type BoardSpec } from '../config.ts';
 
 /* Player indices are fixed identities: 1 = cyan (P1 / the human in CPU mode),
    0 = magenta (P2 / the CPU). Which half of the screen they occupy is a UI

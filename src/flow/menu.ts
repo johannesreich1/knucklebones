@@ -2,16 +2,16 @@
 // strictness ratchet. New code goes in typed modules, not here.
 // The title screen and settings panel: what they show, and how a saved game
 // re-enters play.
-import { ME } from '../core/rules';
-import { S, DIFFS, SEATS, oneOf } from '../state';
-import { loadGame } from '../persist';
-import { $, show, hide } from '../ui/dom';
-import { nameOf } from '../ui/identity';
-import { setStageDie } from '../ui/die';
-import { applySides, updateRecord, clearHints, showHints, setStatus, setActivePlate } from '../ui/render';
-import { stopTimer } from './timer';
-import { clearTut } from './tutorial';
-import { newGame, nextTurn, armTimer, cancelPass } from './game';
+import { ME } from '../core/rules.ts';
+import { S, DIFFS, SEATS, oneOf } from '../state.ts';
+import { loadGame } from '../persist.ts';
+import { $, show, hide } from '../ui/dom.ts';
+import { nameOf } from '../ui/identity.ts';
+import { setStageDie } from '../ui/die.ts';
+import { applySides, updateRecord, clearHints, showHints, setStatus, setActivePlate } from '../ui/render.ts';
+import { stopTimer } from './timer.ts';
+import { clearTut } from './tutorial.ts';
+import { newGame, nextTurn, armTimer, cancelPass } from './game.ts';
 export function resumeGame(){
   const g=loadGame();
   if(!g){ newGame(); return; }

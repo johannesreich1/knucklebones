@@ -1,7 +1,7 @@
 // The game's single mutable state object plus the vocabulary of legal values.
 // Everything that renders, saves or decides reads from here; identity vs
 // screen-half is the invariant to keep straight (see S.bottom).
-import { AI, ME, emptyBoard, type Board, type Player } from './core/rules';
+import { AI, ME, emptyBoard, type Board, type Player } from './core/rules.ts';
 
 export const DIFFS = ['easy', 'medium', 'hard'] as const;
 export const MODES = ['cpu', 'duo'] as const;

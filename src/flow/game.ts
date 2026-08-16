@@ -4,21 +4,21 @@
 // game lifecycle, and the AI policy that picks the CPU's column. One deep
 // module on purpose -- these steps are one process, and S.gen guards every
 // await against a game that was abandoned mid-animation.
-import { AI, ME, SPEC, legalCols, colScore, boardTotal, counts, isFull, emptyBoard } from '../core/rules';
-import { searchRoot, getRiskW, setRiskW } from '../core/ai';
-import { S } from '../state';
-import { saveGame, clearGame, saveStats } from '../persist';
-import { Sfx, vibrate } from '../ui/audio';
-import { isEmbed, kbroot, rootRect } from '../ui/embed';
-import { $, show, hide, sideKey, slotEl, slotIdx, colEl, faceRotated } from '../ui/dom';
-import { nameOf, colorOf } from '../ui/identity';
-import { makeDie, setStageDie } from '../ui/die';
-import { REDUCED, burst, floatPts, shake, flash } from '../ui/fx';
-import { renderSide, renderAll, applySides, updateRecord, clearHints, showHints, setStatus, setActivePlate } from '../ui/render';
-import { fit } from '../ui/layout';
-import { startTimer, stopTimer } from './timer';
-import { coachShow, coachHide, clearTut, tutNextRoll, tutOnChoose } from './tutorial';
-import { updateStatLine } from './menu';
+import { AI, ME, SPEC, legalCols, colScore, boardTotal, counts, isFull, emptyBoard } from '../core/rules.ts';
+import { searchRoot, getRiskW, setRiskW } from '../core/ai.ts';
+import { S } from '../state.ts';
+import { saveGame, clearGame, saveStats } from '../persist.ts';
+import { Sfx, vibrate } from '../ui/audio.ts';
+import { isEmbed, kbroot, rootRect } from '../ui/embed.ts';
+import { $, show, hide, sideKey, slotEl, slotIdx, colEl, faceRotated } from '../ui/dom.ts';
+import { nameOf, colorOf } from '../ui/identity.ts';
+import { makeDie, setStageDie } from '../ui/die.ts';
+import { REDUCED, burst, floatPts, shake, flash } from '../ui/fx.ts';
+import { renderSide, renderAll, applySides, updateRecord, clearHints, showHints, setStatus, setActivePlate } from '../ui/render.ts';
+import { fit } from '../ui/layout.ts';
+import { startTimer, stopTimer } from './timer.ts';
+import { coachShow, coachHide, clearTut, tutNextRoll, tutOnChoose } from './tutorial.ts';
+import { updateStatLine } from './menu.ts';
 
 /* arm the turn clock: on expiry the die drops into a random legal column */
 export function armTimer(){ const gen=S.gen; startTimer(()=>autoPlace(gen)); }
