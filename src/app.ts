@@ -2,7 +2,10 @@
 // Milestone B dissolves this file into typed modules; the ts-nocheck ratchets
 // away with it. Do not add new code here.
 /* ===================== CONSTANTS ===================== */
-const AI = 0, ME = 1;
+import { DICE_FACES } from './config';
+import { AI, ME, SPEC, emptyBoard, countOf, legalCols, colScore, boardTotal, isFull, counts,
+         cloneSt, applyMove } from './core/rules';
+import { riskOf, search, searchRoot, nodes, getRiskW, setRiskW } from './core/ai';
 const PIPS = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
 const $ = s => document.querySelector(s);
 
@@ -20,7 +23,7 @@ function rootRect(){ return kbroot().getBoundingClientRect(); }
    (CPU / Player 2). Which HALF OF THE SCREEN each one occupies is S.bottom,
    which swaps on hand-off so the active player is always nearest their thumbs. */
 const S = {
-  boards:[[[],[],[]],[[],[],[]]],
+  boards:[emptyBoard(),emptyBoard()],
   turn: ME,
   die: 0,
   phase:'menu',          // menu | roll | choose | pass | anim | over
@@ -139,8 +142,8 @@ function loadGame(){
   let g; try{ g=JSON.parse(localStorage.getItem(GKEY)); }catch(e){ return null; }
   if(!g) return null;
   // validate hard: a corrupt or hand-edited blob must not boot the game
-  const okBoard = b => Array.isArray(b) && b.length===3 && b.every(c =>
-    Array.isArray(c) && c.length<=3 && c.every(v => Number.isInteger(v) && v>=1 && v<=6));
+  const okBoard = b => Array.isArray(b) && b.length===SPEC.cols && b.every(c =>
+    Array.isArray(c) && c.length<=SPEC.rows && c.every(v => Number.isInteger(v) && v>=1 && v<=DICE_FACES));
   if(!Array.isArray(g.boards) || g.boards.length!==2 || !g.boards.every(okBoard)) return null;
   if(g.turn!==0 && g.turn!==1) return null;
   if(g.bottom!==0 && g.bottom!==1) return null;
@@ -148,7 +151,7 @@ function loadGame(){
   if(isFull(g.boards[0]) || isFull(g.boards[1])) return null;   // that game was over
   const placed = g.boards[0].flat().length + g.boards[1].flat().length;
   if(placed===0) return null;                                   // nothing worth resuming
-  if(!(Number.isInteger(g.die) && g.die>=0 && g.die<=6)) g.die=0;
+  if(!(Number.isInteger(g.die) && g.die>=0 && g.die<=DICE_FACES)) g.die=0;
   return g;
 }
 function resumeGame(){
@@ -230,114 +233,39 @@ function updateStatLine(){
   el.innerHTML = 'Best <b>'+S.best+'</b>' + (played? '  ·  Record '+S.wins+'–'+S.losses+(S.draws?('–'+S.draws):'') : '');
 }
 
-/* ===================== SCORING ===================== */
-/* countOf stays a plain loop rather than an object tally: colScore runs millions
-   of times inside the search, and building a map per call costs far more. */
-function countOf(col,v){
-  let k=0;
-  for(let i=0;i<col.length;i++) if(col[i]===v) k++;
-  return k;
-}
-function legalCols(board){
-  const out=[];
-  for(let c=0;c<3;c++) if(board[c].length<3) out.push(c);
-  return out;
-}
-function colScore(col){
-  let s=0;
-  for(let v=1;v<=6;v++){
-    const k=countOf(col,v);
-    if(k) s += v*k*k;
-  }
-  return s;
-}
-function boardTotal(b){ return colScore(b[0])+colScore(b[1])+colScore(b[2]); }
-function isFull(b){ return b[0].length+b[1].length+b[2].length >= 9; }
-function counts(col){ const m={}; for(const v of col) m[v]=(m[v]||0)+1; return m; }
-
-/* ===================== AI (expectimax) ===================== */
-let NODES=0; const BUDGET=500000;
-let RISK_W=1.5;                       /* tuned by self-play: 55.3% vs risk-blind over 500 games */
-function cloneSt(st){ return [ [st[0][0].slice(),st[0][1].slice(),st[0][2].slice()],
-                               [st[1][0].slice(),st[1][1].slice(),st[1][2].slice()] ]; }
-function applyMove(st,who,col,die){
-  st[who][col].push(die);
-  const o=1-who, oc=st[o][col];
-  let hit=false; for(let i=0;i<oc.length;i++) if(oc[i]===die){hit=true;break;}
-  if(hit) st[o][col]=oc.filter(v=>v!==die);
-}
-/* expected value a player stands to lose to one enemy placement in a facing column */
-function riskOf(st,p){
-  const o=1-p, mine=st[p], theirs=st[o];
-  let r=0;
-  for(let c=0;c<3;c++){
-    if(theirs[c].length>=3) continue;          // they can't play into this column any more
-    const col=mine[c];
-    for(let v=1;v<=6;v++){
-      const k=countOf(col,v);
-      if(k) r += (v*k*k)/6;                     // 1-in-6 chance they roll exactly this value
-    }
-  }
-  return r;
-}
-function evalSt(st){
-  let s = boardTotal(st[AI]) - boardTotal(st[ME]);
-  if(RISK_W) s += RISK_W*(riskOf(st,ME) - riskOf(st,AI));
-  return s;
-}
-function searchRoot(st,who,die,depth){ NODES=0; return search(st,who,die,depth); }
-function search(st,who,die,depth){
-  NODES++;
-  const legal=legalCols(st[who]);
-  let bestV = who===AI ? -1e9 : 1e9, bestC = legal[0];
-  for(const c of legal){
-    const ns=cloneSt(st);
-    applyMove(ns,who,c,die);
-    let v;
-    if(isFull(ns[who])){
-      const d = boardTotal(ns[AI]) - boardTotal(ns[ME]);   // game over: material only
-      v = d + (d>0?14:d<0?-14:0);
-    } else if(depth<=1 || NODES>BUDGET){
-      v = evalSt(ns);
-    } else {
-      let sum=0;
-      for(let d=1;d<=6;d++) sum += search(ns,1-who,d,depth-1).v;
-      v = sum/6;
-    }
-    v += (Math.random()-0.5)*1e-4;                 // tie-break jitter
-    if(who===AI ? v>bestV : v<bestV){ bestV=v; bestC=c; }
-  }
-  return {v:bestV,c:bestC};
-}
+/* ===================== AI POLICY =====================
+   Scoring + search live in core/ (pure, shared with the server-side replay
+   validator). This is the glue that turns difficulty + tutorial state into a
+   column choice. */
 function aiChoose(){
   const st=[ S.boards[AI].map(c=>c.slice()), S.boards[ME].map(c=>c.slice()) ];
   const legal=legalCols(st[AI]);
   if(legal.length===1) return legal[0];
   if(S.tut){
     if(S.tut.cmoves.length) return S.tut.cmoves.shift();   // lesson setup
-    const w1=RISK_W; RISK_W=0;                              // then a beatable greedy
-    const c1=searchRoot(st,AI,S.die,1).c; RISK_W=w1; return c1;
+    const w1=getRiskW(); setRiskW(0);                       // then a beatable greedy
+    const c1=searchRoot(st,AI,S.die,1).c; setRiskW(w1); return c1;
   }
   const filled = st[AI].flat().length + st[ME].flat().length;
-  const w0=RISK_W;
+  const w0=getRiskW();
   let c;
   if(S.diff==='easy'){
     if(Math.random()<0.5) return legal[(Math.random()*legal.length)|0];
-    RISK_W=0;                                     // easy is blind to danger
+    setRiskW(0);                                  // easy is blind to danger
     c=searchRoot(st,AI,S.die,1).c;
   }else if(S.diff==='medium'){
-    RISK_W=0.9;                                   // 59.9% vs greedy over 400 games
+    setRiskW(0.9);                                // 59.9% vs greedy over 400 games
     c=searchRoot(st,AI,S.die,2).c;
   }else{
-    RISK_W=1.5;
+    setRiskW(1.5);
     /* Time-boxed deepening: always search 4 plies, and only go to 5 if this
        device did 4 fast enough that 5 (~10-18x the nodes) stays responsive.
        Keeps a slow phone at ~30ms/move instead of ~850ms. */
     const t0=performance.now();
     c=searchRoot(st,AI,S.die,4).c;
-    if(performance.now()-t0 < 18 && filled<16) c=searchRoot(st,AI,S.die,5).c;
+    if(performance.now()-t0 < 18 && filled < SPEC.cols*SPEC.rows*2-2) c=searchRoot(st,AI,S.die,5).c;
   }
-  RISK_W=w0;
+  setRiskW(w0);
   return c;
 }
 
@@ -369,12 +297,12 @@ function buildBoards(){
   for(const side of ['top','bot']){
     const b=$('#'+side+'Board'); b.innerHTML='';
     const cs=$('#'+side+'Cols'); cs.innerHTML='';
-    for(let c=0;c<3;c++){
+    for(let c=0;c<SPEC.cols;c++){
       const col=document.createElement('div');
       col.className='col'; col.dataset.col=c;
       col.setAttribute('role','button');
       col.setAttribute('tabindex','-1');
-      for(let r=0;r<3;r++){
+      for(let r=0;r<SPEC.rows;r++){
         const s=document.createElement('div'); s.className='slot'; s.dataset.slot=r;
         s.setAttribute('aria-hidden','true');
         col.appendChild(s);
@@ -393,7 +321,7 @@ function slotEl(who,col,slot){
   return document.querySelector('#'+sideKey(who)+'Board .col[data-col="'+col+'"] .slot[data-slot="'+slot+'"]');
 }
 /* dice stack toward the centre line, so it depends on the half, not the player */
-function slotIdx(who,i){ return sideKey(who)==='bot' ? i : 2-i; }
+function slotIdx(who,i){ return sideKey(who)==='bot' ? i : SPEC.rows-1-i; }
 function colEl(who,c){
   return document.querySelector('#'+sideKey(who)+'Board .col[data-col="'+c+'"]');
 }
@@ -404,9 +332,9 @@ function chipEl(who,c){
 /* ===================== RENDER ===================== */
 function renderSide(who,animate){
   const b=S.boards[who];
-  for(let c=0;c<3;c++){
+  for(let c=0;c<SPEC.cols;c++){
     const cm=counts(b[c]);
-    for(let i=0;i<3;i++){
+    for(let i=0;i<SPEC.rows;i++){
       const slot=slotEl(who,c,slotIdx(who,i));
       const v=b[c][i];
       if(v===undefined){ if(slot.firstChild) slot.innerHTML=''; continue; }
@@ -426,7 +354,7 @@ function renderSide(who,animate){
 }
 function updateScores(who){
   const b=S.boards[who];
-  for(let c=0;c<3;c++){
+  for(let c=0;c<SPEC.cols;c++){
     const sc=colScore(b[c]);
     const chip=chipEl(who,c);
     chip.querySelector('.cs').textContent=sc;
@@ -435,7 +363,7 @@ function updateScores(who){
     for(const v in cm){ if(cm[v]===3) mx='×3'; else if(cm[v]===2 && mx!=='×3') mx='×2'; }
     chip.querySelector('.mx').textContent=mx;
     // and describe it for screen readers, reusing the score we just computed
-    const free=3-b[c].length;
+    const free=SPEC.rows-b[c].length;
     colEl(who,c).setAttribute('aria-label',
       nameOf(who)+' column '+(c+1)+', score '+sc+', '+
       (free? free+' space'+(free>1?'s':'')+' free' : 'full'));
@@ -494,8 +422,8 @@ function showHints(){
      so they are a tutorial aid — reading the board IS the game. */
   const teach = !!S.tut;
   const restrict = S.tut ? S.tut.restrict : null;
-  for(let c=0;c<3;c++){
-    if(S.boards[me][c].length>=3) continue;
+  for(let c=0;c<SPEC.cols;c++){
+    if(S.boards[me][c].length>=SPEC.rows) continue;
     if(restrict!=null && c!==restrict) continue;   // lesson steps point at one column
     colEl(me,c).classList.add('legal');
     if(!teach) continue;
@@ -539,7 +467,7 @@ function burst(x,y,color,n){
    standalone page, the widget iframe, portrait and landscape. */
 function floatPts(who,col,text,color){
   const colE=colEl(who,col); if(!colE) return;
-  const idx=Math.max(0, Math.min(2, S.boards[who][col].length-1));
+  const idx=Math.max(0, Math.min(SPEC.rows-1, S.boards[who][col].length-1));
   const slot=slotEl(who,col,slotIdx(who,idx)) || colE;
   const p=document.createElement('b');
   p.className='pts'; p.textContent=text; p.style.color=color;
@@ -877,7 +805,7 @@ function newGame(opts){
     clearGame();
   }
   document.documentElement.classList.toggle('tut', !!S.tut);
-  S.boards=[[[],[],[]],[[],[],[]]];
+  S.boards=[emptyBoard(),emptyBoard()];
   S.die=0; S.phase='roll'; S.busy=false;
   S.turn=S.starter;
   S.starter = 1-S.starter;
@@ -966,16 +894,16 @@ function fit(){
   document.documentElement.classList.toggle('land', land);
   let cell;
   if(land){
-    // one board tall: hud + plate + 3 cells; one board wide: 6 cells + 2 chip
-    // strips + the centre stage
-    const byH = Math.floor((h - 28 - 20 - 2*6 - 14) / 3);
-    const byW = Math.floor((w - 2*30 - 116 - 40) / 6);
+    // one board tall: hud + plate + a column of cells; one board wide: both
+    // boards' rows + 2 chip strips + the centre stage
+    const byH = Math.floor((h - 28 - 20 - 2*6 - 14) / SPEC.cols);
+    const byW = Math.floor((w - 2*30 - 116 - 40) / (2*SPEC.rows));
     cell = Math.max(34, Math.min(byH, byW, 84));   // capped so it isn't edge-to-edge
   }else{
     const lane = S.tut ? 15 : 4;               // preview-pill lane is tutorial-only
     const fixed = 34 + 2*24 + 2*20 + 4*5 + 94 + 26 + 2*lane + 12;
-    const byH = Math.floor((h - fixed - 4*6) / 6);
-    const byW = Math.floor((Math.min(w,430) - 20 - 2*6) / 3);
+    const byH = Math.floor((h - fixed - 4*6) / (2*SPEC.rows));
+    const byW = Math.floor((Math.min(w,430) - 20 - 2*6) / SPEC.cols);
     cell = Math.max(38, Math.min(byH, byW, 88));
   }
   document.documentElement.style.setProperty('--cell', cell+'px');
@@ -1038,7 +966,7 @@ function commitColumn(col){
     col.classList.add('nope'); setTimeout(()=>col.classList.remove('nope'),340);
     Sfx.tap(); return;                       // the lesson wants a specific column
   }
-  if(S.boards[who][c].length>=3){
+  if(S.boards[who][c].length>=SPEC.rows){
     col.classList.add('nope'); setTimeout(()=>col.classList.remove('nope'),340); Sfx.tap(); return;
   }
   Sfx.tap();
@@ -1133,8 +1061,9 @@ export function boot(embed){
   // desktop: 1/2/3 place, Enter starts / replays
   document.addEventListener('keydown',e=>{
     if(EMBED && !kbroot()) return;   // widget removed from the host page
-    if(e.key==='1'||e.key==='2'||e.key==='3'){
-      const c=+e.key-1, who=S.turn;
+    const colKey=+e.key;
+    if(colKey>=1 && colKey<=SPEC.cols){
+      const c=colKey-1, who=S.turn;
       if(S.phase==='choose' && !S.busy && (S.mode==='duo' || who===ME)){
         commitColumn(colEl(who,c));          // same gate as touch: full, restriction, sfx
       }
@@ -1168,7 +1097,7 @@ export function boot(embed){
 /* ---- test hooks (harmless in normal play; suites drive the game through these) ---- */
 export function hooks(){
   return { S, colScore, boardTotal, search, searchRoot, aiChoose, newGame, place, isFull,
-                applyMove, cloneSt, riskOf, getW:()=>RISK_W, setW:w=>{RISK_W=w}, nodes:()=>NODES,
+                applyMove, cloneSt, riskOf, getW:getRiskW, setW:setRiskW, nodes,
                 sideKey, applySides, renderAll, showHints, setStageDie, setStatus, setActivePlate, nameOf,
                 loadGame, saveGame, clearGame, resumeGame, burst, reduced:REDUCED, fit };
 }

@@ -1,4 +1,8 @@
 
+/* NOTE: the JS reads board dimensions from BoardSpec (src/config.ts), but CSS
+   repeat() counts cannot be custom properties — the repeat(3, …) literals below
+   assume the classic 3×3 spec. A mode with another shape needs these grid
+   templates set per-spec (inline from buildBoards, or a class per spec). */
 /* ============ TOKENS ============ */
 :root{
   --bg:#05060e;
