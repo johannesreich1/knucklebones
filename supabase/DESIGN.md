@@ -1,7 +1,11 @@
 # Stage 3 — Backend design (Supabase)
 
-Status: DESIGN — nothing here is deployed. Becomes implementation the moment
-the Supabase project (EU/Frankfurt) exists.
+Status: **DEPLOYED and e2e-verified** (2026-08-16) on project
+`euzjcejbkxvqfrttgaxu`. Schema lives in `supabase/migrations/`, functions in
+`supabase/functions/`. Live verification: RLS isolation, forged-write denial,
+seed → replay → stored-score round-trip, double-submit 409, tampered game 422,
+anon leaderboard (see `tests/e2e-ranked.mjs`). Remaining: client integration
+(auth UI, ranked mode wiring), covered by the client-integration phase.
 
 ## Principles
 

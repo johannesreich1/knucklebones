@@ -52,8 +52,9 @@ function waitForPort(port, tries = 50) {
 
 execSync('node build.mjs', { stdio: 'inherit' }); // test6 needs harness.html, served suites need pwa/index.html
 
-// the seeded-dice determinism gate (pure Node, no browser)
+// pure-Node gates (no browser): seeded dice determinism + ranked replay validation
 judge('dice', await run('node', ['--experimental-strip-types', 'tests/dice.test.ts']), clean);
+judge('replay', await run('node', ['--experimental-strip-types', 'tests/replay.test.ts']), clean);
 
 for (const t of FILE_SUITES) judge(t, await run('node', [`tests/${t}.mjs`]), clean);
 
