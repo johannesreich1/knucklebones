@@ -6,6 +6,9 @@ import { DICE_FACES } from './config';
 import { AI, ME, SPEC, emptyBoard, countOf, legalCols, colScore, boardTotal, isFull, counts,
          cloneSt, applyMove } from './core/rules';
 import { riskOf, search, searchRoot, nodes, getRiskW, setRiskW } from './core/ai';
+import { S, DIFFS, MODES, TIMERS, SEATS, DIFF_LABEL, oneOf } from './state';
+import { saveStats, loadStats, saveGame, clearGame, loadGame } from './persist';
+import { Sfx, vibrate } from './ui/audio';
 const PIPS = {1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
 const $ = s => document.querySelector(s);
 
@@ -18,142 +21,14 @@ let EMBED = false;
 const kbroot = () => document.getElementById('kbroot');
 function rootRect(){ return kbroot().getBoundingClientRect(); }
 
-/* ===================== STATE ===================== */
-/* Player indices are fixed identities: 1 = cyan (you / Player 1), 0 = magenta
-   (CPU / Player 2). Which HALF OF THE SCREEN each one occupies is S.bottom,
-   which swaps on hand-off so the active player is always nearest their thumbs. */
-const S = {
-  boards:[emptyBoard(),emptyBoard()],
-  turn: ME,
-  die: 0,
-  phase:'menu',          // menu | roll | choose | pass | anim | over
-  mode:'cpu',            // cpu | duo
-  bottom: ME,            // which player is rendered in the lower half
-  diff:'hard',
-  wins:0, losses:0, draws:0,
-  p1:0, p2:0, ties:0,    // duo-mode session record
-  best:0,                // highest single-game score, persisted
-  numerals:false,        // show numbers on dice instead of pips
-  timer:10,              // two-player turn clock in seconds; 0 = off
-  seat:'pass',           // duo seating: pass the phone, or sit facing each other
-  tut:null,              // tutorial script state while the guided game runs
-  tutDone:false,         // persisted: has the tutorial ever been finished
-  starter: ME,
-  sound:true,
-  busy:false,
-  gen:0            // bumped whenever a game is abandoned/restarted; async work checks it
-};
 
-/* ===================== AUDIO ===================== */
-const Sfx = (()=>{
-  let ctx=null;
-  function ac(){
-    if(!ctx){ const C=window.AudioContext||window.webkitAudioContext; if(!C) return null; ctx=new C(); }
-    if(ctx.state==='suspended') ctx.resume();
-    return ctx;
-  }
-  function tone(f,dur,type,gain,slideTo,delay){
-    if(!S.sound) return; const c=ac(); if(!c) return;
-    const t=c.currentTime+(delay||0);
-    const o=c.createOscillator(), g=c.createGain();
-    o.type=type||'sine'; o.frequency.setValueAtTime(f,t);
-    if(slideTo) o.frequency.exponentialRampToValueAtTime(Math.max(40,slideTo),t+dur);
-    g.gain.setValueAtTime(0.0001,t);
-    g.gain.exponentialRampToValueAtTime(gain||0.07,t+0.012);
-    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-    o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+dur+0.03);
-  }
-  function noise(dur,gain,hz){
-    if(!S.sound) return; const c=ac(); if(!c) return;
-    const n=Math.floor(c.sampleRate*dur);
-    const buf=c.createBuffer(1,n,c.sampleRate), d=buf.getChannelData(0);
-    for(let i=0;i<n;i++) d[i]=(Math.random()*2-1)*Math.pow(1-i/n,2.2);
-    const src=c.createBufferSource(); src.buffer=buf;
-    const f=c.createBiquadFilter(); f.type='bandpass'; f.frequency.value=hz||1400; f.Q.value=.9;
-    const g=c.createGain(); g.gain.value=gain||0.05;
-    src.connect(f); f.connect(g); g.connect(c.destination); src.start();
-  }
-  return {
-    unlock(){ ac(); },
-    tick(){ tone(520+Math.random()*380,0.035,'square',0.022); },
-    roll(){ noise(0.16,0.045,2200); },
-    place(){ tone(180,0.12,'triangle',0.09,90); noise(0.07,0.04,900); },
-    kill(){ tone(720,0.28,'sawtooth',0.075,110); noise(0.3,0.07,600); },
-    mult(){ tone(880,0.1,'triangle',0.06); tone(1320,0.12,'triangle',0.05,null,0.07); },
-    pass(){ tone(392,0.16,'triangle',0.05); tone(587,0.2,'triangle',0.045,null,0.11); },
-    win(){ [523,659,784,1046].forEach((f,i)=>tone(f,0.32,'triangle',0.075,null,i*0.1)); },
-    lose(){ [440,349,262].forEach((f,i)=>tone(f,0.4,'sine',0.075,null,i*0.13)); },
-    tap(){ tone(1200,0.04,'square',0.03); }
-  };
-})();
-function vibrate(ms){ try{ if(navigator.vibrate && S.sound) navigator.vibrate(ms); }catch(e){} }
 
 /* ===================== PERSISTENCE =====================
    Storage is unavailable in some embeds (sandboxed iframes, private modes).
    Every access is guarded: the game simply forgets between sessions there. */
-const DIFFS=['easy','medium','hard'], MODES=['cpu','duo'], TIMERS=[0,10,20], SEATS=['pass','face'];
-const DIFF_LABEL={easy:'EASY',medium:'NORMAL',hard:'HARD'};
-/* accept a stored value only if it is one we recognise, else keep the current one */
-function oneOf(list,val,fallback){ return list.indexOf(val)>=0 ? val : fallback; }
 
-const Store = {
-  KEY:'knucklebones.v1',
-  read(){ try{ return JSON.parse(localStorage.getItem(Store.KEY)) || {}; }catch(e){ return {}; } },
-  write(o){ try{ localStorage.setItem(Store.KEY, JSON.stringify(o)); }catch(e){} }
-};
-function saveStats(){
-  Store.write({ wins:S.wins, losses:S.losses, draws:S.draws,
-                p1:S.p1, p2:S.p2, ties:S.ties,
-                best:S.best, diff:S.diff, mode:S.mode, sound:S.sound,
-                numerals:S.numerals, timer:S.timer, seat:S.seat, tutDone:S.tutDone });
-}
-function loadStats(){
-  const d=Store.read();
-  S.wins=d.wins|0; S.losses=d.losses|0; S.draws=d.draws|0;
-  S.p1=d.p1|0; S.p2=d.p2|0; S.ties=d.ties|0; S.best=d.best|0;
-  S.diff  = oneOf(DIFFS, d.diff, S.diff);
-  S.mode  = oneOf(MODES, d.mode, S.mode);
-  S.timer = oneOf(TIMERS, d.timer, S.timer);
-  S.seat  = oneOf(SEATS, d.seat, S.seat);
-  if(typeof d.sound==='boolean') S.sound=d.sound;
-  if(typeof d.numerals==='boolean') S.numerals=d.numerals;
-  if(typeof d.tutDone==='boolean') S.tutDone=d.tutDone;
-}
 const REDUCED = (()=>{ try{ return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
                        catch(e){ return false; } })();
-/* ---- in-progress game, so closing the app doesn't lose it ----
-   The rolled die is saved too: quitting after seeing a bad roll gives you the
-   same one back rather than a free reroll. */
-const GKEY='knucklebones.game.v1';
-function saveGame(){
-  if(S.tut) return;                 // tutorials are throwaway; leave any real save alone
-  if(S.phase==='over'||S.phase==='menu'){ clearGame(); return; }
-  const placed=S.boards[0].flat().length+S.boards[1].flat().length;
-  if(!placed){ clearGame(); return; }   // nothing on the board = nothing to resume
-  try{
-    localStorage.setItem(GKEY, JSON.stringify({
-      boards:S.boards, turn:S.turn, die:S.die, mode:S.mode, diff:S.diff,
-      bottom:S.bottom, starter:S.starter, seat:S.seat
-    }));
-  }catch(e){}
-}
-function clearGame(){ try{ localStorage.removeItem(GKEY); }catch(e){} }
-function loadGame(){
-  let g; try{ g=JSON.parse(localStorage.getItem(GKEY)); }catch(e){ return null; }
-  if(!g) return null;
-  // validate hard: a corrupt or hand-edited blob must not boot the game
-  const okBoard = b => Array.isArray(b) && b.length===SPEC.cols && b.every(c =>
-    Array.isArray(c) && c.length<=SPEC.rows && c.every(v => Number.isInteger(v) && v>=1 && v<=DICE_FACES));
-  if(!Array.isArray(g.boards) || g.boards.length!==2 || !g.boards.every(okBoard)) return null;
-  if(g.turn!==0 && g.turn!==1) return null;
-  if(g.bottom!==0 && g.bottom!==1) return null;
-  if(g.mode!=='cpu' && g.mode!=='duo') return null;
-  if(isFull(g.boards[0]) || isFull(g.boards[1])) return null;   // that game was over
-  const placed = g.boards[0].flat().length + g.boards[1].flat().length;
-  if(placed===0) return null;                                   // nothing worth resuming
-  if(!(Number.isInteger(g.die) && g.die>=0 && g.die<=DICE_FACES)) g.die=0;
-  return g;
-}
 function resumeGame(){
   const g=loadGame();
   if(!g){ newGame(); return; }

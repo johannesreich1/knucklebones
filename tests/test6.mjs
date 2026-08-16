@@ -39,9 +39,11 @@ function audit(s,w){
   if(s.mode==='duo'&&s.phase==='choose') check(s.turn===s.bottom,w+': active player not on bottom',s);
 }
 // ---- CPU game by touch ----
+// Loop budgets are generous on purpose: games are random, destruction-heavy
+// endgames run long, and CI runners are slow. (A 400-tick budget flaked on CI.)
 await page.tap('#btnPlay'); await page.waitForTimeout(1800);
 let cpuDone=false;
-for(let i=0;i<400;i++){ const s=await snap(); audit(s,'cpu'+i);
+for(let i=0;i<1200;i++){ const s=await snap(); audit(s,'cpu'+i);
   if(s.end||s.phase==='over'){cpuDone=true;break;}
   if(s.phase==='choose'&&s.turn===1){ const lg=s.b1.map((c,j)=>c.length<3?j:-1).filter(j=>j>=0);
     await page.tap(`#botBoard .col[data-col="${lg[(Math.random()*lg.length)|0]}"]`); }
@@ -59,7 +61,7 @@ await page.tap('#btnMenu2'); await page.waitForTimeout(500);
 await page.tap('#modeSeg button[data-m="duo"]'); await page.waitForTimeout(200);
 await page.tap('#btnPlay'); await page.waitForTimeout(1200);
 let handoffs=0,duoDone=false;
-for(let i=0;i<400;i++){ const s=await snap(); audit(s,'duo'+i);
+for(let i=0;i<1200;i++){ const s=await snap(); audit(s,'duo'+i);
   if(s.end||s.phase==='over'){duoDone=true;break;}
   if(s.pass){ const before=s.bottom; await page.tap('#ovPass'); await page.waitForTimeout(300);
     const a=await snap(); check(a.bottom!==before,'pass did not swap',{before,a}); handoffs++; continue; }

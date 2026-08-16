@@ -9,7 +9,7 @@ import net from 'net';
 
 const FILE_SUITES = ['test4', 'test6', 'test8', 'test9', 'test10', 'test11', 'test12'];
 const SERVED_SUITES = ['test7', 'testupdate']; // need serve.py; testupdate mutates pwa/, so it runs last
-const SUITE_TIMEOUT_MS = 240_000;
+const SUITE_TIMEOUT_MS = 360_000;   // must clear test6/test10's worst-case random endgames on slow CI
 
 function run(cmd, args) {
   return new Promise(resolve => {
