@@ -7,10 +7,10 @@
     "noEmit": true,
     "isolatedModules": true,
     "skipLibCheck": true,
-    /* Loose during the migration out of app.ts (which is ts-nocheck anyway).
-       The ratchet: as modules are extracted in milestone B they are written
-       clean, and strictness turns ON here the moment app.ts is dissolved. */
-    "strict": false
+    /* Strict everywhere. The moved-verbatim flow/ui modules still carry
+       file-level @ts-nocheck headers — removing those (and typing the file)
+       is the remaining ratchet; never add a new nocheck. */
+    "strict": true
   },
   "include": ["src"]
 }
