@@ -42,6 +42,11 @@ body{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px
   border:1px dashed rgba(255,255,255,.22);border-radius:99px;padding:3px 9px}
 .flows .fc b{color:var(--cy);font-weight:800}
 .dice-static .die{animation:none}
+/* the app's gradient title is scoped .ov h1 (overlay); cards have no .ov,
+   so the chrome provides the same look for bare card headings */
+.scr h1,.scr h2{margin:0;font-size:23px;font-weight:900;text-align:center;letter-spacing:.22em;
+  background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
 `;
 
 const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };

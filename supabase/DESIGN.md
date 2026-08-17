@@ -3,8 +3,8 @@
 Status: **SUPERSEDED IN PART by the PvP pivot (2026-08-16)** — the owner's
 decision: solo/AI games are never ranked; ranked = online PvP only, with bot
 backfill behind generated usernames. Elo ladder; bot games count for humans,
-bots never listed. The deployed reality is migrations 0003-0007 +
-supabase/functions/{pvp-join,pvp-move,pvp-claim}, all live and e2e-verified
+bots never listed. The deployed reality is migrations 0003-0008 +
+supabase/functions/{pvp-join,pvp-move,pvp-claim,account-delete}, all live and e2e-verified
 (tests/e2e-pvp.mjs: full human-vs-human match with zero-sum Elo, bot match,
 seed secrecy, rating-tamper denial, out-of-turn/illegal-move rejection).
 The sections below describe the original solo-ranked design and remain as
@@ -99,8 +99,13 @@ write game rows at all.
 - Ranked play = CPU game where the dice come from the seed stream instead of
   Math.random — `rollDice()` already funnels through one place.
 
-## Open questions for the owner
+## Formerly open questions — decided
 
-1. Nickname moderation: reserve/block list, or rename-on-report only?
-2. Ranked difficulties: Hard only, or per-difficulty boards?
-3. Leaderboard scope at launch: all-time + weekly enough?
+1. Nickname moderation: **rename-on-report** (owner decision 2026-08-16).
+   No reserve/block list for now; a reported name gets force-renamed. The
+   report flow itself is not built yet — tracked in docs/STATUS.md.
+2. Ranked difficulties: **moot** — the PvP pivot removed solo ranked play;
+   difficulty is a practice-only concept.
+3. Leaderboard scope: launched as a single all-time Elo top-50
+   (security-definer function, bots excluded). Weekly/seasonal scopes remain
+   a future product decision.
