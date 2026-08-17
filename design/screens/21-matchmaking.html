@@ -1,0 +1,24 @@
+<!-- meta name="Matchmaking" group="2 · Online flow" subtitle="Rolling dice while searching; widens to the pool after a short wait" width=412 height=880 links="Match, Home" -->
+<style>
+  .qwrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin:auto;width:100%;max-width:300px}
+  .qdice{display:flex;gap:14px}
+  .qdice .die{animation:qspin 2.2s ease-in-out infinite}
+  .qdice .die:nth-child(2){animation-delay:.35s}
+  @keyframes qspin{0%,100%{transform:rotate(-6deg) translateY(0)}50%{transform:rotate(6deg) translateY(-7px)}}
+  .qmsg{font-size:11px;letter-spacing:.2em;color:var(--txt);text-transform:uppercase;text-align:center}
+  .qmsg::after{content:"";animation:dots 1.2s steps(4,end) infinite}
+  .qsub{font-size:10px;letter-spacing:.14em;color:var(--dim);text-align:center}
+  .qtime{font-size:24px;font-weight:900;color:var(--cy);text-shadow:0 0 16px rgba(40,232,255,.5)}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="qwrap">
+    <div class="qdice dice-static">
+      {{die:2:p1:58}}
+      {{die:6:p2:58}}
+    </div>
+    <div class="qmsg">Looking for an opponent</div>
+    <div class="qtime">0:07</div>
+    <div class="qsub">Inviting anyone available…</div>
+    <button class="btn" style="min-width:210px">Cancel</button>
+  </div>
+</div></div>

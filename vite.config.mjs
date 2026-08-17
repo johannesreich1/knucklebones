@@ -7,6 +7,8 @@ import { viteSingleFile } from 'vite-plugin-singlefile';
 export default defineConfig({
   plugins: [viteSingleFile()],
   publicDir: 'public',
+  // dev server: honour an assigned port (e.g. the IDE preview) over the default
+  server: { port: Number(process.env.PORT) || 5173 },
   build: {
     outDir: 'dist/main',
     // Readable output while the modular migration is underway — the artifact

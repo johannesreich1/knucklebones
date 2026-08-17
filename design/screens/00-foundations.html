@@ -1,0 +1,56 @@
+<!-- meta name="Foundations" group="0 · Foundations" subtitle="The tokens every screen is built from — straight out of src/styles" width=860 height=560 links="" -->
+<style>
+  body{align-items:stretch}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:820px;margin:0 auto;width:100%}
+  .fcard{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+  .fcap{font-size:9px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase}
+  .swatches{display:flex;gap:10px}
+  .sw{flex:1;display:flex;flex-direction:column;gap:6px;align-items:center}
+  .sw i{display:block;width:100%;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.1)}
+  .sw span{font-size:9px;letter-spacing:.1em;color:var(--dim)}
+  .trow{display:flex;flex-direction:column;gap:8px}
+  .t-title{font-size:22px;letter-spacing:.24em;font-weight:900;
+    background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .t-lbl{font-size:10px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
+  .t-status{font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--cy);text-transform:uppercase}
+  .t-num{font-size:20px;font-weight:900;color:var(--gold)}
+  .dicerow2{display:flex;gap:14px;align-items:center}
+</style>
+<div class="fgrid">
+  <div class="fcard">
+    <div class="fcap">Palette — player identity is the brand</div>
+    <div class="swatches">
+      <div class="sw"><i style="background:#05060e"></i><span>bg</span></div>
+      <div class="sw"><i style="background:#28e8ff"></i><span>you · cyan</span></div>
+      <div class="sw"><i style="background:#ff2fa0"></i><span>them · magenta</span></div>
+      <div class="sw"><i style="background:#ffd166"></i><span>scoring · gold</span></div>
+      <div class="sw"><i style="background:#e9f1ff"></i><span>text</span></div>
+      <div class="sw"><i style="background:#7c88a8"></i><span>dim</span></div>
+    </div>
+  </div>
+  <div class="fcard">
+    <div class="fcap">Type — ui-rounded, uppercase, letterspaced</div>
+    <div class="trow">
+      <span class="t-title">KNUCKLEBONES</span>
+      <span class="t-lbl">Section label · 0.24em tracking</span>
+      <span class="t-status">Status line · your move</span>
+      <span class="t-num">1032 <span style="font-size:10px;color:var(--dim)">numerals are gold when they score</span></span>
+    </div>
+  </div>
+  <div class="fcard">
+    <div class="fcap">Dice — cyan is always you, magenta always them</div>
+    <div class="dicerow2 dice-static">
+      {{die:5:p1:56}}
+      {{die:3:p2:56}}
+      {{die:4:gold:56}}
+      <span style="font-size:10px;color:var(--dim);letter-spacing:.1em">gold border = multiplied stack</span>
+    </div>
+  </div>
+  <div class="fcard">
+    <div class="fcap">Buttons</div>
+    <button class="btn primary" style="min-width:0">Play online</button>
+    <button class="btn" style="min-width:0">Secondary</button>
+  </div>
+</div>
