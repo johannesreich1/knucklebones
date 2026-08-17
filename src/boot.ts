@@ -149,7 +149,13 @@ export function boot(embed){
   window.addEventListener('orientationchange',()=>setTimeout(fit,120));
   if(window.ResizeObserver) new ResizeObserver(fit).observe($('#app'));
   if(isEmbed()) kbroot().addEventListener('contextmenu',e=>e.preventDefault());
-  else document.addEventListener('gesturestart',e=>e.preventDefault());
+  else {
+    // iOS Safari ignores user-scalable=no: kill pinch at the gesture AND touch
+    // layers. Multi-finger only — single-finger scrolling (leaderboard) lives.
+    document.addEventListener('gesturestart',e=>e.preventDefault());
+    document.addEventListener('gesturechange',e=>e.preventDefault());
+    document.addEventListener('touchmove',e=>{ if(e.touches.length>1) e.preventDefault(); },{passive:false});
+  }
 
   initInstall();
 

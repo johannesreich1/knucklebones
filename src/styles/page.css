@@ -5,7 +5,9 @@ body{
   background:var(--bg);color:var(--txt);
   font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   -webkit-font-smoothing:antialiased;
-  touch-action:manipulation;overscroll-behavior:none;
+  /* pan-x pan-y (NOT manipulation): manipulation still permits pinch-zoom,
+     and iOS ignores user-scalable=no — this is what actually blocks the pinch */
+  touch-action:pan-x pan-y;overscroll-behavior:none;
   -webkit-user-select:none;user-select:none;
   overflow:hidden;font-variant-numeric:tabular-nums;
 }
