@@ -2,10 +2,14 @@
 // when the client signals it has waited long enough (allow_bot) — starts a
 // match against a pooled bot. Human is always p1 (starts) vs a bot; between
 // humans the longer-waiting player is p1. Idempotent: rejoining returns the
-// caller's active match.
+// caller's active match — unless they abandoned a bot match past the stall
+// window, which forfeits here (bots have no client to call pvp-claim).
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { diceStream } from "./core/dice.ts";
+import { AI, ME, boardTotal, type Player } from "./core/rules.ts";
+import { rebuild } from "./core/match.ts";
+import { eloDelta, type MatchScore } from "./core/elo.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -15,6 +19,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...CORS } });
 
 const QUEUE_STALE_MS = 2 * 60 * 1000;
+const STALL_MS = 60 * 1000;          // same threshold pvp-claim enforces between humans
 
 const newSeed = () =>
   [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -43,11 +48,46 @@ Deno.serve(async (req: Request) => {
     return { p1: nick(a), p2: nick(b) };
   };
 
+  // Leaving loses — even against a bot. A human opponent claims the forfeit
+  // via pvp-claim after STALL_MS; a bot has no client, so the same rule is
+  // applied lazily the moment the leaver next contacts matchmaking.
+  // Returns true when the match was forfeited (caller gets fresh matchmaking).
+  const forfeitStalledBotMatch = async (m: any): Promise<boolean> => {
+    const oppId = m.p1 === uid ? m.p2 : m.p1;
+    const myIdx: Player = m.p1 === uid ? ME : AI;
+    if (m.turn !== myIdx) return false;              // only the caller's own silence forfeits
+    if (Date.now() - new Date(m.last_move_at).getTime() < STALL_MS) return false;
+    const { data: opp } = await svc.from("profiles").select("is_bot").eq("id", oppId).maybeSingle();
+    if (!opp?.is_bot) return false;                  // human opponent: their client claims
+    const { data: moves } = await svc.from("match_moves").select("idx, who, col").eq("match_id", m.id);
+    const { data: seedRow } = await svc.from("match_seeds").select("seed").eq("match_id", m.id).single();
+    const s = seedRow && rebuild(seedRow.seed, moves ?? []);
+    if (!s) return false;
+    // finish block mirrors pvp-claim — keep the two in sync.
+    // Claim the row first (status guard beats a concurrent finish), Elo after.
+    const p1Score = boardTotal(s.st[ME]), p2Score = boardTotal(s.st[AI]);
+    const { data: profs } = await svc.from("profiles").select("id, rating").in("id", [m.p1, m.p2]);
+    const r1 = profs!.find((p: any) => p.id === m.p1)!.rating;
+    const r2 = profs!.find((p: any) => p.id === m.p2)!.rating;
+    const p1Result: MatchScore = myIdx === ME ? 0 : 1; // the leaver loses
+    const d1 = eloDelta(r1, r2, p1Result);
+    const d2 = eloDelta(r2, r1, (1 - p1Result) as MatchScore);
+    const { data: claimed } = await svc.from("matches").update({
+      status: "forfeit", winner: oppId, p1_score: p1Score, p2_score: p2Score,
+      p1_rating_delta: d1, p2_rating_delta: d2,
+      next_die: null, finished_at: new Date().toISOString(),
+    }).eq("id", m.id).eq("status", "active").select("id");
+    if (!claimed || claimed.length !== 1) return false;
+    await svc.from("profiles").update({ rating: r1 + d1 }).eq("id", m.p1);
+    await svc.from("profiles").update({ rating: r2 + d2 }).eq("id", m.p2);
+    return true;
+  };
+
   // rejoin an active match if one exists (reconnects, page reloads)
   const { data: active } = await svc.from("matches")
     .select("id, p1, p2, status, turn, next_die, last_move_at")
     .eq("status", "active").or(`p1.eq.${uid},p2.eq.${uid}`).limit(1).maybeSingle();
-  if (active) {
+  if (active && !(await forfeitStalledBotMatch(active))) {
     return json({ status: "matched", rejoined: true, match: active,
                   you: active.p1 === uid ? 1 : 0, names: await names(active.p1, active.p2) });
   }
