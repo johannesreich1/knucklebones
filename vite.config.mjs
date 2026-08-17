@@ -11,9 +11,7 @@ export default defineConfig({
   server: { port: Number(process.env.PORT) || 5173 },
   build: {
     outDir: 'dist/main',
-    // Readable output while the modular migration is underway — the artifact
-    // stays diffable against the old hand-written source. Revisit later.
-    minify: false,
+    minify: true,
     modulePreload: { polyfill: false },
   },
 });

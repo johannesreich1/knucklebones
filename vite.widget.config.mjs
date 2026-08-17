@@ -8,7 +8,7 @@ export default defineConfig({
   publicDir: false,
   build: {
     outDir: 'dist/widget',
-    minify: false,
+    minify: true,
     modulePreload: { polyfill: false },
     rollupOptions: { input: 'widget-page.html' },
   },

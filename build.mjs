@@ -78,9 +78,14 @@ const fragment =
   + styles.join('\n') + '\n'
   + '<div id="kbroot"></div>\n'
   + '<script type="module">\n' + scriptM[1] + '\n</script>\n';
-for (const needle of ['#kbroot{position:relative', 'id="kbroot"', 'MARKUP']) {
+// needles must survive minification: our own added div, and a DOM method name
+// (the minifier mangles identifiers but never property names)
+for (const needle of ['id="kbroot"', 'insertAdjacentHTML']) {
   if (!fragment.includes(needle)) die('fragment sanity: ' + needle);
 }
+// the widget-embed shell rule must be present and positioned — the CSS
+// minifier merges #kbroot rules and reorders declarations, so match loosely
+if (!/#kbroot\{[^}]*position:relative/.test(fragment)) die('fragment sanity: #kbroot positioned');
 writeFileSync('widget.html', fragment);
 writeFileSync('harness.html',
   '<!DOCTYPE html><html><head><meta charset="utf-8">'

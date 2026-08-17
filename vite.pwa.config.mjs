@@ -8,7 +8,7 @@ export default defineConfig({
   publicDir: 'public',
   build: {
     outDir: 'dist/pwa',
-    minify: false,
+    minify: true,
     modulePreload: { polyfill: false },
   },
 });
