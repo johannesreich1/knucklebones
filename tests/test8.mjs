@@ -118,8 +118,9 @@ check(afterResume.die === beforeReload.die, 'die changed across resume (reroll e
 check(afterResume.dom === afterResume.state, 'restored board does not match DOM', afterResume);
 out.resume = { beforeReload: { dice: beforeReload.dice, die: beforeReload.die }, resumeUi, afterResume: { die: afterResume.die, phase: afterResume.phase, dice: afterResume.state } };
 
-// a finished game must not offer resume
-for (let i = 0; i < 400; i++) {
+// a finished game must not offer resume. Generous budget on purpose: random,
+// destruction-heavy endgames run long on slow CI (a 400-tick budget flaked).
+for (let i = 0; i < 1200; i++) {
   const s = await p.evaluate(() => ({ ph: window.__kb.S.phase, t: window.__kb.S.turn, b: window.__kb.S.boards[1] }));
   if (s.ph === 'over') break;
   if (s.ph === 'choose' && s.t === 1) {
