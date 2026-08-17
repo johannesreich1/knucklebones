@@ -2,7 +2,7 @@
 // strictness ratchet. New code goes in typed modules, not here.
 // Painting the table: boards, dice, scores, plates, status line and the
 // tutorial-only strategy hints. State in, DOM out -- game logic stays out.
-import { AI, ME, SPEC, ROWSWITCH, COLSHIELD, colScore, boardTotalMode, counts, countOf } from '../core/rules.ts';
+import { AI, ME, SPEC, ROWSWITCH, ROWMULT, COLSHIELD, colScore, boardTotalMode, counts, countOf } from '../core/rules.ts';
 import { S, DIFF_LABEL } from '../state.ts';
 import { $, sideKey, slotEl, slotIdx, colEl, chipEl } from './dom.ts';
 import { nameOf } from './identity.ts';
@@ -34,6 +34,17 @@ export function buildBoards(){
 /* ===================== RENDER ===================== */
 export function renderSide(who,animate){
   const b=S.boards[who];
+  const rowswitch=S.scoring===ROWSWITCH, rowmult=S.scoring===ROWMULT;
+  // row modes: tally matches ACROSS the row — rowCounts[r][v]
+  let rowCounts=null;
+  if(rowswitch||rowmult){
+    rowCounts=[];
+    for(let r=0;r<SPEC.rows;r++){
+      const m={};
+      for(let c=0;c<SPEC.cols;c++){ const v=b[c][r]; if(v!==undefined) m[v]=(m[v]||0)+1; }
+      rowCounts.push(m);
+    }
+  }
   for(let c=0;c<SPEC.cols;c++){
     const cm=counts(b[c]);
     for(let i=0;i<SPEC.rows;i++){
@@ -47,10 +58,14 @@ export function renderSide(who,animate){
         slot.appendChild(d);
         if(animate){ d.classList.add('settle'); }
       }
-      // ROW SWITCH: columns don't multiply, so the column-match glow would lie
-      const k=S.scoring===ROWSWITCH ? 1 : (cm[v]||1);
+      // the multiplier glow follows whatever actually multiplies: columns in
+      // classic/shield/rowmult, ROWS in rowswitch (columns would lie there)
+      const rk=rowCounts ? (rowCounts[i][v]||1) : 1;
+      const k=rowswitch ? rk : (cm[v]||1);
       d.classList.toggle('m2',k===2);
       d.classList.toggle('m3',k===3);
+      // ROWMULT scores BOTH ways — row matches get their own gold ring on top
+      d.classList.toggle('rm',rowmult && rk>=2);
     }
   }
   updateScores(who);

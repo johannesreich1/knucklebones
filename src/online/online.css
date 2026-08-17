@@ -52,3 +52,6 @@
 .mico{vertical-align:-2px;filter:drop-shadow(0 0 5px currentColor)}
 .mico .f{fill:currentColor;stroke:none}
 .wname .mico{vertical-align:-2.5px;margin-right:2px}
+
+/* ===== ROW MULTIPLY: row matches wear a gold ring (columns keep their glow) ===== */
+.die.rm{outline:2px solid rgba(255,209,102,.6);outline-offset:-2px}

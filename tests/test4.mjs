@@ -67,7 +67,7 @@ await page.click('#btnPlay');
 await page.waitForTimeout(900);
 
 let handoffs = 0, placements = 0, seenBottoms = new Set();
-for (let i = 0; i < 400; i++) {
+for (let i = 0; i < 1200; i++) {  // generous on purpose: random endgames + slow machines (see test6)
   const s = await snap();
   audit(s, 'duo#' + i);
   seenBottoms.add(s.bottom);
@@ -132,7 +132,7 @@ await page.waitForTimeout(200);
 const diffBack = await page.evaluate(() => !document.getElementById('diffCard').hidden);
 await page.click('#btnPlay'); await page.waitForTimeout(900);
 let cpuTurns = 0;
-for (let i = 0; i < 400; i++) {
+for (let i = 0; i < 1200; i++) {  // generous on purpose: random endgames + slow machines (see test6)
   const s = await snap();
   audit(s, 'cpu#' + i);
   check(!s.passOn, 'pass card appeared in CPU mode', s);

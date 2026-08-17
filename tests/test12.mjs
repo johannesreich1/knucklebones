@@ -60,7 +60,7 @@ check(out.aligned, 'facing columns misaligned in face mode', out.aligned);
 
 // play a full game: each player taps their OWN half, no pass card ever
 let p2Placed = 0, sawPass = false, bottomMoved = false, turnChecks = [];
-for (let i = 0; i < 400; i++) {
+for (let i = 0; i < 1200; i++) {  // generous on purpose: random endgames + slow machines (see test6)
   const s = await snap();
   if (s.pass) sawPass = true;
   if (s.bottom !== 1) bottomMoved = true;
