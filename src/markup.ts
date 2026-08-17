@@ -82,6 +82,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   </div>
   <div class="homefoot">
     <button class="linkbtn" id="btnHow">How to play</button>
+    <button class="linkbtn" id="btnInstall" hidden>Install app</button>
     <div class="tiny" id="buildTag" style="opacity:.55">build dev</div>
   </div>
 </div>
@@ -146,6 +147,16 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <p>Pick <b>2 PLAYERS</b> to share one phone, then choose how you sit. <b>Pass phone</b>: a pass card appears between turns and the grids swap so whoever is playing is on the bottom. <b>Face to face</b>: lay the phone flat between you — the top half is turned for Player 2, turns switch on their own, and the bright half with the rotating centre die shows who's up.</p>
   </div>
   <button class="btn primary" id="btnCloseRules">Got it</button>
+</div>
+
+<!-- INSTALL (iOS hint — Chrome-family installs straight from the footer link) -->
+<div class="ov" id="ovInstall">
+  <h1 style="font-size:20px">INSTALL</h1>
+  <div class="rules" style="max-width:330px">
+    <p>Put the game on your home screen — it opens fullscreen and keeps working offline.</p>
+    <p>Tap the <b>Share</b> icon in Safari's toolbar, then <b>Add to Home Screen</b>.</p>
+  </div>
+  <button class="btn primary" id="btnCloseInstall">Got it</button>
 </div>
 
 <!-- HAND-OFF -->

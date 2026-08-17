@@ -27,6 +27,7 @@ import { makeDie } from './ui/die.ts';
 import { buildBoards, applySides, updateRecord } from './ui/render.ts';
 import { fit } from './ui/layout.ts';
 import { tap, boardDown, boardUp, clearPress, commitColumn } from './ui/input.ts';
+import { initInstall } from './ui/install.ts';
 import { coachTap } from './flow/tutorial.ts';
 import { newGame, passTap } from './flow/game.ts';
 import { resumeGame, toMenu, syncSettingsUI, updateResumeButton, updateStatLine } from './flow/menu.ts';
@@ -141,7 +142,7 @@ export function boot(embed){
     }else if(e.key==='Enter'||e.key===' '){
       if($('#ovPass').classList.contains('on')) $('#ovPass').click();
       else if($('#ovStart').classList.contains('on')||$('#ovEnd').classList.contains('on')){ Sfx.unlock(); newGame(); }
-    }else if(e.key==='Escape'){ hide('#ovRules'); hide('#ovSettings'); }
+    }else if(e.key==='Escape'){ hide('#ovRules'); hide('#ovSettings'); hide('#ovInstall'); }
   });
 
   window.addEventListener('resize',fit);
@@ -149,6 +150,8 @@ export function boot(embed){
   if(window.ResizeObserver) new ResizeObserver(fit).observe($('#app'));
   if(isEmbed()) kbroot().addEventListener('contextmenu',e=>e.preventDefault());
   else document.addEventListener('gesturestart',e=>e.preventDefault());
+
+  initInstall();
 
   // Offline support. Only registers from http(s); opening the file directly
   // still plays, it just can't install.
