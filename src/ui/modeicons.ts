@@ -1,0 +1,23 @@
+// Mode icons — the game's own visual language, not font glyphs. Stroke-based
+// 24×24 SVGs on currentColor, so they take any mode hue and glow via CSS.
+// Presentation only: the shared core registry (core/modes.ts) stays free of
+// markup; this map keys off the registry's stable ids. Design source of
+// truth: design/screens/05-mode-icons.html (synced to Claude Design).
+const PATHS: Record<string, string> = {
+  /* a die seen on its point — the pure game */
+  classic: '<path d="M12 3.2 20.8 12 12 20.8 3.2 12Z"/><circle class="f" cx="12" cy="12" r="1.7"/>',
+  /* three rows */
+  rowswitch: '<path d="M4.5 6.5h15M4.5 12h15M4.5 17.5h15"/>',
+  /* rows, plus more */
+  rowmult: '<path d="M4.5 6.5h9M4.5 12h9M4.5 17.5h9M18.7 9v6M15.7 12h6"/>',
+  /* a shield guarding a column of pips */
+  colshield: '<path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/>'
+    + '<circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/>',
+};
+
+export function modeIcon(id: string, size = 14): string {
+  const body = PATHS[id] ?? PATHS.classic;
+  return `<svg class="mico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" `
+    + `stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" `
+    + `aria-hidden="true">${body}</svg>`;
+}

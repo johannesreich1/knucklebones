@@ -7,6 +7,7 @@ import { S, DIFF_LABEL } from '../state.ts';
 import { $, sideKey, slotEl, slotIdx, colEl, chipEl } from './dom.ts';
 import { nameOf } from './identity.ts';
 import { makeDie } from './die.ts';
+import { modeIcon } from './modeicons.ts';
 /* ===================== DOM BUILD ===================== */
 export function buildBoards(){
   for(const side of ['top','bot']){
@@ -68,8 +69,8 @@ function updateScores(who){
     // COLUMN SHIELD: a full column wears its shield (pops in the first time)
     const sh=chip.querySelector('.sh');
     const shielded=S.scoring===COLSHIELD && b[c].length>=SPEC.rows;
-    if(shielded && !sh.textContent){ sh.textContent='🛡'; sh.classList.add('pop'); }
-    else if(!shielded && sh.textContent){ sh.textContent=''; sh.classList.remove('pop'); }
+    if(shielded && !sh.firstChild){ sh.innerHTML=modeIcon('colshield',13); sh.classList.add('pop'); }
+    else if(!shielded && sh.firstChild){ sh.innerHTML=''; sh.classList.remove('pop'); }
     colEl(who,c).classList.toggle('shielded',shielded);
     // and describe it for screen readers, reusing the score we just computed
     const free=SPEC.rows-b[c].length;

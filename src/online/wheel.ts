@@ -4,6 +4,7 @@
 // Built from the MODES registry: a new mode becomes a new segment for free.
 import './online.css';   // the wheel's styles live with the online chunk's
 import { MODES, type ModeSpec } from '../core/modes.ts';
+import { modeIcon } from '../ui/modeicons.ts';
 import { $, show, hide } from '../ui/dom.ts';
 import { Sfx } from '../ui/audio.ts';
 
@@ -23,7 +24,7 @@ function build(): void {
   // labels stay uniform: the landing rotation always brings the WINNING
   // segment to the pointer in this exact orientation — upright, every time
   const labels = MODES.map((m, i) =>
-    `<div class="wlabel" style="transform:rotate(${i * SEG + SEG / 2}deg)"><span style="color:${hue(i)}">${m.name}</span></div>`).join('');
+    `<div class="wlabel" style="transform:rotate(${i * SEG + SEG / 2}deg)"><span style="color:${hue(i)}">${modeIcon(m.id, 15)}<br>${m.name}</span></div>`).join('');
   document.body.insertAdjacentHTML('beforeend', `
 <div class="ov" id="ovWheel">
   <div class="wtitle">GAME MODE</div>
@@ -57,7 +58,7 @@ export async function spinWheel(spec: ModeSpec): Promise<void> {
   disc.style.transform = `rotate(${target}deg)`;
   await pause(3450);
   Sfx.place();
-  name.textContent = `${spec.icon} ${spec.name}`;
+  name.innerHTML = `${modeIcon(spec.id, 17)} ${spec.name}`;
   name.style.color = hue(i);
   $('#wheelBlurb').textContent = spec.blurb;
   await pause(1700);

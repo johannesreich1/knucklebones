@@ -5,6 +5,7 @@
 // after any missed realtime event.
 import { AI, ME, SPEC, CLASSIC, COLSHIELD, emptyBoard, applyMove, boardTotalMode, legalCols, type Player } from '../core/rules.ts';
 import { modeById } from '../core/modes.ts';
+import { modeIcon } from '../ui/modeicons.ts';
 import { ONLINE_TURN_SECS } from '../config.ts';
 import { S } from '../state.ts';
 import { startTimer, stopTimer } from '../flow/timer.ts';
@@ -73,7 +74,8 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   $('#nameTop').textContent = oppName();
   ($('#tagTop') as HTMLElement).hidden = true;
   ($('#tagBot') as HTMLElement).hidden = true;
-  $('#rec').textContent = spec.mode === CLASSIC ? 'ONLINE' : `ONLINE · ${spec.icon} ${spec.name}`;
+  if (spec.mode === CLASSIC) $('#rec').textContent = 'ONLINE';
+  else $('#rec').innerHTML = `ONLINE · ${modeIcon(spec.id, 12)} ${spec.name}`;
   fit();
   buildBoards();
   setPlaceHandler(onlinePlace);
