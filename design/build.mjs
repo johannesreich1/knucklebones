@@ -53,6 +53,16 @@ function dieHtml(v, cls, size) {
   return `<div class="die ${cls}"${style}>${pips}<b class="num">${v}</b></div>`;
 }
 
+/* Device sizes: every screen ships at each of these. The stage is the phone
+   screen; on tablet the app keeps its real max-width column, centered — that
+   is honestly how it renders there today. Foundations skips variants. */
+const SIZES = [
+  { key: 'sm', suffix: ' · 360', stageW: 336, minH: 580, dH: -70 },
+  { key: 'md', suffix: '', stageW: 384, minH: 640, dH: 0 },
+  { key: 'max', suffix: ' · 430 Max', stageW: 402, minH: 720, dH: 50 },
+  { key: 'tab', suffix: ' · Tablet', stageW: 520, minH: 960, dH: 300 },
+];
+
 mkdirSync(join(here, 'dist'), { recursive: true });
 const screens = readdirSync(join(here, 'screens')).filter((f) => f.endsWith('.html')).sort();
 if (!screens.length) die('no screens');
@@ -78,16 +88,24 @@ for (const f of screens) {
     ? `<div class="flows">${links.split(',').map((l) => `<span class="fc">→ <b>${l.trim()}</b></span>`).join('')}</div>`
     : '';
 
-  const out = `<!-- @dsCard group="${group}" name="${name}" subtitle="${subtitle}" width=${width} height=${height} -->
+  const sizes = f.startsWith('00-') ? SIZES.filter((s) => s.key === 'md') : SIZES;
+  for (const s of sizes) {
+    const sizeCss = `.stage{width:${s.stageW}px}.stage .scr{min-height:${s.minH}px}`;
+    const outName = s.key === 'md' ? f : f.replace('.html', `--${s.key}.html`);
+    const cardName = name + s.suffix;
+    const cardW = f.startsWith('00-') ? width : s.stageW + 44;
+    const cardH = f.startsWith('00-') ? height : Math.max(1, +height + s.dH);
+    const out = `<!-- @dsCard group="${group}" name="${cardName}" subtitle="${subtitle}" width=${cardW} height=${cardH} -->
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${name}</title>
-<style>${css}\n${chrome}</style></head>
+<title>${cardName}</title>
+<style>${css}\n${chrome}\n${sizeCss}</style></head>
 <body>
 ${body}
 ${flows}
 </body></html>`;
-  writeFileSync(join(here, 'dist', f), out);
-  console.log('built', f, `(${group} · ${name})`);
+    writeFileSync(join(here, 'dist', outName), out);
+  }
+  console.log('built', f, `(${group} · ${name} × ${sizes.length})`);
 }
 console.log('design cards ready in design/dist/');
