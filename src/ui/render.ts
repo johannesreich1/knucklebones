@@ -2,7 +2,8 @@
 // strictness ratchet. New code goes in typed modules, not here.
 // Painting the table: boards, dice, scores, plates, status line and the
 // tutorial-only strategy hints. State in, DOM out -- game logic stays out.
-import { AI, ME, SPEC, ROWSWITCH, ROWMULT, COLSHIELD, colScore, boardTotalMode, counts, countOf } from '../core/rules.ts';
+import { AI, ME, SPEC, ROWSWITCH, ROWMULT, COLSHIELD, colScore, rowScore, boardTotalMode, counts, countOf } from '../core/rules.ts';
+import { DICE_FACES } from '../config.ts';
 import { S, DIFF_LABEL } from '../state.ts';
 import { $, sideKey, slotEl, slotIdx, colEl, chipEl } from './dom.ts';
 import { nameOf } from './identity.ts';
@@ -29,6 +30,11 @@ export function buildBoards(){
       chip.innerHTML='<span class="cs">0</span><span class="mx"></span><span class="sh"></span><span class="dl"></span>';
       cs.appendChild(chip);
     }
+    // per-row score rail, left of the board — visible only in row modes
+    const rc=document.createElement('div');
+    rc.className='rowchips'; rc.id=side+'Rows'; rc.setAttribute('aria-hidden','true');
+    rc.innerHTML='<span class="rc"></span>'.repeat(SPEC.rows);
+    b.appendChild(rc);
   }
 }
 /* ===================== RENDER ===================== */
@@ -72,12 +78,14 @@ export function renderSide(who,animate){
 }
 function updateScores(who){
   const b=S.boards[who];
-  const rowswitch=S.scoring===ROWSWITCH;   // columns don't multiply: chips show plain sums
+  const rowswitch=S.scoring===ROWSWITCH, rowmult=S.scoring===ROWMULT;
+  document.documentElement.classList.toggle('rowmode',rowswitch||rowmult);
   for(let c=0;c<SPEC.cols;c++){
     const sc=rowswitch ? b[c].reduce((a,v)=>a+v,0) : colScore(b[c]);
     const chip=chipEl(who,c);
-    chip.querySelector('.cs').textContent=sc;
-    chip.classList.toggle('has',sc>0);
+    // ROW SWITCH scores SOLELY by rows — the row rail carries the numbers
+    chip.querySelector('.cs').textContent=rowswitch ? '' : sc;
+    chip.classList.toggle('has',!rowswitch && sc>0);
     const cm=counts(b[c]); let mx='';
     if(!rowswitch) for(const v in cm){ if(cm[v]===3) mx='×3'; else if(cm[v]===2 && mx!=='×3') mx='×2'; }
     chip.querySelector('.mx').textContent=mx;
@@ -92,6 +100,22 @@ function updateScores(who){
     colEl(who,c).setAttribute('aria-label',
       nameOf(who)+' column '+(c+1)+', score '+sc+', '+
       (free? free+' space'+(free>1?'s':'')+' free' : 'full'));
+  }
+  // the row rail: full row scores in ROW SWITCH, just the bonus in ROW MULTIPLY
+  if(rowswitch||rowmult){
+    const rail=$('#'+sideKey(who)+'Rows');
+    if(rail) for(let r=0;r<SPEC.rows;r++){
+      // rows mirror on the top half (dice stack toward the centre line)
+      const el=rail.children[sideKey(who)==='bot' ? r : SPEC.rows-1-r];
+      let val=0;
+      if(rowswitch) val=rowScore(b,r);
+      else for(let v=1;v<=DICE_FACES;v++){
+        let k=0; for(let c=0;c<SPEC.cols;c++) if(b[c][r]===v) k++;
+        if(k>=2) val+=v*k*k;
+      }
+      el.textContent=rowswitch ? String(val) : (val ? '+'+val : '');
+      el.classList.toggle('has',val>0);
+    }
   }
   const tot=boardTotalMode(b,S.scoring);
   const k=sideKey(who)==='bot'?'Bot':'Top';

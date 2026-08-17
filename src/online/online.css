@@ -53,5 +53,17 @@
 .mico .f{fill:currentColor;stroke:none}
 .wname .mico{vertical-align:-2.5px;margin-right:2px}
 
-/* ===== ROW MULTIPLY: row matches wear a gold ring (columns keep their glow) ===== */
-.die.rm{outline:2px solid rgba(255,209,102,.6);outline-offset:-2px}
+/* ===== ROW MULTIPLY: row matches wear a gold ring (columns keep their glow).
+   A border ::after, not outline — outline draws a SQUARE over rounded dice on
+   older Safari, which reads as broken shimmer. ===== */
+.die.rm::after{content:"";position:absolute;inset:1px;border:2px solid rgba(255,209,102,.62);
+  border-radius:inherit;pointer-events:none}
+
+/* ===== the row rail: per-row scores left of each board (row modes only) ===== */
+.rowchips{display:none}
+html.rowmode .rowchips{position:absolute;right:100%;margin-right:9px;top:0;display:grid;
+  grid-template-rows:repeat(3,var(--cell));gap:var(--gap);align-items:center}
+.rowchips .rc{min-width:26px;text-align:right;font-size:11.5px;font-weight:800;
+  color:var(--dim);font-variant-numeric:tabular-nums}
+.rowchips .rc.has{color:var(--gold);text-shadow:0 0 10px rgba(255,209,102,.55)}
+.land .rowchips{display:none!important}   /* landscape transposes the board */

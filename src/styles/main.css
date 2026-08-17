@@ -178,9 +178,8 @@
 /* ============ CENTER STAGE ============ */
 .center{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:5px;padding:5px 0;position:relative}
-.center::before,.center::after{content:"";position:absolute;left:6%;right:6%;height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent)}
-.center::before{top:0}.center::after{bottom:0}
+/* (the hairline dividers that used to frame the centre are gone by request —
+   the glow palette separates the halves well enough on its own) */
 #dieStage{width:calc(var(--cell)*.92);height:calc(var(--cell)*.92);position:relative;--cell2:calc(var(--cell)*.92)}
 #dieStage .die{--cell:var(--cell2)}
 #dieStage.rolling .die{animation:rollspin .42s linear infinite}
@@ -349,7 +348,6 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 .land .chip .dl{position:static;transform:none;padding:0 3px;font-size:9.5px;border-radius:6px}
 .land .chip .dl.show{transform:none}
 .land .center{flex:0 0 auto;padding:0 6px;gap:6px}
-.land .center::before,.land .center::after{display:none}
 .land .timer .track{width:84px}
 .land .status{font-size:9.5px;letter-spacing:.08em;max-width:104px;line-height:1.35;white-space:normal}
 .land .hud{height:28px}
