@@ -175,8 +175,10 @@ export function showHints(){
     g.textContent='+'+gain; g.className='dl gain show';
     const kills=countOf(S.boards[foe][c],die);
     if(kills){
+      // show the POINTS they lose (multiplier included), matching the + pill
+      const loss=colScore(S.boards[foe][c])-colScore(S.boards[foe][c].filter(v=>v!==die));
       const k=chipEl(foe,c).querySelector('.dl');
-      k.textContent='−'+kills; k.className='dl kill show';
+      k.textContent='−'+loss; k.className='dl kill show';
       colEl(foe,c).classList.add('danger');
     }
   }

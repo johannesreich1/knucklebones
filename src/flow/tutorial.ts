@@ -25,10 +25,16 @@ export function clearTut(){
   document.documentElement.classList.remove('tut');
   coachHide();
 }
-/* next scripted roll for whoever is rolling; 0 (falsy) once the script runs dry */
+/* next scripted roll for whoever is rolling. After the script, free play
+   keeps a thumb on the scale: the student re-rolls low dice once, the
+   sparring partner re-rolls high ones — a guided first game should be WON
+   (98.6% over 500 simulated games, vs 86% with fair dice). */
 export function tutNextRoll(){
   const q = S.turn===ME ? S.tut.prolls : S.tut.crolls;
-  return q.length ? q.shift() : 0;
+  if(q.length) return q.shift();
+  let d = 1+((Math.random()*6)|0);
+  if(S.turn===ME ? d<=2 : d>=5) d = 1+((Math.random()*6)|0);
+  return d;
 }
 /* one lesson per player turn, keyed by turn number (board counts shift when
    dice get destroyed, so placements are the wrong key) */

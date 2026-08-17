@@ -33,8 +33,17 @@ export function aiChoose(){
   if(legal.length===1) return legal[0];
   if(S.tut){
     if(S.tut.cmoves.length) return S.tut.cmoves.shift();   // lesson setup
-    const w1=getRiskW(); setRiskW(0);                       // then a beatable greedy
-    const c1=searchRoot(st,AI,S.die,1).c; setRiskW(w1); return c1;
+    // free play: the coach's sparring partner throws the match — it picks the
+    // column that helps itself LEAST (no multipliers, no destruction), so a
+    // guided first game all but always ends in a win
+    let worst=legal[0], worstV=1e9;
+    for(const c of legal){
+      const gain=colScore(st[AI][c].concat([S.die]))-colScore(st[AI][c]);
+      const kill=colScore(st[ME][c])-colScore(st[ME][c].filter(v=>v!==S.die));
+      const v=gain+kill;
+      if(v<worstV){ worstV=v; worst=c; }
+    }
+    return worst;
   }
   const filled = st[AI].flat().length + st[ME].flat().length;
   const w0=getRiskW();

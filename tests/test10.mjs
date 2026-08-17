@@ -121,7 +121,7 @@ out.killPreview = await page.evaluate(() => ({
   kill: [...document.querySelectorAll('#topCols .chip .dl.show')].map(d => d.textContent),
   danger: document.querySelectorAll('#topBoard .col.danger').length,
 }));
-check(out.killPreview.kill.includes('−1') && out.killPreview.danger === 1, 'destruction preview missing', out.killPreview);
+check(out.killPreview.kill.includes('−5') && out.killPreview.danger === 1, 'destruction preview missing', out.killPreview);  // −POINTS (the CPU's lone 5), not dice count
 
 await page.tap('#botBoard .col[data-col="1"]');            // smash it
 await page.waitForTimeout(1200);
