@@ -55,6 +55,7 @@ execSync('node build.mjs', { stdio: 'inherit' }); // test6 needs harness.html, s
 // pure-Node gates (no browser): seeded dice determinism + PvP match core
 judge('dice', await run('node', ['--experimental-strip-types', 'tests/dice.test.ts']), clean);
 judge('match', await run('node', ['--experimental-strip-types', 'tests/match.test.ts']), clean);
+judge('modes', await run('node', ['--experimental-strip-types', 'tests/modes.test.ts']), clean);
 
 for (const t of FILE_SUITES) judge(t, await run('node', [`tests/${t}.mjs`]), clean);
 

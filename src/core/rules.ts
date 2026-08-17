@@ -1,7 +1,7 @@
 // The rules of Knucklebones — pure functions over plain data. No DOM, no
 // timers, no randomness: this module must run identically in the browser and
 // on a server (score validation replays games through exactly this code).
-import { CLASSIC, DICE_FACES, type BoardSpec } from '../config.ts';
+import { CLASSIC as CLASSIC_BOARD, DICE_FACES, type BoardSpec } from '../config.ts';
 
 /* Player indices are fixed identities: 1 = cyan (P1 / the human in CPU mode),
    0 = magenta (P2 / the CPU). Which half of the screen they occupy is a UI
@@ -13,7 +13,7 @@ export type Col = number[];              // dice values, bottom of the stack fir
 export type Board = Col[];               // one column array per BoardSpec col
 export type GameState = [Board, Board];  // indexed by Player
 
-export const SPEC: BoardSpec = CLASSIC;
+export const SPEC: BoardSpec = CLASSIC_BOARD;
 
 export function emptyBoard(): Board {
   const b: Board = [];
@@ -73,11 +73,55 @@ export function cloneSt(st: GameState): GameState {
   return out;
 }
 
+/* ---- game-mode additions (the ranked wheel) ----
+   Mode 0 is classic and must stay BIT-IDENTICAL to the pre-mode game: every
+   mode branch below is written so the mode===CLASSIC path does exactly what
+   the code did before modes existed. The wheel registry lives in modes.ts;
+   the numeric vocabulary lives here because rules and AI branch on it. */
+export const CLASSIC = 0, ROWSWITCH = 1, ROWMULT = 2, COLSHIELD = 3;
+export type Mode = 0 | 1 | 2 | 3;
+
+/* value × count² across a horizontal row (same formula, orientation flipped) */
+export function rowScore(b: Board, r: number): number {
+  let s = 0;
+  for (let v = 1; v <= DICE_FACES; v++) {
+    let k = 0;
+    for (let c = 0; c < b.length; c++) if (b[c][r] === v) k++;
+    if (k) s += v * k * k;
+  }
+  return s;
+}
+
+/* ROWMULT: only MATCHES (2+) add — singles already counted by the columns */
+export function rowBonus(b: Board): number {
+  let s = 0;
+  for (let r = 0; r < SPEC.rows; r++) {
+    for (let v = 1; v <= DICE_FACES; v++) {
+      let k = 0;
+      for (let c = 0; c < b.length; c++) if (b[c][r] === v) k++;
+      if (k >= 2) s += v * k * k;
+    }
+  }
+  return s;
+}
+
+export function boardTotalMode(b: Board, mode: Mode): number {
+  if (mode === ROWSWITCH) {
+    let s = 0;
+    for (let r = 0; r < SPEC.rows; r++) s += rowScore(b, r);
+    return s;
+  }
+  if (mode === ROWMULT) return boardTotal(b) + rowBonus(b);
+  return boardTotal(b);
+}
+
 /* place a die, then destruction: every matching die in the opponent's facing
-   column dies. Mutates st — callers clone first when they need to. */
-export function applyMove(st: GameState, who: Player, col: number, die: number): void {
+   column dies — unless COLSHIELD protects their full column. Mutates st —
+   callers clone first when they need to. */
+export function applyMove(st: GameState, who: Player, col: number, die: number, mode: Mode = CLASSIC): void {
   st[who][col].push(die);
   const o = 1 - who, oc = st[o][col];
+  if (mode === COLSHIELD && oc.length >= SPEC.rows) return;   // shielded: full columns are safe
   let hit = false;
   for (let i = 0; i < oc.length; i++) if (oc[i] === die) { hit = true; break; }
   if (hit) st[o][col] = oc.filter(v => v !== die);

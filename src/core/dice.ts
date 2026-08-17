@@ -7,7 +7,9 @@
 // to Math.random or a float-seeded scheme; determinism IS the feature.
 import { DICE_FACES } from '../config.ts';
 
-export function diceStream(seed: string): () => number {
+/* uniform [0,1) stream — the primitive under diceStream, also used to derive
+   secondary deterministic draws (e.g. the ranked mode wheel) from a seed */
+export function randStream(seed: string): () => number {
   let h = 1779033703 ^ seed.length;                    // xmur3
   for (let i = 0; i < seed.length; i++) {
     h = Math.imul(h ^ seed.charCodeAt(i), 3432918353);
@@ -21,7 +23,11 @@ export function diceStream(seed: string): () => number {
     a = (a + 0x6D2B79F5) | 0;
     let t = Math.imul(a ^ (a >>> 15), 1 | a);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    const r = ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-    return 1 + Math.floor(r * DICE_FACES);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
+
+export function diceStream(seed: string): () => number {
+  const rand = randStream(seed);
+  return () => 1 + Math.floor(rand() * DICE_FACES);
 }

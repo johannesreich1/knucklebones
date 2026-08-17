@@ -6,7 +6,7 @@
 //   p1 = core index 1 (ME) and ALWAYS makes the first move; vs a bot the
 //   human is always p1. Each move consumes exactly one roll from the seed's
 //   dice stream. The game ends the instant a mover fills their board.
-import { type GameState, type Player, ME, emptyBoard, legalCols, isFull, applyMove } from './rules.ts';
+import { type GameState, type Player, type Mode, CLASSIC, ME, emptyBoard, legalCols, isFull, applyMove } from './rules.ts';
 import { diceStream } from './dice.ts';
 
 export interface MoveRow { idx: number; who: number; col: number; }
@@ -20,7 +20,7 @@ export interface MatchState {
 
 /* The log is server-written and therefore trusted; null here means the log is
    corrupt, which is a bug worth failing loudly over — never repair silently. */
-export function rebuild(seed: string, rows: MoveRow[]): MatchState | null {
+export function rebuild(seed: string, rows: MoveRow[], mode: Mode = CLASSIC): MatchState | null {
   const moves = [...rows].sort((a, b) => a.idx - b.idx);
   const st: GameState = [emptyBoard(), emptyBoard()];
   const roll = diceStream(seed);
@@ -31,7 +31,7 @@ export function rebuild(seed: string, rows: MoveRow[]): MatchState | null {
     if (m.idx !== i || m.who !== turn || over) return null;
     const die = roll();
     if (!legalCols(st[turn]).includes(m.col)) return null;
-    applyMove(st, turn, m.col, die);
+    applyMove(st, turn, m.col, die, mode);
     over = isFull(st[turn]);
     turn = (1 - turn) as Player;
   }
