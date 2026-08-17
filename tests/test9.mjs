@@ -11,7 +11,8 @@ async function overlapCheck(w, h, label) {
   const p = await ctx.newPage();
   p.on('pageerror', e => errs.push(label + ': ' + e.message));
   await p.goto(F); await p.waitForTimeout(400);
-  await p.tap('#btnTut'); await p.waitForTimeout(400);   // pills are tutorial-only now
+  await p.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
+await p.tap('#btnTut'); await p.waitForTimeout(400);   // pills are tutorial-only now
   await p.tap('#coach'); await p.waitForTimeout(300);    // dismiss the welcome step
   for (let i = 0; i < 60; i++) {                         // reach the first choose
     const s = await p.evaluate(() => ({ ph: window.__kb.S.phase }));
@@ -62,6 +63,7 @@ p.on('pageerror', e => errs.push('TIMER: ' + e.message));
 p.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
 await p.goto(F); await p.waitForTimeout(400);
 out.timerCardHiddenInCpu = await p.evaluate(() => document.getElementById('timerCard').hidden);
+await p.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await p.tap('#modeSeg button[data-m="duo"]'); await p.waitForTimeout(250);
 out.timerCardShownInDuo = await p.evaluate(() => !document.getElementById('timerCard').hidden);
 check(out.timerCardHiddenInCpu && out.timerCardShownInDuo, 'timer setting visibility wrong', out);
@@ -104,6 +106,7 @@ out.timer = { t0, t1, t2 };
 
 // timer must NOT run in single player
 await toMenu();
+await p.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await p.tap('#modeSeg button[data-m="cpu"]'); await p.waitForTimeout(250);
 await p.tap('#btnPlay'); await p.waitForTimeout(2400);
 for (let i = 0; i < 40; i++) {
@@ -116,6 +119,7 @@ check(!out.cpuTimer, 'timer runs in single player', out);
 
 // off setting must disable it
 await toMenu();
+await p.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await p.tap('#modeSeg button[data-m="duo"]'); await p.waitForTimeout(200);
 await p.tap('#timerSeg button[data-t="0"]'); await p.waitForTimeout(200);
 await p.tap('#btnPlay'); await p.waitForTimeout(1200);
@@ -140,6 +144,7 @@ check(out.timerPersist.setting === 0 && out.timerPersist.onBtn === '0', 'timer s
 
 // timer must not tick during the hand-off card
 await p.evaluate(() => { window.__kb.S.timer = 10; });
+await p.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await p.tap('#timerSeg button[data-t="10"]'); await p.waitForTimeout(200);
 await p.tap('#btnPlay'); await p.waitForTimeout(1200);
 await reachChoose();

@@ -59,7 +59,7 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
     channel: null, tick: null, lastMoveAt: Date.parse(res.match.last_move_at), busySync: false, animating: false, pendingRow: null, done: false,
   };
 
-  hide('#ovOnline'); hide('#ovStart'); hide('#ovEnd'); hide('#ovRules'); hide('#ovPass');
+  hide('#ovOnline'); hide('#ovStart'); hide('#ovEnd'); hide('#ovRules'); hide('#ovPass'); hide('#ovPractice');
   document.documentElement.classList.remove('face', 'tut', 'p2turn');
   $('#sideBot').dataset.owner = String(O.you);
   $('#sideTop').dataset.owner = String(1 - O.you);

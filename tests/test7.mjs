@@ -66,6 +66,7 @@ async function playToEnd(p) {
   }
   return false;
 }
+await page.evaluate(() => window.__kb.openPractice());
 await page.tap('#modeSeg button[data-m="cpu"]');
 await page.tap('#diffSeg button[data-d="medium"]');
 await page.tap('#btnPlay');
@@ -102,13 +103,14 @@ await page.waitForTimeout(1200);
 const offline = await page.evaluate(() => ({
   booted: !!window.__kb,
   title: document.querySelector('#ovStart h1') ? document.querySelector('#ovStart h1').textContent : null,
-  dice: document.querySelectorAll('#startDice .die').length,
+  dice: document.querySelectorAll('#homeDuel .die').length,   // the hero duel: JS built these
   cell: getComputedStyle(document.documentElement).getPropertyValue('--cell').trim(),
   best: window.__kb ? window.__kb.S.best : null,
 }));
 check(offline.booted, 'game did not boot offline', offline);
-check(offline.dice === 3, 'offline boot did not run scripts fully', offline);
+check(offline.dice === 2, 'offline boot did not run scripts fully', offline);
 // and it must still be playable offline, not just render
+await page.evaluate(() => window.__kb.openPractice());
 await page.tap('#btnPlay');
 await page.waitForTimeout(2000);
 const offlinePlay = await page.evaluate(() => ({ phase: window.__kb.S.phase, die: window.__kb.S.die }));
@@ -122,6 +124,7 @@ const p2 = await ctx2.newPage();
 p2.on('pageerror', e => errs.push('DESKTOP PAGEERROR: ' + e.message));
 await p2.goto(URL);
 await p2.waitForTimeout(600);
+await p2.evaluate(() => window.__kb.openPractice());
 await p2.click('#btnPlay');
 await p2.waitForTimeout(1800);
 const desk = await p2.evaluate(() => ({

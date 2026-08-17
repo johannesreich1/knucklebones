@@ -279,7 +279,7 @@ export function newGame(opts){
   fit();                                     // the tutorial's pill lane changes cell size
   applySides();
   updateRecord();
-  hide('#ovEnd'); hide('#ovStart'); hide('#ovRules'); hide('#ovPass');
+  hide('#ovEnd'); hide('#ovStart'); hide('#ovRules'); hide('#ovPass'); hide('#ovPractice');
   setStatus(S.mode==='duo' ? nameOf(S.turn)+' starts'
                            : (S.turn===ME?'You go first':'CPU goes first'), S.turn);
   setActivePlate();

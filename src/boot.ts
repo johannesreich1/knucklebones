@@ -1,6 +1,22 @@
 // @ts-nocheck -- moved verbatim from the monolith; typed in the milestone-D
 // strictness ratchet. New code goes in typed modules, not here.
 // Wire the DOM to the game: one boot per entry point.
+export function refreshHomeChip(): void {
+  const chip = document.getElementById('homeChip');
+  if (!chip) return;
+  try {
+    const p = JSON.parse(localStorage.getItem('knucklebones.online.profile') || 'null');
+    if (p && p.nickname) {
+      chip.classList.remove('anon');
+      chip.innerHTML = 'PLAYING AS <b></b> · <span class="rt"></span>';
+      (chip.querySelector('b') as HTMLElement).textContent = p.nickname;
+      (chip.querySelector('.rt') as HTMLElement).textContent = String(p.rating ?? '');
+      return;
+    }
+  } catch { /* fall through to anon */ }
+  chip.classList.add('anon');
+  chip.textContent = 'NOT SIGNED IN';
+}
 import { SPEC } from './core/rules.ts';
 import { AI, ME, S } from './state.ts';
 import { loadStats, saveStats } from './persist.ts';
@@ -28,9 +44,11 @@ export function boot(embed){
   syncSettingsUI();
   updateStatLine();
   updateResumeButton();
-  // decorative dice on start screen
-  const row=$('#startDice');
-  [6,3,5].forEach((v,i)=>{ const d=makeDie(v,i===1?AI:ME); row.appendChild(d); });
+  // the hero duel: you (cyan) vs them (magenta), gold VS between
+  const duel=$('#homeDuel');
+  duel.insertBefore(makeDie(5,ME), duel.firstChild);
+  duel.appendChild(makeDie(3,AI));
+  refreshHomeChip();
 
   const table=$('#tableEl');
   let sawPointer=false;
@@ -57,6 +75,12 @@ export function boot(embed){
   tap($('#passQuit'),()=>{ Sfx.tap(); toMenu(); });
   tap($('#btnResume'),()=>{ Sfx.unlock(); Sfx.tap(); resumeGame(); });
   tap($('#btnTut'),()=>{ Sfx.unlock(); Sfx.tap(); newGame({tutorial:true}); });
+  const openPractice=(mode)=>{ if(mode) S.mode=mode; saveStats(); syncSettingsUI();
+    updateStatLine(); updateResumeButton(); hide('#ovStart'); show('#ovPractice'); };
+  tap($('#btnVsCpu'),()=>{ Sfx.unlock(); Sfx.tap(); openPractice('cpu'); });
+  tap($('#btnDuoHome'),()=>{ Sfx.unlock(); Sfx.tap(); openPractice('duo'); });
+  tap($('#btnTutHome'),()=>{ Sfx.unlock(); Sfx.tap(); newGame({tutorial:true}); });
+  tap($('#btnPracticeBack'),()=>{ Sfx.tap(); hide('#ovPractice'); show('#ovStart'); });
   tap($('#btnSettings'),()=>{ Sfx.tap(); show('#ovSettings'); });
   tap($('#btnCloseSettings'),()=>{ Sfx.tap(); hide('#ovSettings'); });
   tap($('#btnHow2'),()=>{ Sfx.tap(); hide('#ovSettings'); show('#ovRules'); });
@@ -92,13 +116,17 @@ export function boot(embed){
   bindSeg('#faceSeg','f', v=>{ S.numerals=v==='nums'; });
   tap($('#btnPlay'),()=>{ Sfx.unlock(); Sfx.tap(); newGame(); });
   tap($('#btnAgain'),()=>{ Sfx.tap(); newGame(); });
-  tap($('#btnMenu2'),()=>{ Sfx.tap(); hide('#ovEnd'); updateResumeButton(); show('#ovStart'); });
+  tap($('#btnMenu2'),()=>{ Sfx.tap(); hide('#ovEnd'); updateResumeButton(); show('#ovPractice'); });
   tap($('#btnMenu'),()=>{ Sfx.tap(); toMenu(); });
   tap($('#btnHow'),()=>{ Sfx.tap(); show('#ovRules'); });
   // online module (auth, ladder, account) is lazy: the offline game's boot
   // path must never load supabase-js or anything that talks to a backend
   tap($('#btnOnline'),()=>{ Sfx.unlock(); Sfx.tap();
-    import('./online/ui.ts').then(m=>m.openOnline()); });
+    import('./online/ui.ts').then(m=>m.openOnline('play')); });
+  tap($('#btnBoardHome'),()=>{ Sfx.unlock(); Sfx.tap();
+    import('./online/ui.ts').then(m=>m.openOnline('board')); });
+  tap($('#btnAccountHome'),()=>{ Sfx.unlock(); Sfx.tap();
+    import('./online/ui.ts').then(m=>m.openOnline('account')); });
   tap($('#btnCloseRules'),()=>{ Sfx.tap(); hide('#ovRules'); });
 
   // desktop: 1/2/3 place, Enter starts / replays

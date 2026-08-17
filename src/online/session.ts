@@ -26,18 +26,29 @@ export async function signIn(email: string, password: string): Promise<string | 
   const { error } = await supa().auth.signInWithPassword({ email, password });
   return error ? error.message : null;
 }
-export async function signOut(): Promise<void> { await supa().auth.signOut(); }
+export async function signOut(): Promise<void> { await supa().auth.signOut(); clearProfileCache(); }
 export async function currentUser(): Promise<{ id: string } | null> {
   const { data: { session } } = await supa().auth.getSession();
   return session?.user ?? null;
 }
 
 /* ---- profile ---- */
+/* the home screen's identity chip reads this cache at boot — a stale rating
+   beats putting a network call in the offline game's boot path */
+const PROFILE_CACHE = 'knucklebones.online.profile';
+
 export async function myProfile(): Promise<Profile | null> {
   const user = await currentUser();
   if (!user) return null;
   const { data } = await supa().from('profiles').select('id, nickname, rating').eq('id', user.id).maybeSingle();
+  try {
+    if (data) localStorage.setItem(PROFILE_CACHE, JSON.stringify({ nickname: data.nickname, rating: data.rating }));
+  } catch { /* forgetful host */ }
   return data as Profile | null;
+}
+
+function clearProfileCache(): void {
+  try { localStorage.removeItem(PROFILE_CACHE); } catch { /* forgetful host */ }
 }
 export async function rename(nickname: string): Promise<string | null> {
   const user = await currentUser();
@@ -111,6 +122,6 @@ export function watchMatch(matchId: string,
 /* ---- account ---- */
 export async function deleteAccount(): Promise<string | null> {
   const r = await call<{ deleted?: boolean; error?: string }>('account-delete', {});
-  if (r.status === 200 && r.data?.deleted) { await signOut(); return null; }
+  if (r.status === 200 && r.data?.deleted) { await signOut(); clearProfileCache(); return null; }
   return r.data?.error ?? 'delete failed';
 }

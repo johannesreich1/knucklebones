@@ -25,7 +25,7 @@ export function resumeGame(){
   S.busy=false;
   clearHints();
   applySides(); updateRecord();
-  hide('#ovEnd'); hide('#ovStart'); hide('#ovRules'); hide('#ovPass');
+  hide('#ovEnd'); hide('#ovStart'); hide('#ovRules'); hide('#ovPass'); hide('#ovPractice');
   const human = S.mode==='duo' || S.turn===ME;
   if(human && g.die){
     // hand the same die back
@@ -66,6 +66,7 @@ export function toMenu(){
   S.gen++; S.phase='over';
   stopTimer(); clearTut(); clearHints();
   cancelPass(); hide('#ovPass');
+  hide('#ovPractice');
   updateResumeButton(); show('#ovStart');
 }
 export function updateResumeButton(){

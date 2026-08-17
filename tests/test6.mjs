@@ -41,6 +41,7 @@ function audit(s,w){
 // ---- CPU game by touch ----
 // Loop budgets are generous on purpose: games are random, destruction-heavy
 // endgames run long, and CI runners are slow. (A 400-tick budget flaked on CI.)
+await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#btnPlay'); await page.waitForTimeout(1800);
 let cpuDone=false;
 for(let i=0;i<1200;i++){ const s=await snap(); audit(s,'cpu'+i);

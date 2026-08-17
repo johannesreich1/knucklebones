@@ -6,6 +6,7 @@ import { $, show, hide } from '../ui/dom.ts';
 import { Sfx } from '../ui/audio.ts';
 import { signUp, signIn, signOut, currentUser, myProfile, rename, leaderboard, deleteAccount, join } from './session.ts';
 import { enterMatch, setFinishHandler } from './play.ts';
+import { refreshHomeChip } from '../boot.ts';
 
 const OVERLAY = `
 <div class="ov" id="ovOnline">
@@ -61,6 +62,7 @@ function panel(which: 'onAuth' | 'onMenu' | 'onQueue' | 'onBoard' | 'onAccount')
 
 async function showMenu(): Promise<void> {
   const p = await myProfile();
+  refreshHomeChip();
   $('#onWho').innerHTML = p
     ? `Signed in as <b>${esc(p.nickname)}</b> · <span class="rt">${p.rating}</span>`
     : 'Signed in';
@@ -82,6 +84,34 @@ async function showBoard(): Promise<void> {
   });
 }
 
+/* matchmaking: poll join; offer the bot pool once the wait gets boring */
+let queueAbort = false;
+async function startQueue(): Promise<void> {
+  panel('onQueue');
+  queueAbort = false;
+  const started = Date.now();
+  while (!queueAbort) {
+    const waited = Date.now() - started;
+    $('#onQueueMsg').textContent = waited > 7000
+      ? 'Looking for an opponent… inviting anyone available'
+      : 'Looking for an opponent…';
+    const res = await join(waited > 7000);
+    if (queueAbort) break;
+    if (res?.status === 'matched') {
+      await enterMatch(res);
+      return;
+    }
+    await new Promise(r => setTimeout(r, 2500));
+  }
+}
+
+async function showAccount(): Promise<void> {
+  const p = await myProfile();
+  ($('#onNick') as HTMLInputElement).value = p?.nickname ?? '';
+  $('#onAccErr').textContent = '';
+  panel('onAccount');
+}
+
 let bound = false;
 function bind(): void {
   if (bound) return;
@@ -93,7 +123,10 @@ function bind(): void {
     Sfx.tap(); authErr(null);
     const err = await signIn(($('#onEmail') as HTMLInputElement).value.trim(), ($('#onPass') as HTMLInputElement).value);
     if (err) return authErr(err);
-    await showMenu();
+    const v = pendingView; pendingView = null;
+    await myProfile();           // warms the home-chip cache
+    refreshHomeChip();
+    await route(v);
   });
   $('#btnSignUp').addEventListener('click', async () => {
     Sfx.tap(); authErr(null);
@@ -104,20 +137,14 @@ function bind(): void {
   $('#btnLeaderboard').addEventListener('click', () => { Sfx.tap(); void showBoard(); });
   $('#btnBoardBack').addEventListener('click', () => { Sfx.tap(); void showMenu(); });
 
-  $('#btnAccount').addEventListener('click', async () => {
-    Sfx.tap();
-    const p = await myProfile();
-    ($('#onNick') as HTMLInputElement).value = p?.nickname ?? '';
-    $('#onAccErr').textContent = '';
-    panel('onAccount');
-  });
+  $('#btnAccount').addEventListener('click', () => { Sfx.tap(); void showAccount(); });
   $('#btnAccBack').addEventListener('click', () => { Sfx.tap(); void showMenu(); });
   $('#btnRename').addEventListener('click', async () => {
     Sfx.tap();
     const err = await rename(($('#onNick') as HTMLInputElement).value.trim());
     $('#onAccErr').textContent = err ?? 'Saved.';
   });
-  $('#btnSignOut').addEventListener('click', async () => { Sfx.tap(); await signOut(); panel('onAuth'); });
+  $('#btnSignOut').addEventListener('click', async () => { Sfx.tap(); await signOut(); refreshHomeChip(); panel('onAuth'); });
 
   let armed = 0;
   $('#btnDeleteAcc').addEventListener('click', async () => {
@@ -127,6 +154,7 @@ function bind(): void {
       const err = await deleteAccount();
       if (err) { $('#onAccErr').textContent = err; return; }
       b.textContent = 'Delete account'; armed = 0;
+      refreshHomeChip();
       panel('onAuth');
     } else {
       armed = Date.now(); b.textContent = 'Tap again to delete EVERYTHING';
@@ -134,27 +162,7 @@ function bind(): void {
     }
   });
 
-  // matchmaking: poll join; offer the bot pool once the wait gets boring
-  let queueAbort = false;
-  $('#btnPlayOnline').addEventListener('click', async () => {
-    Sfx.tap();
-    panel('onQueue');
-    queueAbort = false;
-    const started = Date.now();
-    while (!queueAbort) {
-      const waited = Date.now() - started;
-      $('#onQueueMsg').textContent = waited > 7000
-        ? 'Looking for an opponent… inviting anyone available'
-        : 'Looking for an opponent…';
-      const res = await join(waited > 7000);
-      if (queueAbort) break;
-      if (res?.status === 'matched') {
-        await enterMatch(res);
-        return;
-      }
-      await new Promise(r => setTimeout(r, 2500));
-    }
-  });
+  $('#btnPlayOnline').addEventListener('click', () => { Sfx.tap(); void startQueue(); });
   $('#btnQueueCancel').addEventListener('click', () => { Sfx.tap(); queueAbort = true; void showMenu(); });
 
   // back from a finished match: reopen the overlay on the menu with the result
@@ -166,10 +174,21 @@ function bind(): void {
   $('#btnOnlineClose').addEventListener('click', () => { Sfx.tap(); hide('#ovOnline'); });
 }
 
-/* entry point, dynamically imported from boot */
-export async function openOnline(): Promise<void> {
+/* entry point, dynamically imported from boot. The home's buttons deep-link:
+   'play' goes straight into matchmaking, 'board'/'account' to their panels. */
+export type OnlineView = 'play' | 'board' | 'account';
+let pendingView: OnlineView | null = null;
+
+async function route(view: OnlineView | null): Promise<void> {
+  if (view === 'play') return startQueue();
+  if (view === 'board') return showBoard();
+  if (view === 'account') return showAccount();
+  return showMenu();
+}
+
+export async function openOnline(view?: OnlineView): Promise<void> {
   bind();
   show('#ovOnline');
-  if (await currentUser()) await showMenu();
-  else panel('onAuth');
+  if (await currentUser()) { pendingView = null; await route(view ?? null); }
+  else { pendingView = view ?? null; panel('onAuth'); }
 }

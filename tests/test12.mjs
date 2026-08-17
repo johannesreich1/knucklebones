@@ -14,6 +14,7 @@ await page.goto(F); await page.waitForTimeout(500);
 
 // ===== A. the seating option =====
 out.seatHiddenCpu = await page.evaluate(() => document.getElementById('seatCard').hidden);
+await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#modeSeg button[data-m="duo"]'); await page.waitForTimeout(250);
 out.seatShownDuo = await page.evaluate(() => ({
   shown: !document.getElementById('seatCard').hidden,
@@ -112,6 +113,7 @@ await page.waitForTimeout(800);
 await page.reload(); await page.waitForTimeout(700);
 const resumeShown = await page.evaluate(() => !document.getElementById('btnResume').hidden);
 check(resumeShown, 'no resume offered for face game', resumeShown);
+await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#btnResume'); await page.waitForTimeout(1000);
 out.resumed = await page.evaluate(() => ({
   seat: window.__kb.S.seat, bottom: window.__kb.S.bottom,
@@ -123,6 +125,7 @@ check(out.resumed.seat === 'face' && out.resumed.bottom === 1 && out.resumed.fac
 
 // ===== D. pass mode still works after switching back =====
 await page.tap('#btnMenu'); await page.waitForTimeout(400);
+await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#seatSeg button[data-seat="pass"]'); await page.waitForTimeout(200);
 await page.tap('#btnPlay'); await page.waitForTimeout(900);
 let sawPassCard = false;
@@ -146,11 +149,13 @@ const small = await browser.newContext({ viewport: { width: 320, height: 568 }, 
 const sp = await small.newPage();
 sp.on('pageerror', e => errs.push('SMALL: ' + e.message));
 await sp.goto(F); await sp.waitForTimeout(400);
+await sp.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await sp.tap('#modeSeg button[data-m="duo"]'); await sp.waitForTimeout(300);
 out.small = await sp.evaluate(() => {
   const ov = document.getElementById('ovStart');
   return { scrollable: ov.scrollHeight > ov.clientHeight, sh: ov.scrollHeight, ch: ov.clientHeight };
 });
+await sp.evaluate(() => window.__kb.goHome());
 await sp.tap('#btnHow'); await sp.waitForTimeout(400);     // bottom button reachable (auto-scrolls)
 const rulesOpened = await sp.evaluate(() => document.getElementById('ovRules').classList.contains('on'));
 check(rulesOpened, 'bottom title button unreachable on small screen', out.small);

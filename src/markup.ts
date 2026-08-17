@@ -55,11 +55,40 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
 
 
 
-<!-- START -->
+<!-- HOME: online-first. The duel is the hero, PLAY ONLINE the one primary
+     action; local play sits behind the quiet PRACTICE strip. -->
 <div class="ov on" id="ovStart">
-  <div class="dicerow" id="startDice"></div>
-  <h1>KNUCKLEBONES</h1>
-  <div class="sub">Neon Edition</div>
+  <div class="idchip anon" id="homeChip">NOT SIGNED IN</div>
+  <div class="hero">
+    <div class="eyebrow">Neon Edition</div>
+    <h1>KNUCKLEBONES</h1>
+    <div class="duel" id="homeDuel"><span class="vs">VS</span></div>
+    <div class="sub2">Ranked dice duels</div>
+  </div>
+  <div class="homestack">
+    <button class="btn primary" id="btnOnline">Play online</button>
+    <div class="hrow">
+      <button class="btn" id="btnBoardHome">Leaderboard</button>
+      <button class="btn" id="btnAccountHome">Account</button>
+    </div>
+  </div>
+  <div class="quiet">
+    <div class="cap">Practice offline</div>
+    <div class="hrow">
+      <button class="btn" id="btnVsCpu">VS CPU</button>
+      <button class="btn" id="btnDuoHome">2 players</button>
+      <button class="btn" id="btnTutHome">Tutorial</button>
+    </div>
+  </div>
+  <div class="homefoot">
+    <button class="linkbtn" id="btnHow">How to play</button>
+    <div class="tiny" id="buildTag" style="opacity:.55">build dev</div>
+  </div>
+</div>
+
+<!-- PRACTICE: the local-play configuration (was the old title screen) -->
+<div class="ov" id="ovPractice">
+  <h1 style="font-size:20px">PRACTICE</h1>
   <div class="card">
     <div class="lbl">Mode</div>
     <div class="seg" id="modeSeg">
@@ -94,10 +123,9 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   <div class="tiny" id="statLine" hidden></div>
   <button class="btn primary" id="btnResume" hidden>Resume game</button>
   <button class="btn primary" id="btnPlay">Play</button>
-  <button class="btn" id="btnOnline">Online</button>
   <button class="btn" id="btnTut">Tutorial</button>
-  <button class="btn" id="btnHow">How to play</button>
-  <div class="tiny" id="buildTag" style="opacity:.55">build dev</div>
+  <div class="tiny">Practice never touches your online rating</div>
+  <button class="btn" id="btnPracticeBack">Back</button>
 </div>
 
 <!-- RULES -->

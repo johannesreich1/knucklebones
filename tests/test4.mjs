@@ -59,6 +59,7 @@ function audit(s, where) {
 }
 
 // ================= DUO GAME =================
+await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.click('#modeSeg button[data-m="duo"]');
 const diffHidden = await page.evaluate(() => document.getElementById('diffCard').hidden &&
   getComputedStyle(document.getElementById('diffCard')).display === 'none');
@@ -125,6 +126,7 @@ await page.screenshot({ path: './duo-mid.png' });
 
 // ================= CPU MODE REGRESSION =================
 await page.click('#btnMenu'); await page.waitForTimeout(400);
+await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.click('#modeSeg button[data-m="cpu"]');
 await page.waitForTimeout(200);
 const diffBack = await page.evaluate(() => !document.getElementById('diffCard').hidden);

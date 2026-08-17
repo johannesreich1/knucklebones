@@ -41,6 +41,7 @@ out.freshPrimary = await page.evaluate(() => ({
 }));
 check(out.freshPrimary.tut && !out.freshPrimary.play, 'tutorial not primary on first launch', out.freshPrimary);
 
+await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#btnPlay'); await page.waitForTimeout(1500);
 let s = await waitChoose();
 out.cpuNormal = { pills: s.pills, danger: s.danger, legal: s.legal, colsMargin: s.colsMargin };
@@ -51,6 +52,7 @@ check(s.colsMargin === '4px', 'pill lane space not reclaimed in normal play', s)
 
 // duo: same check
 await page.tap('#btnMenu'); await page.waitForTimeout(400);
+await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#modeSeg button[data-m="duo"]'); await page.waitForTimeout(200);
 await page.tap('#btnPlay'); await page.waitForTimeout(1400);
 s = await waitChoose();
@@ -58,6 +60,7 @@ out.duoNormal = { pills: s.pills, danger: s.danger };
 check(s.pills === 0 && s.danger === 0, 'previews shown in duo play', s);
 const quitVia = await page.evaluate(() => document.getElementById('ovPass').classList.contains('on'));
 await page.tap(quitVia ? '#passQuit' : '#btnMenu'); await page.waitForTimeout(400);
+await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#modeSeg button[data-m="cpu"]'); await page.waitForTimeout(200);
 
 // ===================== B. THE TUTORIAL, WALKED END TO END =====================
@@ -169,6 +172,7 @@ check(!out.afterGrad.tutPrimary && out.afterGrad.playPrimary && out.afterGrad.tu
       'post-tutorial button priority wrong', out.afterGrad);
 
 // ===================== C. TUTORIAL MUST NOT EAT A REAL SAVED GAME =====================
+await page.evaluate(() => window.__kb.openPractice());
 await page.tap('#btnPlay'); await page.waitForTimeout(1600);
 s = await waitChoose();
 await page.tap(`#botBoard .col[data-col="0"]`); await page.waitForTimeout(1500);
@@ -176,6 +180,7 @@ await waitChoose();                                        // roll saved with th
 const savedBefore = await page.evaluate(() => localStorage.getItem('knucklebones.game.v1'));
 check(!!savedBefore, 'no save to protect', {});
 await page.tap('#btnMenu'); await page.waitForTimeout(400);
+await page.evaluate(() => window.__kb.openPractice());
 await page.tap('#btnTut'); await page.waitForTimeout(500); // welcome card up
 await page.tap('#coach');
 s = await waitChoose();

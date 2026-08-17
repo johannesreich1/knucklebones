@@ -362,3 +362,42 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
   .col.legal::after,.col.danger::before{animation:none;opacity:.8}
   .die.m3{animation:none}
 }
+
+/* ============ HOME (online-first) ============
+   The duel is the hero; PLAY ONLINE is the one primary action. Local play
+   lives behind the quiet PRACTICE strip. Design source: design/screens/10*. */
+.idchip{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;
+  display:flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.12em;
+  color:var(--txt);border:1px solid rgba(255,255,255,.12);border-radius:99px;
+  padding:5px 11px;background:rgba(255,255,255,.04)}
+.idchip b{color:var(--cy);font-weight:800}
+.idchip .rt{color:var(--gold);font-weight:900}
+.idchip.anon{color:var(--dim);border-style:dashed}
+.idchip .die{width:16px;height:16px;--cell:16px;border-radius:5px}
+.hero{display:flex;flex-direction:column;align-items:center;gap:4px;margin:6px 0 2px}
+.hero .eyebrow{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+.hero h1{font-size:23px;letter-spacing:.24em}
+.duel{display:flex;align-items:center;gap:18px;margin:16px 0 4px}
+.duel .die{width:74px;height:74px;--cell:74px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.34),inset 0 -6px 12px rgba(0,0,0,.35),
+  0 5px 14px rgba(0,0,0,.55),0 0 34px color-mix(in srgb,var(--dc) 45%,transparent)}
+.duel .die.p1{transform:rotate(-9deg)}
+.duel .die.p2{transform:rotate(9deg)}
+.duel .vs{font-size:19px;font-weight:900;letter-spacing:.08em;color:var(--gold);
+  text-shadow:0 0 18px rgba(255,209,102,.65);font-style:italic}
+.sub2{font-size:10px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase;
+  text-align:center;margin-bottom:12px}
+.homestack{display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px}
+.hrow{display:flex;gap:8px;width:100%}
+.hrow .btn{flex:1;min-width:0;padding:12px 6px;font-size:11px;letter-spacing:.12em}
+.quiet{margin-top:14px;display:flex;flex-direction:column;gap:9px;width:100%;max-width:300px}
+.quiet .cap{display:flex;align-items:center;gap:10px;font-size:9px;letter-spacing:.3em;
+  color:var(--dim);text-transform:uppercase}
+.quiet .cap::before,.quiet .cap::after{content:"";flex:1;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent)}
+.quiet .hrow .btn{padding:10px 4px;font-size:10px;letter-spacing:.08em;
+  background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.09);color:var(--dim)}
+.homefoot{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:12px}
+.linkbtn{background:none;border:none;padding:4px;font-family:inherit;cursor:pointer;
+  font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+.linkbtn:focus-visible{outline:2px solid var(--cy);outline-offset:2px}

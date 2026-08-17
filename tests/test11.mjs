@@ -34,6 +34,7 @@ check(out.hud.icons.join(',') === 'btnSettings,btnMenu', 'hud buttons not consol
 check(out.hud.titleStillNamed, 'title screen lost the name', out.hud);
 
 // ===== popups, deterministically via the tutorial =====
+await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#btnTut'); await page.waitForTimeout(500);
 await page.tap('#coach');
 async function waitChoose(maxMs = 15000) {
@@ -69,6 +70,7 @@ check(out.leftover === 0, 'popups leak into the DOM', out.leftover);
 // quit tutorial, popups must also fire in a NORMAL game (they are not tutorial-only)
 await page.tap('#btnMenu'); await page.waitForTimeout(400);
 await page.evaluate(() => { window.__pops = []; });
+await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#btnPlay'); await page.waitForTimeout(1500);
 if (await waitChoose() === 'choose') {
   const lg = await page.evaluate(() => window.__kb.S.boards[1].map((c, j) => c.length < 3 ? j : -1).filter(j => j >= 0));
@@ -120,6 +122,7 @@ await page.evaluate(() => {
 await page.reload(); await page.waitForTimeout(600);
 out.recBefore = await page.evaluate(() => document.getElementById('rec').textContent.trim());
 check(/3/.test(out.recBefore), 'seeded record not shown', out.recBefore);
+await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#btnPlay'); await page.waitForTimeout(1200);   // hud only reachable in-game
 await page.tap('#btnSettings'); await page.waitForTimeout(300);
 await page.tap('#btnResetStats'); await page.waitForTimeout(200);

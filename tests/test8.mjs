@@ -11,6 +11,7 @@ const land = await browser.newContext({ viewport: { width: 844, height: 390 }, h
 const lp = await land.newPage();
 lp.on('pageerror', e => errs.push('LAND: ' + e.message));
 await lp.goto(F); await lp.waitForTimeout(500);
+await lp.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await lp.tap('#btnPlay'); await lp.waitForTimeout(2400);
 out.landscape = await lp.evaluate(() => {
   const r = e => document.getElementById(e).getBoundingClientRect();
@@ -78,6 +79,7 @@ const p = await ctx.newPage();
 p.on('pageerror', e => errs.push('RESUME: ' + e.message));
 p.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
 await p.goto(F); await p.waitForTimeout(400);
+await p.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await p.tap('#btnPlay'); await p.waitForTimeout(2000);
 for (let i = 0; i < 3; i++) {
   const s = await p.evaluate(() => ({ ph: window.__kb.S.phase, t: window.__kb.S.turn, b: window.__kb.S.boards[1] }));
@@ -104,6 +106,7 @@ const resumeUi = await p.evaluate(() => ({
   playLabel: document.getElementById('btnPlay').textContent,
 }));
 check(resumeUi.resumeShown, 'no resume button after reload', resumeUi);
+await p.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await p.tap('#btnResume'); await p.waitForTimeout(1200);
 const afterResume = await p.evaluate(() => ({
   boards: window.__kb.S.boards, die: window.__kb.S.die, turn: window.__kb.S.turn, phase: window.__kb.S.phase,
@@ -150,6 +153,7 @@ const g = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, is
 const gp = await g.newPage();
 gp.on('pageerror', e => errs.push('INPUT: ' + e.message));
 await gp.goto(F); await gp.waitForTimeout(400);
+await gp.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await gp.tap('#btnPlay'); await gp.waitForTimeout(2200);
 for (let i = 0; i < 40; i++) {
   const s = await gp.evaluate(() => ({ ph: window.__kb.S.phase, t: window.__kb.S.turn }));
@@ -209,6 +213,7 @@ const rm = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, i
 const rp = await rm.newPage();
 rp.on('pageerror', e => errs.push('RM: ' + e.message));
 await rp.goto(F); await rp.waitForTimeout(400);
+await rp.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await rp.tap('#btnPlay'); await rp.waitForTimeout(2500);
 out.reduced = await rp.evaluate(() => ({
   jsFlag: window.__kb.reduced,
