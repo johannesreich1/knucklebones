@@ -97,8 +97,23 @@ Deno.serve(async (req: Request) => {
   if (oppProf?.is_bot && !s.over) {
     const botIdx = (1 - myIdx) as Player;  // vs a human p1, the bot is always index 0
     const botDie = s.nextDie;
-    const w = getRiskW(); setRiskW(0.9);   // medium strength: beatable, not trivial
-    const botCol = searchRoot(s.st, botIdx, botDie, 2, MODE).c;
+    // Dynamic sparring: the bot's strength follows the HUMAN's rating, read
+    // at move time. Below 1000 softness ramps in continuously (random moves,
+    // no risk sense, shallow search — by ~850 it plays like the local EASY
+    // CPU); at 1100+ it sharpens to depth 3. Nobody gets frustrated at the
+    // bottom, nobody gets flattered at the top.
+    const { data: me } = await svc.from("profiles").select("rating").eq("id", user.id).single();
+    const hr = me?.rating ?? 1000;
+    const soft = Math.min(1, Math.max(0, (1000 - hr) / 150));   // 0 at 1000 → 1 at ≤850
+    const depth = soft > 0.5 ? 1 : hr >= 1100 ? 3 : 2;
+    const w = getRiskW(); setRiskW(soft > 0 ? 0.9 * (1 - soft) : hr >= 1100 ? 1.3 : 0.9);
+    let botCol: number;
+    if (soft > 0 && Math.random() < soft * 0.5) {
+      const lg = legalCols(s.st[botIdx]);
+      botCol = lg[Math.floor(Math.random() * lg.length)];
+    } else {
+      botCol = searchRoot(s.st, botIdx, botDie, depth, MODE).c;
+    }
     setRiskW(w);
     const { error: botErr } = await svc.from("match_moves")
       .insert({ match_id, idx: s.moveCount, who: botIdx, col: botCol, die: botDie });
