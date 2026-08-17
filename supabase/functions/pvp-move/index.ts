@@ -4,10 +4,11 @@
 // is a bot, computes and records its reply in the same request.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { AI, ME, isFull, boardTotal, legalCols, applyMove, type Player } from "./core/rules.ts";
+import { AI, ME, isFull, boardTotalMode, legalCols, applyMove, type Player, type Mode } from "./core/rules.ts";
 import { rebuild, type MatchState } from "./core/match.ts";
 import { eloDelta, type MatchScore } from "./core/elo.ts";
 import { searchRoot, setRiskW, getRiskW } from "./core/ai.ts";
+import { modeById } from "./core/modes.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -16,19 +17,19 @@ const CORS = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...CORS } });
 
-const MATCH_COLS = "id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at";
+const MATCH_COLS = "id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at, modifier";
 
-async function loadState(svc: SupabaseClient, matchId: string): Promise<MatchState | null> {
+async function loadState(svc: SupabaseClient, matchId: string, mode: Mode): Promise<MatchState | null> {
   const { data: moves } = await svc.from("match_moves").select("idx, who, col").eq("match_id", matchId);
   const { data: seedRow } = await svc.from("match_seeds").select("seed").eq("match_id", matchId).single();
   if (!seedRow) return null;
-  return rebuild(seedRow.seed, moves ?? []);
+  return rebuild(seedRow.seed, moves ?? [], mode);
 }
 
 /* end of match: scores, winner, Elo for both sides (bots included — their
    hidden rating drifting toward true strength improves future pairings) */
-async function finish(svc: SupabaseClient, match: any, s: MatchState, status: "done" | "forfeit", forfeitWinner?: Player) {
-  const p1Score = boardTotal(s.st[ME]), p2Score = boardTotal(s.st[AI]);
+async function finish(svc: SupabaseClient, match: any, s: MatchState, mode: Mode, status: "done" | "forfeit", forfeitWinner?: Player) {
+  const p1Score = boardTotalMode(s.st[ME], mode), p2Score = boardTotalMode(s.st[AI], mode);
   const p1Result: MatchScore = status === "forfeit"
     ? (forfeitWinner === ME ? 1 : 0)
     : (p1Score > p2Score ? 1 : p1Score < p2Score ? 0 : 0.5);
@@ -70,8 +71,9 @@ Deno.serve(async (req: Request) => {
   if (match.status !== "active") return json({ error: "match-over" }, 409);
   const myIdx: Player = match.p1 === user.id ? ME : AI;
   if (match.turn !== myIdx) return json({ error: "not-your-turn" }, 409);
+  const MODE: Mode = modeById(match.modifier).mode;
 
-  let s = await loadState(svc, match_id);
+  let s = await loadState(svc, match_id, MODE);
   if (!s || s.over || s.turn !== myIdx) return json({ error: "corrupt-state" }, 500);
   if (!legalCols(s.st[myIdx]).includes(col)) return json({ error: "illegal-move" }, 422);
 
@@ -80,10 +82,10 @@ Deno.serve(async (req: Request) => {
   const { error: insErr } = await svc.from("match_moves")
     .insert({ match_id, idx: s.moveCount, who: myIdx, col, die: myDie });
   if (insErr) return json({ error: "race-lost" }, 409);
-  applyMove(s.st, myIdx, col, myDie);
+  applyMove(s.st, myIdx, col, myDie, MODE);
 
   if (isFull(s.st[myIdx])) {
-    const updated = await finish(svc, match, s, "done");
+    const updated = await finish(svc, match, s, MODE, "done");
     return json({ match: updated, your_die: myDie });
   }
 
@@ -91,23 +93,23 @@ Deno.serve(async (req: Request) => {
   const oppId = myIdx === ME ? match.p2 : match.p1;
   const { data: oppProf } = await svc.from("profiles").select("is_bot").eq("id", oppId).single();
   let botMove: { col: number; die: number } | null = null;
-  s = (await loadState(svc, match_id))!;   // re-derive next die cleanly from the log
+  s = (await loadState(svc, match_id, MODE))!;   // re-derive next die cleanly from the log
   if (oppProf?.is_bot && !s.over) {
     const botIdx = (1 - myIdx) as Player;  // vs a human p1, the bot is always index 0
     const botDie = s.nextDie;
     const w = getRiskW(); setRiskW(0.9);   // medium strength: beatable, not trivial
-    const botCol = searchRoot(s.st, botIdx, botDie, 2).c;
+    const botCol = searchRoot(s.st, botIdx, botDie, 2, MODE).c;
     setRiskW(w);
     const { error: botErr } = await svc.from("match_moves")
       .insert({ match_id, idx: s.moveCount, who: botIdx, col: botCol, die: botDie });
     if (!botErr) {
-      applyMove(s.st, botIdx, botCol, botDie);
+      applyMove(s.st, botIdx, botCol, botDie, MODE);
       botMove = { col: botCol, die: botDie };
       if (isFull(s.st[botIdx])) {
-        const updated = await finish(svc, match, s, "done");
+        const updated = await finish(svc, match, s, MODE, "done");
         return json({ match: updated, your_die: myDie, bot_move: botMove });
       }
-      s = (await loadState(svc, match_id))!;
+      s = (await loadState(svc, match_id, MODE))!;
     }
   }
 

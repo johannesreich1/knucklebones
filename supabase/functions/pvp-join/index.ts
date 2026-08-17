@@ -7,9 +7,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { diceStream } from "./core/dice.ts";
-import { AI, ME, boardTotal, type Player } from "./core/rules.ts";
+import { AI, ME, boardTotalMode, type Player } from "./core/rules.ts";
 import { rebuild } from "./core/match.ts";
 import { eloDelta, type MatchScore } from "./core/elo.ts";
+import { modeById, pickMode } from "./core/modes.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -59,13 +60,14 @@ Deno.serve(async (req: Request) => {
     if (Date.now() - new Date(m.last_move_at).getTime() < STALL_MS) return false;
     const { data: opp } = await svc.from("profiles").select("is_bot").eq("id", oppId).maybeSingle();
     if (!opp?.is_bot) return false;                  // human opponent: their client claims
+    const MODE = modeById(m.modifier).mode;
     const { data: moves } = await svc.from("match_moves").select("idx, who, col").eq("match_id", m.id);
     const { data: seedRow } = await svc.from("match_seeds").select("seed").eq("match_id", m.id).single();
-    const s = seedRow && rebuild(seedRow.seed, moves ?? []);
+    const s = seedRow && rebuild(seedRow.seed, moves ?? [], MODE);
     if (!s) return false;
     // finish block mirrors pvp-claim — keep the two in sync.
     // Claim the row first (status guard beats a concurrent finish), Elo after.
-    const p1Score = boardTotal(s.st[ME]), p2Score = boardTotal(s.st[AI]);
+    const p1Score = boardTotalMode(s.st[ME], MODE), p2Score = boardTotalMode(s.st[AI], MODE);
     const { data: profs } = await svc.from("profiles").select("id, rating").in("id", [m.p1, m.p2]);
     const r1 = profs!.find((p: any) => p.id === m.p1)!.rating;
     const r2 = profs!.find((p: any) => p.id === m.p2)!.rating;
@@ -85,7 +87,7 @@ Deno.serve(async (req: Request) => {
 
   // rejoin an active match if one exists (reconnects, page reloads)
   const { data: active } = await svc.from("matches")
-    .select("id, p1, p2, status, turn, next_die, last_move_at")
+    .select("id, p1, p2, status, turn, next_die, last_move_at, modifier")
     .eq("status", "active").or(`p1.eq.${uid},p2.eq.${uid}`).limit(1).maybeSingle();
   if (active && !(await forfeitStalledBotMatch(active))) {
     return json({ status: "matched", rejoined: true, match: active,
@@ -98,9 +100,11 @@ Deno.serve(async (req: Request) => {
 
   const startMatch = async (p1: string, p2: string) => {
     const seed = newSeed();
+    // the wheel spins server-side: the modifier is a deterministic draw from
+    // the seed, so replay validation and both clients' wheels agree
     const { data: match, error } = await svc.from("matches")
-      .insert({ p1, p2, next_die: diceStream(seed)() })
-      .select("id, p1, p2, status, turn, next_die, last_move_at").single();
+      .insert({ p1, p2, next_die: diceStream(seed)(), modifier: pickMode(seed).id })
+      .select("id, p1, p2, status, turn, next_die, last_move_at, modifier").single();
     if (error || !match) return null;
     const { error: seedErr } = await svc.from("match_seeds").insert({ match_id: match.id, seed });
     if (seedErr) { await svc.from("matches").delete().eq("id", match.id); return null; }

@@ -3,9 +3,10 @@
 // (Bots reply inside pvp-move, so claims only ever hit absent humans.)
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { AI, ME, boardTotal, type Player } from "./core/rules.ts";
+import { AI, ME, boardTotalMode, type Player } from "./core/rules.ts";
 import { rebuild } from "./core/match.ts";
 import { eloDelta, type MatchScore } from "./core/elo.ts";
+import { modeById } from "./core/modes.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -15,7 +16,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...CORS } });
 
 const STALL_MS = 60 * 1000;
-const MATCH_COLS = "id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at";
+const MATCH_COLS = "id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at, modifier";
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
@@ -42,12 +43,13 @@ Deno.serve(async (req: Request) => {
     return json({ error: "not-stalled-yet" }, 425);
   }
 
+  const MODE = modeById(match.modifier).mode;
   const { data: moves } = await svc.from("match_moves").select("idx, who, col").eq("match_id", match.id);
   const { data: seedRow } = await svc.from("match_seeds").select("seed").eq("match_id", match.id).single();
-  const s = seedRow && rebuild(seedRow.seed, moves ?? []);
+  const s = seedRow && rebuild(seedRow.seed, moves ?? [], MODE);
   if (!s) return json({ error: "corrupt-state" }, 500);
 
-  const p1Score = boardTotal(s.st[ME]), p2Score = boardTotal(s.st[AI]);
+  const p1Score = boardTotalMode(s.st[ME], MODE), p2Score = boardTotalMode(s.st[AI], MODE);
   const p1Result: MatchScore = myIdx === ME ? 1 : 0;
   const { data: profs } = await svc.from("profiles").select("id, rating").in("id", [match.p1, match.p2]);
   const r1 = profs!.find((p: any) => p.id === match.p1)!.rating;
