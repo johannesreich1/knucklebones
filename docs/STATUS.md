@@ -117,10 +117,21 @@ Capacitor wrappers for iOS + Android, Sign in with Apple (required if any
 other OAuth is offered), in-app account deletion (already implemented
 server-side via `account-delete`), privacy policy for both stores.
 
-### 4. Optional polish (unblocked, unscheduled)
+### 4. Done in the 2026-08-17 polish pass
 
-- Minification is still off in all build targets (readable output was the
-  priority during the port).
-- Design cards 10/11/40 predate the shared home CSS and could slim down.
-- `supabase/DESIGN.md` has open product questions that are now partially
-  superseded by the ranked pivot — could use a consolidation pass.
+- Minification ON in every build target (single file 826→285 KB, online
+  chunk 735→220 KB). Fragment sanity needles reworked to survive it.
+- Design cards 10/11/40 now ride the shared HOME CSS; DESIGN.md questions
+  answered in place.
+- PWA install experience: footer link + Chrome prompt + iOS explainer.
+- **Leaving loses, vs bots too** (user-reported): pvp-join v3 forfeits an
+  abandoned bot match lazily at next matchmaking contact — same 60s rule
+  a human opponent enforces via pvp-claim. Verified live.
+- **10s online turn clock** (user request): visible both sides, reuses the
+  practice timer machinery (explicit-seconds mode); my expiry auto-places
+  a random legal column, opponent expiry shows "waiting" (60s forfeit is
+  the absence backstop). Beware the `secs` shadowing TDZ that bit here.
+- **Optimistic move animation** (user-reported delay): the die animates in
+  parallel with the pvp-move request; log slot claimed up front; server
+  rejection falls back to full resync. e2e-pvp-ui.mjs updated for the
+  online-first flow (sign-in deep-links straight into the queue).

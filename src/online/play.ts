@@ -3,8 +3,10 @@
 // authoritative state — every die comes from the server, every move goes
 // through pvp-move, and the die-carrying move log lets us rebuild the board
 // after any missed realtime event.
-import { AI, ME, emptyBoard, applyMove, boardTotal, type Player } from '../core/rules.ts';
+import { AI, ME, emptyBoard, applyMove, boardTotal, legalCols, type Player } from '../core/rules.ts';
+import { ONLINE_TURN_SECS } from '../config.ts';
 import { S } from '../state.ts';
+import { startTimer, stopTimer } from '../flow/timer.ts';
 import { $, show, hide, sideKey } from '../ui/dom.ts';
 import { Sfx } from '../ui/audio.ts';
 import { setStageDie } from '../ui/die.ts';
@@ -90,30 +92,48 @@ function refreshTurnUI(): void {
   setActivePlate();
   clearHints();
   if (mine) showHints();
+  // The 10s turn clock, both sides. Mine auto-places at zero (an honest
+  // client never stalls); theirs just downgrades the status to "waiting" —
+  // the 60s watchdog/forfeit handles an opponent who is truly gone.
+  startTimer(mine ? autoPlace : () => { if (O && !O.done) setStatus('Waiting for ' + oppName(), S.turn, true); },
+    ONLINE_TURN_SECS);
 }
 
-/* my move: server first, then the same juice local play has */
+function autoPlace(): void {
+  if (!O || O.done || S.busy || S.turn !== O.you) return;
+  const lg = legalCols(S.boards[O.you]);
+  if (lg.length) void onlinePlace(O.you, lg[(Math.random() * lg.length) | 0]);
+}
+
+/* my move: animate IMMEDIATELY, in parallel with the server request — the die
+   and column are both known at tap time, so the round-trip must never be felt.
+   The rare server rejection falls back to a full log resync, which also
+   reverts the optimistic board. */
 async function onlinePlace(who: Player, col: number): Promise<void> {
   if (!O || O.done || S.busy || who !== O.you || S.turn !== O.you) return;
   const die = O.pendingDie;
   if (!die) return;
+  stopTimer();
   S.busy = true; S.phase = 'anim';
   clearHints();
   // the gate goes up BEFORE the request: the realtime echo of our own move can
-  // arrive during the round-trip, and sync must not rebuild around it
+  // arrive during the round-trip, and sync must not rebuild around it. Our
+  // move's log slot is claimed up front too — it is our turn, so no other
+  // move can take idx O.applied.
   O.animating = true;
-  const r = await move(O.matchId, col);
+  O.applied += 1;
+  const [r] = await Promise.all([move(O.matchId, col), animateMove(O.you, col, die)]);
   if (!O) return;
   if (r.status !== 200 || !r.data?.match) {
+    O.applied -= 1;              // un-claim; sync(true) resets it absolutely anyway
     O.animating = false;
     await sync(true);            // out of step — the log is the truth
     return;
   }
   const bot = r.data.bot_move;
-  O.applied += bot ? 2 : 1;      // committed server-side, counted before animating
+  if (bot) O.applied += 1;       // the bot's reply is committed server-side too
   O.lastMoveAt = Date.now();
   try {
-    await animateMove(O.you, col, r.data.your_die ?? die);
     if (bot) {
       await pause(450);          // a beat before the "opponent" answers
       setStageDie(bot.die, (1 - O.you) as Player);
@@ -207,6 +227,7 @@ async function watchdog(): Promise<void> {
 function finishUI(m: MatchRow): void {
   if (!O || O.done) return;
   O.done = true;
+  stopTimer();
   void (async () => {
     if (!O) return;
     const { data: rows } = await supa().from('match_moves')
@@ -234,6 +255,7 @@ function finishUI(m: MatchRow): void {
 
 export function teardown(): void {
   if (!O) return;
+  stopTimer();
   O.channel?.unsubscribe();
   if (O.tick) clearInterval(O.tick);
   setPlaceHandler(null as any);

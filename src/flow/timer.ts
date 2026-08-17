@@ -15,21 +15,24 @@ export function stopTimer(){
   const w=$('#timerWrap');
   if(w){ w.classList.remove('on','warn'); $('#timerNum').textContent=''; }
 }
-export function startTimer(onExpire){
+export function startTimer(onExpire,secs){
   stopTimer();
-  if(S.mode!=='duo' || !S.timer || S.phase!=='choose') return;
-  const gen=S.gen, total=S.timer*1000, end=performance.now()+total;
+  // No explicit secs = local two-player, opted in via the practice setting.
+  // With secs (online) the CALLER owns the lifecycle: it runs for either
+  // side's turn (phase is 'anim' on the opponent's) and stops via stopTimer.
+  if(secs==null && (S.mode!=='duo' || !S.timer || S.phase!=='choose')) return;
+  const gen=S.gen, total=(secs??S.timer)*1000, end=performance.now()+total;
   const wrap=$('#timerWrap'), bar=$('#timerBar'), num=$('#timerNum');
   wrap.style.setProperty('--tcbase', colorOf(S.turn));   // clock wears the mover's colour
   wrap.classList.add('on');
   bar.style.width='100%';
   let warned=false;
   timerId=setInterval(()=>{
-    if(S.gen!==gen || S.phase!=='choose'){ stopTimer(); return; }
+    if(S.gen!==gen || (secs==null && S.phase!=='choose')){ stopTimer(); return; }
     const left=Math.max(0,end-performance.now());
     bar.style.width=(left/total*100)+'%';
-    const secs=Math.ceil(left/1000);
-    num.textContent = secs<=5 ? secs : '';
+    const secsLeft=Math.ceil(left/1000);       // display only — `secs` is the param
+    num.textContent = secsLeft<=5 ? secsLeft : '';
     if(left<=5000 && !warned){ warned=true; wrap.classList.add('warn'); }
     if(left<=0){ stopTimer(); onExpire(); }
   },100);

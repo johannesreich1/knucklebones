@@ -23,6 +23,11 @@ export const CLASSIC: BoardSpec = { cols: 3, rows: 3 };
    averages both derive from this. */
 export const DICE_FACES = 6;
 
+/* Online turn clock, seconds. Client-enforced pace: an honest client
+   auto-places when it expires; the server's 60s stall forfeit remains the
+   backstop for clients that vanish entirely (see pvp-claim / pvp-join). */
+export const ONLINE_TURN_SECS = 10;
+
 /* Supabase project — both values are public BY DESIGN (the publishable key is
    made to ship in clients; row security lives in RLS + Edge Functions).
    The online module lazy-loads; nothing here touches the offline boot path. */

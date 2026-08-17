@@ -23,11 +23,13 @@ try {
     await page.waitForSelector('#onAuth:not([hidden])', { timeout: 8000 });
     await page.fill('#onEmail', email); await page.fill('#onPass', pass);
     await page.tap('#btnSignIn');
-    await page.waitForSelector('#onMenu:not([hidden])', { timeout: 8000 });
+    // the home's PLAY ONLINE deep-links to 'play': sign-in drops straight
+    // into the queue — no menu stop, no extra tap
+    await page.waitForSelector('#onQueue:not([hidden])', { timeout: 8000 });
     return page;
   };
-  const A = await mk('e2e.pvp.alice@example.com', 'e2e-pvp-password-1!');
-  const B = await mk('e2e.pvp.bob@example.com', 'e2e-pvp-password-2!');
+  const A = await mk('e2e.pvp.alice@example.com', 'e2e-pvp-password-1!');  // A queues here
+  const B = await mk('e2e.pvp.bob@example.com', 'e2e-pvp-password-2!');    // B pairs on its first join
 
   const inMatch = p => p.evaluate(() => document.getElementById('rec')?.textContent === 'ONLINE'
     && !document.getElementById('ovOnline').classList.contains('on'));
@@ -38,9 +40,6 @@ try {
              over: document.getElementById('ovOnline').classList.contains('on') };
   });
 
-  await A.tap('#btnPlayOnline');
-  await A.waitForTimeout(3000);   // A must be server-side queued before B joins,
-  await B.tap('#btnPlayOnline');  // so B pairs on its FIRST poll (no bot races)
   const t0 = Date.now();
   while (Date.now() - t0 < 20000) {
     if (await inMatch(A) && await inMatch(B)) break;
