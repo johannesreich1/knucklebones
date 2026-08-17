@@ -80,6 +80,7 @@ function updateScores(who){
   const b=S.boards[who];
   const rowswitch=S.scoring===ROWSWITCH, rowmult=S.scoring===ROWMULT;
   document.documentElement.classList.toggle('rowmode',rowswitch||rowmult);
+  document.documentElement.classList.toggle('rowswitch',rowswitch);   // hides the idle column chips
   for(let c=0;c<SPEC.cols;c++){
     const sc=rowswitch ? b[c].reduce((a,v)=>a+v,0) : colScore(b[c]);
     const chip=chipEl(who,c);

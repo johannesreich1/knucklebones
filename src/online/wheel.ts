@@ -61,6 +61,6 @@ export async function spinWheel(spec: ModeSpec): Promise<void> {
   name.innerHTML = `${modeIcon(spec.id, 17)} ${spec.name}`;
   name.style.color = hue(i);
   $('#wheelBlurb').textContent = spec.blurb;
-  await pause(1700);
+  await pause(2600);               // linger — the result must be READABLE, not a flash
   hide('#ovWheel');
 }
