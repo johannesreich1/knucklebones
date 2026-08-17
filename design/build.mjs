@@ -108,4 +108,24 @@ ${flows}
   }
   console.log('built', f, `(${group} · ${name} × ${sizes.length})`);
 }
+/* The Design System pane renders what _ds_manifest.json lists — emit it here
+   so every sync carries a complete, correctly-ordered card index. */
+const rank = { sm: 0, md: 1, max: 2, tab: 3 };
+const cards = readdirSync(join(here, 'dist'))
+  .filter((f) => f.endsWith('.html'))
+  .map((f) => {
+    const first = readFileSync(join(here, 'dist', f), 'utf8').split('\n', 1)[0];
+    const a = (k) => first.match(new RegExp(k + '="([^"]*)"'))?.[1] ?? '';
+    const size = f.match(/--(sm|max|tab)\.html$/)?.[1] ?? 'md';
+    return { path: 'screens/' + f, group: a('group'), subtitle: a('subtitle'), name: a('name'),
+             _base: f.replace(/--(sm|max|tab)\.html$/, '.html'), _r: rank[size] };
+  })
+  .sort((x, y) => x._base.localeCompare(y._base) || x._r - y._r)
+  .map(({ _base, _r, ...card }) => card);
+writeFileSync(join(here, 'dist', '_ds_manifest.json'), JSON.stringify({
+  namespace: 'Knucklebones_e7cddf', components: [], startingPoints: [], cards,
+  templates: [], hasThumbnailHtml: false, globalCssPaths: [], tokens: [],
+  themes: [], fonts: [], brandFonts: [], source: 'spa',
+}, null, 2));
+console.log('manifest:', cards.length, 'cards');
 console.log('design cards ready in design/dist/');
