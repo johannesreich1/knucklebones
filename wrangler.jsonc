@@ -1,0 +1,8 @@
+// Cloudflare deploy config (static assets only, no worker code).
+// The dashboard git integration builds with `npm run build` and serves ./pwa.
+// Project name is infra-only — safe to keep while the game rename is pending.
+{
+  "name": "knucklebones",
+  "compatibility_date": "2026-08-01",
+  "assets": { "directory": "./pwa" }
+}
