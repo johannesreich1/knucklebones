@@ -38,15 +38,22 @@ async function finish(svc: SupabaseClient, match: any, s: MatchState, mode: Mode
   const r2 = profs!.find((p: any) => p.id === match.p2)!.rating;
   const d1 = eloDelta(r1, r2, p1Result);
   const d2 = eloDelta(r2, r1, (1 - p1Result) as MatchScore);
-  await svc.from("profiles").update({ rating: r1 + d1 }).eq("id", match.p1);
-  await svc.from("profiles").update({ rating: r2 + d2 }).eq("id", match.p2);
   const winner = p1Result === 1 ? match.p1 : p1Result === 0 ? match.p2 : null;
-  const { data: updated } = await svc.from("matches").update({
+  // claim the row FIRST (status guard): only the winner of this update pays
+  // Elo, so a racing finisher (claim / lazy forfeit) can never double-pay —
+  // an unguarded version of this once minted 17 phantom rating points
+  const { data: claimed } = await svc.from("matches").update({
     status, winner, p1_score: p1Score, p2_score: p2Score,
     p1_rating_delta: d1, p2_rating_delta: d2,
     next_die: null, finished_at: new Date().toISOString(), last_move_at: new Date().toISOString(),
-  }).eq("id", match.id).select(MATCH_COLS).single();
-  return updated;
+  }).eq("id", match.id).eq("status", "active").select(MATCH_COLS);
+  if (!claimed || claimed.length !== 1) {
+    const { data: cur } = await svc.from("matches").select(MATCH_COLS).eq("id", match.id).single();
+    return cur;   // someone else finished it — their numbers stand
+  }
+  await svc.from("profiles").update({ rating: r1 + d1 }).eq("id", match.p1);
+  await svc.from("profiles").update({ rating: r2 + d2 }).eq("id", match.p2);
+  return claimed[0];
 }
 
 Deno.serve(async (req: Request) => {

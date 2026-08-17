@@ -56,12 +56,18 @@ Deno.serve(async (req: Request) => {
   const r2 = profs!.find((p: any) => p.id === match.p2)!.rating;
   const d1 = eloDelta(r1, r2, p1Result);
   const d2 = eloDelta(r2, r1, (1 - p1Result) as MatchScore);
-  await svc.from("profiles").update({ rating: r1 + d1 }).eq("id", match.p1);
-  await svc.from("profiles").update({ rating: r2 + d2 }).eq("id", match.p2);
-  const { data: updated } = await svc.from("matches").update({
+  // claim the row FIRST (status guard) — mirrors pvp-move's finish: only the
+  // winner of this update pays Elo, so racing finishers never double-pay
+  const { data: claimed } = await svc.from("matches").update({
     status: "forfeit", winner: user.id, p1_score: p1Score, p2_score: p2Score,
     p1_rating_delta: d1, p2_rating_delta: d2,
     next_die: null, finished_at: new Date().toISOString(),
-  }).eq("id", match.id).select(MATCH_COLS).single();
-  return json({ match: updated });
+  }).eq("id", match.id).eq("status", "active").select(MATCH_COLS);
+  if (!claimed || claimed.length !== 1) {
+    const { data: cur } = await svc.from("matches").select(MATCH_COLS).eq("id", match.id).single();
+    return json({ match: cur });
+  }
+  await svc.from("profiles").update({ rating: r1 + d1 }).eq("id", match.p1);
+  await svc.from("profiles").update({ rating: r2 + d2 }).eq("id", match.p2);
+  return json({ match: claimed[0] });
 });

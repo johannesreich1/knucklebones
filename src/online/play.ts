@@ -12,6 +12,8 @@ import { startTimer, stopTimer } from '../flow/timer.ts';
 import { $, show, hide, sideKey, chipEl } from '../ui/dom.ts';
 import { Sfx } from '../ui/audio.ts';
 import { setStageDie } from '../ui/die.ts';
+import { floatPts } from '../ui/fx.ts';
+import { colorOf } from '../ui/identity.ts';
 import { buildBoards, renderAll, renderSide, clearHints, showHints, setStatus, setActivePlate } from '../ui/render.ts';
 import { fit } from '../ui/layout.ts';
 import { setPlaceHandler } from '../ui/input.ts';
@@ -93,7 +95,7 @@ function refreshTurnUI(): void {
   const mine = S.turn === O.you;
   S.phase = mine ? 'choose' : 'anim';
   S.busy = false;
-  if (O.pendingDie) setStageDie(O.pendingDie, S.turn);
+  if (O.pendingDie) revealDie(O.pendingDie, S.turn);
   setStatus(mine ? 'Your move' : oppName() + ' thinking', S.turn, !mine);
   setActivePlate();
   clearHints();
@@ -103,6 +105,26 @@ function refreshTurnUI(): void {
   // the 30s watchdog/forfeit handles an opponent who is truly gone.
   startTimer(mine ? autoPlace : () => { if (O && !O.done) setStatus('Waiting for ' + oppName(), S.turn, true); },
     ONLINE_TURN_SECS);
+}
+
+/* the little roll: spin the stage briefly, then pop the revealed die — the
+   same juice local play has. Purely cosmetic: a tap mid-spin works fine,
+   the authoritative die is O.pendingDie, not the pixels. Re-renders of the
+   SAME die (resyncs, watchdog refreshes) don't re-roll. */
+function revealDie(die: number, who: Player): void {
+  const stage = $('#dieStage') as HTMLElement;
+  const cur = stage.firstElementChild as HTMLElement | null;
+  const prev = cur ? +(cur.dataset.v ?? 0) : 0;
+  setStageDie(die, who);
+  if (prev === die) return;
+  const gen = S.gen;
+  stage.classList.add('rolling');
+  setTimeout(() => {
+    stage.classList.remove('rolling');
+    if (S.gen !== gen) return;
+    stage.classList.add('pop');
+    setTimeout(() => stage.classList.remove('pop'), 320);
+  }, 380);
 }
 
 function autoPlace(): void {
@@ -157,10 +179,15 @@ async function animateMove(who: Player, col: number, die: number): Promise<void>
   setStageDie(die, who);
   // defensive: never animate into an impossible slot — state stays authoritative
   if (S.boards[who][col].length < 3) await flyDie(who, col, die);
+  const before = boardTotalMode(S.boards[who], S.scoring);
   S.boards[who][col].push(die);
   Sfx.place();
   setStageDie(0);
   renderSide(who, true);
+  // the floating "+points" local play celebrates with — mode-aware, and gold
+  // whenever a match multiplied the drop beyond its face value
+  const gain = boardTotalMode(S.boards[who], S.scoring) - before;
+  floatPts(who, col, '+' + gain, gain > die ? 'var(--gold)' : colorOf(who));
   const foe = (1 - who) as Player;
   // COLUMN SHIELD: a full facing column is immune — flash the shield instead
   // of destroying, but only when the die would actually have hit something
