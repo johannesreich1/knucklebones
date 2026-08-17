@@ -256,6 +256,7 @@ export async function place(who,col){
 export function newGame(opts){
   const tutorial = !!(opts && opts.tutorial);
   S.gen++;
+  S.scoring=0;   // local play is always classic (an online teardown may lag by a watchdog tick)
   stopTimer();
   if(tutorial){
     // a real saved game (if any) is deliberately left alone — see saveGame

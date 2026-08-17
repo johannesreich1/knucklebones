@@ -1,7 +1,7 @@
 // The game's single mutable state object plus the vocabulary of legal values.
 // Everything that renders, saves or decides reads from here; identity vs
 // screen-half is the invariant to keep straight (see S.bottom).
-import { AI, ME, emptyBoard, type Board, type Player } from './core/rules.ts';
+import { AI, ME, emptyBoard, type Board, type Player, type Mode as RulesMode } from './core/rules.ts';
 
 export const DIFFS = ['easy', 'medium', 'hard'] as const;
 export const MODES = ['cpu', 'duo'] as const;
@@ -50,7 +50,11 @@ export const S = {
   starter: ME as Player,
   sound: true,
   busy: false,
-  gen: 0                 // bumped whenever a game is abandoned/restarted; async work checks it
+  gen: 0,                // bumped whenever a game is abandoned/restarted; async work checks it
+  /* the active scoring/destruction mode (core/rules Mode). ONLY online play
+     sets it (the ranked wheel); local play is always 0 = classic. Rendering
+     and destroy animations read it so boards/totals match the server. */
+  scoring: 0 as RulesMode
 };
 
 // re-export the identities for modules that get S anyway

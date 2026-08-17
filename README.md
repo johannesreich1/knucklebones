@@ -40,7 +40,14 @@ index.html           # page shell (static no-JS overlay lives here)
 `core/` may touch the DOM, timers or `Math.random` (the AI's tie-break jitter
 is the one deliberate exception, and it never affects replayed scores).
 
-## Online play, in one paragraph
+## Online play, in one paragraph (and a wheel)
+
+Every ranked match starts with a **mode wheel**: classic 50%, or one of the
+additions — rows multiply instead of columns, row matches score on top, or
+full columns become indestructible. The wheel is aimed theater: the mode is
+a deterministic server-side draw from the match seed (`core/modes.ts`),
+stored on the match, and enforced end-to-end (replay validation, scoring,
+Elo, and the bots' search all run under it). Practice is always classic.
 
 Ranked = online PvP only; practice never touches ratings. The server is the
 single authority: clients submit only `{match_id, col}`, the dice seed lives

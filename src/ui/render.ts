@@ -2,7 +2,7 @@
 // strictness ratchet. New code goes in typed modules, not here.
 // Painting the table: boards, dice, scores, plates, status line and the
 // tutorial-only strategy hints. State in, DOM out -- game logic stays out.
-import { AI, ME, SPEC, colScore, boardTotal, counts, countOf } from '../core/rules.ts';
+import { AI, ME, SPEC, ROWSWITCH, colScore, boardTotalMode, counts, countOf } from '../core/rules.ts';
 import { S, DIFF_LABEL } from '../state.ts';
 import { $, sideKey, slotEl, slotIdx, colEl, chipEl } from './dom.ts';
 import { nameOf } from './identity.ts';
@@ -46,7 +46,8 @@ export function renderSide(who,animate){
         slot.appendChild(d);
         if(animate){ d.classList.add('settle'); }
       }
-      const k=cm[v]||1;
+      // ROW SWITCH: columns don't multiply, so the column-match glow would lie
+      const k=S.scoring===ROWSWITCH ? 1 : (cm[v]||1);
       d.classList.toggle('m2',k===2);
       d.classList.toggle('m3',k===3);
     }
@@ -55,13 +56,14 @@ export function renderSide(who,animate){
 }
 function updateScores(who){
   const b=S.boards[who];
+  const rowswitch=S.scoring===ROWSWITCH;   // columns don't multiply: chips show plain sums
   for(let c=0;c<SPEC.cols;c++){
-    const sc=colScore(b[c]);
+    const sc=rowswitch ? b[c].reduce((a,v)=>a+v,0) : colScore(b[c]);
     const chip=chipEl(who,c);
     chip.querySelector('.cs').textContent=sc;
     chip.classList.toggle('has',sc>0);
     const cm=counts(b[c]); let mx='';
-    for(const v in cm){ if(cm[v]===3) mx='×3'; else if(cm[v]===2 && mx!=='×3') mx='×2'; }
+    if(!rowswitch) for(const v in cm){ if(cm[v]===3) mx='×3'; else if(cm[v]===2 && mx!=='×3') mx='×2'; }
     chip.querySelector('.mx').textContent=mx;
     // and describe it for screen readers, reusing the score we just computed
     const free=SPEC.rows-b[c].length;
@@ -69,7 +71,7 @@ function updateScores(who){
       nameOf(who)+' column '+(c+1)+', score '+sc+', '+
       (free? free+' space'+(free>1?'s':'')+' free' : 'full'));
   }
-  const tot=boardTotal(b);
+  const tot=boardTotalMode(b,S.scoring);
   const k=sideKey(who)==='bot'?'Bot':'Top';
   const el = $('#tot'+k), plate = $('#plate'+k);
   if(el.textContent!==String(tot)){

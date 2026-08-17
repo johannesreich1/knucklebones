@@ -154,8 +154,9 @@ export function boot(embed){
   initInstall();
 
   // Offline support. Only registers from http(s); opening the file directly
-  // still plays, it just can't install.
-  if(!isEmbed() && 'serviceWorker' in navigator && location.protocol.indexOf('http')===0){
+  // still plays, it just can't install. NEVER on the Vite dev server — a
+  // registered SW intercepts /src/ module fetches and serves stale code.
+  if(!isEmbed() && 'serviceWorker' in navigator && location.protocol.indexOf('http')===0 && !import.meta.env.DEV){
     window.addEventListener('load',()=>{
       navigator.serviceWorker.register('sw.js').then(reg=>{
         // nudge iOS to look for a fresh version whenever the app comes back

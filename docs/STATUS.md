@@ -56,6 +56,26 @@ backend during development.
 9. **Web deploy** — Cloudflare Pages via git integration (`npm run build` →
    `pwa/`, Node pinned by `.nvmrc`). Hosting decision: resolved.
 
+### 5. The mode wheel (2026-08-17 evening, user feature request)
+
+Ranked matches spin a wheel before starting: **CLASSIC** (50%), **ROW
+SWITCH** (rows multiply instead of columns), **ROW MULTIPLY** (row matches
+add on top), **COLUMN SHIELD** (full columns immune) — each addition ~16.7%.
+Four equal segments, weighted spin; the pick is a server-side deterministic
+draw from the match seed (`core/modes.ts pickMode`), stored in
+`matches.modifier`, and every server consequence (replay, scoring, Elo, bot
+search) runs under it. The client wheel (`src/online/wheel.ts`) is aimed
+theater; boards, chips, totals and destroy animations follow `S.scoring`.
+Practice stays pure classic. Adding a mode = one registry entry + rules/AI
+branches + its gate cases.
+
+**Rollout lesson (burned):** the mode-aware server was deployed while the
+old client was still live — it dealt modded matches the client rendered as
+classic ("the AI always wins even though I have more points"). Hotfixed by
+pinning the deployed pvp-join to `modifier: 'classic'` until the wheel
+client ships; re-enable `pickMode(seed).id` AFTER the client deploy.
+Protocol-changing server work waits for its client, always.
+
 ## Standing rules (learned the hard way)
 
 - **Never lower the game-finish loop budgets** in test6/test8/test10

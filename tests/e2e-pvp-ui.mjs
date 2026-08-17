@@ -31,7 +31,7 @@ try {
   const A = await mk('e2e.pvp.alice@example.com', 'e2e-pvp-password-1!');  // A queues here
   const B = await mk('e2e.pvp.bob@example.com', 'e2e-pvp-password-2!');    // B pairs on its first join
 
-  const inMatch = p => p.evaluate(() => document.getElementById('rec')?.textContent === 'ONLINE'
+  const inMatch = p => p.evaluate(() => (document.getElementById('rec')?.textContent ?? '').startsWith('ONLINE')
     && !document.getElementById('ovOnline').classList.contains('on'));
   const snap = p => p.evaluate(() => {
     const S = window.__kb.S;

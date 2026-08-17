@@ -3,7 +3,8 @@
 // authoritative state — every die comes from the server, every move goes
 // through pvp-move, and the die-carrying move log lets us rebuild the board
 // after any missed realtime event.
-import { AI, ME, emptyBoard, applyMove, boardTotal, legalCols, type Player } from '../core/rules.ts';
+import { AI, ME, SPEC, CLASSIC, COLSHIELD, emptyBoard, applyMove, boardTotalMode, legalCols, type Player } from '../core/rules.ts';
+import { modeById } from '../core/modes.ts';
 import { ONLINE_TURN_SECS } from '../config.ts';
 import { S } from '../state.ts';
 import { startTimer, stopTimer } from '../flow/timer.ts';
@@ -61,6 +62,9 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
     channel: null, tick: null, lastMoveAt: Date.parse(res.match.last_move_at), busySync: false, animating: false, pendingRow: null, done: false,
   };
 
+  const spec = modeById(res.match.modifier);
+  S.scoring = spec.mode;           // rendering/destroy animations follow the server's mode
+
   hide('#ovOnline'); hide('#ovStart'); hide('#ovEnd'); hide('#ovRules'); hide('#ovPass'); hide('#ovPractice');
   document.documentElement.classList.remove('face', 'tut', 'p2turn');
   $('#sideBot').dataset.owner = String(O.you);
@@ -69,7 +73,7 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   $('#nameTop').textContent = oppName();
   ($('#tagTop') as HTMLElement).hidden = true;
   ($('#tagBot') as HTMLElement).hidden = true;
-  $('#rec').textContent = 'ONLINE';
+  $('#rec').textContent = spec.mode === CLASSIC ? 'ONLINE' : 'ONLINE · ' + spec.name;
   fit();
   buildBoards();
   setPlaceHandler(onlinePlace);
@@ -155,7 +159,10 @@ async function animateMove(who: Player, col: number, die: number): Promise<void>
   Sfx.place();
   setStageDie(0);
   renderSide(who, true);
-  await destroyAt((1 - who) as Player, col, die);
+  const foe = (1 - who) as Player;
+  // COLUMN SHIELD: a full facing column is immune — nothing to destroy
+  if (S.scoring === COLSHIELD && S.boards[foe][col].length >= SPEC.rows) return;
+  await destroyAt(foe, col, die);
 }
 
 function isDone(m: MatchRow): boolean { return m.status !== 'active'; }
@@ -195,12 +202,12 @@ async function sync(fullRedraw: boolean): Promise<void> {
       finally { if (O) O.animating = false; }
     } else if (fresh.length || fullRedraw) {
       S.boards = [emptyBoard(), emptyBoard()];
-      for (const r of rows) applyMove(S.boards as any, r.who as Player, r.col, r.die);
+      for (const r of rows) applyMove(S.boards as any, r.who as Player, r.col, r.die, S.scoring);
       O.applied = rows.length;
       renderAll(false);
     }
     const { data: m } = await supa().from('matches')
-      .select('id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at')
+      .select('id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at, modifier')
       .eq('id', O.matchId).maybeSingle();
     if (O && m && !O.pendingRow) O.pendingRow = m as MatchRow;
   } finally { if (O) O.busySync = false; }
@@ -234,12 +241,12 @@ function finishUI(m: MatchRow): void {
       .select('idx, who, col, die').eq('match_id', O.matchId).order('idx');
     if (!rows) return;
     S.boards = [emptyBoard(), emptyBoard()];
-    for (const r of rows) applyMove(S.boards as any, r.who as Player, r.col, r.die);
+    for (const r of rows) applyMove(S.boards as any, r.who as Player, r.col, r.die, S.scoring);
     renderAll(false);
   })();
   const meP1 = O.you === ME;
-  const my = (meP1 ? m.p1_score : m.p2_score) ?? boardTotal(S.boards[O.you]);
-  const their = (meP1 ? m.p2_score : m.p1_score) ?? boardTotal(S.boards[(1 - O.you) as Player]);
+  const my = (meP1 ? m.p1_score : m.p2_score) ?? boardTotalMode(S.boards[O.you], S.scoring);
+  const their = (meP1 ? m.p2_score : m.p1_score) ?? boardTotalMode(S.boards[(1 - O.you) as Player], S.scoring);
   const delta = (meP1 ? (m as any).p1_rating_delta : (m as any).p2_rating_delta) as number | null;
   const won = m.winner !== null && ((meP1 && m.winner === m.p1) || (!meP1 && m.winner === m.p2));
   const head = m.status === 'forfeit'
@@ -256,6 +263,7 @@ function finishUI(m: MatchRow): void {
 export function teardown(): void {
   if (!O) return;
   stopTimer();
+  S.scoring = CLASSIC;             // local play is always classic
   O.channel?.unsubscribe();
   if (O.tick) clearInterval(O.tick);
   setPlaceHandler(null as any);

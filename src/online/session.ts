@@ -15,6 +15,7 @@ export interface MatchRow {
   id: string; p1: string; p2: string; status: 'active' | 'done' | 'forfeit';
   turn: 0 | 1; winner: string | null; p1_score: number | null; p2_score: number | null;
   next_die: number | null; last_move_at: string;
+  modifier: string;   // the wheel's pick (core/modes.ts id) — server-chosen from the seed
 }
 
 /* ---- auth ---- */
