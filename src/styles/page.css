@@ -5,9 +5,11 @@ body{
   background:var(--bg);color:var(--txt);
   font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   -webkit-font-smoothing:antialiased;
-  /* pan-x pan-y (NOT manipulation): manipulation still permits pinch-zoom,
-     and iOS ignores user-scalable=no — this is what actually blocks the pinch */
-  touch-action:pan-x pan-y;overscroll-behavior:none;
+  /* manipulation, NOT pan-x pan-y: Safari treats pan-x/pan-y as unsupported
+     and falls back to auto — which RE-ENABLES double-tap zoom. manipulation
+     kills double-tap everywhere; pinch is blocked in boot.ts (gesture events
+     + multi-finger touchmove), since iOS ignores user-scalable=no. */
+  touch-action:manipulation;overscroll-behavior:none;
   -webkit-user-select:none;user-select:none;
   overflow:hidden;font-variant-numeric:tabular-nums;
 }

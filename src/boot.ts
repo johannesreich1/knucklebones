@@ -151,10 +151,13 @@ export function boot(embed){
   if(isEmbed()) kbroot().addEventListener('contextmenu',e=>e.preventDefault());
   else {
     // iOS Safari ignores user-scalable=no: kill pinch at the gesture AND touch
-    // layers. Multi-finger only — single-finger scrolling (leaderboard) lives.
+    // layers, and double-tap at the dblclick layer (CSS manipulation is the
+    // first line; this is the belt). Multi-finger preventDefault only —
+    // single-finger scrolling (leaderboard) lives.
     document.addEventListener('gesturestart',e=>e.preventDefault());
     document.addEventListener('gesturechange',e=>e.preventDefault());
     document.addEventListener('touchmove',e=>{ if(e.touches.length>1) e.preventDefault(); },{passive:false});
+    document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
   }
 
   initInstall();
