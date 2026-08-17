@@ -2,7 +2,7 @@
 // strictness ratchet. New code goes in typed modules, not here.
 // Painting the table: boards, dice, scores, plates, status line and the
 // tutorial-only strategy hints. State in, DOM out -- game logic stays out.
-import { AI, ME, SPEC, ROWSWITCH, colScore, boardTotalMode, counts, countOf } from '../core/rules.ts';
+import { AI, ME, SPEC, ROWSWITCH, COLSHIELD, colScore, boardTotalMode, counts, countOf } from '../core/rules.ts';
 import { S, DIFF_LABEL } from '../state.ts';
 import { $, sideKey, slotEl, slotIdx, colEl, chipEl } from './dom.ts';
 import { nameOf } from './identity.ts';
@@ -25,7 +25,7 @@ export function buildBoards(){
       b.appendChild(col);
       const chip=document.createElement('div');
       chip.className='chip';
-      chip.innerHTML='<span class="cs">0</span><span class="mx"></span><span class="dl"></span>';
+      chip.innerHTML='<span class="cs">0</span><span class="mx"></span><span class="sh"></span><span class="dl"></span>';
       cs.appendChild(chip);
     }
   }
@@ -65,6 +65,12 @@ function updateScores(who){
     const cm=counts(b[c]); let mx='';
     if(!rowswitch) for(const v in cm){ if(cm[v]===3) mx='×3'; else if(cm[v]===2 && mx!=='×3') mx='×2'; }
     chip.querySelector('.mx').textContent=mx;
+    // COLUMN SHIELD: a full column wears its shield (pops in the first time)
+    const sh=chip.querySelector('.sh');
+    const shielded=S.scoring===COLSHIELD && b[c].length>=SPEC.rows;
+    if(shielded && !sh.textContent){ sh.textContent='🛡'; sh.classList.add('pop'); }
+    else if(!shielded && sh.textContent){ sh.textContent=''; sh.classList.remove('pop'); }
+    colEl(who,c).classList.toggle('shielded',shielded);
     // and describe it for screen readers, reusing the score we just computed
     const free=SPEC.rows-b[c].length;
     colEl(who,c).setAttribute('aria-label',

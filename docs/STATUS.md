@@ -61,6 +61,10 @@ backend during development.
 Ranked matches spin a wheel before starting: **CLASSIC** (50%), **ROW
 SWITCH** (rows multiply instead of columns), **ROW MULTIPLY** (row matches
 add on top), **COLUMN SHIELD** (full columns immune) — each addition ~16.7%.
+Every mode carries an icon (registry field); non-classic matches show
+`ONLINE · <icon> <name>`, and shielded full columns wear a popping 🛡 with a
+golden glow (blocked hits flash it). Stall forfeit tightened to 30s
+(user request; client claims at 35s).
 Four equal segments, weighted spin; the pick is a server-side deterministic
 draw from the match seed (`core/modes.ts pickMode`), stored in
 `matches.modifier`, and every server consequence (replay, scoring, Elo, bot

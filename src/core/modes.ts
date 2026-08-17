@@ -11,15 +11,16 @@ export interface ModeSpec {
   mode: Mode;
   id: string;        // stored in matches.modifier — stable, never rename
   name: string;      // wheel label
+  icon: string;      // single glyph: wheel banner, match badge, board hints
   blurb: string;     // one line under the landed segment
   weight: number;
 }
 
 export const MODES: ModeSpec[] = [
-  { mode: CLASSIC, id: 'classic', name: 'CLASSIC', blurb: 'The pure duel. Columns multiply.', weight: 3 },
-  { mode: ROWSWITCH, id: 'rowswitch', name: 'ROW SWITCH', blurb: 'Rows multiply — columns don’t.', weight: 1 },
-  { mode: ROWMULT, id: 'rowmult', name: 'ROW MULTIPLY', blurb: 'Row matches score on top of columns.', weight: 1 },
-  { mode: COLSHIELD, id: 'colshield', name: 'COLUMN SHIELD', blurb: 'A full column cannot be destroyed.', weight: 1 },
+  { mode: CLASSIC, id: 'classic', name: 'CLASSIC', icon: '◆', blurb: 'The pure duel. Columns multiply.', weight: 3 },
+  { mode: ROWSWITCH, id: 'rowswitch', name: 'ROW SWITCH', icon: '☰', blurb: 'Rows multiply — columns don’t.', weight: 1 },
+  { mode: ROWMULT, id: 'rowmult', name: 'ROW MULTIPLY', icon: '✚', blurb: 'Row matches score on top of columns.', weight: 1 },
+  { mode: COLSHIELD, id: 'colshield', name: 'COLUMN SHIELD', icon: '🛡', blurb: 'A full column cannot be destroyed.', weight: 1 },
 ];
 
 export function modeById(id: string | null | undefined): ModeSpec {

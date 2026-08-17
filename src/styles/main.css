@@ -92,6 +92,10 @@
   border-radius:12px;background:linear-gradient(90deg,color-mix(in srgb,var(--c) 22%,transparent),transparent 70%);
   animation:breathe 2.2s ease-in-out infinite}
 @keyframes breathe{0%,100%{opacity:.45}50%{opacity:1}}
+/* the bottom half is always whoever holds the phone — a your-turn pill behind
+   your own name is redundant there (status, clock and hints already say it);
+   only the TOP plate signals the opponent's turn with the glow */
+#plateBot.active::before{content:none}
 
 /* board */
 .boardwrap{flex:0 0 auto;display:flex;justify-content:center}

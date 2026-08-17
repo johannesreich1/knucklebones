@@ -8,7 +8,7 @@ import { modeById } from '../core/modes.ts';
 import { ONLINE_TURN_SECS } from '../config.ts';
 import { S } from '../state.ts';
 import { startTimer, stopTimer } from '../flow/timer.ts';
-import { $, show, hide, sideKey } from '../ui/dom.ts';
+import { $, show, hide, sideKey, chipEl } from '../ui/dom.ts';
 import { Sfx } from '../ui/audio.ts';
 import { setStageDie } from '../ui/die.ts';
 import { buildBoards, renderAll, renderSide, clearHints, showHints, setStatus, setActivePlate } from '../ui/render.ts';
@@ -73,7 +73,7 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   $('#nameTop').textContent = oppName();
   ($('#tagTop') as HTMLElement).hidden = true;
   ($('#tagBot') as HTMLElement).hidden = true;
-  $('#rec').textContent = spec.mode === CLASSIC ? 'ONLINE' : 'ONLINE · ' + spec.name;
+  $('#rec').textContent = spec.mode === CLASSIC ? 'ONLINE' : `ONLINE · ${spec.icon} ${spec.name}`;
   fit();
   buildBoards();
   setPlaceHandler(onlinePlace);
@@ -98,7 +98,7 @@ function refreshTurnUI(): void {
   if (mine) showHints();
   // The 10s turn clock, both sides. Mine auto-places at zero (an honest
   // client never stalls); theirs just downgrades the status to "waiting" —
-  // the 60s watchdog/forfeit handles an opponent who is truly gone.
+  // the 30s watchdog/forfeit handles an opponent who is truly gone.
   startTimer(mine ? autoPlace : () => { if (O && !O.done) setStatus('Waiting for ' + oppName(), S.turn, true); },
     ONLINE_TURN_SECS);
 }
@@ -160,8 +160,15 @@ async function animateMove(who: Player, col: number, die: number): Promise<void>
   setStageDie(0);
   renderSide(who, true);
   const foe = (1 - who) as Player;
-  // COLUMN SHIELD: a full facing column is immune — nothing to destroy
-  if (S.scoring === COLSHIELD && S.boards[foe][col].length >= SPEC.rows) return;
+  // COLUMN SHIELD: a full facing column is immune — flash the shield instead
+  // of destroying, but only when the die would actually have hit something
+  if (S.scoring === COLSHIELD && S.boards[foe][col].length >= SPEC.rows) {
+    if (S.boards[foe][col].includes(die)) {
+      const sh = chipEl(foe, col)?.querySelector('.sh') as HTMLElement | null;
+      if (sh) { sh.classList.remove('block'); void sh.offsetWidth; sh.classList.add('block'); }
+    }
+    return;
+  }
   await destroyAt(foe, col, die);
 }
 
@@ -223,7 +230,7 @@ async function watchdog(): Promise<void> {
   if (!O) return;
   if (S.gen !== O.gen) return teardown();          // a local game started over us
   if (O.done) return;
-  if (S.turn !== O.you && Date.now() - O.lastMoveAt > 65_000) {
+  if (S.turn !== O.you && Date.now() - O.lastMoveAt > 35_000) {
     const r = await claim(O.matchId);
     if (r.status === 200 && r.data?.match) applyMatchRow(r.data.match);
   } else if (S.turn !== O.you) {

@@ -24,7 +24,7 @@ export const CLASSIC: BoardSpec = { cols: 3, rows: 3 };
 export const DICE_FACES = 6;
 
 /* Online turn clock, seconds. Client-enforced pace: an honest client
-   auto-places when it expires; the server's 60s stall forfeit remains the
+   auto-places when it expires; the server's 30s stall forfeit remains the
    backstop for clients that vanish entirely (see pvp-claim / pvp-join). */
 export const ONLINE_TURN_SECS = 10;
 

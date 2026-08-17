@@ -57,7 +57,7 @@ export async function spinWheel(spec: ModeSpec): Promise<void> {
   disc.style.transform = `rotate(${target}deg)`;
   await pause(3450);
   Sfx.place();
-  name.textContent = spec.name;
+  name.textContent = `${spec.icon} ${spec.name}`;
   name.style.color = hue(i);
   $('#wheelBlurb').textContent = spec.blurb;
   await pause(1700);

@@ -15,7 +15,7 @@ const CORS = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...CORS } });
 
-const STALL_MS = 60 * 1000;
+const STALL_MS = 30 * 1000;
 const MATCH_COLS = "id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at, modifier";
 
 Deno.serve(async (req: Request) => {

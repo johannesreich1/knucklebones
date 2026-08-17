@@ -55,7 +55,10 @@ check(appleIcon.status === 200, 'apple-touch-icon missing', appleIcon);
 
 // ---- 3. stats persist across a reload ----
 async function playToEnd(p) {
-  for (let i = 0; i < 400; i++) {
+  // Budget is generous on purpose: random destruction-heavy endgames run long
+  // and loaded machines/CI run slow. 400 flaked here just like it did in
+  // test6/test8/test10 — never "optimize" these down.
+  for (let i = 0; i < 1200; i++) {
     const s = await p.evaluate(() => ({ ph: window.__kb.S.phase, t: window.__kb.S.turn, b: window.__kb.S.boards[1] }));
     if (s.ph === 'over') return true;
     if (s.ph === 'choose' && s.t === 1) {

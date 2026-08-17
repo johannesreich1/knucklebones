@@ -20,7 +20,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...CORS } });
 
 const QUEUE_STALE_MS = 2 * 60 * 1000;
-const STALL_MS = 60 * 1000;          // same threshold pvp-claim enforces between humans
+const STALL_MS = 30 * 1000;          // same threshold pvp-claim enforces between humans
 
 const newSeed = () =>
   [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, "0")).join("");
