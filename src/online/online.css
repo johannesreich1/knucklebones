@@ -1,6 +1,6 @@
 /* Online screens — same design language as the game's overlays. Loaded only
    with the lazy online chunk. */
-#ovOnline .panel{width:100%;max-width:340px;display:flex;flex-direction:column;gap:16px;margin:auto 0}
+#ovOnline .panel{width:100%;max-width:var(--w-col);display:flex;flex-direction:column;gap:16px;margin:auto 0}
 #ovOnline input{padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
   background:rgba(255,255,255,.05);color:var(--txt);font-size:14px;font-family:inherit;outline:none}
 #ovOnline input:focus-visible{outline:2px solid var(--cy);outline-offset:1px}
@@ -15,12 +15,15 @@
    is a centred form column, so the treatment hangs off the panel, not the
    overlay. ---- */
 #ovOnline.listview{overflow:hidden;padding-left:0;padding-right:0;padding-bottom:0}
-#ovOnline.listview .shead{max-width:none;padding:0 14px}
+#ovOnline.listview .shead{padding:0 var(--pad-x)}
+/* the SCROLLER is full bleed so its bar rides the screen edge; the ROWS carry
+   the column, exactly like the cards inside a scrollview's body */
 #ovOnline.listview #onBoard{max-width:none;width:100%;margin:6px 0 0;gap:0;
   flex:1 1 auto;min-height:0}
-#ovOnline.listview #onBoard .lbl{flex:0 0 auto;padding:0 14px 10px}
+#ovOnline.listview #onBoard .lbl{flex:0 0 auto;padding:0 var(--pad-x) 10px}
 #ovOnline.listview .lb{max-height:none;flex:1 1 auto;min-height:0;overflow-y:auto;
-  padding:0 14px calc(env(safe-area-inset-bottom,0px) + 46px)}
+  padding:0 var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 46px)}
+#ovOnline.listview .lb > *{width:100%;max-width:var(--w-col);margin-inline:auto}
 #ovOnline .lb .row{display:flex;gap:10px;align-items:center;font-size:13px;padding:9px 12px;
   border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
 #ovOnline .lb .row .rank{color:var(--dim);min-width:22px;text-align:right;font-weight:800}
@@ -70,7 +73,7 @@
 #onResult{align-items:center;gap:18px;margin:0;flex:1;min-height:0;padding-top:2vh}
 #onResult .rline{margin-top:auto}
 #onResult #btnResultAgain{margin-top:auto}
-#onResult .btn{width:100%;max-width:300px;min-width:0}
+#onResult .btn{width:100%;max-width:var(--w-col);min-width:0}
 .rtitle{font-size:clamp(31px,9.5vw,40px);letter-spacing:.2em;font-weight:900;text-align:center;
   -webkit-background-clip:text;background-clip:text;color:transparent}
 .rtitle.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
@@ -81,7 +84,7 @@
   filter:drop-shadow(0 0 22px rgba(159,178,216,.35))}
 .rsub{font-size:11px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;
   margin-top:-8px;text-align:center}
-.rline{display:flex;align-items:center;gap:18px;font-weight:800;width:100%;max-width:320px}
+.rline{display:flex;align-items:center;gap:18px;font-weight:800;width:100%;max-width:var(--w-col)}
 /* equal halves so the VS sits dead centre whatever the nickname length */
 .rline .sc{flex:1;min-width:0}
 .rline .you{color:var(--cy);font-size:clamp(34px,11vw,46px);font-weight:900;text-shadow:0 0 14px rgba(40,232,255,.5)}

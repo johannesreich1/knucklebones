@@ -17,14 +17,21 @@ export function setPlaceHandler(h){ placeHandler = h || place; }
    Embedded webviews are inconsistent about synthesising `click` from a touch.
    Bind pointerdown / touchstart / click and de-duplicate, so a tap registers
    on whichever of the three the host actually delivers. */
+/* The ghost-click guard is GLOBAL, not per-element, and only a real pointer or
+   touch arms it. A tap acts on pointerdown; the synthetic click that trails it
+   arrives later and hits whatever is under the finger BY THEN — which is a
+   different element once the first handler has closed an overlay. The Settings
+   ✕ sits directly over the HUD gear that opens Settings, so closing on
+   pointerdown let the trailing click reopen the sheet instantly. A per-element
+   guard cannot see that: the second element was never tapped.
+   Hosts that deliver ONLY synthetic clicks never arm the guard, so their
+   fallback still works. */
+let lastNativeTap = 0;
 export function tap(el,fn){
-  let last=0;
-  const fire=e=>{ last=Date.now(); fn(e); };
-  if(window.PointerEvent) el.addEventListener('pointerdown',fire);
-  else if('ontouchstart' in window) el.addEventListener('touchstart',fire,{passive:true});
-  // click stays bound as a fallback for hosts that deliver only synthetic clicks;
-  // it is ignored when it is just the tail of a tap we already handled.
-  el.addEventListener('click',e=>{ if(Date.now()-last<600) return; fire(e); });
+  const fireNative=e=>{ lastNativeTap=Date.now(); fn(e); };
+  if(window.PointerEvent) el.addEventListener('pointerdown',fireNative);
+  else if('ontouchstart' in window) el.addEventListener('touchstart',fireNative,{passive:true});
+  el.addEventListener('click',e=>{ if(Date.now()-lastNativeTap<600) return; fn(e); });
 }
 /* Placement commits on RELEASE over the same column it started on, so a
    mis-tap can be cancelled by sliding a finger off before lifting. Touch

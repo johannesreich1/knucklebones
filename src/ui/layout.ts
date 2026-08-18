@@ -8,6 +8,14 @@ import { $ } from './dom.ts';
 import { isEmbed, kbroot } from './embed.ts';
 /* the row rail's pill (main.css .rowchips .rc min-width) plus its 9px offset */
 const RAIL_LANE = 50;
+/* The board is a screen body like any other, so it stops at the SAME column as
+   the menus rather than carrying its own cap — a playfield wider than its own
+   UI is the mismatch you notice without being able to name it. CSS owns the
+   number (--w-col); this reads it, so there is still only one. */
+function colWidth(): number {
+  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--w-col'));
+  return v > 0 ? v : 400;
+}
 /* The base padding #app carries on top of the device's safe-area insets, per
    orientation (main.css #app and .land #app). */
 const BASE_PAD = { portrait: { v: 6, h: 10 }, land: { v: 4, h: 8 } };
@@ -47,7 +55,7 @@ export function fit(){
        are reserved to keep the board centred; on tall phones the cell is
        height-bound anyway, so this costs nothing there. */
     const rail = (S.scoring===ROWSWITCH || S.scoring===ROWMULT) ? 2*RAIL_LANE : 0;
-    const byW = Math.floor((Math.min(w - safe.h, 430) - 20 - 2*6 - rail) / SPEC.cols);
+    const byW = Math.floor((Math.min(w - safe.h, colWidth()) - 20 - 2*6 - rail) / SPEC.cols);
     cell = Math.max(38, Math.min(byH, byW, 88));
   }
   document.documentElement.style.setProperty('--cell', cell+'px');

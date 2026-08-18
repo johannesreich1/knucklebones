@@ -1,0 +1,94 @@
+<!-- meta name="Widths" group="0 · Foundations" subtitle="Three tokens replace seven ad-hoc max-widths — every screen body measures the same 400" width=900 height=760 links="Foundations, Home, Ladder, Game modes" -->
+<style>
+  body{align-items:stretch}
+  .wrap{max-width:860px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:18px}
+  .box{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+  .cap{font-size:9px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase}
+  .row{display:flex;align-items:center;gap:12px}
+  .bar{height:26px;border-radius:8px;display:flex;align-items:center;justify-content:flex-end;
+    padding-right:8px;font-size:10px;font-weight:800;letter-spacing:.1em;color:#0a0410}
+  .lbl{font-size:10.5px;letter-spacing:.12em;color:var(--dim);min-width:190px}
+  .now .bar{background:linear-gradient(90deg,#5a3b52,#8c5a72);color:#ffd9ec}
+  .new .bar{background:linear-gradient(90deg,var(--cy),var(--mg))}
+  .tok{display:flex;gap:14px;flex-wrap:wrap}
+  .tok code{font-size:11px;background:rgba(255,255,255,.06);border-radius:6px;padding:3px 7px;color:#c6d3ee}
+  .note{font-size:11.5px;line-height:1.6;color:#c6d3ee}
+  .note b{color:var(--cy)}
+  .keep{font-size:11px;line-height:1.6;color:var(--dim)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .mini{border:1px dashed rgba(255,255,255,.14);border-radius:12px;padding:10px;display:flex;
+    flex-direction:column;gap:6px;align-items:center}
+  .mini .strip{height:12px;border-radius:99px;background:linear-gradient(90deg,var(--cy),var(--mg));width:100%}
+  .mini .shell{width:100%;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px;
+    display:flex;flex-direction:column;gap:5px;align-items:center}
+  .mini span{font-size:9px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase}
+</style>
+<div class="wrap">
+
+  <div class="box">
+    <div class="cap">Today — seven widths, no system</div>
+    <div class="row now"><span class="lbl">#app shell</span><div class="bar" style="width:520px">520</div></div>
+    <div class="row now"><span class="lbl">scrollview header</span><div class="bar" style="width:404px">404</div></div>
+    <div class="row now"><span class="lbl">mode cards</span><div class="bar" style="width:376px">376</div></div>
+    <div class="row now"><span class="lbl">rules text</span><div class="bar" style="width:360px">360</div></div>
+    <div class="row now"><span class="lbl">card · shead · panel · danger</span><div class="bar" style="width:340px">340</div></div>
+    <div class="row now"><span class="lbl">result scoreline</span><div class="bar" style="width:320px">320</div></div>
+    <div class="row now"><span class="lbl">home stack · quiet · buttons</span><div class="bar" style="width:300px">300</div></div>
+    <div class="row now"><span class="lbl">ladder</span><div class="bar" style="width:640px">none — edge to edge</div></div>
+    <div class="keep">Each was picked in isolation, so nothing lines up between screens and the
+      ladder ended up visibly wider than everything else.</div>
+  </div>
+
+  <div class="box">
+    <div class="cap">Shipped — three tokens</div>
+    <div class="tok"><code>--w-app: 520px</code><code>--w-col: 400px</code><code>--pad-x: 14px</code></div>
+    <div class="row new"><span class="lbl">the shell (tablet / desktop cap)</span><div class="bar" style="width:520px">--w-app</div></div>
+    <div class="row new"><span class="lbl">every screen body</span><div class="bar" style="width:400px">--w-col</div></div>
+    <div class="note">One column. Forms, lists, cards, headers and action stacks are all
+      <b>--w-col</b> and no wider, so nothing has to be kept in sync with anything else.
+      On a phone the padding wins and it fills the screen; on a tablet it stops at 400
+      instead of stretching into an unreadable line.</div>
+    <div class="keep">Capping the column was not enough on its own: the INSET differed too (26px on
+      overlays, 14px inside scroll views), so the same cap produced 388 / 400 / 372 on three screens.
+      <b>--pad-x</b> decides how close content comes to the glass, <b>--w-col</b> decides how wide it
+      may get. Measured after: home, account, mode cards, rules, ladder rows and both headers all 400.</div>
+  </div>
+
+  <div class="two">
+    <div class="box">
+      <div class="cap">What changes</div>
+      <div class="note">
+        <b>Home</b> 300 → 400: the menu stops floating in the middle of a wide screen.<br>
+        <b>Account</b> 340 → 400: the identity card and stats get the same room.<br>
+        <b>Ladder</b> edge-to-edge → 400: no longer the odd one out.<br>
+        <b>Mode cards</b> 376 → 400, <b>rules</b> 360 → 400, <b>headers</b> 340 → 400 —
+        so the ✕ sits directly above the content it closes.<br>
+        <b>The board</b> 430 → --w-col: fit() reads the token, so the playfield stops
+        where the menus do instead of being wider than its own UI.
+      </div>
+    </div>
+    <div class="box">
+      <div class="cap">Deliberate exceptions (NOT columns)</div>
+      <div class="keep">
+        <b>.land #coach 300</b> — a floating bubble, not a page body.<br>
+        <b>.land .status 104</b> — a wrap width for two words.<br>
+        <b>.rline .sc em / .awho .sub 130</b> — ellipsis truncation on a nickname.<br>
+        These stay literal, and the comment says why. A token would imply they move together
+        with the column; they do not.
+      </div>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="mini"><span>phone · 390pt</span>
+      <div class="shell" style="max-width:362px"><div class="strip"></div><div class="strip"></div>
+        <div class="strip" style="width:60%"></div></div>
+      <span>padding wins — fills the screen</span></div>
+    <div class="mini"><span>tablet / desktop</span>
+      <div class="shell" style="max-width:400px"><div class="strip"></div><div class="strip"></div>
+        <div class="strip" style="width:60%"></div></div>
+      <span>stops at --w-col, centred</span></div>
+  </div>
+
+</div>
