@@ -113,6 +113,11 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
         <button data-d="hard" class="on">HARD</button>
       </div>
     </div>
+    <div class="card">
+      <div class="lbl">Game mode</div>
+      <div class="modepick" id="modePick"></div>
+      <div class="tiny" id="modePickInfo" style="text-align:left"></div>
+    </div>
     <div class="card" id="seatCard" hidden>
       <div class="lbl">Sitting</div>
       <div class="seg" id="seatSeg">

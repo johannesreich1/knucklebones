@@ -4,13 +4,16 @@
 // game lifecycle, and the AI policy that picks the CPU's column. One deep
 // module on purpose -- these steps are one process, and S.gen guards every
 // await against a game that was abandoned mid-animation.
-import { AI, ME, SPEC, legalCols, colScore, boardTotal, counts, isFull, emptyBoard } from '../core/rules.ts';
+import { AI, ME, SPEC, legalCols, colScore, boardTotal, boardTotalMode, counts, isFull, emptyBoard,
+         COLSHIELD, BOUNTY, LIMITED } from '../core/rules.ts';
+import { POOL_PER_FACE } from '../core/dice.ts';
 import { searchRoot, getRiskW, setRiskW } from '../core/ai.ts';
 import { S } from '../state.ts';
 import { saveStats } from '../persist.ts';
 import { Sfx, vibrate } from '../ui/audio.ts';
 import { isEmbed, kbroot, rootRect } from '../ui/embed.ts';
-import { $, show, hide, sideKey, slotEl, slotIdx, colEl, faceRotated } from '../ui/dom.ts';
+import { $, show, hide, sideKey, slotEl, slotIdx, colEl, chipEl, faceRotated } from '../ui/dom.ts';
+import { showPoolRail, renderPoolCounts } from '../ui/poolrail.ts';
 import { nameOf, colorOf } from '../ui/identity.ts';
 import { makeDie, setStageDie } from '../ui/die.ts';
 import { REDUCED, burst, floatPts, shake, flash } from '../ui/fx.ts';
@@ -23,6 +26,10 @@ import { updateStatLine } from './menu.ts';
 /* arm the turn clock: on expiry the die drops into a random legal column */
 export function armTimer(){ const gen=S.gen; startTimer(()=>autoPlace(gen)); }
 function wait(ms){ return new Promise(r=>setTimeout(r,ms)); }
+/* the one true local score: board under the mode's scoring + banked bounty */
+function localTotal(p){ return boardTotalMode(S.boards[p],S.scoring)+(S.scoring===BOUNTY?S.bounty[p]:0); }
+/* LIMITED offline: remaining faces = a straight tally of the undrawn bag */
+function poolLeft(){ const left=[0,0,0,0,0,0,0]; for(const v of (S.pool||[])) left[v]++; return left; }
 /* ===================== AI POLICY =====================
    Scoring + search live in core/ (pure, shared with the server-side replay
    validator). This is the glue that turns difficulty + tutorial state into a
@@ -51,18 +58,18 @@ export function aiChoose(){
   if(S.diff==='easy'){
     if(Math.random()<0.5) return legal[(Math.random()*legal.length)|0];
     setRiskW(0);                                  // easy is blind to danger
-    c=searchRoot(st,AI,S.die,1).c;
+    c=searchRoot(st,AI,S.die,1,S.scoring).c;
   }else if(S.diff==='medium'){
     setRiskW(0.9);                                // 59.9% vs greedy over 400 games
-    c=searchRoot(st,AI,S.die,2).c;
+    c=searchRoot(st,AI,S.die,2,S.scoring).c;
   }else{
     setRiskW(1.5);
     /* Time-boxed deepening: always search 4 plies, and only go to 5 if this
        device did 4 fast enough that 5 (~10-18x the nodes) stays responsive.
        Keeps a slow phone at ~30ms/move instead of ~850ms. */
     const t0=performance.now();
-    c=searchRoot(st,AI,S.die,4).c;
-    if(performance.now()-t0 < 18 && filled < SPEC.cols*SPEC.rows*2-2) c=searchRoot(st,AI,S.die,5).c;
+    c=searchRoot(st,AI,S.die,4,S.scoring).c;
+    if(performance.now()-t0 < 18 && filled < SPEC.cols*SPEC.rows*2-2) c=searchRoot(st,AI,S.die,5,S.scoring).c;
   }
   setRiskW(w0);
   return c;
@@ -92,8 +99,8 @@ function handOff(who){
     const w=$('#passWho');
     w.textContent=nameOf(who);
     w.style.color=colorOf(who);
-    $('#passP1').textContent=boardTotal(S.boards[ME]);
-    $('#passP2').textContent=boardTotal(S.boards[AI]);
+    $('#passP1').textContent=localTotal(ME);
+    $('#passP2').textContent=localTotal(AI);
     show('#ovPass');
     Sfx.pass();
     const go=()=>{
@@ -134,7 +141,8 @@ async function rollDice(){
   }
   stage.classList.remove('rolling');
   if(S.gen!==gen) return;
-  S.die = (S.tut && tutNextRoll()) || 1+((Math.random()*6)|0);
+  S.die = (S.tut && tutNextRoll()) || (S.pool ? S.pool.shift() : 0) || 1+((Math.random()*6)|0);
+  if(S.pool) renderPoolCounts(poolLeft());
   setStageDie(S.die,S.turn);
   stage.classList.add('pop');
   setTimeout(()=>stage.classList.remove('pop'),320);
@@ -254,10 +262,26 @@ export async function place(who,col){
            burst(r.left+r.width/2,r.top+r.height/2,'#ffd166',10); }
   await wait(120);
   if(S.gen!==gen) return;
-  await destroyAt(1-who,col,die);
+  // COLUMN SHIELD: a full facing column is immune — flash the shield instead,
+  // but only when the die would actually have hit something
+  if(S.scoring===COLSHIELD && S.boards[1-who][col].length>=SPEC.rows){
+    if(S.boards[1-who][col].includes(die)){
+      const sh=chipEl(1-who,col) && chipEl(1-who,col).querySelector('.sh');
+      if(sh){ sh.classList.remove('block'); void sh.offsetWidth; sh.classList.add('block'); }
+    }
+  }else{
+    const destroyed=await destroyAt(1-who,col,die);
+    if(S.scoring===BOUNTY && destroyed){
+      // the kill pays: bank the permanent +1s, celebrate them in gold
+      S.bounty[who]+=destroyed;
+      floatPts(who,col,'+'+destroyed+' ✦','var(--gold)');
+      renderSide(who,true);
+    }
+  }
   await wait(60);
   if(S.gen!==gen) return;
-  if(isFull(S.boards[who])){ return endGame(); }
+  // LIMITED: the just-placed die may have been the bag's last — that ends it
+  if(isFull(S.boards[who]) || (S.pool && !S.pool.length)){ return endGame(); }
   S.turn = 1-who;
   S.busy=false;
   S.die=0;
@@ -267,8 +291,20 @@ export async function place(who,col){
 export function newGame(opts){
   const tutorial = !!(opts && opts.tutorial);
   S.gen++;
-  S.scoring=0;   // local play is always classic (an online teardown may lag by a watchdog tick)
+  // the OFFLINE view's selector picks the mode; the tutorial teaches classic
+  S.scoring = tutorial ? 0 : (S.localMode|0);
   S.bounty=[0,0];
+  // LIMITED offline: shuffle the finite bag (plain Math.random — there is no
+  // replay validator to agree with, unlike the seeded online bag)
+  S.pool=null;
+  if(S.scoring===LIMITED){
+    const b=[];
+    for(let v=1;v<=6;v++) for(let i=0;i<POOL_PER_FACE;i++) b.push(v);
+    for(let i=b.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; const t=b[i]; b[i]=b[j]; b[j]=t; }
+    S.pool=b;
+  }
+  showPoolRail(!!S.pool);
+  if(S.pool) renderPoolCounts(poolLeft());
   stopTimer();
   if(tutorial){
     S.mode='cpu';
@@ -309,7 +345,7 @@ function endGame(){
   if(tut){ S.tutDone=true; clearTut(); }     // graduate
   setActivePlate();
   clearHints();
-  const me=boardTotal(S.boards[ME]), ai=boardTotal(S.boards[AI]);
+  const me=localTotal(ME), ai=localTotal(AI);
   const t=$('#endTitle'), sub=$('#endSub');
   const duo = S.mode==='duo';
   if(me===ai){

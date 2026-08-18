@@ -119,9 +119,7 @@
 @keyframes shblock{0%,100%{transform:scale(1)}40%{transform:scale(1.55);filter:drop-shadow(0 0 16px rgba(255,209,102,1))}}
 .col.shielded{box-shadow:inset 0 0 0 1px rgba(255,209,102,.35),0 0 14px rgba(255,209,102,.12);border-radius:12px}
 
-/* ===== mode icons (src/ui/modeicons.ts) ===== */
-.mico{vertical-align:-2px;filter:drop-shadow(0 0 5px currentColor)}
-.mico .f{fill:currentColor;stroke:none}
+/* mode-icon BASE styles live in main.css (offline uses them too) */
 .wname .mico{vertical-align:-2.5px;margin-right:2px}
 
 /* ===== ROW MULTIPLY: row matches wear a gold ring (columns keep their glow).

@@ -33,6 +33,8 @@ import { newGame, passTap } from './flow/game.ts';
 import { toMenu, syncSettingsUI, updateStatLine } from './flow/menu.ts';
 import { requestLeave } from './flow/leave.ts';
 import { openModes } from './ui/modesview.ts';
+import { MODES } from './core/modes.ts';
+import { modeIcon, modeHue } from './ui/modeicons.ts';
 /* ===================== BOOT ===================== */
 export function boot(embed){
   setEmbed(!!embed);
@@ -94,6 +96,28 @@ export function boot(embed){
     syncSettingsUI(); updateRecord(); saveStats();
     Sfx.unlock(); Sfx.tap();
   });
+  // the OFFLINE view's game-mode picker: every wheel mode, playable locally
+  const pick=$('#modePick');
+  for(const m of MODES){
+    const b=document.createElement('button');
+    b.type='button'; b.dataset.m=String(m.mode);
+    b.style.setProperty('--mh',modeHue(m.id));
+    b.setAttribute('aria-label',m.name);
+    b.innerHTML=modeIcon(m.id,16);
+    pick.appendChild(b);
+  }
+  const syncModePick=()=>{
+    pick.querySelectorAll('button').forEach(b=>b.classList.toggle('on', +b.dataset.m===S.localMode));
+    const m=MODES.find(x=>x.mode===S.localMode)||MODES[0];
+    $('#modePickInfo').textContent=m.name+' — '+m.blurb;
+  };
+  syncModePick();
+  tap(pick,e=>{
+    const b=e.target.closest && e.target.closest('button'); if(!b) return;
+    S.localMode=+b.dataset.m; saveStats(); syncModePick();
+    Sfx.unlock(); Sfx.tap();
+  });
+
   bindSeg('#modeSeg','m', v=>{ S.mode=v; });
   bindSeg('#diffSeg','d', v=>{ S.diff=v; });
   bindSeg('#timerSeg','t',v=>{ S.timer=+v; });

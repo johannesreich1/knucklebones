@@ -301,6 +301,21 @@
 .danger .btn{border-color:rgba(255,47,160,.35);color:#ff9ccb;width:100%;min-width:0}
 .dnote{font-size:9.5px;letter-spacing:.1em;color:var(--dim);text-align:center}
 
+/* the OFFLINE view's game-mode picker: one icon button per wheel mode */
+.modepick{display:flex;flex-wrap:wrap;gap:8px}
+.modepick button{--mh:#8ea3c0;width:44px;height:40px;border-radius:12px;display:grid;place-items:center;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:var(--mh);
+  cursor:pointer;transition:.15s;font-family:inherit;padding:0}
+.modepick button:active{transform:scale(.92)}
+.modepick button.on{border-color:color-mix(in srgb,var(--mh) 65%,transparent);
+  background:color-mix(in srgb,var(--mh) 12%,transparent);
+  box-shadow:0 0 14px color-mix(in srgb,var(--mh) 30%,transparent)}
+
+/* mode icons (src/ui/modeicons.ts) — used OFFLINE too (library, picker),
+   so the base styles live here, not in the lazy online chunk */
+.mico{vertical-align:-2px;filter:drop-shadow(0 0 5px currentColor)}
+.mico .f{fill:currentColor;stroke:none}
+
 /* the install sheet's app-icon tile */
 .appface{width:74px;height:74px;border-radius:18px;display:grid;place-items:center;
   background:linear-gradient(135deg,#17123a,#04263a);border:1px solid rgba(255,255,255,.16);

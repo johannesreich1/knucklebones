@@ -55,6 +55,10 @@ export const S = {
      sets it (the ranked wheel); local play is always 0 = classic. Rendering
      and destroy animations read it so boards/totals match the server. */
   scoring: 0 as RulesMode,
+  /* the OFFLINE view's mode pick — newGame copies it into scoring (persisted) */
+  localMode: 0 as RulesMode,
+  /* LIMITED offline: the remaining undrawn bag; null in every other context */
+  pool: null as number[] | null,
   /* BOUNTY mode's banked +1s per Player — permanent, survives destruction */
   bounty: [0, 0] as [number, number]
 };

@@ -15,7 +15,8 @@ import { startTimer, stopTimer } from '../flow/timer.ts';
 import { setLeaveInterceptor } from '../flow/leave.ts';
 import { $, show, hide, sideKey, chipEl } from '../ui/dom.ts';
 import { Sfx, vibrate } from '../ui/audio.ts';
-import { setStageDie, makeDie } from '../ui/die.ts';
+import { setStageDie } from '../ui/die.ts';
+import { showPoolRail, renderPoolCounts } from '../ui/poolrail.ts';
 import { floatPts } from '../ui/fx.ts';
 import { colorOf } from '../ui/identity.ts';
 import { buildBoards, renderAll, renderSide, clearHints, showHints, setStatus, setActivePlate } from '../ui/render.ts';
@@ -121,8 +122,8 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   S.bounty = [0, 0];
   // LIMITED: the finite-bag rail. Counts come from PUBLIC data only (the
   // move log + the visible next die) — the secret seed stays secret.
-  if (spec.mode === LIMITED) { O.poolPlaced = new Array(DICE_FACES + 1).fill(0); buildPoolRail(); }
-  ($('#poolRail') as HTMLElement).hidden = spec.mode !== LIMITED;
+  if (spec.mode === LIMITED) O.poolPlaced = new Array(DICE_FACES + 1).fill(0);
+  showPoolRail(spec.mode === LIMITED);
 
   hide('#ovOnline'); hide('#ovStart'); hide('#ovEnd'); hide('#ovRules'); hide('#ovPass'); hide('#ovPractice');
   document.documentElement.classList.remove('face', 'tut', 'p2turn');
@@ -151,42 +152,23 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   else { renderAll(false); refreshTurnUI(); }
 }
 
-/* ---- the LIMITED bag rail: six faces, live remaining counts ---- */
-function buildPoolRail(): void {
-  const rail = $('#poolRail');
-  rail.innerHTML = '';
-  for (let v = 1; v <= DICE_FACES; v++) {
-    const w = document.createElement('span');
-    w.className = 'pmini';
-    w.dataset.v = String(v);
-    const d = makeDie(v, ME);
-    d.classList.remove('p1');                    // neutral slate, nobody's colour
-    w.appendChild(d);
-    const c = document.createElement('b');
-    c.className = 'pc';
-    c.textContent = String(POOL_PER_FACE);
-    w.appendChild(c);
-    rail.appendChild(w);
-  }
-}
+/* the LIMITED bag rail: remaining = 4 − placed − (the visible pending die) */
 function renderPool(): void {
   if (!O?.poolPlaced) return;
-  document.querySelectorAll('#poolRail .pmini').forEach((el) => {
-    const v = +((el as HTMLElement).dataset.v ?? 0);
-    const left = Math.max(0, POOL_PER_FACE - O!.poolPlaced![v] - (O!.pendingDie === v ? 1 : 0));
-    const c = el.querySelector('.pc')!;
-    if (c.textContent !== String(left)) {
-      c.textContent = String(left);
-      el.classList.remove('tick');
-      void (el as HTMLElement).offsetWidth;      // restart the pulse
-      el.classList.add('tick');
-    }
-    el.classList.toggle('out', left <= 0);
-  });
+  const left: number[] = [];
+  for (let v = 1; v <= DICE_FACES; v++) {
+    left[v] = POOL_PER_FACE - O.poolPlaced[v] - (O.pendingDie === v ? 1 : 0);
+  }
+  renderPoolCounts(left);
 }
 
 function refreshTurnUI(): void {
   if (!O || O.done) return;
+  // BELT: re-lay both boards from state at every turn boundary. Animations
+  // are optimistic theater — if any path ever misses a repaint (a strike's
+  // compaction, an interrupted destroy), the divergence heals here within
+  // one turn instead of persisting. Idempotent and cheap (18 slots).
+  renderAll(false);
   const mine = S.turn === O.you;
   S.phase = mine ? 'choose' : 'anim';
   S.busy = false;
@@ -440,6 +422,6 @@ export function teardown(): void {
   leaveArmed = 0;
   $('#btnMenu').textContent = 'Quit game';
   $('#rec').classList.remove('tapmode');
-  ($('#poolRail') as HTMLElement).hidden = true;
+  showPoolRail(false);
   O = null;
 }
