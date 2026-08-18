@@ -4,8 +4,8 @@
 // is a bot, computes and records its reply in the same request.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { AI, ME, isFull, boardTotalMode, legalCols, applyMove, type Player, type Mode } from "./core/rules.ts";
-import { rebuild, type MatchState } from "./core/match.ts";
+import { AI, ME, BOUNTY, isFull, boardTotalMode, legalCols, applyMove, type Player, type Mode } from "./core/rules.ts";
+import { rebuild, matchTotal, type MatchState } from "./core/match.ts";
 import { eloDelta, type MatchScore } from "./core/elo.ts";
 import { searchRoot, setRiskW, getRiskW } from "./core/ai.ts";
 import { modeById } from "./core/modes.ts";
@@ -29,7 +29,7 @@ async function loadState(svc: SupabaseClient, matchId: string, mode: Mode): Prom
 /* end of match: scores, winner, Elo for both sides (bots included — their
    hidden rating drifting toward true strength improves future pairings) */
 async function finish(svc: SupabaseClient, match: any, s: MatchState, mode: Mode, status: "done" | "forfeit", forfeitWinner?: Player) {
-  const p1Score = boardTotalMode(s.st[ME], mode), p2Score = boardTotalMode(s.st[AI], mode);
+  const p1Score = matchTotal(s, ME, mode), p2Score = matchTotal(s, AI, mode);
   const p1Result: MatchScore = status === "forfeit"
     ? (forfeitWinner === ME ? 1 : 0)
     : (p1Score > p2Score ? 1 : p1Score < p2Score ? 0 : 0.5);
@@ -89,7 +89,8 @@ Deno.serve(async (req: Request) => {
   const { error: insErr } = await svc.from("match_moves")
     .insert({ match_id, idx: s.moveCount, who: myIdx, col, die: myDie });
   if (insErr) return json({ error: "race-lost" }, 409);
-  applyMove(s.st, myIdx, col, myDie, MODE);
+  const myHits = applyMove(s.st, myIdx, col, myDie, MODE);
+  if (MODE === BOUNTY) s.bounty[myIdx] += myHits;   // the in-request move banks too
 
   if (isFull(s.st[myIdx])) {
     const updated = await finish(svc, match, s, MODE, "done");
@@ -125,7 +126,8 @@ Deno.serve(async (req: Request) => {
     const { error: botErr } = await svc.from("match_moves")
       .insert({ match_id, idx: s.moveCount, who: botIdx, col: botCol, die: botDie });
     if (!botErr) {
-      applyMove(s.st, botIdx, botCol, botDie, MODE);
+      const botHits = applyMove(s.st, botIdx, botCol, botDie, MODE);
+      if (MODE === BOUNTY) s.bounty[botIdx] += botHits;
       botMove = { col: botCol, die: botDie };
       if (isFull(s.st[botIdx])) {
         const updated = await finish(svc, match, s, MODE, "done");

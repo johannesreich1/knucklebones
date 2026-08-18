@@ -8,7 +8,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { diceStream } from "./core/dice.ts";
 import { AI, ME, boardTotalMode, type Player } from "./core/rules.ts";
-import { rebuild } from "./core/match.ts";
+import { rebuild, matchTotal } from "./core/match.ts";
 import { eloDelta, type MatchScore } from "./core/elo.ts";
 import { modeById, pickMode } from "./core/modes.ts";
 
@@ -67,7 +67,7 @@ Deno.serve(async (req: Request) => {
     if (!s) return false;
     // finish block mirrors pvp-claim — keep the two in sync.
     // Claim the row first (status guard beats a concurrent finish), Elo after.
-    const p1Score = boardTotalMode(s.st[ME], MODE), p2Score = boardTotalMode(s.st[AI], MODE);
+    const p1Score = matchTotal(s, ME, MODE), p2Score = matchTotal(s, AI, MODE);
     const { data: profs } = await svc.from("profiles").select("id, rating").in("id", [m.p1, m.p2]);
     const r1 = profs!.find((p: any) => p.id === m.p1)!.rating;
     const r2 = profs!.find((p: any) => p.id === m.p2)!.rating;

@@ -4,7 +4,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { AI, ME, boardTotalMode, type Player } from "./core/rules.ts";
-import { rebuild } from "./core/match.ts";
+import { rebuild, matchTotal } from "./core/match.ts";
 import { eloDelta, type MatchScore } from "./core/elo.ts";
 import { modeById } from "./core/modes.ts";
 
@@ -49,7 +49,7 @@ Deno.serve(async (req: Request) => {
   const s = seedRow && rebuild(seedRow.seed, moves ?? [], MODE);
   if (!s) return json({ error: "corrupt-state" }, 500);
 
-  const p1Score = boardTotalMode(s.st[ME], MODE), p2Score = boardTotalMode(s.st[AI], MODE);
+  const p1Score = matchTotal(s, ME, MODE), p2Score = matchTotal(s, AI, MODE);
   const p1Result: MatchScore = myIdx === ME ? 1 : 0;
   const { data: profs } = await svc.from("profiles").select("id, rating").in("id", [match.p1, match.p2]);
   const r1 = profs!.find((p: any) => p.id === match.p1)!.rating;
