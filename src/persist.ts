@@ -19,7 +19,7 @@ export function saveStats(): void {
                 p1: S.p1, p2: S.p2, ties: S.ties,
                 best: S.best, diff: S.diff, mode: S.mode, sound: S.sound,
                 numerals: S.numerals, timer: S.timer, seat: S.seat, tutDone: S.tutDone,
-                localMode: S.localMode });
+                localMode: S.localMode, spellsOn: S.spellsOn });
 }
 
 export function loadStats(): void {
@@ -32,6 +32,7 @@ export function loadStats(): void {
   S.seat = oneOf(SEATS, d.seat, S.seat);
   if (typeof d.sound === 'boolean') S.sound = d.sound;
   if (typeof d.numerals === 'boolean') S.numerals = d.numerals;
+  if (typeof d.spellsOn === 'boolean') S.spellsOn = d.spellsOn;
   if (typeof d.tutDone === 'boolean') S.tutDone = d.tutDone;
   if (Number.isInteger(d.localMode) && d.localMode >= 0 && d.localMode <= 6) S.localMode = d.localMode;
 }

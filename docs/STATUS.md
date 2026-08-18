@@ -1,6 +1,6 @@
 # Project Status
 
-*Last updated: 2026-08-17. This is the "where do we stand" document — the
+*Last updated: 2026-08-18. This is the "where do we stand" document — the
 README explains how the project works; this file records what exists, what
 was decided, and what's still open.*
 
@@ -12,7 +12,7 @@ was decided, and what's still open.*
 | **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0008, RLS + column-grant hardened |
 | **Edge Functions** | `pvp-join` v10, `pvp-move` v7, `pvp-claim` v6, `account-delete` v1 — all ACTIVE, nothing dead deployed |
 | **CI** | GitHub Actions: build + full test gate on every push — green through current `main` |
-| **Design system** | 66 cards (every screen and sheet × 4 device sizes + the `00-navigation` spec) in the Claude Design project "Knucklebones", generated from the app's real CSS |
+| **Design system** | 90 cards (every screen and sheet × 4 device sizes + the `00-navigation` spec) in the Claude Design project "Knucklebones", generated from the app's real CSS |
 | **Signups** | **Not yet open to the public** — SMTP not configured (see Open items) |
 
 Verified live on 2026-08-17: build tag on the deployed page matches the local
@@ -98,6 +98,41 @@ Validated live by a forced-modifier match (SQL-created, future-dated
 `last_move_at` so the lazy forfeit can't eat it while the probe boots):
 badge, rail counts, per-tick DOM-vs-state equality, and a 24-move
 bag-exhaustion finish through pvp-move v8's `s.over` guard.
+
+### 6. Spells — the optional powers layer (2026-08-18, user feature request)
+
+Offline games deal each seat a **rune** beside the die in play. Drag it onto
+any column (or tap to arm, then tap a column, or press 1–3) and that column
+swaps with the one facing it — dice, multipliers and all. **One cast per
+player per game**, castable only in your own turn between the roll and the
+placement: a cast is not a move, so your die still lands afterwards.
+
+Structure, because more spells are coming:
+
+- `core/spells.ts` — pure registry. One object per spell: id, uses, `legal()`,
+  `apply(st, who, col)`. No DOM, no randomness. **Adding a spell is adding an
+  object** (plus its icon path in `ui/spellicons.ts`); the rail, the gestures,
+  the charge accounting and the CSS never learn its name.
+- `flow/spells.ts` — the runtime: charges (`S.spellCharges`), the rail, both
+  gestures, the cast animation. Every input path funnels through one `cast()`,
+  so legality is asked exactly once and a spell can never half-happen.
+- Charges are dealt in exactly one place (`resetSpells()` from `newGame`), so
+  the layer is optional by construction: **ranked, the tutorial and
+  `OFFLINE → Spells → OFF` all deal an empty hand**, the rail hides and every
+  entry point no-ops. The switch sits beside the game-mode picker on the
+  offline setup screen — spells are part of choosing what game this is, not a
+  device preference. Ranked can never cast — the server validates by
+  replaying a plain move log through `core/rules`.
+
+Two rules the flow had to learn: a swap can fill **either** grid (placement
+can only fill the mover's, which is why `place()` checks just that one), so
+`cast()` asks both and ends the game if either is full; and `renderSide`
+reuses a die element whose face matches, inline styles included — the flying
+copies' `visibility:hidden` is cleared *after* the repaint, never before
+(same trap as the `.dying` survivors in test13). Gates: `tests/spells.test.ts`
+(pure rules) and `tests/test14.mjs` (both gestures, spent-charge accounting,
+computed-pixel visibility, endgame-by-swap, and that OFF restores the old
+table exactly). The CPU does not cast — v1 boundary, not an oversight.
 
 ## Standing rules (learned the hard way)
 

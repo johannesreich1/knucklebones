@@ -1,0 +1,95 @@
+<!-- meta name="Spells — column swap" group="4 · Local play" subtitle="An optional rune beside the die in play: drag it onto a column and the facing pair change owners" width=412 height=1080 links="Local menu, Settings, Game modes" -->
+<style>
+  .scr{gap:6px}
+  .mhud{display:flex;align-items:center;gap:8px;height:30px}
+  .mhud .rec{margin-right:auto}
+  .board3{display:grid;grid-template-columns:repeat(3,58px);gap:6px;justify-content:center}
+  .col3{display:grid;grid-template-rows:repeat(3,58px);gap:6px;position:relative;border-radius:18px}
+  .slot3{width:58px;height:58px;border-radius:14px;background:rgba(255,255,255,.028);
+    border:1px solid rgba(255,255,255,.07);display:grid;place-items:center}
+  .side-top .slot3{border-color:rgba(255,47,160,.13)}
+  .side-bot .slot3{border-color:rgba(40,232,255,.13)}
+  /* the aiming affordance, exactly as html.casting paints it in the game */
+  .col3.target::after{content:"";position:absolute;inset:-4px;border-radius:18px;
+    border:1.5px dashed rgba(255,209,102,.5);pointer-events:none}
+  .col3.hot::after{border-style:solid;border-color:var(--gold);
+    background:rgba(255,209,102,.10);box-shadow:0 0 24px rgba(255,209,102,.35)}
+  .mplate{display:flex;align-items:center;gap:7px;height:24px;max-width:196px;margin:0 auto;width:100%}
+  .mplate .dot{width:8px;height:8px;border-radius:50%}
+  .mplate .nm{font-size:11.5px;font-weight:800;letter-spacing:.14em}
+  .mplate .tot{margin-left:auto;font-size:20px;font-weight:900}
+  .mplate.p2 .dot{background:var(--mg);box-shadow:0 0 10px var(--mg)}
+  .mplate.p2 .tot{color:var(--mg);text-shadow:0 0 16px var(--mg)}
+  .mplate.p1 .dot{background:var(--cy);box-shadow:0 0 10px var(--cy)}
+  .mplate.p1 .tot{color:var(--cy);text-shadow:0 0 16px var(--cy)}
+  .mplate.idle{opacity:.6}
+  .centerrow{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 0}
+  .mstatus{font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--cy);
+    text-transform:uppercase;text-shadow:0 0 12px rgba(40,232,255,.5)}
+  /* .stagerow / .spells / .rune come from the app CSS (main.css) — the card and
+     the game cannot drift, and --cell here is the card's cell size */
+  .stagerow{--cell:58px}
+  .stagerow > .die{width:54px;height:54px;--cell:54px}
+  .states{display:flex;justify-content:center;gap:24px;margin-top:20px}
+  .states .s{display:flex;flex-direction:column;align-items:center;gap:7px;--cell:58px}
+  .states .cap{font-size:9px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+  .note{font-size:11.5px;line-height:1.6;color:#c6d3ee;max-width:var(--w-col);margin:16px auto 0;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:13px 15px}
+  .note b{color:var(--gold)}
+  .note .k{color:#b18cff;font-weight:800}
+  .note code{font-size:10.5px;background:rgba(255,255,255,.07);border-radius:5px;padding:1px 5px;color:#c6d3ee}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="mhud">
+    <div class="rec">P1 <b>0</b> · P2 <i>0</i></div>
+    <button class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M4 6.5h8.4M17.6 6.5H20M4 12h1.4M10.6 12H20M4 17.5h10.4M19.6 17.5H20"/><circle cx="15" cy="6.5" r="2.6"/><circle cx="8" cy="12" r="2.6"/><circle cx="17" cy="17.5" r="2.6"/></svg></button>
+  </div>
+
+  <div class="mplate p2 idle"><span class="dot"></span><span class="nm">PLAYER 2</span><span class="tot">23</span></div>
+  <div class="board3 side-top dice-static">
+    <div class="col3 target"><div class="slot3"></div><div class="slot3"></div><div class="slot3">{{die:2:p2:50}}</div></div>
+    <div class="col3 target"><div class="slot3"></div><div class="slot3">{{die:5:p2:50}}</div><div class="slot3">{{die:5:p2:50}}</div></div>
+    <div class="col3 target hot"><div class="slot3"></div><div class="slot3"></div><div class="slot3">{{die:1:p2:50}}</div></div>
+  </div>
+
+  <!-- the rail is anchored to .stagerow, opposite the LIMITED bag: bag left of
+       the die in play, spells right of it, so the die stays optically centred -->
+  <div class="centerrow dice-static">
+    <div class="stagerow">
+      {{die:4:p1:54}}
+      <div class="spells"><button class="rune armed" style="--sh:#b18cff"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><rect x="16.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><path d="M9 9.4h6M12.8 7.4l2.4 2-2.4 2"/><path d="M15 14.6H9M11.2 12.6l-2.4 2 2.4 2"/></svg><b class="n"></b></button></div>
+    </div>
+    <div class="mstatus">Drop it on a column</div>
+  </div>
+
+  <div class="board3 side-bot dice-static">
+    <div class="col3 target"><div class="slot3">{{die:6:p1:50}}</div><div class="slot3">{{die:6:p1:50}}</div><div class="slot3"></div></div>
+    <div class="col3 target"><div class="slot3">{{die:3:p1:50}}</div><div class="slot3"></div><div class="slot3"></div></div>
+    <div class="col3 target hot"><div class="slot3">{{die:2:p1:50}}</div><div class="slot3"></div><div class="slot3"></div></div>
+  </div>
+  <div class="mplate p1"><span class="dot"></span><span class="nm">PLAYER 1</span><span class="tot">29</span></div>
+
+  <!-- aiming lights BOTH facing columns, because a swap always takes two -->
+  <div class="states dice-static">
+    <div class="s"><button class="rune ready" style="--sh:#b18cff"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><rect x="16.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><path d="M9 9.4h6M12.8 7.4l2.4 2-2.4 2"/><path d="M15 14.6H9M11.2 12.6l-2.4 2 2.4 2"/></svg><b class="n"></b></button><span class="cap">Ready</span></div>
+    <div class="s"><button class="rune armed" style="--sh:#b18cff"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><rect x="16.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><path d="M9 9.4h6M12.8 7.4l2.4 2-2.4 2"/><path d="M15 14.6H9M11.2 12.6l-2.4 2 2.4 2"/></svg><b class="n"></b></button><span class="cap">Aiming</span></div>
+    <div class="s"><button class="rune spent" style="--sh:#b18cff"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><rect x="16.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><path d="M9 9.4h6M12.8 7.4l2.4 2-2.4 2"/><path d="M15 14.6H9M11.2 12.6l-2.4 2 2.4 2"/></svg><b class="n"></b></button><span class="cap">Spent</span></div>
+  </div>
+
+  <div class="note">
+    <b>When.</b> Your turn, after the roll, before you place — the same gate placement
+    itself uses. The die stays in your hand: a cast is not a move.<br>
+    <b>Where.</b> Any column, yours or theirs. A swap always takes the facing pair, so
+    both light up before you let go. Two identical columns are not a target — the charge
+    would buy nothing.<br>
+    <b>Cost.</b> <span class="k">One cast per player, per game.</span> The spent rune stays
+    on the rail, greyed: a rune that vanished would read as a bug rather than as a cost.<br>
+    <b>Never.</b> Ranked matches (the server replays a plain move log), the tutorial
+    (a scripted lesson), or with <code>OFFLINE → Spells → OFF</code> — the switch sits
+    beside the game-mode picker, where the game is set up, and OFF leaves exactly the
+    table that shipped before spells existed.<br>
+    <b>Adding one.</b> An object in <code>core/spells.ts</code> — id, uses, legality, effect —
+    plus its icon path in <code>ui/spellicons.ts</code>. The rail, the gestures, the charge
+    accounting and the CSS never learn its name.
+  </div>
+</div></div>

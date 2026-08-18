@@ -4,12 +4,41 @@
 import { SPEC, type Player } from '../core/rules.ts';
 import { S } from '../state.ts';
 import { $, colEl, slotEl, slotIdx, faceRotated } from './dom.ts';
-import { isEmbed, rootRect } from './embed.ts';
+import { isEmbed, kbroot, rootRect } from './embed.ts';
 
 export const REDUCED: boolean = (() => {
   try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
   catch { return false; }
 })();
+
+/* ---- flying copies ----
+   Animating something FROM where the player can see it means lifting a copy out
+   of the layout and pinning it over the original. Two callers do it (a die
+   flying to its slot, a spell swapping two stacks) and both need the same
+   embed dance: fixed on the standalone page, absolute inside the widget's root,
+   which is its own containing block. One definition, so that difference is
+   handled once. */
+export function fxRoot(): HTMLElement { return isEmbed() ? kbroot()! : document.body; }
+
+export function pin(el: HTMLElement, r: DOMRect, z = 60): void {
+  const off = isEmbed() ? rootRect() : { left: 0, top: 0 };
+  el.style.position = isEmbed() ? 'absolute' : 'fixed';
+  el.style.left = (r.left - off.left) + 'px';
+  el.style.top = (r.top - off.top) + 'px';
+  el.style.width = r.width + 'px';
+  el.style.height = r.height + 'px';
+  el.style.setProperty('--cell', r.width + 'px');
+  el.style.zIndex = String(z);
+}
+
+/* "not there" — the one refusal gesture, shared by every input path that can
+   point at a column it may not have (a full column, the wrong column in a
+   lesson, an illegal spell target). */
+export function nope(el: HTMLElement | null): void {
+  if (!el) return;
+  el.classList.add('nope');
+  setTimeout(() => el.classList.remove('nope'), 340);
+}
 
 export function burst(x: number, y: number, color: string, n?: number): void {
   if (REDUCED) return;

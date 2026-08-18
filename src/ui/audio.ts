@@ -41,6 +41,9 @@ export const Sfx = (() => {
     place() { tone(180, 0.12, 'triangle', 0.09, 90); noise(0.07, 0.04, 900); },
     kill() { tone(720, 0.28, 'sawtooth', 0.075, 110); noise(0.3, 0.07, 600); },
     mult() { tone(880, 0.1, 'triangle', 0.06); tone(1320, 0.12, 'triangle', 0.05, null, 0.07); },
+    /* a spell: an upward sweep with a shimmer over it — nothing else in the
+       game rises, so a cast is audible without looking */
+    spell() { tone(240, 0.34, 'triangle', 0.06, 940); tone(1180, 0.3, 'sine', 0.04, 1760, 0.05); noise(0.26, 0.03, 2600); },
     pass() { tone(392, 0.16, 'triangle', 0.05); tone(587, 0.2, 'triangle', 0.045, null, 0.11); },
     win() { [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.32, 'triangle', 0.075, null, i * 0.1)); },
     lose() { [440, 349, 262].forEach((f, i) => tone(f, 0.4, 'sine', 0.075, null, i * 0.13)); },

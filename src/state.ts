@@ -60,7 +60,15 @@ export const S = {
   /* LIMITED offline: the remaining undrawn bag; null in every other context */
   pool: null as number[] | null,
   /* BOUNTY mode's banked +1s per Player — permanent, survives destruction */
-  bounty: [0, 0] as [number, number]
+  bounty: [0, 0] as [number, number],
+  /* SPELLS (flow/spells) — an OPTIONAL layer over local play. spellsOn is the
+     persisted preference; with it off the game is exactly what it was.
+     spellCharges holds casts LEFT per player for this game, keyed by spell id;
+     an empty hand means this seat holds no spells at all (ranked, tutorial,
+     preference off). spellArmed is the spell waiting for a target. */
+  spellsOn: true,
+  spellCharges: [{}, {}] as [Record<string, number>, Record<string, number>],
+  spellArmed: null as string | null
 };
 
 // re-export the identities for modules that get S anyway

@@ -432,6 +432,65 @@ html.rowswitch .cols .chip{visibility:hidden}
 .land .bag .pile{width:22px;height:26px}
 .land .bag .pile .die{width:18px;height:18px;--cell:18px;border-radius:6px}
 
+/* ===== SPELLS: the optional powers layer (flow/spells) =====
+   The rune rail sits opposite the LIMITED bag — bag left of the die in play,
+   spells right of it — anchored to .stagerow so the die stays optically
+   centred either way. Everything scales off --cell, so a small phone shrinks
+   the rune with the board instead of crowding the centre. With the layer off
+   (or in ranked play, or the tutorial) #spellBar is hidden and none of this
+   applies: the table is exactly what it was before spells existed. */
+.spells{position:absolute;left:100%;margin-left:16px;display:flex;flex-direction:column;
+  gap:7px;align-items:center}
+.rune{--sz:clamp(30px,calc(var(--cell)*.62),42px);--sh:var(--cy);
+  position:relative;width:var(--sz);height:var(--sz);border-radius:calc(var(--sz)*.32);
+  display:grid;place-items:center;padding:0;cursor:pointer;color:#fff;
+  -webkit-appearance:none;appearance:none;font-family:inherit;
+  border:1px solid color-mix(in srgb,var(--sh) 60%,transparent);
+  background:linear-gradient(150deg,rgba(255,47,160,.34),rgba(40,232,255,.30));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.30),0 6px 16px rgba(0,0,0,.5),
+             0 0 14px color-mix(in srgb,var(--sh) 30%,transparent);
+  transition:transform .16s,opacity .25s,filter .25s;
+  touch-action:none}          /* the drag is ours, not the browser's scroll */
+.rune svg{filter:drop-shadow(0 0 5px rgba(255,255,255,.5))}
+/* the breathing ring: a separate layer, so pulsing it costs no shadow repaint */
+.rune::before{content:"";position:absolute;inset:-6px;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--sh) 55%,transparent),transparent 72%);
+  opacity:0;transition:opacity .2s}
+.rune.ready::before{animation:runeglow 2.3s ease-in-out infinite}
+@keyframes runeglow{0%,100%{opacity:.22}50%{opacity:.8}}
+.rune:active{transform:scale(.9)}
+.rune.armed{transform:scale(1.1);border-color:var(--gold)}
+.rune.armed::before{opacity:1;animation:none;
+  background:radial-gradient(closest-side,rgba(255,209,102,.75),transparent 72%)}
+/* spent: still there, plainly out of charges — a rune that vanished would read
+   as a bug rather than as a cost */
+.rune.spent{opacity:.26;filter:grayscale(.9);cursor:default}
+.rune.spent::before{display:none}
+.rune.bump{animation:nope .32s}                    /* refused: the rune's own shake */
+.rune .n{position:absolute;right:-4px;bottom:-4px;min-width:14px;height:14px;border-radius:99px;
+  font-size:9px;font-weight:900;line-height:14px;text-align:center;color:#0a0410;background:var(--gold);
+  box-shadow:0 0 8px rgba(255,209,102,.6)}
+.rune .n:empty{display:none}                       /* a single charge needs no number */
+/* the rune in flight, under the finger */
+.runeghost{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;
+  transform:translate(-50%,-50%);pointer-events:none;z-index:80;color:#fff;
+  border:1px solid var(--gold);
+  background:linear-gradient(150deg,rgba(255,47,160,.55),rgba(40,232,255,.5));
+  box-shadow:0 10px 26px rgba(0,0,0,.6),0 0 26px rgba(255,209,102,.5)}
+/* While a spell is aiming the board asks ONE question — which column? — so the
+   placement hints stand down and every column reads as a target. */
+html.casting .col.legal::after,html.casting .col.danger::before{display:none}
+html.casting .col::after{content:"";position:absolute;inset:-4px;border-radius:calc(var(--r) + 6px);
+  border:1.5px dashed rgba(255,209,102,.5);pointer-events:none;transition:.15s}
+html.casting .col.hot::after{border-style:solid;border-color:var(--gold);
+  background:rgba(255,209,102,.10);box-shadow:0 0 24px rgba(255,209,102,.35)}
+/* Landscape puts the two boards either side of a centre column barely wider
+   than the die, so BESIDE the stage means on top of the facing board's chip
+   rail. The rail goes above the die instead, laid out in a row — the space
+   over the centre column is empty in every landscape layout. */
+.land .spells{left:50%;bottom:100%;transform:translateX(-50%);margin:0 0 7px;flex-direction:row}
+.land .rune{--sz:clamp(26px,calc(var(--cell)*.52),34px)}
+
 /* the install sheet's app-icon tile */
 .appface{width:74px;height:74px;border-radius:18px;display:grid;place-items:center;
   background:linear-gradient(135deg,#17123a,#04263a);border:1px solid rgba(255,255,255,.16);
@@ -475,9 +534,10 @@ html.face:not(.land) .die.p2flip .num{transform:rotate(180deg)}
 .face .side{transition:opacity .35s,filter .35s}
 .face .side.idle{opacity:.5;filter:saturate(.55) brightness(.82)}
 /* the centre stage turns toward whoever is playing — the hand-off signal */
-#dieStage,.status,.timer{transition:transform .3s}
+#dieStage,.status,.timer,.spells{transition:transform .3s}
 html.face.p2turn:not(.land) #dieStage,
 html.face.p2turn:not(.land) .status,
+html.face.p2turn:not(.land) .spells,
 html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 
 /* ---- tutorial coach ---- */

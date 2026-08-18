@@ -30,6 +30,7 @@ import { tap, boardDown, boardUp, clearPress, commitColumn } from './ui/input.ts
 import { initInstall } from './ui/install.ts';
 import { coachTap } from './flow/tutorial.ts';
 import { newGame, passTap } from './flow/game.ts';
+import { castArmed, disarm } from './flow/spells.ts';
 import { toMenu, syncSettingsUI, updateStatLine } from './flow/menu.ts';
 import { requestLeave } from './flow/leave.ts';
 import { openModes } from './ui/modesview.ts';
@@ -124,6 +125,9 @@ export function boot(embed){
   bindSeg('#seatSeg','seat',v=>{ S.seat=v; });
   bindSeg('#sndSeg','s',  v=>{ S.sound=v==='1'; });
   bindSeg('#faceSeg','f', v=>{ S.numerals=v==='nums'; });
+  // spells are optional and chosen where the game is set up, beside the game
+  // mode: OFF puts the table back exactly as it was
+  bindSeg('#spellSeg','sp',v=>{ S.spellsOn=v==='1'; if(!S.spellsOn) disarm(); });
   tap($('#btnPlay'),()=>{ Sfx.unlock(); Sfx.tap(); newGame(); });
   tap($('#btnAgain'),()=>{ Sfx.tap(); newGame(); });
   tap($('#btnMenu2'),()=>{ Sfx.tap(); hide('#ovEnd'); show('#ovPractice'); });
@@ -153,13 +157,14 @@ export function boot(embed){
     const colKey=+e.key;
     if(colKey>=1 && colKey<=SPEC.cols){
       const c=colKey-1, who=S.turn;
+      if(castArmed(c)) return;               // an armed spell takes the key first
       if(S.phase==='choose' && !S.busy && (S.mode==='duo' || who===ME)){
         commitColumn(colEl(who,c));          // same gate as touch: full, restriction, sfx
       }
     }else if(e.key==='Enter'||e.key===' '){
       if($('#ovPass').classList.contains('on')) $('#ovPass').click();
       else if($('#ovStart').classList.contains('on')||$('#ovEnd').classList.contains('on')){ Sfx.unlock(); newGame(); }
-    }else if(e.key==='Escape'){ hide('#ovRules'); hide('#ovSettings'); hide('#ovInstall');
+    }else if(e.key==='Escape'){ disarm(); hide('#ovRules'); hide('#ovSettings'); hide('#ovInstall');
       if(document.getElementById('ovModes')) hide('#ovModes'); }
   });
 

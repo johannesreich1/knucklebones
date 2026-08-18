@@ -1,4 +1,4 @@
-<!-- meta name="Offline — local play" group="4 · Local flow" subtitle="Mode, CPU level, and the full game-mode picker — every wheel mode playable offline" width=412 height=980 links="Home, Game (local)" -->
+<!-- meta name="Offline — local play" group="4 · Local flow" subtitle="Mode, CPU level, the full game-mode picker and the spells switch — every wheel mode playable offline" width=412 height=980 links="Home, Game (local)" -->
 <style>
   /* .seg / .lbl / .tiny / .btn come from the app CSS; below is card-only */
   /* .shead is the app's shared header (src/styles/main.css) — card adds spacing only */
@@ -23,6 +23,11 @@
       <button style="--mh:#b18cff"><svg class="mico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4.4" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="13" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="8.7" y="4.4" width="6.6" height="6.6" rx="1.8"/><circle class="f" cx="12" cy="7.7" r="1.2"/></svg></button>
     </div>
     <div class="tiny" style="text-align:left">CLASSIC — The pure duel. Columns multiply.</div>
+    <!-- spells are part of choosing WHAT GAME THIS IS, so the switch lives here
+         beside the mode picker rather than in the Settings sheet -->
+    <div class="lbl">Spells</div>
+    <div class="seg"><button class="on">ON</button><button>OFF</button></div>
+    <div class="tiny" style="text-align:left">One rune each: swap a column with your opponent, once per game. Ranked matches never use them.</div>
     <button class="btn primary" style="margin-top:8px">Play</button>
     <div class="tiny" style="text-align:center;margin-top:4px">Offline play never touches your online rating</div>
   </div>

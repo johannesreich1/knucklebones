@@ -11,17 +11,17 @@ import { searchRoot, getRiskW, setRiskW } from '../core/ai.ts';
 import { S } from '../state.ts';
 import { saveStats } from '../persist.ts';
 import { Sfx, vibrate } from '../ui/audio.ts';
-import { isEmbed, kbroot, rootRect } from '../ui/embed.ts';
 import { $, show, hide, sideKey, slotEl, slotIdx, colEl, chipEl, faceRotated } from '../ui/dom.ts';
 import { showBag, renderBag } from '../ui/bag.ts';
 import { nameOf, colorOf } from '../ui/identity.ts';
 import { makeDie, setStageDie } from '../ui/die.ts';
-import { REDUCED, burst, floatPts, shake, flash } from '../ui/fx.ts';
+import { REDUCED, burst, floatPts, shake, flash, pin, fxRoot } from '../ui/fx.ts';
 import { renderSide, renderAll, applySides, updateRecord, clearHints, showHints, setStatus, setActivePlate, settleBoard } from '../ui/render.ts';
 import { fit } from '../ui/layout.ts';
 import { startTimer, stopTimer, showClock } from './timer.ts';
 import { coachShow, coachHide, clearTut, tutNextRoll, tutOnChoose } from './tutorial.ts';
 import { updateStatLine } from './menu.ts';
+import { resetSpells, renderSpells } from './spells.ts';
 
 /* arm the turn clock: on expiry the die drops into a random legal column */
 export function armTimer(){ const gen=S.gen; startTimer(()=>autoPlace(gen)); }
@@ -147,6 +147,14 @@ async function rollDice(){
   vibrate(8);
 }
 
+/* What the status line says while a player is choosing a column. Two callers:
+   the turn machine, and a spell handing the turn back after a cast. The rune
+   rail wakes up here too — a choice starting is exactly when it becomes live,
+   and in two-player it changes hands with the turn. */
+export function sayChoose(){
+  setStatus(S.mode==='duo' ? nameOf(S.turn)+' — tap a column' : 'Tap a column', S.turn);
+  renderSpells();
+}
 export async function nextTurn(){
   const gen=S.gen;
   if(S.phase==='over') return;
@@ -160,7 +168,7 @@ export async function nextTurn(){
   if(S.mode==='duo' || S.turn===ME){
     S.phase='choose';
     if(S.tut) tutOnChoose();     // sets the lesson message and any column restriction
-    setStatus(S.mode==='duo' ? nameOf(S.turn)+' — tap a column' : 'Tap a column', S.turn);
+    sayChoose();
     showHints();
     armTimer();
   }else{
@@ -185,15 +193,8 @@ export async function flyDie(who,col,die){
   const to=target.getBoundingClientRect();
   const ghost=makeDie(die,who);
   if(faceRotated(who)) ghost.classList.add('p2flip');
-  ghost.style.position=isEmbed()?'absolute':'fixed';
-  const gx=isEmbed()?rootRect():{left:0,top:0};
-  ghost.style.left=(from.left-gx.left)+'px';
-  ghost.style.top=(from.top-gx.top)+'px';
-  ghost.style.width=from.width+'px';
-  ghost.style.height=from.height+'px';
-  ghost.style.setProperty('--cell',from.width+'px');
-  ghost.style.zIndex='60';
-  (isEmbed()?kbroot():document.body).appendChild(ghost);
+  pin(ghost,from);                       // same lift the spell swap uses (ui/fx)
+  fxRoot().appendChild(ghost);
   src.style.opacity='0';
   const dx=(to.left+to.width/2)-(from.left+from.width/2);
   const dy=(to.top+to.height/2)-(from.top+from.height/2);
@@ -246,6 +247,7 @@ export async function place(who,col){
   S.phase='anim';
   stopTimer();
   clearHints();
+  renderSpells();                 // the turn is spending itself: the rail goes quiet
   const die=S.die;
   // mode-aware, exactly like online play: what the whole board gains, not what
   // the column gains (columns don't score in ROW SWITCH). Classic is unchanged.
@@ -319,6 +321,7 @@ export function newGame(opts){
   S.boards=[emptyBoard(),emptyBoard()];
   S.die=0; S.phase='roll'; S.busy=false;
   S.turn=S.starter;
+  resetSpells();                             // deal this game's charges (none in a lesson)
   S.starter = 1-S.starter;
   // pass mode: whoever starts holds the phone. face mode: halves never move.
   S.bottom = (S.mode==='duo' && S.seat==='pass') ? S.turn : ME;
@@ -340,11 +343,14 @@ export function newGame(opts){
     setTimeout(nextTurn,650);
   }
 }
-function endGame(){
+/* Exported because a spell can end the game too: a swap can fill either grid,
+   and "either grid full ends it" is the rule, not "the mover's grid". */
+export function endGame(){
   stopTimer();
   const tut=!!S.tut;
   if(tut){ S.tutDone=true; clearTut(); }     // graduate
   settleBoard();
+  renderSpells();                            // nothing is castable after the last die
   const me=localTotal(ME), ai=localTotal(AI);
   const t=$('#endTitle'), sub=$('#endSub');
   const duo = S.mode==='duo';

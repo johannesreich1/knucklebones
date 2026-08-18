@@ -6,8 +6,10 @@
 import { ME, SPEC } from '../core/rules.ts';
 import { S } from '../state.ts';
 import { ownerOf } from './dom.ts';
+import { nope } from './fx.ts';
 import { Sfx } from './audio.ts';
 import { place } from '../flow/game.ts';
+import { castArmed } from '../flow/spells.ts';
 
 /* Online matches route placements to the server instead of the local machine.
    Everything else about input (gesture, gating, sfx) stays identical. */
@@ -50,6 +52,7 @@ export function clearPress(){
 export function boardDown(e){
   const col=e.target.closest && e.target.closest('.col');
   clearPress();
+  if(S.spellArmed) return;              // a spell is aiming: no placement press
   if(!playableCol(col)) return;
   pressedCol=col;
   col.classList.add('press');
@@ -57,12 +60,14 @@ export function boardDown(e){
 export function boardUp(e){
   const started=pressedCol;
   clearPress();
-  if(!started) return;
   let over=null;
   if(typeof e.clientX==='number'){
     const el=document.elementFromPoint(e.clientX,e.clientY);
     over = el && el.closest ? el.closest('.col') : null;
   }else over=started;
+  // an armed spell claims the tap — anywhere else on the table cancels it
+  if(S.spellArmed) return void castArmed(over ? +over.dataset.col : null);
+  if(!started) return;
   if(over!==started) return;            // slid away: treat as cancelled
   commitColumn(started);
 }
@@ -73,12 +78,9 @@ export function commitColumn(col){
   if(S.mode==='cpu' && who!==ME) return;
   const c=+col.dataset.col;
   if(S.tut && S.tut.restrict!=null && c!==S.tut.restrict){
-    col.classList.add('nope'); setTimeout(()=>col.classList.remove('nope'),340);
-    Sfx.tap(); return;                       // the lesson wants a specific column
+    nope(col); Sfx.tap(); return;            // the lesson wants a specific column
   }
-  if(S.boards[who][c].length>=SPEC.rows){
-    col.classList.add('nope'); setTimeout(()=>col.classList.remove('nope'),340); Sfx.tap(); return;
-  }
+  if(S.boards[who][c].length>=SPEC.rows){ nope(col); Sfx.tap(); return; }
   Sfx.tap();
   placeHandler(who,c);
 }

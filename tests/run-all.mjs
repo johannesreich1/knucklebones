@@ -7,7 +7,7 @@
 import { spawn, execSync } from 'child_process';
 import net from 'net';
 
-const FILE_SUITES = ['test4', 'test6', 'test8', 'test9', 'test10', 'test11', 'test12', 'test13'];
+const FILE_SUITES = ['test4', 'test6', 'test8', 'test9', 'test10', 'test11', 'test12', 'test13', 'test14'];
 const SERVED_SUITES = ['test7', 'testupdate']; // need serve.py; testupdate mutates pwa/, so it runs last
 const SUITE_TIMEOUT_MS = 360_000;   // must clear test6/test10's worst-case random endgames on slow CI
 
@@ -56,6 +56,7 @@ execSync('node build.mjs', { stdio: 'inherit' }); // test6 needs harness.html, s
 judge('dice', await run('node', ['--experimental-strip-types', 'tests/dice.test.ts']), clean);
 judge('match', await run('node', ['--experimental-strip-types', 'tests/match.test.ts']), clean);
 judge('modes', await run('node', ['--experimental-strip-types', 'tests/modes.test.ts']), clean);
+judge('spells', await run('node', ['--experimental-strip-types', 'tests/spells.test.ts']), clean);
 
 for (const t of FILE_SUITES) judge(t, await run('node', [`tests/${t}.mjs`]), clean);
 

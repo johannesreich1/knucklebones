@@ -9,6 +9,7 @@ import { modeIcon } from '../ui/modeicons.ts';
 import { ONLINE_TURN_SECS } from '../config.ts';
 import { S } from '../state.ts';
 import { startTimer, stopTimer, showClock } from '../flow/timer.ts';
+import { clearSpells } from '../flow/spells.ts';
 import { setLeaveInterceptor } from '../flow/leave.ts';
 import { $, show, hide, sideKey, chipEl } from '../ui/dom.ts';
 import { Sfx, vibrate } from '../ui/audio.ts';
@@ -91,6 +92,7 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   S.tut = null;
   S.mode = 'duo';                // input gating: taps allowed for whoever S.turn says
   S.busy = false;
+  clearSpells();                 // ranked replays a plain move log — no casting here
   S.boards = [emptyBoard(), emptyBoard()];
   S.turn = res.match.turn;
   S.bottom = res.you;
