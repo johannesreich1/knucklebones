@@ -21,6 +21,11 @@
 #ovOnline .lb .row.me{background:rgba(40,232,255,.07);border-color:rgba(40,232,255,.35)}
 #ovOnline .lb .row.me .nm{color:var(--cy)}
 
+/* the ladder's loading state borrows matchmaking's bouncing pair */
+#ovOnline .lbload{display:flex;flex-direction:column;align-items:center;gap:14px;
+  padding:40px 0;margin:auto}
+#ovOnline .lbload .qdice .die{width:44px;height:44px;--cell:44px}
+
 /* ---- matchmaking (design 21): bouncing pair, animated search, big clock */
 #onQueue{align-items:center;gap:22px}
 .qdice{display:flex;gap:14px}

@@ -147,7 +147,9 @@ const esc = (s: string) => s.replace(/[&<>"']/g, c =>
 async function showBoard(): Promise<void> {
   panel('onBoard');
   const list = $('#onBoardList');
-  list.textContent = 'Loading…';
+  // the wait wears the game's own bouncing dice, centred — no bare text
+  list.innerHTML = '<div class="lbload"><div class="qdice" aria-hidden="true"></div><div class="qmsg">Loading</div></div>';
+  (list.querySelector('.qdice') as HTMLElement).append(makeDie(3, ME), makeDie(5, AI));
   const [rows, me] = await Promise.all([leaderboard(50), myProfile()]);
   list.innerHTML = rows.length ? '' : '<div class="row">No ranked games yet — be the first!</div>';
   rows.forEach((r, i) => {
