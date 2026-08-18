@@ -73,17 +73,26 @@ function bindModeTap(): void {
   });
 }
 
+/* Settings' Quit button during a live online match: the first tap arms the
+   confirm ON the button (the Delete-account idiom), a second within 3s
+   abandons — the server forfeits (pvp-claim by a human opponent, lazily by
+   pvp-join for bot matches). */
 let leaveArmed = 0;
 function leaveTap(): boolean {
   if (!O || O.done) return false;               // no live match — normal quit
-  if (Date.now() - leaveArmed < 3000) { leaveArmed = 0; teardown(); return false; }
-  leaveArmed = Date.now();
-  setStatus('Tap ✕ again to forfeit', S.turn, false);
-  setTimeout(() => {                            // not confirmed: restore the status
-    if (!O || O.done || leaveArmed === 0 || Date.now() - leaveArmed < 2900) return;
+  const b = $('#btnMenu');
+  if (Date.now() - leaveArmed < 3000) {
     leaveArmed = 0;
-    const mine = S.turn === O.you;              // the turn clock kept running — no
-    setStatus(mine ? 'Your move' : oppName() + ' thinking', S.turn, !mine);   // free time
+    b.textContent = 'Quit game';
+    teardown();
+    return false;                               // fall through to the normal quit
+  }
+  leaveArmed = Date.now();
+  b.textContent = 'Tap again to forfeit';
+  setTimeout(() => {                            // not confirmed: restore the label
+    if (leaveArmed === 0 || Date.now() - leaveArmed < 2900) return;
+    leaveArmed = 0;
+    b.textContent = 'Quit game';
   }, 3000);
   return true;
 }
@@ -222,6 +231,9 @@ async function onlinePlace(who: Player, col: number): Promise<void> {
   O.lastMoveAt = Date.now();
   try {
     if (bot) {
+      // the response already carries the post-reply state (turn back to us),
+      // so nothing else would ever say the opponent is thinking — say it here
+      setStatus(oppName() + ' thinking', (1 - O.you) as Player, true);
       await pause(450);          // a beat before the "opponent" answers
       revealDie(bot.die, (1 - O.you) as Player);   // their roll, fully animated
       await pause(700);          // the roll lands, then the die flies
@@ -378,6 +390,7 @@ export function teardown(): void {
   setPlaceHandler(null as any);
   setLeaveInterceptor(null);
   leaveArmed = 0;
+  $('#btnMenu').textContent = 'Quit game';
   $('#rec').classList.remove('tapmode');
   O = null;
 }

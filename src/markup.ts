@@ -7,8 +7,8 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   <div class="hud">
     <div class="rec" id="rec">W <b>0</b> · L <i>0</i></div>
     <div class="sp"></div>
-    <button class="ico" id="btnSettings" aria-label="Settings" style="font-size:15px">⚙</button>
-    <button class="ico" id="btnMenu" aria-label="Leave game">✕</button>
+    <!-- the game's ONE control: settings (quit lives inside the sheet) -->
+    <button class="ico" id="btnSettings" aria-label="Settings"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><path d="M4 6.5h8.4M17.6 6.5H20M4 12h1.4M10.6 12H20M4 17.5h10.4M19.6 17.5H20"/><circle cx="15" cy="6.5" r="2.6"/><circle cx="8" cy="12" r="2.6"/><circle cx="17" cy="17.5" r="2.6"/></svg></button>
   </div>
 
   <div id="coach" hidden>
@@ -210,6 +210,9 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     </div>
     <button class="btn" id="btnHow2">How to play</button>
     <div class="tiny">Changes apply the moment you tap them</div>
+    <div class="danger">
+      <button class="btn" id="btnMenu">Quit game</button>
+    </div>
   </div>
 </div>
 

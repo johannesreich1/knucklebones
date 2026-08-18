@@ -297,15 +297,17 @@
   padding:13px 15px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
 .modecard .mchead{display:flex;align-items:center;gap:8px;color:var(--mh)}
 .modecard .mcname{font-size:13px;font-weight:900;letter-spacing:.18em}
-.modecard .modd{margin-left:auto;font-size:9.5px;font-weight:800;letter-spacing:.12em;color:var(--dim);
-  border:1px solid rgba(255,255,255,.14);border-radius:99px;padding:2px 8px}
 .modecard .mcblurb{font-size:9.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
 .modecard .mcdetail{font-size:12px;line-height:1.55;color:#c6d3ee}
 .modecard.now{border-color:color-mix(in srgb,var(--mh) 55%,transparent);
   box-shadow:0 0 18px color-mix(in srgb,var(--mh) 25%,transparent)}
-.modecard.now .modd{color:var(--mh);border-color:color-mix(in srgb,var(--mh) 45%,transparent)}
 /* the list is tall and scrolls — start it under the header, don't centre */
 #ovModes .pbody{margin:6px 0 0;gap:12px}
+
+/* destructive actions sit at arm's length: Settings' quit, Account's delete */
+.danger{margin-top:14px;display:flex;flex-direction:column;gap:6px;width:100%;max-width:340px}
+.danger .btn{border-color:rgba(255,47,160,.35);color:#ff9ccb;width:100%;min-width:0}
+.dnote{font-size:9.5px;letter-spacing:.1em;color:var(--dim);text-align:center}
 
 /* the install sheet's app-icon tile */
 .appface{width:74px;height:74px;border-radius:18px;display:grid;place-items:center;

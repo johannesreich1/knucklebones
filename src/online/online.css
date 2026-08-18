@@ -50,9 +50,7 @@
 .statrow{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.1em;color:var(--dim)}
 .statrow b{color:var(--gold);font-weight:900;font-size:14px}
 .statrow b.rec2{color:var(--txt)}
-.danger{margin-top:14px;display:flex;flex-direction:column;gap:6px}
-.danger .btn{border-color:rgba(255,47,160,.35);color:#ff9ccb;width:100%;min-width:0}
-.dnote{font-size:9.5px;letter-spacing:.1em;color:var(--dim);text-align:center}
+/* .danger / .dnote live in main.css — Settings' Quit button shares them */
 
 /* ---- match result (design 23): verdict up top, scores centred, actions in
    the thumb zone — the Elo delta is the trophy moment */

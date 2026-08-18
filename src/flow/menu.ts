@@ -66,7 +66,7 @@ export function toMenu(){
   S.gen++; S.phase='over';
   stopTimer(); clearTut(); clearHints();
   cancelPass(); hide('#ovPass');
-  hide('#ovPractice');
+  hide('#ovPractice'); hide('#ovSettings');
   updateResumeButton(); show('#ovStart');
 }
 export function updateResumeButton(){

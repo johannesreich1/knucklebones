@@ -11,11 +11,9 @@ let built = false;
 function build(): void {
   if (built) return;
   built = true;
-  const total = MODES.reduce((s, m) => s + m.weight, 0);
   const cards = MODES.map((m) => `
     <div class="modecard" data-mode="${m.id}" style="--mh:${modeHue(m.id)}">
-      <div class="mchead">${modeIcon(m.id, 22)}<span class="mcname">${m.name}</span>
-        <span class="modd">${Math.round((m.weight / total) * 100)}%</span></div>
+      <div class="mchead">${modeIcon(m.id, 22)}<span class="mcname">${m.name}</span></div>
       <div class="mcblurb">${m.blurb}</div>
       <div class="mcdetail">${m.detail}</div>
     </div>`).join('');

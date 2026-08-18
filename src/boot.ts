@@ -110,8 +110,9 @@ export function boot(embed){
   tap($('#btnAgain'),()=>{ Sfx.tap(); newGame(); });
   tap($('#btnMenu2'),()=>{ Sfx.tap(); hide('#ovEnd'); updateResumeButton(); show('#ovPractice'); });
   tap($('#btnEndHome'),()=>{ Sfx.tap(); hide('#ovEnd'); toMenu(); });
-  // the HUD's ✕: an online match intercepts to arm its two-tap forfeit confirm
-  tap($('#btnMenu'),()=>{ Sfx.tap(); if(requestLeave()) return; toMenu(); });
+  // quit lives at the bottom of the Settings sheet; an online match intercepts
+  // the first tap to arm its two-tap forfeit confirm on the button itself
+  tap($('#btnMenu'),()=>{ Sfx.tap(); if(requestLeave()) return; hide('#ovSettings'); toMenu(); });
   tap($('#btnHow'),()=>{ Sfx.tap(); show('#ovRules'); });
   tap($('#btnModes'),()=>{ Sfx.tap(); openModes(); });
   // online module (auth, ladder, account) is lazy: the offline game's boot

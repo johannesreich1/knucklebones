@@ -30,7 +30,7 @@ out.hud = await page.evaluate(() => ({
   titleStillNamed: document.querySelector('#ovStart h1').textContent === 'KNUCKLEBONES',
 }));
 check(!out.hud.brand, 'wordmark still in the in-game hud', out.hud);
-check(out.hud.icons.join(',') === 'btnSettings,btnMenu', 'hud buttons not consolidated', out.hud);
+check(out.hud.icons.join(',') === 'btnSettings', 'hud must hold ONLY settings', out.hud);
 check(out.hud.titleStillNamed, 'title screen lost the name', out.hud);
 
 // ===== popups, deterministically via the tutorial =====
@@ -67,7 +67,9 @@ await page.waitForTimeout(1300);
 out.leftover = await page.evaluate(() => document.querySelectorAll('.pts').length);
 check(out.leftover === 0, 'popups leak into the DOM', out.leftover);
 
-// quit tutorial, popups must also fire in a NORMAL game (they are not tutorial-only)
+// quit tutorial (via Settings — the sheet holds the quit button now),
+// popups must also fire in a NORMAL game (they are not tutorial-only)
+await page.tap('#btnSettings'); await page.waitForTimeout(300);
 await page.tap('#btnMenu'); await page.waitForTimeout(400);
 await page.evaluate(() => { window.__pops = []; });
 await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
@@ -122,7 +124,9 @@ out.sheet = await page.evaluate(() => ({
   done: [...document.querySelectorAll('#ovSettings .btn')].some(b => /done/i.test(b.textContent)),
   x: document.querySelector('#ovSettings .shead #btnCloseSettings')?.textContent ?? '',
   title: document.querySelector('#ovSettings .shead .ttl')?.textContent ?? '',
+  quitInSheet: !!document.querySelector('#ovSettings #btnMenu'),
 }));
+check(out.sheet.quitInSheet, 'Quit game not inside the Settings sheet', out.sheet);
 check(!out.sheet.reset, 'Reset record still in Settings', out.sheet);
 check(!out.sheet.done, 'Settings still has a bottom Done button', out.sheet);
 check(out.sheet.x === '✕' && out.sheet.title === 'SETTINGS', 'Settings sheet header wrong', out.sheet);
