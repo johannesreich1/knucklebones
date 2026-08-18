@@ -19,9 +19,14 @@ export interface MatchRow {
 }
 
 /* ---- auth ---- */
-export async function signUp(email: string, password: string): Promise<string | null> {
-  const { error } = await supa().auth.signUp({ email, password });
-  return error ? error.message : null;
+/* Signing up may or may not hand back a live session: with email confirmation
+   REQUIRED the account waits for the link, with it optional Supabase signs the
+   player straight in. Report which happened rather than assuming — "check your
+   email" shown to somebody who is already signed in is a dead end, and an
+   inbox that never receives anything is a worse one. */
+export async function signUp(email: string, password: string): Promise<{ error: string | null; live: boolean }> {
+  const { data, error } = await supa().auth.signUp({ email, password });
+  return { error: error ? error.message : null, live: !!data?.session };
 }
 export async function signIn(email: string, password: string): Promise<string | null> {
   const { error } = await supa().auth.signInWithPassword({ email, password });

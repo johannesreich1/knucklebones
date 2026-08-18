@@ -236,19 +236,30 @@ function bind(): void {
   $('#btnOnlineBack').addEventListener('click', () => { Sfx.tap(); goHome(); });
 
   const authErr = (m: string | null) => { $('#onAuthErr').textContent = m ?? ''; };
-  $('#btnSignIn').addEventListener('click', async () => {
-    Sfx.tap(); authErr(null);
-    const err = await signIn(($('#onEmail') as HTMLInputElement).value.trim(), ($('#onPass') as HTMLInputElement).value);
-    if (err) return authErr(err);
+  const creds = () => [($('#onEmail') as HTMLInputElement).value.trim(),
+                       ($('#onPass') as HTMLInputElement).value] as const;
+  /* one continuation for every way a session can start: warm the chip and go
+     wherever the tap was headed */
+  const entered = async () => {
     const v = pendingView; pendingView = null;
     await myProfile();           // warms the home-chip cache
     refreshHomeChip();
     await route(v ?? 'play');
+  };
+  $('#btnSignIn').addEventListener('click', async () => {
+    Sfx.tap(); authErr(null);
+    const err = await signIn(...creds());
+    if (err) return authErr(err);
+    await entered();
   });
   $('#btnSignUp').addEventListener('click', async () => {
     Sfx.tap(); authErr(null);
-    const err = await signUp(($('#onEmail') as HTMLInputElement).value.trim(), ($('#onPass') as HTMLInputElement).value);
-    authErr(err ?? 'Account created — check your email to confirm, then sign in.');
+    const { error, live } = await signUp(...creds());
+    if (error) return authErr(error);
+    // confirmation optional: play now, confirm later. Only when the project
+    // demands a confirmed address does the inbox become the next step.
+    if (live) return entered();
+    authErr('Account created — check your email to confirm, then sign in.');
   });
 
   $('#btnRename').addEventListener('click', async () => {
