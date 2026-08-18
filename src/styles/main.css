@@ -235,6 +235,12 @@ html.clock .timer.on{visibility:visible}
 .timer.warn .bar{box-shadow:0 0 10px #ff8a3d}
 
 /* floating score numbers: earned points rise from the column just played */
+/* the result screen's own particle layer — it sits above .ov's backdrop and
+   below its text, because #fx (z-index 50) is under every overlay */
+.fwlayer{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.fwring{position:absolute;border-radius:50%;width:90px;height:90px;border:3px solid currentColor;
+  box-shadow:0 0 26px currentColor,inset 0 0 26px currentColor;
+  pointer-events:none;transform:translate(-50%,-50%)}
 .pts{position:absolute;z-index:60;font-size:19px;font-weight:900;pointer-events:none;
   white-space:nowrap;transform:translate(-50%,0);
   text-shadow:0 0 10px currentColor,0 2px 8px rgba(0,0,0,.8)}
@@ -546,6 +552,37 @@ html.casting .col.hot::after{border-style:solid;border-color:var(--gold);
 .scoreline .sc em{font-style:normal;font-size:9.5px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
 /* NOTE: background-IMAGE, not the background shorthand — the shorthand resets
    background-clip:text and the title would render as a solid gradient block. */
+/* ===== THE RESULT SCREEN (ui/endscreen) =====
+   One screen for local play and ranked alike. The title LANDS: it drops in
+   from above scale with a shockwave hoop behind it, one movement rather than
+   per-letter staging — so VICTORY, DEFEAT and PLAYER 2 WINS all read the same
+   way and the longest title is no slower than the shortest. Studies for five
+   other treatments live in design/screens/6*-win-*. */
+#ovEnd.enter #endTitle{animation:endStamp .85s cubic-bezier(.2,1.25,.3,1) both}
+@keyframes endStamp{
+  0%{transform:scale(3.2);opacity:0;filter:blur(8px)}
+  38%{transform:scale(.93);opacity:1;filter:blur(0)}
+  58%{transform:scale(1.04)}
+  100%{transform:scale(1)}}
+#ovEnd .shock{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 7vh + 24px);
+  width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;border:2px solid currentColor;
+  opacity:0;pointer-events:none;color:var(--cy)}
+#ovEnd.enter .shock{animation:endShock .9s cubic-bezier(.1,.7,.3,1) both}
+#ovEnd.enter #endTitle.lose ~ .shock,#ovEnd #endTitle.lose ~ .shock{color:var(--mg)}
+@keyframes endShock{0%{transform:scale(.1);opacity:0}18%{opacity:.75}100%{transform:scale(3.4);opacity:0}}
+/* the rest of the screen follows the title in, once */
+#ovEnd.enter .sub,#ovEnd.enter .scoreline,#ovEnd.enter .endmeta,#ovEnd.enter .btn,#ovEnd.enter .linkbtn{
+  animation:endRise .5s cubic-bezier(.2,.9,.3,1) both}
+#ovEnd.enter .sub{animation-delay:.16s}
+#ovEnd.enter .scoreline{animation-delay:.22s}
+#ovEnd.enter .endmeta{animation-delay:.28s}
+#ovEnd.enter .btn{animation-delay:.34s}
+#ovEnd.enter .linkbtn{animation-delay:.4s}
+@keyframes endRise{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+/* the context line: a session record locally, an Elo chip and ladder spot online */
+.endmeta{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-align:center;
+  display:flex;flex-direction:column;align-items:center;gap:7px}
+.endmeta:empty{display:none}
 #endTitle.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
   filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
 #endTitle.lose{background-image:linear-gradient(100deg,var(--mg),#fff 55%,#ff8a3d);

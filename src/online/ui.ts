@@ -7,6 +7,7 @@
 import './online.css';
 import { ME, AI } from '../core/rules.ts';
 import { $, show, hide } from '../ui/dom.ts';
+import { showEnd, setMeta, closeEnd } from '../ui/endscreen.ts';
 import { Sfx } from '../ui/audio.ts';
 import { makeDie } from '../ui/die.ts';
 import { signUp, signIn, signOut, currentUser, myProfile, myRecord, rename, leaderboard, deleteAccount, join } from './session.ts';
@@ -62,30 +63,17 @@ const OVERLAY = `
     </div>
   </div>
 
-  <div class="panel" id="onResult" hidden>
-    <div class="rtitle" id="rTitle"></div>
-    <div class="rsub" id="rSub"></div>
-    <div class="rline">
-      <span class="sc"><span class="you" id="rMy">0</span><em>You</em></span>
-      <span class="vs">VS</span>
-      <span class="sc"><span class="cpu" id="rTheir">0</span><em id="rOpp"></em></span>
-    </div>
-    <div class="elochip" id="rElo" hidden></div>
-    <div class="rrank" id="rRank" hidden></div>
-    <button class="btn primary" id="btnResultAgain">Play again</button>
-    <button class="btn" id="btnResultHome">Home</button>
-    <button class="linkbtn" id="btnShare">Share result</button>
-  </div>
 </div>`;
 
 /* one shared header: each panel names itself; the ‹ hides where Cancel (or an
-   explicit action) is the only sane exit, and the Result panel is chromeless */
+   explicit action) is the only sane exit. The result of a match is NOT a panel
+   here — it is the game's one result screen (ui/endscreen), the same one local
+   play ends on. */
 const PANELS = {
   onAuth: { title: 'SIGN IN', back: true },
   onQueue: { title: 'MATCHMAKING', back: false },
   onBoard: { title: 'LADDER', back: true },
   onAccount: { title: 'ACCOUNT', back: true },
-  onResult: { title: '', back: false },
 } as const;
 type Panel = keyof typeof PANELS;
 
@@ -96,8 +84,6 @@ function panel(which: Panel): void {
   $('#ovOnline').classList.toggle('listview', which === 'onBoard');
   $('#onTitle').textContent = PANELS[which].title;
   ($('#btnOnlineBack') as HTMLElement).style.visibility = PANELS[which].back ? 'visible' : 'hidden';
-  (document.querySelector('#ovOnline .shead') as HTMLElement).style.visibility =
-    which === 'onResult' ? 'hidden' : 'visible';
 }
 
 /* every way home funnels through here — leaving the queue included, so a
@@ -183,45 +169,43 @@ async function showAccount(): Promise<void> {
   $('#accRecord').textContent = rec ? `${rec.wins}W – ${rec.losses}L` : '–';
 }
 
-/* ---- match result (design 23): scores, the Elo delta, the ladder spot.
-   Everything paints INSTANTLY — the chip uses the cached rating plus the
-   known delta, and the fresh profile/ladder fetches (in parallel) merely
-   correct and append. No pop-in, no perceived lag. ---- */
-let shareText = '';
+/* ---- match result: the SAME screen local play ends on (ui/endscreen), filled
+   with what ranked has to add — the Elo delta and the ladder spot. Everything
+   paints INSTANTLY: the chip uses the cached rating plus the known delta, and
+   the fresh profile/ladder fetches (in parallel) merely correct and append. ---- */
 async function showResult(r: FinishReport): Promise<void> {
-  show('#ovOnline');
-  panel('onResult');
-  const t = $('#rTitle');
-  t.textContent = r.draw ? 'DEAD HEAT' : r.won ? 'VICTORY' : 'DEFEAT';
-  t.className = 'rtitle ' + (r.draw ? 'draw' : r.won ? 'win' : 'lose');
-  $('#rSub').textContent = r.forfeit
-    ? (r.won ? r.opp + ' forfeited' : 'Match forfeited')
-    : (r.draw ? 'Down to the last die' : r.won ? 'You out-rolled ' + r.opp : r.opp + ' takes it');
-  $('#rMy').textContent = String(r.my);
-  $('#rTheir').textContent = String(r.their);
-  $('#rOpp').textContent = r.opp;
+  hide('#ovOnline');
+  const title = r.draw ? 'DEAD HEAT' : r.won ? 'VICTORY' : 'DEFEAT';
   const deltaTxt = r.delta != null ? ` · ${r.delta >= 0 ? '+' : ''}${r.delta} Elo` : '';
-  shareText = `${t.textContent} ${r.my}–${r.their} vs ${r.opp}${deltaTxt} — Knucklebones, ranked dice duels`;
-  ($('#btnShare') as HTMLElement).textContent = 'Share result';
-  const elo = $('#rElo') as HTMLElement, rank = $('#rRank') as HTMLElement;
-  rank.hidden = true;
-  elo.classList.toggle('down', (r.delta ?? 0) < 0);
-  const chip = (rating: number | null) => {
-    if (r.delta == null) { elo.hidden = true; return; }
-    elo.innerHTML = `${r.delta >= 0 ? '+' : ''}${r.delta} <small>ELO${rating != null ? ' · ' + rating : ''}</small>`;
-    elo.hidden = false;
-  };
+  /* the context line, as HTML — the one thing ranked shows that local play
+     does not. Rebuilt whenever a better number arrives. */
+  const metaHtml = (rating: number | null, rank: number | null) =>
+    (r.delta == null ? '' :
+      `<span class="elochip${r.delta < 0 ? ' down' : ''}">${r.delta >= 0 ? '+' : ''}${r.delta}` +
+      ` <small>ELO${rating != null ? ' · ' + rating : ''}</small></span>`) +
+    (rank != null ? `<span class="rrank">Ladder: <b>#${rank}</b></span>` : '');
   let cachedRating: number | null = null;
   try {
     const c = JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null');
     if (typeof c?.rating === 'number' && r.delta != null) cachedRating = c.rating + r.delta;
   } catch { /* forgetful host */ }
-  chip(cachedRating);
+  showEnd({
+    outcome: r.draw ? 'draw' : r.won ? 'win' : 'lose',
+    title,
+    sub: r.forfeit ? (r.won ? r.opp + ' forfeited' : 'Match forfeited')
+       : r.draw ? 'Down to the last die'
+       : r.won ? 'You out-rolled ' + r.opp : r.opp + ' takes it',
+    you:  { score: r.my, label: 'You' },
+    them: { score: r.their, label: r.opp },
+    meta: metaHtml(cachedRating, null),
+    again: { label: 'Play again', run: () => { closeEnd(); show('#ovOnline'); void route('play'); } },
+    home:  { label: 'Home', run: () => { closeEnd(); goHome(); } },
+    share: `${title} ${r.my}–${r.their} vs ${r.opp}${deltaTxt} — Knucklebones, ranked dice duels`,
+  });
   const [p, rows] = await Promise.all([myProfile(), leaderboard(50)]);
   refreshHomeChip();
-  chip(p?.rating ?? cachedRating);
   const i = p ? rows.findIndex((x) => x.nickname === p.nickname) : -1;
-  if (i >= 0) { rank.innerHTML = `Ladder: <b>#${i + 1}</b>`; rank.hidden = false; }
+  setMeta(metaHtml(p?.rating ?? cachedRating, i >= 0 ? i + 1 : null));
 }
 
 let bound = false;
@@ -291,20 +275,6 @@ function bind(): void {
   });
 
   $('#btnQueueCancel').addEventListener('click', () => { Sfx.tap(); goHome(); });
-  $('#btnResultAgain').addEventListener('click', () => { Sfx.tap(); void startQueue(); });
-  $('#btnResultHome').addEventListener('click', () => { Sfx.tap(); goHome(); });
-  $('#btnShare').addEventListener('click', async () => {
-    Sfx.tap();
-    const b = $('#btnShare');
-    try {
-      if (navigator.share) await navigator.share({ text: shareText, url: location.origin });
-      else {
-        await navigator.clipboard.writeText(shareText + ' ' + location.origin);
-        b.textContent = 'Copied!';
-        setTimeout(() => { b.textContent = 'Share result'; }, 1500);
-      }
-    } catch { /* share sheet dismissed */ }
-  });
 
   // a finished match lands on the Result screen, not on a menu
   setFinishHandler((r) => { void showResult(r); });

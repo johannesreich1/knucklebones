@@ -68,31 +68,11 @@
 .dnote{font-size:9.5px;letter-spacing:.1em;color:var(--dim);text-align:center}
 /* .rec .mi lives in main.css — the OFFLINE badge wears the ⓘ too */
 
-/* ---- match result (design 23): verdict up top, scores centred, actions in
-   the thumb zone — the Elo delta is the trophy moment */
-#onResult{align-items:center;gap:18px;margin:0;flex:1;min-height:0;padding-top:2vh}
-#onResult .rline{margin-top:auto}
-#onResult #btnResultAgain{margin-top:auto}
-#onResult .btn{width:100%;max-width:var(--w-col);min-width:0}
-.rtitle{font-size:clamp(31px,9.5vw,40px);letter-spacing:.2em;font-weight:900;text-align:center;
-  -webkit-background-clip:text;background-clip:text;color:transparent}
-.rtitle.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
-  filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
-.rtitle.lose{background-image:linear-gradient(100deg,var(--mg),#fff 55%,#ff8a3d);
-  filter:drop-shadow(0 0 26px rgba(255,47,160,.45))}
-.rtitle.draw{background-image:linear-gradient(100deg,#9fb2d8,#fff 50%,#9fb2d8);
-  filter:drop-shadow(0 0 22px rgba(159,178,216,.35))}
-.rsub{font-size:11px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;
-  margin-top:-8px;text-align:center}
-.rline{display:flex;align-items:center;gap:18px;font-weight:800;width:100%;max-width:var(--w-col)}
-/* equal halves so the VS sits dead centre whatever the nickname length */
-.rline .sc{flex:1;min-width:0}
-.rline .you{color:var(--cy);font-size:clamp(34px,11vw,46px);font-weight:900;text-shadow:0 0 14px rgba(40,232,255,.5)}
-.rline .cpu{color:var(--mg);font-size:clamp(34px,11vw,46px);font-weight:900;text-shadow:0 0 14px rgba(255,47,160,.5)}
-.rline .vs{color:var(--dim);font-size:12px;letter-spacing:.2em}
-.rline .sc{display:flex;flex-direction:column;align-items:center;gap:1px}
-.rline .sc em{font-style:normal;font-size:9.5px;letter-spacing:.18em;color:var(--dim);
-  text-transform:uppercase;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* ---- what RANKED adds to the shared result screen (ui/endscreen) ----
+   The screen itself — title, sub, the two scores, the actions — is the same
+   one local play ends on and lives in main.css. Only these two go in the
+   meta slot, and only ranked has them: the Elo delta is the trophy moment,
+   the ladder spot is where it left you. */
 .elochip{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:900;color:#0a0410;
   background:var(--gold);border-radius:99px;padding:7px 16px;
   box-shadow:0 0 24px rgba(255,209,102,.55)}

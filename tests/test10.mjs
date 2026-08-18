@@ -146,7 +146,7 @@ for (let i = 0; i < 900; i++) {
 await page.waitForTimeout(1800);
 out.end = await page.evaluate(() => ({
   shown: document.getElementById('ovEnd').classList.contains('on'),
-  endRec: document.getElementById('endRec').textContent,
+  endRec: document.getElementById('endMeta').textContent,
   sub: document.getElementById('endSub').textContent,
   rec: document.getElementById('rec').textContent.trim(),
   stats: (() => { const k = window.__kb.S; return k.wins + k.losses + k.draws + k.p1 + k.p2; })(),

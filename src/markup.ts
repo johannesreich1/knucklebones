@@ -237,8 +237,13 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   </div>
 </div>
 
-<!-- END -->
+<!-- END — the ONE result screen, local and ranked alike (ui/endscreen.ts).
+     Everything that differs between the two is a slot the caller fills: the
+     meta line carries a session record or an Elo chip + ladder spot, and each
+     action's label, visibility and handler come from the spec. -->
 <div class="ov" id="ovEnd">
+  <i class="fwlayer" id="endFx" aria-hidden="true"></i>
+  <i class="shock" id="endShock" aria-hidden="true"></i>
   <h1 id="endTitle">VICTORY</h1>
   <div class="sub" id="endSub">You out-rolled the machine</div>
   <div class="scoreline">
@@ -246,8 +251,9 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <span class="vs">VS</span>
     <span class="sc"><span class="cpu" id="endCpu">0</span><em id="endCpuLbl">CPU</em></span>
   </div>
-  <div class="tiny" id="endRec">SESSION 0–0</div>
+  <div class="endmeta" id="endMeta"></div>
   <button class="btn primary" id="btnAgain">Play again</button>
   <button class="btn" id="btnMenu2">Change difficulty</button>
   <button class="linkbtn" id="btnEndHome">Home</button>
+  <button class="linkbtn" id="btnShare" hidden>Share result</button>
 </div>`;

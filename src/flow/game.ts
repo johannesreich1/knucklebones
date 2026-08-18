@@ -20,7 +20,8 @@ import { renderSide, renderAll, applySides, updateRecord, clearHints, showHints,
 import { fit } from '../ui/layout.ts';
 import { startTimer, stopTimer, showClock } from './timer.ts';
 import { coachShow, coachHide, clearTut, tutNextRoll, tutOnChoose } from './tutorial.ts';
-import { updateStatLine } from './menu.ts';
+import { updateStatLine, toMenu } from './menu.ts';
+import { showEnd, closeEnd } from '../ui/endscreen.ts';
 import { resetSpells, renderSpells, aiSpellTurn } from './spells.ts';
 
 /* arm the turn clock: on expiry the die drops into a random legal column */
@@ -356,32 +357,14 @@ export function endGame(){
   settleBoard();
   renderSpells();                            // nothing is castable after the last die
   const me=localTotal(ME), ai=localTotal(AI);
-  const t=$('#endTitle'), sub=$('#endSub');
   const duo = S.mode==='duo';
-  if(me===ai){
-    if(!tut) duo ? S.ties++ : S.draws++;
-    t.textContent='DEAD HEAT'; t.className='draw'; sub.textContent='Nobody blinks';
-  }else{
-    const p1won = me>ai;                    // cyan won; in CPU mode that means you
-    if(!tut){ if(duo) p1won ? S.p1++ : S.p2++; else p1won ? S.wins++ : S.losses++; }
-    t.textContent = duo ? (p1won?'PLAYER 1 WINS':'PLAYER 2 WINS')
-                        : (p1won?'VICTORY':'DEFEAT');
-    t.className   = p1won ? 'win' : 'lose';  // cyan gradient vs magenta, either mode
-    sub.textContent = duo ? (p1won?'Cyan takes the round':'Magenta takes the round')
-                          : (p1won?'You out-rolled the machine':'The CPU takes this one');
-    if(tut) sub.textContent = p1won ? 'Tutorial complete — the bones obey you'
-                                    : 'Tutorial complete — now beat the real thing';
-    // in two-player somebody always won, so it is always a celebration
-    if(duo || p1won){ Sfx.win(); vibrate([20,50,20,50,60]); }
-    else { Sfx.lose(); vibrate(220); }
-  }
-  $('#endYou').textContent=me; $('#endCpu').textContent=ai;
-  $('#endYouLbl').textContent = duo?'Player 1':'You';
-  $('#endCpuLbl').textContent = duo?'Player 2':'CPU';
-  $('#btnMenu2').textContent = duo?'Change mode':'Change difficulty';
-  $('#endRec').textContent = tut ? 'TUTORIAL COMPLETE'
-    : duo ? 'SESSION  P1 '+S.p1+' – '+S.p2+' P2'+(S.ties?('  ·  '+S.ties+' drawn'):'')
-          : 'SESSION  '+S.wins+'–'+S.losses+(S.draws?('–'+S.draws+' D'):'');
+  const drawn = me===ai, p1won = me>ai;      // cyan won; in CPU mode that means you
+  if(drawn && !tut) duo ? S.ties++ : S.draws++;
+  if(!drawn && !tut){ if(duo) p1won ? S.p1++ : S.p2++; else p1won ? S.wins++ : S.losses++; }
+  // in two-player somebody always won, so it is always a celebration
+  if(drawn){ /* no fanfare for a dead heat */ }
+  else if(duo || p1won){ Sfx.win(); }
+  else { Sfx.lose(); vibrate(220); }
   updateRecord();
   if(!tut){                                     // a scripted round earns no records
     const best = duo ? Math.max(me,ai) : me;    // duo: best score by either player
@@ -389,14 +372,26 @@ export function endGame(){
   }
   saveStats(); updateStatLine();
   setStatus(me>ai?nameOf(ME)+' wins':me<ai?nameOf(AI)+' wins':'Draw', me>ai?ME:me<ai?AI:null);
-  if(me!==ai){
-    const winner = me>ai?ME:AI;
-    if(duo || winner===ME){
-      const r=$('#side'+(sideKey(winner)==='bot'?'Bot':'Top')).getBoundingClientRect();
-      const pal = winner===ME?['#28e8ff','#ffd166','#8dffcf']:['#ff2fa0','#ffd166','#ff8a3d'];
-      for(let i=0;i<5;i++) setTimeout(()=>burst(r.left+Math.random()*r.width, r.top+Math.random()*r.height,
-        pal[(Math.random()*3)|0], 14), i*130);
-    }
-  }
-  setTimeout(()=>show('#ovEnd'), 900);
+  // ONE result screen, filled from here — the fireworks and the title's landing
+  // belong to it, so a ranked win gets exactly the same show (ui/endscreen)
+  showEnd({
+    outcome: drawn ? 'draw' : (duo || p1won) ? 'win' : 'lose',
+    title: drawn ? 'DEAD HEAT'
+      : duo ? (p1won?'PLAYER 1 WINS':'PLAYER 2 WINS') : (p1won?'VICTORY':'DEFEAT'),
+    sub: drawn ? 'Nobody blinks'
+      : tut ? (p1won ? 'Tutorial complete — the bones obey you'
+                     : 'Tutorial complete — now beat the real thing')
+      : duo ? (p1won?'Cyan takes the round':'Magenta takes the round')
+            : (p1won?'You out-rolled the machine':'The CPU takes this one'),
+    you:  { score: me, label: duo?'Player 1':'You' },
+    them: { score: ai, label: duo?'Player 2':'CPU' },
+    meta: tut ? 'TUTORIAL COMPLETE'
+      : duo ? 'SESSION  P1 '+S.p1+' – '+S.p2+' P2'+(S.ties?('  ·  '+S.ties+' drawn'):'')
+            : 'SESSION  '+S.wins+'–'+S.losses+(S.draws?('–'+S.draws+' D'):''),
+    again: { label: 'Play again', run: () => newGame() },
+    alt:   { label: duo?'Change mode':'Change difficulty',
+             run: () => { closeEnd(); show('#ovPractice'); } },
+    home:  { label: 'Home', run: () => { closeEnd(); toMenu(); } },
+    delay: 900,                              // the board holds the last move first
+  });
 }

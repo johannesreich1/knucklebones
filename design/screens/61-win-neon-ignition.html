@@ -1,0 +1,33 @@
+<!-- meta name="Win title B — Neon ignition" group="6 · Win screen studies" subtitle="Letters strike on out of order like a tube warming up, then hold" width=412 height=700 links="Result screen" -->
+<style>
+  .studio{display:flex;flex-direction:column;gap:14px;width:100%;align-items:center}
+  .panel{position:relative;width:100%;max-width:var(--w-col);height:170px;border-radius:18px;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+    background:radial-gradient(120% 90% at 50% 0%,rgba(255,255,255,.05),transparent 70%),rgba(255,255,255,.02);
+    border:1px solid rgba(255,255,255,.08)}
+  .cap{font-size:9px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase}
+  .psub{font-size:10.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+  /* the title is the app's own gradient text — the study changes only its motion */
+  .t{margin:0;font-size:38px;letter-spacing:.2em;font-weight:900;text-align:center;line-height:1.1;
+    background-clip:text;-webkit-background-clip:text;color:transparent;white-space:nowrap}
+  .t.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
+    filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
+  .t.lose{background-image:linear-gradient(100deg,var(--mg),#fff 55%,#ff8a3d);
+    filter:drop-shadow(0 0 26px rgba(255,47,160,.45))}
+  .t .l{display:inline-block;white-space:pre}
+  .note{font-size:11.5px;line-height:1.6;color:#c6d3ee;max-width:var(--w-col);
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:11px 13px}
+  .note b{color:var(--gold)}
+
+  .t .l{opacity:.08;animation:ignite 3.4s steps(1,end) infinite;animation-delay:calc(var(--i)*.06s)}
+  @keyframes ignite{0%,6%{opacity:.08}8%{opacity:1}10%{opacity:.12}13%{opacity:1}15%{opacity:.2}18%,100%{opacity:1}}
+  .t{animation:hum 3.4s ease-in-out infinite}
+  @keyframes hum{0%,17%{filter:drop-shadow(0 0 4px rgba(255,255,255,.15))}
+    22%{filter:drop-shadow(0 0 32px rgba(40,232,255,.65))}30%,100%{filter:drop-shadow(0 0 22px rgba(40,232,255,.4))}}
+</style>
+<div class="studio">
+  <div class="cap">Variant B · Neon ignition</div>
+  <div class="panel"><h1 class="t win"><span class="l" style="--i:0">V</span><span class="l" style="--i:1">I</span><span class="l" style="--i:2">C</span><span class="l" style="--i:3">T</span><span class="l" style="--i:4">O</span><span class="l" style="--i:5">R</span><span class="l" style="--i:6">Y</span></h1><div class="psub">You out-rolled the machine</div></div>
+  <div class="panel"><h1 class="t lose"><span class="l" style="--i:0">D</span><span class="l" style="--i:1">E</span><span class="l" style="--i:2">F</span><span class="l" style="--i:3">E</span><span class="l" style="--i:4">A</span><span class="l" style="--i:5">T</span></h1><div class="psub">The CPU takes this one</div></div>
+  <div class="note"><b>The most on-brand.</b> The stutter is the charm — but the word is not fully readable for ~400ms, and a long title flickers for longer. Best if the celebration itself stays quiet.</div>
+</div>

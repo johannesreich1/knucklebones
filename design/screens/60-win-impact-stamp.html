@@ -1,0 +1,37 @@
+<!-- meta name="Win title A — Impact stamp" group="6 · Win screen studies" subtitle="Lands from above scale with a shockwave hoop — loudest, and instant to read" width=412 height=700 links="Result screen" -->
+<style>
+  .studio{display:flex;flex-direction:column;gap:14px;width:100%;align-items:center}
+  .panel{position:relative;width:100%;max-width:var(--w-col);height:170px;border-radius:18px;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
+    background:radial-gradient(120% 90% at 50% 0%,rgba(255,255,255,.05),transparent 70%),rgba(255,255,255,.02);
+    border:1px solid rgba(255,255,255,.08)}
+  .cap{font-size:9px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase}
+  .psub{font-size:10.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+  /* the title is the app's own gradient text — the study changes only its motion */
+  .t{margin:0;font-size:38px;letter-spacing:.2em;font-weight:900;text-align:center;line-height:1.1;
+    background-clip:text;-webkit-background-clip:text;color:transparent;white-space:nowrap}
+  .t.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
+    filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
+  .t.lose{background-image:linear-gradient(100deg,var(--mg),#fff 55%,#ff8a3d);
+    filter:drop-shadow(0 0 26px rgba(255,47,160,.45))}
+  .t .l{display:inline-block;white-space:pre}
+  .note{font-size:11.5px;line-height:1.6;color:#c6d3ee;max-width:var(--w-col);
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:11px 13px}
+  .note b{color:var(--gold)}
+
+  .t{animation:stamp 3s cubic-bezier(.2,1.3,.3,1) infinite}
+  @keyframes stamp{0%{transform:scale(3.4);opacity:0;filter:blur(7px)}
+    10%{transform:scale(.92);opacity:1;filter:blur(0)}16%{transform:scale(1.05)}
+    22%,100%{transform:scale(1)}}
+  .ring{position:absolute;left:50%;top:50%;width:140px;height:140px;margin:-70px 0 0 -70px;border-radius:50%;
+    border:3px solid currentColor;box-shadow:0 0 26px currentColor;opacity:0;pointer-events:none;
+    animation:shock 3s ease-out infinite}
+  .panel:nth-of-type(1) .ring{color:#8dffcf}.panel:nth-of-type(2) .ring{color:#ff8a3d}
+  @keyframes shock{0%,8%{transform:scale(.15);opacity:0}12%{opacity:.85}55%,100%{transform:scale(3);opacity:0}}
+</style>
+<div class="studio">
+  <div class="cap">Variant A · Impact stamp · SHIPPED</div>
+  <div class="panel"><i class="ring"></i><h1 class="t win"><span class="l" style="--i:0">V</span><span class="l" style="--i:1">I</span><span class="l" style="--i:2">C</span><span class="l" style="--i:3">T</span><span class="l" style="--i:4">O</span><span class="l" style="--i:5">R</span><span class="l" style="--i:6">Y</span></h1><div class="psub">You out-rolled the machine</div></div>
+  <div class="panel"><i class="ring"></i><h1 class="t lose"><span class="l" style="--i:0">D</span><span class="l" style="--i:1">E</span><span class="l" style="--i:2">F</span><span class="l" style="--i:3">E</span><span class="l" style="--i:4">A</span><span class="l" style="--i:5">T</span></h1><div class="psub">The CPU takes this one</div></div>
+  <div class="note"><b>Shipped.</b> One movement, no per-letter staging, so it reads the same at any length — VICTORY, DEFEAT and PLAYER 2 WINS all land identically. The hoop doubles as the fireworks' opening beat, which is why it won: title and celebration became one event.</div>
+</div>

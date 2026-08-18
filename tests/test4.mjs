@@ -106,7 +106,7 @@ const duoEnd = await page.evaluate(() => ({
   realP1: window.__kb.boardTotal(window.__kb.S.boards[1]),
   realP2: window.__kb.boardTotal(window.__kb.S.boards[0]),
   rec: document.getElementById('rec').textContent.trim(),
-  endRec: document.getElementById('endRec').textContent.trim(),
+  endRec: document.getElementById('endMeta').textContent.trim(),
   someoneFull: window.__kb.isFull(window.__kb.S.boards[0]) || window.__kb.isFull(window.__kb.S.boards[1]),
 }));
 await page.screenshot({ path: './duo-end.png' });

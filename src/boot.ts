@@ -31,6 +31,7 @@ import { initInstall } from './ui/install.ts';
 import { coachTap } from './flow/tutorial.ts';
 import { newGame, passTap } from './flow/game.ts';
 import { castArmed, disarm, renderSpells } from './flow/spells.ts';
+import { bindEnd } from './ui/endscreen.ts';
 import { SPELLS } from './core/spells.ts';
 import { spellIcon, spellHue } from './ui/spellicons.ts';
 import { toMenu, syncSettingsUI, updateStatLine } from './flow/menu.ts';
@@ -146,9 +147,7 @@ export function boot(embed){
   bindSeg('#sndSeg','s',  v=>{ S.sound=v==='1'; });
   bindSeg('#faceSeg','f', v=>{ S.numerals=v==='nums'; });
   tap($('#btnPlay'),()=>{ Sfx.unlock(); Sfx.tap(); newGame(); });
-  tap($('#btnAgain'),()=>{ Sfx.tap(); newGame(); });
-  tap($('#btnMenu2'),()=>{ Sfx.tap(); hide('#ovEnd'); show('#ovPractice'); });
-  tap($('#btnEndHome'),()=>{ Sfx.tap(); hide('#ovEnd'); toMenu(); });
+  bindEnd();       // the result screen binds its own actions, once (ui/endscreen)
   // quit lives at the bottom of the Settings sheet; an online match intercepts
   // the first tap to arm its two-tap forfeit confirm on the button itself
   tap($('#btnMenu'),()=>{ Sfx.tap(); if(requestLeave()) return; hide('#ovSettings'); toMenu(); });

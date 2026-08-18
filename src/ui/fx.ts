@@ -40,9 +40,14 @@ export function nope(el: HTMLElement | null): void {
   setTimeout(() => el.classList.remove('nope'), 340);
 }
 
-export function burst(x: number, y: number, color: string, n?: number): void {
+/* opts exist for the ONE caller that needs a different scale — a firework is
+   the same burst, thrown further and drawn bigger. A second particle engine
+   would only drift from this one. */
+export interface BurstOpts { host?: HTMLElement | null; size?: number; dist?: number }
+export function burst(x: number, y: number, color: string, n?: number, opts?: BurstOpts): void {
   if (REDUCED) return;
-  const fx = $('#fx');
+  const fx = opts?.host ?? $('#fx');
+  const size = opts?.size ?? 1, reach = opts?.dist ?? 1;
   if (isEmbed()) { const rr = rootRect(); x -= rr.left; y -= rr.top; }
   n = n || 16;
   for (let i = 0; i < n; i++) {
@@ -50,11 +55,11 @@ export function burst(x: number, y: number, color: string, n?: number): void {
     p.className = 'particle';
     p.style.left = x + 'px'; p.style.top = y + 'px';
     p.style.background = color;
-    p.style.boxShadow = '0 0 10px ' + color;
-    const sz = 4 + Math.random() * 6;
+    p.style.boxShadow = '0 0 ' + (10 * size) + 'px ' + color + ',0 0 ' + (26 * size) + 'px ' + color;
+    const sz = (4 + Math.random() * 6) * size;
     p.style.width = sz + 'px'; p.style.height = sz + 'px';
     fx.appendChild(p);
-    const a = Math.random() * Math.PI * 2, dist = 34 + Math.random() * 84;
+    const a = Math.random() * Math.PI * 2, dist = (34 + Math.random() * 84) * reach;
     const an = p.animate([
       { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
       { transform: 'translate(calc(-50% + ' + (Math.cos(a) * dist) + 'px), calc(-50% + ' + (Math.sin(a) * dist) + 'px)) scale(0)', opacity: 0 }
@@ -86,6 +91,68 @@ export function floatPts(who: Player, col: number, text: string, color: string):
         { transform: 'translate(-50%,-44px) scale(1)' + rot, opacity: 0 }
       ], { duration: 900, easing: 'cubic-bezier(.2,.7,.3,1)' });
   anim.onfinish = () => p.remove();
+}
+
+/* ---- fireworks ----
+   A win used to get five small puffs inside the winner's half of the board,
+   over in 650ms — and a RANKED win got nothing at all, because the celebration
+   lived in the local flow rather than in the result screen. This is the one
+   show, fired by ui/endscreen for either kind of win: shells that climb from
+   the bottom of the screen, hang, and burst into sparks that fall.
+   Everything is WAAPI on throwaway elements in the #fx layer, so nothing here
+   can leave residue in the layout. */
+const SHELLS = 6;
+
+export function fireworks(palette: string[], into?: HTMLElement | null): void {
+  if (REDUCED) return;                       // informative? no. decoration — skip it.
+  const host = into ?? $('#fx');
+  if (!host) return;
+  const box = isEmbed() ? rootRect() : { left: 0, top: 0, width: innerWidth, height: innerHeight };
+  for (let i = 0; i < SHELLS; i++) {
+    // spread across the width, never dead centre where the title sits
+    const x = box.width * (0.12 + 0.76 * ((i + (Math.random() * 0.6)) / SHELLS));
+    const peak = box.height * (0.18 + Math.random() * 0.3);
+    const color = palette[(Math.random() * palette.length) | 0];
+    setTimeout(() => shell(host, x, box.height, peak, color), i * 190 + Math.random() * 120);
+  }
+}
+
+/* one shell: a climbing ember, then the burst it turns into */
+function shell(host: HTMLElement, x: number, fromY: number, peakY: number, color: string): void {
+  const ember = document.createElement('i');
+  ember.className = 'particle';
+  ember.style.left = x + 'px';
+  ember.style.top = fromY + 'px';
+  ember.style.width = ember.style.height = '5px';
+  ember.style.background = color;
+  ember.style.boxShadow = '0 0 14px ' + color + ', 0 14px 22px ' + color;
+  host.appendChild(ember);
+  const climb = ember.animate([
+    { transform: 'translate(-50%,-50%) scale(1)', opacity: 1 },
+    { transform: 'translate(-50%,calc(-50% - ' + (fromY - peakY) + 'px)) scale(.7)', opacity: .9 },
+  ], { duration: 520 + Math.random() * 160, easing: 'cubic-bezier(.15,.7,.4,1)' });
+  climb.onfinish = () => {
+    ember.remove();
+    // the same particle engine as everything else, thrown twice as far
+    burst(x, peakY, color, 38, { host, size: 1.7, dist: 2.1 });
+    ring(host, x, peakY, color);
+    flash(0.14);
+  };
+}
+
+/* the shockwave a burst leaves behind — one expanding hoop, gone in 600ms */
+function ring(host: HTMLElement, x: number, y: number, color: string): void {
+  const r = document.createElement('i');
+  r.className = 'fwring';
+  r.style.left = x + 'px';
+  r.style.top = y + 'px';
+  r.style.borderColor = color;
+  host.appendChild(r);
+  const a = r.animate([
+    { transform: 'translate(-50%,-50%) scale(.1)', opacity: .9 },
+    { transform: 'translate(-50%,-50%) scale(2.6)', opacity: 0 },
+  ], { duration: 620, easing: 'cubic-bezier(.1,.7,.3,1)' });
+  a.onfinish = () => r.remove();
 }
 
 export function shake(power?: number): void {
