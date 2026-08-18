@@ -83,6 +83,10 @@ try {
   check(/ELO/.test(sumA.elo), 'end summary missing Elo delta', sumA);
 
   // ---- bot match: alice alone via Play again, waits past the bot threshold ----
+  // close B first: an occluded page gets its timers throttled by headless
+  // Chromium, which once slowed A's animation chain past the round budget
+  await B.close();
+  await A.bringToFront();
   await A.tap('#btnResultAgain');
   const t1 = Date.now();
   while (Date.now() - t1 < 25000) { if (await inMatch(A)) break; await A.waitForTimeout(500); }
