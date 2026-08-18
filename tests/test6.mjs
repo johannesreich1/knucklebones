@@ -56,6 +56,11 @@ const cpuEnd=await page.evaluate(()=>({shown:document.getElementById('ovEnd').cl
   you:+document.getElementById('endYou').textContent,cpu:+document.getElementById('endCpu').textContent,
   realYou:window.__kb.boardTotal(window.__kb.S.boards[1]),realCpu:window.__kb.boardTotal(window.__kb.S.boards[0])}));
 check(cpuEnd.you===cpuEnd.realYou&&cpuEnd.cpu===cpuEnd.realCpu,'end scores mismatch',cpuEnd);
+// a decided game settles the shared board: no plate still claims a live turn,
+// no column still offers itself. Both flows go through render.settleBoard().
+const settled=await page.evaluate(()=>({active:document.querySelectorAll('.plate.active').length,
+  legal:document.querySelectorAll('.col.legal').length,pills:document.querySelectorAll('.chip .dl.show').length}));
+check(settled.active===0&&settled.legal===0&&settled.pills===0,'board still live after game over',settled);
 
 // ---- duo game by touch ----
 await page.tap('#btnMenu2'); await page.waitForTimeout(500);

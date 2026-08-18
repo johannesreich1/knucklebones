@@ -1,4 +1,4 @@
-<!-- meta name="Match — your move" group="2 · Online flow" subtitle="The badge names the mode and opens its rules (offline too); ONE hud control — settings, with quit in its sheet" width=412 height=980 links="Result, Game modes" -->
+<!-- meta name="Match — your move" group="2 · Online flow" subtitle="Plates never glow — the status, clock and dashed columns carry the turn; the badge opens the mode's rules" width=412 height=980 links="Result, Game modes" -->
 <style>
   .scr{gap:6px}
   .mhud{display:flex;align-items:center;gap:8px;height:30px}
@@ -20,10 +20,13 @@
   .mplate.p1 .dot{background:var(--cy);box-shadow:0 0 10px var(--cy)}
   .mplate.p1 .tot{color:var(--cy);text-shadow:0 0 16px var(--cy)}
   .mplate.idle{opacity:.6}
+  /* no hairlines framing the centre — the glow palette separates the halves */
   .centerrow{display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 0;position:relative}
-  .centerrow::before,.centerrow::after{content:"";position:absolute;left:6%;right:6%;height:1px;
-    background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent)}
-  .centerrow::before{top:0}.centerrow::after{bottom:0}
+  /* a clocked game (every ranked match) shrinks the stage die from .92 to .80
+     of a cell, so the bar's lane never crowds the far board */
+  .mclock{display:flex;align-items:center;gap:6px}
+  .mclock .track{width:118px;height:3px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+  .mclock .bar{display:block;height:100%;width:62%;border-radius:99px;background:var(--cy);box-shadow:0 0 8px var(--cy)}
   .mstatus{font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--cy);
     text-transform:uppercase;text-shadow:0 0 12px rgba(40,232,255,.5)}
 </style>
@@ -43,8 +46,9 @@
   </div>
 
   <div class="centerrow dice-static">
-    {{die:5:p1:54}}
+    {{die:5:p1:46}}
     <div class="mstatus">Your move</div>
+    <div class="mclock"><span class="track"><span class="bar"></span></span></div>
   </div>
 
   <div class="board3 side-bot dice-static">

@@ -17,9 +17,9 @@ import { showBag, renderBag } from '../ui/bag.ts';
 import { nameOf, colorOf } from '../ui/identity.ts';
 import { makeDie, setStageDie } from '../ui/die.ts';
 import { REDUCED, burst, floatPts, shake, flash } from '../ui/fx.ts';
-import { renderSide, renderAll, applySides, updateRecord, clearHints, showHints, setStatus, setActivePlate } from '../ui/render.ts';
+import { renderSide, renderAll, applySides, updateRecord, clearHints, showHints, setStatus, setActivePlate, settleBoard } from '../ui/render.ts';
 import { fit } from '../ui/layout.ts';
-import { startTimer, stopTimer } from './timer.ts';
+import { startTimer, stopTimer, showClock } from './timer.ts';
 import { coachShow, coachHide, clearTut, tutNextRoll, tutOnChoose } from './tutorial.ts';
 import { updateStatLine } from './menu.ts';
 
@@ -324,6 +324,7 @@ export function newGame(opts){
   S.bottom = (S.mode==='duo' && S.seat==='pass') ? S.turn : ME;
   clearHints();
   setStageDie(0);
+  showClock();                               // reserve the clock lane only if this game has one
   fit();                                     // the tutorial's pill lane changes cell size
   applySides();
   updateRecord();
@@ -340,12 +341,10 @@ export function newGame(opts){
   }
 }
 function endGame(){
-  S.phase='over'; S.busy=false;
   stopTimer();
   const tut=!!S.tut;
   if(tut){ S.tutDone=true; clearTut(); }     // graduate
-  setActivePlate();
-  clearHints();
+  settleBoard();
   const me=localTotal(ME), ai=localTotal(AI);
   const t=$('#endTitle'), sub=$('#endSub');
   const duo = S.mode==='duo';

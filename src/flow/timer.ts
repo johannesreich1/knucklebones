@@ -10,6 +10,15 @@ import { colorOf } from '../ui/identity.ts';
    expiry it drops the die into a random legal column so a walk-away can't
    stall the game. */
 let timerId=null;
+/* does THIS game run a local clock? the two-player opt-in from the Offline view */
+const localClock = () => S.mode==='duo' && !!S.timer;
+/* Declare the clock lane for the whole game, the way showBag declares the bag.
+   The bar itself comes and goes each turn; its LANE must not, or the board
+   bounces at every hand-off — and an unclocked game hands the space back to the
+   centre stage instead of holding an empty strip. Online always passes true. */
+export function showClock(on=localClock()){
+  document.documentElement.classList.toggle('clock', !!on);
+}
 export function stopTimer(){
   if(timerId){ clearInterval(timerId); timerId=null; }
   const w=$('#timerWrap');
@@ -20,7 +29,7 @@ export function startTimer(onExpire,secs){
   // No explicit secs = local two-player, opted in via the practice setting.
   // With secs (online) the CALLER owns the lifecycle: it runs for either
   // side's turn (phase is 'anim' on the opponent's) and stops via stopTimer.
-  if(secs==null && (S.mode!=='duo' || !S.timer || S.phase!=='choose')) return;
+  if(secs==null && (!localClock() || S.phase!=='choose')) return;
   const gen=S.gen, total=(secs??S.timer)*1000, end=performance.now()+total;
   const wrap=$('#timerWrap'), bar=$('#timerBar'), num=$('#timerNum');
   wrap.style.setProperty('--tcbase', colorOf(S.turn));   // clock wears the mover's colour

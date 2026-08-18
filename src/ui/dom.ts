@@ -28,6 +28,10 @@ export function chipEl(who: Player, c: number): HTMLElement {
 
 /* is this player's half displayed upside-down right now? (portrait face mode) */
 export function faceRotated(who: Player): boolean {
-  return who === AI && S.mode === 'duo' && S.seat === 'face' &&
+  // Ask the question the CSS asks -- <html>.face -- not the two local settings
+  // it happens to be derived from offline. Online sets S.mode='duo' purely to
+  // unlock input gating and never owns S.seat, so re-deriving here rotated
+  // every ranked score float for anyone whose local seating was face-to-face.
+  return who === AI && document.documentElement.classList.contains('face') &&
          !document.documentElement.classList.contains('land');
 }

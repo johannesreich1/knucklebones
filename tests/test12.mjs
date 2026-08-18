@@ -58,6 +58,22 @@ out.aligned = await page.evaluate(() => [0, 1, 2].every(c => {
 }));
 check(out.aligned, 'facing columns misaligned in face mode', out.aligned);
 
+// The JS that rotates score floats must ask the SAME question the CSS asks —
+// <html>.face — not re-derive it from S.mode/S.seat. Online sets S.mode='duo'
+// for input gating and clears the class, so a re-derived predicate printed every
+// ranked +points upside down for anyone whose local seating was face-to-face.
+out.faceSrc = await page.evaluate(() => {
+  const k = window.__kb, html = document.documentElement;
+  const seated = { css: html.classList.contains('face'), js: k.faceRotated(0) };
+  html.classList.remove('face');                 // exactly what enterMatch() does
+  const online = { css: html.classList.contains('face'), js: k.faceRotated(0) };
+  html.classList.toggle('face', seated.css);     // put it back
+  return { seated, online, settingsStillFace: k.S.seat === 'face' && k.S.mode === 'duo' };
+});
+check(out.faceSrc.seated.js, 'face seating no longer rotates the far half', out.faceSrc);
+check(out.faceSrc.settingsStillFace && !out.faceSrc.online.js,
+      'score floats rotate off a stale local setting instead of html.face', out.faceSrc);
+
 // play a full game: each player taps their OWN half, no pass card ever
 let p2Placed = 0, sawPass = false, bottomMoved = false, turnChecks = [];
 for (let i = 0; i < 1200; i++) {  // generous on purpose: random endgames + slow machines (see test6)

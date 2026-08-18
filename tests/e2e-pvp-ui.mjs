@@ -92,7 +92,9 @@ try {
   while (Date.now() - t1 < 25000) { if (await inMatch(A)) break; await A.waitForTimeout(500); }
   check(await inMatch(A), 'bot match did not start');
   let brounds = 0;
-  while (brounds < 80) {
+  // headroom: a bot now takes a RANDOM think (usually fast, rarely ~6s) instead
+  // of a fixed beat, so a whole match can run several seconds longer than before
+  while (brounds < 120) {
     const s = await snap(A);
     if (s.over) break;
     if (s.phase === 'choose' && s.turn === s.bottom) {

@@ -8,7 +8,7 @@ import { modeById } from '../core/modes.ts';
 import { modeIcon } from '../ui/modeicons.ts';
 import { ONLINE_TURN_SECS } from '../config.ts';
 import { S } from '../state.ts';
-import { startTimer, stopTimer } from '../flow/timer.ts';
+import { startTimer, stopTimer, showClock } from '../flow/timer.ts';
 import { setLeaveInterceptor } from '../flow/leave.ts';
 import { $, show, hide, sideKey, chipEl } from '../ui/dom.ts';
 import { Sfx, vibrate } from '../ui/audio.ts';
@@ -16,7 +16,7 @@ import { setStageDie } from '../ui/die.ts';
 import { showBag, renderBag, BAG_SIZE } from '../ui/bag.ts';
 import { floatPts } from '../ui/fx.ts';
 import { colorOf } from '../ui/identity.ts';
-import { buildBoards, renderAll, renderSide, clearHints, showHints, setStatus, setActivePlate, claimBadge, releaseBadge } from '../ui/render.ts';
+import { buildBoards, renderAll, renderSide, clearHints, showHints, setStatus, setActivePlate, settleBoard, claimBadge, releaseBadge } from '../ui/render.ts';
 import { fit } from '../ui/layout.ts';
 import { setPlaceHandler } from '../ui/input.ts';
 import { flyDie, destroyAt } from '../flow/game.ts';
@@ -109,6 +109,7 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   // and no face is ever revealed.
   O.limited = spec.mode === LIMITED;
   showBag(O.limited);
+  showClock(true);                 // ranked always runs the server clock
 
   hide('#ovOnline'); hide('#ovStart'); hide('#ovEnd'); hide('#ovRules'); hide('#ovPass'); hide('#ovPractice');
   document.documentElement.classList.remove('face', 'tut', 'p2turn');
@@ -160,8 +161,11 @@ function refreshTurnUI(): void {
   // The 10s turn clock, both sides. Mine auto-places at zero (an honest
   // client never stalls); theirs just downgrades the status to "waiting" —
   // the 30s watchdog/forfeit handles an opponent who is truly gone.
-  startTimer(mine ? autoPlace : () => { if (O && !O.done) setStatus('Waiting for ' + oppName(), S.turn, false); },
-    ONLINE_TURN_SECS);
+  startTimer(mine ? autoPlace : oppStalled, ONLINE_TURN_SECS);
+}
+/* their clock ran out: say so and let the watchdog decide if they are gone */
+function oppStalled(): void {
+  if (O && !O.done) setStatus('Waiting for ' + oppName(), S.turn, false);
 }
 
 /* the roll, with local play's full juice: scramble the face with ticks for a
@@ -234,20 +238,46 @@ async function onlinePlace(who: Player, col: number): Promise<void> {
   if (bot) O.applied += 1;       // the bot's reply is committed server-side too
   O.lastMoveAt = Date.now();
   try {
-    if (bot) {
-      // the response already carries the post-reply state (turn back to us),
-      // so nothing else would ever say the opponent is thinking — say it here
-      setStatus(oppName() + ' thinking', (1 - O.you) as Player, false);
-      await pause(450);          // a beat before the "opponent" answers
-      revealDie(bot.die, (1 - O.you) as Player);   // their roll, fully animated
-      await pause(700);          // the roll lands, then the die flies
-      await animateMove((1 - O.you) as Player, bot.col, bot.die);
-    }
+    if (bot) await botReply(bot);
   } finally { if (O) O.animating = false; }
   if (!O) return;
   const row = O.pendingRow ?? r.data.match;
   O.pendingRow = null;
   applyMatchRow(row);   // may re-defer into pendingRow if a sync is mid-fetch
+}
+
+/* How long a bot "thinks". A fixed beat every single turn is what gives a bot
+   away — most human turns are a quick tap, some are a real pause, and once in a
+   while somebody stares at the board. Usually fast, so it never becomes a wait
+   the player resents. Capped well inside the turn clock: a bot must never lose
+   to its own countdown. */
+function botThinkMs(): number {
+  const r = Math.random();
+  const t = r < 0.62 ? 260 + Math.random() * 620        // straight back
+          : r < 0.92 ? 900 + Math.random() * 1500       // a considered pause
+          : 2500 + Math.random() * 2800;                // a long look at the board
+  return Math.min(t, ONLINE_TURN_SECS * 1000 - 1200);
+}
+
+/* The bot's move comes back inside OUR move request, already committed — so its
+   turn is ours to perform. Give it a real turn: their colour on the clock, their
+   die rolled in the open, and the countdown running exactly as a human's does,
+   so the bar means the same thing whoever is sitting across the table. */
+async function botReply(bot: { col: number; die: number }): Promise<void> {
+  if (!O) return;
+  const them = (1 - O.you) as Player;
+  S.turn = them;                    // their turn for real — this also shuts the
+  setActivePlate();                 // input gate, which reads S.turn
+  setStatus(oppName() + ' thinking', them, false);
+  startTimer(oppStalled, ONLINE_TURN_SECS);
+  await pause(260);                 // the turn passing
+  if (!O) return;
+  revealDie(bot.die, them);
+  await pause(340);                 // the roll lands...
+  await pause(botThinkMs());        // ...and then they think about it
+  if (!O) return;
+  stopTimer();
+  await animateMove(them, bot.col, bot.die);
 }
 
 async function animateMove(who: Player, col: number, die: number): Promise<void> {
@@ -377,7 +407,7 @@ function finishUI(m: MatchRow): void {
   const delta = (meP1 ? (m as any).p1_rating_delta : (m as any).p2_rating_delta) as number | null;
   const won = m.winner !== null && ((meP1 && m.winner === m.p1) || (!meP1 && m.winner === m.p2));
   setStatus(won ? 'You win' : m.winner === null ? 'Draw' : oppName() + ' wins', won ? O.you : (1 - O.you) as Player, false);
-  S.phase = 'over';
+  settleBoard();                                   // same end beat as local play
   const report: FinishReport = {
     won, draw: m.winner === null, forfeit: m.status === 'forfeit',
     my, their, delta, opp: oppName(),
@@ -398,5 +428,6 @@ export function teardown(): void {
   $('#btnMenu').textContent = 'Quit game';
   releaseBadge();                  // hands #rec back to the local record
   showBag(false);
+  showClock(false);
   O = null;
 }

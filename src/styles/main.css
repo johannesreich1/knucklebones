@@ -90,17 +90,11 @@
 .side[data-owner="1"]{--c:var(--cy)}
 .side[data-owner="0"]{--c:var(--mg)}
 
-/* turn glow on active plate */
+/* Nameplates never glow. The turn is already said three louder ways — the
+   status line, the running clock and the dashed legal columns — so a breathing
+   pill behind a name was decoration competing with the board. The .active class
+   stays: it is the state both flows settle at game over (render.settleBoard). */
 .plate.active{position:relative}
-.plate.active .nm{opacity:1}
-.plate.active::before{content:"";position:absolute;left:-6px;right:-6px;top:-3px;bottom:-3px;
-  border-radius:12px;background:linear-gradient(90deg,color-mix(in srgb,var(--c) 22%,transparent),transparent 70%);
-  animation:breathe 2.2s ease-in-out infinite}
-@keyframes breathe{0%,100%{opacity:.45}50%{opacity:1}}
-/* the bottom half is always whoever holds the phone — a your-turn pill behind
-   your own name is redundant there (status, clock and hints already say it);
-   only the TOP plate signals the opponent's turn with the glow */
-#plateBot.active::before{content:none}
 
 /* board */
 .boardwrap{flex:0 0 auto;display:flex;justify-content:center}
@@ -188,7 +182,10 @@
   gap:5px;padding:5px 0;position:relative}
 /* (the hairline dividers that used to frame the centre are gone by request —
    the glow palette separates the halves well enough on its own) */
-#dieStage{width:calc(var(--cell)*.92);height:calc(var(--cell)*.92);position:relative;--cell2:calc(var(--cell)*.92)}
+#dieStage{--cell2:calc(var(--cell)*.92);width:var(--cell2);height:var(--cell2);position:relative}
+/* a clocked game spends stage height on the bar, so the die gives some back —
+   the centre keeps breathing room above it instead of crowding the far board */
+html.clock #dieStage{--cell2:calc(var(--cell)*.80)}
 #dieStage .die{--cell:var(--cell2)}
 #dieStage.rolling .die{animation:rollspin .42s linear infinite}
 @keyframes rollspin{0%{transform:rotate(0) scale(1)}25%{transform:rotate(90deg) scale(1.06)}
@@ -202,11 +199,14 @@
 .dots::after{content:"";animation:dots 1.2s steps(4,end) infinite}
 @keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
 
-/* turn clock (two-player only). Space is always reserved so the board never
-   jumps when it appears. */
-.timer{height:12px;display:flex;align-items:center;gap:6px;visibility:hidden;
-  --tc:var(--tcbase,var(--cy))}
-.timer.on{visibility:visible}
+/* Turn clock. The bar blinks in and out every turn, so its LANE is held for the
+   whole game (html.clock, declared once on entry by flow/timer.showClock) —
+   otherwise the board would bounce at every hand-off. A game with no clock at
+   all gives the lane back rather than holding an empty strip that pushes the
+   die off centre. */
+.timer{display:none;height:12px;align-items:center;gap:6px;--tc:var(--tcbase,var(--cy))}
+html.clock .timer{display:flex;visibility:hidden}
+html.clock .timer.on{visibility:visible}
 .timer .track{width:118px;height:3px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
 .timer .bar{display:block;height:100%;width:100%;border-radius:99px;background:var(--tc,var(--cy));
   box-shadow:0 0 8px var(--tc,var(--cy));transition:width .1s linear}

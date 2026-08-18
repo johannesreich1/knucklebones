@@ -231,9 +231,19 @@ export function setActivePlate(){
   $('#plateBot').classList.toggle('active', live && !topActive);
   $('#plateTop').classList.toggle('active', live && topActive);
   /* face-to-face: the idle half dims, and the centre stage (die, status, clock)
-     turns toward whoever is playing — that IS the hand-off signal */
-  const face = S.mode==='duo' && S.seat==='face';
+     turns toward whoever is playing — that IS the hand-off signal.
+     <html>.face is the ONE source of truth for the seating (see faceRotated) */
+  const face = document.documentElement.classList.contains('face');
   $('#sideTop').classList.toggle('idle', face && live && !topActive);
   $('#sideBot').classList.toggle('idle', face && live && topActive);
   document.documentElement.classList.toggle('p2turn', face && live && topActive);
+}
+/* The game stopped: settle the shared view. Whichever flow decided it is over,
+   the board must stop advertising a live turn — online used to leave the last
+   mover's plate glowing and the dashed legal columns up for the whole end beat
+   while the status line already read "You win". */
+export function settleBoard(){
+  S.phase='over'; S.busy=false;
+  setActivePlate();
+  clearHints();
 }
