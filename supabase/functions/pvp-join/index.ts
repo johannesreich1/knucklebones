@@ -112,6 +112,9 @@ Deno.serve(async (req: Request) => {
     return match;
   };
 
+  const { data: myProf } = await svc.from("profiles").select("rating").eq("id", uid).single();
+  const myR = myProf?.rating ?? 1000;
+
   // try to pair with the longest-waiting other human
   const { data: partner } = await svc.from("matchmaking_queue")
     .select("player_id").neq("player_id", uid)
@@ -121,21 +124,33 @@ Deno.serve(async (req: Request) => {
     const { data: claimed } = await svc.from("matchmaking_queue")
       .delete().eq("player_id", partner.player_id).select("player_id");
     if (claimed && claimed.length === 1) {
-      const match = await startMatch(partner.player_id, uid);  // they waited: they start
-      if (match) return json({ status: "matched", match, you: 0, names: await names(match.p1, match.p2) });
+      // handicap: the LOWER-rated player takes the first move — the small
+      // first-move edge works as an equalizer. Ties go to the longer wait.
+      const { data: theirProf } = await svc.from("profiles").select("rating").eq("id", partner.player_id).single();
+      const theirR = theirProf?.rating ?? 1000;
+      const first = myR < theirR ? uid : partner.player_id;
+      const second = first === uid ? partner.player_id : uid;
+      const match = await startMatch(first, second);
+      if (match) return json({ status: "matched", match, you: match.p1 === uid ? 1 : 0, names: await names(match.p1, match.p2) });
     }
   }
 
-  // no partner: sit in the queue; with allow_bot, back-fill from the bot pool
+  // no partner: sit in the queue; with allow_bot, back-fill from the bot pool.
+  // (Vs a bot the human MUST be p1: bots only move inside the human's
+  // requests, so a bot could never make the opening move.)
   await svc.from("matchmaking_queue").upsert({ player_id: uid });
   if (allowBot) {
-    const { data: bots } = await svc.from("profiles").select("id").eq("is_bot", true);
+    const { data: bots } = await svc.from("profiles").select("id, rating").eq("is_bot", true);
     const { data: busy } = await svc.from("matches").select("p1, p2").eq("status", "active");
     const busyIds = new Set((busy ?? []).flatMap((m: any) => [m.p1, m.p2]));
-    const free = (bots ?? []).map((b: any) => b.id).filter((id: string) => !busyIds.has(id));
+    const free = (bots ?? []).filter((b: any) => !busyIds.has(b.id));
     if (free.length) {
-      const bot = free[Math.floor(Math.random() * free.length)];
-      const match = await startMatch(uid, bot);               // human always starts vs a bot
+      // rating-matched backfill: one of the three bots closest to the human's
+      // rating (a dash of randomness so it isn't always the same face)
+      free.sort((a: any, b: any) => Math.abs(a.rating - myR) - Math.abs(b.rating - myR));
+      const pick = free.slice(0, 3);
+      const bot = pick[Math.floor(Math.random() * pick.length)].id;
+      const match = await startMatch(uid, bot);
       if (match) return json({ status: "matched", match, you: 1, names: await names(match.p1, match.p2) });
     }
   }
