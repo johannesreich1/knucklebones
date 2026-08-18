@@ -76,7 +76,8 @@ try {
   /* what a PLAYER can see, plus the state behind it */
   const look = () => page.evaluate(() => {
     const dice = [...document.querySelectorAll('#topBoard .die,#botBoard .die')];
-    const rune = document.querySelector('.rune');
+    const rune = document.querySelector('.rune[data-seat="1"]');   // the near seat's — yours
+    const foe = document.querySelector('.rune[data-seat="0"]');
     return {
       mine: JSON.stringify(window.__kb.S.boards[1]), theirs: JSON.stringify(window.__kb.S.boards[0]),
       charges: JSON.stringify(window.__kb.S.spellCharges),
@@ -85,6 +86,8 @@ try {
       barHidden: document.getElementById('spellBar').hidden,
       runeShown: !!rune && !!rune.offsetParent,
       runeClass: rune ? rune.className : null,
+      foeClass: foe ? foe.className : null,
+      foeShown: !!foe && !!foe.offsetParent,
       present: dice.length,
       visible: dice.filter(d => getComputedStyle(d).visibility === 'visible' && +getComputedStyle(d).opacity > 0.05).length,
       strays: document.querySelectorAll('body > .die, body > .runeghost').length,
@@ -100,9 +103,14 @@ try {
   out.dealt = await look();
   check(out.dealt.runeShown && !out.dealt.barHidden, 'no rune in an offline game', out.dealt);
   check(out.dealt.charges === '[{"swap":1},{"swap":1}]', 'both seats hold one cast', out.dealt.charges);
+  // BOTH seats ride the rail: "does the opponent still have theirs?" must be
+  // answerable by looking, and an opponent's rune is never pressable
+  check(out.dealt.foeShown, "the opponent's rune is not on the rail", out.dealt);
+  check(/\bidle\b/.test(out.dealt.foeClass) && !/\bready\b/.test(out.dealt.foeClass),
+    "the opponent's rune must read as theirs, loaded and not yours to press", out.dealt.foeClass);
 
   /* ---------- 2. tap to arm ---------- */
-  await page.tap('.rune'); await page.waitForTimeout(120);
+  await page.tap('.rune[data-seat="1"]'); await page.waitForTimeout(120);
   out.armed = await look();
   check(out.armed.armed === 'swap', 'tapping the rune did not arm it', out.armed);
   check(out.armed.casting, 'the board never entered casting', out.armed);
@@ -131,7 +139,7 @@ try {
   /* ---------- 4. spent: no second cast, and the die still places ---------- */
   out.spent = await page.evaluate(async () => {
     const k = window.__kb;
-    const b = document.querySelector('.rune');
+    const b = document.querySelector('.rune[data-seat="1"]');
     b.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, clientX: 1, clientY: 1 }));
     return { disabled: b.disabled, armed: k.S.spellArmed, again: await k.spells.cast('swap', 0),
              mine: JSON.stringify(k.S.boards[1]) };
@@ -147,7 +155,7 @@ try {
   /* ---------- 5. drag and drop reaches the same gate ---------- */
   await newGame(); check(await waitChoose(), 'game never reached choose (drag)');
   await table([[1, 1], [], []], [[6], [], []]);
-  const box = await page.locator('.rune').boundingBox();
+  const box = await page.locator('.rune[data-seat="1"]').boundingBox();
   const target = await page.locator('#botBoard .col[data-col="0"]').boundingBox();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
@@ -211,6 +219,41 @@ try {
     'a spell fired with the layer switched off', out.offCast);
   await tapCol(2); await page.waitForTimeout(900);
   check((await look()).mine === '[[6,6],[3],[4]]', 'ordinary play broken with spells off', await look());
+
+  /* ---------- 8b. the CPU holds the same rune, and spends it ----------
+     It was dealt a charge from the first build; leaving it unspent made VS CPU
+     quietly one-sided. HARD takes a big steal and declines a trivial one. */
+  await newGame(); check(await waitChoose(), 'game never reached choose (cpu)');
+  out.cpuTakes = await page.evaluate(async () => {
+    const k = window.__kb;
+    k.S.mode = 'cpu'; k.S.diff = 'hard';
+    k.S.boards[1] = [[6, 6, 6], [1], []];   // the human's fat column...
+    k.S.boards[0] = [[2], [], []];          // ...facing the machine's single 2
+    k.S.turn = 0; k.S.bottom = 1; k.S.busy = false; k.S.die = 3;
+    k.applySides(); k.renderAll(false);
+    const over = await k.spells.ai(0);
+    return { over, cpu: JSON.stringify(k.S.boards[0]), human: JSON.stringify(k.S.boards[1]),
+             charges: JSON.stringify(k.S.spellCharges) };
+  });
+  check(out.cpuTakes.cpu === '[[6,6,6],[],[]]' && out.cpuTakes.human === '[[2],[1],[]]',
+    'THE CPU LEFT A FREE STEAL ON THE TABLE', out.cpuTakes);
+  check(out.cpuTakes.charges === '[{"swap":0},{"swap":1}]', 'the CPU charged the wrong seat', out.cpuTakes);
+  // and the player can SEE that it spent it
+  check(/\bspent\b/.test((await look()).foeClass), "a spent opponent rune must say so", (await look()).foeClass);
+  // a swing below what its difficulty demands is declined, charge intact
+  await newGame(); check(await waitChoose(), 'game never reached choose (cpu decline)');
+  out.cpuHolds = await page.evaluate(async () => {
+    const k = window.__kb;
+    k.S.mode = 'cpu'; k.S.diff = 'hard';
+    k.S.boards[1] = [[2], [], []];          // nothing worth taking
+    k.S.boards[0] = [[1], [], []];
+    k.S.turn = 0; k.S.bottom = 1; k.S.busy = false; k.S.die = 3;
+    k.applySides(); k.renderAll(false);
+    await k.spells.ai(0);
+    return { cpu: JSON.stringify(k.S.boards[0]), charges: JSON.stringify(k.S.spellCharges) };
+  });
+  check(out.cpuHolds.cpu === '[[1],[],[]]' && out.cpuHolds.charges === '[{"swap":1},{"swap":1}]',
+    'the CPU burned its rune on nothing', out.cpuHolds);
 
   /* ---------- 9. the tutorial is a scripted lesson: no spells in it ---------- */
   await newGame({ tutorial: true }); await page.waitForTimeout(900);

@@ -21,7 +21,7 @@ import { fit } from '../ui/layout.ts';
 import { startTimer, stopTimer, showClock } from './timer.ts';
 import { coachShow, coachHide, clearTut, tutNextRoll, tutOnChoose } from './tutorial.ts';
 import { updateStatLine } from './menu.ts';
-import { resetSpells, renderSpells } from './spells.ts';
+import { resetSpells, renderSpells, aiSpellTurn } from './spells.ts';
 
 /* arm the turn clock: on expiry the die drops into a random legal column */
 export function armTimer(){ const gen=S.gen; startTimer(()=>autoPlace(gen)); }
@@ -175,6 +175,10 @@ export async function nextTurn(){
     S.phase='anim';
     setStatus('CPU thinking',AI,true);
     await wait(300);
+    if(S.gen!==gen) return;
+    // it holds the same rune you do — it spends it at the same point in the
+    // turn, before choosing a column, and aiChoose then reads the new board
+    if(await aiSpellTurn(AI)) return;             // the swap ended the game
     if(S.gen!==gen) return;
     const c=aiChoose();
     await wait(140);

@@ -11,7 +11,7 @@
 // the client and the server telling different stories. That boundary is why
 // this module knows nothing about the network: flow/spells simply deals no
 // charges in an online match.
-import { SPEC, type GameState, type Player } from './rules.ts';
+import { SPEC, boardTotalMode, cloneSt, type GameState, type Mode, type Player } from './rules.ts';
 
 export interface SpellSpec {
   id: string;        // stable — persisted, tested and styled against; never rename
@@ -59,6 +59,33 @@ export const SPELLS: SpellSpec[] = [SWAP];
 
 export function spellById(id: string | null | undefined): SpellSpec | null {
   return SPELLS.find((s) => s.id === id) ?? null;
+}
+
+/* ---- what a cast is WORTH ----
+   Written against the SpellSpec interface, never against one spell: any future
+   spell gets a CPU that can weigh it the day it is registered. Pure, so the
+   machine's policy asks exactly the question the effect will answer. */
+
+/* the swing in the score DIFFERENCE, from `who`'s side: what they gain plus
+   what the opponent loses, under the mode actually being played */
+export function swingOf(st: GameState, who: Player, spell: SpellSpec, col: number, mode: Mode): number {
+  const foe = (1 - who) as Player;
+  const lead = (s: GameState) => boardTotalMode(s[who], mode) - boardTotalMode(s[foe], mode);
+  const after = cloneSt(st);
+  spell.apply(after, who, col);
+  return lead(after) - lead(st);
+}
+
+/* the best legal target and what it is worth, or null if none is legal.
+   Ties go to the lower column, so the choice is deterministic and replayable. */
+export function bestTarget(st: GameState, who: Player, spell: SpellSpec, mode: Mode): { col: number; swing: number } | null {
+  let best: { col: number; swing: number } | null = null;
+  for (let c = 0; c < SPEC.cols; c++) {
+    if (!spell.legal(st, who, c)) continue;
+    const swing = swingOf(st, who, spell, c, mode);
+    if (!best || swing > best.swing) best = { col: c, swing };
+  }
+  return best;
 }
 
 /* One player's opening hand: the chosen spell, with its uses. An EMPTY object

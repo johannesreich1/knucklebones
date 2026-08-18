@@ -11,8 +11,9 @@
 // Everywhere else — ranked matches, the tutorial, the layer switched off — both
 // seats hold an empty hand, the rail is hidden and every entry point here
 // no-ops. The game is then exactly the game that shipped before spells existed.
-import { AI, ME, SPEC, isFull, type GameState, type Player } from '../core/rules.ts';
-import { SPELLS, spellById, freshCharges, type SpellSpec } from '../core/spells.ts';
+import { AI, ME, SPEC, isFull, legalCols, cloneSt, boardTotalMode,
+         type GameState, type Player } from '../core/rules.ts';
+import { SPELLS, spellById, freshCharges, bestTarget, type SpellSpec } from '../core/spells.ts';
 import { S } from '../state.ts';
 import { $, colEl, slotEl, slotIdx, faceRotated } from '../ui/dom.ts';
 import { isEmbed, rootRect } from '../ui/embed.ts';
@@ -20,16 +21,11 @@ import { Sfx, vibrate } from '../ui/audio.ts';
 import { REDUCED, burst, shake, flash, pin, nope, fxRoot } from '../ui/fx.ts';
 import { spellIcon, spellHue } from '../ui/spellicons.ts';
 import { renderSide, setStatus, showHints } from '../ui/render.ts';
-import { colorOf } from '../ui/identity.ts';
+import { colorOf, nameOf } from '../ui/identity.ts';
 import { stopTimer } from './timer.ts';
 import { armTimer, endGame, sayChoose } from './game.ts';
 
 /* ===================== WHO HOLDS WHAT ===================== */
-/* The rail speaks for ONE seat. Against the machine that is always you — the
-   CPU does not cast (v1), so a rail that changed hands every turn would only
-   flicker. Two humans share the phone, so it follows whoever is to move. */
-function holder(): Player { return S.mode === 'cpu' ? ME : (S.turn as Player); }
-
 /* the player who may cast RIGHT NOW, or null — the same gate placement uses:
    their turn, their choice to make, nothing else in flight */
 function caster(): Player | null {
@@ -64,40 +60,56 @@ export function clearSpells(): void {
 }
 
 /* ===================== THE RAIL ===================== */
+/* The rail carries BOTH seats, laid out like the table itself: the far
+   player's rune above the die in play, the near player's below it, each in its
+   owner's colour. "Does the CPU still have its spell?" becomes a glance rather
+   than a memory — and the moment it fires, the rune everyone was watching
+   greys out. */
 export function renderSpells(): void {
   const bar = $('#spellBar') as HTMLElement | null;
   if (!bar) return;
   if (!bar.childElementCount) build(bar);
-  const who = holder();
-  bar.hidden = !dealt(who);
-  const live = caster() !== null;
-  for (const s of SPELLS) {
-    const b = bar.querySelector<HTMLButtonElement>('[data-spell="' + s.id + '"]');
-    if (!b) continue;
-    b.hidden = !(s.id in S.spellCharges[who]);   // the rail carries what was BROUGHT
-    const left = chargesOf(who, s.id);
-    b.classList.toggle('spent', left <= 0);
-    b.classList.toggle('ready', left > 0 && live);
-    b.classList.toggle('armed', S.spellArmed === s.id);
-    b.disabled = left <= 0;
-    const n = b.querySelector('.n');
-    if (n) n.textContent = left > 1 ? String(left) : '';   // a single charge needs no number
-    b.setAttribute('aria-label', s.name + ' — ' + s.blurb
-      + (left > 0 ? ' ' + left + ' cast left.' : ' Spent.'));
+  const far = (1 - S.bottom) as Player, near = S.bottom as Player;
+  const now = caster();
+  bar.hidden = !(dealt(far) || dealt(near));
+  for (const seat of [far, near]) {
+    for (const s of SPELLS) {
+      const b = bar.querySelector<HTMLButtonElement>(
+        '[data-seat="' + seat + '"][data-spell="' + s.id + '"]');
+      if (!b) continue;
+      b.hidden = !(s.id in S.spellCharges[seat]);   // the rail carries what was BROUGHT
+      const left = chargesOf(seat, s.id);
+      const mine = seat === now;                    // only the player to move may cast
+      b.style.setProperty('--sh', colorOf(seat));   // whose rune, in the game's own two colours
+      b.style.order = seat === far ? '0' : '1';     // far above, near below — like the table
+      b.classList.toggle('spent', left <= 0);
+      b.classList.toggle('ready', left > 0 && mine);
+      b.classList.toggle('idle', left > 0 && !mine);
+      b.classList.toggle('armed', S.spellArmed === s.id && mine);
+      b.disabled = left <= 0 || !mine;
+      const n = b.querySelector('.n');
+      if (n) n.textContent = left > 1 ? String(left) : '';   // a single charge needs no number
+      b.setAttribute('aria-label', nameOf(seat) + ': ' + s.name + ' — ' + s.blurb
+        + (left > 0 ? ' ' + left + ' cast left.' : ' Spent.'));
+    }
   }
   document.documentElement.classList.toggle('casting', S.spellArmed !== null);
 }
 
+/* one rune per seat per spell; the render decides which are shown, in which
+   order and in whose colour */
 function build(bar: HTMLElement): void {
-  for (const s of SPELLS) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'rune';
-    b.dataset.spell = s.id;
-    b.style.setProperty('--sh', spellHue(s.id));
-    b.innerHTML = spellIcon(s.id, 22) + '<b class="n"></b>';
-    bind(b, s.id);
-    bar.appendChild(b);
+  for (const seat of [AI, ME] as Player[]) {
+    for (const s of SPELLS) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'rune';
+      b.dataset.spell = s.id;
+      b.dataset.seat = String(seat);
+      b.innerHTML = spellIcon(s.id, 22) + '<b class="n"></b>';
+      bind(b, s.id);
+      bar.appendChild(b);
+    }
   }
 }
 
@@ -125,7 +137,32 @@ export function castArmed(col: number | null): boolean {
   return true;
 }
 
-/* ===================== THE CAST ===================== */
+/* ===================== THE CAST =====================
+   castBy() is the engine: spend, perform, and answer whether the game ended.
+   It takes the caster as an argument rather than asking who is allowed to act,
+   because two very different callers drive it — a player's gesture, which has
+   to be gated first, and the machine on its own turn, which is already inside
+   its turn. Both spend the same charge and run the same effect. */
+async function castBy(who: Player, spell: SpellSpec, col: number): Promise<boolean> {
+  S.spellCharges[who][spell.id] = chargesOf(who, spell.id) - 1;
+  // the board is mid-effect: no taps, no auto-place, no CPU reply
+  S.busy = true;
+  S.phase = 'anim';
+  stopTimer();
+  setStatus(S.mode === 'cpu' && who === AI ? 'CPU — ' + spell.name : spell.name, who, false);
+  const gen = S.gen;
+  await perform(spell, who, col);
+  if (S.gen !== gen) return true;                  // abandoned mid-cast: nothing to hand back
+  renderSpells();
+  // "when EITHER grid is full the game ends". A placement can only fill the
+  // mover's own board, which is why place() checks just that one — a spell can
+  // fill either, so both are asked here.
+  if (isFull(S.boards[ME]) || isFull(S.boards[AI])) { endGame(); return true; }
+  return false;
+}
+
+/* the player's entry: gate first, then the engine, then hand the turn back —
+   the die is still in hand, so a cast is not a move */
 export async function cast(id: string, col: number): Promise<boolean> {
   const spell = spellById(id);
   const who = caster();
@@ -136,26 +173,48 @@ export async function cast(id: string, col: number): Promise<boolean> {
     return false;
   }
   disarm();
-  S.spellCharges[who][id] = chargesOf(who, id) - 1;
-  // the board is mid-effect: no taps, no auto-place, no CPU reply
-  S.busy = true;
-  S.phase = 'anim';
-  stopTimer();
-  setStatus(spell.name, who, false);
-  const gen = S.gen;
-  await perform(spell, who, col);
-  if (S.gen !== gen) return true;                  // abandoned mid-cast
-  renderSpells();
-  // "when EITHER grid is full the game ends". A placement can only fill the
-  // mover's own board, which is why place() checks just that one — a spell can
-  // fill either, so both are asked here.
-  if (isFull(S.boards[ME]) || isFull(S.boards[AI])) { endGame(); return true; }
+  const over = await castBy(who, spell, col);
+  if (over) return true;
   S.busy = false;
   S.phase = 'choose';
   showHints();
   sayChoose();
   armTimer();                                      // the board changed: fresh clock
   return true;
+}
+
+/* ===================== THE MACHINE'S SIDE =====================
+   The CPU holds the same rune the player does, so it has to spend it or the
+   offline game is simply unfair. How eagerly it spends is the difficulty: the
+   swing it demands before casting, in points of score DIFFERENCE. */
+const DEMANDS: Record<string, number> = { easy: 30, medium: 16, hard: 10 };
+
+/* Called on the machine's turn, BEFORE it chooses a column — the same moment
+   in the turn the player gets. Returns whether the game ended on the cast.
+   The board it then plays into is the board the swap left behind: aiChoose()
+   runs afterwards and sees the new position, with no extra plumbing. */
+export async function aiSpellTurn(who: Player): Promise<boolean> {
+  const id = Object.keys(S.spellCharges[who]).find((k) => chargesOf(who, k) > 0);
+  const spell = spellById(id);
+  if (!spell) return false;
+  const st = S.boards as GameState;
+  const pick = bestTarget(st, who, spell, S.scoring);
+  if (!pick) return false;
+  // A charge that survives the last turn was worth nothing: with one slot left
+  // to fill, any gain at all beats keeping it.
+  const room = legalCols(st[who]).length && st[who].reduce((n, c) => n + (SPEC.rows - c.length), 0);
+  let demand = room <= 1 ? 1 : (DEMANDS[S.diff] ?? DEMANDS.medium);
+  if (S.diff === 'easy' && Math.random() < 0.5) return false;   // easy often just misses it
+  if (pick.swing < demand) return false;
+  // Never end the game ON ITSELF from behind: a swap that fills a grid settles
+  // the match immediately, so it must settle it in the caster's favour.
+  const after = cloneSt(st);
+  spell.apply(after, who, pick.col);
+  if (isFull(after[ME]) || isFull(after[AI])) {
+    const foe = (1 - who) as Player;
+    if (boardTotalMode(after[who], S.scoring) <= boardTotalMode(after[foe], S.scoring)) return false;
+  }
+  return castBy(who, spell, pick.col);
 }
 
 /* The two stacks physically change places: clones fly while the originals wait
@@ -275,7 +334,8 @@ function bind(b: HTMLButtonElement, id: string): void {
 }
 
 function tryArm(b: HTMLButtonElement, id: string): boolean {
-  if (caster() === null || chargesOf(holder(), id) <= 0) { Sfx.tap(); bump(b); return false; }
+  const who = caster();
+  if (who === null || chargesOf(who, id) <= 0) { Sfx.tap(); bump(b); return false; }
   Sfx.tap();
   arm(id);
   return true;
