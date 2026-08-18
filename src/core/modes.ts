@@ -5,7 +5,7 @@
 // sizes: the wheel draws every mode as an equal segment and weights the spin
 // (classic 3 of 6 = the agreed 50% no-addition rate).
 import { randStream } from './dice.ts';
-import { CLASSIC, ROWSWITCH, ROWMULT, COLSHIELD, SINGLESTRIKE, BOUNTY, type Mode } from './rules.ts';
+import { CLASSIC, ROWSWITCH, ROWMULT, COLSHIELD, SINGLESTRIKE, BOUNTY, LIMITED, type Mode } from './rules.ts';
 
 export interface ModeSpec {
   mode: Mode;
@@ -17,11 +17,11 @@ export interface ModeSpec {
   weight: number;
 }
 
-/* Production odds: classic half the time (weight 5 of 10), every addition an
-   equal slice of the rest (1 of 10 = 10% each). The agreed contract: no
-   addition in 50% of matches, additions split the other half evenly. */
+/* Production odds: classic half the time (weight 6 of 12), every addition an
+   equal slice of the rest (1 of 12 each). The agreed contract: no addition in
+   50% of matches, additions split the other half evenly. */
 export const MODES: ModeSpec[] = [
-  { mode: CLASSIC, id: 'classic', name: 'CLASSIC', icon: '◆', blurb: 'The pure duel. Columns multiply.', weight: 5,
+  { mode: CLASSIC, id: 'classic', name: 'CLASSIC', icon: '◆', blurb: 'The pure duel. Columns multiply.', weight: 6,
     detail: 'Matching dice stacked in a column multiply: two 4s = 16, three 4s = 36. Place a die and every matching die in the facing enemy column is destroyed. First full grid ends it — highest total wins.' },
   { mode: ROWSWITCH, id: 'rowswitch', name: 'ROW SWITCH', icon: '☰', blurb: 'Scoring turns sideways — only rows count.', weight: 1,
     detail: 'Only ROWS score here — columns count for nothing. Matching dice in the same row multiply, and the rail on the left tracks every row. Destruction still strikes down the facing column.' },
@@ -33,6 +33,8 @@ export const MODES: ModeSpec[] = [
     detail: 'Destruction is surgical: a hit removes only ONE matching die — the one closest to the centre. Stacks survive longer, so multipliers rule the board.' },
   { mode: BOUNTY, id: 'bounty', name: 'BOUNTY', icon: '✦', blurb: 'Every die you destroy banks +1. Forever.', weight: 1,
     detail: 'Every die you destroy banks a permanent +1 on your nameplate — the ✦ tally never resets, even when your own dice fall. Feed on destruction; the bank decides close matches.' },
+  { mode: LIMITED, id: 'limited', name: 'LIMITED', icon: '▦', blurb: 'Every face exists FOUR times. The bag ends it.', weight: 1,
+    detail: 'The dice are finite: one shared bag holds every face exactly four times — 24 dice for the whole match. The rail above the boards counts what remains, so you can read what can still come. When the last die is placed the game ends, full boards or not.' },
 ];
 
 export function modeById(id: string | null | undefined): ModeSpec {

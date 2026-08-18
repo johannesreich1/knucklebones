@@ -4,10 +4,11 @@
 // modded match. Classic (mode 0) must stay bit-identical to the pre-mode game.
 // Run: node --experimental-strip-types tests/modes.test.ts
 import {
-  CLASSIC, ROWSWITCH, ROWMULT, COLSHIELD, SINGLESTRIKE, BOUNTY, type Mode,
+  CLASSIC, ROWSWITCH, ROWMULT, COLSHIELD, SINGLESTRIKE, BOUNTY, LIMITED, type Mode,
   type GameState, type Board, AI, ME,
   emptyBoard, applyMove, boardTotal, boardTotalMode, rowScore, rowBonus,
 } from '../src/core/rules.ts';
+import { poolSequence, POOL_PER_FACE } from '../src/core/dice.ts';
 import { rebuild, matchTotal, type MatchState } from '../src/core/match.ts';
 import { searchRoot, riskOf } from '../src/core/ai.ts';
 import { MODES, pickMode, modeById } from '../src/core/modes.ts';
@@ -103,6 +104,44 @@ check(cl === 2 && JSON.stringify(st[AI][0]) === '[5]', 'classic still takes ever
   const again = rebuild(seed, rows, COLSHIELD);
   check(JSON.stringify(again) === JSON.stringify(rebuild(seed, rows, COLSHIELD)), 'modded rebuild deterministic');
   void diverged;
+}
+
+/* ---- LIMITED: the finite bag ---- */
+{
+  const bag = poolSequence('limited-gate');
+  check(bag.length === 6 * POOL_PER_FACE, 'bag holds 24 dice', bag.length);
+  for (let v = 1; v <= 6; v++)
+    check(bag.filter((d) => d === v).length === POOL_PER_FACE, 'face appears exactly 4 times: ' + v);
+  check(JSON.stringify(bag) === JSON.stringify(poolSequence('limited-gate')), 'bag deterministic');
+  check(JSON.stringify(bag) !== JSON.stringify(poolSequence('limited-gate-b')), 'bag varies by seed');
+
+  // drive a full game: every draw must follow the bag; it must END at the
+  // bag's last die (or a full board, whichever comes first)
+  const rows: { idx: number; who: number; col: number }[] = [];
+  for (let i = 0; i < 40; i++) {
+    const s = rebuild('limited-gate', rows, LIMITED);
+    if (!s) { check(false, 'limited rebuild returned null mid-drive', { i }); break; }
+    if (s.over) break;
+    check(s.nextDie === bag[rows.length], 'draw follows the bag at move ' + rows.length,
+      { got: s.nextDie, want: bag[rows.length] });
+    const lg = s.st[s.turn].map((c, j) => c.length < 3 ? j : -1).filter((j) => j >= 0);
+    rows.push({ idx: rows.length, who: s.turn, col: lg[0] });
+  }
+  const fin = rebuild('limited-gate', rows, LIMITED)!;
+  check(fin.over, 'limited game ended', { moves: rows.length });
+  check(rows.length <= bag.length, 'never more draws than the bag holds', rows.length);
+  // a move past the empty bag must be rejected, never invented
+  if (rows.length === bag.length) {
+    const overdraw = rebuild('limited-gate',
+      [...rows, { idx: rows.length, who: fin.turn, col: 0 }], LIMITED);
+    check(overdraw === null, 'a 25th draw is corrupt, not conjured');
+  }
+  // scoring stays pure classic
+  check(matchTotal(fin, ME, LIMITED) === boardTotalMode(fin.st[ME], CLASSIC),
+    'limited scores classic', matchTotal(fin, ME, LIMITED));
+  // and the endless modes never got their dice shifted by the bag's existence
+  check(rebuild('limited-gate', [], CLASSIC)!.nextDie === rebuild('limited-gate', [], BOUNTY)!.nextDie,
+    'classic stream untouched by the pool draw');
 }
 
 /* ---- the wheel pick: deterministic and weight-faithful, whatever the

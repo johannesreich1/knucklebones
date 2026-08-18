@@ -18,6 +18,9 @@ const PATHS: Record<string, string> = {
     + '<circle class="f" cx="12" cy="17.8" r="1.5"/><path d="M8.6 2.8 15.4 9.6M15.4 2.8 8.6 9.6"/>',
   /* a coin banking its +1 */
   bounty: '<circle cx="12" cy="12" r="8.2"/><path d="M12 8.6v6.8M8.6 12h6.8"/>',
+  /* a small stack of dice — the finite bag */
+  limited: '<rect x="4.4" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="13" y="13" width="6.6" height="6.6" rx="1.8"/>'
+    + '<rect x="8.7" y="4.4" width="6.6" height="6.6" rx="1.8"/><circle class="f" cx="12" cy="7.7" r="1.2"/>',
 };
 
 /* per-mode hues — the mode's colour EVERYWHERE (wheel segments, match badge,
@@ -26,6 +29,7 @@ const PATHS: Record<string, string> = {
 const HUES: Record<string, string> = {
   classic: '#8ea3c0', rowswitch: '#28e8ff', rowmult: '#ff2fa0',
   colshield: '#ffd166', singlestrike: '#ff8a3d', bounty: '#7ee787',
+  limited: '#b18cff',
 };
 export function modeHue(id: string): string { return HUES[id] ?? HUES.classic; }
 

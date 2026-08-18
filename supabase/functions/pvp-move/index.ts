@@ -137,6 +137,12 @@ Deno.serve(async (req: Request) => {
     }
   }
 
+  // LIMITED: the bag can empty without a full board — that ends the game too
+  if (s.over) {
+    const updated = await finish(svc, match, s, MODE, "done");
+    return json({ match: updated, your_die: myDie, bot_move: botMove });
+  }
+
   const { data: updated } = await svc.from("matches").update({
     turn: s.turn, next_die: s.nextDie, last_move_at: new Date().toISOString(),
   }).eq("id", match_id).select(MATCH_COLS).single();

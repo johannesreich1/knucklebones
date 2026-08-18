@@ -6,8 +6,8 @@
 //   p1 = core index 1 (ME) and ALWAYS makes the first move; vs a bot the
 //   human is always p1. Each move consumes exactly one roll from the seed's
 //   dice stream. The game ends the instant a mover fills their board.
-import { type GameState, type Player, type Mode, CLASSIC, BOUNTY, ME, emptyBoard, legalCols, isFull, applyMove, boardTotalMode } from './rules.ts';
-import { diceStream } from './dice.ts';
+import { type GameState, type Player, type Mode, CLASSIC, BOUNTY, LIMITED, ME, emptyBoard, legalCols, isFull, applyMove, boardTotalMode } from './rules.ts';
+import { diceStream, poolSequence } from './dice.ts';
 
 export interface MoveRow { idx: number; who: number; col: number; }
 export interface MatchState {
@@ -24,21 +24,27 @@ export interface MatchState {
 export function rebuild(seed: string, rows: MoveRow[], mode: Mode = CLASSIC): MatchState | null {
   const moves = [...rows].sort((a, b) => a.idx - b.idx);
   const st: GameState = [emptyBoard(), emptyBoard()];
-  const roll = diceStream(seed);
+  // LIMITED draws from the finite bag in shuffled order; everyone else rolls
+  // the endless stream. Call counts are identical, so classic stays bit-exact.
+  const bag = mode === LIMITED ? poolSequence(seed) : null;
+  const stream = bag ? null : diceStream(seed);
+  const roll = (i: number): number => bag ? (bag[i] ?? 0) : stream!();
   const bounty: [number, number] = [0, 0];
   let turn: Player = ME;
   let over = false;
   for (let i = 0; i < moves.length; i++) {
     const m = moves[i];
     if (m.idx !== i || m.who !== turn || over) return null;
-    const die = roll();
+    const die = roll(i);
+    if (!die) return null;                       // a move past the empty bag: corrupt
     if (!legalCols(st[turn]).includes(m.col)) return null;
     const destroyed = applyMove(st, turn, m.col, die, mode);
     if (mode === BOUNTY) bounty[turn] += destroyed;
-    over = isFull(st[turn]);
+    // LIMITED: placing the LAST die from the bag ends the game, full or not
+    over = isFull(st[turn]) || (bag !== null && i + 1 >= bag.length);
     turn = (1 - turn) as Player;
   }
-  return { st, turn, over, nextDie: roll(), moveCount: moves.length, bounty };
+  return { st, turn, over, nextDie: roll(moves.length), moveCount: moves.length, bounty };
 }
 
 /* the one true final score: board under the mode's scoring, plus any banked

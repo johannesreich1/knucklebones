@@ -31,3 +31,21 @@ export function diceStream(seed: string): () => number {
   const rand = randStream(seed);
   return () => 1 + Math.floor(rand() * DICE_FACES);
 }
+
+/* LIMITED mode: the dice are FINITE — one shared bag holding every face
+   exactly POOL_PER_FACE times, shuffled deterministically from the seed
+   (Fisher-Yates over randStream). The '#pool' suffix keeps the draw
+   independent of diceStream, so adding the mode never shifted anyone's
+   classic rolls. Clients never see the seed: they derive remaining counts
+   from the public move log + the visible next die instead. */
+export const POOL_PER_FACE = 4;
+export function poolSequence(seed: string): number[] {
+  const bag: number[] = [];
+  for (let v = 1; v <= DICE_FACES; v++) for (let i = 0; i < POOL_PER_FACE; i++) bag.push(v);
+  const rand = randStream(seed + '#pool');
+  for (let i = bag.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [bag[i], bag[j]] = [bag[j], bag[i]];
+  }
+  return bag;
+}

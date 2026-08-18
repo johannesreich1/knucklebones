@@ -6,8 +6,8 @@
 // window, which forfeits here (bots have no client to call pvp-claim).
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { diceStream } from "./core/dice.ts";
-import { AI, ME, boardTotalMode, type Player } from "./core/rules.ts";
+import { diceStream, poolSequence } from "./core/dice.ts";
+import { AI, ME, LIMITED, boardTotalMode, type Player } from "./core/rules.ts";
 import { rebuild, matchTotal } from "./core/match.ts";
 import { eloDelta, type MatchScore } from "./core/elo.ts";
 import { modeById, pickMode } from "./core/modes.ts";
@@ -101,9 +101,12 @@ Deno.serve(async (req: Request) => {
   const startMatch = async (p1: string, p2: string) => {
     const seed = newSeed();
     // the wheel spins server-side: the modifier is a deterministic draw from
-    // the seed, so replay validation and both clients' wheels agree
+    // the seed, so replay validation and both clients' wheels agree.
+    // LIMITED deals its first die from the finite bag, not the endless stream.
+    const spec = pickMode(seed);
+    const firstDie = spec.mode === LIMITED ? poolSequence(seed)[0] : diceStream(seed)();
     const { data: match, error } = await svc.from("matches")
-      .insert({ p1, p2, next_die: diceStream(seed)(), modifier: pickMode(seed).id })
+      .insert({ p1, p2, next_die: firstDie, modifier: spec.id })
       .select("id, p1, p2, status, turn, next_die, last_move_at, modifier").single();
     if (error || !match) return null;
     const { error: seedErr } = await svc.from("match_seeds").insert({ match_id: match.id, seed });

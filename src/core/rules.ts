@@ -78,8 +78,11 @@ export function cloneSt(st: GameState): GameState {
    mode branch below is written so the mode===CLASSIC path does exactly what
    the code did before modes existed. The wheel registry lives in modes.ts;
    the numeric vocabulary lives here because rules and AI branch on it. */
-export const CLASSIC = 0, ROWSWITCH = 1, ROWMULT = 2, COLSHIELD = 3, SINGLESTRIKE = 4, BOUNTY = 5;
-export type Mode = 0 | 1 | 2 | 3 | 4 | 5;
+export const CLASSIC = 0, ROWSWITCH = 1, ROWMULT = 2, COLSHIELD = 3, SINGLESTRIKE = 4, BOUNTY = 5, LIMITED = 6;
+export type Mode = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+/* LIMITED changes only the SUPPLY (a finite bag, see dice.ts poolSequence) and
+   the end condition (bag empty) — scoring and destruction stay pure classic,
+   which every default branch below already delivers. */
 
 /* value × count² across a horizontal row (same formula, orientation flipped) */
 export function rowScore(b: Board, r: number): number {

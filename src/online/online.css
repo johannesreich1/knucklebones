@@ -149,6 +149,21 @@ html.rowmode .rowchips{position:absolute;right:100%;margin-right:9px;top:0;displ
    (visibility, not display: the lane keeps its height, nothing jumps) */
 html.rowswitch .cols .chip{visibility:hidden}
 
+/* ===== LIMITED: the finite bag rail — six faces, live remaining counts.
+   A drawn die pulses its face and ticks the number; an exhausted face
+   ghosts out, and that absence IS the strategy. ===== */
+.poolrail{display:flex;gap:9px;justify-content:center;align-items:flex-start;padding:2px 0}
+.pmini{display:flex;flex-direction:column;align-items:center;gap:2px;transition:opacity .3s,filter .3s}
+.pmini .die{width:20px;height:20px;--cell:20px;border-radius:6px}
+.pmini .pc{font-size:9.5px;font-weight:900;color:var(--dim);font-variant-numeric:tabular-nums;
+  transition:color .25s}
+.pmini.tick .die{animation:pooltick .45s cubic-bezier(.2,1.5,.4,1)}
+.pmini.tick .pc{color:var(--txt)}
+@keyframes pooltick{40%{transform:scale(1.3)}}
+.pmini.out{opacity:.32;filter:grayscale(.85)}
+.land .poolrail{gap:5px}
+.land .pmini .die{width:16px;height:16px;--cell:16px}
+
 /* ===== BOUNTY: the banked kills tally on the plate ===== */
 .plate .bty{font-size:11px;font-weight:900;color:var(--gold);
   text-shadow:0 0 8px rgba(255,209,102,.6);margin-right:5px}

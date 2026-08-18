@@ -35,6 +35,8 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
       <div class="timer" id="timerWrap" aria-hidden="true">
         <span class="track"><span class="bar" id="timerBar"></span></span><b id="timerNum"></b>
       </div>
+      <!-- LIMITED mode only: the finite bag, counted live -->
+      <div class="poolrail" id="poolRail" hidden aria-label="Dice remaining"></div>
     </section>
 
     <!-- near side of the table (always whoever is holding the phone) -->

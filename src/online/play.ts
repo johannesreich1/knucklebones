@@ -3,7 +3,9 @@
 // authoritative state — every die comes from the server, every move goes
 // through pvp-move, and the die-carrying move log lets us rebuild the board
 // after any missed realtime event.
-import { AI, ME, SPEC, CLASSIC, COLSHIELD, BOUNTY, emptyBoard, applyMove, boardTotalMode, legalCols, type Player } from '../core/rules.ts';
+import { AI, ME, SPEC, CLASSIC, COLSHIELD, BOUNTY, LIMITED, emptyBoard, applyMove, boardTotalMode, legalCols, type Player } from '../core/rules.ts';
+import { POOL_PER_FACE } from '../core/dice.ts';
+import { DICE_FACES } from '../config.ts';
 import { modeById } from '../core/modes.ts';
 import { modeIcon } from '../ui/modeicons.ts';
 import { openModes } from '../ui/modesview.ts';
@@ -13,7 +15,7 @@ import { startTimer, stopTimer } from '../flow/timer.ts';
 import { setLeaveInterceptor } from '../flow/leave.ts';
 import { $, show, hide, sideKey, chipEl } from '../ui/dom.ts';
 import { Sfx, vibrate } from '../ui/audio.ts';
-import { setStageDie } from '../ui/die.ts';
+import { setStageDie, makeDie } from '../ui/die.ts';
 import { floatPts } from '../ui/fx.ts';
 import { colorOf } from '../ui/identity.ts';
 import { buildBoards, renderAll, renderSide, clearHints, showHints, setStatus, setActivePlate } from '../ui/render.ts';
@@ -36,6 +38,7 @@ interface OnlineState {
   animating: boolean;          // board mutations in flight — sync must not rebuild
   pendingRow: MatchRow | null; // match update deferred until the animation ends
   done: boolean;
+  poolPlaced: number[] | null; // LIMITED: dice PLACED per face (public data); null elsewhere
 }
 let O: OnlineState | null = null;
 
@@ -110,11 +113,16 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
     matchId: res.match.id, you: res.you, names: (res as any).names ?? { p1: 'PLAYER 1', p2: 'PLAYER 2' },
     pendingDie: res.match.next_die, applied: 0, gen: S.gen,
     channel: null, tick: null, lastMoveAt: Date.parse(res.match.last_move_at), busySync: false, animating: false, pendingRow: null, done: false,
+    poolPlaced: null,
   };
 
   const spec = modeById(res.match.modifier);
   S.scoring = spec.mode;           // rendering/destroy animations follow the server's mode
   S.bounty = [0, 0];
+  // LIMITED: the finite-bag rail. Counts come from PUBLIC data only (the
+  // move log + the visible next die) — the secret seed stays secret.
+  if (spec.mode === LIMITED) { O.poolPlaced = new Array(DICE_FACES + 1).fill(0); buildPoolRail(); }
+  ($('#poolRail') as HTMLElement).hidden = spec.mode !== LIMITED;
 
   hide('#ovOnline'); hide('#ovStart'); hide('#ovEnd'); hide('#ovRules'); hide('#ovPass'); hide('#ovPractice');
   document.documentElement.classList.remove('face', 'tut', 'p2turn');
@@ -143,20 +151,56 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   else { renderAll(false); refreshTurnUI(); }
 }
 
+/* ---- the LIMITED bag rail: six faces, live remaining counts ---- */
+function buildPoolRail(): void {
+  const rail = $('#poolRail');
+  rail.innerHTML = '';
+  for (let v = 1; v <= DICE_FACES; v++) {
+    const w = document.createElement('span');
+    w.className = 'pmini';
+    w.dataset.v = String(v);
+    const d = makeDie(v, ME);
+    d.classList.remove('p1');                    // neutral slate, nobody's colour
+    w.appendChild(d);
+    const c = document.createElement('b');
+    c.className = 'pc';
+    c.textContent = String(POOL_PER_FACE);
+    w.appendChild(c);
+    rail.appendChild(w);
+  }
+}
+function renderPool(): void {
+  if (!O?.poolPlaced) return;
+  document.querySelectorAll('#poolRail .pmini').forEach((el) => {
+    const v = +((el as HTMLElement).dataset.v ?? 0);
+    const left = Math.max(0, POOL_PER_FACE - O!.poolPlaced![v] - (O!.pendingDie === v ? 1 : 0));
+    const c = el.querySelector('.pc')!;
+    if (c.textContent !== String(left)) {
+      c.textContent = String(left);
+      el.classList.remove('tick');
+      void (el as HTMLElement).offsetWidth;      // restart the pulse
+      el.classList.add('tick');
+    }
+    el.classList.toggle('out', left <= 0);
+  });
+}
+
 function refreshTurnUI(): void {
   if (!O || O.done) return;
   const mine = S.turn === O.you;
   S.phase = mine ? 'choose' : 'anim';
   S.busy = false;
   if (O.pendingDie) revealDie(O.pendingDie, S.turn);
-  setStatus(mine ? 'Your move' : oppName() + ' thinking', S.turn, !mine);
+  renderPool();
+  // a calm static status — the countdown bar below carries the motion
+  setStatus(mine ? 'Your move' : oppName() + ' thinking', S.turn, false);
   setActivePlate();
   clearHints();
   if (mine) showHints();
   // The 10s turn clock, both sides. Mine auto-places at zero (an honest
   // client never stalls); theirs just downgrades the status to "waiting" —
   // the 30s watchdog/forfeit handles an opponent who is truly gone.
-  startTimer(mine ? autoPlace : () => { if (O && !O.done) setStatus('Waiting for ' + oppName(), S.turn, true); },
+  startTimer(mine ? autoPlace : () => { if (O && !O.done) setStatus('Waiting for ' + oppName(), S.turn, false); },
     ONLINE_TURN_SECS);
 }
 
@@ -233,7 +277,7 @@ async function onlinePlace(who: Player, col: number): Promise<void> {
     if (bot) {
       // the response already carries the post-reply state (turn back to us),
       // so nothing else would ever say the opponent is thinking — say it here
-      setStatus(oppName() + ' thinking', (1 - O.you) as Player, true);
+      setStatus(oppName() + ' thinking', (1 - O.you) as Player, false);
       await pause(450);          // a beat before the "opponent" answers
       revealDie(bot.die, (1 - O.you) as Player);   // their roll, fully animated
       await pause(700);          // the roll lands, then the die flies
@@ -247,6 +291,7 @@ async function onlinePlace(who: Player, col: number): Promise<void> {
 }
 
 async function animateMove(who: Player, col: number, die: number): Promise<void> {
+  if (O?.poolPlaced) { O.poolPlaced[die]++; renderPool(); }
   setStageDie(die, who);
   // defensive: never animate into an impossible slot — state stays authoritative
   if (S.boards[who][col].length < 3) await flyDie(who, col, die);
@@ -316,12 +361,15 @@ async function sync(fullRedraw: boolean): Promise<void> {
     } else if (fresh.length || fullRedraw) {
       S.boards = [emptyBoard(), emptyBoard()];
       S.bounty = [0, 0];
+      if (O.poolPlaced) O.poolPlaced.fill(0);
       for (const r of rows) {
         const d = applyMove(S.boards as any, r.who as Player, r.col, r.die, S.scoring);
         if (S.scoring === BOUNTY) S.bounty[r.who as Player] += d;
+        if (O.poolPlaced) O.poolPlaced[r.die]++;
       }
       O.applied = rows.length;
       renderAll(false);
+      renderPool();
     }
     const { data: m } = await supa().from('matches')
       .select('id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at, modifier')
@@ -392,5 +440,6 @@ export function teardown(): void {
   leaveArmed = 0;
   $('#btnMenu').textContent = 'Quit game';
   $('#rec').classList.remove('tapmode');
+  ($('#poolRail') as HTMLElement).hidden = true;
   O = null;
 }
