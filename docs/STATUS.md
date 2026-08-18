@@ -82,10 +82,22 @@ Protocol-changing server work waits for its client, always.
 
 ### Mode wheel odds (production, since 2026-08-18)
 
-Classic 50% (weight 5 of 10); the five additions — ROW SWITCH, ROW
-MULTIPLY, COLUMN SHIELD, SINGLE STRIKE, BOUNTY — 10% each. The test-weight
-phase is over; the weights live in `core/modes.ts` and only `pvp-join`
-needs redeploying when they change (it alone spins the wheel).
+Classic 50% (weight 6 of 12); the six additions — ROW SWITCH, ROW
+MULTIPLY, COLUMN SHIELD, SINGLE STRIKE, BOUNTY, LIMITED — 1/12 (~8.3%)
+each. The weights live in `core/modes.ts` and only `pvp-join` needs
+redeploying when they change (it alone spins the wheel).
+
+LIMITED (added 2026-08-18): the dice are finite — one shared bag holds
+every face exactly `POOL_PER_FACE` (4) times, shuffled deterministically
+from the seed (`dice.ts poolSequence`, `'#pool'` suffix, so classic
+streams never shifted). `rebuild()` draws from the bag and ends the game
+when the last die is placed, full boards or not; scoring stays classic.
+The client's rail above the boards counts remaining faces from PUBLIC
+data only (move log + visible next die — the seed stays secret).
+Validated live by a forced-modifier match (SQL-created, future-dated
+`last_move_at` so the lazy forfeit can't eat it while the probe boots):
+badge, rail counts, per-tick DOM-vs-state equality, and a 24-move
+bag-exhaustion finish through pvp-move v8's `s.over` guard.
 
 ## Standing rules (learned the hard way)
 
