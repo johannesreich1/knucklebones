@@ -20,7 +20,12 @@ const snap = () => page.evaluate(() => ({
   legal: document.querySelectorAll('.col.legal').length,
   coach: !document.getElementById('coach').hidden,
   coachMsg: document.getElementById('coachMsg').textContent,
-  colsMargin: getComputedStyle(document.querySelector('#botCols')).marginTop,
+  // The pill lane is the GAP between the centre stage and your chip strip.
+  // Measure the gap the player sees, not the margin property that happens to
+  // carry it — the 4px board/chip separation moved to margin-BOTTOM on the
+  // lower half (it was riding the centre stage 4px high as a margin-top).
+  laneGap: Math.round(document.querySelector('#botCols').getBoundingClientRect().top
+                    - document.querySelector('.center').getBoundingClientRect().bottom),
 }));
 async function waitChoose(maxMs = 15000) {
   const t0 = Date.now();
@@ -37,11 +42,13 @@ async function waitChoose(maxMs = 15000) {
 await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Offline overlay now
 await page.tap('#btnPlay'); await page.waitForTimeout(1500);
 let s = await waitChoose();
-out.cpuNormal = { pills: s.pills, danger: s.danger, legal: s.legal, colsMargin: s.colsMargin };
+out.cpuNormal = { pills: s.pills, danger: s.danger, legal: s.legal, laneGap: s.laneGap };
 check(s.pills === 0, 'gain/kill pills shown in normal CPU play', s);
 check(s.danger === 0, 'danger outline shown in normal CPU play', s);
 check(s.legal === 3, 'legal affordance missing in normal play', s);
-check(s.colsMargin === '4px', 'pill lane space not reclaimed in normal play', s);
+// the lane is a DELTA, not an absolute: how much space the gap gains is fixed,
+// but the gap it starts from is whatever the device box leaves over. Asserted
+// against the tutorial's gap below, so both directions are covered by one fact.
 
 // duo: same check
 await page.tap('#btnSettings'); await page.waitForTimeout(300); await page.tap('#btnMenu'); await page.waitForTimeout(400);
@@ -57,7 +64,9 @@ if (quitVia) { await page.tap('#passQuit'); } else { await page.tap('#btnSetting
 await page.tap('#btnTutHome'); await page.waitForTimeout(500);
 s = await snap();
 check(s.coach && /Welcome/.test(s.coachMsg), 'welcome step missing', s);
-check(s.colsMargin === '15px', 'tutorial pill lane not applied', s);
+check(s.laneGap - out.cpuNormal.laneGap >= 10,
+      'tutorial pill lane not applied (or not reclaimed in normal play)',
+      { tutorial: s.laneGap, normal: out.cpuNormal.laneGap });
 out.tag = await page.evaluate(() => document.getElementById('tagTop').textContent);
 check(out.tag === 'TUTORIAL', 'CPU plate not tagged TUTORIAL', out.tag);
 // the game must be paused on the welcome card
