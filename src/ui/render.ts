@@ -9,6 +9,7 @@ import { $, sideKey, slotEl, slotIdx, colEl, chipEl } from './dom.ts';
 import { nameOf } from './identity.ts';
 import { makeDie } from './die.ts';
 import { modeIcon } from './modeicons.ts';
+import { MODES } from '../core/modes.ts';
 /* ===================== DOM BUILD ===================== */
 export function buildBoards(){
   for(const side of ['top','bot']){
@@ -152,7 +153,17 @@ export function applySides(){
   setActivePlate();
 }
 export function updateRecord(){
-  $('#rec').innerHTML = S.mode==='duo'
+  const rec=$('#rec');
+  // a live ONLINE match owns its badge (mode + ⓘ) — never overwrite it
+  if(rec.classList.contains('tapmode')) return;
+  // an offline modded game names its mode where the record usually sits, so
+  // the picker's choice is visible in EVERY mode — not just the loud ones
+  if(S.scoring){
+    const m=MODES.find(x=>x.mode===S.scoring)||MODES[0];
+    rec.innerHTML=modeIcon(m.id,12)+' '+m.name;
+    return;
+  }
+  rec.innerHTML = S.mode==='duo'
     ? 'P1 <b>'+S.p1+'</b> · P2 <i>'+S.p2+'</i>'
     : 'W <b>'+S.wins+'</b> · L <i>'+S.losses+'</i>';
 }
