@@ -15,7 +15,7 @@ import { AI, ME, SPEC, isFull, legalCols, cloneSt, boardTotalMode,
          type GameState, type Player } from '../core/rules.ts';
 import { SPELLS, spellById, freshCharges, bestTarget, type SpellSpec } from '../core/spells.ts';
 import { S } from '../state.ts';
-import { $, colEl, slotEl, slotIdx, faceRotated } from '../ui/dom.ts';
+import { $, colEl, slotEl, slotIdx, sideKey, faceRotated } from '../ui/dom.ts';
 import { isEmbed, rootRect } from '../ui/embed.ts';
 import { Sfx, vibrate } from '../ui/audio.ts';
 import { REDUCED, burst, shake, flash, pin, nope, fxRoot } from '../ui/fx.ts';
@@ -38,11 +38,6 @@ function caster(): Player | null {
 export function chargesOf(who: Player, id: string): number {
   return S.spellCharges[who][id] ?? 0;
 }
-/* was this seat dealt spells at all this game? (an empty hand hides the rail) */
-function dealt(who: Player): boolean {
-  return Object.keys(S.spellCharges[who]).length > 0;
-}
-
 /* A new local game deals both seats the spell the OFFLINE screen picked — NONE
    deals nothing, and so does the tutorial: it is a scripted lesson about the
    base game, and a spell would break its script. */
@@ -60,28 +55,34 @@ export function clearSpells(): void {
 }
 
 /* ===================== THE RAIL ===================== */
-/* The rail carries BOTH seats, laid out like the table itself: the far
-   player's rune above the die in play, the near player's below it, each in its
-   owner's colour. "Does the CPU still have its spell?" becomes a glance rather
-   than a memory — and the moment it fires, the rune everyone was watching
-   greys out. */
+/* TWO JOBS, TWO PLACES — because they are not the same object.
+   The rune you can cast is a THING YOU WIELD: it belongs beside the die in
+   play, full size, within a short drag of every column. The other player's is
+   a READOUT — "do they still have it?" — so it sits small and inert in their
+   nameplate next to their score, where it can be read at a glance and cannot
+   be pressed. Making them identical implied you could cast theirs, and buried
+   the one you can cast in a corner.
+   Which seat holds the near rune: the player nearest the phone, except
+   face-to-face, where the whole centre stage already turns to whoever is
+   moving — so it follows the turn there, and turns with it. */
 export function renderSpells(): void {
   const bar = $('#spellBar') as HTMLElement | null;
   if (!bar) return;
-  if (!bar.childElementCount) build(bar);
-  const far = (1 - S.bottom) as Player, near = S.bottom as Player;
+  if (!built) build();
+  const face = document.documentElement.classList.contains('face');
+  const near = (face ? S.turn : S.bottom) as Player;
   const now = caster();
-  bar.hidden = !(dealt(far) || dealt(near));
-  for (const seat of [far, near]) {
+  for (const seat of [AI, ME] as Player[]) {
+    const home = seat === near ? bar
+      : $('#plate' + (sideKey(seat) === 'bot' ? 'Bot' : 'Top'))?.querySelector('.runeslot');
     for (const s of SPELLS) {
-      const b = bar.querySelector<HTMLButtonElement>(
-        '[data-seat="' + seat + '"][data-spell="' + s.id + '"]');
-      if (!b) continue;
-      b.hidden = !(s.id in S.spellCharges[seat]);   // the rail carries what was BROUGHT
+      const b = runeOf(seat, s.id);
+      if (!b || !home) continue;
+      if (b.parentElement !== home) home.appendChild(b);
+      b.hidden = !(s.id in S.spellCharges[seat]);   // you carry what you BROUGHT
       const left = chargesOf(seat, s.id);
       const mine = seat === now;                    // only the player to move may cast
       b.style.setProperty('--sh', colorOf(seat));   // whose rune, in the game's own two colours
-      b.style.order = seat === far ? '0' : '1';     // far above, near below — like the table
       b.classList.toggle('spent', left <= 0);
       b.classList.toggle('ready', left > 0 && mine);
       b.classList.toggle('idle', left > 0 && !mine);
@@ -96,9 +97,13 @@ export function renderSpells(): void {
   document.documentElement.classList.toggle('casting', S.spellArmed !== null);
 }
 
-/* one rune per seat per spell; the render decides which are shown, in which
-   order and in whose colour */
-function build(bar: HTMLElement): void {
+/* one rune per seat per spell, made once and re-homed by the render */
+let built = false;
+const runes = new Map<string, HTMLButtonElement>();
+const key = (seat: Player, id: string) => seat + ':' + id;
+const runeOf = (seat: Player, id: string) => runes.get(key(seat, id)) ?? null;
+function build(): void {
+  built = true;
   for (const seat of [AI, ME] as Player[]) {
     for (const s of SPELLS) {
       const b = document.createElement('button');
@@ -106,9 +111,9 @@ function build(bar: HTMLElement): void {
       b.className = 'rune';
       b.dataset.spell = s.id;
       b.dataset.seat = String(seat);
-      b.innerHTML = spellIcon(s.id, 22) + '<b class="n"></b>';
+      b.innerHTML = spellIcon(s.id, 15) + '<b class="n"></b>';
       bind(b, s.id);
-      bar.appendChild(b);
+      runes.set(key(seat, s.id), b);
     }
   }
 }
@@ -118,7 +123,7 @@ export function arm(id: string): void {
   if (S.spellArmed === id) return;
   S.spellArmed = id;
   renderSpells();
-  setStatus('Drop it on a column', S.turn as Player, false);
+  setStatus('Tap a column to swap', S.turn as Player, false);
 }
 export function disarm(): void {
   if (!S.spellArmed) return;

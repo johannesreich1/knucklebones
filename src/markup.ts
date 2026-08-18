@@ -22,7 +22,8 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
       <div class="plate" id="plateTop">
         <span class="dot"></span><span class="nm" id="nameTop">CPU</span>
         <span class="tag" id="tagTop">HARD</span>
-        <span class="sp"></span><span class="bty" id="btyTop" hidden></span><span class="tot" id="totTop">0</span>
+        <span class="sp"></span><span class="runeslot"></span>
+        <span class="bty" id="btyTop" hidden></span><span class="tot" id="totTop">0</span>
       </div>
       <div class="boardwrap"><div class="board" id="topBoard"></div></div>
       <div class="cols" id="topCols"></div>
@@ -37,9 +38,9 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
           <span class="pile" aria-hidden="true"></span>
           <b class="bn" id="bagNum" aria-label="Dice left in the bag">0</b>
         </div>
-        <!-- SPELLS (optional layer): the rune rail, opposite the bag. Built
-             from the registry by flow/spells; hidden when no seat holds one. -->
-        <div class="spells" id="spellBar" hidden></div>
+        <!-- SPELLS: the rune you can actually cast, opposite the bag. The
+             OTHER player's sits small and inert in their nameplate. -->
+        <div class="spells" id="spellBar"></div>
       </div>
       <div class="status" id="status" role="status" aria-live="polite">Tap play to start</div>
       <div class="timer" id="timerWrap" aria-hidden="true">
@@ -54,7 +55,8 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
       <div class="plate" id="plateBot">
         <span class="dot"></span><span class="nm" id="nameBot">YOU</span>
         <span class="tag" id="tagBot" hidden></span>
-        <span class="sp"></span><span class="bty" id="btyBot" hidden></span><span class="tot" id="totBot">0</span>
+        <span class="sp"></span><span class="runeslot"></span>
+        <span class="bty" id="btyBot" hidden></span><span class="tot" id="totBot">0</span>
       </div>
     </section>
   </div>

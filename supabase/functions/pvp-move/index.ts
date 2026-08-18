@@ -105,16 +105,28 @@ Deno.serve(async (req: Request) => {
   if (oppProf?.is_bot && !s.over) {
     const botIdx = (1 - myIdx) as Player;  // vs a human p1, the bot is always index 0
     const botDie = s.nextDie;
-    // Dynamic sparring: the bot's strength follows the HUMAN's rating, read
-    // at move time. Below 1000 softness ramps in continuously (random moves,
-    // no risk sense, shallow search — by ~850 it plays like the local EASY
-    // CPU); at 1100+ it sharpens to depth 3. Nobody gets frustrated at the
-    // bottom, nobody gets flattered at the top.
+    // Dynamic sparring: the bot's strength follows the HUMAN's rating, read at
+    // move time — softness ramps in continuously, no cliffs, and the bot the
+    // player meets at 1100 is a different animal from the one at 900.
+    //
+    // Retuned 2026-08-18 (player report: "too hard around 950", and the
+    // measurements agreed). Against a fixed depth-2 opponent, 50% is an even
+    // match and 81% is playing a coin-flipper; the old ramp left rating 950 at
+    // ~58%, i.e. a quarter of the way from even to easy, because it still ran
+    // a depth-2 search WITH a sense of danger there. Three levers, in the order
+    // they matter:
+    //   · risk sense is the biggest one — it now fades IN over 970..1080
+    //     rather than being on from the start (a bot blind to what you can
+    //     destroy is beatable while still looking sensible),
+    //   · the search stays SHORT-SIGHTED (depth 1) through the whole ramp,
+    //     which reads as a careless player rather than a broken one,
+    //   · a plain slip on top, ramping to a coin-flip move at the very bottom.
+    // The middle of the ladder is sparring; the top is still a real fight.
     const { data: me } = await svc.from("profiles").select("rating").eq("id", user.id).single();
     const hr = me?.rating ?? 1000;
-    const soft = Math.min(1, Math.max(0, (1000 - hr) / 150));   // 0 at 1000 → 1 at ≤850
-    const depth = soft > 0.5 ? 1 : hr >= 1100 ? 3 : 2;
-    const w = getRiskW(); setRiskW(soft > 0 ? 0.9 * (1 - soft) : hr >= 1100 ? 1.3 : 0.9);
+    const soft = Math.min(1, Math.max(0, (1080 - hr) / 260));   // 1 at ≤820 → 0 at ≥1080
+    const depth = soft > 0.2 ? 1 : hr >= 1150 ? 3 : 2;
+    const w = getRiskW(); setRiskW(1.2 * Math.max(0, 1 - soft * 2.4));
     let botCol: number;
     if (soft > 0 && Math.random() < soft * 0.5) {
       const lg = legalCols(s.st[botIdx]);

@@ -83,8 +83,9 @@ try {
       charges: JSON.stringify(window.__kb.S.spellCharges),
       armed: window.__kb.S.spellArmed, casting: document.documentElement.classList.contains('casting'),
       phase: window.__kb.S.phase, busy: window.__kb.S.busy, die: window.__kb.S.die,
-      barHidden: document.getElementById('spellBar').hidden,
       runeShown: !!rune && !!rune.offsetParent,
+      mineHome: rune?.parentElement?.id || rune?.parentElement?.className,
+      foeHome: foe?.closest('.plate')?.id,
       runeClass: rune ? rune.className : null,
       foeClass: foe ? foe.className : null,
       foeShown: !!foe && !!foe.offsetParent,
@@ -101,7 +102,12 @@ try {
   await newGame(); check(await waitChoose(), 'game never reached choose');
   await table([[6, 6], [3], []], [[2], [5], []]);
   out.dealt = await look();
-  check(out.dealt.runeShown && !out.dealt.barHidden, 'no rune in an offline game', out.dealt);
+  check(out.dealt.runeShown, 'no rune in an offline game', out.dealt);
+  // the two runes are two different objects and live in two different places:
+  // the one you can cast sits beside the die in play (a short drag from every
+  // column); the opponent's is a readout in their own nameplate
+  check(out.dealt.mineHome === 'spellBar', 'the castable rune left the die in play', out.dealt);
+  check(out.dealt.foeHome === 'plateTop', "the opponent's rune is not in their nameplate", out.dealt);
   check(out.dealt.charges === '[{"swap":1},{"swap":1}]', 'both seats hold one cast', out.dealt.charges);
   // BOTH seats ride the rail: "does the opponent still have theirs?" must be
   // answerable by looking, and an opponent's rune is never pressable
@@ -209,7 +215,7 @@ try {
   await table([[6, 6], [3], []], [[2], [5], []]);
   out.off = await look();
   check(out.off.charges === '[{},{}]', 'NONE still dealt a hand', out.off.charges);
-  check(out.off.barHidden && !out.off.runeShown, 'the rune survived the NONE pick', out.off);
+  check(!out.off.runeShown && !out.off.foeShown, 'a rune survived the NONE pick', out.off);
   check(!out.off.casting, 'the board is still in casting with no spell picked', out.off);
   out.offCast = await page.evaluate(async () => {
     const k = window.__kb;
@@ -259,10 +265,10 @@ try {
   await newGame({ tutorial: true }); await page.waitForTimeout(900);
   out.tut = await page.evaluate(() => ({
     charges: JSON.stringify(window.__kb.S.spellCharges),
-    barHidden: document.getElementById('spellBar').hidden,
+    runeShown: !!document.querySelector('.rune[data-seat="1"]')?.offsetParent,
   }));
   check(out.tut.charges === '[{},{}]', 'the tutorial dealt spells', out.tut);
-  check(out.tut.barHidden, 'the rune showed up in the tutorial', out.tut);
+  check(!out.tut.runeShown, 'the rune showed up in the tutorial', out.tut);
 
   console.log(JSON.stringify({ out, problems }, null, 2));
 } finally { await browser.close(); }

@@ -1,4 +1,4 @@
-<!-- meta name="Spells — column swap" group="4 · Local play" subtitle="An optional rune beside the die in play: drag it onto a column and the facing pair change owners" width=412 height=1080 links="Local menu, Settings, Game modes" -->
+<!-- meta name="Spells — column swap" group="4 · Local play" subtitle="The rune you can cast sits by the die in play; the opponent's is a readout by their score" width=412 height=1080 links="Local menu, Settings, Game modes" -->
 <style>
   .scr{gap:6px}
   .mhud{display:flex;align-items:center;gap:8px;height:30px}
@@ -26,8 +26,9 @@
   .centerrow{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 0}
   .mstatus{font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--cy);
     text-transform:uppercase;text-shadow:0 0 12px rgba(40,232,255,.5)}
-  /* .stagerow / .spells / .rune come from the app CSS (main.css) — the card and
-     the game cannot drift, and --cell here is the card's cell size */
+  /* .stagerow / .rune come from the app CSS (main.css) — the card and the game
+     cannot drift, and --cell here is the card's cell size */
+  .mplate .rune{margin-left:auto;margin-right:8px}
   .stagerow{--cell:58px}
   .stagerow > .die{width:54px;height:54px;--cell:54px}
   .states{display:flex;justify-content:center;gap:24px;margin-top:20px}
@@ -45,19 +46,19 @@
     <button class="ico"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M4 6.5h8.4M17.6 6.5H20M4 12h1.4M10.6 12H20M4 17.5h10.4M19.6 17.5H20"/><circle cx="15" cy="6.5" r="2.6"/><circle cx="8" cy="12" r="2.6"/><circle cx="17" cy="17.5" r="2.6"/></svg></button>
   </div>
 
-  <div class="mplate p2 idle"><span class="dot"></span><span class="nm">PLAYER 2</span><span class="tot">23</span></div>
+  <div class="mplate p2 idle"><span class="dot"></span><span class="nm">PLAYER 2</span><button class="rune idle" style="--sh:var(--mg)"><svg class="sico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><rect x="16.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><path d="M9 9.4h6M12.8 7.4l2.4 2-2.4 2"/><path d="M15 14.6H9M11.2 12.6l-2.4 2 2.4 2"/></svg><b class="n"></b></button><span class="tot">23</span></div>
   <div class="board3 side-top dice-static">
     <div class="col3 target"><div class="slot3"></div><div class="slot3"></div><div class="slot3">{{die:2:p2:50}}</div></div>
     <div class="col3 target"><div class="slot3"></div><div class="slot3">{{die:5:p2:50}}</div><div class="slot3">{{die:5:p2:50}}</div></div>
     <div class="col3 target hot"><div class="slot3"></div><div class="slot3"></div><div class="slot3">{{die:1:p2:50}}</div></div>
   </div>
 
-  <!-- the rail is anchored to .stagerow, opposite the LIMITED bag: bag left of
-       the die in play, spells right of it, so the die stays optically centred -->
+  <!-- the rune you can CAST sits beside the die in play; the opponent's is a
+       readout in their own nameplate, next to the number the eye returns to -->
   <div class="centerrow dice-static">
     <div class="stagerow">
       {{die:4:p1:54}}
-      <div class="spells"><button class="rune armed" style="--sh:#b18cff"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><rect x="16.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><path d="M9 9.4h6M12.8 7.4l2.4 2-2.4 2"/><path d="M15 14.6H9M11.2 12.6l-2.4 2 2.4 2"/></svg><b class="n"></b></button></div>
+      <div class="spells"><button class="rune ready" style="--sh:var(--cy)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><rect x="16.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><path d="M9 9.4h6M12.8 7.4l2.4 2-2.4 2"/><path d="M15 14.6H9M11.2 12.6l-2.4 2 2.4 2"/></svg><b class="n"></b></button></div>
     </div>
     <div class="mstatus">Drop it on a column</div>
   </div>
@@ -82,8 +83,14 @@
     <b>Where.</b> Any column, yours or theirs. A swap always takes the facing pair, so
     both light up before you let go. Two identical columns are not a target — the charge
     would buy nothing.<br>
-    <b>Cost.</b> <span class="k">One cast per player, per game.</span> The spent rune stays
-    on the rail, greyed: a rune that vanished would read as a bug rather than as a cost.<br>
+    <b>Two jobs, two places.</b> The rune you can cast is a thing you WIELD: full size
+    beside the die in play, a short drag from every column, opposite the LIMITED bag. The
+    opponent's is a <span class="k">readout only</span> — small and inert in their
+    nameplate, immediately left of their score, because the total is the number the eye
+    returns to every turn. Nothing about it reacts to a finger. Making the two identical
+    implied you could cast theirs, and buried the one you can.<br>
+    <b>Cost.</b> <span class="k">One cast per player, per game.</span> A spent rune stays
+    put, greyed: a rune that vanished would read as a bug rather than as a cost.<br>
     <b>Chosen, not toggled.</b> The OFFLINE screen picks a spell the way it picks a game
     mode — the same icon row, each slice wearing the rune the game draws, <code>NONE</code>
     first and default. Ranked matches (the server replays a plain move log) and the
