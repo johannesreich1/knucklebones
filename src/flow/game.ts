@@ -204,8 +204,10 @@ export async function flyDie(who,col,die){
 export async function destroyAt(who,col,die){
   // who = owner of the dice being destroyed
   const b=S.boards[who];
-  const victims=[];
+  let victims=[];
   for(let i=0;i<b[col].length;i++) if(b[col][i]===die) victims.push(i);
+  // SINGLE STRIKE: only the die closest to the centre line falls (index 0 side)
+  if(S.scoring===4 && victims.length>1) victims=victims.slice(0,1);
   if(!victims.length) return 0;
   const color = who===ME ? '#28e8ff' : '#ff2fa0';
   for(const i of victims){
@@ -217,11 +219,12 @@ export async function destroyAt(who,col,die){
       burst(r.left+r.width/2, r.top+r.height/2, color, 18);
     }
   }
-  const lost = colScore(b[col]) - colScore(b[col].filter(v=>v!==die));
+  const survivors=b[col].filter((v,i)=>!victims.includes(i));
+  const lost = colScore(b[col]) - colScore(survivors);
   floatPts(who,col,'−'+lost,'var(--gold)');
   Sfx.kill(); vibrate([16,30,26]); shake(7); flash(0.22);
   await wait(320);
-  S.boards[who][col]=b[col].filter(v=>v!==die);
+  S.boards[who][col]=survivors;
   renderSide(who,true);
   return victims.length;
 }
@@ -266,6 +269,7 @@ export function newGame(opts){
   const tutorial = !!(opts && opts.tutorial);
   S.gen++;
   S.scoring=0;   // local play is always classic (an online teardown may lag by a watchdog tick)
+  S.bounty=[0,0];
   stopTimer();
   if(tutorial){
     // a real saved game (if any) is deliberately left alone — see saveGame

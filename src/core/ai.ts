@@ -7,7 +7,7 @@
 import { DICE_FACES } from '../config.ts';
 import {
   AI, ME, SPEC, type GameState, type Player, type Mode,
-  CLASSIC, ROWSWITCH, COLSHIELD,
+  CLASSIC, ROWSWITCH, COLSHIELD, SINGLESTRIKE, BOUNTY,
   cloneSt, applyMove, legalCols, boardTotalMode, countOf, isFull,
 } from './rules.ts';
 
@@ -33,8 +33,14 @@ export function riskOf(st: GameState, p: Player, mode: Mode = CLASSIC): number {
     for (let v = 1; v <= DICE_FACES; v++) {
       const k = countOf(col, v);
       if (!k) continue;
-      // 1-in-DICE_FACES chance they roll exactly this value
-      r += (mode === ROWSWITCH ? v * k : v * k * k) / DICE_FACES;
+      // 1-in-DICE_FACES chance they roll exactly this value. Per-mode loss:
+      // SINGLESTRIKE removes one die from a k-stack (v·k² → v·(k−1)², so
+      // v·(2k−1)); BOUNTY adds the +1/die they bank on top of the classic hit.
+      const loss = mode === ROWSWITCH ? v * k
+        : mode === SINGLESTRIKE ? v * (2 * k - 1)
+        : mode === BOUNTY ? v * k * k + k
+        : v * k * k;
+      r += loss / DICE_FACES;
     }
   }
   return r;

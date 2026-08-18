@@ -54,7 +54,9 @@ export const S = {
   /* the active scoring/destruction mode (core/rules Mode). ONLY online play
      sets it (the ranked wheel); local play is always 0 = classic. Rendering
      and destroy animations read it so boards/totals match the server. */
-  scoring: 0 as RulesMode
+  scoring: 0 as RulesMode,
+  /* BOUNTY mode's banked +1s per Player — permanent, survives destruction */
+  bounty: [0, 0] as [number, number]
 };
 
 // re-export the identities for modules that get S anyway

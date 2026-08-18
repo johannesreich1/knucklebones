@@ -78,8 +78,8 @@ export function cloneSt(st: GameState): GameState {
    mode branch below is written so the mode===CLASSIC path does exactly what
    the code did before modes existed. The wheel registry lives in modes.ts;
    the numeric vocabulary lives here because rules and AI branch on it. */
-export const CLASSIC = 0, ROWSWITCH = 1, ROWMULT = 2, COLSHIELD = 3;
-export type Mode = 0 | 1 | 2 | 3;
+export const CLASSIC = 0, ROWSWITCH = 1, ROWMULT = 2, COLSHIELD = 3, SINGLESTRIKE = 4, BOUNTY = 5;
+export type Mode = 0 | 1 | 2 | 3 | 4 | 5;
 
 /* value × count² across a horizontal row (same formula, orientation flipped) */
 export function rowScore(b: Board, r: number): number {
@@ -116,13 +116,23 @@ export function boardTotalMode(b: Board, mode: Mode): number {
 }
 
 /* place a die, then destruction: every matching die in the opponent's facing
-   column dies — unless COLSHIELD protects their full column. Mutates st —
-   callers clone first when they need to. */
-export function applyMove(st: GameState, who: Player, col: number, die: number, mode: Mode = CLASSIC): void {
+   column dies — unless COLSHIELD protects their full column, or SINGLESTRIKE
+   limits the damage to ONE die (the earliest-placed = closest to the centre
+   line, index 0 side of the stack). Mutates st — callers clone first when
+   they need to. Returns how many enemy dice were destroyed (BOUNTY banks
+   a permanent +1 per destroyed die; everyone else may ignore it). */
+export function applyMove(st: GameState, who: Player, col: number, die: number, mode: Mode = CLASSIC): number {
   st[who][col].push(die);
   const o = 1 - who, oc = st[o][col];
-  if (mode === COLSHIELD && oc.length >= SPEC.rows) return;   // shielded: full columns are safe
-  let hit = false;
-  for (let i = 0; i < oc.length; i++) if (oc[i] === die) { hit = true; break; }
+  if (mode === COLSHIELD && oc.length >= SPEC.rows) return 0;   // shielded: full columns are safe
+  if (mode === SINGLESTRIKE) {
+    const i = oc.indexOf(die);                 // first match = closest to the centre
+    if (i < 0) return 0;
+    st[o][col] = oc.slice(0, i).concat(oc.slice(i + 1));
+    return 1;
+  }
+  let hit = 0;
+  for (let i = 0; i < oc.length; i++) if (oc[i] === die) hit++;
   if (hit) st[o][col] = oc.filter(v => v !== die);
+  return hit;
 }

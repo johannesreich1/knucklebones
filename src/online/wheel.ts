@@ -9,8 +9,9 @@ import { $, show, hide } from '../ui/dom.ts';
 import { Sfx } from '../ui/audio.ts';
 
 const SEG = 360 / MODES.length;
-/* segment accents: classic neutral, then the game's own player/gold palette */
-const HUES = ['#8ea3c0', '#28e8ff', '#ff2fa0', '#ffd166'];
+/* segment accents: classic neutral, then the game's own palette — the m3
+   destruction orange for SINGLE STRIKE, money green for BOUNTY */
+const HUES = ['#8ea3c0', '#28e8ff', '#ff2fa0', '#ffd166', '#ff8a3d', '#7ee787'];
 const hue = (i: number) => HUES[i % HUES.length];
 
 let built = false;

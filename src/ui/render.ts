@@ -2,7 +2,7 @@
 // strictness ratchet. New code goes in typed modules, not here.
 // Painting the table: boards, dice, scores, plates, status line and the
 // tutorial-only strategy hints. State in, DOM out -- game logic stays out.
-import { AI, ME, SPEC, ROWSWITCH, ROWMULT, COLSHIELD, colScore, rowScore, boardTotalMode, counts, countOf } from '../core/rules.ts';
+import { AI, ME, SPEC, ROWSWITCH, ROWMULT, COLSHIELD, BOUNTY, colScore, rowScore, boardTotalMode, counts, countOf } from '../core/rules.ts';
 import { DICE_FACES } from '../config.ts';
 import { S, DIFF_LABEL } from '../state.ts';
 import { $, sideKey, slotEl, slotIdx, colEl, chipEl } from './dom.ts';
@@ -121,8 +121,11 @@ function updateScores(who){
       el.classList.toggle('has',val>0);
     }
   }
-  const tot=boardTotalMode(b,S.scoring);
+  // BOUNTY: banked +1s count toward the total and show as their own gold tally
+  const tot=boardTotalMode(b,S.scoring)+(S.scoring===BOUNTY?S.bounty[who]:0);
   const k=sideKey(who)==='bot'?'Bot':'Top';
+  const bty=$('#bty'+k);
+  if(bty){ const n=S.scoring===BOUNTY?S.bounty[who]:0; bty.hidden=!n; if(n) bty.textContent='✦'+n; }
   const el = $('#tot'+k), plate = $('#plate'+k);
   if(el.textContent!==String(tot)){
     el.textContent=tot;

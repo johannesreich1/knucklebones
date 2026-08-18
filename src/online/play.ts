@@ -3,7 +3,7 @@
 // authoritative state — every die comes from the server, every move goes
 // through pvp-move, and the die-carrying move log lets us rebuild the board
 // after any missed realtime event.
-import { AI, ME, SPEC, CLASSIC, COLSHIELD, emptyBoard, applyMove, boardTotalMode, legalCols, type Player } from '../core/rules.ts';
+import { AI, ME, SPEC, CLASSIC, COLSHIELD, BOUNTY, emptyBoard, applyMove, boardTotalMode, legalCols, type Player } from '../core/rules.ts';
 import { modeById } from '../core/modes.ts';
 import { modeIcon } from '../ui/modeicons.ts';
 import { ONLINE_TURN_SECS } from '../config.ts';
@@ -67,6 +67,7 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
 
   const spec = modeById(res.match.modifier);
   S.scoring = spec.mode;           // rendering/destroy animations follow the server's mode
+  S.bounty = [0, 0];
 
   hide('#ovOnline'); hide('#ovStart'); hide('#ovEnd'); hide('#ovRules'); hide('#ovPass'); hide('#ovPractice');
   document.documentElement.classList.remove('face', 'tut', 'p2turn');
@@ -213,7 +214,13 @@ async function animateMove(who: Player, col: number, die: number): Promise<void>
     }
     return;
   }
-  await destroyAt(foe, col, die);
+  const destroyed = await destroyAt(foe, col, die);
+  if (S.scoring === BOUNTY && destroyed) {
+    // the kill pays: bank the permanent +1s, celebrate them in gold
+    S.bounty[who] += destroyed;
+    floatPts(who, col, '+' + destroyed + ' ✦', 'var(--gold)');
+    renderSide(who, true);
+  }
 }
 
 function isDone(m: MatchRow): boolean { return m.status !== 'active'; }
@@ -253,7 +260,11 @@ async function sync(fullRedraw: boolean): Promise<void> {
       finally { if (O) O.animating = false; }
     } else if (fresh.length || fullRedraw) {
       S.boards = [emptyBoard(), emptyBoard()];
-      for (const r of rows) applyMove(S.boards as any, r.who as Player, r.col, r.die, S.scoring);
+      S.bounty = [0, 0];
+      for (const r of rows) {
+        const d = applyMove(S.boards as any, r.who as Player, r.col, r.die, S.scoring);
+        if (S.scoring === BOUNTY) S.bounty[r.who as Player] += d;
+      }
       O.applied = rows.length;
       renderAll(false);
     }
@@ -292,12 +303,17 @@ function finishUI(m: MatchRow): void {
       .select('idx, who, col, die').eq('match_id', O.matchId).order('idx');
     if (!rows) return;
     S.boards = [emptyBoard(), emptyBoard()];
-    for (const r of rows) applyMove(S.boards as any, r.who as Player, r.col, r.die, S.scoring);
+    S.bounty = [0, 0];
+    for (const r of rows) {
+      const d = applyMove(S.boards as any, r.who as Player, r.col, r.die, S.scoring);
+      if (S.scoring === BOUNTY) S.bounty[r.who as Player] += d;
+    }
     renderAll(false);
   })();
+  const btyOf = (p: Player) => S.scoring === BOUNTY ? S.bounty[p] : 0;
   const meP1 = O.you === ME;
-  const my = (meP1 ? m.p1_score : m.p2_score) ?? boardTotalMode(S.boards[O.you], S.scoring);
-  const their = (meP1 ? m.p2_score : m.p1_score) ?? boardTotalMode(S.boards[(1 - O.you) as Player], S.scoring);
+  const my = (meP1 ? m.p1_score : m.p2_score) ?? (boardTotalMode(S.boards[O.you], S.scoring) + btyOf(O.you));
+  const their = (meP1 ? m.p2_score : m.p1_score) ?? (boardTotalMode(S.boards[(1 - O.you) as Player], S.scoring) + btyOf((1 - O.you) as Player));
   const delta = (meP1 ? (m as any).p1_rating_delta : (m as any).p2_rating_delta) as number | null;
   const won = m.winner !== null && ((meP1 && m.winner === m.p1) || (!meP1 && m.winner === m.p2));
   const head = m.status === 'forfeit'

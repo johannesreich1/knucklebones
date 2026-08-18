@@ -4,11 +4,11 @@
 // modded match. Classic (mode 0) must stay bit-identical to the pre-mode game.
 // Run: node --experimental-strip-types tests/modes.test.ts
 import {
-  CLASSIC, ROWSWITCH, ROWMULT, COLSHIELD, type Mode,
+  CLASSIC, ROWSWITCH, ROWMULT, COLSHIELD, SINGLESTRIKE, BOUNTY, type Mode,
   type GameState, type Board, AI, ME,
   emptyBoard, applyMove, boardTotal, boardTotalMode, rowScore, rowBonus,
 } from '../src/core/rules.ts';
-import { rebuild } from '../src/core/match.ts';
+import { rebuild, matchTotal, type MatchState } from '../src/core/match.ts';
 import { searchRoot, riskOf } from '../src/core/ai.ts';
 import { MODES, pickMode, modeById } from '../src/core/modes.ts';
 
@@ -50,6 +50,38 @@ st = shielded();
 applyMove(st, ME, 0, 2);
 check(JSON.stringify(st[AI][0]) === '[1,3]', 'applyMove default is classic', st[AI][0]);
 
+/* ---- SINGLE STRIKE: exactly one die falls, the centre-closest ---- */
+st = [[[2, 5, 2], [], []], [[], [], []]];
+const ss = applyMove(st, ME, 0, 2, SINGLESTRIKE);
+check(ss === 1 && JSON.stringify(st[AI][0]) === '[5,2]',
+  'single strike takes only the centre-closest match', { n: ss, col: st[AI][0] });
+st = [[[2, 5, 2], [], []], [[], [], []]];
+const cl = applyMove(st, ME, 0, 2);
+check(cl === 2 && JSON.stringify(st[AI][0]) === '[5]', 'classic still takes every match', { n: cl, col: st[AI][0] });
+
+/* ---- BOUNTY: destroyed dice bank permanent points ---- */
+{
+  const ms: MatchState = { st: [emptyBoard(), [[4, 4], [], []]] as GameState, turn: ME, over: false, nextDie: 1, moveCount: 0, bounty: [2, 5] };
+  check(matchTotal(ms, ME, BOUNTY) === 16 + 5, 'matchTotal adds banked bounty', matchTotal(ms, ME, BOUNTY));
+  check(matchTotal(ms, ME, CLASSIC) === 16, 'bounty ignored outside BOUNTY mode', matchTotal(ms, ME, CLASSIC));
+}
+{
+  // drive a deterministic log and verify rebuild banks exactly the destruction
+  const seed = 'bounty-gate';
+  const rows: { idx: number; who: number; col: number }[] = [];
+  const expect: [number, number] = [0, 0];
+  for (let i = 0; i < 14; i++) {
+    const s = rebuild(seed, rows, BOUNTY);
+    if (!s || s.over) break;
+    const col = s.st[s.turn][0].length < 3 ? 0 : s.st[s.turn][1].length < 3 ? 1 : 2;
+    expect[s.turn] += s.st[1 - s.turn][col].filter((v) => v === s.nextDie).length;
+    rows.push({ idx: rows.length, who: s.turn, col });
+  }
+  const fin = rebuild(seed, rows, BOUNTY);
+  check(!!fin && fin.bounty[0] === expect[0] && fin.bounty[1] === expect[1],
+    'rebuild banks +1 per destroyed die', { got: fin && fin.bounty, expect });
+}
+
 /* ---- rebuild honours the mode (destruction differs, dice identical) ---- */
 {
   // drive both rebuilds from one seed until a destruction-into-full happens
@@ -73,15 +105,19 @@ check(JSON.stringify(st[AI][0]) === '[1,3]', 'applyMove default is classic', st[
   void diverged;
 }
 
-/* ---- the wheel pick: deterministic, weighted, complete ---- */
+/* ---- the wheel pick: deterministic and weight-faithful, whatever the
+   weights currently are (test weights included) ---- */
 check(pickMode('same-seed').id === pickMode('same-seed').id, 'pickMode deterministic');
 {
   const tally: Record<string, number> = {};
   const N = 6000;
   for (let i = 0; i < N; i++) { const m = pickMode('dist-' + i); tally[m.id] = (tally[m.id] ?? 0) + 1; }
-  check(Object.keys(tally).length === MODES.length, 'every mode reachable', tally);
-  const classicShare = (tally['classic'] ?? 0) / N;
-  check(Math.abs(classicShare - 0.5) < 0.03, 'classic lands ~50%', tally);
+  const total = MODES.reduce((s, m) => s + m.weight, 0);
+  for (const m of MODES) {
+    const share = (tally[m.id] ?? 0) / N, want = m.weight / total;
+    check(Math.abs(share - want) < 0.03, 'wheel share drifted for ' + m.id, { share, want });
+    if (m.weight === 0) check(!tally[m.id], 'zero-weight mode must never land: ' + m.id, tally);
+  }
 }
 check(modeById('nonsense').id === 'classic', 'unknown id falls back to classic');
 check(modeById(null).id === 'classic', 'null id falls back to classic');

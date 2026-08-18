@@ -5,7 +5,7 @@
 // sizes: the wheel draws every mode as an equal segment and weights the spin
 // (classic 3 of 6 = the agreed 50% no-addition rate).
 import { randStream } from './dice.ts';
-import { CLASSIC, ROWSWITCH, ROWMULT, COLSHIELD, type Mode } from './rules.ts';
+import { CLASSIC, ROWSWITCH, ROWMULT, COLSHIELD, SINGLESTRIKE, BOUNTY, type Mode } from './rules.ts';
 
 export interface ModeSpec {
   mode: Mode;
@@ -16,11 +16,16 @@ export interface ModeSpec {
   weight: number;
 }
 
+/* TEMPORARY TEST WEIGHTS (2026-08-18): the two newest modes get 50/50 and
+   everything else 0 so they can be playtested back to back. RESTORE real
+   weights (classic majority) before opening signups — tracked in STATUS.md. */
 export const MODES: ModeSpec[] = [
-  { mode: CLASSIC, id: 'classic', name: 'CLASSIC', icon: '◆', blurb: 'The pure duel. Columns multiply.', weight: 3 },
-  { mode: ROWSWITCH, id: 'rowswitch', name: 'ROW SWITCH', icon: '☰', blurb: 'Scoring turns sideways — only rows count.', weight: 1 },
-  { mode: ROWMULT, id: 'rowmult', name: 'ROW MULTIPLY', icon: '✚', blurb: 'Rows pay a bonus on top of columns.', weight: 1 },
-  { mode: COLSHIELD, id: 'colshield', name: 'COLUMN SHIELD', icon: '🛡', blurb: 'A full column cannot be destroyed.', weight: 1 },
+  { mode: CLASSIC, id: 'classic', name: 'CLASSIC', icon: '◆', blurb: 'The pure duel. Columns multiply.', weight: 0 },
+  { mode: ROWSWITCH, id: 'rowswitch', name: 'ROW SWITCH', icon: '☰', blurb: 'Scoring turns sideways — only rows count.', weight: 0 },
+  { mode: ROWMULT, id: 'rowmult', name: 'ROW MULTIPLY', icon: '✚', blurb: 'Rows pay a bonus on top of columns.', weight: 0 },
+  { mode: COLSHIELD, id: 'colshield', name: 'COLUMN SHIELD', icon: '🛡', blurb: 'A full column cannot be destroyed.', weight: 0 },
+  { mode: SINGLESTRIKE, id: 'singlestrike', name: 'SINGLE STRIKE', icon: '☓', blurb: 'Destruction takes ONE die — the closest to the centre.', weight: 1 },
+  { mode: BOUNTY, id: 'bounty', name: 'BOUNTY', icon: '✦', blurb: 'Every die you destroy banks +1. Forever.', weight: 1 },
 ];
 
 export function modeById(id: string | null | undefined): ModeSpec {

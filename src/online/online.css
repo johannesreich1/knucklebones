@@ -78,3 +78,7 @@ html.rowmode .rowchips{position:absolute;right:100%;margin-right:9px;top:0;displ
 /* ROW SWITCH: columns don't score — their empty chip boxes vanish entirely
    (visibility, not display: the lane keeps its height, nothing jumps) */
 html.rowswitch .cols .chip{visibility:hidden}
+
+/* ===== BOUNTY: the banked kills tally on the plate ===== */
+.plate .bty{font-size:11px;font-weight:900;color:var(--gold);
+  text-shadow:0 0 8px rgba(255,209,102,.6);margin-right:5px}
