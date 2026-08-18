@@ -175,6 +175,20 @@ export function boot(embed){
     document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
   }
 
+  // Stale-client self-heal: a cached page can reference hashed chunks that a
+  // newer deploy deleted (bit a phone after a rapid-deploy day — the app died
+  // with a loading error). Reload ONCE per session to fetch the fresh page;
+  // the flag stops a reload loop if the network itself is the problem.
+  window.addEventListener('vite:preloadError', (e)=>{
+    e.preventDefault();
+    try{
+      if(sessionStorage.getItem('kb.chunkReload')) return;
+      sessionStorage.setItem('kb.chunkReload','1');
+    }catch{ /* forgetful host */ }
+    location.reload();
+  });
+  setTimeout(()=>{ try{ sessionStorage.removeItem('kb.chunkReload'); }catch{} },15000);
+
   initInstall();
 
   // Offline support. Only registers from http(s); opening the file directly
