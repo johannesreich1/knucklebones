@@ -1,9 +1,13 @@
 <!-- meta name="Practice — local play" group="4 · Local flow" subtitle="The old title-screen options, one level deeper: CPU level, seating, timer" width=412 height=920 links="Home, Game (local)" -->
 <style>
   /* .seg / .lbl / .tiny / .btn come from the app CSS; below is card-only */
-  .back{align-self:flex-start;font-size:11px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+  /* proposed shared header (spec: 00-navigation) — reuses the HUD's .ico */
+  .shead{display:flex;align-items:center;width:100%;max-width:340px;margin:0 auto}
+  .shead .ttl{flex:1;text-align:center;font-size:16px;letter-spacing:.26em;font-weight:900;
+    background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .shead .pad{width:30px}
   .pwrap{display:flex;flex-direction:column;gap:12px;width:100%;max-width:300px;margin:10px auto 0}
-  .pwrap h2{font-size:18px}
   .tut-tease{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);
     border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px 12px;margin-top:6px}
   .tut-tease .tx{display:flex;flex-direction:column;gap:2px}
@@ -11,9 +15,8 @@
   .tut-tease .t2{font-size:9.5px;letter-spacing:.1em;color:var(--dim)}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
-  <span class="back">‹ Home</span>
+  <div class="shead"><button class="ico">‹</button><span class="ttl">PRACTICE</span><span class="pad"></span></div>
   <div class="pwrap">
-    <h2>PRACTICE</h2>
     <div class="lbl">Mode</div>
     <div class="seg"><button class="on">VS CPU</button><button>2 PLAYERS</button></div>
     <div class="lbl">CPU level</div>

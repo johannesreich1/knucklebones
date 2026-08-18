@@ -1,0 +1,91 @@
+<!-- meta name="Navigation" group="0 · Foundations" subtitle="One nav model: ‹ pages, ✕ sheets, actions at the bottom — never nav buttons" width=860 height=760 links="" -->
+<style>
+  body{align-items:stretch}
+  .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:820px;margin:0 auto;width:100%}
+  .fcard{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+  .fcap{font-size:9px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase}
+  .rule{font-size:11px;line-height:1.6;color:#c6d3ee;letter-spacing:.03em;margin:0}
+  .rule b{color:var(--cy);font-weight:800}
+  .rule .mg{color:var(--mg);font-weight:800}
+  .rule .gd{color:var(--gold);font-weight:800}
+  /* live header demos — the .ico button is the HUD's own component, reused */
+  .demo{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:10px 12px}
+  .shead{display:flex;align-items:center}
+  .shead .ttl{flex:1;text-align:center;font-size:15px;letter-spacing:.26em;font-weight:900;
+    background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .shead .pad{width:30px}
+  .flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .flow .fc{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--txt);
+    border:1px solid rgba(255,255,255,.16);border-radius:99px;padding:4px 10px;font-weight:800}
+  .flow .fc.root{border-color:rgba(40,232,255,.5);color:var(--cy)}
+  .flow .fc.sheet{border-style:dashed;color:var(--dim)}
+  .flow .ar{color:var(--dim);font-size:10px}
+  .dead{display:flex;flex-direction:column;gap:7px;margin:0;padding:0;list-style:none}
+  .dead li{font-size:10.5px;line-height:1.5;color:var(--dim);letter-spacing:.03em;padding-left:18px;position:relative}
+  .dead li::before{content:"✕";position:absolute;left:0;color:var(--mg);font-weight:900}
+  .dead b{color:#c6d3ee;font-weight:800}
+</style>
+<div class="fgrid">
+  <div class="fcard">
+    <div class="fcap">Pages — ‹ top-left, one level up</div>
+    <div class="demo"><div class="shead"><button class="ico">‹</button><span class="ttl">PRACTICE</span><span class="pad"></span></div></div>
+    <p class="rule">Screens you travel <b>into</b> from Home: <b>Practice · Sign in · Ladder · Account</b>.
+      The header reuses the HUD's icon button; the title sits centred beside it.
+      ‹ returns exactly where you came from — always Home, never an intermediate menu.</p>
+  </div>
+  <div class="fcard">
+    <div class="fcap">Sheets — ✕ top-right, context resumes</div>
+    <div class="demo"><div class="shead"><span class="pad"></span><span class="ttl">SETTINGS</span><button class="ico">✕</button></div></div>
+    <p class="rule">Overlays that float <b>over</b> live context: <b>Settings · How to play · Install</b>.
+      ✕ dismisses; whatever was underneath resumes untouched. A reading sheet may keep one
+      bottom <b>GOT IT</b> as an acknowledgement — that is the only bottom dismissal that survives.</p>
+  </div>
+  <div class="fcard">
+    <div class="fcap">The bottom of a screen = actions only</div>
+    <p class="rule">Every bottom stack holds <b>actions</b>, never navigation — and exactly one is primary:
+      <b>Play</b>, <b>Sign in</b>, <b>Save name</b>, <b>Play again</b>, <b>Cancel search</b>.
+      “Back”, “Close” and “Done” as bottom buttons are retired everywhere.
+      Matchmaking's only exit is <b>Cancel</b>, and cancelling truly leaves the queue.</p>
+  </div>
+  <div class="fcard">
+    <div class="fcap">In match — ⚙ settings, ✕ leave</div>
+    <p class="rule"><b>⚙</b> opens the Settings sheet over the game. <b>✕</b> leaves the match:
+      practice just quits; online the first tap arms <span class="mg">Tap again to forfeit</span> —
+      the same two-tap idiom as Delete account. The pass-the-phone screen's quit is this same ✕.</p>
+  </div>
+  <div class="fcard">
+    <div class="fcap">The map — Home is the online menu</div>
+    <div class="flow">
+      <span class="fc root">HOME</span><span class="ar">→</span>
+      <span class="fc">QUEUE</span><span class="ar">→</span>
+      <span class="fc">WHEEL</span><span class="ar">→</span>
+      <span class="fc">MATCH</span><span class="ar">→</span>
+      <span class="fc">RESULT</span>
+    </div>
+    <div class="flow">
+      <span class="fc root">HOME</span><span class="ar">→</span><span class="fc">LADDER</span>
+      <span class="ar">·</span>
+      <span class="fc root">HOME</span><span class="ar">→</span><span class="fc">ACCOUNT</span>
+      <span class="ar">·</span>
+      <span class="fc root">HOME</span><span class="ar">→</span><span class="fc">PRACTICE</span><span class="ar">→</span><span class="fc">GAME</span>
+    </div>
+    <div class="flow">
+      <span class="ar">orbiting sheets:</span>
+      <span class="fc sheet">SETTINGS</span><span class="fc sheet">RULES</span><span class="fc sheet">INSTALL</span>
+    </div>
+    <p class="rule">Deep links go straight to their view. Signed out, <b>Sign in</b> interposes once,
+      then continues to wherever the tap was headed; its ‹ returns Home.</p>
+  </div>
+  <div class="fcard">
+    <div class="fcap">Retired patterns</div>
+    <ul class="dead">
+      <li>The online overlay's bottom <b>Close</b> stacked under a panel <b>Back</b> — two exits, different targets.</li>
+      <li>The <b>ONLINE menu panel</b> — it duplicated Home's three buttons; Home is the online menu.</li>
+      <li><b>≡</b> as quit — one glyph meant “menu” in the HUD and “abandon match” mid-game.</li>
+      <li>Closing matchmaking <b>without leaving the queue</b> — you could be yanked into a match from Home.</li>
+      <li>Match results as <b>text prepended to a menu</b> — they land on the Result screen instead.</li>
+    </ul>
+  </div>
+</div>

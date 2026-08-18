@@ -1,6 +1,11 @@
 <!-- meta name="Account" group="3 · Ladder & account" subtitle="Rename, record, sign out — deletion is present but at arm's length" width=412 height=920 links="Home" -->
 <style>
-  .back{align-self:flex-start;font-size:11px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+  /* proposed shared header (spec: 00-navigation) — reuses the HUD's .ico */
+  .shead{display:flex;align-items:center;width:100%;max-width:340px;margin:0 auto}
+  .shead .ttl{flex:1;text-align:center;font-size:16px;letter-spacing:.26em;font-weight:900;
+    background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .shead .pad{width:30px}
   .awrap{display:flex;flex-direction:column;gap:12px;width:100%;max-width:300px;margin:14px auto 0}
   .acard{display:flex;flex-direction:column;gap:9px;background:rgba(255,255,255,.03);
     border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px}
@@ -17,7 +22,7 @@
   .dnote{font-size:9.5px;letter-spacing:.1em;color:var(--dim);text-align:center;margin-top:5px}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
-  <span class="back">‹ Home</span>
+  <div class="shead"><button class="ico">‹</button><span class="ttl">ACCOUNT</span><span class="pad"></span></div>
   <div class="awrap">
     <div class="acard dice-static">
       <div class="awho">{{die:5:p1:40}}<span class="meta"><span class="nm">FrostLynx303</span><span class="sub">since Aug 2026</span></span></div>

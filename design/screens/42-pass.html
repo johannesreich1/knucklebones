@@ -1,0 +1,31 @@
+<!-- meta name="Pass the phone" group="4 · Local flow" subtitle="Hand-off between local turns; quitting is the same ✕ as everywhere else" width=412 height=880 links="Practice" -->
+<style>
+  .scr{position:relative}
+  .quitico{position:absolute;top:14px;right:16px}
+  .pwrap{display:flex;flex-direction:column;align-items:center;gap:12px;margin:auto}
+  .pglow{position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(60% 42% at 50% 52%,rgba(255,47,160,.16),transparent 70%)}
+  .swapicon{font-size:40px;color:var(--mg);text-shadow:0 0 26px rgba(255,47,160,.6);
+    animation:bob 1.6s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  .who{font-size:26px;font-weight:900;letter-spacing:.24em;color:var(--mg);
+    text-shadow:0 0 22px rgba(255,47,160,.55)}
+  .hint{font-size:11px;letter-spacing:.24em;color:var(--txt);text-transform:uppercase}
+  .mini{display:flex;align-items:center;gap:12px;font-size:22px;font-weight:900}
+  .mini .a{color:var(--cy)}.mini .b{color:var(--mg)}
+  .mini span{color:var(--dim);font-size:13px}
+  .tapline{margin-top:18px;font-size:10px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase;
+    animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.45}50%{opacity:1}}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="pglow"></div>
+  <button class="ico quitico">✕</button>
+  <div class="pwrap">
+    <div class="swapicon">⇅</div>
+    <div class="who">PLAYER 2</div>
+    <div class="hint">Pass the phone</div>
+    <div class="mini"><b class="a">12</b><span>—</span><b class="b">8</b></div>
+    <div class="tapline">Tap anywhere when ready</div>
+  </div>
+</div></div>

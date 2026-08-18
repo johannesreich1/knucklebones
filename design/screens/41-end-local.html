@@ -1,0 +1,31 @@
+<!-- meta name="Practice — game over" group="4 · Local flow" subtitle="Actions only: play again, retune, or a quiet way home — no rating, ever" width=412 height=880 links="Practice, Home" -->
+<style>
+  .rwrap{display:flex;flex-direction:column;align-items:center;gap:14px;margin:auto;width:100%;max-width:320px}
+  .rtitle{font-size:29px;letter-spacing:.2em;font-weight:900;
+    background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
+  .rsub{font-size:11px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:-8px}
+  .rline{display:flex;align-items:center;gap:16px;font-weight:800}
+  .rline .you{color:var(--cy);font-size:32px;font-weight:900;text-shadow:0 0 14px rgba(40,232,255,.5)}
+  .rline .cpu{color:var(--mg);font-size:32px;font-weight:900;text-shadow:0 0 14px rgba(255,47,160,.5)}
+  .rline .vs{color:var(--dim);font-size:12px;letter-spacing:.2em}
+  .rline .sc{display:flex;flex-direction:column;align-items:center;gap:1px}
+  .rline .sc em{font-style:normal;font-size:9.5px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+  .sess{font-size:10.5px;letter-spacing:.18em;color:var(--dim)}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="rwrap">
+    <div class="rtitle">VICTORY</div>
+    <div class="rsub">You out-rolled the machine</div>
+    <div class="rline">
+      <span class="sc"><span class="you">41</span><em>You</em></span>
+      <span class="vs">VS</span>
+      <span class="sc"><span class="cpu">33</span><em>CPU · Hard</em></span>
+    </div>
+    <div class="sess">SESSION 3–1</div>
+    <button class="btn primary" style="min-width:240px">Play again</button>
+    <button class="btn" style="min-width:240px">Change difficulty</button>
+    <button class="linkbtn">Home</button>
+  </div>
+</div></div>
