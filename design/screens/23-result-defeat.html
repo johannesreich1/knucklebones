@@ -11,7 +11,8 @@
     -webkit-background-clip:text;background-clip:text;color:transparent;
     filter:drop-shadow(0 0 26px rgba(255,47,160,.45))}
   .rsub{font-size:11px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:-8px}
-  .rline{display:flex;align-items:center;gap:18px;font-weight:800}
+  .rline{display:flex;align-items:center;gap:18px;font-weight:800;width:100%}
+  .rline .sc{flex:1;min-width:0}   /* equal halves — the VS sits dead centre */
   .rline .you{color:var(--cy);font-size:44px;font-weight:900;text-shadow:0 0 14px rgba(40,232,255,.5)}
   .rline .cpu{color:var(--mg);font-size:44px;font-weight:900;text-shadow:0 0 14px rgba(255,47,160,.5)}
   .rline .vs{color:var(--dim);font-size:12px;letter-spacing:.2em}
@@ -33,5 +34,6 @@
     <div class="rrank">Ladder: <b>#6</b></div>
     <button class="btn primary">Play again</button>
     <button class="btn">Home</button>
+    <button class="linkbtn">Share result</button>
   </div>
 </div></div>

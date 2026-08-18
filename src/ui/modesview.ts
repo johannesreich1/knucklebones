@@ -18,7 +18,7 @@ function build(): void {
       <div class="mcdetail">${m.detail}</div>
     </div>`).join('');
   document.body.insertAdjacentHTML('beforeend', `
-<div class="ov paged" id="ovModes">
+<div class="ov paged scrollview" id="ovModes">
   <div class="shead"><span class="pad"></span><span class="ttl">GAME MODES</span>
     <button class="ico" id="btnCloseModes" aria-label="Close">✕</button></div>
   <div class="pbody">

@@ -89,66 +89,6 @@ for (let i = 0; i < 3; i++) {
   }
   await p.waitForTimeout(1500);
 }
-// wait for the human's turn so a die is showing, then reload
-for (let i = 0; i < 40; i++) {
-  const s = await p.evaluate(() => ({ ph: window.__kb.S.phase, t: window.__kb.S.turn }));
-  if (s.ph === 'choose' && s.t === 1) break;
-  await p.waitForTimeout(150);
-}
-const beforeReload = await p.evaluate(() => ({
-  boards: window.__kb.S.boards, die: window.__kb.S.die, turn: window.__kb.S.turn,
-  dice: window.__kb.S.boards[0].flat().length + window.__kb.S.boards[1].flat().length,
-}));
-await p.reload(); await p.waitForTimeout(800);
-const resumeUi = await p.evaluate(() => ({
-  resumeShown: !document.getElementById('btnResume').hidden,
-  resumeLabel: document.getElementById('btnResume').textContent,
-  playLabel: document.getElementById('btnPlay').textContent,
-}));
-check(resumeUi.resumeShown, 'no resume button after reload', resumeUi);
-await p.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
-await p.tap('#btnResume'); await p.waitForTimeout(1200);
-const afterResume = await p.evaluate(() => ({
-  boards: window.__kb.S.boards, die: window.__kb.S.die, turn: window.__kb.S.turn, phase: window.__kb.S.phase,
-  dom: document.querySelectorAll('.board .die').length,
-  state: window.__kb.S.boards[0].flat().length + window.__kb.S.boards[1].flat().length,
-}));
-check(JSON.stringify(afterResume.boards) === JSON.stringify(beforeReload.boards), 'board not restored', { beforeReload, afterResume });
-check(afterResume.die === beforeReload.die, 'die changed across resume (reroll exploit)', { beforeReload, afterResume });
-check(afterResume.dom === afterResume.state, 'restored board does not match DOM', afterResume);
-out.resume = { beforeReload: { dice: beforeReload.dice, die: beforeReload.die }, resumeUi, afterResume: { die: afterResume.die, phase: afterResume.phase, dice: afterResume.state } };
-
-// a finished game must not offer resume. Generous budget on purpose: random,
-// destruction-heavy endgames run long on slow CI (a 400-tick budget flaked).
-for (let i = 0; i < 1200; i++) {
-  const s = await p.evaluate(() => ({ ph: window.__kb.S.phase, t: window.__kb.S.turn, b: window.__kb.S.boards[1] }));
-  if (s.ph === 'over') break;
-  if (s.ph === 'choose' && s.t === 1) {
-    const lg = s.b.map((c, j) => c.length < 3 ? j : -1).filter(j => j >= 0);
-    await p.tap(`#botBoard .col[data-col="${lg[(Math.random() * lg.length) | 0]}"]`);
-  }
-  await p.waitForTimeout(95);
-}
-await p.waitForTimeout(1500);
-await p.reload(); await p.waitForTimeout(700);
-out.afterFinish = await p.evaluate(() => ({
-  resumeShown: !document.getElementById('btnResume').hidden,
-  stored: localStorage.getItem('knucklebones.game.v1'),
-  statLine: document.getElementById('statLine').textContent.trim(),
-}));
-check(!out.afterFinish.resumeShown && !out.afterFinish.stored, 'finished game still offers resume', out.afterFinish);
-
-// corrupt save must be ignored, not crash
-out.corrupt = await p.evaluate(() => {
-  localStorage.setItem('knucklebones.game.v1', '{"boards":[[[9,9,9],[],[]],[[],[],[]]],"turn":1,"bottom":1,"mode":"cpu"}');
-  let a = null; try { a = window.__kb.loadGame(); } catch (e) { return { threw: e.message }; }
-  localStorage.setItem('knucklebones.game.v1', 'not json at all');
-  let b = null; try { b = window.__kb.loadGame(); } catch (e) { return { threw: e.message }; }
-  localStorage.removeItem('knucklebones.game.v1');
-  return { badDice: a, badJson: b };
-});
-check(out.corrupt.badDice === null && out.corrupt.badJson === null, 'corrupt save not rejected', out.corrupt);
-
 // ================= PLACE ON RELEASE =================
 const g = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
 const gp = await g.newPage();

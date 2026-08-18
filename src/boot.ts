@@ -30,7 +30,7 @@ import { tap, boardDown, boardUp, clearPress, commitColumn } from './ui/input.ts
 import { initInstall } from './ui/install.ts';
 import { coachTap } from './flow/tutorial.ts';
 import { newGame, passTap } from './flow/game.ts';
-import { resumeGame, toMenu, syncSettingsUI, updateResumeButton, updateStatLine } from './flow/menu.ts';
+import { toMenu, syncSettingsUI, updateStatLine } from './flow/menu.ts';
 import { requestLeave } from './flow/leave.ts';
 import { openModes } from './ui/modesview.ts';
 /* ===================== BOOT ===================== */
@@ -46,15 +46,11 @@ export function boot(embed){
   updateRecord();
   syncSettingsUI();
   updateStatLine();
-  updateResumeButton();
   // the hero duel: you (cyan) vs them (magenta), gold VS between
   const duel=$('#homeDuel');
   duel.insertBefore(makeDie(5,ME), duel.firstChild);
   duel.appendChild(makeDie(3,AI));
-  // decorative dice on the Practice tutorial tease and the install sheet's tile
-  const tutDie=makeDie(4,ME); tutDie.classList.add('m2');
-  $('#btnTut').insertBefore(tutDie, $('#btnTut').firstChild);
-  $('#installFace').appendChild(makeDie(5,ME));
+  $('#installFace').appendChild(makeDie(5,ME));   // the install sheet's tile
   refreshHomeChip();
 
   const table=$('#tableEl');
@@ -80,10 +76,8 @@ export function boot(embed){
 
   tap($('#ovPass'),passTap);
   tap($('#passQuit'),()=>{ Sfx.tap(); toMenu(); });
-  tap($('#btnResume'),()=>{ Sfx.unlock(); Sfx.tap(); resumeGame(); });
-  tap($('#btnTut'),()=>{ Sfx.unlock(); Sfx.tap(); newGame({tutorial:true}); });
   const openPractice=(mode)=>{ if(mode) S.mode=mode; saveStats(); syncSettingsUI();
-    updateStatLine(); updateResumeButton(); hide('#ovStart'); show('#ovPractice'); };
+    updateStatLine(); hide('#ovStart'); show('#ovPractice'); };
   tap($('#btnVsCpu'),()=>{ Sfx.unlock(); Sfx.tap(); openPractice('cpu'); });
   tap($('#btnDuoHome'),()=>{ Sfx.unlock(); Sfx.tap(); openPractice('duo'); });
   tap($('#btnTutHome'),()=>{ Sfx.unlock(); Sfx.tap(); newGame({tutorial:true}); });
@@ -108,7 +102,7 @@ export function boot(embed){
   bindSeg('#faceSeg','f', v=>{ S.numerals=v==='nums'; });
   tap($('#btnPlay'),()=>{ Sfx.unlock(); Sfx.tap(); newGame(); });
   tap($('#btnAgain'),()=>{ Sfx.tap(); newGame(); });
-  tap($('#btnMenu2'),()=>{ Sfx.tap(); hide('#ovEnd'); updateResumeButton(); show('#ovPractice'); });
+  tap($('#btnMenu2'),()=>{ Sfx.tap(); hide('#ovEnd'); show('#ovPractice'); });
   tap($('#btnEndHome'),()=>{ Sfx.tap(); hide('#ovEnd'); toMenu(); });
   // quit lives at the bottom of the Settings sheet; an online match intercepts
   // the first tap to arm its two-tap forfeit confirm on the button itself

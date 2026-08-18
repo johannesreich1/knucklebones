@@ -74,6 +74,7 @@ const OVERLAY = `
     <div class="rrank" id="rRank" hidden></div>
     <button class="btn primary" id="btnResultAgain">Play again</button>
     <button class="btn" id="btnResultHome">Home</button>
+    <button class="linkbtn" id="btnShare">Share result</button>
   </div>
 </div>`;
 
@@ -179,7 +180,11 @@ async function showAccount(): Promise<void> {
   $('#accRecord').textContent = rec ? `${rec.wins}W – ${rec.losses}L` : '–';
 }
 
-/* ---- match result (design 23): scores, the Elo delta, the ladder spot ---- */
+/* ---- match result (design 23): scores, the Elo delta, the ladder spot.
+   Everything paints INSTANTLY — the chip uses the cached rating plus the
+   known delta, and the fresh profile/ladder fetches (in parallel) merely
+   correct and append. No pop-in, no perceived lag. ---- */
+let shareText = '';
 async function showResult(r: FinishReport): Promise<void> {
   show('#ovOnline');
   panel('onResult');
@@ -192,16 +197,26 @@ async function showResult(r: FinishReport): Promise<void> {
   $('#rMy').textContent = String(r.my);
   $('#rTheir').textContent = String(r.their);
   $('#rOpp').textContent = r.opp;
+  const deltaTxt = r.delta != null ? ` · ${r.delta >= 0 ? '+' : ''}${r.delta} Elo` : '';
+  shareText = `${t.textContent} ${r.my}–${r.their} vs ${r.opp}${deltaTxt} — Knucklebones, ranked dice duels`;
+  ($('#btnShare') as HTMLElement).textContent = 'Share result';
   const elo = $('#rElo') as HTMLElement, rank = $('#rRank') as HTMLElement;
-  elo.hidden = true; rank.hidden = true;
+  rank.hidden = true;
   elo.classList.toggle('down', (r.delta ?? 0) < 0);
-  const p = await myProfile();               // fresh — the server already paid
-  refreshHomeChip();
-  if (r.delta != null) {
-    elo.innerHTML = `${r.delta >= 0 ? '+' : ''}${r.delta} <small>ELO${p ? ' · ' + p.rating : ''}</small>`;
+  const chip = (rating: number | null) => {
+    if (r.delta == null) { elo.hidden = true; return; }
+    elo.innerHTML = `${r.delta >= 0 ? '+' : ''}${r.delta} <small>ELO${rating != null ? ' · ' + rating : ''}</small>`;
     elo.hidden = false;
-  }
-  const rows = await leaderboard(50);
+  };
+  let cachedRating: number | null = null;
+  try {
+    const c = JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null');
+    if (typeof c?.rating === 'number' && r.delta != null) cachedRating = c.rating + r.delta;
+  } catch { /* forgetful host */ }
+  chip(cachedRating);
+  const [p, rows] = await Promise.all([myProfile(), leaderboard(50)]);
+  refreshHomeChip();
+  chip(p?.rating ?? cachedRating);
   const i = p ? rows.findIndex((x) => x.nickname === p.nickname) : -1;
   if (i >= 0) { rank.innerHTML = `Ladder: <b>#${i + 1}</b>`; rank.hidden = false; }
 }
@@ -264,6 +279,18 @@ function bind(): void {
   $('#btnQueueCancel').addEventListener('click', () => { Sfx.tap(); goHome(); });
   $('#btnResultAgain').addEventListener('click', () => { Sfx.tap(); void startQueue(); });
   $('#btnResultHome').addEventListener('click', () => { Sfx.tap(); goHome(); });
+  $('#btnShare').addEventListener('click', async () => {
+    Sfx.tap();
+    const b = $('#btnShare');
+    try {
+      if (navigator.share) await navigator.share({ text: shareText, url: location.origin });
+      else {
+        await navigator.clipboard.writeText(shareText + ' ' + location.origin);
+        b.textContent = 'Copied!';
+        setTimeout(() => { b.textContent = 'Share result'; }, 1500);
+      }
+    } catch { /* share sheet dismissed */ }
+  });
 
   // a finished match lands on the Result screen, not on a menu
   setFinishHandler((r) => { void showResult(r); });

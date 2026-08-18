@@ -97,7 +97,7 @@ check(out.game.badTurns.length === 0, 'turn indication wrong', out.game.badTurns
 check(out.game.end.shown && out.game.end.you === out.game.end.realP1 && out.game.end.cpu === out.game.end.realP2,
       'face game did not finish cleanly', out.game.end);
 
-// ===== C. resume keeps the seating =====
+// ===== C. play again keeps the face seating (also sets up D's live game) =====
 await page.tap('#btnAgain'); await page.waitForTimeout(900);
 for (let i = 0; i < 60; i++) {
   const s = await snap();
@@ -110,18 +110,12 @@ for (let i = 0; i < 60; i++) {
   await page.waitForTimeout(150);
 }
 await page.waitForTimeout(800);
-await page.reload(); await page.waitForTimeout(700);
-const resumeShown = await page.evaluate(() => !document.getElementById('btnResume').hidden);
-check(resumeShown, 'no resume offered for face game', resumeShown);
-await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
-await page.tap('#btnResume'); await page.waitForTimeout(1000);
-out.resumed = await page.evaluate(() => ({
+out.faceReplay = await page.evaluate(() => ({
   seat: window.__kb.S.seat, bottom: window.__kb.S.bottom,
   face: document.documentElement.classList.contains('face'),
-  pass: document.getElementById('ovPass').classList.contains('on'),
 }));
-check(out.resumed.seat === 'face' && out.resumed.bottom === 1 && out.resumed.face && !out.resumed.pass,
-      'resume lost the seating', out.resumed);
+check(out.faceReplay.seat === 'face' && out.faceReplay.bottom === 1 && out.faceReplay.face,
+      'play again lost the face seating', out.faceReplay);
 
 // ===== D. pass mode still works after switching back =====
 await page.tap('#btnSettings'); await page.waitForTimeout(300); await page.tap('#btnMenu'); await page.waitForTimeout(400);

@@ -34,14 +34,7 @@ async function waitChoose(maxMs = 15000) {
 }
 
 // ===================== A. NO STRATEGY PREVIEWS IN NORMAL PLAY =====================
-// fresh state: tutorial should be the primary button
-out.freshPrimary = await page.evaluate(() => ({
-  tut: document.getElementById('btnTut').classList.contains('primary'),
-  play: document.getElementById('btnPlay').classList.contains('primary'),
-}));
-check(out.freshPrimary.tut && !out.freshPrimary.play, 'tutorial not primary on first launch', out.freshPrimary);
-
-await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
+await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Offline overlay now
 await page.tap('#btnPlay'); await page.waitForTimeout(1500);
 let s = await waitChoose();
 out.cpuNormal = { pills: s.pills, danger: s.danger, legal: s.legal, colsMargin: s.colsMargin };
@@ -60,11 +53,8 @@ out.duoNormal = { pills: s.pills, danger: s.danger };
 check(s.pills === 0 && s.danger === 0, 'previews shown in duo play', s);
 const quitVia = await page.evaluate(() => document.getElementById('ovPass').classList.contains('on'));
 if (quitVia) { await page.tap('#passQuit'); } else { await page.tap('#btnSettings'); await page.waitForTimeout(300); await page.tap('#btnMenu'); } await page.waitForTimeout(400);
-await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
-await page.tap('#modeSeg button[data-m="cpu"]'); await page.waitForTimeout(200);
-
-// ===================== B. THE TUTORIAL, WALKED END TO END =====================
-await page.tap('#btnTut'); await page.waitForTimeout(500);
+// ===================== B. THE TUTORIAL, WALKED END TO END (from the home strip) =====================
+await page.tap('#btnTutHome'); await page.waitForTimeout(500);
 s = await snap();
 check(s.coach && /Welcome/.test(s.coachMsg), 'welcome step missing', s);
 check(s.colsMargin === '15px', 'tutorial pill lane not applied', s);
@@ -154,45 +144,15 @@ out.end = await page.evaluate(() => ({
   best: window.__kb.S.best,
   tutDone: window.__kb.S.tutDone,
   tutCleared: !window.__kb.S.tut,
-  gameSave: localStorage.getItem('knucklebones.game.v1'),
 }));
 check(out.end.shown && out.end.endRec === 'TUTORIAL COMPLETE', 'tutorial end screen wrong', out.end);
 check(out.end.stats === 0 && out.end.best === 0, 'tutorial polluted the record', out.end);
 check(out.end.tutDone && out.end.tutCleared, 'tutorial completion state wrong', out.end);
-check(!out.end.gameSave, 'tutorial left a resumable save', out.end);
 
-// after graduating, Play is primary again and previews stay off
+// after graduating, the flag persists across reload
 await page.reload(); await page.waitForTimeout(600);
-out.afterGrad = await page.evaluate(() => ({
-  tutPrimary: document.getElementById('btnTut').classList.contains('primary'),
-  playPrimary: document.getElementById('btnPlay').classList.contains('primary'),
-  tutDone: window.__kb.S.tutDone,
-}));
-check(!out.afterGrad.tutPrimary && out.afterGrad.playPrimary && out.afterGrad.tutDone,
-      'post-tutorial button priority wrong', out.afterGrad);
-
-// ===================== C. TUTORIAL MUST NOT EAT A REAL SAVED GAME =====================
-await page.evaluate(() => window.__kb.openPractice());
-await page.tap('#btnPlay'); await page.waitForTimeout(1600);
-s = await waitChoose();
-await page.tap(`#botBoard .col[data-col="0"]`); await page.waitForTimeout(1500);
-await waitChoose();                                        // roll saved with the game
-const savedBefore = await page.evaluate(() => localStorage.getItem('knucklebones.game.v1'));
-check(!!savedBefore, 'no save to protect', {});
-await page.tap('#btnSettings'); await page.waitForTimeout(300); await page.tap('#btnMenu'); await page.waitForTimeout(400);
-await page.evaluate(() => window.__kb.openPractice());
-await page.tap('#btnTut'); await page.waitForTimeout(500); // welcome card up
-await page.tap('#coach');
-s = await waitChoose();
-await page.tap('#botBoard .col[data-col="0"]'); await page.waitForTimeout(800);
-const savedDuring = await page.evaluate(() => localStorage.getItem('knucklebones.game.v1'));
-check(savedDuring === savedBefore, 'tutorial touched the real save', { savedBefore: !!savedBefore, savedDuring: !!savedDuring });
-await page.tap('#btnSettings'); await page.waitForTimeout(300); await page.tap('#btnMenu'); await page.waitForTimeout(500);
-out.saveProtected = await page.evaluate(() => ({
-  resumeShown: !document.getElementById('btnResume').hidden,
-  label: document.getElementById('btnResume').textContent,
-}));
-check(out.saveProtected.resumeShown, 'resume lost after a tutorial detour', out.saveProtected);
+out.afterGrad = await page.evaluate(() => ({ tutDone: window.__kb.S.tutDone }));
+check(out.afterGrad.tutDone, 'tutorial completion did not persist', out.afterGrad);
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
 await browser.close();

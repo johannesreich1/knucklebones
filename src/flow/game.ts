@@ -7,7 +7,7 @@
 import { AI, ME, SPEC, legalCols, colScore, boardTotal, counts, isFull, emptyBoard } from '../core/rules.ts';
 import { searchRoot, getRiskW, setRiskW } from '../core/ai.ts';
 import { S } from '../state.ts';
-import { saveGame, clearGame, saveStats } from '../persist.ts';
+import { saveStats } from '../persist.ts';
 import { Sfx, vibrate } from '../ui/audio.ts';
 import { isEmbed, kbroot, rootRect } from '../ui/embed.ts';
 import { $, show, hide, sideKey, slotEl, slotIdx, colEl, faceRotated } from '../ui/dom.ts';
@@ -155,7 +155,6 @@ export async function nextTurn(){
     if(S.tut) tutOnChoose();     // sets the lesson message and any column restriction
     setStatus(S.mode==='duo' ? nameOf(S.turn)+' — tap a column' : 'Tap a column', S.turn);
     showHints();
-    saveGame();                  // the roll is now committed: no quitting to reroll
     armTimer();
   }else{
     S.phase='anim';
@@ -261,7 +260,7 @@ export async function place(who,col){
   if(isFull(S.boards[who])){ return endGame(); }
   S.turn = 1-who;
   S.busy=false;
-  S.die=0; saveGame();
+  S.die=0;
   nextTurn();
 }
 /* ===================== GAME LIFECYCLE ===================== */
@@ -272,14 +271,12 @@ export function newGame(opts){
   S.bounty=[0,0];
   stopTimer();
   if(tutorial){
-    // a real saved game (if any) is deliberately left alone — see saveGame
     S.mode='cpu';
     S.starter=ME;                            // the lessons assume you move first
     S.tut={ turnNo:-1, prolls:[4,4,5], crolls:[2,5], cmoves:[2,1],
             firstCol:null, restrict:null };
   }else{
     clearTut();
-    clearGame();
   }
   document.documentElement.classList.toggle('tut', !!S.tut);
   S.boards=[emptyBoard(),emptyBoard()];
@@ -309,8 +306,7 @@ function endGame(){
   S.phase='over'; S.busy=false;
   stopTimer();
   const tut=!!S.tut;
-  if(tut){ S.tutDone=true; clearTut(); }     // graduate; leave any real save intact
-  else clearGame();
+  if(tut){ S.tutDone=true; clearTut(); }     // graduate
   setActivePlate();
   clearHints();
   const me=boardTotal(S.boards[ME]), ai=boardTotal(S.boards[AI]);

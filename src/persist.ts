@@ -1,9 +1,8 @@
-// Persistence: stats/preferences and the in-progress game save.
+// Persistence: stats and preferences. (Mid-game saves were removed by design
+// 2026-08-18 — offline games are quick; abandoning one simply ends it.)
 // Storage is unavailable in some embeds (sandboxed iframes, private modes).
 // Every access is guarded: the game simply forgets between sessions there.
-import { DICE_FACES } from './config.ts';
-import { SPEC, isFull, type Board, type Player } from './core/rules.ts';
-import { S, DIFFS, MODES, TIMERS, SEATS, oneOf, type Mode, type Diff, type Seat } from './state.ts';
+import { S, DIFFS, MODES, TIMERS, SEATS, oneOf } from './state.ts';
 
 const Store = {
   KEY: 'knucklebones.v1',
@@ -35,53 +34,5 @@ export function loadStats(): void {
   if (typeof d.tutDone === 'boolean') S.tutDone = d.tutDone;
 }
 
-/* ---- in-progress game, so closing the app doesn't lose it ----
-   The rolled die is saved too: quitting after seeing a bad roll gives you the
-   same one back rather than a free reroll. */
-const GKEY = 'knucklebones.game.v1';
-
-export interface GameSave {
-  boards: [Board, Board];
-  turn: Player;
-  die: number;
-  mode: Mode;
-  diff: Diff;
-  bottom: Player;
-  starter?: Player;
-  seat?: Seat;
-}
-
-export function saveGame(): void {
-  if (S.tut) return;                 // tutorials are throwaway; leave any real save alone
-  if (S.phase === 'over' || S.phase === 'menu') { clearGame(); return; }
-  const placed = S.boards[0].flat().length + S.boards[1].flat().length;
-  if (!placed) { clearGame(); return; }   // nothing on the board = nothing to resume
-  try {
-    localStorage.setItem(GKEY, JSON.stringify({
-      boards: S.boards, turn: S.turn, die: S.die, mode: S.mode, diff: S.diff,
-      bottom: S.bottom, starter: S.starter, seat: S.seat
-    }));
-  } catch { /* forgetful host */ }
-}
-
-export function clearGame(): void {
-  try { localStorage.removeItem(GKEY); } catch { /* forgetful host */ }
-}
-
-export function loadGame(): GameSave | null {
-  let g: any;
-  try { g = JSON.parse(localStorage.getItem(GKEY)!); } catch { return null; }
-  if (!g) return null;
-  // validate hard: a corrupt or hand-edited blob must not boot the game
-  const okBoard = (b: unknown): b is Board => Array.isArray(b) && b.length === SPEC.cols && b.every(c =>
-    Array.isArray(c) && c.length <= SPEC.rows && c.every(v => Number.isInteger(v) && v >= 1 && v <= DICE_FACES));
-  if (!Array.isArray(g.boards) || g.boards.length !== 2 || !g.boards.every(okBoard)) return null;
-  if (g.turn !== 0 && g.turn !== 1) return null;
-  if (g.bottom !== 0 && g.bottom !== 1) return null;
-  if (g.mode !== 'cpu' && g.mode !== 'duo') return null;
-  if (isFull(g.boards[0]) || isFull(g.boards[1])) return null;   // that game was over
-  const placed = g.boards[0].flat().length + g.boards[1].flat().length;
-  if (placed === 0) return null;                                 // nothing worth resuming
-  if (!(Number.isInteger(g.die) && g.die >= 0 && g.die <= DICE_FACES)) g.die = 0;
-  return g as GameSave;
-}
+/* one-time hygiene: earlier builds stored an in-progress game here */
+try { localStorage.removeItem('knucklebones.game.v1'); } catch { /* forgetful host */ }

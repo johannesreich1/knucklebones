@@ -68,7 +68,9 @@
   filter:drop-shadow(0 0 22px rgba(159,178,216,.35))}
 .rsub{font-size:11px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;
   margin-top:-8px;text-align:center}
-.rline{display:flex;align-items:center;gap:18px;font-weight:800}
+.rline{display:flex;align-items:center;gap:18px;font-weight:800;width:100%;max-width:320px}
+/* equal halves so the VS sits dead centre whatever the nickname length */
+.rline .sc{flex:1;min-width:0}
 .rline .you{color:var(--cy);font-size:clamp(34px,11vw,46px);font-weight:900;text-shadow:0 0 14px rgba(40,232,255,.5)}
 .rline .cpu{color:var(--mg);font-size:clamp(34px,11vw,46px);font-weight:900;text-shadow:0 0 14px rgba(255,47,160,.5)}
 .rline .vs{color:var(--dim);font-size:12px;letter-spacing:.2em}

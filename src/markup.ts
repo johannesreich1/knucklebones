@@ -84,16 +84,16 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <button class="linkbtn" id="btnHow">How to play</button>
     <button class="linkbtn" id="btnModes">Game modes</button>
     <button class="linkbtn" id="btnInstall" hidden>Install app</button>
-    <div class="tiny" id="buildTag" style="opacity:.55">build dev</div>
   </div>
+  <div class="tiny" id="buildTag">build dev</div>
 </div>
 
-<!-- PRACTICE: the local-play configuration (was the old title screen).
+<!-- OFFLINE: the local-play configuration (was the old title screen).
      A page below Home: ‹ goes back, the bottom holds only actions. -->
 <div class="ov paged" id="ovPractice">
   <div class="shead">
     <button class="ico" id="btnPracticeBack" aria-label="Back">‹</button>
-    <span class="ttl">PRACTICE</span><span class="pad"></span>
+    <span class="ttl">OFFLINE</span><span class="pad"></span>
   </div>
   <div class="pbody">
     <div class="card">
@@ -128,15 +128,13 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     </div>
     <div class="tiny" id="duoNote" hidden>One phone, passed back and forth</div>
     <div class="tiny" id="statLine" hidden></div>
-    <button class="btn primary" id="btnResume" hidden>Resume game</button>
     <button class="btn primary" id="btnPlay">Play</button>
-    <button class="tut-tease" id="btnTut"><span class="tx"><span class="t1">TUTORIAL</span><span class="t2">A guided first game — five minutes</span></span></button>
-    <div class="tiny">Practice never touches your online rating</div>
+    <div class="tiny">Offline play never touches your online rating</div>
   </div>
 </div>
 
-<!-- RULES: a reading sheet — ✕ up top, one GOT IT at the bottom -->
-<div class="ov paged" id="ovRules">
+<!-- RULES: a reading sheet — fixed ✕ bar, the text scrolls, GOT IT at its end -->
+<div class="ov paged scrollview" id="ovRules">
   <div class="shead">
     <span class="pad"></span><span class="ttl">HOW TO PLAY</span>
     <button class="ico" id="btnCloseRules" aria-label="Close">✕</button>

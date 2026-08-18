@@ -33,9 +33,8 @@ check(!out.hud.brand, 'wordmark still in the in-game hud', out.hud);
 check(out.hud.icons.join(',') === 'btnSettings', 'hud must hold ONLY settings', out.hud);
 check(out.hud.titleStillNamed, 'title screen lost the name', out.hud);
 
-// ===== popups, deterministically via the tutorial =====
-await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
-await page.tap('#btnTut'); await page.waitForTimeout(500);
+// ===== popups, deterministically via the tutorial (home strip button) =====
+await page.tap('#btnTutHome'); await page.waitForTimeout(500);
 await page.tap('#coach');
 async function waitChoose(maxMs = 15000) {
   const t0 = Date.now();

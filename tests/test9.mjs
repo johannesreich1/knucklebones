@@ -11,8 +11,7 @@ async function overlapCheck(w, h, label) {
   const p = await ctx.newPage();
   p.on('pageerror', e => errs.push(label + ': ' + e.message));
   await p.goto(F); await p.waitForTimeout(400);
-  await p.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
-await p.tap('#btnTut'); await p.waitForTimeout(400);   // pills are tutorial-only now
+await p.tap('#btnTutHome'); await p.waitForTimeout(400);   // pills are tutorial-only now
   await p.tap('#coach'); await p.waitForTimeout(300);    // dismiss the welcome step
   for (let i = 0; i < 60; i++) {                         // reach the first choose
     const s = await p.evaluate(() => ({ ph: window.__kb.S.phase }));
