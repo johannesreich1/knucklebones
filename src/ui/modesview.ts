@@ -21,8 +21,7 @@ function build(): void {
 <div class="ov paged scrollview" id="ovModes">
   <div class="shead"><span class="pad"></span><span class="ttl">GAME MODES</span>
     <button class="ico" id="btnCloseModes" aria-label="Close">✕</button></div>
-  <div class="pbody">
-    <div class="tiny">Every ranked match spins the wheel — these are the slices</div>
+  <div class="pbody neonscroll">
     <div class="modelist">${cards}</div>
   </div>
 </div>`);

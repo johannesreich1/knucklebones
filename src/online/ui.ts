@@ -42,7 +42,7 @@ const OVERLAY = `
 
   <div class="panel" id="onBoard" hidden>
     <div class="lbl" style="text-align:center">Season 1 · Elo rating</div>
-    <div class="lb" id="onBoardList"></div>
+    <div class="lb neonscroll" id="onBoardList"></div>
   </div>
 
   <div class="panel" id="onAccount" hidden>
@@ -91,6 +91,9 @@ type Panel = keyof typeof PANELS;
 
 function panel(which: Panel): void {
   for (const id of Object.keys(PANELS)) $('#' + id).hidden = id !== which;
+  // the ladder is a LIST, not a form: it takes the whole screen under a fixed
+  // subheading. Every other panel stays a centred column.
+  $('#ovOnline').classList.toggle('listview', which === 'onBoard');
   $('#onTitle').textContent = PANELS[which].title;
   ($('#btnOnlineBack') as HTMLElement).style.visibility = PANELS[which].back ? 'visible' : 'hidden';
   (document.querySelector('#ovOnline .shead') as HTMLElement).style.visibility =

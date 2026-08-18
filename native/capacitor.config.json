@@ -1,0 +1,13 @@
+{
+  "appId": "com.appavaria.knucklebones",
+  "appName": "Knucklebones",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "iosScheme": "https"
+  },
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#05060eff"
+  }
+}

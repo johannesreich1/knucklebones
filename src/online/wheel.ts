@@ -38,6 +38,11 @@ function build(): void {
 }
 
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const mod360 = (d: number) => ((d % 360) + 360) % 360;
+/* Where the disc came to rest last time, 0-360. The wheel spins ON from there,
+   so the arc is never identical even when the server picks the same mode twice
+   in a row. */
+let restingAt = 0;
 
 /* spin, land on the server's pick, linger on the name — resolves when done */
 export async function spinWheel(spec: ModeSpec): Promise<void> {
@@ -48,14 +53,26 @@ export async function spinWheel(spec: ModeSpec): Promise<void> {
   name.textContent = ' ';
   $('#wheelBlurb').textContent = ' ';
   disc.style.transition = 'none';
-  disc.style.transform = 'rotate(0deg)';
+  disc.style.transform = `rotate(${restingAt}deg)`;   // resume, never snap back to zero
   show('#ovWheel');
-  void disc.offsetWidth;                       // commit the reset before spinning
-  const jitter = (Math.random() - 0.5) * (SEG - 26);   // land inside the segment, never on a seam
-  const target = 5 * 360 + (360 - (i * SEG + SEG / 2 + jitter));
-  disc.style.transition = 'transform 3.4s cubic-bezier(.12,.67,.06,1)';
+  void disc.offsetWidth;                       // commit the start angle before spinning
+  /* Three things vary, so no two spins read alike: where it STARTS (wherever
+     the last match left it), how FAR it travels (4-7 whole turns), and where in
+     the winning segment it SETTLES. Only the segment is fixed — the server
+     already decided that, and the wheel is aimed at it, never at random. */
+  const jitter = (Math.random() - 0.5) * (SEG - 20);   // inside the segment, never on a seam
+  const land = mod360(360 - (i * SEG + SEG / 2 + jitter));
+  const turns = 4 + Math.floor(Math.random() * 4);
+  const sweep = turns * 360 + mod360(land - restingAt);
+  const target = restingAt + sweep;
+  restingAt = land;
+  /* A longer sweep gets proportionally longer, so every spin decelerates at the
+     same rate: one fixed duration would make the long ones frantic and the
+     short ones limp. */
+  const secs = Math.max(2.4, Math.min(5, sweep / 620));
+  disc.style.transition = `transform ${secs}s cubic-bezier(.12,.67,.06,1)`;
   disc.style.transform = `rotate(${target}deg)`;
-  await pause(3450);
+  await pause(secs * 1000 + 60);
   Sfx.place();
   name.innerHTML = `${modeIcon(spec.id, 17)} ${spec.name}`;
   name.style.color = hue(i);

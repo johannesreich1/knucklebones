@@ -1,0 +1,17 @@
+{
+  "name": "knucklebones-native",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Capacitor shell around the built web app in native/www (produced by ../build.mjs)",
+  "scripts": {
+    "sync": "cap sync",
+    "open:ios": "cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.0.0",
+    "@capacitor/ios": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0"
+  }
+}

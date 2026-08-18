@@ -146,7 +146,6 @@ export function boot(embed){
   tap($('#btnAccountHome'),()=>{ Sfx.unlock(); Sfx.tap();
     import('./online/ui.ts').then(m=>m.openOnline('account')); });
   tap($('#btnCloseRules'),()=>{ Sfx.tap(); hide('#ovRules'); });
-  tap($('#btnRulesOk'),()=>{ Sfx.tap(); hide('#ovRules'); });
 
   // desktop: 1/2/3 place, Enter starts / replays
   document.addEventListener('keydown',e=>{

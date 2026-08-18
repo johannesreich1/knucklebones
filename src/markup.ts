@@ -151,7 +151,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <span class="pad"></span><span class="ttl">HOW TO PLAY</span>
     <button class="ico" id="btnCloseRules" aria-label="Close">✕</button>
   </div>
-  <div class="pbody">
+  <div class="pbody neonscroll">
   <div class="rules">
     <h3>Goal</h3>
     <p>Fill your 3×3 grid with dice. When <b>either</b> grid is full the game ends — highest total wins.</p>
@@ -166,7 +166,6 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <h3>Two players</h3>
     <p>Pick <b>2 PLAYERS</b> to share one phone, then choose how you sit. <b>Pass phone</b>: a pass card appears between turns and the grids swap so whoever is playing is on the bottom. <b>Face to face</b>: lay the phone flat between you — the top half is turned for Player 2, turns switch on their own, and the bright half with the rotating centre die shows who's up.</p>
   </div>
-  <button class="btn primary" id="btnRulesOk">Got it</button>
   </div>
 </div>
 

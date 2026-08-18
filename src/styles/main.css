@@ -272,6 +272,15 @@ html.clock .timer.on{visibility:visible}
   -webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 18px rgba(40,232,255,.3))}
 .shead .pad{width:30px;flex:0 0 auto}
+/* the header's control wears the title's own gradient — on a sheet whose only
+   exit is that glyph, it has to read as the way out at a glance */
+.shead .ico{color:#fff;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--cy) 26%,transparent),
+                                    color-mix(in srgb,var(--mg) 26%,transparent));
+  border-color:color-mix(in srgb,var(--cy) 40%,transparent);
+  box-shadow:0 0 16px color-mix(in srgb,var(--cy) 22%,transparent)}
+.shead .ico:active{background:linear-gradient(135deg,color-mix(in srgb,var(--cy) 42%,transparent),
+                                                     color-mix(in srgb,var(--mg) 42%,transparent))}
 /* paged overlays pin the header to the top; .pbody centres the rest below it */
 .ov.paged{justify-content:flex-start;overflow-y:auto;
   padding-top:calc(env(safe-area-inset-top,0px) + 16px)}
@@ -288,7 +297,7 @@ html.clock .timer.on{visibility:visible}
 #ovEnd .btn{width:100%;max-width:300px;min-width:0}
 
 /* ---- the game-modes library (home footer + tapping the match badge) ---- */
-.modelist{display:flex;flex-direction:column;gap:10px;width:100%;max-width:340px}
+.modelist{display:flex;flex-direction:column;gap:10px;width:100%;max-width:376px}
 .modecard{--mh:#8ea3c0;display:flex;flex-direction:column;gap:6px;border-radius:16px;
   padding:13px 15px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
 .modecard .mchead{display:flex;align-items:center;gap:8px;color:var(--mh)}
@@ -299,9 +308,24 @@ html.clock .timer.on{visibility:visible}
   box-shadow:0 0 18px color-mix(in srgb,var(--mh) 25%,transparent)}
 /* shared scroll view: content scrolls UNDER a fixed top bar — the ✕/‹ never
    leaves the thumb. Used by the game-modes library and How to play. */
-.ov.scrollview{overflow:hidden}
+/* The scroll area owns the whole screen: it runs to the bottom EDGE and to both
+   side edges, so the scrollbar rides the true right edge and a list never reads
+   as cut off short of the bottom. The overlay's own inset moves INSIDE the
+   scroller as padding — which also gives the over-scroll room the last card
+   needs to clear the home indicator. */
+.ov.scrollview{overflow:hidden;padding-bottom:0;padding-left:0;padding-right:0}
+.ov.scrollview .shead{max-width:404px;padding:0 14px}
 .ov.scrollview .pbody{margin:6px 0 0;flex:1 1 auto;min-height:0;overflow-y:auto;
-  padding:4px 2px 10px}
+  padding:4px 14px calc(env(safe-area-inset-bottom,0px) + 46px)}
+/* The app's scroll indicator, in the game's palette rather than the platform's
+   grey. A class, not a selector list: the ladder wants the same bar and lives
+   in the lazy online sheet, so the look has ONE definition either can wear. */
+.neonscroll{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--cy) 40%,transparent) transparent}
+.neonscroll::-webkit-scrollbar{width:6px}
+.neonscroll::-webkit-scrollbar-track{background:transparent}
+.neonscroll::-webkit-scrollbar-thumb{border-radius:99px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--cy) 55%,transparent),
+                                    color-mix(in srgb,var(--mg) 55%,transparent))}
 .ov.scrollview .rules{max-height:none;overflow:visible;flex:0 0 auto}
 #ovModes .pbody{gap:12px}
 

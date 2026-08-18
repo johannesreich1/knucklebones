@@ -1,6 +1,20 @@
 node_modules/
-native/
 *.zip
+# The native shell: the Capacitor config and the Xcode project ARE source (they
+# carry the bundle id and signing setup, and cannot be regenerated identically).
+# Everything a tool re-creates is not.
+# (gitignore has no trailing comments — a "pattern # note" line matches nothing)
+native/node_modules/
+# build.mjs writes it from dist/main
+native/www/
+# cap sync copies www in here
+native/ios/App/App/public/
+# pod install rebuilds these; Podfile.lock IS committed
+native/ios/App/Pods/
+native/ios/App/build/
+native/ios/DerivedData/
+*.xcuserdatad/
+xcuserdata/
 # agent skills: content restored via `npx skills add` + skills-lock.json
 .agents/
 .claude/skills/
