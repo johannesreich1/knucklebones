@@ -94,9 +94,12 @@ writeFileSync('harness.html',
   + '.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}</style></head><body>'
   + fragment + '</body></html>');
 
-// ---- Capacitor sync, when the native project exists ----
+// ---- Capacitor sync, when a native project exists ----
+// EITHER platform counts: the hook used to require android, so an iOS-only
+// checkout silently shipped whatever web payload cap add copied in on day one.
 try {
-  execSync('[ -d native/node_modules ] && [ -d native/android ] && cd native && npx cap sync', { stdio: 'ignore', shell: '/bin/bash' });
+  execSync('[ -d native/node_modules ] && { [ -d native/ios ] || [ -d native/android ]; } && cd native && npx cap sync',
+    { stdio: 'ignore', shell: '/bin/bash' });
 } catch { /* no native project checked out — fine */ }
 
 console.log(`build ok — tag ${HASH}, sw cache key kb-${HASH}, ${ASSETS.length} precached files`);

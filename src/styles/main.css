@@ -490,7 +490,12 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
    Boards sit side by side and each game-column becomes a horizontal row, so a
    column still physically faces its opposite number. The .land class is set by
    fit() rather than a media query, so JS and CSS always agree on the breakpoint. */
-.land #app{max-width:none;padding:4px 8px}
+/* landscape overrides the portrait padding wholesale, so it has to carry the
+   safe areas too — on its side a notched phone eats the LEFT/RIGHT edge, and
+   the home indicator still owns the bottom strip */
+.land #app{max-width:none;padding:
+  calc(env(safe-area-inset-top,0px) + 4px) calc(env(safe-area-inset-right,0px) + 8px)
+  calc(env(safe-area-inset-bottom,0px) + 4px) calc(env(safe-area-inset-left,0px) + 8px)}
 .land .table{flex-direction:row;align-items:center;justify-content:center;gap:4px}
 .land .side{flex:0 0 auto;display:grid;align-items:center;gap:4px;
   grid-template-columns:auto auto;grid-template-areas:"plate plate" "board chips"}
