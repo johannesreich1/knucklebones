@@ -30,13 +30,18 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
 
     <!-- CENTER -->
     <section class="center">
-      <div id="dieStage" role="img" aria-label="No die rolled yet"></div>
+      <div class="stagerow">
+        <div id="dieStage" role="img" aria-label="No die rolled yet"></div>
+        <!-- LIMITED mode only: the bag beside the die in play -->
+        <div class="bag" id="bagStack" hidden>
+          <span class="pile" aria-hidden="true"></span>
+          <b class="bn" id="bagNum" aria-label="Dice left in the bag">0</b>
+        </div>
+      </div>
       <div class="status" id="status" role="status" aria-live="polite">Tap play to start</div>
       <div class="timer" id="timerWrap" aria-hidden="true">
         <span class="track"><span class="bar" id="timerBar"></span></span><b id="timerNum"></b>
       </div>
-      <!-- LIMITED mode only: the finite bag, counted live -->
-      <div class="poolrail" id="poolRail" hidden aria-label="Dice remaining"></div>
     </section>
 
     <!-- near side of the table (always whoever is holding the phone) -->

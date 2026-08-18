@@ -118,24 +118,52 @@ export function boardTotalMode(b: Board, mode: Mode): number {
   return boardTotal(b);
 }
 
+/* a full column under COLUMN SHIELD cannot be touched. ONE definition — the
+   rules, the AI's risk model, the board's shield chip and both play flows all
+   ask this same question, and they must never disagree. */
+export function isShielded(col: Col, mode: Mode): boolean {
+  return mode === COLSHIELD && col.length >= SPEC.rows;
+}
+
+/* WHICH enemy dice a strike takes, as indices into their column (bottom-first,
+   so index 0 is closest to the centre line). The single source of truth for
+   destruction: core replay, the AI and the animated flows all read it, so what
+   you SEE fall can never differ from what actually falls. */
+export function victimsOf(oc: Col, die: number, mode: Mode = CLASSIC): number[] {
+  if (isShielded(oc, mode)) return [];                  // shielded: full columns are safe
+  if (mode === SINGLESTRIKE) {
+    const i = oc.indexOf(die);                          // first match = closest to the centre
+    return i < 0 ? [] : [i];
+  }
+  const hits: number[] = [];
+  for (let i = 0; i < oc.length; i++) if (oc[i] === die) hits.push(i);
+  return hits;
+}
+
+/* the score a player is holding: their board under the active mode, plus any
+   permanently banked bounty. Server finishes, client displays and the local
+   end screen all settle here. */
+export function totalOf(b: Board, banked: number, mode: Mode): number {
+  return boardTotalMode(b, mode) + (mode === BOUNTY ? banked : 0);
+}
+
+/* the game is over when a mover fills their board — or, under LIMITED, when
+   the finite bag runs dry (pass bagLeft = null when the supply is endless) */
+export function isOver(b: Board, bagLeft: number | null): boolean {
+  return isFull(b) || bagLeft === 0;
+}
+
 /* place a die, then destruction: every matching die in the opponent's facing
    column dies — unless COLSHIELD protects their full column, or SINGLESTRIKE
-   limits the damage to ONE die (the earliest-placed = closest to the centre
-   line, index 0 side of the stack). Mutates st — callers clone first when
-   they need to. Returns how many enemy dice were destroyed (BOUNTY banks
-   a permanent +1 per destroyed die; everyone else may ignore it). */
+   limits the damage to ONE die. Mutates st — callers clone first when they
+   need to. Returns how many enemy dice were destroyed (BOUNTY banks a
+   permanent +1 per destroyed die; everyone else may ignore it). */
 export function applyMove(st: GameState, who: Player, col: number, die: number, mode: Mode = CLASSIC): number {
   st[who][col].push(die);
   const o = 1 - who, oc = st[o][col];
-  if (mode === COLSHIELD && oc.length >= SPEC.rows) return 0;   // shielded: full columns are safe
-  if (mode === SINGLESTRIKE) {
-    const i = oc.indexOf(die);                 // first match = closest to the centre
-    if (i < 0) return 0;
-    st[o][col] = oc.slice(0, i).concat(oc.slice(i + 1));
-    return 1;
-  }
-  let hit = 0;
-  for (let i = 0; i < oc.length; i++) if (oc[i] === die) hit++;
-  if (hit) st[o][col] = oc.filter(v => v !== die);
-  return hit;
+  const victims = victimsOf(oc, die, mode);
+  if (!victims.length) return 0;
+  const doomed = new Set(victims);
+  st[o][col] = oc.filter((_, i) => !doomed.has(i));
+  return victims.length;
 }

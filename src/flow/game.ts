@@ -4,16 +4,16 @@
 // game lifecycle, and the AI policy that picks the CPU's column. One deep
 // module on purpose -- these steps are one process, and S.gen guards every
 // await against a game that was abandoned mid-animation.
-import { AI, ME, SPEC, legalCols, colScore, boardTotal, boardTotalMode, counts, isFull, emptyBoard,
-         COLSHIELD, BOUNTY, LIMITED } from '../core/rules.ts';
-import { POOL_PER_FACE } from '../core/dice.ts';
+import { AI, ME, SPEC, legalCols, colScore, boardTotalMode, totalOf, victimsOf, isShielded, isOver,
+         emptyBoard, BOUNTY, LIMITED } from '../core/rules.ts';
+import { makeBag } from '../core/dice.ts';
 import { searchRoot, getRiskW, setRiskW } from '../core/ai.ts';
 import { S } from '../state.ts';
 import { saveStats } from '../persist.ts';
 import { Sfx, vibrate } from '../ui/audio.ts';
 import { isEmbed, kbroot, rootRect } from '../ui/embed.ts';
 import { $, show, hide, sideKey, slotEl, slotIdx, colEl, chipEl, faceRotated } from '../ui/dom.ts';
-import { showPoolRail, renderPoolCounts } from '../ui/poolrail.ts';
+import { showBag, renderBag } from '../ui/bag.ts';
 import { nameOf, colorOf } from '../ui/identity.ts';
 import { makeDie, setStageDie } from '../ui/die.ts';
 import { REDUCED, burst, floatPts, shake, flash } from '../ui/fx.ts';
@@ -26,10 +26,8 @@ import { updateStatLine } from './menu.ts';
 /* arm the turn clock: on expiry the die drops into a random legal column */
 export function armTimer(){ const gen=S.gen; startTimer(()=>autoPlace(gen)); }
 function wait(ms){ return new Promise(r=>setTimeout(r,ms)); }
-/* the one true local score: board under the mode's scoring + banked bounty */
-function localTotal(p){ return boardTotalMode(S.boards[p],S.scoring)+(S.scoring===BOUNTY?S.bounty[p]:0); }
-/* LIMITED offline: remaining faces = a straight tally of the undrawn bag */
-function poolLeft(){ const left=[0,0,0,0,0,0,0]; for(const v of (S.pool||[])) left[v]++; return left; }
+/* the one true local score — the SAME helper the server settles matches with */
+function localTotal(p){ return totalOf(S.boards[p],S.bounty[p],S.scoring); }
 /* ===================== AI POLICY =====================
    Scoring + search live in core/ (pure, shared with the server-side replay
    validator). This is the glue that turns difficulty + tutorial state into a
@@ -142,7 +140,7 @@ async function rollDice(){
   stage.classList.remove('rolling');
   if(S.gen!==gen) return;
   S.die = (S.tut && tutNextRoll()) || (S.pool ? S.pool.shift() : 0) || 1+((Math.random()*6)|0);
-  if(S.pool) renderPoolCounts(poolLeft());
+  if(S.pool) renderBag(S.pool.length);
   setStageDie(S.die,S.turn);
   stage.classList.add('pop');
   setTimeout(()=>stage.classList.remove('pop'),320);
@@ -152,6 +150,7 @@ async function rollDice(){
 export async function nextTurn(){
   const gen=S.gen;
   if(S.phase==='over') return;
+  renderAll(false);   // same repaint belt online uses: state wins every turn
   if(S.mode==='duo' && S.seat==='pass' && S.turn!==S.bottom){
     const ok=await handOff(S.turn);           // face mode switches turns directly
     if(!ok || S.gen!==gen || S.phase==='over') return;
@@ -211,10 +210,9 @@ export async function flyDie(who,col,die){
 export async function destroyAt(who,col,die){
   // who = owner of the dice being destroyed
   const b=S.boards[who];
-  let victims=[];
-  for(let i=0;i<b[col].length;i++) if(b[col][i]===die) victims.push(i);
-  // SINGLE STRIKE: only the die closest to the centre line falls (index 0 side)
-  if(S.scoring===4 && victims.length>1) victims=victims.slice(0,1);
+  // core decides WHO falls (shield, single strike, classic) — the animation
+  // only performs it, so screen and state can never tell different stories
+  const victims=victimsOf(b[col],die,S.scoring);
   if(!victims.length) return 0;
   const color = who===ME ? '#28e8ff' : '#ff2fa0';
   for(const i of victims){
@@ -227,7 +225,12 @@ export async function destroyAt(who,col,die){
     }
   }
   const survivors=b[col].filter((v,i)=>!victims.includes(i));
-  const lost = colScore(b[col]) - colScore(survivors);
+  // what the victim actually loses under the ACTIVE mode — rows score in
+  // ROW SWITCH, rows pay a bonus in ROW MULTIPLY, so a column-only delta
+  // would lie there. Whole-board diff against a hypothetical survivor board;
+  // in classic it is exactly the old column delta.
+  const lost = boardTotalMode(b,S.scoring)
+             - boardTotalMode(b.map((c,i)=>i===col?survivors:c),S.scoring);
   floatPts(who,col,'−'+lost,'var(--gold)');
   Sfx.kill(); vibrate([16,30,26]); shake(7); flash(0.22);
   await wait(320);
@@ -244,7 +247,9 @@ export async function place(who,col){
   stopTimer();
   clearHints();
   const die=S.die;
-  const preScore=colScore(S.boards[who][col]);
+  // mode-aware, exactly like online play: what the whole board gains, not what
+  // the column gains (columns don't score in ROW SWITCH). Classic is unchanged.
+  const preScore=boardTotalMode(S.boards[who],S.scoring);
   await flyDie(who,col,die);
   if(S.gen!==gen) return;
   S.boards[who][col].push(die);
@@ -252,19 +257,21 @@ export async function place(who,col){
     if(S.tut.firstCol==null) S.tut.firstCol=col;   // the multiplier lesson stacks here
     coachHide();                                    // instruction fulfilled
   }
-  const k=counts(S.boards[who][col])[die];
   Sfx.place(); vibrate(12);
   setStageDie(0);
   renderSide(who,true);
-  const gain=colScore(S.boards[who][col])-preScore;
-  floatPts(who,col,'+'+gain, k>1?'var(--gold)':colorOf(who));   // gold = multiplied
-  if(k>1){ Sfx.mult(); const r=colEl(who,col).getBoundingClientRect();
+  const gain=boardTotalMode(S.boards[who],S.scoring)-preScore;
+  // beating the die's own face value means SOMETHING multiplied — the same
+  // test online uses, and the only one that holds in every mode
+  const mult = gain>die;
+  floatPts(who,col,'+'+gain, mult?'var(--gold)':colorOf(who));
+  if(mult){ Sfx.mult(); const r=colEl(who,col).getBoundingClientRect();
            burst(r.left+r.width/2,r.top+r.height/2,'#ffd166',10); }
   await wait(120);
   if(S.gen!==gen) return;
   // COLUMN SHIELD: a full facing column is immune — flash the shield instead,
   // but only when the die would actually have hit something
-  if(S.scoring===COLSHIELD && S.boards[1-who][col].length>=SPEC.rows){
+  if(isShielded(S.boards[1-who][col],S.scoring)){
     if(S.boards[1-who][col].includes(die)){
       const sh=chipEl(1-who,col) && chipEl(1-who,col).querySelector('.sh');
       if(sh){ sh.classList.remove('block'); void sh.offsetWidth; sh.classList.add('block'); }
@@ -281,7 +288,7 @@ export async function place(who,col){
   await wait(60);
   if(S.gen!==gen) return;
   // LIMITED: the just-placed die may have been the bag's last — that ends it
-  if(isFull(S.boards[who]) || (S.pool && !S.pool.length)){ return endGame(); }
+  if(isOver(S.boards[who], S.pool ? S.pool.length : null)){ return endGame(); }
   S.turn = 1-who;
   S.busy=false;
   S.die=0;
@@ -294,17 +301,11 @@ export function newGame(opts){
   // the OFFLINE view's selector picks the mode; the tutorial teaches classic
   S.scoring = tutorial ? 0 : (S.localMode|0);
   S.bounty=[0,0];
-  // LIMITED offline: shuffle the finite bag (plain Math.random — there is no
-  // replay validator to agree with, unlike the seeded online bag)
-  S.pool=null;
-  if(S.scoring===LIMITED){
-    const b=[];
-    for(let v=1;v<=6;v++) for(let i=0;i<POOL_PER_FACE;i++) b.push(v);
-    for(let i=b.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; const t=b[i]; b[i]=b[j]; b[j]=t; }
-    S.pool=b;
-  }
-  showPoolRail(!!S.pool);
-  if(S.pool) renderPoolCounts(poolLeft());
+  // LIMITED offline: the same bag the ranked game deals, shuffled locally
+  // (no replay validator to agree with, so plain Math.random is right here)
+  S.pool = S.scoring===LIMITED ? makeBag() : null;
+  showBag(!!S.pool);
+  if(S.pool) renderBag(S.pool.length);
   stopTimer();
   if(tutorial){
     S.mode='cpu';

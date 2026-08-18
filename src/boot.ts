@@ -33,7 +33,7 @@ import { newGame, passTap } from './flow/game.ts';
 import { toMenu, syncSettingsUI, updateStatLine } from './flow/menu.ts';
 import { requestLeave } from './flow/leave.ts';
 import { openModes } from './ui/modesview.ts';
-import { MODES } from './core/modes.ts';
+import { MODES, modeByEnum } from './core/modes.ts';
 import { modeIcon, modeHue } from './ui/modeicons.ts';
 /* ===================== BOOT ===================== */
 export function boot(embed){
@@ -108,7 +108,7 @@ export function boot(embed){
   }
   const syncModePick=()=>{
     pick.querySelectorAll('button').forEach(b=>b.classList.toggle('on', +b.dataset.m===S.localMode));
-    const m=MODES.find(x=>x.mode===S.localMode)||MODES[0];
+    const m=modeByEnum(S.localMode);
     $('#modePickInfo').textContent=m.name+' — '+m.blurb;
   };
   syncModePick();

@@ -50,7 +50,10 @@
 .statrow{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.1em;color:var(--dim)}
 .statrow b{color:var(--gold);font-weight:900;font-size:14px}
 .statrow b.rec2{color:var(--txt)}
-/* .danger / .dnote live in main.css — Settings' Quit button shares them */
+/* .danger lives in main.css — Settings' Quit button shares it */
+.dnote{font-size:9.5px;letter-spacing:.1em;color:var(--dim);text-align:center}
+/* the online match badge's ⓘ affordance */
+.rec .mi{color:var(--dim);font-weight:800;margin-left:2px}
 
 /* ---- match result (design 23): verdict up top, scores centred, actions in
    the thumb zone — the Elo delta is the trophy moment */
@@ -111,57 +114,5 @@
 .wblurb{font-size:11px;letter-spacing:.12em;color:var(--dim);min-height:15px;text-align:center;
   margin-top:-9px}   /* the name hugs its description — they read as one unit */
 
-/* ===== COLUMN SHIELD: full columns wear a shield ===== */
-.chip .sh{line-height:1;color:var(--gold);filter:drop-shadow(0 0 6px rgba(255,209,102,.75))}
-.chip .sh.pop{animation:shpop .55s cubic-bezier(.2,1.6,.4,1)}
-@keyframes shpop{0%{transform:scale(0) rotate(-30deg)}70%{transform:scale(1.35)}100%{transform:scale(1)}}
-.chip .sh.block{animation:shblock .45s}
-@keyframes shblock{0%,100%{transform:scale(1)}40%{transform:scale(1.55);filter:drop-shadow(0 0 16px rgba(255,209,102,1))}}
-.col.shielded{box-shadow:inset 0 0 0 1px rgba(255,209,102,.35),0 0 14px rgba(255,209,102,.12);border-radius:12px}
-
-/* mode-icon BASE styles live in main.css (offline uses them too) */
-.wname .mico{vertical-align:-2.5px;margin-right:2px}
-
-/* ===== ROW MULTIPLY: row matches wear a gold ring (columns keep their glow).
-   A border ::after, not outline — outline draws a SQUARE over rounded dice on
-   older Safari, which reads as broken shimmer. ===== */
-.die.rm::after{content:"";position:absolute;inset:1px;border:2px solid rgba(255,209,102,.62);
-  border-radius:inherit;pointer-events:none}
-
-/* ===== the row rail: per-row scores left of each board (row modes only).
-   The .rc boxes deliberately mirror .chip — same pill, same .has treatment,
-   so row scores read as first-class citizens of the score language. ===== */
-.rowchips{display:none}
-html.rowmode .rowchips{position:absolute;right:100%;margin-right:9px;top:0;display:grid;
-  grid-template-rows:repeat(3,var(--cell));gap:var(--gap);align-items:center}
-.rowchips .rc{min-width:30px;height:20px;padding:0 5px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;gap:3px;
-  font-size:11.5px;font-weight:800;color:var(--dim);font-variant-numeric:tabular-nums;
-  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);transition:.2s}
-.rowchips .rc .mx{font-size:9px;opacity:.9;color:var(--gold)}
-.rowchips .rc.has{color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
-  background:color-mix(in srgb,var(--c) 9%,transparent);
-  text-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}
-.land .rowchips{display:none!important}   /* landscape transposes the board */
-/* ROW SWITCH: columns don't score — their empty chip boxes vanish entirely
-   (visibility, not display: the lane keeps its height, nothing jumps) */
-html.rowswitch .cols .chip{visibility:hidden}
-
-/* ===== LIMITED: the finite bag rail — six faces, live remaining counts.
-   A drawn die pulses its face and ticks the number; an exhausted face
-   ghosts out, and that absence IS the strategy. ===== */
-.poolrail{display:flex;gap:9px;justify-content:center;align-items:flex-start;padding:2px 0}
-.pmini{display:flex;flex-direction:column;align-items:center;gap:2px;transition:opacity .3s,filter .3s}
-.pmini .die{width:20px;height:20px;--cell:20px;border-radius:6px}
-.pmini .pc{font-size:9.5px;font-weight:900;color:var(--dim);font-variant-numeric:tabular-nums;
-  transition:color .25s}
-.pmini.tick .die{animation:pooltick .45s cubic-bezier(.2,1.5,.4,1)}
-.pmini.tick .pc{color:var(--txt)}
-@keyframes pooltick{40%{transform:scale(1.3)}}
-.pmini.out{opacity:.32;filter:grayscale(.85)}
-.land .poolrail{gap:5px}
-.land .pmini .die{width:16px;height:16px;--cell:16px}
-
-/* ===== BOUNTY: the banked kills tally on the plate ===== */
-.plate .bty{font-size:11px;font-weight:900;color:var(--gold);
-  text-shadow:0 0 8px rgba(255,209,102,.6);margin-right:5px}
+/* mode-play visuals (shield, rails, bounty, pool) live in main.css now —
+   the OFFLINE mode selector made them universal, not online-only */

@@ -34,11 +34,16 @@ export const MODES: ModeSpec[] = [
   { mode: BOUNTY, id: 'bounty', name: 'BOUNTY', icon: '✦', blurb: 'Every die you destroy banks +1. Forever.', weight: 1,
     detail: 'Every die you destroy banks a permanent +1 on your nameplate — the ✦ tally never resets, even when your own dice fall. Feed on destruction; the bank decides close matches.' },
   { mode: LIMITED, id: 'limited', name: 'LIMITED', icon: '▦', blurb: 'Every face exists FOUR times. The bag ends it.', weight: 1,
-    detail: 'The dice are finite: one shared bag holds every face exactly four times — 24 dice for the whole match. The rail above the boards counts what remains, so you can read what can still come. When the last die is placed the game ends, full boards or not.' },
+    detail: 'The dice are finite: one shared bag holds every face exactly four times — 24 dice for the whole match. The stack beside the die in play counts what is still to come — how MANY, never which. When the last die is placed the game ends, full boards or not.' },
 ];
 
 export function modeById(id: string | null | undefined): ModeSpec {
   return MODES.find((m) => m.id === id) ?? MODES[0];
+}
+
+/* the same lookup by numeric Mode — what the UI holds in S.scoring */
+export function modeByEnum(mode: Mode): ModeSpec {
+  return MODES.find((m) => m.mode === mode) ?? MODES[0];
 }
 
 /* deterministic weighted pick — the '#mode' suffix keeps this draw independent

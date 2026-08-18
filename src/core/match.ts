@@ -6,7 +6,7 @@
 //   p1 = core index 1 (ME) and ALWAYS makes the first move; vs a bot the
 //   human is always p1. Each move consumes exactly one roll from the seed's
 //   dice stream. The game ends the instant a mover fills their board.
-import { type GameState, type Player, type Mode, CLASSIC, BOUNTY, LIMITED, ME, emptyBoard, legalCols, isFull, applyMove, boardTotalMode } from './rules.ts';
+import { type GameState, type Player, type Mode, CLASSIC, BOUNTY, LIMITED, ME, emptyBoard, legalCols, isOver, applyMove, totalOf } from './rules.ts';
 import { diceStream, poolSequence } from './dice.ts';
 
 export interface MoveRow { idx: number; who: number; col: number; }
@@ -41,14 +41,14 @@ export function rebuild(seed: string, rows: MoveRow[], mode: Mode = CLASSIC): Ma
     const destroyed = applyMove(st, turn, m.col, die, mode);
     if (mode === BOUNTY) bounty[turn] += destroyed;
     // LIMITED: placing the LAST die from the bag ends the game, full or not
-    over = isFull(st[turn]) || (bag !== null && i + 1 >= bag.length);
+    over = isOver(st[turn], bag ? bag.length - (i + 1) : null);
     turn = (1 - turn) as Player;
   }
   return { st, turn, over, nextDie: roll(moves.length), moveCount: moves.length, bounty };
 }
 
-/* the one true final score: board under the mode's scoring, plus any banked
-   bounty. Server finishes and client displays must both use this. */
+/* the one true final score for a MATCH — the shared totalOf() applied to this
+   match's board and bank. Server finishes and client displays both land here. */
 export function matchTotal(s: MatchState, who: Player, mode: Mode): number {
-  return boardTotalMode(s.st[who], mode) + (mode === BOUNTY ? s.bounty[who] : 0);
+  return totalOf(s.st[who], s.bounty[who], mode);
 }

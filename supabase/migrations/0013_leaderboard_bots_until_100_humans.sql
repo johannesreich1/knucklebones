@@ -1,0 +1,30 @@
+-- Applied 2026-08-18 via MCP. An empty ladder is a worse lie than a populated
+-- one: while the human pool is small, bots stand in it under their generated
+-- nicknames (indistinguishable by design — they play, they rate, they lose).
+-- The moment 100 real players have ranked games the ladder becomes human-only
+-- automatically, with no deploy and no flag to remember.
+create or replace function public.leaderboard(limit_n integer default 50)
+returns table(nickname text, rating integer, wins bigint, games bigint)
+language sql
+stable security definer
+set search_path to ''
+as $function$
+  with humans as (
+    select count(*) as n
+    from public.profiles p
+    where p.is_bot = false
+      and exists (select 1 from public.matches m
+                  where m.status in ('done','forfeit') and (m.p1 = p.id or m.p2 = p.id))
+  )
+  select p.nickname, p.rating,
+         count(m.id) filter (where m.winner = p.id) as wins,
+         count(m.id) as games
+  from public.profiles p
+  left join public.matches m
+    on m.status in ('done','forfeit') and (m.p1 = p.id or m.p2 = p.id)
+  where p.is_bot = false or (select n from humans) < 100
+  group by p.id, p.nickname, p.rating
+  having count(m.id) > 0
+  order by p.rating desc, wins desc
+  limit least(greatest(limit_n, 1), 100);
+$function$;

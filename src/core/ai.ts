@@ -7,8 +7,8 @@
 import { DICE_FACES } from '../config.ts';
 import {
   AI, ME, SPEC, type GameState, type Player, type Mode,
-  CLASSIC, ROWSWITCH, COLSHIELD, SINGLESTRIKE, BOUNTY,
-  cloneSt, applyMove, legalCols, boardTotalMode, countOf, isFull,
+  CLASSIC, ROWSWITCH, SINGLESTRIKE, BOUNTY,
+  cloneSt, applyMove, legalCols, boardTotalMode, countOf, isFull, isShielded,
 } from './rules.ts';
 
 let NODES = 0;
@@ -29,7 +29,7 @@ export function riskOf(st: GameState, p: Player, mode: Mode = CLASSIC): number {
   for (let c = 0; c < SPEC.cols; c++) {
     if (theirs[c].length >= SPEC.rows) continue;   // they can't play into this column any more
     const col = mine[c];
-    if (mode === COLSHIELD && col.length >= SPEC.rows) continue;   // shielded
+    if (isShielded(col, mode)) continue;                            // shielded
     for (let v = 1; v <= DICE_FACES; v++) {
       const k = countOf(col, v);
       if (!k) continue;

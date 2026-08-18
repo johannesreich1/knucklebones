@@ -2,14 +2,14 @@
 // strictness ratchet. New code goes in typed modules, not here.
 // Painting the table: boards, dice, scores, plates, status line and the
 // tutorial-only strategy hints. State in, DOM out -- game logic stays out.
-import { AI, ME, SPEC, ROWSWITCH, ROWMULT, COLSHIELD, BOUNTY, colScore, rowScore, boardTotalMode, counts, countOf } from '../core/rules.ts';
+import { AI, ME, SPEC, ROWSWITCH, ROWMULT, BOUNTY, colScore, rowScore, totalOf, isShielded, counts, countOf } from '../core/rules.ts';
 import { DICE_FACES } from '../config.ts';
 import { S, DIFF_LABEL } from '../state.ts';
 import { $, sideKey, slotEl, slotIdx, colEl, chipEl } from './dom.ts';
 import { nameOf } from './identity.ts';
 import { makeDie } from './die.ts';
 import { modeIcon } from './modeicons.ts';
-import { MODES } from '../core/modes.ts';
+import { modeByEnum } from '../core/modes.ts';
 /* ===================== DOM BUILD ===================== */
 export function buildBoards(){
   for(const side of ['top','bot']){
@@ -65,6 +65,11 @@ export function renderSide(who,animate){
         slot.appendChild(d);
         if(animate){ d.classList.add('settle'); }
       }
+      // A kept element may still wear the death animation: .dying ends at
+      // opacity 0 with `forwards`, so a SURVIVOR that compacts into a slot
+      // whose old die just died (same face → element reused) would render
+      // invisible for the rest of the match. Cost the user a whole mode.
+      d.classList.remove('dying');
       // the multiplier glow follows whatever actually multiplies: columns in
       // classic/shield/rowmult, ROWS in rowswitch (columns would lie there)
       const rk=rowCounts ? (rowCounts[i][v]||1) : 1;
@@ -93,7 +98,7 @@ function updateScores(who){
     chip.querySelector('.mx').textContent=mx;
     // COLUMN SHIELD: a full column wears its shield (pops in the first time)
     const sh=chip.querySelector('.sh');
-    const shielded=S.scoring===COLSHIELD && b[c].length>=SPEC.rows;
+    const shielded=isShielded(b[c],S.scoring);
     if(shielded && !sh.firstChild){ sh.innerHTML=modeIcon('colshield',13); sh.classList.add('pop'); }
     else if(!shielded && sh.firstChild){ sh.innerHTML=''; sh.classList.remove('pop'); }
     colEl(who,c).classList.toggle('shielded',shielded);
@@ -123,7 +128,7 @@ function updateScores(who){
     }
   }
   // BOUNTY: banked +1s count toward the total and show as their own gold tally
-  const tot=boardTotalMode(b,S.scoring)+(S.scoring===BOUNTY?S.bounty[who]:0);
+  const tot=totalOf(b,S.bounty[who],S.scoring);
   const k=sideKey(who)==='bot'?'Bot':'Top';
   const bty=$('#bty'+k);
   if(bty){ const n=S.scoring===BOUNTY?S.bounty[who]:0; bty.hidden=!n; if(n) bty.textContent='✦'+n; }
@@ -159,7 +164,7 @@ export function updateRecord(){
   // an offline modded game names its mode where the record usually sits, so
   // the picker's choice is visible in EVERY mode — not just the loud ones
   if(S.scoring){
-    const m=MODES.find(x=>x.mode===S.scoring)||MODES[0];
+    const m=modeByEnum(S.scoring);
     rec.innerHTML=modeIcon(m.id,12)+' '+m.name;
     return;
   }

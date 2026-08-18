@@ -57,10 +57,9 @@
 }
 .rec b{color:var(--cy);font-weight:800}
 .rec i{color:var(--mg);font-style:normal;font-weight:800}
-/* online: the badge is tappable — it opens the mode sheet */
+/* the badge is tappable in a live match — it opens the mode library */
 .rec.tapmode{cursor:pointer;transition:transform .15s}
 .rec.tapmode:active{transform:scale(.94)}
-.rec .mi{color:var(--dim);font-weight:800;margin-left:2px}
 .ico{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;
   background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
   color:var(--txt);font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
@@ -299,7 +298,6 @@
 /* destructive actions sit at arm's length: Settings' quit, Account's delete */
 .danger{margin-top:14px;display:flex;flex-direction:column;gap:6px;width:100%;max-width:340px}
 .danger .btn{border-color:rgba(255,47,160,.35);color:#ff9ccb;width:100%;min-width:0}
-.dnote{font-size:9.5px;letter-spacing:.1em;color:var(--dim);text-align:center}
 
 /* the OFFLINE view's game-mode picker: one icon button per wheel mode */
 .modepick{display:flex;flex-wrap:wrap;gap:8px}
@@ -315,6 +313,75 @@
    so the base styles live here, not in the lazy online chunk */
 .mico{vertical-align:-2px;filter:drop-shadow(0 0 5px currentColor)}
 .mico .f{fill:currentColor;stroke:none}
+
+/* ===== COLUMN SHIELD: full columns wear a shield ===== */
+.chip .sh{line-height:1;color:var(--gold);filter:drop-shadow(0 0 6px rgba(255,209,102,.75))}
+.chip .sh.pop{animation:shpop .55s cubic-bezier(.2,1.6,.4,1)}
+@keyframes shpop{0%{transform:scale(0) rotate(-30deg)}70%{transform:scale(1.35)}100%{transform:scale(1)}}
+.chip .sh.block{animation:shblock .45s}
+@keyframes shblock{0%,100%{transform:scale(1)}40%{transform:scale(1.55);filter:drop-shadow(0 0 16px rgba(255,209,102,1))}}
+.col.shielded{box-shadow:inset 0 0 0 1px rgba(255,209,102,.35),0 0 14px rgba(255,209,102,.12);border-radius:12px}
+
+/* mode-icon BASE styles live in main.css (offline uses them too) */
+.wname .mico{vertical-align:-2.5px;margin-right:2px}
+
+/* ===== ROW MULTIPLY: row matches wear a gold ring (columns keep their glow).
+   A border ::after, not outline — outline draws a SQUARE over rounded dice on
+   older Safari, which reads as broken shimmer. ===== */
+.die.rm::after{content:"";position:absolute;inset:1px;border:2px solid rgba(255,209,102,.62);
+  border-radius:inherit;pointer-events:none}
+
+/* ===== the row rail: per-row scores left of each board (row modes only).
+   The .rc boxes deliberately mirror .chip — same pill, same .has treatment,
+   so row scores read as first-class citizens of the score language. ===== */
+.rowchips{display:none}
+html.rowmode .rowchips{position:absolute;right:100%;margin-right:9px;top:0;display:grid;
+  grid-template-rows:repeat(3,var(--cell));gap:var(--gap);align-items:center}
+.rowchips .rc{min-width:30px;height:20px;padding:0 5px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;gap:3px;
+  font-size:11.5px;font-weight:800;color:var(--dim);font-variant-numeric:tabular-nums;
+  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);transition:.2s}
+.rowchips .rc .mx{font-size:9px;opacity:.9;color:var(--gold)}
+.rowchips .rc.has{color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
+  background:color-mix(in srgb,var(--c) 9%,transparent);
+  text-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}
+.land .rowchips{display:none!important}   /* landscape transposes the board */
+/* ROW SWITCH: columns don't score — their empty chip boxes vanish entirely
+   (visibility, not display: the lane keeps its height, nothing jumps) */
+html.rowswitch .cols .chip{visibility:hidden}
+
+/* ===== BOUNTY: the banked kills tally on the plate ===== */
+.plate .bty{font-size:11px;font-weight:900;color:var(--gold);
+  text-shadow:0 0 8px rgba(255,209,102,.6);margin-right:5px}
+
+/* ===== LIMITED: the bag beside the die in play — a stack of FACE-DOWN dice
+   and the number still to come. It never says WHICH faces remain; reading the
+   board for that is the mode. Anchored to .stagerow so the played die stays
+   optically centred. One implementation for online and offline: ui/bag.ts. */
+.stagerow{position:relative;display:flex;justify-content:center;align-items:center}
+.bag{position:absolute;right:100%;margin-right:16px;display:flex;flex-direction:column;
+  align-items:center;gap:6px}
+.bag .pile{position:relative;width:34px;height:36px}
+/* face-down dice: the .die shell with no pips — deliberately unreadable.
+   The BASE die is centred and is the last one to go, so the count below stays
+   centred under the stack whether four dice remain or one. */
+.bag .pile .die{position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+  width:24px;height:24px;--cell:24px;--dc:#9fb2d8;
+  border-radius:7px;transition:opacity .35s,transform .35s}
+/* the layers fan up and back from the base — deep enough to count at a glance,
+   and they thin to that single centred die for the last few draws */
+.bag .pile .die:nth-child(2){bottom:4px;transform:translateX(calc(-50% + 3px))}
+.bag .pile .die:nth-child(3){bottom:8px;transform:translateX(calc(-50% + 6px))}
+.bag .pile .die:nth-child(4){bottom:12px;transform:translateX(calc(-50% + 9px))}
+.bag .pile .die.gone{opacity:0;transform:translate(-50%,-8px) scale(.75)}
+.bag .bn{font-size:11.5px;font-weight:900;color:var(--txt);font-variant-numeric:tabular-nums;
+  letter-spacing:.06em}
+.bag.tick .bn{animation:bagtick .45s cubic-bezier(.2,1.5,.4,1)}
+@keyframes bagtick{40%{transform:scale(1.3);color:var(--gold)}}
+.bag.empty .bn{color:var(--dim)}
+.land .bag{margin-right:8px}
+.land .bag .pile{width:22px;height:26px}
+.land .bag .pile .die{width:18px;height:18px;--cell:18px;border-radius:6px}
 
 /* the install sheet's app-icon tile */
 .appface{width:74px;height:74px;border-radius:18px;display:grid;place-items:center;
