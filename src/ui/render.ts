@@ -157,20 +157,34 @@ export function applySides(){
   renderAll(false);
   setActivePlate();
 }
-export function updateRecord(){
+/* ===================== THE HUD BADGE =====================
+   #rec has two jobs: it names what is being played, and it is the front door to
+   that mode's rules. BOTH flows paint it through here, so the tap affordance can
+   never again exist in only one of them -- boot binds the listener exactly once,
+   against data-mode. Naming a mode and being tappable are the same fact. */
+function paintBadge(html, modeId){
   const rec=$('#rec');
-  // a live ONLINE match owns its badge (mode + ⓘ) — never overwrite it
-  if(rec.classList.contains('tapmode')) return;
-  // an offline modded game names its mode where the record usually sits, so
-  // the picker's choice is visible in EVERY mode — not just the loud ones
+  rec.innerHTML = html + (modeId ? ' <span class="mi">ⓘ</span>' : '');
+  if(modeId) rec.dataset.mode=modeId; else delete rec.dataset.mode;
+  rec.classList.toggle('tapmode', !!modeId);
+}
+/* A live online match CLAIMS the badge: Settings is reachable mid-match, and the
+   updateRecord() on its save path must not repaint the mode away underneath it. */
+let badgeClaimed=false;
+export function claimBadge(html, modeId){ badgeClaimed=true; paintBadge(html,modeId); }
+export function releaseBadge(){ badgeClaimed=false; updateRecord(); }
+export function updateRecord(){
+  if(badgeClaimed) return;
+  // an offline modded game names its mode where the record usually sits, so the
+  // picker's choice is visible in EVERY mode -- and a tap explains it
   if(S.scoring){
     const m=modeByEnum(S.scoring);
-    rec.innerHTML=modeIcon(m.id,12)+' '+m.name;
+    paintBadge(modeIcon(m.id,12)+' '+m.name, m.id);
     return;
   }
-  rec.innerHTML = S.mode==='duo'
+  paintBadge(S.mode==='duo'
     ? 'P1 <b>'+S.p1+'</b> · P2 <i>'+S.p2+'</i>'
-    : 'W <b>'+S.wins+'</b> · L <i>'+S.losses+'</i>';
+    : 'W <b>'+S.wins+'</b> · L <i>'+S.losses+'</i>', null);
 }
 /* ===================== PREVIEW HINTS ===================== */
 export function clearHints(){

@@ -57,9 +57,11 @@
 }
 .rec b{color:var(--cy);font-weight:800}
 .rec i{color:var(--mg);font-style:normal;font-weight:800}
-/* the badge is tappable in a live match — it opens the mode library */
+/* whenever the badge names a mode it opens that mode's rules — offline too, so
+   the affordance and its ⓘ belong in the eager sheet, not the online chunk */
 .rec.tapmode{cursor:pointer;transition:transform .15s}
 .rec.tapmode:active{transform:scale(.94)}
+.rec .mi{color:var(--dim);font-weight:800;margin-left:2px}
 .ico{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;
   background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
   color:var(--txt);font-size:13px;font-weight:700;cursor:pointer;transition:.15s}

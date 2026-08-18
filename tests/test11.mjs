@@ -133,5 +133,45 @@ await page.tap('#btnCloseSettings'); await page.waitForTimeout(300);
 out.sheetClosed = await page.evaluate(() => !document.getElementById('ovSettings').classList.contains('on'));
 check(out.sheetClosed, 'Settings ✕ did not close the sheet', out.sheetClosed);
 
+// ===== the HUD badge explains its mode — OFFLINE too =====
+// Reported bug: tapping the badge opened the modes library online and did
+// nothing offline, because the listener lived inside the online chunk. Both
+// flows now paint the badge through render.paintBadge and boot binds the tap
+// once against data-mode, so the affordance cannot go missing on one side.
+await page.tap('#btnSettings'); await page.waitForTimeout(250);
+await page.tap('#btnMenu'); await page.waitForTimeout(400);
+await page.evaluate(() => { window.__kb.S.localMode = 4; window.__kb.openPractice(); }); // SINGLE STRIKE
+await page.tap('#btnPlay'); await page.waitForTimeout(1200);
+out.badge = await page.evaluate(() => {
+  const r = document.getElementById('rec'), i = r.querySelector('.mi');
+  return {
+    mode: r.dataset.mode, tap: r.classList.contains('tapmode'),
+    named: /SINGLE STRIKE/.test(r.textContent),
+    infoStyled: !!i && getComputedStyle(i).marginLeft !== '0px',   // the ⓘ rule must reach offline
+  };
+});
+check(out.badge.mode === 'singlestrike', 'offline badge does not name its mode to the tap handler', out.badge);
+check(out.badge.tap && out.badge.named, 'offline badge is not a tappable mode label', out.badge);
+check(out.badge.infoStyled, 'the ⓘ affordance is unstyled offline (rule stuck in the online chunk)', out.badge);
+await page.tap('#rec'); await page.waitForTimeout(500);
+out.badgeOpens = await page.evaluate(() => ({
+  on: document.getElementById('ovModes')?.classList.contains('on') ?? false,
+  now: document.querySelector('#ovModes .modecard.now')?.dataset.mode ?? '',
+}));
+check(out.badgeOpens.on, 'tapping the offline badge opens nothing', out.badgeOpens);
+check(out.badgeOpens.now === 'singlestrike', 'modes library did not highlight the mode in play', out.badgeOpens);
+await page.tap('#btnCloseModes'); await page.waitForTimeout(300);
+// a classic offline game keeps the record and stays inert — nothing to explain
+await page.tap('#btnSettings'); await page.waitForTimeout(250);
+await page.tap('#btnMenu'); await page.waitForTimeout(400);
+await page.evaluate(() => { window.__kb.S.localMode = 0; window.__kb.openPractice(); });
+await page.tap('#btnPlay'); await page.waitForTimeout(1200);
+out.badgeClassic = await page.evaluate(() => {
+  const r = document.getElementById('rec');
+  return { mode: r.dataset.mode ?? null, tap: r.classList.contains('tapmode'), text: r.textContent.trim() };
+});
+check(out.badgeClassic.mode === null && !out.badgeClassic.tap, 'classic badge should not pretend to be tappable', out.badgeClassic);
+check(/^W /.test(out.badgeClassic.text), 'classic badge lost the win/loss record', out.badgeClassic);
+
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
 await browser.close();

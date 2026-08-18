@@ -133,6 +133,10 @@ export function boot(embed){
   tap($('#btnMenu'),()=>{ Sfx.tap(); if(requestLeave()) return; hide('#ovSettings'); toMenu(); });
   tap($('#btnHow'),()=>{ Sfx.tap(); show('#ovRules'); });
   tap($('#btnModes'),()=>{ Sfx.tap(); openModes(); });
+  // the HUD badge opens the rules of whatever mode it names. ONE binding serves
+  // both flows: whoever paints the badge sets data-mode (see render.paintBadge),
+  // so this affordance can never go missing on one side again.
+  tap($('#rec'),()=>{ const id=$('#rec').dataset.mode; if(!id) return; Sfx.tap(); openModes(id); });
   // online module (auth, ladder, account) is lazy: the offline game's boot
   // path must never load supabase-js or anything that talks to a backend
   tap($('#btnOnline'),()=>{ Sfx.unlock(); Sfx.tap();

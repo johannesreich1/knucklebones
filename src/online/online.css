@@ -52,8 +52,7 @@
 .statrow b.rec2{color:var(--txt)}
 /* .danger lives in main.css — Settings' Quit button shares it */
 .dnote{font-size:9.5px;letter-spacing:.1em;color:var(--dim);text-align:center}
-/* the online match badge's ⓘ affordance */
-.rec .mi{color:var(--dim);font-weight:800;margin-left:2px}
+/* .rec .mi lives in main.css — the OFFLINE badge wears the ⓘ too */
 
 /* ---- match result (design 23): verdict up top, scores centred, actions in
    the thumb zone — the Elo delta is the trophy moment */
