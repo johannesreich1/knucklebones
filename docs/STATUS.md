@@ -80,13 +80,12 @@ pinning the deployed pvp-join to `modifier: 'classic'` until the wheel
 client ships; re-enable `pickMode(seed).id` AFTER the client deploy.
 Protocol-changing server work waits for its client, always.
 
-### ⚠ TEMPORARY: mode-wheel test weights (2026-08-18)
+### Mode wheel odds (production, since 2026-08-18)
 
-SINGLE STRIKE (one die falls — the centre-closest) and BOUNTY (each
-destroyed die banks a permanent +1, gold tally on the plate) are live at
-**50/50 wheel odds with everything else at 0** for back-to-back playtesting.
-**Restore production weights (classic majority) in `core/modes.ts` — and
-redeploy pvp-join/move/claim — before opening signups.**
+Classic 50% (weight 5 of 10); the five additions — ROW SWITCH, ROW
+MULTIPLY, COLUMN SHIELD, SINGLE STRIKE, BOUNTY — 10% each. The test-weight
+phase is over; the weights live in `core/modes.ts` and only `pvp-join`
+needs redeploying when they change (it alone spins the wheel).
 
 ## Standing rules (learned the hard way)
 
