@@ -194,6 +194,7 @@ async function showResult(r: FinishReport): Promise<void> {
   $('#rOpp').textContent = r.opp;
   const elo = $('#rElo') as HTMLElement, rank = $('#rRank') as HTMLElement;
   elo.hidden = true; rank.hidden = true;
+  elo.classList.toggle('down', (r.delta ?? 0) < 0);
   const p = await myProfile();               // fresh — the server already paid
   refreshHomeChip();
   if (r.delta != null) {

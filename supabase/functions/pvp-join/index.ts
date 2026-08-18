@@ -144,12 +144,24 @@ Deno.serve(async (req: Request) => {
     const { data: busy } = await svc.from("matches").select("p1, p2").eq("status", "active");
     const busyIds = new Set((busy ?? []).flatMap((m: any) => [m.p1, m.p2]));
     const free = (bots ?? []).filter((b: any) => !busyIds.has(b.id));
-    if (free.length) {
-      // rating-matched backfill: one of the three bots closest to the human's
-      // rating (a dash of randomness so it isn't always the same face)
-      free.sort((a: any, b: any) => Math.abs(a.rating - myR) - Math.abs(b.rating - myR));
-      const pick = free.slice(0, 3);
-      const bot = pick[Math.floor(Math.random() * pick.length)].id;
+    // rating-matched backfill: one of the three free bots closest to the
+    // human's rating (a dash of randomness so it isn't always the same face).
+    // Nobody within range — or nobody free at all — and the pool GROWS: a
+    // fresh bot is minted at the human's rating, randomly a bit stronger or
+    // weaker, so the ladder's edges always have sparring partners.
+    free.sort((a: any, b: any) => Math.abs(a.rating - myR) - Math.abs(b.rating - myR));
+    const inRange = free.filter((b: any) => Math.abs(b.rating - myR) <= 150);
+    let bot: string | null = null;
+    if (inRange.length) {
+      const pick = inRange.slice(0, 3);
+      bot = pick[Math.floor(Math.random() * pick.length)].id;
+    } else {
+      const off = (40 + Math.floor(Math.random() * 101)) * (Math.random() < 0.5 ? -1 : 1);
+      const { data: minted } = await svc.rpc("mint_bot", { target_rating: Math.max(150, myR + off) });
+      if (minted) bot = minted as string;
+      else if (free.length) bot = free[0].id;   // mint failed: nearest bot beats no game
+    }
+    if (bot) {
       const match = await startMatch(uid, bot);
       if (match) return json({ status: "matched", match, you: 1, names: await names(match.p1, match.p2) });
     }
