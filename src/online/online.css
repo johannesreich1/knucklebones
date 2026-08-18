@@ -1,7 +1,7 @@
 /* Online screens — same design language as the game's overlays. Loaded only
    with the lazy online chunk. */
-#ovOnline .panel{width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px;margin:auto 0}
-#ovOnline input{padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
+#ovOnline .panel{width:100%;max-width:340px;display:flex;flex-direction:column;gap:16px;margin:auto 0}
+#ovOnline input{padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
   background:rgba(255,255,255,.05);color:var(--txt);font-size:14px;font-family:inherit;outline:none}
 #ovOnline input:focus-visible{outline:2px solid var(--cy);outline-offset:1px}
 #ovOnline .err{min-height:16px;font-size:11px;letter-spacing:.08em;color:#ff8a3d;text-align:center}
@@ -22,7 +22,7 @@
 #ovOnline .lb .row.me .nm{color:var(--cy)}
 
 /* ---- matchmaking (design 21): bouncing pair, animated search, big clock */
-#onQueue{align-items:center;gap:16px}
+#onQueue{align-items:center;gap:22px}
 .qdice{display:flex;gap:14px}
 .qdice .die{width:58px;height:58px;--cell:58px;animation:qspin 2.2s ease-in-out infinite}
 .qdice .die:nth-child(2){animation-delay:.35s}
@@ -33,8 +33,8 @@
 .qsub{font-size:10px;letter-spacing:.14em;color:var(--dim);text-align:center;min-height:13px}
 
 /* ---- account (design 31): identity card, stats, danger at arm's length */
-.acard{display:flex;flex-direction:column;gap:9px;background:rgba(255,255,255,.03);
-  border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px}
+.acard{display:flex;flex-direction:column;gap:11px;background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:16px}
 .awho{display:flex;align-items:center;gap:12px}
 .awho .die{width:40px;height:40px;--cell:40px;flex:0 0 auto}
 .awho .meta{display:flex;flex-direction:column;gap:2px;min-width:0}
@@ -45,12 +45,12 @@
 .statrow{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.1em;color:var(--dim)}
 .statrow b{color:var(--gold);font-weight:900;font-size:14px}
 .statrow b.rec2{color:var(--txt)}
-.danger{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+.danger{margin-top:14px;display:flex;flex-direction:column;gap:6px}
 .danger .btn{border-color:rgba(255,47,160,.35);color:#ff9ccb;width:100%;min-width:0}
 .dnote{font-size:9.5px;letter-spacing:.1em;color:var(--dim);text-align:center}
 
 /* ---- match result (design 23): the Elo delta is the trophy moment */
-#onResult{align-items:center;gap:14px}
+#onResult{align-items:center;gap:18px}
 .rtitle{font-size:29px;letter-spacing:.2em;font-weight:900;text-align:center;
   -webkit-background-clip:text;background-clip:text;color:transparent}
 .rtitle.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
