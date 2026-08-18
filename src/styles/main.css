@@ -468,6 +468,10 @@ html.rowswitch .cols .chip{visibility:hidden}
   opacity:0;transition:opacity .2s}
 .rune.ready::before{animation:runeglow 2.3s ease-in-out infinite}
 @keyframes runeglow{0%,100%{opacity:.22}50%{opacity:.8}}
+/* A rune you cannot cast this turn is NOT restyled — only :disabled changes,
+   and that is invisible by design. Restyling per turn is what made the ring
+   snap: an animation restarts from its first keyframe every time its class
+   comes back. */
 .rune:active{transform:scale(.9)}
 .rune.armed{transform:scale(1.1);border-color:var(--gold)}
 .rune.armed::before{opacity:1;animation:none;

@@ -81,13 +81,18 @@ export function renderSpells(): void {
       if (b.parentElement !== home) home.appendChild(b);
       b.hidden = !(s.id in S.spellCharges[seat]);   // you carry what you BROUGHT
       const left = chargesOf(seat, s.id);
-      const mine = seat === now;                    // only the player to move may cast
+      /* LOOK follows facts that hold for the whole game — whose rune it is and
+         whether it is still loaded. INTERACTION follows the turn. Keeping those
+         apart is what stops the flicker: when `ready` meant "castable right
+         now" it flipped twice per turn, restarting the ring's animation from
+         its first keyframe each time, and the glow visibly snapped. */
+      const readout = seat !== near;                // the other player's: an indicator
       b.style.setProperty('--sh', colorOf(seat));   // whose rune, in the game's own two colours
       b.classList.toggle('spent', left <= 0);
-      b.classList.toggle('ready', left > 0 && mine);
-      b.classList.toggle('idle', left > 0 && !mine);
-      b.classList.toggle('armed', S.spellArmed === s.id && mine);
-      b.disabled = left <= 0 || !mine;
+      b.classList.toggle('ready', left > 0 && !readout);
+      b.classList.toggle('idle', left > 0 && readout);
+      b.classList.toggle('armed', S.spellArmed === s.id && seat === now);
+      b.disabled = left <= 0 || seat !== now;       // the only thing the turn decides
       const n = b.querySelector('.n');
       if (n) n.textContent = left > 1 ? String(left) : '';   // a single charge needs no number
       b.setAttribute('aria-label', nameOf(seat) + ': ' + s.name + ' — ' + s.blurb
