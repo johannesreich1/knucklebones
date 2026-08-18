@@ -32,6 +32,7 @@ import { coachTap } from './flow/tutorial.ts';
 import { newGame, passTap } from './flow/game.ts';
 import { resumeGame, toMenu, syncSettingsUI, updateResumeButton, updateStatLine } from './flow/menu.ts';
 import { requestLeave } from './flow/leave.ts';
+import { openModes } from './ui/modesview.ts';
 /* ===================== BOOT ===================== */
 export function boot(embed){
   setEmbed(!!embed);
@@ -112,6 +113,7 @@ export function boot(embed){
   // the HUD's ✕: an online match intercepts to arm its two-tap forfeit confirm
   tap($('#btnMenu'),()=>{ Sfx.tap(); if(requestLeave()) return; toMenu(); });
   tap($('#btnHow'),()=>{ Sfx.tap(); show('#ovRules'); });
+  tap($('#btnModes'),()=>{ Sfx.tap(); openModes(); });
   // online module (auth, ladder, account) is lazy: the offline game's boot
   // path must never load supabase-js or anything that talks to a backend
   tap($('#btnOnline'),()=>{ Sfx.unlock(); Sfx.tap();
@@ -135,7 +137,8 @@ export function boot(embed){
     }else if(e.key==='Enter'||e.key===' '){
       if($('#ovPass').classList.contains('on')) $('#ovPass').click();
       else if($('#ovStart').classList.contains('on')||$('#ovEnd').classList.contains('on')){ Sfx.unlock(); newGame(); }
-    }else if(e.key==='Escape'){ hide('#ovRules'); hide('#ovSettings'); hide('#ovInstall'); }
+    }else if(e.key==='Escape'){ hide('#ovRules'); hide('#ovSettings'); hide('#ovInstall');
+      if(document.getElementById('ovModes')) hide('#ovModes'); }
   });
 
   window.addEventListener('resize',fit);

@@ -4,15 +4,13 @@
 // Built from the MODES registry: a new mode becomes a new segment for free.
 import './online.css';   // the wheel's styles live with the online chunk's
 import { MODES, type ModeSpec } from '../core/modes.ts';
-import { modeIcon } from '../ui/modeicons.ts';
+import { modeIcon, modeHue } from '../ui/modeicons.ts';
 import { $, show, hide } from '../ui/dom.ts';
 import { Sfx } from '../ui/audio.ts';
 
 const SEG = 360 / MODES.length;
-/* segment accents: classic neutral, then the game's own palette — the m3
-   destruction orange for SINGLE STRIKE, money green for BOUNTY */
-const HUES = ['#8ea3c0', '#28e8ff', '#ff2fa0', '#ffd166', '#ff8a3d', '#7ee787'];
-const hue = (i: number) => HUES[i % HUES.length];
+/* segment accents come from the shared per-mode hue map (ui/modeicons.ts) */
+const hue = (i: number) => modeHue(MODES[i].id);
 
 let built = false;
 function build(): void {

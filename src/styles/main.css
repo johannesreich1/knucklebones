@@ -57,6 +57,10 @@
 }
 .rec b{color:var(--cy);font-weight:800}
 .rec i{color:var(--mg);font-style:normal;font-weight:800}
+/* online: the badge is tappable — it opens the mode sheet */
+.rec.tapmode{cursor:pointer;transition:transform .15s}
+.rec.tapmode:active{transform:scale(.94)}
+.rec .mi{color:var(--dim);font-weight:800;margin-left:2px}
 .ico{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;
   background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
   color:var(--txt);font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
@@ -167,6 +171,9 @@
 .chip.has{color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
   background:color-mix(in srgb,var(--c) 9%,transparent);text-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}
 .chip .mx{font-size:9px;opacity:.9;color:var(--gold)}
+/* empty badge spans must not eat flex gaps — the number sits dead centre
+   (bit the row rail: an empty ×badge shoved every rowscore 3px off) */
+.chip .mx:empty,.chip .sh:empty,.rowchips .rc .mx:empty{display:none}
 .chip .dl{position:absolute;left:50%;top:-15px;font-size:10.5px;font-weight:900;padding:1px 5px;border-radius:99px;
   opacity:0;transform:translate(-50%,4px);transition:.18s;pointer-events:none;white-space:nowrap;line-height:1.25}
 .chip .dl.show{opacity:1;transform:translate(-50%,0)}
@@ -219,7 +226,7 @@
 
 /* ============ OVERLAYS ============ */
 .ov{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:18px;padding:30px 26px;background:rgba(4,5,12,.86);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+  gap:18px;padding:30px 26px calc(env(safe-area-inset-bottom,0px) + 30px);background:rgba(4,5,12,.86);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
   opacity:0;pointer-events:none;visibility:hidden;transition:opacity .28s,visibility 0s .28s}
 .ov.on{opacity:1;pointer-events:auto;visibility:visible;transition:opacity .28s}
 #ovStart{overflow-y:auto;justify-content:flex-start}
@@ -274,6 +281,31 @@
 .tut-tease.primary{background:rgba(40,232,255,.06);
   border-color:color-mix(in srgb,var(--cy) 55%,transparent);
   box-shadow:0 0 18px rgba(40,232,255,.22);color:var(--txt)}
+
+/* result screens (local + online share the shape): the verdict sits up top
+   and LOUD, the scores hold the centre, the actions wait in the thumb zone */
+#ovEnd{justify-content:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 7vh)}
+#ovEnd h1{font-size:clamp(31px,9.5vw,40px)}
+#ovEnd .scoreline{margin-top:auto}
+#ovEnd .scoreline .you,#ovEnd .scoreline .cpu{font-size:clamp(34px,11vw,46px)}
+#ovEnd #btnAgain{margin-top:auto}
+#ovEnd .btn{width:100%;max-width:300px;min-width:0}
+
+/* ---- the game-modes library (home footer + tapping the match badge) ---- */
+.modelist{display:flex;flex-direction:column;gap:10px;width:100%;max-width:340px}
+.modecard{--mh:#8ea3c0;display:flex;flex-direction:column;gap:6px;border-radius:16px;
+  padding:13px 15px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
+.modecard .mchead{display:flex;align-items:center;gap:8px;color:var(--mh)}
+.modecard .mcname{font-size:13px;font-weight:900;letter-spacing:.18em}
+.modecard .modd{margin-left:auto;font-size:9.5px;font-weight:800;letter-spacing:.12em;color:var(--dim);
+  border:1px solid rgba(255,255,255,.14);border-radius:99px;padding:2px 8px}
+.modecard .mcblurb{font-size:9.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+.modecard .mcdetail{font-size:12px;line-height:1.55;color:#c6d3ee}
+.modecard.now{border-color:color-mix(in srgb,var(--mh) 55%,transparent);
+  box-shadow:0 0 18px color-mix(in srgb,var(--mh) 25%,transparent)}
+.modecard.now .modd{color:var(--mh);border-color:color-mix(in srgb,var(--mh) 45%,transparent)}
+/* the list is tall and scrolls — start it under the header, don't centre */
+#ovModes .pbody{margin:6px 0 0;gap:12px}
 
 /* the install sheet's app-icon tile */
 .appface{width:74px;height:74px;border-radius:18px;display:grid;place-items:center;

@@ -13,6 +13,7 @@ export interface ModeSpec {
   name: string;      // wheel label
   icon: string;      // single glyph: wheel banner, match badge, board hints
   blurb: string;     // one line under the landed segment
+  detail: string;    // the tap-to-learn sheet's full explanation (client-only)
   weight: number;
 }
 
@@ -20,12 +21,18 @@ export interface ModeSpec {
    equal slice of the rest (1 of 10 = 10% each). The agreed contract: no
    addition in 50% of matches, additions split the other half evenly. */
 export const MODES: ModeSpec[] = [
-  { mode: CLASSIC, id: 'classic', name: 'CLASSIC', icon: '◆', blurb: 'The pure duel. Columns multiply.', weight: 5 },
-  { mode: ROWSWITCH, id: 'rowswitch', name: 'ROW SWITCH', icon: '☰', blurb: 'Scoring turns sideways — only rows count.', weight: 1 },
-  { mode: ROWMULT, id: 'rowmult', name: 'ROW MULTIPLY', icon: '✚', blurb: 'Rows pay a bonus on top of columns.', weight: 1 },
-  { mode: COLSHIELD, id: 'colshield', name: 'COLUMN SHIELD', icon: '🛡', blurb: 'A full column cannot be destroyed.', weight: 1 },
-  { mode: SINGLESTRIKE, id: 'singlestrike', name: 'SINGLE STRIKE', icon: '☓', blurb: 'Destruction takes ONE die — the closest to the centre.', weight: 1 },
-  { mode: BOUNTY, id: 'bounty', name: 'BOUNTY', icon: '✦', blurb: 'Every die you destroy banks +1. Forever.', weight: 1 },
+  { mode: CLASSIC, id: 'classic', name: 'CLASSIC', icon: '◆', blurb: 'The pure duel. Columns multiply.', weight: 5,
+    detail: 'Matching dice stacked in a column multiply: two 4s = 16, three 4s = 36. Place a die and every matching die in the facing enemy column is destroyed. First full grid ends it — highest total wins.' },
+  { mode: ROWSWITCH, id: 'rowswitch', name: 'ROW SWITCH', icon: '☰', blurb: 'Scoring turns sideways — only rows count.', weight: 1,
+    detail: 'Only ROWS score here — columns count for nothing. Matching dice in the same row multiply, and the rail on the left tracks every row. Destruction still strikes down the facing column.' },
+  { mode: ROWMULT, id: 'rowmult', name: 'ROW MULTIPLY', icon: '✚', blurb: 'Rows pay a bonus on top of columns.', weight: 1,
+    detail: 'Columns score as always — and matching dice lined up in a ROW pay their sum again on top. The rail on the left shows what each row is adding.' },
+  { mode: COLSHIELD, id: 'colshield', name: 'COLUMN SHIELD', icon: '🛡', blurb: 'A full column cannot be destroyed.', weight: 1,
+    detail: 'Fill a column and it locks: a shielded column cannot be destroyed, whatever lands opposite. The shield pops onto the column chip the moment it engages.' },
+  { mode: SINGLESTRIKE, id: 'singlestrike', name: 'SINGLE STRIKE', icon: '☓', blurb: 'Destruction takes ONE die — the closest to the centre.', weight: 1,
+    detail: 'Destruction is surgical: a hit removes only ONE matching die — the one closest to the centre. Stacks survive longer, so multipliers rule the board.' },
+  { mode: BOUNTY, id: 'bounty', name: 'BOUNTY', icon: '✦', blurb: 'Every die you destroy banks +1. Forever.', weight: 1,
+    detail: 'Every die you destroy banks a permanent +1 on your nameplate — the ✦ tally never resets, even when your own dice fall. Feed on destruction; the bank decides close matches.' },
 ];
 
 export function modeById(id: string | null | undefined): ModeSpec {

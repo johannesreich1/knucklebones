@@ -6,6 +6,7 @@
 import { AI, ME, SPEC, CLASSIC, COLSHIELD, BOUNTY, emptyBoard, applyMove, boardTotalMode, legalCols, type Player } from '../core/rules.ts';
 import { modeById } from '../core/modes.ts';
 import { modeIcon } from '../ui/modeicons.ts';
+import { openModes } from '../ui/modesview.ts';
 import { ONLINE_TURN_SECS } from '../config.ts';
 import { S } from '../state.ts';
 import { startTimer, stopTimer } from '../flow/timer.ts';
@@ -59,6 +60,19 @@ export function setFinishHandler(f: typeof onFinished): void { onFinished = f; }
    abandons (the server forfeits — pvp-claim by the human opponent, lazily by
    pvp-join for bot matches). Registered via flow/leave so the eagerly-loaded
    boot never has to import this lazy chunk. */
+/* tapping the HUD badge opens the game-modes library on the live mode */
+let curModeId = 'classic';
+let modeTapBound = false;
+function bindModeTap(): void {
+  if (modeTapBound) return;
+  modeTapBound = true;
+  $('#rec').addEventListener('click', () => {
+    if (!O || O.done) return;
+    Sfx.tap();
+    openModes(curModeId);
+  });
+}
+
 let leaveArmed = 0;
 function leaveTap(): boolean {
   if (!O || O.done) return false;               // no live match — normal quit
@@ -101,8 +115,12 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   $('#nameTop').textContent = oppName();
   ($('#tagTop') as HTMLElement).hidden = true;
   ($('#tagBot') as HTMLElement).hidden = true;
-  if (spec.mode === CLASSIC) $('#rec').textContent = 'ONLINE';
-  else $('#rec').innerHTML = `ONLINE · ${modeIcon(spec.id, 12)} ${spec.name}`;
+  // the badge names the mode and opens the game-modes library on tap
+  curModeId = spec.id;
+  if (spec.mode === CLASSIC) $('#rec').innerHTML = 'ONLINE <span class="mi">ⓘ</span>';
+  else $('#rec').innerHTML = `ONLINE · ${modeIcon(spec.id, 12)} ${spec.name} <span class="mi">ⓘ</span>`;
+  $('#rec').classList.add('tapmode');
+  bindModeTap();
   fit();
   buildBoards();
   setPlaceHandler(onlinePlace);
@@ -360,5 +378,6 @@ export function teardown(): void {
   setPlaceHandler(null as any);
   setLeaveInterceptor(null);
   leaveArmed = 0;
+  $('#rec').classList.remove('tapmode');
   O = null;
 }

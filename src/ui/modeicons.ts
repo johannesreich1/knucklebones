@@ -20,6 +20,15 @@ const PATHS: Record<string, string> = {
   bounty: '<circle cx="12" cy="12" r="8.2"/><path d="M12 8.6v6.8M8.6 12h6.8"/>',
 };
 
+/* per-mode hues — the mode's colour EVERYWHERE (wheel segments, match badge,
+   the game-modes library): classic neutral, then the game's own palette,
+   destruction orange for SINGLE STRIKE, money green for BOUNTY */
+const HUES: Record<string, string> = {
+  classic: '#8ea3c0', rowswitch: '#28e8ff', rowmult: '#ff2fa0',
+  colshield: '#ffd166', singlestrike: '#ff8a3d', bounty: '#7ee787',
+};
+export function modeHue(id: string): string { return HUES[id] ?? HUES.classic; }
+
 export function modeIcon(id: string, size = 14): string {
   const body = PATHS[id] ?? PATHS.classic;
   return `<svg class="mico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" `
