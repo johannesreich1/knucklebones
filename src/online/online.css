@@ -29,8 +29,8 @@
 .wseam{position:absolute;left:50%;top:0;width:1px;height:50%;transform-origin:bottom;
   background:linear-gradient(rgba(255,255,255,.30),rgba(255,255,255,.04))}
 .wlabel{position:absolute;inset:0;display:flex;justify-content:center}
-.wlabel span{margin-top:26px;font-size:11px;font-weight:800;letter-spacing:.13em;
-  text-align:center;text-shadow:0 0 12px currentColor}
+.wlabel span{margin-top:22px;font-size:11px;font-weight:800;letter-spacing:.13em;
+  text-align:center;line-height:1.5;text-shadow:0 0 12px currentColor}
 .wpin{position:absolute;left:50%;top:-7px;transform:translateX(-50%);z-index:2;
   width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;
   border-top:14px solid var(--gold);filter:drop-shadow(0 0 8px rgba(255,209,102,.8))}

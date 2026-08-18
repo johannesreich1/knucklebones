@@ -25,7 +25,7 @@ function build(): void {
   // labels stay uniform: the landing rotation always brings the WINNING
   // segment to the pointer in this exact orientation — upright, every time
   const labels = MODES.map((m, i) =>
-    `<div class="wlabel" style="transform:rotate(${i * SEG + SEG / 2}deg)"><span style="color:${hue(i)}">${modeIcon(m.id, 15)}<br>${m.name}</span></div>`).join('');
+    `<div class="wlabel" style="transform:rotate(${i * SEG + SEG / 2}deg)"><span style="color:${hue(i)}">${modeIcon(m.id, 15)}<br>${m.name.split(' ').join('<br>')}</span></div>`).join('');
   document.body.insertAdjacentHTML('beforeend', `
 <div class="ov" id="ovWheel">
   <div class="wtitle">GAME MODE</div>
