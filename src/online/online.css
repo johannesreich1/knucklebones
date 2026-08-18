@@ -67,9 +67,10 @@
 html.rowmode .rowchips{position:absolute;right:100%;margin-right:9px;top:0;display:grid;
   grid-template-rows:repeat(3,var(--cell));gap:var(--gap);align-items:center}
 .rowchips .rc{min-width:30px;height:20px;padding:0 5px;border-radius:8px;
-  display:flex;align-items:center;justify-content:center;
+  display:flex;align-items:center;justify-content:center;gap:3px;
   font-size:11.5px;font-weight:800;color:var(--dim);font-variant-numeric:tabular-nums;
   background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);transition:.2s}
+.rowchips .rc .mx{font-size:9px;opacity:.9;color:var(--gold)}
 .rowchips .rc.has{color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
   background:color-mix(in srgb,var(--c) 9%,transparent);
   text-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}

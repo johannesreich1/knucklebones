@@ -10,7 +10,7 @@ import { ONLINE_TURN_SECS } from '../config.ts';
 import { S } from '../state.ts';
 import { startTimer, stopTimer } from '../flow/timer.ts';
 import { $, show, hide, sideKey, chipEl } from '../ui/dom.ts';
-import { Sfx } from '../ui/audio.ts';
+import { Sfx, vibrate } from '../ui/audio.ts';
 import { setStageDie } from '../ui/die.ts';
 import { floatPts } from '../ui/fx.ts';
 import { colorOf } from '../ui/identity.ts';
@@ -107,24 +107,38 @@ function refreshTurnUI(): void {
     ONLINE_TURN_SECS);
 }
 
-/* the little roll: spin the stage briefly, then pop the revealed die — the
-   same juice local play has. Purely cosmetic: a tap mid-spin works fine,
+/* the roll, with local play's full juice: scramble the face with ticks for a
+   beat, then reveal with a pop. Purely cosmetic — a tap mid-scramble works,
    the authoritative die is O.pendingDie, not the pixels. Re-renders of the
-   SAME die (resyncs, watchdog refreshes) don't re-roll. */
+   SAME die (resyncs, watchdog refreshes) don't re-roll; a newer reveal or a
+   started placement (cancelReveal) supersedes a running one. */
+let revealSeq = 0;
+function cancelReveal(): void {
+  revealSeq++;
+  ($('#dieStage') as HTMLElement).classList.remove('rolling');
+}
 function revealDie(die: number, who: Player): void {
   const stage = $('#dieStage') as HTMLElement;
   const cur = stage.firstElementChild as HTMLElement | null;
-  const prev = cur ? +(cur.dataset.v ?? 0) : 0;
-  setStageDie(die, who);
-  if (prev === die) return;
-  const gen = S.gen;
+  if (cur && +(cur.dataset.v ?? 0) === die) { setStageDie(die, who); return; }
+  const gen = S.gen, my = ++revealSeq;
   stage.classList.add('rolling');
-  setTimeout(() => {
-    stage.classList.remove('rolling');
-    if (S.gen !== gen) return;
-    stage.classList.add('pop');
-    setTimeout(() => stage.classList.remove('pop'), 320);
-  }, 380);
+  Sfx.roll();
+  const t0 = performance.now();
+  const iv = setInterval(() => {
+    if (S.gen !== gen || revealSeq !== my) { clearInterval(iv); stage.classList.remove('rolling'); return; }
+    if (performance.now() - t0 >= 300) {
+      clearInterval(iv);
+      stage.classList.remove('rolling');
+      setStageDie(die, who);
+      stage.classList.add('pop');
+      setTimeout(() => stage.classList.remove('pop'), 320);
+      vibrate(8);
+      return;
+    }
+    setStageDie(1 + ((Math.random() * 6) | 0), who);
+    Sfx.tick();
+  }, 60);
 }
 
 function autoPlace(): void {
@@ -142,6 +156,7 @@ async function onlinePlace(who: Player, col: number): Promise<void> {
   const die = O.pendingDie;
   if (!die) return;
   stopTimer();
+  cancelReveal();               // a running scramble must not fight the fly animation
   S.busy = true; S.phase = 'anim';
   clearHints();
   // the gate goes up BEFORE the request: the realtime echo of our own move can
@@ -164,8 +179,8 @@ async function onlinePlace(who: Player, col: number): Promise<void> {
   try {
     if (bot) {
       await pause(450);          // a beat before the "opponent" answers
-      setStageDie(bot.die, (1 - O.you) as Player);
-      await pause(350);
+      revealDie(bot.die, (1 - O.you) as Player);   // their roll, fully animated
+      await pause(700);          // the roll lands, then the die flies
       await animateMove((1 - O.you) as Player, bot.col, bot.die);
     }
   } finally { if (O) O.animating = false; }

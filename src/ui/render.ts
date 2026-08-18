@@ -33,7 +33,7 @@ export function buildBoards(){
     // per-row score rail, left of the board — visible only in row modes
     const rc=document.createElement('div');
     rc.className='rowchips'; rc.id=side+'Rows'; rc.setAttribute('aria-hidden','true');
-    rc.innerHTML='<span class="rc"></span>'.repeat(SPEC.rows);
+    rc.innerHTML='<span class="rc"><span class="cs"></span><span class="mx"></span></span>'.repeat(SPEC.rows);
     b.appendChild(rc);
   }
 }
@@ -108,13 +108,16 @@ function updateScores(who){
     if(rail) for(let r=0;r<SPEC.rows;r++){
       // rows mirror on the top half (dice stack toward the centre line)
       const el=rail.children[sideKey(who)==='bot' ? r : SPEC.rows-1-r];
-      let val=0;
-      if(rowswitch) val=rowScore(b,r);
-      else for(let v=1;v<=DICE_FACES;v++){
+      let kmax=1, bonus=0;
+      for(let v=1;v<=DICE_FACES;v++){
         let k=0; for(let c=0;c<SPEC.cols;c++) if(b[c][r]===v) k++;
-        if(k>=2) val+=v*k*k;
+        if(k>kmax) kmax=k;
+        if(k>=2) bonus+=v*k*k;
       }
-      el.textContent=rowswitch ? String(val) : (val ? '+'+val : '');
+      const val=rowswitch ? rowScore(b,r) : bonus;
+      // same anatomy as the column chips: plain value + a ×k badge
+      el.querySelector('.cs').textContent=rowswitch ? String(val) : (val ? String(val) : '');
+      el.querySelector('.mx').textContent=kmax>=2 ? '×'+kmax : '';
       el.classList.toggle('has',val>0);
     }
   }
