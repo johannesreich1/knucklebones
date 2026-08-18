@@ -246,6 +246,40 @@
   box-shadow:0 6px 18px rgba(40,232,255,.3)}
 .lbl{font-size:10px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
 .card{width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px}
+
+/* ---- shared screen header: ‹ pages, ✕ sheets (design: 00-navigation).
+   Reuses the HUD's .ico button; the pad mirrors its width so the title stays
+   optically centred. Pages put the icon left, sheets right — never both. ---- */
+.shead{display:flex;align-items:center;width:100%;max-width:340px;margin:0 auto;flex:0 0 auto}
+.shead .ttl{flex:1;text-align:center;font-size:16px;letter-spacing:.26em;font-weight:900;
+  background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 18px rgba(40,232,255,.3))}
+.shead .pad{width:30px;flex:0 0 auto}
+/* paged overlays pin the header to the top; .pbody centres the rest below it */
+.ov.paged{justify-content:flex-start;overflow-y:auto;
+  padding-top:calc(env(safe-area-inset-top,0px) + 16px)}
+.pbody{display:flex;flex-direction:column;align-items:center;gap:14px;width:100%;
+  margin:auto 0;flex:0 0 auto}
+
+/* the Practice screen's tutorial tease — a quiet card, still a real button */
+.tut-tease{display:flex;align-items:center;gap:10px;width:100%;max-width:340px;text-align:left;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;
+  padding:10px 12px;cursor:pointer;font-family:inherit;color:var(--txt);transition:.15s}
+.tut-tease:active{transform:scale(.97)}
+.tut-tease .tx{display:flex;flex-direction:column;gap:2px}
+.tut-tease .t1{font-size:11.5px;font-weight:800;letter-spacing:.1em;color:var(--txt)}
+.tut-tease .t2{font-size:9.5px;letter-spacing:.1em;color:var(--dim)}
+.tut-tease .die{width:36px;height:36px;--cell:36px;flex:0 0 auto}
+.tut-tease.primary{background:rgba(40,232,255,.06);
+  border-color:color-mix(in srgb,var(--cy) 55%,transparent);
+  box-shadow:0 0 18px rgba(40,232,255,.22);color:var(--txt)}
+
+/* the install sheet's app-icon tile */
+.appface{width:74px;height:74px;border-radius:18px;display:grid;place-items:center;
+  background:linear-gradient(135deg,#17123a,#04263a);border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 12px 30px rgba(0,0,0,.5),0 0 22px rgba(40,232,255,.25)}
+.appface .die{width:44px;height:44px;--cell:44px}
 .rules{max-width:360px;font-size:13.5px;line-height:1.6;color:#c6d3ee;overflow:auto;max-height:62vh;
   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:16px 18px}
 .rules h3{margin:0 0 8px;font-size:12px;letter-spacing:.18em;color:var(--cy);text-transform:uppercase}

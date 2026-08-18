@@ -9,6 +9,7 @@ import { modeIcon } from '../ui/modeicons.ts';
 import { ONLINE_TURN_SECS } from '../config.ts';
 import { S } from '../state.ts';
 import { startTimer, stopTimer } from '../flow/timer.ts';
+import { setLeaveInterceptor } from '../flow/leave.ts';
 import { $, show, hide, sideKey, chipEl } from '../ui/dom.ts';
 import { Sfx, vibrate } from '../ui/audio.ts';
 import { setStageDie } from '../ui/die.ts';
@@ -46,9 +47,32 @@ const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
 const myName = () => O!.you === ME ? O!.names.p1 : O!.names.p2;
 const oppName = () => O!.you === ME ? O!.names.p2 : O!.names.p1;
 
-/* one callback per match end, wired by ui.ts to reopen the online menu */
-let onFinished: ((summary: string) => void) | null = null;
+/* one callback per match end, wired by ui.ts to open the Result screen */
+export interface FinishReport {
+  won: boolean; draw: boolean; forfeit: boolean;
+  my: number; their: number; delta: number | null; opp: string;
+}
+let onFinished: ((r: FinishReport) => void) | null = null;
 export function setFinishHandler(f: typeof onFinished): void { onFinished = f; }
+
+/* the HUD's ✕ during a live online match: first tap arms, a second within 3s
+   abandons (the server forfeits — pvp-claim by the human opponent, lazily by
+   pvp-join for bot matches). Registered via flow/leave so the eagerly-loaded
+   boot never has to import this lazy chunk. */
+let leaveArmed = 0;
+function leaveTap(): boolean {
+  if (!O || O.done) return false;               // no live match — normal quit
+  if (Date.now() - leaveArmed < 3000) { leaveArmed = 0; teardown(); return false; }
+  leaveArmed = Date.now();
+  setStatus('Tap ✕ again to forfeit', S.turn, false);
+  setTimeout(() => {                            // not confirmed: restore the status
+    if (!O || O.done || leaveArmed === 0 || Date.now() - leaveArmed < 2900) return;
+    leaveArmed = 0;
+    const mine = S.turn === O.you;              // the turn clock kept running — no
+    setStatus(mine ? 'Your move' : oppName() + ' thinking', S.turn, !mine);   // free time
+  }, 3000);
+  return true;
+}
 
 export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>): Promise<void> {
   teardown();
@@ -82,6 +106,7 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   fit();
   buildBoards();
   setPlaceHandler(onlinePlace);
+  setLeaveInterceptor(leaveTap);
   O.channel = watchMatch(O.matchId,
     () => { void sync(false); },
     (m) => { void onMatchUpdate(m); });
@@ -316,15 +341,14 @@ function finishUI(m: MatchRow): void {
   const their = (meP1 ? m.p2_score : m.p1_score) ?? (boardTotalMode(S.boards[(1 - O.you) as Player], S.scoring) + btyOf((1 - O.you) as Player));
   const delta = (meP1 ? (m as any).p1_rating_delta : (m as any).p2_rating_delta) as number | null;
   const won = m.winner !== null && ((meP1 && m.winner === m.p1) || (!meP1 && m.winner === m.p2));
-  const head = m.status === 'forfeit'
-    ? (won ? oppName() + ' forfeited — you win!' : 'Forfeited')
-    : (m.winner === null ? 'Dead heat' : won ? 'Victory!' : oppName() + ' takes it');
-  const summary = `${head} · ${my}–${their}` + (delta != null ? ` · ${delta >= 0 ? '+' : ''}${delta} Elo` : '');
   setStatus(won ? 'You win' : m.winner === null ? 'Draw' : oppName() + ' wins', won ? O.you : (1 - O.you) as Player, false);
   S.phase = 'over';
-  const s = summary;
+  const report: FinishReport = {
+    won, draw: m.winner === null, forfeit: m.status === 'forfeit',
+    my, their, delta, opp: oppName(),
+  };
   const cb = onFinished;
-  setTimeout(() => { teardown(); cb?.(s); }, 1400);
+  setTimeout(() => { teardown(); cb?.(report); }, 1400);
 }
 
 export function teardown(): void {
@@ -334,5 +358,7 @@ export function teardown(): void {
   O.channel?.unsubscribe();
   if (O.tick) clearInterval(O.tick);
   setPlaceHandler(null as any);
+  setLeaveInterceptor(null);
+  leaveArmed = 0;
   O = null;
 }

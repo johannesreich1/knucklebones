@@ -113,32 +113,22 @@ out.persist = await page.evaluate(() => ({
 check(out.persist.sound === false && out.persist.numerals === true && out.persist.cls,
       'settings did not persist', out.persist);
 
-// ===== reset record (two-tap confirm) =====
-await page.evaluate(() => {
-  const d = JSON.parse(localStorage.getItem('knucklebones.v1'));
-  Object.assign(d, { wins: 3, losses: 2, best: 44 });
-  localStorage.setItem('knucklebones.v1', JSON.stringify(d));
-});
-await page.reload(); await page.waitForTimeout(600);
-out.recBefore = await page.evaluate(() => document.getElementById('rec').textContent.trim());
-check(/3/.test(out.recBefore), 'seeded record not shown', out.recBefore);
+// ===== settings is a sheet: ✕ header closes it, reset-record is retired =====
 await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#btnPlay'); await page.waitForTimeout(1200);   // hud only reachable in-game
 await page.tap('#btnSettings'); await page.waitForTimeout(300);
-await page.tap('#btnResetStats'); await page.waitForTimeout(200);
-out.armLabel = await page.evaluate(() => document.getElementById('btnResetStats').textContent);
-check(/confirm/i.test(out.armLabel), 'reset not asking for confirmation', out.armLabel);
-// a single tap must NOT have wiped anything
-out.midReset = await page.evaluate(() => window.__kb.S.wins);
-check(out.midReset === 3, 'single tap already wiped the record', out.midReset);
-await page.tap('#btnResetStats'); await page.waitForTimeout(300);
-out.afterReset = await page.evaluate(() => ({
-  wins: window.__kb.S.wins, best: window.__kb.S.best,
-  rec: document.getElementById('rec').textContent.trim(),
-  stored: JSON.parse(localStorage.getItem('knucklebones.v1')).wins,
+out.sheet = await page.evaluate(() => ({
+  reset: !!document.getElementById('btnResetStats'),
+  done: [...document.querySelectorAll('#ovSettings .btn')].some(b => /done/i.test(b.textContent)),
+  x: document.querySelector('#ovSettings .shead #btnCloseSettings')?.textContent ?? '',
+  title: document.querySelector('#ovSettings .shead .ttl')?.textContent ?? '',
 }));
-check(out.afterReset.wins === 0 && out.afterReset.best === 0 && out.afterReset.stored === 0,
-      'reset did not wipe the record', out.afterReset);
+check(!out.sheet.reset, 'Reset record still in Settings', out.sheet);
+check(!out.sheet.done, 'Settings still has a bottom Done button', out.sheet);
+check(out.sheet.x === '✕' && out.sheet.title === 'SETTINGS', 'Settings sheet header wrong', out.sheet);
+await page.tap('#btnCloseSettings'); await page.waitForTimeout(300);
+out.sheetClosed = await page.evaluate(() => !document.getElementById('ovSettings').classList.contains('on'));
+check(out.sheetClosed, 'Settings ✕ did not close the sheet', out.sheetClosed);
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
 await browser.close();

@@ -1,11 +1,7 @@
 <!-- meta name="Settings" group="5 · Sheets" subtitle="A sheet over live context: ✕ closes, toggles apply instantly — no Done button" width=412 height=880 links="Rules" -->
 <style>
-  /* proposed shared header (spec: 00-navigation) — reuses the HUD's .ico */
-  .shead{display:flex;align-items:center;width:100%;max-width:340px;margin:0 auto 10px}
-  .shead .ttl{flex:1;text-align:center;font-size:16px;letter-spacing:.26em;font-weight:900;
-    background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
-    -webkit-background-clip:text;background-clip:text;color:transparent}
-  .shead .pad{width:30px}
+  /* .shead is the app's shared header (src/styles/main.css) — card adds spacing only */
+  .shead{margin-bottom:10px}
   .swrap{display:flex;flex-direction:column;gap:14px;width:100%;max-width:300px;margin:14px auto 0;align-items:stretch}
   .swrap .btn{min-width:0}
 </style>

@@ -48,4 +48,5 @@ export function initInstall(): void {
     }
   });
   tap($('#btnCloseInstall'), () => { Sfx.tap(); hide('#ovInstall'); });
+  tap($('#btnInstallOk'), () => { Sfx.tap(); hide('#ovInstall'); });
 }

@@ -1,11 +1,7 @@
 <!-- meta name="Account" group="3 · Ladder & account" subtitle="Rename, record, sign out — deletion is present but at arm's length" width=412 height=920 links="Home" -->
 <style>
-  /* proposed shared header (spec: 00-navigation) — reuses the HUD's .ico */
-  .shead{display:flex;align-items:center;width:100%;max-width:340px;margin:0 auto}
-  .shead .ttl{flex:1;text-align:center;font-size:16px;letter-spacing:.26em;font-weight:900;
-    background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
-    -webkit-background-clip:text;background-clip:text;color:transparent}
-  .shead .pad{width:30px}
+  /* .shead is the app's shared header (src/styles/main.css) — card adds spacing only */
+  .shead{margin-bottom:10px}
   .awrap{display:flex;flex-direction:column;gap:12px;width:100%;max-width:300px;margin:14px auto 0}
   .acard{display:flex;flex-direction:column;gap:9px;background:rgba(255,255,255,.03);
     border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px}

@@ -31,6 +31,7 @@ import { initInstall } from './ui/install.ts';
 import { coachTap } from './flow/tutorial.ts';
 import { newGame, passTap } from './flow/game.ts';
 import { resumeGame, toMenu, syncSettingsUI, updateResumeButton, updateStatLine } from './flow/menu.ts';
+import { requestLeave } from './flow/leave.ts';
 /* ===================== BOOT ===================== */
 export function boot(embed){
   setEmbed(!!embed);
@@ -49,6 +50,10 @@ export function boot(embed){
   const duel=$('#homeDuel');
   duel.insertBefore(makeDie(5,ME), duel.firstChild);
   duel.appendChild(makeDie(3,AI));
+  // decorative dice on the Practice tutorial tease and the install sheet's tile
+  const tutDie=makeDie(4,ME); tutDie.classList.add('m2');
+  $('#btnTut').insertBefore(tutDie, $('#btnTut').firstChild);
+  $('#installFace').appendChild(makeDie(5,ME));
   refreshHomeChip();
 
   const table=$('#tableEl');
@@ -85,21 +90,6 @@ export function boot(embed){
   tap($('#btnSettings'),()=>{ Sfx.tap(); show('#ovSettings'); });
   tap($('#btnCloseSettings'),()=>{ Sfx.tap(); hide('#ovSettings'); });
   tap($('#btnHow2'),()=>{ Sfx.tap(); hide('#ovSettings'); show('#ovRules'); });
-  let resetArmed=0;
-  tap($('#btnResetStats'),()=>{
-    const b=$('#btnResetStats');
-    if(Date.now()-resetArmed<3000){                    // second tap: actually wipe
-      S.wins=S.losses=S.draws=S.p1=S.p2=S.ties=S.best=0;
-      saveStats(); updateRecord(); updateStatLine(); syncSettingsUI();
-      resetArmed=0; b.textContent='Record cleared';
-      setTimeout(()=>{ b.textContent='Reset record'; },1500);
-    }else{
-      resetArmed=Date.now(); b.textContent='Tap again to confirm';
-      setTimeout(()=>{ if(resetArmed && Date.now()-resetArmed>=2900){
-        b.textContent='Reset record'; resetArmed=0; } },3000);
-    }
-    Sfx.tap();
-  });
   tap($('#coach'),coachTap);
 
 
@@ -118,7 +108,9 @@ export function boot(embed){
   tap($('#btnPlay'),()=>{ Sfx.unlock(); Sfx.tap(); newGame(); });
   tap($('#btnAgain'),()=>{ Sfx.tap(); newGame(); });
   tap($('#btnMenu2'),()=>{ Sfx.tap(); hide('#ovEnd'); updateResumeButton(); show('#ovPractice'); });
-  tap($('#btnMenu'),()=>{ Sfx.tap(); toMenu(); });
+  tap($('#btnEndHome'),()=>{ Sfx.tap(); hide('#ovEnd'); toMenu(); });
+  // the HUD's ✕: an online match intercepts to arm its two-tap forfeit confirm
+  tap($('#btnMenu'),()=>{ Sfx.tap(); if(requestLeave()) return; toMenu(); });
   tap($('#btnHow'),()=>{ Sfx.tap(); show('#ovRules'); });
   // online module (auth, ladder, account) is lazy: the offline game's boot
   // path must never load supabase-js or anything that talks to a backend
@@ -129,6 +121,7 @@ export function boot(embed){
   tap($('#btnAccountHome'),()=>{ Sfx.unlock(); Sfx.tap();
     import('./online/ui.ts').then(m=>m.openOnline('account')); });
   tap($('#btnCloseRules'),()=>{ Sfx.tap(); hide('#ovRules'); });
+  tap($('#btnRulesOk'),()=>{ Sfx.tap(); hide('#ovRules'); });
 
   // desktop: 1/2/3 place, Enter starts / replays
   document.addEventListener('keydown',e=>{

@@ -10,7 +10,7 @@ export function supa(): SupabaseClient {
   return client;
 }
 
-export interface Profile { id: string; nickname: string; rating: number; }
+export interface Profile { id: string; nickname: string; rating: number; created_at?: string; }
 export interface MatchRow {
   id: string; p1: string; p2: string; status: 'active' | 'done' | 'forfeit';
   turn: 0 | 1; winner: string | null; p1_score: number | null; p2_score: number | null;
@@ -41,11 +41,23 @@ const PROFILE_CACHE = 'knucklebones.online.profile';
 export async function myProfile(): Promise<Profile | null> {
   const user = await currentUser();
   if (!user) return null;
-  const { data } = await supa().from('profiles').select('id, nickname, rating').eq('id', user.id).maybeSingle();
+  const { data } = await supa().from('profiles').select('id, nickname, rating, created_at').eq('id', user.id).maybeSingle();
   try {
     if (data) localStorage.setItem(PROFILE_CACHE, JSON.stringify({ nickname: data.nickname, rating: data.rating }));
   } catch { /* forgetful host */ }
   return data as Profile | null;
+}
+
+/* lifetime W–L for the Account card, counted from the matches I took part in */
+export async function myRecord(): Promise<{ wins: number; losses: number; draws: number } | null> {
+  const user = await currentUser();
+  if (!user) return null;
+  const { data } = await supa().from('matches').select('winner, status')
+    .or(`p1.eq.${user.id},p2.eq.${user.id}`).neq('status', 'active');
+  if (!data) return null;
+  const wins = data.filter((r) => r.winner === user.id).length;
+  const draws = data.filter((r) => r.winner === null).length;
+  return { wins, losses: data.length - wins - draws, draws };
 }
 
 function clearProfileCache(): void {

@@ -1,11 +1,7 @@
 <!-- meta name="Leaderboard" group="3 · Ladder & account" subtitle="Elo ladder, top three lifted, your row glows cyan" width=412 height=920 links="Home" -->
 <style>
-  /* proposed shared header (spec: 00-navigation) — reuses the HUD's .ico */
-  .shead{display:flex;align-items:center;width:100%;max-width:340px;margin:0 auto}
-  .shead .ttl{flex:1;text-align:center;font-size:16px;letter-spacing:.26em;font-weight:900;
-    background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
-    -webkit-background-clip:text;background-clip:text;color:transparent}
-  .shead .pad{width:30px}
+  /* .shead is the app's shared header (src/styles/main.css) — card adds spacing only */
+  .shead{margin-bottom:10px}
   .lbh{margin:6px 0 12px;text-align:center}
   .lbh .lbl{text-align:center}
   .ladder{display:flex;flex-direction:column;gap:5px;width:100%;max-width:320px;margin:0 auto}

@@ -1,6 +1,6 @@
 /* Online screens — same design language as the game's overlays. Loaded only
    with the lazy online chunk. */
-#ovOnline .panel{width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px}
+#ovOnline .panel{width:100%;max-width:340px;display:flex;flex-direction:column;gap:10px;margin:auto 0}
 #ovOnline input{padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
   background:rgba(255,255,255,.05);color:var(--txt);font-size:14px;font-family:inherit;outline:none}
 #ovOnline input:focus-visible{outline:2px solid var(--cy);outline-offset:1px}
@@ -8,14 +8,72 @@
 #ovOnline .who{font-size:13px;letter-spacing:.12em;text-align:center;color:var(--txt)}
 #ovOnline .who b{color:var(--cy)}
 #ovOnline .who .rt{color:var(--gold);font-weight:800}
-#ovOnline .lb{max-height:52vh;overflow:auto;display:flex;flex-direction:column;gap:4px;
-  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:10px}
-#ovOnline .lb .row{display:flex;gap:8px;align-items:center;font-size:13px;padding:4px 6px}
-#ovOnline .lb .row .rank{color:var(--dim);min-width:24px;text-align:right}
-#ovOnline .lb .row .nm{flex:1;font-weight:800}
+/* ---- the ladder (design 30): row cards, top three lifted gold, me in cyan */
+#ovOnline .lb{max-height:56vh;overflow:auto;display:flex;flex-direction:column;gap:5px}
+#ovOnline .lb .row{display:flex;gap:10px;align-items:center;font-size:13px;padding:9px 12px;
+  border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
+#ovOnline .lb .row .rank{color:var(--dim);min-width:22px;text-align:right;font-weight:800}
+#ovOnline .lb .row .nm{flex:1;font-weight:800;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #ovOnline .lb .row .rt{color:var(--gold);font-weight:900}
-#ovOnline .lb .row .ws{color:var(--dim);font-size:11px}
+#ovOnline .lb .row .ws{color:var(--dim);font-size:10.5px}
+#ovOnline .lb .row.top{background:rgba(255,209,102,.05);border-color:rgba(255,209,102,.18)}
+#ovOnline .lb .row.top .rank{color:var(--gold);text-shadow:0 0 10px rgba(255,209,102,.6)}
+#ovOnline .lb .row.me{background:rgba(40,232,255,.07);border-color:rgba(40,232,255,.35)}
 #ovOnline .lb .row.me .nm{color:var(--cy)}
+
+/* ---- matchmaking (design 21): bouncing pair, animated search, big clock */
+#onQueue{align-items:center;gap:16px}
+.qdice{display:flex;gap:14px}
+.qdice .die{width:58px;height:58px;--cell:58px;animation:qspin 2.2s ease-in-out infinite}
+.qdice .die:nth-child(2){animation-delay:.35s}
+@keyframes qspin{0%,100%{transform:rotate(-6deg) translateY(0)}50%{transform:rotate(6deg) translateY(-7px)}}
+.qmsg{font-size:11px;letter-spacing:.2em;color:var(--txt);text-transform:uppercase;text-align:center}
+.qmsg::after{content:"";animation:dots 1.2s steps(4,end) infinite}
+.qtime{font-size:24px;font-weight:900;color:var(--cy);text-shadow:0 0 16px rgba(40,232,255,.5)}
+.qsub{font-size:10px;letter-spacing:.14em;color:var(--dim);text-align:center;min-height:13px}
+
+/* ---- account (design 31): identity card, stats, danger at arm's length */
+.acard{display:flex;flex-direction:column;gap:9px;background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px}
+.awho{display:flex;align-items:center;gap:12px}
+.awho .die{width:40px;height:40px;--cell:40px;flex:0 0 auto}
+.awho .meta{display:flex;flex-direction:column;gap:2px;min-width:0}
+.awho .nm{font-size:15px;font-weight:900;letter-spacing:.06em;color:var(--cy);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.awho .sub{font-size:9.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;
+  margin-top:0}   /* .ov .sub pulls itself up -8px; the identity card must not */
+.statrow{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.1em;color:var(--dim)}
+.statrow b{color:var(--gold);font-weight:900;font-size:14px}
+.statrow b.rec2{color:var(--txt)}
+.danger{margin-top:10px;display:flex;flex-direction:column;gap:5px}
+.danger .btn{border-color:rgba(255,47,160,.35);color:#ff9ccb;width:100%;min-width:0}
+.dnote{font-size:9.5px;letter-spacing:.1em;color:var(--dim);text-align:center}
+
+/* ---- match result (design 23): the Elo delta is the trophy moment */
+#onResult{align-items:center;gap:14px}
+.rtitle{font-size:29px;letter-spacing:.2em;font-weight:900;text-align:center;
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.rtitle.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
+  filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
+.rtitle.lose{background-image:linear-gradient(100deg,var(--mg),#fff 55%,#ff8a3d);
+  filter:drop-shadow(0 0 26px rgba(255,47,160,.45))}
+.rtitle.draw{background-image:linear-gradient(100deg,#9fb2d8,#fff 50%,#9fb2d8);
+  filter:drop-shadow(0 0 22px rgba(159,178,216,.35))}
+.rsub{font-size:11px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;
+  margin-top:-8px;text-align:center}
+.rline{display:flex;align-items:center;gap:16px;font-weight:800}
+.rline .you{color:var(--cy);font-size:32px;font-weight:900;text-shadow:0 0 14px rgba(40,232,255,.5)}
+.rline .cpu{color:var(--mg);font-size:32px;font-weight:900;text-shadow:0 0 14px rgba(255,47,160,.5)}
+.rline .vs{color:var(--dim);font-size:12px;letter-spacing:.2em}
+.rline .sc{display:flex;flex-direction:column;align-items:center;gap:1px}
+.rline .sc em{font-style:normal;font-size:9.5px;letter-spacing:.18em;color:var(--dim);
+  text-transform:uppercase;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.elochip{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:900;color:#0a0410;
+  background:var(--gold);border-radius:99px;padding:7px 16px;
+  box-shadow:0 0 24px rgba(255,209,102,.55)}
+.elochip small{font-weight:800;font-size:9px;letter-spacing:.2em}
+.rrank{font-size:10.5px;letter-spacing:.14em;color:var(--dim)}
+.rrank b{color:var(--gold)}
 
 /* ===================== THE MODE WHEEL =====================
    Equal segments, weighted spin (odds live server-side in modes.ts). */

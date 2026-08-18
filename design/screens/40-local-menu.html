@@ -1,12 +1,8 @@
 <!-- meta name="Practice — local play" group="4 · Local flow" subtitle="The old title-screen options, one level deeper: CPU level, seating, timer" width=412 height=920 links="Home, Game (local)" -->
 <style>
   /* .seg / .lbl / .tiny / .btn come from the app CSS; below is card-only */
-  /* proposed shared header (spec: 00-navigation) — reuses the HUD's .ico */
-  .shead{display:flex;align-items:center;width:100%;max-width:340px;margin:0 auto}
-  .shead .ttl{flex:1;text-align:center;font-size:16px;letter-spacing:.26em;font-weight:900;
-    background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
-    -webkit-background-clip:text;background-clip:text;color:transparent}
-  .shead .pad{width:30px}
+  /* .shead is the app's shared header (src/styles/main.css) — card adds spacing only */
+  .shead{margin-bottom:10px}
   .pwrap{display:flex;flex-direction:column;gap:12px;width:100%;max-width:300px;margin:10px auto 0}
   .tut-tease{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.03);
     border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:10px 12px;margin-top:6px}

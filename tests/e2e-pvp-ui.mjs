@@ -73,11 +73,17 @@ try {
   check(fa.over && fb.over, 'match did not finish on both screens', { fa: fa.over, fb: fb.over, rounds });
   // boards agreed at the end
   check(fa.b0 === fb.b0 && fa.b1 === fb.b1, 'boards diverged between players', { a: fa, b: fb });
-  const sumA = await A.textContent('#onWho');
-  check(/Elo/.test(sumA), 'end summary missing Elo delta', sumA);
+  // the finish lands on the Result screen: Elo chip + Play again / Home
+  const sumA = await A.evaluate(() => ({
+    panel: !document.getElementById('onResult').hidden,
+    title: document.getElementById('rTitle').textContent,
+    elo: document.getElementById('rElo').textContent,
+  }));
+  check(sumA.panel, 'result panel not shown after the match', sumA);
+  check(/ELO/.test(sumA.elo), 'end summary missing Elo delta', sumA);
 
-  // ---- bot match: alice alone, waits past the bot threshold ----
-  await A.tap('#btnPlayOnline');
+  // ---- bot match: alice alone via Play again, waits past the bot threshold ----
+  await A.tap('#btnResultAgain');
   const t1 = Date.now();
   while (Date.now() - t1 < 25000) { if (await inMatch(A)) break; await A.waitForTimeout(500); }
   check(await inMatch(A), 'bot match did not start');
@@ -99,6 +105,6 @@ try {
   check((await snap(A)).over, 'bot match did not finish', { brounds });
 
   check(A.errs.length === 0 && B.errs.length === 0, 'page errors', { a: A.errs.slice(0, 3), b: B.errs.slice(0, 3) });
-  console.log(JSON.stringify({ rounds, brounds, summaryA: sumA?.slice(0, 80), problems }, null, 2));
+  console.log(JSON.stringify({ rounds, brounds, summaryA: sumA, problems }, null, 2));
 } finally { await browser.close(); server.kill(); }
 process.exit(problems.length ? 1 : 0);

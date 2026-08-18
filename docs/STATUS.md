@@ -10,9 +10,9 @@ was decided, and what's still open.*
 |---|---|
 | **Web** | **LIVE** at https://knucklebones-asg.pages.dev — Cloudflare Pages, auto-deploys every push to `main` |
 | **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0008, RLS + column-grant hardened |
-| **Edge Functions** | `pvp-join` v2, `pvp-move` v3, `pvp-claim` v2, `account-delete` v1 — all ACTIVE, nothing dead deployed |
+| **Edge Functions** | `pvp-join` v10, `pvp-move` v7, `pvp-claim` v6, `account-delete` v1 — all ACTIVE, nothing dead deployed |
 | **CI** | GitHub Actions: build + full test gate on every push — green through current `main` |
-| **Design system** | 37 cards (all screens × 4 device sizes) in the Claude Design project "Knucklebones", generated from the app's real CSS |
+| **Design system** | 66 cards (every screen and sheet × 4 device sizes + the `00-navigation` spec) in the Claude Design project "Knucklebones", generated from the app's real CSS |
 | **Signups** | **Not yet open to the public** — SMTP not configured (see Open items) |
 
 Verified live on 2026-08-17: build tag on the deployed page matches the local
@@ -147,6 +147,29 @@ until decided.
 Capacitor wrappers for iOS + Android, Sign in with Apple (required if any
 other OAuth is offered), in-app account deletion (already implemented
 server-side via `account-delete`), privacy policy for both stores.
+
+### 5. The navigation pass (2026-08-18)
+
+One model, app-wide (spec: the `00-navigation` design card): **pages** you
+travel into from Home (Practice, Sign in, Ladder, Account) wear a `‹` in the
+HUD's icon-button style top-left and always return Home; **sheets** floating
+over live context (Settings, How to play, Install) wear a top-right `✕`
+(reading sheets keep one bottom GOT IT; Settings lost its Done and the
+retired Reset-record button). The bottom of every screen holds actions only,
+exactly one primary. The shared `.shead` header lives in `src/styles/main.css`
+and the design cards ride it by construction.
+
+Online IA flattened: the ONLINE menu panel is gone — Home *is* the online
+menu, deep links go straight to their panel, and sign-in continues to
+wherever the tap was headed. Matchmaking got its design screen (bouncing
+dice, honest clock, widening message) and **Cancel is the only exit — it
+truly leaves the queue**, closing a real hazard where dismissing the overlay
+kept the poll running and could yank the player into a match from Home.
+Match results land on a proper Result screen (scores, Elo delta chip, fresh
+ladder rank, Play again / Home) instead of text glued onto a menu. In-match,
+`≡` became `✕`: practice quits instantly, online the first tap arms
+"Tap ✕ again to forfeit" (the Delete-account idiom). The Account panel grew
+its identity card (die, nickname, member-since, rating, lifetime record).
 
 ### 4. Done in the 2026-08-17 polish pass
 
