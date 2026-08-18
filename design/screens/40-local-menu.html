@@ -23,11 +23,16 @@
       <button style="--mh:#b18cff"><svg class="mico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4.4" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="13" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="8.7" y="4.4" width="6.6" height="6.6" rx="1.8"/><circle class="f" cx="12" cy="7.7" r="1.2"/></svg></button>
     </div>
     <div class="tiny" style="text-align:left">CLASSIC — The pure duel. Columns multiply.</div>
-    <!-- spells are part of choosing WHAT GAME THIS IS, so the switch lives here
-         beside the mode picker rather than in the Settings sheet -->
-    <div class="lbl">Spells</div>
-    <div class="seg"><button class="on">ON</button><button>OFF</button></div>
-    <div class="tiny" style="text-align:left">One rune each: swap a column with your opponent, once per game. Ranked matches never use them.</div>
+    <!-- Spells are part of choosing WHAT GAME THIS IS, so the pick lives here
+         under the mode picker — and it IS the mode picker: same component, same
+         icon row, and each slice wears the rune the game itself draws.
+         NONE is the first slice and the default. -->
+    <div class="lbl">Spell</div>
+    <div class="modepick">
+      <button class="on" style="--mh:#8ea3c0"><svg class="sico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M6.1 6.1 17.9 17.9"/></svg></button>
+      <button style="--mh:#b18cff"><svg class="sico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><rect x="16.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><path d="M9 9.4h6M12.8 7.4l2.4 2-2.4 2"/><path d="M15 14.6H9M11.2 12.6l-2.4 2 2.4 2"/></svg></button>
+    </div>
+    <div class="tiny" style="text-align:left">NONE — No spells, the pure game.</div>
     <button class="btn primary" style="margin-top:8px">Play</button>
     <div class="tiny" style="text-align:center;margin-top:4px">Offline play never touches your online rating</div>
   </div>

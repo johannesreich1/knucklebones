@@ -40,17 +40,18 @@ function caster(): Player | null {
 }
 
 export function chargesOf(who: Player, id: string): number {
-  return S.spellsOn ? (S.spellCharges[who][id] ?? 0) : 0;
+  return S.spellCharges[who][id] ?? 0;
 }
 /* was this seat dealt spells at all this game? (an empty hand hides the rail) */
 function dealt(who: Player): boolean {
-  return S.spellsOn && Object.keys(S.spellCharges[who]).length > 0;
+  return Object.keys(S.spellCharges[who]).length > 0;
 }
 
-/* A new local game deals both seats their charges. The tutorial deals none: it
-   is a scripted lesson about the base game, and a spell would break its script. */
+/* A new local game deals both seats the spell the OFFLINE screen picked — NONE
+   deals nothing, and so does the tutorial: it is a scripted lesson about the
+   base game, and a spell would break its script. */
 export function resetSpells(): void {
-  const hand = () => (S.tut ? {} : freshCharges());
+  const hand = () => (S.tut ? {} : freshCharges(S.spell));
   S.spellCharges = [hand(), hand()];
   disarm();
   renderSpells();
@@ -73,6 +74,7 @@ export function renderSpells(): void {
   for (const s of SPELLS) {
     const b = bar.querySelector<HTMLButtonElement>('[data-spell="' + s.id + '"]');
     if (!b) continue;
+    b.hidden = !(s.id in S.spellCharges[who]);   // the rail carries what was BROUGHT
     const left = chargesOf(who, s.id);
     b.classList.toggle('spent', left <= 0);
     b.classList.toggle('ready', left > 0 && live);

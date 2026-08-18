@@ -30,7 +30,9 @@ import { tap, boardDown, boardUp, clearPress, commitColumn } from './ui/input.ts
 import { initInstall } from './ui/install.ts';
 import { coachTap } from './flow/tutorial.ts';
 import { newGame, passTap } from './flow/game.ts';
-import { castArmed, disarm } from './flow/spells.ts';
+import { castArmed, disarm, renderSpells } from './flow/spells.ts';
+import { SPELLS } from './core/spells.ts';
+import { spellIcon, spellHue } from './ui/spellicons.ts';
 import { toMenu, syncSettingsUI, updateStatLine } from './flow/menu.ts';
 import { requestLeave } from './flow/leave.ts';
 import { openModes } from './ui/modesview.ts';
@@ -97,27 +99,45 @@ export function boot(embed){
     syncSettingsUI(); updateRecord(); saveStats();
     Sfx.unlock(); Sfx.tap();
   });
-  // the OFFLINE view's game-mode picker: every wheel mode, playable locally
-  const pick=$('#modePick');
-  for(const m of MODES){
-    const b=document.createElement('button');
-    b.type='button'; b.dataset.m=String(m.mode);
-    b.style.setProperty('--mh',modeHue(m.id));
-    b.setAttribute('aria-label',m.name);
-    b.innerHTML=modeIcon(m.id,16);
-    pick.appendChild(b);
-  }
-  const syncModePick=()=>{
-    pick.querySelectorAll('button').forEach(b=>b.classList.toggle('on', +b.dataset.m===S.localMode));
-    const m=modeByEnum(S.localMode);
-    $('#modePickInfo').textContent=m.name+' — '+m.blurb;
+  /* The OFFLINE view's icon pickers. ONE component, two rows: a strip of
+     hued icon buttons plus the line under it that names the current choice.
+     Items are {v, hue, icon, name, blurb}; the caller owns where the value
+     lives, so game mode and spell differ by their list and nothing else. */
+  const pickerRow=(sel,items,read,write)=>{
+    const strip=$(sel), info=$(sel+'Info');
+    for(const it of items){
+      const b=document.createElement('button');
+      b.type='button'; b.dataset.v=it.v;
+      b.style.setProperty('--mh',it.hue);
+      b.setAttribute('aria-label',it.name);
+      b.innerHTML=it.icon;
+      strip.appendChild(b);
+    }
+    const sync=()=>{
+      const cur=String(read());
+      strip.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.v===cur));
+      const it=items.find(i=>i.v===cur) || items[0];
+      info.textContent=it.name+' — '+it.blurb;
+    };
+    tap(strip,e=>{
+      const b=e.target.closest && e.target.closest('button'); if(!b) return;
+      write(b.dataset.v); saveStats(); sync();
+      Sfx.unlock(); Sfx.tap();
+    });
+    sync();
+    return sync;
   };
-  syncModePick();
-  tap(pick,e=>{
-    const b=e.target.closest && e.target.closest('button'); if(!b) return;
-    S.localMode=+b.dataset.m; saveStats(); syncModePick();
-    Sfx.unlock(); Sfx.tap();
-  });
+  // every wheel mode, playable locally
+  pickerRow('#modePick',
+    MODES.map(m=>({v:String(m.mode), hue:modeHue(m.id), icon:modeIcon(m.id,16), name:m.name, blurb:m.blurb})),
+    ()=>S.localMode, v=>{ S.localMode=+v; });
+  // ...and which spell you bring, NONE first — the same row, the same rune icon
+  // the game itself draws, so the picker and the rail can never disagree
+  pickerRow('#spellPick',
+    [{v:'', hue:spellHue('none'), icon:spellIcon('none',16), name:'NONE',
+      blurb:'No spells — the pure game.'},
+     ...SPELLS.map(s=>({v:s.id, hue:spellHue(s.id), icon:spellIcon(s.id,16), name:s.name, blurb:s.blurb}))],
+    ()=>S.spell, v=>{ S.spell=v; disarm(); renderSpells(); });
 
   bindSeg('#modeSeg','m', v=>{ S.mode=v; });
   bindSeg('#diffSeg','d', v=>{ S.diff=v; });
@@ -125,9 +145,6 @@ export function boot(embed){
   bindSeg('#seatSeg','seat',v=>{ S.seat=v; });
   bindSeg('#sndSeg','s',  v=>{ S.sound=v==='1'; });
   bindSeg('#faceSeg','f', v=>{ S.numerals=v==='nums'; });
-  // spells are optional and chosen where the game is set up, beside the game
-  // mode: OFF puts the table back exactly as it was
-  bindSeg('#spellSeg','sp',v=>{ S.spellsOn=v==='1'; if(!S.spellsOn) disarm(); });
   tap($('#btnPlay'),()=>{ Sfx.unlock(); Sfx.tap(); newGame(); });
   tap($('#btnAgain'),()=>{ Sfx.tap(); newGame(); });
   tap($('#btnMenu2'),()=>{ Sfx.tap(); hide('#ovEnd'); show('#ovPractice'); });

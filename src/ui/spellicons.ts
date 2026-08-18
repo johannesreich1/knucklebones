@@ -2,6 +2,8 @@
 // currentColor, keyed off the registry's stable ids, so the shared core stays
 // free of markup and a spell can be re-skinned without touching its rules.
 const PATHS: Record<string, string> = {
+  /* NONE: the picker's first slice — no rune at all */
+  none: '<circle cx="12" cy="12" r="8.4"/><path d="M6.1 6.1 17.9 17.9"/>',
   /* two columns trading places — one arrow each way between them. The stacks
      are kept narrow so the arrows own the middle: at 22px the gap is what
      reads, not the outlines. */
@@ -11,8 +13,9 @@ const PATHS: Record<string, string> = {
       + '<path d="M15 14.6H9M11.2 12.6l-2.4 2 2.4 2"/>',
 };
 
-/* one hue per spell: the rune's glow, its ring and its dragged ghost */
-const HUES: Record<string, string> = { swap: '#b18cff' };
+/* one hue per spell: the rune's glow, its ring, its dragged ghost and its
+   slice in the picker. NONE wears the neutral grey CLASSIC uses. */
+const HUES: Record<string, string> = { none: '#8ea3c0', swap: '#b18cff' };
 
 export function spellHue(id: string): string { return HUES[id] ?? '#b18cff'; }
 

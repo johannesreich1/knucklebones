@@ -61,12 +61,13 @@ export const S = {
   pool: null as number[] | null,
   /* BOUNTY mode's banked +1s per Player — permanent, survives destruction */
   bounty: [0, 0] as [number, number],
-  /* SPELLS (flow/spells) — an OPTIONAL layer over local play. spellsOn is the
-     persisted preference; with it off the game is exactly what it was.
-     spellCharges holds casts LEFT per player for this game, keyed by spell id;
-     an empty hand means this seat holds no spells at all (ranked, tutorial,
-     preference off). spellArmed is the spell waiting for a target. */
-  spellsOn: true,
+  /* SPELLS (flow/spells) — an OPTIONAL layer over local play. `spell` is the
+     OFFLINE screen's pick, exactly like localMode picks the game mode: '' is
+     NONE and the game is then what it always was. spellCharges holds casts
+     LEFT per player for this game, keyed by spell id; an empty hand means this
+     seat holds no spells at all (NONE, ranked, tutorial) and is the ONE thing
+     the runtime asks. spellArmed is the spell waiting for a target. */
+  spell: '',
   spellCharges: [{}, {}] as [Record<string, number>, Record<string, number>],
   spellArmed: null as string | null
 };

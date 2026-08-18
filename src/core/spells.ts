@@ -61,11 +61,11 @@ export function spellById(id: string | null | undefined): SpellSpec | null {
   return SPELLS.find((s) => s.id === id) ?? null;
 }
 
-/* One player's opening hand of charges. An EMPTY object is the honest way to
-   say "this seat holds no spells" — the tutorial, ranked play and the layer
-   switched off all deal exactly that. */
-export function freshCharges(): Record<string, number> {
-  const c: Record<string, number> = {};
-  for (const s of SPELLS) c[s.id] = s.uses;
-  return c;
+/* One player's opening hand: the chosen spell, with its uses. An EMPTY object
+   is the honest way to say "this seat holds no spells" — NONE picked, the
+   tutorial and ranked play all deal exactly that, and every entry point in the
+   runtime reads the hand rather than asking a separate on/off flag. */
+export function freshCharges(id: string | null | undefined): Record<string, number> {
+  const s = spellById(id);
+  return s ? { [s.id]: s.uses } : {};
 }

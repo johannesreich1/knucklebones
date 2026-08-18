@@ -20,9 +20,18 @@ const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m 
   }
   check(spellById('nonsense') === null, 'unknown id is null, never a silent fallback');
   check(spellById(null) === null, 'null id is null');
-  const hand = freshCharges();
-  check(SPELLS.every((s) => hand[s.id] === s.uses), 'a fresh hand deals every spell its uses', hand);
-  check(Object.keys(freshCharges()).length === SPELLS.length, 'no stray keys in a hand');
+  // a hand holds the ONE spell that was picked, with its uses — nothing else
+  for (const s of SPELLS) {
+    const hand = freshCharges(s.id);
+    check(hand[s.id] === s.uses, 'a hand must deal the picked spell its uses: ' + s.id, hand);
+    check(Object.keys(hand).length === 1, 'a hand holds exactly what was brought: ' + s.id, hand);
+  }
+  // NONE, and anything this build does not recognise, deal an EMPTY hand — the
+  // one thing the runtime asks before showing a rail or allowing a cast
+  for (const none of ['', 'nonsense', null, undefined]) {
+    check(Object.keys(freshCharges(none)).length === 0, 'must deal an empty hand: ' + JSON.stringify(none),
+      freshCharges(none));
+  }
 }
 
 /* ---- COLUMN SWAP: the effect ---- */

@@ -3,6 +3,7 @@
 // Storage is unavailable in some embeds (sandboxed iframes, private modes).
 // Every access is guarded: the game simply forgets between sessions there.
 import { S, DIFFS, MODES, TIMERS, SEATS, oneOf } from './state.ts';
+import { spellById } from './core/spells.ts';
 
 const Store = {
   KEY: 'knucklebones.v1',
@@ -19,7 +20,7 @@ export function saveStats(): void {
                 p1: S.p1, p2: S.p2, ties: S.ties,
                 best: S.best, diff: S.diff, mode: S.mode, sound: S.sound,
                 numerals: S.numerals, timer: S.timer, seat: S.seat, tutDone: S.tutDone,
-                localMode: S.localMode, spellsOn: S.spellsOn });
+                localMode: S.localMode, spell: S.spell });
 }
 
 export function loadStats(): void {
@@ -32,7 +33,8 @@ export function loadStats(): void {
   S.seat = oneOf(SEATS, d.seat, S.seat);
   if (typeof d.sound === 'boolean') S.sound = d.sound;
   if (typeof d.numerals === 'boolean') S.numerals = d.numerals;
-  if (typeof d.spellsOn === 'boolean') S.spellsOn = d.spellsOn;
+  // '' is NONE; any other value must still be a spell this build knows about
+  if (d.spell === '' || spellById(d.spell)) S.spell = d.spell;
   if (typeof d.tutDone === 'boolean') S.tutDone = d.tutDone;
   if (Number.isInteger(d.localMode) && d.localMode >= 0 && d.localMode <= 6) S.localMode = d.localMode;
 }

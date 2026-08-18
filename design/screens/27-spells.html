@@ -84,10 +84,11 @@
     would buy nothing.<br>
     <b>Cost.</b> <span class="k">One cast per player, per game.</span> The spent rune stays
     on the rail, greyed: a rune that vanished would read as a bug rather than as a cost.<br>
-    <b>Never.</b> Ranked matches (the server replays a plain move log), the tutorial
-    (a scripted lesson), or with <code>OFFLINE → Spells → OFF</code> — the switch sits
-    beside the game-mode picker, where the game is set up, and OFF leaves exactly the
-    table that shipped before spells existed.<br>
+    <b>Chosen, not toggled.</b> The OFFLINE screen picks a spell the way it picks a game
+    mode — the same icon row, each slice wearing the rune the game draws, <code>NONE</code>
+    first and default. Ranked matches (the server replays a plain move log) and the
+    tutorial (a scripted lesson) always deal NONE, and NONE is exactly the table that
+    shipped before spells existed.<br>
     <b>Adding one.</b> An object in <code>core/spells.ts</code> — id, uses, legality, effect —
     plus its icon path in <code>ui/spellicons.ts</code>. The rail, the gestures, the charge
     accounting and the CSS never learn its name.

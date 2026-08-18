@@ -19,11 +19,43 @@ try {
   page.on('pageerror', e => problems.push('PAGEERROR: ' + e.message));
   await page.goto(F); await page.waitForTimeout(400);
 
+  /* ---------- 0. the picker: NONE by default, one slice per spell ----------
+     Same component as the game-mode row, and the slice wears the SAME rune the
+     game draws — so what you pick and what lands on the rail cannot disagree. */
+  await page.tap('#btnVsCpu'); await page.waitForTimeout(300);
+  out.picker = await page.evaluate(() => {
+    const strip = document.getElementById('spellPick');
+    const bs = [...strip.querySelectorAll('button')];
+    return {
+      slices: bs.length, on: bs.findIndex(b => b.classList.contains('on')),
+      values: bs.map(b => b.dataset.v),
+      icons: bs.map(b => !!b.querySelector('svg')),
+      info: document.getElementById('spellPickInfo').textContent,
+      pick: window.__kb.S.spell,
+      sameComponent: strip.className === document.getElementById('modePick').className,
+    };
+  });
+  check(out.picker.pick === '' && out.picker.on === 0, 'the spell picker must default to NONE', out.picker);
+  check(out.picker.slices >= 2 && out.picker.values[0] === '', 'NONE is the first slice', out.picker);
+  check(out.picker.icons.every(Boolean), 'every slice carries its icon', out.picker);
+  check(/^NONE — /.test(out.picker.info), 'NONE needs its explanation', out.picker.info);
+  check(out.picker.sameComponent, 'the spell row must reuse the game-mode row', out.picker);
+  // picking the spell names it, with its own blurb
+  await page.tap('#spellPick button[data-v="swap"]'); await page.waitForTimeout(200);
+  out.picked = await page.evaluate(() => ({
+    pick: window.__kb.S.spell,
+    on: document.querySelector('#spellPick button.on')?.dataset.v,
+    info: document.getElementById('spellPickInfo').textContent,
+  }));
+  check(out.picked.pick === 'swap' && out.picked.on === 'swap', 'picking a spell did not take', out.picked);
+  check(/^COLUMN SWAP — /.test(out.picked.info), 'a picked spell needs its name and line', out.picked.info);
+  await page.evaluate(() => window.__kb.goHome());
+
   /* start a two-player face-to-face game: no CPU reply and no hand-off card
      racing the assertions, and no turn clock auto-placing under them */
   const newGame = (opts = {}) => page.evaluate((o) => {
     const k = window.__kb;
-    k.S.spellsOn = o.spellsOn !== false;
+    k.S.spell = o.spell === undefined ? 'swap' : o.spell;   // the OFFLINE screen's pick
     k.S.timer = 0; k.S.localMode = 0; k.S.mode = 'duo'; k.S.seat = 'face';
     k.newGame(o.tutorial ? { tutorial: true } : undefined);
   }, opts);
@@ -164,12 +196,13 @@ try {
   out.ended = await look();
   check(out.ended.end, 'a swap that filled a grid did not end the game', out.ended);
 
-  /* ---------- 8. OFF is really off: the table is the old table ---------- */
-  await newGame({ spellsOn: false }); check(await waitChoose(), 'game never reached choose (off)');
+  /* ---------- 8. NONE is really none: the table is the old table ---------- */
+  await newGame({ spell: '' }); check(await waitChoose(), 'game never reached choose (none)');
   await table([[6, 6], [3], []], [[2], [5], []]);
   out.off = await look();
-  check(out.off.barHidden && !out.off.runeShown, 'the rune survived the OFF switch', out.off);
-  check(!out.off.casting, 'the board is still in casting with spells off', out.off);
+  check(out.off.charges === '[{},{}]', 'NONE still dealt a hand', out.off.charges);
+  check(out.off.barHidden && !out.off.runeShown, 'the rune survived the NONE pick', out.off);
+  check(!out.off.casting, 'the board is still in casting with no spell picked', out.off);
   out.offCast = await page.evaluate(async () => {
     const k = window.__kb;
     return { cast: await k.spells.cast('swap', 0), mine: JSON.stringify(k.S.boards[1]) };

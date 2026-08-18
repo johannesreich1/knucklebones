@@ -28,9 +28,8 @@ export function syncSettingsUI(){
   segOn('#seatSeg','seat',S.seat);
   segOn('#sndSeg','s', S.sound?'1':'0');
   segOn('#faceSeg','f', S.numerals?'nums':'pips');
-  segOn('#spellSeg','sp', S.spellsOn?'1':'0');
   document.documentElement.classList.toggle('numerals',S.numerals);
-  renderSpells();     // the rail appears/disappears the moment the toggle moves
+  renderSpells();     // the rail follows whatever hand the current game holds
 }
 /* leaving a game in progress ends it — offline games are quick by design */
 export function toMenu(){

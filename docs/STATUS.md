@@ -117,11 +117,17 @@ Structure, because more spells are coming:
   gestures, the cast animation. Every input path funnels through one `cast()`,
   so legality is asked exactly once and a spell can never half-happen.
 - Charges are dealt in exactly one place (`resetSpells()` from `newGame`), so
-  the layer is optional by construction: **ranked, the tutorial and
-  `OFFLINE → Spells → OFF` all deal an empty hand**, the rail hides and every
-  entry point no-ops. The switch sits beside the game-mode picker on the
-  offline setup screen — spells are part of choosing what game this is, not a
-  device preference. Ranked can never cast — the server validates by
+  the layer is optional by construction: **ranked, the tutorial and the NONE
+  pick all deal an empty hand**, the rail hides and every entry point no-ops.
+  The empty hand is the ONE thing the runtime asks — there is no second on/off
+  flag to keep in sync.
+- The pick lives on the OFFLINE setup screen under the game mode, and it *is*
+  the game-mode component: `boot.pickerRow()` builds both rows (hued icon
+  strip + the line naming the current choice), differing only in their item
+  list and where the value lives. Each slice wears the same rune
+  `ui/spellicons` draws in-game, so picker and rail cannot disagree. NONE is
+  the first slice and the default — spells are part of choosing what game this
+  is, not a device preference. Ranked can never cast — the server validates by
   replaying a plain move log through `core/rules`.
 
 Two rules the flow had to learn: a swap can fill **either** grid (placement
