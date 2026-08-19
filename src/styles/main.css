@@ -308,7 +308,8 @@ html.clock .timer.on{visibility:visible}
 /* result screens (local + online share the shape): the verdict sits up top
    and LOUD, the scores hold the centre, the actions wait in the thumb zone */
 #ovEnd{justify-content:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 7vh)}
-#ovEnd h1{font-size:clamp(34px,11.5vw,54px)}
+#ovEnd{--verdict:clamp(34px,11.5vw,54px)}
+#ovEnd h1{font-size:var(--verdict)}
 #ovEnd .scoreline{margin-top:auto}
 #ovEnd .scoreline .you,#ovEnd .scoreline .cpu{font-size:clamp(34px,11vw,46px)}
 #ovEnd #btnAgain{margin-top:auto}
@@ -598,14 +599,17 @@ html.casting .col.hot::after{border-style:solid;border-color:var(--gold);
   100%{transform:none;opacity:1}}
 /* the light breaks BEFORE the word lands and carries it up. linear, never
    ease-out: a sweep that decelerates into a keyframe reads as a pause. */
-#ovEnd .sweep{position:absolute;left:0;right:0;top:50%;height:2px;opacity:0;pointer-events:none;
-  background:linear-gradient(90deg,transparent,#fff,transparent)}
+#ovEnd .sweep{position:absolute;left:0;right:0;top:50%;opacity:0;pointer-events:none;
+  height:max(3px,calc(var(--verdict) * .07));
+  background:linear-gradient(90deg,transparent,#fff,transparent);
+  box-shadow:0 0 calc(var(--verdict) * .4) rgba(255,255,255,.45)}
 #ovEnd.enter.lose .sweep,#ovEnd.enter.draw .sweep{animation:endSweep 1.35s linear .3s both}
 @keyframes endSweep{
-  0%{transform:translateY(34px) scaleX(.15);opacity:0}
+  0%{transform:translateY(calc(var(--verdict) * .78)) scaleX(.2);opacity:0}
   10%{opacity:.95}
+  45%{transform:translateY(calc(var(--verdict) * -.044)) scaleX(1.15);opacity:.9}
   55%{opacity:.6}
-  100%{transform:translateY(-46px) scaleX(.55);opacity:0}}
+  100%{transform:translateY(calc(var(--verdict) * -1.05)) scaleX(.5);opacity:0}}
 
 /* the context line: a session record locally, an Elo chip and ladder spot online */
 .endmeta{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-align:center;
