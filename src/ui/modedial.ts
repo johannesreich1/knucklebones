@@ -34,6 +34,29 @@ const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
    so the node settles back without a step. */
 const DIM = 0.28;
 
+/* one side of the versus line */
+function sideHtml(p: DialSide, cls: 'me' | 'foe'): string {
+  const rating = p.rating != null ? `<span class="rt">${p.rating}</span>` : '';
+  return `<span class="dside ${cls}"><span class="dav">${dieFace(p.die)}</span>` +
+         `<span class="dnm">${esc(p.name)}</span>${rating}</span>`;
+}
+/* Both ratings are shown; the DIFFERENCE between them is not. It is arithmetic
+   the player can do if they care, and printing it turns a duel into a forecast. */
+function versus(me: DialSide, foe: DialSide): string {
+  return sideHtml(me, 'me') + '<span class="dvs">VS</span>' + sideHtml(foe, 'foe');
+}
+const esc = (t: string): string => t.replace(/[&<>"']/g, (c) =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+/* the die face as pips — makeDie() builds a live element, and this needs a
+   string for one innerHTML write */
+const PIPS: Record<number, number[]> = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8],
+  5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+function dieFace(v: number): string {
+  const on = PIPS[v] ?? PIPS[1];
+  return '<i class="dface">' + Array.from({ length: 9 }, (_, i) =>
+    `<i class="${on.includes(i) ? 'p on' : 'p'}"></i>`).join('') + '</i>';
+}
+
 let built = false;
 function build(): void {
   if (built) return;
@@ -95,8 +118,8 @@ function flare(el: HTMLElement): void {
    nothing and one tap starts the game, ranked passes a peer backed by the
    match's realtime channel. Whatever happens, the countdown still expires on
    its own — an unheard peer costs a few seconds, never the game. */
-/** who you are about to play — ranked fills this, offline leaves it out */
-export interface DialFoe { name: string; rating?: number | null }
+/** a player on the versus line — ranked fills both, offline leaves them out */
+export interface DialSide { name: string; rating?: number | null; die: number }
 
 export interface DialPeer {
   announce(): void;                        // tell the other side I am ready
@@ -152,7 +175,8 @@ function hold(ov: HTMLElement, peer?: DialPeer): Promise<void> {
 let restingAt = 0;
 
 /* hunt, land on the server's pick, linger on the name — resolves when done */
-export async function spinDial(spec: ModeSpec, opts?: { peer?: DialPeer; foe?: DialFoe }): Promise<void> {
+export async function spinDial(spec: ModeSpec,
+  opts?: { peer?: DialPeer; me?: DialSide; foe?: DialSide }): Promise<void> {
   build();
   const i = Math.max(0, MODES.findIndex((m) => m.id === spec.id));
   const ov = $('#ovWheel');
@@ -160,15 +184,12 @@ export async function spinDial(spec: ModeSpec, opts?: { peer?: DialPeer; foe?: D
   const nodes = Array.from(document.querySelectorAll<HTMLElement>('#wheelDial .dnode'));
 
   // the hunting state: nothing named, nothing lit, nothing in the middle
+  /* A ranked match is a comparison, so the screen shows the comparison: both
+     players, both ratings, and the gap between them named. The avatar is a die
+     until players can upload a picture — the game's own object, and a slot that
+     looks right EMPTY is the only kind worth shipping before uploads exist. */
   const who = $('#wheelWho');
-  who.innerHTML = opts?.foe
-    ? `Opponent <b></b>${opts.foe.rating != null ? ' · <span class="rt"></span>' : ''}`
-    : '';
-  if (opts?.foe) {
-    (who.querySelector('b') as HTMLElement).textContent = opts.foe.name;
-    const rt = who.querySelector('.rt') as HTMLElement | null;
-    if (rt) rt.textContent = String(opts.foe.rating);
-  }
+  who.innerHTML = opts?.foe && opts?.me ? versus(opts.me, opts.foe) : '';
   ov.classList.remove('landed', 'ready');
   ov.classList.add('hunting');
   nodes.forEach((n) => n.classList.remove('on'));

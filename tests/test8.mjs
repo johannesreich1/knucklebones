@@ -8,6 +8,7 @@ const out = {};
 
 // ================= LANDSCAPE =================
 const land = await browser.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+await land.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
 const lp = await land.newPage();
 lp.on('pageerror', e => errs.push('LAND: ' + e.message));
 await lp.goto(F); await lp.waitForTimeout(500);
@@ -75,6 +76,7 @@ await lp.screenshot({ path: './v2-rotated-back.png' });
 
 // ================= RESUME =================
 const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
 const p = await ctx.newPage();
 p.on('pageerror', e => errs.push('RESUME: ' + e.message));
 p.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
@@ -91,6 +93,7 @@ for (let i = 0; i < 3; i++) {
 }
 // ================= PLACE ON RELEASE =================
 const g = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+await g.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
 const gp = await g.newPage();
 gp.on('pageerror', e => errs.push('INPUT: ' + e.message));
 await gp.goto(F); await gp.waitForTimeout(400);
@@ -151,6 +154,7 @@ await gp.screenshot({ path: './v2-numerals.png' });
 
 // ================= REDUCED MOTION =================
 const rm = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true, reducedMotion: 'reduce' });
+await rm.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
 const rp = await rm.newPage();
 rp.on('pageerror', e => errs.push('RM: ' + e.message));
 await rp.goto(F); await rp.waitForTimeout(400);
@@ -178,6 +182,7 @@ const SAFE_DEVICES = [
 out.safeAreas = [];
 for (const d of SAFE_DEVICES) {
   const sc = await browser.newContext({ viewport: { width: d.w, height: d.h }, hasTouch: true, isMobile: true, deviceScaleFactor: 3 });
+await sc.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
   const sp = await sc.newPage();
   sp.on('pageerror', e => errs.push('SAFE: ' + e.message));
   await sp.goto(F); await sp.waitForTimeout(400);

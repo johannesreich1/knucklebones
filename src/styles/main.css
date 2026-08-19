@@ -378,7 +378,8 @@ html.clock .timer.on{visibility:visible}
    the centre, so the whole thing scales as a unit instead of as five guesses.
    It is bounded by BOTH axes — a landscape phone has plenty of width and almost
    no height, and the dial has to fit under the title with the name below it. */
-#ovWheel{--dial:clamp(232px,min(78vw,52vh),420px);--node:calc(var(--dial)*.152);
+#ovWheel{padding-top:calc(env(safe-area-inset-top,0px) + 26px);
+  --dial:clamp(232px,min(78vw,52vh),420px);--node:calc(var(--dial)*.152);
   --trail:calc(var(--dial)*.016);
   /* The dial is built on TWO circles, and both are tokens so nothing can drift
      off them: --r-out carries the mode nodes and the ring line, --r-in is the
@@ -447,19 +448,33 @@ html.clock .timer.on{visibility:visible}
 #ovWheel.landed .dfound{opacity:1;transform:none}
 /* Who you are about to play. Ranked fills it; offline leaves it empty, and an
    empty slot takes no room, so one dial serves both without a branch. */
-.dwho{display:flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.14em;color:var(--dim);
-  text-transform:uppercase;min-height:0}
+.dwho{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;
+  max-width:var(--w-col);margin-bottom:auto}   /* pins the pairing to the top */
 .dwho:empty{display:none}
-.dwho b{color:var(--txt);font-weight:900;letter-spacing:.1em;text-transform:none;font-size:13px}
-.dwho .rt{color:var(--gold);font-weight:900}
+.dside{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;min-width:0}
+.dside .dnm{font-size:11.5px;font-weight:900;letter-spacing:.05em;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dside .rt{font-size:16px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums}
+.dside.me .dnm{color:var(--cy)} .dside.foe .dnm{color:var(--mg)}
+.dside.me .dav{border-color:color-mix(in srgb,var(--cy) 42%,transparent)}
+.dside.foe .dav{border-color:color-mix(in srgb,var(--mg) 42%,transparent)}
+.dside.me .p.on{background:var(--cy);box-shadow:0 0 6px var(--cy)}
+.dside.foe .p.on{background:var(--mg);box-shadow:0 0 6px var(--mg)}
+/* the avatar: a die until players can upload a picture */
+.dav{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12)}
+.dface{display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);gap:2px;width:26px;height:26px}
+.dface .p{border-radius:50%}
+.dvs{flex:0 0 auto;font-size:14px;font-weight:900;letter-spacing:.1em;color:var(--txt);
+  font-style:italic}
 /* The hold: five seconds to READ the result, cut short the moment everyone has.
    It only exists once there is something to read. */
 /* Reserved, never conjured: the hold occupies its space from the first frame
    and only becomes VISIBLE on landing. Appearing would grow the column, and a
    centred column that grows moves the dial — the one thing on this screen that
    must not move while the player is watching it. */
-.dhold{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:22px;
-  visibility:hidden}   /* clear of the blurb: it is a separate beat, not a caption */
+.dhold{display:flex;flex-direction:column;align-items:center;gap:6px;
+  margin-top:auto;visibility:hidden}   /* ...and the wait to the bottom */
 #ovWheel.landed .dhold{visibility:visible}
 .dhold b{font-size:26px;font-weight:900;color:var(--cy);line-height:1;
   text-shadow:0 0 18px rgba(40,232,255,.55);font-variant-numeric:tabular-nums}
@@ -914,6 +929,16 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 .homefoot{display:flex;align-items:center;justify-content:center;gap:16px;
   margin-top:auto;padding-bottom:4px}
 .homefoot .linkbtn{opacity:.72}
+/* ---- the first-run offer: asked once, in front of the first real game ---- */
+#ovFirst{background:rgba(4,5,12,.93)}
+.firstcard{display:flex;flex-direction:column;gap:13px;width:100%;max-width:var(--w-col);
+  padding:22px 20px;border-radius:20px;background:rgba(255,255,255,.035);
+  border:1px solid color-mix(in srgb,var(--cy) 26%,transparent);
+  box-shadow:0 0 40px rgba(40,232,255,.10)}
+.firstcard .fh{font-size:19px;font-weight:900;letter-spacing:.1em;color:var(--cy)}
+.firstcard .fp{margin:0;font-size:12.5px;line-height:1.6;color:var(--dim)}
+.firstcard .btn{width:100%;min-width:0}
+
 /* ---- the HOW TO PLAY hub: four ways in, one page ---- */
 .learnlist{display:flex;flex-direction:column;gap:11px;width:100%;max-width:var(--w-col)}
 .learnrow{display:flex;flex-direction:column;gap:5px;text-align:left;width:100%;
@@ -924,9 +949,11 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 .learnrow .lname{font-size:14px;font-weight:900;letter-spacing:.12em;color:var(--txt);
   text-transform:uppercase}
 .learnrow .lblurb{font-size:11.5px;line-height:1.5;color:var(--dim);letter-spacing:.02em}
-.learnrow:first-child{border-color:color-mix(in srgb,var(--cy) 34%,transparent);
+/* only while nothing has been played — after that the tutorial is just one of
+   four things you might want to read, and highlighting it is nagging */
+#ovLearn.fresh .learnrow:first-child{border-color:color-mix(in srgb,var(--cy) 34%,transparent);
   background:color-mix(in srgb,var(--cy) 7%,transparent)}
-.learnrow:first-child .lname{color:var(--cy)}
+#ovLearn.fresh .learnrow:first-child .lname{color:var(--cy)}
 
 /* the deploy-truth tag now closes the Account panel — a plain last line, not a
    pinned overlay fixture (it left home on 2026-08-19) */

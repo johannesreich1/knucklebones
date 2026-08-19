@@ -9,6 +9,7 @@ import { AI, ME, SPEC, legalCols, colScore, boardTotalMode, totalOf, victimsOf, 
 import { makeBag } from '../core/dice.ts';
 import { RANDOM, pickMode } from '../core/modes.ts';
 import { spinDial } from '../ui/modedial.ts';
+import { isNewcomer, offerTutorial } from '../ui/firstrun.ts';
 import { searchRoot, getRiskW, setRiskW } from '../core/ai.ts';
 import { S } from '../state.ts';
 import { saveStats } from '../persist.ts';
@@ -310,6 +311,9 @@ export async function place(who,col){
    taught only the Play button about RANDOM, so Play again quietly dealt classic
    for the rest of the session. One door, no exceptions. */
 export async function startLocal(){
+  /* A newcomer is offered the tutorial before their first real game — once,
+     ever, and never in front of the tutorial itself. */
+  if(isNewcomer() && await offerTutorial()){ newGame({tutorial:true}); return; }
   if(S.localMode!==RANDOM){ newGame(); return; }
   const pick=pickMode(Math.random().toString(36).slice(2));
   hide('#ovEnd'); hide('#ovStart'); hide('#ovPractice');
@@ -379,6 +383,7 @@ export function endGame(){
   const drawn = me===ai, p1won = me>ai;      // cyan won; in CPU mode that means you
   if(drawn && !tut) duo ? S.ties++ : S.draws++;
   if(!drawn && !tut){ if(duo) p1won ? S.p1++ : S.p2++; else p1won ? S.wins++ : S.losses++; }
+  if(!tut) S.played=true;                    // the hub stops nagging after this
   // in two-player somebody always won, so it is always a celebration
   if(drawn){ /* no fanfare for a dead heat */ }
   else if(duo || p1won){ Sfx.win(); }
@@ -406,10 +411,15 @@ export function endGame(){
     meta: tut ? 'TUTORIAL COMPLETE'
       : duo ? 'SESSION  P1 '+S.p1+' – '+S.p2+' P2'+(S.ties?('  ·  '+S.ties+' drawn'):'')
             : 'SESSION  '+S.wins+'–'+S.losses+(S.draws?('–'+S.draws+' D'):''),
-    again: { label: 'Play again', run: () => { void startLocal(); } },
-    alt:   { label: duo?'Change mode':'Change difficulty',
-             run: () => { closeEnd(); show('#ovPractice'); } },
-    home:  { label: 'Home', run: () => { closeEnd(); toMenu(); } },
+    /* The tutorial ends in a graduation, not a rematch — one button, and none
+       of the "change difficulty" furniture that assumes you chose anything. */
+    again: tut ? { label: 'Finish', run: () => { closeEnd(); toMenu(); } }
+               : { label: 'Play again', run: () => { void startLocal(); } },
+    alt:   tut ? undefined
+               : { label: duo?'Change mode':'Change difficulty',
+                   run: () => { closeEnd(); show('#ovPractice'); } },
+    home:  tut ? undefined
+               : { label: 'Home', run: () => { closeEnd(); toMenu(); } },
     delay: 900,                              // the board holds the last move first
   });
 }

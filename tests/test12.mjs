@@ -7,6 +7,7 @@ const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x
 const ROT = t => t === 'matrix(-1, 0, 0, -1, 0, 0)';   // computed rotate(180deg)
 
 const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
 const page = await ctx.newPage();
 page.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
 page.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
@@ -156,6 +157,7 @@ if (quitVia) { await page.tap('#passQuit'); } else { await page.tap('#btnSetting
 
 // ===== E. small screen: duo title with 3 cards must stay reachable =====
 const small = await browser.newContext({ viewport: { width: 320, height: 568 }, hasTouch: true, isMobile: true });
+await small.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
 const sp = await small.newPage();
 sp.on('pageerror', e => errs.push('SMALL: ' + e.message));
 await sp.goto(F); await sp.waitForTimeout(400);

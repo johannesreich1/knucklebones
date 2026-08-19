@@ -19,6 +19,7 @@ const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x
 const browser = await chromium.launch();
 try {
   const ctx = await browser.newContext({ viewport: { width: 430, height: 932 } });
+await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
   const page = await ctx.newPage();
   page.on('pageerror', (e) => problems.push('PAGEERROR ' + e.message));
   await page.goto(F);

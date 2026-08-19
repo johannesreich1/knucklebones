@@ -15,8 +15,12 @@ import { signUp, signIn, signOut, currentUser, ensureIdentity, attachEmail,
 import { availableTaps } from './identity.ts';
 import { enterMatch, setFinishHandler, type FinishReport } from './play.ts';
 import { spinDial } from '../ui/modedial.ts';
+import { isNewcomer, offerTutorial } from '../ui/firstrun.ts';
+import { S } from '../state.ts';
+import { newGame } from '../flow/game.ts';
 import { modeById } from '../core/modes.ts';
 import { refreshHomeChip } from '../boot.ts';
+import { saveStats } from '../persist.ts';
 
 const OVERLAY = `
 <div class="ov paged" id="ovOnline">
@@ -220,6 +224,13 @@ function stopQueue(): void {
   if (qTick) { clearInterval(qTick); qTick = null; }
 }
 async function startQueue(): Promise<void> {
+  /* The offer comes BEFORE matchmaking, never after: nobody wants a tutorial
+     pitched at them while a real opponent waits on a five-second countdown. */
+  if (isNewcomer() && await offerTutorial()) {
+    goHome();
+    newGame({ tutorial: true });
+    return;
+  }
   panel('onQueue');
   queueAbort = false;
   const started = Date.now();
@@ -244,8 +255,18 @@ async function startQueue(): Promise<void> {
         // res.you is MY seat; the opponent is the other one
         const mine = res.you === 1 ? 'p1' : 'p2';
         const theirs = mine === 'p1' ? 'p2' : 'p1';
+        /* the avatar die is derived from the account id, so a player's face is
+           stable match to match instead of re-rolling every screen */
+        const faceOf = (s: string): number => 1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 6);
+        let self = { nickname: 'You', rating: null as number | null };
+        try {
+          const c = JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null');
+          if (c?.nickname) self = { nickname: c.nickname, rating: c.rating ?? null };
+        } catch { /* forgetful host */ }
         await spinDial(modeById(res.match.modifier), {
-          foe: { name: res.names[theirs], rating: res.names.ratings?.[theirs] ?? null },
+          me:  { name: self.nickname, rating: self.rating, die: faceOf(self.nickname) },
+          foe: { name: res.names[theirs], rating: res.names.ratings?.[theirs] ?? null,
+                 die: faceOf(res.names[theirs]) },
           peer: readyPeer(res.match.id),
         });
       }
@@ -385,7 +406,7 @@ function bind(): void {
   $('#btnQueueCancel').addEventListener('click', () => { Sfx.tap(); goHome(); });
 
   // a finished match lands on the Result screen, not on a menu
-  setFinishHandler((r) => { void showResult(r); });
+  setFinishHandler((r) => { S.played = true; saveStats(); void showResult(r); });
 }
 
 /* entry point, dynamically imported from boot. The home's buttons deep-link:

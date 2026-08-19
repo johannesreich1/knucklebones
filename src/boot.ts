@@ -37,6 +37,7 @@ import { spellIcon, spellHue } from './ui/spellicons.ts';
 import { toMenu, syncSettingsUI, updateStatLine } from './flow/menu.ts';
 import { requestLeave } from './flow/leave.ts';
 import { openModes, openSpells } from './ui/library.ts';
+import { isNewcomer } from './ui/firstrun.ts';
 import { MODES, RANDOM, modeByEnum } from './core/modes.ts';
 import { modeIcon, modeHue } from './ui/modeicons.ts';
 /* ===================== BOOT ===================== */
@@ -87,7 +88,10 @@ export function boot(embed){
   tap($('#btnDuoHome'),()=>{ Sfx.unlock(); Sfx.tap(); openPractice('duo'); });
   /* HOW TO PLAY is a hub, not a link: the tutorial, the rules, the modes and
      the spells were four entry points scattered across home and settings. */
-  tap($('#btnLearn'),()=>{ Sfx.unlock(); Sfx.tap(); hide('#ovStart'); show('#ovLearn'); });
+  tap($('#btnLearn'),()=>{ Sfx.unlock(); Sfx.tap();
+    // the tutorial is only the headline act until a game has been played
+    $('#ovLearn').classList.toggle('fresh', isNewcomer());
+    hide('#ovStart'); show('#ovLearn'); });
   tap($('#btnLearnBack'),()=>{ Sfx.tap(); hide('#ovLearn'); show('#ovStart'); });
   tap($('#btnLearnTut'),()=>{ Sfx.unlock(); Sfx.tap(); newGame({tutorial:true}); });
   tap($('#btnLearnRules'),()=>{ Sfx.tap(); show('#ovRules'); });

@@ -47,6 +47,10 @@ export const S = {
   seat: 'pass' as Seat,  // duo seating: pass the phone, or sit facing each other
   tut: null as TutState | null, // tutorial script state while the guided game runs
   tutDone: false,        // persisted: has the tutorial ever been finished
+  /* persisted: has ANY real game been finished — offline or ranked. The first
+     -run tutorial offer and the hub's highlight both ask this, and they must
+     never disagree, so there is one flag and not one per flow. */
+  played: false,
   starter: ME as Player,
   sound: true,
   busy: false,

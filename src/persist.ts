@@ -19,7 +19,7 @@ export function saveStats(): void {
   Store.write({ wins: S.wins, losses: S.losses, draws: S.draws,
                 p1: S.p1, p2: S.p2, ties: S.ties,
                 best: S.best, diff: S.diff, mode: S.mode, sound: S.sound,
-                numerals: S.numerals, timer: S.timer, seat: S.seat, tutDone: S.tutDone,
+                numerals: S.numerals, timer: S.timer, seat: S.seat, tutDone: S.tutDone, played: S.played,
                 localMode: S.localMode, spell: S.spell });
 }
 
@@ -36,6 +36,9 @@ export function loadStats(): void {
   // '' is NONE; any other value must still be a spell this build knows about
   if (d.spell === '' || spellById(d.spell)) S.spell = d.spell;
   if (typeof d.tutDone === 'boolean') S.tutDone = d.tutDone;
+  if (typeof d.played === 'boolean') S.played = d.played;
+  // a player with a record from before this flag existed has obviously played
+  if (S.wins + S.losses + S.draws + S.p1 + S.p2 + S.ties > 0) S.played = true;
   if (Number.isInteger(d.localMode) && d.localMode >= -1 && d.localMode <= 6) S.localMode = d.localMode;
 }
 

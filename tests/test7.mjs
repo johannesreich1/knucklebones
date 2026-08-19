@@ -6,6 +6,7 @@ const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x
 
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
 const page = await ctx.newPage();
 page.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
 page.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
@@ -123,6 +124,7 @@ await ctx.setOffline(false);
 
 // ---- 5. desktop viewport sanity (same bundle, wider screen) ----
 const ctx2 = await browser.newContext({ viewport: { width: 1024, height: 800 } });
+await ctx2.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
 const p2 = await ctx2.newPage();
 p2.on('pageerror', e => errs.push('DESKTOP PAGEERROR: ' + e.message));
 await p2.goto(URL);
