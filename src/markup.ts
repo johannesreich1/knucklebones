@@ -244,7 +244,9 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
 <div class="ov" id="ovEnd">
   <i class="fwlayer" id="endFx" aria-hidden="true"></i>
   <i class="shock" id="endShock" aria-hidden="true"></i>
-  <h1 id="endTitle">VICTORY</h1>
+  <!-- VICTORY lands, DEFEAT rises: the wrapper clips only for the rise, and
+       the sweep bar only runs with it (design studies A and F) -->
+  <div class="titlewrap"><h1 id="endTitle">VICTORY</h1><i class="sweep" aria-hidden="true"></i></div>
   <div class="sub" id="endSub">You out-rolled the machine</div>
   <div class="scoreline">
     <span class="sc"><span class="you" id="endYou">0</span><em id="endYouLbl">You</em></span>

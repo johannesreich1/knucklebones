@@ -558,7 +558,14 @@ html.casting .col.hot::after{border-style:solid;border-color:var(--gold);
    per-letter staging — so VICTORY, DEFEAT and PLAYER 2 WINS all read the same
    way and the longest title is no slower than the shortest. Studies for five
    other treatments live in design/screens/6*-win-*. */
-#ovEnd.enter #endTitle{animation:endStamp .85s cubic-bezier(.2,1.25,.3,1) both}
+/* TWO treatments, because winning and losing are not the same moment.
+   A WIN LANDS (study A, design/screens/60): the verdict drops in from 3.2x
+   scale with a shockwave hoop, one movement, no per-letter staging — so
+   VICTORY, DEFEAT and PLAYER 2 WINS all read the same way whatever their
+   length. A LOSS RISES (study F, 65): the word climbs from behind a line
+   while a light bar sweeps up THROUGH it and the type fades in over the
+   travel — calmer, and it announces less, which is the point. */
+#ovEnd.enter.win #endTitle{animation:endStamp .85s cubic-bezier(.2,1.25,.3,1) both}
 @keyframes endStamp{
   0%{transform:scale(3.2);opacity:0;filter:blur(8px)}
   38%{transform:scale(.93);opacity:1;filter:blur(0)}
@@ -567,18 +574,34 @@ html.casting .col.hot::after{border-style:solid;border-color:var(--gold);
 #ovEnd .shock{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 7vh + 24px);
   width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;border:2px solid currentColor;
   opacity:0;pointer-events:none;color:var(--cy)}
-#ovEnd.enter .shock{animation:endShock .9s cubic-bezier(.1,.7,.3,1) both}
-#ovEnd.enter #endTitle.lose ~ .shock,#ovEnd #endTitle.lose ~ .shock{color:var(--mg)}
+#ovEnd.enter.win .shock{animation:endShock .9s cubic-bezier(.1,.7,.3,1) both}
 @keyframes endShock{0%{transform:scale(.1);opacity:0}18%{opacity:.75}100%{transform:scale(3.4);opacity:0}}
-/* the rest of the screen follows the title in, once */
-#ovEnd.enter .sub,#ovEnd.enter .scoreline,#ovEnd.enter .endmeta,#ovEnd.enter .btn,#ovEnd.enter .linkbtn{
-  animation:endRise .5s cubic-bezier(.2,.9,.3,1) both}
-#ovEnd.enter .sub{animation-delay:.16s}
-#ovEnd.enter .scoreline{animation-delay:.22s}
-#ovEnd.enter .endmeta{animation-delay:.28s}
-#ovEnd.enter .btn{animation-delay:.34s}
-#ovEnd.enter .linkbtn{animation-delay:.4s}
-@keyframes endRise{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+
+/* the rise needs a clipping line to rise from — and ONLY the rise, or the
+   win's glow would be cropped with it */
+.titlewrap{position:relative;width:100%;display:flex;flex-direction:column;align-items:center}
+#ovEnd.lose .titlewrap,#ovEnd.draw .titlewrap{overflow:hidden;padding:3px 0}
+#ovEnd.enter.lose #endTitle,#ovEnd.enter.draw #endTitle{
+  animation:endRise .95s cubic-bezier(.16,1,.3,1) both}
+/* the fade gets its own stops: this easing is all but finished a fifth of the
+   way in, so a plain 0->1 across the same interval snaps to full at once */
+@keyframes endRise{
+  0%{transform:translateY(115%);opacity:0}
+  22%{opacity:.18}
+  42%{opacity:.55}
+  58%{opacity:.85}
+  100%{transform:none;opacity:1}}
+/* the light breaks BEFORE the word lands and carries it up. linear, never
+   ease-out: a sweep that decelerates into a keyframe reads as a pause. */
+#ovEnd .sweep{position:absolute;left:0;right:0;top:50%;height:2px;opacity:0;pointer-events:none;
+  background:linear-gradient(90deg,transparent,#fff,transparent)}
+#ovEnd.enter.lose .sweep,#ovEnd.enter.draw .sweep{animation:endSweep .95s linear both}
+@keyframes endSweep{
+  0%{transform:translateY(34px) scaleX(.15);opacity:0}
+  10%{opacity:.95}
+  55%{opacity:.6}
+  100%{transform:translateY(-46px) scaleX(.55);opacity:0}}
+
 /* the context line: a session record locally, an Elo chip and ladder spot online */
 .endmeta{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-align:center;
   display:flex;flex-direction:column;align-items:center;gap:7px}

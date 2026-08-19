@@ -52,6 +52,11 @@ export function showEnd(spec: EndSpec): void {
   const t = $('#endTitle');
   t.textContent = spec.title;
   t.className = spec.outcome;
+  // the SCREEN wears the outcome too: the entrance differs by it, and CSS
+  // cannot ask a child which way this game went
+  const ov = $('#ovEnd');
+  ov.classList.remove('win', 'lose', 'draw');
+  ov.classList.add(spec.outcome);
   $('#endSub').textContent = spec.sub;
   $('#endYou').textContent = String(spec.you.score);
   $('#endCpu').textContent = String(spec.them.score);
