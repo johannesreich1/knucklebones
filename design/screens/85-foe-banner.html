@@ -1,0 +1,51 @@
+<!-- meta name="Opponent F — Versus banner" group="8 · Opponent on the dial" subtitle="The home screen's duel, reused: two dice angled at each other under a VS" width=412 height=560 links="Dial" -->
+<style>
+  .studio{display:flex;flex-direction:column;gap:15px;width:100%;align-items:center}
+  .cap{font-size:9px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase}
+  .stagebox{position:relative;width:100%;max-width:var(--w-col);border-radius:20px;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;gap:14px;padding:22px 12px 20px;
+    background:radial-gradient(120% 90% at 50% 10%,rgba(255,255,255,.045),transparent 70%),rgba(255,255,255,.02);
+    border:1px solid rgba(255,255,255,.08)}
+  .kicker{font-size:9.5px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+  /* a stand-in for the dial itself, so each option is judged in context */
+  .ghostdial{width:132px;height:132px;border-radius:50%;border:1px dashed rgba(255,255,255,.10);
+    display:grid;place-items:center;font-size:8.5px;letter-spacing:.22em;color:rgba(124,136,168,.5);
+    text-transform:uppercase}
+  .note{font-size:11.5px;line-height:1.6;color:#c6d3ee;max-width:var(--w-col);
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:11px 13px}
+  .note b{color:var(--gold)}
+  /* THE AVATAR: a die stands in until players can upload a picture. It is the
+     game's own object, it already has a per-player colour, and it degrades to
+     nothing if an upload never happens. */
+  .av{position:relative;border-radius:15px;display:grid;place-items:center;flex:0 0 auto;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);overflow:hidden}
+  .av .die{--cell:var(--avs);width:var(--avs);height:var(--avs)}
+  .av.big{--avs:52px;width:66px;height:66px}
+  .av.mid{--avs:40px;width:52px;height:52px}
+  .av.sm{--avs:28px;width:38px;height:38px}
+
+  .ban{position:relative;display:flex;align-items:center;justify-content:center;gap:26px;
+    width:100%;padding:6px 0 2px}
+  .ban .av{transform:rotate(-8deg)}
+  .ban .av.r{transform:rotate(8deg)}
+  .ban .vs{position:absolute;left:50%;top:50%;translate:-50% -50%;font-size:19px;font-weight:900;
+    font-style:italic;color:var(--gold);text-shadow:0 0 18px rgba(255,209,102,.55);letter-spacing:.04em}
+  .names{display:flex;align-items:center;justify-content:center;gap:10px;font-size:10.5px;
+    letter-spacing:.08em;font-weight:900}
+  .names .me{color:var(--cy)} .names .foe{color:var(--mg)} .names .d{color:var(--dim);font-weight:400}
+</style>
+<div class="studio">
+  <div class="cap">Opponent F</div>
+  <div class="stagebox">
+    <div class="kicker">Your opponent</div>
+    <div class="ban">
+      <span class="av mid">{{die:5:p1:40}}</span>
+      <span class="vs">VS</span>
+      <span class="av mid r">{{die:3:p2:40}}</span>
+    </div>
+    <div class="names"><span class="me">You 1000</span><span class="d">·</span>
+      <span class="foe">QuietComet258 1011</span></div>
+    <div class="ghostdial">the dial</div>
+  </div>
+  <div class="note"><b>The most on-brand.</b> It is the home screen&rsquo;s hero duel, one screen later — the same two angled dice the player tapped PLAY ONLINE under, now with names on them. Strongest sense of occasion, and the only one that visually rhymes with something already in the game.</div>
+</div>

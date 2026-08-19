@@ -1,0 +1,44 @@
+<!-- meta name="Opponent E — Challenge line" group="8 · Opponent on the dial" subtitle="A sentence, not a panel: “QuietComet258 · 1011 is waiting”" width=412 height=560 links="Dial" -->
+<style>
+  .studio{display:flex;flex-direction:column;gap:15px;width:100%;align-items:center}
+  .cap{font-size:9px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase}
+  .stagebox{position:relative;width:100%;max-width:var(--w-col);border-radius:20px;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;gap:14px;padding:22px 12px 20px;
+    background:radial-gradient(120% 90% at 50% 10%,rgba(255,255,255,.045),transparent 70%),rgba(255,255,255,.02);
+    border:1px solid rgba(255,255,255,.08)}
+  .kicker{font-size:9.5px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+  /* a stand-in for the dial itself, so each option is judged in context */
+  .ghostdial{width:132px;height:132px;border-radius:50%;border:1px dashed rgba(255,255,255,.10);
+    display:grid;place-items:center;font-size:8.5px;letter-spacing:.22em;color:rgba(124,136,168,.5);
+    text-transform:uppercase}
+  .note{font-size:11.5px;line-height:1.6;color:#c6d3ee;max-width:var(--w-col);
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:11px 13px}
+  .note b{color:var(--gold)}
+  /* THE AVATAR: a die stands in until players can upload a picture. It is the
+     game's own object, it already has a per-player colour, and it degrades to
+     nothing if an upload never happens. */
+  .av{position:relative;border-radius:15px;display:grid;place-items:center;flex:0 0 auto;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);overflow:hidden}
+  .av .die{--cell:var(--avs);width:var(--avs);height:var(--avs)}
+  .av.big{--avs:52px;width:66px;height:66px}
+  .av.mid{--avs:40px;width:52px;height:52px}
+  .av.sm{--avs:28px;width:38px;height:38px}
+
+  .chal{display:flex;align-items:center;gap:10px;padding:7px 15px 7px 7px;border-radius:99px;
+    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.1)}
+  .chal .txt{font-size:12px;letter-spacing:.03em;color:var(--dim)}
+  .chal .txt b{color:var(--mg);font-weight:900;letter-spacing:.05em}
+  .chal .txt i{font-style:normal;color:var(--gold);font-weight:900}
+</style>
+<div class="studio">
+  <div class="cap">Opponent E</div>
+  <div class="stagebox">
+    <div class="kicker">Your opponent</div>
+    <div class="chal">
+      <span class="av sm">{{die:3:p2:28}}</span>
+      <span class="txt"><b>QuietComet258</b> · <i>1011</i> is waiting</span>
+    </div>
+    <div class="ghostdial">the dial</div>
+  </div>
+  <div class="note"><b>The quietest.</b> One line, one row tall, and it reads as a sentence rather than a readout — which suits a screen that is already asking the player to wait. Least room for a real photo to matter, and the rating is buried mid-sentence where a competitive player will hunt for it.</div>
+</div>
