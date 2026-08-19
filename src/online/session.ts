@@ -18,7 +18,24 @@ export interface MatchRow {
   modifier: string;   // the wheel's pick (core/modes.ts id) — server-chosen from the seed
 }
 
-/* ---- auth ---- */
+/* ---- auth ----
+
+   Identity here is a LADDER, not a gate. Every player is the same kind of user
+   to this backend — a row in auth.users, a profile, a rating — and the rungs
+   differ only in how the app can prove which row is theirs:
+
+     guest      the proof is a token in this device's storage. Survives
+                relaunch, dies with the app.
+     attached   an email (or, in the native build, Apple) vouches for the
+                player, so the SAME row comes back after a reinstall.
+
+   Nothing downstream knows the difference: the profile trigger fires for a
+   guest exactly as for anybody else, and every RLS policy is written against
+   auth.uid(). That is why guest play costs no schema. */
+export interface Me { id: string; guest: boolean; email: string | null }
+const me = (u: { id: string; is_anonymous?: boolean; email?: string } | null | undefined): Me | null =>
+  u ? { id: u.id, guest: !!u.is_anonymous, email: u.email ?? null } : null;
+
 /* Signing up may or may not hand back a live session: with email confirmation
    REQUIRED the account waits for the link, with it optional Supabase signs the
    player straight in. Report which happened rather than assuming — "check your
@@ -33,9 +50,49 @@ export async function signIn(email: string, password: string): Promise<string | 
   return error ? error.message : null;
 }
 export async function signOut(): Promise<void> { await supa().auth.signOut(); clearProfileCache(); }
-export async function currentUser(): Promise<{ id: string } | null> {
+/* Once a device has held a real account, silently minting a guest on the next
+   tap would be a trap: the player signed out to sign back IN. Remembering that
+   fact costs one flag and turns the silent path off for exactly those devices. */
+const KNOWN = 'knucklebones.online.attached';
+export const hadRealAccount = (): boolean => {
+  try { return !!localStorage.getItem(KNOWN); } catch { return false; }
+};
+function remember(u: Me | null): Me | null {
+  try {
+    if (u && !u.guest) localStorage.setItem(KNOWN, '1');
+  } catch { /* forgetful host */ }
+  return u;
+}
+
+export async function currentUser(): Promise<Me | null> {
   const { data: { session } } = await supa().auth.getSession();
-  return session?.user ?? null;
+  return remember(me(session?.user));
+}
+
+/* The first rung, taken silently: whoever asks for ranked without a session
+   becomes a guest and keeps playing. Returns null when the project has
+   anonymous sign-ins switched off — the caller then falls back to the sign-in
+   panel, which is exactly how this game behaved before guests existed. */
+export async function ensureIdentity(): Promise<Me | null> {
+  const here = await currentUser();
+  if (here) return here;
+  if (hadRealAccount()) return null;          // they signed out to sign back IN
+  const { data, error } = await supa().auth.signInAnonymously();
+  if (error) return null;
+  return me(data.user);
+}
+
+/* The second rung: hang an email on the account the player already has, so the
+   rating and match history survive a reinstall. updateUser() links an identity
+   to the CURRENT user — it never mints a second one — and a password can only
+   be set once that address counts as verified, which is instant while email
+   confirmation is optional and needs the inbox when it is not. */
+export async function attachEmail(email: string, password: string): Promise<string | null> {
+  const { data, error } = await supa().auth.updateUser({ email });
+  if (error) return error.message;
+  if (!data.user?.email) return 'Almost there — confirm the link we sent, then set your password.';
+  const { error: pw } = await supa().auth.updateUser({ password });
+  return pw ? pw.message : null;
 }
 
 /* ---- profile ---- */
@@ -140,6 +197,12 @@ export function watchMatch(matchId: string,
 /* ---- account ---- */
 export async function deleteAccount(): Promise<string | null> {
   const r = await call<{ deleted?: boolean; error?: string }>('account-delete', {});
-  if (r.status === 200 && r.data?.deleted) { await signOut(); clearProfileCache(); return null; }
+  if (r.status === 200 && r.data?.deleted) {
+    await signOut();
+    clearProfileCache();
+    // the account is gone, so the device is a newcomer again — next tap plays
+    try { localStorage.removeItem(KNOWN); } catch { /* forgetful host */ }
+    return null;
+  }
   return r.data?.error ?? 'delete failed';
 }

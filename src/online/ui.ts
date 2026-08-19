@@ -10,7 +10,9 @@ import { $, show, hide } from '../ui/dom.ts';
 import { showEnd, setMeta, closeEnd } from '../ui/endscreen.ts';
 import { Sfx } from '../ui/audio.ts';
 import { makeDie } from '../ui/die.ts';
-import { signUp, signIn, signOut, currentUser, myProfile, myRecord, rename, leaderboard, deleteAccount, join } from './session.ts';
+import { signUp, signIn, signOut, currentUser, ensureIdentity, attachEmail,
+         myProfile, myRecord, rename, leaderboard, deleteAccount, join } from './session.ts';
+import { availableTaps } from './identity.ts';
 import { enterMatch, setFinishHandler, type FinishReport } from './play.ts';
 import { spinWheel } from './wheel.ts';
 import { modeById } from '../core/modes.ts';
@@ -24,13 +26,14 @@ const OVERLAY = `
   </div>
 
   <div class="panel" id="onAuth" hidden>
-    <div class="lbl" style="text-align:center">Play ranked, climb the ladder</div>
+    <div class="lbl" id="onAuthLead" style="text-align:center"></div>
+    <div class="oneTap" id="onOneTap"></div>
     <input id="onEmail" type="email" autocomplete="email" placeholder="email">
     <input id="onPass" type="password" autocomplete="current-password" placeholder="password (8+)">
     <div class="err" id="onAuthErr"></div>
-    <button class="btn primary" id="btnSignIn">Sign in</button>
-    <button class="btn" id="btnSignUp">Create account</button>
-    <div class="tiny">New accounts get a nickname like BoldRaven482 —<br>change it any time in Account</div>
+    <div class="acts" id="onAuthActs"></div>
+    <button class="btn ghost" id="btnAuthSwap" hidden></button>
+    <div class="tiny" id="onAuthTiny"></div>
   </div>
 
   <div class="panel" id="onQueue" hidden>
@@ -51,6 +54,12 @@ const OVERLAY = `
       <div class="awho"><span id="accDie"></span><span class="meta"><span class="nm" id="accName"></span><span class="sub" id="accSince"></span></span></div>
       <div class="statrow"><span>RATING</span><b id="accRating">–</b></div>
       <div class="statrow"><span>RECORD</span><b class="rec2" id="accRecord">–</b></div>
+    </div>
+    <div class="guestbox" id="accGuest" hidden>
+      <b>GUEST</b>
+      <p>This account lives on this device only. Delete the app and the rating goes with it.</p>
+      <button class="btn primary" id="btnKeepAcc">Keep it forever</button>
+      <button class="btn ghost" id="btnHaveAcc">I already have an account</button>
     </div>
     <div class="lbl">Nickname</div>
     <input id="onNick" maxlength="16" autocomplete="off">
@@ -84,6 +93,112 @@ function panel(which: Panel): void {
   $('#ovOnline').classList.toggle('listview', which === 'onBoard');
   $('#onTitle').textContent = PANELS[which].title;
   ($('#btnOnlineBack') as HTMLElement).style.visibility = PANELS[which].back ? 'visible' : 'hidden';
+}
+
+/* ---- the identity panel ----
+   One panel, two jobs: ATTACHING an identity to the guest you already are, and
+   RESTORING the account you made somewhere else. They share every pixel — the
+   same inputs, the same error line, the same one-tap providers — and differ
+   only in what the buttons do and where they land you afterwards. Two specs of
+   one screen, never two screens. */
+type AuthMode = 'attach' | 'restore';
+interface AuthSpec {
+  title: string;
+  lead: string;
+  tiny: string;
+  /* null means "it worked, move on"; a string is shown and the player stays put
+     — which is also how "check your email" reports itself, honestly */
+  acts: { label: string; primary?: boolean; run: (email: string, pass: string) => Promise<string | null> }[];
+  swap?: { label: string; to: AuthMode };
+  after: () => Promise<void>;
+}
+const AUTH: Record<AuthMode, AuthSpec> = {
+  attach: {
+    title: 'KEEP ACCOUNT',
+    lead: 'Add an email and this account survives a reinstall',
+    tiny: 'Same account, same rating, same record —<br>you just gain a way back into it.',
+    acts: [{ label: 'Keep this account', primary: true, run: attachEmail }],
+    swap: { label: 'I already have an account', to: 'restore' },
+    after: async () => { await showAccount(); },
+  },
+  restore: {
+    title: 'SIGN IN',
+    lead: 'Play ranked, climb the ladder',
+    tiny: 'New accounts get a nickname like BoldRaven482 —<br>change it any time in Account',
+    acts: [
+      { label: 'Sign in', primary: true, run: signIn },
+      { label: 'Create account', run: async (e, p) => {
+          const { error, live } = await signUp(e, p);
+          if (error) return error;
+          return live ? null : 'Account created — check your email to confirm, then sign in.';
+        } },
+    ],
+    after: async () => { await entered(); },
+  },
+};
+
+/* one continuation for every way a session can start: warm the chip and go
+   wherever the tap was headed */
+async function entered(): Promise<void> {
+  const v = pendingView; pendingView = null;
+  await myProfile();           // warms the home-chip cache
+  refreshHomeChip();
+  await route(v ?? 'play');
+}
+
+function authPanel(mode: AuthMode): void {
+  const spec = AUTH[mode];
+  panel('onAuth');
+  $('#onTitle').textContent = spec.title;
+  $('#onAuthLead').textContent = spec.lead;
+  $('#onAuthTiny').innerHTML = spec.tiny;
+  $('#onAuthErr').textContent = '';
+  const acts = $('#onAuthActs');
+  acts.innerHTML = '';
+  const creds = () => [($('#onEmail') as HTMLInputElement).value.trim(),
+                       ($('#onPass') as HTMLInputElement).value] as const;
+  for (const a of spec.acts) {
+    const b = document.createElement('button');
+    b.className = 'btn' + (a.primary ? ' primary' : '');
+    b.textContent = a.label;
+    b.addEventListener('click', async () => {
+      Sfx.tap();
+      $('#onAuthErr').textContent = '';
+      b.disabled = true;
+      const msg = await a.run(...creds());
+      b.disabled = false;
+      if (msg) { $('#onAuthErr').textContent = msg; return; }
+      await spec.after();
+    });
+    acts.appendChild(b);
+  }
+  const swap = $('#btnAuthSwap') as HTMLButtonElement;
+  swap.hidden = !spec.swap;
+  if (spec.swap) { swap.textContent = spec.swap.label; swap.onclick = () => { Sfx.tap(); authPanel(spec.swap!.to); }; }
+  oneTapRow(mode);
+}
+
+/* whatever this device can do without typing. `mode` names the method to call
+   because the registry's two verbs ARE the panel's two jobs — attach on a guest,
+   restore on a fresh install. */
+function oneTapRow(mode: AuthMode): void {
+  const row = $('#onOneTap');
+  row.innerHTML = '';
+  for (const m of availableTaps()) {
+    const b = document.createElement('button');
+    b.className = 'btn tap ' + m.id;
+    b.textContent = m.label;
+    b.addEventListener('click', async () => {
+      Sfx.tap();
+      $('#onAuthErr').textContent = '';
+      b.disabled = true;
+      const msg = await m[mode]();
+      b.disabled = false;
+      if (msg) { $('#onAuthErr').textContent = msg; return; }
+      await AUTH[mode].after();
+    });
+    row.appendChild(b);
+  }
 }
 
 /* every way home funnels through here — leaving the queue included, so a
@@ -157,8 +272,12 @@ async function showAccount(): Promise<void> {
   $('#onAccErr').textContent = '';
   const dieSlot = $('#accDie');
   if (!dieSlot.firstChild) dieSlot.appendChild(makeDie(5, ME));
-  const p = await myProfile();
+  const [p, who] = await Promise.all([myProfile(), currentUser()]);
   refreshHomeChip();
+  /* a guest is offered the way up; "Sign out" is hidden from them because for
+     an account with no identity it does not sign out, it throws away */
+  $('#accGuest').hidden = !who?.guest;
+  ($('#btnSignOut') as HTMLElement).hidden = !!who?.guest;
   ($('#onNick') as HTMLInputElement).value = p?.nickname ?? '';
   $('#accName').textContent = p?.nickname ?? '';
   $('#accRating').textContent = p ? String(p.rating) : '–';
@@ -219,32 +338,8 @@ function bind(): void {
 
   $('#btnOnlineBack').addEventListener('click', () => { Sfx.tap(); goHome(); });
 
-  const authErr = (m: string | null) => { $('#onAuthErr').textContent = m ?? ''; };
-  const creds = () => [($('#onEmail') as HTMLInputElement).value.trim(),
-                       ($('#onPass') as HTMLInputElement).value] as const;
-  /* one continuation for every way a session can start: warm the chip and go
-     wherever the tap was headed */
-  const entered = async () => {
-    const v = pendingView; pendingView = null;
-    await myProfile();           // warms the home-chip cache
-    refreshHomeChip();
-    await route(v ?? 'play');
-  };
-  $('#btnSignIn').addEventListener('click', async () => {
-    Sfx.tap(); authErr(null);
-    const err = await signIn(...creds());
-    if (err) return authErr(err);
-    await entered();
-  });
-  $('#btnSignUp').addEventListener('click', async () => {
-    Sfx.tap(); authErr(null);
-    const { error, live } = await signUp(...creds());
-    if (error) return authErr(error);
-    // confirmation optional: play now, confirm later. Only when the project
-    // demands a confirmed address does the inbox become the next step.
-    if (live) return entered();
-    authErr('Account created — check your email to confirm, then sign in.');
-  });
+  $('#btnKeepAcc').addEventListener('click', () => { Sfx.tap(); authPanel('attach'); });
+  $('#btnHaveAcc').addEventListener('click', () => { Sfx.tap(); authPanel('restore'); });
 
   $('#btnRename').addEventListener('click', async () => {
     Sfx.tap();
@@ -256,7 +351,7 @@ function bind(): void {
       $('#accName').textContent = p?.nickname ?? '';
     }
   });
-  $('#btnSignOut').addEventListener('click', async () => { Sfx.tap(); await signOut(); refreshHomeChip(); panel('onAuth'); });
+  $('#btnSignOut').addEventListener('click', async () => { Sfx.tap(); await signOut(); refreshHomeChip(); authPanel('restore'); });
 
   let armed = 0;
   $('#btnDeleteAcc').addEventListener('click', async () => {
@@ -267,7 +362,7 @@ function bind(): void {
       if (err) { $('#onAccErr').textContent = err; return; }
       b.textContent = 'Delete account'; armed = 0;
       refreshHomeChip();
-      panel('onAuth');
+      authPanel('restore');
     } else {
       armed = Date.now(); b.textContent = 'Tap again to delete EVERYTHING';
       setTimeout(() => { if (armed && Date.now() - armed >= 2900) { b.textContent = 'Delete account'; armed = 0; } }, 3000);
@@ -295,6 +390,15 @@ async function route(view: OnlineView): Promise<void> {
 export async function openOnline(view: OnlineView = 'play'): Promise<void> {
   bind();
   show('#ovOnline');
-  if (await currentUser()) { pendingView = null; await route(view); }
-  else { pendingView = view; panel('onAuth'); }
+  // the ladder is public (its RPC is granted to anon) — reading it must not
+  // cost the reader an account
+  if (view === 'board') { pendingView = null; return showBoard(); }
+  /* everything else needs a player, so BE one: a first-timer becomes a guest
+     here and never sees a form. Only a project with anonymous sign-ins switched
+     off falls through to the panel — which is exactly how this behaved before
+     guests existed, so the fallback is the old, working path. */
+  const who = await ensureIdentity();
+  if (who) { pendingView = null; return route(view); }
+  pendingView = view;
+  authPanel('restore');
 }
