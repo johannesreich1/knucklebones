@@ -310,7 +310,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
      mid-match; the only thing you might want is out, and out should be asked
      about once, plainly. -->
 <div class="ov" id="ovQuit">
-  <div class="firstcard">
+  <div class="askcard">
     <div class="fh" id="quitHead">Quit this game?</div>
     <p class="fp" id="quitBody">The board is lost — offline games are quick, and this one ends here.</p>
     <button class="btn" id="btnQuitYes">Quit game</button>

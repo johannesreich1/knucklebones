@@ -31,16 +31,18 @@
   <div class="fcard">
     <div class="fcap">Pages — ‹ top-left, one level up</div>
     <div class="demo"><div class="shead"><button class="ico">‹</button><span class="ttl">OFFLINE</span><span class="pad"></span></div></div>
-    <p class="rule">Screens you travel <b>into</b> from Home: <b>Offline · Ladder · Account</b>.
+    <p class="rule">Screens you travel <b>into</b> from Home: <b>Offline · Ladder · Account</b> (the last through the identity chip).
       The header reuses the HUD's icon button; the title sits centred beside it.
       ‹ returns exactly where you came from — always Home, never an intermediate menu.</p>
   </div>
   <div class="fcard">
     <div class="fcap">Sheets — ✕ top-right, context resumes</div>
     <div class="demo"><div class="shead"><span class="pad"></span><span class="ttl">SETTINGS</span><button class="ico">✕</button></div></div>
-    <p class="rule">Overlays that float <b>over</b> live context: <b>Settings · How to play · Install</b>.
+    <p class="rule">Overlays that float <b>over</b> live context: <b>Settings · How to play</b>.
       ✕ dismisses; whatever was underneath resumes untouched. A reading sheet may keep one
-      bottom <b>GOT IT</b> as an acknowledgement — that is the only bottom dismissal that survives.</p>
+      bottom <b>GOT IT</b> as an acknowledgement — that is the only bottom dismissal that survives.
+      Settings is opened from <b>Home</b>, where nothing is at stake, and carries the
+      <b>build tag</b> at its foot.</p>
   </div>
   <div class="fcard">
     <div class="fcap">The bottom of a screen = actions only</div>
@@ -50,11 +52,11 @@
       Matchmaking's only exit is <b>Cancel</b>, and cancelling truly leaves the queue.</p>
   </div>
   <div class="fcard">
-    <div class="fcap">In match — one control: settings</div>
-    <p class="rule">The HUD holds a single <b>settings</b> button (flat sliders icon). <b>Quit game</b>
-      waits at the bottom of the Settings sheet in the danger tint: practice quits instantly;
-      online the first tap arms <span class="mg">Tap again to forfeit</span> on the button —
-      the same two-tap idiom as Delete account. The pass-the-phone screen keeps its own ✕.</p>
+    <div class="fcap">In match — one control: the way out</div>
+    <p class="rule">The HUD's single button opens an <b>ask-card</b>, not a sheet: mid-match, sound
+      and dice faces are not what you reach for, and the only thing worth offering is the exit.
+      One question, a way back, and copy that knows the stake — <b>Quit this game?</b> offline,
+      <b>Forfeit this match?</b> when a rating is live. The pass-the-phone screen keeps its own ✕.</p>
   </div>
   <div class="fcard">
     <div class="fcap">The map — Home is the online menu</div>
@@ -68,13 +70,13 @@
     <div class="flow">
       <span class="fc root">HOME</span><span class="ar">→</span><span class="fc">LADDER</span>
       <span class="ar">·</span>
-      <span class="fc root">HOME</span><span class="ar">→</span><span class="fc">ACCOUNT</span>
+      <span class="fc root">CHIP</span><span class="ar">→</span><span class="fc">ACCOUNT</span>
       <span class="ar">·</span>
       <span class="fc root">HOME</span><span class="ar">→</span><span class="fc">OFFLINE</span><span class="ar">→</span><span class="fc">(DIAL)</span><span class="ar">→</span><span class="fc">GAME</span>
     </div>
     <div class="flow">
       <span class="ar">orbiting sheets:</span>
-      <span class="fc sheet">SETTINGS</span><span class="fc sheet">RULES</span><span class="fc sheet">INSTALL</span>
+      <span class="fc sheet">SETTINGS</span><span class="fc sheet">RULES</span><span class="fc sheet">QUIT?</span>
     </div>
     <p class="rule">Deep links go straight to their view. A first-timer never sees a form: the tap makes
       them a <b>guest</b> and continues straight to it. <b>Sign in</b> hangs off Account's guest
@@ -88,6 +90,9 @@
       <li>The <b>ONLINE menu panel</b> — it duplicated Home's three buttons; Home is the online menu.</li>
       <li><b>≡</b> as quit — one glyph meant “menu” in the HUD and “abandon match” mid-game.</li>
       <li>Closing matchmaking <b>without leaving the queue</b> — you could be yanked into a match from Home.</li>
+      <li><b>Settings from the HUD</b> — mid-match it offered sound and dice faces, and hid the exit
+        at its bottom behind a two-tap arm. The gear asks one question now; Settings lives on Home.</li>
+      <li>The <b>INSTALL</b> sheet and its home button — the native clients make it noise.</li>
       <li>Match results as <b>text prepended to a menu</b> — they land on the Result screen instead.</li>
     </ul>
   </div>

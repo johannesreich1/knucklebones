@@ -939,15 +939,17 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
   margin-top:auto;padding-bottom:4px}
 .viewfoot .linkbtn{opacity:.72}
 #ovSettings .pbody{margin-bottom:0}   /* the foot takes the bottom instead */
-/* ---- the first-run offer: asked once, in front of the first real game ---- */
-#ovFirst{background:rgba(4,5,12,.93)}
-.firstcard{display:flex;flex-direction:column;gap:13px;width:100%;max-width:var(--w-col);
+/* ---- ask-cards: a modal that puts ONE question with a way back. Two rosters
+   so far — the first-run tutorial offer, and quitting a game — and they differ
+   only in their words, which is the whole point of there being one card. ---- */
+#ovFirst,#ovQuit{background:rgba(4,5,12,.93)}   /* a question deserves a quiet room */
+.askcard{display:flex;flex-direction:column;gap:13px;width:100%;max-width:var(--w-col);
   padding:22px 20px;border-radius:20px;background:rgba(255,255,255,.035);
   border:1px solid color-mix(in srgb,var(--cy) 26%,transparent);
   box-shadow:0 0 40px rgba(40,232,255,.10)}
-.firstcard .fh{font-size:19px;font-weight:900;letter-spacing:.1em;color:var(--cy)}
-.firstcard .fp{margin:0;font-size:12.5px;line-height:1.6;color:var(--dim)}
-.firstcard .btn{width:100%;min-width:0}
+.askcard .fh{font-size:19px;font-weight:900;letter-spacing:.1em;color:var(--cy)}
+.askcard .fp{margin:0;font-size:12.5px;line-height:1.6;color:var(--dim)}
+.askcard .btn{width:100%;min-width:0}
 
 /* ---- the HOW TO PLAY hub: four ways in, one page ---- */
 .learnlist{display:flex;flex-direction:column;gap:11px;width:100%;max-width:var(--w-col)}

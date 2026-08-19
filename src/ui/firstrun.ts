@@ -17,7 +17,7 @@ function build(): void {
   built = true;
   document.body.insertAdjacentHTML('beforeend', `
 <div class="ov" id="ovFirst">
-  <div class="firstcard">
+  <div class="askcard">
     <div class="fh">First time?</div>
     <p class="fp">The tutorial is one guided game — five lessons, played rather than read.
        It takes about a minute, and you only ever see this once.</p>

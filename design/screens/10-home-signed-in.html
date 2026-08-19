@@ -1,12 +1,14 @@
-<!-- meta name="Home — signed in" group="1 · Home" subtitle="Online-first: the duel is the hero, one tap to ranked" width=412 height=980 links="Matchmaking, Leaderboard, Account, Local play" -->
+<!-- meta name="Home — signed in" group="1 · Home" subtitle="Online-first: the duel is the hero, one tap to ranked" width=412 height=980 links="Matchmaking, Leaderboard, Settings, Account, Local play" -->
 <style>
   /* every visual comes from the app's own HOME CSS (src/styles/main.css);
      this is preview glue only — the real overlay centers and pins for us */
   .scr{align-items:center}
   .hero{margin-top:34px}
-  .homefoot{margin-top:auto;padding-top:20px}
+  .viewfoot{margin-top:auto;padding-top:20px}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
+  <!-- the chip IS the account door: it already says who you are and what you are
+       rated, so tapping it opens the rest -->
   <div class="idchip">PLAYING AS <b>FrostLynx303</b> · <span class="rt">1016</span></div>
 
   <div class="hero">
@@ -24,7 +26,7 @@
     <button class="btn primary">Play online</button>
     <div class="hrow">
       <button class="btn">Leaderboard</button>
-      <button class="btn">Account</button>
+      <button class="btn">Settings</button>
     </div>
   </div>
 
@@ -37,7 +39,7 @@
     </div>
   </div>
 
-  <div class="homefoot">
+  <div class="viewfoot">
     <button class="linkbtn">Impressum</button>
     <button class="linkbtn">Privacy</button>
     </div>
