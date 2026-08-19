@@ -168,8 +168,8 @@ function paintBadge(html, modeId){
   if(modeId) rec.dataset.mode=modeId; else delete rec.dataset.mode;
   rec.classList.toggle('tapmode', !!modeId);
 }
-/* A live online match CLAIMS the badge: Settings is reachable mid-match, and the
-   updateRecord() on its save path must not repaint the mode away underneath it. */
+/* A live online match CLAIMS the badge: anything that saves mid-match calls
+   updateRecord(), and that must not repaint the mode away underneath it. */
 let badgeClaimed=false;
 export function claimBadge(html, modeId){ badgeClaimed=true; paintBadge(html,modeId); }
 export function releaseBadge(){ badgeClaimed=false; updateRecord(); }

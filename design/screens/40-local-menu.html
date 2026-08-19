@@ -14,27 +14,17 @@
     <div class="seg"><button>EASY</button><button>NORMAL</button><button class="on">HARD</button></div>
     <div class="tiny note">Searches four moves deep — five when the phone keeps up</div>
     <div class="lbl">Game mode</div>
-    <div class="modepick">
-      <button class="on" style="--mh:#8ea3c0"><svg class="mico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 20.8 12 12 20.8 3.2 12Z"/><circle class="f" cx="12" cy="12" r="1.7"/></svg></button>
-      <button style="--mh:#28e8ff"><svg class="mico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15M4.5 12h15M4.5 17.5h15"/></svg></button>
-      <button style="--mh:#ff2fa0"><svg class="mico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h9M4.5 12h9M4.5 17.5h9M18.7 9v6M15.7 12h6"/></svg></button>
-      <button style="--mh:#ffd166"><svg class="mico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg></button>
-      <button style="--mh:#ff8a3d"><svg class="mico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle class="f" cx="12" cy="6.2" r="1.5"/><circle class="f" cx="12" cy="12" r="1.5"/><circle class="f" cx="12" cy="17.8" r="1.5"/><path d="M8.6 2.8 15.4 9.6M15.4 2.8 8.6 9.6"/></svg></button>
-      <button style="--mh:#7ee787"><svg class="mico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.2"/><path d="M12 8.6v6.8M8.6 12h6.8"/></svg></button>
-      <button style="--mh:#b18cff"><svg class="mico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4.4" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="13" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="8.7" y="4.4" width="6.6" height="6.6" rx="1.8"/><circle class="f" cx="12" cy="7.7" r="1.2"/></svg></button>
-    </div>
-    <div class="tiny" style="text-align:left">CLASSIC — The pure duel. Columns multiply.</div>
+    <div class="modepick">{{picker:modes:0}}</div>
+    <div class="tiny" style="text-align:left">{{pickinfo:modes:0}}</div>
     <!-- Spells are part of choosing WHAT GAME THIS IS, so the pick lives here
          under the mode picker — and it IS the mode picker: same component, same
          icon row, and each slice wears the rune the game itself draws.
          NONE is the first slice and the default. -->
     <div class="lbl">Spell</div>
-    <div class="modepick">
-      <button class="on" style="--mh:#8ea3c0"><svg class="sico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.4"/><path d="M6.1 6.1 17.9 17.9"/></svg></button>
-      <button style="--mh:#b18cff"><svg class="sico" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><rect x="16.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><path d="M9 9.4h6M12.8 7.4l2.4 2-2.4 2"/><path d="M15 14.6H9M11.2 12.6l-2.4 2 2.4 2"/></svg></button>
-    </div>
-    <div class="tiny" style="text-align:left">NONE — No spells — the pure game.</div>
-    <button class="btn primary" style="margin-top:8px">Play</button>
-    <div class="tiny" style="text-align:center;margin-top:4px">Offline play never touches your online rating</div>
+    <div class="modepick">{{picker:spells}}</div>
+    <div class="tiny" style="text-align:left">{{pickinfo:spells}}</div>
+    <!-- the bar is pinned and full width; the label names the game you picked -->
+    <div class="playbar"><button class="btn primary">Play vs AI</button>
+    <div class="tiny">Offline play never touches your online rating</div></div>
   </div>
 </div></div>

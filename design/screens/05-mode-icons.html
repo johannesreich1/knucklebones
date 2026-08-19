@@ -1,7 +1,9 @@
-<!-- meta name="Mode icons" group="0 · Foundations" subtitle="Every dial mode plus RANDOM, in the game's own stroke language — implemented in src/ui/modeicons.ts" width=412 height=620 links="Matchmaking, Match" -->
+<!-- meta name="Mode icons" group="0 · Foundations" subtitle="Every dial mode plus RANDOM, in the game's own stroke language — rendered from src/ui/modeicons.ts itself" width=412 height=620 links="Matchmaking, Match" -->
 <style>
-  /* the card carries its own copies of the icon paths — the implementation
-     source of truth is src/ui/modeicons.ts; keep them in sync */
+  /* Every glyph below is a mico token — the app's own modeIcon(), not a copy
+     of it. This card used to carry transcribed paths with a "keep them in sync"
+     comment, which is the confession a duplicate always ends up writing. The
+     one-line gloss beside each is the card's own editorial. */
   .irow{display:flex;flex-direction:column;gap:14px;width:100%;max-width:320px;margin:18px auto 0}
   .ic{display:flex;align-items:center;gap:14px;background:rgba(255,255,255,.03);
     border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px 14px}
@@ -18,44 +20,32 @@
 <div class="stage"><div class="bgfx"></div><div class="scr">
   <h1 style="font-size:18px;margin-top:8px">MODE ICONS</h1>
   <div class="irow">
-    <div class="ic" style="color:#8ea3c0">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2 20.8 12 12 20.8 3.2 12Z"/><circle class="f" cx="12" cy="12" r="1.7"/></svg>
+    <div class="ic" style="color:{{mhue:classic}}">{{mico:classic:30}}
       <span class="tx"><span class="t1">CLASSIC</span><span class="t2">A die on its point — the pure game</span></span>
     </div>
-    <div class="ic" style="color:#28e8ff">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15M4.5 12h15M4.5 17.5h15"/></svg>
+    <div class="ic" style="color:{{mhue:rowswitch}}">{{mico:rowswitch:30}}
       <span class="tx"><span class="t1">ROW SWITCH</span><span class="t2">Three rows — scoring turns sideways</span></span>
     </div>
-    <div class="ic" style="color:#ff2fa0">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h9M4.5 12h9M4.5 17.5h9M18.7 9v6M15.7 12h6"/></svg>
+    <div class="ic" style="color:{{mhue:rowmult}}">{{mico:rowmult:30}}
       <span class="tx"><span class="t1">ROW MULTIPLY</span><span class="t2">Rows, plus more on top</span></span>
     </div>
-    <div class="ic" style="color:#ffd166">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg>
+    <div class="ic" style="color:{{mhue:colshield}}">{{mico:colshield:30}}
       <span class="tx"><span class="t1">COLUMN SHIELD</span><span class="t2">A shield guarding a column of pips</span></span>
     </div>
-    <div class="ic" style="color:#ff8a3d">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle class="f" cx="12" cy="6.2" r="1.5"/><circle class="f" cx="12" cy="12" r="1.5"/><circle class="f" cx="12" cy="17.8" r="1.5"/><path d="M8.6 2.8 15.4 9.6M15.4 2.8 8.6 9.6"/></svg>
+    <div class="ic" style="color:{{mhue:singlestrike}}">{{mico:singlestrike:30}}
       <span class="tx"><span class="t1">SINGLE STRIKE</span><span class="t2">Only the outermost pip falls</span></span>
     </div>
-    <div class="ic" style="color:#7ee787">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.2"/><path d="M12 8.6v6.8M8.6 12h6.8"/></svg>
+    <div class="ic" style="color:{{mhue:bounty}}">{{mico:bounty:30}}
       <span class="tx"><span class="t1">BOUNTY</span><span class="t2">A coin banking its +1</span></span>
     </div>
-    <div class="ic" style="color:#b18cff">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4.4" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="13" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="8.7" y="4.4" width="6.6" height="6.6" rx="1.8"/><circle class="f" cx="12" cy="7.7" r="1.2"/></svg>
+    <div class="ic" style="color:{{mhue:limited}}">{{mico:limited:30}}
       <span class="tx"><span class="t1">LIMITED</span><span class="t2">A stack of dice — the finite bag</span></span>
     </div>
-    <div class="ic" style="color:#e9f1ff">
-      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 7.6h3.9l9.3 8.8h3.9M3.4 16.4h3.9l9.3-8.8h3.9"/><path d="M18.1 4.6 20.9 7.6 18.1 10.6M18.1 13.4 20.9 16.4 18.1 19.4"/></svg>
+    <div class="ic" style="color:{{mhue:random}}">{{mico:random:30}}
       <span class="tx"><span class="t1">RANDOM</span><span class="t2">Two arrows crossing — the dial will decide</span></span>
     </div>
   </div>
-  <div class="sizes">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg>
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg>
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg>
-    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg>
-  </div>
+  <!-- one glyph at every size the app asks for, to prove the stroke holds up -->
+  <div class="sizes">{{mico:colshield:12}}{{mico:colshield:15}}{{mico:colshield:20}}{{mico:colshield:30}}</div>
   <div class="cap2">Badge 12 · Shield 13 · Picker 16 · Banner 17 · Cards 22 · Dial 24 · Centre 40</div>
 </div></div>

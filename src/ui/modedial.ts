@@ -57,12 +57,19 @@ function dieFace(v: number): string {
     `<i class="${on.includes(i) ? 'p on' : 'p'}"></i>`).join('') + '</i>';
 }
 
+/* The node ring, as markup — the ONE description of where a mode sits on the
+   dial and what colour it wears. Pure, so the design build imports it too
+   (design/build.mjs, {{dialnodes}}): a card can never draw a ring the app
+   does not build. `found` is the card's slot — at runtime the app lights the
+   winner itself, but a still needs it baked in. */
+export const dialNodes = (found?: string): string => MODES.map((m, i) =>
+  `<i class="dnode${m.id === found ? ' on' : ''}" data-mode="${m.id}"`
+  + ` style="--a:${(i * SEG).toFixed(2)}deg;color:${modeHue(m.id)}">${modeIcon(m.id, 24)}</i>`).join('');
+
 let built = false;
 function build(): void {
   if (built) return;
   built = true;
-  const nodes = MODES.map((m, i) =>
-    `<i class="dnode" data-mode="${m.id}" style="--a:${(i * SEG).toFixed(2)}deg;color:${modeHue(m.id)}">${modeIcon(m.id, 24)}</i>`).join('');
   document.body.insertAdjacentHTML('beforeend', `
 <div class="ov" id="ovWheel">
   <div class="dwho" id="wheelWho"></div>
@@ -70,7 +77,7 @@ function build(): void {
   <div class="dial" id="wheelDial">
     <i class="dring"></i>
     <i class="dcomet" id="wheelComet"><i class="dtrail"></i><i class="dhead"></i></i>
-    ${nodes}
+    ${dialNodes()}
     <div class="dcore"><i class="dsonar"></i><i class="dfound" id="wheelFound"></i></div>
   </div>
   <div class="wname" id="wheelName">&nbsp;</div>

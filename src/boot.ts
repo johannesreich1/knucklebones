@@ -32,14 +32,10 @@ import { newGame, startLocal, passTap } from './flow/game.ts';
 import { stampBuild } from './ui/dom.ts';
 import { castArmed, disarm, renderSpells } from './flow/spells.ts';
 import { bindEnd } from './ui/endscreen.ts';
-import { SPELLS } from './core/spells.ts';
-import { spellIcon, spellHue } from './ui/spellicons.ts';
 import { toMenu, syncSettingsUI, updateStatLine } from './flow/menu.ts';
 import { requestLeave, leavingForfeits } from './flow/leave.ts';
-import { openModes, openSpells } from './ui/library.ts';
+import { openModes, openSpells, pickerButtons, MODE_PICKS, SPELL_PICKS } from './ui/library.ts';
 import { isNewcomer } from './ui/firstrun.ts';
-import { MODES, RANDOM, modeByEnum } from './core/modes.ts';
-import { modeIcon, modeHue } from './ui/modeicons.ts';
 /* ===================== BOOT ===================== */
 export function boot(embed){
   setEmbed(!!embed);
@@ -141,14 +137,7 @@ export function boot(embed){
      lives, so game mode and spell differ by their list and nothing else. */
   const pickerRow=(sel,items,read,write)=>{
     const strip=$(sel), info=$(sel+'Info');
-    for(const it of items){
-      const b=document.createElement('button');
-      b.type='button'; b.dataset.v=it.v;
-      b.style.setProperty('--mh',it.hue);
-      b.setAttribute('aria-label',it.name);
-      b.innerHTML=it.icon;
-      strip.appendChild(b);
-    }
+    strip.innerHTML=pickerButtons(items);   // one button shape, here and on the cards
     const sync=()=>{
       const cur=String(read());
       strip.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.v===cur));
@@ -163,20 +152,10 @@ export function boot(embed){
     sync();
     return sync;
   };
-  // every dial mode, playable locally — plus RANDOM last, which hands the
-  // choice to the same dial ranked uses, on the same weighted odds
-  pickerRow('#modePick',
-    [...MODES.map(m=>({v:String(m.mode), hue:modeHue(m.id), icon:modeIcon(m.id,16), name:m.name, blurb:m.blurb})),
-     {v:String(RANDOM), hue:modeHue('random'), icon:modeIcon('random',16), name:'RANDOM',
-      blurb:'The dial decides — ranked\u2019s odds, spun in front of you.'}],
-    ()=>S.localMode, v=>{ S.localMode=+v; });
-  // ...and which spell you bring, NONE first — the same row, the same rune icon
-  // the game itself draws, so the picker and the rail can never disagree
-  pickerRow('#spellPick',
-    [{v:'', hue:spellHue('none'), icon:spellIcon('none',16), name:'NONE',
-      blurb:'No spells — the pure game.'},
-     ...SPELLS.map(s=>({v:s.id, hue:spellHue(s.id), icon:spellIcon(s.id,16), name:s.name, blurb:s.blurb}))],
-    ()=>S.spell, v=>{ S.spell=v; disarm(); renderSpells(); });
+  // both rosters live in ui/library.ts beside the reference sheet's — one place
+  // that knows what a mode is called and what it promises, whichever screen asks
+  pickerRow('#modePick', MODE_PICKS, ()=>S.localMode, v=>{ S.localMode=+v; });
+  pickerRow('#spellPick', SPELL_PICKS, ()=>S.spell, v=>{ S.spell=v; disarm(); renderSpells(); });
 
   bindSeg('#modeSeg','m', v=>{ S.mode=v; });
   bindSeg('#diffSeg','d', v=>{ S.diff=v; });

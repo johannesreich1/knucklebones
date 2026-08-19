@@ -1,11 +1,16 @@
 <!-- meta name="Mode dial — hunting" group="2 · Online flow" subtitle="Mid-hunt: modes flare as the comet crosses them, the winner is no brighter than the rest, and nothing is named" width=412 height=880 links="Match" -->
 <style>
-  /* dial classes are the app's own (main.css); this centres them on the card.
+  /* dial classes are the app's own (main.css) and the ring itself comes from
+     the app's own generator (the dialnodes token → ui/modedial.ts), so this card
+     cannot show a dial the app does not build. Glue only below.
      --dial is viewport-relative in the app — pinned here so the card's stage,
      not the browser window, decides the size. */
   .scr{align-items:center;justify-content:center;gap:12px}
   #ovWheel{--dial:252px;display:flex;flex-direction:column;align-items:center;gap:12px}
   .wblurb{max-width:250px}
+  /* the two nodes the comet has just crossed are still fading — addressed by
+     the app's own data-mode hook, so this stays true if the ring is reordered */
+  .dnode[data-mode="bounty"],.dnode[data-mode="limited"]{opacity:.62}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
   <div id="ovWheel" class="hunting">
@@ -14,14 +19,8 @@
     <div class="dial">
       <i class="dring"></i>
       <i class="dcomet" style="transform:rotate(282.29deg)"><i class="dtrail"></i><i class="dhead"></i></i>
-      <i class="dnode" style="--a:0.00deg;color:#8ea3c0;"><svg class="mico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2 20.8 12 12 20.8 3.2 12Z"/><circle class="f" cx="12" cy="12" r="1.7"/></svg></i>
-      <i class="dnode" style="--a:51.43deg;color:#28e8ff;"><svg class="mico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5h15M4.5 12h15M4.5 17.5h15"/></svg></i>
-      <i class="dnode" style="--a:102.86deg;color:#ff2fa0;"><svg class="mico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5h9M4.5 12h9M4.5 17.5h9M18.7 9v6M15.7 12h6"/></svg></i>
-      <i class="dnode" style="--a:154.29deg;color:#ffd166;"><svg class="mico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg></i>
-      <i class="dnode" style="--a:205.71deg;color:#ff8a3d;"><svg class="mico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle class="f" cx="12" cy="6.2" r="1.5"/><circle class="f" cx="12" cy="12" r="1.5"/><circle class="f" cx="12" cy="17.8" r="1.5"/><path d="M8.6 2.8 15.4 9.6M15.4 2.8 8.6 9.6"/></svg></i>
-      <i class="dnode" style="--a:257.14deg;color:#7ee787;opacity:.62;"><svg class="mico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.2"/><path d="M12 8.6v6.8M8.6 12h6.8"/></svg></i>
-      <i class="dnode" style="--a:308.57deg;color:#b18cff;opacity:.62;"><svg class="mico" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.4" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="13" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="8.7" y="4.4" width="6.6" height="6.6" rx="1.8"/><circle class="f" cx="12" cy="7.7" r="1.2"/></svg></i>
-      <div class="dcore"><i class="dsonar"></i><i class="dfound" style="color:#ffd166"><svg class="mico" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg></i></div>
+      {{dialnodes}}
+      <div class="dcore"><i class="dsonar"></i><i class="dfound" style="color:{{mhue:colshield}}">{{mico:colshield:40}}</i></div>
     </div>
     <div class="wname">&nbsp;</div>
     <div class="wblurb">&nbsp;</div>

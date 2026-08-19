@@ -8,10 +8,26 @@
 //
 // Screen file format: first line is a meta comment —
 //   <!-- meta name="…" group="…" subtitle="…" width=400 height=900 links="A,B" -->
-// followed by the card's body HTML. {{die:V:p1|p2|gold}} expands to a die.
+// followed by the card's body HTML, in which these tokens expand:
+//
+//   {{die:V:p1|p2|gold[:px]}}   a die face
+//   {{mico:MODE[:px]}}          a mode icon — the APP's, imported below
+//   {{mhue:MODE}}               a mode's hue — likewise
+//   {{dialnodes[:MODE]}}        the dial's whole node ring, optionally landed
+//   {{library:modes|spells[:ID]}}  a whole roster of reference cards, ID ringed
+//   {{picker:modes|spells[:V]}}    an OFFLINE pick row, V selected
+//   {{pickinfo:modes|spells[:V]}}  the line under it that names the choice
+//
+// The last three import from src/ rather than re-describing it: a card that
+// hand-copies an icon is a second implementation that drifts the moment the
+// first one changes, and the mode icons had reached 122 copies across 12 cards
+// before this existed. Needs Node ≥22.18 (type stripping on by default).
 import { readFileSync, writeFileSync, readdirSync, mkdirSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
+import { modeIcon, modeHue } from '../src/ui/modeicons.ts';
+import { dialNodes } from '../src/ui/modedial.ts';
+import { libraryCards, pickerButtons, MODE_LIB, SPELL_LIB, MODE_PICKS, SPELL_PICKS } from '../src/ui/library.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
@@ -87,7 +103,19 @@ for (const f of screens) {
 
   let body = src.slice(meta[0].length)
     .replace(/\{\{die:(\d):([a-z0-9]+)(?::(\d+))?\}\}/g,
-      (_, v, cls, size) => dieHtml(+v, cls === 'gold' ? 'p1 m2' : cls, size ? +size : 0));
+      (_, v, cls, size) => dieHtml(+v, cls === 'gold' ? 'p1 m2' : cls, size ? +size : 0))
+    .replace(/\{\{mico:([a-z]+)(?::(\d+))?\}\}/g, (_, id, size) => modeIcon(id, size ? +size : 24))
+    .replace(/\{\{mhue:([a-z]+)\}\}/g, (_, id) => modeHue(id))
+    .replace(/\{\{dialnodes(?::([a-z]+))?\}\}/g, (_, found) => dialNodes(found))
+    .replace(/\{\{library:(modes|spells)(?::([a-z]+))?\}\}/g,
+      (_, roster, now) => libraryCards(roster === 'modes' ? MODE_LIB : SPELL_LIB, now))
+    .replace(/\{\{picker:(modes|spells)(?::(-?\w+))?\}\}/g,
+      (_, roster, now) => pickerButtons(roster === 'modes' ? MODE_PICKS : SPELL_PICKS, now ?? ''))
+    .replace(/\{\{pickinfo:(modes|spells)(?::(-?\w+))?\}\}/g, (_, roster, now) => {
+      const items = roster === 'modes' ? MODE_PICKS : SPELL_PICKS;
+      const it = items.find((i) => i.v === (now ?? '')) ?? items[0];
+      return `${it.name} — ${it.blurb}`;   // exactly what pickerRow's sync() writes
+    });
 
   const flows = links
     ? `<div class="flows">${links.split(',').map((l) => `<span class="fc">→ <b>${l.trim()}</b></span>`).join('')}</div>`
