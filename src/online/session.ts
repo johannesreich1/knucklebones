@@ -33,8 +33,12 @@ export interface MatchRow {
    guest exactly as for anybody else, and every RLS policy is written against
    auth.uid(). That is why guest play costs no schema. */
 export interface Me { id: string; guest: boolean; email: string | null }
+/* An account carrying an address is NOT a guest, whatever is_anonymous says.
+   Identities attached server-side (Game Center goes through the admin API) do
+   not necessarily clear the flag, and a player who has attached must never be
+   told again that their rating lives on this device only. */
 const me = (u: { id: string; is_anonymous?: boolean; email?: string } | null | undefined): Me | null =>
-  u ? { id: u.id, guest: !!u.is_anonymous, email: u.email ?? null } : null;
+  u ? { id: u.id, guest: !!u.is_anonymous && !u.email, email: u.email ?? null } : null;
 
 /* Signing up may or may not hand back a live session: with email confirmation
    REQUIRED the account waits for the link, with it optional Supabase signs the

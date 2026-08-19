@@ -13,7 +13,7 @@ was decided, and what's still open.*
 | **Edge Functions** | `pvp-join` v10, `pvp-move` v7, `pvp-claim` v6, `account-delete` v1 — all ACTIVE, nothing dead deployed |
 | **CI** | GitHub Actions: build + full test gate on every push — green through current `main` |
 | **Design system** | 90 cards (every screen and sheet × 4 device sizes + the `00-navigation` spec) in the Claude Design project "Knucklebones", generated from the app's real CSS |
-| **Signups** | **Not yet open to the public** — SMTP not configured (see Open items) |
+| **Signups** | **Open** — a first tap on RANKED mints a guest account (no email, no form). Attaching an email still waits on SMTP; see `docs/IDENTITY.md` |
 
 Verified live on 2026-08-17: build tag on the deployed page matches the local
 build, service worker activates with the matching cache key, the online chunk

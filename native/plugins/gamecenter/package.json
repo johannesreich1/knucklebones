@@ -1,0 +1,16 @@
+{
+  "name": "knucklebones-gamecenter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Game Center authentication + identity-verification signature, for gc-auth",
+  "main": "dist/plugin.js",
+  "types": "dist/index.d.ts",
+  "capacitor": {
+    "ios": {
+      "src": "ios"
+    }
+  },
+  "files": ["ios", "KnucklebonesGameCenter.podspec"],
+  "keywords": ["capacitor", "plugin", "gamecenter"],
+  "capacitorPlugin": true
+}

@@ -84,6 +84,7 @@
 .btn.ghost{background:none;color:var(--dim);box-shadow:none;font-size:11px;letter-spacing:.1em;padding:12px}
 /* Apple's own button, per its guidelines: their black-on-white, our radius */
 .btn.tap.apple{background:#fff;color:#000;border-color:#fff}
+.btn.tap.gamecenter{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.3)}
 
 /* ---- what RANKED adds to the shared result screen (ui/endscreen) ----
    The screen itself — title, sub, the two scores, the actions — is the same

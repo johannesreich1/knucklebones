@@ -8,6 +8,7 @@
     "open:ios": "cap open ios"
   },
   "dependencies": {
+    "@capacitor-community/apple-sign-in": "^7.1.0",
     "@capacitor/core": "^7.0.0",
     "@capacitor/ios": "^7.0.0"
   },

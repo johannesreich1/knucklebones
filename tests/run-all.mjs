@@ -57,6 +57,7 @@ judge('dice', await run('node', ['--experimental-strip-types', 'tests/dice.test.
 judge('match', await run('node', ['--experimental-strip-types', 'tests/match.test.ts']), clean);
 judge('modes', await run('node', ['--experimental-strip-types', 'tests/modes.test.ts']), clean);
 judge('spells', await run('node', ['--experimental-strip-types', 'tests/spells.test.ts']), clean);
+judge('gcauth', await run('node', ['--experimental-strip-types', 'tests/gcauth.test.ts']), clean);
 
 for (const t of FILE_SUITES) judge(t, await run('node', [`tests/${t}.mjs`]), clean);
 

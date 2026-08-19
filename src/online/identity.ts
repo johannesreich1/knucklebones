@@ -9,6 +9,7 @@
 // Native providers arrive through the Capacitor bridge on `window`, deliberately
 // NOT through an import: the web bundle must not carry a line of plugin code.
 import { supa } from './session.ts';
+import { SUPABASE_URL, SUPABASE_KEY } from '../config.ts';
 
 export interface OneTap {
   id: string;
@@ -71,5 +72,42 @@ async function appleToken(): Promise<{ token: string; nonce: string } | string> 
   }
 }
 
-export const ONE_TAP: OneTap[] = [APPLE];
+/* ---- Game Center: the rung with no tap at all ----
+   The device already knows who the player is, so there is nothing to present —
+   we ask Apple to sign that identity and let the server decide what it means
+   (supabase/functions/gc-auth). ATTACH sends our session so the identity lands
+   on the guest already playing; RESTORE deliberately does not, so the server
+   answers with whoever owns this Game Center account. */
+const GAME_CENTER: OneTap = {
+  id: 'gamecenter',
+  label: 'Continue with Game Center',
+  available: () => !!plugins().GameCenter,
+  restore: () => gcSession(false),
+  attach: () => gcSession(true),
+};
+
+async function gcSession(link: boolean): Promise<string | null> {
+  let signed: Record<string, string>;
+  try {
+    signed = await plugins().GameCenter.signIn();
+  } catch (e: any) {
+    return e?.message ?? 'Game Center sign-in failed';
+  }
+  const { data: { session } } = await supa().auth.getSession();
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/gc-auth`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SUPABASE_KEY,
+      ...(link && session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+    },
+    body: JSON.stringify(signed),
+  });
+  const data = await res.json().catch(() => null);
+  if (!res.ok || !data?.token_hash) return data?.error ?? 'Game Center could not be verified';
+  const { error } = await supa().auth.verifyOtp({ token_hash: data.token_hash, type: 'magiclink' });
+  return error ? error.message : null;
+}
+
+export const ONE_TAP: OneTap[] = [GAME_CENTER, APPLE];
 export const availableTaps = (): OneTap[] => ONE_TAP.filter((m) => m.available());
