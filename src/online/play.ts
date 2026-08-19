@@ -58,32 +58,13 @@ export interface FinishReport {
 let onFinished: ((r: FinishReport) => void) | null = null;
 export function setFinishHandler(f: typeof onFinished): void { onFinished = f; }
 
-/* the HUD's ✕ during a live online match: first tap arms, a second within 3s
-   abandons (the server forfeits — pvp-claim by the human opponent, lazily by
-   pvp-join for bot matches). Registered via flow/leave so the eagerly-loaded
-   boot never has to import this lazy chunk. */
-/* Settings' Quit button during a live online match: the first tap arms the
-   confirm ON the button (the Delete-account idiom), a second within 3s
-   abandons — the server forfeits (pvp-claim by a human opponent, lazily by
-   pvp-join for bot matches). */
-let leaveArmed = 0;
+/* Quitting a live ranked match forfeits it. The confirmation is the quit modal
+   now (flow/leave → boot), so this no longer arms anything of its own — it
+   tears the match down and lets the normal quit continue. */
 function leaveTap(): boolean {
-  if (!O || O.done) return false;               // no live match — normal quit
-  const b = $('#btnMenu');
-  if (Date.now() - leaveArmed < 3000) {
-    leaveArmed = 0;
-    b.textContent = 'Quit game';
-    teardown();
-    return false;                               // fall through to the normal quit
-  }
-  leaveArmed = Date.now();
-  b.textContent = 'Tap again to forfeit';
-  setTimeout(() => {                            // not confirmed: restore the label
-    if (leaveArmed === 0 || Date.now() - leaveArmed < 2900) return;
-    leaveArmed = 0;
-    b.textContent = 'Quit game';
-  }, 3000);
-  return true;
+  if (!O || O.done) return false;
+  teardown();
+  return false;
 }
 
 export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>): Promise<void> {
@@ -450,8 +431,6 @@ export function teardown(): void {
   if (O.tick) clearInterval(O.tick);
   setPlaceHandler(null as any);
   setLeaveInterceptor(null);
-  leaveArmed = 0;
-  $('#btnMenu').textContent = 'Quit game';
   releaseBadge();                  // hands #rec back to the local record
   showBag(false);
   showClock(false);

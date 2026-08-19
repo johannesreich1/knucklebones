@@ -71,8 +71,9 @@ async function visit({ anonymous = 200, attached = false }) {
   await page.route('**/auth/v1/.well-known/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"keys":[]}' }));
 
   await page.goto(URL, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#btnAccountHome');
-  await page.click('#btnAccountHome');
+  // the home chip carrying the player's identity IS the door to the account view
+  await page.waitForSelector('#homeChip');
+  await page.click('#homeChip');
   await page.waitForSelector('#ovOnline', { state: 'attached', timeout: 15000 });
   await page.waitForFunction(() => {
     const a = document.querySelector('#onAccount'), s = document.querySelector('#onAuth');

@@ -35,7 +35,7 @@ import { bindEnd } from './ui/endscreen.ts';
 import { SPELLS } from './core/spells.ts';
 import { spellIcon, spellHue } from './ui/spellicons.ts';
 import { toMenu, syncSettingsUI, updateStatLine } from './flow/menu.ts';
-import { requestLeave } from './flow/leave.ts';
+import { requestLeave, leavingForfeits } from './flow/leave.ts';
 import { openModes, openSpells } from './ui/library.ts';
 import { isNewcomer } from './ui/firstrun.ts';
 import { MODES, RANDOM, modeByEnum } from './core/modes.ts';
@@ -105,7 +105,20 @@ export function boot(embed){
     tap($('#btnClose'+id+'2'),()=>{ Sfx.tap(); hide('#ov'+id); });
   }
   tap($('#btnPracticeBack'),()=>{ Sfx.tap(); hide('#ovPractice'); show('#ovStart'); });
-  tap($('#btnSettings'),()=>{ Sfx.tap(); show('#ovSettings'); });
+  /* The HUD's only control, and mid-match the only thing it can usefully offer
+     is the way out — asked once, plainly, with a way back. Sound and dice faces
+     live on Settings, which is reachable from home where nothing is at stake. */
+  const armQuit=()=>{
+    const ranked=leavingForfeits();
+    $('#quitHead').textContent = ranked ? 'Forfeit this match?' : 'Quit this game?';
+    $('#quitBody').textContent = ranked
+      ? 'Leaving a ranked match loses it, and the rating goes with it.'
+      : 'The board is lost — offline games are quick, and this one ends here.';
+    $('#btnQuitYes').textContent = ranked ? 'Forfeit' : 'Quit game';
+  };
+  tap($('#btnSettings'),()=>{ Sfx.tap(); armQuit(); show('#ovQuit'); });
+  tap($('#btnQuitNo'),()=>{ Sfx.tap(); hide('#ovQuit'); });
+  tap($('#btnQuitYes'),()=>{ Sfx.tap(); hide('#ovQuit'); requestLeave(); toMenu(); });
   tap($('#btnCloseSettings'),()=>{ Sfx.tap(); hide('#ovSettings'); });
   tap($('#btnHow2'),()=>{ Sfx.tap(); hide('#ovSettings'); show('#ovRules'); });
   /* A coach bubble that is WAITING is dismissed by a tap anywhere, not only by
@@ -175,7 +188,6 @@ export function boot(embed){
   bindEnd();       // the result screen binds its own actions, once (ui/endscreen)
   // quit lives at the bottom of the Settings sheet; an online match intercepts
   // the first tap to arm its two-tap forfeit confirm on the button itself
-  tap($('#btnMenu'),()=>{ Sfx.tap(); if(requestLeave()) return; hide('#ovSettings'); toMenu(); });
   // the HUD badge opens the rules of whatever mode it names. ONE binding serves
   // both flows: whoever paints the badge sets data-mode (see render.paintBadge),
   // so this affordance can never go missing on one side again.
@@ -186,7 +198,8 @@ export function boot(embed){
     import('./online/ui.ts').then(m=>m.openOnline('play')); });
   tap($('#btnBoardHome'),()=>{ Sfx.unlock(); Sfx.tap();
     import('./online/ui.ts').then(m=>m.openOnline('board')); });
-  tap($('#btnAccountHome'),()=>{ Sfx.unlock(); Sfx.tap();
+  tap($('#btnSettingsHome'),()=>{ Sfx.unlock(); Sfx.tap(); show('#ovSettings'); });
+  tap($('#homeChip'),()=>{ Sfx.unlock(); Sfx.tap();
     import('./online/ui.ts').then(m=>m.openOnline('account')); });
   tap($('#btnCloseRules'),()=>{ Sfx.tap(); hide('#ovRules'); });
 
@@ -203,7 +216,7 @@ export function boot(embed){
     }else if(e.key==='Enter'||e.key===' '){
       if($('#ovPass').classList.contains('on')) $('#ovPass').click();
       else if($('#ovStart').classList.contains('on')||$('#ovEnd').classList.contains('on')){ Sfx.unlock(); void startLocal(); }
-    }else if(e.key==='Escape'){ disarm(); hide('#ovRules'); hide('#ovSettings'); hide('#ovLearn'); hide('#ovImprint'); hide('#ovPrivacy');
+    }else if(e.key==='Escape'){ disarm(); hide('#ovRules'); hide('#ovSettings'); hide('#ovLearn'); hide('#ovQuit'); hide('#ovImprint'); hide('#ovPrivacy');
       for(const id of ['ovModes','ovSpells']) if(document.getElementById(id)) hide('#'+id); }
   });
 

@@ -70,7 +70,9 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
 <!-- HOME: online-first. The duel is the hero, PLAY ONLINE the one primary
      action; local play sits behind the quiet PRACTICE strip. -->
 <div class="ov on" id="ovStart">
-  <div class="idchip anon" id="homeChip">NOT SIGNED IN</div>
+  <!-- the chip IS the account: it already shows who you are and what you are
+       rated, so tapping it opens the rest -->
+  <button class="idchip anon" id="homeChip">NOT SIGNED IN</button>
   <div class="hero">
     <div class="eyebrow">Neon Edition</div>
     <h1>KNUCKLEBONES</h1>
@@ -81,7 +83,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <button class="btn primary" id="btnOnline">Play online</button>
     <div class="hrow">
       <button class="btn" id="btnBoardHome">Leaderboard</button>
-      <button class="btn" id="btnAccountHome">Account</button>
+      <button class="btn" id="btnSettingsHome">Settings</button>
     </div>
   </div>
   <div class="quiet">
@@ -95,7 +97,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   <!-- everything teachable moved behind HOW TO PLAY, so the foot carries only
        what the law requires — and it sits at the very bottom, where nobody
        looks for it and nobody has to. -->
-  <div class="homefoot">
+  <div class="viewfoot">
     <button class="linkbtn" id="btnImprint">Impressum</button>
     <button class="linkbtn" id="btnPrivacy">Privacy</button>
   </div>
@@ -304,6 +306,18 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
 </div>
 
 <!-- SETTINGS: a sheet over live context — ✕ closes, toggles apply instantly -->
+<!-- QUIT: the HUD's one control during a game. Settings has nothing to say
+     mid-match; the only thing you might want is out, and out should be asked
+     about once, plainly. -->
+<div class="ov" id="ovQuit">
+  <div class="firstcard">
+    <div class="fh" id="quitHead">Quit this game?</div>
+    <p class="fp" id="quitBody">The board is lost — offline games are quick, and this one ends here.</p>
+    <button class="btn" id="btnQuitYes">Quit game</button>
+    <button class="btn ghost" id="btnQuitNo">Keep playing</button>
+  </div>
+</div>
+
 <div class="ov paged" id="ovSettings">
   <div class="shead">
     <span class="pad"></span><span class="ttl">SETTINGS</span>
@@ -326,10 +340,10 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     </div>
     <button class="btn" id="btnHow2">How to play</button>
     <div class="tiny">Changes apply the moment you tap them</div>
-    <div class="danger">
-      <button class="btn" id="btnMenu">Quit game</button>
-    </div>
   </div>
+  <!-- deploy truth lives here now: the screen you open when something looks
+       wrong is the screen that should tell you WHICH build is wrong -->
+  <div class="viewfoot"><div class="tiny" id="buildTag">build dev</div></div>
 </div>
 
 <!-- END — the ONE result screen, local and ranked alike (ui/endscreen.ts).

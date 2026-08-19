@@ -126,7 +126,7 @@ check(JSON.stringify(beforeIllegal.b0) === JSON.stringify(afterIllegal.b0) &&
 await page.screenshot({ path: './duo-mid.png' });
 
 // ================= CPU MODE REGRESSION =================
-await page.click('#btnSettings'); await page.waitForTimeout(300); await page.click('#btnMenu'); await page.waitForTimeout(400);
+await page.click('#btnSettings'); await page.waitForTimeout(300); await page.click('#btnQuitYes'); await page.waitForTimeout(400);
 await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.click('#modeSeg button[data-m="cpu"]');
 await page.waitForTimeout(200);

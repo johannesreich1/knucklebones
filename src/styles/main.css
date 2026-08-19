@@ -931,9 +931,14 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
    between two auto-margin spacers (:259-260); margin-top:auto pushes the foot
    past the lower one so the legal links sit where legal links belong —
    findable, and never in the way of the game. */
-.homefoot{display:flex;align-items:center;justify-content:center;gap:16px;
+/* a view's footer strip: whatever a screen carries at its very bottom — the
+   legal links on home, the build tag in settings. One rule, two rosters.
+   It pins itself with margin-top:auto, so a sibling that centres itself with
+   auto margins (.pbody) simply shares the free space with it. */
+.viewfoot{display:flex;align-items:center;justify-content:center;gap:16px;
   margin-top:auto;padding-bottom:4px}
-.homefoot .linkbtn{opacity:.72}
+.viewfoot .linkbtn{opacity:.72}
+#ovSettings .pbody{margin-bottom:0}   /* the foot takes the bottom instead */
 /* ---- the first-run offer: asked once, in front of the first real game ---- */
 #ovFirst{background:rgba(4,5,12,.93)}
 .firstcard{display:flex;flex-direction:column;gap:13px;width:100%;max-width:var(--w-col);

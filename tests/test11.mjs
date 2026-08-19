@@ -72,7 +72,7 @@ check(out.leftover === 0, 'popups leak into the DOM', out.leftover);
 // quit tutorial (via Settings — the sheet holds the quit button now),
 // popups must also fire in a NORMAL game (they are not tutorial-only)
 await page.tap('#btnSettings'); await page.waitForTimeout(300);
-await page.tap('#btnMenu'); await page.waitForTimeout(400);
+await page.tap('#btnQuitYes'); await page.waitForTimeout(400);
 await page.evaluate(() => { window.__pops = []; });
 await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#btnPlay'); await page.waitForTimeout(1500);
@@ -87,8 +87,10 @@ check(out.normalPops >= 1, 'no score popup in normal play', out.normalPops);
 out.normalPills = await page.evaluate(() => document.querySelectorAll('.chip .dl.show').length);
 check(out.normalPills === 0, 'previews leaked back into normal play', out.normalPills);
 
-// ===== settings panel =====
-await page.tap('#btnSettings'); await page.waitForTimeout(400);
+// ===== settings panel — a HOME sheet since the HUD became quit-only =====
+await page.evaluate(() => window.__kb.goHome());
+await page.waitForTimeout(300);
+await page.tap('#btnSettingsHome'); await page.waitForTimeout(400);
 out.settingsOpen = await page.evaluate(() => ({
   on: document.getElementById('ovSettings').classList.contains('on'),
   sndOn: document.querySelector('#sndSeg button.on')?.dataset.s,
@@ -117,18 +119,21 @@ out.persist = await page.evaluate(() => ({
 check(out.persist.sound === false && out.persist.numerals === true && out.persist.cls,
       'settings did not persist', out.persist);
 
-// ===== settings is a sheet: ✕ header closes it, reset-record is retired =====
-await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
-await page.tap('#btnPlay'); await page.waitForTimeout(1200);   // hud only reachable in-game
-await page.tap('#btnSettings'); await page.waitForTimeout(300);
+/* Settings is a HOME sheet now: mid-match the HUD asks one question (quit),
+   and sound/dice-faces live where nothing is at stake. */
+await page.evaluate(() => window.__kb.goHome());
+await page.waitForTimeout(300);
+await page.tap('#btnSettingsHome'); await page.waitForTimeout(300);
 out.sheet = await page.evaluate(() => ({
   reset: !!document.getElementById('btnResetStats'),
   done: [...document.querySelectorAll('#ovSettings .btn')].some(b => /done/i.test(b.textContent)),
   x: document.querySelector('#ovSettings .shead #btnCloseSettings')?.textContent ?? '',
   title: document.querySelector('#ovSettings .shead .ttl')?.textContent ?? '',
   quitInSheet: !!document.querySelector('#ovSettings #btnMenu'),
+  buildTag: !!document.querySelector('#ovSettings #buildTag'),
 }));
-check(out.sheet.quitInSheet, 'Quit game not inside the Settings sheet', out.sheet);
+check(!out.sheet.quitInSheet, 'Quit is still inside the Settings sheet', out.sheet);
+check(out.sheet.buildTag, 'the build tag is not at the bottom of Settings', out.sheet);
 check(!out.sheet.reset, 'Reset record still in Settings', out.sheet);
 check(!out.sheet.done, 'Settings still has a bottom Done button', out.sheet);
 check(out.sheet.x === '✕' && out.sheet.title === 'SETTINGS', 'Settings sheet header wrong', out.sheet);
@@ -141,8 +146,6 @@ check(out.sheetClosed, 'Settings ✕ did not close the sheet', out.sheetClosed);
 // nothing offline, because the listener lived inside the online chunk. Both
 // flows now paint the badge through render.paintBadge and boot binds the tap
 // once against data-mode, so the affordance cannot go missing on one side.
-await page.tap('#btnSettings'); await page.waitForTimeout(250);
-await page.tap('#btnMenu'); await page.waitForTimeout(400);
 await page.evaluate(() => { window.__kb.S.localMode = 4; window.__kb.openPractice(); }); // SINGLE STRIKE
 await page.tap('#btnPlay'); await page.waitForTimeout(1200);
 out.badge = await page.evaluate(() => {
@@ -167,7 +170,7 @@ check(out.badgeOpens.now === 'singlestrike', 'modes library did not highlight th
 await page.tap('[data-close="ovModes"]'); await page.waitForTimeout(300);
 // a classic offline game keeps the record and stays inert — nothing to explain
 await page.tap('#btnSettings'); await page.waitForTimeout(250);
-await page.tap('#btnMenu'); await page.waitForTimeout(400);
+await page.tap('#btnQuitYes'); await page.waitForTimeout(400);
 await page.evaluate(() => { window.__kb.S.localMode = 0; window.__kb.openPractice(); });
 await page.tap('#btnPlay'); await page.waitForTimeout(1200);
 out.badgeClassic = await page.evaluate(() => {
