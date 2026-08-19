@@ -169,7 +169,8 @@ async function call<T>(fn: string, body: object): Promise<{ status: number; data
 }
 
 export type JoinResult =
-  | { status: 'matched'; match: MatchRow; you: 0 | 1; rejoined?: boolean; names: { p1: string; p2: string } }
+  | { status: 'matched'; match: MatchRow; you: 0 | 1; rejoined?: boolean;
+      names: { p1: string; p2: string; ratings?: { p1: number | null; p2: number | null } } }
   | { status: 'queued' };
 export async function join(allowBot: boolean): Promise<JoinResult | null> {
   const r = await call<JoinResult>('pvp-join', { allow_bot: allowBot });
@@ -182,6 +183,21 @@ export async function move(matchId: string, col: number): Promise<{ status: numb
 }
 export async function claim(matchId: string): Promise<{ status: number; data: { match: MatchRow } | null }> {
   return call('pvp-claim', { match_id: matchId });
+}
+
+/* Readiness on the mode dial: a BROADCAST, not a table. Nothing here is worth
+   persisting — it only ever shortens a five-second countdown, so a message that
+   never lands costs those seconds and nothing else. */
+export function readyPeer(matchId: string): { announce(): void; onPeer(cb: () => void): () => void } {
+  let hit: (() => void) | null = null;
+  const ch = supa()
+    .channel(`ready-${matchId}`, { config: { broadcast: { self: false } } })
+    .on('broadcast', { event: 'ready' }, () => hit?.())
+    .subscribe();
+  return {
+    announce() { void ch.send({ type: 'broadcast', event: 'ready', payload: {} }); },
+    onPeer(cb) { hit = cb; return () => { hit = null; void supa().removeChannel(ch); }; },
+  };
 }
 
 /* opponent moves + match updates arrive here; caller unsubscribes via the handle */

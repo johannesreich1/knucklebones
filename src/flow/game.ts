@@ -7,6 +7,8 @@
 import { AI, ME, SPEC, legalCols, colScore, boardTotalMode, totalOf, victimsOf, isShielded, isOver,
          emptyBoard, BOUNTY, LIMITED } from '../core/rules.ts';
 import { makeBag } from '../core/dice.ts';
+import { RANDOM, pickMode } from '../core/modes.ts';
+import { spinDial } from '../ui/modedial.ts';
 import { searchRoot, getRiskW, setRiskW } from '../core/ai.ts';
 import { S } from '../state.ts';
 import { saveStats } from '../persist.ts';
@@ -302,11 +304,26 @@ export async function place(who,col){
   nextTurn();
 }
 /* ===================== GAME LIFECYCLE ===================== */
+/* THE way a local game starts, and the only place RANDOM is resolved.
+   There are three ways to ask for a game — the OFFLINE sheet's Play, the
+   keyboard, and Play again on the result screen — and the first version of this
+   taught only the Play button about RANDOM, so Play again quietly dealt classic
+   for the rest of the session. One door, no exceptions. */
+export async function startLocal(){
+  if(S.localMode!==RANDOM){ newGame(); return; }
+  const pick=pickMode(Math.random().toString(36).slice(2));
+  hide('#ovEnd'); hide('#ovStart'); hide('#ovPractice');
+  await spinDial(pick);
+  newGame({scoring:pick.mode});
+}
+
 export function newGame(opts){
   const tutorial = !!(opts && opts.tutorial);
   S.gen++;
-  // the OFFLINE view's selector picks the mode; the tutorial teaches classic
-  S.scoring = tutorial ? 0 : (S.localMode|0);
+  // the OFFLINE view's selector picks the mode; the tutorial teaches classic.
+  // opts.scoring is how RANDOM arrives — already rolled and shown on the dial,
+  // so newGame is handed the answer rather than rolling a second one.
+  S.scoring = tutorial ? 0 : (opts && opts.scoring != null ? opts.scoring|0 : (S.localMode|0));
   S.bounty=[0,0];
   // LIMITED offline: the same bag the ranked game deals, shuffled locally
   // (no replay validator to agree with, so plain Math.random is right here)
@@ -388,7 +405,7 @@ export function endGame(){
     meta: tut ? 'TUTORIAL COMPLETE'
       : duo ? 'SESSION  P1 '+S.p1+' – '+S.p2+' P2'+(S.ties?('  ·  '+S.ties+' drawn'):'')
             : 'SESSION  '+S.wins+'–'+S.losses+(S.draws?('–'+S.draws+' D'):''),
-    again: { label: 'Play again', run: () => newGame() },
+    again: { label: 'Play again', run: () => { void startLocal(); } },
     alt:   { label: duo?'Change mode':'Change difficulty',
              run: () => { closeEnd(); show('#ovPractice'); } },
     home:  { label: 'Home', run: () => { closeEnd(); toMenu(); } },

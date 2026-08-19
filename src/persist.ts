@@ -36,7 +36,7 @@ export function loadStats(): void {
   // '' is NONE; any other value must still be a spell this build knows about
   if (d.spell === '' || spellById(d.spell)) S.spell = d.spell;
   if (typeof d.tutDone === 'boolean') S.tutDone = d.tutDone;
-  if (Number.isInteger(d.localMode) && d.localMode >= 0 && d.localMode <= 6) S.localMode = d.localMode;
+  if (Number.isInteger(d.localMode) && d.localMode >= -1 && d.localMode <= 6) S.localMode = d.localMode;
 }
 
 /* one-time hygiene: earlier builds stored an in-progress game here */

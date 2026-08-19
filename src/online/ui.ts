@@ -11,10 +11,10 @@ import { showEnd, setMeta, closeEnd } from '../ui/endscreen.ts';
 import { Sfx } from '../ui/audio.ts';
 import { makeDie } from '../ui/die.ts';
 import { signUp, signIn, signOut, currentUser, ensureIdentity, attachEmail,
-         myProfile, myRecord, rename, leaderboard, deleteAccount, join } from './session.ts';
+         myProfile, myRecord, rename, leaderboard, deleteAccount, join, readyPeer } from './session.ts';
 import { availableTaps } from './identity.ts';
 import { enterMatch, setFinishHandler, type FinishReport } from './play.ts';
-import { spinWheel } from './wheel.ts';
+import { spinDial } from '../ui/modedial.ts';
 import { modeById } from '../core/modes.ts';
 import { refreshHomeChip } from '../boot.ts';
 
@@ -236,7 +236,16 @@ async function startQueue(): Promise<void> {
       stopQueue();
       // fresh match: the wheel reveal (aimed at the server's stored pick);
       // rejoining skips the show — the mode was revealed when the match began
-      if (!res.rejoined) { hide('#ovOnline'); await spinWheel(modeById(res.match.modifier)); }
+      if (!res.rejoined) {
+        hide('#ovOnline');
+        // res.you is MY seat; the opponent is the other one
+        const mine = res.you === 1 ? 'p1' : 'p2';
+        const theirs = mine === 'p1' ? 'p2' : 'p1';
+        await spinDial(modeById(res.match.modifier), {
+          foe: { name: res.names[theirs], rating: res.names.ratings?.[theirs] ?? null },
+          peer: readyPeer(res.match.id),
+        });
+      }
       await enterMatch(res);
       return;
     }

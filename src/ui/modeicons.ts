@@ -21,6 +21,9 @@ const PATHS: Record<string, string> = {
   /* a small stack of dice — the finite bag */
   limited: '<rect x="4.4" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="13" y="13" width="6.6" height="6.6" rx="1.8"/>'
     + '<rect x="8.7" y="4.4" width="6.6" height="6.6" rx="1.8"/><circle class="f" cx="12" cy="7.7" r="1.2"/>',
+  /* two arrows crossing — the dial will decide */
+  random: '<path d="M3.4 7.6h3.9l9.3 8.8h3.9M3.4 16.4h3.9l9.3-8.8h3.9"/>'
+    + '<path d="M18.1 4.6 20.9 7.6 18.1 10.6M18.1 13.4 20.9 16.4 18.1 19.4"/>',
 };
 
 /* per-mode hues — the mode's colour EVERYWHERE (wheel segments, match badge,
@@ -30,6 +33,8 @@ const HUES: Record<string, string> = {
   classic: '#8ea3c0', rowswitch: '#28e8ff', rowmult: '#ff2fa0',
   colshield: '#ffd166', singlestrike: '#ff8a3d', bounty: '#7ee787',
   limited: '#b18cff',
+  /* RANDOM wears no mode's colour, because it could become any of them */
+  random: '#e9f1ff',
 };
 export function modeHue(id: string): string { return HUES[id] ?? HUES.classic; }
 

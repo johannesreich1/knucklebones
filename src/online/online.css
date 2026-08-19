@@ -101,29 +101,8 @@
 .rrank{font-size:10.5px;letter-spacing:.14em;color:var(--dim)}
 .rrank b{color:var(--gold)}
 
-/* ===================== THE MODE WHEEL =====================
-   Equal segments, weighted spin (odds live server-side in modes.ts). */
-#ovWheel{gap:14px}
-.wtitle{font-size:10px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
-.wheelwrap{position:relative;width:min(78vw,300px);aspect-ratio:1}
-.wdisc{position:absolute;inset:0;border-radius:50%;
-  border:2px solid rgba(255,255,255,.18);
-  box-shadow:0 0 40px rgba(40,232,255,.16),0 0 80px rgba(255,47,160,.10),inset 0 0 34px rgba(0,0,0,.55);
-  will-change:transform}
-.wseam{position:absolute;left:50%;top:0;width:1px;height:50%;transform-origin:bottom;
-  background:linear-gradient(rgba(255,255,255,.30),rgba(255,255,255,.04))}
-.wlabel{position:absolute;inset:0;display:flex;justify-content:center}
-.wlabel span{margin-top:22px;font-size:11px;font-weight:800;letter-spacing:.13em;
-  text-align:center;line-height:1.5;text-shadow:0 0 12px currentColor}
-.wpin{position:absolute;left:50%;top:-7px;transform:translateX(-50%);z-index:2;
-  width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;
-  border-top:14px solid var(--gold);filter:drop-shadow(0 0 8px rgba(255,209,102,.8))}
-.whub{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;
-  width:34px;height:34px;border-radius:50%;background:#0a0d1c;
-  border:2px solid rgba(255,255,255,.25);box-shadow:0 0 16px rgba(0,0,0,.6)}
-.wname{font-size:17px;font-weight:900;letter-spacing:.18em;min-height:22px;margin-top:5px}
-.wblurb{font-size:11px;letter-spacing:.12em;color:var(--dim);min-height:15px;text-align:center;
-  margin-top:-9px}   /* the name hugs its description — they read as one unit */
+/* the mode dial moved to main.css with ui/modedial.ts — OFFLINE reaches it
+   too now, and anything offline-reachable may not live in the lazy chunk */
 
 /* mode-play visuals (shield, rails, bounty, pool) live in main.css now —
    the OFFLINE mode selector made them universal, not online-only */

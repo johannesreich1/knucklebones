@@ -369,6 +369,106 @@ html.clock .timer.on{visibility:visible}
 .danger{margin-top:14px;display:flex;flex-direction:column;gap:6px;width:100%;max-width:var(--w-col)}
 .danger .btn{border-color:rgba(255,47,160,.35);color:#ff9ccb;width:100%;min-width:0}
 
+/* ===================== THE MODE DIAL =====================
+   Equal nodes, weighted pick (the odds live server-side in modes.ts). Sizing is
+   ONE number: --dial drives the ring, the node chips, the icons inside them and
+   the centre, so the whole thing scales as a unit instead of as five guesses.
+   It is bounded by BOTH axes — a landscape phone has plenty of width and almost
+   no height, and the dial has to fit under the title with the name below it. */
+#ovWheel{--dial:clamp(232px,min(78vw,52vh),420px);--node:calc(var(--dial)*.152);
+  --trail:calc(var(--dial)*.016);
+  /* The dial is built on TWO circles, and both are tokens so nothing can drift
+     off them: --r-out carries the mode nodes and the ring line, --r-in is the
+     comet's track and the dashed circle — the same circle, by construction. */
+  --r-out:calc((var(--dial) - var(--node))/2);
+  --r-in:calc(var(--r-out)*.74);
+  gap:14px}
+.wtitle{font-size:10px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+.dial{position:relative;width:var(--dial);height:var(--dial);flex:0 0 auto}
+.dring{position:absolute;inset:calc(var(--node)/2);border-radius:50%;
+  border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 0 40px rgba(40,232,255,.07)}
+.dring::after{content:"";position:absolute;inset:calc(var(--r-out) - var(--r-in));
+  border-radius:50%;border:1px dashed rgba(255,255,255,.07)}
+/* The comet, in two parts, because they cannot share a mask. The TRAIL is a
+   conic gradient clipped to a band; the HEAD is a round cap that must NOT be
+   clipped — a mask applies to an element's children too, so a cap drawn inside
+   the masked layer gets sliced back into the band and the front reads as a
+   straight cut.
+   Both ride --r-in, the INNER circle, which is where the study put the comet:
+   out at the nodes it collides with the chips it is supposed to be pointing at.
+   The box is grown half a trail-width past that radius because a mask cannot
+   paint beyond 100% — a band that ENDS at the track can only hang inside it,
+   and a cap placed on the line would then stick out alone.
+   The cap's diameter is the band's thickness — that is what makes it a rounded
+   END rather than a ball stuck on a thin arc. */
+/* the extra 1px is feather room: the mask cannot paint past 100%, so without it
+   the outer edge has to be clipped hard and the band's centre lands half a
+   pixel inside the track the cap is sitting on */
+.dcomet{position:absolute;inset:calc(var(--dial)/2 - var(--r-in) - var(--trail)/2 - 1px);border-radius:50%}
+.dtrail{position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from -40deg,rgba(40,232,255,0) 0deg,rgba(40,232,255,.85) 30deg,#fff 39deg,rgba(40,232,255,0) 40deg);
+  -webkit-mask:radial-gradient(circle closest-side,transparent calc(100% - var(--trail) - 2px),
+    #000 calc(100% - var(--trail) - 1px),#000 calc(100% - 1px),transparent 100%);
+  mask:radial-gradient(circle closest-side,transparent calc(100% - var(--trail) - 2px),
+    #000 calc(100% - var(--trail) - 1px),#000 calc(100% - 1px),transparent 100%);
+  filter:drop-shadow(0 0 6px rgba(40,232,255,.85))}
+.dhead{position:absolute;left:50%;top:calc(var(--trail)/2 + 1px);translate:-50% -50%;
+  /* a shade wider than the band it caps: dead-equal reads as a nick in the
+     line rather than a rounded end, because the band carries a glow and the
+     cap does not */
+  width:calc(var(--trail)*1.16);aspect-ratio:1;border-radius:50%;background:#fff;
+  box-shadow:0 0 7px rgba(40,232,255,.95),0 0 16px rgba(40,232,255,.45)}
+/* Every node is drawn LIT and dimmed by opacity alone, so a flare is one
+   property and the winner is indistinguishable until it is found. .28 is
+   duplicated as DIM in wheel.ts — a flare has to land back on exactly it. */
+.dnode{position:absolute;left:50%;top:50%;width:var(--node);height:var(--node);
+  margin:calc(var(--node)/-2);border-radius:calc(var(--node)*.3);display:grid;place-items:center;
+  background:rgba(10,13,28,.9);border:1px solid currentColor;opacity:.28;
+  transform:rotate(var(--a)) translateY(calc(var(--node)/2 - var(--dial)/2)) rotate(calc(-1 * var(--a)));
+  box-shadow:0 0 0 1px currentColor,0 0 22px color-mix(in srgb,currentColor 60%,transparent),
+    inset 0 0 16px color-mix(in srgb,currentColor 22%,transparent)}
+.dnode svg{width:52%;height:52%}
+.dnode.on{opacity:1}
+/* The centre is the RESULT, the ring is the process: empty while hunting,
+   blooming what was found on landing. The sonar that fills the gap is in
+   nobody's colour — tint it and it starts hinting. */
+.dcore{position:absolute;left:50%;top:50%;translate:-50% -50%;
+  width:calc(var(--dial)*.34);height:calc(var(--dial)*.34);display:grid;place-items:center}
+.dsonar{grid-area:1/1;width:100%;height:100%;border-radius:50%;
+  border:1px solid rgba(233,241,255,.5);opacity:0}
+#ovWheel.hunting .dsonar{animation:dsonar 1.5s ease-out infinite}
+@keyframes dsonar{0%{opacity:.55;transform:scale(.42)}70%{opacity:0;transform:scale(1)}100%{opacity:0}}
+.dfound{grid-area:1/1;display:grid;place-items:center;width:100%;height:100%;
+  opacity:0;transform:scale(.5);transition:opacity .28s,transform .5s cubic-bezier(.2,1.3,.3,1)}
+.dfound svg{width:56%;height:56%;filter:drop-shadow(0 0 18px currentColor)}
+#ovWheel.landed .dfound{opacity:1;transform:none}
+/* Who you are about to play. Ranked fills it; offline leaves it empty, and an
+   empty slot takes no room, so one dial serves both without a branch. */
+.dwho{display:flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.14em;color:var(--dim);
+  text-transform:uppercase;min-height:0}
+.dwho:empty{display:none}
+.dwho b{color:var(--txt);font-weight:900;letter-spacing:.1em;text-transform:none;font-size:13px}
+.dwho .rt{color:var(--gold);font-weight:900}
+/* The hold: five seconds to READ the result, cut short the moment everyone has.
+   It only exists once there is something to read. */
+/* Reserved, never conjured: the hold occupies its space from the first frame
+   and only becomes VISIBLE on landing. Appearing would grow the column, and a
+   centred column that grows moves the dial — the one thing on this screen that
+   must not move while the player is watching it. */
+.dhold{display:flex;flex-direction:column;align-items:center;gap:5px;margin-top:4px;
+  visibility:hidden}
+#ovWheel.landed .dhold{visibility:visible}
+.dhold b{font-size:26px;font-weight:900;color:var(--cy);line-height:1;
+  text-shadow:0 0 18px rgba(40,232,255,.55);font-variant-numeric:tabular-nums}
+.dhold span{font-size:9.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;min-height:12px}
+#ovWheel.ready .dhold b{color:var(--gold);text-shadow:0 0 18px rgba(255,209,102,.6)}
+/* the readout reserves its lines, so filling them cannot shift the dial */
+.wname{font-size:clamp(15px,4.6vmin,20px);font-weight:900;letter-spacing:.18em;
+  min-height:1.4em;margin-top:5px;display:flex;align-items:center;justify-content:center;gap:8px}
+.wblurb{font-size:11px;letter-spacing:.12em;color:var(--dim);text-align:center;
+  line-height:1.45;min-height:2.9em;max-width:var(--w-col);
+  margin-top:-9px}   /* the name hugs its description — they read as one unit */
+
 /* the OFFLINE view's game-mode picker: one icon button per wheel mode */
 .modepick{display:flex;flex-wrap:wrap;gap:8px}
 .modepick button{--mh:#8ea3c0;width:44px;height:40px;border-radius:12px;display:grid;place-items:center;
@@ -679,7 +779,10 @@ html.face.p2turn:not(.land) .status,
 html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 
 /* ---- tutorial coach ---- */
-#coach{position:absolute;left:10px;right:10px;top:46px;z-index:70;cursor:pointer;
+#coach{position:absolute;left:10px;right:10px;z-index:70;cursor:pointer;
+  /* clear of the notch/Dynamic Island: the app fills the screen, so a fixed
+     offset from the top puts this bubble UNDER the island on a Pro Max */
+  top:calc(env(safe-area-inset-top,0px) + 46px);
   background:rgba(6,8,18,.93);border:1px solid color-mix(in srgb,var(--cy) 45%,transparent);
   border-radius:14px;padding:10px 14px;
   box-shadow:0 8px 30px rgba(0,0,0,.5),0 0 18px rgba(40,232,255,.14);
@@ -689,7 +792,7 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 #coach .chint{margin-top:6px;font-size:9.5px;letter-spacing:.2em;color:var(--cy);
   text-transform:uppercase;animation:breathe 1.8s ease-in-out infinite}
 /* a floating bubble, not a page body — deliberately not --w-col */
-.land #coach{left:auto;right:12px;top:34px;max-width:300px}
+.land #coach{left:auto;right:12px;top:calc(env(safe-area-inset-top,0px) + 34px);max-width:300px}
 
 /* ---- hand-off card (pass the phone) ---- */
 #ovPass{gap:10px;background:rgba(4,5,12,.93);cursor:pointer}

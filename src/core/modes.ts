@@ -2,8 +2,8 @@
 // Pure and shared — pvp-join picks the mode server-side from the match seed,
 // clients derive the SAME pick to aim the wheel animation, and replay
 // validation runs the match under it. Weights are wheel odds, not segment
-// sizes: the wheel draws every mode as an equal segment and weights the spin
-// (classic 3 of 6 = the agreed 50% no-addition rate).
+// sizes: the dial draws every mode as an equal node and weights the pick
+// (classic 4 of 10 = the agreed 40% no-addition rate).
 import { randStream } from './dice.ts';
 import { CLASSIC, ROWSWITCH, ROWMULT, COLSHIELD, SINGLESTRIKE, BOUNTY, LIMITED, type Mode } from './rules.ts';
 
@@ -17,11 +17,13 @@ export interface ModeSpec {
   weight: number;
 }
 
-/* Production odds: classic half the time (weight 6 of 12), every addition an
-   equal slice of the rest (1 of 12 each). The agreed contract: no addition in
-   50% of matches, additions split the other half evenly. */
+/* Production odds: plain classic 40% of the time (weight 4 of 10), every
+   addition an equal slice of the rest (1 of 10 = 10% each). Changed from 50/50
+   on 2026-08-19 — the additions ARE the game's variety, and half of all matches
+   never seeing one made them feel rarer than they should. Any change here has
+   to be redeployed to pvp-join, which owns the real pick. */
 export const MODES: ModeSpec[] = [
-  { mode: CLASSIC, id: 'classic', name: 'CLASSIC', icon: '◆', blurb: 'The pure duel. Columns multiply.', weight: 6,
+  { mode: CLASSIC, id: 'classic', name: 'CLASSIC', icon: '◆', blurb: 'The pure duel. Columns multiply.', weight: 4,
     detail: 'Matching dice stacked in a column multiply: two 4s = 16, three 4s = 36. Place a die and every matching die in the facing enemy column is destroyed. First full grid ends it — highest total wins.' },
   { mode: ROWSWITCH, id: 'rowswitch', name: 'ROW SWITCH', icon: '☰', blurb: 'Scoring turns sideways — only rows count.', weight: 1,
     detail: 'Only ROWS score here — columns count for nothing. Matching dice in the same row multiply, and the rail on the left tracks every row. Destruction still strikes down the facing column.' },
@@ -36,6 +38,11 @@ export const MODES: ModeSpec[] = [
   { mode: LIMITED, id: 'limited', name: 'LIMITED', icon: '▦', blurb: 'Every face exists FOUR times. The bag ends it.', weight: 1,
     detail: 'The dice are finite: one shared bag holds every face exactly four times — 24 dice for the whole match. The stack beside the die in play counts what is still to come — how MANY, never which. When the last die is placed the game ends, full boards or not.' },
 ];
+
+/* The OFFLINE picker's eighth option: not a mode, but "let the dial choose".
+   Kept out of MODES on purpose — it must never be pickable BY the dial, and no
+   match can ever be stored under it. */
+export const RANDOM = -1;
 
 export function modeById(id: string | null | undefined): ModeSpec {
   return MODES.find((m) => m.id === id) ?? MODES[0];

@@ -12,12 +12,15 @@ import { fit } from './ui/layout.ts';
 import { aiChoose, newGame, place } from './flow/game.ts';
 import { cast, arm, disarm, chargesOf, renderSpells, aiSpellTurn } from './flow/spells.ts';
 
+import { modeByEnum } from './core/modes.ts';
+
 export function hooks(){
   return { S, colScore, boardTotal, search, searchRoot, aiChoose, newGame, place, isFull,
            applyMove, cloneSt, riskOf, getW:getRiskW, setW:setRiskW, nodes,
            sideKey, faceRotated, applySides, renderAll, showHints, setStageDie, setStatus, setActivePlate, nameOf,
            burst, reduced:REDUCED, fit,
            spells: { cast, arm, disarm, chargesOf, render: renderSpells, ai: aiSpellTurn },
+           modeByEnum,
            openPractice: () => { hide('#ovStart'); show('#ovPractice'); },
            goHome: () => { hide('#ovPractice'); show('#ovStart'); } };
 }

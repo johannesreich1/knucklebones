@@ -29,7 +29,7 @@ import { fit } from './ui/layout.ts';
 import { tap, boardDown, boardUp, clearPress, commitColumn } from './ui/input.ts';
 import { initInstall } from './ui/install.ts';
 import { coachTap } from './flow/tutorial.ts';
-import { newGame, passTap } from './flow/game.ts';
+import { newGame, startLocal, passTap } from './flow/game.ts';
 import { castArmed, disarm, renderSpells } from './flow/spells.ts';
 import { bindEnd } from './ui/endscreen.ts';
 import { SPELLS } from './core/spells.ts';
@@ -37,7 +37,7 @@ import { spellIcon, spellHue } from './ui/spellicons.ts';
 import { toMenu, syncSettingsUI, updateStatLine } from './flow/menu.ts';
 import { requestLeave } from './flow/leave.ts';
 import { openModes } from './ui/modesview.ts';
-import { MODES, modeByEnum } from './core/modes.ts';
+import { MODES, RANDOM, modeByEnum } from './core/modes.ts';
 import { modeIcon, modeHue } from './ui/modeicons.ts';
 /* ===================== BOOT ===================== */
 export function boot(embed){
@@ -91,7 +91,12 @@ export function boot(embed){
   tap($('#btnSettings'),()=>{ Sfx.tap(); show('#ovSettings'); });
   tap($('#btnCloseSettings'),()=>{ Sfx.tap(); hide('#ovSettings'); });
   tap($('#btnHow2'),()=>{ Sfx.tap(); hide('#ovSettings'); show('#ovRules'); });
+  /* A coach bubble that is WAITING is dismissed by a tap anywhere, not only by
+     a tap on the bubble — the message says "tap to continue" and the player
+     reasonably taps the screen. Capture phase so it lands before anything else
+     interprets the same tap; coachTap is a no-op unless something is waiting. */
   tap($('#coach'),coachTap);
+  document.addEventListener('pointerdown',coachTap,true);
 
 
   const bindSeg=(sel,key,apply)=>tap($(sel),e=>{
@@ -128,9 +133,12 @@ export function boot(embed){
     sync();
     return sync;
   };
-  // every wheel mode, playable locally
+  // every dial mode, playable locally — plus RANDOM last, which hands the
+  // choice to the same dial ranked uses, on the same weighted odds
   pickerRow('#modePick',
-    MODES.map(m=>({v:String(m.mode), hue:modeHue(m.id), icon:modeIcon(m.id,16), name:m.name, blurb:m.blurb})),
+    [...MODES.map(m=>({v:String(m.mode), hue:modeHue(m.id), icon:modeIcon(m.id,16), name:m.name, blurb:m.blurb})),
+     {v:String(RANDOM), hue:modeHue('random'), icon:modeIcon('random',16), name:'RANDOM',
+      blurb:'The dial decides — ranked\u2019s odds, spun in front of you.'}],
     ()=>S.localMode, v=>{ S.localMode=+v; });
   // ...and which spell you bring, NONE first — the same row, the same rune icon
   // the game itself draws, so the picker and the rail can never disagree
@@ -146,7 +154,7 @@ export function boot(embed){
   bindSeg('#seatSeg','seat',v=>{ S.seat=v; });
   bindSeg('#sndSeg','s',  v=>{ S.sound=v==='1'; });
   bindSeg('#faceSeg','f', v=>{ S.numerals=v==='nums'; });
-  tap($('#btnPlay'),()=>{ Sfx.unlock(); Sfx.tap(); newGame(); });
+  tap($('#btnPlay'),()=>{ Sfx.unlock(); Sfx.tap(); void startLocal(); });
   bindEnd();       // the result screen binds its own actions, once (ui/endscreen)
   // quit lives at the bottom of the Settings sheet; an online match intercepts
   // the first tap to arm its two-tap forfeit confirm on the button itself
@@ -179,7 +187,7 @@ export function boot(embed){
       }
     }else if(e.key==='Enter'||e.key===' '){
       if($('#ovPass').classList.contains('on')) $('#ovPass').click();
-      else if($('#ovStart').classList.contains('on')||$('#ovEnd').classList.contains('on')){ Sfx.unlock(); newGame(); }
+      else if($('#ovStart').classList.contains('on')||$('#ovEnd').classList.contains('on')){ Sfx.unlock(); void startLocal(); }
     }else if(e.key==='Escape'){ disarm(); hide('#ovRules'); hide('#ovSettings'); hide('#ovInstall');
       if(document.getElementById('ovModes')) hide('#ovModes'); }
   });
