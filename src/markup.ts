@@ -89,15 +89,16 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <div class="hrow">
       <button class="btn" id="btnVsCpu">VS AI</button>
       <button class="btn" id="btnDuoHome">2 players</button>
-      <button class="btn" id="btnTutHome">Tutorial</button>
+      <button class="btn" id="btnLearn">How to play</button>
     </div>
   </div>
+  <!-- everything teachable moved behind HOW TO PLAY, so the foot carries only
+       what the law requires — and it sits at the very bottom, where nobody
+       looks for it and nobody has to. -->
   <div class="homefoot">
-    <button class="linkbtn" id="btnHow">How to play</button>
-    <button class="linkbtn" id="btnModes">Game modes</button>
-    <button class="linkbtn" id="btnInstall" hidden>Install app</button>
+    <button class="linkbtn" id="btnImprint">Impressum</button>
+    <button class="linkbtn" id="btnPrivacy">Privacy</button>
   </div>
-  <div class="tiny" id="buildTag">build dev</div>
 </div>
 
 <!-- OFFLINE: the local-play configuration (was the old title screen).
@@ -163,6 +164,104 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   </div>
 </div>
 
+<!-- LEGAL. Two reading sheets, same component as the rules screen. Everything
+     factual here was verified against the code, not templated: ONE outbound
+     host, no analytics, no third-party scripts, four functional localStorage
+     keys. Anything in [BRACKETS] is Johannes's to fill and nobody else's. -->
+<div class="ov paged scrollview" id="ovImprint">
+  <div class="shead">
+    <span class="pad"></span><span class="ttl">IMPRESSUM</span>
+    <button class="ico" id="btnCloseImprint" aria-label="Close">✕</button>
+  </div>
+  <div class="pbody neonscroll">
+  <div class="rules">
+    <h3>Angaben gemäß § 5 DDG</h3>
+    <p>[COMPANY / NAME]<br>[STREET]<br>[POSTCODE CITY]<br>[COUNTRY]</p>
+    <h3>Contact</h3>
+    <p>Email: [EMAIL]<br>Phone: [PHONE, optional]</p>
+    <h3>Represented by</h3>
+    <p>[MANAGING DIRECTOR / SOLE TRADER NAME]</p>
+    <h3>Register</h3>
+    <p>[REGISTER COURT AND NUMBER, if registered]<br>VAT ID under § 27a UStG: [VAT ID, if held]</p>
+    <h3>Responsible for content</h3>
+    <p>[NAME, ADDRESS] — under § 18 Abs. 2 MStV.</p>
+    <h3>Dispute resolution</h3>
+    <p>The European Commission provides a platform for online dispute resolution at
+       <b>ec.europa.eu/consumers/odr</b>. We are neither obliged nor willing to take part in
+       dispute resolution proceedings before a consumer arbitration board.</p>
+    <button class="btn primary" id="btnCloseImprint2">Got it</button>
+  </div>
+  </div>
+</div>
+
+<div class="ov paged scrollview" id="ovPrivacy">
+  <div class="shead">
+    <span class="pad"></span><span class="ttl">PRIVACY</span>
+    <button class="ico" id="btnClosePrivacy" aria-label="Close">✕</button>
+  </div>
+  <div class="pbody neonscroll">
+  <div class="rules">
+    <h3>Who is responsible</h3>
+    <p>[COMPANY / NAME], [ADDRESS], [EMAIL]. See the Impressum for full details.</p>
+    <h3>What this game stores</h3>
+    <p>Playing offline stores nothing about you anywhere but on your own device. The moment
+       you play <b>ranked</b>, an account is created — silently, as a guest — and from then on
+       we hold: an account identifier, a generated nickname, your rating, and a record of the
+       matches you played. If you attach an email address to keep the account, we hold that too.</p>
+    <h3>What leaves your device</h3>
+    <p>Exactly one service receives your data: <b>Supabase</b> (EU region), which stores accounts
+       and matches on our behalf. The app itself is delivered by <b>Cloudflare Pages</b>. Both
+       process your IP address in the course of doing that. There is <b>no analytics, no
+       advertising, no tracking of any kind</b>, and no third-party scripts run in this app.</p>
+    <h3>Cookies</h3>
+    <p>None. The game keeps four values in your browser's local storage — your session, a cached
+       copy of your own profile, your settings and your local statistics. All four are strictly
+       necessary for the game to work, so no consent banner is required and none is shown.</p>
+    <h3>Why we may do this</h3>
+    <p>To provide the game you asked for (Art. 6(1)(b) GDPR) and to keep the service from being
+       abused, e.g. rate limits on account creation (Art. 6(1)(f) GDPR).</p>
+    <h3>How long</h3>
+    <p>For as long as the account exists. <b>You can delete it at any time</b> — Account →
+       Delete account removes your profile, your matches and your rating outright. Guest accounts
+       that never played a match are cleared automatically after 30 days.</p>
+    <h3>Your rights</h3>
+    <p>You may request access, correction, erasure, restriction, portability, and object to
+       processing. Write to [EMAIL]. You may also complain to a supervisory authority —
+       for us that is [SUPERVISORY AUTHORITY].</p>
+    <button class="btn primary" id="btnClosePrivacy2">Got it</button>
+  </div>
+  </div>
+</div>
+
+<!-- LEARN: the one door to everything teachable. Four rows rather than four
+     links scattered across the home screen and the settings sheet. -->
+<div class="ov paged" id="ovLearn">
+  <div class="shead">
+    <button class="ico" id="btnLearnBack" aria-label="Back">‹</button>
+    <span class="ttl">HOW TO PLAY</span><span class="pad"></span>
+  </div>
+  <div class="pbody">
+    <div class="learnlist">
+      <button class="learnrow" id="btnLearnTut">
+        <span class="lname">Tutorial</span>
+        <span class="lblurb">A guided first game — five lessons, played not read</span>
+      </button>
+      <button class="learnrow" id="btnLearnRules">
+        <span class="lname">The rules</span>
+        <span class="lblurb">Scoring, destruction and how a game ends</span>
+      </button>
+      <button class="learnrow" id="btnLearnModes">
+        <span class="lname">Game modes</span>
+        <span class="lblurb">Every mode the dial can land on, and what it changes</span>
+      </button>
+      <button class="learnrow" id="btnLearnSpells">
+        <span class="lname">Spells</span>
+        <span class="lblurb">The optional rune you can bring to an offline game</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- RULES: a reading sheet — fixed ✕ bar, the text scrolls, GOT IT at its end -->
 <div class="ov paged scrollview" id="ovRules">
   <div class="shead">
@@ -186,22 +285,6 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <h3>Two players</h3>
     <p>Pick <b>2 PLAYERS</b> to share one phone, then choose how you sit. <b>Pass phone</b>: a pass card appears between turns and the grids swap so whoever is playing is on the bottom. <b>Face to face</b>: lay the phone flat between you — the top half is turned for Player 2, turns switch on their own, and the bright half with the rotating centre die shows who's up.</p>
   </div>
-  </div>
-</div>
-
-<!-- INSTALL (iOS hint — Chrome-family installs straight from the footer link) -->
-<div class="ov paged" id="ovInstall">
-  <div class="shead">
-    <span class="pad"></span><span class="ttl">INSTALL</span>
-    <button class="ico" id="btnCloseInstall" aria-label="Close">✕</button>
-  </div>
-  <div class="pbody">
-    <div class="appface" id="installFace"></div>
-    <div class="rules" style="max-width:330px;text-align:center">
-      <p>Put the game on your home screen — it opens fullscreen and keeps working offline.</p>
-      <p>Tap the <b>Share</b> icon in Safari's toolbar, then <b>Add to Home Screen</b>.</p>
-    </div>
-    <button class="btn primary" id="btnInstallOk">Got it</button>
   </div>
 </div>
 

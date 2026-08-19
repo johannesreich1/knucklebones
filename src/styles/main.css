@@ -257,7 +257,10 @@ html.clock .timer.on{visibility:visible}
   opacity:0;pointer-events:none;visibility:hidden;transition:opacity .28s,visibility 0s .28s}
 .ov.on{opacity:1;pointer-events:auto;visibility:visible;transition:opacity .28s}
 #ovStart{overflow-y:auto;justify-content:flex-start}
-#ovStart::before,#ovStart::after{content:"";margin:auto;flex:0 0 auto}
+/* ONE spacer, not two. The pair used to centre the whole column; now the foot
+   claims the bottom with its own auto margin, and a second spacer would just
+   split the free space three ways and leave the foot floating mid-screen. */
+#ovStart::before{content:"";margin-top:auto;flex:0 0 auto}
 .ov h1{margin:0;font-size:29px;letter-spacing:.2em;font-weight:900;text-align:center;
   background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
   -webkit-background-clip:text;background-clip:text;color:transparent;
@@ -455,8 +458,8 @@ html.clock .timer.on{visibility:visible}
    and only becomes VISIBLE on landing. Appearing would grow the column, and a
    centred column that grows moves the dial — the one thing on this screen that
    must not move while the player is watching it. */
-.dhold{display:flex;flex-direction:column;align-items:center;gap:5px;margin-top:4px;
-  visibility:hidden}
+.dhold{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:22px;
+  visibility:hidden}   /* clear of the blurb: it is a separate beat, not a caption */
 #ovWheel.landed .dhold{visibility:visible}
 .dhold b{font-size:26px;font-weight:900;color:var(--cy);line-height:1;
   text-shadow:0 0 18px rgba(40,232,255,.55);font-variant-numeric:tabular-nums}
@@ -471,7 +474,10 @@ html.clock .timer.on{visibility:visible}
 
 /* the OFFLINE view's game-mode picker: one icon button per wheel mode */
 .modepick{display:flex;flex-wrap:wrap;gap:8px}
-.modepick button{--mh:#8ea3c0;width:44px;height:40px;border-radius:12px;display:grid;place-items:center;
+/* the sheet's main affordance, and eight of them share a row — 44x40 made
+   them read as a toolbar rather than a choice */
+.modepick{gap:9px}
+.modepick button{--mh:#8ea3c0;width:52px;height:48px;border-radius:14px;display:grid;place-items:center;
   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:var(--mh);
   cursor:pointer;transition:.15s;font-family:inherit;padding:0}
 .modepick button:active{transform:scale(.92)}
@@ -524,8 +530,8 @@ html.rowmode .rowchips{position:absolute;right:100%;margin-right:9px;top:0;displ
 html.rowswitch .cols .chip{visibility:hidden}
 
 /* ===== BOUNTY: the banked kills tally on the plate ===== */
-.plate .bty{font-size:11px;font-weight:900;color:var(--gold);
-  text-shadow:0 0 8px rgba(255,209,102,.6);margin-right:5px}
+.plate .bty{font-size:14.5px;font-weight:900;color:var(--gold);
+  text-shadow:0 0 10px rgba(255,209,102,.7);margin-right:6px;letter-spacing:.02em}
 
 /* ===== LIMITED: the bag beside the die in play — a stack of FACE-DOWN dice
    and the number still to come. It never says WHICH faces remain; reading the
@@ -901,10 +907,30 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent)}
 .quiet .hrow .btn{padding:10px 4px;font-size:10px;letter-spacing:.08em;
   background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.09);color:var(--dim)}
-.homefoot{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:18px}
-/* the deploy-truth tag sits alone, bottom-centred, out of the footer row */
-#buildTag{position:absolute;left:0;right:0;text-align:center;opacity:.55;
-  bottom:calc(env(safe-area-inset-bottom,0px) + 8px)}
+/* Pinned to the bottom, above the build tag. #ovStart centres its content
+   between two auto-margin spacers (:259-260); margin-top:auto pushes the foot
+   past the lower one so the legal links sit where legal links belong —
+   findable, and never in the way of the game. */
+.homefoot{display:flex;align-items:center;justify-content:center;gap:16px;
+  margin-top:auto;padding-bottom:4px}
+.homefoot .linkbtn{opacity:.72}
+/* ---- the HOW TO PLAY hub: four ways in, one page ---- */
+.learnlist{display:flex;flex-direction:column;gap:11px;width:100%;max-width:var(--w-col)}
+.learnrow{display:flex;flex-direction:column;gap:5px;text-align:left;width:100%;
+  padding:15px 17px;border-radius:16px;cursor:pointer;font-family:inherit;
+  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);
+  transition:.15s}
+.learnrow:active{transform:scale(.985)}
+.learnrow .lname{font-size:14px;font-weight:900;letter-spacing:.12em;color:var(--txt);
+  text-transform:uppercase}
+.learnrow .lblurb{font-size:11.5px;line-height:1.5;color:var(--dim);letter-spacing:.02em}
+.learnrow:first-child{border-color:color-mix(in srgb,var(--cy) 34%,transparent);
+  background:color-mix(in srgb,var(--cy) 7%,transparent)}
+.learnrow:first-child .lname{color:var(--cy)}
+
+/* the deploy-truth tag now closes the Account panel — a plain last line, not a
+   pinned overlay fixture (it left home on 2026-08-19) */
+#buildTag{text-align:center;opacity:.5;margin-top:2px}
 .linkbtn{background:none;border:none;padding:4px;font-family:inherit;cursor:pointer;
   font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
 .linkbtn:focus-visible{outline:2px solid var(--cy);outline-offset:2px}

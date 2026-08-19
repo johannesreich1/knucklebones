@@ -35,3 +35,12 @@ export function faceRotated(who: Player): boolean {
   return who === AI && document.documentElement.classList.contains('face') &&
          !document.documentElement.classList.contains('land');
 }
+
+/* The deploy-truth tag. It lives on the Account panel, which the lazy online
+   chunk injects — so this is called BOTH at boot (harmless no-op until the
+   panel exists) and when Account opens. One function, so the two callers can
+   never format it differently. */
+export function stampBuild(): void {
+  const el = document.getElementById('buildTag');
+  if (el) el.textContent = 'build ' + (document.documentElement.dataset.build || 'dev');
+}

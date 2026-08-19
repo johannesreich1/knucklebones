@@ -14,7 +14,9 @@ p.on('pageerror', e => errs.push(e.message));
 await p.goto('http://127.0.0.1:8123/index.html');
 await p.waitForTimeout(800);
 const sw1 = await p.evaluate(async () => !!(await navigator.serviceWorker.ready.catch(() => null))?.active);
-const tag1 = await p.evaluate(() => document.getElementById('buildTag').textContent);
+// deploy truth is the data-build attribute; the visible tag moved to the
+// Account panel, which lives in the lazily-loaded online chunk
+const tag1 = await p.evaluate(() => 'build ' + document.documentElement.dataset.build);
 
 // simulate a fresh deploy: server files change under the running app
 // (in-process replace, not sed — GNU and BSD sed disagree on -i syntax)
@@ -29,7 +31,7 @@ patch('./pwa/index.html', `data-build="${hash}"`, 'data-build="NEWDEPLOY"');
 patch('./pwa/sw.js', /const VERSION = '.*';/, "const VERSION = 'kb-newdeploy';");
 
 await p.reload(); await p.waitForTimeout(1200);          // ONE relaunch
-const tag2 = await p.evaluate(() => document.getElementById('buildTag').textContent);
+const tag2 = await p.evaluate(() => 'build ' + document.documentElement.dataset.build);
 check(tag2 === 'build NEWDEPLOY', 'one relaunch did not pick up the deploy', { tag1, tag2 });
 
 await p.waitForTimeout(1500);                            // let the new SW cache
@@ -38,9 +40,9 @@ await p.reload({ waitUntil: 'domcontentloaded' }).catch(() => {});
 await p.waitForTimeout(1500);
 const off = await p.evaluate(() => ({
   booted: !!window.__kb,
-  tag: document.getElementById('buildTag')?.textContent ?? null,
+  tag: document.documentElement.dataset.build ?? null,
 }));
-check(off.booted && off.tag === 'build NEWDEPLOY', 'offline launch broken after update', off);
+check(off.booted && off.tag === 'NEWDEPLOY', 'offline launch broken after update', off);
 
 console.log(JSON.stringify({ sw1, tag1, tag2, off, problems, errs }, null, 2));
 console.log('reminder: run ./build.sh to restore ./pwa');

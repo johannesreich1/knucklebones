@@ -61,7 +61,9 @@ check(s.pills === 0 && s.danger === 0, 'previews shown in duo play', s);
 const quitVia = await page.evaluate(() => document.getElementById('ovPass').classList.contains('on'));
 if (quitVia) { await page.tap('#passQuit'); } else { await page.tap('#btnSettings'); await page.waitForTimeout(300); await page.tap('#btnMenu'); } await page.waitForTimeout(400);
 // ===================== B. THE TUTORIAL, WALKED END TO END (from the home strip) =====================
-await page.tap('#btnTutHome'); await page.waitForTimeout(500);
+// the tutorial now lives one level in, behind HOW TO PLAY
+await page.tap('#btnLearn'); await page.waitForTimeout(320);
+await page.tap('#btnLearnTut'); await page.waitForTimeout(500);
 s = await snap();
 check(s.coach && /Welcome/.test(s.coachMsg), 'welcome step missing', s);
 check(s.laneGap - out.cpuNormal.laneGap >= 10,

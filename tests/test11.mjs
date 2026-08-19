@@ -34,7 +34,9 @@ check(out.hud.icons.join(',') === 'btnSettings', 'hud must hold ONLY settings', 
 check(out.hud.titleStillNamed, 'title screen lost the name', out.hud);
 
 // ===== popups, deterministically via the tutorial (home strip button) =====
-await page.tap('#btnTutHome'); await page.waitForTimeout(500);
+// the tutorial now lives one level in, behind HOW TO PLAY
+await page.tap('#btnLearn'); await page.waitForTimeout(320);
+await page.tap('#btnLearnTut'); await page.waitForTimeout(500);
 await page.tap('#coach');
 async function waitChoose(maxMs = 15000) {
   const t0 = Date.now();
@@ -160,7 +162,8 @@ out.badgeOpens = await page.evaluate(() => ({
 }));
 check(out.badgeOpens.on, 'tapping the offline badge opens nothing', out.badgeOpens);
 check(out.badgeOpens.now === 'singlestrike', 'modes library did not highlight the mode in play', out.badgeOpens);
-await page.tap('#btnCloseModes'); await page.waitForTimeout(300);
+// the library serves both rosters now, so its close button is semantic
+await page.tap('[data-close="ovModes"]'); await page.waitForTimeout(300);
 // a classic offline game keeps the record and stays inert — nothing to explain
 await page.tap('#btnSettings'); await page.waitForTimeout(250);
 await page.tap('#btnMenu'); await page.waitForTimeout(400);

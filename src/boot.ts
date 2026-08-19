@@ -27,16 +27,16 @@ import { makeDie } from './ui/die.ts';
 import { buildBoards, applySides, updateRecord } from './ui/render.ts';
 import { fit } from './ui/layout.ts';
 import { tap, boardDown, boardUp, clearPress, commitColumn } from './ui/input.ts';
-import { initInstall } from './ui/install.ts';
 import { coachTap } from './flow/tutorial.ts';
 import { newGame, startLocal, passTap } from './flow/game.ts';
+import { stampBuild } from './ui/dom.ts';
 import { castArmed, disarm, renderSpells } from './flow/spells.ts';
 import { bindEnd } from './ui/endscreen.ts';
 import { SPELLS } from './core/spells.ts';
 import { spellIcon, spellHue } from './ui/spellicons.ts';
 import { toMenu, syncSettingsUI, updateStatLine } from './flow/menu.ts';
 import { requestLeave } from './flow/leave.ts';
-import { openModes } from './ui/modesview.ts';
+import { openModes, openSpells } from './ui/library.ts';
 import { MODES, RANDOM, modeByEnum } from './core/modes.ts';
 import { modeIcon, modeHue } from './ui/modeicons.ts';
 /* ===================== BOOT ===================== */
@@ -45,7 +45,7 @@ export function boot(embed){
   loadStats();
   // the deploy-truth tag: stamped on <html> by build.mjs (stays "dev" in dev
   // and in the widget, which deliberately has no data-build)
-  $('#buildTag').textContent = 'build ' + (document.documentElement.dataset.build || 'dev');
+  stampBuild();
   buildBoards();
   fit();
   applySides();
@@ -56,7 +56,6 @@ export function boot(embed){
   const duel=$('#homeDuel');
   duel.insertBefore(makeDie(5,ME), duel.firstChild);
   duel.appendChild(makeDie(3,AI));
-  $('#installFace').appendChild(makeDie(5,ME));   // the install sheet's tile
   refreshHomeChip();
 
   const table=$('#tableEl');
@@ -86,7 +85,21 @@ export function boot(embed){
     updateStatLine(); hide('#ovStart'); show('#ovPractice'); };
   tap($('#btnVsCpu'),()=>{ Sfx.unlock(); Sfx.tap(); openPractice('cpu'); });
   tap($('#btnDuoHome'),()=>{ Sfx.unlock(); Sfx.tap(); openPractice('duo'); });
-  tap($('#btnTutHome'),()=>{ Sfx.unlock(); Sfx.tap(); newGame({tutorial:true}); });
+  /* HOW TO PLAY is a hub, not a link: the tutorial, the rules, the modes and
+     the spells were four entry points scattered across home and settings. */
+  tap($('#btnLearn'),()=>{ Sfx.unlock(); Sfx.tap(); hide('#ovStart'); show('#ovLearn'); });
+  tap($('#btnLearnBack'),()=>{ Sfx.tap(); hide('#ovLearn'); show('#ovStart'); });
+  tap($('#btnLearnTut'),()=>{ Sfx.unlock(); Sfx.tap(); newGame({tutorial:true}); });
+  tap($('#btnLearnRules'),()=>{ Sfx.tap(); show('#ovRules'); });
+  tap($('#btnLearnModes'),()=>{ Sfx.tap(); openModes(); });
+  tap($('#btnLearnSpells'),()=>{ Sfx.tap(); openSpells(); });
+  /* the two the law requires — reachable, never in the way */
+  tap($('#btnImprint'),()=>{ Sfx.tap(); show('#ovImprint'); });
+  tap($('#btnPrivacy'),()=>{ Sfx.tap(); show('#ovPrivacy'); });
+  for(const id of ['Imprint','Privacy']){
+    tap($('#btnClose'+id),()=>{ Sfx.tap(); hide('#ov'+id); });
+    tap($('#btnClose'+id+'2'),()=>{ Sfx.tap(); hide('#ov'+id); });
+  }
   tap($('#btnPracticeBack'),()=>{ Sfx.tap(); hide('#ovPractice'); show('#ovStart'); });
   tap($('#btnSettings'),()=>{ Sfx.tap(); show('#ovSettings'); });
   tap($('#btnCloseSettings'),()=>{ Sfx.tap(); hide('#ovSettings'); });
@@ -159,8 +172,6 @@ export function boot(embed){
   // quit lives at the bottom of the Settings sheet; an online match intercepts
   // the first tap to arm its two-tap forfeit confirm on the button itself
   tap($('#btnMenu'),()=>{ Sfx.tap(); if(requestLeave()) return; hide('#ovSettings'); toMenu(); });
-  tap($('#btnHow'),()=>{ Sfx.tap(); show('#ovRules'); });
-  tap($('#btnModes'),()=>{ Sfx.tap(); openModes(); });
   // the HUD badge opens the rules of whatever mode it names. ONE binding serves
   // both flows: whoever paints the badge sets data-mode (see render.paintBadge),
   // so this affordance can never go missing on one side again.
@@ -188,8 +199,8 @@ export function boot(embed){
     }else if(e.key==='Enter'||e.key===' '){
       if($('#ovPass').classList.contains('on')) $('#ovPass').click();
       else if($('#ovStart').classList.contains('on')||$('#ovEnd').classList.contains('on')){ Sfx.unlock(); void startLocal(); }
-    }else if(e.key==='Escape'){ disarm(); hide('#ovRules'); hide('#ovSettings'); hide('#ovInstall');
-      if(document.getElementById('ovModes')) hide('#ovModes'); }
+    }else if(e.key==='Escape'){ disarm(); hide('#ovRules'); hide('#ovSettings'); hide('#ovLearn'); hide('#ovImprint'); hide('#ovPrivacy');
+      for(const id of ['ovModes','ovSpells']) if(document.getElementById(id)) hide('#'+id); }
   });
 
   window.addEventListener('resize',fit);
@@ -221,7 +232,6 @@ export function boot(embed){
   });
   setTimeout(()=>{ try{ sessionStorage.removeItem('kb.chunkReload'); }catch{} },15000);
 
-  initInstall();
 
   // Offline support. Only registers from http(s); opening the file directly
   // still plays, it just can't install. NEVER on the Vite dev server — a

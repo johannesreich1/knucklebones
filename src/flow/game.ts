@@ -354,6 +354,7 @@ export function newGame(opts){
   applySides();
   updateRecord();
   hide('#ovEnd'); hide('#ovStart'); hide('#ovRules'); hide('#ovPass'); hide('#ovPractice');
+  hide('#ovLearn');   // the hub the tutorial is started FROM, or it stays over the board
   setStatus(S.mode==='duo' ? nameOf(S.turn)+' starts'
                            : (S.turn===ME?'You go first':'AI goes first'), S.turn);
   setActivePlate();

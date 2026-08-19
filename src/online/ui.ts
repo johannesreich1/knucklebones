@@ -6,7 +6,7 @@
 // queue). Match play itself lives in play.ts and hooks in via startQueue.
 import './online.css';
 import { ME, AI } from '../core/rules.ts';
-import { $, show, hide } from '../ui/dom.ts';
+import { $, show, hide, stampBuild } from '../ui/dom.ts';
 import { showEnd, setMeta, closeEnd } from '../ui/endscreen.ts';
 import { Sfx } from '../ui/audio.ts';
 import { makeDie } from '../ui/die.ts';
@@ -70,6 +70,9 @@ const OVERLAY = `
       <button class="btn" id="btnDeleteAcc">Delete account</button>
       <div class="dnote">Two taps. Removes your profile, matches and rating — permanently.</div>
     </div>
+    <!-- deploy truth, where somebody looking for it would look: this panel is
+         already the "what am I signed in as" screen -->
+    <div class="tiny" id="buildTag">build dev</div>
   </div>
 
 </div>`;
@@ -281,6 +284,7 @@ async function showAccount(): Promise<void> {
   $('#onAccErr').textContent = '';
   const dieSlot = $('#accDie');
   if (!dieSlot.firstChild) dieSlot.appendChild(makeDie(5, ME));
+  stampBuild();
   const [p, who] = await Promise.all([myProfile(), currentUser()]);
   refreshHomeChip();
   /* a guest is offered the way up; "Sign out" is hidden from them because for

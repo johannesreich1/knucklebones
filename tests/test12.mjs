@@ -161,15 +161,21 @@ sp.on('pageerror', e => errs.push('SMALL: ' + e.message));
 await sp.goto(F); await sp.waitForTimeout(400);
 await sp.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await sp.tap('#modeSeg button[data-m="duo"]'); await sp.waitForTimeout(300);
+/* What matters is that the LAST thing on home can be tapped on the smallest
+   screen — by scrolling to it or by it simply fitting. It used to require a
+   scroll; since the foot was pinned to the bottom the column fits, so asserting
+   "scrollable" would now be asserting the old layout rather than the goal. */
 out.small = await sp.evaluate(() => {
   const ov = document.getElementById('ovStart');
-  return { scrollable: ov.scrollHeight > ov.clientHeight, sh: ov.scrollHeight, ch: ov.clientHeight };
+  const b = document.getElementById('btnImprint').getBoundingClientRect();
+  return { scrollable: ov.scrollHeight > ov.clientHeight, sh: ov.scrollHeight, ch: ov.clientHeight,
+           lastVisible: b.bottom <= innerHeight + 1 && b.top >= 0 };
 });
 await sp.evaluate(() => window.__kb.goHome());
-await sp.tap('#btnHow'); await sp.waitForTimeout(400);     // bottom button reachable (auto-scrolls)
-const rulesOpened = await sp.evaluate(() => document.getElementById('ovRules').classList.contains('on'));
-check(rulesOpened, 'bottom title button unreachable on small screen', out.small);
-out.small.rulesOpened = rulesOpened;
+await sp.tap('#btnImprint'); await sp.waitForTimeout(400);
+const legalOpened = await sp.evaluate(() => document.getElementById('ovImprint').classList.contains('on'));
+check(legalOpened, 'the last button on home is unreachable on a small screen', out.small);
+out.small.legalOpened = legalOpened;
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
 await browser.close();
