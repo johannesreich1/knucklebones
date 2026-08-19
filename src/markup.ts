@@ -20,7 +20,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <!-- far side of the table -->
     <section class="side top" id="sideTop" data-owner="0">
       <div class="plate" id="plateTop">
-        <span class="dot"></span><span class="nm" id="nameTop">CPU</span>
+        <span class="dot"></span><span class="nm" id="nameTop">AI</span>
         <span class="tag" id="tagTop">HARD</span>
         <span class="sp"></span><span class="runeslot"></span>
         <span class="bty" id="btyTop" hidden></span><span class="tot" id="totTop">0</span>
@@ -87,7 +87,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   <div class="quiet">
     <div class="cap">Practice offline</div>
     <div class="hrow">
-      <button class="btn" id="btnVsCpu">VS CPU</button>
+      <button class="btn" id="btnVsCpu">VS AI</button>
       <button class="btn" id="btnDuoHome">2 players</button>
       <button class="btn" id="btnTutHome">Tutorial</button>
     </div>
@@ -111,7 +111,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <div class="card">
       <div class="lbl">Mode</div>
       <div class="seg" id="modeSeg">
-        <button data-m="cpu" class="on">VS CPU</button>
+        <button data-m="cpu" class="on">VS AI</button>
         <button data-m="duo">2 PLAYERS</button>
       </div>
     </div>
@@ -121,7 +121,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
          the choice it sits under — the seating note used to live at the far
          bottom of the sheet, describing a control three cards away. -->
     <div class="card" id="diffCard">
-      <div class="lbl">CPU level</div>
+      <div class="lbl">AI level</div>
       <div class="seg" id="diffSeg">
         <button data-d="easy">EASY</button>
         <button data-d="medium">NORMAL</button>
@@ -262,7 +262,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   <div class="scoreline">
     <span class="sc"><span class="you" id="endYou">0</span><em id="endYouLbl">You</em></span>
     <span class="vs">VS</span>
-    <span class="sc"><span class="cpu" id="endCpu">0</span><em id="endCpuLbl">CPU</em></span>
+    <span class="sc"><span class="cpu" id="endCpu">0</span><em id="endCpuLbl">AI</em></span>
   </div>
   <div class="endmeta" id="endMeta"></div>
   <button class="btn primary" id="btnAgain">Play again</button>

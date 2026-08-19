@@ -131,7 +131,7 @@ async function rollDice(){
   setActivePlate();
   const stage=$('#dieStage');
   stage.classList.add('rolling');
-  setStatus(S.turn===ME?'Your roll':'CPU roll',S.turn);
+  setStatus(S.turn===ME?'Your roll':'AI roll',S.turn);
   Sfx.roll();
   const t0=performance.now();
   while(performance.now()-t0 < 430){
@@ -176,7 +176,7 @@ export async function nextTurn(){
     armTimer();
   }else{
     S.phase='anim';
-    setStatus('CPU thinking',AI,true);
+    setStatus('AI thinking',AI,true);
     await wait(300);
     if(S.gen!==gen) return;
     // it holds the same rune you do — it spends it at the same point in the
@@ -355,11 +355,11 @@ export function newGame(opts){
   updateRecord();
   hide('#ovEnd'); hide('#ovStart'); hide('#ovRules'); hide('#ovPass'); hide('#ovPractice');
   setStatus(S.mode==='duo' ? nameOf(S.turn)+' starts'
-                           : (S.turn===ME?'You go first':'CPU goes first'), S.turn);
+                           : (S.turn===ME?'You go first':'AI goes first'), S.turn);
   setActivePlate();
   if(tutorial){
     const gen=S.gen;
-    coachShow('Welcome to Knucklebones! Your grid is the BOTTOM one. Fill it with dice before the CPU fills theirs — highest total wins.', true)
+    coachShow('Welcome to Knucklebones! Your grid is the BOTTOM one. Fill it with dice before the AI fills theirs — highest total wins.', true)
       .then(()=>{ if(S.gen===gen) nextTurn(); });
   }else{
     setTimeout(nextTurn,650);
@@ -399,9 +399,9 @@ export function endGame(){
       : tut ? (p1won ? 'Tutorial complete — the bones obey you'
                      : 'Tutorial complete — now beat the real thing')
       : duo ? (p1won?'Cyan takes the round':'Magenta takes the round')
-            : (p1won?'You out-rolled the machine':'The CPU takes this one'),
+            : (p1won?'You out-rolled the machine':'The AI takes this one'),
     you:  { score: me, label: duo?'Player 1':'You' },
-    them: { score: ai, label: duo?'Player 2':'CPU' },
+    them: { score: ai, label: duo?'Player 2':'AI' },
     meta: tut ? 'TUTORIAL COMPLETE'
       : duo ? 'SESSION  P1 '+S.p1+' – '+S.p2+' P2'+(S.ties?('  ·  '+S.ties+' drawn'):'')
             : 'SESSION  '+S.wins+'–'+S.losses+(S.draws?('–'+S.draws+' D'):''),

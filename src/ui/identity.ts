@@ -4,7 +4,7 @@ import { S } from '../state.ts';
 
 export function nameOf(who: Player): string {
   if (S.mode === 'duo') return who === ME ? 'PLAYER 1' : 'PLAYER 2';
-  return who === ME ? 'YOU' : 'CPU';
+  return who === ME ? 'YOU' : 'AI';
 }
 
 export function colorOf(who: Player): string {

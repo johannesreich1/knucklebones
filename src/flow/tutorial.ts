@@ -47,7 +47,7 @@ export function tutOnChoose(){
     coachShow('Another 4! Matching dice in one column multiply: two 4s score 16, not 8. Stack it on your first 4.');
   }else if(t.turnNo===2){
     t.restrict=1;
-    coachShow('You rolled a 5 — and the CPU has a 5 in their middle column. Place yours in YOUR middle column to destroy theirs!');
+    coachShow('You rolled a 5 — and the AI has a 5 in their middle column. Place yours in YOUR middle column to destroy theirs!');
   }else if(t.turnNo===3){
     coachShow('Boom. That is the whole game: stack matches, smash theirs. Finish the round — highest total wins.');
   }else{

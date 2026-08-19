@@ -159,7 +159,7 @@ async function castBy(who: Player, spell: SpellSpec, col: number): Promise<boole
   S.busy = true;
   S.phase = 'anim';
   stopTimer();
-  setStatus(S.mode === 'cpu' && who === AI ? 'CPU — ' + spell.name : spell.name, who, false);
+  setStatus(S.mode === 'cpu' && who === AI ? 'AI — ' + spell.name : spell.name, who, false);
   const gen = S.gen;
   await perform(spell, who, col);
   if (S.gen !== gen) return true;                  // abandoned mid-cast: nothing to hand back
