@@ -1,4 +1,4 @@
-<!-- meta name="Win title F — Rise and banner" group="6 · Win screen studies" subtitle="The word rises from behind a line with a light bar sweeping up through it" width=412 height=700 links="Result screen" -->
+<!-- meta name="Win title F — Rise and banner" group="6 · Win screen studies" subtitle="The word rises behind a line while the light bar sweeps up THROUGH it — one movement, not two" width=412 height=700 links="Result screen" -->
 <style>
   .studio{display:flex;flex-direction:column;gap:14px;width:100%;align-items:center}
   .panel{position:relative;width:100%;max-width:var(--w-col);height:170px;border-radius:18px;overflow:hidden;
@@ -25,16 +25,22 @@
   .note b{color:var(--gold)}
 
   .t{animation:rise 3s cubic-bezier(.16,1,.3,1) 1.2s infinite}
-  @keyframes rise{0%,4%{transform:none;opacity:1}5%{transform:translateY(115%);opacity:0}
-    22%,100%{transform:none;opacity:1}}
+  @keyframes rise{0%,4%{transform:none;opacity:1}
+    5%{transform:translateY(115%);opacity:0}
+    10%{opacity:.18}
+    15%{opacity:.55}
+    19%{opacity:.85}
+    24%,100%{transform:none;opacity:1}}
   .bar{position:absolute;left:0;right:0;height:2px;top:50%;opacity:0;
     background:linear-gradient(90deg,transparent,#fff,transparent);animation:bar 3s ease-out 1.2s infinite}
-  @keyframes bar{0%,12%{transform:translateY(30px) scaleX(.2);opacity:0}20%{opacity:.9}
-    42%,100%{transform:translateY(-40px) scaleX(1);opacity:0}}
+  @keyframes bar{0%,5%{transform:translateY(34px) scaleX(.15);opacity:0}
+    8%{opacity:.95}
+    15%{transform:translateY(2px) scaleX(1);opacity:.9}
+    30%,100%{transform:translateY(-46px) scaleX(.55);opacity:0}}
 </style>
 <div class="studio">
   <div class="cap">Variant F · Rise and banner</div>
   <div class="panel"><i class="bar"></i><h1 class="t win"><span class="l" style="--i:0">V</span><span class="l" style="--i:1">I</span><span class="l" style="--i:2">C</span><span class="l" style="--i:3">T</span><span class="l" style="--i:4">O</span><span class="l" style="--i:5">R</span><span class="l" style="--i:6">Y</span></h1><div class="psub">You out-rolled the machine</div></div>
   <div class="panel"><i class="bar"></i><h1 class="t lose"><span class="l" style="--i:0">D</span><span class="l" style="--i:1">E</span><span class="l" style="--i:2">F</span><span class="l" style="--i:3">E</span><span class="l" style="--i:4">A</span><span class="l" style="--i:5">T</span></h1><div class="psub">The CPU takes this one</div></div>
-  <div class="note"><b>The calmest.</b> Cinematic and never tiring, but it announces the least — arguably better for DEFEAT than for VICTORY, which is an argument for using two different treatments.</div>
+  <div class="note"><b>The calmest.</b> The bar breaks before the word has landed, so the light reads as carrying it up rather than following it. Cinematic and never tiring, but it announces the least — arguably better for DEFEAT than for VICTORY, which is an argument for using two treatments.</div>
 </div>
