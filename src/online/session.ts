@@ -181,6 +181,12 @@ export interface MoveResult { match: MatchRow; your_die?: number; bot_move?: { c
 export async function move(matchId: string, col: number): Promise<{ status: number; data: MoveResult | null }> {
   return call<MoveResult>('pvp-move', { match_id: matchId, col });
 }
+/* Ask the server to place for an opponent who has stopped answering. It checks
+   the stall against its OWN clock and refuses (425) until it is real, so this
+   is safe to call optimistically and safe to retry. */
+export async function nudge(matchId: string): Promise<{ status: number; data: MoveResult | null }> {
+  return call<MoveResult>('pvp-move', { match_id: matchId, auto: true });
+}
 export async function claim(matchId: string): Promise<{ status: number; data: { match: MatchRow } | null }> {
   return call('pvp-claim', { match_id: matchId });
 }

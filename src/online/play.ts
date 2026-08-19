@@ -21,7 +21,7 @@ import { buildBoards, renderAll, renderSide, clearHints, showHints, setStatus, s
 import { fit } from '../ui/layout.ts';
 import { setPlaceHandler } from '../ui/input.ts';
 import { flyDie, destroyAt } from '../flow/game.ts';
-import { supa, move, claim, watchMatch, type MatchRow, type JoinResult } from './session.ts';
+import { supa, move, claim, nudge, watchMatch, type MatchRow, type JoinResult } from './session.ts';
 
 interface OnlineState {
   matchId: string;
@@ -167,7 +167,17 @@ function refreshTurnUI(): void {
 }
 /* their clock ran out: say so and let the watchdog decide if they are gone */
 function oppStalled(): void {
-  if (O && !O.done) setStatus('Waiting for ' + oppName(), S.turn, false);
+  if (!O || O.done) return;
+  /* An open-ended "waiting" is indistinguishable from a hang. Say what is about
+     to happen and count it down, so the pause has a shape. */
+  const tick = (): void => {
+    if (!O || O.done || S.turn === O.you) return;
+    const left = Math.max(0, Math.ceil((13_000 - (Date.now() - O.lastMoveAt)) / 1000));
+    setStatus(left > 0 ? oppName() + ' is away — playing for them in ' + left
+                       : 'Playing for ' + oppName() + '…', S.turn, false);
+    if (left > 0) setTimeout(tick, 500);
+  };
+  tick();
 }
 
 /* the roll, with local play's full juice: scramble the face with ticks for a
@@ -377,9 +387,23 @@ async function watchdog(): Promise<void> {
   if (!O) return;
   if (S.gen !== O.gen) return teardown();          // a local game started over us
   if (O.done) return;
-  if (S.turn !== O.you && Date.now() - O.lastMoveAt > 35_000) {
-    const r = await claim(O.matchId);
-    if (r.status === 200 && r.data?.match) applyMatchRow(r.data.match);
+  if (S.turn !== O.you && Date.now() - O.lastMoveAt > 13_000) {
+    /* Their clock ran out and their own client did not answer for it — so the
+       game goes on WITHOUT them rather than stopping dead. The server proves
+       the stall itself and answers 425 until it is real, so calling this on
+       every tick costs nothing. Leaving no longer wins the leaver a way out;
+       it just hands their turns to a die. */
+    const r = await nudge(O.matchId);
+    if (r.status === 200 && r.data?.match) { applyMatchRow(r.data.match); return; }
+    if (r.status === 425) return;                  // not stalled yet by the server's clock
+    /* The deployed function may predate auto-place (it answers 400 for a body
+       with no column). Fall back to the forfeit claim so this client is never
+       WORSE than the one before it, whatever the server is running. */
+    if (Date.now() - O.lastMoveAt > 35_000) {
+      const f = await claim(O.matchId);
+      if (f.status === 200 && f.data?.match) { applyMatchRow(f.data.match); return; }
+    }
+    void sync(false);
   } else if (S.turn !== O.you) {
     void sync(false);                              // belt-and-braces vs missed events
   }

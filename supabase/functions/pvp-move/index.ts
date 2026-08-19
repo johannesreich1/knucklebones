@@ -19,6 +19,15 @@ const json = (body: unknown, status = 200) =>
 
 const MATCH_COLS = "id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at, modifier";
 
+/* How long a player's turn may sit untouched before the OTHER player may ask
+   the server to place for them. The turn clock is 10s and an honest client
+   places for itself when it expires, so this only ever catches somebody whose
+   app is gone — backgrounded, closed, or offline. The waiting player asks; the
+   SERVER decides, against its own clock, so neither a wrong device clock nor a
+   hostile client can force it early.
+   Leaving no longer loses the game outright: it hands your turns to a die. */
+const AUTO_MS = 12 * 1000;
+
 async function loadState(svc: SupabaseClient, matchId: string, mode: Mode): Promise<MatchState | null> {
   const { data: moves } = await svc.from("match_moves").select("idx, who, col").eq("match_id", matchId);
   const { data: seedRow } = await svc.from("match_seeds").select("seed").eq("match_id", matchId).single();
@@ -69,40 +78,60 @@ Deno.serve(async (req: Request) => {
 
   let body: any;
   try { body = await req.json(); } catch { return json({ error: "bad-json" }, 400); }
-  const { match_id, col } = body ?? {};
-  if (typeof match_id !== "string" || !Number.isInteger(col)) return json({ error: "bad-request" }, 400);
+  const { match_id, col, auto } = body ?? {};
+  if (typeof match_id !== "string") return json({ error: "bad-request" }, 400);
+  if (!auto && !Number.isInteger(col)) return json({ error: "bad-request" }, 400);
 
   const svc = createClient(supaUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const { data: match } = await svc.from("matches").select(MATCH_COLS).eq("id", match_id).maybeSingle();
   if (!match || (match.p1 !== user.id && match.p2 !== user.id)) return json({ error: "no-match" }, 404);
   if (match.status !== "active") return json({ error: "match-over" }, 409);
   const myIdx: Player = match.p1 === user.id ? ME : AI;
-  if (match.turn !== myIdx) return json({ error: "not-your-turn" }, 409);
+  /* Two ways to be entitled to move, ONE pipeline below. Normally you move on
+     your own turn. With auto:true you are asking the server to move for an
+     opponent who has stopped answering — so the turn check is inverted and the
+     stall is proven against the server's clock. */
+  const mover: Player = auto ? ((1 - myIdx) as Player) : myIdx;
+  if (auto) {
+    if (match.turn === myIdx) return json({ error: "your-own-turn" }, 409);
+    if (Date.now() - new Date(match.last_move_at).getTime() < AUTO_MS) {
+      return json({ error: "not-stalled-yet" }, 425);
+    }
+  } else if (match.turn !== myIdx) {
+    return json({ error: "not-your-turn" }, 409);
+  }
   const MODE: Mode = modeById(match.modifier).mode;
 
   let s = await loadState(svc, match_id, MODE);
-  if (!s || s.over || s.turn !== myIdx) return json({ error: "corrupt-state" }, 500);
-  if (!legalCols(s.st[myIdx]).includes(col)) return json({ error: "illegal-move" }, 422);
+  if (!s || s.over || s.turn !== mover) return json({ error: "corrupt-state" }, 500);
+  const legal = legalCols(s.st[mover]);
+  // an absent player's die goes somewhere legal and unremarkable — the same
+  // uniform pick their own client would have made when their clock ran out
+  const chosen = auto ? legal[Math.floor(Math.random() * legal.length)] : col;
+  if (!legal.includes(chosen)) return json({ error: "illegal-move" }, 422);
 
-  // the move log's primary key (match_id, idx) makes concurrent submits lose cleanly
+  // the move log's primary key (match_id, idx) makes concurrent submits lose
+  // cleanly — including an auto-place racing the absent player's own return
   const myDie = s.nextDie;
   const { error: insErr } = await svc.from("match_moves")
-    .insert({ match_id, idx: s.moveCount, who: myIdx, col, die: myDie });
+    .insert({ match_id, idx: s.moveCount, who: mover, col: chosen, die: myDie });
   if (insErr) return json({ error: "race-lost" }, 409);
-  const myHits = applyMove(s.st, myIdx, col, myDie, MODE);
-  if (MODE === BOUNTY) s.bounty[myIdx] += myHits;   // the in-request move banks too
+  const myHits = applyMove(s.st, mover, chosen, myDie, MODE);
+  if (MODE === BOUNTY) s.bounty[mover] += myHits;   // the in-request move banks too
 
-  if (isFull(s.st[myIdx])) {
+  if (isFull(s.st[mover])) {
     const updated = await finish(svc, match, s, MODE, "done");
-    return json({ match: updated, your_die: myDie });
+    return json({ match: updated, your_die: myDie, auto: !!auto });
   }
 
-  // opponent's turn; if it's a bot, it answers within this request
+  // opponent's turn; if it's a bot, it answers within this request. An
+  // auto-place never triggers this: it moved FOR the opponent, so the turn has
+  // just come back to the caller.
   const oppId = myIdx === ME ? match.p2 : match.p1;
   const { data: oppProf } = await svc.from("profiles").select("is_bot").eq("id", oppId).single();
   let botMove: { col: number; die: number } | null = null;
   s = (await loadState(svc, match_id, MODE))!;   // re-derive next die cleanly from the log
-  if (oppProf?.is_bot && !s.over) {
+  if (!auto && oppProf?.is_bot && !s.over) {
     const botIdx = (1 - myIdx) as Player;  // vs a human p1, the bot is always index 0
     const botDie = s.nextDie;
     // Dynamic sparring: the bot's strength follows the HUMAN's rating, read at
