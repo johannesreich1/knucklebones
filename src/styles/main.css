@@ -606,13 +606,17 @@ html.casting .col.hot::after{border-style:solid;border-color:var(--gold);
   0%{opacity:0;transform:translate(-50%,-50%) scale(.55)}
   60%{opacity:1}
   100%{opacity:.9;transform:translate(-50%,-50%) scale(1)}}
-#ovEnd.lose .titlewrap,#ovEnd.draw .titlewrap{overflow:hidden;padding:3px 0}
+/* ONLY the word is clipped. The bloom and the sweep are siblings of this box,
+   because a clip that also crops the glow shows its cut edges for the whole
+   animation. */
+.titleclip{width:100%;display:flex;justify-content:center}
+#ovEnd.lose .titleclip,#ovEnd.draw .titleclip{overflow:hidden;padding:3px 0}
 /* NOTHING filters the title. A filter on an element that also carries
    -webkit-background-clip:text makes Safari drop the clip and paint the
    gradient as a solid rectangle — a hard-edged box behind the word. The glow
    is a separate layer below (.titlewrap::before), which cannot interfere.
    The clip is only needed while the word is travelling. */
-#ovEnd.settled .titlewrap{overflow:visible}
+#ovEnd.settled .titleclip{overflow:visible}
 #ovEnd.enter.lose #endTitle,#ovEnd.enter.draw #endTitle{
   animation:endRise 1.35s cubic-bezier(.16,1,.3,1) .3s both}
 /* the fade gets its own stops: this easing is all but finished a fifth of the
