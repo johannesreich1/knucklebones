@@ -30,8 +30,8 @@
 <div class="fgrid">
   <div class="fcard">
     <div class="fcap">Pages — ‹ top-left, one level up</div>
-    <div class="demo"><div class="shead"><button class="ico">‹</button><span class="ttl">PRACTICE</span><span class="pad"></span></div></div>
-    <p class="rule">Screens you travel <b>into</b> from Home: <b>Practice · Sign in · Ladder · Account</b>.
+    <div class="demo"><div class="shead"><button class="ico">‹</button><span class="ttl">OFFLINE</span><span class="pad"></span></div></div>
+    <p class="rule">Screens you travel <b>into</b> from Home: <b>Offline · Ladder · Account</b>.
       The header reuses the HUD's icon button; the title sits centred beside it.
       ‹ returns exactly where you came from — always Home, never an intermediate menu.</p>
   </div>
@@ -45,7 +45,7 @@
   <div class="fcard">
     <div class="fcap">The bottom of a screen = actions only</div>
     <p class="rule">Every bottom stack holds <b>actions</b>, never navigation — and exactly one is primary:
-      <b>Play</b>, <b>Sign in</b>, <b>Save name</b>, <b>Play again</b>, <b>Cancel search</b>.
+      <b>Play</b>, <b>Sign in</b>, <b>Keep it forever</b>, <b>Play again</b>, <b>Cancel</b>.
       “Back”, “Close” and “Done” as bottom buttons are retired everywhere.
       Matchmaking's only exit is <b>Cancel</b>, and cancelling truly leaves the queue.</p>
   </div>
@@ -61,7 +61,7 @@
     <div class="flow">
       <span class="fc root">HOME</span><span class="ar">→</span>
       <span class="fc">QUEUE</span><span class="ar">→</span>
-      <span class="fc">WHEEL</span><span class="ar">→</span>
+      <span class="fc">DIAL</span><span class="ar">→</span>
       <span class="fc">MATCH</span><span class="ar">→</span>
       <span class="fc">RESULT</span>
     </div>
@@ -70,14 +70,16 @@
       <span class="ar">·</span>
       <span class="fc root">HOME</span><span class="ar">→</span><span class="fc">ACCOUNT</span>
       <span class="ar">·</span>
-      <span class="fc root">HOME</span><span class="ar">→</span><span class="fc">PRACTICE</span><span class="ar">→</span><span class="fc">GAME</span>
+      <span class="fc root">HOME</span><span class="ar">→</span><span class="fc">OFFLINE</span><span class="ar">→</span><span class="fc">(DIAL)</span><span class="ar">→</span><span class="fc">GAME</span>
     </div>
     <div class="flow">
       <span class="ar">orbiting sheets:</span>
       <span class="fc sheet">SETTINGS</span><span class="fc sheet">RULES</span><span class="fc sheet">INSTALL</span>
     </div>
-    <p class="rule">Deep links go straight to their view. Signed out, <b>Sign in</b> interposes once,
-      then continues to wherever the tap was headed; its ‹ returns Home.</p>
+    <p class="rule">Deep links go straight to their view. A first-timer never sees a form: the tap makes
+      them a <b>guest</b> and continues straight to it. <b>Sign in</b> hangs off Account's guest
+      box instead — <b>KEEP ACCOUNT</b> to attach an email, <b>SIGN IN</b> to restore one elsewhere;
+      its ‹ returns Home.</p>
   </div>
   <div class="fcard">
     <div class="fcap">Retired patterns</div>

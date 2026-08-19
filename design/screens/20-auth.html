@@ -1,9 +1,9 @@
-<!-- meta name="Sign in" group="2 · Online flow" subtitle="Email + password; account creation inline" width=412 height=880 links="Home, Matchmaking" -->
+<!-- meta name="Sign in" group="2 · Online flow" subtitle="Restoring an account: email + password with creation inline, plus whatever this device can do in one tap — guests reach ranked without ever seeing this panel" width=412 height=880 links="Home, Matchmaking" -->
 <style>
-  .authwrap{display:flex;flex-direction:column;gap:16px;width:100%;max-width:300px;margin:auto}
-  .authwrap input{padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
+  .authwrap{display:flex;flex-direction:column;gap:16px;width:100%;max-width:var(--w-col);margin:auto}
+  .authwrap input{padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
     background:rgba(255,255,255,.05);color:var(--txt);font-size:14px;font-family:inherit}
-  .authwrap .err{min-height:14px;font-size:10.5px;letter-spacing:.08em;color:#ff8a3d;text-align:center}
+  .authwrap .err{min-height:16px;font-size:11px;letter-spacing:.08em;color:#ff8a3d;text-align:center}
   /* .shead is the app's shared header (src/styles/main.css) — card adds spacing only */
   .shead{margin-bottom:10px}
 </style>
@@ -11,6 +11,10 @@
   <div class="shead"><button class="ico">‹</button><span class="ttl">SIGN IN</span><span class="pad"></span></div>
   <div class="authwrap">
     <div class="lbl" style="text-align:center">Play ranked, climb the ladder</div>
+    <div class="oneTap">
+      <button class="btn tap gamecenter">Continue with Game Center</button>
+      <button class="btn tap apple">Continue with Apple</button>
+    </div>
     <input type="email" placeholder="email" value="jor@ecommercewerke.de">
     <input type="password" placeholder="password (8+)" value="••••••••••">
     <div class="err"></div>

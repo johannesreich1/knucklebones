@@ -4,10 +4,13 @@
   .scr{align-items:center}
   .hero{margin-top:34px}
   .homefoot{margin-top:auto;padding-top:20px}
+  /* the app pins the build tag to the bottom of a full-height overlay; on a
+     card the footer links reach it and the two collide */
+  #buildTag{margin-top:10px}
   .hint{font-size:10px;letter-spacing:.14em;color:var(--dim);text-align:center}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
-  <div class="idchip anon">Not signed in</div>
+  <div class="idchip anon">NOT SIGNED IN</div>
 
   <div class="hero">
     <div class="eyebrow">Neon Edition</div>
@@ -22,13 +25,16 @@
 
   <div class="homestack">
     <button class="btn primary">Play online</button>
-    <div class="hint">Sign in to play ranked — takes a minute</div>
+    <div class="hrow">
+      <button class="btn">Leaderboard</button>
+      <button class="btn">Account</button>
+    </div>
   </div>
 
   <div class="quiet">
     <div class="cap">Practice offline</div>
     <div class="hrow">
-      <button class="btn">VS CPU</button>
+      <button class="btn">VS AI</button>
       <button class="btn">2 players</button>
       <button class="btn">Tutorial</button>
     </div>
@@ -37,6 +43,7 @@
   <div class="homefoot">
     <button class="linkbtn">How to play</button>
     <button class="linkbtn">Game modes</button>
+    <button class="linkbtn">Install app</button>
     </div>
   <div class="tiny" id="buildTag">build dev</div>
 </div></div>

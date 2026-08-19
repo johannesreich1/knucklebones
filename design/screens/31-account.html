@@ -2,9 +2,7 @@
 <style>
   /* .shead is the app's shared header (src/styles/main.css) — card adds spacing only */
   .shead{margin-bottom:10px}
-  .awrap{display:flex;flex-direction:column;gap:16px;width:100%;max-width:300px;margin:14px auto 0}
-  .acard{display:flex;flex-direction:column;gap:9px;background:rgba(255,255,255,.03);
-    border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px}
+  .awrap{display:flex;flex-direction:column;gap:16px;width:100%;max-width:var(--w-col);margin:14px auto 0}
   .awho{display:flex;align-items:center;gap:12px}
   .awho .meta{display:flex;flex-direction:column;gap:2px}
   .awho .nm{font-size:15px;font-weight:900;letter-spacing:.06em;color:var(--cy)}
@@ -27,11 +25,12 @@
     </div>
     <div class="lbl">Nickname</div>
     <input value="FrostLynx303" maxlength="16">
+    <div class="err"></div>
     <button class="btn">Save name</button>
     <button class="btn">Sign out</button>
     <div class="danger">
       <button class="btn" style="width:100%">Delete account</button>
-      <div class="dnote">Two taps. Removes your profile, matches and rating — everywhere, permanently.</div>
+      <div class="dnote">Two taps. Removes your profile, matches and rating — permanently.</div>
     </div>
   </div>
 </div></div>
