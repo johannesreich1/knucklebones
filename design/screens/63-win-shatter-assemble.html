@@ -7,7 +7,12 @@
     border:1px solid rgba(255,255,255,.08)}
   .cap{font-size:9px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase}
   .psub{font-size:10.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
-  /* the title is the app's own gradient text — the study changes only its motion */
+  /* The title is the app's own gradient text — a study changes only its motion.
+     EVERY loop RESTS in the finished state and departs from it: a design card is
+     read as a still, so a keyframe set that starts at opacity 0 renders an empty
+     card in any gallery that screenshots frame zero. Each loop also waits 1.2s
+     before its first departure, so a capture taken shortly after load still
+     lands on the finished look. */
   .t{margin:0;font-size:38px;letter-spacing:.2em;font-weight:900;text-align:center;line-height:1.1;
     background-clip:text;-webkit-background-clip:text;color:transparent;white-space:nowrap}
   .t.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
@@ -19,9 +24,10 @@
     background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:11px 13px}
   .note b{color:var(--gold)}
 
-  .t .l{animation:shatter 3s cubic-bezier(.15,1.1,.3,1) infinite;animation-delay:calc(var(--i)*.035s)}
-  @keyframes shatter{0%{transform:translate(calc(var(--i)*7px - 26px),-42px) rotate(-24deg) scale(1.6);opacity:0}
-    20%{transform:none;opacity:1}24%{transform:translateY(-3px)}30%,100%{transform:none;opacity:1}}
+  .t .l{animation:shatter 3s cubic-bezier(.15,1.1,.3,1) infinite;animation-delay:calc(1.2s + var(--i)*.035s)}
+  @keyframes shatter{0%,4%{transform:none;opacity:1}
+    5%{transform:translate(calc(var(--i)*7px - 26px),-42px) rotate(-24deg) scale(1.6);opacity:0}
+    25%{transform:none;opacity:1}28%{transform:translateY(-3px)}34%,100%{transform:none;opacity:1}}
 </style>
 <div class="studio">
   <div class="cap">Variant D · Shatter assemble</div>

@@ -7,7 +7,12 @@
     border:1px solid rgba(255,255,255,.08)}
   .cap{font-size:9px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase}
   .psub{font-size:10.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
-  /* the title is the app's own gradient text — the study changes only its motion */
+  /* The title is the app's own gradient text — a study changes only its motion.
+     EVERY loop RESTS in the finished state and departs from it: a design card is
+     read as a still, so a keyframe set that starts at opacity 0 renders an empty
+     card in any gallery that screenshots frame zero. Each loop also waits 1.2s
+     before its first departure, so a capture taken shortly after load still
+     lands on the finished look. */
   .t{margin:0;font-size:38px;letter-spacing:.2em;font-weight:900;text-align:center;line-height:1.1;
     background-clip:text;-webkit-background-clip:text;color:transparent;white-space:nowrap}
   .t.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
@@ -19,9 +24,9 @@
     background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:11px 13px}
   .note b{color:var(--gold)}
 
-  .t .l{opacity:.08;animation:ignite 3.4s steps(1,end) infinite;animation-delay:calc(var(--i)*.06s)}
-  @keyframes ignite{0%,6%{opacity:.08}8%{opacity:1}10%{opacity:.12}13%{opacity:1}15%{opacity:.2}18%,100%{opacity:1}}
-  .t{animation:hum 3.4s ease-in-out infinite}
+  .t .l{animation:ignite 3.4s steps(1,end) infinite;animation-delay:calc(1.2s + var(--i)*.06s)}
+  @keyframes ignite{0%,5%{opacity:1}6%{opacity:.3}10%{opacity:1}12%{opacity:.35}15%{opacity:1}17%{opacity:.45}20%,100%{opacity:1}}
+  .t{animation:hum 3.4s ease-in-out 1.2s infinite}
   @keyframes hum{0%,17%{filter:drop-shadow(0 0 4px rgba(255,255,255,.15))}
     22%{filter:drop-shadow(0 0 32px rgba(40,232,255,.65))}30%,100%{filter:drop-shadow(0 0 22px rgba(40,232,255,.4))}}
 </style>

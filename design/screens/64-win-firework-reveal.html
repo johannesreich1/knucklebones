@@ -7,7 +7,12 @@
     border:1px solid rgba(255,255,255,.08)}
   .cap{font-size:9px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase}
   .psub{font-size:10.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
-  /* the title is the app's own gradient text — the study changes only its motion */
+  /* The title is the app's own gradient text — a study changes only its motion.
+     EVERY loop RESTS in the finished state and departs from it: a design card is
+     read as a still, so a keyframe set that starts at opacity 0 renders an empty
+     card in any gallery that screenshots frame zero. Each loop also waits 1.2s
+     before its first departure, so a capture taken shortly after load still
+     lands on the finished look. */
   .t{margin:0;font-size:38px;letter-spacing:.2em;font-weight:900;text-align:center;line-height:1.1;
     background-clip:text;-webkit-background-clip:text;color:transparent;white-space:nowrap}
   .t.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
@@ -19,16 +24,16 @@
     background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:11px 13px}
   .note b{color:var(--gold)}
 
-  .t{animation:bloom 3.2s cubic-bezier(.2,1,.3,1) infinite}
-  @keyframes bloom{0%,6%{clip-path:circle(0% at 50% 50%);opacity:0;transform:scale(1.25)}
-    10%{opacity:1}30%{clip-path:circle(85% at 50% 50%);transform:scale(1)}
-    100%{clip-path:circle(85% at 50% 50%);transform:scale(1);opacity:1}}
+  .t{animation:bloom 3.2s cubic-bezier(.2,1,.3,1) 1.2s infinite}
+  @keyframes bloom{0%,4%{clip-path:circle(85% at 50% 50%);opacity:1;transform:scale(1)}
+    5%{clip-path:circle(0% at 50% 50%);opacity:0;transform:scale(1.25)}
+    10%{opacity:1}34%,100%{clip-path:circle(85% at 50% 50%);transform:scale(1);opacity:1}}
   .spark{position:absolute;left:50%;top:50%;width:6px;height:6px;border-radius:50%;background:currentColor;
     box-shadow:0 0 14px currentColor;opacity:0;animation:fly 3.2s ease-out infinite;
-    animation-delay:calc(var(--n)*.012s)}
+    animation-delay:calc(1.2s + var(--n)*.012s)}
   .panel:nth-of-type(1) .spark{color:#8dffcf}.panel:nth-of-type(2) .spark{color:#ff8a3d}
-  @keyframes fly{0%,5%{transform:translate(0,0) scale(1);opacity:0}8%{opacity:1}
-    45%,100%{transform:translate(var(--x),var(--y)) scale(0);opacity:0}}
+  @keyframes fly{0%,6%{transform:translate(0,0) scale(1);opacity:0}9%{opacity:1}
+    48%,100%{transform:translate(var(--x),var(--y)) scale(0);opacity:0}}
 </style>
 <div class="studio">
   <div class="cap">Variant E · Firework reveal</div>
