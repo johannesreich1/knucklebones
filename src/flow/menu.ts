@@ -32,6 +32,9 @@ export function syncSettingsUI(){
     ? 'Phone flat between you — the top half faces Player 2'
     : 'One phone, passed back and forth';
   $('#diffNote').textContent = DIFF_NOTE[S.diff] ?? DIFF_NOTE.medium;
+  // name the game, not the verb: two players on one phone are playing a duel,
+  // and the button is the last thing read before committing to one
+  $('#btnPlay').textContent = duo ? 'Play duel' : 'Play vs AI';
   segOn('#modeSeg','m',S.mode);
   segOn('#diffSeg','d',S.diff);
   segOn('#timerSeg','t',String(S.timer));

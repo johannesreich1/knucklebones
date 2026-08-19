@@ -318,7 +318,12 @@ html.clock .timer.on{visibility:visible}
    downward from the header as options appear. Centring it meant revealing one
    extra card re-centred the whole column, so the cards the player was NOT
    touching moved — measured at 143px on every device size. */
-#ovPractice .pbody{margin:0}
+#ovPractice .pbody{margin:0;flex:1 0 auto}   /* grows to fill, never shrinks */
+/* The action bar takes the bottom when the sheet leaves room, and follows the
+   content when it does not — one rule, no breakpoint. */
+.playbar{display:flex;flex-direction:column;align-items:center;gap:10px;
+  width:100%;max-width:var(--w-col);margin-top:auto;padding-top:6px}
+.playbar #btnPlay{width:100%;min-width:0}
 
 /* result screens (local + online share the shape): the verdict sits up top
    and LOUD, the scores hold the centre, the actions wait in the thumb zone */

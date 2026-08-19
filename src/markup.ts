@@ -159,8 +159,12 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
       </div>
     </div>
     <div class="tiny" id="statLine" hidden></div>
-    <button class="btn primary" id="btnPlay">Play</button>
-    <div class="tiny">Offline play never touches your online rating</div>
+    <!-- the commitment, pinned: whatever the sheet above it grows to, the way
+         OUT of it is always in the same place under your thumb -->
+    <div class="playbar">
+      <button class="btn primary" id="btnPlay">Play</button>
+      <div class="tiny">Offline play never touches your online rating</div>
+    </div>
   </div>
 </div>
 
