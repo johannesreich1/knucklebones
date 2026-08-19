@@ -57,6 +57,15 @@ never answered a real request does not belong in production.
 - [ ] **A paid Apple Developer Program membership**, if `4RKFC79X48` is not one
       already. Sign in with Apple and Game Center are both paid-only
       capabilities; a free personal team cannot sign `App.entitlements`.
+
+      `App.entitlements` exists but is **deliberately not wired** — the Xcode
+      project has no `CODE_SIGN_ENTITLEMENTS` setting. It was wired on
+      2026-08-19 and immediately unwired: Xcode cannot create a development
+      provisioning profile for capabilities the App ID lacks, so the local
+      build failed outright with *"Cannot create a iOS App Development
+      provisioning profile"*. A capability that cannot be signed is not a
+      harmless placeholder — it stops the app compiling. Wire it back (both
+      build configurations) only AFTER the portal has the capabilities.
 - [ ] **Apple provider ON** in Supabase, with `com.appavaria.knucklebones` in
       the Client IDs list (native sign-in needs nothing else — no Services ID,
       no key).
