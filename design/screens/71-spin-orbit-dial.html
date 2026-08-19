@@ -1,4 +1,4 @@
-<!-- meta name="Spinner B — Orbit dial" group="7 · Mode spinner studies" subtitle="No pie: the modes are lights on a ring and a comet runs the circle to one of them" width=412 height=760 links="Wheel" -->
+<!-- meta name="Spinner B — Orbit dial" group="7 · Mode spinner studies" subtitle="No pie: the modes are lights on a ring, each flaring as the comet crosses it" width=412 height=760 links="Wheel" -->
 <style>
   .studio{display:flex;flex-direction:column;gap:15px;width:100%;align-items:center}
   .cap{font-size:9px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase}
@@ -12,6 +12,10 @@
   .note{font-size:11.5px;line-height:1.6;color:#c6d3ee;max-width:var(--w-col);
     background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:11px 13px}
   .note b{color:var(--gold)}
+  /* The name only exists once something is SELECTED — during the hunt the
+     readout is empty, so the spinner cannot spoil its own answer. */
+  .rname,.rblurb{animation:readout var(--dur,5.4s) ease 1.2s infinite}
+  @keyframes readout{0%,6%{opacity:1}9%,90%{opacity:0}97%,100%{opacity:1}}
   .mico .f{fill:currentColor;stroke:none}
   /* A design card is read as a STILL: every loop rests in the landed state and
      departs from it after 1.2s, so a screenshot taken on load shows the result. */
@@ -27,36 +31,47 @@
     -webkit-mask:radial-gradient(circle,transparent 47%,#000 49%,#000 51%,transparent 53%);
     mask:radial-gradient(circle,transparent 47%,#000 49%,#000 51%,transparent 53%);
     filter:drop-shadow(0 0 8px rgba(40,232,255,.9));
-    transform:rotate(214.29deg);animation:runB 5.4s cubic-bezier(.1,.62,.05,1) 1.2s infinite}
+    transform:rotate(214.29deg);animation:runB var(--dur) cubic-bezier(.1,.62,.05,1) 1.2s infinite}
   @keyframes runB{0%,7%{transform:rotate(214.29deg)}
     100%{transform:rotate(1294.29deg)}}
   .nd{position:absolute;left:50%;top:50%;width:40px;height:40px;margin:-20px;border-radius:14px;
     display:grid;place-items:center;background:rgba(10,13,28,.9);
     border:1px solid color-mix(in srgb,currentColor 34%,transparent);
     transform:rotate(var(--a)) translateY(calc(min(37vw,129px) - 20px)) rotate(calc(-1 * var(--a)));
-    opacity:.5;transition:.2s}
-  .nd.win{opacity:1;border-color:currentColor;
+    border-color:currentColor;opacity:.28;
     box-shadow:0 0 0 1px currentColor,0 0 22px color-mix(in srgb,currentColor 60%,transparent),
-      inset 0 0 16px color-mix(in srgb,currentColor 22%,transparent);
-    animation:popB 5.4s ease 1.2s infinite}
-  @keyframes popB{0%,6%{scale:1.16}9%,80%{scale:1}92%{scale:1.26}100%{scale:1.16}}
+      inset 0 0 16px color-mix(in srgb,currentColor 22%,transparent)}
+  @keyframes nd0{0.0%{opacity:0.28} 7.44%{opacity:0.28} 9.64%{opacity:1.0} 13.04%{opacity:0.28} 13.12%{opacity:0.28} 15.32%{opacity:1.0} 18.72%{opacity:0.28} 33.32%{opacity:0.28} 35.52%{opacity:1.0} 38.92%{opacity:0.28} 100.0%{opacity:0.28}}
+  .nd0,.pt0{animation:nd0 var(--dur) linear 1.2s infinite both}
+  @keyframes nd1{0.0%{opacity:0.28} 8.07%{opacity:0.28} 10.27%{opacity:1.0} 13.67%{opacity:0.28} 14.46%{opacity:0.28} 16.66%{opacity:1.0} 20.06%{opacity:0.28} 41.22%{opacity:0.28} 43.42%{opacity:1.0} 46.82%{opacity:0.28} 100.0%{opacity:0.28}}
+  .nd1,.pt1{animation:nd1 var(--dur) linear 1.2s infinite both}
+  @keyframes nd2{0.0%{opacity:0.28} 8.73%{opacity:0.28} 10.93%{opacity:1.0} 14.33%{opacity:0.28} 16.08%{opacity:0.28} 18.28%{opacity:1.0} 21.68%{opacity:0.28} 53.94%{opacity:0.28} 56.14%{opacity:1.0} 59.54%{opacity:0.28} 100.0%{opacity:0.28}}
+  .nd2,.pt2{animation:nd2 var(--dur) linear 1.2s infinite both}
+  @keyframes nd3{0.0%{opacity:1.0} 4.8%{opacity:0.28} 7.0%{opacity:1.0} 9.43%{opacity:0.28} 10.4%{opacity:0.28} 11.63%{opacity:1.0} 15.03%{opacity:0.28} 18.06%{opacity:0.28} 20.26%{opacity:1.0} 23.66%{opacity:0.28} 93.0%{opacity:0.28} 97.8%{opacity:0.28} 99.4%{opacity:1.0} 100.0%{opacity:1.0}}
+  .nd3,.pt3{animation:nd3 var(--dur) linear 1.2s infinite both}
+  @keyframes nd4{0.0%{opacity:0.28} 5.5%{opacity:0.28} 7.7%{opacity:1.0} 10.19%{opacity:0.28} 11.1%{opacity:0.28} 12.39%{opacity:1.0} 15.79%{opacity:0.28} 20.54%{opacity:0.28} 22.74%{opacity:1.0} 26.14%{opacity:0.28} 100.0%{opacity:0.28}}
+  .nd4,.pt4{animation:nd4 var(--dur) linear 1.2s infinite both}
+  @keyframes nd5{0.0%{opacity:0.28} 6.16%{opacity:0.28} 8.36%{opacity:1.0} 11.03%{opacity:0.28} 11.76%{opacity:0.28} 13.23%{opacity:1.0} 16.63%{opacity:0.28} 23.69%{opacity:0.28} 25.89%{opacity:1.0} 29.29%{opacity:0.28} 100.0%{opacity:0.28}}
+  .nd5,.pt5{animation:nd5 var(--dur) linear 1.2s infinite both}
+  @keyframes nd6{0.0%{opacity:0.28} 6.8%{opacity:0.28} 9.0%{opacity:1.0} 12.0%{opacity:0.28} 12.4%{opacity:0.28} 14.2%{opacity:1.0} 17.6%{opacity:0.28} 27.79%{opacity:0.28} 29.99%{opacity:1.0} 33.39%{opacity:0.28} 100.0%{opacity:0.28}}
+  .nd6,.pt6{animation:nd6 var(--dur) linear 1.2s infinite both}
   .core{position:absolute;left:50%;top:50%;translate:-50% -50%;width:96px;height:96px;border-radius:50%;
     display:grid;place-items:center;text-align:center;
     background:radial-gradient(circle at 50% 40%,rgba(255,209,102,.16),transparent 68%);
     color:#ffd166}
   .core svg{filter:drop-shadow(0 0 18px currentColor)}
 </style>
-<div class="studio">
+<div class="studio" style="--dur:5.4s">
   <div class="cap">Spinner B</div>
   <div class="stagebox">
     <div class="kicker">Game mode</div>
     <div class="orb">
       <i class="ring"></i><i class="comet"></i>
-      <i class="nd" style="--a:-90.00deg;color:#8ea3c0"><svg class="mico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2 20.8 12 12 20.8 3.2 12Z"/><circle class="f" cx="12" cy="12" r="1.7"/></svg></i><i class="nd" style="--a:-38.57deg;color:#28e8ff"><svg class="mico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5h15M4.5 12h15M4.5 17.5h15"/></svg></i><i class="nd" style="--a:12.86deg;color:#ff2fa0"><svg class="mico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5h9M4.5 12h9M4.5 17.5h9M18.7 9v6M15.7 12h6"/></svg></i><i class="nd win" style="--a:64.29deg;color:#ffd166"><svg class="mico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg></i><i class="nd" style="--a:115.71deg;color:#ff8a3d"><svg class="mico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle class="f" cx="12" cy="6.2" r="1.5"/><circle class="f" cx="12" cy="12" r="1.5"/><circle class="f" cx="12" cy="17.8" r="1.5"/><path d="M8.6 2.8 15.4 9.6M15.4 2.8 8.6 9.6"/></svg></i><i class="nd" style="--a:167.14deg;color:#7ee787"><svg class="mico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.2"/><path d="M12 8.6v6.8M8.6 12h6.8"/></svg></i><i class="nd" style="--a:218.57deg;color:#b18cff"><svg class="mico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.4" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="13" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="8.7" y="4.4" width="6.6" height="6.6" rx="1.8"/><circle class="f" cx="12" cy="7.7" r="1.2"/></svg></i>
+      <i class="nd nd0" style="--a:-90.00deg;color:#8ea3c0"><svg class="mico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2 20.8 12 12 20.8 3.2 12Z"/><circle class="f" cx="12" cy="12" r="1.7"/></svg></i><i class="nd nd1" style="--a:-38.57deg;color:#28e8ff"><svg class="mico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5h15M4.5 12h15M4.5 17.5h15"/></svg></i><i class="nd nd2" style="--a:12.86deg;color:#ff2fa0"><svg class="mico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5h9M4.5 12h9M4.5 17.5h9M18.7 9v6M15.7 12h6"/></svg></i><i class="nd nd3" style="--a:64.29deg;color:#ffd166"><svg class="mico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg></i><i class="nd nd4" style="--a:115.71deg;color:#ff8a3d"><svg class="mico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle class="f" cx="12" cy="6.2" r="1.5"/><circle class="f" cx="12" cy="12" r="1.5"/><circle class="f" cx="12" cy="17.8" r="1.5"/><path d="M8.6 2.8 15.4 9.6M15.4 2.8 8.6 9.6"/></svg></i><i class="nd nd5" style="--a:167.14deg;color:#7ee787"><svg class="mico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.2"/><path d="M12 8.6v6.8M8.6 12h6.8"/></svg></i><i class="nd nd6" style="--a:218.57deg;color:#b18cff"><svg class="mico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.4" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="13" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="8.7" y="4.4" width="6.6" height="6.6" rx="1.8"/><circle class="f" cx="12" cy="7.7" r="1.2"/></svg></i>
       <div class="core"><svg class="mico" width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg></div>
     </div>
     <div class="rname" style="color:#ffd166"><svg class="mico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg> COLUMN SHIELD</div>
     <div class="rblurb">A full column cannot be destroyed.</div>
   </div>
-  <div class="note"><b>The most modern.</b> Nothing spins — a comet of light runs the ring and slows into one node, which is already lit while the others sit dim. Reads as software rather than a fairground, scales to any number of modes without the wedges getting thin, and the winner is legible the whole time because nothing is upside down.</div>
+  <div class="note"><b>The most modern.</b> Nothing spins — a comet of light runs the ring, and every mode flares as the comet crosses it, so the hunt is visible without the ANSWER being visible. The name underneath stays empty until the comet stops: you watch it pass candidate after candidate and are told nothing until it settles. Scales to any number of modes without the wedges getting thin, and nothing is ever upside down.</div>
 </div>

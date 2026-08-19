@@ -12,6 +12,10 @@
   .note{font-size:11.5px;line-height:1.6;color:#c6d3ee;max-width:var(--w-col);
     background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:11px 13px}
   .note b{color:var(--gold)}
+  /* The name only exists once something is SELECTED — during the hunt the
+     readout is empty, so the spinner cannot spoil its own answer. */
+  .rname,.rblurb{animation:readout var(--dur,5.4s) ease 1.2s infinite}
+  @keyframes readout{0%,6%{opacity:1}9%,90%{opacity:0}97%,100%{opacity:1}}
   .mico .f{fill:currentColor;stroke:none}
   /* A design card is read as a STILL: every loop rests in the landed state and
      departs from it after 1.2s, so a screenshot taken on load shows the result. */
@@ -21,7 +25,7 @@
     border:1px solid rgba(255,255,255,.12);
     box-shadow:inset 0 14px 26px rgba(0,0,0,.75),inset 0 -14px 26px rgba(0,0,0,.75)}
   .reel{display:flex;flex-direction:column;transform:translateY(0);
-    animation:reelC 5s cubic-bezier(.08,.62,.06,1) 1.2s infinite}
+    animation:reelC var(--dur) cubic-bezier(.08,.62,.06,1) 1.2s infinite}
   @keyframes reelC{0%,8%{transform:translateY(0)}
     14%{transform:translateY(-46px);filter:blur(1.5px)}
     60%{filter:blur(4px)}
@@ -40,12 +44,12 @@
   .band::after{right:0;border-right:8px solid var(--gold)}
   /* the snap: one flash at the moment it locks */
   .flash{position:absolute;left:0;right:0;top:92px;height:46px;background:#fff;opacity:0;
-    pointer-events:none;mix-blend-mode:screen;animation:flashC 5s linear 1.2s infinite}
+    pointer-events:none;mix-blend-mode:screen;animation:flashC var(--dur) linear 1.2s infinite}
   @keyframes flashC{0%,96%{opacity:0}97%{opacity:.5}100%{opacity:0}}
   .fade{position:absolute;inset:0;pointer-events:none;
     background:linear-gradient(180deg,rgba(6,8,18,.95),transparent 32%,transparent 68%,rgba(6,8,18,.95))}
 </style>
-<div class="studio">
+<div class="studio" style="--dur:5.4s">
   <div class="cap">Spinner C</div>
   <div class="stagebox">
     <div class="kicker">Game mode</div>

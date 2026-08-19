@@ -12,6 +12,10 @@
   .note{font-size:11.5px;line-height:1.6;color:#c6d3ee;max-width:var(--w-col);
     background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:11px 13px}
   .note b{color:var(--gold)}
+  /* The name only exists once something is SELECTED — during the hunt the
+     readout is empty, so the spinner cannot spoil its own answer. */
+  .rname,.rblurb{animation:readout var(--dur,5.4s) ease 1.2s infinite}
+  @keyframes readout{0%,6%{opacity:1}9%,90%{opacity:0}97%,100%{opacity:1}}
   .mico .f{fill:currentColor;stroke:none}
   /* A design card is read as a STILL: every loop rests in the landed state and
      departs from it after 1.2s, so a screenshot taken on load shows the result. */
@@ -19,7 +23,7 @@
   .gw{position:relative;width:min(74vw,262px);aspect-ratio:1;margin:4px 0 2px}
   .disc{position:absolute;inset:0;border-radius:50%;transform:rotate(-180.00deg);
     background:conic-gradient(#8ea3c055 0.00deg, #8ea3c055 51.43deg, #28e8ff55 51.43deg, #28e8ff55 102.86deg, #ff2fa055 102.86deg, #ff2fa055 154.29deg, #ffd16655 154.29deg, #ffd16655 205.71deg, #ff8a3d55 205.71deg, #ff8a3d55 257.14deg, #7ee78755 257.14deg, #7ee78755 308.57deg, #b18cff55 308.57deg, #b18cff55 360.00deg);
-    animation:spinA 5.6s cubic-bezier(.12,.67,.06,1) 1.2s infinite}
+    animation:spinA var(--dur) cubic-bezier(.12,.67,.06,1) 1.2s infinite}
   @keyframes spinA{0%,6%{transform:rotate(-180.00deg)}
     12%{transform:rotate(-220.00deg)}
     100%{transform:rotate(-1260.00deg)}}
@@ -32,7 +36,7 @@
   /* the winning wedge, lit from behind once it lands */
   .lit{position:absolute;inset:0;border-radius:50%;pointer-events:none;mix-blend-mode:screen;
     background:conic-gradient(from -25.71deg,#ffd16600 0deg,#ffd16666 25.71deg,#ffd16600 51.43deg);
-    filter:blur(6px);animation:litA 5.6s ease 1.2s infinite}
+    filter:blur(6px);animation:litA var(--dur) ease 1.2s infinite}
   @keyframes litA{0%,6%{opacity:1}8%,86%{opacity:0}100%{opacity:1}}
   .s{position:absolute;left:50%;top:0;width:1px;height:50%;transform-origin:bottom;
     background:linear-gradient(rgba(255,255,255,.45),rgba(255,255,255,.03))}
@@ -43,7 +47,7 @@
     background:linear-gradient(180deg,#fff3cf,var(--gold) 45%,#c98f22);
     clip-path:polygon(50% 100%,0 34%,18% 0,82% 0,100% 34%);
     filter:drop-shadow(0 3px 8px rgba(0,0,0,.6)) drop-shadow(0 0 10px rgba(255,209,102,.8));
-    transform-origin:50% 12%;animation:tickA 5.6s linear 1.2s infinite}
+    transform-origin:50% 12%;animation:tickA var(--dur) linear 1.2s infinite}
   @keyframes tickA{0%,7%{transform:rotate(0)}9%{transform:rotate(15deg)}11%{transform:rotate(-4deg)}
     13%{transform:rotate(12deg)}20%{transform:rotate(-3deg)}30%,100%{transform:rotate(0)}}
   .hub{position:absolute;left:50%;top:50%;translate:-50% -50%;z-index:2;width:44px;height:44px;
@@ -52,7 +56,7 @@
     box-shadow:0 0 0 2px rgba(255,255,255,.22),0 8px 20px rgba(0,0,0,.75),inset 0 0 12px rgba(0,0,0,.8)}
   .hub b{width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 12px var(--gold)}
 </style>
-<div class="studio">
+<div class="studio" style="--dur:5.4s">
   <div class="cap">Spinner A</div>
   <div class="stagebox">
     <div class="kicker">Game mode</div>

@@ -12,6 +12,10 @@
   .note{font-size:11.5px;line-height:1.6;color:#c6d3ee;max-width:var(--w-col);
     background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:11px 13px}
   .note b{color:var(--gold)}
+  /* The name only exists once something is SELECTED — during the hunt the
+     readout is empty, so the spinner cannot spoil its own answer. */
+  .rname,.rblurb{animation:readout var(--dur,5.4s) ease 1.2s infinite}
+  @keyframes readout{0%,6%{opacity:1}9%,90%{opacity:0}97%,100%{opacity:1}}
   .mico .f{fill:currentColor;stroke:none}
   /* A design card is read as a STILL: every loop rests in the landed state and
      departs from it after 1.2s, so a screenshot taken on load shows the result. */
@@ -19,7 +23,7 @@
   .scene{width:190px;height:170px;perspective:620px;display:grid;place-items:center;margin:6px 0 2px}
   .cube{position:relative;width:112px;height:112px;transform-style:preserve-3d;
     transform:rotateX(-14deg) rotateY(0deg);
-    animation:tumbleD 5.2s cubic-bezier(.16,.72,.12,1) 1.2s infinite}
+    animation:tumbleD var(--dur) cubic-bezier(.16,.72,.12,1) 1.2s infinite}
   @keyframes tumbleD{0%,8%{transform:rotateX(-14deg) rotateY(0)}
     100%{transform:rotateX(-734deg) rotateY(1080deg)}}
   .cface{position:absolute;inset:0;display:grid;place-items:center;border-radius:20px;
@@ -31,10 +35,10 @@
   /* the die's own light on the floor beneath it */
   .shadow{position:absolute;bottom:-4px;left:50%;translate:-50% 0;width:120px;height:16px;
     border-radius:50%;background:radial-gradient(ellipse,rgba(255,209,102,.32),transparent 70%);
-    filter:blur(4px);animation:shD 5.2s ease 1.2s infinite}
+    filter:blur(4px);animation:shD var(--dur) ease 1.2s infinite}
   @keyframes shD{0%,8%{opacity:1;scale:1}40%{opacity:.35;scale:.7}100%{opacity:1;scale:1}}
 </style>
-<div class="studio">
+<div class="studio" style="--dur:5.4s">
   <div class="cap">Spinner D</div>
   <div class="stagebox">
     <div class="kicker">Game mode</div>

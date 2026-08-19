@@ -12,6 +12,10 @@
   .note{font-size:11.5px;line-height:1.6;color:#c6d3ee;max-width:var(--w-col);
     background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:11px 13px}
   .note b{color:var(--gold)}
+  /* The name only exists once something is SELECTED — during the hunt the
+     readout is empty, so the spinner cannot spoil its own answer. */
+  .rname,.rblurb{animation:readout var(--dur,5.4s) ease 1.2s infinite}
+  @keyframes readout{0%,6%{opacity:1}9%,90%{opacity:0}97%,100%{opacity:1}}
   .mico .f{fill:currentColor;stroke:none}
   /* A design card is read as a STILL: every loop rests in the landed state and
      departs from it after 1.2s, so a screenshot taken on load shows the result. */
@@ -29,7 +33,7 @@
   .sweep{position:absolute;inset:0;border-radius:50%;
     background:conic-gradient(rgba(40,232,255,.42) 0deg,rgba(40,232,255,.14) 24deg,transparent 62deg);
     transform:rotate(244.29deg);
-    animation:sweepE 5.2s cubic-bezier(.12,.66,.06,1) 1.2s infinite}
+    animation:sweepE var(--dur) cubic-bezier(.12,.66,.06,1) 1.2s infinite}
   @keyframes sweepE{0%,7%{transform:rotate(244.29deg)}
     100%{transform:rotate(1324.29deg)}}
   .sweep::after{content:"";position:absolute;left:50%;top:0;width:1px;height:50%;
@@ -37,23 +41,38 @@
   .pt{position:absolute;left:50%;top:50%;width:30px;height:30px;margin:-15px;border-radius:10px;
     display:grid;place-items:center;background:rgba(6,8,18,.86);
     border:1px solid color-mix(in srgb,currentColor 26%,transparent);opacity:.42;
-    transform:rotate(var(--a)) translateY(calc(min(37vw,128px) - 26px)) rotate(calc(-1 * var(--a)))}
-  .pt.win{opacity:1;border-color:currentColor;
+    transition:.15s;
+    transform:rotate(var(--a)) translateY(calc(min(37vw,128px) - 26px)) rotate(calc(-1 * var(--a)));
+    border-color:currentColor;
     box-shadow:0 0 0 1px currentColor,0 0 20px color-mix(in srgb,currentColor 55%,transparent)}
+  @keyframes nd0{0.0%{opacity:0.42} 7.79%{opacity:0.42} 9.99%{opacity:1.0} 13.39%{opacity:0.42} 13.69%{opacity:0.42} 15.89%{opacity:1.0} 19.29%{opacity:0.42} 32.84%{opacity:0.42} 35.04%{opacity:1.0} 38.44%{opacity:0.42} 100.0%{opacity:0.42}}
+  .nd0,.pt0{animation:nd0 var(--dur) linear 1.2s infinite both}
+  @keyframes nd1{0.0%{opacity:0.42} 8.5%{opacity:0.42} 10.7%{opacity:1.0} 14.1%{opacity:0.42} 14.98%{opacity:0.42} 17.18%{opacity:1.0} 20.58%{opacity:0.42} 40.47%{opacity:0.42} 42.67%{opacity:1.0} 46.07%{opacity:0.42} 100.0%{opacity:0.42}}
+  .nd1,.pt1{animation:nd1 var(--dur) linear 1.2s infinite both}
+  @keyframes nd2{0.0%{opacity:0.42} 9.22%{opacity:0.42} 11.42%{opacity:1.0} 14.82%{opacity:0.42} 16.51%{opacity:0.42} 18.71%{opacity:1.0} 22.11%{opacity:0.42} 52.98%{opacity:0.42} 55.18%{opacity:1.0} 58.58%{opacity:0.42} 100.0%{opacity:0.42}}
+  .nd2,.pt2{animation:nd2 var(--dur) linear 1.2s infinite both}
+  @keyframes nd3{0.0%{opacity:1.0} 4.8%{opacity:0.42} 7.0%{opacity:1.0} 9.97%{opacity:0.42} 10.4%{opacity:0.42} 12.17%{opacity:1.0} 15.57%{opacity:0.42} 18.39%{opacity:0.42} 20.59%{opacity:1.0} 23.99%{opacity:0.42} 93.0%{opacity:0.42} 97.8%{opacity:0.42} 99.4%{opacity:1.0} 100.0%{opacity:1.0}}
+  .nd3,.pt3{animation:nd3 var(--dur) linear 1.2s infinite both}
+  @keyframes nd4{0.0%{opacity:0.42} 5.59%{opacity:0.42} 7.79%{opacity:1.0} 10.76%{opacity:0.42} 11.19%{opacity:0.42} 12.96%{opacity:1.0} 16.36%{opacity:0.42} 20.72%{opacity:0.42} 22.92%{opacity:1.0} 26.32%{opacity:0.42} 100.0%{opacity:0.42}}
+  .nd4,.pt4{animation:nd4 var(--dur) linear 1.2s infinite both}
+  @keyframes nd5{0.0%{opacity:0.42} 6.34%{opacity:0.42} 8.54%{opacity:1.0} 11.63%{opacity:0.42} 11.94%{opacity:0.42} 13.83%{opacity:1.0} 17.23%{opacity:0.42} 23.68%{opacity:0.42} 25.88%{opacity:1.0} 29.28%{opacity:0.42} 100.0%{opacity:0.42}}
+  .nd5,.pt5{animation:nd5 var(--dur) linear 1.2s infinite both}
+  @keyframes nd6{0.0%{opacity:0.42} 7.07%{opacity:0.42} 9.27%{opacity:1.0} 12.59%{opacity:0.42} 12.67%{opacity:0.42} 14.79%{opacity:1.0} 18.19%{opacity:0.42} 27.56%{opacity:0.42} 29.76%{opacity:1.0} 33.16%{opacity:0.42} 100.0%{opacity:0.42}}
+  .nd6,.pt6{animation:nd6 var(--dur) linear 1.2s infinite both}
   /* the ping the winner leaves behind */
   .ping{position:absolute;left:50%;top:50%;width:30px;height:30px;margin:-15px;border-radius:50%;
     border:1px solid #ffd166;
     transform:rotate(64.29deg) translateY(calc(min(37vw,128px) - 26px)) rotate(-64.29deg);
-    animation:pingE 5.2s ease-out 1.2s infinite}
-  @keyframes pingE{0%,6%{scale:1;opacity:0}92%{scale:1;opacity:.9}100%{scale:2.6;opacity:0}}
+    animation:pingE var(--dur) ease-out 1.2s infinite}
+  @keyframes pingE{0%,6%{scale:1;opacity:0}94%{scale:1;opacity:.9}100%{scale:1.9;opacity:0}}
 </style>
-<div class="studio">
+<div class="studio" style="--dur:5.4s">
   <div class="cap">Spinner E</div>
   <div class="stagebox">
     <div class="kicker">Game mode</div>
     <div class="radar">
       <i class="cross"></i><i class="sweep"></i>
-      <i class="pt" style="--a:-90.00deg;color:#8ea3c0"><svg class="mico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2 20.8 12 12 20.8 3.2 12Z"/><circle class="f" cx="12" cy="12" r="1.7"/></svg></i><i class="pt" style="--a:-38.57deg;color:#28e8ff"><svg class="mico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5h15M4.5 12h15M4.5 17.5h15"/></svg></i><i class="pt" style="--a:12.86deg;color:#ff2fa0"><svg class="mico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5h9M4.5 12h9M4.5 17.5h9M18.7 9v6M15.7 12h6"/></svg></i><i class="pt win" style="--a:64.29deg;color:#ffd166"><svg class="mico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg></i><i class="pt" style="--a:115.71deg;color:#ff8a3d"><svg class="mico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle class="f" cx="12" cy="6.2" r="1.5"/><circle class="f" cx="12" cy="12" r="1.5"/><circle class="f" cx="12" cy="17.8" r="1.5"/><path d="M8.6 2.8 15.4 9.6M15.4 2.8 8.6 9.6"/></svg></i><i class="pt" style="--a:167.14deg;color:#7ee787"><svg class="mico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.2"/><path d="M12 8.6v6.8M8.6 12h6.8"/></svg></i><i class="pt" style="--a:218.57deg;color:#b18cff"><svg class="mico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.4" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="13" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="8.7" y="4.4" width="6.6" height="6.6" rx="1.8"/><circle class="f" cx="12" cy="7.7" r="1.2"/></svg></i>
+      <i class="pt pt0" style="--a:-90.00deg;color:#8ea3c0"><svg class="mico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2 20.8 12 12 20.8 3.2 12Z"/><circle class="f" cx="12" cy="12" r="1.7"/></svg></i><i class="pt pt1" style="--a:-38.57deg;color:#28e8ff"><svg class="mico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5h15M4.5 12h15M4.5 17.5h15"/></svg></i><i class="pt pt2" style="--a:12.86deg;color:#ff2fa0"><svg class="mico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5h9M4.5 12h9M4.5 17.5h9M18.7 9v6M15.7 12h6"/></svg></i><i class="pt pt3" style="--a:64.29deg;color:#ffd166"><svg class="mico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg></i><i class="pt pt4" style="--a:115.71deg;color:#ff8a3d"><svg class="mico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle class="f" cx="12" cy="6.2" r="1.5"/><circle class="f" cx="12" cy="12" r="1.5"/><circle class="f" cx="12" cy="17.8" r="1.5"/><path d="M8.6 2.8 15.4 9.6M15.4 2.8 8.6 9.6"/></svg></i><i class="pt pt5" style="--a:167.14deg;color:#7ee787"><svg class="mico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.2"/><path d="M12 8.6v6.8M8.6 12h6.8"/></svg></i><i class="pt pt6" style="--a:218.57deg;color:#b18cff"><svg class="mico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.4" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="13" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="8.7" y="4.4" width="6.6" height="6.6" rx="1.8"/><circle class="f" cx="12" cy="7.7" r="1.2"/></svg></i>
       <i class="ping"></i>
     </div>
     <div class="rname" style="color:#ffd166"><svg class="mico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg> COLUMN SHIELD</div>

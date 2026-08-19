@@ -12,6 +12,10 @@
   .note{font-size:11.5px;line-height:1.6;color:#c6d3ee;max-width:var(--w-col);
     background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:11px 13px}
   .note b{color:var(--gold)}
+  /* The name only exists once something is SELECTED — during the hunt the
+     readout is empty, so the spinner cannot spoil its own answer. */
+  .rname,.rblurb{animation:readout var(--dur,5.4s) ease 1.2s infinite}
+  @keyframes readout{0%,6%{opacity:1}9%,90%{opacity:0}97%,100%{opacity:1}}
   .mico .f{fill:currentColor;stroke:none}
   /* A design card is read as a STILL: every loop rests in the landed state and
      departs from it after 1.2s, so a screenshot taken on load shows the result. */
@@ -22,14 +26,14 @@
     background:linear-gradient(160deg,rgba(24,29,52,.96),rgba(9,12,24,.96));
     border:1px solid rgba(255,255,255,.1);box-shadow:0 10px 24px rgba(0,0,0,.6);
     transform:translateX(calc((var(--i) - 1.5) * 26px)) translateY(-16px) rotate(calc((var(--i) - 1.5) * 7deg));
-    opacity:.5;animation:riffleF 5.4s ease 1.2s infinite}
+    opacity:.5;animation:riffleF var(--dur) ease 1.2s infinite}
   @keyframes riffleF{0%,10%{translate:0 0;opacity:.5}
     26%{translate:0 -14px;opacity:.85}
     52%{translate:0 6px;opacity:.6}
     74%,100%{translate:0 0;opacity:.5}}
   /* the dealt card: face-down while the deck riffles, flipped up at the end */
   .deal{position:relative;z-index:3;width:104px;height:142px;border-radius:16px;
-    transform-style:preserve-3d;animation:dealF 5.4s cubic-bezier(.2,.9,.24,1) 1.2s infinite}
+    transform-style:preserve-3d;animation:dealF var(--dur) cubic-bezier(.2,.9,.24,1) 1.2s infinite}
   @keyframes dealF{0%,12%{transform:rotateY(0) translateY(0) scale(1)}
     30%{transform:rotateY(180deg) translateY(-30px) scale(.86)}
     58%{transform:rotateY(540deg) translateY(-18px) scale(.9)}
@@ -47,7 +51,7 @@
   .cfront .lbl2{font-size:8.5px;letter-spacing:.2em;font-weight:900;text-align:center;line-height:1.4;
     position:absolute;bottom:13px;left:0;right:0}
 </style>
-<div class="studio">
+<div class="studio" style="--dur:5.4s">
   <div class="cap">Spinner F</div>
   <div class="stagebox">
     <div class="kicker">Game mode</div>
