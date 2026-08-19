@@ -55,7 +55,7 @@ export function showEnd(spec: EndSpec): void {
   // the SCREEN wears the outcome too: the entrance differs by it, and CSS
   // cannot ask a child which way this game went
   const ov = $('#ovEnd');
-  ov.classList.remove('win', 'lose', 'draw');
+  ov.classList.remove('win', 'lose', 'draw', 'settled');
   ov.classList.add(spec.outcome);
   $('#endSub').textContent = spec.sub;
   $('#endYou').textContent = String(spec.you.score);
@@ -73,7 +73,10 @@ export function showEnd(spec: EndSpec): void {
   setTimeout(() => {
     show('#ovEnd');
     // restart the entrance: a class that is already there animates nothing
-    replay($('#ovEnd'), 'enter');
+    replay(ov, 'enter');
+    // the rise is clipped while it travels; once it lands, the clip (and the
+    // glow it would otherwise crop into a box) can come back
+    t.addEventListener('animationend', () => ov.classList.add('settled'), { once: true });
     if (spec.outcome === 'win') {
       // into the screen's OWN layer: #fx sits below every overlay, so a
       // celebration drawn there would have burst behind this very screen
