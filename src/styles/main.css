@@ -261,6 +261,8 @@ html.clock .timer.on{visibility:visible}
 .ov h1{margin:0;font-size:29px;letter-spacing:.2em;font-weight:900;text-align:center;
   background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
   -webkit-background-clip:text;background-clip:text;color:transparent;
+  /* NOTE: this filter is safe HERE (a static title). It must never apply to a
+     title that also animates or changes state — see #endTitle below. */
   filter:drop-shadow(0 0 22px rgba(40,232,255,.35))}
 .ov .sub{font-size:11.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:-8px;text-align:center}
 .btn{min-width:210px;padding:16px 20px;border-radius:14px;border:1px solid rgba(255,255,255,.14);
@@ -309,6 +311,11 @@ html.clock .timer.on{visibility:visible}
    and LOUD, the scores hold the centre, the actions wait in the thumb zone */
 #ovEnd{justify-content:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 7vh)}
 #ovEnd{--verdict:clamp(34px,11.5vw,54px)}
+/* The verdict carries NO filter of its own — its glow is the bloom layer under
+   it. An element that both clips its background to text AND takes a filter is
+   the combination Safari drops the clip on, painting the gradient as a solid
+   rectangle: the hard-edged box behind the word. */
+#endTitle{filter:none}
 #ovEnd h1{font-size:var(--verdict)}
 #ovEnd .scoreline{margin-top:auto}
 #ovEnd .scoreline .you,#ovEnd .scoreline .cpu{font-size:clamp(34px,11vw,46px)}
@@ -581,11 +588,30 @@ html.casting .col.hot::after{border-style:solid;border-color:var(--gold);
 /* the rise needs a clipping line to rise from — and ONLY the rise, or the
    win's glow would be cropped with it */
 .titlewrap{position:relative;width:100%;display:flex;flex-direction:column;align-items:center}
+/* The verdict's BLOOM — a wide, heavily blurred wash of the outcome's colour
+   sitting under the word. It scales off --verdict like everything else here,
+   and it has no edges to cut: a radial gradient faded to transparent, blurred
+   by half the type size again. */
+#ovEnd.win{--bloom:rgba(40,232,255,.40)}
+#ovEnd.lose{--bloom:rgba(255,47,160,.36)}
+#ovEnd.draw{--bloom:rgba(159,178,216,.26)}
+#ovEnd .titlewrap::before{content:"";position:absolute;left:50%;top:50%;z-index:-1;
+  width:min(160%,calc(var(--verdict) * 9));height:calc(var(--verdict) * 3.4);
+  transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;opacity:0;
+  background:radial-gradient(closest-side,var(--bloom,transparent),transparent 74%);
+  filter:blur(calc(var(--verdict) * .55))}
+/* it swells in behind the landing, and stays */
+#ovEnd.enter .titlewrap::before{animation:endBloom 1.5s cubic-bezier(.2,.8,.3,1) .35s both}
+@keyframes endBloom{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.55)}
+  60%{opacity:1}
+  100%{opacity:.9;transform:translate(-50%,-50%) scale(1)}}
 #ovEnd.lose .titlewrap,#ovEnd.draw .titlewrap{overflow:hidden;padding:3px 0}
-/* A drop-shadow is painted INSIDE the clip, so the title's halo turned into a
-   hard-edged rectangle — read as a background box. The glow waits for the
-   landing, and the clip is only needed while something is moving. */
-#ovEnd.lose:not(.settled) #endTitle,#ovEnd.draw:not(.settled) #endTitle{filter:none}
+/* NOTHING filters the title. A filter on an element that also carries
+   -webkit-background-clip:text makes Safari drop the clip and paint the
+   gradient as a solid rectangle — a hard-edged box behind the word. The glow
+   is a separate layer below (.titlewrap::before), which cannot interfere.
+   The clip is only needed while the word is travelling. */
 #ovEnd.settled .titlewrap{overflow:visible}
 #ovEnd.enter.lose #endTitle,#ovEnd.enter.draw #endTitle{
   animation:endRise 1.35s cubic-bezier(.16,1,.3,1) .3s both}
@@ -615,12 +641,9 @@ html.casting .col.hot::after{border-style:solid;border-color:var(--gold);
 .endmeta{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-align:center;
   display:flex;flex-direction:column;align-items:center;gap:7px}
 .endmeta:empty{display:none}
-#endTitle.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
-  filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
-#endTitle.lose{background-image:linear-gradient(100deg,var(--mg),#fff 55%,#ff8a3d);
-  filter:drop-shadow(0 0 26px rgba(255,47,160,.45))}
-#endTitle.draw{background-image:linear-gradient(100deg,#9fb2d8,#fff 50%,#9fb2d8);
-  filter:drop-shadow(0 0 22px rgba(159,178,216,.35))}
+#endTitle.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf)}
+#endTitle.lose{background-image:linear-gradient(100deg,var(--mg),#fff 55%,#ff8a3d)}
+#endTitle.draw{background-image:linear-gradient(100deg,#9fb2d8,#fff 50%,#9fb2d8)}
 .tiny{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-align:center}
 
 /* ---- face-to-face seating (portrait duo) ----
