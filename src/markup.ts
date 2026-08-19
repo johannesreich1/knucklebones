@@ -115,6 +115,11 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
         <button data-m="duo">2 PLAYERS</button>
       </div>
     </div>
+    <!-- ONE slot, two occupants: whichever of these the Mode above calls for.
+         Both wear label + segment + note, so switching changes what this card
+         SAYS and never where the cards below it sit. Each note also explains
+         the choice it sits under — the seating note used to live at the far
+         bottom of the sheet, describing a control three cards away. -->
     <div class="card" id="diffCard">
       <div class="lbl">CPU level</div>
       <div class="seg" id="diffSeg">
@@ -122,16 +127,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
         <button data-d="medium">NORMAL</button>
         <button data-d="hard" class="on">HARD</button>
       </div>
-    </div>
-    <div class="card">
-      <div class="lbl">Game mode</div>
-      <div class="modepick" id="modePick"></div>
-      <div class="tiny" id="modePickInfo" style="text-align:left"></div>
-    </div>
-    <div class="card">
-      <div class="lbl">Spell</div>
-      <div class="modepick" id="spellPick"></div>
-      <div class="tiny" id="spellPickInfo" style="text-align:left"></div>
+      <div class="tiny note" id="diffNote"></div>
     </div>
     <div class="card" id="seatCard" hidden>
       <div class="lbl">Sitting</div>
@@ -139,7 +135,20 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
         <button data-seat="pass">PASS PHONE</button>
         <button data-seat="face">FACE TO FACE</button>
       </div>
+      <div class="tiny note" id="duoNote"></div>
     </div>
+    <div class="card">
+      <div class="lbl">Game mode</div>
+      <div class="modepick" id="modePick"></div>
+      <div class="tiny note" id="modePickInfo"></div>
+    </div>
+    <div class="card">
+      <div class="lbl">Spell</div>
+      <div class="modepick" id="spellPick"></div>
+      <div class="tiny note" id="spellPickInfo"></div>
+    </div>
+    <!-- the one card only two-player play has: it lands at the END, so the
+         sheet GROWS rather than shuffling what is already on screen -->
     <div class="card" id="timerCard" hidden>
       <div class="lbl">Turn timer</div>
       <div class="seg" id="timerSeg">
@@ -148,7 +157,6 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
         <button data-t="0">OFF</button>
       </div>
     </div>
-    <div class="tiny" id="duoNote" hidden>One phone, passed back and forth</div>
     <div class="tiny" id="statLine" hidden></div>
     <button class="btn primary" id="btnPlay">Play</button>
     <div class="tiny">Offline play never touches your online rating</div>

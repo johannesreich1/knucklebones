@@ -282,6 +282,11 @@ html.clock .timer.on{visibility:visible}
   box-shadow:0 6px 18px rgba(40,232,255,.3)}
 .lbl{font-size:10px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
 .card{width:100%;max-width:var(--w-col);display:flex;flex-direction:column;gap:12px}
+/* A card's note reserves TWO lines whether it needs them or not. Descriptions
+   wrap differently per device — five of the seven game modes take two lines at
+   360px and one at 430px — and letting the slot resize moved every card below
+   it by a line whenever the player tried another mode. */
+.card .note{text-align:left;line-height:1.45;min-height:2.9em}
 
 /* ---- shared screen header: ‹ pages, ✕ sheets (design: 00-navigation).
    Reuses the HUD's .ico button; the pad mirrors its width so the title stays
@@ -306,6 +311,11 @@ html.clock .timer.on{visibility:visible}
   padding-top:calc(env(safe-area-inset-top,0px) + 16px)}
 .pbody{display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;
   margin:auto 0;flex:0 0 auto}
+/* ...except the OFFLINE sheet, which is a FORM rather than a poster: it grows
+   downward from the header as options appear. Centring it meant revealing one
+   extra card re-centred the whole column, so the cards the player was NOT
+   touching moved — measured at 143px on every device size. */
+#ovPractice .pbody{margin:0}
 
 /* result screens (local + online share the shape): the verdict sits up top
    and LOUD, the scores hold the centre, the actions wait in the thumb zone */
