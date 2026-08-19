@@ -1,0 +1,65 @@
+<!-- meta name="Spinner F — Card deal" group="7 · Mode spinner studies" subtitle="The modes riffle as a deck and one card is dealt face-up to the table" width=412 height=760 links="Wheel" -->
+<style>
+  .studio{display:flex;flex-direction:column;gap:15px;width:100%;align-items:center}
+  .cap{font-size:9px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase}
+  .stagebox{position:relative;width:100%;max-width:var(--w-col);border-radius:20px;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 12px 20px;
+    background:radial-gradient(120% 90% at 50% 12%,rgba(255,255,255,.045),transparent 70%),rgba(255,255,255,.02);
+    border:1px solid rgba(255,255,255,.08)}
+  .kicker{font-size:9.5px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+  .rname{font-size:17px;font-weight:900;letter-spacing:.18em;display:flex;align-items:center;gap:8px}
+  .rblurb{font-size:11px;letter-spacing:.1em;color:var(--dim);text-align:center;margin-top:-4px}
+  .note{font-size:11.5px;line-height:1.6;color:#c6d3ee;max-width:var(--w-col);
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:11px 13px}
+  .note b{color:var(--gold)}
+  .mico .f{fill:currentColor;stroke:none}
+  /* A design card is read as a STILL: every loop rests in the landed state and
+     departs from it after 1.2s, so a screenshot taken on load shows the result. */
+
+  .felt{position:relative;width:100%;max-width:274px;height:200px;display:grid;place-items:center;
+    margin-top:2px;perspective:900px}
+  .cd{position:absolute;width:74px;height:104px;border-radius:12px;display:grid;place-items:center;
+    background:linear-gradient(160deg,rgba(24,29,52,.96),rgba(9,12,24,.96));
+    border:1px solid rgba(255,255,255,.1);box-shadow:0 10px 24px rgba(0,0,0,.6);
+    transform:translateX(calc((var(--i) - 1.5) * 26px)) translateY(-16px) rotate(calc((var(--i) - 1.5) * 7deg));
+    opacity:.5;animation:riffleF 5.4s ease 1.2s infinite}
+  @keyframes riffleF{0%,10%{translate:0 0;opacity:.5}
+    26%{translate:0 -14px;opacity:.85}
+    52%{translate:0 6px;opacity:.6}
+    74%,100%{translate:0 0;opacity:.5}}
+  /* the dealt card: face-down while the deck riffles, flipped up at the end */
+  .deal{position:relative;z-index:3;width:104px;height:142px;border-radius:16px;
+    transform-style:preserve-3d;animation:dealF 5.4s cubic-bezier(.2,.9,.24,1) 1.2s infinite}
+  @keyframes dealF{0%,12%{transform:rotateY(0) translateY(0) scale(1)}
+    30%{transform:rotateY(180deg) translateY(-30px) scale(.86)}
+    58%{transform:rotateY(540deg) translateY(-18px) scale(.9)}
+    82%,100%{transform:rotateY(720deg) translateY(0) scale(1)}}
+  .cfront,.cback{position:absolute;inset:0;border-radius:16px;display:grid;place-items:center;
+    backface-visibility:hidden;gap:8px}
+  .cfront{transform:translateZ(1px);font-style:normal;flex-direction:column;color:#ffd166;
+    background:linear-gradient(158deg,rgba(30,36,62,.98),rgba(10,13,26,.98));
+    border:1px solid color-mix(in srgb,#ffd166 46%,transparent);
+    box-shadow:0 14px 34px rgba(0,0,0,.66),0 0 26px color-mix(in srgb,#ffd166 26%,transparent),
+      inset 0 0 22px color-mix(in srgb,#ffd166 10%,transparent)}
+  .cback{transform:rotateY(180deg) translateZ(1px);
+    background:repeating-linear-gradient(45deg,rgba(40,232,255,.10) 0 5px,rgba(6,8,18,.95) 5px 10px);
+    border:1px solid rgba(255,255,255,.14)}
+  .cfront .lbl2{font-size:8.5px;letter-spacing:.2em;font-weight:900;text-align:center;line-height:1.4;
+    position:absolute;bottom:13px;left:0;right:0}
+</style>
+<div class="studio">
+  <div class="cap">Spinner F</div>
+  <div class="stagebox">
+    <div class="kicker">Game mode</div>
+    <div class="felt">
+      <i class="cd" style="--i:0;color:#ff8a3d"><svg class="mico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle class="f" cx="12" cy="6.2" r="1.5"/><circle class="f" cx="12" cy="12" r="1.5"/><circle class="f" cx="12" cy="17.8" r="1.5"/><path d="M8.6 2.8 15.4 9.6M15.4 2.8 8.6 9.6"/></svg></i><i class="cd" style="--i:1;color:#7ee787"><svg class="mico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.2"/><path d="M12 8.6v6.8M8.6 12h6.8"/></svg></i><i class="cd" style="--i:2;color:#b18cff"><svg class="mico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4.4" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="13" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="8.7" y="4.4" width="6.6" height="6.6" rx="1.8"/><circle class="f" cx="12" cy="7.7" r="1.2"/></svg></i><i class="cd" style="--i:3;color:#8ea3c0"><svg class="mico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3.2 20.8 12 12 20.8 3.2 12Z"/><circle class="f" cx="12" cy="12" r="1.7"/></svg></i>
+      <div class="deal">
+        <i class="cback"></i>
+        <i class="cfront"><svg class="mico" width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg><span class="lbl2">COLUMN<br>SHIELD</span></i>
+      </div>
+    </div>
+    <div class="rname" style="color:#ffd166"><svg class="mico" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/><circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/></svg> COLUMN SHIELD</div>
+    <div class="rblurb">A full column cannot be destroyed.</div>
+  </div>
+  <div class="note"><b>The most tactile.</b> Dealing beats spinning for a table game — the deck riffles, one card turns over, and the mode arrives as an object you could pick up. It also gives every mode a permanent card face worth reusing in the modes library and on the match badge. Costs the most to build of the six, and a flip is a shorter beat than a spin, so the drama has to come from the deck before it.</div>
+</div>
