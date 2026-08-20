@@ -1,6 +1,6 @@
 # Project Status
 
-*Last updated: 2026-08-18. This is the "where do we stand" document — the
+*Last updated: 2026-08-20. This is the "where do we stand" document — the
 README explains how the project works; this file records what exists, what
 was decided, and what's still open.*
 
@@ -9,10 +9,10 @@ was decided, and what's still open.*
 | Piece | State |
 |---|---|
 | **Web** | **LIVE** at https://knucklebones-asg.pages.dev — Cloudflare Pages, auto-deploys every push to `main` |
-| **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0008, RLS + column-grant hardened |
-| **Edge Functions** | `pvp-join` v10, `pvp-move` v7, `pvp-claim` v6, `account-delete` v1 — all ACTIVE, nothing dead deployed |
-| **CI** | GitHub Actions: build + full test gate on every push — green through current `main` |
-| **Design system** | 90 cards (every screen and sheet × 4 device sizes + the `00-navigation` spec) in the Claude Design project "Knucklebones", generated from the app's real CSS |
+| **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0013, RLS + column-grant hardened. 0014 (Game Center ids) is written but NOT applied — it waits for a device |
+| **Edge Functions** | `pvp-join` v13, `pvp-move` v10, `pvp-claim` v7, `account-delete` v1 — all ACTIVE, nothing dead deployed. `gc-auth` is written but undeployed (same reason) |
+| **CI** | GitHub Actions: build + full test gate (22 suites) on every push — green through current `main` |
+| **Design system** | 170 cards (44 screens × 4 device sizes + the two `00-` specs) in the Claude Design project "Knucklebones", generated from the app's real CSS **and its real code** — see "Cards render the app" below |
 | **Signups** | **Open** — a first tap on RANKED mints a guest account (no email, no form). Attaching an email still waits on SMTP; see `docs/IDENTITY.md` |
 
 Verified live on 2026-08-17: build tag on the deployed page matches the local
@@ -201,6 +201,87 @@ Capacitor wrappers for iOS + Android, Sign in with Apple (required if any
 other OAuth is offered), in-app account deletion (already implemented
 server-side via `account-delete`), privacy policy for both stores.
 
+### 5b. Identity, the dial, and the things the law wants (2026-08-19/20)
+
+- **Guest accounts (identity rung 1).** A first tap on RANKED signs the player
+  in anonymously — no email, no form. This cost NO schema: anonymous users
+  take the `authenticated` role, so `handle_new_user()` and all five RLS
+  policies already covered them (read before trusting, then verified live —
+  a guest joined ranked and matched a bot). `online/session.ts` holds the
+  ladder: an existing session wins; otherwise a guest is minted, *unless*
+  `knucklebones.online.attached` says this device once had a real account,
+  in which case signing out means they meant to sign back IN.
+- **The mode dial replaced the pie wheel.** Six alternatives were drawn as
+  design cards; B (orbit dial) won. It lives in `ui/modedial.ts` with its CSS
+  in `main.css` — offline-reachable, because the offline game must never pull
+  the online chunk to see it. It must not spoil itself: nodes flare as the
+  comet crosses them, the winner is exactly as dark as the rest until found,
+  the centre pulses in nobody's colour, and the name stays blank until the
+  comet stops. Geometry is three tokens (`--dial`, `--r-in`, `--r-out`), which
+  is what finally fixed the comet reading flat.
+- **RANDOM is an offline choice too**, and CLASSIC's weight moved 50% → 40%
+  (measured at 39.91% over 200,000 draws).
+- **The first-run offer.** Before a newcomer's first real game — offline or
+  ranked, never the tutorial itself — the game asks whether to play the
+  tutorial. `S.played` is the flag, backfilled for anyone with a record. The
+  tutorial ends on **Finish**, not Play again.
+- **HOW TO PLAY is a hub**, not a link: tutorial, rules, game modes, spells,
+  behind one door, with the tutorial highlighted only while nothing has been
+  played. CPU is called **AI** everywhere.
+- **Impressum and Privacy** ship as in-app sheets in the home footer. The
+  company details are still `[BRACKETED]` — see Open items.
+- **An absent opponent no longer stalls the match** (user-reported). The
+  waiting client asks `pvp-move` with `auto:true`; the SERVER checks its own
+  clock (`AUTO_MS` = 12s) and places a legal die *for the absent player*, so
+  neither a wrong device clock nor a hostile client can force it early. The
+  in-match line narrates it ("X is away — playing for them in N") instead of
+  going silent for 25 seconds. Verified live with two throwaway guests:
+  `not-stalled-yet` immediately, the auto-place after 13s, the turn flipping
+  back, repeated over four rounds. Both guests deleted themselves afterwards.
+
+### 6. The navigation batch (2026-08-20)
+
+Four moves, each putting a control where its context makes sense:
+
+- **The HUD's gear became a question.** It used to open Settings, which
+  mid-match offers nothing you want — sound and dice faces are not what you
+  reach for with a board on the line — and hid the exit at its bottom behind
+  a two-tap arm. It now opens ONE ask-card: *Quit this game?* offline,
+  *Forfeit this match?* when a rating is live. `leavingForfeits()` in
+  `flow/leave.ts` is the single source of that distinction, so the copy can
+  never claim the wrong stake.
+- **Home's Account button became Settings**, opening that sheet from the one
+  place where nothing is at stake.
+- **The identity chip is the account door.** It already shows who you are and
+  what you are rated; tapping it opens the rest.
+- **The build tag moved to the foot of Settings** — the screen you open when
+  something looks wrong should tell you which build is wrong.
+
+`.firstcard` became `.askcard` (the quit modal already reused it, so the name
+had stopped describing its rosters) and `.homefoot` became `.viewfoot` (home's
+legal links, settings' build tag — one strip, two rosters).
+
+### 7. Cards render the app, they no longer transcribe it (2026-08-20)
+
+`design/build.mjs` imports `src/` directly (Node ≥22.18 strips the types) and
+expands tokens from the app's own functions: `{{mico}}` / `{{mhue}}` from
+`ui/modeicons.ts`, `{{dialnodes}}` from `ui/modedial.ts`, `{{library}}` and
+`{{picker}}` / `{{pickinfo}}` from `ui/library.ts`.
+
+Before this, the card sources held **122 hand-copied icon SVGs across 12
+cards**; card 05's own comment said "the card carries its own copies […] keep
+them in sync", and card 25 re-typed every mode's icon, hue, name, one-liner
+and full rule — a fifth copy of `core/modes.ts`. Card 40's picker had already
+drifted: it was still missing RANDOM days after the app offered it. Card 71
+was the worst — the orbit dial won its study and shipped, and the card kept
+a 77-line private re-implementation of a live screen.
+
+Three seams opened in the app to allow it, each already single-purpose but
+locked inside a DOM builder: `dialNodes()`, `libraryCards()`, and
+`MODE_PICKS` / `SPELL_PICKS` / `pickerButtons()`. `boot.ts`'s `pickerRow` had
+both rosters inline; it consumes the shared ones now, so the reference sheet
+and the pick row agree on what a mode is called *by construction*.
+
 ### 5. The navigation pass (2026-08-18)
 
 One model, app-wide (spec: the `00-navigation` design card): **pages** you
@@ -219,10 +300,12 @@ dice, honest clock, widening message) and **Cancel is the only exit — it
 truly leaves the queue**, closing a real hazard where dismissing the overlay
 kept the poll running and could yank the player into a match from Home.
 Match results land on a proper Result screen (scores, Elo delta chip, fresh
-ladder rank, Play again / Home) instead of text glued onto a menu. In-match,
-`≡` became `✕`: practice quits instantly, online the first tap arms
-"Tap ✕ again to forfeit" (the Delete-account idiom). The Account panel grew
-its identity card (die, nickname, member-since, rating, lifetime record).
+ladder rank, Play again / Home) instead of text glued onto a menu. The Account
+panel grew its identity card (die, nickname, member-since, rating, lifetime
+record). *(The in-match exit described here — `≡` → `✕`, then a two-tap
+forfeit arm inside the Settings sheet — was superseded on 2026-08-20 by the
+quit ask-card; the Install sheet was retired the same day, the native clients
+make it noise.)*
 
 ### 4. Done in the 2026-08-17 polish pass
 
