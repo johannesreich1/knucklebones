@@ -138,7 +138,13 @@
 @keyframes nope{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
 
 /* ============ DICE ============ */
-.die{width:100%;height:100%;border-radius:var(--r);position:relative;
+/* The corner tracks the die's own size, like the pip padding below already
+   does: --r from 50px cells up (every board in practice), tapering under that
+   so a small die keeps the die's SHAPE instead of rounding toward a circle —
+   the avatar picker's 34px faces wore the full 14px and read as pebbles. The
+   line runs through the radii that were hand-picked per size before it
+   existed (18px→6, 24px→7, 34px→10) and replaces them. */
+.die{width:100%;height:100%;border-radius:min(var(--r),calc(var(--cell)*.25 + 1.5px));position:relative;
   display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
   padding:calc(var(--cell)*.155);
   background:
@@ -465,15 +471,9 @@ html.clock .timer.on{visibility:visible}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dside .rt{font-size:16px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums}
 .dside.me .dnm{color:var(--cy)} .dside.foe .dnm{color:var(--mg)}
-.dside.me .dav{border-color:color-mix(in srgb,var(--cy) 42%,transparent)}
-.dside.foe .dav{border-color:color-mix(in srgb,var(--mg) 42%,transparent)}
-.dside.me .p.on{background:var(--cy);box-shadow:0 0 6px var(--cy)}
-.dside.foe .p.on{background:var(--mg);box-shadow:0 0 6px var(--mg)}
-/* the avatar: a die until players can upload a picture */
-.dav{width:44px;height:44px;border-radius:13px;display:grid;place-items:center;
-  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12)}
-.dface{display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);gap:2px;width:26px;height:26px}
-.dface .p{border-radius:50%}
+/* the avatar slot: paintAvatar fills it with the player's chosen die, so it
+   carries no chrome of its own — the die IS the picture, as everywhere else */
+.dav{width:44px;height:44px;display:grid;place-items:center}
 .dvs{flex:0 0 auto;font-size:14px;font-weight:900;letter-spacing:.1em;color:var(--txt);
   font-style:italic}
 /* The hold: five seconds to READ the result, cut short the moment everyone has.
@@ -570,7 +570,7 @@ html.rowswitch .cols .chip{visibility:hidden}
    centred under the stack whether four dice remain or one. */
 .bag .pile .die{position:absolute;left:50%;bottom:0;transform:translateX(-50%);
   width:24px;height:24px;--cell:24px;--dc:#9fb2d8;
-  border-radius:7px;transition:opacity .35s,transform .35s}
+  transition:opacity .35s,transform .35s}
 /* the layers fan up and back from the base — deep enough to count at a glance,
    and they thin to that single centred die for the last few draws */
 .bag .pile .die:nth-child(2){bottom:4px;transform:translateX(calc(-50% + 3px))}
@@ -584,7 +584,7 @@ html.rowswitch .cols .chip{visibility:hidden}
 .bag.empty .bn{color:var(--dim)}
 .land .bag{margin-right:8px}
 .land .bag .pile{width:22px;height:26px}
-.land .bag .pile .die{width:18px;height:18px;--cell:18px;border-radius:6px}
+.land .bag .pile .die{width:18px;height:18px;--cell:18px}
 
 /* ===== SPELLS: the optional powers layer (flow/spells) =====
    With no spell brought (or in ranked play, or the tutorial) every rune is
@@ -844,7 +844,7 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 .ico{font-family:inherit;padding:0;-webkit-appearance:none;appearance:none}
 .ico:focus-visible,.btn:focus-visible,.seg button:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
 .dicerow{display:flex;gap:8px;justify-content:center;margin-bottom:2px}
-.dicerow .die{width:34px;height:34px;--cell:34px;border-radius:10px}
+.dicerow .die{width:34px;height:34px;--cell:34px}
 
 /* ============ NUMERALS INSTEAD OF PIPS ============
    Pips are charming but hard work for some players; this is a per-device toggle. */
@@ -914,19 +914,26 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
    three o'clock, which reads as a ring knocked askew. */
 .ringwrap{position:relative;width:min(62vw,206px);aspect-ratio:1;display:grid;place-items:center;
   margin:2px auto 0;--p:0;--pk:0}
-/* The track's tail DIMS toward the mouth and then breaks off hard. The first
-   cut of this faded 256deg→270deg all the way to zero, which dissolved the
-   arc's end — you could not say where the ring stopped. The dimming is right
-   (the fill's end of the mouth reads soft through the cyan bloom, and a track
-   that stays full-strength to the edge looked unequal), so it now starts
-   EARLIER (246deg) and lands on a still-visible grey at 270deg with a hard
-   stop — the eye gets both the approach and the edge.
-   (When the fill itself reaches past 246deg, the stops clamp and the dimming
-   simply runs from the fill's edge — conic stops never go backwards.) */
+/* TWO layers, so each arc casts its own light. drop-shadow() tints every
+   pixel's halo one colour, so as long as fill and track shared an element the
+   grey could only borrow the cyan bloom — invisible whenever the fill was
+   small, and the arc's far end unreadable. The track was also a FADE twice
+   (256deg→zero, then 246deg→.035) and both times was reported as "the grey is
+   gone": near a group's top the fill's edge sits inside the dimmed tail, so
+   the whole visible remnant was the faded part. Hence the rule this ring
+   settled on: the track below — the full 270deg, flat grey, its own dim grey
+   bloom, a hard stop at the mouth; the fill above, cyan, the cyan bloom. The
+   dark halo and the bright one meet where you stand, and the dark one always
+   shows where the ring ends. .22 was raised from .16 after review on the real
+   profile page: .16 sat at the edge of visibility on a dim display, and a
+   track that two people have to squint for is not doing its job. */
+.ringwrap::before{content:"";position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 225deg,rgba(255,255,255,.22) 0 270deg,transparent 270deg);
+  -webkit-mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
+  mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
+  filter:drop-shadow(0 0 12px rgba(255,255,255,.2))}
 .lring{position:absolute;inset:0;border-radius:50%;
-  background:conic-gradient(from 225deg,var(--cy) calc(var(--p) * 270deg),
-    rgba(255,255,255,.07) calc(var(--p) * 270deg),rgba(255,255,255,.07) 246deg,
-    rgba(255,255,255,.035) 270deg,transparent 270deg);
+  background:conic-gradient(from 225deg,var(--cy) calc(var(--p) * 270deg),transparent 0);
   -webkit-mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
   mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
   filter:drop-shadow(0 0 14px rgba(40,232,255,.42))}
@@ -945,9 +952,14 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 /* chip size: the same object, with a thicker relative band so four pixels of
    sweep still read as a ring and not as an artifact */
 .ringwrap.mini{width:36px;margin:0;flex:0 0 auto}
+/* the mini wears NO halos at all — neither the grey track bloom nor the cyan
+   fill bloom: around a 36px ring a glow is bigger than the band it decorates
+   and only muddied the chip. The blooms belong to the profile's large ring
+   alone; the mini is the same object, crisp. */
+.ringwrap.mini::before{-webkit-mask:radial-gradient(circle closest-side,transparent 75%,#000 76%);
+  mask:radial-gradient(circle closest-side,transparent 75%,#000 76%);filter:none}
 .ringwrap.mini .lring{-webkit-mask:radial-gradient(circle closest-side,transparent 75%,#000 76%);
-  mask:radial-gradient(circle closest-side,transparent 75%,#000 76%);
-  filter:drop-shadow(0 0 6px rgba(40,232,255,.4))}
+  mask:radial-gradient(circle closest-side,transparent 75%,#000 76%);filter:none}
 
 /* ---- the identity plate (design card 13d) ----
    The account door ON the action stack: ring-avatar, name, group, points, one
@@ -958,10 +970,17 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
   font:inherit;color:var(--txt);cursor:pointer;text-align:left}
 .pplate .nm2{font-size:10.5px;letter-spacing:.1em;font-weight:800;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pplate .meta2{margin-left:auto;display:flex;align-items:baseline;gap:7px;flex:0 0 auto}
+/* The group label and the points each centre themselves. Locking the 8px
+   label to the 13.5px number's baseline hung its ink ~3px below the plate's
+   midline — small all-caps beside big lining digits reads centred, not
+   baseline-aligned, at this size gap. */
+.pplate .meta2{margin-left:auto;display:flex;align-items:center;gap:7px;flex:0 0 auto}
 .pplate .gl{font-size:8px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
 .pplate .meta2 b{font-size:13.5px;font-weight:900;color:var(--gold)}
-.pplate .chev{color:var(--dim);font-size:14px;line-height:1;flex:0 0 auto}
+/* '›' hangs its ink low in the em box (measured ~1.1px below the plate's
+   midline at 14px); the nudge centres the glyph, not the box */
+.pplate .chev{color:var(--dim);font-size:14px;line-height:1;flex:0 0 auto;
+  transform:translateY(-1px)}
 /* no account yet: the same plate, dashed, with an empty ring around nobody */
 .pplate.anon{color:var(--dim);border-style:dashed;font-size:10.5px;letter-spacing:.12em}
 .hero{display:flex;flex-direction:column;align-items:center;gap:4px;margin:6px 0 2px}
@@ -1055,3 +1074,32 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 .askcheck input{width:18px;height:18px;flex:0 0 auto;accent-color:var(--cy);margin-top:1px}
 .askcard .btn.danger{border-color:rgba(255,47,160,.35);color:#ff9ccb}
 .askcard .btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ============ THE LOADING DIE ============
+   ONE loader for every wait (ui/loader.ts; design card 34a, "LD1 pip clock"):
+   the die face IS the spinner — all nine pips visible, the eight rim pips
+   dimming in a clockwise chase around the 3x3 grid (cells 1 2 3 / 6 / 9 8 7 /
+   4 in child order), the centre pip breathing. Lives HERE, not in online.css:
+   the biggest wait of all is the online chunk itself still downloading, and
+   at that moment online.css does not exist (the .btn.ghost lesson —
+   tests/cssreach.test.ts). Reduced motion kills the chase globally above,
+   leaving a calm full-pip die. */
+.ldclock .pip{opacity:1;transform:scale(1);transition:none;animation:ldchase 1.28s linear infinite}
+.ldclock .pip:nth-child(1){animation-delay:0s}
+.ldclock .pip:nth-child(2){animation-delay:.16s}
+.ldclock .pip:nth-child(3){animation-delay:.32s}
+.ldclock .pip:nth-child(6){animation-delay:.48s}
+.ldclock .pip:nth-child(9){animation-delay:.64s}
+.ldclock .pip:nth-child(8){animation-delay:.8s}
+.ldclock .pip:nth-child(7){animation-delay:.96s}
+.ldclock .pip:nth-child(4){animation-delay:1.12s}
+.ldclock .pip:nth-child(5){animation:ldheart 1.28s ease-in-out infinite}
+@keyframes ldchase{0%{opacity:1;transform:scale(1.06)}14%{opacity:1}42%{opacity:.14;transform:scale(.8)}
+  86%{opacity:.14;transform:scale(.8)}100%{opacity:1;transform:scale(1.06)}}
+@keyframes ldheart{0%,100%{opacity:.9;transform:scale(.92)}50%{opacity:.45;transform:scale(.72)}}
+/* whatever the dice-face setting says, a loader tells time in pips — this
+   sits after .numerals' rule on purpose, so the tie breaks this way */
+.die.ldclock .num{display:none}
+.ldwait{display:flex;flex-direction:column;align-items:center;gap:14px;margin:auto}
+.ldmsg{font-size:11px;letter-spacing:.2em;color:var(--txt);text-transform:uppercase;text-align:center}
+.ldmsg::after{content:"";animation:dots 1.2s steps(4,end) infinite}

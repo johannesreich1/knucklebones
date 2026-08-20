@@ -34,6 +34,7 @@ import { Sfx } from './ui/audio.ts';
 import { setEmbed, isEmbed, kbroot } from './ui/embed.ts';
 import { $, show, hide, colEl } from './ui/dom.ts';
 import { makeDie } from './ui/die.ts';
+import { loaderWait } from './ui/loader.ts';
 import { buildBoards, applySides, updateRecord } from './ui/render.ts';
 import { fit } from './ui/layout.ts';
 import { tap, boardDown, boardUp, clearPress, commitColumn } from './ui/input.ts';
@@ -184,14 +185,26 @@ export function boot(embed){
   // so this affordance can never go missing on one side again.
   tap($('#rec'),()=>{ const id=$('#rec').dataset.mode; if(!id) return; Sfx.tap(); openModes(id); });
   // online module (auth, ladder, account) is lazy: the offline game's boot
-  // path must never load supabase-js or anything that talks to a backend
-  tap($('#btnOnline'),()=>{ Sfx.unlock(); Sfx.tap();
-    import('./online/ui.ts').then(m=>m.openOnline('play')); });
-  tap($('#btnBoardHome'),()=>{ Sfx.unlock(); Sfx.tap();
-    import('./online/ui.ts').then(m=>m.openOnline('board')); });
+  // path must never load supabase-js or anything that talks to a backend.
+  // ONE guarded door serves all three entries: the loading die goes up
+  // before the import and stays until the online UI paints its first panel
+  // (panel() hides it) — covering the chunk download AND the identity
+  // round-trip behind it, and a re-tap while in flight is a no-op instead
+  // of a second openOnline. The .finally is the belt for early exits.
+  let onlineBusy=false;
+  const goOnline=(view:'play'|'board'|'account'):void=>{ Sfx.unlock(); Sfx.tap();
+    if(onlineBusy) return;
+    onlineBusy=true;
+    const ov=$('#ovLoad');
+    if(!ov.firstChild) ov.appendChild(loaderWait(56));
+    show('#ovLoad');
+    import('./online/ui.ts').then(m=>m.openOnline(view))
+      .finally(()=>{ onlineBusy=false; hide('#ovLoad'); });
+  };
+  tap($('#btnOnline'),()=>goOnline('play'));
+  tap($('#btnBoardHome'),()=>goOnline('board'));
   tap($('#btnSettingsHome'),()=>{ Sfx.unlock(); Sfx.tap(); show('#ovSettings'); });
-  tap($('#homeChip'),()=>{ Sfx.unlock(); Sfx.tap();
-    import('./online/ui.ts').then(m=>m.openOnline('account')); });
+  tap($('#homeChip'),()=>goOnline('account'));
   tap($('#btnCloseRules'),()=>{ Sfx.tap(); hide('#ovRules'); });
 
   // desktop: 1/2/3 place, Enter starts / replays

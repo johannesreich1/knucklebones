@@ -360,4 +360,6 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   <button class="btn" id="btnMenu2">Change difficulty</button>
   <button class="linkbtn" id="btnEndHome">Home</button>
   <button class="linkbtn" id="btnShare" hidden>Share result</button>
-</div>`;
+</div>
+
+<div class="ov" id="ovLoad" aria-live="polite"></div>`;

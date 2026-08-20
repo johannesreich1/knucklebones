@@ -7,6 +7,7 @@
 import './online.css';
 import { ME, AI } from '../core/rules.ts';
 import { $, show, hide } from '../ui/dom.ts';
+import { loaderDie, loaderWait } from '../ui/loader.ts';
 import { showEnd, setMeta, closeEnd } from '../ui/endscreen.ts';
 import { Sfx } from '../ui/audio.ts';
 import { makeDie } from '../ui/die.ts';
@@ -132,6 +133,9 @@ const PANELS = {
 type Panel = keyof typeof PANELS;
 
 function panel(which: Panel): void {
+  // the boot loader (#ovLoad) covered the chunk download and the identity
+  // round-trip; the first real panel is what relieves it
+  hide('#ovLoad');
   for (const id of Object.keys(PANELS)) $('#' + id).hidden = id !== which;
   // the ladder is a LIST, not a form: it takes the whole screen under a fixed
   // subheading. Every other panel stays a centred column.
@@ -293,18 +297,14 @@ async function startQueue(): Promise<void> {
         // res.you is MY seat; the opponent is the other one
         const mine = res.you === 1 ? 'p1' : 'p2';
         const theirs = mine === 'p1' ? 'p2' : 'p1';
-        /* the avatar die is derived from the account id, so a player's face is
-           stable match to match instead of re-rolling every screen */
-        const faceOf = (s: string): number => 1 + ([...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7) % 6);
-        let self = { nickname: 'You', rating: null as number | null };
-        try {
-          const c = JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null');
-          if (c?.nickname) self = { nickname: c.nickname, rating: c.rating ?? null };
-        } catch { /* forgetful host */ }
+        /* both sides come from the join response — pvp-join hands over name,
+           rating and chosen avatar for the pair, so the versus line shows the
+           same faces the leaderboard does, mine included and never stale */
+        const side = (seat: 'p1' | 'p2') => ({
+          name: res.names[seat], rating: res.names.ratings?.[seat] ?? null,
+          avatar: res.names.avatars?.[seat] ?? null });
         await spinDial(modeById(res.match.modifier), {
-          me:  { name: self.nickname, rating: self.rating, die: faceOf(self.nickname) },
-          foe: { name: res.names[theirs], rating: res.names.ratings?.[theirs] ?? null,
-                 die: faceOf(res.names[theirs]) },
+          me: side(mine), foe: side(theirs),
           peer: readyPeer(res.match.id),
         });
       }
@@ -340,9 +340,11 @@ const gapHtml = (d: number): string =>
 async function showBoard(): Promise<void> {
   panel('onBoard');
   const list = $('#onBoardList');
-  // the wait wears the game's own bouncing dice, centred — no bare text
-  list.innerHTML = '<div class="lbload"><div class="qdice" aria-hidden="true"></div><div class="qmsg">Loading</div></div>';
-  (list.querySelector('.qdice') as HTMLElement).append(makeDie(3, ME), makeDie(5, AI));
+  // the wait wears the loading die (ui/loader.ts), centred — no bare text
+  list.innerHTML = '';
+  const lw = loaderWait(44);
+  lw.classList.add('lbload');
+  list.appendChild(lw);
   const [rows, me, lad] = await Promise.all([leaderboard(50), myProfile(), myLadder()]);
   list.innerHTML = rows.length ? '' : '<div class="row">No ranked games yet — be the first!</div>';
   /* which horizon may claim "your group": my row's if I am on the board, my
@@ -553,6 +555,10 @@ let avPick = DEFAULT_AVATAR;
 async function showAvatar(): Promise<void> {
   panel('onAvatar');
   $('#onAvErr').textContent = '';
+  // first open: the grids don't exist until the profile answers — the
+  // preview slot carries the wait (paintAvatar clears it when data lands)
+  const pv = $('#avPreview');
+  if (!pv.firstChild) pv.appendChild(loaderDie(40));
   const p = await myProfile();
   avPick = p?.avatar ?? DEFAULT_AVATAR;
   const draw = (): void => {
@@ -595,12 +601,17 @@ async function showHistory(): Promise<void> {
      era was retired into season 0 at the cutover, not deleted — myRecord()
      counts lifetime, and the difference is named at the foot of the list so
      a hundred old matches read as history, never as a leak or a loss. */
+  // the loading die goes up BEFORE the first fetch and holds through both —
+  // the bare 'Loading…' text row this replaces only covered the second half
+  const list = $('#onHistoryList');
+  list.innerHTML = '';
+  const hw = loaderWait(36);
+  hw.classList.add('lbload');
+  list.appendChild(hw);
   const [lad, life] = await Promise.all([myLadder(), myRecord()]);
   $('#onHistoryTotal').innerHTML = lad
     ? recordHtml(lad.wins, lad.losses) + (lad.draws ? ` · ${lad.draws}D` : '')
     : '&nbsp;';
-  const list = $('#onHistoryList');
-  list.innerHTML = '<div class="row">Loading…</div>';
   const rows = await matchHistory();
   const seasonGames = lad ? lad.wins + lad.losses + lad.draws : 0;
   const lifeGames = life ? life.wins + life.losses + life.draws : 0;

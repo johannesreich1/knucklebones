@@ -381,6 +381,33 @@ everything) hid it. The rule moved to `main.css`, and `tests/cssreach.test.ts`
 now fails the gate on any offline markup that names a class only the online
 stylesheet defines.
 
+### 8. The loading die (2026-08-20 night, user pick from the LD1–LD8 studies)
+
+Eight loading-animation studies shipped as design cards 34a–h (group "3c ·
+Loading studies") plus 35-ios-launch; Johannes picked **LD1, the pip clock**
+— the die face IS the spinner — as the ONE loader, inline and full-page.
+`ui/loader.ts` (loaderDie/loaderWait) builds it on `makeDie`, the app's single
+die factory; the animation lives in `main.css` because the biggest wait is
+the online chunk itself still downloading, when online.css does not exist
+(the `.btn.ghost` lesson). Wired everywhere the audit found a naked wait:
+
+- **The three online doors** (`boot.ts` goOnline): `#ovLoad` goes up before
+  the `import()` and `panel()` relieves it — one overlay covers the chunk
+  download AND the `ensureIdentity` round-trip (the guest-minting dead air),
+  and re-taps in flight are no-ops instead of queued double-opens.
+- **Ladder** (showBoard): the two bouncing qdice replaced by the loading die.
+- **Match history** (showHistory): the bare "Loading…" text row replaced,
+  and the loader now covers BOTH fetch batches, not just the second.
+- **Avatar picker** (showAvatar): the preview slot carries the first-open wait.
+
+Deliberately untouched: **matchmaking** (its designed queue panel stays until
+the LD8 duel-clash v2 — which needs a resolution beat when the opponent's
+name lands, and must not fight the clock for attention), **the profile**
+(cached-paint anti-flicker choreography is better than a spinner), **the
+result screen** (optimistic paint), and **in-match waits** (the turn clock
+carries them). The rolling die (LD6) stays in the drawer until a wait with a
+direction exists (e.g. a determinate update/download).
+
 ### 7. Cards render the app, they no longer transcribe it (2026-08-20)
 
 `design/build.mjs` imports `src/` directly (Node ≥22.18 strips the types) and
