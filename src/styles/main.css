@@ -924,11 +924,16 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
    settled on: the track below — the full 270deg, flat grey, its own dim grey
    bloom, a hard stop at the mouth; the fill above, cyan, the cyan bloom. The
    dark halo and the bright one meet where you stand, and the dark one always
-   shows where the ring ends. .22 was raised from .16 after review on the real
-   profile page: .16 sat at the edge of visibility on a dim display, and a
-   track that two people have to squint for is not doing its job. */
+   shows where the ring ends.
+   The grey is OPAQUE on purpose. Every translucent track died the same death:
+   the profile sits on .ov — a blurred backdrop where home's neon glows bleed
+   through, bright behind the ring's top and black behind its right — and a
+   see-through band SUMS with that, wearing a fake fade however flat its own
+   stops are. Opaque, the backdrop cannot paint through it. #464c5c ≈ 26%
+   white over the scrim's own base, kept as a fixed colour — nudged up one
+   step from the 22%-equivalent on review. */
 .ringwrap::before{content:"";position:absolute;inset:0;border-radius:50%;
-  background:conic-gradient(from 225deg,rgba(255,255,255,.22) 0 270deg,transparent 270deg);
+  background:conic-gradient(from 225deg,#464c5c 0 270deg,transparent 270deg);
   -webkit-mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
   mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
   filter:drop-shadow(0 0 12px rgba(255,255,255,.2))}

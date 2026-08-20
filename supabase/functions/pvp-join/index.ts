@@ -59,15 +59,17 @@ Deno.serve(async (req: Request) => {
     return data;
   };
 
-  /* Names AND ratings: the mode dial shows who you are about to play, and a
-     client can only ever read its OWN profile row (RLS), so anything it should
-     know about the opponent has to be handed to it here. */
+  /* Names, ratings AND avatars: the mode dial shows who you are about to
+     play, and a client can only ever read its OWN profile row (RLS), so
+     anything it should know about the opponent has to be handed to it here. */
   const names = async (a: string, b: string) => {
-    const { data } = await svc.from("profiles").select("id, nickname, rating").in("id", [a, b]);
+    const { data } = await svc.from("profiles").select("id, nickname, rating, avatar").in("id", [a, b]);
     const row = (id: string) => data?.find((p: any) => p.id === id);
     const nick = (id: string) => row(id)?.nickname ?? "???";
     const rate = (id: string) => row(id)?.rating ?? null;
-    return { p1: nick(a), p2: nick(b), ratings: { p1: rate(a), p2: rate(b) } };
+    const av = (id: string) => row(id)?.avatar ?? null;
+    return { p1: nick(a), p2: nick(b), ratings: { p1: rate(a), p2: rate(b) },
+             avatars: { p1: av(a), p2: av(b) } };
   };
 
   // Leaving loses — even against a bot. A human opponent claims the forfeit
