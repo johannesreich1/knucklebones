@@ -152,6 +152,22 @@ out.numerals = await gp.evaluate(() => {
 });
 out.numerals.settingsClosed = settingsClosed;
 check(out.numerals.on && out.numerals.numShown === 'flex' && out.numerals.pipHidden === 'none' && out.numerals.settingsClosed, 'numerals toggle broken', out.numerals);
+// the LOADING die is exempt: it tells time in pips whatever the face setting
+// says. Numerals once out-specified its chase (.numerals .die .pip is three
+// classes, the chase rule was two) and every wait showed a blank square.
+out.loaderNumerals = await gp.evaluate(() => {
+  const d = window.__kb.loaderDie(24);
+  document.body.appendChild(d);
+  const pip = d.querySelector('.pip');
+  const res = { pipDisplay: getComputedStyle(pip).display, pipOpacity: +getComputedStyle(pip).opacity,
+                pipWidth: pip.getBoundingClientRect().width,
+                numDisplay: getComputedStyle(d.querySelector('.num')).display };
+  d.remove();
+  return res;
+});
+check(out.loaderNumerals.pipDisplay !== 'none' && out.loaderNumerals.pipOpacity > 0.1
+      && out.loaderNumerals.pipWidth > 0 && out.loaderNumerals.numDisplay === 'none',
+      'the loading die obeys the numerals setting', out.loaderNumerals);
 await gp.screenshot({ path: './v2-numerals.png' });
 
 // ================= REDUCED MOTION =================
