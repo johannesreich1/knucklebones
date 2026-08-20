@@ -257,15 +257,53 @@ invisible; the ladder does not change behaviour until step 4.
    history, and the result screen showing the delta the match actually paid.
 7. **`0019_avatar.sql`** — `profiles.avatar text default 'die:5:cy'`.
 
-### What has to be decided before step 1
+### The cutover: retire, do not wipe
 
-- Whether existing players start Season 1 from **0** (a clean slate — every
-  current rating is on the old scale and means nothing under the new one) or
-  from a converted value. **Recommend 0**: there are few enough real accounts
-  today that a clean start is honest, and the alternative is explaining a
-  conversion nobody asked for.
-- Group names. STONE · BONE · IVORY · SILVER · GOLD · OBSIDIAN · NEON is the
-  proposal — dice and bone materials climbing toward the game's own neon.
+Everyone starts Season 1 at **0**. Current ratings are on the old scale and
+mean nothing under the new one, and the population is small enough that a
+clean start is the honest option — 18 human profiles, of which **7** have ever
+finished a match.
+
+Deleting the old data would achieve the same clean start and cost more, so it
+is not what happens. Instead the existing history is *retired into a
+pre-season*:
+
+- `seasons` gets **two** rows: id 0 `Pre-season`, `ends_at` = the cutover
+  moment, and id 1 `Season 1`, `ends_at NULL`.
+- All 119 existing matches are stamped `season_id = 0`. Nothing is deleted —
+  2,359 moves and every finished game stay exactly where they are.
+- `season_ratings` starts empty for Season 1; a row appears at 0 the first
+  time a player is paired.
+- `profiles.rating` (the mirror) resets to 0. This is the only value actually
+  discarded, and it is reconstructible from `matches.p1_rating_delta` if
+  anyone ever wants it back.
+- The five abandoned `active` matches — all human-vs-bot, idle 4 hours to two
+  days — are closed as forfeits before the switch, because a match must not
+  span a scale change: it was started under one rating system and would settle
+  under another.
+
+This keeps match history working for the seven players who have any, and it
+means the season machinery is exercised from day one — with a real pre-season
+already sitting behind the current one, which is a far better test of it than
+a single season could ever be.
+
+### Seed the bots across the ladder
+
+At Season 1 start every profile is at 0, so percentile is degenerate and there
+is nothing to climb *into* — a new player's first opponent, their tenth and
+their fiftieth would all be identical. The 13 bots are synthetic opponents and
+their ratings were always hidden, so spread them across the groups at season
+start: roughly two per group from STONE to the top of OBSIDIAN.
+
+That gives matchmaking a populated ladder immediately, gives percentile
+something to measure, and gives a new player a visible climb. It also matches
+what migration 0013 already decided for the leaderboard — an empty ladder is a
+worse lie than a populated one.
+
+### Names
+
+STONE · BONE · IVORY · SILVER · GOLD · OBSIDIAN · NEON — dice and bone
+materials climbing toward the game's own neon. **Agreed 2026-08-20.**
 
 ---
 
