@@ -1,7 +1,11 @@
 # The Ladder — points, groups, seasons
 
-*Spec. Nothing here is implemented yet; this is the thing to argue with before
-any of it becomes code. Every number was measured, not chosen — the
+*Spec, and as of 2026-08-20 also the shipped design: §1–§4 and §6 steps 1–5
+are live (core/ladder.ts, migrations 0016–0019, pvp-move v11 / pvp-claim v8 /
+pvp-join v14). §5 — the profile screen, avatar picker and match history — is
+still design only.*
+
+*This is the thing to argue with before more of it becomes code. Every number was measured, not chosen — the
 simulations are in `docs/LADDER.md`'s appendix and were run against 800–900
 simulated players with skill ~N(0, 180).*
 
@@ -256,6 +260,22 @@ invisible; the ladder does not change behaviour until step 4.
 6. **Client** — the profile screen (card 92d), the avatar picker, match
    history, and the result screen showing the delta the match actually paid.
 7. **`0019_avatar.sql`** — `profiles.avatar text default 'die:5:cy'`.
+
+### What the first live run taught
+
+Two things bit, both worth keeping written down:
+
+- **A table created by a migration grants `service_role` nothing.** RLS was
+  never the mechanism — service_role bypasses that — plain table privileges
+  are. Without the grant the ladder was silently read-only-empty: every read
+  returned no rows, `ladderRow()` fell to its `0` default, and two live matches
+  settled 0-vs-0 as though both players were unrated, while every write was
+  discarded without an error anyone looked at. Any future table the Edge
+  Functions touch needs the grant in the same migration that creates it.
+- **`profiles.rating` is a mirror and has to be kept one.** 0016 seeded the
+  bots across the ladder in `season_ratings` but left the mirror at 0, and
+  pvp-join pairs on the mirror — so matchmaking saw a flat pool and the spread
+  it had just been given did nothing. Whatever writes points writes both.
 
 ### The cutover: retire, do not wipe
 

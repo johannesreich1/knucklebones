@@ -9,7 +9,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { diceStream, poolSequence } from "./core/dice.ts";
 import { AI, ME, LIMITED, boardTotalMode, type Player } from "./core/rules.ts";
 import { rebuild, matchTotal } from "./core/match.ts";
-import { eloDelta, type MatchScore } from "./core/elo.ts";
+import { settle, matchBand, SCALE, type Score } from "./core/ladder.ts";
 import { modeById, pickMode } from "./core/modes.ts";
 
 const CORS = {
@@ -43,6 +43,17 @@ Deno.serve(async (req: Request) => {
 
   const svc = createClient(supaUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+  /* A player's row on the season ladder, created at zero the first time they
+     are paired — the same helper pvp-move and pvp-claim carry. */
+  const ladderRow = async (season: number, player: string) => {
+    await svc.from("season_ratings")
+      .upsert({ season_id: season, player }, { onConflict: "season_id,player", ignoreDuplicates: true });
+    const { data } = await svc.from("season_ratings")
+      .select("points, peak, wins, losses, draws")
+      .eq("season_id", season).eq("player", player).maybeSingle();
+    return data ?? { points: 0, peak: 0, wins: 0, losses: 0, draws: 0 };
+  };
+
   /* Names AND ratings: the mode dial shows who you are about to play, and a
      client can only ever read its OWN profile row (RLS), so anything it should
      know about the opponent has to be handed to it here. */
@@ -70,29 +81,31 @@ Deno.serve(async (req: Request) => {
     const { data: seedRow } = await svc.from("match_seeds").select("seed").eq("match_id", m.id).single();
     const s = seedRow && rebuild(seedRow.seed, moves ?? [], MODE);
     if (!s) return false;
-    // finish block mirrors pvp-claim — keep the two in sync.
-    // Claim the row first (status guard beats a concurrent finish), Elo after.
+    // The arithmetic is core/ladder.ts's settle(), shared with pvp-move and
+    // pvp-claim — the three used to carry a copy each. Claim the row first
+    // (the status guard beats a concurrent finish), pay out after.
     const p1Score = matchTotal(s, ME, MODE), p2Score = matchTotal(s, AI, MODE);
-    const { data: profs } = await svc.from("profiles").select("id, rating").in("id", [m.p1, m.p2]);
-    const r1 = profs!.find((p: any) => p.id === m.p1)!.rating;
-    const r2 = profs!.find((p: any) => p.id === m.p2)!.rating;
-    const p1Result: MatchScore = myIdx === ME ? 0 : 1; // the leaver loses
-    const d1 = eloDelta(r1, r2, p1Result);
-    const d2 = eloDelta(r2, r1, (1 - p1Result) as MatchScore);
+    const p1Result: Score = myIdx === ME ? 0 : 1;    // the leaver loses
+    const season = m.season_id ?? 1;
+    const [l1, l2] = await Promise.all([ladderRow(season, m.p1), ladderRow(season, m.p2)]);
+    const { da: d1, db: d2, a: next1, b: next2 } = settle(l1, l2, p1Result);
     const { data: claimed } = await svc.from("matches").update({
       status: "forfeit", winner: oppId, p1_score: p1Score, p2_score: p2Score,
       p1_rating_delta: d1, p2_rating_delta: d2,
       next_die: null, finished_at: new Date().toISOString(),
     }).eq("id", m.id).eq("status", "active").select("id");
     if (!claimed || claimed.length !== 1) return false;
-    await svc.from("profiles").update({ rating: r1 + d1 }).eq("id", m.p1);
-    await svc.from("profiles").update({ rating: r2 + d2 }).eq("id", m.p2);
+    for (const [player, next] of [[m.p1, next1], [m.p2, next2]] as const) {
+      await svc.from("season_ratings").update(next)
+        .eq("season_id", season).eq("player", player);
+      await svc.from("profiles").update({ rating: next.points }).eq("id", player);
+    }
     return true;
   };
 
   // rejoin an active match if one exists (reconnects, page reloads)
   const { data: active } = await svc.from("matches")
-    .select("id, p1, p2, status, turn, next_die, last_move_at, modifier")
+    .select("id, p1, p2, status, turn, next_die, last_move_at, modifier, season_id")
     .eq("status", "active").or(`p1.eq.${uid},p2.eq.${uid}`).limit(1).maybeSingle();
   if (active && !(await forfeitStalledBotMatch(active))) {
     return json({ status: "matched", rejoined: true, match: active,
@@ -103,6 +116,12 @@ Deno.serve(async (req: Request) => {
   await svc.from("matchmaking_queue").delete()
     .lt("created_at", new Date(Date.now() - QUEUE_STALE_MS).toISOString());
 
+  /* Every match is stamped with the season it began in. A match must never
+     settle against a ladder it did not start on — that is the same rule the
+     cutover applied to the games that were live when the scale changed. */
+  const { data: seasonNow } = await svc.rpc("current_season");
+  const season = (seasonNow as number) ?? 1;
+
   const startMatch = async (p1: string, p2: string) => {
     const seed = newSeed();
     // the wheel spins server-side: the modifier is a deterministic draw from
@@ -111,8 +130,8 @@ Deno.serve(async (req: Request) => {
     const spec = pickMode(seed);
     const firstDie = spec.mode === LIMITED ? poolSequence(seed)[0] : diceStream(seed)();
     const { data: match, error } = await svc.from("matches")
-      .insert({ p1, p2, next_die: firstDie, modifier: spec.id })
-      .select("id, p1, p2, status, turn, next_die, last_move_at, modifier").single();
+      .insert({ p1, p2, next_die: firstDie, modifier: spec.id, season_id: season })
+      .select("id, p1, p2, status, turn, next_die, last_move_at, modifier, season_id").single();
     if (error || !match) return null;
     const { error: seedErr } = await svc.from("match_seeds").insert({ match_id: match.id, seed });
     if (seedErr) { await svc.from("matches").delete().eq("id", match.id); return null; }
@@ -120,8 +139,15 @@ Deno.serve(async (req: Request) => {
     return match;
   };
 
+  /* profiles.rating is the mirror of this season's ladder points, so it starts
+     at 0 like everything else — NOT at 1000, which was the old Elo's centre. */
   const { data: myProf } = await svc.from("profiles").select("rating").eq("id", uid).single();
-  const myR = myProf?.rating ?? 1000;
+  const myR = myProf?.rating ?? 0;
+  /* How wide to look for an opponent: tight when the neighbourhood is crowded,
+     open when it is empty (docs/LADDER.md §4). A brand-new player at 0 points
+     has nobody beside them on day one, so a fixed window would strand them. */
+  const { data: nearRaw } = await svc.rpc("players_near", { p: uid, band: 150 * SCALE });
+  const BAND = matchBand(Number(nearRaw ?? 0));
 
   // try to pair with the longest-waiting other human
   const { data: partner } = await svc.from("matchmaking_queue")
@@ -135,7 +161,7 @@ Deno.serve(async (req: Request) => {
       // handicap: the LOWER-rated player takes the first move — the small
       // first-move edge works as an equalizer. Ties go to the longer wait.
       const { data: theirProf } = await svc.from("profiles").select("rating").eq("id", partner.player_id).single();
-      const theirR = theirProf?.rating ?? 1000;
+      const theirR = theirProf?.rating ?? 0;
       const first = myR < theirR ? uid : partner.player_id;
       const second = first === uid ? partner.player_id : uid;
       const match = await startMatch(first, second);
@@ -158,14 +184,16 @@ Deno.serve(async (req: Request) => {
     // fresh bot is minted at the human's rating, randomly a bit stronger or
     // weaker, so the ladder's edges always have sparring partners.
     free.sort((a: any, b: any) => Math.abs(a.rating - myR) - Math.abs(b.rating - myR));
-    const inRange = free.filter((b: any) => Math.abs(b.rating - myR) <= 150);
+    const inRange = free.filter((b: any) => Math.abs(b.rating - myR) <= BAND);
     let bot: string | null = null;
     if (inRange.length) {
       const pick = inRange.slice(0, 3);
       bot = pick[Math.floor(Math.random() * pick.length)].id;
     } else {
-      const off = (40 + Math.floor(Math.random() * 101)) * (Math.random() < 0.5 ? -1 : 1);
-      const { data: minted } = await svc.rpc("mint_bot", { target_rating: Math.max(150, myR + off) });
+      // offsets scale with the points, and the floor is 0 — the bottom of the
+      // ladder is where new players live, so a bot must be able to stand there
+      const off = (40 + Math.floor(Math.random() * 101)) * SCALE * (Math.random() < 0.5 ? -1 : 1);
+      const { data: minted } = await svc.rpc("mint_bot", { target_rating: Math.max(0, myR + off) });
       if (minted) bot = minted as string;
       else if (free.length) bot = free[0].id;   // mint failed: nearest bot beats no game
     }

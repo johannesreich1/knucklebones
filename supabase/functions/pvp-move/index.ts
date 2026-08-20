@@ -6,7 +6,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { AI, ME, BOUNTY, isFull, boardTotalMode, legalCols, applyMove, type Player, type Mode } from "./core/rules.ts";
 import { rebuild, matchTotal, type MatchState } from "./core/match.ts";
-import { eloDelta, type MatchScore } from "./core/elo.ts";
+import { settle, botShape, type Score } from "./core/ladder.ts";
 import { searchRoot, setRiskW, getRiskW } from "./core/ai.ts";
 import { modeById } from "./core/modes.ts";
 
@@ -17,7 +17,7 @@ const CORS = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...CORS } });
 
-const MATCH_COLS = "id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at, modifier";
+const MATCH_COLS = "id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at, modifier, season_id";
 
 /* How long a player's turn may sit untouched before the OTHER player may ask
    the server to place for them. The turn clock is 10s and an honest client
@@ -35,18 +35,32 @@ async function loadState(svc: SupabaseClient, matchId: string, mode: Mode): Prom
   return rebuild(seedRow.seed, moves ?? [], mode);
 }
 
-/* end of match: scores, winner, Elo for both sides (bots included — their
-   hidden rating drifting toward true strength improves future pairings) */
+/* A player's row on the season ladder, created at zero the first time they are
+   paired. Season 1 starts empty by design (docs/LADDER.md §6): a row appearing
+   here is what "entering the ladder" means. */
+async function ladderRow(svc: SupabaseClient, season: number, player: string) {
+  await svc.from("season_ratings")
+    .upsert({ season_id: season, player }, { onConflict: "season_id,player", ignoreDuplicates: true });
+  const { data } = await svc.from("season_ratings")
+    .select("points, peak, wins, losses, draws")
+    .eq("season_id", season).eq("player", player).maybeSingle();
+  return data ?? { points: 0, peak: 0, wins: 0, losses: 0, draws: 0 };
+}
+
+/* end of match: scores, winner, and the ladder for both sides (bots included —
+   their points drifting toward true strength improves future pairings).
+   The points come from core/ladder.ts, so the client, the gate and this
+   function cannot disagree about what a match was worth. */
 async function finish(svc: SupabaseClient, match: any, s: MatchState, mode: Mode, status: "done" | "forfeit", forfeitWinner?: Player) {
   const p1Score = matchTotal(s, ME, mode), p2Score = matchTotal(s, AI, mode);
-  const p1Result: MatchScore = status === "forfeit"
+  const p1Result: Score = status === "forfeit"
     ? (forfeitWinner === ME ? 1 : 0)
     : (p1Score > p2Score ? 1 : p1Score < p2Score ? 0 : 0.5);
-  const { data: profs } = await svc.from("profiles").select("id, rating").in("id", [match.p1, match.p2]);
-  const r1 = profs!.find((p: any) => p.id === match.p1)!.rating;
-  const r2 = profs!.find((p: any) => p.id === match.p2)!.rating;
-  const d1 = eloDelta(r1, r2, p1Result);
-  const d2 = eloDelta(r2, r1, (1 - p1Result) as MatchScore);
+  const season = match.season_id ?? 1;
+  const [l1, l2] = await Promise.all([
+    ladderRow(svc, season, match.p1), ladderRow(svc, season, match.p2),
+  ]);
+  const { da: d1, db: d2, a: next1, b: next2 } = settle(l1, l2, p1Result);
   const winner = p1Result === 1 ? match.p1 : p1Result === 0 ? match.p2 : null;
   // claim the row FIRST (status guard): only the winner of this update pays
   // Elo, so a racing finisher (claim / lazy forfeit) can never double-pay —
@@ -60,8 +74,13 @@ async function finish(svc: SupabaseClient, match: any, s: MatchState, mode: Mode
     const { data: cur } = await svc.from("matches").select(MATCH_COLS).eq("id", match.id).single();
     return cur;   // someone else finished it — their numbers stand
   }
-  await svc.from("profiles").update({ rating: r1 + d1 }).eq("id", match.p1);
-  await svc.from("profiles").update({ rating: r2 + d2 }).eq("id", match.p2);
+  /* the ladder is the truth; profiles.rating is a MIRROR of the current
+     season, kept so everything already reading it survives untouched */
+  for (const [player, next] of [[match.p1, next1], [match.p2, next2]] as const) {
+    await svc.from("season_ratings").update(next)
+      .eq("season_id", season).eq("player", player);
+    await svc.from("profiles").update({ rating: next.points }).eq("id", player);
+  }
   return claimed[0];
 }
 
@@ -134,34 +153,32 @@ Deno.serve(async (req: Request) => {
   if (!auto && oppProf?.is_bot && !s.over) {
     const botIdx = (1 - myIdx) as Player;  // vs a human p1, the bot is always index 0
     const botDie = s.nextDie;
-    // Dynamic sparring: the bot's strength follows the HUMAN's rating, read at
-    // move time — softness ramps in continuously, no cliffs, and the bot the
-    // player meets at 1100 is a different animal from the one at 900.
+    // Dynamic sparring, keyed to the player's SHARE of the population rather
+    // than to a rating number (docs/LADDER.md §4). This used to read the
+    // literals 820 / 1080 / 1150 off profiles.rating, which worked only while
+    // the rating was a centred Elo. The new ladder climbs for anyone who keeps
+    // playing, so absolute thresholds quietly stop meaning anything within a
+    // season — and they would have to be re-tuned after every reset. A
+    // percentile does not, and it survives a season rollover for free.
     //
-    // Retuned 2026-08-18 (player report: "too hard around 950", and the
-    // measurements agreed). Against a fixed depth-2 opponent, 50% is an even
-    // match and 81% is playing a coin-flipper; the old ramp left rating 950 at
-    // ~58%, i.e. a quarter of the way from even to easy, because it still ran
-    // a depth-2 search WITH a sense of danger there. Three levers, in the order
-    // they matter:
-    //   · risk sense is the biggest one — it now fades IN over 970..1080
-    //     rather than being on from the start (a bot blind to what you can
-    //     destroy is beatable while still looking sensible),
-    //   · the search stays SHORT-SIGHTED (depth 1) through the whole ramp,
-    //     which reads as a careless player rather than a broken one,
-    //   · a plain slip on top, ramping to a coin-flip move at the very bottom.
-    // The middle of the ladder is sparring; the top is still a real fight.
-    const { data: me } = await svc.from("profiles").select("rating").eq("id", user.id).single();
-    const hr = me?.rating ?? 1000;
-    const soft = Math.min(1, Math.max(0, (1080 - hr) / 260));   // 1 at ≤820 → 0 at ≥1080
-    const depth = soft > 0.2 ? 1 : hr >= 1150 ? 3 : 2;
-    const w = getRiskW(); setRiskW(1.2 * Math.max(0, 1 - soft * 2.4));
+    // The three levers behind it are unchanged, and so is what they buy:
+    //   · risk sense ramps IN rather than being on from the start — a bot
+    //     blind to what you can destroy is beatable while still looking
+    //     sensible,
+    //   · the search stays short-sighted low down, which reads as a careless
+    //     player rather than a broken one,
+    //   · a plain slip on top, up to a coin-flip move at the very bottom.
+    // A brand-new player sits at 0 points in the bottom percentile and meets
+    // something genuinely simple, which is the point of starting at zero.
+    const { data: pctRaw } = await svc.rpc("player_percentile", { p: user.id });
+    const shape = botShape(Number(pctRaw ?? 0));
+    const w = getRiskW(); setRiskW(1.2 * shape.risk);
     let botCol: number;
-    if (soft > 0 && Math.random() < soft * 0.5) {
+    if (shape.slip > 0 && Math.random() < shape.slip) {
       const lg = legalCols(s.st[botIdx]);
       botCol = lg[Math.floor(Math.random() * lg.length)];
     } else {
-      botCol = searchRoot(s.st, botIdx, botDie, depth, MODE).c;
+      botCol = searchRoot(s.st, botIdx, botDie, shape.depth, MODE).c;
     }
     setRiskW(w);
     const { error: botErr } = await svc.from("match_moves")
