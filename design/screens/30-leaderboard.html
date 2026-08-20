@@ -1,32 +1,30 @@
-<!-- meta name="Leaderboard" group="3 · Ladder & account" subtitle="Elo ladder, top three lifted, your row glows cyan" width=412 height=920 links="Home" -->
+<!-- meta name="Leaderboard" group="3 · Ladder & account" subtitle="Elo ladder, top three lifted, your row glows cyan — and every row states BOTH sides of the record" width=412 height=920 links="Home" -->
 <style>
-  /* .shead is the app's shared header (src/styles/main.css) — card adds spacing only */
+  /* The rows are the app's own: #ovOnline.listview > .lb > .row from
+     online.css, reached by wearing that ancestor chain rather than by copying
+     the eight rules out of it — this card used to carry a .lrow that was a
+     verbatim second copy. The record itself comes from the app's formatter
+     (the score token → ui/record.ts), which is what the ladder, the HUD and
+     the account card all say now. Glue only below. */
   .shead{margin-bottom:10px}
   .lbh{margin:6px 0 12px;text-align:center}
   .lbh .lbl{text-align:center}
-  .ladder{display:flex;flex-direction:column;gap:5px;width:100%;max-width:320px;margin:0 auto}
-  .lrow{display:flex;align-items:center;gap:10px;font-size:13px;padding:9px 12px;border-radius:12px;
-    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
-  .lrow .rank{color:var(--dim);min-width:22px;text-align:right;font-weight:800}
-  .lrow .nm{flex:1;font-weight:800;letter-spacing:.04em}
-  .lrow .ws{color:var(--dim);font-size:10.5px}
-  .lrow .rt{color:var(--gold);font-weight:900}
-  .lrow.top .rank{color:var(--gold);text-shadow:0 0 10px rgba(255,209,102,.6)}
-  .lrow.top{background:rgba(255,209,102,.05);border-color:rgba(255,209,102,.18)}
-  .lrow.me{background:rgba(40,232,255,.07);border-color:rgba(40,232,255,.35)}
-  .lrow.me .nm{color:var(--cy)}
+  #ovOnline{display:flex;flex-direction:column;width:100%}
+  #ovOnline.listview .lb{padding:0;max-width:320px;margin:0 auto;overflow:visible}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
   <div class="shead"><button class="ico">‹</button><span class="ttl">LADDER</span><span class="pad"></span></div>
   <div class="lbh"><div class="lbl">Season 1 · Elo rating</div></div>
-  <div class="ladder">
-    <div class="lrow top"><span class="rank">1</span><span class="nm">NovaBadger512</span><span class="ws">22W/31</span><span class="rt">1204</span></div>
-    <div class="lrow top"><span class="rank">2</span><span class="nm">SwiftViper209</span><span class="ws">18W/27</span><span class="rt">1141</span></div>
-    <div class="lrow top"><span class="rank">3</span><span class="nm">VelvetKnight774</span><span class="ws">14W/20</span><span class="rt">1096</span></div>
-    <div class="lrow me"><span class="rank">4</span><span class="nm">FrostLynx303</span><span class="ws">12W/19</span><span class="rt">1032</span></div>
-    <div class="lrow"><span class="rank">5</span><span class="nm">QuietComet651</span><span class="ws">9W/16</span><span class="rt">1004</span></div>
-    <div class="lrow"><span class="rank">6</span><span class="nm">IronOtter138</span><span class="ws">8W/17</span><span class="rt">981</span></div>
-    <div class="lrow"><span class="rank">7</span><span class="nm">ZestyFalcon437</span><span class="ws">6W/14</span><span class="rt">958</span></div>
-    <div class="lrow"><span class="rank">8</span><span class="nm">RadiantMole920</span><span class="ws">4W/12</span><span class="rt">922</span></div>
+  <div id="ovOnline" class="listview">
+    <div class="lb">
+      <div class="row top"><span class="rank">1</span><span class="nm">NovaBadger512</span><span class="ws">{{score:W:22:L:9}}</span><span class="rt">1204</span></div>
+      <div class="row top"><span class="rank">2</span><span class="nm">SwiftViper209</span><span class="ws">{{score:W:18:L:9}}</span><span class="rt">1141</span></div>
+      <div class="row top"><span class="rank">3</span><span class="nm">VelvetKnight774</span><span class="ws">{{score:W:14:L:6}}</span><span class="rt">1096</span></div>
+      <div class="row me"><span class="rank">4</span><span class="nm">FrostLynx303</span><span class="ws">{{score:W:12:L:7}}</span><span class="rt">1032</span></div>
+      <div class="row"><span class="rank">5</span><span class="nm">QuietComet651</span><span class="ws">{{score:W:9:L:7}}</span><span class="rt">1004</span></div>
+      <div class="row"><span class="rank">6</span><span class="nm">IronOtter138</span><span class="ws">{{score:W:8:L:9}}</span><span class="rt">981</span></div>
+      <div class="row"><span class="rank">7</span><span class="nm">ZestyFalcon437</span><span class="ws">{{score:W:6:L:8}}</span><span class="rt">958</span></div>
+      <div class="row"><span class="rank">8</span><span class="nm">RadiantMole920</span><span class="ws">{{score:W:4:L:8}}</span><span class="rt">922</span></div>
+    </div>
   </div>
 </div></div>
