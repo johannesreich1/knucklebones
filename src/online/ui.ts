@@ -419,7 +419,6 @@ function showFaceoff(r: LeaderboardRow, mine: MySide | null): void {
   const ov = document.createElement('div');
   ov.className = 'faceoff' + (mine ? '' : ' solo');
   ov.innerHTML = `<div class="focard" role="dialog" aria-modal="true" tabindex="-1" aria-label="${esc(r.nickname)}">
-    <button class="ico foclose" aria-label="Close">✕</button>
     <div class="focols dice-static">
       <div class="focol" style="--gc:var(--g-${g.id})">
         <span class="av"></span><span class="fnm">${esc(r.nickname)}</span>
@@ -441,19 +440,24 @@ function showFaceoff(r: LeaderboardRow, mine: MySide | null): void {
     (mine ? `<div class="fogap">${
       r.points === mine.lad.points ? 'Level with you'
         : `<b>${pts(Math.abs(r.points - mine.lad.points))} points</b> between you`}</div>` : '') +
-    '</div>';
+    '<button class="btn foexit">Close</button></div>';
   const close = (): void => { ov.remove(); document.removeEventListener('keydown', onKey); };
   const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') close(); };
   ov.addEventListener('click', (e) => { if (e.target === ov) { Sfx.tap(); close(); } });
-  (ov.querySelector('.foclose') as HTMLButtonElement).addEventListener('click', () => { Sfx.tap(); close(); });
+  (ov.querySelector('.foexit') as HTMLButtonElement).addEventListener('click', () => { Sfx.tap(); close(); });
   document.addEventListener('keydown', onKey);
   document.body.appendChild(ov);
+  // the streak cells carry the loading die until their RPCs answer — the
+  // card paints instantly from row data, so these are its only true waits
+  for (const sel of mine ? ['.fostreak', '.mystreak'] : ['.fostreak']) {
+    (ov.querySelector(sel) as HTMLElement).replaceChildren(loaderDie(16));
+  }
   paintAvatar(ov.querySelector('.focol .av') as HTMLElement, r.avatar, 46);
   if (mine) paintAvatar(ov.querySelector('.focol.you .av') as HTMLElement, mine.avatar, 46);
   (ov.querySelector('.focard') as HTMLElement).focus();
   void playerCard(r.nickname).then((pc) => {
     const el = ov.querySelector('.fostreak');
-    if (el && pc) el.textContent = String(pc.streak);
+    if (el) el.textContent = pc ? String(pc.streak) : '–';   // never leave the die spinning over nothing
   });
   if (mine) {
     void bestStreak().then((s) => {

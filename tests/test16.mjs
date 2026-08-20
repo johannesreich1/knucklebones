@@ -130,8 +130,10 @@ async function visit({ anonymous = 200, attached = false, door = 'chip' }) {
   let faceoff = null;
   if (door === 'board') {
     await page.click('#ovOnline .lb .lrow');
+    // the pending cell holds the loading DIE now (no text), so wait for the
+    // RPC's actual digits rather than for the old '–' placeholder to change
     await page.waitForFunction(() =>
-      document.querySelector('.faceoff .fostreak')?.textContent !== '–', null, { timeout: 15000 });
+      /\d/.test(document.querySelector('.faceoff .fostreak')?.textContent ?? ''), null, { timeout: 15000 });
     faceoff = await page.evaluate(() => {
       const ov = document.querySelector('.faceoff');
       const rc = ov?.querySelector('.focard')?.getBoundingClientRect();
