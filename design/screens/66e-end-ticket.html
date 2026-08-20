@@ -1,0 +1,98 @@
+<!-- meta name="End screen E — Match ticket" group="6b · End screen studies" subtitle="The result as a document both players are ON — and the share action finally has an object" width=412 height=1400 links="Result screen, Matchmaking" -->
+<style>
+  .studio{display:flex;flex-direction:column;gap:14px;width:100%;align-items:center}
+  .pane{position:relative;width:100%;max-width:var(--w-col);min-height:440px;border-radius:20px;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;gap:13px;padding:26px 16px 18px;
+    background:radial-gradient(90% 70% at 20% 6%,rgba(255,47,160,.10),transparent 60%),
+      radial-gradient(90% 70% at 82% 94%,rgba(40,232,255,.09),transparent 60%),
+      radial-gradient(120% 90% at 50% 0%,rgba(255,255,255,.05),transparent 70%),rgba(255,255,255,.02);
+    border:1px solid rgba(255,255,255,.08)}
+  .t{margin:0;font-size:29px;letter-spacing:.2em;font-weight:900;text-align:center;line-height:1.1;
+    background-clip:text;-webkit-background-clip:text;color:transparent;white-space:nowrap}
+  .t.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
+    filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
+  .t.lose{background-image:linear-gradient(100deg,var(--mg),#fff 55%,#ff8a3d);
+    filter:drop-shadow(0 0 26px rgba(255,47,160,.45))}
+  .sub{font-size:10px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:-6px}
+  .av{position:relative;border-radius:11px;display:grid;place-items:center;flex:0 0 auto;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);overflow:hidden}
+  .av .die{--cell:var(--avs);width:var(--avs);height:var(--avs)}
+  .av.sm{--avs:26px;width:36px;height:36px}
+  .acts{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;margin-top:auto}
+  .acts .btn{width:100%;max-width:280px;min-width:0}
+
+  /* the ticket: a printed thing. It records rather than celebrates, which is
+     why its defeat costs nothing — the document is identical, the bold moves. */
+  .ticket{width:100%;border-radius:14px;overflow:hidden;position:relative;
+    background:linear-gradient(180deg,rgba(255,255,255,.075),rgba(255,255,255,.03));
+    border:1px solid rgba(255,255,255,.16);box-shadow:0 16px 34px rgba(0,0,0,.4)}
+  .thead{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;
+    font-size:8px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase;
+    border-bottom:1px solid rgba(255,255,255,.1)}
+  .thead b{color:var(--txt);display:inline-flex;align-items:center;gap:6px}
+  .prow{display:flex;align-items:center;gap:11px;padding:11px 13px}
+  .prow .nm{flex:1;min-width:0;font-size:12px;font-weight:900;letter-spacing:.05em;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .prow .sc{font-size:21px;font-weight:900;font-variant-numeric:tabular-nums}
+  .prow.me .nm{color:var(--cy)} .prow.me .sc{color:var(--cy)}
+  .prow.foe .nm{color:var(--mg)} .prow.foe .sc{color:var(--mg)}
+  .prow.took{background:rgba(255,209,102,.07);box-shadow:inset 3px 0 0 var(--gold)}
+  .prow.took .sc{text-shadow:0 0 12px currentColor}
+  .prow.gave{opacity:.55}
+  .wtag{font-size:7px;letter-spacing:.26em;font-weight:900;color:#0a0410;background:var(--gold);
+    border-radius:99px;padding:2px 7px;text-transform:uppercase}
+  .perf{position:relative;border-top:1px dashed rgba(255,255,255,.28);margin:0 -1px}
+  .perf::before,.perf::after{content:"";position:absolute;top:-7px;width:14px;height:14px;border-radius:50%;
+    background:var(--bg);border:1px solid rgba(255,255,255,.16)}
+  .perf::before{left:-8px} .perf::after{right:-8px}
+  .tfoot{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;
+    font-size:8.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+  .tfoot b{font-size:12px;letter-spacing:.1em;color:var(--gold)}
+  .tfoot b.down{color:#ff6d86}
+</style>
+<div class="studio">
+  <div class="cap2">Variant E · Match ticket — victory</div>
+  <div class="pane">
+    <h2 class="t win">VICTORY</h2>
+    <div class="sub">You out-rolled EmberCrow896</div>
+    <div class="ticket">
+      <div class="thead"><b>{{mico:classic:12}} Classic · Ranked</b><span>Aug 20 · 21:47</span></div>
+      <div class="prow me took"><span class="av sm">{{die:5:p1:26}}</span>
+        <span class="nm">You</span><span class="wtag">Winner</span><span class="sc">47</span></div>
+      <div class="prow foe gave"><span class="av sm">{{die:3:p2:26}}</span>
+        <span class="nm">EmberCrow896</span><span class="sc">30</span></div>
+      <div class="perf"></div>
+      <div class="tfoot"><b>+14 points</b><span>You now 706 · Ladder #6</span></div>
+    </div>
+    <div class="acts"><button class="btn primary">Next duel</button>
+      <button class="linkbtn">Share result</button>
+      <button class="linkbtn">Home</button></div>
+  </div>
+
+  <div class="cap2">Defeat — the same document, the bold moves one row</div>
+  <div class="pane">
+    <h2 class="t lose">DEFEAT</h2>
+    <div class="sub">EmberCrow896 out-rolls you</div>
+    <div class="ticket">
+      <div class="thead"><b>{{mico:classic:12}} Classic · Ranked</b><span>Aug 20 · 21:47</span></div>
+      <div class="prow foe took"><span class="av sm">{{die:3:p2:26}}</span>
+        <span class="nm">EmberCrow896</span><span class="wtag">Winner</span><span class="sc">38</span></div>
+      <div class="prow me gave"><span class="av sm">{{die:5:p1:26}}</span>
+        <span class="nm">You</span><span class="sc">21</span></div>
+      <div class="perf"></div>
+      <div class="tfoot"><b class="down">−9 points</b><span>You now 683 · Ladder #7</span></div>
+    </div>
+    <div class="acts"><button class="btn primary">Next duel</button>
+      <button class="linkbtn">Share result</button>
+      <button class="linkbtn">Home</button></div>
+  </div>
+
+  <div class="note"><b>The result becomes a thing.</b> A ticket doesn't gloat, it records:
+    mode, date, both players with their dice, the winner's row lit, the points that moved
+    on the stub below the perforation. That neutrality makes it the gentlest defeat in the
+    set — the document is identical, only the bold moves — and the natural shape for a
+    DRAW: no lit row, no stub delta. Above all it gives <b>Share result</b> an object shaped
+    like itself instead of a sentence; render the ticket to an image and the share sheet is
+    suddenly worth tapping. Needs mode and finish time — both already on the client — and
+    the winner's row ordering rule: winner on top, always.</div>
+</div>

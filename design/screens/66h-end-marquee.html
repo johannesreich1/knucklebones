@@ -1,0 +1,89 @@
+<!-- meta name="End screen H — Marquee depth" group="6b · End screen studies" subtitle="A full-bleed poster where focus is the verdict: winner sharp in front, loser large but behind" width=412 height=1400 links="Result screen, Matchmaking" -->
+<style>
+  .studio{display:flex;flex-direction:column;gap:14px;width:100%;align-items:center}
+  .pane{position:relative;width:100%;max-width:var(--w-col);min-height:440px;border-radius:20px;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;gap:13px;padding:24px 16px 18px;
+    background:radial-gradient(120% 90% at 50% 0%,rgba(255,255,255,.05),transparent 70%),rgba(255,255,255,.02);
+    border:1px solid rgba(255,255,255,.08)}
+  .kick{font-size:10px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+  .av{position:relative;border-radius:15px;display:grid;place-items:center;flex:0 0 auto;
+    background:rgba(10,8,26,.6);border:1px solid rgba(255,255,255,.14);overflow:hidden}
+  .av .die{--cell:var(--avs);width:var(--avs);height:var(--avs)}
+  .av.hero{--avs:84px;width:108px;height:108px;border-radius:24px}
+  .pchip{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:900;color:#0a0410;
+    background:var(--gold);border-radius:99px;padding:6px 14px;box-shadow:0 0 22px rgba(255,209,102,.5)}
+  .pchip small{font-weight:800;font-size:8.5px;letter-spacing:.18em}
+  .pchip.down{background:#e23b55;color:#fff;box-shadow:0 0 22px rgba(226,59,85,.4)}
+  .acts{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;margin-top:auto}
+  .acts .btn{width:100%;max-width:280px;min-width:0}
+
+  /* the marquee: the app's one full-bleed moment. Depth carries the verdict —
+     the loser stays LARGE (a worthy opponent), they just leave the focal plane. */
+  .mq{position:relative;width:calc(100% + 32px);margin:-4px -16px 0;height:212px;flex:0 0 auto;
+    background:linear-gradient(115deg,rgba(40,232,255,.12),rgba(126,60,255,.08) 55%,rgba(255,47,160,.14));
+    border-top:1px solid rgba(255,255,255,.1);border-bottom:1px solid rgba(255,255,255,.1);
+    overflow:hidden}
+  .mq::after{content:"";position:absolute;inset:0;
+    background:radial-gradient(90% 120% at 18% 118%,rgba(0,0,0,.6),transparent 65%)}
+  .mq .back{position:absolute;opacity:.34;filter:blur(2.5px) saturate(.5)}
+  .mq .front{position:absolute;z-index:1}
+  .mq .wtag{position:absolute;z-index:2;font-size:7.5px;letter-spacing:.28em;font-weight:900;
+    color:#0a0410;background:var(--gold);border-radius:99px;padding:2.5px 9px;text-transform:uppercase;
+    box-shadow:0 4px 14px rgba(0,0,0,.45)}
+  .mq .mnm{position:absolute;z-index:2;bottom:12px;margin:0;font-size:30px;font-weight:900;
+    letter-spacing:.06em;line-height:1;background-clip:text;-webkit-background-clip:text;color:transparent;
+    max-width:82%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .mq .mnm.long{font-size:26px}
+  .mq .mnm.win{background-image:linear-gradient(100deg,#28e8ff,#fff 60%,#8dffcf);
+    filter:drop-shadow(0 0 20px rgba(40,232,255,.5))}
+  .mq .mnm.lose{background-image:linear-gradient(100deg,var(--mg),#fff 60%,#ff8a3d);
+    filter:drop-shadow(0 0 20px rgba(255,47,160,.5))}
+  .mq .msc{position:absolute;z-index:2;bottom:14px;font-size:20px;font-weight:900;color:var(--gold);
+    text-shadow:0 0 16px rgba(255,209,102,.6)}
+  .mq .mln{position:absolute;z-index:2;font-size:8.5px;letter-spacing:.2em;color:var(--dim);
+    text-transform:uppercase;white-space:nowrap}
+</style>
+<div class="studio">
+  <div class="cap2">Variant H · Marquee depth — victory</div>
+  <div class="pane">
+    <div class="kick">Victory</div>
+    <div class="mq">
+      <span class="back" style="right:-30px;top:2px;transform:rotate(10deg)">{{die:3:p2:118}}</span>
+      <span class="front" style="left:22px;top:22px;transform:rotate(-5deg)">
+        <span class="av hero" style="box-shadow:0 0 40px rgba(40,232,255,.35),0 18px 34px rgba(0,0,0,.5)">{{die:5:p1:84}}</span></span>
+      <span class="wtag" style="left:26px;top:12px">Winner</span>
+      <h2 class="mnm win" style="left:22px">YOU</h2>
+      <span class="msc" style="left:118px">47</span>
+      <span class="mln" style="right:14px;bottom:18px">EmberCrow896 · 30</span>
+    </div>
+    <div class="pchip">+14 <small>POINTS · 706</small></div>
+    <div class="acts"><button class="btn primary">Next duel</button>
+      <button class="linkbtn">Home</button></div>
+  </div>
+
+  <div class="cap2">Defeat — the composition mirrors, the focus is theirs</div>
+  <div class="pane">
+    <div class="kick">Defeat</div>
+    <div class="mq">
+      <span class="back" style="left:-30px;top:2px;transform:rotate(-10deg)">{{die:5:p1:118}}</span>
+      <span class="front" style="right:22px;top:22px;transform:rotate(5deg)">
+        <span class="av hero" style="box-shadow:0 0 40px rgba(255,47,160,.35),0 18px 34px rgba(0,0,0,.5)">{{die:3:p2:84}}</span></span>
+      <span class="wtag" style="right:26px;top:12px">Winner</span>
+      <h2 class="mnm lose long" style="right:22px">EMBERCROW896</h2>
+      <span class="msc" style="right:26px;bottom:42px">38</span>
+      <span class="mln" style="left:14px;top:16px">You · 21</span>
+    </div>
+    <div class="pchip down">−9 <small>POINTS · 683</small></div>
+    <div class="acts"><button class="btn primary">Next duel</button>
+      <button class="linkbtn">Home</button></div>
+  </div>
+
+  <div class="note"><b>Cinema's oldest trick.</b> Focus and occlusion carry the verdict:
+    the winner is sharp, lit and in front; the loser stays LARGE — a worthy opponent, not a
+    shrunken one — but drifts behind the focal plane, cropped by the edge like a fighter
+    leaving frame. It is the only variant built on the app's one full-bleed idiom (the
+    banner), so the finish feels like a poster of the match rather than a dialog about it.
+    The blurred die reads beautifully today; when photo avatars arrive this becomes the
+    most portrait-hungry layout of the eight — and the name IS the headline, so the
+    ellipsis rule earns its keep. Everything shown is already on the client.</div>
+</div>

@@ -1,0 +1,85 @@
+<!-- meta name="End screen C — Winner's ring" group="6b · End screen studies" subtitle="The trophy is a face: one crowned avatar, the winner's name as the headline" width=412 height=1400 links="Result screen, Matchmaking" -->
+<style>
+  .studio{display:flex;flex-direction:column;gap:14px;width:100%;align-items:center}
+  .pane{position:relative;width:100%;max-width:var(--w-col);min-height:440px;border-radius:20px;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;gap:13px;padding:26px 16px 18px;
+    background:radial-gradient(90% 70% at 20% 6%,rgba(255,47,160,.10),transparent 60%),
+      radial-gradient(90% 70% at 82% 94%,rgba(40,232,255,.09),transparent 60%),
+      radial-gradient(120% 90% at 50% 0%,rgba(255,255,255,.05),transparent 70%),rgba(255,255,255,.02);
+    border:1px solid rgba(255,255,255,.08)}
+  .kick{font-size:10px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+  .hn{margin:0;font-size:25px;letter-spacing:.1em;font-weight:900;text-align:center;line-height:1.1;
+    background-clip:text;-webkit-background-clip:text;color:transparent;max-width:100%;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hn.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
+    filter:drop-shadow(0 0 24px rgba(40,232,255,.45))}
+  .hn.lose{background-image:linear-gradient(100deg,var(--mg),#fff 55%,#ff8a3d);
+    filter:drop-shadow(0 0 24px rgba(255,47,160,.45))}
+  .av{position:relative;border-radius:15px;display:grid;place-items:center;flex:0 0 auto;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);overflow:hidden}
+  .av .die{--cell:var(--avs);width:var(--avs);height:var(--avs)}
+  .av.sm{--avs:24px;width:32px;height:32px;border-radius:9px}
+  .pchip{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:900;color:#0a0410;
+    background:var(--gold);border-radius:99px;padding:6px 14px;box-shadow:0 0 22px rgba(255,209,102,.5)}
+  .pchip small{font-weight:800;font-size:8.5px;letter-spacing:.18em}
+  .pchip.down{background:#e23b55;color:#fff;box-shadow:0 0 22px rgba(226,59,85,.4)}
+  .acts{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;margin-top:auto}
+  .acts .btn{width:100%;max-width:280px;min-width:0}
+
+  /* the ring: the award object. It is gold in BOTH panes — the award has one
+     colour; who wears it is the news. */
+  .crown{position:relative;width:118px;height:118px;border-radius:50%;padding:5px;margin-top:2px;
+    background:conic-gradient(from 210deg,var(--gold),#fff3c4 25%,var(--gold) 55%,#b98a1f 80%,var(--gold));
+    box-shadow:0 0 38px rgba(255,209,102,.35),0 14px 30px rgba(0,0,0,.45)}
+  .crown .in{width:100%;height:100%;border-radius:50%;background:#0c0a20;display:grid;place-items:center}
+  .crown .lb{position:absolute;left:50%;bottom:-9px;translate:-50%;font-size:8px;letter-spacing:.3em;
+    font-weight:900;color:#0a0410;background:var(--gold);border-radius:99px;padding:3px 10px;
+    text-transform:uppercase;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+  .scline{display:flex;align-items:baseline;gap:9px;font-weight:900}
+  .scline .w{font-size:25px} .scline .l{font-size:15px;opacity:.62} .scline i{font-size:10px;color:var(--dim);font-style:normal;letter-spacing:.2em}
+  .scline .you{color:var(--cy)} .scline .them{color:var(--mg)}
+  .beaten{display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:800;letter-spacing:.06em;
+    color:var(--dim);border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:5px 12px 5px 6px;
+    background:rgba(255,255,255,.03)}
+  .beaten b{font-weight:900}
+  .beaten.me b{color:var(--cy)} .beaten.foe b{color:var(--mg)}
+  .beaten .fell{font-size:8px;letter-spacing:.22em;text-transform:uppercase;opacity:.75}
+</style>
+<div class="studio">
+  <div class="cap2">Variant C · Winner's ring — victory</div>
+  <div class="pane">
+    <div class="kick">Victory</div>
+    <div class="crown"><span class="in"><span class="av" style="border:none;background:none">{{die:5:p1:74}}</span></span>
+      <span class="lb">Winner</span></div>
+    <h2 class="hn win">YOU</h2>
+    <div class="scline"><span class="w you">47</span><i>OVER</i><span class="l them">30</span></div>
+    <div class="beaten foe"><span class="av sm">{{die:3:p2:24}}</span>
+      <span class="fell">defeated</span><b>EmberCrow896</b></div>
+    <div class="pchip">+14 <small>POINTS · 706</small></div>
+    <div class="acts"><button class="btn primary">Next duel</button>
+      <button class="linkbtn">Home</button></div>
+  </div>
+
+  <div class="cap2">Defeat — the ring stays gold, but now it frames them</div>
+  <div class="pane">
+    <div class="kick">Defeat</div>
+    <div class="crown"><span class="in"><span class="av" style="border:none;background:none">{{die:3:p2:74}}</span></span>
+      <span class="lb">Winner</span></div>
+    <h2 class="hn lose">EMBERCROW896</h2>
+    <div class="scline"><span class="w them">38</span><i>OVER</i><span class="l you">21</span></div>
+    <div class="beaten me"><span class="av sm">{{die:5:p1:24}}</span>
+      <span class="fell">defeated</span><b>You</b></div>
+    <div class="pchip down">−9 <small>POINTS · 683</small></div>
+    <div class="acts"><button class="btn primary">Next duel</button>
+      <button class="linkbtn">Home</button></div>
+  </div>
+
+  <div class="note"><b>The loudest celebration — and the frankest defeat.</b> The verdict
+    demotes to a kicker and the winner's NAME takes the headline gradient: the screen
+    celebrates a person, not a word. The ring is the award and awards have one colour, so
+    in defeat it is your opponent wearing gold on your screen — that is either this
+    variant's flaw or its whole engine, because nothing fuels "Next duel" like seeing
+    exactly whose face is in the ring. Fits guests today (the die IS the face) and gets
+    strictly better when uploaded avatars arrive. Long nicknames put the headline's
+    ellipsis to work.</div>
+</div>

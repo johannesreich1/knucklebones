@@ -1,0 +1,107 @@
+<!-- meta name="End screen G — The exchange" group="6b · End screen studies" subtitle="Two ledger rows and the points visibly crossing between them — a match is a transfer" width=412 height=1400 links="Result screen, Leaderboard" -->
+<style>
+  .studio{display:flex;flex-direction:column;gap:14px;width:100%;align-items:center}
+  .pane{position:relative;width:100%;max-width:var(--w-col);min-height:440px;border-radius:20px;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;gap:13px;padding:26px 16px 18px;
+    background:radial-gradient(90% 70% at 20% 6%,rgba(255,47,160,.10),transparent 60%),
+      radial-gradient(90% 70% at 82% 94%,rgba(40,232,255,.09),transparent 60%),
+      radial-gradient(120% 90% at 50% 0%,rgba(255,255,255,.05),transparent 70%),rgba(255,255,255,.02);
+    border:1px solid rgba(255,255,255,.08)}
+  .t{margin:0;font-size:29px;letter-spacing:.2em;font-weight:900;text-align:center;line-height:1.1;
+    background-clip:text;-webkit-background-clip:text;color:transparent;white-space:nowrap}
+  .t.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
+    filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
+  .t.lose{background-image:linear-gradient(100deg,var(--mg),#fff 55%,#ff8a3d);
+    filter:drop-shadow(0 0 26px rgba(255,47,160,.45))}
+  .sub{font-size:10px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:-6px}
+  .av{position:relative;border-radius:11px;display:grid;place-items:center;flex:0 0 auto;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);overflow:hidden}
+  .av .die{--cell:var(--avs);width:var(--avs);height:var(--avs)}
+  .av.sm{--avs:28px;width:38px;height:38px}
+  .acts{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;margin-top:auto}
+  .acts .btn{width:100%;max-width:280px;min-width:0}
+
+  /* the ledger: the board's row idiom, two rows deep, with the settlement
+     travelling the channel between the totals. Winner on top, always. */
+  .ledger{width:100%;display:flex;flex-direction:column}
+  .xrow{display:flex;align-items:center;gap:10px;padding:11px 12px;border-radius:14px;
+    border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.03)}
+  .xrow .who{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .xrow .nm{font-size:12px;font-weight:900;letter-spacing:.05em;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .xrow .gt{font-size:7.5px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
+  .xrow .tot{display:flex;flex-direction:column;align-items:flex-end;gap:1px}
+  .xrow .pv{font-size:19px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--txt)}
+  .xrow .dv{font-size:9px;font-weight:900;letter-spacing:.12em}
+  .xrow.me .nm{color:var(--cy)} .xrow.foe .nm{color:var(--mg)}
+  .xrow.won{border-color:rgba(255,209,102,.35);background:rgba(255,209,102,.05);
+    box-shadow:0 0 24px rgba(255,209,102,.08)}
+  .xrow.won .dv{color:var(--gold)}
+  .xrow.won .pv{text-shadow:0 0 12px rgba(255,209,102,.45)}
+  .xrow.lost{opacity:.6}
+  .xrow.lost .dv{color:#ff6d86}
+  .msc{font-size:9px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase}
+  .msc b{color:var(--txt)}
+  /* the settlement crosses the stream bottom→top and RESTS docked at the
+     winner's total (design cards are read as stills — the loop departs late). */
+  .stream{position:relative;height:40px;width:100%}
+  .stream i{position:absolute;right:34px;width:0;height:0;border-left:5px solid transparent;
+    border-right:5px solid transparent;border-bottom:6px solid rgba(255,209,102,.4)}
+  .stream i:nth-child(1){top:5px}.stream i:nth-child(2){top:16px;opacity:.7}
+  .stream i:nth-child(3){top:27px;opacity:.4}
+  .mv{position:absolute;right:58px;top:-8px;font-size:10.5px;font-weight:900;color:#0a0410;
+    background:var(--gold);border-radius:99px;padding:2.5px 9px;
+    box-shadow:0 0 16px rgba(255,209,102,.55);animation:settleup 3.6s ease-in-out 1.4s infinite}
+  @keyframes settleup{0%,30%{transform:translateY(0);opacity:1}
+    36%{transform:translateY(0);opacity:0}
+    42%{transform:translateY(38px);opacity:0}
+    50%{transform:translateY(38px);opacity:1}
+    82%,100%{transform:translateY(0);opacity:1}}
+</style>
+<div class="studio">
+  <div class="cap2">Variant G · The exchange — victory</div>
+  <div class="pane">
+    <h2 class="t win">VICTORY</h2>
+    <div class="sub">You out-rolled EmberCrow896</div>
+    <div class="msc">Final <b>47 – 30</b> · Classic</div>
+    <div class="ledger">
+      <div class="xrow me won"><span class="av sm">{{die:5:p1:28}}</span>
+        <span class="who"><span class="nm">You</span><span class="gt">Gold · #6</span></span>
+        <span class="tot"><span class="pv">706</span><span class="dv">+14</span></span></div>
+      <div class="stream"><i></i><i></i><i></i><span class="mv">+14</span></div>
+      <div class="xrow foe lost"><span class="av sm">{{die:3:p2:28}}</span>
+        <span class="who"><span class="nm">EmberCrow896</span><span class="gt">Ivory · #9</span></span>
+        <span class="tot"><span class="pv">995</span><span class="dv">−9</span></span></div>
+    </div>
+    <div class="acts"><button class="btn primary">Next duel</button>
+      <button class="linkbtn">Home</button></div>
+  </div>
+
+  <div class="cap2">Defeat — the winner's row is theirs, the stream feeds it</div>
+  <div class="pane">
+    <h2 class="t lose">DEFEAT</h2>
+    <div class="sub">EmberCrow896 out-rolls you</div>
+    <div class="msc">Final <b>38 – 21</b> · Classic</div>
+    <div class="ledger">
+      <div class="xrow foe won"><span class="av sm">{{die:3:p2:28}}</span>
+        <span class="who"><span class="nm">EmberCrow896</span><span class="gt">Ivory · #9</span></span>
+        <span class="tot"><span class="pv">1,018</span><span class="dv">+14</span></span></div>
+      <div class="stream"><i></i><i></i><i></i><span class="mv">+14</span></div>
+      <div class="xrow me lost"><span class="av sm">{{die:5:p1:28}}</span>
+        <span class="who"><span class="nm">You</span><span class="gt">Gold · #6</span></span>
+        <span class="tot"><span class="pv">683</span><span class="dv">−9</span></span></div>
+    </div>
+    <div class="acts"><button class="btn primary">Next duel</button>
+      <button class="linkbtn">Home</button></div>
+  </div>
+
+  <div class="note"><b>Ranked's truth, stated.</b> A ranked match is a transfer between two
+    ledgers, and today's chip shows only your half of the entry. Here both players are rows —
+    die, name, group, standing — and the settlement visibly crosses the channel and docks at
+    the winner's total. The +14/−9 asymmetry is the ladder's designed kindness (a win pays
+    more than a loss takes) finally VISIBLE instead of buried in LADDER.md. The most
+    informative of the eight and the least sentimental; it treats defeat as bookkeeping,
+    which some players will love and some will find cold. Needs one new fact the client
+    doesn't get today: the opponent's post-match points — one field on pvp-move's
+    settlement response.</div>
+</div>

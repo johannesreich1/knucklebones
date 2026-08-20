@@ -1,0 +1,89 @@
+<!-- meta name="End screen B — Podium" group="6b · End screen studies" subtitle="Two plinths, one taller — the verdict is readable from the silhouette alone" width=412 height=1400 links="Result screen, Matchmaking" -->
+<style>
+  .studio{display:flex;flex-direction:column;gap:14px;width:100%;align-items:center}
+  .pane{position:relative;width:100%;max-width:var(--w-col);min-height:440px;border-radius:20px;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;gap:14px;padding:26px 16px 18px;
+    background:radial-gradient(90% 70% at 20% 6%,rgba(255,47,160,.10),transparent 60%),
+      radial-gradient(90% 70% at 82% 94%,rgba(40,232,255,.09),transparent 60%),
+      radial-gradient(120% 90% at 50% 0%,rgba(255,255,255,.05),transparent 70%),rgba(255,255,255,.02);
+    border:1px solid rgba(255,255,255,.08)}
+  .t{margin:0;font-size:29px;letter-spacing:.2em;font-weight:900;text-align:center;line-height:1.1;
+    background-clip:text;-webkit-background-clip:text;color:transparent;white-space:nowrap}
+  .t.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
+    filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
+  .t.lose{background-image:linear-gradient(100deg,var(--mg),#fff 55%,#ff8a3d);
+    filter:drop-shadow(0 0 26px rgba(255,47,160,.45))}
+  .sub{font-size:10px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:-6px}
+  .av{position:relative;border-radius:15px;display:grid;place-items:center;flex:0 0 auto;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);overflow:hidden}
+  .av .die{--cell:var(--avs);width:var(--avs);height:var(--avs)}
+  .av.big{--avs:52px;width:66px;height:66px}
+  .av.mid{--avs:38px;width:50px;height:50px}
+  .pchip{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:900;color:#0a0410;
+    background:var(--gold);border-radius:99px;padding:6px 14px;box-shadow:0 0 22px rgba(255,209,102,.5)}
+  .pchip small{font-weight:800;font-size:8.5px;letter-spacing:.18em}
+  .pchip.down{background:#e23b55;color:#fff;box-shadow:0 0 22px rgba(226,59,85,.4)}
+  .acts{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;margin-top:auto}
+  .acts .btn{width:100%;max-width:280px;min-width:0}
+
+  /* the podium: elevation is the one pre-attentive signal. The plinth carries
+     name and score as engravings, so the players and their result are one object. */
+  .podium{display:flex;align-items:flex-end;justify-content:center;gap:14px;width:100%;padding-top:12px}
+  .spot{display:flex;flex-direction:column;align-items:center;gap:9px;flex:1;max-width:138px}
+  .base{width:100%;border-radius:12px 12px 8px 8px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:2px;
+    background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,.02) 70%);
+    border:1px solid rgba(255,255,255,.12);border-bottom-color:rgba(255,255,255,.05)}
+  .spot .nm{font-size:10.5px;font-weight:900;letter-spacing:.06em;max-width:92%;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .spot .sc{font-weight:900;line-height:1.1}
+  .spot.me .nm{color:var(--cy)} .spot.me .sc{color:var(--cy)}
+  .spot.foe .nm{color:var(--mg)} .spot.foe .sc{color:var(--mg)}
+  .spot.first .base{height:104px;box-shadow:inset 0 2px 0 rgba(255,209,102,.75),0 0 30px rgba(255,209,102,.14);
+    border-top-color:rgba(255,209,102,.6)}
+  .spot.first .sc{font-size:31px;text-shadow:0 0 14px currentColor}
+  .spot.second .base{height:56px;opacity:.75}
+  .spot.second{opacity:.62;filter:saturate(.45)}
+  .spot.second .sc{font-size:19px}
+  .place{font-size:8px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase}
+  .spot.first .place{color:var(--gold)}
+</style>
+<div class="studio">
+  <div class="cap2">Variant B · Podium — victory</div>
+  <div class="pane">
+    <h2 class="t win">VICTORY</h2>
+    <div class="sub">You out-rolled EmberCrow896</div>
+    <div class="podium">
+      <div class="spot me first"><span class="av big">{{die:5:p1:52}}</span>
+        <div class="base"><span class="place">Winner</span><span class="nm">You</span><span class="sc">47</span></div></div>
+      <div class="spot foe second"><span class="av mid">{{die:3:p2:38}}</span>
+        <div class="base"><span class="nm">EmberCrow896</span><span class="sc">30</span></div></div>
+    </div>
+    <div class="pchip">+14 <small>POINTS · 706</small></div>
+    <div class="acts"><button class="btn primary">Next duel</button>
+      <button class="linkbtn">Home</button></div>
+  </div>
+
+  <div class="cap2">Defeat — the tall plinth is theirs, your seat stays left</div>
+  <div class="pane">
+    <h2 class="t lose">DEFEAT</h2>
+    <div class="sub">EmberCrow896 out-rolls you</div>
+    <div class="podium">
+      <div class="spot me second"><span class="av mid">{{die:5:p1:38}}</span>
+        <div class="base"><span class="nm">You</span><span class="sc">21</span></div></div>
+      <div class="spot foe first"><span class="av big">{{die:3:p2:52}}</span>
+        <div class="base"><span class="place">Winner</span><span class="nm">EmberCrow896</span><span class="sc">38</span></div></div>
+    </div>
+    <div class="pchip down">−9 <small>POINTS · 683</small></div>
+    <div class="acts"><button class="btn primary">Next duel</button>
+      <button class="linkbtn">Home</button></div>
+  </div>
+
+  <div class="note"><b>The only wordless verdict.</b> Height is read before colour and long
+    before text — the outcome lands from the silhouette, which also makes this the screen a
+    spectator or a screenshot understands with zero context. The plinth doubles as the
+    nameplate: player, name and score are one engraved object, not three floating rows.
+    The stern part is deliberate: standing on the low plinth is the honest picture of losing,
+    softened only by keeping your colour and your seat. Costs vertical room — on the smallest
+    stage the plinths and the thumb-zone actions start negotiating.</div>
+</div>

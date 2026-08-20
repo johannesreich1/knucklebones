@@ -1,0 +1,87 @@
+<!-- meta name="End screen D — Split poster" group="6b · End screen studies" subtitle="The board's two sides folded into a poster — the winner's half takes the area" width=412 height=1400 links="Result screen, Matchmaking" -->
+<style>
+  .studio{display:flex;flex-direction:column;gap:14px;width:100%;align-items:center}
+  .pane{position:relative;width:100%;max-width:var(--w-col);min-height:440px;border-radius:20px;overflow:hidden;
+    display:flex;flex-direction:column;align-items:center;gap:14px;padding:26px 16px 18px;
+    background:radial-gradient(120% 90% at 50% 0%,rgba(255,255,255,.05),transparent 70%),rgba(255,255,255,.02);
+    border:1px solid rgba(255,255,255,.08)}
+  .t{margin:0;font-size:29px;letter-spacing:.2em;font-weight:900;text-align:center;line-height:1.1;
+    background-clip:text;-webkit-background-clip:text;color:transparent;white-space:nowrap}
+  .t.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
+    filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
+  .t.lose{background-image:linear-gradient(100deg,var(--mg),#fff 55%,#ff8a3d);
+    filter:drop-shadow(0 0 26px rgba(255,47,160,.45))}
+  .sub{font-size:10px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:-6px}
+  .av{position:relative;border-radius:15px;display:grid;place-items:center;flex:0 0 auto;
+    background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.14);overflow:hidden}
+  .av .die{--cell:var(--avs);width:var(--avs);height:var(--avs)}
+  .av.mid{--avs:40px;width:52px;height:52px}
+  .pchip{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:900;color:#0a0410;
+    background:var(--gold);border-radius:99px;padding:6px 14px;box-shadow:0 0 22px rgba(255,209,102,.5)}
+  .pchip small{font-weight:800;font-size:8.5px;letter-spacing:.18em}
+  .pchip.down{background:#e23b55;color:#fff;box-shadow:0 0 22px rgba(226,59,85,.4)}
+  .acts{display:flex;flex-direction:column;align-items:center;gap:2px;width:100%;margin-top:auto}
+  .acts .btn{width:100%;max-width:280px;min-width:0}
+
+  /* the poster: your half is cyan, theirs magenta — the board's geography kept.
+     The winner's half claims the AREA; the seam leans away from them. */
+  .duo{position:relative;display:flex;width:100%;border-radius:16px;overflow:hidden;
+    border:1px solid rgba(255,255,255,.1)}
+  .half{display:flex;flex-direction:column;align-items:center;gap:7px;padding:20px 8px 16px;min-width:0}
+  .half.me{background:linear-gradient(200deg,rgba(40,232,255,.2),rgba(40,232,255,.05) 65%)}
+  .half.foe{background:linear-gradient(160deg,rgba(255,47,160,.2),rgba(255,47,160,.05) 65%)}
+  .half .nm{font-size:10.5px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;max-width:94%;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .half.me .nm{color:var(--cy)} .half.foe .nm{color:var(--mg)}
+  .half .sc{font-weight:900;line-height:1}
+  .half.me .sc{color:var(--cy)} .half.foe .sc{color:var(--mg)}
+  .half.won{flex:1.45}
+  .half.won .sc{font-size:46px;text-shadow:0 0 18px currentColor}
+  .half.lost{flex:1;opacity:.55;filter:saturate(.4)}
+  .half.lost .sc{font-size:27px}
+  .wtag{font-size:7.5px;letter-spacing:.28em;font-weight:900;color:#0a0410;background:var(--gold);
+    border-radius:99px;padding:2px 8px;text-transform:uppercase}
+  .duo .seam{position:absolute;top:-8%;bottom:-8%;left:var(--x);width:2px;transform:rotate(7deg);
+    background:linear-gradient(180deg,transparent,rgba(255,255,255,.55),transparent)}
+</style>
+<div class="studio">
+  <div class="cap2">Variant D · Split poster — victory</div>
+  <div class="pane">
+    <h2 class="t win">VICTORY</h2>
+    <div class="sub">You out-rolled EmberCrow896</div>
+    <div class="duo">
+      <div class="half me won"><span class="wtag">Winner</span><span class="av mid">{{die:5:p1:40}}</span>
+        <span class="nm">You</span><span class="sc">47</span></div>
+      <div class="half foe lost"><span class="wtag" style="visibility:hidden">·</span>
+        <span class="av mid">{{die:3:p2:40}}</span><span class="nm">EmberCrow896</span><span class="sc">30</span></div>
+      <span class="seam" style="--x:58%"></span>
+    </div>
+    <div class="pchip">+14 <small>POINTS · 706</small></div>
+    <div class="acts"><button class="btn primary">Next duel</button>
+      <button class="linkbtn">Home</button></div>
+  </div>
+
+  <div class="cap2">Defeat — the seam leans the other way</div>
+  <div class="pane">
+    <h2 class="t lose">DEFEAT</h2>
+    <div class="sub">EmberCrow896 out-rolls you</div>
+    <div class="duo">
+      <div class="half me lost"><span class="wtag" style="visibility:hidden">·</span>
+        <span class="av mid">{{die:5:p1:40}}</span><span class="nm">You</span><span class="sc">21</span></div>
+      <div class="half foe won"><span class="wtag">Winner</span><span class="av mid">{{die:3:p2:40}}</span>
+        <span class="nm">EmberCrow896</span><span class="sc">38</span></div>
+      <span class="seam" style="--x:42%"></span>
+    </div>
+    <div class="pchip down">−9 <small>POINTS · 683</small></div>
+    <div class="acts"><button class="btn primary">Next duel</button>
+      <button class="linkbtn">Home</button></div>
+  </div>
+
+  <div class="note"><b>Territory as verdict.</b> All match long the board was two washes —
+    your cyan side, their magenta side. The poster keeps that geography and lets the winner's
+    half claim the extra area, with the slanted seam leaning away from them like a scoreboard
+    wipe. Identity, score and outcome live INSIDE each player's territory, so nothing floats.
+    The loudest of the eight after C, and the one that scales worst to a draw — two equal
+    halves with no seam lean is exactly how it should degrade, which at least is honest.
+    Everything it shows, the client already has.</div>
+</div>
