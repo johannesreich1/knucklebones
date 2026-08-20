@@ -10,6 +10,7 @@ import { nameOf } from './identity.ts';
 import { makeDie } from './die.ts';
 import { modeIcon } from './modeicons.ts';
 import { modeByEnum } from '../core/modes.ts';
+import { scoreLine, recordHtml } from './record.ts';
 /* ===================== DOM BUILD ===================== */
 export function buildBoards(){
   for(const side of ['top','bot']){
@@ -183,8 +184,8 @@ export function updateRecord(){
     return;
   }
   paintBadge(S.mode==='duo'
-    ? 'P1 <b>'+S.p1+'</b> · P2 <i>'+S.p2+'</i>'
-    : 'W <b>'+S.wins+'</b> · L <i>'+S.losses+'</i>', null);
+    ? scoreLine('P1',S.p1,'P2',S.p2)
+    : recordHtml(S.wins,S.losses), null);
 }
 /* ===================== PREVIEW HINTS ===================== */
 export function clearHints(){

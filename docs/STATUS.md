@@ -9,7 +9,7 @@ was decided, and what's still open.*
 | Piece | State |
 |---|---|
 | **Web** | **LIVE** at https://knucklebones-asg.pages.dev — Cloudflare Pages, auto-deploys every push to `main` |
-| **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0013, RLS + column-grant hardened. 0014 (Game Center ids) is written but NOT applied — it waits for a device |
+| **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0015, RLS + column-grant hardened. 0014 (Game Center ids) is written but NOT applied — it waits for a device |
 | **Edge Functions** | `pvp-join` v13, `pvp-move` v10, `pvp-claim` v7, `account-delete` v1 — all ACTIVE, nothing dead deployed. `gc-auth` is written but undeployed (same reason) |
 | **CI** | GitHub Actions: build + full test gate (23 suites) on every push — green through current `main` |
 | **Design system** | 170 cards (44 screens × 4 device sizes + the two `00-` specs) in the Claude Design project "Knucklebones", generated from the app's real CSS **and its real code** — see "Cards render the app" below |
@@ -238,6 +238,28 @@ server-side via `account-delete`), privacy policy for both stores.
   going silent for 25 seconds. Verified live with two throwaway guests:
   `not-stalled-yet` immediately, the auto-place after 13s, the turn flipping
   back, repeated over four rounds. Both guests deleted themselves afterwards.
+
+### 5c. The ladder states both sides (2026-08-20)
+
+Player report: the leaderboard showed a W and no L. It printed `42W/103` —
+wins over *games* — so a loss appeared nowhere on it, while the HUD and the
+account card had always said W · L. Migration **0015** adds `losses` to the
+`leaderboard` RPC, counted the way `myRecord()` counts it client-side: a
+decided match this profile did not win. A draw (`winner is null`) is neither,
+and a forfeit does name a winner, so it lands on the right side by itself.
+`wins + losses + draws = games` is the invariant that keeps a row auditable.
+(The return type changed, so the migration drops and recreates — which also
+takes the grants and the PUBLIC revoke with it, both restated; the resulting
+ACL is byte-identical to before.)
+
+The three screens then went through **one** formatter, `ui/record.ts`: they
+were saying the same fact in three phrasings, which is how one of them came to
+say only half of it. The numbers carry `.n1`/`.n2` rather than leaning on bare
+`<b>`/`<i>`, because the HUD tinted them with `.rec b` / `.rec i` — so the same
+markup would have rendered *italic* on the ladder, where that rule does not
+reach. test16 grew a ladder case (its harness takes the door as a slot now)
+that reads the rendered row, since the original bug was invisible to anything
+inspecting only the data.
 
 ### 6. The navigation batch (2026-08-20)
 

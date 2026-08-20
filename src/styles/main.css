@@ -67,8 +67,11 @@
   .ico{width:27px;height:27px;border-radius:9px;font-size:12px}
   .hud{gap:6px}
 }
-.rec b{color:var(--cy);font-weight:800}
-.rec i{color:var(--mg);font-style:normal;font-weight:800}
+/* a score line's two numbers (ui/record.ts): the shape is theirs everywhere,
+   the colour belongs to wherever the line lands — cyan/magenta in the HUD */
+.n1,.n2{font-weight:800;font-style:normal}
+.rec .n1{color:var(--cy)}
+.rec .n2{color:var(--mg)}
 /* whenever the badge names a mode it opens that mode's rules — offline too, so
    the affordance and its ⓘ belong in the eager sheet, not the online chunk */
 .rec.tapmode{cursor:pointer;transition:transform .15s}

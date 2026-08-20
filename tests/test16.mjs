@@ -37,7 +37,7 @@ const browser = await webkit.launch();
 
 /* one harness: open the app with supabase answering however this case wants,
    tap ACCOUNT, report what the player is looking at */
-async function visit({ anonymous = 200, attached = false }) {
+async function visit({ anonymous = 200, attached = false, door = 'chip' }) {
   // NO isMobile here: under WebKit it quietly disables page.route(), and a
   // stub that never fires would let this suite talk to the live backend.
   const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, hasTouch: true });
@@ -69,16 +69,24 @@ async function visit({ anonymous = 200, attached = false }) {
     body: JSON.stringify([{ id: GUEST_ID, nickname: 'TestGuest001', rating: 1000, created_at: new Date().toISOString() }]) }));
   await page.route('**/rest/v1/matches*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
   await page.route('**/auth/v1/.well-known/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"keys":[]}' }));
+  await page.route('**/rest/v1/rpc/leaderboard*', (r) => r.fulfill({ status: 200, contentType: 'application/json',
+    body: JSON.stringify([{ nickname: 'NovaComet992', rating: 1072, wins: 7, losses: 2, games: 9 },
+                          { nickname: 'TestGuest001', rating: 1026, wins: 42, losses: 61, games: 103 }]) }));
 
   await page.goto(URL, { waitUntil: 'domcontentloaded' });
   // the home chip carrying the player's identity IS the door to the account view
-  await page.waitForSelector('#homeChip');
-  await page.click('#homeChip');
+  const entry = door === 'board' ? '#btnBoardHome' : '#homeChip';
+  await page.waitForSelector(entry);
+  await page.click(entry);
   await page.waitForSelector('#ovOnline', { state: 'attached', timeout: 15000 });
-  await page.waitForFunction(() => {
-    const a = document.querySelector('#onAccount'), s = document.querySelector('#onAuth');
-    return (a && !a.hidden) || (s && !s.hidden);
-  }, null, { timeout: 15000 });
+  if (door === 'board') {
+    await page.waitForSelector('#ovOnline .lb .row', { timeout: 15000 });
+  } else {
+    await page.waitForFunction(() => {
+      const a = document.querySelector('#onAccount'), s = document.querySelector('#onAuth');
+      return (a && !a.hidden) || (s && !s.hidden);
+    }, null, { timeout: 15000 });
+  }
   await page.waitForTimeout(250);
 
   const seen = await page.evaluate(() => {
@@ -91,6 +99,15 @@ async function visit({ anonymous = 200, attached = false }) {
       guestBox: vis('#accGuest'),
       signOut: vis('#btnSignOut'),
       actions: [...document.querySelectorAll('#onAuthActs .btn')].map((x) => x.textContent),
+      /* What a ladder row SAYS. It used to read "42W/103" — wins over games —
+         so a loss appeared nowhere on the ladder while the HUD and the account
+         card both said W · L. All three go through ui/record.ts now, and this
+         reads the rendered row because the old bug was invisible to anything
+         that only inspected the data. */
+      rows: [...document.querySelectorAll('#ovOnline .lb .row')].map((r) => {
+        const ws = r.querySelector('.ws'); const l = ws?.querySelector('.n2');
+        return { text: ws?.textContent ?? '', lossItalic: l ? getComputedStyle(l).fontStyle : null };
+      }),
     };
   });
   await ctx.close();
@@ -106,6 +123,16 @@ try {
   check(fresh.seen.guestBox === true, 'guest was not offered the way up', fresh.seen);
   check(fresh.seen.signOut === false, 'guest offered Sign out — that discards, not signs out', fresh.seen);
   check(fresh.errs.length === 0, 'page errors on the guest path', fresh.errs);
+
+  // 1b · the ladder that same guest lands on: a row states BOTH sides
+  const board = await visit({ door: 'board' });
+  out.ladder = board.seen.rows;
+  check(board.seen.rows.length === 2, 'ladder did not render its rows', board.seen.rows);
+  check(board.seen.rows[0]?.text === 'W 7 · L 2', 'a ladder row does not state wins AND losses', board.seen.rows);
+  check(board.seen.rows[1]?.text === 'W 42 · L 61', 'a lopsided record is not stated in full', board.seen.rows);
+  check(board.seen.rows.every((r) => r.lossItalic === 'normal'),
+        'the loss count is rendering italic — .n2 lost its shape outside the HUD', board.seen.rows);
+  check(board.errs.length === 0, 'page errors on the ladder', board.errs);
 
   // 2 · the project with anonymous sign-ins off: degrade to the old panel
   const off = await visit({ anonymous: 422 });

@@ -10,6 +10,7 @@ import { $, show, hide } from '../ui/dom.ts';
 import { showEnd, setMeta, closeEnd } from '../ui/endscreen.ts';
 import { Sfx } from '../ui/audio.ts';
 import { makeDie } from '../ui/die.ts';
+import { recordHtml } from '../ui/record.ts';
 import { signUp, signIn, signOut, currentUser, ensureIdentity, attachEmail,
          myProfile, myRecord, rename, leaderboard, deleteAccount, join, readyPeer } from './session.ts';
 import { availableTaps } from './identity.ts';
@@ -291,7 +292,7 @@ async function showBoard(): Promise<void> {
     const div = document.createElement('div');
     div.className = 'row' + (i < 3 ? ' top' : '') + (me && r.nickname === me.nickname ? ' me' : '');
     div.innerHTML = `<span class="rank">${i + 1}</span><span class="nm">${esc(r.nickname)}</span>` +
-      `<span class="ws">${r.wins}W/${r.games}</span><span class="rt">${r.rating}</span>`;
+      `<span class="ws">${recordHtml(r.wins, r.losses)}</span><span class="rt">${r.rating}</span>`;
     list.appendChild(div);
   });
 }
@@ -315,7 +316,7 @@ async function showAccount(): Promise<void> {
     ? 'since ' + new Date(p.created_at).toLocaleDateString('en', { month: 'short', year: 'numeric' })
     : '';
   const rec = await myRecord();
-  $('#accRecord').textContent = rec ? `${rec.wins}W – ${rec.losses}L` : '–';
+  $('#accRecord').innerHTML = rec ? recordHtml(rec.wins, rec.losses) : '–';
 }
 
 /* ---- match result: the SAME screen local play ends on (ui/endscreen), filled

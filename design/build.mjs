@@ -14,6 +14,7 @@
 //   {{mico:MODE[:px]}}          a mode icon — the APP's, imported below
 //   {{mhue:MODE}}               a mode's hue — likewise
 //   {{ico:NAME[:px]}}           a chrome glyph (the HUD's way out)
+//   {{score:A:n:B:n}}           a score line — the HUD's, the ladder's, the card's
 //   {{dialnodes[:MODE]}}        the dial's whole node ring, optionally landed
 //   {{library:modes|spells[:ID]}}  a whole roster of reference cards, ID ringed
 //   {{picker:modes|spells[:V]}}    an OFFLINE pick row, V selected
@@ -28,6 +29,7 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { modeIcon, modeHue } from '../src/ui/modeicons.ts';
 import { chromeIcon } from '../src/ui/chromeicons.ts';
+import { scoreLine } from '../src/ui/record.ts';
 import { dialNodes } from '../src/ui/modedial.ts';
 import { libraryCards, pickerButtons, MODE_LIB, SPELL_LIB, MODE_PICKS, SPELL_PICKS } from '../src/ui/library.ts';
 
@@ -109,6 +111,7 @@ for (const f of screens) {
     .replace(/\{\{mico:([a-z]+)(?::(\d+))?\}\}/g, (_, id, size) => modeIcon(id, size ? +size : 24))
     .replace(/\{\{mhue:([a-z]+)\}\}/g, (_, id) => modeHue(id))
     .replace(/\{\{ico:([a-z]+)(?::(\d+))?\}\}/g, (_, id, size) => chromeIcon(id, size ? +size : 15))
+    .replace(/\{\{score:(\w+):(-?\d+):(\w+):(-?\d+)\}\}/g, (_, la, a, lb, b) => scoreLine(la, +a, lb, +b))
     .replace(/\{\{dialnodes(?::([a-z]+))?\}\}/g, (_, found) => dialNodes(found))
     .replace(/\{\{library:(modes|spells)(?::([a-z]+))?\}\}/g,
       (_, roster, now) => libraryCards(roster === 'modes' ? MODE_LIB : SPELL_LIB, now))

@@ -140,7 +140,7 @@ export async function rename(nickname: string): Promise<string | null> {
 }
 
 /* ---- leaderboard ---- */
-export interface LeaderboardRow { nickname: string; rating: number; wins: number; games: number; }
+export interface LeaderboardRow { nickname: string; rating: number; wins: number; losses: number; games: number; }
 export async function leaderboard(limit = 50): Promise<LeaderboardRow[]> {
   const { data } = await supa().rpc('leaderboard', { limit_n: limit });
   return (data as LeaderboardRow[]) ?? [];
