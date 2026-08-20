@@ -36,6 +36,7 @@ import { toMenu, syncSettingsUI, updateStatLine } from './flow/menu.ts';
 import { requestLeave, leavingForfeits } from './flow/leave.ts';
 import { openModes, openSpells, pickerButtons, MODE_PICKS, SPELL_PICKS } from './ui/library.ts';
 import { isNewcomer } from './ui/firstrun.ts';
+import { ask, dismissAsk } from './ui/askcard.ts';
 /* ===================== BOOT ===================== */
 export function boot(embed){
   setEmbed(!!embed);
@@ -104,17 +105,19 @@ export function boot(embed){
   /* The HUD's only control, and mid-match the only thing it can usefully offer
      is the way out — asked once, plainly, with a way back. Sound and dice faces
      live on Settings, which is reachable from home where nothing is at stake. */
-  const armQuit=()=>{
+  tap($('#btnLeave'),async ()=>{
+    Sfx.tap();
     const ranked=leavingForfeits();
-    $('#quitHead').textContent = ranked ? 'Forfeit this match?' : 'Quit this game?';
-    $('#quitBody').textContent = ranked
-      ? 'Leaving a ranked match loses it, and the rating goes with it.'
-      : 'The board is lost — offline games are quick, and this one ends here.';
-    $('#btnQuitYes').textContent = ranked ? 'Forfeit' : 'Quit game';
-  };
-  tap($('#btnLeave'),()=>{ Sfx.tap(); armQuit(); show('#ovQuit'); });
-  tap($('#btnQuitNo'),()=>{ Sfx.tap(); hide('#ovQuit'); });
-  tap($('#btnQuitYes'),()=>{ Sfx.tap(); hide('#ovQuit'); requestLeave(); toMenu(); });
+    const go=await ask({
+      head: ranked ? 'Forfeit this match?' : 'Quit this game?',
+      body: ranked
+        ? 'Leaving a ranked match loses it, and the points go with it.'
+        : 'The board is lost — offline games are quick, and this one ends here.',
+      confirm: ranked ? 'Forfeit' : 'Quit game',
+      cancel: 'Keep playing',
+    });
+    if(go){ requestLeave(); toMenu(); }
+  });
   tap($('#btnCloseSettings'),()=>{ Sfx.tap(); hide('#ovSettings'); });
   /* A coach bubble that is WAITING is dismissed by a tap anywhere, not only by
      a tap on the bubble — the message says "tap to continue" and the player
@@ -194,7 +197,7 @@ export function boot(embed){
     }else if(e.key==='Enter'||e.key===' '){
       if($('#ovPass').classList.contains('on')) $('#ovPass').click();
       else if($('#ovStart').classList.contains('on')||$('#ovEnd').classList.contains('on')){ Sfx.unlock(); void startLocal(); }
-    }else if(e.key==='Escape'){ disarm(); hide('#ovRules'); hide('#ovSettings'); hide('#ovLearn'); hide('#ovQuit'); hide('#ovImprint'); hide('#ovPrivacy');
+    }else if(e.key==='Escape'){ disarm(); hide('#ovRules'); hide('#ovSettings'); hide('#ovLearn'); dismissAsk(); hide('#ovImprint'); hide('#ovPrivacy');
       for(const id of ['ovModes','ovSpells']) if(document.getElementById(id)) hide('#'+id); }
   });
 

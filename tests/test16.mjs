@@ -95,7 +95,10 @@ async function visit({ anonymous = 200, attached = false, door = 'chip' }) {
     return {
       panel: document.querySelector('#onAccount')?.hidden === false ? 'account' : 'auth',
       title: document.querySelector('#onTitle')?.textContent,
-      nickname: document.querySelector('#accName')?.textContent,
+      /* the profile shows the name ONCE, in the field that edits it — a
+         read-only label beside an input saying the same thing was the kind of
+         duplication the ring/division cleanup removed everywhere else */
+      nickname: document.querySelector('#onNick')?.value,
       guestBox: vis('#accGuest'),
       signOut: vis('#btnSignOut'),
       actions: [...document.querySelectorAll('#onAuthActs .btn')].map((x) => x.textContent),

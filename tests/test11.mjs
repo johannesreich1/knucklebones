@@ -72,7 +72,7 @@ check(out.leftover === 0, 'popups leak into the DOM', out.leftover);
 // quit tutorial (via Settings — the sheet holds the quit button now),
 // popups must also fire in a NORMAL game (they are not tutorial-only)
 await page.tap('#btnLeave'); await page.waitForTimeout(300);
-await page.tap('#btnQuitYes'); await page.waitForTimeout(400);
+await page.tap('#btnAskYes'); await page.waitForTimeout(400);
 await page.evaluate(() => { window.__pops = []; });
 await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#btnPlay'); await page.waitForTimeout(1500);
@@ -180,7 +180,7 @@ check(out.badgeOpens.now === 'singlestrike', 'modes library did not highlight th
 await page.tap('[data-close="ovModes"]'); await page.waitForTimeout(300);
 // a classic offline game keeps the record and stays inert — nothing to explain
 await page.tap('#btnLeave'); await page.waitForTimeout(250);
-await page.tap('#btnQuitYes'); await page.waitForTimeout(400);
+await page.tap('#btnAskYes'); await page.waitForTimeout(400);
 await page.evaluate(() => { window.__kb.S.localMode = 0; window.__kb.openPractice(); });
 await page.tap('#btnPlay'); await page.waitForTimeout(1200);
 out.badgeClassic = await page.evaluate(() => {

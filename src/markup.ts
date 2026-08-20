@@ -308,17 +308,6 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
 </div>
 
 <!-- SETTINGS: a sheet over live context — ✕ closes, toggles apply instantly -->
-<!-- QUIT: the HUD's one control during a game. Settings has nothing to say
-     mid-match; the only thing you might want is out, and out should be asked
-     about once, plainly. -->
-<div class="ov" id="ovQuit">
-  <div class="askcard">
-    <div class="fh" id="quitHead">Quit this game?</div>
-    <p class="fp" id="quitBody">The board is lost — offline games are quick, and this one ends here.</p>
-    <button class="btn quiet" id="btnQuitYes">Quit game</button>
-    <button class="btn primary small" id="btnQuitNo">Keep playing</button>
-  </div>
-</div>
 
 <div class="ov paged" id="ovSettings">
   <div class="shead">

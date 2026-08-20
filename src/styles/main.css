@@ -989,3 +989,9 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 .linkbtn{background:none;border:none;padding:4px;font-family:inherit;cursor:pointer;
   font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
 .linkbtn:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+/* the ask-card's guard: a tick, for an answer nobody should give by reflex */
+.askcheck{display:flex;align-items:flex-start;gap:9px;font-size:11.5px;line-height:1.5;
+  color:var(--dim);cursor:pointer;text-align:left}
+.askcheck input{width:18px;height:18px;flex:0 0 auto;accent-color:var(--cy);margin-top:1px}
+.askcard .btn.danger{border-color:rgba(255,47,160,.35);color:#ff9ccb}
+.askcard .btn:disabled{opacity:.4;cursor:not-allowed}

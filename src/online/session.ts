@@ -10,7 +10,7 @@ export function supa(): SupabaseClient {
   return client;
 }
 
-export interface Profile { id: string; nickname: string; rating: number; created_at?: string; }
+export interface Profile { id: string; nickname: string; rating: number; created_at?: string; avatar?: string; }
 export interface MatchRow {
   id: string; p1: string; p2: string; status: 'active' | 'done' | 'forfeit';
   turn: 0 | 1; winner: string | null; p1_score: number | null; p2_score: number | null;
@@ -107,7 +107,7 @@ const PROFILE_CACHE = 'knucklebones.online.profile';
 export async function myProfile(): Promise<Profile | null> {
   const user = await currentUser();
   if (!user) return null;
-  const { data } = await supa().from('profiles').select('id, nickname, rating, created_at').eq('id', user.id).maybeSingle();
+  const { data } = await supa().from('profiles').select('id, nickname, rating, created_at, avatar').eq('id', user.id).maybeSingle();
   try {
     if (data) localStorage.setItem(PROFILE_CACHE, JSON.stringify({ nickname: data.nickname, rating: data.rating }));
   } catch { /* forgetful host */ }
@@ -140,6 +140,79 @@ export async function rename(nickname: string): Promise<string | null> {
 }
 
 /* ---- leaderboard ---- */
+/* ---- the ladder (docs/LADDER.md) ---- */
+
+/* Where a player stands THIS season. rank is 1-based; population is the field
+   it is measured against, which is what makes the apex a position rather than
+   a threshold. */
+export interface Standing { points: number; rank: number; population: number; percentile: number }
+export async function myStanding(): Promise<Standing | null> {
+  const user = await currentUser();
+  if (!user) return null;
+  const { data } = await supa().rpc('player_standing', { p: user.id });
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ? { points: row.points, rank: Number(row.rank),
+                 population: Number(row.population), percentile: Number(row.percentile) } : null;
+}
+
+/* points + peak + record for the current season. The peak is the gold notch. */
+export interface Ladder { points: number; peak: number; wins: number; losses: number; draws: number }
+export async function myLadder(): Promise<Ladder | null> {
+  const user = await currentUser();
+  if (!user) return null;
+  const { data: season } = await supa().rpc('current_season');
+  const { data } = await supa().from('season_ratings')
+    .select('points, peak, wins, losses, draws')
+    .eq('season_id', season).eq('player', user.id).maybeSingle();
+  /* No row yet is not an error: a player joins the ladder the first time they
+     are paired, so "nothing here" is an honest zero for someone who has not
+     played a ranked match. */
+  return data ?? { points: 0, peak: 0, wins: 0, losses: 0, draws: 0 };
+}
+
+/* The longest run of wins this season — computed server-side over the whole
+   season, so it never shrinks as old matches scroll out of any window. */
+export async function bestStreak(): Promise<number> {
+  const { data } = await supa().rpc('best_streak');
+  return Number(data ?? 0);
+}
+
+/* One finished match as the history list shows it. The delta is what the match
+   ACTUALLY paid — the only place a points number is honest, since what a match
+   is worth depends on the opponent. */
+export interface HistoryRow {
+  id: string; when: string; opponent: string; mode: string;
+  mine: number; theirs: number; delta: number; result: 'win' | 'loss' | 'draw';
+}
+export async function matchHistory(limit = 40): Promise<HistoryRow[]> {
+  /* One definer RPC, not a client-side join: profiles is own-row only, so a
+     client cannot read an opponent's nickname and every row would read "???".
+     The leaderboard is built the same way for the same reason. */
+  const { data } = await supa().rpc('match_history', { limit_n: limit });
+  return (data ?? []).map((r: Record<string, unknown>) => ({
+    id: String(r.id),
+    when: String(r.finished_at ?? ''),
+    opponent: String(r.opponent ?? '???'),
+    mode: String(r.mode ?? 'classic'),
+    mine: Number(r.mine ?? 0),
+    theirs: Number(r.theirs ?? 0),
+    delta: Number(r.delta ?? 0),
+    result: r.result as 'win' | 'loss' | 'draw',
+  }));
+}
+
+/* The avatar is a die face and a hue — "die:5:cy". 36 identities, no storage
+   bucket, no moderation, and no user-generated-image obligations at review.
+   The string shape is the seam: a later value can be "img:<path>". */
+export async function setAvatar(avatar: string): Promise<string | null> {
+  const user = await currentUser();
+  if (!user) return 'not signed in';
+  const { error } = await supa().from('profiles').update({ avatar }).eq('id', user.id);
+  if (error) return error.message;
+  clearProfileCache();
+  return null;
+}
+
 export interface LeaderboardRow { nickname: string; rating: number; wins: number; losses: number; games: number; }
 export async function leaderboard(limit = 50): Promise<LeaderboardRow[]> {
   const { data } = await supa().rpc('leaderboard', { limit_n: limit });

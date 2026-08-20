@@ -74,7 +74,7 @@ check(out.timerCardHiddenInCpu && out.timerCardShownInDuo, 'timer setting visibi
 await p.tap('#btnPlay'); await p.waitForTimeout(1200);
 async function toMenu() {
   const pass = await p.evaluate(() => document.getElementById('ovPass').classList.contains('on'));
-  if (pass) { await p.tap('#passQuit'); } else { await p.tap('#btnLeave'); await p.waitForTimeout(300); await p.tap('#btnQuitYes'); }
+  if (pass) { await p.tap('#passQuit'); } else { await p.tap('#btnLeave'); await p.waitForTimeout(300); await p.tap('#btnAskYes'); }
   await p.waitForTimeout(500);
 }
 async function reachChoose() {

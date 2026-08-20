@@ -10,9 +10,13 @@ import { $, show, hide } from '../ui/dom.ts';
 import { showEnd, setMeta, closeEnd } from '../ui/endscreen.ts';
 import { Sfx } from '../ui/audio.ts';
 import { makeDie } from '../ui/die.ts';
+import { rankName, groupFill, peakState, inApex } from '../core/ladder.ts';
+import { ask } from '../ui/askcard.ts';
+import { REDUCED } from '../ui/fx.ts';
 import { recordHtml } from '../ui/record.ts';
 import { signUp, signIn, signOut, currentUser, ensureIdentity, attachEmail,
-         myProfile, myRecord, rename, leaderboard, deleteAccount, join, readyPeer } from './session.ts';
+         myProfile, myRecord, rename, leaderboard, deleteAccount, join, readyPeer,
+         myLadder, myStanding, matchHistory, setAvatar, bestStreak } from './session.ts';
 import { availableTaps } from './identity.ts';
 import { enterMatch, setFinishHandler, type FinishReport } from './play.ts';
 import { spinDial } from '../ui/modedial.ts';
@@ -55,11 +59,28 @@ const OVERLAY = `
   </div>
 
   <div class="panel" id="onAccount" hidden>
-    <div class="acard">
-      <div class="awho"><span id="accDie"></span><span class="meta"><span class="nm" id="accName"></span><span class="sub" id="accSince"></span></span></div>
-      <div class="statrow"><span>RATING</span><b id="accRating">–</b></div>
-      <div class="statrow"><span>RECORD</span><b class="rec2" id="accRecord">–</b></div>
+    <!-- The ring is ONE continuous fill: how far through the current GROUP you
+         are. It moves on every match, which is the whole feedback loop now that
+         divisions are gone (docs/LADDER.md §5). --p is the fill, --pk the
+         season peak; .haspeak says the peak is worth drawing at all. -->
+    <div class="ringwrap" id="accRing" style="--p:0;--pk:0">
+      <i class="lring"></i><i class="lpeak"></i>
+      <button class="avwrap" id="btnAvatar" aria-label="Change avatar">
+        <span id="accDie"></span><span class="avedit">✎</span>
+      </button>
+      <!-- the group name sits IN the ring's bottom opening. The 90deg gap was
+           already there to keep the ring from closing; giving it the rank makes
+           the ring self-describing instead of merely open. -->
+      <span class="gname" id="accGroup">STONE</span>
     </div>
+    <div class="ptv"><b id="accPoints">0</b><span>Ladder points</span></div>
+    <div class="facts">
+      <div class="fact"><b id="accRank">–</b><span>Rank</span></div>
+      <div class="fact"><b id="accStreak">0</b><span>Best streak</span></div>
+      <div class="fact pk"><b id="accPeak">0</b><span>Peak</span></div>
+    </div>
+    <button class="histrow" id="btnHistory">Match history <b id="accGames">–</b></button>
+    <div class="accsince" id="accSince"></div>
     <div class="guestbox" id="accGuest" hidden>
       <b>GUEST</b>
       <p>This account lives on this device only. Delete the app and the rating goes with it.</p>
@@ -73,8 +94,23 @@ const OVERLAY = `
     <button class="btn" id="btnSignOut">Sign out</button>
     <div class="danger">
       <button class="btn" id="btnDeleteAcc">Delete account</button>
-      <div class="dnote">Two taps. Removes your profile, matches and rating — permanently.</div>
     </div>
+  </div>
+
+  <div class="panel" id="onAvatar" hidden>
+    <div class="lbl" style="text-align:center">Pick a face and a colour</div>
+    <div class="avpreview" id="avPreview"></div>
+    <div class="avgrid" id="avFaces"></div>
+    <div class="avgrid hues" id="avHues"></div>
+    <div class="err" id="onAvErr"></div>
+    <button class="btn primary" id="btnAvatarSave">Save</button>
+  </div>
+
+  <div class="panel" id="onHistory" hidden>
+    <!-- the win/loss tally heads the LIST it summarises, rather than sitting on
+         the profile as a fourth tile competing with the rank and the streak -->
+    <div class="htotal" id="onHistoryTotal">&nbsp;</div>
+    <div class="lb neonscroll" id="onHistoryList"></div>
   </div>
 
 </div>`;
@@ -87,7 +123,9 @@ const PANELS = {
   onAuth: { title: 'SIGN IN', back: true },
   onQueue: { title: 'MATCHMAKING', back: false },
   onBoard: { title: 'LADDER', back: true },
-  onAccount: { title: 'ACCOUNT', back: true },
+  onAccount: { title: 'PROFILE', back: true },
+  onAvatar: { title: 'AVATAR', back: true },
+  onHistory: { title: 'MATCH HISTORY', back: true },
 } as const;
 type Panel = keyof typeof PANELS;
 
@@ -95,7 +133,7 @@ function panel(which: Panel): void {
   for (const id of Object.keys(PANELS)) $('#' + id).hidden = id !== which;
   // the ladder is a LIST, not a form: it takes the whole screen under a fixed
   // subheading. Every other panel stays a centred column.
-  $('#ovOnline').classList.toggle('listview', which === 'onBoard');
+  $('#ovOnline').classList.toggle('listview', which === 'onBoard' || which === 'onHistory');
   $('#onTitle').textContent = PANELS[which].title;
   ($('#btnOnlineBack') as HTMLElement).style.visibility = PANELS[which].back ? 'visible' : 'hidden';
 }
@@ -297,12 +335,48 @@ async function showBoard(): Promise<void> {
   });
 }
 
-/* ---- account ---- */
+/* ---- the avatar: a die face and a hue, "die:5:cy" ---- */
+const AV_HUES: Record<string, string> = {
+  cy: 'var(--cy)', mg: 'var(--mg)', gold: 'var(--gold)',
+  green: '#7ee787', violet: '#b18cff', orange: '#ff8a3d',
+};
+const DEFAULT_AVATAR = 'die:5:cy';
+export function parseAvatar(v: string | null | undefined): { face: number; hue: string } {
+  const m = /^die:([1-6]):([a-z]+)$/.exec(v ?? '');
+  return m && AV_HUES[m[2]] ? { face: +m[1], hue: m[2] } : { face: 5, hue: 'cy' };
+}
+/* one die, tinted — --dc is what the die's pips and border read for colour */
+function paintAvatar(slot: HTMLElement, v: string | null | undefined, size = 74): void {
+  const { face, hue } = parseAvatar(v);
+  slot.innerHTML = '';
+  const die = makeDie(face, ME);
+  die.style.setProperty('--dc', AV_HUES[hue]);
+  die.style.width = die.style.height = `${size}px`;
+  die.style.setProperty('--cell', `${size}px`);
+  slot.appendChild(die);
+}
+
+/* The ring sweeps up to its value when the screen opens. It is not decoration:
+   group promotions are 37 to ~120 games apart, so this fill is the ladder's
+   only continuous feedback, and a number that is simply THERE on arrival never
+   reads as progress. Tweened in JS rather than by a CSS transition because a
+   conic-gradient's angle stop does not interpolate reliably across engines. */
+function fillRing(ring: HTMLElement, to: number): void {
+  if (REDUCED) { ring.style.setProperty('--p', String(to)); return; }
+  ring.style.setProperty('--p', '0');
+  const t0 = performance.now(), DUR = 850;
+  const step = (now: number): void => {
+    const t = Math.min(1, (now - t0) / DUR);
+    ring.style.setProperty('--p', String(to * (1 - Math.pow(1 - t, 3))));
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+/* ---- the profile ---- */
 async function showAccount(): Promise<void> {
   panel('onAccount');
   $('#onAccErr').textContent = '';
-  const dieSlot = $('#accDie');
-  if (!dieSlot.firstChild) dieSlot.appendChild(makeDie(5, ME));
   const [p, who] = await Promise.all([myProfile(), currentUser()]);
   refreshHomeChip();
   /* a guest is offered the way up; "Sign out" is hidden from them because for
@@ -310,13 +384,102 @@ async function showAccount(): Promise<void> {
   $('#accGuest').hidden = !who?.guest;
   ($('#btnSignOut') as HTMLElement).hidden = !!who?.guest;
   ($('#onNick') as HTMLInputElement).value = p?.nickname ?? '';
-  $('#accName').textContent = p?.nickname ?? '';
-  $('#accRating').textContent = p ? String(p.rating) : '–';
-  $('#accSince').textContent = p?.created_at
-    ? 'since ' + new Date(p.created_at).toLocaleDateString('en', { month: 'short', year: 'numeric' })
+  paintAvatar($('#accDie'), p?.avatar ?? DEFAULT_AVATAR);
+  /* "Member since" is a claim about an account that will still be there — a
+     guest's lives on this device only, so the line would be a promise nobody
+     made. Hidden for them until they keep it. */
+  $('#accSince').textContent = (!who?.guest && p?.created_at)
+    ? 'Member since ' + new Date(p.created_at).toLocaleDateString('en', { month: 'long', year: 'numeric' })
     : '';
-  const rec = await myRecord();
-  $('#accRecord').innerHTML = rec ? recordHtml(rec.wins, rec.losses) : '–';
+
+  /* the ladder, painted from core/ladder.ts so the client cannot disagree with
+     the server about what a number means */
+  const [lad, st, streak] = await Promise.all([myLadder(), myStanding(), bestStreak()]);
+  const pts = lad?.points ?? 0, peak = lad?.peak ?? 0;
+  $('#accPoints').textContent = pts.toLocaleString('en');
+  $('#accGroup').textContent = rankName(pts);
+  $('#accPeak').textContent = peak.toLocaleString('en');
+  const games = lad ? lad.wins + lad.losses + lad.draws : 0;
+  $('#accGames').textContent = games ? `${games} games ›` : 'none yet ›';
+  const apex = st ? inApex(pts, st.rank, st.population) : false;
+  $('#accRank').textContent = st && games ? (apex ? 'NEON' : '#' + st.rank) : '–';
+  $('#accStreak').textContent = String(streak);
+
+  /* One continuous fill, and the peak notch in its three states (LADDER.md §5):
+     at your position it is redundant, ahead it sits where it really is, and in
+     a HIGHER group it pins to the far right — your best is beyond this ring. */
+  const ring = $('#accRing') as HTMLElement;
+  const ps = peakState(pts, peak);
+  fillRing(ring, groupFill(pts));
+  ring.classList.toggle('haspeak', ps.kind !== 'at');
+  if (ps.kind === 'ahead') ring.style.setProperty('--pk', String(ps.fill));
+  if (ps.kind === 'above') ring.style.setProperty('--pk', '1');
+}
+
+/* ---- the avatar picker ---- */
+let avPick = DEFAULT_AVATAR;
+async function showAvatar(): Promise<void> {
+  panel('onAvatar');
+  $('#onAvErr').textContent = '';
+  const p = await myProfile();
+  avPick = p?.avatar ?? DEFAULT_AVATAR;
+  const draw = (): void => {
+    const cur = parseAvatar(avPick);
+    paintAvatar($('#avPreview'), avPick, 86);
+    $('#avFaces').querySelectorAll('button').forEach((b) =>
+      b.classList.toggle('on', +(b as HTMLElement).dataset.face! === cur.face));
+    $('#avHues').querySelectorAll('button').forEach((b) =>
+      b.classList.toggle('on', (b as HTMLElement).dataset.hue === cur.hue));
+  };
+  if (!$('#avFaces').firstChild) {
+    for (let f = 1; f <= 6; f++) {
+      const b = document.createElement('button');
+      b.dataset.face = String(f);
+      b.appendChild(makeDie(f, ME));
+      b.addEventListener('click', () => {
+        Sfx.tap(); avPick = `die:${f}:${parseAvatar(avPick).hue}`; draw();
+      });
+      $('#avFaces').appendChild(b);
+    }
+    for (const hue of Object.keys(AV_HUES)) {
+      const b = document.createElement('button');
+      b.dataset.hue = hue;
+      b.className = 'hue';
+      b.style.setProperty('--h', AV_HUES[hue]);
+      b.addEventListener('click', () => {
+        Sfx.tap(); avPick = `die:${parseAvatar(avPick).face}:${hue}`; draw();
+      });
+      $('#avHues').appendChild(b);
+    }
+  }
+  draw();
+}
+
+/* ---- match history: what each match ACTUALLY paid ---- */
+async function showHistory(): Promise<void> {
+  panel('onHistory');
+  const lad = await myLadder();
+  $('#onHistoryTotal').innerHTML = lad
+    ? recordHtml(lad.wins, lad.losses) + (lad.draws ? ` · ${lad.draws}D` : '')
+    : '&nbsp;';
+  const list = $('#onHistoryList');
+  list.innerHTML = '<div class="row">Loading…</div>';
+  const rows = await matchHistory();
+  if (!rows.length) { list.innerHTML = '<div class="row">No ranked matches yet.</div>'; return; }
+  list.innerHTML = '';
+  for (const r of rows) {
+    const div = document.createElement('div');
+    div.className = 'row hrow ' + r.result;
+    const when = r.when ? new Date(r.when).toLocaleDateString('en', { day: 'numeric', month: 'short' }) : '';
+    const sign = r.delta > 0 ? '+' : '';
+    div.innerHTML =
+      `<span class="hres">${r.result === 'win' ? 'W' : r.result === 'loss' ? 'L' : 'D'}</span>` +
+      `<span class="nm">${esc(r.opponent)}</span>` +
+      `<span class="hsc">${r.mine}–${r.theirs}</span>` +
+      `<span class="hd">${sign}${r.delta}</span>` +
+      `<span class="hwhen">${when}</span>`;
+    list.appendChild(div);
+  }
 }
 
 /* ---- match result: the SAME screen local play ends on (ui/endscreen), filled
@@ -367,7 +530,13 @@ function bind(): void {
   qd.appendChild(makeDie(2, ME));
   qd.appendChild(makeDie(6, AI));
 
-  $('#btnOnlineBack').addEventListener('click', () => { Sfx.tap(); goHome(); });
+  /* ‹ climbs ONE level: the avatar picker and the history list are opened FROM
+     the profile, so they return to it rather than dropping the player home. */
+  $('#btnOnlineBack').addEventListener('click', () => {
+    Sfx.tap();
+    const sub = !$('#onAvatar').hidden || !$('#onHistory').hidden;
+    if (sub) void showAccount(); else goHome();
+  });
 
   $('#btnKeepAcc').addEventListener('click', () => { Sfx.tap(); authPanel('attach'); });
   $('#btnHaveAcc').addEventListener('click', () => { Sfx.tap(); authPanel('restore'); });
@@ -383,21 +552,36 @@ function bind(): void {
     }
   });
   $('#btnSignOut').addEventListener('click', async () => { Sfx.tap(); await signOut(); refreshHomeChip(); authPanel('restore'); });
+  $('#btnAvatar').addEventListener('click', () => { Sfx.tap(); void showAvatar(); });
+  $('#btnHistory').addEventListener('click', () => { Sfx.tap(); void showHistory(); });
+  $('#btnAvatarSave').addEventListener('click', async () => {
+    Sfx.tap();
+    const err = await setAvatar(avPick);
+    if (err) { $('#onAvErr').textContent = err; return; }
+    await showAccount();
+  });
 
-  let armed = 0;
+  /* Deletion goes through the SAME ask-card the HUD's quit uses (ui/askcard),
+     with the checkbox guard turned on. It used to be a two-tap arm on the
+     button itself, which asks for a second tap in the very place the first one
+     landed — the one gesture a mis-tap repeats for free. A tick is a different
+     act in a different place, which is what an irreversible answer deserves. */
   $('#btnDeleteAcc').addEventListener('click', async () => {
     Sfx.tap();
-    const b = $('#btnDeleteAcc');
-    if (Date.now() - armed < 3000) {
-      const err = await deleteAccount();
-      if (err) { $('#onAccErr').textContent = err; return; }
-      b.textContent = 'Delete account'; armed = 0;
-      refreshHomeChip();
-      authPanel('restore');
-    } else {
-      armed = Date.now(); b.textContent = 'Tap again to delete EVERYTHING';
-      setTimeout(() => { if (armed && Date.now() - armed >= 2900) { b.textContent = 'Delete account'; armed = 0; } }, 3000);
-    }
+    const go = await ask({
+      head: 'Delete your account?',
+      body: 'Your profile, your matches and your ladder points are removed from the '
+        + 'server. There is no undo, and nothing can be restored afterwards.',
+      confirm: 'Delete everything',
+      cancel: 'Keep my account',
+      danger: true,
+      check: 'I understand this cannot be undone',
+    });
+    if (!go) return;
+    const err = await deleteAccount();
+    if (err) { $('#onAccErr').textContent = err; return; }
+    refreshHomeChip();
+    authPanel('restore');
   });
 
   $('#btnQueueCancel').addEventListener('click', () => { Sfx.tap(); goHome(); });
