@@ -340,7 +340,6 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
         <button data-f="nums">NUMBERS</button>
       </div>
     </div>
-    <button class="btn" id="btnHow2">How to play</button>
     <div class="tiny">Changes apply the moment you tap them</div>
   </div>
   <!-- deploy truth lives here now: the screen you open when something looks

@@ -267,7 +267,9 @@ an arrow leaving it now, `#btnSettings` became `#btnLeave`, and the glyph lives
 in the new `ui/chromeicons.ts` so the three design cards that had copied it
 render the app's own. In the ask-card, **the way back wears the colour**: the
 gradient sits on *Keep playing* at the smaller size, while the destructive
-answer is full width and quiet.
+answer is full width and quiet. Settings also lost its **How to play**
+button — HOW TO PLAY is a hub off Home now, and the sheet had been a third
+door to the same rules. What is left is two toggles and the build tag.
 
 Hunting that down turned up a real defect: **`.btn.ghost` was defined only in
 `online/online.css`**, the lazily-imported chunk — so the offline first-run

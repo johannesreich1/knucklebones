@@ -116,7 +116,6 @@ export function boot(embed){
   tap($('#btnQuitNo'),()=>{ Sfx.tap(); hide('#ovQuit'); });
   tap($('#btnQuitYes'),()=>{ Sfx.tap(); hide('#ovQuit'); requestLeave(); toMenu(); });
   tap($('#btnCloseSettings'),()=>{ Sfx.tap(); hide('#ovSettings'); });
-  tap($('#btnHow2'),()=>{ Sfx.tap(); hide('#ovSettings'); show('#ovRules'); });
   /* A coach bubble that is WAITING is dismissed by a tap anywhere, not only by
      a tap on the bubble — the message says "tap to continue" and the player
      reasonably taps the screen. Capture phase so it lands before anything else

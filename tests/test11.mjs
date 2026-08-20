@@ -101,13 +101,23 @@ check(out.settingsOpen.on && out.settingsOpen.sndOn === '1' && out.settingsOpen.
 
 await page.tap('#sndSeg button[data-s="0"]'); await page.waitForTimeout(200);
 await page.tap('#faceSeg button[data-f="nums"]'); await page.waitForTimeout(200);
-// help routes through settings
-await page.tap('#btnHow2'); await page.waitForTimeout(400);
+// Settings holds the two toggles and nothing else — the rules are reached
+// through the HOW TO PLAY hub on home, which is now their ONLY door.
+out.settingsIsToggles = await page.evaluate(() => ({
+  how2: !!document.getElementById('btnHow2'),
+  quit: !!document.querySelector('#ovSettings #btnMenu'),
+  buttons: [...document.querySelectorAll('#ovSettings .pbody .btn')].length,
+}));
+check(!out.settingsIsToggles.how2 && !out.settingsIsToggles.quit && out.settingsIsToggles.buttons === 0,
+      'settings still carries a button that belongs elsewhere', out.settingsIsToggles);
+await page.tap('#btnCloseSettings'); await page.waitForTimeout(300);
+await page.tap('#btnLearn'); await page.waitForTimeout(320);
+await page.tap('#btnLearnRules'); await page.waitForTimeout(400);
 out.help = await page.evaluate(() => ({
   rules: document.getElementById('ovRules').classList.contains('on'),
   settings: document.getElementById('ovSettings').classList.contains('on'),
 }));
-check(out.help.rules && !out.help.settings, 'help did not open from settings', out.help);
+check(out.help.rules && !out.help.settings, 'help did not open from the hub', out.help);
 await page.tap('#btnCloseRules'); await page.waitForTimeout(300);
 
 // choices persist across reload
