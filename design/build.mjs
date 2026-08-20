@@ -54,10 +54,15 @@ const HOSTILE = { opacity: /opacity\s*:\s*0(?!\.)/, display: /display\s*:\s*none
    a margin, so the app's `position:absolute` survived and four tier numbers
    flew to the corner. */
 const greedy = new Map();
-for (const rule of css.matchAll(/(^|[{}])\s*([^{}@]+?)\s*\{([^{}]*)\}/g)) {
-  const pinned = Object.entries(HOSTILE).filter(([, re]) => re.test(rule[3])).map(([k]) => k);
+/* The boundary must be a LOOKBEHIND: a consuming ([{}]) eats the previous
+   rule's closing brace, so consecutive rules alternate matched/skipped and
+   half the stylesheet is invisible — .dhead's position:absolute slipped
+   through exactly that hole. Comments go first; they can hold braces. */
+for (const rule of css.replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .matchAll(/(?<=^|[{}])\s*([^{}@]+?)\s*\{([^{}]*)\}/g)) {
+  const pinned = Object.entries(HOSTILE).filter(([, re]) => re.test(rule[2])).map(([k]) => k);
   if (!pinned.length) continue;
-  for (const sel of rule[2].split(',')) {
+  for (const sel of rule[1].split(',')) {
     const m = sel.trim().match(/^\.([a-zA-Z][\w-]*)$/);
     if (m) greedy.set(m[1], new Set([...(greedy.get(m[1]) ?? []), ...pinned]));
   }
@@ -163,9 +168,9 @@ for (const f of screens) {
     for (const m of noHtml.matchAll(/class="([^"]+)"/g)) for (const c of m[1].split(/\s+/)) used.add(c);
     /* every property this card declares, per class name it mentions in a selector */
     const declared = new Map();
-    for (const rule of noCss.matchAll(/(^|[{}])\s*([^{}@]+?)\s*\{([^{}]*)\}/g)) {
-      const props = new Set([...rule[3].matchAll(/(?:^|;)\s*([a-z-]+)\s*:/g)].map((m) => m[1]));
-      for (const name of new Set([...rule[2].matchAll(/\.([a-zA-Z][\w-]*)/g)].map((m) => m[1]))) {
+    for (const rule of noCss.matchAll(/(?<=^|[{}])\s*([^{}@]+?)\s*\{([^{}]*)\}/g)) {
+      const props = new Set([...rule[2].matchAll(/(?:^|;)\s*([a-z-]+)\s*:/g)].map((m) => m[1]));
+      for (const name of new Set([...rule[1].matchAll(/\.([a-zA-Z][\w-]*)/g)].map((m) => m[1]))) {
         declared.set(name, new Set([...(declared.get(name) ?? []), ...props]));
       }
     }

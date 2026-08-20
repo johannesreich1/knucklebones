@@ -27,8 +27,9 @@
   .mstatus{font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--cy);
     text-transform:uppercase;text-shadow:0 0 12px rgba(40,232,255,.5)}
   /* .stagerow / .rune come from the app CSS (main.css) — the card and the game
-     cannot drift, and --cell here is the card's cell size */
-  .mplate .rune{margin-left:auto;margin-right:8px}
+     cannot drift, and --cell here is the card's cell size. The nameplate's
+     margin tweak rides on a card-local hook (.mrune) so .rune stays untouched */
+  .mplate .mrune{margin-left:auto;margin-right:8px}
   .stagerow{--cell:58px}
   .stagerow > .die{width:54px;height:54px;--cell:54px}
   .states{display:flex;justify-content:center;gap:24px;margin-top:20px}
@@ -46,7 +47,7 @@
     <button class="ico">{{ico:leave:15}}</button>
   </div>
 
-  <div class="mplate p2 idle"><span class="dot"></span><span class="nm">PLAYER 2</span><button class="rune idle" style="--sh:var(--mg)"><svg class="sico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><rect x="16.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><path d="M9 9.4h6M12.8 7.4l2.4 2-2.4 2"/><path d="M15 14.6H9M11.2 12.6l-2.4 2 2.4 2"/></svg><b class="n"></b></button><span class="tot">23</span></div>
+  <div class="mplate p2 idle"><span class="dot"></span><span class="nm">PLAYER 2</span><button class="rune idle mrune" style="--sh:var(--mg)"><svg class="sico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="2.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><rect x="16.2" y="4.4" width="5.6" height="15.2" rx="1.9"/><path d="M9 9.4h6M12.8 7.4l2.4 2-2.4 2"/><path d="M15 14.6H9M11.2 12.6l-2.4 2 2.4 2"/></svg><b class="n"></b></button><span class="tot">23</span></div>
   <div class="board3 side-top dice-static">
     <div class="col3 target"><div class="slot3"></div><div class="slot3"></div><div class="slot3">{{die:2:p2:50}}</div></div>
     <div class="col3 target"><div class="slot3"></div><div class="slot3">{{die:5:p2:50}}</div><div class="slot3">{{die:5:p2:50}}</div></div>
