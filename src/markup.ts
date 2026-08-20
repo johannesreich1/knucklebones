@@ -72,9 +72,6 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
 <!-- HOME: online-first. The duel is the hero, PLAY ONLINE the one primary
      action; local play sits behind the quiet PRACTICE strip. -->
 <div class="ov on" id="ovStart">
-  <!-- the chip IS the account: it already shows who you are and what you are
-       rated, so tapping it opens the rest -->
-  <button class="idchip anon" id="homeChip">NOT SIGNED IN</button>
   <div class="hero">
     <div class="eyebrow">Neon Edition</div>
     <h1>KNUCKLEBONES</h1>
@@ -82,6 +79,9 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <div class="sub2">Ranked dice duels</div>
   </div>
   <div class="homestack">
+    <!-- the plate IS the account: ring, avatar, name and points, docked on the
+         button that moves them (design 13d). boot's refreshHomeChip fills it. -->
+    <button class="pplate anon" id="homeChip">NOT SIGNED IN</button>
     <button class="btn primary" id="btnOnline">Play ranked match</button>
     <div class="hrow">
       <button class="btn" id="btnBoardHome">Leaderboard</button>

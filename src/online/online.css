@@ -107,38 +107,10 @@
    the OFFLINE mode selector made them universal, not online-only */
 
 /* ---- the profile (design card 92d, spec docs/LADDER.md §5) ---------------
-   The ring is ONE continuous fill — how far through the current GROUP you are
-   — and it is the only continuous feedback the ladder has now that divisions
-   are gone: group promotions are 37 to ~120 games apart, so this has to move
-   visibly on every match or the climb goes quiet between them. It animates by
-   tweening a single custom property.
-
-   The 270deg sweep starts at 225deg, not 180: 225 + 270 = 495 = 135, so it
-   runs lower-left, up the left, over the top, down the right, to lower-right,
-   leaving a 90deg gap centred on six o'clock with both ends at the same
-   height. Starting at 180 puts one end at the bottom and the other out at
-   three o'clock, which reads as a ring knocked askew. */
+   The ring itself (.ringwrap/.lring/.lpeak) lives in styles/main.css: the HOME
+   plate wears it at boot, before this chunk exists. Here is only what the
+   account panel adds around it. */
 #onAccount{gap:11px}
-.ringwrap{position:relative;width:min(62vw,206px);aspect-ratio:1;display:grid;place-items:center;
-  margin:2px auto 0;--p:0;--pk:0}
-.lring{position:absolute;inset:0;border-radius:50%;
-  background:conic-gradient(from 225deg,var(--cy) calc(var(--p) * 270deg),
-    rgba(255,255,255,.07) calc(var(--p) * 270deg) 270deg,transparent 270deg);
-  -webkit-mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
-  mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
-  filter:drop-shadow(0 0 14px rgba(40,232,255,.42))}
-/* The season peak, drawn only when it is AHEAD of you (LADDER.md §5). It is a
-   NEUTRAL white mark, not gold: colour on this screen means "live", and the
-   only live things are the fill showing your current percentage and the points
-   number it belongs to. A gold notch competed with both while marking
-   something you are no longer at. */
-.lpeak{position:absolute;inset:0;border-radius:50%;opacity:0;
-  background:conic-gradient(from 225deg,transparent 0 calc(var(--pk) * 270deg - 1.3deg),
-    rgba(233,241,255,.85) calc(var(--pk) * 270deg - 1.3deg) calc(var(--pk) * 270deg + 1.3deg),transparent 0);
-  -webkit-mask:radial-gradient(circle closest-side,transparent 77%,#000 78%);
-  mask:radial-gradient(circle closest-side,transparent 77%,#000 78%);
-  filter:drop-shadow(0 0 6px rgba(233,241,255,.6));transition:opacity .3s}
-.ringwrap.haspeak .lpeak{opacity:1}
 .avwrap{position:relative;display:grid;place-items:center;background:none;border:0;
   padding:0;cursor:pointer;font:inherit;z-index:2}
 .avwrap .avedit{position:absolute;right:-9px;bottom:-9px;width:26px;height:26px;border-radius:50%;

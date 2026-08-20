@@ -109,7 +109,8 @@ export async function myProfile(): Promise<Profile | null> {
   if (!user) return null;
   const { data } = await supa().from('profiles').select('id, nickname, rating, created_at, avatar').eq('id', user.id).maybeSingle();
   try {
-    if (data) localStorage.setItem(PROFILE_CACHE, JSON.stringify({ nickname: data.nickname, rating: data.rating }));
+    if (data) localStorage.setItem(PROFILE_CACHE,
+      JSON.stringify({ nickname: data.nickname, rating: data.rating, avatar: data.avatar }));
   } catch { /* forgetful host */ }
   return data as Profile | null;
 }

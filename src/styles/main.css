@@ -260,10 +260,12 @@ html.clock .timer.on{visibility:visible}
   opacity:0;pointer-events:none;visibility:hidden;transition:opacity .28s,visibility 0s .28s}
 .ov.on{opacity:1;pointer-events:auto;visibility:visible;transition:opacity .28s}
 #ovStart{overflow-y:auto;justify-content:flex-start}
-/* ONE spacer, not two. The pair used to centre the whole column; now the foot
-   claims the bottom with its own auto margin, and a second spacer would just
-   split the free space three ways and leave the foot floating mid-screen. */
-#ovStart::before{content:"";margin-top:auto;flex:0 0 auto}
+/* The hero rides near the TOP — a fixed offset, not an auto margin. An auto
+   spacer here centred the column, which read fine while the chip floated in a
+   corner; with the identity plate in the stack the centred block drifted low.
+   All remaining free space belongs to the foot's own auto margin, so the legal
+   links stay at the very bottom and the void sits under the practice strip. */
+#ovStart::before{content:"";flex:0 0 clamp(8px,4.5vh,40px)}
 .ov h1{margin:0;font-size:29px;letter-spacing:.2em;font-weight:900;text-align:center;
   background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
   -webkit-background-clip:text;background-clip:text;color:transparent;
@@ -899,14 +901,60 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 /* ============ HOME (online-first) ============
    The duel is the hero; PLAY ONLINE is the one primary action. Local play
    lives behind the quiet PRACTICE strip. Design source: design/screens/10*. */
-.idchip{position:absolute;top:calc(env(safe-area-inset-top,0px) + 10px);right:12px;
-  display:flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.12em;
-  color:var(--txt);border:1px solid rgba(255,255,255,.12);border-radius:99px;
-  padding:5px 11px;background:rgba(255,255,255,.04)}
-.idchip b{color:var(--cy);font-weight:800}
-.idchip .rt{color:var(--gold);font-weight:900}
-.idchip.anon{color:var(--dim);border-style:dashed}
-.idchip .die{width:16px;height:16px;--cell:16px;border-radius:5px}
+/* ---- the ladder ring (design card 92d, spec docs/LADDER.md §5) ----
+   ONE continuous fill — how far through the current GROUP you are — and the
+   ladder's only continuous feedback now that divisions are gone: promotions
+   are 37 to ~120 games apart, so this has to move on every match. It lives
+   HERE, not in online.css, because the home plate paints it at boot, before
+   the online chunk exists; the profile panel wears the same ring large.
+
+   The 270deg sweep starts at 225deg, not 180: 225 + 270 = 495 = 135, so it
+   runs lower-left, up the left, over the top, down the right, to lower-right,
+   leaving a 90deg gap centred on six o'clock with both ends at the same
+   height. Starting at 180 puts one end at the bottom and the other out at
+   three o'clock, which reads as a ring knocked askew. */
+.ringwrap{position:relative;width:min(62vw,206px);aspect-ratio:1;display:grid;place-items:center;
+  margin:2px auto 0;--p:0;--pk:0}
+.lring{position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 225deg,var(--cy) calc(var(--p) * 270deg),
+    rgba(255,255,255,.07) calc(var(--p) * 270deg) 270deg,transparent 270deg);
+  -webkit-mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
+  mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
+  filter:drop-shadow(0 0 14px rgba(40,232,255,.42))}
+/* The season peak, drawn only when it is AHEAD of you (LADDER.md §5). It is a
+   NEUTRAL white mark, not gold: colour on these screens means "live", and the
+   only live things are the fill showing your current percentage and the points
+   number it belongs to. A gold notch competed with both while marking
+   something you are no longer at. */
+.lpeak{position:absolute;inset:0;border-radius:50%;opacity:0;
+  background:conic-gradient(from 225deg,transparent 0 calc(var(--pk) * 270deg - 1.3deg),
+    rgba(233,241,255,.85) calc(var(--pk) * 270deg - 1.3deg) calc(var(--pk) * 270deg + 1.3deg),transparent 0);
+  -webkit-mask:radial-gradient(circle closest-side,transparent 77%,#000 78%);
+  mask:radial-gradient(circle closest-side,transparent 77%,#000 78%);
+  filter:drop-shadow(0 0 6px rgba(233,241,255,.6));transition:opacity .3s}
+.ringwrap.haspeak .lpeak{opacity:1}
+/* chip size: the same object, with a thicker relative band so four pixels of
+   sweep still read as a ring and not as an artifact */
+.ringwrap.mini{width:36px;margin:0;flex:0 0 auto}
+.ringwrap.mini .lring{-webkit-mask:radial-gradient(circle closest-side,transparent 75%,#000 76%);
+  mask:radial-gradient(circle closest-side,transparent 75%,#000 76%);
+  filter:drop-shadow(0 0 6px rgba(40,232,255,.4))}
+
+/* ---- the identity plate (design card 13d) ----
+   The account door ON the action stack: ring-avatar, name, group, points, one
+   slim row directly above PLAY RANKED MATCH — your standing and the button
+   that moves it read as a single block. Replaces the corner chip. */
+.pplate{display:flex;align-items:center;gap:10px;width:100%;padding:7px 12px 7px 7px;
+  border-radius:14px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.035);
+  font:inherit;color:var(--txt);cursor:pointer;text-align:left}
+.pplate .nm2{font-size:10.5px;letter-spacing:.1em;font-weight:800;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pplate .meta2{margin-left:auto;display:flex;align-items:baseline;gap:7px;flex:0 0 auto}
+.pplate .gl{font-size:8px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+.pplate .meta2 b{font-size:13.5px;font-weight:900;color:var(--gold)}
+.pplate .chev{color:var(--dim);font-size:14px;line-height:1;flex:0 0 auto}
+/* no account yet: the same plate, dashed, with an empty ring around nobody */
+.pplate.anon{color:var(--dim);border-style:dashed;font-size:10.5px;letter-spacing:.12em}
 .hero{display:flex;flex-direction:column;align-items:center;gap:4px;margin:6px 0 2px}
 .hero .eyebrow{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
 .hero h1{font-size:23px;letter-spacing:.24em}
@@ -920,7 +968,9 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
   text-shadow:0 0 18px rgba(255,209,102,.65);font-style:italic}
 .sub2{font-size:10px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase;
   text-align:center;margin-bottom:12px}
-.homestack{display:flex;flex-direction:column;gap:12px;width:100%;max-width:var(--w-col)}
+/* the little breath between "Ranked dice duels" and the plate + play pair */
+.homestack{display:flex;flex-direction:column;gap:12px;width:100%;max-width:var(--w-col);
+  margin-top:10px}
 .hrow{display:flex;gap:8px;width:100%}
 .hrow .btn{flex:1;min-width:0;padding:12px 6px;font-size:11px;letter-spacing:.12em}
 .quiet{margin-top:20px;display:flex;flex-direction:column;gap:11px;width:100%;max-width:var(--w-col)}

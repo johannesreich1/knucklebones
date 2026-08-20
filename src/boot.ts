@@ -7,17 +7,27 @@ export function refreshHomeChip(): void {
   try {
     const p = JSON.parse(localStorage.getItem('knucklebones.online.profile') || 'null');
     if (p && p.nickname) {
+      // the identity plate: the profile's ring at chip size, filled to the same
+      // groupFill the account screen shows large — one ladder, two zoom levels
+      const pts = p.rating ?? 0;
       chip.classList.remove('anon');
-      chip.innerHTML = 'PLAYING AS <b></b> · <span class="rt"></span>';
-      (chip.querySelector('b') as HTMLElement).textContent = p.nickname;
-      (chip.querySelector('.rt') as HTMLElement).textContent = String(p.rating ?? '');
+      chip.innerHTML = '<span class="ringwrap mini"><i class="lring"></i><span class="pav"></span></span>'
+        + '<span class="nm2"></span><span class="meta2"><span class="gl"></span><b></b></span>'
+        + '<span class="chev">›</span>';
+      (chip.querySelector('.ringwrap') as HTMLElement).style.setProperty('--p', String(groupFill(pts)));
+      paintAvatar(chip.querySelector('.pav') as HTMLElement, p.avatar, 18);
+      (chip.querySelector('.nm2') as HTMLElement).textContent = p.nickname;
+      (chip.querySelector('.gl') as HTMLElement).textContent = rankName(pts);
+      (chip.querySelector('.meta2 b') as HTMLElement).textContent = Number(pts).toLocaleString('en');
       return;
     }
   } catch { /* fall through to anon */ }
   chip.classList.add('anon');
-  chip.textContent = 'NOT SIGNED IN';
+  chip.innerHTML = '<span class="ringwrap mini"><i class="lring"></i></span>NOT SIGNED IN';
 }
 import { SPEC } from './core/rules.ts';
+import { groupFill, rankName } from './core/ladder.ts';
+import { paintAvatar } from './ui/avatar.ts';
 import { AI, ME, S } from './state.ts';
 import { loadStats, saveStats } from './persist.ts';
 import { Sfx } from './ui/audio.ts';

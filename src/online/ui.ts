@@ -14,6 +14,7 @@ import { rankName, groupFill, peakState, inApex } from '../core/ladder.ts';
 import { ask } from '../ui/askcard.ts';
 import { REDUCED } from '../ui/fx.ts';
 import { recordHtml } from '../ui/record.ts';
+import { AV_HUES, DEFAULT_AVATAR, parseAvatar, paintAvatar } from '../ui/avatar.ts';
 import { signUp, signIn, signOut, currentUser, ensureIdentity, attachEmail,
          myProfile, myRecord, rename, leaderboard, deleteAccount, join, readyPeer,
          myLadder, myStanding, matchHistory, setAvatar, bestStreak } from './session.ts';
@@ -333,27 +334,6 @@ async function showBoard(): Promise<void> {
       `<span class="ws">${recordHtml(r.wins, r.losses)}</span><span class="rt">${r.rating}</span>`;
     list.appendChild(div);
   });
-}
-
-/* ---- the avatar: a die face and a hue, "die:5:cy" ---- */
-const AV_HUES: Record<string, string> = {
-  cy: 'var(--cy)', mg: 'var(--mg)', gold: 'var(--gold)',
-  green: '#7ee787', violet: '#b18cff', orange: '#ff8a3d',
-};
-const DEFAULT_AVATAR = 'die:5:cy';
-export function parseAvatar(v: string | null | undefined): { face: number; hue: string } {
-  const m = /^die:([1-6]):([a-z]+)$/.exec(v ?? '');
-  return m && AV_HUES[m[2]] ? { face: +m[1], hue: m[2] } : { face: 5, hue: 'cy' };
-}
-/* one die, tinted — --dc is what the die's pips and border read for colour */
-function paintAvatar(slot: HTMLElement, v: string | null | undefined, size = 74): void {
-  const { face, hue } = parseAvatar(v);
-  slot.innerHTML = '';
-  const die = makeDie(face, ME);
-  die.style.setProperty('--dc', AV_HUES[hue]);
-  die.style.width = die.style.height = `${size}px`;
-  die.style.setProperty('--cell', `${size}px`);
-  slot.appendChild(die);
 }
 
 /* The ring sweeps up to its value when the screen opens. It is not decoration:

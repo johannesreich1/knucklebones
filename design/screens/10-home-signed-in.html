@@ -1,16 +1,12 @@
 <!-- meta name="Home — signed in" group="1 · Home" subtitle="Online-first: the duel is the hero, one tap to ranked" width=412 height=980 links="Matchmaking, Leaderboard, Settings, Account, Local play" -->
 <style>
   /* every visual comes from the app's own HOME CSS (src/styles/main.css);
-     this is preview glue only — the real overlay centers and pins for us */
+     this is preview glue only — the real overlay top-anchors and pins for us */
   .scr{align-items:center}
   .hero{margin-top:34px}
   .viewfoot{margin-top:auto;padding-top:20px}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
-  <!-- the chip IS the account door: it already says who you are and what you are
-       rated, so tapping it opens the rest -->
-  <div class="idchip">PLAYING AS <b>FrostLynx303</b> · <span class="rt">1016</span></div>
-
   <div class="hero">
     <div class="eyebrow">Neon Edition</div>
     <h1>KNUCKLEBONES</h1>
@@ -23,6 +19,14 @@
   </div>
 
   <div class="homestack">
+    <!-- the plate IS the account door (design 13d): the profile's ring at chip
+         size, docked on the button that moves it -->
+    <button class="pplate dice-static">
+      <span class="ringwrap mini" style="--p:.489"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+      <span class="nm2">FrostLynx303</span>
+      <span class="meta2"><span class="gl">GOLD</span><b>2,494</b></span>
+      <span class="chev">›</span>
+    </button>
     <button class="btn primary">Play ranked match</button>
     <div class="hrow">
       <button class="btn">Leaderboard</button>

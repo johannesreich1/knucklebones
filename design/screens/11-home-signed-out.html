@@ -7,8 +7,6 @@
   .hint{font-size:10px;letter-spacing:.14em;color:var(--dim);text-align:center}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
-  <div class="idchip anon">NOT SIGNED IN</div>
-
   <div class="hero">
     <div class="eyebrow">Neon Edition</div>
     <h1>KNUCKLEBONES</h1>
@@ -21,6 +19,11 @@
   </div>
 
   <div class="homestack">
+    <!-- no account yet: the same plate, dashed, an empty ring around nobody -->
+    <button class="pplate anon">
+      <span class="ringwrap mini"><i class="lring"></i></span>
+      NOT SIGNED IN
+    </button>
     <button class="btn primary">Play ranked match</button>
     <div class="hrow">
       <button class="btn">Leaderboard</button>
