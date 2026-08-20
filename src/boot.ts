@@ -112,7 +112,7 @@ export function boot(embed){
       : 'The board is lost — offline games are quick, and this one ends here.';
     $('#btnQuitYes').textContent = ranked ? 'Forfeit' : 'Quit game';
   };
-  tap($('#btnSettings'),()=>{ Sfx.tap(); armQuit(); show('#ovQuit'); });
+  tap($('#btnLeave'),()=>{ Sfx.tap(); armQuit(); show('#ovQuit'); });
   tap($('#btnQuitNo'),()=>{ Sfx.tap(); hide('#ovQuit'); });
   tap($('#btnQuitYes'),()=>{ Sfx.tap(); hide('#ovQuit'); requestLeave(); toMenu(); });
   tap($('#btnCloseSettings'),()=>{ Sfx.tap(); hide('#ovSettings'); });

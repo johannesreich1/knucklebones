@@ -31,7 +31,7 @@ out.hud = await page.evaluate(() => ({
   titleStillNamed: document.querySelector('#ovStart h1').textContent === 'KNUCKLEBONES',
 }));
 check(!out.hud.brand, 'wordmark still in the in-game hud', out.hud);
-check(out.hud.icons.join(',') === 'btnSettings', 'hud must hold ONLY settings', out.hud);
+check(out.hud.icons.join(',') === 'btnLeave', 'hud must hold ONLY the way out', out.hud);
 check(out.hud.titleStillNamed, 'title screen lost the name', out.hud);
 
 // ===== popups, deterministically via the tutorial (home strip button) =====
@@ -71,7 +71,7 @@ check(out.leftover === 0, 'popups leak into the DOM', out.leftover);
 
 // quit tutorial (via Settings — the sheet holds the quit button now),
 // popups must also fire in a NORMAL game (they are not tutorial-only)
-await page.tap('#btnSettings'); await page.waitForTimeout(300);
+await page.tap('#btnLeave'); await page.waitForTimeout(300);
 await page.tap('#btnQuitYes'); await page.waitForTimeout(400);
 await page.evaluate(() => { window.__pops = []; });
 await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
@@ -169,7 +169,7 @@ check(out.badgeOpens.now === 'singlestrike', 'modes library did not highlight th
 // the library serves both rosters now, so its close button is semantic
 await page.tap('[data-close="ovModes"]'); await page.waitForTimeout(300);
 // a classic offline game keeps the record and stays inert — nothing to explain
-await page.tap('#btnSettings'); await page.waitForTimeout(250);
+await page.tap('#btnLeave'); await page.waitForTimeout(250);
 await page.tap('#btnQuitYes'); await page.waitForTimeout(400);
 await page.evaluate(() => { window.__kb.S.localMode = 0; window.__kb.openPractice(); });
 await page.tap('#btnPlay'); await page.waitForTimeout(1200);

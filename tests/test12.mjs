@@ -135,7 +135,7 @@ check(out.faceReplay.seat === 'face' && out.faceReplay.bottom === 1 && out.faceR
       'play again lost the face seating', out.faceReplay);
 
 // ===== D. pass mode still works after switching back =====
-await page.tap('#btnSettings'); await page.waitForTimeout(300); await page.tap('#btnQuitYes'); await page.waitForTimeout(400);
+await page.tap('#btnLeave'); await page.waitForTimeout(300); await page.tap('#btnQuitYes'); await page.waitForTimeout(400);
 await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#seatSeg button[data-seat="pass"]'); await page.waitForTimeout(200);
 await page.tap('#btnPlay'); await page.waitForTimeout(900);
@@ -153,7 +153,7 @@ for (let i = 0; i < 120; i++) {
 out.passModeBack = { sawPassCard, faceClass: await page.evaluate(() => document.documentElement.classList.contains('face')) };
 check(sawPassCard && !out.passModeBack.faceClass, 'pass mode broken after face mode', out.passModeBack);
 const quitVia = await page.evaluate(() => document.getElementById('ovPass').classList.contains('on'));
-if (quitVia) { await page.tap('#passQuit'); } else { await page.tap('#btnSettings'); await page.waitForTimeout(300); await page.tap('#btnQuitYes'); } await page.waitForTimeout(400);
+if (quitVia) { await page.tap('#passQuit'); } else { await page.tap('#btnLeave'); await page.waitForTimeout(300); await page.tap('#btnQuitYes'); } await page.waitForTimeout(400);
 
 // ===== E. small screen: duo title with 3 cards must stay reachable =====
 const small = await browser.newContext({ viewport: { width: 320, height: 568 }, hasTouch: true, isMobile: true });

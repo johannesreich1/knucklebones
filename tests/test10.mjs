@@ -52,7 +52,7 @@ check(s.legal === 3, 'legal affordance missing in normal play', s);
 // against the tutorial's gap below, so both directions are covered by one fact.
 
 // duo: same check
-await page.tap('#btnSettings'); await page.waitForTimeout(300); await page.tap('#btnQuitYes'); await page.waitForTimeout(400);
+await page.tap('#btnLeave'); await page.waitForTimeout(300); await page.tap('#btnQuitYes'); await page.waitForTimeout(400);
 await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#modeSeg button[data-m="duo"]'); await page.waitForTimeout(200);
 await page.tap('#btnPlay'); await page.waitForTimeout(1400);
@@ -60,7 +60,7 @@ s = await waitChoose();
 out.duoNormal = { pills: s.pills, danger: s.danger };
 check(s.pills === 0 && s.danger === 0, 'previews shown in duo play', s);
 const quitVia = await page.evaluate(() => document.getElementById('ovPass').classList.contains('on'));
-if (quitVia) { await page.tap('#passQuit'); } else { await page.tap('#btnSettings'); await page.waitForTimeout(300); await page.tap('#btnQuitYes'); } await page.waitForTimeout(400);
+if (quitVia) { await page.tap('#passQuit'); } else { await page.tap('#btnLeave'); await page.waitForTimeout(300); await page.tap('#btnQuitYes'); } await page.waitForTimeout(400);
 // ===================== B. THE TUTORIAL, WALKED END TO END (from the home strip) =====================
 // the tutorial now lives one level in, behind HOW TO PLAY
 await page.tap('#btnLearn'); await page.waitForTimeout(320);

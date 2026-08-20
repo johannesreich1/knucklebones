@@ -1,8 +1,10 @@
-<!-- meta name="Quit / forfeit" group="5 · Sheets" subtitle="The HUD's one control mid-match: one question, forfeit-aware copy, a way back" width=412 height=880 links="Home" -->
+<!-- meta name="Quit / forfeit" group="5 · Sheets" subtitle="The HUD's one control mid-match: one question, forfeit-aware copy, and the way back wearing the colour" width=412 height=880 links="Home" -->
 <style>
   /* the ask-card is the app's own component (src/styles/main.css) — the card
      shows both of its rosters side by side, which is the point: one card,
-     two sets of words. */
+     two sets of words — and one emphasis rule, the way BACK carries the
+     gradient at the smaller size while the destructive answer stays full
+     width and quiet. */
   .scr{gap:26px;justify-content:center}
   .cap2{font-size:10px;letter-spacing:.18em;color:var(--dim);text-align:center;margin-bottom:-14px}
   .askcard{max-width:320px}
@@ -13,16 +15,16 @@
   <div class="askcard">
     <div class="fh">Quit this game?</div>
     <p class="fp">The board is lost — offline games are quick, and this one ends here.</p>
-    <button class="btn">Quit game</button>
-    <button class="btn ghost">Keep playing</button>
+    <button class="btn quiet">Quit game</button>
+    <button class="btn primary small">Keep playing</button>
   </div>
 
   <div class="cap2">RANKED — LEAVING COSTS RATING</div>
   <div class="askcard">
     <div class="fh">Forfeit this match?</div>
     <p class="fp">Leaving a ranked match loses it, and the rating goes with it.</p>
-    <button class="btn">Forfeit</button>
-    <button class="btn ghost">Keep playing</button>
+    <button class="btn quiet">Forfeit</button>
+    <button class="btn primary small">Keep playing</button>
   </div>
 
 </div></div>

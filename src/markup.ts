@@ -1,6 +1,8 @@
 // The app's static markup, injected at boot by each entry point.
 // Single source of truth for standalone page and widget alike (the old build
 // derived the widget's copy from the page via regex — this is that, deleted).
+import { chromeIcon } from './ui/chromeicons.ts';
+
 export const MARKUP = `<div id="bg"></div><div id="vig"></div>
 
 <div id="app">
@@ -8,7 +10,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <div class="rec" id="rec">W <b>0</b> · L <i>0</i></div>
     <div class="sp"></div>
     <!-- the game's ONE control: settings (quit lives inside the sheet) -->
-    <button class="ico" id="btnSettings" aria-label="Settings"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><path d="M4 6.5h8.4M17.6 6.5H20M4 12h1.4M10.6 12H20M4 17.5h10.4M19.6 17.5H20"/><circle cx="15" cy="6.5" r="2.6"/><circle cx="8" cy="12" r="2.6"/><circle cx="17" cy="17.5" r="2.6"/></svg></button>
+    <button class="ico" id="btnLeave" aria-label="Leave game">${chromeIcon('leave', 15)}</button>
   </div>
 
   <div id="coach" hidden>
@@ -313,8 +315,8 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   <div class="askcard">
     <div class="fh" id="quitHead">Quit this game?</div>
     <p class="fp" id="quitBody">The board is lost — offline games are quick, and this one ends here.</p>
-    <button class="btn" id="btnQuitYes">Quit game</button>
-    <button class="btn ghost" id="btnQuitNo">Keep playing</button>
+    <button class="btn quiet" id="btnQuitYes">Quit game</button>
+    <button class="btn primary small" id="btnQuitNo">Keep playing</button>
   </div>
 </div>
 

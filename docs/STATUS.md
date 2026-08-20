@@ -11,7 +11,7 @@ was decided, and what's still open.*
 | **Web** | **LIVE** at https://knucklebones-asg.pages.dev — Cloudflare Pages, auto-deploys every push to `main` |
 | **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0013, RLS + column-grant hardened. 0014 (Game Center ids) is written but NOT applied — it waits for a device |
 | **Edge Functions** | `pvp-join` v13, `pvp-move` v10, `pvp-claim` v7, `account-delete` v1 — all ACTIVE, nothing dead deployed. `gc-auth` is written but undeployed (same reason) |
-| **CI** | GitHub Actions: build + full test gate (22 suites) on every push — green through current `main` |
+| **CI** | GitHub Actions: build + full test gate (23 suites) on every push — green through current `main` |
 | **Design system** | 170 cards (44 screens × 4 device sizes + the two `00-` specs) in the Claude Design project "Knucklebones", generated from the app's real CSS **and its real code** — see "Cards render the app" below |
 | **Signups** | **Open** — a first tap on RANKED mints a guest account (no email, no form). Attaching an email still waits on SMTP; see `docs/IDENTITY.md` |
 
@@ -260,6 +260,22 @@ Four moves, each putting a control where its context makes sense:
 `.firstcard` became `.askcard` (the quit modal already reused it, so the name
 had stopped describing its rosters) and `.homefoot` became `.viewfoot` (home's
 legal links, settings' build tag — one strip, two rosters).
+
+Finished the next day on player report: the HUD glyph was still a **sliders
+icon**, promising a Settings screen it no longer opened — it is a doorway with
+an arrow leaving it now, `#btnSettings` became `#btnLeave`, and the glyph lives
+in the new `ui/chromeicons.ts` so the three design cards that had copied it
+render the app's own. In the ask-card, **the way back wears the colour**: the
+gradient sits on *Keep playing* at the smaller size, while the destructive
+answer is full width and quiet.
+
+Hunting that down turned up a real defect: **`.btn.ghost` was defined only in
+`online/online.css`**, the lazily-imported chunk — so the offline first-run
+offer's "Skip, I know the rules" rendered as a solid button for every newcomer
+on a PWA or native install, and the single-file build (which inlines
+everything) hid it. The rule moved to `main.css`, and `tests/cssreach.test.ts`
+now fails the gate on any offline markup that names a class only the online
+stylesheet defines.
 
 ### 7. Cards render the app, they no longer transcribe it (2026-08-20)
 
