@@ -45,13 +45,21 @@ const css = ['src/styles/page.css', 'src/styles/main.css', 'src/online/online.cs
    chrome (.shead, .btn, .lbl) and that is the point of them; the hazard is the
    narrow set that hides or hard-sizes, because there the app wins in silence.
    .pip ships opacity:0, so a study's form strip rendered as literally nothing. */
-const HOSTILE = /(^|;)\s*(opacity\s*:\s*0(?!\.)|display\s*:\s*none|position\s*:\s*(absolute|fixed)|height\s*:)/;
-const greedy = new Set();
+const HOSTILE = { opacity: /opacity\s*:\s*0(?!\.)/, display: /display\s*:\s*none/,
+                  position: /position\s*:\s*(absolute|fixed)/, height: /(^|;)\s*height\s*:/ };
+/* For each BARE app class, which hostile properties its rule pins. A card may
+   wear such a class freely — card CSS is inlined after the app's, so a card
+   rule that sets the same property simply wins. The hazard is the card that
+   styles the class WITHOUT covering the pinned property: `.step .pts` set only
+   a margin, so the app's `position:absolute` survived and four tier numbers
+   flew to the corner. */
+const greedy = new Map();
 for (const rule of css.matchAll(/(^|[{}])\s*([^{}@]+?)\s*\{([^{}]*)\}/g)) {
-  if (!HOSTILE.test(rule[3])) continue;
+  const pinned = Object.entries(HOSTILE).filter(([, re]) => re.test(rule[3])).map(([k]) => k);
+  if (!pinned.length) continue;
   for (const sel of rule[2].split(',')) {
     const m = sel.trim().match(/^\.([a-zA-Z][\w-]*)$/);
-    if (m) greedy.add(m[1]);
+    if (m) greedy.set(m[1], new Set([...(greedy.get(m[1]) ?? []), ...pinned]));
   }
 }
 
@@ -139,18 +147,35 @@ for (const f of screens) {
      only the classes whose app rule HIDES or hard-sizes (see `greedy` above).
      This repo has paid for that three times now (.fc, .table/.face, .pip and
      .chip); it is a check, not a memory. */
-  const style = src.slice(src.indexOf('<style>'), src.indexOf('</style>'));
+  const cut = src.indexOf('</style>');
+  const style = cut < 0 ? '' : src.slice(src.indexOf('<style>'), cut);
+  const markup = cut < 0 ? src : src.slice(cut);
   if (style) {
-    const bare = new Set();
-    for (const rule of style.matchAll(/(^|[{}])\s*([^{}]+?)\s*\{/g)) {
-      for (const sel of rule[2].split(',')) {
-        const m = sel.trim().match(/^\.([a-zA-Z][\w-]*)$/);   // a SINGLE bare class
-        if (m && greedy.has(m[1])) bare.add(m[1]);
+    /* A card that both STYLES a name and USES it in markup wants its own
+       meaning for it. Scoping its own rule (`.step .pts`) does not help: the
+       app's bare `.pts` still matches the element, and .pts is absolutely
+       positioned, so four tier numbers flew to the corner. Cards that reuse a
+       guarded class on purpose (.ico, .dial, .dtrail) never declare it — that
+       is exactly what tells the two apart. */
+    const noCss = style.replace(/\/\*[\s\S]*?\*\//g, ' ');       // a comment naming .ico is prose
+    const noHtml = markup.replace(/<!--[\s\S]*?-->/g, ' ');
+    const used = new Set();
+    for (const m of noHtml.matchAll(/class="([^"]+)"/g)) for (const c of m[1].split(/\s+/)) used.add(c);
+    /* every property this card declares, per class name it mentions in a selector */
+    const declared = new Map();
+    for (const rule of noCss.matchAll(/(^|[{}])\s*([^{}@]+?)\s*\{([^{}]*)\}/g)) {
+      const props = new Set([...rule[3].matchAll(/(?:^|;)\s*([a-z-]+)\s*:/g)].map((m) => m[1]));
+      for (const name of new Set([...rule[2].matchAll(/\.([a-zA-Z][\w-]*)/g)].map((m) => m[1]))) {
+        declared.set(name, new Set([...(declared.get(name) ?? []), ...props]));
       }
     }
-    if (bare.size) {
-      die(`${f}: redefines app class(es) ${[...bare].map((c) => '.' + c).join(', ')} — `
-        + `the app's rule is also in scope and will fight it. Rename, or scope the rule.`);
+    for (const [name, pinned] of greedy) {
+      if (!used.has(name) || !declared.has(name)) continue;   // worn as-is: that is reuse
+      const missed = [...pinned].filter((prop) => !declared.get(name).has(prop));
+      if (missed.length) {
+        die(`${f}: styles .${name}, which the app pins with ${missed.join(', ')} — your rule does `
+          + `not override that, so the app's wins. Rename the card's class, or set ${missed.join(' and ')}.`);
+      }
     }
   }
 

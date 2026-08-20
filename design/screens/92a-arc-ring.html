@@ -1,0 +1,80 @@
+<!-- meta name="C1 — Ringed avatar" group="9 · Profile · C refined" subtitle="The avatar lives inside the arc and IS the edit affordance; points read below it, the division ticks make the steps literal" width=412 height=980 links="Match history, Ladder" -->
+<style>
+  /* The arc is the only invented element: one conic-gradient plus a mask, so it
+     animates by moving --p and needs no SVG and no script. Everything else is
+     the app's own — .shead, .btn, the die, the score line. */
+  .shead{margin-bottom:4px}
+  .pane{display:flex;flex-direction:column;gap:15px;width:100%;max-width:var(--w-col);
+    margin:0 auto;align-items:center}
+  .arcwrap{position:relative;width:236px;height:236px;display:grid;place-items:center}
+  .arc{position:absolute;inset:0;border-radius:50%;
+    background:conic-gradient(from 180deg,var(--cy) calc(var(--p) * 270deg),
+      rgba(255,255,255,.07) calc(var(--p) * 270deg) 270deg,transparent 270deg);
+    -webkit-mask:radial-gradient(circle closest-side,transparent 82%,#000 83%);
+    mask:radial-gradient(circle closest-side,transparent 82%,#000 83%);
+    filter:drop-shadow(0 0 15px rgba(40,232,255,.45))}
+  /* the two gaps that turn one arc into THREE divisions — the steps, literally */
+  .ticks{position:absolute;inset:0;border-radius:50%;
+    background:conic-gradient(from 180deg,transparent 0 88deg,var(--bg) 88deg 92deg,
+      transparent 92deg 178deg,var(--bg) 178deg 182deg,transparent 182deg);
+    -webkit-mask:radial-gradient(circle closest-side,transparent 80%,#000 81%);
+    mask:radial-gradient(circle closest-side,transparent 80%,#000 81%)}
+  .avwrap{position:relative;display:grid;place-items:center;cursor:pointer}
+  .avwrap .ring{position:absolute;inset:-9px;border-radius:26px;
+    border:1px solid rgba(255,255,255,.12)}
+  .avedit{position:absolute;right:-13px;bottom:-13px;width:28px;height:28px;border-radius:50%;
+    display:grid;place-items:center;background:rgba(10,13,28,.95);
+    border:1px solid rgba(40,232,255,.55);color:var(--cy);font-size:12px;
+    box-shadow:0 0 14px rgba(40,232,255,.3)}
+  .ptv{display:flex;flex-direction:column;align-items:center;gap:3px;margin-top:-4px}
+  .ptv b{font-size:38px;font-weight:900;color:var(--gold);line-height:1;
+    text-shadow:0 0 26px rgba(255,209,102,.42);letter-spacing:-.01em}
+  .ptv span{font-size:8.5px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase}
+  .tierline{display:flex;align-items:baseline;justify-content:center;gap:9px}
+  .tierline .tn{font-size:15px;font-weight:900;letter-spacing:.2em;color:var(--txt)}
+  .tierline .dv{font-size:15px;font-weight:900;letter-spacing:.1em;color:var(--cy)}
+  .togo{font-size:9.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase}
+  .togo b{color:var(--gold)}
+  .hist{display:flex;align-items:center;gap:7px;width:100%;padding:11px 13px;border-radius:14px;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);cursor:pointer}
+  .hist .hl{font-size:8.5px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase;margin-right:2px}
+  .res{width:17px;height:17px;border-radius:6px;display:grid;place-items:center;
+    font-size:8.5px;font-weight:900}
+  .res.w{background:rgba(40,232,255,.16);border:1px solid rgba(40,232,255,.5);color:var(--cy)}
+  .res.l{background:rgba(255,47,160,.13);border:1px solid rgba(255,47,160,.45);color:#ff9ccb}
+  .hist .go{margin-left:auto;color:var(--dim);font-weight:800}
+  .delta{display:flex;justify-content:center;gap:14px;font-size:9.5px;letter-spacing:.14em;
+    color:var(--dim);text-transform:uppercase}
+  .delta b{font-weight:900}
+  .delta .up{color:var(--cy)}
+  .delta .dn{color:#ff9ccb}
+  .acts{display:flex;flex-direction:column;gap:9px;width:100%}
+  .acts .btn{width:100%;min-width:0}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">PROFILE</span><span class="pad"></span></div>
+  <div class="pane">
+    <div class="arcwrap" style="--p:.58">
+      <i class="arc"></i><i class="ticks"></i>
+      <div class="avwrap dice-static">
+        <i class="ring"></i>
+        {{die:5:p1:96}}
+        <span class="avedit">✎</span>
+      </div>
+    </div>
+    <div class="ptv"><b>7,465</b><span>Ladder points</span></div>
+    <div class="tierline"><span class="tn">GOLD</span><span class="dv">II</span></div>
+    <div class="togo"><b>105</b> to GOLD I</div>
+    <div class="delta"><span>Last match <b class="up">+80</b></span><span>A loss costs <b class="dn">−60</b></span></div>
+    <div class="hist">
+      <span class="hl">Form</span>
+      <span class="res w">W</span><span class="res w">W</span><span class="res l">L</span>
+      <span class="res w">W</span><span class="res w">W</span><span class="res l">L</span>
+      <span class="go">Match history ›</span>
+    </div>
+    <div class="acts">
+      <button class="btn">Change nickname</button>
+      <button class="btn">Sign out</button>
+    </div>
+  </div>
+</div></div>

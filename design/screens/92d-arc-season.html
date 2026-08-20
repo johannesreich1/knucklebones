@@ -1,0 +1,76 @@
+<!-- meta name="C4 — Season-shaped" group="9 · Profile · C refined" subtitle="Identical to ship today, but every number already belongs to a season — the shelf is one quiet chip now and a picker the day there are two" width=412 height=1000 links="Match history, Ladder" -->
+<style>
+  /* Same arc as C1, drawn smaller, with two structural additions that cost
+     nothing today: the season shelf (one chip now, a row of chips later) and a
+     PEAK marker on the arc — the highest point reached this season, which is
+     the thing a soft reset carries forward. */
+  .shead{margin-bottom:4px}
+  .pane{display:flex;flex-direction:column;gap:13px;width:100%;max-width:var(--w-col);
+    margin:0 auto;align-items:center}
+  .shelf{display:flex;gap:7px;width:100%;align-items:center}
+  .scur{padding:7px 12px;border-radius:10px;font-size:9px;letter-spacing:.22em;
+    text-transform:uppercase;font-weight:900;color:var(--gold);
+    background:rgba(255,209,102,.08);border:1px solid rgba(255,209,102,.28)}
+  .shelf .snote{font-size:8.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+  .arcwrap{position:relative;width:200px;height:200px;display:grid;place-items:center}
+  .arc{position:absolute;inset:0;border-radius:50%;
+    background:conic-gradient(from 180deg,var(--cy) calc(var(--p) * 270deg),
+      rgba(255,255,255,.07) calc(var(--p) * 270deg) 270deg,transparent 270deg);
+    -webkit-mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
+    mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
+    filter:drop-shadow(0 0 14px rgba(40,232,255,.42))}
+  /* the season's high-water mark, parked where it was reached */
+  .peak{position:absolute;inset:0;border-radius:50%;
+    background:conic-gradient(from 180deg,transparent 0 calc(var(--pk) * 270deg - 1.4deg),
+      var(--gold) calc(var(--pk) * 270deg - 1.4deg) calc(var(--pk) * 270deg + 1.4deg),transparent 0);
+    -webkit-mask:radial-gradient(circle closest-side,transparent 77%,#000 78%);
+    mask:radial-gradient(circle closest-side,transparent 77%,#000 78%);
+    filter:drop-shadow(0 0 7px rgba(255,209,102,.9))}
+  .avwrap{position:relative;display:grid;place-items:center;cursor:pointer}
+  .avedit{position:absolute;right:-9px;bottom:-9px;width:26px;height:26px;border-radius:50%;
+    display:grid;place-items:center;background:rgba(10,13,28,.95);
+    border:1px solid rgba(40,232,255,.55);color:var(--cy);font-size:11px}
+  .ptv{display:flex;flex-direction:column;align-items:center;gap:2px}
+  .ptv b{font-size:33px;font-weight:900;color:var(--gold);line-height:1;
+    text-shadow:0 0 24px rgba(255,209,102,.42)}
+  .ptv span{font-size:8.5px;letter-spacing:.26em;color:var(--dim);text-transform:uppercase}
+  .tierline{display:flex;align-items:baseline;gap:9px}
+  .tierline .tn{font-size:14px;font-weight:900;letter-spacing:.2em;color:var(--txt)}
+  .tierline .dv{font-size:14px;font-weight:900;color:var(--cy)}
+  .facts{display:flex;gap:8px;width:100%}
+  .fact{flex:1;text-align:center;padding:9px 5px;border-radius:12px;
+    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08)}
+  .fact b{display:block;font-size:14px;font-weight:900;color:var(--txt)}
+  .fact span{font-size:7.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+  .fact.pk b{color:var(--gold)}
+  .hist{display:flex;align-items:center;width:100%;padding:12px 14px;border-radius:14px;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);cursor:pointer;
+    font-size:11px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+  .hist b{color:var(--txt);margin-left:auto;letter-spacing:.06em}
+  .acts{display:flex;flex-direction:column;gap:9px;width:100%}
+  .acts .btn{width:100%;min-width:0}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">PROFILE</span><span class="pad"></span></div>
+  <div class="pane">
+    <!-- one season, so one chip and no chevron. The day there are two this row
+         becomes the picker, and nothing above or below it has to move. -->
+    <div class="shelf"><span class="scur">Season 1</span><span class="snote">Running</span></div>
+    <div class="arcwrap" style="--p:.58;--pk:.79">
+      <i class="arc"></i><i class="peak"></i>
+      <div class="avwrap dice-static">{{die:5:p1:84}}<span class="avedit">✎</span></div>
+    </div>
+    <div class="ptv"><b>7,465</b><span>Ladder points</span></div>
+    <div class="tierline"><span class="tn">GOLD</span><span class="dv">II</span></div>
+    <div class="facts">
+      <div class="fact"><b>#4</b><span>Rank</span></div>
+      <div class="fact"><b>12–7</b><span>Record</span></div>
+      <div class="fact pk"><b>7,620</b><span>Peak</span></div>
+    </div>
+    <div class="hist">Match history <b>19 games ›</b></div>
+    <div class="acts">
+      <button class="btn">Change nickname</button>
+      <button class="btn">Sign out</button>
+    </div>
+  </div>
+</div></div>
