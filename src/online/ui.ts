@@ -590,15 +590,22 @@ async function showAvatar(): Promise<void> {
 /* ---- match history: what each match ACTUALLY paid ---- */
 async function showHistory(): Promise<void> {
   panel('onHistory');
-  const lad = await myLadder();
+  /* header and list speak the SAME season now (migration 0025): the tally
+     comes from season_ratings and the RPC scopes its rows to match. The Elo
+     era was retired into season 0 at the cutover, not deleted — myRecord()
+     counts lifetime, and the difference is named at the foot of the list so
+     a hundred old matches read as history, never as a leak or a loss. */
+  const [lad, life] = await Promise.all([myLadder(), myRecord()]);
   $('#onHistoryTotal').innerHTML = lad
     ? recordHtml(lad.wins, lad.losses) + (lad.draws ? ` · ${lad.draws}D` : '')
     : '&nbsp;';
   const list = $('#onHistoryList');
   list.innerHTML = '<div class="row">Loading…</div>';
   const rows = await matchHistory();
-  if (!rows.length) { list.innerHTML = '<div class="row">No ranked matches yet.</div>'; return; }
-  list.innerHTML = '';
+  const seasonGames = lad ? lad.wins + lad.losses + lad.draws : 0;
+  const lifeGames = life ? life.wins + life.losses + life.draws : 0;
+  const retired = Math.max(0, lifeGames - seasonGames);
+  list.innerHTML = rows.length ? '' : '<div class="row">No ranked matches this season.</div>';
   for (const r of rows) {
     const div = document.createElement('div');
     div.className = 'row hrow ' + r.result;
@@ -610,6 +617,12 @@ async function showHistory(): Promise<void> {
       `<span class="hsc">${r.mine}–${r.theirs}</span>` +
       `<span class="hd">${sign}${r.delta}</span>` +
       `<span class="hwhen">${when}</span>`;
+    list.appendChild(div);
+  }
+  if (retired > 0) {
+    const div = document.createElement('div');
+    div.className = 'hretired';
+    div.textContent = `Pre-season · ${retired} ${retired === 1 ? 'match' : 'matches'} · kept, not counted`;
     list.appendChild(div);
   }
 }

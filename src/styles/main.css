@@ -914,16 +914,19 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
    three o'clock, which reads as a ring knocked askew. */
 .ringwrap{position:relative;width:min(62vw,206px);aspect-ratio:1;display:grid;place-items:center;
   margin:2px auto 0;--p:0;--pk:0}
-/* The track's tail FADES over its last 14deg into the mouth. The fill's end of
-   the opening already reads soft — the cyan blooms into the gap through the
-   drop-shadow — but the grey track used to stop dead, so the two ends of the
-   mouth looked unequal and the group name below sat visually off-centre.
-   (When the fill itself reaches past the fade's start, the stops clamp and the
-   fade simply runs from the fill's edge — conic stops never go backwards.) */
+/* The track's tail DIMS toward the mouth and then breaks off hard. The first
+   cut of this faded 256deg→270deg all the way to zero, which dissolved the
+   arc's end — you could not say where the ring stopped. The dimming is right
+   (the fill's end of the mouth reads soft through the cyan bloom, and a track
+   that stays full-strength to the edge looked unequal), so it now starts
+   EARLIER (246deg) and lands on a still-visible grey at 270deg with a hard
+   stop — the eye gets both the approach and the edge.
+   (When the fill itself reaches past 246deg, the stops clamp and the dimming
+   simply runs from the fill's edge — conic stops never go backwards.) */
 .lring{position:absolute;inset:0;border-radius:50%;
   background:conic-gradient(from 225deg,var(--cy) calc(var(--p) * 270deg),
-    rgba(255,255,255,.07) calc(var(--p) * 270deg),rgba(255,255,255,.07) 256deg,
-    rgba(255,255,255,0) 270deg,transparent 270deg);
+    rgba(255,255,255,.07) calc(var(--p) * 270deg),rgba(255,255,255,.07) 246deg,
+    rgba(255,255,255,.035) 270deg,transparent 270deg);
   -webkit-mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
   mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
   filter:drop-shadow(0 0 14px rgba(40,232,255,.42))}
