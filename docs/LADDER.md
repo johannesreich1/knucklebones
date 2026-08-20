@@ -1,9 +1,8 @@
 # The Ladder — points, groups, seasons
 
-*Spec, and as of 2026-08-20 also the shipped design: §1–§4 and §6 steps 1–5
-are live (core/ladder.ts, migrations 0016–0019, pvp-move v11 / pvp-claim v8 /
-pvp-join v14). §5 — the profile screen, avatar picker and match history — is
-still design only.*
+*Spec, and as of 2026-08-20 the shipped design: ALL of §1–§5 and §6 are live —
+core/ladder.ts, migrations 0016–0021, pvp-move v12 / pvp-claim v9 /
+pvp-join v15, and the profile, avatar picker and match history in the client.*
 
 *This is the thing to argue with before more of it becomes code. Every number was measured, not chosen — the
 simulations are in `docs/LADDER.md`'s appendix and were run against 800–900
@@ -211,46 +210,74 @@ column, or a small histogram table refreshed on a timer if it ever isn't.
 
 ## 5. The profile
 
-Design: card **92d** (`design/screens/92d-arc-season.html`).
+Design: card **92d** (`design/screens/92d-arc-season.html`). Built in
+`online/ui.ts` + `online/online.css`.
 
-**The ring shows the current group only**, as ONE continuous fill — the
-percentage of the way through it. Its
-270° sweep starts at **225°**, not 180° — 225 + 270 = 495 = 135, so the ring
-runs lower-left, up the left, over the top, down the right, to lower-right, and
-the 90° gap it leaves is centred on six o'clock with both ends at the same
-height. Starting the sweep at 180° puts one end at the bottom and the other out
-at three o'clock, which reads as a ring knocked askew. It moves on every match; it empties
-and starts from the left only when the **group** changes — which makes that a
-moment worth animating, and makes the ring's right end always mean the same
-thing: the next group.
+**The ring is the screen.** ONE continuous fill — the percentage of the way
+through your current group — and it **sweeps up to its value when the profile
+opens**. That animation is load-bearing, not decoration: group promotions are
+37 to ~120 games apart, so this fill is the ladder's only continuous feedback,
+and a number that is simply *there* on arrival never reads as progress. It is
+tweened in JS rather than by a CSS transition, because a conic-gradient's angle
+stop does not interpolate reliably across engines; `REDUCED` motion skips
+straight to the value.
 
-**The gold notch is the season peak**, in three states:
+Its 270° sweep starts at **225°** — 225 + 270 = 495 = 135 — so it runs
+lower-left, up the left, over the top, down the right, to lower-right, leaving
+a 90° gap centred on six o'clock with both ends at the same height. **The group
+name sits in that gap**, which stops it being empty space and makes the ring
+self-describing.
+
+**Colour means LIVE.** Gold is the current points and nothing else. The peak
+tile reads white and the peak notch is a neutral mark — a gold notch competed
+with the live number while marking somewhere the player is no longer at.
+
+**The peak notch**, in three states:
 
 | state | notch |
 |---|---|
-| peak = current points | no separate notch — the fill's leading edge turns gold |
+| peak = current points | none — the fill's leading edge is the peak |
 | peak ahead, inside this group | at its true position on the ring |
-| peak in a higher group (you were demoted) | pinned at the far right, the upgrade point |
+| peak in a higher group (demoted) | pinned at the far right, the upgrade point |
 
-The pinned case cannot say *how far* beyond on its own, so the fact row names
-it in words: **Peak — OBSIDIAN**.
+The invariant behind it: **the notch can never sit behind the fill**, because a
+peak is by definition at least the current score. A new peak is simply pushed
+along by the fill — one animation, no special case.
 
-This gives one invariant worth relying on: **the notch can never sit behind
-the fill**, because a peak is by definition at least the current score. Set a
-new peak and the notch is pushed along by the fill — one animation, no special
-case.
+**Three facts, not four:** Rank · Best streak · Peak. The win/loss tally moved
+to the head of **match history**, which is the list it summarises. It is not
+labelled "record": in English that means both a win-loss tally and a personal
+best, and in German only the second, so the word was quietly promising the
+streak while showing the tally. `best_streak()` (migration 0021) computes the
+longest run of wins over the whole season, so it cannot shrink as old matches
+scroll out of a window.
 
-**Avatar.** `profiles.avatar text`, e.g. `"die:5:cy"` — a die face 1–6 and a
-hue, 36 combinations, tap the avatar to change it. No storage bucket, no
-moderation, and no user-generated-image obligations at App Store review. The
-string format leaves the seam: a later value can be `"img:<storage-path>"`
-with no schema change.
+There is **no "N to the next group"** line. The ring already says how far
+along you are, and the exact remainder was a number nobody was going to act on.
 
-**Match history** is its own screen — opponent, mode, result, the delta that
-match actually paid, date. All of it already lives in `matches`; it needs one
-RPC and one view.
+**Avatar.** `profiles.avatar`, e.g. `"die:5:cy"` — a die face 1–6 and a hue, 36
+identities, tap the avatar to change it. No storage bucket, no moderation, and
+no user-generated-image obligations at App Store review. The string format is
+the seam: a later value can be `"img:<storage-path>"` with no schema change.
 
----
+**"Member since" is hidden for guests** — their account lives on this device
+only, so the line would be a promise nobody made.
+
+**Match history** is its own screen: opponent, result, score, and the delta the
+match *actually* paid. It goes through the `match_history()` definer function
+(migration 0020), because `profiles` is own-row only — a client-side join for
+opponent nicknames returns nothing and every row reads "???", which is exactly
+why the leaderboard is a definer function too.
+
+**The result screen** names what the match paid in **points**, not Elo, and the
+rank comes from `player_standing()` rather than scanning a leaderboard page for
+your own nickname — which silently found nothing past rank 50.
+
+**One ask-card** (`ui/askcard.ts`) serves every either/or question: quitting,
+forfeiting, and deleting an account. They differ only in their words and
+whether the confirm is guarded. Deletion uses that guard — a checkbox — rather
+than a two-tap arm, which asks for the second tap in the very place the first
+one landed: the one gesture a mis-tap repeats for free.
 
 ## 6. Migration plan
 

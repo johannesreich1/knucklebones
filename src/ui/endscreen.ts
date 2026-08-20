@@ -5,7 +5,7 @@
 // used to do it through two overlays with two stylesheets, which is how the
 // ranked screen ended up with no fireworks at all while the local one had
 // them. Now the differences are a SPEC the caller fills — the context line is
-// a slot (a session record, or an Elo chip and a ladder spot), and each action
+// a slot (a session record, or a points chip and a ladder spot), and each action
 // carries its own label and handler.
 //
 // Adding a third context (a tournament, a daily) is another spec, not another
@@ -23,7 +23,7 @@ export interface EndSpec {
   sub: string;                   // the one-line reason
   you: { score: number; label: string };
   them: { score: number; label: string };
-  meta?: string;                 // HTML for the context line (session record, Elo chip…)
+  meta?: string;                 // HTML for the context line (session record, points chip…)
   again?: EndAction;             // the primary action; absent hides it
   alt?: EndAction;               // the secondary; absent hides it
   home?: EndAction;              // the quiet way out; absent hides it
@@ -86,7 +86,7 @@ export function showEnd(spec: EndSpec): void {
   }, spec.delay ?? 0);
 }
 
-/* the context line can arrive LATE — ranked paints an Elo chip from cache and
+/* the context line can arrive LATE — ranked paints a points chip from cache and
    corrects it when the profile and ladder come back */
 export function setMeta(html: string): void {
   const m = $('#endMeta');

@@ -1,10 +1,10 @@
 // Gate for the PvP match core: log rebuilding mirrors real play exactly, log
-// corruption is refused, and the Elo math behaves.
+// corruption is refused, and the ladder math behaves.
 // Run: node --experimental-strip-types tests/match.test.ts
 import { ME, AI, type GameState, type Player, emptyBoard, legalCols, isFull, applyMove, boardTotal } from '../src/core/rules.ts';
 import { diceStream } from '../src/core/dice.ts';
 import { rebuild, type MoveRow } from '../src/core/match.ts';
-import { eloDelta } from '../src/core/elo.ts';
+import { delta } from '../src/core/ladder.ts';
 
 const problems: string[] = [];
 const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -45,12 +45,15 @@ check(rebuild(seed, log.map((m, i) => i === 3 ? { ...m, who: (1 - m.who) } : m))
 check(rebuild(seed, log.filter(m => m.idx !== 2)) === null, 'gapped log accepted');
 check(rebuild(seed, log.map((m, i) => i === 1 ? { ...m, col: 99 } : m)) === null, 'illegal col accepted');
 
-// Elo behaves: symmetric, bounded, favourite gains little, underdog gains much
-check(eloDelta(1000, 1000, 1) === 16 && eloDelta(1000, 1000, 0) === -16, 'equal-rating deltas wrong');
-check(eloDelta(1000, 1000, 0.5) === 0, 'equal-rating draw not zero');
-check(eloDelta(1200, 800, 1) < 4, 'favourite win gains too much', eloDelta(1200, 800, 1));
-check(eloDelta(800, 1200, 1) > 28, 'underdog win gains too little', eloDelta(800, 1200, 1));
-check(eloDelta(1000, 1100, 1) + eloDelta(1100, 1000, 0) === 0, 'deltas not zero-sum');
+/* The ladder behaves: a win pays MORE than a loss takes (that asymmetry is the
+   climb), a favourite gains little, an underdog gains much. The exact payout
+   table is pinned in tests/ladder.test.ts against docs/LADDER.md §1; these are
+   the shape checks that belong beside the match replay they settle. */
+check(delta(1000, 1000, 1) === 80 && delta(1000, 1000, 0) === -60, 'even-match deltas wrong');
+check(delta(1000, 1000, 0.5) === 0, 'even draw not zero');
+check(delta(1000, 1000, 1) + delta(1000, 1000, 0) > 0, 'the ladder no longer climbs');
+check(delta(4000, 0, 1) < delta(1000, 1000, 1), 'favourite win gains too much', delta(4000, 0, 1));
+check(delta(0, 4000, 1) > delta(1000, 1000, 1), 'underdog win gains too little', delta(0, 4000, 1));
 
 console.log(JSON.stringify({ movesInMatch: log.length, problems, errs: [] }, null, 2));
 process.exit(problems.length ? 1 : 0);

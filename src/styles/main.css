@@ -780,7 +780,7 @@ html.casting .col.hot::after{border-style:solid;border-color:var(--gold);
   55%{opacity:.6}
   100%{transform:translateY(calc(var(--verdict) * -1.05)) scaleX(.5);opacity:0}}
 
-/* the context line: a session record locally, an Elo chip and ladder spot online */
+/* the context line: a session record locally, a points chip and ladder spot online */
 .endmeta{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-align:center;
   display:flex;flex-direction:column;align-items:center;gap:7px}
 .endmeta:empty{display:none}

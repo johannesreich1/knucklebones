@@ -338,7 +338,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
 
 <!-- END — the ONE result screen, local and ranked alike (ui/endscreen.ts).
      Everything that differs between the two is a slot the caller fills: the
-     meta line carries a session record or an Elo chip + ladder spot, and each
+     meta line carries a session record or a points chip + ladder spot, and each
      action's label, visibility and handler come from the spec. -->
 <div class="ov" id="ovEnd">
   <i class="fwlayer" id="endFx" aria-hidden="true"></i>

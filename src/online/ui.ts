@@ -54,7 +54,7 @@ const OVERLAY = `
   </div>
 
   <div class="panel" id="onBoard" hidden>
-    <div class="lbl" style="text-align:center">Season 1 · Elo rating</div>
+    <div class="lbl" style="text-align:center">Season 1 · Ladder points</div>
     <div class="lb neonscroll" id="onBoardList"></div>
   </div>
 
@@ -483,20 +483,23 @@ async function showHistory(): Promise<void> {
 }
 
 /* ---- match result: the SAME screen local play ends on (ui/endscreen), filled
-   with what ranked has to add — the Elo delta and the ladder spot. Everything
-   paints INSTANTLY: the chip uses the cached rating plus the known delta, and
-   the fresh profile/ladder fetches (in parallel) merely correct and append. ---- */
+   with what ranked has to add — what the match PAID and where it leaves you.
+   That number is the only honest points figure in the app: nothing is ever
+   previewed before a match, because what one is worth depends on the opponent.
+   Everything paints INSTANTLY: the chip uses the cached points plus the known
+   delta, and the fresh fetches merely correct and append. ---- */
 async function showResult(r: FinishReport): Promise<void> {
   hide('#ovOnline');
   const title = r.draw ? 'DEAD HEAT' : r.won ? 'VICTORY' : 'DEFEAT';
-  const deltaTxt = r.delta != null ? ` · ${r.delta >= 0 ? '+' : ''}${r.delta} Elo` : '';
+  const deltaTxt = r.delta != null ? ` · ${r.delta >= 0 ? '+' : ''}${r.delta} points` : '';
   /* the context line, as HTML — the one thing ranked shows that local play
      does not. Rebuilt whenever a better number arrives. */
-  const metaHtml = (rating: number | null, rank: number | null) =>
+  const metaHtml = (points: number | null, rank: number | null, group: string | null) =>
     (r.delta == null ? '' :
       `<span class="elochip${r.delta < 0 ? ' down' : ''}">${r.delta >= 0 ? '+' : ''}${r.delta}` +
-      ` <small>ELO${rating != null ? ' · ' + rating : ''}</small></span>`) +
-    (rank != null ? `<span class="rrank">Ladder: <b>#${rank}</b></span>` : '');
+      ` <small>PTS${points != null ? ' · ' + points.toLocaleString('en') : ''}</small></span>`) +
+    (group ? `<span class="rrank">${group}${rank != null ? ` · <b>#${rank}</b>` : ''}</span>`
+           : rank != null ? `<span class="rrank">Ladder: <b>#${rank}</b></span>` : '');
   let cachedRating: number | null = null;
   try {
     const c = JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null');
@@ -510,15 +513,17 @@ async function showResult(r: FinishReport): Promise<void> {
        : r.won ? 'You out-rolled ' + r.opp : r.opp + ' takes it',
     you:  { score: r.my, label: 'You' },
     them: { score: r.their, label: r.opp },
-    meta: metaHtml(cachedRating, null),
+    meta: metaHtml(cachedRating, null, cachedRating != null ? rankName(cachedRating) : null),
     again: { label: 'Play again', run: () => { closeEnd(); show('#ovOnline'); void route('play'); } },
     home:  { label: 'Home', run: () => { closeEnd(); goHome(); } },
     share: `${title} ${r.my}–${r.their} vs ${r.opp}${deltaTxt} — Knucklebones, ranked dice duels`,
   });
-  const [p, rows] = await Promise.all([myProfile(), leaderboard(50)]);
+  /* the standing RPC knows the rank directly — no scanning a leaderboard page
+     for your own nickname, which silently found nothing past rank 50 */
+  const [p, st] = await Promise.all([myProfile(), myStanding()]);
   refreshHomeChip();
-  const i = p ? rows.findIndex((x) => x.nickname === p.nickname) : -1;
-  setMeta(metaHtml(p?.rating ?? cachedRating, i >= 0 ? i + 1 : null));
+  const pts = st?.points ?? p?.rating ?? cachedRating;
+  setMeta(metaHtml(pts, st?.rank ?? null, pts != null ? rankName(pts) : null));
 }
 
 let bound = false;
