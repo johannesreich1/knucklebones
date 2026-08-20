@@ -166,6 +166,16 @@
 .guestbox b{font-size:10px;letter-spacing:.24em;color:var(--gold)}
 .guestbox p{margin:0;font-size:11.5px;line-height:1.55;color:var(--dim);letter-spacing:.02em}
 .guestbox .btn{width:100%;min-width:0}
+/* the one-time name claim wears the guestbox shape — the same kind of thing,
+   a boxed offer on the profile — recoloured cyan because it is an invitation
+   to identity, not gold guarding a rating. Gone for good once the name is
+   claimed (migration 0026), so no "disabled" state exists to style. */
+.namebox{background:rgba(40,232,255,.05);border-color:rgba(40,232,255,.22)}
+.namebox b{color:var(--cy)}
+/* the name headline under the ring: identity reads cyan (like the home chip),
+   sized between the group label above it and the gold points below */
+.accname{font-size:17px;font-weight:900;letter-spacing:.06em;color:var(--cy);
+  text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
 #ovOnline .acts,#ovOnline .oneTap{display:flex;flex-direction:column;gap:12px}
 #ovOnline .oneTap:empty{display:none}
 /* Apple's own button, per its guidelines: their black-on-white, our radius */

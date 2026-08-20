@@ -214,8 +214,9 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <h3>What this game stores</h3>
     <p>Playing offline stores nothing about you anywhere but on your own device. The moment
        you play <b>ranked</b>, an account is created — silently, as a guest — and from then on
-       we hold: an account identifier, a generated nickname, your rating, and a record of the
-       matches you played. If you attach an email address to keep the account, we hold that too.</p>
+       we hold: an account identifier, a nickname (generated for you, or the one you claim
+       once yourself), your rating, and a record of the matches you played. If you attach an
+       email address to keep the account, we hold that too.</p>
     <h3>What leaves your device</h3>
     <p>Exactly one service receives your data: <b>Supabase</b> (EU region), which stores accounts
        and matches on our behalf. The app itself is delivered by <b>Cloudflare Pages</b>. Both

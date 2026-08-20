@@ -21,6 +21,10 @@ export interface Ask {
   /* when set, the confirm stays disabled until this is ticked — the guard for
      an answer nobody should be able to give by reflex */
   check?: string;
+  /* which answer is encouraged. A question guarding a destructive act keeps
+     the loud button on the way OUT (default); an INVITATION flips it, so the
+     yes wears primary and the no goes quiet. */
+  loud?: boolean;
 }
 
 let built = false;
@@ -47,6 +51,11 @@ let settle: ((ok: boolean) => void) | null = null;
    question is a no, which is the answer that changes nothing. */
 export function ask(spec: Ask): Promise<boolean> {
   build();
+  /* every .ov shares one z-index, so paint order is DOM order — and overlays
+     injected AFTER the first ask() (the online panel, for one) would otherwise
+     cover the question. Re-appending moves the existing node last, so the card
+     opens above whatever is on screen, listeners intact. */
+  document.body.appendChild(document.getElementById('ovAsk')!);
   const done = (ok: boolean): void => {
     hide('#ovAsk');
     const f = settle; settle = null;
@@ -63,6 +72,10 @@ export function ask(spec: Ask): Promise<boolean> {
   yes.textContent = spec.confirm;
   no.textContent = spec.cancel ?? 'Cancel';
   yes.classList.toggle('danger', !!spec.danger);
+  yes.classList.toggle('primary', !!spec.loud);
+  yes.classList.toggle('quiet', !spec.loud);
+  no.classList.toggle('primary', !spec.loud);
+  no.classList.toggle('quiet', !!spec.loud);
 
   const box = $('#askCheck') as HTMLInputElement;
   $('#askCheckRow').hidden = !spec.check;

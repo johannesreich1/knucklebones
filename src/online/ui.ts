@@ -17,7 +17,7 @@ import { REDUCED } from '../ui/fx.ts';
 import { recordHtml } from '../ui/record.ts';
 import { AV_HUES, DEFAULT_AVATAR, parseAvatar, paintAvatar } from '../ui/avatar.ts';
 import { signUp, signIn, signOut, currentUser, ensureIdentity, attachEmail,
-         myProfile, myRecord, rename, leaderboard, deleteAccount, join, readyPeer,
+         myProfile, myRecord, claimName, leaderboard, deleteAccount, join, readyPeer,
          myLadder, myStanding, matchHistory, setAvatar, bestStreak, playerCard,
          type LeaderboardRow, type Ladder } from './session.ts';
 import { availableTaps } from './identity.ts';
@@ -76,6 +76,10 @@ const OVERLAY = `
            the ring self-describing instead of merely open. -->
       <span class="gname" id="accGroup">STONE</span>
     </div>
+    <!-- the name the ring crowns. Until it is claimed this is the minted
+         placeholder; after the claim it is the one line the old edit-field
+         used to be, minus the ability to edit -->
+    <div class="accname" id="accName"></div>
     <!-- the points are a DOOR: the number names your place on the ladder, so
          tapping it opens the ladder — same pattern as the identity chip and
          the match-history row, where the fact leads to the list behind it -->
@@ -95,10 +99,18 @@ const OVERLAY = `
       <button class="btn primary" id="btnKeepAcc">Keep it forever</button>
       <button class="btn ghost" id="btnHaveAcc">I already have an account</button>
     </div>
-    <div class="lbl">Nickname</div>
-    <input id="onNick" maxlength="16" autocomplete="off">
+    <!-- the ONE-TIME name claim: it wears the guestbox shape because it is the
+         same kind of thing — a boxed offer on the profile — and it exists only
+         while the name is still the minted placeholder. Once named_at is
+         stamped (migration 0026) the card is gone for good, not disabled. -->
+    <div class="guestbox namebox" id="accClaim" hidden>
+      <b>CLAIM YOUR NAME</b>
+      <p>One name per account — set once and kept for good. 3–16 letters, digits or underscores.</p>
+      <input id="onNick" maxlength="16" autocomplete="off" spellcheck="false" autocapitalize="off">
+      <div class="err" id="onNickErr"></div>
+      <button class="btn primary" id="btnClaim">Claim name</button>
+    </div>
     <div class="err" id="onAccErr"></div>
-    <button class="btn" id="btnRename">Save name</button>
     <button class="btn" id="btnSignOut">Sign out</button>
     <div class="danger">
       <button class="btn" id="btnDeleteAcc">Delete account</button>
@@ -178,7 +190,7 @@ const AUTH: Record<AuthMode, AuthSpec> = {
   restore: {
     title: 'SIGN IN',
     lead: 'Play ranked, climb the ladder',
-    tiny: 'New accounts get a nickname like BoldRaven482 —<br>change it any time in Account',
+    tiny: 'New accounts get a nickname like BoldRaven482 —<br>claim your own once in Account',
     acts: [
       { label: 'Sign in', primary: true, run: signIn },
       { label: 'Create account', run: async (e, p) => {
@@ -529,7 +541,16 @@ async function showAccount(): Promise<void> {
      an account with no identity it does not sign out, it throws away */
   $('#accGuest').hidden = !who?.guest;
   ($('#btnSignOut') as HTMLElement).hidden = !!who?.guest;
-  ($('#onNick') as HTMLInputElement).value = p?.nickname ?? '';
+  $('#accName').textContent = p?.nickname ?? '';
+  /* the claim card shows only while the name is still the minted placeholder;
+     with no profile row there is nothing to claim against */
+  const claim = $('#accClaim');
+  claim.hidden = !p || !!p.named_at;
+  if (!claim.hidden) {
+    /* the placeholder is the name you keep by never claiming */
+    ($('#onNick') as HTMLInputElement).placeholder = p!.nickname;
+    $('#onNickErr').textContent = '';
+  }
   paintAvatar($('#accDie'), p?.avatar ?? DEFAULT_AVATAR);
   /* "Member since" is a claim about an account that will still be there — a
      guest's lives on this device only, so the line would be a promise nobody
@@ -713,14 +734,48 @@ function bind(): void {
   $('#btnKeepAcc').addEventListener('click', () => { Sfx.tap(); authPanel('attach'); });
   $('#btnHaveAcc').addEventListener('click', () => { Sfx.tap(); authPanel('restore'); });
 
-  $('#btnRename').addEventListener('click', async () => {
+  $('#btnClaim').addEventListener('click', async () => {
     Sfx.tap();
-    const err = await rename(($('#onNick') as HTMLInputElement).value.trim());
-    $('#onAccErr').textContent = err ?? 'Saved.';
-    if (!err) {
-      const p = await myProfile();
-      refreshHomeChip();
-      $('#accName').textContent = p?.nickname ?? '';
+    const name = ($('#onNick') as HTMLInputElement).value.trim();
+    /* checked here so an empty tap answers instantly; the server's CHECK
+       constraint remains the authority */
+    if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) {
+      $('#onNickErr').textContent = '3–16 letters, digits or underscores.';
+      return;
+    }
+    /* the same deliberate-answer idiom as quitting and deleting, minus the
+       checkbox guard: a name is set once, so a typo here is worn forever */
+    const go = await ask({
+      head: `Play as ${name}?`,
+      body: 'A name is claimed once and kept for good. It cannot be edited or claimed again later.',
+      confirm: 'Claim it',
+      cancel: 'Not yet',
+    });
+    if (!go) return;
+    const btn = $('#btnClaim') as HTMLButtonElement;
+    btn.disabled = true;
+    const err = await claimName(name);
+    if (err) { btn.disabled = false; $('#onNickErr').textContent = err; return; }
+    /* retire the card and seat the headline NOW — a slow refresh must not
+       leave an enabled button offering a second claim of a spent right */
+    $('#accClaim').hidden = true;
+    $('#accName').textContent = name;
+    btn.disabled = false;
+    await showAccount();
+    /* a guest just chained a forever-name to a device-only account — that
+       contradiction is the invitation. Same shared ask-card, same way up
+       as KEEP IT FOREVER. */
+    const who = await currentUser();
+    if (who?.guest) {
+      const up = await ask({
+        head: `Keep ${name} forever?`,
+        body: 'Your account lives on this device only — and the name you just claimed lives with it. '
+          + 'Add an email and both survive anything.',
+        confirm: 'Create account',
+        cancel: 'Not now',
+        loud: true, // an invitation: the yes wears the primary look
+      });
+      if (up) authPanel('attach');
     }
   });
   $('#btnSignOut').addEventListener('click', async () => { Sfx.tap(); await signOut(); refreshHomeChip(); authPanel('restore'); });

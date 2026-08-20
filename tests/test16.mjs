@@ -37,7 +37,7 @@ const browser = await webkit.launch();
 
 /* one harness: open the app with supabase answering however this case wants,
    tap ACCOUNT, report what the player is looking at */
-async function visit({ anonymous = 200, attached = false, door = 'chip' }) {
+async function visit({ anonymous = 200, attached = false, door = 'chip', named = false }) {
   // NO isMobile here: under WebKit it quietly disables page.route(), and a
   // stub that never fires would let this suite talk to the live backend.
   const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, hasTouch: true });
@@ -65,8 +65,20 @@ async function visit({ anonymous = 200, attached = false, door = 'chip' }) {
       : r.fulfill({ status: 422, contentType: 'application/json',
                     body: JSON.stringify({ code: 'anonymous_provider_disabled', message: 'Anonymous sign-ins are disabled' }) });
   });
-  await page.route('**/rest/v1/profiles*', (r) => r.fulfill({ status: 200, contentType: 'application/json',
-    body: JSON.stringify([{ id: GUEST_ID, nickname: 'TestGuest001', rating: 1000, created_at: new Date().toISOString() }]) }));
+  /* stateful, like the live table: the claim PATCH flips named_at (migration
+     0026's trigger stamps it server-side), and every later GET tells the
+     claimed truth — nickname included */
+  let claimed = named;
+  await page.route('**/rest/v1/profiles*', (r) => {
+    if (r.request().method() === 'PATCH') {
+      claimed = true;
+      return r.fulfill({ status: 204, body: '' });
+    }
+    return r.fulfill({ status: 200, contentType: 'application/json',
+      body: JSON.stringify([{ id: GUEST_ID, nickname: claimed && door === 'claim' ? 'NeonKing77' : 'TestGuest001',
+                              rating: 1000, created_at: new Date().toISOString(),
+                              named_at: claimed ? '2026-08-01T00:00:00Z' : null }]) });
+  });
   await page.route('**/rest/v1/matches*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
   await page.route('**/auth/v1/.well-known/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"keys":[]}' }));
   /* the 0022 shape: points/rank/apex/avatar/peak. The two rows sit in
@@ -100,10 +112,15 @@ async function visit({ anonymous = 200, attached = false, door = 'chip' }) {
     return {
       panel: document.querySelector('#onAccount')?.hidden === false ? 'account' : 'auth',
       title: document.querySelector('#onTitle')?.textContent,
-      /* the profile shows the name ONCE, in the field that edits it — a
-         read-only label beside an input saying the same thing was the kind of
-         duplication the ring/division cleanup removed everywhere else */
-      nickname: document.querySelector('#onNick')?.value,
+      /* the profile shows the name ONCE, as the headline under the ring. The
+         claim card exists only while the name is still the minted placeholder
+         (migration 0026): its input starts EMPTY, with the current name as the
+         placeholder — the name you keep by never claiming. */
+      accName: document.querySelector('#accName')?.textContent,
+      accNameShown: vis('#accName'),
+      claim: vis('#accClaim'),
+      nickValue: document.querySelector('#onNick')?.value,
+      nickHint: document.querySelector('#onNick')?.placeholder,
       guestBox: vis('#accGuest'),
       signOut: vis('#btnSignOut'),
       actions: [...document.querySelectorAll('#onAuthActs .btn')].map((x) => x.textContent),
@@ -151,6 +168,52 @@ async function visit({ anonymous = 200, attached = false, door = 'chip' }) {
       };
     });
   }
+  /* the claim, end to end: type, confirm through the shared ask-card, watch
+     the card retire, the headline take the name, and the way-up offer arrive
+     (a guest just chained a forever-name to a device-only account) */
+  let claimFlow = null;
+  if (door === 'claim') {
+    await page.fill('#onNick', 'NeonKing77');
+    await page.click('#btnClaim');
+    await page.waitForSelector('#ovAsk.on', { timeout: 5000 });
+    const confirmHead = await page.evaluate(() => document.querySelector('#askHead')?.textContent);
+    await page.click('#btnAskYes');
+    await page.waitForFunction(() => document.querySelector('#askHead')?.textContent?.startsWith('Keep '),
+      null, { timeout: 15000 });
+    const state = await page.evaluate(() => {
+      const vis = (s) => { const e = document.querySelector(s); if (!e) return false;
+        const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
+      return { head: document.querySelector('#askHead')?.textContent,
+               claimGone: !vis('#accClaim'),
+               headline: document.querySelector('#accName')?.textContent,
+               /* an invitation wears primary on YES (ask's loud flag) — read
+                  the computed paint, not the class list */
+               yesLoud: getComputedStyle(document.querySelector('#btnAskYes')).backgroundImage.includes('gradient') };
+    });
+    await page.click('#btnAskYes'); // "Create account" — the way up
+    await page.waitForFunction(() => document.querySelector('#onAuth')?.hidden === false, null, { timeout: 5000 });
+    claimFlow = { confirmHead, ...state, authShown: true };
+  }
+  /* the ask-card vs later overlays: every .ov shares one z-index, so DOM order
+     paints. Recreate the hazard (an overlay re-appended AFTER #ovAsk — the
+     offline-quit-then-profile ordering) and assert the card wins the PIXEL:
+     ask() re-appends itself on every open. test13's lesson — state and DOM can
+     agree while the player sees neither. */
+  let askAbove = null;
+  if (named) {
+    await page.click('#btnDeleteAcc');
+    await page.waitForSelector('#ovAsk.on', { timeout: 5000 });
+    await page.click('#btnAskNo');
+    await page.evaluate(() => document.body.appendChild(document.querySelector('#ovOnline')));
+    await page.click('#btnDeleteAcc');
+    await page.waitForSelector('#ovAsk.on', { timeout: 5000 });
+    askAbove = await page.evaluate(() => {
+      const card = document.querySelector('#ovAsk .askcard');
+      const rc = card.getBoundingClientRect();
+      return card.contains(document.elementFromPoint(rc.x + rc.width / 2, rc.y + rc.height / 2));
+    });
+    await page.click('#btnAskNo');
+  }
   /* the points on the profile are a door: tapping them opens the ladder */
   let ptsDoor = null;
   if (door === 'chip') {
@@ -165,7 +228,7 @@ async function visit({ anonymous = 200, attached = false, door = 'chip' }) {
     }
   }
   await ctx.close();
-  return { seen, errs, signupCalls, faceoff, ptsDoor };
+  return { seen, errs, signupCalls, faceoff, ptsDoor, claimFlow, askAbove };
 }
 
 try {
@@ -173,7 +236,13 @@ try {
   const fresh = await visit({});
   out.fresh = fresh.seen;
   check(fresh.seen.panel === 'account', 'newcomer was asked to sign in', fresh.seen);
-  check(fresh.seen.nickname === 'TestGuest001', 'guest got no nickname', fresh.seen);
+  check(fresh.seen.accName === 'TestGuest001' && fresh.seen.accNameShown === true,
+        'guest got no visible nickname headline', fresh.seen);
+  /* the unnamed player is offered their ONE claim: empty input, the minted
+     name as the placeholder they keep by never typing */
+  check(fresh.seen.claim === true, 'a fresh player was not offered the name claim', fresh.seen);
+  check(fresh.seen.nickValue === '' && fresh.seen.nickHint === 'TestGuest001',
+        'the claim input should start empty with the minted name as placeholder', fresh.seen);
   check(fresh.seen.guestBox === true, 'guest was not offered the way up', fresh.seen);
   check(fresh.seen.signOut === false, 'guest offered Sign out — that discards, not signs out', fresh.seen);
   check(fresh.errs.length === 0, 'page errors on the guest path', fresh.errs);
@@ -206,6 +275,31 @@ try {
   check(board.faceoff?.record.includes('W 7') && board.faceoff?.record.includes('L 2'),
         'the face-off does not state both sides of the record', board.faceoff);
   check(board.errs.length === 0, 'page errors on the ladder', board.errs);
+
+  // 1c · the named player: the claim is spent, the card is GONE — not
+  // disabled, not re-offered. The headline is all that remains of the name UI.
+  const namedRun = await visit({ named: true });
+  out.named = { accName: namedRun.seen.accName, claim: namedRun.seen.claim };
+  check(namedRun.seen.accName === 'TestGuest001', 'a named player lost their headline', namedRun.seen);
+  check(namedRun.seen.claim === false, 'the claim card survives after the name is set', namedRun.seen);
+  check(namedRun.askAbove === true,
+        'the ask-card opened UNDER a later overlay — ask() lost its re-append', namedRun.askAbove);
+  check(namedRun.errs.length === 0, 'page errors on the named path', namedRun.errs);
+
+  // 1d · the claim itself: confirm through the shared ask-card, the card
+  // retires, the headline takes the name, and a GUEST is offered the way up
+  const claimRun = await visit({ door: 'claim' });
+  out.claim = claimRun.claimFlow;
+  check(claimRun.claimFlow?.confirmHead === 'Play as NeonKing77?',
+        'claiming does not ask the deliberate question', claimRun.claimFlow);
+  check(claimRun.claimFlow?.head === 'Keep NeonKing77 forever?',
+        'a guest claim did not offer the way up', claimRun.claimFlow);
+  check(claimRun.claimFlow?.claimGone === true, 'the claim card survived its own success', claimRun.claimFlow);
+  check(claimRun.claimFlow?.headline === 'NeonKing77', 'the headline did not take the claimed name', claimRun.claimFlow);
+  check(claimRun.claimFlow?.authShown === true, 'Create account did not open the attach panel', claimRun.claimFlow);
+  check(claimRun.claimFlow?.yesLoud === true,
+        'the way-up offer does not wear primary on its yes', claimRun.claimFlow);
+  check(claimRun.errs.length === 0, 'page errors on the claim flow', claimRun.errs);
 
   // 2 · the project with anonymous sign-ins off: degrade to the old panel
   const off = await visit({ anonymous: 422 });

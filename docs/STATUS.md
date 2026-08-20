@@ -289,6 +289,33 @@ server-side via `account-delete`), privacy policy for both stores.
   `not-stalled-yet` immediately, the auto-place after 13s, the turn flipping
   back, repeated over four rounds. Both guests deleted themselves afterwards.
 
+### 5e. One name, forever (2026-08-20 night, user request)
+
+The always-there Nickname field became a **one-time claim**. Signup still
+mints a placeholder (`generate_nickname`); the profile now shows it as a
+headline under the ring, with a cyan claim card — guestbox shape, ask-card
+confirm — offering ONE rename. Migration 0026 makes the rule law at the row:
+`named_at` is stamped by a `BEFORE UPDATE OF nickname` trigger and any later
+change raises, so a curious REST call gets the same no the UI gives (verified
+live with a rollback probe). Uniqueness was already law
+(`profiles_nickname_lower_idx` → "That name is taken"). Once claimed the card
+is GONE — not disabled — and the headline is all that remains of the name UI.
+`session.rename()` became `claimName()`; test16 asserts every state the
+player can see (fresh offer, empty-input-with-placeholder, spent claim, and
+the claim walked end-to-end against a stateful mock).
+
+The review pass on the diff caught and fixed: the shared ask-card could open
+UNDER overlays injected after it (one z-index, DOM order paints — ask() now
+re-appends itself every open, pixel-tested in test16); the sign-in panel
+still promised "change it any time"; the privacy sheet called the nickname
+merely "generated". A guest who claims a name is then offered the way up
+("Keep NAME forever?" → the attach panel) through the same ask-card.
+Migration 0027 pins `lock_nickname()`'s search_path and carries the
+moderation runbook — cleaning an offensive claimed name is a documented
+two-step in SQL, deliberately not an API path. Open question, decided "allow"
+for now: guests can spend a claim, so abandoned devices hold names; a stale
+reaper or attach-only claiming are the options if squatting ever hurts.
+
 ### 5c. The ladder states both sides (2026-08-20)
 
 Player report: the leaderboard showed a W and no L. It printed `42W/103` —

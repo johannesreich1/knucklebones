@@ -10,7 +10,7 @@ export function supa(): SupabaseClient {
   return client;
 }
 
-export interface Profile { id: string; nickname: string; rating: number; created_at?: string; avatar?: string; }
+export interface Profile { id: string; nickname: string; rating: number; created_at?: string; avatar?: string; named_at?: string | null; }
 export interface MatchRow {
   id: string; p1: string; p2: string; status: 'active' | 'done' | 'forfeit';
   turn: 0 | 1; winner: string | null; p1_score: number | null; p2_score: number | null;
@@ -107,7 +107,7 @@ const PROFILE_CACHE = 'knucklebones.online.profile';
 export async function myProfile(): Promise<Profile | null> {
   const user = await currentUser();
   if (!user) return null;
-  const { data } = await supa().from('profiles').select('id, nickname, rating, created_at, avatar').eq('id', user.id).maybeSingle();
+  const { data } = await supa().from('profiles').select('id, nickname, rating, created_at, avatar, named_at').eq('id', user.id).maybeSingle();
   try {
     if (data) localStorage.setItem(PROFILE_CACHE,
       JSON.stringify({ nickname: data.nickname, rating: data.rating, avatar: data.avatar }));
@@ -130,13 +130,18 @@ export async function myRecord(): Promise<{ wins: number; losses: number; draws:
 function clearProfileCache(): void {
   try { localStorage.removeItem(PROFILE_CACHE); } catch { /* forgetful host */ }
 }
-export async function rename(nickname: string): Promise<string | null> {
+/* A name is claimed ONCE: the 0026 trigger stamps named_at on the first
+   nickname write and refuses every later one, so this can only succeed for a
+   profile whose name is still the minted placeholder. The P0001 branch is the
+   backstop for a claim raced from two devices — the UI never offers a second. */
+export async function claimName(nickname: string): Promise<string | null> {
   const user = await currentUser();
   if (!user) return 'not signed in';
   const { error } = await supa().from('profiles').update({ nickname }).eq('id', user.id);
   if (!error) return null;
-  return error.code === '23505' ? 'name already taken'
-    : error.code === '23514' ? '3–16 letters, digits or _'
+  return error.code === '23505' ? 'That name is taken — try another.'
+    : error.code === '23514' ? '3–16 letters, digits or underscores.'
+    : error.code === 'P0001' ? 'Your name is already set.'
     : error.message;
 }
 
