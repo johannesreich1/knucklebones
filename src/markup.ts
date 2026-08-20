@@ -356,7 +356,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <span class="sc"><span class="cpu" id="endCpu">0</span><em id="endCpuLbl">AI</em></span>
   </div>
   <div class="endmeta" id="endMeta"></div>
-  <button class="btn primary" id="btnAgain">Play again</button>
+  <button class="btn primary" id="btnAgain">Next duel</button>
   <button class="btn" id="btnMenu2">Change difficulty</button>
   <button class="linkbtn" id="btnEndHome">Home</button>
   <button class="linkbtn" id="btnShare" hidden>Share result</button>

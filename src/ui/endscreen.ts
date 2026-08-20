@@ -35,7 +35,7 @@ export interface EndSpec {
 
 /* The live spec IS the wiring: the buttons are bound once, and every press
    asks the current spec what it means. That is what lets one screen serve
-   flows whose "Play again" means completely different things. */
+   flows whose "Next duel" means completely different things. */
 let live: EndSpec | null = null;
 let shareText = '';
 

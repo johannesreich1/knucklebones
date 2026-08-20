@@ -73,7 +73,7 @@ try {
   check(fa.over && fb.over, 'match did not finish on both screens', { fa: fa.over, fb: fb.over, rounds });
   // boards agreed at the end
   check(fa.b0 === fb.b0 && fa.b1 === fb.b1, 'boards diverged between players', { a: fa, b: fb });
-  // the finish lands on the Result screen: Elo chip + Play again / Home
+  // the finish lands on the Result screen: Elo chip + Next duel / Home
   const sumA = await A.evaluate(() => ({
     panel: !document.getElementById('onResult').hidden,
     title: document.getElementById('rTitle').textContent,
@@ -82,7 +82,7 @@ try {
   check(sumA.panel, 'result panel not shown after the match', sumA);
   check(/ELO/.test(sumA.elo), 'end summary missing Elo delta', sumA);
 
-  // ---- bot match: alice alone via Play again, waits past the bot threshold ----
+  // ---- bot match: alice alone via Next duel, waits past the bot threshold ----
   // close B first: an occluded page gets its timers throttled by headless
   // Chromium, which once slowed A's animation chain past the round budget
   await B.close();

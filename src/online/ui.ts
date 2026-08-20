@@ -659,7 +659,7 @@ async function showResult(r: FinishReport): Promise<void> {
     you:  { score: r.my, label: 'You' },
     them: { score: r.their, label: r.opp },
     meta: metaHtml(cachedRating, null, cachedRating != null ? rankName(cachedRating) : null),
-    again: { label: 'Play again', run: () => { closeEnd(); show('#ovOnline'); void route('play'); } },
+    again: { label: 'Next duel', run: () => { closeEnd(); show('#ovOnline'); void route('play'); } },
     home:  { label: 'Home', run: () => { closeEnd(); goHome(); } },
     share: `${title} ${r.my}–${r.their} vs ${r.opp}${deltaTxt} — Knucklebones, ranked dice duels`,
   });

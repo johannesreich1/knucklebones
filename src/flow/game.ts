@@ -307,9 +307,9 @@ export async function place(who,col){
 /* ===================== GAME LIFECYCLE ===================== */
 /* THE way a local game starts, and the only place RANDOM is resolved.
    There are three ways to ask for a game — the OFFLINE sheet's Play, the
-   keyboard, and Play again on the result screen — and the first version of this
-   taught only the Play button about RANDOM, so Play again quietly dealt classic
-   for the rest of the session. One door, no exceptions. */
+   keyboard, and Next duel on the result screen — and the first version of this
+   taught only the Play button about RANDOM, so the rematch button quietly dealt
+   classic for the rest of the session. One door, no exceptions. */
 export async function startLocal(){
   /* A newcomer is offered the tutorial before their first real game — once,
      ever, and never in front of the tutorial itself. */
@@ -414,7 +414,7 @@ export function endGame(){
     /* The tutorial ends in a graduation, not a rematch — one button, and none
        of the "change difficulty" furniture that assumes you chose anything. */
     again: tut ? { label: 'Finish', run: () => { closeEnd(); toMenu(); } }
-               : { label: 'Play again', run: () => { void startLocal(); } },
+               : { label: 'Next duel', run: () => { void startLocal(); } },
     alt:   tut ? undefined
                : { label: duo?'Change mode':'Change difficulty',
                    run: () => { closeEnd(); show('#ovPractice'); } },

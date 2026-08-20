@@ -80,7 +80,7 @@ try {
   check(out.afterGame.played === true, 'finishing a game did not record that one was played', out.afterGame);
   check(out.afterGame.stored === true, 'the flag did not survive to storage', out.afterGame);
 
-  // ...so Play again goes straight into a game, and the hub stops shouting
+  // ...so Next duel goes straight into a game, and the hub stops shouting
   await page.click('#btnAgain');
   await page.waitForTimeout(900);
   out.second = await page.evaluate(() => ({

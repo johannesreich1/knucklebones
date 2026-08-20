@@ -138,7 +138,7 @@ await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(lo
 
   /* ...and PLAY AGAIN must roll again. This is the bug that shipped: RANDOM was
      resolved inside the OFFLINE sheet's Play handler, so every other way of
-     starting a game — Play again, the keyboard — quietly dealt classic for the
+     starting a game — Next duel, the keyboard — quietly dealt classic for the
      rest of the session. Drive a real ending and take the button. */
   await page.evaluate(() => {
     const k = window.__kb;
