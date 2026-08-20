@@ -67,6 +67,13 @@
 #ovOnline .lrow .gap{font-size:9px;font-weight:800;letter-spacing:.06em;color:var(--dim);white-space:nowrap}
 #ovOnline .lrow .gap b{color:var(--mg);font-weight:900}
 #ovOnline .lrow .gap b.down{color:var(--cy)}
+/* On narrow phones the gap column crowds the row's identity out: at 390px its
+   53-77px squeeze a 16-char name into ellipsis, at 360px the name loses half
+   its width (measured, webkit). Below the width where the longest generated
+   name still fits beside it (430px), the distance-to-me is the garnish that
+   goes — the name and the points ARE the row. The face-off keeps the exact
+   figure one tap away. */
+@media (max-width:429px){#ovOnline .lrow .gap{display:none}}
 #ovOnline .lrow .rt{color:var(--gc,var(--gold));font-weight:900;min-width:44px;text-align:right}
 /* YOU: the one large row, the screen's true centre */
 #ovOnline .lrow.me{gap:12px;padding:12px 14px;border-radius:15px;
