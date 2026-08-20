@@ -76,7 +76,12 @@ const OVERLAY = `
            the ring self-describing instead of merely open. -->
       <span class="gname" id="accGroup">STONE</span>
     </div>
-    <div class="ptv"><b id="accPoints">0</b><span>Ladder points</span></div>
+    <!-- the points are a DOOR: the number names your place on the ladder, so
+         tapping it opens the ladder — same pattern as the identity chip and
+         the match-history row, where the fact leads to the list behind it -->
+    <button class="ptv" id="btnLadder" aria-label="Open the ladder">
+      <b id="accPoints">0</b><span>Ladder points</span>
+    </button>
     <div class="facts">
       <div class="fact"><b id="accRank">–</b><span>Rank</span></div>
       <div class="fact"><b id="accStreak">0</b><span>Best streak</span></div>
@@ -719,6 +724,7 @@ function bind(): void {
   $('#btnSignOut').addEventListener('click', async () => { Sfx.tap(); await signOut(); refreshHomeChip(); authPanel('restore'); });
   $('#btnAvatar').addEventListener('click', () => { Sfx.tap(); void showAvatar(); });
   $('#btnHistory').addEventListener('click', () => { Sfx.tap(); void showHistory(); });
+  $('#btnLadder').addEventListener('click', () => { Sfx.tap(); void showBoard(); });
   $('#btnAvatarSave').addEventListener('click', async () => {
     Sfx.tap();
     const err = await setAvatar(avPick);

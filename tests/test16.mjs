@@ -151,8 +151,21 @@ async function visit({ anonymous = 200, attached = false, door = 'chip' }) {
       };
     });
   }
+  /* the points on the profile are a door: tapping them opens the ladder */
+  let ptsDoor = null;
+  if (door === 'chip') {
+    const onAccount = await page.evaluate(() => document.querySelector('#onAccount')?.hidden === false);
+    if (onAccount) {
+      await page.click('#btnLadder');
+      await page.waitForSelector('#ovOnline .lb .lrow', { timeout: 15000 });
+      ptsDoor = await page.evaluate(() => ({
+        board: document.querySelector('#onBoard')?.hidden === false,
+        title: document.querySelector('#onTitle')?.textContent,
+      }));
+    }
+  }
   await ctx.close();
-  return { seen, errs, signupCalls, faceoff };
+  return { seen, errs, signupCalls, faceoff, ptsDoor };
 }
 
 try {
@@ -164,6 +177,9 @@ try {
   check(fresh.seen.guestBox === true, 'guest was not offered the way up', fresh.seen);
   check(fresh.seen.signOut === false, 'guest offered Sign out — that discards, not signs out', fresh.seen);
   check(fresh.errs.length === 0, 'page errors on the guest path', fresh.errs);
+  // the ladder-points block is a door: tapping it lands on the board
+  check(fresh.ptsDoor?.board === true && fresh.ptsDoor?.title === 'LADDER',
+        'tapping the points on the profile does not open the ladder', fresh.ptsDoor);
 
   // 1b · the ladder that same guest lands on: a row states BOTH sides
   const board = await visit({ door: 'board' });

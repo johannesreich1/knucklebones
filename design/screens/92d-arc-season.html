@@ -32,7 +32,9 @@
   .avedit{position:absolute;right:-9px;bottom:-9px;width:26px;height:26px;border-radius:50%;
     display:grid;place-items:center;background:rgba(10,13,28,.95);
     border:1px solid rgba(40,232,255,.55);color:var(--cy);font-size:11px}
-  .ptv{display:flex;flex-direction:column;align-items:center;gap:2px}
+  /* a button in the app now — tapping the points opens the ladder */
+  .ptv{display:flex;flex-direction:column;align-items:center;gap:2px;
+    border:0;background:none;padding:0;font-family:inherit;cursor:pointer}
   .ptv b{font-size:33px;font-weight:900;color:var(--gold);line-height:1;
     text-shadow:0 0 24px rgba(255,209,102,.42)}
   .ptv span{font-size:8.5px;letter-spacing:.26em;color:var(--dim);text-transform:uppercase}
@@ -72,7 +74,7 @@
       <i class="ring3"></i><i class="pkmark"></i>
       <div class="avwrap dice-static">{{die:5:p1:86}}<span class="avedit">✎</span></div>
     </div>
-    <div class="ptv"><b>2,494</b><span>Ladder points</span></div>
+    <button class="ptv"><b>2,494</b><span>Ladder points</span></button>
     <div class="tierline"><span class="tn">GOLD</span></div>
     <div class="togo"><b>506</b> to OBSIDIAN</div>
     <div class="facts">
