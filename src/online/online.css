@@ -30,10 +30,88 @@
 #ovOnline .lb .row .nm{flex:1;font-weight:800;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #ovOnline .lb .row .rt{color:var(--gold);font-weight:900}
 #ovOnline .lb .row .ws{color:var(--dim);font-size:10.5px}
-#ovOnline .lb .row.top{background:rgba(255,209,102,.05);border-color:rgba(255,209,102,.18)}
-#ovOnline .lb .row.top .rank{color:var(--gold);text-shadow:0 0 10px rgba(255,209,102,.6)}
 #ovOnline .lb .row.me{background:rgba(40,232,255,.07);border-color:rgba(40,232,255,.35)}
 #ovOnline .lb .row.me .nm{color:var(--cy)}
+
+/* ---- the board, rebuilt (design 33g + 33e, picked 2026-08-20) ----
+   One continuous scroll from the apex to the floor. Groups are HORIZONS —
+   labelled boundaries where the material changes, never header rows — and
+   when the reader is a ranked player every row states its distance to THEM,
+   because the race you are in is against the players a few dozen points
+   either side. Your row is the big one and the list opens centred on it.
+   Signed out (the board is public) rows state the record instead.
+   The seven materials, named once: */
+#ovOnline{--g-stone:#98a1b3;--g-bone:#d8c5a0;--g-ivory:#f1e9d7;--g-silver:#ccd9ee;
+  --g-gold:var(--gold);--g-obsidian:#b18cff;--g-neon:var(--cy)}
+#ovOnline .ghor{display:flex;align-items:center;gap:8px;margin:9px 0 3px}
+#ovOnline .ghor::before,#ovOnline .ghor::after{content:"";height:1px;background:
+  linear-gradient(90deg,transparent,var(--gc) 30%,var(--gc) 70%,transparent);opacity:.45}
+#ovOnline .ghor::before{flex:0 0 18px}
+#ovOnline .ghor::after{flex:1}
+#ovOnline .ghor .gn{font-size:10px;font-weight:900;letter-spacing:.24em;color:var(--gc)}
+#ovOnline .ghor .gf{font-size:8px;letter-spacing:.14em;color:var(--dim)}
+#ovOnline .ghor.apex .gn{text-shadow:0 0 12px color-mix(in srgb,var(--gc) 70%,transparent)}
+/* a row is a BUTTON — tapping deals the face-off — so it resets button chrome */
+#ovOnline .lrow{display:flex;gap:10px;align-items:center;font-size:13px;padding:8px 12px;
+  border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+  color:var(--txt);font-family:inherit;text-align:left;cursor:pointer}
+#ovOnline .lrow:focus-visible{outline:2px solid var(--cy);outline-offset:1px}
+#ovOnline .lrow .rank{color:var(--dim);min-width:22px;text-align:right;font-weight:800}
+#ovOnline .lrow .av{flex:0 0 auto;line-height:0}
+#ovOnline .lrow .nm{flex:1;min-width:0;font-weight:800;letter-spacing:.04em;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#ovOnline .lrow .ws{color:var(--dim);font-size:10.5px}
+#ovOnline .lrow .gap{font-size:9px;font-weight:800;letter-spacing:.06em;color:var(--dim);white-space:nowrap}
+#ovOnline .lrow .gap b{color:var(--mg);font-weight:900}
+#ovOnline .lrow .gap b.down{color:var(--cy)}
+#ovOnline .lrow .rt{color:var(--gc,var(--gold));font-weight:900;min-width:44px;text-align:right}
+/* YOU: the one large row, the screen's true centre */
+#ovOnline .lrow.me{gap:12px;padding:12px 14px;border-radius:15px;
+  border-color:rgba(40,232,255,.5);background:rgba(40,232,255,.08);
+  box-shadow:0 0 24px rgba(40,232,255,.12)}
+#ovOnline .lrow.me .nmwrap{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+#ovOnline .lrow.me .nm{font-size:15px;font-weight:900;color:var(--cy)}
+#ovOnline .lrow.me .mesub{font-size:8.5px;letter-spacing:.16em;color:var(--dim);
+  text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ovOnline .lrow.me .mesub b{color:var(--gc,var(--gold));letter-spacing:.06em}
+#ovOnline .lrow.me .ptcol{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+#ovOnline .lrow.me .pt2{font-size:19px;font-weight:900;color:var(--gold);line-height:1}
+#ovOnline .lrow.me .rk2{font-size:8.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+
+/* ---- the face-off (design 33e): tap a row, be dealt THEM against YOU.
+   Their column reads gold, yours cyan — the duel palette does the talking.
+   With no ranked self to compare (the board is public), the card renders one
+   column and the stat labels lead. ---- */
+/* z 90: ABOVE .ov (80) — the board it opens over IS an overlay, and at 60 the
+   card rendered underneath it, rect present, pixels absent (test16 now asks
+   elementFromPoint, which is what caught this) */
+.faceoff{position:fixed;inset:0;z-index:90;display:grid;place-items:center;
+  background:rgba(3,5,12,.66);padding:14px}
+.focard{width:100%;max-width:356px;border-radius:20px;padding:18px 16px 16px;
+  background:linear-gradient(180deg,#0e1329,#070a18);border:1px solid rgba(255,255,255,.15);
+  box-shadow:0 24px 60px rgba(0,0,0,.65);display:flex;flex-direction:column;gap:12px}
+.focols{display:flex;align-items:center;justify-content:center;gap:16px}
+.focol{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;min-width:0}
+.focol .fnm{font-size:12.5px;font-weight:900;letter-spacing:.05em;max-width:130px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.focol.you .fnm{color:var(--cy)}
+.focol .fgp{font-size:7px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gc,var(--gold));border:1px solid color-mix(in srgb,var(--gc,var(--gold)) 45%,transparent);
+  border-radius:6px;padding:2.5px 7px;white-space:nowrap}
+.fovs{font-size:15px;font-weight:900;letter-spacing:.1em;color:var(--gold);
+  text-shadow:0 0 14px rgba(255,209,102,.5)}
+.fostats{display:flex;flex-direction:column;gap:2px}
+.fost{display:flex;align-items:center;padding:6.5px 4px;border-radius:9px;font-size:12.5px}
+.fost:nth-child(odd){background:rgba(255,255,255,.03)}
+.fost .a,.fost .b{flex:1;min-width:0;font-weight:900}
+.fost .a{text-align:right;padding-right:14px;color:var(--gold)}
+.fost .b{text-align:left;padding-left:14px;color:var(--cy)}
+.fost .k{flex:0 0 84px;text-align:center;font-size:7px;letter-spacing:.2em;
+  color:var(--dim);text-transform:uppercase}
+.faceoff.solo .fost .k{flex:1;text-align:left;padding-left:4px}
+.faceoff.solo .fost .a{flex:0 0 auto;padding-right:4px}
+.fogap{font-size:9px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;text-align:center}
+.fogap b{color:var(--gold);letter-spacing:.05em}
 
 /* the ladder's loading state borrows matchmaking's bouncing pair */
 #ovOnline .lbload{display:flex;flex-direction:column;align-items:center;gap:14px;

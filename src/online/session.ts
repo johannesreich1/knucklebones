@@ -214,10 +214,28 @@ export async function setAvatar(avatar: string): Promise<string | null> {
   return null;
 }
 
-export interface LeaderboardRow { nickname: string; rating: number; wins: number; losses: number; games: number; }
+/* The 0022 shape: points (the ladder score, NOT the old `rating`), the row's
+   1-based rank, whether the player is inside the apex — NEON is resolved
+   server-side because it is a position (top 1%), not a threshold — plus the
+   die they wear and their season peak, which the face-off states. */
+export interface LeaderboardRow {
+  nickname: string; points: number; wins: number; losses: number; games: number;
+  rank: number; apex: boolean; avatar: string | null; peak: number;
+}
 export async function leaderboard(limit = 50): Promise<LeaderboardRow[]> {
   const { data } = await supa().rpc('leaderboard', { limit_n: limit });
   return (data as LeaderboardRow[]) ?? [];
+}
+
+/* The face-off's one fact the board rows cannot carry: the tapped player's
+   best win streak (and member-since). A definer RPC keyed by NICKNAME — the
+   board exposes no account ids, and profiles is own-row only, the same reason
+   the leaderboard and match_history are definer functions. */
+export interface PlayerCard { streak: number; since: string | null }
+export async function playerCard(nick: string): Promise<PlayerCard | null> {
+  const { data } = await supa().rpc('player_card', { nick });
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ? { streak: Number(row.streak ?? 0), since: row.since ?? null } : null;
 }
 
 /* ---- PvP match API (thin wrappers over the Edge Functions) ---- */

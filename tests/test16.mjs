@@ -69,9 +69,14 @@ async function visit({ anonymous = 200, attached = false, door = 'chip' }) {
     body: JSON.stringify([{ id: GUEST_ID, nickname: 'TestGuest001', rating: 1000, created_at: new Date().toISOString() }]) }));
   await page.route('**/rest/v1/matches*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
   await page.route('**/auth/v1/.well-known/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"keys":[]}' }));
+  /* the 0022 shape: points/rank/apex/avatar/peak. The two rows sit in
+     DIFFERENT groups (1,072 is IVORY, 465 is BONE) so the board has to draw a
+     horizon for each — the group structure is asserted below. */
   await page.route('**/rest/v1/rpc/leaderboard*', (r) => r.fulfill({ status: 200, contentType: 'application/json',
-    body: JSON.stringify([{ nickname: 'NovaComet992', rating: 1072, wins: 7, losses: 2, games: 9 },
-                          { nickname: 'TestGuest001', rating: 1026, wins: 42, losses: 61, games: 103 }]) }));
+    body: JSON.stringify([{ nickname: 'NovaComet992', points: 1072, wins: 7, losses: 2, games: 9, rank: 1, apex: false, avatar: 'die:3:mg', peak: 1100 },
+                          { nickname: 'TestGuest001', points: 465, wins: 42, losses: 61, games: 103, rank: 2, apex: false, avatar: 'die:5:cy', peak: 700 }]) }));
+  await page.route('**/rest/v1/rpc/player_card*', (r) => r.fulfill({ status: 200, contentType: 'application/json',
+    body: JSON.stringify([{ streak: 4, since: '2026-06-01T00:00:00Z' }]) }));
 
   await page.goto(URL, { waitUntil: 'domcontentloaded' });
   // the home chip carrying the player's identity IS the door to the account view
@@ -80,7 +85,7 @@ async function visit({ anonymous = 200, attached = false, door = 'chip' }) {
   await page.click(entry);
   await page.waitForSelector('#ovOnline', { state: 'attached', timeout: 15000 });
   if (door === 'board') {
-    await page.waitForSelector('#ovOnline .lb .row', { timeout: 15000 });
+    await page.waitForSelector('#ovOnline .lb .lrow', { timeout: 15000 });
   } else {
     await page.waitForFunction(() => {
       const a = document.querySelector('#onAccount'), s = document.querySelector('#onAuth');
@@ -107,14 +112,45 @@ async function visit({ anonymous = 200, attached = false, door = 'chip' }) {
          card both said W · L. All three go through ui/record.ts now, and this
          reads the rendered row because the old bug was invisible to anything
          that only inspected the data. */
-      rows: [...document.querySelectorAll('#ovOnline .lb .row')].map((r) => {
+      rows: [...document.querySelectorAll('#ovOnline .lb .lrow')].map((r) => {
         const ws = r.querySelector('.ws'); const l = ws?.querySelector('.n2');
-        return { text: ws?.textContent ?? '', lossItalic: l ? getComputedStyle(l).fontStyle : null };
+        return { text: ws?.textContent ?? '', lossItalic: l ? getComputedStyle(l).fontStyle : null,
+                 pts: r.querySelector('.rt')?.textContent ?? '' };
       }),
+      /* the groups, as the reader meets them: a horizon labels each material
+         change, and the board OPENS with one — a list that starts with a bare
+         row has lost its structure */
+      horizons: [...document.querySelectorAll('#ovOnline .lb .ghor .gn')].map((e) => e.textContent),
+      firstIsHorizon: !!document.querySelector('#ovOnline .lb')?.firstElementChild?.classList.contains('ghor'),
     };
   });
+  /* the tap: a board row deals the face-off. The reader here is signed OUT,
+     so the card must be the one-column variant — a VS against nobody is the
+     kind of half-rendered state only a click can reveal. */
+  let faceoff = null;
+  if (door === 'board') {
+    await page.click('#ovOnline .lb .lrow');
+    await page.waitForFunction(() =>
+      document.querySelector('.faceoff .fostreak')?.textContent !== '–', null, { timeout: 15000 });
+    faceoff = await page.evaluate(() => {
+      const ov = document.querySelector('.faceoff');
+      const rc = ov?.querySelector('.focard')?.getBoundingClientRect();
+      /* the pixel test, not the rect test: the card first shipped at z-index
+         60 under the board overlay (z 80) — present in the DOM, invisible on
+         screen. elementFromPoint answers what the PLAYER gets. */
+      const hit = rc ? document.elementFromPoint(rc.x + rc.width / 2, rc.y + rc.height / 2) : null;
+      return {
+        visible: !!rc && rc.width > 0 && rc.height > 0 && !!ov?.contains(hit),
+        solo: !!ov?.classList.contains('solo'),
+        vsShown: !!ov?.querySelector('.fovs'),
+        name: ov?.querySelector('.fnm')?.textContent,
+        streak: ov?.querySelector('.fostreak')?.textContent,
+        record: [...(ov?.querySelectorAll('.fost') ?? [])].map((s) => s.textContent?.trim() ?? '')[1] ?? '',
+      };
+    });
+  }
   await ctx.close();
-  return { seen, errs, signupCalls };
+  return { seen, errs, signupCalls, faceoff };
 }
 
 try {
@@ -135,6 +171,22 @@ try {
   check(board.seen.rows[1]?.text === 'W 42 · L 61', 'a lopsided record is not stated in full', board.seen.rows);
   check(board.seen.rows.every((r) => r.lossItalic === 'normal'),
         'the loss count is rendering italic — .n2 lost its shape outside the HUD', board.seen.rows);
+  /* points, read from the RENDERED row: the 0018 migration renamed the RPC's
+     column rating → points and the ladder printed "undefined" for a day while
+     this mock still spoke the old shape. The mock now mirrors the live RPC,
+     and this line fails if the client and it ever disagree about names again. */
+  check(board.seen.rows[0]?.pts === '1,072', 'a ladder row does not state the points', board.seen.rows);
+  // the groups, as structure: one horizon per material change, and the board opens with one
+  check(board.seen.horizons.join() === 'IVORY,BONE', 'the group horizons are missing or wrong', board.seen.horizons);
+  check(board.seen.firstIsHorizon === true, 'the board does not open with its group horizon', board.seen);
+  // the tap: a row deals the face-off, one-column for a signed-out reader
+  check(board.faceoff?.visible === true, 'tapping a row does not deal the face-off', board.faceoff);
+  check(board.faceoff?.solo === true && board.faceoff?.vsShown === false,
+        'a signed-out reader was dealt a VS column with nobody in it', board.faceoff);
+  check(board.faceoff?.name === 'NovaComet992', 'the face-off names the wrong player', board.faceoff);
+  check(board.faceoff?.streak === '4', 'the face-off streak did not arrive from player_card', board.faceoff);
+  check(board.faceoff?.record.includes('W 7') && board.faceoff?.record.includes('L 2'),
+        'the face-off does not state both sides of the record', board.faceoff);
   check(board.errs.length === 0, 'page errors on the ladder', board.errs);
 
   // 2 · the project with anonymous sign-ins off: degrade to the old panel

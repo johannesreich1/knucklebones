@@ -1,0 +1,140 @@
+<!-- meta name="L2 — Podium" group="3b · Ladder study" subtitle="The top three stand on plinths cut from their group's material; the list follows with group chips, and a tapped player rises as a bottom sheet" width=412 height=1500 links="Home, Profile" -->
+<style>
+  .stage{--sto:#98a1b3;--bon:#d8c5a0;--ivo:#f1e9d7;--sil:#ccd9ee;--gol:#ffd166;--obs:#b18cff;--neo:#28e8ff}
+  .shead{margin-bottom:6px}
+  .lbh{margin:2px 0 14px;text-align:center}
+  .lbh .lbl{text-align:center}
+
+  /* the podium: 2 · 1 · 3, each plinth cut from the PLAYER'S group material.
+     Height is rank; colour is where the climb has taken them. */
+  .podium{display:flex;align-items:flex-end;gap:8px;width:100%;max-width:var(--w-col);
+    margin:0 auto 16px;padding:0 6px}
+  .plc{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
+  .plc .die{margin-bottom:2px}
+  .plc .pn{font-size:10.5px;font-weight:900;letter-spacing:.05em;max-width:110px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .plc .pp{font-size:13px;font-weight:900;color:var(--gc)}
+  .plc .pw{font-size:8.5px;color:var(--dim)}
+  .plinth{width:100%;border-radius:10px 10px 4px 4px;display:flex;flex-direction:column;
+    align-items:center;justify-content:flex-start;padding-top:7px;gap:1px;
+    background:linear-gradient(180deg,color-mix(in srgb,var(--gc) 30%,transparent),
+      color-mix(in srgb,var(--gc) 8%,transparent) 70%,transparent);
+    border:1px solid color-mix(in srgb,var(--gc) 40%,transparent);border-bottom:0}
+  .plinth b{font-size:19px;font-weight:900;color:var(--gc);line-height:1}
+  .plinth span{font-size:6.5px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
+  .p1st .plinth{height:74px;box-shadow:0 -4px 30px color-mix(in srgb,var(--gc) 25%,transparent)}
+  .p2nd .plinth{height:52px}
+  .p3rd .plinth{height:40px}
+  .p1st .pn{color:var(--neo)}
+  .apxtag{font-size:6.5px;letter-spacing:.22em;color:var(--neo);text-transform:uppercase;
+    border:1px solid color-mix(in srgb,var(--neo) 55%,transparent);border-radius:99px;
+    padding:2px 8px;text-shadow:0 0 8px color-mix(in srgb,var(--neo) 80%,transparent)}
+
+  .plist{display:flex;flex-direction:column;gap:5px;width:100%;max-width:var(--w-col);margin:0 auto}
+  .lr{display:flex;gap:10px;align-items:center;font-size:13px;padding:8px 12px;cursor:pointer;
+    border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
+  .lr .rk{color:var(--dim);min-width:22px;text-align:right;font-weight:800}
+  .lr .nm3{flex:1;font-weight:800;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lr .pt{color:var(--txt);font-weight:900;min-width:44px;text-align:right}
+  .lr.me{border-color:rgba(40,232,255,.45);background:rgba(40,232,255,.08)}
+  .lr.me .nm3{color:var(--cy)}
+  /* the group worn as a chip: a small plate of the material beside the points */
+  .gc2{font-size:7px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;color:var(--gc);
+    border:1px solid color-mix(in srgb,var(--gc) 45%,transparent);border-radius:6px;padding:2.5px 6px;
+    background:color-mix(in srgb,var(--gc) 9%,transparent)}
+
+  /* the tapped player, as a bottom sheet over the dimmed board */
+  .dimwash{position:absolute;inset:0;background:rgba(3,5,12,.62);z-index:2}
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:3;border-radius:22px 22px 0 0;
+    background:linear-gradient(180deg,#0d1226,#070a18);border:1px solid rgba(255,255,255,.14);border-bottom:0;
+    padding:10px 18px 20px;display:flex;flex-direction:column;align-items:center;gap:10px;
+    box-shadow:0 -18px 50px rgba(0,0,0,.6)}
+  .grab{width:38px;height:4px;border-radius:2px;background:rgba(255,255,255,.22)}
+  .shwho{display:flex;align-items:center;gap:12px;width:100%}
+  .shwho .die{flex:0 0 auto}
+  .shid{flex:1;display:flex;flex-direction:column;gap:3px}
+  .shid .nm4{font-size:16px;font-weight:900;letter-spacing:.05em}
+  .shid .snc{font-size:8.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+  .shpts{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+  .shpts b{font-size:24px;font-weight:900;color:var(--gol);line-height:1;
+    text-shadow:0 0 18px rgba(255,209,102,.4)}
+  .shpts span{font-size:7px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+  .shfacts{display:flex;gap:7px;width:100%}
+  .xf{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;
+    border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08)}
+  .xf b{font-size:14px;font-weight:900;color:var(--txt);white-space:nowrap}
+  .xf.rec b{font-size:11.5px}
+  .xf span{font-size:6.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+  .shbar{position:relative;height:6px;border-radius:4px;overflow:hidden;width:100%;
+    background:rgba(255,209,102,.14)}
+  .shbar i{position:absolute;inset:0;width:67.7%;border-radius:4px;
+    background:linear-gradient(90deg,rgba(255,209,102,.5),var(--gol));
+    box-shadow:0 0 10px rgba(255,209,102,.55)}
+  .shcap{display:flex;justify-content:space-between;width:100%;font-size:8px;
+    letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+  .shcap b{color:var(--gol);letter-spacing:.06em}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">LADDER</span><span class="pad"></span></div>
+  <div class="lbh"><div class="lbl">Season 1 · Ladder points</div></div>
+
+  <div class="podium dice-static">
+    <div class="plc p2nd" style="--gc:var(--obs)">
+      {{die:3:p2:40}}
+      <span class="pn">LuckyCrow407</span><span class="pp">4,220</span><span class="pw">{{score:W:19:L:12}}</span>
+      <div class="plinth"><b>2</b><span>Obsidian</span></div>
+    </div>
+    <div class="plc p1st" style="--gc:var(--neo)">
+      <span class="apxtag">Top 1%</span>
+      {{die:6:p1:52}}
+      <span class="pn">CosmicRaven681</span><span class="pp">4,600</span><span class="pw">{{score:W:20:L:12}}</span>
+      <div class="plinth"><b>1</b><span>Neon</span></div>
+    </div>
+    <div class="plc p3rd" style="--gc:var(--obs)">
+      {{die:5:p1:40}}
+      <span class="pn">QuietComet258</span><span class="pp">3,830</span><span class="pw">{{score:W:17:L:11}}</span>
+      <div class="plinth"><b>3</b><span>Obsidian</span></div>
+    </div>
+  </div>
+
+  <div class="plist">
+    <div class="lr"><span class="rk">4</span>{{die:2:gold:24}}<span class="nm3">LuckyDrake986</span><span class="gc2" style="--gc:var(--obs)">Obsidian</span><span class="pt">3,450</span></div>
+    <div class="lr"><span class="rk">5</span>{{die:4:p2:24}}<span class="nm3">TurboDrake434</span><span class="gc2" style="--gc:var(--obs)">Obsidian</span><span class="pt">3,070</span></div>
+    <div class="lr"><span class="rk">6</span>{{die:6:p1:24}}<span class="nm3">SwiftDice753</span><span class="gc2" style="--gc:var(--gol)">Gold</span><span class="pt">2,680</span></div>
+    <div class="lr"><span class="rk">7</span>{{die:1:p2:24}}<span class="nm3">EmberCrow156</span><span class="gc2" style="--gc:var(--gol)">Gold</span><span class="pt">2,300</span></div>
+    <div class="lr"><span class="rk">8</span>{{die:4:gold:24}}<span class="nm3">ZestyFox981</span><span class="gc2" style="--gc:var(--sil)">Silver</span><span class="pt">1,920</span></div>
+    <div class="lr"><span class="rk">9</span>{{die:2:p1:24}}<span class="nm3">BoldRaven393</span><span class="gc2" style="--gc:var(--sil)">Silver</span><span class="pt">1,530</span></div>
+    <div class="lr"><span class="rk">10</span>{{die:5:p2:24}}<span class="nm3">ZestyBadger854</span><span class="gc2" style="--gc:var(--ivo)">Ivory</span><span class="pt">1,089</span></div>
+    <div class="lr"><span class="rk">11</span>{{die:3:p1:24}}<span class="nm3">ZestyPixel950</span><span class="gc2" style="--gc:var(--ivo)">Ivory</span><span class="pt">784</span></div>
+    <div class="lr me"><span class="rk">12</span>{{die:5:p1:24}}<span class="nm3">FrostLynx303</span><span class="gc2" style="--gc:var(--bon)">Bone</span><span class="pt">465</span></div>
+    <div class="lr"><span class="rk">13</span>{{die:1:gold:24}}<span class="nm3">NovaComet992</span><span class="gc2" style="--gc:var(--bon)">Bone</span><span class="pt">440</span></div>
+    <div class="lr"><span class="rk">14</span>{{die:6:p2:24}}<span class="nm3">QuietBadger871</span><span class="gc2" style="--gc:var(--sto)">Stone</span><span class="pt">148</span></div>
+  </div>
+
+  <div class="dimwash"></div>
+  <div class="sheet dice-static">
+    <div class="grab"></div>
+    <div class="shwho">
+      {{die:6:p1:46}}
+      <span class="shid"><span class="nm4">SwiftDice753</span><span class="snc">Member since June 2026</span></span>
+      <span class="shpts"><b>2,680</b><span>Ladder points</span></span>
+    </div>
+    <div class="shfacts">
+      <div class="xf"><b>#6</b><span>Rank</span></div>
+      <div class="xf rec"><b>{{score:W:13:L:8}}</b><span>Record</span></div>
+      <div class="xf"><b>4</b><span>Best streak</span></div>
+      <div class="xf"><b>2,743</b><span>Peak</span></div>
+    </div>
+    <div class="shbar"><i></i></div>
+    <div class="shcap"><span><b>GOLD</b> · 68% through</span><span>2,010 → 3,000</span></div>
+  </div>
+</div></div>
+<div class="note"><b>The top of a ladder should look like somewhere to stand.</b> The podium gives the
+  season its three protagonists — each plinth cut from the material of the group its player is
+  actually in, so a podium of one NEON and two OBSIDIAN tells you the apex is genuinely scarce.
+  Below it the list stays flat and quick, with the group worn as a small material chip. Tapping
+  any player — plinth or row — lifts them as a <b>bottom sheet</b>: the thumb-native detail
+  surface, dismissed with a flick, no navigation. The sheet is one player's profile in miniature:
+  points, rank, record, streak, peak, and their progress through the group as a bar.
+  Costs: the podium spends ~150px before rank 4 exists, and it must not tempt anyone into
+  decorating it further — three plinths, no confetti.</div>

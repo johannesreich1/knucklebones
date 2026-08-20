@@ -1,0 +1,102 @@
+<!-- meta name="L7 — Neighborhood" group="3b · Ladder study" subtitle="The board opens on YOU: the podium is pinned small, the list is your neighbourhood, and every neighbour states the gap to you" width=412 height=1500 links="Home, Profile" -->
+<style>
+  .stage{--sto:#98a1b3;--bon:#d8c5a0;--ivo:#f1e9d7;--sil:#ccd9ee;--gol:#ffd166;--obs:#b18cff;--neo:#28e8ff}
+  .shead{margin-bottom:6px}
+  .lbh{margin:2px 0 12px;text-align:center}
+  .lbh .lbl{text-align:center}
+
+  /* the summit, pinned: three medallions, not a stage — the top of the ladder
+     matters here as orientation, not as the subject */
+  .summit{display:flex;justify-content:center;gap:18px;width:100%;max-width:var(--w-col);
+    margin:0 auto 4px}
+  .med{display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer}
+  .med .mring2{position:relative;width:46px;height:46px;border-radius:50%;display:grid;place-items:center;
+    border:2px solid var(--gc);box-shadow:0 0 12px color-mix(in srgb,var(--gc) 45%,transparent)}
+  .med .mrk{position:absolute;top:-6px;right:-4px;width:16px;height:16px;border-radius:50%;
+    display:grid;place-items:center;font-size:8.5px;font-weight:900;color:#0a0d1c;background:var(--gc)}
+  .med .mn{font-size:8px;font-weight:800;letter-spacing:.06em;color:var(--dim);max-width:96px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .med .mp{font-size:9px;font-weight:900;color:var(--gc)}
+
+  /* the fold: everything between the summit and your neighbourhood, folded to
+     one line that says exactly what it hides */
+  .fold{display:flex;align-items:center;gap:10px;width:100%;max-width:var(--w-col);margin:8px auto;
+    color:var(--dim);font-size:8.5px;letter-spacing:.18em;text-transform:uppercase;cursor:pointer}
+  .fold::before,.fold::after{content:"";flex:1;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent)}
+
+  .plist{display:flex;flex-direction:column;gap:5px;width:100%;max-width:var(--w-col);margin:0 auto}
+  .lr{display:flex;gap:10px;align-items:center;font-size:13px;padding:8px 12px;cursor:pointer;
+    border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
+  .lr .rk{color:var(--dim);min-width:22px;text-align:right;font-weight:800}
+  .lr .nm3{flex:1;font-weight:800;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .lr .gap{font-size:9px;font-weight:800;letter-spacing:.06em;color:var(--dim)}
+  .lr .gap b{color:var(--mg);font-weight:900}
+  .lr .gap b.down{color:var(--cy)}
+  .lr .pt{color:var(--gc);font-weight:900;min-width:44px;text-align:right}
+
+  /* the horizon between groups, in the list's own lane */
+  .hor{display:flex;align-items:center;gap:8px;margin:7px 0 2px}
+  .hor::before,.hor::after{content:"";height:1px;background:
+    linear-gradient(90deg,transparent,var(--gc) 30%,var(--gc) 70%,transparent);opacity:.45}
+  .hor::before{flex:0 0 18px}
+  .hor::after{flex:1}
+  .hor .gn{font-size:10px;font-weight:900;letter-spacing:.24em;color:var(--gc)}
+  .hor .gf{font-size:8px;letter-spacing:.14em;color:var(--dim)}
+
+  /* YOU: the one large row, the screen's true centre */
+  .melr{display:flex;gap:12px;align-items:center;padding:12px 14px;cursor:pointer;
+    border-radius:15px;border:1px solid rgba(40,232,255,.5);background:rgba(40,232,255,.08);
+    box-shadow:0 0 24px rgba(40,232,255,.12)}
+  .melr .nmwrap{flex:1;display:flex;flex-direction:column;gap:3px}
+  .melr .nm3{font-size:15px;font-weight:900;letter-spacing:.05em;color:var(--cy)}
+  .melr .sub{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase}
+  .melr .sub b{color:var(--bon);letter-spacing:.06em}
+  .melr .ptcol{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+  .melr .pt2{font-size:19px;font-weight:900;color:var(--gold);line-height:1}
+  .melr .rk2{font-size:8.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">LADDER</span><span class="pad"></span></div>
+  <div class="lbh"><div class="lbl">Season 1 · Ladder points</div></div>
+
+  <div class="summit dice-static">
+    <div class="med" style="--gc:var(--obs)"><span class="mring2">{{die:3:p2:26}}<span class="mrk">2</span></span><span class="mn">LuckyCrow407</span><span class="mp">4,220</span></div>
+    <div class="med" style="--gc:var(--neo)"><span class="mring2">{{die:6:p1:30}}<span class="mrk">1</span></span><span class="mn">CosmicRaven681</span><span class="mp">4,600</span></div>
+    <div class="med" style="--gc:var(--obs)"><span class="mring2">{{die:5:p1:26}}<span class="mrk">3</span></span><span class="mn">QuietComet258</span><span class="mp">3,830</span></div>
+  </div>
+
+  <div class="fold">6 players between the summit and here</div>
+
+  <div class="plist">
+    <div class="hor" style="--gc:var(--ivo)"><span class="gn">IVORY</span><span class="gf">720 and up</span></div>
+    <div class="lr" style="--gc:var(--ivo)"><span class="rk">10</span>{{die:5:p2:24}}<span class="nm3">ZestyBadger854</span><span class="gap"><b>+624</b> on you</span><span class="pt">1,089</span></div>
+    <div class="lr" style="--gc:var(--ivo)"><span class="rk">11</span>{{die:3:p1:24}}<span class="nm3">ZestyPixel950</span><span class="gap"><b>+319</b> on you</span><span class="pt">784</span></div>
+
+    <div class="hor" style="--gc:var(--bon)"><span class="gn">BONE</span><span class="gf">300 and up · your group</span></div>
+    <div class="melr dice-static">
+      {{die:5:p1:34}}
+      <span class="nmwrap"><span class="nm3">FrostLynx303</span><span class="sub"><b>Bone</b> · 39% through · {{score:W:4:L:6}}</span></span>
+      <span class="ptcol"><span class="pt2">465</span><span class="rk2">Rank #12</span></span>
+    </div>
+    <div class="lr" style="--gc:var(--bon)"><span class="rk">13</span>{{die:1:gold:24}}<span class="nm3">NovaComet992</span><span class="gap"><b class="down">−25</b> behind</span><span class="pt">440</span></div>
+
+    <div class="hor" style="--gc:var(--sto)"><span class="gn">STONE</span><span class="gf">the floor is 0</span></div>
+    <div class="lr" style="--gc:var(--sto)"><span class="rk">14</span>{{die:6:p2:24}}<span class="nm3">QuietBadger871</span><span class="gap"><b class="down">−317</b> behind</span><span class="pt">148</span></div>
+    <div class="lr" style="--gc:var(--sto)"><span class="rk">15</span>{{die:2:p1:24}}<span class="nm3">ZestyMole743</span><span class="gap"><b class="down">−338</b> behind</span><span class="pt">127</span></div>
+    <div class="lr" style="--gc:var(--sto)"><span class="rk">16</span>{{die:3:p2:24}}<span class="nm3">ZestyWolf147</span><span class="gap"><b class="down">−367</b> behind</span><span class="pt">98</span></div>
+  </div>
+
+  <div class="fold">Show the whole board</div>
+</div></div>
+<div class="note"><b>The board opens where the player actually looks: at themselves.</b> Rank 1 is
+  the summit, but the race you are IN is against the players a few dozen points either side — so
+  the summit shrinks to three pinned medallions, the middle folds into one honest line, and the
+  screen's centre is YOUR row, full size, with your group, your fill and your record. Every
+  neighbour states the gap to you in points — magenta above, cyan below, the duel palette doing
+  the talking — which is the number that decides tonight's session. The gap is a distance, never
+  a payout: what a match is worth is not previewable in this game, by design. Tapping a neighbour
+  opens the face-off card (study L5); the fold expands to the full strata list (study L1).
+  Costs: it needs a signed-in player with games to centre on — signed-out or unranked, it
+  degrades to the plain top-down board — and the server must return a window around your rank,
+  not just the top 50 (player_standing() already knows the centre).</div>

@@ -311,6 +311,36 @@ reach. test16 grew a ladder case (its harness takes the door as a slot now)
 that reads the rendered row, since the original bug was invisible to anything
 inspecting only the data.
 
+### 5d. The board rework (2026-08-20)
+
+Two things, same evening, same screen:
+
+- **The live ladder printed `undefined` for every points value.** Migration
+  0015→0018 renamed the RPC's column `rating` → `points`; the client interface
+  and test16's route mock both still spoke the old shape, so the gate stayed
+  green while production broke — the mock had drifted from the migration.
+  Fixed, and test16 now reads the POINTS off the rendered row, so the client
+  and the RPC can never silently disagree about a column name again.
+- **The board itself was rebuilt** (design study 33a–33h, eight alternatives;
+  Johannes picked L7's you-centred reading on L1's full scroll, with L5's
+  face-off as the tap). What ships: one continuous list NEON→STONE with a
+  labelled **horizon** wherever the group changes; every row carries the
+  player's die (0022 added `avatar`+`peak` to `leaderboard()`, 0023 spread the
+  bots across the avatar space); for a signed-in reader every row states the
+  **gap to them** — magenta above, cyan below, never a payout — and their row
+  is the big one the list opens centred on. **Tapping a player deals a
+  face-off**: their column against yours, five facts mirrored (points, record,
+  best streak via the new public `player_card()` RPC — 0021's `best_streak()`
+  is now a delegate of it — peak, win rate), one-column when signed out.
+  `boardGroup()` in `core/ladder.ts` decides what a row displays: only the
+  RPC's apex flag can grant NEON, because the apex is a rank, not a threshold.
+  Two lessons paid for on the way: the face-off first rendered at z-index 60
+  **under** the board overlay (z 80) — rect present, pixels absent — so test16
+  asks `elementFromPoint` now, not `getBoundingClientRect`; and the design
+  build's collision guard silently skips ~every other CSS rule (regex consumes
+  the boundary brace), which is how a study card wore the mode dial's `.dhead`
+  glow undetected — fix chip filed.
+
 ### 6. The navigation batch (2026-08-20)
 
 Four moves, each putting a control where its context makes sense:

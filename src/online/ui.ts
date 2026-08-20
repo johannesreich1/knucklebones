@@ -10,14 +10,15 @@ import { $, show, hide } from '../ui/dom.ts';
 import { showEnd, setMeta, closeEnd } from '../ui/endscreen.ts';
 import { Sfx } from '../ui/audio.ts';
 import { makeDie } from '../ui/die.ts';
-import { rankName, groupFill, peakState, inApex } from '../core/ladder.ts';
+import { rankName, groupFill, peakState, inApex, boardGroup } from '../core/ladder.ts';
 import { ask } from '../ui/askcard.ts';
 import { REDUCED } from '../ui/fx.ts';
 import { recordHtml } from '../ui/record.ts';
 import { AV_HUES, DEFAULT_AVATAR, parseAvatar, paintAvatar } from '../ui/avatar.ts';
 import { signUp, signIn, signOut, currentUser, ensureIdentity, attachEmail,
          myProfile, myRecord, rename, leaderboard, deleteAccount, join, readyPeer,
-         myLadder, myStanding, matchHistory, setAvatar, bestStreak } from './session.ts';
+         myLadder, myStanding, matchHistory, setAvatar, bestStreak, playerCard,
+         type LeaderboardRow, type Ladder } from './session.ts';
 import { availableTaps } from './identity.ts';
 import { enterMatch, setFinishHandler, type FinishReport } from './play.ts';
 import { spinDial } from '../ui/modedial.ts';
@@ -319,21 +320,147 @@ async function startQueue(): Promise<void> {
 const esc = (s: string) => s.replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
+const pts = (n: number): string => n.toLocaleString('en');
+
+/* the distance to me, signed: magenta above, cyan below — the duel palette
+   doing the talking. A distance is all it may name: what a match would PAY is
+   never previewed anywhere, because it depends on the opponent. */
+const gapHtml = (d: number): string =>
+  d > 0 ? `<span class="gap"><b>+${pts(d)}</b> on you</span>`
+  : d < 0 ? `<span class="gap"><b class="down">−${pts(-d)}</b> behind</span>`
+  : `<span class="gap">level with you</span>`;
+
+/* The board (design 33g): ONE continuous scroll from the apex to the floor.
+   Groups are horizons — labelled boundaries where the material changes — and
+   for a signed-in player every row states its distance to THEM, the list
+   opening centred on their row: the race you are in is against the players a
+   few dozen points either side, so that is where the screen opens. Signed out
+   (the board is public and must cost the reader nothing) rows state the
+   record, and no row is yours. */
 async function showBoard(): Promise<void> {
   panel('onBoard');
   const list = $('#onBoardList');
   // the wait wears the game's own bouncing dice, centred — no bare text
   list.innerHTML = '<div class="lbload"><div class="qdice" aria-hidden="true"></div><div class="qmsg">Loading</div></div>';
   (list.querySelector('.qdice') as HTMLElement).append(makeDie(3, ME), makeDie(5, AI));
-  const [rows, me] = await Promise.all([leaderboard(50), myProfile()]);
+  const [rows, me, lad] = await Promise.all([leaderboard(50), myProfile(), myLadder()]);
   list.innerHTML = rows.length ? '' : '<div class="row">No ranked games yet — be the first!</div>';
-  rows.forEach((r, i) => {
-    const div = document.createElement('div');
-    div.className = 'row' + (i < 3 ? ' top' : '') + (me && r.nickname === me.nickname ? ' me' : '');
-    div.innerHTML = `<span class="rank">${i + 1}</span><span class="nm">${esc(r.nickname)}</span>` +
-      `<span class="ws">${recordHtml(r.wins, r.losses)}</span><span class="rt">${r.rating}</span>`;
-    list.appendChild(div);
+  /* which horizon may claim "your group": my row's if I am on the board, my
+     points' otherwise — a signed-in player low on games still lives somewhere */
+  const myRow = me ? rows.find((r) => r.nickname === me.nickname) ?? null : null;
+  const myG = myRow ? boardGroup(myRow.points, myRow.apex) : lad ? boardGroup(lad.points, false) : null;
+  let horizon = '';
+  let meEl: HTMLElement | null = null;
+  for (const r of rows) {
+    const g = boardGroup(r.points, r.apex);
+    if (g.id !== horizon) {
+      horizon = g.id;
+      const h = document.createElement('div');
+      h.className = 'ghor' + (g.id === 'neon' ? ' apex' : '');
+      h.style.setProperty('--gc', `var(--g-${g.id})`);
+      const sub = g.id === 'neon' ? 'top 1% of the season'
+        : g.floor === 0 ? 'the floor is 0'
+        : `${pts(g.floor)} and up`;
+      h.innerHTML = `<span class="gn">${g.name}</span>` +
+        `<span class="gf">${sub}${lad && myG === g ? ' · your group' : ''}</span>`;
+      list.appendChild(h);
+    }
+    const isMe = !!me && r.nickname === me.nickname;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'lrow' + (isMe ? ' me' : '');
+    b.style.setProperty('--gc', `var(--g-${g.id})`);
+    /* the row's text is spans a screen reader would run together — name the
+       button as the sentence it means */
+    b.setAttribute('aria-label', isMe
+      ? `${r.nickname} — you, rank ${r.rank}, ${g.name}. Open your profile`
+      : `${r.nickname}, rank ${r.rank}, ${g.name}, ${pts(r.points)} points. Compare`);
+    if (isMe) {
+      const state = r.apex ? 'top 1%' : `${Math.round(groupFill(r.points) * 100)}% through`;
+      b.innerHTML = `<span class="av"></span><span class="nmwrap"><span class="nm">${esc(r.nickname)}</span>` +
+        `<span class="mesub"><b>${g.name}</b> · ${state} · ${recordHtml(r.wins, r.losses)}</span></span>` +
+        `<span class="ptcol"><span class="pt2">${pts(r.points)}</span><span class="rk2">Rank #${r.rank}</span></span>`;
+      meEl = b;
+    } else {
+      const mid = lad ? gapHtml(r.points - lad.points)
+        : `<span class="ws">${recordHtml(r.wins, r.losses)}</span>`;
+      b.innerHTML = `<span class="rank">${r.rank}</span><span class="av"></span>` +
+        `<span class="nm">${esc(r.nickname)}</span>${mid}<span class="rt">${pts(r.points)}</span>`;
+    }
+    paintAvatar(b.querySelector('.av') as HTMLElement, r.avatar, isMe ? 34 : 24);
+    b.addEventListener('click', () => {
+      Sfx.tap();
+      /* my own row is the door to my profile — a face-off against yourself
+         answers nothing */
+      if (isMe) { void showAccount(); return; }
+      showFaceoff(r, me && lad ? { name: me.nickname, avatar: me.avatar ?? null, lad } : null);
+    });
+    list.appendChild(b);
+  }
+  meEl?.scrollIntoView({ block: 'center' });
+}
+
+/* ---- the face-off (design 33e): the tapped player dealt against YOU, stat
+   for stat — their column gold, yours cyan. The card paints instantly from
+   what the board row already carries; the streak (the one fact with its own
+   RPC) and my exact rank land as they arrive. With no ranked self to compare
+   the card is one column, labels leading. */
+interface MySide { name: string; avatar: string | null; lad: Ladder }
+function showFaceoff(r: LeaderboardRow, mine: MySide | null): void {
+  const g = boardGroup(r.points, r.apex);
+  const mg = mine ? boardGroup(mine.lad.points, false) : null;
+  const mGames = mine ? mine.lad.wins + mine.lad.losses + mine.lad.draws : 0;
+  const rate = (w: number, games: number): string => (games ? Math.round((w / games) * 100) + '%' : '–');
+  const stat = (k: string, a: string, b?: string | false | null): string =>
+    `<div class="fost"><span class="a">${a}</span><span class="k">${k}</span>` +
+    (mine ? `<span class="b">${b || '–'}</span>` : '') + '</div>';
+  const ov = document.createElement('div');
+  ov.className = 'faceoff' + (mine ? '' : ' solo');
+  ov.innerHTML = `<div class="focard" role="dialog" aria-modal="true" tabindex="-1" aria-label="${esc(r.nickname)}">
+    <div class="focols dice-static">
+      <div class="focol" style="--gc:var(--g-${g.id})">
+        <span class="av"></span><span class="fnm">${esc(r.nickname)}</span>
+        <span class="fgp">${g.name} · #${r.rank}</span>
+      </div>` + (mine ? `
+      <span class="fovs">VS</span>
+      <div class="focol you" style="--gc:var(--g-${mg!.id})">
+        <span class="av"></span><span class="fnm">${esc(mine.name)}</span>
+        <span class="fgp">${mg!.name}</span>
+      </div>` : '') + `
+    </div>
+    <div class="fostats">
+      ${stat('Points', pts(r.points), mine && pts(mine.lad.points))}
+      ${stat('Record', recordHtml(r.wins, r.losses), mine && recordHtml(mine.lad.wins, mine.lad.losses))}
+      ${stat('Best streak', '<span class="fostreak">–</span>', mine && '<span class="mystreak">–</span>')}
+      ${stat('Peak', pts(r.peak), mine && pts(mine.lad.peak))}
+      ${stat('Win rate', rate(r.wins, r.games), mine && rate(mine.lad.wins, mGames))}
+    </div>` +
+    (mine ? `<div class="fogap">${
+      r.points === mine.lad.points ? 'Level with you'
+        : `<b>${pts(Math.abs(r.points - mine.lad.points))} points</b> between you`}</div>` : '') +
+    '</div>';
+  const close = (): void => { ov.remove(); document.removeEventListener('keydown', onKey); };
+  const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') close(); };
+  ov.addEventListener('click', (e) => { if (e.target === ov) { Sfx.tap(); close(); } });
+  document.addEventListener('keydown', onKey);
+  document.body.appendChild(ov);
+  paintAvatar(ov.querySelector('.focol .av') as HTMLElement, r.avatar, 46);
+  if (mine) paintAvatar(ov.querySelector('.focol.you .av') as HTMLElement, mine.avatar, 46);
+  (ov.querySelector('.focard') as HTMLElement).focus();
+  void playerCard(r.nickname).then((pc) => {
+    const el = ov.querySelector('.fostreak');
+    if (el && pc) el.textContent = String(pc.streak);
   });
+  if (mine) {
+    void bestStreak().then((s) => {
+      const el = ov.querySelector('.mystreak');
+      if (el) el.textContent = String(s);
+    });
+    void myStanding().then((st) => {
+      const el = ov.querySelector('.focol.you .fgp');
+      if (el && st) el.textContent += ` · #${st.rank}`;
+    });
+  }
 }
 
 /* The ring sweeps up to its value when the screen opens. It is not decoration:

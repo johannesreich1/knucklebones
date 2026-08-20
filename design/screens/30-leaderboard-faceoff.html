@@ -1,0 +1,68 @@
+<!-- meta name="Leaderboard · face-off" group="3 · Ladder & account" subtitle="Tap a row, be dealt THEM against YOU — five facts mirrored around the centre, and the one-column variant a signed-out reader gets" width=412 height=1180 links="Leaderboard, Matchmaking" -->
+<style>
+  /* The face-off is the app's own component (.focard and friends, online.css)
+     — the card wears it directly, like 53-quit wears the ask-card, and shows
+     both rosters: the VS card a ranked reader is dealt, and the one-column
+     variant for a signed-out reader. .faceoff is the app's fixed wash, pinned
+     static here so both cards sit in the stage's flow. */
+  .scr{gap:24px;justify-content:center;align-items:center}
+  .cap2{margin-bottom:-10px}
+  .faceoff{position:static;inset:auto;background:none;padding:0;z-index:auto;display:block;width:100%;
+    max-width:330px}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+
+  <div class="cap2">SIGNED IN — THEM AGAINST YOU</div>
+  <div class="faceoff">
+    <div class="focard dice-static">
+      <div class="focols">
+        <div class="focol" style="--gc:var(--g-gold)">
+          <span class="av">{{die:6:p1:46}}</span><span class="fnm">SwiftDice753</span>
+          <span class="fgp">GOLD · #6</span>
+        </div>
+        <span class="fovs">VS</span>
+        <div class="focol you" style="--gc:var(--g-bone)">
+          <span class="av">{{die:5:p1:46}}</span><span class="fnm">FrostLynx303</span>
+          <span class="fgp">BONE · #12</span>
+        </div>
+      </div>
+      <div class="fostats">
+        <div class="fost"><span class="a">2,680</span><span class="k">Points</span><span class="b">465</span></div>
+        <div class="fost"><span class="a">{{score:W:13:L:8}}</span><span class="k">Record</span><span class="b">{{score:W:4:L:6}}</span></div>
+        <div class="fost"><span class="a">4</span><span class="k">Best streak</span><span class="b">2</span></div>
+        <div class="fost"><span class="a">2,743</span><span class="k">Peak</span><span class="b">465</span></div>
+        <div class="fost"><span class="a">62%</span><span class="k">Win rate</span><span class="b">40%</span></div>
+      </div>
+      <div class="fogap"><b>2,215 points</b> between you</div>
+    </div>
+  </div>
+
+  <div class="cap2">SIGNED OUT — ONE COLUMN, LABELS LEADING</div>
+  <div class="faceoff solo">
+    <div class="focard dice-static">
+      <div class="focols">
+        <div class="focol" style="--gc:var(--g-gold)">
+          <span class="av">{{die:6:p1:46}}</span><span class="fnm">SwiftDice753</span>
+          <span class="fgp">GOLD · #6</span>
+        </div>
+      </div>
+      <div class="fostats">
+        <div class="fost"><span class="a">2,680</span><span class="k">Points</span></div>
+        <div class="fost"><span class="a">{{score:W:13:L:8}}</span><span class="k">Record</span></div>
+        <div class="fost"><span class="a">4</span><span class="k">Best streak</span></div>
+        <div class="fost"><span class="a">2,743</span><span class="k">Peak</span></div>
+        <div class="fost"><span class="a">62%</span><span class="k">Win rate</span></div>
+      </div>
+    </div>
+  </div>
+
+</div></div>
+<div class="note"><b>The tap answers the question the ladder raises:</b> how do I stack up against
+  them? Their die and yours meet over the VS mark the matchmaking reveal owns, their column reads
+  gold and yours cyan, and the same five facts are stated twice, mirrored around the centre —
+  points, record, best streak (via the player_card RPC, the one fact a board row cannot carry),
+  peak, win rate. The gap line names the DISTANCE and nothing else: what a match would pay is
+  never previewed in this game, because it depends on the opponent. Signed out — the board is
+  public — the card folds to one column with labels leading, the wash tap or Escape closes it,
+  and the whole surface sits at z-index 90, above the board overlay it opens over (the pixel
+  lesson test16 now pins with elementFromPoint).</div>
