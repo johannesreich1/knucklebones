@@ -251,6 +251,17 @@ Capacitor wrappers for iOS + Android, Sign in with Apple (required if any
 other OAuth is offered), in-app account deletion (already implemented
 server-side via `account-delete`), privacy policy for both stores.
 
+### 4. Deploy pvp-move (away turns in bot matches — see 5e)
+
+`supabase/functions/pvp-move/index.ts` changed: `auto:true` now places for
+whoever's turn it is, and the bot answers an auto-placed human die. Deploy via
+the Supabase MCP (`deploy_edge_function`, uploading `src/config.ts` +
+`src/core/{rules,dice,match,elo,ai}.ts` verbatim next to `index.ts`, as
+always), then verify live: `tests/e2e-pvp.mjs` now proves the path (immediate
+self-nudge → 425, after 13s → 200 with `bot_move` and the turn back). Until
+then the shipped client is harmless — its self-nudge gets 409 and changes
+nothing.
+
 ### 5b. Identity, the dial, and the things the law wants (2026-08-19/20)
 
 - **Guest accounts (identity rung 1).** A first tap on RANKED signs the player
@@ -340,6 +351,35 @@ Two things, same evening, same screen:
   build's collision guard silently skips ~every other CSS rule (regex consumes
   the boundary brace), which is how a study card wore the mode dial's `.dhead`
   glow undetected — fix chip filed.
+
+### 5e. Away handling reaches bot matches (2026-08-20, user report)
+
+"When I play against an AI in ranked and switch to another app, it never
+auto-plays me." True, and structural: the away design (5b) assumed a WAITING
+client does the asking — but vs a bot the stalled side is always the human
+(the bot answers inside the human's own request), so no client existed to
+ask, and the absent player's device was busy being backgrounded: timers
+throttled to a crawl, and the optimistic move pipeline wedging on a WAAPI
+`finished` that hidden pages never fire. Two changes, one meaning — `auto:true`
+now says "place for whoever's turn it is":
+
+- **`pvp-move`** drops the your-own-turn rejection: the mover under `auto` is
+  `match.turn`; the 12s server-clock stall proof is unchanged; the bot replies
+  in-request whenever the HUMAN's die landed — by tap or by auto-place alike.
+  No new power granted: the auto move is a uniform legal die the asker could
+  have played by hand, at a pace the stall clock caps.
+- **The client watchdog** grew the self case: my turn + `document.hidden` +
+  13s stalled → nudge. A visible turn is never touched (present players place
+  their own dice), and `autoPlace` now declines to run hidden — it would only
+  wedge the animation chain where the old behaviour used to.
+
+**Needs the redeploy** (Open items 4) before it does anything: against the
+deployed function the self-nudge answers 409 and the client quietly keeps
+today's behaviour. Known remaining gap, stated not hidden: full suspension
+(iOS backgrounding freezes ALL timers) still stalls a bot match until the
+player returns — a server-side sweep (pg_cron) is the only honest fix there
+and is out of this pass's scope. A throttled desktop/Android tab, the case
+reported, now plays itself out at roughly the PvP away pace.
 
 ### 6. The navigation batch (2026-08-20)
 
