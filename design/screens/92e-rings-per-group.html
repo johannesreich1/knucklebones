@@ -8,15 +8,21 @@
   .shead{margin-bottom:4px}
   .pane{display:flex;flex-direction:column;gap:11px;width:100%;max-width:var(--w-col);
     margin:0 auto;align-items:center}
+  /* The sweep is 270deg and starts at 225deg, NOT 180deg: 225 + 270 = 495 = 135,
+     so the ring runs lower-left -> up the left -> over the top -> down the
+     right -> lower-right, and the 90deg gap it leaves is centred on 6 o'clock.
+     Starting at 180 put one end at the bottom and the other out at 3 o'clock,
+     which read as a ring somebody had knocked askew. Both ends now sit 45deg
+     either side of the bottom, at the same height. */
   .gring{position:relative;width:var(--s);height:var(--s);border-radius:50%;flex:0 0 auto;
-    background:conic-gradient(from 180deg,var(--fill,var(--cy)) calc(var(--f) * 270deg),
+    background:conic-gradient(from 225deg,var(--fill,var(--cy)) calc(var(--f) * 270deg),
       rgba(255,255,255,.07) calc(var(--f) * 270deg) 270deg,transparent 270deg);
     -webkit-mask:radial-gradient(circle closest-side,transparent calc(100% - var(--band)),#000 calc(100% - var(--band) + 1px));
     mask:radial-gradient(circle closest-side,transparent calc(100% - var(--band)),#000 calc(100% - var(--band) + 1px))}
   .gring.lit{filter:drop-shadow(0 0 10px rgba(40,232,255,.5))}
   .gring.done{--fill:rgba(40,232,255,.45)}
   .gring.pk::after{content:"";position:absolute;inset:0;border-radius:50%;
-    background:conic-gradient(from 180deg,transparent 0 calc(var(--pk) * 270deg - 1.6deg),
+    background:conic-gradient(from 225deg,transparent 0 calc(var(--pk) * 270deg - 1.6deg),
       var(--gold) calc(var(--pk) * 270deg - 1.6deg) calc(var(--pk) * 270deg + 1.6deg),transparent 0);
     -webkit-mask:radial-gradient(circle closest-side,transparent calc(100% - var(--band) - 3px),#000 calc(100% - var(--band) - 2px));
     mask:radial-gradient(circle closest-side,transparent calc(100% - var(--band) - 3px),#000 calc(100% - var(--band) - 2px));

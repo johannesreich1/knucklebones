@@ -11,8 +11,14 @@
     margin:0 auto;align-items:center}
   .arcwrap{position:relative;width:214px;height:214px;display:grid;place-items:center}
   /* --d1..--d3 are each division's fill, 0..1 — three 84deg segments with 6deg gaps */
+  /* The sweep is 270deg and starts at 225deg, NOT 180deg: 225 + 270 = 495 = 135,
+     so the ring runs lower-left -> up the left -> over the top -> down the
+     right -> lower-right, and the 90deg gap it leaves is centred on 6 o'clock.
+     Starting at 180 put one end at the bottom and the other out at 3 o'clock,
+     which read as a ring somebody had knocked askew. Both ends now sit 45deg
+     either side of the bottom, at the same height. */
   .arc{position:absolute;inset:0;border-radius:50%;
-    background:conic-gradient(from 180deg,
+    background:conic-gradient(from 225deg,
       var(--cy) calc(var(--d1) * 84deg), rgba(255,255,255,.07) calc(var(--d1) * 84deg) 84deg,
       transparent 84deg 90deg,
       var(--cy) 90deg calc(90deg + var(--d2) * 84deg), rgba(255,255,255,.07) calc(90deg + var(--d2) * 84deg) 174deg,

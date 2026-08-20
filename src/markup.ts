@@ -82,7 +82,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <div class="sub2">Ranked dice duels</div>
   </div>
   <div class="homestack">
-    <button class="btn primary" id="btnOnline">Play online</button>
+    <button class="btn primary" id="btnOnline">Play ranked match</button>
     <div class="hrow">
       <button class="btn" id="btnBoardHome">Leaderboard</button>
       <button class="btn" id="btnSettingsHome">Settings</button>

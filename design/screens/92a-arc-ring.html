@@ -7,15 +7,21 @@
   .pane{display:flex;flex-direction:column;gap:15px;width:100%;max-width:var(--w-col);
     margin:0 auto;align-items:center}
   .arcwrap{position:relative;width:236px;height:236px;display:grid;place-items:center}
+  /* The sweep is 270deg and starts at 225deg, NOT 180deg: 225 + 270 = 495 = 135,
+     so the ring runs lower-left -> up the left -> over the top -> down the
+     right -> lower-right, and the 90deg gap it leaves is centred on 6 o'clock.
+     Starting at 180 put one end at the bottom and the other out at 3 o'clock,
+     which read as a ring somebody had knocked askew. Both ends now sit 45deg
+     either side of the bottom, at the same height. */
   .arc{position:absolute;inset:0;border-radius:50%;
-    background:conic-gradient(from 180deg,var(--cy) calc(var(--p) * 270deg),
+    background:conic-gradient(from 225deg,var(--cy) calc(var(--p) * 270deg),
       rgba(255,255,255,.07) calc(var(--p) * 270deg) 270deg,transparent 270deg);
     -webkit-mask:radial-gradient(circle closest-side,transparent 82%,#000 83%);
     mask:radial-gradient(circle closest-side,transparent 82%,#000 83%);
     filter:drop-shadow(0 0 15px rgba(40,232,255,.45))}
   /* the two gaps that turn one arc into THREE divisions — the steps, literally */
   .ticks{position:absolute;inset:0;border-radius:50%;
-    background:conic-gradient(from 180deg,transparent 0 88deg,var(--bg) 88deg 92deg,
+    background:conic-gradient(from 225deg,transparent 0 88deg,var(--bg) 88deg 92deg,
       transparent 92deg 178deg,var(--bg) 178deg 182deg,transparent 182deg);
     -webkit-mask:radial-gradient(circle closest-side,transparent 80%,#000 81%);
     mask:radial-gradient(circle closest-side,transparent 80%,#000 81%)}

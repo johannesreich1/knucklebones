@@ -198,7 +198,12 @@ column, or a small histogram table refreshed on a timer if it ever isn't.
 
 Design: card **92d** (`design/screens/92d-arc-season.html`).
 
-**The ring shows the current group only**, cut into its three divisions. A
+**The ring shows the current group only**, cut into its three divisions. Its
+270° sweep starts at **225°**, not 180° — 225 + 270 = 495 = 135, so the ring
+runs lower-left, up the left, over the top, down the right, to lower-right, and
+the 90° gap it leaves is centred on six o'clock with both ends at the same
+height. Starting the sweep at 180° puts one end at the bottom and the other out
+at three o'clock, which reads as a ring knocked askew. A
 division-up lights the next segment, so progress accumulates; the ring empties
 and starts from the left only when the **group** changes — which makes that a
 moment worth animating, and makes the ring's right end always mean the same
