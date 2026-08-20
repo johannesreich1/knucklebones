@@ -157,17 +157,27 @@ check(out.numerals.on && out.numerals.numShown === 'flex' && out.numerals.pipHid
 // classes, the chase rule was two) and every wait showed a blank square.
 out.loaderNumerals = await gp.evaluate(() => {
   const d = window.__kb.loaderDie(24);
+  window.__ldprobe = d;
   document.body.appendChild(d);
   const pip = d.querySelector('.pip');
-  const res = { pipDisplay: getComputedStyle(pip).display, pipOpacity: +getComputedStyle(pip).opacity,
-                pipWidth: pip.getBoundingClientRect().width,
-                numDisplay: getComputedStyle(d.querySelector('.num')).display };
-  d.remove();
-  return res;
+  return { pipDisplay: getComputedStyle(pip).display, pipOpacity: +getComputedStyle(pip).opacity,
+           pipWidth: pip.getBoundingClientRect().width,
+           numDisplay: getComputedStyle(d.querySelector('.num')).display,
+           // read at insertion: the grace (ldreveal) must be holding it invisible
+           graceOpacity: +getComputedStyle(d).opacity };
+});
+// past the grace and the fade (200ms + 250ms), a real wait must be fully lit
+await gp.waitForTimeout(700);
+out.loaderNumerals.shownOpacity = await gp.evaluate(() => {
+  const o = +getComputedStyle(window.__ldprobe).opacity;
+  window.__ldprobe.remove(); delete window.__ldprobe;
+  return o;
 });
 check(out.loaderNumerals.pipDisplay !== 'none' && out.loaderNumerals.pipOpacity > 0.1
       && out.loaderNumerals.pipWidth > 0 && out.loaderNumerals.numDisplay === 'none',
       'the loading die obeys the numerals setting', out.loaderNumerals);
+check(out.loaderNumerals.graceOpacity < 0.05 && out.loaderNumerals.shownOpacity > 0.95,
+      'the loader grace is broken: it must be invisible at insertion and lit after it', out.loaderNumerals);
 await gp.screenshot({ path: './v2-numerals.png' });
 
 // ================= REDUCED MOTION =================

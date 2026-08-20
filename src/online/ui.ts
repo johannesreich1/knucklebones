@@ -460,20 +460,22 @@ function showFaceoff(r: LeaderboardRow, mine: MySide | null): void {
   paintAvatar(ov.querySelector('.focol .av') as HTMLElement, r.avatar, 46);
   if (mine) paintAvatar(ov.querySelector('.focol.you .av') as HTMLElement, mine.avatar, 46);
   (ov.querySelector('.focard') as HTMLElement).focus();
-  void playerCard(r.nickname).then((pc) => {
+  /* The late facts land TOGETHER. Three RPCs answer at three speeds, and on a
+     fast network the drizzle of separate arrivals — their streak, my streak,
+     my rank — read as flicker. The card waits for the slowest and paints once;
+     an answer that beats the loader's grace (ldreveal, styles/main.css) means
+     no wait was ever visible at all. */
+  void Promise.all([playerCard(r.nickname),
+    mine ? bestStreak() : null, mine ? myStanding() : null,
+  ]).then(([pc, streak, st]) => {
     const el = ov.querySelector('.fostreak');
     if (el) el.textContent = pc ? String(pc.streak) : '–';   // never leave the die spinning over nothing
+    if (!mine) return;
+    const ms = ov.querySelector('.mystreak');
+    if (ms && streak != null) ms.textContent = String(streak);
+    const gp = ov.querySelector('.focol.you .fgp');
+    if (gp && st) gp.textContent += ` · #${st.rank}`;
   });
-  if (mine) {
-    void bestStreak().then((s) => {
-      const el = ov.querySelector('.mystreak');
-      if (el) el.textContent = String(s);
-    });
-    void myStanding().then((st) => {
-      const el = ov.querySelector('.focol.you .fgp');
-      if (el && st) el.textContent += ` · #${st.rank}`;
-    });
-  }
 }
 
 /* The ring sweeps up to its value when the screen opens. It is not decoration:

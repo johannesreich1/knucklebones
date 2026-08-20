@@ -4,6 +4,8 @@
 // Built on makeDie, so it is the game's own die at any size; the animation
 // lives in styles/main.css because the biggest wait of all is the online
 // chunk still downloading, when online.css does not exist yet.
+// A wait that ends within the loader's .2s grace never shows at all (the
+// ldreveal animation in main.css) — a fast answer must not flash a die.
 import { ME } from '../core/rules.ts';
 import { makeDie } from './die.ts';
 
