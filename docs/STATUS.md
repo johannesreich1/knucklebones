@@ -9,9 +9,9 @@ was decided, and what's still open.*
 | Piece | State |
 |---|---|
 | **Web** | **LIVE** at https://knucklebones-asg.pages.dev — Cloudflare Pages, auto-deploys every push to `main` |
-| **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0015, RLS + column-grant hardened. 0014 (Game Center ids) is written but NOT applied — it waits for a device |
-| **Edge Functions** | `pvp-join` v13, `pvp-move` v10, `pvp-claim` v7, `account-delete` v1 — all ACTIVE, nothing dead deployed. `gc-auth` is written but undeployed (same reason) |
-| **CI** | GitHub Actions: build + full test gate (23 suites) on every push — green through current `main` |
+| **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0024, RLS + column-grant hardened. 0014 (Game Center ids) is written but NOT applied — it waits for a device |
+| **Edge Functions** | `pvp-join` v16, `pvp-move` v13, `pvp-claim` v10, `account-delete` v1 — all ACTIVE, nothing dead deployed. `gc-auth` is written but undeployed (same reason) |
+| **CI** | GitHub Actions: build + full test gate (24 suites) on every push — green through current `main` |
 | **Design system** | 170 cards (44 screens × 4 device sizes + the two `00-` specs) in the Claude Design project "Knucklebones", generated from the app's real CSS **and its real code** — see "Cards render the app" below |
 | **Signups** | **Open** — a first tap on RANKED mints a guest account (no email, no form). Attaching an email still waits on SMTP; see `docs/IDENTITY.md` |
 
@@ -153,24 +153,55 @@ table exactly). The CPU does not cast — v1 boundary, not an oversight.
   the connected MCP is the sanctioned exception.)
 - **`supabase/migrations/` mirrors what's applied** — keep it that way.
 
-## The ladder rework (spec written, nothing built)
+## The ladder (LIVE — docs/LADDER.md is spec AND shipped design)
 
-`docs/LADDER.md` is the full spec: ladder points starting at **0** on a ×5
-scale, a win always paying more than a loss takes, seven groups of three
-divisions whose widths grow ×1.35, a **positional** apex (NEON = top 1%, not a
-threshold — a fixed one had 735 of 900 simulated players clearing it), seasons
-built now and shown later, and percentile — never absolute points — driving
-bot difficulty and matchmaking width.
-
-Every number in it was measured against 800–900 simulated players rather than
-chosen. Two findings are worth knowing even if the plan changes: **raising K
-does not widen the rank range** (K 32→200 moved p10–p90 only 670→1049 while
+`docs/LADDER.md`: ladder points starting at **0** on a ×5 scale, a win always
+paying more than a loss takes, seven groups whose widths grow ×1.35, a
+**positional** apex (NEON = top 1%), seasons built now and shown later. Every
+number in it was measured against 800–900 simulated players rather than
+chosen. Two findings worth knowing even if the plan changes: **raising K does
+not widen the rank range** (K 32→200 moved p10–p90 only 670→1049 while
 fidelity fell 0.918→0.838 — scaling the display is what widens it, for free),
 and **the logistic denominator must scale with the points** (400 instead of
 2000 costs 8 points of fidelity).
 
-Design: card 92d. Migration plan: LADDER.md §6, seven ordered steps, the first
-three additive and invisible.
+### Bots play their rank (2026-08-20 evening, user report)
+
+Player report: "the bots are much too strong in STONE — I'm losing more than
+winning." Replaying all nine of his ranked matches from their seeds proved the
+bots were NOT strong — they verifiably played the weakest configured shape
+(depth-1 agreement 80%, falling with depth; ~20% blunders). What was real:
+
+- **The floor was no floor.** The weakest shape still beat a random mover
+  63.5% — measured — because the un-slipped half of a depth-1 greedy takes
+  every kill; even 90% slip only reaches random-parity.
+- **The percentile bands quantized on a 17-row season** (13 seeded bots, 4
+  humans): the "genuinely simple" bottom band ended at ~99 points, a third of
+  the way through STONE.
+- **The rank badge lied**: difficulty was keyed to the HUMAN's percentile, so
+  a 98-point and a 784-point bot played identically — and matchmaking's
+  sparse-band widening (±2625) sat a STONE player across IVORY-labeled bots.
+
+The fix is the **honest-opponent model** (LADDER.md §4, rewritten): each
+group's bot shape lives in the `GROUPS` registry (`botShapeAt`), a new `oppW`
+eval knob in `core/ai.ts` makes the STONE bot destroy-blind (the only way
+below random-parity: it never AIMS a kill), and `pvp-join` caps bot pairing
+and minting to the player's own group width (`botPairBand`). Bot ratings
+drift through real settles, so labels stay honest by construction. All seven
+shapes tuned by simulation (STONE 50% vs random, climbing to NEON ≈ 80% and
+59% vs the offline Medium); `tests/botbench.test.ts` — seeded, deterministic
+— gates the ordering.
+
+Shipped as pvp-move v13 / pvp-join v16 / pvp-claim v10 (the last only to keep
+its core copy identical). Verified live with a throwaway guest: paired with
+the 98-point STONE bot (cap holds), which took only 1 of 4 available destroys
+and lost 65–16 to a medium policy; scores, deltas and cleanup all exact.
+
+**Migration 0024** rode along, found by that live probe: `profiles.rating`
+still DEFAULTED to 1000 (the old Elo centre) for every signup since the
+cutover — under the new model that would have handed every newcomer an
+IVORY-strength first bot. Default is 0 now; stale mirrors re-mirrored from
+`season_ratings`.
 
 ## Open items
 

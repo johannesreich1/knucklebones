@@ -1,8 +1,10 @@
 # The Ladder — points, groups, seasons
 
-*Spec, and as of 2026-08-20 the shipped design: ALL of §1–§5 and §6 are live —
-core/ladder.ts, migrations 0016–0021, pvp-move v12 / pvp-claim v9 /
-pvp-join v15, and the profile, avatar picker and match history in the client.*
+*Spec, and as of 2026-08-20 the shipped design: ALL of §1–§6 are live —
+core/ladder.ts, migrations 0016–0024, pvp-move v13 / pvp-claim v10 /
+pvp-join v16, and the profile, avatar picker and match history in the client.
+§4 was reworked the same evening: bot strength moved from the human's
+percentile to the bot's own group.*
 
 *This is the thing to argue with before more of it becomes code. Every number was measured, not chosen — the
 simulations are in `docs/LADDER.md`'s appendix and were run against 800–900
@@ -84,7 +86,7 @@ cutting the ring into three segments. Once the ring fills as a **continuous
 percentage of the group**, the bar already shows which part of it you are in
 and how far the next one is — so "GOLD II" printed beside a ring reading 49%
 was a second, worse way of saying the same fact. Nothing functional ever read
-them: matchmaking pairs on points, the bots on percentile, the leaderboard and
+them: matchmaking pairs on points, the bots on their own group (§4), the leaderboard and
 the apex on points and rank. They are gone.
 
 What that costs is promotion *frequency* — group to group is 37 games at the
@@ -181,30 +183,59 @@ player can never catch up.
 
 ---
 
-## 4. Percentile drives the difficulty, never the points
+## 4. The bot's group is its strength
 
-Absolute point thresholds stop meaning anything the moment the ladder
-inflates. Everything that currently keys off a rating number keys off the
-player's **percentile in the live season** instead.
+*Reworked 2026-08-20 (user report: "the bots are much too strong in STONE").
+The first design keyed bot difficulty to the **human's percentile** — the
+table this section used to hold. Replaying the reporter's nine live matches
+from their seeds showed what that actually produced: every bot he faced
+played the identical weak shape whoever wore it, so a 98-point STONE bot and
+a 784-point IVORY bot were indistinguishable — the rank badge was theater.
+And on a 17-row season (13 seeded bots, 4 humans) the "bottom 20%" band
+ended at ~99 points, a third of the way through STONE.*
 
-**Bot strength** (replaces the 820 / 1080 / 1150 constants in `pvp-move`):
+Now **a bot plays the shape of its own group** — the shape is a field of the
+group registry (`core/ladder.ts GROUPS[].bot`, read by `botShapeAt(points)`),
+so the label IS the strength. Difficulty still tracks the player, but through
+**pairing**: `pvp-join` hands out bots within the player's own group width
+(`botPairBand`), and mints new ones inside the same cap when none is free.
+Bots' points move through real settles, so a bot whose shape loses drifts
+down toward the group that plays like it — the label stays honest by
+construction.
 
-| percentile | search depth | risk sense | slip |
-|---|---|---|---|
-| bottom 20% | 1 | off | heavy |
-| 20–60% | 1–2 | ramping in | light |
-| 60–85% | 2 | full | none |
-| top 15% | 3 | full | none |
+| group | depth | risk | sees your board | slip | win% vs random |
+|---|---|---|---|---|---|
+| STONE | 1 | 0 | **no** (`oppW 0`) | 40% | **50** |
+| BONE | 1 | 0 | yes | 30% | 65 |
+| IVORY | 1 | 0.25 | yes | 15% | 77 |
+| SILVER | 1 | 0.6 | yes | 5% | 75 |
+| GOLD | 2 | 1.2 | yes | — | 78 |
+| OBSIDIAN | 3 | 1.2 | yes | — | 79 |
+| NEON | 4 | 1.2 | yes | — | 80 |
 
-A brand-new player sits at 0 points in the bottom percentile and meets
-something genuinely simple, which is the point of starting at zero.
+Every number measured (600 games per cell, 2026-08-20); the deep groups
+separate against stronger anchors instead — vs the offline Medium the climb
+is 22 → 36 → 39 → 44 → 54 → 59 → 59, and vs Hard 17 → 27 → 31 → 41 → 45 →
+44 → 46. `tests/botbench.test.ts` (seeded, in the gate) keeps the ordering
+honest; `tests/ladder.test.ts` pins the shape numbers.
 
-**Matchmaking width** uses the same number from the other end: few players
-near you → widen the band; crowded → keep it tight. Today's fixed ±150 window
-becomes a function of local population density.
+**`oppW` is the floor's knob.** Slip alone cannot make a gentle bot: the
+un-slipped half of a depth-1 greedy still takes every kill, and even at 90%
+slip it holds random-parity (measured). At `oppW 0` the STONE bot's eval sees
+only its own board — a builder that never *aims* a destroy — which is what
+finally put the floor at ~50% vs a random mover: someone who has just learned
+the rules wins more than they lose.
 
-Percentile is cheap at this scale — `percent_rank()` over an indexed points
-column, or a small histogram table refreshed on a timer if it ever isn't.
+**Matchmaking width** (humans) is unchanged: few players near you → widen the
+band; crowded → keep it tight (`players_near` + `matchBand`). Percentile
+still exists where it belongs — `player_standing()` resolves the positional
+apex and the profile's rank line.
+
+**The mirror must start at 0.** `profiles.rating` kept its pre-ladder default
+of 1000 through the cutover, so every new signup entered matchmaking rated
+1000 — under this model that would hand every newcomer an IVORY-strength
+first bot. Found live, fixed in migration 0024 (default → 0, stale mirrors
+re-mirrored from `season_ratings`).
 
 ---
 

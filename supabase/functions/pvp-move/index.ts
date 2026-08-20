@@ -6,8 +6,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { AI, ME, BOUNTY, isFull, boardTotalMode, legalCols, applyMove, type Player, type Mode } from "./core/rules.ts";
 import { rebuild, matchTotal, type MatchState } from "./core/match.ts";
-import { settle, botShape, type Score } from "./core/ladder.ts";
-import { searchRoot, setRiskW, getRiskW } from "./core/ai.ts";
+import { settle, botShapeAt, type Score } from "./core/ladder.ts";
+import { searchRoot, setRiskW, getRiskW, setOppW, getOppW } from "./core/ai.ts";
 import { modeById } from "./core/modes.ts";
 
 const CORS = {
@@ -154,32 +154,25 @@ Deno.serve(async (req: Request) => {
   // auto-place never triggers this: it moved FOR the opponent, so the turn has
   // just come back to the caller.
   const oppId = myIdx === ME ? match.p2 : match.p1;
-  const { data: oppProf } = await svc.from("profiles").select("is_bot").eq("id", oppId).single();
+  const { data: oppProf } = await svc.from("profiles").select("is_bot, rating").eq("id", oppId).single();
   let botMove: { col: number; die: number } | null = null;
   s = (await loadState(svc, match_id, MODE))!;   // re-derive next die cleanly from the log
   if (!auto && oppProf?.is_bot && !s.over) {
     const botIdx = (1 - myIdx) as Player;  // vs a human p1, the bot is always index 0
     const botDie = s.nextDie;
-    // Dynamic sparring, keyed to the player's SHARE of the population rather
-    // than to a rating number (docs/LADDER.md §4). This used to read the
-    // literals 820 / 1080 / 1150 off profiles.rating, which worked only while
-    // the rating was a centred Elo. The new ladder climbs for anyone who keeps
-    // playing, so absolute thresholds quietly stop meaning anything within a
-    // season — and they would have to be re-tuned after every reset. A
-    // percentile does not, and it survives a season rollover for free.
-    //
-    // The three levers behind it are unchanged, and so is what they buy:
-    //   · risk sense ramps IN rather than being on from the start — a bot
-    //     blind to what you can destroy is beatable while still looking
-    //     sensible,
-    //   · the search stays short-sighted low down, which reads as a careless
-    //     player rather than a broken one,
-    //   · a plain slip on top, up to a coin-flip move at the very bottom.
-    // A brand-new player sits at 0 points in the bottom percentile and meets
-    // something genuinely simple, which is the point of starting at zero.
-    const { data: pctRaw } = await svc.rpc("player_percentile", { p: user.id });
-    const shape = botShape(Number(pctRaw ?? 0));
-    const w = getRiskW(); setRiskW(1.2 * shape.risk);
+    // The bot plays the strength of its OWN group (docs/LADDER.md §4): a
+    // STONE bot is genuinely simple, a GOLD bot genuinely hard, whoever it
+    // faces. Difficulty still tracks the player, but through PAIRING —
+    // pvp-join only hands out bots within the player's own group width.
+    // (The previous ladder shaped the bot from the HUMAN's percentile, which
+    // made a 98-point and a 784-point bot play identically in one session —
+    // the rank badge was theater, and it read as "STONE bots are too
+    // strong". Verified by replaying live matches, 2026-08-20.)
+    // profiles.rating is the season mirror, so this reads the same number
+    // the player was shown when the match was made.
+    const shape = botShapeAt(oppProf.rating ?? 0);
+    const w = getRiskW(), ow = getOppW();
+    setRiskW(shape.risk); setOppW(shape.oppW);
     let botCol: number;
     if (shape.slip > 0 && Math.random() < shape.slip) {
       const lg = legalCols(s.st[botIdx]);
@@ -187,7 +180,7 @@ Deno.serve(async (req: Request) => {
     } else {
       botCol = searchRoot(s.st, botIdx, botDie, shape.depth, MODE).c;
     }
-    setRiskW(w);
+    setRiskW(w); setOppW(ow);
     const { error: botErr } = await svc.from("match_moves")
       .insert({ match_id, idx: s.moveCount, who: botIdx, col: botCol, die: botDie });
     if (!botErr) {

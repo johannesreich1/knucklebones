@@ -9,7 +9,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { diceStream, poolSequence } from "./core/dice.ts";
 import { AI, ME, LIMITED, boardTotalMode, type Player } from "./core/rules.ts";
 import { rebuild, matchTotal } from "./core/match.ts";
-import { settle, matchBand, SCALE, type Score } from "./core/ladder.ts";
+import { settle, matchBand, botPairBand, SCALE, type Score } from "./core/ladder.ts";
 import { modeById, pickMode } from "./core/modes.ts";
 
 const CORS = {
@@ -185,19 +185,26 @@ Deno.serve(async (req: Request) => {
     const free = (bots ?? []).filter((b: any) => !busyIds.has(b.id));
     // rating-matched backfill: one of the three free bots closest to the
     // human's rating (a dash of randomness so it isn't always the same face).
-    // Nobody within range — or nobody free at all — and the pool GROWS: a
-    // fresh bot is minted at the human's rating, randomly a bit stronger or
-    // weaker, so the ladder's edges always have sparring partners.
+    // A bot's strength IS its rating now (its own group's shape, LADDER.md
+    // §4), so the human matchmaking BAND is too generous here: it opens to
+    // ±4500 when the ladder is sparse, which sat a 148-point STONE player
+    // across 784-point IVORY bots. A bot is minted or picked, never waited
+    // for, so it never needs to arrive from groups away — the cap is the
+    // player's own group width. Nobody inside it — or nobody free at all —
+    // and the pool GROWS: a fresh bot is minted a step up or down from the
+    // human, inside the same cap, so the ladder's edges always have honest
+    // sparring partners.
+    const CAP = Math.min(BAND, botPairBand(myR));
     free.sort((a: any, b: any) => Math.abs(a.rating - myR) - Math.abs(b.rating - myR));
-    const inRange = free.filter((b: any) => Math.abs(b.rating - myR) <= BAND);
+    const inRange = free.filter((b: any) => Math.abs(b.rating - myR) <= CAP);
     let bot: string | null = null;
     if (inRange.length) {
       const pick = inRange.slice(0, 3);
       bot = pick[Math.floor(Math.random() * pick.length)].id;
     } else {
-      // offsets scale with the points, and the floor is 0 — the bottom of the
+      // 15–50% of the cap, either side; the floor is 0 — the bottom of the
       // ladder is where new players live, so a bot must be able to stand there
-      const off = (40 + Math.floor(Math.random() * 101)) * SCALE * (Math.random() < 0.5 ? -1 : 1);
+      const off = Math.round(CAP * (0.15 + Math.random() * 0.35)) * (Math.random() < 0.5 ? -1 : 1);
       const { data: minted } = await svc.rpc("mint_bot", { target_rating: Math.max(0, myR + off) });
       if (minted) bot = minted as string;
       else if (free.length) bot = free[0].id;   // mint failed: nearest bot beats no game

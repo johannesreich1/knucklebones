@@ -72,11 +72,26 @@ export function settle(a: LadderRow, b: LadderRow, aScore: Score): Settled {
 
 /* ---- groups --------------------------------------------------------- */
 
+/* How a bot of this group plays. The shape belongs to the GROUP, not to the
+   player it faces: a STONE bot is genuinely simple and a GOLD bot is genuinely
+   hard, whoever sits across the board — the label IS the strength. (The first
+   ladder derived difficulty from the human's percentile instead, which made a
+   98-point bot and a 784-point bot play identically in the same session — the
+   rank badge was theater, and it read as "STONE bots are too strong".)
+     depth — expectimax plies (core/ai.ts searchRoot)
+     risk  — RISK_W: how much it fears what you can destroy (0 = blind)
+     oppW  — OPP_W: how much of YOUR board its eval sees. 0 is the floor knob:
+             a builder that never aims a destroy — slip alone cannot get below
+             random-parity, a half-greedy still wins 60% vs random (measured)
+     slip  — share of moves played as a pure coin-flip column */
+export interface BotShape { depth: number; risk: number; oppW: number; slip: number }
+
 export interface Group {
   id: string;
   name: string;
   floor: number;
   width: number;   // 0 for the apex, which has no ceiling
+  bot: BotShape;
 }
 
 /* Widths grow ~×1.35. Equal widths were the first proposal and the measurement
@@ -84,15 +99,18 @@ export interface Group {
    reaching OBSIDIAN. Two independent things make climbing harder now — a match
    pays less when you outrank your opponent, and a group costs more than the
    last. Widths stay round numbers out of habit rather than need — the ring is
-   one continuous fill now, so nothing has to divide evenly into it. */
+   one continuous fill now, so nothing has to divide evenly into it.
+   Bot shapes: tuned by simulation 2026-08-20 (tests/botbench.test.ts keeps the
+   ordering honest) — win% vs a random mover climbs STONE→NEON, and each group
+   beats the one two below it. */
 export const GROUPS: readonly Group[] = [
-  { id: 'stone',    name: 'STONE',    floor: 0,    width: 300 },
-  { id: 'bone',     name: 'BONE',     floor: 300,  width: 420 },
-  { id: 'ivory',    name: 'IVORY',    floor: 720,  width: 540 },
-  { id: 'silver',   name: 'SILVER',   floor: 1260, width: 750 },
-  { id: 'gold',     name: 'GOLD',     floor: 2010, width: 990 },
-  { id: 'obsidian', name: 'OBSIDIAN', floor: 3000, width: 1350 },
-  { id: 'neon',     name: 'NEON',     floor: 4350, width: 0 },
+  { id: 'stone',    name: 'STONE',    floor: 0,    width: 300,  bot: { depth: 1, risk: 0,    oppW: 0, slip: 0.40 } },
+  { id: 'bone',     name: 'BONE',     floor: 300,  width: 420,  bot: { depth: 1, risk: 0,    oppW: 1, slip: 0.30 } },
+  { id: 'ivory',    name: 'IVORY',    floor: 720,  width: 540,  bot: { depth: 1, risk: 0.25, oppW: 1, slip: 0.15 } },
+  { id: 'silver',   name: 'SILVER',   floor: 1260, width: 750,  bot: { depth: 1, risk: 0.6,  oppW: 1, slip: 0.05 } },
+  { id: 'gold',     name: 'GOLD',     floor: 2010, width: 990,  bot: { depth: 2, risk: 1.2,  oppW: 1, slip: 0 } },
+  { id: 'obsidian', name: 'OBSIDIAN', floor: 3000, width: 1350, bot: { depth: 3, risk: 1.2,  oppW: 1, slip: 0 } },
+  { id: 'neon',     name: 'NEON',     floor: 4350, width: 0,    bot: { depth: 4, risk: 1.2,  oppW: 1, slip: 0 } },
 ];
 
 /* NEON is a POSITION, not a threshold. An always-climbing ladder is a ratchet:
@@ -112,14 +130,24 @@ export function inApex(points: number, rank: number, population: number): boolea
   return rank <= Math.max(1, Math.floor(population * APEX_SHARE));
 }
 
+/* The group a LEADERBOARD row displays. NEON is a position, so only the apex
+   flag the board RPC resolves can grant it — a player whose points cross the
+   apex's fallback floor without holding a top-1% rank is shown in the group
+   below: points can outgrow OBSIDIAN, but only rank can leave it. */
+export function boardGroup(points: number, apex: boolean): Group {
+  if (apex) return APEX;
+  const g = groupOf(points);
+  return g === APEX ? GROUPS[GROUPS.length - 2] : g;
+}
+
 /* A group is the WHOLE rank: there are no divisions inside it.
    Divisions existed to give a nearer milestone and a more frequent promotion,
    and they were paying for that with a segmented ring. Once the ring fills as
    a continuous percentage of the group, the bar already shows which part of it
    you are in and how far the next one is — so "GOLD II" beside a bar reading
    47% was a second, worse way of saying the same fact. Nothing functional ever
-   read them: matchmaking pairs on points, bot difficulty on percentile, the
-   leaderboard and the apex on points and rank. */
+   read them: matchmaking pairs on points, bot difficulty on the bot's own
+   group, the leaderboard and the apex on points and rank. */
 
 export function groupOf(points: number): Group {
   let found = GROUPS[0];
@@ -175,24 +203,28 @@ export function peakState(points: number, peak: number): PeakState {
   return { kind: 'ahead', fill: groupFill(peak) };
 }
 
-/* ---- percentile → difficulty -------------------------------------------- */
+/* ---- the bot's group is its strength ------------------------------------ */
 
-/* Absolute point thresholds stop meaning anything the moment the ladder
-   inflates, so everything that used to key off a rating number keys off the
-   player's share of the population instead. `pct` is 0 at the bottom, 1 at the
-   top. Replaces the 820 / 1080 / 1150 constants pvp-move used to carry. */
-export interface BotShape { depth: number; risk: number; slip: number }
+/* A bot plays the shape of the group its OWN points sit in. Difficulty still
+   tracks the player, but through pairing: matchmaking hands you bots near your
+   rank, and those bots play their rank. Bots' points move through real
+   settles, so a bot whose shape loses points sinks toward the group that
+   plays like it — the label stays honest by construction. */
+export const botShapeAt = (points: number): BotShape => groupOf(points).bot;
 
-export function botShape(pct: number): BotShape {
-  const p = Math.min(1, Math.max(0, pct));
-  if (p < 0.20) return { depth: 1, risk: 0,    slip: 0.50 };
-  if (p < 0.60) return { depth: 1, risk: (p - 0.20) / 0.40 * 0.6, slip: 0.18 };
-  if (p < 0.85) return { depth: 2, risk: 1,    slip: 0 };
-  return { depth: 3, risk: 1, slip: 0 };
+/* How far from the human a BACKFILL bot may be: the human's own group width.
+   The general matchBand below must open wide when the ladder is sparse or no
+   two humans would ever meet — but a bot is minted or picked, never waited
+   for, so it has no reason to arrive from two groups up. This cap is what
+   keeps "STONE bots are easy" true in STONE: without it a 148-point player
+   sat across 784-point IVORY bots (live, 2026-08-20). */
+export function botPairBand(points: number): number {
+  const g = groupOf(points);
+  return g.width || GROUPS[GROUPS.length - 2].width;   // the apex borrows OBSIDIAN's
 }
 
-/* Matchmaking looks at the same number from the other end: a crowded band can
-   stay tight, a sparse one has to widen or nobody ever gets a match. */
+/* Matchmaking (humans): a crowded band can stay tight, a sparse one has to
+   widen or nobody ever gets a match. */
 export const MATCH_BAND_MIN = 150 * SCALE;
 export const MATCH_BAND_MAX = 900 * SCALE;
 

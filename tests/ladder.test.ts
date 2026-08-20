@@ -4,8 +4,8 @@
 import {
   SCALE, K, DENOM, START, LOSS_MULT, MIN_GAIN, MAX_LOSS,
   delta, applyDelta, GROUPS, groupOf, rankName, nextRankName,
-  groupFill, toNext, peakState, inApex, botShape, matchBand, APEX,
-  settle, type LadderRow,
+  groupFill, toNext, peakState, inApex, botShapeAt, botPairBand, matchBand, APEX,
+  boardGroup, settle, type LadderRow,
 } from '../src/core/ladder.ts';
 
 const problems: string[] = [];
@@ -110,6 +110,15 @@ for (const g of GROUPS) {
   }
 }
 
+/* ---- §2 what a board row displays ---------------------------------------
+   NEON is a position, so only the RPC's apex flag can grant it: a player whose
+   points cross the fallback floor without the rank shows in OBSIDIAN. */
+eq(boardGroup(4600, true).id, 'neon', 'the apex flag must grant NEON');
+eq(boardGroup(500, true).id, 'neon', 'apex is a rank — the points do not veto it');
+eq(boardGroup(4600, false).id, 'obsidian', 'points beyond the floor without the rank stay OBSIDIAN');
+eq(boardGroup(3200, false).id, 'obsidian', 'below the floor the flag changes nothing');
+eq(boardGroup(0, false).id, 'stone', 'the floor of the board is STONE');
+
 /* ---- §5 the peak notch ------------------------------------------------- */
 eq(peakState(2494, 2494), { kind: 'at' }, 'peak == points should draw no notch');
 eq(peakState(2494, 2000), { kind: 'at' }, 'a peak behind the fill is impossible and must read as at');
@@ -167,18 +176,36 @@ eq(settle(row(0), row(4000), 0).a.points, 0, 'a loss at zero went negative throu
 eq(even.da + even.db > 0, true, 'the ladder stopped climbing');
 
 /* ---- §4 difficulty and matchmaking ------------------------------------- */
-eq([0, 0.1, 0.3, 0.5, 0.7, 0.9, 1].map((p) => botShape(p).depth), [1, 1, 1, 1, 2, 3, 3],
-   'the bot depth ramp drifted from LADDER.md §4');
-eq(botShape(0).risk, 0, 'the bottom of the ladder must meet a bot blind to danger');
-eq(botShape(0.05).slip > 0.4, true, 'a brand-new player must meet a bot that blunders');
-eq(botShape(0.95).slip, 0, 'the top of the ladder must meet a bot that does not blunder');
-/* risk ramps IN, never out */
-let prev = -1;
-for (let p = 0; p <= 1.0001; p += 0.02) {
-  const r = botShape(p).risk;
-  if (r < prev - 1e-9) { problems.push(`bot risk went backwards at pct ${p.toFixed(2)}`); break; }
-  prev = r;
+/* A bot plays the shape of its OWN group — the label IS the strength. The
+   numbers were tuned by simulation (2026-08-20); tests/botbench.test.ts is
+   the suite that keeps their ORDERING honest, this table just pins them. */
+eq(GROUPS.map((g) => [g.bot.depth, g.bot.risk, g.bot.oppW, g.bot.slip]), [
+  [1, 0, 0, 0.4], [1, 0, 1, 0.3], [1, 0.25, 1, 0.15], [1, 0.6, 1, 0.05],
+  [2, 1.2, 1, 0], [3, 1.2, 1, 0], [4, 1.2, 1, 0],
+], 'the per-group bot shapes drifted from LADDER.md §4');
+eq(botShapeAt(148), GROUPS[0].bot, 'a bot with STONE points must play the STONE shape');
+eq(botShapeAt(9999), APEX.bot, 'a bot above the apex floor must play the NEON shape');
+/* the floor knob: slip alone bottoms out at random-parity (a half-greedy still
+   wins 60% vs random, measured), so STONE must also be destroy-BLIND */
+eq(botShapeAt(0).oppW, 0, 'the STONE bot must not see the opponent board');
+eq(botShapeAt(0).slip >= 0.3, true, 'a brand-new player must meet a bot that blunders');
+eq(botShapeAt(4350).slip, 0, 'the top of the ladder must meet a bot that does not blunder');
+/* every knob only ever tightens on the way up */
+{
+  let pv = GROUPS[0].bot;
+  for (const g of GROUPS) {
+    if (g.bot.depth < pv.depth) problems.push(`${g.name}: search depth fell`);
+    if (g.bot.risk < pv.risk - 1e-9) problems.push(`${g.name}: risk sense fell`);
+    if (g.bot.oppW < pv.oppW) problems.push(`${g.name}: board sight fell`);
+    if (g.bot.slip > pv.slip + 1e-9) problems.push(`${g.name}: slip rose`);
+    pv = g.bot;
+  }
 }
+/* backfill pairing: a bot arrives from the player's own neighbourhood — the
+   cap is what keeps "STONE bots are easy" true IN STONE */
+eq(botPairBand(0), 300, 'a STONE player must meet bots within the STONE width');
+eq(botPairBand(2500), 990, "the cap follows the player's own group");
+eq(botPairBand(9999), 1350, "the apex borrows OBSIDIAN's width");
 eq(matchBand(20), 750, 'a crowded band should stay tight');
 eq(matchBand(0), 4500, 'an empty band should open all the way');
 eq(matchBand(6) > matchBand(12), true, 'a sparser band must be wider');

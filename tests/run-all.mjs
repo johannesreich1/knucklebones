@@ -61,6 +61,7 @@ judge('gcauth', await run('node', ['--experimental-strip-types', 'tests/gcauth.t
 judge('cssreach', await run('node', ['--experimental-strip-types', 'tests/cssreach.test.ts']), clean);
 judge('ladder', await run('node', ['--experimental-strip-types', 'tests/ladder.test.ts']), clean);
 judge('ladderbench', await run('node', ['--experimental-strip-types', 'tests/ladderbench.test.ts']), clean);
+judge('botbench', await run('node', ['--experimental-strip-types', 'tests/botbench.test.ts']), clean);
 
 for (const t of FILE_SUITES) judge(t, await run('node', [`tests/${t}.mjs`]), clean);
 
