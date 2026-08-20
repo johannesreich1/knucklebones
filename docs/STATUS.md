@@ -284,7 +284,7 @@ server-side via `account-delete`), privacy policy for both stores.
   waiting client asks `pvp-move` with `auto:true`; the SERVER checks its own
   clock (`AUTO_MS` = 12s) and places a legal die *for the absent player*, so
   neither a wrong device clock nor a hostile client can force it early. The
-  in-match line narrates it ("X is away — playing for them in N") instead of
+  in-match line narrates it ("Away — auto play in N") instead of
   going silent for 25 seconds. Verified live with two throwaway guests:
   `not-stalled-yet` immediately, the auto-place after 13s, the turn flipping
   back, repeated over four rounds. Both guests deleted themselves afterwards.

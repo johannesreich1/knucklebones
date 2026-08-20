@@ -154,8 +154,8 @@ function oppStalled(): void {
   const tick = (): void => {
     if (!O || O.done || S.turn === O.you) return;
     const left = Math.max(0, Math.ceil((13_000 - (Date.now() - O.lastMoveAt)) / 1000));
-    setStatus(left > 0 ? oppName() + ' is away — playing for them in ' + left
-                       : 'Playing for ' + oppName() + '…', S.turn, false);
+    setStatus(left > 0 ? 'Away — auto play in ' + left
+                       : 'Auto play…', S.turn, false);
     if (left > 0) setTimeout(tick, 500);
   };
   tick();
