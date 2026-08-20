@@ -1,0 +1,71 @@
+<!-- meta name="H3 — Your die wears the ring" group="1b · Home identity" subtitle="The hero duel becomes personal: YOUR die sits inside your progress ring, name and points beneath it — no chip anywhere" width=412 height=1180 links="Profile, Matchmaking, Leaderboard" -->
+<style>
+  .scr{align-items:center}
+  .hero{margin-top:44px}
+  .viewfoot{margin-top:auto;padding-top:20px}
+  /* the duel is already "you vs them" — cyan die against magenta. Wrapping the
+     cyan one in YOUR ring makes the hero say it out loud, and frees the top-right
+     corner entirely: there is no chip left to duplicate what the hero shows. */
+  .duel{gap:14px;margin:16px 0 4px}
+  .hside{display:flex;flex-direction:column;align-items:center;gap:9px}
+  .duelring{position:relative;width:106px;aspect-ratio:1;display:grid;place-items:center}
+  .mfill{position:absolute;inset:0;border-radius:50%;
+    background:conic-gradient(from 225deg,var(--cy) calc(var(--p) * 270deg),
+      rgba(255,255,255,.08) calc(var(--p) * 270deg) 270deg,transparent 270deg);
+    -webkit-mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
+    mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
+    filter:drop-shadow(0 0 12px rgba(40,232,255,.42))}
+  /* the opponent's slot keeps the die naked: the asymmetry IS the message —
+     the ring is yours, the mystery is theirs */
+  /* the caption may never outgrow the ring it belongs to: name on one line,
+     points · group on the next, both centred under the die they describe */
+  .dcap{font-size:8.5px;letter-spacing:.12em;color:var(--dim);text-transform:uppercase;
+    text-align:center;max-width:112px;line-height:1.8}
+  .dcap b{display:block;color:var(--cy);letter-spacing:.1em}
+  .dcap .g{color:var(--gold);font-weight:900}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hero">
+    <div class="eyebrow">Neon Edition</div>
+    <h1>KNUCKLEBONES</h1>
+    <div class="duel dice-static">
+      <div class="hside">
+        <span class="duelring" style="--p:.489"><i class="mfill"></i>{{die:5:p1:70}}</span>
+        <div class="dcap"><b>FrostLynx303</b><span class="g">2,494</span> · GOLD</div>
+      </div>
+      <span class="vs">VS</span>
+      <div class="hside">
+        {{die:3:p2:70}}
+        <div class="dcap">Next opponent</div>
+      </div>
+    </div>
+    <div class="sub2">Ranked dice duels</div>
+  </div>
+
+  <div class="homestack">
+    <button class="btn primary">Play ranked match</button>
+    <div class="hrow">
+      <button class="btn">Leaderboard</button>
+      <button class="btn">Settings</button>
+    </div>
+  </div>
+
+  <div class="quiet">
+    <div class="cap">Practice offline</div>
+    <div class="hrow">
+      <button class="btn">VS AI</button>
+      <button class="btn">2 players</button>
+      <button class="btn">How to play</button>
+    </div>
+  </div>
+
+  <div class="viewfoot">
+    <button class="linkbtn">Impressum</button>
+    <button class="linkbtn">Privacy</button>
+  </div>
+</div></div>
+<div class="note"><b>Identity IS the hero.</b> The duel already shows you (cyan) against them
+  (magenta); wrapping your die in your own ring makes that literal — the home's centrepiece is
+  your avatar climbing its group, and coming back from a match visibly moves it. Tapping your
+  side opens the profile, so the chip disappears entirely and the top corners go quiet. The
+  asymmetry is deliberate: the ring is yours, the naked die is whoever comes next.</div>

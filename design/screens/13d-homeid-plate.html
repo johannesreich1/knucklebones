@@ -1,0 +1,70 @@
+<!-- meta name="H4 — Plate on the stack" group="1b · Home identity" subtitle="A slim tappable nameplate directly above PLAY RANKED MATCH: the climb sits on top of the button that advances it" width=412 height=1160 links="Profile, Matchmaking, Leaderboard" -->
+<style>
+  .scr{align-items:center}
+  .hero{margin-top:44px}
+  .viewfoot{margin-top:auto;padding-top:20px}
+  /* the in-game nameplate's shape, promoted to home: one slim row in the action
+     stack. It rides ABOVE the primary button so cause and effect read as one
+     block — this is your standing, and the button under it is how it moves. */
+  .pplate{display:flex;align-items:center;gap:10px;width:100%;
+    padding:7px 12px 7px 7px;border-radius:14px;cursor:pointer;
+    border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.035)}
+  .mring{position:relative;width:36px;aspect-ratio:1;display:grid;place-items:center;flex:0 0 auto}
+  .mfill{position:absolute;inset:0;border-radius:50%;
+    background:conic-gradient(from 225deg,var(--cy) calc(var(--p) * 270deg),
+      rgba(255,255,255,.08) calc(var(--p) * 270deg) 270deg,transparent 270deg);
+    -webkit-mask:radial-gradient(circle closest-side,transparent 75%,#000 76%);
+    mask:radial-gradient(circle closest-side,transparent 75%,#000 76%);
+    filter:drop-shadow(0 0 6px rgba(40,232,255,.4))}
+  .pplate .nm2{font-size:10.5px;letter-spacing:.1em;color:var(--txt);font-weight:800;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .pplate .meta2{margin-left:auto;display:flex;align-items:baseline;gap:7px;flex:0 0 auto}
+  .meta2 .gl{font-size:8px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+  .meta2 b{font-size:13.5px;font-weight:900;color:var(--gold)}
+  .pplate .chev{color:var(--dim);font-size:14px;line-height:1;flex:0 0 auto}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hero">
+    <div class="eyebrow">Neon Edition</div>
+    <h1>KNUCKLEBONES</h1>
+    <div class="duel dice-static">
+      {{die:5:p1:74}}
+      <span class="vs">VS</span>
+      {{die:3:p2:74}}
+    </div>
+    <div class="sub2">Ranked dice duels</div>
+  </div>
+
+  <div class="homestack">
+    <div class="pplate dice-static">
+      <span class="mring" style="--p:.489"><i class="mfill"></i>{{die:5:p1:18}}</span>
+      <span class="nm2">FrostLynx303</span>
+      <span class="meta2"><span class="gl">GOLD</span><b>2,494</b></span>
+      <span class="chev">›</span>
+    </div>
+    <button class="btn primary">Play ranked match</button>
+    <div class="hrow">
+      <button class="btn">Leaderboard</button>
+      <button class="btn">Settings</button>
+    </div>
+  </div>
+
+  <div class="quiet">
+    <div class="cap">Practice offline</div>
+    <div class="hrow">
+      <button class="btn">VS AI</button>
+      <button class="btn">2 players</button>
+      <button class="btn">How to play</button>
+    </div>
+  </div>
+
+  <div class="viewfoot">
+    <button class="linkbtn">Impressum</button>
+    <button class="linkbtn">Privacy</button>
+  </div>
+</div></div>
+<div class="note"><b>Standing and action as one block.</b> The plate borrows the in-game
+  nameplate's shape — ring-avatar, name, group, points, one slim row — and docks it directly
+  above PLAY RANKED MATCH. Your position and the button that moves it read as a single unit,
+  the hero stays untouched, and the corner chip disappears. Tap the plate for the profile,
+  tap the button to climb.</div>
