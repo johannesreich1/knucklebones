@@ -340,14 +340,21 @@ async function showBoard(): Promise<void> {
    group promotions are 37 to ~120 games apart, so this fill is the ladder's
    only continuous feedback, and a number that is simply THERE on arrival never
    reads as progress. Tweened in JS rather than by a CSS transition because a
-   conic-gradient's angle stop does not interpolate reliably across engines. */
+   conic-gradient's angle stop does not interpolate reliably across engines.
+   It tweens from wherever the ring IS — the caller decides whether a sweep
+   starts empty (opening the screen) or continues (fresh data landing) — and a
+   second call simply takes the ring over mid-flight. */
+const ringRun = new WeakMap<HTMLElement, number>();
 function fillRing(ring: HTMLElement, to: number): void {
-  if (REDUCED) { ring.style.setProperty('--p', String(to)); return; }
-  ring.style.setProperty('--p', '0');
+  const run = (ringRun.get(ring) ?? 0) + 1;
+  ringRun.set(ring, run);
+  const from = parseFloat(ring.style.getPropertyValue('--p')) || 0;
+  if (REDUCED || Math.abs(to - from) < 0.002) { ring.style.setProperty('--p', String(to)); return; }
   const t0 = performance.now(), DUR = 850;
   const step = (now: number): void => {
+    if (ringRun.get(ring) !== run) return;   // a newer sweep owns the ring now
     const t = Math.min(1, (now - t0) / DUR);
-    ring.style.setProperty('--p', String(to * (1 - Math.pow(1 - t, 3))));
+    ring.style.setProperty('--p', String(from + (to - from) * (1 - Math.pow(1 - t, 3))));
     if (t < 1) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
@@ -357,6 +364,23 @@ function fillRing(ring: HTMLElement, to: number): void {
 async function showAccount(): Promise<void> {
   panel('onAccount');
   $('#onAccErr').textContent = '';
+  /* The ring's choreography, BEFORE any await. The element still wears last
+     visit's fill, so left alone it showed stale progress for as long as the
+     network took, then jumped to zero and re-swept — a flicker the player read
+     as a reset. Empty it synchronously and start the sweep at once from the
+     same cache the home plate paints; the fresh row then tweens from wherever
+     the sweep has reached, which for an unchanged score is no motion at all. */
+  const ring = $('#accRing') as HTMLElement;
+  ring.classList.remove('haspeak');
+  ring.style.setProperty('--p', '0');
+  try {
+    const cached = JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null')?.rating;
+    if (typeof cached === 'number') {
+      fillRing(ring, groupFill(cached));
+      $('#accPoints').textContent = cached.toLocaleString('en');
+      $('#accGroup').textContent = rankName(cached);
+    }
+  } catch { /* forgetful host — the fresh row below paints everything anyway */ }
   const [p, who] = await Promise.all([myProfile(), currentUser()]);
   refreshHomeChip();
   /* a guest is offered the way up; "Sign out" is hidden from them because for
@@ -388,7 +412,6 @@ async function showAccount(): Promise<void> {
   /* One continuous fill, and the peak notch in its three states (LADDER.md §5):
      at your position it is redundant, ahead it sits where it really is, and in
      a HIGHER group it pins to the far right — your best is beyond this ring. */
-  const ring = $('#accRing') as HTMLElement;
   const ps = peakState(pts, peak);
   fillRing(ring, groupFill(pts));
   ring.classList.toggle('haspeak', ps.kind !== 'at');
