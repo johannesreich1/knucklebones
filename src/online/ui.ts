@@ -417,6 +417,7 @@ function showFaceoff(r: LeaderboardRow, mine: MySide | null): void {
   const ov = document.createElement('div');
   ov.className = 'faceoff' + (mine ? '' : ' solo');
   ov.innerHTML = `<div class="focard" role="dialog" aria-modal="true" tabindex="-1" aria-label="${esc(r.nickname)}">
+    <button class="ico foclose" aria-label="Close">✕</button>
     <div class="focols dice-static">
       <div class="focol" style="--gc:var(--g-${g.id})">
         <span class="av"></span><span class="fnm">${esc(r.nickname)}</span>
@@ -442,6 +443,7 @@ function showFaceoff(r: LeaderboardRow, mine: MySide | null): void {
   const close = (): void => { ov.remove(); document.removeEventListener('keydown', onKey); };
   const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') close(); };
   ov.addEventListener('click', (e) => { if (e.target === ov) { Sfx.tap(); close(); } });
+  (ov.querySelector('.foclose') as HTMLButtonElement).addEventListener('click', () => { Sfx.tap(); close(); });
   document.addEventListener('keydown', onKey);
   document.body.appendChild(ov);
   paintAvatar(ov.querySelector('.focol .av') as HTMLElement, r.avatar, 46);
