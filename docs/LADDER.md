@@ -74,26 +74,41 @@ Skill fidelity (rank correlation between points and true skill) measures
 
 ---
 
-## 2. Groups and divisions
+## 2. Groups
 
-Seven groups. Each is three **equal** divisions — equal matters, because the
-profile ring draws a group as three segments and they have to be honest.
+Seven groups, and a group is the **whole** rank — there are no divisions
+inside it.
 
-| group | floor | width | division | games to clear* |
-|---|---|---|---|---|
-| STONE | 0 | 300 | 100 | 37 |
-| BONE | 300 | 420 | 140 | 36 |
-| IVORY | 720 | 540 | 180 | 53 |
-| SILVER | 1,260 | 750 | 250 | 74 |
-| GOLD | 2,010 | 990 | 330 | 99 |
-| OBSIDIAN | 3,000 | 1,350 | 450 | 120 |
-| NEON | — | — | — | positional, see below |
+Divisions were in the first draft: three per group, to give a nearer milestone
+and a promotion that fires three times as often. They were paying for that by
+cutting the ring into three segments. Once the ring fills as a **continuous
+percentage of the group**, the bar already shows which part of it you are in
+and how far the next one is — so "GOLD II" printed beside a ring reading 49%
+was a second, worse way of saying the same fact. Nothing functional ever read
+them: matchmaking pairs on points, the bots on percentile, the leaderboard and
+the apex on points and rank. They are gone.
+
+What that costs is promotion *frequency* — group to group is 37 games at the
+bottom and ~120 at OBSIDIAN, and that is now the only "you levelled up"
+moment. What replaces it is better: the ring moves on **every single match**,
+visibly, which is more feedback than a promotion every twenty-five games. It
+does mean the ring has to earn it — it should animate when points land.
+
+| group | floor | width | games to clear* |
+|---|---|---|---|
+| STONE | 0 | 300 | 37 |
+| BONE | 300 | 420 | 36 |
+| IVORY | 720 | 540 | 53 |
+| SILVER | 1,260 | 750 | 74 |
+| GOLD | 2,010 | 990 | 99 |
+| OBSIDIAN | 3,000 | 1,350 | 120 |
+| NEON | — | — | positional, see below |
 
 \* measured with real matchmaking, so the win rate slides toward 50% as you
 climb — that slide is why the later groups cost more than the widths alone
 suggest.
 
-Widths grow **×1.35** per group. Equal widths were the first proposal and the
+Widths grow **×1.35** per group, and no longer need to divide by three. Equal widths were the first proposal and the
 measurement killed them: every group took 64–77 games, so leaving STONE cost
 the same as reaching OBSIDIAN. Two independent things now make climbing
 harder as you go: each *match* pays less when you outrank your opponent, and
@@ -198,13 +213,13 @@ column, or a small histogram table refreshed on a timer if it ever isn't.
 
 Design: card **92d** (`design/screens/92d-arc-season.html`).
 
-**The ring shows the current group only**, cut into its three divisions. Its
+**The ring shows the current group only**, as ONE continuous fill — the
+percentage of the way through it. Its
 270° sweep starts at **225°**, not 180° — 225 + 270 = 495 = 135, so the ring
 runs lower-left, up the left, over the top, down the right, to lower-right, and
 the 90° gap it leaves is centred on six o'clock with both ends at the same
 height. Starting the sweep at 180° puts one end at the bottom and the other out
-at three o'clock, which reads as a ring knocked askew. A
-division-up lights the next segment, so progress accumulates; the ring empties
+at three o'clock, which reads as a ring knocked askew. It moves on every match; it empties
 and starts from the left only when the **group** changes — which makes that a
 moment worth animating, and makes the ring's right end always mean the same
 thing: the next group.
@@ -218,7 +233,7 @@ thing: the next group.
 | peak in a higher group (you were demoted) | pinned at the far right, the upgrade point |
 
 The pinned case cannot say *how far* beyond on its own, so the fact row names
-it in words: **Peak — GOLD II**.
+it in words: **Peak — OBSIDIAN**.
 
 This gives one invariant worth relying on: **the notch can never sit behind
 the fill**, because a peak is by definition at least the current score. Set a

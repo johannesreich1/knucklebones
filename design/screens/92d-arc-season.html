@@ -1,10 +1,11 @@
-<!-- meta name="C4 — Tier ring (revised)" group="9 · Profile · C refined" subtitle="The ring is the GROUP, cut into three divisions: it only empties when you change group, and the right end always means the next one — numbers per docs/LADDER.md" width=412 height=1180 links="Match history, Ladder" -->
+<!-- meta name="C4 — Tier ring (revised)" group="9 · Profile · C refined" subtitle="One continuous fill: how far through the GROUP you are, moving on every match — it only empties when the group changes, and the right end always means the next one" width=412 height=1180 links="Match history, Ladder" -->
 <style>
-  /* The ring spans a whole TIER and is cut into its three divisions, so a
-     division-up lights the next segment instead of resetting — the ring only
-     empties when the TIER changes, and its right end always means "next tier".
-     --d1..--d3 are each division's fill (0..1); --pk is the season peak, drawn
-     only while the peak still falls inside this tier. */
+  /* ONE continuous fill: --p is how far through the GROUP you are, 0..1, and
+     it moves on every single match. It used to be cut into three division
+     segments, which existed to give a nearer milestone — but a bar already
+     shows which part of a group you are in, so "GOLD II" beside a ring reading
+     49% was a second, worse way of saying the same thing. Divisions are gone;
+     the group is the whole rank. --pk is the season peak. */
   .shead{margin-bottom:4px}
   .pane{display:flex;flex-direction:column;gap:13px;width:100%;max-width:var(--w-col);
     margin:0 auto;align-items:center}
@@ -16,13 +17,8 @@
      which read as a ring somebody had knocked askew. Both ends now sit 45deg
      either side of the bottom, at the same height. */
   .ring3{position:absolute;inset:0;border-radius:50%;
-    background:conic-gradient(from 225deg,
-      var(--cy) calc(var(--d1) * 84deg), rgba(255,255,255,.07) calc(var(--d1) * 84deg) 84deg,
-      transparent 84deg 90deg,
-      var(--cy) 90deg calc(90deg + var(--d2) * 84deg), rgba(255,255,255,.07) calc(90deg + var(--d2) * 84deg) 174deg,
-      transparent 174deg 180deg,
-      var(--cy) 180deg calc(180deg + var(--d3) * 84deg), rgba(255,255,255,.07) calc(180deg + var(--d3) * 84deg) 264deg,
-      transparent 264deg);
+    background:conic-gradient(from 225deg,var(--cy) calc(var(--p) * 270deg),
+      rgba(255,255,255,.07) calc(var(--p) * 270deg) 270deg,transparent 270deg);
     -webkit-mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
     mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
     filter:drop-shadow(0 0 14px rgba(40,232,255,.42))}
@@ -72,13 +68,13 @@
          or below it has to move. -->
     <div class="shelf" hidden><span class="scur">Season 1</span></div>
 
-    <div class="ringwrap" style="--d1:1;--d2:.467;--d3:0;--pk:.606">
+    <div class="ringwrap" style="--p:.489;--pk:.606">
       <i class="ring3"></i><i class="pkmark"></i>
       <div class="avwrap dice-static">{{die:5:p1:86}}<span class="avedit">✎</span></div>
     </div>
     <div class="ptv"><b>2,494</b><span>Ladder points</span></div>
-    <div class="tierline"><span class="tn">GOLD</span><span class="dv">II</span></div>
-    <div class="togo"><b>176</b> to GOLD I</div>
+    <div class="tierline"><span class="tn">GOLD</span></div>
+    <div class="togo"><b>506</b> to OBSIDIAN</div>
     <div class="facts">
       <div class="fact"><b>#4</b><span>Rank</span></div>
       <div class="fact"><b>12–7</b><span>Record</span></div>
@@ -94,26 +90,28 @@
   <div class="cap2">What the ring does when you climb</div>
   <div class="mini">
     <div class="col">
-      <div class="ringwrap" style="--d1:1;--d2:.467;--d3:0;--pk:.606">
+      <div class="ringwrap" style="--p:.489;--pk:.606">
         <i class="ring3"></i><i class="pkmark"></i>
         <div class="avwrap dice-static">{{die:5:p1:52}}</div>
       </div>
-      <div class="cl">Division up<b>GOLD II → I</b></div>
+      <div class="cl">Climbing<b>GOLD · 49%</b></div>
     </div>
     <div class="col">
-      <div class="ringwrap" style="--d1:0;--d2:0;--d3:0">
+      <div class="ringwrap" style="--p:0">
         <i class="ring3"></i>
         <div class="avwrap dice-static">{{die:5:p1:52}}</div>
       </div>
-      <div class="cl">Group up — empty again<b>OBSIDIAN III</b></div>
+      <div class="cl">Group up — empty again<b>OBSIDIAN</b></div>
     </div>
   </div>
 
-  <div class="note"><b>The ring spans a tier, not a division.</b> Lighting the next of three
-    segments is what a promotion inside a tier looks like, so progress accumulates instead of
-    resetting every twenty-five games — and the ring only starts from the left when the TIER
-    changes, which is the moment worth an animation. Its right end therefore always means the
-    same thing: the next tier.
+  <div class="note"><b>One fill, always a percentage.</b> The ring was cut into three division
+    segments to give a nearer milestone — but the bar already shows which part of the group you
+    are in, so a division label beside it said the same thing twice and worse. Divisions are gone
+    entirely; nothing functional ever read them (matchmaking pairs on points, the bots on
+    percentile, the ladder on points and rank). What is left moves on EVERY match, which is
+    better feedback than a promotion every twenty-five games, and the ring only starts from the
+    left when the group changes.
     <br><br><b>The gold notch is your season peak</b>, and it is drawn only while the peak still
     falls inside this group — that is exactly when it means "you were here, get back". Demoted out of the group, it pins to the far right — your best is beyond this
     ring — and the fact row names the group it really sits in.

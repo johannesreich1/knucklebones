@@ -3,8 +3,8 @@
 // file is the one that fails the gate.
 import {
   SCALE, K, DENOM, START, LOSS_MULT, MIN_GAIN, MAX_LOSS,
-  delta, applyDelta, GROUPS, groupOf, divisionOf, rankName, nextRankName,
-  ringFill, groupFill, toNext, peakState, inApex, botShape, matchBand, APEX,
+  delta, applyDelta, GROUPS, groupOf, rankName, nextRankName,
+  groupFill, toNext, peakState, inApex, botShape, matchBand, APEX,
   settle, type LadderRow,
 } from '../src/core/ladder.ts';
 
@@ -61,43 +61,51 @@ for (const g of GROUPS) {
   eq(g.floor, cursor, `${g.name}'s floor is not the sum of the widths below it`);
   cursor += g.width;
 }
-/* every group divides into three whole numbers, because the ring draws three
-   equal segments and a fractional division would make it lie */
+/* the ring is one continuous fill now, so nothing has to divide evenly into a
+   group — but a width of zero would make groupFill divide by it */
 for (const g of GROUPS) {
-  if (g.width) eq(g.width % 3, 0, `${g.name} does not split into three whole divisions`);
+  if (g !== APEX) eq(g.width > 0, true, `${g.name} has no width`);
 }
 
-/* ---- naming ------------------------------------------------------------ */
-eq([0, 299, 300, 1259, 2010, 2339, 2340, 2669, 2670, 2999, 3000, 4350, 9999]
-     .map(rankName),
-   ['STONE III', 'STONE I', 'BONE III', 'IVORY I', 'GOLD III', 'GOLD III',
-    'GOLD II', 'GOLD II', 'GOLD I', 'GOLD I', 'OBSIDIAN III', 'NEON', 'NEON'],
+/* ---- naming: a GROUP is the whole rank, there are no divisions --------- */
+eq([0, 299, 300, 1259, 2010, 2999, 3000, 4350, 9999].map(rankName),
+   ['STONE', 'STONE', 'BONE', 'IVORY', 'GOLD', 'GOLD', 'OBSIDIAN', 'NEON', 'NEON'],
    'rank naming drifted');
-eq(nextRankName(2494), 'GOLD I', 'the next rank from GOLD II is wrong');
-eq(nextRankName(2900), 'OBSIDIAN III', 'the top division should point at the next GROUP');
+eq(nextRankName(2494), 'OBSIDIAN', 'the next rank above GOLD is OBSIDIAN');
 eq(nextRankName(5000), 'NEON', 'the apex has nothing above it');
+/* nothing anywhere may still speak of divisions */
+eq(/\b(I|II|III)\b/.test(rankName(2494)), false, 'a division numeral survived in the rank name');
 
-/* the card's own worked example: 2,494 is GOLD II with 176 to GOLD I */
-eq(rankName(2494), 'GOLD II', 'design card 92d and the ladder disagree');
-eq(toNext(2494), 176, 'design card 92d and the ladder disagree on the gap');
+/* the worked example: 2,494 is GOLD, 506 short of OBSIDIAN (floor 3,000) */
+eq(rankName(2494), 'GOLD', 'design card 92d and the ladder disagree');
+eq(toNext(2494), 506, 'the gap to the next GROUP is wrong');
+eq(toNext(2010), 990, 'a group floor owes the whole width');
+eq(toNext(5000), 0, 'the apex has no distance to anything');
 
-/* ---- the ring ---------------------------------------------------------- */
-/* GOLD: floor 2010, width 990, divisions of 330 */
-eq(ringFill(2010), [0, 0, 0], 'a group floor should leave the ring empty');
-eq(ringFill(2340), [1, 0, 0], 'one division cleared should fill exactly one segment');
-eq(ringFill(2999).map((f) => Math.round(f * 1000)), [1000, 1000, 997],
-   'the top of a group should very nearly fill the ring');
-eq(ringFill(2494).map((f) => Math.round(f * 1000)), [1000, 467, 0],
-   'the worked example does not match the ring the card draws');
-eq(Math.round(groupFill(2494) * 1000), 489, 'the overall sweep drifted');
-/* segments never run backwards, at any point of any group */
+/* ---- the ring: ONE continuous fill, a percentage of the group ---------- */
+/* GOLD: floor 2010, width 990 */
+eq(groupFill(2010), 0, 'a group floor should leave the ring empty');
+eq(Math.round(groupFill(2494) * 1000), 489, 'the worked example does not match the ring');
+eq(Math.round(groupFill(2999) * 1000), 999, 'the top of a group should very nearly fill the ring');
+eq(groupFill(3000), 0, 'crossing into the next group must empty the ring');
+eq(groupFill(9999), 1, 'the apex reads as full — it is a position, not a distance');
+/* the fill only ever RISES with points, and never leaves 0..1 — the property
+   that lets the ring animate by tweening one number */
+let last = -1, lastGroup = groupOf(0);
+for (let p = 0; p <= 4400; p += 3) {
+  const f = groupFill(p);
+  if (f < 0 || f > 1) { problems.push(`fill out of range at ${p}: ${f}`); break; }
+  const g = groupOf(p);
+  if (g === lastGroup && f < last - 1e-9) { problems.push(`fill went backwards at ${p}`); break; }
+  last = f; lastGroup = g;
+}
+/* and the fill agrees with the distance still owed, at every point */
 for (const g of GROUPS) {
   if (!g.width) continue;
-  for (let p = g.floor; p < g.floor + g.width; p += 7) {
-    const f = ringFill(p);
-    if (!(f[0] >= f[1] && f[1] >= f[2])) {
-      problems.push(`ring segments out of order at ${p} (${g.name}): ${JSON.stringify(f)}`);
-      break;
+  for (const p of [g.floor, g.floor + 1, g.floor + (g.width >> 1), g.floor + g.width - 1]) {
+    const implied = Math.round((1 - groupFill(p)) * g.width);
+    if (Math.abs(implied - toNext(p)) > 1) {
+      problems.push(`fill and toNext disagree at ${p} (${g.name}): ${implied} vs ${toNext(p)}`);
     }
   }
 }

@@ -23,10 +23,17 @@ const MATCH_COLS = "id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rat
 async function ladderRow(svc: SupabaseClient, season: number, player: string) {
   await svc.from("season_ratings")
     .upsert({ season_id: season, player }, { onConflict: "season_id,player", ignoreDuplicates: true });
-  const { data } = await svc.from("season_ratings")
+  const { data, error } = await svc.from("season_ratings")
     .select("points, peak, wins, losses, draws")
     .eq("season_id", season).eq("player", player).maybeSingle();
-  return data ?? { points: 0, peak: 0, wins: 0, losses: 0, draws: 0 };
+  /* NEVER fall back to a default. This returned {points:0,...} on a failed read
+     once, and a missing service_role grant therefore did not look like an
+     error — it looked like two unrated players, and two live matches settled
+     0-vs-0 while every write was discarded. A match that cannot read the
+     ladder must not settle against a guess. */
+  if (error) throw new Error(`ladder read failed for ${player}: ${error.message}`);
+  if (!data) throw new Error(`no ladder row for ${player} in season ${season} after upsert`);
+  return data;
 }
 
 

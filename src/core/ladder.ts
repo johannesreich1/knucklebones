@@ -70,7 +70,7 @@ export function settle(a: LadderRow, b: LadderRow, aScore: Score): Settled {
   return { da, db, a: step(a, da, aScore), b: step(b, db, (1 - aScore) as Score) };
 }
 
-/* ---- groups and divisions ---------------------------------------------- */
+/* ---- groups --------------------------------------------------------- */
 
 export interface Group {
   id: string;
@@ -83,8 +83,8 @@ export interface Group {
    killed them: every group took 64–77 games, so leaving STONE cost the same as
    reaching OBSIDIAN. Two independent things make climbing harder now — a match
    pays less when you outrank your opponent, and a group costs more than the
-   last. Each group is three EQUAL divisions, because the profile ring draws a
-   group as three segments and they have to be honest. */
+   last. Widths stay round numbers out of habit rather than need — the ring is
+   one continuous fill now, so nothing has to divide evenly into it. */
 export const GROUPS: readonly Group[] = [
   { id: 'stone',    name: 'STONE',    floor: 0,    width: 300 },
   { id: 'bone',     name: 'BONE',     floor: 300,  width: 420 },
@@ -112,10 +112,14 @@ export function inApex(points: number, rank: number, population: number): boolea
   return rank <= Math.max(1, Math.floor(population * APEX_SHARE));
 }
 
-export const DIVISIONS = 3;
-/* I is the top of a group, III the bottom — the way every ladder names them. */
-const NUMERAL = ['III', 'II', 'I'] as const;
-export type Division = 1 | 2 | 3;   // the INDEX from the floor: 1 = III … 3 = I
+/* A group is the WHOLE rank: there are no divisions inside it.
+   Divisions existed to give a nearer milestone and a more frequent promotion,
+   and they were paying for that with a segmented ring. Once the ring fills as
+   a continuous percentage of the group, the bar already shows which part of it
+   you are in and how far the next one is — so "GOLD II" beside a bar reading
+   47% was a second, worse way of saying the same fact. Nothing functional ever
+   read them: matchmaking pairs on points, bot difficulty on percentile, the
+   leaderboard and the apex on points and rank. */
 
 export function groupOf(points: number): Group {
   let found = GROUPS[0];
@@ -123,59 +127,29 @@ export function groupOf(points: number): Group {
   return found;
 }
 
-/* Which third of the group, counted up from its floor. The apex has no width
-   and therefore no divisions — it is a position, so it is always 'I'. */
-export function divisionOf(points: number): Division {
-  const g = groupOf(points);
-  if (!g.width) return 3;
-  const step = g.width / DIVISIONS;
-  return (Math.min(DIVISIONS, Math.floor((points - g.floor) / step) + 1)) as Division;
-}
+/* "GOLD" — the group IS the rank */
+export const rankName = (points: number): string => groupOf(points).name;
 
-export const divisionName = (d: Division): string => NUMERAL[d - 1];
-
-/* "GOLD II" */
-export const rankName = (points: number): string => {
-  const g = groupOf(points);
-  return g.width ? `${g.name} ${divisionName(divisionOf(points))}` : g.name;
-};
-
-/* How far into the whole group, 0..1 — the ring's overall sweep. */
+/* How far through the group, 0..1. This is the ring: one continuous fill that
+   moves on every single match, which is the feedback a rare promotion is not. */
 export function groupFill(points: number): number {
   const g = groupOf(points);
   if (!g.width) return 1;
   return Math.min(1, Math.max(0, (points - g.floor) / g.width));
 }
 
-/* The ring draws three segments, so it wants three fills. Segment k is full
-   below the player, partial where they stand, empty above. */
-export function ringFill(points: number): [number, number, number] {
-  const g = groupOf(points);
-  if (!g.width) return [1, 1, 1];
-  const step = g.width / DIVISIONS;
-  return [0, 1, 2].map((i) => {
-    const start = g.floor + i * step;
-    return Math.min(1, Math.max(0, (points - start) / step));
-  }) as [number, number, number];
-}
-
-/* Points still owed to the next division, or to the next group from the top
-   division. 0 in the apex, which has nothing above it. */
+/* Points still owed to the next group. 0 in the apex, which has nothing above
+   it — and which is a POSITION anyway, so no number could name the distance. */
 export function toNext(points: number): number {
   const g = groupOf(points);
   if (!g.width) return 0;
-  const step = g.width / DIVISIONS;
-  const d = divisionOf(points);
-  return Math.ceil(g.floor + d * step - points);
+  return Math.ceil(g.floor + g.width - points);
 }
 
 export const nextRankName = (points: number): string => {
   const g = groupOf(points);
   if (!g.width) return g.name;
-  const d = divisionOf(points);
-  if (d < DIVISIONS) return `${g.name} ${divisionName((d + 1) as Division)}`;
-  const next = GROUPS[GROUPS.indexOf(g) + 1];
-  return next.width ? `${next.name} ${divisionName(1)}` : next.name;
+  return GROUPS[GROUPS.indexOf(g) + 1].name;
 };
 
 /* ---- the peak notch ----------------------------------------------------- */

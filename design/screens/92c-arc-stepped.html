@@ -18,13 +18,8 @@
      which read as a ring somebody had knocked askew. Both ends now sit 45deg
      either side of the bottom, at the same height. */
   .arc{position:absolute;inset:0;border-radius:50%;
-    background:conic-gradient(from 225deg,
-      var(--cy) calc(var(--d1) * 84deg), rgba(255,255,255,.07) calc(var(--d1) * 84deg) 84deg,
-      transparent 84deg 90deg,
-      var(--cy) 90deg calc(90deg + var(--d2) * 84deg), rgba(255,255,255,.07) calc(90deg + var(--d2) * 84deg) 174deg,
-      transparent 174deg 180deg,
-      var(--cy) 180deg calc(180deg + var(--d3) * 84deg), rgba(255,255,255,.07) calc(180deg + var(--d3) * 84deg) 264deg,
-      transparent 264deg);
+    background:conic-gradient(from 225deg,var(--cy) calc(var(--p) * 270deg),
+      rgba(255,255,255,.07) calc(var(--p) * 270deg) 270deg,transparent 270deg);
     -webkit-mask:radial-gradient(circle closest-side,transparent 80%,#000 81%);
     mask:radial-gradient(circle closest-side,transparent 80%,#000 81%);
     filter:drop-shadow(0 0 14px rgba(40,232,255,.42))}
@@ -62,7 +57,7 @@
 <div class="stage"><div class="bgfx"></div><div class="scr">
   <div class="shead"><button class="ico">‹</button><span class="ttl">PROFILE</span><span class="pad"></span></div>
   <div class="pane">
-    <div class="arcwrap" style="--d1:1;--d2:.58;--d3:0">
+    <div class="arcwrap" style="--p:.489">
       <i class="arc"></i>
       <div class="avwrap dice-static">{{die:5:p1:88}}<span class="avedit">✎</span></div>
     </div>

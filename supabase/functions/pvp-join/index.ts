@@ -48,10 +48,15 @@ Deno.serve(async (req: Request) => {
   const ladderRow = async (season: number, player: string) => {
     await svc.from("season_ratings")
       .upsert({ season_id: season, player }, { onConflict: "season_id,player", ignoreDuplicates: true });
-    const { data } = await svc.from("season_ratings")
+    const { data, error } = await svc.from("season_ratings")
       .select("points, peak, wins, losses, draws")
       .eq("season_id", season).eq("player", player).maybeSingle();
-    return data ?? { points: 0, peak: 0, wins: 0, losses: 0, draws: 0 };
+    /* NEVER fall back to a default — see the note in pvp-move. A missing grant
+       once made a failed read look like an unrated player rather than an
+       error, and matches settled against that guess. */
+    if (error) throw new Error(`ladder read failed for ${player}: ${error.message}`);
+    if (!data) throw new Error(`no ladder row for ${player} in season ${season} after upsert`);
+    return data;
   };
 
   /* Names AND ratings: the mode dial shows who you are about to play, and a
