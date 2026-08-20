@@ -1,0 +1,56 @@
+<!-- meta name="LD7 — Stack & burst" group="3c · Loading studies" subtitle="The game's own beat as a loader: three fives stack, the column pays ×3 gold, the strike clears it — a wait that keeps telling you what game this is" width=412 height=780 links="Leaderboard, Matchmaking" -->
+<style>
+  .ldwrap{display:flex;flex-direction:column;align-items:center;gap:26px;margin:auto 0;padding:10px 0}
+  .ldpanel{display:flex;flex-direction:column;align-items:center;gap:16px;width:100%;max-width:var(--w-col);
+    margin:0 auto;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;padding:26px 16px 22px}
+  .ldcap{font-size:9.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;text-align:center}
+
+  /* one column, one 4.6s story. Each die owns a window of the same timeline:
+     drop with the game's settle overshoot, hold, then the game's own dying
+     burst clears all three at once. The chip underneath wakes to gold when
+     the third lands — the multiplier IS the payoff of the wait. */
+  .ldcol{display:flex;flex-direction:column-reverse;gap:5px;height:145px;justify-content:flex-start}
+  .ldcol .die{width:42px;height:42px;--cell:42px;opacity:0;animation:ldlife 4.6s ease-in-out infinite}
+  .ldcol .die:nth-child(1){animation-name:ldlife1}
+  .ldcol .die:nth-child(2){animation-name:ldlife2}
+  .ldcol .die:nth-child(3){animation-name:ldlife3}
+  @keyframes ldlife1{0%,4%{opacity:0;transform:translateY(-46px) scale(.8)}
+    9%{opacity:1;transform:translateY(0) scale(1.07)}11%,78%{opacity:1;transform:translateY(0) scale(1)}
+    82%{opacity:1;transform:scale(1.24) rotate(6deg);filter:brightness(2.4)}
+    88%,100%{opacity:0;transform:scale(.2) rotate(-24deg);filter:brightness(3)}}
+  @keyframes ldlife2{0%,20%{opacity:0;transform:translateY(-46px) scale(.8)}
+    25%{opacity:1;transform:translateY(0) scale(1.07)}27%,78%{opacity:1;transform:translateY(0) scale(1)}
+    82%{opacity:1;transform:scale(1.24) rotate(-6deg);filter:brightness(2.4)}
+    88%,100%{opacity:0;transform:scale(.2) rotate(24deg);filter:brightness(3)}}
+  @keyframes ldlife3{0%,36%{opacity:0;transform:translateY(-46px) scale(.8)}
+    41%{opacity:1;transform:translateY(0) scale(1.07)}43%,78%{opacity:1;transform:translateY(0) scale(1)}
+    82%{opacity:1;transform:scale(1.24) rotate(6deg);filter:brightness(2.4)}
+    88%,100%{opacity:0;transform:scale(.2) rotate(-24deg);filter:brightness(3)}}
+
+  /* the chip wakes when the triple exists (41%) and dies with it (82%) */
+  .ldchip{height:20px;min-width:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    gap:3px;font-size:12px;font-weight:800;color:var(--dim);
+    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);
+    animation:ldchip 4.6s ease-in-out infinite}
+  .ldchip .mx{font-size:9px;color:var(--gold)}
+  @keyframes ldchip{0%,40%{color:var(--dim);background:rgba(255,255,255,.035);
+      border-color:rgba(255,255,255,.06);box-shadow:none}
+    44%,78%{color:var(--gold);background:rgba(255,209,102,.1);border-color:rgba(255,209,102,.45);
+      box-shadow:0 0 12px rgba(255,209,102,.45)}
+    86%,100%{color:var(--dim);background:rgba(255,255,255,.035);border-color:rgba(255,255,255,.06);box-shadow:none}}
+  .ldnote{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;
+    text-align:center;opacity:.8;max-width:340px}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">LOADING</span><span class="pad"></span></div>
+  <div class="ldwrap">
+    <div class="ldpanel">
+      <div class="lbl">Page wait · Longer fetches</div>
+      <div class="ldcol">{{die:5:p1:42}}{{die:5:p1:42}}{{die:5:p1:42}}</div>
+      <div class="ldchip">45<span class="mx">×3</span></div>
+      <div class="ldcap">Loading</div>
+    </div>
+    <div class="ldnote">4.6s story · drop, drop, drop — gold — burst · reuses the board's settle and dying verbs exactly, so the loader teaches the game while it waits</div>
+  </div>
+</div></div>

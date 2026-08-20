@@ -1,0 +1,47 @@
+<!-- meta name="LD3 — Tumble" group="3c · Loading studies" subtitle="A true cube tumbles over its corner in slow space, all six real faces riding it — the set piece, sized for the online chunk's first load and nothing smaller" width=412 height=780 links="Matchmaking" -->
+<style>
+  .ldwrap{display:flex;flex-direction:column;align-items:center;gap:26px;margin:auto 0;padding:10px 0}
+  .ldpanel{display:flex;flex-direction:column;align-items:center;gap:22px;width:100%;max-width:var(--w-col);
+    margin:0 auto;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+    border-radius:16px;padding:34px 16px 26px}
+  .ldcap{font-size:9.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;text-align:center}
+
+  /* the cube: six real faces on a 76px die, tumbling on two axes at once so a
+     corner leads — a straight X-spin reads as a card flip, the corner reads
+     as a THROW. The floor glow answers underneath, out of phase. */
+  .ldspace{perspective:520px;padding:18px 0 6px}
+  .ldcube{position:relative;width:76px;height:76px;transform-style:preserve-3d;
+    animation:ldtumble 5.6s linear infinite}
+  .ldcube .die{position:absolute;inset:0;width:76px;height:76px;--cell:76px}
+  .ldcube .die:nth-child(1){transform:rotateY(0deg) translateZ(38px)}
+  .ldcube .die:nth-child(2){transform:rotateY(180deg) translateZ(38px)}
+  .ldcube .die:nth-child(3){transform:rotateY(90deg) translateZ(38px)}
+  .ldcube .die:nth-child(4){transform:rotateY(-90deg) translateZ(38px)}
+  .ldcube .die:nth-child(5){transform:rotateX(90deg) translateZ(38px)}
+  .ldcube .die:nth-child(6){transform:rotateX(-90deg) translateZ(38px)}
+  @keyframes ldtumble{0%{transform:rotateX(-16deg) rotateY(0deg) rotateZ(8deg)}
+    100%{transform:rotateX(344deg) rotateY(360deg) rotateZ(8deg)}}
+  .ldfloor{width:120px;height:14px;border-radius:50%;margin-top:20px;
+    background:radial-gradient(closest-side,rgba(40,232,255,.35),transparent 70%);
+    animation:ldfloor 2.8s ease-in-out infinite}
+  @keyframes ldfloor{0%,100%{opacity:.5;transform:scaleX(.85)}50%{opacity:1;transform:scaleX(1.1)}}
+
+  /* context: the chunk load — the game's name above, nothing else competing */
+  .ldboot{display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:14px}
+  .ldboot .ttl2{font-size:19px;font-weight:900;letter-spacing:.34em;color:var(--cy);
+    text-shadow:0 0 18px rgba(40,232,255,.55);text-transform:uppercase}
+  .ldnote{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;
+    text-align:center;opacity:.8}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">LOADING</span><span class="pad"></span></div>
+  <div class="ldwrap">
+    <div class="ldpanel">
+      <div class="ldboot"><div class="ttl2">Knucklebones</div><div class="lbl">Going online</div></div>
+      <div class="ldspace"><div class="ldcube">{{die:1:p1:76}}{{die:6:p1:76}}{{die:3:p1:76}}{{die:4:p1:76}}{{die:2:p1:76}}{{die:5:p1:76}}</div></div>
+      <div class="ldfloor"></div>
+      <div class="ldcap">Loading</div>
+    </div>
+    <div class="ldnote">5.6s revolution · opposite faces sum to seven, like a real die · full-page only — never inline</div>
+  </div>
+</div></div>
