@@ -1101,5 +1101,6 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
    sits after .numerals' rule on purpose, so the tie breaks this way */
 .die.ldclock .num{display:none}
 .ldwait{display:flex;flex-direction:column;align-items:center;gap:14px;margin:auto}
+/* the label sits still — the die carries ALL the motion (user call: no
+   ticking ellipsis under the loader) */
 .ldmsg{font-size:11px;letter-spacing:.2em;color:var(--txt);text-transform:uppercase;text-align:center}
-.ldmsg::after{content:"";animation:dots 1.2s steps(4,end) infinite}
