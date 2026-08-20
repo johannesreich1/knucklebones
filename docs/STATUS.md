@@ -153,6 +153,25 @@ table exactly). The CPU does not cast — v1 boundary, not an oversight.
   the connected MCP is the sanctioned exception.)
 - **`supabase/migrations/` mirrors what's applied** — keep it that way.
 
+## The ladder rework (spec written, nothing built)
+
+`docs/LADDER.md` is the full spec: ladder points starting at **0** on a ×5
+scale, a win always paying more than a loss takes, seven groups of three
+divisions whose widths grow ×1.35, a **positional** apex (NEON = top 1%, not a
+threshold — a fixed one had 735 of 900 simulated players clearing it), seasons
+built now and shown later, and percentile — never absolute points — driving
+bot difficulty and matchmaking width.
+
+Every number in it was measured against 800–900 simulated players rather than
+chosen. Two findings are worth knowing even if the plan changes: **raising K
+does not widen the rank range** (K 32→200 moved p10–p90 only 670→1049 while
+fidelity fell 0.918→0.838 — scaling the display is what widens it, for free),
+and **the logistic denominator must scale with the points** (400 instead of
+2000 costs 8 points of fidelity).
+
+Design: card 92d. Migration plan: LADDER.md §6, seven ordered steps, the first
+three additive and invisible.
+
 ## Open items
 
 ### 1. SMTP → real signups (next up, user-side)
