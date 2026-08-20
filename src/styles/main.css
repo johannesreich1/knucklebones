@@ -1037,6 +1037,10 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 .askcard .fh{font-size:19px;font-weight:900;letter-spacing:.1em;color:var(--cy)}
 .askcard .fp{margin:0;font-size:12.5px;line-height:1.6;color:var(--dim)}
 .askcard .btn{width:100%;min-width:0}
+/* the two answers are a PAIR. The card's 13px gap separates thought-groups
+   (headline, body, answers) — but between the answers themselves it read as
+   drift (user call: "too far apart"), so the second answer pulls up to 7px */
+.askcard .btn+.btn{margin-top:-6px}
 /* An ask-card's two answers are not equals. The way BACK wears the colour —
    it is the answer the game would rather you gave — and being the smaller of
    the two is what keeps it from shouting; the destructive answer stays full
@@ -1048,8 +1052,10 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
    arrives with the online chunk. Anything the offline game can reach belongs
    here. */
 .btn.ghost{background:none;color:var(--dim);box-shadow:none;font-size:11px;letter-spacing:.1em;padding:12px}
-.btn.quiet{background:transparent;color:var(--dim);border-color:rgba(255,255,255,.10)}
-.btn.quiet:hover{color:var(--txt);border-color:rgba(255,255,255,.2)}
+/* .soft, not .quiet: .quiet is the home screen's section wrapper, and a
+   button sharing the name inherits its margins (the 33px answer gap) */
+.btn.soft{background:transparent;color:var(--dim);border-color:rgba(255,255,255,.10)}
+.btn.soft:hover{color:var(--txt);border-color:rgba(255,255,255,.2)}
 
 /* ---- the HOW TO PLAY hub: four ways in, one page ---- */
 .learnlist{display:flex;flex-direction:column;gap:11px;width:100%;max-width:var(--w-col)}

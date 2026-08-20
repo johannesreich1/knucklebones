@@ -39,7 +39,7 @@ function build(): void {
     <label class="askcheck" id="askCheckRow" hidden>
       <input type="checkbox" id="askCheck"><span id="askCheckText"></span>
     </label>
-    <button class="btn quiet" id="btnAskYes"></button>
+    <button class="btn soft" id="btnAskYes"></button>
     <button class="btn primary small" id="btnAskNo"></button>
   </div>
 </div>`);
@@ -72,10 +72,13 @@ export function ask(spec: Ask): Promise<boolean> {
   yes.textContent = spec.confirm;
   no.textContent = spec.cancel ?? 'Cancel';
   yes.classList.toggle('danger', !!spec.danger);
+  /* the un-encouraged answer wears .soft, never .quiet — .quiet is the HOME
+     SCREEN's section wrapper (margin-top, flex column), and a button sharing
+     that name inherited its 20px margin: the "answers too far apart" report */
   yes.classList.toggle('primary', !!spec.loud);
-  yes.classList.toggle('quiet', !spec.loud);
+  yes.classList.toggle('soft', !spec.loud);
   no.classList.toggle('primary', !spec.loud);
-  no.classList.toggle('quiet', !!spec.loud);
+  no.classList.toggle('soft', !!spec.loud);
 
   const box = $('#askCheck') as HTMLInputElement;
   $('#askCheckRow').hidden = !spec.check;

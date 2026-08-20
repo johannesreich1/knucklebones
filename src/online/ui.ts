@@ -743,13 +743,15 @@ function bind(): void {
       $('#onNickErr').textContent = '3–16 letters, digits or underscores.';
       return;
     }
-    /* the same deliberate-answer idiom as quitting and deleting, minus the
-       checkbox guard: a name is set once, so a typo here is worn forever */
+    /* deliberate, but not a warning: the body copy carries the forever-ness,
+       and the claim is the answer the player came here to give — so it wears
+       the primary look and "Not yet" goes quiet (user call). */
     const go = await ask({
       head: `Play as ${name}?`,
       body: 'A name is claimed once and kept for good. It cannot be edited or claimed again later.',
       confirm: 'Claim it',
       cancel: 'Not yet',
+      loud: true,
     });
     if (!go) return;
     const btn = $('#btnClaim') as HTMLButtonElement;
