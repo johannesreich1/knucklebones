@@ -17,5 +17,8 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      # chromium for the file/served suites and bench3; webkit because
+      # test16/test17 launch it — missing here, they die on browser
+      # provisioning while green locally (three red runs, 2026-08-20)
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm test
