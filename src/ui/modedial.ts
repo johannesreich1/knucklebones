@@ -18,6 +18,7 @@
 //   · the name and the blurb below stay blank until the same moment.
 import { MODES, type ModeSpec } from '../core/modes.ts';
 import { modeIcon, modeHue } from './modeicons.ts';
+import { paintAvatar } from './avatar.ts';
 import { $, show, hide } from './dom.ts';
 import { Sfx } from './audio.ts';
 import { REDUCED } from './fx.ts';
@@ -34,10 +35,11 @@ const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
    so the node settles back without a step. */
 const DIM = 0.28;
 
-/* one side of the versus line */
+/* one side of the versus line — the .dav slot is filled by paintAvatar after
+   the innerHTML write, so the avatar has exactly one renderer (ui/avatar.ts) */
 function sideHtml(p: DialSide, cls: 'me' | 'foe'): string {
   const rating = p.rating != null ? `<span class="rt">${p.rating}</span>` : '';
-  return `<span class="dside ${cls}"><span class="dav">${dieFace(p.die)}</span>` +
+  return `<span class="dside ${cls}"><span class="dav"></span>` +
          `<span class="dnm">${esc(p.name)}</span>${rating}</span>`;
 }
 /* Both ratings are shown; the DIFFERENCE between them is not. It is arithmetic
@@ -47,15 +49,6 @@ function versus(me: DialSide, foe: DialSide): string {
 }
 const esc = (t: string): string => t.replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
-/* the die face as pips — makeDie() builds a live element, and this needs a
-   string for one innerHTML write */
-const PIPS: Record<number, number[]> = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8],
-  5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
-function dieFace(v: number): string {
-  const on = PIPS[v] ?? PIPS[1];
-  return '<i class="dface">' + Array.from({ length: 9 }, (_, i) =>
-    `<i class="${on.includes(i) ? 'p on' : 'p'}"></i>`).join('') + '</i>';
-}
 
 /* The node ring, as markup — the ONE description of where a mode sits on the
    dial and what colour it wears. Pure, so the design build imports it too
@@ -126,7 +119,7 @@ function flare(el: HTMLElement): void {
    match's realtime channel. Whatever happens, the countdown still expires on
    its own — an unheard peer costs a few seconds, never the game. */
 /** a player on the versus line — ranked fills both, offline leaves them out */
-export interface DialSide { name: string; rating?: number | null; die: number }
+export interface DialSide { name: string; rating?: number | null; avatar?: string | null }
 
 export interface DialPeer {
   announce(): void;                        // tell the other side I am ready
@@ -192,11 +185,14 @@ export async function spinDial(spec: ModeSpec,
 
   // the hunting state: nothing named, nothing lit, nothing in the middle
   /* A ranked match is a comparison, so the screen shows the comparison: both
-     players, both ratings, and the gap between them named. The avatar is a die
-     until players can upload a picture — the game's own object, and a slot that
-     looks right EMPTY is the only kind worth shipping before uploads exist. */
+     players, both ratings — each wearing the profile avatar they chose, the
+     same face the leaderboard and the face-off card show for them. */
   const who = $('#wheelWho');
   who.innerHTML = opts?.foe && opts?.me ? versus(opts.me, opts.foe) : '';
+  if (opts?.foe && opts?.me) {
+    paintAvatar(who.querySelector('.dside.me .dav') as HTMLElement, opts.me.avatar, 44);
+    paintAvatar(who.querySelector('.dside.foe .dav') as HTMLElement, opts.foe.avatar, 44);
+  }
   ov.classList.remove('landed', 'ready');
   ov.classList.add('hunting');
   nodes.forEach((n) => n.classList.remove('on'));

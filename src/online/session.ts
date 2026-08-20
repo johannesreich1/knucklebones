@@ -262,7 +262,10 @@ async function call<T>(fn: string, body: object): Promise<{ status: number; data
 
 export type JoinResult =
   | { status: 'matched'; match: MatchRow; you: 0 | 1; rejoined?: boolean;
-      names: { p1: string; p2: string; ratings?: { p1: number | null; p2: number | null } } }
+      /* avatars is optional only for the deploy gap: a client shipped with
+         this field may still hear from a pvp-join that predates it */
+      names: { p1: string; p2: string; ratings?: { p1: number | null; p2: number | null };
+               avatars?: { p1: string | null; p2: string | null } } }
   | { status: 'queued' };
 export async function join(allowBot: boolean): Promise<JoinResult | null> {
   const r = await call<JoinResult>('pvp-join', { allow_bot: allowBot });
