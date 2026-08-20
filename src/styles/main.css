@@ -260,12 +260,11 @@ html.clock .timer.on{visibility:visible}
   opacity:0;pointer-events:none;visibility:hidden;transition:opacity .28s,visibility 0s .28s}
 .ov.on{opacity:1;pointer-events:auto;visibility:visible;transition:opacity .28s}
 #ovStart{overflow-y:auto;justify-content:flex-start}
-/* The hero rides near the TOP — a fixed offset, not an auto margin. An auto
-   spacer here centred the column, which read fine while the chip floated in a
-   corner; with the identity plate in the stack the centred block drifted low.
-   All remaining free space belongs to the foot's own auto margin, so the legal
-   links stay at the very bottom and the void sits under the practice strip. */
-#ovStart::before{content:"";flex:0 0 clamp(8px,4.5vh,40px)}
+/* ONE spacer, not two: it splits the free space with the foot's own auto
+   margin, so the content column sits centred between the screen top and the
+   legal links. A fixed offset was tried when the plate joined the stack and
+   read top-heavy — the column wants to breathe evenly around its middle. */
+#ovStart::before{content:"";margin-top:auto;flex:0 0 auto}
 .ov h1{margin:0;font-size:29px;letter-spacing:.2em;font-weight:900;text-align:center;
   background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
   -webkit-background-clip:text;background-clip:text;color:transparent;
@@ -975,9 +974,10 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
   text-shadow:0 0 18px rgba(255,209,102,.65);font-style:italic}
 .sub2{font-size:10px;letter-spacing:.28em;color:var(--dim);text-transform:uppercase;
   text-align:center;margin-bottom:12px}
-/* the little breath between "Ranked dice duels" and the plate + play pair */
+/* clear air between the hero and the plate + play pair: the two blocks are
+   different subjects — the game above, YOU below — and the seam shows it */
 .homestack{display:flex;flex-direction:column;gap:12px;width:100%;max-width:var(--w-col);
-  margin-top:10px}
+  margin-top:26px}
 .hrow{display:flex;gap:8px;width:100%}
 .hrow .btn{flex:1;min-width:0;padding:12px 6px;font-size:11px;letter-spacing:.12em}
 .quiet{margin-top:20px;display:flex;flex-direction:column;gap:11px;width:100%;max-width:var(--w-col)}
