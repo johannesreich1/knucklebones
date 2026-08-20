@@ -1,0 +1,91 @@
+<!-- meta name="Profile D — Your row, lifted" group="9 · Profile studies" subtitle="The profile IS your ladder row, enlarged out of its neighbours — identity and standing in one object" width=412 height=1440 links="Home, Ladder" -->
+<style>
+  /* NEW here: .lifted (your row at profile scale) and .ghostrow (the two
+     neighbours, dimmed). The rows themselves are the app's own —
+     #ovOnline.listview > .lb > .row from online.css. */
+  .shead{margin-bottom:6px}
+  .pane{display:flex;flex-direction:column;gap:12px;width:100%;max-width:var(--w-col);margin:0 auto}
+  #ovOnline{display:flex;flex-direction:column;gap:12px;width:100%}
+  #ovOnline.listview .lb{padding:0;overflow:visible;gap:5px}
+  .ghostrow{opacity:.34}
+  .lifted{padding:17px 16px;border-radius:18px;display:flex;flex-direction:column;gap:13px;
+    background:rgba(40,232,255,.07);border:1px solid rgba(40,232,255,.4);
+    box-shadow:0 14px 40px rgba(0,0,0,.5),0 0 30px rgba(40,232,255,.12)}
+  .lifted .top{display:flex;align-items:center;gap:12px}
+  .lifted .pos{font-size:26px;font-weight:900;color:var(--gold);line-height:1;
+    text-shadow:0 0 18px rgba(255,209,102,.45)}
+  .lifted .meta{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+  .lifted .nm{font-size:16px;font-weight:900;letter-spacing:.07em;color:var(--cy)}
+  .lifted .sub{font-size:9px;letter-spacing:.17em;color:var(--dim);text-transform:uppercase}
+  .lifted .rt{font-size:22px;font-weight:900;color:var(--gold)}
+  .lbar{display:flex;height:7px;border-radius:5px;overflow:hidden;background:rgba(255,255,255,.06)}
+  .lbar i{display:block}
+  .lbar .w{background:linear-gradient(90deg,var(--cy),#7ad6ff)}
+  .lbar .l{background:linear-gradient(90deg,var(--mg-d),var(--mg))}
+  .lfoot{display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:.14em;color:var(--dim)}
+  .acts{display:flex;flex-direction:column;gap:9px}
+  .acts .btn{width:100%;min-width:0}
+  .lifted.anon{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.14);box-shadow:none}
+  .lifted.anon .pos,.lifted.anon .rt{color:var(--dim);text-shadow:none}
+  .lifted.anon .nm{color:var(--dim)}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">PROFILE</span><span class="pad"></span></div>
+
+  <div class="cap2">Signed in</div>
+  <div class="pane">
+    <!-- ONE #ovOnline wrapper: the app's row rules need that ancestor, and two
+         elements sharing an id would be invalid even though CSS forgives it -->
+    <div id="ovOnline" class="listview">
+      <div class="lb">
+        <div class="row ghostrow"><span class="rank">3</span><span class="nm">VelvetKnight774</span><span class="ws">{{score:W:14:L:6}}</span><span class="rt">1096</span></div>
+      </div>
+      <div class="lifted dice-static">
+      <div class="top">
+        <span class="pos">#4</span>
+        {{die:5:p1:40}}
+        <span class="meta"><span class="nm">FrostLynx303</span><span class="sub">Since Aug 2026</span></span>
+        <span class="rt">1032</span>
+      </div>
+      <div class="lbar"><i class="w" style="flex:12"></i><i class="l" style="flex:7"></i></div>
+        <div class="lfoot"><span>12 WON</span><span>63%</span><span>7 LOST</span></div>
+      </div>
+      <div class="lb">
+        <div class="row ghostrow"><span class="rank">5</span><span class="nm">QuietComet651</span><span class="ws">{{score:W:9:L:7}}</span><span class="rt">1004</span></div>
+      </div>
+    </div>
+    <div class="tiny" style="text-align:center">64 rating from third · 28 ahead of fifth</div>
+    <div class="acts">
+      <button class="btn">Change nickname</button>
+      <button class="btn">Sign out</button>
+      <div class="danger"><button class="btn">Delete account</button></div>
+    </div>
+  </div>
+
+  <div class="cap2">Not signed in</div>
+  <div class="pane">
+    <div class="lifted anon dice-static">
+      <div class="top">
+        <span class="pos">#–</span>
+        {{die:1:p2:40}}
+        <span class="meta"><span class="nm">Guest player</span><span class="sub">Unlisted</span></span>
+        <span class="rt">1000</span>
+      </div>
+      <div class="lbar"><i style="flex:1;background:repeating-linear-gradient(90deg,rgba(255,255,255,.10) 0 5px,transparent 5px 10px)"></i></div>
+      <div class="lfoot"><span>NO RANKED GAMES</span><span>—</span></div>
+    </div>
+    <div class="acts">
+      <button class="btn primary">Take your place on the ladder</button>
+      <button class="btn ghost">I already have an account</button>
+      <div class="tiny" style="text-align:center">A guest plays rated matches — but the ladder only lists accounts</div>
+    </div>
+  </div>
+
+  <div class="note"><b>The profile and the ladder stop being two ideas.</b> Your row is the same
+    component the ladder draws, lifted out of its neighbours and opened up: position, identity,
+    rating, and a bar that turns the record into a proportion you read without counting. The
+    ghosted rows above and below give the number a direction — a profile that says "64 from
+    third" is a profile you come back to.
+    <br><br>Needs: rank position and the two adjacent rows. One RPC, and the ladder query is
+    already most of it.</div>
+</div></div>

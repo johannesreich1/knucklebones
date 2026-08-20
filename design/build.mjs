@@ -40,8 +40,33 @@ const die = (m) => { console.error('DESIGN BUILD FAILED: ' + m); process.exit(1)
 const css = ['src/styles/page.css', 'src/styles/main.css', 'src/online/online.css']
   .map((p) => readFileSync(join(root, p), 'utf8')).join('\n');
 
-/* preview-only chrome: the phone-shaped stage and the flow-chips strip */
+/* Bare app classes whose rule would SWALLOW a card's element rather than merely
+   tint it — the ones a card must never redefine. Cards deliberately tune shared
+   chrome (.shead, .btn, .lbl) and that is the point of them; the hazard is the
+   narrow set that hides or hard-sizes, because there the app wins in silence.
+   .pip ships opacity:0, so a study's form strip rendered as literally nothing. */
+const HOSTILE = /(^|;)\s*(opacity\s*:\s*0(?!\.)|display\s*:\s*none|position\s*:\s*(absolute|fixed)|height\s*:)/;
+const greedy = new Set();
+for (const rule of css.matchAll(/(^|[{}])\s*([^{}@]+?)\s*\{([^{}]*)\}/g)) {
+  if (!HOSTILE.test(rule[3])) continue;
+  for (const sel of rule[2].split(',')) {
+    const m = sel.trim().match(/^\.([a-zA-Z][\w-]*)$/);
+    if (m) greedy.add(m[1]);
+  }
+}
+
+/* preview-only chrome: the phone-shaped stage, the flow-chips strip, and the
+   two things a STUDY card always needs — a label over each variant and a note
+   under the set explaining the proposal. Those were being redeclared per card
+   (53, 71, and every study in 6x/7x/8x), which is a copy per card of two
+   rules. They live here now, so a study only writes what is actually new. */
 const chrome = `
+.cap2{font-size:9.5px;letter-spacing:.26em;color:var(--dim);text-transform:uppercase;
+  text-align:center;width:100%}
+.note{font-size:11.5px;line-height:1.6;color:#c6d3ee;width:100%;max-width:var(--w-col);
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);
+  border-radius:14px;padding:11px 13px;box-sizing:border-box}
+.note b{color:var(--gold)}
 body{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px 12px;overflow:auto}
 .stage{position:relative;width:384px;border-radius:26px;overflow:hidden;flex:0 0 auto;
   border:1px solid rgba(255,255,255,.14);background:var(--bg);
@@ -104,6 +129,30 @@ for (const f of screens) {
   const width = attr('width', '412');
   const height = attr('height', '900');
   const links = attr('links', '');
+
+  /* A card's own <style> may not REDEFINE a bare app class. Reuse is the whole
+     point of these cards — .btn, .shead, .row are meant to be worn — but a card
+     that writes `.pip{...}` is not reusing the die's pip, it is fighting it,
+     and the app usually wins silently: .pip ships opacity:0, so a study's form
+     strip rendered as nothing at all. Scoped rules (`.tile .k`) are safe by
+     construction and are not flagged, and neither is tuning shared chrome —
+     only the classes whose app rule HIDES or hard-sizes (see `greedy` above).
+     This repo has paid for that three times now (.fc, .table/.face, .pip and
+     .chip); it is a check, not a memory. */
+  const style = src.slice(src.indexOf('<style>'), src.indexOf('</style>'));
+  if (style) {
+    const bare = new Set();
+    for (const rule of style.matchAll(/(^|[{}])\s*([^{}]+?)\s*\{/g)) {
+      for (const sel of rule[2].split(',')) {
+        const m = sel.trim().match(/^\.([a-zA-Z][\w-]*)$/);   // a SINGLE bare class
+        if (m && greedy.has(m[1])) bare.add(m[1]);
+      }
+    }
+    if (bare.size) {
+      die(`${f}: redefines app class(es) ${[...bare].map((c) => '.' + c).join(', ')} — `
+        + `the app's rule is also in scope and will fight it. Rename, or scope the rule.`);
+    }
+  }
 
   let body = src.slice(meta[0].length)
     .replace(/\{\{die:(\d):([a-z0-9]+)(?::(\d+))?\}\}/g,

@@ -1,0 +1,102 @@
+<!-- meta name="Profile H — Split with action bar" group="9 · Profile studies" subtitle="Identity left, standing right, and one pinned bar carrying the only action that matters in each state" width=412 height=1420 links="Home, Ladder" -->
+<style>
+  /* NEW here: .split (the two-column head, stacking under 360) and .pinbar
+     (the action bar pinned at the foot — the .playbar idea from the offline
+     sheet, brought to the profile so the primary action never scrolls away). */
+  .shead{margin-bottom:6px}
+  .pane{display:flex;flex-direction:column;gap:13px;width:100%;max-width:var(--w-col);margin:0 auto}
+  .split{display:flex;gap:12px;align-items:stretch}
+  .sleft{flex:1.05;min-width:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:8px;padding:16px 12px;border-radius:16px;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);text-align:center}
+  .sleft .nm{font-size:14px;font-weight:900;letter-spacing:.06em;color:var(--cy);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+  .sleft .sub{font-size:8.5px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+  .sleft .swap{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;
+    border:1px solid rgba(255,255,255,.14);border-radius:8px;padding:5px 8px;background:none;
+    font-family:inherit;font-weight:800;cursor:pointer;margin-top:2px}
+  .sright{flex:1;display:flex;flex-direction:column;gap:7px}
+  .srow{flex:1;display:flex;flex-direction:column;justify-content:center;gap:2px;
+    padding:10px 13px;border-radius:14px;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
+  .srow .k{font-size:8px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
+  .srow .v{font-size:20px;font-weight:900;line-height:1}
+  .srow.gold .v{color:var(--gold)}
+  .srow.cy .v{color:var(--cy)}
+  .srow .v small{font-size:10px;color:var(--dim);font-weight:800;margin-left:5px}
+  .minor{display:flex;flex-direction:column;border-radius:14px;overflow:hidden;
+    border:1px solid rgba(255,255,255,.07)}
+  .minor button{display:flex;align-items:center;justify-content:space-between;padding:13px 14px;
+    background:rgba(255,255,255,.022);border:0;border-bottom:1px solid rgba(255,255,255,.06);
+    color:var(--dim);font:inherit;font-size:11px;font-weight:800;letter-spacing:.13em;
+    text-transform:uppercase;cursor:pointer}
+  .minor button:last-child{border-bottom:0}
+  .minor button.risk{color:#ff9ccb}
+  .pinbar{display:flex;flex-direction:column;gap:5px;padding:11px 0 3px;
+    border-top:1px solid rgba(255,255,255,.08)}
+  .pinbar .btn{width:100%;min-width:0}
+  .pinbar .tiny{text-align:center}
+  .sleft.anon .nm{color:var(--dim)}
+  .srow.locked{opacity:.42;border-style:dashed}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">PROFILE</span><span class="pad"></span></div>
+
+  <div class="cap2">Signed in</div>
+  <div class="pane">
+    <div class="split">
+      <div class="sleft dice-static">
+        {{die:5:p1:48}}
+        <span class="nm">FrostLynx303</span>
+        <span class="sub">Since Aug 2026</span>
+        <button class="swap">Change name</button>
+      </div>
+      <div class="sright">
+        <div class="srow gold"><span class="k">Rating</span><span class="v">1032<small>+18</small></span></div>
+        <div class="srow cy"><span class="k">Ladder</span><span class="v">#4</span></div>
+        <div class="srow"><span class="k">Record</span><span class="v" style="font-size:16px">12 – 7</span></div>
+      </div>
+    </div>
+    <div class="minor">
+      <button>Match history <span>19 games</span></button>
+      <button>Email <span style="text-transform:none;letter-spacing:.02em">jor@…werke.de</span></button>
+      <button class="risk">Delete account</button>
+    </div>
+    <div class="pinbar">
+      <button class="btn">Sign out</button>
+      <div class="tiny">Your rating stays on the account, not the phone</div>
+    </div>
+  </div>
+
+  <div class="cap2">Not signed in</div>
+  <div class="pane">
+    <div class="split">
+      <div class="sleft anon dice-static">
+        {{die:1:p2:48}}
+        <span class="nm">Guest player</span>
+        <span class="sub">This device only</span>
+        <button class="swap">Change name</button>
+      </div>
+      <div class="sright">
+        <div class="srow gold"><span class="k">Rating</span><span class="v">1000</span></div>
+        <div class="srow locked"><span class="k">Ladder</span><span class="v">—</span></div>
+        <div class="srow locked"><span class="k">Record</span><span class="v" style="font-size:16px">0 – 0</span></div>
+      </div>
+    </div>
+    <div class="minor">
+      <button>I already have an account <span>Sign in</span></button>
+    </div>
+    <div class="pinbar">
+      <button class="btn primary">Keep this account forever</button>
+      <div class="tiny">One tap, no form — the rating you already have comes with it</div>
+    </div>
+  </div>
+
+  <div class="note"><b>One screen, one job, and it is different in each state.</b> The head splits
+    identity from standing so neither has to wait its turn, and the pinned bar carries THE action
+    — Sign out when there is an account, Keep it forever when there is not — the same discipline
+    the offline sheet's play bar uses. Everything else demotes to a quiet strip, which is what
+    keeps a profile from turning into a menu.
+    <br><br>Needs: rating trend and rank; match history implies one new screen. Under 360px the
+    split stacks, which is the one thing worth checking on a small phone.</div>
+</div></div>

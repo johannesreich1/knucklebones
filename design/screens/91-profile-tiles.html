@@ -1,0 +1,81 @@
+<!-- meta name="Profile B — Stat tiles" group="9 · Profile studies" subtitle="A thin identity strip over a grid of stat tiles: the numbers read at a glance, the controls sit under a rule" width=412 height=1420 links="Home, Ladder" -->
+<style>
+  /* NEW here: .idstrip, .tiles / .tile. The identity strip is the home chip's
+     idea (.idchip) at panel scale; the tiles are the new element. */
+  .shead{margin-bottom:6px}
+  .pane{display:flex;flex-direction:column;gap:13px;width:100%;max-width:var(--w-col);margin:0 auto}
+  .idstrip{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:16px;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
+  .idstrip .meta{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1}
+  .idstrip .nm{font-size:15px;font-weight:900;letter-spacing:.07em;color:var(--cy)}
+  .idstrip .sub{font-size:9px;letter-spacing:.17em;color:var(--dim);text-transform:uppercase}
+  .idstrip .edit{font-size:9.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;
+    border:1px solid rgba(255,255,255,.14);border-radius:9px;padding:6px 9px;background:none;
+    font-family:inherit;font-weight:800;cursor:pointer}
+  .tiles{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .tile{padding:14px 13px;border-radius:16px;border:1px solid rgba(255,255,255,.08);
+    background:rgba(255,255,255,.03);display:flex;flex-direction:column;gap:5px}
+  .tile .k{font-size:8.5px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
+  .tile .v{font-size:26px;font-weight:900;line-height:1;letter-spacing:-.01em}
+  .tile .f{font-size:9.5px;letter-spacing:.1em;color:var(--dim)}
+  .tile.gold .v{color:var(--gold);text-shadow:0 0 20px rgba(255,209,102,.35)}
+  .tile.cy .v{color:var(--cy)}
+  .tile.wide{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between}
+  .tile.wide .v{font-size:18px}
+  .tile.locked{opacity:.45;border-style:dashed}
+  .rule{height:1px;background:rgba(255,255,255,.08);margin:3px 0}
+  .acts{display:flex;flex-direction:column;gap:9px}
+  .acts .btn{width:100%;min-width:0}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">PROFILE</span><span class="pad"></span></div>
+
+  <div class="cap2">Signed in</div>
+  <div class="pane">
+    <div class="idstrip dice-static">
+      {{die:5:p1:38}}
+      <span class="meta"><span class="nm">FrostLynx303</span><span class="sub">Since Aug 2026 · jor@…werke.de</span></span>
+      <button class="edit">Edit</button>
+    </div>
+    <div class="tiles">
+      <div class="tile gold"><span class="k">Rating</span><span class="v">1032</span><span class="f">+18 this week</span></div>
+      <div class="tile cy"><span class="k">Ladder rank</span><span class="v">#4</span><span class="f">of 128 rated</span></div>
+      <div class="tile"><span class="k">Record</span><span class="v">12–7</span><span class="f">63% won</span></div>
+      <div class="tile"><span class="k">Best mode</span><span class="v" style="font-size:15px">BOUNTY</span><span class="f">5–1 in bounty</span></div>
+      <div class="tile wide"><span class="k">Longest streak</span><span class="v">5 wins</span></div>
+    </div>
+    <div class="rule"></div>
+    <div class="acts">
+      <button class="btn">Sign out</button>
+      <div class="danger"><button class="btn">Delete account</button></div>
+    </div>
+  </div>
+
+  <div class="cap2">Not signed in</div>
+  <div class="pane">
+    <div class="idstrip dice-static">
+      {{die:1:p2:38}}
+      <span class="meta"><span class="nm" style="color:var(--dim)">Guest player</span><span class="sub">This device only</span></span>
+      <button class="edit">Edit</button>
+    </div>
+    <div class="tiles">
+      <div class="tile gold"><span class="k">Rating</span><span class="v">1000</span><span class="f">unprotected</span></div>
+      <div class="tile locked"><span class="k">Ladder rank</span><span class="v">—</span><span class="f">play a ranked match</span></div>
+      <div class="tile locked"><span class="k">Record</span><span class="v">0–0</span><span class="f">no games yet</span></div>
+      <div class="tile locked"><span class="k">Best mode</span><span class="v" style="font-size:15px">—</span><span class="f">no games yet</span></div>
+    </div>
+    <div class="rule"></div>
+    <div class="acts">
+      <button class="btn primary">Keep this account forever</button>
+      <button class="btn ghost">I already have an account</button>
+      <div class="tiny" style="text-align:center">Your rating and record follow the account, not the phone</div>
+    </div>
+  </div>
+
+  <div class="note"><b>Everything measurable, at a glance.</b> A thin identity strip carries the
+    name and gets out of the way; the grid does the work. Locked tiles are the honest signed-out
+    state — the shape of the profile is already visible, so the player can see exactly what
+    signing in fills in.
+    <br><br>Needs: rating trend, ladder rank, per-mode record and streak. All derivable from
+    <b>matches</b>; a single RPC could return the lot alongside the profile.</div>
+</div></div>
