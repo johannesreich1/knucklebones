@@ -131,12 +131,12 @@ body:has(.ov.on) #bg::after{opacity:0}
 /* whenever the badge names a mode it opens that mode's rules — offline too, so
    the affordance and its ⓘ belong in the eager sheet, not the online chunk */
 .rec.tapmode{cursor:pointer;transition:transform .15s}
-.rec.tapmode:active{transform:scale(.94)}
+.rec.tapmode:active,.rec.tapmode.pressing{transform:scale(.94)}
 .rec .mi{color:var(--dim);font-weight:800;margin-left:2px}
 .ico{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;
   background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
   color:var(--txt);font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
-.ico:active{transform:scale(.9);background:rgba(255,255,255,.12)}
+.ico:active,.ico.pressing{transform:scale(.9);background:rgba(255,255,255,.12)}
 
 /* TABLE */
 .table{flex:1;display:flex;flex-direction:column;min-height:0}
@@ -380,7 +380,7 @@ html.clock .timer.on{visibility:visible}
 .btn{min-width:210px;padding:16px 20px;border-radius:14px;border:1px solid rgba(255,255,255,.14);
   background:rgba(255,255,255,.05);color:var(--txt);font-size:13.5px;font-weight:800;letter-spacing:.16em;
   text-transform:uppercase;cursor:pointer;transition:.15s;font-family:inherit}
-.btn:active{transform:scale(.96)}
+.btn:active,.btn.pressing{transform:scale(.96)}
 .btn.primary{background:linear-gradient(100deg,var(--p1),var(--p1-hi) 40%,var(--p2));color:#04101a;border:none;
   box-shadow:0 10px 30px rgba(var(--p1-rgb),.28),0 0 0 1px rgba(255,255,255,.12) inset}
 [hidden]{display:none!important}
@@ -400,7 +400,7 @@ html.clock .timer.on{visibility:visible}
   cursor:pointer;padding:0;transition:transform .15s}   /* press only — the pick snaps */
 .hues button::after{content:"";width:21px;height:21px;border-radius:50%;background:var(--h);
   box-shadow:0 0 12px var(--h)}
-.hues button:active{transform:scale(.9)}
+.hues button:active,.hues button.pressing{transform:scale(.9)}
 .hues button.on{border-color:var(--h);box-shadow:0 0 14px color-mix(in srgb,var(--h) 45%,transparent)}
 .hues button:disabled{opacity:.3;cursor:default;transform:none}
 .hues button:disabled::after{box-shadow:none}
@@ -430,7 +430,7 @@ html.clock .timer.on{visibility:visible}
                                     color-mix(in srgb,var(--p2) 26%,transparent));
   border-color:color-mix(in srgb,var(--p1) 40%,transparent);
   box-shadow:0 0 16px color-mix(in srgb,var(--p1) 22%,transparent)}
-.shead .ico:active{background:linear-gradient(135deg,color-mix(in srgb,var(--p1) 42%,transparent),
+.shead .ico:active,.shead .ico.pressing{background:linear-gradient(135deg,color-mix(in srgb,var(--p1) 42%,transparent),
                                                      color-mix(in srgb,var(--p2) 42%,transparent))}
 /* paged overlays pin the header to the top; .pbody centres the rest below it */
 .ov.paged{justify-content:flex-start;overflow-y:auto;
@@ -622,7 +622,7 @@ html.clock .timer.on{visibility:visible}
 .modepick button{--mh:#8ea3c0;width:52px;height:48px;border-radius:14px;display:grid;place-items:center;
   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:var(--mh);
   cursor:pointer;transition:transform .15s;font-family:inherit;padding:0}
-.modepick button:active{transform:scale(.92)}
+.modepick button:active,.modepick button.pressing{transform:scale(.92)}
 .modepick button.on{border-color:color-mix(in srgb,var(--mh) 65%,transparent);
   background:color-mix(in srgb,var(--mh) 12%,transparent);
   box-shadow:0 0 14px color-mix(in srgb,var(--mh) 30%,transparent)}
@@ -1180,9 +1180,10 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
      through the delay. */
   animation:stampSlam .5s cubic-bezier(.34,1.3,.4,1) 1.25s backwards}
 @keyframes stampSlam{
-  0%{opacity:0;transform:rotate(-8deg) translateY(-46px) scale(2.6)}
-  55%{opacity:1;transform:rotate(-8deg) translateY(0) scale(1)}
-  70%{transform:rotate(-8deg) scale(1.08)}
+  0%{opacity:0;transform:rotate(-8deg) translateY(-58px) scale(3.1)}
+  55%{opacity:1;transform:rotate(-8deg) translateY(0) scale(.96)}
+  70%{transform:rotate(-8deg) scale(1.14)}
+  85%{transform:rotate(-8deg) scale(.99)}
   100%{opacity:1;transform:rotate(-8deg) scale(1)}}
 /* the plate takes the hit — a two-frame jolt timed to the stamp's contact
    (delay 1.25s + 55% of .5s ≈ 1.53s) — and a thin shock ring blows out of the
@@ -1190,12 +1191,12 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
    rule would replace it, and the foe's card would blink into place. */
 .endplates .pplate.stamped{animation:plateIn .38s cubic-bezier(.2,.9,.3,1) .8s backwards,
   stampJolt .4s linear 1.53s}
-@keyframes stampJolt{0%{transform:none}20%{transform:translateY(2.5px) rotate(.4deg)}
-  45%{transform:translateY(-1.5px)}70%{transform:translateY(.8px)}100%{transform:none}}
+@keyframes stampJolt{0%{transform:none}20%{transform:translateY(4px) rotate(.65deg)}
+  45%{transform:translateY(-2.4px) rotate(-.2deg)}70%{transform:translateY(1.2px)}100%{transform:none}}
 .pstamp::after{content:"";position:absolute;inset:-6px;border-radius:10px;
-  border:2px solid rgba(var(--mg-rgb),.5);opacity:0;
-  animation:stampDust .6s ease-out 1.53s;pointer-events:none}
-@keyframes stampDust{0%{opacity:.8;transform:scale(.9)}100%{opacity:0;transform:scale(1.9)}}
+  border:2.5px solid rgba(var(--mg-rgb),.7);opacity:0;
+  animation:stampDust .7s ease-out 1.53s;pointer-events:none}
+@keyframes stampDust{0%{opacity:1;transform:scale(.86)}100%{opacity:0;transform:scale(2.3)}}
 /* one entrance and one slam per RESULT, not per deal: the late re-deal
    (fresh numbers) rebuilds the rows, and a second landing or crash would
    read as a second verdict */
@@ -1283,7 +1284,7 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
   padding:15px 17px;border-radius:16px;cursor:pointer;font-family:inherit;
   background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);
   transition:.15s}
-.learnrow:active{transform:scale(.985)}
+.learnrow:active,.learnrow.pressing{transform:scale(.985)}
 .learnrow .lname{font-size:14px;font-weight:900;letter-spacing:.12em;color:var(--txt);
   text-transform:uppercase}
 .learnrow .lblurb{font-size:11.5px;line-height:1.5;color:var(--dim);letter-spacing:.02em}

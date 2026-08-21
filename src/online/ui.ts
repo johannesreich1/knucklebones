@@ -16,7 +16,7 @@ import { ask } from '../ui/askcard.ts';
 import { REDUCED } from '../ui/fx.ts';
 import { recordHtml } from '../ui/record.ts';
 import { AV_HUES, DEFAULT_AVATAR, parseAvatar, paintAvatar } from '../ui/avatar.ts';
-import { signUp, signIn, signOut, currentUser, ensureIdentity, attachEmail,
+import { signIn, signOut, currentUser, ensureIdentity, attachEmail,
          myProfile, claimName, leaderboard, deleteAccount, join, readyPeer,
          myLadder, myStanding, matchHistory, setAvatar, bestStreak, playerCard, leaveQueue,
          cacheStanding, resignedOver, type PlayerCard,
@@ -211,14 +211,13 @@ const AUTH: Record<AuthMode, AuthSpec> = {
     title: 'SIGN IN',
     lead: 'Play ranked, climb the ladder',
     tiny: 'New accounts get a nickname like BoldRaven482 —<br>claim your own once in Account',
-    acts: [
-      { label: 'Sign in', primary: true, run: signIn },
-      { label: 'Create account', run: async (e, p) => {
-          const { error, live } = await signUp(e, p);
-          if (error) return error;
-          return live ? null : 'Account created — check your email to confirm, then sign in.';
-        } },
-    ],
+    acts: [{ label: 'Sign in', primary: true, run: signIn }],
+    /* "Create account" is the OTHER panel, not a second action here: signing up
+       from the sign-in form minted a fresh empty account and dropped the player
+       into the newcomer tutorial, throwing away the guest rating they arrived
+       with (user report). KEEP ACCOUNT does the same job without the loss —
+       and mints outright when there is no session to keep (session.attachEmail). */
+    swap: { label: 'Create account', to: 'attach' },
     after: async () => { await entered(); },
   },
 };

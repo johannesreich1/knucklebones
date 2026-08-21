@@ -92,6 +92,16 @@ export async function ensureIdentity(): Promise<Me | null> {
    be set once that address counts as verified, which is instant while email
    confirmation is optional and needs the inbox when it is not. */
 export async function attachEmail(email: string, password: string): Promise<string | null> {
+  /* No session to hang the address on — a device that signed out of a real
+     account never gets a silent guest (see ensureIdentity). "Keep account" is
+     then simply "create account", which is what the player asked for either
+     way: mint it here rather than answering their sign-up with a session
+     error. Sign-in panel's Create account lands here (online/ui.ts AUTH). */
+  if (!(await currentUser())) {
+    const { error, live } = await signUp(email, password);
+    if (error) return error;
+    return live ? null : 'Account created — confirm the link we sent, then sign in.';
+  }
   const { data, error } = await supa().auth.updateUser({ email });
   if (error) return error.message;
   if (!data.user?.email) return 'Almost there — confirm the link we sent, then set your password.';

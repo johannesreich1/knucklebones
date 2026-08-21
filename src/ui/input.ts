@@ -29,10 +29,50 @@ export function setPlaceHandler(h){ placeHandler = h || place; }
    Hosts that deliver ONLY synthetic clicks never arm the guard, so their
    fallback still works. */
 let lastNativeTap = 0;
+/* A control PRESSES on the way down and ACTS on the way up. Firing on
+   pointerdown (what this did) swapped the screen before the pressed frame
+   could ever paint, so the same button looked animated or instant depending
+   only on how fast the next view arrived — and a mis-tap could not be taken
+   back (user report). Down arms and lets :active show; up over the same
+   control fires; sliding off cancels, exactly like the board's placement
+   gesture. The ghost-click guard is unchanged: a real pointer or touch
+   still arms it, so the synthetic click trailing a tap is ignored while
+   click-only hosts keep working. */
 export function tap(el,fn){
-  const fireNative=e=>{ lastNativeTap=Date.now(); fn(e); };
-  if(window.PointerEvent) el.addEventListener('pointerdown',fireNative);
-  else if('ontouchstart' in window) el.addEventListener('touchstart',fireNative,{passive:true});
+  const fire=e=>{ lastNativeTap=Date.now(); fn(e); };
+  let armed=false;
+  /* the press visual is OURS, not the UA's: :active is unreliable in embedded
+     webviews (and dies under pointer capture), which is why the same button
+     looked animated on one tap and dead on the next (user report). One class,
+     mirrored by every :active rule in the sheet. */
+  const hold=on=>el.classList.toggle('pressing',on);
+  const disarm=()=>{ armed=false; hold(false); };
+  if(window.PointerEvent){
+    el.addEventListener('pointerdown',e=>{ armed=true; hold(true); if(e.pointerId!=null && el.setPointerCapture) try{ el.setPointerCapture(e.pointerId); }catch{} });
+    el.addEventListener('pointerup',e=>{
+      if(!armed) return;
+      armed=false; hold(false);
+      // released off the control (slid away): cancelled, not a tap
+      const r=el.getBoundingClientRect();
+      if(typeof e.clientX==='number' &&
+         (e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)) return;
+      fire(e);
+    });
+    el.addEventListener('pointercancel',disarm);
+    el.addEventListener('pointerleave',disarm);
+  }
+  else if('ontouchstart' in window){
+    el.addEventListener('touchstart',()=>{ armed=true; hold(true); },{passive:true});
+    el.addEventListener('touchend',e=>{
+      if(!armed) return;
+      armed=false; hold(false);
+      const t=e.changedTouches && e.changedTouches[0];
+      const over=t ? document.elementFromPoint(t.clientX,t.clientY) : null;
+      if(over && !el.contains(over) && over!==el) return;   // slid off: cancelled
+      fire(e);
+    });
+    el.addEventListener('touchcancel',disarm);
+  }
   el.addEventListener('click',e=>{ if(Date.now()-lastNativeTap<600) return; fn(e); });
 }
 /* Press a bound control from CODE (the edge swipe commits this way). A bare
@@ -41,8 +81,14 @@ export function tap(el,fn){
    control the event tap() actually binds first, then click() for handlers
    bound the plain way; whichever fires, the other one is deduped. */
 export function press(el){
-  if(window.PointerEvent) el.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
-  else if('ontouchstart' in window) el.dispatchEvent(new TouchEvent('touchstart'));
+  /* the full down-then-up now, since tap() acts on release: the release
+     carries the control's own centre so the slid-off test passes */
+  if(window.PointerEvent){
+    const r=el.getBoundingClientRect();
+    const at={bubbles:true,clientX:r.left+r.width/2,clientY:r.top+r.height/2};
+    el.dispatchEvent(new PointerEvent('pointerdown',at));
+    el.dispatchEvent(new PointerEvent('pointerup',at));
+  }
   el.click();
 }
 /* Placement commits on RELEASE over the same column it started on, so a
