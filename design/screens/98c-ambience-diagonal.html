@@ -1,0 +1,97 @@
+<!-- meta name="A3 — The long diagonal" group="9d · Ambience studies" subtitle="One continuous field corner to corner — foe hue breaking from the top-left, yours answering from the bottom-right, purple where they meet mid-screen — the whole height in one move, and the grid fades at the edges instead of mid-air" width=412 height=1050 links="Settings, Ladder" -->
+<style>
+  /* THE SUBJECT: full-height ambience in ONE gesture. A single diagonal
+     field spans corner to corner; a counter-tint keeps the empty corners from
+     going dead. The mid-screen meeting point is the nuance, not a hotspot. */
+  .stage .bgfx::before{content:"";position:absolute;inset:-15%;
+    background:
+      linear-gradient(158deg,
+        rgba(255,47,160,.24) 0%, rgba(255,47,160,.10) 30%,
+        rgba(126,60,255,.13) 50%,
+        rgba(40,232,255,.10) 70%, rgba(40,232,255,.24) 100%),
+      radial-gradient(closest-side,rgba(126,60,255,.10),transparent 70%) 20% 88%/80% 70% no-repeat;
+    filter:blur(26px)}
+  .shead{margin-bottom:4px}
+  .pane{display:flex;flex-direction:column;gap:11px;width:100%;max-width:var(--w-col);
+    margin:0 auto;align-items:center;flex:1}
+  .ringwrap{position:relative;width:186px;height:186px;display:grid;place-items:center}
+  .ring3{position:absolute;inset:0;border-radius:50%;
+    background:conic-gradient(from 225deg,var(--cy) calc(var(--p) * 270deg),
+      rgba(255,255,255,.07) calc(var(--p) * 270deg) 270deg,transparent 270deg);
+    -webkit-mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
+    mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
+    filter:drop-shadow(0 0 14px rgba(40,232,255,.42))}
+  .pkmark{position:absolute;inset:0;border-radius:50%;
+    background:conic-gradient(from 225deg,transparent 0 calc(var(--pk) * 270deg - 1.3deg),
+      var(--gold) calc(var(--pk) * 270deg - 1.3deg) calc(var(--pk) * 270deg + 1.3deg),transparent 0);
+    -webkit-mask:radial-gradient(circle closest-side,transparent 77%,#000 78%);
+    mask:radial-gradient(circle closest-side,transparent 77%,#000 78%);
+    filter:drop-shadow(0 0 7px rgba(255,209,102,.9))}
+  .avwrap{position:relative;display:grid;place-items:center}
+  .avedit{position:absolute;right:-9px;bottom:-9px;width:26px;height:26px;border-radius:50%;
+    display:grid;place-items:center;background:rgba(10,13,28,.95);
+    border:1px solid rgba(40,232,255,.55);color:var(--cy);font-size:11px}
+  .gname{position:absolute;left:0;right:0;bottom:-1px;text-align:center;
+    font-size:13px;font-weight:900;letter-spacing:.18em;color:var(--txt)}
+  .accname{font-size:17px;font-weight:900;letter-spacing:.06em;color:var(--cy)}
+  .ptv{display:flex;flex-direction:column;align-items:center;gap:2px;
+    border:0;background:none;padding:0;font-family:inherit}
+  .ptv b{font-size:30px;font-weight:900;color:var(--gold);line-height:1;
+    text-shadow:0 0 24px rgba(255,209,102,.42)}
+  .ptv span{font-size:8.5px;letter-spacing:.26em;color:var(--dim);text-transform:uppercase}
+  .facts{display:flex;gap:8px;width:100%}
+  .fact{flex:1;text-align:center;padding:9px 5px;border-radius:12px;
+    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08)}
+  .fact b{display:block;font-size:14px;font-weight:900;color:var(--txt)}
+  .fact span{font-size:8px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+  .hist{display:flex;align-items:center;width:100%;padding:12px 14px;border-radius:14px;
+    background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
+    font-size:11px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+  .hist b{color:var(--txt);margin-left:auto;letter-spacing:.06em}
+  .mrow{display:flex;align-items:center;gap:9px;font-size:12px;width:100%;
+    padding:9px 12px;border-radius:12px;background:rgba(255,255,255,.03);
+    border:1px solid rgba(255,255,255,.06);color:var(--txt)}
+  .mrow .hres{width:19px;height:19px;border-radius:6px;display:grid;place-items:center;
+    font-size:9px;font-weight:900}
+  .mrow.win .hres{background:rgba(40,232,255,.16);border:1px solid rgba(40,232,255,.5);color:var(--cy)}
+  .mrow.loss .hres{background:rgba(255,47,160,.13);border:1px solid rgba(255,47,160,.45);color:#ff96cf}
+  .mrow .nm{flex:1;font-weight:800}
+  .mrow .hsc{color:var(--dim);font-size:11px}
+  .mrow .hd{font-weight:900}
+  .mrow.win .hd{color:var(--cy)} .mrow.loss .hd{color:#ff96cf}
+  .accfoot{margin-top:auto;display:flex;flex-direction:column;gap:10px;width:100%}
+  .accfoot .btn{width:100%;min-width:0}
+  .foot2{text-align:center;font-size:10px;letter-spacing:.14em;color:var(--dim);
+    text-transform:uppercase;opacity:.72;padding-bottom:2px}
+  .stage .scr{min-height:820px}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">PROFILE</span><span class="pad"></span></div>
+  <div class="pane">
+    <div class="ringwrap" style="--p:.489;--pk:.606">
+      <i class="ring3"></i><i class="pkmark"></i>
+      <div class="avwrap dice-static">{{die:5:p1:86}}<span class="avedit">✎</span></div>
+      <span class="gname">GOLD</span>
+    </div>
+    <div class="accname">BoldRaven482</div>
+    <button class="ptv"><b>2,494</b><span>Ladder points</span></button>
+    <div class="facts">
+      <div class="fact"><b>#4</b><span>Rank</span></div>
+      <div class="fact"><b>7</b><span>Best streak</span></div>
+      <div class="fact pk"><b>2,610</b><span>Peak</span></div>
+    </div>
+    <div class="hist">Full match history <b>19 games ›</b></div>
+    <div class="mrow win"><span class="hres">W</span><span class="nm">ZestyPixel950</span><span class="hsc">41–28</span><span class="hd">+117</span></div>
+    <div class="mrow loss"><span class="hres">L</span><span class="nm">NovaComet992</span><span class="hsc">22–35</span><span class="hd">−64</span></div>
+    <div class="accfoot">
+      <button class="btn">Sign out</button>
+      <div class="foot2"><span>Delete account</span></div>
+    </div>
+  </div>
+</div></div>
+  <div class="note"><b>The axis is VERTICAL.</b> Today's wash reads as a shallow band around
+    mid-screen because the blobs cluster there and the vignette ate the rest — this study runs
+    the ambience the full HEIGHT of the view instead, four ways. All four keep peak alpha under
+    .3 (quieter than production): reach comes from size and grading, never brightness. The same
+    treatment would land on every view, not only the profile — the backdrop is one layer
+    (#bg::before) behind them all.</div>
