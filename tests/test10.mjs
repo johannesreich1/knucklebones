@@ -1,11 +1,41 @@
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
-const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
+import { spawn } from 'child_process';
+import net from 'net';
+/* Served over LOCAL HTTP, not file:// — this suite's graduation coda reloads
+   the page and asserts the tutorial flag came back, and Chromium's file://
+   DOMStorage can hydrate a reloaded document from a STALE disk commit no
+   matter what holds the area open: the keeper page below was added after runs
+   32456842535/32459675455 lost the write, and run 32485862497 (plus its
+   rerun) lost it straight through the keeper. An http origin's localStorage
+   is one live area per origin — the reload reads it coherently, no disk race.
+   The other file suites keep loading the artifact over file://, so the
+   double-click path stays covered; only the reload assertion needed the
+   protocol. The server is this suite's own (repo root, port 8124), started
+   and killed here, so run-all and serve.py stay untouched. */
+const PORT = 8124;
+const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'],
+  { cwd: process.cwd(), stdio: 'ignore' });
+process.on('exit', () => server.kill());   // a thrown check must not orphan it
+await new Promise((resolve, reject) => {
+  const attempt = n => {
+    const s = net.connect(PORT, '127.0.0.1');
+    s.on('connect', () => { s.end(); resolve(); });
+    s.on('error', () => n > 0 ? setTimeout(() => attempt(n - 1), 200) : reject(new Error('test10 server never came up')));
+  };
+  attempt(50);
+});
+const F = `http://127.0.0.1:${PORT}/knucklebones-neon.html`;
 const browser = await chromium.launch();
 const problems = [], errs = [], out = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
 
 const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+/* over http the single-file page would try to register its service worker
+   (file:// never attempts it) and 404 on /sw.js — not this suite's subject,
+   and the console error would fail the gate. Make the capability absent, the
+   same world every file:// suite already runs in. */
+await ctx.addInitScript(() => { try { delete Navigator.prototype.serviceWorker; } catch { /* strict hosts keep it */ } });
 await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
 const page = await ctx.newPage();
 page.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
@@ -198,3 +228,4 @@ check(out.afterGrad.tutDone, 'tutorial completion did not persist', out.afterGra
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
 await browser.close();
+server.kill();
