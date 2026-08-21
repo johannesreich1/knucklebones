@@ -34,9 +34,9 @@
      overlays themselves: their 82% film eats the backdrop, which is why the
      first cut was invisible everywhere but in-game (user report). */
   --aurora:
-    radial-gradient(closest-side,rgba(var(--p2-rgb),.18),transparent 72%) -10% -6%/95% 85% no-repeat,
-    radial-gradient(closest-side,rgba(var(--p1-rgb),.18),transparent 72%) 110% 106%/95% 85% no-repeat,
-    linear-gradient(125deg,transparent 34%,rgba(126,60,255,.12) 50%,transparent 66%);
+    radial-gradient(closest-side,rgba(var(--p2-rgb),.13),transparent 72%) -10% -6%/95% 85% no-repeat,
+    radial-gradient(closest-side,rgba(var(--p1-rgb),.13),transparent 72%) 110% 106%/95% 85% no-repeat,
+    linear-gradient(125deg,transparent 34%,rgba(126,60,255,.09) 50%,transparent 66%);
   /* THE MULTIPLIER HEATS — what a ×2 (gold) and ×3 (hot orange) die wear.
      Tokens because a player may PICK gold or orange for a side: menu.ts then
      repoints the clashing heat at its fallback (--ice / --red below), so a
@@ -92,10 +92,13 @@
   background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
                    linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
   background-size:34px 34px;
-  /* no mask: the ellipse concentrated the lines into a horizontal belt
-     across mid-screen — THE "centre background" reported three times (user).
-     The texture is even now, and quieter to pay for the coverage. */
-  opacity:.28}
+  -webkit-mask-image:radial-gradient(130% 90% at 50% 50%,#000 35%,transparent 92%);
+  mask-image:radial-gradient(130% 90% at 50% 50%,#000 35%,transparent 92%);
+  opacity:.45;transition:opacity .28s}
+/* the grid is the TABLE's texture and nobody else's (user call): its centre
+   belt under every translucent overlay was the "horizontal background"
+   reported all evening. Any overlay up = grid out. */
+body:has(.ov.on) #bg::after{opacity:0}
 @keyframes drift{from{transform:translate3d(-3%,-2%,0) scale(1)}to{transform:translate3d(4%,3%,0) scale(1.12)}}
 #vig{position:fixed;inset:0;z-index:1;pointer-events:none;
   box-shadow:inset 0 0 110px 12px rgba(0,0,0,.62)}
@@ -310,9 +313,15 @@ html.clock .timer.on{visibility:visible}
 
 /* ============ OVERLAYS ============ */
 .ov{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:18px;padding:30px var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 30px);background:var(--aurora);background-color:rgba(4,5,12,.82);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+  gap:18px;padding:30px var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 30px);background-color:rgba(4,5,12,.82);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
   opacity:0;pointer-events:none;visibility:hidden;transition:opacity .28s,visibility 0s .28s}
 .ov.on{opacity:1;pointer-events:auto;visibility:visible;transition:opacity .28s}
+/* the ambience paints ONCE, on the TOPMOST open overlay: overlays STACK
+   (home stays on beneath pages, pages beneath sheets) and a copy per layer
+   compounded into mud (user report). Same z everywhere means paint order is
+   DOM order, so the last .on sibling is the top — the quiet rooms override
+   their background wholesale and stay plain, as they should. */
+.ov.on:not(:has(~ .ov.on)){background:var(--aurora);background-color:rgba(4,5,12,.82)}
 #ovStart{overflow-y:auto;justify-content:flex-start}
 /* ONE spacer, not two: it splits the free space with the foot's own auto
    margin, so the content column sits centred between the screen top and the
