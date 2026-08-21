@@ -232,8 +232,10 @@ export interface LeaderboardRow {
   nickname: string; points: number; wins: number; losses: number; games: number;
   rank: number; apex: boolean; avatar: string | null; peak: number;
 }
-export async function leaderboard(limit = 50): Promise<LeaderboardRow[]> {
-  const { data } = await supa().rpc('leaderboard', { limit_n: limit });
+export async function leaderboard(limit = 50, fromRank = 1): Promise<LeaderboardRow[]> {
+  /* a rank WINDOW (migration 0032): the board pages around the reader
+     instead of shipping the whole season — from_rank is where it opens */
+  const { data } = await supa().rpc('leaderboard', { limit_n: limit, from_rank: fromRank });
   return (data as LeaderboardRow[]) ?? [];
 }
 

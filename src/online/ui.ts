@@ -396,28 +396,22 @@ async function showBoard(): Promise<void> {
   const lw = loaderWait(44);
   lw.classList.add('lbload');
   list.appendChild(lw);
-  const [rows, me, lad] = await Promise.all([leaderboard(50), myProfile(), myLadder()]);
+  /* the board is a WINDOW now (migration 0032, user call after history got
+     its pages): it opens a page centred on the reader's rank and grows in
+     BOTH directions as they scroll — a season of thousands is never one
+     payload. Signed out (or unranked) it opens at the apex and only grows
+     downward. */
+  const PAGE = 50;
+  const [me, lad, st] = await Promise.all([myProfile(), myLadder(), myStanding()]);
+  const startRank = st?.rank ? Math.max(1, st.rank - 20) : 1;
+  const rows = await leaderboard(PAGE, startRank);
   list.innerHTML = rows.length ? '' : '<div class="row">No ranked games yet — be the first!</div>';
   /* which horizon may claim "your group": my row's if I am on the board, my
      points' otherwise — a signed-in player low on games still lives somewhere */
   const myRow = me ? rows.find((r) => r.nickname === me.nickname) ?? null : null;
   const myG = myRow ? boardGroup(myRow.points, myRow.apex) : lad ? boardGroup(lad.points, false) : null;
-  let horizon = '';
   let meEl: HTMLElement | null = null;
-  for (const r of rows) {
-    const g = boardGroup(r.points, r.apex);
-    if (g.id !== horizon) {
-      horizon = g.id;
-      const h = document.createElement('div');
-      h.className = 'ghor' + (g.id === 'neon' ? ' apex' : '');
-      h.style.setProperty('--gc', `var(--g-${g.id})`);
-      const sub = g.id === 'neon' ? 'top 1%'
-        : g.floor === 0 ? 'the floor is 0'
-        : `${pts(g.floor)} and up`;
-      h.innerHTML = `<span class="gn">${g.name}</span>` +
-        `<span class="gf">${sub}${lad && myG === g ? ' · your group' : ''}</span>`;
-      list.appendChild(h);
-    }
+  const rowEl = (r: LeaderboardRow, g: ReturnType<typeof boardGroup>): HTMLElement => {
     const isMe = !!me && r.nickname === me.nickname;
     const b = document.createElement('button');
     b.type = 'button';
@@ -448,9 +442,94 @@ async function showBoard(): Promise<void> {
       if (isMe) { void showAccount(); return; }
       showFaceoff(r, me && lad ? { name: me.nickname, avatar: me.avatar ?? null, lad } : null);
     });
-    list.appendChild(b);
-  }
-  meEl?.scrollIntoView({ block: 'center' });
+    return b;
+  };
+  const hEl = (g: ReturnType<typeof boardGroup>): HTMLElement => {
+    const h = document.createElement('div');
+    h.className = 'ghor' + (g.id === 'neon' ? ' apex' : '');
+    h.style.setProperty('--gc', `var(--g-${g.id})`);
+    const sub = g.id === 'neon' ? 'top 1%'
+      : g.floor === 0 ? 'the floor is 0'
+      : `${pts(g.floor)} and up`;
+    h.innerHTML = `<span class="gn">${g.name}</span>` +
+      `<span class="gf">${sub}${lad && myG === g ? ' · your group' : ''}</span>`;
+    h.dataset.g = g.id;
+    return h;
+  };
+  /* ONE chunk builder for the first window and both growth directions: rows
+     become a fragment, a horizon opening whenever the group changes from
+     `prev` (null = always open one). Returns the trailing group id. */
+  const seen = new Set<string>();
+  const chunk = (page: LeaderboardRow[], prev: string): { frag: DocumentFragment; last: string; first: string } => {
+    const frag = document.createDocumentFragment();
+    let horizon = prev, first = '';
+    for (const r of page) {
+      if (seen.has(r.nickname)) continue;    // rank ties across a page seam
+      seen.add(r.nickname);
+      const g = boardGroup(r.points, r.apex);
+      if (!first) first = g.id;
+      if (g.id !== horizon) { horizon = g.id; frag.appendChild(hEl(g)); }
+      frag.appendChild(rowEl(r, g));
+    }
+    return { frag, last: horizon, first };
+  };
+  const head = chunk(rows, '');
+  list.appendChild(head.frag);
+  /* the pager. Ranks can TIE across a page seam, so each fetch re-reads from
+     the boundary rank and `seen` drops the rows already dealt. growDown also
+     re-arms itself while the list does not yet OVERFLOW — a window shorter
+     than the screen produces no scroll events, so it must fill by itself. */
+  let firstRank = rows.length ? Number(rows[0].rank) : 1;
+  let lastRank = rows.length ? Number(rows[rows.length - 1].rank) : 1;
+  let botGroup = head.last;
+  let botDry = rows.length < PAGE;
+  let loading = false;
+  const growDown = (): void => {
+    if (botDry || loading) return;
+    loading = true;
+    void leaderboard(PAGE, lastRank).then((page) => {
+      loading = false;
+      if ($('#onBoard').hidden) return;
+      const fresh = page.filter((r) => !seen.has(r.nickname));
+      botDry = page.length < PAGE;
+      if (fresh.length) {
+        const c = chunk(page, botGroup);
+        botGroup = c.last;
+        lastRank = Number(fresh[fresh.length - 1].rank);
+        list.appendChild(c.frag);
+      }
+      if (list.scrollHeight <= list.clientHeight + 60) { if (!botDry) growDown(); else growUp(); }
+    });
+  };
+  const growUp = (): void => {
+    if (firstRank <= 1 || loading) return;
+    loading = true;
+    const want = Math.max(1, firstRank - PAGE);
+    void leaderboard(Math.min(PAGE, firstRank - want), want).then((page) => {
+      loading = false;
+      if ($('#onBoard').hidden) return;
+      const fresh = page.filter((r) => !seen.has(r.nickname) && Number(r.rank) < firstRank);
+      if (!fresh.length) { if (want === 1) firstRank = 1; return; }
+      const c = chunk(fresh, '');
+      /* the group may CONTINUE across the seam: the old leading horizon is
+         then a duplicate of the prepended chunk's trailing group */
+      const oldHead = list.firstElementChild as HTMLElement | null;
+      if (oldHead?.classList.contains('ghor') && oldHead.dataset.g === c.last) oldHead.remove();
+      const before = list.scrollHeight;
+      list.insertBefore(c.frag, list.firstChild);
+      list.scrollTop += list.scrollHeight - before;   // the view must not jump
+      firstRank = Number(fresh[0].rank);
+      // a board SHORTER than the screen never scrolls — keep filling upward
+      if (list.scrollHeight <= list.clientHeight + 60 && firstRank > 1) growUp();
+    });
+  };
+  list.onscroll = () => {
+    if (list.scrollTop + list.clientHeight > list.scrollHeight - 400) growDown();
+    else if (list.scrollTop < 400) growUp();
+  };
+  if (list.scrollHeight <= list.clientHeight + 60) growDown();
+  /* meEl is assigned inside rowEl, which control-flow analysis cannot see */
+  (meEl as HTMLElement | null)?.scrollIntoView({ block: 'center' });
 }
 
 /* ---- the face-off (design 33e): the tapped player dealt against YOU, stat
