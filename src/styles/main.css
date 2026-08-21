@@ -25,6 +25,15 @@
      pink, the destruction keyword, avatar hues — keep reading raw hues. */
   --p1:var(--cy); --p1-rgb:var(--cy-rgb); --p1-hi:var(--cy-hi);
   --p2:var(--mg); --p2-rgb:var(--mg-rgb); --p2-hi:var(--mg-hi);
+  /* THE AURORA (study 98a, picked): two full-height ribbons of the duel hues
+     plus a purple seam. A token because it paints TWICE — the bare table's
+     #bg and every overlay's own background layer. It has to live in the
+     overlays themselves: their 82% film eats the backdrop, which is why the
+     first cut was invisible everywhere but in-game (user report). */
+  --aurora:
+    radial-gradient(closest-side,rgba(var(--p2-rgb),.15),transparent 72%) 12% 8%/68% 165% no-repeat,
+    radial-gradient(closest-side,rgba(var(--p1-rgb),.13),transparent 72%) 88% 92%/70% 170% no-repeat,
+    radial-gradient(closest-side,rgba(126,60,255,.09),transparent 70%) 52% 50%/60% 90% no-repeat;
   /* THE MULTIPLIER HEATS — what a ×2 (gold) and ×3 (hot orange) die wear.
      Tokens because a player may PICK gold or orange for a side: menu.ts then
      repoints the clashing heat at its fallback (--ice / --red below), so a
@@ -67,12 +76,14 @@
   radial-gradient(120% 80% at 50% -10%, #17123a 0%, transparent 60%),
   radial-gradient(110% 70% at 50% 110%, #04263a 0%, transparent 60%),
   var(--bg);}
-#bg::before{content:"";position:absolute;inset:-30%;
-  background:
-    radial-gradient(closest-side,rgba(var(--p2-rgb),.34),transparent 70%) 18% 14%/82% 60% no-repeat,
-    radial-gradient(closest-side,rgba(var(--p1-rgb),.30),transparent 70%) 82% 88%/84% 62% no-repeat,
-    radial-gradient(closest-side,rgba(126,60,255,.24),transparent 70%) 60% 42%/66% 50% no-repeat;
-  filter:blur(34px);animation:drift 18s ease-in-out infinite alternate;}
+/* THE AURORA (study 98a, picked 2026-08-21): two ribbons of the duel hues
+   run the FULL height — the foe's slides down one flank, yours climbs the
+   other — with a faint purple seam where they cross. Reach comes from SIZE
+   (ribbon heights >150% of the frame), never brightness: quieter at its
+   brightest point than every wash before it, and the drift keeps it alive. */
+#bg::before{content:"";position:absolute;inset:-20%;
+  background:var(--aurora);
+  filter:blur(38px);animation:drift 18s ease-in-out infinite alternate;}
 #bg::after{content:"";position:absolute;inset:0;
   background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
                    linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
@@ -293,7 +304,7 @@ html.clock .timer.on{visibility:visible}
 
 /* ============ OVERLAYS ============ */
 .ov{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:18px;padding:30px var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 30px);background:rgba(4,5,12,.82);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+  gap:18px;padding:30px var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 30px);background-color:rgba(4,5,12,.82);background-image:var(--aurora);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
   opacity:0;pointer-events:none;visibility:hidden;transition:opacity .28s,visibility 0s .28s}
 .ov.on{opacity:1;pointer-events:auto;visibility:visible;transition:opacity .28s}
 #ovStart{overflow-y:auto;justify-content:flex-start}
