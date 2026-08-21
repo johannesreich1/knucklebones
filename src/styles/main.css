@@ -34,9 +34,9 @@
      overlays themselves: their 82% film eats the backdrop, which is why the
      first cut was invisible everywhere but in-game (user report). */
   --aurora:
-    radial-gradient(closest-side,rgba(var(--p2-rgb),.13),transparent 72%) -10% -6%/95% 85% no-repeat,
-    radial-gradient(closest-side,rgba(var(--p1-rgb),.13),transparent 72%) 110% 106%/95% 85% no-repeat,
-    linear-gradient(125deg,transparent 34%,rgba(126,60,255,.09) 50%,transparent 66%);
+    radial-gradient(95% 85% at -8% -8%,rgba(var(--p2-rgb),.11),transparent 62%),
+    radial-gradient(95% 85% at 108% 108%,rgba(var(--p1-rgb),.11),transparent 62%),
+    linear-gradient(125deg,transparent 36%,rgba(126,60,255,.07) 50%,transparent 64%);
   /* THE MULTIPLIER HEATS — what a ×2 (gold) and ×3 (hot orange) die wear.
      Tokens because a player may PICK gold or orange for a side: menu.ts then
      repoints the clashing heat at its fallback (--ice / --red below), so a
@@ -313,7 +313,7 @@ html.clock .timer.on{visibility:visible}
 
 /* ============ OVERLAYS ============ */
 .ov{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:18px;padding:30px var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 30px);background-color:rgba(4,5,12,.82);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+  gap:18px;padding:30px var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 30px);background-color:#04050c;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
   opacity:0;pointer-events:none;visibility:hidden;transition:opacity .28s,visibility 0s .28s}
 .ov.on{opacity:1;pointer-events:auto;visibility:visible;transition:opacity .28s}
 /* the ambience paints ONCE, on the TOPMOST open overlay: overlays STACK
@@ -321,7 +321,7 @@ html.clock .timer.on{visibility:visible}
    compounded into mud (user report). Same z everywhere means paint order is
    DOM order, so the last .on sibling is the top — the quiet rooms override
    their background wholesale and stay plain, as they should. */
-.ov.on:not(:has(~ .ov.on)){background:var(--aurora);background-color:rgba(4,5,12,.82)}
+.ov.on:not(:has(~ .ov.on)){background:var(--aurora);background-color:#04050c}
 #ovStart{overflow-y:auto;justify-content:flex-start}
 /* ONE spacer, not two: it splits the free space with the foot's own auto
    margin, so the content column sits centred between the screen top and the
