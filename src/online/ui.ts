@@ -338,6 +338,10 @@ const esc = (s: string) => s.replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
 const pts = (n: number): string => n.toLocaleString('en');
+/* a POSITION always reads the same way, wherever it appears: #-prefixed, with
+   the same thousands separator the points wear — a season with twelve thousand
+   players says "#12,480", never "#12480" */
+const rk = (n: number): string => '#' + n.toLocaleString('en');
 
 /* the distance to me, signed: magenta above, cyan below — the duel palette
    doing the talking. A distance is all it may name: what a match would PAY is
@@ -398,7 +402,7 @@ async function showBoard(): Promise<void> {
       const state = r.apex ? 'top 1%' : `${Math.round(groupFill(r.points) * 100)}% through`;
       b.innerHTML = `<span class="av"></span><span class="nmwrap"><span class="nm">${esc(r.nickname)}</span>` +
         `<span class="mesub"><b>${g.name}</b> · ${state} · ${recordHtml(r.wins, r.losses)}</span></span>` +
-        `<span class="ptcol"><span class="pt2">${pts(r.points)}</span><span class="rk2">Rank #${r.rank}</span></span>`;
+        `<span class="ptcol"><span class="pt2">${pts(r.points)}</span><span class="rk2">Rank ${rk(r.rank)}</span></span>`;
       meEl = b;
     } else {
       const mid = lad ? gapHtml(r.points - lad.points)
@@ -439,7 +443,7 @@ function showFaceoff(r: LeaderboardRow, mine: MySide | null): void {
     <div class="focols dice-static">
       <div class="focol" style="--gc:var(--g-${g.id})">
         <span class="av"></span><span class="fnm">${esc(r.nickname)}</span>
-        <span class="fgp">${g.name} · #${r.rank}</span>
+        <span class="fgp">${g.name} · ${rk(r.rank)}</span>
       </div>` + (mine ? `
       <span class="fovs">VS</span>
       <div class="focol you" style="--gc:var(--g-${mg!.id})">
@@ -486,7 +490,7 @@ function showFaceoff(r: LeaderboardRow, mine: MySide | null): void {
     const ms = ov.querySelector('.mystreak');
     if (ms && streak != null) ms.textContent = String(streak);
     const gp = ov.querySelector('.focol.you .fgp');
-    if (gp && st) gp.textContent += ` · #${st.rank}`;
+    if (gp && st) gp.textContent += ` · ${rk(st.rank)}`;
   });
 }
 
@@ -569,7 +573,7 @@ async function showAccount(): Promise<void> {
   const games = lad ? lad.wins + lad.losses + lad.draws : 0;
   $('#accGames').textContent = games ? `${games} games ›` : 'none yet ›';
   const apex = st ? inApex(pts, st.rank, st.population) : false;
-  $('#accRank').textContent = st && games ? (apex ? 'NEON' : '#' + st.rank) : '–';
+  $('#accRank').textContent = st && games ? (apex ? 'NEON' : rk(st.rank)) : '–';
   $('#accStreak').textContent = String(streak);
 
   /* One continuous fill, and the peak notch in its three states (LADDER.md §5):
@@ -686,8 +690,8 @@ async function showResult(r: FinishReport): Promise<void> {
     (r.delta == null ? '' :
       `<span class="elochip${r.delta < 0 ? ' down' : ''}">${r.delta >= 0 ? '+' : ''}${r.delta}` +
       ` <small>PTS${points != null ? ' · ' + points.toLocaleString('en') : ''}</small></span>`) +
-    (group ? `<span class="rrank">${group}${rank != null ? ` · <b>#${rank}</b>` : ''}</span>`
-           : rank != null ? `<span class="rrank">Ladder: <b>#${rank}</b></span>` : '');
+    (group ? `<span class="rrank">${group}${rank != null ? ` · <b>${rk(rank)}</b>` : ''}</span>`
+           : rank != null ? `<span class="rrank">Ladder: <b>${rk(rank)}</b></span>` : '');
   let cachedRating: number | null = null;
   try {
     const c = JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null');
