@@ -1,6 +1,6 @@
 # Project Status
 
-*Last updated: 2026-08-20. This is the "where do we stand" document — the
+*Last updated: 2026-08-21. This is the "where do we stand" document — the
 README explains how the project works; this file records what exists, what
 was decided, and what's still open.*
 
@@ -478,6 +478,27 @@ on a PWA or native install, and the single-file build (which inlines
 everything) hid it. The rule moved to `main.css`, and `tests/cssreach.test.ts`
 now fails the gate on any offline markup that names a class only the online
 stylesheet defines.
+
+### 6c. Settings pages back, and the edge swipe (2026-08-21, user request)
+
+- **Settings became a page.** It was the one Home destination still wearing
+  sheet clothes (✕ top-right); it now wears the ‹ page header like OFFLINE
+  and the ladder. Same exit, same target — only the glyph and its corner
+  moved. `#btnCloseSettings` → `#btnSettingsBack`; `00-navigation` re-filed.
+- **The iOS back gesture** (`ui/swipeback.ts`): a rightward drag from the
+  left screen edge presses the SAME ‹/✕ the open view's header shows —
+  topmost `.ov.on` only, paged views only. It stays inert where a back
+  gesture would lie: home (the root), mid-game (no paged view open), the
+  ask-card and face-off (they sit on top and want an answer), and
+  matchmaking, whose hidden ‹ means Cancel is the only honest exit. The
+  gesture is a second finger on the existing button, never a second
+  navigation driver — plain touch handling, no history stack, so it works
+  in Safari, the PWA and the wrapped app alike.
+- `input.ts` gained `press(el)` — the one way for CODE to press a bound
+  control through the same ghost-click dedup a finger gets. A bare
+  `.click()` inside 600ms of any real tap is swallowed by the guard (that
+  is what the guard is FOR), which would have eaten every quick
+  tap-then-swipe sequence.
 
 ### 8. The loading die (2026-08-20 night, user pick from the LD1–LD8 studies)
 

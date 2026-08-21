@@ -35,6 +35,16 @@ export function tap(el,fn){
   else if('ontouchstart' in window) el.addEventListener('touchstart',fireNative,{passive:true});
   el.addEventListener('click',e=>{ if(Date.now()-lastNativeTap<600) return; fn(e); });
 }
+/* Press a bound control from CODE (the edge swipe commits this way). A bare
+   .click() is swallowed whenever any real tap landed within the guard's
+   600ms — the guard cannot tell a synthetic click from a ghost. So feed the
+   control the event tap() actually binds first, then click() for handlers
+   bound the plain way; whichever fires, the other one is deduped. */
+export function press(el){
+  if(window.PointerEvent) el.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+  else if('ontouchstart' in window) el.dispatchEvent(new TouchEvent('touchstart'));
+  el.click();
+}
 /* Placement commits on RELEASE over the same column it started on, so a
    mis-tap can be cancelled by sliding a finger off before lifting. Touch
    implicitly captures the pointer to the original element, so the element

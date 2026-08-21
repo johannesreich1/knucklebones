@@ -41,6 +41,7 @@ import { requestLeave, leavingForfeits } from './flow/leave.ts';
 import { openModes, openSpells, pickerButtons, MODE_PICKS, SPELL_PICKS } from './ui/library.ts';
 import { isNewcomer } from './ui/firstrun.ts';
 import { ask, dismissAsk } from './ui/askcard.ts';
+import { bindSwipeBack } from './ui/swipeback.ts';
 /* ===================== BOOT ===================== */
 export function boot(embed){
   setEmbed(!!embed);
@@ -122,7 +123,7 @@ export function boot(embed){
     });
     if(go){ requestLeave(); toMenu(); }
   });
-  tap($('#btnCloseSettings'),()=>{ Sfx.tap(); hide('#ovSettings'); });
+  tap($('#btnSettingsBack'),()=>{ Sfx.tap(); hide('#ovSettings'); });
   /* A coach bubble that is WAITING is dismissed by a tap anywhere, not only by
      a tap on the bubble — the message says "tap to continue" and the player
      reasonably taps the screen. Capture phase so it lands before anything else
@@ -249,6 +250,10 @@ export function boot(embed){
     document.addEventListener('gesturechange',e=>e.preventDefault());
     document.addEventListener('touchmove',e=>{ if(e.touches.length>1) e.preventDefault(); },{passive:false});
     document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
+    // the iOS back gesture: an edge swipe presses the open view's own ‹/✕
+    // (ui/swipeback). Never in the widget — an embedded game must not hijack
+    // the host page's edge swipes.
+    bindSwipeBack();
   }
 
   // Stale-client self-heal: a cached page can reference hashed chunks that a

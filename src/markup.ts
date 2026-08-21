@@ -308,12 +308,12 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   <button class="ico" id="passQuit" aria-label="Leave game">✕</button>
 </div>
 
-<!-- SETTINGS: a sheet over live context — ✕ closes, toggles apply instantly -->
+<!-- SETTINGS: a page below Home like OFFLINE — ‹ goes back, toggles apply instantly -->
 
 <div class="ov paged" id="ovSettings">
   <div class="shead">
-    <span class="pad"></span><span class="ttl">SETTINGS</span>
-    <button class="ico" id="btnCloseSettings" aria-label="Close">✕</button>
+    <button class="ico" id="btnSettingsBack" aria-label="Back">‹</button>
+    <span class="ttl">SETTINGS</span><span class="pad"></span>
   </div>
   <div class="pbody">
     <div class="card">
