@@ -22,10 +22,11 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <!-- far side of the table -->
     <section class="side top" id="sideTop" data-owner="0">
       <div class="plate" id="plateTop">
-        <span class="dot"></span><span class="nm" id="nameTop">AI</span>
-        <span class="tag" id="tagTop">HARD</span>
-        <span class="sp"></span><span class="runeslot"></span>
-        <span class="bty" id="btyTop" hidden></span><span class="tot" id="totTop">0</span>
+        <span class="who"><span class="dot"></span><span class="nm" id="nameTop">AI</span>
+        <span class="tag" id="tagTop">HARD</span></span>
+        <span class="sp"></span>
+        <span class="pright"><span class="runeslot"></span>
+        <span class="bty" id="btyTop" hidden></span><span class="tot" id="totTop">0</span></span>
       </div>
       <div class="boardwrap"><div class="board" id="topBoard"></div></div>
       <div class="cols" id="topCols"></div>
@@ -55,10 +56,11 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
       <div class="cols" id="botCols"></div>
       <div class="boardwrap"><div class="board" id="botBoard"></div></div>
       <div class="plate" id="plateBot">
-        <span class="dot"></span><span class="nm" id="nameBot">YOU</span>
-        <span class="tag" id="tagBot" hidden></span>
-        <span class="sp"></span><span class="runeslot"></span>
-        <span class="bty" id="btyBot" hidden></span><span class="tot" id="totBot">0</span>
+        <span class="who"><span class="dot"></span><span class="nm" id="nameBot">YOU</span>
+        <span class="tag" id="tagBot" hidden></span></span>
+        <span class="sp"></span>
+        <span class="pright"><span class="runeslot"></span>
+        <span class="bty" id="btyBot" hidden></span><span class="tot" id="totBot">0</span></span>
       </div>
     </section>
   </div>

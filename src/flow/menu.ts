@@ -49,22 +49,24 @@ export function syncSettingsUI(){
   const p1 = S.colorblind ? 'cy' : S.p1Hue;
   const p2 = S.colorblind ? 'gold' : S.p2Hue;
   const rs = document.documentElement.style;
+  /* the heats ride along per SIDE: a ×2 wears gold and a ×3 hot orange —
+     unless THIS side's player wears that hue, in which case only THEIR
+     multiplied dice fall back (ice / hot red, main.css) so a doubled die
+     can never pass for their plain one. The other side keeps the true
+     heat — repointing both boards for one player's pick recoloured the
+     whole game (user report, with screenshot). Covers colour blind mode
+     too, whose pinned pair contains gold. */
   for (const [slot,h] of [['p1',p1],['p2',p2]]){
     rs.setProperty(`--${slot}`,      `var(--${h})`);
     rs.setProperty(`--${slot}-rgb`,  `var(--${h}-rgb)`);
     rs.setProperty(`--${slot}-hi`,   `var(--${h}-hi)`);
+    const m2 = h==='gold'   ? 'ice' : 'gold';
+    const m3 = h==='orange' ? 'red' : 'orange';
+    rs.setProperty(`--${slot}-mx2`,     `var(--${m2})`);
+    rs.setProperty(`--${slot}-mx2-rgb`, `var(--${m2}-rgb)`);
+    rs.setProperty(`--${slot}-mx3`,     `var(--${m3})`);
+    rs.setProperty(`--${slot}-mx3-rgb`, `var(--${m3}-rgb)`);
   }
-  /* a ×2 wears gold and a ×3 hot orange — unless a PLAYER wears it: then the
-     clashing heat falls back (ice / hot red, main.css) so a doubled die can
-     never pass for somebody's plain one. Covers colour blind mode too, whose
-     pinned pair contains gold. */
-  const mx = (tok, hue, alt) => {
-    const clash = p1===hue || p2===hue;
-    rs.setProperty(`--${tok}`,     `var(--${clash?alt:hue})`);
-    rs.setProperty(`--${tok}-rgb`, `var(--${clash?alt:hue}-rgb)`);
-  };
-  mx('mx2','gold','ice');
-  mx('mx3','orange','red');
   /* the pickers mirror the pair on screen: the shown pick is the EFFECTIVE
      one, the other side's colour is off the table (a colour belongs to one
      player), and colour blind mode locks both rows, the note saying why */

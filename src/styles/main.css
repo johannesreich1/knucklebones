@@ -40,9 +40,11 @@
     radial-gradient(106% 95% at 108% 108%,rgba(var(--p1-rgb),.10),transparent 66%),
     linear-gradient(125deg,transparent 34%,rgba(126,60,255,.06) 50%,transparent 66%);
   /* THE MULTIPLIER HEATS — what a ×2 (gold) and ×3 (hot orange) die wear.
-     Tokens because a player may PICK gold or orange for a side: menu.ts then
-     repoints the clashing heat at its fallback (--ice / --red below), so a
-     doubled die can never be mistaken for somebody's plain one. */
+     These are the base values; the real ones are PER SIDE (--p1-mx2 …,
+     set inline by menu.ts): only the side whose player picked gold/orange
+     has that heat fall back (--ice / --red below), so a doubled die can
+     never be mistaken for THEIR plain one — the other side keeps the true
+     heat (user report: one pick recoloured both boards). */
   --mx2:var(--gold);   --mx2-rgb:var(--gold-rgb);
   --mx3:var(--orange); --mx3-rgb:var(--orange-rgb);
   /* multiplier FALLBACKS — deliberately not in the DUELHUES roster, so they
@@ -144,20 +146,50 @@ body:has(.ov.on) #bg::after{opacity:0}
 .side.top{--sd:-16px}
 .side.bot{--sd:16px}
 
-/* nameplate */
+/* nameplate. Two seatings, decided by ui/layout.ts (JS owns the breakpoint,
+   same deal as .land): roomy portrait screens get html.sidepts — the name
+   CENTRED over the board and the score moved out beside it into the side
+   gutter — while tight screens keep the original line: name left, score
+   right (user call: only where there is room). */
 .plate{display:flex;align-items:center;gap:7px;padding:0 3px;height:24px;flex:0 0 auto}
+.plate .who{display:flex;align-items:center;gap:7px;min-width:0}
+.plate .sp{flex:1}
+.plate .pright{display:flex;align-items:center;gap:7px}
 .plate .dot{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);flex:0 0 auto}
 .plate .nm{font-size:11.5px;font-weight:800;letter-spacing:.16em;color:var(--txt);opacity:.9}
 .plate .tag{font-size:9px;letter-spacing:.12em;color:var(--dim);border:1px solid rgba(255,255,255,.12);
   border-radius:99px;padding:2px 6px}
-.plate .sp{flex:1}
+/* the roomy seating: the score cluster leaves the plate for the gutter beside
+   the board, vertically centred on the side; --gut (ui/layout.ts) is the
+   gutter's true width, so the cluster sits in its middle. Anchored to the
+   .side, never the plate (.plate.active is position:relative). */
+html.sidepts .side{position:relative}
+html.sidepts .plate{display:grid;grid-template-columns:1fr auto 1fr;position:static}
+html.sidepts .plate .who{grid-column:2;justify-self:center}
+html.sidepts .plate .sp{grid-column:1;grid-row:1}
+html.sidepts .plate .pright{position:absolute;top:50%;right:calc(var(--gut,60px)/2);
+  transform:translate(50%,-50%);flex-direction:column;gap:4px;z-index:3;
+  max-width:var(--gut,60px)}
+/* the number wears what the gutter affords: 27px in a wide one, easing to
+   20px where ui/layout.ts let a tight-but-honest 40px gutter through */
+html.sidepts .plate .tot{font-size:clamp(20px,calc(var(--gut,60px)*.5),27px);
+  min-width:0;text-align:center}
+/* BOUNTY in the gutter: banked points sit BELOW the running total, never
+   beside it (user call) — the cluster is a column, order puts the tally last */
+html.sidepts .plate .bty{margin-right:0;order:1}
 .plate .tot{font-size:20px;font-weight:900;letter-spacing:.02em;color:var(--c);
   text-shadow:0 0 16px var(--c);min-width:34px;text-align:right;transition:transform .18s}
 .plate.bump .tot{transform:scale(1.28)}
 /* colour follows the PLAYER, not the half of the screen they're sitting in,
-   so the boards can swap places on hand-off without the palette moving */
-.side[data-owner="1"]{--c:var(--p1)}
-.side[data-owner="0"]{--c:var(--p2)}
+   so the boards can swap places on hand-off without the palette moving.
+   The heats ride along: chips and rails inside a side wear that OWNER's
+   ×2/×3 colours, falling back with them when the owner picked gold/orange */
+.side[data-owner="1"]{--c:var(--p1);
+  --mx2:var(--p1-mx2,var(--gold));--mx2-rgb:var(--p1-mx2-rgb,var(--gold-rgb));
+  --mx3:var(--p1-mx3,var(--orange));--mx3-rgb:var(--p1-mx3-rgb,var(--orange-rgb))}
+.side[data-owner="0"]{--c:var(--p2);
+  --mx2:var(--p2-mx2,var(--gold));--mx2-rgb:var(--p2-mx2-rgb,var(--gold-rgb));
+  --mx3:var(--p2-mx3,var(--orange));--mx3-rgb:var(--p2-mx3-rgb,var(--orange-rgb))}
 
 /* Nameplates never glow. The turn is already said three louder ways — the
    status line, the running clock and the dashed legal columns — so a breathing
@@ -217,6 +249,12 @@ body:has(.ov.on) #bg::after{opacity:0}
   box-shadow:0 0 6px color-mix(in srgb,var(--dc) 85%,transparent),0 0 14px color-mix(in srgb,var(--dc) 45%,transparent);
   opacity:0;transform:scale(.3);transition:opacity .12s,transform .12s}
 .pip.on{opacity:1;transform:scale(1)}
+/* a die reads its OWNER's heat: only the side wearing gold/orange loses that
+   heat to its fallback — the other side keeps the true one (flow/menu.ts) */
+.die.p1{--mx2:var(--p1-mx2,var(--gold));--mx2-rgb:var(--p1-mx2-rgb,var(--gold-rgb));
+        --mx3:var(--p1-mx3,var(--orange));--mx3-rgb:var(--p1-mx3-rgb,var(--orange-rgb))}
+.die.p2{--mx2:var(--p2-mx2,var(--gold));--mx2-rgb:var(--p2-mx2-rgb,var(--gold-rgb));
+        --mx3:var(--p2-mx3,var(--orange));--mx3-rgb:var(--p2-mx3-rgb,var(--orange-rgb))}
 .die.m2{--dc:var(--mx2);border-color:color-mix(in srgb,var(--mx2) 70%,transparent);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 5px 14px rgba(0,0,0,.55),0 0 18px rgba(var(--mx2-rgb),.5)}
 .die.m3{--dc:var(--mx3);border-color:rgba(var(--mx3-rgb),.85);
@@ -248,7 +286,8 @@ body:has(.ov.on) #bg::after{opacity:0}
   background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);position:relative;transition:.2s}
 .chip.has{color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
   background:color-mix(in srgb,var(--c) 9%,transparent);text-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}
-.chip .mx{font-size:9px;opacity:.9;color:var(--gold)}
+.chip .mx{font-size:9px;opacity:.9;color:var(--mx2,var(--gold))}
+.chip .mx.h3{color:var(--mx3,var(--orange))}
 /* empty badge spans must not eat flex gaps — the number sits dead centre
    (bit the row rail: an empty ×badge shoved every rowscore 3px off) */
 .chip .mx:empty,.chip .sh:empty,.rowchips .rc .mx:empty{display:none}
@@ -623,7 +662,8 @@ html.rowmode .rowchips{position:absolute;right:100%;margin-right:9px;top:0;displ
   display:flex;align-items:center;justify-content:center;gap:3px;
   font-size:11.5px;font-weight:800;color:var(--dim);font-variant-numeric:tabular-nums;
   background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);transition:.2s}
-.rowchips .rc .mx{font-size:9px;opacity:.9;color:var(--gold)}
+.rowchips .rc .mx{font-size:9px;opacity:.9;color:var(--mx2,var(--gold))}
+.rowchips .rc .mx.h3{color:var(--mx3,var(--orange))}
 .rowchips .rc.has{color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
   background:color-mix(in srgb,var(--c) 9%,transparent);
   text-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}

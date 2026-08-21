@@ -96,7 +96,9 @@ function updateScores(who){
     chip.classList.toggle('has',!rowswitch && sc>0);
     const cm=counts(b[c]); let mx='';
     if(!rowswitch) for(const v in cm){ if(cm[v]===3) mx='×3'; else if(cm[v]===2 && mx!=='×3') mx='×2'; }
-    chip.querySelector('.mx').textContent=mx;
+    const mxb=chip.querySelector('.mx');
+    mxb.textContent=mx;
+    mxb.classList.toggle('h3',mx==='×3');   // ×3 wears the hot heat, ×2 the gold one
     // COLUMN SHIELD: a full column wears its shield (pops in the first time)
     const sh=chip.querySelector('.sh');
     const shielded=isShielded(b[c],S.scoring);
@@ -124,7 +126,9 @@ function updateScores(who){
       const val=rowswitch ? rowScore(b,r) : bonus;
       // same anatomy as the column chips: plain value + a ×k badge
       el.querySelector('.cs').textContent=rowswitch ? String(val) : (val ? String(val) : '');
-      el.querySelector('.mx').textContent=kmax>=2 ? '×'+kmax : '';
+      const rmx=el.querySelector('.mx');
+      rmx.textContent=kmax>=2 ? '×'+kmax : '';
+      rmx.classList.toggle('h3',kmax>=3);
       el.classList.toggle('has',val>0);
     }
   }

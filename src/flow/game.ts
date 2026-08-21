@@ -192,6 +192,10 @@ export async function nextTurn(){
 }
 
 export async function flyDie(who,col,die){
+  // the choosing is over the moment the die lifts off: whatever the status
+  // line was saying ("Tap a column", "AI thinking") goes dark INSTANTLY —
+  // the next turn writes its own line. Serves online too (one driver rule).
+  setStatus('',null);
   const stage=$('#dieStage');
   const src=stage.firstElementChild;
   if(!src) return;
@@ -394,7 +398,7 @@ export function endGame(){
     if(best>S.best) S.best=best;
   }
   saveStats(); updateStatLine();
-  setStatus(me>ai?nameOf(ME)+' wins':me<ai?nameOf(AI)+' wins':'Draw', me>ai?ME:me<ai?AI:null);
+  setStatus('',null);   // the result screen announces the winner — the table says nothing twice (user call)
   // ONE result screen, filled from here — the fireworks and the title's landing
   // belong to it, so a ranked win gets exactly the same show (ui/endscreen)
   showEnd({

@@ -445,7 +445,7 @@ function finishUI(m: MatchRow): void {
   const delta = (meP1 ? (m as any).p1_rating_delta : (m as any).p2_rating_delta) as number | null;
   const theirDelta = (meP1 ? (m as any).p2_rating_delta : (m as any).p1_rating_delta) as number | null;
   const won = m.winner !== null && ((meP1 && m.winner === m.p1) || (!meP1 && m.winner === m.p2));
-  setStatus(won ? 'You win' : m.winner === null ? 'Draw' : oppName() + ' wins', won ? O.you : (1 - O.you) as Player, false);
+  setStatus('', null, false);   // the result screen announces the winner — the table says nothing twice (user call)
   settleBoard();                                   // same end beat as local play
   const oppJoin = O.names.ratings?.[oppSeat()] ?? null;
   const report: FinishReport = {

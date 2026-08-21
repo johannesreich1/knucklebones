@@ -59,4 +59,14 @@ export function fit(){
     cell = Math.max(38, Math.min(byH, byW, 88));
   }
   document.documentElement.style.setProperty('--cell', cell+'px');
+  /* the side-points seating (main.css html.sidepts): the score leaves the
+     nameplate for the gutter beside the board wherever that gutter can hold
+     a number at all — the font SCALES to the gutter (main.css), so 40px is
+     enough for the small end of it; truly tight screens keep the original
+     plate (user call). Row modes hang their score rail in the same gutter,
+     so they always keep the plate seating; landscape has no gutter at all. */
+  const gut = Math.floor((w - safe.h - 20 - (cell*SPEC.cols + 2*6)) / 2);
+  const sidepts = !land && !(S.scoring===ROWSWITCH || S.scoring===ROWMULT) && gut >= 40;
+  document.documentElement.classList.toggle('sidepts', sidepts);
+  document.documentElement.style.setProperty('--gut', gut+'px');
 }
