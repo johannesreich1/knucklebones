@@ -5,7 +5,7 @@
 // module on purpose -- these steps are one process, and S.gen guards every
 // await against a game that was abandoned mid-animation.
 import { AI, ME, SPEC, legalCols, colScore, boardTotalMode, totalOf, victimsOf, isShielded, isOver,
-         emptyBoard, BOUNTY, LIMITED } from '../core/rules.ts';
+         openStrikes, emptyBoard, BOUNTY, LIMITED } from '../core/rules.ts';
 import { makeBag } from '../core/dice.ts';
 import { RANDOM, pickMode } from '../core/modes.ts';
 import { spinDial } from '../ui/modedial.ts';
@@ -283,21 +283,39 @@ export async function place(who,col){
            burst(r.left+r.width/2,r.top+r.height/2,heatOf(who),10); }
   await wait(120);
   if(S.gen!==gen) return;
+  // core decides WHICH columns this placement strikes — the facing one, or
+  // every matching column under a SUNDER — and whether a ward answers each.
+  // The very openStrikes applyMove resolves headlessly, and it consumes the
+  // sunder mark, so screen and state can never tell different stories.
+  const plan=openStrikes(S.boards,who,col,die,S.scoring,S.charm);
+  const stage=$('#dieStage'); if(stage) stage.classList.remove('sundered');  // the charged die has flown
   // COLUMN SHIELD: a full facing column is immune — flash the shield instead,
   // but only when the die would actually have hit something
-  if(isShielded(S.boards[1-who][col],S.scoring)){
-    if(S.boards[1-who][col].includes(die)){
-      const sh=chipEl(1-who,col) && chipEl(1-who,col).querySelector('.sh');
-      if(sh){ sh.classList.remove('block'); void sh.offsetWidth; sh.classList.add('block'); }
+  if(isShielded(S.boards[1-who][col],S.scoring) && S.boards[1-who][col].includes(die)){
+    const sh=chipEl(1-who,col) && chipEl(1-who,col).querySelector('.sh');
+    if(sh){ sh.classList.remove('block'); void sh.offsetWidth; sh.classList.add('block'); }
+  }
+  let destroyed=0;
+  for(const hit of plan){
+    if(S.gen!==gen) return;
+    if(hit.warded){
+      // the ward absorbs the whole strike and burns out: pop its chip, then
+      // let the repaint clear it — the mark is gone from the charm it reads
+      S.charm.wards[1-who][hit.col]--;
+      const wd=chipEl(1-who,hit.col) && chipEl(1-who,hit.col).querySelector('.wd');
+      if(wd){ wd.classList.remove('block'); void wd.offsetWidth; wd.classList.add('block'); }
+      Sfx.mult(); flash(0.14);
+      await wait(300);
+      renderSide(1-who,true);
+    }else{
+      destroyed+=await destroyAt(1-who,hit.col,die);
     }
-  }else{
-    const destroyed=await destroyAt(1-who,col,die);
-    if(S.scoring===BOUNTY && destroyed){
-      // the kill pays: bank the permanent +1s, celebrate them in gold
-      S.bounty[who]+=destroyed;
-      floatPts(who,col,'+'+destroyed+' ✦',heatOf(who));
-      renderSide(who,true);
-    }
+  }
+  if(S.scoring===BOUNTY && destroyed){
+    // the kill pays: bank the permanent +1s, celebrate them in gold
+    S.bounty[who]+=destroyed;
+    floatPts(who,col,'+'+destroyed+' ✦',heatOf(who));
+    renderSide(who,true);
   }
   await wait(60);
   if(S.gen!==gen) return;

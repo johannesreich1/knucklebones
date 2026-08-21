@@ -179,27 +179,44 @@ function strike(st: GameState, o: number, col: number, die: number, mode: Mode):
   return victims.length;
 }
 
+/* which columns THIS one placement strikes, and whether a ward answers each —
+   the single source both drivers read (headless applyMove, and the animated
+   flow, which performs each outcome on screen). Consumes an armed SUNDER
+   mark, so call it exactly once per placement: the widened strike is one
+   placement's event, never a standing state. Only columns with victims
+   appear — a shielded column, or one holding no matching dice, is silent. */
+export interface StrikeOutcome { col: number; victims: number[]; warded: boolean; }
+export function openStrikes(st: GameState, who: Player, col: number, die: number, mode: Mode, charm?: CharmSt): StrikeOutcome[] {
+  const o = 1 - who;
+  const wide = !!charm && charm.sunder[who];
+  if (wide) charm!.sunder[who] = false;
+  const plan: StrikeOutcome[] = [];
+  for (let c = 0; c < SPEC.cols; c++) {
+    if (!wide && c !== col) continue;
+    const victims = victimsOf(st[o][c], die, mode);
+    if (!victims.length) continue;
+    plan.push({ col: c, victims, warded: !!charm && charm.wards[o][c] > 0 });
+  }
+  return plan;
+}
+
 /* place a die, then destruction: every matching die in the opponent's facing
    column dies — unless COLSHIELD protects their full column, or SINGLESTRIKE
    limits the damage to ONE die. Mutates st — callers clone first when they
    need to. Returns how many enemy dice were destroyed (BOUNTY banks a
    permanent +1 per destroyed die; everyone else may ignore it).
    With a charm: a SUNDER mark on the mover widens this one placement to every
-   enemy column (each column resolves as its own strike — shields and wards
-   answer per column), and a ward on a struck column absorbs the strike that
-   would have taken dice there, then burns out. A ward is only spent on a
-   strike that HAD victims — a miss costs it nothing. */
+   enemy column, and a ward on a struck column absorbs the strike that would
+   have taken dice there, then burns out. A ward is only spent on a strike
+   that HAD victims — a miss costs it nothing. */
 export function applyMove(st: GameState, who: Player, col: number, die: number, mode: Mode = CLASSIC, charm?: CharmSt): number {
   st[who][col].push(die);
   const o = 1 - who;
   if (charm === undefined) return strike(st, o, col, die, mode);
-  const wide = charm.sunder[who];
-  if (wide) charm.sunder[who] = false;
   let killed = 0;
-  for (let c = 0; c < SPEC.cols; c++) {
-    if (!wide && c !== col) continue;
-    if (charm.wards[o][c] > 0 && victimsOf(st[o][c], die, mode).length) { charm.wards[o][c]--; continue; }
-    killed += strike(st, o, c, die, mode);
+  for (const hit of openStrikes(st, who, col, die, mode, charm)) {
+    if (hit.warded) { charm.wards[o][hit.col]--; continue; }
+    killed += strike(st, o, hit.col, die, mode);
   }
   return killed;
 }

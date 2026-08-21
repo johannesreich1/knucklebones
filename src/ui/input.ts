@@ -70,13 +70,16 @@ export function boardDown(e){
 export function boardUp(e){
   const started=pressedCol;
   clearPress();
-  let over=null;
+  let over=null, onStage=false;
   if(typeof e.clientX==='number'){
     const el=document.elementFromPoint(e.clientX,e.clientY);
     over = el && el.closest ? el.closest('.col') : null;
+    onStage = !!(el && el.closest && el.closest('#dieStage'));
   }else over=started;
-  // an armed spell claims the tap — anywhere else on the table cancels it
-  if(S.spellArmed) return void castArmed(over ? +over.dataset.col : null);
+  // an armed spell claims the tap — a column, the die in play (−1, the self
+  // spells' target), or nowhere useful, which cancels. castArmed sorts out
+  // whether the hit fits the armed spell's vocabulary.
+  if(S.spellArmed) return void castArmed(onStage ? -1 : over ? +over.dataset.col : null);
   if(!started) return;
   if(over!==started) return;            // slid away: treat as cancelled
   commitColumn(started);

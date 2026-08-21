@@ -140,33 +140,52 @@ copies' `visibility:hidden` is cleared *after* the repaint, never before
 computed-pixel visibility, endgame-by-swap, and that OFF restores the old
 table exactly). The CPU does not cast — v1 boundary, not an oversight.
 
-**The next roster (2026-08-21, measured, not yet dealt).** COLUMN SWAP is
-retiring: `tools/spellsim.ts` (seeded self-play at the Medium anchor, 1,000
-games per config) measured a one-sided holder at **70.5%** in classic and
-**81.8%** under SINGLESTRIKE — one free tap worth more than the whole
-difficulty ladder, even under a naive casting policy. Five replacements sit
-in `core/spells.ts` as `CANDIDATES`, castable only through the new `CastCtx`
-(hand, supply, charm marks, mode) so nothing player-facing can reach them:
-the picker, the library and the rail iterate `SPELLS` alone, and every
-candidate's `legal()` without a ctx is false. Persistent effects live in a
-`CharmSt` (`core/rules.ts`) that `applyMove` consults — wards absorb one
-strike that would have taken dice, a sunder widens one placement to every
-column; without a charm, `applyMove` is the pre-spell hot path, untouched
-(bench: parity). Measured one-sided win rates (floors — heuristic casters):
-FATE 56.1% at 2 casts / 52.6% at 1; NUDGE 61.3% at 2 / 53.9% at 1 — ship it
-at 1; WARD 56.5%, mid-game timing, near-neutral under COLSHIELD; SUNDER
-56.9%, participation only ~59% (earned, late-skewing casts); PILFER 56.5%
-eager but **61.0%** patient, and **70.5%** under COLSHIELD — the steal
-un-fills a nearly-full column and denies the shield, so any future ranked
-deal must never pair PILFER with COLSHIELD. Sim caveats recorded in the
-tool header: placement search is charm-blind, one cast per turn, policies
-are floors. The roster commit (candidates → SPELLS, swap out, icons,
-`'self'`-target gesture, per-spell `worth()` for the CPU) is deliberately
-separate — and **OFFLINE-ONLY, by decision (2026-08-21)**: ranked keeps
-dealing the empty hand it deals today. The online protocol (casts as logged
-entries replayed through this same registry, FATE drawing from the seeded
-stream) is designed and the core seams exist, but wiring it is its own
-later step, not part of the roster commit.
+**The second roster (shipped 2026-08-21).** COLUMN SWAP retired:
+`tools/spellsim.ts` (seeded self-play at the Medium anchor, 1,000 games per
+config) measured a one-sided holder at **70.5%** in classic and **81.8%**
+under SINGLESTRIKE — one free tap worth more than the whole difficulty
+ladder, even under a naive casting policy. A persisted `swap` pick falls
+back to NONE (`spellById` no longer resolves it — gated). The roster is now:
+
+- **FATE** ×2 (self): discard the die in hand, draw the next. In LIMITED the
+  redraw burns the shared bag (refused when nothing is left to draw).
+- **NUDGE** ×1 (self): the die ticks one pip up, 6 wraps to 1. (61.3%
+  one-sided at two casts — hence one.)
+- **WARD** ×1 (column): the caster's column absorbs the next strike that
+  would take dice there, then burns out. The mark is painted from `S.charm`
+  by the same render destruction consults.
+- **SUNDER** ×1 (self): this placement strikes EVERY enemy column holding
+  its face. The mark lives exactly one placement (`openStrikes` consumes it).
+- **PILFER** ×1 (column): the top die of an enemy column crosses to the
+  caster's facing column; it lands, it does not strike. A shielded column
+  cannot be robbed.
+
+Shipped-policy numbers (machineCast at Medium demand, 1,000 games/config,
+one-sided floors): FATE 56.8 (LIMITED 63.0 — the warmest pair), NUDGE 55.8,
+WARD 57.1 (COLSHIELD ~neutral), SUNDER 58.5, PILFER 61.4 (COLSHIELD 63.3 —
+the steal un-fills a nearly-full column and denies the shield; any future
+ranked deal must never pair them). WARD/SUNDER cast late by nature (earned
+timing, not sniping). Sim caveats in the tool header: placement search is
+charm-blind, one cast per turn, policies are floors.
+
+Structure added for the roster: `CastCtx` (hand, supply-as-behaviour, charm,
+mode) as an optional trailing argument on `legal`/`apply`; `CharmSt` +
+`openStrikes` in `core/rules.ts` — applyMove and the animated flow read the
+SAME strike plan, and without a charm applyMove is the pre-spell hot path,
+untouched (bench: parity). `machineCast` in `core/spells.ts` is THE machine
+policy — the offline CPU (`aiSpellTurn`) and the harness ask the same
+question, so what ships and what was measured are one policy; per-spell
+`cpuCast` hooks cover spells whose value never shows on the boards. Self
+spells aim at the die in play (drag the rune onto the stage, or tap-arm and
+tap the die); `CAST_FX` in `flow/spells.ts` is the per-spell animation
+registry. Gates: `tests/spells.test.ts` (pure rules + machineCast) and
+`tests/test14.mjs` (column + self gestures, ward chip visibility, CPU
+casts, NONE restores the old table).
+
+**OFFLINE-ONLY, by decision (2026-08-21)**: ranked keeps dealing the empty
+hand it deals today. The online protocol (casts as logged entries replayed
+through this same registry, FATE drawing from the seeded stream) is designed
+and the core seams exist, but wiring it is its own later step.
 
 ## Standing rules (learned the hard way)
 

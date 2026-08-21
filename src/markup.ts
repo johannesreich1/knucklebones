@@ -292,7 +292,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <h3>Reading the board</h3>
     <p>The chips beside each column show its running score, and <b>×2</b>/<b>×3</b> marks a multiplied stack. Working out the best placement is the game — but the <b>tutorial</b> plays a guided round with point previews on every column.</p>
     <h3 style="color:#b18cff">Spells</h3>
-    <p>Offline games deal you a <b>rune</b> beside the die in play. Drag it onto any column — yours or theirs — and that column swaps with the one facing it, dice and all. <b>One cast per game</b>, and you still place your die afterwards. You pick which spell to bring where you set up an offline game, right under the game mode — <b>none</b> by default. Ranked matches never use them.</p>
+    <p>Offline games deal both players a <b>rune</b> beside the die in play — five to choose from, picked where you set up an offline game, right under the game mode (<b>none</b> by default). Drag the rune onto its target — a column, or your own die — to cast; a cast is not a move, so your die still lands afterwards. The full roster lives under <b>HOW TO PLAY → SPELLS</b>. Ranked matches never use them.</p>
     <h3>Two players</h3>
     <p>Pick <b>2 PLAYERS</b> to share one phone, then choose how you sit. <b>Pass phone</b>: a pass card appears between turns and the grids swap so whoever is playing is on the bottom. <b>Face to face</b>: lay the phone flat between you — the top half is turned for Player 2, turns switch on their own, and the bright half with the rotating centre die shows who's up.</p>
   </div>

@@ -1,7 +1,7 @@
 // The game's single mutable state object plus the vocabulary of legal values.
 // Everything that renders, saves or decides reads from here; identity vs
 // screen-half is the invariant to keep straight (see S.bottom).
-import { AI, ME, emptyBoard, type Board, type Player, type Mode as RulesMode } from './core/rules.ts';
+import { AI, ME, emptyBoard, freshCharm, type Board, type CharmSt, type Player, type Mode as RulesMode } from './core/rules.ts';
 
 export const DIFFS = ['easy', 'medium', 'hard'] as const;
 export const MODES = ['cpu', 'duo'] as const;
@@ -93,7 +93,11 @@ export const S = {
      the runtime asks. spellArmed is the spell waiting for a target. */
   spell: '',
   spellCharges: [{}, {}] as [Record<string, number>, Record<string, number>],
-  spellArmed: null as string | null
+  spellArmed: null as string | null,
+  /* persistent spell marks (wards, a pending sunder) — core/rules CharmSt.
+     Reset wherever charges are dealt (resetSpells / clearSpells); the render
+     paints ward chips from it, destruction consults it. */
+  charm: freshCharm() as CharmSt
 };
 
 // re-export the identities for modules that get S anyway

@@ -640,6 +640,21 @@ html.clock .timer.on{visibility:visible}
 @keyframes shblock{0%,100%{transform:scale(1)}40%{transform:scale(1.55);filter:drop-shadow(0 0 16px rgba(var(--mx2-rgb,var(--gold-rgb)),1))}}
 .col.shielded{box-shadow:inset 0 0 0 1px rgba(var(--mx2-rgb,var(--gold-rgb)),.35),0 0 14px rgba(var(--mx2-rgb,var(--gold-rgb)),.12);border-radius:12px}
 
+/* ===== WARD: a guarded column wears its rune until the mark burns =====
+   Same anatomy as the shield chip — pop on arrival, flare when it absorbs —
+   in the ward's own mint, so the two protections never read as one. */
+.chip .wd{--wdc:#7dffc4;line-height:1;color:var(--wdc);filter:drop-shadow(0 0 6px rgba(125,255,196,.75))}
+.chip .wd:empty{display:none}
+.chip .wd.pop{animation:shpop .55s cubic-bezier(.2,1.6,.4,1)}
+.chip .wd.block{animation:wdblock .45s}
+@keyframes wdblock{0%,100%{transform:scale(1)}40%{transform:scale(1.6);filter:drop-shadow(0 0 18px rgba(125,255,196,1))}}
+.col.warded{box-shadow:inset 0 0 0 1px rgba(125,255,196,.4),0 0 14px rgba(125,255,196,.14);border-radius:12px}
+
+/* ===== SUNDER: the charged die announces the widened strike ===== */
+#dieStage.sundered .die{box-shadow:0 0 18px rgba(255,157,102,.85),inset 0 0 8px rgba(255,157,102,.4);
+  animation:sunderpulse 1s ease-in-out infinite}
+@keyframes sunderpulse{50%{box-shadow:0 0 30px rgba(255,157,102,1),inset 0 0 12px rgba(255,157,102,.6)}}
+
 /* mode-icon BASE styles live in main.css (offline uses them too) */
 .wname .mico{vertical-align:-2.5px;margin-right:2px}
 
@@ -789,6 +804,13 @@ html.casting .col::after{content:"";position:absolute;inset:-4px;border-radius:c
   border:1.5px dashed rgba(255,209,102,.5);pointer-events:none;transition:.15s}
 html.casting .col.hot::after{border-style:solid;border-color:var(--gold);
   background:rgba(255,209,102,.10);box-shadow:0 0 24px rgba(255,209,102,.35)}
+/* A SELF spell aims at the die in play, not the board: the columns stand down
+   and the stage is the one thing asking to be touched. */
+html.castself .col::after{display:none}
+html.castself #dieStage::after{content:"";position:absolute;inset:-8px;border-radius:18px;
+  border:1.5px dashed rgba(255,209,102,.55);pointer-events:none;transition:.15s}
+html.castself #dieStage.hot::after{border-style:solid;border-color:var(--gold);
+  background:rgba(255,209,102,.10);box-shadow:0 0 24px rgba(255,209,102,.4)}
 /* landscape plates are shorter, so the rune comes down with them */
 /* landscape: the centre column is only as wide as the die, so the castable
    rune goes ABOVE the stage rather than beside it — beside would sit on the

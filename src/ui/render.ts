@@ -9,6 +9,7 @@ import { $, sideKey, slotEl, slotIdx, colEl, chipEl } from './dom.ts';
 import { nameOf } from './identity.ts';
 import { makeDie } from './die.ts';
 import { modeIcon } from './modeicons.ts';
+import { spellIcon } from './spellicons.ts';
 import { modeByEnum } from '../core/modes.ts';
 import { scoreLine, recordHtml } from './record.ts';
 /* ===================== DOM BUILD ===================== */
@@ -29,7 +30,7 @@ export function buildBoards(){
       b.appendChild(col);
       const chip=document.createElement('div');
       chip.className='chip';
-      chip.innerHTML='<span class="cs">0</span><span class="mx"></span><span class="sh"></span><span class="dl"></span>';
+      chip.innerHTML='<span class="cs">0</span><span class="mx"></span><span class="sh"></span><span class="wd"></span><span class="dl"></span>';
       cs.appendChild(chip);
     }
     // per-row score rail, left of the board — visible only in row modes
@@ -105,6 +106,14 @@ function updateScores(who){
     if(shielded && !sh.firstChild){ sh.innerHTML=modeIcon('colshield',13); sh.classList.add('pop'); }
     else if(!shielded && sh.firstChild){ sh.innerHTML=''; sh.classList.remove('pop'); }
     colEl(who,c).classList.toggle('shielded',shielded);
+    // WARD: a warded column wears its rune until the mark burns (flow/spells).
+    // Painted from S.charm — the same state destruction consults, so the chip
+    // can never outlive or precede the protection it announces.
+    const wd=chip.querySelector('.wd');
+    const warded=S.charm.wards[who][c]>0;
+    if(warded && !wd.firstChild){ wd.innerHTML=spellIcon('ward',13); wd.classList.add('pop'); }
+    else if(!warded && wd.firstChild){ wd.innerHTML=''; wd.classList.remove('pop','block'); }
+    colEl(who,c).classList.toggle('warded',warded);
     // and describe it for screen readers, reusing the score we just computed
     const free=SPEC.rows-b[c].length;
     colEl(who,c).setAttribute('aria-label',
