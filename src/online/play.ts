@@ -16,7 +16,7 @@ import { Sfx, vibrate } from '../ui/audio.ts';
 import { setStageDie } from '../ui/die.ts';
 import { showBag, renderBag, BAG_SIZE } from '../ui/bag.ts';
 import { floatPts } from '../ui/fx.ts';
-import { colorOf } from '../ui/identity.ts';
+import { colorOf, heatOf } from '../ui/identity.ts';
 import { buildBoards, renderAll, renderSide, clearHints, showHints, setStatus, setActivePlate, settleBoard, claimBadge, releaseBadge } from '../ui/render.ts';
 import { fit } from '../ui/layout.ts';
 import { setPlaceHandler } from '../ui/input.ts';
@@ -303,7 +303,7 @@ async function animateMove(who: Player, col: number, die: number): Promise<void>
   // the floating "+points" local play celebrates with — mode-aware, and gold
   // whenever a match multiplied the drop beyond its face value
   const gain = boardTotalMode(S.boards[who], S.scoring) - before;
-  floatPts(who, col, '+' + gain, gain > die ? 'var(--gold)' : colorOf(who));
+  floatPts(who, col, '+' + gain, gain > die ? heatOf(who) : colorOf(who));
   const foe = (1 - who) as Player;
   // COLUMN SHIELD: a full facing column is immune — flash the shield instead
   // of destroying, but only when the die would actually have hit something
@@ -318,7 +318,7 @@ async function animateMove(who: Player, col: number, die: number): Promise<void>
   if (S.scoring === BOUNTY && destroyed) {
     // the kill pays: bank the permanent +1s, celebrate them in gold
     S.bounty[who] += destroyed;
-    floatPts(who, col, '+' + destroyed + ' ✦', 'var(--gold)');
+    floatPts(who, col, '+' + destroyed + ' ✦', heatOf(who));
     renderSide(who, true);
   }
 }

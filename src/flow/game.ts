@@ -16,7 +16,7 @@ import { saveStats } from '../persist.ts';
 import { Sfx, vibrate } from '../ui/audio.ts';
 import { $, show, hide, sideKey, slotEl, slotIdx, colEl, chipEl, faceRotated } from '../ui/dom.ts';
 import { showBag, renderBag } from '../ui/bag.ts';
-import { nameOf, colorOf } from '../ui/identity.ts';
+import { nameOf, colorOf, heatOf } from '../ui/identity.ts';
 import { makeDie, setStageDie } from '../ui/die.ts';
 import { REDUCED, burst, floatPts, shake, flash, pin, fxRoot } from '../ui/fx.ts';
 import { renderSide, renderAll, applySides, updateRecord, clearHints, showHints, setStatus, setActivePlate, settleBoard } from '../ui/render.ts';
@@ -244,7 +244,7 @@ export async function destroyAt(who,col,die){
   // in classic it is exactly the old column delta.
   const lost = boardTotalMode(b,S.scoring)
              - boardTotalMode(b.map((c,i)=>i===col?survivors:c),S.scoring);
-  floatPts(who,col,'−'+lost,'var(--gold)');
+  floatPts(who,col,'−'+lost,heatOf(who));
   Sfx.kill(); vibrate([16,30,26]); shake(7); flash(0.22);
   await wait(320);
   S.boards[who][col]=survivors;
@@ -278,9 +278,9 @@ export async function place(who,col){
   // beating the die's own face value means SOMETHING multiplied — the same
   // test online uses, and the only one that holds in every mode
   const mult = gain>die;
-  floatPts(who,col,'+'+gain, mult?'var(--gold)':colorOf(who));
+  floatPts(who,col,'+'+gain, mult?heatOf(who):colorOf(who));
   if(mult){ Sfx.mult(); const r=colEl(who,col).getBoundingClientRect();
-           burst(r.left+r.width/2,r.top+r.height/2,'#ffd166',10); }
+           burst(r.left+r.width/2,r.top+r.height/2,heatOf(who),10); }
   await wait(120);
   if(S.gen!==gen) return;
   // COLUMN SHIELD: a full facing column is immune — flash the shield instead,
@@ -295,7 +295,7 @@ export async function place(who,col){
     if(S.scoring===BOUNTY && destroyed){
       // the kill pays: bank the permanent +1s, celebrate them in gold
       S.bounty[who]+=destroyed;
-      floatPts(who,col,'+'+destroyed+' ✦','var(--gold)');
+      floatPts(who,col,'+'+destroyed+' ✦',heatOf(who));
       renderSide(who,true);
     }
   }

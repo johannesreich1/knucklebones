@@ -60,8 +60,11 @@ export function syncSettingsUI(){
     rs.setProperty(`--${slot}`,      `var(--${h})`);
     rs.setProperty(`--${slot}-rgb`,  `var(--${h}-rgb)`);
     rs.setProperty(`--${slot}-hi`,   `var(--${h}-hi)`);
-    const m2 = h==='gold'   ? 'ice' : 'gold';
-    const m3 = h==='orange' ? 'red' : 'orange';
+    /* colour blind mode pins the fallbacks on BOTH sides: its pair contains
+       gold by construction, and the point of the mode — unlike freely picking
+       cyan+gold — is that no heat shares a family with any player (user call) */
+    const m2 = (S.colorblind || h==='gold')   ? 'ice' : 'gold';
+    const m3 = (S.colorblind || h==='orange') ? 'red' : 'orange';
     rs.setProperty(`--${slot}-mx2`,     `var(--${m2})`);
     rs.setProperty(`--${slot}-mx2-rgb`, `var(--${m2}-rgb)`);
     rs.setProperty(`--${slot}-mx3`,     `var(--${m3})`);
