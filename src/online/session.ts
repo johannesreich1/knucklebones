@@ -115,18 +115,6 @@ export async function myProfile(): Promise<Profile | null> {
   return data as Profile | null;
 }
 
-/* lifetime W–L for the Account card, counted from the matches I took part in */
-export async function myRecord(): Promise<{ wins: number; losses: number; draws: number } | null> {
-  const user = await currentUser();
-  if (!user) return null;
-  const { data } = await supa().from('matches').select('winner, status')
-    .or(`p1.eq.${user.id},p2.eq.${user.id}`).neq('status', 'active');
-  if (!data) return null;
-  const wins = data.filter((r) => r.winner === user.id).length;
-  const draws = data.filter((r) => r.winner === null).length;
-  return { wins, losses: data.length - wins - draws, draws };
-}
-
 function clearProfileCache(): void {
   try { localStorage.removeItem(PROFILE_CACHE); } catch { /* forgetful host */ }
 }
