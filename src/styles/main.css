@@ -25,15 +25,18 @@
      pink, the destruction keyword, avatar hues — keep reading raw hues. */
   --p1:var(--cy); --p1-rgb:var(--cy-rgb); --p1-hi:var(--cy-hi);
   --p2:var(--mg); --p2-rgb:var(--mg-rgb); --p2-hi:var(--mg-hi);
-  /* THE AURORA (study 98a, picked): two full-height ribbons of the duel hues
-     plus a purple seam. A token because it paints TWICE — the bare table's
+  /* THE AMBIENCE (study 98c, picked — 98a was tried and disliked): the LONG
+     DIAGONAL. The foe's hue masses in the top-left corner, the player's in
+     the bottom-right, and a purple seam crosses at 125deg — one gesture the
+     whole height. Alphas well under the study card's (user call: less
+     dominant than the preview). A token because it paints TWICE — the bare table's
      #bg and every overlay's own background layer. It has to live in the
      overlays themselves: their 82% film eats the backdrop, which is why the
      first cut was invisible everywhere but in-game (user report). */
   --aurora:
-    radial-gradient(closest-side,rgba(var(--p2-rgb),.15),transparent 72%) 12% 8%/68% 165% no-repeat,
-    radial-gradient(closest-side,rgba(var(--p1-rgb),.13),transparent 72%) 88% 92%/70% 170% no-repeat,
-    radial-gradient(closest-side,rgba(126,60,255,.09),transparent 70%) 52% 50%/60% 90% no-repeat;
+    radial-gradient(closest-side,rgba(var(--p2-rgb),.18),transparent 72%) -10% -6%/95% 85% no-repeat,
+    radial-gradient(closest-side,rgba(var(--p1-rgb),.18),transparent 72%) 110% 106%/95% 85% no-repeat,
+    linear-gradient(125deg,transparent 34%,rgba(126,60,255,.12) 50%,transparent 66%);
   /* THE MULTIPLIER HEATS — what a ×2 (gold) and ×3 (hot orange) die wear.
      Tokens because a player may PICK gold or orange for a side: menu.ts then
      repoints the clashing heat at its fallback (--ice / --red below), so a
@@ -72,10 +75,11 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 
 /* ============ BACKDROP ============ */
-#bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:
-  radial-gradient(120% 80% at 50% -10%, #17123a 0%, transparent 60%),
-  radial-gradient(110% 70% at 50% 110%, #04263a 0%, transparent 60%),
-  var(--bg);}
+/* the two navy centre domes that used to sit here were the "narrow centre"
+   wash the ambience studies replaced — with both painting, every screen wore
+   the old spotlight AND the new diagonal (user report). The token is the one
+   colour voice now; the base stays flat. */
+#bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:var(--bg);}
 /* THE AURORA (study 98a, picked 2026-08-21): two ribbons of the duel hues
    run the FULL height — the foe's slides down one flank, yours climbs the
    other — with a faint purple seam where they cross. Reach comes from SIZE
@@ -88,8 +92,10 @@
   background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
                    linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
   background-size:34px 34px;
-  -webkit-mask-image:radial-gradient(130% 90% at 50% 50%,#000 35%,transparent 92%);
-  mask-image:radial-gradient(130% 90% at 50% 50%,#000 35%,transparent 92%);opacity:.45}
+  /* no mask: the ellipse concentrated the lines into a horizontal belt
+     across mid-screen — THE "centre background" reported three times (user).
+     The texture is even now, and quieter to pay for the coverage. */
+  opacity:.28}
 @keyframes drift{from{transform:translate3d(-3%,-2%,0) scale(1)}to{transform:translate3d(4%,3%,0) scale(1.12)}}
 #vig{position:fixed;inset:0;z-index:1;pointer-events:none;
   box-shadow:inset 0 0 110px 12px rgba(0,0,0,.62)}
