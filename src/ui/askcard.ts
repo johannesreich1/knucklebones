@@ -40,7 +40,7 @@ function build(): void {
       <input type="checkbox" id="askCheck"><span id="askCheckText"></span>
     </label>
     <button class="btn soft" id="btnAskYes"></button>
-    <button class="btn primary small" id="btnAskNo"></button>
+    <button class="btn primary" id="btnAskNo"></button>
   </div>
 </div>`);
 }
@@ -79,6 +79,13 @@ export function ask(spec: Ask): Promise<boolean> {
   yes.classList.toggle('soft', !spec.loud);
   no.classList.toggle('primary', !spec.loud);
   no.classList.toggle('soft', !!spec.loud);
+  /* the encouraged answer is the BIG coloured button and it goes FIRST; the
+     other answer follows, smaller and quiet, at the card's bottom — whichever
+     of yes/no each happens to be (user call on the quit card: Keep playing
+     leads at full size, Quit game trails small) */
+  yes.classList.toggle('small', !spec.loud);
+  no.classList.toggle('small', !!spec.loud);
+  yes.parentElement!.append(...(spec.loud ? [yes, no] : [no, yes]));
 
   const box = $('#askCheck') as HTMLInputElement;
   $('#askCheckRow').hidden = !spec.check;
