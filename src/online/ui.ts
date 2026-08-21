@@ -58,7 +58,8 @@ const OVERLAY = `
   </div>
 
   <div class="panel" id="onBoard" hidden>
-    <div class="lbl" style="text-align:center">Season 1 · Ladder points</div>
+    <!-- no subheading: the season is nobody's business while there is only
+         one (user call) — the shead already says LADDER -->
     <div class="lb neonscroll" id="onBoardList"></div>
   </div>
 
@@ -398,7 +399,7 @@ async function showBoard(): Promise<void> {
       const h = document.createElement('div');
       h.className = 'ghor' + (g.id === 'neon' ? ' apex' : '');
       h.style.setProperty('--gc', `var(--g-${g.id})`);
-      const sub = g.id === 'neon' ? 'top 1% of the season'
+      const sub = g.id === 'neon' ? 'top 1%'
         : g.floor === 0 ? 'the floor is 0'
         : `${pts(g.floor)} and up`;
       h.innerHTML = `<span class="gn">${g.name}</span>` +
@@ -687,7 +688,7 @@ async function showHistory(): Promise<void> {
     ? recordHtml(lad.wins, lad.losses) + (lad.draws ? ` · ${lad.draws}D` : '')
     : '&nbsp;';
   const rows = await matchHistory();
-  list.innerHTML = rows.length ? '' : '<div class="row">No ranked matches this season.</div>';
+  list.innerHTML = rows.length ? '' : '<div class="row">No ranked matches yet.</div>';
   for (const r of rows) list.appendChild(histRow(r));
 }
 

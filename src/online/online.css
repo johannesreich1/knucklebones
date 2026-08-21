@@ -20,11 +20,10 @@
    the column, exactly like the cards inside a scrollview's body */
 #ovOnline.listview #onBoard{max-width:none;width:100%;margin:6px 0 0;gap:0;
   flex:1 1 auto;min-height:0}
-#ovOnline.listview #onBoard .lbl{flex:0 0 auto;padding:0 var(--pad-x) 10px}
 #ovOnline.listview .lb{max-height:none;flex:1 1 auto;min-height:0;overflow-y:auto;
   padding:0 var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 46px)}
 #ovOnline.listview .lb > *{width:100%;max-width:var(--w-col);margin-inline:auto}
-#ovOnline .lb .row{display:flex;gap:10px;align-items:center;font-size:13px;padding:9px 12px;
+#ovOnline .lb .row{display:flex;gap:10px;align-items:center;font-size:clamp(13px,3.3vw,14.5px);padding:9px 12px;
   border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
 #ovOnline .lb .row .rank{color:var(--dim);min-width:22px;text-align:right;font-weight:800}
 #ovOnline .lb .row .nm{flex:1;font-weight:800;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -51,8 +50,8 @@
   linear-gradient(90deg,transparent,var(--gc) 30%,var(--gc) 70%,transparent);opacity:.45}
 #ovOnline .ghor::before{flex:0 0 18px}
 #ovOnline .ghor::after{flex:1}
-#ovOnline .ghor .gn{font-size:clamp(10px,2.6vw,11.5px);font-weight:900;letter-spacing:.24em;color:var(--gc)}
-#ovOnline .ghor .gf{font-size:clamp(9px,2.4vw,10.5px);letter-spacing:.14em;color:var(--dim)}
+#ovOnline .ghor .gn{font-size:clamp(11px,3vw,13px);font-weight:900;letter-spacing:.24em;color:var(--gc)}
+#ovOnline .ghor .gf{font-size:clamp(9.5px,2.6vw,11px);letter-spacing:.14em;color:var(--dim)}
 #ovOnline .ghor.apex .gn{text-shadow:0 0 12px color-mix(in srgb,var(--gc) 70%,transparent)}
 /* a row is a BUTTON — tapping deals the face-off — so it resets button chrome */
 #ovOnline .lrow{display:flex;gap:10px;align-items:center;font-size:clamp(13px,3.3vw,14.5px);padding:8px 12px;
@@ -85,8 +84,8 @@
   text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #ovOnline .lrow.me .mesub b{color:var(--gc,var(--gold));letter-spacing:.06em}
 #ovOnline .lrow.me .ptcol{display:flex;flex-direction:column;align-items:flex-end;gap:2px}
-#ovOnline .lrow.me .pt2{font-size:19px;font-weight:900;color:var(--gold);line-height:1}
-#ovOnline .lrow.me .rk2{font-size:8.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+#ovOnline .lrow.me .pt2{font-size:clamp(19px,4.7vw,21px);font-weight:900;color:var(--gold);line-height:1}
+#ovOnline .lrow.me .rk2{font-size:clamp(8.5px,2.2vw,9.5px);letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
 
 /* ---- the face-off (design 33e): tap a row, be dealt THEM against YOU.
    Their column reads gold, yours cyan — the duel palette does the talking.
@@ -108,22 +107,22 @@
 .fost .ldclock{display:inline-block;vertical-align:middle}
 .focols{display:flex;align-items:center;justify-content:center;gap:16px}
 .focol{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;min-width:0}
-.focol .fnm{font-size:12.5px;font-weight:900;letter-spacing:.05em;max-width:130px;
+.focol .fnm{font-size:clamp(12.5px,3.2vw,14px);font-weight:900;letter-spacing:.05em;max-width:130px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .focol.you .fnm{color:var(--p1)}
 .fovs{font-size:15px;font-weight:900;letter-spacing:.1em;color:var(--gold);
   text-shadow:0 0 14px rgba(255,209,102,.5)}
 .fostats{display:flex;flex-direction:column;gap:2px}
-.fost{display:flex;align-items:center;padding:6.5px 4px;border-radius:9px;font-size:12.5px}
+.fost{display:flex;align-items:center;padding:6.5px 4px;border-radius:9px;font-size:clamp(12.5px,3.2vw,14px)}
 .fost:nth-child(odd){background:rgba(255,255,255,.03)}
 .fost .a,.fost .b{flex:1;min-width:0;font-weight:900}
 .fost .a{text-align:right;padding-right:14px;color:var(--gold)}
 .fost .b{text-align:left;padding-left:14px;color:var(--p1)}
-.fost .k{flex:0 0 84px;text-align:center;font-size:7px;letter-spacing:.2em;
+.fost .k{flex:0 0 84px;text-align:center;font-size:clamp(7.5px,2vw,9px);letter-spacing:.2em;
   color:var(--dim);text-transform:uppercase}
 .faceoff.solo .fost .k{flex:1;text-align:left;padding-left:4px}
 .faceoff.solo .fost .a{flex:0 0 auto;padding-right:4px}
-.fogap{font-size:9px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;text-align:center}
+.fogap{font-size:clamp(9px,2.3vw,10px);letter-spacing:.14em;color:var(--dim);text-transform:uppercase;text-align:center}
 .fogap b{color:var(--gold);letter-spacing:.05em}
 
 /* the ladder's loading state borrows matchmaking's bouncing pair */
@@ -226,7 +225,7 @@
    centred width and shifts the visible text half a space left of what it
    labels — the LADDER POINTS caption sat 1.1px left of the 84 (measured).
    The indent puts the same space in front, recentring the ink. */
-#onAccount .ptv span{font-size:8.5px;letter-spacing:.26em;text-indent:.26em;color:var(--dim);text-transform:uppercase}
+#onAccount .ptv span{font-size:clamp(8.5px,2.2vw,9.5px);letter-spacing:.26em;text-indent:.26em;color:var(--dim);text-transform:uppercase}
 /* the rank, centred in the ring's bottom opening — the gap stops being empty
    space and becomes the label. Sized to fit the widest name (OBSIDIAN) inside
    the 90deg mouth, which is ~70% of the ring's width at the band. */
@@ -242,12 +241,12 @@
   background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08)}
 /* nowrap matters: the record is "W 12 · L 7", which wrapped to three lines in
    a third of the width and made the row twice as tall as the other two */
-#onAccount .fact b{display:block;font-size:13.5px;font-weight:900;color:var(--txt);
+#onAccount .fact b{display:block;font-size:clamp(13.5px,3.4vw,15px);font-weight:900;color:var(--txt);
   white-space:nowrap}
-#onAccount .fact .n1,#onAccount .fact .n2{font-size:13.5px}
+#onAccount .fact .n1,#onAccount .fact .n2{font-size:clamp(13.5px,3.4vw,15px)}
 /* display:block because text-indent only applies to block containers — as a
    plain inline the indent is ignored and the caption stays half a space left */
-#onAccount .fact span{display:block;font-size:7.5px;letter-spacing:.2em;text-indent:.2em;color:var(--dim);text-transform:uppercase}
+#onAccount .fact span{display:block;font-size:clamp(8px,2.1vw,9px);letter-spacing:.2em;text-indent:.2em;color:var(--dim);text-transform:uppercase}
 /* Gold is reserved for the number that is LIVE — the points you have right
    now. The peak is a fact like the others and reads white; its gold belongs on
    the ring, where the notch has to stand out against the cyan fill. */
@@ -270,9 +269,9 @@
 #ovOnline .minihist{max-height:none;overflow:visible;flex:0 0 auto}
 .histrow{display:flex;align-items:center;width:100%;padding:12px 14px;border-radius:14px;
   background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);cursor:pointer;
-  font-size:11px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase;font-family:inherit}
+  font-size:clamp(11px,2.8vw,12.5px);letter-spacing:.18em;color:var(--dim);text-transform:uppercase;font-family:inherit}
 .histrow b{color:var(--txt);margin-left:auto;letter-spacing:.06em}
-.accsince{font-size:9px;letter-spacing:.16em;text-indent:.16em;color:var(--dim);text-transform:uppercase;text-align:center}
+.accsince{font-size:clamp(9px,2.3vw,10px);letter-spacing:.16em;text-indent:.16em;color:var(--dim);text-transform:uppercase;text-align:center}
 
 /* ---- the avatar picker: a die face and a hue, 36 identities ---- */
 .avpreview{display:grid;place-items:center;margin:4px 0 2px}
@@ -287,21 +286,21 @@
 
 /* ---- match history: what each match ACTUALLY paid ---- */
 #onHistory .lb{display:flex;flex-direction:column;gap:5px}
-.hrow{display:flex;align-items:center;gap:9px;font-size:12px}
+.hrow{display:flex;align-items:center;gap:9px;font-size:clamp(12px,3vw,13.5px)}
 .hrow .hres{width:19px;height:19px;border-radius:6px;display:grid;place-items:center;
   font-size:9px;font-weight:900;flex:0 0 auto}
 .hrow.win .hres{background:rgba(var(--p1-rgb),.16);border:1px solid rgba(var(--p1-rgb),.5);color:var(--p1)}
 .hrow.loss .hres{background:rgba(var(--p2-rgb),.13);border:1px solid rgba(var(--p2-rgb),.45);color:var(--p2-hi)}
 .hrow.draw .hres{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.18);color:var(--dim)}
-.hrow .hsc{color:var(--dim);font-size:11px;letter-spacing:.04em}
+.hrow .hsc{color:var(--dim);font-size:clamp(11px,2.8vw,12px);letter-spacing:.04em}
 .hrow .hd{font-weight:900;min-width:44px;text-align:right}
 .hrow.win .hd{color:var(--p1)}
 .hrow.loss .hd{color:var(--p2-hi)}
 .hrow.draw .hd{color:var(--dim)}
-.hrow .hwhen{font-size:9px;letter-spacing:.1em;color:var(--dim);min-width:44px;text-align:right}
+.hrow .hwhen{font-size:clamp(9px,2.3vw,10px);letter-spacing:.1em;color:var(--dim);min-width:44px;text-align:right}
 
 /* the season tally, heading the list it summarises */
-.htotal{text-align:center;font-size:14px;letter-spacing:.06em;padding:2px 0 8px;
+.htotal{text-align:center;font-size:clamp(14px,3.5vw,15.5px);letter-spacing:.06em;padding:2px 0 8px;
   width:100%;max-width:var(--w-col);margin-inline:auto}
 .htotal .n1{color:var(--p1)}
 .htotal .n2{color:var(--p2)}

@@ -1043,7 +1043,7 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 /* the group pill: ONE look for a player's group + rank wherever they appear —
    the face-off's columns and the identity plate wear the same class, so the
    result screen, the home chip and the compare card can never drift apart */
-.gpill{font-size:7px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;
+.gpill{font-size:clamp(7.5px,2vw,9px);font-weight:900;letter-spacing:.16em;text-transform:uppercase;
   color:var(--gc,var(--gold));border:1px solid color-mix(in srgb,var(--gc,var(--gold)) 45%,transparent);
   border-radius:6px;padding:2.5px 7px;white-space:nowrap}
 .pplate .meta2 b{font-size:13.5px;font-weight:900;color:var(--gold)}
