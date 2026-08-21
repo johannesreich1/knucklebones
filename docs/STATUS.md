@@ -138,7 +138,9 @@ copies' `visibility:hidden` is cleared *after* the repaint, never before
 (same trap as the `.dying` survivors in test13). Gates: `tests/spells.test.ts`
 (pure rules) and `tests/test14.mjs` (both gestures, spent-charge accounting,
 computed-pixel visibility, endgame-by-swap, and that OFF restores the old
-table exactly). The CPU does not cast — v1 boundary, not an oversight.
+table exactly). The CPU did not cast in that first version — a v1 boundary,
+closed since: it holds the same rune you do and spends it (see the roster
+below for the policy that decides when).
 
 **The second roster (shipped 2026-08-21).** COLUMN SWAP retired:
 `tools/spellsim.ts` (seeded self-play at the Medium anchor, 1,000 games per
