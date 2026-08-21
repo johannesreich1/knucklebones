@@ -36,8 +36,8 @@
      table keeps its original backdrop (user call) — the topmost open
      overlay paints this over its opaque film. */
   --aurora:
-    radial-gradient(106% 95% at -8% -8%,rgba(var(--p2-rgb),.13),transparent 66%),
-    radial-gradient(106% 95% at 108% 108%,rgba(var(--p1-rgb),.13),transparent 66%),
+    radial-gradient(106% 95% at -8% -8%,rgba(var(--p2-rgb),.12),transparent 66%),
+    radial-gradient(106% 95% at 108% 108%,rgba(var(--p1-rgb),.12),transparent 66%),
     linear-gradient(125deg,transparent 34%,rgba(126,60,255,.07) 50%,transparent 66%);
   /* THE MULTIPLIER HEATS — what a ×2 (gold) and ×3 (hot orange) die wear.
      These are the base values; the real ones are PER SIDE (--p1-mx2 …,
