@@ -1,7 +1,9 @@
 // LIVE two-browser test of online match play against the real backend.
 // NOT part of the automated gate (needs the two SQL-created e2e users and
-// mutates live data; wipe matches + queue first). See e2e-pvp.mjs for the
-// API-level version. Run: node tests/e2e-pvp-ui.mjs
+// mutates live data). Before a run: check matchmaking_queue is EMPTY and wipe
+// e2e matches + queue rows. After: delete the e2e matches AND the two
+// season_ratings rows — test accounts must not surface on the live ladder.
+// See e2e-pvp.mjs for the API-level version. Run: node tests/e2e-pvp-ui.mjs
 // two browser contexts, one live PvP match, then a bot match
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
@@ -10,21 +12,44 @@ const server = spawn('python3', ['tests/serve.py'], { stdio: 'ignore' });
 await new Promise(r => setTimeout(r, 1500));
 const problems = [];
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
+const SUPA = 'https://euzjcejbkxvqfrttgaxu.supabase.co';
+const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1empjZWpia3h2cWZydHRnYXh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4OTgxNTgsImV4cCI6MjEwMjQ3NDE1OH0.WIhtcBLc_0mnINapuBqoJVeqqLfx6jHvexRwO5e1KyY';
 const browser = await chromium.launch();
 try {
   const mk = async (email, pass) => {
+    /* sign in over REST and SEED the session before the app boots: the app's
+       own signed-out path mints an anonymous GUEST and routes it straight
+       into the live queue (the email form only lives behind Account now) —
+       every run would strand two unreachable guests in auth.users */
+    const r = await fetch(SUPA + '/auth/v1/token?grant_type=password', {
+      method: 'POST', headers: { apikey: ANON, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password: pass }),
+    });
+    const sess = await r.json();
+    if (!sess.access_token) throw new Error('login failed for ' + email + ' :: ' + JSON.stringify(sess));
+    sess.expires_at ??= Math.floor(Date.now() / 1000) + (sess.expires_in ?? 3600);
+    /* a returning device also holds the profile cache (session.ts myProfile
+       writes it) — the result screen deals the own plate's NAME from it */
+    const pr = await fetch(SUPA + `/rest/v1/profiles?id=eq.${sess.user.id}&select=nickname,rating,avatar`, {
+      headers: { apikey: ANON, Authorization: 'Bearer ' + sess.access_token } });
+    const prof = (await pr.json())?.[0];
+    if (!prof?.nickname) throw new Error('no profile for ' + email);
     const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+    /* a fresh context is a NEWCOMER: matchmaking would stop to offer the
+       tutorial (ui/firstrun) before the queue panel. Seed a played device. */
+    await ctx.addInitScript(([k, v, p]) => {
+      localStorage.setItem(k, v);
+      localStorage.setItem('knucklebones.online.profile', p);
+      localStorage.setItem('knucklebones.v1', JSON.stringify({ played: true }));
+    }, ['sb-euzjcejbkxvqfrttgaxu-auth-token', JSON.stringify(sess), JSON.stringify(prof)]);
     const page = await ctx.newPage();
     page.errs = [];
     page.on('pageerror', e => page.errs.push(e.message));
     await page.goto('http://127.0.0.1:8123/index.html');
     await page.waitForTimeout(500);
     await page.tap('#btnOnline');
-    await page.waitForSelector('#onAuth:not([hidden])', { timeout: 8000 });
-    await page.fill('#onEmail', email); await page.fill('#onPass', pass);
-    await page.tap('#btnSignIn');
-    // the home's PLAY ONLINE deep-links to 'play': sign-in drops straight
-    // into the queue — no menu stop, no extra tap
+    // the home's PLAY RANKED deep-links to 'play': a live session drops
+    // straight into the queue — no menu stop, no extra tap
     await page.waitForSelector('#onQueue:not([hidden])', { timeout: 8000 });
     return page;
   };
@@ -37,7 +62,7 @@ try {
     const S = window.__kb.S;
     return { turn: S.turn, bottom: S.bottom, phase: S.phase,
              b0: JSON.stringify(S.boards[0]), b1: JSON.stringify(S.boards[1]),
-             over: document.getElementById('ovOnline').classList.contains('on') };
+             over: document.getElementById('ovEnd').classList.contains('on') };
   });
 
   const t0 = Date.now();
@@ -73,21 +98,74 @@ try {
   check(fa.over && fb.over, 'match did not finish on both screens', { fa: fa.over, fb: fb.over, rounds });
   // boards agreed at the end
   check(fa.b0 === fb.b0 && fa.b1 === fb.b1, 'boards diverged between players', { a: fa, b: fb });
-  // the finish lands on the Result screen: Elo chip + Next duel / Home
-  const sumA = await A.evaluate(() => ({
-    panel: !document.getElementById('onResult').hidden,
-    title: document.getElementById('rTitle').textContent,
-    elo: document.getElementById('rElo').textContent,
-  }));
-  check(sumA.panel, 'result panel not shown after the match', sumA);
-  check(/ELO/.test(sumA.elo), 'end summary missing Elo delta', sumA);
+  // the finish lands on the SHARED end screen (ui/endscreen, design 36f):
+  // two identity plates — you as a button row carrying the points delta, the
+  // foe in .theirs — the winner's row gold, a beaten foe stamped. The ranked
+  // scoreline drops its labels: the plates carry the names now.
+  const endState = p => p.evaluate(() => {
+    const plates = [...document.querySelectorAll('#endPlates .pplate')].map(el => ({
+      tag: el.tagName, theirs: el.classList.contains('theirs'),
+      won: el.classList.contains('wonp'), lost: el.classList.contains('lostp'),
+      name: el.querySelector('.nm2')?.textContent ?? '',
+      stamp: el.querySelector('.pstamp')?.textContent ?? null,
+      delta: el.querySelector('.pdelta')?.textContent ?? null,
+    }));
+    const ov = document.getElementById('ovEnd');
+    let nick = null;
+    try { nick = JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null')?.nickname ?? null; }
+    catch { /* forgetful host */ }
+    return {
+      on: ov.classList.contains('on'),
+      outcome: ['win', 'lose', 'draw'].find(c => ov.classList.contains(c)) ?? null,
+      title: document.getElementById('endTitle').textContent,
+      youLbl: document.getElementById('endYouLbl').textContent,
+      cpuLbl: document.getElementById('endCpuLbl').textContent,
+      againHidden: document.getElementById('btnAgain').hidden,
+      againLabel: document.getElementById('btnAgain').textContent,
+      platesHidden: document.getElementById('endPlates').hidden,
+      plates, nick,
+    };
+  });
+  const [eA, eB] = [await endState(A), await endState(B)];
+  for (const [who, e] of [['A', eA], ['B', eB]]) {
+    check(e.on, who + ': end screen not shown after the match', e);
+    check(!e.platesHidden && e.plates.length === 2, who + ': expected two identity plates', e.plates);
+    const [me, foe] = e.plates;
+    if (!me || !foe) continue;
+    check(me.tag === 'BUTTON' && !me.theirs, who + ': own plate should be a button row', me);
+    check(!!e.nick && me.name === e.nick, who + ': own plate does not carry the nickname', { me, nick: e.nick });
+    // the foe row's TAG is deliberately unasserted — it is growing a door
+    // (face-off) in a parallel change; .theirs is the row's identity
+    check(foe.theirs, who + ': foe plate should wear .theirs', foe);
+    check(/^[+-]\d+$/.test(me.delta ?? ''), who + ': own plate missing the points delta', me);
+    check(e.youLbl === '' && e.cpuLbl === '', who + ': ranked scoreline labels should be empty', e);
+    check(!e.againHidden && e.againLabel === 'Next duel', who + ': Next duel action missing', e);
+    if (e.outcome === 'win') {
+      check(e.title === 'VICTORY' && me.won && !foe.won, who + ': winner row not marked', e);
+      check(foe.stamp === 'BEATEN', who + ': beaten foe not stamped', foe);
+    } else if (e.outcome === 'lose') {
+      check(e.title === 'DEFEAT' && foe.won && !me.won, who + ': loser dressing wrong', e);
+      check(foe.stamp === null, who + ': only a win stamps the foe', foe);
+    } else {
+      check(e.outcome === 'draw' && e.title === 'DEAD HEAT' && !me.won && !foe.won,
+        who + ': draw dressing wrong', e);
+      check(foe.stamp === null, who + ': a draw must not stamp the foe', foe);
+    }
+  }
+  // the two screens tell ONE story: mirrored outcomes, mirrored names
+  check((eA.outcome === 'win' && eB.outcome === 'lose')
+    || (eA.outcome === 'lose' && eB.outcome === 'win')
+    || (eA.outcome === 'draw' && eB.outcome === 'draw'),
+    'outcomes do not mirror across screens', { a: eA.outcome, b: eB.outcome });
+  check(eA.plates[1]?.name === eB.plates[0]?.name && eB.plates[1]?.name === eA.plates[0]?.name,
+    'plate names do not mirror across screens', { a: eA.plates, b: eB.plates });
 
   // ---- bot match: alice alone via Next duel, waits past the bot threshold ----
   // close B first: an occluded page gets its timers throttled by headless
   // Chromium, which once slowed A's animation chain past the round budget
   await B.close();
   await A.bringToFront();
-  await A.tap('#btnResultAgain');
+  await A.tap('#btnAgain');
   const t1 = Date.now();
   while (Date.now() - t1 < 25000) { if (await inMatch(A)) break; await A.waitForTimeout(500); }
   check(await inMatch(A), 'bot match did not start');
@@ -109,8 +187,11 @@ try {
   }
   await A.waitForTimeout(3000);
   check((await snap(A)).over, 'bot match did not finish', { brounds });
+  // the bot is a ranked opponent like any other: the end screen deals it a plate
+  const eBot = await endState(A);
+  check(eBot.on && eBot.plates.length === 2, 'bot-match end screen not dealt', eBot);
 
   check(A.errs.length === 0 && B.errs.length === 0, 'page errors', { a: A.errs.slice(0, 3), b: B.errs.slice(0, 3) });
-  console.log(JSON.stringify({ rounds, brounds, summaryA: sumA, problems }, null, 2));
+  console.log(JSON.stringify({ rounds, brounds, endA: eA, endB: eB, problems }, null, 2));
 } finally { await browser.close(); server.kill(); }
 process.exit(problems.length ? 1 : 0);
