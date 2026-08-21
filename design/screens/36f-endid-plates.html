@@ -1,0 +1,50 @@
+<!-- meta name="V6 — Two plates, one ladder" group="3d · Result identity" subtitle="The home plate dealt twice: your delta lands on your plate, the winner takes a gold edge, both stay doors" width=440 height=920 sizes="max" links="Matchmaking, Home, Leaderboard" -->
+<style>
+  .rwrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin:0;flex:1;
+    padding-top:24px;width:100%;max-width:336px;align-self:center}
+  .rwrap .btn{width:100%;max-width:300px;min-width:0}
+  .rwrap .btn.primary{margin-top:auto}
+  .rtitle{font-size:42px;letter-spacing:.2em;font-weight:900;
+    background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
+  .rsub{font-size:11px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:-8px}
+  /* the scoreline stays pure numbers — the plates below carry the names */
+  .rline{display:flex;align-items:baseline;justify-content:center;gap:16px;font-weight:900;margin-top:auto}
+  .rline .msca{font-size:44px;color:var(--cy);text-shadow:0 0 14px rgba(40,232,255,.5)}
+  .rline .rvs{font-size:12px;letter-spacing:.2em;color:var(--dim);font-weight:800}
+  .rline .mscb{font-size:44px;color:var(--mg);opacity:.75;text-shadow:0 0 12px rgba(255,47,160,.4)}
+  .plates{display:flex;flex-direction:column;gap:9px;width:100%}
+  .pplate.wonp{border-color:rgba(255,209,102,.5);background:rgba(255,209,102,.05)}
+  .pplate.lostp{opacity:.66}
+  .pdelta{font-size:11px;font-weight:900;color:#8dffcf;letter-spacing:.05em}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="rwrap">
+    <div class="rtitle">VICTORY</div>
+    <div class="rsub">You out-rolled EmberCrow896</div>
+    <div class="rline"><span class="msca">47</span><span class="rvs">VS</span><span class="mscb">30</span></div>
+    <div class="plates dice-static">
+      <div class="pplate wonp">
+        <span class="ringwrap mini" style="--p:.502"><i class="lring"></i>{{die:5:p1:18}}</span>
+        <span class="nm2">FrostLynx303</span>
+        <span class="meta2"><span class="pdelta">+16</span><span class="gl">GOLD</span><b>2,510</b></span>
+        <span class="chev">›</span>
+      </div>
+      <div class="pplate lostp">
+        <span class="ringwrap mini" style="--p:.436;--cy:var(--mg)"><i class="lring"></i>{{die:3:p2:18}}</span>
+        <span class="nm2">EmberCrow896</span>
+        <span class="meta2"><span class="gl">GOLD</span><b>2,431</b></span>
+        <span class="chev">›</span>
+      </div>
+    </div>
+    <button class="btn primary">Next duel</button>
+    <button class="linkbtn">Home</button>
+    <button class="linkbtn">Share result</button>
+  </div>
+</div></div>
+<div class="note"><b>The home plate, dealt twice.</b> The same slim row that sits above PLAY —
+  mini ring, avatar, name, group, points — appears once per player, and your delta lands ON your
+  plate, beside the number it just changed: cause and effect in one line, no separate chip. The
+  winner's plate takes a gold edge, the loser's dims, and both stay doors — yours opens the
+  profile, theirs the face-off. One object wherever the ladder speaks: home, result, next.</div>

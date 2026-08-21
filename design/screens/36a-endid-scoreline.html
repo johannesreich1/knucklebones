@@ -1,0 +1,54 @@
+<!-- meta name="V1 — Faces on the scoreline" group="3d · Result identity" subtitle="The existing scoreline learns who was playing: avatar die above each score, the name where the label sat" width=440 height=920 sizes="max" links="Matchmaking, Home" -->
+<style>
+  .rwrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin:0;flex:1;
+    padding-top:24px;width:100%;max-width:336px;align-self:center}
+  .rwrap .btn{width:100%;max-width:300px;min-width:0}
+  .rwrap .btn.primary{margin-top:auto}
+  .rtitle{font-size:42px;letter-spacing:.2em;font-weight:900;
+    background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
+  .rsub{font-size:11px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:-8px}
+  /* .elochip and .rrank are WORN from online.css — the app's own result chips */
+  /* the scoreline, grown faces: die above the score, name below it. The
+     loser's whole column dims — the verdict repeated in miniature. */
+  .rline{display:flex;align-items:flex-start;justify-content:center;gap:14px;width:100%;margin-top:auto}
+  .idc{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:8px}
+  .idc .scn{font-size:46px;font-weight:900;line-height:1}
+  .idc.mine .scn{color:var(--cy);text-shadow:0 0 14px rgba(40,232,255,.5)}
+  .idc.theirs .scn{color:var(--mg);text-shadow:0 0 14px rgba(255,47,160,.5)}
+  .idnm{font-size:9.5px;letter-spacing:.16em;color:var(--txt);font-weight:800;text-transform:uppercase;
+    max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .idc.beaten{opacity:.62}
+  .idc.beaten .idnm{color:var(--dim)}
+  .rvs{flex:0 0 auto;color:var(--dim);font-size:12px;letter-spacing:.2em;font-weight:800;margin-top:46px}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="rwrap">
+    <div class="rtitle">VICTORY</div>
+    <div class="rsub">You out-rolled EmberCrow896</div>
+    <div class="rline dice-static">
+      <div class="idc mine">
+        {{die:5:p1:26}}
+        <span class="scn">47</span>
+        <span class="idnm">FrostLynx303</span>
+      </div>
+      <span class="rvs">VS</span>
+      <div class="idc theirs beaten">
+        {{die:3:p2:26}}
+        <span class="scn">30</span>
+        <span class="idnm">EmberCrow896</span>
+      </div>
+    </div>
+    <div class="elochip">+16 <small>PTS · 2,510</small></div>
+    <div class="rrank">GOLD · <b>#3</b></div>
+    <button class="btn primary">Next duel</button>
+    <button class="linkbtn">Home</button>
+    <button class="linkbtn">Share result</button>
+  </div>
+</div></div>
+<div class="note"><b>The smallest change that answers the question.</b> The scoreline the screen
+  already has learns who was playing: each side's avatar die lands above its score, and the name
+  takes the little label's place — both players, and the loser's column dims. No new layout, no
+  new component, nothing moves. The only wiring is FinishReport carrying the two avatars that
+  pvp-join already sends.</div>

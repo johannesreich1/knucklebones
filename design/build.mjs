@@ -206,11 +206,18 @@ for (const f of screens) {
     ? `<div class="flows">${links.split(',').map((l) => `<span class="fc">→ <b>${l.trim()}</b></span>`).join('')}</div>`
     : '';
 
-  const sizes = f.startsWith('00-') ? SIZES.filter((s) => s.key === 'md') : SIZES;
+  /* sizes="max" (a comma list of keys) lets a STUDY ship at one device size —
+     eight alternatives × four sizes is a wall, not a comparison. Product
+     screens keep all four; the default is unchanged. */
+  const only = attr('sizes', '');
+  const sizes = f.startsWith('00-') ? SIZES.filter((s) => s.key === 'md')
+    : only ? SIZES.filter((s) => only.split(',').map((k) => k.trim()).includes(s.key))
+    : SIZES;
+  if (!sizes.length) die(f + `: sizes="${only}" names no known size (sm, md, max, tab)`);
   for (const s of sizes) {
     const sizeCss = `.stage{width:${s.stageW}px}.stage .scr{min-height:${s.minH}px}`;
     const outName = s.key === 'md' ? f : f.replace('.html', `--${s.key}.html`);
-    const cardName = name + s.suffix;
+    const cardName = name + (sizes.length > 1 ? s.suffix : '');   // one size needs no size tag
     const cardW = f.startsWith('00-') ? width : s.stageW + 44;
     const cardH = f.startsWith('00-') ? height : Math.max(1, +height + s.dH);
     const out = `<!-- @dsCard group="${group}" name="${cardName}" subtitle="${subtitle}" width=${cardW} height=${cardH} -->

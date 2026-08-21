@@ -1,0 +1,66 @@
+<!-- meta name="V5 — Duel banner" group="3d · Result identity" subtitle="Full-bleed poster: your cyan half against their magenta half, a gold VS medal on the seam, gold edge on the winner" width=440 height=920 sizes="max" links="Matchmaking, Home" -->
+<style>
+  .rwrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin:0;flex:1;
+    padding-top:24px;width:100%;align-self:center}
+  .rwrap .btn{width:100%;max-width:300px;min-width:0}
+  .rwrap .btn.primary{margin-top:auto}
+  .rtitle{font-size:42px;letter-spacing:.2em;font-weight:900;
+    background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
+  .rsub{font-size:11px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:-8px}
+  /* .elochip and .rrank are WORN from online.css — the app's own result chips */
+  /* the poster: two colour washes meet at a skewed seam, edge to edge */
+  .bnr{position:relative;width:calc(100% + 32px);margin:auto -16px 0;display:flex}
+  .bh{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;padding:20px 16px 18px;justify-content:center}
+  .bh.mine{align-items:flex-start;
+    background:linear-gradient(100deg,rgba(40,232,255,.17),rgba(40,232,255,.03) 72%,transparent);
+    box-shadow:inset 0 2px 0 rgba(255,209,102,.75)}
+  .bh.theirs{align-items:flex-end;text-align:right;
+    background:linear-gradient(260deg,rgba(255,47,160,.15),rgba(255,47,160,.03) 72%,transparent)}
+  .bnm{font-size:12.5px;font-weight:900;letter-spacing:.1em;max-width:100%;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .bh.theirs .bnm{color:var(--dim)}
+  .bsc{font-size:44px;font-weight:900;line-height:1}
+  .bh.mine .bsc{color:var(--cy);text-shadow:0 0 16px rgba(40,232,255,.5)}
+  .bh.theirs .bsc{color:var(--mg);opacity:.8;text-shadow:0 0 12px rgba(255,47,160,.4)}
+  .bgp{font-size:7.5px;font-weight:900;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+  .bseam{position:absolute;left:50%;top:0;bottom:0;width:1px;transform:skewX(-8deg);
+    background:linear-gradient(180deg,transparent,rgba(255,255,255,.25),transparent)}
+  .bvs{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:40px;height:40px;
+    border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:900;
+    letter-spacing:.08em;color:var(--gold);background:#0a0e20;border:1px solid rgba(255,209,102,.5);
+    box-shadow:0 0 20px rgba(255,209,102,.35);text-shadow:0 0 10px rgba(255,209,102,.6)}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="rwrap">
+    <div class="rtitle">VICTORY</div>
+    <div class="rsub">You out-rolled EmberCrow896</div>
+    <div class="bnr dice-static">
+      <div class="bh mine">
+        {{die:5:p1:28}}
+        <span class="bnm">FrostLynx303</span>
+        <span class="bsc">47</span>
+        <span class="bgp">GOLD · 2,510</span>
+      </div>
+      <div class="bh theirs">
+        {{die:3:p2:28}}
+        <span class="bnm">EmberCrow896</span>
+        <span class="bsc">30</span>
+        <span class="bgp">GOLD · 2,431</span>
+      </div>
+      <i class="bseam"></i>
+      <span class="bvs">VS</span>
+    </div>
+    <div class="elochip">+16 <small>PTS · 2,510</small></div>
+    <div class="rrank">GOLD · <b>#3</b></div>
+    <button class="btn primary">Next duel</button>
+    <button class="linkbtn">Home</button>
+    <button class="linkbtn">Share result</button>
+  </div>
+</div></div>
+<div class="note"><b>The duel as a poster.</b> Two washes meet at a skewed seam — your cyan
+  against their magenta, the palette every match is already played in — with a gold VS medal
+  where they touch and a gold edge along the winning half. Face, name, score and standing live
+  inside their own colour, edge to edge. The loudest of the eight, and the share image is
+  essentially composed already.</div>

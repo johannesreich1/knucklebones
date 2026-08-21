@@ -1,0 +1,56 @@
+<!-- meta name="V4 — The beaten foe" group="3d · Result identity" subtitle="Opponent-only: the trophy is who you beat — their avatar, name and standing, stamped" width=440 height=920 sizes="max" links="Matchmaking, Home" -->
+<style>
+  .rwrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin:0;flex:1;
+    padding-top:24px;width:100%;max-width:336px;align-self:center}
+  .rwrap .btn{width:100%;max-width:300px;min-width:0}
+  .rwrap .btn.primary{margin-top:auto}
+  .rtitle{font-size:42px;letter-spacing:.2em;font-weight:900;
+    background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
+  /* .elochip and .rrank are WORN from online.css — the app's own result chips */
+  /* the defeated opponent as the hero object, stamp askew across the corner */
+  .foeh{margin-top:auto;position:relative;display:flex;flex-direction:column;align-items:center;gap:9px}
+  .foeeb{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
+  .foenm{font-size:21px;font-weight:900;letter-spacing:.1em;color:var(--txt)}
+  .foegp{font-size:8px;font-weight:900;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
+    border:1px solid rgba(255,255,255,.22);border-radius:6px;padding:2.5px 8px}
+  .stampd{position:absolute;right:-30px;top:40px;transform:rotate(-9deg);
+    border:2px solid rgba(255,47,160,.6);color:rgba(255,71,171,.9);border-radius:7px;
+    padding:3px 9px;font-size:10px;font-weight:900;letter-spacing:.28em;text-transform:uppercase;
+    background:rgba(3,5,12,.5)}
+  .rline{display:flex;align-items:flex-start;justify-content:center;gap:14px;width:100%}
+  .idc{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px}
+  .idc .scn{font-size:40px;font-weight:900;line-height:1}
+  .idc.mine .scn{color:var(--cy);text-shadow:0 0 14px rgba(40,232,255,.5)}
+  .idc.theirs .scn{color:var(--mg);opacity:.75;text-shadow:0 0 12px rgba(255,47,160,.4)}
+  .idc em{font-style:normal;font-size:9.5px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+  .rvs{flex:0 0 auto;color:var(--dim);font-size:12px;letter-spacing:.2em;font-weight:800;margin-top:14px}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="rwrap">
+    <div class="rtitle">VICTORY</div>
+    <div class="foeh dice-static">
+      <span class="foeeb">You out-rolled</span>
+      {{die:3:p2:54}}
+      <span class="foenm">EmberCrow896</span>
+      <span class="foegp">GOLD · 2,431</span>
+      <span class="stampd">Beaten</span>
+    </div>
+    <div class="rline">
+      <div class="idc mine"><span class="scn">47</span><em>You</em></div>
+      <span class="rvs">VS</span>
+      <div class="idc theirs"><span class="scn">30</span><em>EmberCrow896</em></div>
+    </div>
+    <div class="elochip">+16 <small>PTS · 2,510</small></div>
+    <div class="rrank">GOLD · <b>#3</b></div>
+    <button class="btn primary">Next duel</button>
+    <button class="linkbtn">Home</button>
+    <button class="linkbtn">Share result</button>
+  </div>
+</div></div>
+<div class="note"><b>Only the opponent — victory is about who you beat.</b> Your own face is one
+  tap away on the home plate; repeating it here would spend the hero slot on the person who did
+  not change. Instead the beaten foe finally becomes recognisable: avatar at full size, name,
+  standing, and a stamp across the corner. The next queue against them starts with “I know this
+  one.” On a defeat the stamp flips — <i>lost to</i> — which is a grudge worth queueing for.</div>

@@ -1,0 +1,52 @@
+<!-- meta name="V2 — The face-off, settled" group="3d · Result identity" subtitle="The leaderboard's head-to-head card deals the result: avatars, names, group chips, scores where the stats go" width=440 height=920 sizes="max" links="Matchmaking, Home, Leaderboard" -->
+<style>
+  .rwrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin:0;flex:1;
+    padding-top:24px;width:100%;max-width:336px;align-self:center}
+  .rwrap .btn{width:100%;max-width:300px;min-width:0}
+  .rwrap .btn.primary{margin-top:auto}
+  .rtitle{font-size:42px;letter-spacing:.2em;font-weight:900;
+    background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
+  .rsub{font-size:11px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:-8px}
+  /* .elochip and .rrank are WORN from online.css — the app's own result chips */
+  /* the face-off card, worn as-is; the result adds only the score row */
+  .setcard{margin-top:auto}
+  .fsc{font-size:38px;font-weight:900;line-height:1;margin-top:3px}
+  .focol.you .fsc{color:var(--cy);text-shadow:0 0 14px rgba(40,232,255,.5)}
+  .focol:not(.you) .fsc{color:var(--mg);opacity:.75;text-shadow:0 0 12px rgba(255,47,160,.4)}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="rwrap">
+    <div class="rtitle">VICTORY</div>
+    <div class="rsub">You out-rolled EmberCrow896</div>
+    <div class="focard setcard dice-static">
+      <div class="focols">
+        <div class="focol you" style="--gc:var(--gold)">
+          <span class="av">{{die:5:p1:44}}</span>
+          <span class="fnm">FrostLynx303</span>
+          <span class="fgp">GOLD · #3</span>
+          <span class="fsc">47</span>
+        </div>
+        <span class="fovs">VS</span>
+        <div class="focol" style="--gc:var(--gold)">
+          <span class="av">{{die:3:p2:44}}</span>
+          <span class="fnm">EmberCrow896</span>
+          <span class="fgp">GOLD · 2,431</span>
+          <span class="fsc">30</span>
+        </div>
+      </div>
+      <div class="fogap"><b>+16 points</b> change hands</div>
+    </div>
+    <div class="elochip">+16 <small>PTS · 2,510</small></div>
+    <div class="rrank">GOLD · <b>#3</b></div>
+    <button class="btn primary">Next duel</button>
+    <button class="linkbtn">Home</button>
+    <button class="linkbtn">Share result</button>
+  </div>
+</div></div>
+<div class="note"><b>The leaderboard's head-to-head card, second appearance.</b> The face-off the
+  ladder already deals — avatars, names, group chips, gold VS — settles the match: the scores land
+  where the stat rows usually go. One component serves browsing and results (the one-implementation
+  rule), it arrives pre-styled, and tapping it can open the full face-off with records and streaks.
+  A distinct, framed look for zero new visual language.</div>
