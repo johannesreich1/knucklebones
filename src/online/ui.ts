@@ -106,7 +106,9 @@ const OVERLAY = `
     <div class="guestbox namebox" id="accClaim" hidden>
       <b>CLAIM YOUR NAME</b>
       <p>One name per account — set once and kept for good. 3–16 letters, digits or underscores.</p>
-      <input id="onNick" maxlength="16" autocomplete="off" spellcheck="false" autocapitalize="off">
+      <!-- no maxlength: a silent cap eats keystrokes mid-word; the claim
+           button answers over-long names with the limit instead -->
+      <input id="onNick" autocomplete="off" spellcheck="false" autocapitalize="off">
       <div class="err" id="onNickErr"></div>
       <button class="btn primary" id="btnClaim">Claim name</button>
     </div>
@@ -742,8 +744,13 @@ function bind(): void {
   $('#btnClaim').addEventListener('click', async () => {
     Sfx.tap();
     const name = ($('#onNick') as HTMLInputElement).value.trim();
-    /* checked here so an empty tap answers instantly; the server's CHECK
-       constraint remains the authority */
+    /* checked here so a bad tap answers instantly; the server's CHECK
+       constraint remains the authority. Too-long gets its own answer naming
+       the cap — the rule line above the field is easy to have scrolled past */
+    if (name.length > 16) {
+      $('#onNickErr').textContent = `Too long — 16 characters at most (this one is ${name.length}).`;
+      return;
+    }
     if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) {
       $('#onNickErr').textContent = '3–16 letters, digits or underscores.';
       return;
