@@ -115,7 +115,17 @@ Deno.serve(async (req: Request) => {
     .select("id, p1, p2, status, turn, next_die, last_move_at, modifier, season_id")
     .eq("status", "active").or(`p1.eq.${uid},p2.eq.${uid}`).limit(1).maybeSingle();
   if (active && !(await forfeitStalledBotMatch(active))) {
-    return json({ status: "matched", rejoined: true, match: active,
+    /* rejoined tells the client to SKIP the mode-wheel reveal — but a match
+       nobody has moved in yet is a fresh PAIRING, not a reconnect: the
+       WAITING player's next poll lands here whenever the partner's own join
+       created the match between polls, and an unconditional true dropped
+       exactly one of the two players straight onto the board while the other
+       watched the wheel (user report, live match 2026-08-21). Zero moves =
+       the reveal has not been seen: show it. A true reconnect before the
+       first move sees the wheel again, which costs a five-second hold. */
+    const { count } = await svc.from("match_moves")
+      .select("*", { count: "exact", head: true }).eq("match_id", active.id);
+    return json({ status: "matched", rejoined: (count ?? 0) > 0, match: active,
                   you: active.p1 === uid ? 1 : 0, names: await names(active.p1, active.p2) });
   }
 
