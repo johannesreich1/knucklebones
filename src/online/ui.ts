@@ -196,8 +196,16 @@ interface AuthSpec {
      — which is also how "check your email" reports itself, honestly */
   acts: { label: string; primary?: boolean; run: (email: string, pass: string) => Promise<string | null> }[];
   swap?: { label: string; to: AuthMode };
+  /* the same panel doing the same job for somebody who has NO account yet:
+     attaching an address to nothing is creating an account, and the copy has
+     to say so. Used when guests are unavailable (ensureIdentity returned
+     null), the one route that reaches a form with no session behind it. */
+  fresh?: { title: string; lead: string; tiny: string; act: string };
   after: () => Promise<void>;
 }
+/* set at the ONE place that learns it: the fallback below, when this project
+   has anonymous sign-ins switched off and there is no identity to be had */
+let sessionless = false;
 const AUTH: Record<AuthMode, AuthSpec> = {
   attach: {
     title: 'KEEP ACCOUNT',
@@ -205,7 +213,13 @@ const AUTH: Record<AuthMode, AuthSpec> = {
     tiny: 'Same account, same rating, same record —<br>you just gain a way back into it.',
     acts: [{ label: 'Keep this account', primary: true, run: attachEmail }],
     swap: { label: 'I already have an account', to: 'restore' },
-    after: async () => { await showAccount(); },
+    fresh: { title: 'CREATE ACCOUNT',
+             lead: 'Play ranked, climb the ladder',
+             tiny: 'Your rating and record live in this account —<br>the address is how you get back to it.',
+             act: 'Create account' },
+    /* a brand-new account lands where the tap was headed, exactly like signing
+       in does; an attached one goes back to the profile it came from */
+    after: async () => { if (sessionless) { sessionless = false; await entered(); return; } await showAccount(); },
   },
   restore: {
     title: 'SIGN IN',
@@ -233,10 +247,13 @@ async function entered(): Promise<void> {
 
 function authPanel(mode: AuthMode): void {
   const spec = AUTH[mode];
+  /* the same panel, told which job it is doing: with no session behind it,
+     "keep this account" IS "create account" and says so (spec.fresh) */
+  const copy = (sessionless && spec.fresh) ? spec.fresh : spec;
   panel('onAuth');
-  $('#onTitle').textContent = spec.title;
-  $('#onAuthLead').textContent = spec.lead;
-  $('#onAuthTiny').innerHTML = spec.tiny;
+  $('#onTitle').textContent = copy.title;
+  $('#onAuthLead').textContent = copy.lead;
+  $('#onAuthTiny').innerHTML = copy.tiny;
   $('#onAuthErr').textContent = '';
   const acts = $('#onAuthActs');
   acts.innerHTML = '';
@@ -245,7 +262,7 @@ function authPanel(mode: AuthMode): void {
   for (const a of spec.acts) {
     const b = document.createElement('button');
     b.className = 'btn' + (a.primary ? ' primary' : '');
-    b.textContent = a.label;
+    b.textContent = (sessionless && spec.fresh && a.primary) ? spec.fresh.act : a.label;
     b.addEventListener('click', async () => {
       Sfx.tap();
       $('#onAuthErr').textContent = '';
@@ -1027,6 +1044,7 @@ export async function openOnline(view: OnlineView = 'play'): Promise<void> {
      off falls through to the panel — which is exactly how this behaved before
      guests existed, so the fallback is the old, working path. */
   const who = await ensureIdentity();
+  sessionless = !who;      // no identity to be had: the panel is this player's first door
   if (who) { pendingView = null; return route(view); }
   pendingView = view;
   authPanel('restore');

@@ -124,6 +124,12 @@ async function visit({ anonymous = 200, attached = false, door = 'chip', named =
       guestBox: vis('#accGuest'),
       signOut: vis('#btnSignOut'),
       actions: [...document.querySelectorAll('#onAuthActs .btn')].map((x) => x.textContent),
+      /* the OTHER door out of this panel. "Create account" stopped being a
+         second action here: signing up from the sign-in form minted a fresh
+         empty account and threw away the guest rating, so it is a swap to the
+         panel that creates one properly (user call). */
+      swapDoor: document.querySelector('#btnAuthSwap')?.hidden === false
+        ? document.querySelector('#btnAuthSwap')?.textContent : null,
       /* What a ladder row SAYS. It used to read "42W/103" — wins over games —
          so a loss appeared nowhere on the ladder while the HUD and the account
          card both said W · L. All three go through ui/record.ts now, and this
@@ -305,7 +311,8 @@ try {
   const off = await visit({ anonymous: 422 });
   out.providerOff = off.seen;
   check(off.seen.panel === 'auth', 'no fallback when guests are unavailable', off.seen);
-  check(off.seen.actions.join() === 'Sign in,Create account', 'fallback lost its actions', off.seen);
+  check(off.seen.actions.join() === 'Sign in', 'the fallback lost its sign-in', off.seen);
+  check(off.seen.swapDoor === 'Create account', 'the fallback offers no way to make an account', off.seen);
   check(off.errs.length === 0, 'page errors when guests are refused', off.errs);
 
   // 3 · the returning player: signing out must not mint a guest over them

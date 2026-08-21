@@ -48,7 +48,12 @@ export function tap(el,fn){
   const hold=on=>el.classList.toggle('pressing',on);
   const disarm=()=>{ armed=false; hold(false); };
   if(window.PointerEvent){
-    el.addEventListener('pointerdown',e=>{ armed=true; hold(true); if(e.pointerId!=null && el.setPointerCapture) try{ el.setPointerCapture(e.pointerId); }catch{} });
+    /* No setPointerCapture here, deliberately: capture RETARGETS the release to
+       the capturing element, and half these bindings sit on a CONTAINER and
+       read e.target.closest('button') to learn which segment was hit (boot's
+       bindSeg, the picker rows). Capturing blinded all of them — seven suites
+       caught it. Slide-off is handled by the rect test and pointerleave. */
+    el.addEventListener('pointerdown',()=>{ armed=true; hold(true); });
     el.addEventListener('pointerup',e=>{
       if(!armed) return;
       armed=false; hold(false);
