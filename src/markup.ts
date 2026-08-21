@@ -336,12 +336,10 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <div class="card">
       <div class="lbl">Your colour</div>
       <div class="hues" id="p1Pick"></div>
-      <div class="tiny" id="p1PickInfo"></div>
     </div>
     <div class="card">
       <div class="lbl">Opponent colour</div>
       <div class="hues" id="p2Pick"></div>
-      <div class="tiny" id="p2PickInfo"></div>
       <!-- explains the lock while colour blind mode owns the pair; hidden
            otherwise, and the disabled swatches point at it (aria-describedby) -->
       <div class="tiny" id="colNote" hidden>Colour blind mode picks the colours</div>

@@ -2,7 +2,7 @@
 // strictness ratchet. New code goes in typed modules, not here.
 // The title screen and settings panel: what they show. (Mid-game resume was
 // removed by design 2026-08-18 — leaving an offline game simply ends it.)
-import { S, DUELHUES } from '../state.ts';
+import { S } from '../state.ts';
 import { $, show, hide } from '../ui/dom.ts';
 import { stopTimer } from './timer.ts';
 import { clearTut } from './tutorial.ts';
@@ -75,7 +75,6 @@ export function syncSettingsUI(){
       if (S.colorblind) b.setAttribute('aria-describedby','colNote');
       else b.removeAttribute('aria-describedby');
     });
-    $(sel+'Info').textContent = (DUELHUES.find(x=>x.id===mine) ?? DUELHUES[0]).name;
   };
   syncPick('#p1Pick', p1, p2);
   syncPick('#p2Pick', p2, p1);
