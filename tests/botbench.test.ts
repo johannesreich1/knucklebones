@@ -6,11 +6,12 @@
 //
 // Deterministic: Math.random is replaced by a seeded stream, which also seeds
 // core/ai.ts's tie-break jitter — the gate may not depend on the machine's
-// mood. The margins below sit well under the tuned values (bench 2026-08-20:
-// STONE 49.8% vs random, BONE 64.7%, NEON 80.0% / 58.7% vs medium), so they
-// catch a broken retune, not simulation drift.
+// mood. The margins below sit well under the tuned values (bench 2026-08-21,
+// mulberry32: STONE 50.0% vs random, BONE 71.7%, NEON 82.7% / 55.0% vs
+// medium, colshield-aware 48.3% vs blind), so they catch a broken retune,
+// not simulation drift.
 import {
-  AI, ME, emptyBoard, legalCols, applyMove, totalOf, isOver, CLASSIC,
+  AI, ME, emptyBoard, legalCols, applyMove, totalOf, isOver, CLASSIC, COLSHIELD, type Mode,
 } from '../src/core/rules.ts';
 import { searchRoot, setRiskW, setOppW } from '../src/core/ai.ts';
 import { GROUPS, type BotShape } from '../src/core/ladder.ts';
@@ -18,10 +19,19 @@ import { GROUPS, type BotShape } from '../src/core/ladder.ts';
 const problems: string[] = [];
 const errs: string[] = [];
 
-const seeded = (seed: number) => () => (seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+/* mulberry32, NOT a bare LCG: MINSTD's lattice swung near-deterministic
+   policy duels by ±7pp run to run (the colshield decomposition, 2026-08-21
+   — 60.6% one stream, 46.0% the next, far beyond sampling error). These
+   thresholds may not depend on which stream position a duel starts at. */
+const seeded = (a: number) => () => {
+  a |= 0; a = (a + 0x6D2B79F5) | 0;
+  let t = Math.imul(a ^ (a >>> 15), 1 | a);
+  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+};
 Math.random = seeded(20260820);
 
-interface Policy extends Partial<BotShape> { random?: boolean }
+interface Policy extends Partial<BotShape> { random?: boolean; mode?: Mode }
 const rnd = (n: number) => Math.floor(Math.random() * n);
 
 function pick(p: Policy, st: ReturnType<typeof emptyBoard>[], who: 0 | 1, die: number): number {
@@ -29,22 +39,23 @@ function pick(p: Policy, st: ReturnType<typeof emptyBoard>[], who: 0 | 1, die: n
   if (p.random || (p.slip && Math.random() < p.slip)) return legal[rnd(legal.length)];
   setRiskW(p.risk ?? 0);
   setOppW(p.oppW ?? 1);
-  return searchRoot(st as never, who, die, p.depth ?? 1, CLASSIC).c;
+  return searchRoot(st as never, who, die, p.depth ?? 1, p.mode ?? CLASSIC).c;
 }
 
 /* seatME moves first, like the human in a ranked bot match; returns the
-   AI seat's score for one game */
-function play(seatAI: Policy, seatME: Policy): number {
+   AI seat's score for one game. world is the mode the GAME obeys — a policy
+   may search a different one (that mismatch is what §4 measures). */
+function play(seatAI: Policy, seatME: Policy, world: Mode = CLASSIC): number {
   const st = [emptyBoard(), emptyBoard()];
   let turn: 0 | 1 = ME as 1, i = 0;
   for (;;) {
     const die = 1 + rnd(6);
-    applyMove(st as never, turn, pick(turn === AI ? seatAI : seatME, st, turn, die), die, CLASSIC);
+    applyMove(st as never, turn, pick(turn === AI ? seatAI : seatME, st, turn, die), die, world);
     i++;
     if (isOver(st[turn], null)) break;
     turn = (1 - turn) as 0 | 1;
   }
-  const a = totalOf(st[AI], 0, CLASSIC), m = totalOf(st[ME], 0, CLASSIC);
+  const a = totalOf(st[AI], 0, world), m = totalOf(st[ME], 0, world);
   return a > m ? 1 : a < m ? 0 : 0.5;
 }
 
@@ -54,9 +65,9 @@ const vsAnchor = (bot: Policy, anchor: Policy, n: number) => {
   return w / n;
 };
 /* seats alternate so the first-move edge cancels; share for a */
-const duel = (a: Policy, b: Policy, n: number) => {
+const duel = (a: Policy, b: Policy, n: number, world: Mode = CLASSIC) => {
   let w = 0;
-  for (let g = 0; g < n; g++) w += g % 2 ? 1 - play(b, a) : play(a, b);
+  for (let g = 0; g < n; g++) w += g % 2 ? 1 - play(b, a, world) : play(a, b, world);
   return w / n;
 };
 
@@ -67,7 +78,9 @@ const MEDIUM: Policy = { depth: 2, risk: 0.9 };   // the offline Medium anchor
    floor must sit near random-parity. N shrinks with depth for gate time (the
    deep groups dominate the runtime); the run is seeded, so these are exact
    reruns, not samples. */
-const n4 = (d: number) => (d >= 4 ? 60 : d >= 3 ? 150 : 600);
+/* deep groups need N too: at 60 games the apex's SE was ~6pp and the ordered-
+   ladder check tripped on pure noise the day the PRNG changed */
+const n4 = (d: number) => (d >= 4 ? 150 : d >= 3 ? 250 : 600);
 const vsRandom = GROUPS.map((g) => vsAnchor(g.bot, RANDOM, n4(g.bot.depth)));
 if (!(vsRandom[0] <= 0.58)) {
   problems.push(`STONE wins ${(vsRandom[0] * 100).toFixed(1)}% vs a random mover — the floor is `
@@ -96,9 +109,25 @@ if (!(neonVsMedium >= 0.50)) {
   problems.push(`NEON wins only ${(neonVsMedium * 100).toFixed(1)}% vs the offline Medium — the apex is not hard`);
 }
 
+/* 4 · COLSHIELD awareness must not COST anything. The risk model once skipped
+   shielded columns — true, and a measured 44.5% vs a mode-blind twin: closing
+   a column deleted its risk from the eval, so the searcher slammed columns
+   shut on junk (see riskOf in core/ai.ts for the full finding). With the skip
+   cut, aware-vs-blind is parity (~50%). This duel refuses the skip's return:
+   it sat ~44.5% and cannot clear the bar. */
+const csAware: Policy = { depth: 2, risk: 0.9, mode: COLSHIELD };
+const csBlind: Policy = { depth: 2, risk: 0.9 };
+const csAwareVsBlind = duel(csAware, csBlind, 800, COLSHIELD);
+if (!(csAwareVsBlind >= 0.47)) {
+  problems.push(`COLSHIELD-aware search wins only ${(csAwareVsBlind * 100).toFixed(1)}% of colshield games `
+    + `vs a mode-blind twin — a losing mode heuristic is back in the eval (the risk-model shield skip `
+    + `measured 44.5% here; awareness may be neutral, never a handicap)`);
+}
+
 console.log(JSON.stringify({
   vsRandom: Object.fromEntries(GROUPS.map((g, i) => [g.name, +(vsRandom[i] * 100).toFixed(1)])),
   boneVsStone: +(boneVsStone * 100).toFixed(1),
   neonVsMedium: +(neonVsMedium * 100).toFixed(1),
+  csAwareVsBlind: +(csAwareVsBlind * 100).toFixed(1),
   problems, errs,
 }, null, 2));

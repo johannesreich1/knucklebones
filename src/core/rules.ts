@@ -119,8 +119,9 @@ export function boardTotalMode(b: Board, mode: Mode): number {
 }
 
 /* a full column under COLUMN SHIELD cannot be touched. ONE definition — the
-   rules, the AI's risk model, the board's shield chip and both play flows all
-   ask this same question, and they must never disagree. */
+   rules, the board's shield chip and both play flows all ask this same
+   question, and they must never disagree. (The AI's risk model asked it too
+   once, and LOST games by believing the answer — see core/ai.ts riskOf.) */
 export function isShielded(col: Col, mode: Mode): boolean {
   return mode === COLSHIELD && col.length >= SPEC.rows;
 }

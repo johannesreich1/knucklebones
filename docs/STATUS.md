@@ -203,6 +203,19 @@ cutover — under the new model that would have handed every newcomer an
 IVORY-strength first bot. Default is 0 now; stale mirrors re-mirrored from
 `season_ratings`.
 
+**The COLSHIELD follow-up (2026-08-21)** closed this pass's open chip: the
+risk model's shield-skip — true as a fact — made the searcher WEAKER (44.5%
+vs a mode-blind twin, 6,000 games), because closing a column deleted its k²
+risk from the eval and the bot slammed columns shut on junk; the eval has no
+term for the triples a closed column forfeits, and classic phantom fear was
+that term's accidental proxy. The skip is cut (`riskOf` scores colshield
+like classic; the search keeps true shield dynamics, measured neutral), and
+botbench §4 refuses its return. Two artifacts from the same dig: botbench
+now seeds mulberry32 (the old MINSTD LCG swung deterministic-pair duels ±7pp
+between streams), and the deep groups sample 150-250 games (the apex's
+ordered-ladder check had been riding an SE of ~6pp). Redeployed as pvp-move
+v15.
+
 ## Open items
 
 ### 1. SMTP → real signups (next up, user-side)

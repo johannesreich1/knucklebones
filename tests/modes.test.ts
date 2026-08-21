@@ -167,8 +167,15 @@ for (const m of MODES) {
   const r = searchRoot(mid, AI, 4, 2, m.mode as Mode);
   check(r.c >= 0 && r.c <= 2, 'AI move legal under ' + m.id, r);
 }
+/* the risk model scores a shielded column exactly like classic — ON PURPOSE.
+   It once returned 0 there (the true fact), and the searcher paid junk dice
+   to slam columns shut and bank the safety: 44.5% vs a mode-blind twin,
+   measured (riskOf in core/ai.ts tells the full story; botbench §4 refuses
+   the skip's return). The RULES still shield the column — victimsOf is where
+   that truth lives, and the search sees it through applyMove. */
 const fullCol: GameState = [[[3, 3, 3], [], []], [[], [], []]];
-check(riskOf(fullCol, AI, COLSHIELD) === 0, 'shielded full column carries no risk', riskOf(fullCol, AI, COLSHIELD));
+check(riskOf(fullCol, AI, COLSHIELD) === riskOf(fullCol, AI, CLASSIC),
+      'colshield risk must read classic — the shield skip lost games', riskOf(fullCol, AI, COLSHIELD));
 check(riskOf(fullCol, AI, CLASSIC) > 0, 'classic full column still at risk', riskOf(fullCol, AI, CLASSIC));
 
 console.log(JSON.stringify({ problems, errs: [] }, null, 2));
