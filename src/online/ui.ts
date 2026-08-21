@@ -92,7 +92,11 @@ const OVERLAY = `
       <div class="fact"><b id="accStreak">0</b><span>Best streak</span></div>
       <div class="fact pk"><b id="accPeak">0</b><span>Peak</span></div>
     </div>
-    <button class="histrow" id="btnHistory">Match history <b id="accGames">–</b></button>
+    <button class="histrow" id="btnHistory">Full match history <b id="accGames">–</b></button>
+    <!-- the last few matches inline (user call): as many of the newest 0–3 as
+         the space above the pinned foot actually holds on this device. The
+         rows are showHistory's own (histRow) — one implementation. -->
+    <div class="lb minihist" id="accRecent" hidden></div>
     <div class="accsince" id="accSince"></div>
     <div class="guestbox" id="accGuest" hidden>
       <b>GUEST</b>
@@ -114,13 +118,19 @@ const OVERLAY = `
       <button class="btn primary" id="btnClaim">Claim name</button>
     </div>
     <div class="err" id="onAccErr"></div>
-    <button class="btn" id="btnSignOut">Sign out</button>
-    <!-- deleting is a FOOTNOTE, not an action to advertise: the same linkbtn
-         row as home's legal links. The red lives on the confirm ask-card,
-         where the player is actually deciding. Sign out stays the panel's
-         last real button, always directly above it. -->
-    <div class="viewfoot">
-      <button class="linkbtn" id="btnDeleteAcc">Delete account</button>
+    <!-- the foot is PINNED (user call): sign out and the delete footnote sit
+         at the very bottom whatever the device leaves free, and the mini
+         history above fills what remains. One wrapper so the pin holds
+         whether or not Sign out is hidden (guests). -->
+    <div class="accfoot">
+      <button class="btn" id="btnSignOut">Sign out</button>
+      <!-- deleting is a FOOTNOTE, not an action to advertise: the same linkbtn
+           row as home's legal links. The red lives on the confirm ask-card,
+           where the player is actually deciding. Sign out stays the panel's
+           last real button, always directly above it. -->
+      <div class="viewfoot">
+        <button class="linkbtn" id="btnDeleteAcc">Delete account</button>
+      </div>
     </div>
   </div>
 
@@ -594,6 +604,24 @@ async function showAccount(): Promise<void> {
   ring.classList.toggle('haspeak', ps.kind !== 'at');
   if (ps.kind === 'ahead') ring.style.setProperty('--pk', String(ps.fill));
   if (ps.kind === 'above') ring.style.setProperty('--pk', '1');
+
+  /* the newest matches, inline under the history door — as many of the last
+     three as the space above the pinned foot actually holds on THIS device.
+     They fill the gap the auto-margin foot leaves, so nothing already on
+     screen moves when they land; rendered oversize then TRIMMED against the
+     real overflow, because measuring beats guessing. */
+  const mini = $('#accRecent');
+  mini.innerHTML = ''; mini.hidden = true;
+  void matchHistory().then((rows) => {
+    if ($('#onAccount').hidden) return;            // navigated away meanwhile
+    for (const r of rows.slice(0, 3)) mini.appendChild(histRow(r));
+    mini.hidden = !mini.childElementCount;
+    // trim against the PANEL, which owns the scroll: the rows may only fill
+    // the gap, never be the reason the profile starts scrolling
+    const acc = $('#onAccount');
+    while (mini.lastChild && acc.scrollHeight > acc.clientHeight + 1) mini.removeChild(mini.lastChild);
+    mini.hidden = !mini.childElementCount;
+  });
 }
 
 /* ---- the avatar picker ---- */
@@ -660,19 +688,23 @@ async function showHistory(): Promise<void> {
     : '&nbsp;';
   const rows = await matchHistory();
   list.innerHTML = rows.length ? '' : '<div class="row">No ranked matches this season.</div>';
-  for (const r of rows) {
-    const div = document.createElement('div');
-    div.className = 'row hrow ' + r.result;
-    const when = r.when ? new Date(r.when).toLocaleDateString('en', { day: 'numeric', month: 'short' }) : '';
-    const sign = r.delta > 0 ? '+' : '';
-    div.innerHTML =
-      `<span class="hres">${r.result === 'win' ? 'W' : r.result === 'loss' ? 'L' : 'D'}</span>` +
-      `<span class="nm">${esc(r.opponent)}</span>` +
-      `<span class="hsc">${r.mine}–${r.theirs}</span>` +
-      `<span class="hd">${sign}${r.delta}</span>` +
-      `<span class="hwhen">${when}</span>`;
-    list.appendChild(div);
-  }
+  for (const r of rows) list.appendChild(histRow(r));
+}
+
+/* ONE row shape for a played match — the history list and the profile's
+   inline mini-history deal the same element, so they cannot drift */
+function histRow(r: Awaited<ReturnType<typeof matchHistory>>[number]): HTMLElement {
+  const div = document.createElement('div');
+  div.className = 'row hrow ' + r.result;
+  const when = r.when ? new Date(r.when).toLocaleDateString('en', { day: 'numeric', month: 'short' }) : '';
+  const sign = r.delta > 0 ? '+' : '';
+  div.innerHTML =
+    `<span class="hres">${r.result === 'win' ? 'W' : r.result === 'loss' ? 'L' : 'D'}</span>` +
+    `<span class="nm">${esc(r.opponent)}</span>` +
+    `<span class="hsc">${r.mine}–${r.theirs}</span>` +
+    `<span class="hd">${sign}${r.delta}</span>` +
+    `<span class="hwhen">${when}</span>`;
+  return div;
 }
 
 /* ---- match result: the SAME screen local play ends on (ui/endscreen), filled

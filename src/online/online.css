@@ -251,6 +251,23 @@
 /* Gold is reserved for the number that is LIVE — the points you have right
    now. The peak is a fact like the others and reads white; its gold belongs on
    the ring, where the notch has to stand out against the cyan fill. */
+/* the profile STRETCHES so its foot can pin (user call): sign out + the
+   delete footnote sit at the very bottom whatever the device leaves free,
+   and the inline mini-history above fills what remains. overflow-y, because
+   the stretched panel sits in a CENTERING flex parent: content taller than
+   the screen (a guest's offer + claim cards) would otherwise clip at the TOP
+   and take the name headline with it — the gate caught exactly that. */
+#ovOnline #onAccount{flex:1 1 auto;min-height:0;margin:0;overflow-y:auto}
+/* …and its children keep their NATURAL size: in a scrollable flex column,
+   anything wearing overflow (the ellipsised name headline) has an automatic
+   minimum of ZERO and gets crushed flat before the panel deigns to scroll —
+   the gate caught the headline at height 0 exactly that way */
+#ovOnline #onAccount > *{flex-shrink:0}
+.accfoot{margin-top:auto;display:flex;flex-direction:column;gap:12px;width:100%}
+.accfoot .viewfoot{margin-top:0;padding-bottom:0}
+/* the mini list reuses .lb's row chrome but never scrolls — it is trimmed to
+   the space instead (showAccount measures the real overflow) */
+#ovOnline .minihist{max-height:none;overflow:visible;flex:0 0 auto}
 .histrow{display:flex;align-items:center;width:100%;padding:12px 14px;border-radius:14px;
   background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);cursor:pointer;
   font-size:11px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase;font-family:inherit}

@@ -563,6 +563,29 @@ call: the active choice always wears the active colour). Every colour claim
 above was verified live: the pickers, colour-blind, persistence and the
 ladder's gap/W·L colours, screenshot by screenshot, plus the full gate.
 
+### 10. The evening polish batch (2026-08-21, user calls)
+
+- **The profile deals its newest matches inline** under a FULL MATCH HISTORY
+  door — up to three, rendered oversize and TRIMMED against the panel's real
+  overflow (measuring beats guessing; the space differs per device), via
+  showHistory's own `histRow` — one row shape, two screens. Sign out and the
+  delete footnote pin to the very bottom (`.accfoot`, auto margin). Two
+  regressions the gate caught on the way: the stretched panel top-clipped a
+  guest's tall profile in its centering parent (it scrolls now), and the
+  scrollable flex column crushed the ellipsised name headline to height 0
+  (children keep natural size: `flex-shrink:0`).
+- **The result's plates enter in turn** — yours at .25s, the beaten foe's at
+  .8s, the stamp slamming at 1.25s onto a card that JUST landed. Re-deals
+  and reduced motion skip the theatre.
+- **The multiplier heats dodge picked hues**: --mx2/--mx3 tokens; a player
+  wearing gold or orange sends the clashing heat to its fallback (--ice /
+  --red, non-pickable by construction). Covers colour-blind mode's gold.
+- **Selection snaps, the dial's winner holds its light**: the mode/spell
+  pickers and hue swatches transition only their press (a blanket .15s
+  crossfaded old and new picks half-lit), and the dial's final flare no
+  longer overrides the found node's `.on` (the "flicker once selected") —
+  flares skip lit nodes, and landing cancels the stray one.
+
 ### 7. Cards render the app, they no longer transcribe it (2026-08-20)
 
 `design/build.mjs` imports `src/` directly (Node ≥22.18 strips the types) and

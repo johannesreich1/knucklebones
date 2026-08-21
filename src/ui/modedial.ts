@@ -108,7 +108,10 @@ const easeAt = bezier(...EASE);
 
 /** one node lights as the comet goes past, then fades back to resting */
 function flare(el: HTMLElement): void {
-  if (REDUCED) return;
+  /* never on the found node: a flare is a WAAPI animation and would OVERRIDE
+     .on's full opacity, fading the winner toward dim and snapping it back
+     when the flare expires — the "flicker once selected" (user report) */
+  if (REDUCED || el.classList.contains('on')) return;
   el.animate([{ opacity: 1 }, { opacity: 1, offset: 0.14 }, { opacity: DIM }],
     { duration: 480, easing: 'ease-out' });
 }
@@ -243,6 +246,11 @@ export async function spinDial(spec: ModeSpec,
   // found: the node stays lit, the centre blooms, the name arrives
   ov.classList.remove('hunting');
   ov.classList.add('landed');
+  /* the comet's FINAL crossing is the landing itself, and its flare may fire
+     on this very frame — one beat for it to land, then cut it, so the winner
+     holds the flare's full light instead of fading and snapping back */
+  if (!REDUCED) await new Promise(requestAnimationFrame);
+  nodes[i]?.getAnimations().forEach((a) => a.cancel());
   nodes[i]?.classList.add('on');
   Sfx.place();
   const name = $('#wheelName') as HTMLElement;

@@ -25,6 +25,17 @@
      pink, the destruction keyword, avatar hues — keep reading raw hues. */
   --p1:var(--cy); --p1-rgb:var(--cy-rgb); --p1-hi:var(--cy-hi);
   --p2:var(--mg); --p2-rgb:var(--mg-rgb); --p2-hi:var(--mg-hi);
+  /* THE MULTIPLIER HEATS — what a ×2 (gold) and ×3 (hot orange) die wear.
+     Tokens because a player may PICK gold or orange for a side: menu.ts then
+     repoints the clashing heat at its fallback (--ice / --red below), so a
+     doubled die can never be mistaken for somebody's plain one. */
+  --mx2:var(--gold);   --mx2-rgb:var(--gold-rgb);
+  --mx3:var(--orange); --mx3-rgb:var(--orange-rgb);
+  /* multiplier FALLBACKS — deliberately not in the DUELHUES roster, so they
+     can never collide with a picked colour: ice for a ×2 when gold is taken,
+     hot red for a ×3 when orange is */
+  --ice:#eef4ff; --ice-rgb:238,244,255;
+  --red:#ff4d5e; --red-rgb:255,77,94;
   --txt:#e9f1ff;
   --dim:#7c88a8;
   /* the LADDER GROUP palette. Root-scoped on purpose: the identity plate
@@ -183,10 +194,10 @@
   box-shadow:0 0 6px color-mix(in srgb,var(--dc) 85%,transparent),0 0 14px color-mix(in srgb,var(--dc) 45%,transparent);
   opacity:0;transform:scale(.3);transition:opacity .12s,transform .12s}
 .pip.on{opacity:1;transform:scale(1)}
-.die.m2{--dc:var(--gold);border-color:color-mix(in srgb,var(--gold) 70%,transparent);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 5px 14px rgba(0,0,0,.55),0 0 18px rgba(255,209,102,.5)}
-.die.m3{--dc:var(--orange);border-color:rgba(var(--orange-rgb),.85);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 5px 16px rgba(0,0,0,.55),0 0 26px rgba(var(--orange-rgb),.75);
+.die.m2{--dc:var(--mx2);border-color:color-mix(in srgb,var(--mx2) 70%,transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 5px 14px rgba(0,0,0,.55),0 0 18px rgba(var(--mx2-rgb),.5)}
+.die.m3{--dc:var(--mx3);border-color:rgba(var(--mx3-rgb),.85);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 5px 16px rgba(0,0,0,.55),0 0 26px rgba(var(--mx3-rgb),.75);
   animation:hot 1.5s ease-in-out infinite}
 @keyframes hot{0%,100%{filter:brightness(1)}50%{filter:brightness(1.22)}}
 .die.settle{animation:settle .3s cubic-bezier(.2,1.3,.4,1)}
@@ -318,7 +329,7 @@ html.clock .timer.on{visibility:visible}
 .hues{display:flex;gap:9px;flex-wrap:wrap}
 .hues button{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
   background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10);
-  cursor:pointer;padding:0;transition:.15s}
+  cursor:pointer;padding:0;transition:transform .15s}   /* press only — the pick snaps */
 .hues button::after{content:"";width:21px;height:21px;border-radius:50%;background:var(--h);
   box-shadow:0 0 12px var(--h)}
 .hues button:active{transform:scale(.9)}
@@ -537,9 +548,12 @@ html.clock .timer.on{visibility:visible}
 /* the sheet's main affordance, and eight of them share a row — 44x40 made
    them read as a toolbar rather than a choice */
 .modepick{gap:9px}
+/* transition the PRESS only: a blanket .15s made the old and new selection
+   crossfade half-lit on every pick — the highlight itself must snap (user
+   call: highlight, don't flash) */
 .modepick button{--mh:#8ea3c0;width:52px;height:48px;border-radius:14px;display:grid;place-items:center;
   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:var(--mh);
-  cursor:pointer;transition:.15s;font-family:inherit;padding:0}
+  cursor:pointer;transition:transform .15s;font-family:inherit;padding:0}
 .modepick button:active{transform:scale(.92)}
 .modepick button.on{border-color:color-mix(in srgb,var(--mh) 65%,transparent);
   background:color-mix(in srgb,var(--mh) 12%,transparent);
@@ -1057,34 +1071,47 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 /* the stamp wears the foe's SCORE colour (user call): the same bright magenta
    as the losing "30" in the scoreline, not a darker shade of it — the raw
    hue, deliberately: bad news never changes clothes with the duel pair */
+/* The plates take the stage IN TURN (user call): yours first, the beaten
+   foe's card arrives on its own beat — dealt instantly it upstaged the slam,
+   which was falling on a card the eye had already filed away. The stamp then
+   drops on a row that JUST landed. The re-deal (fresh numbers, .restamp)
+   skips the whole theatre, and so does reduced motion. */
+.endplates .pplate{animation:plateIn .38s cubic-bezier(.2,.9,.3,1) .25s backwards}
+.endplates .pplate.theirs{animation:plateIn .38s cubic-bezier(.2,.9,.3,1) .8s backwards}
+@keyframes plateIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
 .pstamp{position:absolute;left:38px;bottom:-6px;transform:rotate(-8deg);
   border:2px solid rgba(var(--mg-rgb),.8);color:var(--mg);border-radius:6px;
   padding:2.5px 8px;font-size:10px;font-weight:900;letter-spacing:.24em;text-transform:uppercase;
   background:rgba(5,6,14,.55);text-shadow:0 0 10px rgba(var(--mg-rgb),.55);pointer-events:none;
   /* the SLAM (design 37a, chosen): the stamp drops oversized out of the air
-     once the verdict has landed (title stamps in around .3–1s). backwards
-     keeps it invisible through the delay. */
-  animation:stampSlam .5s cubic-bezier(.34,1.3,.4,1) .9s backwards}
+     once the verdict has landed (title stamps in around .3–1s) AND the foe's
+     card is on the table (entrance ends ~1.2s). backwards keeps it invisible
+     through the delay. */
+  animation:stampSlam .5s cubic-bezier(.34,1.3,.4,1) 1.25s backwards}
 @keyframes stampSlam{
   0%{opacity:0;transform:rotate(-8deg) translateY(-46px) scale(2.6)}
   55%{opacity:1;transform:rotate(-8deg) translateY(0) scale(1)}
   70%{transform:rotate(-8deg) scale(1.08)}
   100%{opacity:1;transform:rotate(-8deg) scale(1)}}
 /* the plate takes the hit — a two-frame jolt timed to the stamp's contact
-   (delay .9s + 55% of .5s) — and a thin shock ring blows out of the impact */
-.pplate.stamped{animation:stampJolt .4s linear 1.15s}
+   (delay 1.25s + 55% of .5s ≈ 1.53s) — and a thin shock ring blows out of the
+   impact. The jolt rides WITH the entrance in one animation list: a second
+   rule would replace it, and the foe's card would blink into place. */
+.endplates .pplate.stamped{animation:plateIn .38s cubic-bezier(.2,.9,.3,1) .8s backwards,
+  stampJolt .4s linear 1.53s}
 @keyframes stampJolt{0%{transform:none}20%{transform:translateY(2.5px) rotate(.4deg)}
   45%{transform:translateY(-1.5px)}70%{transform:translateY(.8px)}100%{transform:none}}
 .pstamp::after{content:"";position:absolute;inset:-6px;border-radius:10px;
   border:2px solid rgba(var(--mg-rgb),.5);opacity:0;
-  animation:stampDust .6s ease-out 1.15s;pointer-events:none}
+  animation:stampDust .6s ease-out 1.53s;pointer-events:none}
 @keyframes stampDust{0%{opacity:.8;transform:scale(.9)}100%{opacity:0;transform:scale(1.9)}}
-/* one slam per RESULT, not per deal: the late re-deal (fresh numbers) rebuilds
-   the rows, and a second crash would read as a second verdict */
+/* one entrance and one slam per RESULT, not per deal: the late re-deal
+   (fresh numbers) rebuilds the rows, and a second landing or crash would
+   read as a second verdict */
 .endplates.restamp .pstamp,.endplates.restamp .pstamp::after,
-.endplates.restamp .pplate.stamped{animation:none}
+.endplates.restamp .pplate{animation:none}
 @media (prefers-reduced-motion:reduce){
-  .pstamp,.pstamp::after,.pplate.stamped{animation:none}
+  .pstamp,.pstamp::after,.endplates .pplate{animation:none}
   .pstamp::after{content:none}}
 .endplates{display:flex;flex-direction:column;gap:9px;width:100%;max-width:var(--w-col)}
 .endplates div.pplate{cursor:default}   /* a fact, not a door */

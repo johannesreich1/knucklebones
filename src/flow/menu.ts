@@ -54,6 +54,17 @@ export function syncSettingsUI(){
     rs.setProperty(`--${slot}-rgb`,  `var(--${h}-rgb)`);
     rs.setProperty(`--${slot}-hi`,   `var(--${h}-hi)`);
   }
+  /* a ×2 wears gold and a ×3 hot orange — unless a PLAYER wears it: then the
+     clashing heat falls back (ice / hot red, main.css) so a doubled die can
+     never pass for somebody's plain one. Covers colour blind mode too, whose
+     pinned pair contains gold. */
+  const mx = (tok, hue, alt) => {
+    const clash = p1===hue || p2===hue;
+    rs.setProperty(`--${tok}`,     `var(--${clash?alt:hue})`);
+    rs.setProperty(`--${tok}-rgb`, `var(--${clash?alt:hue}-rgb)`);
+  };
+  mx('mx2','gold','ice');
+  mx('mx3','orange','red');
   /* the pickers mirror the pair on screen: the shown pick is the EFFECTIVE
      one, the other side's colour is off the table (a colour belongs to one
      player), and colour blind mode locks both rows, the note saying why */
