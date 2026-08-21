@@ -1,11 +1,37 @@
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
-const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
+import { spawn } from 'child_process';
+import net from 'net';
+/* Served over LOCAL HTTP for the same reason as test10: the settings-persist
+   coda reloads and asserts the flags came back, and Chromium's file://
+   DOMStorage can hydrate the reloaded document from a stale disk commit
+   straight through the keeper page (run 32486960831 lost this suite's write
+   the same afternoon test10 lost its own twice). One live http-origin area,
+   no disk race. Own server, own port, killed on exit — run-all and serve.py
+   stay untouched, and the remaining file suites keep covering file://. */
+const PORT = 8125;
+const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'],
+  { cwd: process.cwd(), stdio: 'ignore' });
+process.on('exit', () => server.kill());   // a thrown check must not orphan it
+await new Promise((resolve, reject) => {
+  const attempt = n => {
+    const s = net.connect(PORT, '127.0.0.1');
+    s.on('connect', () => { s.end(); resolve(); });
+    s.on('error', () => n > 0 ? setTimeout(() => attempt(n - 1), 200) : reject(new Error('test11 server never came up')));
+  };
+  attempt(50);
+});
+const F = `http://127.0.0.1:${PORT}/knucklebones-neon.html`;
 const browser = await chromium.launch();
 const problems = [], errs = [], out = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
 
 const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+/* over http the single-file page would try to register its service worker
+   (file:// never attempts it) and 404 on /sw.js — not this suite's subject,
+   and the console error would fail the gate. Make the capability absent, the
+   same world every file:// suite already runs in. */
+await ctx.addInitScript(() => { try { delete Navigator.prototype.serviceWorker; } catch { /* strict hosts keep it */ } });
 await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
 const page = await ctx.newPage();
 page.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
@@ -241,3 +267,4 @@ check(/^W /.test(out.badgeClassic.text), 'classic badge lost the win/loss record
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
 await browser.close();
+server.kill();
