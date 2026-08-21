@@ -13,6 +13,12 @@
   --gold:#ffd166;
   --txt:#e9f1ff;
   --dim:#7c88a8;
+  /* the LADDER GROUP palette. Root-scoped on purpose: the identity plate
+     paints these on Home and on the result screen, both outside #ovOnline —
+     the palette's first home, where a plate on document.body once silently
+     fell back to gold (user report, online.css history). */
+  --g-stone:#98a1b3;--g-bone:#d8c5a0;--g-ivory:#f1e9d7;--g-silver:#ccd9ee;
+  --g-gold:var(--gold);--g-obsidian:#b18cff;--g-neon:var(--cy);
   /* WIDTHS — two numbers, not seven (design: 01-widths). --w-app caps the
      shell; --w-col is EVERY screen body: forms, lists, cards, headers, action
      stacks. On a phone the padding wins and it fills the screen; past that it
@@ -970,17 +976,29 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
    The account door ON the action stack: ring-avatar, name, group, points, one
    slim row directly above PLAY RANKED MATCH — your standing and the button
    that moves it read as a single block. Replaces the corner chip. */
-.pplate{display:flex;align-items:center;gap:10px;width:100%;padding:7px 12px 7px 7px;
+.pplate{position:relative;display:flex;align-items:center;gap:10px;width:100%;padding:7px 12px 7px 7px;
   border-radius:14px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.035);
   font:inherit;color:var(--txt);cursor:pointer;text-align:left}
 .pplate .nm2{font-size:10.5px;letter-spacing:.1em;font-weight:800;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* the roomier cut (PlateSpec.large): the result screen's plates breathe a
+   little more top and bottom; the home chip keeps the slim row */
+.pplate.lg{padding:12px 14px 12px 9px}
 /* The group label and the points each centre themselves. Locking the 8px
    label to the 13.5px number's baseline hung its ink ~3px below the plate's
    midline — small all-caps beside big lining digits reads centred, not
    baseline-aligned, at this size gap. */
-.pplate .meta2{margin-left:auto;display:flex;align-items:center;gap:7px;flex:0 0 auto}
-.pplate .gl{font-size:8px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+/* the meta is a COLUMN: the points large, the group pill captioning them
+   beneath (user call) — the name keeps the whole middle of the row, which is
+   what lets a 16-character nickname and a rank coexist on a phone */
+.pplate .meta2{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:0 0 auto}
+.pplate .mrow{display:flex;align-items:center;gap:7px}
+/* the group pill: ONE look for a player's group + rank wherever they appear —
+   the face-off's columns and the identity plate wear the same class, so the
+   result screen, the home chip and the compare card can never drift apart */
+.gpill{font-size:7px;font-weight:900;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gc,var(--gold));border:1px solid color-mix(in srgb,var(--gc,var(--gold)) 45%,transparent);
+  border-radius:6px;padding:2.5px 7px;white-space:nowrap}
 .pplate .meta2 b{font-size:13.5px;font-weight:900;color:var(--gold)}
 /* '›' hangs its ink low in the em box (measured ~1.1px below the plate's
    midline at 14px); the nudge centres the glyph, not the box */
@@ -998,9 +1016,42 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 .pdelta{font-size:11px;font-weight:900;color:#8dffcf;letter-spacing:.05em}
 .pdelta.down{color:var(--mg)}
 /* the stamp across the beaten foe's row (design 36d), in-flow but askew */
-.pstamp{margin-left:2px;flex:0 0 auto;transform:rotate(-8deg);
-  border:1.5px solid rgba(255,47,160,.6);color:rgba(255,71,171,.9);border-radius:5px;
-  padding:1.5px 5px;font-size:7.5px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}
+/* the stamp is slapped ON the plate, not set IN it (user call): it sits
+   under the name's start, grazing its letters, and hangs a little off the
+   card's bottom edge — a rubber stamp over paper, not a badge in a row. Out
+   of the flex flow it also stops rationing the name's ellipsis space against
+   the pill and the points. */
+/* the stamp wears the foe's SCORE colour (user call): the same bright magenta
+   as the losing "30" in the scoreline, not a darker shade of it */
+.pstamp{position:absolute;left:38px;bottom:-6px;transform:rotate(-8deg);
+  border:2px solid rgba(255,47,160,.8);color:var(--mg);border-radius:6px;
+  padding:2.5px 8px;font-size:10px;font-weight:900;letter-spacing:.24em;text-transform:uppercase;
+  background:rgba(5,6,14,.55);text-shadow:0 0 10px rgba(255,47,160,.55);pointer-events:none;
+  /* the SLAM (design 37a, chosen): the stamp drops oversized out of the air
+     once the verdict has landed (title stamps in around .3–1s). backwards
+     keeps it invisible through the delay. */
+  animation:stampSlam .5s cubic-bezier(.34,1.3,.4,1) .9s backwards}
+@keyframes stampSlam{
+  0%{opacity:0;transform:rotate(-8deg) translateY(-46px) scale(2.6)}
+  55%{opacity:1;transform:rotate(-8deg) translateY(0) scale(1)}
+  70%{transform:rotate(-8deg) scale(1.08)}
+  100%{opacity:1;transform:rotate(-8deg) scale(1)}}
+/* the plate takes the hit — a two-frame jolt timed to the stamp's contact
+   (delay .9s + 55% of .5s) — and a thin shock ring blows out of the impact */
+.pplate.stamped{animation:stampJolt .4s linear 1.15s}
+@keyframes stampJolt{0%{transform:none}20%{transform:translateY(2.5px) rotate(.4deg)}
+  45%{transform:translateY(-1.5px)}70%{transform:translateY(.8px)}100%{transform:none}}
+.pstamp::after{content:"";position:absolute;inset:-6px;border-radius:10px;
+  border:2px solid rgba(255,47,160,.5);opacity:0;
+  animation:stampDust .6s ease-out 1.15s;pointer-events:none}
+@keyframes stampDust{0%{opacity:.8;transform:scale(.9)}100%{opacity:0;transform:scale(1.9)}}
+/* one slam per RESULT, not per deal: the late re-deal (fresh numbers) rebuilds
+   the rows, and a second crash would read as a second verdict */
+.endplates.restamp .pstamp,.endplates.restamp .pstamp::after,
+.endplates.restamp .pplate.stamped{animation:none}
+@media (prefers-reduced-motion:reduce){
+  .pstamp,.pstamp::after,.pplate.stamped{animation:none}
+  .pstamp::after{content:none}}
 .endplates{display:flex;flex-direction:column;gap:9px;width:100%;max-width:var(--w-col)}
 .endplates div.pplate{cursor:default}   /* a fact, not a door */
 /* with plates dealing the names, the scoreline goes back to pure numbers */

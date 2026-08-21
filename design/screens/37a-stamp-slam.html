@@ -1,0 +1,46 @@
+<!-- meta name="S1 — Slam from above" group="3e · Beaten stamp arrival" subtitle="The stamp drops out of the air, oversized, and crashes to rest — the plate jolts and a dust ring blows out" width=440 height=620 sizes="max" links="Match result" -->
+<style>
+  .rwrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin:0;flex:1;
+    justify-content:center;width:100%;max-width:336px;align-self:center}
+  .rtitle{font-size:34px;letter-spacing:.2em;font-weight:900;
+    background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
+  /* the loop: the arrival plays in the first quarter of a 3.6s cycle, then
+     holds — so the candidate replays itself while you look */
+  .pstamp{position:absolute;animation:slam 3.6s cubic-bezier(.34,1.3,.4,1) infinite;transform-origin:50% 50%}
+  @keyframes slam{
+    0%{opacity:0;transform:rotate(-8deg) translateY(-46px) scale(2.6)}
+    7%{opacity:0;transform:rotate(-8deg) translateY(-46px) scale(2.6)}
+    13%{opacity:1;transform:rotate(-8deg) translateY(0) scale(1)}
+    16%{transform:rotate(-8deg) scale(1.08)}
+    20%,100%{opacity:1;transform:rotate(-8deg) scale(1)}}
+  .foeplate{animation:jolt 3.6s linear infinite}
+  @keyframes jolt{0%,12.9%{transform:none}13.5%{transform:translateY(2.5px) rotate(.4deg)}
+    14.5%{transform:translateY(-1.5px)}16%{transform:translateY(.8px)}18%,100%{transform:none}}
+  .pstamp::after{content:"";position:absolute;inset:-6px;border-radius:10px;border:2px solid rgba(255,47,160,.5);
+    opacity:0;animation:dust 3.6s ease-out infinite;pointer-events:none}
+  @keyframes dust{0%,12.9%{opacity:0;transform:scale(.6)}14%{opacity:.8;transform:scale(.9)}
+    30%{opacity:0;transform:scale(1.9)}100%{opacity:0}}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="rwrap">
+    <div class="rtitle">VICTORY</div>
+  <div class="endplates dice-static">
+    <button class="pplate lg wonp">
+      <span class="ringwrap mini" style="--p:.502"><i class="lring"></i>{{die:5:p1:18}}</span>
+      <span class="nm2">FrostLynx303</span>
+      <span class="meta2"><span class="mrow"><span class="pdelta">+16</span><b>2,510</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #3</span></span>
+      <span class="chev">›</span>
+    </button>
+    <button class="pplate lg theirs lostp foeplate">
+      <span class="ringwrap mini" style="--p:.436"><i class="lring"></i>{{die:3:p2:18}}</span>
+      <span class="nm2">EmberCrow896</span>
+      <span class="pstamp">Beaten</span>
+      <span class="meta2"><span class="mrow"><b>2,431</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #5</span></span>
+      <span class="chev">›</span>
+    </button>
+  </div>
+  </div>
+</div></div>
+<div class="note"><b>Slam from above.</b> The stamp appears huge over the plate and crashes straight down with a hard overshoot; the plate takes the hit (a two-frame jolt) and a thin shock ring blows outward. The most literal "stamp coming down" — heavy, single impact, done in a third of a second. Ships behind prefers-reduced-motion: the stamp simply appears for players who asked for calm.</div>

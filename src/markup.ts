@@ -359,10 +359,16 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   <!-- who played, as plates (design 36f) — ranked fills this, local leaves it hidden -->
   <div class="endplates" id="endPlates" hidden></div>
   <div class="endmeta" id="endMeta"></div>
+  <!-- share sits WITH the thing it shares (user call): right under the two
+       plates (and local play's record line), centered with them — not down in
+       the action stack. The stack keeps its own anchor: #btnAgain's auto
+       margin, so the cluster stays centered between title and actions. -->
+  <button class="linkbtn" id="btnShare" hidden>Share result</button>
   <button class="btn primary" id="btnAgain">Next duel</button>
   <button class="btn" id="btnMenu2">Change difficulty</button>
-  <button class="linkbtn" id="btnEndHome">Home</button>
-  <button class="linkbtn" id="btnShare" hidden>Share result</button>
+  <!-- a real secondary button, not a text link (user call) — the small cut:
+       a way out shouldn't stand as tall as NEXT DUEL -->
+  <button class="btn small" id="btnEndHome">Home</button>
 </div>
 
 <div class="ov" id="ovLoad" aria-live="polite"></div>`;

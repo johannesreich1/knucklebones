@@ -10,7 +10,9 @@ export function refreshHomeChip(): void {
       // the identity plate (ui/plate): the profile's ring at chip size, filled
       // to the same groupFill the account screen shows large — one ladder, two
       // zoom levels. The result screen deals the very same row (design 36f).
-      fillPlate(chip, { name: p.nickname, avatar: p.avatar ?? null, points: p.rating ?? 0, chev: true });
+      // rank/apex ride the cache from the last landed standing (cacheStanding).
+      fillPlate(chip, { name: p.nickname, avatar: p.avatar ?? null, points: p.rating ?? 0,
+        rank: typeof p.rank === 'number' ? p.rank : null, apex: !!p.apex, chev: true });
       return;
     }
   } catch { /* fall through to anon */ }

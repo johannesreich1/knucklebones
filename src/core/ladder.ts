@@ -134,6 +134,11 @@ export const APEX_SHARE = 0.01;
    rated players in the season. A tiny population has no meaningful 1%, so the
    point floor stands in until there are enough players for a position to mean
    something. */
+/* a POSITION always reads the same way, wherever it appears: #-prefixed, with
+   the same thousands separator the points wear — a season with twelve thousand
+   players says "#12,480", never "#12480" */
+export const rk = (n: number): string => '#' + n.toLocaleString('en');
+
 export function inApex(points: number, rank: number, population: number): boolean {
   if (population < 100) return points >= APEX.floor;
   return rank <= Math.max(1, Math.floor(population * APEX_SHARE));

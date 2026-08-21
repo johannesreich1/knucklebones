@@ -1,4 +1,4 @@
-<!-- meta name="Match result — defeat" group="2 · Online flow" subtitle="A lost delta rides your plate in magenta; the winner's plate takes the gold edge, and nobody is stamped" width=412 height=920 links="Matchmaking, Home, Profile" -->
+<!-- meta name="Match result — defeat" group="2 · Online flow" subtitle="A lost delta rides your plate in magenta; the winner's plate takes the gold edge, nobody is stamped, and both group pills carry the ranks" width=412 height=920 links="Matchmaking, Home, Profile" -->
 <style>
   /* verdict up top, the duel centred, actions in the thumb zone. The plates
      (.endplates/.pplate/.pdelta) are WORN from main.css — the app's own
@@ -6,7 +6,7 @@
   .rwrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin:0;flex:1;
     padding-top:16px;width:100%;max-width:320px;align-self:center}
   .rwrap .rline{margin-top:auto}
-  .rwrap .btn:first-of-type{margin-top:auto}
+  .rwrap .btn.primary{margin-top:auto}
   .rwrap .btn{width:100%;max-width:300px;min-width:0}
   .rtitle{font-size:38px;letter-spacing:.2em;font-weight:900;
     background-image:linear-gradient(100deg,#ff2fa0,#fff 55%,#ff8a3d);
@@ -27,21 +27,21 @@
       <span class="you">28</span><span class="vs">VS</span><span class="cpu">41</span>
     </div>
     <div class="endplates dice-static">
-      <button class="pplate lostp">
+      <button class="pplate lg lostp">
         <span class="ringwrap mini" style="--p:.488"><i class="lring"></i>{{die:5:p1:18}}</span>
         <span class="nm2">FrostLynx303</span>
-        <span class="meta2"><span class="pdelta down">-17</span><span class="gl">GOLD</span><b>2,477</b></span>
+        <span class="meta2"><span class="mrow"><span class="pdelta down">-17</span><b>2,477</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
         <span class="chev">›</span>
       </button>
-      <div class="pplate theirs wonp">
+      <button class="pplate lg theirs wonp">
         <span class="ringwrap mini" style="--p:.45"><i class="lring"></i>{{die:3:p2:18}}</span>
         <span class="nm2">EmberCrow896</span>
-        <span class="meta2"><span class="gl">GOLD</span><b>2,448</b></span>
-      </div>
+        <span class="meta2"><span class="mrow"><b>2,448</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #2</span></span>
+        <span class="chev">›</span>
+      </button>
     </div>
-    <div class="rrank">GOLD · <b>#4</b></div>
-    <button class="btn primary">Next duel</button>
-    <button class="linkbtn">Home</button>
     <button class="linkbtn">Share result</button>
+    <button class="btn primary">Next duel</button>
+    <button class="btn small">Home</button>
   </div>
 </div></div>

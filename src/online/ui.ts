@@ -8,10 +8,10 @@ import './online.css';
 import { ME, AI } from '../core/rules.ts';
 import { $, show, hide } from '../ui/dom.ts';
 import { loaderDie, loaderWait } from '../ui/loader.ts';
-import { showEnd, setMeta, setPlates, closeEnd } from '../ui/endscreen.ts';
+import { showEnd, setPlates, closeEnd } from '../ui/endscreen.ts';
 import { Sfx } from '../ui/audio.ts';
 import { makeDie } from '../ui/die.ts';
-import { rankName, groupFill, peakState, inApex, boardGroup } from '../core/ladder.ts';
+import { rankName, groupFill, peakState, inApex, boardGroup, rk } from '../core/ladder.ts';
 import { ask } from '../ui/askcard.ts';
 import { REDUCED } from '../ui/fx.ts';
 import { recordHtml } from '../ui/record.ts';
@@ -19,6 +19,7 @@ import { AV_HUES, DEFAULT_AVATAR, parseAvatar, paintAvatar } from '../ui/avatar.
 import { signUp, signIn, signOut, currentUser, ensureIdentity, attachEmail,
          myProfile, claimName, leaderboard, deleteAccount, join, readyPeer,
          myLadder, myStanding, matchHistory, setAvatar, bestStreak, playerCard,
+         cacheStanding, type PlayerCard,
          type LeaderboardRow, type Ladder } from './session.ts';
 import { availableTaps } from './identity.ts';
 import { enterMatch, setFinishHandler, type FinishReport } from './play.ts';
@@ -340,10 +341,6 @@ const esc = (s: string) => s.replace(/[&<>"']/g, c =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
 const pts = (n: number): string => n.toLocaleString('en');
-/* a POSITION always reads the same way, wherever it appears: #-prefixed, with
-   the same thousands separator the points wear — a season with twelve thousand
-   players says "#12,480", never "#12480" */
-const rk = (n: number): string => '#' + n.toLocaleString('en');
 
 /* the distance to me, signed: magenta above, cyan below — the duel palette
    doing the talking. A distance is all it may name: what a match would PAY is
@@ -445,12 +442,12 @@ function showFaceoff(r: LeaderboardRow, mine: MySide | null): void {
     <div class="focols dice-static">
       <div class="focol" style="--gc:var(--g-${g.id})">
         <span class="av"></span><span class="fnm">${esc(r.nickname)}</span>
-        <span class="fgp">${g.name} · ${rk(r.rank)}</span>
+        <span class="gpill">${g.name} · ${rk(r.rank)}</span>
       </div>` + (mine ? `
       <span class="fovs">VS</span>
       <div class="focol you" style="--gc:var(--g-${mg!.id})">
         <span class="av"></span><span class="fnm">${esc(mine.name)}</span>
-        <span class="fgp">${mg!.name}</span>
+        <span class="gpill">${mg!.name}</span>
       </div>` : '') + `
     </div>
     <div class="fostats">
@@ -491,7 +488,7 @@ function showFaceoff(r: LeaderboardRow, mine: MySide | null): void {
     if (!mine) return;
     const ms = ov.querySelector('.mystreak');
     if (ms && streak != null) ms.textContent = String(streak);
-    const gp = ov.querySelector('.focol.you .fgp');
+    const gp = ov.querySelector('.focol.you .gpill');
     if (gp && st) gp.textContent += ` · ${rk(st.rank)}`;
   });
 }
@@ -577,6 +574,9 @@ async function showAccount(): Promise<void> {
   const apex = st ? inApex(pts, st.rank, st.population) : false;
   $('#accRank').textContent = st && games ? (apex ? 'NEON' : rk(st.rank)) : '–';
   $('#accStreak').textContent = String(streak);
+  // the freshest standing goes home with the chip (its group pill shows it)
+  cacheStanding(st?.rank ?? null, apex);
+  refreshHomeChip();
 
   /* One continuous fill, and the peak notch in its three states (LADDER.md §5):
      at your position it is redundant, ahead it sits where it really is, and in
@@ -679,24 +679,33 @@ async function showResult(r: FinishReport): Promise<void> {
   hide('#ovOnline');
   const title = r.draw ? 'DEAD HEAT' : r.won ? 'VICTORY' : 'DEFEAT';
   const deltaTxt = r.delta != null ? ` · ${r.delta >= 0 ? '+' : ''}${r.delta} points` : '';
-  let cache: { nickname?: string; rating?: number; avatar?: string | null } | null = null;
+  let cache: { nickname?: string; rating?: number; avatar?: string | null;
+               rank?: number; apex?: boolean } | null = null;
   try { cache = JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null'); }
   catch { /* forgetful host */ }
   const cachedRating = typeof cache?.rating === 'number' && r.delta != null
     ? cache.rating + r.delta : null;
-  /* both rows re-dealt whenever a better number for MY points arrives; the
-     loser dims, the winner takes the gold edge, a win stamps the foe */
-  const plates = (pts: number | null) => [
+  /* both rows re-dealt whenever better numbers arrive; the loser dims, the
+     winner takes the gold edge, a win stamps the foe. The ranks ride the
+     plates' group pills — mine cached instantly, both exact when the RPCs
+     land — so the separate "GROUP · #N" line under the plates is gone. */
+  const plates = (pts: number | null, rank: number | null, apex: boolean,
+                  foe: PlayerCard | null, mine: MySide | null) => [
     { name: cache?.nickname ?? 'You', avatar: cache?.avatar ?? null, points: pts,
-      delta: r.delta, won: r.won, lost: !r.won && !r.draw,
+      rank, apex, delta: r.delta, won: r.won, lost: !r.won && !r.draw,
       tap: () => { closeEnd(); show('#ovOnline'); void route('account'); } },
-    { name: r.opp, avatar: r.oppAvatar, points: r.oppRating, theirs: true,
-      won: !r.won && !r.draw, lost: r.won, stamp: r.won ? 'BEATEN' : undefined },
+    { name: r.opp, avatar: r.oppAvatar,
+      points: foe?.points ?? r.oppRating, rank: foe?.rank ?? null, apex: !!foe?.apex,
+      theirs: true, won: !r.won && !r.draw, lost: r.won,
+      stamp: r.won ? 'BEATEN' : undefined,
+      /* the foe's plate is a DOOR once their row is known: the very face-off
+         the ladder opens, dealt from the result instead of a board row */
+      tap: foe && foe.points != null && foe.rank != null ? () => showFaceoff(
+        { nickname: r.opp, points: foe.points!, wins: foe.wins ?? 0,
+          losses: foe.losses ?? 0, games: foe.games ?? 0, rank: foe.rank!,
+          apex: foe.apex, avatar: r.oppAvatar, peak: foe.peak ?? 0 }, mine)
+        : undefined },
   ];
-  /* the context line keeps only the rank — points and delta live ON the plate */
-  const metaHtml = (rank: number | null, group: string | null) =>
-    group ? `<span class="rrank">${group}${rank != null ? ` · <b>${rk(rank)}</b>` : ''}</span>`
-    : rank != null ? `<span class="rrank">Ladder: <b>${rk(rank)}</b></span>` : '';
   showEnd({
     outcome: r.draw ? 'draw' : r.won ? 'win' : 'lose',
     title,
@@ -706,19 +715,27 @@ async function showResult(r: FinishReport): Promise<void> {
     /* the plates carry the names — the scoreline goes back to pure numbers */
     you:  { score: r.my, label: '' },
     them: { score: r.their, label: '' },
-    plates: plates(cachedRating),
-    meta: metaHtml(null, cachedRating != null ? rankName(cachedRating) : null),
+    plates: plates(cachedRating, cache?.rank ?? null, !!cache?.apex, null, null),
     again: { label: 'Next duel', run: () => { closeEnd(); show('#ovOnline'); void route('play'); } },
     home:  { label: 'Home', run: () => { closeEnd(); goHome(); } },
     share: `${title} ${r.my}–${r.their} vs ${r.opp}${deltaTxt} — Knucklebones, ranked dice duels`,
   });
-  /* the standing RPC knows the rank directly — no scanning a leaderboard page
-     for your own nickname, which silently found nothing past rank 50 */
-  const [p, st] = await Promise.all([myProfile(), myStanding()]);
-  refreshHomeChip();
+  /* the standing RPC knows MY rank directly; player_card (0027) knows the
+     foe's whole row; the ladder feeds the face-off's my-side column. Fetched
+     together so the pills and the door are ready as the screen settles. */
+  const [p, st, lad, foe] = await Promise.all([
+    myProfile(), myStanding(), myLadder(), playerCard(r.opp)]);
+  /* a first-match guest has no cache when the screen opens — the fresh
+     profile corrects the own plate's name on the re-deal (it read "You"
+     forever before, while the opponent saw the real minted nickname) */
+  if (p) cache = { ...cache, nickname: p.nickname, avatar: p.avatar ?? null, rating: p.rating };
   const pts = st?.points ?? p?.rating ?? cachedRating;
-  setPlates(plates(pts));
-  setMeta(metaHtml(st?.rank ?? null, pts != null ? rankName(pts) : null));
+  const apex = st ? inApex(pts ?? 0, st.rank, st.population) : false;
+  cacheStanding(st?.rank ?? null, apex);   // the home chip's pill reads it
+  refreshHomeChip();
+  const mine: MySide | null = p && lad
+    ? { name: p.nickname, avatar: p.avatar ?? null, lad } : null;
+  setPlates(plates(pts, st?.rank ?? null, apex, foe, mine));
 }
 
 let bound = false;

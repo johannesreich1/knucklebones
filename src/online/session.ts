@@ -109,10 +109,23 @@ export async function myProfile(): Promise<Profile | null> {
   if (!user) return null;
   const { data } = await supa().from('profiles').select('id, nickname, rating, created_at, avatar, named_at').eq('id', user.id).maybeSingle();
   try {
-    if (data) localStorage.setItem(PROFILE_CACHE,
-      JSON.stringify({ nickname: data.nickname, rating: data.rating, avatar: data.avatar }));
+    // merged over the old entry, not replaced: rank/apex (cacheStanding) come
+    // from a different RPC and must survive a profile refetch
+    if (data) localStorage.setItem(PROFILE_CACHE, JSON.stringify({
+      ...JSON.parse(localStorage.getItem(PROFILE_CACHE) ?? '{}'),
+      nickname: data.nickname, rating: data.rating, avatar: data.avatar }));
   } catch { /* forgetful host */ }
   return data as Profile | null;
+}
+
+/* the home chip paints before any RPC answers, from this cache — when a
+   standing lands anywhere (result, profile), its rank/apex are stashed beside
+   the profile so the chip's group pill can carry "BONE · #13" at next boot */
+export function cacheStanding(rank: number | null, apex: boolean): void {
+  try {
+    const c = JSON.parse(localStorage.getItem(PROFILE_CACHE) ?? 'null');
+    if (c) localStorage.setItem(PROFILE_CACHE, JSON.stringify({ ...c, rank, apex }));
+  } catch { /* forgetful host */ }
 }
 
 function clearProfileCache(): void {
@@ -220,15 +233,26 @@ export async function leaderboard(limit = 50): Promise<LeaderboardRow[]> {
   return (data as LeaderboardRow[]) ?? [];
 }
 
-/* The face-off's one fact the board rows cannot carry: the tapped player's
-   best win streak (and member-since). A definer RPC keyed by NICKNAME — the
-   board exposes no account ids, and profiles is own-row only, the same reason
-   the leaderboard and match_history are definer functions. */
-export interface PlayerCard { streak: number; since: string | null }
+/* The face-off's facts for ANY named player, keyed by NICKNAME — the board
+   exposes no account ids, and profiles is own-row only, the same reason the
+   leaderboard and match_history are definer functions. Since 0027 this is the
+   player's WHOLE row (rank/apex mirroring leaderboard()), which is what lets
+   the result screen open the same face-off the ladder does. The row fields
+   are null for a player with no season row — the caller shows no door. */
+export interface PlayerCard {
+  streak: number; since: string | null;
+  points: number | null; wins: number | null; losses: number | null;
+  games: number | null; rank: number | null; apex: boolean; peak: number | null;
+}
 export async function playerCard(nick: string): Promise<PlayerCard | null> {
   const { data } = await supa().rpc('player_card', { nick });
   const row = Array.isArray(data) ? data[0] : data;
-  return row ? { streak: Number(row.streak ?? 0), since: row.since ?? null } : null;
+  if (!row) return null;
+  const num = (v: unknown): number | null => v == null ? null : Number(v);
+  return { streak: Number(row.streak ?? 0), since: row.since ?? null,
+           points: num(row.points), wins: num(row.wins), losses: num(row.losses),
+           games: num(row.games), rank: num(row.rank), apex: !!row.apex,
+           peak: num(row.peak) };
 }
 
 /* ---- PvP match API (thin wrappers over the Edge Functions) ---- */

@@ -72,6 +72,7 @@ export function showEnd(spec: EndSpec): void {
   $('#endYouLbl').textContent = spec.you.label;
   $('#endCpuLbl').textContent = spec.them.label;
   setMeta(spec.meta ?? '');
+  delete $('#endPlates').dataset.dealtAt;   // a NEW result: the stamp may slam again
   setPlates(spec.plates ?? []);
   label('#btnAgain', spec.again);
   label('#btnMenu2', spec.alt);
@@ -108,11 +109,20 @@ export function setMeta(html: string): void {
    cache and re-deals once the fresh standing lands */
 export function setPlates(plates: EndPlate[]): void {
   const box = $('#endPlates');
+  /* the slam (styles: .pstamp) plays ONCE per result — a re-deal carries
+     fresh numbers, not a fresh verdict. But only once it truly played: a
+     re-deal landing inside the slam's delay+duration window (~1.7s) rebuilds
+     the stamp before it ever rendered, so there the animation restarts
+     instead of being suppressed — the player still sees exactly one slam. */
+  const first = Number(box.dataset.dealtAt || 0);
+  box.classList.toggle('restamp', !!first && performance.now() - first > 1700);
+  if (plates.length && !first) box.dataset.dealtAt = String(performance.now());
   box.innerHTML = '';
   box.hidden = !plates.length;
   for (const p of plates) {
     const el = document.createElement(p.tap ? 'button' : 'div');
-    fillPlate(el, { ...p, chev: p.chev ?? !!p.tap });
+    // the result's plates wear the roomier cut by default; a spec may override
+    fillPlate(el, { large: true, ...p, chev: p.chev ?? !!p.tap });
     if (p.tap) el.addEventListener('click', () => { Sfx.tap(); p.tap!(); });
     box.appendChild(el);
   }
