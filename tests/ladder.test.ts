@@ -177,17 +177,20 @@ eq(even.da + even.db > 0, true, 'the ladder stopped climbing');
 
 /* ---- §4 difficulty and matchmaking ------------------------------------- */
 /* A bot plays the shape of its OWN group — the label IS the strength. The
-   numbers were tuned by simulation (2026-08-20); tests/botbench.test.ts is
-   the suite that keeps their ORDERING honest, this table just pins them. */
+   numbers were tuned by simulation (2026-08-20; floor retuned 2026-08-21 for
+   the onboarding promise); tests/botbench.test.ts keeps their ORDERING and
+   the newcomer win rates honest, this table just pins them. */
 eq(GROUPS.map((g) => [g.bot.depth, g.bot.risk, g.bot.oppW, g.bot.slip]), [
-  [1, 0, 0, 0.4], [1, 0, 1, 0.3], [1, 0.25, 1, 0.15], [1, 0.6, 1, 0.05],
+  [1, 0, -0.5, 0.55], [1, 0, 1, 0.45], [1, 0.25, 1, 0.15], [1, 0.6, 1, 0.05],
   [2, 1.2, 1, 0], [3, 1.2, 1, 0], [4, 1.2, 1, 0],
 ], 'the per-group bot shapes drifted from LADDER.md §4');
 eq(botShapeAt(148), GROUPS[0].bot, 'a bot with STONE points must play the STONE shape');
 eq(botShapeAt(9999), APEX.bot, 'a bot above the apex floor must play the NEON shape');
-/* the floor knob: slip alone bottoms out at random-parity (a half-greedy still
-   wins 60% vs random, measured), so STONE must also be destroy-BLIND */
-eq(botShapeAt(0).oppW, 0, 'the STONE bot must not see the opponent board');
+/* the floor's floor: slip alone bottoms out at random-parity (a half-greedy
+   still wins 60% vs random, measured), so STONE is KILL-AVERSE — negative
+   oppW prefers placements that spare the player's dice, the one below-random
+   weakness that reads as a beginner rather than a drunk */
+eq(botShapeAt(0).oppW < 0, true, 'the STONE bot must actively spare the player');
 eq(botShapeAt(0).slip >= 0.3, true, 'a brand-new player must meet a bot that blunders');
 eq(botShapeAt(4350).slip, 0, 'the top of the ladder must meet a bot that does not blunder');
 /* every knob only ever tightens on the way up */

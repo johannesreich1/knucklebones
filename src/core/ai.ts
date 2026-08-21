@@ -14,11 +14,13 @@ import {
 let NODES = 0;
 const BUDGET = 500000;                  // node cap: search degrades, never hangs
 let RISK_W = 1.5;                       // tuned by self-play: 55.3% vs risk-blind over 500 games
-/* How much of the OPPONENT's board the eval sees, 0..1. At 0 the searcher is a
-   pure builder: it stacks its own columns and never AIMS a destroy (they still
-   happen when its best build collides). This is the difficulty floor's knob —
-   slip alone cannot get below random-parity, because the un-slipped half of a
-   greedy still takes every kill (measured: d1 slip .5 wins 60% vs random).
+/* How much of the OPPONENT's board the eval sees. At 1 a full duelist, at 0 a
+   pure builder that never AIMS a destroy (they still happen when its best
+   build collides). NEGATIVE is the floor's floor: the eval prefers placements
+   that SPARE the opponent's dice — passivity, the one below-random weakness
+   that reads as a beginner rather than a drunk (slip alone cannot get below
+   random-parity, because the un-slipped half of a greedy still takes every
+   kill — measured: d1 slip .5 wins 60% vs random). STONE ships at -0.5.
    AI-seat perspective, like the eval itself: every bot in the game sits there. */
 let OPP_W = 1;
 

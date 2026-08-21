@@ -7,9 +7,10 @@
 // Deterministic: Math.random is replaced by a seeded stream, which also seeds
 // core/ai.ts's tie-break jitter — the gate may not depend on the machine's
 // mood. The margins below sit well under the tuned values (bench 2026-08-21,
-// mulberry32: STONE 50.0% vs random, BONE 71.7%, NEON 82.7% / 55.0% vs
-// medium, colshield-aware 48.3% vs blind), so they catch a broken retune,
-// not simulation drift.
+// mulberry32, floor retune: STONE 41.7% vs random, BONE 66.4%, NEON 81.0% /
+// 59.2% vs medium, newcomer-first 74.4% vs STONE and 57.0% vs BONE,
+// colshield-aware 51.8% vs blind), so they catch a broken retune, not
+// simulation drift.
 import {
   AI, ME, emptyBoard, legalCols, applyMove, totalOf, isOver, CLASSIC, COLSHIELD, type Mode,
 } from '../src/core/rules.ts';
@@ -96,6 +97,24 @@ if (!(vsRandom[GROUPS.length - 1] >= 0.70)) {
   problems.push(`NEON wins only ${(vsRandom[GROUPS.length - 1] * 100).toFixed(1)}% vs random — the apex has gone soft`);
 }
 
+/* 1c · the onboarding promise (2026-08-21): in the PRODUCTION lens (vs a bot
+   the human is p1 and moves first), a newcomer who has merely understood
+   stacking — the pure builder — must WIN clearly in STONE and still win in
+   BONE. "If I lose 50% in the beginning, I quit" is the requirement; the
+   kill-averse STONE (negative oppW) and the slackened BONE are its shape.
+   Measured 76.6% / 59.0%; the bars sit under them by real margins. */
+const NEWCOMER: Policy = { depth: 1, oppW: 0, risk: 0, slip: 0 };
+const stoneNewcomer = 1 - vsAnchor(GROUPS[0].bot, NEWCOMER, 600);
+if (!(stoneNewcomer >= 0.70)) {
+  problems.push(`a stacking newcomer wins only ${(stoneNewcomer * 100).toFixed(1)}% vs the STONE bot — `
+    + `the floor is not a place where new players WIN`);
+}
+const boneNewcomer = 1 - vsAnchor(GROUPS[1].bot, NEWCOMER, 600);
+if (!(boneNewcomer >= 0.54)) {
+  problems.push(`a stacking newcomer wins only ${(boneNewcomer * 100).toFixed(1)}% vs the BONE bot — `
+    + `the first promotion may read "harder", never "losing"`);
+}
+
 /* 2 · the first promotion must be felt: BONE (sees your board) beats STONE
    (destroy-blind) clearly. This is the seam the whole rework exists for. */
 const boneVsStone = duel(GROUPS[1].bot, GROUPS[0].bot, 600);
@@ -126,6 +145,8 @@ if (!(csAwareVsBlind >= 0.47)) {
 
 console.log(JSON.stringify({
   vsRandom: Object.fromEntries(GROUPS.map((g, i) => [g.name, +(vsRandom[i] * 100).toFixed(1)])),
+  stoneNewcomer: +(stoneNewcomer * 100).toFixed(1),
+  boneNewcomer: +(boneNewcomer * 100).toFixed(1),
   boneVsStone: +(boneVsStone * 100).toFixed(1),
   neonVsMedium: +(neonVsMedium * 100).toFixed(1),
   csAwareVsBlind: +(csAwareVsBlind * 100).toFixed(1),

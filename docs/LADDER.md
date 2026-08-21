@@ -205,26 +205,32 @@ construction.
 
 | group | depth | risk | sees your board | slip | win% vs random |
 |---|---|---|---|---|---|
-| STONE | 1 | 0 | **no** (`oppW 0`) | 40% | **50** |
-| BONE | 1 | 0 | yes | 30% | 65 |
-| IVORY | 1 | 0.25 | yes | 15% | 77 |
-| SILVER | 1 | 0.6 | yes | 5% | 75 |
-| GOLD | 2 | 1.2 | yes | — | 78 |
-| OBSIDIAN | 3 | 1.2 | yes | — | 79 |
-| NEON | 4 | 1.2 | yes | — | 80 |
+| STONE | 1 | 0 | **spares it** (`oppW -0.5`) | 55% | **42** |
+| BONE | 1 | 0 | yes | 45% | 66 |
+| IVORY | 1 | 0.25 | yes | 15% | 74 |
+| SILVER | 1 | 0.6 | yes | 5% | 74 |
+| GOLD | 2 | 1.2 | yes | — | 80 |
+| OBSIDIAN | 3 | 1.2 | yes | — | 82 |
+| NEON | 4 | 1.2 | yes | — | 81 |
 
-Every number measured (600 games per cell, 2026-08-20); the deep groups
-separate against stronger anchors instead — vs the offline Medium the climb
-is 22 → 36 → 39 → 44 → 54 → 59 → 59, and vs Hard 17 → 27 → 31 → 41 → 45 →
-44 → 46. `tests/botbench.test.ts` (seeded, in the gate) keeps the ordering
-honest; `tests/ladder.test.ts` pins the shape numbers.
+Every number measured (seeded, `tests/botbench.test.ts` in the gate keeps
+the ordering honest; `tests/ladder.test.ts` pins the shape numbers). The
+deep groups separate against stronger anchors instead — NEON holds ≥50%
+against the offline Medium.
 
-**`oppW` is the floor's knob.** Slip alone cannot make a gentle bot: the
-un-slipped half of a depth-1 greedy still takes every kill, and even at 90%
-slip it holds random-parity (measured). At `oppW 0` the STONE bot's eval sees
-only its own board — a builder that never *aims* a destroy — which is what
-finally put the floor at ~50% vs a random mover: someone who has just learned
-the rules wins more than they lose.
+**`oppW` is the floor's knob, and NEGATIVE is the floor's floor** (retuned
+2026-08-21: "if I lose 50% in the beginning, I quit"). Slip alone cannot
+make a gentle bot: the un-slipped half of a depth-1 greedy still takes every
+kill, and even at 90% slip it holds random-parity (measured). At `oppW 0`
+the eval never *aims* a destroy; below 0 it actively prefers placements that
+SPARE the player's dice — passivity, the one below-random weakness that
+reads as a beginner rather than a drunk. On a passive bot, slip is where
+accidental kills sneak back in, so the gentlest honest shape is high-slip
+AND kill-averse. In the production lens (the human is p1 and moves first vs
+a bot): a newcomer who merely stacks beats STONE **76.6%** and even a random
+mover wins 56.1%; against the slackened BONE the stacker still wins 59.0% —
+the first promotion reads "harder now", never "losing now". Both rates are
+gate-pinned (botbench §1c).
 
 **Matchmaking width** (humans) is unchanged: few players near you → widen the
 band; crowded → keep it tight (`players_near` + `matchBand`). Percentile

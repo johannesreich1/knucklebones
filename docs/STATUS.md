@@ -216,6 +216,16 @@ between streams), and the deep groups sample 150-250 games (the apex's
 ordered-ladder check had been riding an SE of ~6pp). Redeployed as pvp-move
 v15.
 
+**The floor retune (2026-08-21, user decision: "if I lose 50% in the
+beginning, I quit")** — humans stay fair, bots are the onboarding lever.
+STONE is now KILL-AVERSE (`oppW -0.5`, slip .55): negative oppW makes the
+eval prefer placements that spare the player's dice — passivity, the one
+below-random weakness that reads as a beginner rather than a drunk. BONE
+slackened to slip .45. Production lens (human is p1, moves first): a
+newcomer who merely stacks beats STONE 76.6% and BONE 59.0%; even a random
+mover beats STONE 56.1%. Gate-pinned in botbench §1c; shapes pinned in
+ladder.test §4; LADDER.md §4 rewritten. Deployed as pvp-move v16.
+
 **Verified live (2026-08-21 morning).** The evening's whole server surface,
 byte-diffed and probed: deployed bundles fetched and diffed against the repo
 (pvp-join v17 byte-identical to d87e700; pvp-move v15 = this fixed core plus

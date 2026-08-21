@@ -80,10 +80,15 @@ export function settle(a: LadderRow, b: LadderRow, aScore: Score): Settled {
    rank badge was theater, and it read as "STONE bots are too strong".)
      depth — expectimax plies (core/ai.ts searchRoot)
      risk  — RISK_W: how much it fears what you can destroy (0 = blind)
-     oppW  — OPP_W: how much of YOUR board its eval sees. 0 is the floor knob:
-             a builder that never aims a destroy — slip alone cannot get below
-             random-parity, a half-greedy still wins 60% vs random (measured)
-     slip  — share of moves played as a pure coin-flip column */
+     oppW  — OPP_W: how much of YOUR board its eval sees. 0 is a builder that
+             never aims a destroy; NEGATIVE is the floor's floor — a bot that
+             prefers placements which SPARE your dice. Passivity is the one
+             below-random weakness that reads as a beginner rather than a
+             drunk, and it is what lets a brand-new player actually win
+             (decided 2026-08-21: "if I lose 50% in the beginning, I quit").
+     slip  — share of moves played as a pure coin-flip column. On a PASSIVE
+             bot slip is where accidental kills sneak back in, so the gentlest
+             honest shape is high-slip AND kill-averse, not low-slip. */
 export interface BotShape { depth: number; risk: number; oppW: number; slip: number }
 
 export interface Group {
@@ -100,12 +105,16 @@ export interface Group {
    pays less when you outrank your opponent, and a group costs more than the
    last. Widths stay round numbers out of habit rather than need — the ring is
    one continuous fill now, so nothing has to divide evenly into it.
-   Bot shapes: tuned by simulation 2026-08-20 (tests/botbench.test.ts keeps the
-   ordering honest) — win% vs a random mover climbs STONE→NEON, and each group
-   beats the one two below it. */
+   Bot shapes: tuned by simulation (tests/botbench.test.ts keeps the ordering
+   honest) — win% vs a random mover climbs STONE→NEON, and each group beats
+   the one two below it. The bottom two retuned 2026-08-21 for the onboarding
+   promise, measured in the PRODUCTION lens (vs a bot the human is p1 and
+   moves first): vs kill-averse STONE a newcomer who merely stacks wins 76.6%
+   and even a random mover wins 56.1%; vs the softened BONE the stacker still
+   wins 59.0% — promotion reads "harder now", never "losing now". */
 export const GROUPS: readonly Group[] = [
-  { id: 'stone',    name: 'STONE',    floor: 0,    width: 300,  bot: { depth: 1, risk: 0,    oppW: 0, slip: 0.40 } },
-  { id: 'bone',     name: 'BONE',     floor: 300,  width: 420,  bot: { depth: 1, risk: 0,    oppW: 1, slip: 0.30 } },
+  { id: 'stone',    name: 'STONE',    floor: 0,    width: 300,  bot: { depth: 1, risk: 0,    oppW: -0.5, slip: 0.55 } },
+  { id: 'bone',     name: 'BONE',     floor: 300,  width: 420,  bot: { depth: 1, risk: 0,    oppW: 1, slip: 0.45 } },
   { id: 'ivory',    name: 'IVORY',    floor: 720,  width: 540,  bot: { depth: 1, risk: 0.25, oppW: 1, slip: 0.15 } },
   { id: 'silver',   name: 'SILVER',   floor: 1260, width: 750,  bot: { depth: 1, risk: 0.6,  oppW: 1, slip: 0.05 } },
   { id: 'gold',     name: 'GOLD',     floor: 2010, width: 990,  bot: { depth: 2, risk: 1.2,  oppW: 1, slip: 0 } },
