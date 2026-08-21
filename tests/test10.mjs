@@ -161,7 +161,20 @@ check(out.end.shown && out.end.endRec === 'TUTORIAL COMPLETE', 'tutorial end scr
 check(out.end.stats === 0 && out.end.best === 0, 'tutorial polluted the record', out.end);
 check(out.end.tutDone && out.end.tutCleared, 'tutorial completion state wrong', out.end);
 
-// after graduating, the flag persists across reload
+// After graduating, the flag persists across reload. WAIT FOR THE WRITE, not
+// a fixed beat: on CI's slow runners this reload raced the save three times
+// in one evening (2026-08-20) — green locally every time, red ~1-in-2 on the
+// runner. Polling localStorage for the flag makes the wait deterministic, and
+// separates the two failures a fixed sleep conflates: "the save never
+// happened" (times out HERE, before the reload) vs "the boot did not read it
+// back" (the check below).
+await page.waitForFunction(() => {
+  try { return JSON.parse(localStorage.getItem('knucklebones.v1') ?? '{}').tutDone === true; }
+  catch { return false; }
+}, null, { timeout: 8000 }).catch(() => { /* the check below names the failure */ });
+out.saved = await page.evaluate(() =>
+  JSON.parse(localStorage.getItem('knucklebones.v1') ?? '{}').tutDone === true);
+check(out.saved, 'tutorial completion was never SAVED — the write itself is missing', out);
 await page.reload(); await page.waitForTimeout(600);
 out.afterGrad = await page.evaluate(() => ({ tutDone: window.__kb.S.tutDone }));
 check(out.afterGrad.tutDone, 'tutorial completion did not persist', out.afterGrad);

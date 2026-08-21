@@ -120,7 +120,20 @@ out.help = await page.evaluate(() => ({
 check(out.help.rules && !out.help.settings, 'help did not open from the hub', out.help);
 await page.tap('#btnCloseRules'); await page.waitForTimeout(300);
 
-// choices persist across reload
+// Choices persist across reload — but WAIT FOR THE WRITE first: this reload
+// raced the save on CI's slow runner (2026-08-20, same class as test10's).
+// The poll makes the wait deterministic and names the true failure when the
+// save itself never lands.
+await page.waitForFunction(() => {
+  try { const d = JSON.parse(localStorage.getItem('knucklebones.v1') ?? '{}');
+        return d.sound === false && d.numerals === true; }
+  catch { return false; }
+}, null, { timeout: 8000 }).catch(() => { /* the check below names the failure */ });
+out.savedSettings = await page.evaluate(() => {
+  const d = JSON.parse(localStorage.getItem('knucklebones.v1') ?? '{}');
+  return d.sound === false && d.numerals === true;
+});
+check(out.savedSettings, 'settings were never SAVED — the write itself is missing', out);
 await page.reload(); await page.waitForTimeout(600);
 out.persist = await page.evaluate(() => ({
   sound: window.__kb.S.sound, numerals: window.__kb.S.numerals,
