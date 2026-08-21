@@ -174,9 +174,12 @@ try {
   out.dragging = await page.evaluate(() => ({
     ghost: document.querySelectorAll('.runeghost').length,
     hot: document.querySelectorAll('.col.hot').length,
+    hotSide: document.querySelector('.col.hot')?.closest('.side')?.id,
   }));
   check(out.dragging.ghost === 1, 'no rune under the finger while dragging', out.dragging);
-  check(out.dragging.hot === 2, 'a theft must light BOTH facing columns — source and landing', out.dragging);
+  // the steal takes from THEIR half: exactly the column it will rob lights up
+  check(out.dragging.hot === 1 && out.dragging.hotSide === 'sideTop',
+    'a theft must light the enemy column it will rob, and only that', out.dragging);
   await page.mouse.up(); await page.waitForTimeout(1200);
   out.dropped = await look();
   check(out.dropped.mine === '[[1,1,6],[],[]]' && out.dropped.theirs === '[[],[],[]]',
@@ -269,44 +272,105 @@ try {
   check(out.cpuHolds.cpu === '[[2],[],[]]' && out.cpuHolds.charges === '[{"pilfer":1},{"pilfer":1}]',
     'the CPU burned its rune on nothing', out.cpuHolds);
 
-  /* ---------- 9. a SELF spell aims at the die in play, not the board ----------
-     FATE: tap-to-arm lights the STAGE (columns stand down), a column tap
-     cancels instead of casting, and the die on the stage is what changes. */
+  /* ---------- 9. a SELF spell has ONE target, so pressing it casts it ----------
+     NUDGE and FATE act on the die in hand. There is nothing to choose, so
+     there is nothing to aim: a tap on the rune spends it then and there
+     (user call — an aim step for a single possible target was pure friction).
+     NUDGE is the deterministic one: 5 must become 6. */
+  await newGame({ spell: 'nudge' }); check(await waitChoose(), 'game never reached choose (nudge)');
+  await table([[2], [], []], [[5], [], []], 5);
+  await tapRune(); await page.waitForTimeout(700);
+  out.selfTap = await look();
+  check(out.selfTap.die === 6, 'a tap on a self rune must cast it — the die did not tick', out.selfTap);
+  check(out.selfTap.charges === '[{"nudge":1},{"nudge":0}]', 'the tap-cast charged the wrong seat', out.selfTap);
+  check(out.selfTap.armed === null && !out.selfTap.castself,
+    'a self spell must never sit armed waiting for a target', out.selfTap);
+  check(out.selfTap.phase === 'choose' && !out.selfTap.busy, 'the turn was not handed back (nudge)', out.selfTap);
+  // the die the cast produced still places, and the spent rune says so
+  check(out.selfTap.runeClass.includes('spent'), 'a spent self rune must say so', out.selfTap.runeClass);
+  await tapCol(1); await page.waitForTimeout(900);
+  check(JSON.parse((await look()).mine)[1][0] === 6, 'placement broken after a self cast', await look());
+
+  /* the drag still aims — dropping on the die casts, dropping anywhere else
+     cancels and keeps the charge */
   await newGame({ spell: 'fate' }); check(await waitChoose(), 'game never reached choose (fate)');
   await table([[2], [], []], [[5], [], []], 2);
-  await tapRune(); await page.waitForTimeout(120);
-  out.selfArmed = await look();
-  check(out.selfArmed.armed === 'fate' && out.selfArmed.castself,
-    'a self spell must aim at the stage', out.selfArmed);
-  check(/die/i.test(out.selfArmed.status), 'the aim line must point at the die', out.selfArmed.status);
-  // a column is the WRONG target for a self spell: the tap cancels, free of charge
-  await tapCol(0); await page.waitForTimeout(200);
-  out.selfMiss = await look();
-  check(out.selfMiss.armed === null && out.selfMiss.charges === '[{"fate":2},{"fate":2}]',
-    'a column tap must cancel a self spell, not cast it', out.selfMiss);
-  check(out.selfMiss.mine === '[[2],[],[]]' && out.selfMiss.die === 2,
-    'the cancelled aim changed something', out.selfMiss);
-  // arm again, tap the die in play: the cast happens THERE
-  await tapRune(); await page.waitForTimeout(120);
-  await page.tap('#dieStage'); await page.waitForTimeout(900);
-  out.selfCast = await look();
-  check(out.selfCast.charges === '[{"fate":2},{"fate":1}]', 'the stage tap did not cast', out.selfCast);
-  check(out.selfCast.die >= 1 && out.selfCast.die <= 6, 'the redraw lost the die', out.selfCast.die);
-  check(out.selfCast.phase === 'choose' && !out.selfCast.busy, 'the turn was not handed back (fate)', out.selfCast);
-  check(!out.selfCast.castself, 'the stage is still lit after the cast', out.selfCast);
-  // the drag reaches the same gate: rune onto the stage spends the second charge
-  const rbox = await page.locator('.rune[data-seat="1"]:not([hidden])').boundingBox();
-  const sbox = await page.locator('#dieStage').boundingBox();
-  await page.mouse.move(rbox.x + rbox.width / 2, rbox.y + rbox.height / 2);
-  await page.mouse.down();
-  await page.mouse.move(sbox.x + sbox.width / 2, sbox.y + sbox.height / 2, { steps: 10 });
-  await page.mouse.up(); await page.waitForTimeout(900);
+  const drag = async (to) => {
+    const rb = await page.locator('.rune[data-seat="1"]:not([hidden])').boundingBox();
+    const tb = await page.locator(to).boundingBox();
+    await page.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(tb.x + tb.width / 2, tb.y + tb.height / 2, { steps: 10 });
+    await page.mouse.up(); await page.waitForTimeout(900);
+  };
+  await drag('#dieStage');
   out.selfDrag = await look();
-  check(out.selfDrag.charges === '[{"fate":2},{"fate":0}]', 'the stage drop did not cast', out.selfDrag);
-  // and the redrawn die still places
-  await tapCol(1); await page.waitForTimeout(900);
-  out.selfPlaced = await look();
-  check(JSON.parse(out.selfPlaced.mine)[1].length === 1, 'placement broken after a redraw', out.selfPlaced);
+  check(out.selfDrag.charges === '[{"fate":2},{"fate":1}]', 'the stage drop did not cast', out.selfDrag);
+  check(out.selfDrag.die >= 1 && out.selfDrag.die <= 6, 'the redraw lost the die', out.selfDrag.die);
+  await drag('#botBoard .col[data-col="2"]');       // a column is not a self spell's target
+  out.selfDragMiss = await look();
+  check(out.selfDragMiss.charges === '[{"fate":2},{"fate":1}]',
+    'dropping a self spell on a column must cancel, not spend', out.selfDragMiss);
+  check(out.selfDragMiss.armed === null, 'the cancelled drag left the rune armed', out.selfDragMiss);
+
+  /* ---------- 9b. the board rings ONLY what the cast can land on ----------
+     COLUMN SWAP could honestly ring all six (either half was a legal target).
+     WARD guards your three; PILFER robs theirs, and only the ones holding
+     dice. Ringing the rest told the player the board was a target when it
+     was not (user report). markAim asks the registry's own legal(). */
+  const rings = () => page.evaluate(() => {
+    const ring = (side) => [0, 1, 2].map((c) => {
+      const st = getComputedStyle(document.querySelector(`#${side} .col[data-col="${c}"]`), '::after');
+      return st.display !== 'none' && st.borderStyle !== 'none' ? 1 : 0;
+    });
+    return { mine: ring('botBoard'), enemy: ring('topBoard') };
+  });
+  await newGame({ spell: 'ward' }); check(await waitChoose(), 'game never reached choose (ward rings)');
+  await table([[6, 6], [2], []], [[3], [], []]);
+  await tapRune(); await page.waitForTimeout(200);
+  out.wardRings = await rings();
+  check(String(out.wardRings.mine) === '1,1,1' && String(out.wardRings.enemy) === '0,0,0',
+    'A WARD MUST OFFER YOUR COLUMNS AND ONLY YOURS', out.wardRings);
+  await page.tap('#status'); await page.waitForTimeout(200);          // tap off-board: cancel
+
+  await newGame({ spell: 'pilfer' }); check(await waitChoose(), 'game never reached choose (pilfer rings)');
+  await table([[6, 6], [2], []], [[3], [], []]);                      // only enemy col 0 holds a die
+  await tapRune(); await page.waitForTimeout(200);
+  out.pilferRings = await rings();
+  check(String(out.pilferRings.mine) === '0,0,0' && String(out.pilferRings.enemy) === '1,0,0',
+    'A STEAL MUST OFFER ONLY ENEMY COLUMNS THAT HOLD A DIE', out.pilferRings);
+  // and an unringed column refuses rather than casting somewhere else
+  await tapCol(1); await page.waitForTimeout(400);
+  out.unringed = await look();
+  check(out.unringed.charges === '[{"pilfer":1},{"pilfer":1}]',
+    'tapping an unoffered column spent the charge', out.unringed);
+
+  /* ---------- 10. the nameplate holds still ----------
+     The rail and the plate trade the rune every turn face-to-face. The score
+     cluster is vertically centred, so a slot that collapsed when the rune
+     left re-centred it — the number jumped 10px each turn (user report). */
+  await newGame({ spell: 'fate' }); check(await waitChoose(), 'game never reached choose (plate)');
+  out.plateHold = await page.evaluate(async () => {
+    const k = window.__kb;
+    const ys = [];
+    for (const turn of [1, 0, 1, 0]) {
+      k.S.turn = turn; k.S.phase = 'choose'; k.S.busy = false;
+      k.spells.render(); k.renderAll(false);
+      await new Promise((r) => setTimeout(r, 120));
+      ys.push([+document.getElementById('totTop').getBoundingClientRect().y.toFixed(1),
+               +document.getElementById('totBot').getBoundingClientRect().y.toFixed(1)].join('/'));
+    }
+    return { ys, distinct: [...new Set(ys)].length };
+  });
+  check(out.plateHold.distinct === 1, 'THE SCORE MOVES WHEN THE RUNE CHANGES HANDS', out.plateHold);
+  // and a spell-free game reserves nothing: the nameplate is the old nameplate
+  await newGame({ spell: '' }); check(await waitChoose(), 'game never reached choose (plate none)');
+  out.plateNone = await page.evaluate(() => {
+    const slot = document.querySelector('#plateTop .runeslot');
+    return { live: slot.classList.contains('live'), display: getComputedStyle(slot).display };
+  });
+  check(!out.plateNone.live && out.plateNone.display === 'none',
+    'a spell-free game left a hole in the nameplate', out.plateNone);
 
   /* ---------- 10. WARD: the mark is a thing the player can SEE ---------- */
   await newGame({ spell: 'ward' }); check(await waitChoose(), 'game never reached choose (ward)');

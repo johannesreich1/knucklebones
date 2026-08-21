@@ -42,6 +42,10 @@ export interface SpellSpec {
   detail: string;    // the long form (screen readers, and any future sheet)
   aim: string;       // the status line while the rune is armed
   target: 'column' | 'self';   // what a cast aims at — a column, or the die in hand
+  /* WHOSE half a column cast points at. The board rings only the columns a
+     cast can actually land on, so this is what stops a ward from advertising
+     the enemy's columns (and a pilfer from advertising your own). */
+  side?: 'own' | 'foe';
   uses: number;      // casts per player, per game
   /* May this cast happen? Legality is the ONLY failure path a spell has: an
      illegal target is refused before anything moves, so no cast can fail
@@ -138,6 +142,7 @@ const WARD: SpellSpec = {
         + 'fizzles instead, and the ward is spent. One cast per game.',
   aim: 'Tap one of your columns to guard',
   target: 'column',
+  side: 'own',
   uses: 1,
   legal(st, who, col, ctx) {
     if (!ctx || !Number.isInteger(col) || col < 0 || col >= SPEC.cols) return false;
@@ -204,6 +209,7 @@ const PILFER: SpellSpec = {
         + 'robbed. One cast per game.',
   aim: 'Tap an enemy column to steal',
   target: 'column',
+  side: 'foe',
   uses: 1,
   legal(st, who, col, ctx) {
     if (!ctx || !Number.isInteger(col) || col < 0 || col >= SPEC.cols) return false;

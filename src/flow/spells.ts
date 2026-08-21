@@ -126,11 +126,43 @@ export function renderSpells(): void {
         + (left > 0 ? ' ' + left + ' cast left.' : ' Spent.'));
     }
   }
+  /* the plate keeps the rune's place for the WHOLE game, not just the turns
+     the rune spends there. The rail and the plate trade the rune every turn
+     in face-to-face play, and a slot that collapsed when it left re-centred
+     the score cluster with it — the number and the rune visibly jumped 10px
+     each turn. A seat that brought a spell reserves the space; a game with
+     no spells reserves nothing and the nameplate is exactly what it was. */
+  for (const seat of [AI, ME] as Player[]) {
+    const slot = $('#plate' + (sideKey(seat) === 'bot' ? 'Bot' : 'Top'))?.querySelector('.runeslot');
+    slot?.classList.toggle('live', Object.keys(S.spellCharges[seat]).length > 0);
+  }
   const armed = spellById(S.spellArmed);
   document.documentElement.classList.toggle('casting', armed !== null);
   // a self spell aims at the die in play, not the board: the columns stand
   // down and the stage lights up instead (styles/main.css html.castself)
   document.documentElement.classList.toggle('castself', armed?.target === 'self');
+  markAim(armed);
+}
+
+/* WHICH columns the armed spell can actually be dropped on — asked from the
+   registry, never from a list kept here. The board rings exactly these, so a
+   WARD advertises your three columns and a PILFER theirs; ringing all six
+   (which the symmetrical COLUMN SWAP could honestly do) told the player that
+   half the board was a target when it was not. */
+function markAim(spell: SpellSpec | null): void {
+  document.querySelectorAll('.col.aim').forEach((c) => c.classList.remove('aim'));
+  const who = caster();
+  if (!spell || who === null || spell.target !== 'column') return;
+  const side = (spell.side === 'foe' ? 1 - who : who) as Player;
+  const ctx = castCtx();
+  for (let c = 0; c < SPEC.cols; c++) {
+    if (spell.legal(S.boards as GameState, who, c, ctx)) colEl(side, c)?.classList.add('aim');
+  }
+}
+/* is this column a target the rings promised? ONE question for every input
+   path — drag, tap and the 1–3 keys all ask it, so they cannot disagree. */
+function aimed(col: number): boolean {
+  return !!document.querySelector('.col.aim[data-col="' + col + '"]');
 }
 
 /* one rune per seat per spell, made once and re-homed by the render */
@@ -173,13 +205,14 @@ export function disarm(): void {
 /* the armed spell takes the tap before placement does. What arrives is the
    TARGET the tap landed on: a column index, −1 for the die in play, or null —
    nowhere useful, which simply cancels. A target of the wrong kind for the
-   armed spell cancels too: aiming a WARD at the die means nothing. */
+   armed spell cancels too: aiming a WARD at the die means nothing, and so
+   does dropping it on a column the rings never offered. */
 export function castArmed(col: number | null): boolean {
   const id = S.spellArmed;
   if (!id) return false;
   const spell = spellById(id);
   const fits = col !== null && !!spell
-    && (spell.target === 'self' ? col === -1 : col >= 0);
+    && (spell.target === 'self' ? col === -1 : col >= 0 && aimed(col));
   if (!fits) { Sfx.tap(); disarm(); return true; }
   void cast(id, col!);
   return true;
@@ -408,11 +441,6 @@ function reveal(who: Player, col: number): void {
    spell's is the die in play on its stage. */
 const SLOP = 8;                      // px before a press becomes a drag
 
-/* which halves light up under an aimed column spell: WARD guards your own
-   column, PILFER touches both facing ones. The highlight is the explanation,
-   so it must show exactly what the drop will touch. */
-const AIM_SIDES: Record<string, 'own' | 'pair'> = { ward: 'own', pilfer: 'pair' };
-
 /* The rune's gesture is the RUNE'S. Every one of its pointer events is stopped
    here: the whole rail sits inside #tableEl, whose own pointerup means "you
    pointed at the board" — and a tap that lands nowhere on the board cancels
@@ -421,6 +449,7 @@ function bind(b: HTMLButtonElement, id: string): void {
   if (!window.PointerEvent) {        // hosts without pointer events: arm on click
     b.addEventListener('click', (e) => {
       e.stopPropagation();
+      if (spellById(id)?.target === 'self') { if (castable(id)) void cast(id, -1); else bump(b); return; }
       S.spellArmed === id ? disarm() : tryArm(b, id);
     });
     return;
@@ -429,13 +458,19 @@ function bind(b: HTMLButtonElement, id: string): void {
   b.addEventListener('pointerdown', (e: PointerEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    const self = spellById(id)?.target === 'self';
     const wasArmed = S.spellArmed === id;
-    if (!tryArm(b, id)) return;
+    if (!castable(id)) { Sfx.tap(); bump(b); return; }
+    // A SELF spell has exactly one target — the die in hand — so there is
+    // nothing to aim: the tap IS the cast (below). Aiming still exists for
+    // the drag, which arms the moment the finger actually travels.
+    if (self) Sfx.tap(); else if (!tryArm(b, id)) return;
     const x0 = e.clientX, y0 = e.clientY;
     let dragging = false;
     const move = (m: PointerEvent) => {
       if (!dragging && Math.hypot(m.clientX - x0, m.clientY - y0) > SLOP) {
         dragging = true;
+        if (self) arm(id);
         showGhost(id);
       }
       if (dragging) moveGhost(m.clientX, m.clientY, id);
@@ -446,7 +481,8 @@ function bind(b: HTMLButtonElement, id: string): void {
       b.removeEventListener('pointerup', up);
       b.removeEventListener('pointercancel', up);
       if (!dragging) {
-        if (wasArmed) { Sfx.tap(); disarm(); }   // a second tap puts it away
+        if (self) { void cast(id, -1); return; }  // one target: pressing it casts it
+        if (wasArmed) { Sfx.tap(); disarm(); }    // a second tap puts it away
         return;
       }
       const t = targetAt(u.clientX, u.clientY, id);
@@ -454,16 +490,27 @@ function bind(b: HTMLButtonElement, id: string): void {
       if (t === null) { Sfx.tap(); disarm(); return; }
       void cast(id, t);
     };
-    b.setPointerCapture(e.pointerId);
+    /* LISTENERS FIRST, capture second. setPointerCapture throws when the id
+       is not an active pointer (a synthetic event, an odd webview), and it
+       used to run first — so the throw skipped the registrations below and
+       the gesture could never finish: the rune stayed armed with no way to
+       release it. The capture is an improvement to the drag, never a
+       requirement for the tap. */
     b.addEventListener('pointermove', move);
     b.addEventListener('pointerup', up);
     b.addEventListener('pointercancel', up);
+    try { b.setPointerCapture(e.pointerId); } catch { /* drag without capture */ }
   });
 }
 
-function tryArm(b: HTMLButtonElement, id: string): boolean {
+/* may this seat spend this rune right now? The gate every gesture asks
+   BEFORE it decides whether to aim or simply cast. */
+function castable(id: string): boolean {
   const who = caster();
-  if (who === null || chargesOf(who, id) <= 0) { Sfx.tap(); bump(b); return false; }
+  return who !== null && chargesOf(who, id) > 0;
+}
+function tryArm(b: HTMLButtonElement, id: string): boolean {
+  if (!castable(id)) { Sfx.tap(); bump(b); return false; }
   Sfx.tap();
   arm(id);
   return true;
@@ -500,7 +547,9 @@ function hideGhost(): void {
   stageHot(false);
 }
 /* what the point lands on, in the armed spell's vocabulary: a column index,
-   −1 for the die in play (self spells only), or null — nothing useful */
+   −1 for the die in play (self spells only), or null — nothing useful. A
+   column only counts if the rings offered it, which is the same question the
+   tap and the 1–3 keys ask. */
 export function targetAt(x: number, y: number, id: string): number | null {
   const el = document.elementFromPoint(x, y) as HTMLElement | null;
   if (!el || !el.closest) return null;
@@ -508,15 +557,13 @@ export function targetAt(x: number, y: number, id: string): number | null {
   const col = el.closest('.col') as HTMLElement | null;
   if (!col) return null;
   const c = Number(col.dataset.col);
-  return Number.isInteger(c) ? c : null;
+  return Number.isInteger(c) && aimed(c) ? c : null;
 }
-/* light what the drop will touch — the pair, or just the caster's column */
+/* light what the drop will touch — only ever a column the rings offered */
 function setHot(col: number | null): void {
   document.querySelectorAll('.col.hot').forEach((c) => c.classList.remove('hot'));
   if (col === null) return;
-  const sides = AIM_SIDES[S.spellArmed ?? ''] === 'own'
-    ? [S.turn as Player] : [ME, AI] as Player[];
-  for (const p of sides) colEl(p, col)?.classList.add('hot');
+  document.querySelectorAll('.col.aim[data-col="' + col + '"]').forEach((c) => c.classList.add('hot'));
 }
 function stageHot(on: boolean): void {
   ($('#dieStage') as HTMLElement | null)?.classList.toggle('hot', on);
