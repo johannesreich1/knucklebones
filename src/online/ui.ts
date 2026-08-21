@@ -115,8 +115,12 @@ const OVERLAY = `
     </div>
     <div class="err" id="onAccErr"></div>
     <button class="btn" id="btnSignOut">Sign out</button>
-    <div class="danger">
-      <button class="btn" id="btnDeleteAcc">Delete account</button>
+    <!-- deleting is a FOOTNOTE, not an action to advertise: the same linkbtn
+         row as home's legal links. The red lives on the confirm ask-card,
+         where the player is actually deciding. Sign out stays the panel's
+         last real button, always directly above it. -->
+    <div class="viewfoot">
+      <button class="linkbtn" id="btnDeleteAcc">Delete account</button>
     </div>
   </div>
 
