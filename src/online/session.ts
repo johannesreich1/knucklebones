@@ -289,6 +289,18 @@ export async function join(allowBot: boolean): Promise<JoinResult | null> {
   return r.status === 200 ? r.data : null;
 }
 
+/* Truly leave the queue: delete my own row (RLS delete-own, migration 0030).
+   Without this, Cancel only stopped the POLLING while the server row sat
+   claimable for up to two minutes — a player who walked away could still be
+   pulled into a match they would never see. Fire-and-forget by design: the
+   worst a lost request costs is the old behaviour. */
+export function leaveQueue(): void {
+  const c = supa();
+  void c.auth.getUser().then(({ data }) => {
+    if (data.user) void c.from('matchmaking_queue').delete().eq('player_id', data.user.id);
+  });
+}
+
 export interface MoveResult { match: MatchRow; your_die?: number; bot_move?: { col: number; die: number } | null; error?: string; }
 export async function move(matchId: string, col: number): Promise<{ status: number; data: MoveResult | null }> {
   return call<MoveResult>('pvp-move', { match_id: matchId, col });

@@ -18,7 +18,7 @@ import { recordHtml } from '../ui/record.ts';
 import { AV_HUES, DEFAULT_AVATAR, parseAvatar, paintAvatar } from '../ui/avatar.ts';
 import { signUp, signIn, signOut, currentUser, ensureIdentity, attachEmail,
          myProfile, claimName, leaderboard, deleteAccount, join, readyPeer,
-         myLadder, myStanding, matchHistory, setAvatar, bestStreak, playerCard,
+         myLadder, myStanding, matchHistory, setAvatar, bestStreak, playerCard, leaveQueue,
          cacheStanding, resignedOver, type PlayerCard,
          type LeaderboardRow, type Ladder } from './session.ts';
 import { availableTaps } from './identity.ts';
@@ -296,9 +296,20 @@ function goHome(): void {
 /* ---- matchmaking: poll join; the clock and the widening message are honest */
 let queueAbort = false;
 let qTick: ReturnType<typeof setInterval> | null = null;
+/* Backgrounding the app while queuing ENDS the queue (user call): a hidden
+   tab's timers crawl, so the player is neither polling nor present — but
+   their server row stayed claimable, and a human could pull them into a
+   match they would never see. Hidden while hunting = Cancel: leave for
+   real, land on Home for their return. Registered only while the queue
+   runs; stopQueue always takes it down. */
+const queueHidden = (): void => { if (document.hidden && !queueAbort) goHome(); };
 function stopQueue(): void {
   queueAbort = true;
   if (qTick) { clearInterval(qTick); qTick = null; }
+  document.removeEventListener('visibilitychange', queueHidden);
+  /* leave the SERVER's queue too — every exit funnels here, and deleting an
+     already-consumed row is a no-op, so the matched path may call it freely */
+  leaveQueue();
 }
 async function startQueue(): Promise<void> {
   /* The offer comes BEFORE matchmaking, never after: nobody wants a tutorial
@@ -310,6 +321,7 @@ async function startQueue(): Promise<void> {
   }
   panel('onQueue');
   queueAbort = false;
+  document.addEventListener('visibilitychange', queueHidden);
   const started = Date.now();
   $('#qTime').textContent = '0:00';
   $('#qSub').innerHTML = '&nbsp;';
