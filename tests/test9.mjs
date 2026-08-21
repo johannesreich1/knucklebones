@@ -1,6 +1,36 @@
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
-const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
+import { spawn } from 'child_process';
+import net from 'net';
+/* Served over LOCAL HTTP like test10/test11, and for the same reason: the
+   timer-persistence step reloads and asserts the settings came back, and
+   Chromium's file:// DOMStorage can hydrate the reloaded document from a
+   stale disk commit (run 32489123998: the reload lost the saved duo mode,
+   the timer card rendered hidden, and the next tap starved for 30s). One
+   live http-origin area, no disk race. Own server, own port, killed on
+   exit — run-all and serve.py stay untouched. */
+const PORT = 8126;
+const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'],
+  { cwd: process.cwd(), stdio: 'ignore' });
+server.unref();   // a live child must not hold node's event loop open at the end
+process.on('exit', () => server.kill());   // a thrown check must not orphan it
+await new Promise((resolve, reject) => {
+  const attempt = n => {
+    const s = net.connect(PORT, '127.0.0.1');
+    s.on('connect', () => { s.end(); resolve(); });
+    s.on('error', () => n > 0 ? setTimeout(() => attempt(n - 1), 200) : reject(new Error('test9 server never came up')));
+  };
+  attempt(50);
+});
+/* the port answered — but was it OUR server? A bind conflict kills the
+   child instantly, and connecting to some other checkout's orphan would
+   silently test the wrong tree. Fail loudly instead. */
+if (server.exitCode !== null) throw new Error('port held by a foreign server — kill it and rerun');
+const F = `http://127.0.0.1:${PORT}/knucklebones-neon.html`;
+/* over http the single-file page would try to register its service worker
+   (file:// never attempts it) and 404 on /sw.js — not this suite's subject,
+   and the console error would fail the gate */
+const noSW = () => { try { delete Navigator.prototype.serviceWorker; } catch { /* strict hosts keep it */ } };
 const browser = await chromium.launch();
 const problems = [], errs = [], out = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -9,6 +39,7 @@ const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x
 async function overlapCheck(w, h, label) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
 await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
+await ctx.addInitScript(noSW);
   const p = await ctx.newPage();
   p.on('pageerror', e => errs.push(label + ': ' + e.message));
   await p.goto(F); await p.waitForTimeout(400);
@@ -61,6 +92,7 @@ for (const [k, r] of Object.entries(out)) {
 // ===== 2. the turn clock =====
 const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
 await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
+await ctx.addInitScript(noSW);
 const p = await ctx.newPage();
 p.on('pageerror', e => errs.push('TIMER: ' + e.message));
 p.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
@@ -162,3 +194,4 @@ check(!(out.duringPass.pass && out.duringPass.timerRunning), 'clock runs while t
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
 await browser.close();
+server.kill();

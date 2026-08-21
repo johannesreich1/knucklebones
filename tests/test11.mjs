@@ -12,6 +12,7 @@ import net from 'net';
 const PORT = 8125;
 const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'],
   { cwd: process.cwd(), stdio: 'ignore' });
+server.unref();   // a live child must not hold node's event loop open at the end
 process.on('exit', () => server.kill());   // a thrown check must not orphan it
 await new Promise((resolve, reject) => {
   const attempt = n => {
@@ -21,6 +22,10 @@ await new Promise((resolve, reject) => {
   };
   attempt(50);
 });
+/* the port answered — but was it OUR server? A bind conflict kills the
+   child instantly, and connecting to some other checkout's orphan would
+   silently test the wrong tree. Fail loudly instead. */
+if (server.exitCode !== null) throw new Error('port held by a foreign server — kill it and rerun');
 const F = `http://127.0.0.1:${PORT}/knucklebones-neon.html`;
 const browser = await chromium.launch();
 const problems = [], errs = [], out = {};
