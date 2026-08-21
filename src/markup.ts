@@ -84,7 +84,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <button class="pplate anon" id="homeChip">NOT SIGNED IN</button>
     <button class="btn primary" id="btnOnline">Play ranked match</button>
     <div class="hrow">
-      <button class="btn" id="btnBoardHome">Leaderboard</button>
+      <button class="btn" id="btnBoardHome">Ladder</button>
       <button class="btn" id="btnSettingsHome">Settings</button>
     </div>
   </div>
