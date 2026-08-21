@@ -134,11 +134,22 @@ out.savedSettings = await page.evaluate(() => {
   return d.sound === false && d.numerals === true;
 });
 check(out.savedSettings, 'settings were never SAVED — the write itself is missing', out);
-await page.reload(); await page.waitForTimeout(600);
+// Same reload hazard as test10: over file:// this page is the origin's only
+// document, and its teardown races the storage area's disk commit (CI reds
+// 2026-08-21, defaults-after-reload while the poll above passed). The keeper
+// pins the area across the reload; the read-back is polled, not slept for.
+const keeper = await ctx.newPage();
+await keeper.goto(F);
+await keeper.evaluate(() => localStorage.length);   // binds the storage area
+await page.reload();
+await page.waitForFunction(() => window.__kb?.S?.sound === false && window.__kb.S.numerals === true,
+  null, { timeout: 8000 }).catch(() => { /* the check below names the failure */ });
 out.persist = await page.evaluate(() => ({
   sound: window.__kb.S.sound, numerals: window.__kb.S.numerals,
   cls: document.documentElement.classList.contains('numerals'),
+  ...(window.__kb.S.sound === false ? {} : { raw: localStorage.getItem('knucklebones.v1') }),
 }));
+await keeper.close();
 check(out.persist.sound === false && out.persist.numerals === true && out.persist.cls,
       'settings did not persist', out.persist);
 

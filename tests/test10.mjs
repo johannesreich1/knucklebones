@@ -175,8 +175,25 @@ await page.waitForFunction(() => {
 out.saved = await page.evaluate(() =>
   JSON.parse(localStorage.getItem('knucklebones.v1') ?? '{}').tutDone === true);
 check(out.saved, 'tutorial completion was never SAVED — the write itself is missing', out);
-await page.reload(); await page.waitForTimeout(600);
-out.afterGrad = await page.evaluate(() => ({ tutDone: window.__kb.S.tutDone }));
+// The reload must not be the origin's LAST document: over file:// this page
+// is the only thing holding the DOMStorage area open, and tearing it down
+// races Chromium's rate-limited disk commit — CI watched the poll above pass
+// and the reloaded page still read defaults (runs 32456842535/32459675455,
+// 2026-08-21). A keeper page pins the area in memory across the reload, and
+// the read-back is POLLED, not slept for.
+const keeper = await ctx.newPage();
+await keeper.goto(F);
+await keeper.evaluate(() => localStorage.length);   // binds the storage area
+await page.reload();
+await page.waitForFunction(() => window.__kb?.S?.tutDone === true, null, { timeout: 8000 })
+  .catch(() => { /* the check below names the failure */ });
+// on red, the raw value rides along to say WHICH half broke: lost from
+// storage across the reload vs present but not read back by boot
+out.afterGrad = await page.evaluate(() => ({
+  tutDone: window.__kb.S.tutDone,
+  ...(window.__kb.S.tutDone ? {} : { raw: localStorage.getItem('knucklebones.v1') }),
+}));
+await keeper.close();
 check(out.afterGrad.tutDone, 'tutorial completion did not persist', out.afterGrad);
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
