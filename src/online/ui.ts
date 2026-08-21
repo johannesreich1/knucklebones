@@ -99,16 +99,12 @@ const OVERLAY = `
          rows are showHistory's own (histRow) — one implementation. -->
     <div class="lb minihist" id="accRecent" hidden></div>
     <div class="accsince" id="accSince"></div>
-    <div class="guestbox" id="accGuest" hidden>
-      <b>GUEST</b>
-      <p>This account lives on this device only. Delete the app and the rating goes with it.</p>
-      <button class="btn primary" id="btnKeepAcc">Keep it forever</button>
-      <button class="btn ghost" id="btnHaveAcc">I already have an account</button>
-    </div>
     <!-- the ONE-TIME name claim: it wears the guestbox shape because it is the
          same kind of thing — a boxed offer on the profile — and it exists only
          while the name is still the minted placeholder. Once named_at is
-         stamped (migration 0026) the card is gone for good, not disabled. -->
+         stamped (migration 0026) the card is gone for good, not disabled.
+         It leads the guest card (user call): naming yourself comes before
+         deciding where the account lives. -->
     <div class="guestbox namebox" id="accClaim" hidden>
       <b>CLAIM YOUR NAME</b>
       <p>One name per account — set once and kept for good. 3–16 letters, digits or underscores.</p>
@@ -117,6 +113,12 @@ const OVERLAY = `
       <input id="onNick" autocomplete="off" spellcheck="false" autocapitalize="off">
       <div class="err" id="onNickErr"></div>
       <button class="btn primary" id="btnClaim">Claim name</button>
+    </div>
+    <div class="guestbox" id="accGuest" hidden>
+      <b>GUEST</b>
+      <p>This account lives on this device only. Delete the app and the rating goes with it.</p>
+      <button class="btn primary" id="btnKeepAcc">Keep it forever</button>
+      <button class="btn ghost" id="btnHaveAcc">I already have an account</button>
     </div>
     <div class="err" id="onAccErr"></div>
     <!-- the foot is PINNED (user call): sign out and the delete footnote sit

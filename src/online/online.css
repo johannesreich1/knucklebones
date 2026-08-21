@@ -5,6 +5,11 @@
   background:rgba(255,255,255,.05);color:var(--txt);font-size:14px;font-family:inherit;outline:none}
 #ovOnline input:focus-visible{outline:2px solid var(--p1);outline-offset:1px}
 #ovOnline .err{min-height:16px;font-size:11px;letter-spacing:.08em;color:var(--orange);text-align:center}
+/* an err with nothing to say is not a row: its reserved height plus the
+   column gaps around it pushed buttons a whole slot away from their inputs
+   (user report, the claim card). It appears — and takes its room — only
+   when there is actually an error to show. */
+#ovOnline .err:empty{display:none}
 #ovOnline .who{font-size:13px;letter-spacing:.12em;text-align:center;color:var(--txt)}
 #ovOnline .who b{color:var(--p1)}
 #ovOnline .who .rt{color:var(--gold);font-weight:800}
@@ -276,6 +281,9 @@
   font-size:clamp(11px,2.8vw,12.5px);letter-spacing:.18em;color:var(--dim);text-transform:uppercase;font-family:inherit}
 .histrow b{color:var(--txt);margin-left:auto;letter-spacing:.06em}
 .accsince{font-size:clamp(9px,2.3vw,10px);letter-spacing:.16em;text-indent:.16em;color:var(--dim);text-transform:uppercase;text-align:center}
+/* an empty since-line is not a row: as a zero-height flex item it would still
+   claim a column gap, doubling the space under the history row (user report) */
+.accsince:empty{display:none}
 
 /* ---- the avatar picker: a die face and a hue, 36 identities ---- */
 .avpreview{display:grid;place-items:center;margin:4px 0 2px}
