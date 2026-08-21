@@ -31,18 +31,21 @@
   <div class="fcard">
     <div class="fcap">Pages — ‹ top-left, one level up</div>
     <div class="demo"><div class="shead"><button class="ico">‹</button><span class="ttl">OFFLINE</span><span class="pad"></span></div></div>
-    <p class="rule">Screens you travel <b>into</b> from Home: <b>Offline · Ladder · Account</b> (the last through the identity chip).
+    <p class="rule">Screens you travel <b>into</b> from Home: <b>Offline · Settings · Ladder · Account</b> (the last through the identity chip).
       The header reuses the HUD's icon button; the title sits centred beside it.
-      ‹ returns exactly where you came from — always Home, never an intermediate menu.</p>
+      ‹ returns exactly where you came from — always Home, never an intermediate menu.
+      Settings joined this family 2026-08-21 (it was the one Home destination wearing sheet
+      clothes) and carries the <b>build tag</b> at its foot.
+      On touch, a rightward swipe from the left screen edge presses the header's own
+      control — pages and sheets alike, one handler (<b>ui/swipeback</b>), never a second driver.</p>
   </div>
   <div class="fcard">
     <div class="fcap">Sheets — ✕ top-right, context resumes</div>
-    <div class="demo"><div class="shead"><span class="pad"></span><span class="ttl">SETTINGS</span><button class="ico">✕</button></div></div>
-    <p class="rule">Overlays that float <b>over</b> live context: <b>Settings · How to play</b>.
+    <div class="demo"><div class="shead"><span class="pad"></span><span class="ttl">HOW TO PLAY</span><button class="ico">✕</button></div></div>
+    <p class="rule">Overlays that float <b>over</b> live context: <b>How to play's reading sheets ·
+      the mode and spell libraries · Impressum and Privacy</b>.
       ✕ dismisses; whatever was underneath resumes untouched. A reading sheet may keep one
-      bottom <b>GOT IT</b> as an acknowledgement — that is the only bottom dismissal that survives.
-      Settings is opened from <b>Home</b>, where nothing is at stake, and carries the
-      <b>build tag</b> at its foot.</p>
+      bottom <b>GOT IT</b> as an acknowledgement — that is the only bottom dismissal that survives.</p>
   </div>
   <div class="fcard">
     <div class="fcap">The bottom of a screen = actions only</div>
@@ -77,10 +80,12 @@
       <span class="fc root">CHIP</span><span class="ar">→</span><span class="fc">ACCOUNT</span>
       <span class="ar">·</span>
       <span class="fc root">HOME</span><span class="ar">→</span><span class="fc">OFFLINE</span><span class="ar">→</span><span class="fc">(DIAL)</span><span class="ar">→</span><span class="fc">GAME</span>
+      <span class="ar">·</span>
+      <span class="fc root">HOME</span><span class="ar">→</span><span class="fc">SETTINGS</span>
     </div>
     <div class="flow">
       <span class="ar">orbiting sheets:</span>
-      <span class="fc sheet">SETTINGS</span><span class="fc sheet">RULES</span><span class="fc sheet">QUIT?</span>
+      <span class="fc sheet">RULES</span><span class="fc sheet">QUIT?</span>
     </div>
     <p class="rule">Deep links go straight to their view. A first-timer never sees a form: the tap makes
       them a <b>guest</b> and continues straight to it. <b>Sign in</b> hangs off Account's guest

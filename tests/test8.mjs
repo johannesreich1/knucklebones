@@ -100,7 +100,7 @@ await gp.goto(F); await gp.waitForTimeout(400);
 // numerals is a HOME setting now — the in-game gear became the quit modal (test11)
 await gp.tap('#btnSettingsHome'); await gp.waitForTimeout(400);
 await gp.tap('#faceSeg button[data-f="nums"]'); await gp.waitForTimeout(250);
-await gp.tap('#btnCloseSettings'); await gp.waitForTimeout(400);
+await gp.tap('#btnSettingsBack'); await gp.waitForTimeout(400);
 const settingsClosed = await gp.evaluate(() => !document.getElementById('ovSettings').classList.contains('on'));
 await gp.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await gp.tap('#btnPlay'); await gp.waitForTimeout(2200);

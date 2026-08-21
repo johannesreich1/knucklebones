@@ -110,7 +110,7 @@ out.settingsIsToggles = await page.evaluate(() => ({
 }));
 check(!out.settingsIsToggles.how2 && !out.settingsIsToggles.quit && out.settingsIsToggles.buttons === 0,
       'settings still carries a button that belongs elsewhere', out.settingsIsToggles);
-await page.tap('#btnCloseSettings'); await page.waitForTimeout(300);
+await page.tap('#btnSettingsBack'); await page.waitForTimeout(300);
 await page.tap('#btnLearn'); await page.waitForTimeout(320);
 await page.tap('#btnLearnRules'); await page.waitForTimeout(400);
 out.help = await page.evaluate(() => ({
@@ -161,7 +161,7 @@ await page.tap('#btnSettingsHome'); await page.waitForTimeout(300);
 out.sheet = await page.evaluate(() => ({
   reset: !!document.getElementById('btnResetStats'),
   done: [...document.querySelectorAll('#ovSettings .btn')].some(b => /done/i.test(b.textContent)),
-  x: document.querySelector('#ovSettings .shead #btnCloseSettings')?.textContent ?? '',
+  back: document.querySelector('#ovSettings .shead #btnSettingsBack')?.textContent ?? '',
   title: document.querySelector('#ovSettings .shead .ttl')?.textContent ?? '',
   quitInSheet: !!document.querySelector('#ovSettings #btnMenu'),
   buildTag: !!document.querySelector('#ovSettings #buildTag'),
@@ -170,10 +170,35 @@ check(!out.sheet.quitInSheet, 'Quit is still inside the Settings sheet', out.she
 check(out.sheet.buildTag, 'the build tag is not at the bottom of Settings', out.sheet);
 check(!out.sheet.reset, 'Reset record still in Settings', out.sheet);
 check(!out.sheet.done, 'Settings still has a bottom Done button', out.sheet);
-check(out.sheet.x === '✕' && out.sheet.title === 'SETTINGS', 'Settings sheet header wrong', out.sheet);
-await page.tap('#btnCloseSettings'); await page.waitForTimeout(300);
+// Settings is a PAGE below Home now (user call, 2026-08-21): ‹ left like
+// OFFLINE and the ladder, not the old sheet ✕ on the right
+check(out.sheet.back === '‹' && out.sheet.title === 'SETTINGS', 'Settings page header wrong', out.sheet);
+await page.tap('#btnSettingsBack'); await page.waitForTimeout(300);
 out.sheetClosed = await page.evaluate(() => !document.getElementById('ovSettings').classList.contains('on'));
-check(out.sheetClosed, 'Settings ✕ did not close the sheet', out.sheetClosed);
+check(out.sheetClosed, 'Settings ‹ did not close the page', out.sheetClosed);
+
+// ===== the iOS back gesture (ui/swipeback): an edge swipe presses the =====
+// header's own ‹ — same handler as the button, so the two cannot disagree
+const edgeSwipe = () => page.evaluate(() => {
+  const mk = (x, y) => new Touch({ identifier: 7, target: document.body, clientX: x, clientY: y });
+  const fire = (type, t) => document.body.dispatchEvent(new TouchEvent(type, {
+    touches: type === 'touchend' ? [] : [t], changedTouches: [t], bubbles: true }));
+  fire('touchstart', mk(12, 300));
+  for (const x of [30, 55, 90]) fire('touchmove', mk(x, 304));
+  fire('touchend', mk(90, 304));
+});
+await page.tap('#btnSettingsHome'); await page.waitForTimeout(400);
+await edgeSwipe(); await page.waitForTimeout(500);   // .ov visibility flips .28s after .on drops
+out.swipe = await page.evaluate(() => ({
+  on: document.getElementById('ovSettings').classList.contains('on'),
+  vis: getComputedStyle(document.getElementById('ovSettings')).visibility,
+}));
+check(!out.swipe.on && out.swipe.vis === 'hidden', 'edge swipe did not close Settings', out.swipe);
+// home is the root — the same swipe there must go nowhere
+await edgeSwipe(); await page.waitForTimeout(300);
+out.swipeHome = await page.evaluate(() =>
+  [...document.querySelectorAll('.ov.on')].map(o => o.id).join(','));
+check(out.swipeHome === 'ovStart', 'edge swipe on home navigated somewhere', out.swipeHome);
 
 // ===== the HUD badge explains its mode — OFFLINE too =====
 // Reported bug: tapping the badge opened the modes library online and did
