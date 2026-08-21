@@ -9,7 +9,7 @@ was decided, and what's still open.*
 | Piece | State |
 |---|---|
 | **Web** | **LIVE** at https://knucklebones-asg.pages.dev — Cloudflare Pages, auto-deploys every push to `main` |
-| **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0024, RLS + column-grant hardened. 0014 (Game Center ids) is written but NOT applied — it waits for a device. **0027 (player_card returns the full face-off row) is committed but NOT YET APPLIED** — the client degrades gracefully (foe plate shows no rank and opens no face-off) until it lands |
+| **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0024, RLS + column-grant hardened. 0014 (Game Center ids) is written but NOT applied — it waits for a device. 0028 (player_card returns the full face-off row — renumbered from 0027, which the nickname hardening took) applied 2026-08-21: the result screen's foe plate carries the rank and opens the face-off |
 | **Edge Functions** | `pvp-join` v17, `pvp-move` v15, `pvp-claim` v10, `account-delete` v1 — all ACTIVE, nothing dead deployed. `gc-auth` is written but undeployed (same reason). `pvp-move` v15 = the away-turns `index.ts` + the colshield-honest core, both on main since 2026-08-21 |
 | **CI** | GitHub Actions: build + full test gate (24 suites) on every push — green through current `main` |
 | **Design system** | 170 cards (44 screens × 4 device sizes + the two `00-` specs) in the Claude Design project "Knucklebones", generated from the app's real CSS **and its real code** — see "Cards render the app" below |

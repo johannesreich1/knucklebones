@@ -724,7 +724,7 @@ async function showResult(r: FinishReport): Promise<void> {
     home:  { label: 'Home', run: () => { closeEnd(); goHome(); } },
     share: `${title} ${r.my}–${r.their} vs ${r.opp}${deltaTxt} — Knucklebones, ranked dice duels`,
   });
-  /* the standing RPC knows MY rank directly; player_card (0027) knows the
+  /* the standing RPC knows MY rank directly; player_card (0028) knows the
      foe's whole row; the ladder feeds the face-off's my-side column. Fetched
      together so the pills and the door are ready as the screen settles. */
   const [p, st, lad, foe] = await Promise.all([

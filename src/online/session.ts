@@ -235,7 +235,7 @@ export async function leaderboard(limit = 50): Promise<LeaderboardRow[]> {
 
 /* The face-off's facts for ANY named player, keyed by NICKNAME — the board
    exposes no account ids, and profiles is own-row only, the same reason the
-   leaderboard and match_history are definer functions. Since 0027 this is the
+   leaderboard and match_history are definer functions. Since 0028 this is the
    player's WHOLE row (rank/apex mirroring leaderboard()), which is what lets
    the result screen open the same face-off the ladder does. The row fields
    are null for a player with no season row — the caller shows no door. */
