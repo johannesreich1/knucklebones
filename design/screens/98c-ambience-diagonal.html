@@ -5,12 +5,11 @@
      going dead. The mid-screen meeting point is the nuance, not a hotspot. */
   .stage .bgfx::before{content:"";position:absolute;inset:-15%;
     background:
-      linear-gradient(158deg,
-        rgba(255,47,160,.24) 0%, rgba(255,47,160,.10) 30%,
-        rgba(126,60,255,.13) 50%,
-        rgba(40,232,255,.10) 70%, rgba(40,232,255,.24) 100%),
-      radial-gradient(closest-side,rgba(126,60,255,.10),transparent 70%) 20% 88%/80% 70% no-repeat;
-    filter:blur(26px)}
+      radial-gradient(closest-side,rgba(255,47,160,.32),transparent 72%) -10% -6%/95% 85% no-repeat,
+      radial-gradient(closest-side,rgba(40,232,255,.32),transparent 72%) 110% 106%/95% 85% no-repeat,
+      linear-gradient(125deg,
+        transparent 34%, rgba(126,60,255,.22) 50%, transparent 66%);
+    filter:blur(22px)}
   .shead{margin-bottom:4px}
   .pane{display:flex;flex-direction:column;gap:11px;width:100%;max-width:var(--w-col);
     margin:0 auto;align-items:center;flex:1}

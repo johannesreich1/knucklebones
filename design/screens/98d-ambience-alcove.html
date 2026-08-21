@@ -4,13 +4,13 @@
      shaft as wide as the content column, hue graded down its length; the
      flanks keep the dark. The one treatment where "centre" is deliberate. */
   .stage .bgfx::before{content:"";position:absolute;inset:-8% 0;
-    left:50%;width:120%;transform:translateX(-50%);
+    left:50%;width:100%;transform:translateX(-50%);
     background:linear-gradient(180deg,
-      rgba(255,47,160,.22) 0%, rgba(126,60,255,.15) 42%,
-      rgba(126,60,255,.11) 58%, rgba(40,232,255,.22) 100%);
-    -webkit-mask:radial-gradient(58% 95% at 50% 50%,#000 55%,transparent 100%);
-    mask:radial-gradient(58% 95% at 50% 50%,#000 55%,transparent 100%);
-    filter:blur(24px)}
+      rgba(255,47,160,.30) 0%, rgba(126,60,255,.20) 42%,
+      rgba(126,60,255,.15) 58%, rgba(40,232,255,.30) 100%);
+    -webkit-mask:linear-gradient(90deg,transparent 8%,#000 30%,#000 70%,transparent 92%);
+    mask:linear-gradient(90deg,transparent 8%,#000 30%,#000 70%,transparent 92%);
+    filter:blur(18px)}
   .shead{margin-bottom:4px}
   .pane{display:flex;flex-direction:column;gap:11px;width:100%;max-width:var(--w-col);
     margin:0 auto;align-items:center;flex:1}
