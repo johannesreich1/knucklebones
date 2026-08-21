@@ -10,7 +10,11 @@
   whoever's turn it is, once its own clock proves the stall (12s): in PvP the
   waiting opponent asks; vs a bot the absent player's own backgrounded client
   asks for itself, since a bot has no client to do the asking.
-- `pvp-claim` — forfeit win when the opponent has been silent >60s on their turn.
+- `pvp-claim` — the forfeit finisher, aimed either way: claim a win off an
+  opponent silent >30s on their turn, or with `resign: true` give the match
+  away yourself — no stall to prove, valid any time the match is live (the
+  quit button's confirmed tap). Either way the opponent's client hears the
+  match row flip and shows the result immediately.
 
 Anti-cheat model: clients submit only `{match_id, col}` — there is no field to
 lie in. Dice derive from a seed stored in the service-only `match_seeds` table;

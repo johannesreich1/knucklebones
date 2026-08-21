@@ -20,7 +20,7 @@ export interface PlateSpec {
   theirs?: boolean;        // the opponent's plate: their ring in their magenta
   won?: boolean;           // gold edge — this row took the match
   lost?: boolean;          // dimmed — this row did not
-  stamp?: string;          // 'BEATEN' — angled across the row (design 36d)
+  stamp?: string;          // 'BEATEN' / 'FORFEIT' — angled across the row (design 36d)
   chev?: boolean;          // reads as a door
   large?: boolean;         // the result screen's roomier cut; the chip stays slim
 }

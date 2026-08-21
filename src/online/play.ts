@@ -21,7 +21,7 @@ import { buildBoards, renderAll, renderSide, clearHints, showHints, setStatus, s
 import { fit } from '../ui/layout.ts';
 import { setPlaceHandler } from '../ui/input.ts';
 import { flyDie, destroyAt } from '../flow/game.ts';
-import { supa, move, claim, nudge, watchMatch, type MatchRow, type JoinResult } from './session.ts';
+import { supa, move, claim, resign, nudge, watchMatch, type MatchRow, type JoinResult } from './session.ts';
 
 /* the pair as pvp-join hands them over — names always, ratings and avatars
    with them (optional only for the deploy gap, same as JoinResult) */
@@ -66,11 +66,16 @@ export interface FinishReport {
 let onFinished: ((r: FinishReport) => void) | null = null;
 export function setFinishHandler(f: typeof onFinished): void { onFinished = f; }
 
-/* Quitting a live ranked match forfeits it. The confirmation is the quit modal
-   now (flow/leave → boot), so this no longer arms anything of its own — it
-   tears the match down and lets the normal quit continue. */
+/* Quitting a live ranked match forfeits it — at the SERVER, immediately. The
+   confirmation is the quit modal (flow/leave → boot); by the time this runs
+   the player has said "Forfeit", so the resign goes out and the match is
+   flipped: the opponent's client hears the row change and celebrates its win
+   right away instead of waiting out the stall clock, and the next pvp-join
+   finds no active match to drag this player back into. Fire-and-forget —
+   session.ts remembers the outcome so matchmaking can wait for it. */
 function leaveTap(): boolean {
   if (!O || O.done) return false;
+  resign(O.matchId);
   teardown();
   return false;
 }

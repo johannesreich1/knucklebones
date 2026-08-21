@@ -19,7 +19,7 @@ import { AV_HUES, DEFAULT_AVATAR, parseAvatar, paintAvatar } from '../ui/avatar.
 import { signUp, signIn, signOut, currentUser, ensureIdentity, attachEmail,
          myProfile, claimName, leaderboard, deleteAccount, join, readyPeer,
          myLadder, myStanding, matchHistory, setAvatar, bestStreak, playerCard,
-         cacheStanding, type PlayerCard,
+         cacheStanding, resignedOver, type PlayerCard,
          type LeaderboardRow, type Ladder } from './session.ts';
 import { availableTaps } from './identity.ts';
 import { enterMatch, setFinishHandler, type FinishReport } from './play.ts';
@@ -313,6 +313,10 @@ async function startQueue(): Promise<void> {
     const res = await join(waited > 7000);
     if (queueAbort) break;
     if (res?.status === 'matched') {
+      /* a match the player resigned on the way out must never pull them back
+         in — confirm it is over (retrying the resign if the quit-time call
+         was lost to the network) and go straight around for a fresh pairing */
+      if (res.rejoined && await resignedOver(res.match.id)) continue;
       stopQueue();
       // fresh match: the wheel reveal (aimed at the server's stored pick);
       // rejoining skips the show — the mode was revealed when the match began
@@ -701,7 +705,9 @@ async function showResult(r: FinishReport): Promise<void> {
     { name: r.opp, avatar: r.oppAvatar,
       points: foe?.points ?? r.oppRating, rank: foe?.rank ?? null, apex: !!foe?.apex,
       theirs: true, won: !r.won && !r.draw, lost: r.won,
-      stamp: r.won ? 'BEATEN' : undefined,
+      /* the stamp names HOW the row fell: out-rolled wears BEATEN, a foe who
+         walked out (or stalled out) wears FORFEIT */
+      stamp: r.won ? (r.forfeit ? 'FORFEIT' : 'BEATEN') : undefined,
       /* the foe's plate is a DOOR once their row is known: the very face-off
          the ladder opens, dealt from the result instead of a board row */
       tap: foe && foe.points != null && foe.rank != null ? () => showFaceoff(

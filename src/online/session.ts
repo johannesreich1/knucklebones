@@ -303,6 +303,32 @@ export async function claim(matchId: string): Promise<{ status: number; data: { 
   return call('pvp-claim', { match_id: matchId });
 }
 
+/* Resigning: the same forfeit finisher as claim, aimed the other way — the
+   CALLER gives the match away, no stall to prove. Fired from the quit path
+   and never awaited there (the player is already on their way home), so the
+   outcome is remembered: matchmaking must not race it, or pvp-join would
+   hand back the very match the player just walked out of. */
+let resigned: { matchId: string; over: Promise<boolean> } | null = null;
+const resignCall = async (matchId: string): Promise<boolean> => {
+  const r = await call<{ match?: MatchRow; error?: string }>('pvp-claim', { match_id: matchId, resign: true });
+  /* 200 = resigned (or somebody else finished it first — the function answers
+     with the settled row either way); "match-over" = already finished. Any
+     other answer means the match may still be live. */
+  return r.status === 200 || r.data?.error === 'match-over';
+};
+export function resign(matchId: string): void {
+  resigned = { matchId, over: resignCall(matchId) };
+}
+/* true = this match was resigned and is CONFIRMED over — never re-enter it.
+   A quit-time call that failed (a radio blip) gets one retry here; if the
+   match still won't die, the caller falls back to rejoining it. */
+export async function resignedOver(matchId: string): Promise<boolean> {
+  if (resigned?.matchId !== matchId) return false;
+  if (await resigned.over) return true;
+  resigned = { matchId, over: resignCall(matchId) };
+  return resigned.over;
+}
+
 /* Readiness on the mode dial: a BROADCAST, not a table. Nothing here is worth
    persisting — it only ever shortens a five-second countdown, so a message that
    never lands costs those seconds and nothing else. */

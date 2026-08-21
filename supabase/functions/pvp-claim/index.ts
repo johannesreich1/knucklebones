@@ -1,5 +1,9 @@
-// pvp-claim: claim a forfeit win when the opponent has stalled. Only valid
-// while it is the OPPONENT's turn and their silence exceeds the threshold.
+// pvp-claim: the forfeit finisher, aimed either way. Claiming (default) takes
+// the win off an opponent who has stalled — only valid while it is THEIR turn
+// and their silence exceeds the threshold. Resigning (resign: true) is the
+// caller giving the match away: nothing to prove, valid any time the match is
+// live, bot opponents included — the quit button's confirmed tap is the whole
+// case. One status guard, one payout, whichever way the win points.
 // (Bots reply inside pvp-move, so claims only ever hit absent humans.)
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
@@ -56,19 +60,22 @@ Deno.serve(async (req: Request) => {
   const { data: match } = await svc.from("matches").select(MATCH_COLS).eq("id", body.match_id).maybeSingle();
   if (!match || (match.p1 !== user.id && match.p2 !== user.id)) return json({ error: "no-match" }, 404);
   if (match.status !== "active") return json({ error: "match-over" }, 409);
+  const resign = body?.resign === true;
   const myIdx: Player = match.p1 === user.id ? ME : AI;
-  if (match.turn === myIdx) return json({ error: "your-own-turn" }, 409);
-  /* A BOT NEVER FORFEITS. A bot only moves inside the human's own request, so
-     it is never "absent" in the sense this endpoint exists to punish — and if
-     its reply ever failed to land, the turn would sit with it and a player
-     could claim a free win off it on demand. The honest resolution for that
-     stall is pvp-move's auto:true, which plays the missing move rather than
-     awarding the match; the watchdog already calls it. */
   const oppId = myIdx === ME ? match.p2 : match.p1;
-  const { data: oppProf } = await svc.from("profiles").select("is_bot").eq("id", oppId).maybeSingle();
-  if (oppProf?.is_bot) return json({ error: "opponent-is-a-bot" }, 409);
-  if (Date.now() - new Date(match.last_move_at).getTime() < STALL_MS) {
-    return json({ error: "not-stalled-yet" }, 425);
+  if (!resign) {
+    if (match.turn === myIdx) return json({ error: "your-own-turn" }, 409);
+    /* A BOT NEVER FORFEITS. A bot only moves inside the human's own request, so
+       it is never "absent" in the sense this endpoint exists to punish — and if
+       its reply ever failed to land, the turn would sit with it and a player
+       could claim a free win off it on demand. The honest resolution for that
+       stall is pvp-move's auto:true, which plays the missing move rather than
+       awarding the match; the watchdog already calls it. */
+    const { data: oppProf } = await svc.from("profiles").select("is_bot").eq("id", oppId).maybeSingle();
+    if (oppProf?.is_bot) return json({ error: "opponent-is-a-bot" }, 409);
+    if (Date.now() - new Date(match.last_move_at).getTime() < STALL_MS) {
+      return json({ error: "not-stalled-yet" }, 425);
+    }
   }
 
   const MODE = modeById(match.modifier).mode;
@@ -78,7 +85,8 @@ Deno.serve(async (req: Request) => {
   if (!s) return json({ error: "corrupt-state" }, 500);
 
   const p1Score = matchTotal(s, ME, MODE), p2Score = matchTotal(s, AI, MODE);
-  const p1Result: Score = myIdx === ME ? 1 : 0;
+  const winnerId = resign ? oppId : user.id;
+  const p1Result: Score = winnerId === match.p1 ? 1 : 0;
   const season = match.season_id ?? 1;
   const [l1, l2] = await Promise.all([
     ladderRow(svc, season, match.p1), ladderRow(svc, season, match.p2),
@@ -87,7 +95,7 @@ Deno.serve(async (req: Request) => {
   // claim the row FIRST (status guard) — mirrors pvp-move's finish: only the
   // winner of this update pays out, so racing finishers never double-pay
   const { data: claimed } = await svc.from("matches").update({
-    status: "forfeit", winner: user.id, p1_score: p1Score, p2_score: p2Score,
+    status: "forfeit", winner: winnerId, p1_score: p1Score, p2_score: p2Score,
     p1_rating_delta: d1, p2_rating_delta: d2,
     next_die: null, finished_at: new Date().toISOString(),
   }).eq("id", match.id).eq("status", "active").select(MATCH_COLS);
