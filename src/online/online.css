@@ -18,7 +18,11 @@
 #ovOnline.listview .shead{padding:0 var(--pad-x)}
 /* the SCROLLER is full bleed so its bar rides the screen edge; the ROWS carry
    the column, exactly like the cards inside a scrollview's body */
-#ovOnline.listview #onBoard{max-width:none;width:100%;margin:6px 0 0;gap:0;
+/* .panel, not #onBoard: panel() puts MATCH HISTORY in listview mode too, and
+   the board-scoped rule left it a w-col column that grew to its content
+   height — unclamped, so nothing scrolled (user report). One rule for
+   whichever panel wears the mode. */
+#ovOnline.listview .panel{max-width:none;width:100%;margin:6px 0 0;gap:0;
   flex:1 1 auto;min-height:0}
 #ovOnline.listview .lb{max-height:none;flex:1 1 auto;min-height:0;overflow-y:auto;
   padding:0 var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 46px)}

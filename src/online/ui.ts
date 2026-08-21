@@ -625,7 +625,7 @@ async function showAccount(): Promise<void> {
      real overflow, because measuring beats guessing. */
   const mini = $('#accRecent');
   mini.innerHTML = ''; mini.hidden = true;
-  void matchHistory().then((rows) => {
+  void matchHistory(3).then((rows) => {
     if ($('#onAccount').hidden) return;            // navigated away meanwhile
     for (const r of rows.slice(0, 3)) mini.appendChild(histRow(r));
     mini.hidden = !mini.childElementCount;
@@ -699,9 +699,29 @@ async function showHistory(): Promise<void> {
   $('#onHistoryTotal').innerHTML = lad
     ? recordHtml(lad.wins, lad.losses) + (lad.draws ? ` · ${lad.draws}D` : '')
     : '&nbsp;';
-  const rows = await matchHistory();
+  const PAGE = 30;
+  const rows = await matchHistory(PAGE);
   list.innerHTML = rows.length ? '' : '<div class="row">No ranked matches yet.</div>';
   for (const r of rows) list.appendChild(histRow(r));
+  /* LAZY pages (user call): a season of games is not one payload. Keyset on
+     the oldest row's finished_at; a short page means the well is dry. The
+     handler is assigned (not added), so every open starts a fresh pager. */
+  let oldest = rows[rows.length - 1]?.when || null;
+  let done = rows.length < PAGE || !oldest;
+  let loading = false;
+  list.onscroll = () => {
+    if (done || loading) return;
+    if (list.scrollTop + list.clientHeight < list.scrollHeight - 300) return;
+    loading = true;
+    void matchHistory(PAGE, oldest!).then((more) => {
+      loading = false;
+      if ($('#onHistory').hidden) return;          // navigated away meanwhile
+      for (const r of more) list.appendChild(histRow(r));
+      const last = more[more.length - 1]?.when || null;
+      done = more.length < PAGE || !last;
+      if (last) oldest = last;
+    });
+  };
 }
 
 /* ONE row shape for a played match — the history list and the profile's

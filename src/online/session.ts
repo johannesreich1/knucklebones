@@ -191,11 +191,15 @@ export interface HistoryRow {
   id: string; when: string; opponent: string; mode: string;
   mine: number; theirs: number; delta: number; result: 'win' | 'loss' | 'draw';
 }
-export async function matchHistory(limit = 40): Promise<HistoryRow[]> {
+export async function matchHistory(limit = 40, before?: string): Promise<HistoryRow[]> {
   /* One definer RPC, not a client-side join: profiles is own-row only, so a
      client cannot read an opponent's nickname and every row would read "???".
-     The leaderboard is built the same way for the same reason. */
-  const { data } = await supa().rpc('match_history', { limit_n: limit });
+     The leaderboard is built the same way for the same reason. `before`
+     (an ISO finished_at) keysets the next page of OLDER matches — the list
+     lazy-loads because a season of games is not a payload (migration 0031). */
+  const args: Record<string, unknown> = { limit_n: limit };
+  if (before) args.before_t = before;
+  const { data } = await supa().rpc('match_history', args);
   return (data ?? []).map((r: Record<string, unknown>) => ({
     id: String(r.id),
     when: String(r.finished_at ?? ''),
