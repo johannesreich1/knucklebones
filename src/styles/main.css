@@ -988,11 +988,14 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
    label to the 13.5px number's baseline hung its ink ~3px below the plate's
    midline — small all-caps beside big lining digits reads centred, not
    baseline-aligned, at this size gap. */
-/* the meta is a COLUMN: the points large, the group pill captioning them
-   beneath (user call) — the name keeps the whole middle of the row, which is
-   what lets a 16-character nickname and a rank coexist on a phone */
-.pplate .meta2{margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:0 0 auto}
+.pplate .meta2{margin-left:auto;display:flex;align-items:center;gap:7px;flex:0 0 auto}
+.pplate .meta2 .gpill{order:-1}   /* in the slim row the pill leads, points close */
 .pplate .mrow{display:flex;align-items:center;gap:7px}
+/* only the LARGE cut (the result screen) stacks the meta — points large, the
+   pill captioning beneath (user call: the home chip keeps its one-line row).
+   The stack is what lets a 16-character nickname and a rank coexist there. */
+.pplate.lg .meta2{flex-direction:column;align-items:flex-end;gap:3px}
+.pplate.lg .meta2 .gpill{order:0}
 /* the group pill: ONE look for a player's group + rank wherever they appear —
    the face-off's columns and the identity plate wear the same class, so the
    result screen, the home chip and the compare card can never drift apart */
