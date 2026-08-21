@@ -10,7 +10,7 @@ was decided, and what's still open.*
 |---|---|
 | **Web** | **LIVE** at https://knucklebones-asg.pages.dev — Cloudflare Pages, auto-deploys every push to `main` |
 | **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0024, RLS + column-grant hardened. 0014 (Game Center ids) is written but NOT applied — it waits for a device |
-| **Edge Functions** | `pvp-join` v17, `pvp-move` v15, `pvp-claim` v10, `account-delete` v1 — all ACTIVE, nothing dead deployed. `gc-auth` is written but undeployed (same reason). CAREFUL: `pvp-move`'s deployed `index.ts` is the away-turns version from the UNMERGED branch `claude/duell-away-auto-play-9d2203` — redeploying it from main alone reverts live behavior until that branch lands |
+| **Edge Functions** | `pvp-join` v17, `pvp-move` v15, `pvp-claim` v10, `account-delete` v1 — all ACTIVE, nothing dead deployed. `gc-auth` is written but undeployed (same reason). `pvp-move` v15 = the away-turns `index.ts` + the colshield-honest core, both on main since 2026-08-21 |
 | **CI** | GitHub Actions: build + full test gate (24 suites) on every push — green through current `main` |
 | **Design system** | 170 cards (44 screens × 4 device sizes + the two `00-` specs) in the Claude Design project "Knucklebones", generated from the app's real CSS **and its real code** — see "Cards render the app" below |
 | **Signups** | **Open** — a first tap on RANKED mints a guest account (no email, no form). Attaching an email still waits on SMTP; see `docs/IDENTITY.md` |
@@ -309,7 +309,7 @@ server-side via `account-delete`), privacy policy for both stores.
   waiting client asks `pvp-move` with `auto:true`; the SERVER checks its own
   clock (`AUTO_MS` = 12s) and places a legal die *for the absent player*, so
   neither a wrong device clock nor a hostile client can force it early. The
-  in-match line narrates it ("X is away — playing for them in N") instead of
+  in-match line narrates it ("Away — auto play in N") instead of
   going silent for 25 seconds. Verified live with two throwaway guests:
   `not-stalled-yet` immediately, the auto-place after 13s, the turn flipping
   back, repeated over four rounds. Both guests deleted themselves afterwards.
@@ -392,6 +392,40 @@ Two things, same evening, same screen:
   build's collision guard silently skips ~every other CSS rule (regex consumes
   the boundary brace), which is how a study card wore the mode dial's `.dhead`
   glow undetected — fix chip filed.
+
+### 5e. Away handling reaches bot matches (2026-08-20, user report)
+
+"When I play against an AI in ranked and switch to another app, it never
+auto-plays me." True, and structural: the away design (5b) assumed a WAITING
+client does the asking — but vs a bot the stalled side is always the human
+(the bot answers inside the human's own request), so no client existed to
+ask, and the absent player's device was busy being backgrounded: timers
+throttled to a crawl, and the optimistic move pipeline wedging on a WAAPI
+`finished` that hidden pages never fire. Two changes, one meaning — `auto:true`
+now says "place for whoever's turn it is":
+
+- **`pvp-move`** drops the your-own-turn rejection: the mover under `auto` is
+  `match.turn`; the 12s server-clock stall proof is unchanged; the bot replies
+  in-request whenever the HUMAN's die landed — by tap or by auto-place alike.
+  No new power granted: the auto move is a uniform legal die the asker could
+  have played by hand, at a pace the stall clock caps.
+- **The client watchdog** grew the self case: my turn + `document.hidden` +
+  13s stalled → nudge. A visible turn is never touched (present players place
+  their own dice), and `autoPlace` now declines to run hidden — it would only
+  wedge the animation chain where the old behaviour used to.
+
+**Deployed and proven:** the server half went out as pvp-move v14 the same
+evening (carried forward in v15 with the colshield-honest core) and was
+verified live twice on 2026-08-21 with throwaway guests — immediate
+self-nudge → 425, after 13s → 200 with the own-seat die placed and
+`bot_move` in the same response, turn back to the human, exact settle. An
+older pvp-move would answer the self-nudge with 409 and the client quietly
+keeps the old behaviour — the rollout was safe in either order. Known
+remaining gap, stated not hidden: full suspension
+(iOS backgrounding freezes ALL timers) still stalls a bot match until the
+player returns — a server-side sweep (pg_cron) is the only honest fix there
+and is out of this pass's scope. A throttled desktop/Android tab, the case
+reported, now plays itself out at roughly the PvP away pace.
 
 ### 6. The navigation batch (2026-08-20)
 

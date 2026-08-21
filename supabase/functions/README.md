@@ -6,7 +6,10 @@
 - `pvp-move` — THE match authority: validates each move against the
   server-rebuilt state (turn, legality, seed-stream die), writes the move log,
   detects the end, applies Elo; computes the bot's reply in-request when the
-  opponent is a bot.
+  opponent is a bot. With `auto: true` it places a uniform legal die for
+  whoever's turn it is, once its own clock proves the stall (12s): in PvP the
+  waiting opponent asks; vs a bot the absent player's own backgrounded client
+  asks for itself, since a bot has no client to do the asking.
 - `pvp-claim` — forfeit win when the opponent has been silent >60s on their turn.
 
 Anti-cheat model: clients submit only `{match_id, col}` — there is no field to

@@ -19,12 +19,15 @@ const json = (body: unknown, status = 200) =>
 
 const MATCH_COLS = "id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at, modifier, season_id";
 
-/* How long a player's turn may sit untouched before the OTHER player may ask
-   the server to place for them. The turn clock is 10s and an honest client
-   places for itself when it expires, so this only ever catches somebody whose
-   app is gone — backgrounded, closed, or offline. The waiting player asks; the
-   SERVER decides, against its own clock, so neither a wrong device clock nor a
-   hostile client can force it early.
+/* How long a turn may sit untouched before a client may ask the server to
+   place for WHOEVER'S TURN IT IS. The turn clock is 10s and an honest visible
+   client places for itself when it expires, so this only ever catches somebody
+   whose app is gone — backgrounded, closed, or offline. In PvP the waiting
+   player asks; vs a bot the absent player's own backgrounded client asks for
+   itself, because a bot has no client to do the asking. Either way the SERVER
+   decides, against its own clock, so neither a wrong device clock nor a
+   hostile client can force it early — and the granted move is nothing the
+   asker could not do by hand: a uniform legal die for the current mover.
    Leaving no longer loses the game outright: it hands your turns to a die. */
 const AUTO_MS = 12 * 1000;
 
@@ -114,12 +117,13 @@ Deno.serve(async (req: Request) => {
   if (match.status !== "active") return json({ error: "match-over" }, 409);
   const myIdx: Player = match.p1 === user.id ? ME : AI;
   /* Two ways to be entitled to move, ONE pipeline below. Normally you move on
-     your own turn. With auto:true you are asking the server to move for an
-     opponent who has stopped answering — so the turn check is inverted and the
-     stall is proven against the server's clock. */
-  const mover: Player = auto ? ((1 - myIdx) as Player) : myIdx;
+     your own turn. With auto:true you are asking the server to place for
+     whoever's turn it is and has stopped answering — the stalled opponent in
+     PvP, or your own seat when your backgrounded client could not keep the
+     turn clock's promise (vs a bot nobody else exists to ask). The stall is
+     proven against the server's clock either way. */
+  const mover: Player = auto ? (match.turn as Player) : myIdx;
   if (auto) {
-    if (match.turn === myIdx) return json({ error: "your-own-turn" }, 409);
     if (Date.now() - new Date(match.last_move_at).getTime() < AUTO_MS) {
       return json({ error: "not-stalled-yet" }, 425);
     }
@@ -150,14 +154,16 @@ Deno.serve(async (req: Request) => {
     return json({ match: updated, your_die: myDie, auto: !!auto });
   }
 
-  // opponent's turn; if it's a bot, it answers within this request. An
-  // auto-place never triggers this: it moved FOR the opponent, so the turn has
-  // just come back to the caller.
+  // opponent's turn; if it's a bot, it answers within this request — whether
+  // the human's die just landed by tap or by auto-place. Only when the auto
+  // move was placed FOR the bot itself (recovery of a bot turn wedged by a
+  // mid-request crash) does it stay quiet: the turn just came back to the
+  // human.
   const oppId = myIdx === ME ? match.p2 : match.p1;
   const { data: oppProf } = await svc.from("profiles").select("is_bot, rating").eq("id", oppId).single();
   let botMove: { col: number; die: number } | null = null;
   s = (await loadState(svc, match_id, MODE))!;   // re-derive next die cleanly from the log
-  if (!auto && oppProf?.is_bot && !s.over) {
+  if (mover === myIdx && oppProf?.is_bot && !s.over) {
     const botIdx = (1 - myIdx) as Player;  // vs a human p1, the bot is always index 0
     const botDie = s.nextDie;
     // The bot plays the strength of its OWN group (docs/LADDER.md §4): a

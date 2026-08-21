@@ -92,6 +92,21 @@ const jb = await api('/functions/v1/pvp-join', {
   method: 'POST', body: JSON.stringify({ allow_bot: true }) }, alice.jwt);
 check(jb.status === 200 && jb.body.status === 'matched' && jb.body.you === 1, 'bot match not created', jb);
 let bm = jb.body.match, bmoves = 0, sawBotMove = false;
+
+// ---- away handling vs a bot: no second client exists, so the absent human's
+// own (backgrounded) client asks with auto:true — and the server still proves
+// the stall on its OWN clock before handing the turn to a die + the bot its
+// reply. Immediately: refused. After AUTO_MS: one full round, turn back to us.
+const early = await api('/functions/v1/pvp-move', {
+  method: 'POST', body: JSON.stringify({ match_id: bm.id, auto: true }) }, alice.jwt);
+check(early.status === 425, 'self-nudge before the stall was not refused', early);
+await new Promise(r => setTimeout(r, 13_000));
+const away = await api('/functions/v1/pvp-move', {
+  method: 'POST', body: JSON.stringify({ match_id: bm.id, auto: true }) }, alice.jwt);
+check(away.status === 200 && !!away.body.bot_move && away.body.match.turn === 1,
+  'stalled bot-match turn was not auto-played (die placed + bot reply)', away);
+if (away.status === 200) { bm = away.body.match; sawBotMove = sawBotMove || !!away.body.bot_move; bmoves++; }
+
 while (bm.status === 'active' && bmoves < 100) {
   let accepted = null;
   for (const c of [0, 1, 2]) {

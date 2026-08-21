@@ -162,8 +162,8 @@ function oppStalled(): void {
   const tick = (): void => {
     if (!O || O.done || S.turn === O.you) return;
     const left = Math.max(0, Math.ceil((13_000 - (Date.now() - O.lastMoveAt)) / 1000));
-    setStatus(left > 0 ? oppName() + ' is away — playing for them in ' + left
-                       : 'Playing for ' + oppName() + '…', S.turn, false);
+    setStatus(left > 0 ? 'Away — auto play in ' + left
+                       : 'Auto play…', S.turn, false);
     if (left > 0) setTimeout(tick, 500);
   };
   tick();
@@ -205,6 +205,11 @@ function revealDie(die: number, who: Player): void {
 
 function autoPlace(): void {
   if (!O || O.done || S.busy || S.turn !== O.you) return;
+  // A hidden page must not drive the optimistic pipeline: flyDie awaits a
+  // WAAPI finish that never comes without rendering frames, so the flow would
+  // wedge mid-move. The watchdog's self-nudge owns away turns — the server
+  // places the same uniform legal die this line would have picked.
+  if (document.hidden) return;
   const lg = legalCols(S.boards[O.you]);
   if (lg.length) void onlinePlace(O.you, lg[(Math.random() * lg.length) | 0]);
 }
@@ -395,6 +400,19 @@ async function watchdog(): Promise<void> {
     void sync(false);
   } else if (S.turn !== O.you) {
     void sync(false);                              // belt-and-braces vs missed events
+  } else if (document.hidden && Date.now() - O.lastMoveAt > 13_000) {
+    /* MY turn, and this page is hidden — the turn clock that keeps an honest
+       client's promise is throttled or frozen back there, and vs a bot no
+       other client exists to hand my turn to a die (in PvP the opponent asks;
+       a bot cannot). So the away client asks for ITSELF. The server still
+       proves the stall on its own clock (425 until real) and places the same
+       uniform legal die the local clock would have — a visible turn is never
+       touched, present players place their own dice. A pvp-move from before
+       self-nudge answers 409 — harmless, the client just keeps the old
+       behaviour — so this never has to race a deploy. */
+    const r = await nudge(O.matchId);
+    if (r.status === 200 && r.data?.match) applyMatchRow(r.data.match);
+    void sync(false);       // pull the moves realtime may have dropped while hidden
   }
 }
 
