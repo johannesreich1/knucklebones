@@ -1,7 +1,9 @@
-<!-- meta name="Match result" group="2 · Online flow" subtitle="Victory with the Elo delta as the trophy moment" width=412 height=880 links="Matchmaking, Home, Leaderboard" -->
+<!-- meta name="Match result" group="2 · Online flow" subtitle="Victory with the identity plates (design 36f): the home plate dealt twice, your delta beside the number it changed, the beaten foe stamped" width=412 height=920 links="Matchmaking, Home, Profile" -->
 <style>
-  /* verdict up top, scores centred, actions in the thumb zone */
-  .rwrap{display:flex;flex-direction:column;align-items:center;gap:18px;margin:0;flex:1;
+  /* verdict up top, the duel centred, actions in the thumb zone. The plates
+     (.endplates/.pplate/.pstamp/.pdelta) are WORN from main.css — the app's
+     own result rows, not a copy. */
+  .rwrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin:0;flex:1;
     padding-top:16px;width:100%;max-width:320px;align-self:center}
   .rwrap .rline{margin-top:auto}
   .rwrap .btn:first-of-type{margin-top:auto}
@@ -11,31 +13,34 @@
     -webkit-background-clip:text;background-clip:text;color:transparent;
     filter:drop-shadow(0 0 26px rgba(40,232,255,.45))}
   .rsub{font-size:11px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:-8px}
-  .rline{display:flex;align-items:center;gap:16px;font-weight:800;width:100%}
-  .rline .sc{flex:1;min-width:0}   /* equal halves — the VS sits dead centre */
-  .rline .you{color:var(--cy);font-size:44px;font-weight:900;text-shadow:0 0 14px rgba(40,232,255,.5)}
-  .rline .cpu{color:var(--mg);font-size:44px;font-weight:900;text-shadow:0 0 14px rgba(255,47,160,.5)}
-  .rline .vs{color:var(--dim);font-size:12px;letter-spacing:.2em}
-  .rline .sc{display:flex;flex-direction:column;align-items:center;gap:1px}
-  .rline .sc em{font-style:normal;font-size:9.5px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
-  .elochip{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:900;color:#0a0410;
-    background:var(--gold);border-radius:99px;padding:7px 16px;
-    box-shadow:0 0 24px rgba(255,209,102,.55)}
-  .elochip small{font-weight:800;font-size:9px;letter-spacing:.2em}
-  .rrank{font-size:10.5px;letter-spacing:.14em;color:var(--dim)}
-  .rrank b{color:var(--gold)}
+  /* the plates carry the names — the scoreline is pure numbers */
+  .rline{display:flex;align-items:baseline;justify-content:center;gap:16px;font-weight:900}
+  .rline .you{color:var(--cy);font-size:44px;text-shadow:0 0 14px rgba(40,232,255,.5)}
+  .rline .vs{color:var(--dim);font-size:12px;letter-spacing:.2em;font-weight:800}
+  .rline .cpu{color:var(--mg);font-size:44px;opacity:.75;text-shadow:0 0 12px rgba(255,47,160,.4)}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
   <div class="rwrap">
     <div class="rtitle">VICTORY</div>
     <div class="rsub">You out-rolled EmberCrow896</div>
     <div class="rline">
-      <span class="sc"><span class="you">47</span><em>You</em></span>
-      <span class="vs">VS</span>
-      <span class="sc"><span class="cpu">30</span><em>EmberCrow896</em></span>
+      <span class="you">47</span><span class="vs">VS</span><span class="cpu">30</span>
     </div>
-    <div class="elochip">+16 <small>ELO · 1032</small></div>
-    <div class="rrank">Ladder: <b>#3</b></div>
+    <div class="endplates dice-static">
+      <button class="pplate wonp">
+        <span class="ringwrap mini" style="--p:.502"><i class="lring"></i>{{die:5:p1:18}}</span>
+        <span class="nm2">FrostLynx303</span>
+        <span class="meta2"><span class="pdelta">+16</span><span class="gl">GOLD</span><b>2,510</b></span>
+        <span class="chev">›</span>
+      </button>
+      <div class="pplate theirs lostp">
+        <span class="ringwrap mini" style="--p:.436"><i class="lring"></i>{{die:3:p2:18}}</span>
+        <span class="nm2">EmberCrow896</span>
+        <span class="pstamp">Beaten</span>
+        <span class="meta2"><span class="gl">GOLD</span><b>2,431</b></span>
+      </div>
+    </div>
+    <div class="rrank">GOLD · <b>#3</b></div>
     <button class="btn primary">Next duel</button>
     <button class="linkbtn">Home</button>
     <button class="linkbtn">Share result</button>

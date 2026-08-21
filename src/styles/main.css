@@ -988,6 +988,23 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
   transform:translateY(-1px)}
 /* no account yet: the same plate, dashed, with an empty ring around nobody */
 .pplate.anon{color:var(--dim);border-style:dashed;font-size:10.5px;letter-spacing:.12em}
+/* ---- the plate on the result (design 36f): the home plate dealt twice ----
+   The opponent's ring speaks their colour: .lring reads --cy, so their plate
+   redefines it and the same ring component fills magenta. */
+.pplate.theirs{--cy:var(--mg)}
+.pplate.wonp{border-color:rgba(255,209,102,.5);background:rgba(255,209,102,.05)}
+.pplate.lostp{opacity:.66}
+/* what the match paid, beside the number it changed — green up, magenta down */
+.pdelta{font-size:11px;font-weight:900;color:#8dffcf;letter-spacing:.05em}
+.pdelta.down{color:var(--mg)}
+/* the stamp across the beaten foe's row (design 36d), in-flow but askew */
+.pstamp{margin-left:2px;flex:0 0 auto;transform:rotate(-8deg);
+  border:1.5px solid rgba(255,47,160,.6);color:rgba(255,71,171,.9);border-radius:5px;
+  padding:1.5px 5px;font-size:7.5px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}
+.endplates{display:flex;flex-direction:column;gap:9px;width:100%;max-width:var(--w-col)}
+.endplates div.pplate{cursor:default}   /* a fact, not a door */
+/* with plates dealing the names, the scoreline goes back to pure numbers */
+#ovEnd .sc em:empty{display:none}
 .hero{display:flex;flex-direction:column;align-items:center;gap:4px;margin:6px 0 2px}
 .hero .eyebrow{font-size:9px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
 .hero h1{font-size:23px;letter-spacing:.24em}

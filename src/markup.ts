@@ -356,6 +356,8 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <span class="vs">VS</span>
     <span class="sc"><span class="cpu" id="endCpu">0</span><em id="endCpuLbl">AI</em></span>
   </div>
+  <!-- who played, as plates (design 36f) — ranked fills this, local leaves it hidden -->
+  <div class="endplates" id="endPlates" hidden></div>
   <div class="endmeta" id="endMeta"></div>
   <button class="btn primary" id="btnAgain">Next duel</button>
   <button class="btn" id="btnMenu2">Change difficulty</button>

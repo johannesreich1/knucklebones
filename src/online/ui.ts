@@ -8,7 +8,7 @@ import './online.css';
 import { ME, AI } from '../core/rules.ts';
 import { $, show, hide } from '../ui/dom.ts';
 import { loaderDie, loaderWait } from '../ui/loader.ts';
-import { showEnd, setMeta, closeEnd } from '../ui/endscreen.ts';
+import { showEnd, setMeta, setPlates, closeEnd } from '../ui/endscreen.ts';
 import { Sfx } from '../ui/audio.ts';
 import { makeDie } from '../ui/die.ts';
 import { rankName, groupFill, peakState, inApex, boardGroup } from '../core/ladder.ts';
@@ -666,37 +666,46 @@ async function showHistory(): Promise<void> {
 }
 
 /* ---- match result: the SAME screen local play ends on (ui/endscreen), filled
-   with what ranked has to add — what the match PAID and where it leaves you.
-   That number is the only honest points figure in the app: nothing is ever
-   previewed before a match, because what one is worth depends on the opponent.
-   Everything paints INSTANTLY: the chip uses the cached points plus the known
-   delta, and the fresh fetches merely correct and append. ---- */
+   with what ranked has to add — WHO played, as two identity plates (design
+   36f: the home plate dealt twice), and what the match PAID, riding your
+   plate beside the number it changed. The beaten foe wears a stamp. That
+   delta is the only honest points figure in the app: nothing is ever
+   previewed before a match, because what one is worth depends on the
+   opponent. Everything paints INSTANTLY: the plates use the cached profile
+   plus the known delta, and the fresh fetches merely correct and append. ---- */
 async function showResult(r: FinishReport): Promise<void> {
   hide('#ovOnline');
   const title = r.draw ? 'DEAD HEAT' : r.won ? 'VICTORY' : 'DEFEAT';
   const deltaTxt = r.delta != null ? ` · ${r.delta >= 0 ? '+' : ''}${r.delta} points` : '';
-  /* the context line, as HTML — the one thing ranked shows that local play
-     does not. Rebuilt whenever a better number arrives. */
-  const metaHtml = (points: number | null, rank: number | null, group: string | null) =>
-    (r.delta == null ? '' :
-      `<span class="elochip${r.delta < 0 ? ' down' : ''}">${r.delta >= 0 ? '+' : ''}${r.delta}` +
-      ` <small>PTS${points != null ? ' · ' + points.toLocaleString('en') : ''}</small></span>`) +
-    (group ? `<span class="rrank">${group}${rank != null ? ` · <b>${rk(rank)}</b>` : ''}</span>`
-           : rank != null ? `<span class="rrank">Ladder: <b>${rk(rank)}</b></span>` : '');
-  let cachedRating: number | null = null;
-  try {
-    const c = JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null');
-    if (typeof c?.rating === 'number' && r.delta != null) cachedRating = c.rating + r.delta;
-  } catch { /* forgetful host */ }
+  let cache: { nickname?: string; rating?: number; avatar?: string | null } | null = null;
+  try { cache = JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null'); }
+  catch { /* forgetful host */ }
+  const cachedRating = typeof cache?.rating === 'number' && r.delta != null
+    ? cache.rating + r.delta : null;
+  /* both rows re-dealt whenever a better number for MY points arrives; the
+     loser dims, the winner takes the gold edge, a win stamps the foe */
+  const plates = (pts: number | null) => [
+    { name: cache?.nickname ?? 'You', avatar: cache?.avatar ?? null, points: pts,
+      delta: r.delta, won: r.won, lost: !r.won && !r.draw,
+      tap: () => { closeEnd(); show('#ovOnline'); void route('account'); } },
+    { name: r.opp, avatar: r.oppAvatar, points: r.oppRating, theirs: true,
+      won: !r.won && !r.draw, lost: r.won, stamp: r.won ? 'BEATEN' : undefined },
+  ];
+  /* the context line keeps only the rank — points and delta live ON the plate */
+  const metaHtml = (rank: number | null, group: string | null) =>
+    group ? `<span class="rrank">${group}${rank != null ? ` · <b>${rk(rank)}</b>` : ''}</span>`
+    : rank != null ? `<span class="rrank">Ladder: <b>${rk(rank)}</b></span>` : '';
   showEnd({
     outcome: r.draw ? 'draw' : r.won ? 'win' : 'lose',
     title,
     sub: r.forfeit ? (r.won ? r.opp + ' forfeited' : 'Match forfeited')
        : r.draw ? 'Down to the last die'
        : r.won ? 'You out-rolled ' + r.opp : r.opp + ' takes it',
-    you:  { score: r.my, label: 'You' },
-    them: { score: r.their, label: r.opp },
-    meta: metaHtml(cachedRating, null, cachedRating != null ? rankName(cachedRating) : null),
+    /* the plates carry the names — the scoreline goes back to pure numbers */
+    you:  { score: r.my, label: '' },
+    them: { score: r.their, label: '' },
+    plates: plates(cachedRating),
+    meta: metaHtml(null, cachedRating != null ? rankName(cachedRating) : null),
     again: { label: 'Next duel', run: () => { closeEnd(); show('#ovOnline'); void route('play'); } },
     home:  { label: 'Home', run: () => { closeEnd(); goHome(); } },
     share: `${title} ${r.my}–${r.their} vs ${r.opp}${deltaTxt} — Knucklebones, ranked dice duels`,
@@ -706,7 +715,8 @@ async function showResult(r: FinishReport): Promise<void> {
   const [p, st] = await Promise.all([myProfile(), myStanding()]);
   refreshHomeChip();
   const pts = st?.points ?? p?.rating ?? cachedRating;
-  setMeta(metaHtml(pts, st?.rank ?? null, pts != null ? rankName(pts) : null));
+  setPlates(plates(pts));
+  setMeta(metaHtml(st?.rank ?? null, pts != null ? rankName(pts) : null));
 }
 
 let bound = false;

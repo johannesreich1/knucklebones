@@ -23,10 +23,14 @@ import { setPlaceHandler } from '../ui/input.ts';
 import { flyDie, destroyAt } from '../flow/game.ts';
 import { supa, move, claim, nudge, watchMatch, type MatchRow, type JoinResult } from './session.ts';
 
+/* the pair as pvp-join hands them over — names always, ratings and avatars
+   with them (optional only for the deploy gap, same as JoinResult) */
+type Names = Extract<JoinResult, { status: 'matched' }>['names'];
+
 interface OnlineState {
   matchId: string;
   you: Player;
-  names: { p1: string; p2: string };
+  names: Names;
   pendingDie: number | null;   // the die the CURRENT mover must place
   applied: number;             // moves applied to the local board (log idx + 1)
   gen: number;                 // snapshot of S.gen — any local newGame tears us down
@@ -47,13 +51,17 @@ if (typeof window !== 'undefined') {
 }
 
 const pause = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const oppSeat = () => O!.you === ME ? 'p2' as const : 'p1' as const;
 const myName = () => O!.you === ME ? O!.names.p1 : O!.names.p2;
-const oppName = () => O!.you === ME ? O!.names.p2 : O!.names.p1;
+const oppName = () => O!.names[oppSeat()];
 
 /* one callback per match end, wired by ui.ts to open the Result screen */
 export interface FinishReport {
   won: boolean; draw: boolean; forfeit: boolean;
   my: number; their: number; delta: number | null; opp: string;
+  /* the opponent as the result plate needs them (design 36f): the avatar they
+     chose, and their points AFTER this match — join rating plus their delta */
+  oppAvatar: string | null; oppRating: number | null;
 }
 let onFinished: ((r: FinishReport) => void) | null = null;
 export function setFinishHandler(f: typeof onFinished): void { onFinished = f; }
@@ -78,7 +86,7 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   S.turn = res.match.turn;
   S.bottom = res.you;
   O = {
-    matchId: res.match.id, you: res.you, names: (res as any).names ?? { p1: 'PLAYER 1', p2: 'PLAYER 2' },
+    matchId: res.match.id, you: res.you, names: res.names ?? { p1: 'PLAYER 1', p2: 'PLAYER 2' },
     pendingDie: res.match.next_die, applied: 0, gen: S.gen,
     channel: null, tick: null, lastMoveAt: Date.parse(res.match.last_move_at), busySync: false, animating: false, pendingRow: null, done: false,
     limited: false,
@@ -412,12 +420,16 @@ function finishUI(m: MatchRow): void {
   const my = (meP1 ? m.p1_score : m.p2_score) ?? (boardTotalMode(S.boards[O.you], S.scoring) + btyOf(O.you));
   const their = (meP1 ? m.p2_score : m.p1_score) ?? (boardTotalMode(S.boards[(1 - O.you) as Player], S.scoring) + btyOf((1 - O.you) as Player));
   const delta = (meP1 ? (m as any).p1_rating_delta : (m as any).p2_rating_delta) as number | null;
+  const theirDelta = (meP1 ? (m as any).p2_rating_delta : (m as any).p1_rating_delta) as number | null;
   const won = m.winner !== null && ((meP1 && m.winner === m.p1) || (!meP1 && m.winner === m.p2));
   setStatus(won ? 'You win' : m.winner === null ? 'Draw' : oppName() + ' wins', won ? O.you : (1 - O.you) as Player, false);
   settleBoard();                                   // same end beat as local play
+  const oppJoin = O.names.ratings?.[oppSeat()] ?? null;
   const report: FinishReport = {
     won, draw: m.winner === null, forfeit: m.status === 'forfeit',
     my, their, delta, opp: oppName(),
+    oppAvatar: O.names.avatars?.[oppSeat()] ?? null,
+    oppRating: oppJoin != null ? oppJoin + (theirDelta ?? 0) : null,
   };
   const cb = onFinished;
   setTimeout(() => { teardown(); cb?.(report); }, 1400);

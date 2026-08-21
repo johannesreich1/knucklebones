@@ -14,8 +14,13 @@ import { $, show, hide } from './dom.ts';
 import { tap } from './input.ts';
 import { Sfx, vibrate } from './audio.ts';
 import { fireworks } from './fx.ts';
+import { fillPlate, type PlateSpec } from './plate.ts';
 
 export interface EndAction { label: string; run: () => void }
+
+/* an identity plate on the result (design 36f) — the home plate's spec plus
+   an optional door. With a tap the row is a <button> and grows its chevron. */
+export interface EndPlate extends PlateSpec { tap?: () => void }
 
 export interface EndSpec {
   outcome: 'win' | 'lose' | 'draw';
@@ -24,6 +29,10 @@ export interface EndSpec {
   you: { score: number; label: string };
   them: { score: number; label: string };
   meta?: string;                 // HTML for the context line (session record, points chip…)
+  /* who played, as plates (design 36f). Ranked deals two — you with the
+     delta beside the number it changed, the beaten foe stamped. Local play
+     leaves it empty and keeps its score labels instead. */
+  plates?: EndPlate[];
   again?: EndAction;             // the primary action; absent hides it
   alt?: EndAction;               // the secondary; absent hides it
   home?: EndAction;              // the quiet way out; absent hides it
@@ -63,6 +72,7 @@ export function showEnd(spec: EndSpec): void {
   $('#endYouLbl').textContent = spec.you.label;
   $('#endCpuLbl').textContent = spec.them.label;
   setMeta(spec.meta ?? '');
+  setPlates(spec.plates ?? []);
   label('#btnAgain', spec.again);
   label('#btnMenu2', spec.alt);
   label('#btnEndHome', spec.home);
@@ -92,6 +102,20 @@ export function setMeta(html: string): void {
   const m = $('#endMeta');
   m.innerHTML = html;
   m.hidden = !html;
+}
+
+/* the plates can arrive LATE too, for the same reason — ranked deals them from
+   cache and re-deals once the fresh standing lands */
+export function setPlates(plates: EndPlate[]): void {
+  const box = $('#endPlates');
+  box.innerHTML = '';
+  box.hidden = !plates.length;
+  for (const p of plates) {
+    const el = document.createElement(p.tap ? 'button' : 'div');
+    fillPlate(el, { ...p, chev: p.chev ?? !!p.tap });
+    if (p.tap) el.addEventListener('click', () => { Sfx.tap(); p.tap!(); });
+    box.appendChild(el);
+  }
 }
 
 export function closeEnd(): void { hide('#ovEnd'); live = null; }
