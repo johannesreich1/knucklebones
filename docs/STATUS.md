@@ -10,7 +10,7 @@ was decided, and what's still open.*
 |---|---|
 | **Web** | **LIVE** at https://knucklebones-asg.pages.dev — Cloudflare Pages, auto-deploys every push to `main` |
 | **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0024, RLS + column-grant hardened. 0014 (Game Center ids) is written but NOT applied — it waits for a device |
-| **Edge Functions** | `pvp-join` v16, `pvp-move` v13, `pvp-claim` v10, `account-delete` v1 — all ACTIVE, nothing dead deployed. `gc-auth` is written but undeployed (same reason) |
+| **Edge Functions** | `pvp-join` v17, `pvp-move` v15, `pvp-claim` v10, `account-delete` v1 — all ACTIVE, nothing dead deployed. `gc-auth` is written but undeployed (same reason). CAREFUL: `pvp-move`'s deployed `index.ts` is the away-turns version from the UNMERGED branch `claude/duell-away-auto-play-9d2203` — redeploying it from main alone reverts live behavior until that branch lands |
 | **CI** | GitHub Actions: build + full test gate (24 suites) on every push — green through current `main` |
 | **Design system** | 170 cards (44 screens × 4 device sizes + the two `00-` specs) in the Claude Design project "Knucklebones", generated from the app's real CSS **and its real code** — see "Cards render the app" below |
 | **Signups** | **Open** — a first tap on RANKED mints a guest account (no email, no form). Attaching an email still waits on SMTP; see `docs/IDENTITY.md` |
@@ -215,6 +215,18 @@ now seeds mulberry32 (the old MINSTD LCG swung deterministic-pair duels ±7pp
 between streams), and the deep groups sample 150-250 games (the apex's
 ordered-ladder check had been riding an SE of ~6pp). Redeployed as pvp-move
 v15.
+
+**Verified live (2026-08-21 morning).** The evening's whole server surface,
+byte-diffed and probed: deployed bundles fetched and diffed against the repo
+(pvp-join v17 byte-identical to d87e700; pvp-move v15 = this fixed core plus
+the away-turns `index.ts` — see the table's CAREFUL); function logs show zero
+non-200s across the window; botbench green on exactly this core. Two
+throwaway-guest probes each played a full bot match: v17 hands over names,
+ratings AND avatars and the STONE pair-band cap holds; a too-early `auto`
+gets its 425, a 13s-stalled own seat gets served with the bot answering
+in-request, and the settle paid +80/−60 — the 0.75 loss asymmetry exactly.
+Both guests deleted themselves; queue, profiles and season rows all empty
+after.
 
 ## Open items
 
