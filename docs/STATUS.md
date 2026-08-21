@@ -157,11 +157,16 @@ FATE 56.1% at 2 casts / 52.6% at 1; NUDGE 61.3% at 2 / 53.9% at 1 — ship it
 at 1; WARD 56.5%, mid-game timing, near-neutral under COLSHIELD; SUNDER
 56.9%, participation only ~59% (earned, late-skewing casts); PILFER 56.5%
 eager but **61.0%** patient, and **70.5%** under COLSHIELD — the steal
-un-fills a nearly-full column and denies the shield, so a ranked deal must
-never pair PILFER with COLSHIELD. Sim caveats recorded in the tool header:
-placement search is charm-blind, one cast per turn, policies are floors.
-The roster commit (candidates → SPELLS, swap out, icons, `'self'`-target
-gesture, per-spell `worth()` for the CPU) is deliberately separate.
+un-fills a nearly-full column and denies the shield, so any future ranked
+deal must never pair PILFER with COLSHIELD. Sim caveats recorded in the
+tool header: placement search is charm-blind, one cast per turn, policies
+are floors. The roster commit (candidates → SPELLS, swap out, icons,
+`'self'`-target gesture, per-spell `worth()` for the CPU) is deliberately
+separate — and **OFFLINE-ONLY, by decision (2026-08-21)**: ranked keeps
+dealing the empty hand it deals today. The online protocol (casts as logged
+entries replayed through this same registry, FATE drawing from the seeded
+stream) is designed and the core seams exist, but wiring it is its own
+later step, not part of the roster commit.
 
 ## Standing rules (learned the hard way)
 
