@@ -1,12 +1,11 @@
 // Spell icons — same deal as ui/modeicons: stroke-based 24×24 SVGs on
 // currentColor, keyed off the registry's stable ids, so the shared core stays
 // free of markup and a spell can be re-skinned without touching its rules.
+import { modeIcon, modeHue } from './modeicons.ts';
+import { RANDOM_SPELL } from '../core/spells.ts';
 const PATHS: Record<string, string> = {
   /* NONE: the picker's first slice — no rune at all */
   none: '<circle cx="12" cy="12" r="8.4"/><path d="M6.1 6.1 17.9 17.9"/>',
-  /* RANDOM: the picker's last slice. The SAME shuffle mark the mode row uses
-     (ui/modeicons) — one idea, one glyph, whichever row asks it. */
-  random: '<path d="M3.4 7.6h3.9l9.3 8.8h3.9M3.4 16.4h3.9l9.3-8.8h3.9"/>',
   /* FATE: a die tossed back — one face leaving on a return arrow */
   fate: '<rect x="7.6" y="7.6" width="8.8" height="8.8" rx="2.2"/>'
       + '<circle cx="12" cy="12" r=".4" fill="currentColor"/>'
@@ -33,7 +32,6 @@ const PATHS: Record<string, string> = {
    slice in the picker. NONE wears the neutral grey CLASSIC uses. */
 const HUES: Record<string, string> = {
   none: '#8ea3c0',
-  random: '#e9f1ff',    // the mode row's random wears this too
   fate: '#b18cff',      // violet — chance rewoven
   nudge: '#7fd7ff',     // sky — the smallest push
   ward: '#7dffc4',      // mint — protection
@@ -41,9 +39,18 @@ const HUES: Record<string, string> = {
   pilfer: '#ffd166',    // gold — theft
 };
 
-export function spellHue(id: string): string { return HUES[id] ?? '#b18cff'; }
+/* RANDOM is not a rune — it is the same PROMISE the mode row makes, so it
+   wears that row's mark and hue rather than a copy of them. A hand-copied
+   glyph already drifted here: the mode's shuffle is TWO paths (the crossing
+   lines and the arrowheads) and the copy took only the first, so the spell
+   row showed a bare X next to the mode row's arrows. Asking is the fix that
+   cannot drift again. */
+export function spellHue(id: string): string {
+  return id === RANDOM_SPELL ? modeHue('random') : (HUES[id] ?? '#b18cff');
+}
 
 export function spellIcon(id: string, size = 22): string {
+  if (id === RANDOM_SPELL) return modeIcon('random', size);
   const body = PATHS[id] ?? PATHS.none;
   return `<svg class="sico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" `
     + `stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" `

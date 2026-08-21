@@ -63,10 +63,17 @@ export function fit(){
      nameplate for the gutter beside the board wherever that gutter can hold
      a number at all — the font SCALES to the gutter (main.css), so 40px is
      enough for the small end of it; truly tight screens keep the original
-     plate (user call). Row modes hang their score rail in the same gutter,
-     so they always keep the plate seating; landscape has no gutter at all. */
+     plate (user call). Landscape has no gutter at all.
+     THE SEATING MAY NOT DEPEND ON THE MODE at a given size (user call): a
+     name that centres in classic and slides left in ROW SWITCH reads as the
+     table rearranging itself for no reason. Row modes only need a BIGGER
+     gutter, not a different plate — their score rail hangs off the board's
+     left (main.css html.rowmode .rowchips is right:100%) while the points
+     sit in the right one, so the two never meet; asking the gutter to hold
+     the wider of the two tenants is the whole difference. */
   const gut = Math.floor((w - safe.h - 20 - (cell*SPEC.cols + 2*6)) / 2);
-  const sidepts = !land && !(S.scoring===ROWSWITCH || S.scoring===ROWMULT) && gut >= 40;
+  const rowmode = S.scoring===ROWSWITCH || S.scoring===ROWMULT;
+  const sidepts = !land && gut >= (rowmode ? RAIL_LANE : 40);
   document.documentElement.classList.toggle('sidepts', sidepts);
   document.documentElement.style.setProperty('--gut', gut+'px');
 }

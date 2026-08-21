@@ -134,6 +134,8 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
         <button data-d="medium">NORMAL</button>
         <button data-d="hard" class="on">HARD</button>
       </div>
+      <!-- deliberately empty: the AI level says what it is and nothing more
+           (user call). Kept so this card keeps the seat card's height. -->
       <div class="tiny note" id="diffNote"></div>
     </div>
     <div class="card" id="seatCard" hidden>

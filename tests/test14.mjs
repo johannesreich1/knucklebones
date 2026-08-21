@@ -40,6 +40,23 @@ try {
   check(out.picker.pick === '' && out.picker.on === 0, 'the spell picker must default to NONE', out.picker);
   check(out.picker.slices === 7 && out.picker.values[0] === '', 'NONE + the five runes + RANDOM', out.picker);
   check(out.picker.values[6] === 'random', 'RANDOM is the last slice, as on the mode row', out.picker.values);
+  /* ONE idea, ONE mark: RANDOM means the same thing in both rows, so it must
+     LOOK the same in both. A hand-copied glyph drifted here once — the mode's
+     shuffle is two paths and the copy took one, so the spell row showed a bare
+     X beside the mode row's arrows (user spotted it). Compare what is drawn. */
+  out.randomIcon = await page.evaluate(() => {
+    const strip = (sel, v) => document.querySelector(`${sel} button[data-v="${v}"]`);
+    const svg = (b) => b?.querySelector('svg');
+    const geom = (b) => [...(svg(b)?.querySelectorAll('path,circle,rect,line,polyline') ?? [])]
+      .map((n) => n.tagName + ':' + (n.getAttribute('d') ?? '')).join('|');
+    const mode = strip('#modePick', '-1'), spell = strip('#spellPick', 'random');
+    return { mode: geom(mode), spell: geom(spell),
+             modeHue: mode?.style.getPropertyValue('--mh'), spellHue: spell?.style.getPropertyValue('--mh') };
+  });
+  check(out.randomIcon.mode === out.randomIcon.spell && !!out.randomIcon.mode,
+    'THE TWO RANDOM SLICES DRAW DIFFERENT MARKS', out.randomIcon);
+  check(out.randomIcon.modeHue === out.randomIcon.spellHue,
+    'the two RANDOM slices wear different hues', out.randomIcon);
   check(!out.picker.values.includes('swap'), 'the retired swap must not be pickable', out.picker.values);
   check(out.picker.icons.every(Boolean), 'every slice carries its icon', out.picker);
   check(/^NONE — /.test(out.picker.info), 'NONE needs its explanation', out.picker.info);

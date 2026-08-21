@@ -9,14 +9,6 @@ import { clearTut } from './tutorial.ts';
 import { cancelPass } from './game.ts';
 import { renderSpells } from './spells.ts';
 import { clearHints } from '../ui/render.ts';
-/* What each level actually does, not how it feels — the numbers come straight
-   from aiChoose() in flow/game.ts, and must be corrected there and here
-   together. */
-const DIFF_NOTE = {
-  easy:   'Half its moves are random, and it never sees a threat coming',
-  medium: 'Looks two moves ahead and avoids the obvious traps',
-  hard:   'Searches four moves deep — five when the phone keeps up',
-};
 function segOn(sel,key,val){
   document.querySelectorAll(sel+' button').forEach(b=>b.classList.toggle('on', b.dataset[key]===val));
 }
@@ -27,11 +19,14 @@ export function syncSettingsUI(){
   $('#seatCard').hidden  = !duo;
   $('#timerCard').hidden = !duo;
   /* each note explains the control it sits under, and both cards carry one so
-     the swap between them cannot change this slot's height */
+     the swap between them cannot change this slot's height. The AI level's
+     note stays EMPTY on purpose (user call): naming what each level searches
+     told the player how to beat it, and the three words already say enough.
+     The slot itself is kept by .card .note's min-height, so the cards below
+     do not move when this one falls silent. */
   $('#duoNote').textContent = S.seat==='face'
     ? 'Phone flat between you — the top half faces Player 2'
     : 'One phone, passed back and forth';
-  $('#diffNote').textContent = DIFF_NOTE[S.diff] ?? DIFF_NOTE.medium;
   // name the game, not the verb: two players on one phone are playing a duel,
   // and the button is the last thing read before committing to one
   $('#btnPlay').textContent = duo ? 'Play duel' : 'Play vs AI';
