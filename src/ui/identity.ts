@@ -8,5 +8,5 @@ export function nameOf(who: Player): string {
 }
 
 export function colorOf(who: Player): string {
-  return who === ME ? 'var(--cy)' : 'var(--mg)';
+  return who === ME ? 'var(--p1)' : 'var(--p2)';
 }

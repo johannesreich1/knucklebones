@@ -9,9 +9,11 @@
 import { ME } from '../core/rules.ts';
 import { makeDie } from './die.ts';
 
+/* raw hue tokens, never --p1/--p2: a picked avatar keeps its colour whatever
+   the Settings pickers do to the duel pair */
 export const AV_HUES: Record<string, string> = {
   cy: 'var(--cy)', mg: 'var(--mg)', gold: 'var(--gold)',
-  green: '#7ee787', violet: '#b18cff', orange: '#ff8a3d',
+  green: 'var(--green)', violet: 'var(--violet)', orange: 'var(--orange)',
 };
 export const DEFAULT_AVATAR = 'die:5:cy';
 

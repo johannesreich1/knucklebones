@@ -28,11 +28,13 @@ const PATHS: Record<string, string> = {
 
 /* per-mode hues — the mode's colour EVERYWHERE (wheel segments, match badge,
    the game-modes library): classic neutral, then the game's own palette,
-   destruction orange for SINGLE STRIKE, money green for BOUNTY */
+   destruction orange for SINGLE STRIKE, money green for BOUNTY.
+   RAW hue tokens, never --p1/--p2: a mode's identity does not change clothes
+   when Settings trades or repaints the duel pair. */
 const HUES: Record<string, string> = {
-  classic: '#8ea3c0', rowswitch: '#28e8ff', rowmult: '#ff2fa0',
-  colshield: '#ffd166', singlestrike: '#ff8a3d', bounty: '#7ee787',
-  limited: '#b18cff',
+  classic: '#8ea3c0', rowswitch: 'var(--cy)', rowmult: 'var(--mg)',
+  colshield: 'var(--gold)', singlestrike: 'var(--orange)', bounty: 'var(--green)',
+  limited: 'var(--violet)',
   /* RANDOM wears no mode's colour, because it could become any of them */
   random: '#e9f1ff',
 };

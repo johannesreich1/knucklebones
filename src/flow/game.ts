@@ -223,7 +223,7 @@ export async function destroyAt(who,col,die){
   // only performs it, so screen and state can never tell different stories
   const victims=victimsOf(b[col],die,S.scoring);
   if(!victims.length) return 0;
-  const color = who===ME ? '#28e8ff' : '#ff2fa0';
+  const color = colorOf(who);
   for(const i of victims){
     const slot=slotEl(who,col,slotIdx(who,i));
     const d=slot && slot.firstElementChild;
@@ -404,7 +404,9 @@ export function endGame(){
     sub: drawn ? 'Nobody blinks'
       : tut ? (p1won ? 'Tutorial complete — the bones obey you'
                      : 'Tutorial complete — now beat the real thing')
-      : duo ? (p1won?'Cyan takes the round':'Magenta takes the round')
+      /* the seat, never the hue: Settings can trade or repaint the pair,
+         and a line that names a colour would then name the wrong player */
+      : duo ? (p1won?'Player 1 takes the round':'Player 2 takes the round')
             : (p1won?'You out-rolled the machine':'The AI takes this one'),
     you:  { score: me, label: duo?'Player 1':'You' },
     them: { score: ai, label: duo?'Player 2':'AI' },

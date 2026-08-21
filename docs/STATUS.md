@@ -463,9 +463,11 @@ Finished the next day on player report: the HUD glyph was still a **sliders
 icon**, promising a Settings screen it no longer opened — it is a doorway with
 an arrow leaving it now, `#btnSettings` became `#btnLeave`, and the glyph lives
 in the new `ui/chromeicons.ts` so the three design cards that had copied it
-render the app's own. In the ask-card, **the way back wears the colour**: the
-gradient sits on *Keep playing* at the smaller size, while the destructive
-answer is full width and quiet. Settings also lost its **How to play**
+render the app's own. In the ask-card, **the encouraged answer leads** (retuned
+2026-08-21, user call): it sits first at full size wearing the duel gradient —
+*Keep playing* on the quit card, the tutorial invite on the first-run offer —
+while the other answer trails at the bottom, smaller and quiet. `ask()` orders
+and sizes the pair from `spec.loud`; the markup carries no fixed order. Settings also lost its **How to play**
 button — HOW TO PLAY is a hub off Home now, and the sheet had been a third
 door to the same rules. What is left is two toggles and the build tag.
 
@@ -503,6 +505,42 @@ name lands, and must not fight the clock for attention), **the profile**
 result screen** (optimistic paint), and **in-match waits** (the turn clock
 carries them). The rolling die (LD6) stays in the drawer until a wait with a
 direction exists (e.g. a determinate update/download).
+
+### 9. The duel pair became a dial (2026-08-21, user feature request)
+
+The player colours were already tokens (`--cy`/`--mg`) — but 43 raw literals
+in CSS and 3 in TS bypassed them, so nothing could move. Now `main.css` holds
+two layers: RAW HUES (six families — cy, mg, gold, green, violet, orange —
+each `--<id>` + `-rgb` triplet + `-hi` tint) that never change, and THE DUEL
+PAIR (`--p1` you / `--p2` them) that every player-facing colour reads. The
+Settings sheet repoints the pair:
+
+- **Your colour / Opponent colour** — two swatch pickers (one `huePick`
+  builder, two slots) over the `DUELHUES` roster in `state.ts`. Free
+  combination, with one law: a colour belongs to one player, so each strip
+  renders the other side's pick disabled. `syncSettingsUI` writes the chosen
+  families inline onto `<html>` (`--p1*`/`--p2*`), where the `:root` defaults
+  yield. Adding a hue = one roster entry + its three tokens.
+- **Colour blind mode** — pins the display pair to cyan-vs-gold (the
+  blue↔yellow axis red-green colour vision keeps; both clear WCAG 2.1 AA on
+  this backdrop — EN 301 549, what the EU Accessibility Act binds apps to).
+  It locks both pickers (real `disabled` + `aria-describedby` naming why)
+  but does NOT overwrite the stored picks — switching it off restores the
+  chosen combination. Known soft spot, accepted: gold-accented states (the
+  ×2 die, kill highlights) sit close to a gold opponent; the ×N chip badges
+  and board position still carry the fact.
+
+What deliberately does NOT follow the pair, reading raw hues instead: danger
+(pink stays bad-news in every palette), the destruction keyword in the rules,
+avatar hues (a picked cyan die stays cyan), mode-icon hues, and `--g-neon`.
+`colorOf()` in `ui/identity.ts` is the ONE TS source of the pair — the burst
+in `flow/game.ts` had its own hex copy, which is exactly how it would have
+missed the repaint. Duo's round line names the seat ("Player 1 takes the
+round"), never the hue, because a named hue lies the moment the pair moves.
+The mode seg lost its duo-wears-magenta special case the same evening (user
+call: the active choice always wears the active colour). Every colour claim
+above was verified live: the pickers, colour-blind, persistence and the
+ladder's gap/W·L colours, screenshot by screenshot, plus the full gate.
 
 ### 7. Cards render the app, they no longer transcribe it (2026-08-20)
 

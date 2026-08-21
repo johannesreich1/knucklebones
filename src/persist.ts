@@ -2,7 +2,7 @@
 // 2026-08-18 — offline games are quick; abandoning one simply ends it.)
 // Storage is unavailable in some embeds (sandboxed iframes, private modes).
 // Every access is guarded: the game simply forgets between sessions there.
-import { S, DIFFS, MODES, TIMERS, SEATS, oneOf } from './state.ts';
+import { S, DIFFS, MODES, TIMERS, SEATS, HUE_IDS, oneOf } from './state.ts';
 import { spellById } from './core/spells.ts';
 
 const Store = {
@@ -20,7 +20,8 @@ export function saveStats(): void {
                 p1: S.p1, p2: S.p2, ties: S.ties,
                 best: S.best, diff: S.diff, mode: S.mode, sound: S.sound,
                 numerals: S.numerals, timer: S.timer, seat: S.seat, tutDone: S.tutDone, played: S.played,
-                localMode: S.localMode, spell: S.spell });
+                localMode: S.localMode, spell: S.spell,
+                p1Hue: S.p1Hue, p2Hue: S.p2Hue, colorblind: S.colorblind });
 }
 
 export function loadStats(): void {
@@ -33,6 +34,11 @@ export function loadStats(): void {
   S.seat = oneOf(SEATS, d.seat, S.seat);
   if (typeof d.sound === 'boolean') S.sound = d.sound;
   if (typeof d.numerals === 'boolean') S.numerals = d.numerals;
+  S.p1Hue = oneOf(HUE_IDS, d.p1Hue, S.p1Hue);
+  S.p2Hue = oneOf(HUE_IDS, d.p2Hue, S.p2Hue);
+  // the pair must stay a pair — a clashing store falls back to the classic foe
+  if (S.p1Hue === S.p2Hue) S.p2Hue = S.p1Hue === 'mg' ? 'cy' : 'mg';
+  if (typeof d.colorblind === 'boolean') S.colorblind = d.colorblind;
   // '' is NONE; any other value must still be a spell this build knows about
   if (d.spell === '' || spellById(d.spell)) S.spell = d.spell;
   if (typeof d.tutDone === 'boolean') S.tutDone = d.tutDone;

@@ -6,11 +6,25 @@
 /* ============ TOKENS ============ */
 :root{
   --bg:#05060e;
-  --cy:#28e8ff;      /* player */
-  --cy-d:#0b8fb0;
-  --mg:#ff2fa0;      /* cpu */
-  --mg-d:#a81163;
-  --gold:#ffd166;
+  /* RAW HUES — what things ARE: avatar dies, mode icons, the NEON group,
+     danger. These never move. The -rgb triplets exist because rgba() cannot
+     read a hex token; the -hi tints are each hue's light gradient companion.
+     The first six ids are the DUELHUES roster (state.ts) — the Settings
+     pickers offer exactly these families. */
+  --cy:#28e8ff;     --cy-d:#0b8fb0;  --cy-rgb:40,232,255;      --cy-hi:#7ad6ff;
+  --mg:#ff2fa0;     --mg-d:#a81163;  --mg-rgb:255,47,160;      --mg-hi:#ff96cf;
+  --gold:#ffd166;                    --gold-rgb:255,209,102;   --gold-hi:#ffe3a1;
+  --green:#7ee787;                   --green-rgb:126,231,135;  --green-hi:#a9f2b3;
+  --violet:#b18cff;                  --violet-rgb:177,140,255; --violet-hi:#ccb6ff;
+  --orange:#ff8a3d;                  --orange-rgb:255,138,61;  --orange-hi:#ffb987;
+  /* THE DUEL PAIR — what the game paints for YOU (--p1) and THEM (--p2).
+     Every player-facing colour reads these, never the raw hues. These are the
+     DEFAULTS; menu.ts repoints them (inline on <html>) at whichever hue
+     families the Settings pickers chose — or pins cyan-vs-gold while colour
+     blind mode is on. Fixed accents that must NOT follow the pair — danger
+     pink, the destruction keyword, avatar hues — keep reading raw hues. */
+  --p1:var(--cy); --p1-rgb:var(--cy-rgb); --p1-hi:var(--cy-hi);
+  --p2:var(--mg); --p2-rgb:var(--mg-rgb); --p2-hi:var(--mg-hi);
   --txt:#e9f1ff;
   --dim:#7c88a8;
   /* the LADDER GROUP palette. Root-scoped on purpose: the identity plate
@@ -44,8 +58,8 @@
   var(--bg);}
 #bg::before{content:"";position:absolute;inset:-30%;
   background:
-    radial-gradient(closest-side,rgba(255,47,160,.42),transparent 70%) 20% 16%/64% 48% no-repeat,
-    radial-gradient(closest-side,rgba(40,232,255,.36),transparent 70%) 80% 86%/66% 50% no-repeat,
+    radial-gradient(closest-side,rgba(var(--p2-rgb),.42),transparent 70%) 20% 16%/64% 48% no-repeat,
+    radial-gradient(closest-side,rgba(var(--p1-rgb),.36),transparent 70%) 80% 86%/66% 50% no-repeat,
     radial-gradient(closest-side,rgba(126,60,255,.30),transparent 70%) 62% 42%/52% 40% no-repeat;
   filter:blur(34px);animation:drift 18s ease-in-out infinite alternate;}
 #bg::after{content:"";position:absolute;inset:0;
@@ -76,8 +90,8 @@
 /* a score line's two numbers (ui/record.ts): the shape is theirs everywhere,
    the colour belongs to wherever the line lands — cyan/magenta in the HUD */
 .n1,.n2{font-weight:800;font-style:normal}
-.rec .n1{color:var(--cy)}
-.rec .n2{color:var(--mg)}
+.rec .n1{color:var(--p1)}
+.rec .n2{color:var(--p2)}
 /* whenever the badge names a mode it opens that mode's rules — offline too, so
    the affordance and its ⓘ belong in the eager sheet, not the online chunk */
 .rec.tapmode{cursor:pointer;transition:transform .15s}
@@ -108,8 +122,8 @@
 .plate.bump .tot{transform:scale(1.28)}
 /* colour follows the PLAYER, not the half of the screen they're sitting in,
    so the boards can swap places on hand-off without the palette moving */
-.side[data-owner="1"]{--c:var(--cy)}
-.side[data-owner="0"]{--c:var(--mg)}
+.side[data-owner="1"]{--c:var(--p1)}
+.side[data-owner="0"]{--c:var(--p2)}
 
 /* Nameplates never glow. The turn is already said three louder ways — the
    status line, the running clock and the dashed legal columns — so a breathing
@@ -127,8 +141,8 @@
   border:1px solid rgba(255,255,255,.07);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
   display:grid;place-items:center;position:relative}
-.side[data-owner="0"] .slot{border-color:rgba(255,47,160,.13)}
-.side[data-owner="1"] .slot{border-color:rgba(40,232,255,.13)}
+.side[data-owner="0"] .slot{border-color:rgba(var(--p2-rgb),.13)}
+.side[data-owner="1"] .slot{border-color:rgba(var(--p1-rgb),.13)}
 
 /* legal target */
 .col.legal::after{content:"";position:absolute;inset:-4px;border-radius:calc(var(--r) + 6px);
@@ -162,8 +176,8 @@
     0 5px 14px rgba(0,0,0,.55),
     0 0 14px color-mix(in srgb,var(--dc) 32%,transparent);
   --dc:#9fb2d8;}
-.die.p1{--dc:var(--cy)}
-.die.p2{--dc:var(--mg)}
+.die.p1{--dc:var(--p1)}
+.die.p2{--dc:var(--p2)}
 .pip{width:78%;height:78%;border-radius:50%;align-self:center;justify-self:center;
   background:radial-gradient(circle at 35% 30%,#fff,var(--dc) 78%);
   box-shadow:0 0 6px color-mix(in srgb,var(--dc) 85%,transparent),0 0 14px color-mix(in srgb,var(--dc) 45%,transparent);
@@ -171,8 +185,8 @@
 .pip.on{opacity:1;transform:scale(1)}
 .die.m2{--dc:var(--gold);border-color:color-mix(in srgb,var(--gold) 70%,transparent);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 5px 14px rgba(0,0,0,.55),0 0 18px rgba(255,209,102,.5)}
-.die.m3{--dc:#ff8a3d;border-color:rgba(255,138,61,.85);
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 5px 16px rgba(0,0,0,.55),0 0 26px rgba(255,138,61,.75);
+.die.m3{--dc:var(--orange);border-color:rgba(var(--orange-rgb),.85);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 5px 16px rgba(0,0,0,.55),0 0 26px rgba(var(--orange-rgb),.75);
   animation:hot 1.5s ease-in-out infinite}
 @keyframes hot{0%,100%{filter:brightness(1)}50%{filter:brightness(1.22)}}
 .die.settle{animation:settle .3s cubic-bezier(.2,1.3,.4,1)}
@@ -229,8 +243,8 @@ html.clock #dieStage{--cell2:calc(var(--cell)*.80)}
 @keyframes popin{0%{transform:scale(.5) rotate(-30deg)}100%{transform:scale(1) rotate(0)}}
 .status{font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--dim);text-transform:uppercase;
   min-height:14px;text-align:center;transition:color .2s}
-.status.me{color:var(--cy);text-shadow:0 0 12px rgba(40,232,255,.5)}
-.status.ai{color:var(--mg);text-shadow:0 0 12px rgba(255,47,160,.5)}
+.status.me{color:var(--p1);text-shadow:0 0 12px rgba(var(--p1-rgb),.5)}
+.status.ai{color:var(--p2);text-shadow:0 0 12px rgba(var(--p2-rgb),.5)}
 .dots::after{content:"";animation:dots 1.2s steps(4,end) infinite}
 @keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
 
@@ -239,15 +253,15 @@ html.clock #dieStage{--cell2:calc(var(--cell)*.80)}
    otherwise the board would bounce at every hand-off. A game with no clock at
    all gives the lane back rather than holding an empty strip that pushes the
    die off centre. */
-.timer{display:none;height:12px;align-items:center;gap:6px;--tc:var(--tcbase,var(--cy))}
+.timer{display:none;height:12px;align-items:center;gap:6px;--tc:var(--tcbase,var(--p1))}
 html.clock .timer{display:flex;visibility:hidden}
 html.clock .timer.on{visibility:visible}
 .timer .track{width:118px;height:3px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
-.timer .bar{display:block;height:100%;width:100%;border-radius:99px;background:var(--tc,var(--cy));
-  box-shadow:0 0 8px var(--tc,var(--cy));transition:width .1s linear}
-.timer b{font-size:10.5px;font-weight:900;color:var(--tc,var(--cy));min-width:10px;text-align:left}
-.timer.warn{--tc:#ff8a3d}
-.timer.warn .bar{box-shadow:0 0 10px #ff8a3d}
+.timer .bar{display:block;height:100%;width:100%;border-radius:99px;background:var(--tc,var(--p1));
+  box-shadow:0 0 8px var(--tc,var(--p1));transition:width .1s linear}
+.timer b{font-size:10.5px;font-weight:900;color:var(--tc,var(--p1));min-width:10px;text-align:left}
+.timer.warn{--tc:var(--orange)}
+.timer.warn .bar{box-shadow:0 0 10px var(--tc)}
 
 /* floating score numbers: earned points rise from the column just played */
 /* the result screen's own particle layer — it sits above .ov's backdrop and
@@ -278,27 +292,41 @@ html.clock .timer.on{visibility:visible}
    read top-heavy — the column wants to breathe evenly around its middle. */
 #ovStart::before{content:"";margin-top:auto;flex:0 0 auto}
 .ov h1{margin:0;font-size:29px;letter-spacing:.2em;font-weight:900;text-align:center;
-  background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
+  background:linear-gradient(100deg,var(--p1),#fff 50%,var(--p2));
   -webkit-background-clip:text;background-clip:text;color:transparent;
   /* NOTE: this filter is safe HERE (a static title). It must never apply to a
      title that also animates or changes state — see #endTitle below. */
-  filter:drop-shadow(0 0 22px rgba(40,232,255,.35))}
+  filter:drop-shadow(0 0 22px rgba(var(--p1-rgb),.35))}
 .ov .sub{font-size:11.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:-8px;text-align:center}
 .btn{min-width:210px;padding:16px 20px;border-radius:14px;border:1px solid rgba(255,255,255,.14);
   background:rgba(255,255,255,.05);color:var(--txt);font-size:13.5px;font-weight:800;letter-spacing:.16em;
   text-transform:uppercase;cursor:pointer;transition:.15s;font-family:inherit}
 .btn:active{transform:scale(.96)}
-.btn.primary{background:linear-gradient(100deg,var(--cy),#7ad6ff 40%,var(--mg));color:#04101a;border:none;
-  box-shadow:0 10px 30px rgba(40,232,255,.28),0 0 0 1px rgba(255,255,255,.12) inset}
+.btn.primary{background:linear-gradient(100deg,var(--p1),var(--p1-hi) 40%,var(--p2));color:#04101a;border:none;
+  box-shadow:0 10px 30px rgba(var(--p1-rgb),.28),0 0 0 1px rgba(255,255,255,.12) inset}
 [hidden]{display:none!important}
 .seg{display:flex;gap:8px}
-#modeSeg button[data-m="duo"].on{background:linear-gradient(100deg,var(--mg),#ff96cf);
-  box-shadow:0 6px 18px rgba(255,47,160,.32)}
 .seg button{flex:1;padding:13px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
   background:rgba(255,255,255,.04);color:var(--dim);font-size:11.5px;font-weight:800;letter-spacing:.13em;
   cursor:pointer;font-family:inherit;transition:.15s}
-.seg button.on{color:#04101a;background:linear-gradient(100deg,var(--cy),#8fe0ff);border-color:transparent;
-  box-shadow:0 6px 18px rgba(40,232,255,.3)}
+/* a locked choice stays readable — dimmed, not restyled, and the note under
+   the card says who holds the lock (colour blind mode owns the duel pair) */
+.seg button:disabled{opacity:.45;cursor:default}
+/* hue swatches: a round button wearing a colour (--h), the Settings duel
+   pickers' shape. The other side's pick renders disabled — a colour can only
+   belong to one player — and colour blind mode disables the whole row. */
+.hues{display:flex;gap:9px;flex-wrap:wrap}
+.hues button{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10);
+  cursor:pointer;padding:0;transition:.15s}
+.hues button::after{content:"";width:21px;height:21px;border-radius:50%;background:var(--h);
+  box-shadow:0 0 12px var(--h)}
+.hues button:active{transform:scale(.9)}
+.hues button.on{border-color:var(--h);box-shadow:0 0 14px color-mix(in srgb,var(--h) 45%,transparent)}
+.hues button:disabled{opacity:.3;cursor:default;transform:none}
+.hues button:disabled::after{box-shadow:none}
+.seg button.on{color:#04101a;background:linear-gradient(100deg,var(--p1),var(--p1-hi));border-color:transparent;
+  box-shadow:0 6px 18px rgba(var(--p1-rgb),.3)}
 .lbl{font-size:10px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
 .card{width:100%;max-width:var(--w-col);display:flex;flex-direction:column;gap:12px}
 /* A card's note reserves TWO lines whether it needs them or not. Descriptions
@@ -312,19 +340,19 @@ html.clock .timer.on{visibility:visible}
    optically centred. Pages put the icon left, sheets right — never both. ---- */
 .shead{display:flex;align-items:center;width:100%;max-width:var(--w-col);margin:0 auto;flex:0 0 auto}
 .shead .ttl{flex:1;text-align:center;font-size:16px;letter-spacing:.26em;font-weight:900;
-  background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
+  background:linear-gradient(100deg,var(--p1),#fff 50%,var(--p2));
   -webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(0 0 18px rgba(40,232,255,.3))}
+  filter:drop-shadow(0 0 18px rgba(var(--p1-rgb),.3))}
 .shead .pad{width:30px;flex:0 0 auto}
 /* the header's control wears the title's own gradient — on a sheet whose only
    exit is that glyph, it has to read as the way out at a glance */
 .shead .ico{color:#fff;
-  background:linear-gradient(135deg,color-mix(in srgb,var(--cy) 26%,transparent),
-                                    color-mix(in srgb,var(--mg) 26%,transparent));
-  border-color:color-mix(in srgb,var(--cy) 40%,transparent);
-  box-shadow:0 0 16px color-mix(in srgb,var(--cy) 22%,transparent)}
-.shead .ico:active{background:linear-gradient(135deg,color-mix(in srgb,var(--cy) 42%,transparent),
-                                                     color-mix(in srgb,var(--mg) 42%,transparent))}
+  background:linear-gradient(135deg,color-mix(in srgb,var(--p1) 26%,transparent),
+                                    color-mix(in srgb,var(--p2) 26%,transparent));
+  border-color:color-mix(in srgb,var(--p1) 40%,transparent);
+  box-shadow:0 0 16px color-mix(in srgb,var(--p1) 22%,transparent)}
+.shead .ico:active{background:linear-gradient(135deg,color-mix(in srgb,var(--p1) 42%,transparent),
+                                                     color-mix(in srgb,var(--p2) 42%,transparent))}
 /* paged overlays pin the header to the top; .pbody centres the rest below it */
 .ov.paged{justify-content:flex-start;overflow-y:auto;
   padding-top:calc(env(safe-area-inset-top,0px) + 16px)}
@@ -380,18 +408,20 @@ html.clock .timer.on{visibility:visible}
 /* The app's scroll indicator, in the game's palette rather than the platform's
    grey. A class, not a selector list: the ladder wants the same bar and lives
    in the lazy online sheet, so the look has ONE definition either can wear. */
-.neonscroll{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--cy) 40%,transparent) transparent}
+.neonscroll{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--p1) 40%,transparent) transparent}
 .neonscroll::-webkit-scrollbar{width:6px}
 .neonscroll::-webkit-scrollbar-track{background:transparent}
 .neonscroll::-webkit-scrollbar-thumb{border-radius:99px;
-  background:linear-gradient(180deg,color-mix(in srgb,var(--cy) 55%,transparent),
-                                    color-mix(in srgb,var(--mg) 55%,transparent))}
+  background:linear-gradient(180deg,color-mix(in srgb,var(--p1) 55%,transparent),
+                                    color-mix(in srgb,var(--p2) 55%,transparent))}
 .ov.scrollview .rules{max-height:none;overflow:visible;flex:0 0 auto}
 #ovModes .pbody{gap:12px}
 
 /* destructive actions sit at arm's length: Settings' quit, Account's delete */
 .danger{margin-top:14px;display:flex;flex-direction:column;gap:6px;width:100%;max-width:var(--w-col)}
-.danger .btn{border-color:rgba(255,47,160,.35);color:#ff9ccb;width:100%;min-width:0}
+/* danger is FIXED magenta-pink — bad news must not change clothes with the
+   duel palette, so this reads the raw hue, never --p2 */
+.danger .btn{border-color:rgba(var(--mg-rgb),.35);color:#ff9ccb;width:100%;min-width:0}
 
 /* ===================== THE MODE DIAL =====================
    Equal nodes, weighted pick (the odds live server-side in modes.ts). Sizing is
@@ -411,7 +441,7 @@ html.clock .timer.on{visibility:visible}
 .wtitle{font-size:10px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
 .dial{position:relative;width:var(--dial);height:var(--dial);flex:0 0 auto}
 .dring{position:absolute;inset:calc(var(--node)/2);border-radius:50%;
-  border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 0 40px rgba(40,232,255,.07)}
+  border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 0 40px rgba(var(--p1-rgb),.07)}
 .dring::after{content:"";position:absolute;inset:calc(var(--r-out) - var(--r-in));
   border-radius:50%;border:1px dashed rgba(255,255,255,.07)}
 /* The comet, in two parts, because they cannot share a mask. The TRAIL is a
@@ -431,18 +461,18 @@ html.clock .timer.on{visibility:visible}
    pixel inside the track the cap is sitting on */
 .dcomet{position:absolute;inset:calc(var(--dial)/2 - var(--r-in) - var(--trail)/2 - 1px);border-radius:50%}
 .dtrail{position:absolute;inset:0;border-radius:50%;
-  background:conic-gradient(from -40deg,rgba(40,232,255,0) 0deg,rgba(40,232,255,.85) 30deg,#fff 39deg,rgba(40,232,255,0) 40deg);
+  background:conic-gradient(from -40deg,rgba(var(--p1-rgb),0) 0deg,rgba(var(--p1-rgb),.85) 30deg,#fff 39deg,rgba(var(--p1-rgb),0) 40deg);
   -webkit-mask:radial-gradient(circle closest-side,transparent calc(100% - var(--trail) - 2px),
     #000 calc(100% - var(--trail) - 1px),#000 calc(100% - 1px),transparent 100%);
   mask:radial-gradient(circle closest-side,transparent calc(100% - var(--trail) - 2px),
     #000 calc(100% - var(--trail) - 1px),#000 calc(100% - 1px),transparent 100%);
-  filter:drop-shadow(0 0 6px rgba(40,232,255,.85))}
+  filter:drop-shadow(0 0 6px rgba(var(--p1-rgb),.85))}
 .dhead{position:absolute;left:50%;top:calc(var(--trail)/2 + 1px);translate:-50% -50%;
   /* a shade wider than the band it caps: dead-equal reads as a nick in the
      line rather than a rounded end, because the band carries a glow and the
      cap does not */
   width:calc(var(--trail)*1.16);aspect-ratio:1;border-radius:50%;background:#fff;
-  box-shadow:0 0 7px rgba(40,232,255,.95),0 0 16px rgba(40,232,255,.45)}
+  box-shadow:0 0 7px rgba(var(--p1-rgb),.95),0 0 16px rgba(var(--p1-rgb),.45)}
 /* Every node is drawn LIT and dimmed by opacity alone, so a flare is one
    property and the winner is indistinguishable until it is found. .28 is
    duplicated as DIM in wheel.ts — a flare has to land back on exactly it. */
@@ -476,7 +506,7 @@ html.clock .timer.on{visibility:visible}
 .dside .dnm{font-size:11.5px;font-weight:900;letter-spacing:.05em;max-width:100%;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .dside .rt{font-size:16px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums}
-.dside.me .dnm{color:var(--cy)} .dside.foe .dnm{color:var(--mg)}
+.dside.me .dnm{color:var(--p1)} .dside.foe .dnm{color:var(--p2)}
 /* the avatar slot: paintAvatar fills it with the player's chosen die, so it
    carries no chrome of its own — the die IS the picture, as everywhere else */
 .dav{width:44px;height:44px;display:grid;place-items:center}
@@ -491,8 +521,8 @@ html.clock .timer.on{visibility:visible}
 .dhold{display:flex;flex-direction:column;align-items:center;gap:6px;
   margin-top:auto;visibility:hidden}   /* ...and the wait to the bottom */
 #ovWheel.landed .dhold{visibility:visible}
-.dhold b{font-size:26px;font-weight:900;color:var(--cy);line-height:1;
-  text-shadow:0 0 18px rgba(40,232,255,.55);font-variant-numeric:tabular-nums}
+.dhold b{font-size:26px;font-weight:900;color:var(--p1);line-height:1;
+  text-shadow:0 0 18px rgba(var(--p1-rgb),.55);font-variant-numeric:tabular-nums}
 .dhold span{font-size:9.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;min-height:12px}
 #ovWheel.ready .dhold b{color:var(--gold);text-shadow:0 0 18px rgba(255,209,102,.6)}
 /* the readout reserves its lines, so filling them cannot shift the dial */
@@ -607,7 +637,7 @@ html.rowswitch .cols .chip{visibility:hidden}
 .spells{position:absolute;left:100%;margin-left:16px;display:flex;align-items:center}
 .plate .runeslot{display:flex;align-items:center;flex:0 0 auto}
 .plate .runeslot:empty{display:none}
-.rune{--sz:clamp(30px,calc(var(--cell)*.6),40px);--sh:var(--cy);
+.rune{--sz:clamp(30px,calc(var(--cell)*.6),40px);--sh:var(--p1);
   position:relative;width:var(--sz);height:var(--sz);border-radius:calc(var(--sz)*.32);
   display:grid;place-items:center;padding:0;cursor:pointer;color:#fff;
   -webkit-appearance:none;appearance:none;font-family:inherit;
@@ -667,7 +697,7 @@ html.rowswitch .cols .chip{visibility:hidden}
 .runeghost{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;
   transform:translate(-50%,-50%);pointer-events:none;z-index:80;color:#fff;
   border:1px solid var(--gold);
-  background:linear-gradient(150deg,rgba(255,47,160,.55),rgba(40,232,255,.5));
+  background:linear-gradient(150deg,rgba(var(--p2-rgb),.55),rgba(var(--p1-rgb),.5));
   box-shadow:0 10px 26px rgba(0,0,0,.6),0 0 26px rgba(255,209,102,.5)}
 /* While a spell is aiming the board asks ONE question — which column? — so the
    placement hints stand down and every column reads as a target. */
@@ -687,11 +717,11 @@ html.casting .col.hot::after{border-style:solid;border-color:var(--gold);
 /* the install sheet's app-icon tile */
 .appface{width:74px;height:74px;border-radius:18px;display:grid;place-items:center;
   background:linear-gradient(135deg,#17123a,#04263a);border:1px solid rgba(255,255,255,.16);
-  box-shadow:0 12px 30px rgba(0,0,0,.5),0 0 22px rgba(40,232,255,.25)}
+  box-shadow:0 12px 30px rgba(0,0,0,.5),0 0 22px rgba(var(--cy-rgb),.25)}
 .appface .die{width:44px;height:44px;--cell:44px}
 .rules{max-width:var(--w-col);font-size:13.5px;line-height:1.6;color:#c6d3ee;overflow:auto;max-height:62vh;
   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:16px 18px}
-.rules h3{margin:0 0 8px;font-size:12px;letter-spacing:.18em;color:var(--cy);text-transform:uppercase}
+.rules h3{margin:0 0 8px;font-size:12px;letter-spacing:.18em;color:var(--p1);text-transform:uppercase}
 .rules p{margin:0 0 12px}
 .rules b{color:var(--gold)}
 .rules .k{color:var(--mg);font-weight:800}
@@ -699,8 +729,8 @@ html.casting .col.hot::after{border-style:solid;border-color:var(--gold);
   font-weight:800;letter-spacing:.08em;width:100%;max-width:var(--w-col)}
 /* equal halves so the VS sits dead centre whatever the name lengths */
 .scoreline .sc{flex:1;min-width:0}
-.scoreline .you{color:var(--cy);text-shadow:0 0 14px rgba(40,232,255,.5);font-size:32px;font-weight:900}
-.scoreline .cpu{color:var(--mg);text-shadow:0 0 14px rgba(255,47,160,.5);font-size:32px;font-weight:900}
+.scoreline .you{color:var(--p1);text-shadow:0 0 14px rgba(var(--p1-rgb),.5);font-size:32px;font-weight:900}
+.scoreline .cpu{color:var(--p2);text-shadow:0 0 14px rgba(var(--p2-rgb),.5);font-size:32px;font-weight:900}
 .scoreline .vs{color:var(--dim);font-size:12px;letter-spacing:.2em}
 .scoreline .sc{display:flex;flex-direction:column;align-items:center;gap:1px}
 .scoreline .sc em{font-style:normal;font-size:9.5px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
@@ -727,7 +757,7 @@ html.casting .col.hot::after{border-style:solid;border-color:var(--gold);
   100%{transform:scale(1)}}
 #ovEnd .shock{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 7vh + 24px);
   width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;border:2px solid currentColor;
-  opacity:0;pointer-events:none;color:var(--cy)}
+  opacity:0;pointer-events:none;color:var(--p1)}
 #ovEnd.enter.win .shock{animation:endShock 1.15s cubic-bezier(.1,.7,.3,1) .3s both}
 @keyframes endShock{0%{transform:scale(.1);opacity:0}18%{opacity:.75}100%{transform:scale(3.4);opacity:0}}
 
@@ -738,8 +768,8 @@ html.casting .col.hot::after{border-style:solid;border-color:var(--gold);
    sitting under the word. It scales off --verdict like everything else here,
    and it has no edges to cut: a radial gradient faded to transparent, blurred
    by half the type size again. */
-#ovEnd.win{--bloom:rgba(40,232,255,.40)}
-#ovEnd.lose{--bloom:rgba(255,47,160,.36)}
+#ovEnd.win{--bloom:rgba(var(--p1-rgb),.40)}
+#ovEnd.lose{--bloom:rgba(var(--p2-rgb),.36)}
 #ovEnd.draw{--bloom:rgba(159,178,216,.26)}
 #ovEnd .titlewrap::before{content:"";position:absolute;left:50%;top:50%;z-index:-1;
   width:min(160%,calc(var(--verdict) * 9));height:calc(var(--verdict) * 3.4);
@@ -791,8 +821,8 @@ html.casting .col.hot::after{border-style:solid;border-color:var(--gold);
 .endmeta{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-align:center;
   display:flex;flex-direction:column;align-items:center;gap:7px}
 .endmeta:empty{display:none}
-#endTitle.win{background-image:linear-gradient(100deg,#28e8ff,#fff 50%,#8dffcf)}
-#endTitle.lose{background-image:linear-gradient(100deg,var(--mg),#fff 55%,#ff8a3d)}
+#endTitle.win{background-image:linear-gradient(100deg,var(--p1),#fff 50%,#8dffcf)}
+#endTitle.lose{background-image:linear-gradient(100deg,var(--p2),#fff 55%,var(--orange))}
 #endTitle.draw{background-image:linear-gradient(100deg,#9fb2d8,#fff 50%,#9fb2d8)}
 .tiny{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-align:center}
 
@@ -819,13 +849,13 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
   /* clear of the notch/Dynamic Island: the app fills the screen, so a fixed
      offset from the top puts this bubble UNDER the island on a Pro Max */
   top:calc(env(safe-area-inset-top,0px) + 46px);
-  background:rgba(6,8,18,.93);border:1px solid color-mix(in srgb,var(--cy) 45%,transparent);
+  background:rgba(6,8,18,.93);border:1px solid color-mix(in srgb,var(--p1) 45%,transparent);
   border-radius:14px;padding:10px 14px;
-  box-shadow:0 8px 30px rgba(0,0,0,.5),0 0 18px rgba(40,232,255,.14);
+  box-shadow:0 8px 30px rgba(0,0,0,.5),0 0 18px rgba(var(--p1-rgb),.14);
   -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 #coach .cmsg{font-size:12.5px;line-height:1.5;color:var(--txt)}
 #coach .cmsg b{color:var(--gold)}
-#coach .chint{margin-top:6px;font-size:9.5px;letter-spacing:.2em;color:var(--cy);
+#coach .chint{margin-top:6px;font-size:9.5px;letter-spacing:.2em;color:var(--p1);
   text-transform:uppercase;animation:breathe 1.8s ease-in-out infinite}
 /* a floating bubble, not a page body — deliberately not --w-col */
 .land #coach{left:auto;right:12px;top:calc(env(safe-area-inset-top,0px) + 34px);max-width:300px}
@@ -845,10 +875,10 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
   text-transform:uppercase;animation:breathe 1.8s ease-in-out infinite}
 #ovPass .mini{display:flex;gap:14px;align-items:center;font-size:12px;letter-spacing:.12em;color:var(--dim)}
 #ovPass .mini b{font-size:20px;font-weight:900}
-#ovPass .mini .a{color:var(--cy)}#ovPass .mini .b{color:var(--mg)}
+#ovPass .mini .a{color:var(--p1)}#ovPass .mini .b{color:var(--p2)}
 #passQuit{position:absolute;top:calc(env(safe-area-inset-top,0px) + 8px);right:10px}
 .ico{font-family:inherit;padding:0;-webkit-appearance:none;appearance:none}
-.ico:focus-visible,.btn:focus-visible,.seg button:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.ico:focus-visible,.btn:focus-visible,.seg button:focus-visible{outline:2px solid var(--p1);outline-offset:2px}
 .dicerow{display:flex;gap:8px;justify-content:center;margin-bottom:2px}
 .dicerow .die{width:34px;height:34px;--cell:34px}
 
@@ -944,10 +974,10 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
   mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
   filter:drop-shadow(0 0 12px rgba(255,255,255,.2))}
 .lring{position:absolute;inset:0;border-radius:50%;
-  background:conic-gradient(from 225deg,var(--cy) calc(var(--p) * 270deg),transparent 0);
+  background:conic-gradient(from 225deg,var(--p1) calc(var(--p) * 270deg),transparent 0);
   -webkit-mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
   mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
-  filter:drop-shadow(0 0 14px rgba(40,232,255,.42))}
+  filter:drop-shadow(0 0 14px rgba(var(--p1-rgb),.42))}
 /* The season peak, drawn only when it is AHEAD of you (LADDER.md §5). It is a
    NEUTRAL white mark, not gold: colour on these screens means "live", and the
    only live things are the fill showing your current percentage and the points
@@ -1012,7 +1042,7 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 /* ---- the plate on the result (design 36f): the home plate dealt twice ----
    The opponent's ring speaks their colour: .lring reads --cy, so their plate
    redefines it and the same ring component fills magenta. */
-.pplate.theirs{--cy:var(--mg)}
+.pplate.theirs{--p1:var(--p2);--p1-rgb:var(--p2-rgb)}
 .pplate.wonp{border-color:rgba(255,209,102,.5);background:rgba(255,209,102,.05)}
 .pplate.lostp{opacity:.66}
 /* what the match paid, beside the number it changed — green up, magenta down */
@@ -1025,11 +1055,12 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
    of the flex flow it also stops rationing the name's ellipsis space against
    the pill and the points. */
 /* the stamp wears the foe's SCORE colour (user call): the same bright magenta
-   as the losing "30" in the scoreline, not a darker shade of it */
+   as the losing "30" in the scoreline, not a darker shade of it — the raw
+   hue, deliberately: bad news never changes clothes with the duel pair */
 .pstamp{position:absolute;left:38px;bottom:-6px;transform:rotate(-8deg);
-  border:2px solid rgba(255,47,160,.8);color:var(--mg);border-radius:6px;
+  border:2px solid rgba(var(--mg-rgb),.8);color:var(--mg);border-radius:6px;
   padding:2.5px 8px;font-size:10px;font-weight:900;letter-spacing:.24em;text-transform:uppercase;
-  background:rgba(5,6,14,.55);text-shadow:0 0 10px rgba(255,47,160,.55);pointer-events:none;
+  background:rgba(5,6,14,.55);text-shadow:0 0 10px rgba(var(--mg-rgb),.55);pointer-events:none;
   /* the SLAM (design 37a, chosen): the stamp drops oversized out of the air
      once the verdict has landed (title stamps in around .3–1s). backwards
      keeps it invisible through the delay. */
@@ -1045,7 +1076,7 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 @keyframes stampJolt{0%{transform:none}20%{transform:translateY(2.5px) rotate(.4deg)}
   45%{transform:translateY(-1.5px)}70%{transform:translateY(.8px)}100%{transform:none}}
 .pstamp::after{content:"";position:absolute;inset:-6px;border-radius:10px;
-  border:2px solid rgba(255,47,160,.5);opacity:0;
+  border:2px solid rgba(var(--mg-rgb),.5);opacity:0;
   animation:stampDust .6s ease-out 1.15s;pointer-events:none}
 @keyframes stampDust{0%{opacity:.8;transform:scale(.9)}100%{opacity:0;transform:scale(1.9)}}
 /* one slam per RESULT, not per deal: the late re-deal (fresh numbers) rebuilds
@@ -1103,9 +1134,9 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 #ovFirst,#ovQuit{background:rgba(4,5,12,.93)}   /* a question deserves a quiet room */
 .askcard{display:flex;flex-direction:column;gap:13px;width:100%;max-width:var(--w-col);
   padding:22px 20px;border-radius:20px;background:rgba(255,255,255,.035);
-  border:1px solid color-mix(in srgb,var(--cy) 26%,transparent);
-  box-shadow:0 0 40px rgba(40,232,255,.10)}
-.askcard .fh{font-size:19px;font-weight:900;letter-spacing:.1em;color:var(--cy)}
+  border:1px solid color-mix(in srgb,var(--p1) 26%,transparent);
+  box-shadow:0 0 40px rgba(var(--p1-rgb),.10)}
+.askcard .fh{font-size:19px;font-weight:900;letter-spacing:.1em;color:var(--p1)}
 .askcard .fp{margin:0;font-size:12.5px;line-height:1.6;color:var(--dim)}
 .askcard .btn{width:100%;min-width:0}
 /* the two answers are a PAIR. The card's 13px gap separates thought-groups
@@ -1140,21 +1171,21 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 .learnrow .lblurb{font-size:11.5px;line-height:1.5;color:var(--dim);letter-spacing:.02em}
 /* only while nothing has been played — after that the tutorial is just one of
    four things you might want to read, and highlighting it is nagging */
-#ovLearn.fresh .learnrow:first-child{border-color:color-mix(in srgb,var(--cy) 34%,transparent);
-  background:color-mix(in srgb,var(--cy) 7%,transparent)}
-#ovLearn.fresh .learnrow:first-child .lname{color:var(--cy)}
+#ovLearn.fresh .learnrow:first-child{border-color:color-mix(in srgb,var(--p1) 34%,transparent);
+  background:color-mix(in srgb,var(--p1) 7%,transparent)}
+#ovLearn.fresh .learnrow:first-child .lname{color:var(--p1)}
 
 /* the deploy-truth tag now closes the Account panel — a plain last line, not a
    pinned overlay fixture (it left home on 2026-08-19) */
 #buildTag{text-align:center;opacity:.5;margin-top:2px}
 .linkbtn{background:none;border:none;padding:4px;font-family:inherit;cursor:pointer;
   font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
-.linkbtn:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+.linkbtn:focus-visible{outline:2px solid var(--p1);outline-offset:2px}
 /* the ask-card's guard: a tick, for an answer nobody should give by reflex */
 .askcheck{display:flex;align-items:flex-start;gap:9px;font-size:11.5px;line-height:1.5;
   color:var(--dim);cursor:pointer;text-align:left}
-.askcheck input{width:18px;height:18px;flex:0 0 auto;accent-color:var(--cy);margin-top:1px}
-.askcard .btn.danger{border-color:rgba(255,47,160,.35);color:#ff9ccb}
+.askcheck input{width:18px;height:18px;flex:0 0 auto;accent-color:var(--p1);margin-top:1px}
+.askcard .btn.danger{border-color:rgba(var(--mg-rgb),.35);color:#ff9ccb}
 .askcard .btn:disabled{opacity:.4;cursor:not-allowed}
 
 /* ============ THE LOADING DIE ============

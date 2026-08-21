@@ -2,7 +2,7 @@
 // strictness ratchet. New code goes in typed modules, not here.
 // The title screen and settings panel: what they show. (Mid-game resume was
 // removed by design 2026-08-18 — leaving an offline game simply ends it.)
-import { S } from '../state.ts';
+import { S, DUELHUES } from '../state.ts';
 import { $, show, hide } from '../ui/dom.ts';
 import { stopTimer } from './timer.ts';
 import { clearTut } from './tutorial.ts';
@@ -41,6 +41,34 @@ export function syncSettingsUI(){
   segOn('#seatSeg','seat',S.seat);
   segOn('#sndSeg','s', S.sound?'1':'0');
   segOn('#faceSeg','f', S.numerals?'nums':'pips');
+  segOn('#cbSeg','b', S.colorblind?'1':'0');
+  /* THE DUEL PAIR, applied. Colour blind mode overrides the display pair to
+     cyan-vs-gold (the axis red-green colour vision keeps) without touching
+     the stored picks; otherwise the pickers rule. The tokens land inline on
+     <html>, where main.css's :root defaults yield to them. */
+  const p1 = S.colorblind ? 'cy' : S.p1Hue;
+  const p2 = S.colorblind ? 'gold' : S.p2Hue;
+  const rs = document.documentElement.style;
+  for (const [slot,h] of [['p1',p1],['p2',p2]]){
+    rs.setProperty(`--${slot}`,      `var(--${h})`);
+    rs.setProperty(`--${slot}-rgb`,  `var(--${h}-rgb)`);
+    rs.setProperty(`--${slot}-hi`,   `var(--${h}-hi)`);
+  }
+  /* the pickers mirror the pair on screen: the shown pick is the EFFECTIVE
+     one, the other side's colour is off the table (a colour belongs to one
+     player), and colour blind mode locks both rows, the note saying why */
+  const syncPick=(sel,mine,other)=>{
+    document.querySelectorAll(sel+' button').forEach(b=>{
+      b.classList.toggle('on', b.dataset.h===mine);
+      b.disabled = S.colorblind || b.dataset.h===other;
+      if (S.colorblind) b.setAttribute('aria-describedby','colNote');
+      else b.removeAttribute('aria-describedby');
+    });
+    $(sel+'Info').textContent = (DUELHUES.find(x=>x.id===mine) ?? DUELHUES[0]).name;
+  };
+  syncPick('#p1Pick', p1, p2);
+  syncPick('#p2Pick', p2, p1);
+  $('#colNote').hidden = !S.colorblind;
   document.documentElement.classList.toggle('numerals',S.numerals);
   renderSpells();     // the rail follows whatever hand the current game holds
 }

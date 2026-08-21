@@ -91,7 +91,7 @@ export function showEnd(spec: EndSpec): void {
     if (spec.outcome === 'win') {
       // into the screen's OWN layer: #fx sits below every overlay, so a
       // celebration drawn there would have burst behind this very screen
-      fireworks(['#28e8ff', '#ffd166', '#8dffcf', '#fff'], $('#endFx'));
+      fireworks(['var(--p1)', 'var(--gold)', '#8dffcf', '#fff'], $('#endFx'));
       vibrate([20, 50, 20, 50, 60]);
     }
   }, spec.delay ?? 0);

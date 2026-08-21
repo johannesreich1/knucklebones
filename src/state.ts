@@ -8,6 +8,19 @@ export const MODES = ['cpu', 'duo'] as const;
 export const TIMERS = [0, 10, 20] as const;
 export const SEATS = ['pass', 'face'] as const;
 export const DIFF_LABEL: Record<string, string> = { easy: 'EASY', medium: 'NORMAL', hard: 'HARD' };
+/* The duel-colour roster (Settings pickers). Each id names a raw hue token
+   family in styles/main.css (--<id>, --<id>-rgb, --<id>-hi); the pickers offer
+   exactly this list and menu.ts points --p1/--p2 at the chosen families.
+   Adding a hue = one entry here + its three tokens in main.css. */
+export const DUELHUES = [
+  { id: 'cy',     name: 'CYAN' },
+  { id: 'mg',     name: 'MAGENTA' },
+  { id: 'gold',   name: 'GOLD' },
+  { id: 'green',  name: 'GREEN' },
+  { id: 'violet', name: 'VIOLET' },
+  { id: 'orange', name: 'ORANGE' },
+] as const;
+export const HUE_IDS = DUELHUES.map(h => h.id);
 
 export type Diff = typeof DIFFS[number];
 export type Mode = typeof MODES[number];
@@ -53,6 +66,13 @@ export const S = {
   played: false,
   starter: ME as Player,
   sound: true,
+  /* the duel palette: which hue family (DUELHUES id) each side wears. Never
+     equal — each picker disables the other side's pick. colorblind OVERRIDES
+     the display pair to cyan-vs-gold and locks both pickers, but the stored
+     picks survive it, so turning it off restores the chosen combination. */
+  p1Hue: 'cy',
+  p2Hue: 'mg',
+  colorblind: false,
   busy: false,
   gen: 0,                // bumped whenever a game is abandoned/restarted; async work checks it
   /* the active scoring/destruction mode (core/rules Mode). ONLY online play

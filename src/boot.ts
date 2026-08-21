@@ -21,7 +21,7 @@ export function refreshHomeChip(): void {
 }
 import { SPEC } from './core/rules.ts';
 import { fillPlate } from './ui/plate.ts';
-import { AI, ME, S } from './state.ts';
+import { AI, ME, S, DUELHUES } from './state.ts';
 import { loadStats, saveStats } from './persist.ts';
 import { Sfx } from './ui/audio.ts';
 import { setEmbed, isEmbed, kbroot } from './ui/embed.ts';
@@ -132,7 +132,7 @@ export function boot(embed){
 
 
   const bindSeg=(sel,key,apply)=>tap($(sel),e=>{
-    const b=e.target.closest && e.target.closest('button'); if(!b) return;
+    const b=e.target.closest && e.target.closest('button'); if(!b||b.disabled) return;
     apply(b.dataset[key]);
     syncSettingsUI(); updateRecord(); saveStats();
     Sfx.unlock(); Sfx.tap();
@@ -169,6 +169,25 @@ export function boot(embed){
   bindSeg('#seatSeg','seat',v=>{ S.seat=v; });
   bindSeg('#sndSeg','s',  v=>{ S.sound=v==='1'; });
   bindSeg('#faceSeg','f', v=>{ S.numerals=v==='nums'; });
+  /* The duel-colour pickers: ONE builder, two slots — each writes its side's
+     hue. The buttons are swatches (--h paints the dot); which ones are ON or
+     disabled is syncSettingsUI's job, same as every other control here. */
+  const huePick=(sel,write)=>{
+    $(sel).innerHTML = DUELHUES.map(h=>
+      `<button data-h="${h.id}" style="--h:var(--${h.id})" aria-label="${h.name}"></button>`).join('');
+    tap($(sel),e=>{
+      const b=e.target.closest && e.target.closest('button'); if(!b||b.disabled) return;
+      write(b.dataset.h);
+      syncSettingsUI(); updateRecord(); saveStats();
+      Sfx.unlock(); Sfx.tap();
+    });
+  };
+  huePick('#p1Pick', h=>{ S.p1Hue=h; });
+  huePick('#p2Pick', h=>{ S.p2Hue=h; });
+  syncSettingsUI();   // the boot-time sync ran before these buttons existed
+  // colour blind mode locks both pickers and pins cyan-vs-gold; the stored
+  // picks survive it, so turning it off restores the chosen combination
+  bindSeg('#cbSeg','b',   v=>{ S.colorblind=v==='1'; });
   tap($('#btnPlay'),()=>{ Sfx.unlock(); Sfx.tap(); void startLocal(); });
   bindEnd();       // the result screen binds its own actions, once (ui/endscreen)
   // quit lives at the bottom of the Settings sheet; an online match intercepts

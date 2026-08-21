@@ -330,6 +330,30 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
         <button data-f="nums">NUMBERS</button>
       </div>
     </div>
+    <!-- the duel pickers: swatch strips built by boot.ts from DUELHUES
+         (state.ts), one implementation, two slots. A colour belongs to one
+         player only — each strip renders the other side's pick disabled. -->
+    <div class="card">
+      <div class="lbl">Your colour</div>
+      <div class="hues" id="p1Pick"></div>
+      <div class="tiny" id="p1PickInfo"></div>
+    </div>
+    <div class="card">
+      <div class="lbl">Opponent colour</div>
+      <div class="hues" id="p2Pick"></div>
+      <div class="tiny" id="p2PickInfo"></div>
+      <!-- explains the lock while colour blind mode owns the pair; hidden
+           otherwise, and the disabled swatches point at it (aria-describedby) -->
+      <div class="tiny" id="colNote" hidden>Colour blind mode picks the colours</div>
+    </div>
+    <div class="card">
+      <div class="lbl">Colour blind mode</div>
+      <div class="seg" id="cbSeg">
+        <button data-b="1">ON</button>
+        <button data-b="0">OFF</button>
+      </div>
+      <div class="tiny">Locks the duel to cyan vs gold — a pair red-green colour vision tells apart</div>
+    </div>
     <div class="tiny">Changes apply the moment you tap them</div>
   </div>
   <!-- deploy truth lives here now: the screen you open when something looks
