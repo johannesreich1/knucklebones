@@ -154,17 +154,52 @@ export function isOver(b: Board, bagLeft: number | null): boolean {
   return isFull(b) || bagLeft === 0;
 }
 
-/* place a die, then destruction: every matching die in the opponent's facing
-   column dies — unless COLSHIELD protects their full column, or SINGLESTRIKE
-   limits the damage to ONE die. Mutates st — callers clone first when they
-   need to. Returns how many enemy dice were destroyed (BOUNTY banks a
-   permanent +1 per destroyed die; everyone else may ignore it). */
-export function applyMove(st: GameState, who: Player, col: number, die: number, mode: Mode = CLASSIC): number {
-  st[who][col].push(die);
-  const o = 1 - who, oc = st[o][col];
+/* ---- charms: persistent spell marks the placement resolution consults ----
+   The STATE shape lives here because destruction has to read it; what WRITES
+   it is core/spells (a ward guards a column, a sunder widens the next strike).
+   Games without spells never build one — applyMove without a charm is the
+   pre-spell hot path, untouched. */
+export interface CharmSt {
+  wards: [number[], number[]];   // per player, per column: strikes it will absorb
+  sunder: [boolean, boolean];    // per player: their next placement strikes EVERY column
+}
+
+export function freshCharm(): CharmSt {
+  const zeros = () => { const w: number[] = []; for (let c = 0; c < SPEC.cols; c++) w.push(0); return w; };
+  return { wards: [zeros(), zeros()], sunder: [false, false] };
+}
+
+/* one column takes one strike: the matching dice fall, and how many is the answer */
+function strike(st: GameState, o: number, col: number, die: number, mode: Mode): number {
+  const oc = st[o][col];
   const victims = victimsOf(oc, die, mode);
   if (!victims.length) return 0;
   const doomed = new Set(victims);
   st[o][col] = oc.filter((_, i) => !doomed.has(i));
   return victims.length;
+}
+
+/* place a die, then destruction: every matching die in the opponent's facing
+   column dies — unless COLSHIELD protects their full column, or SINGLESTRIKE
+   limits the damage to ONE die. Mutates st — callers clone first when they
+   need to. Returns how many enemy dice were destroyed (BOUNTY banks a
+   permanent +1 per destroyed die; everyone else may ignore it).
+   With a charm: a SUNDER mark on the mover widens this one placement to every
+   enemy column (each column resolves as its own strike — shields and wards
+   answer per column), and a ward on a struck column absorbs the strike that
+   would have taken dice there, then burns out. A ward is only spent on a
+   strike that HAD victims — a miss costs it nothing. */
+export function applyMove(st: GameState, who: Player, col: number, die: number, mode: Mode = CLASSIC, charm?: CharmSt): number {
+  st[who][col].push(die);
+  const o = 1 - who;
+  if (charm === undefined) return strike(st, o, col, die, mode);
+  const wide = charm.sunder[who];
+  if (wide) charm.sunder[who] = false;
+  let killed = 0;
+  for (let c = 0; c < SPEC.cols; c++) {
+    if (!wide && c !== col) continue;
+    if (charm.wards[o][c] > 0 && victimsOf(st[o][c], die, mode).length) { charm.wards[o][c]--; continue; }
+    killed += strike(st, o, c, die, mode);
+  }
+  return killed;
 }
