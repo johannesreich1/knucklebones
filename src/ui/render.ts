@@ -145,7 +145,16 @@ function updateScores(who){
   const tot=totalOf(b,S.bounty[who],S.scoring);
   const k=sideKey(who)==='bot'?'Bot':'Top';
   const bty=$('#bty'+k);
-  if(bty){ const n=S.scoring===BOUNTY?S.bounty[who]:0; bty.hidden=!n; if(n) bty.textContent='✦'+n; }
+  if(bty){
+    // The lane exists for the whole BOUNTY game, not from the first kill: the
+    // score cluster is vertically centred, so a tally appearing mid-match
+    // re-centred it and the score and rune jumped ~10px (user report). Same
+    // rule as the rune slot — a game that HAS a thing reserves its place.
+    const on=S.scoring===BOUNTY, n=on?S.bounty[who]:0;
+    bty.hidden=!on;
+    bty.style.visibility=n?'':'hidden';
+    if(on) bty.textContent='✦'+n;
+  }
   const el = $('#tot'+k), plate = $('#plate'+k);
   if(el.textContent!==String(tot)){
     el.textContent=tot;

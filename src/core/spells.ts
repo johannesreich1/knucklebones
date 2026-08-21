@@ -146,6 +146,10 @@ const WARD: SpellSpec = {
   uses: 1,
   legal(st, who, col, ctx) {
     if (!ctx || !Number.isInteger(col) || col < 0 || col >= SPEC.cols) return false;
+    // A COLUMN SHIELD column is already untouchable, so a ward on it would
+    // spend the charge and buy nothing — the same reason a second ward on
+    // one column is refused. Not an error to report: a target you cannot pick.
+    if (isShielded(st[who][col], ctx.mode)) return false;
     return ctx.charm.wards[who][col] === 0;    // one ward per column — a second buys nothing
   },
   apply(st, who, col, ctx) {
@@ -226,6 +230,13 @@ const PILFER: SpellSpec = {
 };
 
 export const SPELLS: SpellSpec[] = [FATE, NUDGE, WARD, SUNDER, PILFER];
+
+/* The OFFLINE picker's last slice: not a spell, but "surprise me" — the same
+   shape as the mode wheel's RANDOM. Kept OUT of SPELLS on purpose: it must
+   never be dealt as itself, and spellById must never resolve it. Which rune
+   it becomes is drawn where the game is dealt (flow/spells), because core
+   holds no randomness. Both seats always draw the SAME one. */
+export const RANDOM_SPELL = 'random';
 
 export function spellById(id: string | null | undefined): SpellSpec | null {
   return SPELLS.find((s) => s.id === id) ?? null;

@@ -6,7 +6,7 @@
 // Offline module by design: both registries live in core, so nothing here
 // needs the online chunk.
 import { MODES, RANDOM } from '../core/modes.ts';
-import { SPELLS } from '../core/spells.ts';
+import { SPELLS, RANDOM_SPELL } from '../core/spells.ts';
 import { modeIcon, modeHue } from './modeicons.ts';
 import { spellIcon, spellHue } from './spellicons.ts';
 import { $, show, hide } from './dom.ts';
@@ -55,6 +55,9 @@ export const MODE_PICKS: PickItem[] = [
 export const SPELL_PICKS: PickItem[] = [
   { v: '', id: 'none', name: 'NONE', blurb: 'No spells — the pure game.', hue: spellHue('none'), icon: spellIcon('none', 16) },
   ...SPELLS.map((s) => ({ v: s.id, id: s.id, name: s.name, blurb: s.blurb, hue: spellHue(s.id), icon: spellIcon(s.id, 16) })),
+  /* last slice, exactly like the mode row's: a promise to draw, not a rune */
+  { v: RANDOM_SPELL, id: 'random', name: 'RANDOM', hue: spellHue('random'), icon: spellIcon('random', 16),
+    blurb: 'A rune drawn at the table — both players get the same one.' },
 ];
 /* one button shape for both rows — and for the cards that picture them */
 export const pickerButtons = (items: PickItem[], now?: string): string => items.map((it) =>

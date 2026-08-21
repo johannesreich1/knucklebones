@@ -9,7 +9,7 @@
 import { SPEC, emptyBoard, boardTotal, applyMove, openStrikes, freshCharm,
          CLASSIC, ROWSWITCH, COLSHIELD,
          type GameState, type Mode, AI, ME } from '../src/core/rules.ts';
-import { SPELLS, spellById, freshCharges, swingOf, bestTarget, machineCast,
+import { SPELLS, RANDOM_SPELL, spellById, freshCharges, swingOf, bestTarget, machineCast,
          type CastCtx } from '../src/core/spells.ts';
 
 const problems: string[] = [];
@@ -28,6 +28,12 @@ const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m 
   check(spellById('nonsense') === null, 'unknown id is null, never a silent fallback');
   check(spellById(null) === null, 'null id is null');
   check(spellById('swap') === null, 'the retired swap must not resolve (persisted picks fall back to NONE)');
+  // RANDOM is a PROMISE TO DRAW, never a rune: it must not resolve, must not
+  // be dealt as itself, and must not collide with a real spell's id
+  check(spellById(RANDOM_SPELL) === null, 'RANDOM must never resolve to a spell');
+  check(!ids.includes(RANDOM_SPELL), 'RANDOM must stay out of the dealt roster', ids);
+  check(Object.keys(freshCharges(RANDOM_SPELL)).length === 0,
+    'RANDOM dealt as itself must give an empty hand, never a phantom charge');
   // a hand holds the ONE spell that was picked, with its uses — nothing else
   for (const s of SPELLS) {
     const hand = freshCharges(s.id);
@@ -100,6 +106,17 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
   check(ctx.charm.wards[ME][0] === 1, 'the mark landed on the caster side', ctx.charm.wards);
   check(!ward.legal(st, ME, 0, ctx), 'a second ward on the same column buys nothing — refused');
   check(!ward.legal(st, ME, 3, ctx), 'a column past the board is refused');
+  // COLUMN SHIELD: a full column is already untouchable, so a ward on it
+  // would spend the charge for nothing — the mode's promise, not a second
+  // rule about it (user call)
+  {
+    const full: GameState = [[[], [], []], [[4, 4, 4], [2], []]];
+    check(!ward.legal(full, ME, 0, mkCtx({ mode: COLSHIELD as Mode })),
+      'a shielded column must not be wardable — the charge would buy nothing');
+    check(ward.legal(full, ME, 1, mkCtx({ mode: COLSHIELD as Mode })),
+      'an OPEN column is still wardable under COLUMN SHIELD');
+    check(ward.legal(full, ME, 0, mkCtx()), 'the same full column is wardable outside COLUMN SHIELD');
+  }
 
   // a strike that WOULD take dice fizzles, burns the ward, and kills nothing
   const killed = applyMove(st, AI, 0, 4, CLASSIC, ctx.charm);

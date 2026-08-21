@@ -38,7 +38,8 @@ try {
     };
   });
   check(out.picker.pick === '' && out.picker.on === 0, 'the spell picker must default to NONE', out.picker);
-  check(out.picker.slices === 6 && out.picker.values[0] === '', 'NONE + the five runes', out.picker);
+  check(out.picker.slices === 7 && out.picker.values[0] === '', 'NONE + the five runes + RANDOM', out.picker);
+  check(out.picker.values[6] === 'random', 'RANDOM is the last slice, as on the mode row', out.picker.values);
   check(!out.picker.values.includes('swap'), 'the retired swap must not be pickable', out.picker.values);
   check(out.picker.icons.every(Boolean), 'every slice carries its icon', out.picker);
   check(/^NONE — /.test(out.picker.info), 'NONE needs its explanation', out.picker.info);
@@ -371,6 +372,77 @@ try {
   });
   check(!out.plateNone.live && out.plateNone.display === 'none',
     'a spell-free game left a hole in the nameplate', out.plateNone);
+
+  /* ---------- 10b. the marks hold still too ----------
+     The chip CENTRES its contents, so the score and its ×k badge change width
+     on every placement — a mark riding in that row jumped a dozen pixels each
+     time (user report). Ward and shield sit at the chip's ends instead. */
+  await newGame({ spell: 'ward' }); check(await waitChoose(), 'game never reached choose (chip)');
+  await table([[6], [], []], [[1], [], []], 3);
+  await page.evaluate(() => window.__kb.spells.cast('ward', 0));
+  await page.waitForTimeout(700);
+  out.chipHold = await page.evaluate(async () => {
+    const k = window.__kb, xs = [];
+    for (const col of [[6], [6, 6], [6, 6, 6]]) {          // 6 → 24 ×2 → 54 ×3
+      k.S.boards[1][0] = col; k.renderAll(false);
+      await new Promise((r) => setTimeout(r, 80));
+      const wd = document.querySelectorAll('#botCols .chip')[0].querySelector('.wd');
+      xs.push(+wd.getBoundingClientRect().x.toFixed(1));
+    }
+    return { xs, distinct: [...new Set(xs)].length };
+  });
+  check(out.chipHold.distinct === 1, 'THE WARD MARK MOVES WHEN THE SCORE GROWS', out.chipHold);
+
+  /* BOUNTY banks its ✦ tally into the same centred cluster the score and rune
+     share — appearing mid-match re-centred it and both jumped ~10px. */
+  out.btyHold = await page.evaluate(async () => {
+    const k = window.__kb;
+    k.S.spell = 'ward'; k.S.localMode = 5; k.S.mode = 'cpu'; k.S.seat = 'pass';
+    k.newGame();
+    for (let i = 0; i < 60; i++) { if (k.S.phase === 'choose') break; await new Promise((r) => setTimeout(r, 100)); }
+    // let fit()/ResizeObserver finish sizing the table before measuring — a
+    // layout still settling drifts on its own and would read as a tally jump
+    await new Promise((r) => setTimeout(r, 700));
+    const at = () => {
+      const rune = document.querySelector('#plateTop .rune:not([hidden])');
+      return [+rune.getBoundingClientRect().y.toFixed(1),
+              +document.getElementById('totTop').getBoundingClientRect().y.toFixed(1)].join('/');
+    };
+    const ys = [];
+    // 0 → 2 → 11 → back to 0: if the last reading equals the first, the tally
+    // is not moving anything; a drift that never returns is the layout settling
+    for (const banked of [0, 2, 11, 0]) {
+      k.S.bounty = [banked, 0]; k.renderAll(false); k.spells.render();
+      // WAIT OUT THE BUMP. Banking changes the total, and a changed total
+      // scales the number for 190ms (.plate.bump) — sampling inside that
+      // window measures the celebration, not the layout, and reads as drift.
+      await new Promise((r) => setTimeout(r, 420));
+      ys.push(at());
+    }
+    return { ys, distinct: [...new Set(ys)].length, returned: ys[0] === ys[3] };
+  });
+  check(out.btyHold.distinct === 1, 'THE BOUNTY TALLY SHOVES THE SCORE AND RUNE', out.btyHold);
+
+  /* ---------- 10c. RANDOM deals a real rune, the SAME one to both ---------- */
+  out.randomDeal = await page.evaluate(async () => {
+    const k = window.__kb;
+    const seen = new Set(); let mismatched = 0, empty = 0;
+    for (let i = 0; i < 24; i++) {
+      k.S.spell = 'random'; k.S.localMode = 0; k.S.mode = 'duo'; k.S.seat = 'face'; k.S.timer = 0;
+      k.newGame();
+      const mine = Object.keys(k.S.spellCharges[1]), theirs = Object.keys(k.S.spellCharges[0]);
+      if (!mine.length) { empty++; continue; }
+      if (mine[0] !== theirs[0]) mismatched++;
+      seen.add(mine[0]);
+    }
+    return { drew: [...seen].sort(), mismatched, empty, pick: k.S.spell };
+  });
+  check(out.randomDeal.empty === 0, 'RANDOM dealt an EMPTY hand — it must always become a real rune', out.randomDeal);
+  check(out.randomDeal.mismatched === 0,
+    'RANDOM dealt the two seats DIFFERENT runes — the layer is only fair because they match', out.randomDeal);
+  check(out.randomDeal.drew.length >= 2, 'RANDOM never varied over 24 games', out.randomDeal);
+  check(!out.randomDeal.drew.includes('random'), 'RANDOM dealt ITSELF as a rune', out.randomDeal);
+  check(out.randomDeal.pick === 'random', 'the pick must survive the draw — RANDOM stays RANDOM', out.randomDeal);
 
   /* ---------- 10. WARD: the mark is a thing the player can SEE ---------- */
   await newGame({ spell: 'ward' }); check(await waitChoose(), 'game never reached choose (ward)');

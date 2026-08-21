@@ -645,6 +645,13 @@ html.clock .timer.on{visibility:visible}
    in the ward's own mint, so the two protections never read as one. */
 .chip .wd{--wdc:#7dffc4;line-height:1;color:var(--wdc);filter:drop-shadow(0 0 6px rgba(125,255,196,.75))}
 .chip .wd:empty{display:none}
+/* The marks sit at the chip's ENDS, out of the centred flow. The chip centres
+   its contents, so the score and its ×k badge change width on every placement
+   and a mark riding in that row jumped a dozen pixels each time (user report).
+   Ward left, shield right — a column that is both wears both, no collision. */
+.chip .sh,.chip .wd{position:absolute;top:0;bottom:0;display:flex;align-items:center}
+.chip .sh{right:4px}
+.chip .wd{left:4px}
 .chip .wd.pop{animation:shpop .55s cubic-bezier(.2,1.6,.4,1)}
 .chip .wd.block{animation:wdblock .45s}
 @keyframes wdblock{0%,100%{transform:scale(1)}40%{transform:scale(1.6);filter:drop-shadow(0 0 18px rgba(125,255,196,1))}}

@@ -184,6 +184,34 @@ registry. Gates: `tests/spells.test.ts` (pure rules + machineCast) and
 `tests/test14.mjs` (column + self gestures, ward chip visibility, CPU
 casts, NONE restores the old table).
 
+The picker's last slice is **RANDOM** (`RANDOM_SPELL`, kept out of `SPELLS`
+exactly as the mode wheel's `RANDOM` is kept out of `MODES`): it never
+resolves through `spellById` and is drawn in `resetSpells` — once per game,
+so both seats always hold the same rune, and in flow rather than core, which
+holds no randomness.
+
+Three things real play corrected (2026-08-21):
+
+- **The aim ring lied about whose columns a cast could reach.** The
+  placement hint and the ring are the same `.col::after`, and the rule that
+  hides hints while aiming (`html.casting .col.legal::after`) hid the ring
+  too — `.legal` marks the mover's OWN playable columns, so a WARD's ring
+  vanished from your half and appeared only on the enemy's. `markAim` now
+  rings only registry-legal columns (`spell.side` says which half), and the
+  rule wins its `display` back. A probe that skips `showHints()` cannot see
+  this — it tests a state real play never reaches.
+- **Self spells cast on press.** One possible target means nothing to aim.
+- **Centred clusters must reserve, not collapse.** The nameplate keeps the
+  rune's place all match and BOUNTY keeps the ✦ lane, or the score re-centres
+  and jumps ~10px; the column chip's marks sit at its ends, out of the
+  centred row, or they slide when the score's width changes. When measuring
+  any of this, sample AFTER `.plate.bump` (190ms) — the score's celebration
+  scale reads as drift.
+
+WARD refuses a **shielded** column: under COLUMN SHIELD a full column is
+already untouchable, so the charge would buy nothing (same principle as
+refusing a second ward on one column).
+
 **OFFLINE-ONLY, by decision (2026-08-21)**: ranked keeps dealing the empty
 hand it deals today. The online protocol (casts as logged entries replayed
 through this same registry, FATE drawing from the seeded stream) is designed

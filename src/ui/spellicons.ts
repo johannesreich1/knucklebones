@@ -4,6 +4,9 @@
 const PATHS: Record<string, string> = {
   /* NONE: the picker's first slice — no rune at all */
   none: '<circle cx="12" cy="12" r="8.4"/><path d="M6.1 6.1 17.9 17.9"/>',
+  /* RANDOM: the picker's last slice. The SAME shuffle mark the mode row uses
+     (ui/modeicons) — one idea, one glyph, whichever row asks it. */
+  random: '<path d="M3.4 7.6h3.9l9.3 8.8h3.9M3.4 16.4h3.9l9.3-8.8h3.9"/>',
   /* FATE: a die tossed back — one face leaving on a return arrow */
   fate: '<rect x="7.6" y="7.6" width="8.8" height="8.8" rx="2.2"/>'
       + '<circle cx="12" cy="12" r=".4" fill="currentColor"/>'
@@ -30,6 +33,7 @@ const PATHS: Record<string, string> = {
    slice in the picker. NONE wears the neutral grey CLASSIC uses. */
 const HUES: Record<string, string> = {
   none: '#8ea3c0',
+  random: '#e9f1ff',    // the mode row's random wears this too
   fate: '#b18cff',      // violet — chance rewoven
   nudge: '#7fd7ff',     // sky — the smallest push
   ward: '#7dffc4',      // mint — protection
