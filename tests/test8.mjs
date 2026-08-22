@@ -94,17 +94,30 @@ const sampleBoxes = async () => {
     seen.push(await lp.evaluate(() => {
       const r = (q) => { const e = document.querySelector(q); if (!e) return null;
         const b = e.getBoundingClientRect(); return [+b.x.toFixed(2), +b.y.toFixed(2), +b.width.toFixed(2)]; };
-      return { top: r('#topBoard'), bot: r('#botBoard'), centre: r('.center'), stage: r('#dieStage'),
+      return { app: r('#app'),
+               top: r('#topBoard'), bot: r('#botBoard'), centre: r('.center'), stage: r('#dieStage'),
                txt: (document.querySelector('#status') || {}).textContent,
                tick: getComputedStyle(document.querySelector('#status'), '::after').animationName };
     }));
     await lp.waitForTimeout(90);
   }
+  /* MEASURED AGAINST #app, NOT THE VIEWPORT — because the app is allowed to
+     move and the boards are not allowed to move WITHIN it. A placement that
+     destroys dice shakes the whole screen (ui/fx.shake animates #app by
+     ±6px for 260ms), and this sampler deliberately runs THROUGH a real move,
+     so it catches that wobble whenever the random game happens to strike
+     inside its 1.1s window: every box shifted by the identical amount, which
+     read as "the board is drifting" and failed the gate perhaps one run in
+     three. Reading each box relative to #app cancels the shake exactly
+     (top.x - app.x held 62.00 across every frame of a caught wobble) and
+     leaves the claim this test actually makes intact: the centre lane and the
+     score box must not size themselves to their contents, which is a
+     statement about the boxes' positions relative to each other. */
   const drift = {};
   for (const k of ['top', 'bot', 'centre', 'stage']) {
-    const rs = seen.map((s) => s[k]).filter(Boolean);
+    const rs = seen.filter((s) => s[k] && s.app);
     ['x', 'y', 'w'].forEach((dim, i) => {
-      const v = rs.map((r) => r[i]);
+      const v = rs.map((s) => i === 2 ? s[k][2] : s[k][i] - s.app[i]);   // width is already frame-independent
       const spread = +(Math.max(...v) - Math.min(...v)).toFixed(2);
       if (spread > 0.5) (drift[k] = drift[k] || {})[dim] = spread;   // half a pixel is the eye's floor
     });
