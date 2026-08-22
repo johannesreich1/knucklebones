@@ -42,6 +42,15 @@ writeFileSync('knucklebones-neon.html', stamp(single, 'neon build tag'));
 mkdirSync('native/www', { recursive: true });
 cpSync('dist/main', 'native/www', { recursive: true });
 writeFileSync('native/www/index.html', stamp(single, 'native build tag'));
+// dist/main carries public/sw.js verbatim, so the native payload needs the same
+// cache-key stamp the hosted bundle gets. Unstamped it stays 'kb-dev' in every
+// build: the bytes never change, so iOS never sees a new worker to install, and
+// the cache-first icons and manifest cached on first launch outlive every
+// update. Its ASSETS list is right as it stands — the single-file page has no
+// hashed chunks to enumerate.
+writeFileSync('native/www/sw.js',
+  sub(readFileSync('public/sw.js', 'utf8'), "const VERSION = 'kb-dev';",
+    `const VERSION = 'kb-${HASH}';`, 'native sw cache key'));
 
 // ---- hosted PWA bundle (chunked) ----
 rmSync('pwa', { recursive: true, force: true });

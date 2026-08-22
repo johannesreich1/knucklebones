@@ -130,7 +130,7 @@ try {
   const suite = t => async () => judge(t, await run('node', [`tests/${t}.mjs`]), clean);
   await pool([
     // pure-Node gates (no browser): seeded dice determinism + PvP match core
-    ...['dice', 'match', 'modes', 'spells', 'gcauth', 'cssreach', 'ladder', 'ladderbench', 'botbench', 'fnsync'].map(node),
+    ...['dice', 'match', 'modes', 'spells', 'gcauth', 'cssreach', 'ladder', 'ladderbench', 'botbench', 'fnsync', 'iosship'].map(node),
     ...FILE_SUITES.map(suite),
     // bench3 is a benchmark, not a pass/fail suite — but its helper-vs-inline
     // scoring equivalence check is a real correctness assertion.
