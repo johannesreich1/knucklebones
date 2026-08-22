@@ -73,6 +73,34 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
   };
 }
 
+/* ---- A CAST THAT REVEALS MAY NEVER BE TAKEN BACK ----
+   The take-back window (flow/spells) is offered to self spells only, and it
+   hands back the die, the charge, the bag and the charm — everything except
+   what the player SAW. Reaching into the supply is exactly that, so the rule
+   is asked MECHANICALLY rather than remembered: any self spell whose apply()
+   draws must carry `final`, on the day it is registered and not on the day
+   someone notices the free peek. */
+{
+  for (const s of SPELLS) {
+    if (s.target !== 'self') continue;              // board casts never get the window
+    const ctx = mkCtx();
+    let drew = 0;
+    const watched: CastCtx = { ...ctx, draw: () => { drew++; return ctx.draw(); } };
+    s.apply([emptyBoard(), emptyBoard()], ME, -1, watched);
+    check(drew === 0 || s.final === true,
+      s.id + ' draws from the supply, so its cast can never be taken back — mark it `final`',
+      { drew, final: s.final ?? false });
+  }
+  check(spell('fate').final === true, 'FATE shows you the next die: its cast is final');
+  /* and `final` is meaningless where there is no window to close — marking a
+     board spell would imply the unmarked ones are takeable back, which is the
+     opposite of the truth */
+  for (const s of SPELLS) {
+    check(!(s.final && s.target === 'column'),
+      'a board cast is already final; marking it says the wrong thing about the rest: ' + s.id);
+  }
+}
+
 /* ---- FATE: discard and draw ---- */
 {
   const fate = spell('fate');

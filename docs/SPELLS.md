@@ -61,6 +61,17 @@ These are structural, not taste. Breaking one is a redesign, not a tweak.
   ordered entry in the move log, so latency can delay what the opponent
   *sees*, never create a race. Interrupt spells would need sub-second
   bidirectional windows — we do not build those.
+- **What has already paid out cannot be taken back.** A self spell can be
+  pressed again to undo it while the die it changed is still in hand — but
+  only when putting it back leaves the caster *exactly where they were*. If a
+  cast **revealed** something, or handed over an advantage that survives the
+  reversal, it is **final**: you cannot un-see a die, and "cast, peek, undo"
+  is a free look paid for with nothing. FATE is the roster's only one so far
+  (it draws the next die from the supply) and carries `final: true`; board
+  spells are final by construction, because their dice have visibly flown.
+  Asked of the registry, never of a spell's name — and gated mechanically:
+  `tests/spells.test.ts` watches `CastCtx.draw` and fails any self spell that
+  draws without being marked, so the next one is caught the day it is written.
 - **`core/` stays pure.** No DOM, no timers, no randomness. Supply arrives as
   behaviour (`CastCtx.draw`), so offline can hand it `Math.random` and a
   future ranked deal can hand it the seeded stream, with replay deterministic
@@ -256,7 +267,10 @@ charge accounting and the CSS never learn its name.
 1. **The spec** — `id` (stable forever: persisted, tested, styled against),
    `name`, `blurb`, `detail`, `aim` (the line shown while it is armed),
    `target` (`'column' | 'self'`), `side` (`'own' | 'foe'`, for column spells:
-   which half the ring offers), `uses`, `legal()`, `apply()`, and `cpuCast()`
+   which half the ring offers), `uses`, `final` (for a *self* spell whose cast
+   reveals something or otherwise pays out before it could be undone — see §2;
+   a self spell that calls `ctx.draw()` MUST set it, and the gate enforces
+   that), `legal()`, `apply()`, and `cpuCast()`
    if its value is off-board.
 2. **The icon** — a path in `ui/spellicons.ts` plus a hue.
 3. **The cast animation** — an entry in `CAST_FX` (`flow/spells.ts`).
@@ -294,12 +308,17 @@ Learned from real play, each one a shipped bug:
 - **A self spell casts on press.** One possible target means nothing to aim.
   Dragging still works; dropping anywhere else cancels with the charge intact.
 - **And pressing it again takes it back**, for as long as the die it changed is
-  still in hand — placing the die makes the cast final. Implemented as a
-  SNAPSHOT taken at cast time (die, supply, charm), never as a per-spell
-  inverse, so a spell does not have to know it can be undone. Board spells are
-  deliberately excluded: their dice have visibly flown, and un-flying them
-  would be a lie about what the player just watched. The rune stays lit and
-  pressable while the window is open — it must not read as spent yet.
+  still in hand — placing the die closes the window. Implemented as a SNAPSHOT
+  taken at cast time (die, supply, charm), never as a per-spell inverse, so a
+  spell does not have to know it can be undone. Two kinds of cast are never
+  offered the window at all (§2, *what has already paid out*): board spells,
+  whose dice have visibly flown, and spells the registry marks **`final`**
+  because the cast already revealed something — **FATE**, which draws the next
+  die and cannot un-show it. The window is decided in exactly one place
+  (`castBy` asks `target === 'self' && !final`), so no gesture, keyboard path
+  or rune state can offer a take-back the rule forbids. The rune stays lit and
+  pressable *while the window is open* — and a final cast must read spent at
+  once, or the UI is inviting the peek the rule exists to prevent.
 - **Reserve, never collapse.** Anything sharing the vertically-centred score
   cluster (the rune slot, BOUNTY's ✦ lane) must hold its place for the whole
   game, or the cluster re-centres and the score visibly jumps when the thing

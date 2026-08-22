@@ -254,9 +254,11 @@ async function castBy(who: Player, spell: SpellSpec, col: number, ctx: CastCtx):
   /* A self spell lands on the die in hand the instant it is pressed, so the
      press is also the way back: snapshot what it is about to change. Taken
      BEFORE the effect and as a SNAPSHOT, not a per-spell inverse — a spell
-     never has to know it can be undone. Board spells are not offered a
-     take-back: their dice have visibly flown. */
-  S.spellUndo = spell.target === 'self' ? {
+     never has to know it can be undone. Two casts are never offered the
+     window: board spells, whose dice have visibly flown, and the ones the
+     registry marks `final` because they already paid out — asked of the
+     registry, never of a spell's name (core/spells). */
+  S.spellUndo = spell.target === 'self' && !spell.final ? {
     id: spell.id, who, die: S.die,
     pool: S.pool ? S.pool.slice() : null,
     charm: { wards: [S.charm.wards[0].slice(), S.charm.wards[1].slice()],

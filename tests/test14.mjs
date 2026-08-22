@@ -390,9 +390,13 @@ try {
   check(out.undoClosed.charges === '[{"nudge":1},{"nudge":0}]',
     'the charge came back after the die was already played', out.undoClosed);
 
-  /* FATE's redraw came out of the supply, so the take-back must put it BACK —
-     in LIMITED that is a real die the bag would otherwise have lost. */
-  out.undoBag = await page.evaluate(async () => {
+  /* FATE IS FINAL (user call, 2026-08-22). It is the one cast that REVEALS —
+     it draws the next die from the supply — and no take-back can un-see it.
+     Offering the window would be "cast, peek, undo": a free read of what is
+     coming, twice a game, at no charge, and in LIMITED a free read of the bag.
+     So the press must NOT hand anything back: not the die, not the charge, and
+     not the die the bag has already given up. */
+  out.fateFinal = await page.evaluate(async () => {
     const k = window.__kb;
     k.S.spell = 'fate'; k.S.localMode = 6; k.S.mode = 'duo'; k.S.seat = 'face'; k.S.timer = 0;
     k.newGame();
@@ -402,14 +406,27 @@ try {
     await k.spells.cast('fate', -1);
     await new Promise((r) => setTimeout(r, 700));
     const bagAfter = k.S.pool.length, dieAfter = k.S.die;
-    const undone = k.spells.undo();
+    const offered = k.spells.undoable('fate');
+    const undone = k.spells.undo();               // the press the player would make
+    const rune = document.querySelector('.rune[data-seat="1"]:not([hidden])');
     return { bagBefore, bagAfter, bagBack: k.S.pool.length, dieBefore, dieAfter,
-             dieBack: k.S.die, undone, charges: JSON.stringify(k.S.spellCharges) };
+             dieBack: k.S.die, offered, undone, pending: !!k.S.spellUndo,
+             runeClass: rune ? rune.className : '', charges: JSON.stringify(k.S.spellCharges) };
   });
-  check(out.undoBag.bagAfter === out.undoBag.bagBefore - 1, 'the redraw did not come out of the bag', out.undoBag);
-  check(out.undoBag.bagBack === out.undoBag.bagBefore,
-    'THE TAKE-BACK LOST A DIE FROM THE BAG', out.undoBag);
-  check(out.undoBag.dieBack === out.undoBag.dieBefore, 'the take-back kept the redrawn die', out.undoBag);
+  check(out.fateFinal.bagAfter === out.fateFinal.bagBefore - 1,
+    'the redraw did not come out of the bag', out.fateFinal);
+  check(!out.fateFinal.offered && !out.fateFinal.pending,
+    'FATE STILL OFFERS A TAKE-BACK — the peek at the supply is free', out.fateFinal);
+  check(!out.fateFinal.undone && out.fateFinal.dieBack === out.fateFinal.dieAfter,
+    'THE REDRAWN DIE WAS HANDED BACK AFTER THE PLAYER HAD SEEN IT', out.fateFinal);
+  check(out.fateFinal.bagBack === out.fateFinal.bagAfter,
+    'the drawn die crawled back into the bag', out.fateFinal);
+  check(out.fateFinal.charges === '[{"fate":2},{"fate":1}]',
+    'a final cast gave its charge back', out.fateFinal);
+  /* ...and it must READ final: a rune that still says "press again" invites
+     exactly the peek this forbids */
+  check(/\bspent\b/.test(out.fateFinal.runeClass) || !/\bundo\b/.test(out.fateFinal.runeClass),
+    'FATE still reads as takeable back', out.fateFinal.runeClass);
 
   /* SUNDER's mark is charm state, not a die — the take-back must lift it */
   out.undoMark = await page.evaluate(async () => {

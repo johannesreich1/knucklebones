@@ -47,6 +47,16 @@ export interface SpellSpec {
      the enemy's columns (and a pilfer from advertising your own). */
   side?: 'own' | 'foe';
   uses: number;      // casts per player, per game
+  /* Can this cast never be taken back? A self spell lands on the die in hand
+     the instant it is pressed, so pressing it again normally puts it back
+     (flow/spells) — but ONLY when putting it back leaves the caster exactly
+     where they were. A cast that already PAID OUT cannot be unpaid, and the
+     commonest way to pay out is to show the player something: FATE draws the
+     next die from the supply, and no take-back can un-see it. "Cast, peek,
+     undo" would be a free look at the supply, every game, for nothing.
+     Board spells never get the window at all — their dice have visibly
+     flown — so this is only ever asked of the self spells. */
+  final?: boolean;
   /* May this cast happen? Legality is the ONLY failure path a spell has: an
      illegal target is refused before anything moves, so no cast can fail
      halfway through and leave the boards in a state nobody designed. */
@@ -88,10 +98,17 @@ const FATE: SpellSpec = {
   name: 'FATE',
   blurb: 'Throw your die back and draw another.',
   detail: 'Discard the die in hand and draw the next from the supply. The new die is yours '
-        + 'to place this turn. Two casts per game.',
+        + 'to place this turn. The draw is final — you cannot put it back once you have '
+        + 'seen it. Two casts per game.',
   aim: 'Drop it on your die to redraw',
   target: 'self',
   uses: 2,
+  /* The one cast in the roster that REVEALS. Undoing it would hand back the
+     die, the charge and the bag — and keep the knowledge of what the supply
+     was about to give, which is the whole value of the cast. In LIMITED it is
+     worse still: a free read of the bag's next face, twice a game, for no
+     charge at all (user report). */
+  final: true,
   legal(st, who, col, ctx) {
     return !!ctx && ctx.bagLeft !== 0;
   },
