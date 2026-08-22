@@ -1,9 +1,13 @@
-<!-- meta name="How to play" group="5 · Sheets" subtitle="Reading sheet: the gradient ✕ is the only way out, and the text scrolls to the screen edge under it" width=412 height=980 links="Home, Settings" -->
+<!-- meta name="How to play" group="5 · Settings & sheets" subtitle="Reading sheet: the gradient ✕ is the only way out, and the text scrolls to the screen edge under it" width=412 height=1471 links="How to play — the hub" -->
 <style>
   /* .shead is the app's shared header (src/styles/main.css) — card adds spacing only */
   .shead{margin-bottom:10px}
+  /* .rules is the app's own reading panel. The one thing restated: the app
+     lifts its 62vh cap through `.ov.paged .rules` (main.css), and the preview
+     stage is no .ov — without this the sheet would scroll inside itself here
+     and run to the screen edge in the app, which is the opposite of what this
+     card is for. */
   .rules{max-height:none;margin:0 auto}
-
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
   <div class="shead"><span class="pad"></span><span class="ttl">HOW TO PLAY</span><button class="ico">✕</button></div>
@@ -18,5 +22,9 @@
     <p>Place a die and <span class="k">every matching die in the opponent's facing column is destroyed</span>. Columns line up vertically — your left column faces their left column.</p>
     <h3>Reading the board</h3>
     <p>The chips beside each column show its running score, and <b>×2</b>/<b>×3</b> marks a multiplied stack. Working out the best placement is the game — but the <b>tutorial</b> plays a guided round with point previews on every column.</p>
+    <h3 style="color:#b18cff">Spells</h3>
+    <p>Offline games deal both players the same <b>rune</b>, beside the die in play — six to choose from where you set up an offline game, right under the game mode (<b>none</b> by default, or <b>random</b> to have one drawn for you). A rune that acts on your die casts the moment you press it; one that aims at a column is dragged or tapped onto it, and only the columns it can actually reach light up. A cast is not a move, so your die still lands afterwards. The full roster lives under <b>HOW TO PLAY → SPELLS</b>. Ranked matches never use them.</p>
+    <h3>Two players</h3>
+    <p>Pick <b>2 PLAYERS</b> to share one phone, then choose how you sit. <b>Pass phone</b>: a pass card appears between turns and the grids swap so whoever is playing is on the bottom. <b>Face to face</b>: lay the phone flat between you — the top half is turned for Player 2, turns switch on their own, and the bright half with the rotating centre die shows who's up.</p>
   </div>
 </div></div>

@@ -1,4 +1,4 @@
-<!-- meta name="Leaderboard" group="3 · Ladder & account" subtitle="One scroll from NEON to STONE: groups as labelled horizons, every row stating its distance to you, your row the big one the list opens on" width=412 height=1500 links="Home, Profile" -->
+<!-- meta name="Ladder" group="3 · Ladder & profile" subtitle="One scroll from NEON to STONE: groups as labelled horizons, every row stating its distance to you, your row the big one the list opens on" width=412 height=1500 links="Home, Profile" -->
 <style>
   /* The board is the app's own: #ovOnline .lb > .ghor/.lrow from online.css,
      reached by wearing that ancestor chain — the group tokens (--g-stone …
@@ -7,18 +7,15 @@
      signed in at rank 12, so rows carry the gap line the app renders for a
      ranked reader; signed out they carry the record instead (see test16). */
   .shead{margin-bottom:10px}
-  .lbh{margin:6px 0 12px;text-align:center}
-  .lbh .lbl{text-align:center}
   #ovOnline{display:flex;flex-direction:column;width:100%}
   #ovOnline.listview .lb{padding:0;max-width:358px;margin:0 auto;overflow:visible;
     display:flex;flex-direction:column;gap:5px}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
   <div class="shead"><button class="ico">‹</button><span class="ttl">LADDER</span><span class="pad"></span></div>
-  <div class="lbh"><div class="lbl">Season 1 · Ladder points</div></div>
   <div id="ovOnline" class="listview">
     <div class="lb">
-      <div class="ghor apex" style="--gc:var(--g-neon)"><span class="gn">NEON</span><span class="gf">top 1% of the season</span></div>
+      <div class="ghor apex" style="--gc:var(--g-neon)"><span class="gn">NEON</span><span class="gf">top 1%</span></div>
       <button class="lrow" style="--gc:var(--g-neon)"><span class="rank">1</span><span class="av dice-static">{{die:6:p1:24}}</span><span class="nm">CosmicRaven681</span><span class="gap"><b>+4,135</b> on you</span><span class="rt">4,600</span></button>
 
       <div class="ghor" style="--gc:var(--g-obsidian)"><span class="gn">OBSIDIAN</span><span class="gf">3,000 and up</span></div>
@@ -56,4 +53,4 @@
   distance to the signed-in reader — magenta above, cyan below, never a payout — and YOUR row
   full-size, the list opening centred on it (scrollIntoView on arrival). Signed out, rows state
   the record instead and no horizon says "your group". Tapping any row deals the face-off
-  (card 30-faceoff); tapping your own opens your profile.</div>
+  (card 30-leaderboard-faceoff); tapping your own opens your profile.</div>

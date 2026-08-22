@@ -1,37 +1,106 @@
-<!-- meta name="Account" group="3 · Ladder & account" subtitle="Rename, record, sign out — deletion is present but at arm's length" width=412 height=920 links="Home" -->
+<!-- meta name="Profile" group="3 · Ladder & profile" subtitle="The ring is the screen: the group fill under the avatar, the name it crowns, the points a door to the ladder — the name is claimed once, and deletion is a footnote at the foot" width=412 height=1550 links="Home, Ladder, Match history, Avatar" -->
 <style>
-  /* .shead is the app's shared header (src/styles/main.css) — card adds spacing only */
+  /* The profile is the app's own panel: #onAccount inside #ovOnline from
+     online.css, plus the ladder ring (.ringwrap/.lring/.lpeak), which lives in
+     main.css because Home's plate paints it at boot. The card WEARS that
+     ancestor chain rather than copying rules out of it. The version before this
+     one hung a private .awrap off .scr, so every #onAccount- and #ovOnline-
+     scoped rule was out of reach and had to be hand-typed — and the hand-typed
+     copies are what went stale: an identity card, a RATING row and a Save-name
+     field, none of which the app renders. Glue only below.
+
+     The reader is FrostLynx303, the player card 30 seats at rank 12 — 465
+     points, BONE, 39% through, 4W 6L. One player, one set of numbers: the two
+     cards in this group may not contradict each other. */
   .shead{margin-bottom:10px}
-  .awrap{display:flex;flex-direction:column;gap:16px;width:100%;max-width:var(--w-col);margin:14px auto 0}
-  .awho{display:flex;align-items:center;gap:12px}
-  .awho .meta{display:flex;flex-direction:column;gap:2px}
-  .awho .nm{font-size:15px;font-weight:900;letter-spacing:.06em;color:var(--cy)}
-  .awho .sub{font-size:9.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase}
-  .awrap input{padding:12px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
-    background:rgba(255,255,255,.05);color:var(--txt);font-size:14px;font-family:inherit}
-  .statrow{display:flex;justify-content:space-between;font-size:11px;letter-spacing:.1em;color:var(--dim)}
-  .statrow b{color:var(--gold);font-weight:900;font-size:14px}
-  .danger{margin-top:14px}
-  .danger .btn{border-color:rgba(255,47,160,.35);color:#ff9ccb}
-  .dnote{font-size:9.5px;letter-spacing:.1em;color:var(--dim);text-align:center;margin-top:5px}
+  /* stands in for .pbody, the paged view's scrolling body: only its centring,
+     because the rest of .pbody is scroll chrome derived from .ov.paged's header
+     vars, which the preview stage has no header bar to reserve room for. */
+  #ovOnline{display:flex;flex-direction:column;align-items:center;width:100%}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
-  <div class="shead"><button class="ico">‹</button><span class="ttl">ACCOUNT</span><span class="pad"></span></div>
-  <div class="awrap">
-    <div class="acard dice-static">
-      <div class="awho">{{die:5:p1:40}}<span class="meta"><span class="nm">FrostLynx303</span><span class="sub">since Aug 2026</span></span></div>
-      <div class="statrow"><span>RATING</span><b>1032</b></div>
-      <div class="statrow"><span>RECORD</span><b style="color:var(--txt)">12W – 7L</b></div>
-    </div>
-    <div class="lbl">Nickname</div>
-    <input value="FrostLynx303" maxlength="16">
-    <div class="err"></div>
-    <button class="btn">Save name</button>
-    <button class="btn">Sign out</button>
-    <div class="danger">
-      <button class="btn" style="width:100%">Delete account</button>
-      <div class="dnote">Two taps. Removes your profile, matches and rating — permanently.</div>
+  <div class="shead"><button class="ico">‹</button><span class="ttl">PROFILE</span><span class="pad"></span></div>
+  <div id="ovOnline">
+    <div class="panel" id="onAccount">
+      <!-- ONE continuous fill: how far through the current GROUP you are, so it
+           moves on every match. --p is the fill, --pk the season peak; .haspeak
+           says the peak is far enough ahead to be worth drawing. The notch is
+           WHITE, not the gold study 92d used — colour means "live" here, and
+           the only live number is where you stand right now. -->
+      <div class="ringwrap haspeak" style="--p:.393;--pk:.505">
+        <i class="lring"></i><i class="lpeak"></i>
+        <!-- the avatar is a DOOR: tap it for the face-and-hue picker, which is
+             why it is a button wearing a pencil badge. 74px is paintAvatar's own
+             default — the size the app paints here, not a thumbnail beside a
+             name. -->
+        <button class="avwrap"><span class="dice-static">{{die:5:p1:74}}</span><span class="avedit">✎</span></button>
+        <!-- the group name sits IN the ring's bottom mouth: the 90deg gap stops
+             being empty space and becomes the label -->
+        <span class="gname">BONE</span>
+      </div>
+      <div class="accname">FrostLynx303</div>
+      <!-- the points are a door too — the number names your place on the
+           ladder, so tapping it opens the ladder. Written with the thousands
+           separator every points and rank figure wears (core/ladder.ts rk):
+           four digits read "1,032", never "1032". -->
+      <button class="ptv"><b>465</b><span>Ladder points</span></button>
+      <!-- THREE facts, not four. The win/loss tally is not here: it heads the
+           match-history list it summarises, and it is not called "record". -->
+      <div class="facts">
+        <div class="fact"><b>#12</b><span>Rank</span></div>
+        <div class="fact"><b>3</b><span>Best streak</span></div>
+        <div class="fact pk"><b>512</b><span>Peak</span></div>
+      </div>
+      <button class="histrow">Full match history <b>10 games ›</b></button>
+      <!-- the newest matches dealt inline under the door, up to three. The rows
+           are showHistory's own (histRow) — one row shape, so the list and this
+           summary of it cannot drift. -->
+      <div class="lb minihist">
+        <div class="row hrow win"><span class="hres">W</span><span class="nm">NovaComet992</span><span class="hsc">47–31</span><span class="hd">+21</span><span class="hwhen">21 Aug</span></div>
+        <div class="row hrow loss"><span class="hres">L</span><span class="nm">ZestyPixel950</span><span class="hsc">22–38</span><span class="hd">-14</span><span class="hwhen">20 Aug</span></div>
+        <div class="row hrow draw"><span class="hres">D</span><span class="nm">BoldRaven393</span><span class="hsc">29–29</span><span class="hd">+12</span><span class="hwhen">19 Aug</span></div>
+      </div>
+      <!-- the full month, centred and low: "Member since August 2026". It is
+           blank for a guest — their account lives on this device only, so the
+           line would be a promise nobody made — which is why the app's rule
+           collapses it when empty. -->
+      <div class="accsince">Member since August 2026</div>
+      <!-- The ONE-TIME name claim, the only name control the app has. There is
+           no rename anywhere: the 0026 trigger stamps named_at on the first
+           nickname write and refuses every later one, so this box is gone for
+           good after the claim — not disabled. This card pictures the state
+           before it, which is why the headline above still reads the minted
+           placeholder and the input carries it as a PLACEHOLDER, never a value.
+           No maxlength, deliberately: a silent cap eats keystrokes mid-word, so
+           the button answers an over-long name with the limit instead. -->
+      <div class="guestbox namebox">
+        <b>CLAIM YOUR NAME</b>
+        <p>One name per account — set once and kept for good. 3–16 letters, digits or underscores.</p>
+        <input autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="FrostLynx303">
+        <div class="err"></div>
+        <button class="btn primary">Claim name</button>
+      </div>
+      <!-- Sign out is the panel's last real button and deletion sits under it
+           as a FOOTNOTE — the same linkbtn row Home wears for its legal links,
+           no red and no note beside it. One wrapper, so the order holds whether
+           or not Sign out is there (it is hidden for guests, for whom it does
+           not sign out, it throws away). -->
+      <div class="accfoot">
+        <button class="btn">Sign out</button>
+        <div class="viewfoot"><button class="linkbtn">Delete account</button></div>
+      </div>
     </div>
   </div>
-  <div class="tiny" id="buildTag">build 6cb34373</div>
 </div></div>
+<div class="note"><b>The ring is the screen.</b> One continuous fill — the percentage of the way
+  through your current group — sweeping up to its value as the profile opens, with the group name
+  in the 90&deg; mouth at the bottom and the season peak as a white notch while it is still ahead
+  of you. Everything under it is a door: the avatar opens the picker, the points open the ladder,
+  the history row opens the list whose newest three are already dealt beneath it.
+  <br><br><b>Two words this screen no longer says.</b> There is no <em>rename</em> — a name is
+  claimed once and kept, so the old always-there field and its Save button are one boxed offer that
+  disappears for good. And there is no <em>record</em>: the win/loss tally heads the match-history
+  list it summarises rather than crowding the three facts.
+  <br><br><b>Deleting is quiet here and loud where you decide.</b> The footnote opens the shared
+  ask-card (card 53) with its checkbox guard — an irreversible answer deserves a different act in a
+  different place, not a second tap where the first one landed.</div>

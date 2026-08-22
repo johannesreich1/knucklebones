@@ -70,8 +70,12 @@ function sideHtml(p: DialSide, cls: 'me' | 'foe'): string {
          `<span class="dnm">${esc(p.name)}</span>${rating}</span>`;
 }
 /* Both ratings are shown; the DIFFERENCE between them is not. It is arithmetic
-   the player can do if they care, and printing it turns a duel into a forecast. */
-function versus(me: DialSide, foe: DialSide): string {
+   the player can do if they care, and printing it turns a duel into a forecast.
+   Exported for the same reason settledAnswer and answerLines below are: the
+   design build renders the pairing through THIS function ({{versus}}), and the
+   two dial cards had been carrying a hand-written one-line "Opponent NAME ·
+   RATING" — the pre-study treatment this replaced — for as long as it existed. */
+export function versus(me: DialSide, foe: DialSide): string {
   return sideHtml(me, 'me') + '<span class="dvs">VS</span>' + sideHtml(foe, 'foe');
 }
 

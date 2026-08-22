@@ -1,0 +1,237 @@
+<!-- meta name="W6 — Plated dice" group="3g · Shield & ward studies" subtitle="The protection is worn by the DICE, not by the column: each die gains a bevelled metal edge — lit top-left, dark bottom-right — the empty seats show the hairline joint waiting for their plate, and a landing die is CLAD, a plate sliding across it behind a travelling glint" width=430 height=1615 sizes="md" links="Match, Game modes, Spells" -->
+<style>
+  /* Card-local names only (sw*). The app pins .col/.slot/.chip/.pip/.die with
+     position and height, so a card that redeclares them loses silently —
+     design/build.mjs fails the build for exactly that. Dice come from the
+     die token, the rune and shield from the app's own icon registries.
+     Scaffold, hue slots and beat order are W1's (39a), so the six studies are
+     read side by side; everything below .swmint is this option's own. */
+  .scr{gap:10px}
+  .swwrap{display:flex;flex-direction:column;align-items:center;gap:13px;margin:auto 0;width:100%}
+
+  .swrow{display:flex;align-items:flex-start;justify-content:center;gap:14px}
+  .swcol{--cell:52px;--gap:6px;display:flex;flex-direction:column;align-items:center;gap:7px}
+  .swstack{display:grid;grid-template-rows:repeat(3,var(--cell));gap:var(--gap);
+    position:relative;border-radius:16px;padding:3px}
+  .swslot{width:var(--cell);height:var(--cell);border-radius:14px;
+    background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05);display:grid;place-items:center;position:relative}
+  /* the column chip, restated at card scale — the app's .chip is guarded */
+  .swchip{height:20px;min-width:52px;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;gap:4px;font-size:12px;font-weight:800;color:var(--dim);
+    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);position:relative;
+    padding:0 6px;font-variant-numeric:tabular-nums}
+  .swchip i{line-height:0;display:flex}
+  .swchip.gold{color:var(--mx2,var(--gold));border-color:rgba(var(--mx2-rgb,var(--gold-rgb)),.3);
+    background:rgba(var(--mx2-rgb,var(--gold-rgb)),.09)}
+  .swchip.mint{color:var(--wd);border-color:color-mix(in srgb,var(--wd) 30%,transparent);
+    background:color-mix(in srgb,var(--wd) 9%,transparent)}
+
+  /* ===== TODAY, for comparison: a 1px inset ring at 35% and a 14px glow at
+     12%. On a die that already carries a border and a coloured bloom it is
+     below the noise floor — which is the whole reason for this study. ===== */
+  .swstack.now{box-shadow:inset 0 0 0 1px rgba(var(--mx2-rgb,var(--gold-rgb)),.35),
+    0 0 14px rgba(var(--mx2-rgb,var(--gold-rgb)),.12)}
+  .swstack.nowward{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wd) 40%,transparent),
+    0 0 14px color-mix(in srgb,var(--wd) 14%,transparent)}
+
+  .swgold{--g:var(--mx2,var(--gold))}
+  .swmint{--g:var(--wd)}
+
+  /* ===== THE PLATE. Not a thing over the column — a thing the DIE is wearing.
+     A bevel is two rims and nothing else: 1px lit on the top-left, 1px black on
+     the bottom-right, so the die reads as a stamped plate with a thickness
+     rather than a die inside a ring. Every pixel of it is INSIDE the die's own
+     footprint, which is the whole argument for this option: .col.legal's dashed
+     ring lives at -4px and ROW MULTIPLY's bracket at -3px, and this never goes
+     out there to meet them. ===== */
+  .swdie{position:relative;display:block;width:var(--cell);height:var(--cell)}
+  .swplate{position:absolute;inset:0;border-radius:14px;pointer-events:none;overflow:hidden;
+    box-shadow:
+      inset 1px 1px 0 color-mix(in srgb,var(--g) 74%,transparent),   /* lit rim, top-left */
+      inset -1px -1px 0 rgba(0,0,0,.62),                             /* shadow rim, bottom-right */
+      inset 0 0 0 1px color-mix(in srgb,var(--g) 15%,transparent);   /* the plate's own edge */
+    background:linear-gradient(150deg,color-mix(in srgb,var(--g) 12%,transparent),
+      transparent 34%,transparent 62%,rgba(0,0,0,.22))}
+  /* the metal catches the light once, slowly. A pulse says "alert"; one pass
+     every 5.4s says "this is a surface", and it costs no pixels at rest. */
+  .swplate::after{content:"";position:absolute;top:-60%;left:-70%;width:44%;height:220%;
+    transform:rotate(22deg);
+    background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--g) 44%,transparent),
+      rgba(255,255,255,.28),transparent);
+    animation:swglint 5.4s ease-in-out infinite}
+  @keyframes swglint{0%{left:-70%}20%,100%{left:130%}}
+  /* the glint rolls DOWN the stack — 160ms apart, so a guarded column reads as
+     one piece of plating and not three unrelated dice */
+  .swslot:nth-child(2) .swplate::after{animation-delay:.16s}
+  .swslot:nth-child(3) .swplate::after{animation-delay:.32s}
+
+  /* ===== THE EMPTY SEAT. A protected column that is not full still has to say
+     so, and there is no die there to plate — so the seat shows the JOINT the
+     plate will land in: the lit corner bracket top-left, the machined one
+     bottom-right, and nothing in between. ===== */
+  .swjoint{position:absolute;inset:0;border-radius:14px;pointer-events:none;
+    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--g) 7%,transparent)}
+  .swjoint::before,.swjoint::after{content:"";position:absolute;width:15px;height:15px}
+  .swjoint::before{left:0;top:0;border-top-left-radius:14px;
+    border-top:1px solid color-mix(in srgb,var(--g) 44%,transparent);
+    border-left:1px solid color-mix(in srgb,var(--g) 44%,transparent)}
+  .swjoint::after{right:0;bottom:0;border-bottom-right-radius:14px;
+    border-bottom:1px solid rgba(255,255,255,.14);border-right:1px solid rgba(255,255,255,.14)}
+
+  /* ===== THE SEAM. Where two plates butt together, in the 6px gutter the
+     board already has. At rest it is a hairline that ties the stack into one
+     casing; on a hit it is the wire the discharge runs down. ===== */
+  .swseam{position:absolute;left:10px;right:10px;height:1px;pointer-events:none;
+    background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--g) 30%,transparent) 20%,
+      color-mix(in srgb,var(--g) 30%,transparent) 80%,transparent)}
+  .swseam.swa{top:58px}                 /* between rows 1 and 2 */
+  .swseam.swb{top:116px}                /* between rows 2 and 3 */
+
+  /* ===== THE DROP. The die falls exactly as it falls into an unguarded column
+     — a ward eats a STRIKE, it never refuses your own placement, and an
+     animation that stopped or bounced the placing die would teach the wrong
+     rule every single turn. What is new happens AFTER it lands: the plate
+     slides across the settled die behind a travelling glint, and the die is
+     wearing it by the time the hand is back. ===== */
+  .swdrop .swfall{animation:swfall 2.8s cubic-bezier(.3,1.4,.4,1) infinite}
+  @keyframes swfall{0%{transform:translateY(-118px) scale(.86);opacity:0}
+    10%{opacity:1}22%{transform:translateY(0) scale(1.06)}30%{transform:translateY(0) scale(1)}
+    88%{transform:translateY(0) scale(1)}100%{transform:translateY(0) scale(1);opacity:1}}
+  /* the cladding itself: a mask edge walked across the plate, left to right */
+  .swdrop .swnew{-webkit-mask-image:linear-gradient(96deg,#000 0 44%,rgba(0,0,0,.55) 50%,transparent 56%);
+    mask-image:linear-gradient(96deg,#000 0 44%,rgba(0,0,0,.55) 50%,transparent 56%);
+    -webkit-mask-size:230% 100%;mask-size:230% 100%;
+    -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+    animation:swclad 2.8s cubic-bezier(.4,0,.2,1) infinite,swset 2.8s ease-out infinite}
+  @keyframes swclad{0%,22%{-webkit-mask-position:100% 0;mask-position:100% 0}
+    48%,100%{-webkit-mask-position:0 0;mask-position:0 0}}
+  @keyframes swset{0%,44%{filter:none}52%{filter:brightness(1.85)}72%,100%{filter:none}}
+  /* the glint rides the leading edge of the plate — the one frame that says
+     "metal arriving" rather than "something faded in" */
+  .swwipe{position:absolute;top:-8%;bottom:-8%;left:-18%;width:13px;border-radius:8px;opacity:0;
+    transform:rotate(6deg);pointer-events:none;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.92),
+      color-mix(in srgb,var(--g) 85%,transparent),transparent);
+    box-shadow:0 0 14px color-mix(in srgb,var(--g) 65%,transparent)}
+  .swdrop .swwipe{animation:swtrav 2.8s cubic-bezier(.4,0,.2,1) infinite}
+  @keyframes swtrav{0%,22%{opacity:0;left:-18%}26%{opacity:1}
+    48%{left:104%;opacity:1}56%{opacity:0;left:110%}100%{opacity:0;left:110%}}
+
+  /* ===== THE ABSORB. The strike lands on the top plate: it flashes white, the
+     charge runs out along the seams as sparks, and the plate it hit goes DULL
+     — the hue drains out of its rim and only the black shadow side is left.
+     A spent ward is a dead plate, so the charge is legible without a number. */
+  .swhit .swfoe{animation:swbounce 3.2s cubic-bezier(.3,1.5,.4,1) infinite}
+  @keyframes swbounce{0%{transform:translateY(-104px);opacity:0}
+    16%{opacity:1}34%{transform:translateY(-6px)}44%{transform:translateY(-30px)}
+    62%{transform:translateY(-104px);opacity:0}100%{transform:translateY(-104px);opacity:0}}
+  .swhit .swslot:nth-child(1) .swplate{animation:swdull 3.2s ease-out infinite}
+  @keyframes swdull{0%,32%{filter:none;opacity:1}
+    36%{filter:brightness(2.6) saturate(.5);opacity:1}
+    46%{filter:none;opacity:1}
+    56%{filter:grayscale(1) brightness(.8);opacity:.4}
+    93%{filter:grayscale(1) brightness(.8);opacity:.4}
+    100%{filter:none;opacity:1}}
+  .swspk{position:absolute;top:-2px;left:0;width:7px;height:4px;border-radius:3px;opacity:0;
+    pointer-events:none;
+    background:linear-gradient(90deg,transparent,#fff,color-mix(in srgb,var(--g) 92%,transparent));
+    box-shadow:0 0 10px color-mix(in srgb,var(--g) 85%,transparent)}
+  .swhit .swseam{animation:swseamlit 3.2s ease-out infinite}
+  @keyframes swseamlit{0%,32%{filter:none}
+    38%{filter:brightness(2.4) drop-shadow(0 0 6px color-mix(in srgb,var(--g) 80%,transparent))}
+    58%,100%{filter:none}}
+  .swhit .swspk{animation:swrun 3.2s cubic-bezier(.2,.7,.3,1) infinite}
+  .swhit .swrev{animation:swrunb 3.2s cubic-bezier(.2,.7,.3,1) infinite}
+  .swhit .swseam.swb .swspk{animation-delay:.09s}
+  @keyframes swrun{0%,33%{opacity:0;left:0}36%{opacity:1;left:0}
+    52%{opacity:1;left:calc(100% - 7px)}58%{opacity:0;left:calc(100% - 7px)}
+    100%{opacity:0;left:calc(100% - 7px)}}
+  @keyframes swrunb{0%,33%{opacity:0;left:calc(100% - 7px)}37%{opacity:1;left:calc(100% - 7px)}
+    54%{opacity:1;left:0}60%{opacity:0;left:0}100%{opacity:0;left:0}}
+
+  .swlane{position:relative;height:118px;width:100%;display:flex;justify-content:center;
+    align-items:flex-end;pointer-events:none}
+  .swfoe{position:absolute;top:0;opacity:0}
+  .swlbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+    text-align:center;min-height:12px}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">GUARDED COLUMN</span><span class="pad"></span></div>
+  <div class="swwrap" style="--wd:{{shue:ward}}">
+
+    <div class="cap2">Today — a 1px ring and a 12% glow, under a die that already glows</div>
+    <div class="swrow">
+      <div class="swcol">
+        <div class="swstack now">
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:2:p1:52}}</div>
+        </div>
+        <div class="swchip gold">12<i>{{mico:colshield:13}}</i></div>
+        <div class="swlbl">shielded</div>
+      </div>
+      <div class="swcol">
+        <div class="swstack nowward">
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <div class="swslot"></div>
+        </div>
+        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
+        <div class="swlbl">warded</div>
+      </div>
+    </div>
+
+    <div class="cap2">Proposed — the dice are plated: lit rim top-left, shadow rim bottom-right</div>
+    <div class="swrow">
+      <div class="swcol swgold">
+        <div class="swstack">
+          <div class="swslot"><span class="swdie">{{die:5:p1:52}}<i class="swplate"></i></span></div>
+          <div class="swslot"><span class="swdie">{{die:5:p1:52}}<i class="swplate"></i></span></div>
+          <div class="swslot"><span class="swdie">{{die:2:p1:52}}<i class="swplate"></i></span></div>
+          <i class="swseam swa"></i><i class="swseam swb"></i>
+        </div>
+        <div class="swchip gold">12<i>{{mico:colshield:13}}</i></div>
+        <div class="swlbl">shield · gold</div>
+      </div>
+      <div class="swcol swmint">
+        <div class="swstack">
+          <div class="swslot"><span class="swdie">{{die:4:p1:52}}<i class="swplate"></i></span></div>
+          <div class="swslot"><span class="swdie">{{die:1:p1:52}}<i class="swplate"></i></span></div>
+          <div class="swslot"><i class="swjoint"></i></div>
+          <i class="swseam swa"></i><i class="swseam swb"></i>
+        </div>
+        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
+        <div class="swlbl">ward · mint · one empty seat</div>
+      </div>
+    </div>
+
+    <div class="cap2">Your die lands, then a plate slides across it behind the glint</div>
+    <div class="swrow">
+      <div class="swcol swmint swdrop">
+        <div class="swstack">
+          <div class="swslot"><span class="swfall"><span class="swdie">{{die:6:p1:52}}<i class="swplate swnew"></i><i class="swwipe"></i></span></span></div>
+          <div class="swslot"><span class="swdie">{{die:4:p1:52}}<i class="swplate"></i></span></div>
+          <div class="swslot"><span class="swdie">{{die:1:p1:52}}<i class="swplate"></i></span></div>
+          <i class="swseam swa"></i><i class="swseam swb"></i>
+        </div>
+        <div class="swchip mint"><i>{{sico:ward:13}}</i>11</div>
+        <div class="swlbl">drop</div>
+      </div>
+      <div class="swcol swmint swhit">
+        <div class="swlane"><span class="swfoe">{{die:4:p2:52}}</span></div>
+        <div class="swstack">
+          <div class="swslot"><span class="swdie">{{die:4:p1:52}}<i class="swplate"></i></span></div>
+          <div class="swslot"><span class="swdie">{{die:1:p1:52}}<i class="swplate"></i></span></div>
+          <div class="swslot"><i class="swjoint"></i></div>
+          <i class="swseam swa"><b class="swspk"></b><b class="swspk swrev"></b></i>
+          <i class="swseam swb"><b class="swspk"></b></i>
+        </div>
+        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
+        <div class="swlbl">absorb</div>
+      </div>
+    </div>
+
+    <div class="note"><b>What it says:</b> these dice are <b>armoured</b> — the protection is a property of each die, not a box drawn round three of them. Two rims and a slow catch of light do the whole job, and every pixel of it lands <b>inside</b> the die's own footprint: <code>.col.legal</code>'s dashed ring sits at −4px and ROW MULTIPLY's bracket at −3px, and this option never goes out there to argue with either. That also makes it the one of the six that survives landscape unchanged, where the board is transposed and the gutters are the tightest thing on screen. <b>The drop</b> is cladding, not blocking: the die falls and settles exactly as it does into an unguarded column — a ward eats a STRIKE, never your own placement — and only then does the plate walk across it behind a glint. <b>Absorb</b> flashes the struck plate white, runs the discharge out along the seams, and leaves that plate grey; a spent ward is a dead plate, so the charge reads without a number. <b>Cost:</b> this is the <b>quietest</b> option of the six, and quiet is the failure mode being fixed — 1px of hue laid on a die that already has a 1px border in its owner's colour is a small step up from the ring we have, not a large one, and it is the hardest of the six to spot from arm's length or on a 360-wide screen. The gold rim is also the ×2 heat's ink: a shielded column of <code>.m2</code> dice wears gold on gold and the two marks blur. And a ward on an empty column plates nothing at all — three hairline seats is the entire mark, in exactly the state a defensive player casts into.</div>
+  </div>
+</div></div>

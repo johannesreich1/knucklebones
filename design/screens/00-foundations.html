@@ -1,56 +1,113 @@
-<!-- meta name="Foundations" group="0 · Foundations" subtitle="The tokens every screen is built from — straight out of src/styles" width=860 height=560 links="" -->
+<!-- meta name="Foundations" group="0 · Foundations" subtitle="The tokens every screen is built from — straight out of src/styles" width=860 height=960 links="" -->
 <style>
   body{align-items:stretch}
   .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:820px;margin:0 auto;width:100%}
   .fcard{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);
     border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px}
+  /* the palette and the button roster are ROWS, not columns: six hue swatches
+     or six button shapes squeezed into half the grid render as unreadable
+     slivers with wrapped three-line labels */
+  .span2{grid-column:1 / -1}
   .fcap{font-size:9px;letter-spacing:.3em;color:var(--dim);text-transform:uppercase}
   .swatches{display:flex;gap:10px}
-  .sw{flex:1;display:flex;flex-direction:column;gap:6px;align-items:center}
+  .sw{flex:1;display:flex;flex-direction:column;gap:6px;align-items:center;min-width:0}
   .sw i{display:block;width:100%;height:44px;border-radius:10px;border:1px solid rgba(255,255,255,.1)}
-  .sw span{font-size:9px;letter-spacing:.1em;color:var(--dim)}
+  .sw span{font-size:9px;letter-spacing:.1em;color:var(--dim);text-align:center;line-height:1.5}
+  .fline{font-size:11px;line-height:1.6;color:#c6d3ee;letter-spacing:.02em}
+  .fline b{color:var(--p1);font-weight:800}
   .trow{display:flex;flex-direction:column;gap:8px}
+  /* the app's gradient titles (.ov h1, .shead .ttl) read the DUEL PAIR, so they
+     re-colour with the Settings picks. Pinned to --cy/--mg this sample stayed
+     cyan→magenta while every real title moved — the drift is invisible today,
+     because :root still defaults the pair to exactly those two. */
   .t-title{font-size:22px;letter-spacing:.24em;font-weight:900;
-    background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
+    background:linear-gradient(100deg,var(--p1),#fff 50%,var(--p2));
     -webkit-background-clip:text;background-clip:text;color:transparent}
   .t-lbl{font-size:10px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
-  .t-status{font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--cy);text-transform:uppercase}
   .t-num{font-size:20px;font-weight:900;color:var(--gold)}
   .dicerow2{display:flex;gap:14px;align-items:center}
+  .dleg{font-size:10px;line-height:1.6;color:var(--dim);letter-spacing:.06em}
+  .btnrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 </style>
 <div class="fgrid">
-  <div class="fcard">
-    <div class="fcap">Palette — player identity is the brand</div>
+  <div class="fcard span2">
+    <div class="fcap">Palette — RAW HUES, then the duel pair the player picks</div>
+    <!-- every swatch paints a TOKEN, never its hex. The six values used to be
+         transcribed here, which is a second copy of :root that goes stale in
+         silence; painted as var() they re-skin on the next build. -->
     <div class="swatches">
-      <div class="sw"><i style="background:#05060e"></i><span>bg</span></div>
-      <div class="sw"><i style="background:#28e8ff"></i><span>you · cyan</span></div>
-      <div class="sw"><i style="background:#ff2fa0"></i><span>them · magenta</span></div>
-      <div class="sw"><i style="background:#ffd166"></i><span>scoring · gold</span></div>
-      <div class="sw"><i style="background:#e9f1ff"></i><span>text</span></div>
-      <div class="sw"><i style="background:#7c88a8"></i><span>dim</span></div>
+      <div class="sw"><i style="background:var(--cy)"></i><span>--cy<br>cyan · --p1 default</span></div>
+      <div class="sw"><i style="background:var(--mg)"></i><span>--mg<br>magenta · --p2 default</span></div>
+      <div class="sw"><i style="background:var(--gold)"></i><span>--gold</span></div>
+      <div class="sw"><i style="background:var(--green)"></i><span>--green</span></div>
+      <div class="sw"><i style="background:var(--violet)"></i><span>--violet</span></div>
+      <div class="sw"><i style="background:var(--orange)"></i><span>--orange</span></div>
     </div>
+    <div class="fline">Settings picks any two of those six — they are the <b>DUELHUES</b> roster
+      (state.ts), offered by the two pickers. <b>--p1</b> and <b>--p2</b> point at whatever was
+      picked, and every player-facing colour reads the pair, never the raw hue. Fixed accents that
+      must not change clothes with the palette — danger pink, avatar hues — keep reading raw.</div>
+    <div class="swatches">
+      <div class="sw"><i style="background:var(--bg)"></i><span>--bg</span></div>
+      <div class="sw"><i style="background:var(--txt)"></i><span>--txt · text</span></div>
+      <div class="sw"><i style="background:var(--dim)"></i><span>--dim</span></div>
+      <div class="sw"><i style="background:var(--mx2)"></i><span>--mx2<br>×2 heat</span></div>
+      <div class="sw"><i style="background:var(--mx3)"></i><span>--mx3<br>×3 heat</span></div>
+      <div class="sw"><i style="background:var(--ice)"></i><span>--ice<br>×2 fallback</span></div>
+      <div class="sw"><i style="background:var(--red)"></i><span>--red<br>×3 fallback</span></div>
+    </div>
+    <div class="fline">The heats are per SIDE: only the side whose player wears gold or orange loses
+      that heat to its fallback, so a doubled die can never pass for their plain one. The fallbacks
+      sit outside the DUELHUES roster on purpose — they can never collide with a pick.</div>
   </div>
   <div class="fcard">
     <div class="fcap">Type — ui-rounded, uppercase, letterspaced</div>
     <div class="trow">
       <span class="t-title">KNUCKLEBONES</span>
       <span class="t-lbl">Section label · 0.24em tracking</span>
-      <span class="t-status">Status line · your move</span>
+      <!-- the app's own .status.me, worn rather than re-typed: the card used to
+           carry a byte-for-byte copy that pinned the colour to --cy and dropped
+           the glow. Only the centring is overridden, so it aligns with the
+           samples above it. -->
+      <span class="status me" style="text-align:left">Status line · your move</span>
       <span class="t-num">1032 <span style="font-size:10px;color:var(--dim)">numerals are gold when they score</span></span>
     </div>
   </div>
   <div class="fcard">
-    <div class="fcap">Dice — cyan is always you, magenta always them</div>
-    <div class="dicerow2 dice-static">
-      {{die:5:p1:56}}
-      {{die:3:p2:56}}
-      {{die:4:gold:56}}
-      <span style="font-size:10px;color:var(--dim);letter-spacing:.1em">gold border = multiplied stack</span>
+    <div class="fcap">Dice — --p1 is always you, --p2 always them</div>
+    <div class="dicerow2">
+      <!-- .dice-static kills every die animation for the screenshot (build.mjs
+           chrome), and a ×3's hot pulse is the whole point of it — so the ×3
+           sits OUTSIDE that wrapper and keeps moving. -->
+      <span class="dice-static" style="display:contents">
+        {{die:5:p1:56}}
+        {{die:3:p2:56}}
+        {{die:4:gold:56}}
+      </span>
+      {{die:4:m3:56}}
     </div>
+    <div class="dleg">gold border = a ×2 stack; a ×3 wears hot orange and pulses.
+      Colour blind mode pins the pair to cyan vs gold.</div>
   </div>
-  <div class="fcard">
-    <div class="fcap">Buttons</div>
-    <button class="btn primary" style="min-width:0">Play ranked match</button>
-    <button class="btn" style="min-width:0">Secondary</button>
+  <div class="fcard span2">
+    <div class="fcap">Buttons — every shape main.css ships, in the app's own classes</div>
+    <div class="btnrow">
+      <button class="btn primary" style="min-width:0">Play ranked match</button>
+      <button class="btn" style="min-width:0">Secondary</button>
+      <button class="btn small" style="min-width:0">Home</button>
+      <button class="btn soft small" style="min-width:0">Quit game</button>
+      <button class="btn ghost" style="min-width:0">I already have an account</button>
+      <button class="linkbtn">Impressum</button>
+    </div>
+    <!-- .danger is SCOPED (main.css: .askcard .btn.danger): a bare
+         <button class="btn danger"> renders as an ordinary button, so a swatch
+         standing on its own would show the wrong thing. It appears in its real
+         container, where the pairing rule is visible too — the encouraged
+         answer leads at full size, the destructive one trails small and quiet. -->
+    <div class="askcard" style="max-width:400px">
+      <div class="fh">Delete your account?</div>
+      <button class="btn primary">Keep my account</button>
+      <button class="btn soft small danger">Delete everything</button>
+    </div>
   </div>
 </div>

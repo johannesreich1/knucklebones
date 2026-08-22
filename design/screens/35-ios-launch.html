@@ -1,4 +1,4 @@
-<!-- meta name="iOS launch" group="3c · Loading studies" subtitle="The launch screen is static by platform law, so it is the app's first frame: the icon's die alone on the night — and the moment the webview boots, the boot loader draws its die where this one stands. The launch die wakes up; it never blinks away" width=412 height=900 links="Home" -->
+<!-- meta name="iOS launch" group="3c · Loading" subtitle="The launch screen is static by platform law, so it is the app's first frame: the icon's die alone on the night — and the same #05060e under everything that follows it, so nothing between the storyboard and Home ever flashes white" width=412 height=981 links="Home" -->
 <style>
   .ldwrap{display:flex;flex-direction:column;align-items:center;gap:22px;margin:auto 0;padding:10px 0}
   .ldcap{font-size:9.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;text-align:center}
@@ -32,9 +32,12 @@
     border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center}
   .ldbeat .d{width:16px;height:16px;border-radius:4px;border:1px solid var(--cy);
     box-shadow:0 0 6px rgba(40,232,255,.4)}
-  .ldbeat:nth-child(2) .d{animation:ldwake 1.28s ease-in-out infinite}
-  @keyframes ldwake{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
-  .ldbeat:nth-child(3) .mini{border-color:rgba(40,232,255,.35)}
+  /* beat 3 is the only one showing the APP: its mini holds Home's own two dice
+     (the token, so they are the real component), which is why it needs a gap
+     the single-mark minis do not. Beat 2 used to wobble its mark — the launch
+     die "waking into the loader" — but nothing draws a loader at boot, so the
+     animation illustrated a handoff that never happens. */
+  .ldbeat .mini.pair{gap:5px;border-color:rgba(40,232,255,.35)}
   .ldnote{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;
     text-align:center;opacity:.8;max-width:352px}
 </style>
@@ -48,10 +51,10 @@
       <div class="ldbeat"><span class="n">1</span><div class="mini"><div class="d"></div></div>
         <span class="t">Storyboard — static, before any code runs</span></div>
       <div class="ldbeat"><span class="n">2</span><div class="mini"><div class="d"></div></div>
-        <span class="t">Webview boots on the same night — the die wakes into the loader</span></div>
-      <div class="ldbeat"><span class="n">3</span><div class="mini"><div class="d"></div></div>
-        <span class="t">Home fades in under it</span></div>
+        <span class="t">Webview boots on the same night — #05060e under both</span></div>
+      <div class="ldbeat"><span class="n">3</span><div class="mini pair dice-static">{{die:5:p1:15}}{{die:3:p2:15}}</div>
+        <span class="t">Home is simply there — its own dice, no frame between them</span></div>
     </div>
-    <div class="ldnote">Generated from the app icon's own vector (tools/splash.mjs) · ground #05060e everywhere, so no frame ever flashes white</div>
+    <div class="ldnote">Generated from the app icon's own vector (tools/splash.mjs) · ground #05060e everywhere — capacitor.config backgroundColor, index.html theme-color, main.css --bg — so no frame ever flashes white</div>
   </div>
 </div></div>

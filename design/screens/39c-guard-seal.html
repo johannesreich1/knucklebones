@@ -1,0 +1,299 @@
+<!-- meta name="W3 — Runic seal" group="3g · Shield & ward studies" subtitle="The protection is a LINE, not a wash: a dashed seal that crawls around the column with one tick per protected row — it accelerates a full lap when your die lands, and on a hit the ticks burn out from the point of impact, after which a shield redraws itself and a ward stays broken open" width=430 height=1505 sizes="md" links="Match, Game modes, Spells" -->
+<style>
+  /* Card-local names only (sw*). The app pins .col/.slot/.chip/.pip with
+     position and height, so a card that redeclares them loses silently —
+     design/build.mjs fails the build for exactly that. Dice come from the
+     die token, the rune and shield from the app's own icon registries.
+     Same board, same beats and the same class scaffold as 39a, so the six
+     studies can be read against each other; only the mechanism differs. */
+  .scr{gap:10px}
+  .swwrap{display:flex;flex-direction:column;align-items:center;gap:13px;margin:auto 0;width:100%}
+
+  .swrow{display:flex;align-items:flex-start;justify-content:center;gap:14px}
+  .swcol{--cell:52px;--gap:6px;display:flex;flex-direction:column;align-items:center;gap:7px}
+  .swstack{display:grid;grid-template-rows:repeat(3,var(--cell));gap:var(--gap);
+    position:relative;border-radius:16px;padding:3px}
+  .swslot{width:var(--cell);height:var(--cell);border-radius:14px;
+    background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05);display:grid;place-items:center;position:relative}
+  /* the column chip, restated at card scale — the app's .chip is guarded */
+  .swchip{height:20px;min-width:52px;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;gap:4px;font-size:12px;font-weight:800;color:var(--dim);
+    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);position:relative;
+    padding:0 6px;font-variant-numeric:tabular-nums}
+  .swchip i{line-height:0;display:flex}
+  .swchip.gold{color:var(--mx2,var(--gold));border-color:rgba(var(--mx2-rgb,var(--gold-rgb)),.3);
+    background:rgba(var(--mx2-rgb,var(--gold-rgb)),.09)}
+  .swchip.mint{color:var(--wd);border-color:color-mix(in srgb,var(--wd) 30%,transparent);
+    background:color-mix(in srgb,var(--wd) 9%,transparent)}
+
+  /* ===== TODAY, for comparison: a 1px inset ring at 35% and a 14px glow at
+     12%. On a die that already carries a border and a coloured bloom it is
+     below the noise floor — which is the whole reason for this study. ===== */
+  .swstack.now{box-shadow:inset 0 0 0 1px rgba(var(--mx2-rgb,var(--gold-rgb)),.35),
+    0 0 14px rgba(var(--mx2-rgb,var(--gold-rgb)),.12)}
+  .swstack.nowward{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wd) 40%,transparent),
+    0 0 14px color-mix(in srgb,var(--wd) 14%,transparent)}
+
+  /* ===== THE SEAL. One stroke, drawn OUTSIDE the slots (the path sits 3px
+     clear of the stack, 6px clear of any die), so it adds nothing on top of
+     the faces — no tint, no fill, no contrast lost. It survives next to a die
+     that already glows for a different reason than the pane does: it MOVES.
+     A 12% glow is invisible on a lit board; a dash that crawls is not.
+
+     The outline is cut into TWO paths that meet at the top-centre — the point
+     a strike arrives from. pathLength declares each one's share of a 480-unit
+     perimeter (448 + 32), both exact multiples of the 16-unit dash period, so
+     the dash phase carries across the joint and the whole seal reads as one
+     continuous line. That split is what lets the top BREAK later. ===== */
+  .swseal{position:absolute;inset:-7px;width:72px;height:188px;overflow:visible;
+    pointer-events:none;
+    filter:drop-shadow(0 0 4px color-mix(in srgb,var(--g) 45%,transparent)) brightness(1)}
+  .swrun{fill:none;stroke:color-mix(in srgb,var(--g) 90%,transparent);stroke-width:1.7;
+    stroke-linecap:round;stroke-dasharray:10 6;animation:swtrace .8s linear infinite}
+  /* 16 units per .8s = one dash period: the loop is seamless and the crawl
+     is ~20 units/s, slow enough to read as a drawn mark rather than a spinner */
+  @keyframes swtrace{to{stroke-dashoffset:-16}}
+  /* the ticks: one per PROTECTED ROW, on both rails, so a full shield is
+     three-of-three at a glance and a partial one could never be mistaken */
+  .swtk{fill:none;stroke:color-mix(in srgb,var(--g) 92%,transparent);stroke-width:2.4;
+    stroke-linecap:round;opacity:.6;animation:swglint 3.2s ease-in-out infinite}
+  @keyframes swglint{0%,62%,100%{opacity:.5}74%{opacity:1}}
+  .swt2{animation-delay:.16s}
+  .swt3{animation-delay:.32s}
+  /* the redraw head, dark until a shield rebuilds itself (beat 4) */
+  .swhead{fill:none;stroke:color-mix(in srgb,var(--g) 100%,transparent);stroke-width:2.2;
+    stroke-linecap:round;stroke-dasharray:480;stroke-dashoffset:480;opacity:0;
+    filter:drop-shadow(0 0 6px color-mix(in srgb,var(--g) 80%,transparent))}
+
+  .swgold{--g:var(--mx2,var(--gold))}
+  .swmint{--g:var(--wd)}
+
+  /* ===== THE DROP. The die falls and the trace ANSWERS: one full lap at
+     speed, then it settles back into its crawl. The die is not stopped, not
+     bounced, not delayed — a ward absorbs a strike and never refuses your own
+     placement, so anything that interrupts the drop teaches the wrong rule.
+     The lap is 480 units inside a 528-unit cycle (33 dash periods), so the
+     animation still loops seamlessly at the end of it. ===== */
+  .swfall{display:block;animation:swfall 2.8s cubic-bezier(.3,1.4,.4,1) infinite}
+  @keyframes swfall{0%{transform:translateY(-118px) scale(.86);opacity:0}
+    10%{opacity:1}22%{transform:translateY(0) scale(1.06)}30%{transform:translateY(0) scale(1)}
+    100%{transform:translateY(0) scale(1);opacity:1}}
+  .swdrop .swrun{animation:swlap 2.8s linear infinite}
+  @keyframes swlap{0%{stroke-dashoffset:0}
+    21%{stroke-dashoffset:-11;animation-timing-function:cubic-bezier(.45,0,.2,1)}
+    44%{stroke-dashoffset:-491}
+    100%{stroke-dashoffset:-528}}
+  .swdrop .swseal{animation:swlit 2.8s ease-out infinite}
+  @keyframes swlit{0%,20%{filter:drop-shadow(0 0 4px color-mix(in srgb,var(--g) 45%,transparent)) brightness(1)}
+    27%{filter:drop-shadow(0 0 13px color-mix(in srgb,var(--g) 85%,transparent)) brightness(1.35)}
+    62%,100%{filter:drop-shadow(0 0 4px color-mix(in srgb,var(--g) 45%,transparent)) brightness(1)}}
+  /* the ticks wake as the lap sweeps past them, top to bottom */
+  .swdrop .swtk{animation:swwake 2.8s ease-out infinite}
+  @keyframes swwake{0%,20%{opacity:.5;stroke-width:2.4}
+    28%{opacity:1;stroke-width:3.7}
+    48%{opacity:.5;stroke-width:2.4}
+    100%{opacity:.5;stroke-width:2.4}}
+  .swdrop .swt2{animation-delay:.07s}
+  .swdrop .swt3{animation-delay:.14s}
+
+  /* ===== THE ABSORB. The strike lands on the seal, the ticks burn out one at
+     a time from the point of impact, and the line gutters like a fuse that
+     lost its air. What happens NEXT is the whole argument of this study:
+     a COLUMN SHIELD is permanent, so the seal redraws itself from the break;
+     a WARD spent its one charge, so the seal stays open and the rune goes
+     out. Same mechanism, two rules, no legend needed. ===== */
+  .swhit .swfoe{animation:swbounce 3.2s cubic-bezier(.3,1.5,.4,1) infinite}
+  @keyframes swbounce{0%{transform:translateY(-104px);opacity:0}
+    16%{opacity:1}34%{transform:translateY(-4px)}44%{transform:translateY(-30px)}
+    62%{transform:translateY(-104px);opacity:0}100%{transform:translateY(-104px);opacity:0}}
+  .swhit .swseal{animation:swstruck 3.2s ease-out infinite}
+  @keyframes swstruck{0%,32%{filter:drop-shadow(0 0 4px color-mix(in srgb,var(--g) 45%,transparent)) brightness(1)}
+    36%{filter:drop-shadow(0 0 15px color-mix(in srgb,var(--g) 95%,transparent)) brightness(1.5)}
+    60%,100%{filter:drop-shadow(0 0 4px color-mix(in srgb,var(--g) 45%,transparent)) brightness(1)}}
+  /* 64 units across 3.2s = 4 dash periods: the gutter stutters the crawl
+     without ever breaking the loop */
+  .swhit .swrun{animation:swflick 3.2s linear infinite}
+  @keyframes swflick{0%{stroke-dashoffset:0;opacity:1}
+    32%{stroke-dashoffset:-20;opacity:1}
+    36%{stroke-dashoffset:-23;opacity:1}
+    42%{stroke-dashoffset:-27;opacity:.22}
+    48%{stroke-dashoffset:-31;opacity:.55}
+    54%{stroke-dashoffset:-35;opacity:.1}
+    62%{stroke-dashoffset:-40;opacity:.1}
+    84%{stroke-dashoffset:-54;opacity:1}
+    100%{stroke-dashoffset:-64;opacity:1}}
+  .swhit .swtk{animation:swburn 3.2s ease-out infinite}
+  @keyframes swburn{0%,32%{opacity:.6;stroke-width:2.4}
+    36%{opacity:1;stroke-width:4.4}
+    45%{opacity:.05;stroke-width:2.4}
+    76%{opacity:.05;stroke-width:2.4}
+    85%{opacity:1;stroke-width:3.4}
+    93%,100%{opacity:.6;stroke-width:2.4}}
+  .swhit .swt2{animation-delay:.13s}
+  .swhit .swt3{animation-delay:.26s}
+  /* SHIELD: the head runs the outline once, starting from the break — the
+     seal is not switched back on, it is drawn back on */
+  .swredraw .swhead{animation:swdraw 3.2s ease-in-out infinite}
+  @keyframes swdraw{0%,58%{stroke-dashoffset:480;opacity:0}
+    62%{stroke-dashoffset:436;opacity:1}
+    86%{stroke-dashoffset:0;opacity:1}
+    94%,100%{stroke-dashoffset:0;opacity:0}}
+
+  /* WARD: rules AFTER .swhit so they win at equal specificity — the ward
+     column wears both classes because the strike itself is identical. */
+  .swbreak .swrun{animation:swspend 3.2s linear infinite}
+  @keyframes swspend{0%{stroke-dashoffset:0;opacity:1}
+    32%{stroke-dashoffset:-20;opacity:1}
+    36%{stroke-dashoffset:-23;opacity:1}
+    44%{stroke-dashoffset:-29;opacity:.3}
+    50%{stroke-dashoffset:-33;opacity:.6}
+    58%{stroke-dashoffset:-40;opacity:.14}
+    70%{stroke-dashoffset:-48;opacity:.4}
+    76%,100%{stroke-dashoffset:-48;opacity:.4}}
+  /* the top bridge lifts away and does not come back: the seal is OPEN */
+  .swbreak .swrun.swbridge{animation:swopen 3.2s ease-out infinite}
+  @keyframes swopen{0%{opacity:1;stroke-dashoffset:0;transform:translateY(0)}
+    32%{opacity:1;stroke-dashoffset:-20;transform:translateY(0)}
+    36%{opacity:1;stroke-dashoffset:-23;transform:translateY(0)}
+    47%{opacity:0;stroke-dashoffset:-31;transform:translateY(-5px)}
+    100%{opacity:0;stroke-dashoffset:-31;transform:translateY(-5px)}}
+  .swbreak .swtk{animation:swburnout 3.2s ease-out infinite}
+  @keyframes swburnout{0%,32%{opacity:.6;stroke-width:2.4}
+    36%{opacity:1;stroke-width:4.4}
+    47%{opacity:.05;stroke-width:2.4}
+    100%{opacity:.05;stroke-width:2.4}}
+  /* and the mark burns: the chip loses its rune, as it does in the app */
+  .swbreak .swchip i{animation:swspent 3.2s ease-out infinite}
+  @keyframes swspent{0%,42%{opacity:1}56%{opacity:.16}100%{opacity:.16}}
+
+  .swlane{position:relative;height:118px;width:100%;display:flex;justify-content:center;
+    align-items:flex-end;pointer-events:none}
+  .swfoe{position:absolute;top:0;opacity:0}
+  .swlbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+    text-align:center;min-height:12px}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">GUARDED COLUMN</span><span class="pad"></span></div>
+  <div class="swwrap" style="--wd:{{shue:ward}}">
+
+    <div class="cap2">Today — a 1px ring and a 12% glow, under a die that already glows</div>
+    <div class="swrow">
+      <div class="swcol">
+        <div class="swstack now">
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:2:p1:52}}</div>
+        </div>
+        <div class="swchip gold">12<i>{{mico:colshield:13}}</i></div>
+        <div class="swlbl">shielded</div>
+      </div>
+      <div class="swcol">
+        <div class="swstack nowward">
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <div class="swslot"></div>
+        </div>
+        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
+        <div class="swlbl">warded</div>
+      </div>
+    </div>
+
+    <div class="cap2">Proposed — one traced line, crawling, with a tick per protected row</div>
+    <div class="swrow">
+      <div class="swcol swgold">
+        <div class="swstack">
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:2:p1:52}}</div>
+          <svg class="swseal" viewBox="0 0 72 188" width="72" height="188" aria-hidden="true">
+            <path class="swrun swarc" pathLength="448" d="M51 4a17 17 0 0 1 17 17v146a17 17 0 0 1-17 17H21a17 17 0 0 1-17-17V21a17 17 0 0 1 17-17"/>
+            <path class="swrun swbridge" pathLength="32" d="M21 4h30"/>
+            <path class="swhead" pathLength="480" d="M21 4h30a17 17 0 0 1 17 17v146a17 17 0 0 1-17 17H21a17 17 0 0 1-17-17V21a17 17 0 0 1 17-17Z"/>
+            <g class="swtk swt1"><path d="M1 36h6"/><path d="M65 36h6"/></g>
+            <g class="swtk swt2"><path d="M1 94h6"/><path d="M65 94h6"/></g>
+            <g class="swtk swt3"><path d="M1 152h6"/><path d="M65 152h6"/></g>
+          </svg>
+        </div>
+        <div class="swchip gold">12<i>{{mico:colshield:13}}</i></div>
+        <div class="swlbl">shield · gold</div>
+      </div>
+      <div class="swcol swmint">
+        <div class="swstack">
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <div class="swslot"></div>
+          <svg class="swseal" viewBox="0 0 72 188" width="72" height="188" aria-hidden="true">
+            <path class="swrun swarc" pathLength="448" d="M51 4a17 17 0 0 1 17 17v146a17 17 0 0 1-17 17H21a17 17 0 0 1-17-17V21a17 17 0 0 1 17-17"/>
+            <path class="swrun swbridge" pathLength="32" d="M21 4h30"/>
+            <path class="swhead" pathLength="480" d="M21 4h30a17 17 0 0 1 17 17v146a17 17 0 0 1-17 17H21a17 17 0 0 1-17-17V21a17 17 0 0 1 17-17Z"/>
+            <g class="swtk swt1"><path d="M1 36h6"/><path d="M65 36h6"/></g>
+            <g class="swtk swt2"><path d="M1 94h6"/><path d="M65 94h6"/></g>
+            <g class="swtk swt3"><path d="M1 152h6"/><path d="M65 152h6"/></g>
+          </svg>
+        </div>
+        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
+        <div class="swlbl">ward · mint</div>
+      </div>
+    </div>
+
+    <div class="cap2">Your die lands: one fast lap. A strike lands: the ticks burn from the impact</div>
+    <div class="swrow">
+      <div class="swcol swmint swdrop">
+        <div class="swstack">
+          <div class="swslot"><span class="swfall">{{die:6:p1:52}}</span></div>
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <svg class="swseal" viewBox="0 0 72 188" width="72" height="188" aria-hidden="true">
+            <path class="swrun swarc" pathLength="448" d="M51 4a17 17 0 0 1 17 17v146a17 17 0 0 1-17 17H21a17 17 0 0 1-17-17V21a17 17 0 0 1 17-17"/>
+            <path class="swrun swbridge" pathLength="32" d="M21 4h30"/>
+            <path class="swhead" pathLength="480" d="M21 4h30a17 17 0 0 1 17 17v146a17 17 0 0 1-17 17H21a17 17 0 0 1-17-17V21a17 17 0 0 1 17-17Z"/>
+            <g class="swtk swt1"><path d="M1 36h6"/><path d="M65 36h6"/></g>
+            <g class="swtk swt2"><path d="M1 94h6"/><path d="M65 94h6"/></g>
+            <g class="swtk swt3"><path d="M1 152h6"/><path d="M65 152h6"/></g>
+          </svg>
+        </div>
+        <div class="swchip mint"><i>{{sico:ward:13}}</i>11</div>
+        <div class="swlbl">drop</div>
+      </div>
+      <div class="swcol swmint swhit swbreak">
+        <div class="swlane"><span class="swfoe">{{die:4:p2:52}}</span></div>
+        <div class="swstack">
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <div class="swslot"></div>
+          <svg class="swseal" viewBox="0 0 72 188" width="72" height="188" aria-hidden="true">
+            <path class="swrun swarc" pathLength="448" d="M51 4a17 17 0 0 1 17 17v146a17 17 0 0 1-17 17H21a17 17 0 0 1-17-17V21a17 17 0 0 1 17-17"/>
+            <path class="swrun swbridge" pathLength="32" d="M21 4h30"/>
+            <path class="swhead" pathLength="480" d="M21 4h30a17 17 0 0 1 17 17v146a17 17 0 0 1-17 17H21a17 17 0 0 1-17-17V21a17 17 0 0 1 17-17Z"/>
+            <g class="swtk swt1"><path d="M1 36h6"/><path d="M65 36h6"/></g>
+            <g class="swtk swt2"><path d="M1 94h6"/><path d="M65 94h6"/></g>
+            <g class="swtk swt3"><path d="M1 152h6"/><path d="M65 152h6"/></g>
+          </svg>
+        </div>
+        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
+        <div class="swlbl">ward · spent</div>
+      </div>
+      <div class="swcol swgold swhit swredraw">
+        <div class="swlane"><span class="swfoe">{{die:4:p2:52}}</span></div>
+        <div class="swstack">
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:2:p1:52}}</div>
+          <svg class="swseal" viewBox="0 0 72 188" width="72" height="188" aria-hidden="true">
+            <path class="swrun swarc" pathLength="448" d="M51 4a17 17 0 0 1 17 17v146a17 17 0 0 1-17 17H21a17 17 0 0 1-17-17V21a17 17 0 0 1 17-17"/>
+            <path class="swrun swbridge" pathLength="32" d="M21 4h30"/>
+            <path class="swhead" pathLength="480" d="M21 4h30a17 17 0 0 1 17 17v146a17 17 0 0 1-17 17H21a17 17 0 0 1-17-17V21a17 17 0 0 1 17-17Z"/>
+            <g class="swtk swt1"><path d="M1 36h6"/><path d="M65 36h6"/></g>
+            <g class="swtk swt2"><path d="M1 94h6"/><path d="M65 94h6"/></g>
+            <g class="swtk swt3"><path d="M1 152h6"/><path d="M65 152h6"/></g>
+          </svg>
+        </div>
+        <div class="swchip gold">12<i>{{mico:colshield:13}}</i></div>
+        <div class="swlbl">shield · redrawn</div>
+      </div>
+    </div>
+
+    <div class="note"><b>What it says:</b> the column is <b>sealed</b> — a mark drawn around it, not a wash laid over it. The stroke sits outside the slots, so it costs the dice nothing: no tint, no lost pip contrast. It beats today's ring for the opposite reason a glow would — it <b>moves</b>. A 12% halo is invisible on a lit board; a dash that crawls is not, even at 1.7px. The <b>ticks</b> carry the count: one per protected row, so a full shield reads as three-of-three without a number. <b>The drop</b> runs one fast lap and settles — your die is never stopped, because a ward eats a STRIKE, not your placement. <b>The absorb</b> is the argument: the ticks burn out from the point of impact and the line gutters, and then the shield <b>redraws itself</b> from the break while the ward <b>stays open</b> and its rune goes out. One mechanism, two rules, no legend. <b>Cost:</b> it is the thinnest proposal of the six and the first to lose — to a small phone, a bright room, or a busy board behind it; the crawl reads as "loading" if it is ever run faster than this; and it is the only one that animates for the entire match, so with REDUCED motion it collapses to a static dashed ring and gives back most of what it was for.</div>
+  </div>
+</div></div>

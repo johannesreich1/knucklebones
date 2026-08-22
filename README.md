@@ -147,11 +147,37 @@ URL to click (`node tests/serve.mjs [port]`, default 8123).
 ## Design system
 
 `design/screens/*.html` holds every screen as a hand-written card body;
-`node design/build.mjs` inlines the app's **real** CSS, expands
-`{{die:V:p1|p2|gold:size}}` placeholders into genuine die markup, emits each
+`node design/build.mjs` inlines the app's **real** CSS, expands the `{{…}}`
+tokens into genuine markup — dice, mode and rune icons, the loading die, the
+reveal's versus line, whole rosters — by importing `src/` itself, emits each
 card at four device sizes (small phone / standard / pro-max / tablet) and
 writes the `_ds_manifest.json` that the Claude Design pane reads. The pane
 renders only what the manifest lists — always let the builder regenerate it.
+The token table lives at the top of `design/build.mjs`; a card that hand-draws
+something a token can render is a second implementation, and it will drift.
+
+`design/dist/` is generated and gitignored. The builder PRUNES it: a card
+deleted from `design/screens/` loses its four built files and its four
+manifest entries on the next build, so the manifest is always a statement
+about what the repo holds right now.
+
+### Syncing to Claude Design
+
+The cards live in the Claude Design project **Knucklebones**. Syncing needs
+the `DesignSync` tool, which needs a claude.ai design authorization — so it
+runs from a session with an interactive terminal (`/design-login`), never from
+a cloud session, which has none.
+
+1. `node design/build.mjs` — never sync a stale `design/dist/`.
+2. `DesignSync list_projects` → the project's id; `list_files` → what is up
+   there now.
+3. **Deletes are computed, not remembered**: every remote `screens/*.html`
+   the fresh `design/dist/` no longer contains. A retired study card has four
+   remote files (one per device size), and nothing else knows they are gone.
+4. `finalize_plan` with `localDir` = `design/dist`, `writes` =
+   `["screens/**", "_ds_manifest.json"]`, and those deletes.
+5. `write_files` using `localPath` (never inline `data` — the bundle is large),
+   then `delete_files`; both take at most 256 paths per call.
 
 ## Things to know before touching certain code
 

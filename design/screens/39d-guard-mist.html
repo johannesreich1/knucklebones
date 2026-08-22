@@ -1,0 +1,281 @@
+<!-- meta name="W4 — Ward mist" group="3g · Shield & ward studies" subtitle="The column is FILLED, not outlined: a volume of the protection's hue pooled at the floor and thinning upward, with slow motes drifting in it — a die parts the mist on the way down and it folds back in behind, and an absorbed strike leaves visibly LESS mist" width=430 height=1600 sizes="md" links="Match, Game modes, Spells" -->
+<style>
+  /* Card-local names only (sw*). The app pins .col/.slot/.chip/.pip with
+     position and height, so a card that redeclares them loses silently —
+     design/build.mjs fails the build for exactly that. Dice come from the
+     die token, the rune and shield from the app's own icon registries.
+     Scaffold, class names and beat order are W1's (39a) on purpose: same
+     board, same four beats, different mechanism, so the set compares. */
+  .scr{gap:10px}
+  .swwrap{display:flex;flex-direction:column;align-items:center;gap:13px;margin:auto 0;width:100%}
+
+  .swrow{display:flex;align-items:flex-start;justify-content:center;gap:14px}
+  .swcol{--cell:52px;--gap:6px;display:flex;flex-direction:column;align-items:center;gap:7px}
+  .swstack{display:grid;grid-template-rows:repeat(3,var(--cell));gap:var(--gap);
+    position:relative;border-radius:16px;padding:3px}
+  /* the one scaffold change this mechanism needs: the slots are LIFTED out of
+     the default paint order, because half the mist is meant to sit behind the
+     dice and half in front of them. That split is what makes it a volume and
+     not a wash — see .swmist (z 0) and .swhaze (z 3). */
+  .swslot{width:var(--cell);height:var(--cell);border-radius:14px;z-index:1;
+    background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05);display:grid;place-items:center;position:relative}
+  /* the column chip, restated at card scale — the app's .chip is guarded */
+  .swchip{height:20px;min-width:52px;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;gap:4px;font-size:12px;font-weight:800;color:var(--dim);
+    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);position:relative;
+    padding:0 6px;font-variant-numeric:tabular-nums}
+  .swchip i{line-height:0;display:flex}
+  .swchip.gold{color:var(--mx2,var(--gold));border-color:rgba(var(--mx2-rgb,var(--gold-rgb)),.3);
+    background:rgba(var(--mx2-rgb,var(--gold-rgb)),.09)}
+  .swchip.mint{color:var(--wd);border-color:color-mix(in srgb,var(--wd) 30%,transparent);
+    background:color-mix(in srgb,var(--wd) 9%,transparent)}
+
+  /* ===== TODAY, for comparison: a 1px inset ring at 35% and a 14px glow at
+     12%. On a die that already carries a border and a coloured bloom it is
+     below the noise floor — which is the whole reason for this study. ===== */
+  .swstack.now{box-shadow:inset 0 0 0 1px rgba(var(--mx2-rgb,var(--gold-rgb)),.35),
+    0 0 14px rgba(var(--mx2-rgb,var(--gold-rgb)),.12)}
+  .swstack.nowward{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wd) 40%,transparent),
+    0 0 14px color-mix(in srgb,var(--wd) 14%,transparent)}
+
+  /* ===== THE MIST. Not an edge anywhere: the column is FULL of the hue.
+     Three pieces, and the split between them is the whole trick —
+
+       .swmist   the body, BEHIND the dice. It can run hot (30% at the pool,
+                 a 26px bloom) precisely because the dice cover most of it;
+                 what the player sees of it is the gutters, the gaps between
+                 slots and the halo around the column.
+       .swhaze   the veil, IN FRONT of the dice, ramping 0% at the ceiling to
+                 15% at the floor. This is the layer that costs pip contrast,
+                 so it is the layer kept thin — it exists only to put the dice
+                 INSIDE the volume instead of beside it.
+       .swfloor  the pool the mist is densest in, licking the bottom die.
+
+     Densest at the floor, thinning upward, because a column fills from the
+     bottom: the protection is deepest where the dice already are. ===== */
+  .swmist{position:absolute;inset:-8px;border-radius:22px;pointer-events:none;overflow:hidden;z-index:0;
+    background:
+      radial-gradient(120% 62% at 50% 104%, color-mix(in srgb,var(--g) 30%,transparent), transparent 72%),
+      radial-gradient(150% 46% at 42% 74%, color-mix(in srgb,var(--g) 13%,transparent), transparent 74%),
+      linear-gradient(180deg, transparent 6%,
+        color-mix(in srgb,var(--g) 5%,transparent) 44%,
+        color-mix(in srgb,var(--g) 13%,transparent) 100%);
+    box-shadow:0 0 26px color-mix(in srgb,var(--g) 18%,transparent);
+    animation:swbreathe 5.4s ease-in-out infinite}
+  /* two slow churn blobs, 17s and 23s and out of phase, so the volume is never
+     the same shape twice and never fast enough to be a pulse */
+  .swmist::before,.swmist::after{content:"";position:absolute;border-radius:50%;
+    background:radial-gradient(closest-side,color-mix(in srgb,var(--g) 22%,transparent),transparent 76%)}
+  .swmist::before{left:-30%;right:14%;height:82px;bottom:-14px;animation:swchurna 17s ease-in-out infinite}
+  .swmist::after{left:18%;right:-34%;height:64px;bottom:24px;animation:swchurnb 23s ease-in-out infinite}
+  @keyframes swchurna{0%,100%{transform:translate(0,0) scale(1)}
+    50%{transform:translate(16px,-22px) scale(1.16)}}
+  @keyframes swchurnb{0%,100%{transform:translate(0,0) scale(1.08)}
+    50%{transform:translate(-14px,-16px) scale(.92)}}
+  @keyframes swbreathe{0%,100%{opacity:.86}50%{opacity:1}}
+
+  .swhaze{position:absolute;inset:-8px;border-radius:22px;pointer-events:none;overflow:hidden;z-index:3;
+    background:linear-gradient(180deg, transparent 8%,
+      color-mix(in srgb,var(--g) 4%,transparent) 44%,
+      color-mix(in srgb,var(--g) 9%,transparent) 74%,
+      color-mix(in srgb,var(--g) 15%,transparent) 100%)}
+
+  .swfloor{position:absolute;left:-16px;right:-16px;bottom:-13px;height:32px;z-index:4;
+    pointer-events:none;filter:blur(3px);
+    background:radial-gradient(64% 100% at 50% 100%,
+      color-mix(in srgb,var(--g) 34%,transparent), transparent 76%);
+    animation:swbreathe 5.4s ease-in-out infinite}
+
+  /* the motes: three, two behind the dice and one in front, at 9–13s. Slow
+     enough that the eye files them as weather rather than as an alert, and
+     staggered by negative delays so a PAUSED card still has motes in it. */
+  .swmote{position:absolute;border-radius:50%;pointer-events:none;
+    background:radial-gradient(closest-side,color-mix(in srgb,#fff 44%,var(--g)) 0%,
+      color-mix(in srgb,var(--g) 40%,transparent) 52%, transparent 78%)}
+  .swm1{width:9px;height:9px;left:14%;bottom:6px;animation:swdrifta 9.5s linear infinite;animation-delay:-2.6s}
+  .swm2{width:6px;height:6px;left:66%;bottom:0;animation:swdriftb 13s linear infinite;animation-delay:-7.4s}
+  .swm3{width:5px;height:5px;left:44%;bottom:4px;animation:swdrifta 11s linear infinite;animation-delay:-5.1s}
+  @keyframes swdrifta{0%{opacity:0;transform:translate(0,0) scale(.75)}
+    14%{opacity:.9}52%{transform:translate(8px,-70px) scale(1)}
+    80%{opacity:.5}100%{opacity:0;transform:translate(-5px,-136px) scale(.7)}}
+  @keyframes swdriftb{0%{opacity:0;transform:translate(0,0) scale(.8)}
+    16%{opacity:.8}52%{transform:translate(-9px,-66px) scale(1.05)}
+    82%{opacity:.45}100%{opacity:0;transform:translate(4px,-130px) scale(.7)}}
+
+  .swgold{--g:var(--mx2,var(--gold))}
+  .swmint{--g:var(--wd)}
+
+  /* ===== THE DROP. The die PARTS the mist. The body billows outward from the
+     floor and away from the falling die, two puffs are shouldered out to the
+     sides, and then the volume folds back in behind it and re-settles. The die
+     is never slowed, never bounced, never met by anything — a ward absorbs a
+     STRIKE and never refuses your own placement, and a drop animation that
+     resisted the die would teach the opposite rule on every single turn. The
+     mist is the only thing that moves here; the die falls exactly as it falls
+     into an unguarded column. ===== */
+  .swdrop .swfall{animation:swfall 2.8s cubic-bezier(.3,1.4,.4,1) infinite}
+  @keyframes swfall{0%{transform:translateY(-118px) scale(.86);opacity:0}
+    10%{opacity:1}22%{transform:translateY(0) scale(1.06)}30%{transform:translateY(0) scale(1)}
+    100%{transform:translateY(0) scale(1);opacity:1}}
+  /* breathe animates opacity, billow animates transform — two animations, no
+     shared property, so the resting behaviour survives underneath the beat */
+  .swdrop .swmist{transform-origin:50% 100%;
+    animation:swbreathe 5.4s ease-in-out infinite, swbillow 2.8s ease-in-out infinite}
+  .swdrop .swhaze{transform-origin:50% 100%;animation:swbillow 2.8s ease-in-out infinite}
+  @keyframes swbillow{0%,14%{transform:scaleX(1) scaleY(1)}
+    24%{transform:scaleX(1.15) scaleY(.93)}
+    40%{transform:scaleX(.95) scaleY(1.04)}
+    58%{transform:scaleX(1.03) scaleY(.99)}
+    76%,100%{transform:scaleX(1) scaleY(1)}}
+  /* the two shouldered puffs — out as the die passes, drawn back after it */
+  .swwake{position:absolute;top:6px;width:36px;height:62px;border-radius:50%;z-index:5;
+    pointer-events:none;filter:blur(5px);opacity:0;
+    background:radial-gradient(closest-side,color-mix(in srgb,var(--g) 34%,transparent),transparent 76%)}
+  .swwl{left:-18px;animation:swwakel 2.8s ease-out infinite}
+  .swwr{right:-18px;animation:swwaker 2.8s ease-out infinite}
+  @keyframes swwakel{0%,13%{opacity:0;transform:translateX(12px) scale(.55)}
+    24%{opacity:.95;transform:translateX(-9px) scale(1)}
+    46%{opacity:.5;transform:translateX(-3px) scale(1.06)}
+    68%{opacity:0;transform:translateX(12px) scale(.7)}100%{opacity:0}}
+  @keyframes swwaker{0%,13%{opacity:0;transform:translateX(-12px) scale(.55)}
+    24%{opacity:.95;transform:translateX(9px) scale(1)}
+    46%{opacity:.5;transform:translateX(3px) scale(1.06)}
+    68%{opacity:0;transform:translateX(-12px) scale(.7)}100%{opacity:0}}
+  /* and the fold: one puff that CONVERGES behind the die, late, at the height
+     it entered. This is the frame that says the mist closed over it. */
+  .swseal{position:absolute;left:50%;top:30px;width:48px;height:36px;margin-left:-24px;
+    border-radius:50%;z-index:5;pointer-events:none;filter:blur(4px);opacity:0;
+    background:radial-gradient(closest-side,color-mix(in srgb,var(--g) 36%,transparent),transparent 78%);
+    animation:swseal 2.8s ease-out infinite}
+  @keyframes swseal{0%,28%{opacity:0;transform:scale(1.55)}
+    38%{opacity:.9;transform:scale(1.02)}
+    60%{opacity:0;transform:scale(.7)}100%{opacity:0}}
+
+  /* ===== THE ABSORB. The strike reaches the surface, the whole volume goes
+     SOLID for four frames — and then it thins to two thirds and stays there.
+     A spent ward is visibly less mist, so the charge is legible without a
+     number, at a glance, from across the room. The strike is not knocked
+     back: it is drawn up into the mist and gone, which is what "absorbed"
+     means here. ===== */
+  .swhit .swmist,.swhit .swhaze,.swhit .swfloor{animation:swquench 3.2s ease-out infinite}
+  @keyframes swquench{0%,30%{background-color:transparent;filter:none;opacity:1}
+    35%{background-color:color-mix(in srgb,var(--g) 46%,transparent);
+      filter:brightness(1.5) saturate(1.2);opacity:1}
+    42%{background-color:color-mix(in srgb,var(--g) 16%,transparent);filter:none;opacity:1}
+    54%{background-color:transparent;opacity:.64}
+    93%{background-color:transparent;opacity:.64}
+    100%{background-color:transparent;opacity:1}}
+  /* the upwelling at the surface: where the strike went in */
+  .swquell{position:absolute;left:50%;top:-8px;width:66px;height:42px;margin-left:-33px;
+    border-radius:50%;z-index:5;pointer-events:none;filter:blur(3px);opacity:0;
+    background:radial-gradient(closest-side,color-mix(in srgb,#fff 32%,var(--g)) 0%,
+      color-mix(in srgb,var(--g) 45%,transparent) 46%, transparent 78%);
+    animation:swquell 3.2s ease-out infinite}
+  @keyframes swquell{0%,30%{opacity:0;transform:translateY(8px) scale(.5)}
+    37%{opacity:1;transform:translateY(-6px) scale(1.12)}
+    62%{opacity:0;transform:translateY(-28px) scale(1.75)}100%{opacity:0}}
+  .swhit .swfoe{animation:swsink 3.2s cubic-bezier(.35,.05,.5,1) infinite}
+  @keyframes swsink{0%{opacity:0;transform:translateY(-60px);filter:none}
+    9%{opacity:1;transform:translateY(-60px)}
+    32%{opacity:1;transform:translateY(58px) scale(1);filter:none}
+    37%{transform:translateY(52px) scale(1.02);filter:brightness(1.35)}
+    46%{opacity:.75;transform:translateY(42px) scale(.97);filter:blur(2px)}
+    62%{opacity:0;transform:translateY(24px) scale(.86);filter:blur(8px)}
+    100%{opacity:0;transform:translateY(-60px);filter:none}}
+
+  /* the lane clips, so nothing ever floats over the caption above */
+  .swlane{position:relative;height:118px;width:100%;display:flex;justify-content:center;
+    align-items:flex-end;pointer-events:none;overflow:hidden}
+  .swfoe{position:absolute;top:0;opacity:0}
+  .swlbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+    text-align:center;min-height:12px}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">GUARDED COLUMN</span><span class="pad"></span></div>
+  <div class="swwrap" style="--wd:{{shue:ward}}">
+
+    <div class="cap2">Today — a 1px ring and a 12% glow, under a die that already glows</div>
+    <div class="swrow">
+      <div class="swcol">
+        <div class="swstack now">
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:2:p1:52}}</div>
+        </div>
+        <div class="swchip gold">12<i>{{mico:colshield:13}}</i></div>
+        <div class="swlbl">shielded</div>
+      </div>
+      <div class="swcol">
+        <div class="swstack nowward">
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <div class="swslot"></div>
+        </div>
+        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
+        <div class="swlbl">warded</div>
+      </div>
+    </div>
+
+    <div class="cap2">Proposed — the column is filled: a pool at the floor, thinning up, motes in it</div>
+    <div class="swrow">
+      <div class="swcol swgold">
+        <div class="swstack">
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:2:p1:52}}</div>
+          <i class="swmist"><b class="swmote swm1"></b><b class="swmote swm2"></b></i>
+          <i class="swhaze"><b class="swmote swm3"></b></i>
+          <i class="swfloor"></i>
+        </div>
+        <div class="swchip gold">12<i>{{mico:colshield:13}}</i></div>
+        <div class="swlbl">shield · gold</div>
+      </div>
+      <div class="swcol swmint">
+        <div class="swstack">
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <div class="swslot"></div>
+          <i class="swmist"><b class="swmote swm1"></b><b class="swmote swm2"></b></i>
+          <i class="swhaze"><b class="swmote swm3"></b></i>
+          <i class="swfloor"></i>
+        </div>
+        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
+        <div class="swlbl">ward · mint</div>
+      </div>
+    </div>
+
+    <div class="cap2">Your die parts it and it folds back in — nothing ever meets the die</div>
+    <div class="swrow">
+      <div class="swcol swmint swdrop">
+        <div class="swstack">
+          <div class="swslot"><span class="swfall">{{die:6:p1:52}}</span></div>
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <i class="swmist"><b class="swmote swm1"></b><b class="swmote swm2"></b></i>
+          <i class="swhaze"><b class="swmote swm3"></b></i>
+          <i class="swfloor"></i>
+          <i class="swwake swwl"></i><i class="swwake swwr"></i><i class="swseal"></i>
+        </div>
+        <div class="swchip mint"><i>{{sico:ward:13}}</i>11</div>
+        <div class="swlbl">drop</div>
+      </div>
+      <div class="swcol swmint swhit">
+        <div class="swlane"><span class="swfoe">{{die:4:p2:52}}</span></div>
+        <div class="swstack">
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <div class="swslot"></div>
+          <i class="swmist"><b class="swmote swm1"></b><b class="swmote swm2"></b></i>
+          <i class="swhaze"><b class="swmote swm3"></b></i>
+          <i class="swfloor"></i>
+          <i class="swquell"></i>
+        </div>
+        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
+        <div class="swlbl">absorb</div>
+      </div>
+    </div>
+
+    <div class="note"><b>What it says:</b> the column is <b>full</b> of the protection, not ringed by it. Nothing here is an edge, so nothing here can be lost against a die that already carries a border and a bloom — this is the one option of the six you read from across the room, and the only one that answers "which columns are guarded?" without the player looking for a line. Half the volume sits behind the dice where it can run hot, a thin veil sits in front so the dice are standing <b>in</b> it, and three motes drift at 9–13s — weather, not an alert. <b>The drop</b> is the mist getting out of the way: it billows off the floor, two puffs are shouldered aside, and the volume folds back in behind the die. The die itself falls exactly as it falls into an unguarded column, because a ward eats a STRIKE and never refuses your own placement. <b>The absorb</b> goes solid for four frames, then thins to two thirds and <b>stays</b> thin — a spent ward is less mist, so the charge reads without a number. <b>Cost:</b> this is the loudest option at rest, and it is the one that changes what the board looks like. The front veil is real tint over real pips — 15% at the floor, 0% at the ceiling — and it can only get quieter, never louder, without the bottom die going soft. Two adjacent guarded columns pool into one cloud unless the gutter grows. And the board already has a background wash and a bloom per die; a mode where every full column fogs up is a board that is mostly weather.</div>
+  </div>
+</div></div>

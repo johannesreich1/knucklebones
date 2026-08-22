@@ -1,30 +1,56 @@
-<!-- meta name="Offline — local play" group="4 · Local flow" subtitle="Mode, AI level, the full game-mode picker and the spell picker — every dial mode playable offline" width=412 height=980 links="Home, Game (local)" -->
+<!-- meta name="Offline — local play" group="4 · Local play" subtitle="Mode, AI level, the full game-mode picker and the spell picker — every dial mode playable offline" width=412 height=980 links="Home, Game (local)" -->
 <style>
-  /* .seg / .lbl / .tiny / .btn come from the app CSS; below is card-only */
+  /* .seg / .lbl / .tiny / .btn / .card / .playbar all come from the app CSS;
+     below is card-only glue */
   /* .shead is the app's shared header (src/styles/main.css) — card adds spacing only */
   .shead{margin-bottom:10px}
-  .pwrap{display:flex;flex-direction:column;gap:16px;width:100%;max-width:300px;margin:10px auto 0}
+  /* Stands in for .pbody (main.css), which the preview cannot wear: its
+     negative top margin and header-height padding assume the real pinned
+     header. Same 20px gap — and NO width of its own: each row is an app
+     `.card`, so the column is --w-col wherever it is drawn. It used to carry
+     a private max-width:300px and previewed 52px narrower than it ships. */
+  .pwrap{display:flex;flex-direction:column;align-items:center;gap:20px;
+    width:100%;flex:1;margin-top:10px}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
   <div class="shead"><button class="ico">‹</button><span class="ttl">OFFLINE</span><span class="pad"></span></div>
   <div class="pwrap">
-    <div class="lbl">Mode</div>
-    <div class="seg"><button class="on">VS AI</button><button>2 PLAYERS</button></div>
-    <div class="lbl">AI level</div>
-    <div class="seg"><button>EASY</button><button>NORMAL</button><button class="on">HARD</button></div>
-    <div class="tiny note">Searches four moves deep — five when the phone keeps up</div>
-    <div class="lbl">Game mode</div>
-    <div class="modepick">{{picker:modes:0}}</div>
-    <div class="tiny" style="text-align:left">{{pickinfo:modes:0}}</div>
+    <div class="card">
+      <div class="lbl">Mode</div>
+      <div class="seg"><button class="on">VS AI</button><button>2 PLAYERS</button></div>
+    </div>
+    <div class="card">
+      <div class="lbl">AI level</div>
+      <div class="seg"><button>EASY</button><button>NORMAL</button><button class="on">HARD</button></div>
+      <!-- EMPTY, exactly as the app ships it (markup.ts #diffNote, flow/menu.ts):
+           naming what each level searches told the player how to beat it, and
+           the three words already say enough. The slot stays because the seat
+           card swaps into this place carrying a note, and the rows below must
+           not move. It may NOT wear the app's `note` class here — the design
+           chrome styles a bare .note as a boxed study note, so the card would
+           paint a bordered panel where the app shows a blank gap. The height
+           is .card .note's own min-height, restated because the class is out. -->
+      <div class="tiny" style="min-height:2.9em"></div>
+    </div>
+    <div class="card">
+      <div class="lbl">Game mode</div>
+      <div class="modepick">{{picker:modes:0}}</div>
+      <div class="tiny" style="text-align:left">{{pickinfo:modes:0}}</div>
+    </div>
     <!-- Spells are part of choosing WHAT GAME THIS IS, so the pick lives here
          under the mode picker — and it IS the mode picker: same component, same
          icon row, and each slice wears the rune the game itself draws.
          NONE is the first slice and the default. -->
-    <div class="lbl">Spell</div>
-    <div class="modepick">{{picker:spells}}</div>
-    <div class="tiny" style="text-align:left">{{pickinfo:spells}}</div>
-    <!-- the bar is pinned and full width; the label names the game you picked -->
-    <div class="playbar"><button class="btn primary">Play vs AI</button>
+    <div class="card">
+      <div class="lbl">Spell</div>
+      <div class="modepick">{{picker:spells}}</div>
+      <div class="tiny" style="text-align:left">{{pickinfo:spells}}</div>
+    </div>
+    <!-- the bar is pinned and full width; the label names the game you picked.
+         Full width is keyed to the ID (.playbar #btnPlay, main.css) — without
+         it the button falls back to .btn's 210px min-width and previews as a
+         short centred pill, which is not what ships. -->
+    <div class="playbar"><button class="btn primary" id="btnPlay">Play vs AI</button>
     <div class="tiny">Offline play never touches your online rating</div></div>
   </div>
 </div></div>

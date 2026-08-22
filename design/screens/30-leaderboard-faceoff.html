@@ -1,4 +1,4 @@
-<!-- meta name="Leaderboard · face-off" group="3 · Ladder & account" subtitle="Tap a row, be dealt THEM against YOU — five facts mirrored around the centre, and the one-column variant a signed-out reader gets" width=412 height=1180 links="Leaderboard, Matchmaking" -->
+<!-- meta name="Ladder · face-off" group="3 · Ladder & profile" subtitle="Tap a row, be dealt THEM against YOU — five facts mirrored around the centre, and the one-column variant a signed-out reader gets" width=412 height=1303 links="Ladder, Matchmaking" -->
 <style>
   /* The face-off is the app's own component (.focard and friends, online.css)
      — the card wears it directly, like 53-quit wears the ask-card, and shows
@@ -34,6 +34,7 @@
         <div class="fost"><span class="a">62%</span><span class="k">Win rate</span><span class="b">40%</span></div>
       </div>
       <div class="fogap"><b>2,215 points</b> between you</div>
+      <button class="btn foexit">Close</button>
     </div>
   </div>
 
@@ -53,6 +54,7 @@
         <div class="fost"><span class="a">2,743</span><span class="k">Peak</span></div>
         <div class="fost"><span class="a">62%</span><span class="k">Win rate</span></div>
       </div>
+      <button class="btn foexit">Close</button>
     </div>
   </div>
 
@@ -63,6 +65,7 @@
   points, record, best streak (via the player_card RPC, the one fact a board row cannot carry),
   peak, win rate. The gap line names the DISTANCE and nothing else: what a match would pay is
   never previewed in this game, because it depends on the opponent. Signed out — the board is
-  public — the card folds to one column with labels leading, the wash tap or Escape closes it,
+  public — the card folds to one column with labels leading. A full-width Close sits under the
+  stats (it replaced a corner ✕ that was too easy to miss); the wash tap and Escape close it too,
   and the whole surface sits at z-index 90, above the board overlay it opens over (the pixel
   lesson test16 now pins with elementFromPoint).</div>

@@ -25,7 +25,8 @@
      pink, the destruction keyword, avatar hues — keep reading raw hues. */
   --p1:var(--cy); --p1-rgb:var(--cy-rgb); --p1-hi:var(--cy-hi);
   --p2:var(--mg); --p2-rgb:var(--mg-rgb); --p2-hi:var(--mg-hi);
-  /* THE AMBIENCE (study 98c, picked — 98a was tried and disliked): the LONG
+  /* THE AMBIENCE (study 98c, picked — the full-height ribbon variant was
+     tried and disliked, and its card retired with the rest of the study): the LONG
      DIAGONAL. The foe's hue masses in the top-left corner, the player's in
      the bottom-right, and a purple seam crosses at 125deg — one gesture the
      whole height. Alphas well under the study card's, corner pools oversized
@@ -1251,12 +1252,10 @@ html.castself #dieStage.hot::after{border-style:solid;border-color:var(--gold);
 /* NOTE: background-IMAGE, not the background shorthand — the shorthand resets
    background-clip:text and the title would render as a solid gradient block. */
 /* ===== THE RESULT SCREEN (ui/endscreen) =====
-   One screen for local play and ranked alike. The title LANDS: it drops in
-   from above scale with a shockwave hoop behind it, one movement rather than
-   per-letter staging — so VICTORY, DEFEAT and PLAYER 2 WINS all read the same
-   way and the longest title is no slower than the shortest. Studies for five
-   other treatments live in design/screens/6*-win-*. */
-/* TWO treatments, because winning and losing are not the same moment.
+   One screen for local play and ranked alike, and TWO title treatments,
+   because winning and losing are not the same moment. (This paragraph used to
+   be said twice, the first copy still claiming ONE treatment for both — the
+   four losing studies were drawn as cards and retired once these two shipped.)
    A WIN LANDS (study A, design/screens/60): the verdict drops in from 3.2x
    scale with a shockwave hoop, one movement, no per-letter staging — so
    VICTORY, DEFEAT and PLAYER 2 WINS all read the same way whatever their
@@ -1699,10 +1698,12 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
    (headline, body, answers) — but between the answers themselves it read as
    drift (user call: "too far apart"), so the second answer pulls up to 7px */
 .askcard .btn+.btn{margin-top:-6px}
-/* An ask-card's two answers are not equals. The way BACK wears the colour —
-   it is the answer the game would rather you gave — and being the smaller of
-   the two is what keeps it from shouting; the destructive answer stays full
-   width and quiet, easy to reach and impossible to hit by reflex. */
+/* An ask-card's two answers are not equals: ask() orders and sizes the pair
+   from spec.loud (ui/askcard.ts), and the ENCOURAGED answer leads — first, full
+   size, wearing the colour — while the other trails, smaller and quiet. This
+   comment taught the opposite arrangement (destructive full width, the way back
+   the smaller of the two) for a day after the 2026-08-21 retune, and design
+   card 53 was drawn from it, wrong, in exactly that shape. */
 .btn.small{padding:12px 18px;font-size:12px}
 /* ghost lived in online.css, where the sign-in sheet first needed it — but the
    first-run offer is OFFLINE and its "Skip, I know the rules" was rendering as
@@ -1731,8 +1732,10 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
   background:color-mix(in srgb,var(--p1) 7%,transparent)}
 #ovLearn.fresh .learnrow:first-child .lname{color:var(--p1)}
 
-/* the deploy-truth tag now closes the Account panel — a plain last line, not a
-   pinned overlay fixture (it left home on 2026-08-19) */
+/* the deploy-truth tag sits at the foot of SETTINGS — the screen you open when
+   something looks wrong should say which build is wrong. A plain last line, not
+   a pinned overlay fixture: it left home on 2026-08-19, and the Account panel
+   (now PROFILE) on 2026-08-20, though this comment claimed it until 08-22. */
 #buildTag{text-align:center;opacity:.5;margin-top:2px}
 .linkbtn{background:none;border:none;padding:4px;font-family:inherit;cursor:pointer;
   font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}

@@ -1,0 +1,183 @@
+<!-- meta name="W1 — Aegis pane" group="3g · Shield & ward studies" subtitle="The protection becomes a surface: a tinted pane laid over the column, bevelled at its edge, with a slow specular sweep down it — a die drops THROUGH it and the sheet ripples where it passed" width=430 height=1340 sizes="md" links="Match, Game modes, Spells" -->
+<style>
+  /* Card-local names only (sw*). The app pins .col/.slot/.chip/.pip with
+     position and height, so a card that redeclares them loses silently —
+     design/build.mjs fails the build for exactly that. Dice come from the
+     die token, the rune and shield from the app's own icon registries. */
+  .scr{gap:10px}
+  .swwrap{display:flex;flex-direction:column;align-items:center;gap:13px;margin:auto 0;width:100%}
+
+  .swrow{display:flex;align-items:flex-start;justify-content:center;gap:14px}
+  .swcol{--cell:52px;--gap:6px;display:flex;flex-direction:column;align-items:center;gap:7px}
+  .swstack{display:grid;grid-template-rows:repeat(3,var(--cell));gap:var(--gap);
+    position:relative;border-radius:16px;padding:3px}
+  .swslot{width:var(--cell);height:var(--cell);border-radius:14px;
+    background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05);display:grid;place-items:center;position:relative}
+  /* the column chip, restated at card scale — the app's .chip is guarded */
+  .swchip{height:20px;min-width:52px;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;gap:4px;font-size:12px;font-weight:800;color:var(--dim);
+    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);position:relative;
+    padding:0 6px;font-variant-numeric:tabular-nums}
+  .swchip i{line-height:0;display:flex}
+  .swchip.gold{color:var(--mx2,var(--gold));border-color:rgba(var(--mx2-rgb,var(--gold-rgb)),.3);
+    background:rgba(var(--mx2-rgb,var(--gold-rgb)),.09)}
+  .swchip.mint{color:var(--wd);border-color:color-mix(in srgb,var(--wd) 30%,transparent);
+    background:color-mix(in srgb,var(--wd) 9%,transparent)}
+
+  /* ===== TODAY, for comparison: a 1px inset ring at 35% and a 14px glow at
+     12%. On a die that already carries a border and a coloured bloom it is
+     below the noise floor — which is the whole reason for this study. ===== */
+  .swstack.now{box-shadow:inset 0 0 0 1px rgba(var(--mx2-rgb,var(--gold-rgb)),.35),
+    0 0 14px rgba(var(--mx2-rgb,var(--gold-rgb)),.12)}
+  .swstack.nowward{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wd) 40%,transparent),
+    0 0 14px color-mix(in srgb,var(--wd) 14%,transparent)}
+
+  /* ===== THE PANE. One element over the column, not a border on it: a sheet
+     of tinted glass with a lit top bevel, a soft body tint and a specular
+     band that travels down its length. The column beneath is untouched, so
+     the dice keep their own colour and the protection reads as something
+     LAID ON rather than something the dice caught. ===== */
+  .swpane{position:absolute;inset:-4px;border-radius:19px;pointer-events:none;overflow:hidden;
+    background:linear-gradient(180deg,
+      color-mix(in srgb,var(--g) 16%,transparent) 0%,
+      color-mix(in srgb,var(--g) 7%,transparent) 34%,
+      color-mix(in srgb,var(--g) 10%,transparent) 100%);
+    border:1px solid color-mix(in srgb,var(--g) 46%,transparent);
+    box-shadow:0 0 22px color-mix(in srgb,var(--g) 26%,transparent),
+      inset 0 1px 0 color-mix(in srgb,var(--g) 62%,transparent),
+      inset 0 0 22px color-mix(in srgb,var(--g) 12%,transparent)}
+  /* the bevel: the lit edge that makes it a surface and not a wash */
+  .swpane::after{content:"";position:absolute;inset:0;border-radius:inherit;
+    border-top:2px solid color-mix(in srgb,var(--g) 78%,transparent);
+    -webkit-mask-image:linear-gradient(180deg,#000 0 14%,transparent 34%);
+    mask-image:linear-gradient(180deg,#000 0 14%,transparent 34%)}
+  /* the sweep: one band, 4.2s, so it reads as light moving over glass rather
+     than as a pulse. A pulse says "warning"; a sweep says "surface". */
+  .swpane::before{content:"";position:absolute;left:-40%;right:-40%;height:44%;top:-50%;
+    background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--g) 34%,transparent),transparent);
+    animation:swsweep 4.2s ease-in-out infinite}
+  @keyframes swsweep{0%{top:-50%}55%,100%{top:104%}}
+
+  .swgold{--g:var(--mx2,var(--gold))}
+  .swmint{--g:var(--wd)}
+
+  /* ===== THE DROP. The die falls, and the pane answers where it crossed:
+     a ring opens from the entry point and the sheet flexes once. The die is
+     NOT stopped — a ward absorbs a strike, it never refuses your own die,
+     and a pane that blocked the drop would tell that lie every turn. ===== */
+  .swdrop .swfall{animation:swfall 2.8s cubic-bezier(.3,1.4,.4,1) infinite}
+  @keyframes swfall{0%{transform:translateY(-118px) scale(.86);opacity:0}
+    10%{opacity:1}22%{transform:translateY(0) scale(1.06)}30%{transform:translateY(0) scale(1)}
+    88%{transform:translateY(0) scale(1)}100%{transform:translateY(0) scale(1);opacity:1}}
+  .swripple{position:absolute;left:50%;top:26px;width:16px;height:16px;border-radius:50%;
+    transform:translate(-50%,-50%);pointer-events:none;
+    border:2px solid color-mix(in srgb,var(--g) 85%,transparent);
+    opacity:0;animation:swring 2.8s ease-out infinite}
+  @keyframes swring{0%,18%{opacity:0;transform:translate(-50%,-50%) scale(.3)}
+    24%{opacity:.95;transform:translate(-50%,-50%) scale(1)}
+    46%{opacity:0;transform:translate(-50%,-50%) scale(4.6)}100%{opacity:0}}
+  /* the sheet itself flexes on contact — the one frame that sells "surface" */
+  .swdrop .swpane{animation:swflex 2.8s ease-out infinite}
+  @keyframes swflex{0%,18%{transform:scaleX(1) scaleY(1)}
+    23%{transform:scaleX(1.035) scaleY(.985)}34%{transform:scaleX(1) scaleY(1)}}
+
+  /* ===== THE ABSORB. A strike arrives and the pane goes momentarily SOLID:
+     the tint fills, the bevel whitens, and the enemy die stops on the
+     surface instead of landing. Then the pane thins — a spent ward is a
+     thinner pane, so the charge is legible without a number. ===== */
+  .swhit .swpane{animation:swabsorb 3.2s ease-out infinite}
+  @keyframes swabsorb{0%,30%{background-color:transparent;filter:none}
+    36%{background-color:color-mix(in srgb,var(--g) 30%,transparent);
+      filter:brightness(1.5) saturate(1.2)}
+    58%{background-color:transparent;filter:none}}
+  .swhit .swfoe{animation:swbounce 3.2s cubic-bezier(.3,1.5,.4,1) infinite}
+  @keyframes swbounce{0%{transform:translateY(-104px);opacity:0}
+    16%{opacity:1}34%{transform:translateY(-6px)}44%{transform:translateY(-30px)}
+    62%{transform:translateY(-104px);opacity:0}100%{transform:translateY(-104px);opacity:0}}
+
+  .swlane{position:relative;height:118px;width:100%;display:flex;justify-content:center;
+    align-items:flex-end;pointer-events:none}
+  .swfoe{position:absolute;top:0;opacity:0}
+  .swlbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+    text-align:center;min-height:12px}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">GUARDED COLUMN</span><span class="pad"></span></div>
+  <div class="swwrap" style="--wd:{{shue:ward}}">
+
+    <div class="cap2">Today — a 1px ring and a 12% glow, under a die that already glows</div>
+    <div class="swrow">
+      <div class="swcol">
+        <div class="swstack now">
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:2:p1:52}}</div>
+        </div>
+        <div class="swchip gold">12<i>{{mico:colshield:13}}</i></div>
+        <div class="swlbl">shielded</div>
+      </div>
+      <div class="swcol">
+        <div class="swstack nowward">
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <div class="swslot"></div>
+        </div>
+        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
+        <div class="swlbl">warded</div>
+      </div>
+    </div>
+
+    <div class="cap2">Proposed — the pane: a lit bevel, a body tint, one slow sweep</div>
+    <div class="swrow">
+      <div class="swcol swgold">
+        <div class="swstack">
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:2:p1:52}}</div>
+          <i class="swpane"></i>
+        </div>
+        <div class="swchip gold">12<i>{{mico:colshield:13}}</i></div>
+        <div class="swlbl">shield · gold</div>
+      </div>
+      <div class="swcol swmint">
+        <div class="swstack">
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <div class="swslot"></div>
+          <i class="swpane"></i>
+        </div>
+        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
+        <div class="swlbl">ward · mint</div>
+      </div>
+    </div>
+
+    <div class="cap2">Your die drops THROUGH it — the sheet flexes, a ring opens where it crossed</div>
+    <div class="swrow">
+      <div class="swcol swmint swdrop">
+        <div class="swstack">
+          <div class="swslot"><span class="swfall">{{die:6:p1:52}}</span></div>
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <i class="swpane"></i>
+          <i class="swripple"></i>
+        </div>
+        <div class="swchip mint"><i>{{sico:ward:13}}</i>11</div>
+        <div class="swlbl">drop</div>
+      </div>
+      <div class="swcol swmint swhit">
+        <div class="swlane"><span class="swfoe">{{die:4:p2:52}}</span></div>
+        <div class="swstack">
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <div class="swslot"></div>
+          <i class="swpane"></i>
+        </div>
+        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
+        <div class="swlbl">absorb</div>
+      </div>
+    </div>
+
+    <div class="note"><b>What it says:</b> the column is <b>covered</b>, not outlined. The bevel and the travelling sweep make it a surface with a thickness, which is why it survives on top of dice that already carry a border and a bloom — the current 1px ring does not. <b>The drop</b> is the point of this one: your die is never stopped, the pane simply answers where it crossed, so the animation teaches the rule (a ward eats a STRIKE, not your placement) instead of contradicting it. <b>Absorb</b> fills the tint for four frames and pushes the enemy die back off the surface. <b>Cost:</b> it is the most pixels of the six, and a pane over a full column dims the dice under it — the tint has to stay under ~16% or the pips lose contrast.</div>
+  </div>
+</div></div>

@@ -4,8 +4,10 @@
 // Dealing beats spinning for a table game — the deck riffles, one card is
 // drawn, and the rune arrives as an object you could pick up. The drama is in
 // the SHUFFLE, not the turn: a turn is a half-second, so the deck works for
-// nearly three before anything is drawn (design/screens/75, which proposed
-// this, called that out as the thing that would make or break it).
+// nearly three before anything is drawn — the card-deal alternative from the
+// mode-spinner study proposed this and called that out as the thing that would
+// make or break it. (That study's losing cards were retired 2026-08-22; the
+// mode reveal is the orbit dial, and the deck deals the RUNE instead.)
 //
 // THE DECK IS THE ROSTER. Every card is a real spell from core/spells, in its
 // own hue, wearing its own icon in the corner like a playing card's index — so

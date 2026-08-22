@@ -11,8 +11,8 @@ was decided, and what's still open.*
 | **Web** | **LIVE** at https://knucklebones-asg.pages.dev — Cloudflare Pages, auto-deploys every push to `main` |
 | **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0024, RLS + column-grant hardened. 0014 (Game Center ids) is written but NOT applied — it waits for a device. 0028 (player_card returns the full face-off row — renumbered from 0027, which the nickname hardening took) applied 2026-08-21: the result screen's foe plate carries the rank and opens the face-off |
 | **Edge Functions** | `pvp-join` **v20**, `pvp-move` **v17**, `pvp-claim` v11, `account-delete` v1 — all ACTIVE, nothing dead deployed. `gc-auth` is written but undeployed (same reason). `pvp-move` v15 = the away-turns `index.ts` + the colshield-honest core, both on main since 2026-08-21. `pvp-claim` v11 (deployed 2026-08-21, live-verified via `tests/e2e-pvp.mjs`) adds `resign: true` — the quit button's instant forfeit — and carries the same current core. `pvp-join` v18 (2026-08-21 evening, user report from a live human-vs-human match): `rejoined` became honest — a ZERO-MOVE active match returns as a fresh pairing, because the waiting player's poll lands on the active-match branch the instant the partner's join creates the match, and the unconditional `rejoined:true` made exactly one of the two skip the mode-wheel reveal. Deployed-vs-repo byte-verified. **`pvp-join` v20 + `pvp-move` v17 (2026-08-22)** — ONE seating rule everywhere: the lower-rated player opens, in every mode, human opponent or bot. v19 had briefly made it mode-aware (a `seatEdge` field flipping the seat under LIMITED, whose second mover is measurably favoured); reverted within hours by decision, because a seating rule that varies per mode makes every future mode carry a balance question and the ~3.4-point error is smaller than the confusion — the measurement survives in `core/modes.ts` as context explicitly not to act on. v20 also ends the **bot exemption**: bots could not open (they only move inside a human's request), so the handicap applied between humans and was skipped exactly where, with a thin pool, most ranked matches are. `openForBot()` plays a bot's opening move at match creation, which required lifting the bot's move decision out of `pvp-move` into `core/bot.ts` — one implementation, two callers — proven identical to the block it replaced at 113,400 calls across all 7 modes and all 7 ladder groups, 0 differences. (`searchRoot` jitters ties from the GLOBAL `Math.random`, so such a comparison must seed the global stream; seeding only the injected one reports ~16% false mismatches.) A bot's opening move also broke `rejoined`'s "has anyone moved?" proxy for "has the mode wheel been seen?" — it now asks whether THE CALLER has moved, or the reveal would have been eaten in half of all bot matches. **Correction to the v18 line above:** its claim to "refresh the function's `core/` copies to current" was FALSE — v18's `core/rules.ts` predated the spell layer entirely (no `CharmSt`, no `openStrikes`, `applyMove` without its charm parameter) and v19 is what actually refreshed them. That drift was harmless for one reason worth keeping: **no Edge Function imports `core/spells.ts`**, so nothing the server replays could diverge — `applyMove`'s charm branch is only entered when a charm is passed, and neither `rebuild()` nor `ai.ts` ever passes one. Proven, not assumed: 50,400 placements across all 7 modes compared per-placement, 0 divergences, independently re-confirmed at 570,086 rebuild states. `tools/fnfiles.mjs` computes each function's upload set from its imports and `tests/fnsync.test.ts` gates it — including which functions ship `core/spells.ts` (currently none), the fact that stops being true the day one needs the spell layer |
-| **CI** | GitHub Actions: build + full test gate (27 suites) on every push — green through current `main` |
-| **Design system** | 170 cards (44 screens × 4 device sizes + the two `00-` specs) in the Claude Design project "Knucklebones", generated from the app's real CSS **and its real code** — see "Cards render the app" below |
+| **CI** | GitHub Actions: build + full test gate (28 suites) on every push — green through current `main` |
+| **Design system** | 172 cards in the Claude Design project "Knucklebones", generated from the app's real CSS **and its real code** — 52 screens, of which the studies ship at one device size and the rest at four — see "Cards render the app" and "The library stopped being a graveyard" below |
 | **Signups** | **Open** — a first tap on RANKED mints a guest account (no email, no form). Attaching an email still waits on SMTP; see `docs/IDENTITY.md` |
 
 Verified live on 2026-08-17: build tag on the deployed page matches the local
@@ -422,7 +422,8 @@ server-side via `account-delete`), privacy policy for both stores.
   `knucklebones.online.attached` says this device once had a real account,
   in which case signing out means they meant to sign back IN.
 - **The mode dial replaced the pie wheel.** Six alternatives were drawn as
-  design cards; B (orbit dial) won. It lives in `ui/modedial.ts` with its CSS
+  design cards; B (orbit dial) won — and it is the only one of the six whose
+  card is still in `design/screens/` (71). It lives in `ui/modedial.ts` with its CSS
   in `main.css` — offline-reachable, because the offline game must never pull
   the online chunk to see it. It must not spoil itself: nodes flare as the
   comet crosses them, the winner is exactly as dark as the rest until found,
@@ -508,9 +509,10 @@ Two things, same evening, same screen:
   green while production broke — the mock had drifted from the migration.
   Fixed, and test16 now reads the POINTS off the rendered row, so the client
   and the RPC can never silently disagree about a column name again.
-- **The board itself was rebuilt** (design study 33a–33h, eight alternatives;
+- **The board itself was rebuilt** (a study of eight alternatives, 33a–33h;
   Johannes picked L7's you-centred reading on L1's full scroll, with L5's
-  face-off as the tap). What ships: one continuous list NEON→STONE with a
+  face-off as the tap — 33g and 33e are the two cards still in
+  `design/screens/`, the other six were retired 2026-08-22). What ships: one continuous list NEON→STONE with a
   labelled **horizon** wherever the group changes; every row carries the
   player's die (0022 added `avatar`+`peak` to `leaderboard()`, 0023 spread the
   bots across the avatar space); for a signed-in reader every row states the
@@ -627,8 +629,8 @@ stylesheet defines.
 
 ### 8. The loading die (2026-08-20 night, user pick from the LD1–LD8 studies)
 
-Eight loading-animation studies shipped as design cards 34a–h (group "3c ·
-Loading studies") plus 35-ios-launch; Johannes picked **LD1, the pip clock**
+Eight loading-animation studies were drawn as cards 34a–h (group "3c ·
+Loading") plus 35-ios-launch; Johannes picked **LD1, the pip clock**
 — the die face IS the spinner — as the ONE loader, inline and full-page.
 `ui/loader.ts` (loaderDie/loaderWait) builds it on `makeDie`, the app's single
 die factory; the animation lives in `main.css` because the biggest wait is
@@ -645,12 +647,17 @@ the online chunk itself still downloading, when online.css does not exist
 - **Avatar picker** (showAvatar): the preview slot carries the first-open wait.
 
 Deliberately untouched: **matchmaking** (its designed queue panel stays until
-the LD8 duel-clash v2 — which needs a resolution beat when the opponent's
-name lands, and must not fight the clock for attention), **the profile**
+a duel-clash successor exists — two dice leaning in and clashing, which needs
+a resolution beat when the opponent's name lands and must not fight the clock
+for attention; LD8 drew that beat and its card was retired unbuilt with the
+rest of the losing studies, so the successor starts from this paragraph),
+**the profile**
 (cached-paint anti-flicker choreography is better than a spinner), **the
 result screen** (optimistic paint), and **in-match waits** (the turn clock
-carries them). The rolling die (LD6) stays in the drawer until a wait with a
-direction exists (e.g. a determinate update/download).
+carries them). The rolling die (LD6, card 34f) stays in the drawer until a
+wait with a direction exists (e.g. a determinate update/download) — it is the
+one loser of that study kept as a card, by decision, because the wait it
+answers is a matter of when and not whether.
 
 ### 9. The duel pair became a dial (2026-08-21, user feature request)
 
@@ -731,6 +738,72 @@ locked inside a DOM builder: `dialNodes()`, `libraryCards()`, and
 `MODE_PICKS` / `SPELL_PICKS` / `pickerButtons()`. `boot.ts`'s `pickerRow` had
 both rosters inline; it consumes the shared ones now, so the reference sheet
 and the pick row agree on what a mode is called *by construction*.
+
+### 7b. The library stopped being a graveyard (2026-08-22, user request)
+
+Every study this project ever ran had left its losers in `design/screens/`, so
+the Design pane was 77 rejected alternatives and 30 shipped screens, with
+nothing marking which was which. **61 cards were retired**; the rule was the
+narrow one: *a card survives only if the app ships what it proposes.* Every
+verdict is evidence, not memory — the app names its own winner in a comment
+almost every time (`main.css` "Studied as design/screens/38f-rowmult-aimed",
+"the SLAM (design 37a, chosen)", "study 98c, picked"; `ui.ts` "The board
+(design 33g)"), and the four cases with no citation were decided by grepping
+every class name the card invents and finding none of them in `src/`.
+
+What survived a study, and what it is now: **13d** the home plate, **33e/33g**
+the face-off and the board, **34a** the pip-clock loader, **36d/36f** the
+beaten stamp and the result plates, **37a** the slam, **38f** the aimed
+bracket, **60/65** the win and loss titles, **71** the orbit dial, **81** the
+reveal's versus line, **92d** the tier ring, **98c** the long diagonal. Two
+losers were kept by decision and are marked as such: **34f** (the rolling die,
+for a wait with a direction) and **13c** (your die wearing the ring — a
+candidate for the pre-match comparison). Group labels lost the word "study"
+wherever the study was over, because a group named for a bake-off that ended
+is a lie about what is in it.
+
+The 30 surviving product cards were then read against the app line by line and
+**70-odd drifts fixed**. The pattern in almost all of them: the card had
+hand-written something the app owns, and the app moved. Settings was still a ✕
+sheet with two toggles (it is a ‹ page with the duel pickers and colour blind
+mode); the ladder's wait was still matchmaking's bouncing dice (it is the
+loading die); the spells card was built end to end on COLUMN SWAP, retired in
+August, with five hand-drawn SVGs of a rune that no longer exists; both dial
+cards still showed the one-line "Opponent NAME · RATING" that the opponent
+study replaced. So four things moved into the builder instead — `{{sico}}`,
+`{{shue}}`, `{{loader}}` and `{{versus}}` — and `reveal.ts` exports `versus()`
+for the same reason it already exported `settledAnswer`: a card that cannot
+draw the thing itself cannot draw it wrong.
+
+Three defects in the machinery were found on the way, each one able to have hidden
+the next drift:
+
+- **`design/dist/` was never cleaned.** A card deleted from `screens/` kept its
+  four built files and its four manifest entries forever, so a sync would
+  faithfully re-upload a card the repo no longer had. It is pruned per-build now
+  (after the write, not by emptying first — two builds can overlap).
+- **Nothing rendered the cards.** The build catches what Node can see; a card
+  taller than the height its meta declares is simply CUT OFF in the pane, and
+  thirteen were — `01-widths` was losing 811px of itself. `tests/test22.mjs`
+  now lays every built card out in a browser and fails the gate on a card that
+  does not fit its frame, or on a `{{token}}` that never expanded.
+- **The preview chrome pinned the duel pair.** Card titles were drawn in
+  literal cyan-and-magenta while `.ov h1` reads `--p1`/`--p2`.
+
+And four app comments were the SOURCE of a card's drift, so they were fixed
+where they stood: `main.css` still taught the retired ask-card order (which is
+where card 53 got it wrong), still said the build tag closes the Account panel,
+`modeicons.ts` said SINGLE STRIKE takes the outermost pip (`rules.ts` takes the
+one closest to the centre), and `markup.ts` promised the rules sheet a GOT IT
+button it does not have.
+
+One study is deliberately OPEN, and is the exception to the rule above:
+**3g · Shield & ward studies** (39a–39f), six alternatives for the shielded and
+warded column — the current 1px ring at 35% and 14px glow at 12% is below the
+noise floor on a die that already carries a border and a bloom — each also
+answering what happens when a die DROPS into a warded column, which today is
+nothing. None of the six may stop the placing die: a ward eats a strike, it
+never refuses your own placement.
 
 ### 5. The navigation pass (2026-08-18)
 

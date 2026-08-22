@@ -1,14 +1,16 @@
 <!-- meta name="Matchmaking" group="2 · Online flow" subtitle="Rolling dice while searching; Cancel is the ONLY exit and truly leaves the queue" width=412 height=880 links="Mode dial, Home" -->
 <style>
-  .qwrap{display:flex;flex-direction:column;align-items:center;gap:22px;margin:auto;width:100%;max-width:var(--w-col)}
-  .qdice{display:flex;gap:14px}
-  .qdice .die{animation:qspin 2.2s ease-in-out infinite}
-  .qdice .die:nth-child(2){animation-delay:.35s}
-  @keyframes qspin{0%,100%{transform:rotate(-6deg) translateY(0)}50%{transform:rotate(6deg) translateY(-7px)}}
-  .qmsg{font-size:11px;letter-spacing:.2em;color:var(--txt);text-transform:uppercase;text-align:center}
-  .qmsg::after{content:"";animation:dots 1.2s steps(4,end) infinite}
-  .qsub{font-size:10px;letter-spacing:.14em;color:var(--dim);text-align:center}
-  .qtime{font-size:24px;font-weight:900;color:var(--cy);text-shadow:0 0 16px rgba(40,232,255,.5)}
+  /* Everything the queue looks like — .qdice, its bounce, .qmsg and its dots,
+     .qsub, .qtime — already reaches this card: design/build.mjs inlines
+     src/online/online.css, and none of those rules is ID-scoped. The card used
+     to keep a second copy of all seven, and the copy had already drifted:
+     .qtime was pinned to var(--cy) where the app writes var(--p1), a slot the
+     player repoints in Settings (flow/menu.ts).
+     Only the column itself is restated, because #ovOnline .panel is ID-scoped
+     and unreachable — and note the gap is the PANEL's 16px, not #onQueue's
+     22px: #onQueue is a .panel too, and (1 id, 1 class) outranks (1 id), so
+     the 22px at online.css:158 never lands in production either. */
+  .qwrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin:auto;width:100%;max-width:var(--w-col)}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
   <div class="shead"><button class="ico" style="visibility:hidden">‹</button><span class="ttl">MATCHMAKING</span><span class="pad"></span></div>
@@ -20,6 +22,6 @@
     <div class="qmsg">Looking for an opponent</div>
     <div class="qtime">0:07</div>
     <div class="qsub">Inviting anyone available…</div>
-    <button class="btn" style="min-width:210px">Cancel</button>
+    <button class="btn">Cancel</button>
   </div>
 </div></div>

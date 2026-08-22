@@ -24,7 +24,7 @@ import fs from 'fs';
 import path from 'path';
 import { serveTree } from './serve.mjs';
 
-const FILE_SUITES = ['test4', 'test6', 'test8', 'test9', 'test10', 'test11', 'test12', 'test13', 'test14', 'test15', 'test17', 'test18', 'test19', 'test20', 'test21'];
+const FILE_SUITES = ['test4', 'test6', 'test8', 'test9', 'test10', 'test11', 'test12', 'test13', 'test14', 'test15', 'test17', 'test18', 'test19', 'test20', 'test21', 'test22'];
 const SERVED_SUITES = ['test7', 'test16']; // read pwa/ over the shared server, read-only — poolable
 // testupdate reads that same server but MUTATES pwa/ — it always runs alone, last
 const SUITE_TIMEOUT_MS = 360_000;   // must clear test6/test10's worst-case random endgames on slow CI
