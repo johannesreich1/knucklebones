@@ -150,7 +150,7 @@ function refreshTurnUI(): void {
   if (O.pendingDie) revealDie(O.pendingDie, S.turn);
   renderPool();
   // a calm static status — the countdown bar below carries the motion
-  setStatus(mine ? 'Your move' : oppName() + ' thinking', S.turn, false);
+  setStatus(mine ? 'Your move' : oppName() + ' thinking', S.turn);
   setActivePlate();
   clearHints();
   if (mine) showHints();
@@ -168,7 +168,7 @@ function oppStalled(): void {
     if (!O || O.done || S.turn === O.you) return;
     const left = Math.max(0, Math.ceil((13_000 - (Date.now() - O.lastMoveAt)) / 1000));
     setStatus(left > 0 ? 'Away — auto play in ' + left
-                       : 'Auto play…', S.turn, false);
+                       : 'Auto play…', S.turn);
     if (left > 0) setTimeout(tick, 500);
   };
   tick();
@@ -279,7 +279,7 @@ async function botReply(bot: { col: number; die: number }): Promise<void> {
   const them = (1 - O.you) as Player;
   S.turn = them;                    // their turn for real — this also shuts the
   setActivePlate();                 // input gate, which reads S.turn
-  setStatus(oppName() + ' thinking', them, false);
+  setStatus(oppName() + ' thinking', them);
   startTimer(oppStalled, ONLINE_TURN_SECS);
   await pause(260);                 // the turn passing
   if (!O) return;
@@ -445,7 +445,7 @@ function finishUI(m: MatchRow): void {
   const delta = (meP1 ? (m as any).p1_rating_delta : (m as any).p2_rating_delta) as number | null;
   const theirDelta = (meP1 ? (m as any).p2_rating_delta : (m as any).p1_rating_delta) as number | null;
   const won = m.winner !== null && ((meP1 && m.winner === m.p1) || (!meP1 && m.winner === m.p2));
-  setStatus('', null, false);   // the result screen announces the winner — the table says nothing twice (user call)
+  setStatus('', null);   // the result screen announces the winner — the table says nothing twice (user call)
   settleBoard();                                   // same end beat as local play
   const oppJoin = O.names.ratings?.[oppSeat()] ?? null;
   const report: FinishReport = {

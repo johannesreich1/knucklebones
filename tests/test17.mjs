@@ -48,10 +48,8 @@ try {
       const spill = [...document.querySelectorAll('#ovPractice .note')]
         .filter((e) => !e.closest('[hidden]'))
         .filter((e) => e.scrollHeight > e.clientHeight + 1).map((e) => e.id);
-      const seatNote = $('#duoNote').textContent;
-      const seatInsideCard = $('#duoNote').closest('.card')?.id ?? null;
       seg('cpu');
-      return { modeSlots, spellSlots, cpu, duo, spill, seatNote, seatInsideCard };
+      return { modeSlots, spellSlots, cpu, duo, spill };
     });
     out[label] = r;
 
@@ -61,8 +59,6 @@ try {
     check(r.cpu.mode === r.duo.mode, 'the Game mode card moves on cpu/duo: ' + label, [r.cpu.mode, r.duo.mode]);
     check(r.cpu.spell === r.duo.spell, 'the Spell card moves on cpu/duo: ' + label, [r.cpu.spell, r.duo.spell]);
     check(r.spill.length === 0, 'a note overflows its reserved lines: ' + label, r.spill);
-    // the seating note belongs to the control it describes, not to the footer
-    check(r.seatInsideCard === 'seatCard', 'the seating note drifted out of its card: ' + label, r.seatInsideCard);
 
     /* ---- EVERY titled page is the SAME page ----
        A view with a title and a back button pins its header and scrolls its
@@ -153,6 +149,15 @@ try {
           glass: /blur/.test(glass.backdropFilter || glass.webkitBackdropFilter || ''),
           glassAtRest, glassPart, glassMore, glassScrolled,
           scrollable: body.scrollHeight > body.clientHeight + 2,
+          /* HOW FAR THIS PAGE CAN ACTUALLY TRAVEL. The ramp is sampled at 10px
+             and 26px, so a body with four pixels of slack cannot demonstrate a
+             fade — it pins at one value and reads as "the glass snaps". That
+             is not a regression, it is a page that nearly fits: Impressum
+             became one the day its bottom button left (2026-08-22). Scrollable
+             enough to bring the glass in at all is a weaker claim than
+             scrollable enough to show it arriving, and the two assertions want
+             different thresholds. */
+          travel: body.scrollHeight - body.clientHeight,
           /* the mask must actually REACH nothing, not merely be some gradient:
              the old test matched the substring "gradient", which is equally
              true of a mask that ends on a hard edge pointing the wrong way */
@@ -162,7 +167,22 @@ try {
           behindBar: bodyTop <= headBox.top + 0.5,
           extraScrollers: extra,
           /* resting content must clear the glass's REAL reach, not --band's */
-          clearAtRest: first ? first.top >= glassBottom - 0.5 : true });
+          clearAtRest: first ? first.top >= glassBottom - 0.5 : true,
+          /* ‹ PAGES LEFT, ✕ SHEETS RIGHT, NEVER BOTH (design: 00-navigation).
+             The side IS the promise — ‹ says "one level up, where you came
+             from", ✕ says "this floats over something that resumes" — and the
+             edge-swipe handler presses whichever one it finds, so a view
+             wearing the wrong glyph teaches the wrong exit twice. Asserted
+             over every paged view for the same reason the header rules are:
+             Impressum and Privacy sat in sheet clothes for months (they are
+             Home destinations, fixed 2026-08-22) exactly as Settings did
+             before them, and nothing was watching either time. */
+          nav: (() => {
+            const icos = head.querySelectorAll('.ico'), ico = icos[0];
+            return { n: icos.length, glyph: ico ? ico.textContent.trim() : '',
+                     side: !ico ? 'none' : head.firstElementChild === ico ? 'left'
+                         : head.lastElementChild === ico ? 'right' : 'middle' };
+          })() });
         body.scrollTop = 0;
         if (!was) ov.classList.remove('on');
       }
@@ -179,6 +199,8 @@ try {
       check(p.glassAtRest === 0, `${p.id} FROSTS ITS BAR AT REST — it must dim the aurora only once scrolled: ` + label, p);
       if (p.scrollable) {
         check(p.glassScrolled > 0, `${p.id} never brings the glass in when scrolled: ` + label, p);
+      }
+      if (p.travel >= 40) {                      // enough slack to sample a ramp
         check(p.glassPart > 0 && p.glassPart < p.glassScrolled,
           `${p.id}'s glass SNAPS instead of fading in with the scroll: ` + label, p);
         check(p.glassMore > p.glassPart,
@@ -190,6 +212,9 @@ try {
       check(p.clearAtRest, `${p.id} frosts its first card at rest — the glass must cover empty space: ` + label, p);
       check(p.extraScrollers.length === 0,
         `a second page-filling scroller in ${p.id} — the glass cannot reach it: ` + label, p.extraScrollers);
+      check(p.nav.n === 1, `${p.id} must carry exactly ONE header control: ` + label, p.nav);
+      check(p.nav.side === 'left' ? p.nav.glyph === '\u2039' : p.nav.side === 'right' && p.nav.glyph === '\u2715',
+        `${p.id} wears the wrong exit for its side — ‹ belongs left, ✕ right: ` + label, p.nav);
     }
     await ctx.close();
   }

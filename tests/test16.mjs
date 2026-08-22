@@ -174,6 +174,25 @@ async function visit({ anonymous = 200, attached = false, door = 'chip', named =
         name: ov?.querySelector('.fnm')?.textContent,
         streak: ov?.querySelector('.fostreak')?.textContent,
         record: [...(ov?.querySelectorAll('.fost') ?? [])].map((s) => s.textContent?.trim() ?? '')[1] ?? '',
+        /* THE WAY OUT, and where it sits (design: 00-navigation). A sheet
+           dismisses with the shared corner ✕ — the full-width Close that lived
+           under the stats was navigation at the bottom of a screen, retired
+           everywhere else in the app (user call, 2026-08-22). Read as the
+           PLAYER meets it: the glyph, its box, and whether anything else in
+           the card still offers a way out. */
+        exit: (() => {
+          const x = ov?.querySelector('.foexit');
+          const cb = ov?.querySelector('.focard')?.getBoundingClientRect();
+          const xb = x?.getBoundingClientRect();
+          return { glyph: x?.textContent?.trim() ?? '', ico: !!x?.classList.contains('ico'),
+                   /* the corner, in pixels: right half of the card, top of it */
+                   corner: !!(cb && xb && xb.right > cb.right - 56 && xb.top < cb.top + 56),
+                   /* and it must not overlap what it sits above */
+                   clearsCols: (() => { const c = ov?.querySelector('.focols')?.getBoundingClientRect();
+                     return !!(c && xb && xb.bottom <= c.top + 0.5); })(),
+                   bottomBtns: [...(ov?.querySelectorAll('.btn') ?? [])].map((b) => b.textContent?.trim() ?? ''),
+                   gapLine: !!ov?.querySelector('.fogap') };
+        })(),
       };
     });
   }
@@ -283,6 +302,12 @@ try {
   check(board.faceoff?.streak === '4', 'the face-off streak did not arrive from player_card', board.faceoff);
   check(board.faceoff?.record.includes('W 7') && board.faceoff?.record.includes('L 2'),
         'the face-off does not state both sides of the record', board.faceoff);
+  const fx = board.faceoff?.exit;
+  check(fx?.glyph === '\u2715' && fx?.ico, 'the face-off does not dismiss with the shared ✕', fx);
+  check(fx?.corner, 'the face-off\u2019s ✕ is not in its top-right corner', fx);
+  check(fx?.clearsCols, 'the face-off\u2019s ✕ overlaps the columns instead of sitting above them', fx);
+  check(fx?.bottomBtns.length === 0, 'the face-off still carries a bottom dismissal', fx);
+  check(!fx?.gapLine, 'the points-between-you line is back on the face-off', fx);
   check(board.errs.length === 0, 'page errors on the ladder', board.errs);
 
   // 1c · the named player: the claim is spent, the card is GONE — not

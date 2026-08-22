@@ -24,7 +24,7 @@ import { renderSide, renderAll, applySides, updateRecord, clearHints, showHints,
 import { fit } from '../ui/layout.ts';
 import { startTimer, stopTimer, showClock } from './timer.ts';
 import { coachShow, coachHide, clearTut, tutNextRoll, tutOnChoose } from './tutorial.ts';
-import { updateStatLine, toMenu } from './menu.ts';
+import { toMenu } from './menu.ts';
 import { showEnd, closeEnd } from '../ui/endscreen.ts';
 import { resetSpells, drawSpell, renderSpells, aiSpellTurn, clearUndo } from './spells.ts';
 
@@ -164,6 +164,10 @@ export async function nextTurn(){
   const gen=S.gen;
   if(S.phase==='over') return;
   renderAll(false);   // same repaint belt online uses: state wins every turn
+  renderSpells();     // ...and the rail belongs to the turn: the seat that just
+                      // lost it dims here. sayChoose() repaints it again when a
+                      // HUMAN gets the choice; on the machine's turn nothing
+                      // else would, and the rune stayed lit through it.
   if(S.mode==='duo' && S.seat==='pass' && S.turn!==S.bottom){
     const ok=await handOff(S.turn);           // face mode switches turns directly
     if(!ok || S.gen!==gen || S.phase==='over') return;
@@ -178,7 +182,7 @@ export async function nextTurn(){
     armTimer();
   }else{
     S.phase='anim';
-    setStatus('AI thinking',AI,true);
+    setStatus('AI thinking',AI);
     await wait(300);
     if(S.gen!==gen) return;
     // it holds the same rune you do — it spends it at the same point in the
@@ -421,11 +425,16 @@ export function endGame(){
   else if(duo || p1won){ Sfx.win(); }
   else { Sfx.lose(); vibrate(220); }
   updateRecord();
+  /* Still recorded, deliberately unshown: the Best/Record line above the Play
+     button was removed 2026-08-22 (user call — the offline screen is a setup
+     screen, not a trophy case), and the session record now lives on the result
+     screen alone. The high score keeps accumulating rather than being deleted,
+     because a player's history cannot be got back once it stops being written. */
   if(!tut){                                     // a scripted round earns no records
     const best = duo ? Math.max(me,ai) : me;    // duo: best score by either player
     if(best>S.best) S.best=best;
   }
-  saveStats(); updateStatLine();
+  saveStats();
   setStatus('',null);   // the result screen announces the winner — the table says nothing twice (user call)
   // ONE result screen, filled from here — the fireworks and the title's landing
   // belong to it, so a ranked win gets exactly the same show (ui/endscreen)

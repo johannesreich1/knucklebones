@@ -264,10 +264,16 @@ export function showHints(){
   }
 }
 /* ===================== TURN FLOW ===================== */
-export function setStatus(text,who,dots){
+/* ONE status line, said once. The third parameter used to append a ticking
+   ellipsis, and the only caller that passed it was the offline AI's turn — so
+   "AI thinking…" animated offline while the identical online wait ("<name>
+   thinking") sat still. A flag whose whole job is to let two callers of the
+   same function disagree is the difference itself; removing it is what makes
+   them agree, rather than remembering to pass false. */
+export function setStatus(text,who){
   const s=$('#status');
   s.textContent=text;
-  s.className='status'+(who===ME?' me':who===AI?' ai':'')+(dots?' dots':'');
+  s.className='status'+(who===ME?' me':who===AI?' ai':'');
 }
 export function setActivePlate(){
   const live = S.phase!=='over' && S.phase!=='menu';

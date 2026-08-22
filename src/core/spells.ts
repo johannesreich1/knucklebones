@@ -40,7 +40,17 @@ export interface SpellSpec {
   name: string;      // the rune's label
   blurb: string;     // one line: what it does
   detail: string;    // the long form (screen readers, and any future sheet)
-  aim: string;       // the status line while the rune is armed
+  /* The status line while the rune is armed — and it lives in a RESERVED box:
+     one line in portrait, two in landscape's fixed 104px lane. Outgrow it and
+     the box grows with the text, which walks the stage die up the screen on
+     every cast. So this line says WHICH column the tap wants and stops — the
+     verb is already on the rune the player just pressed, in its name, its icon
+     and its `blurb`, and the board rings the legal targets in gold. The one
+     thing the rings CANNOT say is why they are silent, which is exactly what
+     "a filled column" or "an enemy column" answers. Not a character budget:
+     long WORDS break lines, so measure rather than count (tests/test14 §12
+     arms every entry on the narrowest phone, in both orientations). */
+  aim: string;
   target: 'column' | 'self';   // what a cast aims at — a column, or the die in hand
   /* WHOSE half a column cast points at. The board rings only the columns a
      cast can actually land on, so this is what stops a ward from advertising
@@ -157,7 +167,7 @@ const WARD: SpellSpec = {
   blurb: 'Shield a column against the next strike.',
   detail: 'Mark one of your columns: the next enemy strike that would destroy dice there '
         + 'fizzles instead, and the ward is spent. One cast per game.',
-  aim: 'Tap one of your columns to guard',
+  aim: 'Tap your own column',
   target: 'column',
   side: 'own',
   uses: 1,
@@ -228,7 +238,7 @@ const PILFER: SpellSpec = {
   detail: 'Drag onto an enemy column: its top die crosses to your facing column. The stolen '
         + 'die lands without striking. Needs room on your side; a shielded column cannot be '
         + 'robbed. One cast per game.',
-  aim: 'Tap an enemy column to steal',
+  aim: 'Tap an enemy column',
   target: 'column',
   side: 'foe',
   uses: 1,
@@ -271,7 +281,7 @@ const ANVIL: SpellSpec = {
         + 'the die in hand — ties go to the die closest to the centre. Nothing moves and '
         + 'nothing is destroyed, so the column keeps its height, and your die still lands '
         + 'afterwards. A column with room left cannot be forged. One cast per game.',
-  aim: 'Tap a filled column to recast its weakest die',
+  aim: 'Tap a filled column',
   target: 'column',
   side: 'own',
   uses: 1,

@@ -580,6 +580,7 @@ function showFaceoff(r: LeaderboardRow, mine: MySide | null): void {
   const ov = document.createElement('div');
   ov.className = 'faceoff' + (mine ? '' : ' solo');
   ov.innerHTML = `<div class="focard" role="dialog" aria-modal="true" tabindex="-1" aria-label="${esc(r.nickname)}">
+    <button class="ico foexit" aria-label="Close">✕</button>
     <div class="focols dice-static">
       <div class="focol" style="--gc:var(--g-${g.id})">
         <span class="av"></span><span class="fnm">${esc(r.nickname)}</span>
@@ -597,11 +598,7 @@ function showFaceoff(r: LeaderboardRow, mine: MySide | null): void {
       ${stat('Best streak', '<span class="fostreak">–</span>', mine && '<span class="mystreak">–</span>')}
       ${stat('Peak', pts(r.peak), mine && pts(mine.lad.peak))}
       ${stat('Win rate', rate(r.wins, r.games), mine && rate(mine.lad.wins, mGames))}
-    </div>` +
-    (mine ? `<div class="fogap">${
-      r.points === mine.lad.points ? 'Level with you'
-        : `<b>${pts(Math.abs(r.points - mine.lad.points))} points</b> between you`}</div>` : '') +
-    '<button class="btn foexit">Close</button></div>';
+    </div></div>`;
   const close = (): void => { ov.remove(); document.removeEventListener('keydown', onKey); };
   const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') close(); };
   ov.addEventListener('click', (e) => { if (e.target === ov) { Sfx.tap(); close(); } });

@@ -130,6 +130,15 @@ export function renderSpells(): void {
          now" it flipped twice per turn, restarting the ring's animation from
          its first keyframe each time, and the glow visibly snapped. */
       const readout = seat !== near;                // the other player's: an indicator
+      /* THEIR TURN. The one thing the look DOES follow the turn for: a rune
+         you are holding while the other player moves reads as unavailable,
+         because `disabled` by itself was invisible and the lit rune invited a
+         tap that could never land (user report). Keyed on the TURN, not on
+         caster(), so it changes once per hand-over instead of flickering
+         through every busy window inside your own turn — the flicker that
+         taught the rest of this block to ignore the turn. The readout has its
+         own `idle` dimming and must not take this one on top. */
+      const offturn = !readout && seat !== S.turn;
       /* spent, but still takeable back: the press that cast it is also the
          press that returns it, so the rune must not read as dead yet */
       const canUndo = seat === now && undoable(s.id);
@@ -139,6 +148,7 @@ export function renderSpells(): void {
       b.classList.toggle('ready', left > 0 && !readout);
       b.classList.toggle('idle', left > 0 && readout);
       b.classList.toggle('armed', S.spellArmed === s.id && seat === now);
+      b.classList.toggle('offturn', offturn);
       b.disabled = (left <= 0 && !canUndo) || seat !== now;   // the turn decides the rest
       const n = b.querySelector('.n');
       if (n) n.textContent = left > 1 ? String(left) : '';   // a single charge needs no number
@@ -218,7 +228,7 @@ export function arm(id: string): void {
   S.spellArmed = id;
   renderSpells();
   const spell = spellById(id);
-  if (spell) setStatus(spell.aim, S.turn as Player, false);
+  if (spell) setStatus(spell.aim, S.turn as Player);
 }
 export function disarm(): void {
   if (!S.spellArmed) return;
@@ -269,7 +279,7 @@ async function castBy(who: Player, spell: SpellSpec, col: number, ctx: CastCtx):
   S.busy = true;
   S.phase = 'anim';
   stopTimer();
-  setStatus(S.mode === 'cpu' && who === AI ? 'AI — ' + spell.name : spell.name, who, false);
+  setStatus(S.mode === 'cpu' && who === AI ? 'AI — ' + spell.name : spell.name, who);
   const gen = S.gen;
   const fx = CAST_FX[spell.id] ?? defaultFx;
   await fx(who, col, () => spell.apply(S.boards as GameState, who, col, ctx));
@@ -336,7 +346,7 @@ export function undoCast(): boolean {
   renderSide(ME, true);                           // a ward chip, if one was placed
   renderSpells();
   showHints();
-  setStatus((spell ? spell.name : 'Spell') + ' put back', u.who, false);
+  setStatus((spell ? spell.name : 'Spell') + ' put back', u.who);
   return true;
 }
 

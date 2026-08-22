@@ -3,6 +3,7 @@
 // P1 is at the bottom (pass mode swaps halves, face mode doesn't).
 import { SPEC, AI, type Player } from '../core/rules.ts';
 import { S } from '../state.ts';
+import { fit } from './layout.ts';
 
 export const $ = (s: string) => document.querySelector(s) as HTMLElement;
 
@@ -83,15 +84,22 @@ export function watchPagedScroll(): void {
   }, true);
 }
 
+/* Opening or closing a screen can change the ORIENTATION POLICY — landscape
+   belongs to the table and to its setup and result screens, not to menus
+   (ui/layout.ts LANDSCAPE_SCREENS) — so the fit is re-taken here rather than
+   waiting for a resize that will never come. The import is circular (layout
+   reads $ from this module) but only ever at call time, never while either
+   module is still evaluating. */
 export function show(sel: string): void {
   const el = $(sel);
   el.classList.add('on');
+  fit();
   /* a view opening at the top must not already wear the glass — and one whose
      body kept its place must. Appending rows fires no scroll event, so the
      state is settled here rather than inferred later. */
   el.querySelectorAll('.pbody').forEach(markScrolled);
 }
-export function hide(sel: string): void { $(sel).classList.remove('on'); }
+export function hide(sel: string): void { $(sel).classList.remove('on'); fit(); }
 
 export function sideKey(who: Player): 'bot' | 'top' { return who === S.bottom ? 'bot' : 'top'; }
 export function ownerOf(sideEl: HTMLElement): Player { return +sideEl.dataset.owner! as Player; }

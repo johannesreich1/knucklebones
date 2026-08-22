@@ -33,11 +33,35 @@ function inset(cs, land){
   return { v: over('Top', b.v) + over('Bottom', b.v),
            h: over('Left', b.h) + over('Right', b.h) };
 }
+/* WHICH SCREENS MAY TURN. Landscape belongs to the table and to the two screens
+   that dress it: the setup you pick a game mode and a rune on, and the result
+   you end on. Everything else is a portrait column — a menu that also reflows
+   sideways is a second layout to maintain, and only the board gains from the
+   width (user call). The list is an ALLOWLIST on purpose: a screen added later
+   is portrait until someone decides otherwise, which is the safe default. */
+const LANDSCAPE_SCREENS = new Set(['ovPractice', 'ovEnd', 'ovPass', 'ovWheel']);
+/* …and these float over whatever is beneath without being a screen of their own,
+   so they must not change its mind: a confirm over a menu is still a menu. */
+const PASSTHROUGH = new Set(['ovAsk', 'ovLoad', 'ovFirst']);
+/* Overlays STACK (home stays on beneath pages), and paint order is DOM order,
+   so the last `.on` sibling is the one the player is looking at. */
+function landscapeScreen(): boolean {
+  let top = '';
+  for (const ov of document.querySelectorAll('.ov.on')) if (!PASSTHROUGH.has(ov.id)) top = ov.id;
+  return !top || LANDSCAPE_SCREENS.has(top);   // no overlay at all = the table
+}
 export function fit(){
   const app=isEmbed()?kbroot():$('#app');
   const w=app.clientWidth, h=app.clientHeight;
-  const land = w>h && h<560;                 // short and wide: phone on its side
+  const short = h < 560;
+  const land = w>h && short && landscapeScreen();   // short, wide, AND a screen that turns
   document.documentElement.classList.toggle('land', land);
+  /* A SHORT VIEWPORT IS NOT THE SAME FACT AS A LANDSCAPE LAYOUT, and conflating
+     them cost the offline setup screen its Play button: .ov centres its content
+     and never scrolls, so on a 390px-tall phone the button sat below the fold
+     with no way to reach it. The overlays need to know the viewport is short
+     even when — especially when — they are keeping their portrait layout. */
+  document.documentElement.classList.toggle('shortv', short);
   const safe = inset(getComputedStyle(app), land);
   const rowmode = S.scoring===ROWSWITCH || S.scoring===ROWMULT;
   let cell;

@@ -36,7 +36,7 @@ import { newGame, startLocal, passTap } from './flow/game.ts';
 import { stampBuild } from './ui/dom.ts';
 import { castArmed, disarm, renderSpells } from './flow/spells.ts';
 import { bindEnd } from './ui/endscreen.ts';
-import { toMenu, syncSettingsUI, updateStatLine } from './flow/menu.ts';
+import { toMenu, syncSettingsUI } from './flow/menu.ts';
 import { requestLeave, leavingForfeits } from './flow/leave.ts';
 import { openModes, openSpells, pickerButtons, MODE_PICKS, SPELL_PICKS } from './ui/library.ts';
 import { isNewcomer } from './ui/firstrun.ts';
@@ -56,7 +56,6 @@ export function boot(embed){
   watchPagedScroll();
   updateRecord();
   syncSettingsUI();
-  updateStatLine();
   // the hero duel: you (cyan) vs them (magenta), gold VS between
   const duel=$('#homeDuel');
   duel.insertBefore(makeDie(5,ME), duel.firstChild);
@@ -87,7 +86,7 @@ export function boot(embed){
   tap($('#ovPass'),passTap);
   tap($('#passQuit'),()=>{ Sfx.tap(); toMenu(); });
   const openPractice=(mode)=>{ if(mode) S.mode=mode; saveStats(); syncSettingsUI();
-    updateStatLine(); hide('#ovStart'); show('#ovPractice'); };
+    hide('#ovStart'); show('#ovPractice'); };
   tap($('#btnVsCpu'),()=>{ Sfx.unlock(); Sfx.tap(); openPractice('cpu'); });
   tap($('#btnDuoHome'),()=>{ Sfx.unlock(); Sfx.tap(); openPractice('duo'); });
   /* HOW TO PLAY is a hub, not a link: the tutorial, the rules, the modes and
@@ -101,13 +100,12 @@ export function boot(embed){
   tap($('#btnLearnRules'),()=>{ Sfx.tap(); show('#ovRules'); });
   tap($('#btnLearnModes'),()=>{ Sfx.tap(); openModes(); });
   tap($('#btnLearnSpells'),()=>{ Sfx.tap(); openSpells(); });
-  /* the two the law requires — reachable, never in the way */
+  /* the two the law requires — reachable, never in the way. Pages below Home
+     like every other Home destination: ONE way out, the header's ‹ (which the
+     edge swipe presses too), and Home is waiting underneath it. */
   tap($('#btnImprint'),()=>{ Sfx.tap(); show('#ovImprint'); });
   tap($('#btnPrivacy'),()=>{ Sfx.tap(); show('#ovPrivacy'); });
-  for(const id of ['Imprint','Privacy']){
-    tap($('#btnClose'+id),()=>{ Sfx.tap(); hide('#ov'+id); });
-    tap($('#btnClose'+id+'2'),()=>{ Sfx.tap(); hide('#ov'+id); });
-  }
+  for(const id of ['Imprint','Privacy']) tap($('#btn'+id+'Back'),()=>{ Sfx.tap(); hide('#ov'+id); });
   tap($('#btnPracticeBack'),()=>{ Sfx.tap(); hide('#ovPractice'); show('#ovStart'); });
   /* The HUD's only control, and mid-match the only thing it can usefully offer
      is the way out — asked once, plainly, with a way back. Sound and dice faces

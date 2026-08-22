@@ -146,6 +146,71 @@ try {
   out.slots = [solo, both, third].map((d) => d.turned.drawnSlot);
   check(new Set(orders).size > 1, 'the deck fans out in the same order every deal', orders);
   check(out.slots.every((i) => i >= 0), 'a deal took no card out of the fan at all', out.slots);
+  /* ---- THE REVEAL'S PARTS DO NOT SIT ON EACH OTHER ----
+     Every part of this screen is absolutely positioned against the stage's
+     edge through --stage, which is what lets a beat change the stage's size
+     without the readout jumping. The failure mode of that design is total: if
+     --stage ever fails to resolve for one of them, its calc() is invalid, `top`
+     falls back to auto, and an absolutely positioned child of a centred flex
+     column lands in the MIDDLE — the title and the answer printed across the
+     dial they describe. Nothing about the markup or the classes would look
+     wrong, so this is measured in pixels, at two sizes, in BOTH dressings: the
+     ranked one carries a versus line the offline one does not. */
+  const overlaps = async (page, label) => {
+    const r = await page.evaluate(() => {
+      const box = (q) => { const e = document.querySelector(q); if (!e) return null;
+        const b = e.getBoundingClientRect();
+        return (e.textContent || '').trim() && b.height > 0 ? { top: b.top, bot: b.bottom } : null; };
+      const st = document.querySelector('#wheelStage').getBoundingClientRect();
+      const stage = { top: st.top, bot: st.bottom };
+      const over = (a) => a ? Math.round(Math.max(0, Math.min(a.bot, stage.bot) - Math.max(a.top, stage.top))) : 0;
+      return { title: over(box('#wheelTitle')), name: over(box('#wheelName')),
+               blurb: over(box('#wheelBlurb')), settled: over(box('#wheelSettled')),
+               who: over(box('#wheelWho')), hold: over(box('#wheelHold')),
+               stageH: Math.round(st.height) };
+    });
+    out['overlap_' + label] = r;
+    check(r.stageH > 0, `${label}: the reveal has no stage at all`, r);
+    for (const part of ['title', 'name', 'blurb', 'settled', 'who', 'hold']) {
+      check(r[part] === 0, `${label}: the reveal's ${part} is printed across the stage`, r);
+    }
+  };
+
+  /* deal() above always draws a RUNE, which is the offline dressing. Ranked
+     reveals the mode alone, so this one holds on whichever beat is last. */
+  const revealHeld = async (mode, spell) => {
+    await page.evaluate(([m, sp]) => {
+      const k = window.__kb;
+      k.goHome(); k.openPractice();
+      document.querySelector(`#modePick button[data-v="${m}"]`).click();
+      document.querySelector(`#spellPick button[data-v="${sp}"]`).click();
+      k.S.timer = 0;
+    }, [mode, spell]);
+    await page.click('#btnPlay');
+    await page.waitForFunction(() => document.querySelector('#ovWheel')?.classList.contains('holding'), { timeout: 20000 });
+    await page.waitForTimeout(250);
+  };
+  const dismiss = async () => {
+    await page.click('#ovWheel');
+    await page.waitForFunction(() => !document.querySelector('#ovWheel')?.classList.contains('on'), { timeout: 12000 });
+  };
+
+  for (const [w, h] of [[390, 844], [375, 667]]) {
+    await page.setViewportSize({ width: w, height: h });
+    // OFFLINE dressing: mode then rune, so the settled strip is on screen too
+    await revealHeld('-1', 'random');
+    await overlaps(page, `offline-${w}x${h}`);
+    await dismiss();
+    // RANKED dressing: the mode alone, plus the versus line ranked fills in
+    await revealHeld('-1', 'ward');
+    await page.evaluate(() => { document.querySelector('#wheelWho').innerHTML =
+      '<div class="dside me"><span class="dav"></span><span class="dnm">FrostLynx303</span><span class="rt">1284</span></div>'
+      + '<span class="dvs">VS</span>'
+      + '<div class="dside foe"><span class="dav"></span><span class="dnm">EmberCrow896</span><span class="rt">1310</span></div>'; });
+    await page.waitForTimeout(200);
+    await overlaps(page, `ranked-${w}x${h}`);
+    await dismiss();
+  }
 } catch (e) {
   problems.push('THREW :: ' + e.message);
 } finally { await browser.close(); }

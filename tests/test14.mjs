@@ -311,6 +311,49 @@ try {
   check(out.cpuHolds.cpu === '[[2],[],[]]' && out.cpuHolds.charges === '[{"pilfer":1},{"pilfer":1}]',
     'the CPU burned its rune on nothing', out.cpuHolds);
 
+  /* ---------- 8c. their turn: your own rune READS unavailable ----------
+     It was `disabled` and nothing else, and disabled is invisible: the rune
+     sat full-bright and breathing while the machine thought, which reads as a
+     control you may press (user report). Measure the PIXELS, not the class —
+     the test13 lesson — and measure the ring's play state too, because the
+     cheap fix is to drop the `ready` class and that RESTARTS the glow from its
+     first keyframe when the turn comes back. Pausing is what keeps it still. */
+  await newGame(); check(await waitChoose(), 'game never reached choose (offturn)');
+  const rail = () => page.evaluate(() => {
+    const b = document.querySelector('#spellBar .rune:not([hidden])');
+    if (!b) return null;
+    const cs = getComputedStyle(b);
+    return { cls: b.className, opacity: +cs.opacity, grey: cs.filter,
+             ring: getComputedStyle(b, '::before').animationPlayState, disabled: b.disabled };
+  });
+  /* vs CPU the rail is always YOURS (near = S.bottom), so the turn is the only
+     thing moving here — which is exactly the case the player reported */
+  const turnTo = async (who) => {
+    await page.evaluate((t) => {
+      const k = window.__kb;
+      k.S.mode = 'cpu'; k.S.turn = t; k.S.bottom = 1; k.S.busy = false;
+      k.S.phase = t === 1 ? 'choose' : 'anim'; k.S.die = 3;
+      k.applySides(); k.spells.render();
+    }, who);
+    await page.waitForTimeout(420);      // .rune transitions opacity/filter over .25s
+  };
+  await turnTo(0); out.theirTurn = await rail();
+  await turnTo(1); out.myTurn = await rail();
+  check(out.theirTurn && /\boffturn\b/.test(out.theirTurn.cls),
+    'the wielded rune does not know it is not your turn', out.theirTurn);
+  check(out.theirTurn && out.theirTurn.opacity <= 0.6 && out.theirTurn.grey !== 'none',
+    'YOUR RUNE LOOKS CASTABLE ON THE OPPONENT\'S TURN', out.theirTurn);
+  check(out.theirTurn && out.theirTurn.disabled, 'a dimmed rune must also refuse the press', out.theirTurn);
+  // dimmed, not SPENT: nothing was cast, and the two must not look alike
+  check(out.theirTurn && !/\bspent\b/.test(out.theirTurn.cls) && out.theirTurn.opacity > 0.3,
+    'waiting for your turn must not read as a spent rune', out.theirTurn);
+  check(out.theirTurn && out.theirTurn.ring === 'paused',
+    'the ring kept animating under the dim — it must pause, so it can resume', out.theirTurn);
+  // and the turn coming back gives it all back, ring running from where it was
+  check(out.myTurn && !/\boffturn\b/.test(out.myTurn.cls) && out.myTurn.opacity > 0.95
+    && out.myTurn.grey === 'none' && out.myTurn.ring === 'running',
+    'your own turn did not restore the rune', out.myTurn);
+
   /* ---------- 9. a SELF spell has ONE target, so pressing it casts it ----------
      NUDGE and FATE act on the die in hand. There is nothing to choose, so
      there is nothing to aim: a tap on the rune spends it then and there
@@ -671,6 +714,67 @@ try {
   }));
   check(out.tut.charges === '[{},{}]', 'the tutorial dealt spells', out.tut);
   check(!out.tut.runeShown, 'the rune showed up in the tutorial', out.tut);
+
+
+  /* ---------- 12. the armed line fits the lane it was given ----------
+     The status has a RESERVED box, and the reserve is the whole rule: ONE line
+     in portrait, TWO in landscape's fixed 104px lane (`.status` / `.land
+     .status` min-height). A box that sizes itself to its text walks the stage
+     die up the screen — the drift test8 guards for ordinary turns. The ARMED
+     line is that same box with longer words in it and was never measured:
+     ANVIL's "Tap a filled column to recast its weakest die" took FOUR lines in
+     landscape (die shoved 12.6px) and TWO in portrait on a 320px phone (user
+     report), with WARD and PILFER quietly over in landscape.
+
+     Measured through arm(), the path a real press takes, once per REGISTRY
+     entry — so the next spell is measured the day it is written rather than
+     the day someone plays it on a small phone. The budget is READ FROM THE
+     CSS, never typed here, so the reserve and its guard cannot drift apart.
+     Two viewports are the whole family: the narrowest portrait phone (the box
+     is shrink-to-fit there, so the narrowest lane is the one that wraps first)
+     and any landscape (that lane is a fixed 104px — the wrap depends on the
+     words alone). */
+  for (const view of [{ name: 'portrait', w: 320, h: 568 }, { name: 'landscape', w: 667, h: 375 }]) {
+    const vctx = await browser.newContext({ viewport: { width: view.w, height: view.h }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+    await vctx.addInitScript(() => { const k = 'knucklebones.v1', c = JSON.parse(localStorage.getItem(k) || '{}'); c.played = true; localStorage.setItem(k, JSON.stringify(c)); });
+    const vp = await vctx.newPage();
+    vp.on('pageerror', e => problems.push('PAGEERROR(' + view.name + '): ' + e.message));
+    await vp.goto(F); await vp.waitForTimeout(400);
+    await vp.evaluate(() => window.__kb.openPractice());
+    await vp.tap('#btnPlay'); await vp.waitForTimeout(2200);
+    /* one synchronous pass: nothing re-renders between two arms, so every row
+       is measured against the same resting stage. Line boxes are counted with
+       a Range, not by dividing by line-height — portrait's line-height is
+       `normal`, which parses to NaN and quietly makes every row look fine. */
+    const lane = await vp.evaluate((ids) => {
+      const st = document.getElementById('status'), stage = document.getElementById('dieStage');
+      const reserve = parseFloat(getComputedStyle(st).minHeight);
+      const restY = stage.getBoundingClientRect().y;
+      const lines = () => { const rg = document.createRange(); rg.selectNodeContents(st); return rg.getClientRects().length; };
+      const rows = ids.map((id) => {
+        window.__kb.spells.arm(id);
+        const b = st.getBoundingClientRect();
+        return { id, text: st.textContent, lines: lines(), h: +b.height.toFixed(1), w: +b.width.toFixed(1),
+                 offscreen: b.right > window.innerWidth + 0.5 || b.left < -0.5,
+                 dieMoved: +Math.abs(stage.getBoundingClientRect().y - restY).toFixed(1) };
+      });
+      window.__kb.spells.disarm();
+      return { land: document.documentElement.classList.contains('land'), reserve, rows };
+    }, SPELLS.map((s) => s.id));
+    out['aimLane_' + view.name] = lane;
+    check(lane.land === (view.name === 'landscape'), 'the aim-lane probe was in the wrong orientation', { view, land: lane.land });
+    check(lane.rows.every((r) => r.text), 'an armed rune said nothing', lane.rows);
+    check(lane.rows.every((r) => r.h <= lane.reserve + 0.5),
+      'an armed line outgrows the box ' + view.name + ' reserves for it',
+      { reserve: lane.reserve, over: lane.rows.filter((r) => r.h > lane.reserve + 0.5) });
+    check(lane.rows.every((r) => !r.offscreen),
+      'an armed line runs off the edge of a ' + view.name + ' phone',
+      lane.rows.filter((r) => r.offscreen));
+    check(lane.rows.every((r) => r.dieMoved <= 0.5),
+      'arming a rune walked the stage die off its place in ' + view.name,
+      lane.rows.filter((r) => r.dieMoved > 0.5));
+    await vctx.close();
+  }
 
   console.log(JSON.stringify({ out, problems }, null, 2));
 } finally { await browser.close(); }
