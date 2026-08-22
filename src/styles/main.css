@@ -487,16 +487,8 @@ html.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
    header, so 18 of its 26px floated in that empty gap and only the last 8px
    ever touched content. The band looked feeble because it mostly WAS. With no
    gap the header's bottom IS the body's top, so the whole band lies on the
-   scroller; the body reserves that distance in its padding instead.
-   --headgap IS THAT RESERVE, ON TOP OF THE BAND, and it is now 0: it carried
-   the old 18px flex gap so the rework would move nothing, and it read as too
-   much air under every bar (user call, 2026-08-22). At 0 the gap under the bar
-   IS the band — one distance, not two stacked — and because every other length
-   here is derived from --band + --headgap rather than typed again, the glass
-   tail and the scroll the frost arrives over followed it down on their own.
-   The knob stays rather than being folded into --band: the two are different
-   ideas (how tall the frost is, how far content sits below it), and ui/dom.ts
-   adds them by name. */
+   scroller; the body carries the old gap in its padding instead, which keeps
+   resting content exactly where it was. */
 /* --barpad MATCHES the 16px above the bar's content, so the title and the ‹
    sit dead centre in the visible bar rather than 1px high. The safe-area inset
    is added on top of that 16 and is not part of the reckoning: it is the
@@ -518,7 +510,7 @@ html.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
    derived one there fails silently into a fallback, which is the drift this
    is meant to prevent, wearing a disguise. */
 .ov.paged{--band:22px;--barpad:16px;--bartop:calc(env(safe-area-inset-top,0px) + 16px);
-  --headh:calc(var(--bartop) + 30px + var(--barpad));--headgap:0px;
+  --headh:calc(var(--bartop) + 30px + var(--barpad));--headgap:18px;
   --glasstail:calc(var(--band) + var(--headgap) - 6px);
   /* the fade's SEAMS, as offsets into the glass layer — the bar's own parts,
      not one constant, so they move with the inset instead of being swallowed

@@ -38,7 +38,23 @@
    home-indicator room) can never reach them. Sizing to content puts the last
    rows back inside the scroll, and the safe-area padding under them (user
    report: the ladder and match history lost their bottom room on a phone). */
-#ovOnline.listview .panel{max-width:none;width:100%;margin:6px 0 0;gap:0;
+/* THE LADDER SITS CLOSER TO ITS BAR, AND ONLY THE LADDER DOES (user call,
+   2026-08-22). The shared paged reserve (styles/main.css --band + --headgap)
+   is sized for a COLUMN OF CARDS breathing under the glass; a list under a
+   title does not need it, and here it read as a hole between the title and the
+   first group horizon. The six card views keep theirs untouched.
+   Overridden as the two TOKENS, never as a padding, because everything
+   downstream is derived from them: .pbody's own reservation, --glasstail (so
+   the glass still stops exactly 6px short of resting content) and the scroll
+   ramp, which ui/dom.ts reads off THIS element with getComputedStyle. A
+   hardcoded padding-top here would have moved the content up and left the
+   glass reaching past it onto rows standing still. */
+#ovOnline.listview{--band:12px;--headgap:0px}
+/* margin-top:0, not 6px: the .pbody is a flex column with gap:20px, so panels
+   are separated BY THE GAP and never by this margin — and only one panel is
+   ever visible at a time anyway. The 6px was pure top offset, stacking on the
+   reserve above it. */
+#ovOnline.listview .panel{max-width:none;width:100%;margin:0;gap:0;
   flex:0 0 auto}
 /* AS A FULL PAGE it stops scrolling itself and lets the paged body do it: one
    page, one scroller, so the header's blur band (styles/main.css) is pinned to
