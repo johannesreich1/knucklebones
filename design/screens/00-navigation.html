@@ -33,7 +33,11 @@
     <div class="demo"><div class="shead"><button class="ico">‹</button><span class="ttl">OFFLINE</span><span class="pad"></span></div></div>
     <p class="rule">Screens you travel <b>into</b> from Home: <b>Offline · Settings · Ladder · Account · Impressum · Privacy</b> (Account through the identity chip, the legal two from the foot).
       The header reuses the HUD's icon button; the title sits centred beside it.
-      ‹ returns exactly where you came from — always Home, never an intermediate menu.
+      ‹ returns exactly where you came from — never an intermediate menu: Home for everything
+      reached from Home, and the <b>result screen</b> for Account when its own plate was the
+      door (the result stays open underneath; ‹ uncovers it, numbers and all). The target
+      belongs to the opener, never to the page — a constant sent a player who checked their
+      rating after a match to the main menu with the result gone (fixed 2026-08-22).
       Settings joined this family 2026-08-21 (it was the one Home destination wearing sheet
       clothes) and carries the <b>build tag</b> at its foot; <b>Impressum and Privacy</b> followed
       2026-08-22, for the same reason and after the same oversight — they are reached from Home
@@ -83,6 +87,8 @@
       <span class="fc root">HOME</span><span class="ar">→</span><span class="fc">LADDER</span>
       <span class="ar">·</span>
       <span class="fc root">CHIP</span><span class="ar">→</span><span class="fc">ACCOUNT</span>
+      <span class="ar">·</span>
+      <span class="fc root">RESULT</span><span class="ar">→</span><span class="fc">ACCOUNT</span>
       <span class="ar">·</span>
       <span class="fc root">HOME</span><span class="ar">→</span><span class="fc">OFFLINE</span><span class="ar">→</span><span class="fc">(DIAL)</span><span class="ar">→</span><span class="fc">GAME</span>
       <span class="ar">·</span>
