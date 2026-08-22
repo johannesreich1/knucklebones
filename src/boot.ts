@@ -25,7 +25,7 @@ import { AI, ME, S, DUELHUES } from './state.ts';
 import { loadStats, saveStats } from './persist.ts';
 import { Sfx } from './ui/audio.ts';
 import { setEmbed, isEmbed, kbroot } from './ui/embed.ts';
-import { $, show, hide, colEl } from './ui/dom.ts';
+import { $, show, hide, colEl, watchPagedScroll } from './ui/dom.ts';
 import { makeDie } from './ui/die.ts';
 import { loaderWait } from './ui/loader.ts';
 import { buildBoards, applySides, updateRecord } from './ui/render.ts';
@@ -52,6 +52,8 @@ export function boot(embed){
   buildBoards();
   fit();
   applySides();
+  // one listener, every paged view — including the ones built later
+  watchPagedScroll();
   updateRecord();
   syncSettingsUI();
   updateStatLine();

@@ -6,7 +6,35 @@ import { S } from '../state.ts';
 
 export const $ = (s: string) => document.querySelector(s) as HTMLElement;
 
-export function show(sel: string): void { $(sel).classList.add('on'); }
+/* THE HEADER GLASS ONLY EXISTS ONCE YOU SCROLL. At rest the bar is plain and
+   the aurora behind it is unobstructed (user call — frosting a view nobody has
+   moved dims the background for nothing); the frost fades in the moment
+   content actually travels under it.
+   ONE capture-phase listener serves EVERY paged view — the ones in the markup,
+   the ones built lazily (the library, the online sheet) and the ones appended
+   to endlessly (the ladder, match history) — because `scroll` does not bubble
+   but it does capture. No view has to opt in, and none can forget. */
+function markScrolled(body: Element): void {
+  body.closest('.ov.paged')?.classList.toggle('scrolled', (body as HTMLElement).scrollTop > 1);
+}
+let watching = false;
+export function watchPagedScroll(): void {
+  if (watching) return;
+  watching = true;
+  document.addEventListener('scroll', (e) => {
+    const t = e.target as HTMLElement | null;
+    if (t?.classList?.contains('pbody')) markScrolled(t);
+  }, true);
+}
+
+export function show(sel: string): void {
+  const el = $(sel);
+  el.classList.add('on');
+  /* a view opening at the top must not already wear the glass — and one whose
+     body kept its place must. Appending rows fires no scroll event, so the
+     state is settled here rather than inferred later. */
+  el.querySelectorAll('.pbody').forEach(markScrolled);
+}
 export function hide(sel: string): void { $(sel).classList.remove('on'); }
 
 export function sideKey(who: Player): 'bot' | 'top' { return who === S.bottom ? 'bot' : 'top'; }

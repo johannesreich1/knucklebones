@@ -490,12 +490,31 @@ html.clock .timer.on{visibility:visible}
    from the top edge, holds full strength behind the title, then falls away
    past the bar's bottom — so the frost has no edge anywhere, and can be light
    rather than a slab. */
-.ov.paged .shead::before{content:"";position:absolute;left:0;right:0;top:0;
+/* FULL BLEED, ESCAPING THE COLUMN. .shead is capped at --w-col (400px) and
+   centred, so a glass anchored to it stops at the column's edges — on any
+   screen WIDER than 400 that leaves an unfrosted strip down each side (a
+   Pro Max is ~440, so ~20px; user report, from a device). Measuring at 375 and
+   390 cannot show it: both are narrower than the cap. The glass spans the
+   viewport instead, and .ov.paged's overflow:hidden trims the 100vw. */
+.ov.paged .shead::before{content:"";position:absolute;left:calc(50% - 50vw);width:100vw;top:0;
   bottom:calc(-1 * var(--band));z-index:-1;pointer-events:none;
-  background:linear-gradient(180deg,rgba(4,5,12,.5) 0,rgba(4,5,12,.34) 58%,transparent 100%);
+  /* ...and it is NOT THERE until the view is actually scrolled (ui/dom.ts
+     marks .scrolled). An unscrolled page has nothing passing under the bar, so
+     frosting it only dims the aurora for nothing. */
+  opacity:0;transition:opacity .2s ease;
+  /* THE STOPS ARE ABSOLUTE, NOT PERCENTAGES. This layer includes the screen's
+     top inset, and on a notched phone that inset is ~59px — so percentage
+     stops put the glass's full strength on the STATUS BAR and left it already
+     faded by the time it reached the title (user report, from a device; a
+     desktop browser has a 0 inset and cannot show this). Measuring the falloff
+     from the BOTTOM instead makes it inset-independent: solid down to the
+     bar's own bottom edge, then away over --band. */
+  background:linear-gradient(180deg,rgba(4,5,12,.5) 0,
+    rgba(4,5,12,.5) calc(100% - var(--band)),transparent 100%);
   -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
-  -webkit-mask-image:linear-gradient(180deg,#000 0,#000 55%,transparent 100%);
-  mask-image:linear-gradient(180deg,#000 0,#000 55%,transparent 100%)}
+  -webkit-mask-image:linear-gradient(180deg,#000 0,#000 calc(100% - var(--band)),transparent 100%);
+  mask-image:linear-gradient(180deg,#000 0,#000 calc(100% - var(--band)),transparent 100%)}
+.ov.paged.scrolled .shead::before{opacity:1}
 /* THE SOFT TOP EDGE: content BLURS out as it passes under the header instead
    of being guillotined at the scroller's edge. The band hangs off the header,
    so it is pinned to the page's scroll top wherever that is — and because it
@@ -687,6 +706,20 @@ html.clock .timer.on{visibility:visible}
    must not move while the player is watching it. */
 .dhold{display:flex;flex-direction:column;align-items:center;gap:6px;
   margin-top:auto;visibility:hidden}   /* ...and the wait to the bottom */
+/* THE DIAL'S CENTRE IS THE SCREEN'S CENTRE, and the readouts hang off it
+   rather than voting on where it sits. In flow they were ~85px below the dial
+   against the title's 26 above, so the flexbox centred the GROUP and left the
+   dial riding 58px high — and offline, with no pairing to anchor the top, 218px
+   high. The dial is what the eye centres on (user call), so it is pinned to the
+   middle and everything else is anchored to its edge through --dial: the same
+   geometry in a ranked wheel and an offline one, at every size. */
+#ovWheel .dial{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);margin:0}
+#ovWheel .wtitle{position:absolute;left:0;right:0;text-align:center;
+  top:calc(50% - var(--dial)/2 - 28px)}
+#ovWheel .wname{position:absolute;left:0;right:0;margin:0;
+  top:calc(50% + var(--dial)/2 + 10px)}
+#ovWheel .wblurb{position:absolute;left:50%;transform:translateX(-50%);margin:0;
+  top:calc(50% + var(--dial)/2 + 42px)}
 #ovWheel.landed .dhold{visibility:visible}
 .dhold b{font-size:26px;font-weight:900;color:var(--p1);line-height:1;
   text-shadow:0 0 18px rgba(var(--p1-rgb),.55);font-variant-numeric:tabular-nums}

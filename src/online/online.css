@@ -31,8 +31,15 @@
    the board-scoped rule left it a w-col column that grew to its content
    height — unclamped, so nothing scrolled (user report). One rule for
    whichever panel wears the mode. */
+/* flex:0 0 auto, NOT 1 1 auto with min-height:0. That clamp was right when the
+   LIST scrolled inside the panel; now the paged body scrolls, so a panel that
+   shrinks to the visible height lets its rows spill past its own box — outside
+   the body's scrollable content, where the body's bottom padding (the
+   home-indicator room) can never reach them. Sizing to content puts the last
+   rows back inside the scroll, and the safe-area padding under them (user
+   report: the ladder and match history lost their bottom room on a phone). */
 #ovOnline.listview .panel{max-width:none;width:100%;margin:6px 0 0;gap:0;
-  flex:1 1 auto;min-height:0}
+  flex:0 0 auto}
 /* AS A FULL PAGE it stops scrolling itself and lets the paged body do it: one
    page, one scroller, so the header's blur band (styles/main.css) is pinned to
    the one top edge there is. A second scroller here would slide rows out from
@@ -278,7 +285,7 @@
    flex parent where content taller than the screen clipped at the TOP and
    took the name headline with it; the paged body top-aligns and scrolls, so
    that reason is gone with it. */
-#ovOnline #onAccount{flex:1 1 auto;min-height:0;margin:0}
+#ovOnline #onAccount{flex:0 0 auto;margin:0}
 /* …and its children keep their NATURAL size: in a scrollable flex column,
    anything wearing overflow (the ellipsised name headline) has an automatic
    minimum of ZERO and gets crushed flat before the panel deigns to scroll —

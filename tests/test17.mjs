@@ -83,8 +83,16 @@ try {
         const first = body.firstElementChild?.getBoundingClientRect();
         const fade = parseFloat(getComputedStyle(ov).getPropertyValue('--band')) || 0;
         const before = head.getBoundingClientRect().y.toFixed(1);
+        /* AT REST THE GLASS IS NOT THERE. An unscrolled page has nothing
+           passing under the bar, so frosting it only dims the aurora for
+           nothing (user call). Appending rows fires no scroll event, so a
+           lazily-grown list sitting at the top must stay clear too. */
+        body.scrollTop = 0;
+        await new Promise((r) => setTimeout(r, 260));
+        const glassAtRest = +getComputedStyle(head, '::before').opacity;
         body.scrollTop = 600;                       // as far as this body goes
-        await new Promise((r) => setTimeout(r, 60));
+        await new Promise((r) => setTimeout(r, 260));
+        const glassScrolled = +getComputedStyle(head, '::before').opacity;
         const after = head.getBoundingClientRect().y.toFixed(1);
         const cs = getComputedStyle(body);
         /* ONE PAGE, ONE SCROLLER. The glass is the bar's own backdrop, so it
@@ -116,6 +124,7 @@ try {
           bodyScrolls: cs.overflowY === 'auto' || cs.overflowY === 'scroll',
           ovClips: getComputedStyle(ov).overflow === 'hidden',
           glass: /blur/.test(glass.backdropFilter || glass.webkitBackdropFilter || ''),
+          glassAtRest, glassScrolled, scrollable: body.scrollHeight > body.clientHeight + 2,
           glassFades: /gradient/.test(glass.maskImage || glass.webkitMaskImage || ''),
           barAtTop: headBox.top <= 0.5,
           behindBar: bodyTop <= headBox.top + 0.5,
@@ -134,6 +143,10 @@ try {
       check(p.ovClips && p.bodyScrolls, `${p.id} scrolls its whole self, so its header leaves: ` + label, p);
       check(p.stuck, `THE HEADER SCROLLS AWAY IN ${p.id}: ` + label, p);
       check(p.glass, `${p.id} cuts its content off flat — the bar carries no glass: ` + label, p);
+      check(p.glassAtRest === 0, `${p.id} FROSTS ITS BAR AT REST — it must dim the aurora only once scrolled: ` + label, p);
+      if (p.scrollable) {
+        check(p.glassScrolled > 0, `${p.id} never brings the glass in when scrolled: ` + label, p);
+      }
       check(p.glassFades, `${p.id}'s glass ends on a hard edge instead of falling away: ` + label, p);
       check(p.barAtTop, `${p.id}'s bar starts below the screen edge — the glass will read as beginning mid-bar: ` + label, p);
       check(p.behindBar, `CONTENT DOES NOT SCROLL BEHIND THE BAR IN ${p.id}: ` + label, p);
