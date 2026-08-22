@@ -151,6 +151,10 @@ const roster = ONLY.length ? ONLY.map((id) => SPELLS.find((s) => s.id === id)!) 
 /* classic for everyone, plus the mode each spell interacts with hardest */
 const EXTRA: Record<string, Mode[]> = {
   ward: [COLSHIELD], pilfer: [COLSHIELD], sunder: [SINGLESTRIKE], fate: [LIMITED], nudge: [],
+  // ANVIL only fires on a FULL column, which is exactly what COLSHIELD makes
+  // untouchable — so that is the pairing that decides it. SINGLESTRIKE keeps
+  // stacks alive longer, which means more full columns to forge.
+  anvil: [COLSHIELD, SINGLESTRIKE],
 };
 
 const t0 = performance.now();

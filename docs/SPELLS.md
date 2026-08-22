@@ -110,8 +110,55 @@ policy is a heuristic, and a smarter human can only do better.
 | **WARD** — a column absorbs the next strike, then burns out | 1 | own column | 56.9 | COLSHIELD 49.5 |
 | **SUNDER** — this placement strikes *every* matching column | 1 | self | 60.6 | SINGLESTRIKE 59.3 |
 | **PILFER** — steal the top die of an enemy column | 1 | enemy column | 60.7 | COLSHIELD 63.1 |
+| **ANVIL** — recast the weakest die in a column you filled | 1 | own column | 60.2 | COLSHIELD 62.8, SINGLESTRIKE 63.2 |
 
-The roster spans **55.7–63.1**, against the retired swap's 70.5/81.8.
+The roster spans **55.7–63.2**, against the retired swap's 70.5/81.8.
+
+### ANVIL (added 2026-08-22)
+
+It exists for the one board state nothing else in the roster can reach. A full
+column is finished: `[6,6,1]` is stuck at 25 forever, because there is nowhere
+left to place. Every other rune works on the die in hand, the die in flight, or
+the enemy's board.
+
+**Full columns only, and that restriction IS the price.** The unrestricted
+version was measured too (as TEMPER — any column, same effect): it reads about
+the same against a bare twin, but it lets a good column snowball instead of
+repairing a committed one. Refusing a column you can still place into keeps the
+cast a repair, and keeps the decision honest — you must commit the column
+before you may fix it.
+
+**The alternative price was measured and rejected.** A version that ended your
+turn (FORGE — "you place nothing this turn") fell to **52.0–55.2** one-sided and
+last in the cross-table, at every threshold tried, whether or not it was
+restricted to full columns. Skipping a placement does not cost "one die": it
+costs a die on the board *plus* the board-parity edge — the opponent reaches a
+full board sooner and takes the last word (`docs/LADDER.md`, seating). Restrict
+**where** a cast can land, not **whether you may act**.
+
+**The halved demand is measured, not taste.** `swingOf` reads the score
+DIFFERENCE, so a two-sided spell like PILFER is counted twice (it adds to one
+board and subtracts from the other) while ANVIL only ever adds to its own —
+same units, half the reach. Raising the threshold instead makes it worse on
+*both* axes, which is why `demand / 2` ships:
+
+| effective demand | classic | median cast | late% |
+|---|---|---|---|
+| **8 (`demand / 2`, shipped)** | **60.2** | **0.74** | **41.7** |
+| 12 | 59.1 | 0.80 | 51 |
+| 16 (unscaled) | 56.5 | 0.94 | 66 |
+
+**Its lateness is structural, not hoarding.** Median cast 0.74 — the same as
+SUNDER's, earlier than WARD's 0.83. ANVIL is *illegal* until a column fills, so
+the trigger cannot occur early; the player is not choosing to wait. This is the
+clearest "waiting for a condition" case in the roster (§5).
+
+**Known hot pairings, recorded like PILFER's.** COLSHIELD 62.8 and SINGLESTRIKE
+63.2 sit level with the existing PILFER + COLSHIELD 63.1 — the top of the band,
+not beyond it. Both modes make full columns more common or more valuable, which
+is exactly what ANVIL feeds on. Refusing a *shielded* column was considered and
+rejected: under COLSHIELD every full column is shielded, so it would make the
+rune dead there, which is WARD + COLSHIELD's 49.5 problem in a new coat.
 
 **Charge counts were measured, not guessed.** NUDGE at two casts measured 61.3
 and ships at one (53.9 in that first pass); FATE stayed at two because it is
@@ -158,6 +205,34 @@ It answers three questions, and **the second matters most**:
    the swap. Read `castTiming.median` and `lateCastPct`.
 3. **Texture** — cast rate and realized swing: does the spell participate at
    all, and how hard does it hit when it does?
+
+### The fourth question, which this harness cannot ask
+
+Every number above is **holder vs a twin holding NOTHING**. `spellsim` cannot
+measure spell X against spell Y at all. That is sound while §2's Symmetry rule
+holds — both seats are dealt the same rune, so balance is only ever about
+whether a spell is *fun* — and it becomes misleading the instant that rule is
+dropped.
+
+Measured 2026-08-22 with a head-to-head harness (3,000 games per cell, both
+directions averaged, noise floor 0.9pp), the shipped five against **each
+other** in classic, as mean win% across the pool:
+
+    sunder 54.7 · pilfer 54.7 · fate 52.0 · ward 48.2 · nudge 46.0
+
+A span of **7.7pp ≈ 54 Elo**, and the ordering is **not mode-stable**: under
+SINGLE STRIKE the span is 17.3pp and PILFER beats WARD ~67–33. WARD's friendly
+56.9-vs-bare reading hides that it is the worst rune in the pool in every mode.
+
+**The lesson is structural: a roster balanced against nothing systematically
+over-values defensive spells.** Against an opponent who is also gaining, swing
+beats safety. Expect any new defensive rune's one-sided number to overstate it.
+
+**Two cautions before trusting a cross-table.** `searchRoot` takes no charm, so
+the bot does not know its opponent holds a rune — under symmetry that blindness
+cancels, asymmetrically it does not, and adapting to the opponent's rune *is*
+the content of asymmetric balance. And a cell measured in one direction only
+carries ~1pp of seat bias; run both and average.
 
 **Late is not automatically degenerate.** WARD and SUNDER cast at 83% and 74%
 through the game because they wait for a *condition* — a real threat, a die
@@ -248,3 +323,24 @@ replayed through this same registry; FATE draws from the seeded stream), but
 wiring it is its own later step. A ranked turn would then carry two log
 entries — an optional cast, then the placement — which is a protocol shape
 change the server validator must accept.
+
+### If ranked ever deals spells: symmetric first, and probably only
+
+**Symmetric-online is a strict prefix of asymmetric-online.** Dealing both seats
+the same rune — spun server-side from the match seed, exactly as `pickMode` does
+— needs one `matches.spell` column and changes nothing else about the protocol,
+the replay or the reveal. Dealing *different* runes needs all of that plus a
+balanced pool, and the pool is not balanced: §5's cross-table spans 7.7pp in
+classic and 17.3pp under SINGLE STRIKE.
+
+For scale: the ladder's own built-in asymmetry, the seat handicap in
+`docs/LADDER.md`, is at most 3.4pp. A random asymmetric rune deal costs ~3.4pp
+on average **in classic alone**, and 7.8–8.3pp across the mode wheel. It would
+also drown the rating handicap it sits beside and randomise its sign.
+
+The client is already built for it — `S.spellCharges` is per-seat and the rail
+renders "you carry what you BROUGHT" (`flow/spells.ts`) — so the cost is not
+plumbing. It is balance, and it is a real cost. If asymmetry is wanted for its
+own sake, a **mirror draft** (the same three runes offered to both, each picks
+blind) converts residual imbalance from *unfair* into *boring*, which is the
+better failure mode; it still needs the flat pool.

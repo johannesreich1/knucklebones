@@ -229,7 +229,64 @@ const PILFER: SpellSpec = {
   // best swing vs demand — weighs it exactly right
 };
 
-export const SPELLS: SpellSpec[] = [FATE, NUDGE, WARD, SUNDER, PILFER];
+/* ANVIL: the weakest die in a column you have FILLED is recast to the face in
+   hand. Nothing moves, nothing is destroyed, the column keeps its height — and
+   you still place, because a cast is not a move.
+
+   It exists for the one board state nothing else in the roster can reach: a
+   full column is finished, and [6,6,1] is stuck at 25 forever because there is
+   nowhere left to place. Every other rune works on the die in hand, the die in
+   flight, or the enemy's board.
+
+   FULL COLUMNS ONLY, and that restriction is the spell's whole price. The
+   unrestricted version (any column, measured as TEMPER) reads the same on a
+   bare twin but lets a good column snowball; refusing a column you can still
+   place into keeps the cast a repair rather than an accelerator, and keeps the
+   decision honest — you must have committed the column before you may fix it.
+
+   WHICH die is not a second aim: the lowest face, ties to the die closest to
+   the centre line. One tap, and the player can always predict the answer. */
+const ANVIL: SpellSpec = {
+  id: 'anvil',
+  name: 'ANVIL',
+  blurb: 'Recast the weakest die in a column you have filled.',
+  detail: 'Tap one of your own FULL columns: the lowest die in it is recast to the face of '
+        + 'the die in hand — ties go to the die closest to the centre. Nothing moves and '
+        + 'nothing is destroyed, so the column keeps its height, and your die still lands '
+        + 'afterwards. A column with room left cannot be forged. One cast per game.',
+  aim: 'Tap a filled column to recast its weakest die',
+  target: 'column',
+  side: 'own',
+  uses: 1,
+  legal(st, who, col, ctx) {
+    if (!ctx || !Number.isInteger(col) || col < 0 || col >= SPEC.cols) return false;
+    const c = st[who][col];
+    if (c.length < SPEC.rows) return false;          // only a column you can no longer place into
+    let lo = c[0];
+    for (const d of c) if (d < lo) lo = d;
+    return lo !== ctx.die;                           // a cast that changes nothing is illegal
+  },
+  apply(st, who, col, ctx) {
+    const c = st[who][col];
+    let at = 0;
+    for (let i = 1; i < c.length; i++) if (c[i] < c[at]) at = i;
+    c[at] = ctx!.die;
+  },
+  /* The effect shows on the boards, so the default policy CAN weigh it — but
+     it would weigh it at the wrong scale. swingOf measures the score
+     DIFFERENCE, and a two-sided spell like PILFER is counted twice there (it
+     adds to one board and subtracts from the other) while ANVIL only ever adds
+     to its own. Same units, half the reach — so the demand is halved, the same
+     re-scaling FATE (/4), NUDGE (/3), SUNDER (×0.75) and WARD (×1.5) already
+     do. Measured: at the unscaled demand it casts too rarely to be worth a
+     rune (57.3 one-sided); halved, 59.8. */
+  cpuCast(st, who, ctx, demand) {
+    const best = bestTarget(st, who, this, ctx.mode, ctx);
+    return best && best.swing >= demand / 2 ? best.col : null;
+  },
+};
+
+export const SPELLS: SpellSpec[] = [FATE, NUDGE, WARD, SUNDER, PILFER, ANVIL];
 
 /* The OFFLINE picker's last slice: not a spell, but "surprise me" — the same
    shape as the mode wheel's RANDOM. Kept OUT of SPELLS on purpose: it must

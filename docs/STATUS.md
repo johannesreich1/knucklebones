@@ -105,11 +105,23 @@ bag-exhaustion finish through pvp-move v8's `s.over` guard.
 
 ### 6. Spells — the optional powers layer (2026-08-18, user feature request)
 
-Offline games deal each seat a **rune** beside the die in play. Drag it onto
-any column (or tap to arm, then tap a column, or press 1–3) and that column
-swaps with the one facing it — dice, multipliers and all. **One cast per
-player per game**, castable only in your own turn between the roll and the
-placement: a cast is not a move, so your die still lands afterwards.
+Offline games deal each seat a **rune** beside the die in play — the same one
+to both, picked on the offline screen (or RANDOM, drawn at deal time). A self
+rune casts on press; a column rune is dragged onto its target, or tapped to arm
+and tapped again (or 1–3 on a keyboard), and only the columns it can actually
+reach light up. Castable only in your own turn, between the roll and the
+placement: **a cast is not a move**, so your die still lands afterwards.
+
+**Six runes**, one cast each except FATE's two — FATE (redraw), NUDGE (+1 pip,
+6 wraps to 1), WARD (a column absorbs the next strike), SUNDER (this placement
+strikes every matching column), PILFER (steal an enemy column's top die) and
+ANVIL (recast the weakest die in a column you have filled, added 2026-08-22).
+The roster and the thinking behind it live in `docs/SPELLS.md`; the numbers are
+measured, not guessed (`tools/spellsim.ts`).
+
+*This paragraph described COLUMN SWAP until 2026-08-22 — a spell retired on
+2026-08-21 for winning 70.5% one-sided. The registry is the truth; prose about
+it drifts.*
 
 Structure, because more spells are coming:
 

@@ -21,6 +21,14 @@ const PATHS: Record<string, string> = {
   /* SUNDER: a bolt splitting three columns at once */
   sunder: '<path d="M4.2 5v5.4M9.4 5v3M14.6 5v5.4M19.8 5v3"/>'
         + '<path d="M13.4 9.8 9 15.4h3.4L9.8 20.6l6.4-6.8h-3.4l2.4-4Z"/>',
+  /* ANVIL: a die squared up on the anvil's face, waisted body, wide base.
+     Symmetric about x=12 — the first draft hung a horn off the right and the
+     die read as sitting BESIDE the anvil rather than on it. */
+  anvil: '<rect x="8.6" y="2.6" width="6.8" height="6.8" rx="1.9"/>'
+       + '<circle cx="12" cy="6" r=".45" fill="currentColor"/>'
+       + '<path d="M4.6 12.8h14.8"/>'
+       + '<path d="M8.9 12.8 7.8 17.2h8.4l-1.1-4.4"/>'
+       + '<path d="M5.6 20.6h12.8"/>',
   /* PILFER: one die lifted across the centre line by a hooked arrow */
   pilfer: '<path d="M3.4 12.6h17.2" stroke-dasharray="2.4 2.6"/>'
         + '<rect x="13.4" y="3.6" width="7" height="7" rx="1.8"/>'
@@ -37,6 +45,7 @@ const HUES: Record<string, string> = {
   ward: '#7dffc4',      // mint — protection
   sunder: '#ff9d66',    // ember — the widened strike
   pilfer: '#ffd166',    // gold — theft
+  anvil: '#ff7591',     // forge heat — the metal worked, not the flame
 };
 
 /* RANDOM is not a rune — it is the same PROMISE the mode row makes, so it

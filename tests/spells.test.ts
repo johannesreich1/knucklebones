@@ -239,6 +239,49 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
       classic: swingOf(st, AI, pilfer, 0, CLASSIC, ctx), row: swingOf(st, AI, pilfer, 0, ROWSWITCH, ctx) });
 }
 
+/* ---- ANVIL: the weakest die in a FILLED column is recast where it lies ---- */
+{
+  const anvil = spell('anvil');
+  const ctx = mkCtx({ die: 6 });
+  // [6,6,1] is the board state the spell exists for: full, stuck at 25, and
+  // unreachable by placing because there is nowhere left to place
+  const st: GameState = [[[6, 6, 1], [2, 2], []], [[], [], []]];
+  check(boardTotal(st[AI]) === 25 + 8, 'the stuck column scores its 25 before the forge', boardTotal(st[AI]));
+  check(anvil.legal(st, AI, 0, ctx), 'a full column holding a weaker face is forgeable');
+  anvil.apply(st, AI, 0, ctx);
+  check(String(st[AI][0]) === '6,6,6', 'the LOWEST die took the face in hand', st[AI][0]);
+  check(st[AI][0].length === 3, 'the column keeps its height — nothing moved', st[AI][0]);
+  check(String(st[ME][0]) === '', 'the enemy board is never reached', st[ME]);
+  check(ctx.got.length === 0, 'the die in hand is untouched — it still has to be placed', ctx.got);
+
+  // ONLY a column you can no longer place into
+  check(!anvil.legal(st, AI, 1, ctx), 'a column with room left is not forgeable — place into it instead');
+  check(!anvil.legal(st, AI, 2, mkCtx({ die: 6 })), 'an empty column has nothing to forge');
+  // a cast that would change nothing is illegal, not a wasted charge (§2)
+  check(!anvil.legal([[[4, 4, 4], [], []], [[], [], []]] as GameState, AI, 0, mkCtx({ die: 4 })),
+    'forging a face onto itself changes nothing, so it is refused');
+  // ties go to the die closest to the centre line (lowest index)
+  const tie: GameState = [[[1, 5, 1], [], []], [[], [], []]];
+  spell('anvil').apply(tie, AI, 0, mkCtx({ die: 3 }));
+  check(String(tie[AI][0]) === '3,5,1', 'tied lowest faces resolve to the centre-closest die', tie[AI][0]);
+  // a shielded column is still YOUR column: the mode protects it from
+  // destruction, and a forge destroys nothing
+  check(anvil.legal([[[6, 6, 1], [], []], [[], [], []]] as GameState, AI, 0,
+    mkCtx({ die: 6, mode: COLSHIELD as Mode })), 'COLSHIELD guards against strikes, not against your own forge');
+}
+{
+  // the machine's halved demand: ANVIL's swing is ONE-SIDED (it only ever adds
+  // to its own board) where PILFER's is counted twice, so the threshold is
+  // scaled inside cpuCast — measured 57.3 unscaled vs 60.2 halved
+  const anvil = spell('anvil');
+  const fat: GameState = [[[6, 6, 1], [], []], [[], [], []]];
+  check(machineCast(fat, AI, anvil, mkCtx({ die: 6 }), 16) === 0,
+    'a 1 into a third 6 is +83 and always worth the charge', machineCast(fat, AI, anvil, mkCtx({ die: 6 }), 16));
+  const thin: GameState = [[[1, 2, 3], [], []], [[], [], []]];
+  check(machineCast(thin, AI, anvil, mkCtx({ die: 2 }), 16) === null,
+    'a forge that buys almost nothing is declined');
+}
+
 /* ---- machineCast: THE machine decision (the CPU ships it, the harness
    measured it) ---- */
 {

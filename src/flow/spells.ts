@@ -489,8 +489,36 @@ const pilferFx: Fx = async (who, col, apply) => {
   Sfx.mult(); shake(5); flash(0.18);
 };
 
+/* ANVIL recasts one die where it lies. The rule picks WHICH die (the lowest
+   face, ties to the centre), so the animation has to land on that same die or
+   the player cannot see what the cast chose — the index is read BEFORE apply()
+   changes the faces, then re-resolved after the repaint, because renderSide
+   reuses die elements and the old node may be gone. */
+const anvilFx: Fx = async (who, col, apply) => {
+  Sfx.spell();
+  vibrate([10, 30, 14]);
+  const c = S.boards[who][col];
+  let at = 0;
+  for (let i = 1; i < c.length; i++) if (c[i] < c[at]) at = i;
+  apply();
+  renderSide(who, true);
+  const die = slotEl(who, col, slotIdx(who, at))?.firstElementChild as HTMLElement | null;
+  const r = die?.getBoundingClientRect();
+  if (die && !REDUCED) {
+    await die.animate([
+      { transform: 'scale(1)' },
+      { transform: 'scale(1.35) rotate(-6deg)', offset: .45 },
+      { transform: 'scale(1)' },
+    ], { duration: 320, easing: 'cubic-bezier(.2,1.5,.4,1)' }).finished.catch(() => {});
+  }
+  if (r) burst(r.left + r.width / 2, r.top + r.height / 2, spellHue('anvil'), 14);
+  Sfx.mult();
+  shake(4);
+  await wait(REDUCED ? 0 : 180);
+};
+
 const CAST_FX: Record<string, Fx> = {
-  fate: fateFx, nudge: nudgeFx, ward: wardFx, sunder: sunderFx, pilfer: pilferFx,
+  fate: fateFx, nudge: nudgeFx, ward: wardFx, sunder: sunderFx, pilfer: pilferFx, anvil: anvilFx,
 };
 
 /* undo a flight's hiding across a whole column, whatever survived the repaint */

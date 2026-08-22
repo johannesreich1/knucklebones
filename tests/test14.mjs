@@ -10,6 +10,9 @@
 // switching spells OFF leaves the table indistinguishable from the game
 // before spells existed.
 import pkg from 'playwright';
+/* the registry itself, so the probe compares the SCREEN against the source of
+   truth rather than against a count someone typed here (node strips the types) */
+import { SPELLS, RANDOM_SPELL } from '../src/core/spells.ts';
 const { chromium, devices } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';   // the single-file build
 const browser = await chromium.launch();
@@ -38,8 +41,17 @@ try {
     };
   });
   check(out.picker.pick === '' && out.picker.on === 0, 'the spell picker must default to NONE', out.picker);
-  check(out.picker.slices === 7 && out.picker.values[0] === '', 'NONE + the five runes + RANDOM', out.picker);
-  check(out.picker.values[6] === 'random', 'RANDOM is the last slice, as on the mode row', out.picker.values);
+  /* ASK THE REGISTRY, never restate it. The picker builds itself from SPELLS
+     (ui/library.ts), so a hardcoded slice count here would pass while the two
+     disagree — and that is not hypothetical: this line said "the five runes"
+     and src/markup.ts advertised "five to choose from" long enough for a sixth
+     to be measured, written and iconed before either noticed. */
+  const wantSlices = ['', ...SPELLS.map((s) => s.id), RANDOM_SPELL];
+  check(String(out.picker.values) === String(wantSlices),
+    'the picker must be NONE + every rune in registry order + RANDOM',
+    { got: out.picker.values, want: wantSlices });
+  check(out.picker.values.at(-1) === RANDOM_SPELL, 'RANDOM is the last slice, as on the mode row', out.picker.values);
+  check(out.picker.icons.every(Boolean), 'every slice must draw a mark', out.picker.icons);
   /* ONE idea, ONE mark: RANDOM means the same thing in both rows, so it must
      LOOK the same in both. A hand-copied glyph drifted here once — the mode's
      shuffle is two paths and the copy took one, so the spell row showed a bare
@@ -598,6 +610,32 @@ try {
   check(out.warded.charges === '[{"ward":1},{"ward":0}]', 'the ward cast was not charged', out.warded);
   check(out.warded.chipShown && out.warded.colMarked,
     'A WARD THE PLAYER CANNOT SEE IS NOT A WARD', out.warded);
+
+  /* ---------- 10b. ANVIL: the forge lands on the die the RULE names ----------
+     The rule picks WHICH die (lowest face, ties to the centre), so the screen
+     has to show the new face standing where the old one stood — a state-only
+     assertion would pass while the board still drew the 1. */
+  await newGame({ spell: 'anvil' }); await waitChoose();
+  await table([[6, 6, 1], [2], []], [[], [], []], 6);
+  out.anvil = await page.evaluate(async () => {
+    const k = window.__kb;
+    const faces = () => [...document.querySelectorAll('#botBoard .col[data-col="0"] .die')]
+      .map((d) => d.dataset.v).join(',');
+    const drawnBefore = faces();
+    // a column with room left is NOT forgeable — place into it instead
+    const roomy = await k.spells.cast('anvil', 1);
+    const forged = await k.spells.cast('anvil', 0);
+    return { drawnBefore, roomy, forged, drawn: faces(),
+             mine: JSON.stringify(k.S.boards[1]),
+             die: k.S.die, charges: JSON.stringify(k.S.spellCharges) };
+  });
+  check(out.anvil.roomy === false, 'a column with room left must refuse the forge', out.anvil);
+  check(out.anvil.forged === true, 'the full column refused a legal forge', out.anvil);
+  check(out.anvil.mine === '[[6,6,6],[2],[]]', 'the LOWEST die did not take the face in hand', out.anvil);
+  check(out.anvil.drawn.split(',').sort().join() === '6,6,6',
+    'THE BOARD STILL DRAWS THE OLD FACE — the forge is invisible', out.anvil);
+  check(out.anvil.die === 6, 'a cast is not a move: the die in hand must survive it', out.anvil);
+  check(out.anvil.charges === '[{"anvil":1},{"anvil":0}]', 'the forge was not charged', out.anvil);
 
   /* ---------- 11. the tutorial is a scripted lesson: no spells in it ---------- */
   await newGame({ tutorial: true }); await page.waitForTimeout(900);
