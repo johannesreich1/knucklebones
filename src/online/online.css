@@ -142,7 +142,7 @@
    elementFromPoint, which is what caught this) */
 .faceoff{position:fixed;inset:0;z-index:90;display:grid;place-items:center;
   background:rgba(3,5,12,.66);padding:14px}
-.focard{position:relative;width:100%;max-width:356px;border-radius:20px;padding:10px 16px 16px;
+.focard{position:relative;width:100%;max-width:356px;border-radius:20px;padding:16px 16px 16px;
   background:linear-gradient(180deg,#0e1329,#070a18);border:1px solid rgba(255,255,255,.15);
   box-shadow:0 24px 60px rgba(0,0,0,.65);display:flex;flex-direction:column;gap:12px}
 /* THE WAY OUT IS THE ONE EVERY SHEET USES: the shared ✕ .ico in the corner
@@ -152,11 +152,18 @@
    screen, which this app retired everywhere else, and the ask-card's shape
    belongs to a QUESTION, not to a card you are merely done reading. Backdrop
    tap and Escape close it too.
-   IN THE FLOW, not absolutely placed: the card is already a flex column, so
-   `align-self:flex-end` sets the ✕ in the corner while the columns start
-   BELOW it — no arithmetic about whether a 46px avatar clears a 30px button
-   on the narrowest phone, and no nickname truncated to buy the clearance. */
-.focard .foexit{align-self:flex-end;margin-bottom:-8px}
+   IN THE CORNER, which means OUT OF THE FLOW. It spent a day as a flex item
+   (`align-self:flex-end`) to dodge the arithmetic — and that bought a band of
+   empty card across the top with the ✕ adrift at its right, which reads as a
+   button that missed its mark rather than as a corner control (user report).
+   So the arithmetic got done instead, and it is comfortable: on the narrowest
+   phone the card is ~292px wide, its columns ~110px, and a 46px avatar
+   centred in one clears a 30px corner button by ~32px. The nickname and the
+   pill sit BELOW the avatar, well under the button's 30px band, and .fnm is
+   capped at 130px with an ellipsis, so no name can grow into it either.
+   test16 measures that clearance as the player meets it, so this cannot rot
+   quietly if the card's contents change. */
+.focard .foexit{position:absolute;top:8px;right:8px;z-index:2}
 /* the streak cells carry the wait inline while their RPCs answer */
 .fost .ldclock{display:inline-block;vertical-align:middle}
 .focols{display:flex;align-items:center;justify-content:center;gap:16px}

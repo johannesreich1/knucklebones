@@ -187,9 +187,35 @@ async function visit({ anonymous = 200, attached = false, door = 'chip', named =
           return { glyph: x?.textContent?.trim() ?? '', ico: !!x?.classList.contains('ico'),
                    /* the corner, in pixels: right half of the card, top of it */
                    corner: !!(cb && xb && xb.right > cb.right - 56 && xb.top < cb.top + 56),
-                   /* and it must not overlap what it sits above */
-                   clearsCols: (() => { const c = ov?.querySelector('.focols')?.getBoundingClientRect();
-                     return !!(c && xb && xb.bottom <= c.top + 0.5); })(),
+                   /* AND IT MUST NOT SIT ON ANYTHING — which is a different
+                      question from sitting ABOVE everything, and the real one.
+                      This used to read `xb.bottom <= focols.top`, so the only
+                      way to pass was a ✕ in the flex flow — which left a band
+                      of empty card across the top with the button adrift at
+                      its right, reading as a control that had missed its mark
+                      (user call, 2026-08-22). The ✕ now overlays the corner
+                      like every other sheet's, so the test asks whether its
+                      box touches any piece of the card's CONTENT: the avatars,
+                      the names, the pills, the VS. Never .focols itself —
+                      that box spans the card's full width, so it would report
+                      a collision for any corner control whatsoever. */
+                   clearsCols: (() => {
+                     const bits = [...(ov?.querySelectorAll('.focols .av,.focols .fnm,.focols .gpill,.focols .fovs') ?? [])];
+                     return !!xb && bits.length > 0 && bits.every((el) => {
+                       const b = el.getBoundingClientRect();
+                       return xb.right <= b.left + 0.5 || xb.left >= b.right - 0.5
+                           || xb.bottom <= b.top + 0.5 || xb.top >= b.bottom - 0.5; });
+                   })(),
+                   /* the tightest gap to anything, so a regression says HOW close */
+                   tightest: (() => {
+                     const bits = [...(ov?.querySelectorAll('.focols .av,.focols .fnm,.focols .gpill,.focols .fovs') ?? [])];
+                     if (!xb || !bits.length) return null;
+                     return Math.round(Math.min(...bits.map((el) => {
+                       const b = el.getBoundingClientRect();
+                       const dx = Math.max(b.left - xb.right, xb.left - b.right, 0);
+                       const dy = Math.max(b.top - xb.bottom, xb.top - b.bottom, 0);
+                       return Math.max(dx, dy); })) * 10) / 10;
+                   })(),
                    bottomBtns: [...(ov?.querySelectorAll('.btn') ?? [])].map((b) => b.textContent?.trim() ?? ''),
                    gapLine: !!ov?.querySelector('.fogap') };
         })(),
@@ -305,7 +331,7 @@ try {
   const fx = board.faceoff?.exit;
   check(fx?.glyph === '\u2715' && fx?.ico, 'the face-off does not dismiss with the shared ✕', fx);
   check(fx?.corner, 'the face-off\u2019s ✕ is not in its top-right corner', fx);
-  check(fx?.clearsCols, 'the face-off\u2019s ✕ overlaps the columns instead of sitting above them', fx);
+  check(fx?.clearsCols, 'the face-off\u2019s ✕ sits ON TOP of the card\u2019s content', fx);
   check(fx?.bottomBtns.length === 0, 'the face-off still carries a bottom dismissal', fx);
   check(!fx?.gapLine, 'the points-between-you line is back on the face-off', fx);
   check(board.errs.length === 0, 'page errors on the ladder', board.errs);
