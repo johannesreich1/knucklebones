@@ -487,8 +487,19 @@ html.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
    header, so 18 of its 26px floated in that empty gap and only the last 8px
    ever touched content. The band looked feeble because it mostly WAS. With no
    gap the header's bottom IS the body's top, so the whole band lies on the
-   scroller; the body carries the old gap in its padding instead, which keeps
-   resting content exactly where it was. */
+   scroller; the body reserves that distance in its padding instead.
+   ONE DISTANCE UNDER EVERY BAR, and it is the ladder's (user call,
+   2026-08-22). The reserve was 40px — a 22px band plus 18px of --headgap that
+   only ever carried the retired flex gap so the rework would move nothing —
+   and it read as a hole between the title and whatever came first. The ladder
+   was cut to 12 first, on the theory that a list wants less air than a column
+   of cards; looked at side by side the cards wanted the same 12, so the two
+   tokens say it once here rather than twice, and #ovOnline no longer overrides
+   what it agrees with.
+   --headgap STAYS as a knob at 0 rather than being folded into --band: the two
+   are different ideas (how tall the frost is, how far content sits below it)
+   and ui/dom.ts adds them BY NAME — deleting it would hand that sum a NaN and
+   fall silently back to a 40px ramp. */
 /* --barpad MATCHES the 16px above the bar's content, so the title and the ‹
    sit dead centre in the visible bar rather than 1px high. The safe-area inset
    is added on top of that 16 and is not part of the reckoning: it is the
@@ -509,8 +520,8 @@ html.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
    back out of getComputedStyle as text, not as a number — asking for the
    derived one there fails silently into a fallback, which is the drift this
    is meant to prevent, wearing a disguise. */
-.ov.paged{--band:22px;--barpad:16px;--bartop:calc(env(safe-area-inset-top,0px) + 16px);
-  --headh:calc(var(--bartop) + 30px + var(--barpad));--headgap:18px;
+.ov.paged{--band:12px;--barpad:16px;--bartop:calc(env(safe-area-inset-top,0px) + 16px);
+  --headh:calc(var(--bartop) + 30px + var(--barpad));--headgap:0px;
   --glasstail:calc(var(--band) + var(--headgap) - 6px);
   /* the fade's SEAMS, as offsets into the glass layer — the bar's own parts,
      not one constant, so they move with the inset instead of being swallowed

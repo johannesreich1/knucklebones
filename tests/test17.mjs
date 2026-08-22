@@ -122,11 +122,24 @@ try {
            (user report, from the ladder). Sampled PART-WAY through the ramp:
            the value there must be strictly between nothing and everything, and
            must keep growing. A boolean implementation passes every other
-           assertion in this file and fails only these two. */
-        body.scrollTop = 10;
+           assertion in this file and fails only these two.
+           THE SAMPLES ARE FRACTIONS OF THE RAMP, not two fixed pixel counts.
+           10px and 26px were thirds of the 40px reserve the paged views used to
+           carry; at the 12px every bar carries now (2026-08-22) that same 10px
+           lands 83% of the way up, and "0.84 is less than 1" is a fade
+           assertion in name only. Read the ramp the way ui/dom.ts reads it —
+           --band + --headgap, as two plain lengths, because a custom property
+           holding a calc() comes back out of getComputedStyle as text. */
+        const ramp = (() => {
+          const s = getComputedStyle(ov);
+          const px = (n) => parseFloat(s.getPropertyValue(n));
+          const sum = px('--band') + px('--headgap');
+          return sum > 0 ? sum : 40;                // ui/dom.ts's own fallback
+        })();
+        body.scrollTop = Math.max(1, Math.round(ramp * 0.3));
         await frame();
         const glassPart = +getComputedStyle(head, '::before').opacity;
-        body.scrollTop = 26;
+        body.scrollTop = Math.round(ramp * 0.7);
         await frame();
         const glassMore = +getComputedStyle(head, '::before').opacity;
         body.scrollTop = 600;                       // as far as this body goes
@@ -163,16 +176,16 @@ try {
           bodyScrolls: cs.overflowY === 'auto' || cs.overflowY === 'scroll',
           ovClips: getComputedStyle(ov).overflow === 'hidden',
           glass: /blur/.test(glass.backdropFilter || glass.webkitBackdropFilter || ''),
-          glassAtRest, glassPart, glassMore, glassScrolled,
+          glassAtRest, glassPart, glassMore, glassScrolled, ramp,
           scrollable: body.scrollHeight > body.clientHeight + 2,
-          /* HOW FAR THIS PAGE CAN ACTUALLY TRAVEL. The ramp is sampled at 10px
-             and 26px, so a body with four pixels of slack cannot demonstrate a
-             fade — it pins at one value and reads as "the glass snaps". That
-             is not a regression, it is a page that nearly fits: Impressum
-             became one the day its bottom button left (2026-08-22). Scrollable
-             enough to bring the glass in at all is a weaker claim than
-             scrollable enough to show it arriving, and the two assertions want
-             different thresholds. */
+          /* HOW FAR THIS PAGE CAN ACTUALLY TRAVEL. The ramp is sampled at
+             three tenths and seven tenths of itself, so a body with less slack
+             than the ramp cannot demonstrate a fade — it pins at one value and
+             reads as "the glass snaps". That is not a regression, it is a page
+             that nearly fits: Impressum became one the day its bottom button
+             left (2026-08-22). Scrollable enough to bring the glass in at all
+             is a weaker claim than scrollable enough to show it arriving, and
+             the two assertions want different thresholds. */
           travel: body.scrollHeight - body.clientHeight,
           /* the mask must actually REACH nothing, not merely be some gradient:
              the old test matched the substring "gradient", which is equally
@@ -216,7 +229,7 @@ try {
       if (p.scrollable) {
         check(p.glassScrolled > 0, `${p.id} never brings the glass in when scrolled: ` + label, p);
       }
-      if (p.travel >= 40) {                      // enough slack to sample a ramp
+      if (p.travel >= p.ramp) {                  // enough slack to sample a ramp
         check(p.glassPart > 0 && p.glassPart < p.glassScrolled,
           `${p.id}'s glass SNAPS instead of fading in with the scroll: ` + label, p);
         check(p.glassMore > p.glassPart,
