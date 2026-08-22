@@ -1448,11 +1448,20 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
   grid-template-columns:auto auto;grid-template-areas:"plate plate" "board chips"}
 .land .side.bot{grid-template-areas:"plate plate" "chips board"}
 .land .plate{grid-area:plate;height:20px}
-/* WIDE ENOUGH FOR THE WORST SCORE, always. 17px bold three digits measures
-   ~35px against a 28px floor, so the number grew its own box and shifted by
-   7.4px the moment anyone crossed 100 — the same "reserve the space, never let
-   it follow its contents" rule the gutter cluster above is built on. */
-.land .plate .tot{font-size:17px;min-width:36px}
+/* WIDE ENOUGH FOR THE WORST SCORE, ON EVERY PLATFORM. Three 17px bold digits
+   grew their own box and shifted the number by 7.4px the moment anyone crossed
+   100 — the same "reserve the space, never let it follow its contents" rule the
+   gutter cluster above is built on. The floor that fixed it was measured in ONE
+   font, and the stack ends in `sans-serif`, which is a different face on every
+   platform that is not Apple's. Measured, widest first:
+     Verdana Bold      37.28px
+     DejaVu Sans Bold  36.51px   ← Linux, and what CI actually renders
+     SF Pro Rounded    35.39px   ← macOS, the only one 36px ever cleared
+   So 36px held here and broke there: on CI the box followed its contents by
+   0.52px and test8 failed on a machine no player uses. 40px clears the widest
+   measured face by 2.7px. It costs nothing — .plate .sp{flex:1} absorbs the
+   growth, with 84-200px of slack across every size from 568x320 to 932x430. */
+.land .plate .tot{font-size:17px;min-width:40px}
 /* LANDSCAPE seats the boards side by side, so a plate has an OUTSIDE and an
    INSIDE: the name belongs on the outer edge and the score on the inner one,
    facing the table. The left board already reads that way; the right board is
