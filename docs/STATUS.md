@@ -162,12 +162,23 @@ back to NONE (`spellById` no longer resolves it — gated). The roster is now:
   caster's facing column; it lands, it does not strike. A shielded column
   cannot be robbed.
 
-Shipped-policy numbers (machineCast at Medium demand, 1,000 games/config,
-one-sided floors): FATE 56.8 (LIMITED 63.0 — the warmest pair), NUDGE 55.8,
-WARD 57.1 (COLSHIELD ~neutral), SUNDER 58.5, PILFER 61.4 (COLSHIELD 63.3 —
-the steal un-fills a nearly-full column and denies the shield; any future
-ranked deal must never pair them). WARD/SUNDER cast late by nature (earned
-timing, not sniping). Sim caveats in the tool header: placement search is
+Shipped-policy numbers (machineCast at Medium demand, 3,000 games/config,
+one-sided floors, re-measured 2026-08-22 after the ward's shielded-column
+rule): NUDGE 55.7, WARD 56.9, FATE 59.3 (LIMITED 60.8), SUNDER 60.6
+(SINGLESTRIKE 59.3), PILFER 60.7 (COLSHIELD 63.1). The roster spans
+55.7-63.1 against the retired swap's 70.5/81.8.
+
+Two COLSHIELD pairings are outliers and any deal that picks BOTH mode and
+spell should know it: **PILFER is too strong there** (63.1 - the steal
+un-fills a nearly-full column and denies the shield) and **WARD is worth
+nothing** (49.5, casting in only 61% of games - the mode already protects
+full columns and the ward may no longer be spent on one). Both pickers now
+offer RANDOM, so a random/random deal can land on the dead pairing.
+
+WARD and SUNDER cast late by nature (median 83% and 74% through the game):
+a ward waits for a real threat, a sunder for a die that matches several
+columns. That is a CONDITION being met, not the hoard-until-the-end pattern
+that made the swap degenerate (earned timing, not sniping). Sim caveats in the tool header: placement search is
 charm-blind, one cast per turn, policies are floors.
 
 Structure added for the roster: `CastCtx` (hand, supply-as-behaviour, charm,
