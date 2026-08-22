@@ -64,7 +64,15 @@ export const S = {
      -run tutorial offer and the hub's highlight both ask this, and they must
      never disagree, so there is one flag and not one per flow. */
   played: false,
-  starter: ME as Player,
+  /* Who opens the NEXT offline game. It alternates after every game (newGame
+     flips it), which is the fair thing over a session — but it used to START
+     at ME, and it is deliberately NOT persisted, so it reset to the player on
+     every reload. A session one game long therefore gave the player the first
+     move EVERY time: open the app, play a game, close it, and you opened all
+     of them. Drawn once per load instead, so the alternation begins on a coin
+     flip. Not core/, so Math.random is allowed here — no replay validator has
+     an opinion about an offline game. */
+  starter: (Math.random() < 0.5 ? ME : AI) as Player,
   sound: true,
   /* the duel palette: which hue family (DUELHUES id) each side wears. Never
      equal — each picker disables the other side's pick. colorblind OVERRIDES

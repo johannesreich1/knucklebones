@@ -90,6 +90,15 @@ try {
     const k = window.__kb;
     k.S.spell = o.spell === undefined ? 'pilfer' : o.spell;   // the OFFLINE screen's pick
     k.S.timer = 0; k.S.localMode = 0; k.S.mode = 'duo'; k.S.seat = 'face';
+    /* PIN THE OPENER. Offline, who starts is a coin flip per app load and
+       alternates from there (src/state.ts) — right for play, useless for a
+       probe: face-to-face keeps the rune in the plate of whoever is NOT to
+       move, so a random opener relocates the very thing half these assertions
+       measure. This suite is about layout, not seating; test15/18/19 pin
+       S.turn for the same reason. Without this the failure is a null
+       getBoundingClientRect in whichever block happens to draw the wrong
+       side — a flake that reads as a layout regression. */
+    k.S.starter = 1;                                          // ME opens every game in this probe
     k.newGame(o.tutorial ? { tutorial: true } : undefined);
   }, opts);
   const waitChoose = async () => {
