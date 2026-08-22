@@ -484,8 +484,21 @@ async function showBoard(): Promise<void> {
     b.addEventListener('click', () => {
       Sfx.tap();
       /* my own row is the door to my profile — a face-off against yourself
-         answers nothing */
-      if (isMe) { void showAccount(); return; }
+         answers nothing — and, being a door, it fills the ‹ slot the same way
+         Home and the result screen do. It leads back to the LADDER, which is
+         inside this overlay, so the answer is a panel swap rather than a way
+         out of it; ‹ used to bottom out at whatever opened the overlay and
+         drop the player on the main menu instead (user report).
+         The previous answer is restored on the way back, or the ladder's own
+         ‹ would lead to the ladder. The list is left standing rather than
+         re-fetched, so the player returns to the rows and the scroll they
+         left; a profile edit shows up the next time the ladder is opened. */
+      if (isMe) {
+        const back = exitOnline;
+        exitOnline = () => { exitOnline = back; panel('onBoard'); };
+        void showAccount();
+        return;
+      }
       showFaceoff(r, me && lad ? { name: me.nickname, avatar: me.avatar ?? null, lad } : null);
     });
     return b;

@@ -47,6 +47,15 @@ const SESSION = {
 };
 const PROFILE = { id: GUEST_ID, nickname: 'TestGuest001', rating: 1012, avatar: 'die:5:cy',
                   created_at: '2026-06-01T00:00:00Z', named_at: '2026-06-01T00:00:00Z' };
+/* THE BOARD the ladder door is walked on (case 6). Four rows with MINE among
+   them — the app finds it by NICKNAME (online/ui.ts), so that is the field
+   that has to agree with the cached profile, not the id. */
+const BOARD = [
+  { rank: 1, nickname: 'CosmicRaven681', points: 4600, wins: 20, losses: 12, avatar: 'die:2:gold', apex: true, peak: 4600 },
+  { rank: 2, nickname: 'LuckyCrow407', points: 3220, wins: 19, losses: 12, avatar: 'die:4:mg', apex: false, peak: 3300 },
+  { rank: 3, nickname: PROFILE.nickname, points: PROFILE.rating, wins: 12, losses: 7, avatar: PROFILE.avatar, apex: false, peak: 1080 },
+  { rank: 4, nickname: 'ZestyFox981', points: 900, wins: 10, losses: 6, avatar: 'die:6:cy', apex: false, peak: 950 },
+];
 /* the match that just ended, as play.ts reports it: a win worth +18 points
    over a named opponent whose own row the RPC will fill in late */
 const REPORT = { won: true, draw: false, forfeit: false, my: 41, their: 29,
@@ -94,7 +103,7 @@ try {
     // face-off's door, and it can only arrive AFTER the screen is already up
     if (u.includes('/rpc/player_card')) return json([{ streak: 2, since: '2026-06-01T00:00:00Z',
       points: 1104, wins: 31, losses: 19, games: 50, rank: 1, apex: false, peak: 1150 }]);
-    if (u.includes('/rpc/leaderboard')) return json([]);
+    if (u.includes('/rpc/leaderboard')) return json(BOARD);
     if (u.includes('/season_ratings')) return json([{ points: 1012, peak: 1080, wins: 12, losses: 7, draws: 1 }]);
     if (u.includes('/profiles')) return json([PROFILE]);
     return json([]);
@@ -235,6 +244,46 @@ try {
                  endOn: await page.evaluate(() => document.getElementById('ovEnd').classList.contains('on')) };
     check(out.home.room.id === 'ovStart' && out.home.endOn === false,
           'Home arrived with the result screen still on top of it', out.home);
+
+    /* 6 · THE LADDER IS A DOOR TOO. My own row opens my profile — a face-off
+       against myself answers nothing — so ‹ has to hand back the list I was
+       reading rather than the main menu (user report). The ladder lives INSIDE
+       this overlay, so the right answer is a panel swap, not a way out of it:
+       that is why these checks read the TITLE as well as the room, since
+       #ovOnline is the room for the profile and the ladder alike. */
+    await page.click('#btnBoardHome');
+    await page.waitForFunction(() => document.querySelector('#onBoard')?.hidden === false
+      && document.querySelectorAll('.lrow.me').length === 1);
+    await page.waitForTimeout(300);
+    out.ladder = { board: await room() };
+    await page.click('.lrow.me');
+    await page.waitForFunction(() => document.querySelector('#onAccount')?.hidden === false);
+    await page.waitForTimeout(300);
+    out.ladder.profile = await room();
+    await page.click('#btnOnlineBack');
+    await page.waitForTimeout(500);
+    out.ladder.back = await room();
+    check(out.ladder.board.title === 'LADDER', 'the ladder never opened', out.ladder);
+    check(out.ladder.profile.id === 'ovOnline' && out.ladder.profile.title === 'PROFILE',
+          'my own ladder row did not open my profile', out.ladder);
+    /* JUDGED BEFORE THE NEXT STEP IS TAKEN. If ‹ dropped the player home, the
+       overlay is gone and the click below has nothing to hit — the suite would
+       report a 20s click timeout instead of the navigation it exists to
+       describe (the hazard its own preamble names). So this reads first, and
+       the rest of the walk only happens if there is still a ladder to walk. */
+    check(out.ladder.back.id === 'ovOnline' && out.ladder.back.title === 'LADDER',
+          'BACK FROM THE PROFILE LEFT THE LADDER', out.ladder);
+    if (out.ladder.back.id === 'ovOnline') {
+      /* ...and the slot it borrowed is HANDED BACK. The ladder door fills the
+         same ‹ slot Home and the result screen fill, so if it kept it, the
+         ladder's own ‹ would lead to the ladder and the player would be shut
+         in a room that returns to itself. */
+      await page.click('#btnOnlineBack');
+      await page.waitForTimeout(500);
+      out.ladder.home = await room();
+      check(out.ladder.home.id === 'ovStart',
+            'the ladder kept the profile\u2019s answer: its own \u2039 no longer leads home', out.ladder);
+    }
   } catch (e) { problems.push('the walk broke off :: ' + String(e.message).split('\n')[0]); }
 
   out.errs = errs;
