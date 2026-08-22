@@ -12,10 +12,11 @@
 // colshield-aware 51.8% vs blind), so they catch a broken retune, not
 // simulation drift.
 import {
-  AI, ME, emptyBoard, legalCols, applyMove, totalOf, isOver, CLASSIC, COLSHIELD, type Mode,
+  AI, ME, emptyBoard, legalCols, applyMove, totalOf, isOver, CLASSIC, COLSHIELD, type Mode, type GameState,
 } from '../src/core/rules.ts';
-import { searchRoot, setRiskW, setOppW } from '../src/core/ai.ts';
-import { GROUPS, type BotShape } from '../src/core/ladder.ts';
+import { searchRoot, setRiskW, setOppW, getRiskW, getOppW } from '../src/core/ai.ts';
+import { GROUPS, botShapeAt, type BotShape } from '../src/core/ladder.ts';
+import { botMove } from '../src/core/bot.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -141,6 +142,54 @@ if (!(csAwareVsBlind >= 0.47)) {
   problems.push(`COLSHIELD-aware search wins only ${(csAwareVsBlind * 100).toFixed(1)}% of colshield games `
     + `vs a mode-blind twin — a losing mode heuristic is back in the eval (the risk-model shield skip `
     + `measured 44.5% here; awareness may be neutral, never a handicap)`);
+}
+
+/* ---- core/bot botMove(): the ONE implementation both Edge Functions ask ----
+   Extracted from pvp-move 2026-08-22 so pvp-join can play a bot's OPENING move
+   (a bot can be seated first now that the seat handicap applies to bots too).
+   Equivalence to the block it replaced was proven off-gate at 113,400 calls
+   across all 7 modes and all 7 groups, 0 differences; what is pinned HERE is
+   the contract that keeps it safe to call from two places. */
+{
+  const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
+  const seeded = (a: number) => () => {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const st0: GameState = [emptyBoard(), emptyBoard()];
+  // an OPENING move on an empty board is the case pvp-join newly depends on
+  for (const g of GROUPS) {
+    const c = botMove(st0, ME, 4, g.floor + 10, CLASSIC, seeded(7));
+    check(c >= 0 && c < 3, 'botMove must open with a legal column: ' + g.name, c);
+  }
+  // deterministic given the SAME stream — replay and the gate both need this.
+  // core/ai's tie-break jitter reads the global Math.random, so it is seeded too.
+  const mid: GameState = [[[5, 5], [2], []], [[4], [6, 6], [1]]];
+  for (const mode of [CLASSIC, COLSHIELD] as Mode[]) {
+    const real = Math.random;
+    Math.random = seeded(99); const a = botMove(mid, AI, 4, 2020, mode, Math.random);
+    Math.random = seeded(99); const b = botMove(mid, AI, 4, 2020, mode, Math.random);
+    Math.random = real;
+    check(a === b, 'botMove must be deterministic on one seeded stream', { mode, a, b });
+  }
+  // it must never answer with a column it cannot play
+  const nearlyFull: GameState = [[[1, 2, 3], [1, 2, 3], [4]], [[], [], []]];
+  for (let i = 0; i < 60; i++) {
+    const c = botMove(nearlyFull, AI, 1 + (i % 6), GROUPS[i % GROUPS.length].floor + 10, CLASSIC, seeded(i));
+    check(legalCols(nearlyFull[AI]).includes(c), 'botMove returned an illegal column', { i, c });
+  }
+  // a full board has nothing to answer with, and says so rather than guessing
+  const full: GameState = [[[1, 2, 3], [1, 2, 3], [1, 2, 3]], [[], [], []]];
+  check(botMove(full, AI, 4, 0, CLASSIC, seeded(1)) === -1, 'a bot with no legal column must return -1');
+  // the search weights it borrows are RESTORED: a bot must not change how the
+  // next search in the process plays (offline CPU and ranked bot share it)
+  setRiskW(0.9); setOppW(1);
+  botMove(mid, AI, 4, 0, CLASSIC, seeded(3));          // STONE: risk 0, oppW -0.5
+  check(getRiskW() === 0.9 && getOppW() === 1,
+    'botMove leaked its risk/opp weights into the process', { risk: getRiskW(), opp: getOppW() });
+  check(botShapeAt(0).oppW === -0.5, 'STONE is still the kill-averse shape botMove borrows', botShapeAt(0));
 }
 
 console.log(JSON.stringify({

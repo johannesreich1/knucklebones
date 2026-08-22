@@ -6,8 +6,8 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { AI, ME, BOUNTY, isFull, boardTotalMode, legalCols, applyMove, type Player, type Mode } from "./core/rules.ts";
 import { rebuild, matchTotal, type MatchState } from "./core/match.ts";
-import { settle, botShapeAt, type Score } from "./core/ladder.ts";
-import { searchRoot, setRiskW, getRiskW, setOppW, getOppW } from "./core/ai.ts";
+import { settle, type Score } from "./core/ladder.ts";
+import { botMove } from "./core/bot.ts";
 import { modeById } from "./core/modes.ts";
 
 const CORS = {
@@ -176,17 +176,12 @@ Deno.serve(async (req: Request) => {
     // strong". Verified by replaying live matches, 2026-08-20.)
     // profiles.rating is the season mirror, so this reads the same number
     // the player was shown when the match was made.
-    const shape = botShapeAt(oppProf.rating ?? 0);
-    const w = getRiskW(), ow = getOppW();
-    setRiskW(shape.risk); setOppW(shape.oppW);
-    let botCol: number;
-    if (shape.slip > 0 && Math.random() < shape.slip) {
-      const lg = legalCols(s.st[botIdx]);
-      botCol = lg[Math.floor(Math.random() * lg.length)];
-    } else {
-      botCol = searchRoot(s.st, botIdx, botDie, shape.depth, MODE).c;
-    }
-    setRiskW(w); setOppW(ow);
+    // ONE implementation of "what does a bot play" (core/bot.ts) — pvp-join
+    // asks the same question now that a bot can be seated first and has to
+    // make the opening move. Extracted 2026-08-22 and proven identical to the
+    // block that stood here: 113,400 calls across all 7 modes and all 7 ladder
+    // groups, one seeded stream driving both, 0 differences.
+    const botCol = botMove(s.st, botIdx, botDie, oppProf.rating ?? 0, MODE, Math.random);
     const { error: botErr } = await svc.from("match_moves")
       .insert({ match_id, idx: s.moveCount, who: botIdx, col: botCol, die: botDie });
     if (!botErr) {

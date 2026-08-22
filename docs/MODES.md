@@ -48,18 +48,17 @@ baseline every measurement is taken against.
 
 One object in `core/modes.ts` is the whole mode: `mode` (numeric, used by
 rules and AI), `id` (stored in `matches.modifier` — **never rename**), `name`,
-`icon`, `blurb`, `detail`, `weight`, `seatEdge`. The wheel, the badge, the
-picker and the library never learn a mode's name.
+`icon`, `blurb`, `detail`, `weight`. The wheel, the badge, the picker and the
+library never learn a mode's name.
 
-`seatEdge` is the one field a new mode cannot copy from a neighbour: it names
-which seat the mode itself favours (+1 first mover, −1 second, 0 neither), and
-`pvp-join` seats the lower-rated player there as a handicap. It is about the
-**last word** — who makes the final placement — not the opening one, which on
-an empty symmetric board is worth nothing. Measure it (`docs/LADDER.md`
-appendix); every mode so far favours the first mover except BOUNTY (neither)
-and **LIMITED (−1)**, which ends on a shared bag rather than a full board and
-so hands the last die across. A mode that lies here mis-seats every ranked
-match it spins, silently.
+A mode carries **no seating opinion**. Who opens a ranked match is decided by
+rating alone — the lower-rated player — and that rule is the same in every mode.
+A `seatEdge` field existed for a few hours on 2026-08-22, flipping the seat
+under LIMITED because its second mover is measurably favoured; it was reverted
+by decision. A seating rule that varies per mode makes every new mode carry a
+balance question, and the ~3.4-point error it corrected is smaller than the
+confusion it added. The measurement is kept in `core/modes.ts` and
+`docs/LADDER.md` — as context, explicitly not as something to act on again.
 
 Adding a mode is: the registry entry, its branches in `core/rules.ts`
 (scoring, destruction, or supply), its heuristic in `core/ai.ts riskOf` if the

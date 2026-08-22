@@ -15,29 +15,30 @@ export interface ModeSpec {
   blurb: string;     // one line under the landed segment
   detail: string;    // the tap-to-learn sheet's full explanation (client-only)
   weight: number;
-  /* WHICH SEAT THE MODE ITSELF FAVOURS — +1 the first mover, −1 the second,
-     0 neither. pvp-join hands the favoured seat to the LOWER-rated player, so
-     this is the handicap's whole vocabulary; a mode that lies here mis-seats
-     every ranked match it spins.
-
-     It is NOT about the opening placement, which is worth nothing: an empty
-     board's three columns are symmetric, so the first die carries no
-     information. It is about the LAST word — who makes the final placement,
-     whose destruction the opponent never answers. The first mover reaches a
-     full board half a die sooner, and takes that last word 51–58% of the time.
-
-     MEASURED, never reasoned (docs/MODES.md §5), 60,000 games per mode at the
-     Medium anchor, three independent seeds, 95% CI ±0.40 — first-mover win%:
-
-        classic 50.74 · rowswitch 51.37 · rowmult 51.51 · colshield 52.65
-        singlestrike 52.05 · bounty 49.91 · limited 46.63
-
-     LIMITED is the one inversion, and the reason is structural: the bag holds
-     an EVEN 24 dice and empties before either board fills in ~45% of games, so
-     it is the SECOND mover who lays the last die. Any mode that ends on a
-     shared counter rather than a full board will invert the same way. */
-  seatEdge: 1 | 0 | -1;
 }
+
+/* NO SEATING FIELD HERE, ON PURPOSE (decided 2026-08-22, and briefly shipped
+   the other way as v19).
+
+   Who opens a ranked match is decided by RATING alone — the lower-rated player
+   starts — and that rule is deliberately the same in every mode. A `seatEdge`
+   field did exist for a few hours, flipping the seat under LIMITED because the
+   measurement says its second mover is favoured; it was removed because a
+   seating rule that varies per mode makes every future mode carry a balance
+   decision, and the thing it was correcting is smaller than the noise it added
+   to the explanation.
+
+   The measurement itself is still true and still worth knowing — 60,000 games
+   per mode, three seeds, 95% CI ±0.40, first-mover win%:
+
+      classic 50.74 · rowswitch 51.37 · rowmult 51.51 · colshield 52.65
+      singlestrike 52.05 · bounty 49.91 · limited 46.63
+
+   So in LIMITED the player the handicap means to help gets a seat worth about
+   −3.4 points instead of +0. That is the accepted cost of one rule
+   (docs/LADDER.md, seating): the edge is small, the mode is 10% of the wheel,
+   and it is not worth a per-mode branch. Do NOT reintroduce one without a
+   decision — it was tried. */
 
 /* Production odds: plain classic 40% of the time (weight 4 of 10), every
    addition an equal slice of the rest (1 of 10 = 10% each). Changed from 50/50
@@ -45,19 +46,19 @@ export interface ModeSpec {
    never seeing one made them feel rarer than they should. Any change here has
    to be redeployed to pvp-join, which owns the real pick. */
 export const MODES: ModeSpec[] = [
-  { mode: CLASSIC, id: 'classic', name: 'CLASSIC', icon: '◆', blurb: 'The pure duel. Columns multiply.', weight: 4, seatEdge: 1,
+  { mode: CLASSIC, id: 'classic', name: 'CLASSIC', icon: '◆', blurb: 'The pure duel. Columns multiply.', weight: 4,
     detail: 'Matching dice stacked in a column multiply: two 4s = 16, three 4s = 36. Place a die and every matching die in the facing enemy column is destroyed. First full grid ends it — highest total wins.' },
-  { mode: ROWSWITCH, id: 'rowswitch', name: 'ROW SWITCH', icon: '☰', blurb: 'Scoring turns sideways — only rows count.', weight: 1, seatEdge: 1,
+  { mode: ROWSWITCH, id: 'rowswitch', name: 'ROW SWITCH', icon: '☰', blurb: 'Scoring turns sideways — only rows count.', weight: 1,
     detail: 'Only ROWS score here — columns count for nothing. Matching dice in the same row multiply, and the rail on the left tracks every row. Destruction still strikes down the facing column.' },
-  { mode: ROWMULT, id: 'rowmult', name: 'ROW MULTIPLY', icon: '✚', blurb: 'Rows pay a bonus on top of columns.', weight: 1, seatEdge: 1,
+  { mode: ROWMULT, id: 'rowmult', name: 'ROW MULTIPLY', icon: '✚', blurb: 'Rows pay a bonus on top of columns.', weight: 1,
     detail: 'Columns score as always — and matching dice lined up in a ROW pay their sum again on top. The rail on the left shows what each row is adding.' },
-  { mode: COLSHIELD, id: 'colshield', name: 'COLUMN SHIELD', icon: '🛡', blurb: 'A full column cannot be destroyed.', weight: 1, seatEdge: 1,
+  { mode: COLSHIELD, id: 'colshield', name: 'COLUMN SHIELD', icon: '🛡', blurb: 'A full column cannot be destroyed.', weight: 1,
     detail: 'Fill a column and it locks: a shielded column cannot be destroyed, whatever lands opposite. The shield pops onto the column chip the moment it engages.' },
-  { mode: SINGLESTRIKE, id: 'singlestrike', name: 'SINGLE STRIKE', icon: '☓', blurb: 'Destruction takes ONE die — the closest to the centre.', weight: 1, seatEdge: 1,
+  { mode: SINGLESTRIKE, id: 'singlestrike', name: 'SINGLE STRIKE', icon: '☓', blurb: 'Destruction takes ONE die — the closest to the centre.', weight: 1,
     detail: 'Destruction is surgical: a hit removes only ONE matching die — the one closest to the centre. Stacks survive longer, so multipliers rule the board.' },
-  { mode: BOUNTY, id: 'bounty', name: 'BOUNTY', icon: '✦', blurb: 'Every die you destroy banks +1. Forever.', weight: 1, seatEdge: 0,
+  { mode: BOUNTY, id: 'bounty', name: 'BOUNTY', icon: '✦', blurb: 'Every die you destroy banks +1. Forever.', weight: 1,
     detail: 'Every die you destroy banks a permanent +1 on your nameplate — the ✦ tally never resets, even when your own dice fall. Feed on destruction; the bank decides close matches.' },
-  { mode: LIMITED, id: 'limited', name: 'LIMITED', icon: '▦', blurb: 'Every face exists FOUR times. The bag ends it.', weight: 1, seatEdge: -1,
+  { mode: LIMITED, id: 'limited', name: 'LIMITED', icon: '▦', blurb: 'Every face exists FOUR times. The bag ends it.', weight: 1,
     detail: 'The dice are finite: one shared bag holds every face exactly four times — 24 dice for the whole match. The stack beside the die in play counts what is still to come — how MANY, never which. When the last die is placed the game ends, full boards or not.' },
 ];
 
@@ -73,22 +74,6 @@ export function modeById(id: string | null | undefined): ModeSpec {
 /* the same lookup by numeric Mode — what the UI holds in S.scoring */
 export function modeByEnum(mode: Mode): ModeSpec {
   return MODES.find((m) => m.mode === mode) ?? MODES[0];
-}
-
-/* WHO SITS WHERE — the ranked handicap, as a pure function so the gate can
-   test the rule pvp-join actually runs instead of a copy of it.
-
-   p1 moves first (matches.turn defaults to 1). The underdog takes the seat
-   this mode favours (seatEdge), which is p1 everywhere except LIMITED. Callers
-   name who is BEHIND rather than a raw p1/p2 order, so the handicap cannot be
-   dropped by forgetting it at a new call site.
-
-   `forceFirst` is a necessity, not a preference: a bot only moves inside a
-   human's request, so it can never make the opening move, and a match against
-   one must seat the human first whatever the mode is worth. */
-export function seatsFor(spec: ModeSpec, underdog: string, favourite: string, forceFirst?: string): [string, string] {
-  const seats: [string, string] = spec.seatEdge >= 0 ? [underdog, favourite] : [favourite, underdog];
-  return forceFirst === seats[1] ? [seats[1], seats[0]] : seats;
 }
 
 /* deterministic weighted pick — the '#mode' suffix keeps this draw independent

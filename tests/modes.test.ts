@@ -11,7 +11,7 @@ import {
 import { poolSequence, POOL_PER_FACE } from '../src/core/dice.ts';
 import { rebuild, matchTotal, type MatchState } from '../src/core/match.ts';
 import { searchRoot, riskOf } from '../src/core/ai.ts';
-import { MODES, pickMode, modeById, seatsFor } from '../src/core/modes.ts';
+import { MODES, pickMode, modeById } from '../src/core/modes.ts';
 
 const problems: string[] = [];
 const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -161,35 +161,14 @@ check(pickMode('same-seed').id === pickMode('same-seed').id, 'pickMode determini
 check(modeById('nonsense').id === 'classic', 'unknown id falls back to classic');
 check(modeById(null).id === 'classic', 'null id falls back to classic');
 
-/* ---- seatEdge: the ranked handicap's whole vocabulary ----
-   pvp-join seats the LOWER-rated player in the seat this field names, so a
-   wrong value mis-seats every match the mode spins. The numbers behind it are
-   measured (core/modes, 60k games per mode); what the gate pins is that every
-   mode DECLARES one, that it is a legal value, and that LIMITED's inversion
-   survives — it is the only mode whose bag, not a full board, ends the game,
-   and seating the underdog first there penalised them by ~3.4 points. */
+/* ---- seating is NOT a mode's business ----
+   A `seatEdge` field briefly existed here, flipping who opens under LIMITED.
+   It was removed by decision (2026-08-22): ranked seating is decided by RATING
+   alone and is the same in every mode, so a mode must not carry a seating
+   opinion. The gate refuses its return, because the tempting thing to do with
+   the measurement in core/modes' comment is to act on it again. */
 for (const m of MODES)
-  check(m.seatEdge === 1 || m.seatEdge === 0 || m.seatEdge === -1,
-    'every mode must declare a legal seatEdge: ' + m.id, m.seatEdge);
-check(modeById('limited').seatEdge === -1,
-  'LIMITED favours the SECOND mover — an even bag hands the last die across', modeById('limited').seatEdge);
-check(MODES.filter((m) => m.seatEdge === -1).length === 1,
-  'only a mode ended by a shared counter should invert', MODES.filter((m) => m.seatEdge === -1).map((m) => m.id));
-
-/* the seating rule pvp-join actually runs — the underdog must end up in the
-   favoured seat under EVERY mode, and the bot escape must beat the handicap */
-for (const m of MODES) {
-  const [p1, p2] = seatsFor(m, 'U', 'F');
-  check(m.seatEdge >= 0 ? p1 === 'U' : p2 === 'U',
-    'the underdog must take the favoured seat under ' + m.id, { p1, p2, edge: m.seatEdge });
-  check(p1 !== p2 && [p1, p2].sort().join() === 'F,U', 'seatsFor must seat both players once: ' + m.id, [p1, p2]);
-  // a bot cannot open, so the human is p1 whatever the mode is worth
-  check(seatsFor(m, 'U', 'F', 'F')[0] === 'F', 'forceFirst overrides the handicap: ' + m.id);
-  check(seatsFor(m, 'U', 'F', 'U')[0] === 'U', 'forceFirst seats the named player first: ' + m.id);
-}
-// LIMITED is the case the old rule got wrong: the underdog belongs in p2
-check(seatsFor(modeById('limited'), 'U', 'F')[1] === 'U', 'LIMITED seats the underdog SECOND');
-check(seatsFor(modeById('classic'), 'U', 'F')[0] === 'U', 'classic still seats the underdog first');
+  check(!('seatEdge' in m), 'a mode must not carry a seating rule: ' + m.id, m);
 
 /* ---- AI plays every mode without falling over, and respects the shield ---- */
 const mid: GameState = [[[5, 5], [2], []], [[4], [6, 6], [1]]];

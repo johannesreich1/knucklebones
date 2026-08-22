@@ -427,10 +427,9 @@ bench in step 3 is what keeps these honest going forward.
 
 ### Seating — who moves first, and why it is a handicap
 
-`pvp-join` gives the **lower-rated player the seat the mode favours**. It is a
-deliberate equalizer, and until 2026-08-22 it was written as "the underdog
-takes the first move", which is wrong in one mode and was costing the player it
-meant to help.
+**One rule, everywhere: the lower-rated player opens.** Every mode, human
+opponent or bot. It is a deliberate equalizer, and its whole appeal is that it
+fits in one sentence.
 
 The advantage is **not the opening placement** — an empty board's three columns
 are symmetric, so the first die carries no information. It is the **last word**:
@@ -445,22 +444,42 @@ Measured 2026-08-22 — 60,000 games per mode at the offline Medium anchor (dept
 |---|---|---|---|---|---|---|
 | 50.74 | 51.37 | 51.51 | 52.65 | 52.05 | 49.91 | **46.63** |
 
-**LIMITED inverts**, and structurally so: its bag holds an EVEN 24 dice and
-empties before either board fills in ~45% of games, so the *second* mover lays
-the last die — the first mover takes the last word only 28% of the time there.
-Seating the underdog first therefore handed them a ~3.4-point penalty (~24 Elo),
-the exact opposite of the intent. Any future mode that ends on a shared counter
-rather than a full board will invert the same way.
+**LIMITED inverts**, structurally: its bag holds an EVEN 24 dice and empties
+before either board fills in ~45% of games, so the *second* mover lays the last
+die — the first mover takes the last word only 28% of the time there. So in
+LIMITED the handicap gives the underdog a seat worth about −3.4 points instead
+of +0.
 
-The rule now lives in `core/modes.ts seatsFor()` — one implementation, gated by
-`tests/modes.test.ts` — and each mode declares its `seatEdge`. A new mode must
-declare one, and the honest way to pick the value is to measure it.
+**That inversion is known and deliberately NOT corrected** (decision,
+2026-08-22). It briefly was: `pvp-join` v19 shipped a `seatEdge` field on every
+mode and flipped the seat under LIMITED. It was reverted within hours because a
+seating rule that varies per mode makes every future mode carry a balance
+question, and the edge being corrected is smaller than the confusion it buys.
+LIMITED is 10% of the wheel and the error is ~3.4 points; the simpler rule wins.
+`core/modes.ts` keeps the measurement and a note saying it is not to be acted on
+without a decision — because the obvious thing to do with that table is act on
+it, and someone already did.
 
-**Bot matches are exempt, by necessity.** A bot only moves inside a human's
-request, so it cannot make the opening move: the human is p1 in every bot match
-whatever the mode is worth and whichever side is actually rated lower. Weighted
-across the wheel that hands the human ~0.4 points of win probability — small,
-because colshield's +2.65 and limited's −3.37 nearly cancel — but it is a fixed
-per-mode bias rather than noise. Removing it means teaching `pvp-join` to play
-the bot's opening move at match creation, which wants the bot's move decision
-lifted out of `pvp-move` into shared core first.
+**Bots take the same rule.** They used to be exempt by necessity — a bot only
+moves inside a human's `pvp-move` request, so it could not make an opening move,
+and the human was p1 in every bot match whatever either side was rated. With a
+thin player pool most ranked matches are against bots, so "the handicap applies
+except where most matches are" was the wrong shape. `pvp-join openForBot()` now
+plays a bot's opening move at match creation, so a bot that is rated lower opens
+exactly as a human would.
+
+That required lifting the bot's move decision out of `pvp-move` into
+`core/bot.ts` — one implementation, two callers — rather than copying it.
+The extraction was proven identical to the block it replaced before deployment:
+113,400 calls across all 7 modes and all 7 ladder groups, one seeded stream
+driving both, **0 differences**. Note that `searchRoot` adds tie-break jitter
+from the *global* `Math.random` (`core/ai.ts`), so any such comparison has to
+seed the global stream, not just the injected one — seeding only the injected
+stream compares two independently-random calls and reports ~16% false
+mismatches, which is exactly what the first version of that probe did.
+
+**Offline seating is unrelated and randomised.** A local game alternates who
+opens, which is fair over a session — but `S.starter` used to begin at the
+player and is deliberately not persisted, so it reset on every reload and a
+one-game session always gave the player the first move. It is now drawn on a
+coin flip per app load and alternates from there (`src/state.ts`).
