@@ -100,6 +100,18 @@ upside a closed column forfeits. The true dynamics stay in the search, where
 `applyMove` knows shields block destroys. `tests/botbench.test.ts` §4 refuses
 the skip's return.
 
+**A mode's own mark may not name a colour.** ROW MULTIPLY brackets a row match
+in the multiplier heat, and that heat is not a constant: a ×2 is gold and a ×3
+hot orange *unless that side's player wears that hue*, in which case only their
+multiplied dice fall back to ice / hot red, and colour blind mode pins both
+fallbacks on both sides (`flow/menu.ts` writes `--p1-mx2…` inline on `<html>`;
+`.die.p1` / `.die.p2` map them to `--mx2` / `--mx3` per side). So a mode mark
+reads those tokens off the die and never a literal — otherwise it is correct
+for the default pair and wrong for every player who picked gold, and wrong for
+every colour blind player twice over. `tests/test21.mjs` pins all three cases
+in computed pixels, because nothing about a hard-coded colour looks broken
+until someone changes a setting.
+
 **The mode picker and the wheel must agree.** The offline picker, the ranked
 wheel, the match badge and the library all read the same registry. A card or
 screen that re-types a mode's blurb is a copy that will drift.

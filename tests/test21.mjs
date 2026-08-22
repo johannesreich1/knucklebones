@@ -98,6 +98,72 @@ try {
     check(inked.length === 0, `${name} grew a ROW MULTIPLY bracket`, inked);
   }
 
+  // ===== the mark wears the HEAT, never a colour =====
+  // A ×2 is gold and a ×3 hot orange — unless that side's player wears that
+  // hue, when only THEIR multiplied dice fall back to ice / hot red, so a
+  // doubled die can never pass for their plain one. Colour blind mode pins
+  // both fallbacks on both sides. A mark with a literal in it would be
+  // invisible to all of that, and this is the one thing about the bracket a
+  // player can change from the settings screen.
+  const heats = () => page.evaluate(() => {
+    const k = window.__kb;
+    k.S.scoring = 2;
+    k.S.boards[1] = [[4, 6], [4, 6], [1, 6]];
+    k.S.boards[0] = [[4, 6], [4, 6], [1, 6]];
+    k.renderAll(false); k.applySides();
+    const read = (sel) => {
+      const d = document.querySelector(sel);
+      const cs = getComputedStyle(d);
+      return { mark: getComputedStyle(d, '::after').borderLeftColor,
+               head: getComputedStyle(d, '::before').backgroundColor,
+               token: cs.getPropertyValue(d.classList.contains('rm3') ? '--mx3-rgb' : '--mx2-rgb').trim() };
+    };
+    return { botX2: read('#botBoard .col[data-col="0"] .die.rm2.rms'),
+             botX3: read('#botBoard .col[data-col="0"] .die.rm3.rms'),
+             topX2: read('#topBoard .col[data-col="0"] .die.rm2.rms') };
+  });
+
+  const wears = (r) => {
+    const [rr, gg, bb] = r.token.split(',').map((n) => n.trim());
+    return r.mark === `rgba(${rr}, ${gg}, ${bb}, 0.95)` && r.head === r.mark;
+  };
+  const settings = async (fn) => {
+    await page.evaluate(() => window.__kb.goHome());
+    await page.tap('#btnSettingsHome'); await page.waitForTimeout(300);
+    await fn();
+    await page.waitForTimeout(200);
+    await page.tap('#btnSettingsBack'); await page.waitForTimeout(300);
+    await page.evaluate(() => window.__kb.openPractice());
+    await page.tap('#btnPlay'); await page.waitForTimeout(900);
+  };
+
+  // the default pair: nobody wears a heat, so the true heats stand
+  out.heatsDefault = await heats();
+  check(wears(out.heatsDefault.botX2) && wears(out.heatsDefault.botX3),
+    'the bracket does not follow the multiplier heat', out.heatsDefault);
+  check(out.heatsDefault.botX2.mark !== out.heatsDefault.botX3.mark,
+    'a ×2 and a ×3 bracket are the same colour', out.heatsDefault);
+
+  // a player PICKS gold: only that side's ×2 falls back to ice, the foe keeps gold
+  await settings(async () => { await page.tap('#p1Pick button[data-h="gold"]'); });
+  out.heatsGold = await heats();
+  check(wears(out.heatsGold.botX2) && wears(out.heatsGold.botX3),
+    'the bracket ignores a picked hue — it must follow --mx2 / --mx3', out.heatsGold);
+  check(out.heatsGold.botX2.token !== out.heatsDefault.botX2.token,
+    'picking gold did not move that side onto the ice fallback', [out.heatsGold.botX2.token, out.heatsDefault.botX2.token]);
+  check(out.heatsGold.topX2.token !== out.heatsGold.botX2.token,
+    'ONE side picking gold recoloured the other side\'s bracket too', out.heatsGold);
+
+  // colour blind mode pins ice + red on BOTH sides
+  await settings(async () => { await page.tap('#cbSeg button[data-b="1"]'); });
+  out.heatsCb = await heats();
+  check(wears(out.heatsCb.botX2) && wears(out.heatsCb.botX3),
+    'the bracket does not follow the heat in colour blind mode', out.heatsCb);
+  check(out.heatsCb.topX2.token === out.heatsCb.botX2.token,
+    'colour blind mode did not pin the same fallback on both sides', out.heatsCb);
+  check(out.heatsCb.botX2.mark !== out.heatsCb.botX3.mark,
+    'ice and hot red collapsed into one bracket colour', out.heatsCb);
+
   console.log(JSON.stringify({ out, problems }, null, 2));
 } finally { await browser.close(); }
 process.exit(problems.length ? 1 : 0);
