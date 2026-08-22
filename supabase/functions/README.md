@@ -23,11 +23,43 @@ not client-writable (column-level grant: `nickname` only).
 
 ## Deploying
 
-`pvp-move`/`pvp-claim` import `./core/*` — those files are `src/config.ts` and
-`src/core/{rules,dice,match,elo,ai}.ts`, uploaded VERBATIM next to `index.ts`
-at deploy time (one rules implementation, client and server). Deploys so far
-go through the Supabase MCP (`deploy_edge_function`); if deploys move to the
-CLI, a sync step must copy those files first — never hand-edit copies.
+The PvP functions import `./core/*` — src/ files uploaded VERBATIM next to
+`index.ts`, mirroring the repo layout with `src/` stripped (`src/core/rules.ts`
+→ `core/rules.ts`, `src/config.ts` → `config.ts`). One rules implementation,
+client and server. Nothing in the repo copies them: **the upload is the copy**,
+and a hand-made copy under `supabase/functions/<slug>/core/` is a fork of the
+rules that no test covers — `tests/fnsync.test.ts` fails on one.
+
+**Which files** is computed, never remembered:
+
+```bash
+node tools/fnfiles.mjs pvp-join
+```
+
+This list used to be written out here in prose, and prose cannot be re-checked:
+it still named `elo.ts` (deleted long before) and omitted `ladder.ts` and
+`modes.ts`, which every PvP function imports. `tests/fnsync.test.ts` now walks
+the same imports and fails when one resolves to nothing.
+
+Deploys go through the Supabase MCP (`deploy_edge_function`). Its `files`
+argument is exactly what the tool prints:
+
+```bash
+node tools/fnfiles.mjs pvp-join --json
+```
+
+### Deployed is not repo — read it back
+
+The gate can only see the repo. What Supabase is *running* lives in Supabase,
+so the only proof is to fetch it (`get_edge_function <slug>`) and compare
+against the manifest above. Skip that and drift is silent and open-ended:
+`pvp-join` v18 ran a `core/rules.ts` that predated the spell layer entirely for
+a day while `docs/STATUS.md` recorded the copies as current. It was harmless —
+no function imports `core/spells.ts`, so nothing the server replays could
+diverge — but harmless was luck, not design.
+
+So: **a function that changes gets redeployed WHOLE**, all files from the tool,
+never index.ts alone. Then read it back before writing anything down about it.
 
 Two legacy functions from the superseded solo-ranked design may still be
 deployed (`ranked-start`, `ranked-submit`) — their tables are gone and they
