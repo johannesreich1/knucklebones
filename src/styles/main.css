@@ -1151,10 +1151,19 @@ html.rowswitch .cols .chip{visibility:hidden}
   opacity:0;transition:opacity .2s}
 .rune.ready::before{animation:runeglow 2.3s ease-in-out infinite}
 @keyframes runeglow{0%,100%{opacity:.22}50%{opacity:.8}}
-/* A rune you cannot cast this turn is NOT restyled — only :disabled changes,
-   and that is invisible by design. Restyling per turn is what made the ring
+/* THEIR TURN, YOUR RUNE. `disabled` alone refused the press and said nothing:
+   a full-bright, breathing rune while the machine thinks reads as a control
+   you may use, and it is not one (user report). So it dims for exactly as long
+   as the turn is theirs — its own colour and shape kept, because this is not
+   the spent grey and nothing was spent.
+   The ring is PAUSED, never re-classed. Restyling per turn is what made it
    snap: an animation restarts from its first keyframe every time its class
-   comes back. */
+   comes back, which is why this used to be left alone. Pausing resumes it
+   exactly where it stopped, so the fix costs nothing the old rule protected.
+   Only the WIELDED rune wears this — the opponent's readout is already
+   `.idle`, and dimming it twice would say something it does not mean. */
+.rune.offturn{opacity:.42;filter:grayscale(.6);cursor:default}
+.rune.offturn::before{animation-play-state:paused}
 .rune:active{transform:scale(.9)}
 .rune.armed{transform:scale(1.1);border-color:var(--gold)}
 .rune.armed::before{opacity:1;animation:none;

@@ -320,6 +320,23 @@ Learned from real play, each one a shipped bug:
   or rune state can offer a take-back the rule forbids. The rune stays lit and
   pressable *while the window is open* — and a final cast must read spent at
   once, or the UI is inviting the peek the rule exists to prevent.
+- **A rune you cannot cast this turn must LOOK uncastable.** `disabled` was
+  the whole answer for a while, and disabled is invisible: vs the machine the
+  rail rune is always yours (`near` = `S.bottom`), so it sat full-bright and
+  breathing while the AI thought — a control inviting a press that could never
+  land (user report, 2026-08-22). It now dims (`.rune.offturn`, opacity .42 +
+  grayscale) for exactly as long as the turn is the other player's. Three
+  things make that safe, and each was a bug waiting: it is keyed on **`S.turn`,
+  not `caster()`** — caster() also goes null through every busy window inside
+  your own turn, which is the flicker that made the old rule "never restyle per
+  turn"; the glow ring is **paused, not re-classed**, because a class coming
+  back restarts an animation from its first keyframe and that snap is what the
+  old rule was protecting; and only the **wielded** rune wears it, since the
+  opponent's readout is already `.idle` and dimming it twice would say
+  something else. It must also stay clearly brighter than `.spent` — waiting is
+  not spending. The turn machine had to learn to repaint the rail
+  (`nextTurn` → `renderSpells()`): on the machine's turn nothing else did, so
+  the rune kept the look it had when you last moved.
 - **The armed line gets ONE line in portrait and TWO in landscape.** Not a
   preference — the status box is *reserved* at that size (`.status` /
   `.land .status` min-height, a fixed 104px lane in landscape), and a line

@@ -164,6 +164,10 @@ export async function nextTurn(){
   const gen=S.gen;
   if(S.phase==='over') return;
   renderAll(false);   // same repaint belt online uses: state wins every turn
+  renderSpells();     // ...and the rail belongs to the turn: the seat that just
+                      // lost it dims here. sayChoose() repaints it again when a
+                      // HUMAN gets the choice; on the machine's turn nothing
+                      // else would, and the rune stayed lit through it.
   if(S.mode==='duo' && S.seat==='pass' && S.turn!==S.bottom){
     const ok=await handOff(S.turn);           // face mode switches turns directly
     if(!ok || S.gen!==gen || S.phase==='over') return;

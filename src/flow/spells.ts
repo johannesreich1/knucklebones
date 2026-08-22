@@ -130,6 +130,15 @@ export function renderSpells(): void {
          now" it flipped twice per turn, restarting the ring's animation from
          its first keyframe each time, and the glow visibly snapped. */
       const readout = seat !== near;                // the other player's: an indicator
+      /* THEIR TURN. The one thing the look DOES follow the turn for: a rune
+         you are holding while the other player moves reads as unavailable,
+         because `disabled` by itself was invisible and the lit rune invited a
+         tap that could never land (user report). Keyed on the TURN, not on
+         caster(), so it changes once per hand-over instead of flickering
+         through every busy window inside your own turn — the flicker that
+         taught the rest of this block to ignore the turn. The readout has its
+         own `idle` dimming and must not take this one on top. */
+      const offturn = !readout && seat !== S.turn;
       /* spent, but still takeable back: the press that cast it is also the
          press that returns it, so the rune must not read as dead yet */
       const canUndo = seat === now && undoable(s.id);
@@ -139,6 +148,7 @@ export function renderSpells(): void {
       b.classList.toggle('ready', left > 0 && !readout);
       b.classList.toggle('idle', left > 0 && readout);
       b.classList.toggle('armed', S.spellArmed === s.id && seat === now);
+      b.classList.toggle('offturn', offturn);
       b.disabled = (left <= 0 && !canUndo) || seat !== now;   // the turn decides the rest
       const n = b.querySelector('.n');
       if (n) n.textContent = left > 1 ? String(left) : '';   // a single charge needs no number

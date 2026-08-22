@@ -311,6 +311,49 @@ try {
   check(out.cpuHolds.cpu === '[[2],[],[]]' && out.cpuHolds.charges === '[{"pilfer":1},{"pilfer":1}]',
     'the CPU burned its rune on nothing', out.cpuHolds);
 
+  /* ---------- 8c. their turn: your own rune READS unavailable ----------
+     It was `disabled` and nothing else, and disabled is invisible: the rune
+     sat full-bright and breathing while the machine thought, which reads as a
+     control you may press (user report). Measure the PIXELS, not the class —
+     the test13 lesson — and measure the ring's play state too, because the
+     cheap fix is to drop the `ready` class and that RESTARTS the glow from its
+     first keyframe when the turn comes back. Pausing is what keeps it still. */
+  await newGame(); check(await waitChoose(), 'game never reached choose (offturn)');
+  const rail = () => page.evaluate(() => {
+    const b = document.querySelector('#spellBar .rune:not([hidden])');
+    if (!b) return null;
+    const cs = getComputedStyle(b);
+    return { cls: b.className, opacity: +cs.opacity, grey: cs.filter,
+             ring: getComputedStyle(b, '::before').animationPlayState, disabled: b.disabled };
+  });
+  /* vs CPU the rail is always YOURS (near = S.bottom), so the turn is the only
+     thing moving here — which is exactly the case the player reported */
+  const turnTo = async (who) => {
+    await page.evaluate((t) => {
+      const k = window.__kb;
+      k.S.mode = 'cpu'; k.S.turn = t; k.S.bottom = 1; k.S.busy = false;
+      k.S.phase = t === 1 ? 'choose' : 'anim'; k.S.die = 3;
+      k.applySides(); k.spells.render();
+    }, who);
+    await page.waitForTimeout(420);      // .rune transitions opacity/filter over .25s
+  };
+  await turnTo(0); out.theirTurn = await rail();
+  await turnTo(1); out.myTurn = await rail();
+  check(out.theirTurn && /\boffturn\b/.test(out.theirTurn.cls),
+    'the wielded rune does not know it is not your turn', out.theirTurn);
+  check(out.theirTurn && out.theirTurn.opacity <= 0.6 && out.theirTurn.grey !== 'none',
+    'YOUR RUNE LOOKS CASTABLE ON THE OPPONENT\'S TURN', out.theirTurn);
+  check(out.theirTurn && out.theirTurn.disabled, 'a dimmed rune must also refuse the press', out.theirTurn);
+  // dimmed, not SPENT: nothing was cast, and the two must not look alike
+  check(out.theirTurn && !/\bspent\b/.test(out.theirTurn.cls) && out.theirTurn.opacity > 0.3,
+    'waiting for your turn must not read as a spent rune', out.theirTurn);
+  check(out.theirTurn && out.theirTurn.ring === 'paused',
+    'the ring kept animating under the dim — it must pause, so it can resume', out.theirTurn);
+  // and the turn coming back gives it all back, ring running from where it was
+  check(out.myTurn && !/\boffturn\b/.test(out.myTurn.cls) && out.myTurn.opacity > 0.95
+    && out.myTurn.grey === 'none' && out.myTurn.ring === 'running',
+    'your own turn did not restore the rune', out.myTurn);
+
   /* ---------- 9. a SELF spell has ONE target, so pressing it casts it ----------
      NUDGE and FATE act on the die in hand. There is nothing to choose, so
      there is nothing to aim: a tap on the rune spends it then and there
