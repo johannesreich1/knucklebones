@@ -87,11 +87,11 @@ try {
         await new Promise((r) => setTimeout(r, 60));
         const after = head.getBoundingClientRect().y.toFixed(1);
         const cs = getComputedStyle(body);
-        /* ONE PAGE, ONE SCROLLER. The blur band hangs off the header, so it
-           can only cover the page's own top edge — a list that scrolls
-           separately would slide rows out from under a band that cannot
-           reach them. (The ladder did exactly that as a mask-era scroller.)
-           A bounded list inside a card is fine: it sits mid-page and never
+        /* ONE PAGE, ONE SCROLLER. The glass is the bar's own backdrop, so it
+           can only frost what passes behind THAT bar — a list scrolling
+           separately would slide rows out from under glass that cannot reach
+           them. (The ladder did exactly that as a mask-era scroller.) A
+           bounded list inside a card is fine: it sits mid-page and never
            passes the header, so it is only counted when it fills the page. */
         const extra = [];
         for (const el of ov.querySelectorAll('*')) {
@@ -103,12 +103,22 @@ try {
             extra.push(el.id || el.className || el.tagName);
           }
         }
-        const bandCs = getComputedStyle(head, '::after');
+        /* THE BAR IS THE GLASS: a gradient layer BEHIND the bar's own content
+           (::before, so masking it never fades the title), reaching the screen's
+           top edge and falling away past the bar's bottom. Content scrolls
+           BEHIND the bar — the body starts at the bar's top, not below it —
+           which is the whole point and the thing a regression would undo.
+           Note: headless WebKit renders no backdrop-filter, so this asserts the
+           DECLARATION, not the pixels; judge the pixels in Chromium. */
+        const glass = getComputedStyle(head, '::before');
+        const headBox = head.getBoundingClientRect();
         rows.push({ id: ov.id, stuck: before === after, scrolled: body.scrollTop,
           bodyScrolls: cs.overflowY === 'auto' || cs.overflowY === 'scroll',
           ovClips: getComputedStyle(ov).overflow === 'hidden',
-          band: /blur/.test(bandCs.backdropFilter || bandCs.webkitBackdropFilter || ''),
-          bandH: bandCs.height,
+          glass: /blur/.test(glass.backdropFilter || glass.webkitBackdropFilter || ''),
+          glassFades: /gradient/.test(glass.maskImage || glass.webkitMaskImage || ''),
+          barAtTop: headBox.top <= 0.5,
+          behindBar: bodyTop <= headBox.top + 0.5,
           extraScrollers: extra,
           clearAtRest: first ? first.top - bodyTop >= fade - 0.5 : true });
         body.scrollTop = 0;
@@ -123,10 +133,13 @@ try {
       if (p.err) continue;
       check(p.ovClips && p.bodyScrolls, `${p.id} scrolls its whole self, so its header leaves: ` + label, p);
       check(p.stuck, `THE HEADER SCROLLS AWAY IN ${p.id}: ` + label, p);
-      check(p.band, `${p.id} cuts its content off flat — no blur band under the header: ` + label, p);
-      check(p.clearAtRest, `${p.id} blurs its first card at rest — the band must cover empty space: ` + label, p);
+      check(p.glass, `${p.id} cuts its content off flat — the bar carries no glass: ` + label, p);
+      check(p.glassFades, `${p.id}'s glass ends on a hard edge instead of falling away: ` + label, p);
+      check(p.barAtTop, `${p.id}'s bar starts below the screen edge — the glass will read as beginning mid-bar: ` + label, p);
+      check(p.behindBar, `CONTENT DOES NOT SCROLL BEHIND THE BAR IN ${p.id}: ` + label, p);
+      check(p.clearAtRest, `${p.id} frosts its first card at rest — the glass must cover empty space: ` + label, p);
       check(p.extraScrollers.length === 0,
-        `a second page-filling scroller in ${p.id} — the band cannot reach it: ` + label, p.extraScrollers);
+        `a second page-filling scroller in ${p.id} — the glass cannot reach it: ` + label, p.extraScrollers);
     }
     await ctx.close();
   }

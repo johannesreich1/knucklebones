@@ -459,10 +459,43 @@ html.clock .timer.on{visibility:visible}
    The overlay's own inset moves INSIDE the scroller as padding, which also
    gives the last card the over-scroll room it needs to clear the home
    indicator. */
-.ov.paged{--band:26px;justify-content:flex-start;overflow:hidden;
-  padding-top:calc(env(safe-area-inset-top,0px) + 16px);padding-bottom:0;
-  padding-left:0;padding-right:0}
-.ov.paged .shead{padding:0 var(--pad-x);flex:0 0 auto;z-index:2;position:relative}
+/* gap:0 IS LOAD-BEARING. .ov puts an 18px flex gap between its children, which
+   sat between the header and the body — and the frost band hangs off the
+   header, so 18 of its 26px floated in that empty gap and only the last 8px
+   ever touched content. The band looked feeble because it mostly WAS. With no
+   gap the header's bottom IS the body's top, so the whole band lies on the
+   scroller; the body carries the old gap in its padding instead, which keeps
+   resting content exactly where it was. */
+/* --barpad MATCHES the 16px above the bar's content, so the title and the ‹
+   sit dead centre in the visible bar rather than 1px high. The safe-area inset
+   is added on top of that 16 and is not part of the reckoning: it is the
+   notch's space, not the bar's. */
+.ov.paged{--band:22px;--barpad:16px;--bartop:calc(env(safe-area-inset-top,0px) + 16px);
+  --headh:calc(var(--bartop) + 30px + var(--barpad));--headgap:18px;gap:0;
+  justify-content:flex-start;overflow:hidden;
+  padding:0}
+/* THE BAR IS THE GLASS. Content passes BEHIND it — the body is pulled up under
+   the bar by exactly the bar's height — so the frost is the bar's own
+   background rather than a strip hanging below it, which is what a translucent
+   toolbar actually is. The bar keeps real breathing room under its button
+   (--barpad): that space is part of the glass, so the panel has depth instead
+   of ending flush at the icon. */
+/* The bar owns the screen's top inset, so the glass starts at the very TOP
+   EDGE rather than below it — a panel that began at the inset left an
+   untinted strip above it and read as frost starting halfway down the bar. */
+.ov.paged .shead{padding:var(--bartop) var(--pad-x) var(--barpad);flex:0 0 auto;
+  z-index:3;position:relative}
+/* THE GLASS IS ONE GRADIENT, and it is a LAYER BEHIND the bar's content, not
+   the bar itself: masking the bar would fade its own title with it. It runs
+   from the top edge, holds full strength behind the title, then falls away
+   past the bar's bottom — so the frost has no edge anywhere, and can be light
+   rather than a slab. */
+.ov.paged .shead::before{content:"";position:absolute;left:0;right:0;top:0;
+  bottom:calc(-1 * var(--band));z-index:-1;pointer-events:none;
+  background:linear-gradient(180deg,rgba(4,5,12,.5) 0,rgba(4,5,12,.34) 58%,transparent 100%);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  -webkit-mask-image:linear-gradient(180deg,#000 0,#000 55%,transparent 100%);
+  mask-image:linear-gradient(180deg,#000 0,#000 55%,transparent 100%)}
 /* THE SOFT TOP EDGE: content BLURS out as it passes under the header instead
    of being guillotined at the scroller's edge. The band hangs off the header,
    so it is pinned to the page's scroll top wherever that is — and because it
@@ -480,18 +513,19 @@ html.clock .timer.on{visibility:visible}
    Headless Chromium does render it. So check this effect in CHROMIUM, and
    confirm the check itself works by making the filter absurd first
    (invert(1) saturate(3) is unmissable) before trusting a subtle version. */
-.ov.paged .shead::after{content:"";position:absolute;left:0;right:0;top:100%;height:var(--band);
-  -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
-  pointer-events:none;z-index:3;
-  -webkit-mask-image:linear-gradient(180deg,#000 30%,transparent);
-  mask-image:linear-gradient(180deg,#000 30%,transparent)}
 .pbody{display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;
   margin:0;flex:1 1 auto;min-height:0;overflow-y:auto;
   /* the top padding is exactly the fade's height, so a resting list clears it
      entirely and only content actually scrolling away is touched */
   /* the top padding is the band's own height, so a resting list starts below
      it and only content actually scrolling away is blurred */
-  padding:var(--band) var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 46px)}
+  /* pulled up UNDER the bar by exactly the bar's height, so content scrolls
+     BEHIND the glass instead of stopping at its edge; the padding puts resting
+     content back where it was — below the bar, its bleed and the old gap — so
+     nothing is frosted until it actually moves */
+  margin-top:calc(-1 * var(--headh));
+  padding:calc(var(--headh) + var(--band) + var(--headgap)) var(--pad-x)
+          calc(env(safe-area-inset-bottom,0px) + 46px)}
 /* The app's scroll indicator, in the game's palette rather than the platform's
    grey — worn by every paged body and by any bounded list that scrolls inside
    a card (the ladder's box in a form panel). */
