@@ -384,6 +384,50 @@ Learned from real play, each one a shipped bug:
   A changed total scales the number, and reading inside that window looks
   exactly like layout drift.
 
+### The cast animations, and what three studies of them already settled (2026-08-23)
+
+Three runes have a cast that states its effect without showing it, and each has
+an open set of six studies rather than a decision: **SUNDER**
+(`design/screens/43a–43f`), **ANVIL** (`44a–44f`) and **PILFER** (`45a–45f`).
+Every set draws ONE board on all six cards so the comparison is controlled, and
+every card's note names what its idea costs.
+
+Five things came out of building them that hold **whichever idea is picked**,
+and are cheaper to read here than to rediscover:
+
+- **A mark has to survive a MULTIPLIED die.** The dice worth marking are almost
+  always the ones a pair or a triple has already turned gold or orange
+  (`ui/render` toggles `.m2`/`.m3` on the count), and those already carry a
+  coloured border and a bloom. SUNDER's current ember glow disappears entirely
+  on one. Any mark that works by tinting the die is fighting the thing that
+  made the die interesting; marks that sit *over* the face or *outside* the
+  border survive. This is the same lesson the ward/shield studies learned about
+  a 1px ring (§`design/screens/39a`), arrived at independently.
+- **A preview must ask `victimsOf`, never the face.** Under COLUMN SHIELD a
+  full enemy column holding three matching dice loses nothing, and under SINGLE
+  STRIKE only one die of a column falls however many match. A preview that
+  marks "every die whose face equals the die in hand" is wrong in two of the
+  seven modes, and wrong in the direction that makes the player distrust it.
+  `core/rules openStrikes` already returns the exact plan — but it CONSUMES an
+  armed sunder mark, so a preview must ask it on a cloned charm.
+- **Showing the doomed dice makes SUNDER `final`.** A cast that reveals
+  something cannot be taken back (§2), and a preview of which dice will fall is
+  a reveal — the player keeps the targeting knowledge whether or not they press
+  the rune again. SUNDER becomes the roster's second `final` entry the day the
+  animation ships, and its rune must read *spent* at once. The two land in one
+  commit on purpose: finality without the reveal is a strictly worse turn, and
+  the reveal without finality is the free look the rule exists to prevent.
+- **PILFER's hue is COLUMN SHIELD's hue.** Both are `#ffd166`. Anything that
+  tries to distinguish "you may take from here" from "this column is sealed" by
+  colour alone is drawing both in gold. Distinguish by *form* — dashed against
+  solid, thin against thick — or move one of them.
+- **The lane between the halves is occupied.** A stolen die's flight crosses
+  both chip rows, the die in play and the status line, because those are what
+  live there. Any idea that draws in that lane (a thread, a border, a tether)
+  is drawing on top of the busiest 26px of the screen, and any idea that draws
+  a path between two rects has to be re-authored for landscape, for
+  face-to-face, and for the widget's own containing block (`ui/fx pin()`).
+
 ### The RANDOM draw is shown, not silent (2026-08-22)
 
 RANDOM used to draw its rune inside `resetSpells` and the player met it in the
