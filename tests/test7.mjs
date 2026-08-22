@@ -1,5 +1,6 @@
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
+import { shot } from './shot.mjs';
 import { servedBase } from './serve.mjs';
 // service workers refuse file://, so this suite needs an origin. Whose port it
 // is, is nobody's business: run-all passes its own in KB_URL, a hand-run starts
@@ -102,7 +103,7 @@ check(after.wins === before.wins && after.losses === before.losses, 'record did 
 check(after.best === before.best, 'best score did not survive reload', { before, after });
 check(after.diffOn === 'medium', 'difficulty preference not restored', after);
 check(!after.statHidden && after.statLine.length > 0, 'stat line not shown after reload', after);
-await page.screenshot({ path: './pwa-start.png' });
+await shot(page, 'pwa-start');
 
 // ---- 4. offline: cut the network entirely and reload ----
 await ctx.setOffline(true);
@@ -123,7 +124,7 @@ await page.tap('#btnPlay');
 await page.waitForTimeout(2000);
 const offlinePlay = await page.evaluate(() => ({ phase: window.__kb.S.phase, die: window.__kb.S.die }));
 check(['choose', 'roll', 'anim'].includes(offlinePlay.phase), 'game did not start offline', offlinePlay);
-await page.screenshot({ path: './pwa-offline.png' });
+await shot(page, 'pwa-offline');
 await ctx.setOffline(false);
 
 // ---- 5. desktop viewport sanity (same bundle, wider screen) ----
@@ -141,7 +142,7 @@ const desk = await p2.evaluate(() => ({
   scrollH: document.documentElement.scrollHeight, innerH: window.innerHeight,
 }));
 check(desk.scrollH <= desk.innerH + 1, 'desktop layout scrolls', desk);
-await p2.screenshot({ path: './pwa-desktop.png' });
+await shot(p2, 'pwa-desktop');
 
 console.log(JSON.stringify({ sw, man: { ...man, icons: man.icons.map(i => i.status) }, appleIcon,
   finished, before: { ...before, stored: before.stored ? before.stored.slice(0, 80) + '…' : null },

@@ -27,7 +27,9 @@ harness.html
 # test artifacts
 # run-all holds this while a gate runs — one gate at a time per working tree
 .gate.lock
-*.png
-!public/icon-*.png
+# gate screenshots — every suite writes through tests/shot.mjs
+tests/screens/
+# Xcode's icon and splash renditions in the asset catalog (never tracked)
+native/ios/App/App/Assets.xcassets/**/*.png
 .env
 design/dist/

@@ -1,5 +1,6 @@
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
+import { shot } from './shot.mjs';
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
 const browser = await chromium.launch();
 const problems = [], errs = [];
@@ -42,7 +43,7 @@ check(!out.landscape.topOverlapsHud && !out.landscape.botOverlapsHud, 'a board o
 check(out.landscape.fitsVert && out.landscape.fitsHoriz, 'landscape layout does not fit the screen', out.landscape);
 check(out.landscape.scrollH <= out.landscape.winH + 1 && out.landscape.scrollW <= out.landscape.winW + 1, 'landscape scrolls', out.landscape);
 check(out.landscape.rowsAligned, 'facing columns do not align in landscape', out.landscape);
-await lp.screenshot({ path: './v2-landscape.png' });
+await shot(lp, 'v2-landscape');
 
 // play a few moves in landscape to be sure it is usable, not just laid out
 let placed = 0;
@@ -72,7 +73,7 @@ out.rotateBack = await lp.evaluate(() => ({
 check(!out.rotateBack.isLand, 'still in landscape after rotating back', out.rotateBack);
 check(out.rotateBack.dom === out.rotateBack.state, 'dice lost when rotating', out.rotateBack);
 check(out.rotateBack.scrollH <= out.rotateBack.winH + 1, 'portrait scrolls after rotation', out.rotateBack);
-await lp.screenshot({ path: './v2-rotated-back.png' });
+await shot(lp, 'v2-rotated-back');
 
 // ================= RESUME =================
 const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
@@ -178,7 +179,7 @@ check(out.loaderNumerals.pipDisplay !== 'none' && out.loaderNumerals.pipOpacity 
       'the loading die obeys the numerals setting', out.loaderNumerals);
 check(out.loaderNumerals.graceOpacity < 0.05 && out.loaderNumerals.shownOpacity > 0.95,
       'the loader grace is broken: it must be invisible at insertion and lit after it', out.loaderNumerals);
-await gp.screenshot({ path: './v2-numerals.png' });
+await shot(gp, 'v2-numerals');
 
 // ================= REDUCED MOTION =================
 const rm = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true, reducedMotion: 'reduce' });

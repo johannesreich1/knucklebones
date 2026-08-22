@@ -1,5 +1,6 @@
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
+import { shot } from './shot.mjs';
 import { serveTree } from './serve.mjs';
 /* Served over LOCAL HTTP like test10/test11, and for the same reason: the
    timer-persistence step reloads and asserts the settings came back, and
@@ -59,7 +60,7 @@ await p.tap('#btnLearnTut'); await p.waitForTimeout(400);
       cell: getComputedStyle(document.documentElement).getPropertyValue('--cell').trim(),
     };
   });
-  await p.screenshot({ path: `./v4-${label}.png` });
+  await shot(p, `v4-${label}`);
   await ctx.close();
   return r;
 }

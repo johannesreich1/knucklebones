@@ -1,5 +1,6 @@
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
+import { shot } from './shot.mjs';
 const browser = await chromium.launch();
 const errs=[], problems=[];
 const check=(c,m,x)=>{ if(!c) problems.push(m+' :: '+JSON.stringify(x)); };
@@ -24,7 +25,7 @@ const layout = await page.evaluate(()=>{
 check(layout.fixedCount===0,'position:fixed survived the port',layout);
 check(layout.botBottom<=layout.rootH,'bottom half overflows the shell',layout);
 check(layout.docScrollW<=layout.winW+1,'widget causes horizontal scroll',layout);
-await page.screenshot({path:'./w-start.png'});
+await shot(page, 'w-start');
 
 const snap=()=>page.evaluate(()=>{const k=window.__kb,S=k.S;const o=s=>+document.getElementById(s).dataset.owner;
   return {phase:S.phase,turn:S.turn,bottom:S.bottom,mode:S.mode,b0:S.boards[0],b1:S.boards[1],
@@ -51,7 +52,7 @@ for(let i=0;i<1200;i++){ const s=await snap(); audit(s,'cpu'+i);
     await page.tap(`#botBoard .col[data-col="${lg[(Math.random()*lg.length)|0]}"]`); }
   await page.waitForTimeout(95); }
 await page.waitForTimeout(1500);
-await page.screenshot({path:'./w-end.png'});
+await shot(page, 'w-end');
 const cpuEnd=await page.evaluate(()=>({shown:document.getElementById('ovEnd').classList.contains('on'),
   title:document.getElementById('endTitle').textContent,
   you:+document.getElementById('endYou').textContent,cpu:+document.getElementById('endCpu').textContent,
@@ -77,7 +78,7 @@ for(let i=0;i<1200;i++){ const s=await snap(); audit(s,'duo'+i);
     await page.tap(`#botBoard .col[data-col="${lg[(Math.random()*lg.length)|0]}"]`); }
   await page.waitForTimeout(95); }
 await page.waitForTimeout(800);
-await page.screenshot({path:'./w-duo.png'});
+await shot(page, 'w-duo');
 const grew=await page.evaluate(()=>document.getElementById('kbroot').getBoundingClientRect().height);
 console.log(JSON.stringify({layout,cpuDone,cpuEnd,duo:{handoffs,duoDone},shellHeight:grew,problems,errs},null,2));
 await browser.close();

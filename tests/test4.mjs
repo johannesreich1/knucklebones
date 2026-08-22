@@ -1,5 +1,6 @@
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
+import { shot } from './shot.mjs';
 const browser = await chromium.launch();
 const errs = [];
 const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
@@ -110,7 +111,7 @@ const duoEnd = await page.evaluate(() => ({
   endRec: document.getElementById('endMeta').textContent.trim(),
   someoneFull: window.__kb.isFull(window.__kb.S.boards[0]) || window.__kb.isFull(window.__kb.S.boards[1]),
 }));
-await page.screenshot({ path: './duo-end.png' });
+await shot(page, 'duo-end');
 
 // ---- a tap on the OPPONENT's half must do nothing ----
 await page.click('#btnAgain'); await page.waitForTimeout(1100);
@@ -123,7 +124,7 @@ const afterIllegal = await snap();
 check(JSON.stringify(beforeIllegal.b0) === JSON.stringify(afterIllegal.b0) &&
   JSON.stringify(beforeIllegal.b1) === JSON.stringify(afterIllegal.b1),
   'tapping the far half changed the board', { beforeIllegal, afterIllegal });
-await page.screenshot({ path: './duo-mid.png' });
+await shot(page, 'duo-mid');
 
 // ================= CPU MODE REGRESSION =================
 await page.click('#btnLeave'); await page.waitForTimeout(300); await page.click('#btnAskYes'); await page.waitForTimeout(400);
