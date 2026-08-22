@@ -68,13 +68,29 @@ try {
        their headers scrolled away. Asserted over EVERY .ov.paged found, which
        is what stops the next one from being forgotten. */
     const paged = await page.evaluate(async () => {
+      /* WAIT FOR A FRAME, NOT FOR THE CLOCK. --sc is authored from a scroll
+         handler, and WebKit runs scroll steps INSIDE the rendering update,
+         immediately before the rAF callbacks — never on a plain task turn. A
+         setTimeout settles the glass only if a frame happened to be produced
+         inside it, which a headless Linux runner with no GPU does not promise:
+         on CI every glass reading came back 0 and this suite reported that the
+         frost never arrives, on views where it demonstrably does.
+         CAPPED, deliberately. page.evaluate carries no Playwright timeout, so
+         an unbounded rAF wait on a runner that has genuinely stopped painting
+         turns a red row into a six-minute hang that run-all SIGKILLs — killing
+         the JSON report this suite exists to print. With the cap it still
+         samples, still fails, and still says what it saw. */
+      const frame = () => Promise.race([
+        new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
+        new Promise((r) => setTimeout(r, 400)),
+      ]);
       const rows = [];
       for (const ov of document.querySelectorAll('.ov.paged')) {
         const head = ov.querySelector('.shead'), body = ov.querySelector('.pbody');
         if (!head || !body) { rows.push({ id: ov.id, err: !head ? 'no .shead' : 'no .pbody' }); continue; }
         const was = ov.classList.contains('on');
         ov.classList.add('on');
-        await new Promise((r) => setTimeout(r, 60));
+        await frame();
         const bodyTop = body.getBoundingClientRect().top;
         const first = body.firstElementChild?.getBoundingClientRect();
         const before = head.getBoundingClientRect().y.toFixed(1);
@@ -99,7 +115,7 @@ try {
            the fallback the declaration is invalid at computed-value time and
            opacity falls back to its initial 1. */
         body.scrollTop = 0;
-        await new Promise((r) => setTimeout(r, 260));
+        await frame();
         const glassAtRest = +getComputedStyle(head, '::before').opacity;
         /* IT ARRIVES WITH THE CONTENT, not on the first pixel. A frost that
            snapped to full the instant anything moved read as a slab dropping in
@@ -108,13 +124,13 @@ try {
            must keep growing. A boolean implementation passes every other
            assertion in this file and fails only these two. */
         body.scrollTop = 10;
-        await new Promise((r) => setTimeout(r, 200));
+        await frame();
         const glassPart = +getComputedStyle(head, '::before').opacity;
         body.scrollTop = 26;
-        await new Promise((r) => setTimeout(r, 200));
+        await frame();
         const glassMore = +getComputedStyle(head, '::before').opacity;
         body.scrollTop = 600;                       // as far as this body goes
-        await new Promise((r) => setTimeout(r, 260));
+        await frame();
         const glassScrolled = +getComputedStyle(head, '::before').opacity;
         const after = head.getBoundingClientRect().y.toFixed(1);
         const cs = getComputedStyle(body);
