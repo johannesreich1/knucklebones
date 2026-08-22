@@ -9,14 +9,16 @@
   /* RAW HUES — what things ARE: avatar dies, mode icons, the NEON group,
      danger. These never move. The -rgb triplets exist because rgba() cannot
      read a hex token; the -hi tints are each hue's light gradient companion.
-     The first six ids are the DUELHUES roster (state.ts) — the Settings
-     pickers offer exactly these families. */
+     The first seven ids are the DUELHUES roster (state.ts) — the Settings
+     pickers offer exactly these families. Blue sits in the wheel's one wide
+     gap, between cyan and violet, and clear of both heat families. */
   --cy:#28e8ff;     --cy-d:#0b8fb0;  --cy-rgb:40,232,255;      --cy-hi:#7ad6ff;
   --mg:#ff2fa0;     --mg-d:#a81163;  --mg-rgb:255,47,160;      --mg-hi:#ff96cf;
   --gold:#ffd166;                    --gold-rgb:255,209,102;   --gold-hi:#ffe3a1;
   --green:#7ee787;                   --green-rgb:126,231,135;  --green-hi:#a9f2b3;
   --violet:#b18cff;                  --violet-rgb:177,140,255; --violet-hi:#ccb6ff;
   --orange:#ff8a3d;                  --orange-rgb:255,138,61;  --orange-hi:#ffb987;
+  --blue:#4d8cff;                    --blue-rgb:77,140,255;    --blue-hi:#9dbcff;
   /* THE DUEL PAIR — what the game paints for YOU (--p1) and THEM (--p2).
      Every player-facing colour reads these, never the raw hues. These are the
      DEFAULTS; menu.ts repoints them (inline on <html>) at whichever hue
@@ -432,8 +434,13 @@ html.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
 /* hue swatches: a round button wearing a colour (--h), the Settings duel
    pickers' shape. The other side's pick renders disabled — a colour can only
    belong to one player — and colour blind mode disables the whole row. */
-.hues{display:flex;gap:9px;flex-wrap:wrap}
-.hues button{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
+/* ONE ROW, however long the roster gets: auto-fit sizes the columns from the
+   width it has, so seven swatches stay on one line at 375px (~42px each) and
+   still fit a 320px phone (~34px) — a strip that wraps leaves an orphan
+   swatch on its own line. The 44px ideal is the CAP, not the floor. */
+.hues{display:grid;grid-template-columns:repeat(auto-fit,minmax(34px,1fr));gap:9px;
+  justify-items:center}
+.hues button{width:100%;max-width:44px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;
   background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10);
   cursor:pointer;padding:0;transition:transform .15s}   /* press only — the pick snaps */
 .hues button::after{content:"";width:21px;height:21px;border-radius:50%;background:var(--h);

@@ -19,6 +19,10 @@ export const DUELHUES = [
   { id: 'green',  name: 'GREEN' },
   { id: 'violet', name: 'VIOLET' },
   { id: 'orange', name: 'ORANGE' },
+  /* BLUE was added last (2026-08-22) and deliberately sits clear of the heat
+     families: a player wearing it never pushes a multiplier onto its --ice /
+     --red fallback, so both heats stay true on both sides. */
+  { id: 'blue',   name: 'BLUE' },
 ] as const;
 export const HUE_IDS = DUELHUES.map(h => h.id);
 

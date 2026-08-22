@@ -27,10 +27,10 @@
     <!-- THE DUEL PAIR, at its cyan-vs-magenta default. A colour belongs to one
          player only, so each strip renders the other side's pick DISABLED
          (flow/menu.ts syncPick) — that lock is the thing the picture has to
-         show, not the swatches. The six are a hand-copy of DUELHUES
+         show, not the swatches. The seven are a hand-copy of DUELHUES
          (src/state.ts): design/build.mjs has no hue-strip token to render them
-         through, so a seventh hue has to be added here by hand or this card
-         quietly ships five-sixths of a roster. -->
+         through, so an eighth hue has to be added here by hand or this card
+         quietly ships six-sevenths of a roster. -->
     <div class="card">
       <div class="lbl">Your colour</div>
       <div class="hues">
@@ -40,6 +40,7 @@
         <button style="--h:var(--green)" aria-label="GREEN"></button>
         <button style="--h:var(--violet)" aria-label="VIOLET"></button>
         <button style="--h:var(--orange)" aria-label="ORANGE"></button>
+        <button style="--h:var(--blue)" aria-label="BLUE"></button>
       </div>
     </div>
     <div class="card">
@@ -51,6 +52,7 @@
         <button style="--h:var(--green)" aria-label="GREEN"></button>
         <button style="--h:var(--violet)" aria-label="VIOLET"></button>
         <button style="--h:var(--orange)" aria-label="ORANGE"></button>
+        <button style="--h:var(--blue)" aria-label="BLUE"></button>
       </div>
     </div>
     <!-- Pictured OFF, the default. Turning it ON pins the pair to cyan-vs-gold

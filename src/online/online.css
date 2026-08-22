@@ -341,7 +341,11 @@
   background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10);cursor:pointer;padding:0}
 .avgrid button .die{width:34px;height:34px;--cell:34px}
 .avgrid button.on{border-color:var(--p1);box-shadow:0 0 14px rgba(var(--p1-rgb),.35)}
-.avgrid.hues button{width:38px;height:38px;border-radius:50%}
+/* the avatar hue row keeps the centred FLEX strip it was built as — .hues is
+   a fluid grid for the Settings duel pickers, and this two-class rule says so
+   whatever order the chunks' stylesheets land in */
+.avgrid.hues{display:flex;flex-wrap:wrap;justify-content:center}
+.avgrid.hues button{width:38px;height:38px;max-width:none;border-radius:50%}
 .avgrid.hues button::after{content:"";width:20px;height:20px;border-radius:50%;background:var(--h);
   box-shadow:0 0 12px var(--h)}
 

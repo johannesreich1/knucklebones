@@ -721,7 +721,8 @@ answers is a matter of when and not whether.
 
 The player colours were already tokens (`--cy`/`--mg`) — but 43 raw literals
 in CSS and 3 in TS bypassed them, so nothing could move. Now `main.css` holds
-two layers: RAW HUES (six families — cy, mg, gold, green, violet, orange —
+two layers: RAW HUES (seven families — cy, mg, gold, green, violet, orange,
+and blue, added 2026-08-22 for a pick that costs neither side its true heat —
 each `--<id>` + `-rgb` triplet + `-hi` tint) that never change, and THE DUEL
 PAIR (`--p1` you / `--p2` them) that every player-facing colour reads. The
 Settings sheet repoints the pair:
