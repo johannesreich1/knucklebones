@@ -1,7 +1,9 @@
 // pvp-join: enter matchmaking. Pairs with the longest-waiting human, or —
 // when the client signals it has waited long enough (allow_bot) — starts a
-// match against a pooled bot. Human is always p1 (starts) vs a bot; between
-// humans the longer-waiting player is p1. Idempotent: rejoining returns the
+// match against a pooled bot. Human is always p1 (starts) vs a bot, because a
+// bot cannot open; between humans the LOWER-RATED player takes the seat the
+// mode favours, which is p1 everywhere except LIMITED (see startMatch, and
+// core/modes seatEdge for the measurement). Idempotent: rejoining returns the
 // caller's active match — unless they abandoned a bot match past the stall
 // window, which forfeits here (bots have no client to call pvp-claim).
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -10,7 +12,7 @@ import { diceStream, poolSequence } from "./core/dice.ts";
 import { AI, ME, LIMITED, boardTotalMode, type Player } from "./core/rules.ts";
 import { rebuild, matchTotal } from "./core/match.ts";
 import { settle, matchBand, botPairBand, SCALE, type Score } from "./core/ladder.ts";
-import { modeById, pickMode } from "./core/modes.ts";
+import { modeById, pickMode, seatsFor } from "./core/modes.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -139,12 +141,19 @@ Deno.serve(async (req: Request) => {
   const { data: seasonNow } = await svc.rpc("current_season");
   const season = (seasonNow as number) ?? 1;
 
-  const startMatch = async (p1: string, p2: string) => {
+  /* Callers name who is BEHIND, never a raw p1/p2 order, so the ranked
+     handicap cannot be dropped by forgetting it at a new call site. The rule
+     itself lives in core/modes seatsFor() — one implementation, gated by
+     tests/modes.test.ts, because it decides real ranked outcomes: the
+     underdog takes the seat the MODE favours, which is p1 everywhere except
+     LIMITED, whose even 24-die bag hands the last placement across. */
+  const startMatch = async (underdog: string, favourite: string, forceFirst?: string) => {
     const seed = newSeed();
     // the wheel spins server-side: the modifier is a deterministic draw from
     // the seed, so replay validation and both clients' wheels agree.
     // LIMITED deals its first die from the finite bag, not the endless stream.
     const spec = pickMode(seed);
+    const [p1, p2] = seatsFor(spec, underdog, favourite, forceFirst);
     const firstDie = spec.mode === LIMITED ? poolSequence(seed)[0] : diceStream(seed)();
     const { data: match, error } = await svc.from("matches")
       .insert({ p1, p2, next_die: firstDie, modifier: spec.id, season_id: season })
@@ -175,13 +184,14 @@ Deno.serve(async (req: Request) => {
     const { data: claimed } = await svc.from("matchmaking_queue")
       .delete().eq("player_id", partner.player_id).select("player_id");
     if (claimed && claimed.length === 1) {
-      // handicap: the LOWER-rated player takes the first move — the small
-      // first-move edge works as an equalizer. Ties go to the longer wait.
+      // handicap: the LOWER-rated player takes the seat the MODE favours —
+      // which is not always the first one (startMatch owns that rule).
+      // Ties go to the longer wait.
       const { data: theirProf } = await svc.from("profiles").select("rating").eq("id", partner.player_id).single();
       const theirR = theirProf?.rating ?? 0;
-      const first = myR < theirR ? uid : partner.player_id;
-      const second = first === uid ? partner.player_id : uid;
-      const match = await startMatch(first, second);
+      const underdog = myR < theirR ? uid : partner.player_id;
+      const favourite = underdog === uid ? partner.player_id : uid;
+      const match = await startMatch(underdog, favourite);
       if (match) return json({ status: "matched", match, you: match.p1 === uid ? 1 : 0, names: await names(match.p1, match.p2) });
     }
   }
@@ -222,8 +232,16 @@ Deno.serve(async (req: Request) => {
       else if (free.length) bot = free[0].id;   // mint failed: nearest bot beats no game
     }
     if (bot) {
-      const match = await startMatch(uid, bot);
-      if (match) return json({ status: "matched", match, you: 1, names: await names(match.p1, match.p2) });
+      // Seated by NECESSITY, not by the handicap: a bot cannot make the
+      // opening move, so the human is p1 here whichever seat the mode
+      // favours, and whichever of the two is actually rated lower. The cost
+      // is real but small — weighted across the wheel the human gains ~0.4
+      // points of win probability — and removing it means teaching pvp-join
+      // to play the bot's opening move at match creation.
+      const match = await startMatch(uid, bot, uid);
+      // derived, not asserted: `you` must follow the seats actually written,
+      // so this cannot quietly lie if the bot ever learns to open
+      if (match) return json({ status: "matched", match, you: match.p1 === uid ? 1 : 0, names: await names(match.p1, match.p2) });
     }
   }
   return json({ status: "queued" });

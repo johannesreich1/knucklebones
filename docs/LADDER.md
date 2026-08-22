@@ -424,3 +424,43 @@ bench in step 3 is what keeps these honest going forward.
 | Do equal group widths feel flat? | **Yes.** 64–77 games per group, every group. Widening ×1.35 gives 37 → 120. |
 | Does a fixed top group stay scarce? | **No.** 735 of 900 players cleared it in 600 games. Top-1% is the fix. |
 | Does the denominator matter? | **Yes.** Left at 400 instead of 2000: fidelity 0.821, range squashed. |
+
+### Seating — who moves first, and why it is a handicap
+
+`pvp-join` gives the **lower-rated player the seat the mode favours**. It is a
+deliberate equalizer, and until 2026-08-22 it was written as "the underdog
+takes the first move", which is wrong in one mode and was costing the player it
+meant to help.
+
+The advantage is **not the opening placement** — an empty board's three columns
+are symmetric, so the first die carries no information. It is the **last word**:
+who makes the final placement, whose destruction the opponent never answers.
+The first mover reaches a full board about half a die sooner and takes that last
+word 51–58% of the time.
+
+Measured 2026-08-22 — 60,000 games per mode at the offline Medium anchor (depth
+2, risk 0.9), three independent seeds, 95% CI ±0.40 — **first-mover win%**:
+
+| classic | rowswitch | rowmult | colshield | singlestrike | bounty | limited |
+|---|---|---|---|---|---|---|
+| 50.74 | 51.37 | 51.51 | 52.65 | 52.05 | 49.91 | **46.63** |
+
+**LIMITED inverts**, and structurally so: its bag holds an EVEN 24 dice and
+empties before either board fills in ~45% of games, so the *second* mover lays
+the last die — the first mover takes the last word only 28% of the time there.
+Seating the underdog first therefore handed them a ~3.4-point penalty (~24 Elo),
+the exact opposite of the intent. Any future mode that ends on a shared counter
+rather than a full board will invert the same way.
+
+The rule now lives in `core/modes.ts seatsFor()` — one implementation, gated by
+`tests/modes.test.ts` — and each mode declares its `seatEdge`. A new mode must
+declare one, and the honest way to pick the value is to measure it.
+
+**Bot matches are exempt, by necessity.** A bot only moves inside a human's
+request, so it cannot make the opening move: the human is p1 in every bot match
+whatever the mode is worth and whichever side is actually rated lower. Weighted
+across the wheel that hands the human ~0.4 points of win probability — small,
+because colshield's +2.65 and limited's −3.37 nearly cancel — but it is a fixed
+per-mode bias rather than noise. Removing it means teaching `pvp-join` to play
+the bot's opening move at match creation, which wants the bot's move decision
+lifted out of `pvp-move` into shared core first.
