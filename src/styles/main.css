@@ -459,26 +459,36 @@ html.clock .timer.on{visibility:visible}
    The overlay's own inset moves INSIDE the scroller as padding, which also
    gives the last card the over-scroll room it needs to clear the home
    indicator. */
-.ov.paged{--fade-top:20px;justify-content:flex-start;overflow:hidden;
+.ov.paged{--band:26px;justify-content:flex-start;overflow:hidden;
   padding-top:calc(env(safe-area-inset-top,0px) + 16px);padding-bottom:0;
   padding-left:0;padding-right:0}
-.ov.paged .shead{padding:0 var(--pad-x);flex:0 0 auto;z-index:2}
+.ov.paged .shead{padding:0 var(--pad-x);flex:0 0 auto;z-index:2;position:relative}
+/* THE SOFT TOP EDGE: content BLURS out as it passes under the header instead
+   of being guillotined at the scroller's edge. The band hangs off the header,
+   so it is pinned to the page's scroll top wherever that is — and because it
+   blurs the backdrop rather than painting a colour, it needs nothing kept in
+   sync with the aurora behind it. The band itself fades out downward, so it
+   has no hard lower edge of its own.
+   ONE PAGE, ONE SCROLLER is what makes a single band enough: the body scrolls
+   and nothing inside it scrolls separately (see the ladder in online.css).
+   The body reserves the band's height as padding, so a list sitting at rest
+   starts below it and is never blurred until it actually moves. */
+.ov.paged .shead::after{content:"";position:absolute;left:0;right:0;top:100%;height:var(--band);
+  -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
+  pointer-events:none;z-index:3;
+  -webkit-mask-image:linear-gradient(180deg,#000 30%,transparent);
+  mask-image:linear-gradient(180deg,#000 30%,transparent)}
 .pbody{display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;
   margin:0;flex:1 1 auto;min-height:0;overflow-y:auto;
   /* the top padding is exactly the fade's height, so a resting list clears it
      entirely and only content actually scrolling away is touched */
-  /* THE SOFT TOP EDGE itself is defined once, below, for every app scroller —
-     a paged body and the lists that scroll inside one alike. */
-  padding:var(--fade-top) var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 46px)}
-/* ONE definition of "a scrolling region in this app", worn by every paged body
-   AND by any list that does its own scrolling inside one — the ladder and the
-   match history scroll in `.lb`, not in the body around them, so a fade that
-   only knew about .pbody left them cut off flat (user report). Both wear the
-   palette's scrollbar and the same soft top edge. */
-.pbody,.neonscroll{--fade-top:20px;
-  scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--p1) 40%,transparent) transparent;
-  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 var(--fade-top));
-  mask-image:linear-gradient(180deg,transparent 0,#000 var(--fade-top))}
+  /* the top padding is the band's own height, so a resting list starts below
+     it and only content actually scrolling away is blurred */
+  padding:var(--band) var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 46px)}
+/* The app's scroll indicator, in the game's palette rather than the platform's
+   grey — worn by every paged body and by any bounded list that scrolls inside
+   a card (the ladder's box in a form panel). */
+.pbody,.neonscroll{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--p1) 40%,transparent) transparent}
 .pbody::-webkit-scrollbar,.neonscroll::-webkit-scrollbar{width:6px}
 .pbody::-webkit-scrollbar-track,.neonscroll::-webkit-scrollbar-track{background:transparent}
 .pbody::-webkit-scrollbar-thumb,.neonscroll::-webkit-scrollbar-thumb{border-radius:99px;

@@ -67,7 +67,7 @@ const OVERLAY = `
     <div class="lb neonscroll" id="onBoardList"></div>
   </div>
 
-  <div class="panel neonscroll" id="onAccount" hidden>
+  <div class="panel" id="onAccount" hidden>
     <!-- The ring is ONE continuous fill: how far through the current GROUP you
          are. It moves on every match, which is the whole feedback loop now that
          divisions are gone (docs/LADDER.md §5). --p is the fill, --pk the

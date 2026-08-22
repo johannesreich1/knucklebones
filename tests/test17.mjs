@@ -81,28 +81,35 @@ try {
         await new Promise((r) => setTimeout(r, 60));
         const bodyTop = body.getBoundingClientRect().top;
         const first = body.firstElementChild?.getBoundingClientRect();
-        const fade = parseFloat(getComputedStyle(ov).getPropertyValue('--fade-top')) || 0;
+        const fade = parseFloat(getComputedStyle(ov).getPropertyValue('--band')) || 0;
         const before = head.getBoundingClientRect().y.toFixed(1);
         body.scrollTop = 600;                       // as far as this body goes
         await new Promise((r) => setTimeout(r, 60));
         const after = head.getBoundingClientRect().y.toFixed(1);
         const cs = getComputedStyle(body);
-        /* EVERY scroller inside a titled page fades, not just the body: the
-           ladder and the account panel scroll themselves, and a fade that
-           only knew about .pbody left them cut off flat (user report). */
-        const bare = [];
+        /* ONE PAGE, ONE SCROLLER. The blur band hangs off the header, so it
+           can only cover the page's own top edge — a list that scrolls
+           separately would slide rows out from under a band that cannot
+           reach them. (The ladder did exactly that as a mask-era scroller.)
+           A bounded list inside a card is fine: it sits mid-page and never
+           passes the header, so it is only counted when it fills the page. */
+        const extra = [];
         for (const el of ov.querySelectorAll('*')) {
           const s = getComputedStyle(el);
           if (!/auto|scroll/.test(s.overflowY) && !/auto|scroll/.test(s.overflow)) continue;
-          if (!/gradient/.test(s.maskImage || s.webkitMaskImage || '')) {
-            bare.push(el.id || el.className || el.tagName);
+          if (el === body) continue;
+          const r = el.getBoundingClientRect();
+          if (r.height > ov.getBoundingClientRect().height * 0.6) {   // page-filling
+            extra.push(el.id || el.className || el.tagName);
           }
         }
+        const bandCs = getComputedStyle(head, '::after');
         rows.push({ id: ov.id, stuck: before === after, scrolled: body.scrollTop,
           bodyScrolls: cs.overflowY === 'auto' || cs.overflowY === 'scroll',
           ovClips: getComputedStyle(ov).overflow === 'hidden',
-          faded: /gradient/.test(cs.maskImage || cs.webkitMaskImage || ''),
-          bareScrollers: bare,
+          band: /blur/.test(bandCs.backdropFilter || bandCs.webkitBackdropFilter || ''),
+          bandH: bandCs.height,
+          extraScrollers: extra,
           clearAtRest: first ? first.top - bodyTop >= fade - 0.5 : true });
         body.scrollTop = 0;
         if (!was) ov.classList.remove('on');
@@ -116,10 +123,10 @@ try {
       if (p.err) continue;
       check(p.ovClips && p.bodyScrolls, `${p.id} scrolls its whole self, so its header leaves: ` + label, p);
       check(p.stuck, `THE HEADER SCROLLS AWAY IN ${p.id}: ` + label, p);
-      check(p.faded, `${p.id} cuts its content off flat instead of fading it: ` + label, p);
-      check(p.clearAtRest, `${p.id} dims its first card at rest — the fade must cover empty space: ` + label, p);
-      check(p.bareScrollers.length === 0,
-        `a scroller inside ${p.id} cuts its content off flat: ` + label, p.bareScrollers);
+      check(p.band, `${p.id} cuts its content off flat — no blur band under the header: ` + label, p);
+      check(p.clearAtRest, `${p.id} blurs its first card at rest — the band must cover empty space: ` + label, p);
+      check(p.extraScrollers.length === 0,
+        `a second page-filling scroller in ${p.id} — the band cannot reach it: ` + label, p.extraScrollers);
     }
     await ctx.close();
   }
