@@ -111,6 +111,24 @@ function build(): void {
 </div>`);
 }
 
+/* WHAT THE OVERLAY IS WEARING, remembered by the shell that put it on.
+   A beat dresses the overlay while it runs — the rune deal's `dealing` resizes
+   --stage to a CARD, and the title, the name and the blurb are all anchored to
+   --stage — so taking that dress off is not optional. It used to be taken off
+   by naming the classes THIS reveal uses, which is a list that cannot know
+   about the last one: the final beat's class was never removed at all, so an
+   offline deal left `dealing` behind and the next ranked reveal (mode only,
+   which never asks for `dealing` to come off) measured its readout against a
+   card while the dial was on screen — and printed the answer across the wheel
+   it was still turning. Remembering beats listing: there is nothing to keep in
+   sync, and a beat added later is undressed by code that never heard of it. */
+let worn: string | null = null;
+function wear(ov: HTMLElement, cls?: string): void {
+  if (worn) ov.classList.remove(worn);
+  worn = cls ?? null;
+  if (worn) ov.classList.add(worn);
+}
+
 const HOLD_SECS = 5;
 
 /* The result has to be READ, not glimpsed. It holds for five seconds with a
@@ -186,7 +204,7 @@ export async function reveal(opts: {
   const settled = $('#wheelSettled'), stage = $('#wheelStage');
   settled.innerHTML = '';
   ov.classList.remove('landed', 'ready', 'holding');
-  for (const b of beats) if (b.cls) ov.classList.remove(b.cls);
+  wear(ov);                       // whatever the LAST reveal left on, whoever ran it
   show('#ovWheel');
 
   for (let k = 0; k < beats.length; k++) {
@@ -194,7 +212,7 @@ export async function reveal(opts: {
     // the hunting state: nothing named, nothing lit, nothing in the middle
     ov.classList.remove('landed');
     ov.classList.add('hunting');
-    if (beat.cls) ov.classList.add(beat.cls);
+    wear(ov, beat.cls);
     $('#wheelTitle').textContent = beat.label;
     $('#wheelName').innerHTML = '&nbsp;';
     $('#wheelName').style.color = '';
@@ -214,9 +232,10 @@ export async function reveal(opts: {
     stage.classList.add('out');
     await pause(SWAP_MS);
     stage.classList.remove('out');
-    if (beat.cls) ov.classList.remove(beat.cls);
+    wear(ov);
   }
   ov.classList.add('holding');
   await hold(ov, opts.peer);
+  wear(ov);                       // and it leaves the way it arrived
   hide('#ovWheel');
 }
