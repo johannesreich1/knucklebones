@@ -178,7 +178,7 @@ export async function nextTurn(){
     armTimer();
   }else{
     S.phase='anim';
-    setStatus('AI thinking',AI,true);
+    setStatus('AI thinking',AI);
     await wait(300);
     if(S.gen!==gen) return;
     // it holds the same rune you do — it spends it at the same point in the

@@ -218,7 +218,7 @@ export function arm(id: string): void {
   S.spellArmed = id;
   renderSpells();
   const spell = spellById(id);
-  if (spell) setStatus(spell.aim, S.turn as Player, false);
+  if (spell) setStatus(spell.aim, S.turn as Player);
 }
 export function disarm(): void {
   if (!S.spellArmed) return;
@@ -269,7 +269,7 @@ async function castBy(who: Player, spell: SpellSpec, col: number, ctx: CastCtx):
   S.busy = true;
   S.phase = 'anim';
   stopTimer();
-  setStatus(S.mode === 'cpu' && who === AI ? 'AI — ' + spell.name : spell.name, who, false);
+  setStatus(S.mode === 'cpu' && who === AI ? 'AI — ' + spell.name : spell.name, who);
   const gen = S.gen;
   const fx = CAST_FX[spell.id] ?? defaultFx;
   await fx(who, col, () => spell.apply(S.boards as GameState, who, col, ctx));
@@ -336,7 +336,7 @@ export function undoCast(): boolean {
   renderSide(ME, true);                           // a ward chip, if one was placed
   renderSpells();
   showHints();
-  setStatus((spell ? spell.name : 'Spell') + ' put back', u.who, false);
+  setStatus((spell ? spell.name : 'Spell') + ' put back', u.who);
   return true;
 }
 

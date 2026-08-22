@@ -345,8 +345,7 @@ html.clock #dieStage{--cell2:calc(var(--cell)*.80)}
   min-height:14px;text-align:center;transition:color .2s}
 .status.me{color:var(--p1);text-shadow:0 0 12px rgba(var(--p1-rgb),.5)}
 .status.ai{color:var(--p2);text-shadow:0 0 12px rgba(var(--p2-rgb),.5)}
-.dots::after{content:"";animation:dots 1.2s steps(4,end) infinite}
-@keyframes dots{0%{content:""}25%{content:"."}50%{content:".."}75%{content:"..."}}
+
 
 /* Turn clock. The bar blinks in and out every turn, so its LANE is held for the
    whole game (html.clock, declared once on entry by flow/timer.showClock) —
@@ -397,6 +396,12 @@ html.clock .timer.on{visibility:visible}
    background and let the table behind it show through — tried, and it reads
    as a glitch rather than a treatment. */
 #ovStart{overflow-y:auto;justify-content:flex-start}
+/* A SHORT VIEWPORT TURNS "centre it" INTO "clip both ends". .ov centres its
+   column and never scrolls, so on a phone lying down the offline setup screen
+   kept its Play button below the fold with no way to reach it — and #ovStart
+   was exempted individually years ago rather than the rule being fixed. Every
+   screen gets what home already had; .paged runs its own scroller (.pbody). */
+html.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
 /* ONE spacer, not two: it splits the free space with the foot's own auto
    margin, so the content column sits centred between the screen top and the
    legal links. A fixed offset was tried when the plate joined the stack and
@@ -1060,7 +1065,11 @@ html.land.rowmode .rowchips{position:absolute;left:0;right:auto;top:auto;bottom:
   margin:0 0 4px;display:grid;grid-template-rows:none;
   grid-template-columns:repeat(3,var(--cell));gap:var(--gap);justify-items:center}
 html.land.rowmode .rowchips .rc{min-width:0;width:100%;height:18px;padding:0 3px;font-size:10.5px}
-html.land.rowmode .boardwrap{margin-top:var(--land-rail)}
+/* The lane is opened on BOTH grid items in the board's row. Opening it under
+   the board alone let .land .side's align-items:center re-centre the chip strip
+   in the taller row, so every chip sat 13px above the band it labels. They are
+   one row of the same table: they move together or they lie. */
+html.land.rowmode .boardwrap,html.land.rowmode .cols{margin-top:var(--land-rail)}
 /* ROW SWITCH: columns don't score — their empty chip boxes vanish entirely
    (visibility, not display: the lane keeps its height, nothing jumps) */
 html.rowswitch .cols .chip{visibility:hidden}
@@ -1441,11 +1450,24 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
    facing the table. The left board already reads that way; the right board is
    the same plate mirrored — including the hue dot, which stays with the name
    on the outer edge (user call). */
-.land .side.bot .plate,.land .side.bot .plate .who{flex-direction:row-reverse}
+.land .side.bot .plate,.land .side.bot .plate .who,
+.land .side.bot .plate .pright{flex-direction:row-reverse}
 .land .side.bot .plate .tot{text-align:left}
+/* .pright is a cluster, not a single thing — rune, bounty tally, score — and
+   mirroring the plate without mirroring it left the rune and the tally BETWEEN
+   the score and the table: the mirrored side's score sat 65px off the inner
+   edge against the other side's 3px (measured). The score is what faces the
+   table on both halves; the rune and the tally sit outboard of it. */
 .land .plate .nm{font-size:10px;letter-spacing:.12em}
 .land .boardwrap{grid-area:board}
-.land .cols{grid-area:chips;margin:0;grid-template-columns:none;grid-template-rows:repeat(3,var(--cell))}
+/* `.land .side .cols`, not `.land .cols`: the portrait rules that separate a
+   chip strip from ITS OWN board (.side.top .cols margin-top, .side.bot .cols
+   margin-bottom) are two classes deep and outranked this reset, so 4px of
+   portrait spacing survived into landscape — where the strip sits BESIDE the
+   board and the margin only pushes the row's shorter item off centre. Every
+   chip has been 2px off the band it labels, one way on the near side and the
+   other way on the far one. */
+.land .side .cols{grid-area:chips;margin:0;grid-template-columns:none;grid-template-rows:repeat(3,var(--cell))}
 .land .board{grid-template-columns:none;grid-template-rows:repeat(3,var(--cell))}
 .land .col{grid-template-rows:none;grid-template-columns:repeat(3,var(--cell))}
 .land .chip{width:30px;height:var(--cell);flex-direction:column;gap:1px;font-size:11px}
