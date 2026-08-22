@@ -5,7 +5,6 @@
 // after any missed realtime event.
 import { AI, ME, SPEC, CLASSIC, COLSHIELD, BOUNTY, LIMITED, emptyBoard, applyMove, boardTotalMode, legalCols, type Player } from '../core/rules.ts';
 import { modeById } from '../core/modes.ts';
-import { modeIcon } from '../ui/modeicons.ts';
 import { ONLINE_TURN_SECS } from '../config.ts';
 import { S } from '../state.ts';
 import { startTimer, stopTimer, showClock } from '../flow/timer.ts';
@@ -17,7 +16,7 @@ import { setStageDie } from '../ui/die.ts';
 import { showBag, renderBag, BAG_SIZE } from '../ui/bag.ts';
 import { floatPts } from '../ui/fx.ts';
 import { colorOf, heatOf } from '../ui/identity.ts';
-import { buildBoards, renderAll, renderSide, clearHints, showHints, setStatus, setActivePlate, settleBoard, claimBadge, releaseBadge } from '../ui/render.ts';
+import { buildBoards, renderAll, renderSide, clearHints, showHints, setStatus, setActivePlate, settleBoard, claimBadge, releaseBadge, modeChip } from '../ui/render.ts';
 import { fit } from '../ui/layout.ts';
 import { setPlaceHandler } from '../ui/input.ts';
 import { flyDie, destroyAt } from '../flow/game.ts';
@@ -115,9 +114,10 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   $('#nameTop').textContent = oppName();
   ($('#tagTop') as HTMLElement).hidden = true;
   ($('#tagBot') as HTMLElement).hidden = true;
-  // the badge names the mode; boot's one binding makes it open the rules
-  claimBadge(spec.mode === CLASSIC ? 'ONLINE'
-    : `ONLINE · ${modeIcon(spec.id, 12)} ${spec.name}`, spec.id);
+  // the badge names where you are and what is being played; boot's one binding
+  // makes the mode chip open its rules, offline and online alike. The mode is
+  // named in classic too — "ONLINE" says nothing about how this game scores.
+  claimBadge([{ html: 'ONLINE' }, modeChip(spec)]);
   fit();
   buildBoards();
   setPlaceHandler(onlinePlace);

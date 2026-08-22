@@ -116,23 +116,32 @@ body:has(.ov.on) #bg::after{opacity:0}
 /* HUD */
 .hud{display:flex;align-items:center;gap:8px;height:34px;flex:0 0 auto}
 .hud .sp{flex:1}
-.rec{font-size:10px;letter-spacing:.14em;color:var(--dim);white-space:nowrap;
-  border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:3px 8px;background:rgba(255,255,255,.03)}
+/* the badge is a ROW of chips (ui/render paintBadge): the mode always, the
+   spell beside it when a game deals one. The pill belongs to the chip, so a
+   second one reads as a second thing in play rather than a longer label. */
+.rec{display:flex;align-items:center;gap:6px;min-width:0}
+.rchip{font:inherit;font-size:10px;letter-spacing:.14em;color:var(--dim);white-space:nowrap;
+  border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:3px 8px;background:rgba(255,255,255,.03);
+  display:inline-flex;align-items:center;gap:3px}
 @media (max-width:359px){
-  .rec{font-size:9px;padding:3px 6px;letter-spacing:.08em}
+  .rec{gap:4px}
+  .rchip{font-size:9px;padding:3px 6px;letter-spacing:.08em}
   .ico{width:27px;height:27px;border-radius:9px;font-size:12px}
   .hud{gap:6px}
 }
 /* a score line's two numbers (ui/record.ts): the shape is theirs everywhere,
-   the colour belongs to wherever the line lands — cyan/magenta in the HUD */
+   the colour belongs to wherever the line lands. The HUD no longer carries one
+   — it names what is being played, never the tally — so the only cyan/magenta
+   pair left is the match-history total's (online/online.css .htotal). */
 .n1,.n2{font-weight:800;font-style:normal}
-.rec .n1{color:var(--p1)}
-.rec .n2{color:var(--p2)}
-/* whenever the badge names a mode it opens that mode's rules — offline too, so
-   the affordance and its ⓘ belong in the eager sheet, not the online chunk */
-.rec.tapmode{cursor:pointer;transition:transform .15s}
-.rec.tapmode:active,.rec.tapmode.pressing{transform:scale(.94)}
-.rec .mi{color:var(--dim);font-weight:800;margin-left:2px}
+/* every chip the badge makes tappable opens that roster's sheet — offline too,
+   so the affordance and its ⓘ belong in the eager sheet, not the online chunk */
+.rchip.tapmode{cursor:pointer;transition:transform .15s}
+.rchip.tapmode:active{transform:scale(.94)}
+/* tap() holds the press class on the ROW it is bound to, exactly as the picker
+   rows do — one chip pressed, the badge acknowledges */
+.rec.pressing .rchip.tapmode{transform:scale(.94)}
+.rchip .mi{color:var(--dim);font-weight:800;margin-left:2px}
 .ico{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;
   background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
   color:var(--txt);font-size:13px;font-weight:700;cursor:pointer;transition:.15s}

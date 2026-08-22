@@ -195,10 +195,16 @@ export function boot(embed){
   bindEnd();       // the result screen binds its own actions, once (ui/endscreen)
   // quit lives at the bottom of the Settings sheet; an online match intercepts
   // the first tap to arm its two-tap forfeit confirm on the button itself
-  // the HUD badge opens the rules of whatever mode it names. ONE binding serves
-  // both flows: whoever paints the badge sets data-mode (see render.paintBadge),
-  // so this affordance can never go missing on one side again.
-  tap($('#rec'),()=>{ const id=$('#rec').dataset.mode; if(!id) return; Sfx.tap(); openModes(id); });
+  // the HUD badge opens the rules of whatever it names — the mode, and the
+  // spell beside it when a game deals one. ONE binding serves both flows and
+  // both rosters: a chip carries the library it belongs to (see
+  // render.paintBadge), so this affordance can never go missing on one side
+  // again, and a third roster is an entry here rather than another listener.
+  const LIBRARY={ modes:openModes, spells:openSpells };
+  tap($('#rec'),e=>{
+    const c=e.target.closest && e.target.closest('.rchip[data-lib]'); if(!c) return;
+    Sfx.tap(); LIBRARY[c.dataset.lib]?.(c.dataset.id);
+  });
   // online module (auth, ladder, account) is lazy: the offline game's boot
   // path must never load supabase-js or anything that talks to a backend.
   // ONE guarded door serves all three entries: the loading die goes up

@@ -388,3 +388,13 @@ export function freshCharges(id: string | null | undefined): Record<string, numb
   const s = spellById(id);
   return s ? { [s.id]: s.uses } : {};
 }
+
+/* freshCharges read backwards: WHICH rune this hand was dealt, '' for none.
+   Spending the last use leaves the key at zero rather than removing it — you
+   still brought the rune — so this answers "what is this game playing with"
+   for the whole game, which is what the HUD badge names. Derived rather than
+   stored, so the badge and the rail cannot come to disagree. */
+export function dealtOf(charges: Record<string, number>): string {
+  for (const id in charges) return id;
+  return '';
+}

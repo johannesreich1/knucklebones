@@ -11,7 +11,7 @@ import { makeDie } from './die.ts';
 import { modeIcon } from './modeicons.ts';
 import { spellIcon } from './spellicons.ts';
 import { modeByEnum } from '../core/modes.ts';
-import { scoreLine, recordHtml } from './record.ts';
+import { spellById, dealtOf } from '../core/spells.ts';
 /* ===================== DOM BUILD ===================== */
 export function buildBoards(){
   for(const side of ['top','bot']){
@@ -181,33 +181,43 @@ export function applySides(){
   setActivePlate();
 }
 /* ===================== THE HUD BADGE =====================
-   #rec has two jobs: it names what is being played, and it is the front door to
-   that mode's rules. BOTH flows paint it through here, so the tap affordance can
-   never again exist in only one of them -- boot binds the listener exactly once,
-   against data-mode. Naming a mode and being tappable are the same fact. */
-function paintBadge(html, modeId){
-  const rec=$('#rec');
-  rec.innerHTML = html + (modeId ? ' <span class="mi">ⓘ</span>' : '');
-  if(modeId) rec.dataset.mode=modeId; else delete rec.dataset.mode;
-  rec.classList.toggle('tapmode', !!modeId);
+   #rec names WHAT IS BEING PLAYED, and every name it carries is the front door
+   to that thing's rules. So it is a ROW OF CHIPS, not a label: a chip is a
+   caption plus the roster that explains it, which makes a second thing in play
+   -- a spell beside the mode -- another entry rather than another branch. Boot
+   binds ONE delegated listener and opens whichever roster was tapped, so the
+   affordance cannot go missing on one side again.
+
+   It shows no score. The slot used to count wins whenever the mode was classic,
+   which is how classic alone never got the tap: S.scoring is 0 for CLASSIC, so
+   `if(S.scoring)` fell straight through to the record. A slot that sometimes
+   named the mode and sometimes counted wins taught nobody either (user call);
+   the tallies live on the result screen, which is where a game is read. */
+function paintBadge(chips){
+  $('#rec').innerHTML = chips.map(c => c.lib
+    ? `<button type="button" class="rchip tapmode" data-lib="${c.lib}" data-id="${c.id}">`
+      + `${c.html}<span class="mi">ⓘ</span></button>`
+    : `<span class="rchip">${c.html}</span>`).join('');
 }
+/* a registry entry as a chip -- one shape for both rosters, so the mode's
+   caption and the spell's cannot drift apart. Exported: the online flow builds
+   its own chips and must build them the same way. */
+export const modeChip = m => ({ html: modeIcon(m.id,12)+' '+m.name, lib:'modes', id:m.id });
+export const spellChip = s => ({ html: spellIcon(s.id,12)+' '+s.name, lib:'spells', id:s.id });
 /* A live online match CLAIMS the badge: anything that saves mid-match calls
    updateRecord(), and that must not repaint the mode away underneath it. */
 let badgeClaimed=false;
-export function claimBadge(html, modeId){ badgeClaimed=true; paintBadge(html,modeId); }
+export function claimBadge(chips){ badgeClaimed=true; paintBadge(chips); }
 export function releaseBadge(){ badgeClaimed=false; updateRecord(); }
 export function updateRecord(){
   if(badgeClaimed) return;
-  // an offline modded game names its mode where the record usually sits, so the
-  // picker's choice is visible in EVERY mode -- and a tap explains it
-  if(S.scoring){
-    const m=modeByEnum(S.scoring);
-    paintBadge(modeIcon(m.id,12)+' '+m.name, m.id);
-    return;
-  }
-  paintBadge(S.mode==='duo'
-    ? scoreLine('P1',S.p1,'P2',S.p2)
-    : recordHtml(S.wins,S.losses), null);
+  // the mode is named in EVERY game, classic included -- the picker's choice is
+  // visible wherever you are, and a tap explains it
+  const chips=[modeChip(modeByEnum(S.scoring|0))];
+  // ...and the rune this game deals, when it deals one, opens the spell sheet
+  const dealt=spellById(dealtOf(S.spellCharges[ME]));
+  if(dealt) chips.push(spellChip(dealt));
+  paintBadge(chips);
 }
 /* ===================== PREVIEW HINTS ===================== */
 export function clearHints(){

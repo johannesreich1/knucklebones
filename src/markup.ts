@@ -7,7 +7,8 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
 
 <div id="app">
   <div class="hud">
-    <div class="rec" id="rec">W <b>0</b> · L <i>0</i></div>
+    <!-- filled by ui/render updateRecord(): a chip per thing in play -->
+    <div class="rec" id="rec"></div>
     <div class="sp"></div>
     <!-- the game's ONE control: settings (quit lives inside the sheet) -->
     <button class="ico" id="btnLeave" aria-label="Leave game">${chromeIcon('leave', 15)}</button>

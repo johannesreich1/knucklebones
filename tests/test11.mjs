@@ -215,44 +215,85 @@ out.swipeHome = await page.evaluate(() =>
   [...document.querySelectorAll('.ov.on')].map(o => o.id).join(','));
 check(out.swipeHome === 'ovStart', 'edge swipe on home navigated somewhere', out.swipeHome);
 
-// ===== the HUD badge explains its mode — OFFLINE too =====
+// ===== the HUD badge names what is in play, and explains each of it =====
 // Reported bug: tapping the badge opened the modes library online and did
 // nothing offline, because the listener lived inside the online chunk. Both
-// flows now paint the badge through render.paintBadge and boot binds the tap
-// once against data-mode, so the affordance cannot go missing on one side.
-await page.evaluate(() => { window.__kb.S.localMode = 4; window.__kb.openPractice(); }); // SINGLE STRIKE
-await page.tap('#btnPlay'); await page.waitForTimeout(1200);
-out.badge = await page.evaluate(() => {
-  const r = document.getElementById('rec'), i = r.querySelector('.mi');
+// flows now paint the badge through render.paintBadge and boot binds ONE
+// delegated tap against the chip's data-lib, so neither the affordance nor a
+// second roster can go missing on one side.
+//
+// The badge is a row of chips: the mode always, the dealt spell beside it. It
+// carries no tally (user call) — and the tally was how classic alone lost the
+// affordance, since S.scoring is 0 for CLASSIC and the old `if (S.scoring)`
+// fell straight through to the win/loss line. So classic is tested FIRST here.
+const chipsNow = () => page.evaluate(() => {
+  const r = document.getElementById('rec');
   return {
-    mode: r.dataset.mode, tap: r.classList.contains('tapmode'),
-    named: /SINGLE STRIKE/.test(r.textContent),
-    infoStyled: !!i && getComputedStyle(i).marginLeft !== '0px',   // the ⓘ rule must reach offline
+    text: r.textContent.replace(/\s+/g, ' ').trim(),
+    chips: [...r.querySelectorAll('.rchip')].map(c => {
+      const b = c.getBoundingClientRect(), i = c.querySelector('.mi');
+      return { lib: c.dataset.lib ?? null, id: c.dataset.id ?? null,
+               name: c.textContent.replace(/[\sⓘⓘ]+/g, ' ').trim(),
+               tappable: c.classList.contains('tapmode'), icon: !!c.querySelector('svg'),
+               shown: b.width > 0 && b.height > 0,
+               // the ⓘ rule must reach OFFLINE — it lived in the online chunk once
+               infoStyled: !!i && getComputedStyle(i).marginLeft !== '0px' };
+    }),
   };
 });
-check(out.badge.mode === 'singlestrike', 'offline badge does not name its mode to the tap handler', out.badge);
-check(out.badge.tap && out.badge.named, 'offline badge is not a tappable mode label', out.badge);
-check(out.badge.infoStyled, 'the ⓘ affordance is unstyled offline (rule stuck in the online chunk)', out.badge);
-await page.tap('#rec'); await page.waitForTimeout(500);
-out.badgeOpens = await page.evaluate(() => ({
-  on: document.getElementById('ovModes')?.classList.contains('on') ?? false,
-  now: document.querySelector('#ovModes .modecard.now')?.dataset.mode ?? '',
-}));
-check(out.badgeOpens.on, 'tapping the offline badge opens nothing', out.badgeOpens);
-check(out.badgeOpens.now === 'singlestrike', 'modes library did not highlight the mode in play', out.badgeOpens);
-// the library serves both rosters now, so its close button is semantic
-await page.tap('[data-close="ovModes"]'); await page.waitForTimeout(300);
-// a classic offline game keeps the record and stays inert — nothing to explain
-await page.tap('#btnLeave'); await page.waitForTimeout(250);
-await page.tap('#btnAskYes'); await page.waitForTimeout(400);
-await page.evaluate(() => { window.__kb.S.localMode = 0; window.__kb.openPractice(); });
-await page.tap('#btnPlay'); await page.waitForTimeout(1200);
-out.badgeClassic = await page.evaluate(() => {
-  const r = document.getElementById('rec');
-  return { mode: r.dataset.mode ?? null, tap: r.classList.contains('tapmode'), text: r.textContent.trim() };
-});
-check(out.badgeClassic.mode === null && !out.badgeClassic.tap, 'classic badge should not pretend to be tappable', out.badgeClassic);
-check(/^W /.test(out.badgeClassic.text), 'classic badge lost the win/loss record', out.badgeClassic);
+const playLocal = async (mode, spell) => {
+  await page.evaluate(([m, s]) => {
+    window.__kb.S.localMode = m; window.__kb.S.spell = s; window.__kb.openPractice();
+  }, [mode, spell]);
+  await page.tap('#btnPlay'); await page.waitForTimeout(1200);
+};
+const leaveGame = async () => {
+  await page.tap('#btnLeave'); await page.waitForTimeout(250);
+  await page.tap('#btnAskYes'); await page.waitForTimeout(400);
+};
+
+// CLASSIC, no spell: one chip, naming the mode, tappable — no record anywhere
+await playLocal(0, '');
+out.badgeClassic = await chipsNow();
+check(out.badgeClassic.chips.length === 1, 'classic should show exactly one chip', out.badgeClassic);
+check(out.badgeClassic.chips[0]?.id === 'classic' && out.badgeClassic.chips[0]?.tappable,
+  'CLASSIC must name itself and open its rules like every other mode', out.badgeClassic);
+check(!/\bW\b|\bL\b|\bP1\b|\bP2\b/.test(out.badgeClassic.text),
+  'the badge still carries a tally — it names what is played, not the score', out.badgeClassic.text);
+await leaveGame();
+
+// SINGLE STRIKE + WARD: two chips, each iconed, tappable and ⓘ-marked
+await playLocal(4, 'ward');
+out.badge = await chipsNow();
+check(out.badge.chips.length === 2, 'a dealt spell must add its own chip', out.badge);
+check(out.badge.chips[0]?.id === 'singlestrike' && /SINGLE STRIKE/.test(out.badge.chips[0]?.name),
+  'the mode chip does not name the mode in play', out.badge);
+check(out.badge.chips[1]?.id === 'ward' && out.badge.chips[1]?.lib === 'spells',
+  'the spell chip does not name the rune dealt', out.badge);
+check(out.badge.chips.every(c => c.shown && c.icon && c.tappable && c.infoStyled),
+  'a chip is not a shown, iconed, tappable, ⓘ-marked control offline', out.badge);
+
+// each chip opens ITS OWN roster, on the entry in play
+for (const [lib, ov, want] of [['modes', 'ovModes', 'singlestrike'], ['spells', 'ovSpells', 'ward']]) {
+  await page.tap(`#rec .rchip[data-lib="${lib}"]`); await page.waitForTimeout(500);
+  out['badgeOpens_' + lib] = await page.evaluate((id) => ({
+    on: document.getElementById(id)?.classList.contains('on') ?? false,
+    now: document.querySelector(`#${id} .modecard.now`)?.dataset.mode ?? '',
+  }), ov);
+  const r = out['badgeOpens_' + lib];
+  check(r.on, `tapping the ${lib} chip opens nothing`, r);
+  check(r.now === want, `the ${lib} library did not highlight the entry in play`, r);
+  // the library serves both rosters now, so its close button is semantic
+  await page.tap(`[data-close="${ov}"]`); await page.waitForTimeout(300);
+}
+await leaveGame();
+
+// RANDOM resolves at the deal: the badge must name the rune, never "random"
+await playLocal(0, 'random');
+out.badgeRandom = await chipsNow();
+check(out.badgeRandom.chips.length === 2 && out.badgeRandom.chips[1].id !== 'random',
+  'RANDOM must name the rune actually dealt, not the promise to draw one', out.badgeRandom);
+await leaveGame();
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
 await browser.close();   // the server is in-process and unref'd — it goes with us
