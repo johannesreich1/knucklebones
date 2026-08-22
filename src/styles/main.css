@@ -68,6 +68,14 @@
      say why. */
   --w-app:520px;
   --w-col:400px;
+  /* LANDSCAPE's centre lane. ui/layout.ts sizes the cell by subtracting this
+     from the width, so the number has to live in ONE place: read there, pinned
+     here. While it was only assumed, the lane sized itself to the status text
+     — which empties between turns and rewords per seat — and both boards slid
+     2px sideways and the stage die 5.8px up on every handover (measured). */
+  --land-lane:116px;
+  /* the row rail's strip in landscape: chip height plus its gap */
+  --land-rail:22px;
   /* the one horizontal inset. The column caps the CONTENT; this decides how
      close it may come to the glass. Both shared, so a screen is the same width
      wherever its padding happens to be applied. */
@@ -1040,7 +1048,19 @@ html.rowmode .rowchips{position:absolute;right:100%;margin-right:9px;top:0;displ
 .rowchips .rc.has{color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
   background:color-mix(in srgb,var(--c) 9%,transparent);
   text-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}
-.land .rowchips{display:none!important}   /* landscape transposes the board */
+/* LANDSCAPE turns the rail rather than dropping it. The board is transposed
+   there, so a game ROW runs vertically down the cells — the rail turns with it,
+   from a column beside the board into a strip ABOVE it, one chip over each row.
+   It used to be hidden outright, which left ROW MULTIPLY's row bonus with
+   nowhere to be read at all: the column chips show columns, and the row score
+   is the whole point of the mode (user report, in landscape).
+   Still absolutely positioned, so it reserves nothing — .boardwrap opens the
+   lane below, and ui/layout.ts takes --land-rail out of the height budget. */
+html.land.rowmode .rowchips{position:absolute;left:0;right:auto;top:auto;bottom:100%;
+  margin:0 0 4px;display:grid;grid-template-rows:none;
+  grid-template-columns:repeat(3,var(--cell));gap:var(--gap);justify-items:center}
+html.land.rowmode .rowchips .rc{min-width:0;width:100%;height:18px;padding:0 3px;font-size:10.5px}
+html.land.rowmode .boardwrap{margin-top:var(--land-rail)}
 /* ROW SWITCH: columns don't score — their empty chip boxes vanish entirely
    (visibility, not display: the lane keeps its height, nothing jumps) */
 html.rowswitch .cols .chip{visibility:hidden}
@@ -1411,7 +1431,18 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
   grid-template-columns:auto auto;grid-template-areas:"plate plate" "board chips"}
 .land .side.bot{grid-template-areas:"plate plate" "chips board"}
 .land .plate{grid-area:plate;height:20px}
-.land .plate .tot{font-size:17px;min-width:28px}
+/* WIDE ENOUGH FOR THE WORST SCORE, always. 17px bold three digits measures
+   ~35px against a 28px floor, so the number grew its own box and shifted by
+   7.4px the moment anyone crossed 100 — the same "reserve the space, never let
+   it follow its contents" rule the gutter cluster above is built on. */
+.land .plate .tot{font-size:17px;min-width:36px}
+/* LANDSCAPE seats the boards side by side, so a plate has an OUTSIDE and an
+   INSIDE: the name belongs on the outer edge and the score on the inner one,
+   facing the table. The left board already reads that way; the right board is
+   the same plate mirrored — including the hue dot, which stays with the name
+   on the outer edge (user call). */
+.land .side.bot .plate,.land .side.bot .plate .who{flex-direction:row-reverse}
+.land .side.bot .plate .tot{text-align:left}
 .land .plate .nm{font-size:10px;letter-spacing:.12em}
 .land .boardwrap{grid-area:board}
 .land .cols{grid-area:chips;margin:0;grid-template-columns:none;grid-template-rows:repeat(3,var(--cell))}
@@ -1420,10 +1451,15 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
 .land .chip{width:30px;height:var(--cell);flex-direction:column;gap:1px;font-size:11px}
 .land .chip .dl{position:static;transform:none;padding:0 3px;font-size:9.5px;border-radius:6px}
 .land .chip .dl.show{transform:none}
-.land .center{flex:0 0 auto;padding:0 6px;gap:6px}
+.land .center{flex:0 0 var(--land-lane);width:var(--land-lane);padding:0 6px;
+  box-sizing:border-box;gap:6px}
 .land .timer .track{width:84px}
 /* a wrap width for two words, not a column */
-.land .status{font-size:9.5px;letter-spacing:.08em;max-width:104px;line-height:1.35;white-space:normal}
+/* two lines are RESERVED, not grown into: the status empties on every handover
+   and rewords per seat ("AI roll" / "PLAYER 2 — tap a column"), and a box that
+   sized itself to that walked the stage die up and down the screen. */
+.land .status{font-size:9.5px;letter-spacing:.08em;width:104px;max-width:104px;
+  line-height:1.35;white-space:normal;min-height:26px;display:grid;place-items:center}
 .land .hud{height:28px}
 .land .col.nope{animation:nopeY .32s}
 @keyframes nopeY{0%,100%{transform:translateY(0)}20%{transform:translateY(-6px)}40%{transform:translateY(6px)}60%{transform:translateY(-4px)}80%{transform:translateY(3px)}}

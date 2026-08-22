@@ -12,10 +12,11 @@ const RAIL_LANE = 50;
    the menus rather than carrying its own cap — a playfield wider than its own
    UI is the mismatch you notice without being able to name it. CSS owns the
    number (--w-col); this reads it, so there is still only one. */
-function colWidth(): number {
-  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--w-col'));
-  return v > 0 ? v : 400;
+function cssPx(name: string, fallback: number): number {
+  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+  return v > 0 ? v : fallback;
 }
+const colWidth = () => cssPx('--w-col', 400);
 /* The base padding #app carries on top of the device's safe-area insets, per
    orientation (main.css #app and .land #app). */
 const BASE_PAD = { portrait: { v: 6, h: 10 }, land: { v: 4, h: 8 } };
@@ -38,12 +39,22 @@ export function fit(){
   const land = w>h && h<560;                 // short and wide: phone on its side
   document.documentElement.classList.toggle('land', land);
   const safe = inset(getComputedStyle(app), land);
+  const rowmode = S.scoring===ROWSWITCH || S.scoring===ROWMULT;
   let cell;
   if(land){
     // one board tall: hud + plate + a column of cells; one board wide: both
     // boards' rows + 2 chip strips + the centre stage
-    const byH = Math.floor((h - safe.v - 28 - 20 - 2*6 - 14) / SPEC.cols);
-    const byW = Math.floor((w - safe.h - 2*30 - 116 - 40) / (2*SPEC.rows));
+    /* The centre lane's width is a CSS token, not a number repeated here: the
+       lane is pinned to it (main.css .land .center) and this reads the same
+       one. It was a literal 116 while the CSS let the lane size itself to the
+       status text, so the two disagreed on every turn — which is exactly the
+       kind of drift a shared token exists to make impossible. */
+    /* Row modes hang their rail ABOVE the board in landscape (portrait puts it
+       beside). It is absolutely positioned, so this is what reserves it — same
+       bargain as the portrait branch below. */
+    const railL = rowmode ? cssPx('--land-rail', 22) : 0;
+    const byH = Math.floor((h - safe.v - 28 - 20 - 2*6 - 14 - railL) / SPEC.cols);
+    const byW = Math.floor((w - safe.h - 2*30 - cssPx('--land-lane', 116) - 40) / (2*SPEC.rows));
     cell = Math.max(34, Math.min(byH, byW, 84));   // capped so it isn't edge-to-edge
   }else{
     const lane = S.tut ? 15 : 4;               // preview-pill lane is tutorial-only
@@ -77,7 +88,6 @@ export function fit(){
      shimmer on every repaint (user report). Rounding down to even costs at
      most one pixel of gutter and buys a rune that sits still. */
   const gut = 2 * Math.floor((w - safe.h - 20 - (cell*SPEC.cols + 2*6)) / 4);
-  const rowmode = S.scoring===ROWSWITCH || S.scoring===ROWMULT;
   const sidepts = !land && gut >= (rowmode ? RAIL_LANE : 40);
   document.documentElement.classList.toggle('sidepts', sidepts);
   document.documentElement.style.setProperty('--gut', gut+'px');
