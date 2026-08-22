@@ -59,6 +59,10 @@ and make that the parameter.
 
 - **Never push a red gate.** `npm test` must be green — Cloudflare deploys
   `main` immediately, without waiting for CI.
+- **One gate per working tree, any number across trees.** Test servers bind
+  kernel-picked ports (`tests/serve.mjs`) and `run-all` holds `.gate.lock`, so
+  parallel sessions never serve each other their builds — and a second gate in
+  the same checkout queues instead of racing `build.mjs` over `pwa/`.
 - **`core/` stays pure.** No DOM, no timers, no randomness: it runs in the
   browser, in Node (the test gate) and in Deno (Edge Functions) unmodified.
 - **Assert what the player can SEE.** Computed pixels, not DOM contents — a

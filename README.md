@@ -119,6 +119,31 @@ destruction-heavy endgames run long and CI runners are slow — 300–400-tick
 budgets have flaked on CI three separate times (test6, test8, test10). Never
 "optimize" these down.
 
+**Two sessions can gate at the same time.** Every server the gate needs binds
+a port the *kernel* picks (`tests/serve.mjs` — `serveTree()` / `servedBase()`),
+so gates in different worktrees cannot reach each other's builds. The fixed
+ports this replaced (8123 for `pwa/`, 8124-6 per suite) failed the bad way:
+the second checkout's server lost the bind and died, and its suites were then
+served the *first* checkout's `pwa/` — green or red, the answer was about the
+wrong tree.
+
+Inside ONE working tree the gate takes `.gate.lock` and a second run queues
+behind it ("another gate holds this checkout — waiting for it"), because what
+is shared there is the build output: `build.mjs` rewrites `pwa/` and `dist/`,
+and `testupdate` rewrites `pwa/index.html` and `pwa/sw.js` mid-run. A stale
+lock from a killed gate is detected by pid and taken; `KB_NO_LOCK=1` skips it.
+Worktrees stay the recommendation anyway — a shared checkout gates everyone's
+uncommitted work at once, so a red suite cannot tell you whose change it was.
+
+What is still *not* isolated is the machine. Three concurrent gates flaked a
+drag-timing suite (test14) that passed alone and passed in a parallel worktree
+at the same commit; use `KB_JOBS=2` when peers are gating.
+
+Any suite also runs on its own — `node tests/test7.mjs` starts whatever server
+it needs and takes it down with the process. Nothing to launch in another
+terminal first. `npm run serve` still exists for a human who wants a stable
+URL to click (`node tests/serve.mjs [port]`, default 8123).
+
 ## Design system
 
 `design/screens/*.html` holds every screen as a hand-written card body;

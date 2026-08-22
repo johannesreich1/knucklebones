@@ -1,32 +1,18 @@
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
-import { spawn } from 'child_process';
-import net from 'net';
+import { serveTree } from './serve.mjs';
 /* Served over LOCAL HTTP like test10/test11, and for the same reason: the
    timer-persistence step reloads and asserts the settings came back, and
    Chromium's file:// DOMStorage can hydrate the reloaded document from a
    stale disk commit (run 32489123998: the reload lost the saved duo mode,
    the timer card rendered hidden, and the next tap starved for 30s). One
-   live http-origin area, no disk race. Own server, own port, killed on
-   exit — run-all and serve.py stay untouched. */
-const PORT = 8126;
-const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'],
-  { cwd: process.cwd(), stdio: 'ignore' });
-server.unref();   // a live child must not hold node's event loop open at the end
-process.on('exit', () => server.kill());   // a thrown check must not orphan it
-await new Promise((resolve, reject) => {
-  const attempt = n => {
-    const s = net.connect(PORT, '127.0.0.1');
-    s.on('connect', () => { s.end(); resolve(); });
-    s.on('error', () => n > 0 ? setTimeout(() => attempt(n - 1), 200) : reject(new Error('test9 server never came up')));
-  };
-  attempt(50);
-});
-/* the port answered — but was it OUR server? A bind conflict kills the
-   child instantly, and connecting to some other checkout's orphan would
-   silently test the wrong tree. Fail loudly instead. */
-if (server.exitCode !== null) throw new Error('port held by a foreign server — kill it and rerun');
-const F = `http://127.0.0.1:${PORT}/knucklebones-neon.html`;
+   live http-origin area, no disk race. The server is this suite's own, on
+   a port the kernel picks and gone when the process ends (tests/serve.mjs),
+   so run-all stays untouched and a peer session's gate has no number to
+   collide with — the old fixed port needed an "is this server MINE?" guard
+   for exactly that reason. */
+const { url } = await serveTree('.');   // the repo root: the single-file artifact is built there
+const F = url + 'knucklebones-neon.html';
 /* over http the single-file page would try to register its service worker
    (file:// never attempts it) and 404 on /sw.js — not this suite's subject,
    and the console error would fail the gate */
@@ -193,5 +179,4 @@ out.duringPass = await p.evaluate(() => ({
 check(!(out.duringPass.pass && out.duringPass.timerRunning), 'clock runs while the phone is being passed', out.duringPass);
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
-await browser.close();
-server.kill();
+await browser.close();   // the server is in-process and unref'd — it goes with us

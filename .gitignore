@@ -25,6 +25,8 @@ knucklebones-neon.html
 widget.html
 harness.html
 # test artifacts
+# run-all holds this while a gate runs — one gate at a time per working tree
+.gate.lock
 *.png
 !public/icon-*.png
 .env

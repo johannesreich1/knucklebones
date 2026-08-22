@@ -15,7 +15,10 @@
 // is stubbed at the network edge — this asserts OUR decisions, not theirs.
 import pkg from 'playwright';
 const { webkit } = pkg;
-const URL = 'http://127.0.0.1:8123/';
+import { servedBase } from './serve.mjs';
+// the origin comes from run-all (KB_URL) or from a server this suite starts —
+// a kernel-picked port either way, so a peer's gate cannot answer it
+const URL = await servedBase();
 const problems = [], out = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
 

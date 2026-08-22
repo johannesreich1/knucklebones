@@ -4,6 +4,11 @@
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
 import { readFileSync, writeFileSync } from 'fs';
+import { servedBase } from './serve.mjs';
+/* Mutating pwa/ under a LIVE server is this suite's whole method, which is why
+   it runs alone and last — and why the server must be this tree's own. The
+   address arrives in KB_URL from run-all, or is minted here for a hand-run. */
+const URL = await servedBase() + 'index.html';
 const browser = await chromium.launch();
 const problems = [], errs = [];
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -11,7 +16,7 @@ const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x
 const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
 const p = await ctx.newPage();
 p.on('pageerror', e => errs.push(e.message));
-await p.goto('http://127.0.0.1:8123/index.html');
+await p.goto(URL);
 await p.waitForTimeout(800);
 const sw1 = await p.evaluate(async () => !!(await navigator.serviceWorker.ready.catch(() => null))?.active);
 // deploy truth is the data-build attribute; the visible tag moved to the

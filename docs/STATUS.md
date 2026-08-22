@@ -11,7 +11,7 @@ was decided, and what's still open.*
 | **Web** | **LIVE** at https://knucklebones-asg.pages.dev — Cloudflare Pages, auto-deploys every push to `main` |
 | **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0024, RLS + column-grant hardened. 0014 (Game Center ids) is written but NOT applied — it waits for a device. 0028 (player_card returns the full face-off row — renumbered from 0027, which the nickname hardening took) applied 2026-08-21: the result screen's foe plate carries the rank and opens the face-off |
 | **Edge Functions** | `pvp-join` **v19**, `pvp-move` v15, `pvp-claim` v11, `account-delete` v1 — all ACTIVE, nothing dead deployed. `gc-auth` is written but undeployed (same reason). `pvp-move` v15 = the away-turns `index.ts` + the colshield-honest core, both on main since 2026-08-21. `pvp-claim` v11 (deployed 2026-08-21, live-verified via `tests/e2e-pvp.mjs`) adds `resign: true` — the quit button's instant forfeit — and carries the same current core. `pvp-join` v18 (2026-08-21 evening, user report from a live human-vs-human match): `rejoined` became honest — a ZERO-MOVE active match returns as a fresh pairing, because the waiting player's poll lands on the active-match branch the instant the partner's join creates the match, and the unconditional `rejoined:true` made exactly one of the two skip the mode-wheel reveal. Deployed-vs-repo byte-verified. **`pvp-join` v19 (2026-08-22)** carries the mode-aware seat handicap — the lower-rated player now takes the seat the MODE favours (`core/modes seatEdge` / `seatsFor`), which is p1 everywhere except LIMITED, where the even 24-die bag hands the last placement across and seating the underdog first had been costing them ~3.4 points. All 7 uploaded files byte-verified against `origin/main` after deploy. **Correction:** v18's claim above that it "refreshes the function's `core/` copies to current" was FALSE — v18's `core/rules.ts` predated the spell layer entirely (no `CharmSt`, no `openStrikes`, `applyMove` without its charm parameter) and v19 is what actually refreshed them. That drift was harmless for one reason worth keeping: **no Edge Function imports `core/spells.ts`**, so nothing the server replays could diverge — `applyMove`'s charm branch is only entered when a charm is passed, and neither `rebuild()` nor `ai.ts` ever passes one. Proven rather than assumed before the deploy: 50,400 placements across all 7 modes compared per-placement (boards + kill counts) between the deployed core and current `src/`, 0 divergences; independently re-confirmed at 570,086 rebuild states, 0 mismatches. `tools/fnfiles.mjs` now computes each function's upload set from its imports and `tests/fnsync.test.ts` gates it, so this class of drift is checkable offline — including which functions ship `core/spells.ts` (currently none), the fact that stops being true the day one needs the spell layer |
-| **CI** | GitHub Actions: build + full test gate (24 suites) on every push — green through current `main` |
+| **CI** | GitHub Actions: build + full test gate (27 suites) on every push — green through current `main` |
 | **Design system** | 170 cards (44 screens × 4 device sizes + the two `00-` specs) in the Claude Design project "Knucklebones", generated from the app's real CSS **and its real code** — see "Cards render the app" below |
 | **Signups** | **Open** — a first tap on RANKED mints a guest account (no email, no form). Attaching an email still waits on SMTP; see `docs/IDENTITY.md` |
 
@@ -250,6 +250,14 @@ and the core seams exist, but wiring it is its own later step.
   (900–1200 ticks). Three CI flakes proved 300–400 is not enough.
 - **Never push a red gate** — Cloudflare deploys `main` immediately, without
   waiting for GitHub CI.
+- **One gate at a time per working tree, but any number across trees.** Since
+  2026-08-22 every test server binds a kernel-picked port (`tests/serve.mjs`),
+  so parallel sessions no longer serve each other their builds the way the
+  fixed 8123 did; `run-all` holds `.gate.lock` at the tree root so a second
+  gate in the SAME checkout queues instead of racing `build.mjs` and
+  `testupdate` over `pwa/`. Contention is the leftover: with several gates
+  running, drop to `KB_JOBS=2` and re-run a red timing suite solo before
+  believing it.
 - **`core/` stays pure** — it runs in browser, Node (test gate) and Deno
   (Edge Functions) unmodified.
 - **External dashboards are Johannes' domain** — Cloudflare, Supabase

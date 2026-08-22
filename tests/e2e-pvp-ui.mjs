@@ -7,9 +7,10 @@
 // two browser contexts, one live PvP match, then a bot match
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
-import { spawn } from 'child_process';
-const server = spawn('python3', ['tests/serve.py'], { stdio: 'ignore' });
-await new Promise(r => setTimeout(r, 1500));
+import { servedBase } from './serve.mjs';
+// its own origin, on a kernel-picked port: nothing to start by hand, nothing
+// for a peer session's gate to collide with (tests/serve.mjs)
+const BASE = await servedBase();
 const problems = [];
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
 const SUPA = 'https://euzjcejbkxvqfrttgaxu.supabase.co';
@@ -45,7 +46,7 @@ try {
     const page = await ctx.newPage();
     page.errs = [];
     page.on('pageerror', e => page.errs.push(e.message));
-    await page.goto('http://127.0.0.1:8123/index.html');
+    await page.goto(BASE + 'index.html');
     await page.waitForTimeout(500);
     await page.tap('#btnOnline');
     // the home's PLAY RANKED deep-links to 'play': a live session drops
@@ -193,5 +194,5 @@ try {
 
   check(A.errs.length === 0 && B.errs.length === 0, 'page errors', { a: A.errs.slice(0, 3), b: B.errs.slice(0, 3) });
   console.log(JSON.stringify({ rounds, brounds, endA: eA, endB: eB, problems }, null, 2));
-} finally { await browser.close(); server.kill(); }
+} finally { await browser.close(); }   // the server is in-process and unref'd — it goes with us
 process.exit(problems.length ? 1 : 0);

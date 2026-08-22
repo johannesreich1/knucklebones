@@ -1,32 +1,16 @@
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
-import { spawn } from 'child_process';
-import net from 'net';
+import { serveTree } from './serve.mjs';
 /* Served over LOCAL HTTP for the same reason as test10: the settings-persist
    coda reloads and asserts the flags came back, and Chromium's file://
    DOMStorage can hydrate the reloaded document from a stale disk commit
    straight through the keeper page (run 32486960831 lost this suite's write
    the same afternoon test10 lost its own twice). One live http-origin area,
-   no disk race. Own server, own port, killed on exit — run-all and serve.py
-   stay untouched, and the remaining file suites keep covering file://. */
-const PORT = 8125;
-const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'],
-  { cwd: process.cwd(), stdio: 'ignore' });
-server.unref();   // a live child must not hold node's event loop open at the end
-process.on('exit', () => server.kill());   // a thrown check must not orphan it
-await new Promise((resolve, reject) => {
-  const attempt = n => {
-    const s = net.connect(PORT, '127.0.0.1');
-    s.on('connect', () => { s.end(); resolve(); });
-    s.on('error', () => n > 0 ? setTimeout(() => attempt(n - 1), 200) : reject(new Error('test11 server never came up')));
-  };
-  attempt(50);
-});
-/* the port answered — but was it OUR server? A bind conflict kills the
-   child instantly, and connecting to some other checkout's orphan would
-   silently test the wrong tree. Fail loudly instead. */
-if (server.exitCode !== null) throw new Error('port held by a foreign server — kill it and rerun');
-const F = `http://127.0.0.1:${PORT}/knucklebones-neon.html`;
+   no disk race. Own server on a kernel-picked port, gone with the process
+   (tests/serve.mjs), so no peer session's gate can answer it. The remaining
+   file suites keep covering file://. */
+const { url } = await serveTree('.');   // the repo root: the single-file artifact is built there
+const F = url + 'knucklebones-neon.html';
 const browser = await chromium.launch();
 const problems = [], errs = [], out = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -271,5 +255,4 @@ check(out.badgeClassic.mode === null && !out.badgeClassic.tap, 'classic badge sh
 check(/^W /.test(out.badgeClassic.text), 'classic badge lost the win/loss record', out.badgeClassic);
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
-await browser.close();
-server.kill();
+await browser.close();   // the server is in-process and unref'd — it goes with us

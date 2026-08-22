@@ -1,6 +1,10 @@
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
-const URL = 'http://127.0.0.1:8123/index.html';
+import { servedBase } from './serve.mjs';
+// service workers refuse file://, so this suite needs an origin. Whose port it
+// is, is nobody's business: run-all passes its own in KB_URL, a hand-run starts
+// one here — either way it is THIS tree, never a peer gate's (tests/serve.mjs).
+const URL = await servedBase() + 'index.html';
 const errs = [], problems = [];
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
 

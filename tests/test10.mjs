@@ -1,7 +1,6 @@
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
-import { spawn } from 'child_process';
-import net from 'net';
+import { serveTree } from './serve.mjs';
 /* Served over LOCAL HTTP, not file:// — this suite's graduation coda reloads
    the page and asserts the tutorial flag came back, and Chromium's file://
    DOMStorage can hydrate a reloaded document from a STALE disk commit no
@@ -11,26 +10,13 @@ import net from 'net';
    is one live area per origin — the reload reads it coherently, no disk race.
    The other file suites keep loading the artifact over file://, so the
    double-click path stays covered; only the reload assertion needed the
-   protocol. The server is this suite's own (repo root, port 8124), started
-   and killed here, so run-all and serve.py stay untouched. */
-const PORT = 8124;
-const server = spawn('python3', ['-m', 'http.server', String(PORT), '--bind', '127.0.0.1'],
-  { cwd: process.cwd(), stdio: 'ignore' });
-server.unref();   // a live child must not hold node's event loop open at the end
-process.on('exit', () => server.kill());   // a thrown check must not orphan it
-await new Promise((resolve, reject) => {
-  const attempt = n => {
-    const s = net.connect(PORT, '127.0.0.1');
-    s.on('connect', () => { s.end(); resolve(); });
-    s.on('error', () => n > 0 ? setTimeout(() => attempt(n - 1), 200) : reject(new Error('test10 server never came up')));
-  };
-  attempt(50);
-});
-/* the port answered — but was it OUR server? A bind conflict kills the
-   child instantly, and connecting to some other checkout's orphan would
-   silently test the wrong tree. Fail loudly instead. */
-if (server.exitCode !== null) throw new Error('port held by a foreign server — kill it and rerun');
-const F = `http://127.0.0.1:${PORT}/knucklebones-neon.html`;
+   protocol. The server is this suite's own: repo root, a port the kernel
+   picks, gone when the process ends (tests/serve.mjs). run-all stays
+   untouched, and a peer session's gate has no number to collide with — the
+   old fixed port needed an "is this server MINE?" guard for exactly that
+   reason. */
+const { url } = await serveTree('.');   // the repo root: the single-file artifact is built there
+const F = url + 'knucklebones-neon.html';
 const browser = await chromium.launch();
 const problems = [], errs = [], out = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -232,5 +218,4 @@ await keeper.close();
 check(out.afterGrad.tutDone, 'tutorial completion did not persist', out.afterGrad);
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
-await browser.close();
-server.kill();
+await browser.close();   // the server is in-process and unref'd — it goes with us

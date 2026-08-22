@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "vite",
     "build": "node build.mjs",
-    "serve": "python3 tests/serve.py",
+    "serve": "node tests/serve.mjs",
     "test": "node tests/run-all.mjs"
   },
   "devDependencies": {
