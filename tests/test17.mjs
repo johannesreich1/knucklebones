@@ -103,12 +103,14 @@ try {
             extra.push(el.id || el.className || el.tagName);
           }
         }
-        const bandCs = getComputedStyle(head, '::after');
         rows.push({ id: ov.id, stuck: before === after, scrolled: body.scrollTop,
           bodyScrolls: cs.overflowY === 'auto' || cs.overflowY === 'scroll',
           ovClips: getComputedStyle(ov).overflow === 'hidden',
-          band: /blur/.test(bandCs.backdropFilter || bandCs.webkitBackdropFilter || ''),
-          bandH: bandCs.height,
+          /* the soft edge is a MASK ON THE SCROLLER, not a backdrop-filtered
+             band: backdrop-filter does nothing over this page's body — proven
+             with invert(1) saturate(3) in both engines — and a band shipped
+             once as a silent no-op because clipped edges read as blur. */
+          faded: /gradient/.test(cs.maskImage || cs.webkitMaskImage || ''),
           extraScrollers: extra,
           clearAtRest: first ? first.top - bodyTop >= fade - 0.5 : true });
         body.scrollTop = 0;
@@ -123,8 +125,8 @@ try {
       if (p.err) continue;
       check(p.ovClips && p.bodyScrolls, `${p.id} scrolls its whole self, so its header leaves: ` + label, p);
       check(p.stuck, `THE HEADER SCROLLS AWAY IN ${p.id}: ` + label, p);
-      check(p.band, `${p.id} cuts its content off flat — no blur band under the header: ` + label, p);
-      check(p.clearAtRest, `${p.id} blurs its first card at rest — the band must cover empty space: ` + label, p);
+      check(p.faded, `${p.id} cuts its content off flat — no soft top edge: ` + label, p);
+      check(p.clearAtRest, `${p.id} dims its first card at rest — the fade must cover empty space: ` + label, p);
       check(p.extraScrollers.length === 0,
         `a second page-filling scroller in ${p.id} — the band cannot reach it: ` + label, p.extraScrollers);
     }
