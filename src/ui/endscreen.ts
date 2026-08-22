@@ -34,8 +34,11 @@ export interface EndSpec {
      leaves it empty and keeps its score labels instead. */
   plates?: EndPlate[];
   again?: EndAction;             // the primary action; absent hides it
-  alt?: EndAction;               // the secondary; absent hides it
-  home?: EndAction;              // the quiet way out; absent hides it
+  /* the ONE quiet way on, in the short cut — a way out should not stand as
+     tall as NEXT DUEL. Ranked's is Home; local play's is the setup screen it
+     came from. It used to be two buttons offline (Change difficulty AND Home)
+     under a screen whose whole job is "play again or don't" (user call). */
+  quiet?: EndAction;             // absent hides it
   share?: string;                // text to share; absent hides the share link
   /* how long the board keeps the last move before the screen arrives. Local
      play holds for its celebration beat; a ranked match has already had one. */
@@ -47,12 +50,14 @@ export interface EndSpec {
    flows whose "Next duel" means completely different things. */
 let live: EndSpec | null = null;
 let shareText = '';
+/* the last deal, kept so the theatre can run again on a screen that was only
+   covered — the plates are the one thing here that is worth a second showing */
+let dealt: EndPlate[] = [];
 
 export function bindEnd(): void {
   const act = (a?: EndAction) => { Sfx.tap(); a?.run(); };
   tap($('#btnAgain'), () => act(live?.again));
-  tap($('#btnMenu2'), () => act(live?.alt));
-  tap($('#btnEndHome'), () => act(live?.home));
+  tap($('#btnEndQuiet'), () => act(live?.quiet));
   tap($('#btnShare'), () => { Sfx.tap(); void shareResult(); });
 }
 
@@ -75,8 +80,7 @@ export function showEnd(spec: EndSpec): void {
   delete $('#endPlates').dataset.dealtAt;   // a NEW result: the stamp may slam again
   setPlates(spec.plates ?? []);
   label('#btnAgain', spec.again);
-  label('#btnMenu2', spec.alt);
-  label('#btnEndHome', spec.home);
+  label('#btnEndQuiet', spec.quiet);
   shareText = spec.share ?? '';
   const sh = $('#btnShare') as HTMLButtonElement;
   sh.hidden = !spec.share;
@@ -109,6 +113,7 @@ export function setMeta(html: string): void {
    cache and re-deals once the fresh standing lands */
 export function setPlates(plates: EndPlate[]): void {
   const box = $('#endPlates');
+  dealt = plates;
   /* the slam (styles: .pstamp) plays ONCE per result — a re-deal carries
      fresh numbers, not a fresh verdict. But only once it truly played: a
      re-deal landing inside the slam's delay+duration window (~1.7s) rebuilds
@@ -128,7 +133,21 @@ export function setPlates(plates: EndPlate[]): void {
   }
 }
 
-export function closeEnd(): void { hide('#ovEnd'); live = null; }
+/* THE PLATES' THEATRE, RUN AGAIN — and nothing else on the screen with it.
+   A screen that was merely COVERED (the own plate's door to the profile, see
+   online/ui) comes back to a still frame, so it gets one beat of life: the
+   cards deal in turn, the stamp slams, the beaten row takes the hit. The
+   title landed once and the fireworks fired once — replaying those would
+   announce a second verdict rather than resume the one already given (user
+   call). Dropping dealtAt is what re-arms the slam; setPlates does the rest,
+   because rebuilding a node is what restarts a CSS animation. */
+export function replayPlates(): void {
+  if (!dealt.length) return;
+  delete $('#endPlates').dataset.dealtAt;
+  setPlates(dealt);
+}
+
+export function closeEnd(): void { hide('#ovEnd'); live = null; dealt = []; }
 
 function label(sel: string, a?: EndAction): void {
   const b = $(sel) as HTMLButtonElement;

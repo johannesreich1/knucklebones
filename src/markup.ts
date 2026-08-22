@@ -390,10 +390,11 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
        margin, so the cluster stays centered between title and actions. -->
   <button class="linkbtn" id="btnShare" hidden>Share result</button>
   <button class="btn primary" id="btnAgain">Next duel</button>
-  <button class="btn" id="btnMenu2">Change difficulty</button>
-  <!-- a real secondary button, not a text link (user call) — the small cut:
-       a way out shouldn't stand as tall as NEXT DUEL -->
-  <button class="btn small" id="btnEndHome">Home</button>
+  <!-- ONE quiet way on, and a real button rather than a text link (user call)
+       — in the small cut, because a way out shouldn't stand as tall as NEXT
+       DUEL. What it says and where it goes come from the spec: Home after a
+       ranked match, the setup screen after a local one. -->
+  <button class="btn small" id="btnEndQuiet">Home</button>
 </div>
 
 <div class="ov" id="ovLoad" aria-live="polite"></div>`;

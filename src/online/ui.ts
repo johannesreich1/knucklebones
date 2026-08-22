@@ -8,7 +8,7 @@ import './online.css';
 import { ME, AI } from '../core/rules.ts';
 import { $, show, hide, settleGlass } from '../ui/dom.ts';
 import { loaderDie, loaderWait } from '../ui/loader.ts';
-import { showEnd, setPlates, closeEnd } from '../ui/endscreen.ts';
+import { showEnd, setPlates, closeEnd, replayPlates } from '../ui/endscreen.ts';
 import { Sfx } from '../ui/audio.ts';
 import { makeDie } from '../ui/die.ts';
 import { rankName, groupFill, peakState, inApex, boardGroup, rk } from '../core/ladder.ts';
@@ -886,7 +886,9 @@ async function showResult(r: FinishReport): Promise<void> {
      same late-landed numbers, no second entrance and no second firework. A
      screen that closed itself on the way out could offer none of that. */
   const openProfile = (): void => {
-    exitOnline = () => hide('#ovOnline');   // ‹ uncovers the result again
+    // ‹ uncovers the result again, and the plates take their stage a second
+    // time — the one beat of life a still frame gets back (ui/endscreen)
+    exitOnline = () => { hide('#ovOnline'); replayPlates(); };
     show('#ovOnline');
     void route('account');
   };
@@ -925,7 +927,7 @@ async function showResult(r: FinishReport): Promise<void> {
     plates: plates(cachedRating, cache?.rank ?? null, !!cache?.apex, null, null),
     again: { label: 'Next duel', run: () => { closeEnd(); show('#ovOnline'); void route('play'); } },
     // goHome closes whatever floats above Home, this screen included
-    home:  { label: 'Home', run: goHome },
+    quiet: { label: 'Home', run: goHome },
     share: `${title} ${r.my}–${r.their} vs ${r.opp}${deltaTxt} — Knucklebones, ranked dice duels`,
   });
   /* the standing RPC knows MY rank directly; player_card (0028) knows the

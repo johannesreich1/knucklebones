@@ -12,7 +12,9 @@
 //
 //   · from the result screen, ‹ hands back the RESULT — the same screen, with
 //     the numbers that landed late still on it (nothing was re-dealt), and no
-//     second celebration,
+//     second celebration: a screen that was only COVERED replays its plates
+//     (deal, slam, jolt) and nothing else, because the title landed once and
+//     the fireworks fired once,
 //   · one level at a time: the avatar picker still climbs to the profile,
 //     never past it,
 //   · from Home's identity chip, ‹ still lands on Home,
@@ -118,6 +120,12 @@ try {
     }
     return quiet >= 6;
   };
+  /* WHAT IS MOVING ON THE PLATES, by name — the deal, the slam, the beaten
+     row's jolt and its dust ring (styles/main.css). getAnimations() drops an
+     animation once it has finished and stops affecting the element, so an
+     empty list IS a still frame and a full one IS the theatre running. */
+  const theatre = () => page.evaluate(() => document.getElementById('endPlates')
+    .getAnimations({ subtree: true }).map((a) => a.animationName).filter(Boolean).sort());
   /* the result screen as the player reads it, plus the two facts that separate
      THE SAME SCREEN from a re-dealt one: the foe's plate keeps the door only
      the late RPC could have opened, and nothing is celebrating a second time */
@@ -164,7 +172,8 @@ try {
     // and let the celebration finish, so any burst seen later can only be a second one
     check(await celebrationOver(), 'the win never stopped celebrating', null);
     const dealt = await resultFace();
-    out.result = { room: await room(), ...dealt };
+    out.result = { room: await room(), ...dealt, theatre: await theatre() };
+    check(out.result.theatre.length === 0, 'the plates never settled', out.result);
     check(out.result.room.id === 'ovEnd', 'the result screen never became the room', out.result);
     check(dealt.names[0] === PROFILE.nickname && dealt.names[1] === REPORT.opp,
           'the result screen dealt the wrong plates', dealt);
@@ -178,7 +187,14 @@ try {
           'the result screen\'s own plate did not open the profile', out.profileFromResult);
 
     await page.click('#btnOnlineBack');
-    await page.waitForTimeout(900);   // the overlay's .28s fade, and then some
+    /* the plates take their stage again the moment the screen is uncovered —
+       read it while it runs (the stamp's slam is still pending at 400ms, and
+       a pending animation is a listed one) */
+    await page.waitForTimeout(400);
+    out.replay = await theatre();
+    check(out.replay.includes('stampSlam') && out.replay.includes('plateIn'),
+          'coming back did not replay the plates', out.replay);
+    await page.waitForTimeout(2000);  // let the theatre finish before reading the still frame
     const back = await resultFace();
     out.backOnResult = { room: await room(), ...back };
     check(out.backOnResult.room.id === 'ovEnd',
@@ -190,6 +206,7 @@ try {
           'the foe plate lost the door the late RPC opened — the screen was re-dealt, not kept',
           { back, dealt });
     check(back.fireworks === 0, 'the celebration fired a second time on the way back', back);
+    check(await theatre().then((t) => t.length === 0), 'the replayed plates never settled', out.replay);
 
     /* 4 · one level at a time: the avatar picker climbs to the profile, and only
        the profile's own ‹ goes on to the result. */
@@ -212,7 +229,7 @@ try {
     check(out.oneLevel.result.id === 'ovEnd', '‹ from the profile lost the result screen', out.oneLevel);
 
     /* 5 · Home means home: nothing may be left floating above the title screen. */
-    await page.click('#btnEndHome');
+    await page.click('#btnEndQuiet');
     await page.waitForTimeout(700);
     out.home = { room: await room(),
                  endOn: await page.evaluate(() => document.getElementById('ovEnd').classList.contains('on')) };

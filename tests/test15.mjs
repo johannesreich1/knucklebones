@@ -9,6 +9,14 @@
 //
 // This is the suite that would have caught the celebration going missing from
 // ranked play: it asserts the SCREEN's behaviour, which both flows now share.
+//
+// It also pins the ACTION STACK, which both flows fill from the same two slots
+// (2026-08-22, user call): one primary, and ONE quiet secondary in the short
+// cut. Offline used to carry three buttons — "Change difficulty" and "Home"
+// under NEXT DUEL — for a screen whose whole question is "again or not", and
+// the two secondaries landed a tap apart anyway (the setup screen's ‹ IS the
+// way home). The short cut is read in PIXELS: a way out that stands as tall as
+// NEXT DUEL is not a quiet one, whatever its class list says.
 import pkg from 'playwright';
 const { chromium } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
@@ -58,11 +66,22 @@ try {
         // the celebration draws into the SCREEN's own layer (#fx is below every
         // overlay — a burst drawn there fires behind this very screen)
         fireworks: document.querySelectorAll('#endFx .particle, #endFx .fwring').length,
+        /* the stack as the thumb meets it: every button the screen offers, in
+           order, with the height that says which one is the quiet one */
+        acts: [...ov.querySelectorAll('.btn')].filter(b => !b.hidden)
+          .map(b => ({ id: b.id, label: b.textContent, h: Math.round(b.getBoundingClientRect().height) })),
       };
     });
     out[label] = r;
     check(r.shown, 'the result screen never appeared: ' + label, r);
     check(r.outcome === want, 'wrong outcome for ' + label, r);
+    /* TWO buttons, never three — and the same two whichever seating played:
+       what waits behind the secondary is the whole setup, not one segment, so
+       there is one label rather than a duo/cpu pair. */
+    check(r.acts.length === 2 && r.acts[0].id === 'btnAgain' && r.acts[1].id === 'btnEndQuiet',
+          'the result screen is not offering exactly one primary and one quiet way on: ' + label, r.acts);
+    check(r.acts[1].label === 'Change setup', 'the quiet way on lost its label: ' + label, r.acts);
+    check(r.acts[1].h < r.acts[0].h, 'THE WAY OUT STANDS AS TALL AS NEXT DUEL: ' + label, r.acts);
     if (want === 'win') {
       check(/endStamp/.test(r.titleAnim), 'a win must LAND: ' + label, r);
       check(/endShock/.test(r.shockAnim), 'a win lost its shockwave: ' + label, r);

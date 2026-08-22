@@ -458,11 +458,14 @@ export function endGame(){
        of the "change difficulty" furniture that assumes you chose anything. */
     again: tut ? { label: 'Finish', run: () => { closeEnd(); toMenu(); } }
                : { label: 'Next duel', run: () => { void startLocal(); } },
-    alt:   tut ? undefined
-               : { label: duo?'Change mode':'Change difficulty',
-                   run: () => { closeEnd(); show('#ovPractice'); } },
-    home:  tut ? undefined
-               : { label: 'Home', run: () => { closeEnd(); toMenu(); } },
+    /* ONE quiet way on (user call): back to the setup screen this game came
+       from. It replaced a pair — "Change difficulty" and "Home" — that gave a
+       two-choice screen three buttons, and the two were barely distinct: the
+       setup screen IS the way home (its ‹ goes there), so the second was a
+       shortcut past a screen you may well want anyway. One label for both
+       seatings, too: what waits there is the whole setup, not one segment. */
+    quiet: tut ? undefined
+               : { label: 'Change setup', run: () => { closeEnd(); show('#ovPractice'); } },
     delay: 900,                              // the board holds the last move first
   });
 }
