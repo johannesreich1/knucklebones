@@ -3,6 +3,18 @@
 Read `docs/STATUS.md` for where the project stands. This file is the short list
 of principles that decide *how* changes get made here.
 
+**Before touching either variety layer, read its design doc** — they record
+the *thinking* (what a spell or mode is allowed to be, what was rejected and
+why, what the numbers were), so you can extend them without re-deriving the
+rules, or overrule them knowingly:
+
+- `docs/SPELLS.md` — the spell layer: four design principles, the house rules
+  a spell may not break, why COLUMN SWAP was retired, the measured roster, how
+  to measure a new one, and the UI rules real play burned in.
+- `docs/MODES.md` — the game modes: what a mode may change, ranked odds and
+  who owns them, the heuristics that must be measured rather than reasoned,
+  and how modes interact with spells.
+
 ## One thing, one implementation — extensible, never duplicated
 
 **If two screens, flows or behaviours are the same thing wearing different

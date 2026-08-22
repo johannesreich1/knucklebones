@@ -82,10 +82,14 @@ Protocol-changing server work waits for its client, always.
 
 ### Mode wheel odds (production, since 2026-08-18)
 
-Classic 50% (weight 6 of 12); the six additions — ROW SWITCH, ROW
-MULTIPLY, COLUMN SHIELD, SINGLE STRIKE, BOUNTY, LIMITED — 1/12 (~8.3%)
-each. The weights live in `core/modes.ts` and only `pvp-join` needs
-redeploying when they change (it alone spins the wheel).
+Classic 40% (weight 4 of 10); the six additions — ROW SWITCH, ROW
+MULTIPLY, COLUMN SHIELD, SINGLE STRIKE, BOUNTY, LIMITED — 1/10 (10%)
+each. (Changed from 50/50 on 2026-08-19; this line said 50% until
+2026-08-22, when `core/modes.ts` was checked and found to disagree —
+the registry is the truth.) The weights live in `core/modes.ts` and only
+`pvp-join` needs redeploying when they change (it alone spins the wheel).
+The *design* rules behind modes live in `docs/MODES.md`, spells in
+`docs/SPELLS.md`.
 
 LIMITED (added 2026-08-18): the dice are finite — one shared bag holds
 every face exactly `POOL_PER_FACE` (4) times, shuffled deterministically

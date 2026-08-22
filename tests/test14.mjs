@@ -381,6 +381,32 @@ try {
     return { ys, distinct: [...new Set(ys)].length };
   });
   check(out.plateHold.distinct === 1, 'THE SCORE MOVES WHEN THE RUNE CHANGES HANDS', out.plateHold);
+
+  /* The cluster is placed by translate(50%,-50%), so half its own width is
+     baked into where every child lands. A width that grew with the score's
+     digits moved the rune by a FRACTION of a pixel on every scoring turn —
+     invisible as geometry, visible as shimmer, because the glowing icon
+     re-rasterizes against a different pixel grid (user report). Pin the box:
+     one width, and the rune to four decimals, whatever the score reads. */
+  await newGame({ spell: 'fate' }); check(await waitChoose(), 'game never reached choose (cluster)');
+  out.clusterFixed = await page.evaluate(async () => {
+    const k = window.__kb;
+    const widths = new Set(), spots = new Set(), scores = [];
+    for (const b of [[[], [], []], [[6], [], []], [[6, 6], [5], []],
+                     [[6, 6, 6], [5, 5, 5], []], [[6, 6, 6], [5, 5, 5], [4, 4, 4]]]) {
+      k.S.boards[0] = b; k.renderAll(false); k.spells.render();
+      await new Promise((r) => setTimeout(r, 420));      // past .plate.bump
+      widths.add(document.querySelector('#plateTop .pright').getBoundingClientRect().width.toFixed(3));
+      const r = document.querySelector('#plateTop .rune:not([hidden])').getBoundingClientRect();
+      spots.add(r.x.toFixed(4) + ',' + r.y.toFixed(4));
+      scores.push(document.getElementById('totTop').textContent);
+    }
+    return { widths: [...widths], spots: [...spots], scores };
+  });
+  check(out.clusterFixed.widths.length === 1,
+    'the score cluster still grows with its contents — every child will drift', out.clusterFixed);
+  check(out.clusterFixed.spots.length === 1,
+    "THE OPPONENT'S RUNE SHIFTS WHEN THEIR SCORE CHANGES WIDTH", out.clusterFixed);
   // and a spell-free game reserves nothing: the nameplate is the old nameplate
   await newGame({ spell: '' }); check(await waitChoose(), 'game never reached choose (plate none)');
   out.plateNone = await page.evaluate(() => {

@@ -167,9 +167,19 @@ html.sidepts .side{position:relative}
 html.sidepts .plate{display:grid;grid-template-columns:1fr auto 1fr;position:static}
 html.sidepts .plate .who{grid-column:2;justify-self:center}
 html.sidepts .plate .sp{grid-column:1;grid-row:1}
+/* WIDTH IS FIXED to the gutter, not grown from the contents. The cluster is
+   placed by translate(50%,-50%), so half its own width is baked into where
+   every child lands — and the score's width changes with its digits, which
+   moved the rune and the number by a subpixel on every scoring turn. A whole
+   number of pixels is invisible; a fraction of one shimmers, because the
+   glowing icon re-rasterizes against a different pixel grid each time (user
+   report). At width:--gut the box is nailed and the centre is unchanged: the
+   right edge still lands on the side's edge, the centre still on the
+   gutter's middle. Same rule as the rune slot and BOUNTY's lane — reserve the
+   space, never let it follow what happens to be in it. */
 html.sidepts .plate .pright{position:absolute;top:50%;right:calc(var(--gut,60px)/2);
   transform:translate(50%,-50%);flex-direction:column;gap:4px;z-index:3;
-  max-width:var(--gut,60px)}
+  width:var(--gut,60px);max-width:var(--gut,60px)}
 /* the number wears what the gutter affords: 27px in a wide one, easing to
    20px where ui/layout.ts let a tight-but-honest 40px gutter through */
 html.sidepts .plate .tot{font-size:clamp(20px,calc(var(--gut,60px)*.5),27px);
