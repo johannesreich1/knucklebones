@@ -1,12 +1,20 @@
-<!-- meta name="Settings" group="5 · Sheets" subtitle="Two toggles and nothing else — opened from Home, applying instantly, with the build tag at the foot" width=412 height=880 links="Home" -->
+<!-- meta name="Settings" group="5 · Settings & sheets" subtitle="Sound, dice faces, the duel pair and colour blind mode — a page below Home, applying the moment you tap, with the build tag at the foot" width=412 height=1120 links="Home" -->
 <style>
   /* .shead is the app's shared header (src/styles/main.css) — card adds spacing only */
   .shead{margin-bottom:10px}
-  .swrap{display:flex;flex-direction:column;gap:18px;width:100%;max-width:300px;margin:14px auto 0;align-items:stretch}
-  .viewfoot{margin-top:auto;padding-top:20px}
+  /* Stands in for .pbody (main.css), which the preview cannot wear: its
+     negative top margin and header-height padding assume the real pinned
+     header. Same 20px gap and centring — and NO width of its own: every row is
+     an app `.card`, so the column is --w-col wherever it is drawn. This used to
+     carry a private max-width:300px, which is narrower than one row of hue
+     swatches (6×44px + 5×9px gap = 309px): the strip wrapped to two rows in
+     the preview and one in the app. */
+  .swrap{display:flex;flex-direction:column;align-items:center;gap:20px;
+    width:100%;flex:1;margin-top:14px}
+  .viewfoot{padding-top:20px}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
-  <div class="shead"><span class="pad"></span><span class="ttl">SETTINGS</span><button class="ico">✕</button></div>
+  <div class="shead"><button class="ico">‹</button><span class="ttl">SETTINGS</span><span class="pad"></span></div>
   <div class="swrap">
     <div class="card">
       <div class="lbl">Sound</div>
@@ -16,11 +24,49 @@
       <div class="lbl">Dice faces</div>
       <div class="seg"><button class="on">PIPS</button><button>NUMBERS</button></div>
     </div>
+    <!-- THE DUEL PAIR, at its cyan-vs-magenta default. A colour belongs to one
+         player only, so each strip renders the other side's pick DISABLED
+         (flow/menu.ts syncPick) — that lock is the thing the picture has to
+         show, not the swatches. The six are a hand-copy of DUELHUES
+         (src/state.ts): design/build.mjs has no hue-strip token to render them
+         through, so a seventh hue has to be added here by hand or this card
+         quietly ships five-sixths of a roster. -->
+    <div class="card">
+      <div class="lbl">Your colour</div>
+      <div class="hues">
+        <button class="on" style="--h:var(--cy)" aria-label="CYAN"></button>
+        <button disabled style="--h:var(--mg)" aria-label="MAGENTA"></button>
+        <button style="--h:var(--gold)" aria-label="GOLD"></button>
+        <button style="--h:var(--green)" aria-label="GREEN"></button>
+        <button style="--h:var(--violet)" aria-label="VIOLET"></button>
+        <button style="--h:var(--orange)" aria-label="ORANGE"></button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="lbl">Opponent colour</div>
+      <div class="hues">
+        <button disabled style="--h:var(--cy)" aria-label="CYAN"></button>
+        <button class="on" style="--h:var(--mg)" aria-label="MAGENTA"></button>
+        <button style="--h:var(--gold)" aria-label="GOLD"></button>
+        <button style="--h:var(--green)" aria-label="GREEN"></button>
+        <button style="--h:var(--violet)" aria-label="VIOLET"></button>
+        <button style="--h:var(--orange)" aria-label="ORANGE"></button>
+      </div>
+    </div>
+    <!-- Pictured OFF, the default. Turning it ON pins the pair to cyan-vs-gold
+         and locks both strips above — and only then does #colNote appear under
+         the Opponent row to say who holds the lock, so a card showing the
+         default rightly has no such line. -->
+    <div class="card">
+      <div class="lbl">Colour blind mode</div>
+      <div class="seg"><button>ON</button><button class="on">OFF</button></div>
+      <div class="tiny">Locks the duel to cyan vs gold — a pair red-green colour vision tells apart</div>
+    </div>
     <div class="tiny">Changes apply the moment you tap them</div>
   </div>
   <!-- deploy truth, at the foot of the screen you open when something looks
        wrong: it should tell you WHICH build is wrong. Nothing else lives here:
        quitting is the HUD's ask-card (card 53), and How to play is a hub off
-       Home (card 12) — this sheet had been a third door to the rules. -->
+       Home (card 12) — this page had been a third door to the rules. -->
   <div class="viewfoot"><div class="tiny">build 3c5e400f</div></div>
 </div></div>

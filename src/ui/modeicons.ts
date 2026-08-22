@@ -13,7 +13,9 @@ const PATHS: Record<string, string> = {
   /* a shield guarding a column of pips */
   colshield: '<path d="M12 3 19 5.8V12c0 4.6-4.4 7.6-7 8.9C9.4 19.6 5 16.6 5 12V5.8Z"/>'
     + '<circle class="f" cx="12" cy="8.4" r="1.3"/><circle class="f" cx="12" cy="12.2" r="1.3"/><circle class="f" cx="12" cy="16" r="1.3"/>',
-  /* a column of pips, only the outermost struck */
+  /* a column of pips, one of them struck — victimsOf takes the FIRST match,
+     which is the die closest to the centre line, not the outermost one (the
+     comment said outermost until 2026-08-22; core/rules.ts:136 is the truth) */
   singlestrike: '<circle class="f" cx="12" cy="6.2" r="1.5"/><circle class="f" cx="12" cy="12" r="1.5"/>'
     + '<circle class="f" cx="12" cy="17.8" r="1.5"/><path d="M8.6 2.8 15.4 9.6M15.4 2.8 8.6 9.6"/>',
   /* a coin banking its +1 */

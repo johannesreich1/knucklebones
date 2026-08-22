@@ -1,13 +1,20 @@
-<!-- meta name="Quit / forfeit" group="5 · Sheets" subtitle="The HUD's one control mid-match: one question, forfeit-aware copy, and the way back wearing the colour" width=412 height=880 links="Home" -->
+<!-- meta name="Quit / forfeit" group="5 · Settings & sheets" subtitle="The HUD's one control mid-match: one question, forfeit-aware copy, and the way back leading in the duel colour" width=412 height=880 links="Home" -->
 <style>
   /* the ask-card is the app's own component (src/styles/main.css) — the card
-     shows both of its rosters side by side, which is the point: one card,
-     two sets of words — and one emphasis rule, the way BACK carries the
-     gradient at the smaller size while the destructive answer stays full
-     width and quiet. */
+     shows both of its rosters side by side, which is the point: one card, two
+     sets of words — and one emphasis rule (ui/askcard.ts, spec.loud): the
+     ENCOURAGED answer LEADS at full size wearing the duel gradient, and the
+     other answer trails below it, smaller and quiet. Retuned 2026-08-21; the
+     comment above .btn.small in main.css still teaches the old arrangement
+     (way back small, destructive answer first) — askcard.ts is the truth. */
   .scr{gap:26px;justify-content:center}
-  .cap2{font-size:10px;letter-spacing:.18em;color:var(--dim);text-align:center;margin-bottom:-14px}
-  .askcard{max-width:320px}
+  /* the caption itself comes from the preview chrome (design/build.mjs); only
+     the pull-up that tucks it against its ask-card is this card's own */
+  .cap2{margin-bottom:-14px}
+  /* NO width of its own: .askcard is capped at --w-col by main.css and the
+     stage is narrower than that, so it draws here at the width it ships. The
+     private max-width:320px this used to carry previewed the question 36px
+     narrower than a phone actually shows it. */
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
 
@@ -15,16 +22,16 @@
   <div class="askcard">
     <div class="fh">Quit this game?</div>
     <p class="fp">The board is lost — offline games are quick, and this one ends here.</p>
-    <button class="btn soft">Quit game</button>
-    <button class="btn primary small">Keep playing</button>
+    <button class="btn primary">Keep playing</button>
+    <button class="btn soft small">Quit game</button>
   </div>
 
-  <div class="cap2">RANKED — LEAVING COSTS RATING</div>
+  <div class="cap2">RANKED — LEAVING COSTS POINTS</div>
   <div class="askcard">
     <div class="fh">Forfeit this match?</div>
-    <p class="fp">Leaving a ranked match loses it, and the rating goes with it.</p>
-    <button class="btn soft">Forfeit</button>
-    <button class="btn primary small">Keep playing</button>
+    <p class="fp">Leaving a ranked match loses it, and the points go with it.</p>
+    <button class="btn primary">Keep playing</button>
+    <button class="btn soft small">Forfeit</button>
   </div>
 
 </div></div>

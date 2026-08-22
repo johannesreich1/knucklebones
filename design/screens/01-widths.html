@@ -1,4 +1,4 @@
-<!-- meta name="Widths" group="0 · Foundations" subtitle="Three tokens replace seven ad-hoc max-widths — every screen body measures the same 400" width=900 height=760 links="Foundations, Home, Ladder, Game modes" -->
+<!-- meta name="Widths" group="0 · Foundations" subtitle="Three tokens replace seven ad-hoc max-widths — every screen body measures the same 400" width=900 height=1820 links="Foundations, Home, Ladder, Game modes" -->
 <style>
   body{align-items:stretch}
   .wrap{max-width:860px;margin:0 auto;width:100%;display:flex;flex-direction:column;gap:18px}
@@ -27,7 +27,7 @@
 <div class="wrap">
 
   <div class="box">
-    <div class="cap">Today — seven widths, no system</div>
+    <div class="cap">Before — seven widths, no system</div>
     <div class="row now"><span class="lbl">#app shell</span><div class="bar" style="width:520px">520</div></div>
     <div class="row now"><span class="lbl">scrollview header</span><div class="bar" style="width:404px">404</div></div>
     <div class="row now"><span class="lbl">mode cards</span><div class="bar" style="width:376px">376</div></div>
@@ -52,15 +52,15 @@
     <div class="keep">Capping the column was not enough on its own: the INSET differed too (26px on
       overlays, 14px inside scroll views), so the same cap produced 388 / 400 / 372 on three screens.
       <b>--pad-x</b> decides how close content comes to the glass, <b>--w-col</b> decides how wide it
-      may get. Measured after: home, account, mode cards, rules, ladder rows and both headers all 400.</div>
+      may get. Measured after: home, profile, mode cards, rules, ladder rows and both headers all 400.</div>
   </div>
 
   <div class="two">
     <div class="box">
-      <div class="cap">What changes</div>
+      <div class="cap">What it changed</div>
       <div class="note">
-        <b>Home</b> 300 → 400: the menu stops floating in the middle of a wide screen.<br>
-        <b>Account</b> 340 → 400: the identity card and stats get the same room.<br>
+        <b>Home</b> 300 → 400: the menu stopped floating in the middle of a wide screen.<br>
+        <b>Profile</b> 340 → 400: the identity block and stats got the same room.<br>
         <b>Ladder</b> edge-to-edge → 400: no longer the odd one out.<br>
         <b>Mode cards</b> 376 → 400, <b>rules</b> 360 → 400, <b>headers</b> 340 → 400 —
         so the ✕ sits directly above the content it closes.<br>
@@ -73,9 +73,12 @@
       <div class="keep">
         <b>.land #coach 300</b> — a floating bubble, not a page body.<br>
         <b>.land .status 104</b> — a wrap width for two words.<br>
-        <b>.awho .meta / .lb .row .nm</b> — nickname ellipsis needs no width at all: min-width:0 on the flex parent does it.<br>
-        These stay literal, and the comment says why. A token would imply they move together
-        with the column; they do not.
+        <b>.focard 356</b> — the face-off, a modal card over the ladder, not a page body.<br>
+        <b>.focol .fnm 130</b> — an ellipsis width for a nickname beside VS.<br>
+        <b>.lrow .nm / .lb .row .nm</b> — nickname ellipsis needs no width at all: min-width:0 on the flex parent does it.
+        (It was <b>.awho .meta</b> until the profile became the ring + plate; that selector styles nothing now.)<br>
+        These stay literal; where the reason is not obvious the comment says why. A token would
+        imply they move together with the column; they do not.
       </div>
     </div>
   </div>

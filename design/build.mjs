@@ -13,6 +13,10 @@
 //   {{die:V:p1|p2|gold[:px]}}   a die face
 //   {{mico:MODE[:px]}}          a mode icon — the APP's, imported below
 //   {{mhue:MODE}}               a mode's hue — likewise
+//   {{sico:SPELL[:px]}}         a rune icon — the APP's (ui/spellicons.ts)
+//   {{shue:SPELL}}              a rune's hue — likewise
+//   {{loader[:px][:label]}}     the ONE loading die, in loaderWait's own shape
+//   {{versus:N:R:die:F:H|N:R:die:F:H}}  the reveal's me-VS-foe line, the APP's
 //   {{ico:NAME[:px]}}           a chrome glyph (the HUD's way out)
 //   {{score:A:n:B:n}}           a score line — the HUD's, the ladder's, the card's
 //   {{dialnodes[:MODE]}}        the dial's whole node ring, optionally landed
@@ -27,15 +31,17 @@
 // hand-copies an icon is a second implementation that drifts the moment the
 // first one changes, and the mode icons had reached 122 copies across 12 cards
 // before this existed. Needs Node ≥22.18 (type stripping on by default).
-import { readFileSync, writeFileSync, readdirSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, mkdirSync, rmSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import { modeIcon, modeHue } from '../src/ui/modeicons.ts';
 import { chromeIcon } from '../src/ui/chromeicons.ts';
+import { spellIcon, spellHue } from '../src/ui/spellicons.ts';
 import { scoreLine } from '../src/ui/record.ts';
 import { dialNodes, dialBeat } from '../src/ui/modedial.ts';
 import { runeFelt, dealBeat } from '../src/ui/runedeal.ts';
-import { settledAnswer, answerLines } from '../src/ui/reveal.ts';
+import { settledAnswer, answerLines, versus } from '../src/ui/reveal.ts';
+import { parseAvatar, AV_HUES } from '../src/ui/avatar.ts';
 import { spellById } from '../src/core/spells.ts';
 import { modeById } from '../src/core/modes.ts';
 import { libraryCards, pickerButtons, MODE_LIB, SPELL_LIB, MODE_PICKS, SPELL_PICKS } from '../src/ui/library.ts';
@@ -112,19 +118,33 @@ body{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px
 .flows .fc b{color:var(--cy);font-weight:800}
 .dice-static .die{animation:none}
 /* the app's gradient title is scoped .ov h1 (overlay); cards have no .ov,
-   so the chrome provides the same look for bare card headings */
+   so the chrome provides the same look for bare card headings — reading the
+   DUEL PAIR, not the raw hues: .ov h1 tracks --p1/--p2, so a chrome pinned to
+   cyan-and-magenta would render every card's title in a palette the player
+   may have moved away from in Settings. */
 .scr h1,.scr h2{margin:0;font-size:23px;font-weight:900;text-align:center;letter-spacing:.22em;
-  background:linear-gradient(100deg,var(--cy),#fff 50%,var(--mg));
+  background:linear-gradient(100deg,var(--p1),#fff 50%,var(--p2));
   -webkit-background-clip:text;background-clip:text;color:transparent}
 `;
 
 const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
-function dieHtml(v, cls, size) {
+function dieHtml(v, cls, size, extra = '') {
   const on = PIPS[v] || [];
   const pips = Array.from({ length: 9 }, (_, i) =>
     `<span class="pip${on.includes(i) ? ' on' : ''}"></span>`).join('');
-  const style = size ? ` style="width:${size}px;height:${size}px;--cell:${size}px"` : '';
+  const decl = (size ? `width:${size}px;height:${size}px;--cell:${size}px` : '') + extra;
+  const style = decl ? ` style="${decl}"` : '';
   return `<div class="die ${cls}"${style}>${pips}<b class="num">${v}</b></div>`;
+}
+
+/* An avatar is a die wearing a RAW hue (ui/avatar.ts) — never the duel pair,
+   because a player who picked a cyan face keeps it whatever Settings does to
+   --p1/--p2. paintAvatar fills the slot at runtime; here the slot is filled at
+   build time from the same parse, so a card cannot picture a face the app
+   could not produce. */
+function avatarHtml(spec, size) {
+  const { face, hue } = parseAvatar(spec);
+  return dieHtml(face, 'p1', size, `;--dc:${AV_HUES[hue]}`);
 }
 
 /* Device sizes: every screen ships at each of these. The stage is the phone
@@ -138,6 +158,14 @@ const SIZES = [
 ];
 
 mkdirSync(join(here, 'dist'), { recursive: true });
+/* Every file this run is entitled to leave behind. dist used to be written
+   into and never cleaned, so a screen deleted from design/screens/ kept its
+   four built cards AND its four manifest entries forever — and the sync would
+   faithfully re-upload a card the repo no longer has. The stale ones are
+   pruned AFTER the build rather than by emptying the directory first, because
+   two builds can overlap (a peer session, an agent) and a wipe-then-write
+   would serve one of them a half-empty dist. */
+const built = new Set();
 const screens = readdirSync(join(here, 'screens')).filter((f) => f.endsWith('.html')).sort();
 if (!screens.length) die('no screens');
 
@@ -200,6 +228,37 @@ for (const f of screens) {
       (_, v, cls, size) => dieHtml(+v, cls === 'gold' ? 'p1 m2' : cls, size ? +size : 0))
     .replace(/\{\{mico:([a-z]+)(?::(\d+))?\}\}/g, (_, id, size) => modeIcon(id, size ? +size : 24))
     .replace(/\{\{mhue:([a-z]+)\}\}/g, (_, id) => modeHue(id))
+    /* runes render through the app too. A card that hand-draws one is a second
+       implementation of a registry entry: card 27 had five copies of a rune
+       that had already been RETIRED, and nothing noticed. spellOr() fails the
+       build on a rune that does not exist, same as the felt token. */
+    .replace(/\{\{sico:([a-z]+)(?::(\d+))?\}\}/g,
+      (_, id, size) => (spellOr(id), spellIcon(id, size ? +size : 22)))
+    .replace(/\{\{shue:([a-z]+)\}\}/g, (_, id) => (spellOr(id), spellHue(id)))
+    /* THE LOADER, in the shape ui/loader.ts builds it — die wearing .ldclock
+       (which forces all nine pips on and chases them), plus the label, inside
+       .ldwait. loaderWait() returns an ELEMENT and reaches for document, so a
+       Node build cannot call it; this is the one place that shape is written
+       twice, and it is written next to dieHtml, which is already the die said
+       twice for the same reason. The card that used to picture this wait drew
+       matchmaking's two bouncing dice instead — a whole screen out of date. */
+    /* THE VERSUS LINE, from ui/reveal.ts itself. Both dial cards used to hand-
+       write "Opponent NAME · RATING" — the single-line treatment the opponent
+       study replaced — so the two cards that picture the reveal were the last
+       place in the repo still showing the losing option. */
+    .replace(/\{\{versus:([^}]+)\}\}/g, (_, spec) => {
+      const sides = spec.split('|').map((s) => s.split(':'));
+      if (sides.length !== 2) die(`versus needs two sides: {{versus:${spec}}}`);
+      const av = sides.map((p) => avatarHtml(p.slice(2).join(':'), 44));
+      let n = 0;
+      return versus(...sides.map((p) => ({ name: p[0], rating: p[1] ? +p[1] : null })))
+        .replace(/<span class="dav"><\/span>/g, () => `<span class="dav">${av[n++]}</span>`);
+    })
+    .replace(/\{\{loader(?::(\d+))?(?::([^}]+))?\}\}/g, (_, size, label) => {
+      const px = size ? +size : 44;
+      const die = dieHtml(6, 'p1 ldclock', px).replace('<div class="die', '<div aria-label="Loading" class="die');
+      return `<div class="ldwait">${die}<div class="ldmsg">${label ?? 'Loading'}</div></div>`;
+    })
     .replace(/\{\{ico:([a-z]+)(?::(\d+))?\}\}/g, (_, id, size) => chromeIcon(id, size ? +size : 15))
     .replace(/\{\{score:(\w+):(-?\d+):(\w+):(-?\d+)\}\}/g, (_, la, a, lb, b) => scoreLine(la, +a, lb, +b))
     .replace(/\{\{dialnodes(?::([a-z]+))?\}\}/g, (_, found) => dialNodes(found))
@@ -248,8 +307,15 @@ ${body}
 ${flows}
 </body></html>`;
     writeFileSync(join(here, 'dist', outName), out);
+    built.add(outName);
   }
   console.log('built', f, `(${group} · ${name} × ${sizes.length})`);
+}
+for (const f of readdirSync(join(here, 'dist'))) {
+  if (f.endsWith('.html') && !built.has(f)) {
+    rmSync(join(here, 'dist', f));
+    console.log('pruned', f, '(no longer in design/screens)');
+  }
 }
 /* The Design System pane renders what _ds_manifest.json lists — emit it here
    so every sync carries a complete, correctly-ordered card index. */

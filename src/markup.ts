@@ -274,7 +274,9 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   </div>
 </div>
 
-<!-- RULES: a reading sheet — fixed ✕ bar, the text scrolls, GOT IT at its end -->
+<!-- RULES: a reading sheet — fixed ✕ bar, the text scrolls under it. The ✕ is
+     the ONLY way out; the bottom GOT IT this comment used to promise is not
+     here, and design card 51 spent a while picturing the difference. -->
 <div class="ov paged" id="ovRules">
   <div class="shead">
     <span class="pad"></span><span class="ttl">HOW TO PLAY</span>

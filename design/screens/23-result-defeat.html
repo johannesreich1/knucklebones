@@ -3,40 +3,78 @@
   /* verdict up top, the duel centred, actions in the thumb zone. The plates
      (.endplates/.pplate/.pdelta) are WORN from main.css — the app's own
      result rows, not a copy. */
+  /* ONE cap for the column, the app's own token: #ovEnd gives .btn and
+     .endplates the same --w-col (main.css), so on any phone the buttons and
+     the plates share an edge. Two hand-picked numbers used to sit here
+     (320 on the wrap, 300 on the buttons) and the action stack rendered 10px
+     inside the plates above it — a misalignment the shipped screen cannot
+     produce at any width. */
   .rwrap{display:flex;flex-direction:column;align-items:center;gap:16px;margin:0;flex:1;
-    padding-top:16px;width:100%;max-width:320px;align-self:center}
+    padding-top:16px;width:100%;max-width:var(--w-col);align-self:center}
   .rwrap .rline{margin-top:auto}
   .rwrap .btn.primary{margin-top:auto}
-  .rwrap .btn{width:100%;max-width:300px;min-width:0}
+  .rwrap .btn{width:100%;max-width:var(--w-col);min-width:0}
   .rtitle{font-size:38px;letter-spacing:.2em;font-weight:900;
     background-image:linear-gradient(100deg,#ff2fa0,#fff 55%,#ff8a3d);
-    -webkit-background-clip:text;background-clip:text;color:transparent;
-    filter:drop-shadow(0 0 26px rgba(255,47,160,.45))}
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  /* The verdict's glow is a BLOOM LAYER under the word, never a filter on the
+     word: main.css pins `#endTitle{filter:none}` and paints the glow with
+     `#ovEnd .titlewrap::before` — a wash about nine times the type size, not a
+     ring around the letters. This card wears the app's .titlewrap, but that
+     rule is scoped to the #ovEnd overlay a card body has no way to be inside,
+     so the geometry is restated here. It still derives from --verdict, so it
+     stays proportional the way the app's does, and it replays the app's own
+     @keyframes endBloom. A loss blooms a shade softer than a win (.36 against
+     the win card's .40) — that difference is the app's, not a slip. What was
+     here before was drop-shadow(0 0 26px …) on .rtitle itself: the wrong
+     shape, on the element the app keeps clean. */
+  .vbloom{--verdict:38px;--bloom:rgba(255,47,160,.36)}
+  .vbloom::before{content:"";position:absolute;left:50%;top:50%;z-index:-1;
+    width:min(160%,calc(var(--verdict) * 9));height:calc(var(--verdict) * 3.4);
+    transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;opacity:0;
+    background:radial-gradient(closest-side,var(--bloom,transparent),transparent 74%);
+    filter:blur(calc(var(--verdict) * .55));
+    animation:endBloom 1.5s cubic-bezier(.2,.8,.3,1) .35s both}
   .rsub{font-size:11px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:-8px}
-  /* the plates carry the names — the scoreline is pure numbers */
+  /* the plates carry the names — the scoreline is pure numbers.
+     NEITHER number is dimmed: main.css .scoreline .you/.cpu are identical but
+     for the hue, and nothing outcome-scoped reaches them. Your losing 28 used
+     to wear opacity:.8 and a weakened 12px/.4 glow here — an invention on top
+     of the plate dim (.pplate.lostp), which is where the app says who lost. */
   .rline{display:flex;align-items:baseline;justify-content:center;gap:16px;font-weight:900}
-  .rline .you{color:var(--cy);font-size:44px;opacity:.8;text-shadow:0 0 12px rgba(40,232,255,.4)}
+  .rline .you{color:var(--cy);font-size:44px;text-shadow:0 0 14px rgba(40,232,255,.5)}
   .rline .vs{color:var(--dim);font-size:12px;letter-spacing:.2em;font-weight:800}
   .rline .cpu{color:var(--mg);font-size:44px;text-shadow:0 0 14px rgba(255,47,160,.5)}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
   <div class="rwrap">
-    <div class="rtitle">DEFEAT</div>
+    <div class="titlewrap vbloom"><div class="rtitle">DEFEAT</div></div>
     <div class="rsub">EmberCrow896 takes it</div>
     <div class="rline">
       <span class="you">28</span><span class="vs">VS</span><span class="cpu">41</span>
     </div>
     <div class="endplates dice-static">
+      <!-- both plates carry POST-match points, from one settle: core/ladder.ts
+           makes a loss cost MORE the further you outranked the winner, so a
+           number has to be solved for the pair drawn here — delta(2543, 2360,
+           loss) = -66 and their win pays +88, which is how 2,477 and 2,448
+           close. The -17 that used to sit here needs a winner ~1,500 points
+           ABOVE you; against the foe pictured the app takes about -60. -->
       <button class="pplate lg lostp">
         <span class="ringwrap mini" style="--p:.488"><i class="lring"></i>{{die:5:p1:18}}</span>
         <span class="nm2">FrostLynx303</span>
-        <span class="meta2"><span class="mrow"><span class="pdelta down">-17</span><b>2,477</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
+        <span class="meta2"><span class="mrow"><span class="pdelta down">-66</span><b>2,477</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #4</span></span>
         <span class="chev">›</span>
       </button>
+      <!-- rank is a plain ordering of points wherever the screen reads one
+           (player_standing for yours, player_card for theirs), so the foe on
+           2,448 sits BELOW you on 2,477. They used to be drawn at #2 against
+           your #4 — a higher score ranked worse, which is unreadable and the
+           opposite of what the sibling win card shows. -->
       <button class="pplate lg theirs wonp">
         <span class="ringwrap mini" style="--p:.45"><i class="lring"></i>{{die:3:p2:18}}</span>
         <span class="nm2">EmberCrow896</span>
-        <span class="meta2"><span class="mrow"><b>2,448</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #2</span></span>
+        <span class="meta2"><span class="mrow"><b>2,448</b></span><span class="gpill" style="--gc:var(--g-gold)">GOLD · #5</span></span>
         <span class="chev">›</span>
       </button>
     </div>
