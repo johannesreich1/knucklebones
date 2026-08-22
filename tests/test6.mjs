@@ -65,7 +65,7 @@ const settled=await page.evaluate(()=>({active:document.querySelectorAll('.plate
 check(settled.active===0&&settled.legal===0&&settled.pills===0,'board still live after game over',settled);
 
 // ---- duo game by touch ----
-await page.tap('#btnMenu2'); await page.waitForTimeout(500);
+await page.tap('#btnEndQuiet'); await page.waitForTimeout(500);   // the result's one secondary: back to the setup screen
 await page.tap('#modeSeg button[data-m="duo"]'); await page.waitForTimeout(200);
 await page.tap('#btnPlay'); await page.waitForTimeout(1200);
 let handoffs=0,duoDone=false;

@@ -648,11 +648,42 @@ second entrance and no second firework. Closing and rebuilding could give none
 of that. `goHome()` gained `closeEnd()` for the same reason — with a screen able
 to sit above this overlay, home has to arrive with nothing on top of it.
 
+What comes back is a still frame, so it gets **one beat of life, and exactly
+one** (user call): `replayPlates()` runs the plates' theatre again — the cards
+deal in turn, the stamp slams, the beaten row takes the hit and throws its dust
+ring. The title does not land again and the fireworks do not fire again; those
+announce a verdict, and the verdict has already been given. Dropping
+`#endPlates`'s `dealtAt` re-arms the slam and `setPlates` does the rest, since
+rebuilding a node is what restarts a CSS animation — the same seam the late
+re-deal already used to *suppress* the theatre.
+
 Gated by **`tests/test22.mjs`** (served: the online chunk is lazy), which walks
 both doors and asserts in pixels — `elementFromPoint` names the room, because
-every `.ov` shares one z-index and a screen can be `.on` and fully covered.
+every `.ov` shares one z-index and a screen can be `.on` and fully covered. The
+replay is read by name off `getAnimations({subtree:true})`: `stampSlam` and
+`plateIn` running on the way back, nothing running once the screen has settled.
 `window.__kbResult` is the test hook that deals a result screen without a live
 match, alongside `__kb` and `play.ts`'s `__kbOnline`.
+
+### 6e. The result screen offers two actions, not three (2026-08-22, user call)
+
+The offline result carried **Next duel**, **Change difficulty** and **Home** —
+three buttons under a screen whose whole question is *again or not*, and the
+two secondaries landed a tap apart anyway (the setup screen's ‹ IS the way
+home). It is one primary and **one quiet secondary** now, in the short cut:
+**Change setup**, back to the OFFLINE screen this game came from. One label for
+both seatings — what waits there is the whole setup, not the one segment the
+old copy named, so the `duo ? 'Change mode' : 'Change difficulty'` branch is
+gone with it.
+
+The spec followed the screen: `EndSpec.alt` is gone and `home` is now `quiet`
+("the quiet way on"), which is what both flows actually fill — ranked with
+Home, local with the setup screen. `#btnMenu2` left the markup and
+`#btnEndHome` became `#btnEndQuiet`, because a slot named for one caller's
+destination is the same drift the HUD's sliders glyph was (§6). `tests/test15`
+pins the stack: exactly two buttons, the second labelled and **shorter in
+computed pixels** — a way out that stands as tall as NEXT DUEL is not a quiet
+one, whatever its class list says.
 
 ### 8. The loading die (2026-08-20 night, user pick from the LD1–LD8 studies)
 
