@@ -304,10 +304,16 @@ try {
   check(out.selfTap.armed === null && !out.selfTap.castself,
     'a self spell must never sit armed waiting for a target', out.selfTap);
   check(out.selfTap.phase === 'choose' && !out.selfTap.busy, 'the turn was not handed back (nudge)', out.selfTap);
-  // the die the cast produced still places, and the spent rune says so
-  check(out.selfTap.runeClass.includes('spent'), 'a spent self rune must say so', out.selfTap.runeClass);
+  /* Straight after the press the rune is NOT spent — the same press can still
+     put the cast back (§9a). It reads spent once the die is played and the
+     take-back window closes. */
+  check(/\bundo\b/.test(out.selfTap.runeClass) && !/\bspent\b/.test(out.selfTap.runeClass),
+    'a rune that can still be taken back must not read as spent', out.selfTap.runeClass);
   await tapCol(1); await page.waitForTimeout(900);
-  check(JSON.parse((await look()).mine)[1][0] === 6, 'placement broken after a self cast', await look());
+  out.selfPlaced = await look();
+  check(JSON.parse(out.selfPlaced.mine)[1][0] === 6, 'placement broken after a self cast', out.selfPlaced);
+  check(/\bspent\b/.test(out.selfPlaced.runeClass) && !/\bundo\b/.test(out.selfPlaced.runeClass),
+    'the rune still offers a take-back after the die was played', out.selfPlaced.runeClass);
 
   /* the drag still aims — dropping on the die casts, dropping anywhere else
      cancels and keeps the charge */
@@ -330,6 +336,91 @@ try {
   check(out.selfDragMiss.charges === '[{"fate":2},{"fate":1}]',
     'dropping a self spell on a column must cancel, not spend', out.selfDragMiss);
   check(out.selfDragMiss.armed === null, 'the cancelled drag left the rune armed', out.selfDragMiss);
+
+  /* ---------- 9a. the take-back ----------
+     A self spell lands the instant it is pressed, so pressing it again puts
+     it back — until the die it changed is played (user call). NUDGE is the
+     deterministic one to watch: 5 → 6 → 5 → 6. */
+  await newGame({ spell: 'nudge' }); check(await waitChoose(), 'game never reached choose (undo)');
+  await table([[2], [], []], [[5], [], []], 5);
+  await tapRune(); await page.waitForTimeout(700);
+  out.undoCast = await look();
+  check(out.undoCast.die === 6 && out.undoCast.charges === '[{"nudge":1},{"nudge":0}]',
+    'the cast did not happen', out.undoCast);
+  check(/\bundo\b/.test(out.undoCast.runeClass) && !/\bspent\b/.test(out.undoCast.runeClass),
+    'a rune that can still be taken back must not read as spent', out.undoCast.runeClass);
+  await tapRune(); await page.waitForTimeout(700);
+  out.undone = await look();
+  check(out.undone.die === 5, 'PRESSING AGAIN DID NOT PUT THE DIE BACK', out.undone);
+  check(out.undone.charges === '[{"nudge":1},{"nudge":1}]', 'the take-back did not return the charge', out.undone);
+  check(/put back/i.test(out.undone.status), 'the take-back said nothing', out.undone.status);
+  // and it is castable again, for real
+  await tapRune(); await page.waitForTimeout(700);
+  out.recast = await look();
+  check(out.recast.die === 6 && out.recast.charges === '[{"nudge":1},{"nudge":0}]',
+    'the rune did not work again after being put back', out.recast);
+  // playing the die CLOSES the window: the cast is final
+  await tapCol(1); await page.waitForTimeout(1000);
+  out.undoClosed = await page.evaluate(() => ({
+    pending: !!window.__kb.S.spellUndo, undoable: window.__kb.spells.undoable('nudge'),
+    charges: JSON.stringify(window.__kb.S.spellCharges) }));
+  check(!out.undoClosed.pending && !out.undoClosed.undoable,
+    'the cast can still be taken back AFTER the die was played', out.undoClosed);
+  check(out.undoClosed.charges === '[{"nudge":1},{"nudge":0}]',
+    'the charge came back after the die was already played', out.undoClosed);
+
+  /* FATE's redraw came out of the supply, so the take-back must put it BACK —
+     in LIMITED that is a real die the bag would otherwise have lost. */
+  out.undoBag = await page.evaluate(async () => {
+    const k = window.__kb;
+    k.S.spell = 'fate'; k.S.localMode = 6; k.S.mode = 'duo'; k.S.seat = 'face'; k.S.timer = 0;
+    k.newGame();
+    for (let i = 0; i < 80; i++) { if (k.S.phase === 'choose') break; await new Promise((r) => setTimeout(r, 100)); }
+    k.S.turn = 1; k.S.bottom = 1; k.S.busy = false; k.S.phase = 'choose';
+    const bagBefore = k.S.pool.length, dieBefore = k.S.die;
+    await k.spells.cast('fate', -1);
+    await new Promise((r) => setTimeout(r, 700));
+    const bagAfter = k.S.pool.length, dieAfter = k.S.die;
+    const undone = k.spells.undo();
+    return { bagBefore, bagAfter, bagBack: k.S.pool.length, dieBefore, dieAfter,
+             dieBack: k.S.die, undone, charges: JSON.stringify(k.S.spellCharges) };
+  });
+  check(out.undoBag.bagAfter === out.undoBag.bagBefore - 1, 'the redraw did not come out of the bag', out.undoBag);
+  check(out.undoBag.bagBack === out.undoBag.bagBefore,
+    'THE TAKE-BACK LOST A DIE FROM THE BAG', out.undoBag);
+  check(out.undoBag.dieBack === out.undoBag.dieBefore, 'the take-back kept the redrawn die', out.undoBag);
+
+  /* SUNDER's mark is charm state, not a die — the take-back must lift it */
+  out.undoMark = await page.evaluate(async () => {
+    const k = window.__kb;
+    k.S.spell = 'sunder'; k.S.localMode = 0; k.S.mode = 'duo'; k.S.seat = 'face'; k.S.timer = 0;
+    k.newGame();
+    for (let i = 0; i < 80; i++) { if (k.S.phase === 'choose') break; await new Promise((r) => setTimeout(r, 100)); }
+    k.S.turn = 1; k.S.bottom = 1; k.S.busy = false; k.S.phase = 'choose'; k.S.die = 3;
+    await k.spells.cast('sunder', -1);
+    await new Promise((r) => setTimeout(r, 700));
+    const marked = k.S.charm.sunder[1];
+    k.spells.undo();
+    return { marked, afterUndo: k.S.charm.sunder[1],
+             stageLit: document.getElementById('dieStage').classList.contains('sundered'),
+             charges: JSON.stringify(k.S.spellCharges) };
+  });
+  check(out.undoMark.marked === true, 'sunder never marked the caster', out.undoMark);
+  check(out.undoMark.afterUndo === false && !out.undoMark.stageLit,
+    'THE TAKE-BACK LEFT THE SUNDER MARK ON THE DIE', out.undoMark);
+  check(out.undoMark.charges === '[{"sunder":1},{"sunder":1}]', 'the sunder charge did not come back', out.undoMark);
+
+  /* a COLUMN spell has visibly moved dice — no take-back is offered */
+  await newGame({ spell: 'pilfer' }); check(await waitChoose(), 'game never reached choose (no undo)');
+  await table([[2], [], []], [[6, 6], [], []]);
+  await page.evaluate(() => window.__kb.spells.cast('pilfer', 0));
+  await page.waitForTimeout(1200);
+  out.noUndo = await page.evaluate(() => ({ pending: !!window.__kb.S.spellUndo,
+    undoable: window.__kb.spells.undoable('pilfer'),
+    cls: document.querySelector('.rune[data-seat="1"]:not([hidden])')?.className }));
+  check(!out.noUndo.pending && !out.noUndo.undoable,
+    'a board spell offered a take-back after its dice had flown', out.noUndo);
+  check(/\bspent\b/.test(out.noUndo.cls), 'a spent board rune must read as spent', out.noUndo);
 
   /* ---------- 9b. the board rings ONLY what the cast can land on ----------
      COLUMN SWAP could honestly ring all six (either half was a legal target).

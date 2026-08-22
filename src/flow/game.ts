@@ -25,7 +25,7 @@ import { startTimer, stopTimer, showClock } from './timer.ts';
 import { coachShow, coachHide, clearTut, tutNextRoll, tutOnChoose } from './tutorial.ts';
 import { updateStatLine, toMenu } from './menu.ts';
 import { showEnd, closeEnd } from '../ui/endscreen.ts';
-import { resetSpells, renderSpells, aiSpellTurn } from './spells.ts';
+import { resetSpells, renderSpells, aiSpellTurn, clearUndo } from './spells.ts';
 
 /* arm the turn clock: on expiry the die drops into a random legal column */
 export function armTimer(){ const gen=S.gen; startTimer(()=>autoPlace(gen)); }
@@ -259,6 +259,7 @@ export async function place(who,col){
   S.phase='anim';
   stopTimer();
   clearHints();
+  clearUndo();                    // the die is committed: a cast on it is final now
   renderSpells();                 // the turn is spending itself: the rail goes quiet
   const die=S.die;
   // mode-aware, exactly like online play: what the whole board gains, not what

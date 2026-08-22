@@ -218,6 +218,13 @@ Learned from real play, each one a shipped bug:
   a state real play never reaches.
 - **A self spell casts on press.** One possible target means nothing to aim.
   Dragging still works; dropping anywhere else cancels with the charge intact.
+- **And pressing it again takes it back**, for as long as the die it changed is
+  still in hand — placing the die makes the cast final. Implemented as a
+  SNAPSHOT taken at cast time (die, supply, charm), never as a per-spell
+  inverse, so a spell does not have to know it can be undone. Board spells are
+  deliberately excluded: their dice have visibly flown, and un-flying them
+  would be a lie about what the player just watched. The rune stays lit and
+  pressable while the window is open — it must not read as spent yet.
 - **Reserve, never collapse.** Anything sharing the vertically-centred score
   cluster (the rune slot, BOUNTY's ✦ lane) must hold its place for the whole
   game, or the cluster re-centres and the score visibly jumps when the thing

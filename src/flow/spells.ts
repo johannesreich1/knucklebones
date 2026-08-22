@@ -80,6 +80,7 @@ export function resetSpells(): void {
   const id = S.tut ? '' : dealtSpell();
   S.spellCharges = [freshCharges(id), freshCharges(id)];
   S.charm = freshCharm();
+  S.spellUndo = null;
   disarm();
   renderSpells();
 }
@@ -87,6 +88,7 @@ export function resetSpells(): void {
 export function clearSpells(): void {
   S.spellCharges = [{}, {}];
   S.charm = freshCharm();
+  S.spellUndo = null;
   disarm();
   renderSpells();
 }
@@ -124,16 +126,21 @@ export function renderSpells(): void {
          now" it flipped twice per turn, restarting the ring's animation from
          its first keyframe each time, and the glow visibly snapped. */
       const readout = seat !== near;                // the other player's: an indicator
+      /* spent, but still takeable back: the press that cast it is also the
+         press that returns it, so the rune must not read as dead yet */
+      const canUndo = seat === now && undoable(s.id);
       b.style.setProperty('--sh', colorOf(seat));   // whose rune, in the game's own two colours
-      b.classList.toggle('spent', left <= 0);
+      b.classList.toggle('spent', left <= 0 && !canUndo);
+      b.classList.toggle('undo', canUndo);
       b.classList.toggle('ready', left > 0 && !readout);
       b.classList.toggle('idle', left > 0 && readout);
       b.classList.toggle('armed', S.spellArmed === s.id && seat === now);
-      b.disabled = left <= 0 || seat !== now;       // the only thing the turn decides
+      b.disabled = (left <= 0 && !canUndo) || seat !== now;   // the turn decides the rest
       const n = b.querySelector('.n');
       if (n) n.textContent = left > 1 ? String(left) : '';   // a single charge needs no number
       b.setAttribute('aria-label', nameOf(seat) + ': ' + s.name + ' — ' + s.blurb
-        + (left > 0 ? ' ' + left + ' cast left.' : ' Spent.'));
+        + (canUndo ? ' Cast — press again to put it back.'
+          : left > 0 ? ' ' + left + ' cast left.' : ' Spent.'));
     }
   }
   /* the plate keeps the rune's place for the WHOLE game, not just the turns
@@ -235,6 +242,17 @@ export function castArmed(col: number | null): boolean {
    to be gated first, and the machine on its own turn, which is already inside
    its turn. Both spend the same charge and run the same effect. */
 async function castBy(who: Player, spell: SpellSpec, col: number, ctx: CastCtx): Promise<boolean> {
+  /* A self spell lands on the die in hand the instant it is pressed, so the
+     press is also the way back: snapshot what it is about to change. Taken
+     BEFORE the effect and as a SNAPSHOT, not a per-spell inverse — a spell
+     never has to know it can be undone. Board spells are not offered a
+     take-back: their dice have visibly flown. */
+  S.spellUndo = spell.target === 'self' ? {
+    id: spell.id, who, die: S.die,
+    pool: S.pool ? S.pool.slice() : null,
+    charm: { wards: [S.charm.wards[0].slice(), S.charm.wards[1].slice()],
+             sunder: [S.charm.sunder[0], S.charm.sunder[1]] },
+  } : null;
   S.spellCharges[who][spell.id] = chargesOf(who, spell.id) - 1;
   // the board is mid-effect: no taps, no auto-place, no CPU reply
   S.busy = true;
@@ -274,6 +292,40 @@ export async function cast(id: string, col: number): Promise<boolean> {
   showHints();
   sayChoose();
   armTimer();                                      // the board changed: fresh clock
+  return true;
+}
+
+/* ===================== THE TAKE-BACK =====================
+   Pressing a self rune again puts the cast back, for as long as the die it
+   changed is still in hand. `place()` spends the turn for real and clears it,
+   as does the turn passing, a new game or arming anything else — so the
+   window is exactly "this die, still unplayed". */
+export function undoable(id: string): boolean {
+  const u = S.spellUndo;
+  return !!u && u.id === id && u.who === caster() && S.phase === 'choose' && !S.busy;
+}
+export function clearUndo(): void { S.spellUndo = null; }
+
+export function undoCast(): boolean {
+  const u = S.spellUndo;
+  if (!u || !undoable(u.id)) return false;
+  const spell = spellById(u.id);
+  S.spellUndo = null;
+  S.die = u.die;
+  setStageDie(u.die, u.who);
+  S.charm = { wards: [u.charm.wards[0].slice(), u.charm.wards[1].slice()],
+              sunder: [u.charm.sunder[0], u.charm.sunder[1]] };
+  if (u.pool) { S.pool = u.pool.slice(); renderBag(S.pool.length); }   // FATE's draw goes back in the bag
+  S.spellCharges[u.who][u.id] = chargesOf(u.who, u.id) + 1;
+  const stage = $('#dieStage') as HTMLElement | null;
+  stage?.classList.remove('sundered');            // SUNDER's mark leaves with it
+  Sfx.tap();
+  vibrate(12);
+  renderSide(AI, true);
+  renderSide(ME, true);                           // a ward chip, if one was placed
+  renderSpells();
+  showHints();
+  setStatus((spell ? spell.name : 'Spell') + ' put back', u.who, false);
   return true;
 }
 
@@ -459,7 +511,11 @@ function bind(b: HTMLButtonElement, id: string): void {
   if (!window.PointerEvent) {        // hosts without pointer events: arm on click
     b.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (spellById(id)?.target === 'self') { if (castable(id)) void cast(id, -1); else bump(b); return; }
+      if (spellById(id)?.target === 'self') {
+        if (undoCast()) return;
+        if (castable(id)) void cast(id, -1); else bump(b);
+        return;
+      }
       S.spellArmed === id ? disarm() : tryArm(b, id);
     });
     return;
@@ -470,7 +526,9 @@ function bind(b: HTMLButtonElement, id: string): void {
     e.stopPropagation();
     const self = spellById(id)?.target === 'self';
     const wasArmed = S.spellArmed === id;
-    if (!castable(id)) { Sfx.tap(); bump(b); return; }
+    // a rune with no charges left is still live while its cast can be put
+    // back — that press IS the take-back, so it must reach the release below
+    if (!castable(id) && !undoable(id)) { Sfx.tap(); bump(b); return; }
     // A SELF spell has exactly one target — the die in hand — so there is
     // nothing to aim: the tap IS the cast (below). Aiming still exists for
     // the drag, which arms the moment the finger actually travels.
@@ -491,7 +549,9 @@ function bind(b: HTMLButtonElement, id: string): void {
       b.removeEventListener('pointerup', up);
       b.removeEventListener('pointercancel', up);
       if (!dragging) {
-        if (self) { void cast(id, -1); return; }  // one target: pressing it casts it
+        // one target: pressing it casts it — and pressing it again, while the
+        // die it changed is still in hand, puts the cast back
+        if (self) { if (!undoCast()) void cast(id, -1); return; }
         if (wasArmed) { Sfx.tap(); disarm(); }    // a second tap puts it away
         return;
       }
