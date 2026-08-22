@@ -1,0 +1,107 @@
+<!-- meta name="RM2c — Notch Tally" group="3f · Row-match studies" subtitle="The end mark stops being a line and becomes a count: two notches means ×2, three means ×3 — the multiplier survives with the hue channel switched off" width=430 height=880 sizes="md" links="Match, Game modes" -->
+<style>
+  .scr{gap:11px}
+  .rmwrap{display:flex;flex-direction:column;align-items:center;gap:15px;margin:auto 0}
+
+  .rmboard{display:flex;align-items:flex-start;gap:9px}
+  /* the row rail as the game draws it in ROW MULTIPLY: the BONUS plus a ×k */
+  .rrail{display:grid;grid-template-rows:repeat(3,56px);gap:6px;align-items:center}
+  .rchip{min-width:41px;height:20px;padding:0 6px;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;gap:3px;font-size:11.5px;font-weight:800;color:var(--dim);
+    font-variant-numeric:tabular-nums;background:rgba(255,255,255,.035);
+    border:1px solid rgba(255,255,255,.06)}
+  .rchip.on{color:var(--mx2);border-color:color-mix(in srgb,var(--mx2) 30%,transparent);
+    background:color-mix(in srgb,var(--mx2) 9%,transparent)}
+  .rchip.on3{color:var(--mx3);border-color:color-mix(in srgb,var(--mx3) 30%,transparent);
+    background:color-mix(in srgb,var(--mx3) 9%,transparent)}
+  .rmx{font-size:9px;opacity:.9}
+  .board3{display:grid;grid-template-columns:repeat(3,56px);gap:6px}
+  .col3{display:grid;grid-template-rows:repeat(3,56px);gap:6px}
+  .slot3{--cell:56px;--gap:6px;--r:14px;
+    width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.028);
+    border:1px solid rgba(255,255,255,.07);display:grid;place-items:center;position:relative}
+  .strip{display:grid;grid-template-columns:repeat(3,56px);gap:6px}
+
+.r2,.r3{--tw:max(2px,calc(var(--cell)*.045));--off:3.5px;--dir:to bottom}
+.land .r2,.land .r3{--dir:to right}
+.r2{--hr:var(--mx2-rgb,var(--gold-rgb));
+  --stack:linear-gradient(var(--dir),transparent 0 20%,rgba(var(--hr),.95) 20% 44%,
+    transparent 44% 56%,rgba(var(--hr),.95) 56% 80%,transparent 80%)}
+.r3{--hr:var(--mx3-rgb,var(--orange-rgb));
+  --stack:linear-gradient(var(--dir),transparent 0 10%,rgba(var(--hr),.95) 10% 29%,
+    transparent 29% 40.5%,rgba(var(--hr),.95) 40.5% 59.5%,
+    transparent 59.5% 71%,rgba(var(--hr),.95) 71% 90%)}
+.r2,.r3{--brk:linear-gradient(var(--dir),transparent 0 34%,rgba(var(--hr),.6) 34% 42%,
+    transparent 42% 58%,rgba(var(--hr),.6) 58% 66%,transparent 66%)}
+
+/* THE TALLY — on the DIE's ::after, so it paints over the glass rather than
+   ghosting under it. inset -3.5px keeps every band inside .col.legal's -4px ring. */
+.r2>div::after,.r3>div::after{content:"";position:absolute;inset:calc(var(--off)*-1);
+  pointer-events:none;background-repeat:no-repeat;background-size:var(--tw) 100%;
+  filter:drop-shadow(0 0 5px rgba(var(--hr),.5))}
+.kr:not(.kl)>div::after,.r2:not(.kl):not(.kr):not(.last)>div::after{
+  background-image:var(--stack);background-position:left center}
+.kl:not(.kr)>div::after,.r2:not(.kl):not(.kr).last>div::after{
+  background-image:var(--stack);background-position:right center}
+
+/* THROUGH A GAP — a BROKEN notch on the inner edge. A gap partner is never
+   .kr or .kl, so this rule and any joint rule can never hit the same element. */
+.r2:not(.kl):not(.kr)>div::before{content:"";position:absolute;inset:calc(var(--off)*-1);
+  pointer-events:none;background-repeat:no-repeat;
+  background-size:calc(var(--tw)*.75) 100%;background-image:var(--brk)}
+.r2:not(.kl):not(.kr):not(.last)>div::before{background-position:right center}
+.r2:not(.kl):not(.kr).last>div::before{background-position:left center}
+
+/* LANDSCAPE — --dir already flipped above; only the box's axis swaps */
+.land .r2>div::after,.land .r3>div::after{background-size:100% var(--tw)}
+.land .kr:not(.kl)>div::after,.land .r2:not(.kl):not(.kr):not(.last)>div::after{background-position:center top}
+.land .kl:not(.kr)>div::after,.land .r2:not(.kl):not(.kr).last>div::after{background-position:center bottom}
+.land .r2:not(.kl):not(.kr)>div::before{background-size:100% calc(var(--tw)*.75)}
+.land .r2:not(.kl):not(.kr):not(.last)>div::before{background-position:center bottom}
+.land .r2:not(.kl):not(.kr).last>div::before{background-position:center top}
+
+/* DELIBERATELY REMOVED — the proposal's joint notch. Both dice of an adjacent
+   pair drew one into the SAME 6px gutter from 3.5px off their own edge, so the
+   two bands overlapped at every cell size; and it was the one piece of ink that
+   could be swept into the count. With the number stated at the ends, the
+   interior needs no ink at all. */
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">ROW MULTIPLY</span><span class="pad"></span></div>
+  <div class="rmwrap">
+    <div class="cap2">×2 top row · ×3 middle · ×2 through a gap</div>
+
+  <div class="rmboard">
+    <div class="rrail">
+      <div class="rchip on"><span>16</span><span class="rmx">×2</span></div>
+      <div class="rchip on3"><span>54</span><span class="rmx">×3</span></div>
+      <div class="rchip on"><span>12</span><span class="rmx">×2</span></div>
+    </div>
+    <div class="board3">
+      <div class="col3">
+        <div class="slot3 r2 kr">{{die:4:p2:56}}</div>
+        <div class="slot3 r3 kr">{{die:6:p2:56}}</div>
+        <div class="slot3 r2">{{die:3:p2:56}}</div>
+      </div>
+      <div class="col3">
+        <div class="slot3 r2 kl last">{{die:4:p2:56}}</div>
+        <div class="slot3 r3 kl kr">{{die:6:p2:56}}</div>
+        <div class="slot3">{{die:5:p2:56}}</div>
+      </div>
+      <div class="col3">
+        <div class="slot3">{{die:1:p2:56}}</div>
+        <div class="slot3 r3 kl last">{{die:6:p2:56}}</div>
+        <div class="slot3 r2 last">{{die:3:p2:56}}</div>
+      </div>
+    </div>
+  </div>
+    <div class="cap2">The crowded case — a column ×2 (its own gold glow) that is ALSO in a row match</div>
+
+  <div class="strip">
+    <div class="slot3 r2 kr">{{die:5:gold:56}}</div>
+    <div class="slot3 r2 kl last">{{die:5:gold:56}}</div>
+    <div class="slot3">{{die:2:p1:56}}</div>
+  </div>
+    <div class="note"><b>What it says:</b> the number, literally, without a numeral. A player who cannot separate gold from orange still reads the multiplier off the stack, which is the one thing no other variant here guarantees. <b>×2</b> two bars in the collar; <b>×3</b> three of the identical bar, the middle one landing on the row's midline. <b>Cost:</b> the finest ink of the five — a ×3 notch is about 9×2px on a small phone, and it is the first mark to disappear at that size.</div>
+  </div>
+</div></div>

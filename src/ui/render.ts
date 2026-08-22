@@ -78,8 +78,19 @@ export function renderSide(who,animate){
       const k=rowswitch ? rk : (cm[v]||1);
       d.classList.toggle('m2',k===2);
       d.classList.toggle('m3',k===3);
-      // ROWMULT scores BOTH ways — row matches get their own gold ring on top
-      d.classList.toggle('rm',rowmult && rk>=2);
+      // ROWMULT scores BOTH ways, so a row match needs its own mark on top of
+      // the column glow. It is drawn as a SPAN bracketed at its ends (main.css),
+      // and the ends are the only thing the stylesheet is told: a match can jump
+      // a stranger (cols 1 and 3 matching through col 2), so "my neighbour" is
+      // not the same question as "the end of the run" and only this loop can
+      // answer it honestly.
+      const inRow=rowmult && rk>=2;
+      d.classList.toggle('rm2',inRow && rk===2);
+      d.classList.toggle('rm3',inRow && rk===3);
+      let ahead=false; for(let n=c+1;n<SPEC.cols;n++) if(b[n][i]===v) ahead=true;
+      let behind=false; for(let n=0;n<c;n++) if(b[n][i]===v) behind=true;
+      d.classList.toggle('rms',inRow && !behind);   // left end of the span
+      d.classList.toggle('rme',inRow && !ahead);    // right end
     }
   }
   updateScores(who);

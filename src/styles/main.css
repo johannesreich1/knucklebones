@@ -967,11 +967,60 @@ html.clock .timer.on{visibility:visible}
 /* mode-icon BASE styles live in main.css (offline uses them too) */
 .wname .mico{vertical-align:-2.5px;margin-right:2px}
 
-/* ===== ROW MULTIPLY: row matches wear a gold ring (columns keep their glow).
-   A border ::after, not outline — outline draws a SQUARE over rounded dice on
-   older Safari, which reads as broken shimmer. ===== */
-.die.rm::after{content:"";position:absolute;inset:1px;border:2px solid rgba(var(--mx2-rgb,var(--gold-rgb)),.62);
-  border-radius:inherit;pointer-events:none}
+/* ===== ROW MULTIPLY: a row match is a SPAN, so it is bracketed like one.
+   Only the OUTER edge of the first and last die is ticked, and each tick
+   carries a head aimed inward, so the two ends point at each other however far
+   apart they are — a match through a stranger (cols 1 and 3) then reads as an
+   adjacent pair, only wider. Every die between the ends stays clean.
+
+   render.ts answers the only question this needs — is this die an END of its
+   row match, and which one — so the stylesheet never reasons about adjacency:
+     .rm2 / .rm3   in a row match of that size (the heat)
+     .rms / .rme   the span's left / right end (the ink)
+
+   A border with three transparent sides, not an outline: an outline draws a
+   SQUARE over rounded dice on older Safari, which reads as broken shimmer.
+   The ring this replaces fired for ANY row match, so a pair and a full row wore
+   the same mark; here ×3 says the head twice. Heats are --mx2 / --mx3 per side,
+   so a player who picked gold still sees their opponent's true heat.
+   Studied as design/screens/38f-rowmult-aimed. ===== */
+.die.rm2,.die.rm3{
+  /* the die's REAL radius, so the tick's arc sits on the glass, not beside it */
+  --dr:min(var(--r),calc(var(--cell)*.25 + 1.5px));
+  --off:3px;                        /* inside .col.legal's -4px dashed ring */
+  --tw:max(2px,calc(var(--cell)*.045));
+  --aw:calc(var(--cell)*.11);--ah:calc(var(--cell)*.20);
+  --rmc:rgba(var(--mx2-rgb),.95);--rmg:0 0 6px rgba(var(--mx2-rgb),.55)}
+.die.rm3{--rmc:rgba(var(--mx3-rgb),.95);--rmg:0 0 6px rgba(var(--mx3-rgb),.55)}
+/* THE EXTENSION LINE — one lit side, on the end's outward face */
+.die.rms::after,.die.rme::after{content:"";position:absolute;inset:calc(var(--off)*-1);
+  border-radius:calc(var(--dr) + var(--off));border:var(--tw) solid transparent;
+  pointer-events:none;filter:drop-shadow(var(--rmg))}
+.die.rms::after{border-left-color:var(--rmc)}
+.die.rme::after{border-right-color:var(--rmc)}
+/* THE HEAD — declared on the ends themselves, never on every matched die: an
+   absolutely positioned box with no left/right still PAINTS, so the shared
+   declaration put a solid slab on the middle die of a ×3 — the one die this
+   mark exists to leave alone (caught in the render check, not in review). */
+.die.rms::before,.die.rme::before{content:"";position:absolute;top:50%;
+  width:var(--aw);height:var(--ah);transform:translateY(-50%);
+  background:var(--rmc);pointer-events:none;filter:drop-shadow(var(--rmg))}
+.die.rms::before{left:calc(var(--off)*-1);clip-path:polygon(0 0,100% 50%,0 100%)}
+.die.rme::before{right:calc(var(--off)*-1);clip-path:polygon(100% 0,0 50%,100% 100%)}
+/* ×3 — the same head said twice, the quieter copy OUTBOARD. filter runs after
+   clip-path, so the second copy is the arrow's silhouette and not its box. */
+.die.rm3.rms::before{filter:drop-shadow(-4px 0 0 rgba(var(--mx3-rgb),.5)) drop-shadow(var(--rmg))}
+.die.rm3.rme::before{filter:drop-shadow(4px 0 0 rgba(var(--mx3-rgb),.5)) drop-shadow(var(--rmg))}
+/* LANDSCAPE transposes the board, so a row runs DOWN: the ticks move to the top
+   and bottom edges and the heads turn a quarter. Source order breaks the tie. */
+.land .die.rms::before,.land .die.rme::before{left:50%;right:auto;top:auto;
+  width:var(--ah);height:var(--aw);transform:translateX(-50%)}
+.land .die.rms::after{border-left-color:transparent;border-top-color:var(--rmc)}
+.land .die.rme::after{border-right-color:transparent;border-bottom-color:var(--rmc)}
+.land .die.rms::before{top:calc(var(--off)*-1);clip-path:polygon(0 0,50% 100%,100% 0)}
+.land .die.rme::before{bottom:calc(var(--off)*-1);clip-path:polygon(0 100%,50% 0,100% 100%)}
+.land .die.rm3.rms::before{filter:drop-shadow(0 -4px 0 rgba(var(--mx3-rgb),.5)) drop-shadow(var(--rmg))}
+.land .die.rm3.rme::before{filter:drop-shadow(0 4px 0 rgba(var(--mx3-rgb),.5)) drop-shadow(var(--rmg))}
 
 /* ===== the row rail: per-row scores left of each board (row modes only).
    The .rc boxes deliberately mirror .chip — same pill, same .has treatment,

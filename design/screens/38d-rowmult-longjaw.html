@@ -1,0 +1,103 @@
+<!-- meta name="RM2b — Long Jaw" group="3f · Row-match studies" subtitle="One matte bar standing in the gutter at each end of the span, and its LENGTH is the multiplier — a stub for a ×2, the full die for a ×3" width=430 height=880 sizes="md" links="Match, Game modes" -->
+<style>
+  .scr{gap:11px}
+  .rmwrap{display:flex;flex-direction:column;align-items:center;gap:15px;margin:auto 0}
+
+  .rmboard{display:flex;align-items:flex-start;gap:9px}
+  /* the row rail as the game draws it in ROW MULTIPLY: the BONUS plus a ×k */
+  .rrail{display:grid;grid-template-rows:repeat(3,56px);gap:6px;align-items:center}
+  .rchip{min-width:41px;height:20px;padding:0 6px;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;gap:3px;font-size:11.5px;font-weight:800;color:var(--dim);
+    font-variant-numeric:tabular-nums;background:rgba(255,255,255,.035);
+    border:1px solid rgba(255,255,255,.06)}
+  .rchip.on{color:var(--mx2);border-color:color-mix(in srgb,var(--mx2) 30%,transparent);
+    background:color-mix(in srgb,var(--mx2) 9%,transparent)}
+  .rchip.on3{color:var(--mx3);border-color:color-mix(in srgb,var(--mx3) 30%,transparent);
+    background:color-mix(in srgb,var(--mx3) 9%,transparent)}
+  .rmx{font-size:9px;opacity:.9}
+  .board3{display:grid;grid-template-columns:repeat(3,56px);gap:6px}
+  .col3{display:grid;grid-template-rows:repeat(3,56px);gap:6px}
+  .slot3{--cell:56px;--gap:6px;--r:14px;
+    width:56px;height:56px;border-radius:14px;background:rgba(255,255,255,.028);
+    border:1px solid rgba(255,255,255,.07);display:grid;place-items:center;position:relative}
+  .strip{display:grid;grid-template-columns:repeat(3,56px);gap:6px}
+
+.r2{--hr:var(--mx2-rgb,var(--gold-rgb))}
+.r3{--hr:var(--mx3-rgb,var(--orange-rgb))}
+.r2,.r3{--thick:max(2px,calc(var(--cell)*.04))}
+
+/* one jaw per span EDGE; nothing paints until a rule grants --len.
+   Drawn on the DIE's pseudos: a slot pseudo sits BEHIND the die, and the die's
+   background is a translucent gradient (rgba .22 → .04 → .28), so anything
+   underneath ghosts through the glass instead of being hidden. */
+.r2>div::before,.r2>div::after,.r3>div::before,.r3>div::after{
+  content:"";position:absolute;top:50%;transform:translateY(-50%);
+  width:var(--thick);height:var(--len,0);border-radius:var(--thick);
+  background:rgb(var(--hr));opacity:.95;pointer-events:none}  /* matte: no glow */
+.r2>div::before,.r3>div::before{left:-3px}   /* -3 … -0.5 : 0.5px off its own die,
+.r2>div::after ,.r3>div::after {right:-3px}     3px off the neighbour, and clear
+                                                of .col.legal's -4px dashed ring */
+
+/* x2 — a stub, only where the run STOPS */
+.kr:not(.kl)>div::before,                       /* partner right ⇒ my left edge  */
+.kl:not(.kr)>div::after,                        /* partner left  ⇒ my right edge */
+.r2:not(.kl):not(.kr)>div::before,              /* gapped x2: an island — both   */
+.r2:not(.kl):not(.kr)>div::after{--len:32%}     /* of its edges are span edges   */
+
+/* x3 — the SAME bar opened to the full die, GATED ON END-NESS.
+   The proposal's rule was '.r3>div::before,.r3>div::after{--len:96%}', which
+   also jawed .kl.kr — the middle die, the one die that must stay clean. */
+.r3.kr:not(.kl)>div::before{--len:96%}
+.r3.kl:not(.kr)>div::after {--len:96%}
+
+/* LANDSCAPE — the row runs down, so the jaws lie flat. --len is a percentage,
+   so it simply re-resolves against the other axis. */
+.land .r2>div::before,.land .r2>div::after,
+.land .r3>div::before,.land .r3>div::after{
+  width:var(--len);height:var(--thick);left:50%;right:auto;top:auto;
+  transform:translateX(-50%)}
+.land .r2>div::before,.land .r3>div::before{top:-3px}
+.land .r2>div::after ,.land .r3>div::after {bottom:-3px}
+
+/* no animation: .die.m3 already owns the board's only ambient loop in these
+   two heats, so the resting state is the only state and reduced-motion is free */
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">ROW MULTIPLY</span><span class="pad"></span></div>
+  <div class="rmwrap">
+    <div class="cap2">×2 top row · ×3 middle · ×2 through a gap</div>
+
+  <div class="rmboard">
+    <div class="rrail">
+      <div class="rchip on"><span>16</span><span class="rmx">×2</span></div>
+      <div class="rchip on3"><span>54</span><span class="rmx">×3</span></div>
+      <div class="rchip on"><span>12</span><span class="rmx">×2</span></div>
+    </div>
+    <div class="board3">
+      <div class="col3">
+        <div class="slot3 r2 kr">{{die:4:p2:56}}</div>
+        <div class="slot3 r3 kr">{{die:6:p2:56}}</div>
+        <div class="slot3 r2">{{die:3:p2:56}}</div>
+      </div>
+      <div class="col3">
+        <div class="slot3 r2 kl last">{{die:4:p2:56}}</div>
+        <div class="slot3 r3 kl kr">{{die:6:p2:56}}</div>
+        <div class="slot3">{{die:5:p2:56}}</div>
+      </div>
+      <div class="col3">
+        <div class="slot3">{{die:1:p2:56}}</div>
+        <div class="slot3 r3 kl last">{{die:6:p2:56}}</div>
+        <div class="slot3 r2 last">{{die:3:p2:56}}</div>
+      </div>
+    </div>
+  </div>
+    <div class="cap2">The crowded case — a column ×2 (its own gold glow) that is ALSO in a row match</div>
+
+  <div class="strip">
+    <div class="slot3 r2 kr">{{die:5:gold:56}}</div>
+    <div class="slot3 r2 kl last">{{die:5:gold:56}}</div>
+    <div class="slot3">{{die:2:p1:56}}</div>
+  </div>
+    <div class="note"><b>What it says:</b> this is where the run stops. The mark is ink where the column multiplier is light — matte, no glow at all — so the two can never be confused. <b>×2</b> a 32% stub; <b>×3</b> the identical bar at 96%, longer than the straight run of the die's edge, so it can never read as the die's own border. <b>Cost:</b> length is a relative channel with no ruler beside it — the first ×2 a player sees has no ×3 on screen to measure against, so a cold read leans on the heat.</div>
+  </div>
+</div></div>
