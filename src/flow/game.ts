@@ -8,7 +8,8 @@ import { AI, ME, SPEC, legalCols, colScore, boardTotalMode, totalOf, victimsOf, 
          openStrikes, emptyBoard, BOUNTY, LIMITED } from '../core/rules.ts';
 import { makeBag } from '../core/dice.ts';
 import { RANDOM, pickMode } from '../core/modes.ts';
-import { spinDial } from '../ui/modedial.ts';
+import { RANDOM_SPELL, spellById } from '../core/spells.ts';
+import { reveal } from '../ui/reveal.ts';
 import { isNewcomer, offerTutorial } from '../ui/firstrun.ts';
 import { searchRoot, getRiskW, setRiskW } from '../core/ai.ts';
 import { S } from '../state.ts';
@@ -25,7 +26,7 @@ import { startTimer, stopTimer, showClock } from './timer.ts';
 import { coachShow, coachHide, clearTut, tutNextRoll, tutOnChoose } from './tutorial.ts';
 import { updateStatLine, toMenu } from './menu.ts';
 import { showEnd, closeEnd } from '../ui/endscreen.ts';
-import { resetSpells, renderSpells, aiSpellTurn, clearUndo } from './spells.ts';
+import { resetSpells, drawSpell, renderSpells, aiSpellTurn, clearUndo } from './spells.ts';
 
 /* arm the turn clock: on expiry the die drops into a random legal column */
 export function armTimer(){ const gen=S.gen; startTimer(()=>autoPlace(gen)); }
@@ -332,16 +333,23 @@ export async function place(who,col){
    There are three ways to ask for a game — the OFFLINE sheet's Play, the
    keyboard, and Next duel on the result screen — and the first version of this
    taught only the Play button about RANDOM, so the rematch button quietly dealt
-   classic for the rest of the session. One door, no exceptions. */
+   classic for the rest of the session. One door, no exceptions.
+   BOTH of the sheet's RANDOMs are resolved here, before anything is dealt, and
+   handed to newGame as answers. Drawing them inside newGame instead would look
+   identical on screen and be a different game every time. */
 export async function startLocal(){
   /* A newcomer is offered the tutorial before their first real game — once,
      ever, and never in front of the tutorial itself. */
   if(isNewcomer() && await offerTutorial()){ newGame({tutorial:true}); return; }
-  if(S.localMode!==RANDOM){ newGame(); return; }
-  const pick=pickMode(Math.random().toString(36).slice(2));
-  hide('#ovEnd'); hide('#ovStart'); hide('#ovPractice');
-  await spinDial(pick);
-  newGame({scoring:pick.mode});
+  const mode = S.localMode===RANDOM ? pickMode(Math.random().toString(36).slice(2)) : null;
+  const spell = S.spell===RANDOM_SPELL ? drawSpell() : null;
+  /* Whatever the player left to chance gets ONE screen and one countdown —
+     the dial for the mode, the deck for the rune, in that order (ui/reveal). */
+  if(mode || spell){
+    hide('#ovEnd'); hide('#ovStart'); hide('#ovPractice');
+    await reveal({ mode, spell: spellById(spell) });
+  }
+  newGame({ scoring: mode ? mode.mode : undefined, spell: spell ?? undefined });
 }
 
 export function newGame(opts){
@@ -349,7 +357,8 @@ export function newGame(opts){
   S.gen++;
   // the OFFLINE view's selector picks the mode; the tutorial teaches classic.
   // opts.scoring is how RANDOM arrives — already rolled and shown on the dial,
-  // so newGame is handed the answer rather than rolling a second one.
+  // so newGame is handed the answer rather than rolling a second one. opts.spell
+  // is the same bargain for the rune the deck turned over.
   S.scoring = tutorial ? 0 : (opts && opts.scoring != null ? opts.scoring|0 : (S.localMode|0));
   S.bounty=[0,0];
   // LIMITED offline: the same bag the ranked game deals, shuffled locally
@@ -370,7 +379,7 @@ export function newGame(opts){
   S.boards=[emptyBoard(),emptyBoard()];
   S.die=0; S.phase='roll'; S.busy=false;
   S.turn=S.starter;
-  resetSpells();                             // deal this game's charges (none in a lesson)
+  resetSpells(opts && opts.spell);           // deal this game's charges (none in a lesson)
   S.starter = 1-S.starter;
   // pass mode: whoever starts holds the phone. face mode: halves never move.
   S.bottom = (S.mode==='duo' && S.seat==='pass') ? S.turn : ME;

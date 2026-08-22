@@ -16,6 +16,9 @@
 //   {{ico:NAME[:px]}}           a chrome glyph (the HUD's way out)
 //   {{score:A:n:B:n}}           a score line — the HUD's, the ladder's, the card's
 //   {{dialnodes[:MODE]}}        the dial's whole node ring, optionally landed
+//   {{runefelt:SPELL[:up]}}     the rune deck + the card dealt off it, optionally turned
+//   {{wsettled:mode|rune:ID}}   a reveal answer that has settled: pill + its rule
+//   {{wanswer:mode|rune:ID}}    a reveal answer's name + blurb, under the stage
 //   {{library:modes|spells[:ID]}}  a whole roster of reference cards, ID ringed
 //   {{picker:modes|spells[:V]}}    an OFFLINE pick row, V selected
 //   {{pickinfo:modes|spells[:V]}}  the line under it that names the choice
@@ -30,12 +33,20 @@ import { fileURLToPath } from 'url';
 import { modeIcon, modeHue } from '../src/ui/modeicons.ts';
 import { chromeIcon } from '../src/ui/chromeicons.ts';
 import { scoreLine } from '../src/ui/record.ts';
-import { dialNodes } from '../src/ui/modedial.ts';
+import { dialNodes, dialBeat } from '../src/ui/modedial.ts';
+import { runeFelt, dealBeat } from '../src/ui/runedeal.ts';
+import { settledAnswer, answerLines } from '../src/ui/reveal.ts';
+import { spellById } from '../src/core/spells.ts';
+import { modeById } from '../src/core/modes.ts';
 import { libraryCards, pickerButtons, MODE_LIB, SPELL_LIB, MODE_PICKS, SPELL_PICKS } from '../src/ui/library.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
 const die = (m) => { console.error('DESIGN BUILD FAILED: ' + m); process.exit(1); };
+/* modeById falls back to classic by design; spellById returns null, and a card
+   naming a rune that does not exist must fail the build rather than render a
+   blank card nobody notices for a month */
+const spellOr = (id) => spellById(id) ?? die(`no such spell: ${id}`);
 
 const css = ['src/styles/page.css', 'src/styles/main.css', 'src/online/online.css']
   .map((p) => readFileSync(join(root, p), 'utf8')).join('\n');
@@ -192,6 +203,13 @@ for (const f of screens) {
     .replace(/\{\{ico:([a-z]+)(?::(\d+))?\}\}/g, (_, id, size) => chromeIcon(id, size ? +size : 15))
     .replace(/\{\{score:(\w+):(-?\d+):(\w+):(-?\d+)\}\}/g, (_, la, a, lb, b) => scoreLine(la, +a, lb, +b))
     .replace(/\{\{dialnodes(?::([a-z]+))?\}\}/g, (_, found) => dialNodes(found))
+    .replace(/\{\{(wsettled|wanswer):(mode|rune):([a-z]+)\}\}/g, (_, what, kind, id) => {
+      const beat = kind === 'mode' ? dialBeat(modeById(id)) : dealBeat(spellOr(id));
+      return what === 'wsettled' ? settledAnswer(beat) : answerLines(beat);
+    })
+    .replace(/\{\{runefelt:([a-z]+)(?::(up))?\}\}/g, (_, id, up) => {
+      return runeFelt(spellOr(id), !!up);
+    })
     .replace(/\{\{library:(modes|spells)(?::([a-z]+))?\}\}/g,
       (_, roster, now) => libraryCards(roster === 'modes' ? MODE_LIB : SPELL_LIB, now))
     .replace(/\{\{picker:(modes|spells)(?::(-?\w+))?\}\}/g,

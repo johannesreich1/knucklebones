@@ -1,0 +1,24 @@
+<!-- meta name="Rune deal — dealt" group="4 · Local play" subtitle="The deck has shuffled and one card is face-up: the rune both seats carry, under the mode that settled into a pill above it" width=412 height=880 links="Offline — local play, Spells, Mode dial — landed" -->
+<style>
+  /* Every class here is the app's own (main.css) and every piece of content
+     comes from the app's own generators — the felt from ui/runedeal, the pill
+     and the two readout lines from ui/reveal — so this card cannot show a deal
+     the app does not build, or a blurb the registry does not say.
+     The overlay FILLS the stage here exactly as it fills the screen in the app:
+     .dwho and .dhold are pushed to the edges by auto margins, and a box that
+     only wrapped them dropped both through the middle of the dial.
+     --card is viewport-relative in the app; pinned here so the card's stage,
+     not the browser window, decides the size. */
+  .scr{align-items:center;justify-content:center;gap:12px}
+  #ovWheel{--card:76px;flex:1;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px 0}
+  .wblurb{max-width:262px}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div id="ovWheel" class="dealing landed holding">
+    <div class="wsettled">{{wsettled:mode:singlestrike}}</div>
+    <div class="wtitle">YOUR RUNE</div>
+    <div class="wstage">{{runefelt:fate:up}}</div>
+    {{wanswer:rune:fate}}
+    <div class="dhold"><b>5</b><span>Tap when you are ready</span></div>
+  </div>
+</div></div>

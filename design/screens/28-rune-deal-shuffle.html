@@ -1,0 +1,20 @@
+<!-- meta name="Rune deal — shuffling" group="4 · Local play" subtitle="Mid-shuffle: the deck is the whole rune roster, no card has been dealt, and nothing below is named" width=412 height=880 links="Offline — local play, Spells" -->
+<style>
+  /* Same construction as the dealt card — app classes, app generators. The
+     dealt card IS in this markup and is invisible on purpose: it carries no
+     opacity until it has been dealt, which is the same rule that stops the
+     deal from spoiling itself in play. */
+  .scr{align-items:center;justify-content:center;gap:12px}
+  #ovWheel{--card:76px;flex:1;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px 0}
+  .wblurb{max-width:262px}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div id="ovWheel" class="dealing hunting">
+    <div class="wsettled">{{wsettled:mode:singlestrike}}</div>
+    <div class="wtitle">YOUR RUNE</div>
+    <div class="wstage">{{runefelt:fate}}</div>
+    <div class="wname">&nbsp;</div>
+    <div class="wblurb">&nbsp;</div>
+    <div class="dhold"><b>&nbsp;</b><span>&nbsp;</span></div>
+  </div>
+</div></div>

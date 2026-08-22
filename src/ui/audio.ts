@@ -24,7 +24,7 @@ export const Sfx = (() => {
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g); g.connect(c.destination); o.start(t); o.stop(t + dur + 0.03);
   }
-  function noise(dur: number, gain?: number, hz?: number) {
+  function noise(dur: number, gain?: number, hz?: number, delay?: number) {
     if (!S.sound) return; const c = ac(); if (!c) return;
     const n = Math.floor(c.sampleRate * dur);
     const buf = c.createBuffer(1, n, c.sampleRate), d = buf.getChannelData(0);
@@ -32,12 +32,16 @@ export const Sfx = (() => {
     const src = c.createBufferSource(); src.buffer = buf;
     const f = c.createBiquadFilter(); f.type = 'bandpass'; f.frequency.value = hz || 1400; f.Q.value = .9;
     const g = c.createGain(); g.gain.value = gain || 0.05;
-    src.connect(f); f.connect(g); g.connect(c.destination); src.start();
+    src.connect(f); f.connect(g); g.connect(c.destination); src.start(c.currentTime + (delay || 0));
   }
   return {
     unlock() { ac(); },
     tick() { tone(520 + Math.random() * 380, 0.035, 'square', 0.022); },
     roll() { noise(0.16, 0.045, 2200); },
+    /* cards zipping together: a run of dry clicks, not one noise burst — the
+       rune deal shuffles for three seconds, and three silent seconds read as
+       a hang rather than as suspense */
+    riffle() { for (let i = 0; i < 11; i++) noise(0.026, 0.03, 2400 + Math.random() * 1100, i * 0.032); },
     place() { tone(180, 0.12, 'triangle', 0.09, 90); noise(0.07, 0.04, 900); },
     kill() { tone(720, 0.28, 'sawtooth', 0.075, 110); noise(0.3, 0.07, 600); },
     mult() { tone(880, 0.1, 'triangle', 0.06); tone(1320, 0.12, 'triangle', 0.05, null, 0.07); },

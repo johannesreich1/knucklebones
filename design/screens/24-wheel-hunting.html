@@ -3,10 +3,13 @@
   /* dial classes are the app's own (main.css) and the ring itself comes from
      the app's own generator (the dialnodes token → ui/modedial.ts), so this card
      cannot show a dial the app does not build. Glue only below.
+     The overlay FILLS the stage here exactly as it fills the screen in the app:
+     .dwho and .dhold are pushed to the edges by auto margins, and a box that
+     only wrapped them dropped both through the middle of the dial.
      --dial is viewport-relative in the app — pinned here so the card's stage,
      not the browser window, decides the size. */
   .scr{align-items:center;justify-content:center;gap:12px}
-  #ovWheel{--dial:252px;display:flex;flex-direction:column;align-items:center;gap:12px}
+  #ovWheel{--dial:252px;flex:1;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px 0}
   .wblurb{max-width:250px}
   /* the two nodes the comet has just crossed are still fading — addressed by
      the app's own data-mode hook, so this stays true if the ring is reordered */
@@ -16,12 +19,12 @@
   <div id="ovWheel" class="hunting">
     <div class="dwho">Opponent <b>EmberCrow896</b> · <span class="rt">1032</span></div>
     <div class="wtitle">GAME MODE</div>
-    <div class="dial">
+    <div class="wstage"><div class="dial">
       <i class="dring"></i>
       <i class="dcomet" style="transform:rotate(282.29deg)"><i class="dtrail"></i><i class="dhead"></i></i>
       {{dialnodes}}
       <div class="dcore"><i class="dsonar"></i><i class="dfound" style="color:{{mhue:colshield}}">{{mico:colshield:40}}</i></div>
-    </div>
+    </div></div>
     <div class="wname">&nbsp;</div>
     <div class="wblurb">&nbsp;</div>
     <div class="dhold"><b>&nbsp;</b><span>&nbsp;</span></div>

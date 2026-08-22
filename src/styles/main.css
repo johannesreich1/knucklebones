@@ -709,6 +709,11 @@ html.clock .timer.on{visibility:visible}
      comet's track and the dashed circle — the same circle, by construction. */
   --r-out:calc((var(--dial) - var(--node))/2);
   --r-in:calc(var(--r-out)*.74);
+  /* WHAT IS ON STAGE, as one height. The title, the name, the blurb and the
+     settled strip all hang off the stage's edge, and the reveal runs a beat
+     per unanswered question (ui/reveal.ts) — so the thing they hang off has
+     to be the CURRENT beat's size, not the dial's forever. */
+  --stage:var(--dial);
   gap:14px}
 .wtitle{font-size:10px;letter-spacing:.34em;color:var(--dim);text-transform:uppercase}
 .dial{position:relative;width:var(--dial);height:var(--dial);flex:0 0 auto}
@@ -799,14 +804,46 @@ html.clock .timer.on{visibility:visible}
    high. The dial is what the eye centres on (user call), so it is pinned to the
    middle and everything else is anchored to its edge through --dial: the same
    geometry in a ranked wheel and an offline one, at every size. */
-#ovWheel .dial{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);margin:0}
+#ovWheel .wstage{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  display:grid;place-items:center;transition:opacity .2s,scale .24s}
+/* one beat handing the stage to the next — it leaves, it does not cross-fade
+   into a different shape while the player is still reading the last answer */
+#ovWheel .wstage.out{opacity:0;scale:.86}
+#ovWheel .dial{margin:0}
 #ovWheel .wtitle{position:absolute;left:0;right:0;text-align:center;
-  top:calc(50% - var(--dial)/2 - 28px)}
+  top:calc(50% - var(--stage)/2 - 28px)}
 #ovWheel .wname{position:absolute;left:0;right:0;margin:0;
-  top:calc(50% + var(--dial)/2 + 10px)}
-#ovWheel .wblurb{position:absolute;left:50%;transform:translateX(-50%);margin:0;
-  top:calc(50% + var(--dial)/2 + 42px)}
-#ovWheel.landed .dhold{visibility:visible}
+  top:calc(50% + var(--stage)/2 + 10px)}
+/* the DIRECT child is the readout under the stage; a settled answer keeps a
+   .wblurb of its own up top, and it must not be dragged down here */
+#ovWheel > .wblurb{position:absolute;left:50%;transform:translateX(-50%);margin:0;
+  top:calc(50% + var(--stage)/2 + 42px)}
+/* AN ANSWER THAT IS DONE BEING LOOKED AT, kept — the name AND the rule, because
+   "COLUMN SHIELD" alone is a label and the line under it is the half that says
+   what you are about to play. It sits centred in the space ABOVE the deck's
+   title rather than hanging off it: the two answers are then a header and a
+   stage, with room between them, instead of a stack crowding the cards.
+   Absolutely placed like everything else here, so arriving cannot move the
+   stage the player is watching. */
+#ovWheel .wsettled{position:absolute;left:0;right:0;padding:0 var(--pad-x);
+  display:flex;flex-direction:column;align-items:center;gap:14px;
+  top:calc((50% - var(--stage)/2 - 34px)/2);transform:translateY(-50%)}
+#ovWheel .wsettled:empty{display:none}
+.wsett{display:flex;flex-direction:column;align-items:center;gap:9px;
+  max-width:var(--w-col);animation:wpillin .34s cubic-bezier(.2,1.4,.35,1)}
+/* the same line as the readout under the stage, without its reserved lane —
+   up here nothing arrives later, so nothing has to be held open for it */
+.wsett .wblurb{min-height:0;margin:0;display:block}
+.wpill{display:inline-flex;align-items:center;gap:6px;padding:4px 11px;border-radius:99px;
+  font-size:10px;font-weight:900;letter-spacing:.16em;
+  border:1px solid color-mix(in srgb,currentColor 45%,transparent);
+  background:color-mix(in srgb,currentColor 12%,transparent);
+  box-shadow:0 0 14px color-mix(in srgb,currentColor 22%,transparent)}
+.wpill svg{width:13px;height:13px}
+@keyframes wpillin{from{opacity:0;scale:.66}}
+/* the countdown belongs to the WHOLE reveal, not to a beat: `landed` says this
+   beat found its answer, `holding` says there are no more questions */
+#ovWheel.holding .dhold{visibility:visible}
 .dhold b{font-size:26px;font-weight:900;color:var(--p1);line-height:1;
   text-shadow:0 0 18px rgba(var(--p1-rgb),.55);font-variant-numeric:tabular-nums}
 .dhold span{font-size:9.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;min-height:12px}
@@ -817,6 +854,64 @@ html.clock .timer.on{visibility:visible}
 .wblurb{font-size:11px;letter-spacing:.12em;color:var(--dim);text-align:center;
   line-height:1.45;min-height:2.9em;max-width:var(--w-col);
   margin-top:-9px}   /* the name hugs its description — they read as one unit */
+
+/* ===================== THE RUNE DEAL =====================
+   The reveal's second beat (ui/runedeal.ts): the roster riffles as a deck and
+   one card is turned over. Sizing is ONE number — --card drives the deck, the
+   dealt card, the felt they sit on and the label on the face — and it is
+   bounded by BOTH axes for the same reason --dial is: a landscape phone has
+   width to spare and no height at all.
+   This file owns the deck AT REST; the shuffle is WAAPI in ui/runedeal.ts,
+   built from the same geometry, so a still (a design card, a reduced-motion
+   player) shows exactly the deck the animation settles onto. */
+#ovWheel{--card:clamp(58px,min(19vw,12.5vh),96px)}
+#ovWheel.dealing{--stage:calc(var(--card)*2.62)}
+.rfelt{position:relative;width:calc(var(--card)*4.6);height:calc(var(--card)*2.62);
+  display:grid;place-items:center;perspective:900px}
+/* a zero-size anchor: every card hangs off the deck's point, so a card's whole
+   position is its own --x/--y and nothing has to agree about a box */
+.rdeck{position:absolute;left:50%;top:calc(50% - var(--card)*.34);width:0;height:0}
+.rcard{position:absolute;left:calc(var(--card)/-2);top:calc(var(--card)*-.702);
+  width:var(--card);height:calc(var(--card)*1.405);border-radius:calc(var(--card)*.15);
+  opacity:.62;translate:var(--x) var(--y);rotate:var(--o);
+  background:linear-gradient(160deg,rgba(24,29,52,.96),rgba(9,12,24,.96));
+  border:1px solid rgba(255,255,255,.1);box-shadow:0 10px 24px rgba(0,0,0,.6)}
+/* A CORNER INDEX, like a real card's — not a centred emblem. A fan covers all
+   but a sliver of every card under the top one, and a centred icon put six
+   runes in the deck of which exactly one was ever visible. */
+.rcard svg{position:absolute;top:8%;left:7%;width:26%;height:26%;
+  filter:drop-shadow(0 0 6px currentColor)}
+/* the slot the answer came out of, once it has been taken */
+.rcard.drawn{visibility:hidden}
+/* THE DEALT CARD, face-down until the turn. Its hue is on the container, which
+   only the FACE reads — the back is deliberately in nobody's colour, or the
+   deal would announce its answer through the card it is hiding it behind.
+   Which face is lit is one class (ui/runedeal swaps it edge-on, mid-turn), NOT
+   backface-visibility: any grouping property in this overlay's ancestry — and
+   .ov carries a backdrop-filter — flattens the 3D context and shows the back. */
+.rdealt{position:relative;z-index:3;width:calc(var(--card)*1.4);height:calc(var(--card)*1.92);
+  border-radius:calc(var(--card)*.2);opacity:0}
+.rdealt.up{opacity:1}
+.rback,.rface{position:absolute;inset:0;border-radius:inherit;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:calc(var(--card)*.09)}
+.rface{opacity:0}
+.rdealt.up .rface{opacity:1}
+.rdealt.up .rback{opacity:0}
+/* the back is a DECK card's back, index and all: the dealt card is the card
+   that was drawn out of the fan, and it grows out of that slot */
+.rback{background:linear-gradient(160deg,#181d34,#090c18);
+  border:1px solid rgba(255,255,255,.12);box-shadow:0 14px 34px rgba(0,0,0,.6)}
+.rback svg{position:absolute;top:8%;left:7%;width:26%;height:26%;
+  filter:drop-shadow(0 0 6px currentColor)}
+/* opaque on purpose: the deck fans right behind the dealt card, and a
+   translucent face let six corner indices read straight through the answer */
+.rface{background:linear-gradient(158deg,#1e2440,#0b0e1c);
+  border:1px solid color-mix(in srgb,currentColor 46%,transparent);
+  box-shadow:0 14px 34px rgba(0,0,0,.66),0 0 26px color-mix(in srgb,currentColor 26%,transparent),
+    inset 0 0 22px color-mix(in srgb,currentColor 10%,transparent)}
+.rface svg{filter:drop-shadow(0 0 12px currentColor)}
+.rlbl{font-size:calc(var(--card)*.145);letter-spacing:.2em;font-weight:900;text-align:center}
 
 /* the OFFLINE view's game-mode picker: one icon button per wheel mode */
 .modepick{display:flex;flex-wrap:wrap;gap:8px}

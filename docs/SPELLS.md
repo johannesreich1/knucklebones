@@ -309,6 +309,48 @@ Learned from real play, each one a shipped bug:
   A changed total scales the number, and reading inside that window looks
   exactly like layout drift.
 
+### The RANDOM draw is shown, not silent (2026-08-22)
+
+RANDOM used to draw its rune inside `resetSpells` and the player met it in the
+rail. It is now dealt in front of them: `ui/runedeal.ts` shuffles the roster as
+a deck and draws one card (`design/screens/28-rune-deal`). Four rules it keeps,
+each one paid for:
+
+- **The draw happens in `startLocal`, not in `newGame`.** Exactly the bargain
+  `opts.scoring` already struck for the mode: a beat that showed one rune and a
+  game that dealt another would look right on screen and be wrong every time.
+- **The deck is the roster, and it is really shuffled.** Every card is a
+  `SPELLS` entry in its own hue wearing its own icon as a corner index, so a
+  new rune joins the deck the day it is registered. The deck is dealt three
+  orders — the fan you are handed, the fan after the riffle, the fan after the
+  cut — and each card turns over its new rune as it zips back in, so the deck
+  visibly changes under the hands. Where the answer sits is then not
+  decoration: the card that comes forward is drawn out of *that* slot of the
+  final fan, and the fan is one card short afterwards. A card that rose out of
+  the middle every time made the whole shuffle scenery.
+- **A card turns over by swapping which face is lit, edge-on — never with
+  `backface-visibility`.** The 3D version worked in isolation and failed in the
+  app: any grouping property above the card (this overlay carries a
+  `backdrop-filter`) flattens the 3D context, and the card then turns and shows
+  its BACK while the readout names the rune. State and DOM agreed perfectly the
+  whole time; only a computed style could see it (`tests/test20.mjs`).
+- **The shuffle carries the beat, not the flip.** A flip alone is ~0.5s and
+  read as a stutter; the deck now works for ~2.8s (fan, riffle, cut, draw) with
+  a voice — `Sfx.riffle()` — because three silent seconds read as a hang. One
+  riffle, not two: the cut is already the beat that says "and again" (user
+  call).
+
+The rune shares ONE reveal screen with the mode dial (`ui/reveal.ts`), which
+runs a beat per unanswered question and holds ONCE. Two overlays with two
+five-second countdowns is the same screen shown twice, and the mode's answer
+would have scrolled away before the rune arrived — so a landed mode settles
+into the top half and is still readable when the player taps ready. It keeps
+its **rule**, not just its name: `COLUMN SHIELD` alone is a label, and the line
+under it is the half that says what you are about to play (it is literally the
+same `.wblurb` the readout under the stage uses). It also gets a beat alone on
+screen first — 1.5s, because at one the eye was still on the dial when the deck
+replaced it.
+
 ---
 
 ## 8. Scope: offline only

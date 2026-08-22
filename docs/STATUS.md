@@ -119,6 +119,19 @@ ANVIL (recast the weakest die in a column you have filled, added 2026-08-22).
 The roster and the thinking behind it live in `docs/SPELLS.md`; the numbers are
 measured, not guessed (`tools/spellsim.ts`).
 
+**RANDOM is dealt in front of you (2026-08-22).** Picking RANDOM in the spell
+row now shuffles the roster as a deck and draws the rune on screen
+(`src/ui/runedeal.ts`) — the whole roster fans out, is riffled and cut (the
+icons re-deal into new slots as the cards zip back in), the card that comes
+forward is the one sitting in that slot of the *final* fan, and the fan is a
+card short afterwards. It shares ONE screen and ONE countdown with the mode
+dial: `src/ui/reveal.ts` runs a beat per unanswered question (the dial for a
+RANDOM mode, the deck for a RANDOM rune) and a landed answer settles — name
+AND rule — into the top half above the next beat, so both are readable when you
+tap ready. Both draws
+are resolved in `startLocal` and handed to `newGame`, never re-rolled inside
+it. Gated by `tests/test20.mjs`.
+
 *This paragraph described COLUMN SWAP until 2026-08-22 — a spell retired on
 2026-08-21 for winning 70.5% one-sided. The registry is the truth; prose about
 it drifts.*

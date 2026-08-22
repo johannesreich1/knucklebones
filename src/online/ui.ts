@@ -23,7 +23,7 @@ import { signIn, signOut, currentUser, ensureIdentity, attachEmail,
          type LeaderboardRow, type Ladder } from './session.ts';
 import { availableTaps } from './identity.ts';
 import { enterMatch, setFinishHandler, type FinishReport } from './play.ts';
-import { spinDial } from '../ui/modedial.ts';
+import { reveal } from '../ui/reveal.ts';
 import { isNewcomer, offerTutorial } from '../ui/firstrun.ts';
 import { S } from '../state.ts';
 import { newGame } from '../flow/game.ts';
@@ -384,7 +384,8 @@ async function startQueue(): Promise<void> {
         const side = (seat: 'p1' | 'p2') => ({
           name: res.names[seat], rating: res.names.ratings?.[seat] ?? null,
           avatar: res.names.avatars?.[seat] ?? null });
-        await spinDial(modeById(res.match.modifier), {
+        await reveal({
+          mode: modeById(res.match.modifier),
           me: side(mine), foe: side(theirs),
           peer: readyPeer(res.match.id),
         });

@@ -67,17 +67,21 @@ export function chargesOf(who: Player, id: string): number {
    deals nothing, and so does the tutorial: it is a scripted lesson about the
    base game, and a spell would break its script. The charm resets with the
    charges: marks are a game's marks, never a session's. */
-/* WHICH rune this game deals. RANDOM draws one here — where the game is
-   dealt — so every door into a game (Play, Next duel, the keyboard) gets a
-   fresh draw without knowing the rule, and core/spells stays free of
-   randomness. Drawn ONCE per game: both seats must hold the same rune, which
-   is the whole reason the layer is fair. */
-function dealtSpell(): string {
+/* WHICH rune this game deals. RANDOM draws one here, because core/spells stays
+   free of randomness. Drawn ONCE per game: both seats must hold the same rune,
+   which is the whole reason the layer is fair.
+   EXPORTED because startLocal draws it a moment EARLY — the reveal has to show
+   the player the rune before the game is dealt, and a rune it drew itself
+   would be a second draw and a different answer (exactly the bug the mode's
+   `opts.scoring` exists to prevent). Every other door into a game reaches this
+   through resetSpells' fallback, so no door can forget. */
+export function drawSpell(): string {
   if (S.spell !== RANDOM_SPELL) return S.spell;
   return SPELLS[(Math.random() * SPELLS.length) | 0].id;
 }
-export function resetSpells(): void {
-  const id = S.tut ? '' : dealtSpell();
+/** `dealt` is the rune the reveal already showed; without one, draw it here */
+export function resetSpells(dealt?: string): void {
+  const id = S.tut ? '' : (dealt ?? drawSpell());
   S.spellCharges = [freshCharges(id), freshCharges(id)];
   S.charm = freshCharm();
   S.spellUndo = null;
