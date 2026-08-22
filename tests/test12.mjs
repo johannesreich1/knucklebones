@@ -40,14 +40,23 @@ const snap = () => page.evaluate(() => ({
   b0: window.__kb.S.boards[0], b1: window.__kb.S.boards[1],
 }));
 
-// rotations of the top half's readable parts
+/* rotations of the top half's readable parts. The plate turns by its PARTS,
+   never by its own box: transforming the box would make it the containing
+   block for the absolutely-positioned score cluster inside it (see the
+   nameplate geometry check below), so what must read upside-down here is the
+   name and the points — and what must NOT be transformed is the plate. */
 out.rot = await page.evaluate(() => ({
   plateTop: getComputedStyle(document.getElementById('plateTop')).transform,
+  whoTop: getComputedStyle(document.querySelector('#plateTop .who')).transform,
+  whoBot: getComputedStyle(document.querySelector('#plateBot .who')).transform,
   plateBot: getComputedStyle(document.getElementById('plateBot')).transform,
   chipTop: getComputedStyle(document.querySelector('#topCols .chip')).transform,
   numTop: getComputedStyle(document.querySelector('#topBoard .die .num') || document.createElement('i')).transform,
 }));
-check(ROT(out.rot.plateTop), 'top plate not rotated for facing player', out.rot);
+check(ROT(out.rot.whoTop), 'the far player\'s name is not turned toward them', out.rot);
+check(out.rot.whoBot === 'none', 'the near player\'s name is wrongly turned', out.rot);
+check(out.rot.plateTop === 'none',
+  'THE PLATE BOX IS TRANSFORMED — it becomes the containing block for its score cluster', out.rot);
 check(out.rot.plateBot === 'none', 'bottom plate wrongly rotated', out.rot);
 check(ROT(out.rot.chipTop), 'top chips not rotated', out.rot);
 
@@ -58,6 +67,35 @@ out.aligned = await page.evaluate(() => [0, 1, 2].every(c => {
   return Math.abs((a.left + a.width / 2) - (b.left + b.width / 2)) < 2;
 }));
 check(out.aligned, 'facing columns misaligned in face mode', out.aligned);
+
+/* BOTH NAMEPLATES OBEY THE SAME GEOMETRY. The far half turns for the player
+   opposite, and turning it by transforming the PLATE made that plate the
+   containing block for its absolutely-positioned score cluster — so the far
+   player's points and rune stopped resolving against the side and landed in
+   the top-left corner instead of the gutter (measured x=10,y=31 against the
+   near seat's x=333,y=186), and moved whenever the plate's own box changed
+   (user report). The turn belongs to the plate's PARTS, never its box. */
+out.plates = await page.evaluate(() => {
+  const seen = {};
+  for (const half of ['Top', 'Bot']) {
+    const pr = document.querySelector(`#plate${half} .pright`);
+    const side = document.getElementById('side' + half);
+    const r = pr.getBoundingClientRect(), sr = side.getBoundingClientRect();
+    seen[half] = { anchor: pr.offsetParent?.id || 'none',
+      fromRight: +(sr.right - r.right).toFixed(1),
+      onScreen: r.x >= -0.5 && r.right <= window.innerWidth + 0.5,
+      turned: /matrix\(-1/.test(getComputedStyle(pr).transform) };
+  }
+  return seen;
+});
+check(out.plates.Top.anchor === 'sideTop' && out.plates.Bot.anchor === 'sideBot',
+  'A NAMEPLATE CLUSTER IS ANCHORED TO ITS PLATE, NOT ITS SIDE', out.plates);
+check(Math.abs(out.plates.Top.fromRight - out.plates.Bot.fromRight) < 1.5,
+  'the two seats place their points differently in face mode', out.plates);
+check(out.plates.Top.onScreen && out.plates.Bot.onScreen,
+  'a nameplate cluster left the screen in face mode', out.plates);
+check(out.plates.Top.turned && !out.plates.Bot.turned,
+  'the far seat must turn its points for the player opposite, the near one must not', out.plates);
 
 // The JS that rotates score floats must ask the SAME question the CSS asks —
 // <html>.face — not re-derive it from S.mode/S.seat. Online sets S.mode='duo'

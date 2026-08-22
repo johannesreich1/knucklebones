@@ -1015,7 +1015,19 @@ html.castself #dieStage.hot::after{border-style:solid;border-color:var(--gold);
    is turned for the player sitting opposite. Dice pips are 180°-symmetric, so
    the dice themselves never rotate — which also keeps every placement/destroy
    animation untouched. */
-html.face:not(.land) #sideTop .plate{transform:rotate(180deg)}
+/* THE PLATE'S OWN BOX MAY NOT BE TRANSFORMED. A transform makes an element the
+   containing block for its absolutely-positioned descendants, and the score
+   cluster is one: rotating the plate re-anchored the far player's points and
+   rune from the SIDE to the 30px bar, landing them at the top-left corner
+   instead of the gutter (measured x=10,y=31 against the near seat's x=333,
+   y=186) — and moving them whenever the plate's own box changed. So the plate
+   mirrors by reversing its row, and the PARTS turn for the player opposite. */
+html.face:not(.land) #sideTop .plate{flex-direction:row-reverse}
+html.face:not(.land) #sideTop .plate .who,
+html.face:not(.land) #sideTop .plate .pright{transform:rotate(180deg)}
+/* in the gutter seating the cluster is absolute, so it keeps its own placing
+   transform and only adds the turn */
+html.sidepts.face:not(.land) #sideTop .plate .pright{transform:translate(50%,-50%) rotate(180deg)}
 html.face:not(.land) #sideTop .chip{transform:rotate(180deg)}
 html.face:not(.land) #sideTop .die .num{transform:rotate(180deg)}
 html.face:not(.land) .die.p2flip .num{transform:rotate(180deg)}
