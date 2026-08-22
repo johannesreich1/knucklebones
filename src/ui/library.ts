@@ -70,10 +70,10 @@ function build(spec: LibrarySpec): void {
   built.add(spec.id);
   const cards = libraryCards(spec);
   document.body.insertAdjacentHTML('beforeend', `
-<div class="ov paged scrollview" id="${spec.id}">
+<div class="ov paged" id="${spec.id}">
   <div class="shead"><span class="pad"></span><span class="ttl">${spec.title}</span>
     <button class="ico" data-close="${spec.id}" aria-label="Close">✕</button></div>
-  <div class="pbody neonscroll">
+  <div class="pbody">
     <div class="modelist">${cards}</div>
   </div>
 </div>`);

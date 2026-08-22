@@ -180,12 +180,12 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
      factual here was verified against the code, not templated: ONE outbound
      host, no analytics, no third-party scripts, four functional localStorage
      keys. Anything in [BRACKETS] is Johannes's to fill and nobody else's. -->
-<div class="ov paged scrollview" id="ovImprint">
+<div class="ov paged" id="ovImprint">
   <div class="shead">
     <span class="pad"></span><span class="ttl">IMPRESSUM</span>
     <button class="ico" id="btnCloseImprint" aria-label="Close">✕</button>
   </div>
-  <div class="pbody neonscroll">
+  <div class="pbody">
   <div class="rules">
     <h3>Angaben gemäß § 5 DDG</h3>
     <p>[COMPANY / NAME]<br>[STREET]<br>[POSTCODE CITY]<br>[COUNTRY]</p>
@@ -206,12 +206,12 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   </div>
 </div>
 
-<div class="ov paged scrollview" id="ovPrivacy">
+<div class="ov paged" id="ovPrivacy">
   <div class="shead">
     <span class="pad"></span><span class="ttl">PRIVACY</span>
     <button class="ico" id="btnClosePrivacy" aria-label="Close">✕</button>
   </div>
-  <div class="pbody neonscroll">
+  <div class="pbody">
   <div class="rules">
     <h3>Who is responsible</h3>
     <p>[COMPANY / NAME], [ADDRESS], [EMAIL]. See the Impressum for full details.</p>
@@ -276,12 +276,12 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
 </div>
 
 <!-- RULES: a reading sheet — fixed ✕ bar, the text scrolls, GOT IT at its end -->
-<div class="ov paged scrollview" id="ovRules">
+<div class="ov paged" id="ovRules">
   <div class="shead">
     <span class="pad"></span><span class="ttl">HOW TO PLAY</span>
     <button class="ico" id="btnCloseRules" aria-label="Close">✕</button>
   </div>
-  <div class="pbody neonscroll">
+  <div class="pbody">
   <div class="rules">
     <h3>Goal</h3>
     <p>Fill your 3×3 grid with dice. When <b>either</b> grid is full the game ends — highest total wins.</p>

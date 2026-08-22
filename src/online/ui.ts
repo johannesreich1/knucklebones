@@ -38,6 +38,10 @@ const OVERLAY = `
     <span class="ttl" id="onTitle">ONLINE</span><span class="pad"></span>
   </div>
 
+  <!-- the paged view's scrolling body (styles/main.css .ov.paged): the panels
+       are its content, so ONLINE pins its ‹ and fades its top edge exactly
+       like every other titled page — no rules of its own. -->
+  <div class="pbody">
   <div class="panel" id="onAuth" hidden>
     <div class="lbl" id="onAuthLead" style="text-align:center"></div>
     <div class="oneTap" id="onOneTap"></div>
@@ -151,6 +155,7 @@ const OVERLAY = `
          the profile as a fourth tile competing with the rank and the streak -->
     <div class="htotal" id="onHistoryTotal">&nbsp;</div>
     <div class="lb neonscroll" id="onHistoryList"></div>
+  </div>
   </div>
 
 </div>`;
