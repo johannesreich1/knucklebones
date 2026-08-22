@@ -87,10 +87,22 @@ try {
         await new Promise((r) => setTimeout(r, 60));
         const after = head.getBoundingClientRect().y.toFixed(1);
         const cs = getComputedStyle(body);
+        /* EVERY scroller inside a titled page fades, not just the body: the
+           ladder and the account panel scroll themselves, and a fade that
+           only knew about .pbody left them cut off flat (user report). */
+        const bare = [];
+        for (const el of ov.querySelectorAll('*')) {
+          const s = getComputedStyle(el);
+          if (!/auto|scroll/.test(s.overflowY) && !/auto|scroll/.test(s.overflow)) continue;
+          if (!/gradient/.test(s.maskImage || s.webkitMaskImage || '')) {
+            bare.push(el.id || el.className || el.tagName);
+          }
+        }
         rows.push({ id: ov.id, stuck: before === after, scrolled: body.scrollTop,
           bodyScrolls: cs.overflowY === 'auto' || cs.overflowY === 'scroll',
           ovClips: getComputedStyle(ov).overflow === 'hidden',
           faded: /gradient/.test(cs.maskImage || cs.webkitMaskImage || ''),
+          bareScrollers: bare,
           clearAtRest: first ? first.top - bodyTop >= fade - 0.5 : true });
         body.scrollTop = 0;
         if (!was) ov.classList.remove('on');
@@ -106,6 +118,8 @@ try {
       check(p.stuck, `THE HEADER SCROLLS AWAY IN ${p.id}: ` + label, p);
       check(p.faded, `${p.id} cuts its content off flat instead of fading it: ` + label, p);
       check(p.clearAtRest, `${p.id} dims its first card at rest — the fade must cover empty space: ` + label, p);
+      check(p.bareScrollers.length === 0,
+        `a scroller inside ${p.id} cuts its content off flat: ` + label, p.bareScrollers);
     }
     await ctx.close();
   }

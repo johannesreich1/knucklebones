@@ -374,6 +374,11 @@ html.clock .timer.on{visibility:visible}
    DOM order, so the last .on sibling is the top — the quiet rooms override
    their background wholesale and stay plain, as they should. */
 .ov.on:not(:has(~ .ov.on)){background:var(--aurora);background-color:#04050c}
+/* Home scrolls itself and does NOT wear the soft top edge, deliberately: the
+   fade exists to soften content vanishing under a pinned header, and home has
+   none. It is also an opaque overlay, so masking its top would fade its own
+   background and let the table behind it show through — tried, and it reads
+   as a glitch rather than a treatment. */
 #ovStart{overflow-y:auto;justify-content:flex-start}
 /* ONE spacer, not two: it splits the free space with the foot's own auto
    margin, so the content column sits centred between the screen top and the
@@ -462,19 +467,21 @@ html.clock .timer.on{visibility:visible}
   margin:0;flex:1 1 auto;min-height:0;overflow-y:auto;
   /* the top padding is exactly the fade's height, so a resting list clears it
      entirely and only content actually scrolling away is touched */
-  padding:var(--fade-top) var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 46px);
-  /* THE SOFT TOP EDGE. Content leaving under the header dissolves instead of
-     being guillotined at the scroller's edge (user call). A mask, not a
-     painted gradient: it fades the CONTENT to transparent, so whatever the
-     overlay paints behind it — including the aurora — shows through exactly,
-     with no colour to keep in sync. */
+  /* THE SOFT TOP EDGE itself is defined once, below, for every app scroller —
+     a paged body and the lists that scroll inside one alike. */
+  padding:var(--fade-top) var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 46px)}
+/* ONE definition of "a scrolling region in this app", worn by every paged body
+   AND by any list that does its own scrolling inside one — the ladder and the
+   match history scroll in `.lb`, not in the body around them, so a fade that
+   only knew about .pbody left them cut off flat (user report). Both wear the
+   palette's scrollbar and the same soft top edge. */
+.pbody,.neonscroll{--fade-top:20px;
+  scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--p1) 40%,transparent) transparent;
   -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 var(--fade-top));
   mask-image:linear-gradient(180deg,transparent 0,#000 var(--fade-top))}
-/* The app's scroll indicator rides the true right edge of every paged body. */
-.pbody{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--p1) 40%,transparent) transparent}
-.pbody::-webkit-scrollbar{width:6px}
-.pbody::-webkit-scrollbar-track{background:transparent}
-.pbody::-webkit-scrollbar-thumb{border-radius:99px;
+.pbody::-webkit-scrollbar,.neonscroll::-webkit-scrollbar{width:6px}
+.pbody::-webkit-scrollbar-track,.neonscroll::-webkit-scrollbar-track{background:transparent}
+.pbody::-webkit-scrollbar-thumb,.neonscroll::-webkit-scrollbar-thumb{border-radius:99px;
   background:linear-gradient(180deg,color-mix(in srgb,var(--p1) 55%,transparent),
                                     color-mix(in srgb,var(--p2) 55%,transparent))}
 /* The OFFLINE sheet is a FORM rather than a poster: it grows downward from
