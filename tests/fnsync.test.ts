@@ -86,4 +86,33 @@ const spellsShipped = Object.entries(manifest)
 check(!/service_role|SERVICE_ROLE_KEY\s*=/.test(readFileSync('src/config.ts', 'utf8')),
   'src/config.ts names a service-role key — it ships to every client');
 
+/* ---- an Edge Function may not SHADOW its own imports ----
+   These files are the least-checked code in the repo: they are outside
+   tsconfig (Deno globals and jsr: specifiers make tsc refuse them) and no
+   suite imports them, so a name collision is invisible until it throws in
+   production. It happened: core/bot.ts's botMove() was imported into pvp-move
+   while a local `let botMove` already held the reply payload, and the local
+   shadowed the import for the whole handler — every bot reply would have
+   called null. Live pvp-move was still on the previous version, which is the
+   only reason nobody saw it.
+
+   A real parser would be better; this is a deliberately dumb text check, and
+   dumb is what makes it cheap enough to keep. It looks only for a top-level
+   binding that reuses an imported name. */
+for (const slug of Object.keys(manifest)) {
+  const src = readFileSync(`supabase/functions/${slug}/index.ts`, 'utf8');
+  const imported = new Set();
+  for (const m of src.matchAll(/^import\s*\{([^}]*)\}\s*from\s*["'][^"']+["'];/gm)) {
+    for (const part of m[1].split(',')) {
+      const name = part.trim().replace(/^type\s+/, '').split(/\s+as\s+/).pop()?.trim();
+      if (name) imported.add(name);
+    }
+  }
+  for (const m of src.matchAll(/^\s*(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm)) {
+    check(!imported.has(m[1]),
+      `${slug}/index.ts declares \`${m[1]}\` while also importing that name — the local `
+      + `shadows the import, and calling it will throw at runtime. Rename the local.`);
+  }
+}
+
 console.log(JSON.stringify({ manifest, spellsShipped, problems, errs }, null, 2));

@@ -161,7 +161,13 @@ Deno.serve(async (req: Request) => {
   // human.
   const oppId = myIdx === ME ? match.p2 : match.p1;
   const { data: oppProf } = await svc.from("profiles").select("is_bot, rating").eq("id", oppId).single();
-  let botMove: { col: number; die: number } | null = null;
+  /* the bot's REPLY, for the response body — named apart from core/bot's
+     botMove(), which decides a column. They were both called `botMove` for
+     about an hour and the local shadowed the import for the whole handler, so
+     the call below was invoking null. Nothing caught it: these files are not
+     in tsconfig (Deno globals + jsr: imports) and no suite imports them, which
+     is why tests/fnsync.test.ts now refuses a local that shadows an import. */
+  let botReply: { col: number; die: number } | null = null;
   s = (await loadState(svc, match_id, MODE))!;   // re-derive next die cleanly from the log
   if (mover === myIdx && oppProf?.is_bot && !s.over) {
     const botIdx = (1 - myIdx) as Player;  // vs a human p1, the bot is always index 0
@@ -187,10 +193,10 @@ Deno.serve(async (req: Request) => {
     if (!botErr) {
       const botHits = applyMove(s.st, botIdx, botCol, botDie, MODE);
       if (MODE === BOUNTY) s.bounty[botIdx] += botHits;
-      botMove = { col: botCol, die: botDie };
+      botReply = { col: botCol, die: botDie };
       if (isFull(s.st[botIdx])) {
         const updated = await finish(svc, match, s, MODE, "done");
-        return json({ match: updated, your_die: myDie, bot_move: botMove });
+        return json({ match: updated, your_die: myDie, bot_move: botReply });
       }
       s = (await loadState(svc, match_id, MODE))!;
     }
@@ -199,11 +205,11 @@ Deno.serve(async (req: Request) => {
   // LIMITED: the bag can empty without a full board — that ends the game too
   if (s.over) {
     const updated = await finish(svc, match, s, MODE, "done");
-    return json({ match: updated, your_die: myDie, bot_move: botMove });
+    return json({ match: updated, your_die: myDie, bot_move: botReply });
   }
 
   const { data: updated } = await svc.from("matches").update({
     turn: s.turn, next_die: s.nextDie, last_move_at: new Date().toISOString(),
   }).eq("id", match_id).select(MATCH_COLS).single();
-  return json({ match: updated, your_die: myDie, bot_move: botMove });
+  return json({ match: updated, your_die: myDie, bot_move: botReply });
 });
