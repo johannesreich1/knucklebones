@@ -463,23 +463,28 @@ html.clock .timer.on{visibility:visible}
   padding-top:calc(env(safe-area-inset-top,0px) + 16px);padding-bottom:0;
   padding-left:0;padding-right:0}
 .ov.paged .shead{padding:0 var(--pad-x);flex:0 0 auto;z-index:2;position:relative}
-/* THE SOFT TOP EDGE: content DISSOLVES as it reaches the header instead of
-   being guillotined at the scroller's edge. A mask on the scroller, which
-   fades the CONTENT to transparent — so whatever the overlay paints behind it,
-   aurora included, shows through exactly and there is no colour to keep in
-   sync with anything.
-   IT IS NOT A BACKDROP BLUR, and that was tried and shipped by mistake: a
-   band hanging off the header with backdrop-filter does NOTHING here. Proven
-   with invert(1) saturate(3), which would be unmissable — no effect, in either
-   engine, from a pseudo-element or a real one, with or without the overlay's
-   own backdrop-filter. What looked like blur in review was the body clipping
-   its content at its top edge. If anyone tries this again: make the filter
-   absurd first and confirm you can SEE it before believing the subtle version.
-   The body reserves the fade's height as padding, so a list sitting at rest
-   starts below it and only content actually scrolling away is touched. */
-.ov.paged .pbody{
-  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 var(--band));
-  mask-image:linear-gradient(180deg,transparent 0,#000 var(--band))}
+/* THE SOFT TOP EDGE: content BLURS out as it passes under the header instead
+   of being guillotined at the scroller's edge. The band hangs off the header,
+   so it is pinned to the page's scroll top wherever that is — and because it
+   blurs the backdrop rather than painting a colour, it needs nothing kept in
+   sync with the aurora behind it. The band itself fades out downward, so it
+   has no hard lower edge of its own.
+   ONE PAGE, ONE SCROLLER is what makes a single band enough: the body scrolls
+   and nothing inside it scrolls separately (see the ladder in online.css).
+   The body reserves the band's height as padding, so a list sitting at rest
+   starts below it and is never blurred until it actually moves.
+
+   VERIFYING THIS: headless WebKit renders NO backdrop-filter at all — a band
+   under a header simply does not appear, which once led to this rule being
+   torn out as a "proven no-op" on the strength of WebKit screenshots alone.
+   Headless Chromium does render it. So check this effect in CHROMIUM, and
+   confirm the check itself works by making the filter absurd first
+   (invert(1) saturate(3) is unmissable) before trusting a subtle version. */
+.ov.paged .shead::after{content:"";position:absolute;left:0;right:0;top:100%;height:var(--band);
+  -webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);
+  pointer-events:none;z-index:3;
+  -webkit-mask-image:linear-gradient(180deg,#000 30%,transparent);
+  mask-image:linear-gradient(180deg,#000 30%,transparent)}
 .pbody{display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;
   margin:0;flex:1 1 auto;min-height:0;overflow-y:auto;
   /* the top padding is exactly the fade's height, so a resting list clears it
