@@ -1,0 +1,242 @@
+<!-- meta name="PI6 — The ledger" group="4d · PILFER — the theft" subtitle="The two column chips lead: theirs drops and yours climbs as the die crosses between them, so the theft reads as the transfer of score that it is" width=430 height=1315 sizes="md" links="Spells — aiming a rune, Offline — local play, Game modes" -->
+<style>
+  /* Card-local names only (sp*). The app pins .die/.pip/.slot/.chip/.plate/.hud
+     with height, opacity or position, so a card that redeclares them loses
+     silently — design/build.mjs fails the build for exactly that. Every die,
+     rune and mode glyph is drawn by the app's own registries through the
+     tokens, including the gold of a multiplied pair (ui/render's own .m2). */
+  .scr{gap:6px}
+  .pline{max-width:206px;margin:0 auto}
+
+  .spfield{position:relative;width:100%;display:flex;flex-direction:column;align-items:center}
+  .spboard{position:relative;display:grid;grid-template-columns:repeat(3,var(--cell));gap:var(--gap);justify-content:center}
+  .spcol{display:grid;grid-template-rows:repeat(3,var(--cell));gap:var(--gap);position:relative;border-radius:16px}
+  .spslot{width:var(--cell);height:var(--cell);border-radius:14px;position:relative;
+    background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05);display:grid;place-items:center}
+  .spmine{--cell:52px;--gap:6px}
+  .spmine .spslot{border-color:rgba(var(--p1-rgb),.13)}
+  .spfoe{--cell:52px;--gap:6px}
+  .spfoe .spslot{border-color:rgba(var(--p2-rgb),.13)}
+
+  /* THE AIM RING, restated because a card body cannot set the class the app
+     opens it with: the real rule is html.casting .col.aim::after, and
+     flow/spells puts .aim on the columns the spell's OWN legal() accepts. Same
+     inset, same +6 off the slot radius, same dashed gold. */
+  .spcol.aim::after{content:"";position:absolute;inset:-4px;border-radius:20px;pointer-events:none;
+    border:1.5px dashed rgba(var(--gold-rgb),.55)}
+
+  .sprow3{display:grid;grid-template-columns:repeat(3,var(--cell));gap:var(--gap);
+    justify-content:center;width:calc(var(--cell)*3 + var(--gap)*2)}
+  .spchip{height:20px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:800;color:var(--c);font-variant-numeric:tabular-nums;position:relative;
+    border:1px solid color-mix(in srgb,var(--c) 30%,transparent);
+    background:color-mix(in srgb,var(--c) 9%,transparent);
+    text-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}
+  .spchip i{position:absolute;right:4px;top:0;bottom:0;display:flex;align-items:center;line-height:0;
+    color:var(--gold);filter:drop-shadow(0 0 6px rgba(var(--gold-rgb),.75))}
+  .spshield{box-shadow:inset 0 0 0 1px rgba(var(--gold-rgb),.35),0 0 14px rgba(var(--gold-rgb),.12)}
+  .splbl{font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);
+    text-align:center;min-height:11px;padding-top:4px;line-height:1.35}
+  .splbl.hit{color:var(--hue)}
+  .splbl.no{color:#8ea3c0}
+  .splbl.safe{color:var(--gold)}
+
+  /* Every mark hangs on a wrapper of the die's own box. In the app it would be
+     a class ON the die (the way .die.dying already is); a card cannot add one
+     to a token, so where an idea needs the DIE itself it says so and declares
+     height, which is what the build guard asks for. */
+  .spmark{position:relative;display:block;line-height:0}
+
+  /* the charged die needs air: several of these draw well outside its box */
+  .stagerow{--cell:56px;margin-top:18px}
+  /* the line under the die in play needs air on BOTH sides here: in the app
+     the board it sits against is a screen's width away down the page, and in a
+     card it is 6px below unless someone says otherwise */
+  .spstatus{margin-top:14px;margin-bottom:16px}
+  .spafter{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:4px}
+
+  .scr{--hue:{{shue:pilfer}}}
+  /* THE WHOLE CARD IS ONE LOOP: the rune is armed, the tap lands, the die
+     crosses, it settles, both chips and both totals move. Measured, not
+     guessed — --fly is the distance between the two slot centres on this very
+     board, read out of the browser. In play the same number comes out of two
+     getBoundingClientRects at cast time, exactly as ui/fx pin() already does. */
+  /* Field coordinates, read out of the browser on this very board (the study
+     ships at one device size): the field is 350px wide, the stolen die's slot
+     centre sits at y 84 and the slot it lands in at y 435, and the two boards
+     face each other across the lane at y 214. Every seam drawn below is placed
+     against those, never against a fraction of an unknown height. */
+  .spfield{--fly:351px}
+  /* a canvas over the whole field, so an idea can draw between the halves
+     without owning any element in the layout */
+  .spseam{position:absolute;inset:0;pointer-events:none;z-index:3;display:block}
+  /* the rings are the ARMED state: they go the instant the tap lands, or the
+     card would be showing a board the app cannot paint */
+  .spcol.aim::after{animation:piarm 3.2s ease-out infinite}
+  @keyframes piarm{0%,14%{opacity:1}20%,100%{opacity:0}}
+  /* ...and so does the line under the die in play. castBy() writes the SPELL'S
+     NAME there for the whole cast (flow/spells), so a card still reading "tap
+     an enemy column" while the die is already in the air would be showing a
+     frame the app never paints — and would leave the flying die sitting on top
+     of an instruction the player has already followed. */
+  .spstx{position:relative;display:block}
+  .spcasting{position:absolute;left:0;right:0;top:0}
+  .sparmed{animation:pisay1 3.2s steps(1,end) infinite}
+  .spcasting{animation:pisay2 3.2s steps(1,end) infinite}
+  @keyframes pisay1{0%,15.9%{opacity:1}16%,100%{opacity:0}}
+  @keyframes pisay2{0%,15.9%{opacity:0}16%,100%{opacity:1}}
+
+  /* the die that flies is a COPY of theirs, in THEIR colour: flow/spells clones
+     the source element, so a stolen die is magenta the whole way over and only
+     becomes yours when renderSide repaints the far column. Where each idea puts
+     that hand-over is one of the things worth comparing. */
+  .spfly{position:absolute;inset:0;display:block;line-height:0;z-index:7;pointer-events:none}
+  .spsrc{position:relative}
+  /* the source empties at the moment it lifts and the destination fills at the
+     moment it arrives, so no frame shows the die twice or not at all */
+  .spsrc > .spmark{animation:pigone 3.2s steps(1,end) infinite}
+  @keyframes pigone{0%,17.9%{opacity:1}18%,100%{opacity:0}}
+  .spdst > .die{animation:pihere 3.2s steps(1,end) infinite}
+  @keyframes pihere{0%,61.9%{opacity:0}62%,100%{opacity:1}}
+
+  /* every number this rune moves, moving on the same frame it arrives */
+  .spcount{position:relative;overflow:hidden}
+  .spcount > i{font-style:normal}
+  .spcount .spnew{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+  .spold{animation:piold 3.2s steps(1,end) infinite}
+  .spnew{animation:pinew 3.2s steps(1,end) infinite}
+  @keyframes piold{0%,61.9%{opacity:1}62%,100%{opacity:0}}
+  @keyframes pinew{0%,61.9%{opacity:0}62%,100%{opacity:1}}
+  .sptot{display:inline-flex;justify-content:center;min-width:2.2ch}
+
+  /* a full column of yours cannot receive, and says so */
+  .spfull::after{content:"";position:absolute;inset:-4px;border-radius:20px;pointer-events:none;
+    border:1.4px solid rgba(255,255,255,.1)}
+  /* the slot the stolen die is going to fill, lit while it is still empty */
+  .sproom{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--hue) 34%,transparent),
+    inset 0 0 16px color-mix(in srgb,var(--hue) 12%,transparent)}
+
+  /* ===== THE MARK is on the CHIPS. PILFER is the only rune that moves value
+     from one board to the other, and the two numbers it moves it between are
+     already on screen. The die that would be taken carries its own worth as a
+     small tag, so the trade is priced before the tap. ===== */
+  .tgt::after{content:"";position:absolute;inset:-2px;border-radius:16px;pointer-events:none;
+    border:1.4px solid color-mix(in srgb,var(--hue) 70%,transparent)}
+  .tgt::before{content:"+5";position:absolute;left:100%;top:-6px;margin-left:-11px;z-index:5;
+    min-width:20px;height:17px;padding:0 4px;border-radius:99px;display:flex;align-items:center;
+    justify-content:center;font-size:10.5px;font-weight:900;line-height:1;color:#2b2103;
+    background:var(--hue);box-shadow:0 0 12px color-mix(in srgb,var(--hue) 85%,transparent);
+    animation:pi6tag 2s ease-in-out infinite}
+  @keyframes pi6tag{0%,100%{transform:translateY(0);opacity:.85}50%{transform:translateY(-2px);opacity:1}}
+
+  /* ===== THE TRANSFER, READ OFF THE CHIPS. A thread of light runs from their
+     chip to yours as the die crosses, and the two numbers change at the same
+     frame — one down, one up, by the same amount. It is the only idea that
+     shows what PILFER is actually worth: the swing is DOUBLE the die, because
+     the score difference moves at both ends (core/spells says so out loud —
+     it is why the machine's demand is halved for one-sided runes). ===== */
+  .spfly{animation:pi6slide 3.2s cubic-bezier(.4,0,.3,1) infinite}
+  @keyframes pi6slide{0%,17%{transform:translateY(0) scale(1);opacity:0}
+    18%{opacity:1}62%{transform:translateY(var(--fly)) scale(1);opacity:1}
+    62.1%,100%{opacity:0}}
+  .spseam::before{content:"";position:absolute;left:50%;top:190px;height:142px;width:2px;margin-left:-1px;
+    background:linear-gradient(180deg,transparent,var(--hue),transparent);
+    filter:drop-shadow(0 0 6px var(--hue));opacity:0;
+    animation:pi6thread 3.2s ease-in-out infinite}
+  @keyframes pi6thread{0%,20%{opacity:0}34%{opacity:1}58%{opacity:1}68%,100%{opacity:0}}
+  /* both numbers move on the SAME frame, in opposite directions */
+  .spcount .spnew{animation:pinew 3.2s steps(1,end) infinite,pi6pop 3.2s cubic-bezier(.2,1.7,.4,1) infinite}
+  @keyframes pi6pop{0%,62%{transform:scale(1)}70%{transform:scale(1.34)}80%,100%{transform:scale(1)}}
+  .spfoe + .sprow3 .spchip{animation:pi6down 3.2s ease-out infinite}
+  @keyframes pi6down{0%,62%{transform:translateY(0);filter:none}
+    70%{transform:translateY(3px);filter:brightness(.7)}82%,100%{transform:translateY(0);filter:none}}
+  .sprow3 + .spboard.spmine .spcol{animation:pi6up 3.2s ease-out infinite}
+  @keyframes pi6up{0%,62%{transform:translateY(0)}70%{transform:translateY(-3px)}82%,100%{transform:translateY(0)}}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hud">
+    <div class="rec">
+      <button type="button" class="rchip tapmode" data-lib="modes" data-id="colshield">{{mico:colshield:12}} COLUMN SHIELD<span class="mi">ⓘ</span></button>
+      <button type="button" class="rchip tapmode" data-lib="spells" data-id="pilfer">{{sico:pilfer:12}} PILFER<span class="mi">ⓘ</span></button>
+    </div>
+    <div class="sp"></div>
+    <button class="ico">{{ico:leave:15}}</button>
+  </div>
+
+  <div class="cap2">PILFER is armed — and only a column it can actually take from is ringed. The tap lands on column 2: the 5 crosses straight over and LANDS, and a die that lands strikes nothing.</div>
+  <div class="plate pline" style="--c:var(--p2)">
+    <span class="who"><span class="dot"></span><span class="nm">PLAYER 2</span></span>
+    <span class="sp"></span>
+    <span class="pright"><span class="runeslot live"><button class="rune idle" style="--sh:var(--p2)">{{sico:pilfer:16}}<b class="n"></b></button></span><span class="tot"><span class="spcount sptot"><i class="spold">32</i><i class="spnew">27</i></span></span></span>
+  </div>
+  <div class="spfield">
+    <i class="spseam"></i>
+
+    <div class="spboard spfoe">
+      <div class="spcol">
+        <div class="spslot"></div>
+        <div class="spslot">{{die:6:p2:52}}</div>
+        <div class="spslot">{{die:3:p2:52}}</div>
+      </div>
+      <div class="spcol aim">
+        <div class="spslot"></div>
+        <div class="spslot spsrc"><span class="spmark tgt">{{die:5:p2:52}}</span><i class="spfly">{{die:5:p2:52}}</i></div>
+        <div class="spslot">{{die:1:p2:52}}</div>
+      </div>
+      <div class="spcol spshield">
+        <div class="spslot">{{die:1:p2:52}}</div>
+        <div class="spslot">{{die:4:p2 m2:52}}</div>
+        <div class="spslot">{{die:4:p2 m2:52}}</div>
+      </div>
+    </div>
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-top:5px">
+      <div class="spchip" style="--c:var(--p2)">9</div>
+      <div class="spchip spcount" style="--c:var(--p2)"><i class="spold">6</i><i class="spnew">1</i></div>
+      <div class="spchip" style="--c:var(--p2)">17<i>{{mico:colshield:13}}</i></div>
+    </div>
+    <div class="sprow3" style="--cell:52px;--gap:6px">
+      <div class="splbl no">no room</div>
+      <div class="splbl hit">the 5</div>
+      <div class="splbl safe">shielded</div>
+    </div>
+    <div class="stagerow">
+      <span class="spcharged">{{die:4:p1:56}}</span>
+      <div class="spells"><button class="rune ready armed" style="--sh:var(--p1)">{{sico:pilfer:16}}<b class="n"></b></button></div>
+    </div>
+    <div class="status me spstatus"><span class="spstx"><span class="sparmed">Tap an enemy column</span><span class="spcasting">PILFER</span></span></div>
+
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-bottom:5px">
+      <div class="spchip" style="--c:var(--p1)">26</div>
+      <div class="spchip spcount" style="--c:var(--p1)"><i class="spold">3</i><i class="spnew">8</i></div>
+      <div class="spchip" style="--c:var(--p1)">6</div>
+    </div>
+    <div class="spboard spmine">
+      <div class="spcol spfull">
+        <div class="spslot">{{die:6:p1 m2:52}}</div>
+        <div class="spslot">{{die:6:p1 m2:52}}</div>
+        <div class="spslot">{{die:2:p1:52}}</div>
+      </div>
+      <div class="spcol">
+        <div class="spslot">{{die:3:p1:52}}</div>
+        <div class="spslot sproom spdst">{{die:5:p1:52}}</div>
+        <div class="spslot"></div>
+      </div>
+      <div class="spcol">
+        <div class="spslot">{{die:2:p1:52}}</div>
+        <div class="spslot">{{die:4:p1:52}}</div>
+        <div class="spslot"></div>
+      </div>
+    </div>
+  </div>
+  <div class="plate pline" style="--c:var(--p1)">
+    <span class="who"><span class="dot"></span><span class="nm">PLAYER 1</span></span>
+    <span class="sp"></span>
+    <span class="pright"><span class="runeslot live"></span><span class="tot"><span class="spcount sptot"><i class="spold">35</i><i class="spnew">40</i></span></span></span>
+  </div>
+  <div class="splbl">their column 6 → 1 · yours 3 → 8 · a 10-point swing off one die</div>
+  <div class="note"><b>What it says:</b> <b>value moved.</b> The two numbers this rune actually changes are already on screen, four pixels from the die it moves — and no other idea here touches them. Theirs goes 6 → 1 and yours 3 → 8 on the same frame, which is the only way to show the thing that makes PILFER strong: the swing is <b>double</b> the die, because the score <i>difference</i> moves at both ends. core/spells says exactly this out loud, in the comment that halves the machine's demand for one-sided runes.<br>
+  <b>The price is shown before the tap.</b> A +5 tag on the die that would be taken turns "which one" into "what is it worth", and PILFER is the one rune where those are different questions — the top die of a column is not always the one you want.<br>
+  <b>Cheapest of the six by a distance.</b> Two chips, one thread and a straight slide. No path to re-author per layout, nothing anchored outside a column, nothing that breaks when a half turns upside down.<br>
+  <b>Cost:</b> it is <b>arithmetic, not theft</b> — the frames say "transfer complete" where the rune wants to say "taken". And a +5 tag is a real strength change, the same objection SUNDER's toll readout carries: it hands the player a comparison they would otherwise have to make themselves, across three columns, under a clock.</div>
+</div></div>
