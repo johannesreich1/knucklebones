@@ -349,7 +349,16 @@ Learned from real play, each one a shipped bug:
   *which* is the half worth keeping and the verb the half to drop. Measure,
   never count characters: "Tap one of your columns to guard" (32 chars) took
   three landscape lines while "Drop it on your die to charge it" (32) took two
-  — long WORDS break lines, not long strings. `test14` §12 arms every registry
+  — long WORDS break lines, not long strings. **And measure in the font the
+  player actually has.** That two-line result was measured in SF Pro Rounded,
+  which only macOS and iOS resolve; the stack ends in `sans-serif`, and in a
+  fallback face 8–10% wider all three SELF lines went to THREE landscape lines
+  and shoved the stage die 6.2px — caught on CI (2026-08-22), invisible on the
+  machine they were written on. The rule therefore binds self spells too, and
+  the *which* for a self spell is the die in hand: FATE, NUDGE and SUNDER all
+  say **"Drop it on your die"** and stop. Their widest wrapped line is 72.2px
+  of the 104px lane in the widest face measured, so only a font ~44% wider
+  again would break it. `test14` §12 arms every registry
   entry on the narrowest phone in both orientations and measures the box
   against the CSS's own reserve. Burned by ANVIL, which shipped reading "Tap a
   filled column to recast its weakest die": four lines landscape (die shoved

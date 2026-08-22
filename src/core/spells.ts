@@ -43,13 +43,19 @@ export interface SpellSpec {
   /* The status line while the rune is armed — and it lives in a RESERVED box:
      one line in portrait, two in landscape's fixed 104px lane. Outgrow it and
      the box grows with the text, which walks the stage die up the screen on
-     every cast. So this line says WHICH column the tap wants and stops — the
+     every cast. So this line says WHICH TARGET the tap wants and stops — the
      verb is already on the rune the player just pressed, in its name, its icon
      and its `blurb`, and the board rings the legal targets in gold. The one
      thing the rings CANNOT say is why they are silent, which is exactly what
-     "a filled column" or "an enemy column" answers. Not a character budget:
-     long WORDS break lines, so measure rather than count (tests/test14 §12
-     arms every entry on the narrowest phone, in both orientations). */
+     "a filled column" or "an enemy column" answers. For a SELF spell the which
+     is the die in hand, so the line is "Drop it on your die" and stops there
+     too — the three of them carried their verb for a while because the rule
+     was read as being about columns, and in SF Pro Rounded they happened to
+     fit. In a fallback face ~8-10% wider they became THREE landscape lines and
+     shoved the stage die 6.2px, which is the very drift this rule exists to
+     prevent (CI, 2026-08-22). Not a character budget: long WORDS break lines,
+     so measure rather than count (tests/test14 §12 arms every entry on the
+     narrowest phone, in both orientations). */
   aim: string;
   target: 'column' | 'self';   // what a cast aims at — a column, or the die in hand
   /* WHOSE half a column cast points at. The board rings only the columns a
@@ -110,7 +116,7 @@ const FATE: SpellSpec = {
   detail: 'Discard the die in hand and draw the next from the supply. The new die is yours '
         + 'to place this turn. The draw is final — you cannot put it back once you have '
         + 'seen it. Two casts per game.',
-  aim: 'Drop it on your die to redraw',
+  aim: 'Drop it on your die',
   target: 'self',
   uses: 2,
   /* The one cast in the roster that REVEALS. Undoing it would hand back the
@@ -142,7 +148,7 @@ const NUDGE: SpellSpec = {
   name: 'NUDGE',
   blurb: 'Tick your die up one pip.',
   detail: 'The die in hand turns one pip higher — a 6 wraps around to 1. One cast per game.',
-  aim: 'Drop it on your die to nudge',
+  aim: 'Drop it on your die',
   target: 'self',
   uses: 1,
   legal(st, who, col, ctx) {
@@ -209,7 +215,7 @@ const SUNDER: SpellSpec = {
   detail: 'Cast before placing: this turn your die destroys matching dice in EVERY enemy '
         + 'column, not only the facing one. Shields and wards still answer, column by '
         + 'column. One cast per game.',
-  aim: 'Drop it on your die to charge it',
+  aim: 'Drop it on your die',
   target: 'self',
   uses: 1,
   legal(st, who, col, ctx) {
