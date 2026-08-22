@@ -10,7 +10,10 @@
 //   <!-- meta name="…" group="…" subtitle="…" width=400 height=900 links="A,B" -->
 // followed by the card's body HTML, in which these tokens expand:
 //
-//   {{die:V:p1|p2|gold[:px]}}   a die face
+//   {{die:V:p1|p2|gold[:px]}}   a die face — the class slot takes any of the
+//                              app's own die classes, space-separated, so a card
+//                              can picture a MULTIPLIED die (`p2 m2`) instead of
+//                              restating main.css's gold in card CSS
 //   {{mico:MODE[:px]}}          a mode icon — the APP's, imported below
 //   {{mhue:MODE}}               a mode's hue — likewise
 //   {{sico:SPELL[:px]}}         a rune icon — the APP's (ui/spellicons.ts)
@@ -224,7 +227,12 @@ for (const f of screens) {
   }
 
   let body = src.slice(meta[0].length)
-    .replace(/\{\{die:(\d):([a-z0-9]+)(?::(\d+))?\}\}/g,
+    /* The class slot is a LIST, not one name: a die in play is `p2 m2` when its
+       column holds a pair (ui/render toggles m2/m3 on exactly that count), and a
+       card that could only ask for `p2` had to restate main.css's gold to show
+       one — a second copy of the multiplier look, in the file that exists to
+       stop second copies. `gold` stays as the shorthand it always was. */
+    .replace(/\{\{die:(\d):([a-z0-9]+(?: [a-z0-9]+)*)(?::(\d+))?\}\}/g,
       (_, v, cls, size) => dieHtml(+v, cls === 'gold' ? 'p1 m2' : cls, size ? +size : 0))
     .replace(/\{\{mico:([a-z]+)(?::(\d+))?\}\}/g, (_, id, size) => modeIcon(id, size ? +size : 24))
     .replace(/\{\{mhue:([a-z]+)\}\}/g, (_, id) => modeHue(id))
