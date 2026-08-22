@@ -222,9 +222,7 @@ Deno.serve(async (req: Request) => {
     const { data: claimed } = await svc.from("matchmaking_queue")
       .delete().eq("player_id", partner.player_id).select("player_id");
     if (claimed && claimed.length === 1) {
-      // handicap: the LOWER-rated player takes the seat the MODE favours —
-      // which is not always the first one (startMatch owns that rule).
-      // Ties go to the longer wait.
+      // handicap: the LOWER-rated player opens. Ties go to the longer wait.
       const { data: theirProf } = await svc.from("profiles").select("rating").eq("id", partner.player_id).single();
       const theirR = theirProf?.rating ?? 0;
       const underdog = myR < theirR ? uid : partner.player_id;
@@ -235,8 +233,8 @@ Deno.serve(async (req: Request) => {
   }
 
   // no partner: sit in the queue; with allow_bot, back-fill from the bot pool.
-  // (Vs a bot the human MUST be p1: bots only move inside the human's
-  // requests, so a bot could never make the opening move.)
+  // A bot is seated by the same handicap as a human — openForBot above is what
+  // makes that possible, by playing its opening move when it lands in p1.
   await svc.from("matchmaking_queue").upsert({ player_id: uid });
   if (allowBot) {
     const { data: bots } = await svc.from("profiles").select("id, rating").eq("is_bot", true);
