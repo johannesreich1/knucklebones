@@ -319,9 +319,24 @@ function oneTapRow(mode: AuthMode): void {
    dismissed overlay can never yank the player back into a match */
 function goHome(): void {
   stopQueue();
+  /* NOTHING floats above Home. The result screen stays open BENEATH this
+     overlay while its plate's door is open (showResult), and it out-paints
+     #ovStart — same z-index, later in the markup — so home would arrive with
+     the last match still on top of it. Home means home. */
+  closeEnd();
   hide('#ovOnline');
   show('#ovStart');
+  exitOnline = goHome;
 }
+
+/* WHERE ‹ LEADS once the panel stack bottoms out — a slot the OPENER fills,
+   not a constant. Home is the root, so Home is the default; but the profile is
+   reached from the result screen too (its own plate is a door), and a page's ‹
+   "returns exactly where you came from" (design 00-navigation). Only whoever
+   opened this overlay knows where that is. Hard-coding goHome here is what
+   dropped a player who checked their profile after a match onto the main menu,
+   their result gone (user report). */
+let exitOnline: () => void = goHome;
 
 /* ---- matchmaking: poll join; the clock and the widening message are honest */
 let queueAbort = false;
@@ -865,6 +880,16 @@ async function showResult(r: FinishReport): Promise<void> {
   catch { /* forgetful host */ }
   const cachedRating = typeof cache?.rating === 'number' && r.delta != null
     ? cache.rating + r.delta : null;
+  /* MY plate is a door to the profile, and the result screen stays OPEN behind
+     it: overlays stack (styles/main.css — the topmost .ov.on paints the room),
+     so ‹ hands back the very screen the player left, with the same plates, the
+     same late-landed numbers, no second entrance and no second firework. A
+     screen that closed itself on the way out could offer none of that. */
+  const openProfile = (): void => {
+    exitOnline = () => hide('#ovOnline');   // ‹ uncovers the result again
+    show('#ovOnline');
+    void route('account');
+  };
   /* both rows re-dealt whenever better numbers arrive; the loser dims, the
      winner takes the gold edge, a win stamps the foe. The ranks ride the
      plates' group pills — mine cached instantly, both exact when the RPCs
@@ -873,7 +898,7 @@ async function showResult(r: FinishReport): Promise<void> {
                   foe: PlayerCard | null, mine: MySide | null) => [
     { name: cache?.nickname ?? 'You', avatar: cache?.avatar ?? null, points: pts,
       rank, apex, delta: r.delta, won: r.won, lost: !r.won && !r.draw,
-      tap: () => { closeEnd(); show('#ovOnline'); void route('account'); } },
+      tap: openProfile },
     { name: r.opp, avatar: r.oppAvatar,
       points: foe?.points ?? r.oppRating, rank: foe?.rank ?? null, apex: !!foe?.apex,
       theirs: true, won: !r.won && !r.draw, lost: r.won,
@@ -899,7 +924,8 @@ async function showResult(r: FinishReport): Promise<void> {
     them: { score: r.their, label: '' },
     plates: plates(cachedRating, cache?.rank ?? null, !!cache?.apex, null, null),
     again: { label: 'Next duel', run: () => { closeEnd(); show('#ovOnline'); void route('play'); } },
-    home:  { label: 'Home', run: () => { closeEnd(); goHome(); } },
+    // goHome closes whatever floats above Home, this screen included
+    home:  { label: 'Home', run: goHome },
     share: `${title} ${r.my}–${r.their} vs ${r.opp}${deltaTxt} — Knucklebones, ranked dice duels`,
   });
   /* the standing RPC knows MY rank directly; player_card (0028) knows the
@@ -920,6 +946,13 @@ async function showResult(r: FinishReport): Promise<void> {
   setPlates(plates(pts, st?.rank ?? null, apex, foe, mine));
 }
 
+/* test hook, same philosophy as window.__kb and play.ts's __kbOnline: the
+   Result screen exists only at the end of a real ranked match, so the gate
+   needs a door to it — this deals one from a plain report and nothing else. */
+if (typeof window !== 'undefined') {
+  (window as any).__kbResult = (r: FinishReport): void => { bind(); void showResult(r); };
+}
+
 let bound = false;
 function bind(): void {
   if (bound) return;
@@ -930,11 +963,12 @@ function bind(): void {
   qd.appendChild(makeDie(6, AI));
 
   /* ‹ climbs ONE level: the avatar picker and the history list are opened FROM
-     the profile, so they return to it rather than dropping the player home. */
+     the profile, so they return to it rather than dropping the player home.
+     Below those, the level is whatever OPENED this overlay — exitOnline. */
   $('#btnOnlineBack').addEventListener('click', () => {
     Sfx.tap();
     const sub = !$('#onAvatar').hidden || !$('#onHistory').hidden;
-    if (sub) void showAccount(); else goHome();
+    if (sub) void showAccount(); else exitOnline();
   });
 
   $('#btnKeepAcc').addEventListener('click', () => { Sfx.tap(); authPanel('attach'); });
@@ -1045,6 +1079,7 @@ async function route(view: OnlineView): Promise<void> {
 
 export async function openOnline(view: OnlineView = 'play'): Promise<void> {
   bind();
+  exitOnline = goHome;    // reached from Home, so ‹ leads back to it
   show('#ovOnline');
   // the ladder is public (its RPC is granted to anon) — reading it must not
   // cost the reader an account
