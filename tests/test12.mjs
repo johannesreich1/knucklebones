@@ -24,8 +24,6 @@ out.seatShownDuo = await page.evaluate(() => ({
 check(out.seatHiddenCpu && out.seatShownDuo.shown && out.seatShownDuo.onBtn === 'pass',
       'seat card visibility/default wrong', out);
 await page.tap('#seatSeg button[data-seat="face"]'); await page.waitForTimeout(250);
-out.note = await page.evaluate(() => document.getElementById('duoNote').textContent);
-check(/flat between you/.test(out.note), 'duo note not updated for face mode', out.note);
 
 // ===== B. a face-to-face game =====
 await page.tap('#btnPlay'); await page.waitForTimeout(800);
@@ -216,6 +214,23 @@ await sp.tap('#btnImprint'); await sp.waitForTimeout(400);
 const legalOpened = await sp.evaluate(() => document.getElementById('ovImprint').classList.contains('on'));
 check(legalOpened, 'the last button on home is unreachable on a small screen', out.small);
 out.small.legalOpened = legalOpened;
+/* ...and it is a PAGE, not a sheet (user call, 2026-08-22): reached from Home
+   and returning there, so it wears Home's ‹ and carries no bottom dismissal.
+   test17 §nav holds the general rule; this holds the door it came through. */
+out.legalPage = await sp.evaluate(() => {
+  const head = document.querySelector('#ovImprint .shead');
+  return { back: document.querySelector('#ovImprint #btnImprintBack')?.textContent ?? '',
+           first: head.firstElementChild.id,
+           gotIt: [...document.querySelectorAll('#ovImprint .btn')].map((b) => b.textContent.trim()) };
+});
+check(out.legalPage.back === '\u2039' && out.legalPage.first === 'btnImprintBack',
+      'Impressum is not a page: its ‹ is missing or not on the left', out.legalPage);
+check(out.legalPage.gotIt.length === 0,
+      'Impressum still carries a bottom dismissal — the bottom of a screen is actions only', out.legalPage);
+await sp.tap('#btnImprintBack'); await sp.waitForTimeout(300);
+out.legalPage.closed = await sp.evaluate(() => !document.getElementById('ovImprint').classList.contains('on')
+                                            && document.getElementById('ovStart').classList.contains('on'));
+check(out.legalPage.closed, 'Impressum\u2019s ‹ did not return to Home', out.legalPage);
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
 await browser.close();

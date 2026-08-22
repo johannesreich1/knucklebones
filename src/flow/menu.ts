@@ -18,15 +18,6 @@ export function syncSettingsUI(){
   $('#diffCard').hidden  = duo;
   $('#seatCard').hidden  = !duo;
   $('#timerCard').hidden = !duo;
-  /* each note explains the control it sits under, and both cards carry one so
-     the swap between them cannot change this slot's height. The AI level's
-     note stays EMPTY on purpose (user call): naming what each level searches
-     told the player how to beat it, and the three words already say enough.
-     The slot itself is kept by .card .note's min-height, so the cards below
-     do not move when this one falls silent. */
-  $('#duoNote').textContent = S.seat==='face'
-    ? 'Phone flat between you — the top half faces Player 2'
-    : 'One phone, passed back and forth';
   // name the game, not the verb: two players on one phone are playing a duel,
   // and the button is the last thing read before committing to one
   $('#btnPlay').textContent = duo ? 'Play duel' : 'Play vs AI';
@@ -89,11 +80,4 @@ export function toMenu(){
   cancelPass(); hide('#ovPass');
   hide('#ovPractice'); hide('#ovSettings');
   show('#ovStart');
-}
-export function updateStatLine(){
-  const el=$('#statLine');
-  const played=S.wins+S.losses+S.draws;
-  if(!played && !S.best){ el.hidden=true; return; }
-  el.hidden=false;
-  el.innerHTML = 'Best <b>'+S.best+'</b>' + (played? '  ·  Record '+S.wins+'–'+S.losses+(S.draws?('–'+S.draws):'') : '');
 }

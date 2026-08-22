@@ -120,13 +120,21 @@
    elementFromPoint, which is what caught this) */
 .faceoff{position:fixed;inset:0;z-index:90;display:grid;place-items:center;
   background:rgba(3,5,12,.66);padding:14px}
-.focard{position:relative;width:100%;max-width:356px;border-radius:20px;padding:18px 16px 16px;
+.focard{position:relative;width:100%;max-width:356px;border-radius:20px;padding:10px 16px 16px;
   background:linear-gradient(180deg,#0e1329,#070a18);border:1px solid rgba(255,255,255,.15);
   box-shadow:0 24px 60px rgba(0,0,0,.65);display:flex;flex-direction:column;gap:12px}
-/* the way OUT, visible: a full-width quiet Close under the stats — the same
-   shape the forfeit ask-card taught (askcard's full-width .btn). Backdrop tap
-   and Escape still close it; the corner ✕ it replaces was easy to miss. */
-.focard .btn{width:100%;min-width:0;margin-top:2px}
+/* THE WAY OUT IS THE ONE EVERY SHEET USES: the shared ✕ .ico in the corner
+   (design: 00-navigation — ✕ dismisses, the ladder underneath resumes). It
+   spent a while as a full-width Close under the stats, borrowed from the
+   forfeit ask-card; but a bottom "Close" is navigation at the bottom of a
+   screen, which this app retired everywhere else, and the ask-card's shape
+   belongs to a QUESTION, not to a card you are merely done reading. Backdrop
+   tap and Escape close it too.
+   IN THE FLOW, not absolutely placed: the card is already a flex column, so
+   `align-self:flex-end` sets the ✕ in the corner while the columns start
+   BELOW it — no arithmetic about whether a 46px avatar clears a 30px button
+   on the narrowest phone, and no nickname truncated to buy the clearance. */
+.focard .foexit{align-self:flex-end;margin-bottom:-8px}
 /* the streak cells carry the wait inline while their RPCs answer */
 .fost .ldclock{display:inline-block;vertical-align:middle}
 .focols{display:flex;align-items:center;justify-content:center;gap:16px}
@@ -146,8 +154,6 @@
   color:var(--dim);text-transform:uppercase}
 .faceoff.solo .fost .k{flex:1;text-align:left;padding-left:4px}
 .faceoff.solo .fost .a{flex:0 0 auto;padding-right:4px}
-.fogap{font-size:clamp(9px,2.3vw,10px);letter-spacing:.14em;color:var(--dim);text-transform:uppercase;text-align:center}
-.fogap b{color:var(--gold);letter-spacing:.05em}
 
 /* the ladder's loading state borrows matchmaking's bouncing pair */
 #ovOnline .lbload{display:flex;flex-direction:column;align-items:center;gap:14px;

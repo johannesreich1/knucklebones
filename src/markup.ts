@@ -124,10 +124,11 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
       </div>
     </div>
     <!-- ONE slot, two occupants: whichever of these the Mode above calls for.
-         Both wear label + segment + note, so switching changes what this card
-         SAYS and never where the cards below it sit. Each note also explains
-         the choice it sits under — the seating note used to live at the far
-         bottom of the sheet, describing a control three cards away. -->
+         Both wear label + segment and nothing else, so switching changes what
+         this card SAYS and never where the cards below it sit. Neither carries
+         a note any more (user call): VS AI / 2 PLAYERS, EASY / NORMAL / HARD
+         and PASS PHONE / FACE TO FACE are each two words that already say what
+         they do, and the explanations only pushed the Play button down. -->
     <div class="card" id="diffCard">
       <div class="lbl">AI level</div>
       <div class="seg" id="diffSeg">
@@ -135,9 +136,6 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
         <button data-d="medium">NORMAL</button>
         <button data-d="hard" class="on">HARD</button>
       </div>
-      <!-- deliberately empty: the AI level says what it is and nothing more
-           (user call). Kept so this card keeps the seat card's height. -->
-      <div class="tiny note" id="diffNote"></div>
     </div>
     <div class="card" id="seatCard" hidden>
       <div class="lbl">Sitting</div>
@@ -145,7 +143,6 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
         <button data-seat="pass">PASS PHONE</button>
         <button data-seat="face">FACE TO FACE</button>
       </div>
-      <div class="tiny note" id="duoNote"></div>
     </div>
     <div class="card">
       <div class="lbl">Game mode</div>
@@ -167,7 +164,6 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
         <button data-t="0">OFF</button>
       </div>
     </div>
-    <div class="tiny" id="statLine" hidden></div>
     <!-- the commitment, pinned: whatever the sheet above it grows to, the way
          OUT of it is always in the same place under your thumb -->
     <div class="playbar">
@@ -177,14 +173,18 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   </div>
 </div>
 
-<!-- LEGAL. Two reading sheets, same component as the rules screen. Everything
-     factual here was verified against the code, not templated: ONE outbound
-     host, no analytics, no third-party scripts, four functional localStorage
-     keys. Anything in [BRACKETS] is Johannes's to fill and nobody else's. -->
+<!-- LEGAL. Two PAGES below Home, not sheets: they are reached from Home's foot
+     and ‹ returns there, so they wear the ‹ every other Home destination wears
+     (design: 00-navigation). They floated over nothing — the sheet clothes were
+     the same mistake Settings wore until 2026-08-21, and a bottom "Got it" is a
+     navigation button at the bottom of a screen, which this app retired.
+     Everything factual here was verified against the code, not templated: ONE
+     outbound host, no analytics, no third-party scripts, four functional
+     localStorage keys. Anything in [BRACKETS] is Johannes's to fill. -->
 <div class="ov paged" id="ovImprint">
   <div class="shead">
-    <span class="pad"></span><span class="ttl">IMPRESSUM</span>
-    <button class="ico" id="btnCloseImprint" aria-label="Close">✕</button>
+    <button class="ico" id="btnImprintBack" aria-label="Back">‹</button>
+    <span class="ttl">IMPRESSUM</span><span class="pad"></span>
   </div>
   <div class="pbody">
   <div class="rules">
@@ -202,15 +202,14 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <p>The European Commission provides a platform for online dispute resolution at
        <b>ec.europa.eu/consumers/odr</b>. We are neither obliged nor willing to take part in
        dispute resolution proceedings before a consumer arbitration board.</p>
-    <button class="btn primary" id="btnCloseImprint2">Got it</button>
   </div>
   </div>
 </div>
 
 <div class="ov paged" id="ovPrivacy">
   <div class="shead">
-    <span class="pad"></span><span class="ttl">PRIVACY</span>
-    <button class="ico" id="btnClosePrivacy" aria-label="Close">✕</button>
+    <button class="ico" id="btnPrivacyBack" aria-label="Back">‹</button>
+    <span class="ttl">PRIVACY</span><span class="pad"></span>
   </div>
   <div class="pbody">
   <div class="rules">
@@ -242,7 +241,6 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <p>You may request access, correction, erasure, restriction, portability, and object to
        processing. Write to [EMAIL]. You may also complain to a supervisory authority —
        for us that is [SUPERVISORY AUTHORITY].</p>
-    <button class="btn primary" id="btnClosePrivacy2">Got it</button>
   </div>
   </div>
 </div>

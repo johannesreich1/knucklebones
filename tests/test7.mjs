@@ -95,14 +95,15 @@ await page.waitForTimeout(700);
 const after = await page.evaluate(() => ({
   wins: window.__kb.S.wins, losses: window.__kb.S.losses, draws: window.__kb.S.draws,
   best: window.__kb.S.best, diff: window.__kb.S.diff,
-  statLine: document.getElementById('statLine').textContent.trim(),
-  statHidden: document.getElementById('statLine').hidden,
   diffOn: document.querySelector('#diffSeg button.on').dataset.d,
 }));
 check(after.wins === before.wins && after.losses === before.losses, 'record did not survive reload', { before, after });
 check(after.best === before.best, 'best score did not survive reload', { before, after });
 check(after.diffOn === 'medium', 'difficulty preference not restored', after);
-check(!after.statHidden && after.statLine.length > 0, 'stat line not shown after reload', after);
+/* The Best/Record line above Play was removed 2026-08-22 (user call), so no
+   home surface states the record any more — the restored difficulty above is
+   what a player can SEE of the reload, and the session record shows on the
+   result screen at the end of the next game. */
 await shot(page, 'pwa-start');
 
 // ---- 4. offline: cut the network entirely and reload ----

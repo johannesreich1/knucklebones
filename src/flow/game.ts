@@ -24,7 +24,7 @@ import { renderSide, renderAll, applySides, updateRecord, clearHints, showHints,
 import { fit } from '../ui/layout.ts';
 import { startTimer, stopTimer, showClock } from './timer.ts';
 import { coachShow, coachHide, clearTut, tutNextRoll, tutOnChoose } from './tutorial.ts';
-import { updateStatLine, toMenu } from './menu.ts';
+import { toMenu } from './menu.ts';
 import { showEnd, closeEnd } from '../ui/endscreen.ts';
 import { resetSpells, drawSpell, renderSpells, aiSpellTurn, clearUndo } from './spells.ts';
 
@@ -421,11 +421,16 @@ export function endGame(){
   else if(duo || p1won){ Sfx.win(); }
   else { Sfx.lose(); vibrate(220); }
   updateRecord();
+  /* Still recorded, deliberately unshown: the Best/Record line above the Play
+     button was removed 2026-08-22 (user call — the offline screen is a setup
+     screen, not a trophy case), and the session record now lives on the result
+     screen alone. The high score keeps accumulating rather than being deleted,
+     because a player's history cannot be got back once it stops being written. */
   if(!tut){                                     // a scripted round earns no records
     const best = duo ? Math.max(me,ai) : me;    // duo: best score by either player
     if(best>S.best) S.best=best;
   }
-  saveStats(); updateStatLine();
+  saveStats();
   setStatus('',null);   // the result screen announces the winner — the table says nothing twice (user call)
   // ONE result screen, filled from here — the fireworks and the title's landing
   // belong to it, so a ranked win gets exactly the same show (ui/endscreen)
