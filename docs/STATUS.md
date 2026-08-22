@@ -785,7 +785,7 @@ the next drift:
   (after the write, not by emptying first — two builds can overlap).
 - **Nothing rendered the cards.** The build catches what Node can see; a card
   taller than the height its meta declares is simply CUT OFF in the pane, and
-  thirteen were — `01-widths` was losing 811px of itself. `tests/test22.mjs`
+  thirteen were — `01-widths` was losing 811px of itself. `tests/test23.mjs`
   now lays every built card out in a browser and fails the gate on a card that
   does not fit its frame, or on a `{{token}}` that never expanded.
 - **The preview chrome pinned the duel pair.** Card titles were drawn in
