@@ -479,8 +479,34 @@ html.clock .timer.on{visibility:visible}
    sit dead centre in the visible bar rather than 1px high. The safe-area inset
    is added on top of that 16 and is not part of the reckoning: it is the
    notch's space, not the bar's. */
+/* The glass's two lengths are DERIVED from the geometry above, not chosen —
+   they are its optics, not two more numbers to keep in step by hand:
+     --glassfade  how much of the BAR the fade occupies, measured up from the
+                  bar's bottom: its content row plus the breathing room under
+                  it. So the ramp covers exactly the part of the bar you look
+                  at, and the strength above it is the status bar's ground.
+     --glasstail  how far past the bar it takes to reach nothing. Six pixels
+                  short of the --band + --headgap that .pbody reserves, so the
+                  glass can NEVER touch content that is sitting still.
+   How far you must SCROLL for the frost to arrive is a third distance, and it
+   is that same --band + --headgap: how far the first card travels to get
+   behind the bar. ui/dom.ts reads those two lengths and adds them rather than
+   reading one derived var, because a custom property holding a calc() comes
+   back out of getComputedStyle as text, not as a number — asking for the
+   derived one there fails silently into a fallback, which is the drift this
+   is meant to prevent, wearing a disguise. */
 .ov.paged{--band:22px;--barpad:16px;--bartop:calc(env(safe-area-inset-top,0px) + 16px);
-  --headh:calc(var(--bartop) + 30px + var(--barpad));--headgap:18px;gap:0;
+  --headh:calc(var(--bartop) + 30px + var(--barpad));--headgap:18px;
+  --glasstail:calc(var(--band) + var(--headgap) - 6px);
+  /* the fade's SEAMS, as offsets into the glass layer — the bar's own parts,
+     not one constant, so they move with the inset instead of being swallowed
+     by it. The layer runs from the screen's top edge to --glasstail past the
+     bar, so measuring back from 100% lands on: the title's bottom (one --barpad
+     up from the bar's edge), its top (a 30px icon row above that), and the
+     bar's own bottom. */
+  --g-barbot:calc(100% - var(--glasstail));
+  --g-tbot:calc(100% - var(--glasstail) - var(--barpad));
+  --g-ttop:calc(100% - var(--glasstail) - var(--barpad) - 30px);gap:0;
   justify-content:flex-start;overflow:hidden;
   padding:0}
 /* THE BAR IS THE GLASS. Content passes BEHIND it — the body is pulled up under
@@ -495,10 +521,11 @@ html.clock .timer.on{visibility:visible}
 .ov.paged .shead{padding:var(--bartop) var(--pad-x) var(--barpad);flex:0 0 auto;
   z-index:3;position:relative}
 /* THE GLASS IS ONE GRADIENT, and it is a LAYER BEHIND the bar's content, not
-   the bar itself: masking the bar would fade its own title with it. It runs
-   from the top edge, holds full strength behind the title, then falls away
-   past the bar's bottom — so the frost has no edge anywhere, and can be light
-   rather than a slab. */
+   the bar itself: masking the bar would fade its own title with it. THE WHOLE
+   BAR IS THE FADE — it does not hold a strength and then drop away at the
+   bottom, it thins continuously from the screen's top edge until it is gone a
+   little past the bar. So there is no plane and no edge anywhere, and it can
+   be light rather than a slab. */
 /* FULL BLEED, ESCAPING THE COLUMN. .shead is capped at --w-col (400px) and
    centred, so a glass anchored to it stops at the column's edges — on any
    screen WIDER than 400 that leaves an unfrosted strip down each side (a
@@ -506,24 +533,74 @@ html.clock .timer.on{visibility:visible}
    390 cannot show it: both are narrower than the cap. The glass spans the
    viewport instead, and .ov.paged's overflow:hidden trims the 100vw. */
 .ov.paged .shead::before{content:"";position:absolute;left:calc(50% - 50vw);width:100vw;top:0;
-  bottom:calc(-1 * var(--band));z-index:-1;pointer-events:none;
-  /* ...and it is NOT THERE until the view is actually scrolled (ui/dom.ts
-     marks .scrolled). An unscrolled page has nothing passing under the bar, so
-     frosting it only dims the aurora for nothing. */
-  opacity:0;transition:opacity .2s ease;
+  bottom:calc(-1 * var(--glasstail));z-index:-1;pointer-events:none;
+  /* ...and it ARRIVES WITH THE CONTENT, in proportion to how far the body has
+     actually travelled — ui/dom.ts authors --sc as 0..1 over --band + --headgap,
+     the distance the first card takes to get behind the bar. It
+     used to snap to full on the first scrolled pixel, which read as a slab
+     dropping in (user report, from the ladder).
+     THE FALLBACK 0 IS LOAD-BEARING. A view can be measured before any scroll
+     has ever fired — tests/test17 opens views by hand, and assigning a body's
+     scrollTop the 0 it already holds fires no event — so --sc is genuinely
+     unset at rest. Without the fallback the declaration is invalid at
+     computed-value time and opacity falls back to its INITIAL value, 1,
+     frosting every resting view. The 0 is what makes "unscrolled means no
+     glass" true with no JavaScript in the story at all. */
+  opacity:var(--sc,0);
   /* THE STOPS ARE ABSOLUTE, NOT PERCENTAGES. This layer includes the screen's
      top inset, and on a notched phone that inset is ~59px — so percentage
      stops put the glass's full strength on the STATUS BAR and left it already
      faded by the time it reached the title (user report, from a device; a
      desktop browser has a 0 inset and cannot show this). Measuring the falloff
-     from the BOTTOM instead makes it inset-independent: solid down to the
-     bar's own bottom edge, then away over --band. */
-  background:linear-gradient(180deg,rgba(4,5,12,.5) 0,
-    rgba(4,5,12,.5) calc(100% - var(--band)),transparent 100%);
+     from the BOTTOM instead makes it inset-independent, at any inset. */
+  /* A RAMP, NOT A SLAB. The tint used to hold a flat .5 the whole way down and
+     then drop over the last 22px: a panel with an edge on it, however soft
+     those 22px were, and on a device over the aurora it read as a black bar
+     pasted onto the game (user report, with a screenshot of the ladder). Now
+     the fade IS the bar — it thins from the very top edge, is half gone by the
+     bar's own bottom, and dies out over the short tail below. Nothing holds a
+     value anywhere, so there is no plane for the eye to find.
+     THE SEAMS SCALE WITH THE INSET, which is why they are the bar's parts and
+     not a length. A fixed ramp measured up from the bar's bottom is the mirror
+     of the percentage bug above: the bar GROWS with the notch, so a constant
+     covers a shrinking fraction of it. At a 46px ramp the top 75px of a
+     notched bar — 62% of it, the whole status-bar region — ran .56 to .50,
+     which is a plane again, and darker than the slab it replaced. Anchored to
+     the title's own edges the drop across that region is .58 to .44 at every
+     inset, and the type sits on an even ground with the blur at full strength
+     the whole way across it rather than smearing along the baseline.
+     Two things were tried and rejected on the way, both worth not repeating:
+     a fade confined to the tail (the original — that is the slab), and a fade
+     dying exactly ON the bar's bottom edge with no tail at all. The second is
+     genuinely edgeless, but with nothing reaching past the bar the first line
+     of content sits at full brightness immediately under the title and crowds
+     it. The tail is not decoration: it is what gives the title air.
+     No shadow, here or anywhere near it. A drop shadow would put back exactly
+     the hard boundary all of this removes.
+     The curve EASES OUT rather than running straight to zero — a linear ramp
+     is technically edgeless and still reads as a wipe, because the eye finds
+     the place where the slope stops. */
+  background:linear-gradient(180deg,
+    rgba(4,5,12,.58) 0,
+    rgba(4,5,12,.44) var(--g-ttop),
+    rgba(4,5,12,.36) var(--g-tbot),
+    rgba(4,5,12,.20) var(--g-barbot),
+    rgba(4,5,12,.05) calc(100% - var(--glasstail) * .35),
+    transparent 100%);
+  /* the BLUR holds full down to the top of the ramp — that is what keeps the
+     title legible over anything — then eases out with the tint, reaching
+     nothing on the same line so neither leaves an edge behind */
   -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
-  -webkit-mask-image:linear-gradient(180deg,#000 0,#000 calc(100% - var(--band)),transparent 100%);
-  mask-image:linear-gradient(180deg,#000 0,#000 calc(100% - var(--band)),transparent 100%)}
-.ov.paged.scrolled .shead::before{opacity:1}
+  -webkit-mask-image:linear-gradient(180deg,#000 0,
+    #000 var(--g-tbot),
+    rgba(0,0,0,.72) var(--g-barbot),
+    rgba(0,0,0,.30) calc(100% - var(--glasstail) * .5),
+    rgba(0,0,0,.10) calc(100% - var(--glasstail) * .18),transparent 100%);
+  mask-image:linear-gradient(180deg,#000 0,
+    #000 var(--g-tbot),
+    rgba(0,0,0,.72) var(--g-barbot),
+    rgba(0,0,0,.30) calc(100% - var(--glasstail) * .5),
+    rgba(0,0,0,.10) calc(100% - var(--glasstail) * .18),transparent 100%)}
 /* THE SOFT TOP EDGE: content BLURS out as it passes under the header instead
    of being guillotined at the scroller's edge. The band hangs off the header,
    so it is pinned to the page's scroll top wherever that is — and because it

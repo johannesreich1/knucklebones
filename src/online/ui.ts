@@ -6,7 +6,7 @@
 // queue). Match play itself lives in play.ts and hooks in via startQueue.
 import './online.css';
 import { ME, AI } from '../core/rules.ts';
-import { $, show, hide } from '../ui/dom.ts';
+import { $, show, hide, settleGlass } from '../ui/dom.ts';
 import { loaderDie, loaderWait } from '../ui/loader.ts';
 import { showEnd, setPlates, closeEnd } from '../ui/endscreen.ts';
 import { Sfx } from '../ui/audio.ts';
@@ -184,6 +184,13 @@ function panel(which: Panel): void {
   $('#ovOnline').classList.toggle('listview', which === 'onBoard' || which === 'onHistory');
   $('#onTitle').textContent = PANELS[which].title;
   ($('#btnOnlineBack') as HTMLElement).style.visibility = PANELS[which].back ? 'visible' : 'hidden';
+  /* All six panels share ONE .pbody, so leaving the deep-scrolled ladder for a
+     short one leaves its scroll offset behind: the browser clamps it to 0 at
+     once but does not fire the scroll event until the next rendering turn, and
+     Chromium paints one frame of full-strength header glass over an empty page
+     in between (~16ms, measured; WebKit does not). Settling here costs one read
+     and there is no frame to see. */
+  settleGlass('#ovOnline');
 }
 
 /* ---- the identity panel ----

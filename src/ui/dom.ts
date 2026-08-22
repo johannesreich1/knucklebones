@@ -6,16 +6,72 @@ import { S } from '../state.ts';
 
 export const $ = (s: string) => document.querySelector(s) as HTMLElement;
 
-/* THE HEADER GLASS ONLY EXISTS ONCE YOU SCROLL. At rest the bar is plain and
-   the aurora behind it is unobstructed (user call — frosting a view nobody has
-   moved dims the background for nothing); the frost fades in the moment
-   content actually travels under it.
+/* THE HEADER GLASS ARRIVES WITH THE CONTENT. At rest the bar is plain and the
+   aurora behind it is unobstructed (user call — frosting a view nobody has
+   moved dims the background for nothing). Past that it is a CONTINUOUS function
+   of how far the body has actually travelled, not a switch: --sc runs 0..1 over
+   the first --band + --headgap pixels, which is exactly the distance the first
+   card takes to get behind the bar. Snapping to full on the first pixel read as
+   a slab dropping in (user report, from the ladder).
+   The distance lives in the STYLESHEET, beside the padding it is derived from,
+   so the fade and the layout cannot drift apart — here it is only read.
    ONE capture-phase listener serves EVERY paged view — the ones in the markup,
    the ones built lazily (the library, the online sheet) and the ones appended
    to endlessly (the ladder, match history) — because `scroll` does not bubble
    but it does capture. No view has to opt in, and none can forget. */
+interface GlassState { head: HTMLElement | null; ramp: number; sc: number }
+const glass = new WeakMap<Element, GlassState>();
 function markScrolled(body: Element): void {
-  body.closest('.ov.paged')?.classList.toggle('scrolled', (body as HTMLElement).scrollTop > 1);
+  const ov = body.closest('.ov.paged') as HTMLElement | null;
+  if (!ov) return;
+  let g = glass.get(ov);
+  if (!g) {
+    /* The ramp is the distance the first card travels to get behind the bar —
+       exactly .pbody's own reservation, --band + --headgap. Read from the
+       stylesheet so the two cannot drift, and read as those TWO plain lengths
+       rather than one calc(): a custom property is substitution-only, so
+       getComputedStyle hands back the literal token stream — a calc() comes
+       out as the string "calc(22px + 18px)" and parseFloat gives NaN. Asking
+       for a derived var here silently fell through to the fallback below,
+       which is the drift this was meant to prevent, wearing a disguise.
+       Both are fixed px and never change for an overlay, so this is read once. */
+    const cs = getComputedStyle(ov);
+    const px = (n: string) => parseFloat(cs.getPropertyValue(n));
+    const ramp = px('--band') + px('--headgap');
+    g = { head: ov.querySelector('.shead'), ramp: ramp > 0 ? ramp : 40, sc: -1 };
+    glass.set(ov, g);
+  }
+  if (!g.head) return;
+  // iOS rubber-bands scrollTop NEGATIVE at the top, which would otherwise
+  // author a negative opacity and be clamped to nothing anyway — clamp here so
+  // the value written is always the one meant
+  const y = Math.max(0, (body as HTMLElement).scrollTop);
+  /* quantised: a flick fires many events per pixel of travel, and writing an
+     unchanged custom property still costs a style invalidation. 1/50 is a step
+     every 0.8px of the ramp — far below what an eye resolves in a fade. */
+  const sc = Math.round(Math.min(1, y / g.ramp) * 50) / 50;
+  if (sc === g.sc) return;
+  g.sc = sc;
+  /* WRITTEN ON THE BAR, NOT THE OVERLAY. A custom property inherits, so setting
+     it on the overlay invalidates the computed style of everything inside it —
+     and the view this exists for is the ladder, which holds the whole season.
+     Measured on 600 rows at 4x CPU throttle (a mid-range phone): 5515us per
+     write on the overlay against 20us on .shead, 275x, a third of a frame gone
+     on every scroll event of a flick. .shead::before is the only thing that
+     reads --sc, and a pseudo-element inherits from the element it belongs to,
+     so the narrow target is also the correct one.
+     Do NOT reach for @property to fix this: `inherits:false` would stop the
+     value reaching ::before at all and the glass would simply never appear. */
+  g.head.style.setProperty('--sc', String(sc));
+}
+/* Content REBUILT SHORT under a body that kept its offset: the browser clamps
+   scrollTop to 0 at once but does not fire the scroll event until the next
+   rendering turn, so a stale --sc paints for exactly one frame. Chromium shows
+   it (a dark bar over an empty page for ~16ms when the ladder gives way to the
+   short profile panel); WebKit does not. Anything that empties or swaps a
+   paged body calls this straight after, and there is no frame to see. */
+export function settleGlass(sel: string): void {
+  document.querySelector(sel)?.querySelectorAll('.pbody').forEach(markScrolled);
 }
 let watching = false;
 export function watchPagedScroll(): void {

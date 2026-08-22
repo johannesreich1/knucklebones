@@ -81,15 +81,42 @@ try {
         await new Promise((r) => setTimeout(r, 60));
         const bodyTop = body.getBoundingClientRect().top;
         const first = body.firstElementChild?.getBoundingClientRect();
-        const fade = parseFloat(getComputedStyle(ov).getPropertyValue('--band')) || 0;
         const before = head.getBoundingClientRect().y.toFixed(1);
+        /* HOW FAR THE GLASS ACTUALLY REACHES, read off the pseudo-element
+           rather than guessed from a var name. It used to read --band, which
+           stopped governing the glass the day the falloff got its own length —
+           the assertion kept passing while measuring something else entirely.
+           A custom property holding a calc() comes back out of
+           getComputedStyle as TEXT, so no var can be trusted for a number;
+           `bottom` on an absolutely positioned box resolves to real pixels. */
+        const glassBottom = head.getBoundingClientRect().bottom
+                          - parseFloat(getComputedStyle(head, '::before').bottom || '0');
         /* AT REST THE GLASS IS NOT THERE. An unscrolled page has nothing
            passing under the bar, so frosting it only dims the aurora for
            nothing (user call). Appending rows fires no scroll event, so a
-           lazily-grown list sitting at the top must stay clear too. */
+           lazily-grown list sitting at the top must stay clear too.
+           NOTE this view was opened by hand above, never through ui/dom show(),
+           and assigning a body's scrollTop the 0 it already holds fires NO
+           scroll event — so nothing has ever authored --sc here. That is the
+           point: "unscrolled means no glass" has to hold with no JavaScript in
+           the story, which is what the `var(--sc, 0)` fallback buys. Without
+           the fallback the declaration is invalid at computed-value time and
+           opacity falls back to its initial 1. */
         body.scrollTop = 0;
         await new Promise((r) => setTimeout(r, 260));
         const glassAtRest = +getComputedStyle(head, '::before').opacity;
+        /* IT ARRIVES WITH THE CONTENT, not on the first pixel. A frost that
+           snapped to full the instant anything moved read as a slab dropping in
+           (user report, from the ladder). Sampled PART-WAY through the ramp:
+           the value there must be strictly between nothing and everything, and
+           must keep growing. A boolean implementation passes every other
+           assertion in this file and fails only these two. */
+        body.scrollTop = 10;
+        await new Promise((r) => setTimeout(r, 200));
+        const glassPart = +getComputedStyle(head, '::before').opacity;
+        body.scrollTop = 26;
+        await new Promise((r) => setTimeout(r, 200));
+        const glassMore = +getComputedStyle(head, '::before').opacity;
         body.scrollTop = 600;                       // as far as this body goes
         await new Promise((r) => setTimeout(r, 260));
         const glassScrolled = +getComputedStyle(head, '::before').opacity;
@@ -124,12 +151,18 @@ try {
           bodyScrolls: cs.overflowY === 'auto' || cs.overflowY === 'scroll',
           ovClips: getComputedStyle(ov).overflow === 'hidden',
           glass: /blur/.test(glass.backdropFilter || glass.webkitBackdropFilter || ''),
-          glassAtRest, glassScrolled, scrollable: body.scrollHeight > body.clientHeight + 2,
-          glassFades: /gradient/.test(glass.maskImage || glass.webkitMaskImage || ''),
+          glassAtRest, glassPart, glassMore, glassScrolled,
+          scrollable: body.scrollHeight > body.clientHeight + 2,
+          /* the mask must actually REACH nothing, not merely be some gradient:
+             the old test matched the substring "gradient", which is equally
+             true of a mask that ends on a hard edge pointing the wrong way */
+          glassFades: /transparent|rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)/
+            .test(glass.maskImage || glass.webkitMaskImage || ''),
           barAtTop: headBox.top <= 0.5,
           behindBar: bodyTop <= headBox.top + 0.5,
           extraScrollers: extra,
-          clearAtRest: first ? first.top - bodyTop >= fade - 0.5 : true });
+          /* resting content must clear the glass's REAL reach, not --band's */
+          clearAtRest: first ? first.top >= glassBottom - 0.5 : true });
         body.scrollTop = 0;
         if (!was) ov.classList.remove('on');
       }
@@ -146,6 +179,10 @@ try {
       check(p.glassAtRest === 0, `${p.id} FROSTS ITS BAR AT REST — it must dim the aurora only once scrolled: ` + label, p);
       if (p.scrollable) {
         check(p.glassScrolled > 0, `${p.id} never brings the glass in when scrolled: ` + label, p);
+        check(p.glassPart > 0 && p.glassPart < p.glassScrolled,
+          `${p.id}'s glass SNAPS instead of fading in with the scroll: ` + label, p);
+        check(p.glassMore > p.glassPart,
+          `${p.id}'s glass does not keep coming in as more is scrolled: ` + label, p);
       }
       check(p.glassFades, `${p.id}'s glass ends on a hard edge instead of falling away: ` + label, p);
       check(p.barAtTop, `${p.id}'s bar starts below the screen edge — the glass will read as beginning mid-bar: ` + label, p);
