@@ -86,6 +86,12 @@
    retired the scoping: the --g-* palette lives at :root (styles/main.css)
    now, because the identity plate wears it on Home and the result screen. */
 #ovOnline .ghor{display:flex;align-items:center;gap:8px;margin:9px 0 3px}
+/* ...but the TOP one has nothing to be spaced away from: that 9px is the
+   leading BETWEEN groups, and on the first horizon it just stacks on the
+   reserve above it, the same way the panel's margin did. The list keeps its
+   rhythm; only its first line moves up. Flex does not collapse margins, so
+   this has to be said. */
+#ovOnline .lb > .ghor:first-child{margin-top:0}
 #ovOnline .ghor::before,#ovOnline .ghor::after{content:"";height:1px;background:
   linear-gradient(90deg,transparent,var(--gc) 30%,var(--gc) 70%,transparent);opacity:.45}
 #ovOnline .ghor::before{flex:0 0 18px}
