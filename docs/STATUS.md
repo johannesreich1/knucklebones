@@ -12,7 +12,7 @@ was decided, and what's still open.*
 | **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0024, RLS + column-grant hardened. 0014 (Game Center ids) is written but NOT applied — it waits for a device. 0028 (player_card returns the full face-off row — renumbered from 0027, which the nickname hardening took) applied 2026-08-21: the result screen's foe plate carries the rank and opens the face-off |
 | **Edge Functions** | `pvp-join` **v20**, `pvp-move` **v17**, `pvp-claim` v11, `account-delete` v1 — all ACTIVE, nothing dead deployed. `gc-auth` is written but undeployed (same reason). `pvp-move` v15 = the away-turns `index.ts` + the colshield-honest core, both on main since 2026-08-21. `pvp-claim` v11 (deployed 2026-08-21, live-verified via `tests/e2e-pvp.mjs`) adds `resign: true` — the quit button's instant forfeit — and carries the same current core. `pvp-join` v18 (2026-08-21 evening, user report from a live human-vs-human match): `rejoined` became honest — a ZERO-MOVE active match returns as a fresh pairing, because the waiting player's poll lands on the active-match branch the instant the partner's join creates the match, and the unconditional `rejoined:true` made exactly one of the two skip the mode-wheel reveal. Deployed-vs-repo byte-verified. **`pvp-join` v20 + `pvp-move` v17 (2026-08-22)** — ONE seating rule everywhere: the lower-rated player opens, in every mode, human opponent or bot. v19 had briefly made it mode-aware (a `seatEdge` field flipping the seat under LIMITED, whose second mover is measurably favoured); reverted within hours by decision, because a seating rule that varies per mode makes every future mode carry a balance question and the ~3.4-point error is smaller than the confusion — the measurement survives in `core/modes.ts` as context explicitly not to act on. v20 also ends the **bot exemption**: bots could not open (they only move inside a human's request), so the handicap applied between humans and was skipped exactly where, with a thin pool, most ranked matches are. `openForBot()` plays a bot's opening move at match creation, which required lifting the bot's move decision out of `pvp-move` into `core/bot.ts` — one implementation, two callers — proven identical to the block it replaced at 113,400 calls across all 7 modes and all 7 ladder groups, 0 differences. (`searchRoot` jitters ties from the GLOBAL `Math.random`, so such a comparison must seed the global stream; seeding only the injected one reports ~16% false mismatches.) A bot's opening move also broke `rejoined`'s "has anyone moved?" proxy for "has the mode wheel been seen?" — it now asks whether THE CALLER has moved, or the reveal would have been eaten in half of all bot matches. **Correction to the v18 line above:** its claim to "refresh the function's `core/` copies to current" was FALSE — v18's `core/rules.ts` predated the spell layer entirely (no `CharmSt`, no `openStrikes`, `applyMove` without its charm parameter) and v19 is what actually refreshed them. That drift was harmless for one reason worth keeping: **no Edge Function imports `core/spells.ts`**, so nothing the server replays could diverge — `applyMove`'s charm branch is only entered when a charm is passed, and neither `rebuild()` nor `ai.ts` ever passes one. Proven, not assumed: 50,400 placements across all 7 modes compared per-placement, 0 divergences, independently re-confirmed at 570,086 rebuild states. `tools/fnfiles.mjs` computes each function's upload set from its imports and `tests/fnsync.test.ts` gates it — including which functions ship `core/spells.ts` (currently none), the fact that stops being true the day one needs the spell layer |
 | **CI** | GitHub Actions: build + full test gate (28 suites) on every push — green through current `main` |
-| **Design system** | 172 cards in the Claude Design project "Knucklebones", generated from the app's real CSS **and its real code** — 52 screens, of which the studies ship at one device size and the rest at four — see "Cards render the app" and "The library stopped being a graveyard" below |
+| **Design system** | 176 cards in the Claude Design project "Knucklebones", generated from the app's real CSS **and its real code** — 53 screens, of which the studies ship at one device size and the rest at four — see "Cards render the app" and "The library stopped being a graveyard" below |
 | **Signups** | **Open** — a first tap on RANKED mints a guest account (no email, no form). Attaching an email still waits on SMTP; see `docs/IDENTITY.md` |
 
 Verified live on 2026-08-17: build tag on the deployed page matches the local
@@ -647,11 +647,9 @@ the online chunk itself still downloading, when online.css does not exist
 - **Avatar picker** (showAvatar): the preview slot carries the first-open wait.
 
 Deliberately untouched: **matchmaking** (its designed queue panel stays until
-a duel-clash successor exists — two dice leaning in and clashing, which needs
-a resolution beat when the opponent's name lands and must not fight the clock
-for attention; LD8 drew that beat and its card was retired unbuilt with the
-rest of the losing studies, so the successor starts from this paragraph),
-**the profile**
+the LD8 duel-clash v2 — card 34h, two dice leaning in and clashing, which
+needs a resolution beat when the opponent's name lands and must not fight the
+clock for attention), **the profile**
 (cached-paint anti-flicker choreography is better than a spinner), **the
 result screen** (optimistic paint), and **in-match waits** (the turn clock
 carries them). The rolling die (LD6, card 34f) stays in the drawer until a
@@ -743,7 +741,7 @@ and the pick row agree on what a mode is called *by construction*.
 
 Every study this project ever ran had left its losers in `design/screens/`, so
 the Design pane was 77 rejected alternatives and 30 shipped screens, with
-nothing marking which was which. **61 cards were retired**; the rule was the
+nothing marking which was which. **60 cards were retired**; the rule was the
 narrow one: *a card survives only if the app ships what it proposes.* Every
 verdict is evidence, not memory — the app names its own winner in a comment
 almost every time (`main.css` "Studied as design/screens/38f-rowmult-aimed",
@@ -755,10 +753,13 @@ What survived a study, and what it is now: **13d** the home plate, **33e/33g**
 the face-off and the board, **34a** the pip-clock loader, **36d/36f** the
 beaten stamp and the result plates, **37a** the slam, **38f** the aimed
 bracket, **60/65** the win and loss titles, **71** the orbit dial, **81** the
-reveal's versus line, **92d** the tier ring, **98c** the long diagonal. Two
+reveal's versus line, **92d** the tier ring, **98c** the long diagonal. Three
 losers were kept by decision and are marked as such: **34f** (the rolling die,
-for a wait with a direction) and **13c** (your die wearing the ring — a
-candidate for the pre-match comparison). Group labels lost the word "study"
+for a wait with a direction), **34h** (the duel clash, which this file already
+names as matchmaking's successor) and **13c** (your die wearing the ring — a
+candidate for the pre-match comparison). The rule they are the exception to is
+worth stating: an unshipped card stays only where someone has said out loud
+that it is waiting for a moment which does not exist yet. Group labels lost the word "study"
 wherever the study was over, because a group named for a bake-off that ended
 is a lie about what is in it.
 
