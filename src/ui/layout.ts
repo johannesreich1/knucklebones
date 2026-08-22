@@ -71,7 +71,12 @@ export function fit(){
      left (main.css html.rowmode .rowchips is right:100%) while the points
      sit in the right one, so the two never meet; asking the gutter to hold
      the wider of the two tenants is the whole difference. */
-  const gut = Math.floor((w - safe.h - 20 - (cell*SPEC.cols + 2*6)) / 2);
+  /* EVEN, always. The score cluster is placed at right:--gut/2 and centres a
+     20px rune inside itself, so an odd gutter puts both on a half pixel — the
+     button's edge and its glowing icon then straddle the device grid and
+     shimmer on every repaint (user report). Rounding down to even costs at
+     most one pixel of gutter and buys a rune that sits still. */
+  const gut = 2 * Math.floor((w - safe.h - 20 - (cell*SPEC.cols + 2*6)) / 4);
   const rowmode = S.scoring===ROWSWITCH || S.scoring===ROWMULT;
   const sidepts = !land && gut >= (rowmode ? RAIL_LANE : 40);
   document.documentElement.classList.toggle('sidepts', sidepts);

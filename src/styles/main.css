@@ -857,6 +857,12 @@ html.rowswitch .cols .chip{visibility:hidden}
    construction — it is never the player to move's rune, so it is always
    :disabled, which already kills every pointer event and every transform */
 .plate .rune{--sz:20px;margin:-2px 0}
+/* the READOUT carries no glow. The cluster is centred with percentage
+   transforms, so on some screen heights it lands on a half device pixel — and
+   a drop-shadow around a 16px mark turns that half pixel into a visible smear
+   that re-rasterises on every repaint (the "flickering" icon, user report).
+   The wielded rune in the rail keeps its glow; this one is an indicator. */
+.plate .rune svg{filter:none}
 .plate .rune::after{display:none}
 .plate .rune .n{min-width:12px;height:12px;line-height:12px;font-size:8px;right:-3px;bottom:-3px}
 .rune:disabled::after{display:none}

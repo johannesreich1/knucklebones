@@ -196,7 +196,12 @@ function build(): void {
       b.className = 'rune';
       b.dataset.spell = s.id;
       b.dataset.seat = String(seat);
-      b.innerHTML = spellIcon(s.id, 15) + '<b class="n"></b>';
+      /* 16, not 15: the rune's box is an EVEN 20px in a nameplate, so an odd
+         icon centres on a half pixel and the glowing mark straddles the device
+         grid forever — it never rasterises the same way twice, which is the
+         shimmer that reads as the icon moving (user report, three times).
+         Even icon in an even box lands on whole pixels. */
+      b.innerHTML = spellIcon(s.id, 16) + '<b class="n"></b>';
       bind(b, s.id);
       runes.set(key(seat, s.id), b);
     }
