@@ -204,7 +204,10 @@ a cloud session, which has none.
   and re-tune AI depth budgets (`bench3`) for any new spec.
 - **`window.__kb`** (src/hooks.ts) is the test suites' driving surface — keep
   its member names stable. Suites reach the relocated local-play controls via
-  `__kb.openPractice()` / `__kb.goHome()`.
+  `__kb.openPractice()` / `__kb.goHome()`. The lazy online chunk cannot be
+  reached from there (hooks.ts must never import it), so it publishes its own
+  two on load: `__kbOnline()` introspects the live match (`online/play.ts`) and
+  `__kbResult(report)` deals the Result screen without one (`online/ui.ts`).
 
 ## Native (iOS / Android)
 

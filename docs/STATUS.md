@@ -1,6 +1,6 @@
 # Project Status
 
-*Last updated: 2026-08-21. This is the "where do we stand" document — the
+*Last updated: 2026-08-22. This is the "where do we stand" document — the
 README explains how the project works; this file records what exists, what
 was decided, and what's still open.*
 
@@ -11,7 +11,7 @@ was decided, and what's still open.*
 | **Web** | **LIVE** at https://knucklebones-asg.pages.dev — Cloudflare Pages, auto-deploys every push to `main` |
 | **Backend** | Supabase project `euzjcejbkxvqfrttgaxu` (EU) — schema through migration 0024, RLS + column-grant hardened. 0014 (Game Center ids) is written but NOT applied — it waits for a device. 0028 (player_card returns the full face-off row — renumbered from 0027, which the nickname hardening took) applied 2026-08-21: the result screen's foe plate carries the rank and opens the face-off |
 | **Edge Functions** | `pvp-join` **v20**, `pvp-move` **v17**, `pvp-claim` v11, `account-delete` v1 — all ACTIVE, nothing dead deployed. `gc-auth` is written but undeployed (same reason). `pvp-move` v15 = the away-turns `index.ts` + the colshield-honest core, both on main since 2026-08-21. `pvp-claim` v11 (deployed 2026-08-21, live-verified via `tests/e2e-pvp.mjs`) adds `resign: true` — the quit button's instant forfeit — and carries the same current core. `pvp-join` v18 (2026-08-21 evening, user report from a live human-vs-human match): `rejoined` became honest — a ZERO-MOVE active match returns as a fresh pairing, because the waiting player's poll lands on the active-match branch the instant the partner's join creates the match, and the unconditional `rejoined:true` made exactly one of the two skip the mode-wheel reveal. Deployed-vs-repo byte-verified. **`pvp-join` v20 + `pvp-move` v17 (2026-08-22)** — ONE seating rule everywhere: the lower-rated player opens, in every mode, human opponent or bot. v19 had briefly made it mode-aware (a `seatEdge` field flipping the seat under LIMITED, whose second mover is measurably favoured); reverted within hours by decision, because a seating rule that varies per mode makes every future mode carry a balance question and the ~3.4-point error is smaller than the confusion — the measurement survives in `core/modes.ts` as context explicitly not to act on. v20 also ends the **bot exemption**: bots could not open (they only move inside a human's request), so the handicap applied between humans and was skipped exactly where, with a thin pool, most ranked matches are. `openForBot()` plays a bot's opening move at match creation, which required lifting the bot's move decision out of `pvp-move` into `core/bot.ts` — one implementation, two callers — proven identical to the block it replaced at 113,400 calls across all 7 modes and all 7 ladder groups, 0 differences. (`searchRoot` jitters ties from the GLOBAL `Math.random`, so such a comparison must seed the global stream; seeding only the injected one reports ~16% false mismatches.) A bot's opening move also broke `rejoined`'s "has anyone moved?" proxy for "has the mode wheel been seen?" — it now asks whether THE CALLER has moved, or the reveal would have been eaten in half of all bot matches. **Correction to the v18 line above:** its claim to "refresh the function's `core/` copies to current" was FALSE — v18's `core/rules.ts` predated the spell layer entirely (no `CharmSt`, no `openStrikes`, `applyMove` without its charm parameter) and v19 is what actually refreshed them. That drift was harmless for one reason worth keeping: **no Edge Function imports `core/spells.ts`**, so nothing the server replays could diverge — `applyMove`'s charm branch is only entered when a charm is passed, and neither `rebuild()` nor `ai.ts` ever passes one. Proven, not assumed: 50,400 placements across all 7 modes compared per-placement, 0 divergences, independently re-confirmed at 570,086 rebuild states. `tools/fnfiles.mjs` computes each function's upload set from its imports and `tests/fnsync.test.ts` gates it — including which functions ship `core/spells.ts` (currently none), the fact that stops being true the day one needs the spell layer |
-| **CI** | GitHub Actions: build + full test gate (28 suites) on every push — green through current `main` |
+| **CI** | GitHub Actions: build + full test gate (32 suites) on every push. (The count said 27 until 2026-08-22, when `tests/run-all.mjs` was counted and found to disagree — the runner is the truth.) |
 | **Design system** | 176 cards in the Claude Design project "Knucklebones", generated from the app's real CSS **and its real code** — 53 screens, of which the studies ship at one device size and the rest at four — see "Cards render the app" and "The library stopped being a graveyard" below |
 | **Signups** | **Open** — a first tap on RANKED mints a guest account (no email, no form). Attaching an email still waits on SMTP; see `docs/IDENTITY.md` |
 
@@ -626,6 +626,66 @@ stylesheet defines.
   `.click()` inside 600ms of any real tap is swallowed by the guard (that
   is what the guard is FOR), which would have eaten every quick
   tap-then-swipe sequence.
+
+### 6d. ‹ answers to the door you came through (2026-08-22, user report)
+
+Tapping your own plate on the result screen opens your profile (design 36f).
+‹ then dropped you on the **main menu** — the match you had just played gone,
+with no way back to it. The profile is a Home destination *and* a result-screen
+destination, and its ‹ was `goHome()` outright, so it could only be right for
+one of the two doors.
+
+The rule the app already had is the one kept: a page's ‹ "returns exactly where
+you came from" (`00-navigation`). That cannot be a constant, so it is a slot the
+opener fills — `exitOnline` in `online/ui.ts`, defaulting to Home and set by
+`openOnline` (from Home) and by the result plate (back to the result). The
+sub-panel rule above it is untouched: the avatar picker and the history list
+still climb to the profile, never past it.
+
+The result screen is **not closed** on the way out — the online overlay opens
+*over* it, which is what overlays here already do (home stays on beneath pages,
+`main.css`: the topmost `.ov.on` paints the room). So ‹ is a `hide`, not a
+re-render: the same plates, the numbers that landed late still on them, no
+second entrance and no second firework. Closing and rebuilding could give none
+of that. `goHome()` gained `closeEnd()` for the same reason — with a screen able
+to sit above this overlay, home has to arrive with nothing on top of it.
+
+What comes back is a still frame, so it gets **one beat of life, and exactly
+one** (user call): `replayPlates()` runs the plates' theatre again — the cards
+deal in turn, the stamp slams, the beaten row takes the hit and throws its dust
+ring. The title does not land again and the fireworks do not fire again; those
+announce a verdict, and the verdict has already been given. Dropping
+`#endPlates`'s `dealtAt` re-arms the slam and `setPlates` does the rest, since
+rebuilding a node is what restarts a CSS animation — the same seam the late
+re-deal already used to *suppress* the theatre.
+
+Gated by **`tests/test22.mjs`** (served: the online chunk is lazy), which walks
+both doors and asserts in pixels — `elementFromPoint` names the room, because
+every `.ov` shares one z-index and a screen can be `.on` and fully covered. The
+replay is read by name off `getAnimations({subtree:true})`: `stampSlam` and
+`plateIn` running on the way back, nothing running once the screen has settled.
+`window.__kbResult` is the test hook that deals a result screen without a live
+match, alongside `__kb` and `play.ts`'s `__kbOnline`.
+
+### 6e. The result screen offers two actions, not three (2026-08-22, user call)
+
+The offline result carried **Next duel**, **Change difficulty** and **Home** —
+three buttons under a screen whose whole question is *again or not*, and the
+two secondaries landed a tap apart anyway (the setup screen's ‹ IS the way
+home). It is one primary and **one quiet secondary** now, in the short cut:
+**Change setup**, back to the OFFLINE screen this game came from. One label for
+both seatings — what waits there is the whole setup, not the one segment the
+old copy named, so the `duo ? 'Change mode' : 'Change difficulty'` branch is
+gone with it.
+
+The spec followed the screen: `EndSpec.alt` is gone and `home` is now `quiet`
+("the quiet way on"), which is what both flows actually fill — ranked with
+Home, local with the setup screen. `#btnMenu2` left the markup and
+`#btnEndHome` became `#btnEndQuiet`, because a slot named for one caller's
+destination is the same drift the HUD's sliders glyph was (§6). `tests/test15`
+pins the stack: exactly two buttons, the second labelled and **shorter in
+computed pixels** — a way out that stands as tall as NEXT DUEL is not a quiet
+one, whatever its class list says.
 
 ### 8. The loading die (2026-08-20 night, user pick from the LD1–LD8 studies)
 
