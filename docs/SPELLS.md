@@ -319,7 +319,10 @@ Learned from real play, each one a shipped bug:
   a seal is drawn it stands down and the seal carries it (full-strength line,
   thickened, breathing on the hint's beat); where there is no seal the
   `::after` **is** the outline and nothing changed. Both facts still reach the
-  player, with one line. A new mark that rings a column has to answer this
+  player, with one line. Reduced motion is the deliberate exception: ordinary
+  placement emphasis disappears and a protected column keeps only its resting
+  seal, while an explicitly armed spell still paints its registry-legal aim
+  ring. A new mark that rings a column has to answer this
   rule — `.col.legal:is(.shielded,.warded,.sealsnap)` in
   `src/styles/game/guards.css` is the one place it lives, and the spells browser
   `protection-layout` scenario counts the rings per column.

@@ -7,7 +7,12 @@
   animation-duration:.001ms!important;animation-iteration-count:1!important;
   transition-duration:.06s!important}
 #kbroot.reduce-motion #bg::before{animation:none}
-#kbroot.reduce-motion .col.legal::after,#kbroot.reduce-motion .col.danger::before{animation:none;opacity:.8}
+/* Ordinary placement hints are optional motion/attention cues. Spell targets
+   are decisions the player explicitly armed, so their .aim ring remains. */
+#kbroot.reduce-motion .col.legal:not(.aim)::after,
+#kbroot.reduce-motion .col.danger::before{display:none}
+#kbroot.reduce-motion.casting .col.aim::after{display:block;animation:none}
 #kbroot.reduce-motion .col.legal>.seal>g{animation:none;opacity:1}
+#kbroot.reduce-motion .plate.bump .tot{transform:none}
 #kbroot.reduce-motion .die.m3{animation:none}
 #kbroot.reduce-motion .col>.seal .sb{display:none}

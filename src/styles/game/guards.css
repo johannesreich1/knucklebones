@@ -139,15 +139,15 @@
    column box, .col.legal::after's dashed ring at 4px. Two rings 2.4px apart are
    not two marks, they are one doubled edge, which is what the player saw and
    photographed on a warded column.
-   NEITHER FACT IS DROPPED. The placement hint is not a ring — it is a STATE the
-   column's OUTLINE wears. Where the column has no outline of its own, ::after
-   IS that outline and nothing here changes (that ring is the affordance the
-   whole placement flow rests on, and it is also the aim ring — docs/SPELLS.md
-   §7). Where a seal is drawn, the seal is already the column's outline, so it
-   carries the state instead: full-strength line, thicker, breathing on the
-   hint's own beat. The mark still says which rule protects the column — closed
-   loop against clasped line, in gold or mint — and now also says whether you
-   may play into it, with one line rather than two.
+   With motion on, neither fact is dropped. The placement hint is not a ring —
+   it is a STATE the column's OUTLINE wears. Where the column has no outline of
+   its own, ::after IS that outline and nothing here changes (that ring is the
+   affordance the whole placement flow rests on, and it is also the aim ring —
+   docs/SPELLS.md §7). Where a seal is drawn, the seal is already the column's
+   outline, so it carries the state instead: full-strength line, thicker,
+   breathing on the hint's own beat. Reduced motion is the explicit exception:
+   ordinary placement attention cues stand down and the permanent seal stays
+   in its resting form; an armed spell's requested aim ring remains.
    THE STATES ARE THE ONES ABOVE, restated here because CSS has no way to name
    a group once; they are kept adjacent so they cannot drift apart. In practice
    only .warded is reachable — .shielded means FULL and a full column is never
@@ -159,8 +159,8 @@
    against two — which is deliberate: the resting line is described once, below,
    and this says only what changes when the column becomes playable. */
 :where(#kbroot) .col.legal:is(.shielded,.warded,.sealsnap)::after{display:none}
-:where(#kbroot) .col.legal:is(.shielded,.warded,.sealsnap)>.seal>g{animation:sealready 1.4s ease-in-out infinite}
-:where(#kbroot) .col.legal:is(.shielded,.warded,.sealsnap)>.seal :is(.sl,.sa){stroke:var(--g);stroke-width:2;
+#kbroot:not(.reduce-motion) .col.legal:is(.shielded,.warded,.sealsnap)>.seal>g{animation:sealready 1.4s ease-in-out infinite}
+#kbroot:not(.reduce-motion) .col.legal:is(.shielded,.warded,.sealsnap)>.seal :is(.sl,.sa){stroke:var(--g);stroke-width:2;
   filter:drop-shadow(0 0 8px color-mix(in srgb,var(--g) 80%,transparent))}
 /* The breath is the hint's, in the seal's own hue: same 1.4s, same shape as
    @pulse. It does not scale — the line has 1.2px of gutter to a neighbour's

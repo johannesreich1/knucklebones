@@ -24,6 +24,7 @@ export async function runMotionSafeAreaScenarios(suite) {
   }));
   await rp.evaluate(() => document.querySelectorAll('#fx .particle').forEach((particle) => particle.remove()));
   await rp.tap('#motionSeg button[data-rm="1"]'); await rp.waitForTimeout(100);
+  await rp.tap('#faceSeg button[data-f="nums"]'); await rp.waitForTimeout(100);
   await rp.tap('#btnSettingsBack'); await rp.waitForTimeout(200);
   await rp.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
   // Force the human opener so this measures the shared roll/placement view,
@@ -44,7 +45,56 @@ export async function runMotionSafeAreaScenarios(suite) {
       .filter((animation) => animation.playState === 'running').length,
   }), rollStarted);
 
-  const beforePlacement = await rp.evaluate(() => window.__kb.S.boards[1][0].length);
+  /* Reduced motion removes the ordinary attention rings, not information a
+     player explicitly requested by arming a spell. Read the painted pseudo
+     elements because a class-only assertion cannot tell whether either ring
+     is actually visible. */
+  out.reducedHints = await rp.evaluate(() => {
+    const root = document.getElementById('kbroot');
+    const legal = document.querySelector('#botBoard .col.legal');
+    const danger = document.querySelector('#topBoard .col');
+    const ordinary = getComputedStyle(legal, '::after').display;
+    danger.classList.add('danger');
+    const destruction = getComputedStyle(danger, '::before').display;
+    root.classList.add('casting');
+    legal.classList.add('aim');
+    const aimed = getComputedStyle(legal, '::after');
+    const spell = {
+      display: aimed.display,
+      borderWidth: parseFloat(aimed.borderTopWidth),
+      borderStyle: aimed.borderTopStyle,
+    };
+    legal.classList.remove('aim');
+    root.classList.remove('casting');
+    danger.classList.remove('danger');
+    /* A protected legal column normally moves that hint onto its seal. Under
+       reduced motion it must look exactly like the same resting ward, while
+       the ward itself remains visible. */
+    legal.classList.add('warded');
+    const wardLine = legal.querySelector('.seal .sa');
+    const wardedLegal = {
+      seal: getComputedStyle(legal.querySelector('.seal')).display,
+      stroke: getComputedStyle(wardLine).strokeWidth,
+      filter: getComputedStyle(wardLine).filter,
+    };
+    legal.classList.remove('legal');
+    const wardedRest = {
+      stroke: getComputedStyle(wardLine).strokeWidth,
+      filter: getComputedStyle(wardLine).filter,
+    };
+    legal.classList.add('legal');
+    legal.classList.remove('warded');
+    return { ordinary, destruction, spell, wardedLegal, wardedRest };
+  });
+
+  const beforePlacement = await rp.evaluate(() => {
+    const score = document.getElementById('totBot');
+    const rect = score.getBoundingClientRect();
+    return {
+      dice: window.__kb.S.boards[1][0].length,
+      score: { height: rect.height, fontSize: getComputedStyle(score).fontSize },
+    };
+  });
   await rp.tap('#botBoard .col[data-col="0"]');
   await rp.waitForTimeout(50);
   out.reducedPlacement = await rp.evaluate((before) => {
@@ -52,8 +102,20 @@ export async function runMotionSafeAreaScenarios(suite) {
     const die = document.querySelector('#botBoard .col[data-col="0"] .slot .die');
     const dieRect = die?.getBoundingClientRect();
     const slotRect = die?.parentElement?.getBoundingClientRect();
+    const score = document.getElementById('totBot');
+    const scoreRect = score.getBoundingClientRect();
+    const point = document.querySelector('#botBoard .col[data-col="0"] .pts');
+    const numeral = die?.querySelector('.num');
+    const inkRect = (element) => {
+      if (!element) return null;
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      return range.getBoundingClientRect();
+    };
+    const pointRect = inkRect(point);
+    const numeralRect = inkRect(numeral);
     return {
-      before,
+      before: before.dice,
       after: window.__kb.S.boards[1][0].length,
       ghost: !!document.querySelector('#kbroot > .die'),
       settling: !!die?.classList.contains('settle'),
@@ -61,6 +123,22 @@ export async function runMotionSafeAreaScenarios(suite) {
         && Math.abs((dieRect.left + dieRect.width / 2) - (slotRect.left + slotRect.width / 2)) < .5
         && Math.abs((dieRect.top + dieRect.height / 2) - (slotRect.top + slotRect.height / 2)) < .5,
       slotPresent: !!slot,
+      score: {
+        bumping: document.getElementById('plateBot').classList.contains('bump'),
+        heightBefore: before.score.height,
+        heightAfter: scoreRect.height,
+        fontSizeBefore: before.score.fontSize,
+        fontSizeAfter: getComputedStyle(score).fontSize,
+        transform: getComputedStyle(score).transform,
+      },
+      point: pointRect && numeralRect && dieRect ? {
+        text: point.textContent,
+        numeralDisplay: getComputedStyle(numeral).display,
+        gap: numeralRect.top - pointRect.bottom,
+        centreError: Math.abs((pointRect.left + pointRect.width / 2)
+          - (numeralRect.left + numeralRect.width / 2)),
+        edgeError: Math.abs(pointRect.bottom - dieRect.top),
+      } : null,
     };
   }, beforePlacement);
   out.reduced = await rp.evaluate(() => ({
@@ -78,6 +156,24 @@ export async function runMotionSafeAreaScenarios(suite) {
     && !out.reducedPlacement.ghost && !out.reducedPlacement.settling
     && out.reducedPlacement.centred && out.reducedPlacement.slotPresent,
   'reduced motion did not place the die directly in its slot', out.reducedPlacement);
+  check(out.reducedHints.ordinary === 'none' && out.reducedHints.destruction === 'none'
+    && out.reducedHints.spell.display === 'block' && out.reducedHints.spell.borderWidth > 0
+    && out.reducedHints.spell.borderStyle === 'dashed'
+    && out.reducedHints.wardedLegal.seal !== 'none'
+    && out.reducedHints.wardedLegal.stroke === out.reducedHints.wardedRest.stroke
+    && out.reducedHints.wardedLegal.filter === out.reducedHints.wardedRest.filter,
+  'reduced motion did not hide ordinary hints while preserving a spell target', out.reducedHints);
+  check(out.reducedPlacement.score.bumping
+    && Math.abs(out.reducedPlacement.score.heightAfter - out.reducedPlacement.score.heightBefore) < .1
+    && out.reducedPlacement.score.fontSizeAfter === out.reducedPlacement.score.fontSizeBefore
+    && out.reducedPlacement.score.transform === 'none',
+  'a score still changes size when it updates with motion reduced', out.reducedPlacement.score);
+  check(out.reducedPlacement.point?.text.startsWith('+')
+    && out.reducedPlacement.point.numeralDisplay === 'flex'
+    && out.reducedPlacement.point.gap >= 2
+    && out.reducedPlacement.point.centreError <= 1.5
+    && out.reducedPlacement.point.edgeError <= 2,
+  'numbered-die score feedback covers the numeral instead of sitting at its top edge', out.reducedPlacement.point);
   check(out.reducedSystemDefault.state === null && out.reducedSystemDefault.jsFlag
     && out.reducedSystemDefault.rootClass && out.reducedSystemDefault.selected === '1',
     'the Reduced Motion toggle did not initialize from the OS default', out.reducedSystemDefault);

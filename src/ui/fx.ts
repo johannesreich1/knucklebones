@@ -88,17 +88,31 @@ export function floatPts(who: Player, col: number, text: string, color: string):
   const p = document.createElement('b');
   p.className = 'pts'; p.textContent = text; p.style.color = color;
   p.style.left = (slot.offsetLeft + slot.offsetWidth / 2) + 'px';
-  p.style.top = (slot.offsetTop + slot.offsetHeight * 0.30) + 'px';
   colE.appendChild(p);
+  /* A pip face leaves its middle free, so the existing rise can begin there.
+     A numeral owns that centre: deal the feedback from the die's reading-top
+     edge instead. The far face-to-face seat reads from the physical bottom,
+     and the line-height offset keeps a reduced-motion (fade-only) popup clear
+     of the number without depending on travel to create that separation. */
+  const numeral = slot.querySelector<HTMLElement>(':scope > .die.game-die > .num');
+  const numeralFace = !!numeral && getComputedStyle(numeral).display !== 'none';
+  const flippedNumeral = numeralFace && faceRotated(who);
+  p.style.top = numeralFace
+    ? (slot.offsetTop + (flippedNumeral ? slot.offsetHeight - p.offsetHeight : 0)) + 'px'
+    : (slot.offsetTop + slot.offsetHeight * 0.30) + 'px';
   /* informative, so reduced motion gets a plain fade instead of nothing */
   const rot = faceRotated(who) ? ' rotate(180deg)' : '';
-  if (REDUCED) p.style.transform = 'translate(-50%,0)' + rot;
+  const outward = flippedNumeral ? 1 : -1;
+  const edge = numeralFace ? p.offsetHeight : 0;
+  const translate = (distance: number): string =>
+    `translate(-50%,${outward * (edge + distance)}px)`;
+  if (REDUCED) p.style.transform = translate(0) + rot;
   const anim = REDUCED
     ? p.animate([{ opacity: 0 }, { opacity: 1, offset: .25 }, { opacity: 1, offset: .75 }, { opacity: 0 }], { duration: 750 })
     : p.animate([
-        { transform: 'translate(-50%,0) scale(.6)' + rot, opacity: 0 },
-        { transform: 'translate(-50%,-16px) scale(1.18)' + rot, opacity: 1, offset: .28 },
-        { transform: 'translate(-50%,-44px) scale(1)' + rot, opacity: 0 }
+        { transform: translate(0) + ' scale(.6)' + rot, opacity: 0 },
+        { transform: translate(16) + ' scale(1.18)' + rot, opacity: 1, offset: .28 },
+        { transform: translate(44) + ' scale(1)' + rot, opacity: 0 }
       ], { duration: 900, easing: 'cubic-bezier(.2,.7,.3,1)' });
   anim.onfinish = () => p.remove();
 }
