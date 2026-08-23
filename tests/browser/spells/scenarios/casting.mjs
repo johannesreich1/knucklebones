@@ -32,7 +32,8 @@ export async function runCastingScenarios(suite) {
   check(out.rings.legalHidden === 'none', 'placement hints still up while aiming', out.rings);
 
   /* ---------- 3. tap a column: ONE gate, one charge ---------- */
-  await page.tap('#topBoard .col[data-col="0"]'); await page.waitForTimeout(1200);
+  await page.tap('#topBoard .col[data-col="0"]');
+  check(await waitChoose(), 'PILFER never completed after a tapped cast');
   out.cast = await look();
   check(out.cast.mine === '[[2,6],[3],[]]', 'the caster column did not receive the stolen die', out.cast);
   check(out.cast.theirs === '[[6],[5],[]]', 'the enemy column kept its top die', out.cast);
@@ -77,7 +78,8 @@ export async function runCastingScenarios(suite) {
   // the steal takes from THEIR half: exactly the column it will rob lights up
   check(out.dragging.hot === 1 && out.dragging.hotSide === 'sideTop',
     'a theft must light the enemy column it will rob, and only that', out.dragging);
-  await page.mouse.up(); await page.waitForTimeout(1200);
+  await page.mouse.up();
+  check(await waitChoose(), 'PILFER never completed after a dragged cast');
   out.dropped = await look();
   check(out.dropped.mine === '[[1,1,6],[],[]]' && out.dropped.theirs === '[[],[],[]]',
     'the drop did not steal', out.dropped);
@@ -273,7 +275,7 @@ export async function runCastingScenarios(suite) {
     await table([[2], [], []], [[6], [], []], 4, fallback.page);
     await fallback.page.locator('.rune[data-seat="1"]:not([hidden])').click();
     await fallback.page.locator('#topBoard .col[data-col="0"]').click();
-    await fallback.page.waitForTimeout(950);
+    check(await waitChoose(fallback.page), 'PILFER never completed through the click fallback');
     out.clickFallback = await fallback.page.evaluate(() => ({
       pointer: typeof PointerEvent,
       mine: JSON.stringify(window.__kb.S.boards[1]),

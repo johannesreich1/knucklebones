@@ -11,67 +11,123 @@ export async function runPilferAnvilEffectScenarios(suite) {
     const theirs = Array.from({ length: height }, (_, index) => index + 1);
     await table([[4], [], []], [theirs, [], []], 5);
     await page.evaluate(() => { void window.__kb.spells.cast('pilfer', 0); });
-    await page.waitForTimeout(215);
+    await page.waitForTimeout(60);
 
-    const tension = await page.evaluate(() => {
+    const expected = height - 1;
+    const expectedFlight = 992 + expected * 512;
+    const expectedRelease = 512 + expected * 512;
+    const tension = await page.evaluate(async ({ release }) => {
       const column = document.querySelector('#topBoard .col[data-col="0"]');
       const ghost = document.querySelector('.pilfer-ghost');
       const blockers = [...column.querySelectorAll('.pilfer-blocker')];
-      const moved = blockers.filter((die) => {
-        const transform = getComputedStyle(die).transform;
-        return transform !== 'none' && transform !== 'matrix(1, 0, 0, 1, 0, 0)';
-      }).length;
+      const snap = document.querySelector('.pilfer-release-snap');
+      const ghostAnimation = ghost?.getAnimations()
+        .find((animation) => animation.id === 'kb-spell-motion');
+      const columnAnimation = column?.getAnimations()
+        .find((animation) => animation.id === 'kb-spell-motion');
+      const snapAnimation = snap?.getAnimations()
+        .find((animation) => animation.id === 'kb-spell-motion');
+      const frames = ghostAnimation?.effect?.getKeyframes?.() || [];
+      const vectors = frames.map((frame) => {
+        const matrix = new DOMMatrixReadOnly(String(frame.transform || 'none'));
+        return { x: matrix.m41, y: matrix.m42, offset: frame.offset };
+      });
+      const target = vectors.at(-1) || { x: 0, y: 1 };
+      const distance = Math.hypot(target.x, target.y) || 1;
+      const unit = { x: target.x / distance, y: target.y / distance };
+      const local = vectors.slice(0, -1).map((point) => ({
+        along: point.x * unit.x + point.y * unit.y,
+        across: point.x * -unit.y + point.y * unit.x,
+      }));
+
+      ghostAnimation?.pause();
+      columnAnimation?.pause();
+      snapAnimation?.pause();
+      if (ghostAnimation) ghostAnimation.currentTime = 0;
+      if (columnAnimation) columnAnimation.currentTime = 0;
+      await new Promise(requestAnimationFrame);
+      /* A computed early-pull frame proves that the authored straight/local
+         path actually reaches pixels; the complete pre-release extent is
+         checked from every production keyframe above. */
+      if (ghostAnimation) ghostAnimation.currentTime = Math.min(250, release - 40);
+      if (columnAnimation) columnAnimation.currentTime = Math.min(250, release - 40);
+      await new Promise(requestAnimationFrame);
+      const heldMatrix = new DOMMatrixReadOnly(ghost
+        ? getComputedStyle(ghost).transform : 'none');
+      const visibleDelta = ghost ? { x: heldMatrix.m41, y: heldMatrix.m42 }
+        : { x: 999, y: 999 };
+
+      /* Seek to the final paint instead of making the suite sleep through a
+         deliberately readable two-second outer-stack animation. The timing
+         and every authored waypoint above remain the production values. */
+      for (const animation of [ghostAnimation, columnAnimation, snapAnimation]) {
+        if (!animation) continue;
+        const end = Number(animation.effect?.getComputedTiming().endTime || 0);
+        animation.currentTime = Math.max(0, end - 36);
+        animation.play();
+      }
+      const snapRect = snap?.getBoundingClientRect();
       return {
         declared: +(column.dataset.pilferCollisions || -1),
         blockers: blockers.length,
-        blockerAnimations: blockers.filter((die) => die.getAnimations()
-          .some((animation) => animation.id === 'kb-spell-motion')).length,
-        moved,
+        blockerAnimations: blockers.flatMap((die) => die.getAnimations())
+          .filter((animation) => animation.id === 'kb-spell-motion').length,
+        columnAnimations: columnAnimation ? 1 : 0,
+        duration: Number(ghostAnimation?.effect?.getTiming().duration || 0),
+        frameCount: frames.length,
+        maxLocal: Math.max(...local.map((point) => Math.abs(point.along))),
+        maxAcross: Math.max(...local.map((point) => Math.abs(point.across))),
+        visibleAcross: Math.abs(visibleDelta.x * -unit.y + visibleDelta.y * unit.x),
+        visibleLocal: Math.hypot(visibleDelta.x, visibleDelta.y),
+        snapDelay: Number(snapAnimation?.effect?.getTiming().delay || 0),
+        snapDuration: Number(snapAnimation?.effect?.getTiming().duration || 0),
+        snapOriented: !!snapRect && (Math.abs(target.x) > Math.abs(target.y)
+          ? snapRect.height > snapRect.width : snapRect.width > snapRect.height),
         ghost: !!ghost,
         enemyColour: ghost?.classList.contains('p2') && !ghost.classList.contains('p1'),
         sourceHidden: getComputedStyle(column.querySelector('.slot .die')).visibility === 'hidden',
+        state: [JSON.stringify(window.__kb.S.boards[1][0]),
+          JSON.stringify(window.__kb.S.boards[0][0])].join('/'),
         particles: document.querySelectorAll('.particle').length,
         boardShake: document.getElementById('app').getAnimations()
           .some((animation) => animation.playState === 'running'),
       };
-    });
-    const expected = height - 1;
+    }, { release: expectedRelease });
     check(tension.declared === expected && tension.blockers === expected
-      && tension.blockerAnimations === expected,
+      && tension.blockerAnimations === 0 && tension.columnAnimations === (expected ? 1 : 0),
     `PI5 height ${height} did not expose exactly ${expected} resistance beat(s)`, tension);
-    check(tension.moved === (expected ? 1 : 0),
-      `PI5 height ${height} is not visibly meeting its first blocker`, tension);
+    check(tension.duration === expectedFlight && tension.frameCount === (expected ? 4 + expected * 2 : 4),
+      `PI5 height ${height} lost its measured depth timing`, tension);
+    check(tension.maxLocal <= (expected ? 18 : 5) && tension.maxAcross < .75
+      && tension.visibleLocal < 24 && tension.visibleAcross < 1.25,
+    `PI5 height ${height} bounced through the stack instead of tugging locally`, tension);
+    check(tension.snapDelay === expectedRelease && tension.snapDuration === 608
+      && tension.snapOriented,
+    `PI5 height ${height} lost its centre-facing release snap`, tension);
     check(tension.ghost && tension.enemyColour && tension.sourceHidden,
       'the stolen die did not lift as one enemy-coloured copy', tension);
+    check(tension.state === `[4]/${JSON.stringify(theirs)}`,
+      'PILFER committed before the stolen die arrived', tension);
     check(tension.particles === 0 && !tension.boardShake,
       'PILFER taught a strike with particles or a board shake', tension);
 
-    let elapsed = 215;
-    let secondCollision = null;
-    if (height === 3) {
-      await page.waitForTimeout(165);
-      elapsed += 165;
-      secondCollision = await page.evaluate(() => {
-        const die = document.querySelector('[data-pilfer-collision="2"]');
-        const transform = die ? getComputedStyle(die).transform : 'none';
-        return {
-          transform,
-          moved: transform !== 'none' && transform !== 'matrix(1, 0, 0, 1, 0, 0)',
-        };
-      });
-      check(secondCollision.moved,
-        'PI5 never visibly met its second real blocker', secondCollision);
-    }
-
-    const arrivalMs = 350 + expected * 185;
-    await page.waitForTimeout(Math.max(0, arrivalMs + 30 - elapsed));
+    await page.waitForTimeout(90);
     const arrival = await page.evaluate(() => {
       const die = document.querySelector('#botBoard .col[data-col="0"] .pilfer-soft-settle');
+      const animation = die?.getAnimations()
+        .find((candidate) => candidate.id === 'kb-spell-motion');
+      const frames = animation?.effect?.getKeyframes?.() || [];
+      if (animation) {
+        const duration = Number(animation.effect?.getTiming().duration || 0);
+        animation.currentTime = Math.max(0, duration - 36);
+        animation.play();
+      }
       return {
         mine: JSON.stringify(window.__kb.S.boards[1][0]),
         theirs: JSON.stringify(window.__kb.S.boards[0][0]),
-        settling: !!die && die.getAnimations()
-          .some((animation) => animation.id === 'kb-spell-motion'),
+        settling: !!animation,
+        duration: Number(animation?.effect?.getTiming().duration || 0),
+        frames: frames.map((frame) => String(frame.transform)),
         transform: die ? getComputedStyle(die).transform : 'none',
         particles: document.querySelectorAll('.particle').length,
         flash: document.getElementById('flash').getAnimations().length,
@@ -81,21 +137,23 @@ export async function runPilferAnvilEffectScenarios(suite) {
     check(arrival.mine === JSON.stringify([4, height])
       && arrival.theirs === JSON.stringify(theirs.slice(0, -1)),
     'PILFER did not repaint both boards at the arrival beat', arrival);
-    check(arrival.settling && arrival.transform !== 'none',
-      'PI5 arrived without its soft die-only settle', arrival);
+    check(arrival.settling && arrival.duration === 576 && arrival.transform !== 'none'
+      && arrival.frames.some((frame) => frame.includes('1.1'))
+      && arrival.frames.some((frame) => frame.includes('0.94')),
+    'PI5 arrived without its measured die-only squash', arrival);
     check(arrival.particles === 0 && arrival.flash === 0 && arrival.boardShake === 0,
       'the PI5 arrival still reads as a destructive strike', arrival);
 
-    await page.waitForTimeout(230);
+    await page.waitForTimeout(100);
     const cleaned = await page.evaluate(() => ({
-      ghosts: document.querySelectorAll('.pilfer-ghost').length,
+      ghosts: document.querySelectorAll('.pilfer-ghost,.pilfer-release-snap').length,
       strain: document.querySelectorAll('.pilfer-straining,.pilfer-blocker,.pilfer-soft-settle').length,
       hidden: [...document.querySelectorAll('#topBoard .die,#botBoard .die')]
         .filter((die) => getComputedStyle(die).visibility === 'hidden').length,
     }));
     check(cleaned.ghosts === 0 && cleaned.strain === 0 && cleaned.hidden === 0,
       'PI5 left a ghost, tension marker, or hidden die behind', cleaned);
-    out.pilferSnatch.push({ height, tension, secondCollision, arrival, cleaned });
+    out.pilferSnatch.push({ height, tension, arrival, cleaned });
   }
 
   /* A superseding generation must lift the temporary source visibility and
@@ -108,7 +166,7 @@ export async function runPilferAnvilEffectScenarios(suite) {
   await page.evaluate(() => { window.__kb.S.gen++; });
   await page.waitForTimeout(100);
   out.pilferInterrupted = await page.evaluate(() => ({
-    ghost: document.querySelectorAll('.pilfer-ghost').length,
+    ghost: document.querySelectorAll('.pilfer-ghost,.pilfer-release-snap').length,
     marks: document.querySelectorAll('.pilfer-straining,.pilfer-blocker').length,
     sourceVisibility: getComputedStyle(document.querySelector('#topBoard .col[data-col="0"] .die')).visibility,
     mine: JSON.stringify(window.__kb.S.boards[1][0]),

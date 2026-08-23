@@ -4,7 +4,7 @@ import { SPEC, type Player } from '../../core/rules.ts';
 import { S } from '../../state.ts';
 import { Sfx, vibrate } from '../../ui/audio.ts';
 import { colEl, faceRotated, slotEl, slotIdx } from '../../ui/dom.ts';
-import { REDUCED } from '../../ui/fx.ts';
+import { REDUCED, fxRoot, pin } from '../../ui/fx.ts';
 import { renderSide } from '../../ui/game/board.ts';
 import {
   cancelSpellAnimations,
@@ -21,7 +21,13 @@ interface TimedPoint extends SpellMotionDelta {
 
 interface PilferBlocker {
   die: HTMLElement;
-  delta: SpellMotionDelta;
+}
+
+interface PilferPath {
+  duration: number;
+  contacts: number[];
+  points: TimedPoint[];
+  release: number;
 }
 
 function translated(point: SpellMotionDelta): string {
@@ -34,63 +40,66 @@ function unitToward(delta: SpellMotionDelta): { x: number; y: number } {
 }
 
 function flightPoints(
-  blockers: readonly PilferBlocker[],
+  blockerCount: number,
   target: SpellMotionDelta,
-): { duration: number; contacts: number[]; points: TimedPoint[] } {
+): PilferPath {
   const toward = unitToward(target);
   const points: TimedPoint[] = [{ x: 0, y: 0, scale: 1, milliseconds: 0 }];
   const contacts: number[] = [];
-  let milliseconds = 65;
 
-  // The grip tests the die once. This is tension, not a collision: a one-die
-  // source column gets this pull but no blocker impact at all.
-  points.push({
-    x: toward.x * 5,
-    y: toward.y * 5,
-    scale: 1.04,
-    milliseconds,
-  });
-  milliseconds += 45;
-  points.push({
-    x: toward.x * -3,
-    y: toward.y * -3,
-    scale: .99,
-    milliseconds,
-  });
-
-  for (const blocker of blockers) {
-    milliseconds += 85;
-    contacts.push(milliseconds);
-    // The exact contact coordinate comes from the blocker die's live rect.
-    points.push({ ...blocker.delta, scale: 1.09, milliseconds });
-    milliseconds += 48;
+  if (blockerCount === 0) {
+    // The centre-most die has nothing to fight through. It only lifts enough
+    // to show the grip, holds, then tears straight across — no false rebound.
     points.push({
-      x: blocker.delta.x - toward.x * 8,
-      y: blocker.delta.y - toward.y * 8,
-      scale: .98,
-      milliseconds,
+      x: toward.x * 4,
+      y: toward.y * 4,
+      scale: 1.02,
+      milliseconds: 288,
     });
-    milliseconds += 52;
     points.push({
-      x: blocker.delta.x + toward.x * 6,
-      y: blocker.delta.y + toward.y * 6,
-      scale: 1.03,
-      milliseconds,
+      x: toward.x * 4,
+      y: toward.y * 4,
+      scale: 1.02,
+      milliseconds: 512,
     });
+  } else {
+    // PI5's selected one-blocker study spends 1.024s pulling locally before
+    // release: +10, -3, +13, +4 pixels. Extra depth repeats only that local
+    // resistance beat; the flying die never visits a blocker's centre.
+    points.push({
+      x: toward.x * 10,
+      y: toward.y * 10,
+      scale: 1.04,
+      milliseconds: 288,
+    });
+    points.push({
+      x: toward.x * -3,
+      y: toward.y * -3,
+      scale: .99,
+      milliseconds: 544,
+    });
+    for (let index = 0; index < blockerCount; index++) {
+      const contact = 800 + index * 512;
+      contacts.push(contact);
+      points.push({
+        x: toward.x * (13 + index * 4),
+        y: toward.y * (13 + index * 4),
+        scale: 1.06 + index * .015,
+        milliseconds: contact,
+      });
+      points.push({
+        x: toward.x * (4 + index),
+        y: toward.y * (4 + index),
+        scale: 1,
+        milliseconds: contact + 224,
+      });
+    }
   }
 
-  const last = points[points.length - 1];
-  const perpendicular = { x: -toward.y * 9, y: toward.x * 9 };
-  milliseconds += 105;
-  points.push({
-    x: (last.x + target.x) / 2 + perpendicular.x,
-    y: (last.y + target.y) / 2 + perpendicular.y,
-    scale: (last.scale + target.scale) / 2 * 1.06,
-    milliseconds,
-  });
-  milliseconds += 135;
-  points.push({ ...target, milliseconds });
-  return { duration: milliseconds, contacts, points };
+  const release = 512 + blockerCount * 512;
+  const duration = release + 480;
+  points.push({ ...target, milliseconds: duration });
+  return { duration, contacts, points, release };
 }
 
 function flightKeyframes(points: readonly TimedPoint[], duration: number): Keyframe[] {
@@ -102,31 +111,63 @@ function flightKeyframes(points: readonly TimedPoint[], duration: number): Keyfr
 
 function strainKeyframes(
   contacts: readonly number[],
-  duration: number,
+  flightDuration: number,
   horizontal: boolean,
-): Keyframe[] {
+): { duration: number; frames: Keyframe[] } {
   const scale = (amount: number): string => horizontal
     ? `scaleX(${amount})`
     : `scaleY(${amount})`;
-  const frames: Keyframe[] = [
-    { transform: scale(1), offset: 0 },
-    { transform: scale(1.012), offset: 105 / duration },
+  const duration = flightDuration + 256;
+  const frames: Array<Keyframe & { milliseconds?: number }> = [
+    { transform: scale(1), milliseconds: 0 },
   ];
   contacts.forEach((contact, index) => {
+    const last = index === contacts.length - 1;
     frames.push({
-      transform: scale(1.022 + index * .012),
-      offset: contact / duration,
-    });
-    frames.push({
-      transform: scale(.992),
-      offset: Math.min((contact + 55) / duration, .9),
+      transform: scale((last ? 1.045 : 1.035) + index * .01),
+      milliseconds: contact,
+    }, {
+      transform: scale(last ? 1.02 : .992),
+      milliseconds: contact + 224,
+    }, {
+      transform: scale(last ? .975 : 1.005),
+      milliseconds: contact + 384,
     });
   });
-  frames.push(
-    { transform: scale(.982), offset: Math.max(.7, (duration - 90) / duration) },
-    { transform: scale(1), offset: 1 },
-  );
-  return frames.sort((a, b) => Number(a.offset) - Number(b.offset));
+  frames.push({
+    transform: scale(1.01),
+    milliseconds: flightDuration - 64,
+  }, {
+    transform: scale(1),
+    milliseconds: duration,
+  });
+  return {
+    duration,
+    frames: frames
+      .sort((a, b) => Number(a.milliseconds) - Number(b.milliseconds))
+      .map(({ milliseconds = 0, ...frame }) => ({ ...frame, offset: milliseconds / duration })),
+  };
+}
+
+function releaseSnap(
+  sourceRect: DOMRect,
+  toward: { x: number; y: number },
+  horizontal: boolean,
+  hue: string,
+): HTMLElement {
+  const snap = document.createElement('i');
+  snap.className = 'pilfer-release-snap';
+  snap.style.setProperty('--spell-hue', hue);
+  const long = Math.min(44, sourceRect.width * .85);
+  const short = 3;
+  const width = horizontal ? short : long;
+  const height = horizontal ? long : short;
+  const reach = sourceRect.width * .62;
+  const centreX = sourceRect.left + sourceRect.width / 2 + toward.x * reach;
+  const centreY = sourceRect.top + sourceRect.height / 2 + toward.y * reach;
+  pin(snap, new DOMRect(centreX - width / 2, centreY - height / 2, width, height), 69);
+  fxRoot().appendChild(snap);
+  return snap;
 }
 
 function revealColumn(who: Player, column: number): void {
@@ -176,21 +217,22 @@ export const pilferEffect: SpellEffect = async (who, column, apply) => {
   // A numeral cloned out of the far half no longer inherits that half's seat
   // transform. Preserve the victim's reading while it remains their colour.
   pinned.ghost.classList.toggle('p2flip', faceRotated(foe));
-  pinned.ghost.style.setProperty('--spell-hue', spellHue('pilfer'));
+  const hue = spellHue('pilfer');
 
   const blockers: PilferBlocker[] = [];
   for (let index = sourceIndex - 1; index >= 0; index--) {
     const die = slotEl(foe, column, slotIdx(foe, index))?.firstElementChild as HTMLElement | null;
-    if (die) blockers.push({ die, delta: pinned.deltaTo(die) });
+    if (die) blockers.push({ die });
   }
-  const path = flightPoints(blockers, pinned.deltaTo(targetSlot));
-  const toward = unitToward(pinned.deltaTo(targetSlot));
+  const target = pinned.deltaTo(targetSlot);
+  const path = flightPoints(blockers.length, target);
+  const toward = unitToward(target);
   const horizontal = Math.abs(toward.x) > Math.abs(toward.y);
   const oldOrigin = sourceColumn.style.transformOrigin;
   sourceColumn.style.transformOrigin = horizontal
     ? (toward.x > 0 ? 'left center' : 'right center')
     : (toward.y > 0 ? 'center top' : 'center bottom');
-  sourceColumn.classList.add('pilfer-straining');
+  sourceColumn.classList.toggle('pilfer-straining', blockers.length > 0);
   sourceColumn.dataset.pilferCollisions = String(blockers.length);
   pinned.ghost.dataset.pilferCollisions = String(blockers.length);
   blockers.forEach((blocker, index) => {
@@ -198,40 +240,40 @@ export const pilferEffect: SpellEffect = async (who, column, apply) => {
     blocker.die.dataset.pilferCollision = String(index + 1);
   });
 
-  const sideAnimations: Promise<boolean>[] = [playSpellAnimation(
-    sourceColumn,
-    strainKeyframes(path.contacts, path.duration, horizontal),
-    { duration: path.duration, easing: 'cubic-bezier(.5,0,.3,1)' },
-    isCurrent,
-  )];
-  blockers.forEach((blocker, index) => {
-    const contact = path.contacts[index];
-    sideAnimations.push(playSpellAnimation(blocker.die, [
-      { transform: 'translate(0,0) scale(1)' },
-      {
-        transform: `translate(${toward.x * 5}px,${toward.y * 5}px) scale(1.05)`,
-        offset: .42,
-      },
-      {
-        transform: `translate(${toward.x * -2}px,${toward.y * -2}px) scale(.98)`,
-        offset: .72,
-      },
-      { transform: 'translate(0,0) scale(1)' },
-    ], {
-      delay: Math.max(0, contact - 48),
-      duration: 142,
-      easing: 'cubic-bezier(.3,0,.25,1)',
-    }, isCurrent));
-  });
+  const sideAnimations: Promise<boolean>[] = [];
+  if (path.contacts.length > 0) {
+    const strain = strainKeyframes(path.contacts, path.duration, horizontal);
+    sideAnimations.push(playSpellAnimation(
+      sourceColumn,
+      strain.frames,
+      { duration: strain.duration, easing: 'cubic-bezier(.5,0,.3,1)' },
+      isCurrent,
+    ));
+  }
+  const snap = releaseSnap(pinned.sourceRect, toward, horizontal, hue);
+  const snapScale = (amount: number): string => horizontal
+    ? `scaleY(${amount})`
+    : `scaleX(${amount})`;
+  sideAnimations.push(playSpellAnimation(snap, [
+    { opacity: 0, transform: snapScale(.2) },
+    { opacity: 1, transform: snapScale(1), offset: 160 / 608 },
+    { opacity: 0, transform: snapScale(2.4) },
+  ], {
+    delay: path.release,
+    duration: 608,
+    easing: 'ease-out',
+  }, isCurrent));
 
   try {
     const arrived = await playSpellAnimation(
       pinned.ghost,
       flightKeyframes(path.points, path.duration),
-      { duration: path.duration, easing: 'cubic-bezier(.7,0,.2,1)' },
+      // Keep the authored millisecond waypoints literal. An effect-level
+      // curve remaps every keyframe offset and makes the die start crossing
+      // the board before the visible resistance/release beat.
+      { duration: path.duration, easing: 'linear' },
       isCurrent,
     );
-    await Promise.all(sideAnimations);
     if (!arrived || !isCurrent()) return;
 
     commit();
@@ -246,18 +288,21 @@ export const pilferEffect: SpellEffect = async (who, column, apply) => {
       landed.style.visibility = '';
       landed.classList.add('pilfer-soft-settle');
       await playSpellAnimation(landed, [
-        { transform: 'scale(1.055)' },
-        { transform: 'scale(.965)', offset: .46 },
+        { transform: 'scale(1.1)' },
+        { transform: 'scale(.94)', offset: 4 / 9 },
         { transform: 'scale(1)' },
       ], {
-        duration: 180,
-        easing: 'cubic-bezier(.2,1.25,.4,1)',
+        duration: 576,
+        easing: 'cubic-bezier(.2,1.7,.4,1)',
       }, isCurrent);
       cancelSpellAnimations(landed);
       landed.classList.remove('pilfer-soft-settle');
     }
+    await Promise.all(sideAnimations);
   } finally {
     pinned.remove();
+    cancelSpellAnimations(snap);
+    snap.remove();
     cancelSpellAnimations(sourceColumn);
     sourceColumn.classList.remove('pilfer-straining');
     delete sourceColumn.dataset.pilferCollisions;
