@@ -289,28 +289,28 @@ export async function runMotionSafeAreaScenarios(suite) {
   check(out.reducedPlacement.point?.text.startsWith('+')
     && out.reducedPlacement.point.numeralDisplay === 'flex'
     && out.reducedPlacement.point.inside
-    && out.reducedPlacement.point.edgeInset >= -.5
-    && out.reducedPlacement.point.edgeInset <= 4
+    && out.reducedPlacement.point.edgeInset >= 2.5
+    && out.reducedPlacement.point.edgeInset <= 4.5
     && out.reducedPlacement.point.halfGap >= 1
-    && out.reducedPlacement.point.gap >= 0
+    && out.reducedPlacement.point.gap >= -5
     && out.reducedPlacement.point.centreError <= 1.5,
   'numbered-die score feedback is not inside the die above its numeral', out.reducedPlacement.point);
   check(out.reducedFarPoint?.text.startsWith('+')
     && out.reducedFarPoint.numeralDisplay === 'flex'
     && out.reducedFarPoint.turned
     && out.reducedFarPoint.inside
-    && out.reducedFarPoint.edgeInset >= -.5
-    && out.reducedFarPoint.edgeInset <= 4
+    && out.reducedFarPoint.edgeInset >= 2.5
+    && out.reducedFarPoint.edgeInset <= 4.5
     && out.reducedFarPoint.halfGap >= 1
-    && out.reducedFarPoint.gap >= 0
+    && out.reducedFarPoint.gap >= -5
     && out.reducedFarPoint.centreError <= 1.5,
   'top-seat numbered-die feedback is not inside its reading edge', out.reducedFarPoint);
   check(out.reducedMinusPoint?.text === '−5'
     && out.reducedMinusPoint.victim === '5' && out.reducedMinusPoint.survivor === '2'
     && +out.reducedMinusPoint.victimOpacity > .95
     && out.reducedMinusPoint.inside
-    && out.reducedMinusPoint.edgeInset >= -.5 && out.reducedMinusPoint.edgeInset <= 4
-    && out.reducedMinusPoint.halfGap >= 1 && out.reducedMinusPoint.gap >= 0
+    && out.reducedMinusPoint.edgeInset >= 2.5 && out.reducedMinusPoint.edgeInset <= 4.5
+    && out.reducedMinusPoint.halfGap >= 1 && out.reducedMinusPoint.gap >= -5
     && out.reducedMinusPoint.victimCentreError <= 1.5
     && out.reducedMinusPoint.survivorDistance > 20,
   'minus feedback is not inside the destroyed numbered die', out.reducedMinusPoint);

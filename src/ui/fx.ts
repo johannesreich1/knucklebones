@@ -112,12 +112,11 @@ export function floatPts(who: Player, col: number, text: string, color: string, 
      together, so a visible minus cannot drift outside its shrinking victim. */
   const flippedNumeral = numeralFace && faceRotated(who);
   if (numeralFace && die) {
-    /* The rotated line box needs half a pixel more inward allowance to keep
-       its physical bottom inside the far die's border. */
-    const inset = flippedNumeral ? .5 : 0;
-    p.style.top = ((flippedNumeral
-      ? die.offsetHeight - p.offsetHeight - inset
-      : inset)) + 'px';
+    /* Hold the compact header a few pixels inside its reading edge. Anchoring
+       with top/bottom keeps the same inset for both seats without measuring
+       the label or accumulating a fractional rotated offset. */
+    p.style.top = flippedNumeral ? 'auto' : '3px';
+    if (flippedNumeral) p.style.bottom = '3px';
   } else {
     p.style.top = (slot.offsetTop + slot.offsetHeight * .30) + 'px';
   }

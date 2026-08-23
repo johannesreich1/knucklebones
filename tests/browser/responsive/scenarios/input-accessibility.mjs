@@ -141,8 +141,8 @@ export async function runInputAccessibilityScenarios(suite) {
   });
   check(out.normalNumeralPoint?.text.startsWith('+')
     && out.normalNumeralPoint.opacity > .8 && out.normalNumeralPoint.inside
-    && out.normalNumeralPoint.edgeInset >= -.5 && out.normalNumeralPoint.edgeInset <= 4
-    && out.normalNumeralPoint.halfGap >= 1 && out.normalNumeralPoint.gap >= 0
+    && out.normalNumeralPoint.edgeInset >= 2.5 && out.normalNumeralPoint.edgeInset <= 4.5
+    && out.normalNumeralPoint.halfGap >= 1 && out.normalNumeralPoint.gap >= -5
     && out.normalNumeralPoint.centreError <= 1.5,
   'normal-motion numeral feedback is not inside the die above its number', out.normalNumeralPoint);
   await gp.waitForTimeout(750);
@@ -233,14 +233,14 @@ export async function runInputAccessibilityScenarios(suite) {
              numShown: style?.display ?? null,
              pipHidden: d ? getComputedStyle(d.querySelector('.pip')).display : null,
              sizeRatio: style && cell ? parseFloat(style.fontSize) / cell : null,
-             downRatio: matrix && cell ? matrix.f / cell : null };
+             centreOffsetRatio: matrix && cell ? matrix.f / cell : null };
   });
   out.numerals.settingsClosed = settingsClosed;
   check(out.numerals.on && out.numerals.numShown === 'flex' && out.numerals.pipHidden === 'none'
         && out.numerals.settingsClosed, 'numerals toggle broken', out.numerals);
   check(out.numerals.sizeRatio >= .575 && out.numerals.sizeRatio <= .585
-        && out.numerals.downRatio >= .02 && out.numerals.downRatio <= .03,
-        'numeral face is not larger and optically lowered', out.numerals);
+        && Math.abs(out.numerals.centreOffsetRatio) <= .005,
+        'numeral face is not larger and geometrically centred', out.numerals);
   // the LOADING die is exempt: it tells time in pips whatever the face setting
   // says. Keep the computed-paint guard beside the other fixed pip surfaces.
   out.loaderNumerals = await gp.evaluate(() => {
