@@ -5,25 +5,20 @@
    unchanged; all contact light belongs to the clasp and opening seal. */
 :where(#kbroot) .die.ward-strike-ghost{pointer-events:none;will-change:transform,opacity}
 
-/* SU6 — OVERLOAD. The hand is the source: it swells against one containment
-   ring while its heat haze breathes. The die keeps --dc, so the player's hue
-   remains readable rather than being replaced with ember orange. */
+/* SU6 — OVERLOAD. The hand is the source: it swells inside a breathing heat
+   haze. The die keeps --dc, so the player's hue remains readable rather than
+   being replaced with ember orange. */
 :where(#kbroot) #dieStage.sundered{--sunder:#ff9d66;z-index:2}
 :where(#kbroot) #dieStage.sundered::before{content:"";position:absolute;inset:-20px;border-radius:32px;
   pointer-events:none;background:radial-gradient(closest-side,color-mix(in srgb,var(--sunder) 42%,transparent),transparent 72%);
   animation:su6haze 1.25s ease-in-out infinite}
-:where(#kbroot) #dieStage.sundered::after{content:"";position:absolute;inset:-9px;border-radius:21px;
-  pointer-events:none;border:1.5px dashed color-mix(in srgb,var(--sunder) 80%,transparent);
-  filter:drop-shadow(0 0 7px var(--sunder));animation:su6strain 1.25s ease-in-out infinite}
 :where(#kbroot) #dieStage.sundered .die{animation:su6swell 1.25s ease-in-out infinite;
   filter:drop-shadow(0 0 10px color-mix(in srgb,var(--sunder) 86%,transparent))}
 /* The ordinary placement owner lifts a fresh die copy into the root FX layer.
    While the charged stage is still live, let that copy carry the same ember
-   source into its slot; the containment ring itself stays behind on stage. */
+   source into its slot; the haze itself stays behind on stage. */
 #kbroot:has(#dieStage.sundered)>.die{filter:brightness(1.12) drop-shadow(0 0 10px #ff9d66)}
 @keyframes su6swell{0%,100%{transform:scale(1)}50%{transform:scale(1.055)}}
-@keyframes su6strain{0%,100%{transform:scale(1) rotate(0);opacity:.6}
-  50%{transform:scale(1.09) rotate(6deg);opacity:1}}
 @keyframes su6haze{0%,100%{opacity:.42}50%{opacity:1}}
 
 /* The exact authoritative victims fail without surrendering their owner or
@@ -38,13 +33,14 @@
   border-radius:50%;pointer-events:none;background:#ffd9b6;
   box-shadow:-14px 5px 0 -1px #ffd9b6,0 0 7px var(--sunder),-14px 5px 12px var(--sunder);
   animation:su6ember 2.2s ease-out 1 both;animation-delay:calc(var(--sunder-order)*70ms)}
-:where(#kbroot) .die.sunder-doomed{animation:su6tremor .48s ease-in-out 2 both}
+:where(#kbroot) .die.sunder-doomed{transform-origin:50% 58%;animation:su6tremor .48s ease-in-out 2 both}
 /* Keep the triple's independent heat pulse while its shell trembles. */
 :where(#kbroot) .die.m3.sunder-doomed{animation:su6tremor .48s ease-in-out 2 both,hot 1.5s ease-in-out infinite}
 @keyframes su6tremor{0%,100%{transform:translate(0,0) rotate(-2deg)}
-  25%{transform:translate(.8px,-.6px) rotate(-1.2deg)}
-  50%{transform:translate(-.7px,.7px) rotate(-2.6deg)}
-  75%{transform:translate(.5px,.5px) rotate(-1.6deg)}}
+  20%{transform:translate(1.8px,-1.2px) rotate(.2deg)}
+  42%{transform:translate(-1.6px,1.4px) rotate(-3.8deg)}
+  64%{transform:translate(1.3px,1px) rotate(-.4deg)}
+  82%{transform:translate(-.9px,-.8px) rotate(-3deg)}}
 @keyframes su6ember{0%{opacity:0;transform:translate(0,0) scale(.6)}
   15%{opacity:1;transform:translate(-2px,-8px) scale(1)}
   100%{opacity:0;transform:translate(-7px,-34px) scale(.35)}}
@@ -62,7 +58,6 @@
    Explicitly remove SU6's loops/one-shots so even the first sampled frame is
    static; the crooked die and containment/ember geometry carry the meaning. */
 #kbroot.reduce-motion #dieStage.sundered::before,
-#kbroot.reduce-motion #dieStage.sundered::after,
 #kbroot.reduce-motion #dieStage.sundered .die,
 #kbroot.reduce-motion .slot.sunder-doomed-slot::after,
 #kbroot.reduce-motion .die.sunder-doomed,

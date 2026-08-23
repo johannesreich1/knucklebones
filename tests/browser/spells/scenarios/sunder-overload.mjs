@@ -10,7 +10,7 @@ export async function runSunderOverloadScenarios(suite) {
   await guard(1, 0);
   await page.evaluate(() => { void window.__kb.spells.cast('sunder', -1); });
   await page.waitForTimeout(140);
-  out.sunderPreview = await page.evaluate(() => {
+  out.sunderPreview = await page.evaluate(async () => {
     const columns = [...document.querySelectorAll('#topBoard .col')].map((col) => ({
       doomed: col.querySelectorAll('.die.sunder-doomed').length,
       values: [...col.querySelectorAll('.die.sunder-doomed')].map((die) => die.dataset.v),
@@ -18,14 +18,18 @@ export async function runSunderOverloadScenarios(suite) {
         .map((die) => [...die.classList].filter((name) => /^(p[12]|m[23])$/.test(name)).sort().join(':')),
     }));
     const stage = document.getElementById('dieStage');
-    const ring = getComputedStyle(stage, '::after');
+    const outline = getComputedStyle(stage, '::after');
+    const marked = [...document.querySelectorAll('.die.sunder-doomed')];
+    const warningBefore = marked.map((die) => getComputedStyle(die).transform);
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    const warningAfter = marked.map((die) => getComputedStyle(die).transform);
     return {
       columns,
       charged: stage.classList.contains('sundered'),
-      ring: { content: ring.content, style: ring.borderStyle },
+      outline: { content: outline.content, style: outline.borderStyle },
       stageAnimations: stage.getAnimations({ subtree: true }).map((a) => a.animationName).sort(),
-      victimAnimations: [...document.querySelectorAll('.die.sunder-doomed')]
-        .flatMap((die) => die.getAnimations().map((a) => a.animationName)),
+      victimAnimations: marked.flatMap((die) => die.getAnimations().map((a) => a.animationName)),
+      warningMoved: marked.map((_, index) => warningBefore[index] !== warningAfter[index]),
       wards: JSON.stringify(window.__kb.S.charm.wards),
       armed: window.__kb.S.charm.sunder[1],
     };
@@ -34,12 +38,14 @@ export async function runSunderOverloadScenarios(suite) {
     'SU6 marked dice that Ward/Column Shield will spare, or missed real victims', out.sunderPreview);
   check(out.sunderPreview.columns[0].identities.every((identity) => identity === 'm2:p2'),
     'SU6 replaced the doomed dice owner/multiplier identity', out.sunderPreview.columns[0]);
-  check(out.sunderPreview.charged && out.sunderPreview.ring.content !== 'none'
-      && out.sunderPreview.ring.style === 'dashed'
+  check(out.sunderPreview.charged && out.sunderPreview.outline.content === 'none'
+      && out.sunderPreview.outline.style === 'none'
       && out.sunderPreview.stageAnimations.includes('su6swell')
-      && out.sunderPreview.stageAnimations.includes('su6strain'),
-    'the die in hand did not visibly overcharge against its containment ring', out.sunderPreview);
-  check(out.sunderPreview.victimAnimations.includes('su6tremor') && out.sunderPreview.armed,
+      && out.sunderPreview.stageAnimations.includes('su6haze')
+      && !out.sunderPreview.stageAnimations.includes('su6strain'),
+    'the die in hand kept its removed dashed outline or lost the remaining overcharge', out.sunderPreview);
+  check(out.sunderPreview.victimAnimations.includes('su6tremor')
+      && out.sunderPreview.warningMoved.every(Boolean) && out.sunderPreview.armed,
     'the authoritative victims did not begin failing when SUNDER committed', out.sunderPreview);
 
   /* Tremor is an alarm, not a permanent accessibility tax. After its two short
@@ -87,6 +93,53 @@ export async function runSunderOverloadScenarios(suite) {
     'SU6 visuals disagreed with the authoritative Ward/Shield outcome', out.sunderRelease);
   check(!out.sunderRelease.armed && !out.sunderRelease.charged && out.sunderRelease.residue === 0,
     'SU6 leaked its charge or doomed markers into the next turn', out.sunderRelease);
+
+  /* A widened strike is one event, not three ordinary column destructions in
+     sequence. Every unprotected victim starts the same globally staggered
+     collapse before any board repaint can remove another column's warning. */
+  await newGame({ spell: 'sunder' });
+  check(await waitChoose(), 'game never reached choose (SU6 widened collapse)');
+  await table([[], [], []], [[4, 4], [4, 2], [1, 4]], 4);
+  await guard(1, 0);
+  await page.evaluate(() => window.__kb.spells.cast('sunder', -1));
+  out.sunderWideRelease = await page.evaluate(async () => {
+    const k = window.__kb;
+    const targets = [...document.querySelectorAll('.die.sunder-doomed')];
+    const warningTransforms = targets.map((die) => getComputedStyle(die).transform);
+    const animated = targets.map(() => false);
+    const visiblyChanged = targets.map(() => false);
+    let firstCollapse = null, maxCollapse = 0;
+    const placement = k.place(1, 0);
+    for (let i = 0; i < 160; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      const collapsing = [...document.querySelectorAll('.die.sunder-collapse')];
+      if (collapsing.length && firstCollapse === null) firstCollapse = collapsing.length;
+      maxCollapse = Math.max(maxCollapse, collapsing.length);
+      targets.forEach((die, index) => {
+        const collapsingNow = die.getAnimations().some((a) => a.animationName === 'su6fail');
+        animated[index] ||= collapsingNow;
+        const style = getComputedStyle(die);
+        visiblyChanged[index] ||= collapsingNow
+          && (style.transform !== warningTransforms[index] || Number(style.opacity) < .98);
+      });
+    }
+    await placement;
+    return {
+      targets: targets.length, firstCollapse, maxCollapse, animated, visiblyChanged,
+      theirs: JSON.stringify(k.S.boards[0]),
+      wards: JSON.stringify(k.S.charm.wards),
+      residue: document.querySelectorAll('.sunder-doomed,.sunder-doomed-slot,.sunder-collapse').length,
+    };
+  });
+  check(out.sunderWideRelease.targets === 3 && out.sunderWideRelease.firstCollapse === 3
+      && out.sunderWideRelease.maxCollapse === 3
+      && out.sunderWideRelease.animated.every(Boolean)
+      && out.sunderWideRelease.visiblyChanged.every(Boolean),
+    'SU6 did not animate every widened victim as one visible staggered collapse', out.sunderWideRelease);
+  check(out.sunderWideRelease.theirs === '[[],[4,2],[1]]'
+      && JSON.parse(out.sunderWideRelease.wards)[0][1] === 0
+      && out.sunderWideRelease.residue === 0,
+    'SU6 widened collapse disagreed with its authoritative outcomes or leaked presentation', out.sunderWideRelease);
 
   /* SINGLE STRIKE is another visible-planner trap: of two matching dice only
      logical index zero (the centre-nearest die) is genuinely doomed. */

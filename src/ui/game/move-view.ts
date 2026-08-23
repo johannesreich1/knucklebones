@@ -8,8 +8,10 @@ import {
   isShielded,
   openStrikes,
   victimsOf,
+  type Board,
   type CharmSt,
   type Player,
+  type StrikeOutcome,
 } from '../../core/rules.ts';
 import { S } from '../../state.ts';
 import { Sfx, vibrate } from '../audio.ts';
@@ -51,48 +53,104 @@ interface DestructionResult {
   interrupted: boolean;
 }
 
-async function destroyAt(
-  who: Player,
-  col: number,
-  die: number,
-  isCurrent: () => boolean,
-  sundered = false,
-): Promise<DestructionResult> {
-  const board = S.boards[who];
-  const victims = victimsOf(board[col], die, S.scoring);
-  if (!victims.length) return { destroyed: 0, interrupted: false };
+interface DestructionPlan {
+  col: number;
+  victims: number[];
+  survivors: number[];
+  lost: number;
+}
 
-  const color = sundered ? '#ff9d66' : colorOf(who);
-  let collapseOrder = 0;
-  for (const index of victims) {
-    const slot = slotEl(who, col, slotIdx(who, index));
+function planDestruction(board: Board, col: number, victims: number[]): DestructionPlan {
+  const survivors = board[col].filter((_, index) => !victims.includes(index));
+  const lost = boardTotalMode(board, S.scoring)
+    - boardTotalMode(board.map((column, index) => index === col ? survivors : column), S.scoring);
+  return { col, victims, survivors, lost };
+}
+
+function stageDestruction(
+  who: Player,
+  plan: DestructionPlan,
+  color: string,
+  sunderOrder: number | null,
+): number {
+  let order = sunderOrder ?? 0;
+  for (const index of plan.victims) {
+    const slot = slotEl(who, plan.col, slotIdx(who, index));
     const doomed = slot?.firstElementChild as HTMLElement | null;
     if (!doomed) continue;
-    if (sundered) {
+    if (sunderOrder !== null) {
       doomed.classList.add('sunder-doomed', 'sunder-collapse');
-      doomed.style.setProperty('--sunder-delay', `${collapseOrder++ * 70}ms`);
+      doomed.style.setProperty('--sunder-delay', `${order++ * 70}ms`);
     } else {
       doomed.classList.add('dying');
     }
     const rect = doomed.getBoundingClientRect();
     burst(rect.left + rect.width / 2, rect.top + rect.height / 2, color, 18);
   }
-
-  const survivors = board[col].filter((_, index) => !victims.includes(index));
-  const lost = boardTotalMode(board, S.scoring)
-    - boardTotalMode(board.map((column, index) => index === col ? survivors : column), S.scoring);
   /* The aggregate loss belongs to an actually destroyed die, not whichever
      survivor happens to be last in the stack. */
-  floatPts(who, col, '−' + lost, heatOf(who), victims[0]);
+  floatPts(who, plan.col, '−' + plan.lost, heatOf(who), plan.victims[0]);
+  return order;
+}
+
+function playDestructionImpact(): void {
   Sfx.kill();
   vibrate([16, 30, 26]);
   shake(7);
   flash(0.22);
-  await pause(sundered ? (REDUCED ? 0 : 460 + Math.max(0, collapseOrder - 1) * 70) : 320);
+}
+
+async function destroyAt(
+  who: Player,
+  col: number,
+  die: number,
+  isCurrent: () => boolean,
+): Promise<DestructionResult> {
+  const victims = victimsOf(S.boards[who][col], die, S.scoring);
+  if (!victims.length) return { destroyed: 0, interrupted: false };
+
+  const plan = planDestruction(S.boards[who], col, victims);
+  stageDestruction(who, plan, colorOf(who), null);
+  playDestructionImpact();
+  await pause(320);
   if (!isCurrent()) return { destroyed: 0, interrupted: true };
-  S.boards[who][col] = survivors;
+  S.boards[who][col] = plan.survivors;
   renderSide(who, true);
   return { destroyed: victims.length, interrupted: false };
+}
+
+/* SUNDER widens one placement, so its destruction is one visible event too.
+   Stage every authoritative victim before waiting or repainting: resolving the
+   columns through destroyAt one by one made later victims look disconnected
+   from the warning and reset the stagger in every column. */
+async function destroySunderStrikes(
+  who: Player,
+  strikes: StrikeOutcome[],
+  isCurrent: () => boolean,
+): Promise<DestructionResult> {
+  if (!strikes.length) return { destroyed: 0, interrupted: false };
+  /* Score each loss against the preceding planned removals. ROW modes couple
+     columns, so measuring every column against the untouched board would
+     overstate or understate the visible point loss. */
+  const scratch = S.boards[who].map((column) => column.slice());
+  const plans = strikes.map((strike) => {
+    const plan = planDestruction(scratch, strike.col, strike.victims);
+    scratch[strike.col] = plan.survivors;
+    return plan;
+  });
+  let collapseOrder = 0;
+  for (const plan of plans) {
+    collapseOrder = stageDestruction(who, plan, '#ff9d66', collapseOrder);
+  }
+  playDestructionImpact();
+  await pause(REDUCED ? 0 : 460 + Math.max(0, collapseOrder - 1) * 70);
+  if (!isCurrent()) return { destroyed: 0, interrupted: true };
+  for (const plan of plans) S.boards[who][plan.col] = plan.survivors;
+  renderSide(who, true);
+  return {
+    destroyed: plans.reduce((total, plan) => total + plan.victims.length, 0),
+    interrupted: false,
+  };
 }
 
 export async function animateGameMove(
@@ -144,6 +202,8 @@ export async function animateGameMove(
 
   let destroyed = 0;
   try {
+    /* Wards answer first, then every unwarded SUNDER victim collapses in one
+       batch. Ordinary placement keeps its established per-column pipeline. */
     for (const strike of strikes) {
       if (!spec.isCurrent()) return { placed: true, interrupted: true, destroyed };
       if (strike.warded && spec.charm) {
@@ -168,7 +228,17 @@ export async function animateGameMove(
         renderSide(foe, true);
         continue;
       }
-      const result = await destroyAt(foe, strike.col, die, spec.isCurrent, sundered);
+      if (sundered) continue;
+      const result = await destroyAt(foe, strike.col, die, spec.isCurrent);
+      if (result.interrupted) return { placed: true, interrupted: true, destroyed };
+      destroyed += result.destroyed;
+    }
+    if (sundered) {
+      const result = await destroySunderStrikes(
+        foe,
+        strikes.filter((strike) => !strike.warded),
+        spec.isCurrent,
+      );
       if (result.interrupted) return { placed: true, interrupted: true, destroyed };
       destroyed += result.destroyed;
     }
