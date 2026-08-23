@@ -34,5 +34,4 @@
 :where(#kbroot) #passQuit{position:absolute;top:calc(env(safe-area-inset-top,0px) + 8px);right:10px}
 :where(#kbroot) .ico{font-family:inherit;padding:0;-webkit-appearance:none;appearance:none}
 :where(#kbroot) .ico:focus-visible,:where(#kbroot) .btn:focus-visible,:where(#kbroot) .seg button:focus-visible{outline:2px solid var(--p1);outline-offset:2px}
-@media (prefers-reduced-motion:reduce){
-  :where(#kbroot) #coach .chint,:where(#kbroot) #ovPass .tapline{animation:none;opacity:1}}
+#kbroot.reduce-motion #coach .chint,#kbroot.reduce-motion #ovPass .tapline{animation:none;opacity:1}

@@ -8,6 +8,7 @@ import { clearTut } from './tutorial.ts';
 import { clearHints } from '../ui/game/hints.ts';
 import { setNumeralPresentation } from '../ui/game/root-state.ts';
 import { appRoot } from '../ui/embed.ts';
+import { REDUCED, setReducedMotion } from '../ui/fx.ts';
 
 export interface MenuPorts {
   cancelPass: () => void;
@@ -43,6 +44,8 @@ export function syncSettingsUI(): void {
   segOn('#sndSeg', 's', S.sound ? '1' : '0');
   segOn('#faceSeg', 'f', S.numerals ? 'nums' : 'pips');
   segOn('#cbSeg', 'b', S.colorblind ? '1' : '0');
+  setReducedMotion(S.reducedMotion);
+  segOn('#motionSeg', 'rm', REDUCED ? '1' : '0');
 
   /* Colour blind mode overrides the displayed pair without changing the
      stored picks. Multiplier fallbacks remain distinct from each side. */

@@ -30,7 +30,7 @@ export function hooks(){
   return { S, colScore, boardTotal, searchRoot, aiChoose, newGame, place, isFull,
            applyMove, cloneSt, riskOf, nodes,
            sideKey, faceRotated, applySides, renderAll, showHints, setStageDie, loaderDie, setStatus, setActivePlate, nameOf,
-           burst, reduced:REDUCED, fit,
+           burst, get reduced(){ return REDUCED; }, fit,
            spells: {
              cast,
              arm,

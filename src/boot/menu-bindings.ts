@@ -175,6 +175,7 @@ export function bindMenus(root: HTMLElement): void {
   huePicker('#p2Pick', (hue) => { S.p2Hue = hue; });
   syncSettingsUI();
   bindSegment('#cbSeg', 'b', (value) => { S.colorblind = value === '1'; });
+  bindSegment('#motionSeg', 'rm', (value) => { S.reducedMotion = value === '1'; });
 
   tap($('#btnPlay'), () => { Sfx.unlock(); Sfx.tap(); void startLocal(); });
   bindEnd();

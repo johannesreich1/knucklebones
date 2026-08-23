@@ -289,7 +289,14 @@ ${LEGAL_MARKUP}
       </div>
       <div class="tiny">Locks the duel to cyan vs gold — a pair red-green colour vision tells apart</div>
     </div>
-    <div class="tiny">Changes apply the moment you tap them</div>
+    <div class="card">
+      <div class="lbl">Reduced motion</div>
+      <div class="seg" id="motionSeg">
+        <button data-rm="1">ON</button>
+        <button data-rm="0">OFF</button>
+      </div>
+      <div class="tiny">Starts with your device setting; your choice here overrides it</div>
+    </div>
   </div>
   <!-- deploy truth lives here now: the screen you open when something looks
        wrong is the screen that should tell you WHICH build is wrong -->

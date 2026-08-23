@@ -61,13 +61,11 @@
 /* Reduced motion keeps the warning, not a one-frame compressed performance.
    Explicitly remove SU6's loops/one-shots so even the first sampled frame is
    static; the crooked die and containment/ember geometry carry the meaning. */
-@media (prefers-reduced-motion:reduce){
-  :where(#kbroot) #dieStage.sundered::before,
-  :where(#kbroot) #dieStage.sundered::after,
-  :where(#kbroot) #dieStage.sundered .die,
-  :where(#kbroot) .slot.sunder-doomed-slot::after,
-  :where(#kbroot) .die.sunder-doomed,
-  :where(#kbroot) .die.m3.sunder-doomed,
-  :where(#kbroot) .die.sunder-doomed.sunder-collapse{animation:none}
-  :where(#kbroot) .die.sunder-doomed{transform:rotate(-2deg)}
-}
+#kbroot.reduce-motion #dieStage.sundered::before,
+#kbroot.reduce-motion #dieStage.sundered::after,
+#kbroot.reduce-motion #dieStage.sundered .die,
+#kbroot.reduce-motion .slot.sunder-doomed-slot::after,
+#kbroot.reduce-motion .die.sunder-doomed,
+#kbroot.reduce-motion .die.m3.sunder-doomed,
+#kbroot.reduce-motion .die.sunder-doomed.sunder-collapse{animation:none}
+#kbroot.reduce-motion .die.sunder-doomed{transform:rotate(-2deg)}

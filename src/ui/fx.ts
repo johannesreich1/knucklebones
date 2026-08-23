@@ -5,11 +5,21 @@ import { SPEC, type Player } from '../core/rules.ts';
 import { S } from '../state.ts';
 import { $, colEl, slotEl, slotIdx, faceRotated } from './dom.ts';
 import { appRoot, isEmbed, rootRect } from './embed.ts';
+import { setReducedMotionPresentation } from './game/root-state.ts';
 
-export const REDUCED: boolean = (() => {
+const SYSTEM_REDUCED: boolean = (() => {
   try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
   catch { return false; }
 })();
+
+/* A live binding: every effect module reads the effective preference at the
+   moment it acts. null follows the OS default; an explicit in-app choice wins
+   thereafter. The root class gives CSS the same live answer. */
+export let REDUCED = SYSTEM_REDUCED;
+export function setReducedMotion(override: boolean | null): void {
+  REDUCED = override ?? SYSTEM_REDUCED;
+  setReducedMotionPresentation(REDUCED);
+}
 
 /* ---- flying copies ----
    Animating something FROM where the player can see it means lifting a copy out

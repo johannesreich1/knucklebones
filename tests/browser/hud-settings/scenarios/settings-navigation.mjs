@@ -8,22 +8,29 @@ export async function runSettingsNavigationScenarios(suite) {
     on: document.getElementById('ovSettings').classList.contains('on'),
     sndOn: document.querySelector('#sndSeg button.on')?.dataset.s,
     faceOn: document.querySelector('#faceSeg button.on')?.dataset.f,
+    motionOn: document.querySelector('#motionSeg button.on')?.dataset.rm,
     accessibility: document.getElementById('accessibilityHeading')?.textContent?.trim(),
     accessibilityOrder: (() => {
       const body = document.querySelector('#ovSettings .pbody');
       const heading = document.getElementById('accessibilityHeading');
       const faces = document.getElementById('faceSeg')?.closest('.card');
       const colourBlind = document.getElementById('cbSeg')?.closest('.card');
-      return !!body && !!heading && !!faces && !!colourBlind
+      const motion = document.getElementById('motionSeg')?.closest('.card');
+      return !!body && !!heading && !!faces && !!colourBlind && !!motion
         && !!(heading.compareDocumentPosition(faces) & Node.DOCUMENT_POSITION_FOLLOWING)
         && !!(faces.compareDocumentPosition(colourBlind) & Node.DOCUMENT_POSITION_FOLLOWING)
-        && colourBlind.nextElementSibling?.classList.contains('tiny');
+        && !!(colourBlind.compareDocumentPosition(motion) & Node.DOCUMENT_POSITION_FOLLOWING)
+        && motion === body.lastElementChild;
     })(),
+    instantMessage: [...document.querySelectorAll('#ovSettings .pbody .tiny')]
+      .some((node) => /changes apply/i.test(node.textContent ?? '')),
   }));
-  check(out.settingsOpen.on && out.settingsOpen.sndOn === '1' && out.settingsOpen.faceOn === 'pips',
+  check(out.settingsOpen.on && out.settingsOpen.sndOn === '1' && out.settingsOpen.faceOn === 'pips'
+    && out.settingsOpen.motionOn === '0',
         'settings did not open with current values', out.settingsOpen);
   check(out.settingsOpen.accessibility === 'Accessibility' && out.settingsOpen.accessibilityOrder,
         'accessibility controls are not grouped at the end of Settings', out.settingsOpen);
+  check(!out.settingsOpen.instantMessage, 'the redundant instant-apply message is still in Settings', out.settingsOpen);
 
   const accessibilityTop = () => page.$eval('#accessibilityHeading', (heading) => heading.getBoundingClientRect().top);
   const topBeforeColourBlind = await accessibilityTop();

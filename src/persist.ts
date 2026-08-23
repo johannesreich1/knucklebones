@@ -21,7 +21,8 @@ export function saveStats(): void {
                 best: S.best, diff: S.diff, mode: S.mode, sound: S.sound,
                 numerals: S.numerals, timer: S.timer, seat: S.seat, tutDone: S.tutDone, played: S.played,
                 localMode: S.localMode, spell: S.spell,
-                p1Hue: S.p1Hue, p2Hue: S.p2Hue, colorblind: S.colorblind });
+                p1Hue: S.p1Hue, p2Hue: S.p2Hue, colorblind: S.colorblind,
+                reducedMotion: S.reducedMotion });
 }
 
 export function loadStats(): void {
@@ -39,6 +40,7 @@ export function loadStats(): void {
   // the pair must stay a pair — a clashing store falls back to the classic foe
   if (S.p1Hue === S.p2Hue) S.p2Hue = S.p1Hue === 'mg' ? 'cy' : 'mg';
   if (typeof d.colorblind === 'boolean') S.colorblind = d.colorblind;
+  if (typeof d.reducedMotion === 'boolean') S.reducedMotion = d.reducedMotion;
   // '' is NONE; any other value must still be a spell this build knows about
   if (d.spell === '' || d.spell === RANDOM_SPELL || spellById(d.spell)) S.spell = d.spell;
   if (typeof d.tutDone === 'boolean') S.tutDone = d.tutDone;

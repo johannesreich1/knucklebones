@@ -84,9 +84,7 @@
   opacity:0;
 }
 
-@media (prefers-reduced-motion:reduce){
-  :where(#kbroot) .die.spellpreview.anvilpreview::after{
-    animation:none;
-    opacity:.82;
-  }
+#kbroot.reduce-motion .die.spellpreview.anvilpreview::after{
+  animation:none;
+  opacity:.82;
 }

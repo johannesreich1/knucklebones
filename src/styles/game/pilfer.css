@@ -15,7 +15,5 @@
 :where(#kbroot) .col.pilfer-straining,
 :where(#kbroot) .die.pilfer-soft-settle{will-change:transform}
 
-@media (prefers-reduced-motion:reduce){
-  :where(#kbroot) .col.pilfer-straining,
-  :where(#kbroot) .die.pilfer-soft-settle{will-change:auto}
-}
+#kbroot.reduce-motion .col.pilfer-straining,
+#kbroot.reduce-motion .die.pilfer-soft-settle{will-change:auto}

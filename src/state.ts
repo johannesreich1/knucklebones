@@ -85,6 +85,10 @@ export const S = {
   p1Hue: 'cy',
   p2Hue: 'mg',
   colorblind: false,
+  /* null follows the OS default; the first explicit Settings choice becomes
+     a persistent boolean override, including OFF on an iOS device set to
+     Reduce Motion. ui/fx owns the effective value. */
+  reducedMotion: null as boolean | null,
   busy: false,
   gen: 0,                // bumped whenever a game is abandoned/restarted; async work checks it
   /* the active scoring/destruction mode (core/rules Mode). ONLY online play

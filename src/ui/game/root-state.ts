@@ -12,7 +12,7 @@ type GameRootClass =
   | 'face' | 'p2turn'
   | 'land' | 'shortv' | 'sidepts'
   | 'casting' | 'castself'
-  | 'numerals' | 'clock' | 'tut';
+  | 'numerals' | 'clock' | 'tut' | 'reduce-motion';
 
 function setClass(name: GameRootClass, on: boolean): void {
   appRoot().classList.toggle(name, on);
@@ -62,5 +62,6 @@ export function setCastingPresentation(target: CastingPresentation): void {
 }
 
 export function setNumeralPresentation(on: boolean): void { setClass('numerals', on); }
+export function setReducedMotionPresentation(on: boolean): void { setClass('reduce-motion', on); }
 export function setClockPresentation(on: boolean): void { setClass('clock', on); }
 export function setTutorialPresentation(on: boolean): void { setClass('tut', on); }

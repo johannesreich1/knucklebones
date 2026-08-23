@@ -38,9 +38,7 @@
   100%{opacity:1;transform:scale(1)}}
 @keyframes spell-nudge-glow{0%,18%{opacity:0}55%{opacity:1}100%{opacity:0}}
 
-@media (prefers-reduced-motion:reduce){
-  :where(#kbroot) .spell-fate-old,:where(#kbroot) .spell-fate-lane::before,
-  :where(#kbroot) .pip.spell-nudge-removed,:where(#kbroot) .spell-nudge-number-old{display:none}
-  :where(#kbroot) .spell-fate-new,:where(#kbroot) .pip.spell-nudge-added,
-  :where(#kbroot) .spell-nudge-number-new,:where(#kbroot) .die.spell-nudge-rewrite::after{animation:none}
-}
+#kbroot.reduce-motion .spell-fate-old,#kbroot.reduce-motion .spell-fate-lane::before,
+#kbroot.reduce-motion .pip.spell-nudge-removed,#kbroot.reduce-motion .spell-nudge-number-old{display:none}
+#kbroot.reduce-motion .spell-fate-new,#kbroot.reduce-motion .pip.spell-nudge-added,
+#kbroot.reduce-motion .spell-nudge-number-new,#kbroot.reduce-motion .die.spell-nudge-rewrite::after{animation:none}

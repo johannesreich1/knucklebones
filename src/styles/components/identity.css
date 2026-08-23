@@ -160,8 +160,8 @@
    read as a second verdict */
 :where(#kbroot) .endplates.restamp .pstamp,:where(#kbroot) .endplates.restamp .pstamp::after,
 :where(#kbroot) .endplates.restamp .pplate{animation:none}
-@media (prefers-reduced-motion:reduce){
-  :where(#kbroot) .pstamp,:where(#kbroot) .pstamp::after,:where(#kbroot) .endplates .pplate{animation:none}
-  :where(#kbroot) .pstamp::after{content:none}}
+#kbroot.reduce-motion .pstamp,#kbroot.reduce-motion .pstamp::after,
+#kbroot.reduce-motion .endplates .pplate{animation:none}
+#kbroot.reduce-motion .pstamp::after{content:none}
 :where(#kbroot) .endplates{display:flex;flex-direction:column;gap:9px;width:100%;max-width:var(--w-col)}
 :where(#kbroot) .endplates div.pplate{cursor:default}   /* a fact, not a door */
