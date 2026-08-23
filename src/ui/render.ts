@@ -83,7 +83,7 @@ function sealMetrics(){
   const seat = document.querySelector('.slot');
   const corner = seat ? parseFloat(getComputedStyle(seat).borderRadius) : 14;
   return { cell, gap, out, r: (corner > 0 ? corner : 14) + out, h: 3*cell + 2*gap + 2*out,
-           engage: ms('--seal-engage',950), strike: ms('--seal-strike',780), snap: ms('--seal-snap',1050) };
+           engage: ms('--seal-engage',950), strike: ms('--seal-strike',1200), snap: ms('--seal-snap',1600) };
 }
 function sealM(){ return SEALM || (SEALM = sealMetrics()); }
 function sealFor(n){

@@ -103,8 +103,8 @@
      the one typed here. */
   --seal-out:1.6px;
   --seal-engage:950ms;   /* the line closes: the third die seats, or the rune lands */
-  --seal-strike:780ms;   /* a strike meets a shield, which hardens and is unchanged */
-  --seal-snap:1050ms;    /* a ward's clasp fails and the line unwinds off the column */
+  --seal-strike:1200ms;  /* a strike meets a shield, which hardens and is unchanged */
+  --seal-snap:1600ms;    /* a ward's clasp fails and the line unwinds off the column */
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 
@@ -1242,11 +1242,19 @@ html.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
 
 .col>.seal>g{display:none}
 .col.shielded>.seal>.sgold{display:block}
-.col.warded:not(.shielded)>.seal>.smint,.col.sealsnap>.seal>.smint{display:block}
+.col.warded:not(.shielded)>.seal>.smint,.col.sealsnap:not(.shielded)>.seal>.smint{display:block}
 .col.shielded>.seal{--g:var(--mx2,var(--gold))}
 /* the ward's hue AND its heartbeat: the same two states that show the clasp at
-   all are the only two that may animate it (see .sp/.sv below) */
-.col.warded:not(.shielded)>.seal,.col.sealsnap>.seal{--g:var(--wdc);--sealbreathe:sealbreathe}
+   all are the only two that may animate it (see .sp/.sv below).
+   .sealsnap CARRIES THE SAME :not(.shielded) AS .warded, for the same reason
+   one line up and one the beat's length decides: the class outlives the charge
+   on purpose, so the mark can be seen leaving, and while it is on, the column
+   can FILL — the foe moves next and it is their board. A column that becomes
+   full is shielded, and it would then have drawn the shield's loop in the
+   WARD'S mint with the leaving clasp on top of it. At the old 680ms the die
+   could not land inside the window; at 1600ms it can. The shield's mark wins,
+   which is the rule stated above. */
+.col.warded:not(.shielded)>.seal,.col.sealsnap:not(.shielded)>.seal{--g:var(--wdc);--sealbreathe:sealbreathe}
 /* ===== ONE COLUMN, ONE OUTLINE =====
    A protected column you may still play into is making two true statements at
    once — "this column is protected" and "you may play here this turn" — and
