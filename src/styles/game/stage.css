@@ -45,6 +45,10 @@
   white-space:nowrap;transform:translate(-50%,0);
   text-shadow:0 0 10px currentColor,0 2px 8px rgba(0,0,0,.8)}
 #kbroot.land .pts{font-size:15px}
+/* Numeral dice reserve their centre for the face value. Score feedback becomes
+   a compact header inside the reading edge instead of floating over the value. */
+:where(#kbroot) .pts.numeral-pts{font-size:clamp(7.5px,calc(var(--cell)*.115),10px);line-height:1}
+#kbroot.land .pts.numeral-pts{font-size:clamp(7.5px,calc(var(--cell)*.115),10px)}
 
 /* ============ FX ============ */
 :where(#kbroot) #fx{position:fixed;inset:0;z-index:50;pointer-events:none;overflow:hidden}

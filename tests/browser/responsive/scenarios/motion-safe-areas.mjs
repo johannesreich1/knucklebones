@@ -135,10 +135,13 @@ export async function runMotionSafeAreaScenarios(suite) {
       point: pointRect && pointBox && numeralRect && dieRect ? {
         text: point.textContent,
         numeralDisplay: getComputedStyle(numeral).display,
+        inside: pointBox.top >= dieRect.top - .5 && pointBox.bottom <= dieRect.bottom + .5
+          && pointBox.left >= dieRect.left - .5 && pointBox.right <= dieRect.right + .5,
+        edgeInset: pointBox.top - dieRect.top,
+        halfGap: dieRect.top + dieRect.height / 2 - pointBox.bottom,
         gap: numeralRect.top - pointRect.bottom,
         centreError: Math.abs((pointRect.left + pointRect.width / 2)
           - (numeralRect.left + numeralRect.width / 2)),
-        edgeGap: dieRect.top - pointBox.bottom,
       } : null,
     };
   }, beforePlacement);
@@ -182,11 +185,79 @@ export async function runMotionSafeAreaScenarios(suite) {
       text: point.textContent,
       numeralDisplay: getComputedStyle(numeral).display,
       turned: matrix.a < -.99 && matrix.d < -.99,
+      inside: pointBox.top >= dieRect.top - .5 && pointBox.bottom <= dieRect.bottom + .5
+        && pointBox.left >= dieRect.left - .5 && pointBox.right <= dieRect.right + .5,
+      edgeInset: dieRect.bottom - pointBox.bottom,
+      halfGap: pointBox.top - (dieRect.top + dieRect.height / 2),
       gap: pointInk.top - numeralInk.bottom,
       centreError: Math.abs((pointInk.left + pointInk.width / 2)
         - (numeralInk.left + numeralInk.width / 2)),
-      edgeGap: pointBox.top - dieRect.bottom,
     } : null;
+  });
+
+  /* Minus feedback uses the same numeral header, but it belongs to a real
+     victim rather than the last surviving die in that column. Use a stack
+     where the matched 5 is not last so a wrong anchor cannot accidentally
+     pass the geometry check. */
+  out.reducedMinusPoint = await rp.evaluate(async () => {
+    const k = window.__kb;
+    k.S.gen += 1;
+    k.S.mode = 'duo';
+    k.S.seat = 'pass';
+    k.S.scoring = 0;
+    k.S.timer = 0;
+    k.S.bottom = 1;
+    k.S.turn = 1;
+    k.S.phase = 'choose';
+    k.S.busy = false;
+    k.S.die = 5;
+    k.S.boards = [[[5, 2], [], []], [[], [], []]];
+    k.S.charm.wards = [[0, 0, 0], [0, 0, 0]];
+    k.applySides();
+    k.renderAll(false);
+    k.setStageDie(5, 1);
+    k.showHints();
+    const placement = k.place(1, 0);
+    let point = null;
+    for (let tick = 0; tick < 60; tick++) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      point = [...document.querySelectorAll('#topBoard .pts')]
+        .find((node) => node.textContent.startsWith('−'));
+      if (point) break;
+    }
+    const victim = document.querySelector('#topBoard .col[data-col="0"] .slot[data-slot="2"] .die');
+    const survivor = document.querySelector('#topBoard .col[data-col="0"] .slot[data-slot="1"] .die');
+    const numeral = victim?.querySelector('.num');
+    const inkRect = (element) => {
+      if (!element) return null;
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      return range.getBoundingClientRect();
+    };
+    const dieRect = victim?.getBoundingClientRect();
+    const survivorRect = survivor?.getBoundingClientRect();
+    const pointBox = point?.getBoundingClientRect();
+    const pointInk = inkRect(point);
+    const numeralInk = inkRect(numeral);
+    const result = dieRect && survivorRect && pointBox && pointInk && numeralInk ? {
+      text: point.textContent,
+      victim: numeral.textContent,
+      survivor: survivor.querySelector('.num')?.textContent,
+      victimOpacity: getComputedStyle(victim).opacity,
+      inside: pointBox.top >= dieRect.top - .5 && pointBox.bottom <= dieRect.bottom + .5
+        && pointBox.left >= dieRect.left - .5 && pointBox.right <= dieRect.right + .5,
+      edgeInset: pointBox.top - dieRect.top,
+      halfGap: dieRect.top + dieRect.height / 2 - pointBox.bottom,
+      gap: numeralInk.top - pointInk.bottom,
+      victimCentreError: Math.abs((pointInk.left + pointInk.width / 2)
+        - (numeralInk.left + numeralInk.width / 2)),
+      survivorDistance: Math.hypot(
+        (pointInk.left + pointInk.width / 2) - (survivorRect.left + survivorRect.width / 2),
+        (pointInk.top + pointInk.height / 2) - (survivorRect.top + survivorRect.height / 2)),
+    } : null;
+    k.S.gen += 1;
+    await placement;
+    return result;
   });
   out.reduced = await rp.evaluate(() => ({
     jsFlag: window.__kb.reduced,
@@ -217,19 +288,32 @@ export async function runMotionSafeAreaScenarios(suite) {
   'a score still changes size when it updates with motion reduced', out.reducedPlacement.score);
   check(out.reducedPlacement.point?.text.startsWith('+')
     && out.reducedPlacement.point.numeralDisplay === 'flex'
-    && out.reducedPlacement.point.gap >= 2
-    && out.reducedPlacement.point.centreError <= 1.5
-    && out.reducedPlacement.point.edgeGap >= -1
-    && out.reducedPlacement.point.edgeGap <= 3,
-  'numbered-die score feedback covers the numeral instead of sitting at its top edge', out.reducedPlacement.point);
+    && out.reducedPlacement.point.inside
+    && out.reducedPlacement.point.edgeInset >= -.5
+    && out.reducedPlacement.point.edgeInset <= 4
+    && out.reducedPlacement.point.halfGap >= 1
+    && out.reducedPlacement.point.gap >= 0
+    && out.reducedPlacement.point.centreError <= 1.5,
+  'numbered-die score feedback is not inside the die above its numeral', out.reducedPlacement.point);
   check(out.reducedFarPoint?.text.startsWith('+')
     && out.reducedFarPoint.numeralDisplay === 'flex'
     && out.reducedFarPoint.turned
-    && out.reducedFarPoint.gap >= 2
-    && out.reducedFarPoint.centreError <= 1.5
-    && out.reducedFarPoint.edgeGap >= -1
-    && out.reducedFarPoint.edgeGap <= 3,
-  'top-seat numbered-die feedback did not leave through its reading edge', out.reducedFarPoint);
+    && out.reducedFarPoint.inside
+    && out.reducedFarPoint.edgeInset >= -.5
+    && out.reducedFarPoint.edgeInset <= 4
+    && out.reducedFarPoint.halfGap >= 1
+    && out.reducedFarPoint.gap >= 0
+    && out.reducedFarPoint.centreError <= 1.5,
+  'top-seat numbered-die feedback is not inside its reading edge', out.reducedFarPoint);
+  check(out.reducedMinusPoint?.text === '−5'
+    && out.reducedMinusPoint.victim === '5' && out.reducedMinusPoint.survivor === '2'
+    && +out.reducedMinusPoint.victimOpacity > .95
+    && out.reducedMinusPoint.inside
+    && out.reducedMinusPoint.edgeInset >= -.5 && out.reducedMinusPoint.edgeInset <= 4
+    && out.reducedMinusPoint.halfGap >= 1 && out.reducedMinusPoint.gap >= 0
+    && out.reducedMinusPoint.victimCentreError <= 1.5
+    && out.reducedMinusPoint.survivorDistance > 20,
+  'minus feedback is not inside the destroyed numbered die', out.reducedMinusPoint);
   check(out.reducedSystemDefault.state === null && out.reducedSystemDefault.jsFlag
     && out.reducedSystemDefault.rootClass && out.reducedSystemDefault.selected === '1',
     'the Reduced Motion toggle did not initialize from the OS default', out.reducedSystemDefault);

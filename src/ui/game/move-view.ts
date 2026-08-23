@@ -81,7 +81,9 @@ async function destroyAt(
   const survivors = board[col].filter((_, index) => !victims.includes(index));
   const lost = boardTotalMode(board, S.scoring)
     - boardTotalMode(board.map((column, index) => index === col ? survivors : column), S.scoring);
-  floatPts(who, col, '−' + lost, heatOf(who));
+  /* The aggregate loss belongs to an actually destroyed die, not whichever
+     survivor happens to be last in the stack. */
+  floatPts(who, col, '−' + lost, heatOf(who), victims[0]);
   Sfx.kill();
   vibrate([16, 30, 26]);
   shake(7);

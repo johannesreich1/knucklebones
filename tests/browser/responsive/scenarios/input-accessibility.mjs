@@ -85,10 +85,128 @@ export async function runInputAccessibilityScenarios(suite) {
   // now a clean press+release on the same column: must place exactly one
   await gp.mouse.move(box0.x + box0.width / 2, box0.y + box0.height / 2);
   await gp.mouse.down(); await gp.waitForTimeout(60); await gp.mouse.up();
-  await gp.waitForTimeout(1200);
+  await gp.locator('#botBoard .col[data-col="0"] .pts.numeral-pts')
+    .waitFor({ state: 'attached', timeout: 1400 });
+  out.normalNumeralPoint = await gp.evaluate(() => {
+    const point = document.querySelector('#botBoard .col[data-col="0"] .pts.numeral-pts');
+    const animation = point?.getAnimations()[0];
+    let peakTime = null;
+    if (animation) {
+      animation.pause();
+      const duration = Number(animation.effect.getTiming().duration);
+      let peakOpacity = -1;
+      for (let time = 0; time < duration; time += 10) {
+        animation.currentTime = time;
+        const opacity = +getComputedStyle(point).opacity;
+        if (opacity > peakOpacity) { peakOpacity = opacity; peakTime = time; }
+      }
+      animation.currentTime = peakTime;
+    }
+    const pointBox = point?.getBoundingClientRect();
+    const pointCentre = pointBox ? {
+      x: pointBox.left + pointBox.width / 2,
+      y: pointBox.top + pointBox.height / 2,
+    } : null;
+    const dice = [...document.querySelectorAll('#botBoard .col[data-col="0"] .die.game-die')];
+    const die = pointCentre ? dice.reduce((closest, candidate) => {
+      const rect = candidate.getBoundingClientRect();
+      const distance = Math.hypot(pointCentre.x - (rect.left + rect.width / 2),
+        pointCentre.y - (rect.top + rect.height / 2));
+      return !closest || distance < closest.distance ? { candidate, distance } : closest;
+    }, null)?.candidate : null;
+    const numeral = die?.querySelector('.num');
+    const inkRect = (element) => {
+      if (!element) return null;
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      return range.getBoundingClientRect();
+    };
+    const dieRect = die?.getBoundingClientRect();
+    const pointInk = inkRect(point);
+    const numeralInk = inkRect(numeral);
+    const result = dieRect && pointBox && pointInk && numeralInk ? {
+      text: point.textContent,
+      opacity: +getComputedStyle(point).opacity,
+      peakTime,
+      inside: pointBox.top >= dieRect.top - .5 && pointBox.bottom <= dieRect.bottom + .5
+        && pointBox.left >= dieRect.left - .5 && pointBox.right <= dieRect.right + .5,
+      edgeInset: pointBox.top - dieRect.top,
+      halfGap: dieRect.top + dieRect.height / 2 - pointBox.bottom,
+      gap: numeralInk.top - pointInk.bottom,
+      centreError: Math.abs((pointInk.left + pointInk.width / 2)
+        - (numeralInk.left + numeralInk.width / 2)),
+    } : null;
+    animation?.play();
+    return result;
+  });
+  check(out.normalNumeralPoint?.text.startsWith('+')
+    && out.normalNumeralPoint.opacity > .8 && out.normalNumeralPoint.inside
+    && out.normalNumeralPoint.edgeInset >= -.5 && out.normalNumeralPoint.edgeInset <= 4
+    && out.normalNumeralPoint.halfGap >= 1 && out.normalNumeralPoint.gap >= 0
+    && out.normalNumeralPoint.centreError <= 1.5,
+  'normal-motion numeral feedback is not inside the die above its number', out.normalNumeralPoint);
+  await gp.waitForTimeout(750);
   const nPlaced = await gp.evaluate(() => window.__kb.S.boards[1].flat().length);
   check(nPlaced === n0 + 1, 'clean press did not place exactly one die', { n0, nCancel, nPlaced });
   out.input = { n0, nCancel, nPlaced };
+
+  /* A destructive die keeps moving in normal motion. The minus must travel
+     with that exact victim, remain inside while both are visible, and leave
+     with it instead of lingering over the now-empty slot. */
+  out.normalMinusPoint = await gp.evaluate(async () => {
+    const k = window.__kb;
+    k.S.gen += 1;
+    k.S.mode = 'duo';
+    k.S.seat = 'pass';
+    k.S.scoring = 0;
+    k.S.timer = 0;
+    k.S.bottom = 1;
+    k.S.turn = 1;
+    k.S.phase = 'choose';
+    k.S.busy = false;
+    k.S.die = 5;
+    k.S.boards = [[[5, 2], [], []], [[], [], []]];
+    k.S.charm.wards = [[0, 0, 0], [0, 0, 0]];
+    k.applySides();
+    k.renderAll(false);
+    k.setStageDie(5, 1);
+    k.showHints();
+    const victim = document.querySelector('#topBoard .col[data-col="0"] .slot[data-slot="2"] .die');
+    const placement = k.place(1, 0);
+    const samples = [];
+    for (let tick = 0; tick < 110; tick++) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      const point = [...document.querySelectorAll('#topBoard .pts')]
+        .find((node) => node.textContent.startsWith('−'));
+      if (point && victim?.isConnected) {
+        const pointBox = point.getBoundingClientRect();
+        const dieBox = victim.getBoundingClientRect();
+        samples.push({
+          pointOpacity: +getComputedStyle(point).opacity,
+          dieOpacity: +getComputedStyle(victim).opacity,
+          inside: pointBox.top >= dieBox.top - .5 && pointBox.bottom <= dieBox.bottom + .5
+            && pointBox.left >= dieBox.left - .5 && pointBox.right <= dieBox.right + .5,
+        });
+      }
+    }
+    await placement;
+    const visible = samples.filter((sample) => sample.pointOpacity >= .25 && sample.dieOpacity >= .25);
+    const peak = samples.reduce((best, sample) => !best || sample.pointOpacity > best.pointOpacity
+      ? sample : best, null);
+    return {
+      sampleCount: samples.length,
+      visibleCount: visible.length,
+      peak,
+      allVisibleInside: visible.every((sample) => sample.inside),
+      orphaned: [...document.querySelectorAll('#topBoard .pts')]
+        .some((node) => node.textContent.startsWith('−')),
+    };
+  });
+  check(out.normalMinusPoint.sampleCount > 5 && out.normalMinusPoint.visibleCount > 2
+    && out.normalMinusPoint.peak?.pointOpacity > .8
+    && out.normalMinusPoint.peak?.inside && out.normalMinusPoint.allVisibleInside
+    && !out.normalMinusPoint.orphaned,
+  'normal-motion minus feedback left its shrinking numbered die', out.normalMinusPoint);
 
   // ================= ACCESSIBILITY =================
   out.a11y = await gp.evaluate(() => ({
