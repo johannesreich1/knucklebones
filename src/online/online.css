@@ -131,33 +131,77 @@
    Their column reads gold, yours cyan — the duel palette does the talking.
    With no ranked self to compare (the board is public), the card renders one
    column and the stat labels lead. ---- */
-/* z 90: ABOVE .ov (80) — the board it opens over IS an overlay, and at 60 the
-   card rendered underneath it, rect present, pixels absent (test16 now asks
-   elementFromPoint, which is what caught this) */
-.faceoff{position:fixed;inset:0;z-index:90;display:grid;place-items:center;
-  background:rgba(3,5,12,.66);padding:14px}
+/* THE SHEET ARRIVES FROM THE BOTTOM AND LEAVES THE SAME WAY (design:
+   30c-foexit-grabber, user call 2026-08-22). There is no ✕ anywhere on this
+   card any more: it wears the grabber every native sheet wears, and dismissal
+   is a downward drag. That only reads as honest because the card CAME from
+   down there — a sheet you watched slide up is a sheet you can send back.
+
+   ONE CUSTOM PROPERTY OWNS THE TRAVEL. `--fo-dy` is how far, in unitless px,
+   the card sits below its resting place; the card's transform and the wash's
+   alpha are both computed from it, so the backdrop can never disagree with
+   the card about how far the drag has got. 260px is the fade's full span,
+   which is the study's curve exactly: at 152px of travel the wash is at .42
+   of its weight and the ladder reads through it.
+   z 90: ABOVE .ov (80) — the board it opens over IS an overlay, and at 60 the
+   card rendered underneath it, rect present, pixels absent (test16 asks
+   elementFromPoint, which is what caught this). */
+.faceoff{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:14px;
+  --fo-dy:0;background:rgba(3,5,12,calc(.66 * max(0, 1 - var(--fo-dy) / 260)))}
 .focard{position:relative;width:100%;max-width:356px;border-radius:20px;padding:16px 16px 16px;
   background:linear-gradient(180deg,#0e1329,#070a18);border:1px solid rgba(255,255,255,.15);
-  box-shadow:0 24px 60px rgba(0,0,0,.65);display:flex;flex-direction:column;gap:12px}
-/* THE WAY OUT IS THE ONE EVERY SHEET USES: the shared ✕ .ico in the corner
-   (design: 00-navigation — ✕ dismisses, the ladder underneath resumes). It
-   spent a while as a full-width Close under the stats, borrowed from the
-   forfeit ask-card; but a bottom "Close" is navigation at the bottom of a
-   screen, which this app retired everywhere else, and the ask-card's shape
-   belongs to a QUESTION, not to a card you are merely done reading. Backdrop
-   tap and Escape close it too.
-   IN THE CORNER, which means OUT OF THE FLOW. It spent a day as a flex item
-   (`align-self:flex-end`) to dodge the arithmetic — and that bought a band of
-   empty card across the top with the ✕ adrift at its right, which reads as a
-   button that missed its mark rather than as a corner control (user report).
-   So the arithmetic got done instead, and it is comfortable: on the narrowest
-   phone the card is ~292px wide, its columns ~110px, and a 46px avatar
-   centred in one clears a 30px corner button by ~32px. The nickname and the
-   pill sit BELOW the avatar, well under the button's 30px band, and .fnm is
-   capped at 130px with an ellipsis, so no name can grow into it either.
-   test16 measures that clearance as the player meets it, so this cannot rot
-   quietly if the card's contents change. */
-.focard .foexit{position:absolute;top:8px;right:8px;z-index:2}
+  box-shadow:0 24px 60px rgba(0,0,0,.65);display:flex;flex-direction:column;gap:12px;
+  transform:translateY(calc(var(--fo-dy) * 1px));will-change:transform;
+  /* the WHOLE card is the drag surface, so nothing may steal the gesture */
+  touch-action:none}
+/* the three flights — in, out, and home again — are ONE transition wearing
+   three sets of numbers, handed in by ui.ts as --fo-t/--fo-e. Absent while a
+   finger is down, so the card follows it with nothing in between. */
+.faceoff.fofly{transition:background-color var(--fo-t,.34s) var(--fo-e,cubic-bezier(.16,1,.3,1))}
+.faceoff.fofly .focard{transition:transform var(--fo-t,.34s) var(--fo-e,cubic-bezier(.16,1,.3,1))}
+/* LEAVING. The wash is gone about 40% into the exit flight but the overlay
+   covers inset:0 to the last frame, so the departing sheet used to eat every
+   tap aimed at the ladder behind it. ui.ts sets this the instant the flight
+   starts; the card keeps flying, it just stops answering. */
+.faceoff.foout{pointer-events:none}
+
+/* THE GRABBER. A 40×4 bar centred on the card's top EDGE, and the first flex
+   child rather than an absolutely placed decoration — a floating bar would
+   repeat exactly what the retired corner ✕ was accused of. Its cost in card
+   height, in full: the wrapper is 14px tall, -12px eats most of the card's
+   16px top padding, -8px cancels 8 of the column's 12px flex gap and the gap
+   puts 12px back. 14 - 12 - 8 + 12 = 6px, and nothing at all horizontally, so
+   the 46px avatars and the 130px-capped nickname keep the whole 356px. The
+   bar is neutral white, not the duel pair: it is chrome, and must read the
+   same over a gold column and a cyan one.
+   THE MARGINS ARE SPLIT -12/-8, NOT -8/-12, and the 4px that buys is the
+   point: cancelling the WHOLE gap left the wrapper's bottom edge and the
+   avatars' top edge on the same pixel, which is not clearance, it is a tie —
+   the card's content began exactly where the control ended. The pair still
+   totals -20, so the 6px and everything below it are where they were.
+   IT IS A REAL BUTTON, which is the price of taking the ✕ away: a gesture is
+   invisible to a screen reader and unreachable from a keyboard, so the mark
+   that promises the gesture is also the control that performs it — labelled
+   Close, focusable, with the focus ring drawn round the 14px wrapper rather
+   than the 4px bar. Escape and the backdrop still work; this is the way out
+   that can be ANNOUNCED. */
+.fograb{position:relative;align-self:center;width:76px;height:14px;margin:-12px 0 -8px;padding:0;border:0;
+  background:none;-webkit-appearance:none;appearance:none;border-radius:99px;
+  display:grid;place-items:center;cursor:grab;touch-action:none}
+/* A 14px-tall control is under WCAG 2.5.8's 24px floor and nowhere near the
+   44px a finger wants — so the FINGER is given 44px and the drawing keeps its
+   4px, the same trade `.rune::after` makes in styles/main.css. The expander
+   grows UPWARD by choice: 26px above the wrapper is backdrop, where a tap
+   already closes this card, and 4px below is exactly the clearance gap — it
+   stops on .focols' top edge and takes nothing from the card's content (which
+   holds no control of its own; the card's only button is this one). The whole
+   card is still the drag surface, because a press here bubbles to it. */
+.fograb::after{content:"";position:absolute;inset:-26px 0 -4px}
+.fograb:active{cursor:grabbing}
+.fograb:focus-visible{outline:2px solid var(--p1);outline-offset:2px}
+.fobar{width:40px;height:4px;border-radius:99px;background:rgba(255,255,255,.22);
+  transition:background-color .12s}
+.faceoff.fodrag .fobar{background:rgba(255,255,255,.5)}
 /* the streak cells carry the wait inline while their RPCs answer */
 .fost .ldclock{display:inline-block;vertical-align:middle}
 .focols{display:flex;align-items:center;justify-content:center;gap:16px}
