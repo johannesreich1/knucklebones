@@ -39,6 +39,10 @@ complete live migration ledger and its generation workflow is documented.
   Enabling RLS and granting schema/table access are separate requirements.
 - Policies authorize an owned row, not merely the `authenticated` role.
   Update policies need both read eligibility and a `WITH CHECK` boundary.
+- Cross-device UI preferences live in the owner-only `player_settings` row,
+  separate from the profile/avatar surface. The browser validates the complete
+  shape before applying it; typed columns, hue constraints, and RLS enforce the
+  same boundary independently in PostgreSQL.
 - Privileged functions have a pinned `search_path`, explicit execute grants,
   and the narrowest useful location. `SECURITY DEFINER` is never a shortcut
   around a permissions error.

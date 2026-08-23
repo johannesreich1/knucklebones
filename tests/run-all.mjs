@@ -112,7 +112,7 @@ try {
   };
   await pool([
     // pure-Node gates (no browser): seeded dice determinism + PvP match core
-    ...['architecture', 'dice', 'match', 'modes', 'spells', 'online-api', 'gcauth', 'edge-handlers', 'edge-settlement', 'cssgraph', 'cssreach', 'design-library', 'ladder', 'ladderbench', 'botbench', 'fnsync', 'iosship', 'live-safety', 'gate-lock'].map(node),
+    ...['architecture', 'preferences', 'dice', 'match', 'modes', 'spells', 'online-api', 'gcauth', 'edge-handlers', 'edge-settlement', 'cssgraph', 'cssreach', 'design-library', 'ladder', 'ladderbench', 'botbench', 'fnsync', 'iosship', 'live-safety', 'gate-lock'].map(node),
     ...FILE_SUITES.map(suite),
     // bench3 is a benchmark, not a pass/fail suite — but its helper-vs-inline
     // scoring equivalence check is a real correctness assertion.

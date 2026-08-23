@@ -46,4 +46,8 @@ export function boot(embed: boolean): void {
   bindMenus(root);
   bindKeyboard(root);
   bindPlatform(root);
+  // Standalone/PWA/native accounts get their private Settings row after the
+  // offline-first paint. Widgets neither own nor synchronize host preferences.
+  if (!embed) void import('./online/preferences.ts').then(({ syncAccountPreferences }) =>
+    syncAccountPreferences());
 }

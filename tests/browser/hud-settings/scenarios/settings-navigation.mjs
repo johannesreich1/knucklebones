@@ -13,11 +13,13 @@ export async function runSettingsNavigationScenarios(suite) {
     accessibilityOrder: (() => {
       const body = document.querySelector('#ovSettings .pbody');
       const heading = document.getElementById('accessibilityHeading');
+      const sound = document.getElementById('sndSeg')?.closest('.card');
       const faces = document.getElementById('faceSeg')?.closest('.card');
       const colourBlind = document.getElementById('cbSeg')?.closest('.card');
       const motion = document.getElementById('motionSeg')?.closest('.card');
-      return !!body && !!heading && !!faces && !!colourBlind && !!motion
-        && !!(heading.compareDocumentPosition(faces) & Node.DOCUMENT_POSITION_FOLLOWING)
+      return !!body && !!heading && !!sound && !!faces && !!colourBlind && !!motion
+        && !!(heading.compareDocumentPosition(sound) & Node.DOCUMENT_POSITION_FOLLOWING)
+        && !!(sound.compareDocumentPosition(faces) & Node.DOCUMENT_POSITION_FOLLOWING)
         && !!(faces.compareDocumentPosition(colourBlind) & Node.DOCUMENT_POSITION_FOLLOWING)
         && !!(colourBlind.compareDocumentPosition(motion) & Node.DOCUMENT_POSITION_FOLLOWING)
         && motion === body.lastElementChild;

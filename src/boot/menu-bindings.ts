@@ -35,6 +35,12 @@ import {
 } from '../ui/library.ts';
 import { loaderWait } from '../ui/loader.ts';
 import { tap } from '../ui/tap.ts';
+import { isEmbed } from '../ui/embed.ts';
+
+function syncUserSettings(): void {
+  if (!isEmbed()) void import('../online/preferences.ts').then(({ saveAccountPreferences }) =>
+    saveAccountPreferences());
+}
 
 function closestButton(event: Event): HTMLButtonElement | null {
   return event.target instanceof Element
@@ -42,7 +48,7 @@ function closestButton(event: Event): HTMLButtonElement | null {
     : null;
 }
 
-function bindSegment(selector: string, key: string, apply: (value: string) => void): void {
+function bindSegment(selector: string, key: string, apply: (value: string) => void, accountSetting = false): void {
   tap($(selector), (event) => {
     const button = closestButton(event);
     const value = button?.dataset[key];
@@ -51,6 +57,7 @@ function bindSegment(selector: string, key: string, apply: (value: string) => vo
     syncSettingsUI();
     updateRecord();
     saveStats();
+    if (accountSetting) syncUserSettings();
     Sfx.unlock();
     Sfx.tap();
   });
@@ -98,6 +105,7 @@ function huePicker(selector: string, write: (hue: string) => void): void {
     syncSettingsUI();
     updateRecord();
     saveStats();
+    syncUserSettings();
     Sfx.unlock();
     Sfx.tap();
   });
@@ -168,14 +176,14 @@ export function bindMenus(root: HTMLElement): void {
   bindSegment('#diffSeg', 'd', (value) => { S.diff = oneOf(DIFFS, value, S.diff); });
   bindSegment('#timerSeg', 't', (value) => { S.timer = oneOf(TIMERS, Number(value), S.timer); });
   bindSegment('#seatSeg', 'seat', (value) => { S.seat = oneOf(SEATS, value, S.seat); });
-  bindSegment('#sndSeg', 's', (value) => { S.sound = value === '1'; });
-  bindSegment('#faceSeg', 'f', (value) => { S.numerals = value === 'nums'; });
+  bindSegment('#sndSeg', 's', (value) => { S.sound = value === '1'; }, true);
+  bindSegment('#faceSeg', 'f', (value) => { S.numerals = value === 'nums'; }, true);
 
   huePicker('#p1Pick', (hue) => { S.p1Hue = hue; });
   huePicker('#p2Pick', (hue) => { S.p2Hue = hue; });
   syncSettingsUI();
-  bindSegment('#cbSeg', 'b', (value) => { S.colorblind = value === '1'; });
-  bindSegment('#motionSeg', 'rm', (value) => { S.reducedMotion = value === '1'; });
+  bindSegment('#cbSeg', 'b', (value) => { S.colorblind = value === '1'; }, true);
+  bindSegment('#motionSeg', 'rm', (value) => { S.reducedMotion = value === '1'; }, true);
 
   tap($('#btnPlay'), () => { Sfx.unlock(); Sfx.tap(); void startLocal(); });
   bindEnd();

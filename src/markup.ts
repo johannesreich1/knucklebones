@@ -251,13 +251,6 @@ ${LEGAL_MARKUP}
     <span class="ttl">SETTINGS</span><span class="pad"></span>
   </div>
   <div class="pbody">
-    <div class="card">
-      <div class="lbl">Sound</div>
-      <div class="seg" id="sndSeg">
-        <button data-s="1">ON</button>
-        <button data-s="0">OFF</button>
-      </div>
-    </div>
     <!-- the duel pickers: swatch strips built by boot/menu-bindings.ts from DUELHUES
          (state.ts), one implementation, two slots. A colour belongs to one
          player only — each strip renders the other side's pick disabled. -->
@@ -275,6 +268,13 @@ ${LEGAL_MARKUP}
     </div>
     <h2 class="setsection" id="accessibilityHeading">Accessibility</h2>
     <div class="card">
+      <div class="lbl">Sound</div>
+      <div class="seg" id="sndSeg">
+        <button data-s="1">ON</button>
+        <button data-s="0">OFF</button>
+      </div>
+    </div>
+    <div class="card">
       <div class="lbl">Dice faces</div>
       <div class="seg" id="faceSeg">
         <button data-f="pips">PIPS</button>
@@ -287,7 +287,7 @@ ${LEGAL_MARKUP}
         <button data-b="1">ON</button>
         <button data-b="0">OFF</button>
       </div>
-      <div class="tiny">Locks the duel to cyan vs gold — a pair red-green colour vision tells apart</div>
+      <div class="tiny">Uses cyan and gold for clearer contrast</div>
     </div>
     <div class="card">
       <div class="lbl">Reduced motion</div>
@@ -295,7 +295,7 @@ ${LEGAL_MARKUP}
         <button data-rm="1">ON</button>
         <button data-rm="0">OFF</button>
       </div>
-      <div class="tiny">Starts with your device setting; your choice here overrides it</div>
+      <div class="tiny">Follows your device until you choose</div>
     </div>
   </div>
   <!-- deploy truth lives here now: the screen you open when something looks

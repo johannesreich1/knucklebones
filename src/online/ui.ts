@@ -15,6 +15,7 @@ import { createLadderScreen } from './ladder-screen.ts';
 import { createQueueScreen } from './queue-screen.ts';
 import { createResultScreen } from './result-screen.ts';
 import { ensureIdentity, myProfile } from './session.ts';
+import { syncAccountPreferences } from './preferences.ts';
 import { installOnlineShell } from './shell.ts';
 import { setFinishHandler, type FinishReport } from './play.ts';
 
@@ -92,6 +93,7 @@ async function entered(): Promise<void> {
   const view = pendingView;
   pendingView = null;
   await myProfile();
+  await syncAccountPreferences();
   refreshHomeChip();
   await route(view ?? 'play');
 }
@@ -136,6 +138,7 @@ export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<
   setSessionless(!user);
   if (user) {
     pendingView = null;
+    await syncAccountPreferences();
     return route(view);
   }
   pendingView = view;
