@@ -8,8 +8,8 @@
 //
 // Native providers arrive through the Capacitor bridge on `window`, deliberately
 // NOT through an import: the web bundle must not carry a line of plugin code.
-import { supa } from './session.ts';
-import { SUPABASE_URL, SUPABASE_KEY } from '../config.ts';
+import { supa } from './client.ts';
+import { APP_ID, SUPABASE_URL, SUPABASE_KEY } from '../config.ts';
 
 export interface OneTap {
   id: string;
@@ -58,7 +58,7 @@ async function appleToken(): Promise<{ token: string; nonce: string } | string> 
   const raw = crypto.randomUUID();
   try {
     const res = await plugins().SignInWithApple.authorize({
-      clientId: 'com.appavaria.knucklebones',
+      clientId: APP_ID,
       redirectURI: '',                 // native flow: Apple ignores both
       scopes: 'email name',
       nonce: await sha256hex(raw),

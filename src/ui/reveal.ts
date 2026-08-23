@@ -24,9 +24,11 @@ import { dialBeat } from './modedial.ts';
 import { dealBeat } from './runedeal.ts';
 import { paintAvatar } from './avatar.ts';
 import { $, show, hide } from './dom.ts';
+import { appRoot } from './embed.ts';
 import { Sfx } from './audio.ts';
+import type { Answer, Beat, DialPeer, DialSide } from './reveal-types.ts';
 
-export const pause = (ms: number): Promise<void> => new Promise((r) => setTimeout(() => r(), ms));
+const pause = (ms: number): Promise<void> => new Promise((r) => setTimeout(() => r(), ms));
 
 /* One beat of the reveal: a question, its theatre, and its answer.
    `run` resolves when the answer is on screen and the readout may be written;
@@ -34,31 +36,6 @@ export const pause = (ms: number): Promise<void> => new Promise((r) => setTimeou
    flips the overlay from `.hunting` to `.landed`. Splitting those two lets a
    beat land its own last frame (the dial holds its winner's flare through
    one more frame) without the shell knowing how. */
-/* what a beat found: the four things the readout and the pill are made of.
-   Written by the SHELL when the beat lands — never by the beat's own markup,
-   so a beat physically cannot leak its result early. */
-export interface Answer { name: string; blurb: string; hue: string; icon: string }
-
-export interface Beat extends Answer {
-  label: string;           // the title line while this beat runs
-  cls?: string;            // a class the overlay wears while this beat runs
-  stage: string;           // the centred theatre, as markup
-  run(settle: () => void): Promise<void>;
-}
-
-/** a player on the versus line — ranked fills both, offline leaves them out */
-export interface DialSide { name: string; rating?: number | null; avatar?: string | null }
-
-/* Who else has to agree before the countdown can be cut short.
-   The reveal itself knows nothing about opponents or networks: OFFLINE passes
-   nothing and one tap starts the game, ranked passes a peer backed by the
-   match's realtime channel. Whatever happens, the countdown still expires on
-   its own — an unheard peer costs a few seconds, never the game. */
-export interface DialPeer {
-  announce(): void;                        // tell the other side I am ready
-  onPeer(cb: () => void): () => void;      // ...and hear when they are
-}
-
 const esc = (t: string): string => t.replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
 
@@ -103,7 +80,7 @@ let built = false;
 function build(): void {
   if (built) return;
   built = true;
-  document.body.insertAdjacentHTML('beforeend', `
+  appRoot().insertAdjacentHTML('beforeend', `
 <div class="ov" id="ovWheel">
   <div class="dwho" id="wheelWho"></div>
   <div class="wsettled" id="wheelSettled"></div>

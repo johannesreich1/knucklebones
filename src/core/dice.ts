@@ -40,10 +40,10 @@ export function diceStream(seed: string): () => number {
    from the public move log + the visible next die instead. */
 export const POOL_PER_FACE = 4;
 
-/* the bag itself, shuffled by whatever randomness the caller brings. Offline
-   games pass none (Math.random — nobody replays them); ranked matches pass the
-   seed stream so server and both clients deal the identical bag. */
-export function makeBag(rand: () => number = Math.random): number[] {
+/* The bag itself, shuffled by whatever randomness the caller explicitly
+   brings. Ranked matches pass the seed stream so server and both clients deal
+   the identical bag; offline callers deliberately pass Math.random. */
+export function makeBag(rand: () => number): number[] {
   const bag: number[] = [];
   for (let v = 1; v <= DICE_FACES; v++) for (let i = 0; i < POOL_PER_FACE; i++) bag.push(v);
   for (let i = bag.length - 1; i > 0; i--) {

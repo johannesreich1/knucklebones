@@ -1,15 +1,12 @@
 // LIVE end-to-end test of the PvP pipeline: two real users matchmake, play a
-// full match through pvp-move, Elo moves zero-sum; then a bot-backfill match;
+// full match through pvp-move and verify ladder payouts; then a bot-backfill match;
 // plus the adversarial paths (out-of-turn, illegal column, rating tampering,
 // seed secrecy). NOT part of the automated gate (mutates live data; needs two
 // SQL-created confirmed users — see e2e instructions in the repo README).
-//   node --experimental-strip-types tests/e2e-pvp.mjs
-const URL = 'https://euzjcejbkxvqfrttgaxu.supabase.co';
-const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1empjZWpia3h2cWZydHRnYXh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4OTgxNTgsImV4cCI6MjEwMjQ3NDE1OH0.WIhtcBLc_0mnINapuBqoJVeqqLfx6jHvexRwO5e1KyY';
-const USERS = [
-  { email: 'e2e.pvp.alice@example.com', pass: 'e2e-pvp-password-1!' },
-  { email: 'e2e.pvp.bob@example.com', pass: 'e2e-pvp-password-2!' },
-];
+//   npm run test:live:pvp   (reads the gitignored .env.live)
+import { readLivePvpConfig } from './support/live-pvp-config.mjs';
+
+const { supabaseUrl: URL, publishableKey: ANON, users: USERS } = readLivePvpConfig();
 
 const problems = [];
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -24,7 +21,7 @@ const api = async (path, opts = {}, token = ANON) => {
 };
 const login = async (u) => {
   const r = await api('/auth/v1/token?grant_type=password', {
-    method: 'POST', body: JSON.stringify({ email: u.email, password: u.pass }) });
+    method: 'POST', body: JSON.stringify({ email: u.email, password: u.password }) });
   check(r.status === 200, 'login failed ' + u.email, r);
   return { jwt: r.body.access_token, id: r.body.user.id };
 };
@@ -189,8 +186,8 @@ check(names.includes(aliceBefore.nickname) || names.includes(aliceAfter.nickname
 
 console.log(JSON.stringify({
   h2h: { moves, winner: state.winner === alice.id ? 'alice' : state.winner === bob.id ? 'bob' : 'draw',
-         p1_score: state.p1_score, p2_score: state.p2_score, eloDelta: { alice: dA, bob: dB } },
-  resign: { eloDelta: { alice: rdA, bob: rdB } },
+         p1_score: state.p1_score, p2_score: state.p2_score, pointDelta: { alice: dA, bob: dB } },
+  resign: { pointDelta: { alice: rdA, bob: rdB } },
   bot: { moves: bmoves, p1_score: bm.p1_score, p2_score: bm.p2_score, sawBotMove },
   leaderboard: lb.body, problems, errs: [] }, null, 2));
 process.exit(problems.length ? 1 : 0);

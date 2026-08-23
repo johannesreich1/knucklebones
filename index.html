@@ -11,12 +11,13 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Knucklebones">
-<meta name="description" content="Knucklebones — ranked online dice duels. Column multipliers, destruction, an Elo ladder — plus offline practice vs the CPU or pass-and-play.">
+<meta name="description" content="Knucklebones — ranked online dice duels. Column multipliers, destruction, a seasonal points ladder — plus offline practice vs the CPU or pass-and-play.">
 <!-- PWA links (manifest, icons) are injected into the hosted copy by build.mjs;
      the standalone single file has no use for them. -->
 <title>KNUCKLEBONES — Neon</title>
 </head>
 <body oncontextmenu="return false">
+<div id="kbroot">
 <!-- Shown only when scripts are blocked. The line below removes it the instant
      JS is allowed to run, so a real browser never sees it. -->
 <div class="ov on" id="ovNoJs" style="z-index:200">
@@ -32,6 +33,7 @@
   </div>
 </div>
 <script>document.getElementById('ovNoJs').remove();</script>
+</div>
 <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

@@ -1,315 +1,49 @@
-// @ts-nocheck -- moved verbatim from the monolith; typed in the milestone-D
-// strictness ratchet. New code goes in typed modules, not here.
-// Wire the DOM to the game: one boot per entry point.
-export function refreshHomeChip(): void {
-  const chip = document.getElementById('homeChip');
-  if (!chip) return;
-  try {
-    const p = JSON.parse(localStorage.getItem('knucklebones.online.profile') || 'null');
-    if (p && p.nickname) {
-      // the identity plate (ui/plate): the profile's ring at chip size, filled
-      // to the same groupFill the account screen shows large — one ladder, two
-      // zoom levels. The result screen deals the very same row (design 36f).
-      // rank/apex ride the cache from the last landed standing (cacheStanding).
-      fillPlate(chip, { name: p.nickname, avatar: p.avatar ?? null, points: p.rating ?? 0,
-        rank: typeof p.rank === 'number' ? p.rank : null, apex: !!p.apex, chev: true });
-      return;
-    }
-  } catch { /* fall through to anon */ }
-  chip.classList.add('anon');
-  chip.innerHTML = '<span class="ringwrap mini"><i class="lring"></i></span>NOT SIGNED IN';
-}
-import { SPEC } from './core/rules.ts';
-import { fillPlate } from './ui/plate.ts';
-import { AI, ME, S, DUELHUES } from './state.ts';
-import { loadStats, saveStats } from './persist.ts';
-import { Sfx } from './ui/audio.ts';
-import { setEmbed, isEmbed, kbroot } from './ui/embed.ts';
-import { $, show, hide, colEl, watchPagedScroll } from './ui/dom.ts';
+// One typed composition root shared by the standalone and widget entries.
+import { AI, ME } from './core/rules.ts';
+import { loadStats } from './persist.ts';
+import { cancelPass, endGame, place, sayChoose, armTimer } from './flow/game.ts';
+import { configureMenu, syncSettingsUI } from './flow/menu.ts';
+import { castArmed, configureSpellFlow, renderSpells } from './flow/spells.ts';
+import { configureInput } from './ui/input.ts';
+import { appRoot, setEmbed } from './ui/embed.ts';
+import { $, stampBuild, watchPagedScroll } from './ui/dom.ts';
 import { makeDie } from './ui/die.ts';
-import { loaderWait } from './ui/loader.ts';
-import { buildBoards, applySides, updateRecord } from './ui/render.ts';
+import { buildBoards } from './ui/game/board.ts';
+import { updateRecord } from './ui/game/hud.ts';
+import { applySides } from './ui/game/turn-state.ts';
 import { fit } from './ui/layout.ts';
-import { tap, boardDown, boardUp, clearPress, commitColumn } from './ui/input.ts';
-import { coachTap } from './flow/tutorial.ts';
-import { newGame, startLocal, passTap } from './flow/game.ts';
-import { stampBuild } from './ui/dom.ts';
-import { castArmed, disarm, renderSpells } from './flow/spells.ts';
-import { bindEnd } from './ui/endscreen.ts';
-import { toMenu, syncSettingsUI } from './flow/menu.ts';
-import { requestLeave, leavingForfeits } from './flow/leave.ts';
-import { openModes, openSpells, openEntry, pickerButtons, MODE_PICKS, SPELL_PICKS } from './ui/library.ts';
-import { isNewcomer } from './ui/firstrun.ts';
-import { ask, dismissAsk } from './ui/askcard.ts';
-import { bindSwipeBack } from './ui/swipeback.ts';
-import { sheetOpen } from './ui/sheet.ts';
-/* ===================== BOOT ===================== */
-export function boot(embed){
-  setEmbed(!!embed);
+import { refreshHomeChip } from './ui/homechip.ts';
+import { bindBoardInput, bindKeyboard } from './boot/input-bindings.ts';
+import { bindMenus } from './boot/menu-bindings.ts';
+import { bindPlatform } from './boot/platform.ts';
+
+export function boot(embed: boolean): void {
+  configureInput({ place, castArmed });
+  configureMenu({ cancelPass, renderSpells });
+  configureSpellFlow({
+    onChoice: sayChoose,
+    onCastComplete: () => { sayChoose(); armTimer(); },
+    onGameOver: endGame,
+  });
+
+  setEmbed(embed);
+  const root = appRoot();
   loadStats();
-  // the deploy-truth tag: stamped on <html> by build.mjs (stays "dev" in dev
-  // and in the widget, which deliberately has no data-build)
   stampBuild();
   buildBoards();
   fit();
   applySides();
-  // one listener, every paged view — including the ones built later
   watchPagedScroll();
   updateRecord();
   syncSettingsUI();
-  // the hero duel: you (cyan) vs them (magenta), gold VS between
-  const duel=$('#homeDuel');
-  duel.insertBefore(makeDie(5,ME), duel.firstChild);
-  duel.appendChild(makeDie(3,AI));
+
+  const duel = $('#homeDuel');
+  duel.insertBefore(makeDie(5, ME), duel.firstChild);
+  duel.appendChild(makeDie(3, AI));
   refreshHomeChip();
 
-  const table=$('#tableEl');
-  let sawPointer=false;
-  if(window.PointerEvent){
-    table.addEventListener('pointerdown',e=>{ sawPointer=true; boardDown(e); });
-    table.addEventListener('pointerup',boardUp);
-    table.addEventListener('pointercancel',clearPress);
-  }else if('ontouchstart' in window){
-    table.addEventListener('touchstart',e=>{ sawPointer=true; boardDown({target:e.target}); },{passive:true});
-    table.addEventListener('touchend',e=>{
-      const t=e.changedTouches && e.changedTouches[0];
-      boardUp(t?{clientX:t.clientX,clientY:t.clientY,target:e.target}:{target:e.target});
-    });
-    table.addEventListener('touchcancel',clearPress);
-  }
-  // only used where neither pointer nor touch events arrive at all
-  // only used where neither pointer nor touch events arrive at all
-  table.addEventListener('click',e=>{
-    if(sawPointer) return;
-    commitColumn(e.target.closest && e.target.closest('.col'));
-  });
-
-  tap($('#ovPass'),passTap);
-  tap($('#passQuit'),()=>{ Sfx.tap(); toMenu(); });
-  const openPractice=(mode)=>{ if(mode) S.mode=mode; saveStats(); syncSettingsUI();
-    hide('#ovStart'); show('#ovPractice'); };
-  tap($('#btnVsCpu'),()=>{ Sfx.unlock(); Sfx.tap(); openPractice('cpu'); });
-  tap($('#btnDuoHome'),()=>{ Sfx.unlock(); Sfx.tap(); openPractice('duo'); });
-  /* HOW TO PLAY is a hub, not a link: the tutorial, the rules, the modes and
-     the spells were four entry points scattered across home and settings. */
-  tap($('#btnLearn'),()=>{ Sfx.unlock(); Sfx.tap();
-    // the tutorial is only the headline act until a game has been played
-    $('#ovLearn').classList.toggle('fresh', isNewcomer());
-    hide('#ovStart'); show('#ovLearn'); });
-  tap($('#btnLearnBack'),()=>{ Sfx.tap(); hide('#ovLearn'); show('#ovStart'); });
-  tap($('#btnLearnTut'),()=>{ Sfx.unlock(); Sfx.tap(); newGame({tutorial:true}); });
-  tap($('#btnLearnRules'),()=>{ Sfx.tap(); show('#ovRules'); });
-  tap($('#btnLearnModes'),()=>{ Sfx.tap(); openModes(); });
-  tap($('#btnLearnSpells'),()=>{ Sfx.tap(); openSpells(); });
-  /* the two the law requires — reachable, never in the way. Pages below Home
-     like every other Home destination: ONE way out, the header's ‹ (which the
-     edge swipe presses too), and Home is waiting underneath it. */
-  tap($('#btnImprint'),()=>{ Sfx.tap(); show('#ovImprint'); });
-  tap($('#btnPrivacy'),()=>{ Sfx.tap(); show('#ovPrivacy'); });
-  for(const id of ['Imprint','Privacy']) tap($('#btn'+id+'Back'),()=>{ Sfx.tap(); hide('#ov'+id); });
-  tap($('#btnPracticeBack'),()=>{ Sfx.tap(); hide('#ovPractice'); show('#ovStart'); });
-  /* The HUD's only control, and mid-match the only thing it can usefully offer
-     is the way out — asked once, plainly, with a way back. Sound and dice faces
-     live on Settings, which is reachable from home where nothing is at stake. */
-  tap($('#btnLeave'),async ()=>{
-    Sfx.tap();
-    const ranked=leavingForfeits();
-    const go=await ask({
-      head: ranked ? 'Forfeit this match?' : 'Quit this game?',
-      body: ranked
-        ? 'Leaving a ranked match loses it, and the points go with it.'
-        : 'The board is lost — offline games are quick, and this one ends here.',
-      confirm: ranked ? 'Forfeit' : 'Quit game',
-      cancel: 'Keep playing',
-    });
-    if(go){ requestLeave(); toMenu(); }
-  });
-  tap($('#btnSettingsBack'),()=>{ Sfx.tap(); hide('#ovSettings'); });
-  /* A coach bubble that is WAITING is dismissed by a tap anywhere, not only by
-     a tap on the bubble — the message says "tap to continue" and the player
-     reasonably taps the screen. Capture phase so it lands before anything else
-     interprets the same tap; coachTap is a no-op unless something is waiting. */
-  tap($('#coach'),coachTap);
-  document.addEventListener('pointerdown',coachTap,true);
-
-
-  const bindSeg=(sel,key,apply)=>tap($(sel),e=>{
-    const b=e.target.closest && e.target.closest('button'); if(!b||b.disabled) return;
-    apply(b.dataset[key]);
-    syncSettingsUI(); updateRecord(); saveStats();
-    Sfx.unlock(); Sfx.tap();
-  });
-  /* The OFFLINE view's icon pickers. ONE component, two rows: a strip of
-     hued icon buttons plus the line under it that names the current choice.
-     Items are {v, hue, icon, name, blurb}; the caller owns where the value
-     lives, so game mode and spell differ by their list and nothing else. */
-  const pickerRow=(sel,items,read,write)=>{
-    const strip=$(sel), info=$(sel+'Info');
-    strip.innerHTML=pickerButtons(items);   // one button shape, here and on the cards
-    const sync=()=>{
-      const cur=String(read());
-      strip.querySelectorAll('button').forEach(b=>b.classList.toggle('on', b.dataset.v===cur));
-      const it=items.find(i=>i.v===cur) || items[0];
-      info.textContent=it.name+' — '+it.blurb;
-    };
-    tap(strip,e=>{
-      const b=e.target.closest && e.target.closest('button'); if(!b) return;
-      write(b.dataset.v); saveStats(); sync();
-      Sfx.unlock(); Sfx.tap();
-    });
-    sync();
-    return sync;
-  };
-  // both rosters live in ui/library.ts beside the reference sheet's — one place
-  // that knows what a mode is called and what it promises, whichever screen asks
-  pickerRow('#modePick', MODE_PICKS, ()=>S.localMode, v=>{ S.localMode=+v; });
-  pickerRow('#spellPick', SPELL_PICKS, ()=>S.spell, v=>{ S.spell=v; disarm(); renderSpells(); });
-
-  bindSeg('#modeSeg','m', v=>{ S.mode=v; });
-  bindSeg('#diffSeg','d', v=>{ S.diff=v; });
-  bindSeg('#timerSeg','t',v=>{ S.timer=+v; });
-  bindSeg('#seatSeg','seat',v=>{ S.seat=v; });
-  bindSeg('#sndSeg','s',  v=>{ S.sound=v==='1'; });
-  bindSeg('#faceSeg','f', v=>{ S.numerals=v==='nums'; });
-  /* The duel-colour pickers: ONE builder, two slots — each writes its side's
-     hue. The buttons are swatches (--h paints the dot); which ones are ON or
-     disabled is syncSettingsUI's job, same as every other control here. */
-  const huePick=(sel,write)=>{
-    $(sel).innerHTML = DUELHUES.map(h=>
-      `<button data-h="${h.id}" style="--h:var(--${h.id})" aria-label="${h.name}"></button>`).join('');
-    tap($(sel),e=>{
-      const b=e.target.closest && e.target.closest('button'); if(!b||b.disabled) return;
-      write(b.dataset.h);
-      syncSettingsUI(); updateRecord(); saveStats();
-      Sfx.unlock(); Sfx.tap();
-    });
-  };
-  huePick('#p1Pick', h=>{ S.p1Hue=h; });
-  huePick('#p2Pick', h=>{ S.p2Hue=h; });
-  syncSettingsUI();   // the boot-time sync ran before these buttons existed
-  // colour blind mode locks both pickers and pins cyan-vs-gold; the stored
-  // picks survive it, so turning it off restores the chosen combination
-  bindSeg('#cbSeg','b',   v=>{ S.colorblind=v==='1'; });
-  tap($('#btnPlay'),()=>{ Sfx.unlock(); Sfx.tap(); void startLocal(); });
-  bindEnd();       // the result screen binds its own actions, once (ui/endscreen)
-  // quit lives at the bottom of the Settings sheet; an online match intercepts
-  // the first tap to arm its two-tap forfeit confirm on the button itself
-  // the HUD badge explains whatever it names — the mode, and the spell beside
-  // it when a game deals one. ONE binding serves both flows and both rosters:
-  // a chip carries the library it belongs to and the entry it names (see
-  // render.paintBadge), so this affordance can never go missing on one side
-  // again, and a third roster is an entry in library.LIBS rather than another
-  // listener. It deals the ONE entry as a sheet, in that entry's own colour
-  // (library.openEntry); the whole rosters live behind HOW TO PLAY.
-  tap($('#rec'),e=>{
-    const c=e.target.closest && e.target.closest('.rchip[data-lib]'); if(!c) return;
-    if(openEntry(c.dataset.lib,c.dataset.id)) Sfx.tap();
-  });
-  // online module (auth, ladder, account) is lazy: the offline game's boot
-  // path must never load supabase-js or anything that talks to a backend.
-  // ONE guarded door serves all three entries: the loading die goes up
-  // before the import and stays until the online UI paints its first panel
-  // (panel() hides it) — covering the chunk download AND the identity
-  // round-trip behind it, and a re-tap while in flight is a no-op instead
-  // of a second openOnline. The .finally is the belt for early exits.
-  let onlineBusy=false;
-  const goOnline=(view:'play'|'board'|'account'):void=>{ Sfx.unlock(); Sfx.tap();
-    if(onlineBusy) return;
-    onlineBusy=true;
-    const ov=$('#ovLoad');
-    if(!ov.firstChild) ov.appendChild(loaderWait(56));
-    show('#ovLoad');
-    import('./online/ui.ts').then(m=>m.openOnline(view))
-      .finally(()=>{ onlineBusy=false; hide('#ovLoad'); });
-  };
-  tap($('#btnOnline'),()=>goOnline('play'));
-  tap($('#btnBoardHome'),()=>goOnline('board'));
-  tap($('#btnSettingsHome'),()=>{ Sfx.unlock(); Sfx.tap(); show('#ovSettings'); });
-  tap($('#homeChip'),()=>goOnline('account'));
-  tap($('#btnCloseRules'),()=>{ Sfx.tap(); hide('#ovRules'); });
-
-  // desktop: 1/2/3 place, Enter starts / replays
-  document.addEventListener('keydown',e=>{
-    if(isEmbed() && !kbroot()) return;   // widget removed from the host page
-    const colKey=+e.key;
-    if(colKey>=1 && colKey<=SPEC.cols){
-      const c=colKey-1, who=S.turn;
-      if(castArmed(c)) return;               // an armed spell takes the key first
-      if(S.phase==='choose' && !S.busy && (S.mode==='duo' || who===ME)){
-        commitColumn(colEl(who,c));          // same gate as touch: full, restriction, sfx
-      }
-    }else if(e.key==='Enter'||e.key===' '){
-      if($('#ovPass').classList.contains('on')) $('#ovPass').click();
-      /* ...but ONLY IF THAT SCREEN IS THE ROOM. #ovStart stays `.on` underneath
-         every page and sheet — the topmost .ov.on is what paints (styles/main
-         .css) — so testing the class alone started a local game from beneath
-         whatever the player was actually looking at. Pressing Enter to dismiss
-         the face-off dealt a fresh game behind it and put the first-run offer
-         over the ladder. The room is the LAST .ov.on in the markup, and a
-         modal dialog (the face-off is one, and it is not an .ov at all) owns
-         the key outright while it is up. */
-      else if(!document.querySelector('[aria-modal="true"]')){
-        const rooms=document.querySelectorAll('.ov.on');
-        const room=rooms[rooms.length-1];
-        if(room && (room.id==='ovStart'||room.id==='ovEnd')){ Sfx.unlock(); void startLocal(); }
-      }
-    }else if(e.key==='Escape'){
-      /* A SHEET OWNS ESCAPE WHILE IT IS UP (ui/sheet listens for it itself and
-         flies out). Without this the one keypress also disarmed an armed spell
-         and swept every overlay behind the sheet — the player asked what the
-         mode does, read it, pressed Escape, and lost the rune they had aimed.
-         The rosters below are still reachable: HOW TO PLAY opens them, and
-         they are not sheets. */
-      if(sheetOpen()) return;
-      disarm(); hide('#ovRules'); hide('#ovSettings'); hide('#ovLearn'); dismissAsk(); hide('#ovImprint'); hide('#ovPrivacy');
-      for(const id of ['ovModes','ovSpells']) if(document.getElementById(id)) hide('#'+id); }
-  });
-
-  window.addEventListener('resize',fit);
-  window.addEventListener('orientationchange',()=>setTimeout(fit,120));
-  if(window.ResizeObserver) new ResizeObserver(fit).observe($('#app'));
-  if(isEmbed()) kbroot().addEventListener('contextmenu',e=>e.preventDefault());
-  else {
-    // iOS Safari ignores user-scalable=no: kill pinch at the gesture AND touch
-    // layers, and double-tap at the dblclick layer (CSS manipulation is the
-    // first line; this is the belt). Multi-finger preventDefault only —
-    // single-finger scrolling (leaderboard) lives.
-    document.addEventListener('gesturestart',e=>e.preventDefault());
-    document.addEventListener('gesturechange',e=>e.preventDefault());
-    document.addEventListener('touchmove',e=>{ if(e.touches.length>1) e.preventDefault(); },{passive:false});
-    document.addEventListener('dblclick',e=>e.preventDefault(),{passive:false});
-    // the iOS back gesture: an edge swipe presses the open view's own ‹/✕
-    // (ui/swipeback). Never in the widget — an embedded game must not hijack
-    // the host page's edge swipes.
-    bindSwipeBack();
-  }
-
-  // Stale-client self-heal: a cached page can reference hashed chunks that a
-  // newer deploy deleted (bit a phone after a rapid-deploy day — the app died
-  // with a loading error). Reload ONCE per session to fetch the fresh page;
-  // the flag stops a reload loop if the network itself is the problem.
-  window.addEventListener('vite:preloadError', (e)=>{
-    e.preventDefault();
-    try{
-      if(sessionStorage.getItem('kb.chunkReload')) return;
-      sessionStorage.setItem('kb.chunkReload','1');
-    }catch{ /* forgetful host */ }
-    location.reload();
-  });
-  setTimeout(()=>{ try{ sessionStorage.removeItem('kb.chunkReload'); }catch{} },15000);
-
-
-  // Offline support. Only registers from http(s); opening the file directly
-  // still plays, it just can't install. NEVER on the Vite dev server — a
-  // registered SW intercepts /src/ module fetches and serves stale code.
-  if(!isEmbed() && 'serviceWorker' in navigator && location.protocol.indexOf('http')===0 && !import.meta.env.DEV){
-    window.addEventListener('load',()=>{
-      navigator.serviceWorker.register('sw.js').then(reg=>{
-        // nudge iOS to look for a fresh version whenever the app comes back
-        document.addEventListener('visibilitychange',()=>{
-          if(document.visibilityState==='visible') reg.update().catch(()=>{});
-        });
-      }).catch(()=>{});
-    });
-  }
+  bindBoardInput();
+  bindMenus(root);
+  bindKeyboard(root);
+  bindPlatform(root);
 }

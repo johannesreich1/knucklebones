@@ -23,7 +23,7 @@ import { modeIcon, modeHue } from './modeicons.ts';
 import { $ } from './dom.ts';
 import { Sfx } from './audio.ts';
 import { REDUCED } from './fx.ts';
-import type { Beat } from './reveal.ts';
+import type { Beat } from './reveal-types.ts';
 
 const N = MODES.length;
 const SEG = 360 / N;
@@ -107,7 +107,7 @@ export function dialBeat(spec: ModeSpec): Beat {
     </div>`,
     async run(settle) {
       const comet = $('#wheelComet') as HTMLElement;
-      const nodes = Array.from(document.querySelectorAll<HTMLElement>('#wheelDial .dnode'));
+      const nodes = Array.from($('#wheelDial').querySelectorAll<HTMLElement>('.dnode'));
       const from = restingAt;
       const target = i * SEG;
       /* Two things vary so no two hunts read alike — how far it travels (4-6

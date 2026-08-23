@@ -9,7 +9,7 @@
 //
 // WHY THE CLASS NAMES STAYED `fo*`. This is the sheet's family, not the
 // face-off's, but it ships under the names it was born with on purpose: two
-// design cards (design/screens/30-leaderboard-faceoff, 30c-foexit-grabber)
+// design cards (design/screens/product/30-leaderboard-faceoff, 30c-foexit-grabber)
 // write `.faceoff/.focard/.fograb/.fobar` by hand and are explicit about
 // wearing the SHIPPED rules at their shipped sizes, and those cards are synced
 // separately from this repo's commits. Renaming would leave them painting
@@ -20,6 +20,7 @@
 // included, and ui/ is the layer both drivers already share.
 import { Sfx } from './audio.ts';
 import { REDUCED } from './fx.ts';
+import { appRoot } from './embed.ts';
 
 export interface SheetSpec {
   /** the card's content, below the grabber. Trusted markup — escape first. */
@@ -212,7 +213,7 @@ export function showSheet(spec: SheetSpec): Sheet {
     .addEventListener('click', () => { Sfx.tap(); leave(); });
   document.addEventListener('keydown', onKey);
   setDy(REDUCED ? 0 : window.innerHeight);   // start off the bottom edge...
-  document.body.appendChild(ov);
+  appRoot().appendChild(ov);
   void card.offsetHeight;                    // ...resolved as a real start...
   fly(0, 340, 'cubic-bezier(.16,1,.3,1)');   // ...and up it comes, wash with it
   card.focus();

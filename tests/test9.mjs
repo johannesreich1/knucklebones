@@ -57,7 +57,7 @@ await p.tap('#btnLearnTut'); await p.waitForTimeout(400);
         pills.some(q => hit(q, rect(document.getElementById('coach')))),
       offBottom: Math.max(0, Math.round(rect(document.getElementById('sideBot')).bottom - window.innerHeight)),
       scrollH: document.documentElement.scrollHeight, winH: window.innerHeight,
-      cell: getComputedStyle(document.documentElement).getPropertyValue('--cell').trim(),
+      cell: getComputedStyle(document.getElementById('kbroot')).getPropertyValue('--cell').trim(),
     };
   });
   await shot(p, `v4-${label}`);

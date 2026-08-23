@@ -28,7 +28,7 @@ const r = await p.evaluate(() => {
   const runs=[];
   for(let n=0;n<5;n++){
     const t0=performance.now();
-    for(let i=0;i<8;i++) k.searchRoot(st.map(b=>b.map(c=>c.slice())),0,1+(i%6),4);
+    for(let i=0;i<8;i++) k.searchRoot(st.map(b=>b.map(c=>c.slice())),0,1+(i%6),4,{random:Math.random});
     runs.push(+((performance.now()-t0)/8).toFixed(1));
   }
   return { helper:[h1.ms,h2.ms], inline:[i1.ms,i2.ms], sameResult:h1.sink===i1.sink, searchRuns:runs };

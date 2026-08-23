@@ -32,6 +32,7 @@
 // proves the repo's own iOS manifests agree with each other and with the build.
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
+import { APP_ID } from '../src/config.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -40,15 +41,86 @@ const check = (ok: boolean, msg: string) => { if (!ok) problems.push(msg); };
 const PODFILE = 'native/ios/App/Podfile';
 const LOCK = 'native/ios/App/Podfile.lock';
 const PKG = 'native/package.json';
+const ROOT_PKG = 'package.json';
+const ROOT_LOCK = 'package-lock.json';
+const NVMRC = '.nvmrc';
+const CI = '.github/workflows/ci.yml';
+const BUILD = 'build.mjs';
 const CONFIG = 'native/capacitor.config.json';
+const XCODE = 'native/ios/App/App.xcodeproj/project.pbxproj';
+const INFO = 'native/ios/App/App/Info.plist';
+const BROWSER_IDENTITY = 'src/online/identity.ts';
+const GC_AUTH = 'supabase/functions/gc-auth/index.ts';
 const WWW = 'native/www';
 const SYNCED = 'native/ios/App/App/public';   // what cap sync copied into Xcode
+const REQUIRE_SYNCED = process.argv.includes('--require-synced');
 
 const podfile = readFileSync(PODFILE, 'utf8');
 const lock = readFileSync(LOCK, 'utf8');
 const pkg = JSON.parse(readFileSync(PKG, 'utf8'));
+const rootPkg = JSON.parse(readFileSync(ROOT_PKG, 'utf8'));
+const rootLock = JSON.parse(readFileSync(ROOT_LOCK, 'utf8'));
+const capacitor = JSON.parse(readFileSync(CONFIG, 'utf8'));
 
-/* ================= 1. PODS ================= */
+/* ================= 0. BUILD/NATIVE BOUNDARY ================= */
+
+const nodePin = readFileSync(NVMRC, 'utf8').trim();
+const nodeRange = '>=24 <25';
+check(nodePin === '24', `${NVMRC} pins ${JSON.stringify(nodePin)}, expected Node 24`);
+check(rootPkg.engines?.node === nodeRange,
+  `${ROOT_PKG} engines.node=${JSON.stringify(rootPkg.engines?.node)}, expected ${nodeRange}`);
+check(rootLock.packages?.['']?.engines?.node === nodeRange,
+  `${ROOT_LOCK} does not mirror ${ROOT_PKG}'s Node engine ${nodeRange}`);
+
+const ci = readFileSync(CI, 'utf8');
+check(/node-version-file:\s*\.nvmrc\b/.test(ci),
+  `${CI} must consume .nvmrc rather than copy a Node version literal`);
+check(!/node-version:\s*['"]?\d/.test(ci),
+  `${CI} still contains a copied numeric node-version`);
+
+const buildSource = readFileSync(BUILD, 'utf8');
+check(/process\.execPath/.test(buildSource),
+  `${BUILD} must run TypeScript and Vite under the Node binary that launched it`);
+check(!/\bexecSync\s*\(/.test(buildSource) && !/\bcap(?:acitor)?\s+sync\b/.test(buildSource),
+  `${BUILD} must remain deterministic and may not invoke an implicit Capacitor sync`);
+check(rootPkg.scripts?.['native:sync'] === 'npm run build && npm --prefix native run sync',
+  `${ROOT_PKG} native:sync must build then run the tracked native sync fail-fast`);
+check(rootPkg.scripts?.['native:verify']?.includes('native:sync')
+  && rootPkg.scripts?.['native:verify']?.includes('--require-synced'),
+  `${ROOT_PKG} native:verify must sync first and require the generated Xcode payload`);
+
+/* ================= 1. APPLICATION IDENTITY ================= */
+
+/* TypeScript is the canonical source. Capacitor and Xcode cannot import it,
+   and gc-auth is deployed as an isolated Deno bundle, so those unavoidable
+   copies are a strict contract rather than a collection of trusted literals. */
+check(/^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*){2,}$/.test(APP_ID),
+  `src/config.ts APP_ID=${JSON.stringify(APP_ID)} is not a shippable reverse-DNS id`);
+check(capacitor.appId === APP_ID,
+  `${CONFIG} appId=${JSON.stringify(capacitor.appId)} differs from src/config.ts APP_ID=${APP_ID}`);
+
+const xcode = readFileSync(XCODE, 'utf8');
+const xcodeIds = [...xcode.matchAll(/PRODUCT_BUNDLE_IDENTIFIER\s*=\s*([^;\s]+)\s*;/g)]
+  .map((match) => match[1]);
+check(xcodeIds.length >= 2,
+  `${XCODE} exposes ${xcodeIds.length} PRODUCT_BUNDLE_IDENTIFIER values; expected Debug and Release`);
+for (const id of xcodeIds) {
+  check(id === APP_ID, `${XCODE} uses PRODUCT_BUNDLE_IDENTIFIER=${id}, expected ${APP_ID}`);
+}
+check(readFileSync(INFO, 'utf8').includes('<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>'),
+  `${INFO} must derive CFBundleIdentifier from Xcode's PRODUCT_BUNDLE_IDENTIFIER`);
+
+const browserIdentity = readFileSync(BROWSER_IDENTITY, 'utf8');
+check(/import\s*\{[^}]*\bAPP_ID\b[^}]*\}\s*from\s*['"]\.\.\/config\.ts['"]/.test(browserIdentity)
+  && /clientId:\s*APP_ID\b/.test(browserIdentity),
+  `${BROWSER_IDENTITY} must pass the canonical APP_ID to Apple sign-in`);
+
+const gcAuth = readFileSync(GC_AUTH, 'utf8');
+const gcBundle = (gcAuth.match(/const\s+BUNDLE_ID\s*=\s*["']([^"']+)["']/) || [])[1] ?? null;
+check(gcBundle === APP_ID,
+  `${GC_AUTH} verifies Game Center bundle ${JSON.stringify(gcBundle)}, expected ${APP_ID}`);
+
+/* ================= 2. PODS ================= */
 
 /* the exact question, in one comparison: was this lock generated from this Podfile? */
 const stamped = (lock.match(/^PODFILE CHECKSUM: (\w+)$/m) || [])[1] ?? null;
@@ -108,7 +180,7 @@ for (const [pod, path] of locked) {
     + `\`npm install\` in native/ would not produce it`);
 }
 
-/* ================= 2. THE WEB PAYLOAD ================= */
+/* ================= 3. THE WEB PAYLOAD ================= */
 /* run-all builds before it gates, so native/www is always present here. Guard
    anyway: absent, every assertion below would pass by iterating nothing. */
 const built = existsSync(`${WWW}/index.html`);
@@ -154,9 +226,14 @@ if (built) {
   }
 
   /* cap sync copies the payload into the Xcode project; that copy is what Xcode
-     actually bundles. Only present after a sync, which needs native/node_modules
-     — so check it when it is there rather than demanding it. */
-  if (existsSync(`${SYNCED}/index.html`)) {
+     actually bundles. The default repo gate stays independent of generated
+     native state; explicit native:verify requires and compares the synced copy. */
+  const syncedIndexExists = existsSync(`${SYNCED}/index.html`);
+  if (REQUIRE_SYNCED) {
+    check(syncedIndexExists,
+      `${SYNCED}/index.html is absent — explicit native verification requires a successful cap sync`);
+  }
+  if (REQUIRE_SYNCED && syncedIndexExists) {
     const syncedTag = (readFileSync(`${SYNCED}/index.html`, 'utf8').match(/data-build="([^"]+)"/) || [])[1] ?? null;
     check(syncedTag === tag,
       `${SYNCED}/index.html is build ${syncedTag} but ${WWW} is ${tag} — Xcode would `
@@ -164,12 +241,11 @@ if (built) {
   }
 }
 
-/* ================= 3. NO DEV BUILD IN THE BINARY ================= */
+/* ================= 4. NO DEV BUILD IN THE BINARY ================= */
 /* Capacitor's live-reload writes server.url pointing at a dev machine. Ship it
    and the app loads from a laptop that is not there — or worse, is. */
 if (existsSync(CONFIG)) {
-  const cfg = JSON.parse(readFileSync(CONFIG, 'utf8'));
-  const server = cfg.server ?? {};
+  const server = capacitor.server ?? {};
   check(!('url' in server),
     `${CONFIG} sets server.url=${JSON.stringify(server.url)} — that is Capacitor `
     + `live-reload. A build with it loads the app from a dev machine instead of the `
@@ -178,8 +254,13 @@ if (existsSync(CONFIG)) {
     `${CONFIG} sets server.cleartext=true — plaintext HTTP in a shipped app; this is `
     + `a live-reload setting that escaped.`);
   // the synced copy is what the binary reads
-  if (existsSync(`${SYNCED}/../capacitor.config.json`)) {
-    const syncedCfg = JSON.parse(readFileSync(`${SYNCED}/../capacitor.config.json`, 'utf8'));
+  const syncedConfig = `${SYNCED}/../capacitor.config.json`;
+  if (REQUIRE_SYNCED) {
+    check(existsSync(syncedConfig),
+      `${syncedConfig} is absent — explicit native verification requires a successful cap sync`);
+  }
+  if (REQUIRE_SYNCED && existsSync(syncedConfig)) {
+    const syncedCfg = JSON.parse(readFileSync(syncedConfig, 'utf8'));
     check(!('url' in (syncedCfg.server ?? {})),
       `the capacitor.config.json inside the Xcode project sets server.url — the binary `
       + `would load from a dev machine even though the repo config is clean`);
@@ -198,6 +279,8 @@ check(stamped !== null, `no PODFILE CHECKSUM line in ${LOCK} — truncated, or t
 check(checksums.size > 0, 'the SPEC CHECKSUMS parser found nothing — the parser is broken');
 
 console.log(JSON.stringify({
+  nodePin, nodeRange,
+  appId: APP_ID, xcodeIds, gcBundle, requireSynced: REQUIRE_SYNCED,
   podfileSha, stampedSha: stamped,
   declared: Object.fromEntries(declared), locked: Object.fromEntries(locked),
   problems, errs,

@@ -367,7 +367,7 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
 }
 
 /* ---- A SHIELDED COLUMN CANNOT SHRINK, which is now load-bearing ----
-   ui/render.ts draws ONE seal around a run of adjacent shielded columns, and
+   ui/game/seals.ts draws ONE seal around adjacent shielded columns, and
    that merge is only honest because a run can only ever GROW: if a shielded
    column could lose a die mid-game the enclosure would have to come apart,
    and nothing draws that. The permanence is not a property of the seal — it

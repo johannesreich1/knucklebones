@@ -28,6 +28,7 @@
 // is stubbed at the network edge — this asserts OUR decisions, not theirs.
 import pkg from 'playwright';
 const { chromium } = pkg;
+import { SUPABASE_AUTH_STORAGE_KEY } from '../src/config.ts';
 import { servedBase } from './serve.mjs';
 const URL = await servedBase();
 const problems = [], out = {};
@@ -48,7 +49,7 @@ const SESSION = {
 const PROFILE = { id: GUEST_ID, nickname: 'TestGuest001', rating: 1012, avatar: 'die:5:cy',
                   created_at: '2026-06-01T00:00:00Z', named_at: '2026-06-01T00:00:00Z' };
 /* THE BOARD the ladder door is walked on (case 6). Four rows with MINE among
-   them — the app finds it by NICKNAME (online/ui.ts), so that is the field
+   them — the app finds it by NICKNAME (ladder-screen.ts), so that is the field
    that has to agree with the cached profile, not the id. */
 const BOARD = [
   { rank: 1, nickname: 'CosmicRaven681', points: 4600, wins: 20, losses: 12, avatar: 'die:2:gold', apex: true, peak: 4600 },
@@ -81,12 +82,13 @@ try {
   /* a returning, experienced device: a live session, the profile cache the
      result screen deals the own plate from, and a game already played (a
      newcomer would be offered the tutorial instead of a queue) */
-  await page.addInitScript(([sess, prof]) => {
-    localStorage.setItem('sb-euzjcejbkxvqfrttgaxu-auth-token', sess);
+  await page.addInitScript(([sess, prof, storageKey]) => {
+    localStorage.setItem(storageKey, sess);
     localStorage.setItem('knucklebones.online.profile', prof);
     localStorage.setItem('knucklebones.v1', JSON.stringify({ played: true }));
   }, [JSON.stringify(SESSION), JSON.stringify({ nickname: PROFILE.nickname,
-      avatar: PROFILE.avatar, rating: PROFILE.rating, rank: 3, apex: false })]);
+      avatar: PROFILE.avatar, rating: PROFILE.rating, rank: 3, apex: false }),
+      SUPABASE_AUTH_STORAGE_KEY]);
 
   await page.route('**/auth/v1/**', (r) => r.fulfill({ status: 200, contentType: 'application/json',
     body: JSON.stringify(r.request().url().includes('token') ? SESSION : { keys: [] }) }));
@@ -103,6 +105,7 @@ try {
     // face-off's door, and it can only arrive AFTER the screen is already up
     if (u.includes('/rpc/player_card')) return json([{ streak: 2, since: '2026-06-01T00:00:00Z',
       points: 1104, wins: 31, losses: 19, games: 50, rank: 1, apex: false, peak: 1150 }]);
+    if (u.includes('/rpc/leaderboard_before')) return json([]);
     if (u.includes('/rpc/leaderboard')) return json(BOARD);
     if (u.includes('/season_ratings')) return json([{ points: 1012, peak: 1080, wins: 12, losses: 7, draws: 1 }]);
     if (u.includes('/profiles')) return json([PROFILE]);

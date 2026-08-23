@@ -32,4 +32,7 @@ tests/screens/
 # Xcode's icon and splash renditions in the asset catalog (never tracked)
 native/ios/App/App/Assets.xcassets/**/*.png
 .env
+.env.*
+!.env.example
+!.env.live.example
 design/dist/

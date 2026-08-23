@@ -4,7 +4,8 @@ import './styles/main.css';
 import { MARKUP } from './markup.ts';
 import { boot } from './boot.ts';
 import { hooks } from './hooks.ts';
+import { appRoot } from './ui/embed.ts';
 
-document.body.insertAdjacentHTML('afterbegin', MARKUP);
+appRoot().insertAdjacentHTML('afterbegin', MARKUP);
 boot(false);
 (window as any).__kb = hooks();

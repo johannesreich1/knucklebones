@@ -114,7 +114,7 @@ const offline = await page.evaluate(() => ({
   booted: !!window.__kb,
   title: document.querySelector('#ovStart h1') ? document.querySelector('#ovStart h1').textContent : null,
   dice: document.querySelectorAll('#homeDuel .die').length,   // the hero duel: JS built these
-  cell: getComputedStyle(document.documentElement).getPropertyValue('--cell').trim(),
+  cell: getComputedStyle(document.getElementById('kbroot')).getPropertyValue('--cell').trim(),
   best: window.__kb ? window.__kb.S.best : null,
 }));
 check(offline.booted, 'game did not boot offline', offline);
@@ -139,7 +139,7 @@ await p2.evaluate(() => window.__kb.openPractice());
 await p2.click('#btnPlay');
 await p2.waitForTimeout(1800);
 const desk = await p2.evaluate(() => ({
-  cell: getComputedStyle(document.documentElement).getPropertyValue('--cell').trim(),
+  cell: getComputedStyle(document.getElementById('kbroot')).getPropertyValue('--cell').trim(),
   scrollH: document.documentElement.scrollHeight, innerH: window.innerHeight,
 }));
 check(desk.scrollH <= desk.innerH + 1, 'desktop layout scrolls', desk);

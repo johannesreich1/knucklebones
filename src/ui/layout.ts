@@ -1,11 +1,14 @@
-// @ts-nocheck -- moved verbatim from the monolith; typed in the milestone-D
-// strictness ratchet. New code goes in typed modules, not here.
 // fit(): pick the cell size (and the .land breakpoint) from whichever box the
 // game occupies. JS owns the breakpoint so CSS and logic always agree.
 import { SPEC, ROWSWITCH, ROWMULT } from '../core/rules.ts';
 import { S } from '../state.ts';
-import { $ } from './dom.ts';
-import { isEmbed, kbroot } from './embed.ts';
+import { appRoot, isEmbed } from './embed.ts';
+import { $ } from './query.ts';
+import {
+  setLandscapeLayout,
+  setShortViewport,
+  setSidePointsLayout,
+} from './game/root-state.ts';
 /* the row rail's pill (main.css .rowchips .rc min-width) plus its 9px offset */
 const RAIL_LANE = 50;
 /* The board is a screen body like any other, so it stops at the SAME column as
@@ -13,7 +16,7 @@ const RAIL_LANE = 50;
    UI is the mismatch you notice without being able to name it. CSS owns the
    number (--w-col); this reads it, so there is still only one. */
 function cssPx(name: string, fallback: number): number {
-  const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(name));
+  const v = parseFloat(getComputedStyle(appRoot()).getPropertyValue(name));
   return v > 0 ? v : fallback;
 }
 const colWidth = () => cssPx('--w-col', 400);
@@ -27,11 +30,11 @@ const BASE_PAD = { portrait: { v: 6, h: 10 }, land: { v: 4, h: 8 } };
    comes off. Without it the cell was sized against unusable strips and the near
    nameplate slid under the home indicator on every notched phone small enough
    that the cell cap didn't quietly absorb the error (390x844: 9px under). */
-function inset(cs, land){
+function inset(cs: CSSStyleDeclaration, land: boolean): { v: number; h: number } {
   const b = land ? BASE_PAD.land : BASE_PAD.portrait;
-  const over = (side, base) => Math.max(0, parseFloat(cs['padding'+side]) - base);
-  return { v: over('Top', b.v) + over('Bottom', b.v),
-           h: over('Left', b.h) + over('Right', b.h) };
+  const over = (value: string, base: number): number => Math.max(0, parseFloat(value) - base);
+  return { v: over(cs.paddingTop, b.v) + over(cs.paddingBottom, b.v),
+           h: over(cs.paddingLeft, b.h) + over(cs.paddingRight, b.h) };
 }
 /* WHICH SCREENS MAY TURN. Landscape belongs to the table and to the two screens
    that dress it: the setup you pick a game mode and a rune on, and the result
@@ -47,24 +50,27 @@ const PASSTHROUGH = new Set(['ovAsk', 'ovLoad', 'ovFirst']);
    so the last `.on` sibling is the one the player is looking at. */
 function landscapeScreen(): boolean {
   let top = '';
-  for (const ov of document.querySelectorAll('.ov.on')) if (!PASSTHROUGH.has(ov.id)) top = ov.id;
+  for (const ov of appRoot().querySelectorAll<HTMLElement>('.ov.on')) {
+    if (!PASSTHROUGH.has(ov.id)) top = ov.id;
+  }
   return !top || LANDSCAPE_SCREENS.has(top);   // no overlay at all = the table
 }
-export function fit(){
-  const app=isEmbed()?kbroot():$('#app');
+export function fit(): void {
+  const app=isEmbed()?appRoot():$('#app');
+  if (!app) return;
   const w=app.clientWidth, h=app.clientHeight;
   const short = h < 560;
   const land = w>h && short && landscapeScreen();   // short, wide, AND a screen that turns
-  document.documentElement.classList.toggle('land', land);
+  setLandscapeLayout(land);
   /* A SHORT VIEWPORT IS NOT THE SAME FACT AS A LANDSCAPE LAYOUT, and conflating
      them cost the offline setup screen its Play button: .ov centres its content
      and never scrolls, so on a 390px-tall phone the button sat below the fold
      with no way to reach it. The overlays need to know the viewport is short
      even when — especially when — they are keeping their portrait layout. */
-  document.documentElement.classList.toggle('shortv', short);
+  setShortViewport(short);
   const safe = inset(getComputedStyle(app), land);
   const rowmode = S.scoring===ROWSWITCH || S.scoring===ROWMULT;
-  let cell;
+  let cell: number;
   if(land){
     // one board tall: hud + plate + a column of cells; one board wide: both
     // boards' rows + 2 chip strips + the centre stage
@@ -93,8 +99,8 @@ export function fit(){
     const byW = Math.floor((Math.min(w - safe.h, colWidth()) - 20 - 2*6 - rail) / SPEC.cols);
     cell = Math.max(38, Math.min(byH, byW, 88));
   }
-  document.documentElement.style.setProperty('--cell', cell+'px');
-  /* the side-points seating (main.css html.sidepts): the score leaves the
+  appRoot().style.setProperty('--cell', cell+'px');
+  /* the side-points seating (main.css #kbroot.sidepts): the score leaves the
      nameplate for the gutter beside the board wherever that gutter can hold
      a number at all — the font SCALES to the gutter (main.css), so 40px is
      enough for the small end of it; truly tight screens keep the original
@@ -103,7 +109,7 @@ export function fit(){
      name that centres in classic and slides left in ROW SWITCH reads as the
      table rearranging itself for no reason. Row modes only need a BIGGER
      gutter, not a different plate — their score rail hangs off the board's
-     left (main.css html.rowmode .rowchips is right:100%) while the points
+     left (main.css #kbroot.rowmode .rowchips is right:100%) while the points
      sit in the right one, so the two never meet; asking the gutter to hold
      the wider of the two tenants is the whole difference. */
   /* EVEN, always. The score cluster is placed at right:--gut/2 and centres a
@@ -113,6 +119,6 @@ export function fit(){
      most one pixel of gutter and buys a rune that sits still. */
   const gut = 2 * Math.floor((w - safe.h - 20 - (cell*SPEC.cols + 2*6)) / 4);
   const sidepts = !land && gut >= (rowmode ? RAIL_LANE : 40);
-  document.documentElement.classList.toggle('sidepts', sidepts);
-  document.documentElement.style.setProperty('--gut', gut+'px');
+  setSidePointsLayout(sidepts);
+  appRoot().style.setProperty('--gut', gut+'px');
 }

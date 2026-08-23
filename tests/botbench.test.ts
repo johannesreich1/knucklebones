@@ -4,8 +4,8 @@
 // learned the rules. A future retune edits the registry and then has to get
 // past this suite, which is the "measure, don't guess" rule in gate form.
 //
-// Deterministic: Math.random is replaced by a seeded stream, which also seeds
-// core/ai.ts's tie-break jitter — the gate may not depend on the machine's
+// Deterministic: Math.random is replaced by a seeded stream and passed into
+// core/ai.ts for tie-break jitter — the gate may not depend on the machine's
 // mood. The margins below sit well under the tuned values (bench 2026-08-21,
 // mulberry32, floor retune: STONE 41.7% vs random, BONE 66.4%, NEON 81.0% /
 // 59.2% vs medium, newcomer-first 74.4% vs STONE and 57.0% vs BONE,
@@ -14,7 +14,7 @@
 import {
   AI, ME, emptyBoard, legalCols, applyMove, totalOf, isOver, CLASSIC, COLSHIELD, type Mode, type GameState,
 } from '../src/core/rules.ts';
-import { searchRoot, setRiskW, setOppW, getRiskW, getOppW } from '../src/core/ai.ts';
+import { searchRoot } from '../src/core/ai.ts';
 import { GROUPS, botShapeAt, type BotShape } from '../src/core/ladder.ts';
 import { botMove } from '../src/core/bot.ts';
 
@@ -39,9 +39,12 @@ const rnd = (n: number) => Math.floor(Math.random() * n);
 function pick(p: Policy, st: ReturnType<typeof emptyBoard>[], who: 0 | 1, die: number): number {
   const legal = legalCols(st[who]);
   if (p.random || (p.slip && Math.random() < p.slip)) return legal[rnd(legal.length)];
-  setRiskW(p.risk ?? 0);
-  setOppW(p.oppW ?? 1);
-  return searchRoot(st as never, who, die, p.depth ?? 1, p.mode ?? CLASSIC).c;
+  return searchRoot(st as never, who, die, p.depth ?? 1, {
+    mode: p.mode ?? CLASSIC,
+    random: Math.random,
+    riskWeight: p.risk ?? 0,
+    opponentWeight: p.oppW ?? 1,
+  }).c;
 }
 
 /* seatME moves first, like the human in a ranked bot match; returns the
@@ -165,13 +168,10 @@ if (!(csAwareVsBlind >= 0.47)) {
     check(c >= 0 && c < 3, 'botMove must open with a legal column: ' + g.name, c);
   }
   // deterministic given the SAME stream — replay and the gate both need this.
-  // core/ai's tie-break jitter reads the global Math.random, so it is seeded too.
   const mid: GameState = [[[5, 5], [2], []], [[4], [6, 6], [1]]];
   for (const mode of [CLASSIC, COLSHIELD] as Mode[]) {
-    const real = Math.random;
-    Math.random = seeded(99); const a = botMove(mid, AI, 4, 2020, mode, Math.random);
-    Math.random = seeded(99); const b = botMove(mid, AI, 4, 2020, mode, Math.random);
-    Math.random = real;
+    const a = botMove(mid, AI, 4, 2020, mode, seeded(99));
+    const b = botMove(mid, AI, 4, 2020, mode, seeded(99));
     check(a === b, 'botMove must be deterministic on one seeded stream', { mode, a, b });
   }
   // it must never answer with a column it cannot play
@@ -183,12 +183,15 @@ if (!(csAwareVsBlind >= 0.47)) {
   // a full board has nothing to answer with, and says so rather than guessing
   const full: GameState = [[[1, 2, 3], [1, 2, 3], [1, 2, 3]], [[], [], []]];
   check(botMove(full, AI, 4, 0, CLASSIC, seeded(1)) === -1, 'a bot with no legal column must return -1');
-  // the search weights it borrows are RESTORED: a bot must not change how the
-  // next search in the process plays (offline CPU and ranked bot share it)
-  setRiskW(0.9); setOppW(1);
+  // Search options are per call: a ranked bot cannot change how the next
+  // offline search in the same process plays.
+  const independent = () => searchRoot(mid, AI, 4, 2, {
+    mode: CLASSIC, random: seeded(515), riskWeight: 0.9, opponentWeight: 1,
+  }).c;
+  const before = independent();
   botMove(mid, AI, 4, 0, CLASSIC, seeded(3));          // STONE: risk 0, oppW -0.5
-  check(getRiskW() === 0.9 && getOppW() === 1,
-    'botMove leaked its risk/opp weights into the process', { risk: getRiskW(), opp: getOppW() });
+  const after = independent();
+  check(before === after, 'botMove leaked configuration into an independent search', { before, after });
   check(botShapeAt(0).oppW === -0.5, 'STONE is still the kill-averse shape botMove borrows', botShapeAt(0));
 }
 

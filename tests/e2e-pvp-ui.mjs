@@ -3,18 +3,23 @@
 // mutates live data). Before a run: check matchmaking_queue is EMPTY and wipe
 // e2e matches + queue rows. After: delete the e2e matches AND the two
 // season_ratings rows — test accounts must not surface on the live ladder.
-// See e2e-pvp.mjs for the API-level version. Run: node tests/e2e-pvp-ui.mjs
+// See e2e-pvp.mjs for the API-level version. Run: npm run test:live:pvp-ui
 // two browser contexts, one live PvP match, then a bot match
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
+import { SUPABASE_AUTH_STORAGE_KEY } from '../src/config.ts';
 import { servedBase } from './serve.mjs';
+import { readLivePvpConfig } from './support/live-pvp-config.mjs';
 // its own origin, on a kernel-picked port: nothing to start by hand, nothing
 // for a peer session's gate to collide with (tests/serve.mjs)
+const liveConfig = readLivePvpConfig();
+if (liveConfig.target !== 'production') {
+  throw new Error('The UI live probe uses the production-configured app build and is production-only.');
+}
+const { supabaseUrl: SUPA, publishableKey: ANON, users } = liveConfig;
 const BASE = await servedBase();
 const problems = [];
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
-const SUPA = 'https://euzjcejbkxvqfrttgaxu.supabase.co';
-const ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1empjZWpia3h2cWZydHRnYXh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY4OTgxNTgsImV4cCI6MjEwMjQ3NDE1OH0.WIhtcBLc_0mnINapuBqoJVeqqLfx6jHvexRwO5e1KyY';
 const browser = await chromium.launch();
 try {
   const mk = async (email, pass) => {
@@ -42,7 +47,7 @@ try {
       localStorage.setItem(k, v);
       localStorage.setItem('knucklebones.online.profile', p);
       localStorage.setItem('knucklebones.v1', JSON.stringify({ played: true }));
-    }, ['sb-euzjcejbkxvqfrttgaxu-auth-token', JSON.stringify(sess), JSON.stringify(prof)]);
+    }, [SUPABASE_AUTH_STORAGE_KEY, JSON.stringify(sess), JSON.stringify(prof)]);
     const page = await ctx.newPage();
     page.errs = [];
     page.on('pageerror', e => page.errs.push(e.message));
@@ -54,8 +59,8 @@ try {
     await page.waitForSelector('#onQueue:not([hidden])', { timeout: 8000 });
     return page;
   };
-  const A = await mk('e2e.pvp.alice@example.com', 'e2e-pvp-password-1!');  // A queues here
-  const B = await mk('e2e.pvp.bob@example.com', 'e2e-pvp-password-2!');    // B pairs on its first join
+  const A = await mk(users[0].email, users[0].password);  // A queues here
+  const B = await mk(users[1].email, users[1].password);  // B pairs on its first join
 
   const inMatch = p => p.evaluate(() => (document.getElementById('rec')?.textContent ?? '').startsWith('ONLINE')
     && !document.getElementById('ovOnline').classList.contains('on'));

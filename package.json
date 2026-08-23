@@ -2,11 +2,21 @@
   "name": "knucklebones-neon",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
   "scripts": {
     "dev": "vite",
     "build": "node build.mjs",
     "serve": "node tests/serve.mjs",
-    "test": "node tests/run-all.mjs"
+    "test": "node tests/run-all.mjs",
+    "test:db": "supabase test db --local",
+    "test:functions": "node tools/check-functions.mjs",
+    "test:native": "node --experimental-strip-types tests/iosship.test.ts",
+    "native:sync": "npm run build && npm --prefix native run sync",
+    "native:verify": "npm run native:sync && node --experimental-strip-types tests/iosship.test.ts --require-synced",
+    "test:live:pvp": "node --env-file=.env.live tests/e2e-pvp.mjs",
+    "test:live:pvp-ui": "npm run build && node --env-file=.env.live tests/e2e-pvp-ui.mjs"
   },
   "devDependencies": {
     "playwright": "^1.49.0",

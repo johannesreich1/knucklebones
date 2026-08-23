@@ -173,7 +173,7 @@ for (const m of MODES)
 /* ---- AI plays every mode without falling over, and respects the shield ---- */
 const mid: GameState = [[[5, 5], [2], []], [[4], [6, 6], [1]]];
 for (const m of MODES) {
-  const r = searchRoot(mid, AI, 4, 2, m.mode as Mode);
+  const r = searchRoot(mid, AI, 4, 2, { mode: m.mode as Mode, random: () => 0.5 });
   check(r.c >= 0 && r.c <= 2, 'AI move legal under ' + m.id, r);
 }
 /* the risk model scores a shielded column exactly like classic — ON PURPOSE.

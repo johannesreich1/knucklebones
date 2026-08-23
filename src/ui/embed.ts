@@ -9,4 +9,15 @@ export const setEmbed = (v: boolean): void => { embedded = v; };
 export const isEmbed = (): boolean => embedded;
 
 export const kbroot = (): HTMLElement | null => document.getElementById('kbroot');
-export const rootRect = (): DOMRect => kbroot()!.getBoundingClientRect();
+
+/* Every entry point provides exactly one application root before boot. Keep
+   the nullable lookup for the widget-removal guard, but application code uses
+   this required form: falling back to <body> is how portals and state escaped
+   into an embedding page in the first place. */
+export function appRoot(): HTMLElement {
+  const root = kbroot();
+  if (!root) throw new Error('Knucklebones requires one #kbroot application root');
+  return root;
+}
+
+export const rootRect = (): DOMRect => appRoot().getBoundingClientRect();

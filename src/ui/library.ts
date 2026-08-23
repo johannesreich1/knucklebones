@@ -12,6 +12,7 @@ import { spellIcon, spellHue } from './spellicons.ts';
 import { $, show, hide } from './dom.ts';
 import { Sfx } from './audio.ts';
 import { showSheet } from './sheet.ts';
+import { appRoot } from './embed.ts';
 
 export interface LibraryItem { id: string; name: string; blurb: string; detail: string; hue: string; icon: string }
 export interface LibrarySpec { id: string; title: string; items: LibraryItem[] }
@@ -79,7 +80,7 @@ function build(spec: LibrarySpec): void {
   if (built.has(spec.id)) return;
   built.add(spec.id);
   const cards = libraryCards(spec);
-  document.body.insertAdjacentHTML('beforeend', `
+  appRoot().insertAdjacentHTML('beforeend', `
 <div class="ov paged" id="${spec.id}">
   <div class="shead"><span class="pad"></span><span class="ttl">${spec.title}</span>
     <button class="ico" data-close="${spec.id}" aria-label="Close">✕</button></div>
@@ -93,10 +94,10 @@ function build(spec: LibrarySpec): void {
 /* open a roster; a highlight id rings the entry currently in play */
 function openLibrary(spec: LibrarySpec, highlight?: string): void {
   build(spec);
-  document.querySelectorAll(`#${spec.id} .modecard`).forEach((el) =>
+  appRoot().querySelectorAll(`#${spec.id} .modecard`).forEach((el) =>
     el.classList.toggle('now', (el as HTMLElement).dataset.mode === highlight));
   show('#' + spec.id);
-  document.querySelector(`#${spec.id} .modecard.now`)?.scrollIntoView({ block: 'center' });
+  appRoot().querySelector(`#${spec.id} .modecard.now`)?.scrollIntoView({ block: 'center' });
 }
 
 export const openModes = (highlight?: string): void => openLibrary(MODE_LIB, highlight);

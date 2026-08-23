@@ -11,7 +11,7 @@
 // Adding a third context (a tournament, a daily) is another spec, not another
 // screen.
 import { $, show, hide } from './dom.ts';
-import { tap } from './input.ts';
+import { tap } from './tap.ts';
 import { Sfx, vibrate } from './audio.ts';
 import { fireworks } from './fx.ts';
 import { fillPlate, type PlateSpec } from './plate.ts';

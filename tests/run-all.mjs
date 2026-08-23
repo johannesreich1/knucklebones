@@ -24,8 +24,20 @@ import fs from 'fs';
 import path from 'path';
 import { serveTree } from './serve.mjs';
 
-const FILE_SUITES = ['test4', 'test6', 'test8', 'test9', 'test10', 'test11', 'test12', 'test13', 'test14', 'test15', 'test17', 'test18', 'test19', 'test20', 'test21', 'test23'];
-const SERVED_SUITES = ['test7', 'test16', 'test22']; // read pwa/ over the shared server, read-only — poolable
+const FILE_SUITES = [
+  'test4', 'test6',
+  { name: 'test8', file: 'tests/browser/responsive/run.mjs' },
+  'test9', 'test10',
+  { name: 'test11', file: 'tests/browser/hud-settings/run.mjs' },
+  'test12', 'test13',
+  { name: 'spells-browser', file: 'tests/browser/spells/run.mjs' },
+  'test15', 'test17', 'test18', 'test19', 'test20', 'test21', 'test23',
+];
+const SERVED_SUITES = [
+  'test7',
+  { name: 'test16', file: 'tests/browser/online-ui/run.mjs' },
+  'test22',
+]; // read pwa/ over the shared server, read-only — poolable
 // testupdate reads that same server but MUTATES pwa/ — it always runs alone, last
 const SUITE_TIMEOUT_MS = 360_000;   // must clear test6/test10's worst-case random endgames on slow CI
 const argJobs = process.argv.indexOf('--jobs');
@@ -127,10 +139,14 @@ const { url, stop } = await serveTree('pwa');
 process.env.KB_URL = url;   // spawned suites inherit this — servedBase() reads it
 try {
   const node = t => async () => judge(t, await run('node', ['--experimental-strip-types', `tests/${t}.test.ts`]), clean);
-  const suite = t => async () => judge(t, await run('node', [`tests/${t}.mjs`]), clean);
+  const suite = entry => async () => {
+    const spec = typeof entry === 'string'
+      ? { name: entry, file: `tests/${entry}.mjs` } : entry;
+    judge(spec.name, await run('node', [spec.file]), clean);
+  };
   await pool([
     // pure-Node gates (no browser): seeded dice determinism + PvP match core
-    ...['dice', 'match', 'modes', 'spells', 'gcauth', 'cssreach', 'ladder', 'ladderbench', 'botbench', 'fnsync', 'iosship'].map(node),
+    ...['architecture', 'dice', 'match', 'modes', 'spells', 'online-api', 'gcauth', 'edge-handlers', 'edge-settlement', 'cssgraph', 'cssreach', 'design-library', 'ladder', 'ladderbench', 'botbench', 'fnsync', 'iosship', 'live-safety'].map(node),
     ...FILE_SUITES.map(suite),
     // bench3 is a benchmark, not a pass/fail suite — but its helper-vs-inline
     // scoring equivalence check is a real correctness assertion.

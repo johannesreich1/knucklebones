@@ -1,83 +1,92 @@
-// @ts-nocheck -- moved verbatim from the monolith; typed in the milestone-D
-// strictness ratchet. New code goes in typed modules, not here.
-// The title screen and settings panel: what they show. (Mid-game resume was
-// removed by design 2026-08-18 — leaving an offline game simply ends it.)
+// The title screen and settings panel: what they show. Mid-game resume was
+// removed by design; leaving an offline game simply ends it. The composition
+// root injects the two flow operations this screen needs.
 import { S } from '../state.ts';
 import { $, show, hide } from '../ui/dom.ts';
 import { stopTimer } from './timer.ts';
 import { clearTut } from './tutorial.ts';
-import { cancelPass } from './game.ts';
-import { renderSpells } from './spells.ts';
-import { clearHints } from '../ui/render.ts';
-function segOn(sel,key,val){
-  document.querySelectorAll(sel+' button').forEach(b=>b.classList.toggle('on', b.dataset[key]===val));
+import { clearHints } from '../ui/game/hints.ts';
+import { setNumeralPresentation } from '../ui/game/root-state.ts';
+import { appRoot } from '../ui/embed.ts';
+
+export interface MenuPorts {
+  cancelPass: () => void;
+  renderSpells: () => void;
 }
-/* single source of truth for "what the title screen should look like right now" */
-export function syncSettingsUI(){
-  const duo = S.mode==='duo';
-  $('#diffCard').hidden  = duo;
-  $('#seatCard').hidden  = !duo;
+
+let menuPorts: MenuPorts = {
+  cancelPass: () => undefined,
+  renderSpells: () => undefined,
+};
+
+export function configureMenu(ports: MenuPorts): void {
+  menuPorts = ports;
+}
+
+function segOn(selector: string, key: string, value: string): void {
+  appRoot().querySelectorAll<HTMLButtonElement>(selector + ' button').forEach((button) => {
+    button.classList.toggle('on', button.dataset[key] === value);
+  });
+}
+
+/* Single source of truth for what the title screen should look like now. */
+export function syncSettingsUI(): void {
+  const duo = S.mode === 'duo';
+  $('#diffCard').hidden = duo;
+  $('#seatCard').hidden = !duo;
   $('#timerCard').hidden = !duo;
-  // name the game, not the verb: two players on one phone are playing a duel,
-  // and the button is the last thing read before committing to one
   $('#btnPlay').textContent = duo ? 'Play duel' : 'Play vs AI';
-  segOn('#modeSeg','m',S.mode);
-  segOn('#diffSeg','d',S.diff);
-  segOn('#timerSeg','t',String(S.timer));
-  segOn('#seatSeg','seat',S.seat);
-  segOn('#sndSeg','s', S.sound?'1':'0');
-  segOn('#faceSeg','f', S.numerals?'nums':'pips');
-  segOn('#cbSeg','b', S.colorblind?'1':'0');
-  /* THE DUEL PAIR, applied. Colour blind mode overrides the display pair to
-     cyan-vs-gold (the axis red-green colour vision keeps) without touching
-     the stored picks; otherwise the pickers rule. The tokens land inline on
-     <html>, where main.css's :root defaults yield to them. */
+  segOn('#modeSeg', 'm', S.mode);
+  segOn('#diffSeg', 'd', S.diff);
+  segOn('#timerSeg', 't', String(S.timer));
+  segOn('#seatSeg', 'seat', S.seat);
+  segOn('#sndSeg', 's', S.sound ? '1' : '0');
+  segOn('#faceSeg', 'f', S.numerals ? 'nums' : 'pips');
+  segOn('#cbSeg', 'b', S.colorblind ? '1' : '0');
+
+  /* Colour blind mode overrides the displayed pair without changing the
+     stored picks. Multiplier fallbacks remain distinct from each side. */
   const p1 = S.colorblind ? 'cy' : S.p1Hue;
   const p2 = S.colorblind ? 'gold' : S.p2Hue;
-  const rs = document.documentElement.style;
-  /* the heats ride along per SIDE: a ×2 wears gold and a ×3 hot orange —
-     unless THIS side's player wears that hue, in which case only THEIR
-     multiplied dice fall back (ice / hot red, main.css) so a doubled die
-     can never pass for their plain one. The other side keeps the true
-     heat — repointing both boards for one player's pick recoloured the
-     whole game (user report, with screenshot). Covers colour blind mode
-     too, whose pinned pair contains gold. */
-  for (const [slot,h] of [['p1',p1],['p2',p2]]){
-    rs.setProperty(`--${slot}`,      `var(--${h})`);
-    rs.setProperty(`--${slot}-rgb`,  `var(--${h}-rgb)`);
-    rs.setProperty(`--${slot}-hi`,   `var(--${h}-hi)`);
-    /* colour blind mode pins the fallbacks on BOTH sides: its pair contains
-       gold by construction, and the point of the mode — unlike freely picking
-       cyan+gold — is that no heat shares a family with any player (user call) */
-    const m2 = (S.colorblind || h==='gold')   ? 'ice' : 'gold';
-    const m3 = (S.colorblind || h==='orange') ? 'red' : 'orange';
-    rs.setProperty(`--${slot}-mx2`,     `var(--${m2})`);
-    rs.setProperty(`--${slot}-mx2-rgb`, `var(--${m2}-rgb)`);
-    rs.setProperty(`--${slot}-mx3`,     `var(--${m3})`);
-    rs.setProperty(`--${slot}-mx3-rgb`, `var(--${m3}-rgb)`);
+  const style = appRoot().style;
+  const pairs: Array<readonly ['p1' | 'p2', string]> = [['p1', p1], ['p2', p2]];
+  for (const [slot, hue] of pairs) {
+    style.setProperty(`--${slot}`, `var(--${hue})`);
+    style.setProperty(`--${slot}-rgb`, `var(--${hue}-rgb)`);
+    style.setProperty(`--${slot}-hi`, `var(--${hue}-hi)`);
+    const mx2 = S.colorblind || hue === 'gold' ? 'ice' : 'gold';
+    const mx3 = S.colorblind || hue === 'orange' ? 'red' : 'orange';
+    style.setProperty(`--${slot}-mx2`, `var(--${mx2})`);
+    style.setProperty(`--${slot}-mx2-rgb`, `var(--${mx2}-rgb)`);
+    style.setProperty(`--${slot}-mx3`, `var(--${mx3})`);
+    style.setProperty(`--${slot}-mx3-rgb`, `var(--${mx3}-rgb)`);
   }
-  /* the pickers mirror the pair on screen: the shown pick is the EFFECTIVE
-     one, the other side's colour is off the table (a colour belongs to one
-     player), and colour blind mode locks both rows, the note saying why */
-  const syncPick=(sel,mine,other)=>{
-    document.querySelectorAll(sel+' button').forEach(b=>{
-      b.classList.toggle('on', b.dataset.h===mine);
-      b.disabled = S.colorblind || b.dataset.h===other;
-      if (S.colorblind) b.setAttribute('aria-describedby','colNote');
-      else b.removeAttribute('aria-describedby');
+
+  const syncPick = (selector: string, mine: string, other: string): void => {
+    appRoot().querySelectorAll<HTMLButtonElement>(selector + ' button').forEach((button) => {
+      button.classList.toggle('on', button.dataset.h === mine);
+      button.disabled = S.colorblind || button.dataset.h === other;
+      if (S.colorblind) button.setAttribute('aria-describedby', 'colNote');
+      else button.removeAttribute('aria-describedby');
     });
   };
   syncPick('#p1Pick', p1, p2);
   syncPick('#p2Pick', p2, p1);
   $('#colNote').hidden = !S.colorblind;
-  document.documentElement.classList.toggle('numerals',S.numerals);
-  renderSpells();     // the rail follows whatever hand the current game holds
+  setNumeralPresentation(S.numerals);
+  menuPorts.renderSpells();
 }
-/* leaving a game in progress ends it — offline games are quick by design */
-export function toMenu(){
-  S.gen++; S.phase='over';
-  stopTimer(); clearTut(); clearHints();
-  cancelPass(); hide('#ovPass');
-  hide('#ovPractice'); hide('#ovSettings');
+
+/* Leaving a game in progress ends it — offline games are quick by design. */
+export function toMenu(): void {
+  S.gen++;
+  S.phase = 'over';
+  stopTimer();
+  clearTut();
+  clearHints();
+  menuPorts.cancelPass();
+  hide('#ovPass');
+  hide('#ovPractice');
+  hide('#ovSettings');
   show('#ovStart');
 }

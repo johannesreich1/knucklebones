@@ -13,7 +13,6 @@ import {
 
 let NODES = 0;
 const BUDGET = 500000;                  // node cap: search degrades, never hangs
-let RISK_W = 1.5;                       // tuned by self-play: 55.3% vs risk-blind over 500 games
 /* How much of the OPPONENT's board the eval sees. At 1 a full duelist, at 0 a
    pure builder that never AIMS a destroy (they still happen when its best
    build collides). NEGATIVE is the floor's floor: the eval prefers placements
@@ -22,13 +21,8 @@ let RISK_W = 1.5;                       // tuned by self-play: 55.3% vs risk-bli
    random-parity, because the un-slipped half of a greedy still takes every
    kill — measured: d1 slip .5 wins 60% vs random). STONE ships at -0.5.
    AI-seat perspective, like the eval itself: every bot in the game sits there. */
-let OPP_W = 1;
 
 export const nodes = () => NODES;
-export const getRiskW = () => RISK_W;
-export const setRiskW = (w: number) => { RISK_W = w; };
-export const getOppW = () => OPP_W;
-export const setOppW = (w: number) => { OPP_W = w; };
 
 /* expected value a player stands to lose to one enemy placement in a facing
    column. Mode heuristics: ROWSWITCH — a destroyed stack loses roughly its
@@ -67,21 +61,45 @@ export function riskOf(st: GameState, p: Player, mode: Mode = CLASSIC): number {
   return r;
 }
 
-function evalSt(st: GameState, mode: Mode): number {
-  let s = boardTotalMode(st[AI], mode) - OPP_W * boardTotalMode(st[ME], mode);
-  if (RISK_W) s += RISK_W * (riskOf(st, ME, mode) - riskOf(st, AI, mode));
+function evalSt(st: GameState, options: ResolvedSearchOptions): number {
+  const { mode, opponentWeight, riskWeight } = options;
+  let s = boardTotalMode(st[AI], mode) - opponentWeight * boardTotalMode(st[ME], mode);
+  if (riskWeight) s += riskWeight * (riskOf(st, ME, mode) - riskOf(st, AI, mode));
   return s;
 }
 
 export interface SearchResult { v: number; c: number; }
-
-export function searchRoot(st: GameState, who: Player, die: number, depth: number, mode: Mode = CLASSIC): SearchResult {
-  NODES = 0;
-  return search(st, who, die, depth, mode);
+export interface SearchOptions {
+  /** Required so callers choose replayable or ambient randomness explicitly. */
+  random: () => number;
+  mode?: Mode;
+  /** Tuned default: 1.5 (55.3% vs risk-blind over 500 self-play games). */
+  riskWeight?: number;
+  opponentWeight?: number;
 }
 
-export function search(st: GameState, who: Player, die: number, depth: number, mode: Mode = CLASSIC): SearchResult {
+interface ResolvedSearchOptions {
+  random: () => number;
+  mode: Mode;
+  riskWeight: number;
+  opponentWeight: number;
+}
+
+export function searchRoot(st: GameState, who: Player, die: number, depth: number,
+                           options: SearchOptions): SearchResult {
+  NODES = 0;
+  return search(st, who, die, depth, {
+    random: options.random,
+    mode: options.mode ?? CLASSIC,
+    riskWeight: options.riskWeight ?? 1.5,
+    opponentWeight: options.opponentWeight ?? 1,
+  });
+}
+
+function search(st: GameState, who: Player, die: number, depth: number,
+                options: ResolvedSearchOptions): SearchResult {
   NODES++;
+  const { mode, random } = options;
   const legal = legalCols(st[who]);
   let bestV = who === AI ? -1e9 : 1e9, bestC = legal[0];
   for (const c of legal) {
@@ -92,13 +110,15 @@ export function search(st: GameState, who: Player, die: number, depth: number, m
       const d = boardTotalMode(ns[AI], mode) - boardTotalMode(ns[ME], mode);   // game over: material only
       v = d + (d > 0 ? 14 : d < 0 ? -14 : 0);
     } else if (depth <= 1 || NODES > BUDGET) {
-      v = evalSt(ns, mode);
+      v = evalSt(ns, options);
     } else {
       let sum = 0;
-      for (let d = 1; d <= DICE_FACES; d++) sum += search(ns, (1 - who) as Player, d, depth - 1, mode).v;
+      for (let d = 1; d <= DICE_FACES; d++) {
+        sum += search(ns, (1 - who) as Player, d, depth - 1, options).v;
+      }
       v = sum / DICE_FACES;
     }
-    v += (Math.random() - 0.5) * 1e-4;                     // tie-break jitter
+    v += (random() - 0.5) * 1e-4;                         // tie-break jitter
     if (who === AI ? v > bestV : v < bestV) { bestV = v; bestC = c; }
   }
   return { v: bestV, c: bestC };

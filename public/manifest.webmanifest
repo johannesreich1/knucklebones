@@ -1,7 +1,7 @@
 {
   "name": "Knucklebones — Neon Edition",
   "short_name": "Knucklebones",
-  "description": "Ranked online dice duels. Column multipliers, destruction, an Elo ladder — plus offline practice against the CPU or pass-and-play.",
+  "description": "Ranked online dice duels. Column multipliers, destruction, and a seasonal points ladder — plus offline practice against the CPU or pass-and-play.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

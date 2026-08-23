@@ -6,6 +6,7 @@
 import { S } from '../state.ts';
 import { $, show, hide } from './dom.ts';
 import { Sfx } from './audio.ts';
+import { appRoot } from './embed.ts';
 
 /* Nothing to offer somebody who has already played, or who has already been
    taught. Both facts are persisted, so this is a once-in-a-lifetime prompt. */
@@ -15,7 +16,7 @@ let built = false;
 function build(): void {
   if (built) return;
   built = true;
-  document.body.insertAdjacentHTML('beforeend', `
+  appRoot().insertAdjacentHTML('beforeend', `
 <div class="ov" id="ovFirst">
   <div class="askcard">
     <div class="fh">First time?</div>

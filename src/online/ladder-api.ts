@@ -1,0 +1,174 @@
+// Read-only seasonal ladder boundaries. Opponent-facing data comes through
+// narrow RPCs because raw profile and season rows remain own-row only.
+import { supa } from './client.ts';
+import { currentUser } from './session.ts';
+
+export interface Standing {
+  points: number;
+  rank: number;
+  population: number;
+  percentile: number;
+}
+
+export async function myStanding(): Promise<Standing | null> {
+  const user = await currentUser();
+  if (!user) return null;
+  const { data } = await supa().rpc('player_standing', { p: user.id });
+  const row = Array.isArray(data) ? data[0] : data;
+  return row ? {
+    points: row.points,
+    rank: Number(row.rank),
+    population: Number(row.population),
+    percentile: Number(row.percentile),
+  } : null;
+}
+
+export interface Ladder {
+  points: number;
+  peak: number;
+  wins: number;
+  losses: number;
+  draws: number;
+}
+
+export async function myLadder(): Promise<Ladder | null> {
+  const user = await currentUser();
+  if (!user) return null;
+  const { data: season } = await supa().rpc('current_season');
+  const { data } = await supa().from('season_ratings')
+    .select('points, peak, wins, losses, draws')
+    .eq('season_id', season).eq('player', user.id).maybeSingle();
+  // A season row is created at the first pairing; no row is an honest zero.
+  return data ?? { points: 0, peak: 0, wins: 0, losses: 0, draws: 0 };
+}
+
+export async function bestStreak(): Promise<number> {
+  const { data } = await supa().rpc('best_streak');
+  return Number(data ?? 0);
+}
+
+export interface HistoryRow {
+  id: string;
+  when: string;
+  opponent: string;
+  mode: string;
+  mine: number;
+  theirs: number;
+  delta: number;
+  result: 'win' | 'loss' | 'draw';
+}
+
+export interface HistoryCursor { when: string; id: string }
+
+export function historyPageArgs(limit = 40, before?: HistoryCursor): Record<string, unknown> {
+  const args: Record<string, unknown> = { limit_n: limit };
+  if (before) {
+    args.before_t = before.when;
+    args.before_id = before.id;
+  }
+  return args;
+}
+
+export async function matchHistory(limit = 40, before?: HistoryCursor): Promise<HistoryRow[]> {
+  /* Stable keyset ordering is `(finished_at, id)`. Passing only the timestamp
+     can skip rows when several matches settle in the same database instant. */
+  const { data } = await supa().rpc('match_history', historyPageArgs(limit, before));
+  return (data ?? []).map((row: Record<string, unknown>) => ({
+    id: String(row.id),
+    when: String(row.finished_at ?? ''),
+    opponent: String(row.opponent ?? '???'),
+    mode: String(row.mode ?? 'classic'),
+    mine: Number(row.mine ?? 0),
+    theirs: Number(row.theirs ?? 0),
+    delta: Number(row.delta ?? 0),
+    result: row.result as HistoryRow['result'],
+  }));
+}
+
+export interface LeaderboardRow {
+  nickname: string;
+  points: number;
+  wins: number;
+  losses: number;
+  games: number;
+  rank: number;
+  apex: boolean;
+  avatar: string | null;
+  peak: number;
+}
+
+export function leaderboardPageArgs(
+  limit = 50,
+  fromRank = 1,
+  afterNickname?: string,
+): Record<string, number | string> {
+  const args: Record<string, number | string> = { limit_n: limit, from_rank: fromRank };
+  if (afterNickname) args.after_nickname = afterNickname;
+  return args;
+}
+
+export function leaderboardBeforePageArgs(
+  limit = 50,
+  beforeRank = 1,
+  beforeNickname = '',
+): Record<string, number | string> {
+  return {
+    limit_n: limit,
+    before_rank: beforeRank,
+    before_nickname: beforeNickname,
+  };
+}
+
+export async function leaderboard(
+  limit = 50,
+  fromRank = 1,
+  afterNickname?: string,
+): Promise<LeaderboardRow[]> {
+  const { data } = await supa().rpc(
+    'leaderboard',
+    leaderboardPageArgs(limit, fromRank, afterNickname),
+  );
+  return (data as LeaderboardRow[]) ?? [];
+}
+
+export async function leaderboardBefore(
+  limit = 50,
+  beforeRank = 1,
+  beforeNickname = '',
+): Promise<LeaderboardRow[]> {
+  const { data } = await supa().rpc(
+    'leaderboard_before',
+    leaderboardBeforePageArgs(limit, beforeRank, beforeNickname),
+  );
+  return (data as LeaderboardRow[]) ?? [];
+}
+
+export interface PlayerCard {
+  streak: number;
+  since: string | null;
+  points: number | null;
+  wins: number | null;
+  losses: number | null;
+  games: number | null;
+  rank: number | null;
+  apex: boolean;
+  peak: number | null;
+}
+
+export async function playerCard(nickname: string): Promise<PlayerCard | null> {
+  const { data } = await supa().rpc('player_card', { nick: nickname });
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row) return null;
+  const numberOrNull = (value: unknown): number | null => value == null ? null : Number(value);
+  return {
+    streak: Number(row.streak ?? 0),
+    since: row.since ?? null,
+    points: numberOrNull(row.points),
+    wins: numberOrNull(row.wins),
+    losses: numberOrNull(row.losses),
+    games: numberOrNull(row.games),
+    rank: numberOrNull(row.rank),
+    apex: !!row.apex,
+    peak: numberOrNull(row.peak),
+  };
+}

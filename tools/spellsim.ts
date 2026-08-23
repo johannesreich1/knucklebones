@@ -25,7 +25,7 @@ import {
   CLASSIC, ROWSWITCH, COLSHIELD, SINGLESTRIKE, BOUNTY, LIMITED,
   type GameState, type Player, type Mode,
 } from '../src/core/rules.ts';
-import { searchRoot, setRiskW, setOppW } from '../src/core/ai.ts';
+import { searchRoot } from '../src/core/ai.ts';
 import { SPELLS, machineCast, swingOf, type SpellSpec, type CastCtx } from '../src/core/spells.ts';
 import { makeBag } from '../src/core/dice.ts';
 import { DICE_FACES } from '../src/config.ts';
@@ -88,8 +88,9 @@ function playGame(spell: SpellSpec, holds: [boolean, boolean], mode: Mode, first
         if (isFull(st[ME]) || isFull(st[AI])) { over = true; break; }
       }
     }
-    setRiskW(0.9); setOppW(1);
-    const col = searchRoot(st, turn, hand, DEPTH, mode).c;
+    const col = searchRoot(st, turn, hand, DEPTH, {
+      mode, random: Math.random, riskWeight: 0.9, opponentWeight: 1,
+    }).c;
     banked[turn] += applyMove(st, turn, col, hand, mode, charm);
     plies++;
     if (isOver(st[turn], bag ? bag.length : null)) break;

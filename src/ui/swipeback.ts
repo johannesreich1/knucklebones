@@ -7,7 +7,8 @@
 // home is the root, the pass/result/loading screens have no "up", a question
 // card (ask) wants an answer, matchmaking's hidden ‹ means Cancel is the only
 // honest exit, and mid-game there is no paged view open at all.
-import { press } from './input.ts';
+import { press } from './tap.ts';
+import { appRoot } from './embed.ts';
 
 const EDGE = 24;    // arm zone: how far from the left edge a swipe may start
 const TRAVEL = 60;  // rightward travel that commits it
@@ -20,8 +21,8 @@ const DRIFT = 30;   // vertical drift that reveals a scroll instead
 function backControl(): HTMLElement | null {
   // a SHEET (ui/sheet: the face-off, the badge's mode card) sits at z 90, above
   // every .ov, and owns the gesture layer while it is up — it has its own drag
-  if (document.querySelector('.faceoff')) return null;
-  const open = document.querySelectorAll<HTMLElement>('.ov.on');
+  if (appRoot().querySelector('.faceoff')) return null;
+  const open = appRoot().querySelectorAll<HTMLElement>('.ov.on');
   const top = open[open.length - 1];
   if (!top?.classList.contains('paged')) return null;
   const ico = top.querySelector<HTMLElement>('.shead .ico');

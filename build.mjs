@@ -9,11 +9,19 @@
 // contains all code and styles). It becomes the visible data-build tag and the
 // service-worker cache key, so "which version is my phone running?" always has
 // an answer.
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { createHash } from 'crypto';
 import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, readdirSync, statSync } from 'fs';
 
 const die = m => { console.error('BUILD FAILED: ' + m); process.exit(1); };
+const nodeMajor = Number(process.versions.node.split('.')[0]);
+if (nodeMajor !== 24) die(`Node 24 is required (running ${process.versions.node}); use .nvmrc`);
+
+/* Run every JS tool under this exact Node binary. Calling `npx` here could
+   resolve a different system Node than the one that launched the build, which
+   makes a nominal Node-24 build an older-runtime build in disguise. */
+const runNode = (entry, args = []) =>
+  execFileSync(process.execPath, [entry, ...args], { stdio: 'inherit' });
 const sub = (text, old, neu, label) => {
   const n = text.split(old).length - 1;
   if (n !== 1) die(`pattern for "${label}" matched ${n} times`);
@@ -27,10 +35,10 @@ const subRe = (text, re, neu, label) => {
 
 // ---- type gate, then the three Vite builds ----
 rmSync('dist', { recursive: true, force: true });
-execSync('npx tsc --noEmit', { stdio: 'inherit' });
-execSync('npx vite build', { stdio: 'inherit' });
-execSync('npx vite build --config vite.pwa.config.mjs', { stdio: 'inherit' });
-execSync('npx vite build --config vite.widget.config.mjs', { stdio: 'inherit' });
+runNode('node_modules/typescript/bin/tsc', ['--noEmit']);
+runNode('node_modules/vite/bin/vite.js', ['build']);
+runNode('node_modules/vite/bin/vite.js', ['build', '--config', 'vite.pwa.config.mjs']);
+runNode('node_modules/vite/bin/vite.js', ['build', '--config', 'vite.widget.config.mjs']);
 
 // ---- one hash for the whole build ----
 const single = readFileSync('dist/main/index.html', 'utf8');
@@ -83,9 +91,10 @@ if (!styles.length) die('widget styles');
 const scriptM = wpage.match(/<script type="module"[^>]*>([\s\S]*?)<\/script>/);
 if (!scriptM || scriptM[1].length < 1000) die('widget inline script');
 const fragment =
-  '<h2 class="sr-only">Playable Knucklebones dice game: two 3 by 3 grids, tap a column to place your rolled die.</h2>\n'
-  + styles.join('\n') + '\n'
-  + '<div id="kbroot"></div>\n'
+  styles.join('\n') + '\n'
+  + '<div id="kbroot">\n'
+  + '<h2 class="sr-only">Playable Knucklebones dice game: two 3 by 3 grids, tap a column to place your rolled die.</h2>\n'
+  + '</div>\n'
   + '<script type="module">\n' + scriptM[1] + '\n</script>\n';
 // needles must survive minification: our own added div, and a DOM method name
 // (the minifier mangles identifiers but never property names)
@@ -99,16 +108,9 @@ writeFileSync('widget.html', fragment);
 writeFileSync('harness.html',
   '<!DOCTYPE html><html><head><meta charset="utf-8">'
   + '<meta name="viewport" content="width=device-width,initial-scale=1">'
-  + '<style>body{margin:0;padding:12px 8px;background:#faf9f5}'
-  + '.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}</style></head><body>'
-  + fragment + '</body></html>');
-
-// ---- Capacitor sync, when a native project exists ----
-// EITHER platform counts: the hook used to require android, so an iOS-only
-// checkout silently shipped whatever web payload cap add copied in on day one.
-try {
-  execSync('[ -d native/node_modules ] && { [ -d native/ios ] || [ -d native/android ]; } && cd native && npx cap sync',
-    { stdio: 'ignore', shell: '/bin/bash' });
-} catch { /* no native project checked out — fine */ }
+  + '<style>html{--cell:host-cell;--txt:rgb(17,34,51)}'
+  + 'body{margin:0;padding:12px 8px;background:rgb(250,249,245);color:rgb(31,41,55)}'
+  + '#hostSentinel{display:block;width:40px;padding:5px;color:var(--txt);font:16px serif}</style>'
+  + '</head><body><output id="hostSentinel">host</output>' + fragment + '</body></html>');
 
 console.log(`build ok — tag ${HASH}, sw cache key kb-${HASH}, ${ASSETS.length} precached files`);

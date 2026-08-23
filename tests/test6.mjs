@@ -12,12 +12,48 @@ page.on('console',m=>{ if(m.type()==='error') errs.push('CONSOLE: '+m.text()); }
 await page.goto('file://' + process.cwd() + '/harness.html');
 await page.waitForTimeout(600);
 
+/* The host page is deliberately opinionated. Widget CSS/state must stay below
+   #kbroot: the outer custom properties, box model and page paint are sentinels
+   for the old global-token, universal-reset and documentElement leaks. */
+const isolation = await page.evaluate(() => {
+  const root = document.getElementById('kbroot');
+  const host = document.getElementById('hostSentinel');
+  const states = ['rowmode','rowswitch','face','p2turn','land','shortv','sidepts',
+    'casting','castself','numerals','clock','tut'];
+  window.__outsideRootAdds = [];
+  new MutationObserver((records) => {
+    for (const record of records) for (const node of record.addedNodes) {
+      if (node.nodeType === Node.ELEMENT_NODE && node !== root) {
+        window.__outsideRootAdds.push(node.id || node.className || node.tagName);
+      }
+    }
+  }).observe(document.body, { childList: true });
+  return {
+    rootParent: root.parentElement.tagName,
+    htmlCell: getComputedStyle(document.documentElement).getPropertyValue('--cell').trim(),
+    rootCell: getComputedStyle(root).getPropertyValue('--cell').trim(),
+    hostColor: getComputedStyle(host).color,
+    hostBox: getComputedStyle(host).boxSizing,
+    bodyBg: getComputedStyle(document.body).backgroundColor,
+    htmlStates: states.filter((name) => document.documentElement.classList.contains(name)),
+    rootStates: states.filter((name) => root.classList.contains(name)),
+    owned: ['bg','vig','app','fx','flash','ovStart'].every((id) => root.contains(document.getElementById(id))),
+  };
+});
+check(isolation.rootParent === 'BODY' && isolation.owned, 'widget has no single owned application root', isolation);
+check(isolation.htmlCell === 'host-cell' && isolation.rootCell.endsWith('px'),
+  'widget sizing variables escaped onto the host root', isolation);
+check(isolation.hostColor === 'rgb(17, 34, 51)' && isolation.hostBox === 'content-box' &&
+  isolation.bodyBg === 'rgb(250, 249, 245)', 'widget CSS mutated host computed styles', isolation);
+check(isolation.htmlStates.length === 0 && isolation.rootStates.length > 0,
+  'game state lives on the host document instead of #kbroot', isolation);
+
 const layout = await page.evaluate(()=>{
   const r=document.getElementById('kbroot').getBoundingClientRect();
   const bot=document.getElementById('sideBot').getBoundingClientRect();
   const board=document.getElementById('botBoard').getBoundingClientRect();
   return { rootW:Math.round(r.width), rootH:Math.round(r.height),
-    cell:getComputedStyle(document.documentElement).getPropertyValue('--cell').trim(),
+    cell:getComputedStyle(document.getElementById('kbroot')).getPropertyValue('--cell').trim(),
     botBottom:Math.round(bot.bottom-r.top), boardW:Math.round(board.width),
     fixedCount:[...document.querySelectorAll('#kbroot *')].filter(e=>getComputedStyle(e).position==='fixed').length,
     docScrollW:document.documentElement.scrollWidth, winW:window.innerWidth };
@@ -26,6 +62,19 @@ check(layout.fixedCount===0,'position:fixed survived the port',layout);
 check(layout.botBottom<=layout.rootH,'bottom half overflows the shell',layout);
 check(layout.docScrollW<=layout.winW+1,'widget causes horizontal scroll',layout);
 await shot(page, 'w-start');
+
+/* Exercise real lazy portal builders before the game loop: a roster overlay,
+   the quit question and the shared sheet. Their paint order still depends on
+   being direct siblings, now beneath the application root rather than body. */
+await page.tap('#btnLearn'); await page.waitForTimeout(120);
+await page.tap('#btnLearnModes'); await page.waitForSelector('#ovModes.on');
+const rosterPortal = await page.evaluate(() => ({
+  parent: document.getElementById('ovModes').parentElement.id,
+  contained: document.getElementById('kbroot').contains(document.getElementById('ovModes')),
+}));
+check(rosterPortal.parent === 'kbroot' && rosterPortal.contained, 'lazy roster escaped #kbroot', rosterPortal);
+await page.tap('[data-close="ovModes"]');
+await page.tap('#btnLearnBack');
 
 const snap=()=>page.evaluate(()=>{const k=window.__kb,S=k.S;const o=s=>+document.getElementById(s).dataset.owner;
   return {phase:S.phase,turn:S.turn,bottom:S.bottom,mode:S.mode,b0:S.boards[0],b1:S.boards[1],
@@ -45,6 +94,21 @@ function audit(s,w){
 // endgames run long, and CI runners are slow. (A 400-tick budget flaked on CI.)
 await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#btnPlay'); await page.waitForTimeout(1800);
+await page.tap('#btnLeave'); await page.waitForSelector('#ovAsk.on');
+const askPortal = await page.evaluate(() => ({
+  parent: document.getElementById('ovAsk').parentElement.id,
+  top: document.getElementById('kbroot').lastElementChild.id,
+}));
+check(askPortal.parent === 'kbroot' && askPortal.top === 'ovAsk', 'ask portal escaped or lost overlay order', askPortal);
+await page.tap('#btnAskNo');
+await page.tap('#rec .rchip'); await page.waitForSelector('.faceoff');
+const sheetPortal = await page.evaluate(() => {
+  const sheet = document.querySelector('.faceoff');
+  return { parent: sheet.parentElement.id, position: getComputedStyle(sheet).position };
+});
+check(sheetPortal.parent === 'kbroot' && sheetPortal.position === 'absolute',
+  'widget sheet escaped the root or stayed viewport-fixed', sheetPortal);
+await page.tap('.fograb'); await page.waitForSelector('.faceoff', { state:'detached' });
 let cpuDone=false;
 for(let i=0;i<1200;i++){ const s=await snap(); audit(s,'cpu'+i);
   if(s.end||s.phase==='over'){cpuDone=true;break;}
@@ -80,5 +144,45 @@ for(let i=0;i<1200;i++){ const s=await snap(); audit(s,'duo'+i);
 await page.waitForTimeout(800);
 await shot(page, 'w-duo');
 const grew=await page.evaluate(()=>document.getElementById('kbroot').getBoundingClientRect().height);
-console.log(JSON.stringify({layout,cpuDone,cpuEnd,duo:{handoffs,duoDone},shellHeight:grew,problems,errs},null,2));
+const portalAudit = await page.evaluate(() => ({
+  outsideAdds: window.__outsideRootAdds,
+  overlaysOutside: [...document.querySelectorAll('.ov,.faceoff,.runeghost')]
+    .filter((node) => !document.getElementById('kbroot').contains(node))
+    .map((node) => node.id || node.className),
+}));
+check(portalAudit.outsideAdds.length === 0 && portalAudit.overlaysOutside.length === 0,
+  'runtime inserted app UI outside #kbroot', portalAudit);
+
+/* The standalone entry uses the same canonical root, but still owns the full
+   viewport and keeps its fixed geometry. This catches fixes that isolate the
+   widget by accidentally turning the PWA into a 640px container too. */
+const standalonePage = await ctx.newPage();
+standalonePage.on('pageerror',e=>errs.push('STANDALONE PAGEERROR: '+e.message));
+standalonePage.on('console',m=>{ if(m.type()==='error') errs.push('STANDALONE CONSOLE: '+m.text()); });
+await standalonePage.goto('file://' + process.cwd() + '/knucklebones-neon.html');
+await standalonePage.waitForTimeout(500);
+const standalone = await standalonePage.evaluate(() => {
+  const root = document.getElementById('kbroot');
+  const rr = root.getBoundingClientRect(), app = document.getElementById('app');
+  const states = ['land','shortv','sidepts','numerals','clock','tut','casting','castself'];
+  return {
+    root: { x:rr.x, y:rr.y, width:rr.width, height:rr.height },
+    viewport: { width:innerWidth, height:innerHeight },
+    appFixed: getComputedStyle(app).position,
+    rootCell: getComputedStyle(root).getPropertyValue('--cell').trim(),
+    htmlCell: getComputedStyle(document.documentElement).getPropertyValue('--cell').trim(),
+    htmlStates: states.filter((name) => document.documentElement.classList.contains(name)),
+    owned: ['bg','vig','app','fx','flash','ovStart'].every((id) => root.contains(document.getElementById(id))),
+  };
+});
+check(standalone.owned && standalone.appFixed === 'fixed', 'standalone layers left the canonical root/viewport model', standalone);
+check(Math.abs(standalone.root.width-standalone.viewport.width)<1 &&
+  Math.abs(standalone.root.height-standalone.viewport.height)<1 && standalone.root.x===0 && standalone.root.y===0,
+  'standalone #kbroot no longer covers the viewport', standalone);
+check(standalone.rootCell.endsWith('px') && standalone.htmlCell === '' && standalone.htmlStates.length === 0,
+  'standalone state or sizing variables escaped #kbroot', standalone);
+await standalonePage.close();
+
+console.log(JSON.stringify({isolation,layout,portals:{rosterPortal,askPortal,sheetPortal,portalAudit},
+  cpuDone,cpuEnd,duo:{handoffs,duoDone},shellHeight:grew,standalone,problems,errs},null,2));
 await browser.close();

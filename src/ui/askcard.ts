@@ -10,6 +10,7 @@
 // anything the offline game can open must not pull in the online chunk.
 import { $, show, hide } from './dom.ts';
 import { Sfx } from './audio.ts';
+import { appRoot } from './embed.ts';
 
 export interface Ask {
   head: string;
@@ -31,7 +32,7 @@ let built = false;
 function build(): void {
   if (built) return;
   built = true;
-  document.body.insertAdjacentHTML('beforeend', `
+  appRoot().insertAdjacentHTML('beforeend', `
 <div class="ov" id="ovAsk">
   <div class="askcard">
     <div class="fh" id="askHead"></div>
@@ -55,7 +56,7 @@ export function ask(spec: Ask): Promise<boolean> {
      injected AFTER the first ask() (the online panel, for one) would otherwise
      cover the question. Re-appending moves the existing node last, so the card
      opens above whatever is on screen, listeners intact. */
-  document.body.appendChild(document.getElementById('ovAsk')!);
+  appRoot().appendChild($('#ovAsk'));
   const done = (ok: boolean): void => {
     hide('#ovAsk');
     const f = settle; settle = null;
@@ -105,7 +106,7 @@ export function ask(spec: Ask): Promise<boolean> {
 
 /* Escape and any other global dismissal answers no. */
 export function dismissAsk(): void {
-  if (!document.getElementById('ovAsk')?.classList.contains('on')) return;
+  if (!appRoot().querySelector('#ovAsk')?.classList.contains('on')) return;
   hide('#ovAsk');
   const f = settle; settle = null;
   f?.(false);

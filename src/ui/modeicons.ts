@@ -2,7 +2,7 @@
 // 24×24 SVGs on currentColor, so they take any mode hue and glow via CSS.
 // Presentation only: the shared core registry (core/modes.ts) stays free of
 // markup; this map keys off the registry's stable ids. Design source of
-// truth: design/screens/05-mode-icons.html (synced to Claude Design).
+// truth: design/screens/product/05-mode-icons.html (synced to Claude Design).
 const PATHS: Record<string, string> = {
   /* a die seen on its point — the pure game */
   classic: '<path d="M12 3.2 20.8 12 12 20.8 3.2 12Z"/><circle class="f" cx="12" cy="12" r="1.7"/>',

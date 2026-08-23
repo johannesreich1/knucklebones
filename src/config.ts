@@ -5,9 +5,9 @@
    opinion and a new name before store submission or monetisation. */
 export const GAME_NAME = 'Knucklebones';
 
-/* Placeholder on purpose — the real bundle/app id is supplied by the owner
-   before any store build. Deliberately invalid so it can't ship unnoticed. */
-export const APP_ID = 'invalid.appid.TBD';
+/* Canonical application identifier. Native/Xcode copies cannot import TS, so
+   tests/iosship.test.ts fails unless every unavoidable copy matches this. */
+export const APP_ID = 'com.appavaria.knucklebones';
 
 /* The classic board. Game modes with other shapes (e.g. 4 columns) become a
    different spec carried by the mode — the rules and AI read dimensions from
@@ -31,5 +31,7 @@ export const ONLINE_TURN_SECS = 10;
 /* Supabase project — both values are public BY DESIGN (the publishable key is
    made to ship in clients; row security lives in RLS + Edge Functions).
    The online module lazy-loads; nothing here touches the offline boot path. */
-export const SUPABASE_URL = 'https://euzjcejbkxvqfrttgaxu.supabase.co';
+export const SUPABASE_PROJECT_REF = 'euzjcejbkxvqfrttgaxu';
+export const SUPABASE_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co`;
 export const SUPABASE_KEY = 'sb_publishable_xu398Mifx_w42hnJzcD2GA_lxRfVS43';
+export const SUPABASE_AUTH_STORAGE_KEY = `sb-${SUPABASE_PROJECT_REF}-auth-token`;

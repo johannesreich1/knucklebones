@@ -31,8 +31,8 @@ const snap = () => page.evaluate(() => ({
   phase: window.__kb.S.phase, turn: window.__kb.S.turn, bottom: window.__kb.S.bottom,
   pass: document.getElementById('ovPass').classList.contains('on'),
   end: document.getElementById('ovEnd').classList.contains('on'),
-  face: document.documentElement.classList.contains('face'),
-  p2turn: document.documentElement.classList.contains('p2turn'),
+  face: document.getElementById('kbroot').classList.contains('face'),
+  p2turn: document.getElementById('kbroot').classList.contains('p2turn'),
   topIdle: document.getElementById('sideTop').classList.contains('idle'),
   botIdle: document.getElementById('sideBot').classList.contains('idle'),
   b0: window.__kb.S.boards[0], b1: window.__kb.S.boards[1],
@@ -96,20 +96,20 @@ check(out.plates.Top.turned && !out.plates.Bot.turned,
   'the far seat must turn its points for the player opposite, the near one must not', out.plates);
 
 // The JS that rotates score floats must ask the SAME question the CSS asks —
-// <html>.face — not re-derive it from S.mode/S.seat. Online sets S.mode='duo'
+// #kbroot.face — not re-derive it from S.mode/S.seat. Online sets S.mode='duo'
 // for input gating and clears the class, so a re-derived predicate printed every
 // ranked +points upside down for anyone whose local seating was face-to-face.
 out.faceSrc = await page.evaluate(() => {
-  const k = window.__kb, html = document.documentElement;
-  const seated = { css: html.classList.contains('face'), js: k.faceRotated(0) };
-  html.classList.remove('face');                 // exactly what enterMatch() does
-  const online = { css: html.classList.contains('face'), js: k.faceRotated(0) };
-  html.classList.toggle('face', seated.css);     // put it back
+  const k = window.__kb, root = document.getElementById('kbroot');
+  const seated = { css: root.classList.contains('face'), js: k.faceRotated(0) };
+  root.classList.remove('face');                 // exactly what enterMatch() does
+  const online = { css: root.classList.contains('face'), js: k.faceRotated(0) };
+  root.classList.toggle('face', seated.css);     // put it back
   return { seated, online, settingsStillFace: k.S.seat === 'face' && k.S.mode === 'duo' };
 });
 check(out.faceSrc.seated.js, 'face seating no longer rotates the far half', out.faceSrc);
 check(out.faceSrc.settingsStillFace && !out.faceSrc.online.js,
-      'score floats rotate off a stale local setting instead of html.face', out.faceSrc);
+      'score floats rotate off a stale local setting instead of #kbroot.face', out.faceSrc);
 
 // play a full game: each player taps their OWN half, no pass card ever
 let p2Placed = 0, sawPass = false, bottomMoved = false, turnChecks = [];
@@ -165,7 +165,7 @@ for (let i = 0; i < 60; i++) {
 await page.waitForTimeout(800);
 out.faceReplay = await page.evaluate(() => ({
   seat: window.__kb.S.seat, bottom: window.__kb.S.bottom,
-  face: document.documentElement.classList.contains('face'),
+  face: document.getElementById('kbroot').classList.contains('face'),
 }));
 check(out.faceReplay.seat === 'face' && out.faceReplay.bottom === 1 && out.faceReplay.face,
       'play again lost the face seating', out.faceReplay);
@@ -186,7 +186,7 @@ for (let i = 0; i < 120; i++) {
   }
   await page.waitForTimeout(120);
 }
-out.passModeBack = { sawPassCard, faceClass: await page.evaluate(() => document.documentElement.classList.contains('face')) };
+out.passModeBack = { sawPassCard, faceClass: await page.evaluate(() => document.getElementById('kbroot').classList.contains('face')) };
 check(sawPassCard && !out.passModeBack.faceClass, 'pass mode broken after face mode', out.passModeBack);
 const quitVia = await page.evaluate(() => document.getElementById('ovPass').classList.contains('on'));
 if (quitVia) { await page.tap('#passQuit'); } else { await page.tap('#btnLeave'); await page.waitForTimeout(300); await page.tap('#btnAskYes'); } await page.waitForTimeout(400);

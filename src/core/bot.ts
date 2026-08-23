@@ -12,18 +12,15 @@
 // production pass Math.random; the gate passes a seeded stream to prove the
 // extraction changed nothing.
 import { legalCols, type GameState, type Mode, type Player } from './rules.ts';
-import { searchRoot, getRiskW, setRiskW, getOppW, setOppW } from './ai.ts';
+import { searchRoot } from './ai.ts';
 import { botShapeAt } from './ladder.ts';
 
 /* The column this bot plays, and nothing else — no board mutation, no logging.
    `rating` is the BOT's own points: a bot plays the shape of the group its own
    rating sits in (docs/LADDER.md §4), never a shape derived from its opponent.
 
-   The search weights are process-global (core/ai RISK_W / OPP_W), so they are
-   set and RESTORED around the call. That save/restore is not politeness: the
-   offline CPU and the ranked bot run in the same process in a client build, and
-   leaking a bot's risk weight into the next search would quietly change how a
-   different game plays. */
+   Search configuration is per call. The same injected random stream drives
+   slips and tie-break jitter, so a caller can replay the whole decision. */
 export function botMove(st: GameState, botIdx: Player, die: number, rating: number,
                         mode: Mode, rand: () => number): number {
   const shape = botShapeAt(rating);
@@ -35,11 +32,13 @@ export function botMove(st: GameState, botIdx: Player, die: number, rating: numb
      so the stream advances differently for a STONE bot and a GOLD one. Rewrite
      this as a tidier expression and you change which numbers later draws get —
      which is a replay difference, not a style difference. */
-  const w = getRiskW(), ow = getOppW();
-  setRiskW(shape.risk); setOppW(shape.oppW);
   let col: number;
   if (shape.slip > 0 && rand() < shape.slip) col = legal[Math.floor(rand() * legal.length)];
-  else col = searchRoot(st, botIdx, die, shape.depth, mode).c;
-  setRiskW(w); setOppW(ow);
+  else col = searchRoot(st, botIdx, die, shape.depth, {
+    mode,
+    random: rand,
+    riskWeight: shape.risk,
+    opponentWeight: shape.oppW,
+  }).c;
   return col;
 }

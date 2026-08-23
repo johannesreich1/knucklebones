@@ -4,8 +4,11 @@
 import { SPEC, AI, type Player } from '../core/rules.ts';
 import { S } from '../state.ts';
 import { fit } from './layout.ts';
+import { $ } from './query.ts';
+import { isFaceToFace, isLandscapeLayout } from './game/root-state.ts';
+import { appRoot } from './embed.ts';
 
-export const $ = (s: string) => document.querySelector(s) as HTMLElement;
+export { $ } from './query.ts';
 
 /* THE HEADER GLASS ARRIVES WITH THE CONTENT. At rest the bar is plain and the
    aurora behind it is unobstructed (user call — frosting a view nobody has
@@ -72,13 +75,13 @@ function markScrolled(body: Element): void {
    short profile panel); WebKit does not. Anything that empties or swaps a
    paged body calls this straight after, and there is no frame to see. */
 export function settleGlass(sel: string): void {
-  document.querySelector(sel)?.querySelectorAll('.pbody').forEach(markScrolled);
+  appRoot().querySelector(sel)?.querySelectorAll('.pbody').forEach(markScrolled);
 }
 let watching = false;
 export function watchPagedScroll(): void {
   if (watching) return;
   watching = true;
-  document.addEventListener('scroll', (e) => {
+  appRoot().addEventListener('scroll', (e) => {
     const t = e.target as HTMLElement | null;
     if (t?.classList?.contains('pbody')) markScrolled(t);
   }, true);
@@ -87,9 +90,8 @@ export function watchPagedScroll(): void {
 /* Opening or closing a screen can change the ORIENTATION POLICY — landscape
    belongs to the table and to its setup and result screens, not to menus
    (ui/layout.ts LANDSCAPE_SCREENS) — so the fit is re-taken here rather than
-   waiting for a resize that will never come. The import is circular (layout
-   reads $ from this module) but only ever at call time, never while either
-   module is still evaluating. */
+   waiting for a resize that will never come. layout reads the dependency-free
+   query helper, so this behavior points one way: dom -> layout. */
 export function show(sel: string): void {
   const el = $(sel);
   el.classList.add('on');
@@ -105,27 +107,26 @@ export function sideKey(who: Player): 'bot' | 'top' { return who === S.bottom ? 
 export function ownerOf(sideEl: HTMLElement): Player { return +sideEl.dataset.owner! as Player; }
 
 export function slotEl(who: Player, col: number, slot: number): HTMLElement | null {
-  return document.querySelector('#' + sideKey(who) + 'Board .col[data-col="' + col + '"] .slot[data-slot="' + slot + '"]');
+  return appRoot().querySelector('#' + sideKey(who) + 'Board .col[data-col="' + col + '"] .slot[data-slot="' + slot + '"]');
 }
 /* dice stack toward the centre line, so it depends on the half, not the player */
 export function slotIdx(who: Player, i: number): number {
   return sideKey(who) === 'bot' ? i : SPEC.rows - 1 - i;
 }
 export function colEl(who: Player, c: number): HTMLElement | null {
-  return document.querySelector('#' + sideKey(who) + 'Board .col[data-col="' + c + '"]');
+  return appRoot().querySelector('#' + sideKey(who) + 'Board .col[data-col="' + c + '"]');
 }
 export function chipEl(who: Player, c: number): HTMLElement {
-  return document.querySelectorAll('#' + sideKey(who) + 'Cols .chip')[c] as HTMLElement;
+  return appRoot().querySelectorAll('#' + sideKey(who) + 'Cols .chip')[c] as HTMLElement;
 }
 
 /* is this player's half displayed upside-down right now? (portrait face mode) */
 export function faceRotated(who: Player): boolean {
-  // Ask the question the CSS asks -- <html>.face -- not the two local settings
+  // Ask the question the CSS asks -- #kbroot.face -- not the two local settings
   // it happens to be derived from offline. Online sets S.mode='duo' purely to
   // unlock input gating and never owns S.seat, so re-deriving here rotated
   // every ranked score float for anyone whose local seating was face-to-face.
-  return who === AI && document.documentElement.classList.contains('face') &&
-         !document.documentElement.classList.contains('land');
+  return who === AI && isFaceToFace() && !isLandscapeLayout();
 }
 
 /* The deploy-truth tag. It lives on the Account panel, which the lazy online
@@ -133,6 +134,6 @@ export function faceRotated(who: Player): boolean {
    panel exists) and when Account opens. One function, so the two callers can
    never format it differently. */
 export function stampBuild(): void {
-  const el = document.getElementById('buildTag');
+  const el = appRoot().querySelector('#buildTag');
   if (el) el.textContent = 'build ' + (document.documentElement.dataset.build || 'dev');
 }

@@ -1,0 +1,308 @@
+export async function runEffectScenarios(suite) {
+  const { page, out, check, newGame, waitChoose, table, look, tapCol, tapRune } = suite;
+  /* ---------- 9. a SELF spell has ONE target, so pressing it casts it ----------
+     NUDGE and FATE act on the die in hand. There is nothing to choose, so
+     there is nothing to aim: a tap on the rune spends it then and there
+     (user call — an aim step for a single possible target was pure friction).
+     NUDGE is the deterministic one: 5 must become 6. */
+  await newGame({ spell: 'nudge' }); check(await waitChoose(), 'game never reached choose (nudge)');
+  await table([[2], [], []], [[5], [], []], 5);
+  await tapRune(); await page.waitForTimeout(700);
+  out.selfTap = await look();
+  check(out.selfTap.die === 6, 'a tap on a self rune must cast it — the die did not tick', out.selfTap);
+  check(out.selfTap.charges === '[{"nudge":1},{"nudge":0}]', 'the tap-cast charged the wrong seat', out.selfTap);
+  check(out.selfTap.armed === null && !out.selfTap.castself,
+    'a self spell must never sit armed waiting for a target', out.selfTap);
+  check(out.selfTap.phase === 'choose' && !out.selfTap.busy, 'the turn was not handed back (nudge)', out.selfTap);
+  /* Straight after the press the rune is NOT spent — the same press can still
+     put the cast back (§9a). It reads spent once the die is played and the
+     take-back window closes. */
+  check(/\bundo\b/.test(out.selfTap.runeClass) && !/\bspent\b/.test(out.selfTap.runeClass),
+    'a rune that can still be taken back must not read as spent', out.selfTap.runeClass);
+  await tapCol(1); await page.waitForTimeout(900);
+  out.selfPlaced = await look();
+  check(JSON.parse(out.selfPlaced.mine)[1][0] === 6, 'placement broken after a self cast', out.selfPlaced);
+  check(/\bspent\b/.test(out.selfPlaced.runeClass) && !/\bundo\b/.test(out.selfPlaced.runeClass),
+    'the rune still offers a take-back after the die was played', out.selfPlaced.runeClass);
+
+  /* the drag still aims — dropping on the die casts, dropping anywhere else
+     cancels and keeps the charge */
+  await newGame({ spell: 'fate' }); check(await waitChoose(), 'game never reached choose (fate)');
+  await table([[2], [], []], [[5], [], []], 2);
+  const drag = async (to) => {
+    const rb = await page.locator('.rune[data-seat="1"]:not([hidden])').boundingBox();
+    const tb = await page.locator(to).boundingBox();
+    await page.mouse.move(rb.x + rb.width / 2, rb.y + rb.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(tb.x + tb.width / 2, tb.y + tb.height / 2, { steps: 10 });
+    await page.mouse.up(); await page.waitForTimeout(900);
+  };
+  await drag('#dieStage');
+  out.selfDrag = await look();
+  check(out.selfDrag.charges === '[{"fate":2},{"fate":1}]', 'the stage drop did not cast', out.selfDrag);
+  check(out.selfDrag.die >= 1 && out.selfDrag.die <= 6, 'the redraw lost the die', out.selfDrag.die);
+  await drag('#botBoard .col[data-col="2"]');       // a column is not a self spell's target
+  out.selfDragMiss = await look();
+  check(out.selfDragMiss.charges === '[{"fate":2},{"fate":1}]',
+    'dropping a self spell on a column must cancel, not spend', out.selfDragMiss);
+  check(out.selfDragMiss.armed === null, 'the cancelled drag left the rune armed', out.selfDragMiss);
+
+  /* ---------- 9a. the take-back ----------
+     A self spell lands the instant it is pressed, so pressing it again puts
+     it back — until the die it changed is played (user call). NUDGE is the
+     deterministic one to watch: 5 → 6 → 5 → 6. */
+  await newGame({ spell: 'nudge' }); check(await waitChoose(), 'game never reached choose (undo)');
+  await table([[2], [], []], [[5], [], []], 5);
+  await tapRune(); await page.waitForTimeout(700);
+  out.undoCast = await look();
+  check(out.undoCast.die === 6 && out.undoCast.charges === '[{"nudge":1},{"nudge":0}]',
+    'the cast did not happen', out.undoCast);
+  check(/\bundo\b/.test(out.undoCast.runeClass) && !/\bspent\b/.test(out.undoCast.runeClass),
+    'a rune that can still be taken back must not read as spent', out.undoCast.runeClass);
+  await tapRune(); await page.waitForTimeout(700);
+  out.undone = await look();
+  check(out.undone.die === 5, 'PRESSING AGAIN DID NOT PUT THE DIE BACK', out.undone);
+  check(out.undone.charges === '[{"nudge":1},{"nudge":1}]', 'the take-back did not return the charge', out.undone);
+  check(/put back/i.test(out.undone.status), 'the take-back said nothing', out.undone.status);
+  // and it is castable again, for real
+  await tapRune(); await page.waitForTimeout(700);
+  out.recast = await look();
+  check(out.recast.die === 6 && out.recast.charges === '[{"nudge":1},{"nudge":0}]',
+    'the rune did not work again after being put back', out.recast);
+  // playing the die CLOSES the window: the cast is final
+  await tapCol(1); await page.waitForTimeout(1000);
+  out.undoClosed = await page.evaluate(() => ({
+    pending: !!window.__kb.S.spellUndo, undoable: window.__kb.spells.undoable('nudge'),
+    charges: JSON.stringify(window.__kb.S.spellCharges) }));
+  check(!out.undoClosed.pending && !out.undoClosed.undoable,
+    'the cast can still be taken back AFTER the die was played', out.undoClosed);
+  check(out.undoClosed.charges === '[{"nudge":1},{"nudge":0}]',
+    'the charge came back after the die was already played', out.undoClosed);
+
+  /* FATE IS FINAL (user call, 2026-08-22). It is the one cast that REVEALS —
+     it draws the next die from the supply — and no take-back can un-see it.
+     Offering the window would be "cast, peek, undo": a free read of what is
+     coming, twice a game, at no charge, and in LIMITED a free read of the bag.
+     So the press must NOT hand anything back: not the die, not the charge, and
+     not the die the bag has already given up. */
+  out.fateFinal = await page.evaluate(async () => {
+    const k = window.__kb;
+    k.S.spell = 'fate'; k.S.localMode = 6; k.S.mode = 'duo'; k.S.seat = 'face'; k.S.timer = 0;
+    k.newGame();
+    for (let i = 0; i < 80; i++) { if (k.S.phase === 'choose') break; await new Promise((r) => setTimeout(r, 100)); }
+    k.S.turn = 1; k.S.bottom = 1; k.S.busy = false; k.S.phase = 'choose';
+    const bagBefore = k.S.pool.length, dieBefore = k.S.die;
+    await k.spells.cast('fate', -1);
+    await new Promise((r) => setTimeout(r, 700));
+    const bagAfter = k.S.pool.length, dieAfter = k.S.die;
+    const offered = k.spells.undoable('fate');
+    const undone = k.spells.undo();               // the press the player would make
+    const rune = document.querySelector('.rune[data-seat="1"]:not([hidden])');
+    return { bagBefore, bagAfter, bagBack: k.S.pool.length, dieBefore, dieAfter,
+             dieBack: k.S.die, offered, undone, pending: !!k.S.spellUndo,
+             runeClass: rune ? rune.className : '', charges: JSON.stringify(k.S.spellCharges) };
+  });
+  check(out.fateFinal.bagAfter === out.fateFinal.bagBefore - 1,
+    'the redraw did not come out of the bag', out.fateFinal);
+  check(!out.fateFinal.offered && !out.fateFinal.pending,
+    'FATE STILL OFFERS A TAKE-BACK — the peek at the supply is free', out.fateFinal);
+  check(!out.fateFinal.undone && out.fateFinal.dieBack === out.fateFinal.dieAfter,
+    'THE REDRAWN DIE WAS HANDED BACK AFTER THE PLAYER HAD SEEN IT', out.fateFinal);
+  check(out.fateFinal.bagBack === out.fateFinal.bagAfter,
+    'the drawn die crawled back into the bag', out.fateFinal);
+  check(out.fateFinal.charges === '[{"fate":2},{"fate":1}]',
+    'a final cast gave its charge back', out.fateFinal);
+  /* ...and it must READ final: a rune that still says "press again" invites
+     exactly the peek this forbids */
+  check(/\bspent\b/.test(out.fateFinal.runeClass) || !/\bundo\b/.test(out.fateFinal.runeClass),
+    'FATE still reads as takeable back', out.fateFinal.runeClass);
+
+  /* SUNDER's mark is charm state, not a die — the take-back must lift it */
+  out.undoMark = await page.evaluate(async () => {
+    const k = window.__kb;
+    k.S.spell = 'sunder'; k.S.localMode = 0; k.S.mode = 'duo'; k.S.seat = 'face'; k.S.timer = 0;
+    k.newGame();
+    for (let i = 0; i < 80; i++) { if (k.S.phase === 'choose') break; await new Promise((r) => setTimeout(r, 100)); }
+    k.S.turn = 1; k.S.bottom = 1; k.S.busy = false; k.S.phase = 'choose'; k.S.die = 3;
+    await k.spells.cast('sunder', -1);
+    await new Promise((r) => setTimeout(r, 700));
+    const marked = k.S.charm.sunder[1];
+    k.spells.undo();
+    return { marked, afterUndo: k.S.charm.sunder[1],
+             stageLit: document.getElementById('dieStage').classList.contains('sundered'),
+             charges: JSON.stringify(k.S.spellCharges) };
+  });
+  check(out.undoMark.marked === true, 'sunder never marked the caster', out.undoMark);
+  check(out.undoMark.afterUndo === false && !out.undoMark.stageLit,
+    'THE TAKE-BACK LEFT THE SUNDER MARK ON THE DIE', out.undoMark);
+  check(out.undoMark.charges === '[{"sunder":1},{"sunder":1}]', 'the sunder charge did not come back', out.undoMark);
+
+  /* a COLUMN spell has visibly moved dice — no take-back is offered */
+  await newGame({ spell: 'pilfer' }); check(await waitChoose(), 'game never reached choose (no undo)');
+  await table([[2], [], []], [[6, 6], [], []]);
+  await page.evaluate(() => window.__kb.spells.cast('pilfer', 0));
+  await page.waitForTimeout(1200);
+  out.noUndo = await page.evaluate(() => ({ pending: !!window.__kb.S.spellUndo,
+    undoable: window.__kb.spells.undoable('pilfer'),
+    cls: document.querySelector('.rune[data-seat="1"]:not([hidden])')?.className }));
+  check(!out.noUndo.pending && !out.noUndo.undoable,
+    'a board spell offered a take-back after its dice had flown', out.noUndo);
+  check(/\bspent\b/.test(out.noUndo.cls), 'a spent board rune must read as spent', out.noUndo);
+
+  /* ---------- 9b. the board rings ONLY what the cast can land on ----------
+     COLUMN SWAP could honestly ring all six (either half was a legal target).
+     WARD guards your three; PILFER robs theirs, and only the ones holding
+     dice. Ringing the rest told the player the board was a target when it
+     was not (user report). markAim asks the registry's own legal(). */
+  const rings = () => page.evaluate(() => {
+    const ring = (side) => [0, 1, 2].map((c) => {
+      const st = getComputedStyle(document.querySelector(`#${side} .col[data-col="${c}"]`), '::after');
+      return st.display !== 'none' && st.borderStyle !== 'none' ? 1 : 0;
+    });
+    return { mine: ring('botBoard'), enemy: ring('topBoard') };
+  });
+  await newGame({ spell: 'ward' }); check(await waitChoose(), 'game never reached choose (ward rings)');
+  await table([[6, 6], [2], []], [[3], [], []]);
+  await tapRune(); await page.waitForTimeout(200);
+  out.wardRings = await rings();
+  check(String(out.wardRings.mine) === '1,1,1' && String(out.wardRings.enemy) === '0,0,0',
+    'A WARD MUST OFFER YOUR COLUMNS AND ONLY YOURS', out.wardRings);
+  await page.tap('#status'); await page.waitForTimeout(200);          // tap off-board: cancel
+
+  await newGame({ spell: 'pilfer' }); check(await waitChoose(), 'game never reached choose (pilfer rings)');
+  await table([[6, 6], [2], []], [[3], [], []]);                      // only enemy col 0 holds a die
+  await tapRune(); await page.waitForTimeout(200);
+  out.pilferRings = await rings();
+  check(String(out.pilferRings.mine) === '0,0,0' && String(out.pilferRings.enemy) === '1,0,0',
+    'A STEAL MUST OFFER ONLY ENEMY COLUMNS THAT HOLD A DIE', out.pilferRings);
+  // and an unringed column refuses rather than casting somewhere else
+  await tapCol(1); await page.waitForTimeout(400);
+  out.unringed = await look();
+  check(out.unringed.charges === '[{"pilfer":1},{"pilfer":1}]',
+    'tapping an unoffered column spent the charge', out.unringed);
+
+  /* ---------- 10. the nameplate holds still ----------
+     The rail and the plate trade the rune every turn face-to-face. The score
+     cluster is vertically centred, so a slot that collapsed when the rune
+     left re-centred it — the number jumped 10px each turn (user report). */
+  await newGame({ spell: 'fate' }); check(await waitChoose(), 'game never reached choose (plate)');
+  out.plateHold = await page.evaluate(async () => {
+    const k = window.__kb;
+    const ys = [];
+    for (const turn of [1, 0, 1, 0]) {
+      k.S.turn = turn; k.S.phase = 'choose'; k.S.busy = false;
+      k.spells.render(); k.renderAll(false);
+      await new Promise((r) => setTimeout(r, 120));
+      ys.push([+document.getElementById('totTop').getBoundingClientRect().y.toFixed(1),
+               +document.getElementById('totBot').getBoundingClientRect().y.toFixed(1)].join('/'));
+    }
+    return { ys, distinct: [...new Set(ys)].length };
+  });
+  check(out.plateHold.distinct === 1, 'THE SCORE MOVES WHEN THE RUNE CHANGES HANDS', out.plateHold);
+
+  /* The cluster is placed by translate(50%,-50%), so half its own width is
+     baked into where every child lands. A width that grew with the score's
+     digits moved the rune by a FRACTION of a pixel on every scoring turn —
+     invisible as geometry, visible as shimmer, because the glowing icon
+     re-rasterizes against a different pixel grid (user report). Pin the box:
+     one width, and the rune to four decimals, whatever the score reads. */
+  await newGame({ spell: 'fate' }); check(await waitChoose(), 'game never reached choose (cluster)');
+  out.clusterFixed = await page.evaluate(async () => {
+    const k = window.__kb;
+    const widths = new Set(), spots = new Set(), scores = [];
+    for (const b of [[[], [], []], [[6], [], []], [[6, 6], [5], []],
+                     [[6, 6, 6], [5, 5, 5], []], [[6, 6, 6], [5, 5, 5], [4, 4, 4]]]) {
+      k.S.boards[0] = b; k.renderAll(false); k.spells.render();
+      await new Promise((r) => setTimeout(r, 420));      // past .plate.bump
+      widths.add(document.querySelector('#plateTop .pright').getBoundingClientRect().width.toFixed(3));
+      const r = document.querySelector('#plateTop .rune:not([hidden])').getBoundingClientRect();
+      spots.add(r.x.toFixed(4) + ',' + r.y.toFixed(4));
+      scores.push(document.getElementById('totTop').textContent);
+    }
+    return { widths: [...widths], spots: [...spots], scores };
+  });
+  check(out.clusterFixed.widths.length === 1,
+    'the score cluster still grows with its contents — every child will drift', out.clusterFixed);
+  check(out.clusterFixed.spots.length === 1,
+    "THE OPPONENT'S RUNE SHIFTS WHEN THEIR SCORE CHANGES WIDTH", out.clusterFixed);
+  // and a spell-free game reserves nothing: the nameplate is the old nameplate
+  await newGame({ spell: '' }); check(await waitChoose(), 'game never reached choose (plate none)');
+  out.plateNone = await page.evaluate(() => {
+    const slot = document.querySelector('#plateTop .runeslot');
+    return { live: slot.classList.contains('live'), display: getComputedStyle(slot).display };
+  });
+  check(!out.plateNone.live && out.plateNone.display === 'none',
+    'a spell-free game left a hole in the nameplate', out.plateNone);
+
+  /* ---------- 10b. the marks hold still too ----------
+     The chip CENTRES its contents, so the score and its ×k badge change width
+     on every placement — a mark riding in that row jumped a dozen pixels each
+     time (user report). Ward and shield sit at the chip's ends instead. */
+  await newGame({ spell: 'ward' }); check(await waitChoose(), 'game never reached choose (chip)');
+  await table([[6], [], []], [[1], [], []], 3);
+  await page.evaluate(() => window.__kb.spells.cast('ward', 0));
+  await page.waitForTimeout(700);
+  out.chipHold = await page.evaluate(async () => {
+    const k = window.__kb, xs = [];
+    for (const col of [[6], [6, 6], [6, 6, 6]]) {          // 6 → 24 ×2 → 54 ×3
+      k.S.boards[1][0] = col; k.renderAll(false);
+      await new Promise((r) => setTimeout(r, 80));
+      const wd = document.querySelectorAll('#botCols .chip')[0].querySelector('.wd');
+      xs.push(+wd.getBoundingClientRect().x.toFixed(1));
+    }
+    return { xs, distinct: [...new Set(xs)].length };
+  });
+  check(out.chipHold.distinct === 1, 'THE WARD MARK MOVES WHEN THE SCORE GROWS', out.chipHold);
+
+  /* BOUNTY banks its ✦ tally into the same centred cluster the score and rune
+     share — appearing mid-match re-centred it and both jumped ~10px. */
+  out.btyHold = await page.evaluate(async () => {
+    const k = window.__kb;
+    k.S.spell = 'ward'; k.S.localMode = 5; k.S.mode = 'cpu'; k.S.seat = 'pass';
+    k.newGame();
+    for (let i = 0; i < 60; i++) { if (k.S.phase === 'choose') break; await new Promise((r) => setTimeout(r, 100)); }
+    // let fit()/ResizeObserver finish sizing the table before measuring — a
+    // layout still settling drifts on its own and would read as a tally jump
+    await new Promise((r) => setTimeout(r, 700));
+    const at = () => {
+      const rune = document.querySelector('#plateTop .rune:not([hidden])');
+      return [+rune.getBoundingClientRect().y.toFixed(1),
+              +document.getElementById('totTop').getBoundingClientRect().y.toFixed(1)].join('/');
+    };
+    const ys = [];
+    // 0 → 2 → 11 → back to 0: if the last reading equals the first, the tally
+    // is not moving anything; a drift that never returns is the layout settling
+    for (const banked of [0, 2, 11, 0]) {
+      k.S.bounty = [banked, 0]; k.renderAll(false); k.spells.render();
+      // WAIT OUT THE BUMP. Banking changes the total, and a changed total
+      // scales the number for 190ms (.plate.bump) — sampling inside that
+      // window measures the celebration, not the layout, and reads as drift.
+      await new Promise((r) => setTimeout(r, 420));
+      ys.push(at());
+    }
+    return { ys, distinct: [...new Set(ys)].length, returned: ys[0] === ys[3] };
+  });
+  check(out.btyHold.distinct === 1, 'THE BOUNTY TALLY SHOVES THE SCORE AND RUNE', out.btyHold);
+
+  /* ---------- 10c. RANDOM deals a real rune, the SAME one to both ---------- */
+  out.randomDeal = await page.evaluate(async () => {
+    const k = window.__kb;
+    const seen = new Set(); let mismatched = 0, empty = 0;
+    for (let i = 0; i < 24; i++) {
+      k.S.spell = 'random'; k.S.localMode = 0; k.S.mode = 'duo'; k.S.seat = 'face'; k.S.timer = 0;
+      k.newGame();
+      const mine = Object.keys(k.S.spellCharges[1]), theirs = Object.keys(k.S.spellCharges[0]);
+      if (!mine.length) { empty++; continue; }
+      if (mine[0] !== theirs[0]) mismatched++;
+      seen.add(mine[0]);
+    }
+    return { drew: [...seen].sort(), mismatched, empty, pick: k.S.spell };
+  });
+  check(out.randomDeal.empty === 0, 'RANDOM dealt an EMPTY hand — it must always become a real rune', out.randomDeal);
+  check(out.randomDeal.mismatched === 0,
+    'RANDOM dealt the two seats DIFFERENT runes — the layer is only fair because they match', out.randomDeal);
+  check(out.randomDeal.drew.length >= 2, 'RANDOM never varied over 24 games', out.randomDeal);
+  check(!out.randomDeal.drew.includes('random'), 'RANDOM dealt ITSELF as a rune', out.randomDeal);
+  check(out.randomDeal.pick === 'random', 'the pick must survive the draw — RANDOM stays RANDOM', out.randomDeal);
+
+}

@@ -27,7 +27,10 @@ import { SPELLS, type SpellSpec } from '../core/spells.ts';
 import { spellIcon, spellHue } from './spellicons.ts';
 import { Sfx, vibrate } from './audio.ts';
 import { REDUCED } from './fx.ts';
-import { pause, type Beat } from './reveal.ts';
+import type { Beat } from './reveal-types.ts';
+import { appRoot } from './embed.ts';
+
+const pause = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 const MID = (SPELLS.length - 1) / 2;
 
@@ -220,7 +223,7 @@ export function dealBeat(spec: SpellSpec): Beat {
     icon: spellIcon(spec.id, 17),
     stage: runeFelt(spec, false, fanned),
     async run(settle) {
-      const felt = document.querySelector('#wheelStage .rfelt') as HTMLElement;
+      const felt = appRoot().querySelector('#wheelStage .rfelt') as HTMLElement;
       const card = felt.querySelector('.rdealt') as HTMLElement;
       /* reduced motion gets the same STILL a design card gets: the deck as the
          shuffle would have left it, its slot already empty, and the card

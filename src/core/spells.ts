@@ -17,92 +17,13 @@
 // The first roster (COLUMN SWAP) retired 2026-08-21: tools/spellsim.ts
 // measured a one-sided holder at 70.5% in classic and 81.8% under
 // SINGLESTRIKE. This roster measured 53–61% under the same harness.
-import { SPEC, boardTotalMode, cloneSt, isShielded, isFull, legalCols, applyMove, freshCharm,
-         AI, ME, type CharmSt, type GameState, type Mode, type Player } from './rules.ts';
+import { SPEC, isShielded, freshCharm, type Player } from './rules.ts';
 import { DICE_FACES } from '../config.ts';
+import type { CastCtx, SpellSpec } from './spell-types.ts';
+import { bestTarget, colScoreOf, placeGain } from './spell-policy.ts';
 
-/* What a cast may reach BEYOND the two boards: the die in hand, the live
-   supply, the persistent charm marks, and the mode the game obeys. Board-only
-   spells never read it — which is why it is optional everywhere: a call site
-   that has no hand to offer simply omits it, and any spell that NEEDS one
-   answers "not castable here". */
-export interface CastCtx {
-  mode: Mode;
-  die: number;                 // the die in hand
-  setDie(v: number): void;     // hand transforms write back through this
-  draw(): number;              // the next die from the live supply
-  bagLeft: number | null;      // dice left in a finite supply — null = endless
-  charm: CharmSt;              // persistent marks (see core/rules)
-}
-
-export interface SpellSpec {
-  id: string;        // stable — persisted, tested and styled against; never rename
-  name: string;      // the rune's label
-  blurb: string;     // one line: what it does
-  detail: string;    // the long form (screen readers, and any future sheet)
-  /* The status line while the rune is armed — and it lives in a RESERVED box:
-     one line in portrait, two in landscape's fixed 104px lane. Outgrow it and
-     the box grows with the text, which walks the stage die up the screen on
-     every cast. So this line says WHICH TARGET the tap wants and stops — the
-     verb is already on the rune the player just pressed, in its name, its icon
-     and its `blurb`, and the board rings the legal targets in gold. The one
-     thing the rings CANNOT say is why they are silent, which is exactly what
-     "a filled column" or "an enemy column" answers. For a SELF spell the which
-     is the die in hand, so the line is "Drop it on your die" and stops there
-     too — the three of them carried their verb for a while because the rule
-     was read as being about columns, and in SF Pro Rounded they happened to
-     fit. In a fallback face ~8-10% wider they became THREE landscape lines and
-     shoved the stage die 6.2px, which is the very drift this rule exists to
-     prevent (CI, 2026-08-22). Not a character budget: long WORDS break lines,
-     so measure rather than count (tests/test14 §12 arms every entry on the
-     narrowest phone, in both orientations). */
-  aim: string;
-  target: 'column' | 'self';   // what a cast aims at — a column, or the die in hand
-  /* WHOSE half a column cast points at. The board rings only the columns a
-     cast can actually land on, so this is what stops a ward from advertising
-     the enemy's columns (and a pilfer from advertising your own). */
-  side?: 'own' | 'foe';
-  uses: number;      // casts per player, per game
-  /* Can this cast never be taken back? A self spell lands on the die in hand
-     the instant it is pressed, so pressing it again normally puts it back
-     (flow/spells) — but ONLY when putting it back leaves the caster exactly
-     where they were. A cast that already PAID OUT cannot be unpaid, and the
-     commonest way to pay out is to show the player something: FATE draws the
-     next die from the supply, and no take-back can un-see it. "Cast, peek,
-     undo" would be a free look at the supply, every game, for nothing.
-     Board spells never get the window at all — their dice have visibly
-     flown — so this is only ever asked of the self spells. */
-  final?: boolean;
-  /* May this cast happen? Legality is the ONLY failure path a spell has: an
-     illegal target is refused before anything moves, so no cast can fail
-     halfway through and leave the boards in a state nobody designed. */
-  legal(st: GameState, who: Player, col: number, ctx?: CastCtx): boolean;
-  /* The effect: a pure mutation of the boards, the hand or the charm. */
-  apply(st: GameState, who: Player, col: number, ctx?: CastCtx): void;
-  /* The machine's eye: where to aim and whether the cast clears `demand`
-     (points of score difference — the difficulty knob). Spells whose value
-     never shows on the boards MUST provide this, or a machine will never cast
-     them: the default policy (machineCast) weighs board swing alone. */
-  cpuCast?(st: GameState, who: Player, ctx: CastCtx, demand: number): number | null;
-}
-
-/* the immediate worth of placing this die as well as possible: the best swing
-   in the score difference one placement can buy. The yardstick every hand
-   policy measures against; charm-aware when a scratch charm is passed. */
-export function placeGain(st: GameState, who: Player, die: number, mode: Mode, charm?: CharmSt): number {
-  const foe = (1 - who) as Player;
-  const lead = (s: GameState) => boardTotalMode(s[who], mode) - boardTotalMode(s[foe], mode);
-  let best = -Infinity;
-  for (const c of legalCols(st[who])) {
-    const ns = cloneSt(st);
-    const scratch = charm && { wards: [charm.wards[0].slice(), charm.wards[1].slice()] as [number[], number[]],
-                               sunder: [charm.sunder[0], charm.sunder[1]] as [boolean, boolean] };
-    applyMove(ns, who, c, die, mode, scratch);
-    const g = lead(ns) - lead(st);
-    if (g > best) best = g;
-  }
-  return best;
-}
+export type { CastCtx, SpellSpec } from './spell-types.ts';
+export { bestTarget, machineCast, placeGain, swingOf } from './spell-policy.ts';
 
 /* FATE: throw the die in hand back, draw another. Touches nothing but the
    caster's own hand — the floor of the power range (sim: 56.1% one-sided at
@@ -330,87 +251,6 @@ export const RANDOM_SPELL = 'random';
 
 export function spellById(id: string | null | undefined): SpellSpec | null {
   return SPELLS.find((s) => s.id === id) ?? null;
-}
-
-/* colScore without importing the whole scoring surface here — the one column
-   valuation WARD's policy needs */
-function colScoreOf(col: number[]): number {
-  let s = 0;
-  for (let v = 1; v <= DICE_FACES; v++) {
-    let k = 0;
-    for (const d of col) if (d === v) k++;
-    if (k) s += v * k * k;
-  }
-  return s;
-}
-
-/* ---- what a cast is WORTH ----
-   Written against the SpellSpec interface, never against one spell: any future
-   spell gets a CPU that can weigh it the day it is registered. Pure, so the
-   machine's policy asks exactly the question the effect will answer. */
-
-/* the swing in the score DIFFERENCE, from `who`'s side: what they gain plus
-   what the opponent loses, under the mode actually being played. Weighing a
-   cast must never PLAY it, so any ctx offered is sandboxed: the boards are a
-   clone, the charm is a copy, and the hand cannot be written or drawn from.
-   Hand-only spells therefore weigh 0 here — this measures the BOARDS. */
-export function swingOf(st: GameState, who: Player, spell: SpellSpec, col: number, mode: Mode, ctx?: CastCtx): number {
-  const foe = (1 - who) as Player;
-  const lead = (s: GameState) => boardTotalMode(s[who], mode) - boardTotalMode(s[foe], mode);
-  const after = cloneSt(st);
-  spell.apply(after, who, col, ctx && sandbox(ctx));
-  return lead(after) - lead(st);
-}
-
-function sandbox(ctx: CastCtx): CastCtx {
-  return {
-    mode: ctx.mode, die: ctx.die, bagLeft: ctx.bagLeft,
-    setDie() {}, draw: () => ctx.die,
-    charm: { wards: [ctx.charm.wards[0].slice(), ctx.charm.wards[1].slice()],
-             sunder: [ctx.charm.sunder[0], ctx.charm.sunder[1]] },
-  };
-}
-
-/* the best legal target and what it is worth, or null if none is legal.
-   Ties go to the lower column, so the choice is deterministic and replayable. */
-export function bestTarget(st: GameState, who: Player, spell: SpellSpec, mode: Mode, ctx?: CastCtx): { col: number; swing: number } | null {
-  let best: { col: number; swing: number } | null = null;
-  for (let c = 0; c < SPEC.cols; c++) {
-    if (!spell.legal(st, who, c, ctx)) continue;
-    const swing = swingOf(st, who, spell, c, mode, ctx);
-    if (!best || swing > best.swing) best = { col: c, swing };
-  }
-  return best;
-}
-
-/* THE machine's cast decision — the offline CPU and the measurement harness
-   both ask this one question, so what ships and what was measured can never
-   be two policies. Returns the column to cast at (−1 for a self spell), or
-   null: hold the charge. `demand` is the difficulty knob, in points of score
-   difference; spells whose value lives off the boards scale it inside their
-   own cpuCast. */
-export function machineCast(st: GameState, who: Player, spell: SpellSpec, ctx: CastCtx, demand: number): number | null {
-  // a charge that survives the last turn was worth nothing: with one slot
-  // left to fill, any gain at all beats keeping it
-  const room = st[who].reduce((n, c) => n + (SPEC.rows - c.length), 0);
-  const dem = room <= 1 ? 1 : demand;
-  let pick: number | null;
-  if (spell.cpuCast) {
-    pick = spell.cpuCast(st, who, ctx, dem);
-  } else {
-    const best = bestTarget(st, who, spell, ctx.mode, ctx);
-    pick = best && best.swing >= dem ? best.col : null;
-  }
-  if (pick === null || !spell.legal(st, who, pick, ctx)) return null;
-  // never end the game ON ITSELF from behind: a cast that fills a grid
-  // settles the match immediately, so it must settle it in the caster's favour
-  const after = cloneSt(st);
-  spell.apply(after, who, pick, sandbox(ctx));
-  if (isFull(after[ME]) || isFull(after[AI])) {
-    const foe = (1 - who) as Player;
-    if (boardTotalMode(after[who], ctx.mode) <= boardTotalMode(after[foe], ctx.mode)) return null;
-  }
-  return pick;
 }
 
 /* One player's opening hand: the chosen spell, with its uses. An EMPTY object

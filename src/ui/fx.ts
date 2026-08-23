@@ -4,7 +4,7 @@
 import { SPEC, type Player } from '../core/rules.ts';
 import { S } from '../state.ts';
 import { $, colEl, slotEl, slotIdx, faceRotated } from './dom.ts';
-import { isEmbed, kbroot, rootRect } from './embed.ts';
+import { appRoot, isEmbed, rootRect } from './embed.ts';
 
 export const REDUCED: boolean = (() => {
   try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
@@ -18,7 +18,7 @@ export const REDUCED: boolean = (() => {
    embed dance: fixed on the standalone page, absolute inside the widget's root,
    which is its own containing block. One definition, so that difference is
    handled once. */
-export function fxRoot(): HTMLElement { return isEmbed() ? kbroot()! : document.body; }
+export function fxRoot(): HTMLElement { return appRoot(); }
 
 export function pin(el: HTMLElement, r: DOMRect, z = 60): void {
   const off = isEmbed() ? rootRect() : { left: 0, top: 0 };
