@@ -12,6 +12,129 @@ import { modeIcon } from './modeicons.ts';
 import { spellIcon } from './spellicons.ts';
 import { modeByEnum } from '../core/modes.ts';
 import { spellById, dealtOf } from '../core/spells.ts';
+/* ===================== THE COLUMN'S SEAL =====================
+   The mark a PROTECTED column wears (design/screens/39c-guard-seal.html,
+   approved). Built once here with the rest of the column's furniture, both
+   kinds in the one element, because the stylesheet decides which of them is
+   showing (main.css ".col>.seal") from the classes this file already toggles.
+   ONE element, ONE builder: flow/game.ts and online/play.ts drive the same
+   board through this layer and neither may paint a seal privately.
+
+   Coordinates are the RUN's own: 62 units is one column at the reference cell
+   (62px cell, 6px gap) and the line runs along that frame's edge — main.css
+   grows the ELEMENT by --seal-out, which is what stands the line off the stack
+   by a constant number of pixels at every cell size. The mouth — where the
+   shield's two drawing heads meet and where the ward's clasp holds the gap
+   shut — is the middle of the short end at y=0; the hinge the ward swings open
+   on is the middle of the far end, y=198.
+
+   A RUN OF ADJACENT SHIELDED COLUMNS IS ONE SEAL, not one each: `sealFor`
+   below draws n columns and the gutters between them, and updateScores decides
+   which column carries it (see the note there). The viewBox GROWS with the run
+   rather than one 62-wide loop being stretched across it, so the corner radius,
+   the stroke and the circling bead are the reference cell's at every span —
+   stretched, a two-column loop would paint its vertical sides twice as thick as
+   its horizontal ones and round its corners into ellipses. */
+const SEAL_CELL = 62, SEAL_GAP = 6, SEAL_ROWS = 198;
+const sealWide = (n) => SEAL_CELL*n + SEAL_GAP*(n-1);
+function sealFor(n){
+  const w = sealWide(n), m = w/2, e = w - 18;
+  const loop = 'M18 0H'+e+'a18 18 0 0 1 18 18v162a18 18 0 0 1-18 18H18a18 18 0 0 1-18-18V18a18 18 0 0 1 18-18Z';
+  return '<svg class="seal" data-n="'+n+'" viewBox="0 0 '+w+' '+SEAL_ROWS+'" preserveAspectRatio="none" aria-hidden="true">'
+  + '<g class="sgold">'                                   /* SHIELD: closed, doubled, seamless */
+    + '<g class="sset">'
+      + '<path class="sl" d="' + loop + '"/>'
+      + '<path class="si" d="M18 3H'+e+'a15 15 0 0 1 15 15v162a15 15 0 0 1-15 15H18a15 15 0 0 1-15-15V18a15 15 0 0 1 15-15Z"/>'
+      + '<path class="sb" pathLength="480" d="' + loop + '"/>'
+    + '</g>'
+    + '<path class="sd" pathLength="240" d="M'+m+' 198H18a18 18 0 0 1-18-18V18a18 18 0 0 1 18-18h'+(m-18)+'"/>'
+    + '<path class="sd" pathLength="240" d="M'+m+' 198h'+(e-m)+'a18 18 0 0 0 18-18V18a18 18 0 0 0-18-18H'+m+'"/>'
+    + '<circle class="sj" cx="'+m+'" cy="0" r="3.5"/>'
+  + '</g>'
+  /* THE WARD IS NEVER MERGED — it is one charge on one column, and a line
+     drawn round two of them would say something false — so it is only ever
+     built at span 1. A merged seal carries no clasp group at all rather than a
+     stretched one the stylesheet happens to hide. */
+  + (n === 1
+    ? '<g class="smint">'                                 /* WARD: single, thinner, ONE clasp */
+      + '<path class="sa sal" pathLength="240" d="M27 0H18a18 18 0 0 0-18 18v162a18 18 0 0 0 18 18h13"/>'
+      + '<path class="sa sar" pathLength="240" d="M35 0h9a18 18 0 0 1 18 18v162a18 18 0 0 1-18 18H31"/>'
+      + '<g class="sclasp">'
+        + '<path class="sp spl" d="M31 -3.4 26.4 0 31 3.4"/>'
+        + '<path class="sp spr" d="M31 -3.4 35.6 0 31 3.4"/>'
+        + '<circle class="sv" cx="31" cy="0" r="1.5"/>'
+      + '</g></g>'
+    : '')
+  + '</svg>';
+}
+/* Grow (or shrink) the seal this column carries to the run it must enclose.
+   Returns whether it CHANGED — the caller turns that into the engage beat, so
+   two neighbours becoming one mark draw themselves shut again instead of one
+   of them silently vanishing. Rebuilt rather than re-`setAttribute`d because
+   the whole shape changes together, and the only moment it changes is the
+   moment the mark is about to be redrawn anyway. */
+function sealSpan(col,n){
+  const seal = col && col.querySelector('.seal');
+  if(!seal || +seal.dataset.n === n) return false;
+  seal.outerHTML = sealFor(n);
+  col.style.setProperty('--seal-span', n);
+  return true;
+}
+/* The column whose seal encloses this one. A merged run draws ONE mark and it
+   hangs on the run's first column, so a beat aimed at a column inside the run
+   has to travel to the head or it plays on a `display:none` element. Read off
+   the DOM rather than recomputed from the boards: updateScores is the one place
+   that decides a run, and this must not become a second opinion. */
+function sealHost(col){
+  let h = col;
+  while(h && h.classList.contains('sealmerged')) h = h.previousElementSibling;
+  return h && h.classList.contains('col') ? h : col;
+}
+/* Every seal beat is ONE SHOT: the class goes on for exactly as long as the
+   animation main.css gives it and then comes off again, so a column at rest
+   wears no animation but the bead. That is the whole defence against the
+   strobe — renderSide runs on every placement, and a draw-on keyed to a class
+   that merely PERSISTS would restart wherever the element was rebuilt.
+   The numbers mirror the durations beside those keyframes; a little slack so
+   the class never disappears out from under its own last frame. */
+const SEAL_ON_MS = 680, SEAL_HIT_MS = 520, SEAL_SNAP_MS = 720;
+/* PER CLASS, not per element. Two different one-shots can land on one column
+   inside one window — a run that grows wears .sealon on the same beat a strike
+   can be hardening it — and a single timer per element meant the second beat
+   cancelled the first one's REMOVAL and left its class on forever. */
+const beatOff = new WeakMap();
+function oneShot(el,cls,ms){
+  if(!el) return;
+  let t = beatOff.get(el); if(!t) beatOff.set(el, t = {});
+  clearTimeout(t[cls]);
+  // remove/reflow/add: the same restart idiom the chip marks have always used,
+  // so a second strike inside the first beat replays instead of being eaten
+  el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
+  t[cls] = setTimeout(()=>el.classList.remove(cls), ms);
+}
+function restart(el,cls){ if(!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+/* A STRIKE MEETS A PROTECTION — one beat, said once, for both drivers. The
+   chip's mark flares exactly as it always has and the column's seal answers in
+   its own kind: the shield HARDENS and is unchanged, the ward's clasp SNAPS and
+   the line unwinds off the column. These two lines used to be copy-pasted into
+   flow/game.ts and online/play.ts, which is precisely how a shared view grows
+   five differences. */
+export function shieldBlocked(who,col){
+  const chip=chipEl(who,col);
+  restart(chip && chip.querySelector('.sh'),'block');
+  // the CHIP's mark belongs to the struck column; the seal belongs to whatever
+  // run encloses it, which may be a neighbour's
+  oneShot(sealHost(colEl(who,col)),'sealhit',SEAL_HIT_MS);
+}
+export function wardBurned(who,col){
+  const chip=chipEl(who,col);
+  restart(chip && chip.querySelector('.wd'),'block');
+  /* .sealsnap outlives the repaint that clears .warded on purpose: the charge
+     is spent the instant the strike lands, and the mark still has to be seen
+     leaving. main.css keeps the seal drawn for as long as this class is on.
+     No sealHost() here: a ward is never merged, so its seal is always its own. */
+  oneShot(colEl(who,col),'sealsnap',SEAL_SNAP_MS);
+}
 /* ===================== DOM BUILD ===================== */
 export function buildBoards(){
   for(const side of ['top','bot']){
@@ -27,6 +150,7 @@ export function buildBoards(){
         s.setAttribute('aria-hidden','true');
         col.appendChild(s);
       }
+      col.insertAdjacentHTML('beforeend',sealFor(1));   // the column's dress, after its slots
       b.appendChild(col);
       const chip=document.createElement('div');
       chip.className='chip';
@@ -100,6 +224,22 @@ function updateScores(who){
   const rowswitch=S.scoring===ROWSWITCH, rowmult=S.scoring===ROWMULT;
   document.documentElement.classList.toggle('rowmode',rowswitch||rowmult);
   document.documentElement.classList.toggle('rowswitch',rowswitch);   // hides the idle column chips
+  /* WHICH COLUMNS ARE SEALED — asked for the whole board before any of them is
+     dressed, because a column's mark now depends on its NEIGHBOURS: adjacent
+     shielded columns share ONE enclosure. Two seals 6px apart were never two
+     marks a player could tell apart (at the 88px cap their painted strokes
+     leave 0.46px of gutter — main.css, --seal-out), so the honest drawing is
+     one loop around the whole run.
+     SAFE BECAUSE A SHIELD NEVER LIFTS, and that is the load-bearing fact: a
+     COLUMN SHIELD column is full, victimsOf() gives a full column no victims,
+     PILFER refuses to rob one and WARD refuses to mark one (core/rules,
+     core/spells) — so a run can only ever GROW, and no seal ever has to come
+     apart mid-game. If any of those three ever stops being true, this needs an
+     un-merge beat before it needs anything else.
+     Decided HERE, once: flow/game.ts and online/play.ts repaint through this
+     one function and neither learns the word. */
+  const sealed=[];
+  for(let c=0;c<SPEC.cols;c++) sealed.push(isShielded(b[c],S.scoring));
   for(let c=0;c<SPEC.cols;c++){
     const sc=rowswitch ? b[c].reduce((a,v)=>a+v,0) : colScore(b[c]);
     const chip=chipEl(who,c);
@@ -111,23 +251,43 @@ function updateScores(who){
     const mxb=chip.querySelector('.mx');
     mxb.textContent=mx;
     mxb.classList.toggle('h3',mx==='×3');   // ×3 wears the hot heat, ×2 the gold one
+    const colE=colEl(who,c);
     // COLUMN SHIELD: a full column wears its shield (pops in the first time)
     const sh=chip.querySelector('.sh');
     const shielded=isShielded(b[c],S.scoring);
-    if(shielded && !sh.firstChild){ sh.innerHTML=modeIcon('colshield',13); sh.classList.add('pop'); }
+    const shieldNew=shielded && !sh.firstChild;
+    if(shieldNew){ sh.innerHTML=modeIcon('colshield',13); sh.classList.add('pop'); }
     else if(!shielded && sh.firstChild){ sh.innerHTML=''; sh.classList.remove('pop'); }
-    colEl(who,c).classList.toggle('shielded',shielded);
+    colE.classList.toggle('shielded',shielded);
     // WARD: a warded column wears its rune until the mark burns (flow/spells).
     // Painted from S.charm — the same state destruction consults, so the chip
     // can never outlive or precede the protection it announces.
     const wd=chip.querySelector('.wd');
     const warded=S.charm.wards[who][c]>0;
-    if(warded && !wd.firstChild){ wd.innerHTML=spellIcon('ward',13); wd.classList.add('pop'); }
+    const wardNew=warded && !wd.firstChild;
+    if(wardNew){ wd.innerHTML=spellIcon('ward',13); wd.classList.add('pop'); }
     else if(!warded && wd.firstChild){ wd.innerHTML=''; wd.classList.remove('pop','block'); }
-    colEl(who,c).classList.toggle('warded',warded);
+    colE.classList.toggle('warded',warded);
+    /* THE RUN THIS COLUMN IS IN. A shielded column that FOLLOWS another draws
+       nothing of its own — its neighbour's seal already encloses it — and the
+       column that leads the run wears a seal grown to the run's full length.
+       The chip keeps its own shield mark either way: every column in the run
+       really is shielded, and the chips are what say so column by column. */
+    const merged=shielded&&!!sealed[c-1];
+    colE.classList.toggle('sealmerged',merged);
+    let span=1; if(shielded&&!merged) while(sealed[c+span]) span++;
+    const regrown=sealSpan(colE,span);
+    /* AND THE SEAL DRAWS ITSELF SHUT — on exactly the beat the chip's mark pops
+       in, never a frame of its own. "First time only" is the same condition the
+       mark above uses, so the line and the mark arrive together and a repaint
+       (this function runs on every placement) finds nothing left to restart.
+       A run that GREW is the same event one step later: the mark that has to
+       arrive is the longer one, and it arrives the same way. A column inside a
+       run is skipped — its own seal is not on screen to draw. */
+    if(!merged&&(shieldNew||wardNew||regrown)) oneShot(colE,'sealon',SEAL_ON_MS);
     // and describe it for screen readers, reusing the score we just computed
     const free=SPEC.rows-b[c].length;
-    colEl(who,c).setAttribute('aria-label',
+    colE.setAttribute('aria-label',
       nameOf(who)+' column '+(c+1)+', score '+sc+', '+
       (free? free+' space'+(free>1?'s':'')+' free' : 'full'));
   }

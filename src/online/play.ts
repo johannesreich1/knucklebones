@@ -10,13 +10,13 @@ import { S } from '../state.ts';
 import { startTimer, stopTimer, showClock } from '../flow/timer.ts';
 import { clearSpells } from '../flow/spells.ts';
 import { setLeaveInterceptor } from '../flow/leave.ts';
-import { $, show, hide, sideKey, chipEl } from '../ui/dom.ts';
+import { $, show, hide, sideKey } from '../ui/dom.ts';
 import { Sfx, vibrate } from '../ui/audio.ts';
 import { setStageDie } from '../ui/die.ts';
 import { showBag, renderBag, BAG_SIZE } from '../ui/bag.ts';
 import { floatPts } from '../ui/fx.ts';
 import { colorOf, heatOf } from '../ui/identity.ts';
-import { buildBoards, renderAll, renderSide, clearHints, showHints, setStatus, setActivePlate, settleBoard, claimBadge, releaseBadge, modeChip } from '../ui/render.ts';
+import { buildBoards, renderAll, renderSide, clearHints, showHints, setStatus, setActivePlate, settleBoard, claimBadge, releaseBadge, modeChip, shieldBlocked } from '../ui/render.ts';
 import { fit } from '../ui/layout.ts';
 import { setPlaceHandler } from '../ui/input.ts';
 import { flyDie, destroyAt } from '../flow/game.ts';
@@ -308,10 +308,7 @@ async function animateMove(who: Player, col: number, die: number): Promise<void>
   // COLUMN SHIELD: a full facing column is immune — flash the shield instead
   // of destroying, but only when the die would actually have hit something
   if (S.scoring === COLSHIELD && S.boards[foe][col].length >= SPEC.rows) {
-    if (S.boards[foe][col].includes(die)) {
-      const sh = chipEl(foe, col)?.querySelector('.sh') as HTMLElement | null;
-      if (sh) { sh.classList.remove('block'); void sh.offsetWidth; sh.classList.add('block'); }
-    }
+    if (S.boards[foe][col].includes(die)) shieldBlocked(foe, col);
     return;
   }
   const destroyed = await destroyAt(foe, col, die);

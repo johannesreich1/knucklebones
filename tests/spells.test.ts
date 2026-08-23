@@ -366,5 +366,33 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
     'an unmarked charm changes nothing about a placement', { ka, kb });
 }
 
+/* ---- A SHIELDED COLUMN CANNOT SHRINK, which is now load-bearing ----
+   ui/render.ts draws ONE seal around a run of adjacent shielded columns, and
+   that merge is only honest because a run can only ever GROW: if a shielded
+   column could lose a die mid-game the enclosure would have to come apart,
+   and nothing draws that. The permanence is not a property of the seal — it
+   is three separate refusals in core, and this is what asserts they are all
+   still there. A reviewer read docs/SPELLS.md as saying PILFER may rob a
+   shielded column (it says the opposite: the doc's case is a column not yet
+   full, which is therefore not yet shielded), so the question is settled here
+   in code rather than in prose. */
+{
+  const full: GameState = [[[6, 6, 6], [2], []], [[1], [], []]];
+  const pilfer = spellById('pilfer')!;
+  const shielded = mkCtx({ mode: COLSHIELD as Mode });
+  check(!pilfer.legal(full, ME, 0, shielded),
+    'PILFER MAY NOT ROB A SHIELDED COLUMN — the merged seal assumes a run never shrinks',
+    { col: full[AI][0] });
+  // the control: the same call is legal where the column is NOT shielded, so a
+  // refusal that came from a broken probe rather than from the rule would show
+  check(pilfer.legal(full, ME, 0, mkCtx({ mode: CLASSIC as Mode })),
+    'the probe itself is broken: PILFER refused a classic column too', { col: full[AI][0] });
+  // and no strike may take from one either
+  check(openStrikes(full, ME, 0, 6, COLSHIELD).length === 0,
+    'A STRIKE TOOK DICE FROM A SHIELDED COLUMN', { col: full[AI][0] });
+  check(openStrikes(full, ME, 0, 6, CLASSIC).length > 0,
+    'the strike probe is broken: it found nothing in classic either', { col: full[AI][0] });
+}
+
 console.log(JSON.stringify({ problems, errs: [] }, null, 2));
 process.exit(problems.length ? 1 : 0);

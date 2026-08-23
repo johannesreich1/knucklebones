@@ -15,12 +15,12 @@ import { searchRoot, getRiskW, setRiskW } from '../core/ai.ts';
 import { S } from '../state.ts';
 import { saveStats } from '../persist.ts';
 import { Sfx, vibrate } from '../ui/audio.ts';
-import { $, show, hide, sideKey, slotEl, slotIdx, colEl, chipEl, faceRotated } from '../ui/dom.ts';
+import { $, show, hide, sideKey, slotEl, slotIdx, colEl, faceRotated } from '../ui/dom.ts';
 import { showBag, renderBag } from '../ui/bag.ts';
 import { nameOf, colorOf, heatOf } from '../ui/identity.ts';
 import { makeDie, setStageDie } from '../ui/die.ts';
 import { REDUCED, burst, floatPts, shake, flash, pin, fxRoot } from '../ui/fx.ts';
-import { renderSide, renderAll, applySides, updateRecord, clearHints, showHints, setStatus, setActivePlate, settleBoard } from '../ui/render.ts';
+import { renderSide, renderAll, applySides, updateRecord, clearHints, showHints, setStatus, setActivePlate, settleBoard, shieldBlocked, wardBurned } from '../ui/render.ts';
 import { fit } from '../ui/layout.ts';
 import { startTimer, stopTimer, showClock } from './timer.ts';
 import { coachShow, coachHide, clearTut, tutNextRoll, tutOnChoose } from './tutorial.ts';
@@ -298,18 +298,17 @@ export async function place(who,col){
   // COLUMN SHIELD: a full facing column is immune — flash the shield instead,
   // but only when the die would actually have hit something
   if(isShielded(S.boards[1-who][col],S.scoring) && S.boards[1-who][col].includes(die)){
-    const sh=chipEl(1-who,col) && chipEl(1-who,col).querySelector('.sh');
-    if(sh){ sh.classList.remove('block'); void sh.offsetWidth; sh.classList.add('block'); }
+    shieldBlocked(1-who,col);
   }
   let destroyed=0;
   for(const hit of plan){
     if(S.gen!==gen) return;
     if(hit.warded){
-      // the ward absorbs the whole strike and burns out: pop its chip, then
-      // let the repaint clear it — the mark is gone from the charm it reads
+      // the ward absorbs the whole strike and burns out: the chip's mark flares
+      // and the seal's clasp snaps on the SAME beat, then the repaint clears
+      // both — the mark is gone from the charm it reads
       S.charm.wards[1-who][hit.col]--;
-      const wd=chipEl(1-who,hit.col) && chipEl(1-who,hit.col).querySelector('.wd');
-      if(wd){ wd.classList.remove('block'); void wd.offsetWidth; wd.classList.add('block'); }
+      wardBurned(1-who,hit.col);
       Sfx.mult(); flash(0.14);
       await wait(300);
       renderSide(1-who,true);

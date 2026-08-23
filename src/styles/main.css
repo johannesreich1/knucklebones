@@ -55,6 +55,10 @@
      hot red for a ×3 when orange is */
   --ice:#eef4ff; --ice-rgb:238,244,255;
   --red:#ff4d5e; --red-rgb:255,77,94;
+  /* THE WARD'S MINT (ui/spellicons HUES.ward). Root-scoped because TWO things
+     wear it now — the rune on the column chip and the seal around the column
+     itself — and a hue restated in the second place is a hue that drifts. */
+  --wdc:#7dffc4;
   --txt:#e9f1ff;
   --dim:#7c88a8;
   /* the LADDER GROUP palette. Root-scoped on purpose: the identity plate
@@ -972,12 +976,11 @@ html.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
 @keyframes shpop{0%{transform:scale(0) rotate(-30deg)}70%{transform:scale(1.35)}100%{transform:scale(1)}}
 .chip .sh.block{animation:shblock .45s}
 @keyframes shblock{0%,100%{transform:scale(1)}40%{transform:scale(1.55);filter:drop-shadow(0 0 16px rgba(var(--mx2-rgb,var(--gold-rgb)),1))}}
-.col.shielded{box-shadow:inset 0 0 0 1px rgba(var(--mx2-rgb,var(--gold-rgb)),.35),0 0 14px rgba(var(--mx2-rgb,var(--gold-rgb)),.12);border-radius:12px}
 
 /* ===== WARD: a guarded column wears its rune until the mark burns =====
    Same anatomy as the shield chip — pop on arrival, flare when it absorbs —
    in the ward's own mint, so the two protections never read as one. */
-.chip .wd{--wdc:#7dffc4;line-height:1;color:var(--wdc);filter:drop-shadow(0 0 6px rgba(125,255,196,.75))}
+.chip .wd{line-height:1;color:var(--wdc);filter:drop-shadow(0 0 6px color-mix(in srgb,var(--wdc) 75%,transparent))}
 .chip .wd:empty{display:none}
 /* The marks sit at the chip's ENDS, out of the centred flow. The chip centres
    its contents, so the score and its ×k badge change width on every placement
@@ -988,8 +991,239 @@ html.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
 .chip .wd{left:4px}
 .chip .wd.pop{animation:shpop .55s cubic-bezier(.2,1.6,.4,1)}
 .chip .wd.block{animation:wdblock .45s}
-@keyframes wdblock{0%,100%{transform:scale(1)}40%{transform:scale(1.6);filter:drop-shadow(0 0 18px rgba(125,255,196,1))}}
-.col.warded{box-shadow:inset 0 0 0 1px rgba(125,255,196,.4),0 0 14px rgba(125,255,196,.14);border-radius:12px}
+@keyframes wdblock{0%,100%{transform:scale(1)}40%{transform:scale(1.6);filter:drop-shadow(0 0 18px var(--wdc))}}
+/* ===== THE SEAL: the column's own dress =====
+   Design: design/screens/39c-guard-seal.html ("W3 — Runic seal, closed or
+   clasped", approved). It replaces the 1px inset ring both protections used
+   to share. That ring was below the noise floor on a die that already carries
+   a border and a coloured bloom — and it was the SAME ring in two hues, so
+   two different RULES read as one rule wearing two colours. They are now two
+   KINDS of mark, and the geometry says which is which before the colour does:
+
+     SHIELD (a game MODE) — a CLOSED double line. No seam, no segments, no
+       end. A full column cannot be destroyed at all for as long as it stays
+       full, so there is nothing on this mark that could be taken away; a
+       strike can only make it flare and HARDEN, after which it is exactly
+       what it was.
+     WARD (a SPELL) — the same line, single, thinner, in the ward's mint, held
+       shut by ONE clasp. One cast, one fastening, one strike: the clasp
+       snaps, the halves fly, and the line swings open at the hinge and
+       unwinds off the column. It does not come back.
+
+   The distinction is STRUCTURAL, never animated — closed against clasped
+   still says which is which with prefers-reduced-motion, where every beat
+   below collapses to its end state.
+
+   GEOMETRY. The seal's viewBox IS the run it encloses — 62x198 is one column
+   at the reference cell (62px) with its 6px gaps, and each further column the
+   run swallows adds 6+62 (ui/render.ts sealFor) — and preserveAspectRatio="none"
+   stretches that frame onto the element, so the line rides the stack's shape at
+   every cell ui/layout.ts picks (34px to 88px). The line is drawn ON the
+   viewBox edge and the ELEMENT is the run grown by --seal-out on every side,
+   which is what makes that stand-off a CONSTANT number of pixels instead of one
+   that scales. The gutter between two columns is a flat 6px, so a stand-off
+   that grew with the cell ran out of room exactly where the cell is biggest.
+
+   BUT THE BOX IS NOT THE INK, and the difference is the whole reason
+   neighbours merge. The stroke is 1.6 USER UNITS on a stretched viewBox: at
+   the 88px cap the x-scale is 1.471, so the line paints 2.35px wide and half of
+   that lies outside the box — 2.78px of ink into a 6px gutter, which leaves two
+   neighbouring seals 0.46px of clear air, not the 2.8px a box-only measurement
+   reports. At that distance they are one smeared band. So two adjacent SHIELDED
+   columns are no longer drawn as two marks at all: --seal-span below makes them
+   ONE loop around the whole run (decided in ui/render.ts updateScores, which is
+   also where the rule that a shield can never lift is written down). A shield
+   beside a WARD still draws two closing lines — a ward is one charge on one
+   column and merging it would say something false — and what keeps THOSE apart
+   is that they are two different hues, not the gap. tests/test14 §10a measures
+   the INK, deliberately: getBoundingClientRect on an SVG path reports the fill
+   box in Chromium, so a probe built from it reads 1.6px at every cell size and
+   would go on reading 1.6 after the strokes had fully overlapped.
+
+   The line is still outside every die at every span, and clear of everything
+   around it: measured at the 88px cap it is 6.0px short of the column chip and
+   3.1px short of the nearest thing the nameplate DRAWS (the clasp crosses the
+   plate's empty box by 2.4px, which is why that box is not the thing to
+   measure); in landscape the tightest of those is 1.2px. The mark adds nothing
+   on top of the faces — no tint, no fill, no pip contrast lost. overflow:visible
+   because the clasp and the glows sit outside the frame. It is a real element
+   and not a pseudo, because .col::after is the placement hint AND the aim ring
+   and .col::before is the danger ring (docs/SPELLS.md §7) — neither was free.
+
+   ORIENTATION. The element is always sized the long way and TURNED, because a
+   landscape column is the portrait column transposed exactly. The turn also
+   decides which end wears the mouth — where the shield's two heads meet and
+   where the ward's clasp holds the gap shut: the end AWAY from the chip strip,
+   which on both halves and in both orientations is also the end the next die
+   lands at (ui/dom slotIdx mirrors the top half). The seal closes where the
+   third die seats. */
+.col>.seal{--seal-out:1.6px;
+  /* HOW MANY COLUMNS THIS ONE SEAL ENCLOSES. ui/render.ts writes --seal-span on
+     the first column of a run of shielded neighbours; every other column in the
+     run is .sealmerged and draws nothing. Read through a second name so the
+     fallback lives in one place — a lone column never carries the property. */
+  --seal-n:var(--seal-span,1);
+  /* ...and how far the RUN's centre sits from THIS column's centre. Applied
+     outside the rotate, so it is a page-space direction and depends on the
+     orientation alone — never on which half of the table this is. */
+  --seal-run:calc((var(--seal-n) - 1)*(var(--cell) + var(--gap))/2);
+  --seal-dx:var(--seal-run);--seal-dy:0px;
+  position:absolute;left:50%;top:50%;display:none;overflow:visible;pointer-events:none;
+  width:calc(var(--cell)*var(--seal-n) + var(--gap)*(var(--seal-n) - 1) + 2*var(--seal-out));
+  height:calc(var(--cell)*3 + var(--gap)*2 + 2*var(--seal-out));
+  transform:translate(calc(-50% + var(--seal-dx)),calc(-50% + var(--seal-dy))) rotate(var(--seal-turn,0deg))}
+.land .col>.seal{--seal-dx:0px;--seal-dy:var(--seal-run)}   /* a run stacks DOWN the screen there */
+.side.bot .col>.seal{--seal-turn:180deg}          /* chips sit above the near board */
+.land .side.top .col>.seal{--seal-turn:-90deg}    /* board left, chips right */
+.land .side.bot .col>.seal{--seal-turn:90deg}     /* chips left, board right */
+/* A column that is BOTH shielded and warded wears the SHIELD's mark, and that
+   is the honest reading rather than a compromise: victimsOf() gives a full
+   COLUMN SHIELD column no victims at all, so openStrikes never marks it
+   warded and the charge can never be spent while the shield holds. The chip
+   still carries both runes (ward left, shield right) — the seal states what
+   is actually protecting the column. */
+.col.shielded>.seal,.col.warded>.seal,.col.sealsnap>.seal{display:block}
+/* ...except a column INSIDE a run: its neighbour's seal already encloses it,
+   and one enclosure is the whole point of merging them. */
+.col.sealmerged>.seal{display:none}
+.col>.seal>g{display:none}
+.col.shielded>.seal>.sgold{display:block}
+.col.warded:not(.shielded)>.seal>.smint,.col.sealsnap>.seal>.smint{display:block}
+.col.shielded>.seal{--g:var(--mx2,var(--gold))}
+/* the ward's hue AND its heartbeat: the same two states that show the clasp at
+   all are the only two that may animate it (see .sp/.sv below) */
+.col.warded:not(.shielded)>.seal,.col.sealsnap>.seal{--g:var(--wdc);--sealbreathe:sealbreathe}
+
+/* the shield's line: two strokes, the outer carrying the weight and an inner
+   hairline riding just inside it. A doubled line reads as engraved and
+   settled where a single one reads as drawn-on and provisional. */
+.seal .sl{fill:none;stroke:color-mix(in srgb,var(--g) 92%,transparent);stroke-width:1.6;
+  filter:drop-shadow(0 0 5px color-mix(in srgb,var(--g) 55%,transparent))}
+.seal .si{fill:none;stroke:color-mix(in srgb,var(--g) 32%,transparent);stroke-width:.9}
+/* ONE bead, circling. A crawling dash pattern reads as a progress spinner and
+   invites counting; a single bead on an unbroken line cannot be counted and
+   never arrives anywhere — which is the point of a protection with no end
+   condition. dasharray sums to the declared pathLength, so it wraps the
+   closure seamlessly. It rides its OWN element inside .sset, so the engage
+   beat can fade the settled mark in without restarting the bead's travel. */
+.col.shielded>.seal .sb{fill:none;stroke:color-mix(in srgb,var(--g) 55%,#fff);stroke-width:2;
+  stroke-linecap:round;stroke-dasharray:26 454;animation:sealrun 5.2s linear infinite;
+  filter:drop-shadow(0 0 6px color-mix(in srgb,var(--g) 90%,transparent))}
+@keyframes sealrun{to{stroke-dashoffset:-480}}
+
+/* the ward's line: single, thinner, and it STOPS — the gap at the mouth is
+   the whole argument of the mark, and the clasp is what closes it. */
+.seal .sa{fill:none;stroke:color-mix(in srgb,var(--g) 88%,transparent);stroke-width:1.4;
+  stroke-linecap:round;stroke-dasharray:240;transform-box:view-box;transform-origin:31px 198px;
+  filter:drop-shadow(0 0 4px color-mix(in srgb,var(--g) 50%,transparent))}
+/* THE CLASP: two halves of one knot, meeting over the gap, pinned. Two open
+   Vs that close into a diamond, so "this comes apart" is legible while it is
+   still whole. It is the only part of either seal that moves at rest — the
+   eye is told where the failure will be, in advance. */
+.seal .sp{fill:none;stroke:color-mix(in srgb,var(--g) 96%,transparent);stroke-width:1.4;
+  stroke-linecap:round;stroke-linejoin:round;transform-box:view-box;transform-origin:31px 0;
+  filter:drop-shadow(0 0 5px color-mix(in srgb,var(--g) 80%,transparent))}
+.seal .sv{fill:color-mix(in srgb,var(--g) 96%,transparent);
+  transform-box:view-box;transform-origin:31px 0;
+  filter:drop-shadow(0 0 5px color-mix(in srgb,var(--g) 85%,transparent))}
+/* THE WARD'S ALONE. A shielded column hides the whole clasp group, and this
+   used to animate it anyway: three shapes running forever inside a display:none
+   group, which is what tests/test14's steady-state probe was reading back on a
+   shielded column. The NAME is the token (rather than play-state, which leaves
+   the animations there paused), so the beats below — which replace `animation`
+   outright and are less specific than the state selector that would otherwise
+   have to carry this — still win on the beats they own. */
+.seal .sp,.seal .sv{animation:var(--sealbreathe,none) 2.6s ease-in-out infinite}
+@keyframes sealbreathe{0%,100%{opacity:.78}50%{opacity:1}}
+.seal .sclasp{transform-box:view-box;transform-origin:31px 0}
+/* which way each half flies when the clasp lets go */
+.seal .sal,.seal .spl{--d:-1}
+.seal .sar,.seal .spr{--d:1}
+
+/* ===== IT ENGAGES. The third die seats (or the rune lands) and the line runs
+   up both sides from the hinge and MEETS at the mouth; the join flashes once
+   and then there is no join, because the mark it settles into is one closed
+   loop. Nothing about that beat is spendable.
+   .sealon is a ONE-SHOT class, added by ui/render.ts on exactly the beat the
+   chip's mark pops in and dropped again when the beat is over. The RESTING
+   seal therefore carries no animation of its own but the bead — which is what
+   stops renderSide's constant repaints from restarting the draw, the flicker
+   flow/spells.ts records against the rune's glow. ===== */
+.seal .sd{fill:none;stroke:color-mix(in srgb,var(--g) 96%,transparent);stroke-width:1.8;
+  stroke-linecap:round;stroke-dasharray:240;stroke-dashoffset:240;opacity:0;
+  filter:drop-shadow(0 0 7px color-mix(in srgb,var(--g) 85%,transparent))}
+.seal .sj{fill:none;stroke:color-mix(in srgb,var(--g) 45%,#fff);stroke-width:1.7;opacity:0;
+  transform-box:view-box;transform-origin:31px 0}
+.col.sealon>.seal .sd{animation:sealdraw .62s ease-out both}
+@keyframes sealdraw{0%{stroke-dashoffset:240;opacity:0}6%{stroke-dashoffset:240;opacity:1}
+  62%{stroke-dashoffset:0;opacity:1}76%{stroke-dashoffset:0;opacity:1}
+  100%{stroke-dashoffset:0;opacity:0}}
+.col.sealon>.seal .sset{animation:sealsettle .62s ease-out both}
+@keyframes sealsettle{0%,62%{opacity:0}72%{opacity:1}100%{opacity:1}}
+.col.sealon>.seal .sj{animation:sealjoin .62s ease-out both}
+@keyframes sealjoin{0%,58%{opacity:0;transform:scale(.4)}66%{opacity:1;transform:scale(1)}
+  90%{opacity:0;transform:scale(var(--sealjoin-max,3.2))}100%{opacity:0;transform:scale(.4)}}
+/* LANDSCAPE PUTS THE MOUTH AT THE SCREEN'S EDGE. The mouth is the end away
+   from the chip strip, and in landscape that end IS the outer edge of the
+   phone — so the join flash, which is the widest thing either seal ever
+   draws, expanded straight off the viewport: measured 5.34px of it lost at
+   667x375. It cannot be nudged inward instead, because the room on the other
+   side is already spent — the clasp clears what the nameplate draws by
+   1.15px there, the tightest margin in the whole feature. So the flash is
+   given a smaller reach in landscape rather than the seal being moved.
+   MEASURED AND ACCEPTED, not fixed: the resting line itself still stands
+   1.09px past the viewport on the outer side (the board is flush to the
+   screen edge there and the seal is the column grown by --seal-out). That is
+   the outer half of a 2.4px stroke at the extreme edge; pulling it in would
+   cost the nameplate clearance above, and widening the landscape board is a
+   layout change this feature should not be making. */
+.land .seal{--sealjoin-max:1.6}
+/* the ward draws the same way — the line runs up from the hinge and the clasp
+   closes over the gap last, which is the only thing it has to say */
+.col.sealon>.seal .sa{animation:sealclose .62s ease-out both}
+@keyframes sealclose{0%{stroke-dashoffset:-240}66%,100%{stroke-dashoffset:0}}
+.col.sealon>.seal .sclasp{animation:sealclaspin .62s ease-out both}
+@keyframes sealclaspin{0%,58%{opacity:0;transform:scale(.4)}74%{opacity:1;transform:scale(1.3)}
+  100%{opacity:1;transform:scale(1)}}
+
+/* ===== STRUCK. Both beats ride the SAME moment the chip's mark already flares
+   on (ui/render.ts shieldBlocked / wardBurned, called by flow/game.ts and
+   online/play.ts alike) — the seal is the column's dress and the mark is the
+   chip's, and they answer one strike together. =====
+
+   SHIELD STRUCK: the line does not thin, does not gap, loses nothing. It
+   hardens for four frames and is exactly what it was — a full column cannot
+   be destroyed, so there is no state to change and no charge to spend,
+   however many strikes arrive. */
+.col.sealhit>.seal .sl{animation:sealharden .5s ease-out}
+@keyframes sealharden{0%{stroke-width:1.6}22%{stroke-width:3}70%,100%{stroke-width:1.6}}
+.col.sealhit>.seal{animation:sealrepel .5s ease-out}
+@keyframes sealrepel{0%{filter:brightness(1) drop-shadow(0 0 0 transparent)}
+  22%{filter:brightness(1.5) drop-shadow(0 0 13px color-mix(in srgb,var(--g) 80%,transparent))}
+  70%,100%{filter:brightness(1) drop-shadow(0 0 0 transparent)}}
+
+/* WARD BROKEN: the clasp is the charge, so the clasp is what fails. It flares,
+   the pin goes, the two halves fly apart, and the line — no longer held —
+   swings open at the mouth and unwinds down off the column. It does not
+   redraw. .sealsnap outlives the repaint that clears .warded on purpose: the
+   state is spent the instant the strike is absorbed, and the mark has to be
+   allowed to finish leaving. */
+.col.sealsnap>.seal .sv{animation:sealpop .68s ease-out both}
+@keyframes sealpop{0%{opacity:1;transform:scale(1)}10%{opacity:1;transform:scale(2.2)}
+  22%{opacity:0;transform:scale(3)}100%{opacity:0;transform:scale(1)}}
+.col.sealsnap>.seal .sp{animation:sealsnapoff .68s cubic-bezier(.25,1.2,.5,1) both}
+@keyframes sealsnapoff{0%,8%{opacity:1;transform:translate(0,0) rotate(0deg)}
+  34%{opacity:.85;transform:translate(calc(var(--d)*5px),-6px) rotate(calc(var(--d)*34deg))}
+  62%,100%{opacity:0;transform:translate(calc(var(--d)*9px),-3px) rotate(calc(var(--d)*58deg))}}
+.col.sealsnap>.seal .sa{animation:sealunwind .68s ease-out both}
+@keyframes sealunwind{0%,8%{stroke-dashoffset:0;transform:rotate(0deg);opacity:1}
+  22%{stroke-dashoffset:-16;transform:rotate(calc(var(--d)*2.6deg));opacity:1}
+  76%{stroke-dashoffset:-240;transform:rotate(calc(var(--d)*2.6deg));opacity:.5}
+  86%,100%{stroke-dashoffset:-240;transform:rotate(calc(var(--d)*2.6deg));opacity:0}}
+.col.sealsnap>.seal{animation:sealburst .68s ease-out}
+@keyframes sealburst{0%{filter:brightness(1) drop-shadow(0 0 0 transparent)}
+  10%{filter:brightness(1.6) drop-shadow(0 0 14px color-mix(in srgb,var(--g) 85%,transparent))}
+  55%,100%{filter:brightness(1) drop-shadow(0 0 0 transparent)}}
 
 /* ===== SUNDER: the charged die announces the widened strike ===== */
 #dieStage.sundered .die{box-shadow:0 0 18px rgba(255,157,102,.85),inset 0 0 8px rgba(255,157,102,.4);
@@ -1530,6 +1764,14 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
   #bg::before{animation:none}
   .col.legal::after,.col.danger::before{animation:none;opacity:.8}
   .die.m3{animation:none}
+  /* THE SEAL keeps its shape and loses its motion. Every beat above is
+     one-shot and collapses to its own end state under the blanket rule at the
+     top of this block — the line is simply THERE the moment the column locks,
+     and simply GONE the moment a ward is spent — so the reading survives:
+     closed against clasped is geometry, not animation. Only the circling bead
+     has to go by hand, because a travelling dash frozen at 0.001ms would
+     leave a stray gold tick parked on the loop. */
+  .col>.seal .sb{display:none}
 }
 
 /* ============ HOME (online-first) ============
