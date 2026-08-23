@@ -158,7 +158,7 @@ export function clearSpellTargets(): void {
   setHot(null);
   setStageHot(false);
   appRoot().querySelectorAll('.spellpreview').forEach((die) => {
-    die.classList.remove('spellpreview', 'anvilpreview');
+    die.classList.remove('spellpreview', 'anvilpreview', 'pilferpreview');
     (die as HTMLElement).style.removeProperty('--spell-hue');
   });
 }

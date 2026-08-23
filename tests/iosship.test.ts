@@ -33,8 +33,8 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { APP_ID } from '../src/config.ts';
-import { databaseJobUsesPinnedNode } from './support/ci-workflow.ts';
 import { filesUnder, recomputeArtifactTag, sameBytes, tagIn } from './support/ios-artifacts.ts';
+import { verifyNodeRuntimeContract } from './support/node-runtime-contract.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -47,10 +47,6 @@ const NATIVE_LOCK = 'native/package-lock.json';
 const GC_PKG = 'native/plugins/gamecenter/package.json';
 const GC_SWIFT = 'native/plugins/gamecenter/ios/Sources/GameCenterPlugin/GameCenterPlugin.swift';
 const ROOT_PKG = 'package.json';
-const ROOT_LOCK = 'package-lock.json';
-const NVMRC = '.nvmrc';
-const CI = '.github/workflows/ci.yml';
-const BUILD = 'build.mjs';
 const CONFIG = 'native/capacitor.config.json';
 const XCODE = 'native/ios/App/App.xcodeproj/project.pbxproj';
 const INFO = 'native/ios/App/App/Info.plist';
@@ -72,27 +68,10 @@ const pkg = JSON.parse(readFileSync(PKG, 'utf8'));
 const nativeLock = JSON.parse(readFileSync(NATIVE_LOCK, 'utf8'));
 const gcPkg = JSON.parse(readFileSync(GC_PKG, 'utf8'));
 const rootPkg = JSON.parse(readFileSync(ROOT_PKG, 'utf8'));
-const rootLock = JSON.parse(readFileSync(ROOT_LOCK, 'utf8'));
 const capacitor = JSON.parse(readFileSync(CONFIG, 'utf8'));
 /* ================= 0. BUILD/NATIVE BOUNDARY ================= */
 
-const nodePin = readFileSync(NVMRC, 'utf8').trim();
-const nodeRange = '>=24 <25';
-check(nodePin === '24', `${NVMRC} pins ${JSON.stringify(nodePin)}, expected Node 24`);
-check(rootPkg.engines?.node === nodeRange,
-  `${ROOT_PKG} engines.node=${JSON.stringify(rootPkg.engines?.node)}, expected ${nodeRange}`);
-check(rootLock.packages?.['']?.engines?.node === nodeRange,
-  `${ROOT_LOCK} does not mirror ${ROOT_PKG}'s Node engine ${nodeRange}`);
-
-const ci = readFileSync(CI, 'utf8');
-check(databaseJobUsesPinnedNode(ci),
-  `${CI}'s database job must install Node from .nvmrc before running the database start helper`);
-
-const buildSource = readFileSync(BUILD, 'utf8');
-check(/process\.execPath/.test(buildSource),
-  `${BUILD} must run TypeScript and Vite under the Node binary that launched it`);
-check(!/\bexecSync\s*\(/.test(buildSource) && !/\bcap(?:acitor)?\s+sync\b/.test(buildSource),
-  `${BUILD} must remain deterministic and may not invoke an implicit Capacitor sync`);
+const { nodePin, nodeRange } = verifyNodeRuntimeContract(check);
 check(rootPkg.scripts?.['native:sync'] === 'npm run build && npm --prefix native run sync',
   `${ROOT_PKG} native:sync must build then run the tracked native sync fail-fast`);
 check(rootPkg.scripts?.['native:verify']?.includes('native:sync')

@@ -7,7 +7,9 @@ Read this page before changing tests, CI, browser harnesses, or release gates.
 `npm test` runs `tests/run-all.mjs`. The runner builds first, executes pure
 Node contracts, browser behaviour suites, design checks, and the AI benchmark,
 then restores build output changed by update tests. A push to `main` must never
-precede a green full gate.
+precede a green full gate. The runner propagates `process.execPath` to every
+child build, suite, and benchmark, preserving the validated Node 24 runtime for
+the whole gate even on a machine with another `node` earlier on `PATH`.
 
 Database contracts are a sibling CI gate because they require Docker and a
 fresh Supabase database: `npm run db:start`, `npm run test:db`, then schema

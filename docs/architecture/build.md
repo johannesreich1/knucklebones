@@ -66,7 +66,9 @@ through the same consistency contract.
 enforces the supported major and CI consumes `.nvmrc` rather than copying a
 second version literal. `build.mjs` also runs TypeScript and Vite with its own
 `process.execPath`, preventing a different `npx` installation from silently
-using another Node runtime.
+using another Node runtime. The release runner applies the same rule to both
+builds and every test/benchmark child, so entering the gate through a validated
+Node 24 executable cannot fall back to a different bare `node` found on `PATH`.
 
 Cloudflare Pages builds `main` and deploys immediately. The repository gate is
 therefore preventive: run `npm test` before pushing. Deployment instructions

@@ -167,6 +167,10 @@ const PILFER: SpellSpec = {
   target: 'column',
   side: 'foe',
   uses: 1,
+  previewDieIndex(st, who, col) {
+    const foe = (1 - who) as Player;
+    return st[foe][col].length ? st[foe][col].length - 1 : null;
+  },
   legal(st, who, col, ctx) {
     if (!ctx || !Number.isInteger(col) || col < 0 || col >= SPEC.cols) return false;
     const foe = (1 - who) as Player;

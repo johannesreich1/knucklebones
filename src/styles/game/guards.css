@@ -20,7 +20,10 @@
 /* THE CHIP'S MARK AND THE COLUMN'S SEAL ANSWER ONE MOMENT: the rune pops as
    the line closes and flares for as long as that line hardens or unwinds. */
 :where(#kbroot) .chip .wd.block{animation:wdblock var(--seal-snap)}
-@keyframes wdblock{0%,100%{transform:scale(1)}40%{transform:scale(1.6);filter:drop-shadow(0 0 18px var(--wdc))}}
+@keyframes wdblock{
+  0%,4%{opacity:1;transform:scale(1);filter:drop-shadow(0 0 6px color-mix(in srgb,var(--wdc) 75%,transparent))}
+  12%{opacity:1;transform:scale(1.6);filter:drop-shadow(0 0 18px var(--wdc))}
+  48%,100%{opacity:.16;transform:scale(1);filter:drop-shadow(0 0 2px color-mix(in srgb,var(--wdc) 35%,transparent))}}
 /* ===== THE SEAL: the column's own dress =====
    Design: design/screens/product/39c-guard-seal.html ("W3 — Runic seal, closed or
    clasped", approved). It replaces the 1px inset ring both protections used
@@ -182,14 +185,14 @@
 
 /* the ward's line: thinner, and it STOPS — the gap at the mouth is
    the whole argument of the mark, and the clasp is what closes it. */
-:where(#kbroot) .seal .sa{fill:none;stroke:color-mix(in srgb,var(--g) 88%,transparent);stroke-width:1.4;
+:where(#kbroot) .seal .sa{fill:none;stroke:color-mix(in srgb,var(--g) 88%,transparent);stroke-width:1.7;
   stroke-linecap:round;stroke-dasharray:240;transform-box:view-box;transform-origin:50% 100%;
   filter:drop-shadow(0 0 4px color-mix(in srgb,var(--g) 50%,transparent))}
 /* THE CLASP: two halves of one knot, meeting over the gap, pinned. Two open
    Vs that close into a diamond, so "this comes apart" is legible while it is
    still whole. It is the only part of either seal that moves at rest — the
    eye is told where the failure will be, in advance. */
-:where(#kbroot) .seal .sp{fill:none;stroke:color-mix(in srgb,var(--g) 96%,transparent);stroke-width:1.4;
+:where(#kbroot) .seal .sp{fill:none;stroke:color-mix(in srgb,var(--g) 96%,transparent);stroke-width:1.7;
   stroke-linecap:round;stroke-linejoin:round;transform-box:view-box;transform-origin:50% 0;
   filter:drop-shadow(0 0 5px color-mix(in srgb,var(--g) 80%,transparent))}
 :where(#kbroot) .seal .sv{fill:color-mix(in srgb,var(--g) 96%,transparent);
@@ -276,21 +279,21 @@
    state is spent the instant the strike is absorbed, and the mark has to be
    allowed to finish leaving. */
 :where(#kbroot) .col.sealsnap>.seal .sv{animation:sealpop var(--seal-snap) ease-out both}
-@keyframes sealpop{0%{opacity:1;transform:scale(1)}10%{opacity:1;transform:scale(2.2)}
-  22%{opacity:0;transform:scale(3)}100%{opacity:0;transform:scale(1)}}
+@keyframes sealpop{0%{opacity:1;transform:scale(1)}2%{opacity:1;transform:scale(2.2)}
+  20%{opacity:0;transform:scale(3)}100%{opacity:0;transform:scale(1)}}
 :where(#kbroot) .col.sealsnap>.seal .sp{animation:sealsnapoff var(--seal-snap) cubic-bezier(.25,1.2,.5,1) both}
 @keyframes sealsnapoff{0%,8%{opacity:1;transform:translate(0,0) rotate(0deg)}
-  34%{opacity:.85;transform:translate(calc(var(--d)*5px),-6px) rotate(calc(var(--d)*34deg))}
-  62%,100%{opacity:0;transform:translate(calc(var(--d)*9px),-3px) rotate(calc(var(--d)*58deg))}}
+  32%{opacity:.85;transform:translate(calc(var(--d)*5px),-6px) rotate(calc(var(--d)*34deg))}
+  60%,100%{opacity:0;transform:translate(calc(var(--d)*9px),-3px) rotate(calc(var(--d)*58deg))}}
 :where(#kbroot) .col.sealsnap>.seal .sa{animation:sealunwind var(--seal-snap) ease-out both}
 @keyframes sealunwind{0%,8%{stroke-dashoffset:0;transform:rotate(0deg);opacity:1}
-  22%{stroke-dashoffset:-16;transform:rotate(calc(var(--d)*2.6deg));opacity:1}
+  24%{stroke-dashoffset:-16;transform:rotate(calc(var(--d)*2.6deg));opacity:1}
   76%{stroke-dashoffset:-240;transform:rotate(calc(var(--d)*2.6deg));opacity:.5}
-  86%,100%{stroke-dashoffset:-240;transform:rotate(calc(var(--d)*2.6deg));opacity:0}}
+  88%,100%{stroke-dashoffset:-240;transform:rotate(calc(var(--d)*2.6deg));opacity:0}}
 :where(#kbroot) .col.sealsnap>.seal{animation:sealburst var(--seal-snap) ease-out}
 @keyframes sealburst{0%{filter:brightness(1) drop-shadow(0 0 0 transparent)}
-  10%{filter:brightness(1.6) drop-shadow(0 0 14px color-mix(in srgb,var(--g) 85%,transparent))}
-  55%,100%{filter:brightness(1) drop-shadow(0 0 0 transparent)}}
+  4%{filter:brightness(1.6) drop-shadow(0 0 14px color-mix(in srgb,var(--g) 85%,transparent))}
+  56%,100%{filter:brightness(1) drop-shadow(0 0 0 transparent)}}
 
 /* mode-icon BASE styles live in main.css (offline uses them too) */
 :where(#kbroot) .wname .mico{vertical-align:-2.5px;margin-right:2px}

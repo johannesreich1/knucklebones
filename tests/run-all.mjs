@@ -19,7 +19,7 @@
 // WORKING TREE. Every port is now per-run, so gates in different worktrees
 // cannot reach each other's servers. Gates in the SAME checkout still share
 // the build output, which no port can isolate — they queue on the lock below.
-import { spawn, execSync } from 'child_process';
+import { execFileSync, spawn } from 'node:child_process';
 import { serveTree } from './serve.mjs';
 import { acquireCheckoutLock } from './support/gate-lock.mjs';
 
@@ -51,9 +51,13 @@ async function pool(tasks) {
     async () => { while (q.length) await q.shift()(); }));
 }
 
-function run(cmd, args) {
+/* The gate is launched only after package engines/.nvmrc have selected and
+   validated Node 24. This is deliberately the only child-process seam: every
+   child inherits that exact executable instead of resolving a bare `node`
+   through PATH and silently finding another installation. */
+function runNode(args) {
   return new Promise(resolve => {
-    const p = spawn(cmd, args, { cwd: process.cwd() });
+    const p = spawn(process.execPath, args, { cwd: process.cwd() });
     let out = '';
     p.stdout.on('data', d => out += d);
     p.stderr.on('data', d => out += d);
@@ -93,7 +97,7 @@ const clean = rep => (rep.problems || []).length === 0 && (rep.errs || []).lengt
    was. The lock only promises that the answer is about one tree state.
    Escape hatch for someone who knows their peer is idle: KB_NO_LOCK=1. */
 const release = await acquireCheckoutLock();
-execSync('node build.mjs', { stdio: 'inherit' }); // test6 needs harness.html, served suites need pwa/index.html
+execFileSync(process.execPath, ['build.mjs'], { stdio: 'inherit' }); // test6 needs harness.html, served suites need pwa/index.html
 
 /* everything except testupdate shares ONE pool: the pure-Node gates, the
    file suites, bench3, and the two read-only served suites. pwa/ is served
@@ -104,11 +108,12 @@ execSync('node build.mjs', { stdio: 'inherit' }); // test6 needs harness.html, s
 const { url, stop } = await serveTree('pwa');
 process.env.KB_URL = url;   // spawned suites inherit this — servedBase() reads it
 try {
-  const node = t => async () => judge(t, await run('node', ['--experimental-strip-types', `tests/${t}.test.ts`]), clean);
+  const node = t => async () => judge(t,
+    await runNode(['--experimental-strip-types', `tests/${t}.test.ts`]), clean);
   const suite = entry => async () => {
     const spec = typeof entry === 'string'
       ? { name: entry, file: `tests/${entry}.mjs` } : entry;
-    judge(spec.name, await run('node', [spec.file]), clean);
+    judge(spec.name, await runNode([spec.file]), clean);
   };
   await pool([
     // pure-Node gates (no browser): seeded dice determinism + PvP match core
@@ -116,7 +121,7 @@ try {
     ...FILE_SUITES.map(suite),
     // bench3 is a benchmark, not a pass/fail suite — but its helper-vs-inline
     // scoring equivalence check is a real correctness assertion.
-    async () => judge('bench3', await run('node', ['tests/bench3.mjs']), rep => rep.sameResult === true),
+    async () => judge('bench3', await runNode(['tests/bench3.mjs']), rep => rep.sameResult === true),
     ...SERVED_SUITES.map(suite),
   ]);
   // testupdate mutates pwa/ under the server — always alone, always last
@@ -124,7 +129,7 @@ try {
 } finally {
   stop();
 }
-execSync('node build.mjs', { stdio: 'ignore' }); // testupdate mutated pwa/ — restore it
+execFileSync(process.execPath, ['build.mjs'], { stdio: 'ignore' }); // testupdate mutated pwa/ — restore it
 
 console.log(failed ? `\n${failed} suite(s) FAILED` : '\nall suites green');
 release();

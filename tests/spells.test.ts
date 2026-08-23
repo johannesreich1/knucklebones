@@ -206,6 +206,10 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
   const ctx = mkCtx();
   const st: GameState = [[[2], [], []], [[6, 6], [], [1, 1, 1]]];
   check(pilfer.legal(st, AI, 0, ctx), 'a held enemy column with room facing is legal');
+  check(pilfer.previewDieIndex?.(st, AI, 0, ctx) === 1,
+    'PILFER previews the exact outer enemy die it will steal');
+  check(pilfer.previewDieIndex?.(st, AI, 1, ctx) === null,
+    'PILFER does not mark a die in an empty enemy column');
   pilfer.apply(st, AI, 0, ctx);
   check(String(st[AI][0]) === '2,6', 'the stolen die landed on top of the caster column', st[AI][0]);
   check(String(st[ME][0]) === '6', 'the enemy column lost exactly its top die', st[ME][0]);

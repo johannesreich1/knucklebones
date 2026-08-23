@@ -158,7 +158,6 @@ export async function animateGameMove(
             wardBurned(foe, strike.col);
             Sfx.mult();
             vibrate([14, 26, 18]);
-            flash(0.14);
           },
         });
         if (!completed || !spec.isCurrent()) {

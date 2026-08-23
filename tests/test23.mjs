@@ -20,7 +20,7 @@
 // Both are exactly the repo's own rule: assert what the reader can SEE.
 import pkg from 'playwright';
 const { chromium } = pkg;
-import { execFileSync } from 'child_process';
+import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 
@@ -31,7 +31,7 @@ const dist = join(process.cwd(), 'design', 'dist');
 /* build first: the suite must judge the cards as they are RIGHT NOW, not
    whatever a previous run happened to leave in the (gitignored) dist */
 try {
-  execFileSync('node', ['design/build.mjs'], { cwd: process.cwd(), stdio: 'pipe' });
+  execFileSync(process.execPath, ['design/build.mjs'], { cwd: process.cwd(), stdio: 'pipe' });
 } catch (e) {
   problems.push('design/build.mjs failed :: ' + String(e.stdout || e.message).slice(-400));
 }

@@ -36,7 +36,7 @@ export function pinDieGhost(
 ): PinnedDieGhost {
   const sourceRect = source.getBoundingClientRect();
   const ghost = source.cloneNode(true) as HTMLElement;
-  ghost.classList.remove('settle', 'dying', 'spellpreview', 'anvilpreview');
+  ghost.classList.remove('settle', 'dying', 'spellpreview', 'anvilpreview', 'pilferpreview');
   ghost.classList.add(...(options.classes ?? []));
   ghost.removeAttribute('role');
   ghost.removeAttribute('aria-label');

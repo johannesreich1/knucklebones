@@ -30,6 +30,10 @@ interface PilferPath {
   release: number;
 }
 
+const FLIGHT_EASING = 'cubic-bezier(.7,0,.2,1)';
+const STRAIN_EASING = 'cubic-bezier(.5,0,.3,1)';
+const LANDING_EASING = 'cubic-bezier(.2,1.7,.4,1)';
+
 function translated(point: SpellMotionDelta): string {
   return `translate(${point.x}px,${point.y}px) scale(${point.scale})`;
 }
@@ -48,20 +52,8 @@ function flightPoints(
   const contacts: number[] = [];
 
   if (blockerCount === 0) {
-    // The centre-most die has nothing to fight through. It only lifts enough
-    // to show the grip, holds, then tears straight across — no false rebound.
-    points.push({
-      x: toward.x * 4,
-      y: toward.y * 4,
-      scale: 1.02,
-      milliseconds: 288,
-    });
-    points.push({
-      x: toward.x * 4,
-      y: toward.y * 4,
-      scale: 1.02,
-      milliseconds: 512,
-    });
+    // Nothing sits between this die and the centre line: no resistance beat,
+    // no staged hold. It releases on tap and takes PI5's 480ms crossing.
   } else {
     // PI5's selected one-blocker study spends 1.024s pulling locally before
     // release: +10, -3, +13, +4 pixels. Extra depth repeats only that local
@@ -82,21 +74,21 @@ function flightPoints(
       const contact = 800 + index * 512;
       contacts.push(contact);
       points.push({
-        x: toward.x * (13 + index * 4),
-        y: toward.y * (13 + index * 4),
-        scale: 1.06 + index * .015,
+        x: toward.x * 13,
+        y: toward.y * 13,
+        scale: 1.06,
         milliseconds: contact,
       });
       points.push({
-        x: toward.x * (4 + index),
-        y: toward.y * (4 + index),
+        x: toward.x * 4,
+        y: toward.y * 4,
         scale: 1,
         milliseconds: contact + 224,
       });
     }
   }
 
-  const release = 512 + blockerCount * 512;
+  const release = blockerCount === 0 ? 0 : 512 + blockerCount * 512;
   const duration = release + 480;
   points.push({ ...target, milliseconds: duration });
   return { duration, contacts, points, release };
@@ -106,6 +98,7 @@ function flightKeyframes(points: readonly TimedPoint[], duration: number): Keyfr
   return points.map((point) => ({
     transform: translated(point),
     offset: point.milliseconds / duration,
+    easing: FLIGHT_EASING,
   }));
 }
 
@@ -121,16 +114,15 @@ function strainKeyframes(
   const frames: Array<Keyframe & { milliseconds?: number }> = [
     { transform: scale(1), milliseconds: 0 },
   ];
-  contacts.forEach((contact, index) => {
-    const last = index === contacts.length - 1;
+  contacts.forEach((contact) => {
     frames.push({
-      transform: scale((last ? 1.045 : 1.035) + index * .01),
+      transform: scale(1.045),
       milliseconds: contact,
     }, {
-      transform: scale(last ? 1.02 : .992),
+      transform: scale(1.02),
       milliseconds: contact + 224,
     }, {
-      transform: scale(last ? .975 : 1.005),
+      transform: scale(.975),
       milliseconds: contact + 384,
     });
   });
@@ -145,7 +137,11 @@ function strainKeyframes(
     duration,
     frames: frames
       .sort((a, b) => Number(a.milliseconds) - Number(b.milliseconds))
-      .map(({ milliseconds = 0, ...frame }) => ({ ...frame, offset: milliseconds / duration })),
+      .map(({ milliseconds = 0, ...frame }) => ({
+        ...frame,
+        offset: milliseconds / duration,
+        easing: STRAIN_EASING,
+      })),
   };
 }
 
@@ -188,10 +184,19 @@ export const pilferEffect: SpellEffect = async (who, column, apply) => {
   const source = sourceSlot?.firstElementChild as HTMLElement | null;
   const sourceColumn = colEl(foe, column);
   let applied = false;
+  let targetMarked = false;
+
+  const clearTarget = (): void => {
+    if (!targetMarked || !targetSlot) return;
+    targetMarked = false;
+    targetSlot.classList.remove('pilfer-room');
+    targetSlot.style.removeProperty('--spell-hue');
+  };
 
   const commit = (): void => {
     if (applied || !isCurrent()) return;
     applied = true;
+    clearTarget();
     apply();
     // The score, multipliers, source vacancy and destination owner all change
     // on the same arrival frame. Nothing else on either board is animated.
@@ -218,6 +223,9 @@ export const pilferEffect: SpellEffect = async (who, column, apply) => {
   // transform. Preserve the victim's reading while it remains their colour.
   pinned.ghost.classList.toggle('p2flip', faceRotated(foe));
   const hue = spellHue('pilfer');
+  targetSlot.classList.add('pilfer-room');
+  targetSlot.style.setProperty('--spell-hue', hue);
+  targetMarked = true;
 
   const blockers: PilferBlocker[] = [];
   for (let index = sourceIndex - 1; index >= 0; index--) {
@@ -246,7 +254,7 @@ export const pilferEffect: SpellEffect = async (who, column, apply) => {
     sideAnimations.push(playSpellAnimation(
       sourceColumn,
       strain.frames,
-      { duration: strain.duration, easing: 'cubic-bezier(.5,0,.3,1)' },
+      { duration: strain.duration, easing: 'linear' },
       isCurrent,
     ));
   }
@@ -255,13 +263,13 @@ export const pilferEffect: SpellEffect = async (who, column, apply) => {
     ? `scaleY(${amount})`
     : `scaleX(${amount})`;
   sideAnimations.push(playSpellAnimation(snap, [
-    { opacity: 0, transform: snapScale(.2) },
-    { opacity: 1, transform: snapScale(1), offset: 160 / 608 },
-    { opacity: 0, transform: snapScale(2.4) },
+    { opacity: 0, transform: snapScale(.2), easing: 'ease-out' },
+    { opacity: 1, transform: snapScale(1), offset: 160 / 608, easing: 'ease-out' },
+    { opacity: 0, transform: snapScale(2.4), easing: 'ease-out' },
   ], {
     delay: path.release,
     duration: 608,
-    easing: 'ease-out',
+    easing: 'linear',
   }, isCurrent));
 
   try {
@@ -288,18 +296,19 @@ export const pilferEffect: SpellEffect = async (who, column, apply) => {
       landed.style.visibility = '';
       landed.classList.add('pilfer-soft-settle');
       await playSpellAnimation(landed, [
-        { transform: 'scale(1.1)' },
-        { transform: 'scale(.94)', offset: 4 / 9 },
-        { transform: 'scale(1)' },
+        { transform: 'scale(1.1)', easing: LANDING_EASING },
+        { transform: 'scale(.94)', offset: 4 / 9, easing: LANDING_EASING },
+        { transform: 'scale(1)', easing: LANDING_EASING },
       ], {
         duration: 576,
-        easing: 'cubic-bezier(.2,1.7,.4,1)',
+        easing: 'linear',
       }, isCurrent);
       cancelSpellAnimations(landed);
       landed.classList.remove('pilfer-soft-settle');
     }
     await Promise.all(sideAnimations);
   } finally {
+    clearTarget();
     pinned.remove();
     cancelSpellAnimations(snap);
     snap.remove();

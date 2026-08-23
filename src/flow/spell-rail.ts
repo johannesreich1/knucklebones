@@ -106,7 +106,7 @@ function paintCharges(button: HTMLButtonElement, spell: SpellSpec, left: number)
 function markAim(spell: SpellSpec | null, ports: SpellRailPorts): void {
   appRoot().querySelectorAll('.col.aim').forEach((column) => column.classList.remove('aim'));
   appRoot().querySelectorAll('.spellpreview').forEach((die) => {
-    die.classList.remove('spellpreview', 'anvilpreview');
+    die.classList.remove('spellpreview', 'anvilpreview', 'pilferpreview');
     (die as HTMLElement).style.removeProperty('--spell-hue');
   });
   const who = ports.caster();

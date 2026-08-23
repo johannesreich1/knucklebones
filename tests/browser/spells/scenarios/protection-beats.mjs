@@ -1,3 +1,9 @@
+import {
+  inspectReducedWardStrike,
+  inspectWardStrike,
+  wardMotionMatchesW3,
+} from './ward-hit.mjs';
+
 export async function runProtectionBeatScenarios(suite) {
   const {
     page, out, check, devices, newGame, waitChoose, table, guard, sidePage,
@@ -12,72 +18,9 @@ export async function runProtectionBeatScenarios(suite) {
      settled board a second and a half later. So play the die and WATCH: which
      animations run, which one-shot marks land on the column and its chip, and
      whether the seal is still painted once the charm behind it is spent. */
-  const strikeBeat = (side, c, who, at) => page.evaluate(async ([sd, cc, w, a, ticks]) => {
-    const k = window.__kb;
-    const col = document.querySelector('#' + sd + 'Board .col[data-col="' + cc + '"]');
-    const chip = document.querySelectorAll('#' + sd + 'Cols .chip')[cc];
-    // is ANY part of this column's seal on screen right now?
-    const lit = () => { let best = 0;
-      for (const n of col.querySelectorAll('.seal path,.seal circle')) {
-        let p = n, o = 1, ok = true;
-        while (p && p !== col) { const st = getComputedStyle(p);
-          if (st.display === 'none' || st.visibility === 'hidden') { ok = false; break; }
-          o *= +st.opacity; p = p.parentElement; }
-        if (ok && o > best) best = o; }
-      return best; };
-    /* ...and the column whose seal that IS. A merged run draws one mark on its
-       first column, so a strike inside the run has to flare THERE — flaring the
-       struck column would run the whole beat on a display:none element. */
-    let host = col;
-    while (host && host.classList.contains('sealmerged')) host = host.previousElementSibling;
-    const anims = new Set(), marks = new Set(), flare = new Set();
-    const hostAnims = new Set(), hostMarks = new Set();
-    let outlived = false, gone = false, sawWardGhost = false, closestClasp = Infinity;
-    let ghostValue = null, ghostOwner = null, sourceAnchorError = Infinity;
-    void k.place(w, a);                        // polled, not awaited: the beat is the subject
-    for (let i = 0; i < ticks; i++) {
-      await new Promise((r) => setTimeout(r, 40));
-      for (const an of col.getAnimations({ subtree: true })) anims.add(an.animationName);
-      for (const an of chip.getAnimations({ subtree: true })) anims.add(an.animationName);
-      for (const cl of col.classList) marks.add(cl);
-      for (const an of host.getAnimations({ subtree: true })) hostAnims.add(an.animationName);
-      for (const cl of host.classList) hostMarks.add(cl);
-      for (const n of chip.querySelectorAll('.sh,.wd')) for (const cl of n.classList) flare.add(n.classList[0] + ':' + cl);
-      const spent = k.S.charm.wards[0][cc] === 0;
-      if (spent && lit() > 0.05) outlived = true;
-      if (spent && lit() <= 0.05) gone = true;
-      const ghost = document.querySelector('.ward-strike-ghost');
-      const clasp = col.querySelector('.smint .sv');
-      if (ghost && clasp) {
-        sawWardGhost = true;
-        ghostValue ??= ghost.dataset.v || null;
-        ghostOwner ??= ghost.classList.contains('p1') ? 'p1'
-          : ghost.classList.contains('p2') ? 'p2' : null;
-        const sourceSide = k.sideKey(w);
-        const source = document.querySelector('#' + sourceSide + 'Board .col[data-col="' + a
-          + '"] .slot .die[data-v="' + ghost.dataset.v + '"]');
-        const gr = ghost.getBoundingClientRect(), cr = clasp.getBoundingClientRect();
-        if (source) {
-          const sr = source.getBoundingClientRect();
-          /* WAAPI may already have advanced by the first 40ms sample. The
-             pinned copy's untransformed inline anchor is the exact lift point. */
-          const gx = parseFloat(ghost.style.left) + parseFloat(ghost.style.width) / 2;
-          const gy = parseFloat(ghost.style.top) + parseFloat(ghost.style.height) / 2;
-          sourceAnchorError = Math.min(sourceAnchorError,
-            Math.hypot(gx - sr.x - sr.width / 2, gy - sr.y - sr.height / 2));
-        }
-        closestClasp = Math.min(closestClasp,
-          Math.hypot(gr.x + gr.width / 2 - cr.x - cr.width / 2,
-                     gr.y + gr.height / 2 - cr.y - cr.height / 2));
-      }
-    }
-    return { anims: [...anims].sort(), marks: [...marks].sort(), flare: [...flare].sort(),
-             hostAnims: [...hostAnims].sort(), hostMarks: [...hostMarks].sort(),
-             sawWardGhost, closestClasp: Number.isFinite(closestClasp) ? +closestClasp.toFixed(1) : null,
-             ghostValue, ghostOwner,
-             sourceAnchorError: Number.isFinite(sourceAnchorError) ? +sourceAnchorError.toFixed(1) : null,
-             outlived, gone, wards: JSON.stringify(k.S.charm.wards), theirs: JSON.stringify(k.S.boards[0][cc]) };
-  }, [side, c, who, at, sealTiming.strikeTicks]);
+  const strikeBeat = (side, col, who, at, pg = page) => inspectWardStrike(pg, {
+    side, col, who, at, ticks: sealTiming.strikeTicks,
+  });
 
   /* STRUCK. A shield has nothing on it to take away, so it flares and hardens
      and the line after the blow is the line before it, to the pixel. */
@@ -116,18 +59,56 @@ export async function runProtectionBeatScenarios(suite) {
   check(out.wardStruck.anims.includes('wdblock'),
     'the ward chip wore the mark but never ran its flare', out.wardStruck.anims);
   check(out.wardStruck.marks.includes('sealsnap'), 'THE CLASP NEVER SNAPPED', out.wardStruck.marks);
-  check(out.wardStruck.sawWardGhost && out.wardStruck.closestClasp !== null
-      && out.wardStruck.closestClasp < 18,
-    'THE BLOCKED ATTACK NEVER REACHED THE WARD CLASP', out.wardStruck);
+  check(out.wardStruck.sawWardGhost && out.wardStruck.contact?.edgeGap >= 3
+      && out.wardStruck.contact.edgeGap <= 5 && out.wardStruck.contact.crossError < .75
+      && out.wardStruck.contact.centerGap > 20,
+    'THE BLOCKED ATTACK DID NOT MEET THE CLASP WITH ITS LEADING EDGE', out.wardStruck.contact);
   check(out.wardStruck.ghostValue === '4' && out.wardStruck.ghostOwner === 'p1'
-      && out.wardStruck.sourceAnchorError !== null && out.wardStruck.sourceAnchorError < 0.75,
+      && out.wardStruck.sourceAnchorError !== null && out.wardStruck.sourceAnchorError < .75
+      && out.wardStruck.sourceVisible && out.wardStruck.sourceAfterVisible && out.wardStruck.sourceDrift < .75,
     'the Ward contact copy was not cloned from the settled attacking die', out.wardStruck);
+  check(wardMotionMatchesW3(out.wardStruck)
+      && out.wardStruck.approachElapsed >= 570 && out.wardStruck.approachElapsed <= 700
+      && out.wardStruck.recoilElapsed >= 950 && out.wardStruck.recoilElapsed <= 1100
+      && Math.abs(out.wardStruck.contact.reboundProgress - 130 / 174) < .002,
+    'W3 LOST ITS 640ms APPROACH / 384ms REBOUND / 1024ms WITHDRAWAL', out.wardStruck);
+  check(!out.wardStruck.particles && !out.wardStruck.flash,
+    'the Ward hit added particles or a screen flash that W3 never uses', out.wardStruck);
+  const burnTimes = out.wardStruck.burn?.frames.map((frame) => frame.time);
+  const burnScales = out.wardStruck.burn?.frames.map((frame) => frame.scale);
+  const burnOpacity = out.wardStruck.burn?.frames.map((frame) => frame.opacity);
+  check(JSON.stringify(burnTimes) === '[0,64,192,768,1600]'
+      && JSON.stringify(burnScales) === '[1,1,1.6,1,1]'
+      && JSON.stringify(burnOpacity) === '[1,1,1,0.16,0.16]'
+      && out.wardStruck.peakScale > 1.5 && out.wardStruck.peakAt >= 100
+      && out.wardStruck.peakAt <= 280 && out.wardStruck.fadedWhilePresent,
+    'the Ward rune did not flare at contact and burn away before repaint', out.wardStruck);
   check(['sealpop', 'sealsnapoff', 'sealunwind'].every((a) => out.wardStruck.anims.includes(a)),
     'the ward left the column without the clasp failing first', out.wardStruck.anims);
   check(out.wardStruck.outlived, 'THE WARD VANISHED INSTEAD OF BREAKING — the snap is never seen', out.wardStruck);
   check(out.wardStruck.gone, 'a spent ward left its seal standing', out.wardStruck);
   out.sealAfter = await sealOf('top', 1);
   check(!out.sealAfter.drawn, 'the after-state must be dice and NO protection', out.sealAfter);
+
+  /* The same live-rect path turns with the board. W3 is a straight strike, so
+     portrait uses its y axis and landscape the x axis; it must not keep the old
+     screen-up lift when the table transposes. */
+  const landscape = await sidePage({ name: 'W3 Ward strike landscape', w: 667, h: 375 });
+  await newGame({ spell: 'ward' }, landscape.page);
+  check(await waitChoose(landscape.page), 'game never reached choose (W3 landscape)');
+  await table([[], [], []], [[4], [], []], 4, landscape.page);
+  await guard(0, 0, landscape.page);
+  await landscape.page.waitForTimeout(sealTiming.settle);
+  out.wardStrikeLandscape = await strikeBeat('top', 0, 1, 0, landscape.page);
+  await landscape.ctx.close();
+  check(out.wardStruck.contact.axis === 'y' && out.wardStrikeLandscape.contact?.axis === 'x'
+      && wardMotionMatchesW3(out.wardStrikeLandscape)
+      && out.wardStrikeLandscape.contact.edgeGap >= 3 && out.wardStrikeLandscape.contact.edgeGap <= 5
+      && out.wardStrikeLandscape.contact.crossError < .75
+      && Math.abs(out.wardStrikeLandscape.contact.reboundProgress - 130 / 174) < .002
+      && out.wardStrikeLandscape.sourceVisible && out.wardStrikeLandscape.sourceAfterVisible
+      && !out.wardStrikeLandscape.particles && !out.wardStrikeLandscape.flash,
+    'the W3 Ward strike did not transpose cleanly into landscape', out.wardStrikeLandscape);
 
   /* The contact copy is not placement language. A die entering its owner's
      warded column still flies directly to the ordinary slot, and an opponent
@@ -162,7 +143,8 @@ export async function runProtectionBeatScenarios(suite) {
   out.wardRestart = await page.evaluate(async () => {
     const k = window.__kb;
     void k.place(1, 0);
-    for (let i = 0; i < 30 && !document.querySelector('.sealsnap'); i++)
+    /* 300ms placement + 120ms hold + W3's 640ms approach precede contact. */
+    for (let i = 0; i < 50 && !document.querySelector('.sealsnap'); i++)
       await new Promise((resolve) => setTimeout(resolve, 30));
     const sawSnap = !!document.querySelector('.sealsnap');
     k.S.spell = 'nudge'; k.S.starter = 1; k.newGame();
@@ -289,7 +271,6 @@ export async function runProtectionBeatScenarios(suite) {
       };
       return { reduced: window.__kb.reduced, shield: look(0), ward: look(1) };
     });
-    await rctx.close();
     check(out.sealReduced.reduced, 'the reduced-motion probe did not get the setting', out.sealReduced);
     check(out.sealReduced.shield.parts.includes('sl') && out.sealReduced.ward.parts.includes('sv'),
       'WITH MOTION REDUCED A PLAYER CANNOT TELL A SHIELD FROM A WARD', out.sealReduced);
@@ -299,6 +280,19 @@ export async function runProtectionBeatScenarios(suite) {
       'the circling bead froze mid-travel and left a stray tick on the loop', out.sealReduced.shield);
     check(out.sealReduced.ward.offsets.every((o) => parseFloat(o) === 0),
       'a seal froze part-drawn with motion reduced', out.sealReduced.ward);
+
+    /* Its hit is a direct before/after, not a 1.6s invisible `.sealsnap` that
+       suppresses the next player's legal outline after all motion is gone. */
+    await table([[], [], []], [[5, 5, 2], [4], []], 4, rp);
+    await guard(1, 0, rp);
+    out.wardReducedHit = await inspectReducedWardStrike(rp);
+    await rctx.close();
+    check(out.wardReducedHit.wards === '[[0,0,0],[0,0,0]]'
+        && !out.wardReducedHit.sawGhost && !out.wardReducedHit.sawSnap
+        && !out.wardReducedHit.sawParticles && !out.wardReducedHit.sawFlash
+        && !out.wardReducedHit.warded && !out.wardReducedHit.snap && !out.wardReducedHit.rune
+        && out.wardReducedHit.legal && out.wardReducedHit.hint,
+      'reduced motion did not resolve the Ward hit to a clean, playable after-state', out.wardReducedHit);
   }
 
 }

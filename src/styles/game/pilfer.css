@@ -1,5 +1,73 @@
 /* PI5 — THE SNATCH. Flow owns the measured local tugs and straight tear; this
    file keeps the stolen copy visually theirs and draws the release snap. */
+:where(#kbroot) .die.spellpreview.pilferpreview{
+  --pilfer-grip-x:0px;
+  --pilfer-grip-y:2px;
+  --pilfer-grip-rotate:1.6deg;
+  --pilfer-shadow-x:0px;
+  --pilfer-shadow-y:6px;
+  isolation:isolate;
+  z-index:2;
+  animation:pilfer-preview-lean 1.6s ease-in-out infinite;
+}
+:where(#kbroot) .die.spellpreview.pilferpreview::after{
+  content:"";
+  position:absolute;
+  inset:-3px;
+  z-index:2;
+  border:1.5px solid var(--spell-hue);
+  border-top-width:0;
+  border-radius:calc(var(--r) + 5px);
+  pointer-events:none;
+  box-shadow:var(--pilfer-shadow-x) var(--pilfer-shadow-y) 16px
+    color-mix(in srgb,var(--spell-hue) 45%,transparent);
+  animation:pilfer-preview-grip 1.6s ease-in-out infinite;
+}
+:where(#kbroot) .side.bot .die.spellpreview.pilferpreview{
+  --pilfer-grip-y:-2px;
+  --pilfer-grip-rotate:-1.6deg;
+  --pilfer-shadow-y:-6px;
+}
+:where(#kbroot) .side.bot .die.spellpreview.pilferpreview::after{
+  border-top-width:1.5px;
+  border-bottom-width:0;
+}
+#kbroot.land .side.top .die.spellpreview.pilferpreview{
+  --pilfer-grip-x:2px;
+  --pilfer-grip-y:0px;
+  --pilfer-grip-rotate:-1.6deg;
+  --pilfer-shadow-x:6px;
+  --pilfer-shadow-y:0px;
+}
+#kbroot.land .side.top .die.spellpreview.pilferpreview::after{
+  border-top-width:1.5px;
+  border-left-width:0;
+}
+#kbroot.land .side.bot .die.spellpreview.pilferpreview{
+  --pilfer-grip-x:-2px;
+  --pilfer-grip-y:0px;
+  --pilfer-grip-rotate:1.6deg;
+  --pilfer-shadow-x:-6px;
+  --pilfer-shadow-y:0px;
+}
+#kbroot.land .side.bot .die.spellpreview.pilferpreview::after{
+  border-top-width:1.5px;
+  border-bottom-width:1.5px;
+  border-right-width:0;
+}
+@keyframes pilfer-preview-lean{
+  0%,100%{transform:translate(0,0) rotate(0)}
+  50%{transform:translate(var(--pilfer-grip-x),var(--pilfer-grip-y)) rotate(var(--pilfer-grip-rotate))}
+}
+@keyframes pilfer-preview-grip{
+  0%,100%{opacity:.55;transform:translate(0,0)}
+  50%{opacity:1;transform:translate(var(--pilfer-grip-x),var(--pilfer-grip-y))}
+}
+:where(#kbroot) .slot.pilfer-room{
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb,var(--spell-hue) 34%,transparent),
+    inset 0 0 16px color-mix(in srgb,var(--spell-hue) 12%,transparent);
+}
 :where(#kbroot) .die.pilfer-ghost{
   pointer-events:none;
   will-change:transform;
@@ -15,5 +83,11 @@
 :where(#kbroot) .col.pilfer-straining,
 :where(#kbroot) .die.pilfer-soft-settle{will-change:transform}
 
+#kbroot.reduce-motion .die.spellpreview.pilferpreview,
+#kbroot.reduce-motion .die.spellpreview.pilferpreview::after{
+  animation:none;
+  transform:none;
+}
+#kbroot.reduce-motion .die.spellpreview.pilferpreview::after{opacity:.82}
 #kbroot.reduce-motion .col.pilfer-straining,
 #kbroot.reduce-motion .die.pilfer-soft-settle{will-change:auto}

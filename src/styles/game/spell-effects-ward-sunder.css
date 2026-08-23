@@ -1,9 +1,9 @@
 /* W3 — a real absorbed strike lifts a copy of the settled attacking die into
    the ward's centre-facing clasp. Geometry and timing are WAAPI-owned because
    the source slot and transformed SVG mouth are live page coordinates; this
-   class owns only the copied die's material and stacking. */
-:where(#kbroot) .die.ward-strike-ghost{pointer-events:none;will-change:transform,opacity,filter;
-  filter:drop-shadow(0 0 8px color-mix(in srgb,var(--wdc) 55%,transparent))}
+   class owns only the copied die's stacking. W3 keeps the attacker itself
+   unchanged; all contact light belongs to the clasp and opening seal. */
+:where(#kbroot) .die.ward-strike-ghost{pointer-events:none;will-change:transform,opacity}
 
 /* SU6 — OVERLOAD. The hand is the source: it swells against one containment
    ring while its heat haze breathes. The die keeps --dc, so the player's hue

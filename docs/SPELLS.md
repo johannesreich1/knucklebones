@@ -473,8 +473,12 @@ second one.
 
 - **PILFER — PI5, The snatch.** The stolen top die resists once for every die
   beneath it: a one-die source stack crosses immediately, a two-die stack has
-  one collision/resistance beat, and a full three-die stack has two. The
-  source stack strains and releases, then the die travels to the facing column.
+  one collision/resistance beat, and a full three-die stack repeats that same
+  beat twice rather than escalating it. While aiming, a centre-facing open grip
+  marks the exact die and the empty receiving slot glows during the crossing.
+  PI5's authored easing applies between its measured waypoints so the flying
+  die, whole-column strain, release snap, and landing squash stay synchronized.
+  The source stack strains and releases, then the die travels to the facing column.
   Its arrival is a placement, not a strike: no board shake, impact burst, or
   other destruction cue may play when it lands. PILFER and COLUMN SHIELD share
   gold, so legality remains distinguished by form rather than hue alone.
@@ -499,9 +503,12 @@ second one.
   landscape left board, and left on the landscape right board. Casting WARD
   does not reroute a die; later placements settle into their normal
   authoritative slot. Only a genuine opponent strike with victims animates a
-  break: a copy of the settled attacking die travels to the clasp, contact
-  spends the ward, and the seal snaps. A miss, an own placement, or a strike
-  already stopped by COLUMN SHIELD produces no attacker ghost or false break.
+  break: a copy of the settled attacking die travels straight until its leading
+  edge meets the clasp, then follows W3's longer rebound while contact spends
+  the ward and the seal snaps. The clasp and seal provide the light; no generic
+  particle burst, die rotation, or screen flash obscures the break. A miss, an
+  own placement, or a strike already stopped by COLUMN SHIELD produces no
+  attacker ghost or false break.
 - **NUDGE — NU1, The pip lands.** The die shell remains completely still. Pips
   the new face no longer needs leave, and newly needed pips land in their
   cells; the diff is computed for every transition, including the full `6 → 1`
