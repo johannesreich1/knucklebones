@@ -29,6 +29,16 @@ export async function runSettingsNavigationScenarios(suite) {
       return [...(card?.querySelectorAll('.tiny') ?? [])]
         .map((node) => node.textContent?.trim()).filter(Boolean);
     }),
+    sectionSpacing: (() => {
+      const opponent = document.getElementById('p2Pick')?.closest('.card')?.getBoundingClientRect();
+      const sound = document.getElementById('sndSeg')?.closest('.card')?.getBoundingClientRect();
+      const heading = document.getElementById('accessibilityHeading')?.getBoundingClientRect();
+      return opponent && sound && heading ? {
+        aboveSound: sound.top - opponent.bottom,
+        aboveAccessibility: heading.top - sound.bottom,
+        colourNote: !!document.getElementById('colNote'),
+      } : null;
+    })(),
     instantMessage: [...document.querySelectorAll('#ovSettings .pbody .tiny')]
       .some((node) => /changes apply/i.test(node.textContent ?? '')),
   }));
@@ -39,6 +49,9 @@ export async function runSettingsNavigationScenarios(suite) {
         'Sound is not above the grouped accessibility controls', out.settingsOpen);
   check(out.settingsOpen.accessibilityHelp.length === 0,
         'accessibility controls still have explanatory copy below their buttons', out.settingsOpen);
+  check(out.settingsOpen.sectionSpacing && !out.settingsOpen.sectionSpacing.colourNote
+    && out.settingsOpen.sectionSpacing.aboveAccessibility > out.settingsOpen.sectionSpacing.aboveSound + 8,
+        'the section spacing is not attached to the Accessibility heading', out.settingsOpen);
   check(!out.settingsOpen.instantMessage, 'the redundant instant-apply message is still in Settings', out.settingsOpen);
 
   const accessibilityTop = () => page.$eval('#accessibilityHeading', (heading) => heading.getBoundingClientRect().top);

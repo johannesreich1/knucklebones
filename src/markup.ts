@@ -261,10 +261,6 @@ ${LEGAL_MARKUP}
     <div class="card">
       <div class="lbl">Opponent colour</div>
       <div class="hues" id="p2Pick"></div>
-      <!-- The row always reserves one line so Accessibility does not jump when
-           colour-blind mode reveals the note. Disabled swatches point at the
-           inner text while it is relevant (aria-describedby). -->
-      <div class="colnoteslot"><span class="tiny" id="colNote" hidden>Colour blind mode picks the colours</span></div>
     </div>
     <div class="card">
       <div class="lbl">Sound</div>

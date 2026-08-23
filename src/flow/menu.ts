@@ -70,13 +70,10 @@ export function syncSettingsUI(): void {
     appRoot().querySelectorAll<HTMLButtonElement>(selector + ' button').forEach((button) => {
       button.classList.toggle('on', button.dataset.h === mine);
       button.disabled = S.colorblind || button.dataset.h === other;
-      if (S.colorblind) button.setAttribute('aria-describedby', 'colNote');
-      else button.removeAttribute('aria-describedby');
     });
   };
   syncPick('#p1Pick', p1, p2);
   syncPick('#p2Pick', p2, p1);
-  $('#colNote').hidden = !S.colorblind;
   setNumeralPresentation(S.numerals);
   menuPorts.renderSpells();
 }
