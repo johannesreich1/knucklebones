@@ -724,11 +724,12 @@ try {
      page. getBoundingClientRect on an SVG path reports the FILL box in
      Chromium: the stroke is excluded, so a stand-off built from it reads the
      same 1.6px at every cell size and would go on reading 1.6px after two
-     neighbours' strokes had fully overlapped — which, at the 88px cap, is
-     0.46px away from happening (main.css, --seal-out). The line is 1.6 USER
-     UNITS on a viewBox stretched onto the element, so half of its rendered
-     width lies outside the box on every side, and each axis is scaled on its
-     own. Everything below is measured with that half added back. */
+     neighbours' strokes had fully overlapped — which, on the frame this used to
+     be drawn on, was 0.46px away from happening at the 88px cap. The line is
+     1.6px and half of its rendered width lies outside the box on every side, so
+     the ink stands 2.4px off the stack (main.css, --seal-out). Everything below
+     is measured with that half added back — still, because the probe must go on
+     being able to SEE a stroke that scales if one ever comes back. */
   const sealOf = (side, c, pg = page) => pg.evaluate(([sd, cc]) => {
     const col = document.querySelector('#' + sd + 'Board .col[data-col="' + cc + '"]');
     const seal = col.querySelector('.seal');
@@ -753,6 +754,27 @@ try {
        by swapping them rather than by trusting either axis. */
     const vb = seal.viewBox.baseVal, sr = seal.getBoundingClientRect();
     const ux = (land ? sr.height : sr.width) / vb.width, uy = (land ? sr.width : sr.height) / vb.height;
+    /* THE PAINTED CORNER, read off the LINE and not off its `d`. The seal's
+       frame used to be a fixed 62x198 reference stretched onto the element, so
+       its 18-unit corner grew with the cell — 24.4px painted at an 84px cell
+       against .col's flat 18px, and rounder on every bigger phone. That is the
+       "wrong border radius" the ward was reported with, and a probe that read
+       the arc out of the path data would have gone on reporting 18 forever.
+       HOW: the corner arc's centre sits one radius in from the frame's corner
+       on both axes, so the closest point of the line to that corner is
+       R*(sqrt(2)-1) away from it. Sample the path, convert to painted pixels
+       (each axis on its own, so a stretched frame cannot hide inside a mean),
+       take the nearest point, and divide it back out. Quadratic near the
+       minimum, so sampling error is far below the tolerance. */
+    const cornerOf = (n) => {
+      if (!n || !n.getTotalLength) return null;
+      const L = n.getTotalLength(); if (!(L > 0)) return null;
+      const P = []; for (let i = 0; i <= 720; i++) P.push(n.getPointAtLength(L * i / 720));
+      const x0 = Math.min(...P.map((p) => p.x)), y0 = Math.min(...P.map((p) => p.y));
+      let d = Infinity;
+      for (const p of P) d = Math.min(d, Math.hypot((p.x - x0) * ux, (p.y - y0) * uy));
+      return +(d / (Math.SQRT2 - 1)).toFixed(2);
+    };
     const ink = (n) => { const b = n.getBoundingClientRect();
       const sw = parseFloat(getComputedStyle(n).strokeWidth) || 0;
       const hx = sw * (land ? uy : ux) / 2, hy = sw * (land ? ux : uy) / 2;
@@ -780,7 +802,7 @@ try {
                                                Math.max(b2.y - (a.y + a.h), a.y - (b2.y + b2.h))).toFixed(2) : null;
     /* THE NAMEPLATE PAINTS NOTHING OF ITS OWN — the pill behind the name was
        taken out by request (main.css .plate) — so the honest clearance is to
-       what it DRAWS, not to its box, which the clasp does cross by ~2.4px at
+       what it DRAWS, not to its box, which the clasp does cross by ~0.7px at
        the 88px cap. Both numbers are reported; only the ink one is asserted. */
     let mark = null;
     for (const n of (plate ? plate.querySelectorAll('*') : [])) {
@@ -807,6 +829,17 @@ try {
       // run would double this and leave the other axis alone; a loop drawn at
       // the run's own width keeps it.
       thick: line ? +((parseFloat(getComputedStyle(line).strokeWidth) || 0) * (land ? uy : ux)).toFixed(2) : null,
+      /* ...and what it paints ACROSS that. One number per axis, because the
+         same stretch that rounded the corner also painted the loop's vertical
+         sides at a different weight from its horizontal ones. */
+      thickCross: line ? +((parseFloat(getComputedStyle(line).strokeWidth) || 0) * (land ? ux : uy)).toFixed(2) : null,
+      /* THE CORNER, AND WHAT IT HAS TO MATCH. The line rides the column's box
+         grown by --seal-out on every side, and an outline offset outward from a
+         rounded rectangle only stays PARALLEL to it if its radius grows by that
+         same offset. So the honest target is the board's own radius plus the
+         stand-off — one number, checked at every cell size. */
+      corner: cornerOf(line), board: +parseFloat(getComputedStyle(col).borderRadius).toFixed(2),
+      standoff: +parseFloat(getComputedStyle(seal).getPropertyValue('--seal-out')).toFixed(2),
       col: cb, loop: one('sl'), arc: one('sal'),
       clasp: rivet ? r(seal.querySelector('.sclasp')) : null,
       // how far the painted line stands OUTSIDE the run, on each side
@@ -822,6 +855,64 @@ try {
           || b.x + b.w > box.x + box.w || b.y + b.h > box.y + box.h); }),
     };
   }, [side, c]);
+
+  /* THE CORNER IS THE BOARD'S, AT EVERY CELL SIZE — asserted through one
+     helper wherever a seal is measured (this phone, the 88px cap, landscape,
+     and every span), because the whole defect was that the number moved with
+     the cell and a single viewport could not see it. --seal-out is READ, never
+     typed here, so the stand-off and its guard cannot drift apart. */
+  const cornerOk = (name, s, where) => {
+    check(s.corner !== null && Math.abs(s.corner - (s.board + s.standoff)) < 0.75,
+      'THE ' + name.toUpperCase() + ' SEAL DOES NOT WEAR THE BOARD\'S CORNER in ' + where
+      + ' — its line must run parallel to the column it encloses, corners included',
+      { painted: s.corner, want: s.board + s.standoff, board: s.board, standoff: s.standoff });
+    check(s.thick !== null && Math.abs(s.thick - s.thickCross) < 0.15,
+      'the ' + name + ' seal paints its two axes at different weights in ' + where,
+      { along: s.thick, across: s.thickCross });
+  };
+  /* EVERY RING A COLUMN PAINTS, in one list per column. The seal says "this
+     column is protected"; .col.legal::after says "you may play here this turn".
+     Both are true of a warded column with room left, and until now both drew a
+     ring — the seal's line 1.6px outside the column box, the hint's dashed one
+     at 4px — so the player saw ONE DOUBLED EDGE 2.4px thick and reported it as
+     a rendering fault (photographed). The fix is not to drop a fact: it is that
+     the hint is not a ring but a STATE the column's outline wears, so where a
+     seal is drawn the seal carries it and the pseudo stands down. This measures
+     what the fix has to keep true — never two, and never none. */
+  const outlinesOf = (pg = page) => pg.evaluate(() => {
+    const drawn = (n, col) => { let p = n, a = 1;
+      while (p && p !== col) { const st = getComputedStyle(p);
+        if (st.display === 'none' || st.visibility === 'hidden') return 0;
+        a *= +st.opacity; p = p.parentElement; }
+      return a; };
+    const pseudo = (col, at) => { const s = getComputedStyle(col, at);
+      const w = parseFloat(s.borderTopWidth) || 0;
+      return (s.content !== 'none' && s.display !== 'none' && w > 0
+        && s.borderTopStyle !== 'none' && +s.opacity > 0.05)
+        ? at + '(' + s.borderTopStyle + ' ' + +w.toFixed(1) + 'px @' + parseFloat(s.top) + 'px)' : null;
+    };
+    return [...document.querySelectorAll('#topBoard .col,#botBoard .col')].map((col) => {
+      const seal = col.querySelector('.seal');
+      const lit = !!seal && getComputedStyle(seal).display !== 'none'
+        && [...seal.querySelectorAll('path,circle')].some((n) => drawn(n, col) > 0.05);
+      return { id: col.closest('.board').id + '#' + col.dataset.col,
+        cls: [...col.classList].filter((c) => c !== 'col').sort().join('.'),
+        rings: [lit ? 'seal' : null, pseudo(col, '::after'), pseudo(col, '::before')].filter(Boolean) };
+    });
+  });
+  const oneOutline = (list, where) => {
+    check(list.every((o) => o.rings.length <= 1),
+      'A COLUMN WEARS TWO OUTLINES in ' + where + ' — two rings 2.4px apart read as one doubled edge',
+      list.filter((o) => o.rings.length > 1));
+    /* ...and the other half of the same rule, which is what stops "one outline"
+       being solved by deleting one: never NONE either. A column you may play
+       into has to say so, sealed or bare. */
+    const playable = list.filter((o) => /(^|\.)legal(\.|$)/.test(o.cls));
+    check(playable.length > 0 && playable.every((o) => o.rings.length >= 1),
+      'A PLAYABLE COLUMN LOST ITS AFFORDANCE in ' + where
+      + ' — every column you may play into must still wear a ring',
+      playable.filter((o) => !o.rings.length));
+  };
 
   await newGame({ spell: 'ward', mode: 3 });   // 3 = COLUMN SHIELD (core/modes)
   check(await waitChoose(), 'game never reached choose (seal)');
@@ -856,15 +947,17 @@ try {
   /* A WARD BESIDE A SHIELD IS STILL ITS OWN MARK. Only shields merge (§10a-i):
      a ward is ONE charge on ONE column, and a line drawn round two of them
      would say something false. So these two neighbours draw two lines 6px
-     apart, whose INK is 0.46px apart at the 88px cap — the only thing keeping
-     them legible is that they are two different hues, which is what the stroke
-     assertion above is really guarding. */
+     apart, whose INK is 1.2px apart at every cell size — it was 0.46px at the
+     88px cap while the stroke still scaled with the cell. The only thing
+     keeping them legible is that they are two different hues, which is what the
+     stroke assertion above is really guarding. */
   check(!out.sealWard.merged && out.sealWard.spans === 1 && out.sealShield.spans === 1,
     'a WARD was swallowed by its neighbour\'s seal', { ward: out.sealWard.spans, shield: out.sealShield.spans });
   /* IT COSTS THE DICE NOTHING, it never touches the chip strip, and it never
      reaches the nameplate. The painted line stands OUTSIDE the run on all four
-     sides by less than half the 6px gutter — 2.78px at the 88px cap, which is
-     the entire budget a seal has before its ink meets a neighbour's. */
+     sides by less than half the 6px gutter — 2.4px, or 2.6px where the seal is
+     carrying the placement hint, which is the entire budget a seal has before
+     its ink meets a neighbour's. */
   for (const [name, s] of [['shield', out.sealShield], ['ward', out.sealWard]]) {
     check(!!s.out && Object.values(s.out).every((v) => v > 0.3 && v < 3),
       'the ' + name + " seal must sit just outside the stack — over a die, or into the neighbour's gutter",
@@ -873,6 +966,7 @@ try {
     check(s.toChip > 0.5, 'THE ' + name.toUpperCase() + ' SEAL REACHES THE COLUMN CHIP', { gap: s.toChip });
     check(s.toPlateInk > 0.5, 'THE ' + name.toUpperCase() + ' SEAL REACHES THE NAMEPLATE',
       { ink: s.toPlateInk, box: s.toPlate });
+    cornerOk(name, s, 'portrait/390');
   }
   /* IT MUST NOT STROBE. renderSide repaints on every placement; a draw-on keyed
      to a class that merely persists restarts wherever the element is rebuilt —
@@ -987,9 +1081,9 @@ try {
 
   /* ---------- 10a-ii. TWO SEALED NEIGHBOURS ARE ONE SEAL ----------
      Two shielded columns side by side used to draw two closed loops 6px apart,
-     and at the 88px cap their painted strokes leave 0.46px of gutter between
-     them — already one smeared band, said twice. So the drawing tells the
-     truth: ONE enclosure round the whole run.
+     and their painted strokes leave 1.2px of gutter between them (0.46px at the
+     88px cap on the stretched frame this replaced) — already one smeared band,
+     said twice. So the drawing tells the truth: ONE enclosure round the run.
      It is safe to say because A SHIELD NEVER LIFTS. A COLUMN SHIELD column is
      shielded because it is FULL; victimsOf() gives a full column no victims,
      PILFER refuses to rob one and WARD refuses to mark one (core/rules,
@@ -1021,7 +1115,7 @@ try {
   check(out.sealRun.spans === 2 && out.sealRun.parts.includes('sl'),
     'two shielded neighbours did not become one seal', { spans: out.sealRun.spans, parts: out.sealRun.parts });
   check(out.sealInside.merged && !out.sealInside.drawn,
-    'BOTH NEIGHBOURS STILL DRAW A SEAL — two lines 0.46px apart read as one smear', out.sealInside);
+    'BOTH NEIGHBOURS STILL DRAW A SEAL — two lines 1.2px apart read as one smear', out.sealInside);
   check(!!out.sealRun.out && Object.values(out.sealRun.out).every((v) => v > 0.3 && v < 3),
     'the merged seal does not enclose the whole run', { out: out.sealRun.out, spans: out.sealRun.spans });
   /* ONE loop, round BOTH columns, AT THE SAME WEIGHT. A single 62-wide loop
@@ -1031,6 +1125,13 @@ try {
   check(Math.abs(out.sealRun.thick - out.sealLone.thick) < 0.3,
     'THE MERGED SEAL WAS STRETCHED, NOT GROWN — its line is a different weight',
     { lone: out.sealLone.thick, run: out.sealRun.thick });
+  /* ...and the corner is the SAME corner however many columns the loop goes
+     round. A frame that grows with the run keeps it; one stretched across the
+     run does not, and the wider the run the flatter it gets. */
+  cornerOk('merged', out.sealRun, 'portrait/390 span 2');
+  check(Math.abs(out.sealRun.corner - out.sealLone.corner) < 0.5,
+    'the merged seal rounded its corners differently from the lone one',
+    { lone: out.sealLone.corner, run: out.sealRun.corner });
   check(out.sealRun.toChip > 0.5 && out.sealRun.toPlateInk > 0.5,
     'the merged seal reaches the chip strip or the nameplate',
     { chip: out.sealRun.toChip, plate: out.sealRun.toPlateInk });
@@ -1042,6 +1143,7 @@ try {
   check(out.sealRun3.spans === 3 && !!out.sealRun3.out
     && Object.values(out.sealRun3.out).every((v) => v > 0.3 && v < 3),
     'a third sealed neighbour did not join the run', { spans: out.sealRun3.spans, out: out.sealRun3.out });
+  cornerOk('merged', out.sealRun3, 'portrait/390 span 3');
   check(out.sealRun3b.every((s) => s.merged && !s.drawn),
     'a column INSIDE the run still draws a seal of its own', out.sealRun3b.map((s) => s.parts));
   /* AND A STRIKE INSIDE THE RUN FLARES THE MARK THAT EXISTS. The chip's shield
@@ -1174,8 +1276,15 @@ try {
         check(s.toChip > 0.5, 'the ' + name + ' seal reaches the column chip in ' + where, { gap: s.toChip });
         check(s.toPlateInk > 0.5, 'the ' + name + ' seal reaches the nameplate in ' + where,
           { ink: s.toPlateInk, box: s.toPlate });
+        cornerOk(name, s, where + '/cell ' + turn.cell.trim());
       }
     }
+    /* ONE OUTLINE, HERE TOO — and this is the scene the report came from: the
+       near half's column 1 carries a ward AND has room left, so it is `.legal`
+       and `.warded` at once. Both viewports, because the doubling gets worse as
+       the cell grows and 430x932 is the widest the cap allows. */
+    out['sealOutlines_' + view.name] = await outlinesOf(vp);
+    oneOutline(out['sealOutlines_' + view.name], view.name);
     /* ...and a run is the same geometry turned with it: across the screen in
        portrait, DOWN it in landscape. One offset token, two orientations. */
     await vp.evaluate(() => { window.__kb.S.boards[0][1] = [6, 6, 1]; window.__kb.renderAll(false); });
@@ -1187,6 +1296,69 @@ try {
     check(inside.merged && !inside.drawn, 'the run drew two seals in ' + view.name, inside.parts);
     await vctx.close();
   }
+
+  /* ---------- 10a-v. A PROTECTED COLUMN YOU MAY PLAY INTO ----------
+     The reported scene, on the phone it was reported from: your own column,
+     warded, with room left. It is `.warded` and `.legal` at the same time and
+     the two statements used to be two rings — the seal's line 1.6px outside the
+     column box and the placement hint's dashed ring at 4px, 2.4px of gap
+     between them, which is one doubled edge to look at.
+     BOTH FACTS SURVIVE. The hint stands down as a RING only, and the seal it
+     stood down for takes the hint up: the line goes to full strength, thickens,
+     and breathes on the hint's own beat. So the column still answers "you may
+     play here" — with the outline it already had, instead of a second one.
+     A column with NO seal is untouched, and that is asserted here rather than
+     assumed: the dashed ring is the affordance the whole placement flow rests
+     on, and it is also the aim ring (docs/SPELLS.md §7). */
+  await newGame({ spell: 'ward', mode: 3 });
+  check(await waitChoose(), 'game never reached choose (one outline)');
+  await table([[], [4], []], [[5, 5, 2], [], []], 5);
+  await guard(1, 1);                            // MY column 1: a ward, and room left
+  await page.waitForTimeout(900);
+  out.outlines = await outlinesOf();
+  oneOutline(out.outlines, 'portrait/390');
+  out.bare = out.outlines.find((o) => o.id === 'botBoard#0');
+  check(!!out.bare && out.bare.rings.length === 1 && /^::after\(dashed [\d.]+px @-4px\)$/.test(out.bare.rings[0]),
+    'A COLUMN WITH NO SEAL LOST THE HINT IT HAS ALWAYS HAD — that ring is the whole placement flow',
+    out.bare);
+  out.sealedLegal = out.outlines.find((o) => o.id === 'botBoard#1');
+  check(!!out.sealedLegal && /legal/.test(out.sealedLegal.cls) && /warded/.test(out.sealedLegal.cls)
+    && String(out.sealedLegal.rings) === 'seal',
+    'the warded column a player may play into must wear ITS SEAL and nothing else', out.sealedLegal);
+  /* ...and the seal is visibly carrying the hint, not merely surviving it. In
+     computed pixels and in animations, and compared against the SAME seal with
+     the hint taken away — a static probe cannot tell "lit" from "drawn". */
+  out.hintWorn = await page.evaluate(() => {
+    const col = document.querySelector('#botBoard .col[data-col="1"]');
+    const seal = col.querySelector('.seal'), line = seal.querySelector('.sal');
+    const read = () => ({ w: getComputedStyle(line).strokeWidth,
+      anim: seal.getAnimations({ subtree: true }).map((a) => a.animationName).sort().join(',') });
+    const on = read();
+    col.classList.remove('legal');
+    const off = read();
+    col.classList.add('legal');
+    return { on, off };
+  });
+  check(parseFloat(out.hintWorn.on.w) > parseFloat(out.hintWorn.off.w),
+    'A PLAYABLE PROTECTED COLUMN SAYS NOTHING — the hint stood down and the seal never took it up',
+    out.hintWorn);
+  check(out.hintWorn.on.anim.includes('sealready') && !out.hintWorn.off.anim.includes('sealready'),
+    'the seal on a playable column does not breathe on the hint\'s beat', out.hintWorn);
+  /* AND THE AIM RING STILL WINS. While a spell aims, the hints stand down and
+     the ::after becomes the aim ring on the columns the cast can land on — the
+     rule that hides hints hid it once already (docs/SPELLS.md §7). A sealed
+     column is aimable like any other, so it must show that ring even though its
+     hint is the seal. */
+  out.aimRing = await page.evaluate(() => {
+    const col = document.querySelector('#botBoard .col[data-col="1"]');
+    document.documentElement.classList.add('casting'); col.classList.add('aim');
+    const s = getComputedStyle(col, '::after');
+    const r = { display: s.display, w: s.borderTopWidth, style: s.borderTopStyle };
+    col.classList.remove('aim'); document.documentElement.classList.remove('casting');
+    return r;
+  });
+  check(out.aimRing.display !== 'none' && parseFloat(out.aimRing.w) > 0,
+    'THE AIM RING VANISHED ON A SEALED COLUMN — the hint suppressor took it with it', out.aimRing);
 
   /* ---------- 10b. ANVIL: the forge lands on the die the RULE names ----------
      The rule picks WHICH die (lowest face, ties to the centre), so the screen

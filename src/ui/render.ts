@@ -20,36 +20,83 @@ import { spellById, dealtOf } from '../core/spells.ts';
    ONE element, ONE builder: flow/game.ts and online/play.ts drive the same
    board through this layer and neither may paint a seal privately.
 
-   Coordinates are the RUN's own: 62 units is one column at the reference cell
-   (62px cell, 6px gap) and the line runs along that frame's edge — main.css
-   grows the ELEMENT by --seal-out, which is what stands the line off the stack
-   by a constant number of pixels at every cell size. The mouth — where the
+   THE FRAME IS THE COLUMN'S OWN BOX, IN REAL PIXELS. It used to be a fixed
+   62x198 reference — one column at a 62px cell — stretched onto the element
+   with preserveAspectRatio="none", which quietly made every number in here a
+   PROPORTION of the cell instead of a length. The 18-unit corner painted
+   24.4px at an 84px cell against .col's flat 18px radius, so the seal was
+   visibly rounder than everything it enclosed and got rounder on every bigger
+   phone (user report, on a ward — a single thin line makes it obvious). The
+   same stretch painted the loop's vertical sides at a different weight from
+   its horizontal ones. So there is no reference frame any more: the viewBox IS
+   the element's pixel box, one user unit is one CSS pixel, and corner, stroke,
+   clasp and stand-off are all the lengths they look like — constant at every
+   cell size, exactly as --seal-out already was.
+   WHAT THAT COSTS is that the geometry now depends on --cell, so it has to be
+   re-cut when the cell changes; `watchCells` below is that, and it is the only
+   thing that re-cuts it. The dash beats are untouched: every one of them rides
+   `pathLength`, which normalises the line's real length away — which is why
+   they survive this and did NOT survive vector-effect:non-scaling-stroke.
+
+   THE CORNER IS ASKED FOR, NEVER RESTATED. main.css owns the board's radius
+   (.col border-radius); sealMetrics reads it off a real column and adds the
+   stand-off, because a line offset outward from a rounded rectangle only stays
+   PARALLEL to it — corners included — if its radius grows by that same offset.
+
+   The line runs along the frame's edge and main.css grows the ELEMENT by
+   --seal-out, which is what stands it off the stack. The mouth — where the
    shield's two drawing heads meet and where the ward's clasp holds the gap
    shut — is the middle of the short end at y=0; the hinge the ward swings open
-   on is the middle of the far end, y=198.
+   on is the middle of the far end.
 
    A RUN OF ADJACENT SHIELDED COLUMNS IS ONE SEAL, not one each: `sealFor`
    below draws n columns and the gutters between them, and updateScores decides
-   which column carries it (see the note there). The viewBox GROWS with the run
-   rather than one 62-wide loop being stretched across it, so the corner radius,
-   the stroke and the circling bead are the reference cell's at every span —
-   stretched, a two-column loop would paint its vertical sides twice as thick as
-   its horizontal ones and round its corners into ellipses. */
-const SEAL_CELL = 62, SEAL_GAP = 6, SEAL_ROWS = 198;
-const sealWide = (n) => SEAL_CELL*n + SEAL_GAP*(n-1);
+   which column carries it (see the note there). The frame GROWS with the run
+   rather than one column's loop being stretched across it, so the corner, the
+   stroke and the circling bead are the same at every span. */
+const SEAL_MOUTH = 4;      // half the gap at the mouth that the ward's clasp holds shut
+/* READ ONCE PER LAYOUT, not once per column: getComputedStyle forces a style
+   pass and updateScores runs on every placement. watchCells clears it. */
+let SEALM = null;
+function sealMetrics(){
+  const cs = getComputedStyle(document.documentElement);
+  const num = (k,d) => { const v = parseFloat(cs.getPropertyValue(k)); return v > 0 ? v : d; };
+  const cell = num('--cell',62), gap = num('--gap',6), out = num('--seal-out',1.6);
+  const col = document.querySelector('.col');
+  const board = col ? parseFloat(getComputedStyle(col).borderRadius) : 18;
+  return { cell, gap, out, r: board + out, h: 3*cell + 2*gap + 2*out };
+}
+function sealM(){ return SEALM || (SEALM = sealMetrics()); }
 function sealFor(n){
-  const w = sealWide(n), m = w/2, e = w - 18;
-  const loop = 'M18 0H'+e+'a18 18 0 0 1 18 18v162a18 18 0 0 1-18 18H18a18 18 0 0 1-18-18V18a18 18 0 0 1 18-18Z';
-  return '<svg class="seal" data-n="'+n+'" viewBox="0 0 '+w+' '+SEAL_ROWS+'" preserveAspectRatio="none" aria-hidden="true">'
+  const m = sealM(), w = m.cell*n + m.gap*(n-1) + 2*m.out, h = m.h, mid = w/2, R = m.r;
+  const f = (v) => +v.toFixed(2);
+  /* a rounded rectangle inset by k on every side, its corner tightened to
+     match — one helper for the closed loop and the hairline riding inside it */
+  const rr = (k) => { const r = Math.max(0.5, R - k);
+    return 'M'+f(k+r)+' '+f(k)+'H'+f(w-k-r)+'a'+f(r)+' '+f(r)+' 0 0 1 '+f(r)+' '+f(r)
+      + 'V'+f(h-k-r)+'a'+f(r)+' '+f(r)+' 0 0 1 '+f(-r)+' '+f(r)
+      + 'H'+f(k+r)+'a'+f(r)+' '+f(r)+' 0 0 1 '+f(-r)+' '+f(-r)
+      + 'V'+f(k+r)+'a'+f(r)+' '+f(r)+' 0 0 1 '+f(r)+' '+f(-r)+'Z'; };
+  /* the shield's drawing heads: from the hinge, up one side, to the mouth */
+  const half = (d) => 'M'+f(mid)+' '+f(h)+'H'+f(d<0 ? R : w-R)
+    + 'a'+f(R)+' '+f(R)+' 0 0 '+(d<0?1:0)+' '+f(d*R)+' '+f(-R)
+    + 'V'+f(R)+'a'+f(R)+' '+f(R)+' 0 0 '+(d<0?1:0)+' '+f(-d*R)+' '+f(-R)+'H'+f(mid);
+  /* ...and the ward's, which STOP short of the mouth on both sides: the gap is
+     the whole argument of the mark and the clasp is what closes it */
+  const arc = (d) => 'M'+f(mid + d*SEAL_MOUTH)+' 0H'+f(d<0 ? R : w-R)
+    + 'a'+f(R)+' '+f(R)+' 0 0 '+(d<0?0:1)+' '+f(d*R)+' '+f(R)
+    + 'V'+f(h-R)+'a'+f(R)+' '+f(R)+' 0 0 '+(d<0?0:1)+' '+f(-d*R)+' '+f(R)+'H'+f(mid);
+  const loop = rr(0);
+  return '<svg class="seal" data-n="'+n+'" viewBox="0 0 '+f(w)+' '+f(h)+'" preserveAspectRatio="none" aria-hidden="true">'
   + '<g class="sgold">'                                   /* SHIELD: closed, doubled, seamless */
     + '<g class="sset">'
       + '<path class="sl" d="' + loop + '"/>'
-      + '<path class="si" d="M18 3H'+e+'a15 15 0 0 1 15 15v162a15 15 0 0 1-15 15H18a15 15 0 0 1-15-15V18a15 15 0 0 1 15-15Z"/>'
+      + '<path class="si" d="' + rr(3) + '"/>'
       + '<path class="sb" pathLength="480" d="' + loop + '"/>'
     + '</g>'
-    + '<path class="sd" pathLength="240" d="M'+m+' 198H18a18 18 0 0 1-18-18V18a18 18 0 0 1 18-18h'+(m-18)+'"/>'
-    + '<path class="sd" pathLength="240" d="M'+m+' 198h'+(e-m)+'a18 18 0 0 0 18-18V18a18 18 0 0 0-18-18H'+m+'"/>'
-    + '<circle class="sj" cx="'+m+'" cy="0" r="3.5"/>'
+    + '<path class="sd" pathLength="240" d="' + half(-1) + '"/>'
+    + '<path class="sd" pathLength="240" d="' + half(1) + '"/>'
+    + '<circle class="sj" cx="'+f(mid)+'" cy="0" r="3.5"/>'
   + '</g>'
   /* THE WARD IS NEVER MERGED — it is one charge on one column, and a line
      drawn round two of them would say something false — so it is only ever
@@ -57,15 +104,31 @@ function sealFor(n){
      stretched one the stylesheet happens to hide. */
   + (n === 1
     ? '<g class="smint">'                                 /* WARD: single, thinner, ONE clasp */
-      + '<path class="sa sal" pathLength="240" d="M27 0H18a18 18 0 0 0-18 18v162a18 18 0 0 0 18 18h13"/>'
-      + '<path class="sa sar" pathLength="240" d="M35 0h9a18 18 0 0 1 18 18v162a18 18 0 0 1-18 18H31"/>'
+      + '<path class="sa sal" pathLength="240" d="' + arc(-1) + '"/>'
+      + '<path class="sa sar" pathLength="240" d="' + arc(1) + '"/>'
       + '<g class="sclasp">'
-        + '<path class="sp spl" d="M31 -3.4 26.4 0 31 3.4"/>'
-        + '<path class="sp spr" d="M31 -3.4 35.6 0 31 3.4"/>'
-        + '<circle class="sv" cx="31" cy="0" r="1.5"/>'
+        + '<path class="sp spl" d="M'+f(mid)+' -3.4 '+f(mid-4.6)+' 0 '+f(mid)+' 3.4"/>'
+        + '<path class="sp spr" d="M'+f(mid)+' -3.4 '+f(mid+4.6)+' 0 '+f(mid)+' 3.4"/>'
+        + '<circle class="sv" cx="'+f(mid)+'" cy="0" r="1.5"/>'
       + '</g></g>'
     : '')
   + '</svg>';
+}
+/* THE SEAL IS CUT TO THE COLUMN IT DRESSES, so it is re-cut when that column
+   changes size — and only then. Watching the column itself, rather than
+   listening for a window resize, keeps the rule where it belongs and catches
+   every way the cell can move: ui/layout.ts fit() re-picks it on resize, on
+   rotation, on every screen that opens or closes, and when the tutorial's
+   preview lane appears. This is a REDRAW, not a state change: each seal keeps
+   its span, no engage beat fires, and updateScores is not consulted. */
+let sealRO = null;
+function reseal(){
+  for(const seal of document.querySelectorAll('.col>.seal')) seal.outerHTML = sealFor(+seal.dataset.n || 1);
+}
+function watchCells(){
+  if(typeof ResizeObserver === 'undefined') return;   // no observer, no re-cut: the boot size still fits
+  if(!sealRO) sealRO = new ResizeObserver(()=>{ SEALM = null; reseal(); });
+  document.querySelectorAll('.col').forEach(c=>sealRO.observe(c));
 }
 /* Grow (or shrink) the seal this column carries to the run it must enclose.
    Returns whether it CHANGED — the caller turns that into the engage beat, so
@@ -163,6 +226,7 @@ export function buildBoards(){
     rc.innerHTML='<span class="rc"><span class="cs"></span><span class="mx"></span></span>'.repeat(SPEC.rows);
     b.appendChild(rc);
   }
+  watchCells();   // ...and from here the seals answer to the column's size
 }
 /* ===================== RENDER ===================== */
 export function renderSide(who,animate){

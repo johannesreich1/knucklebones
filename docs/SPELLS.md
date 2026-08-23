@@ -306,6 +306,17 @@ Learned from real play, each one a shipped bug:
   mover's *own* playable columns, so this bug shows the ring on exactly the
   wrong half. **A UI probe that skips `showHints()` cannot see it** — it tests
   a state real play never reaches.
+- **One column, one outline.** A warded column with room left is both
+  `.warded` and `.legal`, and each used to draw its own ring — the seal's line
+  1.6px outside the column box, the hint's dashed ring at 4px. Two rings 2.4px
+  apart are one doubled edge, not two marks (user report, photographed). The
+  hint is therefore not a ring but a *state the column's outline wears*: where
+  a seal is drawn it stands down and the seal carries it (full-strength line,
+  thickened, breathing on the hint's beat); where there is no seal the
+  `::after` **is** the outline and nothing changed. Both facts still reach the
+  player, with one line. A new mark that rings a column has to answer this
+  rule — `.col.legal:is(.shielded,.warded,.sealsnap)` in `main.css` is the one
+  place it lives, and `tests/test14` §10a-v counts the rings per column.
 - **A self spell casts on press.** One possible target means nothing to aim.
   Dragging still works; dropping anywhere else cancels with the charge intact.
 - **And pressing it again takes it back**, for as long as the die it changed is

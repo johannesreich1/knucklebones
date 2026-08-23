@@ -1167,10 +1167,13 @@ html.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
    would go on reading 1.6 after the strokes had fully overlapped.
 
    The line is still outside every die at every span, and clear of everything
-   around it: measured at the 88px cap it is 6.0px short of the column chip and
-   3.1px short of the nearest thing the nameplate DRAWS (the clasp crosses the
-   plate's empty box by 2.4px, which is why that box is not the thing to
-   measure); in landscape the tightest of those is 1.2px. The mark adds nothing
+   around it: re-measured at the 88px cap on the pixel frame it is 6.4px short
+   of the column chip and 4.8px short of the nearest thing the nameplate DRAWS
+   (the clasp crosses the plate's empty BOX by 0.7px, which is why that box is
+   not the thing to measure); in landscape the tightest of those is 1.4px. Every
+   one of those numbers is a little better than the stretched frame's, because
+   the ink no longer grows with the cell — at the cap it stands 2.4px off the
+   stack instead of 2.78px. The mark adds nothing
    on top of the faces — no tint, no fill, no pip contrast lost. overflow:visible
    because the clasp and the glows sit outside the frame. It is a real element
    and not a pseudo, because .col::after is the placement hint AND the aim ring
@@ -1212,6 +1215,7 @@ html.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
 /* ...except a column INSIDE a run: its neighbour's seal already encloses it,
    and one enclosure is the whole point of merging them. */
 .col.sealmerged>.seal{display:none}
+
 .col>.seal>g{display:none}
 .col.shielded>.seal>.sgold{display:block}
 .col.warded:not(.shielded)>.seal>.smint,.col.sealsnap>.seal>.smint{display:block}
@@ -1219,6 +1223,40 @@ html.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
 /* the ward's hue AND its heartbeat: the same two states that show the clasp at
    all are the only two that may animate it (see .sp/.sv below) */
 .col.warded:not(.shielded)>.seal,.col.sealsnap>.seal{--g:var(--wdc);--sealbreathe:sealbreathe}
+/* ===== ONE COLUMN, ONE OUTLINE =====
+   A protected column you may still play into is making two true statements at
+   once — "this column is protected" and "you may play here this turn" — and
+   each of them used to draw its own ring: the seal's line 1.6px outside the
+   column box, .col.legal::after's dashed ring at 4px. Two rings 2.4px apart are
+   not two marks, they are one doubled edge, which is what the player saw and
+   photographed on a warded column.
+   NEITHER FACT IS DROPPED. The placement hint is not a ring — it is a STATE the
+   column's OUTLINE wears. Where the column has no outline of its own, ::after
+   IS that outline and nothing here changes (that ring is the affordance the
+   whole placement flow rests on, and it is also the aim ring — docs/SPELLS.md
+   §7). Where a seal is drawn, the seal is already the column's outline, so it
+   carries the state instead: full-strength line, thicker, breathing on the
+   hint's own beat. The mark still says which rule protects the column — closed
+   loop against clasped line, in gold or mint — and now also says whether you
+   may play into it, with one line rather than two.
+   THE STATES ARE THE ONES ABOVE, restated here because CSS has no way to name
+   a group once; they are kept adjacent so they cannot drift apart. In practice
+   only .warded is reachable — .shielded means FULL and a full column is never
+   .legal — but a mode that shields a column with room left would find this rule
+   already true rather than the bug back.
+   `.legal` already implies the column has room, so it can never be
+   .sealmerged: no exclusion is needed for the run.
+   It sits ABOVE the line styles that follow and still wins them — five classes
+   against two — which is deliberate: the resting line is described once, below,
+   and this says only what changes when the column becomes playable. */
+.col.legal:is(.shielded,.warded,.sealsnap)::after{display:none}
+.col.legal:is(.shielded,.warded,.sealsnap)>.seal>g{animation:sealready 1.4s ease-in-out infinite}
+.col.legal:is(.shielded,.warded,.sealsnap)>.seal :is(.sl,.sa){stroke:var(--g);stroke-width:2;
+  filter:drop-shadow(0 0 8px color-mix(in srgb,var(--g) 80%,transparent))}
+/* The breath is the hint's, in the seal's own hue: same 1.4s, same shape as
+   @pulse. It does not scale — the line has 1.2px of gutter to a neighbour's
+   and a breathing ring would spend it — so the whole beat is in the light. */
+@keyframes sealready{0%,100%{opacity:.5}50%{opacity:1}}
 
 /* the shield's line: two strokes, the outer carrying the weight and an inner
    hairline riding just inside it. A doubled line reads as engraved and
@@ -1240,17 +1278,17 @@ html.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
 /* the ward's line: single, thinner, and it STOPS — the gap at the mouth is
    the whole argument of the mark, and the clasp is what closes it. */
 .seal .sa{fill:none;stroke:color-mix(in srgb,var(--g) 88%,transparent);stroke-width:1.4;
-  stroke-linecap:round;stroke-dasharray:240;transform-box:view-box;transform-origin:31px 198px;
+  stroke-linecap:round;stroke-dasharray:240;transform-box:view-box;transform-origin:50% 100%;
   filter:drop-shadow(0 0 4px color-mix(in srgb,var(--g) 50%,transparent))}
 /* THE CLASP: two halves of one knot, meeting over the gap, pinned. Two open
    Vs that close into a diamond, so "this comes apart" is legible while it is
    still whole. It is the only part of either seal that moves at rest — the
    eye is told where the failure will be, in advance. */
 .seal .sp{fill:none;stroke:color-mix(in srgb,var(--g) 96%,transparent);stroke-width:1.4;
-  stroke-linecap:round;stroke-linejoin:round;transform-box:view-box;transform-origin:31px 0;
+  stroke-linecap:round;stroke-linejoin:round;transform-box:view-box;transform-origin:50% 0;
   filter:drop-shadow(0 0 5px color-mix(in srgb,var(--g) 80%,transparent))}
 .seal .sv{fill:color-mix(in srgb,var(--g) 96%,transparent);
-  transform-box:view-box;transform-origin:31px 0;
+  transform-box:view-box;transform-origin:50% 0;
   filter:drop-shadow(0 0 5px color-mix(in srgb,var(--g) 85%,transparent))}
 /* THE WARD'S ALONE. A shielded column hides the whole clasp group, and this
    used to animate it anyway: three shapes running forever inside a display:none
@@ -1261,7 +1299,13 @@ html.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
    have to carry this — still win on the beats they own. */
 .seal .sp,.seal .sv{animation:var(--sealbreathe,none) 2.6s ease-in-out infinite}
 @keyframes sealbreathe{0%,100%{opacity:.78}50%{opacity:1}}
-.seal .sclasp{transform-box:view-box;transform-origin:31px 0}
+/* THE MOUTH AND THE HINGE, AS FRACTIONS OF THE FRAME — 50% 0 and 50% 100%.
+   They were 31px and 198px, the span-1 reference frame's own numbers, which
+   stopped being the mouth the moment the frame became the run's real pixel box
+   (and were already wrong for a merged run's join flash, where the mouth is at
+   half of two or three columns, not at 31). A fraction is right at every span
+   and every cell size. */
+.seal .sclasp{transform-box:view-box;transform-origin:50% 0}
 /* which way each half flies when the clasp lets go */
 .seal .sal,.seal .spl{--d:-1}
 .seal .sar,.seal .spr{--d:1}
@@ -1279,7 +1323,7 @@ html.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
   stroke-linecap:round;stroke-dasharray:240;stroke-dashoffset:240;opacity:0;
   filter:drop-shadow(0 0 7px color-mix(in srgb,var(--g) 85%,transparent))}
 .seal .sj{fill:none;stroke:color-mix(in srgb,var(--g) 45%,#fff);stroke-width:1.7;opacity:0;
-  transform-box:view-box;transform-origin:31px 0}
+  transform-box:view-box;transform-origin:50% 0}
 .col.sealon>.seal .sd{animation:sealdraw .62s ease-out both}
 @keyframes sealdraw{0%{stroke-dashoffset:240;opacity:0}6%{stroke-dashoffset:240;opacity:1}
   62%{stroke-dashoffset:0;opacity:1}76%{stroke-dashoffset:0;opacity:1}
@@ -1297,12 +1341,15 @@ html.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
    side is already spent — the clasp clears what the nameplate draws by
    1.15px there, the tightest margin in the whole feature. So the flash is
    given a smaller reach in landscape rather than the seal being moved.
-   MEASURED AND ACCEPTED, not fixed: the resting line itself still stands
-   1.09px past the viewport on the outer side (the board is flush to the
-   screen edge there and the seal is the column grown by --seal-out). That is
-   the outer half of a 2.4px stroke at the extreme edge; pulling it in would
-   cost the nameplate clearance above, and widening the landscape board is a
-   layout change this feature should not be making. */
+   MEASURED AND ACCEPTED, not fixed: the whole mark still stands 5.19px past
+   the viewport on the outer side at 667x375 (the ward's clasp straddles the
+   mouth and the mouth IS that edge), of which the resting LINE is 1.89px (the
+   board is flush to the screen edge there and the seal is the column grown by
+   --seal-out). The pixel frame improved both by roughly 0.9px, because the
+   clasp and the stroke stopped scaling with the cell, but it does not fix
+   them: pulling the mark in would cost the nameplate clearance above, and
+   widening the landscape board is a layout change this feature should not be
+   making. tests/test14 §10a-iv records the number without gating on it. */
 .land .seal{--sealjoin-max:1.6}
 /* the ward draws the same way — the line runs up from the hinge and the clasp
    closes over the gap last, which is the only thing it has to say */
@@ -1889,6 +1936,13 @@ html.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
     transition-duration:.06s!important}
   #bg::before{animation:none}
   .col.legal::after,.col.danger::before{animation:none;opacity:.8}
+  /* ...and the same for the seal that carries the hint on a protected column.
+     The blanket rule at the top of this block collapses every animation to its
+     END state, and sealready's is the trough — which would leave a playable
+     protected column DIMMER than an unplayable one. The hint's static half —
+     full-strength line, thickened, haloed — is what survives, exactly as the
+     dashed ring above survives as a ring without its pulse. */
+  .col.legal>.seal>g{animation:none;opacity:1}
   .die.m3{animation:none}
   /* THE SEAL keeps its shape and loses its motion. Every beat above is
      one-shot and collapses to its own end state under the blanket rule at the
