@@ -5,6 +5,7 @@ import { SPELLS, spellById, type CastCtx, type SpellSpec } from '../core/spells.
 import { S } from '../state.ts';
 import { colEl, slotEl, slotIdx } from '../ui/dom.ts';
 import { appRoot } from '../ui/embed.ts';
+import { REDUCED } from '../ui/fx.ts';
 import { spellHue } from '../ui/spellicons.ts';
 import { nameOf } from '../ui/identity.ts';
 import { setCastingPresentation } from '../ui/game/root-state.ts';
@@ -60,6 +61,11 @@ export function renderSpellRail(ports: SpellRailPorts): void {
 /* Called only from the state transition that spends a charge. The outgoing
    copy is independent of the rerender that reveals what remains underneath. */
 export function playSpellCharge(who: Player, id: string, alreadyFaceUp = false): void {
+  // Reduced motion resolves straight to the remaining hand. Creating a card
+  // whose animation is collapsed to zero leaves a transient copy until the
+  // browser happens to deliver animationend (or the safety timeout), which is
+  // both visually noisy and observably non-reduced on slower renderers.
+  if (REDUCED) return;
   const button = runeOf(id);
   if (!button || button.hidden || Number(button.dataset.seat) !== who) return;
   const top = button.querySelector<HTMLElement>('.rune-charge.top');

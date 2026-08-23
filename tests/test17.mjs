@@ -84,6 +84,15 @@ try {
         new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))),
         new Promise((r) => setTimeout(r, 400)),
       ]);
+      /* Programmatic scrollTop writes do not consistently enqueue a scroll
+         event in headless WebKit on Linux. Dispatch the same event a real
+         scroll produces so this suite tests the shared capture handler, not
+         the runner's decision about synthesising browser input. */
+      const scrollTo = async (body, y) => {
+        body.scrollTop = y;
+        body.dispatchEvent(new Event('scroll'));
+        await frame();
+      };
       const rows = [];
       for (const ov of document.querySelectorAll('.ov.paged')) {
         const head = ov.querySelector('.shead'), body = ov.querySelector('.pbody');
@@ -114,8 +123,7 @@ try {
            the story, which is what the `var(--sc, 0)` fallback buys. Without
            the fallback the declaration is invalid at computed-value time and
            opacity falls back to its initial 1. */
-        body.scrollTop = 0;
-        await frame();
+        await scrollTo(body, 0);
         const glassAtRest = +getComputedStyle(head, '::before').opacity;
         /* IT ARRIVES WITH THE CONTENT, not on the first pixel. A frost that
            snapped to full the instant anything moved read as a slab dropping in
@@ -136,14 +144,11 @@ try {
           const sum = px('--band') + px('--headgap');
           return sum > 0 ? sum : 40;                // ui/dom.ts's own fallback
         })();
-        body.scrollTop = Math.max(1, Math.round(ramp * 0.3));
-        await frame();
+        await scrollTo(body, Math.max(1, Math.round(ramp * 0.3)));
         const glassPart = +getComputedStyle(head, '::before').opacity;
-        body.scrollTop = Math.round(ramp * 0.7);
-        await frame();
+        await scrollTo(body, Math.round(ramp * 0.7));
         const glassMore = +getComputedStyle(head, '::before').opacity;
-        body.scrollTop = 600;                       // as far as this body goes
-        await frame();
+        await scrollTo(body, 600);                  // as far as this body goes
         const glassScrolled = +getComputedStyle(head, '::before').opacity;
         const after = head.getBoundingClientRect().y.toFixed(1);
         const cs = getComputedStyle(body);
