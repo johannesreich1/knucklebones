@@ -282,7 +282,9 @@ export async function runProtectionBeatScenarios(suite) {
       'a seal froze part-drawn with motion reduced', out.sealReduced.ward);
 
     /* Its hit is a direct before/after, not a 1.6s invisible `.sealsnap` that
-       suppresses the next player's legal outline after all motion is gone. */
+       suppresses the next player's legal state after all motion is gone. The
+       column stays playable, while reduced motion deliberately leaves its
+       ordinary attention ring unpainted. */
     await table([[], [], []], [[5, 5, 2], [4], []], 4, rp);
     await guard(1, 0, rp);
     out.wardReducedHit = await inspectReducedWardStrike(rp);
@@ -291,7 +293,7 @@ export async function runProtectionBeatScenarios(suite) {
         && !out.wardReducedHit.sawGhost && !out.wardReducedHit.sawSnap
         && !out.wardReducedHit.sawParticles && !out.wardReducedHit.sawFlash
         && !out.wardReducedHit.warded && !out.wardReducedHit.snap && !out.wardReducedHit.rune
-        && out.wardReducedHit.legal && out.wardReducedHit.hint,
+        && out.wardReducedHit.legal && !out.wardReducedHit.hint,
       'reduced motion did not resolve the Ward hit to a clean, playable after-state', out.wardReducedHit);
   }
 

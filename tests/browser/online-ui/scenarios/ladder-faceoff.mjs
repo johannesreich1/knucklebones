@@ -90,7 +90,11 @@ export async function runLadderFaceoffScenarios(suite) {
      the ladder underneath is what the finger was aiming at. */
   check(fo?.exit?.rested > 0 && fo?.exit?.restedHit === fo?.exit?.rested,
         'the resting face-off does not take the tap that lands on it', fo?.exit);
-  check(fo?.exit?.leaving >= 2 && fo?.exit?.leavingHit === 0,
+  /* One sampled moved frame is sufficient evidence here: pointer-events is
+     disabled synchronously when the exit begins. Requiring two made the
+     observable contract depend on how many rAF callbacks a busy CI renderer
+     scheduled during the short 180ms flight. */
+  check(fo?.exit?.leaving >= 1 && fo?.exit?.leavingHit === 0,
         'the departing face-off still eats taps while it flies out', fo?.exit);
   /* and the one the gesture cost: with no ✕ there must still be something a
      screen reader announces and a keyboard can press */

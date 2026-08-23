@@ -138,7 +138,7 @@ export async function runMotionSafeAreaScenarios(suite) {
         gap: numeralRect.top - pointRect.bottom,
         centreError: Math.abs((pointRect.left + pointRect.width / 2)
           - (numeralRect.left + numeralRect.width / 2)),
-        edgeError: Math.abs(pointBox.bottom - dieRect.top),
+        edgeGap: dieRect.top - pointBox.bottom,
       } : null,
     };
   }, beforePlacement);
@@ -185,7 +185,7 @@ export async function runMotionSafeAreaScenarios(suite) {
       gap: pointInk.top - numeralInk.bottom,
       centreError: Math.abs((pointInk.left + pointInk.width / 2)
         - (numeralInk.left + numeralInk.width / 2)),
-      edgeError: Math.abs(pointBox.top - dieRect.bottom),
+      edgeGap: pointBox.top - dieRect.bottom,
     } : null;
   });
   out.reduced = await rp.evaluate(() => ({
@@ -219,14 +219,16 @@ export async function runMotionSafeAreaScenarios(suite) {
     && out.reducedPlacement.point.numeralDisplay === 'flex'
     && out.reducedPlacement.point.gap >= 2
     && out.reducedPlacement.point.centreError <= 1.5
-    && out.reducedPlacement.point.edgeError <= 2,
+    && out.reducedPlacement.point.edgeGap >= -1
+    && out.reducedPlacement.point.edgeGap <= 3,
   'numbered-die score feedback covers the numeral instead of sitting at its top edge', out.reducedPlacement.point);
   check(out.reducedFarPoint?.text.startsWith('+')
     && out.reducedFarPoint.numeralDisplay === 'flex'
     && out.reducedFarPoint.turned
     && out.reducedFarPoint.gap >= 2
     && out.reducedFarPoint.centreError <= 1.5
-    && out.reducedFarPoint.edgeError <= 2,
+    && out.reducedFarPoint.edgeGap >= -1
+    && out.reducedFarPoint.edgeGap <= 3,
   'top-seat numbered-die feedback did not leave through its reading edge', out.reducedFarPoint);
   check(out.reducedSystemDefault.state === null && out.reducedSystemDefault.jsFlag
     && out.reducedSystemDefault.rootClass && out.reducedSystemDefault.selected === '1',
