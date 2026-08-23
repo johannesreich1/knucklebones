@@ -2,6 +2,7 @@ import pkg from 'playwright';
 import { runLandscapeScenarios } from './scenarios/landscape.mjs';
 import { runInputAccessibilityScenarios } from './scenarios/input-accessibility.mjs';
 import { runMotionSafeAreaScenarios } from './scenarios/motion-safe-areas.mjs';
+import { runMenuPressFeedbackScenarios } from './scenarios/menu-press-feedback.mjs';
 
 const { chromium, devices } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
@@ -23,6 +24,7 @@ const suite = { browser, devices, F, problems, errs, out, check, markExperienced
 await runLandscapeScenarios(suite);
 await runInputAccessibilityScenarios(suite);
 await runMotionSafeAreaScenarios(suite);
+await runMenuPressFeedbackScenarios(suite);
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
 await browser.close();

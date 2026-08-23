@@ -20,6 +20,7 @@ import { runMatchmakingScenarios } from './scenarios/matchmaking.mjs';
 import { runFreshAccountScenarios } from './scenarios/fresh-account.mjs';
 import { runLadderFaceoffScenarios } from './scenarios/ladder-faceoff.mjs';
 import { runAccountLifecycleScenarios } from './scenarios/account-lifecycle.mjs';
+import { runOnlineMenuPressFeedbackScenarios } from './scenarios/menu-press-feedback.mjs';
 
 const { webkit } = pkg;
 // the origin comes from run-all (KB_URL) or from a server this suite starts —
@@ -51,6 +52,7 @@ try {
   await runFreshAccountScenarios(suite);
   await runLadderFaceoffScenarios(suite);
   await runAccountLifecycleScenarios(suite);
+  await runOnlineMenuPressFeedbackScenarios(suite);
 } catch (e) {
   problems.push('THREW :: ' + e.message);
 }

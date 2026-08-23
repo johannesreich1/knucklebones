@@ -12,6 +12,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     door = 'chip',
     named = false,
     motion = null,
+    probe = null,
   }) {
     // NO isMobile here: under WebKit it quietly disables page.route(), and a
     // stub that never fires would let this suite talk to the live backend.
@@ -66,6 +67,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     // online.css has now landed. Its selectors may style its own screens and
     // body-level sheets, but must not repaint the eager Home hiding underneath.
     const homeAfterOnline = await homeSnapshot();
+    const probeResult = probe ? await probe(page) : null;
 
     if (door === 'play') {
       const samples = [];
@@ -95,7 +97,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     const { claimFlow, askAbove, ptsDoor } = await probeAccountActions(page, { door, named });
 
     await ctx.close();
-    return { seen, errs, signupCalls: signupCalls(), faceoff, ptsDoor, claimFlow, askAbove,
+    return { seen, errs, signupCalls: signupCalls(), faceoff, ptsDoor, claimFlow, askAbove, probeResult,
              homeStyles: { before: homeBeforeOnline, after: homeAfterOnline } };
   };
 }
