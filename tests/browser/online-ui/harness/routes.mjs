@@ -37,6 +37,12 @@ export async function installOnlineRoutes(
                               named_at: claimed ? '2026-08-01T00:00:00Z' : null }]) });
   });
   await page.route('**/rest/v1/matches*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
+  await page.route('**/functions/v1/pvp-join', (r) => r.fulfill({
+    status: 200, contentType: 'application/json', body: '{"status":"queued"}',
+  }));
+  await page.route('**/rest/v1/rpc/leave_ranked_queue', (r) => r.fulfill({
+    status: 200, contentType: 'application/json', body: '{"status":"left"}',
+  }));
   await page.route('**/auth/v1/.well-known/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"keys":[]}' }));
   /* the 0022 shape: points/rank/apex/avatar/peak. The two rows sit in
      DIFFERENT groups (1,072 is IVORY, 465 is BONE) so the board has to draw a

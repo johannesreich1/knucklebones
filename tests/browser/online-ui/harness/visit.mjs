@@ -24,10 +24,17 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     const signupCalls = await installOnlineRoutes(page, {
       anonymous, attached, door, named, SESSION, GUEST_ID,
     });
+    if (door === 'play') {
+      /* Ranked newcomers stop at the once-only tutorial offer. This probe is
+         about the queue the returning player sees, so enter as a played device. */
+      await page.addInitScript(() => localStorage.setItem(
+        'knucklebones.v1', JSON.stringify({ played: true }),
+      ));
+    }
 
     await page.goto(URL, { waitUntil: 'domcontentloaded' });
     // the home chip carrying the player's identity IS the door to the account view
-    const entry = door === 'board' ? '#btnBoardHome' : '#homeChip';
+    const entry = door === 'board' ? '#btnBoardHome' : door === 'play' ? '#btnOnline' : '#homeChip';
     await page.waitForSelector(entry);
     const homeSnapshot = () => page.evaluate(() => {
       const row = document.querySelector('#ovStart .hrow');
@@ -45,7 +52,9 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     const homeBeforeOnline = await homeSnapshot();
     await page.click(entry);
     await page.waitForSelector('#ovOnline', { state: 'attached', timeout: 15000 });
-    if (door === 'board') {
+    if (door === 'play') {
+      await page.waitForSelector('#onQueue:not([hidden])', { timeout: 15000 });
+    } else if (door === 'board') {
       await page.waitForSelector('#ovOnline .lb .lrow', { timeout: 15000 });
     } else {
       await page.waitForFunction(() => {
@@ -57,6 +66,29 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     // online.css has now landed. Its selectors may style its own screens and
     // body-level sheets, but must not repaint the eager Home hiding underneath.
     const homeAfterOnline = await homeSnapshot();
+
+    if (door === 'play') {
+      const samples = [];
+      for (let i = 0; i < 4; i++) {
+        samples.push(await page.evaluate(() => {
+          const message = document.querySelector('#onQueue .qmsg');
+          const die = document.querySelector('#onQueue .qdice .die');
+          const pseudo = getComputedStyle(message, '::after');
+          return {
+            label: message?.textContent?.trim() ?? null,
+            pseudoContent: pseudo.content,
+            labelAnimation: pseudo.animationName,
+            dieAnimation: die ? getComputedStyle(die).animationName : null,
+          };
+        }));
+        if (i < 3) await page.waitForTimeout(350);
+      }
+      await page.click('#btnQueueCancel');
+      await page.waitForTimeout(50);
+      await ctx.close();
+      return { queueLabel: samples, errs, signupCalls: signupCalls(),
+               homeStyles: { before: homeBeforeOnline, after: homeAfterOnline } };
+    }
 
     const seen = await readOnlineView(page);
     const faceoff = await probeFaceoff(page, { door, motion });

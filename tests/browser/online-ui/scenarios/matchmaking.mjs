@@ -1,0 +1,17 @@
+export async function runMatchmakingScenarios(suite) {
+  const { visit, out, check } = suite;
+  const queued = await visit({ door: 'play' });
+  const samples = queued.queueLabel ?? [];
+  out.matchmakingLabel = samples;
+
+  check(samples.length === 4 && samples.every((sample) =>
+    sample.label === 'Looking for an opponent'),
+  'the matchmaking wait no longer says the intended label', samples);
+  check(samples.every((sample) => sample.labelAnimation === 'none'),
+    'the matchmaking label is animating again', samples);
+  check(samples.every((sample) => !sample.pseudoContent.includes('.')),
+    'the matchmaking label is generating trailing dots again', samples);
+  check(samples.every((sample) => sample.dieAnimation === 'qspin'),
+    'removing the label animation also stopped the waiting dice', samples);
+  check(queued.errs.length === 0, 'page errors on the matchmaking queue', queued.errs);
+}

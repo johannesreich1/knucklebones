@@ -16,6 +16,7 @@
 import pkg from 'playwright';
 import { servedBase } from '../../serve.mjs';
 import { createVisit } from './harness/visit.mjs';
+import { runMatchmakingScenarios } from './scenarios/matchmaking.mjs';
 import { runFreshAccountScenarios } from './scenarios/fresh-account.mjs';
 import { runLadderFaceoffScenarios } from './scenarios/ladder-faceoff.mjs';
 import { runAccountLifecycleScenarios } from './scenarios/account-lifecycle.mjs';
@@ -46,6 +47,7 @@ const visit = createVisit({ browser, URL, SESSION, GUEST_ID });
 const suite = { visit, out, check };
 
 try {
+  await runMatchmakingScenarios(suite);
   await runFreshAccountScenarios(suite);
   await runLadderFaceoffScenarios(suite);
   await runAccountLifecycleScenarios(suite);
