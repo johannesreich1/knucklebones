@@ -115,7 +115,7 @@ export async function animateGameMove(
   if (spec.placeVibration) vibrate(12);
   setStageDie(0);
   $('#dieStage').classList.remove('sundered');
-  renderSide(who, true);
+  renderSide(who, !REDUCED);
 
   const gain = boardTotalMode(S.boards[who], S.scoring) - before;
   const multiplied = gain > die;

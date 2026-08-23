@@ -6,7 +6,7 @@ import { S } from '../../state.ts';
 import { Sfx, vibrate } from '../audio.ts';
 import { makeDie, setStageDie } from '../die.ts';
 import { $, faceRotated, slotEl, slotIdx } from '../dom.ts';
-import { fxRoot, pin } from '../fx.ts';
+import { REDUCED, fxRoot, pin } from '../fx.ts';
 import { setStatus } from './turn-state.ts';
 
 export interface RollVisualSpec {
@@ -29,7 +29,9 @@ export interface RollVisualSpec {
 export function animateStageRoll(spec: RollVisualSpec): Promise<number | null> {
   const stage = $('#dieStage');
   const tickMs = spec.tickMs ?? 60;
-  const scramble = spec.scramble ?? true;
+  // Reduced motion reveals the resolved face on the first step. Merely
+  // shortening the CSS spin still left this JavaScript loop cycling faces.
+  const scramble = !REDUCED && (spec.scramble ?? true);
   const started = performance.now();
   let timer: ReturnType<typeof setInterval> | null = null;
   let settled = false;
@@ -81,6 +83,11 @@ export async function flyDieToSlot(who: Player, col: number, die: number): Promi
   if (!source) return;
   const target = slotEl(who, col, slotIdx(who, S.boards[who][col].length));
   if (!target || S.boards[who][col].length >= SPEC.rows) return;
+
+  // The caller paints the authoritative board immediately after this returns.
+  // Do not manufacture a zero-duration traveller: it can still flash at the
+  // root and briefly hides the readable stage die.
+  if (REDUCED) return;
 
   const from = source.getBoundingClientRect();
   const to = target.getBoundingClientRect();

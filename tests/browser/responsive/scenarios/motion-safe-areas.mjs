@@ -26,7 +26,43 @@ export async function runMotionSafeAreaScenarios(suite) {
   await rp.tap('#motionSeg button[data-rm="1"]'); await rp.waitForTimeout(100);
   await rp.tap('#btnSettingsBack'); await rp.waitForTimeout(200);
   await rp.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
-  await rp.tap('#btnPlay'); await rp.waitForTimeout(2500);
+  // Force the human opener so this measures the shared roll/placement view,
+  // not an AI thinking delay. Reduced motion must resolve the face without
+  // the JavaScript scramble and commit a tapped die without a flying ghost.
+  await rp.evaluate(() => { window.__kb.S.starter = 1; });
+  const rollStarted = Date.now();
+  await rp.tap('#btnPlay');
+  await rp.waitForFunction(() => window.__kb.S.phase === 'choose'
+    && !!document.querySelector('#dieStage > .die'), null, { timeout: 1800 })
+    .catch(() => { /* the measured check below names the failure */ });
+  out.reducedRoll = await rp.evaluate((started) => ({
+    elapsed: Date.now() - started,
+    phase: window.__kb.S.phase,
+    value: Number(document.querySelector('#dieStage > .die')?.dataset.v ?? 0),
+    rolling: document.getElementById('dieStage').classList.contains('rolling'),
+    activeAnimations: document.getElementById('dieStage').getAnimations({ subtree: true })
+      .filter((animation) => animation.playState === 'running').length,
+  }), rollStarted);
+
+  const beforePlacement = await rp.evaluate(() => window.__kb.S.boards[1][0].length);
+  await rp.tap('#botBoard .col[data-col="0"]');
+  await rp.waitForTimeout(50);
+  out.reducedPlacement = await rp.evaluate((before) => {
+    const slot = document.querySelector('#botBoard .col[data-col="0"] .slot:last-of-type');
+    const die = document.querySelector('#botBoard .col[data-col="0"] .slot .die');
+    const dieRect = die?.getBoundingClientRect();
+    const slotRect = die?.parentElement?.getBoundingClientRect();
+    return {
+      before,
+      after: window.__kb.S.boards[1][0].length,
+      ghost: !!document.querySelector('#kbroot > .die'),
+      settling: !!die?.classList.contains('settle'),
+      centred: !!dieRect && !!slotRect
+        && Math.abs((dieRect.left + dieRect.width / 2) - (slotRect.left + slotRect.width / 2)) < .5
+        && Math.abs((dieRect.top + dieRect.height / 2) - (slotRect.top + slotRect.height / 2)) < .5,
+      slotPresent: !!slot,
+    };
+  }, beforePlacement);
   out.reduced = await rp.evaluate(() => ({
     jsFlag: window.__kb.reduced,
     particlesAfterBurst: (window.__kb.burst(100, 100, '#fff', 20), document.querySelectorAll('#fx .particle').length),
@@ -34,6 +70,14 @@ export async function runMotionSafeAreaScenarios(suite) {
   }));
   check(out.reduced.jsFlag === true, 'reduced-motion not detected in JS', out.reduced);
   check(out.reduced.particlesAfterBurst === 0, 'particles still spawn under reduced motion', out.reduced);
+  check(out.reducedRoll.phase === 'choose' && out.reducedRoll.value >= 1
+    && out.reducedRoll.elapsed < 950 && !out.reducedRoll.rolling
+    && out.reducedRoll.activeAnimations === 0,
+  'reduced motion did not reveal the settled roll immediately', out.reducedRoll);
+  check(out.reducedPlacement.after === out.reducedPlacement.before + 1
+    && !out.reducedPlacement.ghost && !out.reducedPlacement.settling
+    && out.reducedPlacement.centred && out.reducedPlacement.slotPresent,
+  'reduced motion did not place the die directly in its slot', out.reducedPlacement);
   check(out.reducedSystemDefault.state === null && out.reducedSystemDefault.jsFlag
     && out.reducedSystemDefault.rootClass && out.reducedSystemDefault.selected === '1',
     'the Reduced Motion toggle did not initialize from the OS default', out.reducedSystemDefault);
