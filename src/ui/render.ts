@@ -38,10 +38,16 @@ import { spellById, dealtOf } from '../core/spells.ts';
    `pathLength`, which normalises the line's real length away — which is why
    they survive this and did NOT survive vector-effect:non-scaling-stroke.
 
-   THE CORNER IS ASKED FOR, NEVER RESTATED. main.css owns the board's radius
-   (.col border-radius); sealMetrics reads it off a real column and adds the
-   stand-off, because a line offset outward from a rounded rectangle only stays
-   PARALLEL to it — corners included — if its radius grows by that same offset.
+   THE CORNER IS ASKED FOR, NEVER RESTATED — AND IT ASKS THE CELL. main.css
+   owns one corner for a seat and the die that lands in it (".slot,.die"), and
+   sealMetrics reads it off a real .slot and adds the stand-off, because a line
+   offset outward from a rounded rectangle only stays PARALLEL to it — corners
+   included — if its radius grows by that same offset. It used to ask .col,
+   whose box is 4px rounder than the cells it holds and paints NOTHING: the
+   seal was then parallel to a rectangle no one can see, and bowed away from
+   the dice it encloses by 4px at the corners while running flush to them down
+   the sides. That is what a second report of "the radius is too strong" was
+   looking at, after the stretched frame that made it worse was gone.
 
    The line runs along the frame's edge and main.css grows the ELEMENT by
    --seal-out, which is what stands it off the stack. The mouth — where the
@@ -56,27 +62,41 @@ import { spellById, dealtOf } from '../core/spells.ts';
    stroke and the circling bead are the same at every span. */
 const SEAL_MOUTH = 4;      // half the gap at the mouth that the ward's clasp holds shut
 /* READ ONCE PER LAYOUT, not once per column: getComputedStyle forces a style
-   pass and updateScores runs on every placement. watchCells clears it. */
+   pass and updateScores runs on every placement. watchCells clears it.
+   The BEATS come through here too. They do not depend on the cell — they are
+   read here because this is the one place that asks the stylesheet anything,
+   and a second reader is a second chance to drift. */
 let SEALM = null;
 function sealMetrics(){
   const cs = getComputedStyle(document.documentElement);
   const num = (k,d) => { const v = parseFloat(cs.getPropertyValue(k)); return v > 0 ? v : d; };
+  /* A TIME TOKEN IN MILLISECONDS, WHATEVER UNIT IT REACHES US IN. The CSS
+     minifier the build runs rewrites `950ms` as `.95s` because that is shorter,
+     so a bare parseFloat reads 950 from the dev stylesheet and 0.95 from the
+     shipped bundle — and the one-shot class would come off a millisecond in,
+     cutting the draw-on off in the only place a player ever sees it. Ask the
+     string for its unit; never assume the one that was typed survives. */
+  const ms = (k,d) => { const v = cs.getPropertyValue(k).trim(), n = parseFloat(v);
+    if(!(n > 0)) return d;
+    return /ms$/.test(v) ? n : /s$/.test(v) ? n*1000 : n; };
   const cell = num('--cell',62), gap = num('--gap',6), out = num('--seal-out',1.6);
-  const col = document.querySelector('.col');
-  const board = col ? parseFloat(getComputedStyle(col).borderRadius) : 18;
-  return { cell, gap, out, r: board + out, h: 3*cell + 2*gap + 2*out };
+  const seat = document.querySelector('.slot');
+  const corner = seat ? parseFloat(getComputedStyle(seat).borderRadius) : 14;
+  return { cell, gap, out, r: (corner > 0 ? corner : 14) + out, h: 3*cell + 2*gap + 2*out,
+           engage: ms('--seal-engage',950), strike: ms('--seal-strike',780), snap: ms('--seal-snap',1050) };
 }
 function sealM(){ return SEALM || (SEALM = sealMetrics()); }
 function sealFor(n){
   const m = sealM(), w = m.cell*n + m.gap*(n-1) + 2*m.out, h = m.h, mid = w/2, R = m.r;
   const f = (v) => +v.toFixed(2);
-  /* a rounded rectangle inset by k on every side, its corner tightened to
-     match — one helper for the closed loop and the hairline riding inside it */
-  const rr = (k) => { const r = Math.max(0.5, R - k);
-    return 'M'+f(k+r)+' '+f(k)+'H'+f(w-k-r)+'a'+f(r)+' '+f(r)+' 0 0 1 '+f(r)+' '+f(r)
-      + 'V'+f(h-k-r)+'a'+f(r)+' '+f(r)+' 0 0 1 '+f(-r)+' '+f(r)
-      + 'H'+f(k+r)+'a'+f(r)+' '+f(r)+' 0 0 1 '+f(-r)+' '+f(-r)
-      + 'V'+f(k+r)+'a'+f(r)+' '+f(r)+' 0 0 1 '+f(r)+' '+f(-r)+'Z'; };
+  /* THE LINE — the frame's own edge, cornered at the cell's radius grown by the
+     stand-off, which is what keeps it parallel to the stack. One rectangle, one
+     line: the loop used to carry a hairline copy 3px inside it and that read as
+     a second outline rather than as weight (main.css, ".seal .sl"). */
+  const loop = 'M'+f(R)+' 0H'+f(w-R)+'a'+f(R)+' '+f(R)+' 0 0 1 '+f(R)+' '+f(R)
+    + 'V'+f(h-R)+'a'+f(R)+' '+f(R)+' 0 0 1 '+f(-R)+' '+f(R)
+    + 'H'+f(R)+'a'+f(R)+' '+f(R)+' 0 0 1 '+f(-R)+' '+f(-R)
+    + 'V'+f(R)+'a'+f(R)+' '+f(R)+' 0 0 1 '+f(R)+' '+f(-R)+'Z';
   /* the shield's drawing heads: from the hinge, up one side, to the mouth */
   const half = (d) => 'M'+f(mid)+' '+f(h)+'H'+f(d<0 ? R : w-R)
     + 'a'+f(R)+' '+f(R)+' 0 0 '+(d<0?1:0)+' '+f(d*R)+' '+f(-R)
@@ -86,12 +106,10 @@ function sealFor(n){
   const arc = (d) => 'M'+f(mid + d*SEAL_MOUTH)+' 0H'+f(d<0 ? R : w-R)
     + 'a'+f(R)+' '+f(R)+' 0 0 '+(d<0?0:1)+' '+f(d*R)+' '+f(R)
     + 'V'+f(h-R)+'a'+f(R)+' '+f(R)+' 0 0 '+(d<0?0:1)+' '+f(-d*R)+' '+f(R)+'H'+f(mid);
-  const loop = rr(0);
   return '<svg class="seal" data-n="'+n+'" viewBox="0 0 '+f(w)+' '+f(h)+'" preserveAspectRatio="none" aria-hidden="true">'
-  + '<g class="sgold">'                                   /* SHIELD: closed, doubled, seamless */
+  + '<g class="sgold">'                                   /* SHIELD: closed, seamless, no end */
     + '<g class="sset">'
       + '<path class="sl" d="' + loop + '"/>'
-      + '<path class="si" d="' + rr(3) + '"/>'
       + '<path class="sb" pathLength="480" d="' + loop + '"/>'
     + '</g>'
     + '<path class="sd" pathLength="240" d="' + half(-1) + '"/>'
@@ -103,7 +121,7 @@ function sealFor(n){
      built at span 1. A merged seal carries no clasp group at all rather than a
      stretched one the stylesheet happens to hide. */
   + (n === 1
-    ? '<g class="smint">'                                 /* WARD: single, thinner, ONE clasp */
+    ? '<g class="smint">'                                 /* WARD: thinner, and ONE clasp */
       + '<path class="sa sal" pathLength="240" d="' + arc(-1) + '"/>'
       + '<path class="sa sar" pathLength="240" d="' + arc(1) + '"/>'
       + '<g class="sclasp">'
@@ -158,9 +176,13 @@ function sealHost(col){
    wears no animation but the bead. That is the whole defence against the
    strobe — renderSide runs on every placement, and a draw-on keyed to a class
    that merely PERSISTS would restart wherever the element was rebuilt.
-   The numbers mirror the durations beside those keyframes; a little slack so
-   the class never disappears out from under its own last frame. */
-const SEAL_ON_MS = 680, SEAL_HIT_MS = 520, SEAL_SNAP_MS = 720;
+   THE LENGTHS ARE ASKED FOR, NOT MIRRORED: main.css owns each beat
+   (--seal-engage / --seal-strike / --seal-snap, read by sealMetrics) and this
+   adds a little slack so the class never disappears out from under its own last
+   frame. Three numbers typed here beside three typed there is exactly the kind
+   of pair that parts on the first tuning pass — and did, the moment the beats
+   were slowed. */
+const SEAL_SLACK = 60;
 /* PER CLASS, not per element. Two different one-shots can land on one column
    inside one window — a run that grows wears .sealon on the same beat a strike
    can be hardening it — and a single timer per element meant the second beat
@@ -187,7 +209,7 @@ export function shieldBlocked(who,col){
   restart(chip && chip.querySelector('.sh'),'block');
   // the CHIP's mark belongs to the struck column; the seal belongs to whatever
   // run encloses it, which may be a neighbour's
-  oneShot(sealHost(colEl(who,col)),'sealhit',SEAL_HIT_MS);
+  oneShot(sealHost(colEl(who,col)),'sealhit',sealM().strike + SEAL_SLACK);
 }
 export function wardBurned(who,col){
   const chip=chipEl(who,col);
@@ -196,7 +218,7 @@ export function wardBurned(who,col){
      is spent the instant the strike lands, and the mark still has to be seen
      leaving. main.css keeps the seal drawn for as long as this class is on.
      No sealHost() here: a ward is never merged, so its seal is always its own. */
-  oneShot(colEl(who,col),'sealsnap',SEAL_SNAP_MS);
+  oneShot(colEl(who,col),'sealsnap',sealM().snap + SEAL_SLACK);
 }
 /* ===================== DOM BUILD ===================== */
 export function buildBoards(){
@@ -348,7 +370,7 @@ function updateScores(who){
        A run that GREW is the same event one step later: the mark that has to
        arrive is the longer one, and it arrives the same way. A column inside a
        run is skipped — its own seal is not on screen to draw. */
-    if(!merged&&(shieldNew||wardNew||regrown)) oneShot(colE,'sealon',SEAL_ON_MS);
+    if(!merged&&(shieldNew||wardNew||regrown)) oneShot(colE,'sealon',sealM().engage + SEAL_SLACK);
     // and describe it for screen readers, reusing the score we just computed
     const free=SPEC.rows-b[c].length;
     colE.setAttribute('aria-label',

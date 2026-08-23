@@ -730,6 +730,29 @@ try {
      the ink stands 2.4px off the stack (main.css, --seal-out). Everything below
      is measured with that half added back — still, because the probe must go on
      being able to SEE a stroke that scales if one ever comes back. */
+  /* THE BEATS, ASKED FOR RATHER THAN TYPED. main.css owns each one
+     (--seal-engage / --seal-strike / --seal-snap) and every wait below is a
+     multiple of one of them: "measure the RESTING mark" has to outlast the
+     engage beat, and the strike probe has to outlast the longest. They were
+     typed here as 900 and 45 ticks against a 620ms beat — a margin that was
+     spent the first time the beats were slowed, which is the tuning pass this
+     block was rewritten in. */
+  const cssMs = (k) => page.evaluate((kk) => {
+    /* IN MILLISECONDS, WHATEVER UNIT THE BUNDLE CARRIES. The build's CSS
+       minifier rewrites `950ms` as `.95s`, so a bare parseFloat reads the beat
+       as one millisecond on the very artefact this suite drives — which is
+       exactly how the one-shot windows in ui/render.ts were cut to a single
+       frame in the shipped build and nowhere else. */
+    const v = getComputedStyle(document.documentElement).getPropertyValue(kk).trim();
+    const n = parseFloat(v);
+    return !(n > 0) ? 0 : /ms$/.test(v) ? n : /s$/.test(v) ? n * 1000 : n;
+  }, k);
+  const SEAL_ENGAGE = await cssMs('--seal-engage'), SEAL_SNAP = await cssMs('--seal-snap');
+  const SEAL_SETTLE = Math.round(SEAL_ENGAGE) + 300;
+  /* ...and how long the strike probe watches: the die's flight (300ms) and the
+     beat before the strike (120ms, flow/game.ts), the longest seal beat, and
+     enough after it to SEE the spent ward's mark leave. */
+  const SEAL_TICKS = Math.ceil((420 + SEAL_SNAP + 700) / 40);
   const sealOf = (side, c, pg = page) => pg.evaluate(([sd, cc]) => {
     const col = document.querySelector('#' + sd + 'Board .col[data-col="' + cc + '"]');
     const seal = col.querySelector('.seal');
@@ -820,9 +843,14 @@ try {
       drawn: getComputedStyle(seal).display !== 'none' && shown.length > 0,
       merged: col.classList.contains('sealmerged'),
       spans: cols.length,
-      // the first class of each shape is its KIND: sl closed loop, si hairline,
-      // sb bead, sa half-arc, sp clasp half, sv rivet
+      // the first class of each shape is its KIND: sl closed loop, sb bead,
+      // sa half-arc, sp clasp half, sv rivet
       parts: shown.map((n) => n.getAttribute('class').split(' ')[0]).sort(),
+      /* HOW MANY LINES THE MARK ACTUALLY PAINTS. Distinct geometry, not shape
+         count: the bead rides the loop's own path, so a shield that draws one
+         outline reports 1 however many elements are on it — and the hairline
+         that used to run 3px inside the loop reported 2. */
+      lines: [...new Set(shown.map((n) => n.getAttribute('d') || n.tagName))].length,
       geometry: shown.map((n) => n.tagName + ':' + (n.getAttribute('d') || '')).sort().join('|'),
       stroke: line ? getComputedStyle(line).stroke : null,
       // what the line PAINTS across the screen. A 62-wide loop STRETCHED over a
@@ -833,12 +861,16 @@ try {
          same stretch that rounded the corner also painted the loop's vertical
          sides at a different weight from its horizontal ones. */
       thickCross: line ? +((parseFloat(getComputedStyle(line).strokeWidth) || 0) * (land ? ux : uy)).toFixed(2) : null,
-      /* THE CORNER, AND WHAT IT HAS TO MATCH. The line rides the column's box
+      /* THE CORNER, AND WHAT IT HAS TO MATCH. The line rides the stack's box
          grown by --seal-out on every side, and an outline offset outward from a
          rounded rectangle only stays PARALLEL to it if its radius grows by that
-         same offset. So the honest target is the board's own radius plus the
-         stand-off — one number, checked at every cell size. */
-      corner: cornerOf(line), board: +parseFloat(getComputedStyle(col).borderRadius).toFixed(2),
+         same offset. The rectangle a player SEES there is the cell — the seat
+         and the die share one corner (main.css ".slot,.die") — so the honest
+         target is the cell's radius plus the stand-off, one number at every
+         cell size. It used to be .col's, 4px rounder and painting nothing: the
+         mark ran flush to the dice down the sides and bowed away from them at
+         the corners, which is "the radius is still too strong", reported. */
+      corner: cornerOf(line), cell: +parseFloat(getComputedStyle(col.querySelector('.slot')).borderRadius).toFixed(2),
       standoff: +parseFloat(getComputedStyle(seal).getPropertyValue('--seal-out')).toFixed(2),
       col: cb, loop: one('sl'), arc: one('sal'),
       clasp: rivet ? r(seal.querySelector('.sclasp')) : null,
@@ -856,16 +888,18 @@ try {
     };
   }, [side, c]);
 
-  /* THE CORNER IS THE BOARD'S, AT EVERY CELL SIZE — asserted through one
+  /* THE CORNER IS THE CELL'S, AT EVERY CELL SIZE — asserted through one
      helper wherever a seal is measured (this phone, the 88px cap, landscape,
-     and every span), because the whole defect was that the number moved with
-     the cell and a single viewport could not see it. --seal-out is READ, never
-     typed here, so the stand-off and its guard cannot drift apart. */
+     and every span), because the first defect was that the number moved with
+     the cell and a single viewport could not see it, and the second was that
+     it was parallel to the wrong rectangle at ALL of them. --seal-out and the
+     cell's radius are both READ, never typed here, so the mark and its guard
+     cannot drift apart. */
   const cornerOk = (name, s, where) => {
-    check(s.corner !== null && Math.abs(s.corner - (s.board + s.standoff)) < 0.75,
-      'THE ' + name.toUpperCase() + ' SEAL DOES NOT WEAR THE BOARD\'S CORNER in ' + where
-      + ' — its line must run parallel to the column it encloses, corners included',
-      { painted: s.corner, want: s.board + s.standoff, board: s.board, standoff: s.standoff });
+    check(s.corner !== null && Math.abs(s.corner - (s.cell + s.standoff)) < 0.75,
+      'THE ' + name.toUpperCase() + ' SEAL DOES NOT WEAR THE CELL\'S CORNER in ' + where
+      + ' — its line must run parallel to the dice it encloses, corners included',
+      { painted: s.corner, want: s.cell + s.standoff, cell: s.cell, standoff: s.standoff });
     check(s.thick !== null && Math.abs(s.thick - s.thickCross) < 0.15,
       'the ' + name + ' seal paints its two axes at different weights in ' + where,
       { along: s.thick, across: s.thickCross });
@@ -918,7 +952,29 @@ try {
   check(await waitChoose(), 'game never reached choose (seal)');
   await table([[], [], []], [[5, 5, 2], [4], []], 5);
   await guard();
-  await page.waitForTimeout(900);              // the engage beat is over; measure the RESTING mark
+  /* THE CLASS OUTLIVES ITS OWN ANIMATION. main.css owns each beat and
+     ui/render.ts holds the one-shot class on for it — one number, two files —
+     and the day they part the mark stops drawing itself: the class comes off
+     mid-draw and the line snaps in fully formed. They DID part, silently, the
+     moment the beats became tokens (the minifier ships `950ms` as `.95s`, and
+     the read was a bare parseFloat). Nothing else in this suite could see it —
+     every assertion here waits for the beat to be OVER — so the window is
+     measured on the way in. */
+  out.sealWindow = await page.evaluate(async (beat) => {
+    const col = document.querySelector('#topBoard .col[data-col="1"]');   // the ward just cast
+    const t0 = performance.now();
+    let held = 0;
+    for (let i = 0; i < 120; i++) {
+      if (!col.classList.contains('sealon')) break;
+      held = performance.now() - t0;
+      await new Promise((r) => setTimeout(r, 25));
+    }
+    return { held: Math.round(held), beat };
+  }, SEAL_ENGAGE);
+  check(out.sealWindow.held > SEAL_ENGAGE * 0.9,
+    'THE ENGAGE BEAT IS CUT SHORT — the seal is given less time than its own animation, so the line never draws',
+    out.sealWindow);
+  await page.waitForTimeout(SEAL_SETTLE);       // the engage beat is over; measure the RESTING mark
   out.sealShield = await sealOf('top', 0);
   out.sealWard = await sealOf('top', 1);
   check(out.sealShield.drawn && out.sealWard.drawn, 'A PROTECTION WITH NO SEAL IS INVISIBLE',
@@ -929,6 +985,14 @@ try {
   check(out.sealShield.parts.includes('sl')
     && !out.sealShield.parts.includes('sa') && !out.sealShield.parts.includes('sv'),
     'the shield must draw ONE closed line, with no seam and nothing to spend', out.sealShield.parts);
+  /* ...and ONE means one. The loop carried a hairline copy of itself 3px inside
+     it, meant as weight and read as a second outline — photographed, and by the
+     same player who reported the doubled edge §10a-v exists to keep out. That
+     one came from outside the seal, this one from inside its own group, and
+     both look identical from the sofa. */
+  check(out.sealShield.lines === 1,
+    'THE SHIELD PAINTS A SECOND LINE INSIDE ITS OWN — a mark 3px in is an outline, not weight',
+    { lines: out.sealShield.lines, parts: out.sealShield.parts });
   check(out.sealWard.parts.filter((p) => p === 'sa').length === 2 && out.sealWard.parts.includes('sv')
     && !out.sealWard.parts.includes('sl'),
     'the ward must draw a line held by ONE clasp', out.sealWard.parts);
@@ -998,7 +1062,7 @@ try {
      settled board a second and a half later. So play the die and WATCH: which
      animations run, which one-shot marks land on the column and its chip, and
      whether the seal is still painted once the charm behind it is spent. */
-  const strikeBeat = (side, c, who, at) => page.evaluate(async ([sd, cc, w, a]) => {
+  const strikeBeat = (side, c, who, at) => page.evaluate(async ([sd, cc, w, a, ticks]) => {
     const k = window.__kb;
     const col = document.querySelector('#' + sd + 'Board .col[data-col="' + cc + '"]');
     const chip = document.querySelectorAll('#' + sd + 'Cols .chip')[cc];
@@ -1020,7 +1084,7 @@ try {
     const hostAnims = new Set(), hostMarks = new Set();
     let outlived = false, gone = false;
     void k.place(w, a);                        // polled, not awaited: the beat is the subject
-    for (let i = 0; i < 45; i++) {
+    for (let i = 0; i < ticks; i++) {
       await new Promise((r) => setTimeout(r, 40));
       for (const an of col.getAnimations({ subtree: true })) anims.add(an.animationName);
       for (const an of chip.getAnimations({ subtree: true })) anims.add(an.animationName);
@@ -1035,7 +1099,7 @@ try {
     return { anims: [...anims].sort(), marks: [...marks].sort(), flare: [...flare].sort(),
              hostAnims: [...hostAnims].sort(), hostMarks: [...hostMarks].sort(),
              outlived, gone, wards: JSON.stringify(k.S.charm.wards), theirs: JSON.stringify(k.S.boards[0][cc]) };
-  }, [side, c, who, at]);
+  }, [side, c, who, at, SEAL_TICKS]);
 
   /* STRUCK. A shield has nothing on it to take away, so it flares and hardens
      and the line after the blow is the line before it, to the pixel. */
@@ -1063,7 +1127,7 @@ try {
      is the honest one: dice, and no protection. */
   await table([[], [], []], [[5, 5, 2], [4], []], 4);
   await guard();
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(SEAL_SETTLE);
   out.wardStruck = await strikeBeat('top', 1, 1, 1);
   check(out.wardStruck.theirs === '[4]', 'the ward did not absorb the strike', out.wardStruck);
   check(out.wardStruck.wards === '[[0,0,0],[0,0,0]]', 'the ward was not spent', out.wardStruck);
@@ -1091,7 +1155,7 @@ try {
      mid-game. If any of those three ever stops being true, this block is where
      the un-merge beat it would need goes missing. */
   await table([[], [], []], [[5, 5, 2], [6, 6], []], 5);
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(SEAL_SETTLE);
   out.sealLone = await sealOf('top', 0);
   /* ...and it arrives as a BEAT, on the placement that fills the neighbour: the
      longer mark draws itself shut. It does not appear between two frames. */
@@ -1107,7 +1171,7 @@ try {
     }
     return { anims: [...anims].sort(), on };
   });
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(SEAL_SETTLE);
   out.sealRun = await sealOf('top', 0);
   out.sealInside = await sealOf('top', 1);
   check(out.sealGrew.on && out.sealGrew.anims.includes('sealdraw'),
@@ -1137,7 +1201,7 @@ try {
     { chip: out.sealRun.toChip, plate: out.sealRun.toPlateInk });
   // ...and a third neighbour joins the same one mark rather than starting a second
   await page.evaluate(() => { window.__kb.S.boards[0][2] = [3, 3, 3]; window.__kb.renderAll(false); });
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(SEAL_SETTLE);
   out.sealRun3 = await sealOf('top', 0);
   out.sealRun3b = [await sealOf('top', 1), await sealOf('top', 2)];
   check(out.sealRun3.spans === 3 && !!out.sealRun3.out
@@ -1153,7 +1217,7 @@ try {
      the whole harden on a display:none element and the player would see the
      chip twitch beside a line that never answered. */
   await table([[], [], []], [[5, 5, 2], [6, 6, 1], []], 6);
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(SEAL_SETTLE);
   out.runStruck = await strikeBeat('top', 1, 1, 1);
   check(out.runStruck.flare.includes('sh:block'),
     'a strike inside a run never flared the struck column\'s chip', out.runStruck.flare);
@@ -1222,7 +1286,7 @@ try {
     check(await waitChoose(vp), 'game never reached choose (turn/' + view.name + ')');
     await table([[3, 3, 1], [], []], [[5, 5, 2], [4], []], 5, vp);
     await guard(1, 0, vp); await guard(1, 1, vp);      // a ward on column 1 of each half
-    await vp.waitForTimeout(900);
+    await vp.waitForTimeout(SEAL_SETTLE);
     const turn = {
       land: await vp.evaluate(() => document.documentElement.classList.contains('land')),
       cell: await vp.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--cell')),
@@ -1288,7 +1352,7 @@ try {
     /* ...and a run is the same geometry turned with it: across the screen in
        portrait, DOWN it in landscape. One offset token, two orientations. */
     await vp.evaluate(() => { window.__kb.S.boards[0][1] = [6, 6, 1]; window.__kb.renderAll(false); });
-    await vp.waitForTimeout(900);
+    await vp.waitForTimeout(SEAL_SETTLE);
     const run = await sealOf('top', 0, vp), inside = await sealOf('top', 1, vp);
     out['sealTurnRun_' + view.name] = { run, merged: inside.merged, drawn: inside.drawn };
     check(run.spans === 2 && !!run.out && Object.values(run.out).every((v) => v > 0.3 && v < 3),
@@ -1314,7 +1378,7 @@ try {
   check(await waitChoose(), 'game never reached choose (one outline)');
   await table([[], [4], []], [[5, 5, 2], [], []], 5);
   await guard(1, 1);                            // MY column 1: a ward, and room left
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(SEAL_SETTLE);
   out.outlines = await outlinesOf();
   oneOutline(out.outlines, 'portrait/390');
   out.bare = out.outlines.find((o) => o.id === 'botBoard#0');
