@@ -1,4 +1,4 @@
-<!-- meta name="W4 — Rimmed lattice" group="3g · Shield & ward studies" subtitle="COLUMN SHIELD carrying W5's hexagons, and carrying them with LESS in front of the dice than before. The veil is deleted — it was the one layer costing pip contrast — and the flat wash drops from 13% to 5%; in their place a comb of hexagons, stroked and unfilled at rest, sits BEHIND the dice, in the two 6px seams and the margin inside the rim, which is the only room a structure can take without covering a face. The hard rim stays. At rest the comb is barely there; a strike lights it from the mouth outward and it settles back to exactly where it started, because a shielded column absorbs everything and is never spent" width=430 height=3168 sizes="md" links="Match, Game modes" -->
+<!-- meta name="W4 — Rimmed lattice" group="3g · Shield & ward studies" subtitle="COLUMN SHIELD carrying W5's hexagons, and carrying them with LESS in front of the dice than before. The veil is deleted — it was the one layer costing pip contrast — and the flat wash drops from 13% to 5%; in their place a comb of hexagons, stroked and unfilled at rest, sits BEHIND the dice, in the two 6px seams and the margin inside the rim, which is the only room a structure can take without covering a face. The hard rim stays. At rest the comb is barely there; a strike lights it from the mouth outward and it settles back to exactly where it started, because a shielded column absorbs everything and is never spent" width=430 height=2960 sizes="md" links="Match, Game modes" -->
 <style>
   /* Card-local names only (sw*). The app pins .col/.slot/.chip/.pip/.die with
      position and height, so a card that redeclares them loses silently —
@@ -53,12 +53,6 @@
   .swmk{position:absolute;top:0;bottom:0;right:4px;display:flex;align-items:center;line-height:0;
     color:var(--mx2,var(--gold));
     filter:drop-shadow(0 0 6px rgba(var(--mx2-rgb,var(--gold-rgb)),.75))}
-
-  /* ===== TODAY, for comparison: a 1px inset ring at 35% and a 14px glow at
-     12%. On a die that already carries a border and a coloured bloom it is
-     below the noise floor — which is the whole reason for this study. ===== */
-  .swstack.swnow{box-shadow:inset 0 0 0 1px rgba(var(--mx2-rgb,var(--gold-rgb)),.35),
-    0 0 14px rgba(var(--mx2-rgb,var(--gold-rgb)),.12)}
 
   .swgold{--g:var(--mx2,var(--gold))}
 
@@ -232,29 +226,7 @@
   <div class="shead"><button class="ico">‹</button><span class="ttl">SHIELDED COLUMN</span><span class="pad"></span></div>
   <div class="swwrap">
 
-    <div class="cap2">Today — a 1px ring and a 12% glow, under dice that already glow</div>
-    <div class="swrow">
-      <div class="swcol">
-        <div class="swchip gold">12<i class="swmk">{{mico:colshield:13}}</i></div>
-        <div class="swstack swnow">
-          <div class="swslot">{{die:5:p1:52}}</div>
-          <div class="swslot">{{die:5:p1:52}}</div>
-          <div class="swslot">{{die:2:p1:52}}</div>
-        </div>
-        <div class="swlbl">full · locked</div>
-      </div>
-      <div class="swcol">
-        <div class="swchip">5</div>
-        <div class="swstack">
-          <div class="swslot">{{die:4:p1:52}}</div>
-          <div class="swslot">{{die:1:p1:52}}</div>
-          <div class="swslot"></div>
-        </div>
-        <div class="swlbl swoff">one short · open</div>
-      </div>
-    </div>
-
-    <div class="cap2">Proposed — the layer in front of the dice is gone; the structure moved behind them</div>
+    <div class="cap2">Proposed — a hard rim with the corners clamped, the comb behind the dice, nothing in front of them</div>
     <div class="swrow">
       <div class="swcol swgold">
         <div class="swchip gold">12<i class="swmk">{{mico:colshield:13}}</i></div>

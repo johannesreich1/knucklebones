@@ -1,4 +1,4 @@
-<!-- meta name="W5 — Ward shell under the chip" group="3g · Shield & ward studies" subtitle="The dome comes OFF the column's mouth and moves INTO it: a mint shell springing from the column's own walls, cresting in the top die's blank margin so the chip is the lintel it presses against, never a thing it covers. Near-dark at rest, its scales light outward from wherever something crosses — and the one strike it throws back is the last thing it does" width=430 height=2700 sizes="md" links="Match, Game modes, Spells" -->
+<!-- meta name="W5 — Ward shell under the chip" group="3g · Shield & ward studies" subtitle="The dome comes OFF the column's mouth and moves INTO it: a mint shell springing from the column's own walls, cresting in the top die's blank margin so the chip is the lintel it presses against, never a thing it covers. Near-dark at rest, its scales light outward from wherever something crosses — and the one strike it throws back is the last thing it does" width=430 height=2360 sizes="md" links="Match, Game modes, Spells" -->
 <style>
   /* Card-local names only (sw*). The app pins .col/.slot/.chip/.pip with
      position and height, so a card that redeclares them loses silently —
@@ -45,15 +45,14 @@
   .swchip i.wdm{left:4px;color:var(--wd);
     filter:drop-shadow(0 0 6px color-mix(in srgb,var(--wd) 75%,transparent))}
 
-  /* ===== WHAT SHIPS TODAY, kept and reused, not replaced. The ring answers
-     WHICH column; it is too quiet to answer what the guard does, which is the
-     whole reason for this study — but it is the only mark the dice below the
-     mouth ever get, so removing it would leave two thirds of a warded column
-     saying nothing at all. ===== */
-  .swstack.swshield{box-shadow:inset 0 0 0 1px rgba(var(--mx2-rgb,var(--gold-rgb)),.35),
-    0 0 14px rgba(var(--mx2-rgb,var(--gold-rgb)),.12)}
-  .swstack.swward{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wd) 40%,transparent),
-    0 0 14px color-mix(in srgb,var(--wd) 14%,transparent)}
+  /* ===== NOTHING ON THE COLUMN BODY. An earlier draft of this study drew the
+     app's old 1px inset ring under the shell, in gold for the shield and mint
+     for the ward. That ring is gone: the runic seal (W3) shipped on 2026-08-23
+     and main.css now carries no box-shadow on .col.shielded or .col.warded at
+     all. The column is therefore bare here, and the shell is the only thing
+     this card draws — which is the honest shape of the proposal anyway: the
+     mark that answers WHICH column is the seal's business, and the shell only
+     ever answered WHAT the guard does. ===== */
 
   /* ===== THE SHELL. Seated INSIDE the column's mouth, not arced across it.
      Its feet stand on the column's walls at y=29 — half way down the top cell
@@ -149,8 +148,8 @@
 
      The shell hardens where it is struck, the rim goes white, the lance is
      thrown back the way it came — and THEN the shell unravels from the point
-     of contact, the ring leaves the column and the mark leaves the chip. One
-     charge, visibly gone. The loop re-arms only because a card has to loop. ===== */
+     of contact and the mark leaves the chip. One charge, visibly gone. The
+     loop re-arms only because a card has to loop. ===== */
   .swlance{position:absolute;left:50%;top:0;width:7px;height:40px;margin-left:-3.5px;
     border-radius:99px;z-index:5;pointer-events:none;transform-origin:50% 100%;opacity:0;
     background:linear-gradient(180deg,transparent,
@@ -201,15 +200,6 @@
     23%{opacity:1;transform:scale(1.6);filter:drop-shadow(0 0 18px var(--wd))}
     34%{transform:scale(1);filter:drop-shadow(0 0 6px color-mix(in srgb,var(--wd) 75%,transparent))}
     64%{opacity:1}72%{opacity:0}96%{opacity:0}100%{opacity:1}}
-  /* and the ring goes with it: a spent ward leaves the column bare */
-  .swhit .swstack.swward{animation:swringgo 3.6s ease-out infinite}
-  @keyframes swringgo{
-    0%,64%{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wd) 40%,transparent),
-      0 0 14px color-mix(in srgb,var(--wd) 14%,transparent)}
-    23%{box-shadow:inset 0 0 0 1px #fff,0 0 22px color-mix(in srgb,var(--wd) 45%,transparent)}
-    72%,96%{box-shadow:inset 0 0 0 1px rgba(255,255,255,0),0 0 0 rgba(255,255,255,0)}
-    100%{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wd) 40%,transparent),
-      0 0 14px color-mix(in srgb,var(--wd) 14%,transparent)}}
 
   /* the air a mover needs ABOVE the mouth — reserved by the card, not by the
      board: in the app that air is the centre stage, which is already there */
@@ -221,33 +211,11 @@
   <div class="shead"><button class="ico">‹</button><span class="ttl">GUARDED COLUMN</span><span class="pad"></span></div>
   <div class="swwrap" style="--wd:{{shue:ward}}">
 
-    <div class="cap2">Today — a 1px ring and a 12% glow, under a die that already glows</div>
+    <div class="cap2">Proposed — the shell is the WARD's, and it sits inside the column's mouth</div>
     <div class="swrow">
       <div class="swcol">
         <div class="swchip has">10<i class="shm">{{mico:colshield:13}}</i></div>
-        <div class="swstack swshield">
-          <div class="swslot">{{die:5:p1:52}}</div>
-          <div class="swslot">{{die:3:p1:52}}</div>
-          <div class="swslot">{{die:2:p1:52}}</div>
-        </div>
-        <div class="swlbl">shielded · mode</div>
-      </div>
-      <div class="swcol">
-        <div class="swchip has">5<i class="wdm">{{sico:ward:13}}</i></div>
-        <div class="swstack swward">
-          <div class="swslot">{{die:4:p1:52}}</div>
-          <div class="swslot">{{die:1:p1:52}}</div>
-          <div class="swslot"></div>
-        </div>
-        <div class="swlbl">warded · spell</div>
-      </div>
-    </div>
-
-    <div class="cap2">Proposed — the shell is the WARD's, and it has somewhere to go</div>
-    <div class="swrow">
-      <div class="swcol">
-        <div class="swchip has">10<i class="shm">{{mico:colshield:13}}</i></div>
-        <div class="swstack swshield">
+        <div class="swstack">
           <div class="swslot">{{die:5:p1:52}}</div>
           <div class="swslot">{{die:3:p1:52}}</div>
           <div class="swslot">{{die:2:p1:52}}</div>
@@ -256,7 +224,7 @@
       </div>
       <div class="swcol">
         <div class="swchip has">5<i class="wdm">{{sico:ward:13}}</i></div>
-        <div class="swstack swward">
+        <div class="swstack">
           <div class="swslot">{{die:4:p1:52}}</div>
           <div class="swslot">{{die:1:p1:52}}</div>
           <div class="swslot"></div>
@@ -294,7 +262,7 @@
     <div class="swrow">
       <div class="swcol">
         <div class="swchip has">5<i class="wdm">{{sico:ward:13}}</i></div>
-        <div class="swstack swward">
+        <div class="swstack">
           <div class="swslot">{{die:4:p1:52}}</div>
           <div class="swslot">{{die:1:p1:52}}</div>
           <div class="swslot"></div>
@@ -319,7 +287,7 @@
       </div>
       <div class="swcol">
         <div class="swchip has">17<span class="swmx">×2</span><i class="wdm">{{sico:ward:13}}</i></div>
-        <div class="swstack swward">
+        <div class="swstack">
           <div class="swslot">{{die:4:p1:52}}</div>
           <div class="swslot">{{die:4:p1:52}}</div>
           <div class="swslot">{{die:1:p1:52}}</div>
@@ -349,7 +317,7 @@
       <div class="swcol swdrop">
         <div class="swlane"></div>
         <div class="swchip has">17<span class="swmx">×2</span><i class="wdm">{{sico:ward:13}}</i></div>
-        <div class="swstack swward">
+        <div class="swstack">
           <div class="swslot"><span class="swfall">{{die:4:p1:52}}</span></div>
           <div class="swslot">{{die:4:p1:52}}</div>
           <div class="swslot">{{die:1:p1:52}}</div>
@@ -377,7 +345,7 @@
       <div class="swcol swhit">
         <div class="swlane"></div>
         <div class="swchip has">5<i class="wdm">{{sico:ward:13}}</i></div>
-        <div class="swstack swward">
+        <div class="swstack">
           <div class="swslot">{{die:4:p1:52}}</div>
           <div class="swslot">{{die:1:p1:52}}</div>
           <div class="swslot"></div>
@@ -405,6 +373,6 @@
       </div>
     </div>
 
-    <div class="note"><b>The collision, and how it is solved:</b> the shell no longer arcs ACROSS the column's mouth — it is seated <b>inside</b> it. Its two feet stand on the column's own walls half way down the top cell, and its crown reaches 1.5px above the top die — with the topmost scale stopping 2.8px short of the chip's underside, so 2.8px of the chip's 7px of clear air is left standing at the worst frame of the worst beat: <b>the chip is the lintel the arch presses into</b>, never a thing it covers, dims or moves. Every transform in the beats is anchored at the feet, so even the brace and the burn travel downward, away from the score. The old draft needed ~30px of reserved lane over every mouth — the same lane the chip strip already occupies — and that bill is now zero. <b>The chip is drawn faithfully here</b> so the claim can be checked: one column wide, points in the side's colour, guard marks absolutely positioned at the ends (main.css puts the shield at <i>right:4px</i> and the ward at <i>left:4px</i> for exactly this reason). Third row: two chips, 5 and 17×2, identical shells — the score re-centres, the shell cannot move, because it is anchored to the column and knows nothing about the chip. That second chip is also the tightest the box ever gets: a two-digit score with a ×k badge comes within about 2px of the 13px mark at the end. That squeeze is the chip's own, it is there today, and the shell neither causes it nor helps it. <b>Over the dice:</b> a 52px die is blank glass for its first 8px. The arc — a half-ellipse 26×27.5 about the column's centre — clears the nearest pip by 5.1px, and the nine scales, riding on the shell's outer face, clear it by 3.0px. There is no body wash at all — a rim, a dim under-rim and a comb of scales at 12%. Pip contrast is what it is on a bare column. <b>Why the ward and not the shield:</b> a shell that flexes, hardens and burns out is the grammar of a thing that can be <i>spent</i>. COLUMN SHIELD is not spent — it is the state of being full, it engages the instant the column fills, and it cannot break — so it keeps exactly what it wears today, the gold mark at the chip's right end and the gold ring, and the two never read as one mechanism. <b>The beats:</b> your own die falls straight through the crown; the shell gives 2%, the scales light outward from the crossing, and nothing is spent, because a ward eats a strike and never refuses your placement. Then a strike arrives — drawn as a <b>lance</b>, not an enemy die, because the app never flies a die at your board and a 52px one would have to cross the chip to reach the mouth. It comes in at 42° onto the shell's right shoulder, so its whole path stays in the gutter beside the chip — the opposite end from the mark it is about to put out; the rim goes white, the strike is thrown back the way it came, and then the shell unravels from the point of contact, the ring leaves the column and the mark leaves the chip. <b>Costs:</b> the shell marks the <b>mouth</b>, so it says which column is guarded and not which dice — the shipped mint ring is kept for that, and both go out together on the discharge. The resting sheen is one stroke animating forever on every warded column. And <b>landscape</b> transposes the board: the chip moves to the column's inner end and the shell turns a quarter with it — the same relationship, one rotation, which is the part the old lane-above-the-mouth version could not have done at all.</div>
+    <div class="note"><b>The collision, and how it is solved:</b> the shell no longer arcs ACROSS the column's mouth — it is seated <b>inside</b> it. Its two feet stand on the column's own walls half way down the top cell, and its crown reaches 1.5px above the top die — with the topmost scale stopping 2.8px short of the chip's underside, so 2.8px of the chip's 7px of clear air is left standing at the worst frame of the worst beat: <b>the chip is the lintel the arch presses into</b>, never a thing it covers, dims or moves. Every transform in the beats is anchored at the feet, so even the brace and the burn travel downward, away from the score. The old draft needed ~30px of reserved lane over every mouth — the same lane the chip strip already occupies — and that bill is now zero. <b>The chip is drawn faithfully here</b> so the claim can be checked: one column wide, points in the side's colour, guard marks absolutely positioned at the ends (main.css puts the shield at <i>right:4px</i> and the ward at <i>left:4px</i> for exactly this reason). Third row: two chips, 5 and 17×2, identical shells — the score re-centres, the shell cannot move, because it is anchored to the column and knows nothing about the chip. That second chip is also the tightest the box ever gets: a two-digit score with a ×k badge comes within about 2px of the 13px mark at the end. That squeeze is the chip's own, it is there today, and the shell neither causes it nor helps it. <b>Over the dice:</b> a 52px die is blank glass for its first 8px. The arc — a half-ellipse 26×27.5 about the column's centre — clears the nearest pip by 5.1px, and the nine scales, riding on the shell's outer face, clear it by 3.0px. There is no body wash at all — a rim, a dim under-rim and a comb of scales at 12%. Pip contrast is what it is on a bare column. <b>Why the ward and not the shield:</b> a shell that flexes, hardens and burns out is the grammar of a thing that can be <i>spent</i>. COLUMN SHIELD is not spent — it is the state of being full, it engages the instant the column fills, and it cannot break — so it keeps exactly what it wears today: the gold rune at the chip's right end and the gold seal that shipped. The shield's mark and the ward's shell never read as one mechanism. <b>The beats:</b> your own die falls straight through the crown; the shell gives 2%, the scales light outward from the crossing, and nothing is spent, because a ward eats a strike and never refuses your placement. Then a strike arrives — drawn as a <b>lance</b>, not an enemy die, because the app never flies a die at your board and a 52px one would have to cross the chip to reach the mouth. It comes in at 42° onto the shell's right shoulder, so its whole path stays in the gutter beside the chip — the opposite end from the mark it is about to put out; the rim goes white, the strike is thrown back the way it came, and then the shell unravels from the point of contact and the mark leaves the chip. <b>Costs:</b> the shell marks the <b>mouth</b>, so it says which column is guarded and not which dice. That second question belongs to the column-level mark, and since 2026-08-23 that mark is the <b>runic seal</b> (W3), which shipped and which this card does not restate. The two have never been drawn together, so nothing here has measured whether the seal's line and the shell's feet can share the mouth. The resting sheen is one stroke animating forever on every warded column. And <b>landscape</b> transposes the board: the chip moves to the column's inner end and the shell turns a quarter with it — the same relationship, one rotation, which is the part the old lane-above-the-mouth version could not have done at all.</div>
   </div>
 </div></div>

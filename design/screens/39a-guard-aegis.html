@@ -1,4 +1,4 @@
-<!-- meta name="W1 — Aegis pane (baseline)" group="3g · Shield & ward studies" subtitle="THE BASELINE the others are judged against (user call): the protection as a plain surface — a tinted pane over the column, bevelled at its edge, a slow specular sweep down it, a die dropping THROUGH it and the sheet rippling where it passed. Nothing here is wrong; it is simply the least opinionated answer, so a study only earns its place by beating it" width=430 height=1340 sizes="md" links="Match, Game modes, Spells" -->
+<!-- meta name="W1 — Aegis pane (baseline)" group="3g · Shield & ward studies" subtitle="THE BASELINE the others are judged against (user call): the protection as a plain surface — a tinted pane over the column, bevelled at its edge, a slow specular sweep down it, a die dropping THROUGH it and the sheet rippling where it passed. Nothing here is wrong; it is simply the least opinionated answer, so a study only earns its place by beating it" width=430 height=1090 sizes="md" links="Match, Game modes, Spells" -->
 <style>
   /* Card-local names only (sw*). The app pins .col/.slot/.chip/.pip with
      position and height, so a card that redeclares them loses silently —
@@ -24,14 +24,6 @@
     background:rgba(var(--mx2-rgb,var(--gold-rgb)),.09)}
   .swchip.mint{color:var(--wd);border-color:color-mix(in srgb,var(--wd) 30%,transparent);
     background:color-mix(in srgb,var(--wd) 9%,transparent)}
-
-  /* ===== TODAY, for comparison: a 1px inset ring at 35% and a 14px glow at
-     12%. On a die that already carries a border and a coloured bloom it is
-     below the noise floor — which is the whole reason for this study. ===== */
-  .swstack.now{box-shadow:inset 0 0 0 1px rgba(var(--mx2-rgb,var(--gold-rgb)),.35),
-    0 0 14px rgba(var(--mx2-rgb,var(--gold-rgb)),.12)}
-  .swstack.nowward{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wd) 40%,transparent),
-    0 0 14px color-mix(in srgb,var(--wd) 14%,transparent)}
 
   /* ===== THE PANE. One element over the column, not a border on it: a sheet
      of tinted glass with a lit top bevel, a soft body tint and a specular
@@ -106,29 +98,7 @@
   <div class="shead"><button class="ico">‹</button><span class="ttl">GUARDED COLUMN</span><span class="pad"></span></div>
   <div class="swwrap" style="--wd:{{shue:ward}}">
 
-    <div class="cap2">Today — a 1px ring and a 12% glow, under a die that already glows</div>
-    <div class="swrow">
-      <div class="swcol">
-        <div class="swstack now">
-          <div class="swslot">{{die:5:p1:52}}</div>
-          <div class="swslot">{{die:5:p1:52}}</div>
-          <div class="swslot">{{die:2:p1:52}}</div>
-        </div>
-        <div class="swchip gold">12<i>{{mico:colshield:13}}</i></div>
-        <div class="swlbl">shielded</div>
-      </div>
-      <div class="swcol">
-        <div class="swstack nowward">
-          <div class="swslot">{{die:4:p1:52}}</div>
-          <div class="swslot">{{die:1:p1:52}}</div>
-          <div class="swslot"></div>
-        </div>
-        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
-        <div class="swlbl">warded</div>
-      </div>
-    </div>
-
-    <div class="cap2">Proposed — the pane: a lit bevel, a body tint, one slow sweep</div>
+    <div class="cap2">The pane — a lit bevel, a body tint, one slow sweep</div>
     <div class="swrow">
       <div class="swcol swgold">
         <div class="swstack">
@@ -178,6 +148,6 @@
       </div>
     </div>
 
-    <div class="note"><b>What it says:</b> the column is <b>covered</b>, not outlined. The bevel and the travelling sweep make it a surface with a thickness, which is why it survives on top of dice that already carry a border and a bloom — the current 1px ring does not. <b>The drop</b> is the point of this one: your die is never stopped, the pane simply answers where it crossed, so the animation teaches the rule (a ward eats a STRIKE, not your placement) instead of contradicting it. <b>Absorb</b> fills the tint for four frames and pushes the enemy die back off the surface. <b>Cost:</b> it is the most pixels of the six, and a pane over a full column dims the dice under it — the tint has to stay under ~16% or the pips lose contrast.</div>
+    <div class="note"><b>What it says:</b> the column is <b>covered</b>, not outlined. The bevel and the travelling sweep make it a surface with a thickness, and that thickness is what survives on top of dice that already carry a border and a bloom — a mark that is only an edge sinks under them. <b>The drop</b> is the point of this one: your die is never stopped, the pane simply answers where it crossed, so the animation teaches the rule (a ward eats a STRIKE, not your placement) instead of contradicting it. <b>Absorb</b> fills the tint for four frames and pushes the enemy die back off the surface. <b>Cost:</b> it is the most pixels of the six, and a pane over a full column dims the dice under it — the tint has to stay under ~16% or the pips lose contrast.</div>
   </div>
 </div></div>

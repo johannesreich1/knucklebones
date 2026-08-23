@@ -1,4 +1,4 @@
-<!-- meta name="W6 — Plated dice" group="3g · Shield & ward studies" subtitle="The protection is worn by the DICE, not by the column: each die gains a bevelled metal edge — lit top-left, dark bottom-right — the empty seats show the hairline joint waiting for their plate, and a landing die is CLAD, a plate sliding across it behind a travelling glint" width=430 height=1615 sizes="md" links="Match, Game modes, Spells" -->
+<!-- meta name="W6 — Plated dice" group="3g · Shield & ward studies" subtitle="The protection is worn by the DICE, not by the column: each die gains a bevelled metal edge — lit top-left, dark bottom-right — the empty seats show the hairline joint waiting for their plate, and a landing die is CLAD, a plate sliding across it behind a travelling glint" width=430 height=1350 sizes="md" links="Match, Game modes, Spells" -->
 <style>
   /* Card-local names only (sw*). The app pins .col/.slot/.chip/.pip/.die with
      position and height, so a card that redeclares them loses silently —
@@ -26,14 +26,6 @@
     background:rgba(var(--mx2-rgb,var(--gold-rgb)),.09)}
   .swchip.mint{color:var(--wd);border-color:color-mix(in srgb,var(--wd) 30%,transparent);
     background:color-mix(in srgb,var(--wd) 9%,transparent)}
-
-  /* ===== TODAY, for comparison: a 1px inset ring at 35% and a 14px glow at
-     12%. On a die that already carries a border and a coloured bloom it is
-     below the noise floor — which is the whole reason for this study. ===== */
-  .swstack.now{box-shadow:inset 0 0 0 1px rgba(var(--mx2-rgb,var(--gold-rgb)),.35),
-    0 0 14px rgba(var(--mx2-rgb,var(--gold-rgb)),.12)}
-  .swstack.nowward{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wd) 40%,transparent),
-    0 0 14px color-mix(in srgb,var(--wd) 14%,transparent)}
 
   .swgold{--g:var(--mx2,var(--gold))}
   .swmint{--g:var(--wd)}
@@ -160,29 +152,7 @@
   <div class="shead"><button class="ico">‹</button><span class="ttl">GUARDED COLUMN</span><span class="pad"></span></div>
   <div class="swwrap" style="--wd:{{shue:ward}}">
 
-    <div class="cap2">Today — a 1px ring and a 12% glow, under a die that already glows</div>
-    <div class="swrow">
-      <div class="swcol">
-        <div class="swstack now">
-          <div class="swslot">{{die:5:p1:52}}</div>
-          <div class="swslot">{{die:5:p1:52}}</div>
-          <div class="swslot">{{die:2:p1:52}}</div>
-        </div>
-        <div class="swchip gold">12<i>{{mico:colshield:13}}</i></div>
-        <div class="swlbl">shielded</div>
-      </div>
-      <div class="swcol">
-        <div class="swstack nowward">
-          <div class="swslot">{{die:4:p1:52}}</div>
-          <div class="swslot">{{die:1:p1:52}}</div>
-          <div class="swslot"></div>
-        </div>
-        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
-        <div class="swlbl">warded</div>
-      </div>
-    </div>
-
-    <div class="cap2">Proposed — the dice are plated: lit rim top-left, shadow rim bottom-right</div>
+    <div class="cap2">The dice are plated — lit rim top-left, shadow rim bottom-right</div>
     <div class="swrow">
       <div class="swcol swgold">
         <div class="swstack">
@@ -232,6 +202,6 @@
       </div>
     </div>
 
-    <div class="note"><b>What it says:</b> these dice are <b>armoured</b> — the protection is a property of each die, not a box drawn round three of them. Two rims and a slow catch of light do the whole job, and every pixel of it lands <b>inside</b> the die's own footprint: <code>.col.legal</code>'s dashed ring sits at −4px and ROW MULTIPLY's bracket at −3px, and this option never goes out there to argue with either. That also makes it the one of the six that survives landscape unchanged, where the board is transposed and the gutters are the tightest thing on screen. <b>The drop</b> is cladding, not blocking: the die falls and settles exactly as it does into an unguarded column — a ward eats a STRIKE, never your own placement — and only then does the plate walk across it behind a glint. <b>Absorb</b> flashes the struck plate white, runs the discharge out along the seams, and leaves that plate grey; a spent ward is a dead plate, so the charge reads without a number. <b>Cost:</b> this is the <b>quietest</b> option of the six, and quiet is the failure mode being fixed — 1px of hue laid on a die that already has a 1px border in its owner's colour is a small step up from the ring we have, not a large one, and it is the hardest of the six to spot from arm's length or on a 360-wide screen. The gold rim is also the ×2 heat's ink: a shielded column of <code>.m2</code> dice wears gold on gold and the two marks blur. And a ward on an empty column plates nothing at all — three hairline seats is the entire mark, in exactly the state a defensive player casts into.</div>
+    <div class="note"><b>What it says:</b> these dice are <b>armoured</b> — the protection is a property of each die, not a box drawn round three of them. Two rims and a slow catch of light do the whole job, and every pixel of it lands <b>inside</b> the die's own footprint: <code>.col.legal</code>'s dashed ring sits at −4px and ROW MULTIPLY's bracket at −3px, and this option never goes out there to argue with either. That also makes it the one of the six that survives landscape unchanged, where the board is transposed and the gutters are the tightest thing on screen. <b>The drop</b> is cladding, not blocking: the die falls and settles exactly as it does into an unguarded column — a ward eats a STRIKE, never your own placement — and only then does the plate walk across it behind a glint. <b>Absorb</b> flashes the struck plate white, runs the discharge out along the seams, and leaves that plate grey; a spent ward is a dead plate, so the charge reads without a number. <b>Cost:</b> this is the <b>quietest</b> option of the six, and quiet is the failure mode these studies were called to fix — 1px of hue on a die that already carries a 1px border in its owner's colour lifts the mark barely clear of the die itself, and it is the hardest of the six to spot from arm's length or on a 360-wide screen. The gold rim is also the ×2 heat's ink: a shielded column of <code>.m2</code> dice wears gold on gold and the two marks blur. And a ward on an empty column plates nothing at all — three hairline seats is the entire mark, in exactly the state a defensive player casts into.</div>
   </div>
 </div></div>

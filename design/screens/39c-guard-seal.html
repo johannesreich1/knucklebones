@@ -1,4 +1,4 @@
-<!-- meta name="W3 — Runic seal, closed or clasped" group="3g · Shield & ward studies" subtitle="Keeps the seal-as-a-LINE, drops the per-row ticks that described a rule the game does not have: the shield's seal is a CLOSED double line — it draws itself shut the moment the column fills, has no segments and nothing to spend; the ward's is the same line held together by ONE clasp, and a strike snaps it, the line unwinds off the column and does not come back" width=430 height=1680 sizes="md" links="Match, Game modes, Spells" -->
+<!-- meta name="W3 — Runic seal, closed or clasped" group="3g · Shield & ward studies" subtitle="CHOSEN AND SHIPPED 2026-08-23 — the mark the game draws on a guarded column, and the only one: the shield's seal is a CLOSED double line, drawn shut the moment the column fills, with no segments and nothing to spend; the ward's is the same line held together by ONE clasp, and a strike snaps it — the line unwinds off the column and does not come back" width=430 height=1360 sizes="md" links="Match, Game modes, Spells" -->
 <style>
   /* Card-local names only (sw*). The app pins .col/.slot/.chip/.pip with
      position and height, so a card that redeclares them loses silently —
@@ -38,15 +38,6 @@
     background:rgba(var(--mx2-rgb,var(--gold-rgb)),.09)}
   .swchip.mint{color:var(--wd);border-color:color-mix(in srgb,var(--wd) 30%,transparent);
     background:color-mix(in srgb,var(--wd) 9%,transparent)}
-
-  /* ===== TODAY, for comparison: a 1px inset ring at 35% and a 14px glow at
-     12%. On a die that already carries a border and a coloured bloom it is
-     below the noise floor — and it is the SAME ring in both colours, so the
-     two rules look like one rule wearing two hues. ===== */
-  .swstack.now{box-shadow:inset 0 0 0 1px rgba(var(--mx2-rgb,var(--gold-rgb)),.35),
-    0 0 14px rgba(var(--mx2-rgb,var(--gold-rgb)),.12)}
-  .swstack.nowward{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wd) 40%,transparent),
-    0 0 14px color-mix(in srgb,var(--wd) 14%,transparent)}
 
   /* ===== THE SEAL. One stroke drawn OUTSIDE the slots — its path sits 3px
      clear of the stack and 6px clear of any die — so it adds nothing on top
@@ -217,29 +208,7 @@
   <div class="shead"><button class="ico">‹</button><span class="ttl">GUARDED COLUMN</span><span class="pad"></span></div>
   <div class="swwrap" style="--wd:{{shue:ward}}">
 
-    <div class="cap2">Today — one ring in two colours, under dice that already glow</div>
-    <div class="swrow">
-      <div class="swcol">
-        <div class="swstack now">
-          <div class="swslot">{{die:5:p1:52}}</div>
-          <div class="swslot">{{die:5:p1:52}}</div>
-          <div class="swslot">{{die:2:p1:52}}</div>
-        </div>
-        <div class="swchip gold">22<b class="swmx">×2</b><i>{{mico:colshield:13}}</i></div>
-        <div class="swlbl">shielded</div>
-      </div>
-      <div class="swcol">
-        <div class="swstack nowward">
-          <div class="swslot">{{die:4:p1:52}}</div>
-          <div class="swslot">{{die:1:p1:52}}</div>
-          <div class="swslot"></div>
-        </div>
-        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
-        <div class="swlbl">warded</div>
-      </div>
-    </div>
-
-    <div class="cap2">Proposed — a closed line with nothing on it, and a line held by one clasp</div>
+    <div class="cap2">At rest — a closed line with nothing on it, and a line held by one clasp</div>
     <div class="swrow">
       <div class="swcol swgold">
         <div class="swstack">
@@ -327,6 +296,6 @@
       </div>
     </div>
 
-    <div class="note"><b>What it says:</b> the two protections are different <b>kinds of mark</b>, not two colours of one — which is the correction this card owes. A <b>shield</b> is the state of being full: a closed double line, no seam, no segments, no charge. It is drawn the moment the third die seats, and a strike can only make it flare, because there is nothing on it to take away. A <b>ward</b> is one charge: the same line, single and thinner, held shut by one clasp — the only part of either seal that stirs at rest, so the eye is told in advance where it will give. The strike snaps the clasp, the line swings open and unwinds off the column, the rune burns off the chip, and the last second of the loop holds the true after-state: dice, no protection. The line sits outside the slots, so it costs the dice nothing — no tint on the faces, no pip contrast lost — and the difference between the two rules is <b>structural</b>, closed against clasped, rather than a matter of degree. Neither seal ever stops your own die; a ward eats a strike, not a placement. <b>Cost:</b> the thinnest of the six, and the first to lose to a small phone or a bright room. The clasp is nine pixels wide and carries the whole "this one can break" reading — if it fails, the card fails. Under <b>reduced motion</b> the bead stops and both beats go static: closed-against-clasped still says which is which, but the breaking becomes a before-and-after the player may never see happen.</div>
+    <div class="note"><b>What shipped:</b> this is the mark on a guarded column in the game, live since 2026-08-23, and the only one — nothing is drawn under it, so the seal carries the whole state. The two protections are different <b>kinds of mark</b>, not one mark wearing two hues. A <b>shield</b> is the state of being full: a closed double line, no seam, no segments, no charge. It is drawn the moment the third die seats, and a strike can only make it flare, because there is nothing on it to take away. A <b>ward</b> is one charge: the same line, single and thinner, held shut by one clasp — the only part of either seal that stirs at rest, so the eye is told in advance where it will give. The strike snaps the clasp, the line swings open and unwinds off the column, the rune burns off the chip, and the last second of the loop holds the true after-state: dice, no protection. The line sits outside the slots, so it costs the dice nothing — no tint on the faces, no pip contrast lost — and the difference between the two rules is <b>structural</b>, closed against clasped, rather than a matter of degree. Neither seal ever stops your own die; a ward eats a strike, not a placement. <b>Cost:</b> the thinnest of the six studies, and the first to lose to a small phone or a bright room. The clasp is nine pixels wide and carries the whole "this one can break" reading — if it fails, the ward reads like a shield. Under <b>reduced motion</b> the bead stops and both beats go static: closed-against-clasped still says which is which, but the breaking becomes a before-and-after the player may never see happen.</div>
   </div>
 </div></div>
