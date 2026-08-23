@@ -17,16 +17,14 @@
 // guest, the Game Center identity is hung on THAT account — the rating they
 // just earned is the whole point, and creating a second row would throw it
 // away.
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import "@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "@supabase/supabase-js";
+import {
+  createServiceClient, createUserClient, json, postOnly, record,
+} from "../_shared/http.ts";
 import { verifiedPlayerId } from "./verify.ts";
 
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, apikey, content-type",
-};
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json", ...CORS } });
+const clients = { createClient, env: Deno.env };
 
 const BUNDLE_ID = "com.appavaria.knucklebones";
 const FRESH_MS = 10 * 60 * 1000;          // a signature older than this is a replay
@@ -53,11 +51,11 @@ function certUrlOk(raw: string): boolean {
 }
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
-  if (req.method !== "POST") return json({ error: "method-not-allowed" }, 405);
+  const early = postOnly(req);
+  if (early) return early;
 
-  let body: any;
-  try { body = await req.json(); } catch { return json({ error: "bad-json" }, 400); }
+  let body: Record<string, unknown> | null;
+  try { body = record(await req.json()); } catch { return json({ error: "bad-json" }, 400); }
 
   const { publicKeyUrl, signature, salt, timestamp, gamePlayerID, teamPlayerID } = body ?? {};
   if (typeof publicKeyUrl !== "string" || typeof signature !== "string" ||
@@ -77,7 +75,7 @@ Deno.serve(async (req: Request) => {
   let playerId: string | null;
   try {
     playerId = await verifiedPlayerId(cert, {
-      playerIds: [gamePlayerID, teamPlayerID].filter(Boolean),
+      playerIds: [gamePlayerID, teamPlayerID].filter(Boolean) as string[],
       bundleId: BUNDLE_ID,
       timestamp: ts,
       salt: b64(salt),
@@ -86,13 +84,10 @@ Deno.serve(async (req: Request) => {
   } catch { return json({ error: "bad-certificate" }, 400); }
   if (!playerId) return json({ error: "unverified" }, 401);
 
-  const supaUrl = Deno.env.get("SUPABASE_URL")!;
-  const svc: SupabaseClient = createClient(supaUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+  const svc = createServiceClient(clients);
 
   // whoever is calling — a guest mid-career, or nobody at all
-  const authed = createClient(supaUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-    global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } },
-  });
+  const authed = createUserClient(req, clients);
   const { data: { user: caller } } = await authed.auth.getUser();
 
   const { data: known } = await svc.from("game_center_ids")

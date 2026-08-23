@@ -1,11 +1,10 @@
 // WHAT AN EDGE FUNCTION IS MADE OF — computed, never remembered.
 //
-// The functions import `./core/*.ts` and `../config.ts`; those files live in
-// src/ and are uploaded VERBATIM alongside index.ts at deploy time, mirroring
-// the repo layout with `src/` stripped (src/core/rules.ts -> core/rules.ts,
-// src/config.ts -> config.ts). Nothing copies them into supabase/ — the upload
-// IS the copy, which is what keeps one rules implementation for client and
-// server.
+// PvP operations import `./core/*.ts` and `../config.ts`; those files live in
+// src/ and are uploaded VERBATIM beside the function at deploy time. HTTP and
+// auth infrastructure lives once in supabase/functions/_shared and is carried
+// through the same transitive import walk. Nothing is copied into a function
+// directory — the upload IS the copy.
 //
 // That set used to be written down in supabase/functions/README.md, and prose
 // cannot be re-checked: by 2026-08-22 the list still named `elo.ts` (deleted
@@ -39,9 +38,21 @@ function relativeImports(src) {
 function sourceOf(slug, name) {
   const own = path.join(FN_DIR, slug, name);
   if (existsSync(own)) return own;
+  const functionShared = path.join(FN_DIR, name);
+  if (existsSync(functionShared)) return functionShared;
   const shared = path.join('src', name);
   if (existsSync(shared)) return shared;
   return null;
+}
+
+/* Source uses Supabase's conventional sibling import (`../_shared/http.ts`).
+   The MCP upload is rooted at index.ts, so its safe equivalent is
+   `_shared/http.ts`. Keep source/editor/CLI paths conventional and normalize
+   only the computed upload boundary. */
+function uploadedName(name) {
+  const parent = `..${path.sep}`;
+  const shared = `${parent}_shared${path.sep}`;
+  return name.startsWith(shared) ? name.slice(parent.length) : name;
 }
 
 /**
@@ -63,10 +74,16 @@ export function fnFiles(slug) {
       // resolve against the file's place in the UPLOADED tree, which is what
       // Deno will see — src/core/rules.ts asking for '../config.ts' means
       // config.ts sits beside core/, at the function root
-      walk(path.normalize(path.join(path.dirname(name), spec)), name);
+      walk(uploadedName(path.normalize(path.join(path.dirname(name), spec))), name);
     }
   };
   walk('index.ts', null);
+  /* Supabase recommends a per-function deno.json for deployed dependency
+     isolation. It is runtime input rather than a TypeScript import, so add it
+     explicitly to the otherwise import-derived closure. */
+  const denoConfig = path.join(FN_DIR, slug, 'deno.json');
+  if (existsSync(denoConfig)) files.push({ name: 'deno.json', source: denoConfig });
+  else missing.push({ name: 'deno.json', from: null });
   files.sort((a, b) => a.name.localeCompare(b.name));
   return { slug, files, missing };
 }
@@ -77,9 +94,14 @@ export function allSlugs() {
     .map((e) => e.name).sort();
 }
 
+export function deployContent(file) {
+  const source = readFileSync(file.source, 'utf8');
+  return source.replace(/(["'])\.\.\/_shared\//g, '$1./_shared/');
+}
+
 /* what the Supabase MCP's deploy_edge_function takes: [{ name, content }] */
 export const uploadPayload = (slug) =>
-  fnFiles(slug).files.map((f) => ({ name: f.name, content: readFileSync(f.source, 'utf8') }));
+  fnFiles(slug).files.map((file) => ({ name: file.name, content: deployContent(file) }));
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   const args = process.argv.slice(2);

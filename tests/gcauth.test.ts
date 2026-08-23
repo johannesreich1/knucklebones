@@ -11,6 +11,7 @@
 // long-form length encoding a 2048-bit key forces.
 import crypto from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { APP_ID } from '../src/config.ts';
 import { verifiedPlayerId, payload, spkiFromCertificate } from '../supabase/functions/gc-auth/verify.ts';
 
 const problems: string[] = [];
@@ -42,7 +43,7 @@ const spki = new Uint8Array(publicKey.export({ type: 'spki', format: 'der' }) as
 
 const GAME_ID = 'G:1234567890';
 const TEAM_ID = 'T:0987654321';
-const BUNDLE = 'com.appavaria.knucklebones';
+const BUNDLE = APP_ID;
 const TS = 1755600000000n;
 const SALT = new Uint8Array([9, 8, 7, 6, 5, 4, 3, 2]);
 

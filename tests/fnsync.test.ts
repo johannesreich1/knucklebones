@@ -23,22 +23,38 @@
 // predates the spell layer while STATUS claimed the copies were current.
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
-import { fnFiles, allSlugs, FN_DIR } from '../tools/fnfiles.mjs';
+import { deployContent, fnFiles, allSlugs, FN_DIR, uploadPayload } from '../tools/fnfiles.mjs';
 
 const problems: string[] = [];
 const errs: string[] = [];
 const check = (ok: boolean, msg: string) => { if (!ok) problems.push(msg); };
 
 const manifest: Record<string, string[]> = {};
+const closures = new Map<string, ReturnType<typeof fnFiles>>();
 
 for (const slug of allSlugs()) {
-  const { files, missing } = fnFiles(slug);
+  const closure = fnFiles(slug);
+  closures.set(slug, closure);
+  const { files, missing } = closure;
   manifest[slug] = files.map((f) => f.name);
 
   for (const m of missing) {
-    problems.push(`${slug} imports ${m.name} (from ${m.from}) and NO file provides it — `
-      + `this function cannot be deployed; fix the import or restore the module in src/`);
+    problems.push(m.from
+      ? `${slug} imports ${m.name} (from ${m.from}) and NO file provides it — `
+        + `this function cannot be deployed; fix the import or restore the module in src/`
+      : `${slug} has no ${m.name} — every deployed function needs an isolated, pinned Deno config`);
   }
+
+  check(new Set(files.map((file) => file.name)).size === files.length,
+    `${slug}'s deploy closure contains a path more than once`);
+  check(files.every((file) => !file.name.startsWith(`..${path.sep}`)),
+    `${slug}'s MCP deploy closure contains a parent-directory path`);
+  check(new Set(files.map((file) => file.source)).size === files.length,
+    `${slug}'s deploy closure uploads one source file under multiple paths`);
+  const payload = uploadPayload(slug);
+  check(payload.length === files.length && payload.every((entry, index) =>
+    entry.name === files[index].name && entry.content === deployContent(files[index])),
+  `${slug}'s JSON upload payload differs from the checked deploy closure`);
 
   /* never hand-edit copies: a file inside the function directory that also
      exists in src/ wins the resolution above, so the fork would be invisible
@@ -58,6 +74,44 @@ for (const slug of allSlugs()) {
       `${slug}/${f} shadows src/${f} — a hand-made copy of a shared module. `
       + `Delete it: the deploy uploads src/ directly (tools/fnfiles.mjs)`);
   }
+}
+
+/* Shared infrastructure is source-owned once. Relative imports from index,
+   handler and operation may all reach it, but the deploy closure must dedupe
+   that graph to one copy of each source file. */
+for (const [slug, closure] of closures) {
+  const shared = closure.files.filter((file) =>
+    file.source.startsWith(path.join(FN_DIR, '_shared') + path.sep));
+  check(shared.some((file) => file.source === path.join(FN_DIR, '_shared/http.ts')),
+    `${slug}'s deploy closure omits the shared HTTP/auth infrastructure`);
+  for (const source of new Set(shared.map((file) => file.source))) {
+    check(shared.filter((file) => file.source === source).length === 1,
+      `${slug} deploys ${source} more than once`);
+  }
+}
+
+const PINNED_IMPORTS = {
+  '@supabase/functions-js/edge-runtime.d.ts': 'jsr:@supabase/functions-js@2.112.3/edge-runtime.d.ts',
+  '@supabase/supabase-js': 'npm:@supabase/supabase-js@2.112.3',
+};
+for (const slug of allSlugs()) {
+  const configPath = path.join(FN_DIR, slug, 'deno.json');
+  if (!existsSync(configPath)) continue;
+  const config = JSON.parse(readFileSync(configPath, 'utf8'));
+  check(JSON.stringify(config.imports) === JSON.stringify(PINNED_IMPORTS),
+    `${slug}/deno.json must pin the approved JSR and npm dependencies exactly`);
+  check(config.compilerOptions?.strict === true,
+    `${slug}/deno.json must keep strict type checking enabled`);
+  check(manifest[slug]?.includes('deno.json'),
+    `${slug}'s deploy closure omits its deno.json`);
+}
+
+for (const slug of ['account-delete', 'pvp-join', 'pvp-move', 'pvp-claim']) {
+  check(manifest[slug]?.includes('handler.ts') && manifest[slug]?.includes('operation.ts'),
+    `${slug} must deploy its testable handler and separate operation`);
+  const index = readFileSync(path.join(FN_DIR, slug, 'index.ts'), 'utf8');
+  check(!/\.from\(|\.rpc\(|request\.json\(|req\.json\(/.test(index),
+    `${slug}/index.ts contains request or database logic instead of a thin Deno.serve adapter`);
 }
 
 /* THE CHECK MUST BE ABLE TO FAIL. A broken import scanner would hand every
@@ -87,10 +141,9 @@ check(!/service_role|SERVICE_ROLE_KEY\s*=/.test(readFileSync('src/config.ts', 'u
   'src/config.ts names a service-role key — it ships to every client');
 
 /* ---- an Edge Function may not SHADOW its own imports ----
-   These files are the least-checked code in the repo: they are outside
-   tsconfig (Deno globals and jsr: specifiers make tsc refuse them) and no
-   suite imports them, so a name collision is invisible until it throws in
-   production. It happened: core/bot.ts's botMove() was imported into pvp-move
+   Node exercises the runtime-free handlers and CI runs Deno check, but this
+   cheap static guard catches a class of binding failure before either runtime
+   starts. It happened: core/bot.ts's botMove() was imported into pvp-move
    while a local `let botMove` already held the reply payload, and the local
    shadowed the import for the whole handler — every bot reply would have
    called null. Live pvp-move was still on the previous version, which is the
@@ -100,18 +153,23 @@ check(!/service_role|SERVICE_ROLE_KEY\s*=/.test(readFileSync('src/config.ts', 'u
    dumb is what makes it cheap enough to keep. It looks only for a top-level
    binding that reuses an imported name. */
 for (const slug of Object.keys(manifest)) {
-  const src = readFileSync(`supabase/functions/${slug}/index.ts`, 'utf8');
-  const imported = new Set();
-  for (const m of src.matchAll(/^import\s*\{([^}]*)\}\s*from\s*["'][^"']+["'];/gm)) {
-    for (const part of m[1].split(',')) {
-      const name = part.trim().replace(/^type\s+/, '').split(/\s+as\s+/).pop()?.trim();
-      if (name) imported.add(name);
+  const localModules = closures.get(slug)?.files
+    .filter((file) => file.source.startsWith(path.join(FN_DIR, slug) + path.sep)
+      && file.source.endsWith('.ts')) ?? [];
+  for (const module of localModules) {
+    const src = readFileSync(module.source, 'utf8');
+    const imported = new Set<string>();
+    for (const m of src.matchAll(/^import\s*\{([^}]*)\}\s*from\s*["'][^"']+["'];/gm)) {
+      for (const part of m[1].split(',')) {
+        const name = part.trim().replace(/^type\s+/, '').split(/\s+as\s+/).pop()?.trim();
+        if (name) imported.add(name);
+      }
     }
-  }
-  for (const m of src.matchAll(/^\s*(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm)) {
-    check(!imported.has(m[1]),
-      `${slug}/index.ts declares \`${m[1]}\` while also importing that name — the local `
-      + `shadows the import, and calling it will throw at runtime. Rename the local.`);
+    for (const m of src.matchAll(/^\s*(?:const|let|var)\s+([A-Za-z_$][\w$]*)/gm)) {
+      check(!imported.has(m[1]),
+        `${slug}/${module.name} declares \`${m[1]}\` while also importing that name — the local `
+        + `shadows the import, and calling it will throw at runtime. Rename the local.`);
+    }
   }
 }
 
