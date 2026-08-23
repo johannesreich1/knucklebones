@@ -17,3 +17,20 @@
 #kbroot.reduce-motion .die.m3{animation:none}
 #kbroot.reduce-motion .die.dying{animation:none;opacity:1}
 #kbroot.reduce-motion .col>.seal .sb{display:none}
+/* A result is already delayed long enough to hold the final move. Collapsing
+   its entrance durations while retaining their 300–350ms delays makes the
+   verdict hold an invisible first frame and then flash to its resting one.
+   Reduced motion gets the readable still directly: no stamp, sweep, hoop or
+   delayed bloom, and no clipping left behind for a rise that never runs. */
+#kbroot.reduce-motion #ovEnd.enter #endTitle,
+#kbroot.reduce-motion #ovEnd.enter .shock,
+#kbroot.reduce-motion #ovEnd.enter .titlewrap::before,
+#kbroot.reduce-motion #ovEnd.enter .sweep{animation:none!important}
+#kbroot.reduce-motion #ovEnd .titleclip{overflow:visible}
+/* Direct manipulation is not decorative motion: while a finger owns the
+   sheet, every pointer coordinate must paint on that frame. The blanket rule
+   above otherwise creates a 60ms `transition:all` even after sheet.ts removes
+   .fofly, making a slow drag chase and flicker behind the finger. Arrival,
+   spring-back and dismissal keep their existing reduced-motion policy. */
+#kbroot.reduce-motion .faceoff.fodrag,
+#kbroot.reduce-motion .faceoff.fodrag .focard{transition:none!important}

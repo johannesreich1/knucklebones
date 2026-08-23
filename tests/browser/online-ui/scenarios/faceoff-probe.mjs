@@ -126,9 +126,36 @@ export async function probeFaceoff(page, { door, motion }) {
     });
     faceoff.grab = await grabMetrics();
     /* MOTION REDUCED: the sheet still arrives and still leaves, it simply does
-       not travel to do either. Nothing below applies — a drag is the player's
-       own finger and is never reduced, but there is no flight to measure. */
+       not travel to do either. A drag is the player's own finger and is never
+       reduced: sample a deliberately slow one before testing the instant exit.
+       The global reduced-motion duration used to synthesize transition:all on
+       every pointer step, leaving the card visibly chasing the finger. */
     if (motion === 'reduce') {
+      const grip = await page.evaluate(() => {
+        const c = document.querySelector('.focard').getBoundingClientRect();
+        return { x: Math.round(c.x + c.width / 2), y: Math.round(c.top + 7), rest: c.top };
+      });
+      await page.mouse.move(grip.x, grip.y);
+      await page.mouse.down();
+      faceoff.dragTrack = [];
+      for (let i = 1; i <= 6; i++) {
+        const distance = i * 8;
+        await page.mouse.move(grip.x, grip.y + distance);
+        faceoff.dragTrack.push(await page.evaluate(({ rest, distance }) => {
+          const ov = document.querySelector('.faceoff');
+          const card = ov.querySelector('.focard');
+          return { distance, actual: Math.round((card.getBoundingClientRect().top - rest) * 10) / 10,
+                   transition: getComputedStyle(card).transitionDuration };
+        }, { rest: grip.rest, distance }));
+        await page.waitForTimeout(40);
+      }
+      await page.waitForTimeout(120); // a paused short drag is not a flick
+      await page.mouse.up();
+      await page.waitForTimeout(100);
+      faceoff.dragSprung = await page.evaluate((rest) => {
+        const card = document.querySelector('.faceoff .focard');
+        return { alive: !!card, top: card ? Math.round(card.getBoundingClientRect().top - rest) : null };
+      }, grip.rest);
       await page.keyboard.press('Escape');
       // read at once, with no grace: an exit FLIGHT would still be on screen
       faceoff.escInstant = await page.evaluate(() => !document.querySelector('.faceoff'));

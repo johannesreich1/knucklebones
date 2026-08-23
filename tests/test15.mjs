@@ -26,14 +26,18 @@ const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x
 
 /* each case fills MY grid on the last placement — that is what ends a game */
 const cases = [
-  ['cpu-win',  'cpu', [[6,6,6],[5,5,5],[4,4]], [[1],[2],[3]],         2, 'win'],
-  ['cpu-lose', 'cpu', [[1,1,1],[1,1,1],[2,2]], [[6,6,6],[5,5,5],[4]], 2, 'lose'],
-  ['duo-p2',   'duo', [[1,1,1],[1,1,1],[2,2]], [[6,6,6],[5,5,5],[4]], 2, 'win'],
-  ['cpu-draw', 'cpu', [[2,2,2],[3,3,3],[1,1]], [[6,6,6],[],[]],       1, 'draw'],
+  ['cpu-win',  'cpu', [[6,6,6],[5,5,5],[4,4]], [[1],[2],[3]],         2, 'win',  false],
+  ['cpu-lose', 'cpu', [[1,1,1],[1,1,1],[2,2]], [[6,6,6],[5,5,5],[4]], 2, 'lose', false],
+  ['duo-p2',   'duo', [[1,1,1],[1,1,1],[2,2]], [[6,6,6],[5,5,5],[4]], 2, 'win',  false],
+  ['cpu-draw', 'cpu', [[2,2,2],[3,3,3],[1,1]], [[6,6,6],[],[]],       1, 'draw', false],
+  ['still-win',  'cpu', [[6,6,6],[5,5,5],[4,4]], [[1],[2],[3]],         2, 'win',  true],
+  ['still-lose', 'cpu', [[1,1,1],[1,1,1],[2,2]], [[6,6,6],[5,5,5],[4]], 2, 'lose', true],
+  ['still-draw', 'cpu', [[2,2,2],[3,3,3],[1,1]], [[6,6,6],[],[]],       1, 'draw', true],
 ];
 try {
-  for (const [label, mode, mine, theirs, die, want] of cases) {
-    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+  for (const [label, mode, mine, theirs, die, want, reduced] of cases) {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true,
+                                           ...(reduced ? { reducedMotion: 'reduce' } : {}) });
     const page = await ctx.newPage();
     page.on('pageerror', e => problems.push('PAGEERROR ' + label + ': ' + e.message));
     await page.goto(F); await page.waitForTimeout(400);
@@ -52,7 +56,28 @@ try {
       k.applySides(); k.renderAll(false); k.setStageDie(d, 1);
     }, [mine, theirs, die]);
     await page.evaluate(() => window.__kb.place(1, 2));
-    await page.waitForTimeout(1500);
+    const reducedFrames = [];
+    if (reduced) {
+      await page.waitForSelector('#ovEnd.on');
+      const frame = () => page.evaluate(() => {
+        const ov = document.getElementById('ovEnd'), title = document.getElementById('endTitle');
+        const style = getComputedStyle(title);
+        const named = ov.getAnimations({ subtree: true }).map((a) => a.animationName).filter(Boolean);
+        return {
+          opacity: +style.opacity, transform: style.transform,
+          shock: +getComputedStyle(document.getElementById('endShock')).opacity,
+          sweep: +getComputedStyle(ov.querySelector('.sweep')).opacity,
+          resultMotion: named.filter((name) => /^end(?:Stamp|Shock|Bloom|Rise|Sweep)$/.test(name)),
+          fireworks: document.querySelectorAll('#endFx .particle, #endFx .fwring').length,
+          flash: document.getElementById('flash').getAnimations().length,
+        };
+      });
+      reducedFrames.push(await frame());
+      await page.waitForTimeout(170); reducedFrames.push(await frame());
+      await page.waitForTimeout(230); reducedFrames.push(await frame());
+    } else {
+      await page.waitForTimeout(1500);
+    }
     const r = await page.evaluate(() => {
       const ov = document.getElementById('ovEnd'), t = document.getElementById('endTitle');
       const anim = (el) => el ? el.getAnimations().map(a => a.animationName).filter(Boolean).join(',') : '';
@@ -72,6 +97,7 @@ try {
           .map(b => ({ id: b.id, label: b.textContent, h: Math.round(b.getBoundingClientRect().height) })),
       };
     });
+    r.reducedFrames = reducedFrames;
     out[label] = r;
     check(r.shown, 'the result screen never appeared: ' + label, r);
     check(r.outcome === want, 'wrong outcome for ' + label, r);
@@ -82,7 +108,12 @@ try {
           'the result screen is not offering exactly one primary and one quiet way on: ' + label, r.acts);
     check(r.acts[1].label === 'Change setup', 'the quiet way on lost its label: ' + label, r.acts);
     check(r.acts[1].h < r.acts[0].h, 'THE WAY OUT STANDS AS TALL AS NEXT DUEL: ' + label, r.acts);
-    if (want === 'win') {
+    if (reduced) {
+      check(r.reducedFrames.length === 3 && r.reducedFrames.every((f) => f.opacity > .95
+            && f.transform === 'none' && f.shock === 0 && f.sweep === 0
+            && f.resultMotion.length === 0 && f.fireworks === 0 && f.flash === 0),
+            'REDUCED RESULT FLASHED INSTEAD OF ARRIVING AS A READABLE STILL: ' + label, r.reducedFrames);
+    } else if (want === 'win') {
       check(/endStamp/.test(r.titleAnim), 'a win must LAND: ' + label, r);
       check(/endShock/.test(r.shockAnim), 'a win lost its shockwave: ' + label, r);
       check(r.fireworks > 0, 'A WIN WITHOUT FIREWORKS: ' + label, r);

@@ -125,6 +125,12 @@ export async function runLadderFaceoffScenarios(suite) {
   check(sfo?.arrive != null && Math.abs(sfo.arrive.first - sfo.arrive.last) <= 2
         && sfo.arrive.washFirst === sfo.arrive.washLast,
         'the face-off still flies in with motion reduced', sfo?.arrive);
+  check(sfo?.dragTrack?.length === 6
+        && sfo.dragTrack.every((sample) => Math.abs(sample.actual - sample.distance) <= 1
+          && sample.transition === '0s'),
+        'reduced motion made the directly dragged sheet chase or flicker behind the finger', sfo?.dragTrack);
+  check(sfo?.dragSprung?.alive === true && Math.abs(sfo.dragSprung.top) <= 2,
+        'the reduced-motion sheet did not settle after a short direct drag', sfo?.dragSprung);
   check(sfo?.escInstant === true,
         'the face-off still flies OUT with motion reduced', sfo);
   check(still.errs.length === 0, 'page errors with motion reduced', still.errs);
