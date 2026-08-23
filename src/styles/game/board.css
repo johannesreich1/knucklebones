@@ -3,7 +3,12 @@
 .board{display:grid;grid-template-columns:repeat(3,var(--cell));gap:var(--gap);position:relative}
 .col{display:grid;grid-template-rows:repeat(3,var(--cell));gap:var(--gap);position:relative;
   border-radius:calc(var(--r) + 4px);cursor:pointer}
-.slot{width:var(--cell);height:var(--cell);border-radius:var(--r);
+/* THE CELL'S CORNER, WRITTEN ONCE — worn by the seat, by the die that lands in
+   it, and by the seal cut parallel to the stack around them (ui/game/seals.ts
+   reads it back off a real .slot). It follows the cell size so compact dice
+   keep their shape; the seat and die must never offer the seal two radii. */
+.slot,.die{border-radius:min(var(--r),calc(var(--cell)*.25 + 1.5px))}
+.slot{width:var(--cell);height:var(--cell);
   background:rgba(255,255,255,.028);
   border:1px solid rgba(255,255,255,.07);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.05);

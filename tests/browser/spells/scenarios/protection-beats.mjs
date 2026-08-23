@@ -1,7 +1,7 @@
 export async function runProtectionBeatScenarios(suite) {
   const {
     page, out, check, devices, newGame, waitChoose, table, guard, sidePage,
-    sealOf, cornerOk,
+    sealOf, cornerOk, sealTiming,
   } = suite;
   /* ---------- 10a-i. A STRIKE MEETS A PROTECTION, AND IT IS SEEN ----------
      shieldBlocked() and wardBurned() (ui/game/seals.ts) were extracted from two
@@ -12,7 +12,7 @@ export async function runProtectionBeatScenarios(suite) {
      settled board a second and a half later. So play the die and WATCH: which
      animations run, which one-shot marks land on the column and its chip, and
      whether the seal is still painted once the charm behind it is spent. */
-  const strikeBeat = (side, c, who, at) => page.evaluate(async ([sd, cc, w, a]) => {
+  const strikeBeat = (side, c, who, at) => page.evaluate(async ([sd, cc, w, a, ticks]) => {
     const k = window.__kb;
     const col = document.querySelector('#' + sd + 'Board .col[data-col="' + cc + '"]');
     const chip = document.querySelectorAll('#' + sd + 'Cols .chip')[cc];
@@ -34,7 +34,7 @@ export async function runProtectionBeatScenarios(suite) {
     const hostAnims = new Set(), hostMarks = new Set();
     let outlived = false, gone = false;
     void k.place(w, a);                        // polled, not awaited: the beat is the subject
-    for (let i = 0; i < 45; i++) {
+    for (let i = 0; i < ticks; i++) {
       await new Promise((r) => setTimeout(r, 40));
       for (const an of col.getAnimations({ subtree: true })) anims.add(an.animationName);
       for (const an of chip.getAnimations({ subtree: true })) anims.add(an.animationName);
@@ -49,7 +49,7 @@ export async function runProtectionBeatScenarios(suite) {
     return { anims: [...anims].sort(), marks: [...marks].sort(), flare: [...flare].sort(),
              hostAnims: [...hostAnims].sort(), hostMarks: [...hostMarks].sort(),
              outlived, gone, wards: JSON.stringify(k.S.charm.wards), theirs: JSON.stringify(k.S.boards[0][cc]) };
-  }, [side, c, who, at]);
+  }, [side, c, who, at, sealTiming.strikeTicks]);
 
   /* STRUCK. A shield has nothing on it to take away, so it flares and hardens
      and the line after the blow is the line before it, to the pixel. */
@@ -77,7 +77,7 @@ export async function runProtectionBeatScenarios(suite) {
      is the honest one: dice, and no protection. */
   await table([[], [], []], [[5, 5, 2], [4], []], 4);
   await guard();
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(sealTiming.settle);
   out.wardStruck = await strikeBeat('top', 1, 1, 1);
   check(out.wardStruck.theirs === '[4]', 'the ward did not absorb the strike', out.wardStruck);
   check(out.wardStruck.wards === '[[0,0,0],[0,0,0]]', 'the ward was not spent', out.wardStruck);
@@ -105,7 +105,7 @@ export async function runProtectionBeatScenarios(suite) {
      mid-game. If any of those three ever stops being true, this block is where
      the un-merge beat it would need goes missing. */
   await table([[], [], []], [[5, 5, 2], [6, 6], []], 5);
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(sealTiming.settle);
   out.sealLone = await sealOf('top', 0);
   /* ...and it arrives as a BEAT, on the placement that fills the neighbour: the
      longer mark draws itself shut. It does not appear between two frames. */
@@ -121,7 +121,7 @@ export async function runProtectionBeatScenarios(suite) {
     }
     return { anims: [...anims].sort(), on };
   });
-  await page.waitForTimeout(700);
+  await page.waitForTimeout(sealTiming.settle);
   out.sealRun = await sealOf('top', 0);
   out.sealInside = await sealOf('top', 1);
   check(out.sealGrew.on && out.sealGrew.anims.includes('sealdraw'),
@@ -151,7 +151,7 @@ export async function runProtectionBeatScenarios(suite) {
     { chip: out.sealRun.toChip, plate: out.sealRun.toPlateInk });
   // ...and a third neighbour joins the same one mark rather than starting a second
   await page.evaluate(() => { window.__kb.S.boards[0][2] = [3, 3, 3]; window.__kb.renderAll(false); });
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(sealTiming.settle);
   out.sealRun3 = await sealOf('top', 0);
   out.sealRun3b = [await sealOf('top', 1), await sealOf('top', 2)];
   check(out.sealRun3.spans === 3 && !!out.sealRun3.out
@@ -167,7 +167,7 @@ export async function runProtectionBeatScenarios(suite) {
      the whole harden on a display:none element and the player would see the
      chip twitch beside a line that never answered. */
   await table([[], [], []], [[5, 5, 2], [6, 6, 1], []], 6);
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(sealTiming.settle);
   out.runStruck = await strikeBeat('top', 1, 1, 1);
   check(out.runStruck.flare.includes('sh:block'),
     'a strike inside a run never flared the struck column\'s chip', out.runStruck.flare);

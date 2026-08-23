@@ -1,7 +1,7 @@
 export async function runProtectionLayoutScenarios(suite) {
   const {
     page, out, check, newGame, waitChoose, table, guard, sidePage,
-    sealOf, cornerOk, outlinesOf, oneOutline,
+    sealOf, cornerOk, outlinesOf, oneOutline, sealTiming,
   } = suite;
   /* ---------- 10a-iv. THE SAME MARK, TURNED ----------
      --seal-turn ships FOUR values — one per half, per orientation — and until
@@ -21,7 +21,7 @@ export async function runProtectionLayoutScenarios(suite) {
     check(await waitChoose(vp), 'game never reached choose (turn/' + view.name + ')');
     await table([[3, 3, 1], [], []], [[5, 5, 2], [4], []], 5, vp);
     await guard(1, 0, vp); await guard(1, 1, vp);      // a ward on column 1 of each half
-    await vp.waitForTimeout(900);
+    await vp.waitForTimeout(sealTiming.settle);
     const turn = {
       land: await vp.evaluate(() => document.getElementById('kbroot').classList.contains('land')),
       cell: await vp.evaluate(() => getComputedStyle(document.getElementById('kbroot')).getPropertyValue('--cell')),
@@ -87,7 +87,7 @@ export async function runProtectionLayoutScenarios(suite) {
     /* ...and a run is the same geometry turned with it: across the screen in
        portrait, DOWN it in landscape. One offset token, two orientations. */
     await vp.evaluate(() => { window.__kb.S.boards[0][1] = [6, 6, 1]; window.__kb.renderAll(false); });
-    await vp.waitForTimeout(900);
+    await vp.waitForTimeout(sealTiming.settle);
     const run = await sealOf('top', 0, vp), inside = await sealOf('top', 1, vp);
     out['sealTurnRun_' + view.name] = { run, merged: inside.merged, drawn: inside.drawn };
     check(run.spans === 2 && !!run.out && Object.values(run.out).every((v) => v > 0.3 && v < 3),
@@ -113,7 +113,7 @@ export async function runProtectionLayoutScenarios(suite) {
   check(await waitChoose(), 'game never reached choose (one outline)');
   await table([[], [4], []], [[5, 5, 2], [], []], 5);
   await guard(1, 1);                            // MY column 1: a ward, and room left
-  await page.waitForTimeout(900);
+  await page.waitForTimeout(sealTiming.settle);
   out.outlines = await outlinesOf();
   oneOutline(out.outlines, 'portrait/390');
   out.bare = out.outlines.find((o) => o.id === 'botBoard#0');

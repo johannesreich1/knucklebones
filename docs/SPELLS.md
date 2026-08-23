@@ -317,7 +317,37 @@ Learned from real play, each one a shipped bug:
   player, with one line. A new mark that rings a column has to answer this
   rule — `.col.legal:is(.shielded,.warded,.sealsnap)` in
   `src/styles/game/guards.css` is the one place it lives, and the spells browser
-  protection-layout scenario counts the rings per column.
+  `protection-layout` scenario counts the rings per column.
+  **The rule points inward too**, which took a second report to learn: the
+  shield's loop carried a hairline copy of itself 3px inside, meant as weight
+  and read as a second outline — at the cell sizes a phone actually uses, that
+  3px lands on the dice's own rims. One mark, one line, wherever the second one
+  comes from (`tests/browser/spells/scenarios/protections.mjs` counts the
+  distinct paths the mark paints).
+- **A mark that encloses the stack is cut parallel to the CELL.** The seal
+  rides the stack's box grown by `--seal-out`, and a line offset outward from a
+  rounded rectangle only stays parallel — corners included — if its radius
+  grows by that same offset. The rectangle to match is the one the player sees:
+  the cell, whose corner the seat and the die share (`.slot,.die` in
+  `src/styles/game/board.css`, read back by `sealMetrics()` in
+  `src/ui/game/seals.ts`). Asking `.col` instead looks right in the source and
+  wrong on the glass — its box is 4px rounder than the cells it holds and paints
+  nothing at all, so the mark ran flush to the dice down the sides and bowed
+  away from them at the corners. That is "the radius is too strong", reported
+  twice. The `protections` and `protection-layout` browser scenarios measure the
+  cell-parallel corner at every supported size and orientation.
+- **The seal's beats have one owner each** — `--seal-engage`, `--seal-strike`,
+  and `--seal-snap` live in `src/styles/foundations/tokens.css`; the animations
+  in `src/styles/game/guards.css` consume them, `src/ui/game/seals.ts` reads them
+  back to decide how long to hold each one-shot class on, and the split spells
+  browser scenarios read them to decide how long to observe and when a mark is
+  resting. Three numbers typed in three files is a trio that parts on the first
+  tuning pass — and did. **Read a time token for its unit, never with a bare
+  `parseFloat`:** the build's CSS minifier ships `950ms` as `.95s`, so the same
+  read gives 950 in dev and 0.95 in the bundle — which held the one-shot class
+  on for a single millisecond in the only artefact a player ever sees, with
+  every assertion in the suite still green, because they all waited for the
+  beat to be over before measuring anything.
 - **A self spell casts on press.** One possible target means nothing to aim.
   Dragging still works; dropping anywhere else cancels with the charge intact.
 - **And pressing it again takes it back**, for as long as the die it changed is

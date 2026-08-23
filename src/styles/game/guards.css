@@ -1,8 +1,8 @@
 /* ===== COLUMN SHIELD: full columns wear a shield ===== */
 .chip .sh{line-height:1;color:var(--mx2,var(--gold));filter:drop-shadow(0 0 6px rgba(var(--mx2-rgb,var(--gold-rgb)),.75))}
-.chip .sh.pop,.chip .wd.pop{animation:shpop .55s cubic-bezier(.2,1.6,.4,1)}
+.chip .sh.pop,.chip .wd.pop{animation:shpop var(--seal-engage) cubic-bezier(.2,1.6,.4,1)}
 @keyframes shpop{0%{transform:scale(0) rotate(-30deg)}70%{transform:scale(1.35)}100%{transform:scale(1)}}
-.chip .sh.block{animation:shblock .45s}
+.chip .sh.block{animation:shblock var(--seal-strike)}
 @keyframes shblock{0%,100%{transform:scale(1)}40%{transform:scale(1.55);filter:drop-shadow(0 0 16px rgba(var(--mx2-rgb,var(--gold-rgb)),1))}}
 
 /* ===== WARD: a guarded column wears its rune until the mark burns =====
@@ -17,7 +17,9 @@
 .chip .sh,.chip .wd{position:absolute;top:0;bottom:0;display:flex;align-items:center}
 .chip .sh{right:4px}
 .chip .wd{left:4px}
-.chip .wd.block{animation:wdblock .45s}
+/* THE CHIP'S MARK AND THE COLUMN'S SEAL ANSWER ONE MOMENT: the rune pops as
+   the line closes and flares for as long as that line hardens or unwinds. */
+.chip .wd.block{animation:wdblock var(--seal-snap)}
 @keyframes wdblock{0%,100%{transform:scale(1)}40%{transform:scale(1.6);filter:drop-shadow(0 0 18px var(--wdc))}}
 /* ===== THE SEAL: the column's own dress =====
    Design: design/screens/studies/open/39c-guard-seal.html ("W3 — Runic seal, closed or
@@ -27,15 +29,14 @@
    two different RULES read as one rule wearing two colours. They are now two
    KINDS of mark, and the geometry says which is which before the colour does:
 
-     SHIELD (a game MODE) — a CLOSED double line. No seam, no segments, no
-       end. A full column cannot be destroyed at all for as long as it stays
-       full, so there is nothing on this mark that could be taken away; a
-       strike can only make it flare and HARDEN, after which it is exactly
-       what it was.
-     WARD (a SPELL) — the same line, single, thinner, in the ward's mint, held
-       shut by ONE clasp. One cast, one fastening, one strike: the clasp
-       snaps, the halves fly, and the line swings open at the hinge and
-       unwinds off the column. It does not come back.
+     SHIELD (a game MODE) — a CLOSED line. No seam, no segments, no end. A
+       full column cannot be destroyed at all for as long as it stays full,
+       so there is nothing on this mark that could be taken away; a strike can
+       only make it flare and HARDEN, after which it is exactly what it was.
+     WARD (a SPELL) — the same line, thinner, in the ward's mint, held shut by
+       ONE clasp. One cast, one fastening, one strike: the clasp snaps, the
+       halves fly, and the line swings open at the hinge and unwinds off the
+       column. It does not come back.
 
    The distinction is STRUCTURAL, never animated — closed against clasped
    still says which is which with prefers-reduced-motion, where every beat
@@ -87,7 +88,7 @@
    which on both halves and in both orientations is also the end the next die
    lands at (ui/dom slotIdx mirrors the top half). The seal closes where the
    third die seats. */
-.col>.seal{--seal-out:1.6px;
+.col>.seal{
   /* HOW MANY COLUMNS THIS ONE SEAL ENCLOSES. ui/game/seals.ts writes --seal-span on
      the first column of a run of shielded neighbours; every other column in the
      run is .sealmerged and draws nothing. Read through a second name so the
@@ -119,11 +120,14 @@
 
 .col>.seal>g{display:none}
 .col.shielded>.seal>.sgold{display:block}
-.col.warded:not(.shielded)>.seal>.smint,.col.sealsnap>.seal>.smint{display:block}
+.col.warded:not(.shielded)>.seal>.smint,.col.sealsnap:not(.shielded)>.seal>.smint{display:block}
 .col.shielded>.seal{--g:var(--mx2,var(--gold))}
 /* the ward's hue AND its heartbeat: the same two states that show the clasp at
-   all are the only two that may animate it (see .sp/.sv below) */
-.col.warded:not(.shielded)>.seal,.col.sealsnap>.seal{--g:var(--wdc);--sealbreathe:sealbreathe}
+   all are the only two that may animate it (see .sp/.sv below).
+   .sealsnap carries the same :not(.shielded) as .warded: it intentionally
+   outlives the spent charge, and during its longer beat the foe can fill the
+   column. If that makes the column shielded, the shield's mark must win. */
+.col.warded:not(.shielded)>.seal,.col.sealsnap:not(.shielded)>.seal{--g:var(--wdc);--sealbreathe:sealbreathe}
 /* ===== ONE COLUMN, ONE OUTLINE =====
    A protected column you may still play into is making two true statements at
    once — "this column is protected" and "you may play here this turn" — and
@@ -159,12 +163,11 @@
    and a breathing ring would spend it — so the whole beat is in the light. */
 @keyframes sealready{0%,100%{opacity:.5}50%{opacity:1}}
 
-/* the shield's line: two strokes, the outer carrying the weight and an inner
-   hairline riding just inside it. A doubled line reads as engraved and
-   settled where a single one reads as drawn-on and provisional. */
+/* the shield's line: ONE stroke. The former hairline 3px inside read as a
+   second outline at the size a column actually paints; closure, not doubling,
+   is what distinguishes this permanent mark from the ward. */
 .seal .sl{fill:none;stroke:color-mix(in srgb,var(--g) 92%,transparent);stroke-width:1.6;
   filter:drop-shadow(0 0 5px color-mix(in srgb,var(--g) 55%,transparent))}
-.seal .si{fill:none;stroke:color-mix(in srgb,var(--g) 32%,transparent);stroke-width:.9}
 /* ONE bead, circling. A crawling dash pattern reads as a progress spinner and
    invites counting; a single bead on an unbroken line cannot be counted and
    never arrives anywhere — which is the point of a protection with no end
@@ -176,7 +179,7 @@
   filter:drop-shadow(0 0 6px color-mix(in srgb,var(--g) 90%,transparent))}
 @keyframes sealrun{to{stroke-dashoffset:-480}}
 
-/* the ward's line: single, thinner, and it STOPS — the gap at the mouth is
+/* the ward's line: thinner, and it STOPS — the gap at the mouth is
    the whole argument of the mark, and the clasp is what closes it. */
 .seal .sa{fill:none;stroke:color-mix(in srgb,var(--g) 88%,transparent);stroke-width:1.4;
   stroke-linecap:round;stroke-dasharray:240;transform-box:view-box;transform-origin:50% 100%;
@@ -225,13 +228,13 @@
   filter:drop-shadow(0 0 7px color-mix(in srgb,var(--g) 85%,transparent))}
 .seal .sj{fill:none;stroke:color-mix(in srgb,var(--g) 45%,#fff);stroke-width:1.7;opacity:0;
   transform-box:view-box;transform-origin:50% 0}
-.col.sealon>.seal .sd{animation:sealdraw .62s ease-out both}
+.col.sealon>.seal .sd{animation:sealdraw var(--seal-engage) ease-out both}
 @keyframes sealdraw{0%{stroke-dashoffset:240;opacity:0}6%{stroke-dashoffset:240;opacity:1}
   62%{stroke-dashoffset:0;opacity:1}76%{stroke-dashoffset:0;opacity:1}
   100%{stroke-dashoffset:0;opacity:0}}
-.col.sealon>.seal .sset{animation:sealsettle .62s ease-out both}
+.col.sealon>.seal .sset{animation:sealsettle var(--seal-engage) ease-out both}
 @keyframes sealsettle{0%,62%{opacity:0}72%{opacity:1}100%{opacity:1}}
-.col.sealon>.seal .sj{animation:sealjoin .62s ease-out both}
+.col.sealon>.seal .sj{animation:sealjoin var(--seal-engage) ease-out both}
 @keyframes sealjoin{0%,58%{opacity:0;transform:scale(.4)}66%{opacity:1;transform:scale(1)}
   90%{opacity:0;transform:scale(var(--sealjoin-max,3.2))}100%{opacity:0;transform:scale(.4)}}
 /* LANDSCAPE PUTS THE MOUTH AT THE SCREEN'S EDGE. The mouth is the end away
@@ -254,9 +257,9 @@
 #kbroot.land .seal{--sealjoin-max:1.6}
 /* the ward draws the same way — the line runs up from the hinge and the clasp
    closes over the gap last, which is the only thing it has to say */
-.col.sealon>.seal .sa{animation:sealclose .62s ease-out both}
+.col.sealon>.seal .sa{animation:sealclose var(--seal-engage) ease-out both}
 @keyframes sealclose{0%{stroke-dashoffset:-240}66%,100%{stroke-dashoffset:0}}
-.col.sealon>.seal .sclasp{animation:sealclaspin .62s ease-out both}
+.col.sealon>.seal .sclasp{animation:sealclaspin var(--seal-engage) ease-out both}
 @keyframes sealclaspin{0%,58%{opacity:0;transform:scale(.4)}74%{opacity:1;transform:scale(1.3)}
   100%{opacity:1;transform:scale(1)}}
 
@@ -269,9 +272,9 @@
    hardens for four frames and is exactly what it was — a full column cannot
    be destroyed, so there is no state to change and no charge to spend,
    however many strikes arrive. */
-.col.sealhit>.seal .sl{animation:sealharden .5s ease-out}
+.col.sealhit>.seal .sl{animation:sealharden var(--seal-strike) ease-out}
 @keyframes sealharden{0%{stroke-width:1.6}22%{stroke-width:3}70%,100%{stroke-width:1.6}}
-.col.sealhit>.seal{animation:sealrepel .5s ease-out}
+.col.sealhit>.seal{animation:sealrepel var(--seal-strike) ease-out}
 @keyframes sealrepel{0%{filter:brightness(1) drop-shadow(0 0 0 transparent)}
   22%{filter:brightness(1.5) drop-shadow(0 0 13px color-mix(in srgb,var(--g) 80%,transparent))}
   70%,100%{filter:brightness(1) drop-shadow(0 0 0 transparent)}}
@@ -282,19 +285,19 @@
    redraw. .sealsnap outlives the repaint that clears .warded on purpose: the
    state is spent the instant the strike is absorbed, and the mark has to be
    allowed to finish leaving. */
-.col.sealsnap>.seal .sv{animation:sealpop .68s ease-out both}
+.col.sealsnap>.seal .sv{animation:sealpop var(--seal-snap) ease-out both}
 @keyframes sealpop{0%{opacity:1;transform:scale(1)}10%{opacity:1;transform:scale(2.2)}
   22%{opacity:0;transform:scale(3)}100%{opacity:0;transform:scale(1)}}
-.col.sealsnap>.seal .sp{animation:sealsnapoff .68s cubic-bezier(.25,1.2,.5,1) both}
+.col.sealsnap>.seal .sp{animation:sealsnapoff var(--seal-snap) cubic-bezier(.25,1.2,.5,1) both}
 @keyframes sealsnapoff{0%,8%{opacity:1;transform:translate(0,0) rotate(0deg)}
   34%{opacity:.85;transform:translate(calc(var(--d)*5px),-6px) rotate(calc(var(--d)*34deg))}
   62%,100%{opacity:0;transform:translate(calc(var(--d)*9px),-3px) rotate(calc(var(--d)*58deg))}}
-.col.sealsnap>.seal .sa{animation:sealunwind .68s ease-out both}
+.col.sealsnap>.seal .sa{animation:sealunwind var(--seal-snap) ease-out both}
 @keyframes sealunwind{0%,8%{stroke-dashoffset:0;transform:rotate(0deg);opacity:1}
   22%{stroke-dashoffset:-16;transform:rotate(calc(var(--d)*2.6deg));opacity:1}
   76%{stroke-dashoffset:-240;transform:rotate(calc(var(--d)*2.6deg));opacity:.5}
   86%,100%{stroke-dashoffset:-240;transform:rotate(calc(var(--d)*2.6deg));opacity:0}}
-.col.sealsnap>.seal{animation:sealburst .68s ease-out}
+.col.sealsnap>.seal{animation:sealburst var(--seal-snap) ease-out}
 @keyframes sealburst{0%{filter:brightness(1) drop-shadow(0 0 0 transparent)}
   10%{filter:brightness(1.6) drop-shadow(0 0 14px color-mix(in srgb,var(--g) 85%,transparent))}
   55%,100%{filter:brightness(1) drop-shadow(0 0 0 transparent)}}

@@ -90,5 +90,13 @@
   --cell:62px;
   --gap:6px;
   --r:14px;
+  /* THE SEAL'S NUMBERS — root-scoped because the stylesheet draws with them
+     and ui/game/seals.ts reads them back to cut the frame and keep one-shot
+     classes alive for exactly the matching animation. Keep the time reader
+     unit-aware: the build minifier may ship 950ms as .95s. */
+  --seal-out:1.6px;
+  --seal-engage:950ms;   /* the line closes: the third die seats, or the rune lands */
+  --seal-strike:1200ms;  /* a strike meets a shield, which hardens and is unchanged */
+  --seal-snap:1600ms;    /* a ward's clasp fails and the line unwinds off the column */
 }
 #kbroot,#kbroot *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}

@@ -51,6 +51,26 @@ export async function runProtectionScenarios(suite) {
      the ink stands 2.4px off the stack (main.css, --seal-out). Everything below
      is measured with that half added back — still, because the probe must go on
      being able to SEE a stroke that scales if one ever comes back. */
+  /* THE BEATS, ASKED FOR RATHER THAN TYPED. The stylesheet owns each one and
+     every wait below is derived from them: "measure the RESTING mark" must
+     outlast the engage beat, and a strike probe must watch the longest beat.
+     Keep the reader unit-aware because the build minifier may rewrite `950ms`
+     as `.95s`; a bare parseFloat would turn the shipped beat into 1ms. */
+  const cssMs = (key) => page.evaluate((k) => {
+    const root = document.getElementById('kbroot');
+    const value = getComputedStyle(root).getPropertyValue(k).trim();
+    const number = parseFloat(value);
+    return !(number > 0) ? 0 : /ms$/.test(value) ? number : /s$/.test(value) ? number * 1000 : number;
+  }, key);
+  const sealTiming = {
+    engage: await cssMs('--seal-engage'),
+    strike: await cssMs('--seal-strike'),
+    snap: await cssMs('--seal-snap'),
+  };
+  sealTiming.settle = Math.round(sealTiming.engage) + 300;
+  /* Die flight (300ms), the pre-strike pause (120ms), the longest seal beat,
+     and enough time after it to observe a spent ward's mark leave. */
+  sealTiming.strikeTicks = Math.ceil((420 + Math.max(sealTiming.strike, sealTiming.snap) + 700) / 40);
   const sealOf = (side, c, pg = page) => pg.evaluate(([sd, cc]) => {
     const col = document.querySelector('#' + sd + 'Board .col[data-col="' + cc + '"]');
     const seal = col.querySelector('.seal');
@@ -141,9 +161,14 @@ export async function runProtectionScenarios(suite) {
       drawn: getComputedStyle(seal).display !== 'none' && shown.length > 0,
       merged: col.classList.contains('sealmerged'),
       spans: cols.length,
-      // the first class of each shape is its KIND: sl closed loop, si hairline,
-      // sb bead, sa half-arc, sp clasp half, sv rivet
+      // the first class of each shape is its KIND: sl closed loop, sb bead,
+      // sa half-arc, sp clasp half, sv rivet
       parts: shown.map((n) => n.getAttribute('class').split(' ')[0]).sort(),
+      /* HOW MANY LINES THE MARK ACTUALLY PAINTS. Distinct geometry, not shape
+         count: the bead rides the loop's own path, so a shield that draws one
+         outline reports 1 however many elements are on it — and the hairline
+         that used to run 3px inside the loop reported 2. */
+      lines: [...new Set(shown.map((n) => n.getAttribute('d') || n.tagName))].length,
       geometry: shown.map((n) => n.tagName + ':' + (n.getAttribute('d') || '')).sort().join('|'),
       stroke: line ? getComputedStyle(line).stroke : null,
       // what the line PAINTS across the screen. A 62-wide loop STRETCHED over a
@@ -154,12 +179,13 @@ export async function runProtectionScenarios(suite) {
          same stretch that rounded the corner also painted the loop's vertical
          sides at a different weight from its horizontal ones. */
       thickCross: line ? +((parseFloat(getComputedStyle(line).strokeWidth) || 0) * (land ? ux : uy)).toFixed(2) : null,
-      /* THE CORNER, AND WHAT IT HAS TO MATCH. The line rides the column's box
+      /* THE CORNER, AND WHAT IT HAS TO MATCH. The line rides the stack's box
          grown by --seal-out on every side, and an outline offset outward from a
          rounded rectangle only stays PARALLEL to it if its radius grows by that
-         same offset. So the honest target is the board's own radius plus the
-         stand-off — one number, checked at every cell size. */
-      corner: cornerOf(line), board: +parseFloat(getComputedStyle(col).borderRadius).toFixed(2),
+         same offset. The rectangle a player sees there is the cell — the slot
+         and die share one corner — so the honest target is the cell radius plus
+         the stand-off, one number checked at every cell size. */
+      corner: cornerOf(line), cell: +parseFloat(getComputedStyle(col.querySelector('.slot')).borderRadius).toFixed(2),
       standoff: +parseFloat(getComputedStyle(seal).getPropertyValue('--seal-out')).toFixed(2),
       col: cb, loop: one('sl'), arc: one('sal'),
       clasp: rivet ? r(seal.querySelector('.sclasp')) : null,
@@ -177,16 +203,16 @@ export async function runProtectionScenarios(suite) {
     };
   }, [side, c]);
 
-  /* THE CORNER IS THE BOARD'S, AT EVERY CELL SIZE — asserted through one
+  /* THE CORNER IS THE CELL'S, AT EVERY CELL SIZE — asserted through one
      helper wherever a seal is measured (this phone, the 88px cap, landscape,
-     and every span), because the whole defect was that the number moved with
-     the cell and a single viewport could not see it. --seal-out is READ, never
-     typed here, so the stand-off and its guard cannot drift apart. */
+     and every span), because the number moves with the cell and a single
+     viewport cannot see it. --seal-out and the cell radius are both read, so
+     the mark and its guard cannot drift apart. */
   const cornerOk = (name, s, where) => {
-    check(s.corner !== null && Math.abs(s.corner - (s.board + s.standoff)) < 0.75,
-      'THE ' + name.toUpperCase() + ' SEAL DOES NOT WEAR THE BOARD\'S CORNER in ' + where
-      + ' — its line must run parallel to the column it encloses, corners included',
-      { painted: s.corner, want: s.board + s.standoff, board: s.board, standoff: s.standoff });
+    check(s.corner !== null && Math.abs(s.corner - (s.cell + s.standoff)) < 0.75,
+      'THE ' + name.toUpperCase() + ' SEAL DOES NOT WEAR THE CELL\'S CORNER in ' + where
+      + ' — its line must run parallel to the dice it encloses, corners included',
+      { painted: s.corner, want: s.cell + s.standoff, cell: s.cell, standoff: s.standoff });
     check(s.thick !== null && Math.abs(s.thick - s.thickCross) < 0.15,
       'the ' + name + ' seal paints its two axes at different weights in ' + where,
       { along: s.thick, across: s.thickCross });
@@ -239,7 +265,23 @@ export async function runProtectionScenarios(suite) {
   check(await waitChoose(), 'game never reached choose (seal)');
   await table([[], [], []], [[5, 5, 2], [4], []], 5);
   await guard();
-  await page.waitForTimeout(900);              // the engage beat is over; measure the RESTING mark
+  /* The one-shot class must outlive its animation. Without checking during
+     the beat, every later assertion would still see a valid resting mark after
+     the class had cut the draw-on short. */
+  out.sealWindow = await page.evaluate(async (beat) => {
+    const col = document.querySelector('#topBoard .col[data-col="1"]');
+    const t0 = performance.now();
+    let held = 0;
+    for (let i = 0; i < 120; i++) {
+      if (!col.classList.contains('sealon')) break;
+      held = performance.now() - t0;
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+    return { held: Math.round(held), beat };
+  }, sealTiming.engage);
+  check(out.sealWindow.held > sealTiming.engage * 0.9,
+    'THE ENGAGE BEAT IS CUT SHORT — the seal gets less time than its own animation', out.sealWindow);
+  await page.waitForTimeout(sealTiming.settle); // the engage beat is over; measure the RESTING mark
   out.sealShield = await sealOf('top', 0);
   out.sealWard = await sealOf('top', 1);
   check(out.sealShield.drawn && out.sealWard.drawn, 'A PROTECTION WITH NO SEAL IS INVISIBLE',
@@ -250,6 +292,9 @@ export async function runProtectionScenarios(suite) {
   check(out.sealShield.parts.includes('sl')
     && !out.sealShield.parts.includes('sa') && !out.sealShield.parts.includes('sv'),
     'the shield must draw ONE closed line, with no seam and nothing to spend', out.sealShield.parts);
+  check(out.sealShield.lines === 1,
+    'THE SHIELD PAINTS A SECOND LINE INSIDE ITS OWN — an inset hairline is another outline',
+    { lines: out.sealShield.lines, parts: out.sealShield.parts });
   check(out.sealWard.parts.filter((p) => p === 'sa').length === 2 && out.sealWard.parts.includes('sv')
     && !out.sealWard.parts.includes('sl'),
     'the ward must draw a line held by ONE clasp', out.sealWard.parts);
@@ -311,7 +356,7 @@ export async function runProtectionScenarios(suite) {
     'a resting SHIELD runs more than its one circling bead', out.sealSteady);
 
 
-  const protectionSuite = { ...suite, sealOf, cornerOk, outlinesOf, oneOutline };
+  const protectionSuite = { ...suite, sealOf, cornerOk, outlinesOf, oneOutline, sealTiming };
   await runProtectionBeatScenarios(protectionSuite);
   await runProtectionLayoutScenarios(protectionSuite);
 }

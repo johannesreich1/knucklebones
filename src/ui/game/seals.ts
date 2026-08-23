@@ -7,9 +7,7 @@ import { spellIcon } from '../spellicons.ts';
 import { appRoot } from '../embed.ts';
 
 const SEAL_MOUTH = 4;
-const SEAL_ON_MS = 680;
-const SEAL_HIT_MS = 520;
-const SEAL_SNAP_MS = 720;
+const SEAL_SLACK_MS = 60;
 
 interface SealMetrics {
   cell: number;
@@ -17,11 +15,15 @@ interface SealMetrics {
   out: number;
   radius: number;
   height: number;
+  engage: number;
+  strike: number;
+  snap: number;
 }
 
-/* Geometry is expressed in the column's real CSS pixels. A fixed reference
-   box stretched at larger cell sizes made corners and strokes change weight;
-   this cache is invalidated only when ResizeObserver sees the cells resize. */
+/* Geometry is expressed in the column's real CSS pixels. The corner is asked
+   for, never restated: board.css gives the seat and its die one radius, and we
+   read it from a real .slot so the seal stays parallel to what is painted.
+   The cache is invalidated only when ResizeObserver sees the cells resize. */
 let cachedMetrics: SealMetrics | null = null;
 
 function sealMetrics(): SealMetrics {
@@ -30,17 +32,30 @@ function sealMetrics(): SealMetrics {
     const value = parseFloat(style.getPropertyValue(name));
     return value > 0 ? value : fallback;
   };
+  /* Build minification can rewrite 950ms as .95s. Parse the unit explicitly so
+     the shipped one-shot window cannot collapse to a single millisecond. */
+  const milliseconds = (name: string, fallback: number): number => {
+    const value = style.getPropertyValue(name).trim();
+    const amount = parseFloat(value);
+    if (!(amount > 0)) return fallback;
+    if (/ms$/.test(value)) return amount;
+    if (/s$/.test(value)) return amount * 1000;
+    return amount;
+  };
   const cell = number('--cell', 62);
   const gap = number('--gap', 6);
   const out = number('--seal-out', 1.6);
-  const column = appRoot().querySelector<HTMLElement>('.col');
-  const boardRadius = column ? parseFloat(getComputedStyle(column).borderRadius) : 18;
+  const slot = appRoot().querySelector<HTMLElement>('.slot');
+  const cellRadius = slot ? parseFloat(getComputedStyle(slot).borderRadius) : 14;
   return {
     cell,
     gap,
     out,
-    radius: boardRadius + out,
+    radius: (cellRadius > 0 ? cellRadius : 14) + out,
     height: 3 * cell + 2 * gap + 2 * out,
+    engage: milliseconds('--seal-engage', 950),
+    strike: milliseconds('--seal-strike', 1200),
+    snap: milliseconds('--seal-snap', 1600),
   };
 }
 
@@ -56,18 +71,17 @@ export function sealMarkup(span: number): string {
   const radius = m.radius;
   const fixed = (value: number): number => +value.toFixed(2);
 
-  const roundedRect = (inset: number): string => {
-    const r = Math.max(0.5, radius - inset);
-    return 'M' + fixed(inset + r) + ' ' + fixed(inset)
-      + 'H' + fixed(width - inset - r)
-      + 'a' + fixed(r) + ' ' + fixed(r) + ' 0 0 1 ' + fixed(r) + ' ' + fixed(r)
-      + 'V' + fixed(height - inset - r)
-      + 'a' + fixed(r) + ' ' + fixed(r) + ' 0 0 1 ' + fixed(-r) + ' ' + fixed(r)
-      + 'H' + fixed(inset + r)
-      + 'a' + fixed(r) + ' ' + fixed(r) + ' 0 0 1 ' + fixed(-r) + ' ' + fixed(-r)
-      + 'V' + fixed(inset + r)
-      + 'a' + fixed(r) + ' ' + fixed(r) + ' 0 0 1 ' + fixed(r) + ' ' + fixed(-r) + 'Z';
-  };
+  /* One frame edge, cornered at the cell radius grown by the stand-off. The
+     former inset copy read as a second outline, not as extra line weight. */
+  const loop = 'M' + fixed(radius) + ' 0'
+    + 'H' + fixed(width - radius)
+    + 'a' + fixed(radius) + ' ' + fixed(radius) + ' 0 0 1 ' + fixed(radius) + ' ' + fixed(radius)
+    + 'V' + fixed(height - radius)
+    + 'a' + fixed(radius) + ' ' + fixed(radius) + ' 0 0 1 ' + fixed(-radius) + ' ' + fixed(radius)
+    + 'H' + fixed(radius)
+    + 'a' + fixed(radius) + ' ' + fixed(radius) + ' 0 0 1 ' + fixed(-radius) + ' ' + fixed(-radius)
+    + 'V' + fixed(radius)
+    + 'a' + fixed(radius) + ' ' + fixed(radius) + ' 0 0 1 ' + fixed(radius) + ' ' + fixed(-radius) + 'Z';
   const shieldHalf = (direction: -1 | 1): string =>
     'M' + fixed(middle) + ' ' + fixed(height)
     + 'H' + fixed(direction < 0 ? radius : width - radius)
@@ -85,7 +99,6 @@ export function sealMarkup(span: number): string {
     + 'a' + fixed(radius) + ' ' + fixed(radius) + ' 0 0 ' + (direction < 0 ? 0 : 1)
     + ' ' + fixed(-direction * radius) + ' ' + fixed(radius) + 'H' + fixed(middle);
 
-  const loop = roundedRect(0);
   const ward = span === 1
     ? '<g class="smint">'
       + '<path class="sa sal" pathLength="240" d="' + wardArc(-1) + '"/>'
@@ -103,7 +116,6 @@ export function sealMarkup(span: number): string {
     + fixed(height) + '" preserveAspectRatio="none" aria-hidden="true">'
     + '<g class="sgold"><g class="sset">'
     + '<path class="sl" d="' + loop + '"/>'
-    + '<path class="si" d="' + roundedRect(3) + '"/>'
     + '<path class="sb" pathLength="480" d="' + loop + '"/>'
     + '</g>'
     + '<path class="sd" pathLength="240" d="' + shieldHalf(-1) + '"/>'
@@ -172,17 +184,17 @@ function restart(element: HTMLElement | null, className: string): void {
 }
 
 export function playSealEngage(column: HTMLElement): void {
-  oneShot(column, 'sealon', SEAL_ON_MS);
+  oneShot(column, 'sealon', metrics().engage + SEAL_SLACK_MS);
 }
 
 export function shieldBlocked(who: Player, col: number): void {
   restart(chipEl(who, col).querySelector<HTMLElement>('.sh'), 'block');
-  oneShot(sealHost(colEl(who, col)), 'sealhit', SEAL_HIT_MS);
+  oneShot(sealHost(colEl(who, col)), 'sealhit', metrics().strike + SEAL_SLACK_MS);
 }
 
 export function wardBurned(who: Player, col: number): void {
   restart(chipEl(who, col).querySelector<HTMLElement>('.wd'), 'block');
-  oneShot(colEl(who, col), 'sealsnap', SEAL_SNAP_MS);
+  oneShot(colEl(who, col), 'sealsnap', metrics().snap + SEAL_SLACK_MS);
 }
 
 /* Kept here beside seal ownership: score rendering uses these exact marks and
