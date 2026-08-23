@@ -1,7 +1,8 @@
 /* ============ NUMERALS INSTEAD OF PIPS ============
    Pips are charming but hard work for some players; this is a per-device toggle. */
 :where(#kbroot) .die .num{display:none;position:absolute;inset:0;align-items:center;justify-content:center;
-  font-size:calc(var(--cell)*.52);line-height:1;font-weight:900;color:var(--dc);
+  --num-turn:0deg;font-size:calc(var(--cell)*.58);line-height:1;font-weight:900;color:var(--dc);
+  transform:rotate(var(--num-turn)) translateY(calc(var(--cell)*.025));
   text-shadow:0 0 12px color-mix(in srgb,var(--dc) 80%,transparent);pointer-events:none}
 #kbroot.numerals .die.game-die .pip{display:none}
 #kbroot.numerals .die.game-die .num{display:flex}

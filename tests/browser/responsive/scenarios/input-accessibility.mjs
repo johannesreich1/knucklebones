@@ -225,12 +225,22 @@ export async function runInputAccessibilityScenarios(suite) {
   // numerals: toggled from home before the game — here we check the board obeys
   out.numerals = await gp.evaluate(() => {
     const d = document.querySelector('.board .die');
+    const num = d?.querySelector('.num');
+    const style = num ? getComputedStyle(num) : null;
+    const cell = d ? parseFloat(getComputedStyle(d).getPropertyValue('--cell')) : 0;
+    const matrix = style ? new DOMMatrix(style.transform) : null;
     return { on: document.getElementById('kbroot').classList.contains('numerals'),
-             numShown: d ? getComputedStyle(d.querySelector('.num')).display : null,
-             pipHidden: d ? getComputedStyle(d.querySelector('.pip')).display : null };
+             numShown: style?.display ?? null,
+             pipHidden: d ? getComputedStyle(d.querySelector('.pip')).display : null,
+             sizeRatio: style && cell ? parseFloat(style.fontSize) / cell : null,
+             downRatio: matrix && cell ? matrix.f / cell : null };
   });
   out.numerals.settingsClosed = settingsClosed;
-  check(out.numerals.on && out.numerals.numShown === 'flex' && out.numerals.pipHidden === 'none' && out.numerals.settingsClosed, 'numerals toggle broken', out.numerals);
+  check(out.numerals.on && out.numerals.numShown === 'flex' && out.numerals.pipHidden === 'none'
+        && out.numerals.settingsClosed, 'numerals toggle broken', out.numerals);
+  check(out.numerals.sizeRatio >= .575 && out.numerals.sizeRatio <= .585
+        && out.numerals.downRatio >= .02 && out.numerals.downRatio <= .03,
+        'numeral face is not larger and optically lowered', out.numerals);
   // the LOADING die is exempt: it tells time in pips whatever the face setting
   // says. Keep the computed-paint guard beside the other fixed pip surfaces.
   out.loaderNumerals = await gp.evaluate(() => {

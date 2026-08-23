@@ -17,8 +17,8 @@
    transform and only adds the turn */
 #kbroot.sidepts.face:not(.land) #sideTop .plate .pright{transform:translate(50%,-50%) rotate(180deg)}
 #kbroot.face:not(.land) #sideTop .chip{transform:rotate(180deg)}
-#kbroot.face:not(.land) #sideTop .die .num{transform:rotate(180deg)}
-#kbroot.face:not(.land) .die.p2flip .num{transform:rotate(180deg)}
+#kbroot.face:not(.land) #sideTop .die .num{--num-turn:180deg}
+#kbroot.face:not(.land) .die.p2flip .num{--num-turn:180deg}
 /* the idle half steps back; the active half is the bright one */
 #kbroot.face .side{transition:opacity .35s,filter .35s}
 #kbroot.face .side.idle{opacity:.5;filter:saturate(.55) brightness(.82)}
