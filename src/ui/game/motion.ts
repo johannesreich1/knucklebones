@@ -4,7 +4,7 @@
 import { ME, SPEC, type Player } from '../../core/rules.ts';
 import { S } from '../../state.ts';
 import { Sfx, vibrate } from '../audio.ts';
-import { makeDie, setStageDie } from '../die.ts';
+import { makeGameDie, setStageDie } from '../die.ts';
 import { $, faceRotated, slotEl, slotIdx } from '../dom.ts';
 import { REDUCED, fxRoot, pin } from '../fx.ts';
 import { setStatus } from './turn-state.ts';
@@ -91,7 +91,7 @@ export async function flyDieToSlot(who: Player, col: number, die: number): Promi
 
   const from = source.getBoundingClientRect();
   const to = target.getBoundingClientRect();
-  const ghost = makeDie(die, who);
+  const ghost = makeGameDie(die, who);
   if (faceRotated(who)) ghost.classList.add('p2flip');
   pin(ghost, from);
   fxRoot().appendChild(ghost);

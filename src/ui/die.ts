@@ -16,11 +16,20 @@ export function makeDie(v: number, who: Player): HTMLElement {
   return template.content.firstElementChild as HTMLElement;
 }
 
+/* Only dice that are part of a live duel follow the pips/numerals setting.
+   Brand dice, avatars and matchmaking decoration use makeDie() directly;
+   loaders render the same fixed face through dieMarkup(). */
+export function makeGameDie(v: number, who: Player): HTMLElement {
+  const die = makeDie(v, who);
+  die.classList.add('game-die');
+  return die;
+}
+
 export function setStageDie(v: number, who?: Player): void {
   const st = $('#dieStage'); st.innerHTML = '';
   st.setAttribute('aria-label', v ? ('Rolled ' + v + ' for ' + nameOf(who!).toLowerCase()) : 'No die rolled yet');
   if (v) {
-    const d = makeDie(v, who!);
+    const d = makeGameDie(v, who!);
     d.removeAttribute('role'); d.removeAttribute('aria-label');
     st.appendChild(d);
   }

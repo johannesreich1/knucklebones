@@ -30,11 +30,10 @@
    once, never to one stranded invisible. tests/browser/responsive holds this. */
 :where(#kbroot) .ldwait,:where(#kbroot) .die.ldclock{animation:ldreveal .25s ease-out .2s backwards}
 @keyframes ldreveal{from{opacity:0}to{opacity:1}}
-/* Whatever the dice-face setting says, a loader tells time in pips. Numerals
-   mode is an explicit #kbroot state, so mirror that state boundary here: the
-   normal zero-specificity component rule cannot (and should not) out-rank it.
-   Without these two state overrides every wait is a blank numbered square for
-   numerals players (tests/browser/responsive). */
+/* Whatever the in-game dice-face setting says, a loader tells time in pips.
+   Numerals normally reach only .game-die; keep the invariant pinned here too
+   so a future loader refactor cannot turn a wait into a numbered square.
+   tests/browser/responsive verifies the painted face. */
 :where(#kbroot) .die.ldclock .num{display:none}
 #kbroot.numerals .die.ldclock .pip{display:block}
 #kbroot.numerals .die.ldclock .num{display:none}

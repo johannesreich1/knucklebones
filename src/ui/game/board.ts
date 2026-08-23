@@ -11,7 +11,7 @@ import {
 } from '../../core/rules.ts';
 import { S } from '../../state.ts';
 import { $, slotEl, slotIdx } from '../dom.ts';
-import { makeDie } from '../die.ts';
+import { makeGameDie } from '../die.ts';
 import { sealMarkup, watchSealCells } from './seals.ts';
 import { updateScores } from './scores.ts';
 
@@ -87,7 +87,7 @@ export function renderSide(who: Player, animate: boolean): void {
       let die = slot.firstElementChild as HTMLElement | null;
       if (!die || Number(die.dataset.v) !== value) {
         slot.innerHTML = '';
-        die = makeDie(value, who);
+        die = makeGameDie(value, who);
         slot.appendChild(die);
         if (animate) die.classList.add('settle');
       }

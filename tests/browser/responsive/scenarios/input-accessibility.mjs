@@ -22,6 +22,11 @@ export async function runInputAccessibilityScenarios(suite) {
   // ================= PLACE ON RELEASE =================
   const g = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
   await markExperienced(g);   // an experienced player: the first-run tutorial offer is test19's subject
+  // Paint a real cached profile avatar on Home without pulling the online
+  // chunk into this offline presentation suite.
+  await g.addInitScript(() => localStorage.setItem('knucklebones.online.profile', JSON.stringify({
+    nickname: 'PipKeeper', avatar: 'die:4:gold', rating: 1234,
+  })));
   const gp = await g.newPage();
   gp.on('pageerror', e => errs.push('INPUT: ' + e.message));
   await gp.goto(F); await gp.waitForTimeout(400);
@@ -30,6 +35,34 @@ export async function runInputAccessibilityScenarios(suite) {
   await gp.tap('#faceSeg button[data-f="nums"]'); await gp.waitForTimeout(250);
   await gp.tap('#btnSettingsBack'); await gp.waitForTimeout(400);
   const settingsClosed = await gp.evaluate(() => !document.getElementById('ovSettings').classList.contains('on'));
+  // Numbers are a live-duel presentation, not a global rewrite of the die as
+  // a brand/profile component. Read the visible pixels on Home before play.
+  out.fixedPipFaces = await gp.evaluate(() => {
+    const read = (selector) => [...document.querySelectorAll(selector)].map((die) => {
+      const pip = die.querySelector('.pip.on');
+      const rect = pip?.getBoundingClientRect();
+      return {
+        value: Number(die.dataset.v),
+        pipDisplay: pip ? getComputedStyle(pip).display : null,
+        pipOpacity: pip ? +getComputedStyle(pip).opacity : 0,
+        pipWidth: rect?.width ?? 0,
+        numDisplay: getComputedStyle(die.querySelector('.num')).display,
+      };
+    });
+    return {
+      numerals: document.getElementById('kbroot').classList.contains('numerals'),
+      logo: read('#homeDuel .die'),
+      profile: read('#homeChip .pav .die'),
+    };
+  });
+  const fixedPipsVisible = (faces) => faces.every((face) =>
+    face.pipDisplay !== 'none' && face.pipOpacity > .9 && face.pipWidth > 0 && face.numDisplay === 'none');
+  check(out.fixedPipFaces.numerals
+        && out.fixedPipFaces.logo.map((face) => face.value).join(',') === '5,3'
+        && out.fixedPipFaces.profile.map((face) => face.value).join(',') === '4'
+        && fixedPipsVisible(out.fixedPipFaces.logo)
+        && fixedPipsVisible(out.fixedPipFaces.profile),
+        'the in-game numeral setting rewrote a Home logo/profile die', out.fixedPipFaces);
   await gp.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
   await gp.tap('#btnPlay'); await gp.waitForTimeout(2200);
   for (let i = 0; i < 40; i++) {
@@ -81,8 +114,7 @@ export async function runInputAccessibilityScenarios(suite) {
   out.numerals.settingsClosed = settingsClosed;
   check(out.numerals.on && out.numerals.numShown === 'flex' && out.numerals.pipHidden === 'none' && out.numerals.settingsClosed, 'numerals toggle broken', out.numerals);
   // the LOADING die is exempt: it tells time in pips whatever the face setting
-  // says. Numerals once out-specified its chase (.numerals .die .pip is three
-  // classes, the chase rule was two) and every wait showed a blank square.
+  // says. Keep the computed-paint guard beside the other fixed pip surfaces.
   out.loaderNumerals = await gp.evaluate(() => {
     const d = window.__kb.loaderDie(24);
     window.__ldprobe = d;

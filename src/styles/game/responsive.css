@@ -3,8 +3,8 @@
 :where(#kbroot) .die .num{display:none;position:absolute;inset:0;align-items:center;justify-content:center;
   font-size:calc(var(--cell)*.52);font-weight:900;color:var(--dc);
   text-shadow:0 0 12px color-mix(in srgb,var(--dc) 80%,transparent);pointer-events:none}
-#kbroot.numerals .die .pip{display:none}
-#kbroot.numerals .die .num{display:flex}
+#kbroot.numerals .die.game-die .pip{display:none}
+#kbroot.numerals .die.game-die .num{display:flex}
 
 /* ============ LANDSCAPE ============
    Boards sit side by side and each game-column becomes a horizontal row, so a
