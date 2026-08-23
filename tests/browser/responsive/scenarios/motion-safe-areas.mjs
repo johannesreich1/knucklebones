@@ -113,6 +113,7 @@ export async function runMotionSafeAreaScenarios(suite) {
       return range.getBoundingClientRect();
     };
     const pointRect = inkRect(point);
+    const pointBox = point?.getBoundingClientRect();
     const numeralRect = inkRect(numeral);
     return {
       before: before.dice,
@@ -131,16 +132,62 @@ export async function runMotionSafeAreaScenarios(suite) {
         fontSizeAfter: getComputedStyle(score).fontSize,
         transform: getComputedStyle(score).transform,
       },
-      point: pointRect && numeralRect && dieRect ? {
+      point: pointRect && pointBox && numeralRect && dieRect ? {
         text: point.textContent,
         numeralDisplay: getComputedStyle(numeral).display,
         gap: numeralRect.top - pointRect.bottom,
         centreError: Math.abs((pointRect.left + pointRect.width / 2)
           - (numeralRect.left + numeralRect.width / 2)),
-        edgeError: Math.abs(pointRect.bottom - dieRect.top),
+        edgeError: Math.abs(pointBox.bottom - dieRect.top),
       } : null,
     };
   }, beforePlacement);
+
+  /* The far face-to-face seat is the distinct floatPts branch: its die and
+     feedback both turn, and the score leaves through the physical bottom of
+     the die so it remains the player's reading-top edge. Exercise the real
+     placement path rather than a private effect hook. */
+  out.reducedFarPoint = await rp.evaluate(async () => {
+    const k = window.__kb;
+    k.S.gen += 1;                 // cancel the near placement's continuation
+    k.S.mode = 'duo';
+    k.S.seat = 'face';
+    k.S.timer = 0;
+    k.S.bottom = 1;
+    k.S.turn = 0;
+    k.S.phase = 'choose';
+    k.S.busy = false;
+    k.S.die = 4;
+    k.S.boards = [[[], [], []], [[], [], []]];
+    k.applySides();
+    k.setStageDie(4, 0);
+    k.showHints();
+    await k.place(0, 0);
+
+    const die = document.querySelector('#topBoard .col[data-col="0"] .die');
+    const point = document.querySelector('#topBoard .col[data-col="0"] .pts');
+    const numeral = die?.querySelector('.num');
+    const inkRect = (element) => {
+      if (!element) return null;
+      const range = document.createRange();
+      range.selectNodeContents(element);
+      return range.getBoundingClientRect();
+    };
+    const dieRect = die?.getBoundingClientRect();
+    const pointBox = point?.getBoundingClientRect();
+    const pointInk = inkRect(point);
+    const numeralInk = inkRect(numeral);
+    const matrix = point ? new DOMMatrix(getComputedStyle(point).transform) : null;
+    return dieRect && pointBox && pointInk && numeralInk && matrix ? {
+      text: point.textContent,
+      numeralDisplay: getComputedStyle(numeral).display,
+      turned: matrix.a < -.99 && matrix.d < -.99,
+      gap: pointInk.top - numeralInk.bottom,
+      centreError: Math.abs((pointInk.left + pointInk.width / 2)
+        - (numeralInk.left + numeralInk.width / 2)),
+      edgeError: Math.abs(pointBox.top - dieRect.bottom),
+    } : null;
+  });
   out.reduced = await rp.evaluate(() => ({
     jsFlag: window.__kb.reduced,
     particlesAfterBurst: (window.__kb.burst(100, 100, '#fff', 20), document.querySelectorAll('#fx .particle').length),
@@ -174,6 +221,13 @@ export async function runMotionSafeAreaScenarios(suite) {
     && out.reducedPlacement.point.centreError <= 1.5
     && out.reducedPlacement.point.edgeError <= 2,
   'numbered-die score feedback covers the numeral instead of sitting at its top edge', out.reducedPlacement.point);
+  check(out.reducedFarPoint?.text.startsWith('+')
+    && out.reducedFarPoint.numeralDisplay === 'flex'
+    && out.reducedFarPoint.turned
+    && out.reducedFarPoint.gap >= 2
+    && out.reducedFarPoint.centreError <= 1.5
+    && out.reducedFarPoint.edgeError <= 2,
+  'top-seat numbered-die feedback did not leave through its reading edge', out.reducedFarPoint);
   check(out.reducedSystemDefault.state === null && out.reducedSystemDefault.jsFlag
     && out.reducedSystemDefault.rootClass && out.reducedSystemDefault.selected === '1',
     'the Reduced Motion toggle did not initialize from the OS default', out.reducedSystemDefault);
