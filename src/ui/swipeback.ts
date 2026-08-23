@@ -18,7 +18,9 @@ const DRIFT = 30;   // vertical drift that reveals a scroll instead
    last .on overlay is the top layer (the ask card re-appends itself to stay
    there). A top layer that is not a paged view has no header to press. */
 function backControl(): HTMLElement | null {
-  if (document.querySelector('.faceoff')) return null;   // z 90: above every .ov
+  // a SHEET (ui/sheet: the face-off, the badge's mode card) sits at z 90, above
+  // every .ov, and owns the gesture layer while it is up — it has its own drag
+  if (document.querySelector('.faceoff')) return null;
   const open = document.querySelectorAll<HTMLElement>('.ov.on');
   const top = open[open.length - 1];
   if (!top?.classList.contains('paged')) return null;

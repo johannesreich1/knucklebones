@@ -11,6 +11,7 @@ import { modeIcon, modeHue } from './modeicons.ts';
 import { spellIcon, spellHue } from './spellicons.ts';
 import { $, show, hide } from './dom.ts';
 import { Sfx } from './audio.ts';
+import { showSheet } from './sheet.ts';
 
 export interface LibraryItem { id: string; name: string; blurb: string; detail: string; hue: string; icon: string }
 export interface LibrarySpec { id: string; title: string; items: LibraryItem[] }
@@ -29,15 +30,24 @@ export const SPELL_LIB: LibrarySpec = {
                               hue: spellHue(s.id), icon: spellIcon(s.id, 22) })),
 };
 
+/* ONE ENTRY, AS MARKUP — the three lines every roster entry is made of. It is
+   its own function because it has two homes now: the scrolling roster below,
+   and the sheet the in-game badge deals for the single mode or rune in play
+   (openEntry). A card that re-typed a blurb for the sheet would be the fifth
+   copy of the registry; a sheet that styled its own heading would be the
+   second voice. Both take this. */
+export const libraryBody = (it: LibraryItem): string =>
+  `<div class="mchead">${it.icon}<span class="mcname">${it.name}</span></div>
+      <div class="mcblurb">${it.blurb}</div>
+      <div class="mcdetail">${it.detail}</div>`;
+
 /* A roster as markup. Pure, so the design build renders the real thing rather
    than a transcription of it; `now` is the entry currently in play, which the
    app toggles live and a still has to bake in. */
 export const libraryCards = (spec: LibrarySpec, now?: string): string =>
   spec.items.map((it) => `
     <div class="modecard${it.id === now ? ' now' : ''}" data-mode="${it.id}" style="--mh:${it.hue}">
-      <div class="mchead">${it.icon}<span class="mcname">${it.name}</span></div>
-      <div class="mcblurb">${it.blurb}</div>
-      <div class="mcdetail">${it.detail}</div>
+      ${libraryBody(it)}
     </div>`).join('');
 
 /* The two PICK rows, as data. Same roster knowledge as the library above, at a
@@ -91,3 +101,19 @@ function openLibrary(spec: LibrarySpec, highlight?: string): void {
 
 export const openModes = (highlight?: string): void => openLibrary(MODE_LIB, highlight);
 export const openSpells = (highlight?: string): void => openLibrary(SPELL_LIB, highlight);
+
+/* ---- ONE ENTRY, AS A SHEET (user call 2026-08-23) ----
+   The in-game badge names what is in play; tapping a chip used to throw the
+   WHOLE roster up as a full-screen overlay and leave the player to find the
+   line they asked about. It deals that one entry instead, on the sheet the
+   ladder's face-off rides in (ui/sheet), tinted in the mode's or the rune's
+   own hue — the same --mh the roster card and the picker slice wear, so a new
+   registry entry needs no code here at all. The rosters keep their overlay:
+   HOW TO PLAY is where you go to read them ALL. */
+const LIBS: Record<string, LibrarySpec> = { modes: MODE_LIB, spells: SPELL_LIB };
+export function openEntry(lib: string, id: string): boolean {
+  const it = LIBS[lib]?.items.find((i) => i.id === id);
+  if (!it) return false;   // a chip naming something the registry retired opens nothing
+  showSheet({ cls: 'libsheet', label: it.name, tint: it.hue, body: libraryBody(it) });
+  return true;
+}

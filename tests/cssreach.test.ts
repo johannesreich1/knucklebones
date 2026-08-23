@@ -33,8 +33,25 @@ for (const dir of ['src/ui', 'src/flow']) {
 
 const used = new Map<string, Set<string>>();
 for (const file of reachable) {
-  // class="a b c" — skip anything interpolated, its classes are not literals
-  for (const m of read(file).matchAll(/class="([^"$]+)"/g)) {
+  /* class="a b c" — and class="a ${cond ? 'b' : ''}" too. This used to skip any
+     attribute containing a $, on the reasoning that interpolated classes are
+     not literals. Half of it is: the interpolation is not, but the LITERALS
+     BESIDE IT ARE, and skipping the whole attribute made them invisible. When
+     the sheet moved to ui/, this guard was cited as the proof that its classes
+     may live in main.css — and it could see only two of the six, because the
+     rest sat in `class="focard${'$'}{tint ? ' hued' : ''}"`. A guard that
+     quietly covers less than it is credited with is worse than none.
+     So the interpolations are blanked FIRST and the literals around them read
+     as normal. Classes set through className/classList are read too, for the
+     same reason: sheet.ts writes `ov.className = 'faceoff' + …`. */
+  const src = read(file).replace(/\$\{[^}]*\}/g, ' ');
+  for (const m of src.matchAll(/(?:className\s*=\s*|classList\.(?:add|toggle|remove)\()['"`]([^'"`]+)['"`]/g)) {
+    for (const c of m[1].split(/\s+/)) {
+      if (!c) continue;
+      (used.get(c) ?? used.set(c, new Set()).get(c)!).add(file);
+    }
+  }
+  for (const m of src.matchAll(/class="([^"]+)"/g)) {
     for (const c of m[1].split(/\s+/)) {
       if (!c) continue;
       (used.get(c) ?? used.set(c, new Set()).get(c)!).add(file);

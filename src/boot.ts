@@ -38,10 +38,11 @@ import { castArmed, disarm, renderSpells } from './flow/spells.ts';
 import { bindEnd } from './ui/endscreen.ts';
 import { toMenu, syncSettingsUI } from './flow/menu.ts';
 import { requestLeave, leavingForfeits } from './flow/leave.ts';
-import { openModes, openSpells, pickerButtons, MODE_PICKS, SPELL_PICKS } from './ui/library.ts';
+import { openModes, openSpells, openEntry, pickerButtons, MODE_PICKS, SPELL_PICKS } from './ui/library.ts';
 import { isNewcomer } from './ui/firstrun.ts';
 import { ask, dismissAsk } from './ui/askcard.ts';
 import { bindSwipeBack } from './ui/swipeback.ts';
+import { sheetOpen } from './ui/sheet.ts';
 /* ===================== BOOT ===================== */
 export function boot(embed){
   setEmbed(!!embed);
@@ -193,15 +194,16 @@ export function boot(embed){
   bindEnd();       // the result screen binds its own actions, once (ui/endscreen)
   // quit lives at the bottom of the Settings sheet; an online match intercepts
   // the first tap to arm its two-tap forfeit confirm on the button itself
-  // the HUD badge opens the rules of whatever it names — the mode, and the
-  // spell beside it when a game deals one. ONE binding serves both flows and
-  // both rosters: a chip carries the library it belongs to (see
+  // the HUD badge explains whatever it names — the mode, and the spell beside
+  // it when a game deals one. ONE binding serves both flows and both rosters:
+  // a chip carries the library it belongs to and the entry it names (see
   // render.paintBadge), so this affordance can never go missing on one side
-  // again, and a third roster is an entry here rather than another listener.
-  const LIBRARY={ modes:openModes, spells:openSpells };
+  // again, and a third roster is an entry in library.LIBS rather than another
+  // listener. It deals the ONE entry as a sheet, in that entry's own colour
+  // (library.openEntry); the whole rosters live behind HOW TO PLAY.
   tap($('#rec'),e=>{
     const c=e.target.closest && e.target.closest('.rchip[data-lib]'); if(!c) return;
-    Sfx.tap(); LIBRARY[c.dataset.lib]?.(c.dataset.id);
+    if(openEntry(c.dataset.lib,c.dataset.id)) Sfx.tap();
   });
   // online module (auth, ladder, account) is lazy: the offline game's boot
   // path must never load supabase-js or anything that talks to a backend.
@@ -251,7 +253,15 @@ export function boot(embed){
         const room=rooms[rooms.length-1];
         if(room && (room.id==='ovStart'||room.id==='ovEnd')){ Sfx.unlock(); void startLocal(); }
       }
-    }else if(e.key==='Escape'){ disarm(); hide('#ovRules'); hide('#ovSettings'); hide('#ovLearn'); dismissAsk(); hide('#ovImprint'); hide('#ovPrivacy');
+    }else if(e.key==='Escape'){
+      /* A SHEET OWNS ESCAPE WHILE IT IS UP (ui/sheet listens for it itself and
+         flies out). Without this the one keypress also disarmed an armed spell
+         and swept every overlay behind the sheet — the player asked what the
+         mode does, read it, pressed Escape, and lost the rune they had aimed.
+         The rosters below are still reachable: HOW TO PLAY opens them, and
+         they are not sheets. */
+      if(sheetOpen()) return;
+      disarm(); hide('#ovRules'); hide('#ovSettings'); hide('#ovLearn'); dismissAsk(); hide('#ovImprint'); hide('#ovPrivacy');
       for(const id of ['ovModes','ovSpells']) if(document.getElementById(id)) hide('#'+id); }
   });
 
