@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(12);
+select plan(14);
 
 select has_index(
   'public', 'matches', 'matches_p1_history_idx',
@@ -61,6 +61,20 @@ values
     '30000000-0000-0000-0000-000000000001',
     'done', 1, '30000000-0000-0000-0000-000000000001',
     20, 25, -10, 40, 1, '2026-08-23 11:29:00+00'
+  ),
+  (
+    '40000000-0000-0000-0000-000000000004',
+    '30000000-0000-0000-0000-000000000001',
+    '30000000-0000-0000-0000-000000000002',
+    'active', 1, null,
+    null, null, null, null, 1, null
+  ),
+  (
+    '40000000-0000-0000-0000-000000000005',
+    '30000000-0000-0000-0000-000000000002',
+    '30000000-0000-0000-0000-000000000003',
+    'done', 1, '30000000-0000-0000-0000-000000000002',
+    21, 8, 20, -10, 1, '2026-08-23 11:31:00+00'
   );
 
 select set_config(
@@ -119,6 +133,20 @@ select is(
   )),
   0,
   'the final compound cursor does not repeat a row'
+);
+select is(
+  (select count(*)::integer
+     from public.match_history(10, null, null)
+    where id = '40000000-0000-0000-0000-000000000004'),
+  0,
+  'active participant matches are excluded from history'
+);
+select is(
+  (select count(*)::integer
+     from public.match_history(10, null, null)
+    where id = '40000000-0000-0000-0000-000000000005'),
+  0,
+  'finished matches between unrelated players are excluded from history'
 );
 select is(
   (select concat(mine, '/', theirs, '/', delta, '/', result)

@@ -42,23 +42,25 @@ The Capacitor configuration, dependency locks, Game Center plugin, and iOS
 Xcode project under `native/` are tracked source. `native/www/`, Pods, derived
 data, and other generated payloads are ignored.
 
-The deterministic web build should be independently verifiable. Native sync
-must be an explicit, fail-fast command or verification step; the presence of a
-local native checkout must not make an otherwise green web build silently
-swallow a failed sync.
+`npm run build` generates `native/www/` but never invokes Capacitor. This keeps
+the deterministic web build independent of local CocoaPods/Xcode state.
+`npm run native:sync` builds and then runs Capacitor explicitly; failures are
+not swallowed. `npm run native:verify` performs that sync and additionally
+requires the generated Xcode payload and configuration to match the new build.
 
-Application name, bundle id, URL schemes, entitlements, and test expectations
-must derive from one source where tooling permits, with a consistency gate for
-unavoidable platform copies. The current name/app-id decision remains open;
-do not normalize an intentional placeholder into a shippable identity without
-the owner decision recorded in `docs/STATUS.md`.
+`APP_ID` in `src/config.ts` is the canonical application identifier. Browser
+identity imports it directly; `tests/iosship.test.ts` requires the unavoidable
+Capacitor, Xcode, Info.plist, and Game Center verifier copies to agree. The
+product-name decision remains open and may eventually require changing this id
+through the same consistency contract.
 
 ## Node and CI
 
-`.nvmrc` is the repository Node source of truth. Local builds, package engine
-constraints, CI, design-card imports, and Supabase client tooling must remain
-on a supported compatible version. CI should consume `.nvmrc` rather than copy
-another version literal.
+`.nvmrc` is the repository Node source of truth: Node 24. `package.json`
+enforces the supported major and CI consumes `.nvmrc` rather than copying a
+second version literal. `build.mjs` also runs TypeScript and Vite with its own
+`process.execPath`, preventing a different `npx` installation from silently
+using another Node runtime.
 
 Cloudflare Pages builds `main` and deploys immediately. The repository gate is
 therefore preventive: run `npm test` before pushing. Deployment instructions

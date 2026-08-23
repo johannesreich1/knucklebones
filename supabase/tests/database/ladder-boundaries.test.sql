@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(13);
+select plan(23);
 
 select ok(
   not has_table_privilege('anon', 'public.season_ratings', 'select'),
@@ -14,8 +14,20 @@ select ok(
   'authenticated clients retain the table grant needed for own-row reads'
 );
 select ok(
-  has_table_privilege('service_role', 'public.season_ratings', 'select,insert,update,delete'),
-  'service role retains ladder settlement privileges'
+  has_table_privilege('service_role', 'public.season_ratings', 'select'),
+  'service role can read ladder rows for settlement'
+);
+select ok(
+  has_table_privilege('service_role', 'public.season_ratings', 'insert'),
+  'service role can insert ladder rows for settlement'
+);
+select ok(
+  has_table_privilege('service_role', 'public.season_ratings', 'update'),
+  'service role can update ladder rows for settlement'
+);
+select ok(
+  has_table_privilege('service_role', 'public.season_ratings', 'delete'),
+  'service role can delete ladder rows for account cleanup'
 );
 select ok(
   not has_schema_privilege('anon', 'private', 'usage'),
@@ -34,8 +46,16 @@ select ok(
   'authenticated clients cannot call the internal board function'
 );
 select ok(
-  has_function_privilege('anon', 'public.leaderboard(integer,smallint)', 'execute'),
+  has_function_privilege('anon', 'public.leaderboard(integer,integer,text)', 'execute'),
   'the shaped public leaderboard remains anonymous'
+);
+select ok(
+  has_function_privilege('anon', 'public.leaderboard_before(integer,integer,text)', 'execute'),
+  'the reverse shaped public leaderboard remains anonymous'
+);
+select ok(
+  to_regprocedure('public.leaderboard(integer,smallint)') is null,
+  'the obsolete season-argument leaderboard overload is gone'
 );
 select ok(
   has_function_privilege('anon', 'public.player_card(text)', 'execute'),
@@ -45,23 +65,51 @@ select ok(
 insert into auth.users (id, email, created_at, updated_at)
 values
   ('50000000-0000-0000-0000-000000000001', 'ladder-one@example.invalid', now(), now()),
-  ('50000000-0000-0000-0000-000000000002', 'ladder-two@example.invalid', now(), now());
+  ('50000000-0000-0000-0000-000000000002', 'ladder-two@example.invalid', now(), now()),
+  ('50000000-0000-0000-0000-000000000003', 'ladder-peer@example.invalid', now(), now());
 
 update public.profiles
    set nickname = case id
      when '50000000-0000-0000-0000-000000000001' then 'BoundaryOne'
-     else 'BoundaryTwo'
+     when '50000000-0000-0000-0000-000000000002' then 'BoundaryTwo'
+     else 'BoundaryPeer'
    end
  where id in (
    '50000000-0000-0000-0000-000000000001',
-   '50000000-0000-0000-0000-000000000002'
+   '50000000-0000-0000-0000-000000000002',
+   '50000000-0000-0000-0000-000000000003'
  );
 
 insert into public.season_ratings
   (season_id, player, points, peak, wins, losses, draws)
 values
   (1, '50000000-0000-0000-0000-000000000001', 4444, 4444, 8, 1, 0),
-  (1, '50000000-0000-0000-0000-000000000002', 2222, 2500, 4, 3, 1);
+  (1, '50000000-0000-0000-0000-000000000002', 2222, 2500, 4, 3, 1),
+  (1, '50000000-0000-0000-0000-000000000003', 4444, 4444, 8, 2, 0);
+
+-- One tied rank spans more than the client page size. This is the case that
+-- numeric rank subtraction cannot traverse because rank() jumps from 1 to 61.
+insert into auth.users (id, email, created_at, updated_at)
+select ('80000000-0000-0000-0000-' || lpad(n::text, 12, '0'))::uuid,
+       'ladder-tie-' || n || '@example.invalid',
+       now(),
+       now()
+  from generate_series(1, 60) n;
+
+update public.profiles
+   set nickname = 'Tie' || lpad(right(id::text, 12)::integer::text, 4, '0')
+ where id::text like '80000000-0000-0000-0000-%';
+
+insert into public.season_ratings
+  (season_id, player, points, peak, wins, losses, draws)
+select 1,
+       ('80000000-0000-0000-0000-' || lpad(n::text, 12, '0'))::uuid,
+       5000,
+       5000,
+       10,
+       1,
+       0
+  from generate_series(1, 60) n;
 
 select set_config(
   'request.jwt.claim.sub',
@@ -83,13 +131,80 @@ reset role;
 
 select is(
   (select pc.rank from public.player_card('BoundaryOne') pc),
-  (select lb.rank from public.leaderboard(100, 1::smallint) lb where lb.nickname = 'BoundaryOne'),
+  (select lb.rank from public.leaderboard(100, 1, null) lb where lb.nickname = 'BoundaryOne'),
   'player card and leaderboard share one rank policy'
 );
 select is(
   (select pc.apex from public.player_card('BoundaryOne') pc),
-  (select lb.apex from public.leaderboard(100, 1::smallint) lb where lb.nickname = 'BoundaryOne'),
+  (select lb.apex from public.leaderboard(100, 1, null) lb where lb.nickname = 'BoundaryOne'),
   'player card and leaderboard share one apex policy'
+);
+select is(
+  (select standing.rank
+     from public.player_standing('50000000-0000-0000-0000-000000000001') standing),
+  (select lb.rank
+     from public.leaderboard(100, 1, null) lb
+    where lb.nickname = 'BoundaryOne'),
+  'player standing and leaderboard share one rank policy'
+);
+select is(
+  (select lb.nickname
+     from public.leaderboard(
+       1,
+       (select ranked.rank::integer
+          from public.leaderboard(100, 1, null) ranked
+         where ranked.nickname = 'BoundaryTwo'),
+       null
+     ) lb),
+  'BoundaryTwo'::text,
+  'leaderboard windows begin at the requested rank'
+);
+select is(
+  (select lb.nickname
+     from public.leaderboard(
+       1,
+       (select ranked.rank::integer
+          from public.leaderboard(100, 1, null) ranked
+         where ranked.nickname = 'BoundaryOne'),
+       'BoundaryOne'
+     ) lb),
+  'BoundaryPeer'::text,
+  'the nickname cursor advances across a tied rank without repeating a row'
+);
+select is(
+  (select count(*)::text || '/' || min(lb.nickname) || '/' || max(lb.nickname)
+     from public.leaderboard_before(50, 2, '') lb),
+  '50/Tie0011/Tie0060'::text,
+  'reverse paging selects the nearest full page within a tied rank'
+);
+select is(
+  (with first_page as (
+     select * from public.leaderboard_before(50, 2, '')
+   ),
+   cursor_row as (
+     select page.rank, page.nickname
+       from first_page page
+      order by page.rank, page.nickname
+      limit 1
+   ),
+   second_page as (
+     select prior.*
+       from cursor_row cursor
+       cross join lateral public.leaderboard_before(
+         50,
+         cursor.rank::integer,
+         cursor.nickname
+       ) prior
+   ),
+   walked as (
+     select page.nickname from first_page page
+     union all
+     select page.nickname from second_page page
+   )
+   select array_agg(walked.nickname order by walked.nickname) from walked),
+  (select array_agg('Tie' || lpad(n::text, 4, '0') order by n)
+     from generate_series(1, 60) n),
+  'a tied rank larger than one page is traversed backward without gaps or duplicates'
 );
 
 select * from finish();

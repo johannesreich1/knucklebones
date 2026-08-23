@@ -275,8 +275,8 @@ charge accounting and the CSS never learn its name.
    if its value is off-board.
 2. **The icon** — a path in `ui/spellicons.ts` plus a hue.
 3. **The cast animation** — an entry in `CAST_FX` (`flow/spells.ts`).
-4. **Gate cases** — `tests/spells.test.ts` for the rules, `tests/test14.mjs`
-   for anything the player can see.
+4. **Gate cases** — `tests/spells.test.ts` for the rules and
+   `tests/browser/spells/run.mjs` for anything the player can see.
 5. **Measure it** before shipping, and record the numbers here.
 
 ### The seams that already exist
@@ -315,8 +315,9 @@ Learned from real play, each one a shipped bug:
   thickened, breathing on the hint's beat); where there is no seal the
   `::after` **is** the outline and nothing changed. Both facts still reach the
   player, with one line. A new mark that rings a column has to answer this
-  rule — `.col.legal:is(.shielded,.warded,.sealsnap)` in `main.css` is the one
-  place it lives, and `tests/test14` §10a-v counts the rings per column.
+  rule — `.col.legal:is(.shielded,.warded,.sealsnap)` in
+  `src/styles/game/guards.css` is the one place it lives, and the spells browser
+  protection-layout scenario counts the rings per column.
 - **A self spell casts on press.** One possible target means nothing to aim.
   Dragging still works; dropping anywhere else cancels with the charge intact.
 - **And pressing it again takes it back**, for as long as the die it changed is
@@ -369,7 +370,7 @@ Learned from real play, each one a shipped bug:
   the *which* for a self spell is the die in hand: FATE, NUDGE and SUNDER all
   say **"Drop it on your die"** and stop. Their widest wrapped line is 72.2px
   of the 104px lane in the widest face measured, so only a font ~44% wider
-  again would break it. `test14` §12 arms every registry
+  again would break it. The spells browser layout scenario arms every registry
   entry on the narrowest phone in both orientations and measures the box
   against the CSS's own reserve. Burned by ANVIL, which shipped reading "Tap a
   filled column to recast its weakest die": four lines landscape (die shoved
@@ -388,7 +389,8 @@ Learned from real play, each one a shipped bug:
 
 Three runes have a cast that states its effect without showing it, and each has
 an open set of six studies rather than a decision: **SUNDER**
-(`design/screens/43a–43f`), **ANVIL** (`44a–44f`) and **PILFER** (`45a–45f`).
+(`design/screens/studies/open/43a–43f`), **ANVIL** (`44a–44f`) and **PILFER**
+(`45a–45f`).
 Every set draws ONE board on all six cards so the comparison is controlled, and
 every card's note names what its idea costs.
 
@@ -397,12 +399,12 @@ and are cheaper to read here than to rediscover:
 
 - **A mark has to survive a MULTIPLIED die.** The dice worth marking are almost
   always the ones a pair or a triple has already turned gold or orange
-  (`ui/render` toggles `.m2`/`.m3` on the count), and those already carry a
+  (`ui/game/board.ts` toggles `.m2`/`.m3` on the count), and those already carry a
   coloured border and a bloom. SUNDER's current ember glow disappears entirely
   on one. Any mark that works by tinting the die is fighting the thing that
   made the die interesting; marks that sit *over* the face or *outside* the
   border survive. This is the same lesson the ward/shield studies learned about
-  a 1px ring (§`design/screens/39a`), arrived at independently.
+  a 1px ring (§`design/screens/studies/open/39a`), arrived at independently.
 - **A preview must ask `victimsOf`, never the face.** Under COLUMN SHIELD a
   full enemy column holding three matching dice loses nothing, and under SINGLE
   STRIKE only one die of a column falls however many match. A preview that
@@ -432,7 +434,7 @@ and are cheaper to read here than to rediscover:
 
 RANDOM used to draw its rune inside `resetSpells` and the player met it in the
 rail. It is now dealt in front of them: `ui/runedeal.ts` shuffles the roster as
-a deck and draws one card (`design/screens/28-rune-deal`). Four rules it keeps,
+a deck and draws one card (`design/screens/product/28-rune-deal`). Four rules it keeps,
 each one paid for:
 
 - **The draw happens in `startLocal`, not in `newGame`.** Exactly the bargain

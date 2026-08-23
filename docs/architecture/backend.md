@@ -44,6 +44,11 @@ complete live migration ledger and its generation workflow is documented.
   around a permissions error.
 - Public views/RPCs reveal only their intended fields. Service-only seeds and
   moderation/admin capabilities stay inaccessible to client roles.
+- Keyset paging uses a total order and sends every cursor member. Match history
+  orders by `(finished_at, id)` and tied ladder ranks by `(rank, nickname)`;
+  timestamp-only and rank-only seams can skip or repeat rows. Reverse ladder
+  paging uses its own compound-cursor RPC rather than subtracting numeric ranks,
+  because `rank()` leaves gaps after ties.
 - Add indexes from an observed query and verified plan/advisor evidence, not
   from column-name intuition.
 - Keep transactions short. External HTTP calls, animation, or client waits do
@@ -62,8 +67,10 @@ atomic compare-and-set persistence. Do not duplicate ladder arithmetic in SQL.
 Retries must be idempotent, and a partial rating/profile payout is a failure,
 not an acceptable intermediate state.
 
-Account deletion needs an explicit policy for match retention, opponent
-payout, anonymisation, and cascade effects before its terminal path is changed.
+Account deletion first settles every active opponent through that same
+contract. A settlement failure preserves the account for retry; successful
+Auth deletion then cascades the profile, season row, and match history for
+privacy, while the opponent's already-written points and profile mirror remain.
 
 ## Verification
 
@@ -75,7 +82,9 @@ Backend work is complete only after:
 3. Edge Function type checking and handler tests pass;
 4. `tests/fnsync.test.ts` proves the deployed closure uses current shared core;
 5. database advisors and relevant query plans are reviewed;
-6. a live probe, when required, uses disposable environment-provided accounts,
+6. pgTAP migration, privilege, RLS, and negative data-visibility contracts run
+   in CI against a fresh local Supabase stack;
+7. a live probe, when required, uses disposable environment-provided accounts,
    explicit target opt-in, and cleanup.
 
 Cloudflare and Supabase dashboard operations belong to Johannes unless a

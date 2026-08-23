@@ -32,9 +32,9 @@ core -> core/config only
 
 UI modules must not import a concrete local or online controller. Input code
 receives narrow typed actions such as `place` and `cast`; controllers decide
-what those actions mean. `src/core/` has no DOM or timers. Replay and scoring
-may not depend on ambient randomness. Existing AI tie-breaking is a deliberate
-non-replay exception and must stay injectable/testable.
+what those actions mean. `src/core/` has no DOM or timers. Replay, scoring,
+dice bags, and AI search may not depend on ambient randomness; every random
+stream is supplied explicitly.
 
 ## One shared view
 

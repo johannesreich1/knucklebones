@@ -12,7 +12,7 @@ decisions: [docs/STATUS.md](docs/STATUS.md)
 
 ```
 src/
-├── config.ts        # game name, app id (TBD placeholder), BoardSpec, dice,
+├── config.ts        # game name, canonical app id, BoardSpec, dice,
 │                    # Supabase URL + publishable key (public by design)
 ├── core/            # PURE shared logic — no DOM, runs in browser/Node/Deno
 │   ├── rules.ts     #   board ops + scoring
@@ -22,11 +22,11 @@ src/
 │   └── ladder.ts    #   ladder points, groups, deltas, bot rank policy
 ├── state.ts         # the S state object + typed vocabulary
 ├── persist.ts       # stats + in-progress save (corrupt blobs rejected)
-├── ui/              # dom, die, render, fx, input, layout, audio, identity, embed
+├── ui/              # shared game view/motion, DOM, input, layout, audio, embed
 ├── flow/            # game (turn state machine), menu, timer, tutorial
-├── online/          # lazy chunk: session (API), ui (auth/ladder/account/queue),
-│                    # play (online match driver reusing the local board + animations)
-├── boot.ts          # wiring; hooks.ts — the test-hook surface (window.__kb)
+├── online/          # lazy auth/ladder/match APIs and ranked screen controllers
+├── boot.ts + boot/  # typed composition and focused browser bindings
+├── hooks.ts         # the stable test-hook surface (window.__kb)
 └── main.ts / widget.ts   # entry points: page vs embeddable widget
 supabase/            # immutable migration ledger + Edge Functions + design history
 design/              # every screen as a live card, built from the app's real CSS,
@@ -107,6 +107,7 @@ deploys automatically.
 
 ```bash
 npm test            # builds, then runs the full gate (tests/run-all.mjs)
+npm run test:db     # pgTAP contracts against a running local Supabase stack
 ```
 
 The gate runs pure-core determinism/replay checks under plain Node, Playwright
@@ -114,6 +115,9 @@ behaviour suites, architecture contracts, design checks, and the AI benchmark,
 and fails on any problem. Player-visible suites deliberately assert computed
 pixels, hit testing, and animation where DOM/state agreement cannot prove what
 the player sees.
+
+CI separately starts a fresh local Supabase stack, applies the immutable
+migration ledger, runs every pgTAP contract, and lints the resulting schema.
 
 **Game-completion loops use budgets of 900–1200 ticks on purpose.** Random,
 destruction-heavy endgames run long and CI runners are slow — 300–400-tick
@@ -137,7 +141,7 @@ Worktrees stay the recommendation anyway — a shared checkout gates everyone's
 uncommitted work at once, so a red suite cannot tell you whose change it was.
 
 What is still *not* isolated is the machine. Three concurrent gates flaked a
-drag-timing suite (test14) that passed alone and passed in a parallel worktree
+drag-timing spell suite that passed alone and passed in a parallel worktree
 at the same commit; use `KB_JOBS=2` when peers are gating.
 
 Any suite also runs on its own — `node tests/test7.mjs` starts whatever server
@@ -147,8 +151,10 @@ URL to click (`node tests/serve.mjs [port]`, default 8123).
 
 ## Design system
 
-`design/screens/*.html` holds every screen as a hand-written card body;
-`node design/build.mjs` inlines the app's **real** CSS, expands the `{{…}}`
+`design/screens/` classifies hand-written card bodies as `product/`,
+`studies/open/`, or `studies/archive/`; unclassified top-level cards fail the
+build. `node design/build.mjs` discovers those directories recursively, inlines
+the app's **real** CSS, expands the `{{…}}`
 tokens into genuine markup — dice, mode and rune icons, the loading die, the
 reveal's versus line, whole rosters — by importing `src/` itself, emits each
 card at four device sizes (small phone / standard / pro-max / tablet) and
@@ -158,7 +164,7 @@ The token table lives at the top of `design/build.mjs`; a card that hand-draws
 something a token can render is a second implementation, and it will drift.
 
 `design/dist/` is generated and gitignored. The builder PRUNES it: a card
-deleted from `design/screens/` loses its four built files and its four
+deleted from the classified source tree loses its four built files and its four
 manifest entries on the next build, so the manifest is always a statement
 about what the repo holds right now.
 
@@ -201,14 +207,15 @@ a cloud session, which has none.
   dashed legal-column affordance and earned score popups only.
 - **Board dimensions come from `BoardSpec`** (`src/config.ts`) everywhere in
   JS. The CSS `repeat(3,…)` literals are the one remaining 3×3 assumption —
-  see the note atop `src/styles/main.css` before adding a new board shape,
+  see the note atop `src/styles/foundations/tokens.css` before adding a new board shape,
   and re-tune AI depth budgets (`bench3`) for any new spec.
 - **`window.__kb`** (src/hooks.ts) is the test suites' driving surface — keep
   its member names stable. Suites reach the relocated local-play controls via
   `__kb.openPractice()` / `__kb.goHome()`. The lazy online chunk cannot be
   reached from there (hooks.ts must never import it), so it publishes its own
   two on load: `__kbOnline()` introspects the live match (`online/play.ts`) and
-  `__kbResult(report)` deals the Result screen without one (`online/ui.ts`).
+  `__kbResult(report)` deals the Result screen without one
+  (`online/result-screen.ts`).
 
 ## Native (iOS / Android)
 
@@ -216,13 +223,14 @@ The Capacitor configuration, dependency locks, Game Center plugin, and iOS
 Xcode project are checked in under `native/`. Generated web assets,
 `node_modules`, Pods, and Xcode build products are ignored. Install the native
 dependencies with `npm --prefix native ci`, run the root build, then run
-`npm --prefix native run sync` explicitly. Android has not been added yet;
-iOS development requires a Mac with Xcode.
+`npm run native:sync` explicitly. `npm run native:verify` performs a fresh
+build and sync, then checks the exact payload Xcode would bundle. Android has
+not been added yet; iOS development requires a Mac with Xcode.
 
-The product name and canonical app id remain an owner decision. The browser
-config deliberately contains an invalid placeholder while existing native
-identity copies are tracked; these must be unified or consistency-gated before
-a store build. See [the build architecture](docs/architecture/build.md).
+The product name remains an owner decision. The canonical app id is
+`APP_ID` in `src/config.ts`; the native shipping test consistency-gates its
+Capacitor, Xcode, Apple sign-in, and Game Center copies. See
+[the build architecture](docs/architecture/build.md).
 
 ## Installing the PWA
 

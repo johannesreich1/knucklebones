@@ -14,11 +14,32 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
+      # Hosted Edge Functions run the Deno 2.1-compatible runtime. Check the
+      # exact computed deploy closures, including _shared and shared core.
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.1.14
       - run: npm ci
+      - run: node tools/check-functions.mjs
       # chromium for the file/served suites and bench3; webkit because
       # test16/test17 launch it — missing here, they die on browser
       # provisioning while green locally (three red runs, 2026-08-20)
       - run: npx playwright install --with-deps chromium webkit
       - run: npm test
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: supabase/setup-cli@v3
+        with:
+          # Keep CI on the same CLI release used for the verified local reset.
+          version: 2.115.0
+      - run: supabase start
+      - run: supabase test db --local
+      - run: supabase db lint --local --level warning --fail-on error
+      - if: always()
+        run: supabase stop --no-backup

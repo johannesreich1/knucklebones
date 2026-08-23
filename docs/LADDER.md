@@ -172,7 +172,13 @@ matches.season_id smallint references seasons   -- stamped at creation
   everything already reading it keeps working.
 - The current season is the row with `ends_at is null`. Season 1 has
   `ends_at = NULL` and therefore runs until somebody decides otherwise.
-- `leaderboard(limit_n, season_id default current)`.
+- `leaderboard(limit_n, from_rank default 1, after_nickname default null)`
+  exposes current-season rank windows. `(rank, nickname)` is the stable paging
+  cursor because ladder ranks can tie.
+- `leaderboard_before(limit_n, before_rank, before_nickname)` walks that same
+  total order upward and returns the nearest preceding rows in display order.
+  `player_standing()` is projected from the identical visible board, so its
+  rank is always a valid anchor even when bot visibility or unplayed rows differ.
 - The UI shows no season control until `count(seasons) > 1`. The profile
   already has the slot, hidden (design card 92d).
 
@@ -247,8 +253,8 @@ re-mirrored from `season_ratings`).
 
 ## 5. The profile
 
-Design: card **92d** (`design/screens/92d-arc-season.html`). Built in
-`online/ui.ts` + `online/online.css`.
+Design: card **92d** (`design/screens/product/92d-arc-season.html`). Built in
+`online/ladder-screen.ts` + `online/online.css`.
 
 **The ring is the screen.** ONE continuous fill — the percentage of the way
 through your current group — and it **sweeps up to its value when the profile
@@ -344,6 +350,11 @@ invisible; the ladder does not change behaviour until step 4.
 6. **Client** — the profile screen (card 92d), the avatar picker, match
    history, and the result screen showing the delta the match actually paid.
 7. **`0019_avatar.sql`** — `profiles.avatar text default 'die:5:cy'`.
+
+The implementation ledger later replaced the optional-season public overload
+with current-season `(rank, nickname)` windows in
+`20260823121000_ranked_leaderboard_windows.sql`; historical step 5 above records
+the rollout order, not the current Data API signature.
 
 ### What the first live run taught
 

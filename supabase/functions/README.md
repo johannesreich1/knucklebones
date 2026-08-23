@@ -1,4 +1,4 @@
-# Edge Functions (PvP)
+# Edge Functions
 
 - `pvp-join` — matchmaking: pair with the longest-waiting human, or (when the
   client sends `allow_bot: true` after waiting) start a match against a pooled
@@ -15,12 +15,17 @@
   away yourself — no stall to prove, valid any time the match is live (the
   quit button's confirmed tap). Either way the opponent's client hears the
   match row flip and shows the result immediately.
+- `account-delete` — settles every active opponent through the shared atomic
+  contract, then deletes the authenticated account so privacy cascades remove
+  its profile, ratings, queue rows, and match history.
+- `gc-auth` — verifies an Apple Game Center identity assertion and attaches or
+  restores the corresponding authenticated account.
 
 Anti-cheat model: clients submit only `{match_id, col}` — there is no field to
 lie in. Dice derive from a seed stored in the service-only `match_seeds` table;
 scores and ladder changes are computed from the server-written move log;
-`profiles.rating` is
-not client-writable (column-level grant: `nickname` only).
+`profiles.rating` is not client-writable (column-level grants expose only
+`nickname` and `avatar`).
 
 ## Deploying
 

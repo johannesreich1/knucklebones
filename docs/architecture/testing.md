@@ -9,6 +9,10 @@ Node contracts, browser behaviour suites, design checks, and the AI benchmark,
 then restores build output changed by update tests. A push to `main` must never
 precede a green full gate.
 
+Database contracts are a sibling CI gate because they require Docker and a
+fresh Supabase stack: `supabase start`, `npm run test:db`, then schema lint.
+Run those locally for every migration, grant, RLS, or RPC change.
+
 The gate holds `.gate.lock` because build output is shared inside one working
 tree. Servers use kernel-assigned ports, so independent worktrees may gate in
 parallel. Use `KB_JOBS=2` under machine contention and repeat a timing failure
@@ -57,10 +61,15 @@ not narrow the behavioural state space.
 ## Live tests
 
 Live PvP checks use environment-provided disposable credentials and a clearly
-identified non-production target by default. Production requires an explicit
-opt-in flag, must fail closed when configuration is incomplete, and must clean
-up created users/matches. Never commit live account credentials or make a live
-probe part of `npm test`.
+identified `KB_E2E_TARGET` (`local`, `staging`, or `production`). Every run
+requires `KB_ALLOW_LIVE_E2E=1`; production additionally requires
+`KB_ALLOW_PROD_E2E=1`, local is restricted to loopback, staging must match
+`KB_E2E_STAGING_HOST`, and the production hostname cannot be disguised with a
+safer label. The browser probe uses the production-configured app build and is
+therefore production-only; the API probe supports all three targets. Use
+dedicated test accounts; leave transient queues and active matches terminal,
+and remove any accounts a probe creates. Never commit live credentials or make
+a live probe part of `npm test`.
 
 ## Change verification
 

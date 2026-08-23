@@ -2,10 +2,10 @@
 
 *Written 2026-08-19, when guest accounts shipped.*
 
-A player's account always lives on the server — a row in `auth.users`, a
-profile, a nickname, a rating. It never disappears. The only question this
-system answers is **how the app proves that row is theirs**, and there are
-three rungs:
+A player's account lives on the server until they delete it — a row in
+`auth.users`, a profile, a nickname, and ladder points. Moving between identity
+rungs never replaces that row. The only question this system answers is **how
+the app proves that row is theirs**, and there are three rungs:
 
 | Rung | The proof is… | Survives reinstall? | Costs the player |
 |---|---|---|---|
@@ -14,7 +14,7 @@ three rungs:
 | **Game Center** | Apple vouching automatically | yes | nothing at all |
 
 Everything below the "guest" line is the same code path for every rung: the
-profile trigger, the RLS policies, matchmaking and Elo never learn which rung a
+profile trigger, the RLS policies, matchmaking and ladder policy never learn which rung a
 player is standing on. That is why guests cost no schema — an anonymous user
 takes the `authenticated` role and has a normal `auth.uid()`.
 
@@ -23,10 +23,10 @@ takes the `authenticated` role and has a normal `auth.uid()`.
 | Piece | File |
 |---|---|
 | The rungs, and what each can do | `src/online/session.ts` (guest + email) and `src/online/identity.ts` (one-tap providers) |
-| The one panel that serves attach *and* restore | `AUTH` in `src/online/ui.ts` |
+| The one panel that serves attach *and* restore | `AUTH` in `src/online/auth-screen.ts` |
 | Game Center → a session | `supabase/functions/gc-auth/` (`verify.ts` is the pure crypto) |
 | The native bridge | `native/plugins/gamecenter/` |
-| Tests | `tests/test16.mjs` (the ladder's decisions), `tests/gcauth.test.ts` (the crypto) |
+| Tests | `tests/browser/online-ui/run.mjs` (ladder/identity UI), `tests/gcauth.test.ts` (the crypto) |
 
 A new provider is a registry entry in `identity.ts` with `available()`,
 `restore()` and `attach()`. The panel renders whatever is available and never
@@ -73,7 +73,8 @@ never answered a real request does not belong in production.
 ### Then, in the repo
 
 ```bash
-cd native && npm install && npx cap sync ios
+npm --prefix native ci
+npm run native:verify
 ```
 
 That registers both plugins and regenerates the Podfile. After it, the Apple
