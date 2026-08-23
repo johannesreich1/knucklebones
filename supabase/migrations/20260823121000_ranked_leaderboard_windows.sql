@@ -4,6 +4,7 @@
 -- can tie, so nickname is the stable second cursor member and sort key.
 
 drop function if exists public.leaderboard(integer, smallint);
+drop function if exists public.leaderboard(integer, smallint, integer);
 drop function if exists public.leaderboard(integer, integer);
 
 create function public.leaderboard(

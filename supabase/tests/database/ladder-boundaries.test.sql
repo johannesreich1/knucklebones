@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(23);
+select plan(24);
 
 select ok(
   not has_table_privilege('anon', 'public.season_ratings', 'select'),
@@ -56,6 +56,10 @@ select ok(
 select ok(
   to_regprocedure('public.leaderboard(integer,smallint)') is null,
   'the obsolete season-argument leaderboard overload is gone'
+);
+select ok(
+  to_regprocedure('public.leaderboard(integer,smallint,integer)') is null,
+  'the obsolete production ladder-window overload is gone'
 );
 select ok(
   has_function_privilege('anon', 'public.player_card(text)', 'execute'),
