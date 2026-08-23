@@ -25,6 +25,27 @@ await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(lo
   await page.goto(F);
   await page.waitForTimeout(400);
 
+  /* A game's delayed first turn belongs to the generation that scheduled it.
+     Start twice inside the 650ms opening beat: LIMITED's bag is a visible count
+     of resolved rolls, so exactly one die must be consumed by the surviving
+     game. The old unguarded timeout consumed two. */
+  out.rapidRestart = await page.evaluate(async () => {
+    const k = window.__kb;
+    k.S.mode = 'duo'; k.S.seat = 'face'; k.S.timer = 0;
+    k.S.spell = ''; k.S.localMode = 6; k.S.starter = 1;
+    k.newGame();
+    k.S.starter = 1;
+    k.newGame();
+    const generation = k.S.gen, before = k.S.pool.length;
+    await new Promise((resolve) => setTimeout(resolve, 1300));
+    return { generation, current: k.S.gen, before, after: k.S.pool.length,
+      phase: k.S.phase, die: k.S.die };
+  });
+  check(out.rapidRestart.current === out.rapidRestart.generation
+      && out.rapidRestart.before - out.rapidRestart.after === 1
+      && out.rapidRestart.phase === 'choose' && out.rapidRestart.die > 0,
+    'a stale game-start timeout entered the replacement game', out.rapidRestart);
+
   // the picker's last chip is RANDOM, and it is not one of the seven modes
   await page.evaluate(() => window.__kb.openPractice());
   await page.waitForTimeout(150);

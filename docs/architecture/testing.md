@@ -10,8 +10,11 @@ then restores build output changed by update tests. A push to `main` must never
 precede a green full gate.
 
 Database contracts are a sibling CI gate because they require Docker and a
-fresh Supabase stack: `supabase start`, `npm run test:db`, then schema lint.
-Run those locally for every migration, grant, RLS, or RPC change.
+fresh Supabase database: `npm run db:start`, `npm run test:db`, then schema
+lint. The start helper mirrors the project without raw Edge Function sources
+and starts only PostgreSQL; deployable function closures are materialized and
+Deno-checked separately. Run the database sequence locally for every
+migration, grant, RLS, or RPC change.
 
 The gate holds `.gate.lock` because build output is shared inside one working
 tree. Servers use kernel-assigned ports, so independent worktrees may gate in
@@ -67,9 +70,11 @@ requires `KB_ALLOW_LIVE_E2E=1`; production additionally requires
 `KB_E2E_STAGING_HOST`, and the production hostname cannot be disguised with a
 safer label. The browser probe uses the production-configured app build and is
 therefore production-only; the API probe supports all three targets. Use
-dedicated test accounts; leave transient queues and active matches terminal,
-and remove any accounts a probe creates. Never commit live credentials or make
-a live probe part of `npm test`.
+dedicated test accounts. Both probes establish a clean participant baseline,
+then use `finally` cleanup to dequeue those accounts and resign any active test
+matches even after an assertion or browser failure. Review the report for
+cleanup errors and remove any accounts a probe creates. Never commit live
+credentials or make a live probe part of `npm test`.
 
 ## Change verification
 

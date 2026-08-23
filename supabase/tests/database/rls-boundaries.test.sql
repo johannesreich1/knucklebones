@@ -26,7 +26,8 @@ insert into auth.users (id, email, created_at, updated_at)
 values
   ('60000000-0000-0000-0000-000000000001', 'rls-me@example.invalid', now(), now()),
   ('60000000-0000-0000-0000-000000000002', 'rls-opponent@example.invalid', now(), now()),
-  ('60000000-0000-0000-0000-000000000003', 'rls-stranger@example.invalid', now(), now());
+  ('60000000-0000-0000-0000-000000000003', 'rls-stranger@example.invalid', now(), now()),
+  ('60000000-0000-0000-0000-000000000004', 'rls-stranger-opponent@example.invalid', now(), now());
 
 insert into public.matches (id, p1, p2, status, turn, season_id)
 values
@@ -38,8 +39,8 @@ values
   ),
   (
     '70000000-0000-0000-0000-000000000002',
-    '60000000-0000-0000-0000-000000000002',
     '60000000-0000-0000-0000-000000000003',
+    '60000000-0000-0000-0000-000000000004',
     'active', 1, 1
   );
 

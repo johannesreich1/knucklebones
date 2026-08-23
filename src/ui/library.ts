@@ -75,6 +75,13 @@ export const pickerButtons = (items: PickItem[], now?: string): string => items.
   `<button type="button"${it.v === now ? ' class="on"' : ''} data-v="${it.v}"`
   + ` style="--mh:${it.hue}" aria-label="${it.name}">${it.icon}</button>`).join('');
 
+/* The sentence below either picker. Pure because product cards and runtime
+   must resolve missing/current choices with the same fallback. */
+export const pickInfo = (items: PickItem[], now?: string): string => {
+  const item = items.find((candidate) => candidate.v === (now ?? '')) ?? items[0];
+  return `${item.name} — ${item.blurb}`;
+};
+
 const built = new Set<string>();
 function build(spec: LibrarySpec): void {
   if (built.has(spec.id)) return;

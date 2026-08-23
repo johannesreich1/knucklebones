@@ -30,19 +30,10 @@ export async function runProtectionLayoutScenarios(suite) {
       turn[half + 'Shield'] = await sealOf(half, 0, vp);
       turn[half + 'Ward'] = await sealOf(half, 1, vp);
     }
-    /* RECORDED, NOT ASSERTED — a real defect, and not one the seal can fix
-       from here. At 667x375 `fit()`'s landscape width budget (ui/layout.ts)
-       lands on a 75px cell that puts BOTH boards flush against the screen
-       edges, and the seal is drawn outside the stack: the line's ink is clipped
-       by ~1.9px and the ward's clasp — which straddles the mouth, outside the
-       element — by ~6.1px, so half the diamond that carries "this one can
-       break" is off the edge. Pre-existing and unrelated to merging: it is the
-       same at span 1 as at span 3, and it is the same for a lone ward. Every
-       wider landscape has room to spare (the cell caps at 84 from 844px up,
-       where the ink clears the edge by ~59px), and portrait is never close.
-       Left here as a number rather than a red gate because the lane budget that
-       would fix it lives in a file the seal work may not touch — but the next
-       person to open ui/layout.ts should spend ~8px per side on it. */
+    /* The seal and its clasp paint outside their layout box, so ordinary
+       board-fit checks cannot prove they are on-screen. This exact 667x375
+       viewport used to put about five pixels of visible ink beyond BOTH edges;
+       keep the painted bounds as a release assertion, not merely a report. */
     turn.inkEdge = await vp.evaluate(() => {
       let lo = Infinity, hi = -Infinity;
       for (const n of document.querySelectorAll('.col>.seal path,.col>.seal circle')) {
@@ -62,6 +53,8 @@ export async function runProtectionLayoutScenarios(suite) {
     });
     out['sealTurn_' + view.name] = turn;
     check(turn.land === (view.name === 'landscape'), 'the seal-turn probe was in the wrong orientation', turn.land);
+    check(Object.values(turn.inkEdge).every((edge) => edge >= 0.5),
+      'PROTECTION INK IS CLIPPED BY THE VIEWPORT in ' + view.name, turn.inkEdge);
     for (const half of ['top', 'bot']) {
       const sh = turn[half + 'Shield'], wd = turn[half + 'Ward'], where = view.name + '/' + half;
       check(sh.drawn && wd.drawn, 'a protection lost its seal in ' + where, { shield: sh.parts, ward: wd.parts });

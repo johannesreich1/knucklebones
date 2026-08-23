@@ -11,7 +11,7 @@ decisions, and externally owned actions only. Detailed sprint history lives in
 | Web | Live at <https://knucklebones-asg.pages.dev>; pushes to `main` deploy through Cloudflare Pages immediately | `build.mjs`, `.github/workflows/ci.yml` |
 | Game | Local solo and two-player play, tutorial, modes, optional offline spells, and shared local/ranked board rendering | `src/core/`, `src/flow/`, `src/ui/` |
 | Ranked | Server-authoritative online play with guest accounts, human matchmaking, bot backfill, seasonal ladder points, history, profiles, and account deletion | `src/online/`, `supabase/functions/`, `docs/LADDER.md` |
-| Database | The immutable repository ledger ends at `20260823121000_ranked_leaderboard_windows.sql`; a clean local reset and all pgTAP contracts pass | `supabase/migrations/`, `supabase/tests/` |
+| Database | The immutable repository ledger ends at `20260823132611_game_center_service_grants.sql`; a clean local reset and the focused lifecycle, command, history-plan, grant, settlement, and RLS pgTAP contracts pass locally | `supabase/migrations/`, `supabase/tests/` |
 | Builds | Hosted PWA, standalone HTML, widget, and Capacitor web assets come from the same source build | `build.mjs`, `docs/architecture/build.md` |
 | Native | The Capacitor configuration and iOS Xcode project are tracked; Android is not yet present | `native/` |
 | Design | Product cards, open studies, and archived candidates are explicitly classified and recursively built from shared application CSS/renderers | `design/screens/`, `design/build.mjs` |
@@ -44,10 +44,18 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - Rotate/revoke any live-test credentials that were ever committed. Repository
   live tests must remain environment-only, fail closed, and require explicit
   production opt-in. Credential rotation is an owner action.
-- Reconcile the production migration ledger, apply the five `20260823…`
-  migrations in order, and deploy the five checked Edge Function closures.
-  Repository-local reset, pgTAP, query-plan, handler, closure-sync, and Deno
-  checks are green; production deployment remains an owner action.
+- Reconcile the production migration ledger, then apply the eight ranked dated
+  migrations in order: the five from `20260823112009` through
+  `20260823121000`, followed by `20260823132127`, `20260823132135`, and
+  `20260823132602`. Deploy the four ranked closures (`account-delete`,
+  `pvp-claim`, `pvp-join`, `pvp-move`) database-first. The clean local reset,
+  focused pgTAP/query-plan contracts, handlers, and exact Deno 2.1.14 closure
+  checks are green; no production deployment is implied.
+- Keep the Game Center rollout separate: apply pending migration `0014` and
+  `20260823132611_game_center_service_grants.sql` together, configure a
+  durable deployment-layer rate limit for the deliberately unauthenticated
+  assertion endpoint, then deploy `gc-auth` and prove it with a signed device.
+  None of those production actions is recorded as complete here.
 - A fully suspended mobile client can still leave a bot match waiting until it
   returns. A server-side sweep is the honest remaining solution.
 

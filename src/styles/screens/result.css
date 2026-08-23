@@ -9,35 +9,35 @@
    length. A LOSS RISES (study F, 65): the word climbs from behind a line
    while a light bar sweeps up THROUGH it and the type fades in over the
    travel — calmer, and it announces less, which is the point. */
-#ovEnd.enter.win #endTitle{animation:endStamp 1.05s cubic-bezier(.2,1.25,.3,1) .3s both}
+:where(#kbroot) #ovEnd.enter.win #endTitle{animation:endStamp 1.05s cubic-bezier(.2,1.25,.3,1) .3s both}
 @keyframes endStamp{
   0%{transform:scale(3.2);opacity:0;filter:blur(8px)}
   38%{transform:scale(.93);opacity:1;filter:blur(0)}
   58%{transform:scale(1.04)}
   100%{transform:scale(1)}}
-#ovEnd .shock{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 7vh + 24px);
+:where(#kbroot) #ovEnd .shock{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 7vh + 24px);
   width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;border:2px solid currentColor;
   opacity:0;pointer-events:none;color:var(--p1)}
-#ovEnd.enter.win .shock{animation:endShock 1.15s cubic-bezier(.1,.7,.3,1) .3s both}
+:where(#kbroot) #ovEnd.enter.win .shock{animation:endShock 1.15s cubic-bezier(.1,.7,.3,1) .3s both}
 @keyframes endShock{0%{transform:scale(.1);opacity:0}18%{opacity:.75}100%{transform:scale(3.4);opacity:0}}
 
 /* the rise needs a clipping line to rise from — and ONLY the rise, or the
    win's glow would be cropped with it */
-.titlewrap{position:relative;width:100%;display:flex;flex-direction:column;align-items:center}
+:where(#kbroot) .titlewrap{position:relative;width:100%;display:flex;flex-direction:column;align-items:center}
 /* The verdict's BLOOM — a wide, heavily blurred wash of the outcome's colour
    sitting under the word. It scales off --verdict like everything else here,
    and it has no edges to cut: a radial gradient faded to transparent, blurred
    by half the type size again. */
-#ovEnd.win{--bloom:rgba(var(--p1-rgb),.40)}
-#ovEnd.lose{--bloom:rgba(var(--p2-rgb),.36)}
-#ovEnd.draw{--bloom:rgba(159,178,216,.26)}
-#ovEnd .titlewrap::before{content:"";position:absolute;left:50%;top:50%;z-index:-1;
+:where(#kbroot) #ovEnd.win{--bloom:rgba(var(--p1-rgb),.40)}
+:where(#kbroot) #ovEnd.lose{--bloom:rgba(var(--p2-rgb),.36)}
+:where(#kbroot) #ovEnd.draw{--bloom:rgba(159,178,216,.26)}
+:where(#kbroot) #ovEnd .titlewrap::before{content:"";position:absolute;left:50%;top:50%;z-index:-1;
   width:min(160%,calc(var(--verdict) * 9));height:calc(var(--verdict) * 3.4);
   transform:translate(-50%,-50%);border-radius:50%;pointer-events:none;opacity:0;
   background:radial-gradient(closest-side,var(--bloom,transparent),transparent 74%);
   filter:blur(calc(var(--verdict) * .55))}
 /* it swells in behind the landing, and stays */
-#ovEnd.enter .titlewrap::before{animation:endBloom 1.5s cubic-bezier(.2,.8,.3,1) .35s both}
+:where(#kbroot) #ovEnd.enter .titlewrap::before{animation:endBloom 1.5s cubic-bezier(.2,.8,.3,1) .35s both}
 @keyframes endBloom{
   0%{opacity:0;transform:translate(-50%,-50%) scale(.55)}
   60%{opacity:1}
@@ -45,15 +45,15 @@
 /* ONLY the word is clipped. The bloom and the sweep are siblings of this box,
    because a clip that also crops the glow shows its cut edges for the whole
    animation. */
-.titleclip{width:100%;display:flex;justify-content:center}
-#ovEnd.lose .titleclip,#ovEnd.draw .titleclip{overflow:hidden;padding:3px 0}
+:where(#kbroot) .titleclip{width:100%;display:flex;justify-content:center}
+:where(#kbroot) #ovEnd.lose .titleclip,:where(#kbroot) #ovEnd.draw .titleclip{overflow:hidden;padding:3px 0}
 /* NOTHING filters the title. A filter on an element that also carries
    -webkit-background-clip:text makes Safari drop the clip and paint the
    gradient as a solid rectangle — a hard-edged box behind the word. The glow
    is a separate layer below (.titlewrap::before), which cannot interfere.
    The clip is only needed while the word is travelling. */
-#ovEnd.settled .titleclip{overflow:visible}
-#ovEnd.enter.lose #endTitle,#ovEnd.enter.draw #endTitle{
+:where(#kbroot) #ovEnd.settled .titleclip{overflow:visible}
+:where(#kbroot) #ovEnd.enter.lose #endTitle,:where(#kbroot) #ovEnd.enter.draw #endTitle{
   animation:endRise 1.35s cubic-bezier(.16,1,.3,1) .3s both}
 /* the fade gets its own stops: this easing is all but finished a fifth of the
    way in, so a plain 0->1 across the same interval snaps to full at once */
@@ -65,11 +65,11 @@
   100%{transform:none;opacity:1}}
 /* the light breaks BEFORE the word lands and carries it up. linear, never
    ease-out: a sweep that decelerates into a keyframe reads as a pause. */
-#ovEnd .sweep{position:absolute;left:0;right:0;top:50%;opacity:0;pointer-events:none;
+:where(#kbroot) #ovEnd .sweep{position:absolute;left:0;right:0;top:50%;opacity:0;pointer-events:none;
   height:max(3px,calc(var(--verdict) * .07));
   background:linear-gradient(90deg,transparent,#fff,transparent);
   box-shadow:0 0 calc(var(--verdict) * .4) rgba(255,255,255,.45)}
-#ovEnd.enter.lose .sweep,#ovEnd.enter.draw .sweep{animation:endSweep 1.35s linear .3s both}
+:where(#kbroot) #ovEnd.enter.lose .sweep,:where(#kbroot) #ovEnd.enter.draw .sweep{animation:endSweep 1.35s linear .3s both}
 @keyframes endSweep{
   0%{transform:translateY(calc(var(--verdict) * .78)) scaleX(.2);opacity:0}
   10%{opacity:.95}
@@ -78,10 +78,10 @@
   100%{transform:translateY(calc(var(--verdict) * -1.05)) scaleX(.5);opacity:0}}
 
 /* the context line: a session record locally, a points chip and ladder spot online */
-.endmeta{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-align:center;
+:where(#kbroot) .endmeta{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-align:center;
   display:flex;flex-direction:column;align-items:center;gap:7px}
-.endmeta:empty{display:none}
-#endTitle.win{background-image:linear-gradient(100deg,var(--p1),#fff 50%,#8dffcf)}
-#endTitle.lose{background-image:linear-gradient(100deg,var(--p2),#fff 55%,var(--orange))}
-#endTitle.draw{background-image:linear-gradient(100deg,#9fb2d8,#fff 50%,#9fb2d8)}
-.tiny{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-align:center}
+:where(#kbroot) .endmeta:empty{display:none}
+:where(#kbroot) #endTitle.win{background-image:linear-gradient(100deg,var(--p1),#fff 50%,#8dffcf)}
+:where(#kbroot) #endTitle.lose{background-image:linear-gradient(100deg,var(--p2),#fff 55%,var(--orange))}
+:where(#kbroot) #endTitle.draw{background-image:linear-gradient(100deg,#9fb2d8,#fff 50%,#9fb2d8)}
+:where(#kbroot) .tiny{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-align:center}

@@ -34,11 +34,16 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
       - uses: supabase/setup-cli@v3
         with:
           # Keep CI on the same CLI release used for the verified local reset.
           version: 2.115.0
-      - run: supabase start
+      # Starts the same migration ledger in a temporary database-only project.
+      # Edge closures are materialized and Deno-checked in the test job.
+      - run: npm run db:start
       - run: supabase test db --local
       - run: supabase db lint --local --level warning --fail-on error
       - if: always()

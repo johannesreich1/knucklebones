@@ -22,11 +22,11 @@ public class GameCenterPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "signIn", returnType: CAPPluginReturnPromise)
     ]
 
-    /// Whether this device can offer Game Center at all — the player may have
-    /// signed out of it, and being nagged by a sheet they already dismissed is
-    /// worse than not offering the button.
+    /// The bridge itself is the capability signal. Authentication state must
+    /// not hide the button on a fresh device: signIn() owns installing Apple's
+    /// authenticateHandler and presenting its sheet when required.
     @objc func available(_ call: CAPPluginCall) {
-        call.resolve(["available": GKLocalPlayer.local.isAuthenticated])
+        call.resolve(["available": true])
     }
 
     @objc func signIn(_ call: CAPPluginCall) {

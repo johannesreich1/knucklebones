@@ -10,6 +10,7 @@
     "build": "node build.mjs",
     "serve": "node tests/serve.mjs",
     "test": "node tests/run-all.mjs",
+    "db:start": "node tools/start-database.mjs",
     "test:db": "supabase test db --local",
     "test:functions": "node tools/check-functions.mjs",
     "test:native": "node --experimental-strip-types tests/iosship.test.ts",

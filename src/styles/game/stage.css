@@ -1,22 +1,22 @@
 /* ============ CENTER STAGE ============ */
-.center{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;
+:where(#kbroot) .center{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:5px;padding:5px 0;position:relative}
 /* (the hairline dividers that used to frame the centre are gone by request —
    the glow palette separates the halves well enough on its own) */
-#dieStage{--cell2:calc(var(--cell)*.92);width:var(--cell2);height:var(--cell2);position:relative}
+:where(#kbroot) #dieStage{--cell2:calc(var(--cell)*.92);width:var(--cell2);height:var(--cell2);position:relative}
 /* a clocked game spends stage height on the bar, so the die gives some back —
    the centre keeps breathing room above it instead of crowding the far board */
 #kbroot.clock #dieStage{--cell2:calc(var(--cell)*.80)}
-#dieStage .die{--cell:var(--cell2)}
-#dieStage.rolling .die{animation:rollspin .42s linear infinite}
+:where(#kbroot) #dieStage .die{--cell:var(--cell2)}
+:where(#kbroot) #dieStage.rolling .die{animation:rollspin .42s linear infinite}
 @keyframes rollspin{0%{transform:rotate(0) scale(1)}25%{transform:rotate(90deg) scale(1.06)}
  50%{transform:rotate(180deg) scale(1)}75%{transform:rotate(270deg) scale(1.06)}100%{transform:rotate(360deg) scale(1)}}
-#dieStage.pop .die{animation:popin .3s cubic-bezier(.2,1.5,.4,1)}
+:where(#kbroot) #dieStage.pop .die{animation:popin .3s cubic-bezier(.2,1.5,.4,1)}
 @keyframes popin{0%{transform:scale(.5) rotate(-30deg)}100%{transform:scale(1) rotate(0)}}
-.status{font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--dim);text-transform:uppercase;
+:where(#kbroot) .status{font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--dim);text-transform:uppercase;
   min-height:14px;text-align:center;transition:color .2s}
-.status.me{color:var(--p1);text-shadow:0 0 12px rgba(var(--p1-rgb),.5)}
-.status.ai{color:var(--p2);text-shadow:0 0 12px rgba(var(--p2-rgb),.5)}
+:where(#kbroot) .status.me{color:var(--p1);text-shadow:0 0 12px rgba(var(--p1-rgb),.5)}
+:where(#kbroot) .status.ai{color:var(--p2);text-shadow:0 0 12px rgba(var(--p2-rgb),.5)}
 
 
 /* Turn clock. The bar blinks in and out every turn, so its LANE is held for the
@@ -24,29 +24,29 @@
    otherwise the board would bounce at every hand-off. A game with no clock at
    all gives the lane back rather than holding an empty strip that pushes the
    die off centre. */
-.timer{display:none;height:12px;align-items:center;gap:6px;--tc:var(--tcbase,var(--p1))}
+:where(#kbroot) .timer{display:none;height:12px;align-items:center;gap:6px;--tc:var(--tcbase,var(--p1))}
 #kbroot.clock .timer{display:flex;visibility:hidden}
 #kbroot.clock .timer.on{visibility:visible}
-.timer .track{width:118px;height:3px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
-.timer .bar{display:block;height:100%;width:100%;border-radius:99px;background:var(--tc,var(--p1));
+:where(#kbroot) .timer .track{width:118px;height:3px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+:where(#kbroot) .timer .bar{display:block;height:100%;width:100%;border-radius:99px;background:var(--tc,var(--p1));
   box-shadow:0 0 8px var(--tc,var(--p1));transition:width .1s linear}
-.timer b{font-size:10.5px;font-weight:900;color:var(--tc,var(--p1));min-width:10px;text-align:left}
-.timer.warn{--tc:var(--orange)}
-.timer.warn .bar{box-shadow:0 0 10px var(--tc)}
+:where(#kbroot) .timer b{font-size:10.5px;font-weight:900;color:var(--tc,var(--p1));min-width:10px;text-align:left}
+:where(#kbroot) .timer.warn{--tc:var(--orange)}
+:where(#kbroot) .timer.warn .bar{box-shadow:0 0 10px var(--tc)}
 
 /* floating score numbers: earned points rise from the column just played */
 /* the result screen's own particle layer — it sits above .ov's backdrop and
    below its text, because #fx (z-index 50) is under every overlay */
-.fwlayer{position:absolute;inset:0;overflow:hidden;pointer-events:none}
-.fwring{position:absolute;border-radius:50%;width:90px;height:90px;border:3px solid currentColor;
+:where(#kbroot) .fwlayer{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+:where(#kbroot) .fwring{position:absolute;border-radius:50%;width:90px;height:90px;border:3px solid currentColor;
   box-shadow:0 0 26px currentColor,inset 0 0 26px currentColor;
   pointer-events:none;transform:translate(-50%,-50%)}
-.pts{position:absolute;z-index:60;font-size:19px;font-weight:900;pointer-events:none;
+:where(#kbroot) .pts{position:absolute;z-index:60;font-size:19px;font-weight:900;pointer-events:none;
   white-space:nowrap;transform:translate(-50%,0);
   text-shadow:0 0 10px currentColor,0 2px 8px rgba(0,0,0,.8)}
 #kbroot.land .pts{font-size:15px}
 
 /* ============ FX ============ */
-#fx{position:fixed;inset:0;z-index:50;pointer-events:none;overflow:hidden}
-.particle{position:absolute;width:7px;height:7px;border-radius:50%;transform:translate(-50%,-50%)}
-.flash{position:fixed;inset:0;z-index:45;pointer-events:none;background:#fff;opacity:0}
+:where(#kbroot) #fx{position:fixed;inset:0;z-index:50;pointer-events:none;overflow:hidden}
+:where(#kbroot) .particle{position:absolute;width:7px;height:7px;border-radius:50%;transform:translate(-50%,-50%)}
+:where(#kbroot) .flash{position:fixed;inset:0;z-index:45;pointer-events:none;background:#fff;opacity:0}

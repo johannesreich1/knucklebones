@@ -2,7 +2,7 @@
 /* a BOUNDED list inside a form panel: it sits mid-page, not under the header,
    so a hard edge is right for it — it reads as a box, and the header's blur
    band is about content vanishing under the header, which this never does. */
-#ovOnline .lb{max-height:56vh;overflow:auto;display:flex;flex-direction:column;gap:5px}
+:where(#kbroot) #ovOnline .lb{max-height:56vh;overflow:auto;display:flex;flex-direction:column;gap:5px}
 /* ---- the ladder as a LIST: the whole screen, edge to edge, scrolling to the
    bottom under a subheading that stays put. Every other panel in this overlay
    is a centred form column, so the treatment hangs off the panel, not the
@@ -33,20 +33,20 @@
    are separated BY THE GAP and never by this margin — and only one panel is
    ever visible at a time anyway. The 6px was pure top offset, stacking on the
    reserve above it. */
-#ovOnline.listview .panel{max-width:none;width:100%;margin:0;gap:0;
+:where(#kbroot) #ovOnline.listview .panel{max-width:none;width:100%;margin:0;gap:0;
   flex:0 0 auto}
 /* AS A FULL PAGE it stops scrolling itself and lets the paged body do it: one
    page, one scroller, so the header's blur band (styles/main.css) is pinned to
    the one top edge there is. A second scroller here would slide rows out from
    under a band that could not reach them. The body already carries the side
    padding and the over-scroll room. */
-#ovOnline.listview .lb{max-height:none;overflow:visible;padding:0}
-#ovOnline.listview .lb > *{width:100%;max-width:var(--w-col);margin-inline:auto}
-#ovOnline .lb .row{display:flex;gap:10px;align-items:center;font-size:clamp(13px,3.3vw,14.5px);padding:9px 12px;
+:where(#kbroot) #ovOnline.listview .lb{max-height:none;overflow:visible;padding:0}
+:where(#kbroot) #ovOnline.listview .lb > *{width:100%;max-width:var(--w-col);margin-inline:auto}
+:where(#kbroot) #ovOnline .lb .row{display:flex;gap:10px;align-items:center;font-size:clamp(13px,3.3vw,14.5px);padding:9px 12px;
   border-radius:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06)}
-#ovOnline .lb .row .rank{color:var(--dim);min-width:22px;text-align:right;font-weight:800}
-#ovOnline .lb .row .nm{flex:1;font-weight:800;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#ovOnline .lb .row .rt{color:var(--gold);font-weight:900}
-#ovOnline .lb .row .ws{color:var(--dim);font-size:10.5px}
-#ovOnline .lb .row.me{background:rgba(var(--p1-rgb),.07);border-color:rgba(var(--p1-rgb),.35)}
-#ovOnline .lb .row.me .nm{color:var(--p1)}
+:where(#kbroot) #ovOnline .lb .row .rank{color:var(--dim);min-width:22px;text-align:right;font-weight:800}
+:where(#kbroot) #ovOnline .lb .row .nm{flex:1;font-weight:800;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+:where(#kbroot) #ovOnline .lb .row .rt{color:var(--gold);font-weight:900}
+:where(#kbroot) #ovOnline .lb .row .ws{color:var(--dim);font-size:10.5px}
+:where(#kbroot) #ovOnline .lb .row.me{background:rgba(var(--p1-rgb),.07);border-color:rgba(var(--p1-rgb),.35)}
+:where(#kbroot) #ovOnline .lb .row.me .nm{color:var(--p1)}

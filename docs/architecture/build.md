@@ -6,7 +6,10 @@ application identity changes.
 ## Source and outputs
 
 `build.mjs` type-checks and performs three Vite builds from `src/`, then
-assembles four deliverables with one content-derived build tag:
+assembles four deliverables with one content-derived build tag. The tag hashes
+the fixed-placeholder bytes of every assembled output, including public PWA
+assets and the widget-only bundle, before stamping any output; no artifact can
+refer to its own final hash while that hash is being derived:
 
 | Output | Purpose |
 |---|---|
@@ -46,7 +49,10 @@ data, and other generated payloads are ignored.
 the deterministic web build independent of local CocoaPods/Xcode state.
 `npm run native:sync` builds and then runs Capacitor explicitly; failures are
 not swallowed. `npm run native:verify` performs that sync and additionally
-requires the generated Xcode payload and configuration to match the new build.
+requires the complete generated Xcode payload and configuration to match the
+new build. The tracked `knucklebones-game-center` file dependency is the native
+Game Center implementation; verification requires Capacitor and CocoaPods to
+register it rather than accepting the presence of an unwired source directory.
 
 `APP_ID` in `src/config.ts` is the canonical application identifier. Browser
 identity imports it directly; `tests/iosship.test.ts` requires the unavoidable

@@ -10,6 +10,7 @@
 // NOT through an import: the web bundle must not carry a line of plugin code.
 import { supa } from './client.ts';
 import { APP_ID, SUPABASE_URL, SUPABASE_KEY } from '../config.ts';
+import { randomUuid } from './random-id.ts';
 
 export interface OneTap {
   id: string;
@@ -55,7 +56,7 @@ const APPLE: OneTap = {
 };
 
 async function appleToken(): Promise<{ token: string; nonce: string } | string> {
-  const raw = crypto.randomUUID();
+  const raw = randomUuid();
   try {
     const res = await plugins().SignInWithApple.authorize({
       clientId: APP_ID,

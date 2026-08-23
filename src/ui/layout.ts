@@ -83,8 +83,12 @@ export function fit(): void {
        beside). It is absolutely positioned, so this is what reserves it — same
        bargain as the portrait branch below. */
     const railL = rowmode ? cssPx('--land-rail', 22) : 0;
+    /* Protection ink is deliberately outside the board box. Reserve its clasp
+       and stroke at both viewport edges; without this, 667x375 chose a 75px
+       cell and clipped about five pixels of the ward's only breakable mark. */
+    const inkEdges = 2 * cssPx('--seal-edge-gutter', 8);
     const byH = Math.floor((h - safe.v - 28 - 20 - 2*6 - 14 - railL) / SPEC.cols);
-    const byW = Math.floor((w - safe.h - 2*30 - cssPx('--land-lane', 116) - 40) / (2*SPEC.rows));
+    const byW = Math.floor((w - safe.h - 2*30 - cssPx('--land-lane', 116) - 40 - inkEdges) / (2*SPEC.rows));
     cell = Math.max(34, Math.min(byH, byW, 84));   // capped so it isn't edge-to-edge
   }else{
     const lane = S.tut ? 15 : 4;               // preview-pill lane is tutorial-only

@@ -4,7 +4,7 @@
    apart they are — a match through a stranger (cols 1 and 3) then reads as an
    adjacent pair, only wider. Every die between the ends stays clean.
 
-   render.ts answers the only question this needs — is this die an END of its
+   ui/game/board.ts answers the only question this needs — is this die an END of its
    row match, and which one — so the stylesheet never reasons about adjacency:
      .rm2 / .rm3   in a row match of that size (the heat)
      .rms / .rme   the span's left / right end (the ink)
@@ -15,33 +15,33 @@
    the same mark; here ×3 says the head twice. Heats are --mx2 / --mx3 per side,
    so a player who picked gold still sees their opponent's true heat.
    Studied as design/screens/product/38f-rowmult-aimed. ===== */
-.die.rm2,.die.rm3{
+:where(#kbroot) .die.rm2,:where(#kbroot) .die.rm3{
   /* the die's REAL radius, so the tick's arc sits on the glass, not beside it */
   --dr:min(var(--r),calc(var(--cell)*.25 + 1.5px));
   --off:3px;                        /* inside .col.legal's -4px dashed ring */
   --tw:max(2px,calc(var(--cell)*.045));
   --aw:calc(var(--cell)*.11);--ah:calc(var(--cell)*.20);
   --rmc:rgba(var(--mx2-rgb),.95);--rmg:0 0 6px rgba(var(--mx2-rgb),.55)}
-.die.rm3{--rmc:rgba(var(--mx3-rgb),.95);--rmg:0 0 6px rgba(var(--mx3-rgb),.55)}
+:where(#kbroot) .die.rm3{--rmc:rgba(var(--mx3-rgb),.95);--rmg:0 0 6px rgba(var(--mx3-rgb),.55)}
 /* THE EXTENSION LINE — one lit side, on the end's outward face */
-.die.rms::after,.die.rme::after{content:"";position:absolute;inset:calc(var(--off)*-1);
+:where(#kbroot) .die.rms::after,:where(#kbroot) .die.rme::after{content:"";position:absolute;inset:calc(var(--off)*-1);
   border-radius:calc(var(--dr) + var(--off));border:var(--tw) solid transparent;
   pointer-events:none;filter:drop-shadow(var(--rmg))}
-.die.rms::after{border-left-color:var(--rmc)}
-.die.rme::after{border-right-color:var(--rmc)}
+:where(#kbroot) .die.rms::after{border-left-color:var(--rmc)}
+:where(#kbroot) .die.rme::after{border-right-color:var(--rmc)}
 /* THE HEAD — declared on the ends themselves, never on every matched die: an
    absolutely positioned box with no left/right still PAINTS, so the shared
    declaration put a solid slab on the middle die of a ×3 — the one die this
    mark exists to leave alone (caught in the render check, not in review). */
-.die.rms::before,.die.rme::before{content:"";position:absolute;top:50%;
+:where(#kbroot) .die.rms::before,:where(#kbroot) .die.rme::before{content:"";position:absolute;top:50%;
   width:var(--aw);height:var(--ah);transform:translateY(-50%);
   background:var(--rmc);pointer-events:none;filter:drop-shadow(var(--rmg))}
-.die.rms::before{left:calc(var(--off)*-1);clip-path:polygon(0 0,100% 50%,0 100%)}
-.die.rme::before{right:calc(var(--off)*-1);clip-path:polygon(100% 0,0 50%,100% 100%)}
+:where(#kbroot) .die.rms::before{left:calc(var(--off)*-1);clip-path:polygon(0 0,100% 50%,0 100%)}
+:where(#kbroot) .die.rme::before{right:calc(var(--off)*-1);clip-path:polygon(100% 0,0 50%,100% 100%)}
 /* ×3 — the same head said twice, the quieter copy OUTBOARD. filter runs after
    clip-path, so the second copy is the arrow's silhouette and not its box. */
-.die.rm3.rms::before{filter:drop-shadow(-4px 0 0 rgba(var(--mx3-rgb),.5)) drop-shadow(var(--rmg))}
-.die.rm3.rme::before{filter:drop-shadow(4px 0 0 rgba(var(--mx3-rgb),.5)) drop-shadow(var(--rmg))}
+:where(#kbroot) .die.rm3.rms::before{filter:drop-shadow(-4px 0 0 rgba(var(--mx3-rgb),.5)) drop-shadow(var(--rmg))}
+:where(#kbroot) .die.rm3.rme::before{filter:drop-shadow(4px 0 0 rgba(var(--mx3-rgb),.5)) drop-shadow(var(--rmg))}
 /* LANDSCAPE transposes the board, so a row runs DOWN: the ticks move to the top
    and bottom edges and the heads turn a quarter. Source order breaks the tie. */
 #kbroot.land .die.rms::before,#kbroot.land .die.rme::before{left:50%;right:auto;top:auto;
@@ -56,19 +56,19 @@
 /* ===== the row rail: per-row scores left of each board (row modes only).
    The .rc boxes deliberately mirror .chip — same pill, same .has treatment,
    so row scores read as first-class citizens of the score language. ===== */
-.rowchips{display:none}
+:where(#kbroot) .rowchips{display:none}
 #kbroot.rowmode .rowchips{position:absolute;right:100%;margin-right:9px;top:0;display:grid;
   grid-template-rows:repeat(3,var(--cell));gap:var(--gap);align-items:center}
 /* wide enough for the worst row this game can produce — three 6s score 54 and
    multiply ×3, so "54×3" must sit inside the pill without being squeezed. A
    bare number still centres: the empty ×badge is display:none, not a spacer. */
-.rowchips .rc{min-width:41px;height:20px;padding:0 6px;border-radius:8px;
+:where(#kbroot) .rowchips .rc{min-width:41px;height:20px;padding:0 6px;border-radius:8px;
   display:flex;align-items:center;justify-content:center;gap:3px;
   font-size:11.5px;font-weight:800;color:var(--dim);font-variant-numeric:tabular-nums;
   background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);transition:.2s}
-.rowchips .rc .mx{font-size:9px;opacity:.9;color:var(--mx2,var(--gold))}
-.rowchips .rc .mx.h3{color:var(--mx3,var(--orange))}
-.rowchips .rc.has{color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
+:where(#kbroot) .rowchips .rc .mx{font-size:9px;opacity:.9;color:var(--mx2,var(--gold))}
+:where(#kbroot) .rowchips .rc .mx.h3{color:var(--mx3,var(--orange))}
+:where(#kbroot) .rowchips .rc.has{color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
   background:color-mix(in srgb,var(--c) 9%,transparent);
   text-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}
 /* LANDSCAPE turns the rail rather than dropping it. The board is transposed

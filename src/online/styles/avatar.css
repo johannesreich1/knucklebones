@@ -1,14 +1,14 @@
 /* ---- the avatar picker: a die face and a hue, 36 identities ---- */
-#onAvatar .avpreview{display:grid;place-items:center;margin:4px 0 2px}
-#onAvatar .avgrid{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
-#onAvatar .avgrid button{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;
+:where(#kbroot) #onAvatar .avpreview{display:grid;place-items:center;margin:4px 0 2px}
+:where(#kbroot) #onAvatar .avgrid{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+:where(#kbroot) #onAvatar .avgrid button{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;
   background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10);cursor:pointer;padding:0}
-#onAvatar .avgrid button .die{width:34px;height:34px;--cell:34px}
-#onAvatar .avgrid button.on{border-color:var(--p1);box-shadow:0 0 14px rgba(var(--p1-rgb),.35)}
+:where(#kbroot) #onAvatar .avgrid button .die{width:34px;height:34px;--cell:34px}
+:where(#kbroot) #onAvatar .avgrid button.on{border-color:var(--p1);box-shadow:0 0 14px rgba(var(--p1-rgb),.35)}
 /* the avatar hue row keeps the centred FLEX strip it was built as — .hues is
    a fluid grid for the Settings duel pickers, and this two-class rule says so
    whatever order the chunks' stylesheets land in */
-#onAvatar .avgrid.hues{display:flex;flex-wrap:wrap;justify-content:center}
-#onAvatar .avgrid.hues button{width:38px;height:38px;max-width:none;border-radius:50%}
-#onAvatar .avgrid.hues button::after{content:"";width:20px;height:20px;border-radius:50%;background:var(--h);
+:where(#kbroot) #onAvatar .avgrid.hues{display:flex;flex-wrap:wrap;justify-content:center}
+:where(#kbroot) #onAvatar .avgrid.hues button{width:38px;height:38px;max-width:none;border-radius:50%}
+:where(#kbroot) #onAvatar .avgrid.hues button::after{content:"";width:20px;height:20px;border-radius:50%;background:var(--h);
   box-shadow:0 0 12px var(--h)}

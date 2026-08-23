@@ -1,20 +1,20 @@
 /* the OFFLINE view's game-mode picker: one icon button per wheel mode */
-.modepick{display:flex;flex-wrap:wrap;gap:8px}
+:where(#kbroot) .modepick{display:flex;flex-wrap:wrap;gap:8px}
 /* the sheet's main affordance, and eight of them share a row — 44x40 made
    them read as a toolbar rather than a choice */
-.modepick{gap:9px}
+:where(#kbroot) .modepick{gap:9px}
 /* transition the PRESS only: a blanket .15s made the old and new selection
    crossfade half-lit on every pick — the highlight itself must snap (user
    call: highlight, don't flash) */
-.modepick button{--mh:#8ea3c0;width:52px;height:48px;border-radius:14px;display:grid;place-items:center;
+:where(#kbroot) .modepick button{--mh:#8ea3c0;width:52px;height:48px;border-radius:14px;display:grid;place-items:center;
   background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);color:var(--mh);
   cursor:pointer;transition:transform .15s;font-family:inherit;padding:0}
-.modepick button:active,.modepick button.pressing{transform:scale(.92)}
-.modepick button.on{border-color:color-mix(in srgb,var(--mh) 65%,transparent);
+:where(#kbroot) .modepick button:active,:where(#kbroot) .modepick button.pressing{transform:scale(.92)}
+:where(#kbroot) .modepick button.on{border-color:color-mix(in srgb,var(--mh) 65%,transparent);
   background:color-mix(in srgb,var(--mh) 12%,transparent);
   box-shadow:0 0 14px color-mix(in srgb,var(--mh) 30%,transparent)}
 
 /* mode icons (src/ui/modeicons.ts) — used OFFLINE too (library, picker),
    so the base styles live here, not in the lazy online chunk */
-.mico{vertical-align:-2px;filter:drop-shadow(0 0 5px currentColor)}
-.mico .f{fill:currentColor;stroke:none}
+:where(#kbroot) .mico{vertical-align:-2px;filter:drop-shadow(0 0 5px currentColor)}
+:where(#kbroot) .mico .f{fill:currentColor;stroke:none}

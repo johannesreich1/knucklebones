@@ -1,31 +1,31 @@
 /* ============ COLUMN CHIPS ============ */
 /* Chip rows sit tight in normal play. The tutorial adds a 15px lane above each,
    where its +N / −N preview pills float without touching the turn text or dice. */
-.cols{display:grid;grid-template-columns:repeat(3,var(--cell));gap:var(--gap);
+:where(#kbroot) .cols{display:grid;grid-template-columns:repeat(3,var(--cell));gap:var(--gap);
   justify-content:center;flex:0 0 auto;margin:0 auto}
 /* The 4px separates a chip strip from ITS OWN board, so which side it sits on
    flips with the half. As a blanket margin-top it only ever showed on the
    bottom — between the centre stage and the chips — and rode the die and status
    4px high for the whole game. */
-.side.top .cols{margin-top:4px}
-.side.bot .cols{margin-bottom:4px}
+:where(#kbroot) .side.top .cols{margin-top:4px}
+:where(#kbroot) .side.bot .cols{margin-bottom:4px}
 /* the tutorial's preview pills float ABOVE their chip, so both strips get a
    lane over them — on the bottom half that is the gap to the centre stage */
 #kbroot.tut .cols{margin-top:15px}
-.chip{height:20px;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:3px;
+:where(#kbroot) .chip{height:20px;border-radius:8px;display:flex;align-items:center;justify-content:center;gap:3px;
   font-size:12px;font-weight:800;color:var(--dim);
   background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);position:relative;transition:.2s}
-.chip.has{color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
+:where(#kbroot) .chip.has{color:var(--c);border-color:color-mix(in srgb,var(--c) 30%,transparent);
   background:color-mix(in srgb,var(--c) 9%,transparent);text-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}
-.chip .mx{font-size:9px;opacity:.9;color:var(--mx2,var(--gold))}
-.chip .mx.h3{color:var(--mx3,var(--orange))}
+:where(#kbroot) .chip .mx{font-size:9px;opacity:.9;color:var(--mx2,var(--gold))}
+:where(#kbroot) .chip .mx.h3{color:var(--mx3,var(--orange))}
 /* empty badge spans must not eat flex gaps — the number sits dead centre
    (bit the row rail: an empty ×badge shoved every rowscore 3px off) */
-.chip .mx:empty,.chip .sh:empty,.rowchips .rc .mx:empty{display:none}
-.chip .dl{position:absolute;left:50%;top:-15px;font-size:10.5px;font-weight:900;padding:1px 5px;border-radius:99px;
+:where(#kbroot) .chip .mx:empty,:where(#kbroot) .chip .sh:empty,:where(#kbroot) .rowchips .rc .mx:empty{display:none}
+:where(#kbroot) .chip .dl{position:absolute;left:50%;top:-15px;font-size:10.5px;font-weight:900;padding:1px 5px;border-radius:99px;
   opacity:0;transform:translate(-50%,4px);transition:.18s;pointer-events:none;white-space:nowrap;line-height:1.25}
-.chip .dl.show{opacity:1;transform:translate(-50%,0)}
+:where(#kbroot) .chip .dl.show{opacity:1;transform:translate(-50%,0)}
 /* gain chip follows the active player's colour (--c comes from the .side) */
-.chip .dl.gain{color:#0a0410;background:var(--c);
+:where(#kbroot) .chip .dl.gain{color:#0a0410;background:var(--c);
   box-shadow:0 0 12px color-mix(in srgb,var(--c) 62%,transparent)}
-.chip .dl.kill{color:#300;background:var(--mx2,var(--gold));box-shadow:0 0 12px rgba(var(--mx2-rgb,var(--gold-rgb)),.7)}
+:where(#kbroot) .chip .dl.kill{color:#300;background:var(--mx2,var(--gold));box-shadow:0 0 12px rgba(var(--mx2-rgb,var(--gold-rgb)),.7)}

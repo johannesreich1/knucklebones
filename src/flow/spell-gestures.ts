@@ -5,6 +5,7 @@ import { S } from '../state.ts';
 import { appRoot, isEmbed, rootRect } from '../ui/embed.ts';
 import { Sfx } from '../ui/audio.ts';
 import { fxRoot } from '../ui/fx.ts';
+import { rootElementFromPoint } from '../ui/query.ts';
 import { spellHue, spellIcon } from '../ui/spellicons.ts';
 import { isAimedColumn } from './spell-rail.ts';
 
@@ -139,7 +140,7 @@ function hideGhost(): void {
 }
 
 export function targetAt(x: number, y: number, id: string): number | null {
-  const element = document.elementFromPoint(x, y);
+  const element = rootElementFromPoint(x, y);
   if (!element) return null;
   if (spellById(id)?.target === 'self') return element.closest('#dieStage') ? -1 : null;
   const column = element.closest('.col') as HTMLElement | null;

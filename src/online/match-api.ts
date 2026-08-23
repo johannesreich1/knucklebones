@@ -2,6 +2,7 @@
 // Realtime. Match lifecycle/rendering belongs to play.ts, not this API seam.
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { callFunction, supa } from './client.ts';
+import { randomUuid } from './random-id.ts';
 
 export interface MatchRow {
   id: string;
@@ -28,11 +29,58 @@ export async function join(allowBot: boolean): Promise<JoinResult | null> {
   return response.status === 200 ? response.data : null;
 }
 
-export function leaveQueue(): void {
-  const client = supa();
-  void client.auth.getUser().then(({ data }) => {
-    if (data.user) void client.from('matchmaking_queue').delete().eq('player_id', data.user.id);
-  });
+export type LeaveResult =
+  | { status: 'left' }
+  | { status: 'matched'; match_id: string };
+
+interface QueueRpcError { code?: string; message?: string }
+interface QueueLifecycleClient {
+  rpc(name: string): Promise<{ data: unknown; error: QueueRpcError | null }>;
+  auth: {
+    getSession(): Promise<{
+      data: { session: { user: { id: string } } | null };
+      error: unknown | null;
+    }>;
+  };
+  from(table: string): {
+    delete(): {
+      eq(column: string, value: string): PromiseLike<{ error: unknown | null }>;
+    };
+  };
+}
+
+export function isMissingQueueLifecycleRpc(error: QueueRpcError | null): boolean {
+  if (!error || !['PGRST202', '42883'].includes(error.code ?? '')) return false;
+  return (error.message ?? '').toLowerCase().includes('leave_ranked_queue');
+}
+
+async function legacyLeaveQueue(client: QueueLifecycleClient): Promise<LeaveResult | null> {
+  const { data, error: sessionError } = await client.auth.getSession();
+  const playerId = data.session?.user.id;
+  if (sessionError || !playerId) return null;
+  const { error } = await client.from('matchmaking_queue').delete().eq('player_id', playerId);
+  return error ? null : { status: 'left' };
+}
+
+export async function leaveQueueWithClient(client: QueueLifecycleClient): Promise<LeaveResult | null> {
+  let { data, error } = await client.rpc('leave_ranked_queue');
+  // The web deploy can briefly precede the owner-applied migration. Only the
+  // precise old-schema error falls back to the already-RLS-protected own-row
+  // DELETE; authorization/outage errors are never reclassified as success.
+  if (isMissingQueueLifecycleRpc(error)) return legacyLeaveQueue(client);
+  if (error || data == null) ({ data, error } = await client.rpc('leave_ranked_queue'));
+  if (isMissingQueueLifecycleRpc(error)) return legacyLeaveQueue(client);
+  if (error || !data || typeof data !== 'object') return null;
+  const result = data as Record<string, unknown>;
+  if (result.status === 'left') return { status: 'left' };
+  if (result.status === 'matched' && typeof result.match_id === 'string') {
+    return { status: 'matched', match_id: result.match_id };
+  }
+  return null;
+}
+
+export async function leaveQueue(): Promise<LeaveResult | null> {
+  return leaveQueueWithClient(supa() as unknown as QueueLifecycleClient);
 }
 
 export interface MoveResult {
@@ -42,12 +90,37 @@ export interface MoveResult {
   error?: string;
 }
 
-export async function move(matchId: string, col: number): Promise<{ status: number; data: MoveResult | null }> {
-  return callFunction<MoveResult>('pvp-move', { match_id: matchId, col });
+async function moveCommand(body: Record<string, unknown>): Promise<{ status: number; data: MoveResult | null }> {
+  // Do not automatically replay from the client: the web can deploy before
+  // the Edge Function, and the preceding function ignores command_id. A lost
+  // response is healed by the authoritative log sync; callers that know the
+  // idempotent endpoint is deployed may explicitly replay this command id.
+  return callFunction<MoveResult>('pvp-move', body);
 }
 
-export async function nudge(matchId: string): Promise<{ status: number; data: MoveResult | null }> {
-  return callFunction<MoveResult>('pvp-move', { match_id: matchId, auto: true });
+export async function move(
+  matchId: string,
+  col: number,
+  expectedMoveCount: number,
+): Promise<{ status: number; data: MoveResult | null }> {
+  return moveCommand({
+    match_id: matchId,
+    col,
+    expected_move_count: expectedMoveCount,
+    command_id: randomUuid(),
+  });
+}
+
+export async function nudge(
+  matchId: string,
+  expectedMoveCount: number,
+): Promise<{ status: number; data: MoveResult | null }> {
+  return moveCommand({
+    match_id: matchId,
+    auto: true,
+    expected_move_count: expectedMoveCount,
+    command_id: randomUuid(),
+  });
 }
 
 export async function claim(matchId: string): Promise<{ status: number; data: { match: MatchRow } | null }> {

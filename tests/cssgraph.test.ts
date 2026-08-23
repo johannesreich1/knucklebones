@@ -159,6 +159,8 @@ try {
      breathe/dots being referenced but never defined. */
   const eager = inlineCssGraph(['src/styles/main.css']).css;
   const lazy = inlineCssGraph(['src/online/online.css']).css;
+  const eagerSelectors = ruleSelectors(eager);
+  const lazySelectors = ruleSelectors(lazy);
   const eagerAnimations = animationInventory(eager);
   const lazyAnimations = animationInventory(lazy);
   const missingEager = [...eagerAnimations.used]
@@ -169,15 +171,33 @@ try {
     problems.push(`animations without keyframes: eager=[${missingEager}] lazy=[${missingLazy}]`);
   }
 
+  /* Both bundles are injected into the embedding document. CSS containment on
+     #kbroot does not scope selectors, so every ordinary application rule must
+     name that root. :where() is the default because it adds no specificity and
+     therefore preserves the authored cascade; existing state rules that name
+     #kbroot directly retain their intentional specificity. page.css is not in
+     either closure and remains the standalone host stylesheet. */
+  const applicationRooted = (selector: string): boolean =>
+    /^#kbroot(?:$|[^\w-])/.test(selector)
+    || /^:where\(\s*#kbroot\s*\)(?:$|\s)/.test(selector);
+  const unrootedApplication = [...eagerSelectors, ...lazySelectors]
+    .filter((selector) => !applicationRooted(selector));
+  if (unrootedApplication.length) {
+    problems.push(`application selectors escape #kbroot: ${unrootedApplication.join(' | ')}`);
+  }
+
   /* Lazy screen CSS must not be able to repaint eager Home by coincidence.
-     The only class roots are deliberate cross-overlay components: faceoff is
-     the shared body-level sheet, online-queue is also worn by design card 21,
+     The only class owners are deliberate cross-overlay components: faceoff is
+     the shared sheet, online-queue is also worn by design card 21,
      and pointschip remains for the active result study 36d. History uses an exact
      two-screen :is() root because one row implementation serves both lists. */
   const onlineIds = /^(?:#ovOnline|#onAuth|#onQueue|#onBoard|#onAccount|#onAvatar|#onHistory)(?:\b|[.#:[>+~ ])/;
   const classRoots = /^(?:\.faceoff|\.online-queue|\.pointschip)(?:\b|[.#:[>+~ ])/;
   const historyRoot = /^:is\(#onAccount,#onHistory\)\s+\.history-row(?:\b|[.#:[>+~ ])/;
-  const unrooted = ruleSelectors(lazy)
+  const withoutApplicationRoot = (selector: string): string => selector
+    .replace(/^:where\(\s*#kbroot\s*\)\s*/, '')
+    .replace(/^#kbroot\s+/, '');
+  const unrooted = lazySelectors.map(withoutApplicationRoot)
     .filter((selector) => !onlineIds.test(selector)
       && !classRoots.test(selector) && !historyRoot.test(selector));
   if (unrooted.length) problems.push(`unrooted lazy-online selectors: ${unrooted.join(' | ')}`);

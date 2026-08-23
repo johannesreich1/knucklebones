@@ -19,12 +19,20 @@ import { installOnlineShell } from './shell.ts';
 import { setFinishHandler, type FinishReport } from './play.ts';
 
 export type OnlineView = 'play' | 'board' | 'account';
+export interface OnlinePorts { startTutorial: () => void }
 
 let bound = false;
 let pendingView: OnlineView | null = null;
 let exitOnline: () => void = goHome;
+let onlinePorts: OnlinePorts | null = null;
 
-const queue = createQueueScreen(goHome);
+const queue = createQueueScreen({
+  goHome,
+  startTutorial: () => {
+    if (!onlinePorts) throw new Error('online flow was opened without composition ports');
+    onlinePorts.startTutorial();
+  },
+});
 const ladder = createLadderScreen({
   showAccount,
   getExit: () => exitOnline,
@@ -115,7 +123,8 @@ if (typeof window !== 'undefined') {
   };
 }
 
-export async function openOnline(view: OnlineView = 'play'): Promise<void> {
+export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<void> {
+  onlinePorts = ports;
   bind();
   exitOnline = goHome;
   show('#ovOnline');

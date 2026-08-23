@@ -266,7 +266,7 @@ ${LEGAL_MARKUP}
         <button data-f="nums">NUMBERS</button>
       </div>
     </div>
-    <!-- the duel pickers: swatch strips built by boot.ts from DUELHUES
+    <!-- the duel pickers: swatch strips built by boot/menu-bindings.ts from DUELHUES
          (state.ts), one implementation, two slots. A colour belongs to one
          player only — each strip renders the other side's pick disabled. -->
     <div class="card">

@@ -5,6 +5,7 @@
   bot. Idempotent — rejoining returns your active match.
 - `pvp-move` — THE match authority: validates each move against the
   server-rebuilt state (turn, legality, seed-stream die), writes the move log,
+  atomically commits the public projection and exact idempotent response,
   detects the end, applies ladder settlement; computes the bot's reply in-request when the
   opponent is a bot. With `auto: true` it places a uniform legal die for
   whoever's turn it is, once its own clock proves the configured stall: in PvP the
@@ -18,16 +19,27 @@
 - `account-delete` — settles every active opponent through the shared atomic
   contract, then deletes the authenticated account so privacy cascades remove
   its profile, ratings, queue rows, and match history.
-- `gc-auth` — verifies an Apple Game Center identity assertion and attaches or
-  restores the corresponding authenticated account.
+- `gc-auth` — verifies an Apple Game Center identity assertion and Apple's
+  certificate signing authority, then attaches or restores the corresponding
+  authenticated account. Its assertion is the auth boundary (`verify_jwt =
+  false`), so it is held until a durable deployment-layer rate limit and signed
+  device test exist.
 
-Anti-cheat model: clients submit only `{match_id, col}` — there is no field to
-lie in. Dice derive from a seed stored in the service-only `match_seeds` table;
+Anti-cheat model: new clients submit intent plus replay identity
+`{match_id, col, command_id, expected_move_count}` — no authoritative die,
+score, or rating. Dice derive from a seed stored in the service-only `match_seeds` table;
 scores and ladder changes are computed from the server-written move log;
 `profiles.rating` is not client-writable (column-level grants expose only
 `nickname` and `avatar`).
 
 ## Deploying
+
+Ranked rollout is database-first. Apply the ranked lifecycle/command/history
+migrations before deploying `account-delete`, `pvp-claim`, `pvp-join`, and
+`pvp-move`. Game Center is separate: apply `0014_game_center_ids.sql`, then
+`20260823132611_game_center_service_grants.sql`, configure the external rate
+limit, and only then deploy `gc-auth`. Repository checks do not prove dashboard
+state.
 
 The PvP functions import `./core/*` — src/ files uploaded VERBATIM next to
 `index.ts`, mirroring the repo layout with `src/` stripped (`src/core/rules.ts`

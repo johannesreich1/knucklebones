@@ -10,6 +10,9 @@ import {
   DESIGN_CLASSIFICATIONS,
   discoverDesignScreens,
 } from '../design/screen-library.mjs';
+import { dieMarkup } from '../src/ui/die-markup.ts';
+import { loaderDieMarkup, loaderWaitMarkup } from '../src/ui/loader.ts';
+import { MODE_PICKS, pickInfo } from '../src/ui/library.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -58,8 +61,26 @@ try {
   expectFailure('unknown study state', /studies\/review\/50-unclassified\.html: unclassified design card/);
   rmSync(path.join(fixture, 'studies', 'review'), { recursive: true });
 
+  const shippedOpen = path.join(fixture, 'studies', 'open', '60-shipped.html');
+  writeFileSync(shippedOpen, '<!-- meta name="fixture" subtitle="CHOSEN AND SHIPPED" -->\n');
+  expectFailure('shipped open study', /60-shipped\.html: shipped design card is still classified as an open study/);
+  rmSync(shippedOpen);
+
   writeCard('product/20-open.html');
   expectFailure('duplicate basename', /20-open\.html: duplicate design-card basename/);
+
+  const six = dieMarkup(6, { classes: 'p1' });
+  const loaderDie = loaderDieMarkup(36);
+  if ((six.match(/class="pip/g) ?? []).length !== 9 || (six.match(/class="pip on"/g) ?? []).length !== 6) {
+    problems.push('shared die markup no longer renders the 3x3 six face');
+  }
+  if (!loaderWaitMarkup(36, '<wait>').includes(loaderDie)
+      || !loaderWaitMarkup(36, '<wait>').includes('&lt;wait&gt;')) {
+    problems.push('shared loader wrapper drifted from its die or stopped escaping its label');
+  }
+  if (pickInfo(MODE_PICKS, MODE_PICKS[1].v) !== `${MODE_PICKS[1].name} — ${MODE_PICKS[1].blurb}`) {
+    problems.push('shared picker caption does not resolve the runtime/design choice');
+  }
 } catch (error) {
   errs.push(error instanceof Error ? error.stack ?? error.message : String(error));
 } finally {
@@ -72,6 +93,7 @@ console.log(JSON.stringify({
   recursiveOrder: 'basename',
   topLevelCardsRejected: !problems.some((problem) => problem.startsWith('top-level card:')),
   duplicateBasenamesRejected: !problems.some((problem) => problem.startsWith('duplicate basename:')),
+  shippedOpenStudiesRejected: !problems.some((problem) => problem.startsWith('shipped open study:')),
   problems,
   errs,
 }, null, 2));

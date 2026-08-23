@@ -231,7 +231,7 @@ export interface NewGameOptions {
 
 export function newGame(opts: NewGameOptions = {}): void {
   const tutorial = !!opts.tutorial;
-  S.gen++;
+  const gen = ++S.gen;
   // the OFFLINE view's selector picks the mode; the tutorial teaches classic.
   // opts.scoring is how RANDOM arrives — already rolled and shown on the dial,
   // so newGame is handed the answer rather than rolling a second one. opts.spell
@@ -272,11 +272,10 @@ export function newGame(opts: NewGameOptions = {}): void {
                            : (S.turn===ME?'You go first':'AI goes first'), S.turn);
   setActivePlate();
   if(tutorial){
-    const gen=S.gen;
     coachShow('Welcome to Knucklebones! Your grid is the BOTTOM one. Fill it with dice before the AI fills theirs — highest total wins.', true)
       .then(() => { if (S.gen === gen) void nextTurn(); });
   }else{
-    setTimeout(() => { void nextTurn(); }, 650);
+    setTimeout(() => { if (S.gen === gen) void nextTurn(); }, 650);
   }
 }
 /* Exported because a spell can end the game too: a swap can fill either grid,

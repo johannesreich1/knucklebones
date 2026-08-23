@@ -54,14 +54,15 @@ values
   ('20000000-0000-0000-0000-000000000001',
    '10000000-0000-0000-0000-000000000001',
    '10000000-0000-0000-0000-000000000002', 'active', 1, 1),
-  ('20000000-0000-0000-0000-000000000002',
-   '10000000-0000-0000-0000-000000000001',
-   '10000000-0000-0000-0000-000000000002', 'active', 1, 1),
   ('20000000-0000-0000-0000-000000000003',
    '10000000-0000-0000-0000-000000000003',
    '10000000-0000-0000-0000-000000000004', 'active', 1, 1);
 
-create temporary table settlement_result as
+create temporary table settlement_result (payload jsonb);
+grant insert on settlement_result to service_role;
+
+set local role service_role;
+insert into settlement_result (payload)
 select public.settle_match(
   '20000000-0000-0000-0000-000000000001',
   'done',
@@ -71,7 +72,8 @@ select public.settle_match(
   '{"points":40,"peak":40,"wins":1,"losses":2,"draws":0}',
   '{"points":110,"peak":110,"wins":3,"losses":1,"draws":0}',
   '{"points":20,"peak":40,"wins":1,"losses":3,"draws":0}'
-) as payload;
+);
+reset role;
 
 select is((select (payload->>'applied')::boolean from settlement_result), true,
   'first terminal caller claims the match');
@@ -103,6 +105,17 @@ select is(
 );
 select is((select points from public.season_ratings where season_id = 1 and player = '10000000-0000-0000-0000-000000000001'),
   110, 'race loser leaves the first payout untouched');
+
+-- Once the first match is terminal, the active-seat trigger releases both
+-- participants and permits their next match. This keeps the stale-snapshot
+-- rollback checks realistic under the one-active-match invariant.
+insert into public.matches (id, p1, p2, status, turn, season_id)
+values (
+  '20000000-0000-0000-0000-000000000002',
+  '10000000-0000-0000-0000-000000000001',
+  '10000000-0000-0000-0000-000000000002',
+  'active', 1, 1
+);
 
 select throws_ok(
   $$select public.settle_match(

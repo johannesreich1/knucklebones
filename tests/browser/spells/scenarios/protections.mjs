@@ -25,7 +25,7 @@ export async function runProtectionScenarios(suite) {
     'A WARD THE PLAYER CANNOT SEE IS NOT A WARD', out.warded);
 
   /* ---------- 10a. THE SEAL: two protections, two KINDS of mark ----------
-     design/screens/studies/open/39c-guard-seal.html, approved and shipped. The mark both
+     design/screens/product/39c-guard-seal.html, approved and shipped. The mark both
      rules used to share said nothing: the same 1px inset ring in two hues,
      below the noise floor on a die that already carries a border and a bloom —
      so a COLUMN SHIELD and a WARD read as one rule wearing two colours. They

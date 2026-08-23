@@ -56,6 +56,9 @@ export function readLivePvpConfig(env = process.env) {
   const productionOrigin = new URL(SUPABASE_URL).origin;
   const productionHost = canonicalHost(new URL(SUPABASE_URL).hostname);
   const host = canonicalHost(supabaseUrl.hostname);
+  if (target !== 'local' && supabaseUrl.protocol !== 'https:') {
+    throw new Error('KB_E2E_TARGET=staging or production must use HTTPS.');
+  }
   if (host === productionHost && target !== 'production') {
     throw new Error('The production Supabase host must use KB_E2E_TARGET=production.');
   }

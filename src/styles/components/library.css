@@ -1,6 +1,6 @@
 /* ---- the game-modes library (home footer + tapping the match badge) ---- */
-.modelist{display:flex;flex-direction:column;gap:10px;width:100%;max-width:var(--w-col)}
-.modecard{--mh:#8ea3c0;display:flex;flex-direction:column;gap:6px;border-radius:16px;
+:where(#kbroot) .modelist{display:flex;flex-direction:column;gap:10px;width:100%;max-width:var(--w-col)}
+:where(#kbroot) .modecard{--mh:#8ea3c0;display:flex;flex-direction:column;gap:6px;border-radius:16px;
   padding:13px 15px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)}
 /* An entry's three lines are BARE classes, not .modecard descendants: the same
    markup (ui/library libraryBody) is the roster's card AND the body of the
@@ -8,9 +8,9 @@
    would have forced the sheet to re-describe the typography. The frame stays
    .modecard's; the voice is shared. --mh is whatever the wrapper sets — the
    roster card sets it per entry, the sheet sets it from the same hue. */
-.mchead{display:flex;align-items:center;gap:8px;color:var(--mh,#8ea3c0)}
-.mcname{font-size:13px;font-weight:900;letter-spacing:.18em}
-.mcblurb{font-size:9.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
-.mcdetail{font-size:12px;line-height:1.55;color:#c6d3ee}
-.modecard.now{border-color:color-mix(in srgb,var(--mh) 55%,transparent);
+:where(#kbroot) .mchead{display:flex;align-items:center;gap:8px;color:var(--mh,#8ea3c0)}
+:where(#kbroot) .mcname{font-size:13px;font-weight:900;letter-spacing:.18em}
+:where(#kbroot) .mcblurb{font-size:9.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+:where(#kbroot) .mcdetail{font-size:12px;line-height:1.55;color:#c6d3ee}
+:where(#kbroot) .modecard.now{border-color:color-mix(in srgb,var(--mh) 55%,transparent);
   box-shadow:0 0 18px color-mix(in srgb,var(--mh) 25%,transparent)}

@@ -371,6 +371,24 @@ authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
 
+# Keep gateway authentication explicit for every deployed function. Game
+# Center restore has no Supabase session yet; its Apple signature verification
+# is the authentication boundary inside the handler.
+[functions.account-delete]
+verify_jwt = true
+
+[functions.gc-auth]
+verify_jwt = false
+
+[functions.pvp-claim]
+verify_jwt = true
+
+[functions.pvp-join]
+verify_jwt = true
+
+[functions.pvp-move]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

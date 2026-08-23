@@ -5,16 +5,16 @@
   #kbroot,#kbroot::before,#kbroot::after,#kbroot *,#kbroot *::before,#kbroot *::after{
     animation-duration:.001ms!important;animation-iteration-count:1!important;
     transition-duration:.06s!important}
-  #bg::before{animation:none}
-  .col.legal::after,.col.danger::before{animation:none;opacity:.8}
+  :where(#kbroot) #bg::before{animation:none}
+  :where(#kbroot) .col.legal::after,:where(#kbroot) .col.danger::before{animation:none;opacity:.8}
   /* ...and the same for the seal that carries the hint on a protected column.
      The blanket rule at the top of this block collapses every animation to its
      END state, and sealready's is the trough — which would leave a playable
      protected column DIMMER than an unplayable one. The hint's static half —
      full-strength line, thickened, haloed — is what survives, exactly as the
      dashed ring above survives as a ring without its pulse. */
-  .col.legal>.seal>g{animation:none;opacity:1}
-  .die.m3{animation:none}
+  :where(#kbroot) .col.legal>.seal>g{animation:none;opacity:1}
+  :where(#kbroot) .die.m3{animation:none}
   /* THE SEAL keeps its shape and loses its motion. Every beat above is
      one-shot and collapses to its own end state under the blanket rule at the
      top of this block — the line is simply THERE the moment the column locks,
@@ -22,5 +22,5 @@
      closed against clasped is geometry, not animation. Only the circling bead
      has to go by hand, because a travelling dash frozen at 0.001ms would
      leave a stray gold tick parked on the loop. */
-  .col>.seal .sb{display:none}
+  :where(#kbroot) .col>.seal .sb{display:none}
 }

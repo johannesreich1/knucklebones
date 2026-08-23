@@ -3,7 +3,8 @@
 // One registry entry is one whole spell: what it is called, what a cast needs,
 // how many casts a player gets, which targets are legal, what it does — and
 // how a machine weighs it (cpuCast). Adding a spell is adding an object here
-// (plus its icon path in ui/spellicons and its cast animation in flow/spells)
+// (plus its icon path in src/ui/spellicons.ts and its cast animation in
+// src/flow/spell-effects.ts)
 // — the rail, the gestures, the charge accounting and the CSS never learn its
 // name.
 //

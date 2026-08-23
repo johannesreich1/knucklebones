@@ -4,11 +4,14 @@ PODS:
   - CapacitorCommunityAppleSignIn (7.1.0):
     - Capacitor
   - CapacitorCordova (7.6.8)
+  - KnucklebonesGameCenter (1.0.0):
+    - Capacitor
 
 DEPENDENCIES:
   - "Capacitor (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorCommunityAppleSignIn (from `../../node_modules/@capacitor-community/apple-sign-in`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
+  - KnucklebonesGameCenter (from `../../plugins/gamecenter`)
 
 EXTERNAL SOURCES:
   Capacitor:
@@ -17,12 +20,15 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor-community/apple-sign-in"
   CapacitorCordova:
     :path: "../../node_modules/@capacitor/ios"
+  KnucklebonesGameCenter:
+    :path: "../../plugins/gamecenter"
 
 SPEC CHECKSUMS:
   Capacitor: ff6bf01336ac353098378828aff465095a89e459
   CapacitorCommunityAppleSignIn: 271cb2860576fd2961508bbfa7a82117d93eadca
   CapacitorCordova: e61ee8c40101b8cd011d0224261606a290c082cf
+  KnucklebonesGameCenter: 8c265b73d93e9e37b6ec74627c3e97bf29b82eeb
 
-PODFILE CHECKSUM: 3e1e20367b7f02d25dbc5f30ece45b40965bbe70
+PODFILE CHECKSUM: 5aa05564ce09c6f04d8afea3a5b0ffc27e8f5859
 
 COCOAPODS: 1.16.2

@@ -1,5 +1,7 @@
 node_modules/
 *.zip
+# JetBrains IDE project metadata is local workspace state.
+.idea/
 # The native shell: the Capacitor config and the Xcode project ARE source (they
 # carry the bundle id and signing setup, and cannot be regenerated identically).
 # Everything a tool re-creates is not.

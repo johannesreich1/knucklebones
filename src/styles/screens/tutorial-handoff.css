@@ -1,5 +1,5 @@
 /* ---- tutorial coach ---- */
-#coach{position:absolute;left:10px;right:10px;z-index:70;cursor:pointer;
+:where(#kbroot) #coach{position:absolute;left:10px;right:10px;z-index:70;cursor:pointer;
   /* clear of the notch/Dynamic Island: the app fills the screen, so a fixed
      offset from the top puts this bubble UNDER the island on a Pro Max */
   top:calc(env(safe-area-inset-top,0px) + 46px);
@@ -7,32 +7,32 @@
   border-radius:14px;padding:10px 14px;
   box-shadow:0 8px 30px rgba(0,0,0,.5),0 0 18px rgba(var(--p1-rgb),.14);
   -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
-#coach .cmsg{font-size:12.5px;line-height:1.5;color:var(--txt)}
-#coach .cmsg b{color:var(--gold)}
-#coach .chint{margin-top:6px;font-size:9.5px;letter-spacing:.2em;color:var(--p1);
+:where(#kbroot) #coach .cmsg{font-size:12.5px;line-height:1.5;color:var(--txt)}
+:where(#kbroot) #coach .cmsg b{color:var(--gold)}
+:where(#kbroot) #coach .chint{margin-top:6px;font-size:9.5px;letter-spacing:.2em;color:var(--p1);
   text-transform:uppercase;animation:breathe 1.8s ease-in-out infinite}
 @keyframes breathe{0%,100%{opacity:.45}50%{opacity:1}}
 /* a floating bubble, not a page body — deliberately not --w-col */
 #kbroot.land #coach{left:auto;right:12px;top:calc(env(safe-area-inset-top,0px) + 34px);max-width:300px}
 
 /* ---- hand-off card (pass the phone) ---- */
-#ovPass{gap:10px;background:rgba(4,5,12,.93);cursor:pointer}
-#ovPass .glow{position:absolute;inset:0;pointer-events:none;
+:where(#kbroot) #ovPass{gap:10px;background:rgba(4,5,12,.93);cursor:pointer}
+:where(#kbroot) #ovPass .glow{position:absolute;inset:0;pointer-events:none;
   background:radial-gradient(60% 40% at 50% 50%,color-mix(in srgb,var(--pc) 24%,transparent),transparent 72%)}
-#ovPass .who{font-size:34px;font-weight:900;letter-spacing:.16em;color:var(--pc);
+:where(#kbroot) #ovPass .who{font-size:34px;font-weight:900;letter-spacing:.16em;color:var(--pc);
   text-shadow:0 0 30px color-mix(in srgb,var(--pc) 65%,transparent);text-align:center;line-height:1.05}
-#ovPass .hint{font-size:11.5px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase}
-#ovPass .swapicon{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;margin-bottom:2px;
+:where(#kbroot) #ovPass .hint{font-size:11.5px;letter-spacing:.22em;color:var(--dim);text-transform:uppercase}
+:where(#kbroot) #ovPass .swapicon{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;margin-bottom:2px;
   border:1.5px solid color-mix(in srgb,var(--pc) 45%,transparent);color:var(--pc);font-size:24px;
   box-shadow:0 0 26px color-mix(in srgb,var(--pc) 28%,transparent);animation:spinhint 2.6s ease-in-out infinite}
 @keyframes spinhint{0%,70%,100%{transform:rotate(0)}85%{transform:rotate(180deg)}}
-#ovPass .tapline{margin-top:6px;font-size:13px;font-weight:800;letter-spacing:.2em;color:var(--txt);
+:where(#kbroot) #ovPass .tapline{margin-top:6px;font-size:13px;font-weight:800;letter-spacing:.2em;color:var(--txt);
   text-transform:uppercase;animation:breathe 1.8s ease-in-out infinite}
-#ovPass .mini{display:flex;gap:14px;align-items:center;font-size:12px;letter-spacing:.12em;color:var(--dim)}
-#ovPass .mini b{font-size:20px;font-weight:900}
-#ovPass .mini .a{color:var(--p1)}#ovPass .mini .b{color:var(--p2)}
-#passQuit{position:absolute;top:calc(env(safe-area-inset-top,0px) + 8px);right:10px}
-.ico{font-family:inherit;padding:0;-webkit-appearance:none;appearance:none}
-.ico:focus-visible,.btn:focus-visible,.seg button:focus-visible{outline:2px solid var(--p1);outline-offset:2px}
+:where(#kbroot) #ovPass .mini{display:flex;gap:14px;align-items:center;font-size:12px;letter-spacing:.12em;color:var(--dim)}
+:where(#kbroot) #ovPass .mini b{font-size:20px;font-weight:900}
+:where(#kbroot) #ovPass .mini .a{color:var(--p1)}:where(#kbroot) #ovPass .mini .b{color:var(--p2)}
+:where(#kbroot) #passQuit{position:absolute;top:calc(env(safe-area-inset-top,0px) + 8px);right:10px}
+:where(#kbroot) .ico{font-family:inherit;padding:0;-webkit-appearance:none;appearance:none}
+:where(#kbroot) .ico:focus-visible,:where(#kbroot) .btn:focus-visible,:where(#kbroot) .seg button:focus-visible{outline:2px solid var(--p1);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){
-  #coach .chint,#ovPass .tapline{animation:none;opacity:1}}
+  :where(#kbroot) #coach .chint,:where(#kbroot) #ovPass .tapline{animation:none;opacity:1}}

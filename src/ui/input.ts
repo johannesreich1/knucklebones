@@ -5,6 +5,7 @@ import { S } from '../state.ts';
 import { ownerOf } from './dom.ts';
 import { nope } from './fx.ts';
 import { Sfx } from './audio.ts';
+import { rootElementFromPoint } from './query.ts';
 
 export type PlaceHandler = (who: Player, col: number) => void | Promise<void>;
 export type CastArmedHandler = (target: number | null) => boolean;
@@ -76,7 +77,7 @@ export function boardUp(event: BoardInputEvent): void {
   let over: HTMLElement | null = null;
   let onStage = false;
   if (event.clientX !== undefined && event.clientY !== undefined) {
-    const element = document.elementFromPoint(event.clientX, event.clientY);
+    const element = rootElementFromPoint(event.clientX, event.clientY);
     over = element?.closest('.col') as HTMLElement | null;
     onStage = !!element?.closest('#dieStage');
   } else {

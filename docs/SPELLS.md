@@ -274,7 +274,8 @@ charge accounting and the CSS never learn its name.
    that), `legal()`, `apply()`, and `cpuCast()`
    if its value is off-board.
 2. **The icon** — a path in `ui/spellicons.ts` plus a hue.
-3. **The cast animation** — an entry in `CAST_FX` (`flow/spells.ts`).
+3. **The cast animation** — an entry in `EFFECTS`
+   (`src/flow/spell-effects.ts`), with `defaultEffect` as the fallback.
 4. **Gate cases** — `tests/spells.test.ts` for the rules and
    `tests/browser/spells/run.mjs` for anything the player can see.
 5. **Measure it** before shipping, and record the numbers here.

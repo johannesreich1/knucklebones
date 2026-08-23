@@ -12,7 +12,11 @@
 import crypto from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { APP_ID } from '../src/config.ts';
-import { verifiedPlayerId, payload, spkiFromCertificate } from '../supabase/functions/gc-auth/verify.ts';
+import { certUrlOk, createGcAuthHandler } from '../supabase/functions/gc-auth/handler.ts';
+import {
+  trustedAppleGameCenterCertificate, verifiedPlayerId, payload, spkiFromCertificate,
+} from '../supabase/functions/gc-auth/verify.ts';
+import { runGcAuthOperationTests } from './support/gcauth-operation.ts';
 
 const problems: string[] = [];
 const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -104,10 +108,161 @@ check(await verifiedPlayerId(CERT, claim(forged)) === null,
   check(imported, "WebCrypto refused the key cut out of Apple's certificate");
 }
 
-// 5 · the byte layout itself, in case a refactor "tidies" it
+// 5 · the runtime trust boundary, independently of the assertion signature.
+//     This fixture is the current Apple-hosted leaf on 2026-08-23; its leaf
+//     signature must chain to the pinned DigiCert intermediate. A syntactically
+//     valid attacker certificate and any leaf tampering must fail.
+const currentLeaf = new Uint8Array(Buffer.from(
+  readFileSync(new URL('./fixtures/gc-prod-12.base64', import.meta.url), 'utf8').trim(),
+  'base64',
+));
+check(await trustedAppleGameCenterCertificate(currentLeaf, Date.UTC(2026, 7, 23)) === true,
+  'the current Apple Game Center certificate did not validate to the pinned signing authority');
+check(await trustedAppleGameCenterCertificate(CERT, Date.UTC(2026, 7, 23)) === false,
+  'a self-signed attacker certificate passed the Apple signing-authority boundary');
+const tamperedLeaf = currentLeaf.slice();
+tamperedLeaf[tamperedLeaf.length - 1] ^= 1;
+check(await trustedAppleGameCenterCertificate(tamperedLeaf, Date.UTC(2026, 7, 23)) === false,
+  'a leaf with a tampered certificate signature passed authority verification');
+check(await trustedAppleGameCenterCertificate(currentLeaf, Date.UTC(2028, 0, 1)) === false,
+  'an expired Apple Game Center certificate remained trusted');
+
+// 6 · the unauthenticated fetch boundary accepts only Apple's documented
+//     Game Center cert path, never follows a redirect, validates final URL and
+//     MIME type, and bounds the streamed body before parsing untrusted DER.
+const CERT_URL = 'https://static.gc.apple.com/public-key/gc-prod-12.cer';
+check(certUrlOk(CERT_URL), 'the documented Game Center certificate URL was rejected');
+for (const url of [
+  'https://evil.apple.com/public-key/gc-prod-12.cer',
+  'https://static.gc.apple.com.evil.invalid/public-key/gc-prod-12.cer',
+  'https://static.gc.apple.com/public-key/anything.cer',
+  'https://static.gc.apple.com/public-key/gc-prod-12.cer?redirect=1',
+  'http://static.gc.apple.com/public-key/gc-prod-12.cer',
+]) check(!certUrlOk(url), `an unsafe certificate URL was accepted: ${url}`);
+
+const NOW = Date.UTC(2026, 7, 23);
+const handlerBody = JSON.stringify({
+  publicKeyUrl: CERT_URL,
+  signature: Buffer.from([1, 2, 3]).toString('base64'),
+  salt: Buffer.from([4, 5, 6]).toString('base64'),
+  timestamp: String(NOW),
+  gamePlayerID: GAME_ID,
+});
+const handlerRequest = () => new Request('https://edge.test/gc-auth', {
+  method: 'POST', body: handlerBody, headers: { 'Content-Type': 'application/json' },
+});
+const certificateResponse = (
+  bytes: Uint8Array,
+  url = CERT_URL,
+  contentType = 'application/x-x509-ca-cert',
+): Response => {
+  const response = new Response(bytes as BodyInit, {
+    headers: {
+      'content-type': contentType,
+      'content-length': String(bytes.length),
+      'cache-control': 'public, max-age=60',
+    },
+  });
+  Object.defineProperty(response, 'url', { value: url });
+  return response;
+};
+let fetchInit: RequestInit | null = null;
+let fetchCalls = 0;
+let trustCalls = 0;
+let handlerNow = NOW;
+const handler = createGcAuthHandler({
+  bundleId: BUNDLE,
+  now: () => handlerNow,
+  fetch: async (_url, init) => {
+    fetchCalls++;
+    fetchInit = init;
+    return certificateResponse(currentLeaf);
+  },
+  trust: async () => { trustCalls++; return true; },
+  verify: async () => GAME_ID,
+  complete: async () => new Response(JSON.stringify({ complete: true })),
+});
+const handled = await handler(handlerRequest());
+check(handled.status === 200 && (await handled.json()).complete === true,
+  'a trusted Game Center assertion did not reach identity completion');
+check(fetchInit?.redirect === 'manual' && trustCalls === 1,
+  'the certificate fetch may follow redirects or skipped authority validation');
+check((await handler(handlerRequest())).status === 200 && fetchCalls === 1 && trustCalls === 2,
+  'a current trusted Apple certificate was fetched again inside its bounded max-age cache');
+handlerNow += 61_000;
+check((await handler(handlerRequest())).status === 200 && fetchCalls === 2,
+  'an expired Apple certificate cache entry was reused beyond its max-age');
+
+const fetchesBeforeBadInput = fetchCalls;
+const oversizedRequest = new Request('https://edge.test/gc-auth', {
+  method: 'POST', body: JSON.stringify({ padding: 'x'.repeat(9 * 1024) }),
+  headers: { 'Content-Type': 'application/json' },
+});
+check((await handler(oversizedRequest)).status === 413 && fetchCalls === fetchesBeforeBadInput,
+  'an oversized unauthenticated request reached the Apple fetch boundary');
+const oversizedScalar = new Request('https://edge.test/gc-auth', {
+  method: 'POST',
+  body: JSON.stringify({
+    publicKeyUrl: CERT_URL, signature: 'A'.repeat(1500), salt: 'BA==',
+    timestamp: String(handlerNow), gamePlayerID: GAME_ID,
+  }),
+  headers: { 'Content-Type': 'application/json' },
+});
+check((await handler(oversizedScalar)).status === 400 && fetchCalls === fetchesBeforeBadInput,
+  'an oversized assertion scalar reached certificate fetch or cryptography');
+
+const rejectedFetch = async (
+  response: Response,
+  message: string,
+): Promise<void> => {
+  let trusted = false;
+  const guarded = createGcAuthHandler({
+    bundleId: BUNDLE,
+    now: () => NOW,
+    fetch: async () => response,
+    trust: async () => { trusted = true; return true; },
+    verify: async () => GAME_ID,
+    complete: async () => new Response('impossible'),
+  });
+  const result = await guarded(handlerRequest());
+  check(result.status === 502 && !trusted, message);
+};
+await rejectedFetch(certificateResponse(currentLeaf, 'https://attacker.invalid/key.cer'),
+  'a changed final certificate URL reached authority verification');
+await rejectedFetch(certificateResponse(currentLeaf, CERT_URL, 'text/html'),
+  'a non-certificate response type reached authority verification');
+await rejectedFetch(certificateResponse(new Uint8Array(16 * 1024 + 1)),
+  'an oversized certificate response reached authority verification');
+
+const untrustedHandler = createGcAuthHandler({
+  bundleId: BUNDLE,
+  now: () => NOW,
+  fetch: async () => certificateResponse(currentLeaf),
+  trust: async () => false,
+  verify: async () => GAME_ID,
+  complete: async () => new Response('impossible'),
+});
+check((await untrustedHandler(handlerRequest())).status === 401,
+  'an untrusted certificate was not rejected at the public endpoint');
+
+const config = readFileSync('supabase/config.toml', 'utf8');
+const jwtFlag = (slug: string) => new RegExp(
+  `\\[functions\\.${slug}\\]\\s*verify_jwt\\s*=\\s*(true|false)`,
+).exec(config)?.[1];
+check(jwtFlag('gc-auth') === 'false', 'gc-auth is not explicitly configured for assertion auth');
+for (const slug of ['account-delete', 'pvp-claim', 'pvp-join', 'pvp-move']) {
+  check(jwtFlag(slug) === 'true', `${slug} is not explicitly protected by Supabase JWT verification`);
+}
+
+// 7 · the byte layout itself, in case a refactor "tidies" it
 const p = payload('AB', 'CD', 0x0102030405060708n, new Uint8Array([0xff]));
 check(Buffer.from(p).toString('hex') === '41424344' + '0102030405060708' + 'ff',
   'the signed message is no longer id ++ bundle ++ bigendian(ts) ++ salt', Buffer.from(p).toString('hex'));
+
+// 8 · every identity mutation leaves a durable retry path. Successful mapping
+// claims remain the anchor; only a provisional loser in a mapping race is
+// deleted. The operation-owned fakes/cases live in their focused support file.
+await runGcAuthOperationTests(check, GAME_ID);
 
 console.log(JSON.stringify({ problems, errs: [] }, null, 2));
 process.exit(problems.length ? 1 : 0);

@@ -20,9 +20,8 @@
 // cannot reach each other's servers. Gates in the SAME checkout still share
 // the build output, which no port can isolate — they queue on the lock below.
 import { spawn, execSync } from 'child_process';
-import fs from 'fs';
-import path from 'path';
 import { serveTree } from './serve.mjs';
+import { acquireCheckoutLock } from './support/gate-lock.mjs';
 
 const FILE_SUITES = [
   'test4', 'test6',
@@ -93,40 +92,7 @@ const clean = rep => (rep.problems || []).length === 0 && (rep.errs || []).lengt
    uncommitted work at once, so a red suite cannot tell you WHOSE change it
    was. The lock only promises that the answer is about one tree state.
    Escape hatch for someone who knows their peer is idle: KB_NO_LOCK=1. */
-const LOCK = path.join(process.cwd(), '.gate.lock');
-const alive = pid => { try { process.kill(pid, 0); return true; } catch (e) { return e.code === 'EPERM'; } };
-
-async function lockCheckout() {
-  if (process.env.KB_NO_LOCK) return () => {};
-  const deadline = Date.now() + 20 * 60_000;   // a full gate is minutes; 20 means something is wrong
-  let announced = false;
-  for (;;) {
-    // 'wx' is the whole mutual exclusion: the create either wins or throws.
-    try { fs.writeFileSync(LOCK, `${process.pid} ${new Date().toISOString()}\n`, { flag: 'wx' }); break; }
-    catch (e) {
-      if (e.code !== 'EEXIST') throw e;
-      const held = fs.readFileSync(LOCK, 'utf8').trim();
-      if (!alive(+held.split(' ')[0])) {   // a killed gate leaves its lock behind
-        console.log(`stale .gate.lock (${held}) — that gate is gone, taking it`);
-        fs.rmSync(LOCK, { force: true });
-        continue;
-      }
-      if (!announced) { console.log(`another gate holds this checkout (${held}) — waiting for it`); announced = true; }
-      if (Date.now() > deadline) throw new Error(`.gate.lock still held by ${held} after 20 min — delete it if that gate is gone`);
-      await new Promise(r => setTimeout(r, 2000));
-    }
-  }
-  const release = () => {
-    // only ever drop OUR lock: a stale-steal may have handed it on already
-    try { if (fs.readFileSync(LOCK, 'utf8').startsWith(process.pid + ' ')) fs.rmSync(LOCK, { force: true }); } catch {}
-  };
-  process.on('exit', release);
-  process.on('SIGINT', () => process.exit(130));    // Ctrl-C must not leave the lock held
-  process.on('SIGTERM', () => process.exit(143));
-  return release;
-}
-
-const release = await lockCheckout();
+const release = await acquireCheckoutLock();
 execSync('node build.mjs', { stdio: 'inherit' }); // test6 needs harness.html, served suites need pwa/index.html
 
 /* everything except testupdate shares ONE pool: the pure-Node gates, the
@@ -146,7 +112,7 @@ try {
   };
   await pool([
     // pure-Node gates (no browser): seeded dice determinism + PvP match core
-    ...['architecture', 'dice', 'match', 'modes', 'spells', 'online-api', 'gcauth', 'edge-handlers', 'edge-settlement', 'cssgraph', 'cssreach', 'design-library', 'ladder', 'ladderbench', 'botbench', 'fnsync', 'iosship', 'live-safety'].map(node),
+    ...['architecture', 'dice', 'match', 'modes', 'spells', 'online-api', 'gcauth', 'edge-handlers', 'edge-settlement', 'cssgraph', 'cssreach', 'design-library', 'ladder', 'ladderbench', 'botbench', 'fnsync', 'iosship', 'live-safety', 'gate-lock'].map(node),
     ...FILE_SUITES.map(suite),
     // bench3 is a benchmark, not a pass/fail suite — but its helper-vs-inline
     // scoring equivalence check is a real correctness assertion.

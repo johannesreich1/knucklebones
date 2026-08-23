@@ -6,27 +6,31 @@
 // chunk still downloading, when online.css does not exist yet.
 // A wait that ends within the loader's .2s grace never shows at all (the
 // ldreveal animation in main.css) — a fast answer must not flash a die.
-import { ME } from '../core/rules.ts';
-import { makeDie } from './die.ts';
+import { dieMarkup, escapeMarkupText } from './die-markup.ts';
+
+export const loaderDieMarkup = (size = 44): string => dieMarkup(6, {
+  classes: 'p1 ldclock',
+  size,
+  dataValue: true,
+  role: 'img',
+  ariaLabel: 'Loading',
+});
+
+export const loaderWaitMarkup = (size = 44, label = 'Loading'): string =>
+  `<div class="ldwait">${loaderDieMarkup(size)}<div class="ldmsg">${escapeMarkupText(label)}</div></div>`;
+
+function markupElement(markup: string): HTMLElement {
+  const template = document.createElement('template');
+  template.innerHTML = markup;
+  return template.content.firstElementChild as HTMLElement;
+}
 
 /* the bare die, for inline waits — readable from 24px up */
 export function loaderDie(size = 44): HTMLElement {
-  const d = makeDie(6, ME);
-  d.classList.add('ldclock');
-  d.style.width = d.style.height = `${size}px`;
-  d.style.setProperty('--cell', `${size}px`);
-  d.setAttribute('aria-label', 'Loading');
-  return d;
+  return markupElement(loaderDieMarkup(size));
 }
 
 /* die + label, centred — the panel and full-page form */
 export function loaderWait(size = 44, label = 'Loading'): HTMLElement {
-  const w = document.createElement('div');
-  w.className = 'ldwait';
-  w.appendChild(loaderDie(size));
-  const m = document.createElement('div');
-  m.className = 'ldmsg';
-  m.textContent = label;
-  w.appendChild(m);
-  return w;
+  return markupElement(loaderWaitMarkup(size, label));
 }

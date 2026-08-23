@@ -5,21 +5,21 @@
    wash, its grabber and its drag — is not here: it is the shared component
    in styles/main.css, worn by the in-game badge too. ---- */
 /* the streak cells carry the wait inline while their RPCs answer */
-.faceoff .fost .ldclock{display:inline-block;vertical-align:middle}
-.faceoff .focols{display:flex;align-items:center;justify-content:center;gap:16px}
-.faceoff .focol{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;min-width:0}
-.faceoff .focol .fnm{font-size:clamp(12.5px,3.2vw,14px);font-weight:900;letter-spacing:.05em;max-width:130px;
+:where(#kbroot) .faceoff .fost .ldclock{display:inline-block;vertical-align:middle}
+:where(#kbroot) .faceoff .focols{display:flex;align-items:center;justify-content:center;gap:16px}
+:where(#kbroot) .faceoff .focol{display:flex;flex-direction:column;align-items:center;gap:5px;flex:1;min-width:0}
+:where(#kbroot) .faceoff .focol .fnm{font-size:clamp(12.5px,3.2vw,14px);font-weight:900;letter-spacing:.05em;max-width:130px;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.faceoff .focol.you .fnm{color:var(--p1)}
-.faceoff .fovs{font-size:15px;font-weight:900;letter-spacing:.1em;color:var(--gold);
+:where(#kbroot) .faceoff .focol.you .fnm{color:var(--p1)}
+:where(#kbroot) .faceoff .fovs{font-size:15px;font-weight:900;letter-spacing:.1em;color:var(--gold);
   text-shadow:0 0 14px rgba(255,209,102,.5)}
-.faceoff .fostats{display:flex;flex-direction:column;gap:2px}
-.faceoff .fost{display:flex;align-items:center;padding:6.5px 4px;border-radius:9px;font-size:clamp(12.5px,3.2vw,14px)}
-.faceoff .fost:nth-child(odd){background:rgba(255,255,255,.03)}
-.faceoff .fost .a,.faceoff .fost .b{flex:1;min-width:0;font-weight:900}
-.faceoff .fost .a{text-align:right;padding-right:14px;color:var(--gold)}
-.faceoff .fost .b{text-align:left;padding-left:14px;color:var(--p1)}
-.faceoff .fost .k{flex:0 0 84px;text-align:center;font-size:clamp(7.5px,2vw,9px);letter-spacing:.2em;
+:where(#kbroot) .faceoff .fostats{display:flex;flex-direction:column;gap:2px}
+:where(#kbroot) .faceoff .fost{display:flex;align-items:center;padding:6.5px 4px;border-radius:9px;font-size:clamp(12.5px,3.2vw,14px)}
+:where(#kbroot) .faceoff .fost:nth-child(odd){background:rgba(255,255,255,.03)}
+:where(#kbroot) .faceoff .fost .a,:where(#kbroot) .faceoff .fost .b{flex:1;min-width:0;font-weight:900}
+:where(#kbroot) .faceoff .fost .a{text-align:right;padding-right:14px;color:var(--gold)}
+:where(#kbroot) .faceoff .fost .b{text-align:left;padding-left:14px;color:var(--p1)}
+:where(#kbroot) .faceoff .fost .k{flex:0 0 84px;text-align:center;font-size:clamp(7.5px,2vw,9px);letter-spacing:.2em;
   color:var(--dim);text-transform:uppercase}
-.faceoff.solo .fost .k{flex:1;text-align:left;padding-left:4px}
-.faceoff.solo .fost .a{flex:0 0 auto;padding-right:4px}
+:where(#kbroot) .faceoff.solo .fost .k{flex:1;text-align:left;padding-left:4px}
+:where(#kbroot) .faceoff.solo .fost .a{flex:0 0 auto;padding-right:4px}

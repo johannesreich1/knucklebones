@@ -95,6 +95,10 @@
      classes alive for exactly the matching animation. Keep the time reader
      unit-aware: the build minifier may ship 950ms as .95s. */
   --seal-out:1.6px;
+  /* The seal's clasp and stroke paint beyond its element. Landscape fit reads
+     this clearance on BOTH screen edges so that painted ink, not just the
+     board's layout box, remains visible on narrow phones. */
+  --seal-edge-gutter:8px;
   --seal-engage:950ms;   /* the line closes: the third die seats, or the rune lands */
   --seal-strike:1200ms;  /* a strike meets a shield, which hardens and is unchanged */
   --seal-snap:1600ms;    /* a ward's clasp fails and the line unwinds off the column */

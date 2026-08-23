@@ -10,6 +10,7 @@ import { createPvpJoinHandler } from '../supabase/functions/pvp-join/handler.ts'
 import { createPvpMoveHandler } from '../supabase/functions/pvp-move/handler.ts';
 import { createPvpClaimHandler } from '../supabase/functions/pvp-claim/handler.ts';
 import { oldestEligibleCandidate } from '../supabase/functions/pvp-join/matchmaking.ts';
+import type { MoveInput } from '../supabase/functions/_shared/types.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -32,6 +33,8 @@ const preflight = postOnly(new Request('https://edge.test', { method: 'OPTIONS' 
 check(preflight?.status === 200, 'OPTIONS is not answered directly');
 check(preflight?.headers.get('access-control-allow-headers') === CORS_HEADERS['Access-Control-Allow-Headers'],
   'OPTIONS lost the established allow-headers value');
+check(preflight?.headers.get('access-control-allow-headers')?.includes('idempotency-key') === true,
+  'pvp-move idempotency headers are not allowed through CORS');
 const wrongMethod = postOnly(new Request('https://edge.test', { method: 'GET' }));
 check(wrongMethod?.status === 405 && (await responseBody(wrongMethod!)).error === 'method-not-allowed',
   'non-POST method contract changed');
@@ -87,7 +90,7 @@ await joinHandler(new Request('https://edge.test', {
 check(joinInputs.length === 2 && joinInputs[0] === false && joinInputs[1] === true,
   'join handler changed empty-body or allow_bot parsing');
 
-const moveInputs: Array<{ matchId: string; col: number; auto: boolean }> = [];
+const moveInputs: MoveInput[] = [];
 const moveHandler = createPvpMoveHandler({
   authenticate: allowed,
   operation: async (_received, input) => { moveInputs.push(input); return json({ match: {} }); },
@@ -102,6 +105,31 @@ await moveHandler(new Request('https://edge.test', {
 }));
 check(moveInputs.length === 1 && moveInputs[0].matchId === 'm2' && moveInputs[0].auto === true,
   'move handler changed the existing truthy auto contract');
+check(moveInputs[0].expectedMoveCount === null,
+  'a cached legacy move body no longer reaches the compatibility path');
+
+const commandId = '93000000-0000-4000-8000-000000000001';
+await moveHandler(new Request('https://edge.test', {
+  method: 'POST',
+  headers: { 'Idempotency-Key': commandId },
+  body: JSON.stringify({ match_id: 'm3', col: 2, expected_move_count: 7 }),
+}));
+await moveHandler(new Request('https://edge.test', {
+  method: 'POST',
+  headers: { 'Idempotency-Key': commandId },
+  body: JSON.stringify({ match_id: 'm3', col: 2, expected_move_count: 7 }),
+}));
+check(moveInputs.length === 3
+  && moveInputs[1].commandId === commandId && moveInputs[2].commandId === commandId
+  && moveInputs[1].expectedMoveCount === 7 && moveInputs[2].expectedMoveCount === 7,
+  'same-key handler retries did not preserve the command id and expected state version');
+check((await moveHandler(new Request('https://edge.test', {
+  method: 'POST', body: JSON.stringify({ match_id: 'm4', col: 0, expected_move_count: 0 }),
+}))).status === 400, 'new move version is accepted without a caller command id');
+check((await moveHandler(new Request('https://edge.test', {
+  method: 'POST', headers: { 'Idempotency-Key': commandId },
+  body: JSON.stringify({ match_id: 'm4', col: 0 }),
+}))).status === 400, 'caller command id is accepted without an expected move version');
 
 const claimInputs: Array<{ matchId: string; resign: boolean }> = [];
 const claimHandler = createPvpClaimHandler({

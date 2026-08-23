@@ -101,7 +101,13 @@ class FakeService {
   }
 
   async rpc(name: string, input: Record<string, unknown>) {
-    if (name !== 'settle_match') throw new Error(`unexpected RPC ${name}`);
+    if (name === 'prepare_account_deletion') {
+      this.events.push('prepare-delete');
+      return { data: this.activeError ? null : this.activeMatches, error: this.activeError };
+    }
+    if (name !== 'settle_match' && name !== 'settle_match_checked') {
+      throw new Error(`unexpected RPC ${name}`);
+    }
     this.events.push('settle-match');
     this.rpcCalls.push(input);
     const reply = this.replies.shift() ?? { data: null, error: null };
@@ -195,7 +201,6 @@ try {
 check(rejected, 'malformed atomic RPC payload was accepted as a settled match');
 
 const terminalOperations = [
-  'supabase/functions/pvp-move/operation.ts',
   'supabase/functions/pvp-claim/operation.ts',
   'supabase/functions/pvp-join/operation.ts',
   'supabase/functions/_shared/account-deletion.ts',
@@ -206,6 +211,14 @@ for (const file of terminalOperations) {
   check(!/\.from\("season_ratings"\)\s*\.update|\.from\("profiles"\)\s*\.update/.test(source),
     `${file} still performs a sequential ladder/profile payout outside the atomic RPC`);
 }
+const claimOperation = readFileSync('supabase/functions/pvp-claim/operation.ts', 'utf8');
+check(claimOperation.includes('moveCount: moves.length')
+  && !claimOperation.includes('input.resign ? undefined'),
+  'resignation can settle scores from a replay that lost a concurrent move race');
+const moveOperation = readFileSync('supabase/functions/pvp-move/operation.ts', 'utf8');
+check(moveOperation.includes('commitMatchCommand(')
+  && !/\.from\("match_moves"\)\s*\.insert|\.from\("matches"\)\s*\.update/.test(moveOperation),
+  'pvp-move does not route move/projection/settlement through the atomic command RPC');
 const deletion = readFileSync('supabase/functions/_shared/account-deletion.ts', 'utf8');
 check(deletion.indexOf('settleMatch(') < deletion.indexOf('deleteUser('),
   'account deletion removes auth identity before settling active opponents');
@@ -223,7 +236,7 @@ const deletingContext = {
 const deletedResponse = await deleteAccountWithSettlement(deletingContext, calculate);
 check(deletedResponse.status === 200 && deleting.deleteCalls === 1,
   'account deletion did not remove auth identity after a successful payout');
-check(deleting.events.join(',') === 'settle-match,delete-user',
+check(deleting.events.join(',') === 'prepare-delete,settle-match,delete-user',
   'account deletion did not commit opponent payout before deleting auth identity');
 
 const payoutFailure = new FakeService();

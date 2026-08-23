@@ -46,9 +46,11 @@ import { dialNodes, dialBeat } from '../src/ui/modedial.ts';
 import { runeFelt, dealBeat } from '../src/ui/runedeal.ts';
 import { settledAnswer, answerLines, versus } from '../src/ui/reveal.ts';
 import { parseAvatar, AV_HUES } from '../src/ui/avatar.ts';
+import { dieMarkup } from '../src/ui/die-markup.ts';
+import { loaderWaitMarkup } from '../src/ui/loader.ts';
 import { spellById } from '../src/core/spells.ts';
 import { modeById } from '../src/core/modes.ts';
-import { libraryCards, pickerButtons, MODE_LIB, SPELL_LIB, MODE_PICKS, SPELL_PICKS } from '../src/ui/library.ts';
+import { libraryCards, pickerButtons, pickInfo, MODE_LIB, SPELL_LIB, MODE_PICKS, SPELL_PICKS } from '../src/ui/library.ts';
 import { inlineCssGraph } from '../tools/css-graph.mjs';
 import { discoverDesignScreens } from './screen-library.mjs';
 
@@ -140,16 +142,6 @@ body{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px
   -webkit-background-clip:text;background-clip:text;color:transparent}
 `;
 
-const PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
-function dieHtml(v, cls, size, extra = '') {
-  const on = PIPS[v] || [];
-  const pips = Array.from({ length: 9 }, (_, i) =>
-    `<span class="pip${on.includes(i) ? ' on' : ''}"></span>`).join('');
-  const decl = (size ? `width:${size}px;height:${size}px;--cell:${size}px` : '') + extra;
-  const style = decl ? ` style="${decl}"` : '';
-  return `<div class="die ${cls}"${style}>${pips}<b class="num">${v}</b></div>`;
-}
-
 /* An avatar is a die wearing a RAW hue (ui/avatar.ts) — never the duel pair,
    because a player who picked a cyan face keeps it whatever Settings does to
    --p1/--p2. paintAvatar fills the slot at runtime; here the slot is filled at
@@ -157,7 +149,7 @@ function dieHtml(v, cls, size, extra = '') {
    could not produce. */
 function avatarHtml(spec, size) {
   const { face, hue } = parseAvatar(spec);
-  return dieHtml(face, 'p1', size, `;--dc:${AV_HUES[hue]}`);
+  return dieMarkup(face, { classes: 'p1', size, inlineStyle: `--dc:${AV_HUES[hue]}` });
 }
 
 /* Device sizes: every screen ships at each of these. The stage is the phone
@@ -248,7 +240,10 @@ for (const screen of screens) {
        one — a second copy of the multiplier look, in the file that exists to
        stop second copies. `gold` stays as the shorthand it always was. */
     .replace(/\{\{die:(\d):([a-z0-9]+(?: [a-z0-9]+)*)(?::(\d+))?\}\}/g,
-      (_, v, cls, size) => dieHtml(+v, cls === 'gold' ? 'p1 m2' : cls, size ? +size : 0))
+      (_, v, cls, size) => dieMarkup(+v, {
+        classes: cls === 'gold' ? 'p1 m2' : cls,
+        size: size ? +size : undefined,
+      }))
     .replace(/\{\{mico:([a-z]+)(?::(\d+))?\}\}/g, (_, id, size) => modeIcon(id, size ? +size : 24))
     .replace(/\{\{mhue:([a-z]+)\}\}/g, (_, id) => modeHue(id))
     /* runes render through the app too. A card that hand-draws one is a second
@@ -258,13 +253,8 @@ for (const screen of screens) {
     .replace(/\{\{sico:([a-z]+)(?::(\d+))?\}\}/g,
       (_, id, size) => (spellOr(id), spellIcon(id, size ? +size : 22)))
     .replace(/\{\{shue:([a-z]+)\}\}/g, (_, id) => (spellOr(id), spellHue(id)))
-    /* THE LOADER, in the shape ui/loader.ts builds it — die wearing .ldclock
-       (which forces all nine pips on and chases them), plus the label, inside
-       .ldwait. loaderWait() returns an ELEMENT and reaches for document, so a
-       Node build cannot call it; this is the one place that shape is written
-       twice, and it is written next to dieHtml, which is already the die said
-       twice for the same reason. The card that used to picture this wait drew
-       matchmaking's two bouncing dice instead — a whole screen out of date. */
+    /* THE LOADER, compiled through ui/loader.ts's pure markup seam: the card
+       and runtime share the die, wrapper, label and accessibility structure. */
     /* THE VERSUS LINE, from ui/reveal.ts itself. Both dial cards used to hand-
        write "Opponent NAME · RATING" — the single-line treatment the opponent
        study replaced — so the two cards that picture the reveal were the last
@@ -279,8 +269,7 @@ for (const screen of screens) {
     })
     .replace(/\{\{loader(?::(\d+))?(?::([^}]+))?\}\}/g, (_, size, label) => {
       const px = size ? +size : 44;
-      const die = dieHtml(6, 'p1 ldclock', px).replace('<div class="die', '<div aria-label="Loading" class="die');
-      return `<div class="ldwait">${die}<div class="ldmsg">${label ?? 'Loading'}</div></div>`;
+      return loaderWaitMarkup(px, label ?? 'Loading');
     })
     .replace(/\{\{ico:([a-z]+)(?::(\d+))?\}\}/g, (_, id, size) => chromeIcon(id, size ? +size : 15))
     .replace(/\{\{score:(\w+):(-?\d+):(\w+):(-?\d+)\}\}/g, (_, la, a, lb, b) => scoreLine(la, +a, lb, +b))
@@ -298,8 +287,7 @@ for (const screen of screens) {
       (_, roster, now) => pickerButtons(roster === 'modes' ? MODE_PICKS : SPELL_PICKS, now ?? ''))
     .replace(/\{\{pickinfo:(modes|spells)(?::(-?\w+))?\}\}/g, (_, roster, now) => {
       const items = roster === 'modes' ? MODE_PICKS : SPELL_PICKS;
-      const it = items.find((i) => i.v === (now ?? '')) ?? items[0];
-      return `${it.name} — ${it.blurb}`;   // exactly what pickerRow's sync() writes
+      return pickInfo(items, now);
     });
 
   const flows = links

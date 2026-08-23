@@ -3,7 +3,7 @@ import { rebuild, matchTotal, type MatchState } from "./core/match.ts";
 import { settle, type Score } from "./core/ladder.ts";
 import { modeById } from "./core/modes.ts";
 import { json, type AuthenticatedContext, type EdgeClient } from "../_shared/http.ts";
-import { settleMatch } from "../_shared/settlement.ts";
+import { settleMatch, type SettlementPrecondition } from "../_shared/settlement.ts";
 import type { ClaimInput, MatchMoveRow, MatchRow } from "../_shared/types.ts";
 
 const STALL_MS = 30 * 1000;
@@ -14,6 +14,7 @@ async function finishClaim(
   match: MatchRow,
   state: MatchState,
   winnerId: string,
+  precondition?: SettlementPrecondition,
 ): Promise<Response> {
   const mode = modeById(match.modifier).mode;
   const p1Score = matchTotal(state, ME, mode), p2Score = matchTotal(state, AI, mode);
@@ -24,7 +25,10 @@ async function finishClaim(
     p1Score,
     p2Score,
     p1Result,
-  }, settle);
+  }, settle, precondition);
+  if (!result.applied && result.match.status === "active") {
+    return json({ error: "race-lost" }, 409);
+  }
   return json({ match: result.match });
 }
 
@@ -55,7 +59,19 @@ export async function claimMatch(context: AuthenticatedContext, input: ClaimInpu
   const seedRow = seedData as { seed: string } | null;
   const state = seedRow && rebuild(seedRow.seed, moves, mode);
   if (!state) return json({ error: "corrupt-state" }, 500);
+  if (state.moveCount !== moves.length || state.turn !== match.turn
+    || state.nextDie !== match.next_die) {
+    return json({ error: "race-lost" }, 409);
+  }
 
   const winnerId = input.resign ? oppId : user.id;
-  return finishClaim(svc, match, state, winnerId);
+  // Resignation is intentional, but its score snapshot must still be from the
+  // same log version that the terminal write locks. A move racing this replay
+  // makes the checked settlement return race-lost; the bounded client retry
+  // then reloads and resigns against the newer authoritative state.
+  return finishClaim(svc, match, state, winnerId, {
+    turn: match.turn,
+    lastMoveAt: match.last_move_at,
+    moveCount: moves.length,
+  });
 }

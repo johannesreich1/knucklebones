@@ -1,6 +1,7 @@
 // A control PRESSES on the way down and ACTS on the way up. This is shared by
 // ordinary controls and the swipe-back gesture; it knows nothing about game
 // input or flow ownership.
+import { rootElementFromPoint } from './query.ts';
 
 type TapHandler = (event: Event) => void;
 
@@ -41,8 +42,8 @@ export function tap(el: HTMLElement, fn: TapHandler): void {
       armed = false;
       hold(false);
       const touch = event.changedTouches[0];
-      const over = touch ? document.elementFromPoint(touch.clientX, touch.clientY) : null;
-      if (over && over !== el && !el.contains(over)) return;
+      const over = touch ? rootElementFromPoint(touch.clientX, touch.clientY) : null;
+      if (touch && (!over || (over !== el && !el.contains(over)))) return;
       fire(event);
     });
     el.addEventListener('touchcancel', disarm);

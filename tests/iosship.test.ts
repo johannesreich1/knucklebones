@@ -33,6 +33,8 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { APP_ID } from '../src/config.ts';
+import { databaseJobUsesPinnedNode } from './support/ci-workflow.ts';
+import { filesUnder, recomputeArtifactTag, sameBytes, tagIn } from './support/ios-artifacts.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -41,6 +43,9 @@ const check = (ok: boolean, msg: string) => { if (!ok) problems.push(msg); };
 const PODFILE = 'native/ios/App/Podfile';
 const LOCK = 'native/ios/App/Podfile.lock';
 const PKG = 'native/package.json';
+const NATIVE_LOCK = 'native/package-lock.json';
+const GC_PKG = 'native/plugins/gamecenter/package.json';
+const GC_SWIFT = 'native/plugins/gamecenter/ios/Sources/GameCenterPlugin/GameCenterPlugin.swift';
 const ROOT_PKG = 'package.json';
 const ROOT_LOCK = 'package-lock.json';
 const NVMRC = '.nvmrc';
@@ -53,15 +58,22 @@ const BROWSER_IDENTITY = 'src/online/identity.ts';
 const GC_AUTH = 'supabase/functions/gc-auth/index.ts';
 const WWW = 'native/www';
 const SYNCED = 'native/ios/App/App/public';   // what cap sync copied into Xcode
+const SYNCED_CONFIG = 'native/ios/App/App/capacitor.config.json';
+const STANDALONE = 'knucklebones-neon.html';
+const PWA_INDEX = 'pwa/index.html';
+const PWA_SW = 'pwa/sw.js';
+const WIDGET = 'widget.html';
+const HARNESS = 'harness.html';
 const REQUIRE_SYNCED = process.argv.includes('--require-synced');
 
 const podfile = readFileSync(PODFILE, 'utf8');
 const lock = readFileSync(LOCK, 'utf8');
 const pkg = JSON.parse(readFileSync(PKG, 'utf8'));
+const nativeLock = JSON.parse(readFileSync(NATIVE_LOCK, 'utf8'));
+const gcPkg = JSON.parse(readFileSync(GC_PKG, 'utf8'));
 const rootPkg = JSON.parse(readFileSync(ROOT_PKG, 'utf8'));
 const rootLock = JSON.parse(readFileSync(ROOT_LOCK, 'utf8'));
 const capacitor = JSON.parse(readFileSync(CONFIG, 'utf8'));
-
 /* ================= 0. BUILD/NATIVE BOUNDARY ================= */
 
 const nodePin = readFileSync(NVMRC, 'utf8').trim();
@@ -73,10 +85,8 @@ check(rootLock.packages?.['']?.engines?.node === nodeRange,
   `${ROOT_LOCK} does not mirror ${ROOT_PKG}'s Node engine ${nodeRange}`);
 
 const ci = readFileSync(CI, 'utf8');
-check(/node-version-file:\s*\.nvmrc\b/.test(ci),
-  `${CI} must consume .nvmrc rather than copy a Node version literal`);
-check(!/node-version:\s*['"]?\d/.test(ci),
-  `${CI} still contains a copied numeric node-version`);
+check(databaseJobUsesPinnedNode(ci),
+  `${CI}'s database job must install Node from .nvmrc before running the database start helper`);
 
 const buildSource = readFileSync(BUILD, 'utf8');
 check(/process\.execPath/.test(buildSource),
@@ -88,6 +98,25 @@ check(rootPkg.scripts?.['native:sync'] === 'npm run build && npm --prefix native
 check(rootPkg.scripts?.['native:verify']?.includes('native:sync')
   && rootPkg.scripts?.['native:verify']?.includes('--require-synced'),
   `${ROOT_PKG} native:verify must sync first and require the generated Xcode payload`);
+
+const GC_PACKAGE = 'knucklebones-game-center';
+const GC_POD = 'KnucklebonesGameCenter';
+check(pkg.dependencies?.[GC_PACKAGE] === 'file:plugins/gamecenter',
+  `${PKG} must install the tracked Game Center bridge as ${GC_PACKAGE}=file:plugins/gamecenter`);
+check(nativeLock.packages?.['']?.dependencies?.[GC_PACKAGE] === 'file:plugins/gamecenter',
+  `${NATIVE_LOCK} does not mirror ${PKG}'s local Game Center dependency`);
+check(nativeLock.packages?.[`node_modules/${GC_PACKAGE}`]?.link === true
+  && nativeLock.packages?.[`node_modules/${GC_PACKAGE}`]?.resolved === 'plugins/gamecenter',
+  `${NATIVE_LOCK} does not lock ${GC_PACKAGE} to the tracked local plugin`);
+check(gcPkg.name === GC_PACKAGE && gcPkg.capacitor?.ios?.src === 'ios',
+  `${GC_PKG} must expose the ${GC_PACKAGE} Capacitor iOS package`);
+const gcSwift = readFileSync(GC_SWIFT, 'utf8');
+check(/@objc\(GameCenterPlugin\)/.test(gcSwift)
+  && /jsName\s*=\s*["']GameCenter["']/.test(gcSwift)
+  && /fetchItems\(forIdentityVerificationSignature:/.test(gcSwift)
+  && /func available\([\s\S]*?\["available": true\]/.test(gcSwift)
+  && /player\.authenticateHandler\s*=/.test(gcSwift),
+  `${GC_SWIFT} must provide the GameCenter bridge and Apple's signed identity payload`);
 
 /* ================= 1. APPLICATION IDENTITY ================= */
 
@@ -114,6 +143,10 @@ const browserIdentity = readFileSync(BROWSER_IDENTITY, 'utf8');
 check(/import\s*\{[^}]*\bAPP_ID\b[^}]*\}\s*from\s*['"]\.\.\/config\.ts['"]/.test(browserIdentity)
   && /clientId:\s*APP_ID\b/.test(browserIdentity),
   `${BROWSER_IDENTITY} must pass the canonical APP_ID to Apple sign-in`);
+check(/available:\s*\(\)\s*=>\s*!!plugins\(\)\.GameCenter/.test(browserIdentity)
+  && /await plugins\(\)\.GameCenter\.signIn\(\)/.test(browserIdentity),
+  `${BROWSER_IDENTITY} must expose Game Center from bridge capability alone and let signIn authenticate; `
+  + `checking GKLocalPlayer authentication before rendering would deadlock a fresh-device flow`);
 
 const gcAuth = readFileSync(GC_AUTH, 'utf8');
 const gcBundle = (gcAuth.match(/const\s+BUNDLE_ID\s*=\s*["']([^"']+)["']/) || [])[1] ?? null;
@@ -150,6 +183,13 @@ for (const line of externalBlock.split('\n')) {
 const checksums = new Set<string>();
 const sumBlock = (lock.match(/^SPEC CHECKSUMS:\n((?:[ \t].*\n?)*)/m) || [])[1] ?? '';
 for (const m of sumBlock.matchAll(/^ {2}(\S+):/gm)) checksums.add(m[1]);
+
+check(declared.get(GC_POD) === '../../plugins/gamecenter',
+  `${PODFILE} must declare ${GC_POD} from the tracked ../../plugins/gamecenter package`);
+check(locked.get(GC_POD) === '../../plugins/gamecenter',
+  `${LOCK} must lock ${GC_POD} to the tracked ../../plugins/gamecenter package`);
+check(checksums.has(GC_POD),
+  `${LOCK} has no SPEC CHECKSUM for the tracked ${GC_POD} bridge`);
 
 for (const [pod, path] of declared) {
   check(locked.has(pod),
@@ -188,19 +228,70 @@ check(built, `${WWW}/index.html does not exist — run \`node build.mjs\` before
 
 if (built) {
   const nativeIndex = readFileSync(`${WWW}/index.html`, 'utf8');
-  const expected = existsSync('dist/main/index.html')
-    ? createHash('md5').update(readFileSync('dist/main/index.html', 'utf8')).digest('hex').slice(0, 8)
-    : null;
-  const tag = (nativeIndex.match(/data-build="([^"]+)"/) || [])[1] ?? null;
+  const artifactTags = {
+    standalone: tagIn(STANDALONE),
+    pwa: tagIn(PWA_INDEX),
+    native: tagIn(`${WWW}/index.html`),
+    widget: tagIn(WIDGET),
+    harness: tagIn(HARNESS),
+  };
+  const tags = Object.values(artifactTags);
+  check(tags.every((tag) => tag !== null && /^[a-f0-9]{8}$/.test(tag)),
+    `every built artifact must carry a non-dev content tag: ${JSON.stringify(artifactTags)}`);
+  check(new Set(tags).size === 1,
+    `built artifacts disagree on release identity: ${JSON.stringify(artifactTags)}`);
+  const tag = artifactTags.native;
 
-  check(tag !== 'dev',
-    `${WWW}/index.html is stamped data-build="dev" — that is an UNSTAMPED build. `
-    + `build.mjs replaces it with the build hash; a payload still saying "dev" was `
-    + `copied in by hand.`);
-  check(expected === null || tag === expected,
-    `${WWW}/index.html carries data-build="${tag}" but the current single-file build `
-    + `hashes to ${expected} — the native payload is stale, or came from somewhere `
-    + `other than dist/main.`);
+  /* Native/www is a generated mirror, not an accumulating deployment folder.
+     Compare the complete file set with the clean Vite source before checking
+     bytes, so a deleted public note cannot survive forever in the app binary. */
+  const expectedFiles = filesUnder('dist/main');
+  const nativeFiles = filesUnder(WWW);
+  const missingNative = expectedFiles.filter((file) => !nativeFiles.includes(file));
+  const extraNative = nativeFiles.filter((file) => !expectedFiles.includes(file));
+  check(expectedFiles.includes('index.html') && expectedFiles.includes('sw.js')
+    && expectedFiles.includes('manifest.webmanifest'),
+  'dist/main is incomplete — the native payload comparison would be vacuous');
+  check(missingNative.length === 0 && extraNative.length === 0,
+    `${WWW} differs from clean dist/main; missing=${missingNative.join(',') || 'none'}; `
+    + `stale=${extraNative.join(',') || 'none'}`);
+
+  /* Agreement alone is a false green: a hard-coded tag would agree everywhere.
+     Independently reconstruct build.mjs's pre-stamp deliverables from the
+     shipped bytes, then hash their logical names, lengths, and content. This
+     also makes any omitted icon/manifest/widget/native byte fail the verifier. */
+  if (tag) {
+    const expectedTag = recomputeArtifactTag({
+      tag,
+      nativeDir: WWW,
+      standalone: STANDALONE,
+      pwaDir: 'pwa',
+      widget: WIDGET,
+      harness: HARNESS,
+    });
+    check(tag === expectedTag,
+      `built artifacts carry tag ${tag}, but their independently recomputed content tag is ${expectedTag}`);
+  }
+  for (const file of expectedFiles) {
+    const source = `dist/main/${file}`;
+    const shipped = `${WWW}/${file}`;
+    if (!existsSync(shipped)) continue;
+    if (file === 'index.html') {
+      const normalized = tag
+        ? readFileSync(shipped, 'utf8').replace(`data-build="${tag}"`, 'data-build="dev"')
+        : readFileSync(shipped, 'utf8');
+      check(normalized === readFileSync(source, 'utf8'),
+        `${shipped} is not the stamped dist/main single-file page`);
+    } else if (file === 'sw.js') {
+      const normalized = tag
+        ? readFileSync(shipped, 'utf8').replace(`'kb-${tag}'`, "'kb-dev'")
+        : readFileSync(shipped, 'utf8');
+      check(normalized === readFileSync(source, 'utf8'),
+        `${shipped} is not the version-stamped dist/main service worker`);
+    } else {
+      check(sameBytes(source, shipped), `${shipped} differs byte-for-byte from ${source}`);
+    }
+  }
 
   /* the single-file build inlines everything. The chunked PWA bundle does not,
      so a stray `rsync dist/pwa/ → native/www/` shows up as chunk references and
@@ -225,19 +316,30 @@ if (built) {
     }
   }
 
-  /* cap sync copies the payload into the Xcode project; that copy is what Xcode
-     actually bundles. The default repo gate stays independent of generated
-     native state; explicit native:verify requires and compares the synced copy. */
+  const pwaSw = existsSync(PWA_SW) ? readFileSync(PWA_SW, 'utf8') : '';
+  check(!!tag && pwaSw.includes(`'kb-${tag}'`),
+    `${PWA_SW} cache key does not match the shared artifact tag ${tag}`);
+
+  /* cap sync copies the payload into the Xcode project; compare every source
+     byte. Capacitor itself adds exactly the two Cordova compatibility shims. */
   const syncedIndexExists = existsSync(`${SYNCED}/index.html`);
   if (REQUIRE_SYNCED) {
     check(syncedIndexExists,
       `${SYNCED}/index.html is absent — explicit native verification requires a successful cap sync`);
   }
   if (REQUIRE_SYNCED && syncedIndexExists) {
-    const syncedTag = (readFileSync(`${SYNCED}/index.html`, 'utf8').match(/data-build="([^"]+)"/) || [])[1] ?? null;
-    check(syncedTag === tag,
-      `${SYNCED}/index.html is build ${syncedTag} but ${WWW} is ${tag} — Xcode would `
-      + `bundle the older payload. Run \`npx cap sync ios\` in native/.`);
+    const syncedFiles = filesUnder(SYNCED);
+    const allowedGenerated = new Set(['cordova.js', 'cordova_plugins.js']);
+    const missingSynced = nativeFiles.filter((file) => !syncedFiles.includes(file));
+    const extraSynced = syncedFiles.filter((file) => !nativeFiles.includes(file));
+    check(missingSynced.length === 0,
+      `${SYNCED} omits native payload files: ${missingSynced.join(',')}`);
+    check(extraSynced.every((file) => allowedGenerated.has(file)),
+      `${SYNCED} contains stale/non-Capacitor files: ${extraSynced.join(',')}`);
+    for (const file of nativeFiles) {
+      check(sameBytes(`${WWW}/${file}`, `${SYNCED}/${file}`),
+        `${SYNCED}/${file} differs from the payload cap sync was asked to copy`);
+    }
   }
 }
 
@@ -254,7 +356,7 @@ if (existsSync(CONFIG)) {
     `${CONFIG} sets server.cleartext=true — plaintext HTTP in a shipped app; this is `
     + `a live-reload setting that escaped.`);
   // the synced copy is what the binary reads
-  const syncedConfig = `${SYNCED}/../capacitor.config.json`;
+  const syncedConfig = SYNCED_CONFIG;
   if (REQUIRE_SYNCED) {
     check(existsSync(syncedConfig),
       `${syncedConfig} is absent — explicit native verification requires a successful cap sync`);
@@ -264,14 +366,21 @@ if (existsSync(CONFIG)) {
     check(!('url' in (syncedCfg.server ?? {})),
       `the capacitor.config.json inside the Xcode project sets server.url — the binary `
       + `would load from a dev machine even though the repo config is clean`);
+    check(syncedCfg.server?.cleartext !== true,
+      `the capacitor.config.json inside the Xcode project enables cleartext HTTP`);
+    const registered = syncedCfg.packageClassList ?? [];
+    for (const plugin of ['SignInWithApple', 'GameCenterPlugin']) {
+      check(registered.includes(plugin),
+        `${syncedConfig} does not register ${plugin}; the native identity button would be inert`);
+    }
   }
 }
 
 /* THE CHECK MUST BE ABLE TO FAIL. Every pod assertion loops over a parsed
    collection, so a regex that quietly stops matching turns this suite green by
    iterating nothing — the same vacuous pass that let the lock rot unnoticed.
-   Anchor on the two pods every Capacitor iOS app has. */
-for (const pod of ['Capacitor', 'CapacitorCordova']) {
+   Anchor on both Capacitor pods plus the required local Game Center pod. */
+for (const pod of ['Capacitor', 'CapacitorCordova', GC_POD]) {
   check(declared.has(pod), `the Podfile parser found no pod '${pod}' — the parser is broken, not the Podfile`);
   check(locked.has(pod), `the EXTERNAL SOURCES parser found no '${pod}' — the parser is broken, not the lock`);
 }
@@ -281,7 +390,9 @@ check(checksums.size > 0, 'the SPEC CHECKSUMS parser found nothing — the parse
 console.log(JSON.stringify({
   nodePin, nodeRange,
   appId: APP_ID, xcodeIds, gcBundle, requireSynced: REQUIRE_SYNCED,
+  gameCenterPackage: GC_PACKAGE,
   podfileSha, stampedSha: stamped,
   declared: Object.fromEntries(declared), locked: Object.fromEntries(locked),
   problems, errs,
 }, null, 2));
+process.exit(problems.length || errs.length ? 1 : 0);

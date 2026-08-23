@@ -18,6 +18,20 @@ await page.waitForTimeout(600);
 const isolation = await page.evaluate(() => {
   const root = document.getElementById('kbroot');
   const host = document.getElementById('hostSentinel');
+  /* Common host class names, deliberately outside the widget. CSS containment
+     does not scope selectors, so these catch an unrooted `.btn`, `.card`,
+     `.die`, `.ov` or `.faceoff` in the widget's injected stylesheet. Keep the
+     coordinate target here too, before the runtime-insertion observer starts. */
+  const hostCases = document.createElement('div');
+  hostCases.id = 'hostClassSentinels';
+  hostCases.style.cssText = 'position:absolute;left:-10000px;top:0;width:120px;height:120px';
+  hostCases.innerHTML = '<button id="hostBtn" class="btn">host</button>'
+    + '<div id="hostCard" class="card"></div><div id="hostDie" class="die"></div>'
+    + '<div id="hostOv" class="ov"></div><div id="hostFaceoff" class="faceoff"></div>'
+    + '<div id="hostAim" class="col" data-col="0"></div>';
+  document.body.insertBefore(hostCases, root);
+  const style = (id) => getComputedStyle(document.getElementById(id));
+  const hostBtn = style('hostBtn');
   const states = ['rowmode','rowswitch','face','p2turn','land','shortv','sidepts',
     'casting','castself','numerals','clock','tut'];
   window.__outsideRootAdds = [];
@@ -35,16 +49,42 @@ const isolation = await page.evaluate(() => {
     hostColor: getComputedStyle(host).color,
     hostBox: getComputedStyle(host).boxSizing,
     bodyBg: getComputedStyle(document.body).backgroundColor,
+    hostClasses: {
+      btn: { minWidth: hostBtn.minWidth, padding: hostBtn.padding,
+        radius: hostBtn.borderRadius, weight: hostBtn.fontWeight },
+      cardDisplay: style('hostCard').display,
+      die: { display: style('hostDie').display, position: style('hostDie').position },
+      ov: { display: style('hostOv').display, position: style('hostOv').position,
+        visibility: style('hostOv').visibility, opacity: style('hostOv').opacity },
+      faceoff: { display: style('hostFaceoff').display, position: style('hostFaceoff').position },
+    },
+    build: root.dataset.build || null,
+    hostBuild: document.documentElement.dataset.build || null,
     htmlStates: states.filter((name) => document.documentElement.classList.contains(name)),
     rootStates: states.filter((name) => root.classList.contains(name)),
     owned: ['bg','vig','app','fx','flash','ovStart'].every((id) => root.contains(document.getElementById(id))),
   };
+});
+await page.evaluate(() => {
+  for (const id of ['hostBtn', 'hostCard', 'hostDie', 'hostOv', 'hostFaceoff']) {
+    document.getElementById(id)?.remove();
+  }
 });
 check(isolation.rootParent === 'BODY' && isolation.owned, 'widget has no single owned application root', isolation);
 check(isolation.htmlCell === 'host-cell' && isolation.rootCell.endsWith('px'),
   'widget sizing variables escaped onto the host root', isolation);
 check(isolation.hostColor === 'rgb(17, 34, 51)' && isolation.hostBox === 'content-box' &&
   isolation.bodyBg === 'rgb(250, 249, 245)', 'widget CSS mutated host computed styles', isolation);
+check(isolation.hostClasses.btn.minWidth !== '210px' && isolation.hostClasses.btn.padding !== '16px 20px' &&
+  isolation.hostClasses.btn.radius !== '14px' && isolation.hostClasses.btn.weight !== '800' &&
+  isolation.hostClasses.cardDisplay !== 'flex' &&
+  (isolation.hostClasses.die.display !== 'grid' || isolation.hostClasses.die.position !== 'relative') &&
+  isolation.hostClasses.ov.position !== 'fixed' && isolation.hostClasses.ov.visibility !== 'hidden' &&
+  isolation.hostClasses.ov.opacity === '1' &&
+  (isolation.hostClasses.faceoff.display !== 'grid' || isolation.hostClasses.faceoff.position !== 'fixed'),
+  'widget component selectors restyled matching host classes', isolation.hostClasses);
+check(/^[a-f0-9]{8}$/.test(isolation.build ?? '') && isolation.hostBuild === null,
+  'widget build identity is missing, unstamped, or leaked onto the host document', isolation);
 check(isolation.htmlStates.length === 0 && isolation.rootStates.length > 0,
   'game state lives on the host document instead of #kbroot', isolation);
 
@@ -89,6 +129,68 @@ function audit(s,w){
   check(s.domBot===bc,w+': bot DOM != state',{...s});
   if(s.mode==='duo'&&s.phase==='choose') check(s.turn===s.bottom,w+': active player not on bottom',s);
 }
+/* A coordinate lookup is document-global even when every selector is scoped.
+   Prove the gesture accepts a real internal target, then refuses the same
+   `.col[data-col]` vocabulary on the host page without spending the rune. */
+const originalSetup = await page.evaluate(() => {
+  const S = window.__kb.S;
+  return { mode:S.mode, spell:S.spell, timer:S.timer, localMode:S.localMode,
+    seat:S.seat, starter:S.starter };
+});
+const startWard = async () => {
+  await page.evaluate(() => {
+    const k = window.__kb;
+    k.S.spell = 'ward'; k.S.timer = 0; k.S.localMode = 0;
+    k.S.mode = 'duo'; k.S.seat = 'face'; k.S.starter = 1;
+    k.newGame();
+  });
+  await page.waitForFunction(() => window.__kb.S.phase === 'choose' && !window.__kb.S.busy);
+};
+const dragRune = async (x, y) => {
+  const box = await page.locator('.rune[data-seat="1"]:not([hidden])').boundingBox();
+  if (!box) throw new Error('ward rune has no visible drag target');
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(x, y, { steps: 12 });
+  await page.mouse.up();
+};
+
+await startWard();
+const ownColumn = await page.locator('#botBoard .col[data-col="0"]').boundingBox();
+if (!ownColumn) throw new Error('internal ward column has no visible target');
+await dragRune(ownColumn.x + ownColumn.width / 2, ownColumn.y + ownColumn.height / 2);
+await page.waitForFunction(() => window.__kb.S.phase === 'choose' && !window.__kb.S.busy &&
+  window.__kb.S.spellCharges[1].ward === 0);
+const internalHit = await page.evaluate(() => ({
+  charge: window.__kb.S.spellCharges[1].ward,
+  ward: window.__kb.S.charm.wards[1][0],
+}));
+check(internalHit.charge === 0 && internalHit.ward === 1,
+  'root-safe hit testing rejected a real widget column', internalHit);
+
+await startWard();
+const hostTarget = await page.evaluate(() => {
+  const target = document.getElementById('hostAim');
+  target.style.cssText = 'position:fixed;left:10px;top:760px;width:110px;height:100px;z-index:999999;background:red';
+  const box = target.getBoundingClientRect();
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2,
+    inside: document.getElementById('kbroot').contains(target) };
+});
+await dragRune(hostTarget.x, hostTarget.y);
+await page.waitForTimeout(250);
+const hostHit = await page.evaluate(() => {
+  const k = window.__kb;
+  document.getElementById('hostAim').removeAttribute('style');
+  return { charge: k.S.spellCharges[1].ward, ward: k.S.charm.wards[1][0], armed: k.S.spellArmed };
+});
+check(!hostTarget.inside && hostHit.charge === 1 && hostHit.ward === 0 && hostHit.armed === null,
+  'matching host markup became a widget spell target', { hostTarget, hostHit });
+await page.evaluate((setup) => {
+  const k = window.__kb;
+  k.goHome();
+  Object.assign(k.S, setup);
+}, originalSetup);
+
 // ---- CPU game by touch ----
 // Loop budgets are generous on purpose: games are random, destruction-heavy
 // endgames run long, and CI runners are slow. (A 400-tick budget flaked on CI.)
@@ -109,6 +211,7 @@ const sheetPortal = await page.evaluate(() => {
 check(sheetPortal.parent === 'kbroot' && sheetPortal.position === 'absolute',
   'widget sheet escaped the root or stayed viewport-fixed', sheetPortal);
 await page.tap('.fograb'); await page.waitForSelector('.faceoff', { state:'detached' });
+
 let cpuDone=false;
 for(let i=0;i<1200;i++){ const s=await snap(); audit(s,'cpu'+i);
   if(s.end||s.phase==='over'){cpuDone=true;break;}

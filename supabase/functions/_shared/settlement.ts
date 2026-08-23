@@ -29,6 +29,12 @@ export interface SettlementResult {
   match: MatchRow;
 }
 
+export interface SettlementPrecondition {
+  turn: 0 | 1;
+  lastMoveAt: string;
+  moveCount: number;
+}
+
 const LADDER_COLUMNS = "points, peak, wins, losses, draws";
 const SERIALIZATION_FAILURE = "40001";
 const MAX_ATTEMPTS = 3;
@@ -87,6 +93,7 @@ export async function settleMatch(
   match: MatchRow,
   terminal: TerminalMatch,
   calculate: LadderSettlement,
+  precondition?: SettlementPrecondition,
 ): Promise<SettlementResult> {
   const season = match.season_id ?? 1;
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
@@ -95,7 +102,7 @@ export async function settleMatch(
       loadLadderRow(service, season, match.p2),
     ]);
     const next = calculate(p1, p2, terminal.p1Result);
-    const { data, error } = await service.rpc("settle_match", {
+    const settlement = {
       p_match_id: match.id,
       p_status: terminal.status,
       p_winner: terminal.winner,
@@ -107,7 +114,15 @@ export async function settleMatch(
       p_expected_p2: p2,
       p_next_p1: next.a,
       p_next_p2: next.b,
-    });
+    };
+    const { data, error } = precondition
+      ? await service.rpc("settle_match_checked", {
+        p_expected_turn: precondition.turn,
+        p_expected_last_move_at: precondition.lastMoveAt,
+        p_expected_move_count: precondition.moveCount,
+        ...settlement,
+      })
+      : await service.rpc("settle_match", settlement);
     if (error?.code === SERIALIZATION_FAILURE && attempt < MAX_ATTEMPTS) continue;
     if (error) throw new Error(`atomic settlement failed: ${errorMessage(error)}`);
     const result = payload(data);

@@ -1,15 +1,15 @@
 /* Online screens — same design language as the game's overlays. Loaded only
    with the lazy online chunk. */
-#ovOnline .panel{width:100%;max-width:var(--w-col);display:flex;flex-direction:column;gap:16px;margin:auto 0}
-#ovOnline input{padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
+:where(#kbroot) #ovOnline .panel{width:100%;max-width:var(--w-col);display:flex;flex-direction:column;gap:16px;margin:auto 0}
+:where(#kbroot) #ovOnline input{padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
   background:rgba(255,255,255,.05);color:var(--txt);font-size:14px;font-family:inherit;outline:none}
-#ovOnline input:focus-visible{outline:2px solid var(--p1);outline-offset:1px}
-#ovOnline .err{min-height:16px;font-size:11px;letter-spacing:.08em;color:var(--orange);text-align:center}
+:where(#kbroot) #ovOnline input:focus-visible{outline:2px solid var(--p1);outline-offset:1px}
+:where(#kbroot) #ovOnline .err{min-height:16px;font-size:11px;letter-spacing:.08em;color:var(--orange);text-align:center}
 /* an err with nothing to say is not a row: its reserved height plus the
    column gaps around it pushed buttons a whole slot away from their inputs
    (user report, the claim card). It appears — and takes its room — only
    when there is actually an error to show. */
-#ovOnline .err:empty{display:none}
-#ovOnline .who{font-size:13px;letter-spacing:.12em;text-align:center;color:var(--txt)}
-#ovOnline .who b{color:var(--p1)}
-#ovOnline .who .rt{color:var(--gold);font-weight:800}
+:where(#kbroot) #ovOnline .err:empty{display:none}
+:where(#kbroot) #ovOnline .who{font-size:13px;letter-spacing:.12em;text-align:center;color:var(--txt)}
+:where(#kbroot) #ovOnline .who b{color:var(--p1)}
+:where(#kbroot) #ovOnline .who .rt{color:var(--gold);font-weight:800}

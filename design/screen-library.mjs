@@ -1,4 +1,4 @@
-import { readdirSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 
 export const DESIGN_CLASSIFICATIONS = Object.freeze([
@@ -36,6 +36,11 @@ export function discoverDesignScreens(screenRoot) {
     if (!classification) {
       throw new Error(`${relativePath}: unclassified design card; place it under `
         + DESIGN_CLASSIFICATIONS.map((name) => `design/screens/${name}/`).join(', '));
+    }
+    const meta = readFileSync(file, 'utf8').split('\n', 1)[0];
+    if (classification === 'studies/open' && /\bshipped\b/i.test(meta)) {
+      throw new Error(`${relativePath}: shipped design card is still classified as an open study; `
+        + 'move it to design/screens/product/');
     }
 
     const basename = path.basename(file);

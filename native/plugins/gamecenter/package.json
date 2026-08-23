@@ -1,5 +1,5 @@
 {
-  "name": "knucklebones-gamecenter",
+  "name": "knucklebones-game-center",
   "version": "1.0.0",
   "private": true,
   "description": "Game Center authentication + identity-verification signature, for gc-auth",

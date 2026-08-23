@@ -86,7 +86,9 @@ export async function runInputAccessibilityScenarios(suite) {
   out.loaderNumerals = await gp.evaluate(() => {
     const d = window.__kb.loaderDie(24);
     window.__ldprobe = d;
-    document.body.appendChild(d);
+    // loaderDie returns a component; every application component is mounted
+    // below the canonical root, including this focused probe.
+    document.getElementById('kbroot').appendChild(d);
     const pip = d.querySelector('.pip');
     return { pipDisplay: getComputedStyle(pip).display, pipOpacity: +getComputedStyle(pip).opacity,
              pipWidth: pip.getBoundingClientRect().width,

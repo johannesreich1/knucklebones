@@ -7,14 +7,14 @@
    This file owns the deck AT REST; the shuffle is WAAPI in ui/runedeal.ts,
    built from the same geometry, so a still (a design card, a reduced-motion
    player) shows exactly the deck the animation settles onto. */
-#ovWheel{--card:clamp(58px,min(19vw,12.5vh),96px)}
-#ovWheel.dealing{--stage:calc(var(--card)*2.62)}
-.rfelt{position:relative;width:calc(var(--card)*4.6);height:calc(var(--card)*2.62);
+:where(#kbroot) #ovWheel{--card:clamp(58px,min(19vw,12.5vh),96px)}
+:where(#kbroot) #ovWheel.dealing{--stage:calc(var(--card)*2.62)}
+:where(#kbroot) .rfelt{position:relative;width:calc(var(--card)*4.6);height:calc(var(--card)*2.62);
   display:grid;place-items:center;perspective:900px}
 /* a zero-size anchor: every card hangs off the deck's point, so a card's whole
    position is its own --x/--y and nothing has to agree about a box */
-.rdeck{position:absolute;left:50%;top:calc(50% - var(--card)*.34);width:0;height:0}
-.rcard{position:absolute;left:calc(var(--card)/-2);top:calc(var(--card)*-.702);
+:where(#kbroot) .rdeck{position:absolute;left:50%;top:calc(50% - var(--card)*.34);width:0;height:0}
+:where(#kbroot) .rcard{position:absolute;left:calc(var(--card)/-2);top:calc(var(--card)*-.702);
   width:var(--card);height:calc(var(--card)*1.405);border-radius:calc(var(--card)*.15);
   opacity:.62;translate:var(--x) var(--y);rotate:var(--o);
   background:linear-gradient(160deg,rgba(24,29,52,.96),rgba(9,12,24,.96));
@@ -22,36 +22,36 @@
 /* A CORNER INDEX, like a real card's — not a centred emblem. A fan covers all
    but a sliver of every card under the top one, and a centred icon put six
    runes in the deck of which exactly one was ever visible. */
-.rcard svg{position:absolute;top:8%;left:7%;width:26%;height:26%;
+:where(#kbroot) .rcard svg{position:absolute;top:8%;left:7%;width:26%;height:26%;
   filter:drop-shadow(0 0 6px currentColor)}
 /* the slot the answer came out of, once it has been taken */
-.rcard.drawn{visibility:hidden}
+:where(#kbroot) .rcard.drawn{visibility:hidden}
 /* THE DEALT CARD, face-down until the turn. Its hue is on the container, which
    only the FACE reads — the back is deliberately in nobody's colour, or the
    deal would announce its answer through the card it is hiding it behind.
    Which face is lit is one class (ui/runedeal swaps it edge-on, mid-turn), NOT
    backface-visibility: any grouping property in this overlay's ancestry — and
    .ov carries a backdrop-filter — flattens the 3D context and shows the back. */
-.rdealt{position:relative;z-index:3;width:calc(var(--card)*1.4);height:calc(var(--card)*1.92);
+:where(#kbroot) .rdealt{position:relative;z-index:3;width:calc(var(--card)*1.4);height:calc(var(--card)*1.92);
   border-radius:calc(var(--card)*.2);opacity:0}
-.rdealt.up{opacity:1}
-.rback,.rface{position:absolute;inset:0;border-radius:inherit;
+:where(#kbroot) .rdealt.up{opacity:1}
+:where(#kbroot) .rback,:where(#kbroot) .rface{position:absolute;inset:0;border-radius:inherit;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:calc(var(--card)*.09)}
-.rface{opacity:0}
-.rdealt.up .rface{opacity:1}
-.rdealt.up .rback{opacity:0}
+:where(#kbroot) .rface{opacity:0}
+:where(#kbroot) .rdealt.up .rface{opacity:1}
+:where(#kbroot) .rdealt.up .rback{opacity:0}
 /* the back is a DECK card's back, index and all: the dealt card is the card
    that was drawn out of the fan, and it grows out of that slot */
-.rback{background:linear-gradient(160deg,#181d34,#090c18);
+:where(#kbroot) .rback{background:linear-gradient(160deg,#181d34,#090c18);
   border:1px solid rgba(255,255,255,.12);box-shadow:0 14px 34px rgba(0,0,0,.6)}
-.rback svg{position:absolute;top:8%;left:7%;width:26%;height:26%;
+:where(#kbroot) .rback svg{position:absolute;top:8%;left:7%;width:26%;height:26%;
   filter:drop-shadow(0 0 6px currentColor)}
 /* opaque on purpose: the deck fans right behind the dealt card, and a
    translucent face let six corner indices read straight through the answer */
-.rface{background:linear-gradient(158deg,#1e2440,#0b0e1c);
+:where(#kbroot) .rface{background:linear-gradient(158deg,#1e2440,#0b0e1c);
   border:1px solid color-mix(in srgb,currentColor 46%,transparent);
   box-shadow:0 14px 34px rgba(0,0,0,.66),0 0 26px color-mix(in srgb,currentColor 26%,transparent),
     inset 0 0 22px color-mix(in srgb,currentColor 10%,transparent)}
-.rface svg{filter:drop-shadow(0 0 12px currentColor)}
-.rlbl{font-size:calc(var(--card)*.145);letter-spacing:.2em;font-weight:900;text-align:center}
+:where(#kbroot) .rface svg{filter:drop-shadow(0 0 12px currentColor)}
+:where(#kbroot) .rlbl{font-size:calc(var(--card)*.145);letter-spacing:.2em;font-weight:900;text-align:center}

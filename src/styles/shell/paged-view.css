@@ -1,20 +1,20 @@
 /* ---- shared screen header: ‹ pages, ✕ sheets (design: 00-navigation).
    Reuses the HUD's .ico button; the pad mirrors its width so the title stays
    optically centred. Pages put the icon left, sheets right — never both. ---- */
-.shead{display:flex;align-items:center;width:100%;max-width:var(--w-col);margin:0 auto;flex:0 0 auto}
-.shead .ttl{flex:1;text-align:center;font-size:16px;letter-spacing:.26em;font-weight:900;
+:where(#kbroot) .shead{display:flex;align-items:center;width:100%;max-width:var(--w-col);margin:0 auto;flex:0 0 auto}
+:where(#kbroot) .shead .ttl{flex:1;text-align:center;font-size:16px;letter-spacing:.26em;font-weight:900;
   background:linear-gradient(100deg,var(--p1),#fff 50%,var(--p2));
   -webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 18px rgba(var(--p1-rgb),.3))}
-.shead .pad{width:30px;flex:0 0 auto}
+:where(#kbroot) .shead .pad{width:30px;flex:0 0 auto}
 /* the header's control wears the title's own gradient — on a sheet whose only
    exit is that glyph, it has to read as the way out at a glance */
-.shead .ico{color:#fff;
+:where(#kbroot) .shead .ico{color:#fff;
   background:linear-gradient(135deg,color-mix(in srgb,var(--p1) 26%,transparent),
                                     color-mix(in srgb,var(--p2) 26%,transparent));
   border-color:color-mix(in srgb,var(--p1) 40%,transparent);
   box-shadow:0 0 16px color-mix(in srgb,var(--p1) 22%,transparent)}
-.shead .ico:active,.shead .ico.pressing{background:linear-gradient(135deg,color-mix(in srgb,var(--p1) 42%,transparent),
+:where(#kbroot) .shead .ico:active,:where(#kbroot) .shead .ico.pressing{background:linear-gradient(135deg,color-mix(in srgb,var(--p1) 42%,transparent),
                                                      color-mix(in srgb,var(--p2) 42%,transparent))}
 /* ===== THE PAGED VIEW: one header, pinned; one body, scrolling =====
    EVERY view with a title and a back button is this shape, and it is ONE
@@ -66,7 +66,7 @@
    back out of getComputedStyle as text, not as a number — asking for the
    derived one there fails silently into a fallback, which is the drift this
    is meant to prevent, wearing a disguise. */
-.ov.paged{--band:12px;--barpad:16px;--bartop:calc(env(safe-area-inset-top,0px) + 16px);
+:where(#kbroot) .ov.paged{--band:12px;--barpad:16px;--bartop:calc(env(safe-area-inset-top,0px) + 16px);
   --headh:calc(var(--bartop) + 30px + var(--barpad));--headgap:0px;
   --glasstail:calc(var(--band) + var(--headgap) - 6px);
   /* the fade's SEAMS, as offsets into the glass layer — the bar's own parts,
@@ -89,7 +89,7 @@
 /* The bar owns the screen's top inset, so the glass starts at the very TOP
    EDGE rather than below it — a panel that began at the inset left an
    untinted strip above it and read as frost starting halfway down the bar. */
-.ov.paged .shead{padding:var(--bartop) var(--pad-x) var(--barpad);flex:0 0 auto;
+:where(#kbroot) .ov.paged .shead{padding:var(--bartop) var(--pad-x) var(--barpad);flex:0 0 auto;
   z-index:3;position:relative}
 /* THE GLASS IS ONE GRADIENT, and it is a LAYER BEHIND the bar's content, not
    the bar itself: masking the bar would fade its own title with it. THE WHOLE
@@ -103,7 +103,7 @@
    Pro Max is ~440, so ~20px; user report, from a device). Measuring at 375 and
    390 cannot show it: both are narrower than the cap. The glass spans the
    viewport instead, and .ov.paged's overflow:hidden trims the 100vw. */
-.ov.paged .shead::before{content:"";position:absolute;left:calc(50% - 50vw);width:100vw;top:0;
+:where(#kbroot) .ov.paged .shead::before{content:"";position:absolute;left:calc(50% - 50vw);width:100vw;top:0;
   bottom:calc(-1 * var(--glasstail));z-index:-1;pointer-events:none;
   /* ...and it ARRIVES WITH THE CONTENT, in proportion to how far the body has
      actually travelled — ui/dom.ts authors --sc as 0..1 over --band + --headgap,
@@ -189,7 +189,7 @@
    Headless Chromium does render it. So check this effect in CHROMIUM, and
    confirm the check itself works by making the filter absurd first
    (invert(1) saturate(3) is unmissable) before trusting a subtle version. */
-.pbody{display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;
+:where(#kbroot) .pbody{display:flex;flex-direction:column;align-items:center;gap:20px;width:100%;
   margin:0;flex:1 1 auto;min-height:0;overflow-y:auto;
   /* the top padding is exactly the fade's height, so a resting list clears it
      entirely and only content actually scrolling away is touched */
@@ -205,10 +205,10 @@
 /* The app's scroll indicator, in the game's palette rather than the platform's
    grey — worn by every paged body and by any bounded list that scrolls inside
    a card (the ladder's box in a form panel). */
-.pbody,.neonscroll{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--p1) 40%,transparent) transparent}
-.pbody::-webkit-scrollbar,.neonscroll::-webkit-scrollbar{width:6px}
-.pbody::-webkit-scrollbar-track,.neonscroll::-webkit-scrollbar-track{background:transparent}
-.pbody::-webkit-scrollbar-thumb,.neonscroll::-webkit-scrollbar-thumb{border-radius:99px;
+:where(#kbroot) .pbody,:where(#kbroot) .neonscroll{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--p1) 40%,transparent) transparent}
+:where(#kbroot) .pbody::-webkit-scrollbar,:where(#kbroot) .neonscroll::-webkit-scrollbar{width:6px}
+:where(#kbroot) .pbody::-webkit-scrollbar-track,:where(#kbroot) .neonscroll::-webkit-scrollbar-track{background:transparent}
+:where(#kbroot) .pbody::-webkit-scrollbar-thumb,:where(#kbroot) .neonscroll::-webkit-scrollbar-thumb{border-radius:99px;
   background:linear-gradient(180deg,color-mix(in srgb,var(--p1) 55%,transparent),
                                     color-mix(in srgb,var(--p2) 55%,transparent))}
 /* The OFFLINE sheet is a FORM rather than a poster: it grows downward from
@@ -218,21 +218,21 @@
    grows from the top for the same reason, so this needs no override. */
 /* The action bar takes the bottom when the sheet leaves room, and follows the
    content when it does not — one rule, no breakpoint. */
-.playbar{display:flex;flex-direction:column;align-items:center;gap:10px;
+:where(#kbroot) .playbar{display:flex;flex-direction:column;align-items:center;gap:10px;
   width:100%;max-width:var(--w-col);margin-top:auto;padding-top:6px}
-.playbar #btnPlay{width:100%;min-width:0}
+:where(#kbroot) .playbar #btnPlay{width:100%;min-width:0}
 
 /* result screens (local + online share the shape): the verdict sits up top
    and LOUD, the scores hold the centre, the actions wait in the thumb zone */
-#ovEnd{justify-content:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 7vh)}
-#ovEnd{--verdict:clamp(34px,11.5vw,54px)}
+:where(#kbroot) #ovEnd{justify-content:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 7vh)}
+:where(#kbroot) #ovEnd{--verdict:clamp(34px,11.5vw,54px)}
 /* The verdict carries NO filter of its own — its glow is the bloom layer under
    it. An element that both clips its background to text AND takes a filter is
    the combination Safari drops the clip on, painting the gradient as a solid
    rectangle: the hard-edged box behind the word. */
-#endTitle{filter:none}
-#ovEnd h1{font-size:var(--verdict)}
-#ovEnd .scoreline{margin-top:auto}
-#ovEnd .scoreline .you,#ovEnd .scoreline .cpu{font-size:clamp(34px,11vw,46px)}
-#ovEnd #btnAgain{margin-top:auto}
-#ovEnd .btn{width:100%;max-width:var(--w-col);min-width:0}
+:where(#kbroot) #endTitle{filter:none}
+:where(#kbroot) #ovEnd h1{font-size:var(--verdict)}
+:where(#kbroot) #ovEnd .scoreline{margin-top:auto}
+:where(#kbroot) #ovEnd .scoreline .you,:where(#kbroot) #ovEnd .scoreline .cpu{font-size:clamp(34px,11vw,46px)}
+:where(#kbroot) #ovEnd #btnAgain{margin-top:auto}
+:where(#kbroot) #ovEnd .btn{width:100%;max-width:var(--w-col);min-width:0}

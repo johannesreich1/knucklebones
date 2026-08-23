@@ -131,6 +131,15 @@ export async function runLandscapeScenarios(suite) {
     ? lp.tap(`#botBoard .col[data-col="${live.free}"]`).catch(() => {}) : Promise.resolve();
   const sampled = await sampleBoxes();
   await handover;
+  // Everything below paints synthetic board states for geometry assertions.
+  // Retire the real game's async generation first: otherwise its pending AI
+  // turn can resume while a probe temporarily fills the AI board and throw
+  // `aiChoose requires a legal column` even though the played game was legal.
+  await lp.evaluate(() => {
+    window.__kb.S.gen++;
+    window.__kb.S.phase = 'over';
+    window.__kb.S.busy = false;
+  });
   out.handoverDrift = sampled.drift;
   out.handoverTexts = sampled.texts;
   /* THE STATUS LINE NEVER TICKS. "AI thinking…" animated its ellipsis offline

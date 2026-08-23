@@ -48,6 +48,8 @@ export interface MoveInput {
   matchId: string;
   col: number;
   auto: boolean;
+  commandId: string;
+  expectedMoveCount: number | null;
 }
 
 export interface ClaimInput {

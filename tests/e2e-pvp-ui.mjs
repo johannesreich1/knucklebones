@@ -1,8 +1,8 @@
 // LIVE two-browser test of online match play against the real backend.
 // NOT part of the automated gate (needs the two SQL-created e2e users and
-// mutates live data). Before a run: check matchmaking_queue is EMPTY and wipe
-// e2e matches + queue rows. After: delete the e2e matches AND the two
-// season_ratings rows — test accounts must not surface on the live ladder.
+// mutates live data). Participant queues/active matches are cleaned before and
+// after every run, including failures. Match history and season-rating cleanup
+// remain explicit owner actions when the target must not retain probe records.
 // See e2e-pvp.mjs for the API-level version. Run: npm run test:live:pvp-ui
 // two browser contexts, one live PvP match, then a bot match
 import pkg from 'playwright';
@@ -10,6 +10,7 @@ const { chromium, devices } = pkg;
 import { SUPABASE_AUTH_STORAGE_KEY } from '../src/config.ts';
 import { servedBase } from './serve.mjs';
 import { readLivePvpConfig } from './support/live-pvp-config.mjs';
+import { cleanupLivePvpState } from './support/live-pvp-cleanup.mjs';
 // its own origin, on a kernel-picked port: nothing to start by hand, nothing
 // for a peer session's gate to collide with (tests/serve.mjs)
 const liveConfig = readLivePvpConfig();
@@ -19,27 +20,51 @@ if (liveConfig.target !== 'production') {
 const { supabaseUrl: SUPA, publishableKey: ANON, users } = liveConfig;
 const BASE = await servedBase();
 const problems = [];
+const errs = [];
+const participants = [];
+let report = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
-const browser = await chromium.launch();
+let browser = null;
 try {
-  const mk = async (email, pass) => {
-    /* sign in over REST and SEED the session before the app boots: the app's
-       own signed-out path mints an anonymous GUEST and routes it straight
-       into the live queue (the email form only lives behind Account now) —
-       every run would strand two unreachable guests in auth.users */
+  const authenticate = async (email, pass, label) => {
     const r = await fetch(SUPA + '/auth/v1/token?grant_type=password', {
       method: 'POST', headers: { apikey: ANON, 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password: pass }),
     });
     const sess = await r.json();
-    if (!sess.access_token) throw new Error('login failed for ' + email + ' :: ' + JSON.stringify(sess));
+    if (!r.ok || !sess.access_token || !sess.user?.id) {
+      // Never stringify an auth response: malformed responses can still carry
+      // reusable access or refresh tokens.
+      throw new Error(`login failed for ${label}: HTTP ${r.status}; missing required session fields`);
+    }
     sess.expires_at ??= Math.floor(Date.now() / 1000) + (sess.expires_in ?? 3600);
     /* a returning device also holds the profile cache (session.ts myProfile
        writes it) — the result screen deals the own plate's NAME from it */
     const pr = await fetch(SUPA + `/rest/v1/profiles?id=eq.${sess.user.id}&select=nickname,rating,avatar`, {
       headers: { apikey: ANON, Authorization: 'Bearer ' + sess.access_token } });
     const prof = (await pr.json())?.[0];
-    if (!prof?.nickname) throw new Error('no profile for ' + email);
+    if (!prof?.nickname) throw new Error(`no profile for ${label}: HTTP ${pr.status}`);
+    return { sess, prof };
+  };
+
+  /* Authenticate both dedicated accounts before the app boots. Otherwise its
+     signed-out path could mint anonymous guests and enqueue them before a
+     failed baseline check had a chance to stop the probe. */
+  const identities = [];
+  for (const [index, user] of users.entries()) {
+    const identity = await authenticate(user.email, user.password, `live user ${index ? 'B' : 'A'}`);
+    identities.push(identity);
+    participants.push({ id: identity.sess.user.id, jwt: identity.sess.access_token });
+  }
+  const baselineErrors = await cleanupLivePvpState({
+    supabaseUrl: SUPA, publishableKey: ANON, participants,
+  });
+  if (baselineErrors.length) {
+    throw new Error(`could not establish a clean live-test baseline: ${baselineErrors.join('; ')}`);
+  }
+
+  browser = await chromium.launch();
+  const mk = async ({ sess, prof }) => {
     const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
     /* a fresh context is a NEWCOMER: matchmaking would stop to offer the
        tutorial (ui/firstrun) before the queue panel. Seed a played device. */
@@ -59,8 +84,8 @@ try {
     await page.waitForSelector('#onQueue:not([hidden])', { timeout: 8000 });
     return page;
   };
-  const A = await mk(users[0].email, users[0].password);  // A queues here
-  const B = await mk(users[1].email, users[1].password);  // B pairs on its first join
+  const A = await mk(identities[0]);  // A queues here
+  const B = await mk(identities[1]);  // B pairs on its first join
 
   const inMatch = p => p.evaluate(() => (document.getElementById('rec')?.textContent ?? '').startsWith('ONLINE')
     && !document.getElementById('ovOnline').classList.contains('on'));
@@ -198,6 +223,17 @@ try {
   check(eBot.on && eBot.plates.length === 2, 'bot-match end screen not dealt', eBot);
 
   check(A.errs.length === 0 && B.errs.length === 0, 'page errors', { a: A.errs.slice(0, 3), b: B.errs.slice(0, 3) });
-  console.log(JSON.stringify({ rounds, brounds, endA: eA, endB: eB, problems }, null, 2));
-} finally { await browser.close(); }   // the server is in-process and unref'd — it goes with us
-process.exit(problems.length ? 1 : 0);
+  report = { rounds, brounds, endA: eA, endB: eB };
+} catch (error) {
+  errs.push(String(error));
+} finally {
+  // Stop all polling before cleanup, then terminalize/dequeue with the same
+  // participant credentials the probe used. The server is in-process and
+  // unref'd, so it leaves with this process.
+  try { await browser?.close(); } catch (error) { errs.push(String(error)); }
+  errs.push(...await cleanupLivePvpState({
+    supabaseUrl: SUPA, publishableKey: ANON, participants,
+  }));
+}
+console.log(JSON.stringify({ ...report, problems, errs }, null, 2));
+process.exit(problems.length || errs.length ? 1 : 0);

@@ -42,9 +42,10 @@ written; the app needs the capability before it can be exercised.
 
 **Rung 3 — Game Center: code complete, deliberately NOT deployed.** The
 signature verification is tested against Apple's real production certificates,
-but nothing has run on a device. The Edge Function and migration 0014 stay
-un-deployed until a signed build can exercise them — an auth endpoint that has
-never answered a real request does not belong in production.
+but nothing has run on a device. The Edge Function, migration 0014, and its
+`20260823132611_game_center_service_grants.sql` companion stay un-deployed
+until a signed build can exercise them — an auth endpoint that has never
+answered a real request does not belong in production.
 
 ### What Johannes clicks
 
@@ -77,12 +78,25 @@ npm --prefix native ci
 npm run native:verify
 ```
 
-That registers both plugins and regenerates the Podfile. After it, the Apple
-button appears in the native build only, because `available()` looks for the
-Capacitor bridge that the web build does not have.
+The native package installs `plugins/gamecenter` through its tracked local
+`knucklebones-game-center` dependency. Sync registers that Swift bridge and the
+Apple plugin, regenerates the Podfile, and verification fails unless both are
+present in the generated Xcode configuration. After it, the Apple button
+appears in the native build only, because `available()` looks for the Capacitor
+bridge that the web build does not have.
 
-Game Center additionally needs migration 0014 applied and `gc-auth` deployed —
-hold both until there is a device to test on.
+Game Center remains one held owner rollout, in this order:
+
+1. apply pending migration `0014_game_center_ids.sql`;
+2. immediately apply `20260823132611_game_center_service_grants.sql`, which
+   narrows that table to the service-role reads/inserts the function needs;
+3. configure a durable gateway/deployment-layer rate limit for `gc-auth` — its
+   Apple assertion is the authentication boundary, so Supabase JWT verification
+   is deliberately off;
+4. deploy `gc-auth`, then exercise attach and restore with a signed device.
+
+Hold the whole sequence until the device and rate-limit prerequisite exist.
+Repository tests do not mean any of these production actions happened.
 
 ## Housekeeping this creates
 

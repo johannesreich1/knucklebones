@@ -134,6 +134,11 @@ export function faceRotated(who: Player): boolean {
    panel exists) and when Account opens. One function, so the two callers can
    never format it differently. */
 export function stampBuild(): void {
-  const el = appRoot().querySelector('#buildTag');
-  if (el) el.textContent = 'build ' + (document.documentElement.dataset.build || 'dev');
+  const root = appRoot();
+  const el = root.querySelector('#buildTag');
+  // A full-page build owns <html>; an embedded build owns only #kbroot. Read
+  // the narrowest owner first so a widget never borrows (or mutates) its host's
+  // release identity.
+  if (el) el.textContent = 'build ' + (root.dataset.build
+    || document.documentElement.dataset.build || 'dev');
 }

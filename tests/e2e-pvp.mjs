@@ -3,12 +3,18 @@
 // plus the adversarial paths (out-of-turn, illegal column, rating tampering,
 // seed secrecy). NOT part of the automated gate (mutates live data; needs two
 // SQL-created confirmed users — see e2e instructions in the repo README).
+// Participant queues and active matches are cleaned before and after the run;
+// persistent history/ladder rows still belong to the target's owner policy.
 //   npm run test:live:pvp   (reads the gitignored .env.live)
 import { readLivePvpConfig } from './support/live-pvp-config.mjs';
+import { cleanupLivePvpState } from './support/live-pvp-cleanup.mjs';
 
 const { supabaseUrl: URL, publishableKey: ANON, users: USERS } = readLivePvpConfig();
 
 const problems = [];
+const errs = [];
+const participants = [];
+let report = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
 const api = async (path, opts = {}, token = ANON) => {
   const res = await fetch(URL + path, {
@@ -19,10 +25,14 @@ const api = async (path, opts = {}, token = ANON) => {
   let body = null; try { body = await res.json(); } catch { /* empty */ }
   return { status: res.status, body };
 };
-const login = async (u) => {
+const login = async (u, label) => {
   const r = await api('/auth/v1/token?grant_type=password', {
     method: 'POST', body: JSON.stringify({ email: u.email, password: u.password }) });
-  check(r.status === 200, 'login failed ' + u.email, r);
+  if (r.status !== 200 || !r.body?.access_token || !r.body?.user?.id) {
+    // Never stringify an auth response: a malformed response can still carry
+    // a reusable access or refresh token.
+    throw new Error(`login failed for ${label}: HTTP ${r.status}; missing required session fields`);
+  }
   return { jwt: r.body.access_token, id: r.body.user.id };
 };
 const myRating = async (u) => {
@@ -30,8 +40,17 @@ const myRating = async (u) => {
   return r.body?.[0];
 };
 
-const alice = await login(USERS[0]);
-const bob = await login(USERS[1]);
+try {
+const alice = await login(USERS[0], 'live user A');
+participants.push(alice);
+const bob = await login(USERS[1], 'live user B');
+participants.push(bob);
+const baselineErrors = await cleanupLivePvpState({
+  supabaseUrl: URL, publishableKey: ANON, participants,
+});
+if (baselineErrors.length) {
+  throw new Error(`could not establish a clean live-test baseline: ${baselineErrors.join('; ')}`);
+}
 const aliceBefore = await myRating(alice), bobBefore = await myRating(bob);
 
 // ---- adversarial: self-boost rating via REST must fail ----
@@ -184,10 +203,20 @@ const lb = await api('/rest/v1/rpc/leaderboard', { method: 'POST', body: JSON.st
 const names = (lb.body ?? []).map(r => r.nickname);
 check(names.includes(aliceBefore.nickname) || names.includes(aliceAfter.nickname), 'alice missing from leaderboard', names);
 
-console.log(JSON.stringify({
+report = {
   h2h: { moves, winner: state.winner === alice.id ? 'alice' : state.winner === bob.id ? 'bob' : 'draw',
          p1_score: state.p1_score, p2_score: state.p2_score, pointDelta: { alice: dA, bob: dB } },
   resign: { pointDelta: { alice: rdA, bob: rdB } },
   bot: { moves: bmoves, p1_score: bm.p1_score, p2_score: bm.p2_score, sawBotMove },
-  leaderboard: lb.body, problems, errs: [] }, null, 2));
-process.exit(problems.length ? 1 : 0);
+  leaderboard: lb.body,
+};
+} catch (error) {
+  errs.push(String(error));
+} finally {
+  errs.push(...await cleanupLivePvpState({
+    supabaseUrl: URL, publishableKey: ANON, participants,
+  }));
+}
+
+console.log(JSON.stringify({ ...report, problems, errs }, null, 2));
+process.exit(problems.length || errs.length ? 1 : 0);

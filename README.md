@@ -106,8 +106,9 @@ deploys automatically.
 ## Test
 
 ```bash
-npm test            # builds, then runs the full gate (tests/run-all.mjs)
-npm run test:db     # pgTAP contracts against a running local Supabase stack
+npm test                                # full application gate
+npm run db:start                        # fresh database-only Supabase stack
+npm run test:db                         # pgTAP database contracts
 ```
 
 The gate runs pure-core determinism/replay checks under plain Node, Playwright

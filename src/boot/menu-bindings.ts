@@ -30,6 +30,7 @@ import {
   openModes,
   openSpells,
   pickerButtons,
+  pickInfo,
   type PickItem,
 } from '../ui/library.ts';
 import { loaderWait } from '../ui/loader.ts';
@@ -69,8 +70,7 @@ function pickerRow(
     strip.querySelectorAll('button').forEach((button) => {
       button.classList.toggle('on', (button as HTMLButtonElement).dataset.v === current);
     });
-    const item = items.find((candidate) => candidate.v === current) ?? items[0];
-    info.textContent = item.name + ' — ' + item.blurb;
+    info.textContent = pickInfo(items, current);
   };
   tap(strip, (event) => {
     const button = closestButton(event);
@@ -195,7 +195,9 @@ export function bindMenus(root: HTMLElement): void {
     const loading = $('#ovLoad');
     if (!loading.firstChild) loading.appendChild(loaderWait(56));
     show('#ovLoad');
-    import('../online/ui.ts').then((online) => online.openOnline(view))
+    import('../online/ui.ts').then((online) => online.openOnline(view, {
+      startTutorial: () => newGame({ tutorial: true }),
+    }))
       .finally(() => { onlineBusy = false; hide('#ovLoad'); });
   };
   tap($('#btnOnline'), () => goOnline('play'));

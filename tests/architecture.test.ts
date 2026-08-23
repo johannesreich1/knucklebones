@@ -133,6 +133,7 @@ const ROOT_STATE_OWNER = 'src/ui/game/root-state.ts';
 const ROOT_STATE_CLASS = /['"](?:rowmode|rowswitch|face|p2turn|land|shortv|sidepts|casting|castself|numerals|clock|tut)['"]/;
 const rootStateEscapes: string[] = [];
 const rootQueryEscapes: string[] = [];
+const rootHitTestEscapes: string[] = [];
 for (const file of sourceFiles.filter((candidate) => /\.tsx?$/.test(candidate))) {
   const name = relative(file);
   if (name === ROOT_STATE_OWNER) continue;
@@ -151,6 +152,11 @@ for (const file of sourceFiles.filter((candidate) => /\.tsx?$/.test(candidate)))
     rootQueryEscapes.push(name);
     problems.push(`${name} queries the host document for application elements. Scope the query beneath `
       + `appRoot() so a widget cannot read or mutate matching host markup.`);
+  }
+  if (name !== 'src/ui/query.ts' && /\bdocument\s*\.\s*elementFromPoint\s*\(/.test(clean)) {
+    rootHitTestEscapes.push(name);
+    problems.push(`${name} hit-tests the host document directly. Route coordinates through `
+      + `rootElementFromPoint() so matching host markup cannot become an application target.`);
   }
 }
 
@@ -212,13 +218,19 @@ for (const driver of GAME_DRIVERS) {
         + `view/motion differences in its typed spec instead of restoring a private pipeline.`);
     }
   }
-  if (driver === 'src/online/play.ts' && dependencies.has('src/flow/game.ts')) {
-    problems.push(`${driver} imports the concrete local-game flow. Ranked and local drivers `
-      + `must meet only through ui/game typed contracts.`);
-  }
   if (/S\s*\.\s*boards\s*\[\s*who\s*\]\s*\[\s*col\s*\]\s*\.\s*push\s*\(\s*die\s*\)/.test(driverSource)) {
     problems.push(`${driver} commits a visible move privately. Placement, score feedback and `
       + `strikes belong to ${MOVE_VIEW_OWNER}; express differences in GameViewSpec.`);
+  }
+}
+
+/* Online is a lazy driver, never a composition root for local play. Tutorial
+   handoff and similar cross-flow actions arrive as typed ports from boot; an
+   online import of flow/game would couple the chunks and restore two owners. */
+for (const file of graphFiles.map(relative).filter((name) => name.startsWith('src/online/'))) {
+  if (reachableFrom(file).has('src/flow/game.ts')) {
+    problems.push(`${file} imports the concrete local-game flow. Inject cross-flow actions from `
+      + `src/boot.ts or its binding modules instead.`);
   }
 }
 
@@ -359,6 +371,7 @@ console.log(JSON.stringify({
     cyclicEdges,
     rootStateEscapes,
     rootQueryEscapes,
+    rootHitTestEscapes,
     gameViewEscapes,
     corePurity: coreFindings,
   },

@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(14);
+select plan(20);
 
 select has_index(
   'public', 'matches', 'matches_p1_history_idx',
@@ -12,6 +12,16 @@ select has_index(
 select has_index(
   'public', 'matches', 'matches_p2_history_idx',
   'p2 history lookup has a partial keyset index'
+);
+select alike(
+  pg_get_indexdef('public.matches_p1_history_idx'::regclass),
+  '%finished_at DESC NULLS LAST, id DESC%',
+  'p1 history index physically matches the API order'
+);
+select alike(
+  pg_get_indexdef('public.matches_p2_history_idx'::regclass),
+  '%finished_at DESC NULLS LAST, id DESC%',
+  'p2 history index physically matches the API order'
 );
 select ok(
   not has_function_privilege(
@@ -81,6 +91,100 @@ select set_config(
   'request.jwt.claim.sub',
   '30000000-0000-0000-0000-000000000001',
   true
+);
+
+-- Keep the query-plan requirement durable without depending on the current
+-- fixture size. These are the two SQL-function branches verbatim at the
+-- participant/index boundary; disabling sequential scans makes an accidental
+-- index-shape regression fail instead of disappearing on a tiny test table.
+set local enable_seqscan = off;
+set local enable_mergejoin = off;
+set local enable_hashjoin = off;
+analyze public.matches;
+analyze public.profiles;
+create function pg_temp.explain_json(p_query text)
+returns jsonb
+language plpgsql
+as $function$
+declare
+  v_plan jsonb;
+begin
+  execute 'explain (format json, costs off) ' || p_query into v_plan;
+  return v_plan;
+end;
+$function$;
+
+select alike(
+  pg_temp.explain_json($query$
+    select m.id, m.finished_at, opponent.nickname
+      from public.matches m
+      join public.profiles opponent on opponent.id = m.p2
+     where m.p1 = '30000000-0000-0000-0000-000000000001'::uuid
+       and m.status <> 'active'
+       and m.season_id = 1
+       and (m.finished_at, m.id) < (
+         '2026-08-23 11:30:00+00'::timestamptz,
+         '40000000-0000-0000-0000-000000000002'::uuid
+       )
+     order by m.finished_at desc nulls last, m.id desc
+     limit 10
+  $query$)::text,
+  '%matches_p1_history_idx%',
+  'the p1 branch uses its participant-first keyset index'
+);
+select unalike(
+  pg_temp.explain_json($query$
+    select m.id, m.finished_at, opponent.nickname
+      from public.matches m
+      join public.profiles opponent on opponent.id = m.p2
+     where m.p1 = '30000000-0000-0000-0000-000000000001'::uuid
+       and m.status <> 'active'
+       and m.season_id = 1
+       and (m.finished_at, m.id) < (
+         '2026-08-23 11:30:00+00'::timestamptz,
+         '40000000-0000-0000-0000-000000000002'::uuid
+       )
+     order by m.finished_at desc nulls last, m.id desc
+     limit 10
+  $query$)::text,
+  '%"Node Type": "Sort"%',
+  'the p1 keyset branch does not add an explicit sort'
+);
+select alike(
+  pg_temp.explain_json($query$
+    select m.id, m.finished_at, opponent.nickname
+      from public.matches m
+      join public.profiles opponent on opponent.id = m.p1
+     where m.p2 = '30000000-0000-0000-0000-000000000001'::uuid
+       and m.status <> 'active'
+       and m.season_id = 1
+       and (m.finished_at, m.id) < (
+         '2026-08-23 11:30:00+00'::timestamptz,
+         '40000000-0000-0000-0000-000000000002'::uuid
+       )
+     order by m.finished_at desc nulls last, m.id desc
+     limit 10
+  $query$)::text,
+  '%matches_p2_history_idx%',
+  'the p2 branch uses its participant-first keyset index'
+);
+select unalike(
+  pg_temp.explain_json($query$
+    select m.id, m.finished_at, opponent.nickname
+      from public.matches m
+      join public.profiles opponent on opponent.id = m.p1
+     where m.p2 = '30000000-0000-0000-0000-000000000001'::uuid
+       and m.status <> 'active'
+       and m.season_id = 1
+       and (m.finished_at, m.id) < (
+         '2026-08-23 11:30:00+00'::timestamptz,
+         '40000000-0000-0000-0000-000000000002'::uuid
+       )
+     order by m.finished_at desc nulls last, m.id desc
+     limit 10
+  $query$)::text,
+  '%"Node Type": "Sort"%',
+  'the p2 keyset branch does not add an explicit sort'
 );
 
 select is(

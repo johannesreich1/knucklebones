@@ -72,6 +72,47 @@ contract. A settlement failure preserves the account for retry; successful
 Auth deletion then cascades the profile, season row, and match history for
 privacy, while the opponent's already-written points and profile mirror remain.
 
+## Ranked lifecycle and commands
+
+- `private.active_match_players` is the database-level one-active-match seat
+  invariant. Match triggers lock both profiles in UUID order, reject accounts
+  behind the deletion barrier, synchronize seats on active/terminal changes,
+  and remove both participants' queue claims. This also covers older service
+  writers during a database-first rollout.
+- `enqueue_ranked_player`, `start_ranked_match`, and `leave_ranked_queue` take
+  the same profile locks. Starting consumes the requester and human-opponent
+  queue rows in the match/seed/optional bot-opener transaction; leaving returns
+  `left` or the match that serialized first.
+- A move command carries a UUID plus `expected_move_count`. PostgreSQL locks the
+  match and atomically appends the log, updates the public projection, performs
+  an optional TypeScript-computed settlement, and records the exact response
+  for explicit same-key replay. Cached legacy bodies without both new fields
+  remain accepted during rollout.
+- The browser does not automatically retry a lost move response because it may
+  briefly reach the preceding non-idempotent Edge Function. It rebuilds from
+  the authoritative log instead, and every fresh match crosses that sync
+  boundary before input so an already-committed bot opener cannot be skipped.
+- Stall claims and resignations use a checked settlement snapshot (turn,
+  `last_move_at`, and move count). The legacy move-insert trigger advances
+  `last_move_at` in the append transaction, so a split writer cannot be
+  forfeited while its separate projection update is still pending.
+
+History pages use the tuple cursor `(finished_at, id)` and participant indexes
+ordered `finished_at DESC NULLS LAST, id DESC`. pgTAP keeps an `EXPLAIN` contract
+for both participant branches; do not claim advisor results that were not run.
+
+## Rollout boundaries
+
+Apply ranked migrations before auto-deploying the corresponding web/function
+clients. The browser has a narrow missing-`leave_ranked_queue` fallback to the
+older RLS-protected own-row DELETE, but database-first remains the normal order.
+
+Game Center is a separate held rollout: `0014_game_center_ids.sql` must be
+followed by `20260823132611_game_center_service_grants.sql` before `gc-auth` is
+deployed. Because restore deliberately has no Supabase JWT, configure a durable
+deployment-layer rate limit first; handler input bounds and a bounded Apple
+certificate cache reduce work but are not a distributed rate limiter.
+
 ## Verification
 
 Backend work is complete only after:
