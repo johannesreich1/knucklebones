@@ -3,7 +3,7 @@
 A mobile-first Knucklebones dice duel. Installable, offline-capable PWA with a
 self-play-tuned expectimax CPU, a scripted tutorial, two local two-player
 seatings (pass-the-phone and face-to-face) — and **ranked online PvP** on a
-server-authoritative backend with an Elo ladder.
+server-authoritative backend with a seasonal points ladder.
 
 **Live:** https://knucklebones-asg.pages.dev · current state and open
 decisions: [docs/STATUS.md](docs/STATUS.md)
@@ -19,7 +19,7 @@ src/
 │   ├── ai.ts        #   expectimax CPU (doubles as the server's bot)
 │   ├── dice.ts      #   seeded PRNG, bit-identical across runtimes
 │   ├── match.ts     #   rebuild any board from a move log
-│   └── elo.ts       #   rating math (K=32, start 1000)
+│   └── ladder.ts    #   ladder points, groups, deltas, bot rank policy
 ├── state.ts         # the S state object + typed vocabulary
 ├── persist.ts       # stats + in-progress save (corrupt blobs rejected)
 ├── ui/              # dom, die, render, fx, input, layout, audio, identity, embed
@@ -28,7 +28,7 @@ src/
 │                    # play (online match driver reusing the local board + animations)
 ├── boot.ts          # wiring; hooks.ts — the test-hook surface (window.__kb)
 └── main.ts / widget.ts   # entry points: page vs embeddable widget
-supabase/            # migrations (mirrors of what's applied) + Edge Functions + DESIGN.md
+supabase/            # immutable migration ledger + Edge Functions + design history
 design/              # every screen as a live card, built from the app's real CSS,
                      # synced to the Claude Design project (see design/build.mjs)
 public/              # manifest, icons, sw.js template — copied into builds
@@ -37,27 +37,28 @@ index.html           # page shell (static no-JS overlay lives here)
 
 `core/` must keep running outside the browser — the Edge Functions import it
 **verbatim** to replay and validate every online move server-side. Nothing in
-`core/` may touch the DOM, timers or `Math.random` (the AI's tie-break jitter
-is the one deliberate exception, and it never affects replayed scores).
+`core/` may touch the DOM or timers. Authoritative replay/scoring use explicit
+seeded inputs; local dice and AI randomness must stay outside those outcomes.
 
-## Online play, in one paragraph (and a wheel)
+## Online play, in one paragraph (and a dial)
 
-Every ranked match starts with a **mode wheel**: classic 50%, or one of the
-additions — rows multiply instead of columns, row matches score on top, or
-full columns become indestructible. The wheel is aimed theater: the mode is
-a deterministic server-side draw from the match seed (`core/modes.ts`),
-stored on the match, and enforced end-to-end (replay validation, scoring,
-Elo, and the bots' search all run under it). Practice is always classic.
+Every ranked match reveals its mode before play. The roster, rules, and
+production weights live in [`src/core/modes.ts`](src/core/modes.ts); do not
+copy their current values into documentation. The dial is aimed theater: the
+mode is a deterministic server-side draw from the match seed, stored on the
+match, and enforced end-to-end in replay validation, scoring, ladder changes,
+and bot search. Practice is always classic.
 
 Ranked = online PvP only; practice never touches ratings. The server is the
 single authority: clients submit only `{match_id, col}`, the dice seed lives
 in a service-only table, and `pvp-move` rebuilds the board from the
 die-carrying move log on every request — a hacked client can lose stylishly
-but cannot cheat. When matchmaking finds no human within ~7s, a server-side
+but cannot cheat. When matchmaking needs to backfill the pool, a server-side
 bot (same `core/ai.ts`, disguised behind a generated nickname) takes the
 seat; bot games rate the human, bot accounts never appear on the leaderboard.
-Stalls forfeit after 65s via `pvp-claim`. The whole online client is one
-lazy-loaded chunk — the offline game's boot path never depends on it.
+Absent-human auto-play and forfeits are enforced against server time by the
+Edge Functions; their constants, not prose, are authoritative. The whole
+online client is lazy-loaded, so the offline boot path never depends on it.
 
 ## Develop
 
@@ -108,11 +109,11 @@ deploys automatically.
 npm test            # builds, then runs the full gate (tests/run-all.mjs)
 ```
 
-The gate runs the pure-core determinism/replay checks under plain Node, all
-Playwright behaviour suites, and the AI benchmark, and fails on any problem
-in any suite. Suites assert behaviour (state↔DOM reconciliation, input
-semantics, turn indication, tutorial script adherence, PWA
-install/offline/update), not pixels.
+The gate runs pure-core determinism/replay checks under plain Node, Playwright
+behaviour suites, architecture contracts, design checks, and the AI benchmark,
+and fails on any problem. Player-visible suites deliberately assert computed
+pixels, hit testing, and animation where DOM/state agreement cannot prove what
+the player sees.
 
 **Game-completion loops use budgets of 900–1200 ticks on purpose.** Random,
 destruction-heavy endgames run long and CI runners are slow — 300–400-tick
@@ -211,11 +212,39 @@ a cloud session, which has none.
 
 ## Native (iOS / Android)
 
-The Capacitor wrapper is not checked in (generated, heavy). Recreate with
-`npm i @capacitor/core @capacitor/cli @capacitor/ios @capacitor/android`,
-`npx cap add ios android`, then `npm run build && npx cap sync`. The app id
-is deliberately an invalid placeholder in `src/config.ts` until the real one
-is chosen. iOS requires a Mac with Xcode.
+The Capacitor configuration, dependency locks, Game Center plugin, and iOS
+Xcode project are checked in under `native/`. Generated web assets,
+`node_modules`, Pods, and Xcode build products are ignored. Install the native
+dependencies with `npm --prefix native ci`, run the root build, then run
+`npm --prefix native run sync` explicitly. Android has not been added yet;
+iOS development requires a Mac with Xcode.
+
+The product name and canonical app id remain an owner decision. The browser
+config deliberately contains an invalid placeholder while existing native
+identity copies are tracked; these must be unified or consistency-gated before
+a store build. See [the build architecture](docs/architecture/build.md).
+
+## Installing the PWA
+
+The hosted build requires HTTPS for its service worker. On iPhone, open the
+live URL in Safari and choose **Add to Home Screen**. On Android, use Chrome's
+**Install app** action; supported desktop Chromium browsers show an install
+button in the address bar. The generated service worker and manifest come from
+the build pipeline—never edit files in `pwa/` by hand.
+
+Local preferences and in-progress local games use browser storage. Ranked
+identity, profiles, match logs, and ladder records use Supabase; clearing local
+site data is therefore not equivalent to deleting an online account.
+
+## Architecture references
+
+| Area | Guide |
+|---|---|
+| Frontend and shared game view | [docs/architecture/frontend.md](docs/architecture/frontend.md) |
+| CSS cascade and widget isolation | [docs/architecture/styles.md](docs/architecture/styles.md) |
+| Supabase and Edge Functions | [docs/architecture/backend.md](docs/architecture/backend.md) |
+| Builds, PWA, widget, and native | [docs/architecture/build.md](docs/architecture/build.md) |
+| Tests and release gate | [docs/architecture/testing.md](docs/architecture/testing.md) |
 
 ## Fair warning
 

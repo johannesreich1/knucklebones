@@ -1,14 +1,11 @@
 # Stage 3 — Backend design (Supabase)
 
-Status: **SUPERSEDED IN PART by the PvP pivot (2026-08-16)** — the owner's
-decision: solo/AI games are never ranked; ranked = online PvP only, with bot
-backfill behind generated usernames. Elo ladder; bot games count for humans,
-bots never listed. The deployed reality is migrations 0003-0008 +
-supabase/functions/{pvp-join,pvp-move,pvp-claim,account-delete}, all live and e2e-verified
-(tests/e2e-pvp.mjs: full human-vs-human match with zero-sum Elo, bot match,
-seed secrecy, rating-tamper denial, out-of-turn/illegal-move rejection).
-The sections below describe the original solo-ranked design and remain as
-rationale for the shared-core replay approach the PvP authority reuses.
+Status: **HISTORICAL ORIGINAL PROPOSAL.** The solo-ranked schema and functions
+below were superseded by server-authoritative PvP, seasonal ladder points, and
+bot backfill. They remain only as rationale for shared-core replay. Do not use
+the sample schema, deployment claims, or Elo terminology as current state.
+Current boundaries live in `docs/architecture/backend.md`; current rules live
+in `docs/LADDER.md`, the migration ledger, and the Edge Function source.
 
 ## Principles
 

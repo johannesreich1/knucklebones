@@ -1,9 +1,9 @@
 # Spells — the design rules
 
-*What a spell is allowed to be in this game, why the current five exist, and
-what a sixth would have to prove. `docs/STATUS.md` records what shipped and
-when; this file records **the thinking**, so a later session can add a spell
-without re-deriving it — or can knowingly overrule it.*
+*What a spell is allowed to be in this game, why the current six exist, and
+what a seventh would have to prove. The dated sprint history records what
+shipped when; this file records **the thinking**, so a later session can add a
+spell without re-deriving it — or can knowingly overrule it.*
 
 Spells are an **optional layer over offline play**. Both seats always hold the
 same rune, one cast per turn at most, and a cast is **not a move** — your die
@@ -14,7 +14,7 @@ still lands afterwards.
 ## 1. The four principles
 
 Every spell in this game is judged against these. They came out of retiring
-the first one (§3), and they are the reason the current five feel different
+the first one (§3), and they are the reason the current six feel different
 from it.
 
 **Earned beats free.** A spell whose power depends on the die you actually
@@ -226,7 +226,7 @@ whether a spell is *fun* — and it becomes misleading the instant that rule is
 dropped.
 
 Measured 2026-08-22 with a head-to-head harness (3,000 games per cell, both
-directions averaged, noise floor 0.9pp), the shipped five against **each
+directions averaged, noise floor 0.9pp), the then-shipped five against **each
 other** in classic, as mean win% across the pool:
 
     sunder 54.7 · pilfer 54.7 · fate 52.0 · ward 48.2 · nudge 46.0

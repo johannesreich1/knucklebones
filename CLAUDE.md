@@ -3,77 +3,80 @@
 **Keep `AGENTS.md` and `CLAUDE.md` synchronized. Whenever either file changes,
 update the other in the same change.**
 
-Read `docs/STATUS.md` for where the project stands. This file is the short list
-of principles that decide *how* changes get made here.
+Knucklebones is a mobile-first TypeScript dice duel delivered as a PWA,
+standalone page, widget, and Capacitor app. Local and ranked play share pure
+game rules and the same player-visible game view; ranked persistence and
+validation run on Supabase.
 
-**Before touching either variety layer, read its design doc** — they record
-the *thinking* (what a spell or mode is allowed to be, what was rejected and
-why, what the numbers were), so you can extend them without re-deriving the
-rules, or overrule them knowingly:
+## Load only the context the task needs
 
-- `docs/SPELLS.md` — the spell layer: four design principles, the house rules
-  a spell may not break, why COLUMN SWAP was retired, the measured roster, how
-  to measure a new one, and the UI rules real play burned in.
-- `docs/MODES.md` — the game modes: what a mode may change, ranked odds and
-  who owns them, the heuristics that must be measured rather than reasoned,
-  and how modes interact with spells.
+Do not read every project document up front. Use this routing table before
+touching an area:
 
-## One thing, one implementation — extensible, never duplicated
+| Task | Read first |
+|---|---|
+| Current release state, roadmap, or an unresolved owner decision | `docs/STATUS.md` |
+| Frontend flow, state, module boundaries, or shared game rendering | `docs/architecture/frontend.md` |
+| CSS, responsive layout, game-state overrides, or widget isolation | `docs/architecture/styles.md` |
+| Supabase, auth, RLS, migrations, RPCs, Realtime, or Edge Functions | `docs/architecture/backend.md`, `supabase/DESIGN.md`, and the applicable Supabase skills |
+| Build artifacts, PWA, service worker, widget packaging, native, or deploy | `docs/architecture/build.md` |
+| Tests, CI, browser harnesses, live probes, or verification policy | `docs/architecture/testing.md` |
+| Game modes or their balance/odds | `docs/MODES.md` |
+| Spells or their balance/interaction rules | `docs/SPELLS.md` |
+| Ladder points, groups, bots, or matchmaking policy | `docs/LADDER.md` |
+| Accounts, guest upgrade, nickname, or Game Center identity | `docs/IDENTITY.md` |
+| Historical August rationale or rejected alternatives | `docs/history/2026-08-sprint.md` |
 
-**If two screens, flows or behaviours are the same thing wearing different
-clothes, there is ONE implementation with slots for what genuinely differs.**
-Never a second copy "because this context is a bit different".
+For a routine localized change, inspect its owners and tests; `STATUS.md` is
+not mandatory unless the task depends on current/open external state.
 
-DRY here does not mean "share some helpers". It means: the shared thing has a
-single home, and the differences are *parameters of it* — a slot, a spec
-object, a registry entry, a token. If a new context cannot be expressed by
-filling in the existing thing, that is a signal the thing needs a better seam,
-not a sibling.
+## One thing, one implementation
 
-Why it is worth the extra thought every time:
+If two screens, flows, or behaviours are the same concept with different
+presentation, there is one implementation with explicit slots for what really
+differs. A second near-copy is a design failure, not a shortcut.
 
-- A duplicate is finished once and maintained twice. Every later improvement
-  has to be remembered in both places, and one of them will be missed. This
-  repo has already paid that bill: the in-game view had two drivers that each
-  wrote the board directly, and five player-visible differences accumulated in
-  the gap — a multiplier that celebrated offline and stayed silent online, a
-  game-over beat that settled on one side only.
-- The second copy is where bugs hide, because the tests were written for the
-  first.
+- Registries own variants: modes in `src/core/modes.ts`, spells in
+  `src/core/spells.ts`. Flow, UI, and CSS consume registry data rather than
+  learning every name.
+- Shared components accept specs/slots. Local and online controllers drive the
+  shared board and result primitives; neither paints a private copy.
+- Repeated design values become tokens. Repeated behaviour gets a narrow typed
+  seam, not an event bus or framework.
+- Before copying, name the actual difference and make it a parameter. Keep
+  KISS: do not abstract unrelated one-line coincidences.
 
-In practice:
+## Universal engineering rules
 
-- **Registries over branches.** A new game mode is an object in
-  `core/modes.ts`; a new spell is an object in `core/spells.ts`. The flow, the
-  UI and the CSS never learn its name.
-- **Components over screens.** The game-mode picker and the spell picker are
-  one `pickerRow()` differing by their item list. The end screen serves local
-  play and ranked alike, filled by a spec.
-- **Tokens over numbers.** Three width tokens replaced seven ad-hoc
-  max-widths (`design/screens/01-widths`).
-- **One driver may not own a shared view.** `flow/game.ts` and
-  `online/play.ts` drive the same board through the same render layer; neither
-  paints privately.
-
-When you catch yourself writing a near-copy: stop, name what actually differs,
-and make that the parameter.
-
-## The rest, in brief
-
-- **Never push a red gate.** `npm test` must be green — Cloudflare deploys
-  `main` immediately, without waiting for CI.
-- **One gate per working tree, any number across trees.** Test servers bind
-  kernel-picked ports (`tests/serve.mjs`) and `run-all` holds `.gate.lock`, so
-  parallel sessions never serve each other their builds — and a second gate in
-  the same checkout queues instead of racing `build.mjs` over `pwa/`.
-- **`core/` stays pure.** No DOM, no timers, no randomness: it runs in the
-  browser, in Node (the test gate) and in Deno (Edge Functions) unmodified.
-- **Assert what the player can SEE.** Computed pixels, not DOM contents — a
-  mode once shipped broken while state and DOM agreed perfectly
-  (`tests/test13.mjs`).
-- **Measure, don't guess**, for anything tunable — difficulty, layout budgets,
-  animation. Both AI difficulty passes in this repo were decided by simulated
-  games, not by feel.
+- **Never push a red gate.** Cloudflare deploys `main` immediately. Run
+  `npm test` before push and report the exact verification performed.
+- **One gate per working tree.** `tests/run-all.mjs` holds `.gate.lock` because
+  the build output is shared. Separate worktrees may gate concurrently on
+  kernel-assigned ports.
+- **Keep `src/core/` portable.** No DOM or timers. Replay/scoring are
+  deterministic across browser, Node, and Deno; any AI/dice randomness stays
+  explicit, injectable, and outside authoritative replay outcomes.
+- **Assert what the player can see.** For layout, stacking, visibility, and
+  animation, verify computed pixels/hit testing rather than DOM or state alone.
+- **Measure tunable behaviour.** Difficulty, balance, layout budgets, and
+  animation timing require evidence, not intuition.
+- **Do not spread unchecked code.** New/extracted TypeScript is typed and may
+  not inherit `@ts-nocheck`. Prefer focused modules; split by responsibility,
+  not an arbitrary line counter.
+- **Preserve user changes.** The working tree may contain concurrent work;
+  inspect it first and do not overwrite unrelated edits.
 - **External dashboards belong to Johannes** (Cloudflare, Supabase dashboard,
-  registrars). The repo side prepares and writes the steps; he clicks.
-  Supabase via the connected MCP is the sanctioned exception.
+  registrars). Prepare repository changes and steps; he clicks. A connected
+  Supabase tool is the sanctioned exception when the requested scope permits.
+
+## Verification entry points
+
+```text
+npm run dev       local Vite server
+npm run build     all web/widget/native-web artifacts
+npm test          full release gate
+```
+
+Run a focused owner test while iterating, then the full gate for release-ready
+work. Live tests are explicit, environment-driven, and never part of the
+default gate.

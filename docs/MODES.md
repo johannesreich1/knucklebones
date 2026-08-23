@@ -1,9 +1,9 @@
 # Game modes — the design rules
 
 *What a mode is allowed to be, why the current seven exist, and what an eighth
-would have to satisfy. `docs/STATUS.md` records what shipped and when; this
-file records **the thinking**. Its companion is `docs/SPELLS.md` — modes and
-spells are the game's two variety layers and they interact (§6).*
+would have to satisfy. The dated sprint history records what shipped when;
+this file records **the thinking**. Its companion is `docs/SPELLS.md` — modes
+and spells are the game's two variety layers and they interact (§6).*
 
 A mode changes **the rules of the duel itself**, for both players, for the
 whole match. Ranked spins for one before the match starts; offline you pick it
