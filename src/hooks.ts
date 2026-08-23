@@ -13,7 +13,15 @@ import { showHints } from './ui/game/hints.ts';
 import { applySides, setStatus, setActivePlate } from './ui/game/turn-state.ts';
 import { fit } from './ui/layout.ts';
 import { aiChoose, newGame, place } from './flow/game.ts';
-import { cast, arm, disarm, chargesOf, renderSpells, aiSpellTurn, undoCast, undoable } from './flow/spells.ts';
+import {
+  cast,
+  arm,
+  disarm,
+  chargesOf,
+  renderSpells,
+  aiSpellTurn,
+  resolveTimedOutSpellAim,
+} from './flow/spells.ts';
 
 import { modeByEnum } from './core/modes.ts';
 
@@ -22,8 +30,15 @@ export function hooks(){
            applyMove, cloneSt, riskOf, nodes,
            sideKey, faceRotated, applySides, renderAll, showHints, setStageDie, loaderDie, setStatus, setActivePlate, nameOf,
            burst, reduced:REDUCED, fit,
-           spells: { cast, arm, disarm, chargesOf, render: renderSpells, ai: aiSpellTurn,
-                     undo: undoCast, undoable },
+           spells: {
+             cast,
+             arm,
+             disarm,
+             chargesOf,
+             render: renderSpells,
+             ai: aiSpellTurn,
+             timeoutAim: resolveTimedOutSpellAim,
+           },
            modeByEnum,
            openPractice: () => { hide('#ovStart'); show('#ovPractice'); },
            goHome: () => { hide('#ovPractice'); show('#ovStart'); } };

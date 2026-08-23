@@ -1,0 +1,194 @@
+<!-- meta name="BO4 — The bank lifts the score" group="3i · BOUNTY — the banked kill" subtitle="The ✦ does not sit beside your total, it visibly climbs INTO it: the banked points rise off the tally and the score counts up through them, because in this mode the bank IS part of the number that wins" width=430 height=1172 sizes="md" links="Match, Game modes, Offline — local play" -->
+<style>
+  /* Card-local names only (bo* and sp*). Every die, mode glyph and number comes
+     from the app's own registries through the build tokens; the study board,
+     chips, labels and nameplate width now come from design/build.mjs's chrome. */
+  .scr{gap:6px;--hue:{{mhue:bounty}}}
+  /* THE SCENE is one positioned box — both nameplates and the whole field —
+     because this mode's animation is the only one in the library that has to
+     travel from a die on the board to a number on a NAMEPLATE. A field-only
+     canvas (the seam the PILFER studies draw on) cannot reach that far. */
+  .boscene{position:relative;width:100%;display:flex;flex-direction:column;gap:6px}
+  .bofx{position:absolute;inset:0;pointer-events:none;z-index:6;display:block}
+
+  /* the destination seat, lit while it is still empty */
+  .boroom{box-shadow:inset 0 0 0 1px rgba(var(--p1-rgb),.34),inset 0 0 16px rgba(var(--p1-rgb),.12)}
+  .stagerow{--cell:56px;margin-top:12px}
+  .bostatus{margin-top:10px;margin-bottom:12px}
+
+  /* ===== THE LOOP: 3.6s, the same beats in all six =====
+       16%  my 4 lands in my column 2 — the stage empties, the seat fills
+       20%  the two enemy 4s begin to die (the app's own .dying curve, 0.34s,
+            held here on the card's clock), the second 3% behind the first
+       33%  they are gone — this is where the +1s exist and where the six
+            ideas part company
+       60%  every number that changed cuts: both totals, both column chips,
+            and the ✦ tally
+     Nothing before 16% or after 60% differs between the cards, so what the
+     reader is comparing is exactly the 33–60% window. */
+  .bostage{display:block;line-height:0;animation:boplay 3.6s steps(1,end) infinite}
+  @keyframes boplay{0%,15.9%{opacity:1}16%,100%{opacity:0}}
+  .bodrop > .die{animation:bodrop 3.6s steps(1,end) infinite}
+  @keyframes bodrop{0%,15.9%{opacity:0}16%,100%{opacity:1}}
+  .bovictim{animation:bodie1 3.6s ease-in infinite}
+  .bovictim.v2{animation-name:bodie2}
+  @keyframes bodie1{0%,20%{opacity:1;transform:scale(1) rotate(0)}
+    24%{opacity:1;transform:scale(1.24) rotate(6deg);filter:brightness(2.4)}
+    32%,100%{opacity:0;transform:scale(.2) rotate(-24deg);filter:brightness(3)}}
+  @keyframes bodie2{0%,23%{opacity:1;transform:scale(1) rotate(0)}
+    27%{opacity:1;transform:scale(1.24) rotate(6deg);filter:brightness(2.4)}
+    35%,100%{opacity:0;transform:scale(.2) rotate(-24deg);filter:brightness(3)}}
+  /* every number this strike moves, moving on one frame */
+  .spold{animation:booldn 3.6s steps(1,end) infinite}
+  .spnew{animation:bonewn 3.6s steps(1,end) infinite}
+  @keyframes booldn{0%,59.9%{opacity:1}60%,100%{opacity:0}}
+  @keyframes bonewn{0%,59.9%{opacity:0}60%,100%{opacity:1}}
+  .botot{display:inline-flex;justify-content:center;min-width:2.2ch}
+  /* THE ✦ TALLY is the app's own .plate .bty — including its colour, which is
+     the SIDE'S multiplier heat (--mx2), not a literal gold and not the mode's
+     green. That matters here: green is in the DUELHUES roster, so a tally
+     painted the registry's bounty green would be indistinguishable from the
+     plate of a player who picked green in Settings. */
+  .botally{display:inline-flex;justify-content:center;min-width:3ch}
+
+  /* THE FLOATING NUMBER the game prints today (ui/fx floatPts): "+2 ✦" rising
+     out of the column that struck, in the striker's multiplier heat, gone in
+     900ms. It is the whole of BOUNTY's current animation, and every idea below
+     is measured against whether it still needs it. */
+  .bopts{position:absolute;left:50%;top:8px;z-index:8;
+    animation:bofloat 3.6s cubic-bezier(.2,.7,.3,1) infinite}
+  @keyframes bofloat{0%,33%{transform:translate(-50%,0) scale(.6);opacity:0}
+    42%{transform:translate(-50%,-16px) scale(1.18);opacity:1}
+    58%,100%{transform:translate(-50%,-44px) scale(1);opacity:0}}
+
+  /* ===== THE IDEA. core/rules totalOf() is boardTotal + banked, so under
+     BOUNTY the number on the nameplate is NOT the board — and a player who
+     does not know that reads a score they cannot reconstruct by counting
+     dice. This idea animates the arithmetic: the +2 leaves the ✦, travels the
+     few pixels up to the total, and the total rolls through 26 → 32 with it.
+     The gutter already stacks them that way (styles/game/shell.css: BOUNTY's
+     banked points sit BELOW the running total), so the move is a short one. */
+  .bomyplate .pright{position:relative}
+  .bolift{position:absolute;right:2px;bottom:12px;font-style:normal;font-size:12.5px;font-weight:900;
+    color:var(--mx2,var(--gold));text-shadow:0 0 10px rgba(var(--mx2-rgb,var(--gold-rgb)),.8);
+    opacity:0;pointer-events:none;animation:bolift 3.6s cubic-bezier(.3,0,.2,1) infinite}
+  @keyframes bolift{0%,36%{opacity:0;transform:translateY(0) scale(.7)}
+    42%{opacity:1;transform:translateY(-4px) scale(1.1)}
+    58%{opacity:1;transform:translateY(-15px) scale(1)}
+    60%,100%{opacity:0;transform:translateY(-17px) scale(.9)}}
+  /* the score is struck by the arrival: the app's own .plate.bump, held on
+     the loop's clock rather than a 190ms timeout */
+  .botot{position:relative}
+  .bomyplate .tot{animation:bobump 3.6s ease-out infinite}
+  @keyframes bobump{0%,59%{transform:scale(1)}61%{transform:scale(1.16)}66%,100%{transform:scale(1)}}
+  /* ...and the tally it came out of dips, so the two ends of the transfer are
+     the same gesture rather than two coincidences */
+  .botally{position:relative;animation:bodip 3.6s ease-out infinite}
+  @keyframes bodip{0%,36%{transform:scale(1)}40%{transform:scale(.88)}
+    52%{transform:scale(1.06)}58%,100%{transform:scale(1)}}
+  /* The intermediate reading YOUR score passes through: 26 → 30 (the board's
+     four) → 32 (the bank's two). The board pays first because it did.
+     Scoped to your own plate: the foe's total is a two-state cut like every
+     other number in the set, and an unscoped .botot .spold here would take theirs
+     out at 36% and not put the new one back until 60% — a quarter of the loop
+     with no score on their nameplate at all. */
+  .bomyplate .botot .bomid{position:absolute;inset:0;display:flex;align-items:center;
+    justify-content:center;font-style:normal;animation:bomid 3.6s steps(1,end) infinite}
+  @keyframes bomid{0%,35.9%{opacity:0}36%,59.9%{opacity:1}60%,100%{opacity:0}}
+  .bomyplate .botot .spold{animation-name:bostep1}
+  @keyframes bostep1{0%,35.9%{opacity:1}36%,100%{opacity:0}}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hud">
+    <div class="rec">
+      <span class="rchip">ONLINE</span>
+      <button type="button" class="rchip tapmode" data-lib="modes" data-id="bounty">{{mico:bounty:12}} BOUNTY<span class="mi">ⓘ</span></button>
+    </div>
+    <div class="sp"></div>
+    <button class="ico">{{ico:leave:15}}</button>
+  </div>
+
+  <div class="cap2">Your 4 lands and takes their pair. The board pays 4, the bank pays 2 — and the score takes both, in that order.</div>
+
+  <div class="boscene">
+    <i class="bofx"></i>
+
+    <!-- their bank is untouched by this strike: only the striker banks -->
+    <div class="plate pline" style="--c:var(--p2)">
+      <span class="who"><span class="dot"></span><span class="nm">EmberCrow896</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="bty">✦2</span><span class="tot"><span class="spcount botot"><i class="spold">31</i><i class="spnew">15</i></span></span></span>
+    </div>
+
+    <div class="spfield">
+      <!-- the enemy half fills from the centre line outward, exactly as the
+           app's mirrored board does -->
+      <div class="spboard spfoe">
+        <div class="spcol">
+          <div class="spslot"></div>
+          <div class="spslot"></div>
+          <div class="spslot">{{die:6:p2:52}}</div>
+        </div>
+        <div class="spcol">
+          <div class="spslot"></div>
+          <div class="spslot bovseat b1"><span class="spmark bovictim v1">{{die:4:p2 m2:52}}</span></div>
+          <div class="spslot bovseat b2"><span class="spmark bovictim v2">{{die:4:p2 m2:52}}</span></div>
+        </div>
+        <div class="spcol">
+          <div class="spslot"></div>
+          <div class="spslot">{{die:2:p2:52}}</div>
+          <div class="spslot">{{die:5:p2:52}}</div>
+        </div>
+      </div>
+      <div class="sprow3" style="--cell:52px;--gap:6px;margin-top:5px">
+        <div class="spchip" style="--c:var(--p2)">6</div>
+        <div class="spchip spcount" style="--c:var(--p2)"><i class="spold">16</i><i class="spnew">0</i></div>
+        <div class="spchip" style="--c:var(--p2)">7</div>
+      </div>
+      <div class="sprow3" style="--cell:52px;--gap:6px">
+        <div class="splbl"></div>
+        <div class="splbl hit">their 4s</div>
+        <div class="splbl"></div>
+      </div>
+
+      <div class="stagerow"><span class="bostage">{{die:4:p1:56}}</span></div>
+      <div class="status me bostatus">Your move</div>
+
+      <div class="sprow3" style="--cell:52px;--gap:6px;margin-bottom:5px">
+        <div class="spchip" style="--c:var(--p1)">12</div>
+        <div class="spchip spcount" style="--c:var(--p1)"><i class="spold">5</i><i class="spnew">9</i></div>
+        <div class="spchip" style="--c:var(--p1)">6</div>
+      </div>
+      <div class="spboard spmine">
+        <div class="spcol">
+          <div class="spslot">{{die:3:p1 m2:52}}</div>
+          <div class="spslot">{{die:3:p1 m2:52}}</div>
+          <div class="spslot"></div>
+        </div>
+        <div class="spcol" style="position:relative">
+          <div class="spslot">{{die:5:p1:52}}</div>
+          <div class="spslot boroom bodrop">{{die:4:p1:52}}</div>
+          <div class="spslot"></div>
+
+        </div>
+        <div class="spcol">
+          <div class="spslot">{{die:6:p1:52}}</div>
+          <div class="spslot"></div>
+          <div class="spslot"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="plate pline bomyplate" style="--c:var(--p1)">
+      <span class="who"><span class="dot"></span><span class="nm">FrostLynx303</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="spcount botally"><i class="spold">✦3</i><i class="spnew">✦5</i></span><i class="bolift">+2</i><span class="tot"><span class="spcount botot"><i class="spold">26</i><i class="bomid">30</i><i class="spnew">32</i></span></span></span>
+    </div>
+  </div>
+
+  <div class="splbl">their column 16 → 0 · yours 5 → 9 · the bank ✦3 → ✦5 · your total 26 → 32</div>
+  <div class="note"><b>What it says:</b> <b>the bank is your score, not a souvenir.</b> Under BOUNTY <code>totalOf</code> is board + bank, so the nameplate stops matching the dice — and nothing on screen currently explains the gap. Watching the ✦ climb into the total closes it once, at the moment it first opens.<br>
+  <b>It also separates the two payments.</b> The score passes through 30 on its way to 32: four points for the placement, two for the kills. Those are different rules and the number visibly takes them one at a time.<br>
+  <b>It is nearly free.</b> Everything moves inside the nameplate's right cluster — a lane ui/game/scores.ts already reserves for the whole match precisely so late tallies cannot shove the score around.<br>
+  <b>Cost:</b> it is the least visceral idea here. A strike that kills three dice looks exactly like one that kills one, except for the digits, so it carries no weight of destruction at all — it may want to be the SECOND half of another idea rather than the whole answer. And in landscape the plate cluster is shorter, so the 15px climb has to be re-measured there.</div>
+</div></div>

@@ -1,0 +1,182 @@
+<!-- meta name="NU3 — The ratchet" group="4e · NUDGE — the tick" subtitle="A ring of six notches around the die in hand: the cast advances the lit notch by exactly one, and the six sits next to the one, so the wrap is drawn as the ring closing rather than as a fall" width=430 height=1092 sizes="md" links="Spells — aiming a rune, Offline — local play, Game modes" -->
+<style>
+  /* Card-local names only (nu* and sp*). Every die is the app's own face markup
+     through the build token, so the pip cells animated below are literally the
+     cells src/ui/die-markup.ts lays out. The study board, chips, labels and
+     nameplate width come from design/build.mjs's chrome. */
+  .scr{gap:6px;--hue:{{shue:nudge}}}
+  .stagerow{--cell:56px;margin-top:16px}
+  .nustatus{margin-top:14px;margin-bottom:14px}
+
+  /* ===== THE LOOP: 2.8s, one cast =====
+       0–20%   the rune is armed and the die in hand reads 3
+       20–42%  the tick — the window the six ideas differ in
+       42%     the face IS the new one; the rune is spent
+       42–100% held
+     Every card runs the same loop three times over: on the die in play (3 → 4)
+     and on the two cases in the strip below it (5 → 6, and the WRAP 6 → 1),
+     because an idea that reads well going up and badly coming back around is
+     not an answer — the wrap is the price that keeps this rune honest. */
+  .nuunit{position:relative;display:block;line-height:0;width:var(--sz);height:var(--sz)}
+  .nuunit > i{position:absolute;inset:0;display:block;line-height:0}
+  .nuold{animation:nuoldf 2.8s steps(1,end) infinite}
+  .nunew{animation:nunewf 2.8s steps(1,end) infinite}
+  @keyframes nuoldf{0%,41.9%{opacity:1}42%,100%{opacity:0}}
+  @keyframes nunewf{0%,41.9%{opacity:0}42%,100%{opacity:1}}
+  @keyframes nudrain{0%,20%{opacity:1;transform:scale(1)}
+    28%{opacity:1;transform:scale(1.18)}
+    42%,100%{opacity:0;transform:scale(.15)}}
+  @keyframes nuarrive{0%,42%{opacity:0;transform:scale(.15)}
+    52%{opacity:1;transform:scale(1.25)}60%,100%{opacity:1;transform:scale(1)}}
+
+  /* the rune: armed, then spent — both are the app's own states (.rune.armed,
+     .rune.spent in styles/game/spells.css), cut on the same frame as the face */
+  .nurune{position:relative;display:flex;align-items:center}
+  .nurune .spent{position:absolute;inset:0;margin:0}
+  .nurune .armed{animation:nuoldf 2.8s steps(1,end) infinite}
+  .nurune .spent{animation:nunewf 2.8s steps(1,end) infinite}
+  /* ...and the line under the die, which castBy() rewrites for the whole cast */
+  .nustx{position:relative;display:block}
+  .nusay2{position:absolute;left:0;right:0;top:0}
+  .nusay1{animation:nuoldf 2.8s steps(1,end) infinite}
+  .nusay2{animation:nunewf 2.8s steps(1,end) infinite}
+
+  /* THE WRAP STRIP: the two cases side by side, running the same idea */
+  .nustrip{display:flex;justify-content:center;gap:26px;margin-top:12px;width:100%}
+  .nucase{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .nucase .cap{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;
+    text-align:center;line-height:1.5}
+  .nucase.wrap .cap{color:var(--hue)}
+  .nuarrow{font-size:11px;color:var(--dim);letter-spacing:.1em}
+
+  /* WHICH PIPS MOVE, per case — computed from src/ui/die-markup.ts's own cell
+     map rather than counted by hand, so a card can never picture a face the
+     game does not draw. */
+  /* 3 → 4: 1 pip leave, 2 arrive — 3 becomes 4 */
+  .u34 .nuold .pip:nth-child(5){opacity:1;animation:nudrain 2.8s cubic-bezier(.5,0,.85,1) infinite}
+  .u34 .nunew .pip:nth-child(3),.u34 .nunew .pip:nth-child(7){opacity:1;animation:nuarrive 2.8s cubic-bezier(.2,1.6,.4,1) infinite}
+  /* 5 → 6: 1 pip leave, 2 arrive — 5 becomes 6 */
+  .u56 .nuold .pip:nth-child(5){opacity:1;animation:nudrain 2.8s cubic-bezier(.5,0,.85,1) infinite}
+  .u56 .nunew .pip:nth-child(4),.u56 .nunew .pip:nth-child(6){opacity:1;animation:nuarrive 2.8s cubic-bezier(.2,1.6,.4,1) infinite}
+  /* 6 → 1: 6 pips leave, 1 arrive — 6 becomes 1 */
+  .u61 .nuold .pip:nth-child(1),.u61 .nuold .pip:nth-child(3),.u61 .nuold .pip:nth-child(4),.u61 .nuold .pip:nth-child(6),.u61 .nuold .pip:nth-child(7),.u61 .nuold .pip:nth-child(9){opacity:1;animation:nudrain 2.8s cubic-bezier(.5,0,.85,1) infinite}
+  .u61 .nunew .pip:nth-child(5){opacity:1;animation:nuarrive 2.8s cubic-bezier(.2,1.6,.4,1) infinite}
+
+  /* ===== THE IDEA. Leave the die alone and put the rule OUTSIDE it. Six
+     notches on a ring, one lit; a cast moves the light one notch clockwise and
+     the face follows. The ring says three things the die cannot: that this
+     rune moves by ONE, that there are exactly SIX places to be, and that the
+     last one is adjacent to the first — so the wrap stops being a punishment
+     and becomes a property of the shape.
+     The ring is 6 marks placed by rotation; no SVG, no new geometry. */
+  /* the ring hangs on the die's CENTRE, so it has to beat the scaffold's own
+     .nuunit > i inset rule — which would otherwise pin it to the die's
+     top-left corner and scatter the notches across the board above it */
+  .nuunit > i.nuring{position:absolute;left:50%;top:50%;right:auto;bottom:auto;
+    width:0;height:0;z-index:6;pointer-events:none;
+    /* the notches sit OUTSIDE the die: half a cell plus a little air */
+    --r:calc(var(--sz)*.64)}
+  .nuring > b{position:absolute;left:0;top:0;width:4px;height:9px;margin:-4.5px 0 0 -2px;border-radius:2px;
+    background:rgba(255,255,255,.16);
+    transform:rotate(calc(var(--i)*60deg)) translateY(calc(var(--r)*-1))}
+  /* THE LIT NOTCH — the one that moves. It sits on the ring's own centre, so
+     one rotation is the whole animation. */
+  .nunotch{position:absolute;left:0;top:0;width:4px;height:11px;margin:-5.5px 0 0 -2px;
+    border-radius:2px;z-index:7;pointer-events:none;display:block;
+    background:var(--hue);box-shadow:0 0 10px var(--hue),0 0 20px color-mix(in srgb,var(--hue) 60%,transparent);
+    animation:nu3turn 2.8s cubic-bezier(.3,1.5,.4,1) infinite}
+  @keyframes nu3turn{0%,20%{transform:rotate(calc(var(--from)*60deg)) translateY(calc(var(--r)*-1))}
+    42%,100%{transform:rotate(calc((var(--from) + 1)*60deg)) translateY(calc(var(--r)*-1))}}
+  /* the detent is felt, not just seen: the die takes the stop */
+  .nuunit{animation:nu3kick 2.8s cubic-bezier(.2,1.6,.4,1) infinite}
+  @keyframes nu3kick{0%,40%{transform:scale(1)}44%{transform:scale(1.07)}54%,100%{transform:scale(1)}}
+  /* the gap the ring closes: the seam between the sixth notch and the first is
+     drawn, because that seam IS the wrap */
+  .nuseam{position:absolute;left:0;top:0;width:0;height:0;z-index:5;pointer-events:none;display:block}
+  .nuseam::after{content:"";position:absolute;width:16px;height:2px;margin:-1px 0 0 -8px;border-radius:2px;
+    background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--hue) 70%,transparent),transparent);
+    /* 330°: exactly between the sixth notch (300°) and the first (360°) */
+    transform:rotate(330deg) translateY(calc(var(--r)*-1))}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hud">
+    <div class="rec">
+      <button type="button" class="rchip tapmode" data-lib="modes" data-id="classic">{{mico:classic:12}} CLASSIC<span class="mi">ⓘ</span></button>
+      <button type="button" class="rchip tapmode" data-lib="spells" data-id="nudge">{{sico:nudge:12}} NUDGE<span class="mi">ⓘ</span></button>
+    </div>
+    <div class="sp"></div>
+    <button class="ico">{{ico:leave:15}}</button>
+  </div>
+
+  <div class="cap2">Six notches, one cast, one notch. Where the ring ends is where it begins — that is the whole of the wrap.</div>
+
+  <div class="spfield">
+    <div class="stagerow">
+      <span class="nuunit u34" style="--sz:56px">
+        <i class="nuold">{{die:3:p1:56}}</i>
+        <i class="nunew">{{die:4:p1:56}}</i><i class="nuring" style="--from:2"><b style="--i:0"></b><b style="--i:1"></b><b style="--i:2"></b><b style="--i:3"></b><b style="--i:4"></b><b style="--i:5"></b><i class="nunotch"></i><i class="nuseam"></i></i>
+      </span>
+      <div class="spells nurune">
+        <button class="rune ready armed" style="--sh:var(--p1)">{{sico:nudge:16}}<b class="n"></b></button>
+        <button class="rune spent" style="--sh:var(--p1)">{{sico:nudge:16}}<b class="n"></b></button>
+      </div>
+    </div>
+    <div class="status me nustatus"><span class="nustx"><span class="nusay1">Drop it on your die</span><span class="nusay2">NUDGE</span></span></div>
+
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-bottom:5px">
+        <div class="spchip" style="--c:var(--p1)">8</div>
+        <div class="spchip" style="--c:var(--p1)">5</div>
+        <div class="spchip" style="--c:var(--p1)">16</div>
+    </div>
+    <div class="spboard spmine">
+      <div class="spcol">
+        <div class="spslot">{{die:6:p1:52}}</div>
+        <div class="spslot">{{die:2:p1:52}}</div>
+        <div class="spslot"></div>
+      </div>
+      <div class="spcol">
+        <div class="spslot">{{die:5:p1:52}}</div>
+        <div class="spslot"></div>
+        <div class="spslot"></div>
+      </div>
+      <div class="spcol nucol">
+        <div class="spslot"><span class="spmark nupair">{{die:4:p1 m2:52}}</span></div>
+        <div class="spslot"><span class="spmark nupair">{{die:4:p1 m2:52}}</span></div>
+        <div class="spslot nuseat"></div>
+
+      </div>
+    </div>
+    <div class="splbl">a 3 into that column pays 3 · a 4 pays 20 — the pair becomes a triple</div>
+
+    <div class="plate pline" style="--c:var(--p1);margin-top:8px">
+      <span class="who"><span class="dot"></span><span class="nm">YOU</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="runeslot live"><span class="nurune">
+        <button class="rune idle" style="--sh:var(--p1)" disabled>{{sico:nudge:16}}<b class="n"></b></button>
+        <button class="rune spent" style="--sh:var(--p1)" disabled>{{sico:nudge:16}}<b class="n"></b></button>
+      </span></span><span class="tot">29</span></span>
+    </div>
+  </div>
+
+  <div class="cap2" style="margin-top:10px">Both directions, the same idea: the ordinary tick, and the wrap that pays for it</div>
+  <div class="nustrip">
+    <div class="nucase">
+      <span class="nuunit u56" style="--sz:44px">
+        <i class="nuold">{{die:5:p1:44}}</i>
+        <i class="nunew">{{die:6:p1:44}}</i><i class="nuring" style="--from:4"><b style="--i:0"></b><b style="--i:1"></b><b style="--i:2"></b><b style="--i:3"></b><b style="--i:4"></b><b style="--i:5"></b><i class="nunotch"></i><i class="nuseam"></i></i>
+      </span>
+      <span class="cap">5 → 6<br>the tick</span>
+    </div>
+    <div class="nucase wrap">
+      <span class="nuunit u61" style="--sz:44px">
+        <i class="nuold">{{die:6:p1:44}}</i>
+        <i class="nunew">{{die:1:p1:44}}</i><i class="nuring" style="--from:5"><b style="--i:0"></b><b style="--i:1"></b><b style="--i:2"></b><b style="--i:3"></b><b style="--i:4"></b><b style="--i:5"></b><i class="nunotch"></i><i class="nuseam"></i></i>
+      </span>
+      <span class="cap">6 → 1<br>the wrap</span>
+    </div>
+  </div>
+  <div class="note"><b>What it says:</b> <b>six positions, one step, and the ring closes.</b> The wrap is the hardest thing about this rune to explain in words — the sheet needs a clause for it — and a ring explains it without one: the 6 is beside the 1 because a circle has no end. A player who casts on a 6 once will not be surprised twice.<br>
+  <b>It never touches the die.</b> The face swaps and everything else the player knows about a die in hand — size, colour, position, the drag target — is untouched, which matters for the one rune whose cast target is the die itself.<br>
+  <b>It is reusable.</b> A bounded-step rune added later gets the same ring with a different notch count.<br>
+  <b>Cost:</b> it is chrome around the die in play, and that box is already crowded — the LIMITED bag hangs 16px to its left, the castable rune 16px to its right, and in landscape both are squeezed into a 116px lane (--land-lane). A ring at 0.78× the cell would sit under both. It also asks the player to read a second object at the moment they are reading the face, and it says nothing at all about WHY the tick was worth casting.</div>
+</div></div>

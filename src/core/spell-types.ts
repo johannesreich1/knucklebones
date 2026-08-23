@@ -42,16 +42,14 @@ export interface SpellSpec {
      the enemy's columns (and a pilfer from advertising your own). */
   side?: 'own' | 'foe';
   uses: number;      // casts per player, per game
-  /* May this cast never be taken back? A self spell lands on the die in hand
-     the instant it is pressed, so pressing it again normally puts it back
-     (flow/spells) — but ONLY when putting it back leaves the caster exactly
-     where they were. A cast that already PAID OUT cannot be unpaid, and the
-     commonest way to pay out is to show the player something: FATE draws the
-     next die from the supply, and no take-back can un-see it. "Cast, peek,
-     undo" would be a free look at the supply, every game, for nothing.
-     Board spells never get the window at all — their dice have visibly
-     flown — so this is only ever asked of the self spells. */
-  final?: boolean;
+  /* Most column aiming is only a question until a legal target is chosen and
+     may therefore be cancelled. A spell whose aim itself reveals material
+     information commits when those marks appear. ANVIL uses this because its
+     heat identifies the exact weakest die in every offered column. */
+  commitsOnAim?: boolean;
+  /* Optional die-level preview for a legal column target. The returned board
+     index is semantic (centre-nearest first), never a rendered slot index. */
+  previewDieIndex?(st: GameState, who: Player, col: number, ctx?: CastCtx): number | null;
   /* May this cast happen? Legality is the ONLY failure path a spell has: an
      illegal target is refused before anything moves, so no cast can fail
      halfway through and leave the boards in a state nobody designed. */

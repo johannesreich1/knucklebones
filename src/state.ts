@@ -102,26 +102,17 @@ export const S = {
      NONE and the game is then what it always was. spellCharges holds casts
      LEFT per player for this game, keyed by spell id; an empty hand means this
      seat holds no spells at all (NONE, ranked, tutorial) and is the ONE thing
-     the runtime asks. spellArmed is the spell waiting for a target. */
+     the runtime asks. spellArmed is the spell waiting for a target. ANVIL is
+     the one aim whose markings commit before a target is selected, so that
+     reservation records who already paid for the armed cast. */
   spell: '',
   spellCharges: [{}, {}] as [Record<string, number>, Record<string, number>],
   spellArmed: null as string | null,
+  spellAimCommitted: null as null | { id: string; who: Player },
   /* persistent spell marks (wards, a pending sunder) — core/rules CharmSt.
      Reset wherever charges are dealt (resetSpells / clearSpells); the render
      paints ward chips from it, destruction consults it. */
   charm: freshCharm() as CharmSt,
-  /* THE TAKE-BACK. A spell that lands on the die in hand casts the moment you
-     press it, so pressing it again puts it back — until the die is placed and
-     the turn is spent for real. This holds what the cast changed, as a
-     snapshot rather than a per-spell inverse: the spell does not need to know
-     it can be undone. Null means there is nothing to take back. */
-  spellUndo: null as null | {
-    id: string;
-    who: Player;
-    die: number;                  // the die that was in hand before the cast
-    pool: number[] | null;        // the supply before it (FATE draws from it)
-    charm: CharmSt;               // the marks before it (SUNDER sets one)
-  }
 };
 
 // re-export the identities for modules that get S anyway

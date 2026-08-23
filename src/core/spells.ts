@@ -41,12 +41,8 @@ const FATE: SpellSpec = {
   aim: 'Drop it on your die',
   target: 'self',
   uses: 2,
-  /* The one cast in the roster that REVEALS. Undoing it would hand back the
-     die, the charge and the bag — and keep the knowledge of what the supply
-     was about to give, which is the whole value of the cast. In LIMITED it is
-     worse still: a free read of the bag's next face, twice a game, for no
-     charge at all (user report). */
-  final: true,
+  /* The redraw reveals the live supply. Like every committed cast it cannot
+     be put back; in LIMITED that also means the discarded die stays spent. */
   legal(st, who, col, ctx) {
     return !!ctx && ctx.bagLeft !== 0;
   },
@@ -69,7 +65,8 @@ const NUDGE: SpellSpec = {
   id: 'nudge',
   name: 'NUDGE',
   blurb: 'Tick your die up one pip.',
-  detail: 'The die in hand turns one pip higher — a 6 wraps around to 1. One cast per game.',
+  detail: 'The die in hand turns one pip higher — a 6 wraps around to 1. The cast is final. '
+        + 'One cast per game.',
   aim: 'Drop it on your die',
   target: 'self',
   uses: 1,
@@ -201,6 +198,15 @@ const PILFER: SpellSpec = {
 
    WHICH die is not a second aim: the lowest face, ties to the die closest to
    the centre line. One tap, and the player can always predict the answer. */
+export function anvilTargetIndex(column: readonly number[]): number | null {
+  if (!column.length) return null;
+  let target = 0;
+  for (let index = 1; index < column.length; index++) {
+    if (column[index] < column[target]) target = index;
+  }
+  return target;
+}
+
 const ANVIL: SpellSpec = {
   id: 'anvil',
   name: 'ANVIL',
@@ -213,19 +219,21 @@ const ANVIL: SpellSpec = {
   target: 'column',
   side: 'own',
   uses: 1,
+  commitsOnAim: true,
   legal(st, who, col, ctx) {
     if (!ctx || !Number.isInteger(col) || col < 0 || col >= SPEC.cols) return false;
     const c = st[who][col];
     if (c.length < SPEC.rows) return false;          // only a column you can no longer place into
-    let lo = c[0];
-    for (const d of c) if (d < lo) lo = d;
-    return lo !== ctx.die;                           // a cast that changes nothing is illegal
+    const at = anvilTargetIndex(c);
+    return at !== null && c[at] !== ctx.die;         // a cast that changes nothing is illegal
+  },
+  previewDieIndex(st, who, col, ctx) {
+    return this.legal(st, who, col, ctx) ? anvilTargetIndex(st[who][col]) : null;
   },
   apply(st, who, col, ctx) {
     const c = st[who][col];
-    let at = 0;
-    for (let i = 1; i < c.length; i++) if (c[i] < c[at]) at = i;
-    c[at] = ctx!.die;
+    const at = anvilTargetIndex(c);
+    if (at !== null) c[at] = ctx!.die;
   },
   /* The effect shows on the boards, so the default policy CAN weigh it — but
      it would weigh it at the wrong scale. swingOf measures the score

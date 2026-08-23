@@ -76,6 +76,7 @@ export async function runProtectionScenarios(suite) {
     const seal = col.querySelector('.seal');
     const chip = document.querySelectorAll('#' + sd + 'Cols .chip')[cc];
     const plate = document.getElementById('plate' + (sd === 'bot' ? 'Bot' : 'Top'));
+    const centre = document.getElementById('dieStage');
     const land = document.getElementById('kbroot').classList.contains('land');
     const r = (e) => { const b = e.getBoundingClientRect();
       return { x: +b.x.toFixed(1), y: +b.y.toFixed(1), w: +b.width.toFixed(1), h: +b.height.toFixed(1) }; };
@@ -193,10 +194,12 @@ export async function runProtectionScenarios(suite) {
       out: box && run && { l: +(run.x - box.x).toFixed(2), t: +(run.y - box.y).toFixed(2),
                            r: +(box.x + box.w - run.x - run.w).toFixed(2), b: +(box.y + box.h - run.y - run.h).toFixed(2) },
       toChip: gap(all, cr), toPlate: gap(all, plate ? r(plate) : null), toPlateInk: mark,
-      // where the mouth sits relative to the column, and where the chip strip
-      // does: the seal must close at the end AWAY from the chips
+      // where the mouth, chip strip and table centre sit relative to the
+      // column. The ward's mouth is independently turned toward the centre;
+      // the shield keeps the shared frame's original closure direction.
       mouth: rivet ? { dx: +(mid(r(rivet)).x - mid(cb).x).toFixed(1), dy: +(mid(r(rivet)).y - mid(cb).y).toFixed(1) } : null,
       chipAt: { dx: +(mid(cr).x - mid(cb).x).toFixed(1), dy: +(mid(cr).y - mid(cb).y).toFixed(1) },
+      centerAt: centre ? { dx: +(mid(r(centre)).x - mid(cb).x).toFixed(1), dy: +(mid(r(centre)).y - mid(cb).y).toFixed(1) } : null,
       onDie: [...col.querySelectorAll('.die')].some((d) => {
         const b = r(d); return !!box && (b.x < box.x || b.y < box.y
           || b.x + b.w > box.x + box.w || b.y + b.h > box.y + box.h); }),

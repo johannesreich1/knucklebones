@@ -1,0 +1,205 @@
+<!-- meta name="NU4 — The promise" group="4e · NUDGE — the tick" subtitle="Before you commit, the die already shows what it would become: ghost pips while the rune is armed, the wrap ghosted as a warning — so the one decision this rune asks is made with the answer in front of you" width=430 height=1269 sizes="md" links="Spells — aiming a rune, Offline — local play, Game modes" -->
+<style>
+  /* Card-local names only (nu* and sp*). Every die is the app's own face markup
+     through the build token, so the pip cells animated below are literally the
+     cells src/ui/die-markup.ts lays out. The study board, chips, labels and
+     nameplate width come from design/build.mjs's chrome. */
+  .scr{gap:6px;--hue:{{shue:nudge}}}
+  .stagerow{--cell:56px;margin-top:16px}
+  .nustatus{margin-top:14px;margin-bottom:14px}
+
+  /* ===== THE LOOP: 2.8s, one cast =====
+       0–20%   the rune is armed and the die in hand reads 3
+       20–42%  the tick — the window the six ideas differ in
+       42%     the face IS the new one; the rune is spent
+       42–100% held
+     Every card runs the same loop three times over: on the die in play (3 → 4)
+     and on the two cases in the strip below it (5 → 6, and the WRAP 6 → 1),
+     because an idea that reads well going up and badly coming back around is
+     not an answer — the wrap is the price that keeps this rune honest. */
+  .nuunit{position:relative;display:block;line-height:0;width:var(--sz);height:var(--sz)}
+  .nuunit > i{position:absolute;inset:0;display:block;line-height:0}
+  .nuold{animation:nuoldf 2.8s steps(1,end) infinite}
+  .nunew{animation:nunewf 2.8s steps(1,end) infinite}
+  @keyframes nuoldf{0%,41.9%{opacity:1}42%,100%{opacity:0}}
+  @keyframes nunewf{0%,41.9%{opacity:0}42%,100%{opacity:1}}
+  @keyframes nudrain{0%,20%{opacity:1;transform:scale(1)}
+    28%{opacity:1;transform:scale(1.18)}
+    42%,100%{opacity:0;transform:scale(.15)}}
+  @keyframes nuarrive{0%,42%{opacity:0;transform:scale(.15)}
+    52%{opacity:1;transform:scale(1.25)}60%,100%{opacity:1;transform:scale(1)}}
+
+  /* the rune: armed, then spent — both are the app's own states (.rune.armed,
+     .rune.spent in styles/game/spells.css), cut on the same frame as the face */
+  .nurune{position:relative;display:flex;align-items:center}
+  .nurune .spent{position:absolute;inset:0;margin:0}
+  .nurune .armed{animation:nuoldf 2.8s steps(1,end) infinite}
+  .nurune .spent{animation:nunewf 2.8s steps(1,end) infinite}
+  /* ...and the line under the die, which castBy() rewrites for the whole cast */
+  .nustx{position:relative;display:block}
+  .nusay2{position:absolute;left:0;right:0;top:0}
+  .nusay1{animation:nuoldf 2.8s steps(1,end) infinite}
+  .nusay2{animation:nunewf 2.8s steps(1,end) infinite}
+
+  /* THE WRAP STRIP: the two cases side by side, running the same idea */
+  .nustrip{display:flex;justify-content:center;gap:26px;margin-top:12px;width:100%}
+  .nucase{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .nucase .cap{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;
+    text-align:center;line-height:1.5}
+  .nucase.wrap .cap{color:var(--hue)}
+  .nuarrow{font-size:11px;color:var(--dim);letter-spacing:.1em}
+
+  /* WHICH PIPS MOVE, per case — computed from src/ui/die-markup.ts's own cell
+     map rather than counted by hand, so a card can never picture a face the
+     game does not draw. */
+  /* 3 → 4: 1 pip leave, 2 arrive — 3 becomes 4 */
+  .u34 .nuold .pip:nth-child(5){opacity:1;animation:nudrain 2.8s cubic-bezier(.5,0,.85,1) infinite}
+  .u34 .nunew .pip:nth-child(3),.u34 .nunew .pip:nth-child(7){opacity:1;animation:nuarrive 2.8s cubic-bezier(.2,1.6,.4,1) infinite}
+  /* 5 → 6: 1 pip leave, 2 arrive — 5 becomes 6 */
+  .u56 .nuold .pip:nth-child(5){opacity:1;animation:nudrain 2.8s cubic-bezier(.5,0,.85,1) infinite}
+  .u56 .nunew .pip:nth-child(4),.u56 .nunew .pip:nth-child(6){opacity:1;animation:nuarrive 2.8s cubic-bezier(.2,1.6,.4,1) infinite}
+  /* 6 → 1: 6 pips leave, 1 arrive — 6 becomes 1 */
+  .u61 .nuold .pip:nth-child(1),.u61 .nuold .pip:nth-child(3),.u61 .nuold .pip:nth-child(4),.u61 .nuold .pip:nth-child(6),.u61 .nuold .pip:nth-child(7),.u61 .nuold .pip:nth-child(9){opacity:1;animation:nudrain 2.8s cubic-bezier(.5,0,.85,1) infinite}
+  .u61 .nunew .pip:nth-child(5){opacity:1;animation:nuarrive 2.8s cubic-bezier(.2,1.6,.4,1) infinite}
+  /* 3 → 4: ghost the 2 arriving, dim the 1 leaving */
+  .u34 .nughost .pip:nth-child(3),.u34 .nughost .pip:nth-child(7){opacity:.55}
+  .u34 .nuold .pip:nth-child(5){animation-name:nu4go}
+  /* 5 → 6: ghost the 2 arriving, dim the 1 leaving */
+  .u56 .nughost .pip:nth-child(4),.u56 .nughost .pip:nth-child(6){opacity:.55}
+  .u56 .nuold .pip:nth-child(5){animation-name:nu4go}
+  /* 6 → 1: ghost the 1 arriving, dim the 6 leaving */
+  .u61 .nughost .pip:nth-child(5){opacity:.55}
+  .u61 .nuold .pip:nth-child(1),.u61 .nuold .pip:nth-child(3),.u61 .nuold .pip:nth-child(4),.u61 .nuold .pip:nth-child(6),.u61 .nuold .pip:nth-child(7),.u61 .nuold .pip:nth-child(9){animation-name:nu4go}
+
+  /* ===== THE IDEA. NUDGE's rule is deterministic — the answer is always
+     "one higher, six wraps" — so there is no reason to make the player compute
+     it. ANVIL states the same principle in its own registry entry: one tap,
+     and the player can always predict the answer. Here the prediction is drawn
+     rather than predicted: while the rune is armed, the face the cast would
+     leave is ghosted over the one in hand, and casting makes the ghost solid.
+     ON A SIX the ghost is a 1 and takes the danger hue, because a rune that
+     can cost you five pips must not be able to surprise anybody. */
+  .nughost{position:absolute;inset:0;display:block;line-height:0;z-index:4;pointer-events:none;
+    opacity:0;animation:nu4ghost 2.8s ease-in-out infinite}
+  /* only the pips are ghosted, never a second shell: two die outlines stacked
+     is a rendering bug, not a preview */
+  .nughost .die{background:none;border-color:transparent;box-shadow:none;height:100%}
+  /* IT SHOWS ONLY THE PIPS THAT WOULD ARRIVE, so every cell starts hidden and
+     the per-case rules above light the few that change. Ghosting the whole new
+     face would draw a second pip on top of every pip that is NOT changing, and
+     two lights in one cell is not a preview, it is a smear — the cells that
+     stay put are already correct on the die underneath.
+     AND IT IS GOLD, NOT THE RUNE'S OWN SKY: NUDGE's hue (#7fd7ff, ui/
+     spellicons) is a neighbour of the default player cyan, so a ghost pip in
+     it is nearly invisible on the die it is drawn over — and invisible outright
+     for a player who picked cyan. Gold is what the game already uses to mean
+     "this is the cast you are aiming": html.castself puts a dashed gold ring
+     on this very box. */
+  .nughost .pip,.nughost .pip.on{opacity:0;
+    background:radial-gradient(circle at 35% 30%,#fff,var(--gold) 78%);
+    box-shadow:0 0 8px var(--gold);transform:scale(1)}
+  .nughost .num{display:none}
+  @keyframes nu4ghost{0%{opacity:0}8%{opacity:1}20%{opacity:1}
+    24%,100%{opacity:0}}
+  /* the ghost breathes while it waits, so it reads as a proposal rather than
+     as a face that failed to render */
+  .nughost .die{animation:nu4breathe 1.5s ease-in-out infinite}
+  @keyframes nu4breathe{0%,100%{filter:brightness(.85)}50%{filter:brightness(1.25)}}
+  /* a pip on its way out is dimmed for the whole armed phase, so the preview
+     is complete: these arrive, that one goes */
+  @keyframes nu4go{0%{opacity:1;transform:scale(1)}
+    8%,20%{opacity:.34;transform:scale(.86)}
+    28%{opacity:.34;transform:scale(.86)}
+    42%,100%{opacity:0;transform:scale(.15)}}
+  /* THE WARNING. A wrap is the one cast in this game that can leave you worse
+     off, so its ghost wears the destruction red the game already owns
+     (--red, the multiplier fallback) rather than the rune's own sky. */
+  .nughost.warn .pip,.nughost.warn .pip.on{
+    background:radial-gradient(circle at 35% 30%,#fff,var(--red) 78%);
+    box-shadow:0 0 8px var(--red)}
+  .nughost.warn::after{content:"";position:absolute;inset:-4px;border-radius:18px;pointer-events:none;
+    border:1.4px dashed rgba(var(--red-rgb),.75)}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hud">
+    <div class="rec">
+      <button type="button" class="rchip tapmode" data-lib="modes" data-id="classic">{{mico:classic:12}} CLASSIC<span class="mi">ⓘ</span></button>
+      <button type="button" class="rchip tapmode" data-lib="spells" data-id="nudge">{{sico:nudge:12}} NUDGE<span class="mi">ⓘ</span></button>
+    </div>
+    <div class="sp"></div>
+    <button class="ico">{{ico:leave:15}}</button>
+  </div>
+
+  <div class="cap2">Armed, not cast. The gold pips are the ones that would arrive and the dimmed ones are leaving — and on a 6 the ghost is a 1, which is the whole reason to think twice.</div>
+
+  <div class="spfield">
+    <div class="stagerow">
+      <span class="nuunit u34" style="--sz:56px">
+        <i class="nuold">{{die:3:p1:56}}</i>
+        <i class="nunew">{{die:4:p1:56}}</i><i class="nughost">{{die:4:p1:56}}</i>
+      </span>
+      <div class="spells nurune">
+        <button class="rune ready armed" style="--sh:var(--p1)">{{sico:nudge:16}}<b class="n"></b></button>
+        <button class="rune spent" style="--sh:var(--p1)">{{sico:nudge:16}}<b class="n"></b></button>
+      </div>
+    </div>
+    <div class="status me nustatus"><span class="nustx"><span class="nusay1">Drop it on your die</span><span class="nusay2">NUDGE</span></span></div>
+
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-bottom:5px">
+        <div class="spchip" style="--c:var(--p1)">8</div>
+        <div class="spchip" style="--c:var(--p1)">5</div>
+        <div class="spchip" style="--c:var(--p1)">16</div>
+    </div>
+    <div class="spboard spmine">
+      <div class="spcol">
+        <div class="spslot">{{die:6:p1:52}}</div>
+        <div class="spslot">{{die:2:p1:52}}</div>
+        <div class="spslot"></div>
+      </div>
+      <div class="spcol">
+        <div class="spslot">{{die:5:p1:52}}</div>
+        <div class="spslot"></div>
+        <div class="spslot"></div>
+      </div>
+      <div class="spcol nucol">
+        <div class="spslot"><span class="spmark nupair">{{die:4:p1 m2:52}}</span></div>
+        <div class="spslot"><span class="spmark nupair">{{die:4:p1 m2:52}}</span></div>
+        <div class="spslot nuseat"></div>
+
+      </div>
+    </div>
+    <div class="splbl">a 3 into that column pays 3 · a 4 pays 20 — the pair becomes a triple</div>
+
+    <div class="plate pline" style="--c:var(--p1);margin-top:8px">
+      <span class="who"><span class="dot"></span><span class="nm">YOU</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="runeslot live"><span class="nurune">
+        <button class="rune idle" style="--sh:var(--p1)" disabled>{{sico:nudge:16}}<b class="n"></b></button>
+        <button class="rune spent" style="--sh:var(--p1)" disabled>{{sico:nudge:16}}<b class="n"></b></button>
+      </span></span><span class="tot">29</span></span>
+    </div>
+  </div>
+
+  <div class="cap2" style="margin-top:10px">Both directions, the same idea: the ordinary tick, and the wrap that pays for it</div>
+  <div class="nustrip">
+    <div class="nucase">
+      <span class="nuunit u56" style="--sz:44px">
+        <i class="nuold">{{die:5:p1:44}}</i>
+        <i class="nunew">{{die:6:p1:44}}</i><i class="nughost">{{die:6:p1:44}}</i>
+      </span>
+      <span class="cap">5 → 6<br>the tick</span>
+    </div>
+    <div class="nucase wrap">
+      <span class="nuunit u61" style="--sz:44px">
+        <i class="nuold">{{die:6:p1:44}}</i>
+        <i class="nunew">{{die:1:p1:44}}</i><i class="nughost warn">{{die:1:p1:44}}</i>
+      </span>
+      <span class="cap">6 → 1<br>the wrap</span>
+    </div>
+  </div>
+  <div class="note"><b>What it says:</b> <b>this is what you are about to do.</b> It is the only idea in the set that changes the DECISION rather than the feedback — every other card animates something the player has already committed to. One cast a match, no take-backs, and a wrap that can cost five pips: this is a rune that deserves a preview.<br>
+  <b>It could not wear the rune's own colour.</b> NUDGE's sky (#7fd7ff) is a neighbour of the default player cyan, so a ghost pip in it disappears into the die it is drawn on — and disappears completely for a player who picked cyan in Settings. The ghost is gold instead, which is already what the game means by "this is the cast you are aiming" (html.castself's ring on this very box), and the wrap's warning is the destruction red.<br>
+  <b>The wrap becomes a refusal you can make.</b> A red ghost of a 1 over a 6 is the game saying "you can, but look" — and it says it while the choice is still open, which is the only moment the information is worth anything.<br>
+  <b>The mechanism already exists.</b> A self-aimed cast already lights the stage (html.castself #dieStage in styles/game/spells.css); the ghost hangs on the same state.<br>
+  <b>Cost:</b> it puts a second face on the die in play, and that die is the single most important object on the screen — anything stacked on it risks being read as the face itself, especially at a glance mid-turn. It is also a precedent: once one rune previews its result, every rune that can is expected to, and SUNDER's or PILFER's preview is a whole board's worth of marks rather than four pips.</div>
+</div></div>

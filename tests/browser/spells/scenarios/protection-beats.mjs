@@ -32,7 +32,8 @@ export async function runProtectionBeatScenarios(suite) {
     while (host && host.classList.contains('sealmerged')) host = host.previousElementSibling;
     const anims = new Set(), marks = new Set(), flare = new Set();
     const hostAnims = new Set(), hostMarks = new Set();
-    let outlived = false, gone = false;
+    let outlived = false, gone = false, sawWardGhost = false, closestClasp = Infinity;
+    let ghostValue = null, ghostOwner = null, sourceAnchorError = Infinity;
     void k.place(w, a);                        // polled, not awaited: the beat is the subject
     for (let i = 0; i < ticks; i++) {
       await new Promise((r) => setTimeout(r, 40));
@@ -45,9 +46,36 @@ export async function runProtectionBeatScenarios(suite) {
       const spent = k.S.charm.wards[0][cc] === 0;
       if (spent && lit() > 0.05) outlived = true;
       if (spent && lit() <= 0.05) gone = true;
+      const ghost = document.querySelector('.ward-strike-ghost');
+      const clasp = col.querySelector('.smint .sv');
+      if (ghost && clasp) {
+        sawWardGhost = true;
+        ghostValue ??= ghost.dataset.v || null;
+        ghostOwner ??= ghost.classList.contains('p1') ? 'p1'
+          : ghost.classList.contains('p2') ? 'p2' : null;
+        const sourceSide = k.sideKey(w);
+        const source = document.querySelector('#' + sourceSide + 'Board .col[data-col="' + a
+          + '"] .slot .die[data-v="' + ghost.dataset.v + '"]');
+        const gr = ghost.getBoundingClientRect(), cr = clasp.getBoundingClientRect();
+        if (source) {
+          const sr = source.getBoundingClientRect();
+          /* WAAPI may already have advanced by the first 40ms sample. The
+             pinned copy's untransformed inline anchor is the exact lift point. */
+          const gx = parseFloat(ghost.style.left) + parseFloat(ghost.style.width) / 2;
+          const gy = parseFloat(ghost.style.top) + parseFloat(ghost.style.height) / 2;
+          sourceAnchorError = Math.min(sourceAnchorError,
+            Math.hypot(gx - sr.x - sr.width / 2, gy - sr.y - sr.height / 2));
+        }
+        closestClasp = Math.min(closestClasp,
+          Math.hypot(gr.x + gr.width / 2 - cr.x - cr.width / 2,
+                     gr.y + gr.height / 2 - cr.y - cr.height / 2));
+      }
     }
     return { anims: [...anims].sort(), marks: [...marks].sort(), flare: [...flare].sort(),
              hostAnims: [...hostAnims].sort(), hostMarks: [...hostMarks].sort(),
+             sawWardGhost, closestClasp: Number.isFinite(closestClasp) ? +closestClasp.toFixed(1) : null,
+             ghostValue, ghostOwner,
+             sourceAnchorError: Number.isFinite(sourceAnchorError) ? +sourceAnchorError.toFixed(1) : null,
              outlived, gone, wards: JSON.stringify(k.S.charm.wards), theirs: JSON.stringify(k.S.boards[0][cc]) };
   }, [side, c, who, at, sealTiming.strikeTicks]);
 
@@ -62,6 +90,8 @@ export async function runProtectionBeatScenarios(suite) {
     'THE SEAL DID NOT ANSWER THE STRIKE', out.shieldStruck.marks);
   check(out.shieldStruck.anims.includes('sealharden') && out.shieldStruck.anims.includes('sealrepel'),
     'the seal wore the strike class but nothing hardened', out.shieldStruck.anims);
+  check(!out.shieldStruck.sawWardGhost,
+    'a permanent COLUMN SHIELD borrowed the Ward-breaking attack ghost', out.shieldStruck);
   check(!out.shieldStruck.gone, 'the struck shield left the column', out.shieldStruck);
   out.sealHeld = await sealOf('top', 0);
   check(out.sealHeld.drawn && JSON.stringify(out.sealHeld.loop) === JSON.stringify(out.sealShield.loop)
@@ -86,12 +116,65 @@ export async function runProtectionBeatScenarios(suite) {
   check(out.wardStruck.anims.includes('wdblock'),
     'the ward chip wore the mark but never ran its flare', out.wardStruck.anims);
   check(out.wardStruck.marks.includes('sealsnap'), 'THE CLASP NEVER SNAPPED', out.wardStruck.marks);
+  check(out.wardStruck.sawWardGhost && out.wardStruck.closestClasp !== null
+      && out.wardStruck.closestClasp < 18,
+    'THE BLOCKED ATTACK NEVER REACHED THE WARD CLASP', out.wardStruck);
+  check(out.wardStruck.ghostValue === '4' && out.wardStruck.ghostOwner === 'p1'
+      && out.wardStruck.sourceAnchorError !== null && out.wardStruck.sourceAnchorError < 0.75,
+    'the Ward contact copy was not cloned from the settled attacking die', out.wardStruck);
   check(['sealpop', 'sealsnapoff', 'sealunwind'].every((a) => out.wardStruck.anims.includes(a)),
     'the ward left the column without the clasp failing first', out.wardStruck.anims);
   check(out.wardStruck.outlived, 'THE WARD VANISHED INSTEAD OF BREAKING — the snap is never seen', out.wardStruck);
   check(out.wardStruck.gone, 'a spent ward left its seal standing', out.wardStruck);
   out.sealAfter = await sealOf('top', 1);
   check(!out.sealAfter.drawn, 'the after-state must be dice and NO protection', out.sealAfter);
+
+  /* The contact copy is not placement language. A die entering its owner's
+     warded column still flies directly to the ordinary slot, and an opponent
+     miss never touches the clasp or spends the charge. */
+  const watchFalseWardGhost = () => page.evaluate(async () => {
+    let seen = false;
+    const p = window.__kb.place(1, 0);
+    for (let i = 0; i < 24; i++) {
+      await new Promise((r) => setTimeout(r, 30));
+      seen ||= !!document.querySelector('.ward-strike-ghost');
+    }
+    await p;
+    return { seen, wards: JSON.stringify(window.__kb.S.charm.wards) };
+  });
+  await table([[2], [], []], [[5], [], []], 3);
+  await guard(0, 1);                           // own Ward, ordinary own placement
+  out.wardOwnPlacement = await watchFalseWardGhost();
+  check(!out.wardOwnPlacement.seen && JSON.parse(out.wardOwnPlacement.wards)[1][0] === 1,
+    'ordinary placement routed through or spent its own Ward clasp', out.wardOwnPlacement);
+
+  await table([[], [], []], [[5], [], []], 4);
+  await guard(0, 0);                           // opponent Ward, but no matching victim
+  out.wardMiss = await watchFalseWardGhost();
+  check(!out.wardMiss.seen && JSON.parse(out.wardMiss.wards)[0][0] === 1,
+    'an opponent miss struck or spent the Ward clasp', out.wardMiss);
+
+  /* Starting a replacement duel during the long snap is a hard visual
+     boundary: the broken seal, chip flare, ghost and their timers all leave
+     synchronously, not 1.6 seconds into the new opening roll. */
+  await table([[], [], []], [[4], [], []], 4);
+  await guard(0, 0);
+  out.wardRestart = await page.evaluate(async () => {
+    const k = window.__kb;
+    void k.place(1, 0);
+    for (let i = 0; i < 30 && !document.querySelector('.sealsnap'); i++)
+      await new Promise((resolve) => setTimeout(resolve, 30));
+    const sawSnap = !!document.querySelector('.sealsnap');
+    k.S.spell = 'nudge'; k.S.starter = 1; k.newGame();
+    const immediate = document.querySelectorAll(
+      '.sealsnap,.sealhit,.sealon,.sh.block,.wd.block,.ward-strike-ghost').length;
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    const later = document.querySelectorAll(
+      '.sealsnap,.sealhit,.sealon,.sh.block,.wd.block,.ward-strike-ghost').length;
+    return { sawSnap, immediate, later };
+  });
+  check(out.wardRestart.sawSnap && out.wardRestart.immediate === 0 && out.wardRestart.later === 0,
+    'a Ward snap/flare leaked across the replacement game generation', out.wardRestart);
 
   /* ---------- 10a-ii. TWO SEALED NEIGHBOURS ARE ONE SEAL ----------
      Two shielded columns side by side used to draw two closed loops 6px apart,

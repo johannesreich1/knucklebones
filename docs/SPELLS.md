@@ -61,17 +61,16 @@ These are structural, not taste. Breaking one is a redesign, not a tweak.
   ordered entry in the move log, so latency can delay what the opponent
   *sees*, never create a race. Interrupt spells would need sub-second
   bidirectional windows — we do not build those.
-- **What has already paid out cannot be taken back.** A self spell can be
-  pressed again to undo it while the die it changed is still in hand — but
-  only when putting it back leaves the caster *exactly where they were*. If a
-  cast **revealed** something, or handed over an advantage that survives the
-  reversal, it is **final**: you cannot un-see a die, and "cast, peek, undo"
-  is a free look paid for with nothing. FATE is the roster's only one so far
-  (it draws the next die from the supply) and carries `final: true`; board
-  spells are final by construction, because their dice have visibly flown.
-  Asked of the registry, never of a spell's name — and gated mechanically:
-  `tests/spells.test.ts` watches `CastCtx.draw` and fails any self spell that
-  draws without being marked, so the next one is caught the day it is written.
+- **A committed cast cannot be taken back.** A rune may be disarmed while the
+  player is only asking the board a question; once the spell commits, its
+  charge and information are final. FATE, NUDGE and SUNDER commit when their
+  valid self cast lands on the die in hand. WARD and PILFER commit when a legal
+  column is selected. ANVIL is the deliberate exception: identifying the
+  weakest die in every offered full column is already useful information, so
+  it commits as soon as those markings appear. There is no post-cast snapshot,
+  inverse, or second-press undo for any spell. A wrong target may still cancel
+  an ordinary uncommitted aim with the charge intact; an ANVIL aim cannot be
+  backed out of after its markings are shown.
 - **`core/` stays pure.** No DOM, no timers, no randomness. Supply arrives as
   behaviour (`CastCtx.draw`), so offline can hand it `Math.random` and a
   future ranked deal can hand it the seeded stream, with replay deterministic
@@ -175,6 +174,12 @@ rune dead there, which is WARD + COLSHIELD's 49.5 problem in a new coat.
 and ships at one (53.9 in that first pass); FATE stayed at two because it is
 the weakest effect per cast.
 
+**The weakest die is selected by value, not by grouping.** `[2,3,3]` targets
+the `2`, and the cast is legal whenever the die in hand differs from that `2`.
+The presence of a pair does not redirect or disable the repair. Ties still go
+to the die closest to the centre line, so both the preview and the result are
+predictable from the board.
+
 ### Known bad pairings
 
 Both involve COLUMN SHIELD, in opposite directions, and any deal that picks
@@ -268,11 +273,10 @@ charge accounting and the CSS never learn its name.
    `name`, `blurb`, `detail`, `aim` (the line shown while it is armed —
    two landscape lines is its whole budget, see §7),
    `target` (`'column' | 'self'`), `side` (`'own' | 'foe'`, for column spells:
-   which half the ring offers), `uses`, `final` (for a *self* spell whose cast
-   reveals something or otherwise pays out before it could be undone — see §2;
-   a self spell that calls `ctx.draw()` MUST set it, and the gate enforces
-   that), `legal()`, `apply()`, and `cpuCast()`
-   if its value is off-board.
+   which half the ring offers), `uses`, `commitsOnAim` only when showing the
+   aim itself spends the charge, `previewDieIndex()` when a column spell marks
+   one exact die, `legal()`, `apply()`, and `cpuCast()` if its value is
+   off-board.
 2. **The icon** — a path in `ui/spellicons.ts` plus a hue.
 3. **The cast animation** — an entry in `EFFECTS`
    (`src/flow/spell-effects.ts`), with `defaultEffect` as the fallback.
@@ -351,18 +355,13 @@ Learned from real play, each one a shipped bug:
   beat to be over before measuring anything.
 - **A self spell casts on press.** One possible target means nothing to aim.
   Dragging still works; dropping anywhere else cancels with the charge intact.
-- **And pressing it again takes it back**, for as long as the die it changed is
-  still in hand — placing the die closes the window. Implemented as a SNAPSHOT
-  taken at cast time (die, supply, charm), never as a per-spell inverse, so a
-  spell does not have to know it can be undone. Two kinds of cast are never
-  offered the window at all (§2, *what has already paid out*): board spells,
-  whose dice have visibly flown, and spells the registry marks **`final`**
-  because the cast already revealed something — **FATE**, which draws the next
-  die and cannot un-show it. The window is decided in exactly one place
-  (`castBy` asks `target === 'self' && !final`), so no gesture, keyboard path
-  or rune state can offer a take-back the rule forbids. The rune stays lit and
-  pressable *while the window is open* — and a final cast must read spent at
-  once, or the UI is inviting the peek the rule exists to prevent.
+- **Commitment has one visible direction.** Before commitment, leaving an
+  ordinary aim or missing its target restores the ready rune with its charge
+  intact. After commitment, the rune immediately shows the remaining charge
+  or `spent`; pressing it again cannot restore the old die, supply, charm, or
+  board. ANVIL's marked aim stays visibly locked until the player chooses one
+  of its legal full columns. This rule lives in the shared spell flow, so
+  pointer, touch, keyboard, local-player and machine casts cannot disagree.
 - **A rune you cannot cast this turn must LOOK uncastable.** `disabled` was
   the whole answer for a while, and disabled is invisible: vs the machine the
   rail rune is always yours (`near` = `S.bottom`), so it sat full-bright and
@@ -416,50 +415,117 @@ Learned from real play, each one a shipped bug:
   A changed total scales the number, and reading inside that window looks
   exactly like layout drift.
 
-### The cast animations, and what three studies of them already settled (2026-08-23)
+### The rune in play: the card rail (open study, 2026-08-23)
 
-Three runes have a cast that states its effect without showing it, and each has
-an open set of six studies rather than a decision: **SUNDER**
-(`design/screens/studies/open/43a–43f`), **ANVIL** (`44a–44f`) and **PILFER**
-(`45a–45f`).
-Every set draws ONE board on all six cards so the comparison is controlled, and
-every card's note names what its idea costs.
+Six alternatives are open in `design/screens/studies/open/29a…29f`, group
+**"4g · The rune in play"** in Claude Design. Nothing is chosen. What IS
+decided are the constraints below — every one of them an owner call made while
+looking at the cards, so a later session can pick a winner without re-litigating
+the frame.
 
-Five things came out of building them that hold **whichever idea is picked**,
-and are cheaper to read here than to rediscover:
+**The problem being solved.** Today the rune is a 37px rounded square
+(`.rune`, `--sz: clamp(30px, --cell*.6, 40px)`) beside the die, and the
+opponent's is a *different object in a different place* — a 20px inert readout
+docked in their nameplate (`.plate .rune`). Two implementations of one idea.
+Meanwhile `ui/runedeal.ts` hands the player a beautiful CARD at the reveal and
+the game throws it away five seconds later.
 
-- **A mark has to survive a MULTIPLIED die.** The dice worth marking are almost
-  always the ones a pair or a triple has already turned gold or orange
-  (`ui/game/board.ts` toggles `.m2`/`.m3` on the count), and those already carry a
-  coloured border and a bloom. SUNDER's current ember glow disappears entirely
-  on one. Any mark that works by tinting the die is fighting the thing that
-  made the die interesting; marks that sit *over* the face or *outside* the
-  border survive. This is the same lesson the ward/shield studies learned about
-  a 1px ring (§`design/screens/studies/open/39a`), arrived at independently.
-- **A preview must ask `victimsOf`, never the face.** Under COLUMN SHIELD a
-  full enemy column holding three matching dice loses nothing, and under SINGLE
-  STRIKE only one die of a column falls however many match. A preview that
-  marks "every die whose face equals the die in hand" is wrong in two of the
-  seven modes, and wrong in the direction that makes the player distrust it.
-  `core/rules openStrikes` already returns the exact plan — but it CONSUMES an
-  armed sunder mark, so a preview must ask it on a cloned charm.
-- **Showing the doomed dice makes SUNDER `final`.** A cast that reveals
-  something cannot be taken back (§2), and a preview of which dice will fall is
-  a reveal — the player keeps the targeting knowledge whether or not they press
-  the rune again. SUNDER becomes the roster's second `final` entry the day the
-  animation ships, and its rune must read *spent* at once. The two land in one
-  commit on purpose: finality without the reveal is a strictly worse turn, and
-  the reveal without finality is the free look the rule exists to prevent.
-- **PILFER's hue is COLUMN SHIELD's hue.** Both are `#ffd166`. Anything that
-  tries to distinguish "you may take from here" from "this column is sealed" by
-  colour alone is drawing both in gold. Distinguish by *form* — dashed against
-  solid, thin against thick — or move one of them.
-- **The lane between the halves is occupied.** A stolen die's flight crosses
-  both chip rows, the die in play and the status line, because those are what
-  live there. Any idea that draws in that lane (a thread, a border, a tether)
-  is drawing on top of the busiest 26px of the screen, and any idea that draws
-  a path between two rects has to be re-authored for landscape, for
-  face-to-face, and for the widget's own containing block (`ui/fx pin()`).
+**The frame, decided:**
+
+- **One slot, one card, and it belongs to whoever is to move.** The nameplate
+  readout goes away; the plate gives that lane back to the score. Watch
+  "Reserve, never collapse" above when it does.
+- **The card is the reveal's card at rail size** — same face, same deck back,
+  same corner index, icon centred (`.rdealt` / `.rface` / `.rback` in
+  `styles/components/rune-deal.css`). Not a new object.
+- **At rest it is SMALLER than the die in play.** Same width as the button it
+  replaces, buying its presence in height only, and stopping short:
+  card height `--cell*.81` against a die of `--cell*.92`, about 88% of it.
+  Only the ACTIVE card passes the die, at 1.16. The die is the thing being
+  decided about; a rune that out-measures it beside it steals the centre.
+- **It carries NO seat mark** — no seat colour, no mirrored lean. The die in
+  play is 14px away and is already painted in the colour of whoever is to move,
+  the status line names them, and only one card is ever in the slot. A seat
+  hue could not be honest anyway: both seats are dealt the same rune
+  (symmetry, §2), so the face wears the RUNE's hue in either hand.
+- **An unplayed rune lies FACE-DOWN**, its index enlarged for rail size — the
+  deck draws that index at 26% for a card 2.5× bigger, which is a 9px smudge
+  here. A played rune is face UP. That is the reading every card game already
+  taught the player, and it means the turn is a genuine reveal rather than a
+  flourish.
+- **The press turns it ONCE.** One half-turn, not a spin, arriving enlarged.
+  Use `ui/runedeal.ts` `flip()`'s method — 0 → 90°, swap which face is lit
+  while edge-on, −90 → 0 — never `backface-visibility`: one grouping property
+  anywhere in the ancestry flattens the 3D context and shows the wrong face,
+  which is exactly what the deal's first build did.
+- **More than one charge is more than one card**, each at its own slight tilt.
+  FATE's two casts stop being a 14px corner badge (`.rune .n`). The tilts must
+  differ — two cards at the same angle read as one thick card.
+- **Portrait face-to-face turns the card 180°** with the rest of the centre.
+  No new mechanism: `styles/game/seating.css` already rotates `#dieStage`,
+  `.status` and `.timer` under `#kbroot.face.p2turn:not(.land)`. The card
+  belongs in that selector.
+
+**What the six differ on** is only the spent mark and how the slot re-arms:
+RC1 played card face-up and dimmed · RC2 a larger card whose back is legible
+and whose face names the rune · RC3 a seat in the rail drawn with the board's
+own empty-slot values · RC4 a stack that deals its top card away and leaves an
+empty outline · RC5 a wax seal that breaks as the card turns · RC6 the card
+flies to the column it chose and the rail is left empty.
+
+**Costs already identified, so they are not re-discovered:** the drag ghost
+(`.runeghost`, a 46px rounded square in `flow/spell-gestures.ts`) has to become
+a card too; landscape squeezes the rail into the 116px `--land-lane` with the
+status line and the LIMITED bag; and a rail that can be empty must not let the
+die in play shift, which is what RC3's seat and RC4's outline are for.
+
+### The selected cast animations (2026-08-23)
+
+The studies are implementation references, not permission to approximate the
+rule. The authoritative board mutation still comes from the registry and
+`openStrikes`; animation may reveal or explain that result, never invent a
+second one.
+
+- **PILFER — PI5, The snatch.** The stolen top die resists once for every die
+  beneath it: a one-die source stack crosses immediately, a two-die stack has
+  one collision/resistance beat, and a full three-die stack has two. The
+  source stack strains and releases, then the die travels to the facing column.
+  Its arrival is a placement, not a strike: no board shake, impact burst, or
+  other destruction cue may play when it lands. PILFER and COLUMN SHIELD share
+  gold, so legality remains distinguished by form rather than hue alone.
+- **SUNDER — SU6, Overload.** Casting marks only the exact dice the following
+  placement will destroy. The preview asks `openStrikes()` with a cloned charm,
+  preserving COLUMN SHIELD, SINGLE STRIKE and current WARD answers without
+  consuming live state. Shielded dice and dice behind an answering ward are
+  not painted as doomed. The doomed faces keep their seat and multiplier
+  reading, tremble briefly, then calm into a static warning; reduced motion
+  uses the static warning immediately. The valid self cast is committed and
+  spent before this information appears, so it cannot be used as a free probe.
+- **ANVIL — AN2 forge heat plus AN3's expanding border.** Heat works the whole
+  die, not one pip or an overlay fragment: it rises to white, the authoritative
+  face changes, and the new die cools in place. One solid border expands once
+  from the face-change beat. Nothing rotates, rocks, spins, rolls, or tumbles;
+  the result was known from the die in hand and must not read as random. The
+  aim marks the exact weakest die in every legal full column, including the `2`
+  in `[2,3,3]`, and commits as soon as those markings appear.
+- **WARD — W3, Runic seal.** The ward is the closed seal held by one modestly
+  enlarged clasp, and the clasp always faces the centre of the table: down on
+  the portrait top board, up on the portrait bottom board, right on the
+  landscape left board, and left on the landscape right board. Casting WARD
+  does not reroute a die; later placements settle into their normal
+  authoritative slot. Only a genuine opponent strike with victims animates a
+  break: a copy of the settled attacking die travels to the clasp, contact
+  spends the ward, and the seal snaps. A miss, an own placement, or a strike
+  already stopped by COLUMN SHIELD produces no attacker ghost or false break.
+- **NUDGE — NU1, The pip lands.** The die shell remains completely still. Pips
+  the new face no longer needs leave, and newly needed pips land in their
+  cells; the diff is computed for every transition, including the full `6 → 1`
+  wrap. The face alone changes because the face is the whole rule.
+- **FATE — FA4, The pass.** The rejected die moves left while the next die
+  enters from the right at the same time, so the stage is never empty for a
+  frame. The pass is contained inside the stage lane and does not cross the
+  LIMITED bag, the rune, or either board. The supply draw and charge are
+  committed before the revealed replacement can influence another choice.
 
 ### The RANDOM draw is shown, not silent (2026-08-22)
 

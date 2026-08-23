@@ -17,6 +17,9 @@ import { createBrowserReport, capturePageErrors } from '../../support/browser-re
 import { runPickerScenarios } from './scenarios/picker.mjs';
 import { runCastingScenarios } from './scenarios/casting.mjs';
 import { runEffectScenarios } from './scenarios/effects.mjs';
+import { runStageEffectScenarios } from './scenarios/stage-effects.mjs';
+import { runSunderOverloadScenarios } from './scenarios/sunder-overload.mjs';
+import { runPilferAnvilEffectScenarios } from './scenarios/pilfer-anvil-effects.mjs';
 import { runProtectionScenarios } from './scenarios/protections.mjs';
 import { runLayoutScenarios } from './scenarios/layout.mjs';
 
@@ -79,6 +82,11 @@ try {
     const c = await browser.newContext({ hasTouch: true, isMobile: true, deviceScaleFactor: 2,
       ...(view.device || { viewport: { width: view.w, height: view.h } }), ...(view.opts || {}) });
     await c.addInitScript(() => { const k = 'knucklebones.v1', cf = JSON.parse(localStorage.getItem(k) || '{}'); cf.played = true; localStorage.setItem(k, JSON.stringify(cf)); });
+    if (view.noPointer) await c.addInitScript(() => {
+      /* Exercise the semantic click seam used by accessibility/legacy hosts,
+         not Chromium's default pointer path. */
+      Object.defineProperty(window, 'PointerEvent', { configurable: true, value: undefined });
+    });
     const p = await c.newPage();
     capturePageErrors(p, problems, view.name);
     await p.goto(F); await p.waitForTimeout(400);
@@ -120,6 +128,9 @@ try {
   await runPickerScenarios(suite);
   await runCastingScenarios(suite);
   await runEffectScenarios(suite);
+  await runStageEffectScenarios(suite);
+  await runSunderOverloadScenarios(suite);
+  await runPilferAnvilEffectScenarios(suite);
   await runProtectionScenarios(suite);
   await runLayoutScenarios(suite);
 

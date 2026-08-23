@@ -1,0 +1,235 @@
+<!-- meta name="Spell effects — production motion" group="4 · Local play" subtitle="CHOSEN AND SHIPPED 2026-08-23 — the six selected rune effects, their protected cases, and the exact moment a cast becomes irreversible" width=430 height=1930 sizes="md" links="Spells — aiming a rune, W3 — Runic seal, closed or clasped, Match, Match — LIMITED bag" -->
+<style>
+  /* A production CONTRACT plate, not a seventh set of studies. Every die,
+     rune, shield and mode mark below comes from the app's registries through
+     design/build.mjs. The card-local fx* scaffold only explains which motion
+     owns which state; timings and effect classes stay in src/flow/spell-effects/
+     and the spell-effect styles under src/styles/game/. */
+  .scr{gap:12px;padding-bottom:18px}
+  .fxhead{display:flex;flex-direction:column;align-items:center;gap:7px;padding:4px 12px 2px}
+  .fxhead h1{font-size:22px;line-height:1.2}
+  .fxkicker{font-size:9px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+  .fxintro{max-width:330px;text-align:center;color:#aebed8;font-size:10.5px;line-height:1.55}
+
+  /* One irreversible state machine for all six runes. The exception is named
+     in the strip itself: ANVIL's markings are already information, so they are
+     the commit — not a preview that can be taken back. */
+  .fxcommit{display:grid;grid-template-columns:1fr 20px 1fr 20px 1fr;align-items:center;
+    width:100%;box-sizing:border-box;padding:10px;border-radius:16px;
+    border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.035)}
+  .fxstate{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center}
+  .fxstate b{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:#e7efff}
+  .fxstate span{font-size:8px;line-height:1.35;color:var(--dim)}
+  .fxstate:last-child b{color:var(--gold)}
+  .fxarr{text-align:center;color:rgba(var(--gold-rgb),.65);font-size:15px}
+  .fxlock{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;
+    border-radius:50%;border:1px solid currentColor;color:var(--gold);
+    background:rgba(var(--gold-rgb),.08);box-shadow:0 0 12px rgba(var(--gold-rgb),.14)}
+
+  .fxcards{display:flex;flex-direction:column;gap:10px}
+  .fxcard{--fxc:var(--gold);display:flex;flex-direction:column;gap:9px;padding:11px 12px 12px;
+    border-radius:18px;border:1px solid color-mix(in srgb,var(--fxc) 22%,rgba(255,255,255,.08));
+    background:radial-gradient(100% 90% at 0 0,color-mix(in srgb,var(--fxc) 9%,transparent),transparent 62%),
+      rgba(255,255,255,.025)}
+  .fxtitle{display:grid;grid-template-columns:33px 1fr auto;gap:9px;align-items:center}
+  .fxglyph{width:31px;height:31px;border-radius:10px;display:grid;place-items:center;color:var(--fxc);
+    border:1px solid color-mix(in srgb,var(--fxc) 35%,transparent);
+    background:color-mix(in srgb,var(--fxc) 8%,transparent);
+    filter:drop-shadow(0 0 7px color-mix(in srgb,var(--fxc) 45%,transparent))}
+  .fxname{display:flex;flex-direction:column;gap:1px}
+  .fxname b{font-size:11px;letter-spacing:.16em;color:#edf3ff}
+  .fxname span{font-size:8.5px;letter-spacing:.18em;color:var(--fxc);text-transform:uppercase}
+  .fxbadge{border:1px solid rgba(255,255,255,.11);border-radius:99px;padding:3px 7px;
+    color:#98abc6;font-size:7.5px;letter-spacing:.13em;text-transform:uppercase;white-space:nowrap}
+  .fxscene{min-height:78px;border-radius:14px;border:1px solid rgba(255,255,255,.07);
+    background:rgba(4,7,18,.36);display:flex;align-items:center;justify-content:center;
+    padding:9px;box-sizing:border-box;overflow:hidden;position:relative}
+  .fxrule{font-size:9.5px;line-height:1.5;color:#aebed8}
+  .fxrule b{color:var(--fxc)}
+  .fxrule code{font-size:8.5px;color:#d7e3fa;background:rgba(255,255,255,.06);
+    padding:1px 4px;border-radius:4px}
+  .fxmini{position:relative;display:block;line-height:0}
+  .fxcap{font-size:7.5px;line-height:1.35;letter-spacing:.12em;text-transform:uppercase;
+    text-align:center;color:var(--dim)}
+
+  /* PI5 — three bounded source depths. Each little rail names the number of
+     resistance beats before release; the arrival arrow is deliberately plain
+     because landing is not another strike. */
+  .fxdepths{display:flex;align-items:flex-end;justify-content:center;gap:18px;width:100%}
+  .fxdepth{display:flex;flex-direction:column;align-items:center;gap:5px}
+  .fxstack{height:42px;display:flex;align-items:flex-end;position:relative}
+  .fxstack .fxmini{margin-left:-17px}.fxstack .fxmini:first-child{margin-left:0}
+  .fxstack .fxmini:not(:last-child){filter:saturate(.48) brightness(.7)}
+  .fxsnatch{position:absolute;right:-11px;top:-8px;color:var(--fxc);font-size:14px;
+    text-shadow:0 0 8px var(--fxc)}
+  .fxbeats{display:flex;gap:3px;height:4px}
+  .fxbeats i{display:block;width:12px;height:3px;border-radius:3px;background:var(--fxc);
+    box-shadow:0 0 6px var(--fxc)}
+  .fxplain{font-size:8px;color:#91a4c0;letter-spacing:.11em;text-transform:uppercase}
+
+  /* SU6 — only authoritative victims are altered. A protected die stays its
+     normal colour; the small shield/ward labels sit outside the face. */
+  .fxvictims{display:flex;align-items:center;gap:13px}
+  .fxdoom{transform:rotate(-2deg);filter:drop-shadow(0 0 9px var(--fxc)) saturate(1.35)}
+  .fxdoom::after{content:"";position:absolute;inset:-2px;border-radius:13px;pointer-events:none;
+    box-shadow:inset 0 0 10px color-mix(in srgb,var(--fxc) 55%,transparent)}
+  .fxember{position:absolute;width:3px;height:3px;border-radius:50%;background:#fff2dc;
+    right:3px;top:-5px;box-shadow:-5px 8px 0 color-mix(in srgb,var(--fxc) 75%,#fff),0 0 8px var(--fxc)}
+  .fxsafe{display:flex;flex-direction:column;align-items:center;gap:3px;padding-left:8px;
+    border-left:1px solid rgba(255,255,255,.1);color:var(--gold)}
+  .fxsafe > span:first-child{height:38px;display:flex;align-items:center;gap:3px}
+
+  /* ANVIL — the heat belongs to the complete workpiece. The one solid ring is
+     the AN3 expansion at the face change; nothing on the die rotates. */
+  .fxforge{gap:18px}
+  .fxmarks{display:flex;align-items:center;gap:4px;padding-right:14px;border-right:1px solid rgba(255,255,255,.1)}
+  .fxmarked{filter:drop-shadow(0 0 10px var(--fxc))}
+  .fxmarked::after{content:"";position:absolute;inset:-4px;border:1px dashed var(--fxc);
+    border-radius:14px;box-shadow:0 0 8px color-mix(in srgb,var(--fxc) 60%,transparent)}
+  .fxwork{width:52px;height:52px;display:grid;place-items:center;position:relative;
+    border-radius:15px;background:radial-gradient(circle,color-mix(in srgb,var(--fxc) 32%,transparent),transparent 68%);
+    box-shadow:0 0 18px color-mix(in srgb,var(--fxc) 42%,transparent)}
+  .fxwork::before{content:"";position:absolute;inset:-5px;border:2px solid var(--fxc);
+    border-radius:17px;box-shadow:0 0 10px color-mix(in srgb,var(--fxc) 60%,transparent)}
+  .fxfacechange{font-size:16px;color:var(--fxc)}
+
+  /* W3 — portrait lower-seat example: the clasp is at the TOP because that is
+     the edge facing table centre. The ordinary placement arrow goes into the
+     open slot; only the opponent ghost takes the separate line to the clasp. */
+  .fxwardscene{gap:20px;min-height:112px;overflow:visible}
+  .fxwardcol{display:flex;flex-direction:column;gap:4px;padding:8px 6px 6px;position:relative;
+    border:1.5px solid var(--fxc);border-radius:15px;box-shadow:0 0 9px color-mix(in srgb,var(--fxc) 48%,transparent)}
+  .fxclasp{position:absolute;left:50%;top:-8px;width:13px;height:13px;transform:translateX(-50%) rotate(45deg);
+    border:2px solid var(--fxc);background:#080b18;box-shadow:0 0 8px var(--fxc)}
+  .fxwardmark{position:absolute;left:-14px;bottom:-10px;color:var(--fxc);display:grid;place-items:center;
+    width:25px;height:25px;border-radius:50%;background:#080b18;border:1px solid var(--fxc);
+    filter:drop-shadow(0 0 6px color-mix(in srgb,var(--fxc) 65%,transparent))}
+  .fxwardflows{display:grid;grid-template-rows:1fr 1fr;gap:8px;min-width:145px}
+  .fxwardflow{display:grid;grid-template-columns:36px 18px 1fr;align-items:center;gap:5px}
+  .fxwardflow b{font-size:8px;line-height:1.35;color:#d8e4f8;text-transform:uppercase;letter-spacing:.08em}
+  .fxwardflow small{display:block;color:var(--dim);font-weight:500;text-transform:none;letter-spacing:0}
+  .fxwardflow.hit b{color:var(--fxc)}
+
+  /* NU1 — two faces occupy one unchanged shell; the only subject is the pip
+     pattern, including the expensive wrap. */
+  .fxnudge{gap:13px}
+  .fxnudgecase{display:flex;flex-direction:column;align-items:center;gap:5px}
+  .fxpair{display:flex;align-items:center;gap:7px}
+  .fxpiparr{color:var(--fxc);font-size:14px;text-shadow:0 0 7px var(--fxc)}
+  .fxwrap .fxcap{color:var(--fxc)}
+
+  /* FA4 — the bounded pass lane sits between the LIMITED bag and the rune.
+     The old and new faces coexist in the lane, so there is no empty stage. */
+  .fxfate{gap:8px}
+  .fxfurniture{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--dim)}
+  .fxbag{width:28px;height:24px;border-radius:7px 7px 10px 10px;border:1px solid #7f90a9;
+    position:relative;background:rgba(255,255,255,.035)}
+  .fxbag::before{content:"•••";position:absolute;inset:1px 0 auto;text-align:center;font-size:10px;letter-spacing:1px}
+  .fxlane{width:150px;height:62px;border-radius:15px;position:relative;overflow:hidden;
+    border:1px solid color-mix(in srgb,var(--fxc) 30%,transparent);
+    background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--fxc) 8%,transparent),transparent)}
+  .fxlane::after{content:"";position:absolute;left:12px;right:12px;top:50%;height:1px;
+    background:linear-gradient(90deg,transparent,var(--fxc),transparent);opacity:.65}
+  .fxout,.fxin{position:absolute;top:9px;z-index:1}
+  .fxout{left:21px}.fxin{right:21px}
+  .fxpassarr{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;
+    color:var(--fxc);font-size:16px;text-shadow:0 0 8px var(--fxc)}
+
+  .fxfoot{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .fxfoot > div{padding:9px 10px;border-radius:13px;border:1px solid rgba(255,255,255,.08);
+    background:rgba(255,255,255,.025);font-size:8.7px;line-height:1.45;color:#aebed8}
+  .fxfoot b{display:block;color:var(--gold);font-size:8px;letter-spacing:.12em;
+    text-transform:uppercase;margin-bottom:2px}
+
+  @media (prefers-reduced-motion:reduce){
+    .fxdoom{transform:none}
+  }
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr dice-static">
+  <div class="fxhead">
+    <div class="fxkicker">Production contract · six runes</div>
+    <h1>SPELL MOTION</h1>
+    <div class="fxintro">Each effect has one visual verb, one authoritative result, and one commit point. This plate is the shipped answer; the open studies remain the decision trail.</div>
+  </div>
+
+  <div class="fxcommit">
+    <div class="fxstate"><span class="fxlock">◇</span><b>Ordinary aim</b><span>Cancel is still allowed</span></div>
+    <div class="fxarr">→</div>
+    <div class="fxstate"><span class="fxlock">◆</span><b>Commit</b><span>Legal target · ANVIL marks</span></div>
+    <div class="fxarr">→</div>
+    <div class="fxstate"><span class="fxlock">×</span><b>No undo</b><span>Outcome plays through</span></div>
+  </div>
+
+  <div class="fxcards">
+    <section class="fxcard" style="--fxc:{{shue:pilfer}}">
+      <div class="fxtitle"><span class="fxglyph">{{sico:pilfer:18}}</span><span class="fxname"><b>PI5 · PILFER</b><span>The snatch</span></span><span class="fxbadge">bounded resistance</span></div>
+      <div class="fxscene">
+        <div class="fxdepths">
+          <div class="fxdepth"><div class="fxstack"><span class="fxmini">{{die:5:p2:36}}</span><b class="fxsnatch">↓</b></div><span class="fxbeats"></span><span class="fxcap">Depth 1<br>0 beats</span></div>
+          <div class="fxdepth"><div class="fxstack"><span class="fxmini">{{die:2:p2:36}}</span><span class="fxmini">{{die:5:p2:36}}</span><b class="fxsnatch">↓</b></div><span class="fxbeats"><i></i></span><span class="fxcap">Depth 2<br>1 beat</span></div>
+          <div class="fxdepth"><div class="fxstack"><span class="fxmini">{{die:4:p2:36}}</span><span class="fxmini">{{die:2:p2:36}}</span><span class="fxmini">{{die:5:p2:36}}</span><b class="fxsnatch">↓</b></div><span class="fxbeats"><i></i><i></i></span><span class="fxcap">Depth 3<br>2 beats</span></div>
+        </div>
+      </div>
+      <div class="fxrule"><b>Pull, resist, release.</b> Source height alone sets the count: <code>1 → 0</code>, <code>2 → 1</code>, <code>3 → 2</code>. The stolen die then travels straight into the facing column; arriving is a landing, never an extra collision.</div>
+    </section>
+
+    <section class="fxcard" style="--fxc:{{shue:sunder}}">
+      <div class="fxtitle"><span class="fxglyph">{{sico:sunder:18}}</span><span class="fxname"><b>SU6 · SUNDER</b><span>Overload</span></span><span class="fxbadge">exact victims</span></div>
+      <div class="fxscene">
+        <div class="fxvictims">
+          <span class="fxmini fxdoom">{{die:4:p2:40}}<i class="fxember"></i></span>
+          <span class="fxmini fxdoom">{{die:4:p2:40}}<i class="fxember"></i></span>
+          <div class="fxsafe"><span>{{die:2:p2:36}}{{mico:colshield:14}}</span><span class="fxcap">protected</span></div>
+          <div class="fxsafe"><span>{{die:5:p2:36}}{{sico:ward:14}}</span><span class="fxcap">protected</span></div>
+        </div>
+      </div>
+      <div class="fxrule"><b>Failure begins only on the authoritative doomed dice.</b> They heat, sit crooked, tremble and shed embers; then the exact victims collapse and the board becomes still. Shields and Wards never receive a false doom mark. Reduced motion keeps a static doomed state and the same result.</div>
+    </section>
+
+    <section class="fxcard" style="--fxc:{{shue:anvil}}">
+      <div class="fxtitle"><span class="fxglyph">{{sico:anvil:18}}</span><span class="fxname"><b>AN2 + AN3 · ANVIL</b><span>Forge heat · expanding border</span></span><span class="fxbadge">marking commits</span></div>
+      <div class="fxscene fxforge">
+        <div><div class="fxmarks"><span class="fxmini fxmarked">{{die:2:p1:36}}</span><span class="fxmini">{{die:3:p1:36}}</span><span class="fxmini">{{die:3:p1:36}}</span></div><div class="fxcap" style="margin-top:7px">[2, 3, 3] · the 2 is marked</div></div>
+        <span class="fxfacechange">→</span>
+        <span class="fxwork"><span class="fxmini">{{die:6:p1:42}}</span></span>
+      </div>
+      <div class="fxrule"><b>The whole die is the workpiece.</b> Full-shell forge heat owns the recast; one solid AN3 border expands exactly when the face changes. The die does not rotate. A hand die different from the weakest board face can recast <code>[2, 3, 3]</code>'s <code>2</code>. Weakest-die markings reveal the answer, so appearing marks reserve the charge and cannot be backed out.</div>
+    </section>
+
+    <section class="fxcard" style="--fxc:{{shue:ward}}">
+      <div class="fxtitle"><span class="fxglyph">{{sico:ward:18}}</span><span class="fxname"><b>W3 · WARD</b><span>Runic seal · clasped</span></span><span class="fxbadge">centre-facing clasp</span></div>
+      <div class="fxscene fxwardscene">
+        <div class="fxwardcol"><i class="fxclasp"></i><span class="fxmini">{{die:4:p1:36}}</span><span class="fxmini">{{die:1:p1:36}}</span><span class="fxwardmark">{{sico:ward:15}}</span></div>
+        <div class="fxwardflows">
+          <div class="fxwardflow"><span class="fxmini">{{die:3:p1:32}}</span><span class="fxarr">→</span><b>Normal slot<small>ordinary placement does not visit the clasp</small></b></div>
+          <div class="fxwardflow hit"><span class="fxmini">{{die:5:p2:32}}</span><span class="fxarr">↘</span><b>Clasp breaks<small>settled attacker is cloned only for a real hit</small></b></div>
+        </div>
+      </div>
+      <div class="fxrule"><b>The clasp always faces table centre</b> — top edge for the lower portrait seat, bottom edge for the upper seat, and the equivalent inner edges in landscape. It is modestly larger at the border. Only an opponent strike with genuine victims sends a clone of the settled attacker to the clasp and consumes the Ward; a miss, own placement or shield block creates no ghost.</div>
+    </section>
+
+    <section class="fxcard" style="--fxc:{{shue:nudge}}">
+      <div class="fxtitle"><span class="fxglyph">{{sico:nudge:18}}</span><span class="fxname"><b>NU1 · NUDGE</b><span>The pip lands</span></span><span class="fxbadge">pip-only · final</span></div>
+      <div class="fxscene fxnudge">
+        <div class="fxnudgecase"><div class="fxpair"><span class="fxmini">{{die:3:p1:40}}</span><span class="fxpiparr">→</span><span class="fxmini">{{die:4:p1:40}}</span></div><span class="fxcap">the tick · shell stays put</span></div>
+        <div class="fxnudgecase fxwrap"><div class="fxpair"><span class="fxmini">{{die:6:p1:40}}</span><span class="fxpiparr">→</span><span class="fxmini">{{die:1:p1:40}}</span></div><span class="fxcap">the wrap · five pips leave</span></div>
+      </div>
+      <div class="fxrule"><b>Only the pip pattern moves.</b> Unneeded pips drain and the new pattern lands inside an unchanged, static die shell. The expensive <code>6 → 1</code> wrap uses the same language and leaves one centre pip. Once cast, the new face is final.</div>
+    </section>
+
+    <section class="fxcard" style="--fxc:{{shue:fate}}">
+      <div class="fxtitle"><span class="fxglyph">{{sico:fate:18}}</span><span class="fxname"><b>FA4 · FATE</b><span>The pass</span></span><span class="fxbadge">simultaneous · final</span></div>
+      <div class="fxscene fxfate">
+        <div class="fxfurniture"><i class="fxbag"></i><span class="fxcap">LIMITED<br>bag</span></div>
+        <div class="fxlane"><span class="fxmini fxout">{{die:1:p1:42}}</span><span class="fxpassarr">⇆</span><span class="fxmini fxin">{{die:6:p1:42}}</span></div>
+        <div class="fxfurniture"><span class="fxglyph">{{sico:fate:16}}</span><span class="fxcap">rune</span></div>
+      </div>
+      <div class="fxrule"><b>Old leaves left while new enters right, at the same time.</b> Their overlap keeps the stage occupied for every frame. The whole pass is clipped to a contained lane, so neither face crosses the LIMITED bag or rune furniture. Seeing the replacement commits the draw; it cannot be returned.</div>
+    </section>
+  </div>
+
+  <div class="fxfoot">
+    <div><b>Interaction rule</b>Ordinary aim may be cancelled before commitment. Legal selection commits WARD and PILFER; the die commits self-casts; ANVIL alone commits when its markings appear.</div>
+    <div><b>Completion rule</b>After commitment there is no rune re-press, Escape, backdrop or cast undo. Motion may reduce, but authoritative identity, protection and finality never do.</div>
+  </div>
+</div></div>

@@ -10,7 +10,7 @@ import { SPEC, emptyBoard, boardTotal, applyMove, openStrikes, freshCharm,
          CLASSIC, ROWSWITCH, COLSHIELD,
          type GameState, type Mode, AI, ME } from '../src/core/rules.ts';
 import { SPELLS, RANDOM_SPELL, spellById, freshCharges, swingOf, bestTarget, machineCast,
-         type CastCtx } from '../src/core/spells.ts';
+         anvilTargetIndex, type CastCtx } from '../src/core/spells.ts';
 
 const problems: string[] = [];
 const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -73,32 +73,17 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
   };
 }
 
-/* ---- A CAST THAT REVEALS MAY NEVER BE TAKEN BACK ----
-   The take-back window (flow/spells) is offered to self spells only, and it
-   hands back the die, the charge, the bag and the charm — everything except
-   what the player SAW. Reaching into the supply is exactly that, so the rule
-   is asked MECHANICALLY rather than remembered: any self spell whose apply()
-   draws must carry `final`, on the day it is registered and not on the day
-   someone notices the free peek. */
+/* ---- AIM-TIME COMMITMENT IS DECLARATIVE ----
+   Every completed cast is final. ANVIL is the one earlier commitment: its aim
+   marks reveal the exact die before a column is chosen, so the registry must
+   declare both the lock and the die-level preview that explains it. */
 {
   for (const s of SPELLS) {
-    if (s.target !== 'self') continue;              // board casts never get the window
-    const ctx = mkCtx();
-    let drew = 0;
-    const watched: CastCtx = { ...ctx, draw: () => { drew++; return ctx.draw(); } };
-    s.apply([emptyBoard(), emptyBoard()], ME, -1, watched);
-    check(drew === 0 || s.final === true,
-      s.id + ' draws from the supply, so its cast can never be taken back — mark it `final`',
-      { drew, final: s.final ?? false });
+    if (!s.commitsOnAim) continue;
+    check(s.target === 'column' && typeof s.previewDieIndex === 'function',
+      'a spell that commits while aiming must show the exact board target: ' + s.id);
   }
-  check(spell('fate').final === true, 'FATE shows you the next die: its cast is final');
-  /* and `final` is meaningless where there is no window to close — marking a
-     board spell would imply the unmarked ones are takeable back, which is the
-     opposite of the truth */
-  for (const s of SPELLS) {
-    check(!(s.final && s.target === 'column'),
-      'a board cast is already final; marking it says the wrong thing about the rest: ' + s.id);
-  }
+  check(spell('anvil').commitsOnAim === true, 'ANVIL markings commit before column selection');
 }
 
 /* ---- FATE: discard and draw ---- */
@@ -117,7 +102,7 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
 {
   const nudge = spell('nudge');
   const st: GameState = [emptyBoard(), emptyBoard()];
-  for (const [before, after] of [[1, 2], [3, 4], [5, 6], [6, 1]] as const) {
+  for (const [before, after] of [[1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 1]] as const) {
     const ctx = mkCtx({ die: before });
     nudge.apply(st, ME, -1, ctx);
     check(ctx.got[0] === after, `nudge turns ${before} into ${after}`, ctx.got);
@@ -296,6 +281,16 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
   // destruction, and a forge destroys nothing
   check(anvil.legal([[[6, 6, 1], [], []], [[], [], []]] as GameState, AI, 0,
     mkCtx({ die: 6, mode: COLSHIELD as Mode })), 'COLSHIELD guards against strikes, not against your own forge');
+
+  // The reported real-match shape: the 2 is the weakest and must be offered
+  // whenever the hand differs from it. A 2 in hand is the intentional no-op.
+  const pair: GameState = [[[2, 3, 3], [], []], [[], [], []]];
+  check(anvilTargetIndex(pair[AI][0]) === 0, '[2,3,3] selects the centre-nearest 2');
+  check(anvil.legal(pair, AI, 0, mkCtx({ die: 3 })), '[2,3,3] is forgeable with a 3 in hand');
+  anvil.apply(pair, AI, 0, mkCtx({ die: 3 }));
+  check(String(pair[AI][0]) === '3,3,3', '[2,3,3] recasts its 2 into the held 3', pair[AI][0]);
+  check(!anvil.legal([[[2, 3, 3], [], []], [[], [], []]] as GameState, AI, 0, mkCtx({ die: 2 })),
+    '[2,3,3] with a 2 in hand is refused because it would not change');
 }
 {
   // the machine's halved demand: ANVIL's swing is ONE-SIDED (it only ever adds

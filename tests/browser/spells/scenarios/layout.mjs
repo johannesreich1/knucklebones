@@ -60,27 +60,40 @@ export async function runLayoutScenarios(suite) {
     const vp = await vctx.newPage();
     vp.on('pageerror', e => problems.push('PAGEERROR(' + view.name + '): ' + e.message));
     await vp.goto(F); await vp.waitForTimeout(400);
-    await vp.evaluate(() => window.__kb.openPractice());
-    await vp.tap('#btnPlay'); await vp.waitForTimeout(2200);
-    /* one synchronous pass: nothing re-renders between two arms, so every row
-       is measured against the same resting stage. Line boxes are counted with
+    /* Give every registry entry its own real hand and legal board. Reusing one
+       deal made arm() correctly refuse every spell except the dealt one; once
+       ANVIL gained committed aim it could also lock all later rows. Line boxes are counted with
        a Range, not by dividing by line-height — portrait's line-height is
        `normal`, which parses to NaN and quietly makes every row look fine. */
-    const lane = await vp.evaluate((ids) => {
-      const st = document.getElementById('status'), stage = document.getElementById('dieStage');
-      const reserve = parseFloat(getComputedStyle(st).minHeight);
-      const restY = stage.getBoundingClientRect().y;
-      const lines = () => { const rg = document.createRange(); rg.selectNodeContents(st); return rg.getClientRects().length; };
-      const rows = ids.map((id) => {
-        window.__kb.spells.arm(id);
+    const rows = [];
+    let reserve = 0;
+    let land = false;
+    for (const spell of SPELLS) {
+      await newGame({ spell: spell.id }, vp);
+      check(await waitChoose(vp), `game never reached choose (aim lane ${view.name}/${spell.id})`);
+      await table([[2, 3, 3], [], []], [[], [6, 6], []], 4, vp);
+      const row = await vp.evaluate((id) => {
+        const st = document.getElementById('status'), stage = document.getElementById('dieStage');
+        const cssReserve = parseFloat(getComputedStyle(st).minHeight);
+        const restY = stage.getBoundingClientRect().y;
+        const lines = () => { const rg = document.createRange(); rg.selectNodeContents(st); return rg.getClientRects().length; };
+        const armed = window.__kb.spells.arm(id);
         const b = st.getBoundingClientRect();
-        return { id, text: st.textContent, lines: lines(), h: +b.height.toFixed(1), w: +b.width.toFixed(1),
-                 offscreen: b.right > window.innerWidth + 0.5 || b.left < -0.5,
-                 dieMoved: +Math.abs(stage.getBoundingClientRect().y - restY).toFixed(1) };
-      });
-      window.__kb.spells.disarm();
-      return { land: document.getElementById('kbroot').classList.contains('land'), reserve, rows };
-    }, SPELLS.map((s) => s.id));
+        const result = { id, armed, text: st.textContent, lines: lines(), h: +b.height.toFixed(1),
+          w: +b.width.toFixed(1), cssReserve,
+          land: document.getElementById('kbroot').classList.contains('land'),
+          offscreen: b.right > window.innerWidth + 0.5 || b.left < -0.5,
+          dieMoved: +Math.abs(stage.getBoundingClientRect().y - restY).toFixed(1) };
+        window.__kb.spells.disarm(true);
+        return result;
+      }, spell.id);
+      rows.push(row);
+      reserve = row.cssReserve;
+      land = row.land;
+      check(row.armed && row.text === spell.aim,
+        `the aim-lane probe never armed ${spell.id}`, { row, expected: spell.aim });
+    }
+    const lane = { land, reserve, rows };
     out['aimLane_' + view.name] = lane;
     check(lane.land === (view.name === 'landscape'), 'the aim-lane probe was in the wrong orientation', { view, land: lane.land });
     check(lane.rows.every((r) => r.text), 'an armed rune said nothing', lane.rows);

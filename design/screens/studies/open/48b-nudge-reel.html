@@ -1,0 +1,175 @@
+<!-- meta name="NU2 — The reel" group="4e · NUDGE — the tick" subtitle="The six faces are a strip and the die is a window onto it: one cast rolls the strip up exactly one stop — and the six rolls forward onto the 1 that comes after it, the way an odometer turns over" width=430 height=1055 sizes="md" links="Spells — aiming a rune, Offline — local play, Game modes" -->
+<style>
+  /* Card-local names only (nu* and sp*). Every die is the app's own face markup
+     through the build token, so the pip cells animated below are literally the
+     cells src/ui/die-markup.ts lays out. The study board, chips, labels and
+     nameplate width come from design/build.mjs's chrome. */
+  .scr{gap:6px;--hue:{{shue:nudge}}}
+  .stagerow{--cell:56px;margin-top:16px}
+  .nustatus{margin-top:14px;margin-bottom:14px}
+
+  /* ===== THE LOOP: 2.8s, one cast =====
+       0–20%   the rune is armed and the die in hand reads 3
+       20–42%  the tick — the window the six ideas differ in
+       42%     the face IS the new one; the rune is spent
+       42–100% held
+     Every card runs the same loop three times over: on the die in play (3 → 4)
+     and on the two cases in the strip below it (5 → 6, and the WRAP 6 → 1),
+     because an idea that reads well going up and badly coming back around is
+     not an answer — the wrap is the price that keeps this rune honest. */
+  .nuunit{position:relative;display:block;line-height:0;width:var(--sz);height:var(--sz)}
+  .nuunit > i{position:absolute;inset:0;display:block;line-height:0}
+  .nuold{animation:nuoldf 2.8s steps(1,end) infinite}
+  .nunew{animation:nunewf 2.8s steps(1,end) infinite}
+  @keyframes nuoldf{0%,41.9%{opacity:1}42%,100%{opacity:0}}
+  @keyframes nunewf{0%,41.9%{opacity:0}42%,100%{opacity:1}}
+  @keyframes nudrain{0%,20%{opacity:1;transform:scale(1)}
+    28%{opacity:1;transform:scale(1.18)}
+    42%,100%{opacity:0;transform:scale(.15)}}
+  @keyframes nuarrive{0%,42%{opacity:0;transform:scale(.15)}
+    52%{opacity:1;transform:scale(1.25)}60%,100%{opacity:1;transform:scale(1)}}
+
+  /* the rune: armed, then spent — both are the app's own states (.rune.armed,
+     .rune.spent in styles/game/spells.css), cut on the same frame as the face */
+  .nurune{position:relative;display:flex;align-items:center}
+  .nurune .spent{position:absolute;inset:0;margin:0}
+  .nurune .armed{animation:nuoldf 2.8s steps(1,end) infinite}
+  .nurune .spent{animation:nunewf 2.8s steps(1,end) infinite}
+  /* ...and the line under the die, which castBy() rewrites for the whole cast */
+  .nustx{position:relative;display:block}
+  .nusay2{position:absolute;left:0;right:0;top:0}
+  .nusay1{animation:nuoldf 2.8s steps(1,end) infinite}
+  .nusay2{animation:nunewf 2.8s steps(1,end) infinite}
+
+  /* THE WRAP STRIP: the two cases side by side, running the same idea */
+  .nustrip{display:flex;justify-content:center;gap:26px;margin-top:12px;width:100%}
+  .nucase{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .nucase .cap{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;
+    text-align:center;line-height:1.5}
+  .nucase.wrap .cap{color:var(--hue)}
+  .nuarrow{font-size:11px;color:var(--dim);letter-spacing:.1em}
+
+  /* WHICH PIPS MOVE, per case — computed from src/ui/die-markup.ts's own cell
+     map rather than counted by hand, so a card can never picture a face the
+     game does not draw. */
+  /* 3 → 4: 1 pip leave, 2 arrive — 3 becomes 4 */
+  .u34 .nuold .pip:nth-child(5){opacity:1;animation:nudrain 2.8s cubic-bezier(.5,0,.85,1) infinite}
+  .u34 .nunew .pip:nth-child(3),.u34 .nunew .pip:nth-child(7){opacity:1;animation:nuarrive 2.8s cubic-bezier(.2,1.6,.4,1) infinite}
+  /* 5 → 6: 1 pip leave, 2 arrive — 5 becomes 6 */
+  .u56 .nuold .pip:nth-child(5){opacity:1;animation:nudrain 2.8s cubic-bezier(.5,0,.85,1) infinite}
+  .u56 .nunew .pip:nth-child(4),.u56 .nunew .pip:nth-child(6){opacity:1;animation:nuarrive 2.8s cubic-bezier(.2,1.6,.4,1) infinite}
+  /* 6 → 1: 6 pips leave, 1 arrive — 6 becomes 1 */
+  .u61 .nuold .pip:nth-child(1),.u61 .nuold .pip:nth-child(3),.u61 .nuold .pip:nth-child(4),.u61 .nuold .pip:nth-child(6),.u61 .nuold .pip:nth-child(7),.u61 .nuold .pip:nth-child(9){opacity:1;animation:nudrain 2.8s cubic-bezier(.5,0,.85,1) infinite}
+  .u61 .nunew .pip:nth-child(5){opacity:1;animation:nuarrive 2.8s cubic-bezier(.2,1.6,.4,1) infinite}
+
+  /* ===== THE IDEA. NUDGE is a rune with a MODULUS, and a modulus has a
+     natural picture: a reel. Six faces in a fixed order, one stop per cast,
+     and a seventh position that is the 1 again — so the wrap is not a special
+     case with its own animation, it is the same forward roll landing on the
+     tile after the six. The window is the die's own box; the strip is the
+     app's own faces, in order.
+     --stop is the face the reel starts on (0-based); the roll always advances
+     by exactly one. */
+  /* the window: the die's own corner, so what is clipped still reads as a die */
+  .nuunit{overflow:hidden;border-radius:14px}
+  .nuold,.nunew{opacity:0!important;animation:none}
+  .nureel{position:absolute;left:0;top:0;right:auto;bottom:auto;width:var(--sz);height:auto;
+    display:block;line-height:0;
+    transform:translateY(calc(var(--stop)*var(--sz)*-1));
+    animation:nureel 2.8s cubic-bezier(.3,1.35,.45,1) infinite}
+  .nureel b{display:block;width:var(--sz);height:var(--sz);line-height:0}
+  @keyframes nureel{0%,20%{transform:translateY(calc(var(--stop)*var(--sz)*-1))}
+    42%,100%{transform:translateY(calc((var(--stop) + 1)*var(--sz)*-1))}}
+  /* the two faces either side of the window are dimmed, so the die still reads
+     as ONE die rather than as a list that happens to be die-shaped */
+  .nuunit::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:4;border-radius:14px;
+    background:linear-gradient(180deg,rgba(5,6,14,.72) 0%,transparent 26%,transparent 74%,rgba(5,6,14,.72) 100%)}
+  /* the detent: the window itself takes the stop, a single hard tick */
+  /* the detent ring lives INSIDE the window: .nuunit clips here, so a ring at
+     inset:-3px would simply be cut off */
+  .nuunit::after{content:"";position:absolute;inset:0;border-radius:14px;pointer-events:none;z-index:5;
+    border:1.5px solid var(--hue);opacity:0;box-shadow:inset 0 0 16px color-mix(in srgb,var(--hue) 60%,transparent);
+    animation:nu2click 2.8s ease-out infinite}
+  @keyframes nu2click{0%,36%{opacity:0}42%{opacity:1}58%,100%{opacity:0}}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hud">
+    <div class="rec">
+      <button type="button" class="rchip tapmode" data-lib="modes" data-id="classic">{{mico:classic:12}} CLASSIC<span class="mi">ⓘ</span></button>
+      <button type="button" class="rchip tapmode" data-lib="spells" data-id="nudge">{{sico:nudge:12}} NUDGE<span class="mi">ⓘ</span></button>
+    </div>
+    <div class="sp"></div>
+    <button class="ico">{{ico:leave:15}}</button>
+  </div>
+
+  <div class="cap2">One stop up the reel. The strip only ever moves forward, which is why the six lands on a one.</div>
+
+  <div class="spfield">
+    <div class="stagerow">
+      <span class="nuunit u34" style="--sz:56px">
+        <i class="nuold">{{die:3:p1:56}}</i>
+        <i class="nunew">{{die:4:p1:56}}</i><i class="nureel" style="--stop:2"><b>{{die:1:p1:56}}</b><b>{{die:2:p1:56}}</b><b>{{die:3:p1:56}}</b><b>{{die:4:p1:56}}</b><b>{{die:5:p1:56}}</b><b>{{die:6:p1:56}}</b><b>{{die:1:p1:56}}</b></i>
+      </span>
+      <div class="spells nurune">
+        <button class="rune ready armed" style="--sh:var(--p1)">{{sico:nudge:16}}<b class="n"></b></button>
+        <button class="rune spent" style="--sh:var(--p1)">{{sico:nudge:16}}<b class="n"></b></button>
+      </div>
+    </div>
+    <div class="status me nustatus"><span class="nustx"><span class="nusay1">Drop it on your die</span><span class="nusay2">NUDGE</span></span></div>
+
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-bottom:5px">
+        <div class="spchip" style="--c:var(--p1)">8</div>
+        <div class="spchip" style="--c:var(--p1)">5</div>
+        <div class="spchip" style="--c:var(--p1)">16</div>
+    </div>
+    <div class="spboard spmine">
+      <div class="spcol">
+        <div class="spslot">{{die:6:p1:52}}</div>
+        <div class="spslot">{{die:2:p1:52}}</div>
+        <div class="spslot"></div>
+      </div>
+      <div class="spcol">
+        <div class="spslot">{{die:5:p1:52}}</div>
+        <div class="spslot"></div>
+        <div class="spslot"></div>
+      </div>
+      <div class="spcol nucol">
+        <div class="spslot"><span class="spmark nupair">{{die:4:p1 m2:52}}</span></div>
+        <div class="spslot"><span class="spmark nupair">{{die:4:p1 m2:52}}</span></div>
+        <div class="spslot nuseat"></div>
+
+      </div>
+    </div>
+    <div class="splbl">a 3 into that column pays 3 · a 4 pays 20 — the pair becomes a triple</div>
+
+    <div class="plate pline" style="--c:var(--p1);margin-top:8px">
+      <span class="who"><span class="dot"></span><span class="nm">YOU</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="runeslot live"><span class="nurune">
+        <button class="rune idle" style="--sh:var(--p1)" disabled>{{sico:nudge:16}}<b class="n"></b></button>
+        <button class="rune spent" style="--sh:var(--p1)" disabled>{{sico:nudge:16}}<b class="n"></b></button>
+      </span></span><span class="tot">29</span></span>
+    </div>
+  </div>
+
+  <div class="cap2" style="margin-top:10px">Both directions, the same idea: the ordinary tick, and the wrap that pays for it</div>
+  <div class="nustrip">
+    <div class="nucase">
+      <span class="nuunit u56" style="--sz:44px">
+        <i class="nuold">{{die:5:p1:44}}</i>
+        <i class="nunew">{{die:6:p1:44}}</i><i class="nureel" style="--stop:4"><b>{{die:1:p1:44}}</b><b>{{die:2:p1:44}}</b><b>{{die:3:p1:44}}</b><b>{{die:4:p1:44}}</b><b>{{die:5:p1:44}}</b><b>{{die:6:p1:44}}</b><b>{{die:1:p1:44}}</b></i>
+      </span>
+      <span class="cap">5 → 6<br>the tick</span>
+    </div>
+    <div class="nucase wrap">
+      <span class="nuunit u61" style="--sz:44px">
+        <i class="nuold">{{die:6:p1:44}}</i>
+        <i class="nunew">{{die:1:p1:44}}</i><i class="nureel" style="--stop:5"><b>{{die:1:p1:44}}</b><b>{{die:2:p1:44}}</b><b>{{die:3:p1:44}}</b><b>{{die:4:p1:44}}</b><b>{{die:5:p1:44}}</b><b>{{die:6:p1:44}}</b><b>{{die:1:p1:44}}</b></i>
+      </span>
+      <span class="cap">6 → 1<br>the wrap</span>
+    </div>
+  </div>
+  <div class="note"><b>What it says:</b> <b>one stop, always forward.</b> The reel is the only idea in the set where the wrap needs no explanation and no special treatment: the 1 is simply the tile after the 6, and the player sees the order of the faces every time they cast. Nothing has to be learned twice.<br>
+  <b>It makes the bound visible.</b> A player watching a strip of six understands immediately that this rune moves by one and cannot be aimed — which is the difference between a bounded rune and a wish.<br>
+  <b>Cost:</b> it says "slot machine", and this is the one game that must never say that — the dice here are chosen, not spun, and the reel imports a fruit-machine grammar the rest of the game deliberately avoids. It also draws seven faces inside a 56px box, which means the two neighbours are visible during the roll: at speed that reads as motion blur, and paused it reads as three dice stacked in a window. Under reduced motion the roll collapses to its end state and the whole idea evaporates.</div>
+</div></div>

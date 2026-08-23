@@ -70,7 +70,19 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - Complete legal text and company details before store submission.
 - Add the Android wrapper only after the name/app-id decision; finish Apple
   identity and store release work alongside the existing iOS project.
-- The shield/ward visual study remains open in the retained design cards.
+- W3's centre-facing runic seal is now the production shield/ward treatment;
+  its closed shield, clasped Ward, and strike-only break contract are recorded
+  in `design/screens/product/39c-guard-seal.html` and `docs/SPELLS.md`.
+- The rune-in-play card rail is an open study: six alternatives in
+  `design/screens/studies/open/29a…29f`. The constraints are already decided
+  and written down in `docs/SPELLS.md` §7 ("The rune in play") — the pick is
+  the only thing outstanding.
+- BOUNTY's banked kill (46a–46f) and LIMITED's shared bag (47a–47f) still have
+  six open signature-animation proposals each. NUDGE and FATE are resolved:
+  NU1's pip-only tick (including 6→1) and FA4's contained simultaneous pass
+  are production, with the alternatives retained in 48a–48f and 49a–49f.
+  Their contracts live in `design/screens/product/27b-spell-effects.html` and
+  `docs/SPELLS.md`.
 
 ## Documentation map
 

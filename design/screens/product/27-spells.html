@@ -1,4 +1,4 @@
-<!-- meta name="Spells — aiming a rune" group="4 · Local play" subtitle="The rune you can cast sits by the die in play; the opponent's is a readout by their score" width=412 height=2106 links="Offline — local play, Rune deal — dealt, Game modes" -->
+<!-- meta name="Spells — aiming a rune" group="4 · Local play" subtitle="The rune you can cast sits by the die in play; the opponent's is a readout by their score" width=412 height=2160 links="Offline — local play, Rune deal — dealt, Game modes" -->
 <style>
   /* The rune is PILFER, and every glyph on this card is drawn by the app
      (ui/spellicons, through the sico token). It used to hand-draw five copies
@@ -88,7 +88,7 @@
       <div class="spells"><button class="rune ready armed" style="--sh:var(--p1)">{{sico:pilfer:16}}<b class="n"></b></button></div>
     </div>
     <!-- the armed status line is the registry's own `aim` string, verbatim -->
-    <div class="status me">Tap an enemy column to steal</div>
+    <div class="status me">Tap an enemy column</div>
   </div>
 
   <div class="board3 side-bot dice-static">
@@ -106,17 +106,17 @@
     <span class="pright"><span class="runeslot live"></span><span class="tot">29</span></span>
   </div>
 
-  <!-- The four looks of the rune YOU hold (flow/spells sets them in one render).
-       The undo cell wears NUDGE on purpose: the take-back window only ever opens
-       on a self cast that is not final, so a column rune like PILFER can never
-       carry it — it reads spent the moment its dice have flown. -->
+  <!-- The four decisive looks of the rune YOU hold (flow/spell-rail sets them
+       in one render). ANVIL owns the committed-aim look: its weakest-die marks
+       reveal the answer before a column is chosen, so the charge is already
+       reserved and a second press cannot back out. -->
   <div class="states">
     <div class="s"><button class="rune ready" style="--sh:var(--p1)">{{sico:pilfer:16}}<b class="n"></b></button><span class="cap">Ready</span></div>
     <div class="s"><button class="rune ready armed" style="--sh:var(--p1)">{{sico:pilfer:16}}<b class="n"></b></button><span class="cap">Aiming</span></div>
-    <div class="s"><button class="rune undo" style="--sh:var(--p1)">{{sico:nudge:16}}<b class="n"></b></button><span class="cap">Cast — press to put back</span></div>
+    <div class="s"><button class="rune committed armed" style="--sh:var(--p1)">{{sico:anvil:16}}<b class="n"></b></button><span class="cap">Committed — choose a mark</span></div>
     <div class="s"><button class="rune spent" style="--sh:var(--p1)">{{sico:pilfer:16}}<b class="n"></b></button><span class="cap">Spent</span></div>
   </div>
-  <div class="statecap">The fifth look is the opponent's — idle, in their plate above</div>
+  <div class="statecap">Off-turn dims the wielded rune; the opponent's readout is idle in their plate</div>
 
   <div class="note">
     <b>When.</b> Your turn, after the roll, before you place — the same gate placement
@@ -136,8 +136,10 @@
     <b>Cost.</b> <span class="k">One cast per game — two for FATE.</span> A rune holding
     more than one charge wears the number it has left; a single charge needs none. A spent
     rune stays put, greyed: a rune that vanished would read as a bug rather than as a cost.
-    A cast that landed on the die in hand can be pressed again to put it back until the die
-    is played — except FATE, which is final the moment it has shown you the next die.<br>
+    An ordinary aim may be cancelled before a legal target commits it. No committed cast
+    can be put back: self spells commit on the die, WARD and PILFER on their selected legal
+    column, and ANVIL as soon as its weakest-die markings appear. Its committed rune stays
+    locked to that choice until one of the marked full columns is selected.<br>
     <b>Chosen, not toggled.</b> The OFFLINE screen picks a spell the way it picks a game
     mode — the same icon row, each rune slice wearing the mark it wears in the rail,
     <code>NONE</code> first and default, <code>RANDOM</code> last. RANDOM is not a seventh
@@ -146,11 +148,12 @@
     replays a plain move log) and the tutorial (a scripted lesson) always deal NONE, and
     NONE is exactly the table that shipped before spells existed.<br>
     <b>Adding one.</b> An object in <code>core/spells.ts</code> — id, name, blurb, detail,
-    aim, target and side, uses, <code>final</code> when the cast reveals something,
+    aim, target and side, uses, <code>commitsOnAim</code> only when the preview itself
+    commits, <code>previewDieIndex()</code> when one exact die is marked,
     <code>legal()</code>, <code>apply()</code>, and <code>cpuCast</code> when its value
     never shows on the boards — plus its path AND its hue in <code>ui/spellicons.ts</code>,
-    and its cast animation in <code>src/flow/spell-effects.ts</code>'s <code>EFFECTS</code> (a rune
-    with no entry falls back to <code>defaultEffect</code>). The rail, the gestures, the charge
-    accounting and the CSS never learn its name.
+    and its cast animation in <code>src/flow/spell-effects.ts</code>'s <code>EFFECTS</code>
+    (a rune with no entry falls back to <code>defaultEffect</code>). The rail, the gestures,
+    the charge accounting and the CSS never learn its name.
   </div>
 </div></div>

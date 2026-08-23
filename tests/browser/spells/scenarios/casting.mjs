@@ -1,5 +1,5 @@
 export async function runCastingScenarios(suite) {
-  const { page, out, check, newGame, waitChoose, table, look, tapCol, tapRune } = suite;
+  const { page, out, check, newGame, waitChoose, table, look, tapCol, tapRune, sidePage } = suite;
   /* ---------- 1. the rune is dealt to a normal offline game ---------- */
   await newGame(); check(await waitChoose(), 'game never reached choose');
   await table([[2], [3], []], [[6, 6], [5], []]);
@@ -32,7 +32,7 @@ export async function runCastingScenarios(suite) {
   check(out.rings.legalHidden === 'none', 'placement hints still up while aiming', out.rings);
 
   /* ---------- 3. tap a column: ONE gate, one charge ---------- */
-  await tapCol(0); await page.waitForTimeout(1200);
+  await page.tap('#topBoard .col[data-col="0"]'); await page.waitForTimeout(1200);
   out.cast = await look();
   check(out.cast.mine === '[[2,6],[3],[]]', 'the caster column did not receive the stolen die', out.cast);
   check(out.cast.theirs === '[[6],[5],[]]', 'the enemy column kept its top die', out.cast);
@@ -64,7 +64,7 @@ export async function runCastingScenarios(suite) {
   await newGame(); check(await waitChoose(), 'game never reached choose (drag)');
   await table([[1, 1], [], []], [[6], [], []]);
   const box = await page.locator('.rune[data-seat="1"]:not([hidden])').boundingBox();
-  const target = await page.locator('#botBoard .col[data-col="0"]').boundingBox();
+  const target = await page.locator('#topBoard .col[data-col="0"]').boundingBox();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
   await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 12 });
@@ -211,5 +211,84 @@ export async function runCastingScenarios(suite) {
   check(out.myTurn && !/\boffturn\b/.test(out.myTurn.cls) && out.myTurn.opacity > 0.95
     && out.myTurn.grey === 'none' && out.myTurn.ring === 'running',
     'your own turn did not restore the rune', out.myTurn);
+
+  /* ---------- 8d. every input path respects an armed spell ----------
+     Number keys are placement shortcuts, but an armed self spell owns them:
+     the wrong target cancels the ordinary aim and must never place the die. */
+  await newGame({ spell: 'fate' }); check(await waitChoose(), 'game never reached choose (armed key)');
+  await table([[2], [], []], [[5], [], []], 4);
+  check(await page.evaluate(() => window.__kb.spells.arm('fate')),
+    'the self spell could not be armed for keyboard ownership');
+  await page.keyboard.press('1'); await page.waitForTimeout(80);
+  out.armedSelfKey = await page.evaluate(() => ({
+    mine: JSON.stringify(window.__kb.S.boards[1]),
+    armed: window.__kb.S.spellArmed,
+    die: window.__kb.S.die,
+    charges: JSON.stringify(window.__kb.S.spellCharges),
+  }));
+  check(out.armedSelfKey.mine === '[[2],[],[]]' && out.armedSelfKey.armed === null
+      && out.armedSelfKey.die === 4 && out.armedSelfKey.charges === '[{"fate":2},{"fate":2}]',
+    'a number key bypassed an armed self spell and placed the die', out.armedSelfKey);
+
+  /* The turn clock is still authoritative while aiming. An ordinary aim
+     cancels at expiry; ANVIL has already revealed and charged its markings,
+     so it resolves its first legal marked column instead of stalling/refunding. */
+  await newGame({ spell: 'ward' }); check(await waitChoose(), 'game never reached choose (aim timeout)');
+  await table([[2], [], []], [[5], [], []], 4);
+  out.ordinaryAimTimeout = await page.evaluate(async () => {
+    const k = window.__kb;
+    const armed = k.spells.arm('ward');
+    const cast = await k.spells.timeoutAim();
+    return { armed, cast, aim: k.S.spellArmed, committed: k.S.spellAimCommitted,
+      charges: JSON.stringify(k.S.spellCharges) };
+  });
+  check(out.ordinaryAimTimeout.armed && !out.ordinaryAimTimeout.cast
+      && out.ordinaryAimTimeout.aim === null && out.ordinaryAimTimeout.committed === null
+      && out.ordinaryAimTimeout.charges === '[{"ward":1},{"ward":1}]',
+    'an ordinary expired aim spent a charge or survived the timer', out.ordinaryAimTimeout);
+
+  await newGame({ spell: 'anvil' }); check(await waitChoose(), 'game never reached choose (ANVIL timeout)');
+  await table([[2, 3, 3], [], []], [[1], [], []], 3);
+  out.committedAimTimeout = await page.evaluate(async () => {
+    const k = window.__kb;
+    const armed = k.spells.arm('anvil');
+    const cast = await k.spells.timeoutAim();
+    return { armed, cast, mine: JSON.stringify(k.S.boards[1]), aim: k.S.spellArmed,
+      committed: k.S.spellAimCommitted, charges: JSON.stringify(k.S.spellCharges) };
+  });
+  check(out.committedAimTimeout.armed && out.committedAimTimeout.cast
+      && out.committedAimTimeout.mine === '[[3,3,3],[],[]]'
+      && out.committedAimTimeout.aim === null && out.committedAimTimeout.committed === null
+      && out.committedAimTimeout.charges === '[{"anvil":1},{"anvil":0}]',
+    'the turn clock refunded, stranded, or failed to resolve committed ANVIL', out.committedAimTimeout);
+
+  /* Hosts without PointerEvent still use the same side-aware typed target.
+     A synthetic click has useless (0,0) coordinates, so this specifically
+     proves the semantic target fallback rather than the pointer path above. */
+  const fallback = await sidePage({ name: 'spell click fallback', w: 390, h: 844,
+    opts: { hasTouch: false, isMobile: false }, noPointer: true });
+  try {
+    await newGame({ spell: 'pilfer' }, fallback.page);
+    check(await waitChoose(fallback.page), 'game never reached choose (click fallback)');
+    await table([[2], [], []], [[6], [], []], 4, fallback.page);
+    await fallback.page.locator('.rune[data-seat="1"]:not([hidden])').click();
+    await fallback.page.locator('#topBoard .col[data-col="0"]').click();
+    await fallback.page.waitForTimeout(950);
+    out.clickFallback = await fallback.page.evaluate(() => ({
+      pointer: typeof PointerEvent,
+      mine: JSON.stringify(window.__kb.S.boards[1]),
+      theirs: JSON.stringify(window.__kb.S.boards[0]),
+      armed: window.__kb.S.spellArmed,
+      charges: JSON.stringify(window.__kb.S.spellCharges),
+    }));
+    check(out.clickFallback.pointer === 'undefined'
+        && out.clickFallback.mine === '[[2,6],[],[]]'
+        && out.clickFallback.theirs === '[[],[],[]]'
+        && out.clickFallback.armed === null
+        && out.clickFallback.charges === '[{"pilfer":1},{"pilfer":0}]',
+      'the no-Pointer click fallback lost or cancelled the armed target', out.clickFallback);
+  } finally {
+    await fallback.ctx.close();
+  }
 
 }

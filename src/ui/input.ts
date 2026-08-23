@@ -6,9 +6,10 @@ import { ownerOf } from './dom.ts';
 import { nope } from './fx.ts';
 import { Sfx } from './audio.ts';
 import { rootElementFromPoint } from './query.ts';
+import type { SpellInputTarget } from '../flow/spell-target.ts';
 
 export type PlaceHandler = (who: Player, col: number) => void | Promise<void>;
-export type CastArmedHandler = (target: number | null) => boolean;
+export type CastArmedHandler = (target: SpellInputTarget | null) => boolean;
 
 export interface InputPorts {
   place: PlaceHandler;
@@ -81,13 +82,22 @@ export function boardUp(event: BoardInputEvent): void {
     over = element?.closest('.col') as HTMLElement | null;
     onStage = !!element?.closest('#dieStage');
   } else {
-    over = started;
+    const target = eventElement(event.target);
+    over = started ?? target?.closest('.col') as HTMLElement | null;
+    onStage = !!target?.closest('#dieStage');
   }
 
-  // An armed spell claims the tap: a column, the die in play (-1), or a
+  // An armed spell claims the tap: a side-aware column, the stage, or a
   // cancellation. The injected spell port owns the target vocabulary.
   if (S.spellArmed) {
-    castArmedHandler(onStage ? -1 : over ? Number(over.dataset.col) : null);
+    const owner = over ? sideOwner(over) : null;
+    const column = over ? Number(over.dataset.col) : NaN;
+    const target: SpellInputTarget | null = onStage
+      ? { kind: 'stage' }
+      : owner !== null && Number.isInteger(column)
+        ? { kind: 'column', who: owner, column }
+        : null;
+    castArmedHandler(target);
     return;
   }
   if (!started || over !== started) return;

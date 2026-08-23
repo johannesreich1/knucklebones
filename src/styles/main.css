@@ -13,9 +13,13 @@
 @import "./components/rune-deal.css";
 @import "./components/picker.css";
 @import "./game/guards.css";
+@import "./game/spell-effects-ward-sunder.css";
 @import "./game/row-modes.css";
 @import "./game/variants.css";
 @import "./game/spells.css";
+@import "./game/stage-spell-effects.css";
+@import "./game/anvil.css";
+@import "./game/pilfer.css";
 @import "./components/game-info.css";
 @import "./screens/result.css";
 @import "./game/seating.css";

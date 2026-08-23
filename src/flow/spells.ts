@@ -1,9 +1,10 @@
-// Spell orchestration: hands, legality, spend/undo, and turn lifecycle.
+// Spell orchestration: hands, legality, commitment, and turn lifecycle.
 // Rendering, pointer gestures, and visible effects are separate leaves; every
 // entry path still ends in cast(), so legality is decided exactly once.
 import {
   AI,
   ME,
+  SPEC,
   freshCharm,
   isFull,
   type GameState,
@@ -20,18 +21,19 @@ import {
 } from '../core/spells.ts';
 import { S } from '../state.ts';
 import { colEl } from '../ui/dom.ts';
-import { appRoot } from '../ui/embed.ts';
-import { Sfx, vibrate } from '../ui/audio.ts';
+import { Sfx } from '../ui/audio.ts';
 import { nope } from '../ui/fx.ts';
 import { renderBag } from '../ui/bag.ts';
 import { setStageDie } from '../ui/die.ts';
-import { renderSide } from '../ui/game/board.ts';
 import { showHints } from '../ui/game/hints.ts';
+import { clearSealPresentation } from '../ui/game/seals.ts';
+import { clearSunderPresentation } from '../ui/game/sunder-presentation.ts';
 import { setStatus } from '../ui/game/turn-state.ts';
 import { stopTimer } from './timer.ts';
 import { runSpellEffect } from './spell-effects.ts';
 import { bindSpellGesture, clearSpellTargets, type SpellGesturePorts } from './spell-gestures.ts';
 import { isAimedColumn, renderSpellRail, type SpellRailPorts } from './spell-rail.ts';
+import type { SpellInputTarget } from './spell-target.ts';
 
 export interface SpellFlowPorts {
   onChoice: () => void;
@@ -94,8 +96,10 @@ export function resetSpells(dealt?: string): void {
   const id = S.tut ? '' : (dealt ?? drawSpell());
   S.spellCharges = [freshCharges(id), freshCharges(id)];
   S.charm = freshCharm();
-  S.spellUndo = null;
-  disarm();
+  clearSealPresentation();
+  clearSunderPresentation();
+  S.spellAimCommitted = null;
+  disarm(true);
   renderSpells();
 }
 
@@ -103,8 +107,10 @@ export function resetSpells(dealt?: string): void {
 export function clearSpells(): void {
   S.spellCharges = [{}, {}];
   S.charm = freshCharm();
-  S.spellUndo = null;
-  disarm();
+  clearSealPresentation();
+  clearSunderPresentation();
+  S.spellAimCommitted = null;
+  disarm(true);
   renderSpells();
 }
 
@@ -113,15 +119,13 @@ const gesturePorts: SpellGesturePorts = {
   disarm,
   cast,
   castable,
-  undoable,
-  undoCast,
 };
 
 const railPorts: SpellRailPorts = {
   caster,
   castContext,
   chargesOf,
-  undoable,
+  castable,
   bindRune: (button, id) => bindSpellGesture(button, id, gesturePorts),
 };
 
@@ -129,56 +133,110 @@ export function renderSpells(): void {
   renderSpellRail(railPorts);
 }
 
-export function arm(id: string): void {
-  if (S.spellArmed === id) return;
-  S.spellArmed = id;
-  renderSpells();
+export function arm(id: string): boolean {
+  if (S.spellArmed === id) return true;
+  if (S.spellAimCommitted) return false;
+  const who = caster();
   const spell = spellById(id);
-  if (spell) setStatus(spell.aim, S.turn as Player);
+  if (who === null || !spell || !castable(id)) return false;
+  S.spellArmed = id;
+  if (spell.commitsOnAim) {
+    S.spellCharges[who][id] = chargesOf(who, id) - 1;
+    S.spellAimCommitted = { id, who };
+  }
+  renderSpells();
+  setStatus(spell.aim, who);
+  return true;
 }
 
-export function disarm(): void {
-  if (!S.spellArmed) return;
+function clearAimState(): void {
   S.spellArmed = null;
+  S.spellAimCommitted = null;
   clearSpellTargets();
+}
+
+export function disarm(force = false): boolean {
+  if (S.spellAimCommitted && !force) return false;
+  if (!S.spellArmed && !S.spellAimCommitted) return true;
+  clearAimState();
   renderSpells();
   if (S.phase === 'choose') flowPorts.onChoice();
+  return true;
 }
 
 /* An armed spell claims board input before placement. Wrong or empty targets
    cancel the aim and still consume the input event. */
-export function castArmed(column: number | null): boolean {
+export function castArmed(target: SpellInputTarget | null): boolean {
   const id = S.spellArmed;
   if (!id) return false;
   const spell = spellById(id);
-  const fits = column !== null && !!spell
-    && (spell.target === 'self' ? column === -1 : column >= 0 && isAimedColumn(column));
+  const who = S.turn as Player;
+  const targetSide = spell?.side === 'foe' ? (1 - who) as Player : who;
+  const fits = !!target && !!spell && (spell.target === 'self'
+    ? target.kind === 'stage'
+    : target.kind === 'column' && target.who === targetSide
+      && isAimedColumn(target.who, target.column));
   if (!fits) {
     Sfx.tap();
     disarm();
     return true;
   }
-  void cast(id, column);
+  void cast(id, target.kind === 'stage' ? -1 : target.column);
   return true;
 }
 
+/* Number keys select the uniquely expected side for the armed spell. Physical
+   pointer paths carry their actual side through SpellInputTarget instead. */
+export function castArmedByIndex(column: number): boolean {
+  const spell = spellById(S.spellArmed);
+  if (!spell) return false;
+  /* An armed self spell still owns the number key. A column key is the wrong
+     target for it, so feed that mismatch through the normal cancellation path
+     instead of falling through to ordinary placement. */
+  if (spell.target !== 'column') return castArmed(null);
+  const who = S.turn as Player;
+  const side = (spell.side === 'foe' ? 1 - who : who) as Player;
+  return castArmed({ kind: 'column', who: side, column });
+}
+
+/* The normal turn clock keeps running while a rune is aimed. An ordinary aim
+   simply falls away at expiry; an information-bearing ANVIL aim has already
+   committed, so expiry selects its first legal marked column instead of
+   refunding it or letting the duel stall forever. A completed cast receives
+   the usual fresh placement clock through onCastComplete(). */
+export async function resolveTimedOutSpellAim(): Promise<boolean> {
+  const id = S.spellArmed;
+  if (!id) return false;
+  if (!S.spellAimCommitted) {
+    disarm(true);
+    return false;
+  }
+  const spell = spellById(id);
+  const who = caster();
+  if (!spell || who === null || spell.target !== 'column') return false;
+  const context = castContext();
+  for (let column = 0; column < SPEC.cols; column++) {
+    if (spell.legal(S.boards as GameState, who, column, context)) {
+      return cast(id, column);
+    }
+  }
+  return false;
+}
+
 /* Spend and perform for either a player gesture or the CPU. */
-async function castBy(who: Player, spell: SpellSpec, column: number, context: CastCtx): Promise<boolean> {
-  S.spellUndo = spell.target === 'self' && !spell.final ? {
-    id: spell.id,
-    who,
-    die: S.die,
-    pool: S.pool ? S.pool.slice() : null,
-    charm: {
-      wards: [S.charm.wards[0].slice(), S.charm.wards[1].slice()],
-      sunder: [S.charm.sunder[0], S.charm.sunder[1]],
-    },
-  } : null;
-  S.spellCharges[who][spell.id] = chargesOf(who, spell.id) - 1;
+async function castBy(
+  who: Player,
+  spell: SpellSpec,
+  column: number,
+  context: CastCtx,
+  chargeReserved = false,
+): Promise<boolean> {
+  if (!chargeReserved) S.spellCharges[who][spell.id] = chargesOf(who, spell.id) - 1;
   S.busy = true;
   S.phase = 'anim';
   stopTimer();
   setStatus(S.mode === 'cpu' && who === AI ? 'AI — ' + spell.name : spell.name, who);
+  renderSpells();
   const generation = S.gen;
   await runSpellEffect(spell.id, who, column,
     () => spell.apply(S.boards as GameState, who, column, context));
@@ -195,15 +253,22 @@ export async function cast(id: string, column: number): Promise<boolean> {
   const spell = spellById(id);
   const who = caster();
   const context = castContext();
-  if (!spell || who === null || chargesOf(who, id) <= 0
-      || !spell.legal(S.boards as GameState, who, column, context)) {
+  if (!spell || who === null) {
     Sfx.tap();
-    if (spell?.target === 'column' && column >= 0) nope(colEl(S.turn as Player, column));
     disarm();
     return false;
   }
-  disarm();
-  const over = await castBy(who, spell, column, context);
+  const chargeReserved = !!S.spellAimCommitted
+    && S.spellAimCommitted.id === id && S.spellAimCommitted.who === who;
+  if ((!chargeReserved && chargesOf(who, id) <= 0)
+      || !spell.legal(S.boards as GameState, who, column, context)) {
+    Sfx.tap();
+    if (spell.target === 'column' && column >= 0) nope(colEl(S.turn as Player, column));
+    disarm();
+    return false;
+  }
+  clearAimState();
+  const over = await castBy(who, spell, column, context, chargeReserved);
   if (over) return true;
   S.busy = false;
   S.phase = 'choose';
@@ -212,46 +277,23 @@ export async function cast(id: string, column: number): Promise<boolean> {
   return true;
 }
 
-export function undoable(id: string): boolean {
-  const undo = S.spellUndo;
-  return !!undo && undo.id === id && undo.who === caster() && S.phase === 'choose' && !S.busy;
-}
-
-export function clearUndo(): void {
-  S.spellUndo = null;
-}
-
-export function undoCast(): boolean {
-  const undo = S.spellUndo;
-  if (!undo || !undoable(undo.id)) return false;
-  const spell = spellById(undo.id);
-  S.spellUndo = null;
-  S.die = undo.die;
-  setStageDie(undo.die, undo.who);
-  S.charm = {
-    wards: [undo.charm.wards[0].slice(), undo.charm.wards[1].slice()],
-    sunder: [undo.charm.sunder[0], undo.charm.sunder[1]],
-  };
-  if (undo.pool) {
-    S.pool = undo.pool.slice();
-    renderBag(S.pool.length);
+function legalNow(spell: SpellSpec, who: Player, context: CastCtx): boolean {
+  if (spell.target === 'self') return spell.legal(S.boards as GameState, who, -1, context);
+  for (let column = 0; column < SPEC.cols; column++) {
+    if (spell.legal(S.boards as GameState, who, column, context)) return true;
   }
-  S.spellCharges[undo.who][undo.id] = chargesOf(undo.who, undo.id) + 1;
-  appRoot().querySelector('#dieStage')?.classList.remove('sundered');
-  Sfx.tap();
-  vibrate(12);
-  renderSide(AI, true);
-  renderSide(ME, true);
-  renderSpells();
-  showHints();
-  setStatus((spell ? spell.name : 'Spell') + ' put back', undo.who);
-  return true;
+  return false;
 }
 
-const DEMANDS: Record<string, number> = { easy: 30, medium: 16, hard: 10 };
+function castable(id: string): boolean {
+  const spell = spellById(id);
+  const who = caster();
+  if (!spell || who === null || S.spellAimCommitted || chargesOf(who, id) <= 0) return false;
+  return legalNow(spell, who, castContext());
+}
 
-/* The CPU casts before choosing its placement so the chooser sees the board
-   and die left by the effect. */
+/* The machine never enters a player-visible aim state, so its cast reserves
+   and spends in one step. */
 export async function aiSpellTurn(who: Player): Promise<boolean> {
   const id = Object.keys(S.spellCharges[who]).find((key) => chargesOf(who, key) > 0);
   const spell = spellById(id);
@@ -269,7 +311,10 @@ export async function aiSpellTurn(who: Player): Promise<boolean> {
   return castBy(who, spell, column, context);
 }
 
-function castable(id: string): boolean {
-  const who = caster();
-  return who !== null && chargesOf(who, id) > 0;
-}
+/*
+ * The former spell take-back snapshot was removed when the full shipped
+ * roster adopted one rule: aiming may cancel before commitment, but a cast
+ * cannot be undone after commitment.
+ */
+
+const DEMANDS: Record<string, number> = { easy: 30, medium: 16, hard: 10 };

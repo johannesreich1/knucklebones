@@ -1,0 +1,184 @@
+<!-- meta name="NU5 — The overflow" group="4e · NUDGE — the tick" subtitle="Going up is a gentle rise; going round is a BREAK — the six takes a seventh pip it cannot hold, the face floods and drains, and one pip is left in the middle" width=430 height=1129 sizes="md" links="Spells — aiming a rune, Offline — local play, Game modes" -->
+<style>
+  /* Card-local names only (nu* and sp*). Every die is the app's own face markup
+     through the build token, so the pip cells animated below are literally the
+     cells src/ui/die-markup.ts lays out. The study board, chips, labels and
+     nameplate width come from design/build.mjs's chrome. */
+  .scr{gap:6px;--hue:{{shue:nudge}}}
+  .stagerow{--cell:56px;margin-top:16px}
+  .nustatus{margin-top:14px;margin-bottom:14px}
+
+  /* ===== THE LOOP: 2.8s, one cast =====
+       0–20%   the rune is armed and the die in hand reads 3
+       20–42%  the tick — the window the six ideas differ in
+       42%     the face IS the new one; the rune is spent
+       42–100% held
+     Every card runs the same loop three times over: on the die in play (3 → 4)
+     and on the two cases in the strip below it (5 → 6, and the WRAP 6 → 1),
+     because an idea that reads well going up and badly coming back around is
+     not an answer — the wrap is the price that keeps this rune honest. */
+  .nuunit{position:relative;display:block;line-height:0;width:var(--sz);height:var(--sz)}
+  .nuunit > i{position:absolute;inset:0;display:block;line-height:0}
+  .nuold{animation:nuoldf 2.8s steps(1,end) infinite}
+  .nunew{animation:nunewf 2.8s steps(1,end) infinite}
+  @keyframes nuoldf{0%,41.9%{opacity:1}42%,100%{opacity:0}}
+  @keyframes nunewf{0%,41.9%{opacity:0}42%,100%{opacity:1}}
+  @keyframes nudrain{0%,20%{opacity:1;transform:scale(1)}
+    28%{opacity:1;transform:scale(1.18)}
+    42%,100%{opacity:0;transform:scale(.15)}}
+  @keyframes nuarrive{0%,42%{opacity:0;transform:scale(.15)}
+    52%{opacity:1;transform:scale(1.25)}60%,100%{opacity:1;transform:scale(1)}}
+
+  /* the rune: armed, then spent — both are the app's own states (.rune.armed,
+     .rune.spent in styles/game/spells.css), cut on the same frame as the face */
+  .nurune{position:relative;display:flex;align-items:center}
+  .nurune .spent{position:absolute;inset:0;margin:0}
+  .nurune .armed{animation:nuoldf 2.8s steps(1,end) infinite}
+  .nurune .spent{animation:nunewf 2.8s steps(1,end) infinite}
+  /* ...and the line under the die, which castBy() rewrites for the whole cast */
+  .nustx{position:relative;display:block}
+  .nusay2{position:absolute;left:0;right:0;top:0}
+  .nusay1{animation:nuoldf 2.8s steps(1,end) infinite}
+  .nusay2{animation:nunewf 2.8s steps(1,end) infinite}
+
+  /* THE WRAP STRIP: the two cases side by side, running the same idea */
+  .nustrip{display:flex;justify-content:center;gap:26px;margin-top:12px;width:100%}
+  .nucase{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .nucase .cap{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;
+    text-align:center;line-height:1.5}
+  .nucase.wrap .cap{color:var(--hue)}
+  .nuarrow{font-size:11px;color:var(--dim);letter-spacing:.1em}
+
+  /* WHICH PIPS MOVE, per case — computed from src/ui/die-markup.ts's own cell
+     map rather than counted by hand, so a card can never picture a face the
+     game does not draw. */
+  /* 3 → 4: 1 pip leave, 2 arrive — 3 becomes 4 */
+  .u34 .nuold .pip:nth-child(5){opacity:1;animation:nudrain 2.8s cubic-bezier(.5,0,.85,1) infinite}
+  .u34 .nunew .pip:nth-child(3),.u34 .nunew .pip:nth-child(7){opacity:1;animation:nuarrive 2.8s cubic-bezier(.2,1.6,.4,1) infinite}
+  /* 5 → 6: 1 pip leave, 2 arrive — 5 becomes 6 */
+  .u56 .nuold .pip:nth-child(5){opacity:1;animation:nudrain 2.8s cubic-bezier(.5,0,.85,1) infinite}
+  .u56 .nunew .pip:nth-child(4),.u56 .nunew .pip:nth-child(6){opacity:1;animation:nuarrive 2.8s cubic-bezier(.2,1.6,.4,1) infinite}
+  /* 6 → 1: 6 pips leave, 1 arrive — 6 becomes 1 */
+  .u61 .nuold .pip:nth-child(1),.u61 .nuold .pip:nth-child(3),.u61 .nuold .pip:nth-child(4),.u61 .nuold .pip:nth-child(6),.u61 .nuold .pip:nth-child(7),.u61 .nuold .pip:nth-child(9){opacity:1;animation:nudrain 2.8s cubic-bezier(.5,0,.85,1) infinite}
+  .u61 .nunew .pip:nth-child(5){opacity:1;animation:nuarrive 2.8s cubic-bezier(.2,1.6,.4,1) infinite}
+
+  /* ===== THE IDEA. Every other card in this set draws the tick and lets the
+     wrap fall out of it. This one inverts the emphasis: the tick is nearly
+     nothing — a small rise, a pip, done — and the WRAP is the whole animation,
+     because the wrap is the only part of this rune that is a cost. docs/SPELLS
+     is explicit that the wrap is what stops "always cast on anything below a
+     six" from being free; an animation that treats both directions the same is
+     hiding the price the design charges. */
+  /* the ordinary tick: a rise and a settle, nothing more */
+  .nuunit{animation:nu5rise 2.8s cubic-bezier(.2,1.5,.4,1) infinite}
+  @keyframes nu5rise{0%,32%{transform:translateY(0)}42%{transform:translateY(-5px)}
+    56%,100%{transform:translateY(0)}}
+  /* THE OVERFLOW, on the six only: a seventh pip arrives in the one cell a die
+     face never uses, the face floods with it, and everything drains */
+  .u61 .nuunit,.nuunit.u61{animation:nu5shake 2.8s cubic-bezier(.36,.07,.19,.97) infinite}
+  @keyframes nu5shake{0%,30%{transform:translate(0,0)}
+    34%{transform:translate(-3px,1px)}37%{transform:translate(3px,-1px)}
+    40%{transform:translate(-2px,0)}43%{transform:translate(2px,1px)}
+    48%,100%{transform:translate(0,0)}}
+  .nuflood{position:absolute;inset:0;display:block;z-index:6;pointer-events:none}
+  /* the pip that does not fit: it arrives dead centre, over a face whose
+     centre is already taken, which is exactly why it cannot stay */
+  .nu7{position:absolute;left:50%;top:50%;width:26%;height:26%;margin:-13% 0 0 -13%;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#fff,var(--red) 78%);
+    box-shadow:0 0 10px var(--red),0 0 22px rgba(var(--red-rgb),.6);
+    opacity:0;animation:nu5seven 2.8s cubic-bezier(.2,1.6,.4,1) infinite}
+  @keyframes nu5seven{0%,26%{opacity:0;transform:scale(.2)}
+    32%{opacity:1;transform:scale(1.3)}38%{opacity:1;transform:scale(1)}
+    42%,100%{opacity:0;transform:scale(2.6)}}
+  /* the face floods red for the frame it is over-full, then drains to the 1 */
+  .nuflood::after{content:"";position:absolute;inset:0;border-radius:14px;
+    background:radial-gradient(closest-side,rgba(var(--red-rgb),.55),transparent 78%);
+    opacity:0;animation:nu5flood 2.8s ease-out infinite}
+  @keyframes nu5flood{0%,30%{opacity:0}38%{opacity:1}56%,100%{opacity:0}}
+  /* on the wrap the old pips do not fade, they FALL out of the bottom */
+  .u61 .nuold .pip.on{animation:nu5spill 2.8s cubic-bezier(.4,0,.9,1) infinite}
+  @keyframes nu5spill{0%,34%{opacity:1;transform:translateY(0) scale(1)}
+    42%,100%{opacity:0;transform:translateY(22px) scale(.4)}}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hud">
+    <div class="rec">
+      <button type="button" class="rchip tapmode" data-lib="modes" data-id="classic">{{mico:classic:12}} CLASSIC<span class="mi">ⓘ</span></button>
+      <button type="button" class="rchip tapmode" data-lib="spells" data-id="nudge">{{sico:nudge:12}} NUDGE<span class="mi">ⓘ</span></button>
+    </div>
+    <div class="sp"></div>
+    <button class="ico">{{ico:leave:15}}</button>
+  </div>
+
+  <div class="cap2">Five to six is a nudge. Six to one is what happens when you nudge a face that has no room left.</div>
+
+  <div class="spfield">
+    <div class="stagerow">
+      <span class="nuunit u34" style="--sz:56px">
+        <i class="nuold">{{die:3:p1:56}}</i>
+        <i class="nunew">{{die:4:p1:56}}</i>
+      </span>
+      <div class="spells nurune">
+        <button class="rune ready armed" style="--sh:var(--p1)">{{sico:nudge:16}}<b class="n"></b></button>
+        <button class="rune spent" style="--sh:var(--p1)">{{sico:nudge:16}}<b class="n"></b></button>
+      </div>
+    </div>
+    <div class="status me nustatus"><span class="nustx"><span class="nusay1">Drop it on your die</span><span class="nusay2">NUDGE</span></span></div>
+
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-bottom:5px">
+        <div class="spchip" style="--c:var(--p1)">8</div>
+        <div class="spchip" style="--c:var(--p1)">5</div>
+        <div class="spchip" style="--c:var(--p1)">16</div>
+    </div>
+    <div class="spboard spmine">
+      <div class="spcol">
+        <div class="spslot">{{die:6:p1:52}}</div>
+        <div class="spslot">{{die:2:p1:52}}</div>
+        <div class="spslot"></div>
+      </div>
+      <div class="spcol">
+        <div class="spslot">{{die:5:p1:52}}</div>
+        <div class="spslot"></div>
+        <div class="spslot"></div>
+      </div>
+      <div class="spcol nucol">
+        <div class="spslot"><span class="spmark nupair">{{die:4:p1 m2:52}}</span></div>
+        <div class="spslot"><span class="spmark nupair">{{die:4:p1 m2:52}}</span></div>
+        <div class="spslot nuseat"></div>
+
+      </div>
+    </div>
+    <div class="splbl">a 3 into that column pays 3 · a 4 pays 20 — the pair becomes a triple</div>
+
+    <div class="plate pline" style="--c:var(--p1);margin-top:8px">
+      <span class="who"><span class="dot"></span><span class="nm">YOU</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="runeslot live"><span class="nurune">
+        <button class="rune idle" style="--sh:var(--p1)" disabled>{{sico:nudge:16}}<b class="n"></b></button>
+        <button class="rune spent" style="--sh:var(--p1)" disabled>{{sico:nudge:16}}<b class="n"></b></button>
+      </span></span><span class="tot">29</span></span>
+    </div>
+  </div>
+
+  <div class="cap2" style="margin-top:10px">Both directions, the same idea: the ordinary tick, and the wrap that pays for it</div>
+  <div class="nustrip">
+    <div class="nucase">
+      <span class="nuunit u56" style="--sz:44px">
+        <i class="nuold">{{die:5:p1:44}}</i>
+        <i class="nunew">{{die:6:p1:44}}</i>
+      </span>
+      <span class="cap">5 → 6<br>the tick</span>
+    </div>
+    <div class="nucase wrap">
+      <span class="nuunit u61" style="--sz:44px">
+        <i class="nuold">{{die:6:p1:44}}</i>
+        <i class="nunew">{{die:1:p1:44}}</i><i class="nuflood"><b class="nu7"></b></i>
+      </span>
+      <span class="cap">6 → 1<br>the wrap</span>
+    </div>
+  </div>
+  <div class="note"><b>What it says:</b> <b>the six is full.</b> The wrap is the rune's price, and this is the only idea that charges it out loud — a seventh pip that will not fit, a face that floods, five pips on the floor. A player who has seen it once will hesitate over a 6 forever, which is exactly the hesitation the balance depends on.<br>
+  <b>It keeps the ordinary case cheap.</b> Five casts out of six are a small rise and a new face; the drama is spent entirely on the case that deserves it, which is the opposite of the usual mistake of animating everything equally.<br>
+  <b>The red is already in the palette</b> — --red is the multiplier fallback, a raw token that never follows the duel pair, so a player who has picked red dice still reads this as heat rather than as their own colour.<br>
+  <b>Cost:</b> it dramatises a legal, deliberate, and sometimes CORRECT cast as a failure. Wrapping a 6 to a 1 is occasionally the right move — a 1 into a column full of 1s, or a 6 you cannot afford to place — and an animation that treats it as an accident tells the player they made a mistake when they did not. It is also the one idea here that needs a shake, and shake is the game's word for destruction.</div>
+</div></div>

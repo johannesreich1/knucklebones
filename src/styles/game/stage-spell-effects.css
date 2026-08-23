@@ -1,0 +1,46 @@
+/* Player-visible spell motion on the centre stage. These layers never escape
+   #dieStage, so FATE cannot cross the LIMITED bag or the castable rune. */
+:where(#kbroot) #dieStage.spell-fate-pass{overflow:hidden;
+  border-radius:min(var(--r),calc(var(--cell2)*.25 + 1.5px))}
+:where(#kbroot) #dieStage > .die.spell-fate-live{visibility:hidden}
+:where(#kbroot) .spell-fate-lane{--spell-effect-hue:#b18cff;position:absolute;inset:0;z-index:4;
+  display:block;overflow:hidden;border-radius:inherit;pointer-events:none}
+:where(#kbroot) .spell-fate-lane::before{content:"";position:absolute;z-index:0;left:0;right:0;top:50%;height:2px;
+  transform:translateY(-50%);background:linear-gradient(90deg,transparent,
+    color-mix(in srgb,var(--spell-effect-hue) 72%,transparent),transparent);
+  animation:spell-fate-lane 280ms ease-out both}
+:where(#kbroot) .spell-fate-lane .spell-stage-copy{position:absolute;inset:0;z-index:1;width:100%;height:100%;
+  --cell:var(--cell2);pointer-events:none}
+:where(#kbroot) .spell-fate-old{animation:spell-fate-out 280ms cubic-bezier(.5,0,.3,1) both}
+:where(#kbroot) .spell-fate-new{animation:spell-fate-in 280ms cubic-bezier(.5,0,.3,1) both}
+@keyframes spell-fate-out{from{transform:translateX(0)}to{transform:translateX(-100%)}}
+@keyframes spell-fate-in{from{transform:translateX(100%)}to{transform:translateX(0)}}
+@keyframes spell-fate-lane{0%{opacity:0;transform:translateY(-50%) scaleX(.25)}
+  38%{opacity:.9;transform:translateY(-50%) scaleX(1)}100%{opacity:0;transform:translateY(-50%) scaleX(1)}}
+
+/* NU1 changes the pattern, not the object. Shared cells remain absolutely
+   still; removed and added cells carry the arithmetic of the tick. */
+:where(#kbroot) .die.spell-nudge-rewrite{--spell-effect-hue:#7fd7ff;isolation:isolate}
+:where(#kbroot) .die.spell-nudge-rewrite::after{content:"";position:absolute;inset:0;z-index:1;border-radius:inherit;
+  pointer-events:none;background:radial-gradient(closest-side,
+    color-mix(in srgb,var(--spell-effect-hue) 34%,transparent),transparent 74%);
+  animation:spell-nudge-glow 380ms ease-in-out both}
+:where(#kbroot) .die.spell-nudge-rewrite > .pip,
+:where(#kbroot) .die.spell-nudge-rewrite > .num{position:relative;z-index:2;transition:none}
+:where(#kbroot) .die.spell-nudge-rewrite > .num{position:absolute}
+:where(#kbroot) .pip.spell-nudge-removed{animation:spell-nudge-drain 180ms cubic-bezier(.5,0,.85,1) both}
+:where(#kbroot) .pip.spell-nudge-added{animation:spell-nudge-land 260ms 120ms cubic-bezier(.2,1.6,.4,1) both}
+:where(#kbroot) .spell-nudge-number-old{animation:spell-nudge-drain 180ms cubic-bezier(.5,0,.85,1) both}
+:where(#kbroot) .spell-nudge-number-new{animation:spell-nudge-land 260ms 120ms cubic-bezier(.2,1.6,.4,1) both}
+@keyframes spell-nudge-drain{0%{opacity:1;transform:scale(1)}38%{opacity:1;transform:scale(1.18)}
+  100%{opacity:0;transform:scale(.15)}}
+@keyframes spell-nudge-land{0%{opacity:0;transform:scale(.15)}58%{opacity:1;transform:scale(1.24)}
+  100%{opacity:1;transform:scale(1)}}
+@keyframes spell-nudge-glow{0%,18%{opacity:0}55%{opacity:1}100%{opacity:0}}
+
+@media (prefers-reduced-motion:reduce){
+  :where(#kbroot) .spell-fate-old,:where(#kbroot) .spell-fate-lane::before,
+  :where(#kbroot) .pip.spell-nudge-removed,:where(#kbroot) .spell-nudge-number-old{display:none}
+  :where(#kbroot) .spell-fate-new,:where(#kbroot) .pip.spell-nudge-added,
+  :where(#kbroot) .spell-nudge-number-new,:where(#kbroot) .die.spell-nudge-rewrite::after{animation:none}
+}

@@ -1,0 +1,92 @@
+/* AN2 — FORGE HEAT. While ANVIL is committed to an aim, only the exact die
+   chosen by core/spells is already warm; no badge or rotating geometry is
+   added to the board. */
+:where(#kbroot) .die.spellpreview.anvilpreview{
+  isolation:isolate;
+  z-index:2;
+}
+:where(#kbroot) .die.spellpreview.anvilpreview>.pip,
+:where(#kbroot) .die.spellpreview.anvilpreview>.num{z-index:1}
+:where(#kbroot) .die.spellpreview.anvilpreview::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+  border-radius:inherit;
+  pointer-events:none;
+  background:linear-gradient(0deg,
+    color-mix(in srgb,var(--spell-hue,var(--red)) 52%,transparent),
+    color-mix(in srgb,var(--spell-hue,var(--red)) 16%,transparent) 52%,
+    transparent 82%);
+  box-shadow:
+    0 0 16px color-mix(in srgb,var(--spell-hue,var(--red)) 45%,transparent),
+    inset 0 -6px 12px color-mix(in srgb,var(--spell-hue,var(--red)) 30%,transparent);
+  animation:anvil-preview-heat 1.9s ease-in-out infinite;
+}
+@keyframes anvil-preview-heat{
+  0%,100%{opacity:.62}
+  50%{opacity:1}
+}
+
+/* The board repaints at the white-hot midpoint. A pinned workpiece holds the
+   exact visual centre across that repaint so shell, border, pips/numeral and
+   glow soften as one full die. Motion itself is WAAPI and restart-cancellable. */
+:where(#kbroot) .anvil-workpiece{
+  display:block;
+  isolation:isolate;
+  overflow:visible;
+  border-radius:min(var(--r),calc(var(--cell)*.25 + 1.5px));
+  pointer-events:none;
+  transform-origin:center;
+  will-change:transform;
+}
+:where(#kbroot) .anvil-workpiece>.die{
+  position:absolute;
+  inset:0;
+  z-index:2;
+  width:100%;
+  height:100%;
+  will-change:filter;
+}
+:where(#kbroot) .anvil-forge-heat,
+:where(#kbroot) .anvil-forge-glow,
+:where(#kbroot) .anvil-recast-ring{
+  position:absolute;
+  display:block;
+  pointer-events:none;
+  transform-origin:center;
+}
+:where(#kbroot) .anvil-forge-heat{
+  inset:0;
+  z-index:3;
+  border-radius:inherit;
+  background:linear-gradient(0deg,
+    var(--spell-hue),
+    color-mix(in srgb,var(--spell-hue) 34%,transparent) 62%,
+    transparent);
+  mix-blend-mode:screen;
+}
+:where(#kbroot) .anvil-forge-glow{
+  inset:-14px;
+  z-index:1;
+  border-radius:calc(var(--r) + 10px);
+  background:radial-gradient(closest-side,
+    color-mix(in srgb,var(--spell-hue) 48%,transparent),
+    transparent 72%);
+  filter:drop-shadow(0 0 10px color-mix(in srgb,var(--spell-hue) 52%,transparent));
+}
+:where(#kbroot) .anvil-recast-ring{
+  inset:-6px;
+  z-index:4;
+  border:2px solid var(--spell-hue);
+  border-radius:calc(var(--r) + 7px);
+  filter:drop-shadow(0 0 8px var(--spell-hue));
+  opacity:0;
+}
+
+@media (prefers-reduced-motion:reduce){
+  :where(#kbroot) .die.spellpreview.anvilpreview::after{
+    animation:none;
+    opacity:.82;
+  }
+}

@@ -1,12 +1,18 @@
 // Protection-seal geometry and its one-shot beats. Both local and ranked
 // drivers repaint through this owner; neither flow paints a seal privately.
 import { type Player } from '../../core/rules.ts';
-import { chipEl, colEl } from '../dom.ts';
+import { chipEl, colEl, faceRotated } from '../dom.ts';
+import { REDUCED, burst } from '../fx.ts';
 import { modeIcon } from '../modeicons.ts';
-import { spellIcon } from '../spellicons.ts';
+import { spellHue, spellIcon } from '../spellicons.ts';
 import { appRoot } from '../embed.ts';
+import { pinDieGhost, playSpellAnimation } from './spell-motion.ts';
 
-const SEAL_MOUTH = 4;
+/* The clasp is the ward's one spendable part, so it must survive the board's
+   visual noise. W3's first production pass landed a little too fine at the
+   smallest cell size; this modestly wider mouth gives the enlarged knot room
+   without changing the seal's stand-off or the shield geometry beside it. */
+const SEAL_MOUTH = 5;
 const SEAL_SLACK_MS = 60;
 
 interface SealMetrics {
@@ -104,11 +110,11 @@ export function sealMarkup(span: number): string {
       + '<path class="sa sal" pathLength="240" d="' + wardArc(-1) + '"/>'
       + '<path class="sa sar" pathLength="240" d="' + wardArc(1) + '"/>'
       + '<g class="sclasp">'
-      + '<path class="sp spl" d="M' + fixed(middle) + ' -3.4 ' + fixed(middle - 4.6)
-        + ' 0 ' + fixed(middle) + ' 3.4"/>'
-      + '<path class="sp spr" d="M' + fixed(middle) + ' -3.4 ' + fixed(middle + 4.6)
-        + ' 0 ' + fixed(middle) + ' 3.4"/>'
-      + '<circle class="sv" cx="' + fixed(middle) + '" cy="0" r="1.5"/>'
+      + '<path class="sp spl" d="M' + fixed(middle) + ' -4.2 ' + fixed(middle - 5.7)
+        + ' 0 ' + fixed(middle) + ' 4.2"/>'
+      + '<path class="sp spr" d="M' + fixed(middle) + ' -4.2 ' + fixed(middle + 5.7)
+        + ' 0 ' + fixed(middle) + ' 4.2"/>'
+      + '<circle class="sv" cx="' + fixed(middle) + '" cy="0" r="1.9"/>'
       + '</g></g>'
     : '';
 
@@ -160,6 +166,7 @@ function sealHost(column: HTMLElement | null): HTMLElement | null {
 }
 
 const beatOff = new WeakMap<HTMLElement, Record<string, ReturnType<typeof setTimeout>>>();
+const beatElements = new Set<HTMLElement>();
 
 function oneShot(element: HTMLElement | null, className: string, duration: number): void {
   if (!element) return;
@@ -167,6 +174,7 @@ function oneShot(element: HTMLElement | null, className: string, duration: numbe
   if (!timers) {
     timers = {};
     beatOff.set(element, timers);
+    beatElements.add(element);
   }
   const old = timers[className];
   if (old !== undefined) clearTimeout(old);
@@ -174,6 +182,24 @@ function oneShot(element: HTMLElement | null, className: string, duration: numbe
   void element.offsetWidth;
   element.classList.add(className);
   timers[className] = setTimeout(() => element.classList.remove(className), duration);
+}
+
+/* A duel restart is a hard presentation boundary. Seal beats deliberately
+   outlive a spent Ward long enough to show its snap, so their timers/classes
+   must be cancelled explicitly instead of leaking into the next board paint. */
+export function clearSealPresentation(): void {
+  for (const element of beatElements) {
+    const timers = beatOff.get(element);
+    if (timers) Object.values(timers).forEach(clearTimeout);
+    beatOff.delete(element);
+  }
+  beatElements.clear();
+  appRoot().querySelectorAll<HTMLElement>('.sealon,.sealhit,.sealsnap')
+    .forEach((element) => element.classList.remove('sealon', 'sealhit', 'sealsnap'));
+  appRoot().querySelectorAll<HTMLElement>('.sh.block,.wd.block')
+    .forEach((element) => element.classList.remove('block'));
+  appRoot().querySelectorAll<HTMLElement>('.ward-strike-ghost')
+    .forEach((element) => element.remove());
 }
 
 function restart(element: HTMLElement | null, className: string): void {
@@ -185,6 +211,83 @@ function restart(element: HTMLElement | null, className: string): void {
 
 export function playSealEngage(column: HTMLElement): void {
   oneShot(column, 'sealon', metrics().engage + SEAL_SLACK_MS);
+}
+
+/* The clasp is transformed independently from the shared shield frame. Ask
+   the painted rivet for its page-space box whenever a cast or strike needs the
+   mouth; deriving a direction from player/portrait state here would duplicate
+   CSS geometry and drift as soon as seating changes. */
+export function wardClaspRect(who: Player, col: number): DOMRect | null {
+  const rivet = colEl(who, col)?.querySelector<SVGGraphicsElement>('.smint .sv');
+  return rivet?.getBoundingClientRect() ?? null;
+}
+
+export interface WardStrikeSpec {
+  attacker: Player;
+  target: Player;
+  targetColumn: number;
+  source: HTMLElement | null;
+  isCurrent: () => boolean;
+  impact: () => void;
+}
+
+/* Only a strike that openStrikes has proved would take victims calls this.
+   The copy starts on the attacking die after it has settled, reaches the
+   transformed centre-facing clasp exactly, then recoils while the clasp snaps.
+   Ordinary placement, misses and permanent shields never enter this seam. */
+export async function playWardStrike(spec: WardStrikeSpec): Promise<boolean> {
+  const target = wardClaspRect(spec.target, spec.targetColumn);
+  if (REDUCED || !spec.source || !target) {
+    if (!spec.isCurrent()) return false;
+    spec.impact();
+    return true;
+  }
+
+  const classes = ['ward-strike-ghost'];
+  if (faceRotated(spec.attacker)) classes.push('p2flip');
+  const pinned = pinDieGhost(spec.source, { classes, zIndex: 66 });
+  const delta = pinned.deltaTo(target);
+  const turn = delta.x >= 0 ? 7 : -7;
+  const lift = Math.min(24, Math.max(10, Math.hypot(delta.x, delta.y) * .08));
+
+  try {
+    const arrived = await playSpellAnimation(pinned.ghost, [
+      { transform: 'translate(0,0) scale(1) rotate(0deg)', opacity: 1 },
+      {
+        transform: `translate(${delta.x * .56}px,${delta.y * .56 - lift}px) scale(1.05) rotate(${turn}deg)`,
+        offset: .56,
+      },
+      {
+        transform: `translate(${delta.x}px,${delta.y}px) scale(.9) rotate(0deg)`,
+        filter: 'brightness(1.55) drop-shadow(0 0 13px var(--wdc))',
+      },
+    ], { duration: 300, easing: 'cubic-bezier(.3,.72,.2,1)' }, spec.isCurrent);
+    if (!arrived || !spec.isCurrent()) return false;
+
+    spec.impact();
+    burst(
+      target.left + target.width / 2,
+      target.top + target.height / 2,
+      spellHue('ward'),
+      12,
+    );
+
+    const recoiled = await playSpellAnimation(pinned.ghost, [
+      {
+        transform: `translate(${delta.x}px,${delta.y}px) scale(.9) rotate(0deg)`,
+        filter: 'brightness(1.55) drop-shadow(0 0 13px var(--wdc))',
+        opacity: 1,
+      },
+      {
+        transform: `translate(${delta.x * .84}px,${delta.y * .84 - 8}px) scale(.72) rotate(${-turn * 1.8}deg)`,
+        filter: 'brightness(1.1) drop-shadow(0 0 3px var(--wdc))',
+        opacity: 0,
+      },
+    ], { duration: 220, easing: 'cubic-bezier(.18,.7,.32,1)' }, spec.isCurrent);
+    return recoiled;
+  } finally {
+    pinned.remove();
+  }
 }
 
 export function shieldBlocked(who: Player, col: number): void {

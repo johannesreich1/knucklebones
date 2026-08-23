@@ -3,15 +3,14 @@ export async function runProtectionLayoutScenarios(suite) {
     page, out, check, newGame, waitChoose, table, guard, sidePage,
     sealOf, cornerOk, outlinesOf, oneOutline, sealTiming,
   } = suite;
-  /* ---------- 10a-iv. THE SAME MARK, TURNED ----------
-     --seal-turn ships FOUR values — one per half, per orientation — and until
-     now no suite put a seal on a landscape table at all. The turn decides where
-     the MOUTH goes, and the rule is that the mouth is the end AWAY from the
-     chip strip (which is also the end the next die lands at). A sign flip on
-     either rotate() would have put the ward's clasp on the chip strip with
-     nothing here going red. The clasp is the only mouth a resting seal SHOWS —
-     the shield's join sits at opacity 0 — but both kinds read the one token, so
-     measuring the ward measures the turn.
+  /* ---------- 10a-iv. THE WARD FACES TABLE CENTRE ----------
+     --seal-turn ships four frame values — one per half, per orientation — but
+     the spendable WARD now owns one additional inner turn. The shield keeps its
+     closed-frame direction; the Ward clasp must face the attack across table
+     centre: down/up in portrait, right/left in landscape. A whole-SVG flip
+     would silently reverse the shield too, and a seat-only rule would fail as
+     soon as pass-phone swaps identities, so this measures the painted clasp
+     against the live stage rather than trusting a class name.
      BOTH HALVES, because their turns are opposite; and the portrait viewport is
      deliberately the widest the cell cap allows — at 88px the ink stands
      furthest out and every clearance here is at its tightest. */
@@ -58,9 +57,12 @@ export async function runProtectionLayoutScenarios(suite) {
     for (const half of ['top', 'bot']) {
       const sh = turn[half + 'Shield'], wd = turn[half + 'Ward'], where = view.name + '/' + half;
       check(sh.drawn && wd.drawn, 'a protection lost its seal in ' + where, { shield: sh.parts, ward: wd.parts });
-      check(!!wd.mouth && wd.mouth.dx * wd.chipAt.dx + wd.mouth.dy * wd.chipAt.dy < 0,
-        'THE SEAL CLOSES ON THE CHIP STRIP in ' + where + ' — the mouth belongs at the far end',
-        { mouth: wd.mouth, chip: wd.chipAt });
+      check(!!wd.mouth && !!wd.centerAt
+          && wd.mouth.dx * wd.centerAt.dx + wd.mouth.dy * wd.centerAt.dy > 0,
+        'THE WARD CLASP FACES AWAY FROM TABLE CENTRE in ' + where,
+        { mouth: wd.mouth, centre: wd.centerAt, chip: wd.chipAt });
+      check(!!wd.clasp && Math.max(wd.clasp.w, wd.clasp.h) >= 9,
+        'the Ward clasp is still too small to read on the border in ' + where, wd.clasp);
       for (const [name, s] of [['shield', sh], ['ward', wd]]) {
         check(!!s.out && Object.values(s.out).every((v) => v > 0.3 && v < 3),
           'the ' + name + ' seal left the stack in ' + where, s.out);

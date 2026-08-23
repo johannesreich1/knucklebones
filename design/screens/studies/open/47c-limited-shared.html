@@ -1,0 +1,155 @@
+<!-- meta name="LI3 — Both hands in the bag" group="3j · LIMITED — the shared bag" subtitle="The draw leans toward whoever is about to move — out and DOWN on your turn, out and UP on theirs — so the one thing players miss about the mode, that the twenty-four dice are shared, is visible twice a round" width=430 height=1196 sizes="md" links="Match — LIMITED bag, Game modes, Spells — aiming a rune" -->
+<style>
+  /* Card-local names only (li* and sp*). The bag below is the APP's — .bag, .pile,
+     .bn and the face-down .die shells are ui/bag.ts's own markup and
+     styles/game/variants.css's own rules — so a card cannot picture a bag the
+     game could not draw. The study board, chips, labels and nameplate width
+     come from design/build.mjs's chrome. */
+  .scr{gap:6px;--hue:{{mhue:limited}}}
+  .spfield{gap:0}
+  .stagerow{--cell:56px;margin-top:16px;min-height:60px}
+  .listatus{margin-top:12px;margin-bottom:14px}
+  /* the bag hangs off .stagerow exactly as it does in play (right:100%), so
+     the die in play stays optically centred whatever the bag is doing */
+
+  /* ===== THE LOOP: 3.4s, one DRAW =====
+       0–6%    the last die has been placed; the stage is empty and the bag
+               holds 15 — deliberately brief, because an empty stage is a
+               frame the game passes through, never one it rests in
+       6–24%   the draw — this is the window the six ideas differ in
+       24%     the die is on the stage face-up and the count cuts 15 → 14
+       24–100% held, so the settled state can be read
+     THE PILE DOES NOT MOVE ACROSS THIS DRAW, and that is not an oversight:
+     ui/bag.ts quantises the pile to ceil(n / 24 × 4) layers, so 15 and 14 are
+     both three layers. Twenty of the twenty-four draws in a match change
+     nothing about the picture — only the digit moves. Several ideas below
+     exist because of exactly that. */
+  .listage{display:block;line-height:0;animation:lishow 3.4s steps(1,end) infinite}
+  @keyframes lishow{0%,23.9%{opacity:0}24%,100%{opacity:1}}
+  .spold{animation:liold 3.4s steps(1,end) infinite}
+  .spnew{animation:linew 3.4s steps(1,end) infinite}
+  @keyframes liold{0%,23.9%{opacity:1}24%,100%{opacity:0}}
+  @keyframes linew{0%,23.9%{opacity:0}24%,100%{opacity:1}}
+  .licount{display:inline-flex;justify-content:center;min-width:2ch}
+  /* the count's own tick — ui/bag.ts adds .tick and variants.css scales it
+     1.3× in gold over 450ms. Held on the card's clock. */
+  .bn{animation:litick 3.4s cubic-bezier(.2,1.5,.4,1) infinite}
+  @keyframes litick{0%,24%{transform:scale(1);color:var(--txt)}
+    30%{transform:scale(1.3);color:var(--gold)}42%,100%{transform:scale(1);color:var(--txt)}}
+
+  /* ===== THE IDEA. "One shared bag of 24" is the sentence in the mode's blurb
+     that players read as "you each get 24". Nothing on screen corrects them:
+     the bag sits on your side of the stage, ticks down on their turn too, and
+     never once behaves as though it belongs to both of you.
+     So the draw takes a SIDE. Your die is pulled out and down toward your
+     half; theirs is pulled out and up toward theirs. Same bag, same gesture,
+     opposite direction — and the count falls for both.
+     THIS CARD RUNS A ROUND, not a turn: 0–50% is your draw, 50–100% is theirs. */
+  .lipull{position:absolute;left:50%;top:50%;width:0;height:0;z-index:9;pointer-events:none;
+    /* measured: the pile's centre is 61px left of the die in play's centre */
+    --pull:61px}
+  .lipull > .die{position:absolute;left:0;top:0;margin:-22px 0 0 -22px}
+  .lipull.mine{animation:limine 5.2s cubic-bezier(.35,0,.3,1) infinite}
+  .lipull.theirs{animation:litheirs 5.2s cubic-bezier(.35,0,.3,1) infinite}
+  @keyframes limine{0%,6%{opacity:0;transform:translate(calc(var(--pull)*-1),0) scale(.45)}
+    10%{opacity:1;transform:translate(calc(var(--pull)*-1),0) scale(.5)}
+    26%{opacity:1;transform:translate(0,34px) scale(1)}
+    40%{opacity:1;transform:translate(0,34px) scale(1)}
+    46%,100%{opacity:0;transform:translate(0,34px) scale(1)}}
+  @keyframes litheirs{0%,56%{opacity:0;transform:translate(calc(var(--pull)*-1),0) scale(.45)}
+    60%{opacity:1;transform:translate(calc(var(--pull)*-1),0) scale(.5)}
+    76%{opacity:1;transform:translate(0,-34px) scale(1)}
+    90%{opacity:1;transform:translate(0,-34px) scale(1)}
+    96%,100%{opacity:0;transform:translate(0,-34px) scale(1)}}
+  /* the count falls TWICE a round, once per player — the clearest statement
+     that there is one supply and not two */
+  .bn{animation:litick2 5.2s cubic-bezier(.2,1.5,.4,1) infinite}
+  @keyframes litick2{0%,22%{transform:scale(1);color:var(--txt)}
+    27%{transform:scale(1.3);color:var(--gold)}
+    38%,72%{transform:scale(1);color:var(--txt)}
+    77%{transform:scale(1.3);color:var(--gold)}88%,100%{transform:scale(1);color:var(--txt)}}
+  .listage{animation:limineface 5.2s steps(1,end) infinite}
+  @keyframes limineface{0%,25.9%{opacity:0}26%,45.9%{opacity:1}46%,100%{opacity:0}}
+  .spold{animation:licount1 5.2s steps(1,end) infinite}
+  .spmid{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-style:normal;animation:licount2 5.2s steps(1,end) infinite}
+  .spnew{animation:licount3 5.2s steps(1,end) infinite}
+  @keyframes licount1{0%,21.9%{opacity:1}22%,100%{opacity:0}}
+  @keyframes licount2{0%,21.9%{opacity:0}22%,71.9%{opacity:1}72%,100%{opacity:0}}
+  @keyframes licount3{0%,71.9%{opacity:0}72%,100%{opacity:1}}
+  /* the status names whose draw it is, because the direction alone should not
+     have to carry a turn change */
+  .listx{position:relative;display:block}
+  .lisme{animation:lisay1 5.2s steps(1,end) infinite}
+  .listheirs{position:absolute;left:0;right:0;top:0;animation:lisay2 5.2s steps(1,end) infinite}
+  @keyframes lisay1{0%,45.9%{opacity:1}46%,100%{opacity:0}}
+  @keyframes lisay2{0%,45.9%{opacity:0}46%,100%{opacity:1}}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hud">
+    <div class="rec">
+      <span class="rchip">ONLINE</span>
+      <button type="button" class="rchip tapmode" data-lib="modes" data-id="limited">{{mico:limited:12}} LIMITED<span class="mi">ⓘ</span></button>
+    </div>
+    <div class="sp"></div>
+    <button class="ico">{{ico:leave:15}}</button>
+  </div>
+
+  <div class="cap2">The same bag serves both of you. Your draw comes down; theirs goes up. Watch it twice and the mode explains itself.</div>
+
+  <div class="spfield">
+    <!-- LIMITED changes SUPPLY only: scoring and destruction stay classic, so
+         neither plate carries a rune slot or BOUNTY's ✦ lane -->
+    <div class="plate pline" style="--c:var(--p2)">
+      <span class="who"><span class="dot"></span><span class="nm">EmberCrow896</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="tot">29</span></span>
+    </div>
+
+    <div class="spboard spfoe" style="margin-top:6px">
+      <div class="spcol"><div class="spslot"></div><div class="spslot"></div><div class="spslot">{{die:6:p2:52}}</div></div>
+      <div class="spcol"><div class="spslot"></div><div class="spslot">{{die:4:p2 m2:52}}</div><div class="spslot">{{die:4:p2 m2:52}}</div></div>
+      <div class="spcol"><div class="spslot"></div><div class="spslot">{{die:2:p2:52}}</div><div class="spslot">{{die:5:p2:52}}</div></div>
+    </div>
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-top:5px">
+      <div class="spchip" style="--c:var(--p2)">6</div>
+      <div class="spchip" style="--c:var(--p2)">16</div>
+      <div class="spchip" style="--c:var(--p2)">7</div>
+    </div>
+
+    <div class="stagerow">
+      <div class="bag ">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die gone"></i></span>
+          <b class="bn"><span class="spcount licount"><i class="spold">15</i><i class="spmid">14</i><i class="spnew">13</i></span></b>
+        </div>
+      <span class="listage">{{die:2:p1:56}}</span>
+      <i class="lipull mine" aria-hidden="true">{{die:2:p1:44}}</i><i class="lipull theirs" aria-hidden="true">{{die:5:p2:44}}</i>
+    </div>
+    <div class="status me listatus"><span class="listx"><span class="lisme">Your move</span><span class="listheirs">EmberCrow896 is drawing</span></span></div>
+
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-bottom:5px">
+      <div class="spchip" style="--c:var(--p1)">12</div>
+      <div class="spchip" style="--c:var(--p1)">5</div>
+      <div class="spchip" style="--c:var(--p1)">6</div>
+    </div>
+    <div class="spboard spmine">
+      <div class="spcol"><div class="spslot">{{die:3:p1 m2:52}}</div><div class="spslot">{{die:3:p1 m2:52}}</div><div class="spslot"></div></div>
+      <div class="spcol"><div class="spslot">{{die:5:p1:52}}</div><div class="spslot"></div><div class="spslot"></div></div>
+      <div class="spcol"><div class="spslot">{{die:6:p1:52}}</div><div class="spslot"></div><div class="spslot"></div></div>
+    </div>
+
+    <div class="plate pline" style="--c:var(--p1);margin-top:6px">
+      <span class="who"><span class="dot"></span><span class="nm">FrostLynx303</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="tot">23</span></span>
+    </div>
+  </div>
+
+
+
+  <div class="splbl">nine dice on the boards · one in play · fourteen still in the bag · twenty-four in the match</div>
+  <div class="note"><b>What it says:</b> <b>there is one bag and you are both in it.</b> This is the mode's most-missed rule — the blurb says "one shared bag of 24" and players hear "24 each" — and it is also the reason LIMITED plays the way it does: taking the die you wanted denies it to them. A draw that visibly serves whoever is to move says so twice a round, forever, and needs no copy.<br>
+  <b>The count falls on their turn too</b>, in front of you, which today happens silently while your attention is on their board.<br>
+  <b>It reuses one gesture</b> — the same pull, mirrored — rather than inventing a second animation for the opponent. Faces rotate 180° on the far side already (ui/dom faceRotated), so the drawn die arrives correctly oriented for its owner.<br>
+  <b>Cost:</b> it animates on the opponent's turn, which is the one time the game currently keeps the centre quiet so the player can read the enemy board. It also doubles the number of draws that carry motion — forty-eight per match — and in landscape the two halves are left and right, not up and down, so the direction has to be re-derived from the seat rather than hard-coded.</div>
+</div></div>

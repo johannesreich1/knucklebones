@@ -1,0 +1,140 @@
+<!-- meta name="LI5 — The level" group="3j · LIMITED — the shared bag" subtitle="The pile becomes a vessel with something in it: the level falls a little on every single draw, smoothly, and the number rides it down — a quantity drawn as a quantity rather than as four steps" width=430 height=1178 sizes="md" links="Match — LIMITED bag, Game modes, Spells — aiming a rune" -->
+<style>
+  /* Card-local names only (li* and sp*). The bag below is the APP's — .bag, .pile,
+     .bn and the face-down .die shells are ui/bag.ts's own markup and
+     styles/game/variants.css's own rules — so a card cannot picture a bag the
+     game could not draw. The study board, chips, labels and nameplate width
+     come from design/build.mjs's chrome. */
+  .scr{gap:6px;--hue:{{mhue:limited}}}
+  .spfield{gap:0}
+  .stagerow{--cell:56px;margin-top:16px;min-height:60px}
+  .listatus{margin-top:12px;margin-bottom:14px}
+  /* the bag hangs off .stagerow exactly as it does in play (right:100%), so
+     the die in play stays optically centred whatever the bag is doing */
+
+  /* ===== THE LOOP: 3.4s, one DRAW =====
+       0–6%    the last die has been placed; the stage is empty and the bag
+               holds 15 — deliberately brief, because an empty stage is a
+               frame the game passes through, never one it rests in
+       6–24%   the draw — this is the window the six ideas differ in
+       24%     the die is on the stage face-up and the count cuts 15 → 14
+       24–100% held, so the settled state can be read
+     THE PILE DOES NOT MOVE ACROSS THIS DRAW, and that is not an oversight:
+     ui/bag.ts quantises the pile to ceil(n / 24 × 4) layers, so 15 and 14 are
+     both three layers. Twenty of the twenty-four draws in a match change
+     nothing about the picture — only the digit moves. Several ideas below
+     exist because of exactly that. */
+  .listage{display:block;line-height:0;animation:lishow 3.4s steps(1,end) infinite}
+  @keyframes lishow{0%,23.9%{opacity:0}24%,100%{opacity:1}}
+  .spold{animation:liold 3.4s steps(1,end) infinite}
+  .spnew{animation:linew 3.4s steps(1,end) infinite}
+  @keyframes liold{0%,23.9%{opacity:1}24%,100%{opacity:0}}
+  @keyframes linew{0%,23.9%{opacity:0}24%,100%{opacity:1}}
+  .licount{display:inline-flex;justify-content:center;min-width:2ch}
+  /* the count's own tick — ui/bag.ts adds .tick and variants.css scales it
+     1.3× in gold over 450ms. Held on the card's clock. */
+  .bn{animation:litick 3.4s cubic-bezier(.2,1.5,.4,1) infinite}
+  @keyframes litick{0%,24%{transform:scale(1);color:var(--txt)}
+    30%{transform:scale(1.3);color:var(--gold)}42%,100%{transform:scale(1);color:var(--txt)}}
+
+  /* ===== THE IDEA. The bag is not a stack of objects, it is an AMOUNT, and
+     an amount is the one thing the current four-layer fan cannot express: it
+     rounds twenty-four dice into four pictures. A level moves by 1/24 on every
+     draw — small, but never zero — so the bag is never twice the same and
+     never lies about how much is left.
+     The vessel keeps the die's own silhouette: this is still the bag, still
+     the corner radius of a die, still the pile's 34×36 footprint. ===== */
+  .lilevel .pile{width:34px;height:36px;position:relative;overflow:hidden}
+  /* the empty vessel: the die's outline, with nothing in it */
+  .dieghost{position:absolute;left:50%;bottom:0;width:28px;height:32px;margin-left:-14px;
+    border-radius:9px;pointer-events:none;
+    border:1px solid rgba(159,178,216,.5);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+  /* what is in it */
+  .lifill{position:absolute;left:50%;bottom:0;width:26px;margin-left:-13px;border-radius:0 0 8px 8px;
+    background:linear-gradient(180deg,
+      color-mix(in srgb,var(--hue) 65%,transparent),
+      color-mix(in srgb,var(--hue) 30%,transparent));
+    box-shadow:0 0 12px color-mix(in srgb,var(--hue) 45%,transparent);
+    height:calc(31px*15/24);animation:lidrain 3.4s cubic-bezier(.35,0,.25,1) infinite}
+  @keyframes lidrain{0%,24%{height:calc(31px*15/24)}44%,100%{height:calc(31px*14/24)}}
+  /* the surface, so the fall reads as a level and not as a bar: a bright line
+     at the top of the fill that dips when the level does */
+  .lifill::after{content:"";position:absolute;left:0;right:0;top:0;height:1.5px;
+    background:color-mix(in srgb,var(--hue) 90%,#fff);
+    box-shadow:0 0 8px var(--hue)}
+  /* and it slops: a draw disturbs the surface before it settles */
+  .lifill::before{content:"";position:absolute;left:0;right:0;top:-2px;height:4px;
+    background:radial-gradient(closest-side,color-mix(in srgb,var(--hue) 60%,transparent),transparent 70%);
+    opacity:0;animation:lislop 3.4s ease-out infinite}
+  @keyframes lislop{0%,23%{opacity:0;transform:scaleX(.4)}
+    29%{opacity:1;transform:scaleX(1.2)}51%,100%{opacity:0;transform:scaleX(.6)}}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hud">
+    <div class="rec">
+      <span class="rchip">ONLINE</span>
+      <button type="button" class="rchip tapmode" data-lib="modes" data-id="limited">{{mico:limited:12}} LIMITED<span class="mi">ⓘ</span></button>
+    </div>
+    <div class="sp"></div>
+    <button class="ico">{{ico:leave:15}}</button>
+  </div>
+
+  <div class="cap2">Not four layers and not twenty-four plates: a level, falling by one twenty-fourth every time somebody draws.</div>
+
+  <div class="spfield">
+    <!-- LIMITED changes SUPPLY only: scoring and destruction stay classic, so
+         neither plate carries a rune slot or BOUNTY's ✦ lane -->
+    <div class="plate pline" style="--c:var(--p2)">
+      <span class="who"><span class="dot"></span><span class="nm">EmberCrow896</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="tot">29</span></span>
+    </div>
+
+    <div class="spboard spfoe" style="margin-top:6px">
+      <div class="spcol"><div class="spslot"></div><div class="spslot"></div><div class="spslot">{{die:6:p2:52}}</div></div>
+      <div class="spcol"><div class="spslot"></div><div class="spslot">{{die:4:p2 m2:52}}</div><div class="spslot">{{die:4:p2 m2:52}}</div></div>
+      <div class="spcol"><div class="spslot"></div><div class="spslot">{{die:2:p2:52}}</div><div class="spslot">{{die:5:p2:52}}</div></div>
+    </div>
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-top:5px">
+      <div class="spchip" style="--c:var(--p2)">6</div>
+      <div class="spchip" style="--c:var(--p2)">16</div>
+      <div class="spchip" style="--c:var(--p2)">7</div>
+    </div>
+
+    <div class="stagerow">
+      <div class="bag lilevel">
+          <span class="pile" aria-hidden="true"><i class="lifill"></i><i class="dieghost"></i></span>
+          <b class="bn"><span class="spcount licount"><i class="spold">15</i><i class="spnew">14</i></span></b>
+        </div>
+      <span class="listage">{{die:2:p1:56}}</span>
+
+    </div>
+    <div class="status me listatus">Your move</div>
+
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-bottom:5px">
+      <div class="spchip" style="--c:var(--p1)">12</div>
+      <div class="spchip" style="--c:var(--p1)">5</div>
+      <div class="spchip" style="--c:var(--p1)">6</div>
+    </div>
+    <div class="spboard spmine">
+      <div class="spcol"><div class="spslot">{{die:3:p1 m2:52}}</div><div class="spslot">{{die:3:p1 m2:52}}</div><div class="spslot"></div></div>
+      <div class="spcol"><div class="spslot">{{die:5:p1:52}}</div><div class="spslot"></div><div class="spslot"></div></div>
+      <div class="spcol"><div class="spslot">{{die:6:p1:52}}</div><div class="spslot"></div><div class="spslot"></div></div>
+    </div>
+
+    <div class="plate pline" style="--c:var(--p1);margin-top:6px">
+      <span class="who"><span class="dot"></span><span class="nm">FrostLynx303</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="tot">23</span></span>
+    </div>
+  </div>
+
+
+
+  <div class="splbl">nine dice on the boards · one in play · fourteen still in the bag · twenty-four in the match</div>
+  <div class="note"><b>What it says:</b> <b>this much is left.</b> It is the only idea in the set whose picture is exact on all twenty-four draws AND readable without counting — a tower has to be counted, a fan of four rounds, a level is simply seen. It also makes the bag's shape mean something: the vessel is a die, so "the supply" and "the dice" are drawn as the same thing.<br>
+  <b>It carries the mode's colour honestly.</b> The fill is the registry's own hue for LIMITED (ui/modeicons), a raw hue, so it cannot be confused with either seat's dice — and the level, not the colour, is what carries the reading, which keeps it safe under colour blind mode.<br>
+  <b>It is one height animation.</b> No particles, no travel, no per-die elements; it costs a transition on a 26px box.<br>
+  <b>Cost:</b> it deletes the face-down dice, and those are the bag's best joke — they are the game telling you it knows what is coming and will not say. A fluid level also reads as a resource meter from a different genre; this is a dice game whose every other surface is made of dice, and a tank of glowing liquid in the middle of the table is the biggest departure in the set.</div>
+</div></div>

@@ -70,13 +70,12 @@
    as a bug rather than as a cost */
 :where(#kbroot) .rune.spent{opacity:.26;filter:grayscale(.9);cursor:default}
 :where(#kbroot) .rune.spent::before{display:none}
-/* CAST, BUT NOT YET FINAL. A rune that lands on the die in hand can be pressed
-   again to put the cast back, until the die is played — so it stays lit and
-   pressable, with a returning ring rather than the spent grey. */
-:where(#kbroot) .rune.undo{opacity:.92}
-:where(#kbroot) .rune.undo::before{opacity:.5;animation:runeundo 1.6s ease-in-out infinite;
-  background:radial-gradient(closest-side,rgba(255,209,102,.7),transparent 72%)}
-@keyframes runeundo{0%,100%{opacity:.24}50%{opacity:.62}}
+/* ANVIL commits when its weakest-die markings appear, before the player has
+   chosen which legal column to forge. The rune stays visibly locked to that
+   question, but a second press cannot cancel or restore the charge. */
+:where(#kbroot) .rune.committed{opacity:1;cursor:default;border-color:var(--gold)}
+:where(#kbroot) .rune.committed::before{opacity:.72;animation:none;
+  background:radial-gradient(closest-side,rgba(255,209,102,.78),transparent 72%)}
 :where(#kbroot) .rune:disabled{transform:none}                     /* no press feedback on a rune you can't press */
 :where(#kbroot) .rune.bump{animation:nope .32s}                    /* refused: the rune's own shake */
 :where(#kbroot) .rune .n{position:absolute;right:-4px;bottom:-4px;min-width:14px;height:14px;border-radius:99px;

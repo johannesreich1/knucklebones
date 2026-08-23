@@ -11,6 +11,30 @@ const PIPS: Record<number, readonly number[]> = {
 };
 const FACE_CELLS = 9;
 
+export interface DiePipDiff {
+  shared: readonly number[];
+  removed: readonly number[];
+  added: readonly number[];
+}
+
+/* The face map has one owner. Motion studies and production effects ask this
+   helper which cells changed instead of growing their own remembered version
+   of a die face (the wrap from six to one is where that drift is easiest to
+   miss). Returned arrays are fresh so callers may decorate them safely. */
+export function diePipCells(value: number): readonly number[] {
+  return [...(PIPS[value] ?? [])];
+}
+
+export function diePipDiff(from: number, to: number): DiePipDiff {
+  const before = new Set(PIPS[from] ?? []);
+  const after = new Set(PIPS[to] ?? []);
+  return {
+    shared: [...before].filter((cell) => after.has(cell)),
+    removed: [...before].filter((cell) => !after.has(cell)),
+    added: [...after].filter((cell) => !before.has(cell)),
+  };
+}
+
 const escapeAttribute = (value: string): string => value
   .replace(/&/g, '&amp;')
   .replace(/"/g, '&quot;')

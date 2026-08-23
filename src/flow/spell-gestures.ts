@@ -4,18 +4,18 @@ import { spellById } from '../core/spells.ts';
 import { S } from '../state.ts';
 import { appRoot, isEmbed, rootRect } from '../ui/embed.ts';
 import { Sfx } from '../ui/audio.ts';
+import { colEl, ownerOf } from '../ui/dom.ts';
 import { fxRoot } from '../ui/fx.ts';
 import { rootElementFromPoint } from '../ui/query.ts';
 import { spellHue, spellIcon } from '../ui/spellicons.ts';
 import { isAimedColumn } from './spell-rail.ts';
+import type { SpellInputTarget } from './spell-target.ts';
 
 export interface SpellGesturePorts {
-  arm: (id: string) => void;
-  disarm: () => void;
+  arm: (id: string) => boolean;
+  disarm: () => boolean;
   cast: (id: string, column: number) => Promise<boolean>;
   castable: (id: string) => boolean;
-  undoable: (id: string) => boolean;
-  undoCast: () => boolean;
 }
 
 const SLOP = 8;
@@ -29,7 +29,6 @@ export function bindSpellGesture(
     button.addEventListener('click', (event) => {
       event.stopPropagation();
       if (spellById(id)?.target === 'self') {
-        if (ports.undoCast()) return;
         if (ports.castable(id)) void ports.cast(id, -1);
         else bump(button);
         return;
@@ -45,7 +44,7 @@ export function bindSpellGesture(
     event.stopPropagation();
     const self = spellById(id)?.target === 'self';
     const wasArmed = S.spellArmed === id;
-    if (!ports.castable(id) && !ports.undoable(id)) {
+    if (!ports.castable(id)) {
       Sfx.tap();
       bump(button);
       return;
@@ -71,7 +70,7 @@ export function bindSpellGesture(
       button.removeEventListener('pointercancel', up);
       if (!dragging) {
         if (self) {
-          if (!ports.undoCast()) void ports.cast(id, -1);
+          void ports.cast(id, -1);
           return;
         }
         if (wasArmed) { Sfx.tap(); ports.disarm(); }
@@ -80,7 +79,7 @@ export function bindSpellGesture(
       const target = targetAt(upEvent.clientX, upEvent.clientY, id);
       hideGhost();
       if (target === null) { Sfx.tap(); ports.disarm(); return; }
-      void ports.cast(id, target);
+      void ports.cast(id, target.kind === 'stage' ? -1 : target.column);
     };
     button.addEventListener('pointermove', move);
     button.addEventListener('pointerup', up);
@@ -96,8 +95,7 @@ function tryArm(button: HTMLButtonElement, id: string, ports: SpellGesturePorts)
     return false;
   }
   Sfx.tap();
-  ports.arm(id);
-  return true;
+  return ports.arm(id);
 }
 
 function bump(button: HTMLElement): void {
@@ -126,10 +124,10 @@ function moveGhost(x: number, y: number, id: string): void {
   ghost.style.top = `${y - offset.top}px`;
   const target = targetAt(x, y, id);
   if (spellById(id)?.target === 'self') {
-    setStageHot(target === -1);
+    setStageHot(target?.kind === 'stage');
     setHot(null);
   } else {
-    setHot(target !== null && target >= 0 ? target : null);
+    setHot(target?.kind === 'column' ? target : null);
   }
 }
 
@@ -139,26 +137,33 @@ function hideGhost(): void {
   setStageHot(false);
 }
 
-export function targetAt(x: number, y: number, id: string): number | null {
+export function targetAt(x: number, y: number, id: string): SpellInputTarget | null {
   const element = rootElementFromPoint(x, y);
   if (!element) return null;
-  if (spellById(id)?.target === 'self') return element.closest('#dieStage') ? -1 : null;
+  if (spellById(id)?.target === 'self') return element.closest('#dieStage') ? { kind: 'stage' } : null;
   const column = element.closest('.col') as HTMLElement | null;
   if (!column) return null;
+  const side = column.closest('.side') as HTMLElement | null;
+  const who = side ? ownerOf(side) : null;
   const index = Number(column.dataset.col);
-  return Number.isInteger(index) && isAimedColumn(index) ? index : null;
+  return who !== null && Number.isInteger(index) && isAimedColumn(who, index)
+    ? { kind: 'column', who, column: index }
+    : null;
 }
 
 export function clearSpellTargets(): void {
   setHot(null);
   setStageHot(false);
+  appRoot().querySelectorAll('.spellpreview').forEach((die) => {
+    die.classList.remove('spellpreview', 'anvilpreview');
+    (die as HTMLElement).style.removeProperty('--spell-hue');
+  });
 }
 
-function setHot(column: number | null): void {
+function setHot(target: Extract<SpellInputTarget, { kind: 'column' }> | null): void {
   appRoot().querySelectorAll('.col.hot').forEach((element) => element.classList.remove('hot'));
-  if (column === null) return;
-  appRoot().querySelectorAll(`.col.aim[data-col="${column}"]`)
-    .forEach((element) => element.classList.add('hot'));
+  if (target === null) return;
+  colEl(target.who, target.column)?.classList.add('hot');
 }
 
 function setStageHot(on: boolean): void {

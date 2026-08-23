@@ -37,7 +37,7 @@ import { startTimer, stopTimer, showClock } from './timer.ts';
 import { coachShow, coachHide, clearTut, tutNextRoll, tutOnChoose } from './tutorial.ts';
 import { toMenu } from './menu.ts';
 import { showEnd, closeEnd } from '../ui/endscreen.ts';
-import { resetSpells, drawSpell, renderSpells, aiSpellTurn, clearUndo } from './spells.ts';
+import { aiSpellTurn, disarm, drawSpell, renderSpells, resetSpells, resolveTimedOutSpellAim } from './spells.ts';
 import { aiChoose } from './game-ai.ts';
 
 export { aiChoose } from './game-ai.ts';
@@ -50,7 +50,9 @@ function localTotal(player: Player): number {
   return totalOf(S.boards[player], S.bounty[player], S.scoring);
 }
 
-function autoPlace(gen: number): void {
+async function autoPlace(gen: number): Promise<void> {
+  if(S.gen!==gen || S.phase!=='choose' || S.busy) return;
+  if(await resolveTimedOutSpellAim()) return;
   if(S.gen!==gen || S.phase!=='choose' || S.busy) return;
   const who=S.turn;
   const legal=legalCols(S.boards[who]);
@@ -169,12 +171,16 @@ export async function nextTurn(): Promise<void> {
 
 export async function place(who: Player, col: number): Promise<void> {
   if (S.phase === 'over') return;
+  /* Board input cannot reach placement while aiming, but timer/test/host
+     seams can. A committed ANVIL must be resolved, never silently forfeited;
+     an ordinary unanswered aim may close before the move commits. */
+  if (S.spellAimCommitted) return;
+  if (S.spellArmed) disarm(true);
   const gen = S.gen;
   S.busy = true;
   S.phase = 'anim';
   stopTimer();
   clearHints();
-  clearUndo();
   renderSpells();
   const die = S.die;
   const result = await animateGameMove(who, col, die, {

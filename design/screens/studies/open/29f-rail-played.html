@@ -1,0 +1,299 @@
+<!-- meta name="RC6 — Played to the board" group="4g · The rune in play" subtitle="The cast has a destination: the card turns face-up, grows, and is then PLAYED — it flies to the column it chose and burns out over it, leaving the rail empty, so the rune is spent ON something rather than merely spent" width=430 height=1400 sizes="md" links="Spells — aiming a rune, Rune deal — dealt, Offline — local play" -->
+<style>
+  /* Card-local names only (rc* and sp*). Every rune glyph is the app's own
+     (ui/spellicons through the token); the card's anatomy is the REVEAL card's
+     (ui/runedeal.ts + styles/components/rune-deal.css), restated at rail size
+     because that overlay sizes everything off --card and a card body cannot
+     reach its scope. The study board, chips, labels and nameplate width come
+     from design/build.mjs's chrome. */
+  .scr{gap:6px;--hue:{{shue:pilfer}}}
+  .stagerow{--cell:56px;margin-top:16px}
+  .rcstatus{margin-top:14px;margin-bottom:14px}
+  /* THE DIE IS WHAT SAYS WHOSE TURN IT IS — it is painted in the colour of
+     whoever is to move and sits 14px from the card, so the card carries no
+     seat mark of its own (user call). It changes here at the hand-over. */
+  .rcdie{position:relative;display:block;width:56px;height:56px;line-height:0}
+  .rcdie > i{position:absolute;inset:0;display:block;line-height:0}
+  .d1{animation:rcd1 4s steps(1,end) infinite}
+  .d2{animation:rcd2 4s steps(1,end) infinite}
+  @keyframes rcd1{0%,77.9%{opacity:1}78%,100%{opacity:0}}
+  @keyframes rcd2{0%,77.9%{opacity:0}78%,100%{opacity:1}}
+
+  /* ===== THE CARD =====
+     AT REST IT IS SMALLER THAN THE DIE (user call): the die in play is the
+     thing being decided about, and a rune that out-measures it beside it
+     steals the centre. So the card is the SAME WIDTH as the button it
+     replaces — the app's rune is clamp(30px, --cell*.6, 40px), this is
+     clamp(32px, --cell*.59, 46px) — and buys its presence in HEIGHT only,
+     stopping short of the die: card height --cell*.81 against a die of
+     --cell*.92, about 88% of it. Only the ACTIVE card passes the die, at 1.16.
+     Proportion is the dealt card's own 1.4:1.92. Frozen here at 36px wide. */
+  .rcrail{position:absolute;left:100%;margin-left:14px;top:50%;
+    width:var(--rcw,36px);height:calc(var(--rcw,36px)*1.371);margin-top:calc(var(--rcw,36px)*-.685);
+    display:block;pointer-events:none}
+  .rccard{position:absolute;inset:0;border-radius:calc(var(--rcw,36px)*.2);
+    transform:perspective(700px) rotate(-7deg) rotateY(0deg) scale(1)}
+  .rcface,.rcback{position:absolute;inset:0;border-radius:inherit;display:flex;
+    flex-direction:column;align-items:center;justify-content:center;
+    gap:calc(var(--rcw,36px)*.08);color:var(--hue)}
+  /* THE BACK IS THE RESTING STATE. A rune you have not cast is a card you have
+     not played, and an unplayed card is face-down. It is the deck's own back
+     (styles/components/rune-deal.css .rback) with ONE change: the corner index
+     is enlarged, because the deck draws it at 26% for a card 2.5× this size
+     and at rail size that is a 9px smudge. */
+  .rcback{background:linear-gradient(160deg,#181d34,#090c18);
+    border:1px solid rgba(255,255,255,.14);box-shadow:0 8px 20px rgba(0,0,0,.6)}
+  .rcback svg{position:absolute;top:9%;left:8%;width:40%;height:40%;
+    filter:drop-shadow(0 0 6px currentColor)}
+  /* THE FACE, opaque and hue-edged, the icon CENTRED — ui/runedeal's .rface,
+     which is where the centred icon comes from. Shown from the press onward:
+     a played card is face up. */
+  .rcface{background:linear-gradient(158deg,#1e2440,#0b0e1c);
+    border:1px solid color-mix(in srgb,var(--hue) 46%,transparent);
+    box-shadow:0 8px 20px rgba(0,0,0,.66),0 0 18px color-mix(in srgb,var(--hue) 26%,transparent),
+      inset 0 0 16px color-mix(in srgb,var(--hue) 10%,transparent);opacity:0}
+  .rcface svg{filter:drop-shadow(0 0 9px currentColor)}
+
+  /* MORE THAN ONE CHARGE IS MORE THAN ONE CARD, each at its own tilt — FATE
+     has two casts and every other rune one, and a stack of two says so without
+     the app's 14px corner badge. The tilts are deliberately unequal: two cards
+     at the same angle read as one thick card. */
+  .rcchg{position:absolute;inset:0;border-radius:calc(var(--rcw,36px)*.2);
+    background:linear-gradient(160deg,#181d34,#090c18);
+    border:1px solid rgba(255,255,255,.12);
+    box-shadow:0 6px 16px rgba(0,0,0,.55);opacity:0}
+  .rcchg svg{position:absolute;top:9%;left:8%;width:40%;height:40%;opacity:.5;
+    filter:drop-shadow(0 0 5px currentColor)}
+  .rcchg.c2{transform:rotate(-16deg) translate(-7px,4px)}
+  .rcbox.two .rcchg.c2,.rctwo .rcchg.c2{opacity:1}
+
+  /* ===== THE LOOP: 4.0s =====
+       0–20%   READY — face-down, leaning, breathing
+       20–32%  THE PRESS — ONE half-turn (user call: it turns, it does not
+               spin), and it arrives face-up and enlarged. The turn is the
+               app's own: 0 → 90°, the lit face swapped while edge-on, −90 → 0.
+               ui/runedeal.ts flip() does exactly this rather than use
+               backface-visibility, because one grouping property anywhere in
+               the ancestry flattens a 3D context and shows the wrong face.
+       32–46%  AIMING — held face-up and large, the legal columns ringed
+       46–52%  the column is tapped: the card comes down, marked
+       52–70%  SPENT — face UP, because it has been played
+       70–78%  THE HAND-OVER — and this is the beat worth watching: the two
+               players' cards are in DIFFERENT states, yours spent and theirs
+               not. The slot goes back to a face-down card, and the die beside
+               it changes colour.
+       78–100% READY again — theirs now
+     Everything outside 46–78% is identical in all six, so what is being
+     compared is exactly the spent mark and how the slot re-arms. */
+  .rccard{animation:rccast 4s cubic-bezier(.3,0,.25,1) infinite}
+  @keyframes rccast{
+    0%,20%{transform:perspective(700px) rotate(-7deg) rotateY(0deg) scale(1)}
+    26%{transform:perspective(700px) rotate(-3deg) rotateY(90deg) scale(1.1)}
+    26.01%{transform:perspective(700px) rotate(-3deg) rotateY(-90deg) scale(1.1)}
+    32%,46%{transform:perspective(700px) rotate(0deg) rotateY(0deg) scale(1.16)}
+    52%,100%{transform:perspective(700px) rotate(-7deg) rotateY(0deg) scale(1)}}
+  .rcface{animation:rcfaceup 4s steps(1,end) infinite}
+  .rcback{animation:rcbackup 4s steps(1,end) infinite}
+  @keyframes rcfaceup{0%,25.9%{opacity:0}26%,77.9%{opacity:1}78%,100%{opacity:0}}
+  @keyframes rcbackup{0%,25.9%{opacity:1}26%,77.9%{opacity:0}78%,100%{opacity:1}}
+
+  /* the ring the aiming beat puts on the columns the registry accepts */
+  .spcol.aim::after{animation:rcaim 4s steps(1,end) infinite}
+  @keyframes rcaim{0%,31.9%{opacity:0}32%,45.9%{opacity:1}46%,100%{opacity:0}}
+  .rcstx{position:relative;display:block}
+  .rcstx > span:not(.s1){position:absolute;left:0;right:0;top:0}
+  .s1{animation:rcs1 4s steps(1,end) infinite}
+  .s2{animation:rcs2 4s steps(1,end) infinite}
+  .s3{animation:rcs3 4s steps(1,end) infinite}
+  .s4{animation:rcs4 4s steps(1,end) infinite}
+  @keyframes rcs1{0%,19.9%{opacity:1}20%,100%{opacity:0}}
+  @keyframes rcs2{0%,19.9%{opacity:0}20%,45.9%{opacity:1}46%,100%{opacity:0}}
+  @keyframes rcs3{0%,45.9%{opacity:0}46%,69.9%{opacity:1}70%,100%{opacity:0}}
+  @keyframes rcs4{0%,69.9%{opacity:0}70%,100%{opacity:1}}
+
+  /* THE STATES, side by side and still — the actual comparison. An idea has to
+     be readable in ONE frame, because that is how a player takes it in. */
+  .rcstates{display:flex;justify-content:center;gap:14px;width:100%;margin-top:12px}
+  .rcst{display:flex;flex-direction:column;align-items:center;gap:9px}
+  .rcst .cap{font-size:8px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;
+    text-align:center;line-height:1.5;max-width:60px}
+  .rcbox{position:relative;width:var(--rcw,36px);height:calc(var(--rcw,36px)*1.371)}
+  /* THE STILLS ARE STILL. Every mark is driven by the loop's keyframes, and an
+     animation's filled value beats a plain declaration however specific it is —
+     so without this a state card shows whatever frame the loop is on rather
+     than the state it is labelled with. Measured, three times. */
+  .rcbox,.rcbox *,.rcbox *::before,.rcbox *::after{animation:none!important}
+  .rcbox .rcback{opacity:1}
+  .rcbox .rcface{opacity:0}
+  .rcbox.up .rcback{opacity:0}
+  .rcbox.up .rcface{opacity:1}
+  .rcbox.aim .rccard{transform:perspective(700px) rotate(0deg) scale(1.16)}
+  /* PORTRAIT FACE-TO-FACE. The far player reads the table upside down, so the
+     centre turns for them: styles/game/seating.css already rotates #dieStage,
+     .status and .timer under #kbroot.face.p2turn:not(.land). The card is part
+     of the centre and joins that rule — one selector, no new mechanism. */
+  .rcbox.flip .rccard{transform:perspective(700px) rotate(-7deg) scale(1) rotate(180deg)}
+
+  /* ===== THE IDEA. Every other card spends the rune in the rail and leaves a
+     mark there. But a cast does not happen in the rail — it happens on the
+     BOARD, at a column the player picked, and the rail is only where the card
+     was waiting. So the card goes: it turns face-up on the press and, when the
+     column is tapped, travels to that column and burns out over it. What is
+     left in the rail is nothing, which is the most honest spent state there is.
+     The journey is measured off the two elements at cast time, exactly as
+     ui/fx pin() and the PILFER effect already resolve theirs. ===== */
+  .rccard{--tox:-96px;--toy:-118px}
+  .rccard{animation-name:rc6cast}
+  @keyframes rc6cast{
+    0%,20%{transform:perspective(700px) translate(0,0) rotate(-7deg) rotateY(0deg) scale(1);opacity:1}
+    26%{transform:perspective(700px) translate(0,0) rotate(-3deg) rotateY(90deg) scale(1.1);opacity:1}
+    26.01%{transform:perspective(700px) translate(0,0) rotate(-3deg) rotateY(-90deg) scale(1.1);opacity:1}
+    32%,46%{transform:perspective(700px) translate(0,0) rotate(0deg) rotateY(0deg) scale(1.16);opacity:1}
+    50%{transform:perspective(700px) translate(calc(var(--tox)*.45),calc(var(--toy)*.42))
+      rotate(-14deg) rotateY(0deg) scale(1);opacity:1}
+    56%{transform:perspective(700px) translate(var(--tox),var(--toy))
+      rotate(-22deg) rotateY(0deg) scale(.6);opacity:.85}
+    62%,74%{transform:perspective(700px) translate(var(--tox),var(--toy))
+      rotate(-22deg) rotateY(0deg) scale(.42);opacity:0}
+    77%{transform:perspective(700px) translate(0,-10px) rotate(-4deg) rotateY(0deg) scale(.94);opacity:0}
+    78%{transform:perspective(700px) translate(0,-8px) rotate(-5deg) rotateY(0deg) scale(.96);opacity:1}
+    83%,100%{transform:perspective(700px) translate(0,0) rotate(-7deg) rotateY(0deg) scale(1);opacity:1}}
+  /* where it lands: the column takes the rune's colour for a beat — the only
+     frame that says the card was spent ON something */
+  .spcol.aim:nth-child(2)::before{content:"";position:absolute;inset:-4px;border-radius:20px;
+    pointer-events:none;background:radial-gradient(closest-side,
+      color-mix(in srgb,var(--hue) 34%,transparent),transparent 76%);
+    opacity:0;animation:rc6burn 4s ease-out infinite}
+  @keyframes rc6burn{0%,55%{opacity:0}60%{opacity:1}76%,100%{opacity:0}}
+  .rcbox.gone .rccard{opacity:0}
+  .rcbox.gone::after{content:"";position:absolute;inset:0;border-radius:calc(var(--rcw,36px)*.2);
+    border:1px dashed rgba(255,255,255,.42);background:rgba(255,255,255,.02);
+    transform:rotate(-7deg)}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hud">
+    <div class="rec">
+      <button type="button" class="rchip tapmode" data-lib="modes" data-id="classic">{{mico:classic:12}} CLASSIC<span class="mi">ⓘ</span></button>
+      <button type="button" class="rchip tapmode" data-lib="spells" data-id="pilfer">{{sico:pilfer:12}} PILFER<span class="mi">ⓘ</span></button>
+    </div>
+    <div class="sp"></div>
+    <button class="ico">{{ico:leave:15}}</button>
+  </div>
+
+  <div class="cap2">Turn, grow, and go. The card is played at the column it chose and does not come back.</div>
+
+  <div class="spfield">
+    <!-- neither nameplate carries a rune slot any more: the readout has moved
+         into the shared rail, so the plate gives its lane back to the score -->
+    <div class="plate pline" style="--c:var(--p2)">
+      <span class="who"><span class="dot"></span><span class="nm">EmberCrow896</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="tot">31</span></span>
+    </div>
+
+    <div class="spboard spfoe" style="margin-top:6px">
+      <div class="spcol aim"><div class="spslot"></div><div class="spslot"></div><div class="spslot">{{die:6:p2:52}}</div></div>
+      <div class="spcol aim"><div class="spslot"></div><div class="spslot">{{die:4:p2 m2:52}}</div><div class="spslot">{{die:4:p2 m2:52}}</div></div>
+      <div class="spcol"><div class="spslot">{{die:1:p2:52}}</div><div class="spslot">{{die:2:p2:52}}</div><div class="spslot">{{die:5:p2:52}}</div></div>
+    </div>
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-top:5px">
+      <div class="spchip" style="--c:var(--p2)">6</div>
+      <div class="spchip" style="--c:var(--p2)">16</div>
+      <div class="spchip" style="--c:var(--p2)">8</div>
+    </div>
+    <div class="sprow3" style="--cell:52px;--gap:6px">
+      <div class="splbl hit">room</div>
+      <div class="splbl hit">room</div>
+      <div class="splbl no">yours is full</div>
+    </div>
+
+    <div class="stagerow">
+      <span class="rcdie"><i class="d1">{{die:4:p1:56}}</i><i class="d2">{{die:2:p2:56}}</i></span>
+      <i class="rcrail">
+        <i class="rcchg c2">{{sico:pilfer:11}}</i>
+        <i class="rccard">
+          <i class="rcback">{{sico:pilfer:11}}</i>
+          <i class="rcface">{{sico:pilfer:20}}</i>
+        </i>
+        </i>
+    </div>
+    <div class="status me rcstatus"><span class="rcstx"><span class="s1">Your move</span><span class="s2">Tap an enemy column</span><span class="s3">PILFER</span><span class="s4">EmberCrow896's move</span></span></div>
+
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-bottom:5px">
+      <div class="spchip" style="--c:var(--p1)">12</div>
+      <div class="spchip" style="--c:var(--p1)">5</div>
+      <div class="spchip" style="--c:var(--p1)">18</div>
+    </div>
+    <div class="spboard spmine">
+      <div class="spcol"><div class="spslot">{{die:3:p1 m2:52}}</div><div class="spslot">{{die:3:p1 m2:52}}</div><div class="spslot"></div></div>
+      <div class="spcol"><div class="spslot">{{die:5:p1:52}}</div><div class="spslot"></div><div class="spslot"></div></div>
+      <div class="spcol"><div class="spslot">{{die:6:p1:52}}</div><div class="spslot">{{die:6:p1 m2:52}}</div><div class="spslot">{{die:6:p1 m2:52}}</div></div>
+    </div>
+
+    <div class="plate pline" style="--c:var(--p1);margin-top:6px">
+      <span class="who"><span class="dot"></span><span class="nm">YOU</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="tot">35</span></span>
+    </div>
+  </div>
+
+  <div class="splbl">one slot, one card — face-down while it is held, face-up once it is played</div>
+
+  <div class="cap2" style="margin-top:10px">The states the ONE card has to carry — nothing here says whose it is</div>
+  <div class="rcstates dice-static">
+    <div class="rcst">
+      <div class="rcbox " style="--hue:{{shue:pilfer}}">
+        <i class="rcchg c2">{{sico:pilfer:11}}</i>
+        <i class="rccard">
+          <i class="rcback">{{sico:pilfer:11}}</i>
+          <i class="rcface">{{sico:pilfer:20}}</i>
+        </i>
+        </div>
+      <span class="cap">Held<br>face-down</span>
+    </div>
+    <div class="rcst">
+      <div class="rcbox up aim" style="--hue:{{shue:pilfer}}">
+        <i class="rcchg c2">{{sico:pilfer:11}}</i>
+        <i class="rccard">
+          <i class="rcback">{{sico:pilfer:11}}</i>
+          <i class="rcface">{{sico:pilfer:20}}</i>
+        </i>
+        </div>
+      <span class="cap">Playing</span>
+    </div>
+    <div class="rcst">
+      <div class="rcbox gone" style="--hue:{{shue:pilfer}}">
+        <i class="rcchg c2">{{sico:pilfer:11}}</i>
+        <i class="rccard">
+          <i class="rcback">{{sico:pilfer:11}}</i>
+          <i class="rcface">{{sico:pilfer:20}}</i>
+        </i>
+        </div>
+      <span class="cap">Spent</span>
+    </div>
+    <div class="rcst">
+      <div class="rcbox two" style="--hue:{{shue:fate}}">
+        <i class="rcchg c2">{{sico:fate:11}}</i>
+        <i class="rccard">
+          <i class="rcback">{{sico:fate:11}}</i>
+          <i class="rcface">{{sico:fate:20}}</i>
+        </i>
+        </div>
+      <span class="cap">FATE<br>two casts</span>
+    </div>
+    <div class="rcst">
+      <div class="rcbox flip" style="--hue:{{shue:pilfer}}">
+        <i class="rcchg c2">{{sico:pilfer:11}}</i>
+        <i class="rccard">
+          <i class="rcback">{{sico:pilfer:11}}</i>
+          <i class="rcface">{{sico:pilfer:20}}</i>
+        </i>
+        </div>
+      <span class="cap">Face-to-face<br>far seat</span>
+    </div>
+  </div>
+  <div class="note"><b>What it says:</b> <b>it was spent on that column.</b> A cast happens at a place the player chose, and this is the only idea whose animation carries the rune to it. The card lands on the column, colours it for a beat, and is gone.<br>
+  <b>Spent is nothing at all.</b> No grey card, no broken mark, no rectangle to interpret — the rail is empty, which is unambiguous at any size and in any palette.<br>
+  <b>Cost:</b> the most expensive and least general idea here. The destination is only meaningful for the three COLUMN runes — WARD, PILFER, ANVIL; the three self runes aim at the die in play, so the card would fly 40px onto the die, which is either charming or a fumble. It also crosses the enemy half at the moment the player is reading their own result, and an empty rail leaves nothing to remember the rune by.<br>
+  <b>Face-to-face:</b> in portrait duo the card turns 180° with the rest of the centre — styles/game/seating.css already rotates <code>#dieStage</code>, <code>.status</code> and <code>.timer</code> for whoever is playing, and the card belongs in that selector. No new mechanism, one more name in a rule that exists.</div>
+</div></div>

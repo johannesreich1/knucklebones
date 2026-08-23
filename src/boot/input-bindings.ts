@@ -8,7 +8,7 @@ import { isEmbed, kbroot } from '../ui/embed.ts';
 import { boardDown, boardUp, clearPress, commitColumn } from '../ui/input.ts';
 import { sheetOpen } from '../ui/sheet.ts';
 import { startLocal } from '../flow/game.ts';
-import { castArmed, disarm } from '../flow/spells.ts';
+import { castArmedByIndex, disarm } from '../flow/spells.ts';
 
 function eventElement(target: EventTarget | null): Element | null {
   return target instanceof Element ? target : null;
@@ -40,6 +40,12 @@ export function bindBoardInput(): void {
   // Click is only the fallback for hosts where neither pointer nor touch fires.
   table.addEventListener('click', (event) => {
     if (sawPointer) return;
+    if (S.spellArmed) {
+      /* A synthetic/accessibility click reports (0,0), not the column's page
+         coordinates. Hand the typed input seam the semantic target instead. */
+      boardUp({ target: event.target });
+      return;
+    }
     commitColumn(eventElement(event.target)?.closest('.col') as HTMLElement | null);
   });
 }
@@ -53,7 +59,7 @@ export function bindKeyboard(root: HTMLElement): void {
     if (columnKey >= 1 && columnKey <= SPEC.cols) {
       const column = columnKey - 1;
       const who = S.turn;
-      if (castArmed(column)) return;
+      if (castArmedByIndex(column)) return;
       if (S.phase === 'choose' && !S.busy && (S.mode === 'duo' || who === ME)) {
         commitColumn(colEl(who, column));
       }

@@ -140,6 +140,64 @@ body{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px
 .scr h1,.scr h2{margin:0;font-size:23px;font-weight:900;text-align:center;letter-spacing:.22em;
   background:linear-gradient(100deg,var(--p1),#fff 50%,var(--p2));
   -webkit-background-clip:text;background-clip:text;color:transparent}
+
+/* THE STUDY BOARD, once. An animation study pictures the same thing every
+   time — two facing half-boards of 52px slots, the chip row under each, a
+   caption strip under that, and a nameplate at each end — and every study in
+   4b/4c/4d wrote that scaffold out again, ~35 lines apiece, before it got to
+   the one idea it exists to show. Same reason .cap2 and .note moved here.
+   A card that needs different numbers simply declares them: card CSS is
+   inlined after this, so an override is one line rather than a fresh copy.
+   (The 4b/4c/4d studies predate this and still carry their identical private
+   copy; they lose it the next time one of them is edited.) */
+.spfield{position:relative;width:100%;display:flex;flex-direction:column;align-items:center}
+.spboard{position:relative;display:grid;grid-template-columns:repeat(3,var(--cell));gap:var(--gap);
+  justify-content:center}
+.spcol{display:grid;grid-template-rows:repeat(3,var(--cell));gap:var(--gap);position:relative;border-radius:16px}
+.spslot{width:var(--cell);height:var(--cell);border-radius:14px;position:relative;
+  background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.05);display:grid;place-items:center}
+/* each half wears its seat's colour, exactly as .side[data-owner] does in play */
+.spmine{--cell:52px;--gap:6px}
+.spmine .spslot{border-color:rgba(var(--p1-rgb),.13)}
+.spfoe{--cell:52px;--gap:6px}
+.spfoe .spslot{border-color:rgba(var(--p2-rgb),.13)}
+/* THE AIM RING, restated because a card body cannot set the class the app
+   opens it with: the real rule is html.casting .col.aim::after, and
+   flow/spells puts .aim on the columns the spell's OWN legal() accepts. */
+.spcol.aim::after{content:"";position:absolute;inset:-4px;border-radius:20px;pointer-events:none;
+  border:1.5px dashed rgba(var(--gold-rgb),.55)}
+.sprow3{display:grid;grid-template-columns:repeat(3,var(--cell));gap:var(--gap);
+  justify-content:center;width:calc(var(--cell)*3 + var(--gap)*2)}
+.spchip{height:20px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:var(--c);font-variant-numeric:tabular-nums;position:relative;
+  border:1px solid color-mix(in srgb,var(--c) 30%,transparent);
+  background:color-mix(in srgb,var(--c) 9%,transparent);
+  text-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}
+/* the chip's corner glyph (a shield, a mode mark). NOTE this catches ANY <i>
+   inside a chip, including a two-state count's own readings — which is why a
+   counting chip IS the .spcount — class="spchip spcount", so the readings sit
+   in the chip's own 20px of height — rather than wrapping a .spcount inside
+   one: a nested .spcount
+   collapses to zero height here and then clips both readings away. */
+.spchip i{position:absolute;right:4px;top:0;bottom:0;display:flex;align-items:center;line-height:0;
+  color:var(--gold);filter:drop-shadow(0 0 6px rgba(var(--gold-rgb),.75))}
+.splbl{font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);
+  text-align:center;min-height:11px;padding-top:4px;line-height:1.35}
+.splbl.hit{color:var(--hue,var(--gold))}
+.splbl.no{color:#8ea3c0}
+.splbl.safe{color:var(--gold)}
+/* Every mark hangs on a wrapper of the die's own box. In the app it would be a
+   class ON the die (the way .die.dying already is); a card cannot add one to a
+   token, so a study wraps the token instead. */
+.spmark{position:relative;display:block;line-height:0}
+/* ONE element, two readings — the number (or face) before the beat and after
+   it. The cards own the CUT; this owns only the stacking. */
+.spcount{position:relative;overflow:hidden}
+.spcount > i{font-style:normal}
+.spcount .spnew{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+/* the nameplate at each end of a study board, narrowed to the phone's column */
+.pline{max-width:206px;margin:0 auto}
 `;
 
 /* An avatar is a die wearing a RAW hue (ui/avatar.ts) — never the duel pair,

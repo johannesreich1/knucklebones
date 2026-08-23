@@ -14,16 +14,13 @@ export async function runEffectScenarios(suite) {
   check(out.selfTap.armed === null && !out.selfTap.castself,
     'a self spell must never sit armed waiting for a target', out.selfTap);
   check(out.selfTap.phase === 'choose' && !out.selfTap.busy, 'the turn was not handed back (nudge)', out.selfTap);
-  /* Straight after the press the rune is NOT spent — the same press can still
-     put the cast back (§9a). It reads spent once the die is played and the
-     take-back window closes. */
-  check(/\bundo\b/.test(out.selfTap.runeClass) && !/\bspent\b/.test(out.selfTap.runeClass),
-    'a rune that can still be taken back must not read as spent', out.selfTap.runeClass);
+  check(/\bspent\b/.test(out.selfTap.runeClass) && !/\bundo\b/.test(out.selfTap.runeClass),
+    'a committed self cast must read spent immediately', out.selfTap.runeClass);
   await tapCol(1); await page.waitForTimeout(900);
   out.selfPlaced = await look();
   check(JSON.parse(out.selfPlaced.mine)[1][0] === 6, 'placement broken after a self cast', out.selfPlaced);
-  check(/\bspent\b/.test(out.selfPlaced.runeClass) && !/\bundo\b/.test(out.selfPlaced.runeClass),
-    'the rune still offers a take-back after the die was played', out.selfPlaced.runeClass);
+  check(/\bspent\b/.test(out.selfPlaced.runeClass),
+    'the placed die made its spent rune look reusable', out.selfPlaced.runeClass);
 
   /* the drag still aims — dropping on the die casts, dropping anywhere else
      cancels and keeps the charge */
@@ -37,47 +34,39 @@ export async function runEffectScenarios(suite) {
     await page.mouse.move(tb.x + tb.width / 2, tb.y + tb.height / 2, { steps: 10 });
     await page.mouse.up(); await page.waitForTimeout(900);
   };
+  await drag('#botBoard .col[data-col="2"]');       // a column is not a self spell's target
+  out.selfDragMiss = await look();
+  check(out.selfDragMiss.charges === '[{"fate":2},{"fate":2}]',
+    'dropping a self spell on a column must cancel, not spend', out.selfDragMiss);
+  check(out.selfDragMiss.armed === null, 'the cancelled drag left the rune armed', out.selfDragMiss);
   await drag('#dieStage');
   out.selfDrag = await look();
   check(out.selfDrag.charges === '[{"fate":2},{"fate":1}]', 'the stage drop did not cast', out.selfDrag);
   check(out.selfDrag.die >= 1 && out.selfDrag.die <= 6, 'the redraw lost the die', out.selfDrag.die);
-  await drag('#botBoard .col[data-col="2"]');       // a column is not a self spell's target
-  out.selfDragMiss = await look();
-  check(out.selfDragMiss.charges === '[{"fate":2},{"fate":1}]',
-    'dropping a self spell on a column must cancel, not spend', out.selfDragMiss);
-  check(out.selfDragMiss.armed === null, 'the cancelled drag left the rune armed', out.selfDragMiss);
 
-  /* ---------- 9a. the take-back ----------
-     A self spell lands the instant it is pressed, so pressing it again puts
-     it back — until the die it changed is played (user call). NUDGE is the
-     deterministic one to watch: 5 → 6 → 5 → 6. */
-  await newGame({ spell: 'nudge' }); check(await waitChoose(), 'game never reached choose (undo)');
+  /* ---------- 9a. commitment is one-way ----------
+     Aim can be cancelled before a legal drop. Once a cast commits, every
+     spell is final: no snapshot, rail state or hook may put its state or
+     charge back. */
+  await newGame({ spell: 'nudge' }); check(await waitChoose(), 'game never reached choose (commit)');
   await table([[2], [], []], [[5], [], []], 5);
   await tapRune(); await page.waitForTimeout(700);
-  out.undoCast = await look();
-  check(out.undoCast.die === 6 && out.undoCast.charges === '[{"nudge":1},{"nudge":0}]',
-    'the cast did not happen', out.undoCast);
-  check(/\bundo\b/.test(out.undoCast.runeClass) && !/\bspent\b/.test(out.undoCast.runeClass),
-    'a rune that can still be taken back must not read as spent', out.undoCast.runeClass);
-  await tapRune(); await page.waitForTimeout(700);
-  out.undone = await look();
-  check(out.undone.die === 5, 'PRESSING AGAIN DID NOT PUT THE DIE BACK', out.undone);
-  check(out.undone.charges === '[{"nudge":1},{"nudge":1}]', 'the take-back did not return the charge', out.undone);
-  check(/put back/i.test(out.undone.status), 'the take-back said nothing', out.undone.status);
-  // and it is castable again, for real
-  await tapRune(); await page.waitForTimeout(700);
-  out.recast = await look();
-  check(out.recast.die === 6 && out.recast.charges === '[{"nudge":1},{"nudge":0}]',
-    'the rune did not work again after being put back', out.recast);
-  // playing the die CLOSES the window: the cast is final
-  await tapCol(1); await page.waitForTimeout(1000);
-  out.undoClosed = await page.evaluate(() => ({
-    pending: !!window.__kb.S.spellUndo, undoable: window.__kb.spells.undoable('nudge'),
-    charges: JSON.stringify(window.__kb.S.spellCharges) }));
-  check(!out.undoClosed.pending && !out.undoClosed.undoable,
-    'the cast can still be taken back AFTER the die was played', out.undoClosed);
-  check(out.undoClosed.charges === '[{"nudge":1},{"nudge":0}]',
-    'the charge came back after the die was already played', out.undoClosed);
+  out.committedNudge = await page.evaluate(async () => {
+    const k = window.__kb;
+    const before = { die: k.S.die, charges: JSON.stringify(k.S.spellCharges) };
+    const recast = await k.spells.cast('nudge', -1);
+    const rune = document.querySelector('.rune[data-seat="1"]:not([hidden])');
+    return { before, recast, die: k.S.die, charges: JSON.stringify(k.S.spellCharges),
+      hasUndo: 'undo' in k.spells || 'undoable' in k.spells || 'spellUndo' in k.S,
+      runeClass: rune?.className ?? '' };
+  });
+  check(out.committedNudge.before.die === 6 && out.committedNudge.die === 6 && !out.committedNudge.recast,
+    'NUDGE could be reversed or repeated after commitment', out.committedNudge);
+  check(out.committedNudge.before.charges === '[{"nudge":1},{"nudge":0}]'
+      && out.committedNudge.charges === out.committedNudge.before.charges,
+    'NUDGE returned or double-spent its committed charge', out.committedNudge);
+  check(!out.committedNudge.hasUndo && /\bspent\b/.test(out.committedNudge.runeClass),
+    'the runtime still exposes a cast take-back', out.committedNudge);
 
   /* FATE IS FINAL (user call, 2026-08-22). It is the one cast that REVEALS —
      it draws the next die from the supply — and no take-back can un-see it.
@@ -95,21 +84,15 @@ export async function runEffectScenarios(suite) {
     await k.spells.cast('fate', -1);
     await new Promise((r) => setTimeout(r, 700));
     const bagAfter = k.S.pool.length, dieAfter = k.S.die;
-    const offered = k.spells.undoable('fate');
-    const undone = k.spells.undo();               // the press the player would make
     const rune = document.querySelector('.rune[data-seat="1"]:not([hidden])');
-    return { bagBefore, bagAfter, bagBack: k.S.pool.length, dieBefore, dieAfter,
-             dieBack: k.S.die, offered, undone, pending: !!k.S.spellUndo,
+    return { bagBefore, bagAfter, dieBefore, dieAfter,
+             hasUndo: 'undo' in k.spells || 'undoable' in k.spells || 'spellUndo' in k.S,
              runeClass: rune ? rune.className : '', charges: JSON.stringify(k.S.spellCharges) };
   });
   check(out.fateFinal.bagAfter === out.fateFinal.bagBefore - 1,
     'the redraw did not come out of the bag', out.fateFinal);
-  check(!out.fateFinal.offered && !out.fateFinal.pending,
+  check(!out.fateFinal.hasUndo,
     'FATE STILL OFFERS A TAKE-BACK — the peek at the supply is free', out.fateFinal);
-  check(!out.fateFinal.undone && out.fateFinal.dieBack === out.fateFinal.dieAfter,
-    'THE REDRAWN DIE WAS HANDED BACK AFTER THE PLAYER HAD SEEN IT', out.fateFinal);
-  check(out.fateFinal.bagBack === out.fateFinal.bagAfter,
-    'the drawn die crawled back into the bag', out.fateFinal);
   check(out.fateFinal.charges === '[{"fate":2},{"fate":1}]',
     'a final cast gave its charge back', out.fateFinal);
   /* ...and it must READ final: a rune that still says "press again" invites
@@ -117,8 +100,9 @@ export async function runEffectScenarios(suite) {
   check(/\bspent\b/.test(out.fateFinal.runeClass) || !/\bundo\b/.test(out.fateFinal.runeClass),
     'FATE still reads as takeable back', out.fateFinal.runeClass);
 
-  /* SUNDER's mark is charm state, not a die — the take-back must lift it */
-  out.undoMark = await page.evaluate(async () => {
+  /* SUNDER's warning reveals authoritative victims, so its mark is equally
+     committed: a second cast attempt cannot lift or replay it. */
+  out.sunderCommit = await page.evaluate(async () => {
     const k = window.__kb;
     k.S.spell = 'sunder'; k.S.localMode = 0; k.S.mode = 'duo'; k.S.seat = 'face'; k.S.timer = 0;
     k.newGame();
@@ -127,26 +111,25 @@ export async function runEffectScenarios(suite) {
     await k.spells.cast('sunder', -1);
     await new Promise((r) => setTimeout(r, 700));
     const marked = k.S.charm.sunder[1];
-    k.spells.undo();
-    return { marked, afterUndo: k.S.charm.sunder[1],
+    const recast = await k.spells.cast('sunder', -1);
+    return { marked, afterRecast: k.S.charm.sunder[1], recast,
              stageLit: document.getElementById('dieStage').classList.contains('sundered'),
              charges: JSON.stringify(k.S.spellCharges) };
   });
-  check(out.undoMark.marked === true, 'sunder never marked the caster', out.undoMark);
-  check(out.undoMark.afterUndo === false && !out.undoMark.stageLit,
-    'THE TAKE-BACK LEFT THE SUNDER MARK ON THE DIE', out.undoMark);
-  check(out.undoMark.charges === '[{"sunder":1},{"sunder":1}]', 'the sunder charge did not come back', out.undoMark);
+  check(out.sunderCommit.marked && out.sunderCommit.afterRecast && !out.sunderCommit.recast,
+    'SUNDER was lifted or repeated after its warning committed', out.sunderCommit);
+  check(out.sunderCommit.stageLit && out.sunderCommit.charges === '[{"sunder":1},{"sunder":0}]',
+    'SUNDER lost its committed mark or returned its charge', out.sunderCommit);
 
   /* a COLUMN spell has visibly moved dice — no take-back is offered */
   await newGame({ spell: 'pilfer' }); check(await waitChoose(), 'game never reached choose (no undo)');
   await table([[2], [], []], [[6, 6], [], []]);
   await page.evaluate(() => window.__kb.spells.cast('pilfer', 0));
   await page.waitForTimeout(1200);
-  out.noUndo = await page.evaluate(() => ({ pending: !!window.__kb.S.spellUndo,
-    undoable: window.__kb.spells.undoable('pilfer'),
+  out.noUndo = await page.evaluate(() => ({
+    hasUndo: 'undo' in window.__kb.spells || 'undoable' in window.__kb.spells || 'spellUndo' in window.__kb.S,
     cls: document.querySelector('.rune[data-seat="1"]:not([hidden])')?.className }));
-  check(!out.noUndo.pending && !out.noUndo.undoable,
-    'a board spell offered a take-back after its dice had flown', out.noUndo);
+  check(!out.noUndo.hasUndo, 'a board spell offered a take-back after its dice had flown', out.noUndo);
   check(/\bspent\b/.test(out.noUndo.cls), 'a spent board rune must read as spent', out.noUndo);
 
   /* ---------- 9b. the board rings ONLY what the cast can land on ----------

@@ -1,0 +1,201 @@
+<!-- meta name="BO1 — The toll" group="3i · BOUNTY — the banked kill" subtitle="Each destroyed die pays a coin: one ✦ leaves each dead seat, crosses the board and lands on the tally, which ticks once per arrival — so the count is not read, it is watched being made" width=430 height=1190 sizes="md" links="Match, Game modes, Offline — local play" -->
+<style>
+  /* Card-local names only (bo* and sp*). Every die, mode glyph and number comes
+     from the app's own registries through the build tokens; the study board,
+     chips, labels and nameplate width now come from design/build.mjs's chrome. */
+  .scr{gap:6px;--hue:{{mhue:bounty}}}
+  /* THE SCENE is one positioned box — both nameplates and the whole field —
+     because this mode's animation is the only one in the library that has to
+     travel from a die on the board to a number on a NAMEPLATE. A field-only
+     canvas (the seam the PILFER studies draw on) cannot reach that far. */
+  .boscene{position:relative;width:100%;display:flex;flex-direction:column;gap:6px}
+  .bofx{position:absolute;inset:0;pointer-events:none;z-index:6;display:block}
+
+  /* the destination seat, lit while it is still empty */
+  .boroom{box-shadow:inset 0 0 0 1px rgba(var(--p1-rgb),.34),inset 0 0 16px rgba(var(--p1-rgb),.12)}
+  .stagerow{--cell:56px;margin-top:12px}
+  .bostatus{margin-top:10px;margin-bottom:12px}
+
+  /* ===== THE LOOP: 3.6s, the same beats in all six =====
+       16%  my 4 lands in my column 2 — the stage empties, the seat fills
+       20%  the two enemy 4s begin to die (the app's own .dying curve, 0.34s,
+            held here on the card's clock), the second 3% behind the first
+       33%  they are gone — this is where the +1s exist and where the six
+            ideas part company
+       60%  every number that changed cuts: both totals, both column chips,
+            and the ✦ tally
+     Nothing before 16% or after 60% differs between the cards, so what the
+     reader is comparing is exactly the 33–60% window. */
+  .bostage{display:block;line-height:0;animation:boplay 3.6s steps(1,end) infinite}
+  @keyframes boplay{0%,15.9%{opacity:1}16%,100%{opacity:0}}
+  .bodrop > .die{animation:bodrop 3.6s steps(1,end) infinite}
+  @keyframes bodrop{0%,15.9%{opacity:0}16%,100%{opacity:1}}
+  .bovictim{animation:bodie1 3.6s ease-in infinite}
+  .bovictim.v2{animation-name:bodie2}
+  @keyframes bodie1{0%,20%{opacity:1;transform:scale(1) rotate(0)}
+    24%{opacity:1;transform:scale(1.24) rotate(6deg);filter:brightness(2.4)}
+    32%,100%{opacity:0;transform:scale(.2) rotate(-24deg);filter:brightness(3)}}
+  @keyframes bodie2{0%,23%{opacity:1;transform:scale(1) rotate(0)}
+    27%{opacity:1;transform:scale(1.24) rotate(6deg);filter:brightness(2.4)}
+    35%,100%{opacity:0;transform:scale(.2) rotate(-24deg);filter:brightness(3)}}
+  /* every number this strike moves, moving on one frame */
+  .spold{animation:booldn 3.6s steps(1,end) infinite}
+  .spnew{animation:bonewn 3.6s steps(1,end) infinite}
+  @keyframes booldn{0%,59.9%{opacity:1}60%,100%{opacity:0}}
+  @keyframes bonewn{0%,59.9%{opacity:0}60%,100%{opacity:1}}
+  .botot{display:inline-flex;justify-content:center;min-width:2.2ch}
+  /* THE ✦ TALLY is the app's own .plate .bty — including its colour, which is
+     the SIDE'S multiplier heat (--mx2), not a literal gold and not the mode's
+     green. That matters here: green is in the DUELHUES roster, so a tally
+     painted the registry's bounty green would be indistinguishable from the
+     plate of a player who picked green in Settings. */
+  .botally{display:inline-flex;justify-content:center;min-width:3ch}
+
+  /* THE FLOATING NUMBER the game prints today (ui/fx floatPts): "+2 ✦" rising
+     out of the column that struck, in the striker's multiplier heat, gone in
+     900ms. It is the whole of BOUNTY's current animation, and every idea below
+     is measured against whether it still needs it. */
+  .bopts{position:absolute;left:50%;top:8px;z-index:8;
+    animation:bofloat 3.6s cubic-bezier(.2,.7,.3,1) infinite}
+  @keyframes bofloat{0%,33%{transform:translate(-50%,0) scale(.6);opacity:0}
+    42%{transform:translate(-50%,-16px) scale(1.18);opacity:1}
+    58%,100%{transform:translate(-50%,-44px) scale(1);opacity:0}}
+
+  /* ===== THE IDEA. A die that died PAID something, and the payment is a
+     physical object that crosses the board. The tally cannot be a number that
+     was already right when you looked at it: it ticks once as each coin lands,
+     so two dice visibly become two points. =====
+     The travel is measured, not guessed — --dx/--dy are the offset from a
+     seat in the enemy's middle column to the ✦ on your nameplate, read out of
+     the browser on this very card. In play the same pair comes out of two
+     getBoundingClientRects at strike time, exactly as ui/fx pin() already does. */
+  .bocoin{position:absolute;left:50%;top:50%;margin:-11px 0 0 -11px;width:22px;height:22px;
+    border-radius:50%;display:grid;place-items:center;z-index:9;
+    font-size:13px;font-weight:900;color:#0a0410;
+    background:radial-gradient(circle at 34% 30%,var(--mx2-hi,#ffe3a1),var(--mx2,var(--gold)) 72%);
+    box-shadow:0 0 12px rgba(var(--mx2-rgb,var(--gold-rgb)),.85),0 4px 10px rgba(0,0,0,.5);
+    opacity:0}
+  /* the two seats are not the same distance from the plate, so they do not
+     share one number: --dx/--dy are per SEAT, measured on this card */
+  .bovseat.b1 .bocoin{--dx:44px;--dy:462px}
+  .bovseat.b2 .bocoin{--dx:44px;--dy:404px}
+  .bocoin.c1{animation:bopay1 3.6s cubic-bezier(.4,0,.3,1) infinite}
+  .bocoin.c2{animation:bopay2 3.6s cubic-bezier(.4,0,.3,1) infinite}
+  /* struck out of the die at the moment it fails, then thrown — the arc rises
+     first so the coin is never confused with a die falling into a seat */
+  @keyframes bopay1{0%,24%{opacity:0;transform:translate(0,0) scale(.4)}
+    28%{opacity:1;transform:translate(0,-10px) scale(1.15)}
+    52%{opacity:1;transform:translate(var(--dx),var(--dy)) scale(.8)}
+    56%,100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.5)}}
+  @keyframes bopay2{0%,27%{opacity:0;transform:translate(0,0) scale(.4)}
+    31%{opacity:1;transform:translate(0,-10px) scale(1.15)}
+    57%{opacity:1;transform:translate(var(--dx),var(--dy)) scale(.8)}
+    61%,100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.5)}}
+  /* the tally has THREE readings, not two: 3, then 4 when the first coin
+     lands, then 5 when the second does */
+  .bomid{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-style:normal;animation:bomid 3.6s steps(1,end) infinite}
+  @keyframes bomid{0%,51.9%{opacity:0}52%,57.9%{opacity:1}58%,100%{opacity:0}}
+  .botally .spold{animation-name:bopaid1}
+  .botally .spnew{animation-name:bopaid2}
+  @keyframes bopaid1{0%,51.9%{opacity:1}52%,100%{opacity:0}}
+  @keyframes bopaid2{0%,57.9%{opacity:0}58%,100%{opacity:1}}
+  /* the plate takes each arrival — the same .bump the score already uses */
+  .bomyplate{animation:botake 3.6s ease-out infinite}
+  @keyframes botake{0%,51%{transform:scale(1)}53%{transform:scale(1.035)}56%{transform:scale(1)}
+    57%{transform:scale(1)}59%{transform:scale(1.035)}62%,100%{transform:scale(1)}}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hud">
+    <div class="rec">
+      <span class="rchip">ONLINE</span>
+      <button type="button" class="rchip tapmode" data-lib="modes" data-id="bounty">{{mico:bounty:12}} BOUNTY<span class="mi">ⓘ</span></button>
+    </div>
+    <div class="sp"></div>
+    <button class="ico">{{ico:leave:15}}</button>
+  </div>
+
+  <div class="cap2">Your 4 lands and takes their pair. Two dice died, so two coins are owed — and both are paid where you can see them.</div>
+
+  <div class="boscene">
+    <i class="bofx"></i>
+
+    <!-- their bank is untouched by this strike: only the striker banks -->
+    <div class="plate pline" style="--c:var(--p2)">
+      <span class="who"><span class="dot"></span><span class="nm">EmberCrow896</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="bty">✦2</span><span class="tot"><span class="spcount botot"><i class="spold">31</i><i class="spnew">15</i></span></span></span>
+    </div>
+
+    <div class="spfield">
+      <!-- the enemy half fills from the centre line outward, exactly as the
+           app's mirrored board does -->
+      <div class="spboard spfoe">
+        <div class="spcol">
+          <div class="spslot"></div>
+          <div class="spslot"></div>
+          <div class="spslot">{{die:6:p2:52}}</div>
+        </div>
+        <div class="spcol">
+          <div class="spslot"></div>
+          <div class="spslot bovseat b1"><span class="spmark bovictim v1">{{die:4:p2 m2:52}}</span><i class="bocoin c1">✦</i></div>
+          <div class="spslot bovseat b2"><span class="spmark bovictim v2">{{die:4:p2 m2:52}}</span><i class="bocoin c2">✦</i></div>
+        </div>
+        <div class="spcol">
+          <div class="spslot"></div>
+          <div class="spslot">{{die:2:p2:52}}</div>
+          <div class="spslot">{{die:5:p2:52}}</div>
+        </div>
+      </div>
+      <div class="sprow3" style="--cell:52px;--gap:6px;margin-top:5px">
+        <div class="spchip" style="--c:var(--p2)">6</div>
+        <div class="spchip spcount" style="--c:var(--p2)"><i class="spold">16</i><i class="spnew">0</i></div>
+        <div class="spchip" style="--c:var(--p2)">7</div>
+      </div>
+      <div class="sprow3" style="--cell:52px;--gap:6px">
+        <div class="splbl"></div>
+        <div class="splbl hit">their 4s</div>
+        <div class="splbl"></div>
+      </div>
+
+      <div class="stagerow"><span class="bostage">{{die:4:p1:56}}</span></div>
+      <div class="status me bostatus">Your move</div>
+
+      <div class="sprow3" style="--cell:52px;--gap:6px;margin-bottom:5px">
+        <div class="spchip" style="--c:var(--p1)">12</div>
+        <div class="spchip spcount" style="--c:var(--p1)"><i class="spold">5</i><i class="spnew">9</i></div>
+        <div class="spchip" style="--c:var(--p1)">6</div>
+      </div>
+      <div class="spboard spmine">
+        <div class="spcol">
+          <div class="spslot">{{die:3:p1 m2:52}}</div>
+          <div class="spslot">{{die:3:p1 m2:52}}</div>
+          <div class="spslot"></div>
+        </div>
+        <div class="spcol" style="position:relative">
+          <div class="spslot">{{die:5:p1:52}}</div>
+          <div class="spslot boroom bodrop">{{die:4:p1:52}}</div>
+          <div class="spslot"></div>
+
+        </div>
+        <div class="spcol">
+          <div class="spslot">{{die:6:p1:52}}</div>
+          <div class="spslot"></div>
+          <div class="spslot"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="plate pline bomyplate" style="--c:var(--p1)">
+      <span class="who"><span class="dot"></span><span class="nm">FrostLynx303</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="spcount botally"><i class="spold">✦3</i><i class="bomid">✦4</i><i class="spnew">✦5</i></span><span class="tot"><span class="spcount botot"><i class="spold">26</i><i class="spnew">32</i></span></span></span>
+    </div>
+  </div>
+
+  <div class="splbl">their column 16 → 0 · yours 5 → 9 · the bank ✦3 → ✦5 · your total 26 → 32</div>
+  <div class="note"><b>What it says:</b> <b>two dice, two points.</b> BOUNTY banks one per DIE, never per pip, and that is the single thing players get wrong about it — a 6 and a 1 are worth the same ✦. A coin per corpse, counted onto the tally one at a time, is the only idea here that states the rule rather than the result.<br>
+  <b>It gives the mode a direction.</b> The points leave THEIR half and land on YOUR plate, so the bank is visibly fed by destruction rather than appearing beside your score out of nowhere.<br>
+  <b>It replaces the floating number.</b> Today the game prints "+2 ✦" over the striking column and updates the tally silently; a coin that arrives makes the float redundant, which is one fewer thing in the lane.<br>
+  <b>Cost:</b> the longest flight in the game — a full board-height, resolved from two rects at strike time, and one object per destroyed die. A SUNDER-widened strike under BOUNTY can kill six dice at once, so this must degrade gracefully: cap the coins, or throw one coin carrying "×6". It also crosses the centre stage, where the die in play and the status line live.</div>
+</div></div>
