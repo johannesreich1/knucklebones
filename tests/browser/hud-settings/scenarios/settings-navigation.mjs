@@ -25,6 +25,16 @@ export async function runSettingsNavigationScenarios(suite) {
   check(out.settingsOpen.accessibility === 'Accessibility' && out.settingsOpen.accessibilityOrder,
         'accessibility controls are not grouped at the end of Settings', out.settingsOpen);
 
+  const accessibilityTop = () => page.$eval('#accessibilityHeading', (heading) => heading.getBoundingClientRect().top);
+  const topBeforeColourBlind = await accessibilityTop();
+  await page.tap('#cbSeg button[data-b="1"]'); await page.waitForTimeout(150);
+  const topWithColourBlind = await accessibilityTop();
+  await page.tap('#cbSeg button[data-b="0"]'); await page.waitForTimeout(150);
+  const topAfterColourBlind = await accessibilityTop();
+  out.accessibilityStable = { topBeforeColourBlind, topWithColourBlind, topAfterColourBlind };
+  check(Math.max(...Object.values(out.accessibilityStable)) - Math.min(...Object.values(out.accessibilityStable)) < 0.5,
+        'Accessibility jumps when the colour-blind note appears', out.accessibilityStable);
+
   await page.tap('#sndSeg button[data-s="0"]'); await page.waitForTimeout(200);
   await page.tap('#faceSeg button[data-f="nums"]'); await page.waitForTimeout(200);
   // Settings holds the two toggles and nothing else — the rules are reached

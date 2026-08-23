@@ -268,9 +268,10 @@ ${LEGAL_MARKUP}
     <div class="card">
       <div class="lbl">Opponent colour</div>
       <div class="hues" id="p2Pick"></div>
-      <!-- explains the lock while colour blind mode owns the pair; hidden
-           otherwise, and the disabled swatches point at it (aria-describedby) -->
-      <div class="tiny" id="colNote" hidden>Colour blind mode picks the colours</div>
+      <!-- The row always reserves one line so Accessibility does not jump when
+           colour-blind mode reveals the note. Disabled swatches point at the
+           inner text while it is relevant (aria-describedby). -->
+      <div class="colnoteslot"><span class="tiny" id="colNote" hidden>Colour blind mode picks the colours</span></div>
     </div>
     <h2 class="setsection" id="accessibilityHeading">Accessibility</h2>
     <div class="card">
