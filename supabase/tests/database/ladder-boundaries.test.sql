@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(24);
+select plan(26);
 
 select ok(
   not has_table_privilege('anon', 'public.season_ratings', 'select'),
@@ -28,6 +28,18 @@ select ok(
 select ok(
   has_table_privilege('service_role', 'public.season_ratings', 'delete'),
   'service role can delete ladder rows for account cleanup'
+);
+select ok(
+  has_function_privilege('service_role', 'public.current_season()', 'execute'),
+  'matchmaking can read the current season through the service role'
+);
+select ok(
+  has_function_privilege(
+    'service_role',
+    'public.players_near(uuid,integer)',
+    'execute'
+  ),
+  'matchmaking can measure the ladder band through the service role'
 );
 select ok(
   not has_schema_privilege('anon', 'private', 'usage'),
