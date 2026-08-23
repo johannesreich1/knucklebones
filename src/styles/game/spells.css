@@ -1,8 +1,9 @@
 /* ===== SPELLS: RC4, THE CHARGE STACK (flow/spell-rail) =====
    One fixed slot follows the turn. Cards carry remaining casts; once none are
    left their outlines keep the slot's exact geometry, so the die cannot move. */
-:where(#kbroot) .spells{--rw:clamp(32px,calc(var(--cell)*.59),46px);position:absolute;left:100%;top:50%;
-  width:var(--rw);height:calc(var(--rw)*1.371);margin-left:14px;translate:0 -50%;display:none;z-index:4}
+:where(#kbroot) .spells{--rw:clamp(32px,calc(var(--cell)*.59),46px);position:absolute;
+  left:calc(50% + var(--cell) + var(--gap));top:50%;width:var(--rw);height:calc(var(--rw)*1.371);
+  translate:-50% -50%;display:none;z-index:4}
 :where(#kbroot) .spells.live{display:block}
 :where(#kbroot) .rune{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;background:none;
   color:var(--rune-hue);font:inherit;-webkit-appearance:none;appearance:none;touch-action:none;cursor:pointer}
@@ -20,12 +21,17 @@
 :where(#kbroot) .rune-charge .rface{opacity:0}
 :where(#kbroot) .rune-charge .rback svg{top:9%;left:8%;width:40%;height:40%}
 :where(#kbroot) .rune-charge .rface svg{width:58%;height:58%;filter:drop-shadow(0 0 9px currentColor)}
-/* The held top card breathes without repainting its shadow. */
-:where(#kbroot) .rune-charge.top::after{content:"";position:absolute;inset:-6px;border-radius:inherit;
-  background:radial-gradient(closest-side,color-mix(in srgb,currentColor 55%,transparent),transparent 72%);
-  opacity:0;pointer-events:none}
-:where(#kbroot) .rune.ready .rune-charge.top::after{animation:runeglow 2.3s ease-in-out infinite}
-@keyframes runeglow{0%,100%{opacity:.22}50%{opacity:.8}}
+/* The rune hue is a quiet property of the card, not an availability light.
+   An oversized wash has no visible ring edge and stays identical while the
+   hand waits, becomes castable, turns face-up, or follows the finger. */
+:where(#kbroot) #spellBar .rune-charge .rback::before,
+:where(#kbroot) #spellBar .rune-charge .rface::before,
+:where(#kbroot) .runeghost .rback::before,
+:where(#kbroot) .runeghost .rface::before{content:"";position:absolute;inset:0;border-radius:inherit;
+  background:radial-gradient(140% 120% at 25% 15%,
+    color-mix(in srgb,currentColor 12%,transparent) 0%,
+    color-mix(in srgb,currentColor 4%,transparent) 58%,transparent 100%);
+  pointer-events:none}
 /* Pressing turns one half-revolution and holds the played face above the die. */
 :where(#kbroot) .rune.armed .rune-charge.top{animation:runeArm .36s linear both;z-index:3}
 :where(#kbroot) .rune.armed .rune-charge.top .rback{animation:runeBackUp .36s steps(1,end) both}

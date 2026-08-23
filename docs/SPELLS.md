@@ -367,8 +367,8 @@ Learned from real play, each one a shipped bug:
   pointer, touch, keyboard, local-player and machine casts cannot disagree.
 - **The rail follows `S.turn`, while interactivity follows `caster()`.** The
   card always shows the hand whose turn it is, including the machine's inert
-  hand while it thinks. Only a legal player choice gets the ready breath and
-  pointer events. Busy windows therefore change availability without changing
+  hand while it thinks. Only a legal player choice gets pointer events. Busy
+  windows therefore change availability without changing
   ownership, while `nextTurn` repaints the slot with the other seat's remaining
   cards. Waiting, spending and handing over are three different pictures.
 - **The armed line gets ONE line in portrait and TWO in landscape.** Not a
@@ -430,9 +430,17 @@ The rail now keeps that card vocabulary in play.
   replaces, buying its presence in height only, and stopping short:
   card height `--cell*.81` against a die of `--cell*.92`, about 88% of it.
   Only the ACTIVE card passes the die, at 1.16. The die is the thing being
-  decided about; a rune that out-measures it beside it steals the centre.
+  decided about; a rune that out-measures it steals the centre.
+- **Portrait aligns it with the board's third column.** The die keeps the
+  table's centre while the card stays vertically beside it and places its own
+  centre on the rightmost column's centre line (`--cell + --gap`). Landscape
+  keeps the existing compact answer: the card is centred above the die.
+- **Its rune colour is always present and quiet.** Both faces carry the same
+  oversized 12% → 4% → transparent surface wash. It has no breathing halo and
+  does not change when castability, busy state, or turn ownership changes;
+  pressing still supplies the selected flip and 1.16 enlargement.
 - **It carries NO seat mark** — no seat colour, no mirrored lean. The die in
-  play is 14px away and is already painted in the colour of whoever is to move,
+  play is beside it and is already painted in the colour of whoever is to move,
   the status line names them, and only one card is ever in the slot. A seat
   hue could not be honest anyway: both seats are dealt the same rune
   (symmetry, §2), so the face wears the RUNE's hue in either hand.

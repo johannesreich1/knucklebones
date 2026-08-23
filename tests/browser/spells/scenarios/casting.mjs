@@ -6,7 +6,7 @@ export async function runCastingScenarios(suite) {
   out.dealt = await look();
   check(out.dealt.runeShown, 'no rune in an offline game', out.dealt);
   // One rail follows the turn. Plates carry scores only; the current hand is
-  // a card stack beside the die and the die says whose hand it is.
+  // a card stack aligned with the right board column and the die says whose hand it is.
   check(out.dealt.mineHome === 'spellBar' && out.dealt.runeSeat === '1',
     'the rail does not belong to the player to move', out.dealt);
   check(out.dealt.charges === '[{"pilfer":1},{"pilfer":1}]', 'both seats hold one cast', out.dealt.charges);
@@ -227,9 +227,11 @@ export async function runCastingScenarios(suite) {
     const b = document.querySelector('#spellBar .rune:not([hidden])');
     if (!b) return null;
     const top = b.querySelector('.rune-charge.top');
+    const back = top?.querySelector('.rback');
     return { cls: b.className, seat: b.dataset.seat, disabled: b.disabled,
       cards: [...b.querySelectorAll('.rune-charge')].filter((e) => !e.hidden).length,
-      ring: top ? getComputedStyle(top, '::after').animationPlayState : 'none' };
+      pulse: top ? getComputedStyle(top, '::after').animationName : 'none',
+      wash: back ? getComputedStyle(back, '::before').backgroundImage : 'none' };
   });
   const turnTo = async (who) => {
     await page.evaluate((t) => {
@@ -246,8 +248,12 @@ export async function runCastingScenarios(suite) {
   check(out.theirTurn?.seat === '0' && out.theirTurn.disabled && out.theirTurn.cards === 1,
     'the CPU turn did not deal its own inert card into the shared rail', out.theirTurn);
   check(out.myTurn?.seat === '1' && !out.myTurn.disabled && out.myTurn.cards === 1
-    && out.myTurn.ring === 'running',
+    && out.myTurn.pulse === 'none',
     'the player turn did not deal its castable card into the shared rail', out.myTurn);
+  check(out.theirTurn?.pulse === 'none' && out.theirTurn.wash !== 'none'
+      && out.theirTurn.wash === out.myTurn?.wash,
+    'the card tint flickered or changed with turn availability',
+    { theirs: out.theirTurn, mine: out.myTurn });
 
   /* ---------- 8d. every input path respects an armed spell ----------
      Number keys are placement shortcuts, but an armed self spell owns them:

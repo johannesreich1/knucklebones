@@ -166,7 +166,7 @@ export async function runEffectScenarios(suite) {
 
   /* ---------- 10. the shared rail and scores hold still ----------
      The rail changes owner without entering either plate. Handover must move
-     neither score nor the fixed slot beside the die. */
+     neither score nor the fixed slot aligned with the right board column. */
   await newGame({ spell: 'fate' }); check(await waitChoose(), 'game never reached choose (plate)');
   out.plateHold = await page.evaluate(async () => {
     const k = window.__kb;

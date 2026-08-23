@@ -73,6 +73,9 @@ export function playSpellCharge(who: Player, id: string, alreadyFaceUp = false):
   if (!top || !bar) return;
   const flight = top.cloneNode(true) as HTMLElement;
   flight.className = 'rune-charge rune-played' + (alreadyFaceUp ? ' face-up' : ' turning');
+  /* The copy leaves the button that supplied currentColor. Pin that resolved
+     hue before reparenting so the played card keeps the same quiet wash. */
+  flight.style.color = getComputedStyle(button).color;
   flight.dataset.gen = String(S.gen);
   flight.setAttribute('aria-hidden', 'true');
   bar.appendChild(flight);

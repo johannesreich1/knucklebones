@@ -1,5 +1,5 @@
 export async function runLayoutScenarios(suite) {
-  const { browser, F, problems, page, out, check, SPELLS, newGame, waitChoose, table } = suite;
+  const { browser, F, problems, page, out, check, SPELLS, newGame, waitChoose, table, sidePage } = suite;
   /* ---------- 10b. ANVIL: the forge lands on the die the RULE names ----------
      The rule picks WHICH die (lowest face, ties to the centre), so the screen
      has to show the new face standing where the old one stood — a state-only
@@ -107,6 +107,48 @@ export async function runLayoutScenarios(suite) {
       'arming a rune walked the stage die off its place in ' + view.name,
       lane.rows.filter((r) => r.dieMoved > 0.5));
     await vctx.close();
+  }
+
+  /* ---------- 13. the card follows the board's third column ----------
+     Portrait gives the card a board-derived x coordinate, not an eyeballed
+     gap from the die. Landscape keeps its compact position above the stage. */
+  for (const view of [
+    { name: 'card portrait 320', w: 320, h: 568, land: false },
+    { name: 'card portrait 390', w: 390, h: 844, land: false },
+    { name: 'card landscape', w: 667, h: 375, land: true },
+  ]) {
+    const probe = await sidePage(view);
+    try {
+      await newGame({ spell: 'pilfer' }, probe.page);
+      check(await waitChoose(probe.page), `game never reached choose (${view.name})`);
+      await table([[2], [], []], [[6], [], []], 4, probe.page);
+      const measured = await probe.page.evaluate(() => {
+        const box = (selector) => document.querySelector(selector)?.getBoundingClientRect();
+        const card = box('#spellBar .rune-charge.top');
+        const die = box('#dieStage');
+        const third = box('#botBoard .col[data-col="2"]');
+        const centerX = (rect) => rect.left + rect.width / 2;
+        const centerY = (rect) => rect.top + rect.height / 2;
+        const land = document.getElementById('kbroot').classList.contains('land');
+        return { land,
+          x: Math.abs(centerX(card) - centerX(land ? die : third)),
+          y: Math.abs(centerY(card) - centerY(die)),
+          above: die.top - card.bottom,
+          left: card.left, right: card.right, viewport: innerWidth };
+      });
+      out[view.name.replaceAll(' ', '_')] = measured;
+      check(measured.land === view.land, `${view.name} chose the wrong orientation`, measured);
+      check(measured.x <= 0.5, `${view.name} card is not horizontally centred on its target`, measured);
+      if (view.land) {
+        check(measured.above >= 0, 'the landscape card overlaps the die', measured);
+      } else {
+        check(measured.y <= 0.5, `${view.name} card is not vertically beside the die`, measured);
+        check(measured.left >= -0.5 && measured.right <= measured.viewport + 0.5,
+          `${view.name} card runs off screen`, measured);
+      }
+    } finally {
+      await probe.ctx.close();
+    }
   }
 
 }
