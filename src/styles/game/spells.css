@@ -1,109 +1,72 @@
-/* ===== SPELLS: the optional powers layer (flow/spells) =====
-   With no spell brought (or in ranked play, or the tutorial) every rune is
-   hidden and none of this applies: the table is exactly what it was before
-   spells existed.
-
-   TWO PLACES, because they are two different objects. The rune you can CAST
-   sits beside the die in play, opposite the LIMITED bag — full size, a short
-   drag from every column, and unmistakably a thing you wield. The other
-   player's is a READOUT: small and inert in their nameplate beside their own
-   score, where "do they still have it?" is a glance and nothing reacts to a
-   finger. Both scale off --cell / the plate, so every screen size is covered
-   without a breakpoint. */
-:where(#kbroot) .spells{position:absolute;left:100%;margin-left:16px;display:flex;align-items:center}
-/* A game with no spells reserves nothing — the nameplate is exactly what it
-   was before spells existed. A game WITH them keeps the rune's place for the
-   whole match, even on the turns the rune is away in the centre rail: the
-   score cluster is vertically centred, so a slot that collapsed when the
-   rune left re-centred the cluster and the number visibly jumped 10px every
-   turn in face-to-face play. Reserving is what holds it still.
-   `.live` is the ONLY switch — :empty cannot answer this, because the slot
-   still holds the hidden runes of every spell this game did not bring. */
-:where(#kbroot) .plate .runeslot{display:none;align-items:center;flex:0 0 auto}
-:where(#kbroot) .plate .runeslot.live{display:flex;justify-content:center;min-width:20px;min-height:20px}
-:where(#kbroot) .rune{--sz:clamp(30px,calc(var(--cell)*.6),40px);--sh:var(--p1);
-  position:relative;width:var(--sz);height:var(--sz);border-radius:calc(var(--sz)*.32);
-  display:grid;place-items:center;padding:0;cursor:pointer;color:#fff;
-  -webkit-appearance:none;appearance:none;font-family:inherit;
-  border:1px solid color-mix(in srgb,var(--sh) 60%,transparent);
-  /* the tile wears its owner's colour (--sh is set per seat by flow/spells), so
-     whose rune is whose is the same question the whole board already answers */
-  background:linear-gradient(150deg,color-mix(in srgb,var(--sh) 42%,transparent),
-                                    color-mix(in srgb,var(--sh) 10%,transparent)),
-             linear-gradient(150deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.30),0 6px 16px rgba(0,0,0,.5),
-             0 0 14px color-mix(in srgb,var(--sh) 30%,transparent);
-  transition:transform .16s,opacity .25s,filter .25s;
-  touch-action:none}          /* the drag is ours, not the browser's scroll */
-:where(#kbroot) .rune svg{filter:drop-shadow(0 0 5px rgba(255,255,255,.5))}
-/* the breathing ring: a separate layer, so pulsing it costs no shadow repaint */
-:where(#kbroot) .rune::before{content:"";position:absolute;inset:-6px;border-radius:inherit;pointer-events:none;
-  background:radial-gradient(closest-side,color-mix(in srgb,var(--sh) 55%,transparent),transparent 72%);
-  opacity:0;transition:opacity .2s}
-:where(#kbroot) .rune.ready::before{animation:runeglow 2.3s ease-in-out infinite}
+/* ===== SPELLS: RC4, THE CHARGE STACK (flow/spell-rail) =====
+   One fixed slot follows the turn. Cards carry remaining casts; once none are
+   left their outlines keep the slot's exact geometry, so the die cannot move. */
+:where(#kbroot) .spells{--rw:clamp(32px,calc(var(--cell)*.59),46px);position:absolute;left:100%;top:50%;
+  width:var(--rw);height:calc(var(--rw)*1.371);margin-left:14px;translate:0 -50%;display:none;z-index:4}
+:where(#kbroot) .spells.live{display:block}
+:where(#kbroot) .rune{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;background:none;
+  color:var(--rune-hue);font:inherit;-webkit-appearance:none;appearance:none;touch-action:none;cursor:pointer}
+:where(#kbroot) .rune[hidden]{display:none}
+:where(#kbroot) .rune::after{content:"";position:absolute;inset:-5px -7px;border-radius:10px}
+:where(#kbroot) .rune:disabled{pointer-events:none;cursor:default}
+:where(#kbroot) .rune-charge,:where(#kbroot) .rune-empty{position:absolute;inset:0;display:block;
+  border-radius:calc(var(--rw)*.2);transform:rotate(-7deg);transform-origin:50% 50%}
+:where(#kbroot) .rune-charge[hidden],:where(#kbroot) .rune-empty[hidden]{display:none}
+:where(#kbroot) .rune-charge.under,:where(#kbroot) .rune.multi .rune-empty.charge-1{
+  transform:rotate(-16deg) translate(-7px,4px)}
+:where(#kbroot) .rune-charge.top{z-index:2}
+:where(#kbroot) .rune-charge .rback,:where(#kbroot) .rune-charge .rface{
+  gap:0;border-radius:inherit;box-shadow:0 8px 20px rgba(0,0,0,.6)}
+:where(#kbroot) .rune-charge .rface{opacity:0}
+:where(#kbroot) .rune-charge .rback svg{top:9%;left:8%;width:40%;height:40%}
+:where(#kbroot) .rune-charge .rface svg{width:58%;height:58%;filter:drop-shadow(0 0 9px currentColor)}
+/* The held top card breathes without repainting its shadow. */
+:where(#kbroot) .rune-charge.top::after{content:"";position:absolute;inset:-6px;border-radius:inherit;
+  background:radial-gradient(closest-side,color-mix(in srgb,currentColor 55%,transparent),transparent 72%);
+  opacity:0;pointer-events:none}
+:where(#kbroot) .rune.ready .rune-charge.top::after{animation:runeglow 2.3s ease-in-out infinite}
 @keyframes runeglow{0%,100%{opacity:.22}50%{opacity:.8}}
-/* THEIR TURN, YOUR RUNE. `disabled` alone refused the press and said nothing:
-   a full-bright, breathing rune while the machine thinks reads as a control
-   you may use, and it is not one (user report). So it dims for exactly as long
-   as the turn is theirs — its own colour and shape kept, because this is not
-   the spent grey and nothing was spent.
-   The ring is PAUSED, never re-classed. Restyling per turn is what made it
-   snap: an animation restarts from its first keyframe every time its class
-   comes back, which is why this used to be left alone. Pausing resumes it
-   exactly where it stopped, so the fix costs nothing the old rule protected.
-   Only the WIELDED rune wears this — the opponent's readout is already
-   `.idle`, and dimming it twice would say something it does not mean. */
-:where(#kbroot) .rune.offturn{opacity:.42;filter:grayscale(.6);cursor:default}
-:where(#kbroot) .rune.offturn::before{animation-play-state:paused}
-:where(#kbroot) .rune:active{transform:scale(.9)}
-:where(#kbroot) .rune.armed{transform:scale(1.1);border-color:var(--gold)}
-:where(#kbroot) .rune.armed::before{opacity:1;animation:none;
-  background:radial-gradient(closest-side,rgba(255,209,102,.75),transparent 72%)}
-/* A rune you cannot cast is an INDICATOR, not a control: no press, no glow, no
-   hover, nothing to react to a finger at all. The opponent's rune answers one
-   question — do they still have it? — and answering is all it does. */
-:where(#kbroot) .rune:disabled{pointer-events:none;transform:none}
-/* loaded, but not this player's turn */
-:where(#kbroot) .rune.idle{opacity:.7;cursor:default}
-:where(#kbroot) .rune.idle::before{opacity:.14;animation:none}
-/* spent: still there, plainly out of charges — a rune that vanished would read
-   as a bug rather than as a cost */
-:where(#kbroot) .rune.spent{opacity:.26;filter:grayscale(.9);cursor:default}
-:where(#kbroot) .rune.spent::before{display:none}
-/* ANVIL commits when its weakest-die markings appear, before the player has
-   chosen which legal column to forge. The rune stays visibly locked to that
-   question, but a second press cannot cancel or restore the charge. */
-:where(#kbroot) .rune.committed{opacity:1;cursor:default;border-color:var(--gold)}
-:where(#kbroot) .rune.committed::before{opacity:.72;animation:none;
-  background:radial-gradient(closest-side,rgba(255,209,102,.78),transparent 72%)}
-:where(#kbroot) .rune:disabled{transform:none}                     /* no press feedback on a rune you can't press */
-:where(#kbroot) .rune.bump{animation:nope .32s}                    /* refused: the rune's own shake */
-:where(#kbroot) .rune .n{position:absolute;right:-4px;bottom:-4px;min-width:14px;height:14px;border-radius:99px;
-  font-size:9px;font-weight:900;line-height:14px;text-align:center;color:#0a0410;background:var(--gold);
-  box-shadow:0 0 8px rgba(255,209,102,.6)}
-:where(#kbroot) .rune .n:empty{display:none}                       /* a single charge needs no number */
-/* the castable rune is a touch target: an invisible expander keeps the finger
-   above 44px whatever --cell says, without changing what is drawn */
-:where(#kbroot) .rune::after{content:"";position:absolute;inset:-8px;border-radius:inherit}
-/* the READOUT: small enough to sit inside a nameplate, and inert by
-   construction — it is never the player to move's rune, so it is always
-   :disabled, which already kills every pointer event and every transform */
-:where(#kbroot) .plate .rune{--sz:20px;margin:-2px 0}
-/* the READOUT carries no glow. The cluster is centred with percentage
-   transforms, so on some screen heights it lands on a half device pixel — and
-   a drop-shadow around a 16px mark turns that half pixel into a visible smear
-   that re-rasterises on every repaint (the "flickering" icon, user report).
-   The wielded rune in the rail keeps its glow; this one is an indicator. */
-:where(#kbroot) .plate .rune svg{filter:none}
-:where(#kbroot) .plate .rune::after{display:none}
-:where(#kbroot) .plate .rune .n{min-width:12px;height:12px;line-height:12px;font-size:8px;right:-3px;bottom:-3px}
-:where(#kbroot) .rune:disabled::after{display:none}
-/* the rune in flight, under the finger */
-:where(#kbroot) .runeghost{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;
-  transform:translate(-50%,-50%);pointer-events:none;z-index:80;color:#fff;
-  border:1px solid var(--gold);
-  background:linear-gradient(150deg,rgba(var(--p2-rgb),.55),rgba(var(--p1-rgb),.5));
-  box-shadow:0 10px 26px rgba(0,0,0,.6),0 0 26px rgba(255,209,102,.5)}
+/* Pressing turns one half-revolution and holds the played face above the die. */
+:where(#kbroot) .rune.armed .rune-charge.top{animation:runeArm .36s linear both;z-index:3}
+:where(#kbroot) .rune.armed .rune-charge.top .rback{animation:runeBackUp .36s steps(1,end) both}
+:where(#kbroot) .rune.armed .rune-charge.top .rface{animation:runeFaceUp .36s steps(1,end) both}
+@keyframes runeArm{0%{transform:perspective(700px) rotate(-7deg) rotateY(0) scale(1)}
+  49.9%{transform:perspective(700px) rotate(-3deg) rotateY(90deg) scale(1.1)}
+  50%{transform:perspective(700px) rotate(-3deg) rotateY(-90deg) scale(1.1)}
+  100%{transform:perspective(700px) rotate(0) rotateY(0) scale(1.16)}}
+@keyframes runeBackUp{0%,49.9%{opacity:1}50%,100%{opacity:0}}
+@keyframes runeFaceUp{0%,49.9%{opacity:0}50%,100%{opacity:1}}
+/* A committed card is copied before state drops it from the stack. Column
+   aims are already face-up; self casts and ANVIL turn while they leave. */
+:where(#kbroot) .rune-played{display:block!important;z-index:6;pointer-events:none}
+:where(#kbroot) .rune-played.face-up{animation:runeDealUp .46s cubic-bezier(.3,0,.25,1) both}
+:where(#kbroot) .rune-played.turning{animation:runeTurnDeal .62s cubic-bezier(.3,0,.25,1) both}
+:where(#kbroot) .rune-played.face-up .rback{opacity:0}
+:where(#kbroot) .rune-played.face-up .rface{opacity:1}
+:where(#kbroot) .rune-played.turning .rback{animation:runeBackAway .62s steps(1,end) both}
+:where(#kbroot) .rune-played.turning .rface{animation:runeFaceAway .62s steps(1,end) both}
+@keyframes runeDealUp{0%{transform:perspective(700px) rotate(0) scale(1.16);opacity:1}
+  100%{transform:perspective(700px) rotate(22deg) scale(.86) translate(26px,-40px);opacity:0}}
+@keyframes runeTurnDeal{0%{transform:perspective(700px) rotate(-7deg) rotateY(0);opacity:1}
+  25%{transform:perspective(700px) rotate(-3deg) rotateY(90deg) scale(1.1);opacity:1}
+  25.1%{transform:perspective(700px) rotate(-3deg) rotateY(-90deg) scale(1.1);opacity:1}
+  52%{transform:perspective(700px) rotate(0) rotateY(0) scale(1.16);opacity:1}
+  100%{transform:perspective(700px) rotate(22deg) rotateY(0) scale(.86) translate(26px,-40px);opacity:0}}
+@keyframes runeBackAway{0%,24.9%{opacity:1}25%,100%{opacity:0}}
+@keyframes runeFaceAway{0%,24.9%{opacity:0}25%,100%{opacity:1}}
+/* Spent is absence with memory, not a dimmed live card. */
+:where(#kbroot) .rune-empty{border:1px dashed rgba(255,255,255,.42);background:rgba(255,255,255,.02)}
+:where(#kbroot) .rune-empty.charge-2{transform:rotate(-7deg)}
+:where(#kbroot) .rune.committed .rune-empty{border-color:rgba(255,209,102,.68)}
+:where(#kbroot) .rune.bump{animation:nope .32s}
+/* The drag copy is the same face-up card, scaled for a finger rather than a
+   fourth square rune treatment. */
+:where(#kbroot) .runeghost{--rw:40px;width:var(--rw);height:calc(var(--rw)*1.371);border-radius:calc(var(--rw)*.2);
+  transform:translate(-50%,-50%) rotate(3deg);pointer-events:none;z-index:80;color:var(--rune-hue)}
+:where(#kbroot) .runeghost .rback{opacity:0}
+:where(#kbroot) .runeghost .rface{opacity:1;box-shadow:0 10px 26px rgba(0,0,0,.6),
+  0 0 26px rgba(255,209,102,.35)}
+:where(#kbroot) .runeghost .rface svg{width:58%;height:58%}
 /* While a spell is aiming the board asks ONE question — which column? — so the
    placement hints stand down and every column reads as a target. */
 #kbroot.casting .col.legal::after,#kbroot.casting .col.danger::before{display:none}
@@ -128,10 +91,7 @@
   border:1.5px dashed rgba(255,209,102,.55);pointer-events:none;transition:.15s}
 #kbroot.castself #dieStage.hot::after{border-style:solid;border-color:var(--gold);
   background:rgba(255,209,102,.10);box-shadow:0 0 24px rgba(255,209,102,.4)}
-/* landscape plates are shorter, so the rune comes down with them */
-/* landscape: the centre column is only as wide as the die, so the castable
-   rune goes ABOVE the stage rather than beside it — beside would sit on the
-   facing board's chip rail. */
-#kbroot.land .spells{left:50%;top:auto;bottom:100%;transform:translateX(-50%);margin:0 0 7px}
-#kbroot.land .rune{--sz:clamp(26px,calc(var(--cell)*.5),34px)}
-#kbroot.land .plate .rune{--sz:17px}
+/* Landscape's centre lane is only as wide as the die, so the card goes above
+   the stage rather than beside it, clear of the facing board's chip rail. */
+#kbroot.land .spells{--rw:clamp(28px,calc(var(--cell)*.5),36px);left:50%;top:auto;bottom:100%;
+  translate:-50% 0;margin:0 0 7px}

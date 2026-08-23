@@ -1,4 +1,5 @@
 import { runProtectionBeatScenarios } from './protection-beats.mjs';
+import { runProtectionColourScenarios } from './protection-colours.mjs';
 import { runProtectionLayoutScenarios } from './protection-layout.mjs';
 
 export async function runProtectionScenarios(suite) {
@@ -362,4 +363,5 @@ export async function runProtectionScenarios(suite) {
   const protectionSuite = { ...suite, sealOf, cornerOk, outlinesOf, oneOutline, sealTiming };
   await runProtectionBeatScenarios(protectionSuite);
   await runProtectionLayoutScenarios(protectionSuite);
+  await runProtectionColourScenarios(protectionSuite);
 }

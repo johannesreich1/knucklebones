@@ -23,7 +23,9 @@
 #kbroot.face .side{transition:opacity .35s,filter .35s}
 #kbroot.face .side.idle{opacity:.5;filter:saturate(.55) brightness(.82)}
 /* the centre stage turns toward whoever is playing — the hand-off signal */
-:where(#kbroot) #dieStage,:where(#kbroot) .status,:where(#kbroot) .timer{transition:transform .3s}
+:where(#kbroot) #dieStage,:where(#kbroot) .status,:where(#kbroot) .timer,
+:where(#kbroot) .spells{transition:transform .3s}
 #kbroot.face.p2turn:not(.land) #dieStage,
 #kbroot.face.p2turn:not(.land) .status,
-#kbroot.face.p2turn:not(.land) .timer{transform:rotate(180deg)}
+#kbroot.face.p2turn:not(.land) .timer,
+#kbroot.face.p2turn:not(.land) .spells{transform:rotate(180deg)}

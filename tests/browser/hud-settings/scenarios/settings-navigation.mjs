@@ -8,9 +8,22 @@ export async function runSettingsNavigationScenarios(suite) {
     on: document.getElementById('ovSettings').classList.contains('on'),
     sndOn: document.querySelector('#sndSeg button.on')?.dataset.s,
     faceOn: document.querySelector('#faceSeg button.on')?.dataset.f,
+    accessibility: document.getElementById('accessibilityHeading')?.textContent?.trim(),
+    accessibilityOrder: (() => {
+      const body = document.querySelector('#ovSettings .pbody');
+      const heading = document.getElementById('accessibilityHeading');
+      const faces = document.getElementById('faceSeg')?.closest('.card');
+      const colourBlind = document.getElementById('cbSeg')?.closest('.card');
+      return !!body && !!heading && !!faces && !!colourBlind
+        && !!(heading.compareDocumentPosition(faces) & Node.DOCUMENT_POSITION_FOLLOWING)
+        && !!(faces.compareDocumentPosition(colourBlind) & Node.DOCUMENT_POSITION_FOLLOWING)
+        && colourBlind.nextElementSibling?.classList.contains('tiny');
+    })(),
   }));
   check(out.settingsOpen.on && out.settingsOpen.sndOn === '1' && out.settingsOpen.faceOn === 'pips',
         'settings did not open with current values', out.settingsOpen);
+  check(out.settingsOpen.accessibility === 'Accessibility' && out.settingsOpen.accessibilityOrder,
+        'accessibility controls are not grouped at the end of Settings', out.settingsOpen);
 
   await page.tap('#sndSeg button[data-s="0"]'); await page.waitForTimeout(200);
   await page.tap('#faceSeg button[data-f="nums"]'); await page.waitForTimeout(200);

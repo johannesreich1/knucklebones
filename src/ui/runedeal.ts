@@ -62,6 +62,20 @@ export const deckCards = (order?: readonly number[], drawn?: string): string =>
       + ` style="--x:${r.x}%;--y:${r.y}px;--o:${r.rot}deg;color:${f.hue}">${f.icon}</i>`;
   }).join('');
 
+/* One card anatomy for the reveal, the in-game charge stack and its drag
+   ghost. Containers choose scale and state; the back, face and optional name
+   never get redrawn as three subtly different objects. */
+export function runeCardFaces(
+  spec: SpellSpec,
+  backSize = 20,
+  faceSize = 44,
+  labelled = true,
+): string {
+  return `<i class="rback">${spellIcon(spec.id, backSize)}</i>`
+    + `<i class="rface">${spellIcon(spec.id, faceSize)}`
+    + `${labelled ? `<span class="rlbl">${spec.name}</span>` : ''}</i>`;
+}
+
 /* THE DECK IS ACTUALLY RE-ORDERED, and you can watch it happen: as each card
    comes back into the fan it is carrying a different rune. Without this the
    shuffle was a set of cards waving about and landing in the order they
@@ -93,8 +107,7 @@ function shuffledOrder(): number[] {
    begins, and by then the fan has already shown every rune it holds. */
 export const dealtCard = (spec: SpellSpec, up = false): string =>
   `<div class="rdealt${up ? ' up' : ''}" data-rune="${spec.id}" style="color:${spellHue(spec.id)}">`
-  + `<i class="rback">${spellIcon(spec.id, 20)}</i>`
-  + `<i class="rface">${spellIcon(spec.id, 44)}<span class="rlbl">${spec.name}</span></i></div>`;
+  + `${runeCardFaces(spec)}</div>`;
 
 /* The whole felt: the deck, and the card dealt off it. A turned-over still is
    necessarily a deck ONE CARD SHORT — the card in front is the one that was in

@@ -19,6 +19,8 @@
    a pinned overlay fixture: it left home on 2026-08-19, and the Account panel
    (now PROFILE) on 2026-08-20, though this comment claimed it until 08-22. */
 :where(#kbroot) #buildTag{text-align:center;opacity:.5;margin-top:2px}
+:where(#kbroot) #ovSettings .setsection{width:100%;max-width:var(--w-col);margin:4px 0 -4px;
+  font-size:11px;line-height:1;letter-spacing:.2em;text-transform:uppercase;color:var(--txt)}
 :where(#kbroot) .linkbtn{background:none;border:none;padding:4px;font-family:inherit;cursor:pointer;
   font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
 :where(#kbroot) .linkbtn:focus-visible{outline:2px solid var(--p1);outline-offset:2px}

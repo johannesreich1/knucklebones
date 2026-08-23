@@ -1,4 +1,4 @@
-<!-- meta name="Spells — aiming a rune" group="4 · Local play" subtitle="The rune you can cast sits by the die in play; the opponent's is a readout by their score" width=412 height=2160 links="Offline — local play, Rune deal — dealt, Game modes" -->
+<!-- meta name="Spells — aiming a rune" group="4 · Local play" subtitle="RC4: the turn-owned card stack shows every remaining charge, then deals the committed card away" width=412 height=2160 links="Offline — local play, Rune deal — dealt, Game modes" -->
 <style>
   /* The rune is PILFER, and every glyph on this card is drawn by the app
      (ui/spellicons, through the sico token). It used to hand-draw five copies
@@ -21,18 +21,16 @@
   .col3.target::after{content:"";position:absolute;inset:-4px;border-radius:calc(var(--r3) + 6px);
     border:1.5px dashed rgba(255,209,102,.5);pointer-events:none}
   /* the nameplate is the APP's .plate — --c is the only thing a card hands it,
-     because in play it comes off .side[data-owner]. The card used to keep a
-     private .mplate, which is how the readout rune ended up at the RAIL's 37px
-     inside a 24px plate, wearing the glow .plate .rune svg deliberately kills. */
+     because the selected rail removed the old private readout entirely. */
   .pline{max-width:196px;margin:0 auto}
   .centerrow{display:flex;flex-direction:column;align-items:center;gap:5px;padding:10px 0}
   /* .stagerow / .spells / .rune / .status come from the app CSS (main.css), so
-     the card and the game cannot drift; --cell here is the card's cell size and
-     is what sizes the wielded rune (.rune --sz is clamp(30px, --cell*.6, 40px)). */
+     the card and the game cannot drift; --cell sizes the rail card. */
   .stagerow{--cell:58px}
   .stagerow > .die{width:54px;height:54px;--cell:54px}
   .states{display:flex;flex-wrap:wrap;justify-content:center;gap:14px 16px;margin-top:20px}
   .states .s{display:flex;flex-direction:column;align-items:center;gap:7px;width:74px;--cell:58px}
+  .states .rcbox{position:relative;width:36px;height:49px;--rw:36px}
   .states .cap{font-size:9px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;
     text-align:center;line-height:1.5}
   .statecap{font-size:9.5px;letter-spacing:.16em;color:var(--dim);text-align:center;margin-top:12px}
@@ -59,11 +57,7 @@
   <div class="plate pline" style="--c:var(--p2)">
     <span class="who"><span class="dot"></span><span class="nm">PLAYER 2</span></span>
     <span class="sp"></span>
-    <!-- the READOUT: 20px and glowless, because .plate .rune says so. Its icon
-         is built at 16 like every other rune (flow/spells) — an ODD size in an
-         even box centres on a half pixel, which is the shimmer that read as the
-         mark moving. -->
-    <span class="pright"><span class="runeslot live"><button class="rune idle" style="--sh:var(--p2)">{{sico:pilfer:16}}<b class="n"></b></button></span><span class="tot">23</span></span>
+    <span class="pright"><span class="tot">23</span></span>
   </div>
   <!-- PILFER is the roster's one `foe` rune, so the rings sit on THEIR half and
        nowhere else. All three enemy columns hold a die, none is shielded, and
@@ -76,16 +70,14 @@
     <div class="col3 target"><div class="slot3"></div><div class="slot3"></div><div class="slot3">{{die:1:p2:50}}</div></div>
   </div>
 
-  <!-- the rune you can CAST sits beside the die in play; the opponent's is a
-       readout in their own nameplate, next to the number the eye returns to.
-       It is `armed`, not merely `ready`: the rings and the armed look are set
-       in the same render, so a ringed board with an unarmed rune is a state the
-       app cannot paint. No column is `hot` either — .hot is only ever set under
-       a dragging finger, and then the rune has left the rail for the ghost. -->
+  <!-- One stack belongs to whoever is to move. It is armed here, so the top
+       card has turned face-up while the legal columns ring. -->
   <div class="centerrow dice-static">
     <div class="stagerow">
       {{die:4:p1:54}}
-      <div class="spells"><button class="rune ready armed" style="--sh:var(--p1)">{{sico:pilfer:16}}<b class="n"></b></button></div>
+      <div class="spells live" style="--rw:36px"><button class="rune ready armed" style="--rune-hue:{{shue:pilfer}}">
+        <i class="rune-empty charge-1" hidden></i><i class="rune-charge charge-1 top" data-charge="1">
+          <i class="rback">{{sico:pilfer:12}}</i><i class="rface">{{sico:pilfer:21}}</i></i></button></div>
     </div>
     <!-- the armed status line is the registry's own `aim` string, verbatim -->
     <div class="status me">Tap an enemy column</div>
@@ -99,24 +91,18 @@
   <div class="plate pline" style="--c:var(--p1)">
     <span class="who"><span class="dot"></span><span class="nm">PLAYER 1</span></span>
     <span class="sp"></span>
-    <!-- reserved and empty: the rune is away in the rail this turn. BOTH plates
-         hold the slot for the whole game — one that collapsed when the rune left
-         re-centred the score cluster, and the number visibly jumped 10px at every
-         hand-off. Reserve, never collapse. -->
-    <span class="pright"><span class="runeslot live"></span><span class="tot">29</span></span>
+    <span class="pright"><span class="tot">29</span></span>
   </div>
 
-  <!-- The four decisive looks of the rune YOU hold (flow/spell-rail sets them
-       in one render). ANVIL owns the committed-aim look: its weakest-die marks
-       reveal the answer before a column is chosen, so the charge is already
-       reserved and a second press cannot back out. -->
+  <!-- RC4's decisive stills. The production renderer builds these from uses
+       and remaining charges rather than learning FATE's name. -->
   <div class="states">
-    <div class="s"><button class="rune ready" style="--sh:var(--p1)">{{sico:pilfer:16}}<b class="n"></b></button><span class="cap">Ready</span></div>
-    <div class="s"><button class="rune ready armed" style="--sh:var(--p1)">{{sico:pilfer:16}}<b class="n"></b></button><span class="cap">Aiming</span></div>
-    <div class="s"><button class="rune committed armed" style="--sh:var(--p1)">{{sico:anvil:16}}<b class="n"></b></button><span class="cap">Committed — choose a mark</span></div>
-    <div class="s"><button class="rune spent" style="--sh:var(--p1)">{{sico:pilfer:16}}<b class="n"></b></button><span class="cap">Spent</span></div>
+    <div class="s"><div class="rcbox"><button class="rune ready" style="--rune-hue:{{shue:pilfer}}"><i class="rune-charge top"><i class="rback">{{sico:pilfer:12}}</i><i class="rface">{{sico:pilfer:21}}</i></i></button></div><span class="cap">Held<br>face-down</span></div>
+    <div class="s"><div class="rcbox"><button class="rune armed" style="--rune-hue:{{shue:pilfer}}"><i class="rune-charge top"><i class="rback">{{sico:pilfer:12}}</i><i class="rface">{{sico:pilfer:21}}</i></i></button></div><span class="cap">Playing</span></div>
+    <div class="s"><div class="rcbox"><button class="rune spent"><i class="rune-empty charge-1"></i></button></div><span class="cap">Spent<br>outline</span></div>
+    <div class="s"><div class="rcbox"><button class="rune multi ready" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under"><i class="rback">{{sico:fate:12}}</i><i class="rface">{{sico:fate:21}}</i></i><i class="rune-charge charge-2 top"><i class="rback">{{sico:fate:12}}</i><i class="rface">{{sico:fate:21}}</i></i></button></div><span class="cap">FATE<br>two casts</span></div>
   </div>
-  <div class="statecap">Off-turn dims the wielded rune; the opponent's readout is idle in their plate</div>
+  <div class="statecap">The one fixed slot changes owner with the die and status</div>
 
   <div class="note">
     <b>When.</b> Your turn, after the roll, before you place — the same gate placement
@@ -127,15 +113,12 @@
     <code>legal()</code> accepts are ringed, which is what stops a ward from advertising
     the enemy's half. A cast that would buy nothing is refused rather than spent: a second
     ward on one column, an anvil that would recast a face to itself.<br>
-    <b>Two jobs, two places.</b> The rune you can cast is a thing you WIELD: full size
-    beside the die in play, a short drag from every column, opposite the LIMITED bag. The
-    opponent's is a <span class="k">readout only</span> — small and inert in their
-    nameplate, immediately left of their score, because the total is the number the eye
-    returns to every turn. Nothing about it reacts to a finger. Making the two identical
-    implied you could cast theirs, and buried the one you can.<br>
-    <b>Cost.</b> <span class="k">One cast per game — two for FATE.</span> A rune holding
-    more than one charge wears the number it has left; a single charge needs none. A spent
-    rune stays put, greyed: a rune that vanished would read as a bug rather than as a cost.
+    <b>One slot, one hand.</b> The card beside the die belongs to whoever is to move; the
+    die colour and status name the owner, so the card needs no seat mark and the plates
+    need no second readout. It is the reveal card at rail size, not another rune object.<br>
+    <b>Cost.</b> <span class="k">One cast per game — two for FATE.</span> Every charge is
+    a face-down card at its own tilt. Committing turns the top card once and deals it away;
+    the fully spent hand is the same stack of dashed outlines, holding the stage still.
     An ordinary aim may be cancelled before a legal target commits it. No committed cast
     can be put back: self spells commit on the die, WARD and PILFER on their selected legal
     column, and ANVIL as soon as its weakest-die markings appear. Its committed rune stays

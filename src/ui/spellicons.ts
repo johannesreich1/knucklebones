@@ -42,7 +42,7 @@ const HUES: Record<string, string> = {
   none: '#8ea3c0',
   fate: '#b18cff',      // violet — chance rewoven
   nudge: '#7fd7ff',     // sky — the smallest push
-  ward: '#7dffc4',      // mint — protection
+  ward: 'var(--wdc)',   // mint normally; hot red in colour-blind mode
   sunder: '#ff9d66',    // ember — the widened strike
   pilfer: '#ffd166',    // gold — theft
   anvil: '#ff7591',     // forge heat — the metal worked, not the flame

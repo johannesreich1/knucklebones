@@ -20,6 +20,7 @@ import {
   chargesOf,
   renderSpells,
   aiSpellTurn,
+  aiSpellDelay,
   resolveTimedOutSpellAim,
 } from './flow/spells.ts';
 
@@ -36,7 +37,11 @@ export function hooks(){
              disarm,
              chargesOf,
              render: renderSpells,
-             ai: aiSpellTurn,
+             // Most effect scenarios ask the CPU to act immediately. The
+             // delayed hook exercises the exact production path separately.
+             ai: (who: 0 | 1) => aiSpellTurn(who, false),
+             aiDelayed: aiSpellTurn,
+             aiDelay: aiSpellDelay,
              timeoutAim: resolveTimedOutSpellAim,
            },
            modeByEnum,

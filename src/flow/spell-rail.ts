@@ -1,13 +1,14 @@
-// The rune rail and its read-only opponent indicator. Cast legality and state
-// transitions stay in flow/spells; this leaf renders facts supplied by it.
-import { AI, ME, SPEC, type GameState, type Player } from '../core/rules.ts';
+// The one turn-owned rune rail. Cast legality and state transitions stay in
+// flow/spells; this leaf renders the current hand and plays committed cards.
+import { SPEC, type GameState, type Player } from '../core/rules.ts';
 import { SPELLS, spellById, type CastCtx, type SpellSpec } from '../core/spells.ts';
 import { S } from '../state.ts';
-import { colEl, sideKey, slotEl, slotIdx } from '../ui/dom.ts';
+import { colEl, slotEl, slotIdx } from '../ui/dom.ts';
 import { appRoot } from '../ui/embed.ts';
-import { spellHue, spellIcon } from '../ui/spellicons.ts';
-import { colorOf, nameOf } from '../ui/identity.ts';
-import { isFaceToFace, setCastingPresentation } from '../ui/game/root-state.ts';
+import { spellHue } from '../ui/spellicons.ts';
+import { nameOf } from '../ui/identity.ts';
+import { setCastingPresentation } from '../ui/game/root-state.ts';
+import { runeCardFaces } from '../ui/runedeal.ts';
 
 export interface SpellRailPorts {
   caster: () => Player | null;
@@ -17,56 +18,82 @@ export interface SpellRailPorts {
   bindRune: (button: HTMLButtonElement, id: string) => void;
 }
 
-/* TWO JOBS, TWO PLACES: the near rune is a thing you wield beside the die;
-   the other player's rune is a small, inert readout in their nameplate. */
+/* ONE SLOT, ONE HAND. The die and status already say whose turn it is; the
+   rail changes owner with them instead of drawing a second plate readout. */
 export function renderSpellRail(ports: SpellRailPorts): void {
   const bar = appRoot().querySelector<HTMLElement>('#spellBar');
   if (!bar) return;
   if (!built) build(ports.bindRune);
-  const near = (isFaceToFace() ? S.turn : S.bottom) as Player;
+  clearStaleFlights(bar);
+  const seat = S.turn as Player;
   const now = ports.caster();
-  for (const seat of [AI, ME] as Player[]) {
-    const home = seat === near ? bar : opponentSlot(seat);
-    for (const spell of SPELLS) {
-      const button = runeOf(seat, spell.id);
-      if (!button || !home) continue;
-      if (button.parentElement !== home) home.appendChild(button);
-      button.hidden = !(spell.id in S.spellCharges[seat]);
-      const left = ports.chargesOf(seat, spell.id);
-      const readout = seat !== near;
-      const offturn = !readout && seat !== S.turn;
-      const committed = seat === now && S.spellAimCommitted?.id === spell.id
-        && S.spellAimCommitted.who === seat;
-      const canCast = seat === now && left > 0 && ports.castable(spell.id);
-      const readyVisual = !readout && !committed && left > 0 && (seat !== now || canCast);
-      button.style.setProperty('--sh', colorOf(seat));
-      button.classList.toggle('spent', left <= 0 && !committed);
-      button.classList.toggle('committed', committed);
-      button.classList.toggle('ready', readyVisual);
-      button.classList.toggle('idle', left > 0 && readout);
-      button.classList.toggle('armed', S.spellArmed === spell.id && seat === now);
-      button.classList.toggle('offturn', offturn);
-      button.disabled = seat !== now || (!committed && !canCast);
-      const count = button.querySelector('.n');
-      if (count) count.textContent = left > 1 ? String(left) : '';
-      button.setAttribute('aria-label', nameOf(seat) + ': ' + spell.name + ' — ' + spell.blurb
-        + (committed ? ' Committed — choose a marked column.'
-          : canCast ? ' ' + left + ' cast left.'
-            : left > 0 ? ' No legal target this turn.' : ' Spent.'));
-    }
+  for (const spell of SPELLS) {
+    const button = runeOf(spell.id);
+    if (!button) continue;
+    const dealt = spell.id in S.spellCharges[seat];
+    button.hidden = !dealt;
+    if (!dealt) continue;
+    const left = ports.chargesOf(seat, spell.id);
+    const committed = S.spellAimCommitted?.id === spell.id
+      && S.spellAimCommitted.who === seat;
+    const canCast = seat === now && left > 0 && ports.castable(spell.id);
+    button.dataset.seat = String(seat);
+    button.dataset.left = String(left);
+    button.classList.toggle('spent', left <= 0);
+    button.classList.toggle('committed', committed);
+    button.classList.toggle('ready', !committed && canCast);
+    button.classList.toggle('armed', S.spellArmed === spell.id && seat === now);
+    button.disabled = !canCast;
+    paintCharges(button, spell, left);
+    button.setAttribute('aria-label', nameOf(seat) + ': ' + spell.name + ' — ' + spell.blurb
+      + (committed ? ' Committed — choose a marked column.'
+        : canCast ? ` ${left} cast${left === 1 ? '' : 's'} left.`
+          : left > 0 ? ` ${left} cast${left === 1 ? '' : 's'} left. Not available right now.`
+            : ' Spent.'));
   }
-
-  for (const seat of [AI, ME] as Player[]) {
-    opponentSlot(seat)?.classList.toggle('live', Object.keys(S.spellCharges[seat]).length > 0);
-  }
+  bar.classList.toggle('live', SPELLS.some((spell) => !runeOf(spell.id)?.hidden));
   const armed = spellById(S.spellArmed);
   setCastingPresentation(armed?.target ?? 'none');
   markAim(armed, ports);
 }
 
-function opponentSlot(seat: Player): Element | null {
-  return appRoot().querySelector('#plate' + (sideKey(seat) === 'bot' ? 'Bot' : 'Top'))
-    ?.querySelector('.runeslot') ?? null;
+/* Called only from the state transition that spends a charge. The outgoing
+   copy is independent of the rerender that reveals what remains underneath. */
+export function playSpellCharge(who: Player, id: string, alreadyFaceUp = false): void {
+  const button = runeOf(id);
+  if (!button || button.hidden || Number(button.dataset.seat) !== who) return;
+  const top = button.querySelector<HTMLElement>('.rune-charge.top');
+  const bar = button.parentElement;
+  if (!top || !bar) return;
+  const flight = top.cloneNode(true) as HTMLElement;
+  flight.className = 'rune-charge rune-played' + (alreadyFaceUp ? ' face-up' : ' turning');
+  flight.dataset.gen = String(S.gen);
+  flight.setAttribute('aria-hidden', 'true');
+  bar.appendChild(flight);
+  const remove = () => flight.remove();
+  flight.addEventListener('animationend', (event) => {
+    if (event.target === flight) remove();
+  });
+  window.setTimeout(remove, 900);
+}
+
+function clearStaleFlights(bar: HTMLElement): void {
+  bar.querySelectorAll<HTMLElement>('.rune-played').forEach((card) => {
+    if (card.dataset.gen !== String(S.gen)) card.remove();
+  });
+}
+
+function paintCharges(button: HTMLButtonElement, spell: SpellSpec, left: number): void {
+  button.querySelectorAll<HTMLElement>('.rune-charge').forEach((card) => {
+    const charge = Number(card.dataset.charge);
+    card.hidden = charge > left;
+    card.classList.toggle('top', charge === left);
+    card.classList.toggle('under', charge < left);
+  });
+  button.querySelectorAll<HTMLElement>('.rune-empty').forEach((outline) => {
+    outline.hidden = left > 0;
+  });
+  button.style.setProperty('--rune-hue', spellHue(spell.id));
 }
 
 /* Ring exactly the columns the registry says are legal for the armed spell. */
@@ -100,22 +127,25 @@ export function isAimedColumn(who: Player, column: number): boolean {
 
 let built = false;
 const runes = new Map<string, HTMLButtonElement>();
-const runeKey = (seat: Player, id: string): string => `${seat}:${id}`;
-const runeOf = (seat: Player, id: string): HTMLButtonElement | null => runes.get(runeKey(seat, id)) ?? null;
+const runeOf = (id: string): HTMLButtonElement | null => runes.get(id) ?? null;
 
 function build(bindRune: SpellRailPorts['bindRune']): void {
   built = true;
-  for (const seat of [AI, ME] as Player[]) {
-    for (const spell of SPELLS) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'rune';
-      button.dataset.spell = spell.id;
-      button.dataset.seat = String(seat);
-      /* An even icon in the even 20px button lands on whole device pixels. */
-      button.innerHTML = spellIcon(spell.id, 16) + '<b class="n"></b>';
-      bindRune(button, spell.id);
-      runes.set(runeKey(seat, spell.id), button);
-    }
+  const bar = appRoot().querySelector<HTMLElement>('#spellBar');
+  if (!bar) return;
+  for (const spell of SPELLS) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'rune' + (spell.uses > 1 ? ' multi' : '');
+    button.dataset.spell = spell.id;
+    const outlines = Array.from({ length: spell.uses }, (_, index) =>
+      `<i class="rune-empty charge-${index + 1}" hidden></i>`).join('');
+    const charges = Array.from({ length: spell.uses }, (_, index) =>
+      `<i class="rune-charge charge-${index + 1}" data-charge="${index + 1}">`
+      + `${runeCardFaces(spell, 12, 21, false)}</i>`).join('');
+    button.innerHTML = outlines + charges;
+    bindRune(button, spell.id);
+    runes.set(spell.id, button);
+    bar.appendChild(button);
   }
 }

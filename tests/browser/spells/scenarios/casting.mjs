@@ -5,24 +5,28 @@ export async function runCastingScenarios(suite) {
   await table([[2], [3], []], [[6, 6], [5], []]);
   out.dealt = await look();
   check(out.dealt.runeShown, 'no rune in an offline game', out.dealt);
-  // the two runes are two different objects and live in two different places:
-  // the one you can cast sits beside the die in play (a short drag from every
-  // column); the opponent's is a readout in their own nameplate
-  check(out.dealt.mineHome === 'spellBar', 'the castable rune left the die in play', out.dealt);
-  check(out.dealt.foeHome === 'plateTop', "the opponent's rune is not in their nameplate", out.dealt);
+  // One rail follows the turn. Plates carry scores only; the current hand is
+  // a card stack beside the die and the die says whose hand it is.
+  check(out.dealt.mineHome === 'spellBar' && out.dealt.runeSeat === '1',
+    'the rail does not belong to the player to move', out.dealt);
   check(out.dealt.charges === '[{"pilfer":1},{"pilfer":1}]', 'both seats hold one cast', out.dealt.charges);
-  // BOTH seats ride the rail: "does the opponent still have theirs?" must be
-  // answerable by looking, and an opponent's rune is never pressable
-  check(out.dealt.foeShown, "the opponent's rune is not on the rail", out.dealt);
-  check(/\bidle\b/.test(out.dealt.foeClass) && !/\bready\b/.test(out.dealt.foeClass),
-    "the opponent's rune must read as theirs, loaded and not yours to press", out.dealt.foeClass);
+  check(out.dealt.visibleRunes === 1 && out.dealt.cards === 1 && out.dealt.outlines === 0,
+    'a single-use rune is not one face-down card in one slot', out.dealt);
 
   /* ---------- 2. tap to arm ---------- */
-  await tapRune(); await page.waitForTimeout(120);
+  await tapRune(); await page.waitForTimeout(420);
   out.armed = await look();
   check(out.armed.armed === 'pilfer', 'tapping the rune did not arm it', out.armed);
   check(out.armed.casting && !out.armed.castself, 'a column spell arms the board, not the stage', out.armed);
   check(/column/i.test(out.armed.status), 'no instruction while aiming', out.armed.status);
+  out.armedCard = await page.evaluate(() => {
+    const card = document.querySelector('#spellBar .rune-charge.top');
+    return { face: +getComputedStyle(card.querySelector('.rface')).opacity,
+      back: +getComputedStyle(card.querySelector('.rback')).opacity,
+      animations: card.getAnimations().map((a) => a.animationName) };
+  });
+  check(out.armedCard.face > out.armedCard.back && out.armedCard.animations.includes('runeArm'),
+    'arming did not turn and present the card face-up', out.armedCard);
   // aiming must not place: a tap on the board casts instead of dropping the die
   out.rings = await page.evaluate(() => {
     const c = document.querySelector('#botBoard .col');
@@ -32,8 +36,17 @@ export async function runCastingScenarios(suite) {
   check(out.rings.legalHidden === 'none', 'placement hints still up while aiming', out.rings);
 
   /* ---------- 3. tap a column: ONE gate, one charge ---------- */
-  await page.tap('#topBoard .col[data-col="0"]');
-  check(await waitChoose(), 'PILFER never completed after a tapped cast');
+  await page.tap('#topBoard .col[data-col="0"]'); await page.waitForTimeout(50);
+  out.cardFlight = await page.evaluate(() => ({
+    flights: document.querySelectorAll('#spellBar .rune-played').length,
+    names: [...document.querySelectorAll('#spellBar .rune-played')]
+      .flatMap((e) => e.getAnimations().map((a) => a.animationName)),
+  }));
+  check(out.cardFlight.flights === 1 && out.cardFlight.names.includes('runeDealUp'),
+    'a committed aimed card was not dealt off the rail', out.cardFlight);
+  // A two-die source has one readable resistance beat before the release,
+  // followed by the soft landing.
+  await page.waitForTimeout(2300);
   out.cast = await look();
   check(out.cast.mine === '[[2,6],[3],[]]', 'the caster column did not receive the stolen die', out.cast);
   check(out.cast.theirs === '[[6],[5],[]]', 'the enemy column kept its top die', out.cast);
@@ -44,6 +57,8 @@ export async function runCastingScenarios(suite) {
   check(out.cast.phase === 'choose' && !out.cast.busy, 'the turn was not handed back', out.cast);
   check(out.cast.die === 4, 'the roll in hand was lost to the cast', out.cast.die);
   check(out.cast.runeClass.includes('spent'), 'a spent rune must say so', out.cast.runeClass);
+  check(out.cast.cards === 0 && out.cast.outlines === 1,
+    'a spent single-use rune did not leave one empty outline', out.cast);
 
   /* ---------- 4. spent: no second cast, and the die still places ---------- */
   out.spent = await page.evaluate(async () => {
@@ -64,7 +79,7 @@ export async function runCastingScenarios(suite) {
   /* ---------- 5. drag and drop reaches the same gate ---------- */
   await newGame(); check(await waitChoose(), 'game never reached choose (drag)');
   await table([[1, 1], [], []], [[6], [], []]);
-  const box = await page.locator('.rune[data-seat="1"]:not([hidden])').boundingBox();
+  const box = await page.locator('#spellBar .rune:not([hidden])').boundingBox();
   const target = await page.locator('#topBoard .col[data-col="0"]').boundingBox();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();
@@ -78,8 +93,7 @@ export async function runCastingScenarios(suite) {
   // the steal takes from THEIR half: exactly the column it will rob lights up
   check(out.dragging.hot === 1 && out.dragging.hotSide === 'sideTop',
     'a theft must light the enemy column it will rob, and only that', out.dragging);
-  await page.mouse.up();
-  check(await waitChoose(), 'PILFER never completed after a dragged cast');
+  await page.mouse.up(); await page.waitForTimeout(1800);
   out.dropped = await look();
   check(out.dropped.mine === '[[1,1,6],[],[]]' && out.dropped.theirs === '[[],[],[]]',
     'the drop did not steal', out.dropped);
@@ -125,7 +139,7 @@ export async function runCastingScenarios(suite) {
   await table([[6, 6], [3], []], [[2], [5], []]);
   out.off = await look();
   check(out.off.charges === '[{},{}]', 'NONE still dealt a hand', out.off.charges);
-  check(!out.off.runeShown && !out.off.foeShown, 'a rune survived the NONE pick', out.off);
+  check(!out.off.runeShown && out.off.visibleRunes === 0, 'a rune survived the NONE pick', out.off);
   check(!out.off.casting, 'the board is still in casting with no spell picked', out.off);
   out.offCast = await page.evaluate(async () => {
     const k = window.__kb;
@@ -147,15 +161,32 @@ export async function runCastingScenarios(suite) {
     k.S.boards[0] = [[2], [], []];          // ...facing the machine's single 2
     k.S.turn = 0; k.S.bottom = 1; k.S.busy = false; k.S.die = 3;
     k.applySides(); k.renderAll(false);
-    const over = await k.spells.ai(0);
+    const started = performance.now(), pending = k.spells.aiDelayed(0);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    const beforeTell = { human: JSON.stringify(k.S.boards[1]),
+      charges: JSON.stringify(k.S.spellCharges) };
+    for (let i = 0; i < 80 && k.S.spellCharges[0].pilfer === 1; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    const tellElapsed = Math.round(performance.now() - started);
+    const over = await pending;
     return { over, cpu: JSON.stringify(k.S.boards[0]), human: JSON.stringify(k.S.boards[1]),
-             charges: JSON.stringify(k.S.spellCharges) };
+             charges: JSON.stringify(k.S.spellCharges), beforeTell,
+             tellElapsed,
+             bounds: [k.spells.aiDelay(() => 0), k.spells.aiDelay(() => .5), k.spells.aiDelay(() => 1)] };
   });
   check(out.cpuTakes.cpu === '[[2,6],[],[]]' && out.cpuTakes.human === '[[6],[1],[]]',
     'THE CPU LEFT A FREE STEAL ON THE TABLE', out.cpuTakes);
   check(out.cpuTakes.charges === '[{"pilfer":0},{"pilfer":1}]', 'the CPU charged the wrong seat', out.cpuTakes);
-  // and the player can SEE that it spent it
-  check(/\bspent\b/.test((await look()).foeClass), "a spent opponent rune must say so", (await look()).foeClass);
+  check(out.cpuTakes.beforeTell.human === '[[6,6],[1],[]]'
+      && out.cpuTakes.beforeTell.charges === '[{"pilfer":1},{"pilfer":1}]',
+    'the computer cast before its card could be read', out.cpuTakes);
+  check(out.cpuTakes.tellElapsed >= 300 && out.cpuTakes.tellElapsed < 1100
+      && String(out.cpuTakes.bounds) === '320,610,900',
+    'the computer spell pause is missing or outside its varied 320–900ms window', out.cpuTakes);
+  // and while that turn still owns the rail, the player can see it is spent
+  check(/\bspent\b/.test((await look()).runeClass),
+    "a spent opponent turn did not leave an empty stack", await look());
   // a swing below what its difficulty demands is declined, charge intact
   await newGame(); check(await waitChoose(), 'game never reached choose (cpu decline)');
   out.cpuHolds = await page.evaluate(async () => {
@@ -171,48 +202,52 @@ export async function runCastingScenarios(suite) {
   check(out.cpuHolds.cpu === '[[2],[],[]]' && out.cpuHolds.charges === '[{"pilfer":1},{"pilfer":1}]',
     'the CPU burned its rune on nothing', out.cpuHolds);
 
-  /* ---------- 8c. their turn: your own rune READS unavailable ----------
-     It was `disabled` and nothing else, and disabled is invisible: the rune
-     sat full-bright and breathing while the machine thought, which reads as a
-     control you may press (user report). Measure the PIXELS, not the class —
-     the test13 lesson — and measure the ring's play state too, because the
-     cheap fix is to drop the `ready` class and that RESTARTS the glow from its
-     first keyframe when the turn comes back. Pausing is what keeps it still. */
+  /* A new generation during the tell cancels the pending cast; delayed AI
+     work may never land in a replacement game. */
+  out.cpuTellCancelled = await page.evaluate(async () => {
+    const k = window.__kb;
+    k.S.mode = 'cpu'; k.S.diff = 'hard'; k.S.turn = 0; k.S.phase = 'anim';
+    k.S.boards[1] = [[6, 6], [], []]; k.S.boards[0] = [[2], [], []]; k.S.die = 3;
+    k.spells.render();
+    const pending = k.spells.aiDelayed(0);
+    await new Promise((resolve) => setTimeout(resolve, 80));
+    k.S.gen += 1;
+    const result = await pending;
+    return { result, human: JSON.stringify(k.S.boards[1]), cpu: JSON.stringify(k.S.boards[0]),
+      charges: JSON.stringify(k.S.spellCharges) };
+  });
+  check(!out.cpuTellCancelled.result && out.cpuTellCancelled.human === '[[6,6],[],[]]'
+      && out.cpuTellCancelled.cpu === '[[2],[],[]]'
+      && out.cpuTellCancelled.charges === '[{"pilfer":1},{"pilfer":1}]',
+    'a computer spell survived its game generation', out.cpuTellCancelled);
+
+  /* ---------- 8c. the rail changes owner with the turn ---------- */
   await newGame(); check(await waitChoose(), 'game never reached choose (offturn)');
   const rail = () => page.evaluate(() => {
     const b = document.querySelector('#spellBar .rune:not([hidden])');
     if (!b) return null;
-    const cs = getComputedStyle(b);
-    return { cls: b.className, opacity: +cs.opacity, grey: cs.filter,
-             ring: getComputedStyle(b, '::before').animationPlayState, disabled: b.disabled };
+    const top = b.querySelector('.rune-charge.top');
+    return { cls: b.className, seat: b.dataset.seat, disabled: b.disabled,
+      cards: [...b.querySelectorAll('.rune-charge')].filter((e) => !e.hidden).length,
+      ring: top ? getComputedStyle(top, '::after').animationPlayState : 'none' };
   });
-  /* vs CPU the rail is always YOURS (near = S.bottom), so the turn is the only
-     thing moving here — which is exactly the case the player reported */
   const turnTo = async (who) => {
     await page.evaluate((t) => {
       const k = window.__kb;
       k.S.mode = 'cpu'; k.S.turn = t; k.S.bottom = 1; k.S.busy = false;
+      k.S.boards = [[[3], [], []], [[4], [], []]];
       k.S.phase = t === 1 ? 'choose' : 'anim'; k.S.die = 3;
       k.applySides(); k.spells.render();
     }, who);
-    await page.waitForTimeout(420);      // .rune transitions opacity/filter over .25s
+    await page.waitForTimeout(80);
   };
   await turnTo(0); out.theirTurn = await rail();
   await turnTo(1); out.myTurn = await rail();
-  check(out.theirTurn && /\boffturn\b/.test(out.theirTurn.cls),
-    'the wielded rune does not know it is not your turn', out.theirTurn);
-  check(out.theirTurn && out.theirTurn.opacity <= 0.6 && out.theirTurn.grey !== 'none',
-    'YOUR RUNE LOOKS CASTABLE ON THE OPPONENT\'S TURN', out.theirTurn);
-  check(out.theirTurn && out.theirTurn.disabled, 'a dimmed rune must also refuse the press', out.theirTurn);
-  // dimmed, not SPENT: nothing was cast, and the two must not look alike
-  check(out.theirTurn && !/\bspent\b/.test(out.theirTurn.cls) && out.theirTurn.opacity > 0.3,
-    'waiting for your turn must not read as a spent rune', out.theirTurn);
-  check(out.theirTurn && out.theirTurn.ring === 'paused',
-    'the ring kept animating under the dim — it must pause, so it can resume', out.theirTurn);
-  // and the turn coming back gives it all back, ring running from where it was
-  check(out.myTurn && !/\boffturn\b/.test(out.myTurn.cls) && out.myTurn.opacity > 0.95
-    && out.myTurn.grey === 'none' && out.myTurn.ring === 'running',
-    'your own turn did not restore the rune', out.myTurn);
+  check(out.theirTurn?.seat === '0' && out.theirTurn.disabled && out.theirTurn.cards === 1,
+    'the CPU turn did not deal its own inert card into the shared rail', out.theirTurn);
+  check(out.myTurn?.seat === '1' && !out.myTurn.disabled && out.myTurn.cards === 1
+    && out.myTurn.ring === 'running',
+    'the player turn did not deal its castable card into the shared rail', out.myTurn);
 
   /* ---------- 8d. every input path respects an armed spell ----------
      Number keys are placement shortcuts, but an armed self spell owns them:
@@ -275,7 +310,7 @@ export async function runCastingScenarios(suite) {
     await table([[2], [], []], [[6], [], []], 4, fallback.page);
     await fallback.page.locator('.rune[data-seat="1"]:not([hidden])').click();
     await fallback.page.locator('#topBoard .col[data-col="0"]').click();
-    check(await waitChoose(fallback.page), 'PILFER never completed through the click fallback');
+    await fallback.page.waitForTimeout(1800);
     out.clickFallback = await fallback.page.evaluate(() => ({
       pointer: typeof PointerEvent,
       mine: JSON.stringify(window.__kb.S.boards[1]),

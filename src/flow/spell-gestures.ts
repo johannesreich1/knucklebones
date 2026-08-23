@@ -7,7 +7,8 @@ import { Sfx } from '../ui/audio.ts';
 import { colEl, ownerOf } from '../ui/dom.ts';
 import { fxRoot } from '../ui/fx.ts';
 import { rootElementFromPoint } from '../ui/query.ts';
-import { spellHue, spellIcon } from '../ui/spellicons.ts';
+import { spellHue } from '../ui/spellicons.ts';
+import { runeCardFaces } from '../ui/runedeal.ts';
 import { isAimedColumn } from './spell-rail.ts';
 import type { SpellInputTarget } from './spell-target.ts';
 
@@ -108,11 +109,13 @@ let ghost: HTMLElement | null = null;
 
 function showGhost(id: string): void {
   hideGhost();
+  const spell = spellById(id);
+  if (!spell) return;
   const next = document.createElement('div');
   next.className = 'runeghost';
-  next.style.setProperty('--sh', spellHue(id));
+  next.style.setProperty('--rune-hue', spellHue(id));
   next.style.position = isEmbed() ? 'absolute' : 'fixed';
-  next.innerHTML = spellIcon(id, 26);
+  next.innerHTML = runeCardFaces(spell, 12, 24, false);
   fxRoot().appendChild(next);
   ghost = next;
 }

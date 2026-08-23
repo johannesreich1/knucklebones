@@ -32,7 +32,12 @@ import { setStatus } from '../ui/game/turn-state.ts';
 import { stopTimer } from './timer.ts';
 import { runSpellEffect } from './spell-effects.ts';
 import { bindSpellGesture, clearSpellTargets, type SpellGesturePorts } from './spell-gestures.ts';
-import { isAimedColumn, renderSpellRail, type SpellRailPorts } from './spell-rail.ts';
+import {
+  isAimedColumn,
+  playSpellCharge,
+  renderSpellRail,
+  type SpellRailPorts,
+} from './spell-rail.ts';
 import type { SpellInputTarget } from './spell-target.ts';
 
 export interface SpellFlowPorts {
@@ -141,6 +146,7 @@ export function arm(id: string): boolean {
   if (who === null || !spell || !castable(id)) return false;
   S.spellArmed = id;
   if (spell.commitsOnAim) {
+    playSpellCharge(who, id);
     S.spellCharges[who][id] = chargesOf(who, id) - 1;
     S.spellAimCommitted = { id, who };
   }
@@ -230,8 +236,12 @@ async function castBy(
   column: number,
   context: CastCtx,
   chargeReserved = false,
+  cardFaceUp = false,
 ): Promise<boolean> {
-  if (!chargeReserved) S.spellCharges[who][spell.id] = chargesOf(who, spell.id) - 1;
+  if (!chargeReserved) {
+    playSpellCharge(who, spell.id, cardFaceUp);
+    S.spellCharges[who][spell.id] = chargesOf(who, spell.id) - 1;
+  }
   S.busy = true;
   S.phase = 'anim';
   stopTimer();
@@ -267,8 +277,9 @@ export async function cast(id: string, column: number): Promise<boolean> {
     disarm();
     return false;
   }
+  const cardFaceUp = S.spellArmed === id && !chargeReserved;
   clearAimState();
-  const over = await castBy(who, spell, column, context, chargeReserved);
+  const over = await castBy(who, spell, column, context, chargeReserved, cardFaceUp);
   if (over) return true;
   S.busy = false;
   S.phase = 'choose';
@@ -292,9 +303,22 @@ function castable(id: string): boolean {
   return legalNow(spell, who, castContext());
 }
 
+const CPU_SPELL_DELAY_MIN = 320;
+const CPU_SPELL_DELAY_SPREAD = 580;
+const pause = (milliseconds: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+/* A chosen computer cast gets a small tell: enough time to see its card in
+   hand before it turns, never enough to read as a stall. Injecting the sample
+   keeps the bounds directly testable without making production deterministic. */
+export function aiSpellDelay(random: () => number = Math.random): number {
+  const sample = Math.max(0, Math.min(0.999999, random()));
+  return CPU_SPELL_DELAY_MIN + Math.floor(sample * (CPU_SPELL_DELAY_SPREAD + 1));
+}
+
 /* The machine never enters a player-visible aim state, so its cast reserves
    and spends in one step. */
-export async function aiSpellTurn(who: Player): Promise<boolean> {
+export async function aiSpellTurn(who: Player, waitForTell = true): Promise<boolean> {
   const id = Object.keys(S.spellCharges[who]).find((key) => chargesOf(who, key) > 0);
   const spell = spellById(id);
   if (!spell) return false;
@@ -308,6 +332,11 @@ export async function aiSpellTurn(who: Player): Promise<boolean> {
     DEMANDS[S.diff] ?? DEMANDS.medium,
   );
   if (column === null) return false;
+  if (waitForTell) {
+    const generation = S.gen;
+    await pause(aiSpellDelay());
+    if (S.gen !== generation || S.turn !== who || S.phase === 'over') return false;
+  }
   return castBy(who, spell, column, context);
 }
 

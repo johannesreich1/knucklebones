@@ -43,11 +43,8 @@
 #kbroot.land .side.bot .plate,#kbroot.land .side.bot .plate .who,
 #kbroot.land .side.bot .plate .pright{flex-direction:row-reverse}
 #kbroot.land .side.bot .plate .tot{text-align:left}
-/* .pright is a cluster, not a single thing — rune, bounty tally, score — and
-   mirroring the plate without mirroring it left the rune and the tally BETWEEN
-   the score and the table: the mirrored side's score sat 65px off the inner
-   edge against the other side's 3px (measured). The score is what faces the
-   table on both halves; the rune and the tally sit outboard of it. */
+/* .pright is a cluster — bounty tally plus score. Mirroring it keeps the score
+   facing the table on both halves and the optional tally outboard. */
 #kbroot.land .plate .nm{font-size:10px;letter-spacing:.12em}
 #kbroot.land .boardwrap{grid-area:board}
 /* `.land .side .cols`, not `.land .cols`: the portrait rules that separate a

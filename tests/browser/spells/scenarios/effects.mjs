@@ -19,8 +19,8 @@ export async function runEffectScenarios(suite) {
   await tapCol(1); await page.waitForTimeout(900);
   out.selfPlaced = await look();
   check(JSON.parse(out.selfPlaced.mine)[1][0] === 6, 'placement broken after a self cast', out.selfPlaced);
-  check(/\bspent\b/.test(out.selfPlaced.runeClass),
-    'the placed die made its spent rune look reusable', out.selfPlaced.runeClass);
+  check(out.selfPlaced.runeSeat === '0' && out.selfPlaced.cards === 1,
+    "handover did not replace the spent hand with the next player's card", out.selfPlaced);
 
   /* the drag still aims — dropping on the die casts, dropping anywhere else
      cancels and keeps the charge */
@@ -164,31 +164,30 @@ export async function runEffectScenarios(suite) {
   check(out.unringed.charges === '[{"pilfer":1},{"pilfer":1}]',
     'tapping an unoffered column spent the charge', out.unringed);
 
-  /* ---------- 10. the nameplate holds still ----------
-     The rail and the plate trade the rune every turn face-to-face. The score
-     cluster is vertically centred, so a slot that collapsed when the rune
-     left re-centred it — the number jumped 10px each turn (user report). */
+  /* ---------- 10. the shared rail and scores hold still ----------
+     The rail changes owner without entering either plate. Handover must move
+     neither score nor the fixed slot beside the die. */
   await newGame({ spell: 'fate' }); check(await waitChoose(), 'game never reached choose (plate)');
   out.plateHold = await page.evaluate(async () => {
     const k = window.__kb;
-    const ys = [];
+    const ys = [], turns = [];
     for (const turn of [1, 0, 1, 0]) {
       k.S.turn = turn; k.S.phase = 'choose'; k.S.busy = false;
-      k.spells.render(); k.renderAll(false);
-      await new Promise((r) => setTimeout(r, 120));
+      k.applySides(); k.spells.render(); k.renderAll(false);
+      await new Promise((r) => setTimeout(r, 360));
       ys.push([+document.getElementById('totTop').getBoundingClientRect().y.toFixed(1),
-               +document.getElementById('totBot').getBoundingClientRect().y.toFixed(1)].join('/'));
+               +document.getElementById('totBot').getBoundingClientRect().y.toFixed(1),
+               +document.getElementById('spellBar').getBoundingClientRect().y.toFixed(1)].join('/'));
+      turns.push(getComputedStyle(document.getElementById('spellBar')).transform);
     }
-    return { ys, distinct: [...new Set(ys)].length };
+    return { ys, turns, distinct: [...new Set(ys)].length };
   });
   check(out.plateHold.distinct === 1, 'THE SCORE MOVES WHEN THE RUNE CHANGES HANDS', out.plateHold);
+  check(out.plateHold.turns[0] === 'none' && out.plateHold.turns[1] !== 'none'
+      && out.plateHold.turns[2] === 'none' && out.plateHold.turns[3] !== 'none',
+    'portrait face-to-face did not turn the card rail toward the active seat', out.plateHold);
 
-  /* The cluster is placed by translate(50%,-50%), so half its own width is
-     baked into where every child lands. A width that grew with the score's
-     digits moved the rune by a FRACTION of a pixel on every scoring turn —
-     invisible as geometry, visible as shimmer, because the glowing icon
-     re-rasterizes against a different pixel grid (user report). Pin the box:
-     one width, and the rune to four decimals, whatever the score reads. */
+  /* Score width changes may not leak into the centre rail. */
   await newGame({ spell: 'fate' }); check(await waitChoose(), 'game never reached choose (cluster)');
   out.clusterFixed = await page.evaluate(async () => {
     const k = window.__kb;
@@ -198,7 +197,7 @@ export async function runEffectScenarios(suite) {
       k.S.boards[0] = b; k.renderAll(false); k.spells.render();
       await new Promise((r) => setTimeout(r, 420));      // past .plate.bump
       widths.add(document.querySelector('#plateTop .pright').getBoundingClientRect().width.toFixed(3));
-      const r = document.querySelector('#plateTop .rune:not([hidden])').getBoundingClientRect();
+      const r = document.getElementById('spellBar').getBoundingClientRect();
       spots.add(r.x.toFixed(4) + ',' + r.y.toFixed(4));
       scores.push(document.getElementById('totTop').textContent);
     }
@@ -207,15 +206,16 @@ export async function runEffectScenarios(suite) {
   check(out.clusterFixed.widths.length === 1,
     'the score cluster still grows with its contents — every child will drift', out.clusterFixed);
   check(out.clusterFixed.spots.length === 1,
-    "THE OPPONENT'S RUNE SHIFTS WHEN THEIR SCORE CHANGES WIDTH", out.clusterFixed);
-  // and a spell-free game reserves nothing: the nameplate is the old nameplate
+    'THE CARD RAIL SHIFTS WHEN A SCORE CHANGES WIDTH', out.clusterFixed);
+  // and a spell-free game reserves nothing anywhere
   await newGame({ spell: '' }); check(await waitChoose(), 'game never reached choose (plate none)');
   out.plateNone = await page.evaluate(() => {
-    const slot = document.querySelector('#plateTop .runeslot');
-    return { live: slot.classList.contains('live'), display: getComputedStyle(slot).display };
+    const rail = document.getElementById('spellBar');
+    return { slots: document.querySelectorAll('.runeslot').length,
+      live: rail.classList.contains('live'), display: getComputedStyle(rail).display };
   });
-  check(!out.plateNone.live && out.plateNone.display === 'none',
-    'a spell-free game left a hole in the nameplate', out.plateNone);
+  check(out.plateNone.slots === 0 && !out.plateNone.live && out.plateNone.display === 'none',
+    'a spell-free game reserved a rail or nameplate hole', out.plateNone);
 
   /* ---------- 10b. the marks hold still too ----------
      The chip CENTRES its contents, so the score and its ×k badge change width
@@ -237,8 +237,7 @@ export async function runEffectScenarios(suite) {
   });
   check(out.chipHold.distinct === 1, 'THE WARD MARK MOVES WHEN THE SCORE GROWS', out.chipHold);
 
-  /* BOUNTY banks its ✦ tally into the same centred cluster the score and rune
-     share — appearing mid-match re-centred it and both jumped ~10px. */
+  /* BOUNTY joins the score cluster but must not disturb it or the centre rail. */
   out.btyHold = await page.evaluate(async () => {
     const k = window.__kb;
     k.S.spell = 'ward'; k.S.localMode = 5; k.S.mode = 'cpu'; k.S.seat = 'pass';
@@ -248,8 +247,8 @@ export async function runEffectScenarios(suite) {
     // layout still settling drifts on its own and would read as a tally jump
     await new Promise((r) => setTimeout(r, 700));
     const at = () => {
-      const rune = document.querySelector('#plateTop .rune:not([hidden])');
-      return [+rune.getBoundingClientRect().y.toFixed(1),
+      const rail = document.getElementById('spellBar');
+      return [+rail.getBoundingClientRect().y.toFixed(1),
               +document.getElementById('totTop').getBoundingClientRect().y.toFixed(1)].join('/');
     };
     const ys = [];
@@ -265,7 +264,28 @@ export async function runEffectScenarios(suite) {
     }
     return { ys, distinct: [...new Set(ys)].length, returned: ys[0] === ys[3] };
   });
-  check(out.btyHold.distinct === 1, 'THE BOUNTY TALLY SHOVES THE SCORE AND RUNE', out.btyHold);
+  check(out.btyHold.distinct === 1, 'THE BOUNTY TALLY SHOVES THE SCORE OR CARD RAIL', out.btyHold);
+
+  /* FATE is the only two-card hand: one cast exposes one card, the second
+     leaves both original tilts as empty outlines. */
+  await newGame({ spell: 'fate' }); check(await waitChoose(), 'game never reached choose (FATE stack)');
+  const fateStack = () => page.evaluate(() => {
+    const rune = document.querySelector('#spellBar .rune:not([hidden])');
+    return { left: rune?.dataset.left, cards: [...rune.querySelectorAll('.rune-charge')]
+      .filter((e) => !e.hidden).length, outlines: [...rune.querySelectorAll('.rune-empty')]
+      .filter((e) => !e.hidden).length };
+  });
+  out.fateFull = await fateStack();
+  await page.evaluate(() => window.__kb.spells.cast('fate', -1)); await page.waitForTimeout(750);
+  out.fateOne = await fateStack();
+  await page.evaluate(() => window.__kb.spells.cast('fate', -1)); await page.waitForTimeout(750);
+  out.fateEmpty = await fateStack();
+  check(out.fateFull.left === '2' && out.fateFull.cards === 2 && out.fateFull.outlines === 0,
+    'FATE was not dealt as two differently stacked cards', out.fateFull);
+  check(out.fateOne.left === '1' && out.fateOne.cards === 1 && out.fateOne.outlines === 0,
+    'FATE did not expose exactly one remaining card', out.fateOne);
+  check(out.fateEmpty.left === '0' && out.fateEmpty.cards === 0 && out.fateEmpty.outlines === 2,
+    'spent FATE did not leave its two-card outline', out.fateEmpty);
 
   /* ---------- 10c. RANDOM deals a real rune, the SAME one to both ---------- */
   out.randomDeal = await page.evaluate(async () => {

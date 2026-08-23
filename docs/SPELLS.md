@@ -362,23 +362,12 @@ Learned from real play, each one a shipped bug:
   board. ANVIL's marked aim stays visibly locked until the player chooses one
   of its legal full columns. This rule lives in the shared spell flow, so
   pointer, touch, keyboard, local-player and machine casts cannot disagree.
-- **A rune you cannot cast this turn must LOOK uncastable.** `disabled` was
-  the whole answer for a while, and disabled is invisible: vs the machine the
-  rail rune is always yours (`near` = `S.bottom`), so it sat full-bright and
-  breathing while the AI thought — a control inviting a press that could never
-  land (user report, 2026-08-22). It now dims (`.rune.offturn`, opacity .42 +
-  grayscale) for exactly as long as the turn is the other player's. Three
-  things make that safe, and each was a bug waiting: it is keyed on **`S.turn`,
-  not `caster()`** — caster() also goes null through every busy window inside
-  your own turn, which is the flicker that made the old rule "never restyle per
-  turn"; the glow ring is **paused, not re-classed**, because a class coming
-  back restarts an animation from its first keyframe and that snap is what the
-  old rule was protecting; and only the **wielded** rune wears it, since the
-  opponent's readout is already `.idle` and dimming it twice would say
-  something else. It must also stay clearly brighter than `.spent` — waiting is
-  not spending. The turn machine had to learn to repaint the rail
-  (`nextTurn` → `renderSpells()`): on the machine's turn nothing else did, so
-  the rune kept the look it had when you last moved.
+- **The rail follows `S.turn`, while interactivity follows `caster()`.** The
+  card always shows the hand whose turn it is, including the machine's inert
+  hand while it thinks. Only a legal player choice gets the ready breath and
+  pointer events. Busy windows therefore change availability without changing
+  ownership, while `nextTurn` repaints the slot with the other seat's remaining
+  cards. Waiting, spending and handing over are three different pictures.
 - **The armed line gets ONE line in portrait and TWO in landscape.** Not a
   preference — the status box is *reserved* at that size (`.status` /
   `.land .status` min-height, a fixed 104px lane in landscape), and a line
@@ -406,29 +395,25 @@ Learned from real play, each one a shipped bug:
   filled column to recast its weakest die": four lines landscape (die shoved
   12.6px), two portrait (6px), and the rules it spelled out were already on
   the picker slice and the library card.
-- **Reserve, never collapse.** Anything sharing the vertically-centred score
-  cluster (the rune slot, BOUNTY's ✦ lane) must hold its place for the whole
-  game, or the cluster re-centres and the score visibly jumps when the thing
-  appears or leaves. Likewise the column chip *centres* its contents, so marks
-  sit at its ends, out of that row.
+- **Reserve, never collapse.** The card rail keeps its box when a hand is spent,
+  and BOUNTY's ✦ lane keeps its place inside the score cluster, or the stage or
+  score visibly jumps when the thing appears or leaves. Likewise the column
+  chip *centres* its contents, so marks sit at its ends, out of that row.
 - **When measuring any of this, sample after `.plate.bump` settles (190ms).**
   A changed total scales the number, and reading inside that window looks
   exactly like layout drift.
 
-### The rune in play: the card rail (open study, 2026-08-23)
+### The rune in play: RC4's charge stack (selected 2026-08-23)
 
-Six alternatives are open in `design/screens/studies/open/29a…29f`, group
-**"4g · The rune in play"** in Claude Design. Nothing is chosen. What IS
-decided are the constraints below — every one of them an owner call made while
-looking at the cards, so a later session can pick a winner without re-litigating
-the frame.
+Six alternatives remain as design history in
+`design/screens/studies/open/29a…29f`, group **"4g · The rune in play"** in
+Claude Design. **RC4 — The charge stack** is production. The constraints below
+are its contract, not another comparison brief.
 
-**The problem being solved.** Today the rune is a 37px rounded square
-(`.rune`, `--sz: clamp(30px, --cell*.6, 40px)`) beside the die, and the
-opponent's is a *different object in a different place* — a 20px inert readout
-docked in their nameplate (`.plate .rune`). Two implementations of one idea.
-Meanwhile `ui/runedeal.ts` hands the player a beautiful CARD at the reveal and
-the game throws it away five seconds later.
+**The problem it solved.** The first build used a rounded-square control beside
+the die and a second, smaller readout in the opponent's nameplate — two
+implementations of one idea — then threw away the card dealt during the reveal.
+The rail now keeps that card vocabulary in play.
 
 **The frame, decided:**
 
@@ -466,18 +451,18 @@ the game throws it away five seconds later.
   `.status` and `.timer` under `#kbroot.face.p2turn:not(.land)`. The card
   belongs in that selector.
 
-**What the six differ on** is only the spent mark and how the slot re-arms:
-RC1 played card face-up and dimmed · RC2 a larger card whose back is legible
-and whose face names the rune · RC3 a seat in the rail drawn with the board's
-own empty-slot values · RC4 a stack that deals its top card away and leaves an
-empty outline · RC5 a wax seal that breaks as the card turns · RC6 the card
-flies to the column it chose and the rail is left empty.
+**RC4's distinguishing rule.** Each remaining charge is a card at its own
+tilt. Committing a cast deals the top card face-up and away; a fully spent hand
+leaves the same number of dashed outlines. FATE therefore reads as two, then
+one, then an empty two-card stack without a numeric badge. The drag ghost is
+the same face-up card, reduced motion resolves directly to the remaining hand,
+and the fixed outline keeps portrait, landscape and LIMITED stage geometry
+unchanged.
 
-**Costs already identified, so they are not re-discovered:** the drag ghost
-(`.runeghost`, a 46px rounded square in `flow/spell-gestures.ts`) has to become
-a card too; landscape squeezes the rail into the 116px `--land-lane` with the
-status line and the LIMITED bag; and a rail that can be empty must not let the
-die in play shift, which is what RC3's seat and RC4's outline are for.
+**The machine shows its tell.** Once the CPU has chosen a legal cast, it holds
+the card for a random **320–900ms** before activation. Declining a spell adds
+no delay, every selected effect still completes before placement, and a new
+game generation cancels the pending cast.
 
 ### The selected cast animations (2026-08-23)
 

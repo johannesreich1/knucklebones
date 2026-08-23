@@ -27,8 +27,8 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
         <span class="who"><span class="dot"></span><span class="nm" id="nameTop">AI</span>
         <span class="tag" id="tagTop">HARD</span></span>
         <span class="sp"></span>
-        <span class="pright"><span class="runeslot"></span>
-        <span class="bty" id="btyTop" hidden></span><span class="tot" id="totTop">0</span></span>
+        <span class="pright"><span class="bty" id="btyTop" hidden></span>
+        <span class="tot" id="totTop">0</span></span>
       </div>
       <div class="boardwrap"><div class="board" id="topBoard"></div></div>
       <div class="cols" id="topCols"></div>
@@ -43,8 +43,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
           <span class="pile" aria-hidden="true"></span>
           <b class="bn" id="bagNum" aria-label="Dice left in the bag">0</b>
         </div>
-        <!-- SPELLS: the rune you can actually cast, opposite the bag. The
-             OTHER player's sits small and inert in their nameplate. -->
+        <!-- SPELLS: one card stack, owned by whoever is to move. -->
         <div class="spells" id="spellBar"></div>
       </div>
       <div class="status" id="status" role="status" aria-live="polite">Tap play to start</div>
@@ -61,8 +60,8 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
         <span class="who"><span class="dot"></span><span class="nm" id="nameBot">YOU</span>
         <span class="tag" id="tagBot" hidden></span></span>
         <span class="sp"></span>
-        <span class="pright"><span class="runeslot"></span>
-        <span class="bty" id="btyBot" hidden></span><span class="tot" id="totBot">0</span></span>
+        <span class="pright"><span class="bty" id="btyBot" hidden></span>
+        <span class="tot" id="totBot">0</span></span>
       </div>
     </section>
   </div>
@@ -259,13 +258,6 @@ ${LEGAL_MARKUP}
         <button data-s="0">OFF</button>
       </div>
     </div>
-    <div class="card">
-      <div class="lbl">Dice faces</div>
-      <div class="seg" id="faceSeg">
-        <button data-f="pips">PIPS</button>
-        <button data-f="nums">NUMBERS</button>
-      </div>
-    </div>
     <!-- the duel pickers: swatch strips built by boot/menu-bindings.ts from DUELHUES
          (state.ts), one implementation, two slots. A colour belongs to one
          player only — each strip renders the other side's pick disabled. -->
@@ -279,6 +271,14 @@ ${LEGAL_MARKUP}
       <!-- explains the lock while colour blind mode owns the pair; hidden
            otherwise, and the disabled swatches point at it (aria-describedby) -->
       <div class="tiny" id="colNote" hidden>Colour blind mode picks the colours</div>
+    </div>
+    <h2 class="setsection" id="accessibilityHeading">Accessibility</h2>
+    <div class="card">
+      <div class="lbl">Dice faces</div>
+      <div class="seg" id="faceSeg">
+        <button data-f="pips">PIPS</button>
+        <button data-f="nums">NUMBERS</button>
+      </div>
     </div>
     <div class="card">
       <div class="lbl">Colour blind mode</div>

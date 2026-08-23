@@ -206,7 +206,10 @@ export async function runPilferAnvilEffectScenarios(suite) {
      hide the markings. */
   await page.keyboard.press('Escape');
   await page.tap('#status');
-  await tapRune();
+  await page.evaluate(() => {
+    const rune = document.querySelector('.rune[data-seat="1"]:not([hidden])');
+    rune.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }));
+  });
   await page.waitForTimeout(80);
   out.anvilLocked = await page.evaluate(() => ({
     armed: window.__kb.S.spellArmed,
@@ -347,14 +350,20 @@ export async function runPilferAnvilEffectScenarios(suite) {
     check(await waitChoose(reduced.page), 'game never reached choose (ANVIL reduced)');
     await table([[2, 3, 3], [], []], [[1], [], []], 3, reduced.page);
     await reduced.page.evaluate(() => window.__kb.spells.cast('anvil', 0));
-    out.spellEffectsReduced = await reduced.page.evaluate(() => ({
-      column: JSON.stringify(window.__kb.S.boards[1][0]),
-      ghosts: document.querySelectorAll('.pilfer-ghost,.anvil-workpiece').length,
-      hidden: [...document.querySelectorAll('#topBoard .die,#botBoard .die,#dieStage>.die')]
-        .filter((die) => getComputedStyle(die).visibility === 'hidden').length,
-    }));
+    out.spellEffectsReduced = await reduced.page.evaluate(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 30));
+      return {
+        column: JSON.stringify(window.__kb.S.boards[1][0]),
+        ghosts: document.querySelectorAll('.pilfer-ghost,.anvil-workpiece,.rune-played').length,
+        outlines: [...document.querySelectorAll('#spellBar .rune:not([hidden]) .rune-empty')]
+          .filter((outline) => !outline.hidden).length,
+        hidden: [...document.querySelectorAll('#topBoard .die,#botBoard .die,#dieStage>.die')]
+          .filter((die) => getComputedStyle(die).visibility === 'hidden').length,
+      };
+    });
     check(out.spellEffectsReduced.column === '[3,3,3]'
-      && out.spellEffectsReduced.ghosts === 0 && out.spellEffectsReduced.hidden === 0,
+      && out.spellEffectsReduced.ghosts === 0 && out.spellEffectsReduced.hidden === 0
+      && out.spellEffectsReduced.outlines === 1,
     'reduced motion did not resolve both effects to a clean readable result', out.spellEffectsReduced);
   } finally {
     await reduced.ctx.close();

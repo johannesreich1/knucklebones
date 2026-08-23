@@ -207,28 +207,22 @@ export async function runLandscapeScenarios(suite) {
       `a column chip does not line up with its band in landscape (${mode})`, o);
   }
 
-  /* ===== THE SCORE FACES THE TABLE ON BOTH HALVES =====
-     .pright is a cluster — rune, bounty tally, score — so mirroring the plate
-     without mirroring it left the rune and the tally between the score and the
-     table: 65px off the inner edge against the other half's 3px. */
+  /* ===== THE SCORE FACES THE TABLE ON BOTH HALVES ===== */
   out.scoreFacing = await lp.evaluate(() => {
     const k = window.__kb;
     k.S.scoring = 5; k.S.bounty = [3, 2];                 // BOUNTY: the tally lane is live
     k.S.boards[0] = [[6, 6], [5, 5], [4]]; k.S.boards[1] = [[6, 6], [5, 5], [4]];
     k.renderAll(false); k.applySides();
-    document.querySelectorAll('.plate .runeslot').forEach((e) => {   // as a spell game dresses it
-      e.classList.add('live'); e.innerHTML = '<span style="width:20px;height:20px;display:block"></span>'; });
     const box = (q) => { const b = document.querySelector(q).getBoundingClientRect();
       return { L: Math.round(b.left), R: Math.round(b.right) }; };
     return { leftGap: box('#sideTop').R - box('#totTop').R,     // score to the inner edge
              rightGap: box('#totBot').L - box('#sideBot').L,
-             leftRune: box('#plateTop .runeslot').L, leftTot: box('#totTop').L,
-             rightRune: box('#plateBot .runeslot').L, rightTot: box('#totBot').L };
+             runeSlots: document.querySelectorAll('.plate .runeslot').length };
   });
   check(Math.abs(out.scoreFacing.leftGap - out.scoreFacing.rightGap) <= 1,
     'the two scores are not the same distance from the table', out.scoreFacing);
-  check(out.scoreFacing.leftTot > out.scoreFacing.leftRune && out.scoreFacing.rightTot < out.scoreFacing.rightRune,
-    'the rune sits between a score and the table — .pright is not mirrored', out.scoreFacing);
+  check(out.scoreFacing.runeSlots === 0,
+    'the retired plate rune slot survived the single card rail', out.scoreFacing);
 
   /* ===== ROW MODES KEEP THEIR RAIL =====
      Landscape transposes the board, and the rail used to be hidden outright

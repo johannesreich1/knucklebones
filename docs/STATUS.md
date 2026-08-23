@@ -73,10 +73,9 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - W3's centre-facing runic seal is now the production shield/ward treatment;
   its closed shield, clasped Ward, and strike-only break contract are recorded
   in `design/screens/product/39c-guard-seal.html` and `docs/SPELLS.md`.
-- The rune-in-play card rail is an open study: six alternatives in
-  `design/screens/studies/open/29a…29f`. The constraints are already decided
-  and written down in `docs/SPELLS.md` §7 ("The rune in play") — the pick is
-  the only thing outstanding.
+- RC4's turn-owned charge stack is now the production rune rail. The retained
+  29a–29f studies record the alternatives; `docs/SPELLS.md` owns the selected
+  face-down hand, deal-away cast, FATE stack, and empty-outline contract.
 - BOUNTY's banked kill (46a–46f) and LIMITED's shared bag (47a–47f) still have
   six open signature-animation proposals each. NUDGE and FATE are resolved:
   NU1's pip-only tick (including 6→1) and FA4's contained simultaneous pass

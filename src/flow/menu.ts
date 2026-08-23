@@ -49,6 +49,7 @@ export function syncSettingsUI(): void {
   const p1 = S.colorblind ? 'cy' : S.p1Hue;
   const p2 = S.colorblind ? 'gold' : S.p2Hue;
   const style = appRoot().style;
+  style.setProperty('--wdc', `var(--${S.colorblind ? 'red' : 'wdc-mint'})`);
   const pairs: Array<readonly ['p1' | 'p2', string]> = [['p1', p1], ['p2', p2]];
   for (const [slot, hue] of pairs) {
     style.setProperty(`--${slot}`, `var(--${hue})`);

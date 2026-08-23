@@ -55,10 +55,12 @@
      hot red for a ×3 when orange is */
   --ice:#eef4ff; --ice-rgb:238,244,255;
   --red:#ff4d5e; --red-rgb:255,77,94;
-  /* THE WARD'S MINT (ui/spellicons HUES.ward). Root-scoped because TWO things
-     wear it now — the rune on the column chip and the seal around the column
-     itself — and a hue restated in the second place is a hue that drifts. */
-  --wdc:#7dffc4;
+  /* THE WARD'S HUE. Mint is its ordinary identity; colour-blind mode repoints
+     --wdc to the existing hot-red fallback so the Ward stays distinct from a
+     COLUMN SHIELD's ice-white mark. Every Ward surface asks for --wdc rather
+     than restating either colour. */
+  --wdc-mint:#7dffc4;
+  --wdc:var(--wdc-mint);
   --txt:#e9f1ff;
   --dim:#7c88a8;
   /* the LADDER GROUP palette. Root-scoped on purpose: the identity plate

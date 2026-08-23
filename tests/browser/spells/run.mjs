@@ -95,8 +95,7 @@ try {
   /* what a PLAYER can see, plus the state behind it */
   const look = () => page.evaluate(() => {
     const dice = [...document.querySelectorAll('#topBoard .die,#botBoard .die')];
-    const rune = document.querySelector('.rune[data-seat="1"]:not([hidden])');
-    const foe = document.querySelector('.rune[data-seat="0"]:not([hidden])');
+    const rune = document.querySelector('#spellBar .rune:not([hidden])');
     return {
       mine: JSON.stringify(window.__kb.S.boards[1]), theirs: JSON.stringify(window.__kb.S.boards[0]),
       charges: JSON.stringify(window.__kb.S.spellCharges),
@@ -105,10 +104,12 @@ try {
       phase: window.__kb.S.phase, busy: window.__kb.S.busy, die: window.__kb.S.die,
       runeShown: !!rune && !!rune.offsetParent,
       mineHome: rune?.parentElement?.id || rune?.parentElement?.className,
-      foeHome: foe?.closest('.plate')?.id,
+      runeSeat: rune?.dataset.seat ?? null,
       runeClass: rune ? rune.className : null,
-      foeClass: foe ? foe.className : null,
-      foeShown: !!foe && !!foe.offsetParent,
+      cards: rune ? [...rune.querySelectorAll('.rune-charge')].filter((e) => !e.hidden).length : 0,
+      outlines: rune ? [...rune.querySelectorAll('.rune-empty')].filter((e) => !e.hidden).length : 0,
+      visibleRunes: [...document.querySelectorAll('#spellBar .rune:not([hidden])')]
+        .filter((e) => !!e.offsetParent).length,
       present: dice.length,
       visible: dice.filter(d => getComputedStyle(d).visibility === 'visible' && +getComputedStyle(d).opacity > 0.05).length,
       strays: document.querySelectorAll('body > .die, body > .runeghost').length,
@@ -117,7 +118,7 @@ try {
     };
   });
   const tapCol = (c) => page.tap(`#botBoard .col[data-col="${c}"]`);
-  const tapRune = () => page.tap('.rune[data-seat="1"]:not([hidden])');
+  const tapRune = () => page.tap('#spellBar .rune:not([hidden])');
 
 
   const suite = {
