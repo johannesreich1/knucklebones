@@ -56,7 +56,7 @@ export function inspectWardStrike(page, { side, col, who, at, ticks }) {
     };
     const animations = new Set(), marks = new Set(), flare = new Set();
     const hostAnimations = new Set(), hostMarks = new Set();
-    let approach = null, recoil = null, burn = null, source = null, sourceStart = null;
+    let approach = null, recoil = null, burn = null, unwind = null, source = null, sourceStart = null;
     let firstGhostAt = null, spentAt = null, goneAt = null, sourceVisible = true, sourceDrift = 0;
     let sourceAnchorError = Infinity, ghostValue = null, ghostOwner = null;
     let outlived = false, gone = false, particles = false, flash = false;
@@ -67,7 +67,13 @@ export function inspectWardStrike(page, { side, col, who, at, ticks }) {
     for (let index = 0; index < spec.ticks; index++) {
       await new Promise((resolve) => setTimeout(resolve, 40));
       const now = performance.now();
-      for (const animation of column.getAnimations({ subtree: true })) animations.add(animation.animationName);
+      for (const animation of column.getAnimations({ subtree: true })) {
+        animations.add(animation.animationName);
+        if (animation.animationName === 'sealunwind' && unwind === null) {
+          unwind = animation.effect.getKeyframes().map((frame) =>
+            parseFloat(String(frame.strokeDashoffset)));
+        }
+      }
       for (const animation of chip.getAnimations({ subtree: true })) animations.add(animation.animationName);
       for (const mark of column.classList) marks.add(mark);
       for (const animation of host.getAnimations({ subtree: true })) hostAnimations.add(animation.animationName);
@@ -154,7 +160,7 @@ export function inspectWardStrike(page, { side, col, who, at, ticks }) {
     return {
       anims: [...animations].sort(), marks: [...marks].sort(), flare: [...flare].sort(),
       hostAnims: [...hostAnimations].sort(), hostMarks: [...hostMarks].sort(),
-      approach, recoil, burn, contact, ghostValue, ghostOwner,
+      approach, recoil, burn, unwind, contact, ghostValue, ghostOwner,
       sawWardGhost: firstGhostAt !== null, ghostFilters: [...ghostFilters],
       approachElapsed: firstGhostAt !== null && spentAt !== null ? +(spentAt - firstGhostAt).toFixed(0) : null,
       recoilElapsed: spentAt !== null && goneAt !== null ? +(goneAt - spentAt).toFixed(0) : null,

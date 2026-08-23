@@ -85,6 +85,11 @@ export async function runProtectionBeatScenarios(suite) {
     'the Ward rune did not flare at contact and burn away before repaint', out.wardStruck);
   check(['sealpop', 'sealsnapoff', 'sealunwind'].every((a) => out.wardStruck.anims.includes(a)),
     'the ward left the column without the clasp failing first', out.wardStruck.anims);
+  check(out.wardStruck.unwind?.[0] === 0
+      && out.wardStruck.unwind.at(-1) === 240
+      && out.wardStruck.unwind.every((offset) => offset >= 0),
+    'THE WARD UNWINDS FROM THE OUTER HINGE INSTEAD OF THE CENTRE-FACING CLASP',
+    out.wardStruck.unwind);
   check(out.wardStruck.outlived, 'THE WARD VANISHED INSTEAD OF BREAKING — the snap is never seen', out.wardStruck);
   check(out.wardStruck.gone, 'a spent ward left its seal standing', out.wardStruck);
   out.sealAfter = await sealOf('top', 1);

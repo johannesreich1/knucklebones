@@ -20,10 +20,18 @@ export async function runProtectionLayoutScenarios(suite) {
     check(await waitChoose(vp), 'game never reached choose (turn/' + view.name + ')');
     await table([[3, 3, 1], [], []], [[5, 5, 2], [4], []], 5, vp);
     await guard(1, 0, vp); await guard(1, 1, vp);      // a ward on column 1 of each half
+    const close = await vp.evaluate(() => {
+      const animation = [...document.querySelectorAll('.col.warded .sa')]
+        .flatMap((arc) => arc.getAnimations())
+        .find((item) => item.animationName === 'sealclose');
+      return animation?.effect.getKeyframes().map((frame) =>
+        parseFloat(String(frame.strokeDashoffset))) ?? null;
+    });
     await vp.waitForTimeout(sealTiming.settle);
     const turn = {
       land: await vp.evaluate(() => document.getElementById('kbroot').classList.contains('land')),
       cell: await vp.evaluate(() => getComputedStyle(document.getElementById('kbroot')).getPropertyValue('--cell')),
+      close,
     };
     for (const half of ['top', 'bot']) {
       turn[half + 'Shield'] = await sealOf(half, 0, vp);
@@ -52,6 +60,10 @@ export async function runProtectionLayoutScenarios(suite) {
     });
     out['sealTurn_' + view.name] = turn;
     check(turn.land === (view.name === 'landscape'), 'the seal-turn probe was in the wrong orientation', turn.land);
+    check(turn.close?.[0] === 240 && turn.close.at(-1) === 0
+        && turn.close.every((offset) => offset >= 0),
+      'THE WARD ENGAGES FROM THE CENTRE-FACING CLASP INSTEAD OF THE OUTER HINGE in ' + view.name,
+      turn.close);
     check(Object.values(turn.inkEdge).every((edge) => edge >= 0.5),
       'PROTECTION INK IS CLIPPED BY THE VIEWPORT in ' + view.name, turn.inkEdge);
     for (const half of ['top', 'bot']) {
@@ -61,7 +73,7 @@ export async function runProtectionLayoutScenarios(suite) {
           && wd.mouth.dx * wd.centerAt.dx + wd.mouth.dy * wd.centerAt.dy > 0,
         'THE WARD CLASP FACES AWAY FROM TABLE CENTRE in ' + where,
         { mouth: wd.mouth, centre: wd.centerAt, chip: wd.chipAt });
-      /* The negative dash beat removes each path from its END. The endpoint
+      /* The positive dash beat removes each path from its END. The endpoint
          must therefore be the centre-facing clasp: placement grows from the
          outer hinge toward it, and a strike opens there and retreats toward
          the outer edge. The path direction is checked in the Ward group's own

@@ -250,7 +250,7 @@
 /* the ward draws the same way — the line runs up from the hinge and the clasp
    closes over the gap last, which is the only thing it has to say */
 :where(#kbroot) .col.sealon>.seal .sa{animation:sealclose var(--seal-engage) ease-out both}
-@keyframes sealclose{0%{stroke-dashoffset:-240}66%,100%{stroke-dashoffset:0}}
+@keyframes sealclose{0%{stroke-dashoffset:240}66%,100%{stroke-dashoffset:0}}
 :where(#kbroot) .col.sealon>.seal .sclasp{animation:sealclaspin var(--seal-engage) ease-out both}
 @keyframes sealclaspin{0%,58%{opacity:0;transform:translateY(var(--clasp-in)) scale(.4)}
   74%{opacity:1;transform:translateY(var(--clasp-in)) scale(1.3)}
@@ -287,9 +287,9 @@
   60%,100%{opacity:0;transform:translate(calc(var(--d)*9px),-3px) rotate(calc(var(--d)*58deg))}}
 :where(#kbroot) .col.sealsnap>.seal .sa{animation:sealunwind var(--seal-snap) ease-out both}
 @keyframes sealunwind{0%,8%{stroke-dashoffset:0;transform:rotate(0deg);opacity:1}
-  24%{stroke-dashoffset:-16;transform:rotate(calc(var(--d)*2.6deg));opacity:1}
-  76%{stroke-dashoffset:-240;transform:rotate(calc(var(--d)*2.6deg));opacity:.5}
-  88%,100%{stroke-dashoffset:-240;transform:rotate(calc(var(--d)*2.6deg));opacity:0}}
+  24%{stroke-dashoffset:16;transform:rotate(calc(var(--d)*2.6deg));opacity:1}
+  76%{stroke-dashoffset:240;transform:rotate(calc(var(--d)*2.6deg));opacity:.5}
+  88%,100%{stroke-dashoffset:240;transform:rotate(calc(var(--d)*2.6deg));opacity:0}}
 :where(#kbroot) .col.sealsnap>.seal{animation:sealburst var(--seal-snap) ease-out}
 @keyframes sealburst{0%{filter:brightness(1) drop-shadow(0 0 0 transparent)}
   4%{filter:brightness(1.6) drop-shadow(0 0 14px color-mix(in srgb,var(--g) 85%,transparent))}
