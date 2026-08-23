@@ -1,91 +1,114 @@
-<!-- meta name="W5 — Shield dome" group="3g · Shield & ward studies" subtitle="The guard sits over the column's MOUTH, not around it: a dome of light arced across the end dice fall into, holding a hex lattice you cannot see until something touches it — your die passes straight through and the hexes ripple outward from the crossing; a strike meets the lattice gone solid and is thrown back" width=430 height=1770 sizes="md" links="Match, Game modes, Spells" -->
+<!-- meta name="W5 — Ward shell under the chip" group="3g · Shield & ward studies" subtitle="The dome comes OFF the column's mouth and moves INTO it: a mint shell springing from the column's own walls, cresting in the top die's blank margin so the chip is the lintel it presses against, never a thing it covers. Near-dark at rest, its scales light outward from wherever something crosses — and the one strike it throws back is the last thing it does" width=430 height=2700 sizes="md" links="Match, Game modes, Spells" -->
 <style>
   /* Card-local names only (sw*). The app pins .col/.slot/.chip/.pip with
      position and height, so a card that redeclares them loses silently —
      design/build.mjs fails the build for exactly that. Dice come from the
      die token, the rune and shield from the app's own icon registries.
-     Scaffold, class names and beat order are W1's (39a) on purpose: same
-     board, same four beats, different mechanism, so the studies compare. */
+
+     Layout note: the chip is drawn ABOVE the stack here, because the chip
+     strip sits at the column's MOUTH — the end facing the centre stage, the
+     end dice fall in through (.side.bot .cols, main.css). The previous draft
+     of this study drew the chip at the far end and the dome at the mouth, so
+     the two never met on the page and the collision only showed up in play. */
   .scr{gap:10px}
   .swwrap{display:flex;flex-direction:column;align-items:center;gap:13px;margin:auto 0;width:100%}
 
   .swrow{display:flex;align-items:flex-start;justify-content:center;gap:14px}
-  /* the dome stands ~30px clear of the mouth, and in this beat there is no
-     drop lane over the stack to hold it — that reserved air is the mechanism's
-     real bill and the note pays it honestly */
-  .swrow.swair{padding-top:26px}
   .swcol{--cell:52px;--gap:6px;display:flex;flex-direction:column;align-items:center;gap:7px}
+  /* 52 + 3px padding either side = 58 wide: the number every dome coordinate
+     below is measured in, so the shell's feet land on the column's own walls */
   .swstack{display:grid;grid-template-rows:repeat(3,var(--cell));gap:var(--gap);
     position:relative;border-radius:16px;padding:3px}
   .swslot{width:var(--cell);height:var(--cell);border-radius:14px;
     background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.05);display:grid;place-items:center;position:relative}
-  /* the column chip, restated at card scale — the app's .chip is guarded */
-  .swchip{height:20px;min-width:52px;border-radius:8px;display:flex;align-items:center;
-    justify-content:center;gap:4px;font-size:12px;font-weight:800;color:var(--dim);
-    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);position:relative;
-    padding:0 6px;font-variant-numeric:tabular-nums}
-  .swchip i{line-height:0;display:flex}
-  .swchip.gold{color:var(--mx2,var(--gold));border-color:rgba(var(--mx2-rgb,var(--gold-rgb)),.3);
-    background:rgba(var(--mx2-rgb,var(--gold-rgb)),.09)}
-  .swchip.mint{color:var(--wd);border-color:color-mix(in srgb,var(--wd) 30%,transparent);
-    background:color-mix(in srgb,var(--wd) 9%,transparent)}
+  .swfall{display:block;line-height:0}
 
-  /* ===== TODAY, for comparison: a 1px inset ring at 35% and a 14px glow at
-     12%. On a die that already carries a border and a coloured bloom it is
-     below the noise floor — which is the whole reason for this study. ===== */
-  .swstack.now{box-shadow:inset 0 0 0 1px rgba(var(--mx2-rgb,var(--gold-rgb)),.35),
+  /* THE CHIP, restated at card scale (the app's .chip is guarded) — and
+     restated FAITHFULLY, because this card is about not disturbing it: the
+     box is exactly one column wide, the points wear the SIDE's colour, and
+     the guard marks are absolutely positioned at the ends (main.css:
+     .chip .sh right:4px, .chip .wd left:4px) so a score that changes width
+     re-centres under them without ever moving them. */
+  .swchip{width:58px;height:20px;box-sizing:border-box;border-radius:8px;
+    display:flex;align-items:center;justify-content:center;gap:3px;
+    font-size:12px;font-weight:800;color:var(--dim);position:relative;
+    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);
+    font-variant-numeric:tabular-nums}
+  .swchip.has{color:var(--p1);border-color:color-mix(in srgb,var(--p1) 30%,transparent);
+    background:color-mix(in srgb,var(--p1) 9%,transparent);
+    text-shadow:0 0 10px color-mix(in srgb,var(--p1) 70%,transparent)}
+  .swmx{font-size:9px;opacity:.9;color:var(--mx2,var(--gold))}
+  .swchip i{position:absolute;top:0;bottom:0;display:flex;align-items:center;line-height:0}
+  .swchip i.shm{right:4px;color:var(--mx2,var(--gold));
+    filter:drop-shadow(0 0 6px rgba(var(--mx2-rgb,var(--gold-rgb)),.75))}
+  .swchip i.wdm{left:4px;color:var(--wd);
+    filter:drop-shadow(0 0 6px color-mix(in srgb,var(--wd) 75%,transparent))}
+
+  /* ===== WHAT SHIPS TODAY, kept and reused, not replaced. The ring answers
+     WHICH column; it is too quiet to answer what the guard does, which is the
+     whole reason for this study — but it is the only mark the dice below the
+     mouth ever get, so removing it would leave two thirds of a warded column
+     saying nothing at all. ===== */
+  .swstack.swshield{box-shadow:inset 0 0 0 1px rgba(var(--mx2-rgb,var(--gold-rgb)),.35),
     0 0 14px rgba(var(--mx2-rgb,var(--gold-rgb)),.12)}
-  .swstack.nowward{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wd) 40%,transparent),
+  .swstack.swward{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wd) 40%,transparent),
     0 0 14px color-mix(in srgb,var(--wd) 14%,transparent)}
 
-  /* ===== THE DOME. Not a border on the column and not a sheet over it: one
-     arc standing on the column's OPEN END — the end a die is thrown into —
-     with a hex lattice held inside it. Nothing is painted over a die, so pip
-     contrast is exactly what it is on an unguarded column, and the column
-     keeps every pixel of its width: the whole mechanism lives in the lane
-     above the mouth. 68px wide over a 58px stack, so it overhangs 5px each
-     side and reads as a cap rather than a lid.
+  /* ===== THE SHELL. Seated INSIDE the column's mouth, not arced across it.
+     Its feet stand on the column's walls at y=29 — half way down the top cell
+     — and the rim's crown reaches y=1.5, 1.5px above the top die; the topmost
+     scale, riding proud of the rim, stops at y=-4.2, which is 2.8px short of
+     the chip's underside. So the chip caps it: the arch presses up into a
+     lintel it never touches, and the lane the old draft needed above the mouth
+     (~30px, the chip strip's own lane) costs nothing now. Every transform in
+     the beats below is anchored at the FEET, so the brace's 2% is 0.7px at the
+     crown — the gap narrows to 2.1px at its worst and never closes.
 
-     The lattice is the part that makes it a SHIELD and not a decoration: at
-     rest it is 16% of a 55% stroke — you register that something is there
-     without being able to say what. It only draws itself when struck. ===== */
-  .swdome{position:absolute;left:50%;top:-30px;width:68px;height:34px;margin-left:-34px;
+     WHERE IT RUNS, measured (the numbers are the point — this is the study
+     that has to prove it stays out of the way): a die pads itself by
+     cell*.155 = 8px before its first pip, so a 52px die is blank glass all
+     round its rim. The arc is a half-ellipse rx=26 ry=27.5 about (29,29) and
+     clears the nearest pip by 5.1px. The nine scales ride 1.5px PROUD of it,
+     on the shell's outer face, where they clear the nearest pip by 3.0px,
+     stop 2.8px short of the chip's underside, and reach 2.2px into each 6px
+     gutter — two neighbouring shells could touch there, and cannot: WARD is
+     one cast, on one column, per game. Nothing is painted over a pip, and
+     there is NO body wash: a rim, a dim under-rim and a comb of scales.
+
+     At rest the scales are 12% of a thin stroke — you register that something
+     is there without being able to say what. They only draw themselves when
+     something crosses. ===== */
+  .swdome{position:absolute;left:50%;top:0;width:58px;height:30px;margin-left:-29px;
     overflow:visible;pointer-events:none;z-index:3;transform-origin:50% 100%;
-    -webkit-mask-image:linear-gradient(180deg,#000 0 74%,transparent 100%);
-    mask-image:linear-gradient(180deg,#000 0 74%,transparent 100%);
-    filter:drop-shadow(0 0 5px color-mix(in srgb,var(--g) 38%,transparent))}
-  /* the volume: a wash inside the shell, so the dome reads as a thing with an
-     inside when the card is PAUSED and nothing is animating */
-  .swbody{fill:color-mix(in srgb,var(--g) 9%,transparent)}
-  .swarc{fill:none;stroke:color-mix(in srgb,var(--g) 84%,transparent);stroke-width:1.6;
+    filter:drop-shadow(0 0 5px color-mix(in srgb,var(--wd) 34%,transparent))}
+  .swarc{fill:none;stroke:color-mix(in srgb,var(--wd) 52%,transparent);stroke-width:1.3;
     stroke-linecap:round}
-  /* a second, wider, dimmer arc just inside the rim: thickness without a
-     second bright line competing with the first */
-  .swin{fill:none;stroke:color-mix(in srgb,var(--g) 20%,transparent);stroke-width:3.6;
+  /* a wider, dimmer arc under the rim: thickness without a second bright line
+     competing with the first. 3.4px wide, so it stays inside the die's margin
+     with the rim it thickens. */
+  .swin{fill:none;stroke:color-mix(in srgb,var(--wd) 16%,transparent);stroke-width:3.4;
     stroke-linecap:round}
-  .swhex polygon{fill:none;stroke:color-mix(in srgb,var(--g) 55%,transparent);
-    stroke-width:.7;opacity:.16}
-  /* the resting sheen: one short dash gliding the length of the arc every 5s.
-     A pulse would say "warning"; light travelling over a surface says
-     "surface", and it is the only thing moving on an untouched board. */
-  .swsheen{fill:none;stroke:color-mix(in srgb,var(--g) 95%,transparent);stroke-width:2;
-    stroke-linecap:round;stroke-dasharray:14 200;opacity:0;animation:swglide 5s linear infinite}
-  @keyframes swglide{0%{stroke-dashoffset:0;opacity:0}10%{opacity:.65}
-    55%{stroke-dashoffset:-116;opacity:0}100%{stroke-dashoffset:-116;opacity:0}}
-  /* the wake: two half-arcs leaving the crown for either foot, so a ripple
-     spreads from the point the die crossed instead of from the middle of a box */
-  .swrip{fill:none;stroke:var(--g);stroke-width:2.2;stroke-linecap:round;
-    stroke-dasharray:12 200;opacity:0}
+  .swhex polygon{fill:none;stroke:color-mix(in srgb,var(--wd) 60%,transparent);
+    stroke-width:.7;opacity:.12}
+  /* the resting sheen: one short dash gliding the arc every 6s. A pulse says
+     "warning"; light travelling over a surface says "surface" — and it is the
+     only thing moving on an untouched board, so it stays under half strength. */
+  .swsheen{fill:none;stroke:color-mix(in srgb,var(--wd) 90%,transparent);stroke-width:1.8;
+    stroke-linecap:round;stroke-dasharray:12 100;opacity:0;animation:swglide 6s linear infinite}
+  @keyframes swglide{0%{stroke-dashoffset:0;opacity:0}12%{opacity:.5}
+    58%{stroke-dashoffset:-112;opacity:0}100%{stroke-dashoffset:-112;opacity:0}}
+  /* the wake: two half-arcs leaving the CROSSING POINT for either foot, so the
+     ripple spreads from where the thing touched rather than from the middle of
+     a box. Each beat's paths start at its own crossing. */
+  .swrip{fill:none;stroke:var(--wd);stroke-width:2;stroke-linecap:round;
+    stroke-dasharray:16 100;opacity:0}
 
-  .swgold{--g:var(--mx2,var(--gold))}
-  .swmint{--g:var(--wd)}
-
-  /* ===== THE DROP. The die falls THROUGH the dome. It is not slowed, not
-     bounced, not caught: a ward eats a STRIKE and never refuses your own
-     placement, and any drop animation that stops the die tells that lie every
-     turn. All the dome does is answer — it gives about 5%, the hexes nearest
-     the crossing light and fade outward, and the wake runs off both feet. ===== */
+  /* ===== THE DROP. Your die falls straight through the crown. It is not
+     slowed, not bounced, not caught: a ward eats a STRIKE and never refuses
+     your own placement, and any drop that stops the die tells that lie every
+     turn. The shell gives 2%, the scales light outward from the crown and go
+     dark again, the wake runs off both feet — and nothing is spent. ===== */
   .swdrop .swfall{animation:swfall 2.8s cubic-bezier(.4,.05,.5,1) infinite}
   @keyframes swfall{0%{transform:translateY(-96px) scale(.9);opacity:0}
     7%{transform:translateY(-74px) scale(.94);opacity:1}
@@ -93,70 +116,104 @@
     24%{transform:translateY(0) scale(1.07)}
     31%{transform:translateY(0) scale(1)}
     100%{transform:translateY(0) scale(1);opacity:1}}
-  /* the give: 5% on one axis, sprung back by 24%. Any more and it reads as a
-     trampoline, which is the wrong rule. */
+  /* the give: 2% on one axis, sprung back by 36%. Any more and it reads as a
+     trampoline, which is the wrong rule — and it is scaled from the feet, so
+     what little the crown moves, it moves away from the chip. */
   .swdrop .swdome{animation:swgive 2.8s ease-out infinite}
-  @keyframes swgive{0%,7%{transform:scale(1,1)}
-    13%{transform:scale(1.03,.95)}24%{transform:scale(1,1)}}
+  @keyframes swgive{0%,20%{transform:scale(1,1)}24%{transform:scale(1.02,.94)}
+    36%{transform:scale(1,1)}}
   .swdrop .swarc{animation:swlift 2.8s ease-out infinite}
-  @keyframes swlift{0%,7%{stroke-width:1.6}12%{stroke-width:2.6}30%{stroke-width:1.6}}
-  .swdrop .swrip{animation:swwake 2.8s ease-out infinite}
-  @keyframes swwake{0%,8%{stroke-dashoffset:0;opacity:0}
-    12%{opacity:1}38%{stroke-dashoffset:-104;opacity:0}
-    100%{stroke-dashoffset:-104;opacity:0}}
-  /* each hex carries its own delay, ordered by distance from the crown: the
-     lattice lights as a ring leaving the crossing, not as a block */
+  @keyframes swlift{0%,20%{stroke-width:1.3}25%{stroke-width:2.4}42%{stroke-width:1.3}}
+  /* each scale carries its own delay, ordered by distance from the crossing:
+     the comb lights as a run leaving the contact, not as a block */
   .swdrop .swhex polygon{animation:swlit 2.8s ease-out infinite;animation-delay:var(--d)}
-  @keyframes swlit{0%,8%{opacity:.16;fill:transparent}
-    13%{opacity:1;fill:color-mix(in srgb,var(--g) 28%,transparent)}
-    40%{opacity:.16;fill:transparent}100%{opacity:.16;fill:transparent}}
+  @keyframes swlit{0%,21%{opacity:.12;fill:transparent}
+    26%{opacity:1;fill:color-mix(in srgb,var(--wd) 30%,transparent)}
+    48%{opacity:.12;fill:transparent}100%{opacity:.12;fill:transparent}}
+  .swdrop .swrip{animation:swwake 2.8s ease-out infinite}
+  @keyframes swwake{0%,21%{stroke-dashoffset:0;opacity:0}
+    25%{opacity:1}46%{stroke-dashoffset:-116;opacity:0}
+    100%{stroke-dashoffset:-116;opacity:0}}
 
-  /* ===== THE ABSORB. The strike arrives and the dome HARDENS: the whole
-     lattice draws itself at once, the rim whitens, and the enemy die stops
-     dead on the crown and is thrown back the way it came. Then the ward's
-     dome dissolves from the feet up — the mark is spent. A shield's would
-     simply settle back, because a mode's protection does not burn. ===== */
-  .swhit .swfoe{animation:swrepel 3.2s cubic-bezier(.35,.85,.3,1) infinite}
-  @keyframes swrepel{0%{transform:translateY(-66px);opacity:0}
-    10%{opacity:1}28%{transform:translateY(21px)}
-    33%{transform:translateY(17px)}
-    50%{transform:translateY(-30px)}
-    68%{transform:translateY(-66px);opacity:0}
-    100%{transform:translateY(-66px);opacity:0}}
-  .swhit .swarc{animation:swharden 3.2s ease-out infinite}
-  @keyframes swharden{0%,25%{stroke-width:1.6;stroke:color-mix(in srgb,var(--g) 84%,transparent)}
-    30%{stroke-width:3.4;stroke:#fff}
-    42%{stroke-width:2.4;stroke:var(--g)}
-    60%{stroke-width:1.6;stroke:color-mix(in srgb,var(--g) 84%,transparent)}}
-  .swhit .swbody{animation:swfill 3.2s ease-out infinite}
-  @keyframes swfill{0%,25%{fill:color-mix(in srgb,var(--g) 9%,transparent)}
-    30%{fill:color-mix(in srgb,var(--g) 30%,transparent)}
-    60%{fill:color-mix(in srgb,var(--g) 9%,transparent)}}
-  /* a third of the drop's stagger: on a hit the lattice is one solid thing,
-     not a ripple — that difference is the whole read */
-  .swhit .swhex polygon{animation:swsolid 3.2s ease-out infinite;animation-delay:calc(var(--d)/3)}
-  @keyframes swsolid{0%,25%{opacity:.16;fill:transparent}
-    30%{opacity:1;fill:color-mix(in srgb,var(--g) 46%,transparent)}
-    44%{opacity:.9;fill:color-mix(in srgb,var(--g) 20%,transparent)}
-    62%{opacity:.16;fill:transparent}100%{opacity:.16;fill:transparent}}
-  .swhit .swrip{animation:swshock 3.2s ease-out infinite}
-  @keyframes swshock{0%,27%{stroke-dashoffset:0;opacity:0}
-    31%{opacity:1}52%{stroke-dashoffset:-104;opacity:0}
-    100%{stroke-dashoffset:-104;opacity:0}}
-  /* brace, then burn: the ward's dome goes out from the feet up once it has
-     eaten its strike, so the loop teaches "one strike, then spent" */
-  .swhit .swdome{animation:swbrace 3.2s ease-out infinite}
-  @keyframes swbrace{0%,25%{transform:scale(1,1);opacity:1}
-    30%{transform:scale(.98,.96);opacity:1}
-    38%{transform:scale(1.02,1.02);opacity:1}
-    50%{transform:scale(1,1);opacity:1}
-    72%{transform:scale(1,.82);opacity:0}
-    93%{transform:scale(1,.82);opacity:0}
+  /* ===== THE STRIKE, and the discharge. The strike is drawn as a LANCE, not
+     as an enemy die: the app never flies a die at your board — the enemy
+     places in their own column and your matching dice die where they stand —
+     and a 52px die coming down the mouth would have to cross the chip to get
+     there. The lance comes in at 42° and lands on the shell's RIGHT
+     shoulder, so its whole path stays in the gutter beside the chip. Measured
+     against the chip's own box (x 0..58): across the band the ward mark
+     occupies, the lance spans x 59.8..75.6 — entirely off the column, at the
+     opposite end from the mark it is about to put out, so the mark's flare
+     reads as an answer and not as the impact. It grazes the chip's
+     bottom-right corner on the way past, and never crosses the points.
+
+     The shell hardens where it is struck, the rim goes white, the lance is
+     thrown back the way it came — and THEN the shell unravels from the point
+     of contact, the ring leaves the column and the mark leaves the chip. One
+     charge, visibly gone. The loop re-arms only because a card has to loop. ===== */
+  .swlance{position:absolute;left:50%;top:0;width:7px;height:40px;margin-left:-3.5px;
+    border-radius:99px;z-index:5;pointer-events:none;transform-origin:50% 100%;opacity:0;
+    background:linear-gradient(180deg,transparent,
+      color-mix(in srgb,var(--p2) 55%,transparent) 55%,var(--p2));
+    box-shadow:0 0 12px color-mix(in srgb,var(--p2) 70%,transparent)}
+  .swhit .swlance{animation:swstrike 3.6s cubic-bezier(.4,.8,.3,1) infinite}
+  @keyframes swstrike{0%{transform:translate(79px,-102px) rotate(42deg);opacity:0}
+    6%{opacity:1}
+    20%{transform:translate(18px,-33px) rotate(42deg);opacity:1}
+    25%{transform:translate(26px,-42px) rotate(42deg);opacity:1}
+    42%{transform:translate(79px,-102px) rotate(42deg);opacity:0}
+    100%{transform:translate(79px,-102px) rotate(42deg);opacity:0}}
+  .swhit .swarc{animation:swharden 3.6s ease-out infinite}
+  @keyframes swharden{0%,19%{stroke-width:1.3;stroke:color-mix(in srgb,var(--wd) 52%,transparent)}
+    23%{stroke-width:3;stroke:#fff}
+    32%{stroke-width:2;stroke:var(--wd)}
+    50%{stroke-width:1.3;stroke:color-mix(in srgb,var(--wd) 52%,transparent)}}
+  /* delays ordered from the struck SHOULDER this time, so the same comb reads as one
+     mechanism answering two different contacts */
+  .swhit .swhex polygon{animation:swsolid 3.6s ease-out infinite;animation-delay:var(--d)}
+  @keyframes swsolid{0%,19%{opacity:.12;fill:transparent}
+    23%{opacity:1;fill:color-mix(in srgb,var(--wd) 48%,transparent)}
+    36%{opacity:.9;fill:color-mix(in srgb,var(--wd) 22%,transparent)}
+    52%{opacity:.45;fill:transparent}
+    64%{opacity:0;fill:transparent}96%{opacity:0}100%{opacity:.12}}
+  .swhit .swrip{animation:swshock 3.6s ease-out infinite}
+  @keyframes swshock{0%,20%{stroke-dashoffset:0;opacity:0}
+    24%{opacity:1}46%{stroke-dashoffset:-116;opacity:0}
+    100%{stroke-dashoffset:-116;opacity:0}}
+  /* brace, then burn: the shell takes the hit, settles, and goes out. Every
+     transform is anchored at the feet, so nothing it does ever travels up into
+     the chip's air. */
+  .swhit .swdome{animation:swbrace 3.6s ease-out infinite}
+  @keyframes swbrace{0%,19%{transform:scale(1,1);opacity:1}
+    23%{transform:scale(.98,.95);opacity:1}
+    30%{transform:scale(1.03,1.02);opacity:1}
+    46%{transform:scale(1,1);opacity:1}
+    60%{opacity:.7}
+    72%{transform:scale(1,.86);opacity:0}
+    96%{transform:scale(1,.86);opacity:0}
     100%{transform:scale(1,1);opacity:1}}
+  /* the chip's mark flares exactly as wdblock ships (main.css), then leaves.
+     It is absolutely positioned at the chip's left end, so it can go without
+     the score moving a pixel — which is the whole reason the app put it there. */
+  .swhit .swchip i{animation:swmarkgo 3.6s ease-out infinite}
+  @keyframes swmarkgo{
+    0%,19%{opacity:1;transform:scale(1);filter:drop-shadow(0 0 6px color-mix(in srgb,var(--wd) 75%,transparent))}
+    23%{opacity:1;transform:scale(1.6);filter:drop-shadow(0 0 18px var(--wd))}
+    34%{transform:scale(1);filter:drop-shadow(0 0 6px color-mix(in srgb,var(--wd) 75%,transparent))}
+    64%{opacity:1}72%{opacity:0}96%{opacity:0}100%{opacity:1}}
+  /* and the ring goes with it: a spent ward leaves the column bare */
+  .swhit .swstack.swward{animation:swringgo 3.6s ease-out infinite}
+  @keyframes swringgo{
+    0%,64%{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wd) 40%,transparent),
+      0 0 14px color-mix(in srgb,var(--wd) 14%,transparent)}
+    23%{box-shadow:inset 0 0 0 1px #fff,0 0 22px color-mix(in srgb,var(--wd) 45%,transparent)}
+    72%,96%{box-shadow:inset 0 0 0 1px rgba(255,255,255,0),0 0 0 rgba(255,255,255,0)}
+    100%{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wd) 40%,transparent),
+      0 0 14px color-mix(in srgb,var(--wd) 14%,transparent)}}
 
-  .swlane{position:relative;height:96px;width:100%;display:flex;justify-content:center;
-    align-items:flex-end;pointer-events:none;z-index:4}
-  .swfoe{position:absolute;top:0;opacity:0}
+  /* the air a mover needs ABOVE the mouth — reserved by the card, not by the
+     board: in the app that air is the centre stage, which is already there */
+  .swlane{height:96px;width:100%}
   .swlbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
     text-align:center;min-height:12px}
 </style>
@@ -167,139 +224,187 @@
     <div class="cap2">Today — a 1px ring and a 12% glow, under a die that already glows</div>
     <div class="swrow">
       <div class="swcol">
-        <div class="swstack now">
+        <div class="swchip has">10<i class="shm">{{mico:colshield:13}}</i></div>
+        <div class="swstack swshield">
           <div class="swslot">{{die:5:p1:52}}</div>
-          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:3:p1:52}}</div>
           <div class="swslot">{{die:2:p1:52}}</div>
         </div>
-        <div class="swchip gold">12<i>{{mico:colshield:13}}</i></div>
-        <div class="swlbl">shielded</div>
+        <div class="swlbl">shielded · mode</div>
       </div>
       <div class="swcol">
-        <div class="swstack nowward">
+        <div class="swchip has">5<i class="wdm">{{sico:ward:13}}</i></div>
+        <div class="swstack swward">
           <div class="swslot">{{die:4:p1:52}}</div>
           <div class="swslot">{{die:1:p1:52}}</div>
           <div class="swslot"></div>
         </div>
-        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
-        <div class="swlbl">warded</div>
+        <div class="swlbl">warded · spell</div>
       </div>
     </div>
 
-    <div class="cap2">Proposed — a dome over the mouth, lattice almost dark, one gliding sheen</div>
-    <div class="swrow swair">
-      <div class="swcol swgold">
-        <div class="swstack">
-          <div class="swslot">{{die:5:p1:52}}</div>
-          <div class="swslot">{{die:5:p1:52}}</div>
-          <div class="swslot">{{die:2:p1:52}}</div>
-          <svg class="swdome" viewBox="0 0 68 34" width="68" height="34" aria-hidden="true">
-            <path class="swbody" d="M2 33A32 31 0 0 1 66 33Z"/>
-            <path class="swin" d="M7 33A27 26 0 0 1 61 33"/>
-            <g class="swhex">
-              <polygon style="--d:0s" points="28,12 31,6.8 37,6.8 40,12 37,17.2 31,17.2"/>
-              <polygon style="--d:.06s" points="19,17.2 22,12 28,12 31,17.2 28,22.4 22,22.4"/>
-              <polygon style="--d:.06s" points="37,17.2 40,12 46,12 49,17.2 46,22.4 40,22.4"/>
-              <polygon style="--d:.1s" points="28,22.4 31,17.2 37,17.2 40,22.4 37,27.6 31,27.6"/>
-              <polygon style="--d:.14s" points="10,22.4 13,17.2 19,17.2 22,22.4 19,27.6 13,27.6"/>
-              <polygon style="--d:.14s" points="46,22.4 49,17.2 55,17.2 58,22.4 55,27.6 49,27.6"/>
-              <polygon style="--d:.18s" points="19,27.6 22,22.4 28,22.4 31,27.6 28,32.8 22,32.8"/>
-              <polygon style="--d:.18s" points="37,27.6 40,22.4 46,22.4 49,27.6 46,32.8 40,32.8"/>
-            </g>
-            <path class="swarc" d="M2 33A32 31 0 0 1 66 33"/>
-            <path class="swsheen" pathLength="100" d="M2 33A32 31 0 0 1 66 33"/>
-          </svg>
-        </div>
-        <div class="swchip gold">12<i>{{mico:colshield:13}}</i></div>
-        <div class="swlbl">shield · gold</div>
-      </div>
-      <div class="swcol swmint">
-        <div class="swstack">
-          <div class="swslot">{{die:4:p1:52}}</div>
-          <div class="swslot">{{die:1:p1:52}}</div>
-          <div class="swslot"></div>
-          <svg class="swdome" viewBox="0 0 68 34" width="68" height="34" aria-hidden="true">
-            <path class="swbody" d="M2 33A32 31 0 0 1 66 33Z"/>
-            <path class="swin" d="M7 33A27 26 0 0 1 61 33"/>
-            <g class="swhex">
-              <polygon style="--d:0s" points="28,12 31,6.8 37,6.8 40,12 37,17.2 31,17.2"/>
-              <polygon style="--d:.06s" points="19,17.2 22,12 28,12 31,17.2 28,22.4 22,22.4"/>
-              <polygon style="--d:.06s" points="37,17.2 40,12 46,12 49,17.2 46,22.4 40,22.4"/>
-              <polygon style="--d:.1s" points="28,22.4 31,17.2 37,17.2 40,22.4 37,27.6 31,27.6"/>
-              <polygon style="--d:.14s" points="10,22.4 13,17.2 19,17.2 22,22.4 19,27.6 13,27.6"/>
-              <polygon style="--d:.14s" points="46,22.4 49,17.2 55,17.2 58,22.4 55,27.6 49,27.6"/>
-              <polygon style="--d:.18s" points="19,27.6 22,22.4 28,22.4 31,27.6 28,32.8 22,32.8"/>
-              <polygon style="--d:.18s" points="37,27.6 40,22.4 46,22.4 49,27.6 46,32.8 40,32.8"/>
-            </g>
-            <path class="swarc" d="M2 33A32 31 0 0 1 66 33"/>
-            <path class="swsheen" pathLength="100" d="M2 33A32 31 0 0 1 66 33"/>
-          </svg>
-        </div>
-        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
-        <div class="swlbl">ward · mint</div>
-      </div>
-    </div>
-
-    <div class="cap2">Your die goes THROUGH it — hexes light outward from the crossing</div>
+    <div class="cap2">Proposed — the shell is the WARD's, and it has somewhere to go</div>
     <div class="swrow">
-      <div class="swcol swmint swdrop">
-        <div class="swlane"></div>
-        <div class="swstack">
-          <div class="swslot"><span class="swfall">{{die:6:p1:52}}</span></div>
+      <div class="swcol">
+        <div class="swchip has">10<i class="shm">{{mico:colshield:13}}</i></div>
+        <div class="swstack swshield">
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:3:p1:52}}</div>
+          <div class="swslot">{{die:2:p1:52}}</div>
+        </div>
+        <div class="swlbl">shield · unchanged</div>
+      </div>
+      <div class="swcol">
+        <div class="swchip has">5<i class="wdm">{{sico:ward:13}}</i></div>
+        <div class="swstack swward">
           <div class="swslot">{{die:4:p1:52}}</div>
           <div class="swslot">{{die:1:p1:52}}</div>
-          <svg class="swdome" viewBox="0 0 68 34" width="68" height="34" aria-hidden="true">
-            <path class="swbody" d="M2 33A32 31 0 0 1 66 33Z"/>
-            <path class="swin" d="M7 33A27 26 0 0 1 61 33"/>
+          <div class="swslot"></div>
+          <svg class="swdome" viewBox="0 0 58 30" width="58" height="30" aria-hidden="true">
+            <path class="swin" d="M3 29A26 27.5 0 0 1 55 29"/>
             <g class="swhex">
-              <polygon style="--d:0s" points="28,12 31,6.8 37,6.8 40,12 37,17.2 31,17.2"/>
-              <polygon style="--d:.06s" points="19,17.2 22,12 28,12 31,17.2 28,22.4 22,22.4"/>
-              <polygon style="--d:.06s" points="37,17.2 40,12 46,12 49,17.2 46,22.4 40,22.4"/>
-              <polygon style="--d:.1s" points="28,22.4 31,17.2 37,17.2 40,22.4 37,27.6 31,27.6"/>
-              <polygon style="--d:.14s" points="10,22.4 13,17.2 19,17.2 22,22.4 19,27.6 13,27.6"/>
-              <polygon style="--d:.14s" points="46,22.4 49,17.2 55,17.2 58,22.4 55,27.6 49,27.6"/>
-              <polygon style="--d:.18s" points="19,27.6 22,22.4 28,22.4 31,27.6 28,32.8 22,32.8"/>
-              <polygon style="--d:.18s" points="37,27.6 40,22.4 46,22.4 49,27.6 46,32.8 40,32.8"/>
+              <polygon transform="translate(29 0)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(38.41 1.75) rotate(20)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(19.59 1.75) rotate(-20)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(46.68 6.78) rotate(40)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(11.32 6.78) rotate(-40)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(52.82 14.5) rotate(60)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(5.18 14.5) rotate(-60)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(56.08 23.96) rotate(80)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(1.92 23.96) rotate(-80)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
             </g>
-            <path class="swarc" d="M2 33A32 31 0 0 1 66 33"/>
-            <path class="swrip" pathLength="100" d="M34 2A32 31 0 0 0 2 33"/>
-            <path class="swrip" pathLength="100" d="M34 2A32 31 0 0 1 66 33"/>
-            <path class="swsheen" pathLength="100" d="M2 33A32 31 0 0 1 66 33"/>
+            <path class="swarc" d="M3 29A26 27.5 0 0 1 55 29"/>
+            <path class="swsheen" pathLength="100" d="M3 29A26 27.5 0 0 1 55 29"/>
           </svg>
         </div>
-        <div class="swchip mint"><i>{{sico:ward:13}}</i>11</div>
-        <div class="swlbl">drop</div>
+        <div class="swlbl">ward · armed</div>
       </div>
-      <div class="swcol swmint swhit">
-        <div class="swlane"><span class="swfoe">{{die:4:p2:52}}</span></div>
+      <div class="swcol">
+        <div class="swchip has">5</div>
         <div class="swstack">
           <div class="swslot">{{die:4:p1:52}}</div>
           <div class="swslot">{{die:1:p1:52}}</div>
           <div class="swslot"></div>
-          <svg class="swdome" viewBox="0 0 68 34" width="68" height="34" aria-hidden="true">
-            <path class="swbody" d="M2 33A32 31 0 0 1 66 33Z"/>
-            <path class="swin" d="M7 33A27 26 0 0 1 61 33"/>
-            <g class="swhex">
-              <polygon style="--d:0s" points="28,12 31,6.8 37,6.8 40,12 37,17.2 31,17.2"/>
-              <polygon style="--d:.06s" points="19,17.2 22,12 28,12 31,17.2 28,22.4 22,22.4"/>
-              <polygon style="--d:.06s" points="37,17.2 40,12 46,12 49,17.2 46,22.4 40,22.4"/>
-              <polygon style="--d:.1s" points="28,22.4 31,17.2 37,17.2 40,22.4 37,27.6 31,27.6"/>
-              <polygon style="--d:.14s" points="10,22.4 13,17.2 19,17.2 22,22.4 19,27.6 13,27.6"/>
-              <polygon style="--d:.14s" points="46,22.4 49,17.2 55,17.2 58,22.4 55,27.6 49,27.6"/>
-              <polygon style="--d:.18s" points="19,27.6 22,22.4 28,22.4 31,27.6 28,32.8 22,32.8"/>
-              <polygon style="--d:.18s" points="37,27.6 40,22.4 46,22.4 49,27.6 46,32.8 40,32.8"/>
-            </g>
-            <path class="swarc" d="M2 33A32 31 0 0 1 66 33"/>
-            <path class="swrip" pathLength="100" d="M34 2A32 31 0 0 0 2 33"/>
-            <path class="swrip" pathLength="100" d="M34 2A32 31 0 0 1 66 33"/>
-            <path class="swsheen" pathLength="100" d="M2 33A32 31 0 0 1 66 33"/>
-          </svg>
         </div>
-        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
-        <div class="swlbl">absorb</div>
+        <div class="swlbl">ward · spent</div>
       </div>
     </div>
 
-    <div class="note"><b>What it says:</b> the column is <b>capped</b>, not outlined — the guard stands over its <b>mouth</b>, the open end a die is thrown into, which is the most literal thing a shield can be on this board: something between the column and what is coming at it. The mouth is always the end facing the <b>centre stage</b>, so the dome arcs <b>up</b> over the top of a near-half column and <b>down</b> under the bottom of a far-half one — the two domes face each other across the die stage, which is exactly the geometry of the table. <b>The drop:</b> your die passes straight through. The dome gives 5%, the hexes nearest the crossing light and fade outward, the wake runs off both feet — and the die's speed never changes, so the animation cannot tell the lie that a ward refuses your own placement. Nothing it does is ever in the die's way. <b>The absorb:</b> the lattice draws itself all at once, the rim whitens, the enemy die stops dead on the crown and is thrown back the way it came; then a ward's dome goes out from the feet up, because the mark is spent — a shield's would simply settle. <b>Cost:</b> it is the only one of the six that costs the column no <b>width</b> — nothing in the gutters, nothing over a die, pip contrast untouched — but it buys that with <b>height</b>: ~30px of clear lane over every mouth, and on the near half that lane is where the chip strip already sits, 4px clear. Either both strips move (about 50px out of a 640px screen, and the board is tightest on a 360 phone) or the dome tucks behind the chip and loses the crown that carries it. It also marks the mouth and not the column: a full shielded column and a one-die warded column wear an identical dome, so it says <i>protected</i> without ever saying <i>how much</i>. And it is the only option with an <b>axis</b> — in landscape the boards sit side by side and the columns run sideways, so the dome has to rotate onto the inner end with them. A ring does not care which way the board is turned.</div>
+    <div class="cap2">The chip keeps its box — the shell is anchored to the column, not to the score</div>
+    <div class="swrow">
+      <div class="swcol">
+        <div class="swchip has">5<i class="wdm">{{sico:ward:13}}</i></div>
+        <div class="swstack swward">
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <div class="swslot"></div>
+          <svg class="swdome" viewBox="0 0 58 30" width="58" height="30" aria-hidden="true">
+            <path class="swin" d="M3 29A26 27.5 0 0 1 55 29"/>
+            <g class="swhex">
+              <polygon transform="translate(29 0)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(38.41 1.75) rotate(20)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(19.59 1.75) rotate(-20)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(46.68 6.78) rotate(40)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(11.32 6.78) rotate(-40)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(52.82 14.5) rotate(60)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(5.18 14.5) rotate(-60)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(56.08 23.96) rotate(80)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(1.92 23.96) rotate(-80)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+            </g>
+            <path class="swarc" d="M3 29A26 27.5 0 0 1 55 29"/>
+            <path class="swsheen" pathLength="100" d="M3 29A26 27.5 0 0 1 55 29"/>
+          </svg>
+        </div>
+        <div class="swlbl">score 5</div>
+      </div>
+      <div class="swcol">
+        <div class="swchip has">17<span class="swmx">×2</span><i class="wdm">{{sico:ward:13}}</i></div>
+        <div class="swstack swward">
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <svg class="swdome" viewBox="0 0 58 30" width="58" height="30" aria-hidden="true">
+            <path class="swin" d="M3 29A26 27.5 0 0 1 55 29"/>
+            <g class="swhex">
+              <polygon transform="translate(29 0)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(38.41 1.75) rotate(20)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(19.59 1.75) rotate(-20)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(46.68 6.78) rotate(40)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(11.32 6.78) rotate(-40)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(52.82 14.5) rotate(60)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(5.18 14.5) rotate(-60)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(56.08 23.96) rotate(80)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon transform="translate(1.92 23.96) rotate(-80)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+            </g>
+            <path class="swarc" d="M3 29A26 27.5 0 0 1 55 29"/>
+            <path class="swsheen" pathLength="100" d="M3 29A26 27.5 0 0 1 55 29"/>
+          </svg>
+        </div>
+        <div class="swlbl">score 17 ×2</div>
+      </div>
+    </div>
+
+    <div class="cap2">Your die passes through and spends nothing — the strike is the shell's last act</div>
+    <div class="swrow">
+      <div class="swcol swdrop">
+        <div class="swlane"></div>
+        <div class="swchip has">17<span class="swmx">×2</span><i class="wdm">{{sico:ward:13}}</i></div>
+        <div class="swstack swward">
+          <div class="swslot"><span class="swfall">{{die:4:p1:52}}</span></div>
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <svg class="swdome" viewBox="0 0 58 30" width="58" height="30" aria-hidden="true">
+            <path class="swin" d="M3 29A26 27.5 0 0 1 55 29"/>
+            <g class="swhex">
+              <polygon style="--d:0s" transform="translate(29 0)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon style="--d:.05s" transform="translate(38.41 1.75) rotate(20)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon style="--d:.05s" transform="translate(19.59 1.75) rotate(-20)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon style="--d:.1s" transform="translate(46.68 6.78) rotate(40)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon style="--d:.1s" transform="translate(11.32 6.78) rotate(-40)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon style="--d:.15s" transform="translate(52.82 14.5) rotate(60)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon style="--d:.15s" transform="translate(5.18 14.5) rotate(-60)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon style="--d:.2s" transform="translate(56.08 23.96) rotate(80)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon style="--d:.2s" transform="translate(1.92 23.96) rotate(-80)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+            </g>
+            <path class="swarc" d="M3 29A26 27.5 0 0 1 55 29"/>
+            <path class="swrip" pathLength="100" d="M29 1.5A26 27.5 0 0 0 3 29"/>
+            <path class="swrip" pathLength="100" d="M29 1.5A26 27.5 0 0 1 55 29"/>
+            <path class="swsheen" pathLength="100" d="M3 29A26 27.5 0 0 1 55 29"/>
+          </svg>
+        </div>
+        <div class="swlbl">drop · still armed</div>
+      </div>
+      <div class="swcol swhit">
+        <div class="swlane"></div>
+        <div class="swchip has">5<i class="wdm">{{sico:ward:13}}</i></div>
+        <div class="swstack swward">
+          <div class="swslot">{{die:4:p1:52}}</div>
+          <div class="swslot">{{die:1:p1:52}}</div>
+          <div class="swslot"></div>
+          <svg class="swdome" viewBox="0 0 58 30" width="58" height="30" aria-hidden="true">
+            <path class="swin" d="M3 29A26 27.5 0 0 1 55 29"/>
+            <g class="swhex">
+              <polygon style="--d:.07s" transform="translate(29 0)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon style="--d:.035s" transform="translate(38.41 1.75) rotate(20)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon style="--d:.105s" transform="translate(19.59 1.75) rotate(-20)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon style="--d:0s" transform="translate(46.68 6.78) rotate(40)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon style="--d:.14s" transform="translate(11.32 6.78) rotate(-40)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon style="--d:.035s" transform="translate(52.82 14.5) rotate(60)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon style="--d:.175s" transform="translate(5.18 14.5) rotate(-60)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon style="--d:.07s" transform="translate(56.08 23.96) rotate(80)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+              <polygon style="--d:.21s" transform="translate(1.92 23.96) rotate(-80)" points="0,-4.2 3.64,-2.1 3.64,2.1 0,4.2 -3.64,2.1 -3.64,-2.1"/>
+            </g>
+            <path class="swarc" d="M3 29A26 27.5 0 0 1 55 29"/>
+            <path class="swrip" pathLength="100" d="M45.71 7.93A26 27.5 0 0 1 55 29"/>
+            <path class="swrip" pathLength="100" d="M45.71 7.93A26 27.5 0 0 0 3 29"/>
+            <path class="swsheen" pathLength="100" d="M3 29A26 27.5 0 0 1 55 29"/>
+          </svg>
+          <i class="swlance"></i>
+        </div>
+        <div class="swlbl">absorb · then spent</div>
+      </div>
+    </div>
+
+    <div class="note"><b>The collision, and how it is solved:</b> the shell no longer arcs ACROSS the column's mouth — it is seated <b>inside</b> it. Its two feet stand on the column's own walls half way down the top cell, and its crown reaches 1.5px above the top die — with the topmost scale stopping 2.8px short of the chip's underside, so 2.8px of the chip's 7px of clear air is left standing at the worst frame of the worst beat: <b>the chip is the lintel the arch presses into</b>, never a thing it covers, dims or moves. Every transform in the beats is anchored at the feet, so even the brace and the burn travel downward, away from the score. The old draft needed ~30px of reserved lane over every mouth — the same lane the chip strip already occupies — and that bill is now zero. <b>The chip is drawn faithfully here</b> so the claim can be checked: one column wide, points in the side's colour, guard marks absolutely positioned at the ends (main.css puts the shield at <i>right:4px</i> and the ward at <i>left:4px</i> for exactly this reason). Third row: two chips, 5 and 17×2, identical shells — the score re-centres, the shell cannot move, because it is anchored to the column and knows nothing about the chip. That second chip is also the tightest the box ever gets: a two-digit score with a ×k badge comes within about 2px of the 13px mark at the end. That squeeze is the chip's own, it is there today, and the shell neither causes it nor helps it. <b>Over the dice:</b> a 52px die is blank glass for its first 8px. The arc — a half-ellipse 26×27.5 about the column's centre — clears the nearest pip by 5.1px, and the nine scales, riding on the shell's outer face, clear it by 3.0px. There is no body wash at all — a rim, a dim under-rim and a comb of scales at 12%. Pip contrast is what it is on a bare column. <b>Why the ward and not the shield:</b> a shell that flexes, hardens and burns out is the grammar of a thing that can be <i>spent</i>. COLUMN SHIELD is not spent — it is the state of being full, it engages the instant the column fills, and it cannot break — so it keeps exactly what it wears today, the gold mark at the chip's right end and the gold ring, and the two never read as one mechanism. <b>The beats:</b> your own die falls straight through the crown; the shell gives 2%, the scales light outward from the crossing, and nothing is spent, because a ward eats a strike and never refuses your placement. Then a strike arrives — drawn as a <b>lance</b>, not an enemy die, because the app never flies a die at your board and a 52px one would have to cross the chip to reach the mouth. It comes in at 42° onto the shell's right shoulder, so its whole path stays in the gutter beside the chip — the opposite end from the mark it is about to put out; the rim goes white, the strike is thrown back the way it came, and then the shell unravels from the point of contact, the ring leaves the column and the mark leaves the chip. <b>Costs:</b> the shell marks the <b>mouth</b>, so it says which column is guarded and not which dice — the shipped mint ring is kept for that, and both go out together on the discharge. The resting sheen is one stroke animating forever on every warded column. And <b>landscape</b> transposes the board: the chip moves to the column's inner end and the shell turns a quarter with it — the same relationship, one rotation, which is the part the old lane-above-the-mouth version could not have done at all.</div>
   </div>
 </div></div>

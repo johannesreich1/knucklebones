@@ -1,281 +1,547 @@
-<!-- meta name="W4 — Ward mist" group="3g · Shield & ward studies" subtitle="The column is FILLED, not outlined: a volume of the protection's hue pooled at the floor and thinning upward, with slow motes drifting in it — a die parts the mist on the way down and it folds back in behind, and an absorbed strike leaves visibly LESS mist" width=430 height=1600 sizes="md" links="Match, Game modes, Spells" -->
+<!-- meta name="W4 — Rimmed lattice" group="3g · Shield & ward studies" subtitle="COLUMN SHIELD carrying W5's hexagons, and carrying them with LESS in front of the dice than before. The veil is deleted — it was the one layer costing pip contrast — and the flat wash drops from 13% to 5%; in their place a comb of hexagons, stroked and unfilled at rest, sits BEHIND the dice, in the two 6px seams and the margin inside the rim, which is the only room a structure can take without covering a face. The hard rim stays. At rest the comb is barely there; a strike lights it from the mouth outward and it settles back to exactly where it started, because a shielded column absorbs everything and is never spent" width=430 height=3168 sizes="md" links="Match, Game modes" -->
 <style>
-  /* Card-local names only (sw*). The app pins .col/.slot/.chip/.pip with
+  /* Card-local names only (sw*). The app pins .col/.slot/.chip/.pip/.die with
      position and height, so a card that redeclares them loses silently —
-     design/build.mjs fails the build for exactly that. Dice come from the
-     die token, the rune and shield from the app's own icon registries.
-     Scaffold, class names and beat order are W1's (39a) on purpose: same
-     board, same four beats, different mechanism, so the set compares. */
+     design/build.mjs fails the build for exactly that. That is also why the
+     animated dice here are wrapped in a card-local <span> (.swset, .swfoe)
+     rather than targeted as `.die`: naming .die in a selector would demand
+     this card own the die's height, which it must not.
+
+     Scaffold and beat order are W1's (39a) on purpose, with two corrections
+     this study needed and the earlier ones got wrong:
+
+       1. THE CHIP IS AT THE MOUTH. On your own board the chip strip sits
+          between the centre and the board, i.e. above it, at the end dice
+          enter from (main.css .side.bot .cols). It is drawn here where it
+          actually is, and the shield mark rides at its RIGHT end, absolutely
+          positioned, exactly as .chip .sh ships — because the chip is centred
+          and changes width with the score, and a mark in that flow jumps.
+       2. A COLUMN FILLS AWAY FROM THE MOUTH. render.ts maps board index 0 to
+          the slot nearest the chip, so the die that CLOSES a column is the far
+          one. The engage beat settles that die, and the lattice knits from
+          there back toward the mouth. */
   .scr{gap:10px}
   .swwrap{display:flex;flex-direction:column;align-items:center;gap:13px;margin:auto 0;width:100%}
 
   .swrow{display:flex;align-items:flex-start;justify-content:center;gap:14px}
-  .swcol{--cell:52px;--gap:6px;display:flex;flex-direction:column;align-items:center;gap:7px}
+  /* 11px between chip and stack, not the 7px the earlier studies used: the rim
+     stands 6px outside the stack, so at 7px it came within a pixel of the chip
+     and the two glows fused. At 11px the rim clears the chip's underside by
+     5px and the topmost hexagon by 7.4px. */
+  .swcol{--cell:52px;--gap:6px;display:flex;flex-direction:column;align-items:center;gap:11px}
   .swstack{display:grid;grid-template-rows:repeat(3,var(--cell));gap:var(--gap);
     position:relative;border-radius:16px;padding:3px}
-  /* the one scaffold change this mechanism needs: the slots are LIFTED out of
-     the default paint order, because half the mist is meant to sit behind the
-     dice and half in front of them. That split is what makes it a volume and
-     not a wash — see .swmist (z 0) and .swhaze (z 3). */
+  /* the slots are LIFTED one layer, and everything that carries meaning is
+     either UNDER them (z 0: the wash, the lattice) or at the boundary
+     (z 3/4/5: the rim, the corners, the ring a strike leaves). Nothing sits
+     in the band between — that band is where the last draft's veil was, and
+     it was the whole of this card's pip-contrast bill. */
   .swslot{width:var(--cell);height:var(--cell);border-radius:14px;z-index:1;
     background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);
     box-shadow:inset 0 1px 0 rgba(255,255,255,.05);display:grid;place-items:center;position:relative}
-  /* the column chip, restated at card scale — the app's .chip is guarded */
-  .swchip{height:20px;min-width:52px;border-radius:8px;display:flex;align-items:center;
-    justify-content:center;gap:4px;font-size:12px;font-weight:800;color:var(--dim);
+
+  /* the column chip, restated at card scale — the app's .chip is guarded.
+     The mark is absolute at the right end and the score stays centred, so
+     nothing here moves when 10 becomes 12. Nothing else on this card reaches
+     into the chip's box at any frame of any beat. */
+  .swchip{height:20px;min-width:56px;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;font-size:12px;font-weight:800;color:var(--dim);
     background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);position:relative;
-    padding:0 6px;font-variant-numeric:tabular-nums}
-  .swchip i{line-height:0;display:flex}
+    padding:0 6px;font-variant-numeric:tabular-nums;z-index:6}
   .swchip.gold{color:var(--mx2,var(--gold));border-color:rgba(var(--mx2-rgb,var(--gold-rgb)),.3);
     background:rgba(var(--mx2-rgb,var(--gold-rgb)),.09)}
-  .swchip.mint{color:var(--wd);border-color:color-mix(in srgb,var(--wd) 30%,transparent);
-    background:color-mix(in srgb,var(--wd) 9%,transparent)}
+  .swmk{position:absolute;top:0;bottom:0;right:4px;display:flex;align-items:center;line-height:0;
+    color:var(--mx2,var(--gold));
+    filter:drop-shadow(0 0 6px rgba(var(--mx2-rgb,var(--gold-rgb)),.75))}
 
   /* ===== TODAY, for comparison: a 1px inset ring at 35% and a 14px glow at
      12%. On a die that already carries a border and a coloured bloom it is
      below the noise floor — which is the whole reason for this study. ===== */
-  .swstack.now{box-shadow:inset 0 0 0 1px rgba(var(--mx2-rgb,var(--gold-rgb)),.35),
+  .swstack.swnow{box-shadow:inset 0 0 0 1px rgba(var(--mx2-rgb,var(--gold-rgb)),.35),
     0 0 14px rgba(var(--mx2-rgb,var(--gold-rgb)),.12)}
-  .swstack.nowward{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--wd) 40%,transparent),
-    0 0 14px color-mix(in srgb,var(--wd) 14%,transparent)}
-
-  /* ===== THE MIST. Not an edge anywhere: the column is FULL of the hue.
-     Three pieces, and the split between them is the whole trick —
-
-       .swmist   the body, BEHIND the dice. It can run hot (30% at the pool,
-                 a 26px bloom) precisely because the dice cover most of it;
-                 what the player sees of it is the gutters, the gaps between
-                 slots and the halo around the column.
-       .swhaze   the veil, IN FRONT of the dice, ramping 0% at the ceiling to
-                 15% at the floor. This is the layer that costs pip contrast,
-                 so it is the layer kept thin — it exists only to put the dice
-                 INSIDE the volume instead of beside it.
-       .swfloor  the pool the mist is densest in, licking the bottom die.
-
-     Densest at the floor, thinning upward, because a column fills from the
-     bottom: the protection is deepest where the dice already are. ===== */
-  .swmist{position:absolute;inset:-8px;border-radius:22px;pointer-events:none;overflow:hidden;z-index:0;
-    background:
-      radial-gradient(120% 62% at 50% 104%, color-mix(in srgb,var(--g) 30%,transparent), transparent 72%),
-      radial-gradient(150% 46% at 42% 74%, color-mix(in srgb,var(--g) 13%,transparent), transparent 74%),
-      linear-gradient(180deg, transparent 6%,
-        color-mix(in srgb,var(--g) 5%,transparent) 44%,
-        color-mix(in srgb,var(--g) 13%,transparent) 100%);
-    box-shadow:0 0 26px color-mix(in srgb,var(--g) 18%,transparent);
-    animation:swbreathe 5.4s ease-in-out infinite}
-  /* two slow churn blobs, 17s and 23s and out of phase, so the volume is never
-     the same shape twice and never fast enough to be a pulse */
-  .swmist::before,.swmist::after{content:"";position:absolute;border-radius:50%;
-    background:radial-gradient(closest-side,color-mix(in srgb,var(--g) 22%,transparent),transparent 76%)}
-  .swmist::before{left:-30%;right:14%;height:82px;bottom:-14px;animation:swchurna 17s ease-in-out infinite}
-  .swmist::after{left:18%;right:-34%;height:64px;bottom:24px;animation:swchurnb 23s ease-in-out infinite}
-  @keyframes swchurna{0%,100%{transform:translate(0,0) scale(1)}
-    50%{transform:translate(16px,-22px) scale(1.16)}}
-  @keyframes swchurnb{0%,100%{transform:translate(0,0) scale(1.08)}
-    50%{transform:translate(-14px,-16px) scale(.92)}}
-  @keyframes swbreathe{0%,100%{opacity:.86}50%{opacity:1}}
-
-  .swhaze{position:absolute;inset:-8px;border-radius:22px;pointer-events:none;overflow:hidden;z-index:3;
-    background:linear-gradient(180deg, transparent 8%,
-      color-mix(in srgb,var(--g) 4%,transparent) 44%,
-      color-mix(in srgb,var(--g) 9%,transparent) 74%,
-      color-mix(in srgb,var(--g) 15%,transparent) 100%)}
-
-  .swfloor{position:absolute;left:-16px;right:-16px;bottom:-13px;height:32px;z-index:4;
-    pointer-events:none;filter:blur(3px);
-    background:radial-gradient(64% 100% at 50% 100%,
-      color-mix(in srgb,var(--g) 34%,transparent), transparent 76%);
-    animation:swbreathe 5.4s ease-in-out infinite}
-
-  /* the motes: three, two behind the dice and one in front, at 9–13s. Slow
-     enough that the eye files them as weather rather than as an alert, and
-     staggered by negative delays so a PAUSED card still has motes in it. */
-  .swmote{position:absolute;border-radius:50%;pointer-events:none;
-    background:radial-gradient(closest-side,color-mix(in srgb,#fff 44%,var(--g)) 0%,
-      color-mix(in srgb,var(--g) 40%,transparent) 52%, transparent 78%)}
-  .swm1{width:9px;height:9px;left:14%;bottom:6px;animation:swdrifta 9.5s linear infinite;animation-delay:-2.6s}
-  .swm2{width:6px;height:6px;left:66%;bottom:0;animation:swdriftb 13s linear infinite;animation-delay:-7.4s}
-  .swm3{width:5px;height:5px;left:44%;bottom:4px;animation:swdrifta 11s linear infinite;animation-delay:-5.1s}
-  @keyframes swdrifta{0%{opacity:0;transform:translate(0,0) scale(.75)}
-    14%{opacity:.9}52%{transform:translate(8px,-70px) scale(1)}
-    80%{opacity:.5}100%{opacity:0;transform:translate(-5px,-136px) scale(.7)}}
-  @keyframes swdriftb{0%{opacity:0;transform:translate(0,0) scale(.8)}
-    16%{opacity:.8}52%{transform:translate(-9px,-66px) scale(1.05)}
-    82%{opacity:.45}100%{opacity:0;transform:translate(4px,-130px) scale(.7)}}
 
   .swgold{--g:var(--mx2,var(--gold))}
-  .swmint{--g:var(--wd)}
 
-  /* ===== THE DROP. The die PARTS the mist. The body billows outward from the
-     floor and away from the falling die, two puffs are shouldered out to the
-     sides, and then the volume folds back in behind it and re-settles. The die
-     is never slowed, never bounced, never met by anything — a ward absorbs a
-     STRIKE and never refuses your own placement, and a drop animation that
-     resisted the die would teach the opposite rule on every single turn. The
-     mist is the only thing that moves here; the die falls exactly as it falls
-     into an unguarded column. ===== */
-  .swdrop .swfall{animation:swfall 2.8s cubic-bezier(.3,1.4,.4,1) infinite}
-  @keyframes swfall{0%{transform:translateY(-118px) scale(.86);opacity:0}
-    10%{opacity:1}22%{transform:translateY(0) scale(1.06)}30%{transform:translateY(0) scale(1)}
-    100%{transform:translateY(0) scale(1);opacity:1}}
-  /* breathe animates opacity, billow animates transform — two animations, no
-     shared property, so the resting behaviour survives underneath the beat */
-  .swdrop .swmist{transform-origin:50% 100%;
-    animation:swbreathe 5.4s ease-in-out infinite, swbillow 2.8s ease-in-out infinite}
-  .swdrop .swhaze{transform-origin:50% 100%;animation:swbillow 2.8s ease-in-out infinite}
-  @keyframes swbillow{0%,14%{transform:scaleX(1) scaleY(1)}
-    24%{transform:scaleX(1.15) scaleY(.93)}
-    40%{transform:scaleX(.95) scaleY(1.04)}
-    58%{transform:scaleX(1.03) scaleY(.99)}
-    76%,100%{transform:scaleX(1) scaleY(1)}}
-  /* the two shouldered puffs — out as the die passes, drawn back after it */
-  .swwake{position:absolute;top:6px;width:36px;height:62px;border-radius:50%;z-index:5;
-    pointer-events:none;filter:blur(5px);opacity:0;
-    background:radial-gradient(closest-side,color-mix(in srgb,var(--g) 34%,transparent),transparent 76%)}
-  .swwl{left:-18px;animation:swwakel 2.8s ease-out infinite}
-  .swwr{right:-18px;animation:swwaker 2.8s ease-out infinite}
-  @keyframes swwakel{0%,13%{opacity:0;transform:translateX(12px) scale(.55)}
-    24%{opacity:.95;transform:translateX(-9px) scale(1)}
-    46%{opacity:.5;transform:translateX(-3px) scale(1.06)}
-    68%{opacity:0;transform:translateX(12px) scale(.7)}100%{opacity:0}}
-  @keyframes swwaker{0%,13%{opacity:0;transform:translateX(-12px) scale(.55)}
-    24%{opacity:.95;transform:translateX(9px) scale(1)}
-    46%{opacity:.5;transform:translateX(3px) scale(1.06)}
-    68%{opacity:0;transform:translateX(-12px) scale(.7)}100%{opacity:0}}
-  /* and the fold: one puff that CONVERGES behind the die, late, at the height
-     it entered. This is the frame that says the mist closed over it. */
-  .swseal{position:absolute;left:50%;top:30px;width:48px;height:36px;margin-left:-24px;
-    border-radius:50%;z-index:5;pointer-events:none;filter:blur(4px);opacity:0;
-    background:radial-gradient(closest-side,color-mix(in srgb,var(--g) 36%,transparent),transparent 78%);
-    animation:swseal 2.8s ease-out infinite}
-  @keyframes swseal{0%,28%{opacity:0;transform:scale(1.55)}
-    38%{opacity:.9;transform:scale(1.02)}
-    60%{opacity:0;transform:scale(.7)}100%{opacity:0}}
+  /* ===== THE WASH, cut back to scaffolding. It was 13% flat with an 18% ring
+     pulled in from the boundary; it is 5% and 9% now. Not for pip contrast —
+     it is BEHIND the dice and never cost any — but because a 13% field is
+     brighter than a 0.7px stroke, and the lattice below would have read as
+     texture inside a haze rather than as the thing you are looking at. 5% is
+     the amount that still says the rim encloses something. If it reads at all
+     next to the strokes, take it to zero: the rim and the comb are the
+     design, this is the floor they stand on. ===== */
+  .swpool{position:absolute;inset:-6px;border-radius:19px;pointer-events:none;z-index:0;
+    background:color-mix(in srgb,var(--g) 5%,transparent);
+    box-shadow:inset 0 0 18px color-mix(in srgb,var(--g) 9%,transparent);
+    animation:swrest 9s ease-in-out infinite}
+  /* the resting breath is 9s and 6 points of opacity — slow enough that the
+     eye reads "lit", not "pulsing". A shield that can never break should be
+     the calmest thing on the board; anything faster reads as a warning. */
+  @keyframes swrest{0%,100%{opacity:.94}50%{opacity:1}}
 
-  /* ===== THE ABSORB. The strike reaches the surface, the whole volume goes
-     SOLID for four frames — and then it thins to two thirds and stays there.
-     A spent ward is visibly less mist, so the charge is legible without a
-     number, at a glance, from across the room. The strike is not knocked
-     back: it is drawn up into the mist and gone, which is what "absorbed"
-     means here. ===== */
-  .swhit .swmist,.swhit .swhaze,.swhit .swfloor{animation:swquench 3.2s ease-out infinite}
-  @keyframes swquench{0%,30%{background-color:transparent;filter:none;opacity:1}
-    35%{background-color:color-mix(in srgb,var(--g) 46%,transparent);
-      filter:brightness(1.5) saturate(1.2);opacity:1}
-    42%{background-color:color-mix(in srgb,var(--g) 16%,transparent);filter:none;opacity:1}
-    54%{background-color:transparent;opacity:.64}
-    93%{background-color:transparent;opacity:.64}
-    100%{background-color:transparent;opacity:1}}
-  /* the upwelling at the surface: where the strike went in */
-  .swquell{position:absolute;left:50%;top:-8px;width:66px;height:42px;margin-left:-33px;
-    border-radius:50%;z-index:5;pointer-events:none;filter:blur(3px);opacity:0;
-    background:radial-gradient(closest-side,color-mix(in srgb,#fff 32%,var(--g)) 0%,
-      color-mix(in srgb,var(--g) 45%,transparent) 46%, transparent 78%);
-    animation:swquell 3.2s ease-out infinite}
-  @keyframes swquell{0%,30%{opacity:0;transform:translateY(8px) scale(.5)}
-    37%{opacity:1;transform:translateY(-6px) scale(1.12)}
-    62%{opacity:0;transform:translateY(-28px) scale(1.75)}100%{opacity:0}}
-  .swhit .swfoe{animation:swsink 3.2s cubic-bezier(.35,.05,.5,1) infinite}
-  @keyframes swsink{0%{opacity:0;transform:translateY(-60px);filter:none}
-    9%{opacity:1;transform:translateY(-60px)}
-    32%{opacity:1;transform:translateY(58px) scale(1);filter:none}
-    37%{transform:translateY(52px) scale(1.02);filter:brightness(1.35)}
-    46%{opacity:.75;transform:translateY(42px) scale(.97);filter:blur(2px)}
-    62%{opacity:0;transform:translateY(24px) scale(.86);filter:blur(8px)}
-    100%{opacity:0;transform:translateY(-60px);filter:none}}
+  /* ===== THE LATTICE. W5's technique, moved to where it costs nothing: an
+     inline <g> of stroke-only <polygon> hexes, one custom property per polygon
+     for its delay. It sits at z 0, BEHIND the dice, in the same rect as the
+     wash and the rim — inset -6px, 70×186 CSS px, drawn 1:1 in the viewBox so
+     a coordinate here is a pixel on screen.
 
-  /* the lane clips, so nothing ever floats over the caption above */
-  .swlane{position:relative;height:118px;width:100%;display:flex;justify-content:center;
-    align-items:flex-end;pointer-events:none;overflow:hidden}
-  .swfoe{position:absolute;top:0;opacity:0}
+     WHERE IT RUNS, measured, because "behind the dice" has to mean nothing is
+     covered: a die occupies x 9..61 in that rect, and the three of them
+     occupy y 9..61, 67..119, 125..177. The comb is four courses of ten
+     hexagons — one at y 5 in the margin above the top die, one in each 6px
+     seam (y 64, y 122), one at y 181 in the margin below the bottom die. Each
+     hexagon is flat-topped, circumradius 2.6, so 5.2 across and 4.5 tall; with
+     the 0.7px stroke that is 5.2 of the seam's 6px, clearing the die above and
+     the die below by 0.4px each. In the two margins the clearance is 1.4px.
+     Sideways, each course's end vertices land exactly on x 9 and x 61, the
+     dice's own width. Nothing is drawn over a die face at any frame.
+
+     At rest it is 62% of the hue on a 0.7px line at 26% opacity — you register
+     that something is behind the column without being able to read it. That
+     number is free, because the comb never touches a die: it could go to 100%
+     without costing a pip. It is held down because a guard that can never
+     break should be the quiet thing until something tests it. ===== */
+  .swmesh{position:absolute;inset:-6px;width:70px;height:186px;pointer-events:none;z-index:0}
+  .swhex polygon{fill:none;stroke:color-mix(in srgb,var(--g) 62%,transparent);
+    stroke-width:.7;stroke-linejoin:round;opacity:.26}
+
+  /* ===== THE BOUNDARY. A rim, plus four clamped corners — kept unchanged,
+     because it is the part that makes this a shield and not weather: the
+     volume stops somewhere, and the somewhere is drawn. The rim carries the
+     hue at 52% on a 1px line with a 3px inner shelf under it, so it has a
+     thickness; the corners are a second, brighter 2px line masked down to the
+     four angles, which is the part that reads as hardware. Both are lines at
+     the stack's edge — they cross no die. ===== */
+  .swrim{position:absolute;inset:-6px;border-radius:19px;pointer-events:none;z-index:3;
+    border:1px solid color-mix(in srgb,var(--g) 52%,transparent);
+    box-shadow:inset 0 0 0 3px color-mix(in srgb,var(--g) 9%,transparent),
+      inset 0 1px 0 color-mix(in srgb,var(--g) 30%,transparent),
+      0 0 16px color-mix(in srgb,var(--g) 16%,transparent)}
+  /* Two masks intersected — left/right thirds AND top/bottom bands — leaves
+     the four corners of the ring and nothing else. Where mask-composite is
+     not honoured the element degrades to a full 2px ring, which is dimmer
+     than intended but never broken. */
+  .swbrace{position:absolute;inset:-6px;border-radius:19px;pointer-events:none;z-index:4;
+    border:2px solid color-mix(in srgb,var(--g) 82%,transparent);
+    filter:drop-shadow(0 0 5px color-mix(in srgb,var(--g) 55%,transparent));
+    -webkit-mask-image:linear-gradient(90deg,#000 0 30%,transparent 30% 70%,#000 70% 100%),
+      linear-gradient(180deg,#000 0 13%,transparent 13% 87%,#000 87% 100%);
+    -webkit-mask-composite:source-in;
+    mask-image:linear-gradient(90deg,#000 0 30%,transparent 30% 70%,#000 70% 100%),
+      linear-gradient(180deg,#000 0 13%,transparent 13% 87%,#000 87% 100%);
+    mask-composite:intersect}
+
+  /* ===== THE ENGAGE. The column fills and the guard closes over it, in one
+     beat: the last die settles (the app's own curve — a placed die scales into
+     its slot, it does not fly, which is also why nothing in this card ever
+     crosses the chip), the corners clamp in from outside, the rim lights, the
+     wash rises, the mark pops onto the chip, and the comb knits from the far
+     end — the end the closing die went into — back toward the mouth, a course
+     every 0.05s. From 40% of the loop onward NOTHING moves at all, and that
+     stillness is the statement: this engaged, and now it is simply the state
+     of the column. ===== */
+  .sween .swset{display:block;animation:swsettle 4.6s cubic-bezier(.2,1.3,.4,1) infinite}
+  @keyframes swsettle{0%,11%{opacity:0;transform:scale(.72)}
+    13%{opacity:1;transform:scale(.72)}20%{transform:scale(1.07)}
+    26%,100%{opacity:1;transform:scale(1)}}
+  .sween .swbrace{animation:swclamp 4.6s cubic-bezier(.2,1.5,.4,1) infinite}
+  @keyframes swclamp{0%,13%{opacity:0;transform:scale(1.22)}
+    22%{opacity:1;transform:scale(.98)}30%,100%{opacity:1;transform:scale(1)}}
+  .sween .swrim{animation:swlight 4.6s ease-out infinite}
+  @keyframes swlight{0%,14%{opacity:0}20%{opacity:1;filter:brightness(1.6)}
+    34%,100%{opacity:1;filter:brightness(1)}}
+  /* the wash arrives from the far end too — the volume fills after the column
+     does, never before it */
+  .sween .swpool{transform-origin:50% 100%;animation:swrise 4.6s ease-out infinite}
+  @keyframes swrise{0%,14%{opacity:0;transform:scaleY(.18)}
+    24%{opacity:1;transform:scaleY(1.03)}34%,100%{opacity:1;transform:scaleY(1)}}
+  /* --e is the knit order: 0 at the far course, 0.05s a course toward the
+     mouth, 0.025s a ring outward from the column's centre line. The longest
+     delay is 0.25s, which is 5.4% of this loop, so the last hexagon settles
+     at 39.4% — inside the 40% the beat promises. */
+  .sween .swhex polygon{animation:swknit 4.6s ease-out infinite;animation-delay:var(--e)}
+  @keyframes swknit{0%,14%{opacity:0;fill:transparent}
+    20%{opacity:1;fill:color-mix(in srgb,var(--g) 34%,transparent)}
+    34%,100%{opacity:.26;fill:transparent}}
+  /* the chip mark, on the app's shpop curve and at the app's moment */
+  .sween .swmk{animation:swpop 4.6s cubic-bezier(.2,1.6,.4,1) infinite}
+  @keyframes swpop{0%,15%{opacity:0;transform:scale(0) rotate(-30deg)}
+    23%{opacity:1;transform:scale(1.35) rotate(0)}
+    30%,100%{opacity:1;transform:scale(1) rotate(0)}}
+
+  /* ===== THE STRIKE. It arrives at the mouth, meets the guard, and fails.
+     Nothing is spent, so nothing may look spent: the guard's last keyframe is
+     byte-for-byte its first, and the column beside it — the same column after
+     the strike, drawn static — is the proof. The strike stops ABOVE the chip
+     because the chip owns the mouth; the guard answers underneath it, and the
+     mark at the chip's right end flares on the same frame, which is what
+     .chip .sh.block already does today. ===== */
+  .swlane{position:relative;height:104px;width:100%;overflow:hidden;pointer-events:none}
+  .swfoe{position:absolute;left:50%;bottom:0;width:52px;margin-left:-26px;display:block;opacity:0}
+  .swhit .swfoe{animation:swstrike 3.6s cubic-bezier(.4,.05,.55,1) infinite}
+  @keyframes swstrike{0%,6%{opacity:0;transform:translateY(-104px) scale(1)}
+    10%{opacity:1;transform:translateY(-104px)}
+    26%{opacity:1;transform:translateY(0) scale(1)}
+    30%{transform:translateY(2px) scale(.97);filter:brightness(1.5)}
+    41%{opacity:.7;transform:translateY(-34px) scale(.92);filter:blur(1px)}
+    56%{opacity:0;transform:translateY(-96px) scale(.8);filter:blur(6px)}
+    100%{opacity:0;transform:translateY(-104px) scale(1);filter:none}}
+  /* the boundary takes it: brightness only, and back to exactly 1 */
+  .swhit .swrim{animation:swhold 3.6s ease-out infinite}
+  @keyframes swhold{0%,25%{filter:brightness(1)}
+    28%{filter:brightness(2) saturate(1.15)}
+    36%{filter:brightness(1.3)}48%,100%{filter:brightness(1)}}
+  /* the corners carry a drop-shadow at rest, and `filter` is one property:
+     a beat that animated brightness alone would drop that glow for the whole
+     loop, so this one restates it in every frame */
+  .swhit .swbrace{animation:swholdb 3.6s ease-out infinite}
+  @keyframes swholdb{
+    0%,25%{filter:drop-shadow(0 0 5px color-mix(in srgb,var(--g) 55%,transparent)) brightness(1)}
+    28%{filter:drop-shadow(0 0 13px color-mix(in srgb,var(--g) 92%,transparent)) brightness(1.8)}
+    36%{filter:drop-shadow(0 0 8px color-mix(in srgb,var(--g) 70%,transparent)) brightness(1.25)}
+    48%,100%{filter:drop-shadow(0 0 5px color-mix(in srgb,var(--g) 55%,transparent)) brightness(1)}}
+  /* one ring off the rim, outward — the shape of a thing that held */
+  .swshock{position:absolute;inset:-6px;border-radius:19px;pointer-events:none;z-index:5;opacity:0;
+    border:2px solid color-mix(in srgb,var(--g) 90%,transparent);
+    animation:swshock 3.6s ease-out infinite}
+  @keyframes swshock{0%,25%{opacity:0;transform:scale(.95)}
+    29%{opacity:.9;transform:scale(1)}
+    48%{opacity:0;transform:scale(1.16)}100%{opacity:0;transform:scale(.95)}}
+  /* THE ABSORPTION, and the whole reason the lattice is here. --d is the
+     strike order: the course nearest the mouth first, then 0.05s a course
+     downward, 0.025s a ring outward from the point of contact. Each hexagon
+     fills, then empties back to the 26% it started at — it does not dim, it
+     does not go out, it does not take a neighbour with it. There is no
+     depletion to draw: a shielded column absorbs this one and the next one
+     and every one after, for as long as it stays full. */
+  .swhit .swhex polygon{animation:swlit 3.6s ease-out infinite;animation-delay:var(--d)}
+  @keyframes swlit{0%,25%{opacity:.26;fill:transparent}
+    29%{opacity:1;fill:color-mix(in srgb,var(--g) 34%,transparent)}
+    44%{opacity:.55;fill:transparent}
+    58%,100%{opacity:.26;fill:transparent}}
+  .swhit .swmk{animation:swblock 3.6s ease-out infinite}
+  @keyframes swblock{0%,25%{transform:scale(1)}
+    30%{transform:scale(1.55);filter:drop-shadow(0 0 16px rgba(var(--mx2-rgb,var(--gold-rgb)),1))}
+    45%,100%{transform:scale(1);filter:drop-shadow(0 0 6px rgba(var(--mx2-rgb,var(--gold-rgb)),.75))}}
+
   .swlbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
     text-align:center;min-height:12px}
+  .swlbl.swoff{color:#6f7c96}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
-  <div class="shead"><button class="ico">‹</button><span class="ttl">GUARDED COLUMN</span><span class="pad"></span></div>
-  <div class="swwrap" style="--wd:{{shue:ward}}">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">SHIELDED COLUMN</span><span class="pad"></span></div>
+  <div class="swwrap">
 
-    <div class="cap2">Today — a 1px ring and a 12% glow, under a die that already glows</div>
+    <div class="cap2">Today — a 1px ring and a 12% glow, under dice that already glow</div>
     <div class="swrow">
       <div class="swcol">
-        <div class="swstack now">
+        <div class="swchip gold">12<i class="swmk">{{mico:colshield:13}}</i></div>
+        <div class="swstack swnow">
           <div class="swslot">{{die:5:p1:52}}</div>
           <div class="swslot">{{die:5:p1:52}}</div>
           <div class="swslot">{{die:2:p1:52}}</div>
         </div>
-        <div class="swchip gold">12<i>{{mico:colshield:13}}</i></div>
-        <div class="swlbl">shielded</div>
+        <div class="swlbl">full · locked</div>
       </div>
       <div class="swcol">
-        <div class="swstack nowward">
+        <div class="swchip">5</div>
+        <div class="swstack">
           <div class="swslot">{{die:4:p1:52}}</div>
           <div class="swslot">{{die:1:p1:52}}</div>
           <div class="swslot"></div>
         </div>
-        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
-        <div class="swlbl">warded</div>
+        <div class="swlbl swoff">one short · open</div>
       </div>
     </div>
 
-    <div class="cap2">Proposed — the column is filled: a pool at the floor, thinning up, motes in it</div>
+    <div class="cap2">Proposed — the layer in front of the dice is gone; the structure moved behind them</div>
     <div class="swrow">
       <div class="swcol swgold">
+        <div class="swchip gold">12<i class="swmk">{{mico:colshield:13}}</i></div>
         <div class="swstack">
+          <i class="swpool"></i>
+          <svg class="swmesh" viewBox="0 0 70 186" width="70" height="186" aria-hidden="true"><g class="swhex">
+            <polygon style="--d:.1s;--e:.25s" transform="translate(11.6 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.225s" transform="translate(16.8 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.2s" transform="translate(22 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.025s;--e:.175s" transform="translate(27.2 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:0s;--e:.15s" transform="translate(32.4 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:0s;--e:.15s" transform="translate(37.6 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.025s;--e:.175s" transform="translate(42.8 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.2s" transform="translate(48 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.225s" transform="translate(53.2 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.25s" transform="translate(58.4 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.2s" transform="translate(11.6 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.175s" transform="translate(16.8 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.15s" transform="translate(22 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.125s" transform="translate(27.2 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.1s" transform="translate(32.4 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.1s" transform="translate(37.6 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.125s" transform="translate(42.8 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.15s" transform="translate(48 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.175s" transform="translate(53.2 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.2s" transform="translate(58.4 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.15s" transform="translate(11.6 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.125s" transform="translate(16.8 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.1s" transform="translate(22 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.075s" transform="translate(27.2 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.05s" transform="translate(32.4 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.05s" transform="translate(37.6 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.075s" transform="translate(42.8 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.1s" transform="translate(48 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.125s" transform="translate(53.2 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.15s" transform="translate(58.4 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.25s;--e:.1s" transform="translate(11.6 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.225s;--e:.075s" transform="translate(16.8 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.05s" transform="translate(22 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.025s" transform="translate(27.2 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:0s" transform="translate(32.4 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:0s" transform="translate(37.6 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.025s" transform="translate(42.8 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.05s" transform="translate(48 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.225s;--e:.075s" transform="translate(53.2 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.25s;--e:.1s" transform="translate(58.4 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+          </g></svg>
           <div class="swslot">{{die:5:p1:52}}</div>
           <div class="swslot">{{die:5:p1:52}}</div>
           <div class="swslot">{{die:2:p1:52}}</div>
-          <i class="swmist"><b class="swmote swm1"></b><b class="swmote swm2"></b></i>
-          <i class="swhaze"><b class="swmote swm3"></b></i>
-          <i class="swfloor"></i>
+          <i class="swrim"></i><i class="swbrace"></i>
         </div>
-        <div class="swchip gold">12<i>{{mico:colshield:13}}</i></div>
-        <div class="swlbl">shield · gold</div>
+        <div class="swlbl">full · locked</div>
       </div>
-      <div class="swcol swmint">
+      <div class="swcol">
+        <div class="swchip">5</div>
         <div class="swstack">
           <div class="swslot">{{die:4:p1:52}}</div>
           <div class="swslot">{{die:1:p1:52}}</div>
           <div class="swslot"></div>
-          <i class="swmist"><b class="swmote swm1"></b><b class="swmote swm2"></b></i>
-          <i class="swhaze"><b class="swmote swm3"></b></i>
-          <i class="swfloor"></i>
         </div>
-        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
-        <div class="swlbl">ward · mint</div>
+        <div class="swlbl swoff">one short · open</div>
       </div>
     </div>
 
-    <div class="cap2">Your die parts it and it folds back in — nothing ever meets the die</div>
+    <div class="cap2">It engages the frame the column fills — the corners clamp, the comb knits from the far end</div>
     <div class="swrow">
-      <div class="swcol swmint swdrop">
+      <div class="swcol swgold sween">
+        <div class="swchip gold">12<i class="swmk">{{mico:colshield:13}}</i></div>
         <div class="swstack">
-          <div class="swslot"><span class="swfall">{{die:6:p1:52}}</span></div>
-          <div class="swslot">{{die:4:p1:52}}</div>
-          <div class="swslot">{{die:1:p1:52}}</div>
-          <i class="swmist"><b class="swmote swm1"></b><b class="swmote swm2"></b></i>
-          <i class="swhaze"><b class="swmote swm3"></b></i>
-          <i class="swfloor"></i>
-          <i class="swwake swwl"></i><i class="swwake swwr"></i><i class="swseal"></i>
+          <i class="swpool"></i>
+          <svg class="swmesh" viewBox="0 0 70 186" width="70" height="186" aria-hidden="true"><g class="swhex">
+            <polygon style="--d:.1s;--e:.25s" transform="translate(11.6 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.225s" transform="translate(16.8 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.2s" transform="translate(22 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.025s;--e:.175s" transform="translate(27.2 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:0s;--e:.15s" transform="translate(32.4 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:0s;--e:.15s" transform="translate(37.6 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.025s;--e:.175s" transform="translate(42.8 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.2s" transform="translate(48 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.225s" transform="translate(53.2 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.25s" transform="translate(58.4 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.2s" transform="translate(11.6 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.175s" transform="translate(16.8 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.15s" transform="translate(22 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.125s" transform="translate(27.2 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.1s" transform="translate(32.4 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.1s" transform="translate(37.6 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.125s" transform="translate(42.8 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.15s" transform="translate(48 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.175s" transform="translate(53.2 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.2s" transform="translate(58.4 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.15s" transform="translate(11.6 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.125s" transform="translate(16.8 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.1s" transform="translate(22 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.075s" transform="translate(27.2 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.05s" transform="translate(32.4 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.05s" transform="translate(37.6 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.075s" transform="translate(42.8 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.1s" transform="translate(48 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.125s" transform="translate(53.2 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.15s" transform="translate(58.4 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.25s;--e:.1s" transform="translate(11.6 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.225s;--e:.075s" transform="translate(16.8 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.05s" transform="translate(22 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.025s" transform="translate(27.2 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:0s" transform="translate(32.4 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:0s" transform="translate(37.6 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.025s" transform="translate(42.8 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.05s" transform="translate(48 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.225s;--e:.075s" transform="translate(53.2 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.25s;--e:.1s" transform="translate(58.4 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+          </g></svg>
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot"><span class="swset">{{die:2:p1:52}}</span></div>
+          <i class="swrim"></i><i class="swbrace"></i>
         </div>
-        <div class="swchip mint"><i>{{sico:ward:13}}</i>11</div>
-        <div class="swlbl">drop</div>
+        <div class="swlbl">the closing die</div>
       </div>
-      <div class="swcol swmint swhit">
-        <div class="swlane"><span class="swfoe">{{die:4:p2:52}}</span></div>
+      <div class="swcol swgold">
+        <div class="swchip gold">12<i class="swmk">{{mico:colshield:13}}</i></div>
         <div class="swstack">
-          <div class="swslot">{{die:4:p1:52}}</div>
-          <div class="swslot">{{die:1:p1:52}}</div>
-          <div class="swslot"></div>
-          <i class="swmist"><b class="swmote swm1"></b><b class="swmote swm2"></b></i>
-          <i class="swhaze"><b class="swmote swm3"></b></i>
-          <i class="swfloor"></i>
-          <i class="swquell"></i>
+          <i class="swpool"></i>
+          <svg class="swmesh" viewBox="0 0 70 186" width="70" height="186" aria-hidden="true"><g class="swhex">
+            <polygon style="--d:.1s;--e:.25s" transform="translate(11.6 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.225s" transform="translate(16.8 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.2s" transform="translate(22 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.025s;--e:.175s" transform="translate(27.2 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:0s;--e:.15s" transform="translate(32.4 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:0s;--e:.15s" transform="translate(37.6 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.025s;--e:.175s" transform="translate(42.8 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.2s" transform="translate(48 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.225s" transform="translate(53.2 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.25s" transform="translate(58.4 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.2s" transform="translate(11.6 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.175s" transform="translate(16.8 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.15s" transform="translate(22 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.125s" transform="translate(27.2 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.1s" transform="translate(32.4 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.1s" transform="translate(37.6 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.125s" transform="translate(42.8 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.15s" transform="translate(48 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.175s" transform="translate(53.2 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.2s" transform="translate(58.4 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.15s" transform="translate(11.6 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.125s" transform="translate(16.8 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.1s" transform="translate(22 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.075s" transform="translate(27.2 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.05s" transform="translate(32.4 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.05s" transform="translate(37.6 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.075s" transform="translate(42.8 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.1s" transform="translate(48 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.125s" transform="translate(53.2 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.15s" transform="translate(58.4 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.25s;--e:.1s" transform="translate(11.6 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.225s;--e:.075s" transform="translate(16.8 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.05s" transform="translate(22 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.025s" transform="translate(27.2 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:0s" transform="translate(32.4 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:0s" transform="translate(37.6 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.025s" transform="translate(42.8 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.05s" transform="translate(48 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.225s;--e:.075s" transform="translate(53.2 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.25s;--e:.1s" transform="translate(58.4 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+          </g></svg>
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:2:p1:52}}</div>
+          <i class="swrim"></i><i class="swbrace"></i>
         </div>
-        <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
-        <div class="swlbl">absorb</div>
+        <div class="swlbl">ten turns later</div>
       </div>
     </div>
 
-    <div class="note"><b>What it says:</b> the column is <b>full</b> of the protection, not ringed by it. Nothing here is an edge, so nothing here can be lost against a die that already carries a border and a bloom — this is the one option of the six you read from across the room, and the only one that answers "which columns are guarded?" without the player looking for a line. Half the volume sits behind the dice where it can run hot, a thin veil sits in front so the dice are standing <b>in</b> it, and three motes drift at 9–13s — weather, not an alert. <b>The drop</b> is the mist getting out of the way: it billows off the floor, two puffs are shouldered aside, and the volume folds back in behind the die. The die itself falls exactly as it falls into an unguarded column, because a ward eats a STRIKE and never refuses your own placement. <b>The absorb</b> goes solid for four frames, then thins to two thirds and <b>stays</b> thin — a spent ward is less mist, so the charge reads without a number. <b>Cost:</b> this is the loudest option at rest, and it is the one that changes what the board looks like. The front veil is real tint over real pips — 15% at the floor, 0% at the ceiling — and it can only get quieter, never louder, without the bottom die going soft. Two adjacent guarded columns pool into one cloud unless the gutter grows. And the board already has a background wash and a bloom per die; a mode where every full column fogs up is a board that is mostly weather.</div>
+    <div class="cap2">A strike arrives and fails — the comb lights from the contact and settles back to where it was</div>
+    <div class="swrow">
+      <div class="swcol swgold swhit">
+        <div class="swlane"><span class="swfoe">{{die:5:p2:52}}</span></div>
+        <div class="swchip gold">12<i class="swmk">{{mico:colshield:13}}</i></div>
+        <div class="swstack">
+          <i class="swpool"></i>
+          <svg class="swmesh" viewBox="0 0 70 186" width="70" height="186" aria-hidden="true"><g class="swhex">
+            <polygon style="--d:.1s;--e:.25s" transform="translate(11.6 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.225s" transform="translate(16.8 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.2s" transform="translate(22 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.025s;--e:.175s" transform="translate(27.2 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:0s;--e:.15s" transform="translate(32.4 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:0s;--e:.15s" transform="translate(37.6 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.025s;--e:.175s" transform="translate(42.8 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.2s" transform="translate(48 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.225s" transform="translate(53.2 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.25s" transform="translate(58.4 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.2s" transform="translate(11.6 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.175s" transform="translate(16.8 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.15s" transform="translate(22 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.125s" transform="translate(27.2 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.1s" transform="translate(32.4 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.1s" transform="translate(37.6 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.125s" transform="translate(42.8 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.15s" transform="translate(48 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.175s" transform="translate(53.2 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.2s" transform="translate(58.4 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.15s" transform="translate(11.6 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.125s" transform="translate(16.8 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.1s" transform="translate(22 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.075s" transform="translate(27.2 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.05s" transform="translate(32.4 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.05s" transform="translate(37.6 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.075s" transform="translate(42.8 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.1s" transform="translate(48 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.125s" transform="translate(53.2 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.15s" transform="translate(58.4 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.25s;--e:.1s" transform="translate(11.6 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.225s;--e:.075s" transform="translate(16.8 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.05s" transform="translate(22 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.025s" transform="translate(27.2 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:0s" transform="translate(32.4 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:0s" transform="translate(37.6 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.025s" transform="translate(42.8 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.05s" transform="translate(48 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.225s;--e:.075s" transform="translate(53.2 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.25s;--e:.1s" transform="translate(58.4 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+          </g></svg>
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:2:p1:52}}</div>
+          <i class="swrim"></i><i class="swbrace"></i><i class="swshock"></i>
+        </div>
+        <div class="swlbl">the strike breaks</div>
+      </div>
+      <div class="swcol swgold">
+        <div class="swlane"></div>
+        <div class="swchip gold">12<i class="swmk">{{mico:colshield:13}}</i></div>
+        <div class="swstack">
+          <i class="swpool"></i>
+          <svg class="swmesh" viewBox="0 0 70 186" width="70" height="186" aria-hidden="true"><g class="swhex">
+            <polygon style="--d:.1s;--e:.25s" transform="translate(11.6 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.225s" transform="translate(16.8 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.2s" transform="translate(22 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.025s;--e:.175s" transform="translate(27.2 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:0s;--e:.15s" transform="translate(32.4 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:0s;--e:.15s" transform="translate(37.6 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.025s;--e:.175s" transform="translate(42.8 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.2s" transform="translate(48 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.225s" transform="translate(53.2 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.25s" transform="translate(58.4 5)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.2s" transform="translate(11.6 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.175s" transform="translate(16.8 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.15s" transform="translate(22 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.125s" transform="translate(27.2 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.1s" transform="translate(32.4 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.05s;--e:.1s" transform="translate(37.6 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.075s;--e:.125s" transform="translate(42.8 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.15s" transform="translate(48 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.175s" transform="translate(53.2 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.2s" transform="translate(58.4 64)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.15s" transform="translate(11.6 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.125s" transform="translate(16.8 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.1s" transform="translate(22 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.075s" transform="translate(27.2 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.05s" transform="translate(32.4 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.1s;--e:.05s" transform="translate(37.6 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.125s;--e:.075s" transform="translate(42.8 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:.1s" transform="translate(48 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.125s" transform="translate(53.2 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.15s" transform="translate(58.4 122)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.25s;--e:.1s" transform="translate(11.6 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.225s;--e:.075s" transform="translate(16.8 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.05s" transform="translate(22 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.025s" transform="translate(27.2 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:0s" transform="translate(32.4 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.15s;--e:0s" transform="translate(37.6 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.175s;--e:.025s" transform="translate(42.8 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.2s;--e:.05s" transform="translate(48 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.225s;--e:.075s" transform="translate(53.2 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+            <polygon style="--d:.25s;--e:.1s" transform="translate(58.4 181)" points="2.6,0 1.3,2.25 -1.3,2.25 -2.6,0 -1.3,-2.25 1.3,-2.25"/>
+          </g></svg>
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:5:p1:52}}</div>
+          <div class="swslot">{{die:2:p1:52}}</div>
+          <i class="swrim"></i><i class="swbrace"></i>
+        </div>
+        <div class="swlbl">the same column, after</div>
+      </div>
+    </div>
+
+    <div class="note"><b>What it says:</b> a full column is <b>held</b> — a hard rim with the four corners clamped shut, and behind the dice a comb of hexagons filling the gaps the dice leave. That is the whole rule of COLUMN SHIELD in one picture: the column is full, so it is locked, and it stays locked as long as it stays full. Nothing is spent, nothing depletes, and it cannot break. <b>What changed since the haze:</b> the layer in front of the dice is gone, and nothing took its place. The last draft had exactly one — a 3%-to-6% gradient over the whole stack — and that layer was this card's entire pip-contrast bill. It is deleted, not thinned; the motes went with it, because they were the mist's weather and there is no mist now. What is left in front of a die is what was there on a bare column: nothing. The rim, the corners and the ring a strike leaves are lines at the stack's edge and cross no die at any frame. This draft puts <b>less</b> ink in front of the dice than the one before it, which was the condition on adding the hexagons at all. <b>Where the structure went instead:</b> behind them, at z 0, into the only room a lattice can take without covering anything — the two 6px seams between the dice and the 9px margin inside the rim. Four courses of ten hexagons, one size, one orientation, drawn the way the ward shell (W5) draws its scales — a 0.7px stroke, one custom property per polygon for its delay. <b>Stroke-only at rest</b>, which is what makes it affordable: a honeycomb of sub-pixel lines covers a fraction of what a wash does, so it can be structure without being a layer. When a hexagon is LIT it fills, to 34% for a fraction of a second, and then empties back to its stroke — that flash is the beat, and it is free here for the same reason everything else is: every polygon sits in a strip no die covers, so a fill costs no pip contrast either. Measured: a hexagon is 5.2 across and 4.5 tall, so with its stroke it takes 5.2 of a seam's 6px and clears the die above and the die below by <b>0.4px each</b>; in the two margins the clearance is 1.4px; and each course's end vertices land on x 9 and x 61, the dice's own width. <b>The wash came down to make room:</b> 13% flat is now <b>5%</b>, and the ring pulled in from the boundary 18% → 9%. Not for contrast — the wash is behind the dice and never cost any — but because a 13% field is brighter than a 0.7px stroke, and the comb would have read as texture inside a haze instead of as the thing you are looking at. 5% is the amount that still says the rim encloses something; the strokes say what. If it reads at all beside them, take it to zero. <b>At rest it is quiet on purpose:</b> 62% of the hue on a 0.7px line held at 26% opacity — you sense a structure behind the column without being able to read it. That number is free: the comb never touches a die, so it could go to 100% without costing a pip. It is held down because a guard that can never break should be the calm thing until something tests it. <b>The beats.</b> A column fills away from its mouth — render.ts maps board index 0 to the slot nearest the chip, so the die that closes a column is the far one. The corners clamp, the rim lights, and the comb knits from that far end back toward the mouth, a course every 0.05s: the structure appears after the column is full, never before it, and the last hexagon settles at 39.4% of the loop, inside the 40% after which nothing moves at all. Then a strike arrives at the mouth and fails. It lights the course nearest the contact first and runs down and outward, 0.025s a ring — and every hexagon fills and then empties back to the 26% it started at. <b>Nothing drains, nothing cracks, no count goes down.</b> The last frame of the strike loop is byte-for-byte the first, and the column beside it — the same column afterwards, drawn static — is identical on purpose. <b>The chip is untouched.</b> It keeps its box, its score and its mark — measured constant at every frame of every beat. Two layers do travel under it: the strike's ring, and the corner clamps as they spring in. They pass BENEATH the chip (z 4 and 5 against the chip's 6) and never over it, so the chip is never covered or dimmed — but "nothing reaches it" would be the wrong claim, and the distinction is the one that matters if either layer is ever given a higher z. The rim stops 5px below the chip's underside and the topmost hexagon 7.4px below it, and the mark stays absolutely positioned at the chip's right end where main.css puts it (<i>.chip .sh, right:4px</i>), so a score that changes width re-centres under a mark that never moves. <b>Costs.</b> Forty stroked polygons per shielded column, and it is per column: three of them is 120, on a board that already carries a bloom per die — worth a frame check on the oldest phone before this ships, though strokes that only change opacity and fill are the cheap kind. <b>The seam sets the hexagon's size</b>, and it is small: 5.2px across is what fits a 6px gap once the stroke is counted, roughly seven tenths the width of the ward shell's scales. If the gutters do grow, the comb grows with them, and that is the first thing to re-measure. And the rim still wants room the board has not got: it stands 9px off the dice while columns sit 6px apart and the chip strip clears the board by 4px, so two shielded neighbours would overlap by 12px. Either both gutters grow in this mode, or the rim tucks in to 3px off the dice and gives up the inner shelf that makes its edge look thick. This draft does not settle that trade — it only stops the guard from costing anything the dice were paying.</div>
   </div>
 </div></div>

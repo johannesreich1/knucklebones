@@ -1,0 +1,282 @@
+<!-- meta name="F3 — Grabber" group="3h · Face-off dismissal" subtitle="No ✕ anywhere: the card wears the bar every mobile sheet wears and leaves by being dragged down — the wash lightening as the ladder comes back, a spring back when the drag is too short" width=428 height=2210 sizes="md" links="Ladder, Navigation" -->
+<style>
+  /* Card-local names only (fg*) — with ONE exception: .fograb is the class a
+     real implementation would add to online.css, so the card proposes the name
+     it would ship under rather than inventing a study-only one.
+
+     The app pins .faceoff with position:fixed, so every rule here that touches
+     it sets position too (design/build.mjs fails the build otherwise). The
+     face-off card itself is the app's own component, worn exactly as it ships
+     apart from the grabber; the ladder rows behind the wash are deliberately
+     schematic bars — they are here to be REVEALED, not to be a second copy of
+     the board's markup. */
+  .scr{gap:16px;align-items:center;justify-content:center}
+  .cap2{margin-bottom:-5px}
+
+  /* the wash pinned static so the rest card sits in the stage's flow (card 30
+     does the same); the demo frames below draw their own wash instead */
+  .faceoff{position:static;inset:auto;background:none;padding:0;z-index:auto;
+    display:block;width:100%;max-width:330px;margin:0 auto}
+
+  /* ===== THE GRABBER. A 40×4 bar centred on the card's top EDGE, and the
+     first flex child of .focard rather than an absolutely placed decoration —
+     a floating bar would repeat exactly what the corner ✕ is accused of.
+     Its cost in card height, in full: the wrapper is 14px tall, -8px eats
+     half the card's 16px top padding, -12px cancels the column's 12px flex
+     gap and the gap puts 12px back. 14 - 8 - 12 + 12 = 6px, and nothing at
+     all horizontally, so the 46px avatars and the 130px-capped nickname get
+     the whole 356px back. The bar is neutral white, not the duel pair: it is
+     chrome, and it must read the same over a gold column and a cyan one. ===== */
+  .fograb{height:14px;margin:-8px 0 -12px;display:grid;place-items:center;
+    cursor:grab;touch-action:none}
+  .fgbar{width:40px;height:4px;border-radius:99px;background:rgba(255,255,255,.22)}
+
+  /* ===== THE DEMO FRAMES: the ladder underneath, the wash over it, the card
+     over that. A window on the screen, not a component. ===== */
+  .fgframe{position:relative;width:100%;max-width:330px;height:400px;border-radius:18px;
+    overflow:hidden;border:1px solid rgba(255,255,255,.10);
+    background:linear-gradient(180deg,#0a0d1e,#070a16)}
+  /* the short beat only needs the top of the card; the cut is a fade so it
+     reads as a window rather than as a card that lost its stats */
+  .fgframe.fgshort{height:210px;
+    -webkit-mask-image:linear-gradient(180deg,#000 76%,transparent);
+    mask-image:linear-gradient(180deg,#000 76%,transparent)}
+
+  .fglad{position:absolute;inset:0;padding:10px;display:flex;flex-direction:column;gap:5px}
+  .fgr{height:32px;border-radius:10px;background:rgba(255,255,255,.035);
+    border:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:9px;padding:0 9px}
+  .fgrk{font-size:9px;font-weight:900;color:var(--dim);width:14px;text-align:right}
+  .fgav{width:18px;height:18px;border-radius:6px;background:rgba(255,255,255,.10)}
+  .fgnm{height:6px;border-radius:99px;background:rgba(255,255,255,.14);width:84px}
+  .fgpt{height:6px;border-radius:99px;background:rgba(255,209,102,.30);width:32px;margin-left:auto}
+  .fgr.fgme{border-color:rgba(var(--p1-rgb),.28)}
+  .fgr.fgme .fgnm{background:rgba(var(--p1-rgb),.38)}
+
+  .fgwash{position:absolute;inset:0;background:rgba(3,5,12,.66)}
+  /* the commit line, drawn OVER the wash because it is an annotation, not
+     something the player would ever see: 96px of travel, measured from the
+     card's top edge (rest top 14px + 96px = 110px down the frame) */
+  .fgrule{position:absolute;left:0;right:0;top:110px;border-top:1px dashed rgba(255,209,102,.42);z-index:4}
+  /* the number rides the CENTRE of the line, on the VS axis: the ~56px gap
+     between the two group pills is the only band of the card an annotation
+     can cross without covering something the player would be reading */
+  .fgrule span{position:absolute;left:50%;transform:translateX(-50%);top:-8px;font-size:8px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--gold);white-space:nowrap;
+    padding:2px 6px;border-radius:99px;background:rgba(6,9,20,.86);
+    border:1px solid rgba(255,209,102,.3)}
+  .fgslide{position:absolute;left:0;right:0;top:14px;padding:0 12px;z-index:3}
+  /* the fingertip rides INSIDE the moving card, so it needs no timeline of
+     its own beyond arriving and lifting — it is on the bar, and the bar moves */
+  .fgfinger{position:absolute;left:50%;top:0;width:30px;height:30px;margin-left:-15px;
+    border-radius:50%;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.34);
+    box-shadow:0 0 18px rgba(255,255,255,.12);opacity:0}
+
+  /* ===== BEAT 1 — the drag that commits, 6s:
+       0–8%    at rest; the finger arrives on the bar
+       8–34%   the card FOLLOWS the finger, 0 → 152px, wash .66 → ~.28
+       34–38%  held past the line; the finger lifts
+       38–48%  released: it leaves, ease-in, and the wash goes to nothing
+       48–70%  the ladder, resumed — the point of the whole gesture
+       70–80%  dealt again, which is what a tap on a row does anyway ===== */
+  @keyframes fgleave{
+    0%,8%{transform:translateY(0);opacity:1;animation-timing-function:linear}
+    34%{transform:translateY(152px);opacity:1}
+    38%{transform:translateY(160px);opacity:1;animation-timing-function:cubic-bezier(.42,0,1,1)}
+    48%{transform:translateY(452px);opacity:1}
+    49%,69%{transform:translateY(452px);opacity:0}
+    70%{transform:translateY(16px);opacity:0;animation-timing-function:cubic-bezier(.2,.9,.3,1)}
+    80%,100%{transform:translateY(0);opacity:1}
+  }
+  @keyframes fgwash{
+    0%,8%{opacity:1;animation-timing-function:linear}
+    34%{opacity:.42}38%{opacity:.4}48%,70%{opacity:0}80%,100%{opacity:1}
+  }
+  @keyframes fgpress{
+    0%,6%{background-color:rgba(255,255,255,.22)}
+    9%,37%{background-color:rgba(255,255,255,.5)}
+    44%,100%{background-color:rgba(255,255,255,.22)}
+  }
+  @keyframes fgtouch{0%,3%{opacity:0}8%,36%{opacity:1}40%,100%{opacity:0}}
+  .fgcommit .fgslide{animation:fgleave 6s infinite}
+  .fgcommit .fgwash{animation:fgwash 6s infinite}
+  .fgcommit .fgbar{animation:fgpress 6s infinite}
+  .fgcommit .fgfinger{animation:fgtouch 6s infinite}
+
+  /* ===== BEAT 2 — the drag that does not, 4.4s. It dips 58px, 38px short of
+     the line, and the release springs it home with a small overshoot. The
+     wash barely moves, which is the tell: nothing was going to happen. ===== */
+  @keyframes fgsnap{
+    0%,12%{transform:translateY(0);animation-timing-function:linear}
+    40%{transform:translateY(58px)}
+    48%{transform:translateY(58px);animation-timing-function:cubic-bezier(.2,1.4,.4,1)}
+    62%,100%{transform:translateY(0)}
+  }
+  @keyframes fgsnapwash{0%,12%{opacity:1}40%,48%{opacity:.84}62%,100%{opacity:1}}
+  @keyframes fgsnappress{
+    0%,10%{background-color:rgba(255,255,255,.22)}
+    13%,47%{background-color:rgba(255,255,255,.5)}
+    54%,100%{background-color:rgba(255,255,255,.22)}
+  }
+  @keyframes fgsnaptouch{0%,6%{opacity:0}12%,46%{opacity:1}51%,100%{opacity:0}}
+  .fgshort .fgslide{animation:fgsnap 4.4s infinite}
+  .fgshort .fgwash{animation:fgsnapwash 4.4s infinite}
+  .fgshort .fgbar{animation:fgsnappress 4.4s infinite}
+  .fgshort .fgfinger{animation:fgsnaptouch 4.4s infinite}
+
+  .fgchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:330px}
+  .fgchip{font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+    border:1px solid rgba(255,255,255,.14);border-radius:99px;padding:4px 9px}
+  .fgchip b{color:var(--cy);font-weight:800}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+
+  <div class="cap2">AT REST — ONE BAR ON THE EDGE, NOTHING IN THE CORNERS</div>
+  <div class="faceoff">
+    <div class="focard dice-static">
+      <div class="fograb"><span class="fgbar"></span></div>
+      <div class="focols">
+        <div class="focol" style="--gc:var(--g-gold)">
+          <span class="av">{{die:6:p1:46}}</span><span class="fnm">SwiftDice753</span>
+          <span class="gpill">GOLD · #6</span>
+        </div>
+        <span class="fovs">VS</span>
+        <div class="focol you" style="--gc:var(--g-bone)">
+          <span class="av">{{die:5:p1:46}}</span><span class="fnm">FrostLynx303</span>
+          <span class="gpill">BONE · #12</span>
+        </div>
+      </div>
+      <div class="fostats">
+        <div class="fost"><span class="a">2,680</span><span class="k">Points</span><span class="b">465</span></div>
+        <div class="fost"><span class="a">{{score:W:13:L:8}}</span><span class="k">Record</span><span class="b">{{score:W:4:L:6}}</span></div>
+        <div class="fost"><span class="a">4</span><span class="k">Best streak</span><span class="b">2</span></div>
+        <div class="fost"><span class="a">2,743</span><span class="k">Peak</span><span class="b">465</span></div>
+        <div class="fost"><span class="a">62%</span><span class="k">Win rate</span><span class="b">40%</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="fgchips">
+    <span class="fgchip">bar <b>40 × 4</b></span>
+    <span class="fgchip"><b>+6px</b> tall</span>
+    <span class="fgchip"><b>0px</b> wide</span>
+    <span class="fgchip">drag = <b>whole card</b></span>
+  </div>
+
+  <div class="cap2">THE DRAG — RELEASED PAST THE LINE, IT GOES, AND THE LADDER IS BACK</div>
+  <div class="fgframe fgcommit">
+    <div class="fglad">
+      <div class="fgr"><span class="fgrk">4</span><span class="fgav"></span><span class="fgnm"></span><span class="fgpt"></span></div>
+      <div class="fgr"><span class="fgrk">5</span><span class="fgav"></span><span class="fgnm"></span><span class="fgpt"></span></div>
+      <div class="fgr"><span class="fgrk">6</span><span class="fgav"></span><span class="fgnm"></span><span class="fgpt"></span></div>
+      <div class="fgr"><span class="fgrk">7</span><span class="fgav"></span><span class="fgnm"></span><span class="fgpt"></span></div>
+      <div class="fgr"><span class="fgrk">8</span><span class="fgav"></span><span class="fgnm"></span><span class="fgpt"></span></div>
+      <div class="fgr"><span class="fgrk">9</span><span class="fgav"></span><span class="fgnm"></span><span class="fgpt"></span></div>
+      <div class="fgr"><span class="fgrk">10</span><span class="fgav"></span><span class="fgnm"></span><span class="fgpt"></span></div>
+      <div class="fgr"><span class="fgrk">11</span><span class="fgav"></span><span class="fgnm"></span><span class="fgpt"></span></div>
+      <div class="fgr fgme"><span class="fgrk">12</span><span class="fgav"></span><span class="fgnm"></span><span class="fgpt"></span></div>
+      <div class="fgr"><span class="fgrk">13</span><span class="fgav"></span><span class="fgnm"></span><span class="fgpt"></span></div>
+    </div>
+    <div class="fgwash"></div>
+    <div class="fgrule"><span>96px</span></div>
+    <div class="fgslide">
+      <div class="faceoff">
+        <div class="focard dice-static">
+          <div class="fograb"><span class="fgbar"></span></div>
+          <div class="focols">
+            <div class="focol" style="--gc:var(--g-gold)">
+              <span class="av">{{die:6:p1:46}}</span><span class="fnm">SwiftDice753</span>
+              <span class="gpill">GOLD · #6</span>
+            </div>
+            <span class="fovs">VS</span>
+            <div class="focol you" style="--gc:var(--g-bone)">
+              <span class="av">{{die:5:p1:46}}</span><span class="fnm">FrostLynx303</span>
+              <span class="gpill">BONE · #12</span>
+            </div>
+          </div>
+          <div class="fostats">
+            <div class="fost"><span class="a">2,680</span><span class="k">Points</span><span class="b">465</span></div>
+            <div class="fost"><span class="a">{{score:W:13:L:8}}</span><span class="k">Record</span><span class="b">{{score:W:4:L:6}}</span></div>
+            <div class="fost"><span class="a">4</span><span class="k">Best streak</span><span class="b">2</span></div>
+            <div class="fost"><span class="a">2,743</span><span class="k">Peak</span><span class="b">465</span></div>
+            <div class="fost"><span class="a">62%</span><span class="k">Win rate</span><span class="b">40%</span></div>
+          </div>
+        </div>
+      </div>
+      <span class="fgfinger"></span>
+    </div>
+  </div>
+
+  <div class="cap2">TOO SHORT — IT NEVER REACHES THE LINE, SO IT SPRINGS BACK</div>
+  <div class="fgframe fgshort">
+    <div class="fglad">
+      <div class="fgr"><span class="fgrk">4</span><span class="fgav"></span><span class="fgnm"></span><span class="fgpt"></span></div>
+      <div class="fgr"><span class="fgrk">5</span><span class="fgav"></span><span class="fgnm"></span><span class="fgpt"></span></div>
+      <div class="fgr"><span class="fgrk">6</span><span class="fgav"></span><span class="fgnm"></span><span class="fgpt"></span></div>
+      <div class="fgr"><span class="fgrk">7</span><span class="fgav"></span><span class="fgnm"></span><span class="fgpt"></span></div>
+      <div class="fgr"><span class="fgrk">8</span><span class="fgav"></span><span class="fgnm"></span><span class="fgpt"></span></div>
+      <div class="fgr"><span class="fgrk">9</span><span class="fgav"></span><span class="fgnm"></span><span class="fgpt"></span></div>
+    </div>
+    <div class="fgwash"></div>
+    <div class="fgrule"><span>96px</span></div>
+    <div class="fgslide">
+      <div class="faceoff">
+        <div class="focard dice-static">
+          <div class="fograb"><span class="fgbar"></span></div>
+          <div class="focols">
+            <div class="focol" style="--gc:var(--g-gold)">
+              <span class="av">{{die:6:p1:46}}</span><span class="fnm">SwiftDice753</span>
+              <span class="gpill">GOLD · #6</span>
+            </div>
+            <span class="fovs">VS</span>
+            <div class="focol you" style="--gc:var(--g-bone)">
+              <span class="av">{{die:5:p1:46}}</span><span class="fnm">FrostLynx303</span>
+              <span class="gpill">BONE · #12</span>
+            </div>
+          </div>
+          <div class="fostats">
+            <div class="fost"><span class="a">2,680</span><span class="k">Points</span><span class="b">465</span></div>
+            <div class="fost"><span class="a">{{score:W:13:L:8}}</span><span class="k">Record</span><span class="b">{{score:W:4:L:6}}</span></div>
+            <div class="fost"><span class="a">4</span><span class="k">Best streak</span><span class="b">2</span></div>
+            <div class="fost"><span class="a">2,743</span><span class="k">Peak</span><span class="b">465</span></div>
+            <div class="fost"><span class="a">62%</span><span class="k">Win rate</span><span class="b">40%</span></div>
+          </div>
+        </div>
+      </div>
+      <span class="fgfinger"></span>
+    </div>
+  </div>
+
+</div></div>
+<div class="note"><b>What it does:</b> nothing sits in the card's corners. A 40×4 bar rides its top
+  edge — the mark every native sheet wears to say <b>drag me away</b> — and dismissal becomes a downward
+  drag: the card follows the finger, the wash lightens as it travels (at 152px it is a quarter of its
+  weight and the ladder reads through it), and past <b>96px</b> the release sends it out. Short of that
+  it springs home and nothing happened. Backdrop tap and Escape are untouched — this is a third way out,
+  not a replacement for the two that already exist.
+  <b>What it buys:</b> the top of the card is symmetric again, nothing hovers over the gold column's
+  avatar, and the affordance costs <b>6px of height and no width</b> (14px wrapper, −8 into the card's
+  padding, −12 cancelling the flex gap, +12 gap back). It answers both retired shapes instead of dodging
+  them: not navigation at the bottom of a screen, and not a button adrift in a band of empty card,
+  because it is centred <b>on</b> an edge rather than parked <b>in</b> a corner.
+  <b>Where it argues with the law:</b> 00-navigation says a sheet leaves by the shared ✕ in its corner,
+  and every other sheet wears one — this would be the one that does not. So it forces a choice: either
+  the face-off is a granted exception (it is already odd, a modal above every overlay rather than a sheet
+  over live context), or the grabber eventually belongs on the reading sheets and both libraries too,
+  which is a far bigger job than this study. And a grabber is conventionally worn by a sheet
+  <b>attached to the bottom edge</b>; ours is centred, so "drag me back where I came from" is a weaker
+  promise here than on a sheet that slid up.
+  <b>What it costs:</b> the bar promises a gesture that must then exist — the mark without the handler is
+  worse than today's ✕. A player who never tries dragging is left with the backdrop, which on a 320px
+  phone is a 14px rail either side of the card (the bands above and below are generous, but nothing says
+  any of it is tappable). And no focusable, announceable way out survives: the keyboard keeps Escape, a
+  screen reader hears nothing. Shipping it means keeping a visually hidden Close, or giving the grabber a
+  button role and a focus ring drawn around the 14px wrapper rather than the 4px bar.
+  <b>To ship it:</b> pointer events on .focard, touch-action:none, setPointerCapture; dy = max(0, y − y0)
+  into the transform and into the wash's alpha through one custom property, so the colour keeps a single
+  home. Commit on dy &gt; 96 <b>or</b> a flick faster than ~0.5px/ms, because a quick short flick that
+  springs back feels stuck. Out in 180ms ease-in, back in 220ms with a small overshoot, and every path
+  calls the existing close(), so gesture, wash tap and Escape stay one implementation. The trap: the
+  pointerup ending a drag can fire the wash's own click and chase a spring-back with an accidental close,
+  so swallow one click after any drag that moved. Reduced motion keeps the follow — it is the player's
+  own finger — and makes the exit instant. test16 stops measuring the ✕'s clearance from the avatar and
+  starts on the bar's painted rect plus two synthesised drags: 120px leaves no .faceoff in the DOM, 40px
+  leaves it there with its transform back at none.</div>

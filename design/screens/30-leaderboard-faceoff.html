@@ -1,47 +1,260 @@
-<!-- meta name="Ladder · face-off" group="3 · Ladder & profile" subtitle="Tap a row, be dealt THEM against YOU — five facts mirrored around the centre, and the one-column variant a signed-out reader gets" width=412 height=1303 links="Ladder, Matchmaking" -->
+<!-- meta name="Ladder · face-off" group="3 · Ladder & profile" subtitle="Tap a row, be dealt THEM against YOU — five facts mirrored around the centre, a sheet that comes up from below and leaves by a downward drag on its grabber, and the one-column variant a signed-out reader gets" width=412 height=2900 links="Ladder, Matchmaking" -->
 <style>
   /* The face-off is the app's own component (.focard and friends, online.css)
-     — the card wears it directly, like 53-quit wears the ask-card, and shows
-     both rosters: the VS card a ranked reader is dealt, and the one-column
-     variant for a signed-out reader. .faceoff is the app's fixed wash, pinned
-     static here so both cards sit in the stage's flow. */
-  .scr{gap:24px;justify-content:center;align-items:center}
-  .cap2{margin-bottom:-10px}
-  .faceoff{position:static;inset:auto;background:none;padding:0;z-index:auto;display:block;width:100%;
-    max-width:330px}
+     — the card wears it directly, like 53-quit wears the ask-card, including
+     the grabber that replaced the corner ✕ (design 30c, user call 2026-08-22).
+     Everything this card adds is fk*; nothing bare is redeclared, so .fograb
+     and .fobar are the shipped ones, at their shipped size.
+
+     THE MOTION IS THE APP'S OWN, NOT A REDRAWING OF IT. online.css derives
+     the card's transform AND the wash's alpha from one custom property,
+     `--fo-dy` (unitless px below the resting place). Registering it here lets
+     the card ANIMATE that property and leave the drawing to the app's rules —
+     so these frames cannot picture a travel, or a wash, the product would not
+     produce. It is the same trick as importing an icon instead of tracing it.
+
+     The ladder rows behind the wash are deliberately schematic bars: they are
+     here to be REVEALED, not to be a second copy of the board's markup. */
+  .scr{gap:16px;align-items:center;justify-content:center}
+  .cap2{margin-bottom:-4px}
+  @property --fo-dy{syntax:"<number>";inherits:true;initial-value:0}
+
+  /* the app pins .faceoff fixed over the whole screen; the two REST cards are
+     flattened into the stage's flow instead (the frames below keep it) */
+  .faceoff.fkflat{position:static;inset:auto;background:none;padding:0;z-index:auto;
+    display:block;width:100%;max-width:330px}
+  .fkrest{width:100%;display:flex;justify-content:center;padding-top:26px}
+
+  /* THE FINGER'S TARGET, drawn where .fograb::after actually puts it: the
+     14px wrapper grows to 76 × 44 (inset:-26px 0 -4px), upward by choice —
+     above the bar is backdrop, where a tap already closes this card, and the
+     4px below is exactly the clearance gap before .focols. WCAG 2.5.8 asks
+     24px; a finger asks more, and the drawing keeps its 4px bar. */
+  .fkhit{position:absolute;inset:-26px 0 -4px;border-radius:11px;
+    border:1px dashed rgba(var(--p1-rgb),.45)}
+  .fkhit i{position:absolute;left:calc(100% + 8px);top:50%;transform:translateY(-50%);
+    font-style:normal;font-size:8px;letter-spacing:.14em;text-transform:uppercase;
+    color:rgba(var(--p1-rgb),.75);white-space:nowrap}
+
+  /* ===== THE FRAMES: the ladder underneath, the sheet over it. A window on
+     the screen, not a component — so the sheet is pinned to the window's top
+     rather than centred in a phone, and everything below the cut is the
+     frame's edge, not the card's. ONE change to the app's overlay: fixed
+     becomes absolute, so it fills the frame instead of the browser. ===== */
+  .fkframe{position:relative;width:100%;max-width:330px;height:400px;border-radius:18px;
+    overflow:hidden;border:1px solid rgba(255,255,255,.10);
+    background:linear-gradient(180deg,#0a0d1e,#070a16)}
+  /* the spring-back only needs the top of the card; the cut is a fade so it
+     reads as a window rather than as a card that lost its stats */
+  .fkframe.fkshort{height:210px;
+    -webkit-mask-image:linear-gradient(180deg,#000 76%,transparent);
+    mask-image:linear-gradient(180deg,#000 76%,transparent)}
+  .fkframe .faceoff{position:absolute;align-items:start}
+
+  .fklad{position:absolute;inset:0;padding:10px;display:flex;flex-direction:column;gap:5px}
+  .fkr{height:32px;border-radius:10px;background:rgba(255,255,255,.035);
+    border:1px solid rgba(255,255,255,.05);display:flex;align-items:center;gap:9px;padding:0 9px}
+  .fkrk{font-size:9px;font-weight:900;color:var(--dim);width:14px;text-align:right}
+  .fkav{width:18px;height:18px;border-radius:6px;background:rgba(255,255,255,.10)}
+  .fknm{height:6px;border-radius:99px;background:rgba(255,255,255,.14);width:84px}
+  .fkpt{height:6px;border-radius:99px;background:rgba(255,209,102,.30);width:32px;margin-left:auto}
+  .fkr.fkme{border-color:rgba(var(--p1-rgb),.28)}
+  .fkr.fkme .fknm{background:rgba(var(--p1-rgb),.38)}
+
+  /* the commit line, drawn OVER the wash (z 95 clears the overlay's 90)
+     because it is an annotation, not something the player would ever see:
+     96px of travel, measured from the sheet's resting top edge (14px into
+     the frame). The number rides the centre, on the VS axis — the ~56px gap
+     between the two group pills is the only band of the card an annotation
+     can cross without covering something the player would be reading. */
+  .fkrule{position:absolute;left:0;right:0;top:110px;z-index:95;
+    border-top:1px dashed rgba(255,209,102,.42)}
+  .fkrule span{position:absolute;left:50%;transform:translateX(-50%);top:-8px;font-size:8px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--gold);white-space:nowrap;
+    padding:2px 6px;border-radius:99px;background:rgba(6,9,20,.86);
+    border:1px solid rgba(255,209,102,.3)}
+  /* the fingertip rides the SAME property the sheet does, so it needs no
+     timeline of its own beyond arriving and lifting: it is on the bar, and
+     the bar is at --fo-dy. 11px puts it on the bar's centre (14 frame padding
+     + 1 border + 4 into the card's top padding + 7 half the wrapper − 15). */
+  .fkfing{position:absolute;left:50%;top:11px;width:30px;height:30px;margin-left:-15px;
+    border-radius:50%;background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.34);
+    box-shadow:0 0 18px rgba(255,255,255,.12);opacity:0;
+    transform:translateY(calc(var(--fo-dy) * 1px))}
+
+  /* ===== THE ROUND TRIP, 6s. It arrives from below, is read, and is sent
+     back the way it came — which is the whole argument for the gesture: a
+     sheet you watched slide up is a sheet you can send back down.
+       0–4%    the row has been tapped; the sheet is still below the fold
+       4–10%   IT COMES UP — 360ms on the app's own arrival curve, and the
+               wash darkens by itself, because it is computed from the travel
+               (nothing at all until 260px out, then all of it)
+       10–38%  at rest, read
+       38–64%  the finger drags: the card follows it to 152px, the wash
+               lightening past the 96px line until the ladder reads through
+       64–69%  held past the line; the finger lifts
+       69–72%  released: 180ms ease-in, and it is gone
+       72–100% the ladder, resumed — the point of the whole gesture ===== */
+  @keyframes fkround{
+    0%,4%{--fo-dy:410;animation-timing-function:cubic-bezier(.16,1,.3,1)}
+    10%,38%{--fo-dy:0;animation-timing-function:linear}
+    64%,69%{--fo-dy:152;animation-timing-function:cubic-bezier(.42,0,1,1)}
+    72%,100%{--fo-dy:410}
+  }
+  @keyframes fkfing{0%,36%{opacity:0}38%,68%{opacity:1}70%,100%{opacity:0}}
+  .fkround .faceoff{animation:fkround 6s infinite}
+  .fkround .fkfing{animation:fkfing 6s infinite}
+
+  /* ===== THE DRAG THAT DOES NOT, 4.4s. It dips 58px, 38px short of the line,
+     and the release springs it home in 220ms with the app's own overshoot —
+     which carries the card a hair ABOVE its rest and the wash a hair past its
+     weight, exactly as the shipped transition does. The wash barely moves at
+     all: that is the tell that nothing was going to happen.
+     THIS FRAME WEARS .fodrag, the app's own name for "a finger is on it", so
+     its bar reads at the brighter .5 rather than the resting .22 — a state a
+     card cannot animate, because the brightness lives in a class and not in a
+     property. It belongs here and not on the round trip: this beat is a
+     gesture from end to end, that one is mostly a sheet at rest. ===== */
+  @keyframes fksnap{
+    0%,12%{--fo-dy:0;animation-timing-function:linear}
+    40%,48%{--fo-dy:58;animation-timing-function:cubic-bezier(.2,1.4,.4,1)}
+    62%,100%{--fo-dy:0}
+  }
+  @keyframes fksnapfing{0%,6%{opacity:0}12%,46%{opacity:1}51%,100%{opacity:0}}
+  .fkshort .faceoff{animation:fksnap 4.4s infinite}
+  .fkshort .fkfing{animation:fksnapfing 4.4s infinite}
+  /* the app's own reduced-motion path: it still arrives and still leaves, it
+     just does not travel — so the frames rest rather than loop */
+  @media (prefers-reduced-motion:reduce){
+    .fkround .faceoff,.fkround .fkfing,.fkshort .faceoff,.fkshort .fkfing{animation:none}
+  }
+
+  .fkchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:330px}
+  .fkchip{font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+    border:1px solid rgba(255,255,255,.14);border-radius:99px;padding:4px 9px}
+  .fkchip b{color:var(--cy);font-weight:800}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
 
-  <div class="cap2">SIGNED IN — THEM AGAINST YOU</div>
-  <div class="faceoff">
-    <div class="focard dice-static">
-      <button class="ico foexit" aria-label="Close">✕</button>
-      <div class="focols">
-        <div class="focol" style="--gc:var(--g-gold)">
-          <span class="av">{{die:6:p1:46}}</span><span class="fnm">SwiftDice753</span>
-          <span class="gpill">GOLD · #6</span>
+  <div class="cap2">SIGNED IN — THEM AGAINST YOU, A BAR ON THE EDGE, NOTHING IN THE CORNERS</div>
+  <div class="fkrest">
+    <div class="faceoff fkflat">
+      <div class="focard">
+        <button type="button" class="fograb" aria-label="Close"><span class="fobar"></span><span class="fkhit"><i>76 × 44</i></span></button>
+        <div class="focols dice-static">
+          <div class="focol" style="--gc:var(--g-gold)">
+            <span class="av">{{die:6:p1:46}}</span><span class="fnm">SwiftDice753</span>
+            <span class="gpill">GOLD · #6</span>
+          </div>
+          <span class="fovs">VS</span>
+          <div class="focol you" style="--gc:var(--g-bone)">
+            <span class="av">{{die:5:p1:46}}</span><span class="fnm">FrostLynx303</span>
+            <span class="gpill">BONE · #12</span>
+          </div>
         </div>
-        <span class="fovs">VS</span>
-        <div class="focol you" style="--gc:var(--g-bone)">
-          <span class="av">{{die:5:p1:46}}</span><span class="fnm">FrostLynx303</span>
-          <span class="gpill">BONE · #12</span>
+        <div class="fostats">
+          <div class="fost"><span class="a">2,680</span><span class="k">Points</span><span class="b">465</span></div>
+          <div class="fost"><span class="a">{{score:W:13:L:8}}</span><span class="k">Record</span><span class="b">{{score:W:4:L:6}}</span></div>
+          <div class="fost"><span class="a">4</span><span class="k">Best streak</span><span class="b">2</span></div>
+          <div class="fost"><span class="a">2,743</span><span class="k">Peak</span><span class="b">465</span></div>
+          <div class="fost"><span class="a">62%</span><span class="k">Win rate</span><span class="b">40%</span></div>
         </div>
-      </div>
-      <div class="fostats">
-        <div class="fost"><span class="a">2,680</span><span class="k">Points</span><span class="b">465</span></div>
-        <div class="fost"><span class="a">{{score:W:13:L:8}}</span><span class="k">Record</span><span class="b">{{score:W:4:L:6}}</span></div>
-        <div class="fost"><span class="a">4</span><span class="k">Best streak</span><span class="b">2</span></div>
-        <div class="fost"><span class="a">2,743</span><span class="k">Peak</span><span class="b">465</span></div>
-        <div class="fost"><span class="a">62%</span><span class="k">Win rate</span><span class="b">40%</span></div>
       </div>
     </div>
   </div>
+  <div class="fkchips">
+    <span class="fkchip">bar <b>40 × 4</b></span>
+    <span class="fkchip">target <b>76 × 44</b></span>
+    <span class="fkchip"><b>+6px</b> tall, <b>0px</b> wide</span>
+    <span class="fkchip">labelled <b>Close</b>, focusable</span>
+    <span class="fkchip">commit <b>96px</b> or <b>0.5px/ms</b></span>
+    <span class="fkchip">in <b>340</b> · out <b>180</b> · home <b>220</b>ms</span>
+    <span class="fkchip">wash spans <b>260px</b></span>
+    <span class="fkchip">leaving: <b>taps off</b></span>
+  </div>
 
-  <div class="cap2">SIGNED OUT — ONE COLUMN, LABELS LEADING</div>
-  <div class="faceoff solo">
-    <div class="focard dice-static">
-      <button class="ico foexit" aria-label="Close">✕</button>
-      <div class="focols">
+  <div class="cap2">IT COMES UP FROM DOWN THERE — AND PAST THE LINE, IT GOES BACK</div>
+  <div class="fkframe fkround">
+    <div class="fklad">
+      <div class="fkr"><span class="fkrk">4</span><span class="fkav"></span><span class="fknm"></span><span class="fkpt"></span></div>
+      <div class="fkr"><span class="fkrk">5</span><span class="fkav"></span><span class="fknm"></span><span class="fkpt"></span></div>
+      <div class="fkr"><span class="fkrk">6</span><span class="fkav"></span><span class="fknm"></span><span class="fkpt"></span></div>
+      <div class="fkr"><span class="fkrk">7</span><span class="fkav"></span><span class="fknm"></span><span class="fkpt"></span></div>
+      <div class="fkr"><span class="fkrk">8</span><span class="fkav"></span><span class="fknm"></span><span class="fkpt"></span></div>
+      <div class="fkr"><span class="fkrk">9</span><span class="fkav"></span><span class="fknm"></span><span class="fkpt"></span></div>
+      <div class="fkr"><span class="fkrk">10</span><span class="fkav"></span><span class="fknm"></span><span class="fkpt"></span></div>
+      <div class="fkr"><span class="fkrk">11</span><span class="fkav"></span><span class="fknm"></span><span class="fkpt"></span></div>
+      <div class="fkr fkme"><span class="fkrk">12</span><span class="fkav"></span><span class="fknm"></span><span class="fkpt"></span></div>
+      <div class="fkr"><span class="fkrk">13</span><span class="fkav"></span><span class="fknm"></span><span class="fkpt"></span></div>
+    </div>
+    <div class="faceoff">
+      <div class="focard">
+        <button type="button" class="fograb" aria-label="Close"><span class="fobar"></span></button>
+        <div class="focols dice-static">
+          <div class="focol" style="--gc:var(--g-gold)">
+            <span class="av">{{die:6:p1:46}}</span><span class="fnm">SwiftDice753</span>
+            <span class="gpill">GOLD · #6</span>
+          </div>
+          <span class="fovs">VS</span>
+          <div class="focol you" style="--gc:var(--g-bone)">
+            <span class="av">{{die:5:p1:46}}</span><span class="fnm">FrostLynx303</span>
+            <span class="gpill">BONE · #12</span>
+          </div>
+        </div>
+        <div class="fostats">
+          <div class="fost"><span class="a">2,680</span><span class="k">Points</span><span class="b">465</span></div>
+          <div class="fost"><span class="a">{{score:W:13:L:8}}</span><span class="k">Record</span><span class="b">{{score:W:4:L:6}}</span></div>
+          <div class="fost"><span class="a">4</span><span class="k">Best streak</span><span class="b">2</span></div>
+          <div class="fost"><span class="a">2,743</span><span class="k">Peak</span><span class="b">465</span></div>
+          <div class="fost"><span class="a">62%</span><span class="k">Win rate</span><span class="b">40%</span></div>
+        </div>
+      </div>
+      <span class="fkfing"></span>
+    </div>
+    <div class="fkrule"><span>96px</span></div>
+  </div>
+
+  <div class="cap2">TOO SHORT — IT NEVER REACHES THE LINE, SO IT SPRINGS BACK</div>
+  <div class="fkframe fkshort">
+    <div class="fklad">
+      <div class="fkr"><span class="fkrk">4</span><span class="fkav"></span><span class="fknm"></span><span class="fkpt"></span></div>
+      <div class="fkr"><span class="fkrk">5</span><span class="fkav"></span><span class="fknm"></span><span class="fkpt"></span></div>
+      <div class="fkr"><span class="fkrk">6</span><span class="fkav"></span><span class="fknm"></span><span class="fkpt"></span></div>
+      <div class="fkr"><span class="fkrk">7</span><span class="fkav"></span><span class="fknm"></span><span class="fkpt"></span></div>
+      <div class="fkr"><span class="fkrk">8</span><span class="fkav"></span><span class="fknm"></span><span class="fkpt"></span></div>
+    </div>
+    <div class="faceoff fodrag">
+      <div class="focard">
+        <button type="button" class="fograb" aria-label="Close"><span class="fobar"></span></button>
+        <div class="focols dice-static">
+          <div class="focol" style="--gc:var(--g-gold)">
+            <span class="av">{{die:6:p1:46}}</span><span class="fnm">SwiftDice753</span>
+            <span class="gpill">GOLD · #6</span>
+          </div>
+          <span class="fovs">VS</span>
+          <div class="focol you" style="--gc:var(--g-bone)">
+            <span class="av">{{die:5:p1:46}}</span><span class="fnm">FrostLynx303</span>
+            <span class="gpill">BONE · #12</span>
+          </div>
+        </div>
+        <div class="fostats">
+          <div class="fost"><span class="a">2,680</span><span class="k">Points</span><span class="b">465</span></div>
+          <div class="fost"><span class="a">{{score:W:13:L:8}}</span><span class="k">Record</span><span class="b">{{score:W:4:L:6}}</span></div>
+          <div class="fost"><span class="a">4</span><span class="k">Best streak</span><span class="b">2</span></div>
+          <div class="fost"><span class="a">2,743</span><span class="k">Peak</span><span class="b">465</span></div>
+          <div class="fost"><span class="a">62%</span><span class="k">Win rate</span><span class="b">40%</span></div>
+        </div>
+      </div>
+      <span class="fkfing"></span>
+    </div>
+    <div class="fkrule"><span>96px</span></div>
+  </div>
+
+  <div class="cap2">SIGNED OUT — ONE COLUMN, LABELS LEADING, SAME WAY OUT</div>
+  <div class="faceoff solo fkflat">
+    <div class="focard">
+      <button type="button" class="fograb" aria-label="Close"><span class="fobar"></span></button>
+      <div class="focols dice-static">
         <div class="focol" style="--gc:var(--g-gold)">
           <span class="av">{{die:6:p1:46}}</span><span class="fnm">SwiftDice753</span>
           <span class="gpill">GOLD · #6</span>
@@ -63,9 +276,30 @@
   gold and yours cyan, and the same five facts are stated twice, mirrored around the centre —
   points, record, best streak (via the player_card RPC, the one fact a board row cannot carry),
   peak, win rate. It stops there: a <b>points between you</b> line under the stats restated the
-  first row as a subtraction, and what a match would actually pay is never previewed in this
-  game anyway, because it depends on the opponent (removed 2026-08-22, with the full-width
-  Close beneath it — the ✕ in the corner is the one every sheet wears). Signed out — the board
-  is public — the card folds to one column with labels leading, the wash tap or Escape closes
-  it too, and the whole surface sits at z-index 90, above the board overlay it opens over (the
-  pixel lesson test16 now pins with elementFromPoint).</div>
+  first row as a subtraction, and what a match would pay is never previewed in this game anyway,
+  because it depends on the opponent. Signed out — the board is public — the card folds to one
+  column with labels leading, and the whole surface sits at z-index 90, above the board overlay it
+  opens over (the pixel lesson test16 pins with elementFromPoint).
+  <b>It arrives from below and it leaves the same way.</b> The sheet rises in 340ms; a downward
+  drag past <b>96px</b> — or a flick over <b>0.5px/ms</b>, because a quick flick that springs back
+  feels stuck — sends it out in 180ms, and short of that it springs home in 220ms with a small
+  overshoot. ONE property carries all of it: <b>--fo-dy</b>, unitless px below the resting place,
+  from which online.css computes both the card's transform and the wash's alpha, so the backdrop
+  can never disagree with the card about how far the finger has got (260px is the fade's full
+  span). This card animates that same property and lets the app's own rules draw the result. The
+  backdrop tap and Escape are untouched and every door ends at the one close(); the instant a
+  flight starts <b>.foout</b> takes the overlay's taps away, so a departing sheet cannot swallow
+  the tap meant for the ladder behind it.
+  <b>The grabber is a real button</b> — labelled Close, focusable, its focus ring drawn round the
+  14px wrapper rather than the 4px bar, and a ::after expander bringing the finger's target to
+  76 × 44 above a bar that stays 40 × 4. That was the study's biggest cost, and it is answered: a
+  gesture alone is invisible to a screen reader and unreachable from a keyboard, so the mark that
+  promises the gesture is also the control that performs it. It costs the card <b>6px of height
+  and no width</b> — the 46px avatars and the 130px-capped nicknames keep the whole 356px.
+  <b>This screen is the app's ONE exception to the ✕ law</b> (design 00-navigation): every other
+  sheet leaves by the shared corner ✕, and this one does not. Granted, not forgotten. The face-off
+  is not a sheet over live context — it is a modal above every overlay, dealt by a tap on a row —
+  and the ✕ had nowhere to sit here that did not either float over the gold column's avatar or buy
+  it a whole header row the card had nothing to put in. Both shapes were drawn as studies (group
+  <b>3h · Face-off dismissal</b>) and both were turned down before the grabber was chosen,
+  2026-08-22 — the same call that took the full-width <b>Close</b> away.</div>
