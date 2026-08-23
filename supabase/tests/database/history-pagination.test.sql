@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(10);
+select plan(12);
 
 select has_index(
   'public', 'matches', 'matches_p1_history_idx',
@@ -54,6 +54,13 @@ values
     '30000000-0000-0000-0000-000000000003',
     'done', 1, '30000000-0000-0000-0000-000000000003',
     9, 18, -20, 30, 1, '2026-08-23 11:30:00+00'
+  ),
+  (
+    '40000000-0000-0000-0000-000000000003',
+    '30000000-0000-0000-0000-000000000002',
+    '30000000-0000-0000-0000-000000000001',
+    'done', 1, '30000000-0000-0000-0000-000000000001',
+    20, 25, -10, 40, 1, '2026-08-23 11:29:00+00'
   );
 
 select set_config(
@@ -77,13 +84,13 @@ select is(
   'the compound cursor reaches the tied row on the next page'
 );
 select is(
-  (select count(*)::integer from public.match_history(
+  (select id from public.match_history(
     1,
     '2026-08-23 11:30:00+00',
     '40000000-0000-0000-0000-000000000001'
   )),
-  0,
-  'the final compound cursor does not repeat a row'
+  '40000000-0000-0000-0000-000000000003'::uuid,
+  'the cursor advances from a timestamp tie to the next older row'
 );
 select is(
   (select count(*)::integer from public.match_history(
@@ -91,7 +98,7 @@ select is(
     '2026-08-23 11:30:00+00',
     null
   )),
-  0,
+  1,
   'legacy time-only cursors retain strictly-older behavior'
 );
 select is(
@@ -99,9 +106,26 @@ select is(
      from public.match_history(10, null, null)),
   array[
     '40000000-0000-0000-0000-000000000002'::uuid,
-    '40000000-0000-0000-0000-000000000001'::uuid
+    '40000000-0000-0000-0000-000000000001'::uuid,
+    '40000000-0000-0000-0000-000000000003'::uuid
   ],
   'a full page contains every tied row once in total order'
+);
+select is(
+  (select count(*)::integer from public.match_history(
+    10,
+    '2026-08-23 11:29:00+00',
+    '40000000-0000-0000-0000-000000000003'
+  )),
+  0,
+  'the final compound cursor does not repeat a row'
+);
+select is(
+  (select concat(mine, '/', theirs, '/', delta, '/', result)
+     from public.match_history(10, null, null)
+    where id = '40000000-0000-0000-0000-000000000003'),
+  '25/20/40/win',
+  'the p2 branch projects scores, delta, and result from the caller side'
 );
 select is(
   (select count(*)::integer
