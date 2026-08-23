@@ -238,7 +238,19 @@ export function boot(embed){
       }
     }else if(e.key==='Enter'||e.key===' '){
       if($('#ovPass').classList.contains('on')) $('#ovPass').click();
-      else if($('#ovStart').classList.contains('on')||$('#ovEnd').classList.contains('on')){ Sfx.unlock(); void startLocal(); }
+      /* ...but ONLY IF THAT SCREEN IS THE ROOM. #ovStart stays `.on` underneath
+         every page and sheet — the topmost .ov.on is what paints (styles/main
+         .css) — so testing the class alone started a local game from beneath
+         whatever the player was actually looking at. Pressing Enter to dismiss
+         the face-off dealt a fresh game behind it and put the first-run offer
+         over the ladder. The room is the LAST .ov.on in the markup, and a
+         modal dialog (the face-off is one, and it is not an .ov at all) owns
+         the key outright while it is up. */
+      else if(!document.querySelector('[aria-modal="true"]')){
+        const rooms=document.querySelectorAll('.ov.on');
+        const room=rooms[rooms.length-1];
+        if(room && (room.id==='ovStart'||room.id==='ovEnd')){ Sfx.unlock(); void startLocal(); }
+      }
     }else if(e.key==='Escape'){ disarm(); hide('#ovRules'); hide('#ovSettings'); hide('#ovLearn'); dismissAsk(); hide('#ovImprint'); hide('#ovPrivacy');
       for(const id of ['ovModes','ovSpells']) if(document.getElementById(id)) hide('#'+id); }
   });
