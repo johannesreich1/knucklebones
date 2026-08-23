@@ -1,6 +1,6 @@
 // The one turn-owned rune rail. Cast legality and state transitions stay in
 // flow/spells; this leaf renders the current hand and plays committed cards.
-import { SPEC, type GameState, type Player } from '../core/rules.ts';
+import { ME, SPEC, type GameState, type Player } from '../core/rules.ts';
 import { SPELLS, spellById, type CastCtx, type SpellSpec } from '../core/spells.ts';
 import { S } from '../state.ts';
 import { colEl, slotEl, slotIdx } from '../ui/dom.ts';
@@ -38,12 +38,17 @@ export function renderSpellRail(ports: SpellRailPorts): void {
     const committed = S.spellAimCommitted?.id === spell.id
       && S.spellAimCommitted.who === seat;
     const canCast = seat === now && left > 0 && ports.castable(spell.id);
+    /* In CPU play the one shared card changes hands with the turn. Keep the
+       historical opponent-turn mute tied to ownership, not `canCast`: brief
+       busy/legality changes on the player's own turn must not make it blink. */
+    const offturn = S.mode === 'cpu' && seat !== ME;
     button.dataset.seat = String(seat);
     button.dataset.left = String(left);
     button.classList.toggle('spent', left <= 0);
     button.classList.toggle('committed', committed);
     button.classList.toggle('ready', !committed && canCast);
     button.classList.toggle('armed', S.spellArmed === spell.id && seat === now);
+    button.classList.toggle('offturn', offturn);
     button.disabled = !canCast;
     paintCharges(button, spell, left);
     button.setAttribute('aria-label', nameOf(seat) + ': ' + spell.name + ' — ' + spell.blurb

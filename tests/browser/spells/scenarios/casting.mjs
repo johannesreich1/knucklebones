@@ -228,7 +228,9 @@ export async function runCastingScenarios(suite) {
     if (!b) return null;
     const top = b.querySelector('.rune-charge.top');
     const back = top?.querySelector('.rback');
+    const style = getComputedStyle(b);
     return { cls: b.className, seat: b.dataset.seat, disabled: b.disabled,
+      offturn: b.classList.contains('offturn'), opacity: Number(style.opacity), filter: style.filter,
       cards: [...b.querySelectorAll('.rune-charge')].filter((e) => !e.hidden).length,
       pulse: top ? getComputedStyle(top, '::after').animationName : 'none',
       wash: back ? getComputedStyle(back, '::before').backgroundImage : 'none' };
@@ -241,19 +243,34 @@ export async function runCastingScenarios(suite) {
       k.S.phase = t === 1 ? 'choose' : 'anim'; k.S.die = 3;
       k.applySides(); k.spells.render();
     }, who);
-    await page.waitForTimeout(80);
+    await page.waitForTimeout(320);
   };
   await turnTo(0); out.theirTurn = await rail();
   await turnTo(1); out.myTurn = await rail();
-  check(out.theirTurn?.seat === '0' && out.theirTurn.disabled && out.theirTurn.cards === 1,
-    'the CPU turn did not deal its own inert card into the shared rail', out.theirTurn);
+  await page.evaluate(() => {
+    window.__kb.S.busy = true;
+    window.__kb.spells.render();
+  });
+  await page.waitForTimeout(80);
+  out.busyMyTurn = await rail();
+  check(out.theirTurn?.seat === '0' && out.theirTurn.disabled && out.theirTurn.cards === 1
+      && out.theirTurn.offturn && out.theirTurn.opacity >= .40 && out.theirTurn.opacity <= .44
+      && out.theirTurn.filter === 'grayscale(0.6)',
+    'the CPU-owned disabled card did not retain the visible off-turn mute', out.theirTurn);
   check(out.myTurn?.seat === '1' && !out.myTurn.disabled && out.myTurn.cards === 1
-    && out.myTurn.pulse === 'none',
+      && !out.myTurn.offturn && out.myTurn.opacity >= .99 && out.myTurn.filter === 'none'
+      && out.myTurn.pulse === 'none',
     'the player turn did not deal its castable card into the shared rail', out.myTurn);
   check(out.theirTurn?.pulse === 'none' && out.theirTurn.wash !== 'none'
       && out.theirTurn.wash === out.myTurn?.wash,
     'the card tint flickered or changed with turn availability',
     { theirs: out.theirTurn, mine: out.myTurn });
+  check(out.busyMyTurn?.disabled && !out.busyMyTurn.offturn
+      && out.busyMyTurn.opacity === out.myTurn?.opacity
+      && out.busyMyTurn.filter === out.myTurn?.filter
+      && out.busyMyTurn.wash === out.myTurn?.wash,
+    'a transient busy state visually flickered the player-owned card',
+    { mine: out.myTurn, busy: out.busyMyTurn });
 
   /* ---------- 8d. every input path respects an armed spell ----------
      Number keys are placement shortcuts, but an armed self spell owns them:
