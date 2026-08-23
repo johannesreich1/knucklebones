@@ -61,6 +61,16 @@ export async function runProtectionLayoutScenarios(suite) {
           && wd.mouth.dx * wd.centerAt.dx + wd.mouth.dy * wd.centerAt.dy > 0,
         'THE WARD CLASP FACES AWAY FROM TABLE CENTRE in ' + where,
         { mouth: wd.mouth, centre: wd.centerAt, chip: wd.chipAt });
+      /* The negative dash beat removes each path from its END. The endpoint
+         must therefore be the centre-facing clasp: placement grows from the
+         outer hinge toward it, and a strike opens there and retreats toward
+         the outer edge. The path direction is checked in the Ward group's own
+         coordinates; the centre-facing assertion above separately proves that
+         the whole group turns correctly in every seat and orientation. */
+      check(wd.flow?.length === 2
+          && wd.flow.every((arc) => arc.endToClasp < 15 && arc.startToClasp > arc.endToClasp * 5),
+        'THE WARD OUTLINE ANIMATES AWAY FROM TABLE CENTRE in ' + where,
+        { flow: wd.flow, mouth: wd.mouth, centre: wd.centerAt });
       check(!!wd.clasp && Math.max(wd.clasp.w, wd.clasp.h) >= 9,
         'the Ward clasp is still too small to read on the border in ' + where, wd.clasp);
       for (const [name, s] of [['shield', sh], ['ward', wd]]) {

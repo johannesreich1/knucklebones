@@ -102,14 +102,20 @@ export function sealMarkup(span: number): string {
     + 'V' + fixed(radius)
     + 'a' + fixed(radius) + ' ' + fixed(radius) + ' 0 0 ' + (direction < 0 ? 1 : 0)
     + ' ' + fixed(-direction * radius) + ' ' + fixed(-radius) + 'H' + fixed(middle);
+  /* Direction is part of the animation contract, not interchangeable SVG
+     geometry. Each half starts at the hinge opposite table centre and ends at
+     the clasp. sealclose therefore grows toward the clasp; sealunwind removes
+     from the clasp back toward the hinge. The transformed group mirrors that
+     one rule for all four board orientations. */
   const wardArc = (direction: -1 | 1): string =>
-    'M' + fixed(middle + direction * SEAL_MOUTH) + ' 0'
+    'M' + fixed(middle) + ' ' + fixed(height)
     + 'H' + fixed(direction < 0 ? radius : width - radius)
-    + 'a' + fixed(radius) + ' ' + fixed(radius) + ' 0 0 ' + (direction < 0 ? 0 : 1)
-    + ' ' + fixed(direction * radius) + ' ' + fixed(radius)
-    + 'V' + fixed(height - radius)
-    + 'a' + fixed(radius) + ' ' + fixed(radius) + ' 0 0 ' + (direction < 0 ? 0 : 1)
-    + ' ' + fixed(-direction * radius) + ' ' + fixed(radius) + 'H' + fixed(middle);
+    + 'a' + fixed(radius) + ' ' + fixed(radius) + ' 0 0 ' + (direction < 0 ? 1 : 0)
+    + ' ' + fixed(direction * radius) + ' ' + fixed(-radius)
+    + 'V' + fixed(radius)
+    + 'a' + fixed(radius) + ' ' + fixed(radius) + ' 0 0 ' + (direction < 0 ? 1 : 0)
+    + ' ' + fixed(-direction * radius) + ' ' + fixed(-radius)
+    + 'H' + fixed(middle + direction * SEAL_MOUTH);
 
   const ward = span === 1
     ? '<g class="smint">'

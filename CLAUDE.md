@@ -71,6 +71,12 @@ differs. A second near-copy is a design failure, not a shortcut.
 
 ## Verification entry points
 
+Node 24 is required. On Johannes's machine `/usr/local/bin/node` may still be
+Node 20 while `/opt/homebrew/bin/node` is the current Node 24 installation. If
+`node --version` is not v24, run the full gate as
+`/opt/homebrew/bin/node tests/run-all.mjs`; this preserves Node 24 as
+`process.execPath` for every child build and test.
+
 ```text
 npm run dev       local Vite server
 npm run build     all web/widget/native-web artifacts

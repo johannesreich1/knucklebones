@@ -159,6 +159,21 @@ export async function runProtectionScenarios(suite) {
     const rivet = shown.find((n) => n.classList.contains('sv'));
     const line = shown.find((n) => n.classList.contains('sl') || n.classList.contains('sa'));
     const cb = r(col), cr = r(chip);
+    /* Path direction is authored inside .smint, before that whole group turns
+       toward table centre. Keep both endpoints and the clasp in that same
+       coordinate system: Chromium's getScreenCTM omits the ancestor's CSS
+       transform here, while getBoundingClientRect includes it. */
+    const claspMid = rivet
+      ? { x: rivet.cx.baseVal.value, y: rivet.cy.baseVal.value }
+      : null;
+    const flow = claspMid ? [...seal.querySelectorAll('.sa')].map((path) => {
+      const start = path.getPointAtLength(0), end = path.getPointAtLength(path.getTotalLength());
+      const distance = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+      return {
+        startToClasp: +distance(start, claspMid).toFixed(2),
+        endToClasp: +distance(end, claspMid).toFixed(2),
+      };
+    }) : null;
     return {
       drawn: getComputedStyle(seal).display !== 'none' && shown.length > 0,
       merged: col.classList.contains('sealmerged'),
@@ -199,6 +214,7 @@ export async function runProtectionScenarios(suite) {
       // column. The ward's mouth is independently turned toward the centre;
       // the shield keeps the shared frame's original closure direction.
       mouth: rivet ? { dx: +(mid(r(rivet)).x - mid(cb).x).toFixed(1), dy: +(mid(r(rivet)).y - mid(cb).y).toFixed(1) } : null,
+      flow,
       chipAt: { dx: +(mid(cr).x - mid(cb).x).toFixed(1), dy: +(mid(cr).y - mid(cb).y).toFixed(1) },
       centerAt: centre ? { dx: +(mid(r(centre)).x - mid(cb).x).toFixed(1), dy: +(mid(r(centre)).y - mid(cb).y).toFixed(1) } : null,
       onDie: [...col.querySelectorAll('.die')].some((d) => {
