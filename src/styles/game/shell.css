@@ -1,0 +1,107 @@
+/* ============ APP SHELL ============ */
+#app{position:fixed;inset:0;z-index:2;display:flex;flex-direction:column;
+  padding:calc(env(safe-area-inset-top,0px) + 6px) 10px calc(env(safe-area-inset-bottom,0px) + 6px);
+  max-width:var(--w-app);margin:0 auto;}
+
+/* HUD */
+.hud{display:flex;align-items:center;gap:8px;height:34px;flex:0 0 auto}
+.hud .sp{flex:1}
+/* the badge is a ROW of chips (ui/game/hud.ts paintBadge): the mode always, the
+   spell beside it when a game deals one. The pill belongs to the chip, so a
+   second one reads as a second thing in play rather than a longer label. */
+.rec{display:flex;align-items:center;gap:6px;min-width:0}
+.rchip{font:inherit;font-size:10px;letter-spacing:.14em;color:var(--dim);white-space:nowrap;
+  border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:3px 8px;background:rgba(255,255,255,.03);
+  display:inline-flex;align-items:center;gap:3px}
+@media (max-width:359px){
+  .rec{gap:4px}
+  .rchip{font-size:9px;padding:3px 6px;letter-spacing:.08em}
+  .ico{width:27px;height:27px;border-radius:9px;font-size:12px}
+  .hud{gap:6px}
+}
+/* a score line's two numbers (ui/record.ts): the shape is theirs everywhere,
+   the colour belongs to wherever the line lands. The HUD no longer carries one
+   — it names what is being played, never the tally — so the only cyan/magenta
+   pair left is the match-history total's (online/online.css .htotal). */
+.n1,.n2{font-weight:800;font-style:normal}
+/* every chip the badge makes tappable opens that roster's sheet — offline too,
+   so the affordance and its ⓘ belong in the eager sheet, not the online chunk */
+.rchip.tapmode{cursor:pointer;transition:transform .15s}
+.rchip.tapmode:active{transform:scale(.94)}
+/* tap() holds the press class on the ROW it is bound to, exactly as the picker
+   rows do — one chip pressed, the badge acknowledges */
+.rec.pressing .rchip.tapmode{transform:scale(.94)}
+.rchip .mi{color:var(--dim);font-weight:800;margin-left:2px}
+.ico{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
+  color:var(--txt);font-size:13px;font-weight:700;cursor:pointer;transition:.15s}
+.ico:active,.ico.pressing{transform:scale(.9);background:rgba(255,255,255,.12)}
+
+/* TABLE */
+.table{flex:1;display:flex;flex-direction:column;min-height:0}
+.side{flex:1 1 0;display:flex;flex-direction:column;min-height:0;justify-content:center;gap:5px}
+.table.swap .side{animation:swapIn .42s cubic-bezier(.25,.9,.3,1)}
+@keyframes swapIn{0%{opacity:0;transform:translateY(var(--sd,14px)) scale(.96)}100%{opacity:1;transform:none}}
+.side.top{--sd:-16px}
+.side.bot{--sd:16px}
+
+/* nameplate. Two seatings, decided by ui/layout.ts (JS owns the breakpoint,
+   same deal as .land): roomy portrait screens get #kbroot.sidepts — the name
+   CENTRED over the board and the score moved out beside it into the side
+   gutter — while tight screens keep the original line: name left, score
+   right (user call: only where there is room). */
+.plate{display:flex;align-items:center;gap:7px;padding:0 3px;height:24px;flex:0 0 auto}
+.plate .who{display:flex;align-items:center;gap:7px;min-width:0}
+.plate .sp{flex:1}
+.plate .pright{display:flex;align-items:center;gap:7px}
+.plate .dot{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);flex:0 0 auto}
+.plate .nm{font-size:11.5px;font-weight:800;letter-spacing:.16em;color:var(--txt);opacity:.9}
+.plate .tag{font-size:9px;letter-spacing:.12em;color:var(--dim);border:1px solid rgba(255,255,255,.12);
+  border-radius:99px;padding:2px 6px}
+/* the roomy seating: the score cluster leaves the plate for the gutter beside
+   the board, vertically centred on the side; --gut (ui/layout.ts) is the
+   gutter's true width, so the cluster sits in its middle. Anchored to the
+   .side, never the plate (.plate.active is position:relative). */
+#kbroot.sidepts .side{position:relative}
+#kbroot.sidepts .plate{display:grid;grid-template-columns:1fr auto 1fr;position:static}
+#kbroot.sidepts .plate .who{grid-column:2;justify-self:center}
+#kbroot.sidepts .plate .sp{grid-column:1;grid-row:1}
+/* WIDTH IS FIXED to the gutter, not grown from the contents. The cluster is
+   placed by translate(50%,-50%), so half its own width is baked into where
+   every child lands — and the score's width changes with its digits, which
+   moved the rune and the number by a subpixel on every scoring turn. A whole
+   number of pixels is invisible; a fraction of one shimmers, because the
+   glowing icon re-rasterizes against a different pixel grid each time (user
+   report). At width:--gut the box is nailed and the centre is unchanged: the
+   right edge still lands on the side's edge, the centre still on the
+   gutter's middle. Same rule as the rune slot and BOUNTY's lane — reserve the
+   space, never let it follow what happens to be in it. */
+#kbroot.sidepts .plate .pright{position:absolute;top:50%;right:calc(var(--gut,60px)/2);
+  transform:translate(50%,-50%);flex-direction:column;gap:4px;z-index:3;
+  width:var(--gut,60px);max-width:var(--gut,60px)}
+/* the number wears what the gutter affords: 27px in a wide one, easing to
+   20px where ui/layout.ts let a tight-but-honest 40px gutter through */
+#kbroot.sidepts .plate .tot{font-size:clamp(20px,calc(var(--gut,60px)*.5),27px);
+  min-width:0;text-align:center}
+/* BOUNTY in the gutter: banked points sit BELOW the running total, never
+   beside it (user call) — the cluster is a column, order puts the tally last */
+#kbroot.sidepts .plate .bty{margin-right:0;order:1}
+.plate .tot{font-size:20px;font-weight:900;letter-spacing:.02em;color:var(--c);
+  text-shadow:0 0 16px var(--c);min-width:34px;text-align:right;transition:transform .18s}
+.plate.bump .tot{transform:scale(1.28)}
+/* colour follows the PLAYER, not the half of the screen they're sitting in,
+   so the boards can swap places on hand-off without the palette moving.
+   The heats ride along: chips and rails inside a side wear that OWNER's
+   ×2/×3 colours, falling back with them when the owner picked gold/orange */
+.side[data-owner="1"]{--c:var(--p1);
+  --mx2:var(--p1-mx2,var(--gold));--mx2-rgb:var(--p1-mx2-rgb,var(--gold-rgb));
+  --mx3:var(--p1-mx3,var(--orange));--mx3-rgb:var(--p1-mx3-rgb,var(--orange-rgb))}
+.side[data-owner="0"]{--c:var(--p2);
+  --mx2:var(--p2-mx2,var(--gold));--mx2-rgb:var(--p2-mx2-rgb,var(--gold-rgb));
+  --mx3:var(--p2-mx3,var(--orange));--mx3-rgb:var(--p2-mx3-rgb,var(--orange-rgb))}
+
+/* Nameplates never glow. The turn is already said three louder ways — the
+   status line, the running clock and the dashed legal columns — so a breathing
+   pill behind a name was decoration competing with the board. The .active class
+   stays: it is the state both flows settle at game over (render.settleBoard). */
+.plate.active{position:relative}

@@ -1,0 +1,27 @@
+
+/* ---- the identity ladder ----
+   A guest is a real player with a real rating — the only thing missing is a way
+   back in. So this reads as an OFFER, not a warning: it wears the gold of the
+   rating it exists to protect, and sits above the account's own controls.
+   The sign-in panel stacks the same way whether it is attaching an identity or
+   restoring one, because it is one panel (see AUTH in auth-screen.ts). */
+#onAccount .guestbox{display:flex;flex-direction:column;gap:11px;padding:15px;border-radius:16px;
+  background:rgba(255,209,102,.06);border:1px solid rgba(255,209,102,.22)}
+#onAccount .guestbox b{font-size:10px;letter-spacing:.24em;color:var(--gold)}
+#onAccount .guestbox p{margin:0;font-size:11.5px;line-height:1.55;color:var(--dim);letter-spacing:.02em}
+#onAccount .guestbox .btn{width:100%;min-width:0}
+/* the one-time name claim wears the guestbox shape — the same kind of thing,
+   a boxed offer on the profile — recoloured cyan because it is an invitation
+   to identity, not gold guarding a rating. Gone for good once the name is
+   claimed (migration 0026), so no "disabled" state exists to style. */
+#onAccount .namebox{background:rgba(var(--p1-rgb),.05);border-color:rgba(var(--p1-rgb),.22)}
+#onAccount .namebox b{color:var(--p1)}
+/* the name headline under the ring: identity reads cyan (like the home chip),
+   sized between the group label above it and the gold points below */
+#onAccount .accname{font-size:17px;font-weight:900;letter-spacing:.06em;color:var(--p1);
+  text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+#ovOnline .acts,#ovOnline .oneTap{display:flex;flex-direction:column;gap:12px}
+#ovOnline .oneTap:empty{display:none}
+/* Apple's own button, per its guidelines: their black-on-white, our radius */
+#onAuth .btn.tap.apple{background:#fff;color:#000;border-color:#fff}
+#onAuth .btn.tap.gamecenter{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.3)}

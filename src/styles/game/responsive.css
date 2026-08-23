@@ -1,0 +1,77 @@
+/* ============ NUMERALS INSTEAD OF PIPS ============
+   Pips are charming but hard work for some players; this is a per-device toggle. */
+.die .num{display:none;position:absolute;inset:0;align-items:center;justify-content:center;
+  font-size:calc(var(--cell)*.52);font-weight:900;color:var(--dc);
+  text-shadow:0 0 12px color-mix(in srgb,var(--dc) 80%,transparent);pointer-events:none}
+#kbroot.numerals .die .pip{display:none}
+#kbroot.numerals .die .num{display:flex}
+
+/* ============ LANDSCAPE ============
+   Boards sit side by side and each game-column becomes a horizontal row, so a
+   column still physically faces its opposite number. The .land class is set by
+   fit() rather than a media query, so JS and CSS always agree on the breakpoint. */
+/* landscape overrides the portrait padding wholesale, so it has to carry the
+   safe areas too — on its side a notched phone eats the LEFT/RIGHT edge, and
+   the home indicator still owns the bottom strip */
+#kbroot.land #app{max-width:none;padding:
+  calc(env(safe-area-inset-top,0px) + 4px) calc(env(safe-area-inset-right,0px) + 8px)
+  calc(env(safe-area-inset-bottom,0px) + 4px) calc(env(safe-area-inset-left,0px) + 8px)}
+#kbroot.land .table{flex-direction:row;align-items:center;justify-content:center;gap:4px}
+#kbroot.land .side{flex:0 0 auto;display:grid;align-items:center;gap:4px;
+  grid-template-columns:auto auto;grid-template-areas:"plate plate" "board chips"}
+#kbroot.land .side.bot{grid-template-areas:"plate plate" "chips board"}
+#kbroot.land .plate{grid-area:plate;height:20px}
+/* WIDE ENOUGH FOR THE WORST SCORE, ON EVERY PLATFORM. Three 17px bold digits
+   grew their own box and shifted the number by 7.4px the moment anyone crossed
+   100 — the same "reserve the space, never let it follow its contents" rule the
+   gutter cluster above is built on. The floor that fixed it was measured in ONE
+   font, and the stack ends in `sans-serif`, which is a different face on every
+   platform that is not Apple's. Measured, widest first:
+     Verdana Bold      37.28px
+     DejaVu Sans Bold  36.51px   ← Linux, and what CI actually renders
+     SF Pro Rounded    35.39px   ← macOS, the only one 36px ever cleared
+   So 36px held here and broke there: on CI the box followed its contents by
+   0.52px and test8 failed on a machine no player uses. 40px clears the widest
+   measured face by 2.7px. It costs nothing — .plate .sp{flex:1} absorbs the
+   growth, with 84-200px of slack across every size from 568x320 to 932x430. */
+#kbroot.land .plate .tot{font-size:17px;min-width:40px}
+/* LANDSCAPE seats the boards side by side, so a plate has an OUTSIDE and an
+   INSIDE: the name belongs on the outer edge and the score on the inner one,
+   facing the table. The left board already reads that way; the right board is
+   the same plate mirrored — including the hue dot, which stays with the name
+   on the outer edge (user call). */
+#kbroot.land .side.bot .plate,#kbroot.land .side.bot .plate .who,
+#kbroot.land .side.bot .plate .pright{flex-direction:row-reverse}
+#kbroot.land .side.bot .plate .tot{text-align:left}
+/* .pright is a cluster, not a single thing — rune, bounty tally, score — and
+   mirroring the plate without mirroring it left the rune and the tally BETWEEN
+   the score and the table: the mirrored side's score sat 65px off the inner
+   edge against the other side's 3px (measured). The score is what faces the
+   table on both halves; the rune and the tally sit outboard of it. */
+#kbroot.land .plate .nm{font-size:10px;letter-spacing:.12em}
+#kbroot.land .boardwrap{grid-area:board}
+/* `.land .side .cols`, not `.land .cols`: the portrait rules that separate a
+   chip strip from ITS OWN board (.side.top .cols margin-top, .side.bot .cols
+   margin-bottom) are two classes deep and outranked this reset, so 4px of
+   portrait spacing survived into landscape — where the strip sits BESIDE the
+   board and the margin only pushes the row's shorter item off centre. Every
+   chip has been 2px off the band it labels, one way on the near side and the
+   other way on the far one. */
+#kbroot.land .side .cols{grid-area:chips;margin:0;grid-template-columns:none;grid-template-rows:repeat(3,var(--cell))}
+#kbroot.land .board{grid-template-columns:none;grid-template-rows:repeat(3,var(--cell))}
+#kbroot.land .col{grid-template-rows:none;grid-template-columns:repeat(3,var(--cell))}
+#kbroot.land .chip{width:30px;height:var(--cell);flex-direction:column;gap:1px;font-size:11px}
+#kbroot.land .chip .dl{position:static;transform:none;padding:0 3px;font-size:9.5px;border-radius:6px}
+#kbroot.land .chip .dl.show{transform:none}
+#kbroot.land .center{flex:0 0 var(--land-lane);width:var(--land-lane);padding:0 6px;
+  box-sizing:border-box;gap:6px}
+#kbroot.land .timer .track{width:84px}
+/* a wrap width for two words, not a column */
+/* two lines are RESERVED, not grown into: the status empties on every handover
+   and rewords per seat ("AI roll" / "PLAYER 2 — tap a column"), and a box that
+   sized itself to that walked the stage die up and down the screen. */
+#kbroot.land .status{font-size:9.5px;letter-spacing:.08em;width:104px;max-width:104px;
+  line-height:1.35;white-space:normal;min-height:26px;display:grid;place-items:center}
+#kbroot.land .hud{height:28px}
+#kbroot.land .col.nope{animation:nopeY .32s}
+@keyframes nopeY{0%,100%{transform:translateY(0)}20%{transform:translateY(-6px)}40%{transform:translateY(6px)}60%{transform:translateY(-4px)}80%{transform:translateY(3px)}}

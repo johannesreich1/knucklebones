@@ -1,0 +1,40 @@
+<!-- meta name="Sign in" group="2 · Online flow" subtitle="Restoring an account: email + password, with Create account handing off to the keep-or-create panel rather than signing up here, plus whatever this device can do in one tap — guests reach ranked without ever seeing this panel" width=412 height=880 links="Home, Matchmaking" -->
+<style>
+  /* The panel's own rules are ID-scoped to #ovOnline (src/online/online.css),
+     an ancestor no card has — so these four are restated, and ONLY these four.
+     Anything reachable (.btn, .btn.ghost, .btn.tap.apple, .tiny, .lbl) is worn
+     as the app writes it. */
+  .authwrap{display:flex;flex-direction:column;gap:16px;width:100%;max-width:var(--w-col);margin:auto}
+  .authwrap input{padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
+    background:rgba(255,255,255,.05);color:var(--txt);font-size:14px;font-family:inherit}
+  .authwrap .err{min-height:16px;font-size:11px;letter-spacing:.08em;color:var(--orange);text-align:center}
+  /* an err with nothing to say is not a row (online.css #ovOnline .err:empty):
+     its reserved height plus a column gap either side pushed the buttons a
+     whole slot away from their inputs. The card held that stale 48px because
+     the suppressing rule is ID-scoped and could never reach it. */
+  .authwrap .err:empty{display:none}
+  /* the one-tap row stacks — without this the provider buttons fall back to
+     inline-block and sit side by side (same ID-scoped reason as above) */
+  .oneTap{display:flex;flex-direction:column;gap:12px}
+  /* .shead is the app's shared header (src/styles/main.css) — card adds spacing only */
+  .shead{margin-bottom:10px}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">SIGN IN</span><span class="pad"></span></div>
+  <div class="authwrap" id="onAuth">
+    <div class="lbl" style="text-align:center">Play ranked, climb the ladder</div>
+    <div class="oneTap">
+      <button class="btn tap gamecenter">Continue with Game Center</button>
+      <button class="btn tap apple">Continue with Apple</button>
+    </div>
+    <input type="email" placeholder="email" value="player@example.com">
+    <input type="password" placeholder="password (8+)" value="••••••••••">
+    <div class="err"></div>
+    <button class="btn primary">Sign in</button>
+    <!-- ghost, not a second solid action: signing up from THIS form threw away
+         the guest rating the player arrived with, so the swap now only carries
+         them to the keep-or-create panel (AUTH.restore.swap, auth-screen.ts) -->
+    <button class="btn ghost">Create account</button>
+    <div class="tiny" style="text-align:center">New accounts get a nickname like BoldRaven482 —<br>claim your own once in Account</div>
+  </div>
+</div></div>

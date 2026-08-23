@@ -2,7 +2,7 @@
    The widget build must not restyle whatever page embeds it. */
 html,body{height:100%;margin:0;padding:0}
 body{
-  background:var(--bg);color:var(--txt);
+  background:#05060e;color:#e9f1ff;
   font-family:ui-rounded,"SF Pro Rounded",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
   -webkit-font-smoothing:antialiased;
   /* manipulation, NOT pan-x pan-y: Safari treats pan-x/pan-y as unsupported
@@ -13,3 +13,4 @@ body{
   -webkit-user-select:none;user-select:none;
   overflow:hidden;font-variant-numeric:tabular-nums;
 }
+#kbroot{width:100%;height:100%;color:var(--txt)}

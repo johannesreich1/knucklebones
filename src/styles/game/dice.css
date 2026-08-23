@@ -1,0 +1,43 @@
+/* ============ DICE ============ */
+/* The corner tracks the die's own size, like the pip padding below already
+   does: --r from 50px cells up (every board in practice), tapering under that
+   so a small die keeps the die's SHAPE instead of rounding toward a circle —
+   the avatar picker's 34px faces wore the full 14px and read as pebbles. The
+   line runs through the radii that were hand-picked per size before it
+   existed (18px→6, 24px→7, 34px→10) and replaces them. */
+.die{width:100%;height:100%;border-radius:min(var(--r),calc(var(--cell)*.25 + 1.5px));position:relative;
+  display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+  padding:calc(var(--cell)*.155);
+  background:
+    linear-gradient(158deg,rgba(255,255,255,.22),rgba(255,255,255,.04) 42%,rgba(0,0,0,.28));
+  border:1px solid color-mix(in srgb,var(--dc) 55%,transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.34),
+    inset 0 -6px 12px rgba(0,0,0,.35),
+    0 5px 14px rgba(0,0,0,.55),
+    0 0 14px color-mix(in srgb,var(--dc) 32%,transparent);
+  --dc:#9fb2d8;}
+.die.p1{--dc:var(--p1)}
+.die.p2{--dc:var(--p2)}
+.pip{width:78%;height:78%;border-radius:50%;align-self:center;justify-self:center;
+  background:radial-gradient(circle at 35% 30%,#fff,var(--dc) 78%);
+  box-shadow:0 0 6px color-mix(in srgb,var(--dc) 85%,transparent),0 0 14px color-mix(in srgb,var(--dc) 45%,transparent);
+  opacity:0;transform:scale(.3);transition:opacity .12s,transform .12s}
+.pip.on{opacity:1;transform:scale(1)}
+/* a die reads its OWNER's heat: only the side wearing gold/orange loses that
+   heat to its fallback — the other side keeps the true one (flow/menu.ts) */
+.die.p1{--mx2:var(--p1-mx2,var(--gold));--mx2-rgb:var(--p1-mx2-rgb,var(--gold-rgb));
+        --mx3:var(--p1-mx3,var(--orange));--mx3-rgb:var(--p1-mx3-rgb,var(--orange-rgb))}
+.die.p2{--mx2:var(--p2-mx2,var(--gold));--mx2-rgb:var(--p2-mx2-rgb,var(--gold-rgb));
+        --mx3:var(--p2-mx3,var(--orange));--mx3-rgb:var(--p2-mx3-rgb,var(--orange-rgb))}
+.die.m2{--dc:var(--mx2);border-color:color-mix(in srgb,var(--mx2) 70%,transparent);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 5px 14px rgba(0,0,0,.55),0 0 18px rgba(var(--mx2-rgb),.5)}
+.die.m3{--dc:var(--mx3);border-color:rgba(var(--mx3-rgb),.85);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 5px 16px rgba(0,0,0,.55),0 0 26px rgba(var(--mx3-rgb),.75);
+  animation:hot 1.5s ease-in-out infinite}
+@keyframes hot{0%,100%{filter:brightness(1)}50%{filter:brightness(1.22)}}
+.die.settle{animation:settle .3s cubic-bezier(.2,1.3,.4,1)}
+@keyframes settle{0%{transform:scale(.72)}60%{transform:scale(1.07)}100%{transform:scale(1)}}
+.die.dying{animation:dying .34s ease-in forwards}
+@keyframes dying{0%{transform:scale(1) rotate(0)}30%{transform:scale(1.24) rotate(6deg);filter:brightness(2.4)}
+ 100%{transform:scale(.2) rotate(-24deg);opacity:0;filter:brightness(3)}}

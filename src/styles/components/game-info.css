@@ -1,0 +1,17 @@
+.rules{max-width:var(--w-col);font-size:13.5px;line-height:1.6;color:#c6d3ee;overflow:auto;max-height:62vh;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);border-radius:16px;padding:16px 18px}
+.rules h3{margin:0 0 8px;font-size:12px;letter-spacing:.18em;color:var(--p1);text-transform:uppercase}
+.rules p{margin:0 0 12px}
+.rules b{color:var(--gold)}
+.rules .k{color:var(--mg);font-weight:800}
+.scoreline{display:flex;align-items:center;justify-content:center;gap:16px;font-size:15px;
+  font-weight:800;letter-spacing:.08em;width:100%;max-width:var(--w-col)}
+/* equal halves so the VS sits dead centre whatever the name lengths */
+.scoreline .sc{flex:1;min-width:0}
+.scoreline .you{color:var(--p1);text-shadow:0 0 14px rgba(var(--p1-rgb),.5);font-size:32px;font-weight:900}
+.scoreline .cpu{color:var(--p2);text-shadow:0 0 14px rgba(var(--p2-rgb),.5);font-size:32px;font-weight:900}
+.scoreline .vs{color:var(--dim);font-size:12px;letter-spacing:.2em}
+.scoreline .sc{display:flex;flex-direction:column;align-items:center;gap:1px}
+.scoreline .sc em{font-style:normal;font-size:9.5px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
+/* NOTE: background-IMAGE, not the background shorthand — the shorthand resets
+   background-clip:text and the title would render as a solid gradient block. */

@@ -1,0 +1,154 @@
+<!-- meta name="Match — LIMITED bag" group="2 · Online flow" subtitle="The bag beside the die in play: face-down dice and a total, never which faces remain" width=412 height=980 links="Game modes" -->
+<style>
+  /* This card wears the APP's classes — .hud, .rec/.rchip, .plate, .table,
+     .side/.board/.col/.slot, .cols/.chip, .center, .status, .timer,
+     .stagerow/.bag — so every number and every colour comes from
+     src/styles/main.css. It used to keep a private copy of each (.mhud,
+     .mplate, .board3/.col3/.slot3, .mstatus) and the copies had drifted: a
+     30px HUD against the app's 34, a badge that was flat 16px text where the
+     app paints two 10px pills, a nameplate capsule that matches NEITHER
+     shipped seating, dice floating 4px inside their own cells, no column
+     chips at all, and a hard-coded cyan/magenta pair where the app writes --c
+     off the side's data-owner — a slot the player repoints in Settings.
+
+     What is restated below is ONLY what a card cannot reach: the app opens
+     these with a class on <html>, and a card body cannot set one.
+       html.clock    flow/timer.showClock — online/play.ts passes true, so
+                     every ranked match runs the 10s server clock, and the
+                     stage die gives back the height (.80 of a cell, not .92)
+       html.sidepts  ui/layout.fit — the gutter clears 40px at all four stage
+                     widths this card ships at, so the name centres over the
+                     board and the running total sits out beside it */
+
+  /* the two lengths ui/layout.fit measures every frame. The cell is frozen —
+     the card draws its board at 58px at every stage — but the GUTTER is not
+     allowed to be: it is what is left beside the board, (screen − board) / 2,
+     which is layout.ts's own formula. 100cqw is that screen (the .scr content
+     box, hence container-type), so the score cluster lands where the app puts
+     it at all four stage widths. */
+  .scr{--cell:58px;container-type:inline-size}
+  .side{position:relative;--gut:calc((100cqw - (3*var(--cell) + 2*var(--gap)))/2)}
+  /* The one place this card must part company with main.css, and why. The app
+     gives .table `flex:1` and each .side `flex:1 1 0` — a ZERO basis — because
+     ui/layout.fit has already sized the cell to whatever the viewport left, so
+     the halves only ever divide space that is known to be enough. A card
+     freezes the cell instead and carries an explainer strip below the phone
+     screen, and against a zero basis that strip simply takes the room from the
+     table: the two halves shrank under their own boards and the chip rows
+     printed straight through the centre stage. Basing both on content instead
+     draws the identical picture wherever there IS room to divide, and lets the
+     stage grow rather than overlap where there is not. */
+  .table{flex:1 0 auto}
+  .side{flex:1 1 auto}
+
+  /* html.sidepts. The height here is NOT a spare copy: design/build.mjs fails
+     the build if a card styles a class the app pins with height without
+     covering it, and .plate is pinned at 24px. Same for .timer's 12px below. */
+  .plate{display:grid;grid-template-columns:1fr auto 1fr;height:24px}
+  .plate .who{grid-column:2;justify-self:center}
+  .plate .sp{grid-column:1;grid-row:1}
+  .plate .pright{position:absolute;top:50%;right:calc(var(--gut)/2);transform:translate(50%,-50%);
+    flex-direction:column;gap:4px;z-index:3;width:var(--gut);max-width:var(--gut)}
+  .plate .tot{font-size:clamp(20px,calc(var(--gut)*.5),27px);min-width:0;text-align:center}
+
+  /* html.clock: the clocked stage die and the lane the timer holds for the
+     whole game */
+  #dieStage{--cell2:calc(var(--cell)*.80)}
+  .timer{display:flex;height:12px}
+
+  /* the explainer strip: the same .bag, three depths deep. Only its anchoring
+     is card-local — in play the bag hangs off .stagerow (position:absolute),
+     and these three stand on their own. */
+  .depths{display:flex;justify-content:center;gap:26px;margin-top:22px}
+  .depths .bag{position:static;margin:0}
+  .depths .d{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .depths .cap{font-size:9px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hud">
+    <!-- the badge is a ROW of chips (ui/game/hud.ts paintBadge), not a label: ranked
+         claims it with exactly two — where a chip names a registry entry it IS
+         the way into that entry's rules, and boot.ts binds .rchip[data-lib]
+         once, ranked and offline alike -->
+    <div class="rec">
+      <span class="rchip">ONLINE</span>
+      <button type="button" class="rchip tapmode" data-lib="modes" data-id="limited">{{mico:limited:12}} LIMITED<span class="mi">ⓘ</span></button>
+    </div>
+    <div class="sp"></div>
+    <button class="ico">{{ico:leave:15}}</button>
+  </div>
+
+  <div class="table dice-static">
+    <!-- data-owner is what hands each half its colour (main.css .side[data-owner]),
+         exactly as online/play.ts sets it: the near half is always you -->
+    <section class="side top" data-owner="0">
+      <div class="plate">
+        <span class="who"><span class="dot"></span><span class="nm">EmberCrow896</span></span>
+        <span class="sp"></span>
+        <!-- LIMITED has neither a rune slot nor BOUNTY's ✦ tally: it changes
+             the SUPPLY only, so scoring and destruction stay pure classic -->
+        <span class="pright"><span class="tot">18</span></span>
+      </div>
+      <div class="boardwrap"><div class="board">
+        <div class="col"><div class="slot"></div><div class="slot"></div><div class="slot">{{die:6:p2}}</div></div>
+        <!-- a pair in a column takes the gold multiplier skin, either side of
+             the board (ui/game/board.ts toggles .m2). The builder's `gold` form is
+             `p1 m2`, so on the FOE's half this reads p1's heat token where the
+             app reads p2's — identical today, both falling back to --gold. -->
+        <div class="col"><div class="slot"></div><div class="slot">{{die:2:gold}}</div><div class="slot">{{die:2:gold}}</div></div>
+        <div class="col"><div class="slot"></div><div class="slot"></div><div class="slot">{{die:4:p2}}</div></div>
+      </div></div>
+      <!-- the column chips: built for both boards in the online path too
+           (buildBoards runs there), and hidden only under ROW SWITCH, which
+           LIMITED is not. Column scores by core/rules colScore: 6 / 2·2² / 4. -->
+      <div class="cols">
+        <div class="chip has"><span class="cs">6</span><span class="mx"></span></div>
+        <div class="chip has"><span class="cs">8</span><span class="mx">×2</span></div>
+        <div class="chip has"><span class="cs">4</span><span class="mx"></span></div>
+      </div>
+    </section>
+
+    <section class="center">
+      <div class="stagerow">
+        <div id="dieStage">{{die:5:p1}}</div>
+        <!-- eight dice are on the boards and a ninth is on the stage, so the
+             bag holds 24 − 8 − 1: the die in play has already been drawn.
+             The pile thins with it — ceil(15/24 × 4) = 3 of 4 layers. -->
+        <div class="bag">
+          <span class="pile"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die gone"></i></span>
+          <b class="bn">15</b>
+        </div>
+      </div>
+      <div class="status me">Your move</div>
+      <!-- bar only, no digit: flow/timer writes the number at 5s and under -->
+      <div class="timer"><span class="track"><span class="bar" style="width:62%"></span></span><b></b></div>
+    </section>
+
+    <section class="side bot" data-owner="1">
+      <div class="cols">
+        <div class="chip has"><span class="cs">5</span><span class="mx"></span></div>
+        <div class="chip has"><span class="cs">12</span><span class="mx">×2</span></div>
+        <div class="chip has"><span class="cs">6</span><span class="mx"></span></div>
+      </div>
+      <div class="boardwrap"><div class="board">
+        <div class="col legal"><div class="slot">{{die:5:p1}}</div><div class="slot"></div><div class="slot"></div></div>
+        <div class="col legal"><div class="slot">{{die:3:gold}}</div><div class="slot">{{die:3:gold}}</div><div class="slot"></div></div>
+        <div class="col legal"><div class="slot">{{die:6:p1}}</div><div class="slot"></div><div class="slot"></div></div>
+      </div></div>
+      <div class="plate">
+        <!-- 5 + 3·2² + 6 = 23, plainly: LIMITED diverts neither boardTotal nor
+             destruction, so the plate prints the classic sum -->
+        <span class="who"><span class="dot"></span><span class="nm">FrostLynx303</span></span>
+        <span class="sp"></span>
+        <span class="pright"><span class="tot">23</span></span>
+      </div>
+    </section>
+  </div>
+
+  <!-- the pile thins as the bag drains: the last draws stand alone -->
+  <div class="depths dice-static">
+    <div class="d"><div class="bag"><span class="pile"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die"></i></span><b class="bn">24</b></div><span class="cap">Full</span></div>
+    <div class="d"><div class="bag"><span class="pile"><i class="die"></i><i class="die"></i><i class="die gone"></i><i class="die gone"></i></span><b class="bn">11</b></div><span class="cap">Halfway</span></div>
+    <div class="d"><div class="bag"><span class="pile"><i class="die"></i><i class="die gone"></i><i class="die gone"></i><i class="die gone"></i></span><b class="bn">2</b></div><span class="cap">Last dice</span></div>
+  </div>
+</div></div>

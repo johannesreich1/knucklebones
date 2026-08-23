@@ -1,0 +1,30 @@
+/* ---- the HOW TO PLAY hub: four ways in, one page ---- */
+.learnlist{display:flex;flex-direction:column;gap:11px;width:100%;max-width:var(--w-col)}
+.learnrow{display:flex;flex-direction:column;gap:5px;text-align:left;width:100%;
+  padding:15px 17px;border-radius:16px;cursor:pointer;font-family:inherit;
+  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.09);
+  transition:.15s}
+.learnrow:active,.learnrow.pressing{transform:scale(.985)}
+.learnrow .lname{font-size:14px;font-weight:900;letter-spacing:.12em;color:var(--txt);
+  text-transform:uppercase}
+.learnrow .lblurb{font-size:11.5px;line-height:1.5;color:var(--dim);letter-spacing:.02em}
+/* only while nothing has been played — after that the tutorial is just one of
+   four things you might want to read, and highlighting it is nagging */
+#ovLearn.fresh .learnrow:first-child{border-color:color-mix(in srgb,var(--p1) 34%,transparent);
+  background:color-mix(in srgb,var(--p1) 7%,transparent)}
+#ovLearn.fresh .learnrow:first-child .lname{color:var(--p1)}
+
+/* the deploy-truth tag sits at the foot of SETTINGS — the screen you open when
+   something looks wrong should say which build is wrong. A plain last line, not
+   a pinned overlay fixture: it left home on 2026-08-19, and the Account panel
+   (now PROFILE) on 2026-08-20, though this comment claimed it until 08-22. */
+#buildTag{text-align:center;opacity:.5;margin-top:2px}
+.linkbtn{background:none;border:none;padding:4px;font-family:inherit;cursor:pointer;
+  font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase}
+.linkbtn:focus-visible{outline:2px solid var(--p1);outline-offset:2px}
+/* the ask-card's guard: a tick, for an answer nobody should give by reflex */
+.askcheck{display:flex;align-items:flex-start;gap:9px;font-size:11.5px;line-height:1.5;
+  color:var(--dim);cursor:pointer;text-align:left}
+.askcheck input{width:18px;height:18px;flex:0 0 auto;accent-color:var(--p1);margin-top:1px}
+.askcard .btn.danger{border-color:rgba(var(--mg-rgb),.35);color:#ff9ccb}
+.askcard .btn:disabled{opacity:.4;cursor:not-allowed}

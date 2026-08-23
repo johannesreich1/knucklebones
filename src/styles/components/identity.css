@@ -1,0 +1,167 @@
+/* ============ HOME (online-first) ============
+   The duel is the hero; PLAY ONLINE is the one primary action. Local play
+   lives behind the quiet PRACTICE strip. Design source: design/screens/product/10*. */
+/* ---- the ladder ring (design card 92d, spec docs/LADDER.md §5) ----
+   ONE continuous fill — how far through the current GROUP you are — and the
+   ladder's only continuous feedback now that divisions are gone: promotions
+   are 37 to ~120 games apart, so this has to move on every match. It lives
+   HERE, not in online.css, because the home plate paints it at boot, before
+   the online chunk exists; the profile panel wears the same ring large.
+
+   The 270deg sweep starts at 225deg, not 180: 225 + 270 = 495 = 135, so it
+   runs lower-left, up the left, over the top, down the right, to lower-right,
+   leaving a 90deg gap centred on six o'clock with both ends at the same
+   height. Starting at 180 puts one end at the bottom and the other out at
+   three o'clock, which reads as a ring knocked askew. */
+.ringwrap{position:relative;width:min(62vw,206px);aspect-ratio:1;display:grid;place-items:center;
+  margin:2px auto 0;--p:0;--pk:0}
+/* TWO layers, so each arc casts its own light. drop-shadow() tints every
+   pixel's halo one colour, so as long as fill and track shared an element the
+   grey could only borrow the cyan bloom — invisible whenever the fill was
+   small, and the arc's far end unreadable. The track was also a FADE twice
+   (256deg→zero, then 246deg→.035) and both times was reported as "the grey is
+   gone": near a group's top the fill's edge sits inside the dimmed tail, so
+   the whole visible remnant was the faded part. Hence the rule this ring
+   settled on: the track below — the full 270deg, flat grey, its own dim grey
+   bloom, a hard stop at the mouth; the fill above, cyan, the cyan bloom. The
+   dark halo and the bright one meet where you stand, and the dark one always
+   shows where the ring ends.
+   The grey is OPAQUE on purpose. Every translucent track died the same death:
+   the profile sits on .ov — a blurred backdrop where home's neon glows bleed
+   through, bright behind the ring's top and black behind its right — and a
+   see-through band SUMS with that, wearing a fake fade however flat its own
+   stops are. Opaque, the backdrop cannot paint through it. #464c5c ≈ 26%
+   white over the scrim's own base, kept as a fixed colour — nudged up one
+   step from the 22%-equivalent on review. */
+.ringwrap::before{content:"";position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 225deg,#464c5c 0 270deg,transparent 270deg);
+  -webkit-mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
+  mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
+  filter:drop-shadow(0 0 12px rgba(255,255,255,.2))}
+.lring{position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(from 225deg,var(--p1) calc(var(--p) * 270deg),transparent 0);
+  -webkit-mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
+  mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
+  filter:drop-shadow(0 0 14px rgba(var(--p1-rgb),.42))}
+/* The season peak, drawn only when it is AHEAD of you (LADDER.md §5). It is a
+   NEUTRAL white mark, not gold: colour on these screens means "live", and the
+   only live things are the fill showing your current percentage and the points
+   number it belongs to. A gold notch competed with both while marking
+   something you are no longer at. */
+.lpeak{position:absolute;inset:0;border-radius:50%;opacity:0;
+  background:conic-gradient(from 225deg,transparent 0 calc(var(--pk) * 270deg - 1.3deg),
+    rgba(233,241,255,.85) calc(var(--pk) * 270deg - 1.3deg) calc(var(--pk) * 270deg + 1.3deg),transparent 0);
+  -webkit-mask:radial-gradient(circle closest-side,transparent 77%,#000 78%);
+  mask:radial-gradient(circle closest-side,transparent 77%,#000 78%);
+  filter:drop-shadow(0 0 6px rgba(233,241,255,.6));transition:opacity .3s}
+.ringwrap.haspeak .lpeak{opacity:1}
+/* chip size: the same object, with a thicker relative band so four pixels of
+   sweep still read as a ring and not as an artifact */
+.ringwrap.mini{width:36px;margin:0;flex:0 0 auto}
+/* the mini wears NO halos at all — neither the grey track bloom nor the cyan
+   fill bloom: around a 36px ring a glow is bigger than the band it decorates
+   and only muddied the chip. The blooms belong to the profile's large ring
+   alone; the mini is the same object, crisp. */
+.ringwrap.mini::before,.ringwrap.mini .lring{-webkit-mask:radial-gradient(circle closest-side,transparent 75%,#000 76%);
+  mask:radial-gradient(circle closest-side,transparent 75%,#000 76%);filter:none}
+
+/* ---- the identity plate (design card 13d) ----
+   The account door ON the action stack: ring-avatar, name, group, points, one
+   slim row directly above PLAY RANKED MATCH — your standing and the button
+   that moves it read as a single block. Replaces the corner chip. */
+.pplate{position:relative;display:flex;align-items:center;gap:10px;width:100%;padding:7px 12px 7px 7px;
+  border-radius:14px;border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.035);
+  font:inherit;color:var(--txt);cursor:pointer;text-align:left}
+.pplate .nm2{font-size:10.5px;letter-spacing:.1em;font-weight:800;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* the roomier cut (PlateSpec.large): the result screen's plates breathe a
+   little more top and bottom; the home chip keeps the slim row */
+.pplate.lg{padding:12px 14px 12px 9px}
+/* The group label and the points each centre themselves. Locking the 8px
+   label to the 13.5px number's baseline hung its ink ~3px below the plate's
+   midline — small all-caps beside big lining digits reads centred, not
+   baseline-aligned, at this size gap. */
+.pplate .meta2{margin-left:auto;display:flex;align-items:center;gap:7px;flex:0 0 auto}
+.pplate .meta2 .gpill{order:-1}   /* in the slim row the pill leads, points close */
+.pplate .mrow{display:flex;align-items:center;gap:7px}
+/* only the LARGE cut (the result screen) stacks the meta — points large, the
+   pill captioning beneath (user call: the home chip keeps its one-line row).
+   The stack is what lets a 16-character nickname and a rank coexist there. */
+.pplate.lg .meta2{flex-direction:column;align-items:flex-end;gap:3px}
+.pplate.lg .meta2 .gpill{order:0}
+/* the group pill: ONE look for a player's group + rank wherever they appear —
+   the face-off's columns and the identity plate wear the same class, so the
+   result screen, the home chip and the compare card can never drift apart */
+.gpill{font-size:clamp(7.5px,2vw,9px);font-weight:900;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gc,var(--gold));border:1px solid color-mix(in srgb,var(--gc,var(--gold)) 45%,transparent);
+  border-radius:6px;padding:2.5px 7px;white-space:nowrap}
+.pplate .meta2 b{font-size:13.5px;font-weight:900;color:var(--gold)}
+/* '›' hangs its ink low in the em box (measured ~1.1px below the plate's
+   midline at 14px); the nudge centres the glyph, not the box */
+.pplate .chev{color:var(--dim);font-size:14px;line-height:1;flex:0 0 auto;
+  transform:translateY(-1px)}
+/* no account yet: the same plate, dashed, with an empty ring around nobody */
+.pplate.anon{color:var(--dim);border-style:dashed;font-size:10.5px;letter-spacing:.12em}
+/* ---- the plate on the result (design 36f): the home plate dealt twice ----
+   The opponent's ring speaks their colour: .lring reads --cy, so their plate
+   redefines it and the same ring component fills magenta. */
+.pplate.theirs{--p1:var(--p2);--p1-rgb:var(--p2-rgb)}
+.pplate.wonp{border-color:rgba(255,209,102,.5);background:rgba(255,209,102,.05)}
+.pplate.lostp{opacity:.66}
+/* what the match paid, beside the number it changed — green up, magenta down */
+.pdelta{font-size:11px;font-weight:900;color:#8dffcf;letter-spacing:.05em}
+.pdelta.down{color:var(--mg)}
+/* the stamp across the beaten foe's row (design 36d), in-flow but askew */
+/* the stamp is slapped ON the plate, not set IN it (user call): it sits
+   under the name's start, grazing its letters, and hangs a little off the
+   card's bottom edge — a rubber stamp over paper, not a badge in a row. Out
+   of the flex flow it also stops rationing the name's ellipsis space against
+   the pill and the points. */
+/* the stamp wears the foe's SCORE colour (user call): the same bright magenta
+   as the losing "30" in the scoreline, not a darker shade of it — the raw
+   hue, deliberately: bad news never changes clothes with the duel pair */
+/* The plates take the stage IN TURN (user call): yours first, the beaten
+   foe's card arrives on its own beat — dealt instantly it upstaged the slam,
+   which was falling on a card the eye had already filed away. The stamp then
+   drops on a row that JUST landed. The re-deal (fresh numbers, .restamp)
+   skips the whole theatre, and so does reduced motion. */
+.endplates .pplate{animation:plateIn .38s cubic-bezier(.2,.9,.3,1) .25s backwards}
+.endplates .pplate.theirs{animation:plateIn .38s cubic-bezier(.2,.9,.3,1) .8s backwards}
+@keyframes plateIn{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
+.pstamp{position:absolute;left:38px;bottom:-6px;transform:rotate(-8deg);
+  border:2px solid rgba(var(--mg-rgb),.8);color:var(--mg);border-radius:6px;
+  padding:2.5px 8px;font-size:10px;font-weight:900;letter-spacing:.24em;text-transform:uppercase;
+  background:rgba(5,6,14,.55);text-shadow:0 0 10px rgba(var(--mg-rgb),.55);pointer-events:none;
+  /* the SLAM (design 37a, chosen): the stamp drops oversized out of the air
+     once the verdict has landed (title stamps in around .3–1s) AND the foe's
+     card is on the table (entrance ends ~1.2s). backwards keeps it invisible
+     through the delay. */
+  animation:stampSlam .5s cubic-bezier(.34,1.3,.4,1) 1.25s backwards}
+@keyframes stampSlam{
+  0%{opacity:0;transform:rotate(-8deg) translateY(-58px) scale(3.1)}
+  55%{opacity:1;transform:rotate(-8deg) translateY(0) scale(.96)}
+  70%{transform:rotate(-8deg) scale(1.14)}
+  85%{transform:rotate(-8deg) scale(.99)}
+  100%{opacity:1;transform:rotate(-8deg) scale(1)}}
+/* the plate takes the hit — a two-frame jolt timed to the stamp's contact
+   (delay 1.25s + 55% of .5s ≈ 1.53s) — and a thin shock ring blows out of the
+   impact. The jolt rides WITH the entrance in one animation list: a second
+   rule would replace it, and the foe's card would blink into place. */
+.endplates .pplate.stamped{animation:plateIn .38s cubic-bezier(.2,.9,.3,1) .8s backwards,
+  stampJolt .4s linear 1.53s}
+@keyframes stampJolt{0%{transform:none}20%{transform:translateY(4px) rotate(.65deg)}
+  45%{transform:translateY(-2.4px) rotate(-.2deg)}70%{transform:translateY(1.2px)}100%{transform:none}}
+.pstamp::after{content:"";position:absolute;inset:-6px;border-radius:10px;
+  border:2.5px solid rgba(var(--mg-rgb),.7);opacity:0;
+  animation:stampDust .7s ease-out 1.53s;pointer-events:none}
+@keyframes stampDust{0%{opacity:1;transform:scale(.86)}100%{opacity:0;transform:scale(2.3)}}
+/* one entrance and one slam per RESULT, not per deal: the late re-deal
+   (fresh numbers) rebuilds the rows, and a second landing or crash would
+   read as a second verdict */
+.endplates.restamp .pstamp,.endplates.restamp .pstamp::after,
+.endplates.restamp .pplate{animation:none}
+@media (prefers-reduced-motion:reduce){
+  .pstamp,.pstamp::after,.endplates .pplate{animation:none}
+  .pstamp::after{content:none}}
+.endplates{display:flex;flex-direction:column;gap:9px;width:100%;max-width:var(--w-col)}
+.endplates div.pplate{cursor:default}   /* a fact, not a door */

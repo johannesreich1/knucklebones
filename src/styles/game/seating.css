@@ -1,0 +1,29 @@
+/* ---- face-to-face seating (portrait duo) ----
+   The two halves stay put; only orientation-sensitive content on the top half
+   is turned for the player sitting opposite. Dice pips are 180°-symmetric, so
+   the dice themselves never rotate — which also keeps every placement/destroy
+   animation untouched. */
+/* THE PLATE'S OWN BOX MAY NOT BE TRANSFORMED. A transform makes an element the
+   containing block for its absolutely-positioned descendants, and the score
+   cluster is one: rotating the plate re-anchored the far player's points and
+   rune from the SIDE to the 30px bar, landing them at the top-left corner
+   instead of the gutter (measured x=10,y=31 against the near seat's x=333,
+   y=186) — and moving them whenever the plate's own box changed. So the plate
+   mirrors by reversing its row, and the PARTS turn for the player opposite. */
+#kbroot.face:not(.land) #sideTop .plate{flex-direction:row-reverse}
+#kbroot.face:not(.land) #sideTop .plate .who,
+#kbroot.face:not(.land) #sideTop .plate .pright{transform:rotate(180deg)}
+/* in the gutter seating the cluster is absolute, so it keeps its own placing
+   transform and only adds the turn */
+#kbroot.sidepts.face:not(.land) #sideTop .plate .pright{transform:translate(50%,-50%) rotate(180deg)}
+#kbroot.face:not(.land) #sideTop .chip{transform:rotate(180deg)}
+#kbroot.face:not(.land) #sideTop .die .num{transform:rotate(180deg)}
+#kbroot.face:not(.land) .die.p2flip .num{transform:rotate(180deg)}
+/* the idle half steps back; the active half is the bright one */
+#kbroot.face .side{transition:opacity .35s,filter .35s}
+#kbroot.face .side.idle{opacity:.5;filter:saturate(.55) brightness(.82)}
+/* the centre stage turns toward whoever is playing — the hand-off signal */
+#dieStage,.status,.timer{transition:transform .3s}
+#kbroot.face.p2turn:not(.land) #dieStage,
+#kbroot.face.p2turn:not(.land) .status,
+#kbroot.face.p2turn:not(.land) .timer{transform:rotate(180deg)}

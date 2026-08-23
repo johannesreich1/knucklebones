@@ -1,0 +1,76 @@
+/* ---- the profile (design card 92d, spec docs/LADDER.md §5) ---------------
+   The ring itself (.ringwrap/.lring/.lpeak) lives in styles/main.css: the HOME
+   plate wears it at boot, before this chunk exists. Here is only what the
+   account panel adds around it. */
+#onAccount{gap:11px}
+#onAccount .avwrap{position:relative;display:grid;place-items:center;background:none;border:0;
+  padding:0;cursor:pointer;font:inherit;z-index:2}
+#onAccount .avwrap .avedit{position:absolute;right:-9px;bottom:-9px;width:26px;height:26px;border-radius:50%;
+  display:grid;place-items:center;background:rgba(10,13,28,.95);
+  border:1px solid rgba(var(--p1-rgb),.55);color:var(--p1);font-size:11px}
+/* a button since it opens the ladder — resets keep it reading as the number */
+#onAccount .ptv{display:flex;flex-direction:column;align-items:center;gap:2px;
+  border:0;background:none;padding:0;font-family:inherit;cursor:pointer}
+#onAccount .ptv:focus-visible{outline:2px solid var(--p1);outline-offset:3px;border-radius:8px}
+#onAccount .ptv b{font-size:33px;font-weight:900;color:var(--gold);line-height:1;
+  text-shadow:0 0 24px rgba(255,209,102,.42)}
+/* Every centred label with tracking carries text-indent EQUAL to its
+   letter-spacing: the spacing trails the last glyph, so it counts into the
+   centred width and shifts the visible text half a space left of what it
+   labels — the LADDER POINTS caption sat 1.1px left of the 84 (measured).
+   The indent puts the same space in front, recentring the ink. */
+#onAccount .ptv span{font-size:clamp(8.5px,2.2vw,9.5px);letter-spacing:.26em;text-indent:.26em;color:var(--dim);text-transform:uppercase}
+/* the rank, centred in the ring's bottom opening — the gap stops being empty
+   space and becomes the label. Sized to fit the widest name (OBSIDIAN) inside
+   the 90deg mouth, which is ~70% of the ring's width at the band. */
+#onAccount .gname{position:absolute;left:0;right:0;bottom:-1px;text-align:center;z-index:2;
+  font-size:clamp(12px,3.4vw,15px);font-weight:900;letter-spacing:.18em;text-indent:.18em;
+  color:var(--txt);text-shadow:0 0 18px rgba(4,5,12,.9)}
+/* what is still owed, directly under the number it is owed against */
+#onAccount .togo{font-size:9.5px;letter-spacing:.16em;text-indent:.16em;color:var(--dim);
+  text-transform:uppercase;text-align:center;margin-top:-6px}
+#onAccount .togo b{color:var(--gold)}
+#onAccount .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+#onAccount .fact{flex:1;text-align:center;padding:9px 5px;border-radius:12px;
+  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08)}
+/* nowrap matters: the record is "W 12 · L 7", which wrapped to three lines in
+   a third of the width and made the row twice as tall as the other two */
+#onAccount .fact b{display:block;font-size:clamp(13.5px,3.4vw,15px);font-weight:900;color:var(--txt);
+  white-space:nowrap}
+#onAccount .fact .n1,#onAccount .fact .n2{font-size:clamp(13.5px,3.4vw,15px)}
+/* display:block because text-indent only applies to block containers — as a
+   plain inline the indent is ignored and the caption stays half a space left */
+#onAccount .fact span{display:block;font-size:clamp(8px,2.1vw,9px);letter-spacing:.2em;text-indent:.2em;color:var(--dim);text-transform:uppercase}
+/* Gold is reserved for the number that is LIVE — the points you have right
+   now. The peak is a fact like the others and reads white; its gold belongs on
+   the ring, where the notch has to stand out against the cyan fill. */
+/* the profile STRETCHES so its foot can pin (user call): sign out + the
+   delete footnote sit at the very bottom whatever the device leaves free,
+   and the inline mini-history above fills what remains. overflow-y, because
+   the stretched panel sits in a CENTERING flex parent: content taller than
+   the screen (a guest's offer + claim cards) would otherwise clip at the TOP
+   and take the name headline with it — the gate caught exactly that. */
+/* The account panel does NOT scroll itself either — the paged body around it
+   does (one page, one scroller). It used to, because it sat in a CENTERING
+   flex parent where content taller than the screen clipped at the TOP and
+   took the name headline with it; the paged body top-aligns and scrolls, so
+   that reason is gone with it. */
+#ovOnline #onAccount{flex:0 0 auto;margin:0}
+/* …and its children keep their NATURAL size: in a scrollable flex column,
+   anything wearing overflow (the ellipsised name headline) has an automatic
+   minimum of ZERO and gets crushed flat before the panel deigns to scroll —
+   the gate caught the headline at height 0 exactly that way */
+#ovOnline #onAccount > *{flex-shrink:0}
+#onAccount .accfoot{margin-top:auto;display:flex;flex-direction:column;gap:12px;width:100%}
+#onAccount .accfoot .viewfoot{margin-top:0;padding-bottom:0}
+/* the mini list reuses .lb's row chrome but never scrolls — it is trimmed to
+   the space instead (showAccount measures the real overflow) */
+#ovOnline .minihist{max-height:none;overflow:visible;flex:0 0 auto}
+#onAccount .histrow{display:flex;align-items:center;width:100%;padding:12px 14px;border-radius:14px;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);cursor:pointer;
+  font-size:clamp(11px,2.8vw,12.5px);letter-spacing:.18em;color:var(--dim);text-transform:uppercase;font-family:inherit}
+#onAccount .histrow b{color:var(--txt);margin-left:auto;letter-spacing:.06em}
+#onAccount .accsince{font-size:clamp(9px,2.3vw,10px);letter-spacing:.16em;text-indent:.16em;color:var(--dim);text-transform:uppercase;text-align:center}
+/* an empty since-line is not a row: as a zero-height flex item it would still
+   claim a column gap, doubling the space under the history row (user report) */
+#onAccount .accsince:empty{display:none}

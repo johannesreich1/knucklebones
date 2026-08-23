@@ -1,0 +1,29 @@
+/* ============ BACKDROP ============ */
+/* the GAME's backdrop, byte-identical to before the ambience rework (user
+   call: the table keeps its original stage). Overlays are opaque, so
+   everything from here to the vignette paints ONLY the live table — the
+   pages wear the --aurora token instead. */
+#bg{position:fixed;inset:0;z-index:0;overflow:hidden;background:
+  radial-gradient(120% 80% at 50% -10%, #17123a 0%, transparent 60%),
+  radial-gradient(110% 70% at 50% 110%, #04263a 0%, transparent 60%),
+  var(--bg);}
+#bg::before{content:"";position:absolute;inset:-30%;
+  background:
+    radial-gradient(closest-side,rgba(var(--p2-rgb),.42),transparent 70%) 20% 16%/64% 48% no-repeat,
+    radial-gradient(closest-side,rgba(var(--p1-rgb),.36),transparent 70%) 80% 86%/66% 50% no-repeat,
+    radial-gradient(closest-side,rgba(126,60,255,.30),transparent 70%) 62% 42%/52% 40% no-repeat;
+  filter:blur(34px);animation:drift 18s ease-in-out infinite alternate;}
+#bg::after{content:"";position:absolute;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px),
+                   linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px);
+  background-size:34px 34px;
+  -webkit-mask-image:radial-gradient(130% 90% at 50% 50%,#000 35%,transparent 92%);
+  mask-image:radial-gradient(130% 90% at 50% 50%,#000 35%,transparent 92%);
+  opacity:.45;transition:opacity .28s}
+/* the grid is the TABLE's texture and nobody else's (user call): its centre
+   belt under every translucent overlay was the "horizontal background"
+   reported all evening. Any overlay up = grid out. */
+#kbroot:has(.ov.on) #bg::after{opacity:0}
+@keyframes drift{from{transform:translate3d(-3%,-2%,0) scale(1)}to{transform:translate3d(4%,3%,0) scale(1.12)}}
+#vig{position:fixed;inset:0;z-index:1;pointer-events:none;
+  box-shadow:inset 0 0 140px 40px rgba(0,0,0,.85)}

@@ -1,0 +1,76 @@
+/* ============ OVERLAYS ============ */
+.ov{position:fixed;inset:0;z-index:80;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:18px;padding:30px var(--pad-x) calc(env(safe-area-inset-bottom,0px) + 30px);background-color:#04050c;-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
+  opacity:0;pointer-events:none;visibility:hidden;transition:opacity .28s,visibility 0s .28s}
+.ov.on{opacity:1;pointer-events:auto;visibility:visible;transition:opacity .28s}
+/* the ambience paints ONCE, on the TOPMOST open overlay: overlays STACK
+   (home stays on beneath pages, pages beneath sheets) and a copy per layer
+   compounded into mud (user report). Same z everywhere means paint order is
+   DOM order, so the last .on sibling is the top — the quiet rooms override
+   their background wholesale and stay plain, as they should. */
+.ov.on:not(:has(~ .ov.on)){background:var(--aurora);background-color:#04050c}
+/* Home scrolls itself and does NOT wear the soft top edge, deliberately: the
+   fade exists to soften content vanishing under a pinned header, and home has
+   none. It is also an opaque overlay, so masking its top would fade its own
+   background and let the table behind it show through — tried, and it reads
+   as a glitch rather than a treatment. */
+#ovStart{overflow-y:auto;justify-content:flex-start}
+/* A SHORT VIEWPORT TURNS "centre it" INTO "clip both ends". .ov centres its
+   column and never scrolls, so on a phone lying down the offline setup screen
+   kept its Play button below the fold with no way to reach it — and #ovStart
+   was exempted individually years ago rather than the rule being fixed. Every
+   screen gets what home already had; .paged runs its own scroller (.pbody). */
+#kbroot.shortv .ov:not(.paged){overflow-y:auto;justify-content:flex-start}
+/* ONE spacer, not two: it splits the free space with the foot's own auto
+   margin, so the content column sits centred between the screen top and the
+   legal links. A fixed offset was tried when the plate joined the stack and
+   read top-heavy — the column wants to breathe evenly around its middle. */
+#ovStart::before{content:"";margin-top:auto;flex:0 0 auto}
+.ov h1{margin:0;font-size:29px;letter-spacing:.2em;font-weight:900;text-align:center;
+  background:linear-gradient(100deg,var(--p1),#fff 50%,var(--p2));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  /* NOTE: this filter is safe HERE (a static title). It must never apply to a
+     title that also animates or changes state — see #endTitle below. */
+  filter:drop-shadow(0 0 22px rgba(var(--p1-rgb),.35))}
+.ov .sub{font-size:11.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;margin-top:-8px;text-align:center}
+.btn{min-width:210px;padding:16px 20px;border-radius:14px;border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.05);color:var(--txt);font-size:13.5px;font-weight:800;letter-spacing:.16em;
+  text-transform:uppercase;cursor:pointer;transition:.15s;font-family:inherit}
+.btn:active,.btn.pressing{transform:scale(.96)}
+.btn.primary{background:linear-gradient(100deg,var(--p1),var(--p1-hi) 40%,var(--p2));color:#04101a;border:none;
+  box-shadow:0 10px 30px rgba(var(--p1-rgb),.28),0 0 0 1px rgba(255,255,255,.12) inset}
+#kbroot [hidden]{display:none!important}
+.seg{display:flex;gap:8px}
+.seg button{flex:1;padding:13px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(255,255,255,.04);color:var(--dim);font-size:11.5px;font-weight:800;letter-spacing:.13em;
+  cursor:pointer;font-family:inherit;transition:.15s}
+/* a locked choice stays readable — dimmed, not restyled, and the note under
+   the card says who holds the lock (colour blind mode owns the duel pair) */
+.seg button:disabled{opacity:.45;cursor:default}
+/* hue swatches: a round button wearing a colour (--h), the Settings duel
+   pickers' shape. The other side's pick renders disabled — a colour can only
+   belong to one player — and colour blind mode disables the whole row. */
+/* ONE ROW, however long the roster gets: auto-fit sizes the columns from the
+   width it has, so seven swatches stay on one line at 375px (~42px each) and
+   still fit a 320px phone (~34px) — a strip that wraps leaves an orphan
+   swatch on its own line. The 44px ideal is the CAP, not the floor. */
+.hues{display:grid;grid-template-columns:repeat(auto-fit,minmax(34px,1fr));gap:9px;
+  justify-items:center}
+.hues button{width:100%;max-width:44px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;
+  background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10);
+  cursor:pointer;padding:0;transition:transform .15s}   /* press only — the pick snaps */
+.hues button::after{content:"";width:21px;height:21px;border-radius:50%;background:var(--h);
+  box-shadow:0 0 12px var(--h)}
+.hues button:active,.hues button.pressing{transform:scale(.9)}
+.hues button.on{border-color:var(--h);box-shadow:0 0 14px color-mix(in srgb,var(--h) 45%,transparent)}
+.hues button:disabled{opacity:.3;cursor:default;transform:none}
+.hues button:disabled::after{box-shadow:none}
+.seg button.on{color:#04101a;background:linear-gradient(100deg,var(--p1),var(--p1-hi));border-color:transparent;
+  box-shadow:0 6px 18px rgba(var(--p1-rgb),.3)}
+.lbl{font-size:10px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
+.card{width:100%;max-width:var(--w-col);display:flex;flex-direction:column;gap:12px}
+/* A card's note reserves TWO lines whether it needs them or not. Descriptions
+   wrap differently per device — five of the seven game modes take two lines at
+   360px and one at 430px — and letting the slot resize moved every card below
+   it by a line whenever the player tried another mode. */
+.card .note{text-align:left;line-height:1.45;min-height:2.9em}

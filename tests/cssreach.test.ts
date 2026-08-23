@@ -13,6 +13,7 @@
 // the invariant behind it is simply "offline markup, offline stylesheet", and
 // that is decidable by reading the files.
 import { readFileSync, readdirSync } from 'node:fs';
+import { inlineCssGraph } from '../tools/css-graph.mjs';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -21,8 +22,16 @@ const read = (p: string) => readFileSync(p, 'utf8');
 const classesIn = (css: string): Set<string> =>
   new Set([...css.matchAll(/\.([a-zA-Z][\w-]*)/g)].map((m) => m[1]));
 
-const offlineCss = classesIn(read('src/styles/main.css') + read('src/styles/page.css'));
-const onlineCss = classesIn(read('src/online/online.css'));
+const cssClasses = (label: string, entries: string[]): Set<string> => {
+  try {
+    return classesIn(inlineCssGraph(entries, { rootDir: process.cwd(), separator: '' }).css);
+  } catch (error) {
+    errs.push(`${label}: ${error instanceof Error ? error.message : String(error)}`);
+    return new Set();
+  }
+};
+const offlineCss = cssClasses('offline CSS graph', ['src/styles/page.css', 'src/styles/main.css']);
+const onlineCss = cssClasses('online CSS graph', ['src/online/online.css']);
 
 /* every module the offline game can reach: the static markup plus ui/ and
    flow/, never online/ — those are the files that may only name offline CSS */

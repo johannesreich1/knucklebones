@@ -1,8 +1,9 @@
-// Build the design cards: each screen body in design/screens/ is wrapped with
-// the GAME'S OWN stylesheets (inlined) plus a little preview chrome, and lands
-// in design/dist/ ready for DesignSync. Design and product share CSS by
-// construction — a token change in src/styles/ re-skins every design card on
-// the next build.
+// Build the design cards: each recursively classified screen body under
+// design/screens/ is wrapped with the GAME'S OWN stylesheets (inlined) plus a
+// little preview chrome, and lands in design/dist/ ready for DesignSync. The
+// flat output keeps each globally unique basename as its durable card identity.
+// Design and product share CSS by construction — a token change in src/styles/
+// re-skins every design card on the next build.
 //
 //   node design/build.mjs
 //
@@ -13,7 +14,7 @@
 //   {{die:V:p1|p2|gold[:px]}}   a die face — the class slot takes any of the
 //                              app's own die classes, space-separated, so a card
 //                              can picture a MULTIPLIED die (`p2 m2`) instead of
-//                              restating main.css's gold in card CSS
+//                              restating the shared dice CSS's gold in card CSS
 //   {{mico:MODE[:px]}}          a mode icon — the APP's, imported below
 //   {{mhue:MODE}}               a mode's hue — likewise
 //   {{sico:SPELL[:px]}}         a rune icon — the APP's (ui/spellicons.ts)
@@ -48,6 +49,8 @@ import { parseAvatar, AV_HUES } from '../src/ui/avatar.ts';
 import { spellById } from '../src/core/spells.ts';
 import { modeById } from '../src/core/modes.ts';
 import { libraryCards, pickerButtons, MODE_LIB, SPELL_LIB, MODE_PICKS, SPELL_PICKS } from '../src/ui/library.ts';
+import { inlineCssGraph } from '../tools/css-graph.mjs';
+import { discoverDesignScreens } from './screen-library.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..');
@@ -57,8 +60,15 @@ const die = (m) => { console.error('DESIGN BUILD FAILED: ' + m); process.exit(1)
    blank card nobody notices for a month */
 const spellOr = (id) => spellById(id) ?? die(`no such spell: ${id}`);
 
-const css = ['src/styles/page.css', 'src/styles/main.css', 'src/online/online.css']
-  .map((p) => readFileSync(join(root, p), 'utf8')).join('\n');
+let css;
+try {
+  css = inlineCssGraph(
+    ['src/styles/page.css', 'src/styles/main.css', 'src/online/online.css'],
+    { rootDir: root },
+  ).css;
+} catch (error) {
+  die(error instanceof Error ? error.message : String(error));
+}
 
 /* Bare app classes whose rule would SWALLOW a card's element rather than merely
    tint it — the ones a card must never redefine. Cards deliberately tune shared
@@ -169,11 +179,16 @@ mkdirSync(join(here, 'dist'), { recursive: true });
    two builds can overlap (a peer session, an agent) and a wipe-then-write
    would serve one of them a half-empty dist. */
 const built = new Set();
-const screens = readdirSync(join(here, 'screens')).filter((f) => f.endsWith('.html')).sort();
-if (!screens.length) die('no screens');
+let screens;
+try {
+  screens = discoverDesignScreens(join(here, 'screens'));
+} catch (error) {
+  die(error instanceof Error ? error.message : String(error));
+}
 
-for (const f of screens) {
-  const src = readFileSync(join(here, 'screens', f), 'utf8');
+for (const screen of screens) {
+  const f = screen.basename;
+  const src = readFileSync(screen.file, 'utf8');
   const meta = src.match(/^<!-- meta ([\s\S]*?)-->/);
   if (!meta) die(f + ': missing meta comment');
   const attr = (k, d) => meta[1].match(new RegExp(k + '="([^"]*)"'))?.[1]
@@ -228,8 +243,8 @@ for (const f of screens) {
 
   let body = src.slice(meta[0].length)
     /* The class slot is a LIST, not one name: a die in play is `p2 m2` when its
-       column holds a pair (ui/render toggles m2/m3 on exactly that count), and a
-       card that could only ask for `p2` had to restate main.css's gold to show
+       column holds a pair (ui/game/board.ts toggles m2/m3 on that count), and a
+       card that could only ask for `p2` had to restate the shared dice CSS to show
        one — a second copy of the multiplier look, in the file that exists to
        stop second copies. `gold` stays as the shorthand it always was. */
     .replace(/\{\{die:(\d):([a-z0-9]+(?: [a-z0-9]+)*)(?::(\d+))?\}\}/g,
@@ -310,7 +325,7 @@ for (const f of screens) {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${cardName}</title>
 <style>${css}\n${chrome}\n${sizeCss}</style></head>
-<body>
+<body id="kbroot">
 ${body}
 ${flows}
 </body></html>`;
@@ -322,7 +337,7 @@ ${flows}
 for (const f of readdirSync(join(here, 'dist'))) {
   if (f.endsWith('.html') && !built.has(f)) {
     rmSync(join(here, 'dist', f));
-    console.log('pruned', f, '(no longer in design/screens)');
+    console.log('pruned', f, '(no longer in classified design screens)');
   }
 }
 /* The Design System pane renders what _ds_manifest.json lists — emit it here

@@ -1,0 +1,42 @@
+/* ============ THE LOADING DIE ============
+   ONE loader for every wait (ui/loader.ts; design card 34a, "LD1 pip clock"):
+   the die face IS the spinner — all nine pips visible, the eight rim pips
+   dimming in a clockwise chase around the 3x3 grid (cells 1 2 3 / 6 / 9 8 7 /
+   4 in child order), the centre pip breathing. Lives HERE, not in online.css:
+   the biggest wait of all is the online chunk itself still downloading, and
+   at that moment online.css does not exist (the .btn.ghost lesson —
+   tests/cssreach.test.ts). Reduced motion kills the chase globally above,
+   leaving a calm full-pip die. */
+.die.ldclock .pip{display:block;opacity:1;transform:scale(1);transition:none;animation:ldchase 1.28s linear infinite}
+.ldclock .pip:nth-child(1){animation-delay:0s}
+.ldclock .pip:nth-child(2){animation-delay:.16s}
+.ldclock .pip:nth-child(3){animation-delay:.32s}
+.ldclock .pip:nth-child(6){animation-delay:.48s}
+.ldclock .pip:nth-child(9){animation-delay:.64s}
+.ldclock .pip:nth-child(8){animation-delay:.8s}
+.ldclock .pip:nth-child(7){animation-delay:.96s}
+.ldclock .pip:nth-child(4){animation-delay:1.12s}
+.ldclock .pip:nth-child(5){animation:ldheart 1.28s ease-in-out infinite}
+@keyframes ldchase{0%{opacity:1;transform:scale(1.06)}14%{opacity:1}42%{opacity:.14;transform:scale(.8)}
+  86%{opacity:.14;transform:scale(.8)}100%{opacity:1;transform:scale(1.06)}}
+@keyframes ldheart{0%,100%{opacity:.9;transform:scale(.92)}50%{opacity:.45;transform:scale(.72)}}
+/* THE GRACE: a wait that ends fast never shows. The die (and the labelled
+   wait around it) spends its first .2s at opacity 0 — backwards fill during
+   the delay — so an answer that beats the grace swaps values straight in
+   with no flash of loader; only a real wait earns the die, and it fades in.
+   Base opacity stays 1 and the keyframe owns the 0 on purpose: anything that
+   kills animations (reduced motion's duration clamp keeps the DELAY, the
+   design build's dice-static) degrades to a loader that simply shows at
+   once, never to one stranded invisible. tests/browser/responsive holds this. */
+.ldwait,.die.ldclock{animation:ldreveal .25s ease-out .2s backwards}
+@keyframes ldreveal{from{opacity:0}to{opacity:1}}
+/* Whatever the dice-face setting says, a loader tells time in pips. Numerals
+   mode hides pips with a THREE-class rule (.numerals .die .pip), so the chase
+   rule above carries .die too and re-asserts display — matching specificity,
+   later in the file, or the loader rendered as a blank square for every
+   numerals player. Same tie-break here for the number (tests/browser/responsive). */
+.die.ldclock .num{display:none}
+.ldwait{display:flex;flex-direction:column;align-items:center;gap:14px;margin:auto}
+/* the label sits still — the die carries ALL the motion (user call: no
+   ticking ellipsis under the loader) */
+.ldmsg{font-size:11px;letter-spacing:.2em;color:var(--txt);text-transform:uppercase;text-align:center}

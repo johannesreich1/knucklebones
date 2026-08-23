@@ -1,0 +1,138 @@
+/* ===== SPELLS: the optional powers layer (flow/spells) =====
+   With no spell brought (or in ranked play, or the tutorial) every rune is
+   hidden and none of this applies: the table is exactly what it was before
+   spells existed.
+
+   TWO PLACES, because they are two different objects. The rune you can CAST
+   sits beside the die in play, opposite the LIMITED bag — full size, a short
+   drag from every column, and unmistakably a thing you wield. The other
+   player's is a READOUT: small and inert in their nameplate beside their own
+   score, where "do they still have it?" is a glance and nothing reacts to a
+   finger. Both scale off --cell / the plate, so every screen size is covered
+   without a breakpoint. */
+.spells{position:absolute;left:100%;margin-left:16px;display:flex;align-items:center}
+/* A game with no spells reserves nothing — the nameplate is exactly what it
+   was before spells existed. A game WITH them keeps the rune's place for the
+   whole match, even on the turns the rune is away in the centre rail: the
+   score cluster is vertically centred, so a slot that collapsed when the
+   rune left re-centred the cluster and the number visibly jumped 10px every
+   turn in face-to-face play. Reserving is what holds it still.
+   `.live` is the ONLY switch — :empty cannot answer this, because the slot
+   still holds the hidden runes of every spell this game did not bring. */
+.plate .runeslot{display:none;align-items:center;flex:0 0 auto}
+.plate .runeslot.live{display:flex;justify-content:center;min-width:20px;min-height:20px}
+.rune{--sz:clamp(30px,calc(var(--cell)*.6),40px);--sh:var(--p1);
+  position:relative;width:var(--sz);height:var(--sz);border-radius:calc(var(--sz)*.32);
+  display:grid;place-items:center;padding:0;cursor:pointer;color:#fff;
+  -webkit-appearance:none;appearance:none;font-family:inherit;
+  border:1px solid color-mix(in srgb,var(--sh) 60%,transparent);
+  /* the tile wears its owner's colour (--sh is set per seat by flow/spells), so
+     whose rune is whose is the same question the whole board already answers */
+  background:linear-gradient(150deg,color-mix(in srgb,var(--sh) 42%,transparent),
+                                    color-mix(in srgb,var(--sh) 10%,transparent)),
+             linear-gradient(150deg,rgba(255,255,255,.07),rgba(255,255,255,.02));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.30),0 6px 16px rgba(0,0,0,.5),
+             0 0 14px color-mix(in srgb,var(--sh) 30%,transparent);
+  transition:transform .16s,opacity .25s,filter .25s;
+  touch-action:none}          /* the drag is ours, not the browser's scroll */
+.rune svg{filter:drop-shadow(0 0 5px rgba(255,255,255,.5))}
+/* the breathing ring: a separate layer, so pulsing it costs no shadow repaint */
+.rune::before{content:"";position:absolute;inset:-6px;border-radius:inherit;pointer-events:none;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--sh) 55%,transparent),transparent 72%);
+  opacity:0;transition:opacity .2s}
+.rune.ready::before{animation:runeglow 2.3s ease-in-out infinite}
+@keyframes runeglow{0%,100%{opacity:.22}50%{opacity:.8}}
+/* THEIR TURN, YOUR RUNE. `disabled` alone refused the press and said nothing:
+   a full-bright, breathing rune while the machine thinks reads as a control
+   you may use, and it is not one (user report). So it dims for exactly as long
+   as the turn is theirs — its own colour and shape kept, because this is not
+   the spent grey and nothing was spent.
+   The ring is PAUSED, never re-classed. Restyling per turn is what made it
+   snap: an animation restarts from its first keyframe every time its class
+   comes back, which is why this used to be left alone. Pausing resumes it
+   exactly where it stopped, so the fix costs nothing the old rule protected.
+   Only the WIELDED rune wears this — the opponent's readout is already
+   `.idle`, and dimming it twice would say something it does not mean. */
+.rune.offturn{opacity:.42;filter:grayscale(.6);cursor:default}
+.rune.offturn::before{animation-play-state:paused}
+.rune:active{transform:scale(.9)}
+.rune.armed{transform:scale(1.1);border-color:var(--gold)}
+.rune.armed::before{opacity:1;animation:none;
+  background:radial-gradient(closest-side,rgba(255,209,102,.75),transparent 72%)}
+/* A rune you cannot cast is an INDICATOR, not a control: no press, no glow, no
+   hover, nothing to react to a finger at all. The opponent's rune answers one
+   question — do they still have it? — and answering is all it does. */
+.rune:disabled{pointer-events:none;transform:none}
+/* loaded, but not this player's turn */
+.rune.idle{opacity:.7;cursor:default}
+.rune.idle::before{opacity:.14;animation:none}
+/* spent: still there, plainly out of charges — a rune that vanished would read
+   as a bug rather than as a cost */
+.rune.spent{opacity:.26;filter:grayscale(.9);cursor:default}
+.rune.spent::before{display:none}
+/* CAST, BUT NOT YET FINAL. A rune that lands on the die in hand can be pressed
+   again to put the cast back, until the die is played — so it stays lit and
+   pressable, with a returning ring rather than the spent grey. */
+.rune.undo{opacity:.92}
+.rune.undo::before{opacity:.5;animation:runeundo 1.6s ease-in-out infinite;
+  background:radial-gradient(closest-side,rgba(255,209,102,.7),transparent 72%)}
+@keyframes runeundo{0%,100%{opacity:.24}50%{opacity:.62}}
+.rune:disabled{transform:none}                     /* no press feedback on a rune you can't press */
+.rune.bump{animation:nope .32s}                    /* refused: the rune's own shake */
+.rune .n{position:absolute;right:-4px;bottom:-4px;min-width:14px;height:14px;border-radius:99px;
+  font-size:9px;font-weight:900;line-height:14px;text-align:center;color:#0a0410;background:var(--gold);
+  box-shadow:0 0 8px rgba(255,209,102,.6)}
+.rune .n:empty{display:none}                       /* a single charge needs no number */
+/* the castable rune is a touch target: an invisible expander keeps the finger
+   above 44px whatever --cell says, without changing what is drawn */
+.rune::after{content:"";position:absolute;inset:-8px;border-radius:inherit}
+/* the READOUT: small enough to sit inside a nameplate, and inert by
+   construction — it is never the player to move's rune, so it is always
+   :disabled, which already kills every pointer event and every transform */
+.plate .rune{--sz:20px;margin:-2px 0}
+/* the READOUT carries no glow. The cluster is centred with percentage
+   transforms, so on some screen heights it lands on a half device pixel — and
+   a drop-shadow around a 16px mark turns that half pixel into a visible smear
+   that re-rasterises on every repaint (the "flickering" icon, user report).
+   The wielded rune in the rail keeps its glow; this one is an indicator. */
+.plate .rune svg{filter:none}
+.plate .rune::after{display:none}
+.plate .rune .n{min-width:12px;height:12px;line-height:12px;font-size:8px;right:-3px;bottom:-3px}
+.rune:disabled::after{display:none}
+/* the rune in flight, under the finger */
+.runeghost{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;
+  transform:translate(-50%,-50%);pointer-events:none;z-index:80;color:#fff;
+  border:1px solid var(--gold);
+  background:linear-gradient(150deg,rgba(var(--p2-rgb),.55),rgba(var(--p1-rgb),.5));
+  box-shadow:0 10px 26px rgba(0,0,0,.6),0 0 26px rgba(255,209,102,.5)}
+/* While a spell is aiming the board asks ONE question — which column? — so the
+   placement hints stand down and every column reads as a target. */
+#kbroot.casting .col.legal::after,#kbroot.casting .col.danger::before{display:none}
+/* Only a column the cast can actually LAND on is ringed (flow/spells markAim
+   asks the registry's own legal()). Ringing all six was honest for the
+   symmetrical COLUMN SWAP and a lie for everything since: a WARD guards your
+   three, a PILFER robs their three, and the board must not offer the rest. */
+/* display:block is LOAD-BEARING, not tidiness. The placement hint and the aim
+   ring are the same ::after, so the suppressor above (which hides the hint on
+   .legal columns while a spell aims) also hid the ring — and .legal marks the
+   mover's OWN playable columns, so a WARD's ring vanished from your half and
+   showed only on the enemy's. That is the "ward highlights the wrong rows"
+   report. Winning the display back is what puts the ring where the cast goes. */
+#kbroot.casting .col.aim::after{content:"";display:block;position:absolute;inset:-4px;border-radius:calc(var(--r) + 6px);
+  border:1.5px dashed rgba(255,209,102,.5);pointer-events:none;transition:.15s}
+#kbroot.casting .col.aim.hot::after{border-style:solid;border-color:var(--gold);
+  background:rgba(255,209,102,.10);box-shadow:0 0 24px rgba(255,209,102,.35)}
+/* A SELF spell aims at the die in play, not the board: the columns stand down
+   and the stage is the one thing asking to be touched. */
+#kbroot.castself .col::after{display:none}
+#kbroot.castself #dieStage::after{content:"";position:absolute;inset:-8px;border-radius:18px;
+  border:1.5px dashed rgba(255,209,102,.55);pointer-events:none;transition:.15s}
+#kbroot.castself #dieStage.hot::after{border-style:solid;border-color:var(--gold);
+  background:rgba(255,209,102,.10);box-shadow:0 0 24px rgba(255,209,102,.4)}
+/* landscape plates are shorter, so the rune comes down with them */
+/* landscape: the centre column is only as wide as the die, so the castable
+   rune goes ABOVE the stage rather than beside it — beside would sit on the
+   facing board's chip rail. */
+#kbroot.land .spells{left:50%;top:auto;bottom:100%;transform:translateX(-50%);margin:0 0 7px}
+#kbroot.land .rune{--sz:clamp(26px,calc(var(--cell)*.5),34px)}
+#kbroot.land .plate .rune{--sz:17px}

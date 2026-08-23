@@ -1,0 +1,19 @@
+
+/* ---- what RANKED adds to the shared result screen (ui/endscreen) ----
+   The screen itself — title, sub, the two scores, the actions — is the same
+   one local play ends on and lives in main.css. Only these two go in the
+   meta slot, and only ranked has them: the points delta is the trophy moment,
+   the ladder spot is where it left you. */
+.pointschip{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:900;color:#0a0410;
+  background:var(--gold);border-radius:99px;padding:7px 16px;
+  box-shadow:0 0 24px rgba(255,209,102,.55)}
+.pointschip small{font-weight:800;font-size:9px;letter-spacing:.2em}
+/* a lost delta is no trophy: the chip goes red with white text on defeat */
+.pointschip.down{color:#fff;background:linear-gradient(100deg,var(--mg),#c9156f);
+  box-shadow:0 0 24px rgba(var(--mg-rgb),.5)}
+
+/* the mode dial moved to main.css with ui/modedial.ts — OFFLINE reaches it
+   too now, and anything offline-reachable may not live in the lazy chunk */
+
+/* mode-play visuals (shield, rails, bounty, pool) live in main.css now —
+   the OFFLINE mode selector made them universal, not online-only */

@@ -1,0 +1,20 @@
+/* ---- match history: what each match ACTUALLY paid ---- */
+#onHistory .lb{display:flex;flex-direction:column;gap:5px}
+:is(#onAccount,#onHistory) .history-row{display:flex;align-items:center;gap:9px;font-size:clamp(12px,3vw,13.5px)}
+:is(#onAccount,#onHistory) .history-row .hres{width:19px;height:19px;border-radius:6px;display:grid;place-items:center;
+  font-size:9px;font-weight:900;flex:0 0 auto}
+:is(#onAccount,#onHistory) .history-row.win .hres{background:rgba(var(--p1-rgb),.16);border:1px solid rgba(var(--p1-rgb),.5);color:var(--p1)}
+:is(#onAccount,#onHistory) .history-row.loss .hres{background:rgba(var(--p2-rgb),.13);border:1px solid rgba(var(--p2-rgb),.45);color:var(--p2-hi)}
+:is(#onAccount,#onHistory) .history-row.draw .hres{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.18);color:var(--dim)}
+:is(#onAccount,#onHistory) .history-row .hsc{color:var(--dim);font-size:clamp(11px,2.8vw,12px);letter-spacing:.04em}
+:is(#onAccount,#onHistory) .history-row .hd{font-weight:900;min-width:44px;text-align:right}
+:is(#onAccount,#onHistory) .history-row.win .hd{color:var(--p1)}
+:is(#onAccount,#onHistory) .history-row.loss .hd{color:var(--p2-hi)}
+:is(#onAccount,#onHistory) .history-row.draw .hd{color:var(--dim)}
+:is(#onAccount,#onHistory) .history-row .hwhen{font-size:clamp(9px,2.3vw,10px);letter-spacing:.1em;color:var(--dim);min-width:44px;text-align:right}
+
+/* the season tally, heading the list it summarises */
+#onHistory .htotal{text-align:center;font-size:clamp(14px,3.5vw,15.5px);letter-spacing:.06em;padding:2px 0 8px;
+  width:100%;max-width:var(--w-col);margin-inline:auto}
+#onHistory .htotal .n1{color:var(--p1)}
+#onHistory .htotal .n2{color:var(--p2)}

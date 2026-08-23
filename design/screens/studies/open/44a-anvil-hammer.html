@@ -1,0 +1,192 @@
+<!-- meta name="AN1 — Hammer fall" group="4c · ANVIL — the recast die" subtitle="A wedge of forge-light falls on the die the cast has picked, the column takes the blow, and the face is re-struck under it" width=430 height=1280 sizes="md" links="Spells — aiming a rune, Offline — local play, Game modes" -->
+<style>
+  /* Card-local names only (sp*). The app pins .die/.pip/.slot/.chip/.plate/.hud
+     with height, opacity or position, so a card that redeclares them loses
+     silently — design/build.mjs fails the build for exactly that. Every die,
+     rune and mode glyph is drawn by the app's own registries through the
+     tokens, including the gold of a multiplied pair (ui/game/board.ts owns .m2). */
+  .scr{gap:6px}
+  .pline{max-width:206px;margin:0 auto}
+
+  .spfield{position:relative;width:100%;display:flex;flex-direction:column;align-items:center}
+  .spboard{display:grid;grid-template-columns:repeat(3,var(--cell));gap:var(--gap);justify-content:center}
+  .spcol{display:grid;grid-template-rows:repeat(3,var(--cell));gap:var(--gap);position:relative;border-radius:16px}
+  .spslot{width:var(--cell);height:var(--cell);border-radius:14px;position:relative;
+    background:rgba(255,255,255,.028);border:1px solid rgba(255,255,255,.07);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05);display:grid;place-items:center}
+  .spmine{--cell:52px;--gap:6px}
+  .spmine .spslot{border-color:rgba(var(--p1-rgb),.13)}
+  .spfoe{--cell:52px;--gap:6px}
+  .spfoe .spslot{border-color:rgba(var(--p2-rgb),.13)}
+
+  /* THE AIM RING, restated because a card body cannot set the class the app
+     opens it with: the real rule is html.casting .col.aim::after, and
+     flow/spells puts .aim on the columns the spell's OWN legal() accepts. Same
+     inset, same +6 off the slot radius, same dashed gold. */
+  .spcol.aim::after{content:"";position:absolute;inset:-4px;border-radius:20px;pointer-events:none;
+    border:1.5px dashed rgba(var(--gold-rgb),.55)}
+
+  .sprow3{display:grid;grid-template-columns:repeat(3,var(--cell));gap:var(--gap);
+    justify-content:center;width:calc(var(--cell)*3 + var(--gap)*2)}
+  .spchip{height:20px;border-radius:8px;display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:800;color:var(--c);font-variant-numeric:tabular-nums;position:relative;
+    border:1px solid color-mix(in srgb,var(--c) 30%,transparent);
+    background:color-mix(in srgb,var(--c) 9%,transparent);
+    text-shadow:0 0 10px color-mix(in srgb,var(--c) 70%,transparent)}
+  .spchip i{position:absolute;right:4px;top:0;bottom:0;display:flex;align-items:center;line-height:0;
+    color:var(--gold);filter:drop-shadow(0 0 6px rgba(var(--gold-rgb),.75))}
+  .spshield{box-shadow:inset 0 0 0 1px rgba(var(--gold-rgb),.35),0 0 14px rgba(var(--gold-rgb),.12)}
+  .splbl{font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);
+    text-align:center;min-height:11px;padding-top:4px;line-height:1.35}
+  .splbl.hit{color:var(--hue)}
+  .splbl.no{color:#8ea3c0}
+  .splbl.safe{color:var(--gold)}
+
+  /* Every mark hangs on a wrapper of the die's own box. In the app it would be
+     a class ON the die (the way .die.dying already is); a card cannot add one
+     to a token, so where an idea needs the DIE itself it says so and declares
+     height, which is what the build guard asks for. */
+  .spmark{position:relative;display:block;line-height:0}
+
+  /* the charged die needs air: several of these draw well outside its box */
+  .stagerow{--cell:56px;margin-top:18px}
+  /* the line under the die in play needs air on BOTH sides here: in the app
+     the board it sits against is a screen's width away down the page, and in a
+     card it is 6px below unless someone says otherwise */
+  .spstatus{margin-top:14px;margin-bottom:16px}
+  .spafter{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:4px}
+
+  /* the forge heat is the rune's own hue, asked of the registry */
+  .scr{--hue:{{shue:anvil}}}
+  /* ONE column, not three. .spboard reserves three tracks; a lone column left
+     in it sits in the first one, and the chip under it lines up with nothing. */
+  .spafterboard{--cell:52px;--gap:6px;grid-template-columns:var(--cell)}
+  .spafterchip{width:52px;grid-template-columns:52px}
+  /* ONE die, two faces: the old one and the one the cast leaves. Every idea
+     below cuts between them at the same beat (52% of a 2.8s loop) and differs
+     only in what it does AROUND the cut — which is the actual question. */
+  .spswap{position:relative;display:block;width:52px;height:52px}
+  .spswap > i{position:absolute;inset:0;display:block;line-height:0}
+  .spold{animation:anold 2.8s steps(1,end) infinite}
+  .spnew{animation:annew 2.8s steps(1,end) infinite}
+  @keyframes anold{0%,51.9%{opacity:1}52%,100%{opacity:0}}
+  @keyframes annew{0%,51.9%{opacity:0}52%,100%{opacity:1}}
+  .spcount{position:relative;overflow:hidden}
+  .spcount > i{font-style:normal}
+  .spcount .spnew{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+
+  /* ===== BEFORE THE TAP the mark is a raised HAMMER, not a highlight: it
+     hangs over the die the cast has already chosen, so "which one" is answered
+     before the finger commits rather than after. ANVIL promises a predictable
+     target; a ring around the whole column would not keep that promise. ===== */
+  /* it lives in the 6px slot gap, because the die above it is a real die and
+     not scenery — an 9px hammer head drawn there covered its bottom row of pips */
+  .tgt::before{content:"";position:absolute;left:50%;bottom:100%;margin:0 0 1px -7px;
+    width:14px;height:5px;background:var(--hue);pointer-events:none;
+    clip-path:polygon(0 0,100% 0,50% 100%);
+    filter:drop-shadow(0 0 6px var(--hue));
+    animation:an1lift 1.5s ease-in-out infinite}
+  @keyframes an1lift{0%,100%{transform:translateY(-2px);opacity:.6}50%{transform:translateY(0);opacity:1}}
+  .tgt::after{content:"";position:absolute;inset:-3px;border-radius:17px;pointer-events:none;
+    border:1.4px solid color-mix(in srgb,var(--hue) 70%,transparent);
+    box-shadow:0 0 13px color-mix(in srgb,var(--hue) 45%,transparent)}
+
+  /* ===== THE BLOW. The wedge drops, the die flattens by a few per cent under
+     it, an impact ring opens at the contact line, and the face has changed by
+     the time the wedge lifts. The two dice above JUMP — a column struck at its
+     middle is one object, and dice that ignored the hit would say the opposite. */
+  .spblow .spswap{animation:an1hit 2.8s cubic-bezier(.3,0,.2,1) infinite}
+  @keyframes an1hit{0%,46%{transform:scale(1,1)}
+    52%{transform:scale(1.1,.84)}58%{transform:scale(.97,1.05)}66%,100%{transform:scale(1,1)}}
+  .spafterboard .spslot:not(.spblow) .spswap{animation:an1jump 2.8s cubic-bezier(.3,0,.2,1) infinite}
+  @keyframes an1jump{0%,50%{transform:translateY(0)}56%{transform:translateY(-5px)}
+    64%{transform:translateY(1px)}72%,100%{transform:translateY(0)}}
+  .spblow::before{content:"";position:absolute;left:50%;top:-90px;width:30px;height:12px;
+    margin-left:-15px;border-radius:3px 3px 7px 7px;background:var(--hue);z-index:6;
+    box-shadow:0 0 20px var(--hue),0 6px 0 -2px color-mix(in srgb,var(--hue) 55%,transparent);
+    animation:an1fall 2.8s cubic-bezier(.5,0,.25,1) infinite}
+  /* it stops with its head 6px into the slot gap and 2px onto the die: any
+     further up and it is standing on the die ABOVE, which is a real die */
+  @keyframes an1fall{0%,30%{transform:translateY(0);opacity:0}
+    34%{opacity:1}52%{transform:translateY(82px);opacity:1}
+    60%{transform:translateY(58px);opacity:.9}74%{transform:translateY(-10px);opacity:0}
+    100%{transform:translateY(0);opacity:0}}
+  .spblow::after{content:"";position:absolute;left:50%;top:-1px;width:16px;height:16px;
+    margin-left:-8px;border-radius:50%;pointer-events:none;z-index:6;
+    border:2px solid #fff3e4;opacity:0;animation:an1ring 2.8s ease-out infinite}
+  @keyframes an1ring{0%,50%{opacity:0;transform:scale(.2)}
+    54%{opacity:1;transform:scale(1)}72%{opacity:0;transform:scale(4.2)}100%{opacity:0}}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hud">
+    <div class="rec">
+      <button type="button" class="rchip tapmode" data-lib="modes" data-id="classic">{{mico:classic:12}} CLASSIC<span class="mi">ⓘ</span></button>
+      <button type="button" class="rchip tapmode" data-lib="spells" data-id="anvil">{{sico:anvil:12}} ANVIL<span class="mi">ⓘ</span></button>
+    </div>
+    <div class="sp"></div>
+    <button class="ico">{{ico:leave:15}}</button>
+  </div>
+
+  <div class="cap2">ANVIL is armed — and only a column you can no longer place into is offered</div>
+  <div class="spfield">
+    <div class="stagerow">
+      <span class="spcharged">{{die:6:p1:56}}</span>
+      <div class="spells"><button class="rune ready armed" style="--sh:var(--p1)">{{sico:anvil:16}}<b class="n"></b></button></div>
+    </div>
+    <div class="status me spstatus">Tap a filled column</div>
+
+    <div class="spboard spmine">
+      <div class="spcol aim">
+        <div class="spslot">{{die:6:p1 m2:52}}</div>
+        <div class="spslot"><span class="spmark tgt">{{die:1:p1:52}}</span></div>
+        <div class="spslot">{{die:6:p1 m2:52}}</div>
+      </div>
+      <div class="spcol">
+        <div class="spslot">{{die:4:p1:52}}</div>
+        <div class="spslot">{{die:2:p1:52}}</div>
+        <div class="spslot"></div>
+      </div>
+      <div class="spcol aim">
+        <div class="spslot"><span class="spmark tgt">{{die:3:p1 m2:52}}</span></div>
+        <div class="spslot">{{die:6:p1:52}}</div>
+        <div class="spslot">{{die:3:p1 m2:52}}</div>
+      </div>
+    </div>
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-top:5px">
+      <div class="spchip" style="--c:var(--p1)">25</div>
+      <div class="spchip" style="--c:var(--p1)">6</div>
+      <div class="spchip" style="--c:var(--p1)">18</div>
+    </div>
+    <div class="sprow3" style="--cell:52px;--gap:6px">
+      <div class="splbl hit">the 1</div>
+      <div class="splbl no">has room</div>
+      <div class="splbl hit">tie</div>
+    </div>
+    <div class="cap2" style="margin-top:5px">Column 2 can still be placed into, so it is not offered — that restriction is the rune's whole price. Column 3's two 3s tie, and the one nearer the centre line wins.</div>
+  </div>
+  <div class="plate pline" style="--c:var(--p1)">
+    <span class="who"><span class="dot"></span><span class="nm">PLAYER 1</span></span>
+    <span class="sp"></span>
+    <span class="pright"><span class="runeslot live"></span><span class="tot">49</span></span>
+  </div>
+
+  <div class="cap2">The tap lands on column 1 — its 1 is recast to the 6 in hand, and the column turns over with it</div>
+  <div class="spafter">
+
+    <div class="spboard spmine spafterboard">
+      <div class="spcol">
+        <div class="spslot"><span class="spmark spswap"><i class="spold">{{die:6:p1 m2:52}}</i><i class="spnew">{{die:6:p1 m3:52}}</i></span></div>
+        <div class="spslot spblow"><span class="spmark spswap"><i class="spold">{{die:1:p1:52}}</i><i class="spnew">{{die:6:p1 m3:52}}</i></span></div>
+        <div class="spslot"><span class="spmark spswap"><i class="spold">{{die:6:p1 m2:52}}</i><i class="spnew">{{die:6:p1 m3:52}}</i></span></div>
+      </div>
+    </div>
+    <div class="sprow3 spafterchip" style="--cell:52px;--gap:6px">
+      <div class="spchip spcount" style="--c:var(--p1)"><i class="spold">25</i><i class="spnew">54</i></div>
+    </div>
+    <div class="splbl">column 1 · 25 → 54 · three of a kind</div>
+  </div>
+  <div class="note"><b>What it says:</b> <b>it was struck.</b> ANVIL is the only rune that changes a die already on the board, and a hammer is the one image that makes a die change its face without moving — which is the rule, exactly: nothing moves, nothing dies, the column keeps its height.<br>
+  <b>The mark answers "which one" before the tap.</b> A raised hammer hanging over the chosen die is a prediction the player can check; the roster's promise is that ANVIL's target is never a surprise, and a ring around the whole column does not keep it. It also survives on a gold die, because it sits <i>above</i> the face rather than on it.<br>
+  <b>The column jumps.</b> Two dice reacting to a blow landing between them is what turns three tiles into one object — and the score that changes is the column's, not the die's.<br>
+  <b>Cost:</b> the falling wedge needs ~90px of clear air above the struck die, and the top row of your own half has the centre stage right above it. On the struck die in the TOP slot the hammer would fall through the die in play. It either shortens (and reads as a tap, not a blow) or comes in at an angle.</div>
+</div></div>

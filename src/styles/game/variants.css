@@ -1,0 +1,32 @@
+/* ===== BOUNTY: the banked kills tally on the plate ===== */
+.plate .bty{font-size:14.5px;font-weight:900;color:var(--mx2,var(--gold));
+  text-shadow:0 0 10px rgba(var(--mx2-rgb,var(--gold-rgb)),.7);margin-right:6px;letter-spacing:.02em}
+
+/* ===== LIMITED: the bag beside the die in play — a stack of FACE-DOWN dice
+   and the number still to come. It never says WHICH faces remain; reading the
+   board for that is the mode. Anchored to .stagerow so the played die stays
+   optically centred. One implementation for online and offline: ui/bag.ts. */
+.stagerow{position:relative;display:flex;justify-content:center;align-items:center}
+.bag{position:absolute;right:100%;margin-right:16px;display:flex;flex-direction:column;
+  align-items:center;gap:6px}
+.bag .pile{position:relative;width:34px;height:36px}
+/* face-down dice: the .die shell with no pips — deliberately unreadable.
+   The BASE die is centred and is the last one to go, so the count below stays
+   centred under the stack whether four dice remain or one. */
+.bag .pile .die{position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+  width:24px;height:24px;--cell:24px;--dc:#9fb2d8;
+  transition:opacity .35s,transform .35s}
+/* the layers fan up and back from the base — deep enough to count at a glance,
+   and they thin to that single centred die for the last few draws */
+.bag .pile .die:nth-child(2){bottom:4px;transform:translateX(calc(-50% + 3px))}
+.bag .pile .die:nth-child(3){bottom:8px;transform:translateX(calc(-50% + 6px))}
+.bag .pile .die:nth-child(4){bottom:12px;transform:translateX(calc(-50% + 9px))}
+.bag .pile .die.gone{opacity:0;transform:translate(-50%,-8px) scale(.75)}
+.bag .bn{font-size:11.5px;font-weight:900;color:var(--txt);font-variant-numeric:tabular-nums;
+  letter-spacing:.06em}
+.bag.tick .bn{animation:bagtick .45s cubic-bezier(.2,1.5,.4,1)}
+@keyframes bagtick{40%{transform:scale(1.3);color:var(--gold)}}
+.bag.empty .bn{color:var(--dim)}
+#kbroot.land .bag{margin-right:8px}
+#kbroot.land .bag .pile{width:22px;height:26px}
+#kbroot.land .bag .pile .die{width:18px;height:18px;--cell:18px}

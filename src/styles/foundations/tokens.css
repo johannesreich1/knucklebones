@@ -1,0 +1,94 @@
+
+/* NOTE: the JS reads board dimensions from BoardSpec (src/config.ts), but CSS
+   repeat() counts cannot be custom properties — the repeat(3, …) literals below
+   assume the classic 3×3 spec. A mode with another shape needs these grid
+   templates set per-spec (inline from buildBoards, or a class per spec). */
+/* ============ TOKENS ============ */
+#kbroot{
+  --bg:#05060e;
+  /* RAW HUES — what things ARE: avatar dies, mode icons, the NEON group,
+     danger. These never move. The -rgb triplets exist because rgba() cannot
+     read a hex token; the -hi tints are each hue's light gradient companion.
+     The first seven ids are the DUELHUES roster (state.ts) — the Settings
+     pickers offer exactly these families. Blue sits in the wheel's one wide
+     gap, between cyan and violet, and clear of both heat families. */
+  --cy:#28e8ff;     --cy-d:#0b8fb0;  --cy-rgb:40,232,255;      --cy-hi:#7ad6ff;
+  --mg:#ff2fa0;     --mg-d:#a81163;  --mg-rgb:255,47,160;      --mg-hi:#ff96cf;
+  --gold:#ffd166;                    --gold-rgb:255,209,102;   --gold-hi:#ffe3a1;
+  --green:#7ee787;                   --green-rgb:126,231,135;  --green-hi:#a9f2b3;
+  --violet:#b18cff;                  --violet-rgb:177,140,255; --violet-hi:#ccb6ff;
+  --orange:#ff8a3d;                  --orange-rgb:255,138,61;  --orange-hi:#ffb987;
+  --blue:#4d8cff;                    --blue-rgb:77,140,255;    --blue-hi:#9dbcff;
+  /* THE DUEL PAIR — what the game paints for YOU (--p1) and THEM (--p2).
+     Every player-facing colour reads these, never the raw hues. These are the
+     DEFAULTS; menu.ts repoints them (inline on #kbroot) at whichever hue
+     families the Settings pickers chose — or pins cyan-vs-gold while colour
+     blind mode is on. Fixed accents that must NOT follow the pair — danger
+     pink, the destruction keyword, avatar hues — keep reading raw hues. */
+  --p1:var(--cy); --p1-rgb:var(--cy-rgb); --p1-hi:var(--cy-hi);
+  --p2:var(--mg); --p2-rgb:var(--mg-rgb); --p2-hi:var(--mg-hi);
+  /* THE AMBIENCE (study 98c, picked — the full-height ribbon variant was
+     tried and disliked, and its card retired with the rest of the study): the LONG
+     DIAGONAL. The foe's hue masses in the top-left corner, the player's in
+     the bottom-right, and a purple seam crosses at 125deg — one gesture the
+     whole height. Alphas well under the study card's, corner pools oversized
+     so the voices blur into one field, the seam quietest of the three — but
+     the dark stays between them: colours shine against dark, not against
+     each other (user calls, incl. the Bob Ross clause). The PAGES' token
+     only: the game
+     table keeps its original backdrop (user call) — the topmost open
+     overlay paints this over its opaque film. */
+  --aurora:
+    radial-gradient(106% 95% at -8% -8%,rgba(var(--p2-rgb),.12),transparent 66%),
+    radial-gradient(106% 95% at 108% 108%,rgba(var(--p1-rgb),.12),transparent 66%),
+    linear-gradient(125deg,transparent 34%,rgba(126,60,255,.07) 50%,transparent 66%);
+  /* THE MULTIPLIER HEATS — what a ×2 (gold) and ×3 (hot orange) die wear.
+     These are the base values; the real ones are PER SIDE (--p1-mx2 …,
+     set inline by menu.ts): only the side whose player picked gold/orange
+     has that heat fall back (--ice / --red below), so a doubled die can
+     never be mistaken for THEIR plain one — the other side keeps the true
+     heat (user report: one pick recoloured both boards). */
+  --mx2:var(--gold);   --mx2-rgb:var(--gold-rgb);
+  --mx3:var(--orange); --mx3-rgb:var(--orange-rgb);
+  /* multiplier FALLBACKS — deliberately not in the DUELHUES roster, so they
+     can never collide with a picked colour: ice for a ×2 when gold is taken,
+     hot red for a ×3 when orange is */
+  --ice:#eef4ff; --ice-rgb:238,244,255;
+  --red:#ff4d5e; --red-rgb:255,77,94;
+  /* THE WARD'S MINT (ui/spellicons HUES.ward). Root-scoped because TWO things
+     wear it now — the rune on the column chip and the seal around the column
+     itself — and a hue restated in the second place is a hue that drifts. */
+  --wdc:#7dffc4;
+  --txt:#e9f1ff;
+  --dim:#7c88a8;
+  /* the LADDER GROUP palette. Root-scoped on purpose: the identity plate
+     paints these on Home and on the result screen, both outside #ovOnline —
+     the palette's first home, where a plate on document.body once silently
+     fell back to gold (user report, online.css history). */
+  --g-stone:#98a1b3;--g-bone:#d8c5a0;--g-ivory:#f1e9d7;--g-silver:#ccd9ee;
+  --g-gold:var(--gold);--g-obsidian:#b18cff;--g-neon:var(--cy);
+  /* WIDTHS — two numbers, not seven (design: 01-widths). --w-app caps the
+     shell; --w-col is EVERY screen body: forms, lists, cards, headers, action
+     stacks. On a phone the padding wins and it fills the screen; past that it
+     stops rather than stretching into an unreadable line. Widths that are not
+     columns (a floating bubble, a wrap width, an ellipsis) stay literal and
+     say why. */
+  --w-app:520px;
+  --w-col:400px;
+  /* LANDSCAPE's centre lane. ui/layout.ts sizes the cell by subtracting this
+     from the width, so the number has to live in ONE place: read there, pinned
+     here. While it was only assumed, the lane sized itself to the status text
+     — which empties between turns and rewords per seat — and both boards slid
+     2px sideways and the stage die 5.8px up on every handover (measured). */
+  --land-lane:116px;
+  /* the row rail's strip in landscape: chip height plus its gap */
+  --land-rail:22px;
+  /* the one horizontal inset. The column caps the CONTENT; this decides how
+     close it may come to the glass. Both shared, so a screen is the same width
+     wherever its padding happens to be applied. */
+  --pad-x:14px;
+  --cell:62px;
+  --gap:6px;
+  --r:14px;
+}
+#kbroot,#kbroot *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
