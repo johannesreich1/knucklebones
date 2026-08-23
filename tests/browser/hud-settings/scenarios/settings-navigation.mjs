@@ -18,12 +18,17 @@ export async function runSettingsNavigationScenarios(suite) {
       const colourBlind = document.getElementById('cbSeg')?.closest('.card');
       const motion = document.getElementById('motionSeg')?.closest('.card');
       return !!body && !!heading && !!sound && !!faces && !!colourBlind && !!motion
-        && !!(heading.compareDocumentPosition(sound) & Node.DOCUMENT_POSITION_FOLLOWING)
-        && !!(sound.compareDocumentPosition(faces) & Node.DOCUMENT_POSITION_FOLLOWING)
+        && !!(sound.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING)
+        && !!(heading.compareDocumentPosition(faces) & Node.DOCUMENT_POSITION_FOLLOWING)
         && !!(faces.compareDocumentPosition(colourBlind) & Node.DOCUMENT_POSITION_FOLLOWING)
         && !!(colourBlind.compareDocumentPosition(motion) & Node.DOCUMENT_POSITION_FOLLOWING)
         && motion === body.lastElementChild;
     })(),
+    accessibilityHelp: ['faceSeg', 'cbSeg', 'motionSeg'].flatMap((id) => {
+      const card = document.getElementById(id)?.closest('.card');
+      return [...(card?.querySelectorAll('.tiny') ?? [])]
+        .map((node) => node.textContent?.trim()).filter(Boolean);
+    }),
     instantMessage: [...document.querySelectorAll('#ovSettings .pbody .tiny')]
       .some((node) => /changes apply/i.test(node.textContent ?? '')),
   }));
@@ -31,7 +36,9 @@ export async function runSettingsNavigationScenarios(suite) {
     && out.settingsOpen.motionOn === '0',
         'settings did not open with current values', out.settingsOpen);
   check(out.settingsOpen.accessibility === 'Accessibility' && out.settingsOpen.accessibilityOrder,
-        'accessibility controls are not grouped at the end of Settings', out.settingsOpen);
+        'Sound is not above the grouped accessibility controls', out.settingsOpen);
+  check(out.settingsOpen.accessibilityHelp.length === 0,
+        'accessibility controls still have explanatory copy below their buttons', out.settingsOpen);
   check(!out.settingsOpen.instantMessage, 'the redundant instant-apply message is still in Settings', out.settingsOpen);
 
   const accessibilityTop = () => page.$eval('#accessibilityHeading', (heading) => heading.getBoundingClientRect().top);

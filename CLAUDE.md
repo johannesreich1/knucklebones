@@ -48,8 +48,13 @@ differs. A second near-copy is a design failure, not a shortcut.
 
 ## Universal engineering rules
 
-- **Never push a red gate.** Cloudflare deploys `main` immediately. Run
-  `npm test` before push and report the exact verification performed.
+- **Never push a known red gate.** Cloudflare deploys `main` immediately.
+  Choose verification in proportion to the change: focused owner and
+  specialized gates are sufficient for a well-contained, low-risk change;
+  run `npm test` when a change is cross-cutting, high-risk, lacks decisive
+  focused coverage, or touches shared build/test infrastructure. Report the
+  exact verification performed and say explicitly when the full gate was not
+  run.
 - **One gate per working tree.** `tests/run-all.mjs` holds `.gate.lock` because
   the build output is shared. Separate worktrees may gate concurrently on
   kernel-assigned ports.
@@ -73,9 +78,9 @@ differs. A second near-copy is a design failure, not a shortcut.
 
 Node 24 is required. On Johannes's machine `/usr/local/bin/node` may still be
 Node 20 while `/opt/homebrew/bin/node` is the current Node 24 installation. If
-`node --version` is not v24, run the full gate as
-`/opt/homebrew/bin/node tests/run-all.mjs`; this preserves Node 24 as
-`process.execPath` for every child build and test.
+`node --version` is not v24, invoke Node-based verification with that binary;
+for the full gate use `/opt/homebrew/bin/node tests/run-all.mjs`. This preserves
+Node 24 as `process.execPath` for every child build and test.
 
 ```text
 npm run dev       local Vite server
@@ -83,6 +88,8 @@ npm run build     all web/widget/native-web artifacts
 npm test          full release gate
 ```
 
-Run a focused owner test while iterating, then the full gate for release-ready
-work. Live tests are explicit, environment-driven, and never part of the
-default gate.
+Run a focused owner test while iterating. Before handoff or deployment, decide
+whether focused/specialized gates cover the affected surface decisively; use
+the full gate when the scope or remaining risk warrants it, not automatically
+for every localized change. Live tests are explicit, environment-driven, and
+never part of the default gate.

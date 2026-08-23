@@ -266,7 +266,6 @@ ${LEGAL_MARKUP}
            inner text while it is relevant (aria-describedby). -->
       <div class="colnoteslot"><span class="tiny" id="colNote" hidden>Colour blind mode picks the colours</span></div>
     </div>
-    <h2 class="setsection" id="accessibilityHeading">Accessibility</h2>
     <div class="card">
       <div class="lbl">Sound</div>
       <div class="seg" id="sndSeg">
@@ -274,6 +273,7 @@ ${LEGAL_MARKUP}
         <button data-s="0">OFF</button>
       </div>
     </div>
+    <h2 class="setsection" id="accessibilityHeading">Accessibility</h2>
     <div class="card">
       <div class="lbl">Dice faces</div>
       <div class="seg" id="faceSeg">
@@ -287,7 +287,6 @@ ${LEGAL_MARKUP}
         <button data-b="1">ON</button>
         <button data-b="0">OFF</button>
       </div>
-      <div class="tiny">Uses cyan and gold for clearer contrast</div>
     </div>
     <div class="card">
       <div class="lbl">Reduced motion</div>
@@ -295,7 +294,6 @@ ${LEGAL_MARKUP}
         <button data-rm="1">ON</button>
         <button data-rm="0">OFF</button>
       </div>
-      <div class="tiny">Follows your device until you choose</div>
     </div>
   </div>
   <!-- deploy truth lives here now: the screen you open when something looks

@@ -70,9 +70,11 @@ using another Node runtime. The release runner applies the same rule to both
 builds and every test/benchmark child, so entering the gate through a validated
 Node 24 executable cannot fall back to a different bare `node` found on `PATH`.
 
-Cloudflare Pages builds `main` and deploys immediately. The repository gate is
-therefore preventive: run `npm test` before pushing. Deployment instructions
-or dashboard state are not encoded into generated public artifacts.
+Cloudflare Pages builds `main` and deploys immediately. Repository verification
+is therefore preventive: choose focused/specialized gates for a well-contained,
+low-risk change and `npm test` when the change is cross-cutting, high-risk, or
+lacks decisive focused coverage. Deployment instructions or dashboard state
+are not encoded into generated public artifacts.
 
 ## Build verification
 

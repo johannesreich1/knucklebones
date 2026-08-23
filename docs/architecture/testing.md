@@ -6,10 +6,14 @@ Read this page before changing tests, CI, browser harnesses, or release gates.
 
 `npm test` runs `tests/run-all.mjs`. The runner builds first, executes pure
 Node contracts, browser behaviour suites, design checks, and the AI benchmark,
-then restores build output changed by update tests. A push to `main` must never
-precede a green full gate. The runner propagates `process.execPath` to every
-child build, suite, and benchmark, preserving the validated Node 24 runtime for
-the whole gate even on a machine with another `node` earlier on `PATH`.
+then restores build output changed by update tests. Use it before pushing
+cross-cutting or high-risk changes, changes without decisive focused coverage,
+and shared build/test infrastructure changes. A well-contained, low-risk
+change may instead use its focused owner and specialized gates; never push a
+known failure, and report explicitly when the full gate was not run. The runner
+propagates `process.execPath` to every child build, suite, and benchmark,
+preserving the validated Node 24 runtime for the whole gate even on a machine
+with another `node` earlier on `PATH`.
 
 Database contracts are a sibling CI gate because they require Docker and a
 fresh Supabase database: `npm run db:start`, `npm run test:db`, then schema
@@ -80,8 +84,10 @@ credentials or make a live probe part of `npm test`.
 
 ## Change verification
 
-Run the narrow owner suite while iterating, then the full gate before handoff.
-CSS moves additionally require same-machine before/after visual or computed
-style comparison. Backend changes require authorization, race/idempotency, and
+Run the narrow owner suite while iterating. Before handoff or deployment,
+decide whether focused/specialized gates cover the affected surface decisively;
+run the full gate when the scope or remaining risk warrants it. CSS moves
+additionally require same-machine before/after visual or computed style
+comparison. Backend changes require authorization, race/idempotency, and
 rollback coverage. Build/native changes require artifact-level checks rather
 than treating a successful TypeScript compile as delivery proof.
