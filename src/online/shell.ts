@@ -8,6 +8,7 @@ import {
 import { $, hide, settleGlass } from '../ui/dom.ts';
 import { makeDie } from '../ui/die.ts';
 import { appRoot } from '../ui/embed.ts';
+import { loaderWait } from '../ui/loader.ts';
 
 const OVERLAY = `
 <div class="ov paged" id="ovOnline">
@@ -21,6 +22,12 @@ const OVERLAY = `
        are its content, so ONLINE pins its ‹ and fades its top edge exactly
        like every other titled page — no rules of its own. -->
   <div class="pbody">
+  <!-- One blocking wait for every data-backed online panel. Keeping it as a
+       sibling, rather than placing a loader inside each panel's content,
+       makes the die centre against the VIEW and keeps half-painted rows/cards
+       out of sight until their owner can reveal them atomically. -->
+  <div class="panel" id="onLoading" hidden aria-live="polite"></div>
+
   <div class="panel" id="onAuth" hidden>
     <div class="lbl" id="onAuthLead" style="text-align:center"></div>
     <div class="oneTap" id="onOneTap"></div>
@@ -154,6 +161,8 @@ const PANELS = {
 
 export type OnlinePanel = keyof typeof PANELS;
 let activeTitle: LocaleKey<'online'> | null = null;
+let activePanel: OnlinePanel | null = null;
+let loadingFor: OnlinePanel | null = null;
 let localeBound = false;
 
 function paintPanelTitle(): void {
@@ -181,14 +190,38 @@ export function installOnlineShell(): void {
   const dice = $('#qDice');
   dice.appendChild(makeDie(2, ME));
   dice.appendChild(makeDie(6, AI));
+  $('#onLoading').appendChild(loaderWait(56));
 }
 
 export function showOnlinePanel(which: OnlinePanel): void {
+  activePanel = which;
+  loadingFor = null;
   activeTitle = PANELS[which].title;
   hide('#ovLoad');
+  $('#onLoading').hidden = true;
   for (const id of Object.keys(PANELS)) $('#' + id).hidden = id !== which;
   $('#ovOnline').classList.toggle('listview', which === 'onBoard' || which === 'onHistory');
   paintPanelTitle();
   ($('#btnOnlineBack') as HTMLElement).style.visibility = PANELS[which].back ? 'visible' : 'hidden';
   settleGlass('#ovOnline');
+}
+
+/** Hold one complete online view behind the shared, view-centred loading die. */
+export function showOnlineLoading(which: OnlinePanel): void {
+  activePanel = null;
+  loadingFor = which;
+  activeTitle = PANELS[which].title;
+  hide('#ovLoad');
+  for (const id of Object.keys(PANELS)) $('#' + id).hidden = true;
+  $('#onLoading').hidden = false;
+  $('#ovOnline').classList.remove('listview');
+  paintPanelTitle();
+  ($('#btnOnlineBack') as HTMLElement).style.visibility = PANELS[which].back ? 'visible' : 'hidden';
+  settleGlass('#ovOnline');
+}
+
+/** Async painters may finish after Back or another panel has won the view. */
+export function isOnlinePanelCurrent(which: OnlinePanel): boolean {
+  return !!document.getElementById('ovOnline')?.classList.contains('on')
+    && (activePanel === which || loadingFor === which);
 }

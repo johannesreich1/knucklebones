@@ -10,6 +10,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     anonymous = 200,
     attached = false,
     door = 'chip',
+    inspectLoading = false,
     named = false,
     motion = null,
     locale = 'en-US',
@@ -25,7 +26,8 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     page.on('pageerror', (e) => errs.push(e.message));
 
     const signupCalls = await installOnlineRoutes(page, {
-      anonymous, attached, door, named, SESSION, GUEST_ID,
+      anonymous, attached, dataDelay: inspectLoading ? 900 : 0,
+      door, named, SESSION, GUEST_ID,
     });
     if (door === 'play') {
       /* Ranked newcomers stop at the once-only tutorial offer. This probe is
@@ -55,6 +57,34 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     const homeBeforeOnline = await homeSnapshot();
     await page.click(entry);
     await page.waitForSelector('#ovOnline', { state: 'attached', timeout: 15000 });
+    let loading = null;
+    if (inspectLoading) {
+      await page.waitForSelector('#onLoading:not([hidden])', { timeout: 15000 });
+      /* Past both the .2s no-flash grace and the .25s reveal. Sampling only
+         past the delay catches a correctly animating loader mid-fade and
+         mistakes its deliberately-low opacity for absence. */
+      await page.waitForTimeout(520);
+      loading = await page.evaluate((target) => {
+        const wait = document.querySelector('#onLoading .ldwait');
+        const head = document.querySelector('#ovOnline .shead');
+        const targetPanel = document.getElementById(target);
+        const wr = wait?.getBoundingClientRect();
+        const hr = head?.getBoundingClientRect();
+        const style = wait ? getComputedStyle(wait) : null;
+        const visibleCentre = hr ? (hr.bottom + innerHeight) / 2 : innerHeight / 2;
+        return {
+          target,
+          title: document.querySelector('#onTitle')?.textContent,
+          visible: !!wr && wr.width > 0 && wr.height > 0 && Number(style?.opacity ?? 0) > .9,
+          xError: wr ? +(wr.x + wr.width / 2 - innerWidth / 2).toFixed(1) : null,
+          yError: wr ? +(wr.y + wr.height / 2 - visibleCentre).toFixed(1) : null,
+          targetHidden: targetPanel?.hidden === true,
+          visiblePanels: [...document.querySelectorAll('#ovOnline .panel:not(#onLoading)')]
+            .filter((panel) => !panel.hidden && panel.getBoundingClientRect().height > 0)
+            .map((panel) => panel.id),
+        };
+      }, door === 'board' ? 'onBoard' : 'onAccount');
+    }
     if (door === 'play') {
       await page.waitForSelector('#onQueue:not([hidden])', { timeout: 15000 });
     } else if (door === 'board') {
@@ -91,7 +121,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
       await page.waitForTimeout(50);
       const rootLang = await page.locator('html').getAttribute('lang');
       await ctx.close();
-      return { queueLabel: samples, errs, signupCalls: signupCalls(),
+      return { queueLabel: samples, errs, loading, signupCalls: signupCalls(),
                rootLang,
                homeStyles: { before: homeBeforeOnline, after: homeAfterOnline } };
     }
@@ -101,7 +131,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     const { claimFlow, askAbove, ptsDoor } = await probeAccountActions(page, { door, named });
 
     await ctx.close();
-    return { seen, errs, signupCalls: signupCalls(), faceoff, ptsDoor, claimFlow, askAbove, probeResult,
+    return { seen, errs, loading, signupCalls: signupCalls(), faceoff, ptsDoor, claimFlow, askAbove, probeResult,
              homeStyles: { before: homeBeforeOnline, after: homeAfterOnline } };
   };
 }

@@ -1,8 +1,11 @@
 export async function installOnlineRoutes(
   page,
-  { anonymous, attached, door, named, SESSION, GUEST_ID },
+  { anonymous, attached, dataDelay = 0, door, named, SESSION, GUEST_ID },
 ) {
   let signupCalls = 0;
+  const hold = (share = 1) => dataDelay > 0
+    ? new Promise((resolve) => setTimeout(resolve, dataDelay * share))
+    : Promise.resolve();
   /* Kill the service worker before app code runs. Once it controls the page it
      re-issues requests from the worker, where page.route() cannot see them —
      and whether it has claimed the page by the time of the tap is a race, so a
@@ -26,11 +29,12 @@ export async function installOnlineRoutes(
      0026's trigger stamps it server-side), and every later GET tells the
      claimed truth — nickname included */
   let claimed = named;
-  await page.route('**/rest/v1/profiles*', (r) => {
+  await page.route('**/rest/v1/profiles*', async (r) => {
     if (r.request().method() === 'PATCH') {
       claimed = true;
       return r.fulfill({ status: 204, body: '' });
     }
+    await hold(.35);
     return r.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify([{ id: GUEST_ID, nickname: claimed && door === 'claim' ? 'NeonKing77' : 'TestGuest001',
                               rating: 1000, created_at: new Date().toISOString(),
@@ -44,10 +48,39 @@ export async function installOnlineRoutes(
     status: 200, contentType: 'application/json', body: '{"status":"left"}',
   }));
   await page.route('**/auth/v1/.well-known/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"keys":[]}' }));
+  await page.route('**/rest/v1/rpc/current_season*', async (r) => {
+    await hold(.55);
+    return r.fulfill({ status: 200, contentType: 'application/json',
+      body: '"11111111-1111-4111-8111-111111111111"' });
+  });
+  await page.route('**/rest/v1/season_ratings*', async (r) => {
+    await hold(.65);
+    return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
+      { points: 465, peak: 700, wins: 42, losses: 61, draws: 0 },
+    ]) });
+  });
+  await page.route('**/rest/v1/rpc/player_standing*', async (r) => {
+    await hold(.7);
+    return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
+      { points: 465, rank: 2, population: 200, percentile: 1 },
+    ]) });
+  });
+  await page.route('**/rest/v1/rpc/best_streak*', async (r) => {
+    await hold(.8);
+    return r.fulfill({ status: 200, contentType: 'application/json', body: '4' });
+  });
+  /* Deliberately last during loading probes: the profile must keep its die up
+     after identity and ladder facts have arrived, rather than revealing rows
+     one endpoint at a time. */
+  await page.route('**/rest/v1/rpc/match_history*', async (r) => {
+    await hold(1);
+    return r.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+  });
   /* the 0022 shape: points/rank/apex/avatar/peak. The two rows sit in
      DIFFERENT groups (1,072 is IVORY, 465 is BONE) so the board has to draw a
      horizon for each — the group structure is asserted below. */
-  await page.route('**/rest/v1/rpc/leaderboard*', (r) => {
+  await page.route('**/rest/v1/rpc/leaderboard*', async (r) => {
+    await hold(1);
     const board = r.request().url().includes('/rpc/leaderboard_before') ? []
       : [{ nickname: 'NovaComet992', points: 1072, wins: 7, losses: 2, games: 9, rank: 1, apex: false, avatar: 'die:3:mg', peak: 1100 },
          { nickname: 'TestGuest001', points: 465, wins: 42, losses: 61, games: 103, rank: 2, apex: false, avatar: 'die:5:cy', peak: 700 }];

@@ -28,7 +28,7 @@ import {
 } from './session.ts';
 import { historyRow } from './history-screen.ts';
 import { repaintOnlineMessage } from './message-copy.ts';
-import { showOnlinePanel } from './shell.ts';
+import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';
 import type { AuthMode } from './auth-screen.ts';
 import type { Ladder, Standing } from './ladder-api.ts';
 import type { Me, Profile } from './session.ts';
@@ -150,8 +150,8 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
 
   async function show(): Promise<void> {
     const run = ++showRevision;
-    const ownsRun = (): boolean => run === showRevision && !$('#onAccount').hidden;
-    showOnlinePanel('onAccount');
+    const ownsRun = (): boolean => run === showRevision && isOnlinePanelCurrent('onAccount');
+    showOnlineLoading('onAccount');
     lastAccount = null;
     pendingCachedRating = null;
     lastRecent = [];
@@ -182,7 +182,17 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
         $('#accGroup').textContent = groupName(cached);
       }
     } catch { /* forgetful host — the fresh row below paints everything anyway */ }
-    const [profile, user] = await Promise.all([myProfile(), currentUser()]);
+    /* Nothing on the profile is useful half-painted. Fetch every independent
+       answer together while the shared die holds the view, then reveal one
+       coherent card (recent matches included) in a single rendering turn. */
+    const [profile, user, ladder, standing, streak, recent] = await Promise.all([
+      myProfile(),
+      currentUser(),
+      myLadder(),
+      myStanding(),
+      bestStreak(),
+      matchHistory(3),
+    ]);
     if (!ownsRun()) return;
     refreshHomeChip();
     $('#accGuest').hidden = !user?.guest;
@@ -195,17 +205,12 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       clearNickError();
     }
     paintAvatar($('#accDie'), profile?.avatar ?? DEFAULT_AVATAR);
-    const [ladder, standing, streak] = await Promise.all([
-      myLadder(),
-      myStanding(),
-      bestStreak(),
-    ]);
-    if (!ownsRun()) return;
     const points = ladder?.points ?? 0;
     const peak = ladder?.peak ?? 0;
     const games = ladder ? ladder.wins + ladder.losses + ladder.draws : 0;
     const apex = standing ? inApex(points, standing.rank, standing.population) : false;
     lastAccount = { profile, user, ladder, standing, streak };
+    lastRecent = recent;
     pendingCachedRating = null;
     paintAccount();
     cacheStanding(standing?.rank ?? null, apex);
@@ -216,12 +221,10 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     ring.classList.toggle('haspeak', peakPosition.kind !== 'at');
     if (peakPosition.kind === 'ahead') ring.style.setProperty('--pk', String(peakPosition.fill));
     if (peakPosition.kind === 'above') ring.style.setProperty('--pk', '1');
-
-    void matchHistory(3).then((rows) => {
-      if (!ownsRun()) return;
-      lastRecent = rows;
-      paintRecent();
-    });
+    showOnlinePanel('onAccount');
+    /* The hidden panel has no measurable viewport, so trim the already-loaded
+       recent rows once, immediately after the atomic reveal. */
+    paintRecent();
   }
 
   function bind(): void {

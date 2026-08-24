@@ -21,6 +21,7 @@ import { runFreshAccountScenarios } from './scenarios/fresh-account.mjs';
 import { runLadderFaceoffScenarios } from './scenarios/ladder-faceoff.mjs';
 import { runAccountLifecycleScenarios } from './scenarios/account-lifecycle.mjs';
 import { runOnlineMenuPressFeedbackScenarios } from './scenarios/menu-press-feedback.mjs';
+import { runOnlineLoadingPanelScenarios } from './scenarios/loading-panels.mjs';
 
 const { webkit } = pkg;
 // the origin comes from run-all (KB_URL) or from a server this suite starts —
@@ -53,6 +54,7 @@ try {
   await runLadderFaceoffScenarios(suite);
   await runAccountLifecycleScenarios(suite);
   await runOnlineMenuPressFeedbackScenarios(suite);
+  await runOnlineLoadingPanelScenarios(suite);
 } catch (e) {
   problems.push('THREW :: ' + e.message);
 }

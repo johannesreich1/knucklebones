@@ -7,7 +7,6 @@ import {
 } from '../i18n/index.ts';
 import { Sfx } from '../ui/audio.ts';
 import { $ } from '../ui/dom.ts';
-import { loaderWait } from '../ui/loader.ts';
 import { paintAvatar } from '../ui/avatar.ts';
 import { recordHtml } from '../ui/record.ts';
 import {
@@ -20,7 +19,7 @@ import {
 import { myProfile } from './session.ts';
 import { esc, pts, rank } from './format.ts';
 import { showFaceoff } from './faceoff.ts';
-import { showOnlinePanel } from './shell.ts';
+import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';
 
 interface LadderPorts {
   showAccount(): Promise<void>;
@@ -39,19 +38,18 @@ const gapHtml = (distance: number): string =>
 
 export function createLadderScreen(ports: LadderPorts): LadderScreen {
   let paintVisible: (() => void) | null = null;
+  let showRevision = 0;
   subscribeLocale(() => {
     const panel = document.getElementById('onBoard');
     if (panel && !panel.hidden) paintVisible?.();
   });
 
   async function show(): Promise<void> {
+    const run = ++showRevision;
     paintVisible = null;
-    showOnlinePanel('onBoard');
+    showOnlineLoading('onBoard');
     const list = $('#onBoardList');
     list.innerHTML = '';
-    const wait = loaderWait(44);
-    wait.classList.add('lbload');
-    list.appendChild(wait);
     const PAGE = 50;
     const ABOVE_ME = 20;
     const [me, ladder, standing] = await Promise.all([myProfile(), myLadder(), myStanding()]);
@@ -68,6 +66,7 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
     } else {
       rows = await leaderboard(PAGE);
     }
+    if (run !== showRevision || !isOnlinePanelCurrent('onBoard')) return;
     list.innerHTML = '';
     let empty: HTMLElement | null = null;
     if (!rows.length) {
@@ -267,6 +266,7 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
       if (list.scrollTop + list.clientHeight > list.scrollHeight - 400) growDown();
       else if (list.scrollTop < 400) growUp();
     };
+    showOnlinePanel('onBoard');
     if (list.scrollHeight <= list.clientHeight + 60) {
       if (!bottomDry) growDown();
       else growUp();
