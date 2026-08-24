@@ -1,4 +1,15 @@
 export async function probeAccountActions(page, { door, named }) {
+  const assertNoOfflineRestart = async (label) => {
+    const visible = await page.evaluate(() => {
+      const button = document.getElementById('btnAskAlt');
+      if (!button || button.hidden) return false;
+      const rect = button.getBoundingClientRect();
+      const style = getComputedStyle(button);
+      return rect.width > 0 && rect.height > 0
+        && style.display !== 'none' && style.visibility !== 'hidden';
+    });
+    if (visible) throw new Error(`${label} exposed the offline Restart duel action`);
+  };
   /* the claim, end to end: type, confirm through the shared ask-card, watch
      the card retire, the headline take the name, and the way-up offer arrive
      (a guest just chained a forever-name to a device-only account) */
@@ -7,10 +18,12 @@ export async function probeAccountActions(page, { door, named }) {
     await page.fill('#onNick', 'NeonKing77');
     await page.click('#btnClaim');
     await page.waitForSelector('#ovAsk.on', { timeout: 5000 });
+    await assertNoOfflineRestart('nickname claim');
     const confirmHead = await page.evaluate(() => document.querySelector('#askHead')?.textContent);
     await page.click('#btnAskYes');
     await page.waitForFunction(() => document.querySelector('#askHead')?.textContent?.startsWith('Keep '),
       null, { timeout: 15000 });
+    await assertNoOfflineRestart('account upgrade');
     const state = await page.evaluate(() => {
       const vis = (s) => { const e = document.querySelector(s); if (!e) return false;
         const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
@@ -34,10 +47,12 @@ export async function probeAccountActions(page, { door, named }) {
   if (named) {
     await page.click('#btnDeleteAcc');
     await page.waitForSelector('#ovAsk.on', { timeout: 5000 });
+    await assertNoOfflineRestart('account deletion');
     await page.click('#btnAskNo');
     await page.evaluate(() => document.getElementById('kbroot').appendChild(document.querySelector('#ovOnline')));
     await page.click('#btnDeleteAcc');
     await page.waitForSelector('#ovAsk.on', { timeout: 5000 });
+    await assertNoOfflineRestart('reopened account deletion');
     askAbove = await page.evaluate(() => {
       const card = document.querySelector('#ovAsk .askcard');
       const rc = card.getBoundingClientRect();

@@ -15,6 +15,7 @@ import { saveStats } from '../persist.ts';
 import { newGame, passTap, startLocal } from '../flow/game.ts';
 import { requestLeave, leavingForfeits } from '../flow/leave.ts';
 import { syncSettingsUI, toMenu } from '../flow/menu.ts';
+import { restartLocal } from '../flow/restart.ts';
 import { coachTap } from '../flow/tutorial.ts';
 import { disarm, renderSpells } from '../flow/spells.ts';
 import { Sfx } from '../ui/audio.ts';
@@ -149,12 +150,15 @@ export function bindMenus(root: HTMLElement): void {
     Sfx.tap();
     const ranked = leavingForfeits();
     const leave = await ask({
-      head: ranked ? 'Forfeit this match?' : 'Quit this game?',
+      head: ranked ? 'Forfeit this match?' : 'Quit this duel?',
       body: ranked
         ? 'Leaving a ranked match loses it, and the points go with it.'
-        : 'The board is lost — offline games are quick, and this one ends here.',
-      confirm: ranked ? 'Forfeit' : 'Quit game',
+        : 'The board is lost — offline duels are quick, and this one ends here.',
+      confirm: ranked ? 'Forfeit' : 'Quit duel',
       cancel: 'Keep playing',
+      alternate: !ranked && !S.tut
+        ? { label: 'Restart duel', run: restartLocal }
+        : undefined,
     });
     if (leave) { requestLeave(); toMenu(); }
   });

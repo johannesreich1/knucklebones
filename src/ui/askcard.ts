@@ -1,16 +1,21 @@
 // The ask-card: ONE modal that puts a single question with a way back.
 //
-// Three callers so far and they differ only in their words and whether the
-// confirm is guarded — quitting a game, forfeiting a ranked match, deleting an
-// account. That last one is the reason the guard exists: an account deletion
-// wants a deliberate act, not a second tap in the same place the first one
-// landed, which is what a two-tap arm gives you.
+// Callers differ only in their words, emphasis, and optional guard/action. A
+// normal offline duel adds one quiet restart between the way back and the way
+// out; forfeiting a ranked match and account questions remain either/or. The
+// deletion guard exists because that answer wants a deliberate act, not a
+// second tap in the same place the first one landed.
 //
 // Lives in ui/ (not online/) because the quit modal is offline-reachable, and
 // anything the offline game can open must not pull in the online chunk.
 import { $, show, hide } from './dom.ts';
 import { Sfx } from './audio.ts';
 import { appRoot } from './embed.ts';
+
+export interface AskAction {
+  label: string;
+  run: () => void;
+}
 
 export interface Ask {
   head: string;
@@ -26,6 +31,9 @@ export interface Ask {
      the loud button on the way OUT (default); an INVITATION flips it, so the
      yes wears primary and the no goes quiet. */
   loud?: boolean;
+  /* an optional third path. It stays quiet like the trailing answer and runs
+     only after the card has dismissed and resolved as "no" to its caller. */
+  alternate?: AskAction;
 }
 
 let built = false;
@@ -41,6 +49,7 @@ function build(): void {
       <input type="checkbox" id="askCheck"><span id="askCheckText"></span>
     </label>
     <button class="btn soft" id="btnAskYes"></button>
+    <button class="btn soft small" id="btnAskAlt" hidden></button>
     <button class="btn primary" id="btnAskNo"></button>
   </div>
 </div>`);
@@ -69,8 +78,12 @@ export function ask(spec: Ask): Promise<boolean> {
   $('#askHead').textContent = spec.head;
   $('#askBody').textContent = spec.body;
   const yes = $('#btnAskYes') as HTMLButtonElement;
+  const alternate = $('#btnAskAlt') as HTMLButtonElement;
   const no = $('#btnAskNo') as HTMLButtonElement;
+  const action = spec.alternate;
   yes.textContent = spec.confirm;
+  alternate.textContent = action?.label ?? '';
+  alternate.hidden = !action;
   no.textContent = spec.cancel ?? 'Cancel';
   yes.classList.toggle('danger', !!spec.danger);
   /* the un-encouraged answer wears .soft, never .quiet — .quiet is the HOME
@@ -80,13 +93,14 @@ export function ask(spec: Ask): Promise<boolean> {
   yes.classList.toggle('soft', !spec.loud);
   no.classList.toggle('primary', !spec.loud);
   no.classList.toggle('soft', !!spec.loud);
-  /* the encouraged answer is the BIG coloured button and it goes FIRST; the
-     other answer follows, smaller and quiet, at the card's bottom — whichever
-     of yes/no each happens to be (user call on the quit card: Keep playing
-     leads at full size, Quit game trails small) */
+  /* the encouraged answer is the BIG coloured button and it goes FIRST. Any
+     alternate sits in the middle, matching the smaller quiet answer that
+     trails at the bottom. Markup carries no fixed answer order. */
   yes.classList.toggle('small', !spec.loud);
   no.classList.toggle('small', !!spec.loud);
-  yes.parentElement!.append(...(spec.loud ? [yes, no] : [no, yes]));
+  yes.parentElement!.append(...(spec.loud
+    ? [yes, alternate, no]
+    : [no, alternate, yes]));
 
   const box = $('#askCheck') as HTMLInputElement;
   $('#askCheckRow').hidden = !spec.check;
@@ -98,6 +112,11 @@ export function ask(spec: Ask): Promise<boolean> {
   box.onchange = () => { yes.disabled = !!spec.check && !box.checked; };
 
   yes.onclick = () => { if (yes.disabled) return; Sfx.tap(); done(true); };
+  alternate.onclick = action ? () => {
+    Sfx.tap();
+    done(false);
+    action.run();
+  } : null;
   no.onclick = () => { Sfx.tap(); done(false); };
 
   show('#ovAsk');

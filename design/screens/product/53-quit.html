@@ -1,12 +1,11 @@
-<!-- meta name="Quit / forfeit" group="5 · Settings & sheets" subtitle="The HUD's one control mid-match: one question, forfeit-aware copy, and the way back leading in the duel colour" width=412 height=880 links="Home" -->
+<!-- meta name="Quit / forfeit" group="5 · Settings & sheets" subtitle="The HUD's one control mid-duel: restart or quit offline, forfeit ranked, and Keep playing always leads" width=412 height=880 links="Home" -->
 <style>
   /* the ask-card is the app's own component (src/styles/main.css) — the card
      shows both of its rosters side by side, which is the point: one card, two
      sets of words — and one emphasis rule (ui/askcard.ts, spec.loud): the
-     ENCOURAGED answer LEADS at full size wearing the duel gradient, and the
-     other answer trails below it, smaller and quiet. Retuned 2026-08-21; the
-     comment above .btn.small in main.css still teaches the old arrangement
-     (way back small, destructive answer first) — askcard.ts is the truth. */
+     ENCOURAGED answer LEADS at full size wearing the duel gradient. Offline's
+     two alternatives follow at the same small, quiet size; ranked needs only
+     its destructive alternative. */
   .scr{gap:26px;justify-content:center}
   /* the caption itself comes from the preview chrome (design/build.mjs); only
      the pull-up that tucks it against its ask-card is this card's own */
@@ -20,10 +19,11 @@
 
   <div class="cap2">OFFLINE — NOTHING RATED IS AT STAKE</div>
   <div class="askcard">
-    <div class="fh">Quit this game?</div>
-    <p class="fp">The board is lost — offline games are quick, and this one ends here.</p>
+    <div class="fh">Quit this duel?</div>
+    <p class="fp">The board is lost — offline duels are quick, and this one ends here.</p>
     <button class="btn primary">Keep playing</button>
-    <button class="btn soft small">Quit game</button>
+    <button class="btn soft small">Restart duel</button>
+    <button class="btn soft small">Quit duel</button>
   </div>
 
   <div class="cap2">RANKED — LEAVING COSTS POINTS</div>

@@ -1,6 +1,6 @@
-/* ---- ask-cards: a modal that puts ONE question with a way back. Two rosters
-   so far — the first-run tutorial offer, and quitting a game — and they differ
-   only in their words, which is the whole point of there being one card. ---- */
+/* ---- ask-cards: a modal that puts ONE question with a way back. The first-run
+   offer and shared runtime questions differ through their supplied words and
+   actions, which is the whole point of there being one card. ---- */
 :where(#kbroot) #ovFirst,:where(#kbroot) #ovAsk{background:rgba(4,5,12,.93)}   /* a question deserves a quiet room */
 :where(#kbroot) .askcard{display:flex;flex-direction:column;gap:13px;width:100%;max-width:var(--w-col);
   padding:22px 20px;border-radius:20px;background:rgba(255,255,255,.035);
@@ -9,13 +9,13 @@
 :where(#kbroot) .askcard .fh{font-size:19px;font-weight:900;letter-spacing:.1em;color:var(--p1)}
 :where(#kbroot) .askcard .fp{margin:0;font-size:12.5px;line-height:1.6;color:var(--dim)}
 :where(#kbroot) .askcard .btn{width:100%;min-width:0}
-/* the two answers are a PAIR. The card's 13px gap separates thought-groups
-   (headline, body, answers) — but between the answers themselves it read as
-   drift (user call: "too far apart"), so the second answer pulls up to 7px */
+/* the actions are one STACK. The card's 13px gap separates thought-groups
+   (headline, body, actions) — but between the actions themselves it read as
+   drift (user call: "too far apart"), so each following action pulls up */
 :where(#kbroot) .askcard .btn+.btn{margin-top:-6px}
-/* An ask-card's two answers are not equals: ask() orders and sizes the pair
-   from spec.loud (ui/askcard.ts), and the ENCOURAGED answer leads — first, full
-   size, wearing the colour — while the other trails, smaller and quiet. This
+/* An ask-card's answers are not equals: ask() orders and sizes the stack from
+   spec.loud (ui/askcard.ts), and the ENCOURAGED answer leads — first, full
+   size, wearing the colour — while the other paths stay smaller and quiet. This
    comment taught the opposite arrangement (destructive full width, the way back
    the smaller of the two) for a day after the 2026-08-21 retune, and design
    card 53 was drawn from it, wrong, in exactly that shape. */

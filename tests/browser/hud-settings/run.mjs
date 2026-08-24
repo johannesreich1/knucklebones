@@ -1,6 +1,7 @@
 import pkg from 'playwright';
 import { serveTree } from '../../serve.mjs';
 import { runHudPopupScenarios } from './scenarios/hud-popups.mjs';
+import { runOfflineRestartScenarios } from './scenarios/offline-restart.mjs';
 import { runSettingsNavigationScenarios } from './scenarios/settings-navigation.mjs';
 import { runBadgeCardScenarios } from './scenarios/badge-cards.mjs';
 
@@ -33,6 +34,7 @@ await page.goto(F); await page.waitForTimeout(500);
 
 const suite = { page, ctx, F, problems, errs, out, check };
 await runHudPopupScenarios(suite);
+await runOfflineRestartScenarios(suite);
 await runSettingsNavigationScenarios(suite);
 await runBadgeCardScenarios(suite);
 

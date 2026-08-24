@@ -219,11 +219,25 @@ await page.evaluate((setup) => {
 await page.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await page.tap('#btnPlay'); await page.waitForTimeout(1800);
 await page.tap('#btnLeave'); await page.waitForSelector('#ovAsk.on');
-const askPortal = await page.evaluate(() => ({
-  parent: document.getElementById('ovAsk').parentElement.id,
-  top: document.getElementById('kbroot').lastElementChild.id,
-}));
-check(askPortal.parent === 'kbroot' && askPortal.top === 'ovAsk', 'ask portal escaped or lost overlay order', askPortal);
+const askPortal = await page.evaluate(() => {
+  const root = document.getElementById('kbroot');
+  const ask = document.getElementById('ovAsk');
+  const visibleButtons = [...ask.querySelectorAll('.askcard > button')].filter((button) => {
+    const rect = button.getBoundingClientRect();
+    return !button.hidden && rect.width > 0 && rect.height > 0;
+  });
+  const alternate = document.getElementById('btnAskAlt');
+  return {
+    parent: ask.parentElement.id,
+    top: root.lastElementChild.id,
+    alternateContained: !!alternate && root.contains(alternate),
+    order: visibleButtons.map((button) => button.textContent.trim()),
+  };
+});
+check(askPortal.parent === 'kbroot' && askPortal.top === 'ovAsk'
+  && askPortal.alternateContained
+  && askPortal.order.join(' -> ') === 'Keep playing -> Restart duel -> Quit duel',
+  'widget ask portal escaped, lost overlay order, or lost its contained restart action', askPortal);
 await page.tap('#btnAskNo');
 await page.tap('#rec .rchip'); await page.waitForSelector('.faceoff');
 const sheetPortal = await page.evaluate(() => {
