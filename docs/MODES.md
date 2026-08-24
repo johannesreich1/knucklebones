@@ -144,3 +144,62 @@ that changes destruction (which is what WARD and SUNDER are about) or supply
 | SINGLE STRIKE | ☓ | a hit removes ONE die — the closest to the centre |
 | BOUNTY | ✦ | every die you destroy banks a permanent +1 |
 | LIMITED | ▦ | one shared bag of 24; the bag ends the match |
+
+## 8. BOUNTY's struck-coin presentation
+
+BO2 is the production signature for a BOUNTY kill. Every die the rules
+actually destroy is pressed flat in its own grid seat and receives one centred
+BOUNTY `✦` coin in the attacker's heat. Survivors and dice protected by WARD
+or COLUMN SHIELD receive no mark. This is presentation only: victim selection,
+the permanent bank, the existing `+N ✦` feedback, scores, tallies, and replay
+remain authoritative elsewhere.
+
+### The timing contract
+
+The selected study was authored on a **3.6s review loop**, but production uses
+only its **16% through 60% active crop: 1584ms**. The remaining 1440ms was the
+study's idle/reset tail and must never be added to gameplay. All times below
+are relative to the attacking die landing in the grid:
+
+| Beat | First victim | Second victim |
+|---|---:|---:|
+| Press begins | 144ms | 252ms |
+| Squash peak | 288ms | 396ms |
+| Die is flat/gone | 576ms | 684ms |
+| Coin lands | 324ms | 432ms |
+| Coin settles | 504ms | 612ms |
+| Coin hold ends | 1080ms | 1188ms |
+| Coin fade completes | 1440ms | 1548ms |
+
+Victims are staggered by exactly **108ms**. A two-victim sequence cleans up at
+1584ms, 36ms after the second coin fades. A third or later victim repeats the
+same choreography at the same 108ms cadence; cleanup extends by 108ms for each
+additional victim so the final coin always completes. Equivalently, for one or
+more victims the cleanup offset is `1476ms + (victim count - 1) × 108ms`.
+
+The die press lasts 432ms with `cubic-bezier(.4,0,.2,1)`: normal at the start,
+`scaleY(.72) scaleX(1.06)` with `brightness(2.6)` at its peak, then
+`scaleY(.08) scaleX(1.1)`, `brightness(3)`, and zero opacity. The coin lasts
+1296ms with `cubic-bezier(.2,1.4,.4,1)`: hidden at scale `2.1`, lands at `.92`,
+settles and holds at `1`, then fades while moving to `-58%` vertically and
+scaling to `.9`. Its seat ring uses that same 1296ms clock with `ease-out`.
+
+With SUNDER, SU6 still owns the victim's collapse, its 160ms stagger, and its
+duration; BO2 adds only the centred coin and never applies the ordinary BOUNTY
+flatten transform. Each coin begins 360ms before that victim's SU6 62% impact
+so its settle lands exactly on the impact beat. The coin completes within SU6,
+so the combination adds no time. Under reduced motion, all victims instead
+show simultaneous static centred coins for 320ms, with no press, flare, or
+stagger.
+
+This contract is deliberately duplicated as named runtime constants and
+browser assertions. Its duration drifted repeatedly when the study's review
+tail was mistaken for gameplay, so changing any beat requires a new explicit
+design decision rather than percentage reconstruction at a call site.
+
+### What the design reference owns
+
+`design/screens/product/46b-bounty-mint.html` is authoritative only for the
+**game-grid kill treatment** described above. Any nameplates, score placement,
+bottom points, or tally layout shown in an earlier 46b study are non-normative
+composition aids and must not be copied into the game.

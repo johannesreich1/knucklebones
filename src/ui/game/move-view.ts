@@ -20,6 +20,16 @@ import { $, colEl, slotEl, slotIdx } from '../dom.ts';
 import { REDUCED, burst, flash, floatPts, shake } from '../fx.ts';
 import { colorOf, heatOf } from '../identity.ts';
 import { renderSide } from './board.ts';
+import {
+  BOUNTY_TIMING,
+  bountyPlacementDelay,
+  bountyPresentationNow,
+  bountySequenceDuration,
+  bountySunderDelay,
+  clearBountyPresentation,
+  markBountyVictim,
+  waitForBountyOffset,
+} from './bounty-presentation.ts';
 import { playWardStrike, shieldBlocked, wardBurned } from './seals.ts';
 import { flyDieToSlot } from './motion.ts';
 import {
@@ -75,18 +85,50 @@ function planDestruction(board: Board, col: number, victims: number[]): Destruct
 
 function stageDestruction(
   who: Player,
+  attacker: Player,
   plan: DestructionPlan,
   color: string,
   sunderOrder: number | null,
+  placementLandedAt?: number,
 ): number {
   let order = sunderOrder ?? 0;
+  /* Sample the placement clock once for the whole batch. Reading it per die
+     turns the authored 108ms cadence into 107.xms by subtracting loop time. */
+  const bountyBaseDelay = sunderOrder === null && S.scoring === BOUNTY
+    ? bountyPlacementDelay(placementLandedAt!, 0)
+    : 0;
   for (const index of plan.victims) {
     const slot = slotEl(who, plan.col, slotIdx(who, index));
     const doomed = slot?.firstElementChild as HTMLElement | null;
     if (!doomed) continue;
     if (sunderOrder !== null) {
-      markSunderVictim(slot!, doomed, order);
-      releaseSunderVictim(slot!, doomed, order++ * SUNDER_STAGGER_MS);
+      const victimOrder = order++;
+      markSunderVictim(slot!, doomed, victimOrder);
+      releaseSunderVictim(slot!, doomed, victimOrder * SUNDER_STAGGER_MS);
+      if (S.scoring === BOUNTY) {
+        markBountyVictim({
+          slot: slot!,
+          die: doomed,
+          attacker,
+          order: victimOrder,
+          delayMs: bountySunderDelay(victimOrder, SUNDER_COLLAPSE_MS, SUNDER_STAGGER_MS),
+          flatten: false,
+          reduced: REDUCED,
+          source: 'sunder',
+        });
+      }
+    } else if (S.scoring === BOUNTY) {
+      const victimOrder = order++;
+      markBountyVictim({
+        slot: slot!,
+        die: doomed,
+        attacker,
+        order: victimOrder,
+        delayMs: bountyBaseDelay + victimOrder * BOUNTY_TIMING.victimStaggerMs,
+        flatten: true,
+        reduced: REDUCED,
+        source: 'ordinary',
+      });
     } else {
       doomed.classList.add('dying');
       const rect = doomed.getBoundingClientRect();
@@ -109,21 +151,44 @@ function playDestructionImpact(withGlobalVisual = true): void {
 }
 
 async function destroyAt(
-  who: Player,
+  attacker: Player,
+  target: Player,
   col: number,
   die: number,
+  placementLandedAt: number,
   isCurrent: () => boolean,
 ): Promise<DestructionResult> {
-  const victims = victimsOf(S.boards[who][col], die, S.scoring);
+  const victims = victimsOf(S.boards[target][col], die, S.scoring);
   if (!victims.length) return { destroyed: 0, interrupted: false };
 
-  const plan = planDestruction(S.boards[who], col, victims);
-  stageDestruction(who, plan, colorOf(who), null);
-  playDestructionImpact();
-  await pause(320);
-  if (!isCurrent()) return { destroyed: 0, interrupted: true };
-  S.boards[who][col] = plan.survivors;
-  renderSide(who, true);
+  const plan = planDestruction(S.boards[target], col, victims);
+  if (S.scoring === BOUNTY) {
+    const presentationStartedAt = REDUCED ? bountyPresentationNow() : placementLandedAt;
+    const ready = REDUCED || await waitForBountyOffset(
+      placementLandedAt,
+      BOUNTY_TIMING.pressStartMs,
+      isCurrent,
+    );
+    if (!ready) return { destroyed: 0, interrupted: true };
+    stageDestruction(target, attacker, plan, colorOf(target), null, placementLandedAt);
+    playDestructionImpact();
+    const completed = await waitForBountyOffset(
+      presentationStartedAt,
+      REDUCED ? BOUNTY_TIMING.reducedHoldMs : bountySequenceDuration(victims.length),
+      isCurrent,
+    );
+    /* Clear before repaint: a compacted survivor can reuse the victim's DOM
+       node when it has the same face, and must not inherit the filled press. */
+    clearBountyPresentation();
+    if (!completed) return { destroyed: 0, interrupted: true };
+  } else {
+    stageDestruction(target, attacker, plan, colorOf(target), null);
+    playDestructionImpact();
+    await pause(320);
+    if (!isCurrent()) return { destroyed: 0, interrupted: true };
+  }
+  S.boards[target][col] = plan.survivors;
+  renderSide(target, true);
   return { destroyed: victims.length, interrupted: false };
 }
 
@@ -132,7 +197,8 @@ async function destroyAt(
    columns through destroyAt one by one made later victims look disconnected
    from the warning and reset the stagger in every column. */
 async function destroySunderStrikes(
-  who: Player,
+  attacker: Player,
+  target: Player,
   strikes: StrikeOutcome[],
   isCurrent: () => boolean,
 ): Promise<DestructionResult> {
@@ -140,7 +206,7 @@ async function destroySunderStrikes(
   /* Score each loss against the preceding planned removals. ROW modes couple
      columns, so measuring every column against the untouched board would
      overstate or understate the visible point loss. */
-  const scratch = S.boards[who].map((column) => column.slice());
+  const scratch = S.boards[target].map((column) => column.slice());
   const plans = strikes.map((strike) => {
     const plan = planDestruction(scratch, strike.col, strike.victims);
     scratch[strike.col] = plan.survivors;
@@ -148,17 +214,23 @@ async function destroySunderStrikes(
   });
   let collapseOrder = 0;
   for (const plan of plans) {
-    collapseOrder = stageDestruction(who, plan, '#ff9d66', collapseOrder);
+    collapseOrder = stageDestruction(target, attacker, plan, '#ff9d66', collapseOrder);
   }
   /* SU6 already carries its authored whole-die shine. A generic centre burst,
      board shake or screen flash would introduce a new destruction language at
      release instead of letting the warning finish. */
   playDestructionImpact(false);
-  await pause(REDUCED ? 0
-    : SUNDER_COLLAPSE_MS + Math.max(0, collapseOrder - 1) * SUNDER_STAGGER_MS);
-  if (!isCurrent()) return { destroyed: 0, interrupted: true };
-  for (const plan of plans) S.boards[who][plan.col] = plan.survivors;
-  renderSide(who, true);
+  const collapseStartedAt = bountyPresentationNow();
+  const collapseDuration = REDUCED
+    ? (S.scoring === BOUNTY ? BOUNTY_TIMING.reducedHoldMs : 0)
+    : SUNDER_COLLAPSE_MS + Math.max(0, collapseOrder - 1) * SUNDER_STAGGER_MS;
+  const completed = S.scoring === BOUNTY
+    ? await waitForBountyOffset(collapseStartedAt, collapseDuration, isCurrent)
+    : (await pause(collapseDuration), isCurrent());
+  clearBountyPresentation();
+  if (!completed) return { destroyed: 0, interrupted: true };
+  for (const plan of plans) S.boards[target][plan.col] = plan.survivors;
+  renderSide(target, true);
   return {
     destroyed: plans.reduce((total, plan) => total + plan.victims.length, 0),
     interrupted: false,
@@ -171,6 +243,9 @@ export async function animateGameMove(
   die: number,
   spec: GameViewSpec,
 ): Promise<GameViewResult> {
+  /* A superseded move/restart may have removed the old board before its async
+     owner observed cancellation. Start every shared move from a clean grid. */
+  clearBountyPresentation();
   const sundered = !!spec.charm?.sunder[who];
   if (spec.stageDieBeforeFlight) setStageDie(die, who);
   const openSlot = S.boards[who][col].length < SPEC.rows;
@@ -188,6 +263,7 @@ export async function animateGameMove(
   setStageDie(0);
   $('#dieStage').classList.remove('sundered');
   renderSide(who, !REDUCED);
+  const placementLandedAt = bountyPresentationNow();
 
   const gain = boardTotalMode(S.boards[who], S.scoring) - before;
   const multiplied = gain > die;
@@ -241,12 +317,13 @@ export async function animateGameMove(
         continue;
       }
       if (sundered) continue;
-      const result = await destroyAt(foe, strike.col, die, spec.isCurrent);
+      const result = await destroyAt(who, foe, strike.col, die, placementLandedAt, spec.isCurrent);
       if (result.interrupted) return { placed: true, interrupted: true, destroyed };
       destroyed += result.destroyed;
     }
     if (sundered) {
       const result = await destroySunderStrikes(
+        who,
         foe,
         strikes.filter((strike) => !strike.warded),
         spec.isCurrent,
@@ -255,6 +332,7 @@ export async function animateGameMove(
       destroyed += result.destroyed;
     }
   } finally {
+    clearBountyPresentation();
     if (sundered) clearSunderPresentation();
   }
 

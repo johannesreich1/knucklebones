@@ -2,6 +2,47 @@
 :where(#kbroot) .plate .bty{font-size:14.5px;font-weight:900;color:var(--mx2,var(--gold));
   text-shadow:0 0 10px rgba(var(--mx2-rgb,var(--gold-rgb)),.7);margin-right:6px;letter-spacing:.02em}
 
+/* BO2 — STRUCK COIN. JS anchors --bounty-delay to placement (ordinary
+   BOUNTY) or to SU6's 62% impact (BOUNTY + SUNDER). Durations below are the
+   exact active crop of design 46b; the study's 1.44s idle/reset tail is not a
+   production beat. The seat owns both ring and coin, so pips/numerals and
+   portrait/landscape all share the same measured centre. */
+:where(#kbroot) .slot.bounty-mint-slot{z-index:2}
+:where(#kbroot) .slot.bounty-mint-slot::after{content:"";position:absolute;z-index:3;inset:-2px;
+  border-radius:inherit;pointer-events:none;border:1.5px solid var(--bounty-heat);
+  opacity:0;box-shadow:0 0 18px color-mix(in srgb,var(--bounty-heat) 50%,transparent),
+    inset 0 0 18px color-mix(in srgb,var(--bounty-heat) 28%,transparent);
+  animation:bounty-mint-ring 1296ms ease-out var(--bounty-delay,0ms) both}
+:where(#kbroot) .die.bounty-flatten{transform-origin:50% 50%;
+  animation:bounty-mint-press 432ms cubic-bezier(.4,0,.2,1) var(--bounty-delay,0ms) both}
+:where(#kbroot) .bounty-mint{position:absolute;z-index:4;left:50%;top:50%;width:54%;height:54%;
+  display:grid;place-items:center;line-height:0;color:var(--bounty-heat);pointer-events:none;
+  opacity:0;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--bounty-heat) 90%,transparent));
+  animation:bounty-mint-strike 1296ms cubic-bezier(.2,1.4,.4,1) var(--bounty-delay,0ms) both}
+:where(#kbroot) .bounty-mint>.mico{display:block;width:100%;height:100%}
+@keyframes bounty-mint-press{
+  0%{opacity:1;transform:scaleY(1) scaleX(1);filter:brightness(1)}
+  33.333333%{opacity:1;transform:scaleY(.72) scaleX(1.06);filter:brightness(2.6)}
+  100%{opacity:0;transform:scaleY(.08) scaleX(1.1);filter:brightness(3)}}
+@keyframes bounty-mint-strike{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(2.1)}
+  13.888889%{opacity:1;transform:translate(-50%,-50%) scale(.92)}
+  27.777778%,72.222222%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-58%) scale(.9)}}
+@keyframes bounty-mint-ring{
+  0%{opacity:0}
+  13.888889%{opacity:1}
+  100%{opacity:0}}
+
+/* Reduced motion is an informative still, not a compressed one-frame strike:
+   no flatten, flare or stagger, and JS holds every victim together for 320ms. */
+:where(#kbroot) .slot.bounty-mint-static-slot::after{content:none;animation:none}
+:where(#kbroot) .bounty-mint.bounty-mint-static{opacity:1;
+  transform:translate(-50%,-50%) scale(1);animation:none}
+#kbroot.reduce-motion .die.bounty-flatten{animation:none!important;transform:none;opacity:1;filter:none}
+#kbroot.reduce-motion .slot.bounty-mint-slot::after{content:none;animation:none!important}
+#kbroot.reduce-motion .bounty-mint{opacity:1;transform:translate(-50%,-50%) scale(1);animation:none!important}
+
 /* ===== LIMITED: the bag beside the die in play — a stack of FACE-DOWN dice
    and the number still to come. It never says WHICH faces remain; reading the
    board for that is the mode. Anchored to .stagerow so the played die stays

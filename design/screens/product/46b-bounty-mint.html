@@ -1,0 +1,134 @@
+<!-- meta name="BO2 — Struck coin" group="3i · BOUNTY — the banked kill" subtitle="CHOSEN AND SHIPPED 2026-08-24 — GRID ONLY: every destroyed die is overstruck with the centred BOUNTY ✦ and flattened into the coin it banks" width=430 height=1000 sizes="md" links="Match, Game modes, Mode icons" -->
+<style>
+  /* BO2 is a grid-effect contract, not a game-layout proposal. The visible
+     composition deliberately contains no nameplate, score, tally or point
+     float: those remain exactly where the shipped game already puts them. */
+  .scr{gap:12px;--hue:{{mhue:bounty}}}
+  .bogrids{display:flex;flex-direction:column;align-items:center;gap:10px;
+    width:100%;margin:8px 0 2px}
+  .bogridlabel{font-size:8px;font-weight:800;letter-spacing:.24em;color:var(--dim);
+    text-transform:uppercase}
+  .bogap{height:18px;display:flex;align-items:center;justify-content:center;
+    color:var(--dim);font-size:8px;letter-spacing:.22em;text-transform:uppercase}
+  .bogap::before,.bogap::after{content:"";width:42px;height:1px;margin:0 9px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.18))}
+  .bogap::after{transform:scaleX(-1)}
+
+  /* REVIEW CLOCK — exactly the selected BO2 study's original 3.6s loop.
+       16%  the attacker's 4 lands; production rebases this instant to t=0
+       20%  first victim begins to press; the second is 3% / 108ms behind
+       60%  the production grid sequence cuts
+     Runtime consumes only 16%→60% = 1.584s. The remaining 1.440s is merely
+     this card's idle/reset tail and is never part of game duration. */
+  .bodrop>.die{animation:bodrop 3.6s steps(1,end) infinite}
+  @keyframes bodrop{0%,15.9%{opacity:0}16%,100%{opacity:1}}
+
+  /* THE IDEA. Destruction in this mode is currency: each victim is pressed
+     flat in its own seat while the registry-owned coin and centred ✦ strike
+     the face. No effect travels out of the grid. */
+  .boroom{box-shadow:inset 0 0 0 1px rgba(var(--p1-rgb),.34),
+    inset 0 0 16px rgba(var(--p1-rgb),.12)}
+  .bostrike{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    z-index:9;line-height:0;color:var(--mx2,var(--gold));opacity:0;
+    filter:drop-shadow(0 0 8px rgba(var(--mx2-rgb,var(--gold-rgb)),.9))}
+  .bostrike .f{fill:currentColor;stroke:none}
+  .bostrike.s1{animation:bomint1 3.6s cubic-bezier(.2,1.4,.4,1) infinite}
+  .bostrike.s2{animation:bomint2 3.6s cubic-bezier(.2,1.4,.4,1) infinite}
+  @keyframes bomint1{
+    0%,20%{opacity:0;transform:translate(-50%,-50%) scale(2.1)}
+    25%{opacity:1;transform:translate(-50%,-50%) scale(.92)}
+    30%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    46%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    56%,100%{opacity:0;transform:translate(-50%,-58%) scale(.9)}}
+  @keyframes bomint2{
+    0%,23%{opacity:0;transform:translate(-50%,-50%) scale(2.1)}
+    28%{opacity:1;transform:translate(-50%,-50%) scale(.92)}
+    33%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    49%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+    59%,100%{opacity:0;transform:translate(-50%,-58%) scale(.9)}}
+
+  /* The seat takes the same authored impact and cools with its coin. */
+  .bovseat::after{content:"";position:absolute;inset:-2px;border-radius:16px;
+    pointer-events:none;border:1.5px solid rgba(var(--mx2-rgb,var(--gold-rgb)),.9);
+    opacity:0;box-shadow:0 0 18px rgba(var(--mx2-rgb,var(--gold-rgb)),.5),
+      inset 0 0 18px rgba(var(--mx2-rgb,var(--gold-rgb)),.28)}
+  .bovseat.b1::after{animation:bocool1 3.6s ease-out infinite}
+  .bovseat.b2::after{animation:bocool2 3.6s ease-out infinite}
+  @keyframes bocool1{0%,20%{opacity:0}25%{opacity:1}56%,100%{opacity:0}}
+  @keyframes bocool2{0%,23%{opacity:0}28%{opacity:1}59%,100%{opacity:0}}
+
+  /* The die flattens instead of tumbling: it is being minted, not thrown. */
+  .bovictim{animation:bopress1 3.6s cubic-bezier(.4,0,.2,1) infinite}
+  .bovictim.v2{animation-name:bopress2}
+  @keyframes bopress1{
+    0%,20%{opacity:1;transform:scaleY(1)}
+    24%{opacity:1;transform:scaleY(.72) scaleX(1.06);filter:brightness(2.6)}
+    32%,100%{opacity:0;transform:scaleY(.08) scaleX(1.1);filter:brightness(3)}}
+  @keyframes bopress2{
+    0%,23%{opacity:1;transform:scaleY(1)}
+    27%{opacity:1;transform:scaleY(.72) scaleX(1.06);filter:brightness(2.6)}
+    35%,100%{opacity:0;transform:scaleY(.08) scaleX(1.1);filter:brightness(3)}}
+
+  .bocontract{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;
+    max-width:340px;margin:2px auto 0}
+  .bobeat{padding:7px 8px;border-radius:9px;text-align:center;font-size:9px;
+    line-height:1.35;color:#c6d3ee;background:rgba(255,255,255,.035);
+    border:1px solid rgba(255,255,255,.08)}
+  .bobeat b{display:block;color:var(--green);font-size:10px;letter-spacing:.08em}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <h1 style="font-size:18px;margin-top:8px">BOUNTY</h1>
+  <div class="cap2">A placed 4 destroys their pair · the effect never leaves the grid</div>
+
+  <div class="bogrids">
+    <div class="bogridlabel">Their grid · victims</div>
+    <div class="spboard spfoe">
+      <div class="spcol">
+        <div class="spslot"></div>
+        <div class="spslot"></div>
+        <div class="spslot">{{die:6:p2:52}}</div>
+      </div>
+      <div class="spcol">
+        <div class="spslot"></div>
+        <div class="spslot bovseat b1"><span class="spmark bovictim v1">{{die:4:p2 m2:52}}</span><i class="bostrike s1">{{mico:bounty:26}}</i></div>
+        <div class="spslot bovseat b2"><span class="spmark bovictim v2">{{die:4:p2 m2:52}}</span><i class="bostrike s2">{{mico:bounty:26}}</i></div>
+      </div>
+      <div class="spcol">
+        <div class="spslot"></div>
+        <div class="spslot">{{die:2:p2:52}}</div>
+        <div class="spslot">{{die:5:p2:52}}</div>
+      </div>
+    </div>
+
+    <div class="bogap">placement</div>
+
+    <div class="bogridlabel">Your grid · placed die</div>
+    <div class="spboard spmine">
+      <div class="spcol">
+        <div class="spslot">{{die:3:p1 m2:52}}</div>
+        <div class="spslot">{{die:3:p1 m2:52}}</div>
+        <div class="spslot"></div>
+      </div>
+      <div class="spcol">
+        <div class="spslot">{{die:5:p1:52}}</div>
+        <div class="spslot boroom bodrop">{{die:4:p1:52}}</div>
+        <div class="spslot"></div>
+      </div>
+      <div class="spcol">
+        <div class="spslot">{{die:6:p1:52}}</div>
+        <div class="spslot"></div>
+        <div class="spslot"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="bocontract">
+    <div class="bobeat"><b>3.600s</b>review loop</div>
+    <div class="bobeat"><b>1.584s</b>production cut</div>
+    <div class="bobeat"><b>16% → 60%</b>active window</div>
+    <div class="bobeat"><b>108ms</b>victim stagger</div>
+  </div>
+
+  <div class="note"><b>What shipped — and no more:</b> BO2 is authoritative only for destroyed dice inside the game grid. Each victim presses flat in its own seat while the canonical BOUNTY coin lands with <b>✦ centred</b>. Score chips, tally placement, nameplates and the existing <b>+N ✦</b> point feedback are deliberately absent here; this card does not move or redesign any of them.<br>
+  <b>Timing contract:</b> this review card keeps the selected study's exact <b>3.600s</b> loop. Production rebases the placement at 16% to <code>t=0</code> and consumes only 16%→60% — exactly <b>1.584s</b>. The final <b>1.440s</b> is review-only idle/reset time and must never be added to game duration. The second victim remains exactly 3% / <b>108ms</b> behind the first.</div>
+</div></div>

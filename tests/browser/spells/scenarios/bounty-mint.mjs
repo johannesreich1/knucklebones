@@ -1,0 +1,400 @@
+import {
+  assertBountyMintSourceContract,
+  close,
+  easingNumbers,
+} from './bounty-mint-contract.mjs';
+
+export async function runBountyMintScenarios(suite) {
+  const { page, out, check, newGame, waitChoose, table, guard, sidePage } = suite;
+  assertBountyMintSourceContract({ out, check });
+
+  /* Ordinary BOUNTY: only the two matching dice in the struck column receive
+     a coin. A matching die elsewhere controls for a face-wide DOM query. */
+  await newGame({ spell: '', mode: 5 });
+  check(await waitChoose(), 'game never reached choose (BO2 pair)');
+  await table([[], [], []], [[4, 4, 2], [4], [1, 4]], 4);
+  out.bountyPair = await page.evaluate(async () => {
+    const k = window.__kb;
+    const rect = (selector) => {
+      const r = document.querySelector(selector).getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: r.height };
+    };
+    const plateBefore = {
+      plate: rect('#plateBot'), who: rect('#plateBot .who'), right: rect('#plateBot .pright'),
+    };
+    const move = k.place(1, 0);
+    for (let i = 0; i < 180 && document.querySelectorAll('.bounty-mint').length !== 2; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 8));
+    }
+    const expectedHeatProbe = document.createElement('i');
+    expectedHeatProbe.style.color = 'var(--p1-mx2,var(--gold))';
+    document.getElementById('kbroot').appendChild(expectedHeatProbe);
+    const expectedHeat = getComputedStyle(expectedHeatProbe).color;
+    expectedHeatProbe.remove();
+    const slots = [...document.querySelectorAll('.bounty-mint-slot')]
+      .sort((a, b) => Number(a.dataset.bountyOrder) - Number(b.dataset.bountyOrder));
+    const placed = document.querySelector('#botBoard .col[data-col="0"] .die[data-v="4"]');
+    const placement = placed?.getAnimations().find((animation) => animation.animationName === 'settle');
+    const liveAnimations = [placement, ...slots.flatMap((slot) => slot.getAnimations({ subtree: true }))]
+      .filter(Boolean);
+    await Promise.all(liveAnimations.map((animation) => animation.ready));
+    const placementStart = typeof placement?.startTime === 'number' ? placement.startTime : null;
+    const victims = slots.map((slot) => {
+      const die = slot.querySelector(':scope > .die');
+      const stamp = slot.querySelector(':scope > .bounty-mint');
+      const press = die?.getAnimations().find((animation) => animation.animationName === 'bounty-mint-press');
+      const strike = stamp?.getAnimations().find((animation) => animation.animationName === 'bounty-mint-strike');
+      const ring = slot.getAnimations({ subtree: true })
+        .find((animation) => animation.animationName === 'bounty-mint-ring');
+      const timing = (animation) => {
+        const value = animation?.effect?.getTiming();
+        return value ? { duration: Number(value.duration), delay: Number(value.delay),
+          easing: value.easing, fill: value.fill } : null;
+      };
+      const frame = (value) => {
+        const matrix = new DOMMatrixReadOnly(String(value.transform || 'none'));
+        const brightness = String(value.filter || '').match(/brightness\(([\d.]+)\)/);
+        return {
+          offset: Number(value.computedOffset ?? value.offset),
+          sx: Math.hypot(matrix.m11, matrix.m12),
+          sy: Math.hypot(matrix.m21, matrix.m22),
+          opacity: value.opacity === undefined ? null : Number(value.opacity),
+          brightness: brightness ? Number(brightness[1]) : null,
+          easing: value.easing,
+        };
+      };
+      const pressFrames = press?.effect?.getKeyframes().map(frame) || [];
+      const strikeFrames = strike?.effect?.getKeyframes().map((value) => ({
+        offset: Number(value.computedOffset ?? value.offset),
+        transform: String(value.transform), opacity: Number(value.opacity), easing: value.easing,
+      })) || [];
+      const ringFrames = ring?.effect?.getKeyframes().map((value) => ({
+        offset: Number(value.computedOffset ?? value.offset), opacity: Number(value.opacity), easing: value.easing,
+      })) || [];
+      const pressTiming = timing(press), strikeTiming = timing(strike), ringTiming = timing(ring);
+      const activeStart = (animation, value) => typeof animation?.startTime === 'number' && value
+        ? animation.startTime + value.delay - placementStart : null;
+      const clock = { press: activeStart(press, pressTiming), strike: activeStart(strike, strikeTiming),
+        ring: activeStart(ring, ringTiming) };
+      if (strike && strikeTiming) {
+        strike.pause();
+        strike.currentTime = strikeTiming.delay + 360;
+      }
+      const sr = slot.getBoundingClientRect();
+      const mr = stamp?.getBoundingClientRect();
+      return {
+        order: Number(slot.dataset.bountyOrder), source: slot.dataset.bountySource,
+        col: slot.closest('.col')?.dataset.col,
+        delay: parseFloat(slot.style.getPropertyValue('--bounty-delay')),
+        heat: stamp ? getComputedStyle(stamp).color : null,
+        centreError: mr ? Math.max(
+          Math.abs(sr.x + sr.width / 2 - (mr.x + mr.width / 2)),
+          Math.abs(sr.y + sr.height / 2 - (mr.y + mr.height / 2)),
+        ) : 999,
+        flatten: !!die?.classList.contains('bounty-flatten'),
+        dying: !!die?.classList.contains('dying'),
+        icon: !!stamp?.querySelector('.mico'),
+        clock, press: pressTiming, strike: strikeTiming, ring: ringTiming,
+        pressFrames, strikeFrames, ringFrames,
+      };
+    });
+    const during = {
+      stamps: document.querySelectorAll('.bounty-mint').length,
+      offGrid: [...document.querySelectorAll('.bounty-mint')]
+        .filter((stamp) => !stamp.closest('#topBoard,#botBoard')).length,
+      unstampedMatch: document.querySelector('#topBoard .col[data-col="1"] .die[data-v="4"]')
+        ?.closest('.slot')?.classList.contains('bounty-mint-slot') || false,
+    };
+    const cleared = new Promise((resolve) => {
+      const observer = new MutationObserver(() => {
+        if (document.querySelector('.bounty-mint')) return;
+        observer.disconnect();
+        resolve(document.timeline.currentTime);
+      });
+      observer.observe(document.getElementById('topBoard'), { childList: true, subtree: true });
+    });
+    await move;
+    const cleanupOffset = await cleared - placementStart;
+    await new Promise((resolve) => setTimeout(resolve, 220)); // beyond the existing plate bump
+    const plateAfter = {
+      plate: rect('#plateBot'), who: rect('#plateBot .who'), right: rect('#plateBot .pright'),
+    };
+    return {
+      expectedHeat, victims, during, plateBefore, plateAfter, cleanupOffset,
+      boards: JSON.stringify(k.S.boards), bounty: JSON.stringify(k.S.bounty),
+      feedback: [...document.querySelectorAll('.pts')].map((element) => element.textContent),
+      tally: document.getElementById('btyBot').textContent,
+      residue: document.querySelectorAll('.bounty-mint,.bounty-mint-slot,.bounty-flatten').length,
+    };
+  });
+  const pair = out.bountyPair;
+  check(pair.during.stamps === 2 && pair.victims.length === 2
+      && String(pair.victims.map((victim) => victim.order)) === '0,1'
+      && pair.victims.every((victim) => victim.col === '0' && victim.source === 'ordinary'
+        && victim.flatten && !victim.dying && victim.icon)
+      && !pair.during.unstampedMatch && pair.during.offGrid === 0,
+    'BO2 marked something other than the two authoritative grid victims', pair);
+  check(pair.victims.every((victim) => victim.centreError <= 1 && victim.heat === pair.expectedHeat),
+    'BO2 coin is not centred within 1px or does not wear the attacker heat', pair.victims);
+  check(close(pair.victims[1].delay - pair.victims[0].delay, 108, 2)
+      && pair.victims.every((victim) => victim.press?.duration === 432
+        && victim.strike?.duration === 1296 && victim.ring?.duration === 1296
+        && victim.press.easing === 'linear' && victim.strike.easing === 'linear'
+        && victim.ring.easing === 'linear'
+        && victim.pressFrames.every((frame) => easingNumbers(frame.easing) === '0.4,0,0.2,1')
+        && victim.strikeFrames.every((frame) => easingNumbers(frame.easing) === '0.2,1.4,0.4,1')
+        && victim.ringFrames.every((frame) => frame.easing === 'ease-out')
+        && victim.press.fill === 'both' && victim.strike.fill === 'both' && victim.ring.fill === 'both'),
+    'BO2 visible animations lost their exact durations, stagger, fill, or easings', pair.victims);
+  check(close(pair.cleanupOffset, 1584, 35) && pair.victims.every((victim, order) => {
+    const stagger = order * 108;
+    return close(victim.clock.press, 144 + stagger, 20)
+      && close(victim.clock.strike, 144 + stagger, 20)
+      && close(victim.clock.ring, 144 + stagger, 20);
+  }), 'BO2 is not anchored 144ms after landing or cleaned at 1584ms', pair);
+  check(pair.victims.every((victim) => {
+    const frames = victim.pressFrames;
+    return frames.length === 3 && close(frames[1].offset, 1 / 3, .001)
+      && close(frames[1].sx, 1.06, .01) && close(frames[1].sy, .72, .01)
+      && frames[1].brightness === 2.6 && close(frames[2].sx, 1.1, .01)
+      && close(frames[2].sy, .08, .01) && frames[2].brightness === 3
+      && frames[2].opacity === 0;
+  }), 'BO2 victim press no longer uses the authored squash/flatten frames', pair.victims);
+  check(pair.victims.every((victim) => {
+    const frames = victim.strikeFrames;
+    return String(frames.map((frame) => +frame.offset.toFixed(6)))
+        === '0,0.138889,0.277778,0.722222,1'
+      && frames[0].transform.includes('scale(2.1)') && frames[0].opacity === 0
+      && frames[1].transform.includes('scale(0.92)') && frames[1].opacity === 1
+      && frames[2].transform.includes('scale(1)') && frames[3].transform.includes('scale(1)')
+      && frames[4].transform.includes('-58%') && frames[4].transform.includes('scale(0.9)')
+      && frames[4].opacity === 0;
+  }), 'BO2 coin no longer lands, holds, and lifts on the authored frames', pair.victims);
+  check(pair.victims.every((victim) => String(victim.ringFrames.map((frame) =>
+    `${+frame.offset.toFixed(6)}:${frame.opacity}`)) === '0:0,0.138889:1,1:0'),
+  'BO2 seat ring no longer lands and fades on the authored coin beats', pair.victims);
+  const geometryDelta = (before, after) => Math.max(
+    Math.abs(before.x - after.x), Math.abs(before.y - after.y),
+    Math.abs(before.width - after.width), Math.abs(before.height - after.height),
+  );
+  check(pair.boards === '[[[2],[4],[1,4]],[[4],[],[]]]' && pair.bounty === '[0,2]'
+      && pair.feedback.includes('+2 ✦') && pair.tally === '✦2' && pair.residue === 0,
+    'BO2 visuals disagreed with the board/bank or removed existing point feedback', pair);
+  check(geometryDelta(pair.plateBefore.plate, pair.plateAfter.plate) <= 1
+      && geometryDelta(pair.plateBefore.who, pair.plateAfter.who) <= 1
+      && geometryDelta(pair.plateBefore.right, pair.plateAfter.right) <= 1,
+    'BO2 moved the existing nameplate/score cluster', { before: pair.plateBefore, after: pair.plateAfter });
+
+  /* Three victims prove the cadence extends rather than stretching. Numerals
+     in landscape cover the second face style and responsive table shape. */
+  const landscape = await sidePage({ name: 'BO2 landscape numerals', w: 844, h: 390 });
+  try {
+    await newGame({ spell: '', mode: 5 }, landscape.page);
+    check(await waitChoose(landscape.page), 'game never reached choose (BO2 landscape triple)');
+    await table([[], [], []], [[4, 4, 4], [], []], 4, landscape.page);
+    out.bountyTriple = await landscape.page.evaluate(async () => {
+      document.getElementById('kbroot').classList.add('numerals');
+      const k = window.__kb;
+      const move = k.place(1, 0);
+      for (let i = 0; i < 180 && document.querySelectorAll('.bounty-mint').length !== 3; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 8));
+      }
+      const victims = [...document.querySelectorAll('.bounty-mint-slot')]
+        .sort((a, b) => Number(a.dataset.bountyOrder) - Number(b.dataset.bountyOrder))
+        .map((slot) => {
+          const stamp = slot.querySelector(':scope > .bounty-mint');
+          const animation = stamp.getAnimations()
+            .find((item) => item.animationName === 'bounty-mint-strike');
+          const timing = animation.effect.getTiming();
+          animation.pause(); animation.currentTime = Number(timing.delay) + 360;
+          const sr = slot.getBoundingClientRect(), mr = stamp.getBoundingClientRect();
+          return {
+            order: Number(slot.dataset.bountyOrder),
+            delay: parseFloat(slot.style.getPropertyValue('--bounty-delay')),
+            duration: Number(timing.duration),
+            centreError: Math.max(
+              Math.abs(sr.x + sr.width / 2 - (mr.x + mr.width / 2)),
+              Math.abs(sr.y + sr.height / 2 - (mr.y + mr.height / 2)),
+            ),
+            numeral: getComputedStyle(slot.querySelector('.num')).display !== 'none',
+          };
+        });
+      await move;
+      return { victims, board: JSON.stringify(k.S.boards[0]), bounty: JSON.stringify(k.S.bounty),
+        residue: document.querySelectorAll('.bounty-mint,.bounty-mint-slot,.bounty-flatten').length };
+    });
+    const triple = out.bountyTriple;
+    check(triple.victims.length === 3 && triple.victims.every((victim, index) =>
+      victim.order === index && victim.duration === 1296 && victim.centreError <= 1 && victim.numeral)
+        && close(triple.victims[1].delay - triple.victims[0].delay, 108, 2)
+        && close(triple.victims[2].delay - triple.victims[1].delay, 108, 2),
+      'BO2 triple did not continue the 108ms cadence in landscape numerals', triple);
+    check(triple.board === '[[],[],[]]' && triple.bounty === '[0,3]' && triple.residue === 0,
+      'BO2 triple did not settle cleanly on authoritative state', triple);
+  } finally {
+    await landscape.ctx.close();
+  }
+
+  /* CLASSIC remains the control: the same hit uses generic destruction and
+     never manufactures a struck coin. */
+  await newGame({ spell: '', mode: 0 });
+  check(await waitChoose(), 'game never reached choose (BO2 classic control)');
+  await table([[], [], []], [[4, 4, 2], [4], []], 4);
+  out.bountyClassic = await page.evaluate(async () => {
+    const k = window.__kb;
+    const move = k.place(1, 0);
+    for (let i = 0; i < 120 && !document.querySelector('.die.dying'); i++) {
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+    const during = { dying: document.querySelectorAll('.die.dying').length,
+      stamps: document.querySelectorAll('.bounty-mint').length,
+      particles: document.querySelectorAll('#fx .particle').length };
+    await move;
+    return { during, board: JSON.stringify(k.S.boards[0]), bounty: JSON.stringify(k.S.bounty) };
+  });
+  check(out.bountyClassic.during.dying === 2 && out.bountyClassic.during.stamps === 0
+      && out.bountyClassic.during.particles > 0 && out.bountyClassic.board === '[[2],[4],[]]'
+      && out.bountyClassic.bounty === '[0,0]',
+    'CLASSIC no longer uses its unchanged generic destruction control', out.bountyClassic);
+
+  /* SUNDER owns the collapse. BO2 settles each coin on the SU6 impact; the
+     Warded middle column is neither collapsed nor stamped. */
+  await newGame({ spell: 'sunder', mode: 5 });
+  check(await waitChoose(), 'game never reached choose (BO2 + SU6)');
+  await table([[], [], []], [[4, 4], [4, 2], [4, 1, 4]], 4);
+  await guard(1, 0);
+  await page.evaluate(() => window.__kb.spells.cast('sunder', -1));
+  out.bountySunder = await page.evaluate(async () => {
+    const k = window.__kb;
+    const move = k.place(1, 0);
+    for (let i = 0; i < 220 && document.querySelectorAll('.bounty-mint').length !== 4; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    }
+    const slots = [...document.querySelectorAll('.bounty-mint-slot')]
+      .sort((a, b) => Number(a.dataset.bountyOrder) - Number(b.dataset.bountyOrder));
+    await Promise.all(slots.flatMap((slot) => slot.getAnimations({ subtree: true }))
+      .map((animation) => animation.ready));
+    const victims = slots
+      .map((slot) => {
+        const die = slot.querySelector(':scope > .die');
+        const stamp = slot.querySelector(':scope > .bounty-mint');
+        const collapse = die.getAnimations().find((item) => item.animationName === 'su6fail');
+        const strike = stamp.getAnimations().find((item) => item.animationName === 'bounty-mint-strike');
+        const collapseTiming = collapse.effect.getTiming(), strikeTiming = strike.effect.getTiming();
+        return {
+          order: Number(slot.dataset.bountyOrder), source: slot.dataset.bountySource,
+          flatten: die.classList.contains('bounty-flatten'),
+          collapseDuration: Number(collapseTiming.duration), collapseDelay: Number(collapseTiming.delay),
+          stampDuration: Number(strikeTiming.duration), stampDelay: Number(strikeTiming.delay),
+          settle: Number(strikeTiming.delay) + 360,
+          impact: Number(collapseTiming.delay) + Number(collapseTiming.duration) * .62,
+          stampEnd: Number(strikeTiming.delay) + Number(strikeTiming.duration),
+          collapseEnd: Number(collapseTiming.delay) + Number(collapseTiming.duration),
+          timelineSettle: Number(strike.startTime) + Number(strikeTiming.delay) + 360,
+          timelineImpact: Number(collapse.startTime) + Number(collapseTiming.delay)
+            + Number(collapseTiming.duration) * .62,
+          timelineStampEnd: Number(strike.startTime) + Number(strikeTiming.delay)
+            + Number(strikeTiming.duration),
+          timelineCollapseEnd: Number(collapse.startTime) + Number(collapseTiming.delay)
+            + Number(collapseTiming.duration),
+        };
+      });
+    const protectedColumn = document.querySelector('#topBoard .col[data-col="1"]');
+    const during = {
+      collapse: document.querySelectorAll('.die.sunder-collapse').length,
+      protectedStamps: protectedColumn.querySelectorAll('.bounty-mint').length,
+      protectedCollapse: protectedColumn.querySelectorAll('.die.sunder-collapse').length,
+    };
+    await move;
+    return {
+      victims, during, board: JSON.stringify(k.S.boards[0]), bounty: JSON.stringify(k.S.bounty),
+      wards: JSON.stringify(k.S.charm.wards),
+      feedback: [...document.querySelectorAll('.pts')].map((element) => element.textContent),
+      residue: document.querySelectorAll('.bounty-mint,.bounty-mint-slot,.bounty-flatten,.sunder-collapse').length,
+    };
+  });
+  const combo = out.bountySunder;
+  check(combo.victims.length === 4 && combo.during.collapse === 4
+      && combo.during.protectedStamps === 0 && combo.during.protectedCollapse === 0
+      && combo.victims.every((victim) => victim.source === 'sunder' && !victim.flatten),
+    'BO2 replaced SU6 collapse or stamped its Warded matching die', combo);
+  check(combo.victims.every((victim, index) => victim.order === index
+      && victim.collapseDuration === 2600 && victim.stampDuration === 1296
+      && close(victim.settle, victim.impact, .5) && victim.stampEnd <= victim.collapseEnd
+      && close(victim.timelineSettle, victim.timelineImpact, 2)
+      && victim.timelineStampEnd <= victim.timelineCollapseEnd),
+    'BO2 coin does not settle on SU6 62% impact or extends the collapse', combo.victims);
+  check(combo.board === '[[],[4,2],[1]]' && combo.bounty === '[0,4]'
+      && JSON.parse(combo.wards)[0][1] === 0 && combo.feedback.includes('+4 ✦')
+      && combo.residue === 0,
+    'BO2 + SU6 presentation disagreed with protected authoritative state', combo);
+
+  /* Reduced motion is one readable still: all victims appear together for
+     320ms, centred in the grid, with no BO2 animation running. */
+  const reduced = await sidePage({ name: 'BO2 reduced', w: 390, h: 844,
+    opts: { reducedMotion: 'reduce' } });
+  try {
+    await newGame({ spell: '', mode: 5 }, reduced.page);
+    check(await waitChoose(reduced.page), 'game never reached choose (BO2 reduced)');
+    await table([[], [], []], [[4, 4], [], []], 4, reduced.page);
+    out.bountyReduced = await reduced.page.evaluate(async () => {
+      const k = window.__kb;
+      const move = k.place(1, 0);
+      for (let i = 0; i < 160 && !document.querySelector('.bounty-mint-static'); i++) {
+        await new Promise((resolve) => setTimeout(resolve, 4));
+      }
+      const appearedAt = performance.now();
+      const victims = [...document.querySelectorAll('.bounty-mint-static')].map((stamp) => {
+        const slot = stamp.closest('.slot'), sr = slot.getBoundingClientRect(), mr = stamp.getBoundingClientRect();
+        return {
+          source: slot.dataset.bountySource,
+          delay: parseFloat(slot.style.getPropertyValue('--bounty-delay')),
+          flatten: !!slot.querySelector('.bounty-flatten'),
+          animations: slot.getAnimations({ subtree: true }).filter((animation) =>
+            animation.animationName?.startsWith('bounty-mint-')).length,
+          centreError: Math.max(
+            Math.abs(sr.x + sr.width / 2 - (mr.x + mr.width / 2)),
+            Math.abs(sr.y + sr.height / 2 - (mr.y + mr.height / 2)),
+          ),
+        };
+      });
+      for (let i = 0; i < 160 && document.querySelector('.bounty-mint-static'); i++) {
+        await new Promise((resolve) => setTimeout(resolve, 4));
+      }
+      const visibleFor = performance.now() - appearedAt;
+      await move;
+      return { victims, visibleFor, board: JSON.stringify(k.S.boards[0]), bounty: JSON.stringify(k.S.bounty),
+        residue: document.querySelectorAll('.bounty-mint,.bounty-mint-slot,.bounty-flatten').length };
+    });
+    const still = out.bountyReduced;
+    check(still.victims.length === 2 && still.victims.every((victim) =>
+      victim.source === 'ordinary' && victim.delay === 0 && !victim.flatten
+        && victim.animations === 0 && victim.centreError <= 1)
+        && close(still.visibleFor, 320, 45),
+      'reduced motion did not show simultaneous static centred coins for 320ms', still);
+    check(still.board === '[[],[],[]]' && still.bounty === '[0,2]' && still.residue === 0,
+      'reduced BO2 did not cleanly settle on authoritative state', still);
+  } finally {
+    await reduced.ctx.close();
+  }
+
+  /* A new generation cancels the absolute clock and owns a clean grid. */
+  await newGame({ spell: '', mode: 5 });
+  check(await waitChoose(), 'game never reached choose (BO2 interruption)');
+  await table([[], [], []], [[4, 4, 4], [], []], 4);
+  await page.evaluate(() => {
+    window.__bountyInterruptedDone = false;
+    void window.__kb.place(1, 0).finally(() => { window.__bountyInterruptedDone = true; });
+  });
+  await page.waitForSelector('.bounty-mint');
+  await page.evaluate(() => window.__kb.newGame());
+  await page.waitForFunction(() => window.__bountyInterruptedDone
+    && !document.querySelector('.bounty-mint,.bounty-mint-slot,.bounty-flatten'));
+  out.bountyInterrupted = await page.evaluate(() => ({
+    residue: document.querySelectorAll('.bounty-mint,.bounty-mint-slot,.bounty-flatten').length,
+    boards: JSON.stringify(window.__kb.S.boards), bounty: JSON.stringify(window.__kb.S.bounty),
+  }));
+  check(out.bountyInterrupted.residue === 0 && out.bountyInterrupted.bounty === '[0,0]'
+      && out.bountyInterrupted.boards === '[[[],[],[]],[[],[],[]]]',
+    'restart leaked BO2 presentation or the interrupted destruction state', out.bountyInterrupted);
+}

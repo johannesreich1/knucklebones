@@ -1,6 +1,6 @@
 # Project status
 
-*Current as of 2026-08-23. Keep this page short: current state, unresolved
+*Current as of 2026-08-24. Keep this page short: current state, unresolved
 decisions, and externally owned actions only. Detailed sprint history lives in
 [`docs/history/2026-08-sprint.md`](history/2026-08-sprint.md).*
 
@@ -76,8 +76,11 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - RC4's turn-owned charge stack is now the production rune rail. The retained
   29a–29f studies record the alternatives; `docs/SPELLS.md` owns the selected
   face-down hand, deal-away cast, FATE stack, and empty-outline contract.
-- BOUNTY's banked kill (46a–46f) and LIMITED's shared bag (47a–47f) still have
-  six open signature-animation proposals each. NUDGE and FATE are resolved:
+- BO2's struck coin is now BOUNTY's production grid-kill signature: every real
+  victim receives a centred `✦` coin on the exact 1584ms active clock recorded
+  in `docs/MODES.md`; the study's score/nameplate treatment is explicitly not
+  part of that decision. LIMITED's shared bag (47a–47f) still has six open
+  signature-animation proposals. NUDGE and FATE are resolved:
   NU1's pip-only tick (including 6→1) and FA4's contained simultaneous pass
   are production, with the alternatives retained in 48a–48f and 49a–49f.
   Their contracts live in `design/screens/product/27b-spell-effects.html` and

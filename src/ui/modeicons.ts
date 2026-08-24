@@ -18,8 +18,9 @@ const PATHS: Record<string, string> = {
      comment said outermost until 2026-08-22; core/rules.ts:136 is the truth) */
   singlestrike: '<circle class="f" cx="12" cy="6.2" r="1.5"/><circle class="f" cx="12" cy="12" r="1.5"/>'
     + '<circle class="f" cx="12" cy="17.8" r="1.5"/><path d="M8.6 2.8 15.4 9.6M15.4 2.8 8.6 9.6"/>',
-  /* a coin banking its +1 */
-  bounty: '<circle cx="12" cy="12" r="8.2"/><path d="M12 8.6v6.8M8.6 12h6.8"/>',
+  /* a coin carrying the banked BOUNTY mark */
+  bounty: '<circle cx="12" cy="12" r="8.2"/>'
+    + '<path class="f" fill="currentColor" stroke="none" d="M12 5.1C12.7 9.5 14.3 11.1 18.9 12C14.3 12.9 12.7 14.5 12 18.9C11.3 14.5 9.7 12.9 5.1 12C9.7 11.1 11.3 9.5 12 5.1Z"/>',
   /* a small stack of dice — the finite bag */
   limited: '<rect x="4.4" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="13" y="13" width="6.6" height="6.6" rx="1.8"/>'
     + '<rect x="8.7" y="4.4" width="6.6" height="6.6" rx="1.8"/><circle class="f" cx="12" cy="7.7" r="1.2"/>',

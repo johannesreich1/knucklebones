@@ -19,6 +19,7 @@ import { runCastingScenarios } from './scenarios/casting.mjs';
 import { runEffectScenarios } from './scenarios/effects.mjs';
 import { runStageEffectScenarios } from './scenarios/stage-effects.mjs';
 import { runSunderOverloadScenarios } from './scenarios/sunder-overload.mjs';
+import { runBountyMintScenarios } from './scenarios/bounty-mint.mjs';
 import { runPilferAnvilEffectScenarios } from './scenarios/pilfer-anvil-effects.mjs';
 import { runProtectionScenarios } from './scenarios/protections.mjs';
 import { runLayoutScenarios } from './scenarios/layout.mjs';
@@ -130,6 +131,7 @@ try {
   await runCastingScenarios(suite);
   await runEffectScenarios(suite);
   await runStageEffectScenarios(suite);
+  await runBountyMintScenarios(suite);
   await runSunderOverloadScenarios(suite);
   await runPilferAnvilEffectScenarios(suite);
   await runProtectionScenarios(suite);
