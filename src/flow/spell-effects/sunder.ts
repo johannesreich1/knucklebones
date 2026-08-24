@@ -5,7 +5,7 @@ import { slotEl, slotIdx } from '../../ui/dom.ts';
 import { appRoot } from '../../ui/embed.ts';
 import { REDUCED, burst, shake } from '../../ui/fx.ts';
 import { spellHue } from '../../ui/spellicons.ts';
-import { clearSunderPresentation } from '../../ui/game/sunder-presentation.ts';
+import { clearSunderPresentation, markSunderVictim } from '../../ui/game/sunder-presentation.ts';
 import { effectPause, type SpellEffect } from './types.ts';
 
 /* openStrikes is authoritative but consumes the live SUNDER mark. Preview on a
@@ -32,18 +32,16 @@ function markSunderVictims(who: Player): number {
       const slot = slotEl(foe, strike.col, slotIdx(foe, index));
       const die = slot?.firstElementChild as HTMLElement | null;
       if (!slot || !die) continue;
-      slot.classList.add('sunder-doomed-slot');
-      slot.style.setProperty('--sunder-order', String(order++));
-      die.classList.add('sunder-doomed');
+      markSunderVictim(slot, die, order++);
     }
   }
   return order;
 }
 
-/* SU6 — Overload. The hand strains against its ring while the exact dice the
-   next placement will destroy go crooked, tremble briefly, shed two embers and
-   then hold a readable static warning. The registry mutation happens before
-   any marking: flow has already committed the charge, and the screen never
+/* SU6 — Overload. The hand strains while the exact dice the next placement
+   will destroy go crooked and keep trembling and shedding two independent
+   embers until that placement releases their collapse. The mutation happens
+   before any marking: flow has already committed the charge, and the screen never
    offers a preview of a cast that can still be taken back. */
 export const sunderEffect: SpellEffect = async (who, _col, apply) => {
   Sfx.spell();

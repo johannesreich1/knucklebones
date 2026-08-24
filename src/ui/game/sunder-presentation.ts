@@ -3,6 +3,23 @@
 // or completed move cannot leak the warning into a different turn or game.
 import { appRoot } from '../embed.ts';
 
+export function markSunderVictim(
+  slot: HTMLElement,
+  die: HTMLElement,
+  order: number,
+): void {
+  slot.classList.add('sunder-doomed-slot');
+  slot.style.setProperty('--sunder-order', String(order));
+  die.classList.add('sunder-doomed');
+
+  if (die.querySelector(':scope > .sunder-embers')) return;
+  const embers = document.createElement('span');
+  embers.className = 'sunder-embers';
+  embers.setAttribute('aria-hidden', 'true');
+  embers.append(document.createElement('i'), document.createElement('i'));
+  die.appendChild(embers);
+}
+
 export function clearSunderPresentation(): void {
   const root = appRoot();
   root.querySelector('#dieStage')?.classList.remove('sundered');
@@ -14,4 +31,5 @@ export function clearSunderPresentation(): void {
     die.classList.remove('sunder-doomed', 'sunder-collapse');
     die.style.removeProperty('--sunder-delay');
   }
+  root.querySelectorAll('.sunder-embers').forEach((embers) => embers.remove());
 }

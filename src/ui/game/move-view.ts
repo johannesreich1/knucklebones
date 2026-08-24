@@ -22,9 +22,11 @@ import { colorOf, heatOf } from '../identity.ts';
 import { renderSide } from './board.ts';
 import { playWardStrike, shieldBlocked, wardBurned } from './seals.ts';
 import { flyDieToSlot } from './motion.ts';
-import { clearSunderPresentation } from './sunder-presentation.ts';
+import { clearSunderPresentation, markSunderVictim } from './sunder-presentation.ts';
 
 const pause = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+const SUNDER_COLLAPSE_MS = 2600;
+const SUNDER_STAGGER_MS = 160;
 
 export interface GameViewSpec {
   /* Captures a local generation or an exact ranked-match identity. */
@@ -79,13 +81,14 @@ function stageDestruction(
     const doomed = slot?.firstElementChild as HTMLElement | null;
     if (!doomed) continue;
     if (sunderOrder !== null) {
-      doomed.classList.add('sunder-doomed', 'sunder-collapse');
-      doomed.style.setProperty('--sunder-delay', `${order++ * 70}ms`);
+      markSunderVictim(slot!, doomed, order);
+      doomed.classList.add('sunder-collapse');
+      doomed.style.setProperty('--sunder-delay', `${order++ * SUNDER_STAGGER_MS}ms`);
     } else {
       doomed.classList.add('dying');
+      const rect = doomed.getBoundingClientRect();
+      burst(rect.left + rect.width / 2, rect.top + rect.height / 2, color, 18);
     }
-    const rect = doomed.getBoundingClientRect();
-    burst(rect.left + rect.width / 2, rect.top + rect.height / 2, color, 18);
   }
   /* The aggregate loss belongs to an actually destroyed die, not whichever
      survivor happens to be last in the stack. */
@@ -93,11 +96,13 @@ function stageDestruction(
   return order;
 }
 
-function playDestructionImpact(): void {
+function playDestructionImpact(withGlobalVisual = true): void {
   Sfx.kill();
   vibrate([16, 30, 26]);
-  shake(7);
-  flash(0.22);
+  if (withGlobalVisual) {
+    shake(7);
+    flash(0.22);
+  }
 }
 
 async function destroyAt(
@@ -142,8 +147,12 @@ async function destroySunderStrikes(
   for (const plan of plans) {
     collapseOrder = stageDestruction(who, plan, '#ff9d66', collapseOrder);
   }
-  playDestructionImpact();
-  await pause(REDUCED ? 0 : 2600 + Math.max(0, collapseOrder - 1) * 70);
+  /* SU6 already carries its authored whole-die shine. A generic centre burst,
+     board shake or screen flash would introduce a new destruction language at
+     release instead of letting the warning finish. */
+  playDestructionImpact(false);
+  await pause(REDUCED ? 0
+    : SUNDER_COLLAPSE_MS + Math.max(0, collapseOrder - 1) * SUNDER_STAGGER_MS);
   if (!isCurrent()) return { destroyed: 0, interrupted: true };
   for (const plan of plans) S.boards[who][plan.col] = plan.survivors;
   renderSide(who, true);
