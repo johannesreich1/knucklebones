@@ -41,6 +41,16 @@ made remotely into a new local migration; it does not fetch application rows.
 Never delete or edit an already-applied migration to undo it—write and test a
 new forward migration that reverses the change.
 
+This repository's compact historical local filenames do not exactly match the
+timestamped production history, so the generic commands above describe the
+normal Supabase model but are not safe to run from this working tree today.
+Production allow-listed rollouts use `tools/database/production-rollout.mjs`:
+it fetches the canonical remote history into a fresh temporary project, adds
+only committed manifest files, requires an exact dry run, applies through the
+official pinned CLI, and validates history plus schema afterward. See
+`tools/database/README.md`. Never use `--include-all` from the repository root
+to work around a history mismatch; that can cross a deliberately held rollout.
+
 For a disposable local database, `supabase migration down --local --last 1`
 can step back and `supabase migration up --local` can reapply pending files;
 the repository gate normally prefers `supabase db reset --local` so the entire

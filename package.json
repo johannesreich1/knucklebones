@@ -11,6 +11,7 @@
     "serve": "node tests/serve.mjs",
     "test": "node tests/run-all.mjs",
     "db:start": "node tools/start-database.mjs",
+    "db:production:settings": "node --experimental-strip-types tools/database/production-rollout.mjs settings-locale",
     "test:db": "supabase test db --local",
     "test:functions": "node tools/check-functions.mjs",
     "test:native": "node --experimental-strip-types tests/iosship.test.ts && node --experimental-strip-types tests/androidship.test.ts",
@@ -29,6 +30,7 @@
   },
   "devDependencies": {
     "playwright": "^1.49.0",
+    "supabase": "2.115.0",
     "typescript": "^7.0.2",
     "vite": "^8.2.1",
     "vite-plugin-singlefile": "^2.3.3"
