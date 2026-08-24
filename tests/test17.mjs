@@ -49,7 +49,39 @@ try {
         .filter((e) => !e.closest('[hidden]'))
         .filter((e) => e.scrollHeight > e.clientHeight + 1).map((e) => e.id);
       seg('cpu');
-      return { modeSlots, spellSlots, cpu, duo, spill };
+      /* Mobile WebKit must paint the selected segment itself. Its native
+         button bevel plus a transparent border produced a bright bar down the
+         left edge on-device. Read the rendered edge, not just the class. */
+      const selected = document.querySelector('#modeSeg button.on');
+      const selectedStyle = getComputedStyle(selected);
+      const root = document.getElementById('kbroot');
+      const colourProbe = document.createElement('i');
+      colourProbe.style.color = 'var(--p1)';
+      root.append(colourProbe);
+      const segmentEdge = {
+        appearance: selectedStyle.appearance,
+        webkitAppearance: selectedStyle.webkitAppearance,
+        borderLeft: selectedStyle.borderLeftColor,
+        p1: getComputedStyle(colourProbe).color,
+      };
+      colourProbe.remove();
+
+      /* The prose contract is semantic and live: both ordinary <b> copy and
+         the rules' special .k highlight follow --p2 when the chosen opponent
+         hue changes. This covers every .rules surface, not Privacy alone. */
+      const privacyBold = document.querySelector('#ovPrivacy .rules b');
+      const rulesKeyword = document.querySelector('#ovRules .rules .k');
+      const proseBefore = {
+        bold: getComputedStyle(privacyBold).color,
+        keyword: getComputedStyle(rulesKeyword).color,
+      };
+      root.style.setProperty('--p2', '#00ff66');
+      const proseAfter = {
+        bold: getComputedStyle(privacyBold).color,
+        keyword: getComputedStyle(rulesKeyword).color,
+      };
+      root.style.removeProperty('--p2');
+      return { modeSlots, spellSlots, cpu, duo, spill, segmentEdge, proseBefore, proseAfter };
     });
     out[label] = r;
 
@@ -59,6 +91,14 @@ try {
     check(r.cpu.mode === r.duo.mode, 'the Game mode card moves on cpu/duo: ' + label, [r.cpu.mode, r.duo.mode]);
     check(r.cpu.spell === r.duo.spell, 'the Rune card moves on cpu/duo: ' + label, [r.cpu.spell, r.duo.spell]);
     check(r.spill.length === 0, 'a note overflows its reserved lines: ' + label, r.spill);
+    check(r.segmentEdge.appearance === 'none',
+      'a selected segment still wears the native WebKit button bevel: ' + label, r.segmentEdge);
+    check(r.segmentEdge.borderLeft === r.segmentEdge.p1,
+      'a selected segment leaves its bright left edge unpainted: ' + label, r.segmentEdge);
+    check(r.proseBefore.bold === r.proseBefore.keyword,
+      'informational highlights disagree before an opponent-colour change: ' + label, r.proseBefore);
+    check(r.proseAfter.bold === 'rgb(0, 255, 102)' && r.proseAfter.keyword === 'rgb(0, 255, 102)',
+      'informational highlights do not follow the opponent colour: ' + label, r.proseAfter);
 
     /* ---- EVERY titled page is the SAME page ----
        A view with a title and a back button pins its header and scrolls its

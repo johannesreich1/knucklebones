@@ -24,9 +24,12 @@
      DEFAULTS; menu.ts repoints them (inline on #kbroot) at whichever hue
      families the Settings pickers chose — or pins cyan-vs-gold while colour
      blind mode is on. Fixed accents that must NOT follow the pair — danger
-     pink, the destruction keyword, avatar hues — keep reading raw hues. */
+     pink and avatar hues — keep reading raw hues. Informational prose uses
+     --prose-highlight below so every emphasized phrase follows the opponent
+     instead of inventing a fixed accent. */
   --p1:var(--cy); --p1-rgb:var(--cy-rgb); --p1-hi:var(--cy-hi);
   --p2:var(--mg); --p2-rgb:var(--mg-rgb); --p2-hi:var(--mg-hi);
+  --prose-highlight:var(--p2);
   /* THE AMBIENCE (study 98c, picked — the full-height ribbon variant was
      tried and disliked, and its card retired with the rest of the study): the LONG
      DIAGONAL. The foe's hue masses in the top-left corner, the player's in
