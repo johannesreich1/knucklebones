@@ -18,7 +18,10 @@ export async function runProtectionLayoutScenarios(suite) {
     const { ctx: vctx, page: vp } = await sidePage(view);
     await newGame({ spell: 'ward', mode: 3 }, vp);
     check(await waitChoose(vp), 'game never reached choose (turn/' + view.name + ')');
-    await table([[3, 3, 1], [], []], [[5, 5, 2], [4], []], 5, vp);
+    /* Every protected chip carries a score AND ×2 here. This is deliberate:
+       landscape turns the chip into a vertical rail, and portrait's left/right
+       mark anchors used to land directly on that centred score flow. */
+    await table([[3, 3, 1], [6, 6], []], [[5, 5, 2], [4, 4], []], 5, vp);
     await guard(1, 0, vp); await guard(1, 1, vp);      // a ward on column 1 of each half
     const close = await vp.evaluate(() => {
       const animation = [...document.querySelectorAll('.col.warded .sa')]
@@ -33,6 +36,21 @@ export async function runProtectionLayoutScenarios(suite) {
       cell: await vp.evaluate(() => getComputedStyle(document.getElementById('kbroot')).getPropertyValue('--cell')),
       close,
     };
+    turn.chipMarks = await vp.evaluate(() => {
+      const box = (element) => {
+        const rect = element.getBoundingClientRect();
+        return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom,
+          cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2 };
+      };
+      return ['top', 'bot'].flatMap((half) => [
+        { half, kind: 'shield', col: 0, selector: '.sh' },
+        { half, kind: 'ward', col: 1, selector: '.wd' },
+      ].map((spec) => {
+        const chip = document.querySelector(`#${half}Cols .chip:nth-child(${spec.col + 1})`);
+        return { ...spec, chip: box(chip), mark: box(chip.querySelector(`${spec.selector} svg`)),
+          score: box(chip.querySelector('.cs')), multiplier: box(chip.querySelector('.mx')) };
+      }));
+    });
     for (const half of ['top', 'bot']) {
       turn[half + 'Shield'] = await sealOf(half, 0, vp);
       turn[half + 'Ward'] = await sealOf(half, 1, vp);
@@ -66,6 +84,32 @@ export async function runProtectionLayoutScenarios(suite) {
       turn.close);
     check(Object.values(turn.inkEdge).every((edge) => edge >= 0.5),
       'PROTECTION INK IS CLIPPED BY THE VIEWPORT in ' + view.name, turn.inkEdge);
+    const overlaps = (a, b) => a.left < b.right - .25 && b.left < a.right - .25
+      && a.top < b.bottom - .25 && b.top < a.bottom - .25;
+    for (const mark of turn.chipMarks) {
+      const where = `${view.name}/${mark.half}/${mark.kind}`;
+      check(!overlaps(mark.mark, mark.score) && !overlaps(mark.mark, mark.multiplier),
+        'A PROTECTION MARK COVERS THE COLUMN SCORE OR MULTIPLIER in ' + where, mark);
+      if (turn.land) {
+        check(Math.abs(mark.mark.cx - mark.chip.cx) <= .5,
+          'the landscape protection mark is not centred across its vertical chip in ' + where, mark);
+        const endGap = mark.kind === 'ward'
+          ? mark.mark.top - mark.chip.top
+          : mark.chip.bottom - mark.mark.bottom;
+        check(endGap >= 4 && endGap <= 6,
+          'the landscape protection mark is not at its transposed chip end in ' + where, mark);
+      } else {
+        check(Math.abs(mark.mark.cy - mark.chip.cy) <= .5,
+          'the portrait protection mark moved off the middle of its horizontal chip in ' + where, mark);
+        /* Face-to-face turns the far chip through 180deg, so the mark's authored
+           left/right end changes physical sides there. It must remain at ONE
+           end; which page edge that is belongs to seating, not this contract. */
+        const endGap = Math.min(mark.mark.left - mark.chip.left,
+          mark.chip.right - mark.mark.right);
+        check(endGap >= 4 && endGap <= 6,
+          'the portrait protection mark moved away from its chip end in ' + where, mark);
+      }
+    }
     for (const half of ['top', 'bot']) {
       const sh = turn[half + 'Shield'], wd = turn[half + 'Ward'], where = view.name + '/' + half;
       check(sh.drawn && wd.drawn, 'a protection lost its seal in ' + where, { shield: sh.parts, ward: wd.parts });

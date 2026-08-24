@@ -13,8 +13,14 @@ export async function runBadgeCardScenarios(suite) {
   // fell straight through to the win/loss line. So classic is tested FIRST here.
   const chipsNow = () => page.evaluate(() => {
     const r = document.getElementById('rec');
+    const badge = r.getBoundingClientRect();
+    const hud = r.closest('.hud').getBoundingClientRect();
+    const leave = document.getElementById('btnLeave').getBoundingClientRect();
     return {
       text: r.textContent.replace(/\s+/g, ' ').trim(),
+      geometry: { badgeCenter: badge.left + badge.width / 2,
+                  hudCenter: hud.left + hud.width / 2,
+                  badgeRight: badge.right, leaveLeft: leave.left },
       chips: [...r.querySelectorAll('.rchip')].map(c => {
         const b = c.getBoundingClientRect(), i = c.querySelector('.mi');
         return { lib: c.dataset.lib ?? null, id: c.dataset.id ?? null,
@@ -88,6 +94,9 @@ export async function runBadgeCardScenarios(suite) {
     await page.tap('#btnLeave'); await page.waitForTimeout(250);
     await page.tap('#btnAskYes'); await page.waitForTimeout(400);
   };
+  const portraitBadgeCentred = (badge) =>
+    Math.abs(badge.geometry.badgeCenter - badge.geometry.hudCenter) <= .5
+    && badge.geometry.badgeRight <= badge.geometry.leaveLeft - 4;
 
   // CLASSIC, no spell: one chip, naming the mode, tappable — no record anywhere
   await playLocal(0, '');
@@ -97,6 +106,8 @@ export async function runBadgeCardScenarios(suite) {
     'CLASSIC must name itself and open its rules like every other mode', out.badgeClassic);
   check(!/\bW\b|\bL\b|\bP1\b|\bP2\b/.test(out.badgeClassic.text),
     'the badge still carries a tally — it names what is played, not the score', out.badgeClassic.text);
+  check(portraitBadgeCentred(out.badgeClassic),
+    'the portrait game mode is not centred clear of Leave', out.badgeClassic.geometry);
   await leaveGame();
 
   // SINGLE STRIKE + WARD: two chips, each iconed, tappable and ⓘ-marked
@@ -109,6 +120,14 @@ export async function runBadgeCardScenarios(suite) {
     'the spell chip does not name the rune dealt', out.badge);
   check(out.badge.chips.every(c => c.shown && c.icon && c.tappable && c.infoStyled),
     'a chip is not a shown, iconed, tappable, ⓘ-marked control offline', out.badge);
+  check(portraitBadgeCentred(out.badge),
+    'the portrait game mode and current rune are not centred as one badge', out.badge.geometry);
+  const portraitViewport = page.viewportSize();
+  await page.setViewportSize({ width: 320, height: 568 }); await page.waitForTimeout(160);
+  out.badgeCompact = await chipsNow();
+  check(portraitBadgeCentred(out.badgeCompact),
+    'the compact portrait mode+rune badge is not centred clear of Leave', out.badgeCompact.geometry);
+  await page.setViewportSize(portraitViewport); await page.waitForTimeout(160);
 
   /* ===== EACH CHIP DEALS ITS OWN CARD (user call 2026-08-23) =====
      A chip used to throw the WHOLE roster up as a full-screen overlay and leave

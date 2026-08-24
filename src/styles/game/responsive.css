@@ -59,6 +59,13 @@
 #kbroot.land .board{grid-template-columns:none;grid-template-rows:repeat(3,var(--cell))}
 #kbroot.land .col{grid-template-rows:none;grid-template-columns:repeat(3,var(--cell))}
 #kbroot.land .chip{width:30px;height:var(--cell);flex-direction:column;gap:1px;font-size:11px}
+/* Portrait score chips are horizontal, so their persistent protection marks
+   live at the left/right ends (guards.css). Landscape turns the chip into a
+   vertical rail: transpose those same ends so the marks stay out of the
+   centred score/×k flow. Ward leads at the top, shield closes the bottom. */
+#kbroot.land .chip :is(.sh,.wd){left:0;right:0;top:auto;bottom:auto;justify-content:center}
+#kbroot.land .chip .wd{top:4px}
+#kbroot.land .chip .sh{bottom:4px}
 #kbroot.land .chip .dl{position:static;transform:none;padding:0 3px;font-size:9.5px;border-radius:6px}
 #kbroot.land .chip .dl.show{transform:none}
 #kbroot.land .center{flex:0 0 var(--land-lane);width:var(--land-lane);padding:0 6px;

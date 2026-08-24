@@ -13,6 +13,7 @@ export async function runLandscapeScenarios(suite) {
   out.landscape = await lp.evaluate(() => {
     const r = e => document.getElementById(e).getBoundingClientRect();
     const app = r('app'), top = r('sideTop'), bot = r('sideBot'), hud = document.querySelector('.hud').getBoundingClientRect();
+    const badge = document.getElementById('rec').getBoundingClientRect();
     const overlap = (a, b) => !(a.right <= b.left + 0.5 || b.right <= a.left + 0.5 || a.bottom <= b.top + 0.5 || b.bottom <= a.top + 0.5);
     return {
       isLand: document.getElementById('kbroot').classList.contains('land'),
@@ -24,6 +25,7 @@ export async function runLandscapeScenarios(suite) {
       fitsHoriz: top.left >= -0.5 && bot.right <= window.innerWidth + 0.5,
       scrollH: document.documentElement.scrollHeight, winH: window.innerHeight,
       scrollW: document.documentElement.scrollWidth, winW: window.innerWidth,
+      badgeLeading: Math.abs(badge.left - hud.left) <= .5,
       // facing columns must share a horizontal band in landscape
       rowsAligned: [0, 1, 2].every(c => {
         const a = document.querySelector(`#topBoard .col[data-col="${c}"]`).getBoundingClientRect();
@@ -37,6 +39,7 @@ export async function runLandscapeScenarios(suite) {
   check(!out.landscape.topOverlapsHud && !out.landscape.botOverlapsHud, 'a board overlaps the HUD in landscape', out.landscape);
   check(out.landscape.fitsVert && out.landscape.fitsHoriz, 'landscape layout does not fit the screen', out.landscape);
   check(out.landscape.scrollH <= out.landscape.winH + 1 && out.landscape.scrollW <= out.landscape.winW + 1, 'landscape scrolls', out.landscape);
+  check(out.landscape.badgeLeading, 'portrait badge centring leaked into landscape', out.landscape);
   check(out.landscape.rowsAligned, 'facing columns do not align in landscape', out.landscape);
   await shot(lp, 'v2-landscape');
 

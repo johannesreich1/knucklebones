@@ -6,6 +6,14 @@
 /* HUD */
 :where(#kbroot) .hud{display:flex;align-items:center;gap:8px;height:34px;flex:0 0 auto}
 :where(#kbroot) .hud .sp{flex:1}
+/* Portrait reserves the same rail on both sides of the badge. The empty left
+   cell balances Leave on the right, so a one-chip mode and a mode+rune pair
+   are centred on the game itself rather than merely filling the space before
+   the control. Landscape keeps its compact leading badge. */
+#kbroot:not(.land) .hud{display:grid;grid-template-columns:30px minmax(0,1fr) 30px}
+#kbroot:not(.land) .hud .sp{grid-column:1;grid-row:1}
+#kbroot:not(.land) .rec{grid-column:2;grid-row:1;justify-self:center}
+#kbroot:not(.land) .hud>.ico{grid-column:3;grid-row:1;justify-self:end}
 /* the badge is a ROW of chips (ui/game/hud.ts paintBadge): the mode always, the
    spell beside it when a game deals one. The pill belongs to the chip, so a
    second one reads as a second thing in play rather than a longer label. */
