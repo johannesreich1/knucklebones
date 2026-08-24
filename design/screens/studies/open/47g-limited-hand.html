@@ -1,0 +1,211 @@
+<!-- meta name="LI7 — The hand thins" group="3j · LIMITED — the shared bag" subtitle="LI1 and LI4 in one bag: the die is lifted out of the pile in front of you, and the pile itself carries the whole endgame — the shells take the mode's hue and close ranks as the supply runs down, with the count left exactly as it is" width=430 height=1426 sizes="md" links="Match — LIMITED bag, Game modes, Spells — aiming a rune" -->
+<style>
+  /* Card-local names only (li* and sp*). The bag is the APP's — .bag, .pile,
+     .bn and the face-down .die shells are ui/bag.ts's markup and
+     styles/game/variants.css's rules — so a card cannot picture a bag the game
+     could not draw. The study board, chips, labels and nameplate width come
+     from design/build.mjs's chrome. */
+  .scr{gap:6px;--hue:{{mhue:limited}}}
+  .spfield{gap:0}
+  .stagerow{--cell:56px;margin-top:16px;min-height:60px}
+  .listatus{margin-top:12px;margin-bottom:14px}
+
+  /* ===== THE LOOP: 3.4s, one DRAW =====
+       0–6%    the last die has been placed; the stage is empty, the bag holds 15
+       6–24%   THE DRAW
+       24%     the die is on the stage face-up and the count cuts 15 → 14
+       24–100% held
+     THE COUNT IS UNTOUCHED. ui/bag.ts already pulses it (.bag.tick, 450ms,
+     gold) and that pulse is kept exactly as it is; nothing below recolours,
+     resizes or rewords it, and neither nameplate changes at all. */
+  .listage{display:block;line-height:0;animation:lishow 3.4s steps(1,end) infinite}
+  @keyframes lishow{0%,23.9%{opacity:0}24%,100%{opacity:1}}
+  .spold{animation:liold 3.4s steps(1,end) infinite}
+  .spnew{animation:linew 3.4s steps(1,end) infinite}
+  @keyframes liold{0%,23.9%{opacity:1}24%,100%{opacity:0}}
+  @keyframes linew{0%,23.9%{opacity:0}24%,100%{opacity:1}}
+  .licount{display:inline-flex;justify-content:center;min-width:2ch}
+  /* the app's own tick, unchanged — variants.css bagtick, on the card's clock */
+  .bn{animation:litick 3.4s cubic-bezier(.2,1.5,.4,1) infinite}
+  @keyframes litick{0%,24%{transform:scale(1);color:var(--txt)}
+    30%{transform:scale(1.3);color:var(--gold)}42%,100%{transform:scale(1);color:var(--txt)}}
+
+  /* THE ESCALATION STRIP: the same bag at the four depths that matter. The
+     number under each is the app's, in the app's colour, at the app's size. */
+  .listrip{display:flex;justify-content:center;gap:20px;margin-top:16px;width:100%}
+  .listrip .bag{position:relative;right:auto;margin:0}
+  .listrip .d{display:flex;flex-direction:column;align-items:center;gap:8px}
+  .listrip .cap{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;
+    text-align:center;line-height:1.45;max-width:66px}
+
+  /* ===== THE IDEA. LI1 gave the draw a gesture and LI4 gave the ending a
+     curve, and each was half an answer: a draw with no stakes, or stakes with
+     nothing happening on the twenty draws before them. Together they are the
+     mode. What is new here is that the escalation may not touch the COUNT
+     (user call) — so it is carried by the SHELLS, which are the one part of
+     the bag that has never said anything.
+     Three things move together as the bag empties, and none of them is a word:
+     the shells take the mode's own hue, the fan CLOSES (a full bag is spread,
+     a nearly-empty one is squared up), and the last few breathe. ===== */
+
+  /* --- the bag, given depth. The shipped pile is four flat squares; these are
+     the same four shells with a rim, a seated shadow and a lift, so the stack
+     reads as a thing you could pick a die off. Nothing structural changes:
+     same 34×36 footprint, same nth-child fan, same .gone. --- */
+  .lihand .pile .die{box-shadow:0 2px 5px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.22);
+    border-color:color-mix(in srgb,var(--dc) 62%,transparent)}
+  .lihand .pile::after{content:"";position:absolute;left:50%;bottom:-3px;width:30px;height:5px;
+    margin-left:-15px;border-radius:50%;pointer-events:none;
+    background:radial-gradient(closest-side,rgba(0,0,0,.55),transparent 72%)}
+
+  /* --- THE DRAW. The top shell lifts, arcs across the 61px to the stage — the
+     measured gap between the pile's centre and the die in play's — and turns
+     face-up as it lands. Face-DOWN for the first half of the trip, because a
+     drawn die is not known until it arrives, which is the same promise the
+     pile's blank shells make. --- */
+  .lidrawn{position:absolute;left:50%;top:50%;width:0;height:0;z-index:9;pointer-events:none;
+    --pull:61px;--rise:9px}
+  .lidrawn > i{position:absolute;display:block;line-height:0;transform-origin:50% 50%}
+  .lidown{width:26px;height:26px;--cell:26px;border-radius:8px;margin:-13px 0 0 -13px;
+    background:linear-gradient(158deg,rgba(255,255,255,.22),rgba(255,255,255,.04) 42%,rgba(0,0,0,.28));
+    border:1px solid rgba(159,178,216,.75);
+    box-shadow:0 5px 14px rgba(0,0,0,.55),0 0 16px rgba(159,178,216,.45);
+    animation:li7lift 3.4s cubic-bezier(.34,.06,.2,1) infinite}
+  .liup{width:56px;height:56px;margin:-28px 0 0 -28px;
+    animation:li7land 3.4s cubic-bezier(.24,1.34,.36,1) infinite}
+  @keyframes li7lift{0%,5%{opacity:0;transform:translate(calc(var(--pull)*-1),var(--rise)) scale(1) rotate(0)}
+    7%{opacity:1;transform:translate(calc(var(--pull)*-1),var(--rise)) scale(1) rotate(0)}
+    15%{opacity:1;transform:translate(calc(var(--pull)*-.5),-21px) scale(1.66) rotate(-9deg) rotateY(58deg)}
+    18%,100%{opacity:0;transform:translate(calc(var(--pull)*-.32),-17px) scale(1.86) rotate(-6deg) rotateY(90deg)}}
+  @keyframes li7land{0%,18%{opacity:0;transform:translate(calc(var(--pull)*-.32),-17px) scale(.52) rotate(-6deg) rotateY(90deg)}
+    19%{opacity:1;transform:translate(calc(var(--pull)*-.32),-17px) scale(.64) rotate(-4deg) rotateY(64deg)}
+    24%{opacity:1;transform:translate(0,0) scale(1.05) rotate(0) rotateY(0deg)}
+    28%,100%{opacity:1;transform:translate(0,0) scale(1) rotate(0) rotateY(0deg)}}
+  /* the wake it leaves: a short trail of the mode's hue along the arc, gone
+     before the die has settled — it is the bag exhaling, not a comet */
+  .liwake{position:absolute;left:50%;top:50%;width:52px;height:3px;margin:-1.5px 0 0 -52px;
+    border-radius:3px;pointer-events:none;z-index:8;transform-origin:100% 50%;
+    background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--hue) 62%,transparent));
+    opacity:0;animation:li7wake 3.4s ease-out infinite}
+  @keyframes li7wake{0%,7%{opacity:0;transform:rotate(-14deg) scaleX(.3)}
+    13%{opacity:.9;transform:rotate(-10deg) scaleX(1)}
+    24%,100%{opacity:0;transform:rotate(-4deg) scaleX(1)}}
+  /* the pile answers the loss: the top layer is away while the die is in the
+     air, and the stack settles onto its new top */
+  .lihand .pile .die:nth-child(3){animation:li7top 3.4s cubic-bezier(.3,1.2,.4,1) infinite}
+  @keyframes li7top{0%,5%{opacity:1;transform:translateX(calc(-50% + 6px)) translateY(0)}
+    8%{opacity:0;transform:translateX(calc(-50% + 6px)) translateY(-7px)}
+    24%{opacity:0;transform:translateX(calc(-50% + 6px)) translateY(-7px)}
+    32%,100%{opacity:1;transform:translateX(calc(-50% + 6px)) translateY(0)}}
+
+  /* --- THE ESCALATION, in the shells only. --dc is the die's OWN colour token
+     (styles/game/dice.css), so tinting it is the move the app already makes for
+     a multiplied die rather than a new treatment. The fan closes with it: at a
+     full bag the layers are spread 3px apart, and by the last few they are
+     squared up, which narrows the silhouette without moving the count. --- */
+  .lihand.warm .pile .die{--dc:var(--gold)}
+  .lihand.hot .pile .die{--dc:var(--hue)}
+  .lihand.last .pile .die{--dc:var(--hue)}
+  .lihand.warm .pile .die:nth-child(2){transform:translateX(calc(-50% + 2px))}
+  .lihand.warm .pile .die:nth-child(3){bottom:7px;transform:translateX(calc(-50% + 4px))}
+  .lihand.hot .pile .die:nth-child(2){transform:translateX(-50%)}
+  /* the breath: slow under six, quicker under three — the pile itself, never
+     the number beneath it */
+  .lihand.warm .pile{animation:li7breath 2.6s ease-in-out infinite}
+  .lihand.hot .pile{animation:li7breath 1.6s ease-in-out infinite}
+  @keyframes li7breath{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+  /* the last die is ringed with the closed line a protected column wears
+     (design 39c) — it means the same thing here: this one is final */
+  .lihand.last .pile::before{content:"";position:absolute;left:50%;bottom:-3px;width:32px;height:32px;
+    margin-left:-16px;border-radius:11px;pointer-events:none;
+    border:1.6px solid var(--hue);box-shadow:0 0 16px color-mix(in srgb,var(--hue) 70%,transparent);
+    animation:li7last 1.3s ease-in-out infinite}
+  @keyframes li7last{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
+  /* the strip is a still: the loop's draw would fire on four bags at once */
+  .listrip .bag .die{animation:none!important}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hud">
+    <div class="rec">
+      <span class="rchip">ONLINE</span>
+      <button type="button" class="rchip tapmode" data-lib="modes" data-id="limited">{{mico:limited:12}} LIMITED<span class="mi">ⓘ</span></button>
+    </div>
+    <div class="sp"></div>
+    <button class="ico">{{ico:leave:15}}</button>
+  </div>
+
+  <div class="cap2">The die comes out of the pile. And the pile — not the number — is what tells you how near the end is.</div>
+
+  <div class="spfield">
+    <!-- both nameplates are EXACTLY what the app renders: LIMITED changes
+         supply only, and nothing in this study touches their text -->
+    <div class="plate pline" style="--c:var(--p2)">
+      <span class="who"><span class="dot"></span><span class="nm">EmberCrow896</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="tot">29</span></span>
+    </div>
+
+    <div class="spboard spfoe" style="margin-top:6px">
+      <div class="spcol"><div class="spslot"></div><div class="spslot"></div><div class="spslot">{{die:6:p2:52}}</div></div>
+      <div class="spcol"><div class="spslot"></div><div class="spslot">{{die:4:p2 m2:52}}</div><div class="spslot">{{die:4:p2 m2:52}}</div></div>
+      <div class="spcol"><div class="spslot"></div><div class="spslot">{{die:2:p2:52}}</div><div class="spslot">{{die:5:p2:52}}</div></div>
+    </div>
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-top:5px">
+      <div class="spchip" style="--c:var(--p2)">6</div>
+      <div class="spchip" style="--c:var(--p2)">16</div>
+      <div class="spchip" style="--c:var(--p2)">7</div>
+    </div>
+
+    <div class="stagerow">
+      <div class="bag lihand">
+        <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die gone"></i></span>
+        <b class="bn"><span class="spcount licount"><i class="spold">15</i><i class="spnew">14</i></span></b>
+      </div>
+      <span class="listage">{{die:2:p1:56}}</span>
+      <i class="liwake" aria-hidden="true"></i><i class="lidrawn" aria-hidden="true"><i class="lidown"></i><i class="liup">{{die:2:p1:56}}</i></i>
+    </div>
+    <div class="status me listatus">Your move</div>
+
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-bottom:5px">
+      <div class="spchip" style="--c:var(--p1)">12</div>
+      <div class="spchip" style="--c:var(--p1)">5</div>
+      <div class="spchip" style="--c:var(--p1)">6</div>
+    </div>
+    <div class="spboard spmine">
+      <div class="spcol"><div class="spslot">{{die:3:p1 m2:52}}</div><div class="spslot">{{die:3:p1 m2:52}}</div><div class="spslot"></div></div>
+      <div class="spcol"><div class="spslot">{{die:5:p1:52}}</div><div class="spslot"></div><div class="spslot"></div></div>
+      <div class="spcol"><div class="spslot">{{die:6:p1:52}}</div><div class="spslot"></div><div class="spslot"></div></div>
+    </div>
+
+    <div class="plate pline" style="--c:var(--p1);margin-top:6px">
+      <span class="who"><span class="dot"></span><span class="nm">FrostLynx303</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="tot">23</span></span>
+    </div>
+  </div>
+
+  <div class="cap2" style="margin-top:12px">The same bag at four depths — every number below is the app's own, unaltered</div>
+  <div class="listrip dice-static">
+    <div class="d"><div class="bag lihand">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die"></i></span>
+          <b class="bn">24</b>
+        </div><span class="cap">Full · neutral</span></div>
+    <div class="d"><div class="bag lihand warm">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die gone"></i><i class="die gone"></i><i class="die gone"></i></span>
+          <b class="bn">6</b>
+        </div><span class="cap">Six · warm, closing</span></div>
+    <div class="d"><div class="bag lihand hot">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die gone"></i><i class="die gone"></i><i class="die gone"></i></span>
+          <b class="bn">3</b>
+        </div><span class="cap">Three · the mode's hue</span></div>
+    <div class="d"><div class="bag lihand last">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die gone"></i><i class="die gone"></i><i class="die gone"></i></span>
+          <b class="bn">1</b>
+        </div><span class="cap">One · ringed</span></div>
+  </div>
+  <div class="splbl">nine dice on the boards · one in play · fourteen still in the bag · twenty-four in the match</div>
+  <div class="note"><b>What it says:</b> <b>this die came out of that pile, and the pile is running out.</b> LI1 and LI4 were each half of the mode — a draw with no stakes, or stakes with nothing happening on the twenty draws before them. One bag doing both is the first version of this that is alive on every turn AND builds toward its ending.<br>
+  <b>The count is untouched.</b> The escalation is carried by the shells: they take the mode's own hue, the fan closes as the supply squares up, and the last few breathe. The number keeps its size, its colour and its 450ms gold tick exactly as <code>ui/bag.ts</code> ships them, and neither nameplate changes at all.<br>
+  <b>It tints the token the app already tints.</b> <code>--dc</code> is the die's own colour, so a warming shell is the same move the game makes for a multiplied die — not a new treatment to learn.<br>
+  <b>Cost:</b> the shells stop being neutral, and their neutrality was doing a job — a face-down die in nobody's colour is what makes the bag feel anonymous. Tinting them toward violet also has to be checked against colour blind mode, where the duel pair is pinned to cyan-and-gold and a violet that reads as "nearly out" must not read as a player's dice. The closing fan is 3px of movement at the size of a fingernail, so it may only register in the strip and not in play.</div>
+</div></div>

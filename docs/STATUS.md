@@ -79,12 +79,15 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - BO2's struck coin is now BOUNTY's production grid-kill signature: every real
   victim receives a centred `✦` coin on the exact 1584ms active clock recorded
   in `docs/MODES.md`; the study's score/nameplate treatment is explicitly not
-  part of that decision. LIMITED's shared bag (47a–47f) still has six open
-  signature-animation proposals. NUDGE and FATE are resolved:
-  NU1's pip-only tick (including 6→1) and FA4's contained simultaneous pass
-  are production, with the alternatives retained in 48a–48f and 49a–49f.
-  Their contracts live in `design/screens/product/27b-spell-effects.html` and
-  `docs/SPELLS.md`.
+  part of that decision. LIMITED's shared bag still has open
+  signature-animation proposals: 47a–47f, plus 47g/47h added 2026-08-24,
+  which combine LI1's draw with LI4's endgame escalation under a constraint
+  the earlier pair did not have — **no text may change**. The count keeps its
+  colour, size and gold tick and both nameplates are untouched, so the
+  escalation lives entirely in the pile (shells and the light under them). NUDGE and FATE are resolved: NU1's pip-only
+  tick (including 6→1) and FA4's contained simultaneous pass are production,
+  with the alternatives retained in 48a–48f and 49a–49f. Their contracts live in
+  `design/screens/product/27b-spell-effects.html` and `docs/SPELLS.md`.
 
 ## Documentation map
 
