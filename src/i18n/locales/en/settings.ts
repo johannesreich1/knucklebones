@@ -11,6 +11,7 @@ export const enSettings = {
   pips: 'PIPS',
   numbers: 'NUMBERS',
   colourBlindMode: 'Colour blind mode',
+  colourBlindPalette: 'Colour-blind mode · cyan + gold',
   reducedMotion: 'Reduced motion',
   hues: {
     cyan: 'CYAN',

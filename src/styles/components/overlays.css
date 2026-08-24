@@ -61,7 +61,7 @@
    still fit a 320px phone (~34px) — a strip that wraps leaves an orphan
    swatch on its own line. The 44px ideal is the CAP, not the floor. */
 :where(#kbroot) .hues{display:grid;grid-template-columns:repeat(auto-fit,minmax(34px,1fr));gap:9px;
-  justify-items:center}
+  justify-items:center;position:relative;isolation:isolate}
 :where(#kbroot) .hues button{width:100%;max-width:44px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;
   background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10);
   cursor:pointer;padding:0;transition:transform .15s}   /* press only — the pick snaps */
@@ -71,6 +71,22 @@
 :where(#kbroot) .hues button.on{border-color:var(--h);box-shadow:0 0 14px color-mix(in srgb,var(--h) 45%,transparent)}
 :where(#kbroot) .hues button:disabled{opacity:.3;cursor:default;transform:none}
 :where(#kbroot) .hues button:disabled::after{box-shadow:none}
+/* Colour-blind mode owns the duel palette, so the locked swatches explain
+   themselves in place. Absolute positioning preserves the cards' geometry;
+   the frosted strip is also the hit surface, keeping every swatch inert. */
+:where(#kbroot) .hues-lock{position:absolute;z-index:2;inset:-4px -2px;display:flex;align-items:center;
+  justify-content:center;gap:9px;padding:5px 10px;border:1px solid rgba(255,255,255,.18);border-radius:14px;
+  color:var(--txt);background:linear-gradient(100deg,rgba(var(--cy-rgb),.2),rgba(5,6,14,.9) 34%,
+  rgba(5,6,14,.9) 66%,rgba(var(--gold-rgb),.2));box-shadow:-8px 0 24px rgba(var(--cy-rgb),.12),
+  8px 0 24px rgba(var(--gold-rgb),.12),inset 0 1px 0 rgba(255,255,255,.08);
+  -webkit-backdrop-filter:blur(7px) saturate(.75);backdrop-filter:blur(7px) saturate(.75);
+  pointer-events:auto;user-select:none}
+:where(#kbroot) .hues-lock__copy{font-size:clamp(8px,2.4vw,9.5px);font-weight:900;letter-spacing:.1em;
+  line-height:1.2;text-transform:uppercase;white-space:nowrap;text-shadow:0 0 12px rgba(255,255,255,.16)}
+:where(#kbroot) .hues-lock__icon{position:relative;flex:none;width:13px;height:11px;border:1.5px solid currentColor;
+  border-radius:3px;box-shadow:0 0 10px rgba(255,255,255,.2)}
+:where(#kbroot) .hues-lock__icon::before{content:"";position:absolute;left:2.5px;top:-7px;width:5px;height:6px;
+  border:1.5px solid currentColor;border-bottom:0;border-radius:6px 6px 0 0}
 :where(#kbroot) .seg button.on{color:#04101a;background:linear-gradient(100deg,var(--p1),var(--p1-hi));border-color:var(--p1);
   box-shadow:0 6px 18px rgba(var(--p1-rgb),.3)}
 :where(#kbroot) .lbl{font-size:10px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}

@@ -291,6 +291,17 @@ export async function runConstrainedSurfaceScenarios(suite) {
     /* The picker contains its three children, so sibling overlap is checked by
        the focused behavior scenario; this pass is about translated bounds. */
     checkSurface(check, `settings-320/${locale}`, settings, { overlap: false });
+    await page.locator('#cbSeg button[data-b="1"]').scrollIntoViewIfNeeded();
+    await page.click('#cbSeg button[data-b="1"]');
+    await page.waitForSelector('#p1Pick .hues-lock:not([hidden])');
+    await page.locator('#p1Pick .hues-lock').scrollIntoViewIfNeeded();
+    await frame(page);
+    const colourLocks = await inspect(page, '#ovSettings', ['.hues-lock:not([hidden])']);
+    checkSurface(check, `colour-locks-320/${locale}`, colourLocks, { overlap: false });
+    check(colourLocks.items.length === 2 && colourLocks.items.every((item) => item.text.length > 0),
+      `colour-locks-320/${locale} did not render both localized explanations`, colourLocks);
+    await page.locator('#cbSeg button[data-b="0"]').scrollIntoViewIfNeeded();
+    await page.click('#cbSeg button[data-b="0"]');
 
     const setup = await inspectSetup(page);
     checkSurface(check, `mode-picker-320/${locale}`, setup.mode);

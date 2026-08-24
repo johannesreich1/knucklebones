@@ -75,10 +75,19 @@ export function syncSettingsUI(): void {
   }
 
   const syncPick = (selector: string, mine: string, other: string): void => {
-    appRoot().querySelectorAll<HTMLButtonElement>(selector + ' button').forEach((button) => {
+    const picker = $(selector);
+    picker.querySelectorAll<HTMLButtonElement>('button[data-h]').forEach((button) => {
       button.classList.toggle('on', button.dataset.h === mine);
       button.disabled = S.colorblind || button.dataset.h === other;
     });
+    picker.classList.toggle('hues--locked', S.colorblind);
+    picker.setAttribute('aria-disabled', String(S.colorblind));
+    const lock = picker.querySelector<HTMLElement>('.hues-lock');
+    if (lock) {
+      lock.hidden = !S.colorblind;
+      const copy = lock.querySelector<HTMLElement>('.hues-lock__copy');
+      if (copy) copy.textContent = t('settings', 'colourBlindPalette');
+    }
   };
   syncPick('#p1Pick', p1, p2);
   syncPick('#p2Pick', p2, p1);

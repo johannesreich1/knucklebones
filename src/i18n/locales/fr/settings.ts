@@ -14,6 +14,7 @@ export const frSettings = {
   pips: 'POINTS',
   numbers: 'CHIFFRES',
   colourBlindMode: 'Mode daltonien',
+  colourBlindPalette: 'Mode daltonien · cyan + or',
   reducedMotion: 'Animations réduites',
   hues: {
     cyan: 'CYAN',

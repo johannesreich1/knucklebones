@@ -14,6 +14,7 @@ export const deSettings = {
   pips: 'AUGEN',
   numbers: 'ZAHLEN',
   colourBlindMode: 'Farbenblind-Modus',
+  colourBlindPalette: 'Farbenblind-Modus · Cyan + Gold',
   reducedMotion: 'Bewegung reduzieren',
   hues: {
     cyan: 'CYAN',

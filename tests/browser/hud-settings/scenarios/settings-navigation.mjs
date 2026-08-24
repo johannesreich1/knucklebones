@@ -61,8 +61,45 @@ export async function runSettingsNavigationScenarios(suite) {
   const accessibilityTop = () => page.$eval('#accessibilityHeading', (heading) => heading.getBoundingClientRect().top);
   const topBeforeColourBlind = await accessibilityTop();
   await page.tap('#cbSeg button[data-b="1"]'); await page.waitForTimeout(150);
+  out.colourBlindLocks = await page.evaluate(() => [...document.querySelectorAll('#ovSettings .hues')].map((picker) => {
+    const lock = picker.querySelector('.hues-lock');
+    const lockBox = lock?.getBoundingClientRect();
+    const buttons = [...picker.querySelectorAll('button[data-h]')];
+    const first = buttons[0]?.getBoundingClientRect();
+    const last = buttons.at(-1)?.getBoundingClientRect();
+    const centreTarget = lockBox
+      ? document.elementFromPoint(lockBox.x + lockBox.width / 2, lockBox.y + lockBox.height / 2)
+      : null;
+    return {
+      picker: picker.id,
+      text: lock?.textContent?.trim(),
+      visible: !!lockBox && lockBox.width > 0 && lockBox.height > 0
+        && getComputedStyle(lock).visibility === 'visible',
+      coversRow: !!lockBox && !!first && !!last
+        && lockBox.left <= first.left && lockBox.right >= last.right
+        && lockBox.top <= first.top && lockBox.bottom >= first.bottom,
+      blocksCentre: !!lock && !!centreTarget && (centreTarget === lock || lock.contains(centreTarget)),
+      disabled: buttons.length > 0 && buttons.every((button) => button.disabled),
+      ariaDisabled: picker.getAttribute('aria-disabled'),
+    };
+  }));
+  check(out.colourBlindLocks.length === 2 && out.colourBlindLocks.every((lock) =>
+    lock.text === 'Colour-blind mode · cyan + gold' && lock.visible && lock.coversRow
+      && lock.blocksCentre && lock.disabled && lock.ariaDisabled === 'true'),
+  'colour-blind mode does not clearly cover and explain both locked colour pickers',
+  out.colourBlindLocks);
   const topWithColourBlind = await accessibilityTop();
   await page.tap('#cbSeg button[data-b="0"]'); await page.waitForTimeout(150);
+  out.colourBlindLocksOff = await page.evaluate(() => ({
+    hidden: [...document.querySelectorAll('#ovSettings .hues-lock')]
+      .every((lock) => lock.hidden && lock.getBoundingClientRect().width === 0),
+    unlocked: [...document.querySelectorAll('#ovSettings .hues')]
+      .every((picker) => picker.getAttribute('aria-disabled') === 'false'
+        && [...picker.querySelectorAll('button[data-h]')].some((button) => !button.disabled)),
+  }));
+  check(out.colourBlindLocksOff.hidden && out.colourBlindLocksOff.unlocked,
+        'colour picker overlays or locks remain after colour-blind mode is switched off',
+        out.colourBlindLocksOff);
   const topAfterColourBlind = await accessibilityTop();
   out.accessibilityStable = { topBeforeColourBlind, topWithColourBlind, topAfterColourBlind };
   check(Math.max(...Object.values(out.accessibilityStable)) - Math.min(...Object.values(out.accessibilityStable)) < 0.5,

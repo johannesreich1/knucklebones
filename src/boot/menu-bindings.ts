@@ -123,6 +123,14 @@ function huePicker(selector: string, write: (hue: string) => void): void {
   const picker = $(selector);
   picker.innerHTML = DUELHUES.map((hue) =>
     `<button data-h="${hue.id}" style="--h:var(--${hue.id})" aria-label="${hueLabel(hue.id)}"></button>`).join('');
+  const lock = document.createElement('div');
+  lock.className = 'hues-lock';
+  lock.id = `${picker.id}Lock`;
+  lock.hidden = true;
+  lock.setAttribute('role', 'note');
+  lock.innerHTML = '<span class="hues-lock__icon" aria-hidden="true"></span><span class="hues-lock__copy"></span>';
+  picker.append(lock);
+  picker.setAttribute('aria-describedby', lock.id);
   tap(picker, (event) => {
     const button = closestButton(event);
     const hue = button?.dataset.h;
