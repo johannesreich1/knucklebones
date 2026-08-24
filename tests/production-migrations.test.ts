@@ -16,6 +16,7 @@ import {
   validatePlayerSettingsSchemaStage,
   withTemporaryWorkspace,
 } from '../tools/database/production-rollout-core.mjs';
+import { SETTINGS_SCHEMA } from '../tools/database/production-rollout.mjs';
 
 const BASE = '20260823192604_player_settings.sql';
 const LOCALE = '20260824133121_player_settings_locale.sql';
@@ -286,6 +287,12 @@ check('schema metadata rejects partial, out-of-order, and mismatched postconditi
     localeComment: true,
     localeValues: false,
   }), /stored values/);
+});
+
+check('production grant audit uses complete PostgreSQL 17 ACLs', () => {
+  assert.match(SETTINGS_SCHEMA, /aclexplode\(/);
+  assert.match(SETTINGS_SCHEMA, /'MAINTAIN'/);
+  assert.doesNotMatch(SETTINGS_SCHEMA, /information_schema\.table_privileges/);
 });
 
 await checkAsync('temporary workspace cleanup runs after success and preparation failure', async () => {

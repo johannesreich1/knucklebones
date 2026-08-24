@@ -11,7 +11,7 @@ decisions, and externally owned actions only. Detailed sprint history lives in
 | Web | Live at <https://knucklebones-asg.pages.dev>; pushes to `main` deploy through Cloudflare Pages immediately | `build.mjs`, `.github/workflows/ci.yml` |
 | Game | Local solo and two-player play, tutorial, modes, optional offline spells, and shared local/ranked board rendering | `src/core/`, `src/flow/`, `src/ui/` |
 | Ranked | Server-authoritative online play with guest accounts, human matchmaking, bot backfill, seasonal ladder points, history, profiles, and account deletion | `src/online/`, `supabase/functions/`, `docs/LADDER.md` |
-| Database | The immutable repository ledger ends at `20260823132611_game_center_service_grants.sql`; a clean local reset and the focused lifecycle, command, history-plan, grant, settlement, and RLS pgTAP contracts pass locally | `supabase/migrations/`, `supabase/tests/` |
+| Database | The repository migration directory ends at `20260824133121_player_settings_locale.sql`; production records the ranked migrations through `20260823154719_matchmaking_read_grants.sql` and the player-settings base/locale rollout, while Game Center remains held; a clean local reset and the focused lifecycle, command, history-plan, grant, settlement, settings, and RLS pgTAP contracts pass locally | `supabase/migrations/`, `supabase/tests/` |
 | Builds | Hosted PWA, standalone HTML, widget, and Capacitor web assets come from the same source build | `build.mjs`, `docs/architecture/build.md` |
 | Native | Capacitor 8.5 iOS and Android projects are tracked; iOS supports 15+, Android installs on API 24+ while targeting API 36 | `native/`, `docs/architecture/build.md` |
 | Design | Product cards, open studies, and archived candidates are explicitly classified and recursively built from shared application CSS/renderers | `design/screens/`, `design/build.mjs` |
@@ -44,14 +44,14 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - Rotate/revoke any live-test credentials that were ever committed. Repository
   live tests must remain environment-only, fail closed, and require explicit
   production opt-in. Credential rotation is an owner action.
-- Reconcile the production migration ledger, then apply the eight ranked dated
-  migrations in order: the five from `20260823112009` through
-  `20260823121000`, followed by `20260823132127`, `20260823132135`, and
-  `20260823132602`. Deploy the four ranked closures (`account-delete`,
-  `pvp-claim`, `pvp-join`, `pvp-move`) database-first. The clean local reset,
-  focused pgTAP/query-plan contracts, handlers, and exact Deno 2.1.14 closure
-  checks are green; no production deployment is implied.
-- Keep the Game Center rollout separate: apply pending migration `0014` and
+- Reconcile the legacy local/production migration identifiers before any normal
+  linked push. Production already records the eight ranked dated migrations
+  through `20260823132602` plus
+  `20260823154719_matchmaking_read_grants.sql`; do not reapply them or use
+  `--include-all`. Confirm the four ranked Edge Function versions
+  independently because migration history does not establish function state.
+- Keep the Game Center rollout separate: apply pending migration
+  `0014_game_center_ids.sql` and
   `20260823132611_game_center_service_grants.sql` together, configure a
   durable deployment-layer rate limit for the deliberately unauthenticated
   assertion endpoint, then deploy `gc-auth` and prove it with a signed device.

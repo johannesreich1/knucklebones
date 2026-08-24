@@ -149,21 +149,36 @@ select
      from pg_policies
     where schemaname = 'public' and tablename = 'player_settings')
     as owner_policies,
-  coalesce((select array_agg(g.privilege_type order by g.privilege_type)
-              from (select distinct privilege_type::text as privilege_type
-                      from information_schema.table_privileges
-                     where table_schema = 'public' and table_name = 'player_settings'
-                       and grantee = 'authenticated') g), array[]::text[])
+  coalesce((select array_agg(distinct a.privilege_type::text
+                             order by a.privilege_type::text)
+              from pg_class c
+              join pg_namespace n on n.oid = c.relnamespace
+              cross join lateral aclexplode(
+                coalesce(c.relacl, acldefault('r', c.relowner))) a
+              join pg_roles r on r.oid = a.grantee
+             where n.nspname = 'public' and c.relname = 'player_settings'
+               and r.rolname = 'authenticated'), array[]::text[])
     = array['INSERT', 'SELECT', 'UPDATE']::text[] as authenticated_grants,
-  not exists (select 1 from information_schema.table_privileges
-               where table_schema = 'public' and table_name = 'player_settings'
-                 and grantee in ('anon', 'PUBLIC')) as anon_locked,
-  coalesce((select array_agg(g.privilege_type order by g.privilege_type)
-              from (select distinct privilege_type::text as privilege_type
-                      from information_schema.table_privileges
-                     where table_schema = 'public' and table_name = 'player_settings'
-                       and grantee = 'service_role') g), array[]::text[])
-    = array['DELETE', 'INSERT', 'REFERENCES', 'SELECT', 'TRIGGER', 'TRUNCATE', 'UPDATE']::text[]
+  not exists (
+    select 1
+      from pg_class c
+      join pg_namespace n on n.oid = c.relnamespace
+      cross join lateral aclexplode(
+        coalesce(c.relacl, acldefault('r', c.relowner))) a
+      left join pg_roles r on r.oid = a.grantee
+     where n.nspname = 'public' and c.relname = 'player_settings'
+       and (a.grantee = 0 or r.rolname = 'anon')) as anon_locked,
+  coalesce((select array_agg(distinct a.privilege_type::text
+                             order by a.privilege_type::text)
+              from pg_class c
+              join pg_namespace n on n.oid = c.relnamespace
+              cross join lateral aclexplode(
+                coalesce(c.relacl, acldefault('r', c.relowner))) a
+              join pg_roles r on r.oid = a.grantee
+             where n.nspname = 'public' and c.relname = 'player_settings'
+               and r.rolname = 'service_role'), array[]::text[])
+    = array['DELETE', 'INSERT', 'MAINTAIN', 'REFERENCES', 'SELECT', 'TRIGGER',
+            'TRUNCATE', 'UPDATE']::text[]
     as service_role_grants,
   exists (select 1 from information_schema.columns
            where table_schema = 'public' and table_name = 'player_settings'
