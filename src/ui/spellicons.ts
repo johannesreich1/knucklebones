@@ -1,7 +1,7 @@
 // Spell icons — same deal as ui/modeicons: stroke-based 24×24 SVGs on
 // currentColor, keyed off the registry's stable ids, so the shared core stays
 // free of markup and a spell can be re-skinned without touching its rules.
-import { modeIcon, modeIconBody, modeHue } from './modeicons.ts';
+import { modeIcon, modeHue } from './modeicons.ts';
 import { RANDOM_DUAL_SPELL, RANDOM_SPELL } from '../core/spells.ts';
 const PATHS: Record<string, string> = {
   /* NONE: the picker's first slice — no rune at all */
@@ -62,15 +62,18 @@ export function spellHue(id: string): string {
 export function spellIcon(id: string, size = 22): string {
   if (id === RANDOM_SPELL) return modeIcon('random', size);
   if (id === RANDOM_DUAL_SPELL) {
-    /* The arrows are still the mode icon's ONE geometry. The small corner seal
-       is the only addition: a hand-drawn 2 that stays crisp without relying on
-       an SVG font at the picker's 16px size. */
+    /* TWO DIFFERENT DRAWS, not Random with a damaged corner. At the picker's
+       real 16px size a numeral badge cannot stay readable without covering an
+       arrowhead. Two outward-dealt cards make the count the silhouette; their
+       different sigils and player colours say that the hands are not shared. */
     return `<svg class="sico sico-random2" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" `
       + `stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" `
-      + `aria-hidden="true">${modeIconBody('random')}`
-      + `<circle cx="18.1" cy="5.4" r="4" fill="#0b0e1c"/>`
-      + `<path d="M16.5 4.5c.2-1 1-1.5 1.9-1.5 1.1 0 1.8.6 1.8 1.5 0 .8-.4 1.3-1.2 1.9l-2.4 1.7h3.8" `
-      + `stroke-width="1.35"/></svg>`;
+      + `aria-hidden="true">`
+      + `<path class="r2card r2one" stroke="var(--p1)" d="M3.8 6.5 10.2 5.2l1.4 12.5-6.4 1.2Z"/>`
+      + `<path class="r2card r2two" stroke="var(--p2)" d="m13.8 5.2 6.4 1.3-1.4 12.4-6.4-1.2Z"/>`
+      + `<circle class="r2sigil r2one" cx="7.7" cy="12" r="1.15" fill="var(--p1)" stroke="none"/>`
+      + `<path class="r2sigil r2two" d="m16.3 10.45 1.55 1.55-1.55 1.55-1.55-1.55Z" `
+      + `fill="var(--p2)" stroke="none"/></svg>`;
   }
   const body = PATHS[id] ?? PATHS.none;
   return `<svg class="sico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" `

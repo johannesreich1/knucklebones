@@ -44,8 +44,11 @@ export async function runPickerScenarios(suite) {
       .map((n) => n.tagName + ':' + (n.getAttribute('d') ?? '')).join('|');
     const mode = strip('#modePick', '-1'), spell = strip('#spellPick', 'random');
     const dual = strip('#spellPick', 'random2');
+    const dualCards = [...(dual?.querySelectorAll('.r2card') ?? [])];
     return { mode: geom(mode), spell: geom(spell),
-             dual: geom(dual), dualBadge: dual?.querySelectorAll('circle').length ?? 0,
+             dual: geom(dual), dualCards: dualCards.length,
+             dualSigils: dual?.querySelectorAll('.r2sigil').length ?? 0,
+             dualCardColours: dualCards.map((card) => getComputedStyle(card).stroke),
              modeHue: mode?.style.getPropertyValue('--mh'),
              spellHue: spell?.style.getPropertyValue('--mh'),
              dualHue: dual?.style.getPropertyValue('--mh') };
@@ -54,9 +57,10 @@ export async function runPickerScenarios(suite) {
     'THE TWO RANDOM SLICES DRAW DIFFERENT MARKS', out.randomIcon);
   check(out.randomIcon.modeHue === out.randomIcon.spellHue,
     'the two RANDOM slices wear different hues', out.randomIcon);
-  check(out.randomIcon.dual.startsWith(out.randomIcon.mode)
-      && out.randomIcon.dual !== out.randomIcon.mode && out.randomIcon.dualBadge > 0,
-    'RANDOM ×2 did not reuse the shuffle mark and add its 2 seal', out.randomIcon);
+  check(!!out.randomIcon.dual && !out.randomIcon.dual.startsWith(out.randomIcon.mode)
+      && out.randomIcon.dualCards === 2 && out.randomIcon.dualSigils === 2
+      && new Set(out.randomIcon.dualCardColours).size === 2,
+    'RANDOM ×2 is not a distinct two-player, two-rune draw mark', out.randomIcon);
   check(out.randomIcon.dualHue === out.randomIcon.modeHue,
     'RANDOM ×2 does not wear the neutral random hue', out.randomIcon);
   check(!out.picker.values.includes('swap'), 'the retired swap must not be pickable', out.picker.values);
