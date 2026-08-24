@@ -34,6 +34,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { APP_ID } from '../src/config.ts';
 import { filesUnder, recomputeArtifactTag, sameBytes, tagIn } from './support/ios-artifacts.ts';
+import { verifyIosShellContract } from './support/ios-shell-contract.ts';
 import { verifyNodeRuntimeContract } from './support/node-runtime-contract.ts';
 
 const problems: string[] = [];
@@ -48,10 +49,6 @@ const GC_PKG = 'native/plugins/gamecenter/package.json';
 const GC_SWIFT = 'native/plugins/gamecenter/ios/Sources/GameCenterPlugin/GameCenterPlugin.swift';
 const ROOT_PKG = 'package.json';
 const CONFIG = 'native/capacitor.config.json';
-const XCODE = 'native/ios/App/App.xcodeproj/project.pbxproj';
-const INFO = 'native/ios/App/App/Info.plist';
-const BROWSER_IDENTITY = 'src/online/identity.ts';
-const GC_AUTH = 'supabase/functions/gc-auth/index.ts';
 const WWW = 'native/www';
 const SYNCED = 'native/ios/App/App/public';   // what cap sync copied into Xcode
 const SYNCED_CONFIG = 'native/ios/App/App/capacitor.config.json';
@@ -72,6 +69,22 @@ const capacitor = JSON.parse(readFileSync(CONFIG, 'utf8'));
 /* ================= 0. BUILD/NATIVE BOUNDARY ================= */
 
 const { nodePin, nodeRange } = verifyNodeRuntimeContract(check);
+const nativePins: Record<string, string> = {
+  '@capacitor/core': '8.5.0',
+  '@capacitor/cli': '8.5.0',
+  '@capacitor/ios': '8.5.0',
+  '@capacitor/android': '8.5.0',
+  '@capacitor/splash-screen': '8.0.2',
+  '@capawesome/capacitor-apple-sign-in': '0.1.3',
+  '@capacitor/assets': '3.0.5',
+};
+for (const [name, version] of Object.entries(nativePins)) {
+  const declaredVersion = pkg.dependencies?.[name] ?? pkg.devDependencies?.[name];
+  check(declaredVersion === version,
+    `${PKG} must pin ${name} exactly to ${version}, found ${JSON.stringify(declaredVersion)}`);
+  check(nativeLock.packages?.[`node_modules/${name}`]?.version === version,
+    `${NATIVE_LOCK} must resolve the direct ${name} package to ${version}`);
+}
 check(rootPkg.scripts?.['native:sync'] === 'npm run build && npm --prefix native run sync',
   `${ROOT_PKG} native:sync must build then run the tracked native sync fail-fast`);
 check(rootPkg.scripts?.['native:verify']?.includes('native:sync')
@@ -97,40 +110,9 @@ check(/@objc\(GameCenterPlugin\)/.test(gcSwift)
   && /player\.authenticateHandler\s*=/.test(gcSwift),
   `${GC_SWIFT} must provide the GameCenter bridge and Apple's signed identity payload`);
 
-/* ================= 1. APPLICATION IDENTITY ================= */
+/* ================= 1. APPLICATION IDENTITY + iOS SHELL ================= */
 
-/* TypeScript is the canonical source. Capacitor and Xcode cannot import it,
-   and gc-auth is deployed as an isolated Deno bundle, so those unavoidable
-   copies are a strict contract rather than a collection of trusted literals. */
-check(/^[a-z][a-z0-9]*(?:\.[a-z][a-z0-9]*){2,}$/.test(APP_ID),
-  `src/config.ts APP_ID=${JSON.stringify(APP_ID)} is not a shippable reverse-DNS id`);
-check(capacitor.appId === APP_ID,
-  `${CONFIG} appId=${JSON.stringify(capacitor.appId)} differs from src/config.ts APP_ID=${APP_ID}`);
-
-const xcode = readFileSync(XCODE, 'utf8');
-const xcodeIds = [...xcode.matchAll(/PRODUCT_BUNDLE_IDENTIFIER\s*=\s*([^;\s]+)\s*;/g)]
-  .map((match) => match[1]);
-check(xcodeIds.length >= 2,
-  `${XCODE} exposes ${xcodeIds.length} PRODUCT_BUNDLE_IDENTIFIER values; expected Debug and Release`);
-for (const id of xcodeIds) {
-  check(id === APP_ID, `${XCODE} uses PRODUCT_BUNDLE_IDENTIFIER=${id}, expected ${APP_ID}`);
-}
-check(readFileSync(INFO, 'utf8').includes('<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>'),
-  `${INFO} must derive CFBundleIdentifier from Xcode's PRODUCT_BUNDLE_IDENTIFIER`);
-
-const browserIdentity = readFileSync(BROWSER_IDENTITY, 'utf8');
-check(/import\s*\{[^}]*\bAPP_ID\b[^}]*\}\s*from\s*['"]\.\.\/config\.ts['"]/.test(browserIdentity)
-  && /clientId:\s*APP_ID\b/.test(browserIdentity),
-  `${BROWSER_IDENTITY} must pass the canonical APP_ID to Apple sign-in`);
-check(/available:\s*\(\)\s*=>\s*!!plugins\(\)\.GameCenter/.test(browserIdentity)
-  && /await plugins\(\)\.GameCenter\.signIn\(\)/.test(browserIdentity),
-  `${BROWSER_IDENTITY} must expose Game Center from bridge capability alone and let signIn authenticate; `
-  + `checking GKLocalPlayer authentication before rendering would deadlock a fresh-device flow`);
-
-const gcAuth = readFileSync(GC_AUTH, 'utf8');
-const gcBundle = (gcAuth.match(/const\s+BUNDLE_ID\s*=\s*["']([^"']+)["']/) || [])[1] ?? null;
-check(gcBundle === APP_ID,
-  `${GC_AUTH} verifies Game Center bundle ${JSON.stringify(gcBundle)}, expected ${APP_ID}`);
+const { xcodeIds, gcBundle } = verifyIosShellContract(check);
 
 /* ================= 2. PODS ================= */
 
@@ -142,7 +124,7 @@ check(stamped === podfileSha,
   + `The lock was generated from a DIFFERENT Podfile than the one committed — run `
   + `\`pod install\` in native/ios/App and commit the result.`);
 
-// `pod 'CapacitorCommunityAppleSignIn', :path => '../../node_modules/@capacitor-community/apple-sign-in'`
+// `pod 'CapawesomeCapacitorAppleSignIn', :path => '../../node_modules/@capawesome/capacitor-apple-sign-in'`
 const declared = new Map<string, string>();
 for (const m of podfile.matchAll(/^\s*pod\s+'([^']+)'\s*,\s*:path\s*=>\s*'([^']+)'/gm)) {
   declared.set(m[1], m[2]);
@@ -165,6 +147,12 @@ for (const m of sumBlock.matchAll(/^ {2}(\S+):/gm)) checksums.add(m[1]);
 
 check(declared.get(GC_POD) === '../../plugins/gamecenter',
   `${PODFILE} must declare ${GC_POD} from the tracked ../../plugins/gamecenter package`);
+check(declared.get('CapawesomeCapacitorAppleSignIn') === '../../node_modules/@capawesome/capacitor-apple-sign-in',
+  `${PODFILE} must declare the Capawesome Apple Sign-In pod from its installed package`);
+check(declared.get('CapacitorSplashScreen') === '../../node_modules/@capacitor/splash-screen',
+  `${PODFILE} must declare CapacitorSplashScreen from its installed package`);
+check(!declared.has('CapacitorCommunityAppleSignIn'),
+  `${PODFILE} must not retain the replaced iOS-only community Apple Sign-In pod`);
 check(locked.get(GC_POD) === '../../plugins/gamecenter',
   `${LOCK} must lock ${GC_POD} to the tracked ../../plugins/gamecenter package`);
 check(checksums.has(GC_POD),
@@ -348,7 +336,7 @@ if (existsSync(CONFIG)) {
     check(syncedCfg.server?.cleartext !== true,
       `the capacitor.config.json inside the Xcode project enables cleartext HTTP`);
     const registered = syncedCfg.packageClassList ?? [];
-    for (const plugin of ['SignInWithApple', 'GameCenterPlugin']) {
+    for (const plugin of ['AppleSignInPlugin', 'SplashScreenPlugin', 'GameCenterPlugin']) {
       check(registered.includes(plugin),
         `${syncedConfig} does not register ${plugin}; the native identity button would be inert`);
     }

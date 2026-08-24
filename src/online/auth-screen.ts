@@ -121,8 +121,8 @@ function showOneTapRow(mode: AuthMode, ports: AuthPorts): void {
       button.disabled = true;
       const message = await method[mode]();
       button.disabled = false;
-      if (message) {
-        $('#onAuthErr').textContent = message;
+      if (message !== null) {
+        if (message) $('#onAuthErr').textContent = message;
         return;
       }
       await AUTH[mode].after(ports);

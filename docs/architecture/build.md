@@ -41,24 +41,74 @@ expected substitution or artifact is missing.
 
 ## Native wrapper
 
-The Capacitor configuration, dependency locks, Game Center plugin, and iOS
-Xcode project under `native/` are tracked source. `native/www/`, Pods, derived
-data, and other generated payloads are ignored.
+The Capacitor configuration, pinned dependency lock, Game Center plugin, iOS
+Xcode project, Android Gradle project, and both platforms' generated resource
+catalogs under `native/` are tracked compiler input. `native/www/`,
+`node_modules`, Pods, Gradle output, derived data, local SDK paths, keystores,
+and `keystore.properties` are ignored.
 
 `npm run build` generates `native/www/` but never invokes Capacitor. This keeps
 the deterministic web build independent of local CocoaPods/Xcode state.
-`npm run native:sync` builds and then runs Capacitor explicitly; failures are
-not swallowed. `npm run native:verify` performs that sync and additionally
-requires the complete generated Xcode payload and configuration to match the
-new build. The tracked `knucklebones-game-center` file dependency is the native
-Game Center implementation; verification requires Capacitor and CocoaPods to
-register it rather than accepting the presence of an unwired source directory.
+The root scripts make the native mutation explicit:
 
-`APP_ID` in `src/config.ts` is the canonical application identifier. Browser
-identity imports it directly; `tests/iosship.test.ts` requires the unavoidable
-Capacitor, Xcode, Info.plist, and Game Center verifier copies to agree. The
-product-name decision remains open and may eventually require changing this id
-through the same consistency contract.
+| Scope | Sync | Open | Verify |
+|---|---|---|---|
+| both | `npm run native:sync` | — | `npm run native:verify` |
+| iOS | `npm run native:sync:ios` | `npm run native:open:ios` | `npm run native:verify:ios` |
+| Android | `npm run native:sync:android` | `npm run native:open:android` | `npm run native:verify:android` |
+
+Every sync first rebuilds `native/www/`; failures are not swallowed. Verify
+then checks the platform's tracked manifests, plugins, assets, versions,
+security settings, and the exact web bytes copied by Capacitor. The tracked
+`knucklebones-game-center` file dependency is the native Game Center
+implementation; iOS verification requires Capacitor and CocoaPods to register
+it rather than accepting an unwired source directory.
+
+`npm run native:assets:android` renders Android-only custom icon/splash inputs
+from the shared vector generators, runs Capacitor Assets 3.0.5, and writes the
+tracked legacy, round, adaptive, monochrome, light, dark, portrait, and
+landscape resources without replacing the custom iOS appearance catalog.
+
+`APP_ID`, `NATIVE_APP_NAME`, `APPLE_SERVICE_ID`, and the Supabase-derived Apple
+callback in `src/config.ts` are the public sources of truth. Native files that
+cannot import TypeScript are consistency-gated copies. Only the native shell
+display name is **Knucklebones Neon**: the application id remains
+`com.appavaria.knucklebones`, and `GAME_NAME`, PWA metadata, URLs, and storage
+keys remain unchanged.
+
+`native/package.json` and its lock pin Capacitor core/CLI/iOS/Android 8.5.0,
+Splash Screen 8.0.2, Capawesome Apple Sign-In 0.1.3, and Capacitor Assets 3.0.5.
+Native dependency upgrades change compiler input and require both platform
+contracts; they are not floating maintenance updates.
+
+iOS deploys to 15 and uses Capacitor 8.5's UIScene lifecycle. The branded
+launch screen stays up through synchronous Home composition; the global
+Splash Screen bridge hides it on the next task with a 200 ms fade, while the
+native five-second auto-hide remains a crash/error watchdog. The web and widget
+entries do not import a native plugin.
+
+Android uses `com.appavaria.knucklebones` for both namespace and application
+id, minSdk 24, compile/target SDK 36, AGP 8.13.0, Gradle 8.14.3, and Java 21.
+Its initial release metadata is versionCode 1 and versionName `1.0`.
+API 36 is the Google Play submission target required for new apps and updates
+from August 31, 2026. Cleartext traffic and backups/device transfer are
+disabled, and the manifest requests only Internet access.
+
+### Android signing and owner release
+
+`npm run native:bundle:android` syncs Android, then invokes the guarded release
+builder. It requires ignored `native/android/keystore.properties` with all four
+values from `keystore.properties.example`, builds `bundleRelease`, and verifies
+the resulting AAB signature. Missing or incomplete secrets are fatal; the
+release task never falls back to debug signing.
+
+Johannes keeps the upload keystore outside Git and uses a distinct upload key
+with Play App Signing. In Play Console he creates the listing under the
+unchanged package id `com.appavaria.knucklebones`, sets its listing name to
+**Knucklebones Neon**, enrolls in Play App Signing, and manually uploads
+`native/android/app/build/outputs/bundle/release/app-release.aab`. CI receives
+no Play credentials and never publishes. Store-name legal/trademark clearance
+remains unresolved; a technically valid bundle is not approval to submit it.
 
 ## Node and CI
 
@@ -76,6 +126,15 @@ low-risk change and `npm test` when the change is cross-cutting, high-risk, or
 lacks decisive focused coverage. Deployment instructions or dashboard state
 are not encoded into generated public artifacts.
 
+The separate `android` CI job consumes both npm lockfiles under Node 24, uses
+Temurin Java 21 and Android SDK/build-tools 36, syncs Android, runs the native
+contract, Gradle unit/lint/debug tasks, and builds an unsigned release AAB. A
+second artifact-level contract verifies package, version, target/security
+metadata, and that the release is not debug-signed before CI uploads it for
+seven days as `knucklebones-neon-unsigned-aab`. That artifact is labelled and
+intended for verification only; it cannot replace Johannes's locally signed
+Play upload.
+
 ## Build verification
 
 A build change must prove:
@@ -88,4 +147,8 @@ A build change must prove:
 - the hosted PWA loads, updates, and works offline under its tested contract;
 - the widget fragment mounts once and stays isolated from its host;
 - native web assets are current, and native sync/verification succeeds when
-  that platform is in scope.
+  that platform is in scope;
+- branded native resources, names, ids, versions, SDKs, plugins, pods, and
+  lifecycle manifests agree with the canonical source;
+- no live-reload URL, cleartext, backup/transfer path, committed signing
+  secret, or debug release signing can enter a shipping artifact.

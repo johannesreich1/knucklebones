@@ -15,6 +15,19 @@ native/ios/App/App/public/
 native/ios/App/Pods/
 native/ios/App/build/
 native/ios/DerivedData/
+native/android/.gradle/
+native/android/build/
+native/android/app/build/
+native/android/local.properties
+# tools/appicon.mjs and tools/splash.mjs recreate the temporary custom-mode
+# inputs; @capacitor/assets turns them into tracked Android res/ compiler input.
+native/assets/
+# Release credentials stay owner-local. CI intentionally builds unsigned.
+keystore.properties
+*.jks
+*.keystore
+*.p12
+*.pfx
 *.xcuserdatad/
 xcuserdata/
 # agent skills: content restored via `npx skills add` + skills-lock.json
@@ -31,8 +44,6 @@ harness.html
 .gate.lock
 # gate screenshots — every suite writes through tests/shot.mjs
 tests/screens/
-# Xcode's icon and splash renditions in the asset catalog (never tracked)
-native/ios/App/App/Assets.xcassets/**/*.png
 .env
 .env.*
 !.env.example

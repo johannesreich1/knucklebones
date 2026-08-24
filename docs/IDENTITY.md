@@ -25,8 +25,8 @@ takes the `authenticated` role and has a normal `auth.uid()`.
 | The rungs, and what each can do | `src/online/session.ts` (guest + email) and `src/online/identity.ts` (one-tap providers) |
 | The one panel that serves attach *and* restore | `AUTH` in `src/online/auth-screen.ts` |
 | Game Center → a session | `supabase/functions/gc-auth/` (`verify.ts` is the pure crypto) |
-| The native bridge | `native/plugins/gamecenter/` |
-| Tests | `tests/browser/online-ui/run.mjs` (ladder/identity UI), `tests/gcauth.test.ts` (the crypto) |
+| The native bridges | `@capawesome/capacitor-apple-sign-in` plus `native/plugins/gamecenter/` |
+| Tests | `tests/apple-identity.test.ts`, `tests/browser/online-ui/run.mjs`, and `tests/gcauth.test.ts` |
 
 A new provider is a registry entry in `identity.ts` with `available()`,
 `restore()` and `attach()`. The panel renders whatever is available and never
@@ -37,8 +37,16 @@ learns a provider's name; the web build finds none.
 **Rung 1 — guest: LIVE.** Verified against production on 2026-08-19: a guest
 joined ranked and matched a bot with no email anywhere.
 
-**Rung 2 — Apple: code complete, not yet runnable.** The client path is
-written; the app needs the capability before it can be exercised.
+**Rung 2 — Apple: repository-complete, dashboard/device acceptance pending.**
+iOS uses native AuthenticationServices. Android initializes the same bridge
+with Services ID `com.appavaria.knucklebones.web` and uses its HTTPS WebView
+flow. Every attempt creates a raw nonce and state; Apple receives
+`SHA-256(rawNonce)`, Supabase receives the raw nonce, and Android results must
+return an exact state match before any Supabase call. Restore uses
+`signInWithIdToken`; attach uses typed `linkIdentity` when a session exists and
+falls back to `signInWithIdToken` only for sessionless account creation. A link
+conflict never replaces the current guest. Client-decoded Apple claims are not
+trusted.
 
 **Rung 3 — Game Center: code complete, deliberately NOT deployed.** The
 signature verification is tested against Apple's real production certificates,
@@ -50,8 +58,6 @@ answered a real request does not belong in production.
 ### What Johannes clicks
 
 - [x] **Anonymous sign-ins → ON** — done 2026-08-19.
-- [ ] **Manual linking → ON** (Authentication → Sign In / Providers). Needed
-      before a guest can attach an identity and keep its rating.
 - [ ] **Confirm email → OFF**, or configure SMTP. Until then "Keep it forever"
       can only get as far as *"confirm the link we sent"* — and no link is sent.
       Guest play is unaffected.
@@ -67,23 +73,60 @@ answered a real request does not belong in production.
       provisioning profile"*. A capability that cannot be signed is not a
       harmless placeholder — it stops the app compiling. Wire it back (both
       build configurations) only AFTER the portal has the capabilities.
-- [ ] **Apple provider ON** in Supabase, with `com.appavaria.knucklebones` in
-      the Client IDs list (native sign-in needs nothing else — no Services ID,
-      no key).
+- [ ] **Apple App ID:** enable Sign in with Apple for the existing
+      `com.appavaria.knucklebones` App ID.
+- [ ] **Apple Services ID:** create `com.appavaria.knucklebones.web`, associate
+      it with that App ID, and register website domain
+      `euzjcejbkxvqfrttgaxu.supabase.co` with return URL
+      `https://euzjcejbkxvqfrttgaxu.supabase.co/auth/v1/callback`.
+- [ ] **Provisioning, then entitlements:** regenerate/confirm provisioning for
+      the App ID capability first. Only then wire the prepared
+      `App.entitlements` into both Xcode build configurations.
+- [ ] **Supabase Apple provider → ON:** list
+      `com.appavaria.knucklebones.web` first and
+      `com.appavaria.knucklebones` second under Client IDs.
+- [ ] **Supabase Manual Linking → ON** (Authentication → Sign In / Providers),
+      so a guest can attach Apple without losing its existing user and rating.
+
+This client sends Apple's ID token directly to Supabase
+`signInWithIdToken`/`linkIdentity`; it does not use Supabase's Apple OAuth code
+exchange. Do not create or configure an Apple OAuth client secret for this
+flow. None of the unchecked items above is implied complete by repository
+tests.
+
+### Android/Play owner release
+
+- [ ] Install Android Studio Otter or newer, JDK 21, and Android SDK 36 before
+      local device testing or signed bundling.
+- [ ] Create the Play listing under unchanged package id
+      `com.appavaria.knucklebones` and set the listing name to
+      **Knucklebones Neon**.
+- [ ] Enroll in Play App Signing, keep a distinct owner-held upload key, and
+      configure only the ignored `native/android/keystore.properties` locally.
+- [ ] Run `npm run native:bundle:android` and manually upload its signed AAB.
+      Do not add Play API credentials or automated publishing to CI.
+
+Apple requires an App Store app using Sign in with Apple before the associated
+service can be offered on other platforms. Android Apple sign-in is therefore
+release-blocked until the associated iOS app is live; a locally successful
+WebView does not remove that requirement. The **Knucklebones Neon** shell rename
+also does not resolve store-name legal/trademark clearance.
 
 ### Then, in the repo
 
 ```bash
 npm --prefix native ci
-npm run native:verify
+npm run native:verify:ios
+npm run native:verify:android
+# or: npm run native:verify
 ```
 
 The native package installs `plugins/gamecenter` through its tracked local
 `knucklebones-game-center` dependency. Sync registers that Swift bridge and the
-Apple plugin, regenerates the Podfile, and verification fails unless both are
-present in the generated Xcode configuration. After it, the Apple button
-appears in the native build only, because `available()` looks for the Capacitor
-bridge that the web build does not have.
+Capawesome Apple plugin; verification fails unless the platform manifests,
+plugins, assets, ids, versions, and synced web bytes agree. The Apple button
+appears in native builds only because `available()` looks for the global
+Capacitor bridge; web code imports no native plugin.
 
 Game Center remains one held owner rollout, in this order:
 

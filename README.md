@@ -220,18 +220,41 @@ a cloud session, which has none.
 
 ## Native (iOS / Android)
 
-The Capacitor configuration, dependency locks, Game Center plugin, and iOS
-Xcode project are checked in under `native/`. Generated web assets,
-`node_modules`, Pods, and Xcode build products are ignored. Install the native
-dependencies with `npm --prefix native ci`, run the root build, then run
-`npm run native:sync` explicitly. `npm run native:verify` performs a fresh
-build and sync, then checks the exact payload Xcode would bundle. Android has
-not been added yet; iOS development requires a Mac with Xcode.
+The tracked Capacitor 8.5 shell under `native/` ships on both platforms as
+**Knucklebones Neon**, while the package/bundle id remains
+`com.appavaria.knucklebones`. That shell rename does not change the in-game
+name, PWA metadata, URLs, or browser storage keys. Generated web payloads,
+`node_modules`, Pods, Gradle output, local SDK paths, and signing secrets stay
+ignored; native projects, resource catalogs, lockfiles, and Gradle wrappers are
+source.
 
-The product name remains an owner decision. The canonical app id is
-`APP_ID` in `src/config.ts`; the native shipping test consistency-gates its
-Capacitor, Xcode, Apple sign-in, and Game Center copies. See
-[the build architecture](docs/architecture/build.md).
+Use Node 24 on both platforms. iOS also needs a Mac with Xcode and CocoaPods.
+Android local work needs Android Studio Otter or newer, JDK 21, and Android SDK
+36. Install both lockfiles before the platform commands:
+
+```bash
+npm ci
+npm --prefix native ci
+npm run native:assets:android # regenerate tracked Android icon/splash resources
+npm run native:sync:ios       # build web bytes, then cap sync ios
+npm run native:open:ios
+npm run native:verify:ios     # sync plus the iOS shipping contract
+npm run native:sync:android
+npm run native:open:android
+npm run native:verify:android # sync plus the Android shipping contract
+npm run native:verify         # both platforms
+```
+
+For a Play upload, copy `native/android/keystore.properties.example` to the
+ignored `native/android/keystore.properties`, point it at Johannes's
+owner-held upload keystore (preferably outside the checkout), and run
+`npm run native:bundle:android`. The command fails when the properties or key
+are absent and never substitutes the debug key. CI deliberately builds only an
+unsigned, verification-only AAB; Johannes enrolls in Play App Signing with a
+distinct upload key and manually uploads the locally signed bundle. No Play API
+credentials or automatic publishing belong in CI. See
+[the build architecture](docs/architecture/build.md) and
+[identity owner steps](docs/IDENTITY.md).
 
 ## Installing the PWA
 
@@ -258,7 +281,7 @@ site data is therefore not equivalent to deleting an online account.
 ## Fair warning
 
 Knucklebones is the dice minigame from *Cult of the Lamb* (Massive Monster /
-Devolver Digital); this project borrows the name and ruleset. The rename
-decision — with market research and available domains — is tracked in
-[docs/STATUS.md](docs/STATUS.md). Get real legal advice before store
-submission or monetisation.
+Devolver Digital); this project borrows the name and ruleset. The native store
+shell now says **Knucklebones Neon**, but existing legal/trademark clearance for
+that listing name is still unresolved. This technical rename does not settle
+it; get real legal advice before store submission or monetisation.

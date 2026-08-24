@@ -48,3 +48,47 @@ jobs:
       - run: supabase db lint --local --level warning --fail-on error
       - if: always()
         run: supabase stop --no-backup
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            native/package-lock.json
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-36" "build-tools;36.0.0"
+      - name: Install pinned bundletool verifier
+        env:
+          BUNDLETOOL_VERSION: '1.18.3'
+          BUNDLETOOL_SHA256: a099cfa1543f55593bc2ed16a70a7c67fe54b1747bb7301f37fdfd6d91028e29
+        run: |
+          curl --location --fail --silent --show-error \
+            --output "$RUNNER_TEMP/bundletool.jar" \
+            "https://github.com/google/bundletool/releases/download/${BUNDLETOOL_VERSION}/bundletool-all-${BUNDLETOOL_VERSION}.jar"
+          echo "${BUNDLETOOL_SHA256}  $RUNNER_TEMP/bundletool.jar" | sha256sum --check --strict
+          echo "BUNDLETOOL_JAR=$RUNNER_TEMP/bundletool.jar" >> "$GITHUB_ENV"
+      - run: npm ci
+      - run: npm ci --prefix native
+      - run: npm run native:sync:android
+      - run: node --experimental-strip-types tests/androidship.test.ts --require-synced
+      - name: Build Android debug app and unsigned release bundle
+        working-directory: native/android
+        run: ./gradlew --no-daemon testDebugUnitTest lintDebug assembleDebug bundleRelease
+      - run: node --experimental-strip-types tests/androidship.test.ts --require-synced --require-built
+      - uses: actions/upload-artifact@v4
+        with:
+          name: knucklebones-neon-unsigned-aab
+          path: native/android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+          retention-days: 7

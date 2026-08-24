@@ -67,6 +67,53 @@ random games exceeded smaller budgets on CI; do not reduce them as a speed
 optimization. Speed work should remove setup duplication or share a browser,
 not narrow the behavioural state space.
 
+## Native release verification
+
+`npm run test:native` runs the static iOS and Android shipping contracts
+without requiring a sync. Platform release checks use
+`npm run native:verify:ios`, `npm run native:verify:android`, or the combined
+`npm run native:verify`; each rebuilds, syncs, and requires the copied native
+web payload to match. Apple identity coverage separately exercises nonce
+hashing, Android state validation, per-platform plugin arguments,
+restore/attach/sessionless behavior, silent cancellation, conflict handling,
+and rejection before Supabase on invalid results. A Playwright startup contract
+observes the real built Home when the native bridge receives its one splash
+hide call; the focused unit contract also verifies boot-error release and that
+widget/web startup remains independent of Capacitor.
+
+The `android` CI job is deliberately separate from the web and database gates.
+It provisions Node 24, Java 21, Android SDK/build-tools 36, installs both npm
+lockfiles, syncs Android, runs the Android shipping contract, then executes:
+
+```text
+testDebugUnitTest lintDebug assembleDebug bundleRelease
+```
+
+CI has no `keystore.properties`, upload keystore, or Play API credentials, so
+`bundleRelease` is unsigned. The post-build contract uses a checksum-pinned
+bundletool 1.18.3 to inspect the AAB's own package, version, SDK, security
+metadata, and signing state before the workflow uploads
+`knucklebones-neon-unsigned-aab` as a seven-day, verification-only artifact.
+It is never a publishable substitute for `npm run native:bundle:android`, and
+there is no automatic Play publication.
+
+Before a native release, run the full Node 24 `npm test` gate, the focused
+native/identity/startup contracts, CocoaPods plus an unsigned iOS simulator
+build, and the Android Gradle/AAB job. Repository gates do not replace device
+acceptance:
+
+| Target | Required acceptance |
+|---|---|
+| iOS 15+ | Cold and warm launch in light and dark mode; branded splash continuity; safe areas; rotation; back navigation; resume; Apple attach and restore. |
+| Android API 24 | Cold/warm launch, splash continuity, safe areas, rotation, system back, resume, core offline/ranked navigation, and—once externally unblocked—Apple attach/restore on the minimum SDK. |
+| Android API 31 | Repeat every Android behavior, including Apple attach/restore once unblocked, across the Android 12 splash/edge-to-edge boundary. |
+| Android API 36 | Repeat every Android behavior, including Apple attach/restore once unblocked, on the Play target. |
+| Cross-platform identity | Attach or restore the same Apple identity on iOS and Android and prove it preserves the same Supabase user, profile, rating, and history. |
+
+Android Apple sign-in remains release-blocked until the associated iOS app with
+Sign in with Apple is live on the App Store. Passing mocks, Gradle, or an Android
+device before then does not clear that external prerequisite.
+
 ## Live tests
 
 Live PvP checks use environment-provided disposable credentials and a clearly
