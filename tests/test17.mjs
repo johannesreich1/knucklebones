@@ -1,7 +1,7 @@
 // THE OFFLINE SHEET HOLDS STILL.
 //
 // A settings form that reflows while you read it is exhausting, and this one
-// did: choosing 2 PLAYERS moved the Game mode and Spell cards 143px because
+// did: choosing 2 PLAYERS moved the Game mode and Rune cards 143px because
 // .pbody was vertically centred, and trying a different game mode moved every
 // card below it by a line because the description slot resized. Both were
 // invisible to state-and-DOM assertions — the markup was always "correct".
@@ -57,7 +57,7 @@ try {
     check(swing(r.modeSlots) === 0, 'the game-mode description slot resizes: ' + label, r.modeSlots);
     check(swing(r.spellSlots) === 0, 'the spell description slot resizes: ' + label, r.spellSlots);
     check(r.cpu.mode === r.duo.mode, 'the Game mode card moves on cpu/duo: ' + label, [r.cpu.mode, r.duo.mode]);
-    check(r.cpu.spell === r.duo.spell, 'the Spell card moves on cpu/duo: ' + label, [r.cpu.spell, r.duo.spell]);
+    check(r.cpu.spell === r.duo.spell, 'the Rune card moves on cpu/duo: ' + label, [r.cpu.spell, r.duo.spell]);
     check(r.spill.length === 0, 'a note overflows its reserved lines: ' + label, r.spill);
 
     /* ---- EVERY titled page is the SAME page ----

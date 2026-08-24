@@ -12,11 +12,15 @@ export async function runPickerScenarios(suite) {
       values: bs.map(b => b.dataset.v),
       icons: bs.map(b => !!b.querySelector('svg')),
       info: document.getElementById('spellPickInfo').textContent,
+      setupLabel: strip.closest('.card')?.querySelector('.lbl')?.textContent?.trim() ?? '',
+      learnLabel: document.querySelector('#btnLearnSpells .lname')?.textContent?.trim() ?? '',
       pick: window.__kb.S.spell,
       sameComponent: strip.className === document.getElementById('modePick').className,
     };
   });
   check(out.picker.pick === '' && out.picker.on === 0, 'the spell picker must default to NONE', out.picker);
+  check(out.picker.setupLabel === 'Rune' && out.picker.learnLabel === 'Runes',
+    'the player-facing category must be Rune / Runes', out.picker);
   /* ASK THE REGISTRY, never restate it. The picker builds itself from SPELLS
      (ui/library.ts), so a hardcoded slice count here would pass while the two
      disagree — and that is not hypothetical: this line said "the five runes"
@@ -47,7 +51,8 @@ export async function runPickerScenarios(suite) {
     'the two RANDOM slices wear different hues', out.randomIcon);
   check(!out.picker.values.includes('swap'), 'the retired swap must not be pickable', out.picker.values);
   check(out.picker.icons.every(Boolean), 'every slice carries its icon', out.picker);
-  check(/^NONE — /.test(out.picker.info), 'NONE needs its explanation', out.picker.info);
+  check(out.picker.info === 'NONE — No rune — the pure game.',
+    'NONE must describe the absence of a rune', out.picker.info);
   check(out.picker.sameComponent, 'the spell row must reuse the game-mode row', out.picker);
   // picking the spell names it, with its own blurb
   await page.tap('#spellPick button[data-v="pilfer"]'); await page.waitForTimeout(200);

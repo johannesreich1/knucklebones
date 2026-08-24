@@ -43,6 +43,7 @@ export async function runBadgeCardScenarios(suite) {
       const buttons = [...(head?.querySelectorAll('button') ?? [])];
       const back = head?.querySelector(`[data-learn-back="${ov}"]`);
       return { on: o?.classList.contains('on') ?? false,
+               title: head?.querySelector('.ttl')?.textContent?.trim() ?? '',
                name: c?.querySelector('.mcname')?.textContent?.trim() ?? '',
                detail: c?.querySelector('.mcdetail')?.textContent?.trim() ?? '',
                // the entry's OWN hue, as painted — not the token it came from
@@ -64,6 +65,9 @@ export async function runBadgeCardScenarios(suite) {
   };
   out.rosterMode = await rosterEntry('#btnLearnModes', 'ovModes', 'singlestrike');
   out.rosterSpell = await rosterEntry('#btnLearnSpells', 'ovSpells', 'ward');
+  check(out.rosterMode.title === 'GAME MODES' && out.rosterSpell.title === 'RUNES',
+    'the Learn libraries do not use their player-facing category names',
+    { modes: out.rosterMode.title, runes: out.rosterSpell.title });
   for (const [k, r] of [['modes', out.rosterMode], ['spells', out.rosterSpell]]) {
     check(r.on, `HOW TO PLAY no longer opens the ${k} library`, r);
     check(r.name.length > 0 && r.detail.length > 20, `the ${k} roster entry is empty`, r);

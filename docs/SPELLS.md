@@ -5,6 +5,12 @@ what a seventh would have to prove. The dated sprint history records what
 shipped when; this file records **the thinking**, so a later session can add a
 spell without re-deriving it — or can knowingly overrule it.*
 
+**Vocabulary boundary.** Players choose, receive, hold and spend **runes**, so
+all player-facing category labels say *Rune / Runes*. In code and in this
+technical document, *spell* names the castable rules effect and its engine
+(`SpellSpec`, `SPELLS`, `spellCharges`). Keep that implementation vocabulary;
+do not expose it as a competing name for the player's rune.
+
 Spells are an **optional layer over offline play**. Both seats always hold the
 same rune, one cast per turn at most, and a cast is **not a move** — your die
 still lands afterwards.

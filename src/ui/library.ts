@@ -26,7 +26,7 @@ export const MODE_LIB: LibrarySpec = {
                              hue: modeHue(m.id), icon: modeIcon(m.id, 22) })),
 };
 export const SPELL_LIB: LibrarySpec = {
-  id: 'ovSpells', title: 'SPELLS',
+  id: 'ovSpells', title: 'RUNES',
   items: SPELLS.map((s) => ({ id: s.id, name: s.name, blurb: s.blurb, detail: s.detail,
                               hue: spellHue(s.id), icon: spellIcon(s.id, 22) })),
 };
@@ -64,7 +64,7 @@ export const MODE_PICKS: PickItem[] = [
     blurb: 'The dial decides — ranked\u2019s odds, spun in front of you.' },
 ];
 export const SPELL_PICKS: PickItem[] = [
-  { v: '', id: 'none', name: 'NONE', blurb: 'No spells — the pure game.', hue: spellHue('none'), icon: spellIcon('none', 16) },
+  { v: '', id: 'none', name: 'NONE', blurb: 'No rune — the pure game.', hue: spellHue('none'), icon: spellIcon('none', 16) },
   ...SPELLS.map((s) => ({ v: s.id, id: s.id, name: s.name, blurb: s.blurb, hue: spellHue(s.id), icon: spellIcon(s.id, 16) })),
   /* last slice, exactly like the mode row's: a promise to draw, not a rune */
   { v: RANDOM_SPELL, id: 'random', name: 'RANDOM', hue: spellHue('random'), icon: spellIcon('random', 16),
