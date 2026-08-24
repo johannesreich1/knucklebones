@@ -3,7 +3,10 @@
 :where(#kbroot) #onAvatar .avgrid{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
 :where(#kbroot) #onAvatar .avgrid button{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;
   background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10);cursor:pointer;padding:0}
-:where(#kbroot) #onAvatar .avgrid button .die{width:34px;height:34px;--cell:34px}
+/* The die is the face button's artwork, not its own hit target. Let the button
+   receive the pointer directly so native :active reaches the shared menu
+   feedback consistently in WebKit as well as Chromium. */
+:where(#kbroot) #onAvatar .avgrid button .die{width:34px;height:34px;--cell:34px;pointer-events:none}
 :where(#kbroot) #onAvatar .avgrid button.on{border-color:var(--p1);box-shadow:0 0 14px rgba(var(--p1-rgb),.35)}
 /* the avatar hue row keeps the centred FLEX strip it was built as — .hues is
    a fluid grid for the Settings duel pickers, and this two-class rule says so
