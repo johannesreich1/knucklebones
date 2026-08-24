@@ -83,6 +83,8 @@
      — which empties between turns and rewords per seat — and both boards slid
      2px sideways and the stage die 5.8px up on every handover (measured). */
   --land-lane:116px;
+  /* room for protection hardware centred on the board-facing outline */
+  --land-board-chip-gap:8px;
   /* the row rail's strip in landscape: chip height plus its gap */
   --land-rail:22px;
   /* the one horizontal inset. The column caps the CONTENT; this decides how

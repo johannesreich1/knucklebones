@@ -18,7 +18,7 @@
   calc(env(safe-area-inset-top,0px) + 4px) calc(env(safe-area-inset-right,0px) + 8px)
   calc(env(safe-area-inset-bottom,0px) + 4px) calc(env(safe-area-inset-left,0px) + 8px)}
 #kbroot.land .table{flex-direction:row;align-items:center;justify-content:center;gap:4px}
-#kbroot.land .side{flex:0 0 auto;display:grid;align-items:center;gap:4px;
+#kbroot.land .side{flex:0 0 auto;display:grid;align-items:center;gap:4px var(--land-board-chip-gap);
   grid-template-columns:auto auto;grid-template-areas:"plate plate" "board chips"}
 #kbroot.land .side.bot{grid-template-areas:"plate plate" "chips board"}
 #kbroot.land .plate{grid-area:plate;height:20px}

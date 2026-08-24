@@ -159,6 +159,21 @@ export async function runProtectionScenarios(suite) {
     const rivet = shown.find((n) => n.classList.contains('sv'));
     const line = shown.find((n) => n.classList.contains('sl') || n.classList.contains('sa'));
     const cb = r(col), cr = r(chip);
+    const rivetBox = rivet ? r(rivet) : null;
+    const mouth = rivetBox
+      ? { dx: +(mid(rivetBox).x - mid(cb).x).toFixed(1), dy: +(mid(rivetBox).y - mid(cb).y).toFixed(1) }
+      : null;
+    const arcBox = hull(shown.filter((n) => n.classList.contains('sa')).map(r));
+    const claspLine = rivetBox && arcBox && mouth
+      ? +(Math.abs(mouth.dx) > Math.abs(mouth.dy)
+          ? Math.abs(mid(rivetBox).x - (mouth.dx > 0 ? arcBox.x + arcBox.w : arcBox.x))
+          : Math.abs(mid(rivetBox).y - (mouth.dy > 0 ? arcBox.y + arcBox.h : arcBox.y))).toFixed(2)
+      : null;
+    const join = seal.querySelector('.sj');
+    const joinAt = join ? {
+      dx: +(mid(r(join)).x - mid(cb).x).toFixed(1),
+      dy: +(mid(r(join)).y - mid(cb).y).toFixed(1),
+    } : null;
     /* Path direction is authored inside .smint, before that whole group turns
        toward table centre. Keep both endpoints and the clasp in that same
        coordinate system: Chromium's getScreenCTM omits the ancestor's CSS
@@ -213,7 +228,7 @@ export async function runProtectionScenarios(suite) {
       // where the mouth, chip strip and table centre sit relative to the
       // column. The ward's mouth is independently turned toward the centre;
       // the shield keeps the shared frame's original closure direction.
-      mouth: rivet ? { dx: +(mid(r(rivet)).x - mid(cb).x).toFixed(1), dy: +(mid(r(rivet)).y - mid(cb).y).toFixed(1) } : null,
+      mouth, claspLine, joinAt,
       flow,
       chipAt: { dx: +(mid(cr).x - mid(cb).x).toFixed(1), dy: +(mid(cr).y - mid(cb).y).toFixed(1) },
       centerAt: centre ? { dx: +(mid(r(centre)).x - mid(cb).x).toFixed(1), dy: +(mid(r(centre)).y - mid(cb).y).toFixed(1) } : null,

@@ -73,9 +73,9 @@
 
    The line is still outside every die at every span, and clear of the chip and
    what the nameplate actually paints. The enlarged centre-facing clasp is the
-   tight case in landscape, so its knot sits 3.5px into the frame while still
-   crossing the border; protection-layout measures the painted clearance in
-   both orientations rather than trusting the SVG box. The mark adds nothing
+   tight case in landscape, so its knot is centred exactly on the frame while
+   overflow remains visible; protection-layout measures the painted clearance
+   in both orientations rather than trusting the SVG box. The mark adds nothing
    on top of the faces — no tint, no fill, no pip contrast lost. overflow:visible
    because the clasp and the glows sit outside the frame. It is a real element
    and not a pseudo, because .col::after is the placement hint AND the aim ring
@@ -107,10 +107,11 @@
 :where(#kbroot) .side.bot .col>.seal{--seal-turn:180deg}          /* chips sit above the near board */
 #kbroot.land .side.top .col>.seal{--seal-turn:-90deg}    /* board left, chips right */
 #kbroot.land .side.bot .col>.seal{--seal-turn:90deg}     /* chips left, board right */
-/* The shield and ward share one SVG frame, but not one direction. The frame's
-   turn above keeps the closed shield exactly where it was; only the spendable
-   ward group turns its mouth through 180 degrees to face table centre. */
-:where(#kbroot) .col>.seal>.smint{transform-box:view-box;transform-origin:50% 50%;transform:rotate(180deg)}
+/* The settled shield loop is symmetrical, but its ENGAGE beat is not: its two
+   drawing heads and final join must meet on the edge facing table centre. Turn
+   both protection groups inside the shared frame so shield closure and Ward
+   clasp obey the same centre-facing rule in every seating/orientation. */
+:where(#kbroot) .col>.seal>:is(.sgold,.smint){transform-box:view-box;transform-origin:50% 50%;transform:rotate(180deg)}
 /* A column that is BOTH shielded and warded wears the SHIELD's mark, and that
    is the honest reading rather than a compromise: victimsOf() gives a full
    COLUMN SHIELD column no victims at all, so openStrikes never marks it
@@ -213,7 +214,7 @@
    (and were already wrong for a merged run's join flash, where the mouth is at
    half of two or three columns, not at 31). A fraction is right at every span
    and every cell size. */
-:where(#kbroot) .seal .sclasp{--clasp-in:3.5px;transform-box:view-box;transform-origin:50% 0;
+:where(#kbroot) .seal .sclasp{--clasp-in:0px;transform-box:view-box;transform-origin:50% 0;
   transform:translateY(var(--clasp-in))}
 /* which way each half flies when the clasp lets go */
 :where(#kbroot) .seal .sal,:where(#kbroot) .seal .spl{--d:-1}
@@ -242,10 +243,9 @@
 :where(#kbroot) .col.sealon>.seal .sj{animation:sealjoin var(--seal-engage) ease-out both}
 @keyframes sealjoin{0%,58%{opacity:0;transform:scale(.4)}66%{opacity:1;transform:scale(1)}
   90%{opacity:0;transform:scale(var(--sealjoin-max,3.2))}100%{opacity:0;transform:scale(.4)}}
-/* The permanent SHIELD still closes on the outer edge in landscape. Its join
-   flash is wider than the resting line, so reduce only that decorative reach
-   rather than moving the enclosure. The Ward no longer shares this direction:
-   its independently turned clasp faces centre and does not use .sj. */
+/* The shield's centre-facing join flash is wider than the resting line in
+   landscape, so reduce only that decorative reach rather than moving it. The
+   Ward uses its independently drawn clasp and does not use .sj. */
 #kbroot.land .seal{--sealjoin-max:1.6}
 /* the ward draws the same way — the line runs up from the hinge and the clasp
    closes over the gap last, which is the only thing it has to say */

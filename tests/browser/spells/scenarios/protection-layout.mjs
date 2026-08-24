@@ -69,6 +69,10 @@ export async function runProtectionLayoutScenarios(suite) {
     for (const half of ['top', 'bot']) {
       const sh = turn[half + 'Shield'], wd = turn[half + 'Ward'], where = view.name + '/' + half;
       check(sh.drawn && wd.drawn, 'a protection lost its seal in ' + where, { shield: sh.parts, ward: wd.parts });
+      check(!!sh.joinAt && !!sh.centerAt
+          && sh.joinAt.dx * sh.centerAt.dx + sh.joinAt.dy * sh.centerAt.dy > 0,
+        'THE SHIELD CLOSES ON ITS OUTER EDGE INSTEAD OF TABLE CENTRE in ' + where,
+        { join: sh.joinAt, centre: sh.centerAt });
       check(!!wd.mouth && !!wd.centerAt
           && wd.mouth.dx * wd.centerAt.dx + wd.mouth.dy * wd.centerAt.dy > 0,
         'THE WARD CLASP FACES AWAY FROM TABLE CENTRE in ' + where,
@@ -85,6 +89,9 @@ export async function runProtectionLayoutScenarios(suite) {
         { flow: wd.flow, mouth: wd.mouth, centre: wd.centerAt });
       check(!!wd.clasp && Math.max(wd.clasp.w, wd.clasp.h) >= 9,
         'the Ward clasp is still too small to read on the border in ' + where, wd.clasp);
+      check(wd.claspLine !== null && wd.claspLine < .75,
+        'THE WARD CLASP IS NOT CENTRED ON ITS OUTLINE in ' + where,
+        { offset: wd.claspLine, clasp: wd.clasp, mouth: wd.mouth });
       for (const [name, s] of [['shield', sh], ['ward', wd]]) {
         check(!!s.out && Object.values(s.out).every((v) => v > 0.3 && v < 3),
           'the ' + name + ' seal left the stack in ' + where, s.out);
