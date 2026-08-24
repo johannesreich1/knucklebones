@@ -128,7 +128,7 @@ function huePicker(selector: string, write: (hue: string) => void): void {
   lock.id = `${picker.id}Lock`;
   lock.hidden = true;
   lock.setAttribute('role', 'note');
-  lock.innerHTML = '<span class="hues-lock__icon" aria-hidden="true"></span><span class="hues-lock__copy"></span>';
+  lock.innerHTML = '<span class="hues-lock__icon" aria-hidden="true"><span class="hues-lock__shackle"></span></span><span class="hues-lock__copy"></span>';
   picker.append(lock);
   picker.setAttribute('aria-describedby', lock.id);
   tap(picker, (event) => {

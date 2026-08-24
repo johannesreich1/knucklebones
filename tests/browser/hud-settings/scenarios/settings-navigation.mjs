@@ -67,6 +67,9 @@ export async function runSettingsNavigationScenarios(suite) {
     const buttons = [...picker.querySelectorAll('button[data-h]')];
     const first = buttons[0]?.getBoundingClientRect();
     const last = buttons.at(-1)?.getBoundingClientRect();
+    const icon = lock?.querySelector('.hues-lock__icon');
+    const iconBox = icon?.getBoundingClientRect();
+    const shackleBox = lock?.querySelector('.hues-lock__shackle')?.getBoundingClientRect();
     const centreTarget = lockBox
       ? document.elementFromPoint(lockBox.x + lockBox.width / 2, lockBox.y + lockBox.height / 2)
       : null;
@@ -79,13 +82,17 @@ export async function runSettingsNavigationScenarios(suite) {
         && lockBox.left <= first.left && lockBox.right >= last.right
         && lockBox.top <= first.top && lockBox.bottom >= first.bottom,
       blocksCentre: !!lock && !!centreTarget && (centreTarget === lock || lock.contains(centreTarget)),
+      iconCentreError: iconBox && shackleBox
+        ? Math.abs((iconBox.left + iconBox.width / 2) - (shackleBox.left + shackleBox.width / 2))
+        : null,
       disabled: buttons.length > 0 && buttons.every((button) => button.disabled),
       ariaDisabled: picker.getAttribute('aria-disabled'),
     };
   }));
   check(out.colourBlindLocks.length === 2 && out.colourBlindLocks.every((lock) =>
     lock.text === 'Colour-blind mode · cyan + gold' && lock.visible && lock.coversRow
-      && lock.blocksCentre && lock.disabled && lock.ariaDisabled === 'true'),
+      && lock.blocksCentre && lock.iconCentreError !== null && lock.iconCentreError <= 0.25
+      && lock.disabled && lock.ariaDisabled === 'true'),
   'colour-blind mode does not clearly cover and explain both locked colour pickers',
   out.colourBlindLocks);
   const topWithColourBlind = await accessibilityTop();

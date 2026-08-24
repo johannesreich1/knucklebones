@@ -83,10 +83,10 @@
   pointer-events:auto;user-select:none}
 :where(#kbroot) .hues-lock__copy{font-size:clamp(8px,2.4vw,9.5px);font-weight:900;letter-spacing:.1em;
   line-height:1.2;text-transform:uppercase;white-space:nowrap;text-shadow:0 0 12px rgba(255,255,255,.16)}
-:where(#kbroot) .hues-lock__icon{position:relative;flex:none;width:13px;height:11px;border:1.5px solid currentColor;
-  border-radius:3px;box-shadow:0 0 10px rgba(255,255,255,.2)}
-:where(#kbroot) .hues-lock__icon::before{content:"";position:absolute;left:2.5px;top:-7px;width:5px;height:6px;
-  border:1.5px solid currentColor;border-bottom:0;border-radius:6px 6px 0 0}
+:where(#kbroot) .hues-lock__icon{position:relative;box-sizing:border-box;flex:none;width:14px;height:12px;
+  border:1.5px solid currentColor;border-radius:3px;box-shadow:0 0 10px rgba(255,255,255,.2)}
+:where(#kbroot) .hues-lock__shackle{position:absolute;box-sizing:border-box;left:50%;top:-7px;
+  width:8px;height:7px;translate:-50% 0;border:1.5px solid currentColor;border-bottom:0;border-radius:6px 6px 0 0}
 :where(#kbroot) .seg button.on{color:#04101a;background:linear-gradient(100deg,var(--p1),var(--p1-hi));border-color:var(--p1);
   box-shadow:0 6px 18px rgba(var(--p1-rgb),.3)}
 :where(#kbroot) .lbl{font-size:10px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
