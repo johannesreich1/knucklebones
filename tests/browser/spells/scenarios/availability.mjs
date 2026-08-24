@@ -1,0 +1,70 @@
+export async function runAvailabilityScenarios(suite) {
+  const { page, out, check, SPELLS, newGame, waitChoose } = suite;
+
+  /* Every registry spell advertises real availability. The flow already asks
+     each spec's legal() before arming. Pin the player-visible half of that
+     contract as well: every spell is fully present when it has a legal answer,
+     and every spell that can have no answer shares the opponent card's exact
+     mute. NUDGE is intentionally always legal. */
+  const blockedFixtures = new Set(['fate', 'ward', 'sunder', 'pilfer', 'anvil']);
+  check(SPELLS.every((spell) => spell.id === 'nudge' || blockedFixtures.has(spell.id)),
+    'a new conditionally legal spell needs an unavailable-card fixture', SPELLS.map((spell) => spell.id));
+
+  const availability = async (spell, blocked) => {
+    await newGame({ spell: spell.id });
+    check(await waitChoose(), `game never reached choose (${spell.id} availability)`);
+    await page.evaluate(({ id, uses, blockedNow }) => {
+      const k = window.__kb;
+      k.S.gen += 1;
+      k.S.mode = 'duo'; k.S.turn = 1; k.S.bottom = 1;
+      k.S.phase = 'choose'; k.S.busy = false; k.S.die = 4; k.S.scoring = 0;
+      k.S.pool = id === 'fate' && blockedNow ? [] : null;
+      k.S.boards = [[[], [], []], [[], [], []]];
+      k.S.charm.wards = [[0, 0, 0], [0, 0, 0]];
+      k.S.charm.sunder = [false, false];
+      k.S.spellCharges = [{ [id]: uses }, { [id]: uses }];
+      k.S.spellArmed = null; k.S.spellAimCommitted = null;
+      if (id === 'ward' && blockedNow) k.S.charm.wards[1] = [1, 1, 1];
+      if (id === 'sunder' && blockedNow) k.S.charm.sunder[1] = true;
+      if (id === 'pilfer' && !blockedNow) k.S.boards[0][0] = [6];
+      if (id === 'anvil' && !blockedNow) k.S.boards[1][0] = [1, 2, 3];
+      k.applySides(); k.renderAll(false); k.setStageDie(4, 1); k.showHints(); k.spells.render();
+    }, { id: spell.id, uses: spell.uses, blockedNow: blocked });
+    await page.waitForTimeout(300);
+    return page.evaluate((id) => {
+      const k = window.__kb;
+      const card = document.querySelector(`#spellBar .rune[data-spell="${id}"]`);
+      const style = getComputedStyle(card);
+      const before = {
+        disabled: card.disabled,
+        unavailable: card.classList.contains('unavailable'),
+        offturn: card.classList.contains('offturn'),
+        opacity: Number(style.opacity),
+        filter: style.filter,
+        aria: card.getAttribute('aria-label'),
+      };
+      const armed = k.spells.arm(id);
+      const aim = k.S.spellArmed;
+      k.spells.disarm(true);
+      return { ...before, armed, aim };
+    }, spell.id);
+  };
+
+  out.spellAvailability = {};
+  for (const spell of SPELLS) {
+    const available = await availability(spell, false);
+    out.spellAvailability[spell.id] = { available };
+    check(!available.disabled && !available.unavailable && !available.offturn
+        && available.opacity >= .99 && available.filter === 'none'
+        && available.armed && available.aim === spell.id,
+      `${spell.name} did not look and behave activatable with a legal target`, available);
+    if (!blockedFixtures.has(spell.id)) continue;
+    const blocked = await availability(spell, true);
+    out.spellAvailability[spell.id].blocked = blocked;
+    check(blocked.disabled && blocked.unavailable && !blocked.offturn
+        && blocked.opacity >= .40 && blocked.opacity <= .44
+        && blocked.filter === 'grayscale(0.6)' && /not available right now/i.test(blocked.aria || '')
+        && !blocked.armed && blocked.aim === null,
+      `${spell.name} did not use the opponent-card cue when it had no legal target`, blocked);
+  }
+}

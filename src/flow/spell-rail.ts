@@ -42,6 +42,10 @@ export function renderSpellRail(ports: SpellRailPorts): void {
        historical opponent-turn mute tied to ownership, not `canCast`: brief
        busy/legality changes on the player's own turn must not make it blink. */
     const offturn = S.mode === 'cpu' && seat !== ME;
+    /* `now` is null during transient phase/busy locks. Requiring the active
+       chooser here leaves those brief locks visually stable; with charges and
+       commitment ruled out, a remaining false `canCast` is registry legality. */
+    const unavailable = seat === now && left > 0 && !committed && !canCast;
     button.dataset.seat = String(seat);
     button.dataset.left = String(left);
     button.classList.toggle('spent', left <= 0);
@@ -49,6 +53,7 @@ export function renderSpellRail(ports: SpellRailPorts): void {
     button.classList.toggle('ready', !committed && canCast);
     button.classList.toggle('armed', S.spellArmed === spell.id && seat === now);
     button.classList.toggle('offturn', offturn);
+    button.classList.toggle('unavailable', unavailable);
     button.disabled = !canCast;
     paintCharges(button, spell, left);
     button.setAttribute('aria-label', nameOf(seat) + ': ' + spell.name + ' — ' + spell.blurb

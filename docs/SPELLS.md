@@ -441,11 +441,12 @@ The rail now keeps that card vocabulary in play.
   keeps the existing compact answer: the card is centred above the die.
 - **Its rune colour is always present and quiet.** Both faces carry the same
   oversized 12% → 4% → transparent surface wash. It has no breathing halo and
-  the wash does not change with castability or busy state. For the full machine
-  turn the shared card restores the historical opponent cue: 42% opacity with
-  partial grayscale. That cue follows ownership only, so brief busy or legality
-  changes cannot flicker it; pressing still supplies the selected flip and 1.16
-  enlargement.
+  the wash itself does not change with availability or busy state. For the full
+  machine turn the shared card restores the historical opponent cue: 42%
+  opacity with partial grayscale. An own rune with no legal target uses that
+  same mute so every registry spell advertises whether it can be activated.
+  Brief busy or phase locks keep the stable pre-lock appearance; pressing still
+  supplies the selected flip and 1.16 enlargement.
 - **It carries NO seat mark** — no seat colour, no mirrored lean. The die in
   play is beside it and is already painted in the colour of whoever is to move,
   the status line names them, and only one card is ever in the slot. A seat

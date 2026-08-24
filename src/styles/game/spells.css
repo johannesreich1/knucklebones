@@ -11,10 +11,10 @@
 :where(#kbroot) .rune[hidden]{display:none}
 :where(#kbroot) .rune::after{content:"";position:absolute;inset:-5px -7px;border-radius:10px}
 :where(#kbroot) .rune:disabled{pointer-events:none;cursor:default}
-/* The opponent owns this card for the whole machine turn. Muting that stable
-   ownership state restores the old disabled cue without tying visuals to
-   transient busy/castability changes (and without reviving the pulse). */
-:where(#kbroot) .rune.offturn{opacity:.42;filter:grayscale(.6);cursor:default}
+/* An opponent-owned card and an own card with no legal target share the same
+   disabled cue. Transient busy/phase locks receive neither class, so the card
+   does not flicker while an animation completes. */
+:where(#kbroot) .rune:is(.offturn,.unavailable){opacity:.42;filter:grayscale(.6);cursor:default}
 :where(#kbroot) .rune-charge,:where(#kbroot) .rune-empty{position:absolute;inset:0;display:block;
   border-radius:calc(var(--rw)*.2);transform:rotate(-7deg);transform-origin:50% 50%}
 :where(#kbroot) .rune-charge[hidden],:where(#kbroot) .rune-empty[hidden]{display:none}
