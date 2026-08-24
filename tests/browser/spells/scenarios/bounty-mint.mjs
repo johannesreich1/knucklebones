@@ -1,8 +1,4 @@
-import {
-  assertBountyMintSourceContract,
-  close,
-  easingNumbers,
-} from './bounty-mint-contract.mjs';
+import { assertBountyMintSourceContract, close, easingNumbers } from './bounty-mint-contract.mjs';
 
 export async function runBountyMintScenarios(suite) {
   const { page, out, check, newGame, waitChoose, table, guard, sidePage } = suite;
@@ -22,6 +18,13 @@ export async function runBountyMintScenarios(suite) {
     const plateBefore = {
       plate: rect('#plateBot'), who: rect('#plateBot .who'), right: rect('#plateBot .pright'),
     };
+    const placement = new Promise((resolve) => {
+      const root = document.getElementById('botBoard'), observer = new MutationObserver(() => {
+        if (root.querySelector('.col[data-col="0"] .die[data-v="4"]')) {
+          observer.disconnect(); resolve(document.timeline.currentTime);
+        }
+      });
+      observer.observe(root, { childList: true, subtree: true }); });
     const move = k.place(1, 0);
     for (let i = 0; i < 180 && document.querySelectorAll('.bounty-mint').length !== 2; i++) {
       await new Promise((resolve) => setTimeout(resolve, 8));
@@ -33,12 +36,9 @@ export async function runBountyMintScenarios(suite) {
     expectedHeatProbe.remove();
     const slots = [...document.querySelectorAll('.bounty-mint-slot')]
       .sort((a, b) => Number(a.dataset.bountyOrder) - Number(b.dataset.bountyOrder));
-    const placed = document.querySelector('#botBoard .col[data-col="0"] .die[data-v="4"]');
-    const placement = placed?.getAnimations().find((animation) => animation.animationName === 'settle');
-    const liveAnimations = [placement, ...slots.flatMap((slot) => slot.getAnimations({ subtree: true }))]
-      .filter(Boolean);
+    const liveAnimations = slots.flatMap((slot) => slot.getAnimations({ subtree: true }));
     await Promise.all(liveAnimations.map((animation) => animation.ready));
-    const placementStart = typeof placement?.startTime === 'number' ? placement.startTime : null;
+    const placementStart = await placement;
     const victims = slots.map((slot) => {
       const die = slot.querySelector(':scope > .die');
       const stamp = slot.querySelector(':scope > .bounty-mint');
