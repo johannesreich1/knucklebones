@@ -1,3 +1,9 @@
+import {
+  beginReducedRollProbe,
+  readReducedRollProbe,
+  reloadReducedMotionWithKeeper,
+} from '../reduced-motion-support.mjs';
+
 export async function runMotionSafeAreaScenarios(suite) {
   const { browser, devices, F, errs, out, check, markExperienced } = suite;
   // ================= REDUCED MOTION =================
@@ -32,19 +38,12 @@ export async function runMotionSafeAreaScenarios(suite) {
   // not an AI thinking delay. Reduced motion must resolve the face without
   // the JavaScript scramble and commit a tapped die without a flying ghost.
   await rp.evaluate(() => { window.__kb.S.starter = 1; });
-  const rollStarted = Date.now();
+  const rollStarted = await beginReducedRollProbe(rp);
   await rp.tap('#btnPlay');
   await rp.waitForFunction(() => window.__kb.S.phase === 'choose'
     && !!document.querySelector('#dieStage > .die'), null, { timeout: 1800 })
     .catch(() => { /* the measured check below names the failure */ });
-  out.reducedRoll = await rp.evaluate((started) => ({
-    elapsed: Date.now() - started,
-    phase: window.__kb.S.phase,
-    value: Number(document.querySelector('#dieStage > .die')?.dataset.v ?? 0),
-    rolling: document.getElementById('dieStage').classList.contains('rolling'),
-    activeAnimations: document.getElementById('dieStage').getAnimations({ subtree: true })
-      .filter((animation) => animation.playState === 'running').length,
-  }), rollStarted);
+  out.reducedRoll = await readReducedRollProbe(rp, rollStarted);
 
   /* Reduced motion removes the ordinary attention rings, not information a
      player explicitly requested by arming a spell. Read the painted pseudo
@@ -268,7 +267,8 @@ export async function runMotionSafeAreaScenarios(suite) {
   check(out.reduced.jsFlag === true, 'reduced-motion not detected in JS', out.reduced);
   check(out.reduced.particlesAfterBurst === 0, 'particles still spawn under reduced motion', out.reduced);
   check(out.reducedRoll.phase === 'choose' && out.reducedRoll.value >= 1
-    && out.reducedRoll.elapsed < 950 && !out.reducedRoll.rolling
+    && out.reducedRoll.values.length === 1 && out.reducedRoll.values[0] === out.reducedRoll.value
+    && !out.reducedRoll.rolling
     && out.reducedRoll.activeAnimations === 0,
   'reduced motion did not reveal the settled roll immediately', out.reducedRoll);
   check(out.reducedPlacement.after === out.reducedPlacement.before + 1
@@ -346,12 +346,16 @@ export async function runMotionSafeAreaScenarios(suite) {
     try { return JSON.parse(localStorage.getItem('knucklebones.v1') ?? '{}').reducedMotion === true; }
     catch { return false; }
   });
-  await mp.reload(); await mp.waitForTimeout(300);
-  out.reducedSetting.persisted = await mp.evaluate(() => window.__kb.S.reducedMotion
-    && window.__kb.reduced && document.getElementById('kbroot').classList.contains('reduce-motion'));
+  // file:// can discard the sole document's just-written storage area during
+  // reload on a slow CI runner. Keep a second document bound to the origin,
+  // matching the other persistence browser contracts, and poll the observable
+  // restored state instead of sleeping through the teardown race.
+  out.reducedSetting.persisted = await reloadReducedMotionWithKeeper(manual, mp, F);
   check(out.reducedSetting.state && out.reducedSetting.jsFlag && out.reducedSetting.rootClass
     && out.reducedSetting.selected === '1' && out.reducedSetting.ambient === 'none'
-    && out.reducedSetting.particlesAfterBurst === 0 && out.reducedSetting.persisted,
+    && out.reducedSetting.particlesAfterBurst === 0
+    && out.reducedSetting.persisted.state === true
+    && out.reducedSetting.persisted.jsFlag && out.reducedSetting.persisted.rootClass,
     'the Reduced Motion setting did not apply or persist across JS and CSS', out.reducedSetting);
   await manual.close();
 

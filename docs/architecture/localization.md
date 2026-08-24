@@ -146,6 +146,12 @@ boxes and hit testing in these pressure points:
 - tutorial steps, confirmation cards, result verdict/subtitle, and actions;
 - Settings labels, selector value, and accessible names.
 
+Single-word result verdicts keep the normal display scale when they fit. The
+shared result renderer reduces only an unbroken verdict that would exceed 90%
+of the owned app root, recalculating after locale and viewport changes; do not
+replace that neutral fitter with locale selectors or per-language offsets.
+Multi-word player-result titles retain their intentional wrapping.
+
 A test passes only when visible text stays inside its reserved box, required
 lines are not clipped, interactive targets remain reachable and at least 44 px,
 and translated copy does not overlap another visible element. DOM presence or

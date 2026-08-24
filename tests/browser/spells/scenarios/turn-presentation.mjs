@@ -200,7 +200,7 @@ export async function runTurnPresentationScenarios(suite) {
     out.turnScaleReduced = await reducedTurn.page.evaluate(async () => {
       const k = window.__kb;
       const root = document.getElementById('kbroot');
-      const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+      const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
       const setTurn = (turn) => {
         k.S.mode = 'cpu'; k.S.turn = turn; k.S.bottom = 1; k.S.busy = false;
         k.S.phase = turn === 1 ? 'choose' : 'anim';
@@ -218,9 +218,31 @@ export async function runTurnPresentationScenarios(suite) {
           icon: { x: (ir.left - cr.left) / cr.width, y: (ir.top - cr.top) / cr.height,
             width: ir.width / cr.width, height: ir.height / cr.height } };
       };
-      setTurn(1); await pause(90); const full = read();
-      setTurn(0); const immediate = read(); await pause(90); const opponent = read();
-      setTurn(1); await pause(90); const fullAgain = read();
+      /* A loaded Linux compositor can advance fewer paint frames than a JS
+         timer's wall clock implies. Synchronize with the actual transition,
+         while the assertion below independently pins its authored 60ms
+         reduced-motion duration. Re-check because the first frame can replace
+         a transition as the new turn state reaches the compositor. */
+      const settle = async () => {
+        const card = document.querySelector('#spellBar .rune:not([hidden])');
+        getComputedStyle(card).transform;
+        await frame();
+        for (let pass = 0; pass < 3; pass++) {
+          const running = card.getAnimations().filter((animation) =>
+            animation.playState === 'pending' || animation.playState === 'running');
+          if (!running.length) {
+            await frame();
+            if (!card.getAnimations().some((animation) =>
+              animation.playState === 'pending' || animation.playState === 'running')) break;
+            continue;
+          }
+          await Promise.allSettled(running.map((animation) => animation.finished));
+          await frame();
+        }
+      };
+      setTurn(1); await settle(); const full = read();
+      setTurn(0); const immediate = read(); await settle(); const opponent = read();
+      setTurn(1); await settle(); const fullAgain = read();
       return { reduced: k.reduced, rootReduced: root.classList.contains('reduce-motion'),
         full, immediate, opponent, fullAgain };
     });
