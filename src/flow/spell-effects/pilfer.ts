@@ -4,7 +4,7 @@ import { SPEC, type Player } from '../../core/rules.ts';
 import { S } from '../../state.ts';
 import { Sfx, vibrate } from '../../ui/audio.ts';
 import { colEl, faceRotated, slotEl, slotIdx } from '../../ui/dom.ts';
-import { REDUCED, fxRoot, pin } from '../../ui/fx.ts';
+import { REDUCED } from '../../ui/fx.ts';
 import { renderSide } from '../../ui/game/board.ts';
 import {
   cancelSpellAnimations,
@@ -27,7 +27,6 @@ interface PilferPath {
   duration: number;
   contacts: number[];
   points: TimedPoint[];
-  release: number;
 }
 
 const FLIGHT_EASING = 'cubic-bezier(.7,0,.2,1)';
@@ -91,7 +90,7 @@ function flightPoints(
   const release = blockerCount === 0 ? 0 : 512 + blockerCount * 512;
   const duration = release + 480;
   points.push({ ...target, milliseconds: duration });
-  return { duration, contacts, points, release };
+  return { duration, contacts, points };
 }
 
 function flightKeyframes(points: readonly TimedPoint[], duration: number): Keyframe[] {
@@ -143,27 +142,6 @@ function strainKeyframes(
         easing: STRAIN_EASING,
       })),
   };
-}
-
-function releaseSnap(
-  sourceRect: DOMRect,
-  toward: { x: number; y: number },
-  horizontal: boolean,
-  hue: string,
-): HTMLElement {
-  const snap = document.createElement('i');
-  snap.className = 'pilfer-release-snap';
-  snap.style.setProperty('--spell-hue', hue);
-  const long = Math.min(44, sourceRect.width * .85);
-  const short = 3;
-  const width = horizontal ? short : long;
-  const height = horizontal ? long : short;
-  const reach = sourceRect.width * .62;
-  const centreX = sourceRect.left + sourceRect.width / 2 + toward.x * reach;
-  const centreY = sourceRect.top + sourceRect.height / 2 + toward.y * reach;
-  pin(snap, new DOMRect(centreX - width / 2, centreY - height / 2, width, height), 69);
-  fxRoot().appendChild(snap);
-  return snap;
 }
 
 function revealColumn(who: Player, column: number): void {
@@ -258,20 +236,6 @@ export const pilferEffect: SpellEffect = async (who, column, apply) => {
       isCurrent,
     ));
   }
-  const snap = releaseSnap(pinned.sourceRect, toward, horizontal, hue);
-  const snapScale = (amount: number): string => horizontal
-    ? `scaleY(${amount})`
-    : `scaleX(${amount})`;
-  sideAnimations.push(playSpellAnimation(snap, [
-    { opacity: 0, transform: snapScale(.2), easing: 'ease-out' },
-    { opacity: 1, transform: snapScale(1), offset: 160 / 608, easing: 'ease-out' },
-    { opacity: 0, transform: snapScale(2.4), easing: 'ease-out' },
-  ], {
-    delay: path.release,
-    duration: 608,
-    easing: 'linear',
-  }, isCurrent));
-
   try {
     const arrived = await playSpellAnimation(
       pinned.ghost,
@@ -310,8 +274,6 @@ export const pilferEffect: SpellEffect = async (who, column, apply) => {
   } finally {
     clearTarget();
     pinned.remove();
-    cancelSpellAnimations(snap);
-    snap.remove();
     cancelSpellAnimations(sourceColumn);
     sourceColumn.classList.remove('pilfer-straining');
     delete sourceColumn.dataset.pilferCollisions;

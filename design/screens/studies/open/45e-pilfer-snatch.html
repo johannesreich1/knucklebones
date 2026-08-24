@@ -65,12 +65,9 @@
   /* Field coordinates, read out of the browser on this very board (the study
      ships at one device size): the field is 350px wide, the stolen die's slot
      centre sits at y 84 and the slot it lands in at y 435, and the two boards
-     face each other across the lane at y 214. Every seam drawn below is placed
+     face each other across the lane at y 214. Every moving mark below is placed
      against those, never against a fraction of an unknown height. */
   .spfield{--fly:351px}
-  /* a canvas over the whole field, so an idea can draw between the halves
-     without owning any element in the layout */
-  .spseam{position:absolute;inset:0;pointer-events:none;z-index:3;display:block}
   /* the rings are the ARMED state: they go the instant the tap lands, or the
      card would be showing a board the app cannot paint */
   .spcol.aim::after{animation:piarm 3.2s ease-out infinite}
@@ -95,7 +92,7 @@
   .spsrc{position:relative}
   /* the source empties at the moment it lifts and the destination fills at the
      moment it arrives, so no frame shows the die twice or not at all */
-  .spsrc > .spmark{animation:pigone 3.2s steps(1,end) infinite}
+  .spsrc > .spmark{animation:pigone 3.2s steps(1,end) infinite,pi5lean 1.6s ease-in-out infinite}
   @keyframes pigone{0%,17.9%{opacity:1}18%,100%{opacity:0}}
   .spdst > .die{animation:pihere 3.2s steps(1,end) infinite}
   @keyframes pihere{0%,61.9%{opacity:0}62%,100%{opacity:1}}
@@ -119,14 +116,13 @@
 
   /* ===== THE MARK is tension. The die that would be taken leans toward your
      half and the column leans back — the grab has already started. ===== */
-  .tgt{animation:pi5lean 1.6s ease-in-out infinite}
   @keyframes pi5lean{0%,100%{transform:translateY(0) rotate(0)}
     50%{transform:translateY(2px) rotate(1.6deg)}}
-  .tgt::after{content:"";position:absolute;inset:-3px;border-radius:17px;pointer-events:none;
+  .tgt::after{content:"";position:absolute;inset:0;border-radius:14px;pointer-events:none;
     border:1.5px solid var(--hue);border-top-width:0;
     box-shadow:0 6px 16px color-mix(in srgb,var(--hue) 45%,transparent);
     animation:pi5grip 1.6s ease-in-out infinite}
-  @keyframes pi5grip{0%,100%{opacity:.55;transform:translateY(0)}50%{opacity:1;transform:translateY(2px)}}
+  @keyframes pi5grip{0%,100%{opacity:.55}50%{opacity:1}}
 
   /* ===== THE TEARING. It pulls, the column holds, it pulls again, and it goes
      — with a snap-back through the dice below it. PILFER is the roster's one
@@ -151,11 +147,6 @@
      jolt, which is a deliberate risk: see the note */
   .spdst > .die{animation:pihere 3.2s steps(1,end) infinite,pi5slam 3.2s cubic-bezier(.2,1.7,.4,1) infinite}
   @keyframes pi5slam{0%,62%{transform:scale(1.1)}70%{transform:scale(.94)}80%,100%{transform:scale(1)}}
-  .spseam::after{content:"";position:absolute;left:50%;top:116px;width:44px;height:3px;margin-left:-22px;
-    border-radius:3px;background:var(--hue);opacity:0;filter:drop-shadow(0 0 8px var(--hue));
-    animation:pi5snap 3.2s ease-out infinite}
-  @keyframes pi5snap{0%,47%{opacity:0;transform:scaleX(.2)}
-    52%{opacity:1;transform:scaleX(1)}66%{opacity:0;transform:scaleX(2.4)}100%{opacity:0}}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
   <div class="hud">
@@ -174,8 +165,6 @@
     <span class="pright"><span class="runeslot live"><button class="rune idle" style="--sh:var(--p2)">{{sico:pilfer:16}}<b class="n"></b></button></span><span class="tot"><span class="spcount sptot"><i class="spold">32</i><i class="spnew">27</i></span></span></span>
   </div>
   <div class="spfield">
-    <i class="spseam"></i>
-
     <div class="spboard spfoe">
       <div class="spcol">
         <div class="spslot"></div>

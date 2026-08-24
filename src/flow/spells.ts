@@ -162,7 +162,7 @@ function clearAimState(): void {
 }
 
 export function disarm(force = false): boolean {
-  if (S.spellAimCommitted && !force) return false;
+  if ((S.spellAimCommitted || spellById(S.spellArmed)?.locksOnAim) && !force) return false;
   if (!S.spellArmed && !S.spellAimCommitted) return true;
   clearAimState();
   renderSpells();
@@ -171,7 +171,8 @@ export function disarm(force = false): boolean {
 }
 
 /* An armed spell claims board input before placement. Wrong or empty targets
-   cancel the aim and still consume the input event. */
+   consume the input event; ordinary aims cancel, while a registry-locked aim
+   stays open until it receives a legal answer. */
 export function castArmed(target: SpellInputTarget | null): boolean {
   const id = S.spellArmed;
   if (!id) return false;

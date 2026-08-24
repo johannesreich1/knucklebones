@@ -65,12 +65,15 @@ These are structural, not taste. Breaking one is a redesign, not a tweak.
   player is only asking the board a question; once the spell commits, its
   charge and information are final. FATE, NUDGE and SUNDER commit when their
   valid self cast lands on the die in hand. WARD and PILFER commit when a legal
-  column is selected. ANVIL is the deliberate exception: identifying the
+  column is selected. Once PILFER is armed it must be answered with a legal
+  enemy column rather than disarmed; its charge remains intact until that
+  answer lands. ANVIL is the deliberate exception: identifying the
   weakest die in every offered full column is already useful information, so
   it commits as soon as those markings appear. There is no post-cast snapshot,
   inverse, or second-press undo for any spell. A wrong target may still cancel
-  an ordinary uncommitted aim with the charge intact; an ANVIL aim cannot be
-  backed out of after its markings are shown.
+  an ordinary uncommitted aim with the charge intact. PILFER is the locked
+  uncommitted exception; ANVIL cannot be backed out of after its markings are
+  shown and charged.
 - **`core/` stays pure.** No DOM, no timers, no randomness. Supply arrives as
   behaviour (`CastCtx.draw`), so offline can hand it `Math.random` and a
   future ranked deal can hand it the seeded stream, with replay deterministic
@@ -274,9 +277,9 @@ charge accounting and the CSS never learn its name.
    two landscape lines is its whole budget, see §7),
    `target` (`'column' | 'self'`), `side` (`'own' | 'foe'`, for column spells:
    which half the ring offers), `uses`, `commitsOnAim` only when showing the
-   aim itself spends the charge, `previewDieIndex()` when a column spell marks
-   one exact die, `legal()`, `apply()`, and `cpuCast()` if its value is
-   off-board.
+   aim itself spends the charge, `locksOnAim` only when an uncommitted aim must
+   receive a legal answer, `previewDieIndex()` when a column spell marks one
+   exact die, `legal()`, `apply()`, and `cpuCast()` if its value is off-board.
 2. **The icon** — a path in `ui/spellicons.ts` plus a hue.
 3. **The cast animation** — an entry in `EFFECTS`
    (`src/flow/spell-effects.ts`), with `defaultEffect` as the fallback.
@@ -360,10 +363,11 @@ Learned from real play, each one a shipped bug:
   Dragging still works; dropping anywhere else cancels with the charge intact.
 - **Commitment has one visible direction.** Before commitment, leaving an
   ordinary aim or missing its target restores the ready rune with its charge
-  intact. After commitment, the rune immediately shows the remaining charge
-  or `spent`; pressing it again cannot restore the old die, supply, charm, or
-  board. ANVIL's marked aim stays visibly locked until the player chooses one
-  of its legal full columns. This rule lives in the shared spell flow, so
+  intact. PILFER deliberately locks that uncommitted aim until a legal enemy
+  column answers it. After commitment, the rune immediately shows the remaining
+  charge or `spent`; pressing it again cannot restore the old die, supply,
+  charm, or board. ANVIL's marked aim stays visibly locked until the player
+  chooses one of its legal full columns. This rule lives in the shared spell flow, so
   pointer, touch, keyboard, local-player and machine casts cannot disagree.
 - **The rail follows `S.turn`, while interactivity follows `caster()`.** The
   card always shows the hand whose turn it is, including the machine's inert
@@ -490,9 +494,11 @@ second one.
   one collision/resistance beat, and a full three-die stack repeats that same
   beat twice rather than escalating it. While aiming, a centre-facing open grip
   marks the exact die and the empty receiving slot glows during the crossing.
-  PI5's authored easing applies between its measured waypoints so the flying
-  die, whole-column strain, release snap, and landing squash stay synchronized.
-  The source stack strains and releases, then the die travels to the facing column.
+  The open grip sits directly on the die's real outline and moves only with the
+  die, never as a second offset ring. PI5's authored easing applies between its
+  measured waypoints so the flying die, whole-column strain, and landing squash
+  stay synchronized. The source stack strains and releases, then the die travels
+  to the facing column without a separate crossing line.
   Its arrival is a placement, not a strike: no board shake, impact burst, or
   other destruction cue may play when it lands. PILFER and COLUMN SHIELD share
   gold, so legality remains distinguished by form rather than hue alone.

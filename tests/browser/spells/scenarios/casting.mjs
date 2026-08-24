@@ -35,6 +35,32 @@ export async function runCastingScenarios(suite) {
   });
   check(out.rings.legalHidden === 'none', 'placement hints still up while aiming', out.rings);
 
+  /* PILFER is an answered threat, not a toggle. A second press, Escape, a tap
+     on the wrong half, and even the shared non-forced flow exit all leave the
+     legal enemy targets open and the unspent card face-up. */
+  await tapRune();
+  await page.keyboard.press('Escape');
+  await page.tap('#botBoard .col[data-col="0"]');
+  out.pilferLockedAim = await page.evaluate(() => {
+    const k = window.__kb;
+    const disarmed = k.spells.disarm();
+    return {
+      disarmed,
+      armed: k.S.spellArmed,
+      charges: JSON.stringify(k.S.spellCharges),
+      mine: JSON.stringify(k.S.boards[1]),
+      casting: document.getElementById('kbroot').classList.contains('casting'),
+      targets: document.querySelectorAll('#topBoard .col.aim').length,
+      cardArmed: document.querySelector('#spellBar .rune:not([hidden])')?.classList.contains('armed'),
+    };
+  });
+  check(!out.pilferLockedAim.disarmed && out.pilferLockedAim.armed === 'pilfer'
+      && out.pilferLockedAim.charges === '[{"pilfer":1},{"pilfer":1}]'
+      && out.pilferLockedAim.mine === '[[2],[3],[]]'
+      && out.pilferLockedAim.casting && out.pilferLockedAim.targets === 2
+      && out.pilferLockedAim.cardArmed,
+    'PILFER could be deactivated before a legal enemy column answered it', out.pilferLockedAim);
+
   /* ---------- 3. tap a column: ONE gate, one charge ---------- */
   await page.tap('#topBoard .col[data-col="0"]'); await page.waitForTimeout(50);
   out.cardFlight = await page.evaluate(() => ({

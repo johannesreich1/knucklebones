@@ -1,5 +1,5 @@
 /* PI5 — THE SNATCH. Flow owns the measured local tugs and straight tear; this
-   file keeps the stolen copy visually theirs and draws the release snap. */
+   file keeps the stolen copy visually theirs and its armed grip on the rim. */
 :where(#kbroot) .die.spellpreview.pilferpreview{
   --pilfer-grip-x:0px;
   --pilfer-grip-y:2px;
@@ -13,11 +13,11 @@
 :where(#kbroot) .die.spellpreview.pilferpreview::after{
   content:"";
   position:absolute;
-  inset:-3px;
+  inset:0;
   z-index:2;
   border:1.5px solid var(--spell-hue);
   border-top-width:0;
-  border-radius:calc(var(--r) + 5px);
+  border-radius:inherit;
   pointer-events:none;
   box-shadow:var(--pilfer-shadow-x) var(--pilfer-shadow-y) 16px
     color-mix(in srgb,var(--spell-hue) 45%,transparent);
@@ -60,8 +60,8 @@
   50%{transform:translate(var(--pilfer-grip-x),var(--pilfer-grip-y)) rotate(var(--pilfer-grip-rotate))}
 }
 @keyframes pilfer-preview-grip{
-  0%,100%{opacity:.55;transform:translate(0,0)}
-  50%{opacity:1;transform:translate(var(--pilfer-grip-x),var(--pilfer-grip-y))}
+  0%,100%{opacity:.55}
+  50%{opacity:1}
 }
 :where(#kbroot) .slot.pilfer-room{
   box-shadow:
@@ -71,14 +71,6 @@
 :where(#kbroot) .die.pilfer-ghost{
   pointer-events:none;
   will-change:transform;
-}
-:where(#kbroot) .pilfer-release-snap{
-  pointer-events:none;
-  border-radius:3px;
-  background:var(--spell-hue);
-  filter:drop-shadow(0 0 8px var(--spell-hue));
-  opacity:0;
-  will-change:transform,opacity;
 }
 :where(#kbroot) .col.pilfer-straining,
 :where(#kbroot) .die.pilfer-soft-settle{will-change:transform}

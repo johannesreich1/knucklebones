@@ -167,6 +167,7 @@ const PILFER: SpellSpec = {
   target: 'column',
   side: 'foe',
   uses: 1,
+  locksOnAim: true,
   previewDieIndex(st, who, col) {
     const foe = (1 - who) as Player;
     return st[foe][col].length ? st[foe][col].length - 1 : null;

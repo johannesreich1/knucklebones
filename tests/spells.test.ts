@@ -73,10 +73,11 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
   };
 }
 
-/* ---- AIM-TIME COMMITMENT IS DECLARATIVE ----
+/* ---- AIM-TIME LOCKS ARE DECLARATIVE ----
    Every completed cast is final. ANVIL is the one earlier commitment: its aim
    marks reveal the exact die before a column is chosen, so the registry must
-   declare both the lock and the die-level preview that explains it. */
+   declare both the commitment and the die-level preview that explains it.
+   PILFER locks the question without spending its charge until it is answered. */
 {
   for (const s of SPELLS) {
     if (!s.commitsOnAim) continue;
@@ -84,6 +85,8 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
       'a spell that commits while aiming must show the exact board target: ' + s.id);
   }
   check(spell('anvil').commitsOnAim === true, 'ANVIL markings commit before column selection');
+  check(spell('pilfer').locksOnAim === true && !spell('pilfer').commitsOnAim,
+    'PILFER aim locks until answered but spends only on a legal target');
 }
 
 /* ---- FATE: discard and draw ---- */

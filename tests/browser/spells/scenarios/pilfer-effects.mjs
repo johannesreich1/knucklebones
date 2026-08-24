@@ -4,15 +4,15 @@ const FLIGHT_EASING = 'cubic-bezier(0.7,0,0.2,1)';
 const STRAIN_EASING = 'cubic-bezier(0.5,0,0.3,1)';
 const LANDING_EASING = 'cubic-bezier(0.2,1.7,0.4,1)';
 const PI5_DEPTH = {
-  1: { flight: 480, release: 0, along: [0], times: [0, 480], strainTimes: [], strainScales: [] },
+  1: { flight: 480, along: [0], times: [0, 480], strainTimes: [], strainScales: [] },
   2: {
-    flight: 1504, release: 1024, along: [0, 10, -3, 13, 4],
+    flight: 1504, along: [0, 10, -3, 13, 4],
     times: [0, 288, 544, 800, 1024, 1504],
     strainTimes: [0, 800, 1024, 1184, 1440, 1760],
     strainScales: [1, 1.045, 1.02, .975, 1.01, 1],
   },
   3: {
-    flight: 2016, release: 1536, along: [0, 10, -3, 13, 4, 13, 4],
+    flight: 2016, along: [0, 10, -3, 13, 4, 13, 4],
     times: [0, 288, 544, 800, 1024, 1312, 1536, 2016],
     strainTimes: [0, 800, 1024, 1184, 1312, 1536, 1696, 1952, 2272],
     strainScales: [1, 1.045, 1.02, .975, 1.045, 1.02, .975, 1.01, 1],
@@ -31,25 +31,36 @@ function pilferGripProbe() {
   const grip = animations.find((animation) => animation.animationName === 'pilfer-preview-grip');
   const lean = preview?.getAnimations()
     .find((animation) => animation.animationName === 'pilfer-preview-lean');
-  const middle = grip?.effect?.getKeyframes?.()
+  const middle = lean?.effect?.getKeyframes?.()
     .find((frame) => Math.abs(Number(frame.computedOffset ?? frame.offset) - .5) < .001);
   const matrix = new DOMMatrixReadOnly(String(middle?.transform || 'none'));
   const toward = rect && destination ? {
     x: destination.x + destination.width / 2 - (rect.x + rect.width / 2),
     y: destination.y + destination.height / 2 - (rect.y + rect.height / 2),
   } : { x: 0, y: 0 };
+  const dieStyle = preview ? getComputedStyle(preview) : null;
   const after = preview ? getComputedStyle(preview, '::after') : null;
+  const gripAttached = (grip?.effect?.getKeyframes?.() || []).every((frame) => {
+    const gripMatrix = new DOMMatrixReadOnly(String(frame.transform || 'none'));
+    return Math.abs(gripMatrix.m41) < .01 && Math.abs(gripMatrix.m42) < .01;
+  });
   const land = document.getElementById('kbroot').classList.contains('land');
   return {
     land, count: previews.length, value: +(preview?.dataset.v || 0),
     exactTop: +(preview?.dataset.v || 0) === window.__kb.S.boards[0][0].at(-1),
     gripAnimation: !!grip, leanAnimation: !!lean, animations: animations.length,
     gripVector: [matrix.m41, matrix.m42],
+    gripAttached,
     centreDot: matrix.m41 * toward.x + matrix.m42 * toward.y,
     centreAxis: land ? Math.abs(matrix.m41) > Math.abs(matrix.m42)
       : Math.abs(matrix.m42) > Math.abs(matrix.m41),
     openOuterEdge: land ? after?.borderLeftWidth === '0px' && after?.borderRightWidth !== '0px'
       : after?.borderTopWidth === '0px' && after?.borderBottomWidth !== '0px',
+    outlineFlush: !!after && !!dieStyle
+      && [after.top, after.right, after.bottom, after.left].every((inset) => inset === '0px')
+      && after.borderRadius === dieStyle.borderRadius,
+    outlineInsets: after ? [after.top, after.right, after.bottom, after.left] : [],
+    outlineRadius: after?.borderRadius, dieRadius: dieStyle?.borderRadius,
     sourceVisible: preview ? getComputedStyle(preview).visibility === 'visible' : false,
     gripContent: after?.content, gripOpacity: +(after?.opacity || 0), gripTransform: after?.transform,
   };
@@ -62,11 +73,9 @@ async function pilferFlightProbe(advance) {
   const column = document.querySelector('#topBoard .col[data-col="0"]');
   const ghost = document.querySelector('.pilfer-ghost');
   const blockers = [...column.querySelectorAll('.pilfer-blocker')];
-  const snap = document.querySelector('.pilfer-release-snap');
   const room = document.querySelector('.pilfer-room');
   const animation = ghost?.getAnimations().find((item) => item.id === 'kb-spell-motion');
   const strain = column?.getAnimations().find((item) => item.id === 'kb-spell-motion');
-  const snapAnimation = snap?.getAnimations().find((item) => item.id === 'kb-spell-motion');
   const duration = Number(animation?.effect?.getTiming().duration || 0);
   const frames = animation?.effect?.getKeyframes?.() || [];
   const vectors = frames.map((frame) => {
@@ -79,21 +88,12 @@ async function pilferFlightProbe(advance) {
   const horizontal = Math.abs(target.x) > Math.abs(target.y);
   const strainFrames = strain?.effect?.getKeyframes?.() || [];
   const strainDuration = Number(strain?.effect?.getTiming().duration || 0);
-  const snapFrames = snapAnimation?.effect?.getKeyframes?.() || [];
-  const snapDuration = Number(snapAnimation?.effect?.getTiming().duration || 0);
-  animation?.pause(); strain?.pause(); snapAnimation?.pause();
+  animation?.pause(); strain?.pause();
   if (animation) animation.currentTime = 0;
   if (strain) strain.currentTime = 0;
-  if (snapAnimation) snapAnimation.currentTime = 0;
   await new Promise(requestAnimationFrame);
-  const snapRect = snap?.getBoundingClientRect();
-  const ghostRect = ghost?.getBoundingClientRect();
-  const snapDelta = snapRect && ghostRect ? {
-    x: snapRect.x + snapRect.width / 2 - (ghostRect.x + ghostRect.width / 2),
-    y: snapRect.y + snapRect.height / 2 - (ghostRect.y + ghostRect.height / 2),
-  } : { x: 0, y: 0 };
   if (advance) {
-    for (const item of [animation, strain, snapAnimation]) {
+    for (const item of [animation, strain]) {
       if (!item) continue;
       item.currentTime = Math.max(0, Number(item.effect?.getComputedTiming().endTime || 0) - 36);
       item.play();
@@ -119,18 +119,7 @@ async function pilferFlightProbe(advance) {
     }),
     strainEffectEasing: compact(strain?.effect?.getTiming().easing),
     strainFrameEasings: strainFrames.map((frame) => compact(frame.easing)),
-    snapDelay: Number(snapAnimation?.effect?.getTiming().delay || 0), snapDuration,
-    snapTimes: snapFrames.map((frame) => rounded(offsetOf(frame) * snapDuration)),
-    snapScales: snapFrames.map((frame) => {
-      const matrix = new DOMMatrixReadOnly(String(frame.transform || 'none'));
-      return rounded(horizontal ? matrix.m22 : matrix.m11);
-    }),
-    snapOpacities: snapFrames.map((frame) => +frame.opacity),
-    snapEffectEasing: compact(snapAnimation?.effect?.getTiming().easing),
-    snapFrameEasings: snapFrames.map((frame) => compact(frame.easing)),
-    snapOriented: !!snapRect && (horizontal
-      ? snapRect.height > snapRect.width : snapRect.width > snapRect.height),
-    snapCentreFacing: snapDelta.x * unit.x + snapDelta.y * unit.y > 0,
+    releaseLines: document.querySelectorAll('.pilfer-release-snap').length,
     ghost: !!ghost, enemyColour: ghost?.classList.contains('p2') && !ghost.classList.contains('p1'),
     hiddenValues: [...column.querySelectorAll('.slot .die')]
       .filter((die) => getComputedStyle(die).visibility === 'hidden').map((die) => +die.dataset.v),
@@ -171,6 +160,60 @@ function pilferLandingProbe() {
 export async function runPilferEffectScenarios(suite) {
   const { page, out, check, newGame, waitChoose, table, tapRune, sidePage } = suite;
   out.pilferSnatch = [];
+
+  /* Every legal enemy column gets the same PI5 waiting gesture on its exact
+     top die. One-column fixtures cannot catch a second/third preview drifting
+     back to a generic animation. */
+  await newGame({ spell: 'pilfer' });
+  check(await waitChoose(), 'game never reached choose (PI5 all targets)');
+  await table([[], [], []], [[1], [2, 3], [4, 5, 6]], 5);
+  await tapRune(); await page.waitForTimeout(80);
+  out.pilferAllTargets = await page.evaluate(() => {
+    const state = window.__kb.S;
+    return [...document.querySelectorAll('#topBoard .pilferpreview')].map((die) => {
+      const column = +(die.closest('.col')?.dataset.col || -1);
+      const lean = die.getAnimations().find((item) => item.animationName === 'pilfer-preview-lean');
+      const grip = die.getAnimations({ subtree: true })
+        .find((item) => item.animationName === 'pilfer-preview-grip');
+      const leanFrames = lean?.effect?.getKeyframes?.() || [];
+      const gripFrames = grip?.effect?.getKeyframes?.() || [];
+      const middle = leanFrames
+        .find((frame) => Math.abs(Number(frame.computedOffset ?? frame.offset) - .5) < .001);
+      const matrix = new DOMMatrixReadOnly(String(middle?.transform || 'none'));
+      const after = getComputedStyle(die, '::after');
+      const style = getComputedStyle(die);
+      return {
+        column,
+        value: +die.dataset.v,
+        exactTop: +die.dataset.v === state.boards[0][column].at(-1),
+        leanDuration: Number(lean?.effect?.getTiming().duration || 0),
+        leanEffectEasing: lean?.effect?.getTiming().easing,
+        leanFrameEasings: leanFrames.map((frame) => frame.easing),
+        towardY: matrix.m42,
+        rotation: Math.atan2(matrix.m12, matrix.m11) * 180 / Math.PI,
+        gripDuration: Number(grip?.effect?.getTiming().duration || 0),
+        gripEffectEasing: grip?.effect?.getTiming().easing,
+        gripFrameEasings: gripFrames.map((frame) => frame.easing),
+        gripAttached: gripFrames.every((frame) => {
+          const gripMatrix = new DOMMatrixReadOnly(String(frame.transform || 'none'));
+          return Math.abs(gripMatrix.m41) < .01 && Math.abs(gripMatrix.m42) < .01;
+        }),
+        outlineFlush: [after.top, after.right, after.bottom, after.left]
+          .every((inset) => inset === '0px') && after.borderRadius === style.borderRadius,
+      };
+    });
+  });
+  check(out.pilferAllTargets.length === 3
+      && out.pilferAllTargets.every((target, column) => target.column === column
+        && target.exactTop && target.leanDuration === 1600 && target.leanEffectEasing === 'linear'
+        && target.leanFrameEasings.every((easing) => easing === 'ease-in-out')
+        && Math.abs(target.towardY - 2) < .02 && Math.abs(target.rotation - 1.6) < .02
+        && target.gripDuration === 1600 && target.gripEffectEasing === 'linear'
+        && target.gripFrameEasings.every((easing) => easing === 'ease-in-out')
+        && target.gripAttached && target.outlineFlush),
+    'PI5 did not give every draggable target the same attached waiting gesture', out.pilferAllTargets);
+  await page.evaluate(() => window.__kb.spells.disarm(true));
+
   for (const height of [1, 2, 3]) {
     await newGame({ spell: 'pilfer' });
     check(await waitChoose(), `game never reached choose (PI5 height ${height})`);
@@ -180,8 +223,8 @@ export async function runPilferEffectScenarios(suite) {
     const grip = await page.evaluate(pilferGripProbe);
     check(grip.count === 1 && grip.value === height && grip.exactTop && grip.sourceVisible,
       `PI5 height ${height} did not clasp exactly the stolen top die`, grip);
-    check(!grip.land && grip.gripAnimation && grip.leanAnimation && grip.centreDot > 0
-      && grip.centreAxis && grip.openOuterEdge,
+    check(!grip.land && grip.gripAnimation && grip.leanAnimation && grip.gripAttached
+      && grip.outlineFlush && grip.centreDot > 0 && grip.centreAxis && grip.openOuterEdge,
     `PI5 height ${height} grip did not face the portrait table centre`, grip);
 
     await page.evaluate(() => { void window.__kb.spells.cast('pilfer', 0); });
@@ -206,14 +249,8 @@ export async function runPilferEffectScenarios(suite) {
       && (expected === 0 || (tension.strainEffectEasing === 'linear'
         && tension.strainFrameEasings.every((easing) => easing === STRAIN_EASING))),
     `PI5 height ${height} lost its exact repeated column strain`, tension);
-    check(tension.snapDelay === depth.release && tension.snapDuration === 608
-      && sameNumbers(tension.snapTimes, [0, 160, 608])
-      && sameNumbers(tension.snapScales, [.2, 1, 2.4])
-      && sameNumbers(tension.snapOpacities, [0, 1, 0])
-      && tension.snapEffectEasing === 'linear'
-      && tension.snapFrameEasings.every((easing) => easing === 'ease-out')
-      && tension.snapOriented && tension.snapCentreFacing,
-    `PI5 height ${height} lost its centre-facing release snap`, tension);
+    check(tension.releaseLines === 0,
+      `PI5 height ${height} drew a release line across the die's path`, tension);
     check(tension.ghost && tension.enemyColour && sameNumbers(tension.hiddenValues, [height]),
       'the stolen die did not lift as one enemy-coloured copy', tension);
     check(tension.roomCount === 1 && tension.roomCorrect,
@@ -237,7 +274,7 @@ export async function runPilferEffectScenarios(suite) {
       'the PI5 arrival still reads as a destructive strike', arrival);
     await page.waitForTimeout(100);
     const cleaned = await page.evaluate(() => ({
-      ghosts: document.querySelectorAll('.pilfer-ghost,.pilfer-release-snap').length,
+      ghosts: document.querySelectorAll('.pilfer-ghost').length,
       strain: document.querySelectorAll('.pilfer-straining,.pilfer-blocker,.pilfer-soft-settle').length,
       rooms: document.querySelectorAll('.pilfer-room').length,
       grips: document.querySelectorAll('.pilferpreview').length,
@@ -257,7 +294,7 @@ export async function runPilferEffectScenarios(suite) {
   await page.waitForTimeout(120); await page.evaluate(() => { window.__kb.S.gen++; });
   await page.waitForTimeout(100);
   out.pilferInterrupted = await page.evaluate(() => ({
-    ghost: document.querySelectorAll('.pilfer-ghost,.pilfer-release-snap').length,
+    ghost: document.querySelectorAll('.pilfer-ghost').length,
     marks: document.querySelectorAll(
       '.pilfer-straining,.pilfer-blocker,.pilfer-room,.pilferpreview').length,
     sourceVisibility: getComputedStyle(
@@ -281,7 +318,8 @@ export async function runPilferEffectScenarios(suite) {
     out.pilferLandscapeGrip = await landscape.page.evaluate(pilferGripProbe);
     const lg = out.pilferLandscapeGrip;
     check(lg.land && lg.count === 1 && lg.value === 3 && lg.exactTop && lg.gripAnimation
-      && lg.centreDot > 0 && lg.centreAxis && lg.openOuterEdge,
+      && lg.gripAttached && lg.outlineFlush && lg.centreDot > 0
+      && lg.centreAxis && lg.openOuterEdge,
     'PI5 did not transpose its armed grip toward the landscape centre', lg);
     await landscape.page.evaluate(() => { void window.__kb.spells.cast('pilfer', 0); });
     await landscape.page.waitForTimeout(60);
@@ -296,8 +334,8 @@ export async function runPilferEffectScenarios(suite) {
       && lf.flightEffectEasing === 'linear'
       && lf.flightFrameEasings.every((easing) => easing === FLIGHT_EASING),
     'PI5 did not transpose its two exact beats into a straight horizontal flight', lf);
-    check(lf.snapOriented && lf.snapCentreFacing && lf.roomCount === 1 && lf.roomCorrect,
-      'PI5 landscape lost its centre-facing snap or destination room', lf);
+    check(lf.releaseLines === 0 && lf.roomCount === 1 && lf.roomCorrect,
+      'PI5 landscape drew a release line or lost its destination room', lf);
   } finally { await landscape.ctx.close(); }
 
   const reduced = await sidePage({
@@ -312,7 +350,8 @@ export async function runPilferEffectScenarios(suite) {
     out.pilferReducedGrip = await reduced.page.evaluate(pilferGripProbe);
     const rg = out.pilferReducedGrip;
     check(rg.count === 1 && rg.value === 3 && rg.exactTop && rg.animations === 0
-      && rg.gripContent !== 'none' && rg.gripOpacity >= .8 && rg.gripTransform === 'none',
+      && rg.outlineFlush && rg.gripContent !== 'none'
+      && rg.gripOpacity >= .8 && rg.gripTransform === 'none',
     'reduced motion removed the static armed PILFER grip', rg);
     await reduced.page.evaluate(() => window.__kb.spells.cast('pilfer', 0));
     await reduced.page.waitForTimeout(30);
@@ -320,7 +359,7 @@ export async function runPilferEffectScenarios(suite) {
       mine: JSON.stringify(window.__kb.S.boards[1][0]),
       theirs: JSON.stringify(window.__kb.S.boards[0][0]),
       transients: document.querySelectorAll(
-        '.pilferpreview,.pilfer-ghost,.pilfer-release-snap,.pilfer-straining,'
+        '.pilferpreview,.pilfer-ghost,.pilfer-straining,'
         + '.pilfer-blocker,.pilfer-soft-settle,.pilfer-room').length,
       hidden: [...document.querySelectorAll('#topBoard .die,#botBoard .die')]
         .filter((die) => getComputedStyle(die).visibility === 'hidden').length,

@@ -46,6 +46,7 @@ page.on('pageerror', (e) => errs.push('PAGEERROR: ' + e.message));
 page.on('console', (m) => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
 
 const clipped = [], unexpanded = [];
+let pilferStudy = null;
 for (const f of files) {
   const head = readFileSync(join(dist, f), 'utf8').split('\n', 1)[0];
   const w = +(head.match(/width=(\d+)/)?.[1] || 0);
@@ -66,12 +67,36 @@ for (const f of files) {
     .replace(/<!--[\s\S]*?-->/g, ' ').replace(/\/\*[\s\S]*?\*\//g, ' ');
   const left = body.match(/\{\{[^}\s]+\}\}/g);
   if (left) unexpanded.push({ card: f, tokens: [...new Set(left)] });
+
+  /* PI5's source-die visibility beat and waiting lean share one element. A
+     more-specific animation shorthand once silently replaced the lean, so the
+     rendered card looked unlike production even though both keyframes existed
+     in its source. Read the cascade the designer actually sees. */
+  if (f === '45e-pilfer-snatch.html') {
+    pilferStudy = await page.evaluate(() => {
+      const target = document.querySelector('.spsrc > .spmark.tgt');
+      const grip = target ? getComputedStyle(target, '::after') : null;
+      return {
+        targetAnimations: target ? getComputedStyle(target).animationName : 'missing',
+        gripAnimation: grip?.animationName ?? 'missing',
+        gripInsets: grip ? [grip.top, grip.right, grip.bottom, grip.left] : [],
+        gripRadius: grip?.borderRadius ?? 'missing',
+        releaseLines: document.querySelectorAll('.spseam').length,
+      };
+    });
+  }
 }
 await browser.close();
 
 out.clipped = clipped;
 out.unexpanded = unexpanded;
+out.pilferStudy = pilferStudy;
 check(clipped.length === 0, 'design cards taller than the frame the pane gives them', clipped);
 check(unexpanded.length === 0, 'design cards shipping an unexpanded {{token}} as copy', unexpanded);
+check(pilferStudy?.targetAnimations.split(',').map((name) => name.trim()).join(',') === 'pigone,pi5lean'
+    && pilferStudy?.gripAnimation === 'pi5grip'
+    && pilferStudy?.gripInsets.every((inset) => inset === '0px')
+    && pilferStudy?.gripRadius === '14px' && pilferStudy?.releaseLines === 0,
+  'PI5 rendered without its waiting lean or retained the removed crossing line', pilferStudy);
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
