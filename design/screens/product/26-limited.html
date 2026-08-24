@@ -1,4 +1,4 @@
-<!-- meta name="Match — LIMITED bag" group="2 · Online flow" subtitle="The bag beside the die in play: face-down dice and a total, never which faces remain" width=412 height=980 links="Game modes" -->
+<!-- meta name="Match — LIMITED bag" group="2 · Online flow" subtitle="The bag beside the die in play: face-down dice, a plain column carrying the exact supply, and a total — never which faces remain" width=412 height=980 links="Game modes" -->
 <style>
   /* This card wears the APP's classes — .hud, .rec/.rchip, .plate, .table,
      .side/.board/.col/.slot, .cols/.chip, .center, .status, .timer,
@@ -60,7 +60,7 @@
      is card-local — in play the bag hangs off .stagerow (position:absolute),
      and these three stand on their own. */
   .depths{display:flex;justify-content:center;gap:26px;margin-top:22px}
-  .depths .bag{position:static;margin:0}
+  .depths .bag{position:static;translate:none;margin:0}
   .depths .d{display:flex;flex-direction:column;align-items:center;gap:6px}
   .depths .cap{font-size:9px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
 </style>
@@ -113,9 +113,12 @@
         <div id="dieStage">{{die:5:p1}}</div>
         <!-- eight dice are on the boards and a ninth is on the stage, so the
              bag holds 24 − 8 − 1: the die in play has already been drawn.
-             The pile thins with it — ceil(15/24 × 4) = 3 of 4 layers. -->
-        <div class="bag">
-          <span class="pile"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die gone"></i></span>
+             The pile thins with it — ceil(15/24 × 4) = 3 of 4 layers — and the
+             column in the left gutter carries the exact 15/24, because four
+             shells cannot. The last shell is the one that LEAVES: ui/bag.ts
+             appends it, and it rides the top layer on every draw. -->
+        <div class="bag" style="--bag-left:.625">
+          <span class="pile"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die gone"></i><i class="die take"></i></span>
           <b class="bn">15</b>
         </div>
       </div>
@@ -145,10 +148,13 @@
     </section>
   </div>
 
-  <!-- the pile thins as the bag drains: the last draws stand alone -->
+  <!-- the pile thins as the bag drains: the last draws stand alone. The pile
+       is a QUARTER at a time and the gutter is the remainder — which is the
+       whole reason the gutter exists, and it is plainest between 6 and 2,
+       where the shells stop changing and the column keeps falling. -->
   <div class="depths dice-static">
-    <div class="d"><div class="bag"><span class="pile"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die"></i></span><b class="bn">24</b></div><span class="cap">Full</span></div>
-    <div class="d"><div class="bag"><span class="pile"><i class="die"></i><i class="die"></i><i class="die gone"></i><i class="die gone"></i></span><b class="bn">11</b></div><span class="cap">Halfway</span></div>
-    <div class="d"><div class="bag"><span class="pile"><i class="die"></i><i class="die gone"></i><i class="die gone"></i><i class="die gone"></i></span><b class="bn">2</b></div><span class="cap">Last dice</span></div>
+    <div class="d"><div class="bag" style="--bag-left:1"><span class="pile"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die"></i></span><b class="bn">24</b></div><span class="cap">Full</span></div>
+    <div class="d"><div class="bag" style="--bag-left:.458"><span class="pile"><i class="die"></i><i class="die"></i><i class="die gone"></i><i class="die gone"></i></span><b class="bn">11</b></div><span class="cap">Halfway</span></div>
+    <div class="d"><div class="bag" style="--bag-left:.083"><span class="pile"><i class="die"></i><i class="die gone"></i><i class="die gone"></i><i class="die gone"></i></span><b class="bn">2</b></div><span class="cap">Last dice</span></div>
   </div>
 </div></div>

@@ -47,27 +47,83 @@
    and the number still to come. It never says WHICH faces remain; reading the
    board for that is the mode. Anchored to .stagerow so the played die stays
    optically centred. One implementation for online and offline: ui/bag.ts. */
+/* --pile-h is the stack's height. It lives at the root because two rules need
+   it and they are not in the same subtree: the pile itself, and the landscape
+   reserve on .stagerow that keeps the bag off the status line. One number, one
+   place — and no bag can fail to inherit it. */
+:where(#kbroot){--pile-h:36px}
+#kbroot.land{--pile-h:26px}
 :where(#kbroot) .stagerow{position:relative;display:flex;justify-content:center;align-items:center}
-:where(#kbroot) .bag{position:absolute;right:100%;margin-right:16px;display:flex;flex-direction:column;
-  align-items:center;gap:6px}
-:where(#kbroot) .bag .pile{position:relative;width:34px;height:36px}
+/* THE BAG SITS ON COLUMN ONE, the way the rune card sits on column three
+   (styles/game/spells.css uses the same expression with the sign flipped). The
+   two things beside the die in play are therefore symmetric about it and each
+   lines up with a real column of the board above and below, rather than each
+   floating at its own hand-picked offset from the stage. */
+:where(#kbroot) .bag{position:absolute;left:calc(50% - var(--cell) - var(--gap));top:50%;
+  translate:-50% -50%;display:flex;flex-direction:column;align-items:center;gap:6px}
+/* 2px wider than the shells need: the left lane belongs to the gauge below. */
+:where(#kbroot) .bag .pile{position:relative;width:36px;height:var(--pile-h)}
+/* THE GUTTER (design LI10). Four shells for twenty-four dice is a coarse
+   gauge, so the exact supply is a plain LENGTH in the lane at the pile's left
+   edge — the one run that stays clear at every count, whatever the fan is
+   doing. Sold as a length and NOT as marks to count: 24 ticks in 36px is a
+   1.5px pitch nobody resolves at arm's length. The spent track stays lit at a
+   twelfth so the scale itself is readable once the supply is short. No hue
+   anywhere, so the seven pickable player colours and colour blind mode cannot
+   touch it. --bag-left is the remaining fraction, set by ui/bag.ts because
+   BAG_SIZE lives there: a literal 24 here would lie the day DICE_FACES or
+   POOL_PER_FACE moves. */
+:where(#kbroot) .bag .pile::before,:where(#kbroot) .bag .pile::after{content:"";
+  position:absolute;left:0;bottom:0;width:2px;border-radius:1px;pointer-events:none;
+  background:rgba(233,240,255,.12)}
+:where(#kbroot) .bag .pile::after{height:calc(100% * var(--bag-left,1));
+  background:rgba(233,240,255,.78);transition:height .35s}
+:where(#kbroot) .bag .pile::before{height:100%}
 /* face-down dice: the .die shell with no pips — deliberately unreadable.
    The BASE die is centred and is the last one to go, so the count below stays
-   centred under the stack whether four dice remain or one. */
-:where(#kbroot) .bag .pile .die{position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+   centred under the stack whether four dice remain or one. --lay is the shell's
+   height in the pile; the step itself is written once, here. */
+:where(#kbroot) .bag .pile .die{position:absolute;left:50%;bottom:calc(4px * var(--lay,0));
+  transform:translateX(calc(-50% + 3px * var(--lay,0)));
   width:24px;height:24px;--cell:24px;--dc:#9fb2d8;
   transition:opacity .35s,transform .35s}
-/* the layers fan up and back from the base — deep enough to count at a glance,
-   and they thin to that single centred die for the last few draws */
-:where(#kbroot) .bag .pile .die:nth-child(2){bottom:4px;transform:translateX(calc(-50% + 3px))}
-:where(#kbroot) .bag .pile .die:nth-child(3){bottom:8px;transform:translateX(calc(-50% + 6px))}
-:where(#kbroot) .bag .pile .die:nth-child(4){bottom:12px;transform:translateX(calc(-50% + 9px))}
-:where(#kbroot) .bag .pile .die.gone{opacity:0;transform:translate(-50%,-8px) scale(.75)}
+/* the layers fan up and back from the base — a depth cue, not a count: this
+   rounds to a quarter, which is precisely why the gutter above carries the
+   number. They thin to that single centred die for the last six draws. */
+:where(#kbroot) .bag .pile .die:nth-child(2){--lay:1}
+:where(#kbroot) .bag .pile .die:nth-child(3){--lay:2}
+:where(#kbroot) .bag .pile .die:nth-child(4){--lay:3}
+:where(#kbroot) .bag .pile .die.gone{opacity:0;
+  transform:translate(calc(-50% + 3px * var(--lay,0)),-8px) scale(.75)}
+/* THE DRAW comes off the TOP of the stack, on EVERY draw — not only the one in
+   six that costs the pile a layer. This spare shell rides at whatever the top
+   layer was and is the only thing that moves, so the four below can restack
+   underneath it instead of fighting an animation for the same element. It is
+   the pile's last child on purpose: the layer rules above are nth-child. */
+:where(#kbroot) .bag .pile .take{opacity:0;transition:none}
+:where(#kbroot) .bag .pile .take.drawn{animation:bagtake 300ms cubic-bezier(.2,.72,.3,1)}
+/* solid while it travels, gone once it has: an opacity that starts falling on
+   the first frame reads as a shell dissolving in place rather than one being
+   taken out, because the ease-out spends most of its distance early. */
+@keyframes bagtake{
+  0%{opacity:1;transform:translateX(calc(-50% + 3px * var(--lay,0))) scale(1)}
+  45%{opacity:1}
+  100%{opacity:0;transform:translateX(calc(-50% + 3px * var(--lay,0))) translateY(-13px) scale(.76)}}
 :where(#kbroot) .bag .bn{font-size:11.5px;font-weight:900;color:var(--txt);font-variant-numeric:tabular-nums;
   letter-spacing:.06em}
 :where(#kbroot) .bag.tick .bn{animation:bagtick .45s cubic-bezier(.2,1.5,.4,1)}
 @keyframes bagtick{40%{transform:scale(1.3);color:var(--gold)}}
 :where(#kbroot) .bag.empty .bn{color:var(--dim)}
-#kbroot.land .bag{margin-right:8px}
-#kbroot.land .bag .pile{width:22px;height:26px}
+/* Landscape's centre lane is only as wide as the die, so the pair stacks
+   instead of flanking: the rune card keeps the space above the stage and the
+   bag takes the space below it, on the same 7px gap.
+   The room is a MARGIN on the row, not padding: the rune card is anchored to
+   the row's own box (`bottom:100%`, styles/game/spells.css), so growing that
+   box would walk the card away from the die it belongs to. A margin leaves the
+   row exactly where it was and moves the status line down instead — and only
+   while a bag is on screen at all, which is LIMITED and nothing else. */
+#kbroot.land .stagerow:has(.bag:not([hidden])){
+  margin-bottom:calc(7px + var(--pile-h) + 6px + 13px)}
+#kbroot.land .bag{left:50%;top:100%;translate:-50% 0;margin:7px 0 0}
+#kbroot.land .bag .pile{width:24px}
 #kbroot.land .bag .pile .die{width:18px;height:18px;--cell:18px}

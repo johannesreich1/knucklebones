@@ -1,0 +1,233 @@
+<!-- meta name="LI12 — The draw tells you" group="3j · LIMITED — the shared bag" subtitle="The bag looks the same at rest and the DRAW carries the count: a full bag gives its die up slowly and heavily with a deep settle, a nearly-empty one lets go at once — one event, one glance, no memory of an earlier turn required" width=430 height=1400 sizes="md" links="Match — LIMITED bag, Game modes, Spells — aiming a rune" -->
+<style>
+  /* Card-local names only (li* and sp*). The bag is the APP's — .bag, .pile,
+     .bn and the face-down .die shells are ui/bag.ts's markup and
+     styles/game/variants.css's rules. The study board, chips, labels and
+     nameplate width come from design/build.mjs's chrome. */
+  .scr{gap:6px;--hue:{{mhue:limited}}}
+  .spfield{gap:0}
+  .stagerow{--cell:52px;margin-top:16px;min-height:60px}
+  .listatus{margin-top:12px;margin-bottom:14px}
+
+  /* ===== THE LOOP: 3.4s, one DRAW — 6% to 24%, then held. =====
+     THE COUNT IS UNTOUCHED in all four: ui/bag.ts's own 450ms gold pulse, at
+     its own size and colour, and neither nameplate changes. NOTHING BELOW
+     USES A HUE — not the pile, not the gauge, not the draw. That is the
+     whole brief. */
+  .listage{display:block;line-height:0;animation:lishow 3.4s steps(1,end) infinite}
+  @keyframes lishow{0%,23.9%{opacity:0}24%,100%{opacity:1}}
+  .spold{animation:liold 3.4s steps(1,end) infinite}
+  .spnew{animation:linew 3.4s steps(1,end) infinite}
+  @keyframes liold{0%,23.9%{opacity:1}24%,100%{opacity:0}}
+  @keyframes linew{0%,23.9%{opacity:0}24%,100%{opacity:1}}
+  .licount{display:inline-flex;justify-content:center;min-width:2ch}
+  .bn{animation:litick 3.4s cubic-bezier(.2,1.5,.4,1) infinite}
+  @keyframes litick{0%,24%{transform:scale(1);color:var(--txt)}
+    30%{transform:scale(1.3);color:var(--gold)}42%,100%{transform:scale(1);color:var(--txt)}}
+
+  /* THE DRAW, shared: the top shell lifts, arcs the measured 61px to the
+     stage, and turns face-up as it lands. Achromatic — LI8's tinted wake is
+     deliberately gone. */
+  .lidrawn{position:absolute;left:50%;top:50%;width:0;height:0;z-index:9;pointer-events:none;
+    --pull:61px;--rise:9px}
+  .lidrawn > i{position:absolute;display:block;line-height:0;transform-origin:50% 50%}
+  .lidown{width:26px;height:26px;--cell:26px;border-radius:8px;margin:-13px 0 0 -13px;
+    background:linear-gradient(158deg,rgba(255,255,255,.22),rgba(255,255,255,.04) 42%,rgba(0,0,0,.28));
+    border:1px solid rgba(159,178,216,.75);box-shadow:0 5px 14px rgba(0,0,0,.55);
+    animation:lidlift 3.4s var(--lift-ease,cubic-bezier(.34,.06,.2,1)) infinite}
+  .liup{width:56px;height:56px;margin:-28px 0 0 -28px;
+    animation:lidland 3.4s cubic-bezier(.24,1.34,.36,1) infinite}
+  @keyframes lidlift{0%,5%{opacity:0;transform:translate(calc(var(--pull)*-1),var(--rise)) scale(1)}
+    7%{opacity:1;transform:translate(calc(var(--pull)*-1),var(--rise)) scale(1)}
+    15%{opacity:1;transform:translate(calc(var(--pull)*-.5),-21px) scale(1.66) rotate(-9deg) rotateY(58deg)}
+    18%,100%{opacity:0;transform:translate(calc(var(--pull)*-.32),-17px) scale(1.86) rotateY(90deg)}}
+  @keyframes lidland{0%,18%{opacity:0;transform:translate(calc(var(--pull)*-.32),-17px) scale(.52) rotateY(90deg)}
+    19%{opacity:1;transform:translate(calc(var(--pull)*-.32),-17px) scale(.64) rotateY(64deg)}
+    24%{opacity:1;transform:translate(0,0) scale(1.05) rotateY(0deg)}
+    28%,100%{opacity:1;transform:translate(0,0) scale(1) rotateY(0deg)}}
+  .pile .die:nth-child(3){animation:lidtop 3.4s cubic-bezier(.3,1.2,.4,1) infinite}
+  @keyframes lidtop{0%,5%{opacity:1;transform:translateX(calc(-50% + 6px)) translateY(0)}
+    8%,24%{opacity:0;transform:translateX(calc(-50% + 6px)) translateY(-7px)}
+    32%,100%{opacity:1;transform:translateX(calc(-50% + 6px)) translateY(0)}}
+
+  /* THE LADDER: the same bag at the six depths the brief names. Every number
+     under it is the app's own, in the app's colour, at the app's size. */
+  .listrip{display:flex;justify-content:center;gap:13px;margin-top:16px;width:100%}
+  .listrip .bag{position:relative;left:auto;top:auto;translate:none;margin:0}
+  .listrip .bag .die{animation:none!important}
+  .listrip .d{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .listrip .cap{font-size:8px;letter-spacing:.13em;color:var(--dim);text-transform:uppercase;
+    text-align:center;line-height:1.4}
+
+  /* ===== THE IDEA (proposed as "The Quickening Tell", refuted, repaired).
+     The first version put the count in the INTERVAL between idle micro-settles
+     — a tempo that quickened as the bag emptied. It was refuted on perception
+     rather than pixels: a rate needs at least two events to exist, realistically
+     three, and the player's observation window almost never contains them. The
+     opponent's turn is ~7s and the player spends it reading their own board;
+     they would have to remember a cadence from an earlier turn to decode this
+     one.
+     The repair is to move the count out of the GAP between events and into the
+     FORM of a single one. There is exactly one event the player watches every
+     single turn — the draw — so the draw carries it: at a full bag the shell
+     comes away slowly and the pile settles deep behind it; near the end it
+     leaves at once and the pile barely moves. One glance is sufficient, and
+     nothing has to be remembered. ===== */
+  /* --lift scales the whole gesture. It is the ONLY thing that changes. */
+  .litell{--lift:1}
+  .litell .lidown{animation-duration:calc(3.4s);
+    animation-timing-function:var(--lift-ease,cubic-bezier(.34,.06,.2,1))}
+  /* the pile's answer: a deep, slow settle behind a heavy draw; almost none
+     behind a light one. Depth is --settle, in px. */
+  .litell .pile{animation:litellsettle 3.4s cubic-bezier(.3,1.1,.4,1) infinite}
+  @keyframes litellsettle{0%,6%{transform:translateY(0)}
+    12%{transform:translateY(var(--settle,4px))}
+    30%{transform:translateY(calc(var(--settle,4px)*-.28))}
+    46%,100%{transform:translateY(0)}}
+  /* the three weights, shown as three live draws rather than six stills —
+     this is the one idea in the set whose signal cannot be photographed.
+     THE WEIGHT IS IN THE SPAN, not only the easing: a full bag gives its die
+     up over 16% of the turn and a nearly-empty one over 5%, so at any instant
+     mid-draw the heavy one is still in the air while the light one has landed.
+     Easing alone was tried first and is not demonstrable — all three arrived
+     on the same frame. */
+  .litellrow{display:flex;justify-content:center;gap:26px;margin-top:16px;width:100%}
+  .litellrow .d{display:flex;flex-direction:column;align-items:center;gap:9px}
+  .litellrow .stagerow{--cell:34px;min-height:40px;margin:0}
+  .litellrow .bag{position:absolute;right:100%;margin-right:10px}
+  .litellrow .cap{font-size:8px;letter-spacing:.13em;color:var(--dim);text-transform:uppercase;
+    text-align:center;line-height:1.4;max-width:78px}
+  .litellrow .lidrawn{--pull:38px;--rise:6px}
+  .litellrow .liup{width:34px;height:34px;margin:-17px 0 0 -17px}
+  .litellrow .listage{display:none}
+  /* HEAVY: reluctant to come away, and the pile drops hard behind it */
+  .w24{--settle:5px}
+  .w24 .lidown{animation-name:lift24;animation-timing-function:cubic-bezier(.66,.02,.4,1)}
+  .w24 .liup{animation-name:land24}
+  @keyframes lift24{0%,6%{opacity:0;transform:translate(calc(var(--pull)*-1),var(--rise)) scale(1)}
+    9%{opacity:1;transform:translate(calc(var(--pull)*-1),var(--rise)) scale(1)}
+    19%{opacity:1;transform:translate(calc(var(--pull)*-.5),-15px) scale(1.5) rotateY(58deg)}
+    22%,100%{opacity:0;transform:translate(calc(var(--pull)*-.32),-12px) scale(1.6) rotateY(90deg)}}
+  @keyframes land24{0%,22%{opacity:0;transform:translate(calc(var(--pull)*-.32),-12px) scale(.5) rotateY(90deg)}
+    24%{opacity:1;transform:translate(calc(var(--pull)*-.32),-12px) scale(.62) rotateY(64deg)}
+    32%{opacity:1;transform:translate(0,0) scale(1.04) rotateY(0deg)}
+    36%,100%{opacity:1;transform:translate(0,0) scale(1) rotateY(0deg)}}
+  /* MIDDLING */
+  .w12{--settle:3px}
+  .w12 .lidown{animation-name:lift12}
+  .w12 .liup{animation-name:land12}
+  @keyframes lift12{0%,6%{opacity:0;transform:translate(calc(var(--pull)*-1),var(--rise)) scale(1)}
+    8%{opacity:1;transform:translate(calc(var(--pull)*-1),var(--rise)) scale(1)}
+    14%{opacity:1;transform:translate(calc(var(--pull)*-.5),-15px) scale(1.5) rotateY(58deg)}
+    16%,100%{opacity:0;transform:translate(calc(var(--pull)*-.32),-12px) scale(1.6) rotateY(90deg)}}
+  @keyframes land12{0%,16%{opacity:0;transform:translate(calc(var(--pull)*-.32),-12px) scale(.5) rotateY(90deg)}
+    18%{opacity:1;transform:translate(calc(var(--pull)*-.32),-12px) scale(.62) rotateY(64deg)}
+    23%{opacity:1;transform:translate(0,0) scale(1.04) rotateY(0deg)}
+    27%,100%{opacity:1;transform:translate(0,0) scale(1) rotateY(0deg)}}
+  /* LIGHT: away almost before the finger is off it */
+  .w3{--settle:1px}
+  .w3 .lidown{animation-name:lift3;animation-timing-function:cubic-bezier(.14,.72,.3,1)}
+  .w3 .liup{animation-name:land3}
+  @keyframes lift3{0%,6%{opacity:0;transform:translate(calc(var(--pull)*-1),var(--rise)) scale(1)}
+    7%{opacity:1;transform:translate(calc(var(--pull)*-1),var(--rise)) scale(1)}
+    9.5%{opacity:1;transform:translate(calc(var(--pull)*-.5),-15px) scale(1.5) rotateY(58deg)}
+    11%,100%{opacity:0;transform:translate(calc(var(--pull)*-.32),-12px) scale(1.6) rotateY(90deg)}}
+  @keyframes land3{0%,11%{opacity:0;transform:translate(calc(var(--pull)*-.32),-12px) scale(.5) rotateY(90deg)}
+    12%{opacity:1;transform:translate(calc(var(--pull)*-.32),-12px) scale(.62) rotateY(64deg)}
+    15%{opacity:1;transform:translate(0,0) scale(1.04) rotateY(0deg)}
+    18%,100%{opacity:1;transform:translate(0,0) scale(1) rotateY(0deg)}}
+  /* the pile's own settle, deep behind a heavy draw and almost nothing behind
+     a light one — same curve, three depths */
+  .litellrow .pile{animation:litellsettle 3.4s cubic-bezier(.3,1.1,.4,1) infinite}
+  /* LI10's gutter now SHIPS (styles/game/variants.css draws it on every .bag).
+     This card proposes a rival channel for the same quantity, so the shipped
+     gauge is hidden here: two gauges in one picture measure nothing. */
+  .bag .pile::before,.bag .pile::after{content:none}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hud">
+    <div class="rec">
+      <span class="rchip">ONLINE</span>
+      <button type="button" class="rchip tapmode" data-lib="modes" data-id="limited">{{mico:limited:12}} LIMITED<span class="mi">ⓘ</span></button>
+    </div>
+    <div class="sp"></div>
+    <button class="ico">{{ico:leave:15}}</button>
+  </div>
+
+  <div class="cap2">Nothing changes while you look at it. Everything changes in how it hands the die over.</div>
+
+  <div class="spfield">
+    <div class="plate pline" style="--c:var(--p2)">
+      <span class="who"><span class="dot"></span><span class="nm">EmberCrow896</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="tot">29</span></span>
+    </div>
+
+    <div class="spboard spfoe" style="margin-top:6px">
+      <div class="spcol"><div class="spslot"></div><div class="spslot"></div><div class="spslot">{{die:6:p2:52}}</div></div>
+      <div class="spcol"><div class="spslot"></div><div class="spslot">{{die:4:p2 m2:52}}</div><div class="spslot">{{die:4:p2 m2:52}}</div></div>
+      <div class="spcol"><div class="spslot"></div><div class="spslot">{{die:2:p2:52}}</div><div class="spslot">{{die:5:p2:52}}</div></div>
+    </div>
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-top:5px">
+      <div class="spchip" style="--c:var(--p2)">6</div>
+      <div class="spchip" style="--c:var(--p2)">16</div>
+      <div class="spchip" style="--c:var(--p2)">7</div>
+    </div>
+
+    <div class="stagerow litell w12">
+      <div class="bag litell" style="--sp:0.720;--n:15">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die"></i></span>
+          <b class="bn"><span class="spcount licount"><i class="spold">15</i><i class="spnew">14</i></span></b>
+        </div>
+      <span class="listage">{{die:2:p1:56}}</span>
+      <i class="lidrawn" aria-hidden="true"><i class="lidown"></i><i class="liup">{{die:2:p1:56}}</i></i>
+    </div>
+    <div class="status me listatus">Your move</div>
+
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-bottom:5px">
+      <div class="spchip" style="--c:var(--p1)">12</div>
+      <div class="spchip" style="--c:var(--p1)">5</div>
+      <div class="spchip" style="--c:var(--p1)">6</div>
+    </div>
+    <div class="spboard spmine">
+      <div class="spcol"><div class="spslot">{{die:3:p1 m2:52}}</div><div class="spslot">{{die:3:p1 m2:52}}</div><div class="spslot"></div></div>
+      <div class="spcol"><div class="spslot">{{die:5:p1:52}}</div><div class="spslot"></div><div class="spslot"></div></div>
+      <div class="spcol"><div class="spslot">{{die:6:p1:52}}</div><div class="spslot"></div><div class="spslot"></div></div>
+    </div>
+
+    <div class="plate pline" style="--c:var(--p1);margin-top:6px">
+      <span class="who"><span class="dot"></span><span class="nm">FrostLynx303</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="tot">23</span></span>
+    </div>
+  </div>
+
+  <div class="cap2" style="margin-top:12px">Three draws at three depths — this one cannot be photographed, so watch it</div>
+  <div class="litellrow">
+    <div class="d"><div class="stagerow w24 litell">
+      <div class="bag litell" style="--sp:1.000;--n:24">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die"></i></span>
+          <b class="bn">24</b>
+        </div>
+      <i class="lidrawn" aria-hidden="true"><i class="lidown"></i><i class="liup">{{die:2:p1:34}}</i></i>
+    </div><span class="cap">Full<br>heavy, slow</span></div>
+    <div class="d"><div class="stagerow w12 litell">
+      <div class="bag litell" style="--sp:0.616;--n:12">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die"></i></span>
+          <b class="bn">12</b>
+        </div>
+      <i class="lidrawn" aria-hidden="true"><i class="lidown"></i><i class="liup">{{die:2:p1:34}}</i></i>
+    </div><span class="cap">Half<br>even</span></div>
+    <div class="d"><div class="stagerow w3 litell">
+      <div class="bag litell" style="--sp:0.233;--n:3">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die gone"></i></span>
+          <b class="bn">3</b>
+        </div>
+      <i class="lidrawn" aria-hidden="true"><i class="lidown"></i><i class="liup">{{die:2:p1:34}}</i></i>
+    </div><span class="cap">Three<br>light, gone</span></div>
+  </div>
+  <div class="splbl">no hue anywhere · the count keeps its colour, size and gold tick · both nameplates untouched</div>
+  <div class="note"><b>What it says:</b> <b>how heavy the bag still is</b> — carried by the one event the player watches on every single turn, so it needs no memory and no comparison with an earlier moment.<br>
+  <b>It costs the bag nothing at rest.</b> The pile, the shells, the fan and the count are pixel-identical to what ships today; this is the only idea in the set that adds no mark at all. It can therefore sit underneath any of the other three rather than competing with them.<br>
+  <b>Cost — and the reason the first version died.</b> It was proposed as a tempo: idle micro-settles whose interval quickened as the bag emptied. The adversarial pass killed it on perception, not pixels — <b>a rate needs two or three events to exist, and the player's window almost never contains them.</b> The opponent's turn is about seven seconds and the player spends it reading their own board. Moving the signal into one event fixes that, but the honest limits remain: <b>it says nothing at all to a player who is not looking at the moment of the draw</b>, it is invisible in a still (which is why the strip below runs three live draws instead of six photographs), and under reduced motion — where the game collapses every animation — it degrades to nothing whatsoever. That is a real gap the other three do not have.</div>
+</div></div>

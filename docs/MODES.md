@@ -203,3 +203,70 @@ design decision rather than percentage reconstruction at a call site.
 **game-grid kill treatment** described above. Any nameplates, score placement,
 bottom points, or tally layout shown in an earlier 46b study are non-normative
 composition aids and must not be copied into the game.
+
+## 9. LIMITED's bag: the gutter and the top draw
+
+The bag beside the die in play is `ui/bag.ts` plus the LIMITED block of
+`styles/game/variants.css`, one implementation for offline and ranked. It shows
+three things and never a fourth: **how many** are left, **that one just left**,
+and nothing whatsoever about **which faces** remain — reading the board for
+that is the mode.
+
+### Where it stands
+
+The bag is centred on the **first board column**, exactly as the rune card is
+centred on the third (`calc(50% ± var(--cell) ± var(--gap))`, the same
+expression with the sign flipped — `styles/game/spells.css` owns the other
+half). The two things flanking the die in play are therefore symmetric about
+it and each lines up with a real column above and below, rather than each
+floating at its own offset from the stage.
+
+Landscape's centre lane is only as wide as the die, so the pair stacks instead:
+the rune keeps the space above the stage, the bag takes the space below it, on
+the same 7px gap. That room is a **margin on the stage row, not padding** — the
+rune card is anchored to the row's own box, so growing the box would walk the
+card away from the die it belongs to. The margin leaves the row where it is and
+moves the status line down instead, and only while a bag is on screen at all.
+
+### The pile rounds; the gutter does not
+
+The stack of face-down shells is a coarse gauge by construction —
+`ceil(n/24 × 4)` shells, one per quarter — so it cannot tell six dice from one,
+which is exactly the stretch of the match where the number matters most.
+Design LI10 puts the exact supply in the lane at the pile's left edge: a 2px
+column whose height is `n/24` of the pile, drawn over a full-height track at a
+twelfth alpha so the scale itself stays readable when the supply is short.
+`ui/bag.ts` sets `--bag-left` as the remaining fraction, because `BAG_SIZE` is
+derived there from `POOL_PER_FACE × DICE_FACES`; a literal 24 in the
+stylesheet would lie the day either moves.
+
+It is **read as a length, not as marks to count.** The idea was proposed as a
+collar of 24 countable teeth and refuted twice over: the collar anchored its
+scale on the floor and right wall, where the shells permanently sit, and 24
+ticks in 36px is a 1.5px pitch nobody resolves at arm's length. Only the left
+gutter survives at every depth, and the counting claim is gone.
+
+**Nothing in the gauge carries a hue.** Seven duel colours are pickable and
+colour blind mode repoints the pair, so a gauge reading `--p1`/`--p2` would
+mean different things on two phones. Repointing the pair must not move a
+channel of it — `tests/test24.mjs` asserts exactly that.
+
+### The draw comes off the top
+
+Every draw takes the shell the player is looking at, not only the one in six
+that costs the pile a layer. A dedicated fifth shell (`.take`) rides whatever
+layer is currently on top and is the only thing that moves: 300ms on
+`cubic-bezier(.2,.72,.3,1)`, 13px up and to `scale(.76)`, holding full opacity
+through the first 45% so it reads as a die being taken out rather than one
+dissolving in place. The four shells below restack underneath it instead of
+fighting an animation for the same element.
+
+It is armed only when the painted count falls by **exactly one**. A fresh
+game, a reconnect whose count arrives several dice on, and FA4 rewinding its
+own bag all repaint the same elements with a jump, and none of them may throw
+a die off the pile. Under reduced motion the lift collapses with every other
+animation and the count, the shells and the column still land on the truth.
+
+`design/screens/product/47j-limited-gutter.html` is the design reference for
+both beats; `design/screens/studies/open/47a`–`47l` retain the rival proposals
+and suppress the shipped gauge so each shows its own channel alone.

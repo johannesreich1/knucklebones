@@ -1,0 +1,182 @@
+<!-- meta name="LI11 — The stack shortens" group="3j · LIMITED — the shared bag" subtitle="Height is the signal: the whole 12px splay budget is spent on a monotonic ramp from a 36px stack to a single 24px tile, and the last four draws are literal — one shell per die, so the endgame stops being a quantised guess" width=430 height=1400 sizes="md" links="Match — LIMITED bag, Game modes, Spells — aiming a rune" -->
+<style>
+  /* Card-local names only (li* and sp*). The bag is the APP's — .bag, .pile,
+     .bn and the face-down .die shells are ui/bag.ts's markup and
+     styles/game/variants.css's rules. The study board, chips, labels and
+     nameplate width come from design/build.mjs's chrome. */
+  .scr{gap:6px;--hue:{{mhue:limited}}}
+  .spfield{gap:0}
+  .stagerow{--cell:52px;margin-top:16px;min-height:60px}
+  .listatus{margin-top:12px;margin-bottom:14px}
+
+  /* ===== THE LOOP: 3.4s, one DRAW — 6% to 24%, then held. =====
+     THE COUNT IS UNTOUCHED in all four: ui/bag.ts's own 450ms gold pulse, at
+     its own size and colour, and neither nameplate changes. NOTHING BELOW
+     USES A HUE — not the pile, not the gauge, not the draw. That is the
+     whole brief. */
+  .listage{display:block;line-height:0;animation:lishow 3.4s steps(1,end) infinite}
+  @keyframes lishow{0%,23.9%{opacity:0}24%,100%{opacity:1}}
+  .spold{animation:liold 3.4s steps(1,end) infinite}
+  .spnew{animation:linew 3.4s steps(1,end) infinite}
+  @keyframes liold{0%,23.9%{opacity:1}24%,100%{opacity:0}}
+  @keyframes linew{0%,23.9%{opacity:0}24%,100%{opacity:1}}
+  .licount{display:inline-flex;justify-content:center;min-width:2ch}
+  .bn{animation:litick 3.4s cubic-bezier(.2,1.5,.4,1) infinite}
+  @keyframes litick{0%,24%{transform:scale(1);color:var(--txt)}
+    30%{transform:scale(1.3);color:var(--gold)}42%,100%{transform:scale(1);color:var(--txt)}}
+
+  /* THE DRAW, shared: the top shell lifts, arcs the measured 61px to the
+     stage, and turns face-up as it lands. Achromatic — LI8's tinted wake is
+     deliberately gone. */
+  .lidrawn{position:absolute;left:50%;top:50%;width:0;height:0;z-index:9;pointer-events:none;
+    --pull:61px;--rise:9px}
+  .lidrawn > i{position:absolute;display:block;line-height:0;transform-origin:50% 50%}
+  .lidown{width:26px;height:26px;--cell:26px;border-radius:8px;margin:-13px 0 0 -13px;
+    background:linear-gradient(158deg,rgba(255,255,255,.22),rgba(255,255,255,.04) 42%,rgba(0,0,0,.28));
+    border:1px solid rgba(159,178,216,.75);box-shadow:0 5px 14px rgba(0,0,0,.55);
+    animation:lidlift 3.4s var(--lift-ease,cubic-bezier(.34,.06,.2,1)) infinite}
+  .liup{width:56px;height:56px;margin:-28px 0 0 -28px;
+    animation:lidland 3.4s cubic-bezier(.24,1.34,.36,1) infinite}
+  @keyframes lidlift{0%,5%{opacity:0;transform:translate(calc(var(--pull)*-1),var(--rise)) scale(1)}
+    7%{opacity:1;transform:translate(calc(var(--pull)*-1),var(--rise)) scale(1)}
+    15%{opacity:1;transform:translate(calc(var(--pull)*-.5),-21px) scale(1.66) rotate(-9deg) rotateY(58deg)}
+    18%,100%{opacity:0;transform:translate(calc(var(--pull)*-.32),-17px) scale(1.86) rotateY(90deg)}}
+  @keyframes lidland{0%,18%{opacity:0;transform:translate(calc(var(--pull)*-.32),-17px) scale(.52) rotateY(90deg)}
+    19%{opacity:1;transform:translate(calc(var(--pull)*-.32),-17px) scale(.64) rotateY(64deg)}
+    24%{opacity:1;transform:translate(0,0) scale(1.05) rotateY(0deg)}
+    28%,100%{opacity:1;transform:translate(0,0) scale(1) rotateY(0deg)}}
+  .pile .die:nth-child(3){animation:lidtop 3.4s cubic-bezier(.3,1.2,.4,1) infinite}
+  @keyframes lidtop{0%,5%{opacity:1;transform:translateX(calc(-50% + 6px)) translateY(0)}
+    8%,24%{opacity:0;transform:translateX(calc(-50% + 6px)) translateY(-7px)}
+    32%,100%{opacity:1;transform:translateX(calc(-50% + 6px)) translateY(0)}}
+
+  /* THE LADDER: the same bag at the six depths the brief names. Every number
+     under it is the app's own, in the app's colour, at the app's size. */
+  .listrip{display:flex;justify-content:center;gap:13px;margin-top:16px;width:100%}
+  .listrip .bag{position:relative;left:auto;top:auto;translate:none;margin:0}
+  .listrip .bag .die{animation:none!important}
+  .listrip .d{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .listrip .cap{font-size:8px;letter-spacing:.13em;color:var(--dim);text-transform:uppercase;
+    text-align:center;line-height:1.4}
+
+  /* ===== THE IDEA (proposed as "The heap squares up", refuted, repaired).
+     The first version rotated each shell a little more as the bag emptied —
+     disorder as the gauge. It was refuted on arithmetic: the shell is not a
+     square, it carries a 7.5px corner radius (board.css min(--r, --cell*.25 +
+     1.5px)), so a few degrees of rotation moves the silhouette 0.39px and
+     costs the crisp edge that makes it read as a die at all.
+     What survived the refutation was its diagnosis — shellCount = min(4, n) —
+     plus the instruction to spend the whole vertical budget on SIZE, which is
+     a channel that does survive the periphery and is hue-free and value-free
+     by construction. So: the splay pitch ramps continuously, the tail is
+     floored at 2px so the last four counts differ by silhouette height rather
+     than by four superimposed glows, and rotate() is gone entirely. ===== */
+  .lishort .pile .die{transform:translateX(-50%)}
+  .lishort .pile .die:nth-child(2){bottom:calc(2px + 2px*var(--sp,1));
+    transform:translateX(calc(-50% + 3px))}
+  .lishort .pile .die:nth-child(3){bottom:calc((2px + 2px*var(--sp,1))*2);
+    transform:translateX(calc(-50% + 6px))}
+  .lishort .pile .die:nth-child(4){bottom:calc((2px + 2px*var(--sp,1))*3);
+    transform:translateX(calc(-50% + 9px))}
+  /* the last four draws are LITERAL: one shell per die. min(4,n) is applied in
+     the markup, so 3 dice is three shells and 1 die is one flat tile — the
+     shipped ceil(n/24*4) shows one shell for everything from 6 down to 1. */
+  .lishort .pile .die.gone{opacity:0}
+  /* a hairline under the stack so its height has a floor to be measured from */
+  .lishort .pile{box-shadow:inset 0 -1px 0 rgba(233,240,255,.16)}
+  .lishort .pile .die:nth-child(3){animation:none}
+  /* LI10's gutter now SHIPS (styles/game/variants.css draws it on every .bag).
+     This card proposes a rival channel for the same quantity, so the shipped
+     gauge is hidden here: two gauges in one picture measure nothing. */
+  .bag .pile::before,.bag .pile::after{content:none}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hud">
+    <div class="rec">
+      <span class="rchip">ONLINE</span>
+      <button type="button" class="rchip tapmode" data-lib="modes" data-id="limited">{{mico:limited:12}} LIMITED<span class="mi">ⓘ</span></button>
+    </div>
+    <div class="sp"></div>
+    <button class="ico">{{ico:leave:15}}</button>
+  </div>
+
+  <div class="cap2">A full bag stands 36px tall; the last die is a flat 24px tile. Size, and nothing else.</div>
+
+  <div class="spfield">
+    <div class="plate pline" style="--c:var(--p2)">
+      <span class="who"><span class="dot"></span><span class="nm">EmberCrow896</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="tot">29</span></span>
+    </div>
+
+    <div class="spboard spfoe" style="margin-top:6px">
+      <div class="spcol"><div class="spslot"></div><div class="spslot"></div><div class="spslot">{{die:6:p2:52}}</div></div>
+      <div class="spcol"><div class="spslot"></div><div class="spslot">{{die:4:p2 m2:52}}</div><div class="spslot">{{die:4:p2 m2:52}}</div></div>
+      <div class="spcol"><div class="spslot"></div><div class="spslot">{{die:2:p2:52}}</div><div class="spslot">{{die:5:p2:52}}</div></div>
+    </div>
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-top:5px">
+      <div class="spchip" style="--c:var(--p2)">6</div>
+      <div class="spchip" style="--c:var(--p2)">16</div>
+      <div class="spchip" style="--c:var(--p2)">7</div>
+    </div>
+
+    <div class="stagerow ">
+      <div class="bag lishort" style="--sp:0.720;--n:15">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die"></i></span>
+          <b class="bn"><span class="spcount licount"><i class="spold">15</i><i class="spnew">14</i></span></b>
+        </div>
+      <span class="listage">{{die:2:p1:56}}</span>
+      <i class="lidrawn" aria-hidden="true"><i class="lidown"></i><i class="liup">{{die:2:p1:56}}</i></i>
+    </div>
+    <div class="status me listatus">Your move</div>
+
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-bottom:5px">
+      <div class="spchip" style="--c:var(--p1)">12</div>
+      <div class="spchip" style="--c:var(--p1)">5</div>
+      <div class="spchip" style="--c:var(--p1)">6</div>
+    </div>
+    <div class="spboard spmine">
+      <div class="spcol"><div class="spslot">{{die:3:p1 m2:52}}</div><div class="spslot">{{die:3:p1 m2:52}}</div><div class="spslot"></div></div>
+      <div class="spcol"><div class="spslot">{{die:5:p1:52}}</div><div class="spslot"></div><div class="spslot"></div></div>
+      <div class="spcol"><div class="spslot">{{die:6:p1:52}}</div><div class="spslot"></div><div class="spslot"></div></div>
+    </div>
+
+    <div class="plate pline" style="--c:var(--p1);margin-top:6px">
+      <span class="who"><span class="dot"></span><span class="nm">FrostLynx303</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="tot">23</span></span>
+    </div>
+  </div>
+
+  <div class="cap2" style="margin-top:12px">The same bag at six depths — every number below is the app\u2019s own, unaltered</div>
+  <div class="listrip dice-static">
+    <div class="d"><div class="bag lishort" style="--sp:1.000;--n:24">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die"></i></span>
+          <b class="bn">24</b>
+        </div><span class="cap">24<br>36px tall</span></div>
+    <div class="d"><div class="bag lishort" style="--sp:0.818;--n:18">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die"></i></span>
+          <b class="bn">18</b>
+        </div><span class="cap">18</span></div>
+    <div class="d"><div class="bag lishort" style="--sp:0.616;--n:12">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die"></i></span>
+          <b class="bn">12</b>
+        </div><span class="cap">12</span></div>
+    <div class="d"><div class="bag lishort" style="--sp:0.379;--n:6">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die"></i></span>
+          <b class="bn">6</b>
+        </div><span class="cap">6<br>four, tight</span></div>
+    <div class="d"><div class="bag lishort" style="--sp:0.233;--n:3">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die gone"></i></span>
+          <b class="bn">3</b>
+        </div><span class="cap">3<br>three</span></div>
+    <div class="d"><div class="bag lishort" style="--sp:0.108;--n:1">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die gone"></i><i class="die gone"></i><i class="die gone"></i></span>
+          <b class="bn">1</b>
+        </div><span class="cap">1<br>one tile</span></div>
+  </div>
+  <div class="splbl">no hue anywhere · the count keeps its colour, size and gold tick · both nameplates untouched</div>
+  <div class="note"><b>What it says:</b> <b>how big the pile is</b> — and size is the channel that most reliably survives peripheral vision at this scale, which is exactly what the refuted version could not claim.<br>
+  <b>The endgame stops being a guess.</b> The shipped <code>ceil(n / 24 × 4)</code> shows a single shell for everything from six dice down to one, so the last five draws are pictorially identical. Here the final four are literal — three dice is three shells, one die is one flat tile — while the continuous ramp carries the twenty above them.<br>
+  <b>Cost — what the adversary took away.</b> This was proposed as growing disorder: each shell rotated a little more as the bag emptied. That died on arithmetic — the shell has a 7.5px corner radius, so a few degrees moves the silhouette <b>0.39px</b> and costs the crisp edge that makes it read as a die. Rotation is gone. What is left is honest but plain: 12px of height across the whole match is about 3.6px per checkpoint, which is real but undramatic, and a stack that is merely shorter has none of the flavour a "nearly empty bag" wants. It also changes the pile's height, which is the one dimension the 34×36 box has least of.</div>
+</div></div>

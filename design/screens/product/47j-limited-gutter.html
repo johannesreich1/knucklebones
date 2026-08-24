@@ -1,0 +1,143 @@
+<!-- meta name="Match — LIMITED bag, the draw" group="2 · Online flow" subtitle="What shipped from the LI10 study: the bag stands on column one, a plain column in its left gutter carries the exact supply as a length, and every draw comes off the TOP of the stack" width=430 height=1637 sizes="md" links="Match — LIMITED bag, Game modes, Spells — aiming a rune" -->
+<style>
+  /* Card-local names only (li* and sp*). EVERYTHING the bag does here is the
+     app's: .bag, .pile, .bn, the face-down .die shells and the .take shell are
+     ui/bag.ts's markup, and the gutter, the fan and the lift are
+     styles/game/variants.css. This card only drives them on a loop — it
+     redeclares none of them. The board, chips, labels and nameplate width come
+     from design/build.mjs's chrome. */
+  .scr{gap:6px;--hue:{{mhue:limited}}}
+  .spfield{gap:0}
+  .stagerow{--cell:52px;margin-top:16px;min-height:60px}
+  .listatus{margin-top:12px;margin-bottom:14px}
+
+  /* ===== THE LOOP: 3.4s, one DRAW at 6%. ===== */
+  /* the count: ui/bag.ts's own 450ms gold pulse, at its own size and colour,
+     and neither nameplate changes */
+  .spold{animation:liold 3.4s steps(1,end) infinite}
+  .spnew{animation:linew 3.4s steps(1,end) infinite}
+  @keyframes liold{0%,5.9%{opacity:1}6%,100%{opacity:0}}
+  @keyframes linew{0%,5.9%{opacity:0}6%,100%{opacity:1}}
+  .licount{display:inline-flex;justify-content:center;min-width:2ch}
+  .bn{animation:litick 3.4s cubic-bezier(.2,1.5,.4,1) infinite}
+  @keyframes litick{0%,6%{transform:scale(1);color:var(--txt)}
+    12%{transform:scale(1.3);color:var(--gold)}24%,100%{transform:scale(1);color:var(--txt)}}
+
+  /* THE DRAW — the app's own .take shell, on the app's own path. In the game
+     ui/bag.ts adds .drawn for one 300ms run and sets --lay to the layer that
+     was on top; here the same 300ms is 8.8% of the loop, on production's own
+     easing and with its opacity hold (45% of the run) at 9.96%. 15 dice is ceil(15/24 × 4) = 3 layers, so
+     the top layer is --lay:2. */
+  .stagerow .pile .take{--lay:2;animation:lidraw 3.4s cubic-bezier(.2,.72,.3,1) infinite}
+  @keyframes lidraw{
+    0%,5.9%{opacity:0;transform:translateX(calc(-50% + 3px * var(--lay,0))) scale(1)}
+    6%{opacity:1;transform:translateX(calc(-50% + 3px * var(--lay,0))) scale(1)}
+    9.96%{opacity:1}
+    14.8%,100%{opacity:0;
+      transform:translateX(calc(-50% + 3px * var(--lay,0))) translateY(-13px) scale(.76)}}
+  /* the gutter drains with it, over the 350ms the stylesheet transitions in */
+  .stagerow .pile::after{animation:ligauge 3.4s linear infinite}
+  @keyframes ligauge{0%,6%{height:62.5%}16.3%,100%{height:58.3%}}
+  /* the drawn die reaches the stage: the ordinary roll owns that beat, so it
+     is shown arriving and nothing more */
+  .listage{display:block;line-height:0;animation:lishow 3.4s steps(1,end) infinite}
+  @keyframes lishow{0%,13.9%{opacity:0}14%,100%{opacity:1}}
+
+  /* THE LADDER: the same bag at six depths, all six painted by the app. */
+  .listrip{display:flex;justify-content:center;gap:13px;margin-top:16px;width:100%}
+  .listrip .bag{position:relative;left:auto;top:auto;translate:none;margin:0}
+  .listrip .bag .die{animation:none!important}
+  .listrip .d{display:flex;flex-direction:column;align-items:center;gap:7px}
+  .listrip .cap{font-size:8px;letter-spacing:.13em;color:var(--dim);text-transform:uppercase;
+    text-align:center;line-height:1.4}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hud">
+    <div class="rec">
+      <span class="rchip">ONLINE</span>
+      <button type="button" class="rchip tapmode" data-lib="modes" data-id="limited">{{mico:limited:12}} LIMITED<span class="mi">ⓘ</span></button>
+    </div>
+    <div class="sp"></div>
+    <button class="ico">{{ico:leave:15}}</button>
+  </div>
+
+  <div class="cap2">A plain column beside the pile. Its length is the supply. Nothing about it is coloured.</div>
+
+  <div class="spfield">
+    <div class="plate pline" style="--c:var(--p2)">
+      <span class="who"><span class="dot"></span><span class="nm">EmberCrow896</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="tot">29</span></span>
+    </div>
+
+    <div class="spboard spfoe" style="margin-top:6px">
+      <div class="spcol"><div class="spslot"></div><div class="spslot"></div><div class="spslot">{{die:6:p2:52}}</div></div>
+      <div class="spcol"><div class="spslot"></div><div class="spslot">{{die:4:p2 m2:52}}</div><div class="spslot">{{die:4:p2 m2:52}}</div></div>
+      <div class="spcol"><div class="spslot"></div><div class="spslot">{{die:2:p2:52}}</div><div class="spslot">{{die:5:p2:52}}</div></div>
+    </div>
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-top:5px">
+      <div class="spchip" style="--c:var(--p2)">6</div>
+      <div class="spchip" style="--c:var(--p2)">16</div>
+      <div class="spchip" style="--c:var(--p2)">7</div>
+    </div>
+
+    <div class="stagerow">
+      <div class="bag" style="--bag-left:.625">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die gone"></i><i class="die take"></i></span>
+          <b class="bn"><span class="spcount licount"><i class="spold">15</i><i class="spnew">14</i></span></b>
+        </div>
+      <span class="listage">{{die:2:p1:56}}</span>
+    </div>
+    <div class="status me listatus">Your move</div>
+
+    <div class="sprow3" style="--cell:52px;--gap:6px;margin-bottom:5px">
+      <div class="spchip" style="--c:var(--p1)">12</div>
+      <div class="spchip" style="--c:var(--p1)">5</div>
+      <div class="spchip" style="--c:var(--p1)">6</div>
+    </div>
+    <div class="spboard spmine">
+      <div class="spcol"><div class="spslot">{{die:3:p1 m2:52}}</div><div class="spslot">{{die:3:p1 m2:52}}</div><div class="spslot"></div></div>
+      <div class="spcol"><div class="spslot">{{die:5:p1:52}}</div><div class="spslot"></div><div class="spslot"></div></div>
+      <div class="spcol"><div class="spslot">{{die:6:p1:52}}</div><div class="spslot"></div><div class="spslot"></div></div>
+    </div>
+
+    <div class="plate pline" style="--c:var(--p1);margin-top:6px">
+      <span class="who"><span class="dot"></span><span class="nm">FrostLynx303</span></span>
+      <span class="sp"></span>
+      <span class="pright"><span class="tot">23</span></span>
+    </div>
+  </div>
+
+  <div class="cap2" style="margin-top:12px">Six depths, all painted by the app — the shells round to a quarter, the column does not</div>
+  <div class="listrip dice-static">
+    <div class="d"><div class="bag" style="--bag-left:1">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die"></i></span>
+          <b class="bn">24</b>
+        </div><span class="cap">24<br>full column</span></div>
+    <div class="d"><div class="bag" style="--bag-left:.75">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die"></i><i class="die gone"></i></span>
+          <b class="bn">18</b>
+        </div><span class="cap">18</span></div>
+    <div class="d"><div class="bag" style="--bag-left:.5">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die"></i><i class="die gone"></i><i class="die gone"></i></span>
+          <b class="bn">12</b>
+        </div><span class="cap">12<br>half</span></div>
+    <div class="d"><div class="bag" style="--bag-left:.25">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die gone"></i><i class="die gone"></i><i class="die gone"></i></span>
+          <b class="bn">6</b>
+        </div><span class="cap">6</span></div>
+    <div class="d"><div class="bag" style="--bag-left:.125">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die gone"></i><i class="die gone"></i><i class="die gone"></i></span>
+          <b class="bn">3</b>
+        </div><span class="cap">3</span></div>
+    <div class="d"><div class="bag" style="--bag-left:.042">
+          <span class="pile" aria-hidden="true"><i class="die"></i><i class="die gone"></i><i class="die gone"></i><i class="die gone"></i></span>
+          <b class="bn">1</b>
+        </div><span class="cap">1<br>a stub</span></div>
+  </div>
+  <div class="splbl">no hue anywhere · the count keeps its colour, size and gold tick · both nameplates untouched</div>
+  <div class="note"><b>Where it stands.</b> On the <b>first board column</b>, exactly as the rune card stands on the third — the same expression with the sign flipped, so the two things flanking the die are symmetric about it and each lines up with a real column above and below. In landscape the lane is only as wide as the die, so the pair stacks instead: rune above, bag below, on the same 7px gap.<br>
+  <b>What it says:</b> <b>this much is left</b> — as a length, which is the one quantity a person reads without counting or fixating. The pile is unchanged: the same shells, the same fan, the same anonymity. It rounds to a quarter and always has, which is why the last six draws all look alike to it; the column beside it does not round, and between 6 and 1 it is the only thing still moving.<br>
+  <b>The draw comes off the top.</b> Every draw, not only the one in six that costs the pile a layer. A fifth shell (<code>.take</code>, ui/bag.ts) rides whatever layer is currently on top and is the only thing that moves, so the four below restack underneath it instead of fighting an animation for the same element. It is armed only when the count falls by exactly one — a reconnect that jumps, a fresh game, or FA4 rewinding its own bag repaints with nothing coming off anything.<br>
+  <b>Achromatic.</b> No hue, so colour blind mode and the seven pickable player hues cannot touch the gauge; reduced motion keeps the identical picture and loses only the 300ms lift. <b>The claim that had to be dropped:</b> this was proposed as a U-shaped collar of 24 countable teeth, and the adversarial pass killed it for anchoring the scale exactly where the shells permanently sit — the floor and right wall are never visible, and the lit run burned toward the pile, hiding the final teeth under the thing they measure. Only the left gutter survives at every depth, and <b>24 marks in 36px is a 1.5px pitch nobody can count at arm's length</b>. So the counting read is gone: this is a bar, not a scale. Whether a 2px bar survives a low-DPR phone is a measurement, not an opinion.</div>
+</div></div>

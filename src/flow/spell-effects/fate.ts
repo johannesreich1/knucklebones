@@ -5,41 +5,10 @@ import { S } from '../../state.ts';
 import { Sfx, vibrate } from '../../ui/audio.ts';
 import { appRoot } from '../../ui/embed.ts';
 import { REDUCED } from '../../ui/fx.ts';
+import { bagLeft, renderBag } from '../../ui/bag.ts';
 import { effectPause, type SpellEffect } from './types.ts';
 
 const PASS_MS = 280;
-
-interface BagVisual {
-  count: string;
-  empty: boolean;
-  gone: readonly boolean[];
-}
-
-function bagVisual(bag: HTMLElement | null): BagVisual | null {
-  if (!bag || bag.hidden) return null;
-  const count = bag.querySelector<HTMLElement>('.bn');
-  if (!count) return null;
-  return {
-    count: count.textContent ?? '',
-    empty: bag.classList.contains('empty'),
-    gone: [...bag.querySelectorAll<HTMLElement>('.pile .die')]
-      .map((die) => die.classList.contains('gone')),
-  };
-}
-
-function showBagVisual(bag: HTMLElement, visual: BagVisual, pulse: boolean): void {
-  const count = bag.querySelector<HTMLElement>('.bn');
-  if (count) count.textContent = visual.count;
-  bag.classList.toggle('empty', visual.empty);
-  bag.querySelectorAll<HTMLElement>('.pile .die').forEach((die, index) => {
-    die.classList.toggle('gone', visual.gone[index] ?? false);
-  });
-  bag.classList.remove('tick');
-  if (pulse) {
-    void bag.offsetWidth;
-    bag.classList.add('tick');
-  }
-}
 
 function visualDie(source: HTMLElement, className: string): HTMLElement {
   const clone = source.cloneNode(true) as HTMLElement;
@@ -68,8 +37,9 @@ export const fateEffect: SpellEffect = async (_who, _column, apply) => {
   }
 
   const generation = S.gen;
-  const bag = root.querySelector<HTMLElement>('#bagStack');
-  const beforeBag = bagVisual(bag);
+  /* what the bag is painting right now — LIMITED's count must not answer the
+     redraw before the die itself arrives. -1 in every other mode. */
+  const bagBefore = bagLeft();
   const oldVisual = visualDie(oldDie, 'spell-fate-old');
 
   /* apply() must run to learn the drawn face. Nothing can paint between this
@@ -80,8 +50,9 @@ export const fateEffect: SpellEffect = async (_who, _column, apply) => {
 
   const newDie = stage.querySelector<HTMLElement>(':scope > .die');
   if (!newDie) return;
-  const afterBag = bagVisual(bag);
-  if (bag && beforeBag) showBagVisual(bag, beforeBag, false);
+  const bagAfter = bagLeft();
+  const bagMoved = bagAfter !== bagBefore;
+  if (bagMoved) renderBag(bagBefore, { silent: true });
 
   const lane = document.createElement('span');
   lane.className = 'spell-fate-lane';
@@ -95,9 +66,9 @@ export const fateEffect: SpellEffect = async (_who, _column, apply) => {
     await effectPause(PASS_MS);
     if (S.gen === generation) {
       newDie.classList.remove('spell-fate-live');
-      if (bag && afterBag) {
-        showBagVisual(bag, afterBag, beforeBag?.count !== afterBag.count);
-      }
+      /* now, with the die on the stage: the count ticks and the drawn shell
+         comes off the top of the pile, exactly as an ordinary roll's would */
+      if (bagMoved) renderBag(bagAfter);
     }
   } finally {
     lane.remove();

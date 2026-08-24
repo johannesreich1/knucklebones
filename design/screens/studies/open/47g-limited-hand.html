@@ -7,7 +7,7 @@
      from design/build.mjs's chrome. */
   .scr{gap:6px;--hue:{{mhue:limited}}}
   .spfield{gap:0}
-  .stagerow{--cell:56px;margin-top:16px;min-height:60px}
+  .stagerow{--cell:52px;margin-top:16px;min-height:60px}
   .listatus{margin-top:12px;margin-bottom:14px}
 
   /* ===== THE LOOP: 3.4s, one DRAW =====
@@ -33,7 +33,7 @@
   /* THE ESCALATION STRIP: the same bag at the four depths that matter. The
      number under each is the app's, in the app's colour, at the app's size. */
   .listrip{display:flex;justify-content:center;gap:20px;margin-top:16px;width:100%}
-  .listrip .bag{position:relative;right:auto;margin:0}
+  .listrip .bag{position:relative;left:auto;top:auto;translate:none;margin:0}
   .listrip .d{display:flex;flex-direction:column;align-items:center;gap:8px}
   .listrip .cap{font-size:8.5px;letter-spacing:.16em;color:var(--dim);text-transform:uppercase;
     text-align:center;line-height:1.45;max-width:66px}
@@ -123,6 +123,10 @@
   @keyframes li7last{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.06)}}
   /* the strip is a still: the loop's draw would fire on four bags at once */
   .listrip .bag .die{animation:none!important}
+  /* LI10's gutter now SHIPS (styles/game/variants.css draws it on every .bag).
+     This card proposes a rival channel for the same quantity, so the shipped
+     gauge is hidden here: two gauges in one picture measure nothing. */
+  .bag .pile::before,.bag .pile::after{content:none}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
   <div class="hud">

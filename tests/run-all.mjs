@@ -31,7 +31,7 @@ const FILE_SUITES = [
   { name: 'test11', file: 'tests/browser/hud-settings/run.mjs' },
   'test12', 'test13',
   { name: 'spells-browser', file: 'tests/browser/spells/run.mjs' },
-  'test15', 'test17', 'test18', 'test19', 'test20', 'test21', 'test23',
+  'test15', 'test17', 'test18', 'test19', 'test20', 'test21', 'test23', 'test24',
 ];
 const SERVED_SUITES = [
   'test7',
