@@ -200,14 +200,17 @@ export function bindMenus(root: HTMLElement): void {
   tap($('#btnLeave'), async () => {
     Sfx.tap();
     const ranked = leavingForfeits();
+    const tutorial = !ranked && !!S.tut;
     const leave = await ask({
       head: () => ranked ? t('game', 'leave.forfeitTitle') : t('game', 'leave.quitTitle'),
       body: () => ranked
         ? t('game', 'leave.forfeitBody')
         : t('game', 'leave.quitBody'),
-      confirm: () => ranked ? t('game', 'leave.forfeit') : t('game', 'leave.quit'),
+      confirm: () => ranked
+        ? t('game', 'leave.forfeit')
+        : t('game', tutorial ? 'leave.quitTutorial' : 'leave.quit'),
       cancel: () => t('game', 'leave.keepPlaying'),
-      alternate: !ranked && !S.tut
+      alternate: !ranked && !tutorial
         ? { label: () => t('game', 'leave.restart'), run: restartLocal }
         : undefined,
     });

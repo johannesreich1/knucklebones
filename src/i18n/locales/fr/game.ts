@@ -104,6 +104,7 @@ export const frGame = {
     quitTitle: 'Quitter ce duel ?',
     quitBody: 'La partie en cours sera perdue — les duels hors ligne sont rapides, et celui-ci s’arrête ici.',
     quit: 'Quitter le duel',
+    quitTutorial: 'Quitter le tutoriel',
     keepPlaying: 'Continuer à jouer',
     restart: 'Recommencer le duel',
   },

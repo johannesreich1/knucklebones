@@ -101,6 +101,7 @@ export const enGame = {
     quitTitle: 'Quit this duel?',
     quitBody: 'The board is lost — offline duels are quick, and this one ends here.',
     quit: 'Quit duel',
+    quitTutorial: 'Quit tutorial',
     keepPlaying: 'Keep playing',
     restart: 'Restart duel',
   },

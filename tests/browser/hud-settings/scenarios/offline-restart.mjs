@@ -318,9 +318,9 @@ export async function runOfflineRestartScenarios(suite) {
   await page.tap('#btnLeave');
   await page.waitForSelector('#ovAsk.on');
   out.tutorialAsk = await page.evaluate(askShape);
-  check(out.tutorialAsk.order.join(' -> ') === 'Keep playing -> Quit duel'
+  check(out.tutorialAsk.order.join(' -> ') === 'Keep playing -> Quit tutorial'
     && out.tutorialAsk.restart === null,
-  'the offline restart action leaked into the tutorial ask-card', out.tutorialAsk);
+  'the tutorial ask-card does not name its tutorial exit or leaked restart', out.tutorialAsk);
   await page.tap('#btnAskYes');
   await page.waitForTimeout(300);
 }

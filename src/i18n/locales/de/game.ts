@@ -104,6 +104,7 @@ export const deGame = {
     quitTitle: 'Dieses Duell beenden?',
     quitBody: 'Der aktuelle Spielstand geht verloren — Offline-Duelle sind kurz, und dieses endet hier.',
     quit: 'Duell beenden',
+    quitTutorial: 'Tutorial beenden',
     keepPlaying: 'Weiterspielen',
     restart: 'Duell neu starten',
   },
