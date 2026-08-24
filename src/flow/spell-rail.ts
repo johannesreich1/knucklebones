@@ -20,8 +20,9 @@ export interface SpellRailPorts {
   bindRune: (button: HTMLButtonElement, id: string) => void;
 }
 
-/* ONE SLOT, ONE HAND. The die and status already say whose turn it is; the
-   rail changes owner with them instead of drawing a second plate readout. */
+/* ONE SLOT, EVERY RELEVANT HAND. A shared rune is one card that follows the
+   turn. A distinct deal keeps both owner-marked cards fanned in the same slot,
+   with the active hand in front. */
 export function renderSpellRail(ports: SpellRailPorts): void {
   const bar = appRoot().querySelector<HTMLElement>('#spellBar');
   if (!bar) return;
@@ -29,43 +30,55 @@ export function renderSpellRail(ports: SpellRailPorts): void {
   clearStaleFlights(bar);
   const seat = S.turn as Player;
   const now = ports.caster();
+  const dealtIds = S.spellCharges.map((hand) => Object.keys(hand)[0] ?? '');
+  const paired = !!dealtIds[ME] && !!dealtIds[1 - ME] && dealtIds[ME] !== dealtIds[1 - ME];
+  let shown = 0;
   for (const spell of SPELLS) {
     const button = runeOf(spell.id);
     if (!button) continue;
-    const dealt = spell.id in S.spellCharges[seat];
-    button.hidden = !dealt;
-    if (!dealt) continue;
-    const left = ports.chargesOf(seat, spell.id);
+    const owners = ([0, 1] as Player[]).filter((who) => spell.id in S.spellCharges[who]);
+    /* A shared hand still has one physical card that follows the turn. A
+       distinct deal has one persistent card per owner, so the other player's
+       rune and remaining charges never disappear between turns. */
+    const owner = owners.length === 2 ? seat : owners[0];
+    button.hidden = owner === undefined;
+    if (owner === undefined) continue;
+    shown++;
+    const currentHand = owner === seat;
+    const left = ports.chargesOf(owner, spell.id);
     const committed = S.spellAimCommitted?.id === spell.id
-      && S.spellAimCommitted.who === seat;
-    const canCast = seat === now && left > 0 && ports.castable(spell.id);
+      && S.spellAimCommitted.who === owner;
+    const canCast = currentHand && owner === now && left > 0 && ports.castable(spell.id);
     /* In CPU play the one shared card changes hands with the turn. Keep the
        historical opponent-turn mute tied to ownership, not `canCast`: brief
        busy/legality changes on the player's own turn must not make it blink. */
-    const offturn = S.mode === 'cpu' && seat !== ME;
+    const offturn = S.mode === 'cpu' && owner !== ME;
     /* `now` is null during transient phase/busy locks. Requiring the active
        chooser here leaves those brief locks visually stable; with charges and
        commitment ruled out, a remaining false `canCast` is registry legality. */
-    const unavailable = seat === now && left > 0 && !committed && !canCast;
-    button.dataset.seat = String(seat);
+    const unavailable = owner === now && left > 0 && !committed && !canCast;
+    button.dataset.seat = String(owner);
     button.dataset.left = String(left);
     button.classList.toggle('spent', left <= 0);
     button.classList.toggle('committed', committed);
     button.classList.toggle('ready', !committed && canCast);
-    button.classList.toggle('armed', S.spellArmed === spell.id && seat === now);
+    button.classList.toggle('armed', S.spellArmed === spell.id && owner === now);
     button.classList.toggle('offturn', offturn);
     button.classList.toggle('unavailable', unavailable);
+    button.classList.toggle('hand-active', paired && currentHand);
+    button.classList.toggle('hand-standby', paired && !currentHand);
     button.disabled = !canCast;
     paintCharges(button, spell, left);
     const copy = spellCopy(spell.id);
-    const values = { player: nameOf(seat), name: copy.name, blurb: copy.blurb, count: left };
+    const values = { player: nameOf(owner), name: copy.name, blurb: copy.blurb, count: left };
     button.setAttribute('aria-label', committed
       ? t('game', 'runes.ariaCommitted', values)
       : canCast ? t('game', 'runes.ariaAvailable', values)
         : left > 0 ? t('game', 'runes.ariaUnavailable', values)
           : t('game', 'runes.ariaSpent', values));
   }
-  bar.classList.toggle('live', SPELLS.some((spell) => !runeOf(spell.id)?.hidden));
+  bar.classList.toggle('paired', paired);
+  bar.classList.toggle('live', shown > 0);
   const armed = spellById(S.spellArmed);
   setCastingPresentation(armed?.target ?? 'none');
   markAim(armed, ports);

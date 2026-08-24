@@ -87,6 +87,7 @@ assert.equal(formatRelativeTime(-1, 'day'), new Intl.RelativeTimeFormat('de').fo
 
 assert.equal(modeCopy('random').name, 'ZUFALL');
 assert.equal(spellCopy('none').name, 'KEINE');
+assert.equal(spellCopy('random2').name, 'ZUFALL ×2');
 assert.equal(ladderGroupName('obsidian'), 'OBSIDIAN');
 assert.deepEqual(ladderGroupCopy('stone'), { name: 'STEIN', compactName: 'STEIN' });
 assert.equal(ladderGroupCompactName('ivory'), 'ELFENBEIN');

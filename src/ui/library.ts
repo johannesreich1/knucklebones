@@ -6,7 +6,7 @@
 // Offline module by design: both registries live in core, so nothing here
 // needs the online chunk.
 import { MODES, RANDOM } from '../core/modes.ts';
-import { SPELLS, RANDOM_SPELL } from '../core/spells.ts';
+import { SPELLS, RANDOM_DUAL_SPELL, RANDOM_SPELL } from '../core/spells.ts';
 import { modeCopy, spellCopy, subscribeLocale, t } from '../i18n/index.ts';
 import { modeIcon, modeHue } from './modeicons.ts';
 import { spellIcon, spellHue } from './spellicons.ts';
@@ -83,6 +83,10 @@ const spellPicks = (): PickItem[] => [
   }),
   /* last slice, exactly like the mode row's: a promise to draw, not a rune */
   { v: RANDOM_SPELL, id: 'random', ...spellCopy('random'), hue: spellHue('random'), icon: spellIcon('random', 16) },
+  /* an opt-in chaos deal: two distinct answers, marked ×2 rather than
+     overloading the persisted shared RANDOM choice */
+  { v: RANDOM_DUAL_SPELL, id: 'random2', ...spellCopy('random2'),
+    hue: spellHue('random2'), icon: spellIcon('random2', 16) },
 ];
 export const MODE_PICKS: PickItem[] = modePicks();
 export const SPELL_PICKS: PickItem[] = spellPicks();

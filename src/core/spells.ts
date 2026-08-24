@@ -248,12 +248,13 @@ const ANVIL: SpellSpec = {
 
 export const SPELLS: SpellSpec[] = [FATE, NUDGE, WARD, SUNDER, PILFER, ANVIL];
 
-/* The OFFLINE picker's last slice: not a spell, but "surprise me" — the same
-   shape as the mode wheel's RANDOM. Kept OUT of SPELLS on purpose: it must
-   never be dealt as itself, and spellById must never resolve it. Which rune
-   it becomes is drawn where the game is dealt (flow/spells), because core
-   holds no randomness. Both seats always draw the SAME one. */
+/* The OFFLINE picker's final slices are promises, not spells. RANDOM draws one
+   shared rune; RANDOM ×2 draws a distinct rune for each seat. Both stay OUT of
+   SPELLS on purpose: neither may be dealt as itself or resolve through
+   spellById. The answers are drawn where the game is dealt (flow/spells),
+   because core holds no randomness. */
 export const RANDOM_SPELL = 'random';
+export const RANDOM_DUAL_SPELL = 'random2';
 
 export function spellById(id: string | null | undefined): SpellSpec | null {
   return SPELLS.find((s) => s.id === id) ?? null;

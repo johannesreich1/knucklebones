@@ -1,5 +1,5 @@
 export async function runPickerScenarios(suite) {
-  const { page, out, check, SPELLS, RANDOM_SPELL } = suite;
+  const { page, out, check, SPELLS, RANDOM_SPELL, RANDOM_DUAL_SPELL } = suite;
   /* ---------- 0. the picker: NONE by default, one slice per spell ----------
      Same component as the game-mode row, and the slice wears the SAME rune the
      game draws — so what you pick and what lands on the rail cannot disagree. */
@@ -26,11 +26,12 @@ export async function runPickerScenarios(suite) {
      disagree — and that is not hypothetical: this line said "the five runes"
      and src/markup.ts advertised "five to choose from" long enough for a sixth
      to be measured, written and iconed before either noticed. */
-  const wantSlices = ['', ...SPELLS.map((s) => s.id), RANDOM_SPELL];
+  const wantSlices = ['', ...SPELLS.map((s) => s.id), RANDOM_SPELL, RANDOM_DUAL_SPELL];
   check(String(out.picker.values) === String(wantSlices),
     'the picker must be NONE + every rune in registry order + RANDOM',
     { got: out.picker.values, want: wantSlices });
-  check(out.picker.values.at(-1) === RANDOM_SPELL, 'RANDOM is the last slice, as on the mode row', out.picker.values);
+  check(out.picker.values.at(-2) === RANDOM_SPELL && out.picker.values.at(-1) === RANDOM_DUAL_SPELL,
+    'the two RANDOM promises must finish the rune row', out.picker.values);
   check(out.picker.icons.every(Boolean), 'every slice must draw a mark', out.picker.icons);
   /* ONE idea, ONE mark: RANDOM means the same thing in both rows, so it must
      LOOK the same in both. A hand-copied glyph drifted here once — the mode's
@@ -42,13 +43,22 @@ export async function runPickerScenarios(suite) {
     const geom = (b) => [...(svg(b)?.querySelectorAll('path,circle,rect,line,polyline') ?? [])]
       .map((n) => n.tagName + ':' + (n.getAttribute('d') ?? '')).join('|');
     const mode = strip('#modePick', '-1'), spell = strip('#spellPick', 'random');
+    const dual = strip('#spellPick', 'random2');
     return { mode: geom(mode), spell: geom(spell),
-             modeHue: mode?.style.getPropertyValue('--mh'), spellHue: spell?.style.getPropertyValue('--mh') };
+             dual: geom(dual), dualBadge: dual?.querySelectorAll('circle').length ?? 0,
+             modeHue: mode?.style.getPropertyValue('--mh'),
+             spellHue: spell?.style.getPropertyValue('--mh'),
+             dualHue: dual?.style.getPropertyValue('--mh') };
   });
   check(out.randomIcon.mode === out.randomIcon.spell && !!out.randomIcon.mode,
     'THE TWO RANDOM SLICES DRAW DIFFERENT MARKS', out.randomIcon);
   check(out.randomIcon.modeHue === out.randomIcon.spellHue,
     'the two RANDOM slices wear different hues', out.randomIcon);
+  check(out.randomIcon.dual.startsWith(out.randomIcon.mode)
+      && out.randomIcon.dual !== out.randomIcon.mode && out.randomIcon.dualBadge > 0,
+    'RANDOM ×2 did not reuse the shuffle mark and add its 2 seal', out.randomIcon);
+  check(out.randomIcon.dualHue === out.randomIcon.modeHue,
+    'RANDOM ×2 does not wear the neutral random hue', out.randomIcon);
   check(!out.picker.values.includes('swap'), 'the retired swap must not be pickable', out.picker.values);
   check(out.picker.icons.every(Boolean), 'every slice carries its icon', out.picker);
   check(out.picker.info === 'NONE — No rune — the pure game.',

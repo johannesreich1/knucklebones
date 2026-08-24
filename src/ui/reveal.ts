@@ -1,8 +1,9 @@
 // THE PRE-GAME REVEAL: the one screen that answers "what am I about to play?"
 //
 // ONE screen, a SEQUENCE OF BEATS. Ranked leaves one thing to chance (the
-// mode the server drew) and offline can leave two (the mode, the rune, or
-// both) — so this is not "the mode wheel plus a spell wheel", it is one
+// mode the server drew) and offline can leave up to three answers (the mode
+// and one distinct rune per player) — so this is not "the mode wheel plus a
+// spell wheel", it is one
 // reveal that runs a beat per unanswered question and then holds ONCE.
 // Two overlays with two five-second countdowns is the same screen shown
 // twice, and the player would have watched the mode's answer scroll away
@@ -19,6 +20,7 @@
 // still called that: it is the name the tests, the CSS and the design cards
 // already know, and renaming it buys the player nothing.
 import type { ModeSpec } from '../core/modes.ts';
+import type { Player } from '../core/rules.ts';
 import type { SpellSpec } from '../core/spells.ts';
 import { formatNumber, subscribeLocale, t } from '../i18n/index.ts';
 import { dialBeat } from './modedial.ts';
@@ -26,6 +28,7 @@ import { dealBeat } from './runedeal.ts';
 import { paintAvatar } from './avatar.ts';
 import { $, show, hide } from './dom.ts';
 import { appRoot } from './embed.ts';
+import { colorOf, nameOf } from './identity.ts';
 import { Sfx } from './audio.ts';
 import type { Answer, Beat, DialPeer, DialSide } from './reveal-types.ts';
 
@@ -69,7 +72,8 @@ export function versus(me: DialSide, foe: DialSide): string {
    mode's blurb would be one more copy of the registry. */
 export const settledAnswer = (b: Answer): string =>
   `<div class="wsett" style="color:${b.hue}">`
-  + `<span class="wpill">${b.icon}<b>${esc(b.name)}</b></span>`
+  + `<span class="wpill">${b.context ? `<small class="wowner" style="color:${b.contextHue ?? b.hue}">${esc(b.context)}</small>` : ''}`
+  + `${b.icon}<b>${esc(b.name)}</b></span>`
   + `<span class="wblurb">${esc(b.blurb)}</span></div>`;
 
 /** the readout under the stage — what a landed beat says, and its colour */
@@ -141,8 +145,10 @@ function repaintReveal(context: ActiveReveal): void {
     const settledBeat = beats[index];
     if (!settledBeat) return;
     const name = answer.querySelector<HTMLElement>('.wpill b');
+    const owner = answer.querySelector<HTMLElement>('.wowner');
     const blurb = answer.querySelector<HTMLElement>('.wblurb');
     if (name) name.textContent = settledBeat.name;
+    if (owner && settledBeat.context) owner.textContent = settledBeat.context;
     if (blurb) blurb.textContent = settledBeat.blurb;
   });
   context.repaintHold?.();
@@ -227,11 +233,24 @@ const SWAP_MS = 260;
 export async function reveal(opts: {
   mode?: ModeSpec | null;
   spell?: SpellSpec | null;
+  runes?: readonly {
+    spell: SpellSpec;
+    player: Player;
+    candidates?: readonly SpellSpec[];
+  }[];
   peer?: DialPeer; me?: DialSide; foe?: DialSide;
 }): Promise<void> {
   const beats: Beat[] = [];
   if (opts.mode) beats.push(dialBeat(opts.mode));
   if (opts.spell) beats.push(dealBeat(opts.spell));
+  for (const rune of opts.runes ?? []) {
+    beats.push(dealBeat(rune.spell, {
+      candidates: rune.candidates,
+      label: () => t('game', 'reveal.runeFor', { player: nameOf(rune.player) }),
+      context: () => nameOf(rune.player),
+      contextHue: colorOf(rune.player),
+    }));
+  }
   if (!beats.length) return;               // nothing was left to chance
   build();
   const ov = $('#ovWheel');
@@ -246,6 +265,7 @@ export async function reveal(opts: {
   }
   const settled = $('#wheelSettled'), stage = $('#wheelStage');
   settled.innerHTML = '';
+  settled.removeAttribute('data-count');
   ov.classList.remove('landed', 'ready', 'holding');
   wear(ov);                       // whatever the LAST reveal left on, whoever ran it
   show('#ovWheel');
@@ -287,6 +307,7 @@ export async function reveal(opts: {
       if (k === beats.length - 1) break;
       await pause(READ_MS);
       settled.insertAdjacentHTML('beforeend', settledAnswer(beat));
+      settled.dataset.count = String(settled.children.length);
       stage.classList.add('out');
       await pause(SWAP_MS);
       stage.classList.remove('out');

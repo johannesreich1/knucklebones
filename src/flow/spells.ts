@@ -12,7 +12,6 @@ import {
   type Player,
 } from '../core/rules.ts';
 import {
-  RANDOM_SPELL,
   SPELLS,
   freshCharges,
   spellById,
@@ -41,8 +40,10 @@ import {
 } from './spell-rail.ts';
 import type { SpellInputTarget } from './spell-target.ts';
 import { runAiSpellTurn, type AiSpellTurnResult } from './spell-ai.ts';
+import { resolveSpellDeal, type SpellDeal } from './spell-deal.ts';
 
 export { aiSpellDelay } from './spell-ai.ts';
+export type { SpellDeal } from './spell-deal.ts';
 
 export interface SpellFlowPorts {
   onChoice: () => void;
@@ -95,16 +96,26 @@ export function chargesOf(who: Player, id: string): number {
   return S.spellCharges[who][id] ?? 0;
 }
 
-/* RANDOM is drawn once before the reveal so the shown rune and dealt rune are
-   the same answer. */
-export function drawSpell(): string {
-  if (S.spell !== RANDOM_SPELL) return S.spell;
-  return SPELLS[(Math.random() * SPELLS.length) | 0].id;
+/* Resolve the setup promise ONCE before the reveal so every card shown is the
+   hand actually dealt. Existing RANDOM remains shared. RANDOM ×2 samples the
+   second seat from the remaining roster rather than retrying until it differs:
+   it is uniform, deterministic under an injected stream, and cannot hang on a
+   stub that returns the same number forever. Tuple order follows Player ids. */
+export function drawSpellDeal(random: () => number = Math.random): SpellDeal {
+  return resolveSpellDeal(S.spell, random);
 }
 
-export function resetSpells(dealt?: string): void {
-  const id = S.tut ? '' : (dealt ?? drawSpell());
-  S.spellCharges = [freshCharges(id), freshCharges(id)];
+/* Kept as the singular compatibility seam for focused helpers that ask for
+   the selected/shared answer. New lifecycle code passes the full deal. */
+export function drawSpell(random: () => number = Math.random): string {
+  return drawSpellDeal(random)[ME];
+}
+
+export function resetSpells(dealt?: string | readonly [string, string]): void {
+  const ids: readonly [string, string] = S.tut ? ['', '']
+    : typeof dealt === 'string' ? [dealt, dealt]
+      : dealt ?? drawSpellDeal();
+  S.spellCharges = [freshCharges(ids[AI]), freshCharges(ids[ME])];
   S.charm = freshCharm();
   clearSealPresentation();
   clearSunderPresentation();

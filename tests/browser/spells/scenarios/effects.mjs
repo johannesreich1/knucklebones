@@ -287,7 +287,7 @@ export async function runEffectScenarios(suite) {
   check(out.fateEmpty.left === '0' && out.fateEmpty.cards === 0 && out.fateEmpty.outlines === 2,
     'spent FATE did not leave its two-card outline', out.fateEmpty);
 
-  /* ---------- 10c. RANDOM deals a real rune, the SAME one to both ---------- */
+  /* ---------- 10c. RANDOM keeps its original shared-rune promise ---------- */
   out.randomDeal = await page.evaluate(async () => {
     const k = window.__kb;
     const seen = new Set(); let mismatched = 0, empty = 0;
@@ -307,5 +307,41 @@ export async function runEffectScenarios(suite) {
   check(out.randomDeal.drew.length >= 2, 'RANDOM never varied over 24 games', out.randomDeal);
   check(!out.randomDeal.drew.includes('random'), 'RANDOM dealt ITSELF as a rune', out.randomDeal);
   check(out.randomDeal.pick === 'random', 'the pick must survive the draw — RANDOM stays RANDOM', out.randomDeal);
+
+  /* ---------- 10d. RANDOM ×2 deals two guaranteed-distinct hands ----------
+     The selector is another promise, never a rune. Both seat records must be
+     real, different, and visible together; the active hand comes forward while
+     the other remains as the opponent's readable threat. */
+  out.randomDualDeal = await page.evaluate(() => {
+    const k = window.__kb;
+    const seen = new Set(); let matched = 0, empty = 0;
+    for (let i = 0; i < 24; i++) {
+      k.S.spell = 'random2'; k.S.localMode = 0; k.S.mode = 'duo'; k.S.seat = 'face'; k.S.timer = 0;
+      k.newGame();
+      const mine = Object.keys(k.S.spellCharges[1])[0] ?? '';
+      const theirs = Object.keys(k.S.spellCharges[0])[0] ?? '';
+      if (!mine || !theirs) empty++;
+      if (mine === theirs) matched++;
+      seen.add(`${theirs}:${mine}`);
+    }
+    k.spells.render();
+    const cards = [...document.querySelectorAll('#spellBar .rune:not([hidden])')];
+    return {
+      pairs: [...seen], matched, empty, pick: k.S.spell,
+      paired: document.getElementById('spellBar').classList.contains('paired'),
+      visible: cards.filter((card) => !!card.offsetParent).length,
+      owners: cards.map((card) => card.dataset.seat).sort(),
+      active: cards.filter((card) => card.classList.contains('hand-active')).length,
+      standby: cards.filter((card) => card.classList.contains('hand-standby')).length,
+    };
+  });
+  check(out.randomDualDeal.empty === 0 && out.randomDualDeal.matched === 0,
+    'RANDOM ×2 did not deal two real, different runes', out.randomDualDeal);
+  check(out.randomDualDeal.pairs.length >= 2 && out.randomDualDeal.pick === 'random2',
+    'RANDOM ×2 did not vary or replaced its persisted picker promise', out.randomDualDeal);
+  check(out.randomDualDeal.paired && out.randomDualDeal.visible === 2
+      && out.randomDualDeal.owners.join() === '0,1'
+      && out.randomDualDeal.active === 1 && out.randomDualDeal.standby === 1,
+    'the two distinct rune cards are not simultaneously visible and owner-mapped', out.randomDualDeal);
 
 }

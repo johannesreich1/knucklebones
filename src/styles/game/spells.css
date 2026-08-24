@@ -20,6 +20,19 @@
    persistent identity transform/filter values keep Safari on one compositing
    surface instead of re-rasterizing the rotated, glowing corner icon. */
 #kbroot.opponent-turn .rune{transform:scale(.95)}
+/* RANDOM ×2 keeps both threats on the table. The current hand comes forward;
+   the other remains a smaller face-down card with its charge stack readable.
+   Turn changes trade depth in one restrained motion rather than blinking one
+   rune out and another in. */
+#kbroot .spells.paired .rune.hand-active{z-index:3;transform:translate(7px,4px) rotate(2deg) scale(1)}
+#kbroot .spells.paired .rune.hand-standby{z-index:1;transform:translate(-9px,-6px) rotate(-5deg) scale(.82);
+  opacity:.62;filter:saturate(.72) brightness(.82)}
+#kbroot.opponent-turn .spells.paired .rune.hand-active{transform:translate(7px,4px) rotate(2deg) scale(.95)}
+#kbroot .spells.paired .rune::before{content:"";position:absolute;z-index:5;right:-3px;top:-3px;
+  width:6px;height:6px;border:1px solid rgba(9,12,24,.92);border-radius:50%;
+  background:var(--owner);box-shadow:0 0 8px var(--owner);pointer-events:none}
+#kbroot .spells.paired .rune[data-seat="1"]{--owner:var(--p1)}
+#kbroot .spells.paired .rune[data-seat="0"]{--owner:var(--p2)}
 :where(#kbroot) .rune-charge,:where(#kbroot) .rune-empty{position:absolute;inset:0;display:block;
   border-radius:calc(var(--rw)*.2);transform:rotate(-7deg);transform-origin:50% 50%}
 :where(#kbroot) .rune-charge[hidden],:where(#kbroot) .rune-empty[hidden]{display:none}
@@ -111,3 +124,6 @@
    the stage rather than beside it, clear of the facing board's chip rail. */
 #kbroot.land .spells{--rw:clamp(28px,calc(var(--cell)*.5),36px);left:50%;top:auto;bottom:100%;
   translate:-50% 0;margin:0 0 7px}
+#kbroot.land .spells.paired .rune.hand-active{transform:translate(8px,1px) rotate(3deg) scale(1)}
+#kbroot.land .spells.paired .rune.hand-standby{transform:translate(-8px,-3px) rotate(-5deg) scale(.82)}
+#kbroot.land.opponent-turn .spells.paired .rune.hand-active{transform:translate(8px,1px) rotate(3deg) scale(.95)}

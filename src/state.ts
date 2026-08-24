@@ -106,12 +106,14 @@ export const S = {
   bounty: [0, 0] as [number, number],
   /* SPELLS (flow/spells) — an OPTIONAL layer over local play. `spell` is the
      OFFLINE screen's pick, exactly like localMode picks the game mode: '' is
-     NONE and the game is then what it always was. spellCharges holds casts
-     LEFT per player for this game, keyed by spell id; an empty hand means this
-     seat holds no spells at all (NONE, ranked, tutorial) and is the ONE thing
-     the runtime asks. spellArmed is the spell waiting for a target. ANVIL is
-     the one aim whose markings commit before a target is selected, so that
-     reservation records who already paid for the armed cast. */
+     NONE and the game is then what it always was. The two random promise ids
+     remain here while the resolved per-seat deal lives in spellCharges.
+     spellCharges holds casts LEFT per player for this game, keyed by spell id;
+     an empty hand means this seat holds no spells at all (NONE, ranked,
+     tutorial) and is the ONE thing the runtime asks. spellArmed is the spell
+     waiting for a target. ANVIL is the one aim whose markings commit before a
+     target is selected, so that reservation records who already paid for the
+     armed cast. */
   spell: '',
   spellCharges: [{}, {}] as [Record<string, number>, Record<string, number>],
   spellArmed: null as string | null,

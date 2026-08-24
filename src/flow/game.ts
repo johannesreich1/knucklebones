@@ -15,7 +15,7 @@ import {
 } from '../core/rules.ts';
 import { makeBag } from '../core/dice.ts';
 import { RANDOM, pickMode } from '../core/modes.ts';
-import { RANDOM_SPELL, spellById } from '../core/spells.ts';
+import { RANDOM_DUAL_SPELL, RANDOM_SPELL, SPELLS, spellById } from '../core/spells.ts';
 import { formatNumber, t } from '../i18n/index.ts';
 import { reveal } from '../ui/reveal.ts';
 import { isNewcomer, offerTutorial } from '../ui/firstrun.ts';
@@ -41,10 +41,11 @@ import { closeEnd } from '../ui/endscreen.ts';
 import {
   aiSpellPlacementTurn,
   disarm,
-  drawSpell,
+  drawSpellDeal,
   renderSpells,
   resetSpells,
   resolveTimedOutSpellAim,
+  type SpellDeal,
 } from './spells.ts';
 import { aiChoose } from './game-ai.ts';
 import { showLocalResult } from './local-result.ts';
@@ -216,8 +217,8 @@ export async function place(who: Player, col: number): Promise<void> {
    keyboard, and Next duel on the result screen — and the first version of this
    taught only the Play button about RANDOM, so the rematch button quietly dealt
    classic for the rest of the session. One door, no exceptions.
-   BOTH of the sheet's RANDOMs are resolved here, before anything is dealt, and
-   handed to newGame as answers. Drawing them inside newGame instead would look
+   Every RANDOM promise is resolved here, before anything is dealt, and handed
+   to newGame as its exact answer. Drawing inside newGame instead would look
    identical on screen and be a different game every time. */
 export async function startLocal(): Promise<void> {
   /* A newcomer is offered the tutorial before their first real game — once,
@@ -225,20 +226,31 @@ export async function startLocal(): Promise<void> {
   if(isNewcomer() && await offerTutorial()){ newGame({tutorial:true}); return; }
   const selectedMode: number = S.localMode;
   const mode = selectedMode === RANDOM ? pickMode(Math.random().toString(36).slice(2)) : null;
-  const spell = S.spell===RANDOM_SPELL ? drawSpell() : null;
+  const randomRunes = S.spell === RANDOM_SPELL || S.spell === RANDOM_DUAL_SPELL
+    ? drawSpellDeal() : null;
   /* Whatever the player left to chance gets ONE screen and one countdown —
-     the dial for the mode, the deck for the rune, in that order (ui/reveal). */
-  if(mode || spell){
+     the dial for the mode, then one deck per unresolved rune (ui/reveal). */
+  if(mode || randomRunes){
     hide('#ovEnd'); hide('#ovStart'); hide('#ovPractice');
-    await reveal({ mode, spell: spellById(spell) });
+    const mine = randomRunes ? spellById(randomRunes[ME]) : null;
+    const theirs = randomRunes ? spellById(randomRunes[AI]) : null;
+    await reveal({
+      mode,
+      spell: S.spell === RANDOM_SPELL ? mine : null,
+      runes: S.spell === RANDOM_DUAL_SPELL && mine && theirs ? [
+        { spell: mine, player: ME },
+        { spell: theirs, player: AI, candidates: SPELLS.filter((spell) => spell.id !== mine.id) },
+      ] : undefined,
+    });
   }
-  newGame({ scoring: mode?.mode, spell: spell ?? undefined });
+  newGame({ scoring: mode?.mode, spells: randomRunes ?? undefined });
 }
 
 export interface NewGameOptions {
   tutorial?: boolean;
   scoring?: Mode;
   spell?: string;
+  spells?: Readonly<SpellDeal>;
 }
 
 export function newGame(opts: NewGameOptions = {}): void {
@@ -246,8 +258,9 @@ export function newGame(opts: NewGameOptions = {}): void {
   const gen = ++S.gen;
   // the OFFLINE view's selector picks the mode; the tutorial teaches classic.
   // opts.scoring is how RANDOM arrives — already rolled and shown on the dial,
-  // so newGame is handed the answer rather than rolling a second one. opts.spell
-  // is the same bargain for the rune the deck turned over.
+  // so newGame is handed the answer rather than rolling a second one.
+  // opts.spells is the same bargain for the rune cards the deck turned over;
+  // opts.spell remains the shared-rune convenience used by focused helpers.
   S.scoring = tutorial ? CLASSIC : (opts.scoring ?? S.localMode);
   S.bounty=[0,0];
   // LIMITED offline: the same bag the ranked game deals, shuffled locally
@@ -268,7 +281,7 @@ export function newGame(opts: NewGameOptions = {}): void {
   S.boards=[emptyBoard(),emptyBoard()];
   S.die=0; S.phase='roll'; S.busy=false;
   S.turn=S.starter;
-  resetSpells(opts.spell);                   // deal this game's charges (none in a lesson)
+  resetSpells(opts.spells ?? opts.spell);    // deal this game's charges (none in a lesson)
   S.starter = (1 - S.starter) as Player;
   // pass mode: whoever starts holds the phone. face mode: halves never move.
   S.bottom = (S.mode==='duo' && S.seat==='pass') ? S.turn : ME;

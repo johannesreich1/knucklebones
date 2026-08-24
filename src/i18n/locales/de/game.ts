@@ -92,6 +92,7 @@ export const deGame = {
   reveal: {
     gameMode: 'SPIELMODUS',
     yourRune: 'DEINE RUNE',
+    runeFor: 'RUNE FÜR {{player}}',
     tapReady: 'Antippen, wenn du bereit bist',
     connecting: 'Spieler werden verbunden …',
     starting: 'Spiel startet',
@@ -254,6 +255,13 @@ export const deGame = {
       blurb: 'Eine Rune wird am Tisch gezogen — beide erhalten dieselbe.',
       detail: 'Beim Start des Duells wird eine Rune gezogen. Beide Spieler erhalten dieselbe Rune mit ihrer üblichen Anzahl an Einsätzen.',
       aim: 'Wird beim Start gezogen',
+    },
+    random2: {
+      name: 'ZUFALL ×2',
+      compact: 'ZUFALL ×2',
+      blurb: 'Zwei verschiedene Runen — für jeden Spieler eine.',
+      detail: 'Beim Start des Duells wird das Deck zweimal gemischt. Spieler 1 und Spieler 2 erhalten jeweils eine andere zufällige Rune mit ihrer üblichen Anzahl an Einsätzen. Diese Variante ist wild und bewusst ungleich.',
+      aim: 'Wird beim Start zweimal gezogen',
     },
     unavailable: 'Derzeit nicht verfügbar.',
   },

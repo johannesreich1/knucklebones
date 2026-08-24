@@ -1,5 +1,5 @@
 // The rune deal: one beat of the pre-game reveal (ui/reveal.ts), in which the
-// rune both seats will carry is drawn from a deck.
+// rune one or both seats will carry is drawn from a deck.
 //
 // Dealing beats spinning for a table game — the deck riffles, one card is
 // drawn, and the rune arrives as an object you could pick up. The drama is in
@@ -9,10 +9,10 @@
 // make or break it. (That study's losing cards were retired 2026-08-22; the
 // mode reveal is the orbit dial, and the deck deals the RUNE instead.)
 //
-// THE DECK IS THE ROSTER. Every card is a real spell from core/spells, in its
+// THE DECK IS THE OFFER. Every card is a real spell from core/spells, in its
 // own hue, wearing its own icon in the corner like a playing card's index — so
-// a rune added to the registry joins the shuffle for free, and the fan is an
-// honest picture of what could come out.
+// a rune added to the registry joins the first shuffle for free. RANDOM ×2's
+// second offer removes the first answer, leaving an honest five-card fan.
 //
 // WHERE THE ANSWER IS is what the shuffle decides. The fan shows every rune and
 // none of them is the answer until a card is DRAWN, out of the one slot the
@@ -33,14 +33,15 @@ import { appRoot } from './embed.ts';
 
 const pause = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-const MID = (SPELLS.length - 1) / 2;
-
 /* Where card i sits when the deck is squared up: fanned across the felt, each
    one a hair higher than the last so the stack has a thickness. ONE function,
    read by the markup below (through --x/--y/--o) and by every animation — a
    riffle that arched back to a different resting place than the CSS draws
    would settle with a visible jump. */
-const restOf = (i: number) => ({ x: (i - MID) * 38, y: -i, rot: (i - MID) * 5.5 });
+const restOf = (i: number, count: number) => {
+  const middle = (count - 1) / 2;
+  return { x: (i - middle) * 38, y: -i, rot: (i - middle) * 5.5 };
+};
 
 /* WHICH RUNE a slot is holding, as the three things that say so. ONE
    description, two renderers: deckCards builds it as markup, redeal writes it
@@ -57,8 +58,8 @@ const faceOf = (pick: number) => {
    player where their rune lives before it is drawn. Omitted (the design card,
    a still) it is the registry's own order. */
 export const deckCards = (order?: readonly number[], drawn?: string): string =>
-  (order ?? SPELLS.map((_, i) => i)).map((pick, i) => {
-    const f = faceOf(pick), r = restOf(i);
+  (order ?? SPELLS.map((_, i) => i)).map((pick, i, picks) => {
+    const f = faceOf(pick), r = restOf(i, picks.length);
     return `<i class="rcard${f.id === drawn ? ' drawn' : ''}" data-rune="${f.id}"`
       + ` style="--x:${r.x}%;--y:${r.y}px;--o:${r.rot}deg;color:${f.hue}">${f.icon}</i>`;
   }).join('');
@@ -91,8 +92,8 @@ function redeal(el: HTMLElement, pick: number): void {
 }
 
 /** a fresh cut of the roster — Fisher-Yates, because ui/ may hold randomness */
-function shuffledOrder(): number[] {
-  const o = SPELLS.map((_, i) => i);
+function shuffledOrder(candidates: readonly number[]): number[] {
+  const o = [...candidates];
   for (let i = o.length - 1; i > 0; i--) {
     const j = (Math.random() * (i + 1)) | 0;
     [o[i], o[j]] = [o[j], o[i]];
@@ -135,8 +136,9 @@ const cardsIn = (felt: HTMLElement) =>
 
 /** the deck arrives on the felt, card by card */
 function fanIn(felt: HTMLElement): void {
-  cardsIn(felt).forEach((el, i) => {
-    const r = restOf(i);
+  const cards = cardsIn(felt);
+  cards.forEach((el, i) => {
+    const r = restOf(i, cards.length);
     el.animate([{ translate: '0% 0px', rotate: '0deg', opacity: 0 },
                 { translate: `${r.x}% ${r.y}px`, rotate: `${r.rot}deg`, opacity: 1 }],
       { duration: FAN, delay: i * 26, easing: EASE_LAND, fill: 'both' });
@@ -147,8 +149,9 @@ function fanIn(felt: HTMLElement): void {
    zip back together holding `next`. The stagger IS the zip — every card sharing
    one delay reads as two blocks colliding, not as a shuffle. */
 function riffle(felt: HTMLElement, next: readonly number[]): void {
-  cardsIn(felt).forEach((el, i) => {
-    const r = restOf(i), s = i % 2 ? 1 : -1;
+  const cards = cardsIn(felt);
+  cards.forEach((el, i) => {
+    const r = restOf(i, cards.length), s = i % 2 ? 1 : -1;
     setTimeout(() => redeal(el, next[i]), i * 30 + RIFFLE * 0.5);
     const rest = { translate: `${r.x}% ${r.y}px`, rotate: `${r.rot}deg` };
     el.animate([rest,
@@ -162,8 +165,9 @@ function riffle(felt: HTMLElement, next: readonly number[]): void {
 
 /** a cut: the deck lifts aside as a block and drops back squared, holding `next` */
 function cut(felt: HTMLElement, next: readonly number[]): void {
-  cardsIn(felt).forEach((el, i) => {
-    const r = restOf(i);
+  const cards = cardsIn(felt);
+  cards.forEach((el, i) => {
+    const r = restOf(i, cards.length);
     setTimeout(() => redeal(el, next[i]), i * 22 + CUT * 0.5);
     const rest = { translate: `${r.x}% ${r.y}px`, rotate: `${r.rot}deg` };
     el.animate([rest,
@@ -218,25 +222,48 @@ function draw(card: HTMLElement, from: HTMLElement, rot: number): void {
     { duration: DEAL, easing: EASE_LAND, fill: 'both' });
 }
 
-/** shuffle the roster and turn one card over — on a rune already drawn */
-export function dealBeat(spec: SpellSpec): Beat {
+export interface RuneDealOptions {
+  /** The honest deck for this draw; RANDOM ×2 removes the first player's rune. */
+  candidates?: readonly SpellSpec[];
+  /** Locale-live title above the deck. */
+  label?: () => string;
+  /** Locale-live owner retained in the settled answer. */
+  context?: () => string;
+  contextHue?: string;
+}
+
+/** shuffle the offered roster and turn one card over — on a rune already drawn */
+export function dealBeat(spec: SpellSpec, options: RuneDealOptions = {}): Beat {
+  const offered = options.candidates ?? SPELLS;
+  const candidateIndices = offered.map((candidate) => SPELLS.indexOf(candidate));
+  const answerIndex = SPELLS.indexOf(spec);
+  if (answerIndex < 0 || candidateIndices.some((index) => index < 0)
+      || !candidateIndices.includes(answerIndex)) {
+    throw new TypeError(`Rune deal candidates do not contain ${spec.id}`);
+  }
   /* One order per beat of the shuffle: the deck the player is handed, the deck
      after the riffle, and the deck after the cut. The LAST one is the deck the
      draw reaches into — so where the answer ends up is decided by the shuffle
      the player just watched, not before it. */
-  const [fanned, riffled, settled] = [shuffledOrder(), shuffledOrder(), shuffledOrder()];
+  const [fanned, riffled, settled] = [
+    shuffledOrder(candidateIndices),
+    shuffledOrder(candidateIndices),
+    shuffledOrder(candidateIndices),
+  ];
   /* WHICH SLOT of the fan the answer ends up in, once the deck has stopped
      moving — so the draw reaches into a place the shuffle chose. */
-  const slot = settled.indexOf(SPELLS.findIndex((s) => s.id === spec.id));
+  const slot = settled.indexOf(answerIndex);
   return {
     /* Locale-live getters let the reveal repaint copy without creating a new
        beat (which would also reshuffle the deck). */
-    get label() { return t('game', 'reveal.yourRune'); },
+    get label() { return options.label?.() ?? t('game', 'reveal.yourRune'); },
     cls: 'dealing',
     get name() { return spellCopy(spec.id).name; },
     get blurb() { return spellCopy(spec.id).blurb; },
     hue: spellHue(spec.id),
     icon: spellIcon(spec.id, 17),
+    get context() { return options.context?.(); },
+    contextHue: options.contextHue,
     stage: runeFelt(spec, false, fanned),
     repaintStage(stage) {
       const label = stage.querySelector<HTMLElement>('.rdealt .rlbl');
@@ -256,17 +283,17 @@ export function dealBeat(spec: SpellSpec): Beat {
         return;
       }
       fanIn(felt);
-      await pause(FAN + (SPELLS.length - 1) * 26);
+      await pause(FAN + (candidateIndices.length - 1) * 26);
       for (let k = 0; k < RIFFLES; k++) {
         Sfx.riffle();
         riffle(felt, riffled);
-        await pause(RIFFLE + (SPELLS.length - 1) * 30);
+        await pause(RIFFLE + (candidateIndices.length - 1) * 30);
       }
       Sfx.roll();
       cut(felt, settled);
-      await pause(CUT + (SPELLS.length - 1) * 22 + SQUARE);
+      await pause(CUT + (candidateIndices.length - 1) * 22 + SQUARE);
       Sfx.tick();
-      draw(card, cardsIn(felt)[slot], restOf(slot).rot);
+      draw(card, cardsIn(felt)[slot], restOf(slot, candidateIndices.length).rot);
       await pause(DEAL);
       settle();
       Sfx.place();

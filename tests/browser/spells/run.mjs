@@ -12,7 +12,7 @@
 import pkg from 'playwright';
 /* the registry itself, so the probe compares the SCREEN against the source of
    truth rather than against a count someone typed here (node strips the types) */
-import { SPELLS, RANDOM_SPELL } from '../../../src/core/spells.ts';
+import { RANDOM_DUAL_SPELL, SPELLS, RANDOM_SPELL } from '../../../src/core/spells.ts';
 import { spellCopy } from '../../../src/i18n/index.ts';
 import { createBrowserReport, capturePageErrors } from '../../support/browser-report.mjs';
 import { runPickerScenarios } from './scenarios/picker.mjs';
@@ -129,7 +129,7 @@ try {
 
   const suite = {
     browser, devices, F, problems, out, check, ctx, page,
-    SPELLS, RANDOM_SPELL, spellCopy, newGame, waitChoose, table, guard, sidePage,
+    SPELLS, RANDOM_SPELL, RANDOM_DUAL_SPELL, spellCopy, newGame, waitChoose, table, guard, sidePage,
     look, tapCol, tapRune,
   };
   await runPickerScenarios(suite);

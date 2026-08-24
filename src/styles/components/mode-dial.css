@@ -143,6 +143,13 @@
   background:color-mix(in srgb,currentColor 12%,transparent);
   box-shadow:0 0 14px color-mix(in srgb,currentColor 22%,transparent)}
 :where(#kbroot) .wpill svg{width:13px;height:13px}
+:where(#kbroot) .wowner{font-size:8px;line-height:1;letter-spacing:.13em;font-weight:900;
+  padding-right:7px;margin-right:1px;border-right:1px solid color-mix(in srgb,currentColor 42%,transparent)}
+/* A random mode followed by RANDOM ×2 leaves two prior answers above the
+   second deck. Tighten their rhythm without dropping either rule in portrait. */
+:where(#kbroot) #wheelSettled[data-count="2"]{gap:9px}
+:where(#kbroot) #wheelSettled[data-count="2"] .wsett{gap:5px}
+:where(#kbroot) #wheelSettled[data-count="2"] .wblurb{font-size:10px;line-height:1.3}
 @keyframes wpillin{from{opacity:0;scale:.66}}
 /* the countdown belongs to the WHOLE reveal, not to a beat: `landed` says this
    beat found its answer, `holding` says there are no more questions */
@@ -173,4 +180,11 @@
      Keep its pill inside the viewport while retaining clear air above title. */
   :where(#kbroot) #ovWheel.dealing .wsettled{
     top:calc((50% - var(--stage)/2 - 34px)/2 + 3px)}
+  /* There is no vertical lane for two full settled answers on a 320px-tall
+     phone. Keep both owner/name pills across the safe top gutter; their rules
+     were readable on landing and remain available in the final game badge. */
+  :where(#kbroot) #ovWheel.dealing #wheelSettled[data-count="2"]{
+    top:calc(env(safe-area-inset-top,0px) + 5px);transform:none;flex-direction:row;
+    justify-content:center;gap:9px}
+  :where(#kbroot) #wheelSettled[data-count="2"] .wblurb{display:none}
 }

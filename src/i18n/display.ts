@@ -6,7 +6,7 @@ export const MODE_COPY_IDS = [
 export type ModeCopyId = typeof MODE_COPY_IDS[number];
 
 export const SPELL_COPY_IDS = [
-  'fate', 'nudge', 'ward', 'sunder', 'pilfer', 'anvil', 'none', 'random',
+  'fate', 'nudge', 'ward', 'sunder', 'pilfer', 'anvil', 'none', 'random', 'random2',
 ] as const;
 export type SpellCopyId = typeof SPELL_COPY_IDS[number];
 

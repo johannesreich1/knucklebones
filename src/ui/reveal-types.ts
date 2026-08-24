@@ -6,6 +6,9 @@ export interface Answer {
   blurb: string;
   hue: string;
   icon: string;
+  /** Optional owner/context retained when this answer settles above a later beat. */
+  context?: string;
+  contextHue?: string;
 }
 
 export interface Beat extends Answer {

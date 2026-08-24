@@ -1,6 +1,6 @@
 // The in-game badge names what is being played. Each named mode/spell is the
 // same typed chip and opens the registry that explains it.
-import { ME } from '../../core/rules.ts';
+import { AI, ME, type Player } from '../../core/rules.ts';
 import { modeByEnum, type ModeSpec } from '../../core/modes.ts';
 import { dealtOf, spellById, type SpellSpec } from '../../core/spells.ts';
 import { modeCopy, spellCopy } from '../../i18n/index.ts';
@@ -8,13 +8,14 @@ import { S } from '../../state.ts';
 import { $ } from '../query.ts';
 import { modeIcon } from '../modeicons.ts';
 import { spellIcon } from '../spellicons.ts';
+import { nameOf } from '../identity.ts';
 
 export type BadgeChip =
-  | { html: string; lib: 'modes' | 'spells'; id: string }
+  | { html: string; lib: 'modes' | 'spells'; id: string; owner?: Player; ariaLabel?: string }
   | { html: string; lib?: undefined; id?: undefined };
 
 function badgeKey(chip: BadgeChip, index: number): string {
-  return chip.lib ? `${chip.lib}:${chip.id}` : `plain:${index}`;
+  return chip.lib ? `${chip.lib}:${chip.id}:${chip.owner ?? 'shared'}` : `plain:${index}`;
 }
 
 function updateChip(element: HTMLElement, chip: BadgeChip): void {
@@ -24,12 +25,18 @@ function updateChip(element: HTMLElement, chip: BadgeChip): void {
     button.type = 'button';
     button.dataset.lib = chip.lib;
     button.dataset.id = chip.id;
+    if (chip.owner === undefined) delete button.dataset.owner;
+    else button.dataset.owner = String(chip.owner);
+    if (chip.ariaLabel) button.setAttribute('aria-label', chip.ariaLabel);
+    else button.removeAttribute('aria-label');
     const html = `${chip.html}<span class="mi">ⓘ</span>`;
     if (button.innerHTML !== html) button.innerHTML = html;
     return;
   }
   delete element.dataset.lib;
   delete element.dataset.id;
+  delete element.dataset.owner;
+  element.removeAttribute('aria-label');
   if (element.innerHTML !== chip.html) element.innerHTML = chip.html;
 }
 
@@ -67,8 +74,15 @@ export function modeChip(mode: Pick<ModeSpec, 'id'>): BadgeChip {
   return { html: modeIcon(mode.id, 12) + ' ' + modeCopy(mode.id).compactName, lib: 'modes', id: mode.id };
 }
 
-export function spellChip(spell: Pick<SpellSpec, 'id'>): BadgeChip {
-  return { html: spellIcon(spell.id, 12) + ' ' + spellCopy(spell.id).compactName, lib: 'spells', id: spell.id };
+export function spellChip(spell: Pick<SpellSpec, 'id'>, owner?: Player): BadgeChip {
+  const copy = spellCopy(spell.id);
+  return {
+    html: spellIcon(spell.id, 12) + ' ' + copy.compactName,
+    lib: 'spells',
+    id: spell.id,
+    owner,
+    ariaLabel: owner === undefined ? undefined : `${nameOf(owner)}: ${copy.name}`,
+  };
 }
 
 let badgeClaim: (() => readonly BadgeChip[]) | null = null;
@@ -89,7 +103,12 @@ export function updateRecord(): void {
     return;
   }
   const chips: BadgeChip[] = [modeChip(modeByEnum(S.scoring))];
-  const dealt = spellById(dealtOf(S.spellCharges[ME]));
-  if (dealt) chips.push(spellChip(dealt));
+  const mine = spellById(dealtOf(S.spellCharges[ME]));
+  const theirs = spellById(dealtOf(S.spellCharges[AI]));
+  if (mine && theirs && mine.id !== theirs.id) {
+    chips.push(spellChip(mine, ME), spellChip(theirs, AI));
+  } else if (mine) {
+    chips.push(spellChip(mine));
+  }
   paintBadge(chips);
 }

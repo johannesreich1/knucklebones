@@ -89,6 +89,7 @@ export const enGame = {
   reveal: {
     gameMode: 'GAME MODE',
     yourRune: 'YOUR RUNE',
+    runeFor: 'RUNE FOR {{player}}',
     tapReady: 'Tap when you are ready',
     connecting: 'Connecting players…',
     starting: 'Starting',
@@ -251,6 +252,13 @@ export const enGame = {
       blurb: 'A rune drawn at the table — both players get the same one.',
       detail: 'One rune is drawn when the duel starts. Both players receive the same rune and its usual number of casts.',
       aim: 'Drawn at the start',
+    },
+    random2: {
+      name: 'RANDOM ×2',
+      compact: 'RANDOM ×2',
+      blurb: 'Two different runes — one drawn for each player.',
+      detail: 'The deck shuffles twice when the duel starts. Player 1 and Player 2 each receive a different random rune with its usual number of casts. This is the wild, deliberately uneven deal.',
+      aim: 'Drawn twice at the start',
     },
     unavailable: 'Not available right now.',
   },

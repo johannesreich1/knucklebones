@@ -305,6 +305,42 @@ export async function runOfflineRestartScenarios(suite) {
   check(restarted.askGone && !restarted.revealOn && !restarted.revealSeen,
     'Restart duel opened a RANDOM reveal or left the ask-card on screen', restarted);
 
+  /* RANDOM ×2 restart preserves both resolved answers and their orientation.
+     FATE's two cards make a seat swap or accidental symmetrization observable. */
+  const dualGeneration = await page.evaluate(() => {
+    const k = window.__kb;
+    k.S.mode = 'duo'; k.S.seat = 'face'; k.S.timer = 0;
+    k.S.localMode = 0; k.S.spell = 'random2'; k.S.starter = 1;
+    k.newGame({ spells: ['fate', 'ward'] });
+    return k.S.gen;
+  });
+  await page.waitForFunction(() => window.__kb.S.phase === 'choose', null, { timeout: 10000 });
+  await page.evaluate(() => {
+    window.__kb.S.spellCharges[0].fate = 0;
+    window.__kb.S.spellCharges[1].ward = 0;
+  });
+  await page.tap('#btnLeave');
+  await page.waitForSelector('#ovAsk.on');
+  await page.tap('#btnAskAlt');
+  await page.waitForFunction((generation) => {
+    const S = window.__kb.S;
+    return S.gen === generation + 1 && S.phase === 'choose' && !S.busy;
+  }, dualGeneration, { timeout: 10000 });
+  out.restartedDual = await page.evaluate(() => ({
+    selector: window.__kb.S.spell,
+    hands: window.__kb.S.spellCharges.map((hand) => ({ ...hand })),
+    reveal: document.querySelector('#ovWheel.on') !== null,
+    paired: document.getElementById('spellBar').classList.contains('paired'),
+    visible: [...document.querySelectorAll('#spellBar .rune:not([hidden])')]
+      .filter((card) => !!card.offsetParent).length,
+  }));
+  check(out.restartedDual.selector === 'random2'
+      && out.restartedDual.hands[0].fate === 2 && Object.keys(out.restartedDual.hands[0]).length === 1
+      && out.restartedDual.hands[1].ward === 1 && Object.keys(out.restartedDual.hands[1]).length === 1,
+    'Restart duel redrew, swapped, or symmetrized the RANDOM ×2 hands', out.restartedDual);
+  check(!out.restartedDual.reveal && out.restartedDual.paired && out.restartedDual.visible === 2,
+    'RANDOM ×2 restart replayed the reveal or hid one resolved hand', out.restartedDual);
+
   /* The optional action is rebuilt state, not sticky DOM. Open the same shared
      ask-card from a tutorial after the three-action card and prove it returns
      to its ordinary two answers. */

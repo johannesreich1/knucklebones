@@ -9,8 +9,9 @@
 import { SPEC, emptyBoard, boardTotal, applyMove, openStrikes, freshCharm,
          CLASSIC, ROWSWITCH, COLSHIELD,
          type GameState, type Mode, AI, ME } from '../src/core/rules.ts';
-import { SPELLS, RANDOM_SPELL, spellById, freshCharges, swingOf, bestTarget, machineCast,
+import { SPELLS, RANDOM_DUAL_SPELL, RANDOM_SPELL, spellById, freshCharges, swingOf, bestTarget, machineCast,
          anvilTargetIndex, type CastCtx } from '../src/core/spells.ts';
+import { resolveSpellDeal } from '../src/flow/spell-deal.ts';
 
 const problems: string[] = [];
 const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -30,9 +31,13 @@ const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m 
   // RANDOM is a PROMISE TO DRAW, never a rune: it must not resolve, must not
   // be dealt as itself, and must not collide with a real spell's id
   check(spellById(RANDOM_SPELL) === null, 'RANDOM must never resolve to a spell');
+  check(spellById(RANDOM_DUAL_SPELL) === null, 'RANDOM ×2 must never resolve to a spell');
   check(!ids.includes(RANDOM_SPELL), 'RANDOM must stay out of the dealt roster', ids);
+  check(!ids.includes(RANDOM_DUAL_SPELL), 'RANDOM ×2 must stay out of the dealt roster', ids);
   check(Object.keys(freshCharges(RANDOM_SPELL)).length === 0,
     'RANDOM dealt as itself must give an empty hand, never a phantom charge');
+  check(Object.keys(freshCharges(RANDOM_DUAL_SPELL)).length === 0,
+    'RANDOM ×2 dealt as itself must give an empty hand, never a phantom charge');
   // a hand holds the ONE spell that was picked, with its uses — nothing else
   for (const s of SPELLS) {
     const hand = freshCharges(s.id);
@@ -45,6 +50,22 @@ const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m 
     check(Object.keys(freshCharges(none)).length === 0, 'must deal an empty hand: ' + JSON.stringify(none),
       freshCharges(none));
   }
+}
+
+/* Picker promises resolve before UI/state sees them. Pin the boundary samples:
+   explicit and old RANDOM stay shared, RANDOM ×2 is ordered [AI, ME], distinct,
+   and a constant stream cannot trigger a retry loop. */
+{
+  check(String(resolveSpellDeal('ward', () => .9)) === 'ward,ward',
+    'an explicit rune must remain shared');
+  check(String(resolveSpellDeal(RANDOM_SPELL, () => 0)) === 'fate,fate',
+    'shared RANDOM did not resolve its boundary sample once');
+  const low = resolveSpellDeal(RANDOM_DUAL_SPELL, () => 0);
+  const high = resolveSpellDeal(RANDOM_DUAL_SPELL, () => 1);
+  check(low[0] !== low[1] && high[0] !== high[1],
+    'RANDOM ×2 returned the same rune twice', { low, high });
+  check(low.every((id) => !!spellById(id)) && high.every((id) => !!spellById(id)),
+    'RANDOM ×2 returned a picker promise or unknown rune', { low, high });
 }
 
 /* every spell needs the cast context: a caller with no hand to offer (an

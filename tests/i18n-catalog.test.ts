@@ -49,7 +49,8 @@ for (const namespace of LOCALE_NAMESPACES) {
 }
 
 assert.deepEqual(MODES.map(({ id }) => id), MODE_COPY_IDS.filter((id) => id !== 'random'));
-assert.deepEqual(SPELLS.map(({ id }) => id), SPELL_COPY_IDS.filter((id) => id !== 'none' && id !== 'random'));
+assert.deepEqual(SPELLS.map(({ id }) => id),
+  SPELL_COPY_IDS.filter((id) => id !== 'none' && id !== 'random' && id !== 'random2'));
 assert.deepEqual(GROUPS.map(({ id }) => id), LADDER_GROUP_IDS);
 
 /* Portable rule registries expose stable identity and mechanics only. Copy

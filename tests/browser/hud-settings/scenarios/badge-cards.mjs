@@ -24,6 +24,7 @@ export async function runBadgeCardScenarios(suite) {
       chips: [...r.querySelectorAll('.rchip')].map(c => {
         const b = c.getBoundingClientRect(), i = c.querySelector('.mi');
         return { lib: c.dataset.lib ?? null, id: c.dataset.id ?? null,
+                 owner: c.dataset.owner ?? null,
                  name: c.textContent.replace(/[\sⓘⓘ]+/g, ' ').trim(),
                  tappable: c.classList.contains('tapmode'), icon: !!c.querySelector('svg'),
                  shown: b.width > 0 && b.height > 0,
@@ -356,6 +357,30 @@ export async function runBadgeCardScenarios(suite) {
   out.badgeRandom = await chipsNow();
   check(out.badgeRandom.chips.length === 2 && out.badgeRandom.chips[1].id !== 'random',
     'RANDOM must name the rune actually dealt, not the promise to draw one', out.badgeRandom);
+  await leaveGame();
+
+  /* RANDOM ×2 resolves to two owner-marked chips. Feed a pinned deal directly
+     so this HUD test does not spend six seconds retesting test20's two shuffles. */
+  await page.evaluate(() => {
+    const k = window.__kb;
+    k.S.mode = 'duo'; k.S.seat = 'face'; k.S.timer = 0; k.S.localMode = 0; k.S.spell = 'random2';
+    k.newGame({ spells: ['fate', 'ward'] });
+  });
+  await page.waitForTimeout(180);
+  out.badgeDual = await chipsNow();
+  check(out.badgeDual.chips.length === 3
+      && out.badgeDual.chips[1].id === 'ward' && out.badgeDual.chips[1].owner === '1'
+      && out.badgeDual.chips[2].id === 'fate' && out.badgeDual.chips[2].owner === '0',
+    'the asymmetric HUD does not name and owner-mark both resolved runes', out.badgeDual);
+  check(out.badgeDual.chips.every((chip) => chip.shown && chip.icon && chip.tappable),
+    'one of the asymmetric HUD chips is not a visible rune-library control', out.badgeDual);
+  const dualViewport = page.viewportSize();
+  await page.setViewportSize({ width: 320, height: 568 }); await page.waitForTimeout(160);
+  out.badgeDualCompact = await chipsNow();
+  check(portraitBadgeCentred(out.badgeDualCompact),
+    'the compact mode+two-rune badge is not centred clear of Leave', out.badgeDualCompact.geometry);
+  if (dualViewport) await page.setViewportSize(dualViewport);
+  await page.waitForTimeout(120);
   await leaveGame();
 
 }

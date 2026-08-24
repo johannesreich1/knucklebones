@@ -11,9 +11,10 @@ technical document, *spell* names the castable rules effect and its engine
 (`SpellSpec`, `SPELLS`, `spellCharges`). Keep that implementation vocabulary;
 do not expose it as a competing name for the player's rune.
 
-Spells are an **optional layer over offline play**. Both seats always hold the
-same rune, one cast per turn at most, and a cast is **not a move** — your die
-still lands afterwards.
+Spells are an **optional layer over offline play**. A named pick and RANDOM
+deal both seats the same rune. RANDOM 2 is the explicit chaos exception: the
+deck shuffles once per player and deals two distinct runes. One cast per turn
+at most, and a cast is **not a move** — your die still lands afterwards.
 
 ---
 
@@ -53,10 +54,15 @@ the answer is "plays worse on purpose", reject it.
 
 These are structural, not taste. Breaking one is a redesign, not a tweak.
 
-- **Symmetry.** Both seats are dealt the same rune. Balance is then about
-  whether the spell is *fun*, never about whether it is *fair*.
-- **Visible threats.** The opponent's remaining charges are always on screen
-  (their nameplate). A spell you cannot see coming is a trap, not a duel.
+- **Symmetry by default.** A named rune and RANDOM deal the same rune to both
+  seats, so ordinary balance is about whether it is *fun*, never whether the
+  deal is *fair*. RANDOM 2 deliberately suspends that guarantee. It is labelled
+  as a wild, uneven variant and never replaces the persisted shared-RANDOM
+  choice.
+- **Visible threats.** The opponent's rune and remaining charges are always on
+  screen. A shared deal needs one turn-owned card; RANDOM 2 keeps both cards in
+  the rail, owner-marked in player colours, and brings the active hand forward.
+  A spell you cannot see coming is a trap, not a duel.
 - **Legality is the only failure path.** An illegal target is refused *before*
   anything moves, so a cast can never half-happen and leave the boards in a
   state nobody designed. A cast that would change nothing is illegal, not a
@@ -234,10 +240,9 @@ It answers three questions, and **the second matters most**:
 ### The fourth question, which this harness cannot ask
 
 Every number above is **holder vs a twin holding NOTHING**. `spellsim` cannot
-measure spell X against spell Y at all. That is sound while §2's Symmetry rule
-holds — both seats are dealt the same rune, so balance is only ever about
-whether a spell is *fun* — and it becomes misleading the instant that rule is
-dropped.
+measure spell X against spell Y at all. That is sound for named and shared-
+RANDOM deals, where both seats hold the same rune and balance is about whether
+the spell is *fun*. It is not evidence that a RANDOM 2 pairing is fair.
 
 Measured 2026-08-22 with a head-to-head harness (3,000 games per cell, both
 directions averaged, noise floor 0.9pp), the then-shipped five against **each
@@ -246,7 +251,9 @@ other** in classic, as mean win% across the pool:
     sunder 54.7 · pilfer 54.7 · fate 52.0 · ward 48.2 · nudge 46.0
 
 A span of **7.7pp ≈ 54 Elo**, and the ordering is **not mode-stable**: under
-SINGLE STRIKE the span is 17.3pp and PILFER beats WARD ~67–33. WARD's friendly
+SINGLE STRIKE the span is 17.3pp and PILFER beats WARD ~67–33. RANDOM 2 can
+therefore create a sharply uneven individual duel by design; it must never be
+presented as a balanced competitive draft. WARD's friendly
 56.9-vs-bare reading hides that it is the worst rune in the pool in every mode.
 
 **The lesson is structural: a roster balanced against nothing systematically
@@ -485,11 +492,11 @@ The rail now keeps that card vocabulary in play.
   locks keep the stable pre-lock appearance at its current ownership size;
   pressing still supplies the selected flip and 1.16 enlargement. Local
   two-player has no fixed viewer and never shrinks either active card.
-- **It carries NO seat mark** — no seat colour, no mirrored lean. The die in
-  play is beside it and is already painted in the colour of whoever is to move,
-  the status line names them, and only one card is ever in the slot. A seat
-  hue could not be honest anyway: both seats are dealt the same rune
-  (symmetry, §2), so the face wears the RUNE's hue in either hand.
+- **The face carries the rune hue; ownership is a dot.** A shared deal needs no
+  seat mark: the die beside its one card already says whose turn it is. RANDOM
+  2 keeps both cards in the slot, so each gains the same tiny player-colour dot
+  used by its HUD chip. The active hand comes forward while the other remains
+  readable behind it; neither face trades its rune identity for a seat colour.
 - **An unplayed rune lies FACE-DOWN**, its index enlarged for rail size — the
   deck draws that index at 26% for a card 2.5× bigger, which is a 9px smudge
   here. A played rune is face UP. That is the reading every card game already

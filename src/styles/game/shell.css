@@ -40,6 +40,13 @@
    rows do — one chip pressed, the badge acknowledges */
 :where(#kbroot) .rec.pressing .rchip.tapmode{transform:scale(.94)}
 :where(#kbroot) .rchip .mi{color:var(--dim);font-weight:800;margin-left:2px}
+/* A distinct two-rune deal adds one chip per hand. The owner dot repeats the
+   nameplate colour, keeping both controls compact while making the mapping
+   explicit in VS AI, pass-the-phone, and face-to-face play. */
+:where(#kbroot) .rchip[data-owner]::before{content:"";width:5px;height:5px;border-radius:50%;flex:0 0 auto;
+  background:var(--owner);box-shadow:0 0 7px var(--owner)}
+:where(#kbroot) .rchip[data-owner="1"]{--owner:var(--p1)}
+:where(#kbroot) .rchip[data-owner="0"]{--owner:var(--p2)}
 :where(#kbroot) .ico{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;
   background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);
   color:var(--txt);font-size:13px;font-weight:700;cursor:pointer;transition:.15s}

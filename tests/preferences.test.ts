@@ -53,6 +53,13 @@ assert.equal(S.localeOverride, null);
 stored = JSON.stringify({ localeOverride: 'en-US' });
 loadStats();
 assert.equal(S.localeOverride, null);
+stored = JSON.stringify({ spell: 'random2' });
+S.spell = '';
+loadStats();
+assert.equal(S.spell, 'random2');
+stored = JSON.stringify({ spell: 'not-a-rune' });
+loadStats();
+assert.equal(S.spell, 'random2', 'an unknown rune selector replaced the last valid pick');
 
 function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
   let resolve!: (value: T) => void;

@@ -92,6 +92,7 @@ export const frGame = {
   reveal: {
     gameMode: 'MODE DE JEU',
     yourRune: 'VOTRE RUNE',
+    runeFor: 'RUNE POUR {{player}}',
     tapReady: 'Touchez quand vous êtes prêt',
     connecting: 'Connexion des joueurs…',
     starting: 'Démarrage',
@@ -254,6 +255,13 @@ export const frGame = {
       blurb: 'Une rune tirée à la table — les deux joueurs ont la même.',
       detail: 'Une rune est tirée au début du duel. Les deux joueurs reçoivent la même rune avec son nombre habituel d’usages.',
       aim: 'Tirée au départ',
+    },
+    random2: {
+      name: 'ALÉATOIRE ×2',
+      compact: 'ALÉA ×2',
+      blurb: 'Deux runes différentes — une tirée pour chaque joueur.',
+      detail: 'Le paquet est mélangé deux fois au début du duel. Le joueur 1 et le joueur 2 reçoivent chacun une rune aléatoire différente avec son nombre habituel d’usages. Cette variante est volontairement sauvage et inégale.',
+      aim: 'Tirée deux fois au départ',
     },
     unavailable: 'Indisponible pour le moment.',
   },

@@ -1,8 +1,8 @@
 // Spell icons — same deal as ui/modeicons: stroke-based 24×24 SVGs on
 // currentColor, keyed off the registry's stable ids, so the shared core stays
 // free of markup and a spell can be re-skinned without touching its rules.
-import { modeIcon, modeHue } from './modeicons.ts';
-import { RANDOM_SPELL } from '../core/spells.ts';
+import { modeIcon, modeIconBody, modeHue } from './modeicons.ts';
+import { RANDOM_DUAL_SPELL, RANDOM_SPELL } from '../core/spells.ts';
 const PATHS: Record<string, string> = {
   /* NONE: the picker's first slice — no rune at all */
   none: '<circle cx="12" cy="12" r="8.4"/><path d="M6.1 6.1 17.9 17.9"/>',
@@ -55,11 +55,23 @@ const HUES: Record<string, string> = {
    row showed a bare X next to the mode row's arrows. Asking is the fix that
    cannot drift again. */
 export function spellHue(id: string): string {
-  return id === RANDOM_SPELL ? modeHue('random') : (HUES[id] ?? '#b18cff');
+  return id === RANDOM_SPELL || id === RANDOM_DUAL_SPELL
+    ? modeHue('random') : (HUES[id] ?? '#b18cff');
 }
 
 export function spellIcon(id: string, size = 22): string {
   if (id === RANDOM_SPELL) return modeIcon('random', size);
+  if (id === RANDOM_DUAL_SPELL) {
+    /* The arrows are still the mode icon's ONE geometry. The small corner seal
+       is the only addition: a hand-drawn 2 that stays crisp without relying on
+       an SVG font at the picker's 16px size. */
+    return `<svg class="sico sico-random2" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" `
+      + `stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" `
+      + `aria-hidden="true">${modeIconBody('random')}`
+      + `<circle cx="18.1" cy="5.4" r="4" fill="#0b0e1c"/>`
+      + `<path d="M16.5 4.5c.2-1 1-1.5 1.9-1.5 1.1 0 1.8.6 1.8 1.5 0 .8-.4 1.3-1.2 1.9l-2.4 1.7h3.8" `
+      + `stroke-width="1.35"/></svg>`;
+  }
   const body = PATHS[id] ?? PATHS.none;
   return `<svg class="sico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" `
     + `stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" `

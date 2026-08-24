@@ -42,9 +42,10 @@ const HUES: Record<string, string> = {
   random: '#e9f1ff',
 };
 export function modeHue(id: string): string { return HUES[id] ?? HUES.classic; }
+export function modeIconBody(id: string): string { return PATHS[id] ?? PATHS.classic; }
 
 export function modeIcon(id: string, size = 14): string {
-  const body = PATHS[id] ?? PATHS.classic;
+  const body = modeIconBody(id);
   return `<svg class="mico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" `
     + `stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" `
     + `aria-hidden="true">${body}</svg>`;

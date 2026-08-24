@@ -3,7 +3,7 @@
 // Storage is unavailable in some embeds (sandboxed iframes, private modes).
 // Every access is guarded: the game simply forgets between sessions there.
 import { S, DIFFS, MODES, TIMERS, SEATS, HUE_IDS, oneOf } from './state.ts';
-import { spellById, RANDOM_SPELL } from './core/spells.ts';
+import { spellById, RANDOM_DUAL_SPELL, RANDOM_SPELL } from './core/spells.ts';
 import { isLanguageOverride, setLanguageOverride } from './i18n/index.ts';
 
 const Store = {
@@ -46,7 +46,8 @@ export function loadStats(): void {
   if (typeof d.colorblind === 'boolean') S.colorblind = d.colorblind;
   if (typeof d.reducedMotion === 'boolean') S.reducedMotion = d.reducedMotion;
   // '' is NONE; any other value must still be a spell this build knows about
-  if (d.spell === '' || d.spell === RANDOM_SPELL || spellById(d.spell)) S.spell = d.spell;
+  if (d.spell === '' || d.spell === RANDOM_SPELL || d.spell === RANDOM_DUAL_SPELL
+      || spellById(d.spell)) S.spell = d.spell;
   if (typeof d.tutDone === 'boolean') S.tutDone = d.tutDone;
   if (typeof d.played === 'boolean') S.played = d.played;
   // a player with a record from before this flag existed has obviously played
