@@ -16,7 +16,6 @@ export async function runLanguageSelectorScenarios(suite) {
     const value = document.getElementById('languageValue');
     const previous = document.getElementById('languagePrevious');
     const next = document.getElementById('languageNext');
-    const opponent = document.getElementById('p2Pick')?.closest('.card');
     const language = picker?.closest('.card');
     const sound = document.getElementById('sndSeg')?.closest('.card');
     const rect = (element) => element?.getBoundingClientRect();
@@ -51,8 +50,7 @@ export async function runLanguageSelectorScenarios(suite) {
       centred: pickerRect && valueRect
         ? Math.abs((pickerRect.left + pickerRect.width / 2) - (valueRect.left + valueRect.width / 2))
         : null,
-      order: !!opponent && !!language && !!sound
-        && !!(opponent.compareDocumentPosition(language) & Node.DOCUMENT_POSITION_FOLLOWING)
+      order: !!language && !!sound && language.parentElement?.firstElementChild === language
         && !!(language.compareDocumentPosition(sound) & Node.DOCUMENT_POSITION_FOLLOWING),
       visibleSystemChoice: /system|automatic/i.test(picker?.textContent ?? ''),
     };
@@ -60,7 +58,7 @@ export async function runLanguageSelectorScenarios(suite) {
   check(out.languagePicker.override === null && NAMES.includes(out.languagePicker.value),
         'language picker did not start from the effective automatic locale', out.languagePicker);
   check(out.languagePicker.order && !out.languagePicker.visibleSystemChoice,
-        'language picker is not immediately before Sound or exposes a System choice', out.languagePicker);
+        'language picker is not first in Settings or exposes a System choice', out.languagePicker);
   check(out.languagePicker.live === 'polite' && out.languagePicker.atomic === 'true'
     && out.languagePicker.previous.label && out.languagePicker.next.label
     && out.languagePicker.previous.label !== out.languagePicker.next.label,

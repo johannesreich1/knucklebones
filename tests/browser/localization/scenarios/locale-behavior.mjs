@@ -74,7 +74,9 @@ export async function runLocaleBehaviorScenarios(suite) {
       && document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2) === element;
     return {
       value: value?.textContent?.trim(),
-      directBeforeSound: languageCard?.nextElementSibling === soundCard,
+      firstInSettings: languageCard?.parentElement?.firstElementChild === languageCard,
+      beforeSound: !!languageCard && !!soundCard
+        && !!(languageCard.compareDocumentPosition(soundCard) & Node.DOCUMENT_POSITION_FOLLOWING),
       visibleAutomaticChoice: /system|automatic|automatisch|système|automatique/iu
         .test(picker?.textContent ?? ''),
       live: value?.getAttribute('aria-live'),
@@ -97,7 +99,7 @@ export async function runLocaleBehaviorScenarios(suite) {
     };
   });
   out.languageSelector = selector;
-  check(selector.value === 'Deutsch' && selector.directBeforeSound
+  check(selector.value === 'Deutsch' && selector.firstInSettings && selector.beforeSound
     && !selector.visibleAutomaticChoice && selector.live === 'polite' && selector.atomic === 'true',
   'language selector position, value, or live-region contract is wrong', selector);
   check(selector.previous.tag === 'BUTTON' && selector.next.tag === 'BUTTON'

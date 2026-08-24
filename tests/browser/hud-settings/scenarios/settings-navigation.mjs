@@ -10,6 +10,8 @@ export async function runSettingsNavigationScenarios(suite) {
     faceOn: document.querySelector('#faceSeg button.on')?.dataset.f,
     motionOn: document.querySelector('#motionSeg button.on')?.dataset.rm,
     accessibility: document.getElementById('accessibilityHeading')?.textContent?.trim(),
+    languageFirst: document.querySelector('#ovSettings .pbody')?.firstElementChild
+      === document.getElementById('languagePicker')?.closest('.card'),
     accessibilityOrder: (() => {
       const body = document.querySelector('#ovSettings .pbody');
       const heading = document.getElementById('accessibilityHeading');
@@ -30,11 +32,11 @@ export async function runSettingsNavigationScenarios(suite) {
         .map((node) => node.textContent?.trim()).filter(Boolean);
     }),
     sectionSpacing: (() => {
-      const language = document.getElementById('languagePicker')?.closest('.card')?.getBoundingClientRect();
+      const opponentColour = document.getElementById('p2Pick')?.closest('.card')?.getBoundingClientRect();
       const sound = document.getElementById('sndSeg')?.closest('.card')?.getBoundingClientRect();
       const heading = document.getElementById('accessibilityHeading')?.getBoundingClientRect();
-      return language && sound && heading ? {
-        aboveSound: sound.top - language.bottom,
+      return opponentColour && sound && heading ? {
+        aboveSound: sound.top - opponentColour.bottom,
         aboveAccessibility: heading.top - sound.bottom,
         colourNote: !!document.getElementById('colNote'),
       } : null;
@@ -45,6 +47,8 @@ export async function runSettingsNavigationScenarios(suite) {
   check(out.settingsOpen.on && out.settingsOpen.sndOn === '1' && out.settingsOpen.faceOn === 'pips'
     && out.settingsOpen.motionOn === '0',
         'settings did not open with current values', out.settingsOpen);
+  check(out.settingsOpen.languageFirst,
+        'Language is not the first control in Settings', out.settingsOpen);
   check(out.settingsOpen.accessibility === 'Accessibility' && out.settingsOpen.accessibilityOrder,
         'Sound is not above the grouped accessibility controls', out.settingsOpen);
   check(out.settingsOpen.accessibilityHelp.length === 0,

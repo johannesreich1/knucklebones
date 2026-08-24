@@ -255,6 +255,16 @@ ${RULES_PAGE}
     <span class="ttl" data-i18n="settings:title">SETTINGS</span><span class="pad"></span>
   </div>
   <div class="pbody">
+    <div class="card">
+      <div class="lbl" id="languageLabel" data-i18n="settings:language">Language</div>
+      <div class="language-picker" id="languagePicker" role="group" aria-labelledby="languageLabel">
+        <button type="button" id="languagePrevious" data-language-step="-1"
+          data-i18n-attr="aria-label=settings:previousLanguage" aria-label="Previous language">‹</button>
+        <span class="language-picker__value" id="languageValue" aria-live="polite" aria-atomic="true">English</span>
+        <button type="button" id="languageNext" data-language-step="1"
+          data-i18n-attr="aria-label=settings:nextLanguage" aria-label="Next language">›</button>
+      </div>
+    </div>
     <!-- the duel pickers: swatch strips built by boot/menu-bindings.ts from DUELHUES
          (state.ts), one implementation, two slots. A colour belongs to one
          player only — each strip renders the other side's pick disabled. -->
@@ -265,16 +275,6 @@ ${RULES_PAGE}
     <div class="card">
       <div class="lbl" data-i18n="settings:opponentColour">Opponent colour</div>
       <div class="hues" id="p2Pick"></div>
-    </div>
-    <div class="card">
-      <div class="lbl" id="languageLabel" data-i18n="settings:language">Language</div>
-      <div class="language-picker" id="languagePicker" role="group" aria-labelledby="languageLabel">
-        <button type="button" id="languagePrevious" data-language-step="-1"
-          data-i18n-attr="aria-label=settings:previousLanguage" aria-label="Previous language">‹</button>
-        <span class="language-picker__value" id="languageValue" aria-live="polite" aria-atomic="true">English</span>
-        <button type="button" id="languageNext" data-language-step="1"
-          data-i18n-attr="aria-label=settings:nextLanguage" aria-label="Next language">›</button>
-      </div>
     </div>
     <div class="card">
       <div class="lbl" data-i18n="settings:sound">Sound</div>
