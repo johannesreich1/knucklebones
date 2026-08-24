@@ -52,11 +52,9 @@ import { showLocalResult } from './local-result.ts';
 import { hidePassCard, showPassCard } from './pass-card.ts';
 
 export { aiChoose } from './game-ai.ts';
-
 /* arm the turn clock: on expiry the die drops into a random legal column */
 export function armTimer(): void { const gen = S.gen; startTimer(() => autoPlace(gen)); }
 const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
-/* the one true local score — the SAME helper the server settles matches with */
 function localTotal(player: Player): number {
   return totalOf(S.boards[player], S.bounty[player], S.scoring);
 }
@@ -73,7 +71,6 @@ async function autoPlace(gen: number): Promise<void> {
   vibrate([30,40,30]);
   void place(who, c);
 }
-/* ---- pass the phone ---- */
 let passResolve: (() => void) | null = null;
 function handOff(who: Player): Promise<boolean> {
   return new Promise<boolean>((resolve) => {
@@ -228,8 +225,7 @@ export async function startLocal(): Promise<void> {
   const mode = selectedMode === RANDOM ? pickMode(Math.random().toString(36).slice(2)) : null;
   const randomRunes = S.spell === RANDOM_SPELL || S.spell === RANDOM_DUAL_SPELL
     ? drawSpellDeal() : null;
-  /* Whatever the player left to chance gets ONE screen and one countdown —
-     the dial for the mode, then one deck per unresolved rune (ui/reveal). */
+  /* Resolve every random choice in one reveal sequence and one countdown. */
   if(mode || randomRunes){
     hide('#ovEnd'); hide('#ovStart'); hide('#ovPractice');
     const mine = randomRunes ? spellById(randomRunes[ME]) : null;

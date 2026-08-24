@@ -9,64 +9,15 @@
 import { SPEC, emptyBoard, boardTotal, applyMove, openStrikes, freshCharm,
          CLASSIC, ROWSWITCH, COLSHIELD,
          type GameState, type Mode, AI, ME } from '../src/core/rules.ts';
-import { SPELLS, RANDOM_DUAL_SPELL, RANDOM_SPELL, spellById, freshCharges, swingOf, bestTarget, machineCast,
+import { SPELLS, spellById, swingOf, bestTarget, machineCast,
          anvilTargetIndex, type CastCtx } from '../src/core/spells.ts';
-import { resolveSpellDeal } from '../src/flow/spell-deal.ts';
+import { checkSpellRegistryContract } from './spell-registry-contract.ts';
 
 const problems: string[] = [];
 const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
 
-/* ---- the registry itself ---- */
-{
-  const ids = SPELLS.map((s) => s.id);
-  check(new Set(ids).size === ids.length, 'spell ids must be unique', ids);
-  check(!ids.includes('swap'), 'COLUMN SWAP retired 2026-08-21 (70.5% one-sided) — it must not return', ids);
-  for (const s of SPELLS) {
-    check(s.uses >= 1, 'a spell with no uses can never be cast: ' + s.id, s.uses);
-    check(s.target === 'column' || s.target === 'self', 'unknown target kind: ' + s.id, s.target);
-  }
-  check(spellById('nonsense') === null, 'unknown id is null, never a silent fallback');
-  check(spellById(null) === null, 'null id is null');
-  check(spellById('swap') === null, 'the retired swap must not resolve (persisted picks fall back to NONE)');
-  // RANDOM is a PROMISE TO DRAW, never a rune: it must not resolve, must not
-  // be dealt as itself, and must not collide with a real spell's id
-  check(spellById(RANDOM_SPELL) === null, 'RANDOM must never resolve to a spell');
-  check(spellById(RANDOM_DUAL_SPELL) === null, 'RANDOM ×2 must never resolve to a spell');
-  check(!ids.includes(RANDOM_SPELL), 'RANDOM must stay out of the dealt roster', ids);
-  check(!ids.includes(RANDOM_DUAL_SPELL), 'RANDOM ×2 must stay out of the dealt roster', ids);
-  check(Object.keys(freshCharges(RANDOM_SPELL)).length === 0,
-    'RANDOM dealt as itself must give an empty hand, never a phantom charge');
-  check(Object.keys(freshCharges(RANDOM_DUAL_SPELL)).length === 0,
-    'RANDOM ×2 dealt as itself must give an empty hand, never a phantom charge');
-  // a hand holds the ONE spell that was picked, with its uses — nothing else
-  for (const s of SPELLS) {
-    const hand = freshCharges(s.id);
-    check(hand[s.id] === s.uses, 'a hand must deal the picked spell its uses: ' + s.id, hand);
-    check(Object.keys(hand).length === 1, 'a hand holds exactly what was brought: ' + s.id, hand);
-  }
-  // NONE, and anything this build does not recognise, deal an EMPTY hand — the
-  // one thing the runtime asks before showing a rail or allowing a cast
-  for (const none of ['', 'nonsense', 'swap', null, undefined]) {
-    check(Object.keys(freshCharges(none)).length === 0, 'must deal an empty hand: ' + JSON.stringify(none),
-      freshCharges(none));
-  }
-}
-
-/* Picker promises resolve before UI/state sees them. Pin the boundary samples:
-   explicit and old RANDOM stay shared, RANDOM ×2 is ordered [AI, ME], distinct,
-   and a constant stream cannot trigger a retry loop. */
-{
-  check(String(resolveSpellDeal('ward', () => .9)) === 'ward,ward',
-    'an explicit rune must remain shared');
-  check(String(resolveSpellDeal(RANDOM_SPELL, () => 0)) === 'fate,fate',
-    'shared RANDOM did not resolve its boundary sample once');
-  const low = resolveSpellDeal(RANDOM_DUAL_SPELL, () => 0);
-  const high = resolveSpellDeal(RANDOM_DUAL_SPELL, () => 1);
-  check(low[0] !== low[1] && high[0] !== high[1],
-    'RANDOM ×2 returned the same rune twice', { low, high });
-  check(low.every((id) => !!spellById(id)) && high.every((id) => !!spellById(id)),
-    'RANDOM ×2 returned a picker promise or unknown rune', { low, high });
-}
+/* ---- registry and picker promises ---- */
+checkSpellRegistryContract(check);
 
 /* every spell needs the cast context: a caller with no hand to offer (an
    ungated flow, a stray call) is refused before anything moves */

@@ -32,13 +32,13 @@ export const SUNDER_SENSITIVITY_VERSION = 1;
 export const FROZEN_MATCHUP_SHA256 = 'a875c056c6f98071b679f184e0672e80438965148ae2bd76796b1acf42e90acf';
 export const PRODUCTION_POLICY_SHA256: Record<string, string> = {
   'src/core/spell-policy.ts': '821879f3566ea6b86aa79fe7fc6b3c76f6491d4c1a1a7d9339035a234d8de427',
-  'src/core/spells.ts': 'db6557218bc3a132702a41385519bf14533ed10b6f6998bc82e1287367de2d73',
+  'src/core/spells.ts': '3588a479471954b3a0c918dca3dd029195ff2f8c2d744d7e2bb875128ef057ea',
   'src/core/spell-types.ts': 'b56906dd5fc6c9ad56aaa7b8329a0365cc23c80f6d44814d04ebce9165ab35d6',
   'src/core/ai.ts': '2de44498b9acfb6fadf14dc12accc56f423df074271c7d97708ed755685a5c26',
   'src/core/rules.ts': 'af9ae96cbbede7e5bc6c8f7e766f6738ea430280a1cadd43c88273647e7bba59',
   'src/flow/spell-ai.ts': 'de01f52854a54677d29d7ea710b7e2aafaa7a1e12f213c886cc518e56183b1be',
   'src/flow/game-ai.ts': '102b4bdad6eca6457c864cf6314d8deb249a8c0485d9d78cd5942bc5529f1cdf',
-  'src/flow/game.ts': '85392b4a942309dc99cc3c7eb01fa08ff569b02b6fff08e5714d5eb6c204620d',
+  'src/flow/game.ts': '082a3ac1c83c3d4fb9ebbda1b02b90e1c6a515d1af20ea5d317a2cdce41c16bc',
 };
 export const DEFAULT_SEEDS = [
   '20260824-a', '20260824-b', '20260824-c', '20260824-d',

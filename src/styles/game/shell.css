@@ -24,6 +24,12 @@
 @media (max-width:359px){
   :where(#kbroot) .rec{gap:4px}
   :where(#kbroot) .rchip{font-size:9px;padding:3px 6px;letter-spacing:.08em}
+  /* Three full translated labels cannot share a 320px HUD with Leave. Keep
+     the mode named and turn the two owner-marked rune chips into compact
+     glyph controls; their player-colour dots, stable icons and accessible
+     owner/name labels retain the full meaning without crowding the corner. */
+  :where(#kbroot) .rec[data-count="3"] .rchip[data-owner] .rlab{display:none}
+  :where(#kbroot) .rec[data-count="3"] .rchip[data-owner]{padding-inline:5px}
   :where(#kbroot) .ico{width:27px;height:27px;border-radius:9px;font-size:12px}
   :where(#kbroot) .hud{gap:6px}
 }

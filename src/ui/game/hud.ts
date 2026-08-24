@@ -42,6 +42,7 @@ function updateChip(element: HTMLElement, chip: BadgeChip): void {
 
 function paintBadge(chips: readonly BadgeChip[]): void {
   const badge = $('#rec');
+  badge.dataset.count = String(chips.length);
   const existing = new Map(Array.from(badge.children, (child, index) => [
     (child as HTMLElement).dataset.badgeKey ?? `legacy:${index}`,
     child as HTMLElement,
@@ -71,13 +72,17 @@ function paintBadge(chips: readonly BadgeChip[]): void {
 }
 
 export function modeChip(mode: Pick<ModeSpec, 'id'>): BadgeChip {
-  return { html: modeIcon(mode.id, 12) + ' ' + modeCopy(mode.id).compactName, lib: 'modes', id: mode.id };
+  return {
+    html: `${modeIcon(mode.id, 12)}<span class="rlab">${modeCopy(mode.id).compactName}</span>`,
+    lib: 'modes',
+    id: mode.id,
+  };
 }
 
 export function spellChip(spell: Pick<SpellSpec, 'id'>, owner?: Player): BadgeChip {
   const copy = spellCopy(spell.id);
   return {
-    html: spellIcon(spell.id, 12) + ' ' + copy.compactName,
+    html: `${spellIcon(spell.id, 12)}<span class="rlab">${copy.compactName}</span>`,
     lib: 'spells',
     id: spell.id,
     owner,
