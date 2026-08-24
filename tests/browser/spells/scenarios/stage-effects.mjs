@@ -7,12 +7,26 @@ export async function runStageEffectScenarios(suite) {
   check(await waitChoose(), 'game never reached choose (NU1 wrap)');
   await table([[2], [], []], [[5], [], []], 6);
   const nudgeBefore = await page.locator('#dieStage > .die').boundingBox();
-  await page.evaluate(() => { void window.__kb.spells.cast('nudge', -1); });
+  await page.evaluate(() => {
+    const started = performance.now();
+    window.__nudgeCastElapsed = null;
+    void window.__kb.spells.cast('nudge', -1).finally(() => {
+      window.__nudgeCastElapsed = performance.now() - started;
+    });
+  });
   await page.waitForTimeout(70);
   out.nudgePips = await page.evaluate(() => {
     const stage = document.getElementById('dieStage');
     const die = stage.querySelector(':scope > .die');
     const box = die.getBoundingClientRect();
+    const allAnimations = die.getAnimations({ subtree: true });
+    const pipAnimations = [...die.querySelectorAll('.pip')]
+      .flatMap((pip) => pip.getAnimations());
+    const timingFor = (animations, name) => {
+      const animation = animations.find((candidate) => candidate.animationName === name);
+      const timing = animation?.effect?.getTiming();
+      return timing ? { duration: Number(timing.duration), delay: Number(timing.delay) } : null;
+    };
     return {
       value: die.dataset.v,
       removed: die.querySelectorAll('.pip.spell-nudge-removed').length,
@@ -20,8 +34,12 @@ export async function runStageEffectScenarios(suite) {
       added: die.querySelectorAll('.pip.spell-nudge-added').length,
       shellTransform: getComputedStyle(die).transform,
       shellAnimations: die.getAnimations().map((animation) => animation.animationName || ''),
-      pipAnimations: [...die.querySelectorAll('.pip')]
-        .flatMap((pip) => pip.getAnimations().map((animation) => animation.animationName || '')),
+      pipAnimations: pipAnimations.map((animation) => animation.animationName || ''),
+      nudgeTiming: {
+        drain: timingFor(pipAnimations, 'spell-nudge-drain'),
+        land: timingFor(pipAnimations, 'spell-nudge-land'),
+        glow: timingFor(allAnimations, 'spell-nudge-glow'),
+      },
       box: { x: box.x, y: box.y, width: box.width, height: box.height },
       pop: stage.classList.contains('pop'),
       particles: document.querySelectorAll('#fx .particle').length,
@@ -41,12 +59,23 @@ export async function runStageEffectScenarios(suite) {
       && out.nudgePips.pipAnimations.includes('spell-nudge-land')
       && !out.nudgePips.pop && out.nudgePips.particles === 0,
     'NU1 fell back to a whole-die pop/burst or lost its pip motion', out.nudgePips);
-  await page.waitForTimeout(450);
+  check(Math.abs(out.nudgePips.nudgeTiming.drain?.duration - 616) < 1
+      && Math.abs(out.nudgePips.nudgeTiming.drain?.delay) < 1
+      && Math.abs(out.nudgePips.nudgeTiming.land?.duration - 504) < 1
+      && Math.abs(out.nudgePips.nudgeTiming.land?.delay - 616) < 1
+      && Math.abs(out.nudgePips.nudgeTiming.glow?.duration - 1176) < 1
+      && Math.abs(out.nudgePips.nudgeTiming.glow?.delay) < 1
+      && out.nudgePips.nudgeTiming.land.delay >= out.nudgePips.nudgeTiming.drain.duration,
+    'NU1 no longer follows the selected removal-first timing', out.nudgePips.nudgeTiming);
+  await page.waitForFunction(() => !document.querySelector('#dieStage .spell-nudge-rewrite'));
+  await page.waitForFunction(() => window.__nudgeCastElapsed !== null);
   out.nudgeSettled = await page.evaluate(() => ({
     value: document.querySelector('#dieStage > .die')?.dataset.v,
     temporary: document.querySelectorAll('#dieStage [class*="spell-nudge-"]').length,
+    elapsed: window.__nudgeCastElapsed,
   }));
-  check(out.nudgeSettled.value === '1' && out.nudgeSettled.temporary === 0,
+  check(out.nudgeSettled.value === '1' && out.nudgeSettled.temporary === 0
+      && out.nudgeSettled.elapsed >= 1170,
     'NU1 did not cleanly settle on its authoritative face', out.nudgeSettled);
 
   /* Numerals get the same arithmetic without leaking hidden pips through the
@@ -76,7 +105,7 @@ export async function runStageEffectScenarios(suite) {
       && out.nudgeNumerals.oldDisplay === 'flex' && out.nudgeNumerals.nextDisplay === 'flex'
       && out.nudgeNumerals.pipDisplay === 'none' && out.nudgeNumerals.shellTransform === 'none',
     'NU1 numeral mode did not perform a contained number handoff', out.nudgeNumerals);
-  await page.waitForTimeout(350);
+  await page.waitForFunction(() => !document.querySelector('#dieStage .spell-nudge-rewrite'));
   await page.evaluate(() => document.getElementById('kbroot').classList.remove('numerals'));
 
   /* FA4: sample the whole pass. Equal transforms keep the two square faces

@@ -7,7 +7,9 @@ import { REDUCED } from '../../ui/fx.ts';
 import { diePipDiff } from '../../ui/die-markup.ts';
 import { effectPause, type SpellEffect } from './types.ts';
 
-const REWRITE_MS = 420;
+/* NU1's authored beat drains for 616ms, lands for 504ms, then lets the glow
+   finish at 1176ms. Keep a small cleanup margin beyond the CSS choreography. */
+const REWRITE_MS = 1220;
 
 function markPip(pips: readonly HTMLElement[], cell: number, className: string): void {
   pips[cell]?.classList.add(className);

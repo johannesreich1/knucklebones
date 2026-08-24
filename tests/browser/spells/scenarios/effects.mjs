@@ -7,7 +7,7 @@ export async function runEffectScenarios(suite) {
      NUDGE is the deterministic one: 5 must become 6. */
   await newGame({ spell: 'nudge' }); check(await waitChoose(), 'game never reached choose (nudge)');
   await table([[2], [], []], [[5], [], []], 5);
-  await tapRune(); await page.waitForTimeout(700);
+  await tapRune(); await page.waitForFunction(() => !window.__kb.S.busy);
   out.selfTap = await look();
   check(out.selfTap.die === 6, 'a tap on a self rune must cast it — the die did not tick', out.selfTap);
   check(out.selfTap.charges === '[{"nudge":1},{"nudge":0}]', 'the tap-cast charged the wrong seat', out.selfTap);
@@ -50,7 +50,7 @@ export async function runEffectScenarios(suite) {
      charge back. */
   await newGame({ spell: 'nudge' }); check(await waitChoose(), 'game never reached choose (commit)');
   await table([[2], [], []], [[5], [], []], 5);
-  await tapRune(); await page.waitForTimeout(700);
+  await tapRune(); await page.waitForFunction(() => !window.__kb.S.busy);
   out.committedNudge = await page.evaluate(async () => {
     const k = window.__kb;
     const before = { die: k.S.die, charges: JSON.stringify(k.S.spellCharges) };

@@ -24,19 +24,19 @@
 :where(#kbroot) .die.spell-nudge-rewrite::after{content:"";position:absolute;inset:0;z-index:1;border-radius:inherit;
   pointer-events:none;background:radial-gradient(closest-side,
     color-mix(in srgb,var(--spell-effect-hue) 34%,transparent),transparent 74%);
-  animation:spell-nudge-glow 380ms ease-in-out both}
+  animation:spell-nudge-glow 1176ms ease-in-out both}
 :where(#kbroot) .die.spell-nudge-rewrite > .pip,
 :where(#kbroot) .die.spell-nudge-rewrite > .num{position:relative;z-index:2;transition:none}
 :where(#kbroot) .die.spell-nudge-rewrite > .num{position:absolute}
-:where(#kbroot) .pip.spell-nudge-removed{animation:spell-nudge-drain 180ms cubic-bezier(.5,0,.85,1) both}
-:where(#kbroot) .pip.spell-nudge-added{animation:spell-nudge-land 260ms 120ms cubic-bezier(.2,1.6,.4,1) both}
-:where(#kbroot) .spell-nudge-number-old{animation:spell-nudge-drain 180ms cubic-bezier(.5,0,.85,1) both}
-:where(#kbroot) .spell-nudge-number-new{animation:spell-nudge-land 260ms 120ms cubic-bezier(.2,1.6,.4,1) both}
-@keyframes spell-nudge-drain{0%{opacity:1;transform:scale(1)}38%{opacity:1;transform:scale(1.18)}
+:where(#kbroot) .pip.spell-nudge-removed{animation:spell-nudge-drain 616ms cubic-bezier(.5,0,.85,1) both}
+:where(#kbroot) .pip.spell-nudge-added{animation:spell-nudge-land 504ms 616ms cubic-bezier(.2,1.6,.4,1) both}
+:where(#kbroot) .spell-nudge-number-old{animation:spell-nudge-drain 616ms cubic-bezier(.5,0,.85,1) both}
+:where(#kbroot) .spell-nudge-number-new{animation:spell-nudge-land 504ms 616ms cubic-bezier(.2,1.6,.4,1) both}
+@keyframes spell-nudge-drain{0%{opacity:1;transform:scale(1)}36%{opacity:1;transform:scale(1.18)}
   100%{opacity:0;transform:scale(.15)}}
-@keyframes spell-nudge-land{0%{opacity:0;transform:scale(.15)}58%{opacity:1;transform:scale(1.24)}
+@keyframes spell-nudge-land{0%{opacity:0;transform:scale(.15)}56%{opacity:1;transform:scale(1.24)}
   100%{opacity:1;transform:scale(1)}}
-@keyframes spell-nudge-glow{0%,18%{opacity:0}55%{opacity:1}100%{opacity:0}}
+@keyframes spell-nudge-glow{0%,14%{opacity:0}52%{opacity:1}100%{opacity:0}}
 
 #kbroot.reduce-motion .spell-fate-old,#kbroot.reduce-motion .spell-fate-lane::before,
 #kbroot.reduce-motion .pip.spell-nudge-removed,#kbroot.reduce-motion .spell-nudge-number-old{display:none}
