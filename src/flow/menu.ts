@@ -6,7 +6,7 @@ import { $, show, hide } from '../ui/dom.ts';
 import { stopTimer } from './timer.ts';
 import { clearTut } from './tutorial.ts';
 import { clearHints } from '../ui/game/hints.ts';
-import { setNumeralPresentation } from '../ui/game/root-state.ts';
+import { setNumeralPresentation, setOpponentTurnPresentation } from '../ui/game/root-state.ts';
 import { appRoot } from '../ui/embed.ts';
 import { REDUCED, setReducedMotion } from '../ui/fx.ts';
 
@@ -82,6 +82,7 @@ export function syncSettingsUI(): void {
 export function toMenu(): void {
   S.gen++;
   S.phase = 'over';
+  setOpponentTurnPresentation(false);
   stopTimer();
   clearTut();
   clearHints();

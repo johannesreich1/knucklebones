@@ -91,10 +91,28 @@ try {
     && !document.getElementById('ovOnline').classList.contains('on'));
   const snap = p => p.evaluate(() => {
     const S = window.__kb.S;
-    return { turn: S.turn, bottom: S.bottom, phase: S.phase,
+    const online = window.__kbOnline?.();
+    const root = document.getElementById('kbroot');
+    const spellBar = document.getElementById('spellBar');
+    return { turn: S.turn, bottom: S.bottom, phase: S.phase, busy: S.busy,
              b0: JSON.stringify(S.boards[0]), b1: JSON.stringify(S.boards[1]),
-             over: document.getElementById('ovEnd').classList.contains('on') };
+             over: document.getElementById('ovEnd').classList.contains('on'),
+             viewer: online?.you ?? null,
+             opponentTurn: root.classList.contains('opponent-turn'),
+             spellBarDisplay: getComputedStyle(spellBar).display,
+             visibleRunes: [...spellBar.querySelectorAll('.rune:not([hidden])')]
+               .filter((rune) => !!rune.offsetParent).length };
   });
+  const checkLiveTurnPresentation = (who, state) => {
+    check(state.spellBarDisplay === 'none' && state.visibleRunes === 0,
+      `${who}: ranked play exposed the offline spell rail`, state);
+    if (state.over || state.phase === 'over'
+        || (state.phase !== 'choose' && state.phase !== 'anim')) return;
+    check(state.viewer === 0 || state.viewer === 1,
+      `${who}: live snapshot has no authenticated viewer seat`, state);
+    check(state.opponentTurn === (state.turn !== state.viewer),
+      `${who}: opponent-turn does not match the authenticated viewer`, state);
+  };
 
   const t0 = Date.now();
   while (Date.now() - t0 < 20000) {
@@ -105,12 +123,28 @@ try {
   const [midA, midB] = await Promise.all([A, B].map(p => p.evaluate(() => window.__kbOnline?.()?.matchId)));
   check(!!midA && midA === midB, 'players are in DIFFERENT matches', { midA, midB });
   if (midA !== midB) throw new Error('abort: separate matches');
+  let [initialA, initialB] = [await snap(A), await snap(B)];
+  for (let attempt = 0; attempt < 40; attempt++) {
+    const ready = (state) => !state.busy && (state.phase === 'choose' || state.phase === 'anim')
+      && (state.viewer === 0 || state.viewer === 1);
+    if (ready(initialA) && ready(initialB)) break;
+    await A.waitForTimeout(200);
+    [initialA, initialB] = [await snap(A), await snap(B)];
+  }
+  check(!initialA.busy && !initialB.busy
+      && (initialA.phase === 'choose' || initialA.phase === 'anim')
+      && (initialB.phase === 'choose' || initialB.phase === 'anim'),
+    'initial ranked turn presentation never settled after sync', { a: initialA, b: initialB });
+  checkLiveTurnPresentation('A initial', initialA);
+  checkLiveTurnPresentation('B initial', initialB);
 
   // play to completion: whoever's turn it is taps their first legal column
   let rounds = 0, finished = false;
   while (rounds < 80 && !finished) {
     const [sa, sb] = [await snap(A), await snap(B)];
     if (sa.over && sb.over) { finished = true; break; }
+    if (!sa.over) checkLiveTurnPresentation('A round ' + rounds, sa);
+    if (!sb.over) checkLiveTurnPresentation('B round ' + rounds, sb);
     for (const [p, s] of [[A, sa], [B, sb]]) {
       if (!s.over && s.phase === 'choose' && s.turn === s.bottom) {
         const col = await p.evaluate(() => {
@@ -129,6 +163,11 @@ try {
   check(fa.over && fb.over, 'match did not finish on both screens', { fa: fa.over, fb: fb.over, rounds });
   // boards agreed at the end
   check(fa.b0 === fb.b0 && fa.b1 === fb.b1, 'boards diverged between players', { a: fa, b: fb });
+  check(!fa.opponentTurn && !fb.opponentTurn,
+    'the opponent-turn presentation survived ranked match completion', { a: fa, b: fb });
+  check(fa.spellBarDisplay === 'none' && fb.spellBarDisplay === 'none'
+      && fa.visibleRunes === 0 && fb.visibleRunes === 0,
+    'the ranked result exposed the offline spell rail', { a: fa, b: fb });
   // the finish lands on the SHARED end screen (ui/endscreen, design 36f):
   // two identity plates — you as a button row carrying the points delta, the
   // foe in .theirs — the winner's row gold, a beaten foe stamped. The ranked
@@ -206,6 +245,7 @@ try {
   while (brounds < 120) {
     const s = await snap(A);
     if (s.over) break;
+    checkLiveTurnPresentation('bot round ' + brounds, s);
     if (s.phase === 'choose' && s.turn === s.bottom) {
       const col = await A.evaluate(() => {
         const S = window.__kb.S;
@@ -217,7 +257,10 @@ try {
     brounds++;
   }
   await A.waitForTimeout(3000);
-  check((await snap(A)).over, 'bot match did not finish', { brounds });
+  const botFinal = await snap(A);
+  check(botFinal.over, 'bot match did not finish', { brounds });
+  check(!botFinal.opponentTurn && botFinal.spellBarDisplay === 'none' && botFinal.visibleRunes === 0,
+    'the bot match left opponent-turn or the spell rail visible after completion', botFinal);
   // the bot is a ranked opponent like any other: the end screen deals it a plate
   const eBot = await endState(A);
   check(eBot.on && eBot.plates.length === 2, 'bot-match end screen not dealt', eBot);

@@ -16,6 +16,7 @@ import { SPELLS, RANDOM_SPELL } from '../../../src/core/spells.ts';
 import { createBrowserReport, capturePageErrors } from '../../support/browser-report.mjs';
 import { runPickerScenarios } from './scenarios/picker.mjs';
 import { runCastingScenarios } from './scenarios/casting.mjs';
+import { runTurnPresentationScenarios } from './scenarios/turn-presentation.mjs';
 import { runAvailabilityScenarios } from './scenarios/availability.mjs';
 import { runEffectScenarios } from './scenarios/effects.mjs';
 import { runStageEffectScenarios } from './scenarios/stage-effects.mjs';
@@ -130,6 +131,7 @@ try {
   };
   await runPickerScenarios(suite);
   await runCastingScenarios(suite);
+  await runTurnPresentationScenarios(suite);
   await runAvailabilityScenarios(suite);
   await runEffectScenarios(suite);
   await runStageEffectScenarios(suite);

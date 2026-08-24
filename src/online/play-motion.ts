@@ -68,7 +68,7 @@ export async function playBotReply(
   if (!options.isCurrent()) return;
   const opponent = (1 - options.you) as Player;
   S.turn = opponent;
-  setActivePlate();
+  setActivePlate(options.you);
   setStatus(options.opponentName + ' thinking', opponent);
   startTimer(options.onOpponentStalled, ONLINE_TURN_SECS);
   await pause(260);

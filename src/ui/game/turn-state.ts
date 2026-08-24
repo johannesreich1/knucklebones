@@ -8,6 +8,7 @@ import { buildBoards, renderAll } from './board.ts';
 import { clearHints } from './hints.ts';
 import {
   isFaceToFace,
+  setOpponentTurnPresentation,
   setSeatingPresentation,
   setTurnPresentation,
 } from './root-state.ts';
@@ -35,7 +36,7 @@ export function setStatus(text: string, who: Player | null): void {
   status.className = 'status' + (who === ME ? ' me' : who === AI ? ' ai' : '');
 }
 
-export function setActivePlate(): void {
+export function setActivePlate(viewer: Player | null = S.mode === 'cpu' ? ME : null): void {
   const live = S.phase !== 'over' && S.phase !== 'menu';
   const topActive = S.turn !== S.bottom;
   $('#plateBot').classList.toggle('active', live && !topActive);
@@ -45,6 +46,7 @@ export function setActivePlate(): void {
   $('#sideTop').classList.toggle('idle', face && live && !topActive);
   $('#sideBot').classList.toggle('idle', face && live && topActive);
   setTurnPresentation(!live ? 'none' : topActive ? 'top' : 'bottom');
+  setOpponentTurnPresentation(live && viewer !== null && S.turn !== viewer);
 }
 
 export function settleBoard(): void {

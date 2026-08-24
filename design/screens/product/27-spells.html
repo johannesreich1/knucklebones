@@ -1,4 +1,4 @@
-<!-- meta name="Spells — aiming a rune" group="4 · Local play" subtitle="RC4: the turn-owned card stack shows every remaining charge, then deals the committed card away" width=412 height=2300 links="Offline — local play, Rune deal — dealt, Game modes" -->
+<!-- meta name="Spells — aiming a rune" group="4 · Local play" subtitle="RC4: the turn-owned card stack shows every remaining charge, then deals the committed card away" width=412 height=2500 links="Offline — local play, Rune deal — dealt, Game modes" -->
 <style>
   /* The rune is PILFER, and every glyph on this card is drawn by the app
      (ui/spellicons, through the sico token). It used to hand-draw five copies
@@ -116,11 +116,19 @@
     <b>One slot, one hand.</b> The card belongs to whoever is to move. In portrait its
     centre follows the board's rightmost column while it stays vertically beside the die;
     landscape centres it above the die. Its rune-coloured surface wash stays quiet and
-    constant — no availability pulse. The machine-owned card is visibly disabled at 42%
-    opacity with partial grayscale for that whole turn; brief busy or legality changes do
-    not restyle it. The die colour and status name the owner, so the card needs no seat
-    mark and the plates need no second readout. It is the reveal card at rail size, not
-    another rune object.<br>
+    constant — no availability pulse. Its <code>scale(1)</code>, centred transform origin
+    and zero grayscale are persistent, with transform, opacity and filter named for
+    change; this keeps the rotated rune icon on one iPhone compositing surface. For a
+    fixed viewer, the opponent-owned card eases to 95% over 250ms alongside the existing
+    42% opacity and partial grayscale, then returns to exactly 100% on the viewer's turn.
+    Today that means the machine in single-player. Online tracks the same viewer-relative
+    ownership state now, but ranked still deals NONE and hides the rail, so the cue only
+    becomes visible there if online runes are intentionally introduced.
+    An unavailable own rune may share the mute but stays 100%, brief busy locks preserve
+    the pre-lock size, and local pass-and-play or face-to-face never shrinks either human's
+    card because there is no fixed viewer. The die colour and status name the owner, so
+    the card needs no seat mark and the plates need no second readout. It is the reveal
+    card at rail size, not another rune object.<br>
     <b>Cost.</b> <span class="k">One cast per game — two for FATE.</span> Every charge is
     a face-down card at its own tilt. Committing turns the top card once and deals it away;
     the fully spent hand is the same stack of dashed outlines, holding the stage still.

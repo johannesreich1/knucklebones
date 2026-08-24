@@ -16,7 +16,7 @@ import { claimBadge, releaseBadge, modeChip } from '../ui/game/hud.ts';
 import { setActivePlate, setStatus } from '../ui/game/turn-state.ts';
 import { fit } from '../ui/layout.ts';
 import { setPlaceHandler } from '../ui/input.ts';
-import { setSeatingPresentation, setTurnPresentation, setTutorialPresentation } from '../ui/game/root-state.ts';
+import { setOpponentTurnPresentation, setSeatingPresentation, setTurnPresentation, setTutorialPresentation } from '../ui/game/root-state.ts';
 import { supa } from './client.ts';
 import { move, claim, resign, nudge, watchMatch, type MatchRow, type JoinResult } from './match-api.ts';
 import { createInitialSyncBoundary, type InitialSyncBoundary } from './initial-sync.ts';
@@ -86,7 +86,7 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   hide('#ovOnline'); hide('#ovStart'); hide('#ovEnd'); hide('#ovRules'); hide('#ovPass'); hide('#ovPractice');
   setSeatingPresentation('shared');
   setTutorialPresentation(false);
-  setTurnPresentation('none');
+  setTurnPresentation('none'); setOpponentTurnPresentation(false);
   $('#sideBot').dataset.owner = String(O.you);
   $('#sideTop').dataset.owner = String(1 - O.you);
   $('#nameBot').textContent = myName();
@@ -130,7 +130,7 @@ function refreshTurnUI(): void {
   renderPool();
   // a calm static status — the countdown bar below carries the motion
   setStatus(mine ? 'Your move' : oppName() + ' thinking', S.turn);
-  setActivePlate();
+  setActivePlate(O.you);
   clearHints();
   if (mine) showHints();
   // The 10s turn clock, both sides. Mine auto-places at zero (an honest
@@ -213,7 +213,6 @@ async function onlinePlace(who: Player, col: number): Promise<void> {
 }
 
 function isDone(m: MatchRow): boolean { return m.status !== 'active'; }
-
 async function onMatchUpdate(m: MatchRow): Promise<void> {
   if (!O || m.id !== O.matchId) return;
   const online = O;
@@ -334,9 +333,9 @@ function finishUI(m: MatchRow): void {
     onFinished,
   });
 }
-
 export function teardown(): void {
   if (!O) return;
+  const ownsPresentation = S.gen === O.gen; // a stale watchdog must not clear a replacement local game
   initialSync = null; stopTimer();
   S.scoring = CLASSIC;             // local play is always classic
   O.channel?.unsubscribe();
@@ -346,5 +345,6 @@ export function teardown(): void {
   releaseBadge();                  // hands #rec back to the local record
   showBag(false);
   showClock(false);
+  if (ownsPresentation) setOpponentTurnPresentation(false);
   O = null;
 }

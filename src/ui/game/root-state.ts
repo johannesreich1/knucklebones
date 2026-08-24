@@ -9,7 +9,7 @@ import { appRoot } from '../embed.ts';
 
 type GameRootClass =
   | 'rowmode' | 'rowswitch'
-  | 'face' | 'p2turn'
+  | 'face' | 'p2turn' | 'opponent-turn'
   | 'land' | 'shortv' | 'sidepts'
   | 'casting' | 'castself'
   | 'numerals' | 'clock' | 'tut' | 'reduce-motion';
@@ -41,6 +41,13 @@ export type ActiveHalf = 'none' | 'top' | 'bottom';
 
 export function setTurnPresentation(active: ActiveHalf): void {
   setClass('p2turn', isFaceToFace() && active === 'top');
+}
+
+/* Whether the fixed local viewer is waiting on another seat. Unlike p2turn,
+   this is player-relative rather than screen-relative: CPU and online clients
+   have one viewer, while two humans sharing a phone deliberately do not. */
+export function setOpponentTurnPresentation(on: boolean): void {
+  setClass('opponent-turn', on);
 }
 
 /* These layout facts are independent: a viewport may be short while a menu

@@ -35,10 +35,13 @@ export async function runAvailabilityScenarios(suite) {
       const k = window.__kb;
       const card = document.querySelector(`#spellBar .rune[data-spell="${id}"]`);
       const style = getComputedStyle(card);
+      const matrix = style.transform === 'none' ? new DOMMatrixReadOnly() : new DOMMatrixReadOnly(style.transform);
       const before = {
         disabled: card.disabled,
         unavailable: card.classList.contains('unavailable'),
         offturn: card.classList.contains('offturn'),
+        opponentTurn: document.getElementById('kbroot').classList.contains('opponent-turn'),
+        scale: Math.hypot(matrix.a, matrix.b),
         opacity: Number(style.opacity),
         filter: style.filter,
         aria: card.getAttribute('aria-label'),
@@ -55,13 +58,15 @@ export async function runAvailabilityScenarios(suite) {
     const available = await availability(spell, false);
     out.spellAvailability[spell.id] = { available };
     check(!available.disabled && !available.unavailable && !available.offturn
-        && available.opacity >= .99 && available.filter === 'none'
+        && !available.opponentTurn && Math.abs(available.scale - 1) <= .002
+        && available.opacity >= .99 && available.filter === 'grayscale(0)'
         && available.armed && available.aim === spell.id,
       `${spell.name} did not look and behave activatable with a legal target`, available);
     if (!blockedFixtures.has(spell.id)) continue;
     const blocked = await availability(spell, true);
     out.spellAvailability[spell.id].blocked = blocked;
     check(blocked.disabled && blocked.unavailable && !blocked.offturn
+        && !blocked.opponentTurn && Math.abs(blocked.scale - 1) <= .002
         && blocked.opacity >= .40 && blocked.opacity <= .44
         && blocked.filter === 'grayscale(0.6)' && /not available right now/i.test(blocked.aria || '')
         && !blocked.armed && blocked.aim === null,

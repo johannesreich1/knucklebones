@@ -247,61 +247,7 @@ export async function runCastingScenarios(suite) {
       && out.cpuTellCancelled.charges === '[{"pilfer":1},{"pilfer":1}]',
     'a computer spell survived its game generation', out.cpuTellCancelled);
 
-  /* ---------- 8c. the rail changes owner with the turn ---------- */
-  await newGame(); check(await waitChoose(), 'game never reached choose (offturn)');
-  const rail = () => page.evaluate(() => {
-    const b = document.querySelector('#spellBar .rune:not([hidden])');
-    if (!b) return null;
-    const top = b.querySelector('.rune-charge.top');
-    const back = top?.querySelector('.rback');
-    const style = getComputedStyle(b);
-    return { cls: b.className, seat: b.dataset.seat, disabled: b.disabled,
-      offturn: b.classList.contains('offturn'), unavailable: b.classList.contains('unavailable'),
-      opacity: Number(style.opacity), filter: style.filter,
-      cards: [...b.querySelectorAll('.rune-charge')].filter((e) => !e.hidden).length,
-      pulse: top ? getComputedStyle(top, '::after').animationName : 'none',
-      wash: back ? getComputedStyle(back, '::before').backgroundImage : 'none' };
-  });
-  const turnTo = async (who) => {
-    await page.evaluate((t) => {
-      const k = window.__kb;
-      k.S.mode = 'cpu'; k.S.turn = t; k.S.bottom = 1; k.S.busy = false;
-      k.S.boards = [[[3], [], []], [[4], [], []]];
-      k.S.phase = t === 1 ? 'choose' : 'anim'; k.S.die = 3;
-      k.applySides(); k.spells.render();
-    }, who);
-    await page.waitForTimeout(320);
-  };
-  await turnTo(0); out.theirTurn = await rail();
-  await turnTo(1); out.myTurn = await rail();
-  await page.evaluate(() => {
-    window.__kb.S.busy = true;
-    window.__kb.spells.render();
-  });
-  await page.waitForTimeout(80);
-  out.busyMyTurn = await rail();
-  check(out.theirTurn?.seat === '0' && out.theirTurn.disabled && out.theirTurn.cards === 1
-      && out.theirTurn.offturn && !out.theirTurn.unavailable
-      && out.theirTurn.opacity >= .40 && out.theirTurn.opacity <= .44
-      && out.theirTurn.filter === 'grayscale(0.6)',
-    'the CPU-owned disabled card did not retain the visible off-turn mute', out.theirTurn);
-  check(out.myTurn?.seat === '1' && !out.myTurn.disabled && out.myTurn.cards === 1
-      && !out.myTurn.offturn && !out.myTurn.unavailable
-      && out.myTurn.opacity >= .99 && out.myTurn.filter === 'none'
-      && out.myTurn.pulse === 'none',
-    'the player turn did not deal its castable card into the shared rail', out.myTurn);
-  check(out.theirTurn?.pulse === 'none' && out.theirTurn.wash !== 'none'
-      && out.theirTurn.wash === out.myTurn?.wash,
-    'the card tint flickered or changed with turn availability',
-    { theirs: out.theirTurn, mine: out.myTurn });
-  check(out.busyMyTurn?.disabled && !out.busyMyTurn.offturn && !out.busyMyTurn.unavailable
-      && out.busyMyTurn.opacity === out.myTurn?.opacity
-      && out.busyMyTurn.filter === out.myTurn?.filter
-      && out.busyMyTurn.wash === out.myTurn?.wash,
-    'a transient busy state visually flickered the player-owned card',
-    { mine: out.myTurn, busy: out.busyMyTurn });
-
-  /* ---------- 8d. every input path respects an armed spell ----------
+  /* ---------- 8c. every input path respects an armed spell ----------
      Number keys are placement shortcuts, but an armed self spell owns them:
      the wrong target cancels the ordinary aim and must never place the die. */
   await newGame({ spell: 'fate' }); check(await waitChoose(), 'game never reached choose (armed key)');

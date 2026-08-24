@@ -130,7 +130,7 @@ function withoutComments(source: string): string {
    #kbroot (not the host documentElement), and a direct read is also an escape:
    consumers ask semantic queries so `p2turn => face` cannot be bypassed. */
 const ROOT_STATE_OWNER = 'src/ui/game/root-state.ts';
-const ROOT_STATE_CLASS = /['"](?:rowmode|rowswitch|face|p2turn|land|shortv|sidepts|casting|castself|numerals|clock|tut)['"]/;
+const ROOT_STATE_CLASS = /['"](?:rowmode|rowswitch|face|p2turn|opponent-turn|land|shortv|sidepts|casting|castself|numerals|clock|tut)['"]/;
 const rootStateEscapes: string[] = [];
 const rootQueryEscapes: string[] = [];
 const rootHitTestEscapes: string[] = [];

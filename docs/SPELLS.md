@@ -376,11 +376,15 @@ Learned from real play, each one a shipped bug:
   chooses one of its legal full columns. This rule lives in the shared spell flow, so
   pointer, touch, keyboard, local-player and machine casts cannot disagree.
 - **The rail follows `S.turn`, while interactivity follows `caster()`.** The
-  card always shows the hand whose turn it is, including the machine's inert
-  hand while it thinks. Only a legal player choice gets pointer events. Busy
-  windows therefore change availability without changing
-  ownership, while `nextTurn` repaints the slot with the other seat's remaining
-  cards. Waiting, spending and handing over are three different pictures.
+  card always shows the hand whose turn it is, including an opponent's inert
+  hand while they think. Only a legal player choice gets pointer events. A
+  fixed-viewer game also marks `opponent-turn` whenever `S.turn` is not that
+  viewer's seat: single-player fixes the viewer to the human, and online fixes
+  it to the authenticated match seat. Local pass-and-play and face-to-face have
+  no fixed viewer, so neither human's turn gets the opponent treatment. Busy
+  windows therefore change availability without changing ownership, while
+  `nextTurn` repaints the slot with the other seat's remaining cards. Waiting,
+  spending and handing over are three different pictures.
 - **The armed line gets ONE line in portrait and TWO in landscape.** Not a
   preference — the status box is *reserved* at that size (`.status` /
   `.land .status` min-height, a fixed 104px lane in landscape), and a line
@@ -447,12 +451,23 @@ The rail now keeps that card vocabulary in play.
   keeps the existing compact answer: the card is centred above the die.
 - **Its rune colour is always present and quiet.** Both faces carry the same
   oversized 12% → 4% → transparent surface wash. It has no breathing halo and
-  the wash itself does not change with availability or busy state. For the full
-  machine turn the shared card restores the historical opponent cue: 42%
-  opacity with partial grayscale. An own rune with no legal target uses that
-  same mute so every registry spell advertises whether it can be activated.
-  Brief busy or phase locks keep the stable pre-lock appearance; pressing still
-  supplies the selected flip and 1.16 enlargement.
+  the wash itself does not change with availability or busy state. The card
+  always owns `transform: scale(1)`, a centred transform origin and
+  `filter: grayscale(0)`, with `will-change` naming transform, opacity and
+  filter. Rather than adding those properties only when a state changes, its
+  icon therefore stays on one Safari compositing surface instead of twitching
+  a few pixels as iOS rerasterises the rotated SVG. For a fixed viewer's full
+  opponent turn the
+  shared card transitions over 250ms to 95% scale, 42% opacity and partial
+  grayscale, then returns to exactly 100% for the viewer's turn. This is the
+  machine turn in single-player today. Online tracks the same viewer-relative
+  ownership now, but ranked's empty hand keeps the cue invisible until online
+  runes are intentionally introduced. An own rune with no legal target uses
+  the same mute but remains 100%, so every registry spell advertises whether it
+  can be activated without pretending ownership changed. Brief busy or phase
+  locks keep the stable pre-lock appearance at its current ownership size;
+  pressing still supplies the selected flip and 1.16 enlargement. Local
+  two-player has no fixed viewer and never shrinks either active card.
 - **It carries NO seat mark** — no seat colour, no mirrored lean. The die in
   play is beside it and is already painted in the colour of whoever is to move,
   the status line names them, and only one card is ever in the slot. A seat
