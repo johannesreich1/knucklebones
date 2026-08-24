@@ -28,6 +28,7 @@ import {
   parseMigrationFilename,
   productionDbPushArgs,
   productionMigrationFetchArgs,
+  validateMatchCommandRetentionSchemaStage,
   validatePlayerSettingsSchemaStage,
   withTemporaryWorkspace,
 } from './production-rollout-core.mjs';
@@ -44,6 +45,7 @@ const PROD_OPT_IN = 'KB_ALLOW_PRODUCTION_DB_MIGRATIONS';
 
 const ROLLOUTS = Object.freeze({
   'settings-locale': Object.freeze({
+    audit: 'settings-locale',
     migrations: Object.freeze([
       Object.freeze({
         version: '20260823192604',
@@ -56,6 +58,17 @@ const ROLLOUTS = Object.freeze({
         name: 'player_settings_locale',
         file: 'supabase/migrations/20260824133121_player_settings_locale.sql',
         sha256: '9bf3236179c2891c729f434fbb99855aae39cf05e781bb0d13711d73f7b15ffa',
+      }),
+    ]),
+  }),
+  'match-command-retention': Object.freeze({
+    audit: 'match-command-retention',
+    migrations: Object.freeze([
+      Object.freeze({
+        version: '20260824212535',
+        name: 'match_command_retention',
+        file: 'supabase/migrations/20260824212535_match_command_retention.sql',
+        sha256: '58f3cc83fcde8b29ccbd5a34d462fe18b219e423d52849b86139e05582bf4523',
       }),
     ]),
   }),
@@ -208,11 +221,126 @@ select count(*) filter (
   from public.player_settings;
 `;
 
+export const MATCH_COMMAND_RETENTION_SCHEMA = String.raw`
+select
+  exists (select 1 from pg_extension where extname = 'pg_cron')
+    as cron_extension,
+  coalesce((
+    select pg_get_indexdef(indexrelid) =
+      'CREATE INDEX match_commands_retention_idx ON private.match_commands USING btree (created_at, match_id, command_id)'
+      from pg_index
+     where indexrelid = to_regclass('private.match_commands_retention_idx')
+  ), false) as retention_index,
+  coalesce((
+    select not prosecdef
+           and provolatile = 'v'
+           and prokind = 'f'
+           and prorettype = 'integer'::regtype
+           and pronargs = 2
+           and pronargdefaults = 1
+           and oidvectortypes(proargtypes) = 'timestamp with time zone, integer'
+           and 'search_path=""' = any(coalesce(proconfig, array[]::text[]))
+      from pg_proc
+     where oid = to_regprocedure(
+       'private.purge_expired_match_commands(timestamp with time zone,integer)'
+     )
+  ), false) as cleanup_function,
+  coalesce((
+    select not exists (
+      select 1
+        from aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) acl
+        left join pg_roles role on role.oid = acl.grantee
+       where acl.privilege_type = 'EXECUTE'
+         and (acl.grantee = 0
+              or role.rolname in ('anon', 'authenticated', 'service_role'))
+    )
+      from pg_proc p
+     where p.oid = to_regprocedure(
+       'private.purge_expired_match_commands(timestamp with time zone,integer)'
+     )
+  ), false) as cleanup_function_locked;
+`;
+
+export const MATCH_COMMAND_RETENTION_JOB = String.raw`
+select
+  count(*) = 1 as cron_job,
+  count(*) filter (
+    where active
+      and schedule = '0 * * * *'
+      and btrim(regexp_replace(command, '[[:space:]]+', ' ', 'g')) =
+        'select private.purge_expired_match_commands( clock_timestamp() - interval ''7 days'', 5000 );'
+  ) = 1 as cron_job_contract
+  from cron.job
+ where jobname = 'purge-expired-match-commands';
+`;
+
 function usage(message, code = 64) {
   if (message) console.error(message);
-  console.error('Usage: node --experimental-strip-types tools/database/production-rollout.mjs settings-locale [--apply]');
+  console.error('Usage: node --experimental-strip-types tools/database/production-rollout.mjs <settings-locale|match-command-retention> [--apply]');
   console.error(`Apply requires ${PROD_OPT_IN}=1.`);
   process.exitCode = code;
+}
+
+async function auditPlayerSettings(plan, rollout) {
+  const rows = await productionRead(SETTINGS_SCHEMA);
+  if (rows.length !== 1) throw new Error('Production schema audit returned an unexpected shape.');
+  const row = rows[0];
+  const evidence = {
+    baseTable: row.table_exists === true,
+    baseContract: [
+      row.rls_enabled,
+      row.base_columns,
+      row.primary_key,
+      row.cascade_profile_fk,
+      row.base_checks,
+      row.owner_policies,
+      row.authenticated_grants,
+      row.anon_locked,
+      row.service_role_grants,
+    ].every((value) => value === true),
+    localeColumn: row.locale_column === true && row.locale_shape === true,
+    localeConstraint: row.locale_constraint === true,
+    localeComment: row.locale_comment === true,
+    localeValues: false,
+  };
+  if (plan.applied.length === rollout.migrations.length) {
+    const values = await productionRead(VALID_LOCALE_VALUES);
+    evidence.localeValues = values.length === 1 && Number(values[0].invalid_locale_count) === 0;
+  }
+  return {
+    evidence,
+    schemaStage: validatePlayerSettingsSchemaStage(evidence),
+  };
+}
+
+async function auditMatchCommandRetention() {
+  const rows = await productionRead(MATCH_COMMAND_RETENTION_SCHEMA);
+  if (rows.length !== 1) {
+    throw new Error('Production command-retention schema audit returned an unexpected shape.');
+  }
+  const row = rows[0];
+  let cronJob = false;
+  let cronJobContract = false;
+  if (row.cron_extension === true) {
+    const jobs = await productionRead(MATCH_COMMAND_RETENTION_JOB);
+    if (jobs.length !== 1) {
+      throw new Error('Production command-retention cron audit returned an unexpected shape.');
+    }
+    cronJob = jobs[0].cron_job === true;
+    cronJobContract = jobs[0].cron_job_contract === true;
+  }
+  const evidence = {
+    cronExtension: row.cron_extension === true,
+    retentionIndex: row.retention_index === true,
+    cleanupFunction: row.cleanup_function === true,
+    cleanupFunctionLocked: row.cleanup_function_locked === true,
+    cronJob,
+    cronJobContract,
+  };
+  return {
+    evidence,
+    schemaStage: validateMatchCommandRetentionSchemaStage(evidence),
+  };
 }
 
 function sha256(value) {
@@ -324,32 +452,15 @@ async function auditProduction(rollout) {
   if ([...plan.applied, ...plan.pending].some((migration) => !migration)) {
     throw new Error('Production rollout manifest could not be mapped to its migration files.');
   }
-  const rows = await productionRead(SETTINGS_SCHEMA);
-  if (rows.length !== 1) throw new Error('Production schema audit returned an unexpected shape.');
-  const row = rows[0];
-  const evidence = {
-    baseTable: row.table_exists === true,
-    baseContract: [
-      row.rls_enabled,
-      row.base_columns,
-      row.primary_key,
-      row.cascade_profile_fk,
-      row.base_checks,
-      row.owner_policies,
-      row.authenticated_grants,
-      row.anon_locked,
-      row.service_role_grants,
-    ].every((value) => value === true),
-    localeColumn: row.locale_column === true && row.locale_shape === true,
-    localeConstraint: row.locale_constraint === true,
-    localeComment: row.locale_comment === true,
-    localeValues: false,
-  };
-  if (plan.applied.length === rollout.migrations.length) {
-    const values = await productionRead(VALID_LOCALE_VALUES);
-    evidence.localeValues = values.length === 1 && Number(values[0].invalid_locale_count) === 0;
+  let audited;
+  if (rollout.audit === 'settings-locale') {
+    audited = await auditPlayerSettings(plan, rollout);
+  } else if (rollout.audit === 'match-command-retention') {
+    audited = await auditMatchCommandRetention();
+  } else {
+    throw new Error(`Unknown production schema audit: ${String(rollout.audit)}.`);
   }
-  const schemaStage = validatePlayerSettingsSchemaStage(evidence);
+  const { evidence, schemaStage } = audited;
   if (schemaStage !== plan.stage) {
     throw new Error(`Production schema stage ${schemaStage} does not match migration stage ${plan.stage}.`);
   }

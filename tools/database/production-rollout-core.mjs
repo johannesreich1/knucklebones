@@ -12,6 +12,14 @@ const SCHEMA_FIELDS = Object.freeze([
   'localeComment',
   'localeValues',
 ]);
+const MATCH_COMMAND_RETENTION_FIELDS = Object.freeze([
+  'cronExtension',
+  'retentionIndex',
+  'cleanupFunction',
+  'cleanupFunctionLocked',
+  'cronJob',
+  'cronJobContract',
+]);
 
 export class ProductionRolloutGuardError extends Error {
   constructor(message) {
@@ -345,4 +353,34 @@ export function validatePlayerSettingsSchemaStage(metadata) {
   if (locale.every(value => value === false)) return 1;
   if (locale.every(value => value === true)) return 2;
   fail('Player-settings locale schema or stored values do not match the complete postcondition.');
+}
+
+/**
+ * Validate command retention as absent or complete. pg_cron may already be
+ * installed for an unrelated job, but every retention-owned object must
+ * appear together and the completed state requires the extension.
+ */
+export function validateMatchCommandRetentionSchemaStage(metadata) {
+  if (!isObject(metadata)) fail('Command-retention metadata must be an object.');
+  assertOnlyKeys(
+    metadata,
+    MATCH_COMMAND_RETENTION_FIELDS,
+    'Command-retention metadata',
+  );
+  for (const field of MATCH_COMMAND_RETENTION_FIELDS) {
+    if (typeof metadata[field] !== 'boolean') {
+      fail(`Command-retention metadata field ${field} must be boolean.`);
+    }
+  }
+
+  const owned = [
+    metadata.retentionIndex,
+    metadata.cleanupFunction,
+    metadata.cleanupFunctionLocked,
+    metadata.cronJob,
+    metadata.cronJobContract,
+  ];
+  if (owned.every(value => value === false)) return 0;
+  if (metadata.cronExtension && owned.every(value => value === true)) return 1;
+  fail('Match-command retention schema or cron job is partial.');
 }

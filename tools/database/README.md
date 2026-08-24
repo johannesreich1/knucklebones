@@ -12,15 +12,22 @@ Use the guarded rollout command instead:
 /opt/homebrew/bin/node --experimental-strip-types \
   tools/database/production-rollout.mjs settings-locale
 
+/opt/homebrew/bin/node --experimental-strip-types \
+  tools/database/production-rollout.mjs match-command-retention
+
 # Apply the already-previewed allow-list, then validate history and schema.
 KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
   /opt/homebrew/bin/node --experimental-strip-types \
   tools/database/production-rollout.mjs settings-locale --apply
+
+KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
+  /opt/homebrew/bin/node --experimental-strip-types \
+  tools/database/production-rollout.mjs match-command-retention --apply
 ```
 
-`npm run db:production:settings` is the shorter preview command when the npm
-process is already using Node 24. Add `-- --apply` plus the same environment
-opt-in to apply.
+`npm run db:production:settings` and `npm run db:production:commands` are the
+shorter preview commands when the npm process is already using Node 24. Add
+`-- --apply` plus the same environment opt-in to apply.
 
 The command is fail-closed. It:
 

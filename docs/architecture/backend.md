@@ -119,6 +119,11 @@ privacy, while the opponent's already-written points and profile mirror remain.
   an optional TypeScript-computed settlement, and records the exact response
   for explicit same-key replay. Cached legacy bodies without both new fields
   remain accepted during rollout.
+- Command responses are retry receipts, not match history. An hourly
+  `pg_cron` job deletes at most 5,000 receipts whose command and terminal match
+  are both older than seven days; active-match receipts never expire. The
+  authoritative `matches`, `match_moves`, and `match_seeds` rows are untouched,
+  so production replay diagnostics continue to inspect the complete game.
 - The browser does not automatically retry a lost move response because it may
   briefly reach the preceding non-idempotent Edge Function. It rebuilds from
   the authoritative log instead, and every fresh match crosses that sync

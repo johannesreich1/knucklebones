@@ -12,15 +12,21 @@ import {
   parseMigrationListJson,
   productionDbPushArgs,
   productionMigrationFetchArgs,
+  validateMatchCommandRetentionSchemaStage,
   validateMigrationFilenames,
   validatePlayerSettingsSchemaStage,
   withTemporaryWorkspace,
 } from '../tools/database/production-rollout-core.mjs';
-import { SETTINGS_SCHEMA } from '../tools/database/production-rollout.mjs';
+import {
+  MATCH_COMMAND_RETENTION_JOB,
+  MATCH_COMMAND_RETENTION_SCHEMA,
+  SETTINGS_SCHEMA,
+} from '../tools/database/production-rollout.mjs';
 
 const BASE = '20260823192604_player_settings.sql';
 const LOCALE = '20260824133121_player_settings_locale.sql';
 const GAME_CENTER = '20260823132611_game_center_service_grants.sql';
+const RETENTION = '20260824212535_match_command_retention.sql';
 const PROJECT = 'euzjcejbkxvqfrttgaxu';
 const checked: string[] = [];
 const problems: string[] = [];
@@ -287,6 +293,66 @@ check('schema metadata rejects partial, out-of-order, and mismatched postconditi
     localeComment: true,
     localeValues: false,
   }), /stored values/);
+});
+
+check('command-retention schema accepts only absent and complete states', () => {
+  assert.equal(validateMatchCommandRetentionSchemaStage({
+    cronExtension: false,
+    retentionIndex: false,
+    cleanupFunction: false,
+    cleanupFunctionLocked: false,
+    cronJob: false,
+    cronJobContract: false,
+  }), 0);
+  assert.equal(validateMatchCommandRetentionSchemaStage({
+    cronExtension: true,
+    retentionIndex: false,
+    cleanupFunction: false,
+    cleanupFunctionLocked: false,
+    cronJob: false,
+    cronJobContract: false,
+  }), 0);
+  assert.equal(validateMatchCommandRetentionSchemaStage({
+    cronExtension: true,
+    retentionIndex: true,
+    cleanupFunction: true,
+    cleanupFunctionLocked: true,
+    cronJob: true,
+    cronJobContract: true,
+  }), 1);
+});
+
+check('command-retention schema rejects every partial contract', () => {
+  guarded(() => validateMatchCommandRetentionSchemaStage({
+    cronExtension: true,
+    retentionIndex: true,
+    cleanupFunction: true,
+    cleanupFunctionLocked: true,
+    cronJob: true,
+    cronJobContract: false,
+  }), /partial/);
+  guarded(() => validateMatchCommandRetentionSchemaStage({
+    cronExtension: false,
+    retentionIndex: true,
+    cleanupFunction: true,
+    cleanupFunctionLocked: true,
+    cronJob: true,
+    cronJobContract: true,
+  }), /partial/);
+});
+
+check('command-retention production audit pins every safety boundary', () => {
+  assert.match(MATCH_COMMAND_RETENTION_SCHEMA, /match_commands_retention_idx/);
+  assert.match(MATCH_COMMAND_RETENTION_SCHEMA, /security-invoker|not prosecdef/);
+  assert.match(MATCH_COMMAND_RETENTION_SCHEMA, /'anon', 'authenticated', 'service_role'/);
+  assert.match(MATCH_COMMAND_RETENTION_JOB, /'0 \* \* \* \*'/);
+  assert.match(MATCH_COMMAND_RETENTION_JOB, /interval ''7 days''/);
+  assert.match(MATCH_COMMAND_RETENTION_JOB, /5000/);
+  assert.deepEqual(parseMigrationFilename(RETENTION), {
+    filename: RETENTION,
+    version: '20260824212535',
+    name: 'match_command_retention',
+  });
 });
 
 check('production grant audit uses complete PostgreSQL 17 ACLs', () => {
