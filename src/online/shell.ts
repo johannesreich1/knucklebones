@@ -46,7 +46,7 @@ const OVERLAY = `
     <div class="qmsg" data-i18n="online:matchmaking.looking">Looking for an opponent</div>
     <div class="qtime" id="qTime">0:00</div>
     <div class="qsub" id="qSub">&nbsp;</div>
-    <button class="btn" id="btnQueueCancel" data-i18n="online:matchmaking.cancel">Cancel matchmaking</button>
+    <button class="btn" id="btnQueueCancel" data-i18n="online:matchmaking.cancel">Cancel</button>
   </div>
 
   <div class="panel" id="onBoard" hidden>

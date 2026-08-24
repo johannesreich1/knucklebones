@@ -7,13 +7,14 @@ import { readFileSync } from 'node:fs';
 import { createRunGeneration } from '../src/online/run-generation.ts';
 import { createQueueCancellation } from '../src/online/queue-cancellation.ts';
 import { createInitialSyncBoundary } from '../src/online/initial-sync.ts';
-import { readMatchSyncSnapshot } from '../src/online/match-sync.ts';
+import { newerMatchProjection, readMatchSyncSnapshot } from '../src/online/match-sync.ts';
 import { randomUuid } from '../src/online/random-id.ts';
 import {
   isMissingQueueLifecycleRpc,
   leaveQueueWithClient,
 } from '../src/online/match-api.ts';
 import { localizedAuthError } from '../src/online/session.ts';
+import { rankedBadge } from '../src/online/play-copy.ts';
 import { setLanguageOverride, t } from '../src/i18n/index.ts';
 
 const problems: string[] = [];
@@ -83,6 +84,9 @@ check(!moveTransport.includes('status === 0')
 const playSource = readFileSync('src/online/play.ts', 'utf8');
 check(playSource.includes('sync: () => sync(true)') && !playSource.includes('if (res.rejoined)'),
   'fresh matches do not sync a possible old-backend bot opening move before input');
+check(playSource.includes('newerMatchProjection(online.pendingRow, r.data.match)')
+  && playSource.includes('if (isDone(m)) freezeMatchInput()'),
+  'ranked play is not consuming the monotonic terminal projection/input gate');
 
 let initialAttempts = 0;
 let initialReady = 0;
@@ -122,6 +126,30 @@ const recoveredProjection = await readProjection();
 check(recoveredProjection?.match.turn === 1 && projectionReads === 2,
   'an empty move-log delta permanently skipped projection recovery',
   { recoveredProjection, projectionReads });
+
+/* A terminal bot reply can race an older Realtime callback that was deferred
+   while the local and bot move animations ran. The terminal command response
+   must win in either arrival order; otherwise the stale active row reopens a
+   local turn even though the opponent's board is already full. */
+const projection = (status: 'active' | 'done', when: string) => ({
+  id: 'match-1', p1: 'player-1', p2: 'bot-1', status, turn: 1 as const,
+  winner: status === 'done' ? 'bot-1' : null,
+  p1_score: status === 'done' ? 52 : null,
+  p2_score: status === 'done' ? 72 : null,
+  p1_rating_delta: status === 'done' ? -5 : null,
+  p2_rating_delta: status === 'done' ? 5 : null,
+  next_die: status === 'done' ? null : 5,
+  last_move_at: when,
+  modifier: 'classic',
+});
+const staleActive = projection('active', '2026-08-24T20:14:00.000Z');
+const terminalReply = projection('done', '2026-08-24T20:15:00.000Z');
+check(newerMatchProjection(staleActive, terminalReply).status === 'done'
+  && newerMatchProjection(terminalReply, staleActive).status === 'done',
+  'a delayed active projection can outrank the terminal board-full response');
+const newerActive = projection('active', '2026-08-24T20:16:00.000Z');
+check(newerMatchProjection(newerActive, staleActive) === newerActive,
+  'an older active Realtime callback can roll back the current turn projection');
 
 /* A web release may briefly run against the preceding database schema. Only
    PostgREST's exact missing-function response may use the legacy RLS DELETE;
@@ -220,6 +248,22 @@ setLanguageOverride('en');
 check(t('online', 'result.delta', { count: 1, points: '+1' }) === ' · +1 point'
   && t('online', 'result.delta', { count: 2, points: '+2' }) === ' · +2 points',
   'ranked result points do not select singular/plural copy');
+check(t('online', 'matchmaking.cancel') === 'Cancel',
+  'the English queue action is not concise');
+setLanguageOverride('de');
+check(t('online', 'matchmaking.cancel') === 'Abbrechen',
+  'the German queue action should say only Abbrechen');
+setLanguageOverride('fr');
+check(t('online', 'matchmaking.cancel') === 'Annuler',
+  'the French queue action is not concise');
+setLanguageOverride('en');
+
+const rankedChips = rankedBadge({ id: 'classic' })();
+check(rankedChips.length === 1
+  && rankedChips[0]?.lib === 'modes'
+  && rankedChips[0]?.id === 'classic'
+  && !rankedChips[0]?.html.includes('ONLINE'),
+  'the ranked HUD should keep the shared mode chip without a redundant ONLINE tag', rankedChips);
 
 console.log(JSON.stringify({ problems, errs: [] }, null, 2));
 process.exit(problems.length ? 1 : 0);

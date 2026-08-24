@@ -18,7 +18,7 @@ import { setOpponentTurnPresentation, setSeatingPresentation, setTurnPresentatio
 import { supa } from './client.ts';
 import { move, claim, resign, nudge, watchMatch, type MatchRow, type JoinResult } from './match-api.ts';
 import { createInitialSyncBoundary, type InitialSyncBoundary } from './initial-sync.ts';
-import { readMatchSyncSnapshot } from './match-sync.ts';
+import { newerMatchProjection, readMatchSyncSnapshot } from './match-sync.ts';
 import { animateOnlineMove, cancelOnlineReveal, playBotReply, revealOnlineDie } from './play-motion.ts';
 import { finishOnlineMatch } from './play-finish.ts';
 import { rankedBadge, reconnectingCopy, showAwayAutoPlayCountdown, turnCopy } from './play-copy.ts';
@@ -89,9 +89,7 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   $('#nameTop').textContent = oppName();
   ($('#tagTop') as HTMLElement).hidden = true;
   ($('#tagBot') as HTMLElement).hidden = true;
-  // the badge names where you are and what is being played; boot's one binding
-  // makes the mode chip open its rules, offline and online alike. The mode is
-  // named in classic too — "ONLINE" says nothing about how this game scores.
+  // Ranked names the mode only; the shared chip opens its rules in every flow.
   claimBadge(rankedBadge(spec));
   fit();
   buildBoards();
@@ -202,23 +200,28 @@ async function onlinePlace(who: Player, col: number): Promise<void> {
     });
   } finally { if (isCurrentOnline(online)) online.animating = false; }
   if (!isCurrentOnline(online)) return;
-  const row = online.pendingRow ?? r.data.match;
+  const row = newerMatchProjection(online.pendingRow, r.data.match);
   online.pendingRow = null;
   applyMatchRow(row);   // may re-defer into pendingRow if a sync is mid-fetch
 }
 
 function isDone(m: MatchRow): boolean { return m.status !== 'active'; }
+function freezeMatchInput(): void { S.busy = true; S.phase = 'anim'; stopTimer(); clearHints(); }
 async function onMatchUpdate(m: MatchRow): Promise<void> {
   if (!O || m.id !== O.matchId) return;
+  if (isDone(m)) freezeMatchInput(); // terminal is known; the log fetch may still animate
   const online = O;
   await sync(false);
   if (isCurrentOnline(online)) applyMatchRow(m);
 }
-
 function applyMatchRow(m: MatchRow): void {
-  if (!O || m.id !== O.matchId) return;
+  if (!O || O.done || m.id !== O.matchId) return;
   // board mutations OR a sync fetch in flight: defer — sync's tail drains it
-  if (O.animating || O.busySync) { O.pendingRow = m; return; }
+  if (O.animating || O.busySync) {
+    O.pendingRow = newerMatchProjection(O.pendingRow, m);
+    if (isDone(O.pendingRow)) freezeMatchInput();
+    return;
+  }
   O.pendingDie = m.next_die;
   O.lastMoveAt = Date.parse(m.last_move_at);
   S.turn = m.turn;
@@ -226,8 +229,7 @@ function applyMatchRow(m: MatchRow): void {
   refreshTurnUI();
 }
 
-/* the die-carrying log is the client's source of truth; apply whatever the
-   local board hasn't seen yet (animating only a single fresh opponent move) */
+/* Apply whatever the local board has not seen; animate one fresh opponent move. */
 async function sync(fullRedraw: boolean): Promise<boolean> {
   if (!O || O.busySync || O.animating) return false;
   const online = O;
@@ -260,7 +262,7 @@ async function sync(fullRedraw: boolean): Promise<boolean> {
       renderAll(false);
       renderPool();
     }
-    if (!online.pendingRow) online.pendingRow = snapshot.match;
+    online.pendingRow = newerMatchProjection(online.pendingRow, snapshot.match);
   } finally { online.busySync = false; }
   // drain: anything deferred during the fetch/animation applies now, once
   if (isCurrentOnline(online) && online.pendingRow && !online.animating && !online.busySync) {

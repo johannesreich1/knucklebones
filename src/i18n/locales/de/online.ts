@@ -32,7 +32,7 @@ export const deOnline = {
   matchmaking: {
     looking: 'Gegner wird gesucht',
     inviting: 'Verfügbare Spieler werden eingeladen …',
-    cancel: 'Spielsuche abbrechen',
+    cancel: 'Abbrechen',
     opponentFound: 'Gegner gefunden',
     reconnecting: 'Verbindung zum Spiel wird wiederhergestellt …',
   },
@@ -119,7 +119,6 @@ export const deOnline = {
     },
   },
   play: {
-    badge: 'ONLINE',
     yourMove: 'Du bist dran',
     opponentThinking: '{{opponent}} überlegt',
     reconnecting: 'Neu verbinden …',

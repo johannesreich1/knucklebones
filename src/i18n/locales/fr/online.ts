@@ -32,7 +32,7 @@ export const frOnline = {
   matchmaking: {
     looking: 'Recherche d’un adversaire',
     inviting: 'Invitation des joueurs disponibles…',
-    cancel: 'Annuler la recherche',
+    cancel: 'Annuler',
     opponentFound: 'Adversaire trouvé',
     reconnecting: 'Reconnexion à votre partie…',
   },
@@ -119,7 +119,6 @@ export const frOnline = {
     },
   },
   play: {
-    badge: 'EN LIGNE',
     yourMove: 'À vous de jouer',
     opponentThinking: '{{opponent}} réfléchit',
     reconnecting: 'Reconnexion…',

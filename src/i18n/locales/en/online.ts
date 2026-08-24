@@ -29,7 +29,7 @@ export const enOnline = {
   matchmaking: {
     looking: 'Looking for an opponent',
     inviting: 'Inviting anyone available…',
-    cancel: 'Cancel matchmaking',
+    cancel: 'Cancel',
     opponentFound: 'Opponent found',
     reconnecting: 'Reconnecting to your match…',
   },
@@ -116,7 +116,6 @@ export const enOnline = {
     },
   },
   play: {
-    badge: 'ONLINE',
     yourMove: 'Your move',
     opponentThinking: '{{opponent}} thinking',
     reconnecting: 'Reconnecting…',

@@ -88,7 +88,7 @@ try {
   const A = await mk(identities[0]);  // A queues here
   const B = await mk(identities[1]);  // B pairs on its first join
 
-  const inMatch = p => p.evaluate(() => (document.getElementById('rec')?.textContent ?? '').startsWith('ONLINE')
+  const inMatch = p => p.evaluate(() => !!window.__kbOnline?.()?.matchId
     && !document.getElementById('ovOnline').classList.contains('on'));
   const snap = p => p.evaluate(() => {
     const S = window.__kb.S;

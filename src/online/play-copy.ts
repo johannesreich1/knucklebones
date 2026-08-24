@@ -12,9 +12,9 @@ export function defaultOnlineNames(): MatchNames {
   };
 }
 
-/** Keep ranked badge copy live so shared HUD repaint preserves its claim. */
+/** Keep ranked mode copy live so shared HUD repaint preserves its claim. */
 export function rankedBadge(mode: Pick<ModeSpec, 'id'>): () => readonly BadgeChip[] {
-  return () => [{ html: t('online', 'play.badge') }, modeChip(mode)];
+  return () => [modeChip(mode)];
 }
 
 export const reconnectingCopy = (): string => t('online', 'play.reconnecting');

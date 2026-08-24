@@ -120,11 +120,20 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
         }));
         if (i < 3) await page.waitForTimeout(350);
       }
+      const queueCancel = await page.evaluate(() => {
+        const button = document.getElementById('btnQueueCancel');
+        const style = button ? getComputedStyle(button) : null;
+        return {
+          label: button?.textContent?.trim() ?? null,
+          textTransform: style?.textTransform ?? null,
+          clipped: button ? button.scrollWidth > button.clientWidth : null,
+        };
+      });
       await page.click('#btnQueueCancel');
       await page.waitForTimeout(50);
       const rootLang = await page.locator('html').getAttribute('lang');
       await ctx.close();
-      return { queueLabel: samples, errs, loading, signupCalls: routes.signupCalls(),
+      return { queueLabel: samples, queueCancel, errs, loading, signupCalls: routes.signupCalls(),
                rootLang,
                homeStyles: { before: homeBeforeOnline, after: homeAfterOnline } };
     }
