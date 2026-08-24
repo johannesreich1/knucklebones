@@ -20,12 +20,25 @@ export function markSunderVictim(
   die.appendChild(embers);
 }
 
+export function releaseSunderVictim(
+  slot: HTMLElement,
+  die: HTMLElement,
+  delayMs: number,
+): void {
+  slot.classList.remove('sunder-doomed-slot');
+  slot.classList.add('sunder-returning-slot');
+  slot.style.setProperty('--sunder-delay', `${delayMs}ms`);
+  die.classList.add('sunder-collapse');
+  die.style.setProperty('--sunder-delay', `${delayMs}ms`);
+}
+
 export function clearSunderPresentation(): void {
   const root = appRoot();
   root.querySelector('#dieStage')?.classList.remove('sundered');
-  for (const slot of root.querySelectorAll<HTMLElement>('.sunder-doomed-slot')) {
-    slot.classList.remove('sunder-doomed-slot');
+  for (const slot of root.querySelectorAll<HTMLElement>('.sunder-doomed-slot,.sunder-returning-slot')) {
+    slot.classList.remove('sunder-doomed-slot', 'sunder-returning-slot');
     slot.style.removeProperty('--sunder-order');
+    slot.style.removeProperty('--sunder-delay');
   }
   for (const die of root.querySelectorAll<HTMLElement>('.sunder-doomed,.sunder-collapse')) {
     die.classList.remove('sunder-doomed', 'sunder-collapse');

@@ -173,8 +173,38 @@ export async function runSunderOverloadScenarios(suite) {
         ) : 999,
       };
     };
+    const alphaOf = (color) => {
+      if (color === 'transparent') return 0;
+      const alpha = color.match(/(?:,|\/)\s*([\d.]+)\s*\)$/);
+      return alpha ? Number(alpha[1]) : 1;
+    };
+    const describeRestore = (slot) => {
+      const animation = slot.getAnimations().find((item) => item.transitionProperty === 'background-color');
+      if (!animation) return null;
+      const timing = animation.effect.getTiming();
+      return {
+        duration: timing.duration, delay: timing.delay, easing: timing.easing, fill: timing.fill,
+      };
+    };
+    const readRestoreBeat = (slot, transitions, dieAnimation, time) => {
+      transitions.forEach((transition) => { transition.currentTime = time; });
+      dieAnimation.currentTime = time;
+      const style = getComputedStyle(slot);
+      const normal = getComputedStyle(document.querySelector('#topBoard .col[data-col="1"] .slot'));
+      const dieStyle = getComputedStyle(slot.querySelector('.die.sunder-collapse'));
+      return {
+        time,
+        backgroundAlpha: alphaOf(style.backgroundColor),
+        borderAlpha: alphaOf(style.borderTopColor),
+        normalBackgroundAlpha: alphaOf(normal.backgroundColor),
+        normalBorderAlpha: alphaOf(normal.borderTopColor),
+        dieOpacity: Number(dieStyle.opacity),
+        diePresent: !!slot.querySelector('.die.sunder-collapse'),
+      };
+    };
     let maxCollapse = 0, sawFail = false, sawWardGhost = false;
-    let failEffects = null, shine = null, particles = false, flash = false, boardShake = false;
+    let failEffects = null, shine = null, restoreEffects = null, restoreBeats = null;
+    let particles = false, flash = false, boardShake = false;
     const placement = k.place(1, 0);
     for (let i = 0; i < 90; i++) {
       await new Promise((r) => setTimeout(r, 30));
@@ -189,6 +219,34 @@ export async function runSunderOverloadScenarios(suite) {
         .some((animation) => animation.playState === 'running');
       if (!failEffects && collapsing.length === 2) {
         failEffects = collapsing.map(describeFail);
+        const restoring = [...document.querySelectorAll('.sunder-returning-slot')];
+        restoreEffects = restoring.map(describeRestore);
+        const firstSlot = restoring.find((slot) => slot.getAnimations()
+          .find((item) => item.transitionProperty === 'background-color')?.effect?.getTiming().delay === 1900);
+        const restoreTransition = firstSlot?.getAnimations()
+          .find((item) => item.transitionProperty === 'background-color');
+        const restoreTransitions = firstSlot?.getAnimations()
+          .filter((item) => item.transitionProperty);
+        const firstDie = firstSlot?.querySelector('.die.sunder-collapse');
+        const firstDieAnimation = firstDie?.getAnimations()
+          .find((item) => item.animationName === 'su6fail');
+        if (firstSlot && restoreTransition && restoreTransitions?.length && firstDieAnimation) {
+          const originalRestoreTimes = restoreTransitions.map((transition) => transition.currentTime);
+          const originalDieTime = firstDieAnimation.currentTime;
+          restoreTransitions.forEach((transition) => transition.pause());
+          firstDieAnimation.pause();
+          restoreBeats = [
+            readRestoreBeat(firstSlot, restoreTransitions, firstDieAnimation, 1900),
+            readRestoreBeat(firstSlot, restoreTransitions, firstDieAnimation, 1970),
+            readRestoreBeat(firstSlot, restoreTransitions, firstDieAnimation, 2120),
+          ];
+          restoreTransitions.forEach((transition, index) => {
+            transition.currentTime = originalRestoreTimes[index];
+          });
+          firstDieAnimation.currentTime = originalDieTime;
+          restoreTransitions.forEach((transition) => transition.play());
+          firstDieAnimation.play();
+        }
         const first = collapsing.find((die) => die.getAnimations()
           .find((item) => item.animationName === 'su6fail')?.effect?.getTiming().delay === 0);
         const animation = first.getAnimations().find((item) => item.animationName === 'su6fail');
@@ -199,12 +257,13 @@ export async function runSunderOverloadScenarios(suite) {
     }
     await placement;
     return {
-      maxCollapse, sawFail, sawWardGhost, failEffects, shine, particles, flash, boardShake,
+      maxCollapse, sawFail, sawWardGhost, failEffects, shine, restoreEffects, restoreBeats,
+      particles, flash, boardShake,
       theirs: JSON.stringify(k.S.boards[0]),
       wards: JSON.stringify(k.S.charm.wards),
       armed: k.S.charm.sunder[1],
       charged: document.getElementById('dieStage').classList.contains('sundered'),
-      residue: document.querySelectorAll('.sunder-doomed,.sunder-doomed-slot,.sunder-collapse,.sunder-embers,.ward-strike-ghost').length,
+      residue: document.querySelectorAll('.sunder-doomed,.sunder-doomed-slot,.sunder-returning-slot,.sunder-collapse,.sunder-embers,.ward-strike-ghost').length,
     };
   });
   check(out.sunderRelease.maxCollapse === 2 && out.sunderRelease.sawFail
@@ -226,6 +285,24 @@ export async function runSunderOverloadScenarios(suite) {
       && out.sunderRelease.shine[1].overlayError < .75,
     'SU6 missed the whole-die local shine or left its embers behind during collapse',
     out.sunderRelease.shine);
+  check(out.sunderRelease.restoreEffects?.length === 2
+      && String(out.sunderRelease.restoreEffects.map((effect) => effect.delay).sort((a, b) => a - b))
+        === '1900,2060'
+      && out.sunderRelease.restoreEffects.every((effect) => effect.duration === 220
+        && effect.easing === 'ease-out')
+      && out.sunderRelease.restoreBeats?.length === 3
+      && out.sunderRelease.restoreBeats.every((beat) => beat.diePresent)
+      && out.sunderRelease.restoreBeats[0].backgroundAlpha <= .005
+      && out.sunderRelease.restoreBeats[1].backgroundAlpha > .005
+      && out.sunderRelease.restoreBeats[1].backgroundAlpha < .028
+      && out.sunderRelease.restoreBeats[1].dieOpacity > .02
+      && Math.abs(out.sunderRelease.restoreBeats[2].backgroundAlpha
+        - out.sunderRelease.restoreBeats[2].normalBackgroundAlpha) <= .002
+      && Math.abs(out.sunderRelease.restoreBeats[2].borderAlpha
+        - out.sunderRelease.restoreBeats[2].normalBorderAlpha) <= .005
+      && out.sunderRelease.restoreBeats[2].dieOpacity <= .02,
+    'SU6 did not quickly fade each grid tile back underneath the final collapse beat',
+    { effects: out.sunderRelease.restoreEffects, beats: out.sunderRelease.restoreBeats });
   check(!out.sunderRelease.particles && !out.sunderRelease.flash && !out.sunderRelease.boardShake,
     'SU6 introduced a centre burst, screen flash or board shake when its existing warning released',
     out.sunderRelease);
@@ -251,7 +328,7 @@ export async function runSunderOverloadScenarios(suite) {
     const warningTransforms = targets.map((die) => getComputedStyle(die).transform);
     const animated = targets.map(() => false);
     const visiblyChanged = targets.map(() => false);
-    let firstCollapse = null, maxCollapse = 0, delays = null;
+    let firstCollapse = null, maxCollapse = 0, delays = null, returnDelays = null;
     const placement = k.place(1, 0);
     for (let i = 0; i < 160; i++) {
       await new Promise((resolve) => setTimeout(resolve, 20));
@@ -261,6 +338,12 @@ export async function runSunderOverloadScenarios(suite) {
       if (!delays && collapsing.length === 3) delays = collapsing.map((die) =>
         die.getAnimations().find((animation) => animation.animationName === 'su6fail')
           ?.effect?.getTiming().delay ?? -1);
+      if (!returnDelays && collapsing.length === 3) {
+        returnDelays = [...document.querySelectorAll('.sunder-returning-slot')].map((slot) =>
+          Math.round(slot.getAnimations()
+            .find((animation) => animation.transitionProperty === 'background-color')
+            ?.effect?.getTiming().delay ?? -1));
+      }
       targets.forEach((die, index) => {
         const collapsingNow = die.getAnimations().some((a) => a.animationName === 'su6fail');
         animated[index] ||= collapsingNow;
@@ -271,17 +354,18 @@ export async function runSunderOverloadScenarios(suite) {
     }
     await placement;
     return {
-      targets: targets.length, firstCollapse, maxCollapse, animated, visiblyChanged, delays,
+      targets: targets.length, firstCollapse, maxCollapse, animated, visiblyChanged, delays, returnDelays,
       theirs: JSON.stringify(k.S.boards[0]),
       wards: JSON.stringify(k.S.charm.wards),
-      residue: document.querySelectorAll('.sunder-doomed,.sunder-doomed-slot,.sunder-collapse,.sunder-embers').length,
+      residue: document.querySelectorAll('.sunder-doomed,.sunder-doomed-slot,.sunder-returning-slot,.sunder-collapse,.sunder-embers').length,
     };
   });
   check(out.sunderWideRelease.targets === 3 && out.sunderWideRelease.firstCollapse === 3
       && out.sunderWideRelease.maxCollapse === 3
       && out.sunderWideRelease.animated.every(Boolean)
       && out.sunderWideRelease.visiblyChanged.every(Boolean)
-      && String(out.sunderWideRelease.delays?.sort((a, b) => a - b)) === '0,160,320',
+      && String(out.sunderWideRelease.delays?.sort((a, b) => a - b)) === '0,160,320'
+      && String(out.sunderWideRelease.returnDelays?.sort((a, b) => a - b)) === '1900,2060,2220',
     'SU6 did not animate every widened victim as one visible staggered collapse', out.sunderWideRelease);
   check(out.sunderWideRelease.theirs === '[[],[4,2],[1]]'
       && JSON.parse(out.sunderWideRelease.wards)[0][1] === 0
@@ -311,7 +395,7 @@ export async function runSunderOverloadScenarios(suite) {
   await newGame({ spell: 'nudge' });
   out.sunderRestart = await page.evaluate(() => ({
     charged: document.getElementById('dieStage').classList.contains('sundered'),
-    residue: document.querySelectorAll('.sunder-doomed,.sunder-doomed-slot,.sunder-collapse,.sunder-embers').length,
+    residue: document.querySelectorAll('.sunder-doomed,.sunder-doomed-slot,.sunder-returning-slot,.sunder-collapse,.sunder-embers').length,
     marks: JSON.stringify(window.__kb.S.charm.sunder),
   }));
   check(!out.sunderRestart.charged && out.sunderRestart.residue === 0
@@ -378,8 +462,8 @@ export async function runSunderOverloadScenarios(suite) {
         wards: JSON.stringify(k.S.charm.wards),
         armed: k.S.charm.sunder[1],
         residue: document.querySelectorAll(
-          '.sunder-doomed,.sunder-doomed-slot,.sunder-collapse,.sunder-embers,.ward-strike-ghost').length,
-        running: [...document.querySelectorAll('.sunder-doomed-slot,.sunder-doomed,.sunder-embers')]
+          '.sunder-doomed,.sunder-doomed-slot,.sunder-returning-slot,.sunder-collapse,.sunder-embers,.ward-strike-ghost').length,
+        running: [...document.querySelectorAll('.sunder-doomed-slot,.sunder-returning-slot,.sunder-doomed,.sunder-embers')]
           .flatMap((node) => node.getAnimations({ subtree: true }))
           .filter((animation) => String(animation.animationName || '').startsWith('su6')
             && animation.playState === 'running').length,

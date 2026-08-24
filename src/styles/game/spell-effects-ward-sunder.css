@@ -27,6 +27,10 @@
    so they tremble, shine and collapse with it rather than lingering behind. */
 :where(#kbroot) .side .slot.sunder-doomed-slot{--sunder:#ff9d66;z-index:2;
   background:transparent;border-color:transparent;box-shadow:none}
+:where(#kbroot) .side .slot.sunder-returning-slot{--sunder:#ff9d66;z-index:2;
+  transition:background-color .22s ease-out calc(1.9s + var(--sunder-delay,0ms)),
+    border-color .22s ease-out calc(1.9s + var(--sunder-delay,0ms)),
+    box-shadow .22s ease-out calc(1.9s + var(--sunder-delay,0ms))}
 :where(#kbroot) .die.sunder-doomed{transform-origin:50% 58%;animation:su6tremor .46s ease-in-out infinite}
 /* Keep the triple's independent heat pulse while its shell trembles. */
 :where(#kbroot) .die.m3.sunder-doomed{animation:su6tremor .46s ease-in-out infinite,hot 1.5s ease-in-out infinite}
@@ -48,7 +52,8 @@
   100%{opacity:0;transform:translate(-7px,-34px) scale(.35)}}
 
 /* Placement releases the failure already in progress. Each exact victim gets
-   a small delay from JS, so pairs/triples collapse as one staggered event. */
+   a small delay from JS, so pairs/triples collapse as one staggered event.
+   Its real grid seat starts returning beneath the final visible shrink. */
 :where(#kbroot) .die.sunder-doomed.sunder-collapse{animation:su6fail 2.6s ease-in var(--sunder-delay,0ms) both}
 @keyframes su6fail{0%{transform:rotate(-2deg);opacity:1}
   30%{transform:translate(1.4px,-1px) rotate(-3.4deg)}
@@ -66,5 +71,6 @@
 #kbroot.reduce-motion .die.sunder-doomed,
 #kbroot.reduce-motion .die.m3.sunder-doomed,
 #kbroot.reduce-motion .die.sunder-doomed.sunder-collapse{animation:none}
+#kbroot.reduce-motion .slot.sunder-returning-slot{transition:none}
 #kbroot.reduce-motion .die.sunder-doomed{transform:rotate(-2deg)}
 #kbroot.reduce-motion .die.sunder-doomed>.sunder-embers>i{opacity:.85;transform:none}

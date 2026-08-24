@@ -22,7 +22,11 @@ import { colorOf, heatOf } from '../identity.ts';
 import { renderSide } from './board.ts';
 import { playWardStrike, shieldBlocked, wardBurned } from './seals.ts';
 import { flyDieToSlot } from './motion.ts';
-import { clearSunderPresentation, markSunderVictim } from './sunder-presentation.ts';
+import {
+  clearSunderPresentation,
+  markSunderVictim,
+  releaseSunderVictim,
+} from './sunder-presentation.ts';
 
 const pause = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 const SUNDER_COLLAPSE_MS = 2600;
@@ -82,8 +86,7 @@ function stageDestruction(
     if (!doomed) continue;
     if (sunderOrder !== null) {
       markSunderVictim(slot!, doomed, order);
-      doomed.classList.add('sunder-collapse');
-      doomed.style.setProperty('--sunder-delay', `${order++ * SUNDER_STAGGER_MS}ms`);
+      releaseSunderVictim(slot!, doomed, order++ * SUNDER_STAGGER_MS);
     } else {
       doomed.classList.add('dying');
       const rect = doomed.getBoundingClientRect();
