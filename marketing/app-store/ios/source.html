@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1320, initial-scale=1">
+  <title>Knucklebones Neon — iOS App Store screenshots</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
+      --cyan: #28e8ff;
+      --magenta: #ff2fa0;
+      --gold: #ffd768;
+      --ink: #05060e;
+      --paper: #f7f8ff;
+      --accent: var(--cyan);
+      --accent-rgb: 40, 232, 255;
+      --counter: "01 / 06";
+    }
+
+    * { box-sizing: border-box; }
+
+    html,
+    body {
+      width: 1320px;
+      height: 2868px;
+      margin: 0;
+      overflow: hidden;
+      background: var(--ink);
+    }
+
+    body {
+      position: relative;
+      color: var(--paper);
+      isolation: isolate;
+      transform: translateY(var(--capture-offset, 0px));
+      transform-origin: 0 0;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
+    }
+
+    body::before {
+      content: "";
+      position: absolute;
+      inset: -12%;
+      z-index: -5;
+      background:
+        radial-gradient(44% 31% at 12% 20%, rgba(255, 47, 160, .34), transparent 74%),
+        radial-gradient(48% 36% at 91% 74%, rgba(40, 232, 255, .29), transparent 76%),
+        radial-gradient(35% 24% at 62% 43%, rgba(var(--accent-rgb), .16), transparent 72%),
+        linear-gradient(152deg, #090818 0%, #05060e 46%, #06101a 100%);
+    }
+
+    body::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: -4;
+      pointer-events: none;
+      opacity: .30;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, .022) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, .022) 1px, transparent 1px);
+      background-size: 72px 72px;
+      mask-image: linear-gradient(to bottom, black, transparent 82%);
+    }
+
+    .brand {
+      position: absolute;
+      top: 112px;
+      left: 112px;
+      right: 112px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 36px;
+    }
+
+    .brand-lockup {
+      display: flex;
+      align-items: center;
+      gap: 25px;
+      min-width: 0;
+    }
+
+    .brand img {
+      width: 84px;
+      height: 84px;
+      border-radius: 23px;
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, .16),
+        0 18px 44px rgba(0, 0, 0, .38),
+        0 0 42px rgba(var(--accent-rgb), .16);
+    }
+
+    .brand-name {
+      min-width: 0;
+      font-size: 31px;
+      font-weight: 780;
+      letter-spacing: .205em;
+      white-space: nowrap;
+      text-transform: uppercase;
+    }
+
+    .count {
+      flex: 0 0 auto;
+      padding: 18px 24px 17px;
+      border: 1px solid rgba(255, 255, 255, .14);
+      border-radius: 999px;
+      color: rgba(239, 243, 255, .72);
+      background: rgba(7, 8, 20, .44);
+      box-shadow: inset 0 1px rgba(255, 255, 255, .04);
+      font-size: 24px;
+      font-weight: 720;
+      letter-spacing: .17em;
+      text-transform: uppercase;
+      backdrop-filter: blur(18px);
+    }
+
+    .copy {
+      position: absolute;
+      top: 264px;
+      left: 112px;
+      right: 112px;
+      z-index: 3;
+    }
+
+    .eyebrow {
+      margin-bottom: 30px;
+      color: var(--accent);
+      font-size: 27px;
+      font-weight: 820;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+      text-shadow: 0 0 28px rgba(var(--accent-rgb), .32);
+    }
+
+    h1 {
+      max-width: 1130px;
+      margin: 0;
+      font-size: 151px;
+      font-weight: 890;
+      line-height: .91;
+      letter-spacing: -.055em;
+      text-wrap: balance;
+      text-shadow: 0 16px 56px rgba(0, 0, 0, .40);
+    }
+
+    h1 .wash {
+      background: linear-gradient(105deg, var(--cyan), #ffffff 50%, var(--magenta));
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .subhead {
+      max-width: 1010px;
+      margin: 35px 0 0;
+      color: rgba(239, 243, 255, .70);
+      font-size: 41px;
+      font-weight: 510;
+      line-height: 1.28;
+      letter-spacing: -.014em;
+    }
+
+    .halo {
+      position: absolute;
+      top: 840px;
+      left: 50%;
+      z-index: -2;
+      width: 1120px;
+      height: 1750px;
+      transform: translateX(-50%);
+      border-radius: 48%;
+      opacity: .55;
+      background:
+        radial-gradient(closest-side, rgba(var(--accent-rgb), .20), transparent 72%),
+        radial-gradient(closest-side, rgba(255, 47, 160, .12), transparent 77%);
+      filter: blur(64px);
+    }
+
+    .screen-shell {
+      position: absolute;
+      top: 776px;
+      left: 187px;
+      z-index: 2;
+      width: 946px;
+      height: 2054px;
+      overflow: hidden;
+      border: 2px solid rgba(255, 255, 255, .15);
+      border-radius: 78px 78px 0 0;
+      background: #05060e;
+      box-shadow:
+        0 65px 120px rgba(0, 0, 0, .57),
+        0 0 0 11px rgba(255, 255, 255, .025),
+        0 0 100px rgba(var(--accent-rgb), .14);
+    }
+
+    .screen-shell::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      border-radius: inherit;
+      pointer-events: none;
+      box-shadow:
+        inset 0 1px rgba(255, 255, 255, .18),
+        inset 0 0 100px rgba(var(--accent-rgb), .025);
+    }
+
+    .screen-shell::after {
+      content: "";
+      position: absolute;
+      top: 118px;
+      bottom: 118px;
+      left: 0;
+      z-index: 6;
+      width: 4px;
+      border-radius: 0 99px 99px 0;
+      background: linear-gradient(transparent, var(--accent) 20%, var(--accent) 80%, transparent);
+      box-shadow: 0 0 30px rgba(var(--accent-rgb), .8);
+      opacity: .72;
+    }
+
+    #runtime {
+      display: block;
+      width: 440px;
+      height: 956px;
+      border: 0;
+      transform: scale(2.15);
+      transform-origin: 0 0;
+      background: #05060e;
+    }
+
+    .error {
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      display: none;
+      place-items: center;
+      padding: 80px;
+      background: #130710;
+      color: #fff;
+      font: 700 40px/1.35 ui-monospace, monospace;
+      text-align: center;
+    }
+
+    body.failed .error { display: grid; }
+  </style>
+</head>
+<body>
+  <div class="brand">
+    <div class="brand-lockup">
+      <img src="/icon-512.png" alt="">
+      <div class="brand-name">Knucklebones Neon</div>
+    </div>
+    <div class="count" id="count">01 / 06</div>
+  </div>
+
+  <main class="copy">
+    <div class="eyebrow" id="eyebrow">Ranked Row Multiply</div>
+    <h1 id="headline"><span class="wash">MATCH DICE.</span><br>MULTIPLY.</h1>
+    <p class="subhead" id="subhead">Build two scoring rows, stack the multipliers, and turn the table.</p>
+  </main>
+
+  <div class="halo"></div>
+  <div class="screen-shell">
+    <iframe id="runtime" title="Real Knucklebones game rendering"></iframe>
+  </div>
+
+  <div class="error" id="error">The production game rendering did not initialize.</div>
+
+  <script>
+    const SLIDES = {
+      1: {
+        slug: 'ranked-row-multiply',
+        scene: 'rowmult',
+        count: '01 / 06',
+        eyebrow: 'Ranked Row Multiply',
+        headline: '<span class="wash">MATCH DICE.</span><br>MULTIPLY.',
+        subhead: 'Build two scoring rows, stack the multipliers, and turn the table.',
+        accent: '#28e8ff', accentRgb: '40, 232, 255',
+      },
+      2: {
+        slug: 'ranked-mode-dial',
+        scene: 'dial',
+        count: '02 / 06',
+        eyebrow: 'Seven game modes',
+        headline: '<span class="wash">SEVEN MODES.</span><br>ONE SPIN.',
+        subhead: 'Every ranked duel can change the rules before the first roll.',
+        accent: '#ffd166', accentRgb: '255, 209, 102',
+      },
+      3: {
+        slug: 'sunder-overload',
+        scene: 'sunder',
+        count: '03 / 06',
+        eyebrow: 'Six tactical runes',
+        headline: '<span class="wash">ONE DIE.</span><br>EVERY COLUMN.',
+        subhead: 'Arm SUNDER to overload every matching enemy column at once.',
+        accent: '#ff9d66', accentRgb: '255, 157, 102',
+      },
+      4: {
+        slug: 'ranked-bounty',
+        scene: 'bounty',
+        count: '04 / 06',
+        eyebrow: 'Bounty mode',
+        headline: '<span class="wash">EVERY STRIKE</span><br>PAYS.',
+        subhead: 'Destroy matching dice and bank a permanent bounty for every one.',
+        accent: '#ffd166', accentRgb: '255, 209, 102',
+      },
+      5: {
+        slug: 'ranked-victory',
+        scene: 'ranked-result',
+        count: '05 / 06',
+        eyebrow: 'Ranked result',
+        headline: '<span class="wash">WIN. CLIMB.</span><br>REPEAT.',
+        subhead: 'Earn points, rise the ladder, and leave your mark on every rival.',
+        accent: '#28e8ff', accentRgb: '40, 232, 255',
+      },
+      6: {
+        slug: 'neon-ladder',
+        scene: 'ladder',
+        count: '06 / 06',
+        eyebrow: 'Ranked competition',
+        headline: '<span class="wash">CLIMB THE</span><br>NEON LADDER.',
+        subhead: 'Track every rival, every rise, and the next rank within reach.',
+        accent: '#ff2fa0', accentRgb: '255, 47, 160',
+      },
+    };
+
+    const params = new URLSearchParams(location.search);
+    const slideNumber = Math.min(6, Math.max(1, Number(params.get('slide')) || 1));
+    const captureOffset = Math.min(2107, Math.max(0, Number(params.get('offset')) || 0));
+    const slide = SLIDES[slideNumber];
+    document.body.style.setProperty('--capture-offset', `${-captureOffset}px`);
+    document.documentElement.style.setProperty('--accent', slide.accent);
+    document.documentElement.style.setProperty('--accent-rgb', slide.accentRgb);
+    document.getElementById('count').textContent = slide.count;
+    document.getElementById('eyebrow').textContent = slide.eyebrow;
+    document.getElementById('headline').innerHTML = slide.headline;
+    document.getElementById('subhead').textContent = slide.subhead;
+
+    const GAME_KEY = 'knucklebones.v1';
+    const PROFILE_KEY = 'knucklebones.online.profile';
+    localStorage.setItem(GAME_KEY, JSON.stringify({
+      played: true,
+      tutDone: true,
+      sound: false,
+      reducedMotion: true,
+      localeOverride: 'en',
+      p1Hue: 'cy',
+      p2Hue: 'mg',
+      colorblind: false,
+      numerals: false,
+      mode: 'cpu',
+      diff: 'medium',
+      timer: 0,
+      seat: 'face',
+      localMode: 0,
+      spell: '',
+    }));
+    localStorage.setItem(PROFILE_KEY, JSON.stringify({
+      nickname: 'FrostLynx303',
+      avatar: 'die:5:cy',
+      rating: 2494,
+      rank: 4,
+      apex: false,
+    }));
+
+    const frame = document.getElementById('runtime');
+    frame.src = `/knucklebones-neon.html?app-store-capture=${slideNumber}`;
+
+    const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const twoFrames = (win) => new Promise((resolve) => win.requestAnimationFrame(() => win.requestAnimationFrame(resolve)));
+    const waitFor = async (read, timeout = 10000) => {
+      const started = performance.now();
+      while (performance.now() - started < timeout) {
+        const value = read();
+        if (value) return value;
+        await pause(25);
+      }
+      throw new Error('Timed out waiting for the game renderer');
+    };
+
+    function applyNativeGeometry(win) {
+      const doc = win.document;
+      const app = doc.getElementById('app') || doc.getElementById('kbroot');
+      if (app) {
+        app.style.paddingTop = 'calc(62px + 6px)';
+        app.style.paddingBottom = 'calc(34px + 6px)';
+      }
+      win.__kb.fit();
+    }
+
+    function hideMenus(doc) {
+      for (const id of ['ovStart', 'ovPractice', 'ovOnline', 'ovEnd']) {
+        doc.getElementById(id)?.classList.remove('on');
+      }
+    }
+
+    function startScene(k, {
+      scoring,
+      spell = '',
+      mine,
+      theirs,
+      die,
+      status = 'YOUR MOVE',
+      opponent = null,
+      aiNormal = false,
+    }) {
+      k.S.spell = spell;
+      k.S.timer = 0;
+      k.S.localMode = scoring;
+      k.S.mode = aiNormal ? 'cpu' : 'duo';
+      k.S.diff = aiNormal ? 'medium' : k.S.diff;
+      k.S.seat = aiNormal ? 'face' : 'side';
+      k.S.starter = 1;
+      k.newGame({ scoring, spell });
+      k.S.gen++;
+      k.S.mode = aiNormal ? 'cpu' : 'duo';
+      k.S.diff = aiNormal ? 'medium' : k.S.diff;
+      k.S.seat = aiNormal ? 'face' : 'side';
+      k.S.boards[1] = mine;
+      k.S.boards[0] = theirs;
+      k.S.turn = 1;
+      k.S.bottom = 1;
+      k.S.phase = 'choose';
+      k.S.busy = false;
+      k.S.die = die;
+      k.applySides();
+      k.renderAll(false);
+      k.setStageDie(die, 1);
+      k.setStatus(status, 1);
+      k.showHints();
+      k.spells.render();
+      k.setActivePlate();
+      k.fit();
+
+      const doc = document.getElementById('runtime').contentDocument;
+      hideMenus(doc);
+      if (opponent) {
+        doc.getElementById('nameBot').textContent = 'FrostLynx303';
+        doc.getElementById('nameTop').textContent = opponent;
+        doc.getElementById('tagTop').hidden = true;
+        doc.getElementById('tagBot').hidden = true;
+        doc.getElementById('kbroot').classList.add('clock');
+        const timer = doc.getElementById('timerWrap');
+        timer.classList.add('on');
+        timer.classList.remove('warn');
+        timer.style.setProperty('--tcbase', 'var(--p1)');
+        doc.getElementById('timerBar').style.width = '72%';
+        doc.getElementById('timerNum').textContent = '';
+        k.fit();
+      }
+    }
+
+    const b64url = (win, value) => win.btoa(JSON.stringify(value))
+      .replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+
+    function installOnlineFixture(win, variant) {
+      const USER_ID = '00000000-0000-4000-8000-00000000cafe';
+      const now = Math.floor(Date.now() / 1000);
+      const accessToken = `${b64url(win, { alg: 'HS256', typ: 'JWT' })}.${b64url(win, {
+        sub: USER_ID,
+        aud: 'authenticated',
+        role: 'authenticated',
+        is_anonymous: true,
+        exp: now + 3600,
+      })}.capture`;
+      const session = {
+        access_token: accessToken,
+        token_type: 'bearer',
+        expires_in: 3600,
+        refresh_token: 'capture',
+        expires_at: now + 3600,
+        user: {
+          id: USER_ID,
+          aud: 'authenticated',
+          role: 'authenticated',
+          email: null,
+          is_anonymous: true,
+          created_at: '2026-08-01T00:00:00Z',
+          app_metadata: {},
+          user_metadata: {},
+          identities: [],
+        },
+      };
+      const isResult = variant === 'result';
+      const profile = {
+        id: USER_ID,
+        nickname: 'FrostLynx303',
+        rating: 2510,
+        avatar: 'die:5:cy',
+        created_at: '2026-08-01T00:00:00Z',
+        named_at: '2026-08-01T00:00:00Z',
+      };
+      const board = [
+        { rank: 1, nickname: 'PrismWolf771', points: 4708, wins: 88, losses: 34, games: 122, apex: true, avatar: 'die:6:gold', peak: 4708 },
+        { rank: 2, nickname: 'NovaComet992', points: 3620, wins: 61, losses: 29, games: 90, apex: false, avatar: 'die:4:mg', peak: 3710 },
+        { rank: 3, nickname: 'FrostLynx303', points: 2510, wins: 35, losses: 18, games: 53, apex: false, avatar: 'die:5:cy', peak: 2570 },
+        { rank: 4, nickname: 'CipherMoth440', points: 2470, wins: 32, losses: 21, games: 53, apex: false, avatar: 'die:2:ice', peak: 2520 },
+        { rank: 5, nickname: 'EmberCrow896', points: 2431, wins: 31, losses: 19, games: 50, apex: false, avatar: 'die:3:mg', peak: 2493 },
+        { rank: 6, nickname: 'LunarFox118', points: 1940, wins: 28, losses: 22, games: 50, apex: false, avatar: 'die:6:violet', peak: 2010 },
+        { rank: 7, nickname: 'OrbitHare662', points: 1540, wins: 24, losses: 20, games: 44, apex: false, avatar: 'die:1:cy', peak: 1660 },
+        { rank: 8, nickname: 'GlitchRaven37', points: 1180, wins: 19, losses: 17, games: 36, apex: false, avatar: 'die:4:orange', peak: 1260 },
+      ];
+      const fixture = {
+        profile,
+        standing: isResult
+          ? { points: 2510, rank: 3, population: 200, percentile: 1.5 }
+          : { points: 2510, rank: 3, population: 200, percentile: 1.5 },
+        ladder: isResult
+          ? { points: 2510, peak: 2510, wins: 13, losses: 7, draws: 1 }
+          : { points: 2510, peak: 2570, wins: 35, losses: 18, draws: 2 },
+        board,
+      };
+
+      win.localStorage.setItem('sb-euzjcejbkxvqfrttgaxu-auth-token', JSON.stringify(session));
+      win.localStorage.setItem(PROFILE_KEY, JSON.stringify(isResult ? {
+        nickname: 'FrostLynx303', avatar: 'die:5:cy', rating: 2427, rank: 3, apex: false,
+      } : {
+        nickname: 'FrostLynx303', avatar: 'die:5:cy', rating: 2510, rank: 3, apex: false,
+      }));
+
+      const originalFetch = win.fetch.bind(win);
+      win.fetch = async (input, init) => {
+        const url = typeof input === 'string' ? input : input.url;
+        if (!url.startsWith('https://euzjcejbkxvqfrttgaxu.supabase.co')) {
+          return originalFetch(input, init);
+        }
+        const json = (body, status = 200) => new win.Response(JSON.stringify(body), {
+          status,
+          headers: { 'Content-Type': 'application/json' },
+        });
+        if (url.includes('/auth/v1/')) return json(session);
+        if (url.includes('/rest/v1/rpc/current_season')) return json('11111111-1111-4111-8111-111111111111');
+        if (url.includes('/rest/v1/rpc/player_standing')) return json([fixture.standing]);
+        if (url.includes('/rest/v1/rpc/player_card')) return json([{
+          streak: 2,
+          since: '2026-06-01T00:00:00Z',
+          points: 2431,
+          wins: 31,
+          losses: 19,
+          games: 50,
+          rank: 5,
+          apex: false,
+          peak: 2493,
+        }]);
+        if (url.includes('/rest/v1/rpc/leaderboard_before')) return json([]);
+        if (url.includes('/rest/v1/rpc/leaderboard')) return json(fixture.board);
+        if (url.includes('/rest/v1/season_ratings')) return json([fixture.ladder]);
+        if (url.includes('/rest/v1/profiles')) return json([fixture.profile]);
+        if (url.includes('/rest/v1/rpc/best_streak')) return json(7);
+        if (url.includes('/rest/v1/rpc/match_history')) return json([]);
+        throw new Error(`Unmocked capture request blocked: ${url}`);
+      };
+      return fixture;
+    }
+
+    async function configure(win) {
+      const k = await waitFor(() => win.__kb);
+      const doc = win.document;
+      await doc.fonts.ready;
+      applyNativeGeometry(win);
+
+      if (slide.scene === 'rowmult') {
+        startScene(k, {
+          scoring: 2,
+          mine: [[6, 5, 1], [6, 5], [6, 5, 3]],
+          theirs: [[2, 2], [5], [1, 4]],
+          die: 4,
+          opponent: 'EmberCrow896',
+        });
+        const multipliers = [...doc.querySelectorAll('#botRows .mx')]
+          .filter((element) => element.textContent.trim());
+        if (multipliers.length !== 2) throw new Error(`Expected two multiplied rows; saw ${multipliers.length}`);
+      } else if (slide.scene === 'dial') {
+        const [{ reveal }, { modeById }, { hide }, { setReducedMotion }, { setLanguageOverride }] = await win.eval(`Promise.all([
+          import('/src/ui/reveal.ts'),
+          import('/src/core/modes.ts'),
+          import('/src/ui/dom.ts'),
+          import('/src/ui/fx.ts'),
+          import('/src/i18n/index.ts')
+        ])`);
+        setLanguageOverride('en');
+        hide('#ovStart');
+        hide('#ovPractice');
+        setReducedMotion(true);
+        win.setInterval = () => 0;
+        void reveal({
+          mode: modeById('colshield'),
+          me: { name: 'FrostLynx303', rating: 2494, avatar: 'die:5:cy' },
+          foe: { name: 'EmberCrow896', rating: 2468, avatar: 'die:3:mg' },
+          peer: { announce() {}, onPeer() { return () => {}; } },
+        });
+        await waitFor(() => doc.querySelector('#ovWheel.landed.holding'));
+        await waitFor(() => doc.querySelector('#wheelDial .dnode.on')?.dataset.mode === 'colshield');
+        const answer = doc.getElementById('wheelName');
+        await waitFor(() => win.getComputedStyle(answer).color === 'rgb(255, 209, 102)');
+        document.body.dataset.dialColor = win.getComputedStyle(answer).color;
+        k.fit();
+      } else if (slide.scene === 'sunder') {
+        startScene(k, {
+          scoring: 0,
+          spell: 'sunder',
+          mine: [[6, 6], [3], [2]],
+          theirs: [[4, 4], [5, 4], [1, 4]],
+          die: 4,
+          aiNormal: true,
+        });
+        await k.spells.cast('sunder', -1);
+        await waitFor(() => doc.querySelectorAll('.sunder-doomed').length === 4);
+        if (doc.getElementById('tagTop').textContent.trim() !== 'NORMAL') {
+          throw new Error('SUNDER capture is not showing AI NORMAL');
+        }
+        k.fit();
+      } else if (slide.scene === 'bounty') {
+        startScene(k, {
+          scoring: 5,
+          mine: [[6, 2], [5], [3, 1]],
+          theirs: [[4, 4, 4], [2, 5], [1, 6]],
+          die: 4,
+          opponent: 'EmberCrow896',
+        });
+        k.S.bounty = [0, 2];
+        k.renderAll(false);
+        void k.place(1, 0);
+        await waitFor(() => doc.querySelectorAll('.bounty-mint.bounty-mint-static').length === 3);
+        const frozenAt = win.performance.now();
+        try {
+          Object.defineProperty(win.performance, 'now', { configurable: true, value: () => frozenAt });
+          win.setTimeout = () => 0;
+        } catch { /* the authored reduced-motion hold still leaves 320ms */ }
+        if (doc.querySelectorAll('.bounty-mint').length !== 3) throw new Error('BOUNTY triple strike did not hold');
+        k.fit();
+      } else if (slide.scene === 'ranked-result') {
+        installOnlineFixture(win, 'result');
+        hideMenus(doc);
+        const [{ setLanguageOverride }, { setReducedMotion }] = await win.eval(`Promise.all([
+          import('/src/i18n/index.ts'),
+          import('/src/ui/fx.ts')
+        ])`);
+        setLanguageOverride('en');
+        setReducedMotion(true);
+        await win.eval("import('/src/online/ui.ts')");
+        await waitFor(() => typeof win.__kbResult === 'function');
+        win.__kbResult({
+          won: true,
+          draw: false,
+          forfeit: false,
+          my: 47,
+          their: 30,
+          delta: 83,
+          opp: 'EmberCrow896',
+          oppAvatar: 'die:3:mg',
+          oppRating: 2493,
+        });
+        await waitFor(() => doc.getElementById('ovEnd')?.classList.contains('on'));
+        await waitFor(() => doc.querySelectorAll('#endPlates button').length === 2);
+        await waitFor(() => doc.querySelector('.pstamp')?.textContent.trim() === 'BEATEN');
+        await waitFor(() => [...doc.querySelectorAll('#endPlates .gpill')]
+          .some((pill) => pill.textContent.includes('GOLD') && pill.textContent.includes('#5')));
+        k.fit();
+      } else if (slide.scene === 'ladder') {
+        installOnlineFixture(win, 'ladder');
+        hideMenus(doc);
+        const { setLanguageOverride } = await win.eval("import('/src/i18n/index.ts')");
+        setLanguageOverride('en');
+        const online = await win.eval("import('/src/online/ui.ts')");
+        await online.openOnline('board', { startTutorial() {} });
+        await waitFor(() => !doc.getElementById('onBoard')?.hidden);
+        await waitFor(() => doc.querySelectorAll('#onBoardList .lrow').length >= 8);
+        await waitFor(() => doc.querySelector('#onBoardList .lrow.me .nm')?.textContent === 'FrostLynx303');
+        k.fit();
+      }
+
+      applyNativeGeometry(win);
+      await twoFrames(win);
+      // The overlays deliberately leave with a short opacity transition. The
+      // final still must be a settled product frame, never two screens blended
+      // together halfway through that transition.
+      if (slide.scene !== 'bounty') await pause(slide.scene === 'dial' ? 140 : 500);
+
+      const visibleOverlay = [...doc.querySelectorAll('.ov.on')].map((element) => element.id);
+      if (!doc.getElementById('app') || !doc.getElementById('kbroot')) {
+        throw new Error('Production application root is missing');
+      }
+      const expectedOverlay = slide.scene === 'dial' ? 'ovWheel'
+        : slide.scene === 'ranked-result' ? 'ovEnd'
+        : slide.scene === 'ladder' ? 'ovOnline'
+        : null;
+      if (visibleOverlay.some((id) => id !== expectedOverlay)) {
+        throw new Error(`Unexpected overlay: ${visibleOverlay.join(', ')}`);
+      }
+
+      document.body.dataset.ready = '1';
+      document.body.dataset.slide = String(slideNumber);
+      document.body.dataset.slug = slide.slug;
+      document.title = `${slide.count} — ${slide.slug}`;
+      window.scrollTo(0, 0);
+    }
+
+    frame.addEventListener('load', () => {
+      configure(frame.contentWindow).catch((error) => {
+        console.error(error);
+        document.body.classList.add('failed');
+        document.getElementById('error').textContent = error instanceof Error ? error.message : String(error);
+        document.body.dataset.ready = 'error';
+      });
+    }, { once: true });
+  </script>
+</body>
+</html>

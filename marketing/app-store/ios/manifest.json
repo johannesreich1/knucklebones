@@ -1,0 +1,64 @@
+{
+  "schemaVersion": 1,
+  "title": "Knucklebones Neon — iOS App Store screenshots",
+  "status": "draft pending store-name clearance and ranked-rune launch",
+  "locale": "en",
+  "target": {
+    "display": "iPhone 6.9-inch",
+    "width": 1320,
+    "height": 2868,
+    "format": "png",
+    "alpha": false
+  },
+  "runtimeSource": "knucklebones-neon.html",
+  "slides": [
+    {
+      "index": 1,
+      "slug": "ranked-row-multiply",
+      "eyebrow": "Ranked Row Multiply",
+      "headline": "MATCH DICE. MULTIPLY.",
+      "subhead": "Build two scoring rows, stack the multipliers, and turn the table.",
+      "scene": "Production Row Multiply board with exactly two multiplied rows and named rivals"
+    },
+    {
+      "index": 2,
+      "slug": "ranked-mode-dial",
+      "eyebrow": "Seven game modes",
+      "headline": "SEVEN MODES. ONE SPIN.",
+      "subhead": "Every ranked duel can change the rules before the first roll.",
+      "scene": "Production ranked orbit dial landed on COLUMN SHIELD"
+    },
+    {
+      "index": 3,
+      "slug": "sunder-overload",
+      "eyebrow": "Six tactical runes",
+      "headline": "ONE DIE. EVERY COLUMN.",
+      "subhead": "Arm SUNDER to overload every matching enemy column at once.",
+      "scene": "Production SUNDER preview with four exact doomed dice against AI NORMAL"
+    },
+    {
+      "index": 4,
+      "slug": "ranked-bounty",
+      "eyebrow": "Bounty mode",
+      "headline": "EVERY STRIKE PAYS.",
+      "subhead": "Destroy matching dice and bank a permanent bounty for every one.",
+      "scene": "Production BOUNTY triple-strike presentation with named rivals"
+    },
+    {
+      "index": 5,
+      "slug": "ranked-victory",
+      "eyebrow": "Ranked result",
+      "headline": "WIN. CLIMB. REPEAT.",
+      "subhead": "Earn points, rise the ladder, and leave your mark on every rival.",
+      "scene": "Production ranked result with two plates, +83 delta, GOLD ranks, and BEATEN stamp"
+    },
+    {
+      "index": 6,
+      "slug": "neon-ladder",
+      "eyebrow": "Ranked competition",
+      "headline": "CLIMB THE NEON LADDER.",
+      "subhead": "Track every rival, every rise, and the next rank within reach.",
+      "scene": "Production ranked ladder centered on FrostLynx303 and named rivals"
+    }
+  ]
+}

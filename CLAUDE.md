@@ -71,6 +71,10 @@ differs. A second near-copy is a design failure, not a shortcut.
   not an arbitrary line counter.
 - **Preserve user changes.** The working tree may contain concurrent work;
   inspect it first and do not overwrite unrelated edits.
+- **Regenerate affected previews with design changes.** When a source or design
+  change alters a generated design card, marketing screenshot, or preview,
+  rebuild every affected preview/export in the same change. A stale generated
+  preview is a failing handoff, not follow-up work.
 - **External dashboards belong to Johannes** (Cloudflare, Supabase dashboard,
   registrars). Prepare repository changes and steps; he clicks. A connected
   Supabase tool is the sanctioned exception when the requested scope permits.
