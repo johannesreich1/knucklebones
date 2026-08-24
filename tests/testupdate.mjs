@@ -13,7 +13,8 @@ const browser = await chromium.launch();
 const problems = [], errs = [];
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
 
-const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
+  locale: 'en-US' });
 const p = await ctx.newPage();
 p.on('pageerror', e => errs.push(e.message));
 await p.goto(URL);

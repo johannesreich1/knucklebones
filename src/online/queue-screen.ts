@@ -1,4 +1,5 @@
 import { modeById } from '../core/modes.ts';
+import { formatNumber, t } from '../i18n/index.ts';
 import { Sfx } from '../ui/audio.ts';
 import { $, hide } from '../ui/dom.ts';
 import { reveal } from '../ui/reveal.ts';
@@ -25,6 +26,14 @@ export interface QueueScreen {
 export interface QueueScreenPorts {
   goHome: () => void;
   startTutorial: () => void;
+}
+
+function queueTime(seconds: number): string {
+  return formatNumber(Math.floor(seconds / 60), { useGrouping: false }) + ':'
+    + formatNumber(seconds % 60, {
+      minimumIntegerDigits: 2,
+      useGrouping: false,
+    });
 }
 
 export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
@@ -75,14 +84,17 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
     showOnlinePanel('onQueue');
     document.addEventListener('visibilitychange', hidden);
     const started = Date.now();
-    $('#qTime').textContent = '0:00';
+    $('#qTime').textContent = queueTime(0);
+    $('#qSub').removeAttribute('data-i18n');
     $('#qSub').innerHTML = '&nbsp;';
     if (tick) clearInterval(tick);
     tick = setInterval(() => {
       const seconds = Math.floor((Date.now() - started) / 1000);
-      $('#qTime').textContent = Math.floor(seconds / 60) + ':'
-        + String(seconds % 60).padStart(2, '0');
-      if (seconds >= 7) $('#qSub').textContent = 'Inviting anyone available…';
+      $('#qTime').textContent = queueTime(seconds);
+      if (seconds >= 7) {
+        $('#qSub').setAttribute('data-i18n', 'online:matchmaking.inviting');
+        $('#qSub').textContent = t('online', 'matchmaking.inviting');
+      }
     }, 250);
     while (runs.owns(run)) {
       const waited = Date.now() - started;

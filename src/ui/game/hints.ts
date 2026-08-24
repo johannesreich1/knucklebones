@@ -1,6 +1,7 @@
 // Tutorial-only score/destruction previews plus the ordinary legal-column
 // affordance. Strategy hints never leak into normal play.
 import { ME, SPEC, colScore, countOf, type Player } from '../../core/rules.ts';
+import { formatNumber } from '../../i18n/index.ts';
 import { S } from '../../state.ts';
 import { chipEl, colEl } from '../dom.ts';
 import { appRoot } from '../embed.ts';
@@ -33,14 +34,14 @@ export function showHints(): void {
     const ownColumn = S.boards[me][col];
     const gain = colScore(ownColumn.concat([die])) - colScore(ownColumn);
     const gainDetail = chipEl(me, col).querySelector<HTMLElement>('.dl')!;
-    gainDetail.textContent = '+' + gain;
+    gainDetail.textContent = '+' + formatNumber(gain);
     gainDetail.className = 'dl gain show';
 
     const foeColumn = S.boards[foe][col];
     if (!countOf(foeColumn, die)) continue;
     const loss = colScore(foeColumn) - colScore(foeColumn.filter((value) => value !== die));
     const killDetail = chipEl(foe, col).querySelector<HTMLElement>('.dl')!;
-    killDetail.textContent = '−' + loss;
+    killDetail.textContent = '−' + formatNumber(loss);
     killDetail.className = 'dl kill show';
     colEl(foe, col)?.classList.add('danger');
   }

@@ -8,6 +8,7 @@ export interface OnlineState {
   matchId: string;
   you: Player;
   names: MatchNames;
+  namesAreFallback: boolean;
   pendingDie: number | null;
   applied: number;
   gen: number;
@@ -29,6 +30,8 @@ export interface FinishReport {
   their: number;
   delta: number | null;
   opp: string;
+  /** Present only when a server-name fallback must remain locale-live. */
+  opponentName?: () => string;
   oppAvatar: string | null;
   oppRating: number | null;
 }

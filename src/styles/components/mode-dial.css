@@ -157,3 +157,20 @@
 :where(#kbroot) .wblurb{font-size:11px;letter-spacing:.12em;color:var(--dim);text-align:center;
   line-height:1.45;min-height:2.9em;max-width:var(--w-col);
   margin-top:-9px}   /* the name hugs its description — they read as one unit */
+
+/* A 320px-high landscape screen has room BESIDE the centred theatre, but not
+   for two independent lanes under it. During the final hold the answer owns
+   the lower lane, so park the countdown in the unused right gutter. Its width
+   is derived from the dealt card's actual felt, keeping an explicit gap from
+   the theatre even on narrower landscape WebViews. This is positioning only:
+   the stage stays on the exact same centre before and after landing. */
+@media (orientation:landscape) and (max-height:340px){
+  :where(#kbroot) #ovWheel .dhold{position:absolute;right:var(--pad-x);top:50%;
+    width:min(132px,calc(50% - var(--card)*2.3 - var(--pad-x) - 8px));
+    margin:0;transform:translateY(-50%)}
+  :where(#kbroot) #ovWheel .dhold span{width:100%;min-height:0;line-height:1.35;text-align:center}
+  /* The translated settled line is a few pixels taller in the tightest lane.
+     Keep its pill inside the viewport while retaining clear air above title. */
+  :where(#kbroot) #ovWheel.dealing .wsettled{
+    top:calc((50% - var(--stage)/2 - 34px)/2 + 3px)}
+}

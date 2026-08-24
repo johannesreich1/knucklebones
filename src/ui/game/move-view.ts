@@ -13,6 +13,7 @@ import {
   type Player,
   type StrikeOutcome,
 } from '../../core/rules.ts';
+import { formatNumber } from '../../i18n/index.ts';
 import { S } from '../../state.ts';
 import { Sfx, vibrate } from '../audio.ts';
 import { setStageDie } from '../die.ts';
@@ -137,7 +138,7 @@ function stageDestruction(
   }
   /* The aggregate loss belongs to an actually destroyed die, not whichever
      survivor happens to be last in the stack. */
-  floatPts(who, plan.col, '−' + plan.lost, heatOf(who), plan.victims[0]);
+  floatPts(who, plan.col, '−' + formatNumber(plan.lost), heatOf(who), plan.victims[0]);
   return order;
 }
 
@@ -267,7 +268,7 @@ export async function animateGameMove(
 
   const gain = boardTotalMode(S.boards[who], S.scoring) - before;
   const multiplied = gain > die;
-  floatPts(who, col, '+' + gain, multiplied ? heatOf(who) : colorOf(who));
+  floatPts(who, col, '+' + formatNumber(gain), multiplied ? heatOf(who) : colorOf(who));
   if (multiplied && spec.celebrateMultiplier) {
     Sfx.mult();
     const rect = colEl(who, col)?.getBoundingClientRect();
@@ -338,7 +339,7 @@ export async function animateGameMove(
 
   if (S.scoring === BOUNTY && destroyed) {
     S.bounty[who] += destroyed;
-    floatPts(who, col, '+' + destroyed + ' ✦', heatOf(who));
+    floatPts(who, col, '+' + formatNumber(destroyed) + ' ✦', heatOf(who));
     renderSide(who, true);
   }
   if (spec.afterMoveMs) await pause(spec.afterMoveMs);

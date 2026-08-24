@@ -41,7 +41,7 @@ check(files.length > 0, 'no design cards were built', files.length);
 out.cards = files.length;
 
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 900, height: 600 } });
+const page = await browser.newPage({ viewport: { width: 900, height: 600 }, locale: 'en-US' });
 page.on('pageerror', (e) => errs.push('PAGEERROR: ' + e.message));
 page.on('console', (m) => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
 

@@ -13,6 +13,7 @@ import {
   type Player,
 } from '../../core/rules.ts';
 import { DICE_FACES } from '../../config.ts';
+import { formatNumber, t } from '../../i18n/index.ts';
 import { S } from '../../state.ts';
 import { $, chipEl, colEl, sideKey } from '../dom.ts';
 import { nameOf } from '../identity.ts';
@@ -39,7 +40,7 @@ export function updateScores(who: Player): void {
     const score = rowSwitch ? column.reduce((sum, value) => sum + value, 0) : colScore(column);
     const chip = chipEl(who, col);
     const scoreText = chip.querySelector<HTMLElement>('.cs')!;
-    scoreText.textContent = rowSwitch ? '' : String(score);
+    scoreText.textContent = rowSwitch ? '' : formatNumber(score);
     chip.classList.toggle('has', !rowSwitch && score > 0);
 
     const columnCounts = counts(column);
@@ -89,14 +90,35 @@ export function updateScores(who: Player): void {
     const regrown = setSealSpan(columnElement, span);
     if (!merged && (newShield || newWard || regrown)) playSealEngage(columnElement);
 
-    const free = SPEC.rows - column.length;
-    columnElement.setAttribute('aria-label',
-      nameOf(who) + ' column ' + (col + 1) + ', score ' + score + ', '
-      + (free ? free + ' space' + (free > 1 ? 's' : '') + ' free' : 'full'));
+    columnElement.setAttribute('aria-label', columnAriaLabel(who, col));
   }
 
   renderRowRail(who, rowSwitch, rowMultiply);
   renderTotal(who);
+}
+
+function columnAriaLabel(who: Player, col: number): string {
+  const column = S.boards[who][col];
+  const score = S.scoring === ROWSWITCH
+    ? column.reduce((sum, value) => sum + value, 0)
+    : colScore(column);
+  const free = SPEC.rows - column.length;
+  return free
+    ? t('game', 'board.columnAvailable', {
+      player: nameOf(who), column: formatNumber(col + 1), score: formatNumber(score), count: free,
+    })
+    : t('game', 'board.columnFull', {
+      player: nameOf(who), column: formatNumber(col + 1), score: formatNumber(score),
+    });
+}
+
+/** Locale-only repaint for the existing column nodes; no marks or dice move. */
+export function repaintScoreLocale(): void {
+  for (const who of [0, 1] as const satisfies readonly Player[]) {
+    for (let col = 0; col < SPEC.cols; col++) {
+      colEl(who, col)?.setAttribute('aria-label', columnAriaLabel(who, col));
+    }
+  }
 }
 
 function renderRowRail(who: Player, rowSwitch: boolean, rowMultiply: boolean): void {
@@ -119,7 +141,7 @@ function renderRowRail(who: Player, rowSwitch: boolean, rowMultiply: boolean): v
     }
     const value = rowSwitch ? rowScore(board, row) : bonus;
     element.querySelector<HTMLElement>('.cs')!.textContent = rowSwitch
-      ? String(value) : value ? String(value) : '';
+      ? formatNumber(value) : value ? formatNumber(value) : '';
     const multiplier = element.querySelector<HTMLElement>('.mx')!;
     multiplier.textContent = maxMultiplier >= 2 ? '×' + maxMultiplier : '';
     multiplier.classList.toggle('h3', maxMultiplier >= 3);
@@ -138,14 +160,15 @@ function renderTotal(who: Player): void {
     const value = active ? S.bounty[who] : 0;
     bounty.hidden = !active;
     bounty.style.visibility = value ? '' : 'hidden';
-    if (active) bounty.textContent = '✦' + value;
+    if (active) bounty.textContent = '✦' + formatNumber(value);
   }
 
   const total = totalOf(board, S.bounty[who], S.scoring);
   const score = $('#tot' + side);
   const plate = $('#plate' + side);
-  if (score.textContent === String(total)) return;
-  score.textContent = String(total);
+  const renderedTotal = formatNumber(total);
+  if (score.textContent === renderedTotal) return;
+  score.textContent = renderedTotal;
   plate.classList.add('bump');
   setTimeout(() => plate.classList.remove('bump'), 190);
 }

@@ -1,5 +1,5 @@
 export async function runAvailabilityScenarios(suite) {
-  const { page, out, check, SPELLS, newGame, waitChoose } = suite;
+  const { page, out, check, SPELLS, spellCopy, newGame, waitChoose } = suite;
 
   /* Every registry spell advertises real availability. The flow already asks
      each spec's legal() before arming. Pin the player-visible half of that
@@ -61,7 +61,7 @@ export async function runAvailabilityScenarios(suite) {
         && !available.opponentTurn && Math.abs(available.scale - 1) <= .002
         && available.opacity >= .99 && available.filter === 'grayscale(0)'
         && available.armed && available.aim === spell.id,
-      `${spell.name} did not look and behave activatable with a legal target`, available);
+      `${spellCopy(spell.id).name} did not look and behave activatable with a legal target`, available);
     if (!blockedFixtures.has(spell.id)) continue;
     const blocked = await availability(spell, true);
     out.spellAvailability[spell.id].blocked = blocked;
@@ -70,6 +70,6 @@ export async function runAvailabilityScenarios(suite) {
         && blocked.opacity >= .40 && blocked.opacity <= .44
         && blocked.filter === 'grayscale(0.6)' && /not available right now/i.test(blocked.aria || '')
         && !blocked.armed && blocked.aim === null,
-      `${spell.name} did not use the opponent-card cue when it had no legal target`, blocked);
+      `${spellCopy(spell.id).name} did not use the opponent-card cue when it had no legal target`, blocked);
   }
 }

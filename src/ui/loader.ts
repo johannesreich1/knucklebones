@@ -7,17 +7,22 @@
 // A wait that ends within the loader's .2s grace never shows at all (the
 // ldreveal animation in main.css) — a fast answer must not flash a die.
 import { dieMarkup, escapeMarkupText } from './die-markup.ts';
+import { t } from '../i18n/index.ts';
 
 export const loaderDieMarkup = (size = 44): string => dieMarkup(6, {
   classes: 'p1 ldclock',
   size,
   dataValue: true,
   role: 'img',
-  ariaLabel: 'Loading',
+  ariaLabel: t('common', 'states.loading'),
+  dataI18nAttr: 'aria-label=common:states.loading',
 });
 
-export const loaderWaitMarkup = (size = 44, label = 'Loading'): string =>
-  `<div class="ldwait">${loaderDieMarkup(size)}<div class="ldmsg">${escapeMarkupText(label)}</div></div>`;
+export const loaderWaitMarkup = (size = 44, label?: string): string => {
+  const message = label ?? t('common', 'states.loading');
+  const binding = label === undefined ? ' data-i18n="common:states.loading"' : '';
+  return `<div class="ldwait">${loaderDieMarkup(size)}<div class="ldmsg"${binding}>${escapeMarkupText(message)}</div></div>`;
+};
 
 function markupElement(markup: string): HTMLElement {
   const template = document.createElement('template');
@@ -31,6 +36,6 @@ export function loaderDie(size = 44): HTMLElement {
 }
 
 /* die + label, centred — the panel and full-page form */
-export function loaderWait(size = 44, label = 'Loading'): HTMLElement {
+export function loaderWait(size = 44, label?: string): HTMLElement {
   return markupElement(loaderWaitMarkup(size, label));
 }

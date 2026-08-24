@@ -1,6 +1,7 @@
 // NU1 — THE PIP LANDS. The shell stays planted; only the canonical face cells
 // that differ between the old and new values are allowed to move.
 import { S } from '../../state.ts';
+import { formatNumber } from '../../i18n/index.ts';
 import { Sfx, vibrate } from '../../ui/audio.ts';
 import { appRoot } from '../../ui/embed.ts';
 import { REDUCED } from '../../ui/fx.ts';
@@ -49,7 +50,7 @@ export const nudgeEffect: SpellEffect = async (_who, _column, apply) => {
   const newNumber = die.querySelector<HTMLElement>(':scope > .num');
   const oldNumber = newNumber?.cloneNode(false) as HTMLElement | undefined;
   if (newNumber && oldNumber) {
-    oldNumber.textContent = String(oldValue);
+    oldNumber.textContent = formatNumber(oldValue);
     oldNumber.classList.add('spell-nudge-number-old');
     oldNumber.setAttribute('aria-hidden', 'true');
     newNumber.classList.add('spell-nudge-number-new');

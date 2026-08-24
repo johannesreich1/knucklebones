@@ -2,6 +2,14 @@
 // existing UI/flow operations; no game rule lives here.
 import { type Mode as RulesMode } from '../core/rules.ts';
 import {
+  SUPPORTED_LOCALES,
+  effectiveLocale,
+  setLanguageOverride,
+  subscribeLocale,
+  t,
+} from '../i18n/index.ts';
+import { captureUserPreferences } from '../preferences.ts';
+import {
   DIFFS,
   DUELHUES,
   MODES,
@@ -38,10 +46,13 @@ import { loaderWait } from '../ui/loader.ts';
 import { bindLearnPageBack } from '../ui/learn-page.ts';
 import { tap } from '../ui/tap.ts';
 import { isEmbed } from '../ui/embed.ts';
+import { hueLabel } from '../ui/hue.ts';
 
 function syncUserSettings(): void {
-  if (!isEmbed()) void import('../online/preferences.ts').then(({ saveAccountPreferences }) =>
-    saveAccountPreferences());
+  if (isEmbed()) return;
+  const snapshot = captureUserPreferences();
+  void import('../online/preferences.ts').then(({ saveAccountPreferences }) =>
+    saveAccountPreferences(snapshot));
 }
 
 function closestButton(event: Event): HTMLButtonElement | null {
@@ -73,7 +84,6 @@ function pickerRow(
 ): () => void {
   const strip = $(selector);
   const info = $(selector + 'Info');
-  strip.innerHTML = pickerButtons(items);
   const sync = (): void => {
     const current = String(read());
     strip.querySelectorAll('button').forEach((button) => {
@@ -91,14 +101,28 @@ function pickerRow(
     Sfx.unlock();
     Sfx.tap();
   });
-  sync();
+  const refresh = (): void => {
+    const buttons = Array.from(strip.querySelectorAll<HTMLButtonElement>('button'));
+    const sameRegistry = buttons.length === items.length
+      && buttons.every((button, index) => button.dataset.v === items[index]?.v);
+    if (!sameRegistry) {
+      strip.innerHTML = pickerButtons(items);
+    } else {
+      /* Locale changes alter copy, not registry identity. Keep every button
+         (and therefore keyboard focus and the delegated gesture) in place. */
+      buttons.forEach((button, index) => button.setAttribute('aria-label', items[index].name));
+    }
+    sync();
+  };
+  subscribeLocale(refresh);
+  refresh();
   return sync;
 }
 
 function huePicker(selector: string, write: (hue: string) => void): void {
   const picker = $(selector);
   picker.innerHTML = DUELHUES.map((hue) =>
-    `<button data-h="${hue.id}" style="--h:var(--${hue.id})" aria-label="${hue.name}"></button>`).join('');
+    `<button data-h="${hue.id}" style="--h:var(--${hue.id})" aria-label="${hueLabel(hue.id)}"></button>`).join('');
   tap(picker, (event) => {
     const button = closestButton(event);
     const hue = button?.dataset.h;
@@ -111,6 +135,25 @@ function huePicker(selector: string, write: (hue: string) => void): void {
     Sfx.unlock();
     Sfx.tap();
   });
+}
+
+function bindLanguagePicker(): void {
+  const cycle = (step: -1 | 1): void => {
+    const current = SUPPORTED_LOCALES.indexOf(effectiveLocale());
+    const next = SUPPORTED_LOCALES[
+      (current + step + SUPPORTED_LOCALES.length) % SUPPORTED_LOCALES.length
+    ];
+    S.localeOverride = next;
+    setLanguageOverride(next);
+    syncSettingsUI();
+    updateRecord();
+    saveStats();
+    syncUserSettings();
+    Sfx.unlock();
+    Sfx.tap();
+  };
+  tap($('#languagePrevious'), () => cycle(-1));
+  tap($('#languageNext'), () => cycle(1));
 }
 
 export function bindMenus(root: HTMLElement): void {
@@ -150,14 +193,14 @@ export function bindMenus(root: HTMLElement): void {
     Sfx.tap();
     const ranked = leavingForfeits();
     const leave = await ask({
-      head: ranked ? 'Forfeit this match?' : 'Quit this duel?',
-      body: ranked
-        ? 'Leaving a ranked match loses it, and the points go with it.'
-        : 'The board is lost — offline duels are quick, and this one ends here.',
-      confirm: ranked ? 'Forfeit' : 'Quit duel',
-      cancel: 'Keep playing',
+      head: () => ranked ? t('game', 'leave.forfeitTitle') : t('game', 'leave.quitTitle'),
+      body: () => ranked
+        ? t('game', 'leave.forfeitBody')
+        : t('game', 'leave.quitBody'),
+      confirm: () => ranked ? t('game', 'leave.forfeit') : t('game', 'leave.quit'),
+      cancel: () => t('game', 'leave.keepPlaying'),
       alternate: !ranked && !S.tut
-        ? { label: 'Restart duel', run: restartLocal }
+        ? { label: () => t('game', 'leave.restart'), run: restartLocal }
         : undefined,
     });
     if (leave) { requestLeave(); toMenu(); }
@@ -186,6 +229,7 @@ export function bindMenus(root: HTMLElement): void {
 
   huePicker('#p1Pick', (hue) => { S.p1Hue = hue; });
   huePicker('#p2Pick', (hue) => { S.p2Hue = hue; });
+  bindLanguagePicker();
   syncSettingsUI();
   bindSegment('#cbSeg', 'b', (value) => { S.colorblind = value === '1'; }, true);
   bindSegment('#motionSeg', 'rm', (value) => { S.reducedMotion = value === '1'; }, true);

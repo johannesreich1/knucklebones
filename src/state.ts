@@ -2,27 +2,27 @@
 // Everything that renders, saves or decides reads from here; identity vs
 // screen-half is the invariant to keep straight (see S.bottom).
 import { AI, ME, emptyBoard, freshCharm, type Board, type CharmSt, type Player, type Mode as RulesMode } from './core/rules.ts';
+import type { LanguageOverride } from './i18n/index.ts';
 
 export const DIFFS = ['easy', 'medium', 'hard'] as const;
 export const MODES = ['cpu', 'duo'] as const;
 export const TIMERS = [0, 10, 20] as const;
 export const SEATS = ['pass', 'face'] as const;
-export const DIFF_LABEL: Record<string, string> = { easy: 'EASY', medium: 'NORMAL', hard: 'HARD' };
 /* The duel-colour roster (Settings pickers). Each id names a raw hue token
    family in styles/main.css (--<id>, --<id>-rgb, --<id>-hi); the pickers offer
    exactly this list and menu.ts points --p1/--p2 at the chosen families.
    Adding a hue = one entry here + its three tokens in main.css. */
 export const DUELHUES = [
-  { id: 'cy',     name: 'CYAN' },
-  { id: 'mg',     name: 'MAGENTA' },
-  { id: 'gold',   name: 'GOLD' },
-  { id: 'green',  name: 'GREEN' },
-  { id: 'violet', name: 'VIOLET' },
-  { id: 'orange', name: 'ORANGE' },
+  { id: 'cy' },
+  { id: 'mg' },
+  { id: 'gold' },
+  { id: 'green' },
+  { id: 'violet' },
+  { id: 'orange' },
   /* BLUE was added last (2026-08-22) and deliberately sits clear of the heat
      families: a player wearing it never pushes a multiplier onto its --ice /
      --red fallback, so both heats stay true on both sides. */
-  { id: 'blue',   name: 'BLUE' },
+  { id: 'blue' },
 ] as const;
 export const HUE_IDS = DUELHUES.map(h => h.id);
 
@@ -77,6 +77,9 @@ export const S = {
      flip. Not core/, so Math.random is allowed here — no replay validator has
      an opinion about an offline game. */
   starter: (Math.random() < 0.5 ? ME : AI) as Player,
+  /* null follows the current browser/device language. A concrete supported
+     base locale is the user's local and cross-device override. */
+  localeOverride: null as LanguageOverride,
   sound: true,
   /* the duel palette: which hue family (DUELHUES id) each side wears. Never
      equal — each picker disables the other side's pick. colorblind OVERRIDES

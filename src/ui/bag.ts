@@ -5,6 +5,7 @@
 // offline from its local bag), so the two can never drift apart.
 import { POOL_PER_FACE } from '../core/dice.ts';
 import { DICE_FACES } from '../config.ts';
+import { formatNumber } from '../i18n/index.ts';
 import { $ } from './dom.ts';
 
 export const BAG_SIZE = POOL_PER_FACE * DICE_FACES;   // 24 dice, one whole match
@@ -43,8 +44,16 @@ export function showBag(on: boolean): void {
 export function bagLeft(): number {
   const bag = $('#bagStack') as HTMLElement;
   if (bag.hidden) return -1;
-  const shown = Number(bag.querySelector('.bn')!.textContent);
+  const num = bag.querySelector('.bn') as HTMLElement;
+  const shown = Number(num.dataset.count ?? num.textContent);
   return Number.isFinite(shown) ? shown : -1;
+}
+
+/** Reformat the mounted count without replaying the draw animation. */
+export function repaintBagLocale(): void {
+  const num = $('#bagStack').querySelector('.bn') as HTMLElement;
+  const shown = Number(num.dataset.count ?? num.textContent);
+  if (Number.isFinite(shown)) num.textContent = formatNumber(shown);
 }
 
 /* left = dice still in the bag (the die in play has already been drawn).
@@ -54,12 +63,13 @@ export function renderBag(left: number, opts: { silent?: boolean } = {}): void {
   const bag = $('#bagStack') as HTMLElement;
   if (bag.hidden) return;
   const n = Math.max(0, left);
-  const num = bag.querySelector('.bn')!;
-  const was = Number(num.textContent);
+  const num = bag.querySelector('.bn') as HTMLElement;
+  const was = Number(num.dataset.count ?? num.textContent);
   const take = bag.querySelector('.take') as HTMLElement | null;
 
-  if (String(n) !== num.textContent) {
-    num.textContent = String(n);
+  if (n !== was) {
+    num.dataset.count = String(n);
+    num.textContent = formatNumber(n);
     bag.classList.remove('tick');
     take?.classList.remove('drawn');
     if (!opts.silent) {

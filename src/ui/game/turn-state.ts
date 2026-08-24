@@ -1,7 +1,8 @@
 // Player-to-screen ownership, status and live-turn presentation. This is the
 // seam shared by local and ranked drivers when a turn starts or settles.
 import { AI, ME, type Player } from '../../core/rules.ts';
-import { DIFF_LABEL, S } from '../../state.ts';
+import { t } from '../../i18n/index.ts';
+import { S } from '../../state.ts';
 import { $ } from '../dom.ts';
 import { nameOf } from '../identity.ts';
 import { buildBoards, renderAll } from './board.ts';
@@ -18,11 +19,7 @@ export function applySides(): void {
   const top = (1 - S.bottom) as Player;
   $('#sideBot').dataset.owner = String(bottom);
   $('#sideTop').dataset.owner = String(top);
-  $('#nameBot').textContent = nameOf(bottom);
-  $('#nameTop').textContent = nameOf(top);
-  const tag = $('#tagTop');
-  tag.hidden = !(S.mode === 'cpu' && top === AI);
-  tag.textContent = S.tut ? 'TUTORIAL' : DIFF_LABEL[S.diff];
+  repaintTurnLocale();
   $('#tagBot').hidden = true;
   setSeatingPresentation(S.mode === 'duo' && S.seat === 'face' ? 'face-to-face' : 'shared');
   buildBoards();
@@ -30,10 +27,45 @@ export function applySides(): void {
   setActivePlate();
 }
 
-export function setStatus(text: string, who: Player | null): void {
+/** Repaint locale-owned turn chrome without rebuilding either live board. */
+export function repaintTurnLocale(): void {
+  const bottom = S.bottom;
+  const top = (1 - S.bottom) as Player;
+  $('#nameBot').textContent = nameOf(bottom);
+  $('#nameTop').textContent = nameOf(top);
+  const tag = $('#tagTop');
+  tag.hidden = !(S.mode === 'cpu' && top === AI);
+  tag.textContent = S.tut ? t('game', 'difficulty.tutorial') : t('game', {
+    easy: 'difficulty.easy',
+    medium: 'difficulty.normal',
+    hard: 'difficulty.hard',
+  }[S.diff] as 'difficulty.easy' | 'difficulty.normal' | 'difficulty.hard');
+  repaintStatus();
+}
+
+export type StatusCopy = string | (() => string);
+let liveStatusCopy: (() => string) | null = null;
+let liveStatusWho: Player | null = null;
+
+function paintStatus(text: string, who: Player | null): void {
   const status = $('#status');
+  status.removeAttribute('data-i18n');
   status.textContent = text;
   status.className = 'status' + (who === ME ? ' me' : who === AI ? ' ai' : '');
+}
+
+function repaintStatus(): void {
+  if (liveStatusCopy) paintStatus(liveStatusCopy(), liveStatusWho);
+}
+
+/* A localized status is supplied as a zero-argument renderer. applySides()
+   runs on locale changes, so the live lane is repainted without guessing the
+   current turn's sentence from mutable game state. Raw strings remain useful
+   for server/user content and deliberately have no translation semantics. */
+export function setStatus(copy: StatusCopy, who: Player | null): void {
+  liveStatusCopy = typeof copy === 'function' ? copy : null;
+  liveStatusWho = who;
+  paintStatus(typeof copy === 'function' ? copy() : copy, who);
 }
 
 export function setActivePlate(viewer: Player | null = S.mode === 'cpu' ? ME : null): void {

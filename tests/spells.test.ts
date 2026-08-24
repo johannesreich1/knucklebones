@@ -22,7 +22,6 @@ const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m 
   check(!ids.includes('swap'), 'COLUMN SWAP retired 2026-08-21 (70.5% one-sided) — it must not return', ids);
   for (const s of SPELLS) {
     check(s.uses >= 1, 'a spell with no uses can never be cast: ' + s.id, s.uses);
-    check(!!s.name && !!s.blurb && !!s.detail && !!s.aim, 'spell missing its words: ' + s.id);
     check(s.target === 'column' || s.target === 'self', 'unknown target kind: ' + s.id, s.target);
   }
   check(spellById('nonsense') === null, 'unknown id is null, never a silent fallback');

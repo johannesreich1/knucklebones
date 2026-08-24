@@ -4,6 +4,7 @@
 // Every access is guarded: the game simply forgets between sessions there.
 import { S, DIFFS, MODES, TIMERS, SEATS, HUE_IDS, oneOf } from './state.ts';
 import { spellById, RANDOM_SPELL } from './core/spells.ts';
+import { isLanguageOverride, setLanguageOverride } from './i18n/index.ts';
 
 const Store = {
   KEY: 'knucklebones.v1',
@@ -19,6 +20,7 @@ export function saveStats(): void {
   Store.write({ wins: S.wins, losses: S.losses, draws: S.draws,
                 p1: S.p1, p2: S.p2, ties: S.ties,
                 best: S.best, diff: S.diff, mode: S.mode, sound: S.sound,
+                localeOverride: S.localeOverride,
                 numerals: S.numerals, timer: S.timer, seat: S.seat, tutDone: S.tutDone, played: S.played,
                 localMode: S.localMode, spell: S.spell,
                 p1Hue: S.p1Hue, p2Hue: S.p2Hue, colorblind: S.colorblind,
@@ -33,6 +35,8 @@ export function loadStats(): void {
   S.mode = oneOf(MODES, d.mode, S.mode);
   S.timer = oneOf(TIMERS, d.timer, S.timer);
   S.seat = oneOf(SEATS, d.seat, S.seat);
+  if (isLanguageOverride(d.localeOverride)) S.localeOverride = d.localeOverride;
+  setLanguageOverride(S.localeOverride);
   if (typeof d.sound === 'boolean') S.sound = d.sound;
   if (typeof d.numerals === 'boolean') S.numerals = d.numerals;
   S.p1Hue = oneOf(HUE_IDS, d.p1Hue, S.p1Hue);

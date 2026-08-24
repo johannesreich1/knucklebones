@@ -3,7 +3,8 @@ import { shot } from '../../../shot.mjs';
 export async function runInputAccessibilityScenarios(suite) {
   const { browser, devices, F, errs, out, check, markExperienced } = suite;
   // ================= RESUME =================
-  const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
+    locale: 'en-US' });
   await markExperienced(ctx);   // an experienced player: the first-run tutorial offer is test19's subject
   const p = await ctx.newPage();
   p.on('pageerror', e => errs.push('RESUME: ' + e.message));
@@ -20,7 +21,8 @@ export async function runInputAccessibilityScenarios(suite) {
     await p.waitForTimeout(1500);
   }
   // ================= PLACE ON RELEASE =================
-  const g = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+  const g = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
+    locale: 'en-US' });
   await markExperienced(g);   // an experienced player: the first-run tutorial offer is test19's subject
   // Paint a real cached profile avatar on Home without pulling the online
   // chunk into this offline presentation suite.

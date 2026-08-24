@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(13);
+select plan(22);
 
 select ok(
   not has_table_privilege('anon', 'public.player_settings', 'select'),
@@ -46,6 +46,42 @@ select is(
   1,
   'RLS reveals only the caller settings row'
 );
+select ok(
+  (select locale is null from public.player_settings),
+  'new and migrated settings follow the current device by default'
+);
+select lives_ok(
+  $$update public.player_settings set locale = 'en'
+     where user_id = '61000000-0000-0000-0000-000000000001'$$,
+  'English is a valid locale override'
+);
+select lives_ok(
+  $$update public.player_settings set locale = 'de'
+     where user_id = '61000000-0000-0000-0000-000000000001'$$,
+  'German is a valid locale override'
+);
+select lives_ok(
+  $$update public.player_settings set locale = 'fr'
+     where user_id = '61000000-0000-0000-0000-000000000001'$$,
+  'French is a valid locale override'
+);
+select throws_ok(
+  $$update public.player_settings set locale = 'en-US'
+     where user_id = '61000000-0000-0000-0000-000000000001'$$,
+  '23514', null,
+  'regional locale variants are rejected by the database'
+);
+select throws_ok(
+  $$update public.player_settings set locale = 'es'
+     where user_id = '61000000-0000-0000-0000-000000000001'$$,
+  '23514', null,
+  'unsupported locales are rejected by the database'
+);
+select lives_ok(
+  $$update public.player_settings set locale = null
+     where user_id = '61000000-0000-0000-0000-000000000001'$$,
+  'the locale override can return to the current device'
+);
 select throws_ok(
   $$update public.player_settings set p1_hue = 'pink'
      where user_id = '61000000-0000-0000-0000-000000000001'$$,
@@ -82,6 +118,19 @@ select is(
     where user_id = '61000000-0000-0000-0000-000000000001'),
   false,
   'the valid override was stored'
+);
+select ok(
+  (select locale is null from public.player_settings
+    where user_id = '61000000-0000-0000-0000-000000000001'),
+  'the automatic locale preference was stored'
+);
+delete from auth.users
+where id = '61000000-0000-0000-0000-000000000001';
+select is(
+  (select count(*)::integer from public.player_settings
+    where user_id = '61000000-0000-0000-0000-000000000001'),
+  0,
+  'deleting the account still removes its synchronized settings row'
 );
 
 select * from finish();

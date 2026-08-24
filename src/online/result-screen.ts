@@ -1,6 +1,7 @@
 import { inApex } from '../core/ladder.ts';
+import { formatNumber, t } from '../i18n/index.ts';
 import { hide } from '../ui/dom.ts';
-import { showEnd, setPlates } from '../ui/endscreen.ts';
+import { showLocalizedEnd, setPlates, type EndSpec } from '../ui/endscreen.ts';
 import { refreshHomeChip } from '../ui/homechip.ts';
 import {
   myLadder,
@@ -8,7 +9,7 @@ import {
   playerCard,
   type PlayerCard,
 } from './ladder-api.ts';
-import { showFaceoff, type MySide } from './ladder-screen.ts';
+import { showFaceoff, type MySide } from './faceoff.ts';
 import { cacheStanding, myProfile } from './session.ts';
 import type { FinishReport } from './play.ts';
 
@@ -25,9 +26,7 @@ export interface ResultScreen {
 export function createResultScreen(ports: ResultPorts): ResultScreen {
   async function show(report: FinishReport): Promise<void> {
     hide('#ovOnline');
-    const title = report.draw ? 'DEAD HEAT' : report.won ? 'VICTORY' : 'DEFEAT';
-    const deltaText = report.delta != null
-      ? ` · ${report.delta >= 0 ? '+' : ''}${report.delta} points` : '';
+    const opponentName = (): string => report.opponentName?.() ?? report.opp;
     let cache: {
       nickname?: string;
       rating?: number;
@@ -40,65 +39,85 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
     } catch { /* forgetful host */ }
     const cachedRating = typeof cache?.rating === 'number' && report.delta != null
       ? cache.rating + report.delta : null;
-    const plates = (
-      points: number | null,
-      rank: number | null,
-      apex: boolean,
-      foe: PlayerCard | null,
-      mine: MySide | null,
-    ) => [
+    let visiblePoints: number | null = cachedRating;
+    let visibleRank: number | null = cache?.rank ?? null;
+    let visibleApex = !!cache?.apex;
+    let visibleFoe: PlayerCard | null = null;
+    let visibleMine: MySide | null = null;
+
+    const plates = () => [
       {
-        name: cache?.nickname ?? 'You',
+        name: cache?.nickname ?? t('common', 'people.you'),
         avatar: cache?.avatar ?? null,
-        points,
-        rank,
-        apex,
+        points: visiblePoints,
+        rank: visibleRank,
+        apex: visibleApex,
         delta: report.delta,
         won: report.won,
         lost: !report.won && !report.draw,
         tap: ports.openProfile,
       },
       {
-        name: report.opp,
+        name: opponentName(),
         avatar: report.oppAvatar,
-        points: foe?.points ?? report.oppRating,
-        rank: foe?.rank ?? null,
-        apex: !!foe?.apex,
+        points: visibleFoe?.points ?? report.oppRating,
+        rank: visibleFoe?.rank ?? null,
+        apex: !!visibleFoe?.apex,
         theirs: true,
         won: !report.won && !report.draw,
         lost: report.won,
-        stamp: report.won ? (report.forfeit ? 'FORFEIT' : 'BEATEN') : undefined,
-        tap: foe && foe.points != null && foe.rank != null ? () => showFaceoff({
-          nickname: report.opp,
-          points: foe.points!,
-          wins: foe.wins ?? 0,
-          losses: foe.losses ?? 0,
-          games: foe.games ?? 0,
-          rank: foe.rank!,
-          apex: foe.apex,
+        stamp: report.won ? (report.forfeit
+          ? t('online', 'result.forfeitStamp') : t('online', 'result.beatenStamp')) : undefined,
+        tap: visibleFoe && visibleFoe.points != null && visibleFoe.rank != null ? () => showFaceoff({
+          nickname: opponentName(),
+          points: visibleFoe!.points!,
+          wins: visibleFoe!.wins ?? 0,
+          losses: visibleFoe!.losses ?? 0,
+          games: visibleFoe!.games ?? 0,
+          rank: visibleFoe!.rank!,
+          apex: visibleFoe!.apex,
           avatar: report.oppAvatar,
-          peak: foe.peak ?? 0,
-        }, mine) : undefined,
+          peak: visibleFoe!.peak ?? 0,
+        }, visibleMine) : undefined,
       },
     ];
-    showEnd({
-      outcome: report.draw ? 'draw' : report.won ? 'win' : 'lose',
-      title,
-      sub: report.forfeit ? (report.won ? report.opp + ' forfeited' : 'Match forfeited')
-        : report.draw ? 'Down to the last die'
-        : report.won ? 'You out-rolled ' + report.opp : report.opp + ' takes it',
-      you: { score: report.my, label: '' },
-      them: { score: report.their, label: '' },
-      plates: plates(cachedRating, cache?.rank ?? null, !!cache?.apex, null, null),
-      again: { label: 'Next duel', run: ports.nextDuel },
-      quiet: { label: 'Home', run: ports.goHome },
-      share: `${title} ${report.my}–${report.their} vs ${report.opp}${deltaText} — Knucklebones, ranked dice duels`,
-    });
+    const endSpec = (): EndSpec => {
+      const title = report.draw ? t('game', 'result.deadHeat')
+        : report.won ? t('game', 'result.victory') : t('game', 'result.defeat');
+      const deltaText = report.delta != null
+        ? t('online', 'result.delta', {
+          count: Math.abs(report.delta),
+          points: `${report.delta >= 0 ? '+' : ''}${formatNumber(report.delta)}`,
+        }) : '';
+      return {
+        outcome: report.draw ? 'draw' : report.won ? 'win' : 'lose',
+        title,
+        sub: report.forfeit ? (report.won
+          ? t('online', 'result.opponentForfeited', { opponent: opponentName() })
+          : t('online', 'result.matchForfeited'))
+          : report.draw ? t('online', 'result.lastDie')
+          : report.won ? t('online', 'result.outRolledOpponent', { opponent: opponentName() })
+          : t('online', 'result.opponentWins', { opponent: opponentName() }),
+        you: { score: report.my, label: '' },
+        them: { score: report.their, label: '' },
+        plates: plates(),
+        again: { label: t('online', 'result.nextDuel'), run: ports.nextDuel },
+        quiet: { label: t('common', 'actions.home'), run: ports.goHome },
+        share: t('online', 'result.share', {
+          title,
+          mine: formatNumber(report.my),
+          theirs: formatNumber(report.their),
+          opponent: opponentName(),
+          delta: deltaText,
+        }),
+      };
+    };
+    showLocalizedEnd(endSpec);
     const [profile, standing, ladder, foe] = await Promise.all([
       myProfile(),
       myStanding(),
       myLadder(),
-      playerCard(report.opp),
+      playerCard(opponentName()),
     ]);
     if (profile) {
       cache = {
@@ -115,7 +134,12 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
     const mine: MySide | null = profile && ladder
       ? { name: profile.nickname, avatar: profile.avatar ?? null, lad: ladder }
       : null;
-    setPlates(plates(points, standing?.rank ?? null, apex, foe, mine));
+    visiblePoints = points;
+    visibleRank = standing?.rank ?? null;
+    visibleApex = apex;
+    visibleFoe = foe;
+    visibleMine = mine;
+    setPlates(plates());
   }
 
   return { show };

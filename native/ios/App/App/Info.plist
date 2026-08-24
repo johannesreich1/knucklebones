@@ -4,8 +4,15 @@
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
+	<!-- Runtime catalogs are bundled in the WebView rather than .lproj folders. -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>de</string>
+		<string>fr</string>
+	</array>
 	<key>CFBundleDisplayName</key>
-	<string>Knucklebones Neon</string>
+	<string>Knucklebones</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

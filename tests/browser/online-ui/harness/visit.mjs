@@ -12,11 +12,13 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     door = 'chip',
     named = false,
     motion = null,
+    locale = 'en-US',
     probe = null,
   }) {
     // NO isMobile here: under WebKit it quietly disables page.route(), and a
     // stub that never fires would let this suite talk to the live backend.
     const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, hasTouch: true,
+                                           locale,
                                            ...(motion ? { reducedMotion: motion } : {}) });
     const page = await ctx.newPage();
     const errs = [];
@@ -87,8 +89,10 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
       }
       await page.click('#btnQueueCancel');
       await page.waitForTimeout(50);
+      const rootLang = await page.locator('html').getAttribute('lang');
       await ctx.close();
       return { queueLabel: samples, errs, signupCalls: signupCalls(),
+               rootLang,
                homeStyles: { before: homeBeforeOnline, after: homeAfterOnline } };
     }
 

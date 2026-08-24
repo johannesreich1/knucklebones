@@ -31,9 +31,10 @@ baseline every measurement is taken against.
 ## 2. The rules a mode may not break
 
 - **Both players play the same mode.** Asymmetry is a different game.
-- **It must be legible in one line.** Every mode carries a `blurb` that fits
-  under the wheel and a `detail` for the sheet. A mode that needs a paragraph
-  to explain is too complicated for a dice game you play on a phone.
+- **It must be legible in one line.** Every mode's catalog entry carries a
+  `blurb` that fits under the wheel and a `detail` for the sheet, keyed by its
+  stable mode id. A mode that needs a paragraph to explain is too complicated
+  for a dice game you play on a phone.
 - **It must be visible on the board.** A shielded column wears a 🛡; BOUNTY
   shows its ✦ tally; row modes hang a per-row rail; LIMITED counts the bag.
   A rule the player cannot see operating is a rule they will think is a bug.
@@ -46,10 +47,11 @@ baseline every measurement is taken against.
 
 ## 3. The registry
 
-One object in `core/modes.ts` is the whole mode: `mode` (numeric, used by
-rules and AI), `id` (stored in `matches.modifier` — **never rename**), `name`,
-`icon`, `blurb`, `detail`, `weight`. The wheel, the badge, the picker and the
-library never learn a mode's name.
+One object in `core/modes.ts` is the whole mode rule: `mode` (numeric, used by
+rules and AI), `id` (stored in `matches.modifier` — **never rename**), `icon`,
+and `weight`. Player-visible `name`, `compact`, `blurb`, and `detail` live in
+the localization catalogs under that same id. The wheel, badge, picker, and
+library ask the localization adapter for copy; core never learns a language.
 
 A mode carries **no seating opinion**. Who opens a ranked match is decided by
 rating alone — the lower-rated player — and that rule is the same in every mode.
@@ -60,10 +62,10 @@ balance question, and the ~3.4-point error it corrected is smaller than the
 confusion it added. The measurement is kept in `core/modes.ts` and
 `docs/LADDER.md` — as context, explicitly not as something to act on again.
 
-Adding a mode is: the registry entry, its branches in `core/rules.ts`
-(scoring, destruction, or supply), its heuristic in `core/ai.ts riskOf` if the
-loss maths differ, and its gate cases. Then **redeploy `pvp-join`** — it alone
-spins the wheel server-side.
+Adding a mode is: the registry entry, matching catalog copy in every supported
+locale, its branches in `core/rules.ts` (scoring, destruction, or supply), its
+heuristic in `core/ai.ts riskOf` if the loss maths differ, and its gate cases.
+Then **redeploy `pvp-join`** — it alone spins the wheel server-side.
 
 ## 4. Ranked odds
 
@@ -112,9 +114,10 @@ every colour blind player twice over. `tests/test21.mjs` pins all three cases
 in computed pixels, because nothing about a hard-coded colour looks broken
 until someone changes a setting.
 
-**The mode picker and the wheel must agree.** The offline picker, the ranked
-wheel, the match badge and the library all read the same registry. A card or
-screen that re-types a mode's blurb is a copy that will drift.
+**The mode picker and the wheel must agree.** The offline picker, ranked wheel,
+match badge, and library all read stable ids from the same rule registry and
+copy from the same localization adapter. A card or screen that re-types a
+mode's blurb is a copy that will drift.
 
 ## 6. Modes × spells
 

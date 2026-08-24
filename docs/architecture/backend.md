@@ -33,6 +33,23 @@ The repository currently uses imperative migrations. Do not introduce a
 declarative `supabase/schemas/` view until it can be reconciled against the
 complete live migration ledger and its generation workflow is documented.
 
+Remote schema rollout is an explicit owner operation. Compare history with
+`supabase migration list --linked`, preview pending work with
+`supabase db push --linked --dry-run`, then apply it with
+`supabase db push --linked`. `supabase db pull <name>` captures schema changes
+made remotely into a new local migration; it does not fetch application rows.
+Never delete or edit an already-applied migration to undo it—write and test a
+new forward migration that reverses the change.
+
+For a disposable local database, `supabase migration down --local --last 1`
+can step back and `supabase migration up --local` can reapply pending files;
+the repository gate normally prefers `supabase db reset --local` so the entire
+ledger is replayed from a clean database. Do not use `migration down --linked`
+or `db reset --linked` as a production rollback: those rebuild schema state
+and can destroy data. `migration fetch --linked` synchronizes migration
+history, while the production-match debug tools fetch gameplay rows; neither
+applies, removes, or reverses schema changes.
+
 ## Database and security rules
 
 - Every table exposed through the Data API has explicit grants and RLS.

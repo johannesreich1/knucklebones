@@ -9,6 +9,7 @@
 //
 // Pure and DOM-free, so it is offline-reachable and the design cards can
 // render it through the app itself.
+import { formatNumber, t } from '../i18n/index.ts';
 
 /* Two labelled numbers, the game's own way of putting a score side by side.
    The numbers carry .n1/.n2 rather than leaning on bare <b>/<i>: the HUD used
@@ -17,7 +18,7 @@
    place. The classes make the shape travel with the string; colour stays the
    landing site's business. */
 export const scoreLine = (aLabel: string, a: number, bLabel: string, b: number): string =>
-  `${aLabel} <b class="n1">${a}</b> · ${bLabel} <i class="n2">${b}</i>`;
+  `${aLabel} <b class="n1">${formatNumber(a)}</b> · ${bLabel} <i class="n2">${formatNumber(b)}</i>`;
 
 export const recordHtml = (wins: number, losses: number): string =>
-  scoreLine('W', wins, 'L', losses);
+  scoreLine(t('common', 'record.win'), wins, t('common', 'record.loss'), losses);

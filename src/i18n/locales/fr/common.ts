@@ -1,0 +1,61 @@
+import type { CatalogShape } from '../../catalog-shape.ts';
+import { enCommon } from '../en/common.ts';
+
+export const frCommon = {
+  app: {
+    name: 'KNUCKLEBONES',
+    edition: 'Édition Néon',
+    tagline: 'Duels de dés classés',
+  },
+  actions: {
+    back: 'Retour',
+    cancel: 'Annuler',
+    close: 'Fermer',
+    continue: 'Continuer',
+    done: 'Terminé',
+    finish: 'Finir',
+    home: 'Accueil',
+    next: 'Suivant',
+    notNow: 'Pas maintenant',
+    retry: 'Réessayer',
+    save: 'Enregistrer',
+  },
+  states: {
+    on: 'OUI',
+    off: 'NON',
+    none: 'AUCUN',
+    random: 'ALÉATOIRE',
+    loading: 'Chargement…',
+    unavailable: 'Indisponible',
+  },
+  people: {
+    you: 'VOUS',
+    opponent: 'ADVERSAIRE',
+    ai: 'IA',
+    playerOne: 'JOUEUR 1',
+    playerTwo: 'JOUEUR 2',
+    guest: 'INVITÉ',
+  },
+  record: {
+    win: 'V',
+    loss: 'D',
+    draw: 'N',
+    wins_one: '{{count}} victoire',
+    wins_other: '{{count}} victoires',
+    losses_one: '{{count}} défaite',
+    losses_other: '{{count}} défaites',
+    draws_one: '{{count}} égalité',
+    draws_other: '{{count}} égalités',
+  },
+  units: {
+    secondShort: 'SEC',
+    points_one: '{{count}} point',
+    points_other: '{{count}} points',
+    games_one: '{{count}} partie',
+    games_other: '{{count}} parties',
+    castsLeft_one: '{{count}} usage restant',
+    castsLeft_other: '{{count}} usages restants',
+  },
+  build: 'build {{tag}}',
+  versus: 'VS',
+} satisfies CatalogShape<typeof enCommon>;

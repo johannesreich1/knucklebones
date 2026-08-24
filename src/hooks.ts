@@ -12,6 +12,7 @@ import { renderAll } from './ui/game/board.ts';
 import { showHints } from './ui/game/hints.ts';
 import { applySides, setStatus, setActivePlate } from './ui/game/turn-state.ts';
 import { fit } from './ui/layout.ts';
+import { closeEnd, showEnd } from './ui/endscreen.ts';
 import { aiChoose, newGame, place } from './flow/game.ts';
 import {
   cast,
@@ -31,6 +32,7 @@ export function hooks(){
            applyMove, cloneSt, riskOf, nodes,
            sideKey, faceRotated, applySides, renderAll, showHints, setStageDie, loaderDie, setStatus, setActivePlate, nameOf,
            burst, get reduced(){ return REDUCED; }, fit,
+           showEnd, closeEnd,
            spells: {
              cast,
              arm,

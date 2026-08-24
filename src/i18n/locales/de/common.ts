@@ -1,0 +1,61 @@
+import type { CatalogShape } from '../../catalog-shape.ts';
+import { enCommon } from '../en/common.ts';
+
+export const deCommon = {
+  app: {
+    name: 'KNUCKLEBONES',
+    edition: 'Neon-Edition',
+    tagline: 'Ranglisten-Würfelduelle',
+  },
+  actions: {
+    back: 'Zurück',
+    cancel: 'Abbrechen',
+    close: 'Schließen',
+    continue: 'Weiter',
+    done: 'Fertig',
+    finish: 'Beenden',
+    home: 'Start',
+    next: 'Weiter',
+    notNow: 'Nicht jetzt',
+    retry: 'Erneut versuchen',
+    save: 'Speichern',
+  },
+  states: {
+    on: 'AN',
+    off: 'AUS',
+    none: 'KEINE',
+    random: 'ZUFALL',
+    loading: 'Wird geladen …',
+    unavailable: 'Nicht verfügbar',
+  },
+  people: {
+    you: 'DU',
+    opponent: 'GEGNER',
+    ai: 'KI',
+    playerOne: 'SPIELER 1',
+    playerTwo: 'SPIELER 2',
+    guest: 'GAST',
+  },
+  record: {
+    win: 'S',
+    loss: 'N',
+    draw: 'U',
+    wins_one: '{{count}} Sieg',
+    wins_other: '{{count}} Siege',
+    losses_one: '{{count}} Niederlage',
+    losses_other: '{{count}} Niederlagen',
+    draws_one: '{{count}} Unentschieden',
+    draws_other: '{{count}} Unentschieden',
+  },
+  units: {
+    secondShort: 'SEK',
+    points_one: '{{count}} Punkt',
+    points_other: '{{count}} Punkte',
+    games_one: '{{count}} Spiel',
+    games_other: '{{count}} Spiele',
+    castsLeft_one: '{{count}} Einsatz übrig',
+    castsLeft_other: '{{count}} Einsätze übrig',
+  },
+  build: 'Build {{tag}}',
+  versus: 'VS',
+} satisfies CatalogShape<typeof enCommon>;

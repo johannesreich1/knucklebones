@@ -2,6 +2,7 @@
 // screen halves. EVERY lookup goes through sideKey()/S.bottom — never assume
 // P1 is at the bottom (pass mode swaps halves, face mode doesn't).
 import { SPEC, AI, type Player } from '../core/rules.ts';
+import { t } from '../i18n/index.ts';
 import { S } from '../state.ts';
 import { fit } from './layout.ts';
 import { $ } from './query.ts';
@@ -139,6 +140,6 @@ export function stampBuild(): void {
   // A full-page build owns <html>; an embedded build owns only #kbroot. Read
   // the narrowest owner first so a widget never borrows (or mutates) its host's
   // release identity.
-  if (el) el.textContent = 'build ' + (root.dataset.build
-    || document.documentElement.dataset.build || 'dev');
+  if (el) el.textContent = t('common', 'build', { tag: root.dataset.build
+    || document.documentElement.dataset.build || 'dev' });
 }

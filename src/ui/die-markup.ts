@@ -52,6 +52,8 @@ export interface DieMarkupOptions {
   inlineStyle?: string;
   role?: string;
   ariaLabel?: string;
+  /** Optional static localization hook consumed by the app-owned DOM translator. */
+  dataI18nAttr?: string;
   dataValue?: boolean;
 }
 
@@ -68,6 +70,7 @@ export function dieMarkup(value: number, options: DieMarkupOptions): string {
     options.dataValue ? `data-v="${value}"` : '',
     options.role ? `role="${escapeAttribute(options.role)}"` : '',
     options.ariaLabel ? `aria-label="${escapeAttribute(options.ariaLabel)}"` : '',
+    options.dataI18nAttr ? `data-i18n-attr="${escapeAttribute(options.dataI18nAttr)}"` : '',
     declarations ? `style="${escapeAttribute(declarations)}"` : '',
   ].filter(Boolean).join(' ');
   return `<div ${attributes}>${pips}<b class="num" aria-hidden="true">${value}</b></div>`;

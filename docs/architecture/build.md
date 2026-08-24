@@ -69,12 +69,13 @@ from the shared vector generators, runs Capacitor Assets 3.0.5, and writes the
 tracked legacy, round, adaptive, monochrome, light, dark, portrait, and
 landscape resources without replacing the custom iOS appearance catalog.
 
-`APP_ID`, `NATIVE_APP_NAME`, `APPLE_SERVICE_ID`, and the Supabase-derived Apple
-callback in `src/config.ts` are the public sources of truth. Native files that
-cannot import TypeScript are consistency-gated copies. Only the native shell
-display name is **Knucklebones Neon**: the application id remains
-`com.appavaria.knucklebones`, and `GAME_NAME`, PWA metadata, URLs, and storage
-keys remain unchanged.
+`APP_ID`, `NATIVE_APP_NAME`, `NATIVE_STORE_NAME`, `APPLE_SERVICE_ID`, and the
+Supabase-derived Apple callback in `src/config.ts` are the public sources of
+truth. Native files that cannot import TypeScript are consistency-gated copies.
+The installed iOS and Android label is **Knucklebones**, while their App Store
+and Play listing name is **Knucklebones Neon**. The application id remains
+`com.appavaria.knucklebones`; PWA metadata, URLs, and storage keys remain
+unchanged.
 
 `native/package.json` and its lock pin Capacitor core/CLI/iOS/Android 8.5.0,
 Splash Screen 8.0.2, Capawesome Apple Sign-In 0.1.3, and Capacitor Assets 3.0.5.
@@ -89,12 +90,22 @@ entries do not import a native plugin.
 
 Android uses `com.appavaria.knucklebones` for both namespace and application
 id, minSdk 24, compile/target SDK 36, AGP 8.13.0, Gradle 8.14.3, and Java 21.
-Its initial release metadata is versionCode 1 and versionName `1.0`.
-API 36 is the Google Play submission target required for new apps and updates
-from August 31, 2026. Cleartext traffic and backups/device transfer are
-disabled, and the manifest requests only Internet access.
+Its initial release metadata is versionCode 1 and versionName `1.0`. The two
+SDK settings have deliberately different jobs: minSdk 24 is the install floor
+(Android 7.0), while targetSdk 36 opts into current platform behavior and does
+not exclude API 24–35 devices. API 24 is also Capacitor 8's supported Android
+floor. API 36 is the Google Play submission target required for new apps and
+updates from August 31, 2026. There is no maxSdk restriction. Framework
+attributes introduced after API 24 belong in version-qualified resources so a
+lint fix may never silently raise the install floor. Cleartext traffic and
+backups/device transfer are disabled, and the manifest requests only Internet
+access.
 
 ### Android signing and owner release
+
+This owner/store rehearsal is explicitly deferred as of 2026-08-24. The
+configuration remains release-gated below; an unsigned CI bundle is not a
+substitute for completing it before the first store submission.
 
 `npm run native:bundle:android` syncs Android, then invokes the guarded release
 builder. It requires ignored `native/android/keystore.properties` with all four

@@ -24,7 +24,8 @@ const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x
 
 // ===== 1. the reported bug: preview pills must not touch the turn text =====
 async function overlapCheck(w, h, label) {
-  const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+  const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: true,
+    isMobile: true, deviceScaleFactor: 2, locale: 'en-US' });
 await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
 await ctx.addInitScript(noSW);
   const p = await ctx.newPage();
@@ -77,7 +78,8 @@ for (const [k, r] of Object.entries(out)) {
 }
 
 // ===== 2. the turn clock =====
-const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
+  locale: 'en-US' });
 await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
 await ctx.addInitScript(noSW);
 const p = await ctx.newPage();

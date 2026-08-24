@@ -102,12 +102,17 @@ native/identity/startup contracts, CocoaPods plus an unsigned iOS simulator
 build, and the Android Gradle/AAB job. Repository gates do not replace device
 acceptance:
 
+Apple/Game Center device acceptance and both stores' signed-release rehearsals
+were explicitly deferred by the owner on 2026-08-24. They remain required
+release gates; the current shell-validation pass does not mark them complete.
+
 | Target | Required acceptance |
 |---|---|
 | iOS 15+ | Cold and warm launch in light and dark mode; branded splash continuity; safe areas; rotation; back navigation; resume; Apple attach and restore. |
 | Android API 24 | Cold/warm launch, splash continuity, safe areas, rotation, system back, resume, core offline/ranked navigation, and—once externally unblocked—Apple attach/restore on the minimum SDK. |
-| Android API 31 | Repeat every Android behavior, including Apple attach/restore once unblocked, across the Android 12 splash/edge-to-edge boundary. |
-| Android API 36 | Repeat every Android behavior, including Apple attach/restore once unblocked, on the Play target. |
+| Android API 31 | Repeat every Android behavior, including Apple attach/restore once unblocked, across the Android 12 system-splash boundary. |
+| Android API 35 | Repeat with enforced edge-to-edge, gesture and three-button navigation, cutouts, keyboard, and system-bar contrast. |
+| Android API 36 | Repeat every Android behavior, including predictive Back and Apple attach/restore once unblocked, on the Play target. |
 | Cross-platform identity | Attach or restore the same Apple identity on iOS and Android and prove it preserves the same Supabase user, profile, rating, and history. |
 
 Android Apple sign-in remains release-blocked until the associated iOS app with

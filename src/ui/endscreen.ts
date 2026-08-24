@@ -11,10 +11,11 @@
 // Adding a third context (a tournament, a daily) is another spec, not another
 // screen.
 import { $, show, hide } from './dom.ts';
+import { formatNumber, t } from '../i18n/index.ts';
 import { tap } from './tap.ts';
 import { Sfx, vibrate } from './audio.ts';
 import { fireworks } from './fx.ts';
-import { fillPlate, type PlateSpec } from './plate.ts';
+import { fillPlate, repaintPlateLocale, type PlateSpec } from './plate.ts';
 
 export interface EndAction { label: string; run: () => void }
 
@@ -49,7 +50,15 @@ export interface EndSpec {
    asks the current spec what it means. That is what lets one screen serve
    flows whose "Next duel" means completely different things. */
 let live: EndSpec | null = null;
+/* Localized results provide a fresh spec on demand. Locale repaint consumes
+   only its copy-bearing fields; outcome classes, plates, timing, focus, and
+   the one-time entrance theatre stay exactly where they are. */
+let localizedSpec: (() => EndSpec) | null = null;
 let shareText = '';
+type ShareFeedback = 'idle' | 'copied' | 'copyFailed';
+let shareFeedback: ShareFeedback = 'idle';
+let shareFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
+let presentationRevision = 0;
 /* the last deal, kept so the theatre can run again on a screen that was only
    covered — the plates are the one thing here that is worth a second showing */
 let dealt: EndPlate[] = [];
@@ -61,37 +70,45 @@ export function bindEnd(): void {
   tap($('#btnShare'), () => { Sfx.tap(); void shareResult(); });
 }
 
-export function showEnd(spec: EndSpec): void {
+function paintCopy(spec: EndSpec): void {
+  const title = $('#endTitle');
+  title.textContent = spec.title;
+  $('#endSub').textContent = spec.sub;
+  $('#endYou').textContent = formatNumber(spec.you.score);
+  $('#endCpu').textContent = formatNumber(spec.them.score);
+  $('#endYouLbl').textContent = spec.you.label;
+  $('#endCpuLbl').textContent = spec.them.label;
+  setMeta(spec.meta ?? '');
+  label('#btnAgain', spec.again);
+  label('#btnEndQuiet', spec.quiet);
+  shareText = spec.share ?? '';
+  const share = $('#btnShare') as HTMLButtonElement;
+  share.hidden = !spec.share;
+  paintShareFeedback();
+}
+
+function presentEnd(spec: EndSpec, localize: (() => EndSpec) | null): void {
+  presentationRevision++;
+  resetShareFeedback();
   live = spec;
-  const t = $('#endTitle');
-  t.textContent = spec.title;
-  t.className = spec.outcome;
+  localizedSpec = localize;
+  const title = $('#endTitle');
+  title.className = spec.outcome;
   // the SCREEN wears the outcome too: the entrance differs by it, and CSS
   // cannot ask a child which way this game went
   const ov = $('#ovEnd');
   ov.classList.remove('win', 'lose', 'draw', 'settled');
   ov.classList.add(spec.outcome);
-  $('#endSub').textContent = spec.sub;
-  $('#endYou').textContent = String(spec.you.score);
-  $('#endCpu').textContent = String(spec.them.score);
-  $('#endYouLbl').textContent = spec.you.label;
-  $('#endCpuLbl').textContent = spec.them.label;
-  setMeta(spec.meta ?? '');
+  paintCopy(spec);
   delete $('#endPlates').dataset.dealtAt;   // a NEW result: the stamp may slam again
   setPlates(spec.plates ?? []);
-  label('#btnAgain', spec.again);
-  label('#btnEndQuiet', spec.quiet);
-  shareText = spec.share ?? '';
-  const sh = $('#btnShare') as HTMLButtonElement;
-  sh.hidden = !spec.share;
-  sh.textContent = 'Share result';
   setTimeout(() => {
     show('#ovEnd');
     // restart the entrance: a class that is already there animates nothing
     replay(ov, 'enter');
     // the rise is clipped while it travels; once it lands, the clip (and the
     // glow it would otherwise crop into a box) can come back
-    t.addEventListener('animationend', () => ov.classList.add('settled'), { once: true });
+    title.addEventListener('animationend', () => ov.classList.add('settled'), { once: true });
     if (spec.outcome === 'win') {
       // into the screen's OWN layer: #fx sits below every overlay, so a
       // celebration drawn there would have burst behind this very screen
@@ -99,6 +116,50 @@ export function showEnd(spec: EndSpec): void {
       vibrate([20, 50, 20, 50, 60]);
     }
   }, spec.delay ?? 0);
+}
+
+export function showEnd(spec: EndSpec): void {
+  presentEnd(spec, null);
+}
+
+/* A localized caller owns how its copy is rebuilt. Repainting calls the
+   factory again and edits the existing result DOM in place; it never replays
+   showEnd's entrance, fireworks, plate deal, bindings, or delay. */
+export function showLocalizedEnd(makeSpec: () => EndSpec): void {
+  presentEnd(makeSpec(), makeSpec);
+}
+
+export function repaintEndLocale(): void {
+  if (!live) return;
+  let localizedPlates: EndPlate[] | undefined;
+  if (localizedSpec) {
+    const copy = localizedSpec();
+    localizedPlates = copy.plates;
+    live = {
+      ...live,
+      title: copy.title,
+      sub: copy.sub,
+      you: copy.you,
+      them: copy.them,
+      meta: copy.meta,
+      again: copy.again,
+      quiet: copy.quiet,
+      share: copy.share,
+    };
+    paintCopy(live);
+  } else {
+    /* A legacy caller may have corrected its meta late with setMeta(). Do not
+       restore the original HTML before that caller adopts the locale factory. */
+    $('#endYou').textContent = formatNumber(live.you.score);
+    $('#endCpu').textContent = formatNumber(live.them.score);
+    paintShareFeedback();
+  }
+  if (localizedPlates?.length === dealt.length) dealt = localizedPlates;
+  const box = $('#endPlates');
+  Array.from(box.children).forEach((plate, index) => {
+    const spec = dealt[index];
+    if (spec) repaintPlateLocale(plate as HTMLElement, { large: true, ...spec });
+  });
 }
 
 /* the context line can arrive LATE — ranked paints a points chip from cache and
@@ -147,7 +208,14 @@ export function replayPlates(): void {
   setPlates(dealt);
 }
 
-export function closeEnd(): void { hide('#ovEnd'); live = null; dealt = []; }
+export function closeEnd(): void {
+  hide('#ovEnd');
+  presentationRevision++;
+  resetShareFeedback();
+  live = null;
+  localizedSpec = null;
+  dealt = [];
+}
 
 function label(sel: string, a?: EndAction): void {
   const b = $(sel) as HTMLButtonElement;
@@ -163,12 +231,35 @@ function replay(el: HTMLElement, cls: string): void {
 }
 
 async function shareResult(): Promise<void> {
-  const b = $('#btnShare');
+  const revision = presentationRevision;
   const url = location.origin + location.pathname;
   try {
     if (navigator.share) { await navigator.share({ text: shareText, url }); return; }
     await navigator.clipboard.writeText(shareText + ' ' + url);
-    b.textContent = 'Copied!';
-  } catch { b.textContent = 'Copy failed'; }
-  setTimeout(() => { b.textContent = 'Share result'; }, 1500);
+    if (presentationRevision === revision) showShareFeedback('copied');
+  } catch {
+    if (presentationRevision === revision) showShareFeedback('copyFailed');
+  }
+}
+
+function paintShareFeedback(): void {
+  const key = shareFeedback === 'idle' ? 'result.share' : `result.${shareFeedback}` as const;
+  $('#btnShare').textContent = t('game', key);
+}
+
+function resetShareFeedback(): void {
+  if (shareFeedbackTimer !== null) clearTimeout(shareFeedbackTimer);
+  shareFeedbackTimer = null;
+  shareFeedback = 'idle';
+}
+
+function showShareFeedback(feedback: Exclude<ShareFeedback, 'idle'>): void {
+  resetShareFeedback();
+  shareFeedback = feedback;
+  paintShareFeedback();
+  shareFeedbackTimer = setTimeout(() => {
+    shareFeedbackTimer = null;
+    shareFeedback = 'idle';
+    paintShareFeedback();
+  }, 1500);
 }

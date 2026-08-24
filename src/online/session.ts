@@ -2,6 +2,7 @@
 // This module (and supabase-js with it) is loaded ONLY via dynamic import —
 // the offline game's boot path must never depend on it.
 import { callFunction, supa } from './client.ts';
+import { onlineMessage } from './message-copy.ts';
 
 export interface Profile { id: string; nickname: string; rating: number; created_at?: string; avatar?: string; named_at?: string | null; }
 
@@ -27,6 +28,26 @@ export interface Me { id: string; guest: boolean; email: string | null }
 const me = (u: { id: string; is_anonymous?: boolean; email?: string } | null | undefined): Me | null =>
   u ? { id: u.id, guest: !!u.is_anonymous && !u.email, email: u.email ?? null } : null;
 
+function providerErrorCode(error: unknown): string {
+  if (!error || typeof error !== 'object' || !('code' in error)) return '';
+  return String((error as { code?: unknown }).code ?? '').toLowerCase();
+}
+
+export function localizedAuthError(error: unknown): string | null {
+  if (!error) return null;
+  switch (providerErrorCode(error)) {
+    case 'invalid_credentials': return onlineMessage('errors.invalidCredentials');
+    case 'email_not_confirmed': return onlineMessage('errors.emailNotConfirmed');
+    case 'email_exists':
+    case 'user_already_exists': return onlineMessage('errors.emailInUse');
+    case 'weak_password': return onlineMessage('errors.weakPassword');
+    case 'email_address_invalid': return onlineMessage('errors.invalidEmail');
+    case 'over_email_send_rate_limit':
+    case 'over_request_rate_limit': return onlineMessage('errors.rateLimit');
+    default: return onlineMessage('errors.generic');
+  }
+}
+
 /* Signing up may or may not hand back a live session: with email confirmation
    REQUIRED the account waits for the link, with it optional Supabase signs the
    player straight in. Report which happened rather than assuming — "check your
@@ -34,11 +55,11 @@ const me = (u: { id: string; is_anonymous?: boolean; email?: string } | null | u
    inbox that never receives anything is a worse one. */
 export async function signUp(email: string, password: string): Promise<{ error: string | null; live: boolean }> {
   const { data, error } = await supa().auth.signUp({ email, password });
-  return { error: error ? error.message : null, live: !!data?.session };
+  return { error: localizedAuthError(error), live: !!data?.session };
 }
 export async function signIn(email: string, password: string): Promise<string | null> {
   const { error } = await supa().auth.signInWithPassword({ email, password });
-  return error ? error.message : null;
+  return localizedAuthError(error);
 }
 export async function signOut(): Promise<void> { await supa().auth.signOut(); clearProfileCache(); }
 /* Once a device has held a real account, silently minting a guest on the next
@@ -87,13 +108,13 @@ export async function attachEmail(email: string, password: string): Promise<stri
   if (!(await currentUser())) {
     const { error, live } = await signUp(email, password);
     if (error) return error;
-    return live ? null : 'Account created — confirm the link we sent, then sign in.';
+    return live ? null : onlineMessage('errors.accountCreatedConfirm');
   }
   const { data, error } = await supa().auth.updateUser({ email });
-  if (error) return error.message;
-  if (!data.user?.email) return 'Almost there — confirm the link we sent, then set your password.';
+  if (error) return localizedAuthError(error);
+  if (!data.user?.email) return onlineMessage('errors.confirmEmailThenPassword');
   const { error: pw } = await supa().auth.updateUser({ password });
-  return pw ? pw.message : null;
+  return localizedAuthError(pw);
 }
 
 /* ---- profile ---- */
@@ -134,13 +155,13 @@ function clearProfileCache(): void {
    backstop for a claim raced from two devices — the UI never offers a second. */
 export async function claimName(nickname: string): Promise<string | null> {
   const user = await currentUser();
-  if (!user) return 'not signed in';
+  if (!user) return onlineMessage('errors.notSignedIn');
   const { error } = await supa().from('profiles').update({ nickname }).eq('id', user.id);
   if (!error) return null;
-  return error.code === '23505' ? 'That name is taken — try another.'
-    : error.code === '23514' ? '3–16 letters, digits or underscores.'
-    : error.code === 'P0001' ? 'Your name is already set.'
-    : error.message;
+  return error.code === '23505' ? onlineMessage('errors.nameTaken')
+    : error.code === '23514' ? onlineMessage('profile.nameInvalid')
+    : error.code === 'P0001' ? onlineMessage('errors.nameAlreadySet')
+    : onlineMessage('errors.generic');
 }
 
 /* The avatar is a die face and a hue — "die:5:cy". 36 identities, no storage
@@ -148,9 +169,9 @@ export async function claimName(nickname: string): Promise<string | null> {
    The string shape is the seam: a later value can be "img:<path>". */
 export async function setAvatar(avatar: string): Promise<string | null> {
   const user = await currentUser();
-  if (!user) return 'not signed in';
+  if (!user) return onlineMessage('errors.notSignedIn');
   const { error } = await supa().from('profiles').update({ avatar }).eq('id', user.id);
-  if (error) return error.message;
+  if (error) return onlineMessage('errors.generic');
   clearProfileCache();
   return null;
 }
@@ -165,5 +186,7 @@ export async function deleteAccount(): Promise<string | null> {
     try { localStorage.removeItem(KNOWN); } catch { /* forgetful host */ }
     return null;
   }
-  return r.data?.error ?? 'delete failed';
+  return r.status === 401
+    ? onlineMessage('errors.notSignedIn')
+    : onlineMessage('errors.deleteFailed');
 }

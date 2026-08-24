@@ -9,6 +9,8 @@ import { clearHints } from '../ui/game/hints.ts';
 import { setNumeralPresentation, setOpponentTurnPresentation } from '../ui/game/root-state.ts';
 import { appRoot } from '../ui/embed.ts';
 import { REDUCED, setReducedMotion } from '../ui/fx.ts';
+import { effectiveLocale, localeSelfName, t } from '../i18n/index.ts';
+import { hueLabel } from '../ui/hue.ts';
 
 export interface MenuPorts {
   cancelPass: () => void;
@@ -36,7 +38,9 @@ export function syncSettingsUI(): void {
   $('#diffCard').hidden = duo;
   $('#seatCard').hidden = !duo;
   $('#timerCard').hidden = !duo;
-  $('#btnPlay').textContent = duo ? 'Play duel' : 'Play vs AI';
+  $('#btnPlay').textContent = duo
+    ? t('game', 'practice.playDuel')
+    : t('game', 'practice.playVersusAi');
   segOn('#modeSeg', 'm', S.mode);
   segOn('#diffSeg', 'd', S.diff);
   segOn('#timerSeg', 't', String(S.timer));
@@ -46,6 +50,10 @@ export function syncSettingsUI(): void {
   segOn('#cbSeg', 'b', S.colorblind ? '1' : '0');
   setReducedMotion(S.reducedMotion);
   segOn('#motionSeg', 'rm', REDUCED ? '1' : '0');
+  $('#languageLabel').textContent = t('settings', 'language');
+  $('#languagePrevious').setAttribute('aria-label', t('settings', 'previousLanguage'));
+  $('#languageNext').setAttribute('aria-label', t('settings', 'nextLanguage'));
+  $('#languageValue').textContent = localeSelfName(effectiveLocale());
 
   /* Colour blind mode overrides the displayed pair without changing the
      stored picks. Multiplier fallbacks remain distinct from each side. */
@@ -74,6 +82,9 @@ export function syncSettingsUI(): void {
   };
   syncPick('#p1Pick', p1, p2);
   syncPick('#p2Pick', p2, p1);
+  appRoot().querySelectorAll<HTMLButtonElement>('.hues button[data-h]').forEach((button) => {
+    if (button.dataset.h) button.setAttribute('aria-label', hueLabel(button.dataset.h));
+  });
   setNumeralPresentation(S.numerals);
   menuPorts.renderSpells();
 }

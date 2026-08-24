@@ -3,7 +3,8 @@ import { shot } from '../../../shot.mjs';
 export async function runLandscapeScenarios(suite) {
   const { browser, F, errs, out, check, markExperienced } = suite;
   // ================= LANDSCAPE =================
-  const land = await browser.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+  const land = await browser.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true,
+    isMobile: true, deviceScaleFactor: 2, locale: 'en-US' });
   await markExperienced(land);   // an experienced player: the first-run tutorial offer is test19's subject
   const lp = await land.newPage();
   lp.on('pageerror', e => errs.push('LAND: ' + e.message));

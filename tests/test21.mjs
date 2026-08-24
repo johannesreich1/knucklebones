@@ -23,7 +23,8 @@ const problems = [], out = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
 const lit = (c) => !!c && !/rgba\(0, 0, 0, 0\)|transparent/.test(c);
 try {
-  const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
+    locale: 'en-US' });
   await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });
   const page = await ctx.newPage();
   page.on('pageerror', e => problems.push('PAGEERROR: ' + e.message));

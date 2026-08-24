@@ -5,9 +5,8 @@ export const LEGAL_MARKUP = `<!-- LEGAL. Two PAGES below Home, not sheets: they 
      (design: 00-navigation). They floated over nothing — the sheet clothes were
      the same mistake Settings wore until 2026-08-21, and a bottom "Got it" is a
      navigation button at the bottom of a screen, which this app retired.
-     Everything factual here was verified against the code, not templated: ONE
-     outbound host, no analytics, no third-party scripts, four functional
-     localStorage keys. Anything in [BRACKETS] is Johannes's to fill. -->
+     Runtime services and storage statements below follow the current code.
+     The remaining bracketed email is a release blocker, not publishable copy. -->
 <div class="ov paged" id="ovImprint">
   <div class="shead">
     <button class="ico" id="btnImprintBack" aria-label="Back">‹</button>
@@ -15,20 +14,10 @@ export const LEGAL_MARKUP = `<!-- LEGAL. Two PAGES below Home, not sheets: they 
   </div>
   <div class="pbody">
   <div class="rules">
-    <h3>Angaben gemäß § 5 DDG</h3>
-    <p>[COMPANY / NAME]<br>[STREET]<br>[POSTCODE CITY]<br>[COUNTRY]</p>
+    <h3>Angaben gemäß § 18 Abs. 1 MStV</h3>
+    <p>Johannes Reich<br>Krumpterstr. 4<br>81543 München<br>Germany</p>
     <h3>Contact</h3>
-    <p>Email: [EMAIL]<br>Phone: [PHONE, optional]</p>
-    <h3>Represented by</h3>
-    <p>[MANAGING DIRECTOR / SOLE TRADER NAME]</p>
-    <h3>Register</h3>
-    <p>[REGISTER COURT AND NUMBER, if registered]<br>VAT ID under § 27a UStG: [VAT ID, if held]</p>
-    <h3>Responsible for content</h3>
-    <p>[NAME, ADDRESS] — under § 18 Abs. 2 MStV.</p>
-    <h3>Dispute resolution</h3>
-    <p>The European Commission provides a platform for online dispute resolution at
-       <b>ec.europa.eu/consumers/odr</b>. We are neither obliged nor willing to take part in
-       dispute resolution proceedings before a consumer arbitration board.</p>
+    <p>Email: [PUBLIC EMAIL REQUIRED BEFORE RELEASE]</p>
   </div>
   </div>
 </div>
@@ -41,33 +30,48 @@ export const LEGAL_MARKUP = `<!-- LEGAL. Two PAGES below Home, not sheets: they 
   <div class="pbody">
   <div class="rules">
     <h3>Who is responsible</h3>
-    <p>[COMPANY / NAME], [ADDRESS], [EMAIL]. See the Impressum for full details.</p>
+    <p>Johannes Reich, Krumpterstr. 4, 81543 München, Germany.<br>
+       Email: [PUBLIC EMAIL REQUIRED BEFORE RELEASE]. See the Impressum for full details.</p>
     <h3>What this game stores</h3>
-    <p>Playing offline stores nothing about you anywhere but on your own device. The moment
-       you play <b>ranked</b>, an account is created — silently, as a guest — and from then on
-       we hold: an account identifier, a nickname (generated for you, or the one you claim
-       once yourself), your rating, your game settings, and a record of the matches you played.
-       If you attach an email address to keep the account, we hold that too.</p>
+    <p>Offline gameplay, preferences, and statistics are not sent to Supabase; they remain on
+       your device. If you use the hosted web version, Cloudflare still receives the normal
+       request metadata needed to deliver the app. The moment you play <b>ranked</b>, an account
+       is created — silently, as a guest — and from then on we hold: an account identifier, a
+       nickname (generated for you, or the one you claim once yourself), your avatar choice,
+       rating and ladder record, game settings, and match and move history. If you attach an
+       email address to keep the account, Supabase Auth holds that too.</p>
     <h3>What leaves your device</h3>
-    <p>Exactly one service receives your data: <b>Supabase</b> (EU region), which stores accounts
-       and matches on our behalf. The app itself is delivered by <b>Cloudflare Pages</b>. Both
-       process your IP address in the course of doing that. There is <b>no analytics, no
-       advertising, no tracking of any kind</b>, and no third-party scripts run in this app.</p>
-    <h3>Cookies</h3>
-    <p>None. The game keeps four values in your browser's local storage — your session, a cached
-       copy of your own profile, your settings and your local statistics. All four are strictly
-       necessary for the game to work, so no consent banner is required and none is shown.</p>
+    <p>Ranked account, settings, ladder, and match data is sent to <b>Supabase</b>, which stores
+       it on our behalf and provides authentication, database, Edge Function, and Realtime
+       services. <b>Cloudflare Pages</b> delivers the hosted web version; the installed native
+       app loads bundled web assets instead. These providers may process your IP address,
+       device/browser information, and request metadata in operational and security logs when
+       you use their part of the service. We integrate <b>no advertising or behavioral-
+       analytics SDK</b> and run no remotely hosted marketing or analytics script.</p>
+    <h3>Device storage</h3>
+    <p>The game uses local storage for your session, a cached copy of your own profile, account
+       state, preferences, and local statistics. The hosted PWA also uses Cache Storage for
+       offline assets and a temporary session value for failed-chunk recovery. It does not use
+       advertising or marketing cookies.</p>
     <h3>Why we may do this</h3>
     <p>To provide the game you asked for (Art. 6(1)(b) GDPR) and to keep the service from being
        abused, e.g. rate limits on account creation (Art. 6(1)(f) GDPR).</p>
     <h3>How long</h3>
-    <p>For as long as the account exists. <b>You can delete it at any time</b> — Account →
-       Delete account removes your profile, settings, matches and rating outright. Guest accounts
-       that never played a match are cleared automatically after 30 days.</p>
+    <p>Guest and attached accounts are retained until they are deleted. <b>You can delete your
+       account at any time</b> — Account → Delete account removes the hosted profile, settings,
+       matches and rating. Local preferences and statistics remain on the device until you clear
+       the app or site data. Provider security logs and backups follow their separately stated
+       retention periods.</p>
+    <h3>What other players see</h3>
+    <p>Your nickname, avatar, rank, current and peak rating/points, wins, losses, games played,
+       best streak, member-since date, and ranked match results may be shown to opponents or
+       anyone viewing the in-game ladder and player cards. Your detailed match history is shown
+       only to you and the players who took part in those matches.</p>
     <h3>Your rights</h3>
     <p>You may request access, correction, erasure, restriction, portability, and object to
-       processing. Write to [EMAIL]. You may also complain to a supervisory authority —
-       for us that is [SUPERVISORY AUTHORITY].</p>
+       processing. Write to [PUBLIC EMAIL REQUIRED BEFORE RELEASE]. You may also complain to a
+       supervisory authority. The competent authority for this controller is the Bayerisches
+       Landesamt für Datenschutzaufsicht (BayLDA), Promenade 18, 91522 Ansbach, Germany.</p>
   </div>
   </div>
 </div>`;

@@ -1,0 +1,42 @@
+/* Settings' locale cycle: equal arrow columns keep the current language on
+   the card's true centre even when one translated name is wider than another. */
+:where(#kbroot) .language-picker{
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr) 44px;
+  align-items:center;
+  gap:8px;
+  width:100%;
+}
+:where(#kbroot) .language-picker button{
+  display:grid;
+  place-items:center;
+  width:44px;
+  height:44px;
+  padding:0;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:12px;
+  background:rgba(255,255,255,.04);
+  color:var(--txt);
+  font-family:inherit;
+  font-size:24px;
+  font-weight:800;
+  line-height:1;
+  cursor:pointer;
+}
+:where(#kbroot) .language-picker button:focus-visible{
+  outline:2px solid var(--p1);
+  outline-offset:2px;
+}
+:where(#kbroot) .language-picker__value{
+  display:grid;
+  place-items:center;
+  min-width:0;
+  min-height:44px;
+  color:var(--txt);
+  font-size:13px;
+  font-weight:800;
+  letter-spacing:.08em;
+  line-height:1.25;
+  text-align:center;
+  white-space:nowrap;
+}

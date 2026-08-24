@@ -1,6 +1,4 @@
-// Online play drives the shared board and animation, while the server owns the
-// turn machine: every die and move comes from it, and the die-carrying log lets
-// this client rebuild after any missed Realtime event.
+// Shared ranked view; the server owns turns and its die-carrying log heals missed events.
 import { ME, CLASSIC, BOUNTY, LIMITED, emptyBoard, applyMove, legalCols, type Player } from '../core/rules.ts';
 import { modeById } from '../core/modes.ts';
 import { ONLINE_TURN_SECS } from '../config.ts';
@@ -12,7 +10,7 @@ import { $, show, hide } from '../ui/dom.ts';
 import { showBag, renderBag, BAG_SIZE } from '../ui/bag.ts';
 import { buildBoards, renderAll } from '../ui/game/board.ts';
 import { clearHints, showHints } from '../ui/game/hints.ts';
-import { claimBadge, releaseBadge, modeChip } from '../ui/game/hud.ts';
+import { claimBadge, releaseBadge } from '../ui/game/hud.ts';
 import { setActivePlate, setStatus } from '../ui/game/turn-state.ts';
 import { fit } from '../ui/layout.ts';
 import { setPlaceHandler } from '../ui/input.ts';
@@ -23,19 +21,21 @@ import { createInitialSyncBoundary, type InitialSyncBoundary } from './initial-s
 import { readMatchSyncSnapshot } from './match-sync.ts';
 import { animateOnlineMove, cancelOnlineReveal, playBotReply, revealOnlineDie } from './play-motion.ts';
 import { finishOnlineMatch } from './play-finish.ts';
+import { rankedBadge, reconnectingCopy, showAwayAutoPlayCountdown, turnCopy } from './play-copy.ts';
+import { createOnlineState } from './play-state.ts';
+import { claimOnlinePlayerNames, onlineOpponentName, onlineOpponentSeat, onlinePlayerName } from './play-identity.ts';
 import type { FinishReport, OnlineState } from './play-types.ts';
 
 let O: OnlineState | null = null, initialSync: InitialSyncBoundary | null = null;
-
+let releasePlayerNames = (): void => undefined;
 function isCurrentOnline(online: OnlineState): boolean { return O === online && S.gen === online.gen; }
 
 /* test hook, same philosophy as window.__kb: harmless introspection */
 if (typeof window !== 'undefined') (window as any).__kbOnline = () => O
   && { matchId: O.matchId, you: O.you, applied: O.applied, done: O.done };
 
-const oppSeat = () => O!.you === ME ? 'p2' as const : 'p1' as const;
-const myName = () => O!.you === ME ? O!.names.p1 : O!.names.p2;
-const oppName = () => O!.names[oppSeat()];
+const myName = () => onlinePlayerName(O!, O!.you);
+const oppName = () => onlineOpponentName(O!)();
 
 /* one callback per match end, wired by ui.ts to open the Result screen */
 export type { FinishReport } from './play-types.ts';
@@ -65,12 +65,8 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   S.boards = [emptyBoard(), emptyBoard()];
   S.turn = res.match.turn;
   S.bottom = res.you;
-  O = {
-    matchId: res.match.id, you: res.you, names: res.names ?? { p1: 'PLAYER 1', p2: 'PLAYER 2' },
-    pendingDie: res.match.next_die, applied: 0, gen: S.gen,
-    channel: null, tick: null, lastMoveAt: Date.parse(res.match.last_move_at), busySync: false, animating: false, pendingRow: null, done: false,
-    limited: false,
-  };
+  O = createOnlineState(res, S.gen);
+  releasePlayerNames = claimOnlinePlayerNames(() => O);
   const online = O;
 
   const spec = modeById(res.match.modifier);
@@ -96,7 +92,7 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   // the badge names where you are and what is being played; boot's one binding
   // makes the mode chip open its rules, offline and online alike. The mode is
   // named in classic too — "ONLINE" says nothing about how this game scores.
-  claimBadge([{ html: 'ONLINE' }, modeChip(spec)]);
+  claimBadge(rankedBadge(spec));
   fit();
   buildBoards();
   setPlaceHandler(onlinePlace);
@@ -108,7 +104,10 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
 
   initialSync = createInitialSyncBoundary({
     sync: () => sync(true), owns: () => isCurrentOnline(online), onReady: refreshTurnUI,
-    onWaiting: () => { S.busy = true; setStatus('Reconnecting…', S.turn); },
+    onWaiting: () => {
+      S.busy = true;
+      setStatus(reconnectingCopy, S.turn);
+    },
   });
   await initialSync.start();
 }
@@ -129,7 +128,7 @@ function refreshTurnUI(): void {
   if (O.pendingDie) revealOnlineDie(O.pendingDie, S.turn);
   renderPool();
   // a calm static status — the countdown bar below carries the motion
-  setStatus(mine ? 'Your move' : oppName() + ' thinking', S.turn);
+  setStatus(turnCopy(mine, () => oppName()), S.turn);
   setActivePlate(O.you);
   clearHints();
   if (mine) showHints();
@@ -141,16 +140,12 @@ function refreshTurnUI(): void {
 /* their clock ran out: say so and let the watchdog decide if they are gone */
 function oppStalled(): void {
   if (!O || O.done) return;
-  /* An open-ended "waiting" is indistinguishable from a hang. Say what is about
-     to happen and count it down, so the pause has a shape. */
-  const tick = (): void => {
-    if (!O || O.done || S.turn === O.you) return;
-    const left = Math.max(0, Math.ceil((13_000 - (Date.now() - O.lastMoveAt)) / 1000));
-    setStatus(left > 0 ? 'Away — auto play in ' + left
-                       : 'Auto play…', S.turn);
-    if (left > 0) setTimeout(tick, 500);
-  };
-  tick();
+  const online = O;
+  showAwayAutoPlayCountdown({
+    active: () => isCurrentOnline(online) && !online.done && S.turn !== online.you,
+    lastMoveAt: () => online.lastMoveAt,
+    who: S.turn,
+  });
 }
 
 function autoPlace(): void {
@@ -202,7 +197,7 @@ async function onlinePlace(who: Player, col: number): Promise<void> {
     if (bot) await playBotReply(bot, {
       you: online.you,
       isCurrent: () => isCurrentOnline(online),
-      opponentName: oppName(),
+      opponentName: () => oppName(),
       onOpponentStalled: oppStalled,
     });
   } finally { if (isCurrentOnline(online)) online.animating = false; }
@@ -323,11 +318,12 @@ async function watchdog(): Promise<void> {
 function finishUI(m: MatchRow): void {
   if (!O || O.done) return;
   const finished = O;
+  const opponentSeat = onlineOpponentSeat(finished);
   finishOnlineMatch({
     online: finished,
     match: m,
-    opponentName: oppName(),
-    opponentSeat: oppSeat(),
+    opponentName: onlineOpponentName(finished),
+    opponentSeat,
     isCurrent: () => isCurrentOnline(finished),
     teardown,
     onFinished,
@@ -346,5 +342,7 @@ export function teardown(): void {
   showBag(false);
   showClock(false);
   if (ownsPresentation) setOpponentTurnPresentation(false);
+  releasePlayerNames();
+  releasePlayerNames = (): void => undefined;
   O = null;
 }

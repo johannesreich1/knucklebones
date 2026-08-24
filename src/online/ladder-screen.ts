@@ -1,29 +1,26 @@
-import { groupFill, boardGroup, rk } from '../core/ladder.ts';
+import { groupFill, boardGroup } from '../core/ladder.ts';
+import {
+  formatNumber,
+  ladderGroupName,
+  subscribeLocale,
+  t,
+} from '../i18n/index.ts';
 import { Sfx } from '../ui/audio.ts';
 import { $ } from '../ui/dom.ts';
-import { loaderDie, loaderWait } from '../ui/loader.ts';
+import { loaderWait } from '../ui/loader.ts';
 import { paintAvatar } from '../ui/avatar.ts';
 import { recordHtml } from '../ui/record.ts';
-import { showSheet } from '../ui/sheet.ts';
 import {
   leaderboard,
   leaderboardBefore,
   myLadder,
   myStanding,
-  bestStreak,
-  playerCard,
-  type Ladder,
   type LeaderboardRow,
 } from './ladder-api.ts';
 import { myProfile } from './session.ts';
-import { esc, pts } from './format.ts';
+import { esc, pts, rank } from './format.ts';
+import { showFaceoff } from './faceoff.ts';
 import { showOnlinePanel } from './shell.ts';
-
-export interface MySide {
-  name: string;
-  avatar: string | null;
-  lad: Ladder;
-}
 
 interface LadderPorts {
   showAccount(): Promise<void>;
@@ -36,12 +33,19 @@ export interface LadderScreen {
 }
 
 const gapHtml = (distance: number): string =>
-  distance > 0 ? `<span class="gap"><b>+${pts(distance)}</b> on you</span>`
-  : distance < 0 ? `<span class="gap"><b class="down">−${pts(-distance)}</b> behind</span>`
-  : '<span class="gap">level with you</span>';
+  distance > 0 ? `<span class="gap"><b>${esc(t('online', 'ladder.onYou', { points: pts(distance) }))}</b></span>`
+  : distance < 0 ? `<span class="gap"><b class="down">${esc(t('online', 'ladder.behind', { points: pts(-distance) }))}</b></span>`
+  : `<span class="gap">${esc(t('online', 'ladder.levelWithYou'))}</span>`;
 
 export function createLadderScreen(ports: LadderPorts): LadderScreen {
+  let paintVisible: (() => void) | null = null;
+  subscribeLocale(() => {
+    const panel = document.getElementById('onBoard');
+    if (panel && !panel.hidden) paintVisible?.();
+  });
+
   async function show(): Promise<void> {
+    paintVisible = null;
     showOnlinePanel('onBoard');
     const list = $('#onBoardList');
     list.innerHTML = '';
@@ -64,12 +68,77 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
     } else {
       rows = await leaderboard(PAGE);
     }
-    list.innerHTML = rows.length ? '' : '<div class="row">No ranked games yet — be the first!</div>';
+    list.innerHTML = '';
+    let empty: HTMLElement | null = null;
+    if (!rows.length) {
+      empty = document.createElement('div');
+      empty.className = 'row';
+      list.appendChild(empty);
+    }
     const myRow = me ? rows.find((row) => row.nickname === me.nickname) ?? null : null;
     const myGroup = myRow
       ? boardGroup(myRow.points, myRow.apex)
       : ladder ? boardGroup(ladder.points, false) : null;
     let meElement: HTMLElement | null = null;
+    const rowViews: Array<{
+      button: HTMLButtonElement;
+      row: LeaderboardRow;
+      group: ReturnType<typeof boardGroup>;
+      isMe: boolean;
+    }> = [];
+    const horizonViews: Array<{
+      element: HTMLElement;
+      group: ReturnType<typeof boardGroup>;
+    }> = [];
+
+    const paintRow = (view: typeof rowViews[number]): void => {
+      const { button, row, group, isMe } = view;
+      const groupName = ladderGroupName(group.id);
+      button.setAttribute('aria-label', isMe
+        ? t('online', 'ladder.openProfile', {
+          name: row.nickname,
+          rank: rank(row.rank),
+          group: groupName,
+        })
+        : t('online', 'ladder.comparePlayer', {
+          name: row.nickname,
+          rank: rank(row.rank),
+          group: groupName,
+          points: pts(row.points),
+        }));
+      if (isMe) {
+        const state = row.apex ? t('online', 'ladder.topOnePercent')
+          : t('online', 'ladder.progress', {
+            percent: formatNumber(Math.round(groupFill(row.points) * 100)),
+          });
+        button.innerHTML = `<span class="av"></span><span class="nmwrap"><span class="nm">${esc(row.nickname)}</span>`
+          + `<span class="mesub"><b>${esc(groupName)}</b> · ${esc(state)} · ${recordHtml(row.wins, row.losses)}</span></span>`
+          + `<span class="ptcol"><span class="pt2">${pts(row.points)}</span><span class="rk2">${esc(t('online', 'ladder.rank', { rank: rank(row.rank) }))}</span></span>`;
+      } else {
+        const middle = ladder ? gapHtml(row.points - ladder.points)
+          : `<span class="ws">${recordHtml(row.wins, row.losses)}</span>`;
+        button.innerHTML = `<span class="rank">${formatNumber(row.rank)}</span><span class="av"></span>`
+          + `<span class="nm">${esc(row.nickname)}</span>${middle}<span class="rt">${pts(row.points)}</span>`;
+      }
+      paintAvatar(button.querySelector('.av') as HTMLElement, row.avatar, isMe ? 34 : 24);
+    };
+
+    const paintHorizon = (view: typeof horizonViews[number]): void => {
+      const { element, group } = view;
+      const sub = group.id === 'neon' ? t('online', 'ladder.topOnePercent')
+        : group.floor === 0 ? t('online', 'ladder.floorZero')
+        : t('online', 'ladder.andUp', { points: pts(group.floor) });
+      element.innerHTML = `<span class="gn">${esc(ladderGroupName(group.id))}</span>`
+        + `<span class="gf">${esc(sub)}${ladder && myGroup === group
+          ? ` · ${esc(t('online', 'ladder.yourGroup'))}` : ''}</span>`;
+    };
+
+    paintVisible = (): void => {
+      if (empty) empty.textContent = t('online', 'ladder.empty');
+      for (const view of rowViews) paintRow(view);
+      for (const view of horizonViews) paintHorizon(view);
+    };
+    paintVisible();
 
     const rowElement = (
       row: LeaderboardRow,
@@ -80,22 +149,10 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
       button.type = 'button';
       button.className = 'lrow' + (isMe ? ' me' : '');
       button.style.setProperty('--gc', `var(--g-${group.id})`);
-      button.setAttribute('aria-label', isMe
-        ? `${row.nickname} — you, rank ${row.rank}, ${group.name}. Open your profile`
-        : `${row.nickname}, rank ${row.rank}, ${group.name}, ${pts(row.points)} points. Compare`);
-      if (isMe) {
-        const state = row.apex ? 'top 1%' : `${Math.round(groupFill(row.points) * 100)}% through`;
-        button.innerHTML = `<span class="av"></span><span class="nmwrap"><span class="nm">${esc(row.nickname)}</span>`
-          + `<span class="mesub"><b>${group.name}</b> · ${state} · ${recordHtml(row.wins, row.losses)}</span></span>`
-          + `<span class="ptcol"><span class="pt2">${pts(row.points)}</span><span class="rk2">Rank ${rk(row.rank)}</span></span>`;
-        meElement = button;
-      } else {
-        const middle = ladder ? gapHtml(row.points - ladder.points)
-          : `<span class="ws">${recordHtml(row.wins, row.losses)}</span>`;
-        button.innerHTML = `<span class="rank">${row.rank}</span><span class="av"></span>`
-          + `<span class="nm">${esc(row.nickname)}</span>${middle}<span class="rt">${pts(row.points)}</span>`;
-      }
-      paintAvatar(button.querySelector('.av') as HTMLElement, row.avatar, isMe ? 34 : 24);
+      const view = { button, row, group, isMe };
+      rowViews.push(view);
+      paintRow(view);
+      if (isMe) meElement = button;
       button.addEventListener('click', () => {
         Sfx.tap();
         if (isMe) {
@@ -118,11 +175,9 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
       const horizon = document.createElement('div');
       horizon.className = 'ghor' + (group.id === 'neon' ? ' apex' : '');
       horizon.style.setProperty('--gc', `var(--g-${group.id})`);
-      const sub = group.id === 'neon' ? 'top 1%'
-        : group.floor === 0 ? 'the floor is 0'
-        : `${pts(group.floor)} and up`;
-      horizon.innerHTML = `<span class="gn">${group.name}</span>`
-        + `<span class="gf">${sub}${ladder && myGroup === group ? ' · your group' : ''}</span>`;
+      const view = { element: horizon, group };
+      horizonViews.push(view);
+      paintHorizon(view);
       horizon.dataset.g = group.id;
       return horizon;
     };
@@ -220,55 +275,4 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
   }
 
   return { show };
-}
-
-export function showFaceoff(row: LeaderboardRow, mine: MySide | null): void {
-  const group = boardGroup(row.points, row.apex);
-  const myGroup = mine ? boardGroup(mine.lad.points, false) : null;
-  const myGames = mine ? mine.lad.wins + mine.lad.losses + mine.lad.draws : 0;
-  const rate = (wins: number, games: number): string => games
-    ? Math.round((wins / games) * 100) + '%' : '–';
-  const stat = (key: string, theirs: string, ours?: string | false | null): string =>
-    `<div class="fost"><span class="a">${theirs}</span><span class="k">${key}</span>`
-    + (mine ? `<span class="b">${ours || '–'}</span>` : '') + '</div>';
-  const { ov } = showSheet({
-    cls: mine ? undefined : 'solo',
-    label: row.nickname,
-    body: `<div class="focols dice-static">
-      <div class="focol" style="--gc:var(--g-${group.id})">
-        <span class="av"></span><span class="fnm">${esc(row.nickname)}</span>
-        <span class="gpill">${group.name} · ${rk(row.rank)}</span>
-      </div>` + (mine ? `
-      <span class="fovs">VS</span>
-      <div class="focol you" style="--gc:var(--g-${myGroup!.id})">
-        <span class="av"></span><span class="fnm">${esc(mine.name)}</span>
-        <span class="gpill">${myGroup!.name}</span>
-      </div>` : '') + `
-    </div>
-    <div class="fostats">
-      ${stat('Points', pts(row.points), mine && pts(mine.lad.points))}
-      ${stat('Record', recordHtml(row.wins, row.losses), mine && recordHtml(mine.lad.wins, mine.lad.losses))}
-      ${stat('Best streak', '<span class="fostreak">–</span>', mine && '<span class="mystreak">–</span>')}
-      ${stat('Peak', pts(row.peak), mine && pts(mine.lad.peak))}
-      ${stat('Win rate', rate(row.wins, row.games), mine && rate(mine.lad.wins, myGames))}
-    </div>`,
-  });
-  for (const selector of mine ? ['.fostreak', '.mystreak'] : ['.fostreak']) {
-    (ov.querySelector(selector) as HTMLElement).replaceChildren(loaderDie(16));
-  }
-  paintAvatar(ov.querySelector('.focol .av') as HTMLElement, row.avatar, 46);
-  if (mine) paintAvatar(ov.querySelector('.focol.you .av') as HTMLElement, mine.avatar, 46);
-  void Promise.all([
-    playerCard(row.nickname),
-    mine ? bestStreak() : null,
-    mine ? myStanding() : null,
-  ]).then(([card, streak, standing]) => {
-    const theirStreak = ov.querySelector('.fostreak');
-    if (theirStreak) theirStreak.textContent = card ? String(card.streak) : '–';
-    if (!mine) return;
-    const myStreak = ov.querySelector('.mystreak');
-    if (myStreak && streak != null) myStreak.textContent = String(streak);
-    const groupPill = ov.querySelector('.focol.you .gpill');
-    if (groupPill && standing) groupPill.textContent += ` · ${rk(standing.rank)}`;
-  });
 }

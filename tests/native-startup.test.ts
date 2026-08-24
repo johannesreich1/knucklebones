@@ -78,16 +78,23 @@ check(!unhandled, 'a rejected native splash hide escaped as an unhandled rejecti
 const mainSource = readFileSync('src/main.ts', 'utf8');
 const widgetSource = readFileSync('src/widget.ts', 'utf8');
 const helperSource = readFileSync('src/boot/native-splash.ts', 'utf8');
-const markupAt = mainSource.indexOf("insertAdjacentHTML('afterbegin', MARKUP)");
 const releaseAt = mainSource.indexOf('releaseNativeSplashAfter(() =>');
-const bootAt = mainSource.indexOf('boot(false)', releaseAt);
+const statsAt = mainSource.indexOf('loadStats()', releaseAt);
+const localeAt = mainSource.indexOf('setLanguageOverride(S.localeOverride)', statsAt);
+const markupAt = mainSource.indexOf("insertAdjacentHTML('afterbegin', MARKUP)", localeAt);
+const localeRootAt = mainSource.indexOf("bindLocaleRoot(root, 'document')", markupAt);
+const languageChangesAt = mainSource.indexOf('bindSystemLanguageChanges()', localeRootAt);
+const bootAt = mainSource.indexOf('boot(false)', languageChangesAt);
 const hooksAt = mainSource.indexOf('__kb = hooks()', bootAt);
-check(markupAt >= 0 && releaseAt > markupAt && bootAt > releaseAt && hooksAt > bootAt,
-  'standalone startup does not compose markup, Home, and hooks before release', {
-    markupAt, releaseAt, bootAt, hooksAt,
+check(releaseAt >= 0 && statsAt > releaseAt && localeAt > statsAt && markupAt > localeAt
+    && localeRootAt > markupAt && languageChangesAt > localeRootAt
+    && bootAt > languageChangesAt && hooksAt > bootAt,
+  'standalone startup does not resolve locale, compose localized Home, and install hooks before release', {
+    releaseAt, statsAt, localeAt, markupAt, localeRootAt, languageChangesAt, bootAt, hooksAt,
   });
-check(!widgetSource.includes('native-splash') && widgetSource.includes('boot(true)'),
-  'widget boot was coupled to the native splash lifecycle');
+check(!widgetSource.includes('native-splash') && widgetSource.includes('loadStats()')
+    && widgetSource.includes("bindLocaleRoot(root, 'widget')") && widgetSource.includes('boot(true)'),
+  'widget boot was coupled to native splash or skipped root-scoped localization');
 check(!/from\s+['"]@capacitor\//.test(helperSource),
   'native splash helper imports plugin code into the web bundle');
 

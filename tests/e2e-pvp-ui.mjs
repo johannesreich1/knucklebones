@@ -65,7 +65,8 @@ try {
 
   browser = await chromium.launch();
   const mk = async ({ sess, prof }) => {
-    const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+    const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
+      locale: 'en-US' });
     /* a fresh context is a NEWCOMER: matchmaking would stop to offer the
        tutorial (ui/firstrun) before the queue panel. Seed a played device. */
     await ctx.addInitScript(([k, v, p]) => {

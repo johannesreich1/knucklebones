@@ -24,6 +24,7 @@
 // both read the same geometry (restOf) — so a still (a design card, or a
 // reduced-motion player) shows exactly the deck the animation comes to rest on.
 import { SPELLS, type SpellSpec } from '../core/spells.ts';
+import { spellCopy, t } from '../i18n/index.ts';
 import { spellIcon, spellHue } from './spellicons.ts';
 import { Sfx, vibrate } from './audio.ts';
 import { REDUCED } from './fx.ts';
@@ -73,7 +74,7 @@ export function runeCardFaces(
 ): string {
   return `<i class="rback">${spellIcon(spec.id, backSize)}</i>`
     + `<i class="rface">${spellIcon(spec.id, faceSize)}`
-    + `${labelled ? `<span class="rlbl">${spec.name}</span>` : ''}</i>`;
+    + `${labelled ? `<span class="rlbl">${spellCopy(spec.id).name}</span>` : ''}</i>`;
 }
 
 /* THE DECK IS ACTUALLY RE-ORDERED, and you can watch it happen: as each card
@@ -228,13 +229,19 @@ export function dealBeat(spec: SpellSpec): Beat {
      moving — so the draw reaches into a place the shuffle chose. */
   const slot = settled.indexOf(SPELLS.findIndex((s) => s.id === spec.id));
   return {
-    label: 'YOUR RUNE',
+    /* Locale-live getters let the reveal repaint copy without creating a new
+       beat (which would also reshuffle the deck). */
+    get label() { return t('game', 'reveal.yourRune'); },
     cls: 'dealing',
-    name: spec.name,
-    blurb: spec.blurb,
+    get name() { return spellCopy(spec.id).name; },
+    get blurb() { return spellCopy(spec.id).blurb; },
     hue: spellHue(spec.id),
     icon: spellIcon(spec.id, 17),
     stage: runeFelt(spec, false, fanned),
+    repaintStage(stage) {
+      const label = stage.querySelector<HTMLElement>('.rdealt .rlbl');
+      if (label) label.textContent = spellCopy(spec.id).name;
+    },
     async run(settle) {
       const felt = appRoot().querySelector('#wheelStage .rfelt') as HTMLElement;
       const card = felt.querySelector('.rdealt') as HTMLElement;

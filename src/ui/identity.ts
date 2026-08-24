@@ -1,10 +1,23 @@
 // Names and colours follow the PLAYER identity, never the screen half.
 import { ME, type Player } from '../core/rules.ts';
+import { t } from '../i18n/index.ts';
 import { S } from '../state.ts';
 
+export type PlayerNameResolver = (who: Player) => string | null;
+let claimedNames: PlayerNameResolver | null = null;
+
+/** Ranked play may claim the shared plates/ARIA with server-owned nicknames. */
+export function claimPlayerNames(resolve: PlayerNameResolver): () => void {
+  claimedNames = resolve;
+  return () => { if (claimedNames === resolve) claimedNames = null; };
+}
+
 export function nameOf(who: Player): string {
-  if (S.mode === 'duo') return who === ME ? 'PLAYER 1' : 'PLAYER 2';
-  return who === ME ? 'YOU' : 'AI';
+  const claimed = claimedNames?.(who);
+  if (claimed) return claimed;
+  if (S.mode === 'duo') return who === ME
+    ? t('game', 'player.player1') : t('game', 'player.player2');
+  return who === ME ? t('game', 'player.you') : t('game', 'player.ai');
 }
 
 export function colorOf(who: Player): string {

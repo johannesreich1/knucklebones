@@ -7,6 +7,7 @@
 // needs the online chunk.
 import { MODES, RANDOM } from '../core/modes.ts';
 import { SPELLS, RANDOM_SPELL } from '../core/spells.ts';
+import { modeCopy, spellCopy, subscribeLocale, t } from '../i18n/index.ts';
 import { modeIcon, modeHue } from './modeicons.ts';
 import { spellIcon, spellHue } from './spellicons.ts';
 import { $, show } from './dom.ts';
@@ -20,15 +21,22 @@ export interface LibrarySpec { id: string; title: string; items: LibraryItem[] }
 /* the two rosters, each a spec of the one library. Exported because the design
    cards render them through this very function (design/build.mjs, {{library}}):
    a card that re-typed a mode's blurb would be a fifth copy of the registry. */
+const modeItems = (): LibraryItem[] => MODES.map((mode) => {
+  const copy = modeCopy(mode.id);
+  return { id: mode.id, name: copy.name, blurb: copy.blurb, detail: copy.detail,
+    hue: modeHue(mode.id), icon: modeIcon(mode.id, 22) };
+});
+const spellItems = (): LibraryItem[] => SPELLS.map((spell) => {
+  const copy = spellCopy(spell.id);
+  return { id: spell.id, name: copy.name, blurb: copy.blurb, detail: copy.detail,
+    hue: spellHue(spell.id), icon: spellIcon(spell.id, 22) };
+});
+
 export const MODE_LIB: LibrarySpec = {
-  id: 'ovModes', title: 'GAME MODES',
-  items: MODES.map((m) => ({ id: m.id, name: m.name, blurb: m.blurb, detail: m.detail,
-                             hue: modeHue(m.id), icon: modeIcon(m.id, 22) })),
+  id: 'ovModes', title: t('learn', 'library.gameModes'), items: modeItems(),
 };
 export const SPELL_LIB: LibrarySpec = {
-  id: 'ovSpells', title: 'RUNES',
-  items: SPELLS.map((s) => ({ id: s.id, name: s.name, blurb: s.blurb, detail: s.detail,
-                              hue: spellHue(s.id), icon: spellIcon(s.id, 22) })),
+  id: 'ovSpells', title: t('learn', 'library.runes'), items: spellItems(),
 };
 
 /* ONE ENTRY, AS MARKUP — the three lines every roster entry is made of. It is
@@ -58,18 +66,26 @@ export const libraryCards = (spec: LibrarySpec, now?: string): string =>
    Exported for the design cards too ({{picker}}), so a card cannot offer a
    roster the game does not. */
 export interface PickItem { v: string; id: string; name: string; blurb: string; hue: string; icon: string }
-export const MODE_PICKS: PickItem[] = [
-  ...MODES.map((m) => ({ v: String(m.mode), id: m.id, name: m.name, blurb: m.blurb, hue: modeHue(m.id), icon: modeIcon(m.id, 16) })),
-  { v: String(RANDOM), id: 'random', name: 'RANDOM', hue: modeHue('random'), icon: modeIcon('random', 16),
-    blurb: 'The dial decides — ranked\u2019s odds, spun in front of you.' },
+const modePicks = (): PickItem[] => [
+  ...MODES.map((mode) => {
+    const copy = modeCopy(mode.id);
+    return { v: String(mode.mode), id: mode.id, name: copy.name, blurb: copy.blurb,
+      hue: modeHue(mode.id), icon: modeIcon(mode.id, 16) };
+  }),
+  { v: String(RANDOM), id: 'random', ...modeCopy('random'), hue: modeHue('random'), icon: modeIcon('random', 16) },
 ];
-export const SPELL_PICKS: PickItem[] = [
-  { v: '', id: 'none', name: 'NONE', blurb: 'No rune — the pure game.', hue: spellHue('none'), icon: spellIcon('none', 16) },
-  ...SPELLS.map((s) => ({ v: s.id, id: s.id, name: s.name, blurb: s.blurb, hue: spellHue(s.id), icon: spellIcon(s.id, 16) })),
+const spellPicks = (): PickItem[] => [
+  { v: '', id: 'none', ...spellCopy('none'), hue: spellHue('none'), icon: spellIcon('none', 16) },
+  ...SPELLS.map((spell) => {
+    const copy = spellCopy(spell.id);
+    return { v: spell.id, id: spell.id, name: copy.name, blurb: copy.blurb,
+      hue: spellHue(spell.id), icon: spellIcon(spell.id, 16) };
+  }),
   /* last slice, exactly like the mode row's: a promise to draw, not a rune */
-  { v: RANDOM_SPELL, id: 'random', name: 'RANDOM', hue: spellHue('random'), icon: spellIcon('random', 16),
-    blurb: 'A rune drawn at the table — both players get the same one.' },
+  { v: RANDOM_SPELL, id: 'random', ...spellCopy('random'), hue: spellHue('random'), icon: spellIcon('random', 16) },
 ];
+export const MODE_PICKS: PickItem[] = modePicks();
+export const SPELL_PICKS: PickItem[] = spellPicks();
 /* one button shape for both rows — and for the cards that picture them */
 export const pickerButtons = (items: PickItem[], now?: string): string => items.map((it) =>
   `<button type="button"${it.v === now ? ' class="on"' : ''} data-v="${it.v}"`
@@ -83,6 +99,33 @@ export const pickInfo = (items: PickItem[], now?: string): string => {
 };
 
 const built = new Set<string>();
+function refreshLibraryCopy(): void {
+  MODE_LIB.title = t('learn', 'library.gameModes');
+  MODE_LIB.items = modeItems();
+  SPELL_LIB.title = t('learn', 'library.runes');
+  SPELL_LIB.items = spellItems();
+  MODE_PICKS.splice(0, MODE_PICKS.length, ...modePicks());
+  SPELL_PICKS.splice(0, SPELL_PICKS.length, ...spellPicks());
+  /* A system language can change while a roster is already open. Repaint its
+     existing cards in place so scroll position and the active highlight stay
+     intact. */
+  for (const spec of [MODE_LIB, SPELL_LIB]) {
+    if (!built.has(spec.id)) continue;
+    const page = appRoot().querySelector<HTMLElement>('#' + spec.id);
+    if (!page) continue;
+    const title = page.querySelector<HTMLElement>('.ttl');
+    if (title) title.textContent = spec.title;
+    for (const item of spec.items) {
+      const card = page.querySelector<HTMLElement>(`.modecard[data-mode="${item.id}"]`);
+      if (!card) continue;
+      card.querySelector<HTMLElement>('.mcname')!.textContent = item.name;
+      card.querySelector<HTMLElement>('.mcblurb')!.textContent = item.blurb;
+      card.querySelector<HTMLElement>('.mcdetail')!.textContent = item.detail;
+    }
+  }
+}
+subscribeLocale(refreshLibraryCopy);
+
 function build(spec: LibrarySpec): void {
   if (built.has(spec.id)) return;
   built.add(spec.id);
@@ -117,8 +160,21 @@ export const openSpells = (highlight?: string): void => openLibrary(SPELL_LIB, h
    HOW TO PLAY is where you go to read them ALL. */
 const LIBS: Record<string, LibrarySpec> = { modes: MODE_LIB, spells: SPELL_LIB };
 export function openEntry(lib: string, id: string): boolean {
-  const it = LIBS[lib]?.items.find((i) => i.id === id);
+  const current = (): LibraryItem | undefined => LIBS[lib]?.items.find((i) => i.id === id);
+  const it = current();
   if (!it) return false;   // a chip naming something the registry retired opens nothing
-  showSheet({ cls: 'libsheet', label: it.name, tint: it.hue, body: libraryBody(it) });
+  showSheet({
+    cls: 'libsheet',
+    label: () => current()?.name ?? it.name,
+    tint: it.hue,
+    body: libraryBody(it),
+    repaintLocale: (card) => {
+      const copy = current();
+      if (!copy) return;
+      card.querySelector<HTMLElement>('.mcname')!.textContent = copy.name;
+      card.querySelector<HTMLElement>('.mcblurb')!.textContent = copy.blurb;
+      card.querySelector<HTMLElement>('.mcdetail')!.textContent = copy.detail;
+    },
+  });
   return true;
 }

@@ -14,11 +14,11 @@ import {
   RANDOM_SPELL,
   SPELLS,
   freshCharges,
-  machineCast,
   spellById,
   type CastCtx,
   type SpellSpec,
 } from '../core/spells.ts';
+import { spellCopy, t } from '../i18n/index.ts';
 import { S } from '../state.ts';
 import { colEl } from '../ui/dom.ts';
 import { Sfx } from '../ui/audio.ts';
@@ -39,6 +39,9 @@ import {
   type SpellRailPorts,
 } from './spell-rail.ts';
 import type { SpellInputTarget } from './spell-target.ts';
+import { runAiSpellTurn } from './spell-ai.ts';
+
+export { aiSpellDelay } from './spell-ai.ts';
 
 export interface SpellFlowPorts {
   onChoice: () => void;
@@ -151,7 +154,7 @@ export function arm(id: string): boolean {
     S.spellAimCommitted = { id, who };
   }
   renderSpells();
-  setStatus(spell.aim, who);
+  setStatus(() => spellCopy(spell.id).aim, who);
   return true;
 }
 
@@ -246,7 +249,11 @@ async function castBy(
   S.busy = true;
   S.phase = 'anim';
   stopTimer();
-  setStatus(S.mode === 'cpu' && who === AI ? 'AI — ' + spell.name : spell.name, who);
+  setStatus(() => {
+    const name = spellCopy(spell.id).name;
+    return S.mode === 'cpu' && who === AI
+      ? t('game', 'status.aiSpell', { spell: name }) : name;
+  }, who);
   renderSpells();
   const generation = S.gen;
   await runSpellEffect(spell.id, who, column,
@@ -304,41 +311,8 @@ function castable(id: string): boolean {
   return legalNow(spell, who, castContext());
 }
 
-const CPU_SPELL_DELAY_MIN = 320;
-const CPU_SPELL_DELAY_SPREAD = 580;
-const pause = (milliseconds: number): Promise<void> =>
-  new Promise((resolve) => setTimeout(resolve, milliseconds));
-
-/* A chosen computer cast gets a small tell: enough time to see its card in
-   hand before it turns, never enough to read as a stall. Injecting the sample
-   keeps the bounds directly testable without making production deterministic. */
-export function aiSpellDelay(random: () => number = Math.random): number {
-  const sample = Math.max(0, Math.min(0.999999, random()));
-  return CPU_SPELL_DELAY_MIN + Math.floor(sample * (CPU_SPELL_DELAY_SPREAD + 1));
-}
-
-/* The machine never enters a player-visible aim state, so its cast reserves
-   and spends in one step. */
 export async function aiSpellTurn(who: Player, waitForTell = true): Promise<boolean> {
-  const id = Object.keys(S.spellCharges[who]).find((key) => chargesOf(who, key) > 0);
-  const spell = spellById(id);
-  if (!spell) return false;
-  if (S.diff === 'easy' && Math.random() < 0.5) return false;
-  const context = castContext();
-  const column = machineCast(
-    S.boards as GameState,
-    who,
-    spell,
-    context,
-    DEMANDS[S.diff] ?? DEMANDS.medium,
-  );
-  if (column === null) return false;
-  if (waitForTell) {
-    const generation = S.gen;
-    await pause(aiSpellDelay());
-    if (S.gen !== generation || S.turn !== who || S.phase === 'over') return false;
-  }
-  return castBy(who, spell, column, context);
+  return runAiSpellTurn(who, { chargesOf, castContext, castBy }, waitForTell);
 }
 
 /*
@@ -346,5 +320,3 @@ export async function aiSpellTurn(who: Player, waitForTell = true): Promise<bool
  * roster adopted one rule: aiming may cancel before commitment, but a cast
  * cannot be undone after commitment.
  */
-
-const DEMANDS: Record<string, number> = { easy: 30, medium: 16, hard: 10 };

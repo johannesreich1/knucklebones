@@ -6,8 +6,16 @@ import './styles/widget-embed.css';
 import { MARKUP } from './markup.ts';
 import { boot } from './boot.ts';
 import { hooks } from './hooks.ts';
+import { bindLocaleRoot, bindSystemLanguageChanges, setLanguageOverride } from './i18n/index.ts';
+import { loadStats } from './persist.ts';
+import { S } from './state.ts';
 import { appRoot } from './ui/embed.ts';
 
-appRoot().insertAdjacentHTML('afterbegin', MARKUP);
+loadStats();
+setLanguageOverride(S.localeOverride);
+const root = appRoot();
+root.insertAdjacentHTML('afterbegin', MARKUP);
+bindLocaleRoot(root, 'widget');
+bindSystemLanguageChanges();
 boot(true);
 (window as any).__kb = hooks();

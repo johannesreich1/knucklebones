@@ -1,8 +1,10 @@
+import { subscribeLocale, t, translateDom, type LocaleKey } from '../i18n/index.ts';
 import { $ } from '../ui/dom.ts';
 import { Sfx } from '../ui/audio.ts';
 import { availableTaps } from './identity.ts';
 import { attachEmail, signIn } from './session.ts';
-import { showOnlinePanel } from './shell.ts';
+import { setOnlinePanelTitle, showOnlinePanel } from './shell.ts';
+import { onlineMessage, repaintOnlineMessage } from './message-copy.ts';
 
 export type AuthMode = 'attach' | 'restore';
 
@@ -12,33 +14,70 @@ export interface AuthPorts {
 }
 
 interface AuthSpec {
-  title: string;
-  lead: string;
-  tiny: string;
+  title: LocaleKey<'online'>;
+  lead: LocaleKey<'online'>;
+  tiny: LocaleKey<'online'>;
   acts: {
-    label: string;
+    label: LocaleKey<'online'>;
     primary?: boolean;
     run(email: string, password: string): Promise<string | null>;
   }[];
-  swap?: { label: string; to: AuthMode };
-  fresh?: { title: string; lead: string; tiny: string; act: string };
+  swap?: { label: LocaleKey<'online'>; to: AuthMode };
+  fresh?: {
+    title: LocaleKey<'online'>;
+    lead: LocaleKey<'online'>;
+    tiny: LocaleKey<'online'>;
+    act: LocaleKey<'online'>;
+  };
   after(ports: AuthPorts): Promise<void>;
 }
 
 let sessionless = false;
+let authMessage: string | null = null;
+let authViewRevision = 0;
+let authOperationRevision = 0;
+
+function setAuthBusy(busy: boolean): void {
+  document.getElementById('onAuth')?.querySelectorAll<HTMLButtonElement>('button')
+    .forEach((button) => { button.disabled = busy; });
+}
+
+function ownsAuthOperation(view: number, operation: number): boolean {
+  const panel = document.getElementById('onAuth');
+  const overlay = document.getElementById('ovOnline');
+  return view === authViewRevision && operation === authOperationRevision
+    && !!panel && !panel.hidden && !!overlay?.classList.contains('on');
+}
+
+function clearAuthError(): void {
+  authMessage = null;
+  $('#onAuthErr').textContent = '';
+}
+
+function showAuthError(message: string): void {
+  authMessage = message;
+  $('#onAuthErr').textContent = message;
+}
+
+subscribeLocale(() => {
+  const panel = document.getElementById('onAuth');
+  if (!panel || panel.hidden || !authMessage) return;
+  authMessage = repaintOnlineMessage(authMessage);
+  $('#onAuthErr').textContent = authMessage;
+});
 
 const AUTH: Record<AuthMode, AuthSpec> = {
   attach: {
-    title: 'KEEP ACCOUNT',
-    lead: 'Add an email and this account survives a reinstall',
-    tiny: 'Same account, same rating, same record —<br>you just gain a way back into it.',
-    acts: [{ label: 'Keep this account', primary: true, run: attachEmail }],
-    swap: { label: 'I already have an account', to: 'restore' },
+    title: 'auth.keepTitle',
+    lead: 'auth.keepLead',
+    tiny: 'auth.keepDetail',
+    acts: [{ label: 'auth.keepAction', primary: true, run: attachEmail }],
+    swap: { label: 'auth.alreadyHaveAccount', to: 'restore' },
     fresh: {
-      title: 'CREATE ACCOUNT',
-      lead: 'Play ranked, climb the ladder',
-      tiny: 'Your rating and record live in this account —<br>the address is how you get back to it.',
-      act: 'Create account',
+      title: 'auth.createTitle',
+      lead: 'auth.rankedLead',
+      tiny: 'auth.createDetail',
+      act: 'auth.createAction',
     },
     after: async (ports) => {
       if (sessionless) {
@@ -50,11 +89,11 @@ const AUTH: Record<AuthMode, AuthSpec> = {
     },
   },
   restore: {
-    title: 'SIGN IN',
-    lead: 'Play ranked, climb the ladder',
-    tiny: 'New accounts get a nickname like BoldRaven482 —<br>claim your own once in Account',
-    acts: [{ label: 'Sign in', primary: true, run: signIn }],
-    swap: { label: 'Create account', to: 'attach' },
+    title: 'auth.signInTitle',
+    lead: 'auth.rankedLead',
+    tiny: 'auth.signInDetail',
+    acts: [{ label: 'auth.signInAction', primary: true, run: signIn }],
+    swap: { label: 'auth.createAction', to: 'attach' },
     after: (ports) => ports.entered(),
   },
 };
@@ -64,13 +103,16 @@ export function setSessionless(value: boolean): void {
 }
 
 export function showAuth(mode: AuthMode, ports: AuthPorts): void {
+  const viewRevision = ++authViewRevision;
+  authOperationRevision++;
   const spec = AUTH[mode];
   const copy = sessionless && spec.fresh ? spec.fresh : spec;
   showOnlinePanel('onAuth');
-  $('#onTitle').textContent = copy.title;
-  $('#onAuthLead').textContent = copy.lead;
-  $('#onAuthTiny').innerHTML = copy.tiny;
-  $('#onAuthErr').textContent = '';
+  setAuthBusy(false);
+  setOnlinePanelTitle(copy.title);
+  $('#onAuthLead').setAttribute('data-i18n', `online:${copy.lead}`);
+  $('#onAuthTiny').setAttribute('data-i18n-rich', `online:${copy.tiny}`);
+  clearAuthError();
   const acts = $('#onAuthActs');
   acts.innerHTML = '';
   const creds = () => [
@@ -80,16 +122,26 @@ export function showAuth(mode: AuthMode, ports: AuthPorts): void {
   for (const action of spec.acts) {
     const button = document.createElement('button');
     button.className = 'btn' + (action.primary ? ' primary' : '');
-    button.textContent = sessionless && spec.fresh && action.primary
+    const actionKey = sessionless && spec.fresh && action.primary
       ? spec.fresh.act : action.label;
+    button.setAttribute('data-i18n', `online:${actionKey}`);
+    button.textContent = t('online', actionKey);
     button.addEventListener('click', async () => {
+      if (viewRevision !== authViewRevision) return;
       Sfx.tap();
-      $('#onAuthErr').textContent = '';
-      button.disabled = true;
-      const message = await action.run(...creds());
-      button.disabled = false;
+      clearAuthError();
+      const operation = ++authOperationRevision;
+      setAuthBusy(true);
+      let message: string | null;
+      try {
+        message = await action.run(...creds());
+      } catch {
+        message = onlineMessage('errors.generic');
+      }
+      if (!ownsAuthOperation(viewRevision, operation)) return;
+      setAuthBusy(false);
       if (message) {
-        $('#onAuthErr').textContent = message;
+        showAuthError(message);
         return;
       }
       await spec.after(ports);
@@ -99,30 +151,41 @@ export function showAuth(mode: AuthMode, ports: AuthPorts): void {
   const swap = $('#btnAuthSwap') as HTMLButtonElement;
   swap.hidden = !spec.swap;
   if (spec.swap) {
-    swap.textContent = spec.swap.label;
+    swap.setAttribute('data-i18n', `online:${spec.swap.label}`);
+    swap.textContent = t('online', spec.swap.label);
     swap.onclick = () => {
       Sfx.tap();
       showAuth(spec.swap!.to, ports);
     };
   }
-  showOneTapRow(mode, ports);
+  showOneTapRow(mode, ports, viewRevision);
+  translateDom($('#onAuth'));
 }
 
-function showOneTapRow(mode: AuthMode, ports: AuthPorts): void {
+function showOneTapRow(mode: AuthMode, ports: AuthPorts, viewRevision: number): void {
   const row = $('#onOneTap');
   row.innerHTML = '';
   for (const method of availableTaps()) {
     const button = document.createElement('button');
     button.className = 'btn tap ' + method.id;
-    button.textContent = method.label;
+    button.setAttribute('data-i18n', `online:${method.labelKey}`);
+    button.textContent = t('online', method.labelKey);
     button.addEventListener('click', async () => {
+      if (viewRevision !== authViewRevision) return;
       Sfx.tap();
-      $('#onAuthErr').textContent = '';
-      button.disabled = true;
-      const message = await method[mode]();
-      button.disabled = false;
+      clearAuthError();
+      const operation = ++authOperationRevision;
+      setAuthBusy(true);
+      let message: string | null;
+      try {
+        message = await method[mode]();
+      } catch {
+        message = onlineMessage('errors.generic');
+      }
+      if (!ownsAuthOperation(viewRevision, operation)) return;
+      setAuthBusy(false);
       if (message !== null) {
-        if (message) $('#onAuthErr').textContent = message;
+        if (message) showAuthError(message);
         return;
       }
       await AUTH[mode].after(ports);

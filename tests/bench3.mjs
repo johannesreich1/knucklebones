@@ -1,7 +1,7 @@
 import pkg from 'playwright';
 const { chromium } = pkg;
 const b = await chromium.launch();
-const p = await b.newPage();
+const p = await b.newPage({ locale: 'en-US' });
 await p.goto('file://' + process.cwd() + '/knucklebones-neon.html');
 await p.waitForTimeout(400);
 const r = await p.evaluate(() => {

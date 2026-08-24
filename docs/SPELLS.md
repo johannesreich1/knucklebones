@@ -275,23 +275,25 @@ board-swing policy will never cast it and it will measure as worthless.
 
 ## 6. Adding a spell
 
-One object in `core/spells.ts` is the whole spell. The rail, the gestures, the
-charge accounting and the CSS never learn its name.
+One object in `core/spells.ts` is the whole spell rule. The rail, gestures,
+charge accounting, and CSS use its stable id; player-visible copy comes from
+the localization catalogs through the shared adapter.
 
 1. **The spec** — `id` (stable forever: persisted, tested, styled against),
-   `name`, `blurb`, `detail`, `aim` (the line shown while it is armed —
-   two landscape lines is its whole budget, see §7),
    `target` (`'column' | 'self'`), `side` (`'own' | 'foe'`, for column spells:
    which half the ring offers), `uses`, `commitsOnAim` only when showing the
    aim itself spends the charge, `locksOnAim` only when an uncommitted aim must
    receive a legal answer, `previewDieIndex()` when a column spell marks one
    exact die, `legal()`, `apply()`, and `cpuCast()` if its value is off-board.
-2. **The icon** — a path in `ui/spellicons.ts` plus a hue.
-3. **The cast animation** — an entry in `EFFECTS`
+2. **The copy** — `name`, `compact`, `blurb`, `detail`, and `aim` in every
+   locale catalog under the stable id. The armed `aim` gets at most two
+   landscape lines; see §7.
+3. **The icon** — a path in `ui/spellicons.ts` plus a hue.
+4. **The cast animation** — an entry in `EFFECTS`
    (`src/flow/spell-effects.ts`), with `defaultEffect` as the fallback.
-4. **Gate cases** — `tests/spells.test.ts` for the rules and
+5. **Gate cases** — `tests/spells.test.ts` for the rules and
    `tests/browser/spells/run.mjs` for anything the player can see.
-5. **Measure it** before shipping, and record the numbers here.
+6. **Measure it** before shipping, and record the numbers here.
 
 ### The seams that already exist
 
@@ -389,10 +391,10 @@ Learned from real play, each one a shipped bug:
   preference — the status box is *reserved* at that size (`.status` /
   `.land .status` min-height, a fixed 104px lane in landscape), and a line
   past the reserve grows the box and walks the stage die up the screen: the
-  same drift `test8` guards for ordinary turns. So `aim` says WHICH column the
-  tap wants and stops. The verb is already on the rune the player just pressed
-  — its name, its icon, its `blurb` — and the board rings the legal targets in
-  gold. What the rings *cannot* say is why they are silent, which is exactly
+  same drift `test8` guards for ordinary turns. So the catalog's `aim` says
+  WHICH column the tap wants and stops. The verb is already on the rune the
+  player just pressed — its localized name, icon, and `blurb` — and the board
+  rings the legal targets in gold. What the rings *cannot* say is why they are silent, which is exactly
   the work "a filled column" or "an enemy column" does; that is why the
   *which* is the half worth keeping and the verb the half to drop. Measure,
   never count characters: "Tap one of your columns to guard" (32 chars) took

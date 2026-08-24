@@ -3,7 +3,7 @@
 // file is the one that fails the gate.
 import {
   SCALE, K, DENOM, START, LOSS_MULT, MIN_GAIN, MAX_LOSS,
-  delta, applyDelta, GROUPS, groupOf, rankName, nextRankName,
+  delta, applyDelta, GROUPS, groupOf,
   groupFill, toNext, peakState, inApex, botShapeAt, botPairBand, matchBand, APEX,
   boardGroup, settle, type LadderRow,
 } from '../src/core/ladder.ts';
@@ -48,36 +48,32 @@ eq(applyDelta(0, -120), 0, 'a loss at zero went negative');
 eq(applyDelta(40, -120), 0, 'the floor is not zero');
 
 /* ---- §2 the band table ------------------------------------------------- */
-eq(GROUPS.map((g) => [g.name, g.floor, g.width]), [
-  ['STONE', 0, 300], ['BONE', 300, 420], ['IVORY', 720, 540],
-  ['SILVER', 1260, 750], ['GOLD', 2010, 990], ['OBSIDIAN', 3000, 1350],
-  ['NEON', 4350, 0],
+eq(GROUPS.map((g) => [g.id, g.floor, g.width]), [
+  ['stone', 0, 300], ['bone', 300, 420], ['ivory', 720, 540],
+  ['silver', 1260, 750], ['gold', 2010, 990], ['obsidian', 3000, 1350],
+  ['neon', 4350, 0],
 ], 'the band table drifted from LADDER.md §2');
 
 /* floors are exactly cumulative widths — the invariant that keeps a group from
    overlapping its neighbour or leaving a gap nobody can occupy */
 let cursor = 0;
 for (const g of GROUPS) {
-  eq(g.floor, cursor, `${g.name}'s floor is not the sum of the widths below it`);
+  eq(g.floor, cursor, `${g.id}'s floor is not the sum of the widths below it`);
   cursor += g.width;
 }
 /* the ring is one continuous fill now, so nothing has to divide evenly into a
    group — but a width of zero would make groupFill divide by it */
 for (const g of GROUPS) {
-  if (g !== APEX) eq(g.width > 0, true, `${g.name} has no width`);
+  if (g !== APEX) eq(g.width > 0, true, `${g.id} has no width`);
 }
 
-/* ---- naming: a GROUP is the whole rank, there are no divisions --------- */
-eq([0, 299, 300, 1259, 2010, 2999, 3000, 4350, 9999].map(rankName),
-   ['STONE', 'STONE', 'BONE', 'IVORY', 'GOLD', 'GOLD', 'OBSIDIAN', 'NEON', 'NEON'],
-   'rank naming drifted');
-eq(nextRankName(2494), 'OBSIDIAN', 'the next rank above GOLD is OBSIDIAN');
-eq(nextRankName(5000), 'NEON', 'the apex has nothing above it');
-/* nothing anywhere may still speak of divisions */
-eq(/\b(I|II|III)\b/.test(rankName(2494)), false, 'a division numeral survived in the rank name');
+/* ---- stable group identity: player-visible names live in i18n catalogs -- */
+eq([0, 299, 300, 1259, 2010, 2999, 3000, 4350, 9999].map((points) => groupOf(points).id),
+   ['stone', 'stone', 'bone', 'ivory', 'gold', 'gold', 'obsidian', 'neon', 'neon'],
+   'group identity drifted');
 
-/* the worked example: 2,494 is GOLD, 506 short of OBSIDIAN (floor 3,000) */
-eq(rankName(2494), 'GOLD', 'design card 92d and the ladder disagree');
+/* the worked example: 2,494 is gold, 506 short of obsidian (floor 3,000) */
+eq(groupOf(2494).id, 'gold', 'design card 92d and the ladder disagree');
 eq(toNext(2494), 506, 'the gap to the next GROUP is wrong');
 eq(toNext(2010), 990, 'a group floor owes the whole width');
 eq(toNext(5000), 0, 'the apex has no distance to anything');
@@ -105,7 +101,7 @@ for (const g of GROUPS) {
   for (const p of [g.floor, g.floor + 1, g.floor + (g.width >> 1), g.floor + g.width - 1]) {
     const implied = Math.round((1 - groupFill(p)) * g.width);
     if (Math.abs(implied - toNext(p)) > 1) {
-      problems.push(`fill and toNext disagree at ${p} (${g.name}): ${implied} vs ${toNext(p)}`);
+      problems.push(`fill and toNext disagree at ${p} (${g.id}): ${implied} vs ${toNext(p)}`);
     }
   }
 }
@@ -127,7 +123,7 @@ eq(Math.round((peakState(2494, 2610) as { fill: number }).fill * 1000), 606,
    'the notch is not where the card draws it');
 const demoted = peakState(2494, 3200);
 eq(demoted.kind, 'above', 'a peak in a higher group should pin right');
-eq((demoted as { group: { name: string } }).group.name, 'OBSIDIAN',
+eq((demoted as { group: { id: string } }).group.id, 'obsidian',
    'the pinned notch must still name the group it really sits in');
 /* the invariant: never behind the fill, anywhere */
 for (let p = 0; p < 4350; p += 53) {
@@ -144,7 +140,7 @@ eq(inApex(9000, 40, 800), false, 'rank 40 of 800 is not the top 1%');
 eq(inApex(500, 3, 800), true, 'the apex is a POSITION — points must not gate it');
 eq(inApex(4400, 90, 40), true, 'a population too small for a 1% falls back to the point floor');
 eq(inApex(4000, 1, 40), false, 'the small-population fallback still needs the floor');
-eq(APEX.name, 'NEON', 'the apex is not NEON');
+eq(APEX.id, 'neon', 'the apex is not neon');
 
 /* ---- settling a match --------------------------------------------------- */
 const row = (points: number, peak = points): LadderRow => ({ points, peak, wins: 0, losses: 0, draws: 0 });
@@ -197,10 +193,10 @@ eq(botShapeAt(4350).slip, 0, 'the top of the ladder must meet a bot that does no
 {
   let pv = GROUPS[0].bot;
   for (const g of GROUPS) {
-    if (g.bot.depth < pv.depth) problems.push(`${g.name}: search depth fell`);
-    if (g.bot.risk < pv.risk - 1e-9) problems.push(`${g.name}: risk sense fell`);
-    if (g.bot.oppW < pv.oppW) problems.push(`${g.name}: board sight fell`);
-    if (g.bot.slip > pv.slip + 1e-9) problems.push(`${g.name}: slip rose`);
+    if (g.bot.depth < pv.depth) problems.push(`${g.id}: search depth fell`);
+    if (g.bot.risk < pv.risk - 1e-9) problems.push(`${g.id}: risk sense fell`);
+    if (g.bot.oppW < pv.oppW) problems.push(`${g.id}: board sight fell`);
+    if (g.bot.slip > pv.slip + 1e-9) problems.push(`${g.id}: slip rose`);
     pv = g.bot;
   }
 }

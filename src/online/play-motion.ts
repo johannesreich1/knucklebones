@@ -9,6 +9,7 @@ import { setStageDie } from '../ui/die.ts';
 import { animateGameMove } from '../ui/game/move-view.ts';
 import { animateStageRoll, clearStageRoll } from '../ui/game/motion.ts';
 import { setActivePlate, setStatus } from '../ui/game/turn-state.ts';
+import { opponentThinkingCopy } from './play-copy.ts';
 
 let revealSequence = 0;
 const pause = (milliseconds: number) => new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -61,7 +62,7 @@ export async function playBotReply(
   options: {
     you: Player;
     isCurrent: () => boolean;
-    opponentName: string;
+    opponentName: () => string;
     onOpponentStalled: () => void;
   },
 ): Promise<void> {
@@ -69,7 +70,7 @@ export async function playBotReply(
   const opponent = (1 - options.you) as Player;
   S.turn = opponent;
   setActivePlate(options.you);
-  setStatus(options.opponentName + ' thinking', opponent);
+  setStatus(opponentThinkingCopy(options.opponentName), opponent);
   startTimer(options.onOpponentStalled, ONLINE_TURN_SECS);
   await pause(260);
   if (!options.isCurrent()) return;

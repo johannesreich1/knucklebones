@@ -5,7 +5,8 @@ const restored = (sample) => near(sample.resting, 1) && near(sample.released, 1)
 
 export async function runMenuPressFeedbackScenarios(suite) {
   const { browser, devices, F, out, check, markExperienced } = suite;
-  const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
+    locale: 'en-US' });
   await markExperienced(ctx);
   const page = await ctx.newPage();
   await page.goto(F);

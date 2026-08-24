@@ -93,7 +93,6 @@ export interface BotShape { depth: number; risk: number; oppW: number; slip: num
 
 export interface Group {
   id: string;
-  name: string;
   floor: number;
   width: number;   // 0 for the apex, which has no ceiling
   bot: BotShape;
@@ -113,13 +112,13 @@ export interface Group {
    and even a random mover wins 56.1%; vs the softened BONE the stacker still
    wins 59.0% — promotion reads "harder now", never "losing now". */
 export const GROUPS: readonly Group[] = [
-  { id: 'stone',    name: 'STONE',    floor: 0,    width: 300,  bot: { depth: 1, risk: 0,    oppW: -0.5, slip: 0.55 } },
-  { id: 'bone',     name: 'BONE',     floor: 300,  width: 420,  bot: { depth: 1, risk: 0,    oppW: 1, slip: 0.45 } },
-  { id: 'ivory',    name: 'IVORY',    floor: 720,  width: 540,  bot: { depth: 1, risk: 0.25, oppW: 1, slip: 0.15 } },
-  { id: 'silver',   name: 'SILVER',   floor: 1260, width: 750,  bot: { depth: 1, risk: 0.6,  oppW: 1, slip: 0.05 } },
-  { id: 'gold',     name: 'GOLD',     floor: 2010, width: 990,  bot: { depth: 2, risk: 1.2,  oppW: 1, slip: 0 } },
-  { id: 'obsidian', name: 'OBSIDIAN', floor: 3000, width: 1350, bot: { depth: 3, risk: 1.2,  oppW: 1, slip: 0 } },
-  { id: 'neon',     name: 'NEON',     floor: 4350, width: 0,    bot: { depth: 4, risk: 1.2,  oppW: 1, slip: 0 } },
+  { id: 'stone',    floor: 0,    width: 300,  bot: { depth: 1, risk: 0,    oppW: -0.5, slip: 0.55 } },
+  { id: 'bone',     floor: 300,  width: 420,  bot: { depth: 1, risk: 0,    oppW: 1, slip: 0.45 } },
+  { id: 'ivory',    floor: 720,  width: 540,  bot: { depth: 1, risk: 0.25, oppW: 1, slip: 0.15 } },
+  { id: 'silver',   floor: 1260, width: 750,  bot: { depth: 1, risk: 0.6,  oppW: 1, slip: 0.05 } },
+  { id: 'gold',     floor: 2010, width: 990,  bot: { depth: 2, risk: 1.2,  oppW: 1, slip: 0 } },
+  { id: 'obsidian', floor: 3000, width: 1350, bot: { depth: 3, risk: 1.2,  oppW: 1, slip: 0 } },
+  { id: 'neon',     floor: 4350, width: 0,    bot: { depth: 4, risk: 1.2,  oppW: 1, slip: 0 } },
 ];
 
 /* NEON is a POSITION, not a threshold. An always-climbing ladder is a ratchet:
@@ -134,11 +133,6 @@ export const APEX_SHARE = 0.01;
    rated players in the season. A tiny population has no meaningful 1%, so the
    point floor stands in until there are enough players for a position to mean
    something. */
-/* a POSITION always reads the same way, wherever it appears: #-prefixed, with
-   the same thousands separator the points wear — a season with twelve thousand
-   players says "#12,480", never "#12480" */
-export const rk = (n: number): string => '#' + n.toLocaleString('en');
-
 export function inApex(points: number, rank: number, population: number): boolean {
   if (population < 100) return points >= APEX.floor;
   return rank <= Math.max(1, Math.floor(population * APEX_SHARE));
@@ -169,9 +163,6 @@ export function groupOf(points: number): Group {
   return found;
 }
 
-/* "GOLD" — the group IS the rank */
-export const rankName = (points: number): string => groupOf(points).name;
-
 /* How far through the group, 0..1. This is the ring: one continuous fill that
    moves on every single match, which is the feedback a rare promotion is not. */
 export function groupFill(points: number): number {
@@ -187,12 +178,6 @@ export function toNext(points: number): number {
   if (!g.width) return 0;
   return Math.ceil(g.floor + g.width - points);
 }
-
-export const nextRankName = (points: number): string => {
-  const g = groupOf(points);
-  if (!g.width) return g.name;
-  return GROUPS[GROUPS.indexOf(g) + 1].name;
-};
 
 /* ---- the peak notch ----------------------------------------------------- */
 

@@ -30,11 +30,11 @@ export async function runSettingsNavigationScenarios(suite) {
         .map((node) => node.textContent?.trim()).filter(Boolean);
     }),
     sectionSpacing: (() => {
-      const opponent = document.getElementById('p2Pick')?.closest('.card')?.getBoundingClientRect();
+      const language = document.getElementById('languagePicker')?.closest('.card')?.getBoundingClientRect();
       const sound = document.getElementById('sndSeg')?.closest('.card')?.getBoundingClientRect();
       const heading = document.getElementById('accessibilityHeading')?.getBoundingClientRect();
-      return opponent && sound && heading ? {
-        aboveSound: sound.top - opponent.bottom,
+      return language && sound && heading ? {
+        aboveSound: sound.top - language.bottom,
         aboveAccessibility: heading.top - sound.bottom,
         colourNote: !!document.getElementById('colNote'),
       } : null;
@@ -66,8 +66,8 @@ export async function runSettingsNavigationScenarios(suite) {
 
   await page.tap('#sndSeg button[data-s="0"]'); await page.waitForTimeout(200);
   await page.tap('#faceSeg button[data-f="nums"]'); await page.waitForTimeout(200);
-  // Settings holds the two toggles and nothing else — the rules are reached
-  // through the HOW TO PLAY hub on home, which is now their ONLY door.
+  // Settings holds preferences rather than navigation actions — the rules are
+  // reached through the HOW TO PLAY hub on home, which is now their ONLY door.
   out.settingsIsToggles = await page.evaluate(() => ({
     how2: !!document.getElementById('btnHow2'),
     quit: !!document.querySelector('#ovSettings #btnMenu'),

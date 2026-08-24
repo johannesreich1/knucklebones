@@ -13,7 +13,7 @@ decisions, and externally owned actions only. Detailed sprint history lives in
 | Ranked | Server-authoritative online play with guest accounts, human matchmaking, bot backfill, seasonal ladder points, history, profiles, and account deletion | `src/online/`, `supabase/functions/`, `docs/LADDER.md` |
 | Database | The immutable repository ledger ends at `20260823132611_game_center_service_grants.sql`; a clean local reset and the focused lifecycle, command, history-plan, grant, settlement, and RLS pgTAP contracts pass locally | `supabase/migrations/`, `supabase/tests/` |
 | Builds | Hosted PWA, standalone HTML, widget, and Capacitor web assets come from the same source build | `build.mjs`, `docs/architecture/build.md` |
-| Native | The Capacitor configuration and iOS Xcode project are tracked; Android is not yet present | `native/` |
+| Native | Capacitor 8.5 iOS and Android projects are tracked; iOS supports 15+, Android installs on API 24+ while targeting API 36 | `native/`, `docs/architecture/build.md` |
 | Design | Product cards, open studies, and archived candidates are explicitly classified and recursively built from shared application CSS/renderers | `design/screens/`, `design/build.mjs` |
 | Verification | `npm test` gates the application; CI also starts a fresh local Supabase stack for pgTAP and schema lint. Live PvP suites remain explicit external probes | `tests/run-all.mjs`, `.github/workflows/ci.yml`, `docs/architecture/testing.md` |
 
@@ -67,9 +67,29 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - Resolve the product name after a real trademark review. The current app id
   is `com.appavaria.knucklebones`; `tests/iosship.test.ts` consistency-gates
   the platform copies if a rename changes it.
-- Complete legal text and company details before store submission.
-- Add the Android wrapper only after the name/app-id decision; finish Apple
-  identity and store release work alongside the existing iOS project.
+- Complete and publish German, English, and French legal/privacy text before
+  store submission. The natural-person name/address, Bavaria authority,
+  non-commercial hobby model, and low-risk content profile are recorded; a public
+  support/privacy email, verified provider retention/region facts, localized
+  public pages, an external account-deletion path, and territory review remain
+  open. The interim development policy is all ages with no gate; mandatory
+  child/privacy and store-audience reconsideration remains a release blocker
+  before App Store or Play production submission. Mainland China and Vietnam
+  require game approvals and are excluded from the initial App Store scope
+  until those approvals exist. See `docs/LEGAL.md`.
+- Apple/Game Center enablement and both stores' signing/upload rehearsals were
+  explicitly deferred on 2026-08-24. Keep their prepared repository work, but
+  do not treat either native shell as release-ready until the held checklist in
+  `docs/IDENTITY.md` and `docs/architecture/build.md` is completed.
+- The first Android CI compile found an API-27 theme attribute in base API-24
+  resources. It is now isolated in `values-v27` without raising minSdk, but the
+  Android CI/AAB job must rerun green after these local changes are committed.
+- Android system/predictive Back still has no app-level routing. Before release,
+  make it close the current sheet/page, cancel matchmaking safely, ask before
+  leaving an active duel, and fall through to normal OS Back only on Home.
+  Repository splash/startup tests and the unsigned iOS compiler build are green;
+  background/resume, OS process death, and physical safe areas remain device
+  acceptance rather than laptop proof.
 - W3's centre-facing runic seal is now the production shield/ward treatment;
   its closed shield, clasped Ward, and strike-only break contract are recorded
   in `design/screens/product/39c-guard-seal.html` and `docs/SPELLS.md`.

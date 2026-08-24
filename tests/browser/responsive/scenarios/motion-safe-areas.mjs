@@ -1,7 +1,8 @@
 export async function runMotionSafeAreaScenarios(suite) {
   const { browser, devices, F, errs, out, check, markExperienced } = suite;
   // ================= REDUCED MOTION =================
-  const rm = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true, reducedMotion: 'reduce' });
+  const rm = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
+    reducedMotion: 'reduce', locale: 'en-US' });
   await markExperienced(rm);   // an experienced player: the first-run tutorial offer is test19's subject
   const rp = await rm.newPage();
   rp.on('pageerror', e => errs.push('RM: ' + e.message));
@@ -325,7 +326,8 @@ export async function runMotionSafeAreaScenarios(suite) {
 
   // The in-app opt-in reaches the SAME effective flag and CSS state, persists,
   // and does not depend on a browser context emulating the OS preference.
-  const manual = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+  const manual = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
+    locale: 'en-US' });
   await markExperienced(manual);
   const mp = await manual.newPage();
   mp.on('pageerror', e => errs.push('RM SETTING: ' + e.message));
@@ -366,7 +368,8 @@ export async function runMotionSafeAreaScenarios(suite) {
   ];
   out.safeAreas = [];
   for (const d of SAFE_DEVICES) {
-    const sc = await browser.newContext({ viewport: { width: d.w, height: d.h }, hasTouch: true, isMobile: true, deviceScaleFactor: 3 });
+    const sc = await browser.newContext({ viewport: { width: d.w, height: d.h }, hasTouch: true,
+      isMobile: true, deviceScaleFactor: 3, locale: 'en-US' });
   await markExperienced(sc);   // an experienced player: the first-run tutorial offer is test19's subject
     const sp = await sc.newPage();
     sp.on('pageerror', e => errs.push('SAFE: ' + e.message));

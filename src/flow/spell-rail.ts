@@ -2,6 +2,7 @@
 // flow/spells; this leaf renders the current hand and plays committed cards.
 import { ME, SPEC, type GameState, type Player } from '../core/rules.ts';
 import { SPELLS, spellById, type CastCtx, type SpellSpec } from '../core/spells.ts';
+import { spellCopy, t } from '../i18n/index.ts';
 import { S } from '../state.ts';
 import { colEl, slotEl, slotIdx } from '../ui/dom.ts';
 import { appRoot } from '../ui/embed.ts';
@@ -56,11 +57,13 @@ export function renderSpellRail(ports: SpellRailPorts): void {
     button.classList.toggle('unavailable', unavailable);
     button.disabled = !canCast;
     paintCharges(button, spell, left);
-    button.setAttribute('aria-label', nameOf(seat) + ': ' + spell.name + ' — ' + spell.blurb
-      + (committed ? ' Committed — choose a marked column.'
-        : canCast ? ` ${left} cast${left === 1 ? '' : 's'} left.`
-          : left > 0 ? ` ${left} cast${left === 1 ? '' : 's'} left. Not available right now.`
-            : ' Spent.'));
+    const copy = spellCopy(spell.id);
+    const values = { player: nameOf(seat), name: copy.name, blurb: copy.blurb, count: left };
+    button.setAttribute('aria-label', committed
+      ? t('game', 'runes.ariaCommitted', values)
+      : canCast ? t('game', 'runes.ariaAvailable', values)
+        : left > 0 ? t('game', 'runes.ariaUnavailable', values)
+          : t('game', 'runes.ariaSpent', values));
   }
   bar.classList.toggle('live', SPELLS.some((spell) => !runeOf(spell.id)?.hidden));
   const armed = spellById(S.spellArmed);

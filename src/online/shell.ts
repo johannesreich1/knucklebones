@@ -1,4 +1,10 @@
 import { ME, AI } from '../core/rules.ts';
+import {
+  subscribeLocale,
+  t,
+  translateDom,
+  type LocaleKey,
+} from '../i18n/index.ts';
 import { $, hide, settleGlass } from '../ui/dom.ts';
 import { makeDie } from '../ui/die.ts';
 import { appRoot } from '../ui/embed.ts';
@@ -6,7 +12,8 @@ import { appRoot } from '../ui/embed.ts';
 const OVERLAY = `
 <div class="ov paged" id="ovOnline">
   <div class="shead">
-    <button class="ico" id="btnOnlineBack" aria-label="Back">‹</button>
+    <button class="ico" id="btnOnlineBack" aria-label="Back"
+      data-i18n-attr="aria-label=common:actions.back">‹</button>
     <span class="ttl" id="onTitle">ONLINE</span><span class="pad"></span>
   </div>
 
@@ -17,8 +24,10 @@ const OVERLAY = `
   <div class="panel" id="onAuth" hidden>
     <div class="lbl" id="onAuthLead" style="text-align:center"></div>
     <div class="oneTap" id="onOneTap"></div>
-    <input id="onEmail" type="email" autocomplete="email" placeholder="email">
-    <input id="onPass" type="password" autocomplete="current-password" placeholder="password (8+)">
+    <input id="onEmail" type="email" autocomplete="email" placeholder="email"
+      data-i18n-attr="placeholder=online:auth.emailPlaceholder">
+    <input id="onPass" type="password" autocomplete="current-password" placeholder="password (8+)"
+      data-i18n-attr="placeholder=online:auth.passwordPlaceholder">
     <div class="err" id="onAuthErr"></div>
     <div class="acts" id="onAuthActs"></div>
     <button class="btn ghost" id="btnAuthSwap" hidden></button>
@@ -27,10 +36,10 @@ const OVERLAY = `
 
   <div class="panel online-queue" id="onQueue" hidden>
     <div class="qdice" id="qDice"></div>
-    <div class="qmsg">Looking for an opponent</div>
+    <div class="qmsg" data-i18n="online:matchmaking.looking">Looking for an opponent</div>
     <div class="qtime" id="qTime">0:00</div>
     <div class="qsub" id="qSub">&nbsp;</div>
-    <button class="btn" id="btnQueueCancel">Cancel</button>
+    <button class="btn" id="btnQueueCancel" data-i18n="online:matchmaking.cancel">Cancel matchmaking</button>
   </div>
 
   <div class="panel" id="onBoard" hidden>
@@ -46,13 +55,14 @@ const OVERLAY = `
          season peak; .haspeak says the peak is worth drawing at all. -->
     <div class="ringwrap" id="accRing" style="--p:0;--pk:0">
       <i class="lring"></i><i class="lpeak"></i>
-      <button class="avwrap" id="btnAvatar" aria-label="Change avatar">
+      <button class="avwrap" id="btnAvatar" aria-label="Change avatar"
+        data-i18n-attr="aria-label=online:profile.changeAvatar">
         <span id="accDie"></span><span class="avedit">✎</span>
       </button>
       <!-- the group name sits IN the ring's bottom opening. The 90deg gap was
            already there to keep the ring from closing; giving it the rank makes
            the ring self-describing instead of merely open. -->
-      <span class="gname" id="accGroup">STONE</span>
+      <span class="gname" id="accGroup"></span>
     </div>
     <!-- the name the ring crowns. Until it is claimed this is the minted
          placeholder; after the claim it is the one line the old edit-field
@@ -61,15 +71,16 @@ const OVERLAY = `
     <!-- the points are a DOOR: the number names your place on the ladder, so
          tapping it opens the ladder — same pattern as the identity chip and
          the match-history row, where the fact leads to the list behind it -->
-    <button class="ptv" id="btnLadder" aria-label="Open the ladder">
-      <b id="accPoints">0</b><span>Ladder points</span>
+    <button class="ptv" id="btnLadder" aria-label="Open the ladder"
+      data-i18n-attr="aria-label=online:profile.openLadder">
+      <b id="accPoints">0</b><span data-i18n="online:profile.ladderPoints">Ladder points</span>
     </button>
     <div class="facts">
-      <div class="fact"><b id="accRank">–</b><span>Rank</span></div>
-      <div class="fact"><b id="accStreak">0</b><span>Best streak</span></div>
-      <div class="fact pk"><b id="accPeak">0</b><span>Peak</span></div>
+      <div class="fact"><b id="accRank">–</b><span data-i18n="online:profile.rank">RANK</span></div>
+      <div class="fact"><b id="accStreak">0</b><span data-i18n="online:profile.bestStreak">BEST STREAK</span></div>
+      <div class="fact pk"><b id="accPeak">0</b><span data-i18n="online:profile.peak">PEAK</span></div>
     </div>
-    <button class="histrow" id="btnHistory">Full match history <b id="accGames">–</b></button>
+    <button class="histrow" id="btnHistory"><span data-i18n="online:profile.fullHistory">Full match history</span> <b id="accGames">–</b></button>
     <!-- the last few matches inline (user call): as many of the newest 0–3 as
          the space above the pinned foot actually holds on this device. The
          rows are showHistory's own (histRow) — one implementation. -->
@@ -82,19 +93,19 @@ const OVERLAY = `
          It leads the guest card (user call): naming yourself comes before
          deciding where the account lives. -->
     <div class="guestbox namebox" id="accClaim" hidden>
-      <b>CLAIM YOUR NAME</b>
-      <p>One name per account — set once and kept for good. 3–16 letters, digits or underscores.</p>
+      <b data-i18n="online:profile.claimTitle">CLAIM YOUR NAME</b>
+      <p data-i18n="online:profile.claimDetail">One name per account — set once and kept for good. 3–16 letters, digits or underscores.</p>
       <!-- no maxlength: a silent cap eats keystrokes mid-word; the claim
            button answers over-long names with the limit instead -->
       <input id="onNick" autocomplete="off" spellcheck="false" autocapitalize="off">
       <div class="err" id="onNickErr"></div>
-      <button class="btn primary" id="btnClaim">Claim name</button>
+      <button class="btn primary" id="btnClaim" data-i18n="online:profile.claimName">Claim name</button>
     </div>
     <div class="guestbox" id="accGuest" hidden>
-      <b>GUEST</b>
-      <p>This account lives on this device only. Delete the app and the rating goes with it.</p>
-      <button class="btn primary" id="btnKeepAcc">Keep it forever</button>
-      <button class="btn ghost" id="btnHaveAcc">I already have an account</button>
+      <b data-i18n="common:people.guest">GUEST</b>
+      <p data-i18n="online:profile.guestDetail">This account lives on this device only. Delete the app and the rating goes with it.</p>
+      <button class="btn primary" id="btnKeepAcc" data-i18n="online:profile.keepForever">Keep it forever</button>
+      <button class="btn ghost" id="btnHaveAcc" data-i18n="online:auth.alreadyHaveAccount">I already have an account</button>
     </div>
     <div class="err" id="onAccErr"></div>
     <!-- the foot is PINNED (user call): sign out and the delete footnote sit
@@ -102,24 +113,24 @@ const OVERLAY = `
          history above fills what remains. One wrapper so the pin holds
          whether or not Sign out is hidden (guests). -->
     <div class="accfoot">
-      <button class="btn" id="btnSignOut">Sign out</button>
+      <button class="btn" id="btnSignOut" data-i18n="online:profile.signOut">Sign out</button>
       <!-- deleting is a FOOTNOTE, not an action to advertise: the same linkbtn
            row as home's legal links. The red lives on the confirm ask-card,
            where the player is actually deciding. Sign out stays the panel's
            last real button, always directly above it. -->
       <div class="viewfoot">
-        <button class="linkbtn" id="btnDeleteAcc">Delete account</button>
+        <button class="linkbtn" id="btnDeleteAcc" data-i18n="online:profile.deleteAccount">Delete account</button>
       </div>
     </div>
   </div>
 
   <div class="panel" id="onAvatar" hidden>
-    <div class="lbl" style="text-align:center">Pick a face and a colour</div>
+    <div class="lbl" style="text-align:center" data-i18n="online:avatar.instruction">Pick a face and a colour</div>
     <div class="avpreview" id="avPreview"></div>
     <div class="avgrid" id="avFaces"></div>
     <div class="avgrid hues" id="avHues"></div>
     <div class="err" id="onAvErr"></div>
-    <button class="btn primary" id="btnAvatarSave">Save</button>
+    <button class="btn primary" id="btnAvatarSave" data-i18n="online:avatar.save">Save</button>
   </div>
 
   <div class="panel" id="onHistory" hidden>
@@ -133,28 +144,51 @@ const OVERLAY = `
 </div>`;
 
 const PANELS = {
-  onAuth: { title: 'SIGN IN', back: true },
-  onQueue: { title: 'MATCHMAKING', back: false },
-  onBoard: { title: 'LADDER', back: true },
-  onAccount: { title: 'PROFILE', back: true },
-  onAvatar: { title: 'AVATAR', back: true },
-  onHistory: { title: 'MATCH HISTORY', back: true },
+  onAuth: { title: 'panels.signIn', back: true },
+  onQueue: { title: 'panels.matchmaking', back: false },
+  onBoard: { title: 'panels.ladder', back: true },
+  onAccount: { title: 'panels.profile', back: true },
+  onAvatar: { title: 'panels.avatar', back: true },
+  onHistory: { title: 'panels.matchHistory', back: true },
 } as const;
 
 export type OnlinePanel = keyof typeof PANELS;
+let activeTitle: LocaleKey<'online'> | null = null;
+let localeBound = false;
+
+function paintPanelTitle(): void {
+  if (activeTitle) $('#onTitle').textContent = t('online', activeTitle);
+}
+
+function paintOnlineShell(): void {
+  const overlay = document.getElementById('ovOnline');
+  if (overlay) translateDom(overlay);
+  paintPanelTitle();
+}
+
+export function setOnlinePanelTitle(title: LocaleKey<'online'>): void {
+  activeTitle = title;
+  paintPanelTitle();
+}
 
 export function installOnlineShell(): void {
   appRoot().insertAdjacentHTML('beforeend', OVERLAY);
+  translateDom($('#ovOnline'));
+  if (!localeBound) {
+    localeBound = true;
+    subscribeLocale(paintOnlineShell);
+  }
   const dice = $('#qDice');
   dice.appendChild(makeDie(2, ME));
   dice.appendChild(makeDie(6, AI));
 }
 
 export function showOnlinePanel(which: OnlinePanel): void {
+  activeTitle = PANELS[which].title;
   hide('#ovLoad');
   for (const id of Object.keys(PANELS)) $('#' + id).hidden = id !== which;
   $('#ovOnline').classList.toggle('listview', which === 'onBoard' || which === 'onHistory');
-  $('#onTitle').textContent = PANELS[which].title;
+  paintPanelTitle();
   ($('#btnOnlineBack') as HTMLElement).style.visibility = PANELS[which].back ? 'visible' : 'hidden';
   settleGlass('#ovOnline');
 }

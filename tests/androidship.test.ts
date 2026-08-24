@@ -10,7 +10,7 @@ import {
   statSync,
 } from 'node:fs';
 import { join, relative } from 'node:path';
-import { APP_ID, NATIVE_APP_NAME } from '../src/config.ts';
+import { APP_ID, GAME_NAME, NATIVE_APP_NAME, NATIVE_STORE_NAME } from '../src/config.ts';
 import { sameBytes } from './support/ios-artifacts.ts';
 import { verifyNodeRuntimeContract } from './support/node-runtime-contract.ts';
 
@@ -128,6 +128,8 @@ check(/\n  android:\n/.test(workflow)
 /* -------------------- Capacitor and Android identity -------------------- */
 check(cap.appId === APP_ID && cap.appName === NATIVE_APP_NAME && cap.webDir === 'www',
   `${CAP_CONFIG} must use canonical native identity ${APP_ID} / ${NATIVE_APP_NAME}`);
+check(NATIVE_APP_NAME === GAME_NAME && NATIVE_STORE_NAME === 'Knucklebones Neon',
+  'installed native label must stay Knucklebones while the store listing stays Knucklebones Neon');
 check(!('url' in (cap.server ?? {})) && cap.server?.cleartext !== true,
   `${CAP_CONFIG} contains a live-reload URL or cleartext override`);
 check(cap.plugins?.SplashScreen?.launchAutoHide === true
@@ -165,6 +167,11 @@ check(strings.includes(`<string name="app_name">${NATIVE_APP_NAME}</string>`)
 const colors = read(`${RES}/values/colors.xml`);
 check((colors.match(/#05060E/g) ?? []).length >= 2 && colors.includes('#2FD4F2'),
   `${RES}/values/colors.xml must keep system chrome on the branded dark background`);
+const baseStyles = read(`${RES}/values/styles.xml`);
+const api27Styles = read(`${RES}/values-v27/styles.xml`);
+check(!baseStyles.includes('android:windowLightNavigationBar')
+  && api27Styles.includes('android:windowLightNavigationBar'),
+`${RES} must keep the API-27 navigation-bar attribute out of base API-24 resources`);
 const mainActivity = read(`${APP}/src/main/java/com/appavaria/knucklebones/MainActivity.java`);
 check(mainActivity.includes(`package ${APP_ID};`) && /extends\s+BridgeActivity/.test(mainActivity),
   'Android MainActivity must remain the standard Capacitor bridge activity');
@@ -367,6 +374,7 @@ console.log(JSON.stringify({
   nodeRange,
   appId: APP_ID,
   appName: NATIVE_APP_NAME,
+  storeName: NATIVE_STORE_NAME,
   requireSynced: REQUIRE_SYNCED,
   requireBuilt: REQUIRE_BUILT,
   permissions,

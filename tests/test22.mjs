@@ -64,7 +64,8 @@ const REPORT = { won: true, draw: false, forfeit: false, my: 41, their: 29,
 
 const browser = await chromium.launch();
 try {
-  const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, hasTouch: true });
+  const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, hasTouch: true,
+    locale: 'en-US' });
   const page = await ctx.newPage();
   const errs = [];
   page.on('pageerror', (e) => errs.push(e.message));

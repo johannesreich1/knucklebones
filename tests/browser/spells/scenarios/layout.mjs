@@ -1,5 +1,5 @@
 export async function runLayoutScenarios(suite) {
-  const { browser, F, problems, page, out, check, SPELLS, newGame, waitChoose, table, sidePage } = suite;
+  const { browser, F, problems, page, out, check, SPELLS, spellCopy, newGame, waitChoose, table, sidePage } = suite;
   /* ---------- 10b. ANVIL: the forge lands on the die the RULE names ----------
      The rule picks WHICH die (lowest face, ties to the centre), so the screen
      has to show the new face standing where the old one stood — a state-only
@@ -55,7 +55,8 @@ export async function runLayoutScenarios(suite) {
      and any landscape (that lane is a fixed 104px — the wrap depends on the
      words alone). */
   for (const view of [{ name: 'portrait', w: 320, h: 568 }, { name: 'landscape', w: 667, h: 375 }]) {
-    const vctx = await browser.newContext({ viewport: { width: view.w, height: view.h }, hasTouch: true, isMobile: true, deviceScaleFactor: 2 });
+    const vctx = await browser.newContext({ viewport: { width: view.w, height: view.h }, hasTouch: true,
+      isMobile: true, deviceScaleFactor: 2, locale: 'en-US' });
     await vctx.addInitScript(() => { const k = 'knucklebones.v1', c = JSON.parse(localStorage.getItem(k) || '{}'); c.played = true; localStorage.setItem(k, JSON.stringify(c)); });
     const vp = await vctx.newPage();
     vp.on('pageerror', e => problems.push('PAGEERROR(' + view.name + '): ' + e.message));
@@ -90,8 +91,9 @@ export async function runLayoutScenarios(suite) {
       rows.push(row);
       reserve = row.cssReserve;
       land = row.land;
-      check(row.armed && row.text === spell.aim,
-        `the aim-lane probe never armed ${spell.id}`, { row, expected: spell.aim });
+      const expectedAim = spellCopy(spell.id).aim;
+      check(row.armed && row.text === expectedAim,
+        `the aim-lane probe never armed ${spell.id}`, { row, expected: expectedAim });
     }
     const lane = { land, reserve, rows };
     out['aimLane_' + view.name] = lane;

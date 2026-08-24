@@ -93,8 +93,8 @@ if (!(vsRandom[0] <= 0.58)) {
 }
 for (let i = 1; i < GROUPS.length; i++) {
   if (vsRandom[i] < vsRandom[i - 1] - 0.06) {
-    problems.push(`${GROUPS[i].name} (${(vsRandom[i] * 100).toFixed(1)}%) is weaker vs random than `
-      + `${GROUPS[i - 1].name} (${(vsRandom[i - 1] * 100).toFixed(1)}%) — the ladder is not ordered`);
+    problems.push(`${GROUPS[i].id} (${(vsRandom[i] * 100).toFixed(1)}%) is weaker vs random than `
+      + `${GROUPS[i - 1].id} (${(vsRandom[i - 1] * 100).toFixed(1)}%) — the ladder is not ordered`);
   }
 }
 if (!(vsRandom[GROUPS.length - 1] >= 0.70)) {
@@ -165,7 +165,7 @@ if (!(csAwareVsBlind >= 0.47)) {
   // an OPENING move on an empty board is the case pvp-join newly depends on
   for (const g of GROUPS) {
     const c = botMove(st0, ME, 4, g.floor + 10, CLASSIC, seeded(7));
-    check(c >= 0 && c < 3, 'botMove must open with a legal column: ' + g.name, c);
+    check(c >= 0 && c < 3, 'botMove must open with a legal column: ' + g.id, c);
   }
   // deterministic given the SAME stream — replay and the gate both need this.
   const mid: GameState = [[[5, 5], [2], []], [[4], [6, 6], [1]]];
@@ -196,7 +196,7 @@ if (!(csAwareVsBlind >= 0.47)) {
 }
 
 console.log(JSON.stringify({
-  vsRandom: Object.fromEntries(GROUPS.map((g, i) => [g.name, +(vsRandom[i] * 100).toFixed(1)])),
+  vsRandom: Object.fromEntries(GROUPS.map((g, i) => [g.id, +(vsRandom[i] * 100).toFixed(1)])),
   stoneNewcomer: +(stoneNewcomer * 100).toFixed(1),
   boneNewcomer: +(boneNewcomer * 100).toFixed(1),
   boneVsStone: +(boneVsStone * 100).toFixed(1),

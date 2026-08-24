@@ -7,6 +7,7 @@
 @import "./game/stage.css";
 @import "./components/overlays.css";
 @import "./shell/paged-view.css";
+@import "./components/language-picker.css";
 @import "./components/library.css";
 @import "./components/sheet.css";
 @import "./components/mode-dial.css";

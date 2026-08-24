@@ -9,10 +9,11 @@ export const GAME_NAME = 'Knucklebones';
    tests/iosship.test.ts fails unless every unavoidable copy matches this. */
 export const APP_ID = 'com.appavaria.knucklebones';
 
-/* Store-shell identity. The player-visible web/PWA game keeps GAME_NAME;
-   Capacitor, Info.plist, and Android resources copy this value under a native
-   shipping contract because those files cannot import TypeScript. */
-export const NATIVE_APP_NAME = 'Knucklebones Neon';
+/* Installed native identity. App Store Connect and Play Console use the
+   separate marketing name below; Capacitor, Info.plist, and Android resources
+   copy NATIVE_APP_NAME because those files cannot import TypeScript. */
+export const NATIVE_APP_NAME = GAME_NAME;
+export const NATIVE_STORE_NAME = 'Knucklebones Neon';
 
 /* Apple uses the App ID for native iOS AuthenticationServices, but its Android
    WebView flow is a website sign-in and therefore uses the associated Services

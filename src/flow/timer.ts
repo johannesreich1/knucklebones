@@ -1,6 +1,7 @@
 // The two-player turn clock. Pure countdown + display; what happens on
 // expiry is injected by the flow (no upward dependency).
 import { S } from '../state.ts';
+import { formatNumber } from '../i18n/index.ts';
 import { $ } from '../ui/dom.ts';
 import { colorOf } from '../ui/identity.ts';
 import { setClockPresentation } from '../ui/game/root-state.ts';
@@ -45,7 +46,7 @@ export function startTimer(onExpire: () => void, secs?: number): void {
     const left = Math.max(0, end - performance.now());
     bar.style.width = (left / total * 100) + '%';
     const secsLeft = Math.ceil(left / 1000);       // display only — `secs` is the param
-    num.textContent = secsLeft <= 5 ? String(secsLeft) : '';
+    num.textContent = secsLeft <= 5 ? formatNumber(secsLeft) : '';
     if (left <= 5000 && !warned) { warned = true; wrap.classList.add('warn'); }
     if (left <= 0) { stopTimer(); onExpire(); }
   }, 100);

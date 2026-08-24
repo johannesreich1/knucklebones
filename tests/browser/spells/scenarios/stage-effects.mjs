@@ -117,7 +117,9 @@ export async function runStageEffectScenarios(suite) {
     const k = window.__kb;
     k.S.pool = [6, 4];
     const bag = document.getElementById('bagStack');
-    document.getElementById('bagNum').textContent = '2';
+    const bagNum = document.getElementById('bagNum');
+    bagNum.dataset.count = '2';
+    bagNum.textContent = '2';
     bag.classList.remove('empty', 'tick');
     bag.querySelectorAll('.pile .die').forEach((die, index) => die.classList.toggle('gone', index >= 1));
   });

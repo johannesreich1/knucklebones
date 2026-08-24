@@ -220,9 +220,10 @@ a cloud session, which has none.
 
 ## Native (iOS / Android)
 
-The tracked Capacitor 8.5 shell under `native/` ships on both platforms as
+The tracked Capacitor 8.5 shell under `native/` installs on both platforms with
+the Home Screen label **Knucklebones**. Its App Store and Play listing name is
 **Knucklebones Neon**, while the package/bundle id remains
-`com.appavaria.knucklebones`. That shell rename does not change the in-game
+`com.appavaria.knucklebones`. This store-name split does not change the in-game
 name, PWA metadata, URLs, or browser storage keys. Generated web payloads,
 `node_modules`, Pods, Gradle output, local SDK paths, and signing secrets stay
 ignored; native projects, resource catalogs, lockfiles, and Gradle wrappers are
@@ -282,6 +283,6 @@ site data is therefore not equivalent to deleting an online account.
 
 Knucklebones is the dice minigame from *Cult of the Lamb* (Massive Monster /
 Devolver Digital); this project borrows the name and ruleset. The native store
-shell now says **Knucklebones Neon**, but existing legal/trademark clearance for
-that listing name is still unresolved. This technical rename does not settle
+listing now says **Knucklebones Neon**, but existing legal/trademark clearance
+for that listing name is still unresolved. This technical rename does not settle
 it; get real legal advice before store submission or monetisation.

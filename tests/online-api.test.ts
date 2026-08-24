@@ -13,6 +13,8 @@ import {
   isMissingQueueLifecycleRpc,
   leaveQueueWithClient,
 } from '../src/online/match-api.ts';
+import { localizedAuthError } from '../src/online/session.ts';
+import { setLanguageOverride, t } from '../src/i18n/index.ts';
 
 const problems: string[] = [];
 const check = (condition: boolean, message: string, detail?: unknown) => {
@@ -196,6 +198,28 @@ await matchedCancellation.cleanup();
 await matchedCancellation.cleanup({ status: 'matched', match: { id: 'race-match' } });
 check(resigned.join(',') === 'race-match' && confirmed.join(',') === 'race-match',
   'matched cancellation did not converge on one confirmed resign', { resigned, confirmed });
+
+/* Provider prose is not player copy. Stable provider codes map into the
+   current catalog, and unknown messages fall back without leaking English
+   returned by Supabase into a German or French screen. */
+setLanguageOverride('de');
+check(localizedAuthError({ code: 'invalid_credentials', message: 'Invalid login credentials' })
+  === 'E-Mail oder Passwort ist falsch.',
+  'known auth errors do not use the effective locale');
+check(localizedAuthError({ code: 'email_address_invalid', message: 'Invalid email' })
+  === 'Gib eine gültige E-Mail-Adresse ein.',
+  'the exact invalid-email provider code is not localized');
+check(localizedAuthError({ code: 'validation_failed', message: 'Some field failed validation' })
+  === 'Etwas ist schiefgelaufen. Bitte versuche es erneut.',
+  'the generic validation code was unsafely presented as an email error');
+const unknownGerman = localizedAuthError({ code: 'future_provider_code', message: 'Raw provider English' });
+check(unknownGerman === 'Etwas ist schiefgelaufen. Bitte versuche es erneut.'
+  && !unknownGerman.includes('Raw provider English'),
+  'unknown provider prose leaked through the localized error boundary', unknownGerman);
+setLanguageOverride('en');
+check(t('online', 'result.delta', { count: 1, points: '+1' }) === ' · +1 point'
+  && t('online', 'result.delta', { count: 2, points: '+2' }) === ' · +2 points',
+  'ranked result points do not select singular/plural copy');
 
 console.log(JSON.stringify({ problems, errs: [] }, null, 2));
 process.exit(problems.length ? 1 : 0);

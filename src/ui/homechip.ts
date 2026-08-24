@@ -4,6 +4,7 @@
 // profile or standing changes.
 import { fillPlate } from './plate.ts';
 import { appRoot } from './embed.ts';
+import { t } from '../i18n/index.ts';
 
 interface CachedHomeProfile {
   nickname?: string;
@@ -35,5 +36,6 @@ export function refreshHomeChip(): void {
     }
   } catch { /* forgetful host: paint the anonymous state below */ }
   chip.classList.add('anon');
-  chip.innerHTML = '<span class="ringwrap mini"><i class="lring"></i></span>NOT SIGNED IN';
+  chip.innerHTML = '<span class="ringwrap mini"><i class="lring"></i></span>'
+    + t('game', 'home.notSignedIn');
 }

@@ -16,6 +16,7 @@ import {
 import { makeBag } from '../core/dice.ts';
 import { RANDOM, pickMode } from '../core/modes.ts';
 import { RANDOM_SPELL, spellById } from '../core/spells.ts';
+import { formatNumber, t } from '../i18n/index.ts';
 import { reveal } from '../ui/reveal.ts';
 import { isNewcomer, offerTutorial } from '../ui/firstrun.ts';
 import { S } from '../state.ts';
@@ -23,7 +24,7 @@ import { saveStats } from '../persist.ts';
 import { Sfx, vibrate } from '../ui/audio.ts';
 import { $, show, hide } from '../ui/dom.ts';
 import { showBag, renderBag } from '../ui/bag.ts';
-import { nameOf, colorOf } from '../ui/identity.ts';
+import { nameOf } from '../ui/identity.ts';
 import { setStageDie } from '../ui/die.ts';
 import { renderAll } from '../ui/game/board.ts';
 import { clearHints, showHints } from '../ui/game/hints.ts';
@@ -36,9 +37,11 @@ import { fit } from '../ui/layout.ts';
 import { startTimer, stopTimer, showClock } from './timer.ts';
 import { coachShow, coachHide, clearTut, tutNextRoll, tutOnChoose } from './tutorial.ts';
 import { toMenu } from './menu.ts';
-import { showEnd, closeEnd } from '../ui/endscreen.ts';
+import { closeEnd } from '../ui/endscreen.ts';
 import { aiSpellTurn, disarm, drawSpell, renderSpells, resetSpells, resolveTimedOutSpellAim } from './spells.ts';
 import { aiChoose } from './game-ai.ts';
+import { showLocalResult } from './local-result.ts';
+import { hidePassCard, showPassCard } from './pass-card.ts';
 
 export { aiChoose } from './game-ai.ts';
 
@@ -58,7 +61,7 @@ async function autoPlace(gen: number): Promise<void> {
   const legal=legalCols(S.boards[who]);
   if(!legal.length) return;
   const c=legal[(Math.random()*legal.length)|0];
-  setStatus('Out of time — column '+(c+1),who);
+  setStatus(() => t('game', 'status.outOfTime', { column: formatNumber(c + 1) }), who);
   vibrate([30,40,30]);
   void place(who, c);
 }
@@ -71,24 +74,17 @@ function handOff(who: Player): Promise<boolean> {
     stopTimer();
     clearHints();
     setStageDie(0);
-    setStatus('Pass the phone',who);
-    const ov=$('#ovPass');
-    ov.style.setProperty('--pc',colorOf(who));
-    const w=$('#passWho');
-    w.textContent=nameOf(who);
-    w.style.color=colorOf(who);
-    $('#passP1').textContent=String(localTotal(ME));
-    $('#passP2').textContent=String(localTotal(AI));
-    show('#ovPass');
+    setStatus(() => t('game', 'status.passPhone'), who);
+    showPassCard(who);
     Sfx.pass();
     const go=()=>{
-      hide('#ovPass');
+      hidePassCard();
       if(S.gen!==gen) { resolve(false); return; }
       S.bottom=who;
       applySides();
-      const t=$('#tableEl');
-      t.classList.remove('swap'); void t.offsetWidth; t.classList.add('swap');
-      setTimeout(()=>t.classList.remove('swap'),480);
+      const table=$('#tableEl');
+      table.classList.remove('swap'); void table.offsetWidth; table.classList.add('swap');
+      setTimeout(()=>table.classList.remove('swap'),480);
       Sfx.tap(); vibrate(10);
       resolve(true);
     };
@@ -106,7 +102,7 @@ async function rollDice(): Promise<void> {
   const who = S.turn;
   S.phase = 'roll';
   setActivePlate();
-  setStatus(who === ME ? 'Your roll' : 'AI roll', who);
+  setStatus(() => who === ME ? t('game', 'status.yourRoll') : t('game', 'status.aiRoll'), who);
   await animateStageRoll({
     who,
     durationMs: 430,
@@ -127,7 +123,11 @@ async function rollDice(): Promise<void> {
    rail wakes up here too — a choice starting is exactly when it becomes live,
    and in two-player it changes hands with the turn. */
 export function sayChoose(): void {
-  setStatus(S.mode==='duo' ? nameOf(S.turn)+' — tap a column' : 'Tap a column', S.turn);
+  const who = S.turn;
+  const duo = S.mode === 'duo';
+  setStatus(() => duo
+    ? t('game', 'status.playerChoose', { player: nameOf(who) })
+    : t('game', 'status.chooseColumn'), who);
   renderSpells();
 }
 const gameOver = (): boolean => S.phase === 'over';
@@ -153,7 +153,7 @@ export async function nextTurn(): Promise<void> {
     armTimer();
   }else{
     S.phase='anim';
-    setStatus('AI thinking',AI);
+    setStatus(() => t('game', 'status.aiThinking'), AI);
     await wait(300);
     if(S.gen!==gen) return;
     // it holds the same rune you do — it spends it at the same point in the
@@ -272,11 +272,15 @@ export function newGame(opts: NewGameOptions = {}): void {
   updateRecord();
   hide('#ovEnd'); hide('#ovStart'); hide('#ovRules'); hide('#ovPass'); hide('#ovPractice');
   hide('#ovLearn');   // the hub the tutorial is started FROM, or it stays over the board
-  setStatus(S.mode==='duo' ? nameOf(S.turn)+' starts'
-                           : (S.turn===ME?'You go first':'AI goes first'), S.turn);
+  const openingPlayer = S.turn;
+  const duo = S.mode === 'duo';
+  setStatus(() => duo
+    ? t('game', 'status.playerStarts', { player: nameOf(openingPlayer) })
+    : (openingPlayer === ME ? t('game', 'status.youFirst') : t('game', 'status.aiFirst')),
+  openingPlayer);
   setActivePlate();
   if(tutorial){
-    coachShow('Welcome to Knucklebones! Your grid is the BOTTOM one. Fill it with dice before the AI fills theirs — highest total wins.', true)
+    coachShow(() => t('learn', 'tutorial.welcome'), true)
       .then(() => { if (S.gen === gen) void nextTurn(); });
   }else{
     setTimeout(() => { if (S.gen === gen) void nextTurn(); }, 650);
@@ -312,36 +316,26 @@ export function endGame(): void {
   }
   saveStats();
   setStatus('',null);   // the result screen announces the winner — the table says nothing twice (user call)
-  // ONE result screen, filled from here — the fireworks and the title's landing
-  // belong to it, so a ranked win gets exactly the same show (ui/endscreen)
-  showEnd({
-    outcome: drawn ? 'draw' : (duo || p1won) ? 'win' : 'lose',
-    title: drawn ? 'DEAD HEAT'
-      : duo ? (p1won?'PLAYER 1 WINS':'PLAYER 2 WINS') : (p1won?'VICTORY':'DEFEAT'),
-    sub: drawn ? 'Nobody blinks'
-      : tut ? (p1won ? 'Tutorial complete — the bones obey you'
-                     : 'Tutorial complete — now beat the real thing')
-      /* the seat, never the hue: Settings can trade or repaint the pair,
-         and a line that names a colour would then name the wrong player */
-      : duo ? (p1won?'Player 1 takes the round':'Player 2 takes the round')
-            : (p1won?'You out-rolled the machine':'The AI takes this one'),
-    you:  { score: me, label: duo?'Player 1':'You' },
-    them: { score: ai, label: duo?'Player 2':'AI' },
-    meta: tut ? 'TUTORIAL COMPLETE'
-      : duo ? 'SESSION  P1 '+S.p1+' – '+S.p2+' P2'+(S.ties?('  ·  '+S.ties+' drawn'):'')
-            : 'SESSION  '+S.wins+'–'+S.losses+(S.draws?('–'+S.draws+' D'):''),
-    /* The tutorial ends in a graduation, not a rematch — one button, and none
-       of the "change difficulty" furniture that assumes you chose anything. */
-    again: tut ? { label: 'Finish', run: () => { closeEnd(); toMenu(); } }
-               : { label: 'Next duel', run: () => { void startLocal(); } },
-    /* ONE quiet way on (user call): back to the setup screen this game came
-       from. It replaced a pair — "Change difficulty" and "Home" — that gave a
-       two-choice screen three buttons, and the two were barely distinct: the
-       setup screen IS the way home (its ‹ goes there), so the second was a
-       shortcut past a screen you may well want anyway. One label for both
-       seatings, too: what waits there is the whole setup, not one segment. */
-    quiet: tut ? undefined
-               : { label: 'Change setup', run: () => { closeEnd(); show('#ovPractice'); } },
-    delay: 900,                              // the board holds the last move first
+  showLocalResult({
+    tutorial: tut,
+    duo,
+    drawn,
+    playerOneWon: p1won,
+    playerOneScore: me,
+    playerTwoScore: ai,
+    session: {
+      playerOneWins: S.p1,
+      playerTwoWins: S.p2,
+      ties: S.ties,
+      wins: S.wins,
+      losses: S.losses,
+      draws: S.draws,
+    },
+  }, {
+    /* Tutorial graduates; ordinary results offer a rematch and one quiet way
+       back to the complete setup screen. */
+    finishTutorial: () => { closeEnd(); toMenu(); },
+    nextDuel: () => { void startLocal(); },
+    changeSetup: () => { closeEnd(); show('#ovPractice'); },
   });
 }

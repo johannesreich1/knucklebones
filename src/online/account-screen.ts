@@ -1,4 +1,11 @@
-import { groupFill, inApex, peakState, rankName, rk } from '../core/ladder.ts';
+import { groupFill, groupOf, inApex, peakState } from '../core/ladder.ts';
+import {
+  formatDate,
+  formatNumber,
+  ladderGroupName,
+  subscribeLocale,
+  t,
+} from '../i18n/index.ts';
 import { ask } from '../ui/askcard.ts';
 import { Sfx } from '../ui/audio.ts';
 import { DEFAULT_AVATAR, paintAvatar } from '../ui/avatar.ts';
@@ -20,8 +27,11 @@ import {
   signOut,
 } from './session.ts';
 import { historyRow } from './history-screen.ts';
+import { repaintOnlineMessage } from './message-copy.ts';
 import { showOnlinePanel } from './shell.ts';
 import type { AuthMode } from './auth-screen.ts';
+import type { Ladder, Standing } from './ladder-api.ts';
+import type { Me, Profile } from './session.ts';
 
 interface AccountPorts {
   showAuth(mode: AuthMode): void;
@@ -57,21 +67,123 @@ function fillRing(ring: HTMLElement, target: number): void {
 }
 
 export function createAccountScreen(ports: AccountPorts): AccountScreen {
-  async function show(): Promise<void> {
-    showOnlinePanel('onAccount');
+  let lastAccount: {
+    profile: Profile | null;
+    user: Me | null;
+    ladder: Ladder | null;
+    standing: Standing | null;
+    streak: number;
+  } | null = null;
+  let lastRecent: Awaited<ReturnType<typeof matchHistory>> = [];
+  let pendingCachedRating: number | null = null;
+  let nickError: (() => string) | null = null;
+  let accountError: (() => string) | null = null;
+  let showRevision = 0;
+
+  const clearNickError = (): void => {
+    nickError = null;
+    $('#onNickErr').textContent = '';
+  };
+  const showNickError = (render: () => string): void => {
+    nickError = render;
+    $('#onNickErr').textContent = render();
+  };
+  const clearAccountError = (): void => {
+    accountError = null;
     $('#onAccErr').textContent = '';
+  };
+  const showAccountError = (render: () => string): void => {
+    accountError = render;
+    $('#onAccErr').textContent = render();
+  };
+
+  const groupName = (points: number): string => ladderGroupName(groupOf(points).id);
+  const rankText = (standing: Standing | null, games: number, apex: boolean): string =>
+    standing && games ? (apex ? ladderGroupName('neon') : '#' + formatNumber(standing.rank)) : '–';
+
+  const paintRecent = (): void => {
+    const recent = $('#accRecent');
+    recent.innerHTML = '';
+    for (const row of lastRecent.slice(0, 3)) recent.appendChild(historyRow(row));
+    recent.hidden = !recent.childElementCount;
+    const account = $('#onAccount');
+    while (recent.lastChild && account.scrollHeight > account.clientHeight + 1) {
+      recent.removeChild(recent.lastChild);
+    }
+    recent.hidden = !recent.childElementCount;
+  };
+
+  const paintAccount = (): void => {
+    if (!lastAccount) return;
+    const { profile, user, ladder, standing, streak } = lastAccount;
+    $('#accSince').textContent = !user?.guest && profile?.created_at
+      ? t('online', 'profile.memberSince', {
+        date: formatDate(new Date(profile.created_at), { month: 'long', year: 'numeric' }),
+      })
+      : '';
+    const points = ladder?.points ?? 0;
+    const peak = ladder?.peak ?? 0;
+    const games = ladder ? ladder.wins + ladder.losses + ladder.draws : 0;
+    const apex = standing ? inApex(points, standing.rank, standing.population) : false;
+    $('#accPoints').textContent = formatNumber(points);
+    $('#accGroup').textContent = groupName(points);
+    $('#accPeak').textContent = formatNumber(peak);
+    $('#accGames').textContent = games
+      ? t('online', 'profile.gamesLink', { count: games, formatted: formatNumber(games) })
+      : t('online', 'profile.noneYet');
+    $('#accRank').textContent = rankText(standing, games, apex);
+    $('#accStreak').textContent = formatNumber(streak);
+    paintRecent();
+  };
+
+  subscribeLocale(() => {
+    const panel = document.getElementById('onAccount');
+    if (!panel || panel.hidden) return;
+    if (lastAccount) paintAccount();
+    else if (pendingCachedRating !== null) {
+      $('#accPoints').textContent = formatNumber(pendingCachedRating);
+      $('#accGroup').textContent = groupName(pendingCachedRating);
+    }
+    if (nickError) $('#onNickErr').textContent = nickError();
+    if (accountError) $('#onAccErr').textContent = accountError();
+  });
+
+  async function show(): Promise<void> {
+    const run = ++showRevision;
+    const ownsRun = (): boolean => run === showRevision && !$('#onAccount').hidden;
+    showOnlinePanel('onAccount');
+    lastAccount = null;
+    pendingCachedRating = null;
+    lastRecent = [];
+    clearAccountError();
+    clearNickError();
+    $('#accSince').textContent = '';
+    $('#accPoints').textContent = formatNumber(0);
+    $('#accGroup').textContent = groupName(0);
+    $('#accPeak').textContent = formatNumber(0);
+    $('#accGames').textContent = t('online', 'profile.noneYet');
+    $('#accRank').textContent = '–';
+    $('#accStreak').textContent = formatNumber(0);
+    $('#accName').textContent = '';
+    $('#accGuest').hidden = true;
+    ($('#btnSignOut') as HTMLElement).hidden = true;
+    $('#accClaim').hidden = true;
+    paintAvatar($('#accDie'), DEFAULT_AVATAR);
+    paintRecent();
     const ring = $('#accRing') as HTMLElement;
     ring.classList.remove('haspeak');
     ring.style.setProperty('--p', '0');
     try {
       const cached = JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null')?.rating;
       if (typeof cached === 'number') {
+        pendingCachedRating = cached;
         fillRing(ring, groupFill(cached));
-        $('#accPoints').textContent = cached.toLocaleString('en');
-        $('#accGroup').textContent = rankName(cached);
+        $('#accPoints').textContent = formatNumber(cached);
+        $('#accGroup').textContent = groupName(cached);
       }
     } catch { /* forgetful host — the fresh row below paints everything anyway */ }
     const [profile, user] = await Promise.all([myProfile(), currentUser()]);
+    if (!ownsRun()) return;
     refreshHomeChip();
     $('#accGuest').hidden = !user?.guest;
     ($('#btnSignOut') as HTMLElement).hidden = !!user?.guest;
@@ -80,29 +192,22 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     claim.hidden = !profile || !!profile.named_at;
     if (!claim.hidden) {
       ($('#onNick') as HTMLInputElement).placeholder = profile!.nickname;
-      $('#onNickErr').textContent = '';
+      clearNickError();
     }
     paintAvatar($('#accDie'), profile?.avatar ?? DEFAULT_AVATAR);
-    $('#accSince').textContent = !user?.guest && profile?.created_at
-      ? 'Member since ' + new Date(profile.created_at)
-        .toLocaleDateString('en', { month: 'long', year: 'numeric' })
-      : '';
-
     const [ladder, standing, streak] = await Promise.all([
       myLadder(),
       myStanding(),
       bestStreak(),
     ]);
+    if (!ownsRun()) return;
     const points = ladder?.points ?? 0;
     const peak = ladder?.peak ?? 0;
-    $('#accPoints').textContent = points.toLocaleString('en');
-    $('#accGroup').textContent = rankName(points);
-    $('#accPeak').textContent = peak.toLocaleString('en');
     const games = ladder ? ladder.wins + ladder.losses + ladder.draws : 0;
-    $('#accGames').textContent = games ? `${games} games ›` : 'none yet ›';
     const apex = standing ? inApex(points, standing.rank, standing.population) : false;
-    $('#accRank').textContent = standing && games ? (apex ? 'NEON' : rk(standing.rank)) : '–';
-    $('#accStreak').textContent = String(streak);
+    lastAccount = { profile, user, ladder, standing, streak };
+    pendingCachedRating = null;
+    paintAccount();
     cacheStanding(standing?.rank ?? null, apex);
     refreshHomeChip();
 
@@ -112,18 +217,10 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     if (peakPosition.kind === 'ahead') ring.style.setProperty('--pk', String(peakPosition.fill));
     if (peakPosition.kind === 'above') ring.style.setProperty('--pk', '1');
 
-    const recent = $('#accRecent');
-    recent.innerHTML = '';
-    recent.hidden = true;
     void matchHistory(3).then((rows) => {
-      if ($('#onAccount').hidden) return;
-      for (const row of rows.slice(0, 3)) recent.appendChild(historyRow(row));
-      recent.hidden = !recent.childElementCount;
-      const account = $('#onAccount');
-      while (recent.lastChild && account.scrollHeight > account.clientHeight + 1) {
-        recent.removeChild(recent.lastChild);
-      }
-      recent.hidden = !recent.childElementCount;
+      if (!ownsRun()) return;
+      lastRecent = rows;
+      paintRecent();
     });
   }
 
@@ -138,20 +235,23 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     });
     $('#btnClaim').addEventListener('click', async () => {
       Sfx.tap();
+      clearNickError();
       const name = ($('#onNick') as HTMLInputElement).value.trim();
       if (name.length > 16) {
-        $('#onNickErr').textContent = `Too long — 16 characters at most (this one is ${name.length}).`;
+        showNickError(() => t('online', 'profile.nameTooLong', {
+          count: formatNumber(name.length),
+        }));
         return;
       }
       if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) {
-        $('#onNickErr').textContent = '3–16 letters, digits or underscores.';
+        showNickError(() => t('online', 'profile.nameInvalid'));
         return;
       }
       const confirmed = await ask({
-        head: `Play as ${name}?`,
-        body: 'A name is claimed once and kept for good. It cannot be edited or claimed again later.',
-        confirm: 'Claim it',
-        cancel: 'Not yet',
+        head: () => t('online', 'profile.claimQuestion', { name }),
+        body: () => t('online', 'profile.claimWarning'),
+        confirm: () => t('online', 'profile.claimIt'),
+        cancel: () => t('online', 'profile.notYet'),
         loud: true,
       });
       if (!confirmed) return;
@@ -160,9 +260,11 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       const error = await claimName(name);
       if (error) {
         button.disabled = false;
-        $('#onNickErr').textContent = error;
+        const returned = error;
+        showNickError(() => repaintOnlineMessage(returned));
         return;
       }
+      clearNickError();
       $('#accClaim').hidden = true;
       $('#accName').textContent = name;
       button.disabled = false;
@@ -170,11 +272,10 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       const user = await currentUser();
       if (user?.guest) {
         const upgrade = await ask({
-          head: `Keep ${name} forever?`,
-          body: 'Your account lives on this device only — and the name you just claimed lives with it. '
-            + 'Add an email and both survive anything.',
-          confirm: 'Create account',
-          cancel: 'Not now',
+          head: () => t('online', 'profile.keepNameTitle', { name }),
+          body: () => t('online', 'profile.keepNameDetail'),
+          confirm: () => t('online', 'auth.createAction'),
+          cancel: () => t('online', 'profile.notNow'),
           loud: true,
         });
         if (upgrade) ports.showAuth('attach');
@@ -200,21 +301,23 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     });
     $('#btnDeleteAcc').addEventListener('click', async () => {
       Sfx.tap();
+      clearAccountError();
       const confirmed = await ask({
-        head: 'Delete your account?',
-        body: 'Your profile, your matches and your ladder points are removed from the '
-          + 'server. There is no undo, and nothing can be restored afterwards.',
-        confirm: 'Delete everything',
-        cancel: 'Keep my account',
+        head: () => t('online', 'profile.deleteTitle'),
+        body: () => t('online', 'profile.deleteDetail'),
+        confirm: () => t('online', 'profile.deleteEverything'),
+        cancel: () => t('online', 'profile.keepAccount'),
         danger: true,
-        check: 'I understand this cannot be undone',
+        check: () => t('online', 'profile.deleteCheck'),
       });
       if (!confirmed) return;
       const error = await deleteAccount();
       if (error) {
-        $('#onAccErr').textContent = error;
+        const returned = error;
+        showAccountError(() => repaintOnlineMessage(returned));
         return;
       }
+      clearAccountError();
       refreshHomeChip();
       ports.showAuth('restore');
     });

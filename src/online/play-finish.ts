@@ -13,7 +13,7 @@ import type { FinishReport, OnlineState } from './play-types.ts';
 export function finishOnlineMatch(options: {
   online: OnlineState;
   match: MatchRow;
-  opponentName: string;
+  opponentName: () => string;
   opponentSeat: 'p1' | 'p2';
   isCurrent: () => boolean;
   teardown: () => void;
@@ -59,7 +59,8 @@ export function finishOnlineMatch(options: {
     my: mine,
     their: theirs,
     delta,
-    opp: options.opponentName,
+    opp: options.opponentName(),
+    opponentName: options.opponentName,
     oppAvatar: online.names.avatars?.[options.opponentSeat] ?? null,
     oppRating: opponentJoinPoints != null ? opponentJoinPoints + (opponentDelta ?? 0) : null,
   };

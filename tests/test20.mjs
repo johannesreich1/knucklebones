@@ -26,7 +26,7 @@ const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x
 
 const browser = await chromium.launch();
 try {
-  const ctx = await browser.newContext({ viewport: { width: 430, height: 932 } });
+  const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, locale: 'en-US' });
   await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the tutorial offer is test19's subject
   const page = await ctx.newPage();
   page.on('pageerror', (e) => problems.push('PAGEERROR ' + e.message));
@@ -35,7 +35,7 @@ try {
 
   /* one deal, driven exactly as a player drives it: pick RANDOM in the spell
      row, press Play, and read only what is on screen */
-  const deal = async (localMode) => {
+  const deal = async (localMode, liveLocale = false) => {
     await page.evaluate((m) => {
       const k = window.__kb;
       k.goHome(); k.openPractice();
@@ -44,7 +44,72 @@ try {
       k.S.timer = 0;
     }, localMode);
     await page.click('#btnPlay');
+    const localeRepaint = {};
+    if (liveLocale) {
+      await page.waitForSelector('#wheelDial', { timeout: 14000 });
+      await page.waitForTimeout(700); // clear tap()'s native-click guard
+      localeRepaint.mode = await page.evaluate(() => {
+        const overlay = document.getElementById('ovWheel');
+        const stage = document.getElementById('wheelStage');
+        const dial = document.getElementById('wheelDial');
+        const comet = document.getElementById('wheelComet');
+        const animation = comet.getAnimations()[0] ?? null;
+        window.__localeReveal = { overlay, stage, dial, comet, animation };
+        const state = () => JSON.stringify({
+          gen: window.__kb.S.gen,
+          scoring: window.__kb.S.scoring,
+          spellCharges: window.__kb.S.spellCharges,
+          boards: window.__kb.S.boards,
+        });
+        const stateBefore = state();
+        document.getElementById('languageNext').click();
+        return {
+          locale: window.__kb.S.localeOverride,
+          title: document.getElementById('wheelTitle').textContent.trim(),
+          sameOverlay: document.getElementById('ovWheel') === overlay,
+          sameStage: document.getElementById('wheelStage') === stage,
+          sameDial: document.getElementById('wheelDial') === dial,
+          sameComet: document.getElementById('wheelComet') === comet,
+          sameAnimation: !animation || comet.getAnimations().includes(animation),
+          stateBefore,
+          stateAfter: state(),
+        };
+      });
+    }
     await page.waitForSelector('#ovWheel.dealing', { timeout: 14000 });
+    if (liveLocale) {
+      await page.waitForTimeout(30); // fanIn has installed its live WAAPI animations
+      localeRepaint.rune = await page.evaluate(() => {
+        const stage = document.getElementById('wheelStage');
+        const card = stage.querySelector('.rdealt');
+        const label = card.querySelector('.rlbl');
+        const deckCard = stage.querySelector('.rcard');
+        const animation = deckCard.getAnimations()[0] ?? null;
+        const before = label.textContent.trim();
+        const state = () => JSON.stringify({
+          gen: window.__kb.S.gen,
+          scoring: window.__kb.S.scoring,
+          spellCharges: window.__kb.S.spellCharges,
+          boards: window.__kb.S.boards,
+        });
+        const stateBefore = state();
+        Object.assign(window.__localeReveal, { runeStage: stage, card, label, deckCard, animation });
+        document.getElementById('languageNext').click();
+        return {
+          locale: window.__kb.S.localeOverride,
+          title: document.getElementById('wheelTitle').textContent.trim(),
+          before,
+          label: label.textContent.trim(),
+          sameStage: document.getElementById('wheelStage') === stage,
+          sameCard: stage.querySelector('.rdealt') === card,
+          sameLabel: card.querySelector('.rlbl') === label,
+          sameDeckCard: stage.querySelector('.rcard') === deckCard,
+          sameAnimation: !animation || deckCard.getAnimations().includes(animation),
+          stateBefore,
+          stateAfter: state(),
+        };
+      });
+    }
     const t0 = Date.now();
     const shuffling = await page.evaluate(() => ({
       named: document.querySelector('#wheelName').textContent.trim(),
@@ -78,6 +143,53 @@ try {
         hold: getComputedStyle(document.querySelector('.dhold')).visibility,
       };
     });
+    if (liveLocale) {
+      await page.waitForFunction(() => document.querySelector('#ovWheel')?.classList.contains('holding'),
+        null, { timeout: 8000 });
+      localeRepaint.hold = await page.evaluate(() => {
+        const overlay = document.getElementById('ovWheel');
+        const stage = document.getElementById('wheelStage');
+        const card = stage.querySelector('.rdealt');
+        const label = card.querySelector('.rlbl');
+        const name = document.querySelector('#wheelName .wcopy');
+        const blurb = document.getElementById('wheelBlurb');
+        const settled = document.querySelector('#wheelSettled .wsett');
+        const before = {
+          name: name.textContent.trim(),
+          blurb: blurb.textContent.trim(),
+          settled: settled?.textContent.trim() ?? '',
+          hint: document.getElementById('wheelHint').textContent.trim(),
+        };
+        const state = () => JSON.stringify({
+          gen: window.__kb.S.gen,
+          scoring: window.__kb.S.scoring,
+          spellCharges: window.__kb.S.spellCharges,
+          boards: window.__kb.S.boards,
+        });
+        const stateBefore = state();
+        document.getElementById('languageNext').click();
+        const after = {
+          name: name.textContent.trim(),
+          blurb: blurb.textContent.trim(),
+          settled: settled?.textContent.trim() ?? '',
+          hint: document.getElementById('wheelHint').textContent.trim(),
+        };
+        return {
+          locale: window.__kb.S.localeOverride,
+          before,
+          after,
+          sameOverlay: document.getElementById('ovWheel') === overlay,
+          sameStage: document.getElementById('wheelStage') === stage,
+          sameCard: stage.querySelector('.rdealt') === card,
+          sameLabel: card.querySelector('.rlbl') === label,
+          sameName: document.querySelector('#wheelName .wcopy') === name,
+          sameBlurb: document.getElementById('wheelBlurb') === blurb,
+          sameSettled: document.querySelector('#wheelSettled .wsett') === settled,
+          stateBefore,
+          stateAfter: state(),
+        };
+      });
+    }
     await page.click('#ovWheel');            // "I have read it" — cuts the hold short
     await page.waitForFunction(() => !document.querySelector('#ovWheel')?.classList.contains('on'),
       null, { timeout: 8000 });
@@ -87,7 +199,16 @@ try {
       theirs: Object.keys(window.__kb.S.spellCharges[0])[0] ?? null,
       mode: window.__kb.modeByEnum(window.__kb.S.scoring).id,
     }));
-    return { shuffling, shuffleMs, turned, played };
+    if (liveLocale) {
+      await page.evaluate(() => {
+        window.__kb.S.localeOverride = null;
+        const key = 'knucklebones.v1';
+        const saved = JSON.parse(localStorage.getItem(key) ?? '{}');
+        saved.localeOverride = null;
+        localStorage.setItem(key, JSON.stringify(saved));
+      });
+    }
+    return { shuffling, shuffleMs, turned, played, localeRepaint };
   };
 
   // ---- a deal under a mode the player CHOSE: one beat, one countdown ----
@@ -120,7 +241,7 @@ try {
   check(solo.shuffleMs < 6000, 'the shuffle outstays its welcome', { shuffleMs: solo.shuffleMs });
 
   // ---- both left to chance: TWO answers, ONE countdown ----
-  const both = await deal('-1');                                  // -1 = RANDOM
+  const both = await deal('-1', true);                            // -1 = RANDOM
   out.both = both;
   check(both.turned.settled.length === 1,
     'the mode did not settle above the rune', both.turned.settled);
@@ -131,6 +252,34 @@ try {
   check(both.turned.hold === 'visible', 'the countdown never arrived', both.turned);
   check(both.played.mode !== 'random' && both.turned.card === both.played.mine,
     'the game and the reveal disagree when BOTH were random', { turned: both.turned, played: both.played });
+  check(both.localeRepaint.mode.locale === 'de'
+    && both.localeRepaint.mode.title === 'SPIELMODUS'
+    && both.localeRepaint.mode.sameOverlay && both.localeRepaint.mode.sameStage
+    && both.localeRepaint.mode.sameDial && both.localeRepaint.mode.sameComet
+    && both.localeRepaint.mode.sameAnimation
+    && both.localeRepaint.mode.stateAfter === both.localeRepaint.mode.stateBefore,
+  'changing locale rebuilt or restarted the live mode dial', both.localeRepaint.mode);
+  check(both.localeRepaint.rune.locale === 'fr'
+    && both.localeRepaint.rune.title === 'VOTRE RUNE'
+    && both.localeRepaint.rune.label !== both.localeRepaint.rune.before
+    && both.localeRepaint.rune.sameStage && both.localeRepaint.rune.sameCard
+    && both.localeRepaint.rune.sameLabel && both.localeRepaint.rune.sameDeckCard
+    && both.localeRepaint.rune.sameAnimation
+    && both.localeRepaint.rune.stateAfter === both.localeRepaint.rune.stateBefore,
+  'changing locale rebuilt/restarted the rune deal or left its card label stale',
+  both.localeRepaint.rune);
+  check(both.localeRepaint.hold.locale === 'en'
+    && both.localeRepaint.hold.before.name !== both.localeRepaint.hold.after.name
+    && both.localeRepaint.hold.before.blurb !== both.localeRepaint.hold.after.blurb
+    && both.localeRepaint.hold.before.settled !== both.localeRepaint.hold.after.settled
+    && both.localeRepaint.hold.before.hint !== both.localeRepaint.hold.after.hint
+    && both.localeRepaint.hold.sameOverlay && both.localeRepaint.hold.sameStage
+    && both.localeRepaint.hold.sameCard && both.localeRepaint.hold.sameLabel
+    && both.localeRepaint.hold.sameName && both.localeRepaint.hold.sameBlurb
+    && both.localeRepaint.hold.sameSettled
+    && both.localeRepaint.hold.stateAfter === both.localeRepaint.hold.stateBefore,
+  'holding reveal did not repaint every answer in place or changed game state',
+  both.localeRepaint.hold);
 
   // ---- the deck is cut fresh: three deals must not fan out identically ----
   const third = await deal('0');

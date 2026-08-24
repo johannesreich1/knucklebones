@@ -1,9 +1,12 @@
 import { readFileSync } from 'node:fs';
 import {
   APPLE_IDENTITY_MESSAGES,
+  GAME_CENTER_IDENTITY_MESSAGES,
   createAppleIdentity,
+  createGameCenterIdentity,
   sha256Hex,
   type AppleSignInBridge,
+  type GameCenterBridge,
 } from '../src/online/identity.ts';
 import {
   APPLE_OAUTH_REDIRECT_URL,
@@ -225,6 +228,118 @@ const linkingOff = createAppleIdentity(identityPorts(
 ));
 check(await linkingOff.attach() === APPLE_IDENTITY_MESSAGES.configuration,
 'manual-linking dashboard configuration did not return a stable error');
+
+interface GameCenterHarnessOptions {
+  session?: { access_token: string } | null;
+  sessionError?: { code: string } | null;
+  status?: number;
+  body?: unknown;
+  verifyError?: { code: string } | null;
+  throwAt?: 'getSession' | 'request' | 'json' | 'verifyOtp';
+}
+
+function gameCenterHarness(options: GameCenterHarnessOptions = {}) {
+  const calls = {
+    getSession: 0,
+    requests: [] as Array<{ input: string; init: RequestInit }>,
+    verifyOtp: [] as Array<{ token_hash: string; type: string }>,
+  };
+  const plugin: GameCenterBridge = {
+    signIn: async () => ({
+      publicKeyUrl: 'https://apple.example/cert',
+      signature: 'signed',
+      salt: 'salt',
+      timestamp: '123',
+      playerId: 'player',
+      bundleId: 'com.appavaria.knucklebones',
+    }),
+  };
+  const identity = createGameCenterIdentity({
+    getPlugin: () => plugin,
+    getAuth: () => ({
+      getSession: async () => {
+        calls.getSession++;
+        if (options.throwAt === 'getSession') throw new Error('storage failed');
+        return {
+          data: { session: options.session ?? null },
+          error: options.sessionError ?? null,
+        };
+      },
+      verifyOtp: async (params) => {
+        calls.verifyOtp.push(params);
+        if (options.throwAt === 'verifyOtp') throw new Error('auth failed');
+        return { data: { user: null, session: null }, error: options.verifyError ?? null };
+      },
+    }),
+    request: async (input, init) => {
+      calls.requests.push({ input, init });
+      if (options.throwAt === 'request') throw new Error('offline');
+      const status = options.status ?? 200;
+      return {
+        status,
+        ok: status >= 200 && status < 300,
+        json: async () => {
+          if (options.throwAt === 'json') throw new Error('invalid json');
+          return options.body ?? { token_hash: 'gc-token-hash' };
+        },
+      };
+    },
+  });
+  return { identity, calls };
+}
+
+/* Attach must fail closed when the guest session cannot be read. Omitting the
+   JWT would turn this into restore and could replace the current player. */
+for (const readFailure of ['returned', 'thrown'] as const) {
+  const harness = gameCenterHarness(readFailure === 'returned'
+    ? { sessionError: { code: 'session_read_failed' } }
+    : { throwAt: 'getSession' });
+  check(await harness.identity.attach() === GAME_CENTER_IDENTITY_MESSAGES.failed
+    && harness.calls.getSession === 1
+    && harness.calls.requests.length === 0
+    && harness.calls.verifyOtp.length === 0,
+  `Game Center attach continued after a ${readFailure} session failure`, harness.calls);
+}
+
+const linkedGameCenter = gameCenterHarness({
+  session: { access_token: 'guest-access-token' },
+});
+check(await linkedGameCenter.identity.attach() === null
+  && linkedGameCenter.calls.getSession === 1
+  && linkedGameCenter.calls.requests.length === 1
+  && (linkedGameCenter.calls.requests[0]?.init.headers as Record<string, string>)
+    .Authorization === 'Bearer guest-access-token'
+  && linkedGameCenter.calls.verifyOtp[0]?.token_hash === 'gc-token-hash',
+'Game Center attach did not send the guest JWT through the verified OTP flow',
+linkedGameCenter.calls);
+
+/* Restore deliberately has no current-user dependency and must not attach an
+   ambient session even if one exists. */
+const restoredGameCenter = gameCenterHarness({
+  session: { access_token: 'must-not-be-sent' },
+});
+check(await restoredGameCenter.identity.restore() === null
+  && restoredGameCenter.calls.getSession === 0
+  && !('Authorization' in (restoredGameCenter.calls.requests[0]?.init.headers as Record<string, string>)),
+'Game Center restore read or sent an ambient session', restoredGameCenter.calls);
+
+const conflictGameCenter = gameCenterHarness({
+  session: { access_token: 'guest-conflict-token' },
+  status: 409,
+  body: { error: 'identity-already-linked' },
+});
+check(await conflictGameCenter.identity.attach() === GAME_CENTER_IDENTITY_MESSAGES.conflict
+  && conflictGameCenter.calls.verifyOtp.length === 0,
+'gc-auth identity conflict was not mapped to its exact localized message',
+conflictGameCenter.calls);
+
+/* None of these provider/network failures may reject: the one-tap UI awaits a
+   returned message before restoring the button's enabled state. */
+for (const throwAt of ['request', 'json', 'verifyOtp'] as const) {
+  const harness = gameCenterHarness({ throwAt });
+  check(await harness.identity.restore() === GAME_CENTER_IDENTITY_MESSAGES.failed,
+    `a thrown Game Center ${throwAt} failure escaped the localized boundary`, harness.calls);
+}
 
 const identitySource = readFileSync('src/online/identity.ts', 'utf8');
 check(!/from\s+['"]@(?:capacitor|capawesome)\//.test(identitySource),

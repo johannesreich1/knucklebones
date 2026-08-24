@@ -9,24 +9,28 @@
 // Lives in ui/ (not online/) because the quit modal is offline-reachable, and
 // anything the offline game can open must not pull in the online chunk.
 import { $, show, hide } from './dom.ts';
+import { subscribeLocale, t } from '../i18n/index.ts';
 import { Sfx } from './audio.ts';
 import { appRoot } from './embed.ts';
 
+/** A callback is re-read when the visible card's locale changes. */
+export type AskText = string | (() => string);
+
 export interface AskAction {
-  label: string;
+  label: AskText;
   run: () => void;
 }
 
 export interface Ask {
-  head: string;
-  body: string;
-  confirm: string;
-  cancel?: string;
+  head: AskText;
+  body: AskText;
+  confirm: AskText;
+  cancel?: AskText;
   /* the destructive answer reads destructive */
   danger?: boolean;
   /* when set, the confirm stays disabled until this is ticked — the guard for
      an answer nobody should be able to give by reflex */
-  check?: string;
+  check?: AskText;
   /* which answer is encouraged. A question guarding a destructive act keeps
      the loud button on the way OUT (default); an INVITATION flips it, so the
      yes wears primary and the no goes quiet. */
@@ -56,6 +60,28 @@ function build(): void {
 }
 
 let settle: ((ok: boolean) => void) | null = null;
+let activeAsk: Ask | null = null;
+
+const resolveText = (value: AskText): string =>
+  typeof value === 'function' ? value() : value;
+
+/** Repaint copy only: checkbox state, focus, actions, and card nodes stay put. */
+function repaintAskCopy(spec: Ask): void {
+  $('#askHead').textContent = resolveText(spec.head);
+  $('#askBody').textContent = resolveText(spec.body);
+  $('#btnAskYes').textContent = resolveText(spec.confirm);
+  $('#btnAskAlt').textContent = spec.alternate ? resolveText(spec.alternate.label) : '';
+  $('#btnAskNo').textContent = spec.cancel !== undefined
+    ? resolveText(spec.cancel)
+    : t('common', 'actions.cancel');
+  $('#askCheckText').textContent = spec.check !== undefined ? resolveText(spec.check) : '';
+}
+
+subscribeLocale(() => {
+  if (activeAsk && appRoot().querySelector('#ovAsk')?.classList.contains('on')) {
+    repaintAskCopy(activeAsk);
+  }
+});
 
 /* Resolves TRUE when the question is answered yes. Never rejects: a dismissed
    question is a no, which is the answer that changes nothing. */
@@ -68,6 +94,7 @@ export function ask(spec: Ask): Promise<boolean> {
   appRoot().appendChild($('#ovAsk'));
   const done = (ok: boolean): void => {
     hide('#ovAsk');
+    activeAsk = null;
     const f = settle; settle = null;
     f?.(ok);
   };
@@ -75,16 +102,13 @@ export function ask(spec: Ask): Promise<boolean> {
      leaving a stale promise unsettled would hang whatever awaited it */
   settle?.(false);
 
-  $('#askHead').textContent = spec.head;
-  $('#askBody').textContent = spec.body;
   const yes = $('#btnAskYes') as HTMLButtonElement;
   const alternate = $('#btnAskAlt') as HTMLButtonElement;
   const no = $('#btnAskNo') as HTMLButtonElement;
   const action = spec.alternate;
-  yes.textContent = spec.confirm;
-  alternate.textContent = action?.label ?? '';
+  activeAsk = spec;
+  repaintAskCopy(spec);
   alternate.hidden = !action;
-  no.textContent = spec.cancel ?? 'Cancel';
   yes.classList.toggle('danger', !!spec.danger);
   /* the un-encouraged answer wears .soft, never .quiet — .quiet is the HOME
      SCREEN's section wrapper (margin-top, flex column), and a button sharing
@@ -103,13 +127,12 @@ export function ask(spec: Ask): Promise<boolean> {
     : [no, alternate, yes]));
 
   const box = $('#askCheck') as HTMLInputElement;
-  $('#askCheckRow').hidden = !spec.check;
-  $('#askCheckText').textContent = spec.check ?? '';
+  $('#askCheckRow').hidden = spec.check === undefined;
   box.checked = false;
   /* the guard: disabled until ticked, and re-armed every time the card opens
      so a previous yes can never carry over */
-  yes.disabled = !!spec.check;
-  box.onchange = () => { yes.disabled = !!spec.check && !box.checked; };
+  yes.disabled = spec.check !== undefined;
+  box.onchange = () => { yes.disabled = spec.check !== undefined && !box.checked; };
 
   yes.onclick = () => { if (yes.disabled) return; Sfx.tap(); done(true); };
   alternate.onclick = action ? () => {
@@ -127,6 +150,7 @@ export function ask(spec: Ask): Promise<boolean> {
 export function dismissAsk(): void {
   if (!appRoot().querySelector('#ovAsk')?.classList.contains('on')) return;
   hide('#ovAsk');
+  activeAsk = null;
   const f = settle; settle = null;
   f?.(false);
 }

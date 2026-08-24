@@ -26,6 +26,7 @@ import { acquireCheckoutLock } from './support/gate-lock.mjs';
 const FILE_SUITES = [
   'test4', 'test6',
   { name: 'native-startup-browser', file: 'tests/browser/native-startup.mjs' },
+  { name: 'localization-browser', file: 'tests/browser/localization/run.mjs' },
   { name: 'test8', file: 'tests/browser/responsive/run.mjs' },
   'test9', 'test10',
   { name: 'test11', file: 'tests/browser/hud-settings/run.mjs' },
@@ -118,7 +119,7 @@ try {
   };
   await pool([
     // pure-Node gates (no browser): seeded dice determinism + PvP match core
-    ...['architecture', 'preferences', 'dice', 'match', 'modes', 'spells', 'online-api', 'gcauth', 'edge-handlers', 'edge-settlement', 'cssgraph', 'cssreach', 'design-library', 'ladder', 'ladderbench', 'botbench', 'fnsync', 'iosship', 'androidship', 'apple-identity', 'native-startup', 'live-safety', 'gate-lock'].map(node),
+    ...['architecture', 'preferences', 'i18n', 'i18n-catalog', 'dice', 'match', 'modes', 'spells', 'online-api', 'gcauth', 'edge-handlers', 'edge-settlement', 'cssgraph', 'cssreach', 'design-library', 'ladder', 'ladderbench', 'botbench', 'fnsync', 'iosship', 'androidship', 'apple-identity', 'native-startup', 'live-safety', 'gate-lock'].map(node),
     ...FILE_SUITES.map(suite),
     // bench3 is a benchmark, not a pass/fail suite — but its helper-vs-inline
     // scoring equivalence check is a real correctness assertion.

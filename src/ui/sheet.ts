@@ -19,6 +19,7 @@
 // Lives in ui/ rather than online/: the badge exists in every game, offline
 // included, and ui/ is the layer both drivers already share.
 import { Sfx } from './audio.ts';
+import { subscribeLocale, t } from '../i18n/index.ts';
 import { REDUCED } from './fx.ts';
 import { appRoot } from './embed.ts';
 
@@ -26,11 +27,13 @@ export interface SheetSpec {
   /** the card's content, below the grabber. Trusted markup — escape first. */
   body: string;
   /** what a screen reader calls this dialog */
-  label: string;
+  label: string | (() => string);
   /** the variant's own class on the overlay ('faceoff', 'faceoff solo', 'libsheet') */
   cls?: string;
   /** the card's own light: a hue token that dresses border, glow and heading */
   tint?: string;
+  /** Repaint only locale-owned descendants already mounted in the card. */
+  repaintLocale?: (card: HTMLElement) => void;
 }
 export interface Sheet { ov: HTMLElement; card: HTMLElement; close: () => void }
 
@@ -47,18 +50,21 @@ export function showSheet(spec: SheetSpec): Sheet {
   const ov = document.createElement('div');
   ov.className = 'faceoff' + (spec.cls ? ' ' + spec.cls : '');
   ov.innerHTML = `<div class="focard${spec.tint ? ' hued' : ''}" role="dialog" aria-modal="true" tabindex="-1">
-    <button type="button" class="fograb" aria-label="Close"><span class="fobar"></span></button>
+    <button type="button" class="fograb" aria-label="${t('common', 'actions.close')}"><span class="fobar"></span></button>
   </div>`;
   const card = ov.querySelector('.focard') as HTMLElement;
+  const resolvedLabel = (): string => typeof spec.label === 'function' ? spec.label() : spec.label;
   /* the label is SET, not interpolated: a nickname carries whatever the player
      typed, and an attribute built by string concatenation is one quote away
      from being someone else's markup */
-  card.setAttribute('aria-label', spec.label);
+  card.setAttribute('aria-label', resolvedLabel());
   if (spec.tint) card.style.setProperty('--mh', spec.tint);
   card.insertAdjacentHTML('beforeend', spec.body);
 
+  let unbindLocale = (): void => undefined;
   const close = (): void => {
     ov.remove(); document.removeEventListener('keydown', onKey);
+    unbindLocale();
     if (live === sheet) live = null;
   };
   const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') leave(); };
@@ -214,6 +220,12 @@ export function showSheet(spec: SheetSpec): Sheet {
   document.addEventListener('keydown', onKey);
   setDy(REDUCED ? 0 : window.innerHeight);   // start off the bottom edge...
   appRoot().appendChild(ov);
+  unbindLocale = subscribeLocale(() => {
+    (ov.querySelector('.fograb') as HTMLButtonElement)
+      .setAttribute('aria-label', t('common', 'actions.close'));
+    card.setAttribute('aria-label', resolvedLabel());
+    spec.repaintLocale?.(card);
+  });
   void card.offsetHeight;                    // ...resolved as a real start...
   fly(0, 340, 'cubic-bezier(.16,1,.3,1)');   // ...and up it comes, wash with it
   card.focus();

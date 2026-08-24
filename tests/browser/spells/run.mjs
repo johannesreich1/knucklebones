@@ -13,6 +13,7 @@ import pkg from 'playwright';
 /* the registry itself, so the probe compares the SCREEN against the source of
    truth rather than against a count someone typed here (node strips the types) */
 import { SPELLS, RANDOM_SPELL } from '../../../src/core/spells.ts';
+import { spellCopy } from '../../../src/i18n/index.ts';
 import { createBrowserReport, capturePageErrors } from '../../support/browser-report.mjs';
 import { runPickerScenarios } from './scenarios/picker.mjs';
 import { runCastingScenarios } from './scenarios/casting.mjs';
@@ -31,7 +32,8 @@ const F = 'file://' + process.cwd() + '/knucklebones-neon.html';   // the single
 const browser = await chromium.launch();
 const { problems, out, check } = createBrowserReport();
 try {
-  const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+  const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
+    locale: 'en-US' });
   const page = await ctx.newPage();
   capturePageErrors(page, problems);
   await page.goto(F); await page.waitForTimeout(400);
@@ -83,6 +85,7 @@ try {
      not the main phone borrows this rather than repeating the boot */
   const sidePage = async (view) => {
     const c = await browser.newContext({ hasTouch: true, isMobile: true, deviceScaleFactor: 2,
+      locale: 'en-US',
       ...(view.device || { viewport: { width: view.w, height: view.h } }), ...(view.opts || {}) });
     await c.addInitScript(() => { const k = 'knucklebones.v1', cf = JSON.parse(localStorage.getItem(k) || '{}'); cf.played = true; localStorage.setItem(k, JSON.stringify(cf)); });
     if (view.noPointer) await c.addInitScript(() => {
@@ -126,7 +129,7 @@ try {
 
   const suite = {
     browser, devices, F, problems, out, check, ctx, page,
-    SPELLS, RANDOM_SPELL, newGame, waitChoose, table, guard, sidePage,
+    SPELLS, RANDOM_SPELL, spellCopy, newGame, waitChoose, table, guard, sidePage,
     look, tapCol, tapRune,
   };
   await runPickerScenarios(suite);

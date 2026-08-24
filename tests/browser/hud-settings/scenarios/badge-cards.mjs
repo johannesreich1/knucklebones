@@ -1,5 +1,5 @@
 export async function runBadgeCardScenarios(suite) {
-  const { page, out, check } = suite;
+  const { page, out, check, modeCopy, spellCopy, t } = suite;
   // ===== the HUD badge names what is in play, and explains each of it =====
   // Reported bug: tapping the badge opened the modes library online and did
   // nothing offline, because the listener lived inside the online chunk. Both
@@ -71,14 +71,15 @@ export async function runBadgeCardScenarios(suite) {
   };
   out.rosterMode = await rosterEntry('#btnLearnModes', 'ovModes', 'singlestrike');
   out.rosterSpell = await rosterEntry('#btnLearnSpells', 'ovSpells', 'ward');
-  check(out.rosterMode.title === 'GAME MODES' && out.rosterSpell.title === 'RUNES',
+  check(out.rosterMode.title === t('learn', 'library.gameModes')
+      && out.rosterSpell.title === t('learn', 'library.runes'),
     'the Learn libraries do not use their player-facing category names',
     { modes: out.rosterMode.title, runes: out.rosterSpell.title });
   for (const [k, r] of [['modes', out.rosterMode], ['spells', out.rosterSpell]]) {
     check(r.on, `HOW TO PLAY no longer opens the ${k} library`, r);
     check(r.name.length > 0 && r.detail.length > 20, `the ${k} roster entry is empty`, r);
     check(r.nav.buttons === 1 && r.nav.backs === 1 && r.nav.glyph === '‹'
-      && r.nav.label === 'Back' && r.nav.left && r.nav.noX,
+      && r.nav.label === t('common', 'actions.back') && r.nav.left && r.nav.noX,
       `the ${k} library does not use the one shared Learn-page Back header`, r.nav);
     check(!r.back.child && r.back.learn,
       `the ${k} Back did not close only the library and return to HOW TO PLAY`, r.back);
@@ -114,9 +115,11 @@ export async function runBadgeCardScenarios(suite) {
   await playLocal(4, 'ward');
   out.badge = await chipsNow();
   check(out.badge.chips.length === 2, 'a dealt spell must add its own chip', out.badge);
-  check(out.badge.chips[0]?.id === 'singlestrike' && /SINGLE STRIKE/.test(out.badge.chips[0]?.name),
+  check(out.badge.chips[0]?.id === 'singlestrike'
+      && out.badge.chips[0]?.name === modeCopy('singlestrike').compactName,
     'the mode chip does not name the mode in play', out.badge);
-  check(out.badge.chips[1]?.id === 'ward' && out.badge.chips[1]?.lib === 'spells',
+  check(out.badge.chips[1]?.id === 'ward' && out.badge.chips[1]?.lib === 'spells'
+      && out.badge.chips[1]?.name === spellCopy('ward').compactName,
     'the spell chip does not name the rune dealt', out.badge);
   check(out.badge.chips.every(c => c.shown && c.icon && c.tappable && c.infoStyled),
     'a chip is not a shown, iconed, tappable, ⓘ-marked control offline', out.badge);

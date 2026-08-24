@@ -1,7 +1,62 @@
 export async function runLadderFaceoffScenarios(suite) {
   const { visit, out, check } = suite;
   // 1b · the ladder that same guest lands on: a row states BOTH sides
-  const board = await visit({ door: 'board' });
+  const board = await visit({ door: 'board', probe: async (page) => {
+    let localeRequests = 0;
+    const countRequest = (request) => {
+      if (request.url().includes('/rpc/leaderboard')) localeRequests++;
+    };
+    page.on('request', countRequest);
+    await page.locator('#onBoardList .lrow').first().focus();
+    await page.evaluate(() => {
+      window.__kbLocaleRow = document.querySelector('#onBoardList .lrow');
+      Object.defineProperty(navigator, 'languages', {
+        configurable: true, get: () => ['de-DE', 'en-US'],
+      });
+      Object.defineProperty(navigator, 'language', {
+        configurable: true, get: () => 'de-DE',
+      });
+      window.dispatchEvent(new Event('languagechange'));
+    });
+    await page.waitForFunction(() => document.querySelector('#onTitle')?.textContent === 'RANGLISTE');
+    const german = await page.evaluate(() => {
+      const row = document.querySelector('#onBoardList .lrow');
+      return {
+        title: document.querySelector('#onTitle')?.textContent,
+        record: row?.querySelector('.ws')?.textContent,
+        points: row?.querySelector('.rt')?.textContent,
+        horizon: document.querySelector('#onBoardList .ghor .gn')?.textContent,
+        sameRow: row === window.__kbLocaleRow,
+        focused: document.activeElement === row,
+      };
+    });
+    await page.evaluate(() => {
+      Object.defineProperty(navigator, 'languages', {
+        configurable: true, get: () => ['en-US'],
+      });
+      Object.defineProperty(navigator, 'language', {
+        configurable: true, get: () => 'en-US',
+      });
+      window.dispatchEvent(new Event('languagechange'));
+    });
+    await page.waitForFunction(() => document.querySelector('#onTitle')?.textContent === 'LADDER');
+    const restored = await page.evaluate(() => {
+      const row = document.querySelector('#onBoardList .lrow');
+      return { sameRow: row === window.__kbLocaleRow, focused: document.activeElement === row };
+    });
+    page.off('request', countRequest);
+    return { german, restored, localeRequests };
+  } });
+  out.ladderLocaleRepaint = board.probeResult;
+  check(board.probeResult?.german?.title === 'RANGLISTE'
+        && board.probeResult.german.record === 'S 7 · N 2'
+        && board.probeResult.german.points === '1.072'
+        && board.probeResult.german.horizon === 'ELFENBEIN',
+        'the visible ladder did not repaint all locale-owned copy and formatting', board.probeResult);
+  check(board.probeResult?.german?.sameRow && board.probeResult.german.focused
+        && board.probeResult?.restored?.sameRow && board.probeResult.restored.focused
+        && board.probeResult.localeRequests === 0,
+        'locale repaint replaced/refetched the interactive ladder or lost focus', board.probeResult);
   out.ladder = board.seen.rows;
   check(board.seen.rows.length === 2, 'ladder did not render its rows', board.seen.rows);
   check(board.seen.rows[0]?.text === 'W 7 · L 2', 'a ladder row does not state wins AND losses', board.seen.rows);

@@ -1,12 +1,11 @@
 // SPELLS — an optional layer of one-use powers over local play.
 //
-// One registry entry is one whole spell: what it is called, what a cast needs,
-// how many casts a player gets, which targets are legal, what it does — and
-// how a machine weighs it (cpuCast). Adding a spell is adding an object here
-// (plus its icon path in src/ui/spellicons.ts and its cast animation in
-// src/flow/spell-effects.ts)
-// — the rail, the gestures, the charge accounting and the CSS never learn its
-// name.
+// One registry entry is one whole spell rule: what a cast needs, how many
+// casts a player gets, which targets are legal, what it does, and how a
+// machine weighs it (cpuCast). Player-visible copy is keyed by the stable id
+// in the localization catalogs; core remains locale-free. Adding a spell is
+// adding an object here (plus its localized copy, icon path in
+// src/ui/spellicons.ts, and cast animation in src/flow/spell-effects.ts).
 //
 // Pure, like the rest of core/: plain data in, plain data out. No DOM, no
 // timers, no randomness — the supply is handed in as behaviour (CastCtx.draw),
@@ -33,12 +32,6 @@ export { bestTarget, machineCast, placeGain, swingOf } from './spell-policy.ts';
    real there, and legality refuses the cast when nothing is left to draw. */
 const FATE: SpellSpec = {
   id: 'fate',
-  name: 'FATE',
-  blurb: 'Throw your die back and draw another.',
-  detail: 'Discard the die in hand and draw the next from the supply. The new die is yours '
-        + 'to place this turn. The draw is final — you cannot put it back once you have '
-        + 'seen it. Two casts per game.',
-  aim: 'Drop it on your die',
   target: 'self',
   uses: 2,
   /* The redraw reveals the live supply. Like every committed cast it cannot
@@ -63,11 +56,6 @@ const FATE: SpellSpec = {
    one 53.9%. */
 const NUDGE: SpellSpec = {
   id: 'nudge',
-  name: 'NUDGE',
-  blurb: 'Tick your die up one pip.',
-  detail: 'The die in hand turns one pip higher — a 6 wraps around to 1. The cast is final. '
-        + 'One cast per game.',
-  aim: 'Drop it on your die',
   target: 'self',
   uses: 1,
   legal(st, who, col, ctx) {
@@ -88,11 +76,6 @@ const NUDGE: SpellSpec = {
    applyMove / openStrikes). A strike with no victims costs the ward nothing. */
 const WARD: SpellSpec = {
   id: 'ward',
-  name: 'WARD',
-  blurb: 'Shield a column against the next strike.',
-  detail: 'Mark one of your columns: the next enemy strike that would destroy dice there '
-        + 'fizzles instead, and the ward is spent. One cast per game.',
-  aim: 'Tap your own column',
   target: 'column',
   side: 'own',
   uses: 1,
@@ -129,12 +112,6 @@ const WARD: SpellSpec = {
    (core/rules openStrikes). */
 const SUNDER: SpellSpec = {
   id: 'sunder',
-  name: 'SUNDER',
-  blurb: 'This die strikes every column, not just its own.',
-  detail: 'Cast before placing: this turn your die destroys matching dice in EVERY enemy '
-        + 'column, not only the facing one. Shields and wards still answer, column by '
-        + 'column. One cast per game.',
-  aim: 'Drop it on your die',
   target: 'self',
   uses: 1,
   legal(st, who, col, ctx) {
@@ -158,12 +135,6 @@ const SUNDER: SpellSpec = {
    cannot be touched — the mode's promise holds against spells too. */
 const PILFER: SpellSpec = {
   id: 'pilfer',
-  name: 'PILFER',
-  blurb: 'Steal the top die of an enemy column.',
-  detail: 'Drag onto an enemy column: its top die crosses to your facing column. The stolen '
-        + 'die lands without striking. Needs room on your side; a shielded column cannot be '
-        + 'robbed. One cast per game.',
-  aim: 'Tap an enemy column',
   target: 'column',
   side: 'foe',
   uses: 1,
@@ -214,13 +185,6 @@ export function anvilTargetIndex(column: readonly number[]): number | null {
 
 const ANVIL: SpellSpec = {
   id: 'anvil',
-  name: 'ANVIL',
-  blurb: 'Recast the weakest die in a column you have filled.',
-  detail: 'Tap one of your own FULL columns: the lowest die in it is recast to the face of '
-        + 'the die in hand — ties go to the die closest to the centre. Nothing moves and '
-        + 'nothing is destroyed, so the column keeps its height, and your die still lands '
-        + 'afterwards. A column with room left cannot be forged. One cast per game.',
-  aim: 'Tap a filled column',
   target: 'column',
   side: 'own',
   uses: 1,

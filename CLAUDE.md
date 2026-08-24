@@ -18,6 +18,7 @@ touching an area:
 | Current release state, roadmap, or an unresolved owner decision | `docs/STATUS.md` |
 | Frontend flow, state, module boundaries, or shared game rendering | `docs/architecture/frontend.md` |
 | CSS, responsive layout, game-state overrides, or widget isolation | `docs/architecture/styles.md` |
+| Locale detection, translated copy, language settings, or translation layout budgets | `docs/architecture/localization.md` |
 | Supabase, auth, RLS, migrations, RPCs, Realtime, or Edge Functions | `docs/architecture/backend.md`, `supabase/DESIGN.md`, and the applicable Supabase skills |
 | Build artifacts, PWA, service worker, widget packaging, native, or deploy | `docs/architecture/build.md` |
 | Tests, CI, browser harnesses, live probes, or verification policy | `docs/architecture/testing.md` |

@@ -10,11 +10,14 @@ import {
   SUPABASE_KEY,
   SUPABASE_URL,
 } from '../config.ts';
+import { t, type LocaleKey } from '../i18n/index.ts';
 import { supa } from './client.ts';
+import { onlineMessage } from './message-copy.ts';
 import { randomUuid } from './random-id.ts';
 
 export interface OneTap {
   id: string;
+  labelKey: LocaleKey<'online'>;
   label: string;
   available(): boolean;
   restore(): Promise<string | null>;   // null = signed in
@@ -44,8 +47,22 @@ export interface AppleSignInBridge {
   signIn(options?: AppleSignInOptions): Promise<AppleSignInResult>;
 }
 
-interface GameCenterBridge {
+export interface GameCenterBridge {
   signIn(): Promise<Record<string, string>>;
+}
+
+type GameCenterAuth = Pick<SupabaseClient['auth'], 'getSession' | 'verifyOtp'>;
+
+interface GameCenterResponse {
+  readonly ok: boolean;
+  readonly status: number;
+  json(): Promise<unknown>;
+}
+
+export interface GameCenterIdentityPorts {
+  getPlugin(): GameCenterBridge | undefined;
+  getAuth(): GameCenterAuth;
+  request(input: string, init: RequestInit): Promise<GameCenterResponse>;
 }
 
 interface CapacitorBridge {
@@ -61,11 +78,11 @@ const capacitor = (): CapacitorBridge | undefined =>
 const plugins = () => capacitor()?.Plugins ?? {};
 
 export const APPLE_IDENTITY_MESSAGES = {
-  unavailable: 'Apple sign-in is not available on this device.',
-  configuration: 'Apple sign-in is not configured yet.',
-  invalid: 'Apple sign-in could not be verified. Please try again.',
-  conflict: 'That Apple account is already linked to another player.',
-  failed: 'Apple sign-in failed. Please try again.',
+  get unavailable(): string { return onlineMessage('errors.appleUnavailable'); },
+  get configuration(): string { return onlineMessage('errors.appleConfiguration'); },
+  get invalid(): string { return onlineMessage('errors.appleInvalid'); },
+  get conflict(): string { return onlineMessage('errors.appleConflict'); },
+  get failed(): string { return onlineMessage('errors.appleFailed'); },
 } as const;
 
 export async function sha256Hex(value: string): Promise<string> {
@@ -184,7 +201,8 @@ export function createAppleIdentity(ports: AppleIdentityPorts): OneTap {
 
   return {
     id: 'apple',
-    label: 'Continue with Apple',
+    labelKey: 'auth.continueApple',
+    get label(): string { return t('online', 'auth.continueApple'); },
     available: () => !!ports.getPlugin() && isApplePlatform(ports.getPlatform()),
     restore: () => authenticate('restore'),
     attach: () => authenticate('attach'),
@@ -202,38 +220,100 @@ const APPLE = createAppleIdentity({
 /* ---- Game Center: the rung with no tap at all ----
    ATTACH sends the current session so the identity lands on the guest already
    playing; RESTORE deliberately does not, so the server answers with its owner. */
-const GAME_CENTER: OneTap = {
-  id: 'gamecenter',
-  label: 'Continue with Game Center',
-  available: () => !!plugins().GameCenter,
-  restore: () => gcSession(false),
-  attach: () => gcSession(true),
-};
+export const GAME_CENTER_IDENTITY_MESSAGES = {
+  get unavailable(): string { return onlineMessage('errors.gameCenterUnavailable'); },
+  get failed(): string { return onlineMessage('errors.gameCenterFailed'); },
+  get invalid(): string { return onlineMessage('errors.gameCenterInvalid'); },
+  get conflict(): string { return onlineMessage('errors.gameCenterConflict'); },
+} as const;
 
-async function gcSession(link: boolean): Promise<string | null> {
+function gameCenterPlugin(): GameCenterBridge | undefined {
   const gameCenter = plugins().GameCenter;
-  if (!gameCenter) return 'Game Center is not available';
-  let signed: Record<string, string>;
-  try {
-    signed = await gameCenter.signIn();
-  } catch (error) {
-    return error instanceof Error ? error.message : 'Game Center sign-in failed';
-  }
-  const { data: { session } } = await supa().auth.getSession();
-  const response = await fetch(`${SUPABASE_URL}/functions/v1/gc-auth`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: SUPABASE_KEY,
-      ...(link && session ? { Authorization: `Bearer ${session.access_token}` } : {}),
-    },
-    body: JSON.stringify(signed),
-  });
-  const data = await response.json().catch(() => null);
-  if (!response.ok || !data?.token_hash) return data?.error ?? 'Game Center could not be verified';
-  const { error } = await supa().auth.verifyOtp({ token_hash: data.token_hash, type: 'magiclink' });
-  return error ? error.message : null;
+  return gameCenter;
 }
+
+function isGameCenterPayload(value: unknown): value is { token_hash: string } {
+  return !!value && typeof value === 'object'
+    && 'token_hash' in value
+    && typeof (value as { token_hash?: unknown }).token_hash === 'string'
+    && !!(value as { token_hash: string }).token_hash;
+}
+
+function isGameCenterConflict(status: number, value: unknown): boolean {
+  return status === 409
+    && !!value
+    && typeof value === 'object'
+    && 'error' in value
+    && (value as { error?: unknown }).error === 'identity-already-linked';
+}
+
+export function createGameCenterIdentity(ports: GameCenterIdentityPorts): OneTap {
+  const authenticate = async (link: boolean): Promise<string | null> => {
+    const gameCenter = ports.getPlugin();
+    if (!gameCenter) return GAME_CENTER_IDENTITY_MESSAGES.unavailable;
+
+    let signed: Record<string, string>;
+    try {
+      signed = await gameCenter.signIn();
+    } catch {
+      return GAME_CENTER_IDENTITY_MESSAGES.failed;
+    }
+
+    try {
+      const auth = ports.getAuth();
+      let accessToken: string | undefined;
+      if (link) {
+        const { data, error } = await auth.getSession();
+        // A failed read is not the same as a missing session. Sending the
+        // assertion without the guest JWT could restore a different owner.
+        if (error) return GAME_CENTER_IDENTITY_MESSAGES.failed;
+        accessToken = data.session?.access_token;
+      }
+
+      const response = await ports.request(`${SUPABASE_URL}/functions/v1/gc-auth`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: SUPABASE_KEY,
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        body: JSON.stringify(signed),
+      });
+      const data = await response.json();
+      if (isGameCenterConflict(response.status, data)) {
+        return GAME_CENTER_IDENTITY_MESSAGES.conflict;
+      }
+      if (!response.ok || !isGameCenterPayload(data)) {
+        return GAME_CENTER_IDENTITY_MESSAGES.invalid;
+      }
+      const { error } = await auth.verifyOtp({
+        token_hash: data.token_hash,
+        type: 'magiclink',
+      });
+      return error ? GAME_CENTER_IDENTITY_MESSAGES.invalid : null;
+    } catch {
+      // Supabase session reads, fetch, body decoding, and OTP verification can
+      // all reject. Provider methods return copy rather than leaking a rejected
+      // promise, so the one-tap UI always reaches its re-enable path.
+      return GAME_CENTER_IDENTITY_MESSAGES.failed;
+    }
+  };
+
+  return {
+    id: 'gamecenter',
+    labelKey: 'auth.continueGameCenter',
+    get label(): string { return t('online', 'auth.continueGameCenter'); },
+    available: () => !!ports.getPlugin(),
+    restore: () => authenticate(false),
+    attach: () => authenticate(true),
+  };
+}
+
+const GAME_CENTER = createGameCenterIdentity({
+  getPlugin: gameCenterPlugin,
+  getAuth: () => supa().auth,
+  request: (input, init) => fetch(input, init),
+});
 
 export const ONE_TAP: OneTap[] = [GAME_CENTER, APPLE];
 export const availableTaps = (): OneTap[] => ONE_TAP.filter((method) => method.available());

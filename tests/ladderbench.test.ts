@@ -84,7 +84,7 @@ if (!(run.p90 > run.median && run.median > run.p10)) {
 /* 4 · every group is REACHABLE and none swallows the field. Equal-width bands
    failed exactly here, and a future retune could too. */
 const pop = new Map<string, number>();
-for (const p of run.pts) pop.set(groupOf(p).name, (pop.get(groupOf(p).name) ?? 0) + 1);
+for (const p of run.pts) pop.set(groupOf(p).id, (pop.get(groupOf(p).id) ?? 0) + 1);
 const biggest = Math.max(...[...pop.values()]);
 if (biggest > N * 0.55) {
   problems.push(`one group holds ${biggest} of ${N} players — the bands are not spreading the field`);

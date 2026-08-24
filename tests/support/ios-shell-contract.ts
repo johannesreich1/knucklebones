@@ -4,7 +4,9 @@ import {
   APP_ID,
   APPLE_OAUTH_REDIRECT_URL,
   APPLE_SERVICE_ID,
+  GAME_NAME,
   NATIVE_APP_NAME,
+  NATIVE_STORE_NAME,
 } from '../../src/config.ts';
 import { sameBytes } from './ios-artifacts.ts';
 
@@ -40,6 +42,8 @@ export function verifyIosShellContract(check: Check): {
   check(capacitor.appName === NATIVE_APP_NAME,
     `${CONFIG} appName=${JSON.stringify(capacitor.appName)} differs from src/config.ts `
     + `NATIVE_APP_NAME=${JSON.stringify(NATIVE_APP_NAME)}`);
+  check(NATIVE_APP_NAME === GAME_NAME && NATIVE_STORE_NAME === 'Knucklebones Neon',
+    'installed native label must stay Knucklebones while the store listing stays Knucklebones Neon');
 
   const xcode = readFileSync(XCODE, 'utf8');
   const xcodeIds = [...xcode.matchAll(/PRODUCT_BUNDLE_IDENTIFIER\s*=\s*([^;\s]+)\s*;/g)]
@@ -56,6 +60,12 @@ export function verifyIosShellContract(check: Check): {
   check(displayName === NATIVE_APP_NAME,
     `${INFO} CFBundleDisplayName=${JSON.stringify(displayName)} differs from src/config.ts `
     + `NATIVE_APP_NAME=${JSON.stringify(NATIVE_APP_NAME)}`);
+  const localizationBlock = (info.match(/<key>CFBundleLocalizations<\/key>\s*<array>([\s\S]*?)<\/array>/) || [])[1] ?? '';
+  const localizations = [...localizationBlock.matchAll(/<string>([^<]+)<\/string>/g)]
+    .map((match) => match[1]);
+  check(JSON.stringify(localizations) === JSON.stringify(['en', 'de', 'fr']),
+    `${INFO} must declare the JavaScript-owned runtime localizations en, de, and fr; `
+    + `found ${JSON.stringify(localizations)}`);
 
   const browserIdentity = readFileSync(BROWSER_IDENTITY, 'utf8');
   const browserConfigImport = (browserIdentity.match(/import\s*\{([^}]*)\}\s*from\s*['"]\.\.\/config\.ts['"]/) || [])[1] ?? '';
@@ -68,8 +78,10 @@ export function verifyIosShellContract(check: Check): {
     `APPLE_SERVICE_ID=${APPLE_SERVICE_ID} must remain associated with APP_ID=${APP_ID}`);
   check(APPLE_OAUTH_REDIRECT_URL === 'https://euzjcejbkxvqfrttgaxu.supabase.co/auth/v1/callback',
     `APPLE_OAUTH_REDIRECT_URL=${APPLE_OAUTH_REDIRECT_URL} is not the registered Supabase callback`);
-  check(/available:\s*\(\)\s*=>\s*!!plugins\(\)\.GameCenter/.test(browserIdentity)
-    && /const gameCenter\s*=\s*plugins\(\)\.GameCenter/.test(browserIdentity)
+  check(/function gameCenterPlugin\(\)[\s\S]*?plugins\(\)\.GameCenter/.test(browserIdentity)
+    && /getPlugin:\s*gameCenterPlugin/.test(browserIdentity)
+    && /available:\s*\(\)\s*=>\s*!!ports\.getPlugin\(\)/.test(browserIdentity)
+    && /const gameCenter\s*=\s*ports\.getPlugin\(\)/.test(browserIdentity)
     && /await gameCenter\.signIn\(\)/.test(browserIdentity),
     `${BROWSER_IDENTITY} must expose Game Center from bridge capability alone and let signIn authenticate; `
     + `checking GKLocalPlayer authentication before rendering would deadlock a fresh-device flow`);

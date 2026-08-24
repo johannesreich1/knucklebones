@@ -12,6 +12,8 @@ export interface Beat extends Answer {
   label: string;
   cls?: string;
   stage: string;
+  /** Repaint locale-owned text already mounted inside the theatre. */
+  repaintStage?(stage: HTMLElement): void;
   run(settle: () => void): Promise<void>;
 }
 

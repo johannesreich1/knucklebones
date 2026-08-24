@@ -1,9 +1,11 @@
 import { ME } from '../core/rules.ts';
+import { formatNumber, subscribeLocale, t } from '../i18n/index.ts';
 import { Sfx } from '../ui/audio.ts';
 import { AV_HUES, DEFAULT_AVATAR, parseAvatar, paintAvatar } from '../ui/avatar.ts';
 import { makeDie } from '../ui/die.ts';
 import { $ } from '../ui/dom.ts';
 import { loaderDie } from '../ui/loader.ts';
+import { repaintOnlineMessage } from './message-copy.ts';
 import { myProfile, setAvatar } from './session.ts';
 import { showOnlinePanel } from './shell.ts';
 
@@ -14,10 +16,48 @@ export interface AvatarScreen {
 
 export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScreen {
   let pick = DEFAULT_AVATAR;
+  let avatarError: (() => string) | null = null;
+  const clearAvatarError = (): void => {
+    avatarError = null;
+    $('#onAvErr').textContent = '';
+  };
+  const showAvatarError = (render: () => string): void => {
+    avatarError = render;
+    $('#onAvErr').textContent = render();
+  };
+  const colourKeys = {
+    cy: 'avatar.colours.cy',
+    mg: 'avatar.colours.mg',
+    gold: 'avatar.colours.gold',
+    green: 'avatar.colours.green',
+    violet: 'avatar.colours.violet',
+    orange: 'avatar.colours.orange',
+  } as const;
+
+  const paintLabels = (): void => {
+    const panel = document.getElementById('onAvatar');
+    if (!panel) return;
+    $('#avFaces').querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+      button.setAttribute('aria-label', t('online', 'avatar.faceLabel', {
+        face: formatNumber(Number(button.dataset.face)),
+      }));
+    });
+    $('#avHues').querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+      const hue = button.dataset.hue as keyof typeof colourKeys;
+      button.setAttribute('aria-label', t('online', 'avatar.colourLabel', {
+        colour: t('online', colourKeys[hue]),
+      }));
+    });
+  };
+  subscribeLocale(() => {
+    paintLabels();
+    const panel = document.getElementById('onAvatar');
+    if (panel && !panel.hidden && avatarError) $('#onAvErr').textContent = avatarError();
+  });
 
   async function show(): Promise<void> {
     showOnlinePanel('onAvatar');
-    $('#onAvErr').textContent = '';
+    clearAvatarError();
     const preview = $('#avPreview');
     if (!preview.firstChild) preview.appendChild(loaderDie(40));
     const profile = await myProfile();
@@ -33,6 +73,7 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
     if (!$('#avFaces').firstChild) {
       for (let face = 1; face <= 6; face++) {
         const button = document.createElement('button');
+        button.type = 'button';
         button.dataset.face = String(face);
         button.appendChild(makeDie(face, ME));
         button.addEventListener('click', () => {
@@ -44,6 +85,7 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
       }
       for (const hue of Object.keys(AV_HUES)) {
         const button = document.createElement('button');
+        button.type = 'button';
         button.dataset.hue = hue;
         button.className = 'hue';
         button.style.setProperty('--h', AV_HUES[hue]);
@@ -54,6 +96,7 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
         });
         $('#avHues').appendChild(button);
       }
+      paintLabels();
     }
     draw();
   }
@@ -61,11 +104,14 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
   function bind(): void {
     $('#btnAvatarSave').addEventListener('click', async () => {
       Sfx.tap();
+      clearAvatarError();
       const error = await setAvatar(pick);
       if (error) {
-        $('#onAvErr').textContent = error;
+        const returned = error;
+        showAvatarError(() => repaintOnlineMessage(returned));
         return;
       }
+      clearAvatarError();
       await showAccount();
     });
   }

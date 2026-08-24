@@ -20,7 +20,7 @@ const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x
 const browser = await webkit.launch();
 try {
   for (const [width, height, label] of SIZES) {
-    const ctx = await browser.newContext({ viewport: { width, height } });
+    const ctx = await browser.newContext({ viewport: { width, height }, locale: 'en-US' });
     const page = await ctx.newPage();
     page.on('pageerror', (e) => problems.push('PAGEERROR ' + label + ': ' + e.message));
     await page.goto(F);

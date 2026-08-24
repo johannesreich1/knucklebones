@@ -19,6 +19,7 @@
 //   · the name and the blurb below are the SHELL's to write, and it writes
 //     them only once this beat's `run` has resolved.
 import { MODES, type ModeSpec } from '../core/modes.ts';
+import { modeCopy, t } from '../i18n/index.ts';
 import { modeIcon, modeHue } from './modeicons.ts';
 import { $ } from './dom.ts';
 import { Sfx } from './audio.ts';
@@ -90,9 +91,12 @@ let restingAt = 0;
 export function dialBeat(spec: ModeSpec): Beat {
   const i = Math.max(0, MODES.findIndex((m) => m.id === spec.id));
   return {
-    label: 'GAME MODE',
-    name: spec.name,
-    blurb: spec.blurb,
+    /* These are getters, not a locale snapshot. The shell reads them again
+       when a visible reveal repaints, without rebuilding or restarting the
+       dial theatre. */
+    get label() { return t('game', 'reveal.gameMode'); },
+    get name() { return modeCopy(spec.id).name; },
+    get blurb() { return modeCopy(spec.id).blurb; },
     hue: hue(i),
     icon: modeIcon(spec.id, 17),
     /* the found icon rides in the markup from the first frame and is held back

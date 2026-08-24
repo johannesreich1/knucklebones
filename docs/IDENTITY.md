@@ -37,8 +37,9 @@ learns a provider's name; the web build finds none.
 **Rung 1 — guest: LIVE.** Verified against production on 2026-08-19: a guest
 joined ranked and matched a bot with no email anywhere.
 
-**Rung 2 — Apple: repository-complete, dashboard/device acceptance pending.**
-iOS uses native AuthenticationServices. Android initializes the same bridge
+**Rung 2 — Apple: core attach/restore path implemented; release work deferred.**
+The owner explicitly deferred Apple enablement and device acceptance on
+2026-08-24. iOS uses native AuthenticationServices. Android initializes the same bridge
 with Services ID `com.appavaria.knucklebones.web` and uses its HTTPS WebView
 flow. Every attempt creates a raw nonce and state; Apple receives
 `SHA-256(rawNonce)`, Supabase receives the raw nonce, and Android results must
@@ -48,6 +49,13 @@ falls back to `signInWithIdToken` only for sessionless account creation. A link
 conflict never replaces the current guest. Client-decoded Apple claims are not
 trusted.
 
+Before this rung can ship, replace the current text-only Apple action with an
+Apple-compliant button and complete deletion-time Apple token revocation. The
+plugin returns an authorization code, but the current client discards it and
+`account-delete` removes only the Supabase account. Code exchange and revocation
+must happen server-side with an owner-held Apple `.p8` key; no Apple secret may
+enter the app bundle.
+
 **Rung 3 — Game Center: code complete, deliberately NOT deployed.** The
 signature verification is tested against Apple's real production certificates,
 but nothing has run on a device. The Edge Function, migration 0014, and its
@@ -55,7 +63,11 @@ but nothing has run on a device. The Edge Function, migration 0014, and its
 until a signed build can exercise them — an auth endpoint that has never
 answered a real request does not belong in production.
 
-### What Johannes clicks
+### Deferred Apple owner/release checklist
+
+Do not execute or mark this checklist complete until the owner resumes Apple
+identity work. None of it is required for the current shell-validation pass;
+all of it remains required before Apple identity is offered in a store build.
 
 - [x] **Anonymous sign-ins → ON** — done 2026-08-19.
 - [ ] **Confirm email → OFF**, or configure SMTP. Until then "Keep it forever"
@@ -75,6 +87,9 @@ answered a real request does not belong in production.
       build configurations) only AFTER the portal has the capabilities.
 - [ ] **Apple App ID:** enable Sign in with Apple for the existing
       `com.appavaria.knucklebones` App ID.
+- [ ] **App Store Connect name:** set the localized store listing name to
+      **Knucklebones Neon**. The uploaded bundle deliberately keeps
+      `CFBundleDisplayName` as **Knucklebones** for the installed Home Screen.
 - [ ] **Apple Services ID:** create `com.appavaria.knucklebones.web`, associate
       it with that App ID, and register website domain
       `euzjcejbkxvqfrttgaxu.supabase.co` with return URL
@@ -91,10 +106,16 @@ answered a real request does not belong in production.
 This client sends Apple's ID token directly to Supabase
 `signInWithIdToken`/`linkIdentity`; it does not use Supabase's Apple OAuth code
 exchange. Do not create or configure an Apple OAuth client secret for this
-flow. None of the unchecked items above is implied complete by repository
+sign-in/linking flow. That is separate from deletion-time Apple token
+revocation, which does require a server-side Apple client secret and remains
+deferred. None of the unchecked items above is implied complete by repository
 tests.
 
 ### Android/Play owner release
+
+This signing/upload rehearsal was explicitly deferred on 2026-08-24. Keep the
+guardrails below as the resumption checklist; no unsigned CI artifact may be
+uploaded in its place.
 
 - [ ] Install Android Studio Otter or newer, JDK 21, and Android SDK 36 before
       local device testing or signed bundling.
@@ -109,8 +130,9 @@ tests.
 Apple requires an App Store app using Sign in with Apple before the associated
 service can be offered on other platforms. Android Apple sign-in is therefore
 release-blocked until the associated iOS app is live; a locally successful
-WebView does not remove that requirement. The **Knucklebones Neon** shell rename
-also does not resolve store-name legal/trademark clearance.
+WebView does not remove that requirement. Using **Knucklebones Neon** for the
+store listing while the installed label remains **Knucklebones** also does not
+resolve store-name legal/trademark clearance.
 
 ### Then, in the repo
 

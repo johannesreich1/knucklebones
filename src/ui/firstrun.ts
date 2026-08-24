@@ -4,6 +4,7 @@
 // so it lives in ui/ and knows about neither. The caller decides what "yes"
 // means; this only asks, and only when it is worth asking.
 import { S } from '../state.ts';
+import { t } from '../i18n/index.ts';
 import { $, show, hide } from './dom.ts';
 import { Sfx } from './audio.ts';
 import { appRoot } from './embed.ts';
@@ -19,11 +20,10 @@ function build(): void {
   appRoot().insertAdjacentHTML('beforeend', `
 <div class="ov" id="ovFirst">
   <div class="askcard">
-    <div class="fh">First time?</div>
-    <p class="fp">The tutorial is one guided game — five lessons, played rather than read.
-       It takes about a minute, and you only ever see this once.</p>
-    <button class="btn primary" id="btnFirstYes">Play the tutorial</button>
-    <button class="btn ghost" id="btnFirstNo">Skip, I know the rules</button>
+    <div class="fh" data-i18n="learn:firstRun.title">${t('learn', 'firstRun.title')}</div>
+    <p class="fp" data-i18n="learn:firstRun.body">${t('learn', 'firstRun.body')}</p>
+    <button class="btn primary" id="btnFirstYes" data-i18n="learn:firstRun.play">${t('learn', 'firstRun.play')}</button>
+    <button class="btn ghost" id="btnFirstNo" data-i18n="learn:firstRun.skip">${t('learn', 'firstRun.skip')}</button>
   </div>
 </div>`);
 }

@@ -7,7 +7,8 @@
 // contexts is DATA in the spec, never a second markup.
 //
 // Lives in ui/ because home paints it at boot, before any online code loads.
-import { groupFill, boardGroup, rk } from '../core/ladder.ts';
+import { groupFill, boardGroup } from '../core/ladder.ts';
+import { formatNumber, ladderGroupCompactName } from '../i18n/index.ts';
 import { paintAvatar } from './avatar.ts';
 
 export interface PlateSpec {
@@ -23,6 +24,32 @@ export interface PlateSpec {
   stamp?: string;          // 'BEATEN' / 'FORFEIT' — angled across the row (design 36d)
   chev?: boolean;          // reads as a door
   large?: boolean;         // the result screen's roomier cut; the chip stays slim
+}
+
+/** Repaint locale-owned text and formatting without replacing a live plate. */
+export function repaintPlateLocale(el: HTMLElement, p: PlateSpec): void {
+  const pts = p.points ?? 0;
+  const name = el.querySelector<HTMLElement>('.nm2');
+  if (name) name.textContent = p.name;
+  const stamp = el.querySelector<HTMLElement>('.pstamp');
+  if (stamp) stamp.textContent = p.stamp ?? '';
+  const delta = el.querySelector<HTMLElement>('.pdelta');
+  if (delta && p.delta != null) {
+    delta.textContent = (p.delta >= 0 ? '+' : '') + formatNumber(p.delta);
+    delta.classList.toggle('down', p.delta < 0);
+  }
+  const group = el.querySelector<HTMLElement>('.gpill');
+  if (group) {
+    group.hidden = p.points == null;
+    if (p.points != null) {
+      const resolved = boardGroup(pts, !!p.apex);
+      group.style.setProperty('--gc', `var(--g-${resolved.id})`);
+      group.textContent = ladderGroupCompactName(resolved.id)
+        + (p.rank != null ? ` · #${formatNumber(p.rank)}` : '');
+    }
+  }
+  const points = el.querySelector<HTMLElement>('.meta2 b');
+  if (points) points.textContent = p.points != null ? formatNumber(pts) : '';
 }
 
 /* `el` keeps its tag — a <button> where the plate is a door, a <div> where it
@@ -47,22 +74,7 @@ export function fillPlate(el: HTMLElement, p: PlateSpec): void {
     + (p.chev ? '<span class="chev">›</span>' : '');
   (el.querySelector('.ringwrap') as HTMLElement).style.setProperty('--p', String(groupFill(pts)));
   paintAvatar(el.querySelector('.pav') as HTMLElement, p.avatar, 18);
-  (el.querySelector('.nm2') as HTMLElement).textContent = p.name;
-  if (p.stamp) (el.querySelector('.pstamp') as HTMLElement).textContent = p.stamp;
-  if (p.delta != null) {
-    const d = el.querySelector('.pdelta') as HTMLElement;
-    d.textContent = (p.delta >= 0 ? '+' : '') + p.delta;
-    d.classList.toggle('down', p.delta < 0);
-  }
-  /* the group pill — the face-off's own tag (one .gpill, styles/main.css):
-     the group in its colour, the rank beside it when the caller knows one */
-  const gl = el.querySelector('.gpill') as HTMLElement;
-  gl.hidden = p.points == null;
-  if (p.points != null) {
-    const g = boardGroup(pts, !!p.apex);
-    gl.style.setProperty('--gc', `var(--g-${g.id})`);
-    gl.textContent = g.name + (p.rank != null ? ` · ${rk(p.rank)}` : '');
-  }
-  (el.querySelector('.meta2 b') as HTMLElement).textContent =
-    p.points != null ? pts.toLocaleString('en') : '';
+  /* The group pill, points, delta, name, and stamp all share the locale-only
+     painter used by a live result repaint. */
+  repaintPlateLocale(el, p);
 }

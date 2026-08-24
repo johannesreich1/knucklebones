@@ -37,6 +37,7 @@ const cases = [
 try {
   for (const [label, mode, mine, theirs, die, want, reduced] of cases) {
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true,
+                                           locale: 'en-US',
                                            ...(reduced ? { reducedMotion: 'reduce' } : {}) });
     const page = await ctx.newPage();
     page.on('pageerror', e => problems.push('PAGEERROR ' + label + ': ' + e.message));

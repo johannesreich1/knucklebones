@@ -1,6 +1,6 @@
 {
   "appId": "com.appavaria.knucklebones",
-  "appName": "Knucklebones Neon",
+  "appName": "Knucklebones",
   "webDir": "www",
   "server": {
     "androidScheme": "https",

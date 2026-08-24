@@ -21,7 +21,8 @@ const browser = await chromium.launch();
 const problems = [], errs = [], out = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
 
-const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true });
+const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
+  locale: 'en-US' });
 /* over http the single-file page would try to register its service worker
    (file:// never attempts it) and 404 on /sw.js — not this suite's subject,
    and the console error would fail the gate. Make the capability absent, the

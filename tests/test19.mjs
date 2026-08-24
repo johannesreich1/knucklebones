@@ -18,7 +18,7 @@ const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x
 const browser = await chromium.launch();
 try {
   // ---- a brand-new player: empty storage, nothing played, nothing taught ----
-  const ctx = await browser.newContext({ viewport: { width: 430, height: 932 } });
+  const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, locale: 'en-US' });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => problems.push('PAGEERROR ' + e.message));
   await page.goto(F);

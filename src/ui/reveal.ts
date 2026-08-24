@@ -20,6 +20,7 @@
 // already know, and renaming it buys the player nothing.
 import type { ModeSpec } from '../core/modes.ts';
 import type { SpellSpec } from '../core/spells.ts';
+import { formatNumber, subscribeLocale, t } from '../i18n/index.ts';
 import { dialBeat } from './modedial.ts';
 import { dealBeat } from './runedeal.ts';
 import { paintAvatar } from './avatar.ts';
@@ -42,7 +43,7 @@ const esc = (t: string): string => t.replace(/[&<>"']/g, (c) =>
 /* one side of the versus line — the .dav slot is filled by paintAvatar after
    the innerHTML write, so the avatar has exactly one renderer (ui/avatar.ts) */
 function sideHtml(p: DialSide, cls: 'me' | 'foe'): string {
-  const rating = p.rating != null ? `<span class="rt">${p.rating}</span>` : '';
+  const rating = p.rating != null ? `<span class="rt">${formatNumber(p.rating)}</span>` : '';
   return `<span class="dside ${cls}"><span class="dav"></span>` +
          `<span class="dnm">${esc(p.name)}</span>${rating}</span>`;
 }
@@ -53,7 +54,7 @@ function sideHtml(p: DialSide, cls: 'me' | 'foe'): string {
    two dial cards had been carrying a hand-written one-line "Opponent NAME ·
    RATING" — the pre-study treatment this replaced — for as long as it existed. */
 export function versus(me: DialSide, foe: DialSide): string {
-  return sideHtml(me, 'me') + '<span class="dvs">VS</span>' + sideHtml(foe, 'foe');
+  return sideHtml(me, 'me') + `<span class="dvs">${t('common', 'versus')}</span>` + sideHtml(foe, 'foe');
 }
 
 /* An answer that is done being looked at, kept where it can still be read. It
@@ -84,13 +85,72 @@ function build(): void {
 <div class="ov" id="ovWheel">
   <div class="dwho" id="wheelWho"></div>
   <div class="wsettled" id="wheelSettled"></div>
-  <div class="wtitle" id="wheelTitle">GAME MODE</div>
+  <div class="wtitle" id="wheelTitle">${t('game', 'reveal.gameMode')}</div>
   <div class="wstage" id="wheelStage"></div>
   <div class="wname" id="wheelName">&nbsp;</div>
   <div class="wblurb" id="wheelBlurb">&nbsp;</div>
   <div class="dhold" id="wheelHold"><b id="wheelCount">&nbsp;</b><span id="wheelHint">&nbsp;</span></div>
 </div>`);
 }
+
+interface ActiveReveal {
+  readonly ov: HTMLElement;
+  readonly beats: readonly Beat[];
+  readonly me?: DialSide;
+  readonly foe?: DialSide;
+  activeIndex: number;
+  landed: boolean;
+  repaintHold?: () => void;
+}
+
+let activeReveal: ActiveReveal | null = null;
+
+function repaintRating(side: Element | null, player?: DialSide): void {
+  const rating = side?.querySelector<HTMLElement>('.rt');
+  if (rating && player?.rating != null) rating.textContent = formatNumber(player.rating);
+}
+
+/**
+ * Repaint only locale-owned text in the live reveal. Theatre markup, settled
+ * cards, avatars, listeners, and WAAPI animations remain the exact same nodes.
+ */
+function repaintReveal(context: ActiveReveal): void {
+  const { ov, beats } = context;
+  const beat = beats[context.activeIndex];
+  if (!beat) return;
+
+  const who = ov.querySelector<HTMLElement>('#wheelWho');
+  const versusLabel = who?.querySelector<HTMLElement>('.dvs');
+  if (versusLabel) versusLabel.textContent = t('common', 'versus');
+  repaintRating(who?.querySelector('.dside.me') ?? null, context.me);
+  repaintRating(who?.querySelector('.dside.foe') ?? null, context.foe);
+
+  const title = ov.querySelector<HTMLElement>('#wheelTitle');
+  if (title) title.textContent = beat.label;
+  const stage = ov.querySelector<HTMLElement>('#wheelStage');
+  if (stage) beat.repaintStage?.(stage);
+
+  if (context.landed) {
+    const currentName = ov.querySelector<HTMLElement>('#wheelName .wcopy');
+    const currentBlurb = ov.querySelector<HTMLElement>('#wheelBlurb');
+    if (currentName) currentName.textContent = beat.name;
+    if (currentBlurb) currentBlurb.textContent = beat.blurb;
+  }
+
+  ov.querySelectorAll<HTMLElement>('#wheelSettled .wsett').forEach((answer, index) => {
+    const settledBeat = beats[index];
+    if (!settledBeat) return;
+    const name = answer.querySelector<HTMLElement>('.wpill b');
+    const blurb = answer.querySelector<HTMLElement>('.wblurb');
+    if (name) name.textContent = settledBeat.name;
+    if (blurb) blurb.textContent = settledBeat.blurb;
+  });
+  context.repaintHold?.();
+}
+
+subscribeLocale(() => {
+  if (activeReveal?.ov.classList.contains('on')) repaintReveal(activeReveal);
+});
 
 /* WHAT THE OVERLAY IS WEARING, remembered by the shell that put it on.
    A beat dresses the overlay while it runs — the rune deal's `dealing` resizes
@@ -115,17 +175,18 @@ const HOLD_SECS = 5;
 /* The result has to be READ, not glimpsed. It holds for five seconds with a
    countdown under it, and a tap says "I have read it" — once everyone has, the
    wait ends there. */
-function hold(ov: HTMLElement, peer?: DialPeer): Promise<void> {
+function hold(ov: HTMLElement, context: ActiveReveal, peer?: DialPeer): Promise<void> {
   const count = $('#wheelCount'), hint = $('#wheelHint');
   let left = HOLD_SECS;
   let mine = false;
   let theirs = !peer;                      // nobody to wait for when alone
   const paint = (): void => {
-    count.textContent = String(Math.max(0, left));
-    hint.textContent = !mine ? 'Tap when you are ready'
-      : theirs ? 'Starting' : 'Ready — waiting for your opponent';
+    count.textContent = formatNumber(Math.max(0, left));
+    hint.textContent = !mine ? t('game', 'reveal.tapReady')
+      : theirs ? t('game', 'reveal.starting') : t('game', 'reveal.readyWaiting');
     ov.classList.toggle('ready', mine);
   };
+  context.repaintHold = paint;
   paint();
   return new Promise<void>((resolve) => {
     let ticker = 0, off: (() => void) | null = null;
@@ -133,6 +194,7 @@ function hold(ov: HTMLElement, peer?: DialPeer): Promise<void> {
       clearInterval(ticker);
       ov.removeEventListener('pointerdown', tap);
       off?.();
+      if (context.repaintHold === paint) context.repaintHold = undefined;
       resolve();
     };
     const both = (): void => { if (mine && theirs) done(); };
@@ -187,36 +249,54 @@ export async function reveal(opts: {
   ov.classList.remove('landed', 'ready', 'holding');
   wear(ov);                       // whatever the LAST reveal left on, whoever ran it
   show('#ovWheel');
+  const context: ActiveReveal = {
+    ov,
+    beats,
+    me: opts.me,
+    foe: opts.foe,
+    activeIndex: 0,
+    landed: false,
+  };
+  activeReveal = context;
 
-  for (let k = 0; k < beats.length; k++) {
-    const beat = beats[k];
-    // the hunting state: nothing named, nothing lit, nothing in the middle
-    ov.classList.remove('landed');
-    ov.classList.add('hunting');
-    wear(ov, beat.cls);
-    $('#wheelTitle').textContent = beat.label;
-    $('#wheelName').innerHTML = '&nbsp;';
-    $('#wheelName').style.color = '';
-    $('#wheelBlurb').innerHTML = '&nbsp;';
-    stage.innerHTML = beat.stage;
+  try {
+    for (let k = 0; k < beats.length; k++) {
+      const beat = beats[k];
+      context.activeIndex = k;
+      context.landed = false;
+      // the hunting state: nothing named, nothing lit, nothing in the middle
+      ov.classList.remove('landed');
+      ov.classList.add('hunting');
+      wear(ov, beat.cls);
+      $('#wheelTitle').textContent = beat.label;
+      $('#wheelName').innerHTML = '&nbsp;';
+      $('#wheelName').style.color = '';
+      $('#wheelBlurb').innerHTML = '&nbsp;';
+      stage.innerHTML = beat.stage;
+      beat.repaintStage?.(stage);
 
-    await beat.run(() => { ov.classList.remove('hunting'); ov.classList.add('landed'); });
+      await beat.run(() => { ov.classList.remove('hunting'); ov.classList.add('landed'); });
 
-    const name = $('#wheelName');
-    name.innerHTML = `${beat.icon} ${beat.name}`;
-    name.style.color = beat.hue;
-    $('#wheelBlurb').textContent = beat.blurb;
+      const name = $('#wheelName');
+      /* Keep the icon node stable across locale changes; only .wcopy changes. */
+      name.innerHTML = `${beat.icon} <span class="wcopy"></span>`;
+      name.style.color = beat.hue;
+      context.landed = true;
+      repaintReveal(context);
 
-    if (k === beats.length - 1) break;
-    await pause(READ_MS);
-    settled.insertAdjacentHTML('beforeend', settledAnswer(beat));
-    stage.classList.add('out');
-    await pause(SWAP_MS);
-    stage.classList.remove('out');
-    wear(ov);
+      if (k === beats.length - 1) break;
+      await pause(READ_MS);
+      settled.insertAdjacentHTML('beforeend', settledAnswer(beat));
+      stage.classList.add('out');
+      await pause(SWAP_MS);
+      stage.classList.remove('out');
+      wear(ov);
+    }
+    ov.classList.add('holding');
+    await hold(ov, context, opts.peer);
+    wear(ov);                       // and it leaves the way it arrived
+    hide('#ovWheel');
+  } finally {
+    if (activeReveal === context) activeReveal = null;
   }
-  ov.classList.add('holding');
-  await hold(ov, opts.peer);
-  wear(ov);                       // and it leaves the way it arrived
-  hide('#ovWheel');
 }

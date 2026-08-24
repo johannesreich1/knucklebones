@@ -144,6 +144,65 @@ export async function runOfflineRestartScenarios(suite) {
   out.offlineAskRegular = await page.evaluate(askShape);
   checkAskLayout(check, 'regular phone', out.offlineAskRegular);
 
+  /* The shared question remains live while language changes. Only its text
+     nodes repaint: focus, the modal/buttons, and their already-bound actions
+     must survive. Wait out tap()'s native-click guard before pressing the
+     hidden Settings arrow from code. */
+  await page.waitForTimeout(700);
+  out.askLocaleRepaint = await page.evaluate(() => {
+    const ids = ['ovAsk', 'askHead', 'askBody', 'btnAskNo', 'btnAskAlt', 'btnAskYes'];
+    const nodes = Object.fromEntries(ids.map((id) => [id, document.getElementById(id)]));
+    window.__askLocaleNodes = nodes;
+    nodes.btnAskAlt.focus();
+    const before = {
+      head: nodes.askHead.textContent.trim(),
+      body: nodes.askBody.textContent.trim(),
+      focus: document.activeElement?.id,
+    };
+    document.getElementById('languageNext').click();
+    const card = document.querySelector('#ovAsk .askcard');
+    const visible = [...card.querySelectorAll(':scope > button')]
+      .filter((button) => !button.hidden).map((button) => button.textContent.trim());
+    return {
+      before,
+      locale: window.__kb.S.localeOverride,
+      head: nodes.askHead.textContent.trim(),
+      body: nodes.askBody.textContent.trim(),
+      order: visible,
+      focus: document.activeElement?.id,
+      sameNodes: ids.every((id) => document.getElementById(id) === window.__askLocaleNodes[id]),
+    };
+  });
+  check(out.askLocaleRepaint.locale === 'de'
+    && out.askLocaleRepaint.head === 'Dieses Duell beenden?'
+    && out.askLocaleRepaint.body !== out.askLocaleRepaint.before.body
+    && out.askLocaleRepaint.order.join(' -> ')
+      === 'Weiterspielen -> Duell neu starten -> Duell beenden',
+  'visible ask-card did not repaint all copy in German', out.askLocaleRepaint);
+  check(out.askLocaleRepaint.sameNodes && out.askLocaleRepaint.focus === 'btnAskAlt',
+    'ask-card locale repaint replaced a node or lost focus', out.askLocaleRepaint);
+
+  out.askLocaleRestored = await page.evaluate(() => {
+    document.getElementById('languagePrevious').click();
+    const sameNodes = Object.entries(window.__askLocaleNodes)
+      .every(([id, node]) => document.getElementById(id) === node);
+    /* Restore the automatic preference expected by the selector scenarios;
+       the effective language is already English again. */
+    window.__kb.S.localeOverride = null;
+    const key = 'knucklebones.v1';
+    const saved = JSON.parse(localStorage.getItem(key) ?? '{}');
+    saved.localeOverride = null;
+    localStorage.setItem(key, JSON.stringify(saved));
+    return {
+      head: document.getElementById('askHead').textContent.trim(),
+      focus: document.activeElement?.id,
+      sameNodes,
+    };
+  });
+  check(out.askLocaleRestored.head === 'Quit this duel?'
+    && out.askLocaleRestored.focus === 'btnAskAlt' && out.askLocaleRestored.sameNodes,
+  'ask-card did not repaint back to English in place', out.askLocaleRestored);
+
   await page.setViewportSize({ width: originalViewport?.width ?? 390, height: 620 });
   await page.waitForTimeout(120);
   out.offlineAskShort = await page.evaluate(askShape);

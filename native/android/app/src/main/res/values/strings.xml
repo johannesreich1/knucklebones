@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Knucklebones Neon</string>
-    <string name="title_activity_main">Knucklebones Neon</string>
+    <string name="app_name">Knucklebones</string>
+    <string name="title_activity_main">Knucklebones</string>
     <string name="package_name">com.appavaria.knucklebones</string>
     <string name="custom_url_scheme">com.appavaria.knucklebones</string>
 </resources>

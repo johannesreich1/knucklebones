@@ -1,6 +1,7 @@
 // The guided first game: scripted rolls, scripted CPU, one lesson per
 // player turn. Deterministic, so the whole flow is testable.
 import { ME } from '../core/rules.ts';
+import { subscribeLocale, t } from '../i18n/index.ts';
 import { S } from '../state.ts';
 import { $ } from '../ui/dom.ts';
 import { Sfx } from '../ui/audio.ts';
@@ -12,8 +13,10 @@ import { setTutorialPresentation } from '../ui/game/root-state.ts';
    lesson — wherever the player put their earlier dice. Deterministic, so the
    whole flow is testable. */
 let coachResolve: (() => void) | null = null;
-export function coachShow(msg: string, needTap = false): Promise<void> {
-  $('#coachMsg').textContent = msg;
+let coachCopy: (() => string) | null = null;
+export function coachShow(copy: string | (() => string), needTap = false): Promise<void> {
+  coachCopy = typeof copy === 'function' ? copy : null;
+  $('#coachMsg').textContent = typeof copy === 'function' ? copy() : copy;
   $('#coachHint').hidden = !needTap;
   $('#coach').hidden = false;
   return new Promise<void>((resolve) => {
@@ -21,7 +24,11 @@ export function coachShow(msg: string, needTap = false): Promise<void> {
     else resolve();
   });
 }
-export function coachHide(): void { $('#coach').hidden = true; coachResolve = null; }
+export function coachHide(): void { $('#coach').hidden = true; coachResolve = null; coachCopy = null; }
+export function repaintCoach(): void {
+  if (coachCopy) $('#coachMsg').textContent = coachCopy();
+}
+subscribeLocale(repaintCoach);
 export function clearTut(): void {
   S.tut = null;
   setTutorialPresentation(false);
@@ -43,20 +50,20 @@ export function tutNextRoll(): number {
 /* one lesson per player turn, keyed by turn number (board counts shift when
    dice get destroyed, so placements are the wrong key) */
 export function tutOnChoose(): void {
-  const t = S.tut;
-  if (!t) return;
-  t.turnNo++;
-  t.restrict = null;
-  if(t.turnNo===0){
-    coachShow('You rolled a 4. The +pills preview what each column would score — tap any column to drop it in.');
-  }else if(t.turnNo===1){
-    t.restrict=t.firstCol;
-    coachShow('Another 4! Matching dice in one column multiply: two 4s score 16, not 8. Stack it on your first 4.');
-  }else if(t.turnNo===2){
-    t.restrict=1;
-    coachShow('You rolled a 5 — and the AI has a 5 in their middle column. Place yours in YOUR middle column to destroy theirs!');
-  }else if(t.turnNo===3){
-    coachShow('Boom. That is the whole game: stack matches, smash theirs. Finish the round — highest total wins.');
+  const tutorial = S.tut;
+  if (!tutorial) return;
+  tutorial.turnNo++;
+  tutorial.restrict = null;
+  if(tutorial.turnNo===0){
+    coachShow(() => t('learn', 'tutorial.lesson1'));
+  }else if(tutorial.turnNo===1){
+    tutorial.restrict=tutorial.firstCol;
+    coachShow(() => t('learn', 'tutorial.lesson2'));
+  }else if(tutorial.turnNo===2){
+    tutorial.restrict=1;
+    coachShow(() => t('learn', 'tutorial.lesson3'));
+  }else if(tutorial.turnNo===3){
+    coachShow(() => t('learn', 'tutorial.lesson4'));
   }else{
     coachHide();
   }
