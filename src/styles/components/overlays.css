@@ -64,7 +64,7 @@
   justify-items:center}
 :where(#kbroot) .hues button{width:100%;max-width:44px;aspect-ratio:1;border-radius:50%;display:grid;place-items:center;
   background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.10);
-  cursor:pointer;padding:0;transition:transform .1s}   /* fast tactile press only — the pick snaps */
+  cursor:pointer;padding:0;transition:transform .15s}   /* press only — the pick snaps */
 :where(#kbroot) .hues button::after{content:"";width:21px;height:21px;border-radius:50%;background:var(--h);
   box-shadow:0 0 12px var(--h)}
 :where(#kbroot) .hues button:active,:where(#kbroot) .hues button.pressing{transform:scale(.9)}

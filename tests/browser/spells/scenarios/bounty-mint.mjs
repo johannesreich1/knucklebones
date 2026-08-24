@@ -18,13 +18,16 @@ export async function runBountyMintScenarios(suite) {
     const plateBefore = {
       plate: rect('#plateBot'), who: rect('#plateBot .who'), right: rect('#plateBot .pright'),
     };
-    const placement = new Promise((resolve) => {
-      const root = document.getElementById('botBoard'), observer = new MutationObserver(() => {
-        if (root.querySelector('.col[data-col="0"] .die[data-v="4"]')) {
-          observer.disconnect(); resolve(document.timeline.currentTime);
-        }
+    const observedAt = (root, ready) => new Promise((resolve) => {
+      const observer = new MutationObserver(() => {
+        if (!ready()) return;
+        observer.disconnect(); resolve(performance.now());
       });
       observer.observe(root, { childList: true, subtree: true }); });
+    const topBoard = document.getElementById('topBoard');
+    const placement = observedAt(document.getElementById('botBoard'), () =>
+      !!document.querySelector('#botBoard .col[data-col="0"] .die[data-v="4"]'));
+    const minted = observedAt(topBoard, () => topBoard.querySelectorAll('.bounty-mint').length === 2);
     const move = k.place(1, 0);
     for (let i = 0; i < 180 && document.querySelectorAll('.bounty-mint').length !== 2; i++) {
       await new Promise((resolve) => setTimeout(resolve, 8));
@@ -39,6 +42,7 @@ export async function runBountyMintScenarios(suite) {
     const liveAnimations = slots.flatMap((slot) => slot.getAnimations({ subtree: true }));
     await Promise.all(liveAnimations.map((animation) => animation.ready));
     const placementStart = await placement;
+    const mintedAt = await minted;
     const victims = slots.map((slot) => {
       const die = slot.querySelector(':scope > .die');
       const stamp = slot.querySelector(':scope > .bounty-mint');
@@ -72,10 +76,11 @@ export async function runBountyMintScenarios(suite) {
         offset: Number(value.computedOffset ?? value.offset), opacity: Number(value.opacity), easing: value.easing,
       })) || [];
       const pressTiming = timing(press), strikeTiming = timing(strike), ringTiming = timing(ring);
-      const activeStart = (animation, value) => typeof animation?.startTime === 'number' && value
-        ? animation.startTime + value.delay - placementStart : null;
-      const clock = { press: activeStart(press, pressTiming), strike: activeStart(strike, strikeTiming),
-        ring: activeStart(ring, ringTiming) };
+      /* Refresh-tick animation startTime varies by OS. Measure the authored
+         DOM mark plus catch-up delay on one performance clock instead. */
+      const activeStart = (value) => value ? mintedAt + value.delay - placementStart : null;
+      const clock = { press: activeStart(pressTiming), strike: activeStart(strikeTiming),
+        ring: activeStart(ringTiming) };
       if (strike && strikeTiming) {
         strike.pause();
         strike.currentTime = strikeTiming.delay + 360;
@@ -105,14 +110,7 @@ export async function runBountyMintScenarios(suite) {
       unstampedMatch: document.querySelector('#topBoard .col[data-col="1"] .die[data-v="4"]')
         ?.closest('.slot')?.classList.contains('bounty-mint-slot') || false,
     };
-    const cleared = new Promise((resolve) => {
-      const observer = new MutationObserver(() => {
-        if (document.querySelector('.bounty-mint')) return;
-        observer.disconnect();
-        resolve(document.timeline.currentTime);
-      });
-      observer.observe(document.getElementById('topBoard'), { childList: true, subtree: true });
-    });
+    const cleared = observedAt(topBoard, () => !document.querySelector('.bounty-mint'));
     await move;
     const cleanupOffset = await cleared - placementStart;
     await new Promise((resolve) => setTimeout(resolve, 220)); // beyond the existing plate bump
