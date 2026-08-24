@@ -59,6 +59,7 @@ type ShareFeedback = 'idle' | 'copied' | 'copyFailed';
 let shareFeedback: ShareFeedback = 'idle';
 let shareFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 let presentationRevision = 0;
+let titleResizeObserver: ResizeObserver | null = null;
 /* the last deal, kept so the theatre can run again on a screen that was only
    covered — the plates are the one thing here that is worth a second showing */
 let dealt: EndPlate[] = [];
@@ -68,11 +69,37 @@ export function bindEnd(): void {
   tap($('#btnAgain'), () => act(live?.again));
   tap($('#btnEndQuiet'), () => act(live?.quiet));
   tap($('#btnShare'), () => { Sfx.tap(); void shareResult(); });
+  if (typeof ResizeObserver !== 'undefined') {
+    titleResizeObserver ??= new ResizeObserver(() => fitEndTitle());
+    titleResizeObserver.observe($('#ovEnd .titleclip'));
+  }
+}
+
+/* A translated verdict is allowed the full normal type scale. Only an
+   unbroken word that would exceed 90% of the owned app viewport is reduced,
+   and only by the exact ratio needed to fit. This is copy- and locale-neutral:
+   a future long English/French/German word follows the same rule, while
+   multi-word duo verdicts retain their intentional wrapping. */
+function fitEndTitle(): void {
+  const title = $('#endTitle');
+  title.style.removeProperty('--fitted-verdict');
+  const oneLine = !/\s/u.test(title.textContent?.trim() ?? '');
+  title.classList.toggle('fit-one-line', oneLine);
+  if (!oneLine) return;
+  const clip = $('#ovEnd .titleclip');
+  const root = title.closest('#kbroot') as HTMLElement | null;
+  const viewportWidth = root?.getBoundingClientRect().width || window.innerWidth;
+  const limit = Math.min(clip.clientWidth, viewportWidth * .9);
+  const naturalWidth = title.getBoundingClientRect().width;
+  if (!(limit > 0 && naturalWidth > limit)) return;
+  const naturalSize = parseFloat(getComputedStyle(title).fontSize);
+  title.style.setProperty('--fitted-verdict', `${naturalSize * limit / naturalWidth}px`);
 }
 
 function paintCopy(spec: EndSpec): void {
   const title = $('#endTitle');
   title.textContent = spec.title;
+  fitEndTitle();
   $('#endSub').textContent = spec.sub;
   $('#endYou').textContent = formatNumber(spec.you.score);
   $('#endCpu').textContent = formatNumber(spec.them.score);
@@ -104,6 +131,7 @@ function presentEnd(spec: EndSpec, localize: (() => EndSpec) | null): void {
   setPlates(spec.plates ?? []);
   setTimeout(() => {
     show('#ovEnd');
+    fitEndTitle();
     // restart the entrance: a class that is already there animates nothing
     replay(ov, 'enter');
     // the rise is clipped while it travels; once it lands, the clip (and the

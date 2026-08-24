@@ -49,8 +49,11 @@
 /* Tracking trails the last glyph, so centring the text box alone leaves the
    painted verdict half a tracking unit left. A matching leading pad balances
    that trailing space for every line, including wrapped duo translations,
-   without moving the centred transform origin used by the win stamp. */
-:where(#kbroot) #endTitle{padding-inline-start:.2em}
+   without moving the centred transform origin used by the win stamp.
+   A single-word localized verdict keeps the normal scale until it would cross
+   90% of the app viewport; ui/endscreen then supplies --fitted-verdict. */
+:where(#kbroot) #ovEnd #endTitle{padding-inline-start:.2em;font-size:var(--fitted-verdict,var(--verdict))}
+:where(#kbroot) #endTitle.fit-one-line{white-space:nowrap}
 :where(#kbroot) #ovEnd.lose .titleclip,:where(#kbroot) #ovEnd.draw .titleclip{overflow:hidden;padding:3px 0}
 /* NOTHING filters the title. A filter on an element that also carries
    -webkit-background-clip:text makes Safari drop the clip and paint the

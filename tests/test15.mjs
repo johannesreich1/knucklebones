@@ -87,6 +87,7 @@ async function paintedTitleCentre(page) {
     box,
     clip,
     ink: scan.right < scan.left ? null : { left: inkLeft, right: inkRight },
+    fitsNinetyPercent: !!box && !!viewport && box.width <= viewport.width * .9 + .5,
     inside: !!clip && scan.right >= scan.left
       && inkLeft >= clip.x - .5 && inkRight <= clip.x + clip.width + .5,
     centreError: !clip || scan.right < scan.left ? null
@@ -226,10 +227,12 @@ try {
           const key = `${locale}-${size.width}`;
           r.paintedTitles[key] = { title, ...paint };
           check(title === expectedTitle, `wrong ${locale} verdict for ${label}`, r.paintedTitles[key]);
-          /* Rasterised glyph extents quantise to whole pixels; one pixel is
-             the strictest cross-string threshold that does not confuse the
-             angled V in VICTOIRE with the old half-tracking (~4–5px) bug. */
-          check(paint.inside && paint.centreError !== null && Math.abs(paint.centreError) <= 1,
+          /* Linux and macOS rasterise the same centred glyph run up to 1.5px
+             apart at these sizes. Two pixels still decisively rejects the old
+             half-tracking shift (~4–5px), while the separate 90% bound proves
+             a long localized word was resized rather than clipped. */
+          check(paint.inside && paint.fitsNinetyPercent
+              && paint.centreError !== null && Math.abs(paint.centreError) <= 2,
             `THE ${locale.toUpperCase()} PAINTED VERDICT IS NOT CENTRED/CONTAINED AT ${size.width}px: ${label}`, paint);
         }
       }
