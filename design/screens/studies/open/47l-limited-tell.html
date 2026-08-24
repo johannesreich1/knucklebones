@@ -139,10 +139,10 @@
   /* the pile's own settle, deep behind a heavy draw and almost nothing behind
      a light one — same curve, three depths */
   .litellrow .pile{animation:litellsettle 3.4s cubic-bezier(.3,1.1,.4,1) infinite}
-  /* LI10's gutter now SHIPS (styles/game/variants.css draws it on every .bag).
+  /* LI10's gutter now SHIPS (styles/game/variants.css draws it beside every .bag).
      This card proposes a rival channel for the same quantity, so the shipped
      gauge is hidden here: two gauges in one picture measure nothing. */
-  .bag .pile::before,.bag .pile::after{content:none}
+  .bag::before,.bag::after{content:none}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
   <div class="hud">

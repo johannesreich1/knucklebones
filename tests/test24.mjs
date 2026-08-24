@@ -28,7 +28,8 @@ const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x
 
 const browser = await chromium.launch();
 try {
-  const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, hasTouch: true });
+  const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, hasTouch: true,
+    locale: 'en-US' });
   await ctx.addInitScript(() => {
     const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}');
     cur.played = true; localStorage.setItem(k, JSON.stringify(cur));   // no first-run offer over the board
@@ -67,10 +68,10 @@ try {
     const box = (el) => { const r = el.getBoundingClientRect();
       return { x: +r.x.toFixed(1), y: +r.y.toFixed(1), w: +r.width.toFixed(1), h: +r.height.toFixed(1),
         cx: +(r.x + r.width / 2).toFixed(1), cy: +(r.y + r.height / 2).toFixed(1) }; };
-    const live = getComputedStyle(pile, '::after'), track = getComputedStyle(pile, '::before');
+    const live = getComputedStyle(bag, '::after'), track = getComputedStyle(bag, '::before');
     return {
       count: Number(document.getElementById('bagNum').textContent),
-      pile: box(pile),
+      pile: box(pile), bagBox: box(bag),
       liveH: +parseFloat(live.height).toFixed(2), liveW: +parseFloat(live.width).toFixed(2),
       liveLeft: live.left, liveBg: live.backgroundColor, trackBg: track.backgroundColor,
       trackH: +parseFloat(track.height).toFixed(2),
@@ -152,9 +153,9 @@ try {
     const root = document.getElementById('kbroot');
     root.style.setProperty('--p1', '#ff0000'); root.style.setProperty('--p1-rgb', '255,0,0');
     root.style.setProperty('--p2', '#00ff00'); root.style.setProperty('--p2-rgb', '0,255,0');
-    const pile = root.querySelector('#bagStack .pile');
-    const shot = { liveBg: getComputedStyle(pile, '::after').backgroundColor,
-      trackBg: getComputedStyle(pile, '::before').backgroundColor };
+    const bag = root.querySelector('#bagStack');
+    const shot = { liveBg: getComputedStyle(bag, '::after').backgroundColor,
+      trackBg: getComputedStyle(bag, '::before').backgroundColor };
     root.style.removeProperty('--p1'); root.style.removeProperty('--p1-rgb');
     root.style.removeProperty('--p2'); root.style.removeProperty('--p2-rgb');
     return shot;
@@ -169,15 +170,15 @@ try {
     const step = await drawOnce(target + 1);
     if (!step) { problems.push('no legal column left to reach ' + target); break; }
     const now = step.after;
-    ladder.push({ n: now.count, liveH: now.liveH, want: +(now.pile.h * now.count / BAG).toFixed(2),
-      liveW: now.liveW, liveLeft: now.liveLeft, trackH: now.trackH, pileH: now.pile.h,
+    ladder.push({ n: now.count, liveH: now.liveH, want: +(now.bagBox.h * now.count / BAG).toFixed(2),
+      liveW: now.liveW, liveLeft: now.liveLeft, trackH: now.trackH, bagH: now.bagBox.h,
       shells: now.shells.length, liftY: step.lift?.take.cy ?? null });
   }
   out.ladder = ladder;
   check(ladder.length === 5 && ladder.every((r) => Math.abs(r.liveH - r.want) <= 0.6),
-    'the gutter column is not the remaining fraction of the pile', ladder);
-  check(ladder.every((r) => r.liveW === 2 && r.liveLeft === '0px' && r.trackH === r.pileH),
-    'the gutter is not a 2px column in the lane at the pile edge, full-height track behind it', ladder);
+    'the gutter column is not the remaining fraction of the bag', ladder);
+  check(ladder.every((r) => r.liveW === 2 && r.liveLeft === '-10px' && r.trackH === r.bagH),
+    'the gutter is not a 2px column in its own lane beside the bag, full-height track behind it', ladder);
   /* the whole point: from six down the shells have stopped saying anything
      different, and the column is the only thing still moving */
   const tail = ladder.filter((r) => r.n <= 6 && r.n > 0);
@@ -196,20 +197,39 @@ try {
       return { cx: +(r.x + r.width / 2).toFixed(1), cy: +(r.y + r.height / 2).toFixed(1),
         top: +r.top.toFixed(1), bottom: +r.bottom.toFixed(1) }; };
     const bag = document.getElementById('bagStack');
+    /* the gauge hangs outside the bag's box, so the box centre is NOT the
+       thing a reader lines up — the shells are. Measure the fan itself. */
+    const shells = [...bag.querySelectorAll('.pile .die:not(.take)')]
+      .filter((d) => !d.classList.contains('gone')).map((d) => d.getBoundingClientRect());
+    const fan = { cx: +((Math.min(...shells.map((r) => r.left))
+      + Math.max(...shells.map((r) => r.right))) / 2).toFixed(1) };
     const rune = document.getElementById('spellBar');
     const status = document.querySelector('.status');
     const hit = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
     return {
       land: document.getElementById('kbroot').classList.contains('land'),
       cols: [...document.querySelectorAll('#botBoard .col')].map((c) => mid(c).cx),
+      fanCx: fan.cx, countCx: mid(document.getElementById('bagNum')).cx,
+      /* the gauge spans the WHOLE bag, shells and number both */
+      gauge: getComputedStyle(bag, '::before').height, bagH: +bag.getBoundingClientRect().height.toFixed(1),
       bag: mid(bag), rune: rune && !rune.hidden ? mid(rune) : null, stage: mid(document.getElementById('dieStage')),
       onStatus: hit(bag.getBoundingClientRect(), status.getBoundingClientRect()),
     };
   });
+  /* the ladder above ends on an EMPTY bag; refill and draw once — that is the
+     production path that repaints it — or there are no shells left to find a
+     centre of. */
+  await page.evaluate(() => { window.__kb.S.pool.length = 0;
+    for (let i = 0; i < 24; i++) window.__kb.S.pool.push(1 + (i % 6)); });
+  await drawOnce();
   const upright = await stand(page);
   out.stand = { portrait: upright };
-  check(Math.abs(upright.bag.cx - upright.cols[0]) < 0.5,
-    'the bag is not centred on the first board column', upright);
+  check(Math.abs(upright.fanCx - upright.cols[0]) < 0.5,
+    'the STACK is not centred on the first board column', upright);
+  check(Math.abs(upright.countCx - upright.cols[0]) < 0.5,
+    'the count is not on the same axis as the stack', upright);
+  check(Math.abs(parseFloat(upright.gauge) - upright.bagH) < 0.5,
+    'the gauge does not span the whole bag (shells plus the count)', upright);
   check(Math.abs(upright.bag.cy - upright.stage.cy) < 0.5,
     'the bag is not level with the die in play', upright);
 
