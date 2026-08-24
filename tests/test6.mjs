@@ -108,12 +108,34 @@ await shot(page, 'w-start');
    being direct siblings, now beneath the application root rather than body. */
 await page.tap('#btnLearn'); await page.waitForTimeout(120);
 await page.tap('#btnLearnModes'); await page.waitForSelector('#ovModes.on');
-const rosterPortal = await page.evaluate(() => ({
-  parent: document.getElementById('ovModes').parentElement.id,
-  contained: document.getElementById('kbroot').contains(document.getElementById('ovModes')),
-}));
+const rosterPortal = await page.evaluate(() => {
+  const roster = document.getElementById('ovModes');
+  const head = roster.querySelector('.shead');
+  const buttons = [...head.querySelectorAll('button')];
+  const back = head.querySelector('[data-learn-back="ovModes"]');
+  return {
+    parent: roster.parentElement.id,
+    contained: document.getElementById('kbroot').contains(roster),
+    nav: { buttons: buttons.length,
+           backs: head.querySelectorAll('[data-learn-back="ovModes"]').length,
+           glyph: back?.textContent?.trim() ?? '',
+           label: back?.getAttribute('aria-label') ?? '',
+           left: head.firstElementChild === back,
+           noX: !buttons.some((button) => button.textContent?.includes('✕')) },
+  };
+});
 check(rosterPortal.parent === 'kbroot' && rosterPortal.contained, 'lazy roster escaped #kbroot', rosterPortal);
-await page.tap('[data-close="ovModes"]');
+check(rosterPortal.nav.buttons === 1 && rosterPortal.nav.backs === 1
+  && rosterPortal.nav.glyph === '‹' && rosterPortal.nav.label === 'Back'
+  && rosterPortal.nav.left && rosterPortal.nav.noX,
+  'widget Game Modes does not use the one shared Learn-page Back header', rosterPortal.nav);
+await page.tap('[data-learn-back="ovModes"]');
+const rosterBack = await page.evaluate(() => ({
+  modes: document.getElementById('ovModes').classList.contains('on'),
+  learn: document.getElementById('ovLearn').classList.contains('on'),
+}));
+check(!rosterBack.modes && rosterBack.learn,
+  'widget Game Modes Back did not close only the roster and return to HOW TO PLAY', rosterBack);
 await page.tap('#btnLearnBack');
 
 const snap=()=>page.evaluate(()=>{const k=window.__kb,S=k.S;const o=s=>+document.getElementById(s).dataset.owner;

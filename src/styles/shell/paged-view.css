@@ -1,14 +1,14 @@
-/* ---- shared screen header: ‹ pages, ✕ sheets (design: 00-navigation).
+/* ---- shared screen header: ‹ goes back (design: 00-navigation).
    Reuses the HUD's .ico button; the pad mirrors its width so the title stays
-   optically centred. Pages put the icon left, sheets right — never both. ---- */
+   optically centred. Every titled view puts the one navigation control left. ---- */
 :where(#kbroot) .shead{display:flex;align-items:center;width:100%;max-width:var(--w-col);margin:0 auto;flex:0 0 auto}
 :where(#kbroot) .shead .ttl{flex:1;text-align:center;font-size:16px;letter-spacing:.26em;font-weight:900;
   background:linear-gradient(100deg,var(--p1),#fff 50%,var(--p2));
   -webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 18px rgba(var(--p1-rgb),.3))}
 :where(#kbroot) .shead .pad{width:30px;flex:0 0 auto}
-/* the header's control wears the title's own gradient — on a sheet whose only
-   exit is that glyph, it has to read as the way out at a glance */
+/* the header's control wears the title's own gradient so it reads as the way
+   back at a glance */
 :where(#kbroot) .shead .ico{color:#fff;
   background:linear-gradient(135deg,color-mix(in srgb,var(--p1) 26%,transparent),
                                     color-mix(in srgb,var(--p2) 26%,transparent));

@@ -9,10 +9,10 @@ import { MODES, RANDOM } from '../core/modes.ts';
 import { SPELLS, RANDOM_SPELL } from '../core/spells.ts';
 import { modeIcon, modeHue } from './modeicons.ts';
 import { spellIcon, spellHue } from './spellicons.ts';
-import { $, show, hide } from './dom.ts';
-import { Sfx } from './audio.ts';
+import { $, show } from './dom.ts';
 import { showSheet } from './sheet.ts';
 import { appRoot } from './embed.ts';
+import { bindLearnPageBack, learnPageMarkup } from './learn-page.ts';
 
 export interface LibraryItem { id: string; name: string; blurb: string; detail: string; hue: string; icon: string }
 export interface LibrarySpec { id: string; title: string; items: LibraryItem[] }
@@ -87,15 +87,12 @@ function build(spec: LibrarySpec): void {
   if (built.has(spec.id)) return;
   built.add(spec.id);
   const cards = libraryCards(spec);
-  appRoot().insertAdjacentHTML('beforeend', `
-<div class="ov paged" id="${spec.id}">
-  <div class="shead"><span class="pad"></span><span class="ttl">${spec.title}</span>
-    <button class="ico" data-close="${spec.id}" aria-label="Close">✕</button></div>
-  <div class="pbody">
-    <div class="modelist">${cards}</div>
-  </div>
-</div>`);
-  $(`[data-close="${spec.id}"]`).addEventListener('click', () => { Sfx.tap(); hide('#' + spec.id); });
+  appRoot().insertAdjacentHTML('beforeend', learnPageMarkup({
+    id: spec.id,
+    title: spec.title,
+    body: `<div class="modelist">${cards}</div>`,
+  }));
+  bindLearnPageBack(spec.id);
 }
 
 /* open a roster; a highlight id rings the entry currently in play */

@@ -1,4 +1,4 @@
-<!-- meta name="Navigation" group="0 · Foundations" subtitle="One nav model: ‹ pages, ✕ sheets, actions at the bottom — never nav buttons" width=860 height=1330 links="" -->
+<!-- meta name="Navigation" group="0 · Foundations" subtitle="One nav model: titled pages go back with ‹; modal cards use a grabber; match exits stay actions" width=860 height=1330 links="" -->
 <style>
   body{align-items:stretch}
   .fgrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;max-width:820px;margin:0 auto;width:100%}
@@ -19,45 +19,31 @@
   .flow .fc{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--txt);
     border:1px solid rgba(255,255,255,.16);border-radius:99px;padding:4px 10px;font-weight:800}
   .flow .fc.root{border-color:rgba(40,232,255,.5);color:var(--cy)}
-  .flow .fc.sheet{border-style:dashed;color:var(--dim)}
+  .flow .fc.modal{border-style:dashed;color:var(--dim)}
   .flow .ar{color:var(--dim);font-size:10px}
   .dead{display:flex;flex-direction:column;gap:7px;margin:0;padding:0;list-style:none}
   .dead li{font-size:10.5px;line-height:1.5;color:var(--dim);letter-spacing:.03em;padding-left:18px;position:relative}
-  .dead li::before{content:"✕";position:absolute;left:0;color:var(--mg);font-weight:900}
+  .dead li::before{content:"–";position:absolute;left:0;color:var(--mg);font-weight:900}
   .dead b{color:#c6d3ee;font-weight:800}
 </style>
 <div class="fgrid">
   <div class="fcard">
-    <div class="fcap">Pages — ‹ top-left, one level up</div>
-    <div class="demo"><div class="shead"><button class="ico">‹</button><span class="ttl">OFFLINE</span><span class="pad"></span></div></div>
-    <p class="rule">Screens you travel <b>into</b> from Home: <b>Offline · How to play · Settings · Ladder · Profile · Impressum · Privacy</b> (Profile through the identity chip, the legal two from the foot).
-      The header reuses the HUD's icon button; the title sits centred beside it.
-      ‹ returns exactly where you came from — never an intermediate menu: Home for everything
-      reached from Home, and the <b>result screen</b> for Profile when its own plate was the
-      door (the result stays open underneath; ‹ uncovers it, numbers and all). The target
-      belongs to the opener, never to the page — a constant sent a player who checked their
-      rating after a match to the main menu with the result gone (fixed 2026-08-22).
-      Profile deals three more pages of its own — <b>AVATAR</b>, <b>MATCH HISTORY</b> and the
-      identity form (<b>KEEP ACCOUNT</b> / <b>SIGN IN</b>) — and those return to Profile.
-      Settings joined this family 2026-08-21 (it was the one Home destination wearing sheet
-      clothes) and carries the <b>build tag</b> at its foot; <b>Impressum and Privacy</b> followed
-      2026-08-22, for the same reason and after the same oversight — they are reached from Home
-      and return to it, so they never floated over anything, and their bottom <b>GOT IT</b> was
-      a navigation button at the bottom of a screen.
-      On touch, a rightward swipe from the left screen edge presses the header's own
-      control — pages and sheets alike, one handler (<b>ui/swipeback</b>), never a second driver.</p>
+    <div class="fcap">Titled pages — ‹ top-left, one level up</div>
+    <div class="demo"><div class="shead"><button class="ico" aria-label="Back">‹</button><span class="ttl">HOW TO PLAY</span><span class="pad"></span></div></div>
+    <p class="rule">Every titled page has one left <b>Back</b> control. Home destinations return
+      to Home; Profile subpages return to Profile. <b>Rules · Game Modes · Spells</b> are child
+      pages of <b>HOW TO PLAY</b> and share one reference-page view with content supplied as data.
+      The opener owns the destination, and an edge swipe presses this same control.</p>
   </div>
   <div class="fcard">
-    <div class="fcap">Sheets — ✕ top-right, context resumes</div>
-    <div class="demo"><div class="shead"><span class="pad"></span><span class="ttl">HOW TO PLAY</span><button class="ico">✕</button></div></div>
-    <p class="rule">Overlays that float <b>over</b> live context: <b>How to play's reading sheets ·
-      the mode and spell libraries · the ladder's face-off card</b>.
-      ✕ dismisses; whatever was underneath resumes untouched. A reading sheet may keep one
-      bottom <b>GOT IT</b> as an acknowledgement — that is the only bottom dismissal that survives,
-      and it acknowledges something. The face-off's full-width <b>Close</b> did not: it wears the
-      corner ✕ since 2026-08-22, the same component every other sheet shows. The face-off is still
-      its own shape — a modal above every overlay, not over live context — but its way OUT is now
-      the one every sheet wears.</p>
+    <div class="fcap">Modal cards — grabber, context resumes</div>
+    <div class="demo"><div class="focard" style="margin:0 auto;max-width:260px">
+      <button class="fograb" aria-label="Close"><span class="fobar"></span></button>
+      <div class="fcap" style="text-align:center">FACE-OFF</div>
+    </div></div>
+    <p class="rule">The ladder face-off and a badge's single mode or rune card rise over live
+      context. Their shared grabber is a real close control and a downward-drag affordance;
+      backdrop tap and Escape also dismiss them. They are modal cards, never titled pages.</p>
   </div>
   <div class="fcard">
     <div class="fcap">The bottom of a screen = actions only</div>
@@ -65,9 +51,7 @@
       primary: <b>Play vs AI</b> / <b>Play duel</b> (the markup ships “Play”, but <b>flow/menu</b>
       rewrites it to name the game, so no player ever reads the bare verb), <b>Sign in</b>,
       <b>Keep it forever</b>, <b>Next duel</b>.
-      “Back”, “Close” and “Done” as bottom buttons are retired everywhere: the face-off was the
-      last screen with one, and it went back to the corner ✕ on 2026-08-22. The only bottom
-      dismissal left is a reading sheet's <b>GOT IT</b>, which acknowledges something.
+      <b>Back</b>, <b>Close</b> and <b>Done</b> are not bottom navigation buttons.
       A stack is <b>as short as its question</b>: the result screen asks “again or not”, so it
       offers two — NEXT DUEL and one quiet way on in the short cut (<b>Home</b> ranked,
       <b>Change setup</b> local). It carried three offline until 2026-08-22, and the two
@@ -84,7 +68,8 @@
       and dice faces are not what you reach for, and the only thing worth offering is the exit.
       One question, a way back, and copy that knows the stake — <b>Quit this game?</b> offline,
       <b>Forfeit this match?</b> when a rating is live. The way back is the one wearing the
-      gradient; the destructive answer is the quiet full-width one. The pass-the-phone screen keeps its own ✕.</p>
+      gradient; the destructive answer is the quiet full-width one. The pass-the-phone hand-off
+      has no corner control: the whole screen continues, and leaving belongs to the game HUD.</p>
   </div>
   <div class="fcard">
     <div class="fcap">The map — Home is the online menu</div>
@@ -107,12 +92,14 @@
       <span class="fc root">HOME</span><span class="ar">→</span><span class="fc">SETTINGS</span>
       <span class="ar">·</span>
       <span class="fc root">HOME</span><span class="ar">→</span><span class="fc">HOW TO PLAY</span>
+      <span class="ar">→</span><span class="fc">RULES</span><span class="ar">·</span>
+      <span class="fc">GAME MODES</span><span class="ar">·</span><span class="fc">SPELLS</span>
       <span class="ar">·</span>
       <span class="fc root">HOME</span><span class="ar">→</span><span class="fc">IMPRESSUM</span><span class="ar">·</span><span class="fc">PRIVACY</span>
     </div>
     <div class="flow">
-      <span class="ar">orbiting sheets:</span>
-      <span class="fc sheet">RULES</span><span class="fc sheet">QUIT?</span><span class="fc sheet">FACE-OFF</span>
+      <span class="ar">modal cards:</span>
+      <span class="fc modal">FACE-OFF</span><span class="fc modal">MODE / RUNE DETAIL</span>
     </div>
     <p class="rule">Deep links go straight to their view. A first-timer never sees a form: the tap makes
       them a <b>guest</b> and continues straight to it. <b>Sign in</b> hangs off Profile's guest
@@ -124,7 +111,9 @@
     <ul class="dead">
       <li>The online overlay's bottom <b>Close</b> stacked under a panel <b>Back</b> — two exits, different targets.</li>
       <li>The face-off's full-width <b>Close</b> and the <b>points between you</b> line above it —
-        a dismissal dressed as the card's conclusion, under a stat the five rows already state.</li>
+        the shared grabber now closes the card without posing as its conclusion.</li>
+      <li>A top-right close glyph on <b>Rules · Game Modes · Spells</b> — each is one level below
+        HOW TO PLAY, so each uses the shared left Back control.</li>
       <li>The <b>ONLINE menu panel</b> — it duplicated Home's three buttons; Home is the online menu.</li>
       <li><b>≡</b> as quit — one glyph meant “menu” in the HUD and “abandon match” mid-game.</li>
       <li>Closing matchmaking <b>without leaving the queue</b> — you could be yanked into a match from Home.</li>

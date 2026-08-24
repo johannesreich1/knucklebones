@@ -202,20 +202,22 @@ try {
           extraScrollers: extra,
           /* resting content must clear the glass's REAL reach, not --band's */
           clearAtRest: first ? first.top >= glassBottom - 0.5 : true,
-          /* ‹ PAGES LEFT, ✕ SHEETS RIGHT, NEVER BOTH (design: 00-navigation).
-             The side IS the promise — ‹ says "one level up, where you came
-             from", ✕ says "this floats over something that resumes" — and the
-             edge-swipe handler presses whichever one it finds, so a view
-             wearing the wrong glyph teaches the wrong exit twice. Asserted
+          /* EVERY PAGED VIEW GOES BACK: one ‹ on the left, labelled Back, and
+             no header ✕. The edge-swipe handler presses this very control, so
+             a view wearing a second glyph teaches the wrong exit twice. Asserted
              over every paged view for the same reason the header rules are:
              Impressum and Privacy sat in sheet clothes for months (they are
              Home destinations, fixed 2026-08-22) exactly as Settings did
              before them, and nothing was watching either time. */
           nav: (() => {
+            const buttons = head.querySelectorAll('button');
             const icos = head.querySelectorAll('.ico'), ico = icos[0];
-            return { n: icos.length, glyph: ico ? ico.textContent.trim() : '',
+            return { n: buttons.length, icons: icos.length,
+                     glyph: ico ? ico.textContent.trim() : '',
+                     label: ico?.getAttribute('aria-label') ?? '',
                      side: !ico ? 'none' : head.firstElementChild === ico ? 'left'
-                         : head.lastElementChild === ico ? 'right' : 'middle' };
+                         : head.lastElementChild === ico ? 'right' : 'middle',
+                     hasX: head.textContent.includes('✕') };
           })() });
         body.scrollTop = 0;
         if (!was) ov.classList.remove('on');
@@ -246,9 +248,11 @@ try {
       check(p.clearAtRest, `${p.id} frosts its first card at rest — the glass must cover empty space: ` + label, p);
       check(p.extraScrollers.length === 0,
         `a second page-filling scroller in ${p.id} — the glass cannot reach it: ` + label, p.extraScrollers);
-      check(p.nav.n === 1, `${p.id} must carry exactly ONE header control: ` + label, p.nav);
-      check(p.nav.side === 'left' ? p.nav.glyph === '\u2039' : p.nav.side === 'right' && p.nav.glyph === '\u2715',
-        `${p.id} wears the wrong exit for its side — ‹ belongs left, ✕ right: ` + label, p.nav);
+      check(p.nav.n === 1 && p.nav.icons === 1,
+        `${p.id} must carry exactly ONE header button: ` + label, p.nav);
+      check(p.nav.side === 'left' && p.nav.glyph === '\u2039' && p.nav.label === 'Back',
+        `${p.id} does not wear one labelled ‹ Back on the left: ` + label, p.nav);
+      check(!p.nav.hasX, `${p.id} still carries a header ✕: ` + label, p.nav);
     }
     await ctx.close();
   }

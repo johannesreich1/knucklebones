@@ -34,6 +34,7 @@ import {
   type PickItem,
 } from '../ui/library.ts';
 import { loaderWait } from '../ui/loader.ts';
+import { bindLearnPageBack } from '../ui/learn-page.ts';
 import { tap } from '../ui/tap.ts';
 import { isEmbed } from '../ui/embed.ts';
 
@@ -113,7 +114,6 @@ function huePicker(selector: string, write: (hue: string) => void): void {
 
 export function bindMenus(root: HTMLElement): void {
   tap($('#ovPass'), passTap);
-  tap($('#passQuit'), () => { Sfx.tap(); toMenu(); });
 
   const openPractice = (mode: Mode): void => {
     S.mode = mode;
@@ -137,6 +137,7 @@ export function bindMenus(root: HTMLElement): void {
   tap($('#btnLearnRules'), () => { Sfx.tap(); show('#ovRules'); });
   tap($('#btnLearnModes'), () => { Sfx.tap(); openModes(); });
   tap($('#btnLearnSpells'), () => { Sfx.tap(); openSpells(); });
+  bindLearnPageBack('ovRules');
   tap($('#btnImprint'), () => { Sfx.tap(); show('#ovImprint'); });
   tap($('#btnPrivacy'), () => { Sfx.tap(); show('#ovPrivacy'); });
   for (const id of ['Imprint', 'Privacy']) {
@@ -213,6 +214,4 @@ export function bindMenus(root: HTMLElement): void {
   tap($('#btnBoardHome'), () => goOnline('board'));
   tap($('#btnSettingsHome'), () => { Sfx.unlock(); Sfx.tap(); show('#ovSettings'); });
   tap($('#homeChip'), () => goOnline('account'));
-  tap($('#btnCloseRules'), () => { Sfx.tap(); hide('#ovRules'); });
-
 }

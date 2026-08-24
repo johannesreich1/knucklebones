@@ -1,4 +1,4 @@
-// The HUD's ✕ (leave). Practice quits instantly; an online match must arm a
+// The HUD's leave control. Practice quits instantly; an online match must arm a
 // two-tap forfeit confirm first. The online chunk is lazy-loaded, so boot
 // cannot import it — instead the match driver registers an interceptor here
 // while a match is live, and boot consults it before quitting to the menu.

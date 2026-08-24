@@ -1,5 +1,5 @@
 // The iOS back gesture, for an app with no history stack: a rightward drag
-// from the left screen edge presses the SAME ‹/✕ the open view's header
+// from the left screen edge presses the SAME ‹ the open view's header
 // shows. The header button stays the one navigation driver — the gesture is
 // another finger on it, so the two can never disagree about where back leads.
 //

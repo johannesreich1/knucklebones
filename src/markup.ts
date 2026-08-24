@@ -2,7 +2,29 @@
 // Single source of truth for standalone page and widget alike (the old build
 // derived the widget's copy from the page via regex — this is that, deleted).
 import { chromeIcon } from './ui/chromeicons.ts';
+import { learnPageMarkup } from './ui/learn-page.ts';
 import { LEGAL_MARKUP } from './markup/legal.ts';
+
+const RULES_PAGE = learnPageMarkup({
+  id: 'ovRules',
+  title: 'RULES',
+  body: `<div class="rules">
+    <h3>Goal</h3>
+    <p>Fill your 3×3 grid with dice. When <b>either</b> grid is full the game ends — highest total wins.</p>
+    <h3>Placing</h3>
+    <p>You roll a die, then tap one of <b>your</b> columns to drop it in. You can't choose the roll, only where it lands.</p>
+    <h3>Column multipliers</h3>
+    <p>Matching dice in the same column multiply. Two 4s in a column = <b>4×2×2 = 16</b>, not 8. Three 4s = <b>4×3×3 = 36</b>.</p>
+    <h3 style="color:var(--mg)">Destruction</h3>
+    <p>Place a die and <span class="k">every matching die in the opponent's facing column is destroyed</span>. Columns line up vertically — your left column faces their left column.</p>
+    <h3>Reading the board</h3>
+    <p>The chips beside each column show its running score, and <b>×2</b>/<b>×3</b> marks a multiplied stack. Working out the best placement is the game — but the <b>tutorial</b> plays a guided round with point previews on every column.</p>
+    <h3 style="color:#b18cff">Spells</h3>
+    <p>Offline games deal both players the same <b>rune</b>, beside the die in play — six to choose from where you set up an offline game, right under the game mode (<b>none</b> by default, or <b>random</b> to have one drawn for you). A rune that acts on your die casts the moment you press it; one that aims at a column is dragged or tapped onto it, and only the columns it can actually reach light up. A cast is not a move, so your die still lands afterwards. The full roster lives under <b>HOW TO PLAY → SPELLS</b>. Ranked matches never use them.</p>
+    <h3>Two players</h3>
+    <p>Pick <b>2 PLAYERS</b> to share one phone, then choose how you sit. <b>Pass phone</b>: a pass card appears between turns and the grids swap so whoever is playing is on the bottom. <b>Face to face</b>: lay the phone flat between you — the top half is turned for Player 2, turns switch on their own, and the bright half with the rotating centre die shows who's up.</p>
+  </div>`,
+});
 
 export const MARKUP = `<div id="bg"></div><div id="vig"></div>
 
@@ -204,33 +226,8 @@ ${LEGAL_MARKUP}
   </div>
 </div>
 
-<!-- RULES: a reading sheet — fixed ✕ bar, the text scrolls under it. The ✕ is
-     the ONLY way out; the bottom GOT IT this comment used to promise is not
-     here, and design card 51 spent a while picturing the difference. -->
-<div class="ov paged" id="ovRules">
-  <div class="shead">
-    <span class="pad"></span><span class="ttl">HOW TO PLAY</span>
-    <button class="ico" id="btnCloseRules" aria-label="Close">✕</button>
-  </div>
-  <div class="pbody">
-  <div class="rules">
-    <h3>Goal</h3>
-    <p>Fill your 3×3 grid with dice. When <b>either</b> grid is full the game ends — highest total wins.</p>
-    <h3>Placing</h3>
-    <p>You roll a die, then tap one of <b>your</b> columns to drop it in. You can't choose the roll, only where it lands.</p>
-    <h3>Column multipliers</h3>
-    <p>Matching dice in the same column multiply. Two 4s in a column = <b>4×2×2 = 16</b>, not 8. Three 4s = <b>4×3×3 = 36</b>.</p>
-    <h3 style="color:var(--mg)">Destruction</h3>
-    <p>Place a die and <span class="k">every matching die in the opponent's facing column is destroyed</span>. Columns line up vertically — your left column faces their left column.</p>
-    <h3>Reading the board</h3>
-    <p>The chips beside each column show its running score, and <b>×2</b>/<b>×3</b> marks a multiplied stack. Working out the best placement is the game — but the <b>tutorial</b> plays a guided round with point previews on every column.</p>
-    <h3 style="color:#b18cff">Spells</h3>
-    <p>Offline games deal both players the same <b>rune</b>, beside the die in play — six to choose from where you set up an offline game, right under the game mode (<b>none</b> by default, or <b>random</b> to have one drawn for you). A rune that acts on your die casts the moment you press it; one that aims at a column is dragged or tapped onto it, and only the columns it can actually reach light up. A cast is not a move, so your die still lands afterwards. The full roster lives under <b>HOW TO PLAY → SPELLS</b>. Ranked matches never use them.</p>
-    <h3>Two players</h3>
-    <p>Pick <b>2 PLAYERS</b> to share one phone, then choose how you sit. <b>Pass phone</b>: a pass card appears between turns and the grids swap so whoever is playing is on the bottom. <b>Face to face</b>: lay the phone flat between you — the top half is turned for Player 2, turns switch on their own, and the bright half with the rotating centre die shows who's up.</p>
-  </div>
-  </div>
-</div>
+<!-- RULES: one instance of the same Learn-detail page Game Modes and Spells use. -->
+${RULES_PAGE}
 
 <!-- HAND-OFF -->
 <div class="ov" id="ovPass">
@@ -240,7 +237,6 @@ ${LEGAL_MARKUP}
   <div class="hint">Pass the phone</div>
   <div class="mini"><b class="a" id="passP1">0</b><span>—</span><b class="b" id="passP2">0</b></div>
   <div class="tapline">Tap anywhere when ready</div>
-  <button class="ico" id="passQuit" aria-label="Leave game">✕</button>
 </div>
 
 <!-- SETTINGS: a page below Home like OFFLINE — ‹ goes back, toggles apply instantly -->

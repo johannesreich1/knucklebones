@@ -1,16 +1,16 @@
-<!-- meta name="How to play" group="5 · Settings & sheets" subtitle="Reading sheet: the gradient ✕ is the only way out, and the text scrolls to the screen edge under it" width=412 height=1471 links="How to play — the hub" -->
+<!-- meta name="Rules" group="5 · Settings & sheets" subtitle="Child page of HOW TO PLAY: shared ‹ Back header, with the rules scrolling beneath it" width=412 height=1471 links="How to play — the hub" -->
 <style>
   /* .shead is the app's shared header (src/styles/main.css) — card adds spacing only */
   .shead{margin-bottom:10px}
   /* .rules is the app's own reading panel. The one thing restated: the app
      lifts its 62vh cap through `.ov.paged .rules` (main.css), and the preview
-     stage is no .ov — without this the sheet would scroll inside itself here
+     stage is no .ov — without this the rules panel would scroll inside itself here
      and run to the screen edge in the app, which is the opposite of what this
      card is for. */
   .rules{max-height:none;margin:0 auto}
 </style>
 <div class="stage"><div class="bgfx"></div><div class="scr">
-  <div class="shead"><span class="pad"></span><span class="ttl">HOW TO PLAY</span><button class="ico">✕</button></div>
+  <div class="shead"><button class="ico" aria-label="Back">‹</button><span class="ttl">RULES</span><span class="pad"></span></div>
   <div class="rules">
     <h3>Goal</h3>
     <p>Fill your 3×3 grid with dice. When <b>either</b> grid is full the game ends — highest total wins.</p>

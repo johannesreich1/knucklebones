@@ -39,13 +39,26 @@ export async function runBadgeCardScenarios(suite) {
       const o = document.getElementById(ov);
       const c = o?.querySelector(`.modecard[data-mode="${id}"]`);
       const h = c?.querySelector('.mchead');
+      const head = o?.querySelector('.shead');
+      const buttons = [...(head?.querySelectorAll('button') ?? [])];
+      const back = head?.querySelector(`[data-learn-back="${ov}"]`);
       return { on: o?.classList.contains('on') ?? false,
                name: c?.querySelector('.mcname')?.textContent?.trim() ?? '',
                detail: c?.querySelector('.mcdetail')?.textContent?.trim() ?? '',
                // the entry's OWN hue, as painted — not the token it came from
-               hue: h ? getComputedStyle(h).color : '' };
+               hue: h ? getComputedStyle(h).color : '',
+               nav: { buttons: buttons.length,
+                      backs: head?.querySelectorAll(`[data-learn-back="${ov}"]`).length ?? 0,
+                      glyph: back?.textContent?.trim() ?? '',
+                      label: back?.getAttribute('aria-label') ?? '',
+                      left: head?.firstElementChild === back,
+                      noX: !buttons.some((button) => button.textContent?.includes('✕')) } };
     }, [ov, id]);
-    await page.tap(`[data-close="${ov}"]`); await page.waitForTimeout(300);
+    await page.tap(`[data-learn-back="${ov}"]`); await page.waitForTimeout(300);
+    r.back = await page.evaluate((ov) => ({
+      child: document.getElementById(ov)?.classList.contains('on') ?? false,
+      learn: document.getElementById('ovLearn').classList.contains('on'),
+    }), ov);
     await page.tap('#btnLearnBack'); await page.waitForTimeout(340);
     return r;
   };
@@ -54,6 +67,11 @@ export async function runBadgeCardScenarios(suite) {
   for (const [k, r] of [['modes', out.rosterMode], ['spells', out.rosterSpell]]) {
     check(r.on, `HOW TO PLAY no longer opens the ${k} library`, r);
     check(r.name.length > 0 && r.detail.length > 20, `the ${k} roster entry is empty`, r);
+    check(r.nav.buttons === 1 && r.nav.backs === 1 && r.nav.glyph === '‹'
+      && r.nav.label === 'Back' && r.nav.left && r.nav.noX,
+      `the ${k} library does not use the one shared Learn-page Back header`, r.nav);
+    check(!r.back.child && r.back.learn,
+      `the ${k} Back did not close only the library and return to HOW TO PLAY`, r.back);
   }
 
   const playLocal = async (mode, spell) => {

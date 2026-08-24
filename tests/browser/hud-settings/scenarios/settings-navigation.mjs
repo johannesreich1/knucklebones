@@ -78,12 +78,37 @@ export async function runSettingsNavigationScenarios(suite) {
   await page.tap('#btnSettingsBack'); await page.waitForTimeout(300);
   await page.tap('#btnLearn'); await page.waitForTimeout(320);
   await page.tap('#btnLearnRules'); await page.waitForTimeout(400);
-  out.help = await page.evaluate(() => ({
-    rules: document.getElementById('ovRules').classList.contains('on'),
-    settings: document.getElementById('ovSettings').classList.contains('on'),
-  }));
+  out.help = await page.evaluate(() => {
+    const rules = document.getElementById('ovRules');
+    const head = rules?.querySelector('.shead');
+    const buttons = [...(head?.querySelectorAll('button') ?? [])];
+    const back = head?.querySelector('[data-learn-back="ovRules"]');
+    return {
+      rules: rules?.classList.contains('on') ?? false,
+      learn: document.getElementById('ovLearn').classList.contains('on'),
+      settings: document.getElementById('ovSettings').classList.contains('on'),
+      nav: {
+        buttons: buttons.length,
+        backs: head?.querySelectorAll('[data-learn-back="ovRules"]').length ?? 0,
+        glyph: back?.textContent?.trim() ?? '',
+        label: back?.getAttribute('aria-label') ?? '',
+        left: head?.firstElementChild === back,
+        noX: !buttons.some((button) => button.textContent?.includes('✕')),
+      },
+    };
+  });
   check(out.help.rules && !out.help.settings, 'help did not open from the hub', out.help);
-  await page.tap('#btnCloseRules'); await page.waitForTimeout(300);
+  check(out.help.learn && out.help.nav.buttons === 1 && out.help.nav.backs === 1
+    && out.help.nav.glyph === '‹' && out.help.nav.label === 'Back'
+    && out.help.nav.left && out.help.nav.noX,
+        'Rules does not use the one shared Learn-page Back header', out.help);
+  await page.tap('[data-learn-back="ovRules"]'); await page.waitForTimeout(300);
+  out.helpBack = await page.evaluate(() => ({
+    rules: document.getElementById('ovRules').classList.contains('on'),
+    learn: document.getElementById('ovLearn').classList.contains('on'),
+  }));
+  check(!out.helpBack.rules && out.helpBack.learn,
+        'Rules Back did not return to HOW TO PLAY without closing it', out.helpBack);
 
   // Choices persist across reload — but WAIT FOR THE WRITE first: this reload
   // raced the save on CI's slow runner (2026-08-20, same class as test10's).

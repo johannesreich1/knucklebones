@@ -95,10 +95,8 @@ function handOff(who: Player): Promise<boolean> {
     passResolve=go;      // consumed by the single listener bound in boot()
   });
 }
-/* the hand-off card's tap target (ignores taps on the quit button) */
-export function passTap(event?: Event): void {
-  const target = event?.target instanceof Element ? event.target : null;
-  if(target?.closest('#passQuit')) return;
+/* the whole hand-off card is the one continue target; it has no corner control */
+export function passTap(): void {
   if(passResolve){ const f=passResolve; passResolve=null; f(); }
 }
 /* abandoning mid-hand-off (quit to menu): drop the pending resolver */

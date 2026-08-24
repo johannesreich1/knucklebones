@@ -186,10 +186,29 @@ for (let i = 0; i < 120; i++) {
   }
   await page.waitForTimeout(120);
 }
-out.passModeBack = { sawPassCard, faceClass: await page.evaluate(() => document.getElementById('kbroot').classList.contains('face')) };
+out.passModeBack = await page.evaluate((sawPassCard) => ({
+  sawPassCard,
+  faceClass: document.getElementById('kbroot').classList.contains('face'),
+  handoffVisible: document.getElementById('ovPass').classList.contains('on'),
+  passQuitAbsent: document.getElementById('passQuit') === null,
+  controls: document.querySelectorAll('#ovPass button').length,
+}), sawPassCard);
 check(sawPassCard && !out.passModeBack.faceClass, 'pass mode broken after face mode', out.passModeBack);
-const quitVia = await page.evaluate(() => document.getElementById('ovPass').classList.contains('on'));
-if (quitVia) { await page.tap('#passQuit'); } else { await page.tap('#btnLeave'); await page.waitForTimeout(300); await page.tap('#btnAskYes'); } await page.waitForTimeout(400);
+check(out.passModeBack.passQuitAbsent && out.passModeBack.controls === 0,
+      'pass hand-off still has a corner control', out.passModeBack);
+if (out.passModeBack.handoffVisible) {
+  await page.tap('#ovPass');
+  await page.waitForFunction(() => document.getElementById('ovPass').classList.contains('on') === false
+    && window.__kb.S.phase !== 'pass', null, { timeout: 3000 }).catch(() => {});
+}
+out.passModeBack.afterTap = await page.evaluate(() => ({
+  handoffVisible: document.getElementById('ovPass').classList.contains('on'),
+  phase: window.__kb.S.phase,
+}));
+check(out.passModeBack.handoffVisible && !out.passModeBack.afterTap.handoffVisible
+      && out.passModeBack.afterTap.phase !== 'pass',
+      'tapping the pass hand-off did not advance to the board', out.passModeBack);
+await page.tap('#btnLeave'); await page.waitForTimeout(300); await page.tap('#btnAskYes'); await page.waitForTimeout(400);
 
 // ===== E. small screen: duo title with 3 cards must stay reachable =====
 const small = await browser.newContext({ viewport: { width: 320, height: 568 }, hasTouch: true, isMobile: true });
