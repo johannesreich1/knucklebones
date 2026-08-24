@@ -48,35 +48,41 @@ export async function runSunderOverloadScenarios(suite) {
       && out.sunderPreview.warningMoved.every(Boolean) && out.sunderPreview.armed,
     'the authoritative victims did not begin failing when SUNDER committed', out.sunderPreview);
 
-  /* Tremor is an alarm, not a permanent accessibility tax. After its two short
-     cycles the marked dice stay crooked and ember-bordered, but no tremor is
-     still running. */
+  /* The selected SU6 study holds the same failure warning until placement:
+     after several cycles every marked die must still be visibly trembling. */
   await page.waitForTimeout(1050);
-  out.sunderCalm = await page.evaluate(() => [...document.querySelectorAll('.die.sunder-doomed')].map((die) => ({
-    transform: getComputedStyle(die).transform,
-    tremor: die.getAnimations().filter((a) => a.animationName === 'su6tremor').map((a) => a.playState),
-  })));
-  check(out.sunderCalm.length === 2 && out.sunderCalm.every((die) => die.transform !== 'none'
-      && die.tremor.every((state) => state !== 'running')),
-    'SU6 kept trembling continuously instead of settling into a static warning', out.sunderCalm);
+  out.sunderHeld = await page.evaluate(async () => {
+    const marked = [...document.querySelectorAll('.die.sunder-doomed')];
+    const before = marked.map((die) => getComputedStyle(die).transform);
+    await new Promise((resolve) => setTimeout(resolve, 120));
+    return marked.map((die, index) => ({
+      moved: getComputedStyle(die).transform !== before[index],
+      tremor: die.getAnimations().filter((a) => a.animationName === 'su6tremor').map((a) => a.playState),
+    }));
+  });
+  check(out.sunderHeld.length === 2 && out.sunderHeld.every((die) => die.moved
+      && die.tremor.includes('running')),
+    'SU6 stopped its failure warning before the charged die was played', out.sunderHeld);
 
   /* Placement finishes the same visual language: the already-marked pair
      collapses with a stagger, the Warded column gets the one real contact copy,
      and every transient marker is gone before the next turn. */
   out.sunderRelease = await page.evaluate(async () => {
     const k = window.__kb;
-    let maxCollapse = 0, sawFail = false, sawWardGhost = false;
+    let maxCollapse = 0, sawFail = false, sawAuthoredTiming = false, sawWardGhost = false;
     const placement = k.place(1, 0);
     for (let i = 0; i < 90; i++) {
       await new Promise((r) => setTimeout(r, 30));
       const collapsing = [...document.querySelectorAll('.die.sunder-collapse')];
       maxCollapse = Math.max(maxCollapse, collapsing.length);
       sawFail ||= collapsing.some((die) => die.getAnimations().some((a) => a.animationName === 'su6fail'));
+      sawAuthoredTiming ||= collapsing.some((die) => die.getAnimations().some((a) =>
+        a.animationName === 'su6fail' && a.effect?.getTiming().duration === 2600));
       sawWardGhost ||= !!document.querySelector('.ward-strike-ghost');
     }
     await placement;
     return {
-      maxCollapse, sawFail, sawWardGhost,
+      maxCollapse, sawFail, sawAuthoredTiming, sawWardGhost,
       theirs: JSON.stringify(k.S.boards[0]),
       wards: JSON.stringify(k.S.charm.wards),
       armed: k.S.charm.sunder[1],
@@ -84,7 +90,8 @@ export async function runSunderOverloadScenarios(suite) {
       residue: document.querySelectorAll('.sunder-doomed,.sunder-doomed-slot,.sunder-collapse,.ward-strike-ghost').length,
     };
   });
-  check(out.sunderRelease.maxCollapse === 2 && out.sunderRelease.sawFail,
+  check(out.sunderRelease.maxCollapse === 2 && out.sunderRelease.sawFail
+      && out.sunderRelease.sawAuthoredTiming,
     'SU6 did not collapse its marked pair as a staggered continuation', out.sunderRelease);
   check(out.sunderRelease.sawWardGhost,
     'SUNDER did not send its real Ward-blocked strike into the clasp', out.sunderRelease);

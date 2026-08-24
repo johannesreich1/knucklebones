@@ -501,9 +501,11 @@ second one.
   preserving COLUMN SHIELD, SINGLE STRIKE and current WARD answers without
   consuming live state. Shielded dice and dice behind an answering ward are
   not painted as doomed. The doomed faces keep their seat and multiplier
-  reading, tremble briefly, then calm into a static warning; reduced motion
-  uses the static warning immediately. The valid self cast is committed and
-  spent before this information appears, so it cannot be used as a free probe.
+  reading while their low-amplitude tremor and slow ember shedding continue
+  until placement. Placement completes that already-visible failure over the
+  selected study's 2.6-second collapse; reduced motion uses the static warning
+  immediately. The valid self cast is committed and spent before this
+  information appears, so it cannot be used as a free probe.
 - **ANVIL — AN2 forge heat plus AN3's expanding border.** Heat works the whole
   die, not one pip or an overlay fragment: it rises to white, the authoritative
   face changes, and the new die cools in place. One solid border expands once

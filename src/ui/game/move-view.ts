@@ -143,7 +143,7 @@ async function destroySunderStrikes(
     collapseOrder = stageDestruction(who, plan, '#ff9d66', collapseOrder);
   }
   playDestructionImpact();
-  await pause(REDUCED ? 0 : 460 + Math.max(0, collapseOrder - 1) * 70);
+  await pause(REDUCED ? 0 : 2600 + Math.max(0, collapseOrder - 1) * 70);
   if (!isCurrent()) return { destroyed: 0, interrupted: true };
   for (const plan of plans) S.boards[who][plan.col] = plan.survivors;
   renderSide(who, true);
