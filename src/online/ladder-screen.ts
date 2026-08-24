@@ -220,7 +220,7 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
       loading = true;
       void leaderboard(PAGE, bottomCursor.rank, bottomCursor.nickname).then((page) => {
         loading = false;
-        if ($('#onBoard').hidden) return;
+        if (run !== showRevision || !isOnlinePanelCurrent('onBoard')) return;
         const fresh = page.filter((row) => !seen.has(row.nickname));
         bottomDry = page.length < PAGE;
         if (page.length) {
@@ -244,7 +244,7 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
       loading = true;
       void leaderboardBefore(PAGE, topCursor.rank, topCursor.nickname).then((page) => {
         loading = false;
-        if ($('#onBoard').hidden) return;
+        if (run !== showRevision || !isOnlinePanelCurrent('onBoard')) return;
         const fresh = page.filter((row) => !seen.has(row.nickname));
         topDry = page.length < PAGE;
         if (page.length) {

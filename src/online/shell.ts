@@ -22,10 +22,10 @@ const OVERLAY = `
        are its content, so ONLINE pins its ‹ and fades its top edge exactly
        like every other titled page — no rules of its own. -->
   <div class="pbody">
-  <!-- One blocking wait for every data-backed online panel. Keeping it as a
-       sibling, rather than placing a loader inside each panel's content,
-       makes the die centre against the VIEW and keeps half-painted rows/cards
-       out of sight until their owner can reveal them atomically. -->
+  <!-- One blocking wait for data-backed panels that reveal atomically. Keeping
+       it as a sibling, rather than placing a loader inside each panel's
+       content, makes the die centre against the VIEW and keeps half-painted
+       rows/cards out of sight until their owner can reveal them. -->
   <div class="panel" id="onLoading" hidden aria-live="polite"></div>
 
   <div class="panel" id="onAuth" hidden>

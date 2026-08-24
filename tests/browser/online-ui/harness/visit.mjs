@@ -14,7 +14,9 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     named = false,
     motion = null,
     locale = 'en-US',
+    paginationRace = false,
     probe = null,
+    skipStandardProbes = false,
   }) {
     // NO isMobile here: under WebKit it quietly disables page.route(), and a
     // stub that never fires would let this suite talk to the live backend.
@@ -25,9 +27,9 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     const errs = [];
     page.on('pageerror', (e) => errs.push(e.message));
 
-    const signupCalls = await installOnlineRoutes(page, {
+    const routes = await installOnlineRoutes(page, {
       anonymous, attached, dataDelay: inspectLoading ? 900 : 0,
-      door, named, SESSION, GUEST_ID,
+      door, named, paginationRace, SESSION, GUEST_ID,
     });
     if (door === 'play') {
       /* Ranked newcomers stop at the once-only tutorial offer. This probe is
@@ -99,7 +101,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     // online.css has now landed. Its selectors may style its own screens and
     // body-level sheets, but must not repaint the eager Home hiding underneath.
     const homeAfterOnline = await homeSnapshot();
-    const probeResult = probe ? await probe(page) : null;
+    const probeResult = probe ? await probe(page, routes) : null;
 
     if (door === 'play') {
       const samples = [];
@@ -121,17 +123,19 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
       await page.waitForTimeout(50);
       const rootLang = await page.locator('html').getAttribute('lang');
       await ctx.close();
-      return { queueLabel: samples, errs, loading, signupCalls: signupCalls(),
+      return { queueLabel: samples, errs, loading, signupCalls: routes.signupCalls(),
                rootLang,
                homeStyles: { before: homeBeforeOnline, after: homeAfterOnline } };
     }
 
     const seen = await readOnlineView(page);
-    const faceoff = await probeFaceoff(page, { door, motion });
-    const { claimFlow, askAbove, ptsDoor } = await probeAccountActions(page, { door, named });
+    const faceoff = skipStandardProbes ? null : await probeFaceoff(page, { door, motion });
+    const { claimFlow, askAbove, ptsDoor } = skipStandardProbes
+      ? { claimFlow: null, askAbove: null, ptsDoor: null }
+      : await probeAccountActions(page, { door, named });
 
     await ctx.close();
-    return { seen, errs, loading, signupCalls: signupCalls(), faceoff, ptsDoor, claimFlow, askAbove, probeResult,
+    return { seen, errs, loading, signupCalls: routes.signupCalls(), faceoff, ptsDoor, claimFlow, askAbove, probeResult,
              homeStyles: { before: homeBeforeOnline, after: homeAfterOnline } };
   };
 }

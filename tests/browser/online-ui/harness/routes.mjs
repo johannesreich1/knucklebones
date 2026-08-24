@@ -1,8 +1,13 @@
 export async function installOnlineRoutes(
   page,
-  { anonymous, attached, dataDelay = 0, door, named, SESSION, GUEST_ID },
+  { anonymous, attached, dataDelay = 0, door, named, paginationRace = false, SESSION, GUEST_ID },
 ) {
   let signupCalls = 0;
+  let leaderboardCalls = 0;
+  let markPaginationStarted;
+  let releasePagination;
+  const paginationStarted = new Promise((resolve) => { markPaginationStarted = resolve; });
+  const paginationRelease = new Promise((resolve) => { releasePagination = resolve; });
   const hold = (share = 1) => dataDelay > 0
     ? new Promise((resolve) => setTimeout(resolve, dataDelay * share))
     : Promise.resolve();
@@ -81,12 +86,49 @@ export async function installOnlineRoutes(
      horizon for each — the group structure is asserted below. */
   await page.route('**/rest/v1/rpc/leaderboard*', async (r) => {
     await hold(1);
-    const board = r.request().url().includes('/rpc/leaderboard_before') ? []
-      : [{ nickname: 'NovaComet992', points: 1072, wins: 7, losses: 2, games: 9, rank: 1, apex: false, avatar: 'die:3:mg', peak: 1100 },
-         { nickname: 'TestGuest001', points: 465, wins: 42, losses: 61, games: 103, rank: 2, apex: false, avatar: 'die:5:cy', peak: 700 }];
-    return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(board) });
+    const before = r.request().url().includes('/rpc/leaderboard_before');
+    const ordinary = [
+      { nickname: 'NovaComet992', points: 1072, wins: 7, losses: 2, games: 9, rank: 1, apex: false, avatar: 'die:3:mg', peak: 1100 },
+      { nickname: 'TestGuest001', points: 465, wins: 42, losses: 61, games: 103, rank: 2, apex: false, avatar: 'die:5:cy', peak: 700 },
+    ];
+    let board = before ? [] : ordinary;
+    let headers;
+    if (paginationRace && !before) {
+      leaderboardCalls++;
+      if (leaderboardCalls === 1) {
+        board = [...ordinary, ...Array.from({ length: 48 }, (_, index) => ({
+          nickname: `RunA${String(index + 3).padStart(2, '0')}`,
+          points: 460 - index,
+          wins: 1,
+          losses: 1,
+          games: 2,
+          rank: index + 3,
+          apex: false,
+          avatar: null,
+          peak: 460 - index,
+        }))];
+      } else if (leaderboardCalls === 2) {
+        markPaginationStarted();
+        await paginationRelease;
+        board = [{
+          nickname: 'StaleRunA', points: 100, wins: 1, losses: 2, games: 3,
+          rank: 51, apex: false, avatar: null, peak: 100,
+        }];
+        headers = { 'x-kb-fixture': 'stale-run-a' };
+      }
+    }
+    return r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      ...(headers ? { headers } : {}),
+      body: JSON.stringify(board),
+    });
   });
   await page.route('**/rest/v1/rpc/player_card*', (r) => r.fulfill({ status: 200, contentType: 'application/json',
     body: JSON.stringify([{ streak: 4, since: '2026-06-01T00:00:00Z' }]) }));
-  return () => signupCalls;
+  return {
+    signupCalls: () => signupCalls,
+    paginationStarted,
+    releasePagination: () => releasePagination(),
+  };
 }
