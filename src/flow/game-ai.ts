@@ -7,11 +7,12 @@ import {
   SPEC,
   colScore,
   legalCols,
+  type CharmSt,
   type GameState,
 } from '../core/rules.ts';
 import { S } from '../state.ts';
 
-export function aiChoose(): number {
+export function aiChoose(rootCharm?: CharmSt): number {
   const state: GameState = [
     S.boards[AI].map((column) => column.slice()),
     S.boards[ME].map((column) => column.slice()),
@@ -43,20 +44,20 @@ export function aiChoose(): number {
   if (S.diff === 'easy') {
     if (Math.random() < 0.5) return legal[(Math.random() * legal.length) | 0];
     column = searchRoot(state, AI, S.die, 1, {
-      mode: S.scoring, random: Math.random, riskWeight: 0,
+      mode: S.scoring, random: Math.random, riskWeight: 0, rootCharm,
     }).c;
   } else if (S.diff === 'medium') {
     column = searchRoot(state, AI, S.die, 2, {
-      mode: S.scoring, random: Math.random, riskWeight: 0.9,
+      mode: S.scoring, random: Math.random, riskWeight: 0.9, rootCharm,
     }).c;
   } else {
     const started = performance.now();
     column = searchRoot(state, AI, S.die, 4, {
-      mode: S.scoring, random: Math.random, riskWeight: 1.5,
+      mode: S.scoring, random: Math.random, riskWeight: 1.5, rootCharm,
     }).c;
     if (performance.now() - started < 18 && filled < SPEC.cols * SPEC.rows * 2 - 2) {
       column = searchRoot(state, AI, S.die, 5, {
-        mode: S.scoring, random: Math.random, riskWeight: 1.5,
+        mode: S.scoring, random: Math.random, riskWeight: 1.5, rootCharm,
       }).c;
     }
   }

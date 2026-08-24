@@ -17,13 +17,21 @@
 // The first roster (COLUMN SWAP) retired 2026-08-21: tools/spellsim.ts
 // measured a one-sided holder at 70.5% in classic and 81.8% under
 // SINGLESTRIKE. This roster measured 53–61% under the same harness.
-import { SPEC, isShielded, freshCharm, type Player } from './rules.ts';
+import { BOUNTY, COLSHIELD, SPEC, cloneCharm, isShielded, type CharmSt, type Player } from './rules.ts';
 import { DICE_FACES } from '../config.ts';
 import type { CastCtx, SpellSpec } from './spell-types.ts';
-import { bestTarget, colScoreOf, placeGain } from './spell-policy.ts';
+import { bestTarget, colScoreOf, immediatePlacementGain, placeGain } from './spell-policy.ts';
 
 export type { CastCtx, SpellSpec } from './spell-types.ts';
-export { bestTarget, machineCast, placeGain, swingOf } from './spell-policy.ts';
+export {
+  bestTarget,
+  immediatePlacementGain,
+  machineCast,
+  machineCastPlan,
+  placeGain,
+  swingOf,
+} from './spell-policy.ts';
+export type { ImmediatePlacementOptions, MachineCastPlan } from './spell-policy.ts';
 
 /* FATE: throw the die in hand back, draw another. Touches nothing but the
    caster's own hand — the floor of the power range (sim: 56.1% one-sided at
@@ -103,6 +111,13 @@ const WARD: SpellSpec = {
     }
     return bestV >= demand * 1.5 ? bestC : null;
   },
+  cpuForbiddenPlacements(st, who, castTarget, ctx) {
+    /* Filling the warded column immediately makes it permanently untouchable
+       in COLUMN SHIELD, so the fresh ward would never be able to help. */
+    return ctx.mode === COLSHIELD && st[who][castTarget].length === SPEC.rows - 1
+      ? [castTarget]
+      : [];
+  },
 };
 
 /* SUNDER: the placement that follows this cast strikes EVERY enemy column
@@ -110,6 +125,12 @@ const WARD: SpellSpec = {
    actually in hand. The mark lives exactly one placement: a cast happens
    inside the caster's own turn, and their placement consumes it
    (core/rules openStrikes). */
+function armedSunderCharm(ctx: CastCtx, who: Player): CharmSt {
+  const charm = cloneCharm(ctx.charm);
+  charm.sunder[who] = true;
+  return charm;
+}
+
 const SUNDER: SpellSpec = {
   id: 'sunder',
   target: 'self',
@@ -120,11 +141,18 @@ const SUNDER: SpellSpec = {
   apply(st, who, col, ctx) {
     ctx!.charm.sunder[who] = true;
   },
+  cpuRootCharm(st, who, castTarget, ctx) {
+    return armedSunderCharm(ctx, who);
+  },
   cpuCast(st, who, ctx, demand) {
-    const scratch = freshCharm();
-    scratch.sunder[who] = true;
-    const wide = placeGain(st, who, ctx.die, ctx.mode, scratch);
-    return wide - placeGain(st, who, ctx.die, ctx.mode) >= demand * 0.75 ? -1 : null;
+    const bankPerKill = ctx.mode === BOUNTY ? 1 : 0;
+    const wide = immediatePlacementGain(st, who, ctx.die, ctx.mode, {
+      charm: armedSunderCharm(ctx, who), bankPerKill,
+    });
+    const plain = immediatePlacementGain(st, who, ctx.die, ctx.mode, {
+      charm: cloneCharm(ctx.charm), bankPerKill,
+    });
+    return wide - plain >= demand * 0.75 ? -1 : null;
   },
 };
 

@@ -169,6 +169,16 @@ export function freshCharm(): CharmSt {
   return { wards: [zeros(), zeros()], sunder: [false, false] };
 }
 
+/* Search and previews branch charm state just like boards. Keep the copy here
+   beside its shape so every consumer preserves future marks without sharing
+   mutable arrays between candidate moves. */
+export function cloneCharm(charm: CharmSt): CharmSt {
+  return {
+    wards: [charm.wards[0].slice(), charm.wards[1].slice()],
+    sunder: [charm.sunder[0], charm.sunder[1]],
+  };
+}
+
 /* one column takes one strike: the matching dice fall, and how many is the answer */
 function strike(st: GameState, o: number, col: number, die: number, mode: Mode): number {
   const oc = st[o][col];

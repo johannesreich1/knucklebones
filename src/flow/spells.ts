@@ -7,6 +7,7 @@ import {
   SPEC,
   freshCharm,
   isFull,
+  type CharmSt,
   type GameState,
   type Player,
 } from '../core/rules.ts';
@@ -39,7 +40,7 @@ import {
   type SpellRailPorts,
 } from './spell-rail.ts';
 import type { SpellInputTarget } from './spell-target.ts';
-import { runAiSpellTurn } from './spell-ai.ts';
+import { runAiSpellTurn, type AiSpellTurnResult } from './spell-ai.ts';
 
 export { aiSpellDelay } from './spell-ai.ts';
 
@@ -60,7 +61,8 @@ export function configureSpellFlow(ports: SpellFlowPorts): void {
 }
 
 /* The player who may cast right now: their turn, their choice, nothing else
-   in flight. The CPU drives its own cast through aiSpellTurn(). */
+   in flight. The CPU drives its production turn through
+   aiSpellPlacementTurn(). */
 function caster(): Player | null {
   if (S.phase !== 'choose' || S.busy) return null;
   const who = S.turn as Player;
@@ -312,7 +314,21 @@ function castable(id: string): boolean {
 }
 
 export async function aiSpellTurn(who: Player, waitForTell = true): Promise<boolean> {
-  return runAiSpellTurn(who, { chargesOf, castContext, castBy }, waitForTell);
+  return (await runAiSpellTurn(who, { chargesOf, castContext, castBy }, waitForTell)).gameOver;
+}
+
+/* Production CPU turns coordinate a tentative cast with the normal placement
+   chooser. The boolean-only hook above stays stable for browser probes. */
+export function aiSpellPlacementTurn(
+  who: Player,
+  previewPlacement: (rootCharm?: CharmSt) => number,
+  waitForTell = true,
+): Promise<AiSpellTurnResult> {
+  return runAiSpellTurn(
+    who,
+    { chargesOf, castContext, castBy, previewPlacement },
+    waitForTell,
+  );
 }
 
 /*

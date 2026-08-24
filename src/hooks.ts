@@ -40,7 +40,7 @@ export function hooks(){
              chargesOf,
              render: renderSpells,
              // Most effect scenarios ask the CPU to act immediately. The
-             // delayed hook exercises the exact production path separately.
+             // delayed hook exercises the visible cast tell separately.
              ai: (who: 0 | 1) => aiSpellTurn(who, false),
              aiDelayed: aiSpellTurn,
              aiDelay: aiSpellDelay,

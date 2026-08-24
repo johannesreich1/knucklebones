@@ -1,13 +1,43 @@
 import { DICE_FACES } from '../config.ts';
 import {
-  AI, ME, SPEC, applyMove, boardTotalMode, cloneSt, isFull, legalCols,
+  AI, ME, SPEC, applyMove, boardTotalMode, cloneCharm, cloneSt, isFull, legalCols,
   type CharmSt, type GameState, type Mode, type Player,
 } from './rules.ts';
 import type { CastCtx, SpellSpec } from './spell-types.ts';
 
+export interface ImmediatePlacementOptions {
+  charm?: CharmSt;
+  /* Some modes bank value outside the boards. Keep that policy explicit so
+     adding BOUNTY's +1 here cannot silently retune older spell policies. */
+  bankPerKill?: number;
+}
+
 /* The immediate worth of placing this die as well as possible: the best swing
-   in the score difference one placement can buy. The yardstick every hand
-   policy measures against; charm-aware when a scratch charm is passed. */
+   in score difference one placement can buy, plus any explicitly requested
+   off-board value per destroyed die. */
+export function immediatePlacementGain(
+  st: GameState,
+  who: Player,
+  die: number,
+  mode: Mode,
+  options: ImmediatePlacementOptions = {},
+): number {
+  const { charm, bankPerKill = 0 } = options;
+  const foe = (1 - who) as Player;
+  const lead = (s: GameState) => boardTotalMode(s[who], mode) - boardTotalMode(s[foe], mode);
+  let best = -Infinity;
+  for (const c of legalCols(st[who])) {
+    const ns = cloneSt(st);
+    const scratch = charm && cloneCharm(charm);
+    const killed = applyMove(ns, who, c, die, mode, scratch);
+    const gain = lead(ns) - lead(st) + killed * bankPerKill;
+    if (gain > best) best = gain;
+  }
+  return best;
+}
+
+/* Established board-only yardstick used by FATE/NUDGE and legacy tuning.
+   Charm is optional; off-board bounty remains opt-in through the seam above. */
 export function placeGain(
   st: GameState,
   who: Player,
@@ -15,20 +45,7 @@ export function placeGain(
   mode: Mode,
   charm?: CharmSt,
 ): number {
-  const foe = (1 - who) as Player;
-  const lead = (s: GameState) => boardTotalMode(s[who], mode) - boardTotalMode(s[foe], mode);
-  let best = -Infinity;
-  for (const c of legalCols(st[who])) {
-    const ns = cloneSt(st);
-    const scratch = charm && {
-      wards: [charm.wards[0].slice(), charm.wards[1].slice()] as [number[], number[]],
-      sunder: [charm.sunder[0], charm.sunder[1]] as [boolean, boolean],
-    };
-    applyMove(ns, who, c, die, mode, scratch);
-    const gain = lead(ns) - lead(st);
-    if (gain > best) best = gain;
-  }
-  return best;
+  return immediatePlacementGain(st, who, die, mode, { charm });
 }
 
 /* The one-column valuation WARD's catalog policy needs. */
@@ -66,10 +83,7 @@ function sandbox(ctx: CastCtx): CastCtx {
     bagLeft: ctx.bagLeft,
     setDie() {},
     draw: () => ctx.die,
-    charm: {
-      wards: [ctx.charm.wards[0].slice(), ctx.charm.wards[1].slice()],
-      sunder: [ctx.charm.sunder[0], ctx.charm.sunder[1]],
-    },
+    charm: cloneCharm(ctx.charm),
   };
 }
 
@@ -119,4 +133,45 @@ export function machineCast(
     if (boardTotalMode(after[who], ctx.mode) <= boardTotalMode(after[foe], ctx.mode)) return null;
   }
   return pick;
+}
+
+export interface MachineCastPlan {
+  target: number | null;
+  /* The one placement inspected while coordinating the cast. Callers may
+     reuse it or deliberately make their ordinary choice again. Null means
+     this cast needed no placement preview. */
+  placement: number | null;
+  rootCharm: CharmSt | null;
+  vetoedByPlacement: boolean;
+}
+
+/* Coordinate a spell's registry-owned placement hazards and one-shot root
+   charm with the ordinary placement policy. The cast decision itself stays
+   machineCast's answer; only a spell that declares one of those hooks asks
+   for a placement preview. */
+export function machineCastPlan(
+  st: GameState,
+  who: Player,
+  spell: SpellSpec,
+  ctx: CastCtx,
+  demand: number,
+  previewPlacement?: (rootCharm?: CharmSt) => number,
+): MachineCastPlan {
+  const target = machineCast(st, who, spell, ctx, demand);
+  if (target === null || !previewPlacement) {
+    return { target, placement: null, rootCharm: null, vetoedByPlacement: false };
+  }
+  const rootCharm = spell.cpuRootCharm?.(st, who, target, ctx) ?? null;
+  const forbidden = spell.cpuForbiddenPlacements?.(st, who, target, ctx) ?? [];
+  if (!rootCharm && !forbidden.length) {
+    return { target, placement: null, rootCharm: null, vetoedByPlacement: false };
+  }
+  const placement = previewPlacement(rootCharm ?? undefined);
+  const vetoedByPlacement = forbidden.includes(placement);
+  return {
+    target: vetoedByPlacement ? null : target,
+    placement,
+    rootCharm,
+    vetoedByPlacement,
+  };
 }

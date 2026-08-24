@@ -46,4 +46,23 @@ export interface SpellSpec {
      never shows on the boards MUST provide this, or a machine will never cast
      them: the default policy (machineCast) weighs board swing alone. */
   cpuCast?(st: GameState, who: Player, ctx: CastCtx, demand: number): number | null;
+  /* Some casts change how the immediately following placement resolves.
+     Return the projected charm for that root move so the shared placement
+     search can evaluate the rule it will actually execute. */
+  cpuRootCharm?(
+    st: GameState,
+    who: Player,
+    castTarget: number,
+    ctx: CastCtx,
+  ): CharmSt;
+  /* A cast may make particular follow-up placements defeat the reason for
+     casting it. The registry declares those columns; the shared CPU policy
+     can then preview once without teaching turn flow any spell ids. Empty
+     means this cast target needs no placement coordination. */
+  cpuForbiddenPlacements?(
+    st: GameState,
+    who: Player,
+    castTarget: number,
+    ctx: CastCtx,
+  ): readonly number[];
 }

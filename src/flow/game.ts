@@ -38,7 +38,14 @@ import { startTimer, stopTimer, showClock } from './timer.ts';
 import { coachShow, coachHide, clearTut, tutNextRoll, tutOnChoose } from './tutorial.ts';
 import { toMenu } from './menu.ts';
 import { closeEnd } from '../ui/endscreen.ts';
-import { aiSpellTurn, disarm, drawSpell, renderSpells, resetSpells, resolveTimedOutSpellAim } from './spells.ts';
+import {
+  aiSpellPlacementTurn,
+  disarm,
+  drawSpell,
+  renderSpells,
+  resetSpells,
+  resolveTimedOutSpellAim,
+} from './spells.ts';
 import { aiChoose } from './game-ai.ts';
 import { showLocalResult } from './local-result.ts';
 import { hidePassCard, showPassCard } from './pass-card.ts';
@@ -156,11 +163,12 @@ export async function nextTurn(): Promise<void> {
     setStatus(() => t('game', 'status.aiThinking'), AI);
     await wait(300);
     if(S.gen!==gen) return;
-    // it holds the same rune you do — it spends it at the same point in the
-    // turn, before choosing a column, and aiChoose then reads the new board
-    if(await aiSpellTurn(AI)) return;             // the swap ended the game
+    // It holds the same rune you do. A spell may ask the registry-owned CPU
+    // policy to preview its follow-up placement before spending the charge.
+    const spellTurn=await aiSpellPlacementTurn(AI, aiChoose);
+    if(spellTurn.gameOver) return;
     if(S.gen!==gen) return;
-    const c=aiChoose();
+    const c=spellTurn.placement ?? aiChoose();
     await wait(140);
     if(S.gen!==gen) return;
     await place(AI,c);

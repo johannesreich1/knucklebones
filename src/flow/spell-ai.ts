@@ -1,12 +1,13 @@
 // Computer rune choice and its visible tell. The shared spell controller owns
 // casting; this module owns only when and where the machine elects to cast.
-import { type GameState, type Player } from '../core/rules.ts';
-import { machineCast, spellById, type CastCtx, type SpellSpec } from '../core/spells.ts';
+import { type CharmSt, type GameState, type Player } from '../core/rules.ts';
+import { machineCastPlan, spellById, type CastCtx, type SpellSpec } from '../core/spells.ts';
 import { S } from '../state.ts';
 
 const CPU_SPELL_DELAY_MIN = 320;
 const CPU_SPELL_DELAY_SPREAD = 580;
 const DEMANDS = { easy: 30, medium: 16, hard: 10 } as const;
+export const NORMAL_CHARM_COORDINATION_SLIP_RATE = 0.05;
 
 const pause = (milliseconds: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -14,12 +15,22 @@ const pause = (milliseconds: number): Promise<void> =>
 export interface AiSpellPorts {
   chargesOf: (who: Player, id: string) => number;
   castContext: () => CastCtx;
+  previewPlacement?: (rootCharm?: CharmSt) => number;
+  random?: () => number;
   castBy: (
     who: Player,
     spell: SpellSpec,
     column: number,
     context: CastCtx,
   ) => Promise<boolean>;
+}
+
+export interface AiSpellTurnResult {
+  gameOver: boolean;
+  /* Hard reuses every coordinated preview exactly. Normal preserves WARD's
+     independent final choice, while root-charm spells coordinate except for
+     their explicit rare slip. Easy never previews. */
+  placement: number | null;
 }
 
 /* A chosen computer cast gets a small tell: enough time to see its card in
@@ -36,24 +47,36 @@ export async function runAiSpellTurn(
   who: Player,
   ports: AiSpellPorts,
   waitForTell = true,
-): Promise<boolean> {
+): Promise<AiSpellTurnResult> {
+  const random = ports.random ?? Math.random;
   const id = Object.keys(S.spellCharges[who]).find((key) => ports.chargesOf(who, key) > 0);
   const spell = spellById(id);
-  if (!spell) return false;
-  if (S.diff === 'easy' && Math.random() < 0.5) return false;
+  if (!spell) return { gameOver: false, placement: null };
+  if (S.diff === 'easy' && random() < 0.5) return { gameOver: false, placement: null };
   const context = ports.castContext();
-  const column = machineCast(
+  const plan = machineCastPlan(
     S.boards as GameState,
     who,
     spell,
     context,
     DEMANDS[S.diff],
+    S.diff === 'easy' ? undefined : ports.previewPlacement,
   );
-  if (column === null) return false;
+  let placement = S.diff === 'hard' ? plan.placement : null;
+  if (S.diff === 'medium' && plan.target !== null && plan.rootCharm && plan.placement !== null
+      && random() >= NORMAL_CHARM_COORDINATION_SLIP_RATE) {
+    placement = plan.placement;
+  }
+  if (plan.target === null) return { gameOver: false, placement };
   if (waitForTell) {
     const generation = S.gen;
     await pause(aiSpellDelay());
-    if (S.gen !== generation || S.turn !== who || S.phase === 'over') return false;
+    if (S.gen !== generation || S.turn !== who || S.phase === 'over') {
+      return { gameOver: false, placement: null };
+    }
   }
-  return ports.castBy(who, spell, column, context);
+  return {
+    gameOver: await ports.castBy(who, spell, plan.target, context),
+    placement,
+  };
 }

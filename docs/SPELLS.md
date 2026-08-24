@@ -253,11 +253,14 @@ SINGLE STRIKE the span is 17.3pp and PILFER beats WARD ~67–33. WARD's friendly
 over-values defensive spells.** Against an opponent who is also gaining, swing
 beats safety. Expect any new defensive rune's one-sided number to overstate it.
 
-**Two cautions before trusting a cross-table.** `searchRoot` takes no charm, so
-the bot does not know its opponent holds a rune — under symmetry that blindness
-cancels, asymmetrically it does not, and adapting to the opponent's rune *is*
-the content of asymmetric balance. And a cell measured in one direction only
-carries ~1pp of seat bias; run both and average.
+**Two cautions before trusting a cross-table.** `searchRoot` can receive the
+exact live charm for the immediately following root placement, which production
+uses to coordinate SUNDER, but deeper plies still omit charm, rune identity,
+and unspent charges. The frozen asymmetric v1 matrix predates that root
+coordination and is deliberately labeled blind. Under symmetry some blindness
+cancels; asymmetrically, adapting to the opponent's rune *is* part of the
+matchup. And a cell measured in one direction only carries ~1pp of seat bias;
+run both and average.
 
 **Late is not automatically degenerate.** WARD and SUNDER cast at 83% and 74%
 through the game because they wait for a *condition* — a real threat, a die
@@ -265,11 +268,14 @@ that matches several columns. The swap's lateness was different: hoarding was
 unconditionally correct. Distinguish "waiting for a trigger" from "waiting
 because later is always better".
 
-**The machine's policy is the shipped one.** `machineCast` in `core/spells.ts`
-is asked by both the offline CPU and the harness, so what is measured and what
-plays can never be two different policies. A spell whose value never shows on
-the boards (FATE, NUDGE, SUNDER) must provide a `cpuCast` hook, or the default
-board-swing policy will never cast it and it will measure as worthless.
+**Name the machine policy in every measurement.** `machineCast` remains the
+shared cast/hold decision, but production local play now layers
+`machineCastPlan` over it for registry-declared same-turn coordination. The
+frozen v1 harness intentionally retains its earlier blind placement policy;
+WARD and SUNDER treatments live in separately versioned evidence. A spell whose
+value never shows on the boards (FATE, NUDGE, SUNDER) must provide a `cpuCast`
+hook, or the default board-swing policy will never cast it and it will measure
+as worthless.
 
 ---
 
@@ -285,6 +291,9 @@ the localization catalogs through the shared adapter.
    aim itself spends the charge, `locksOnAim` only when an uncommitted aim must
    receive a legal answer, `previewDieIndex()` when a column spell marks one
    exact die, `legal()`, `apply()`, and `cpuCast()` if its value is off-board.
+   Use `cpuRootCharm()` when the cast changes the immediately following
+   placement, and `cpuForbiddenPlacements()` when a follow-up column can make
+   the cast self-defeating.
 2. **The copy** — `name`, `compact`, `blurb`, `detail`, and `aim` in every
    locale catalog under the stable id. The armed `aim` gets at most two
    landscape lines; see §7.
@@ -306,6 +315,12 @@ the localization catalogs through the shared adapter.
   victims, which are warded) and is read by *both* the headless `applyMove`
   and the animated flow, so screen and state cannot tell different stories.
   Without a charm, `applyMove` is the pre-spell hot path, untouched.
+- **Root placement coordination** — `machineCastPlan` asks only registry hooks.
+  Hard reuses the exact preview; Normal reuses a root-charm preview except for
+  its named 5% slip, while WARD's hazard-only preview is independently chosen
+  again; Easy does not preview. `searchRoot.rootCharm` is intentionally root
+  only, so this is exact same-turn resolution rather than a claim of fully
+  charm-aware expectimax.
 
 ---
 
@@ -616,29 +631,44 @@ construction — charges are dealt in exactly one place (`resetSpells`), and
 ranked, the tutorial and the NONE pick all deal `{}`, which is the single
 thing the runtime asks before showing a rail or allowing a cast.
 
-The online path is *designed* and its seams exist (a cast is a logged entry
-replayed through this same registry; FATE draws from the seeded stream), but
-wiring it is its own later step. A ranked turn would then carry two log
-entries — an optional cast, then the placement — which is a protocol shape
-change the server validator must accept.
+The intended online path has a design outline, not an implemented protocol. A
+cast would become a logged action replayed through this same registry, and FATE
+would draw from the seeded stream. A ranked turn may then carry two actions—an
+optional cast and the placement—which is a protocol shape change the server
+validator must accept.
 
-### If ranked ever deals spells: symmetric first, and probably only
+### If ranked ever deals spells: personal runes and Rune Trial
 
-**Symmetric-online is a strict prefix of asymmetric-online.** Dealing both seats
-the same rune — spun server-side from the match seed, exactly as `pickMode` does
-— needs one `matches.spell` column and changes nothing else about the protocol,
-the replay or the reveal. Dealing *different* runes needs all of that plus a
-balanced pool, and the pool is not balanced: §5's cross-table spans 7.7pp in
-classic and 17.3pp under SINGLE STRIKE.
+The comprehensive evidence and feasibility record is
+`docs/RUNE_MULTIPLAYER_INVESTIGATION.md`; this section keeps only its current
+boundary.
 
-For scale: the ladder's own built-in asymmetry, the seat handicap in
-`docs/LADDER.md`, is at most 3.4pp. A random asymmetric rune deal costs ~3.4pp
-on average **in classic alone**, and 7.8–8.3pp across the mode wheel. It would
-also drown the rating handicap it sits beside and randomise its sign.
+**Symmetric, personal, and Trial runes all need the same missing authoritative
+cast protocol.** The current server log records placements, not casts. It must
+version and replay cast, placement, FATE supply draws, persistent charm, and
+cast-terminal outcomes before any of the three formats is ranked. Symmetric
+online needs fewer loadout fields, but it does not avoid that action-grammar
+change. The client already has per-seat hands; the server is the hard seam.
 
-The client is already built for it — `S.spellCharges` is per-seat and the rail
-renders "you carry what you BROUGHT" (`flow/spells.ts`) — so the cost is not
-plumbing. It is balance, and it is a real cost. If asymmetry is wanted for its
-own sake, a **mirror draft** (the same three runes offered to both, each picks
-blind) converts residual imbalance from *unfair* into *boring*, which is the
-better failure mode; it still needs the flat pool.
+The frozen asymmetric v1 study now covers all six runes, seven modes, both
+opener orientations, four seeds, and both FATE cast grammars. Under its blind
+Normal policy, fixed pre-match PILFER strictly dominates every other loadout at
+the point estimate; uniform-opponent wheel strength spans about 9.6pp from
+PILFER to WARD. A separate coordinated-SUNDER treatment moves SUNDER only
++0.1788pp in Classic and +0.2503pp in BOUNTY, while confirming BOUNTY SUNDER as
+an existing mode specialist. Those corrections do not make the roster ready
+for win-gated ranked ownership.
+
+The two proposed formats remain distinct:
+
+- **Personal-rune modes:** each player locks one equipped rune before
+  matchmaking; the shared mode and both runes are revealed after matching.
+- **Rune Trial:** equipment is ignored; both players receive the same three
+  loaned runes, choose privately, then reveal together. Equal offers remove
+  collection access inequality, but the fixed-policy Classic analysis still
+  finds at least one strictly dominated option in every offer.
+
+The evidence-bounded launch rule is therefore: equal ranked rune access first,
+balance and human-choice telemetry second, mechanical collection unlocks only
+after access no longer predicts option strength. Wins may safely advance
+finite cosmetic/mastery progression in the meantime.

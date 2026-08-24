@@ -1,4 +1,4 @@
-import { freshCharm, openStrikes, type Player, type StrikeOutcome } from '../../core/rules.ts';
+import { cloneCharm, openStrikes, type Player, type StrikeOutcome } from '../../core/rules.ts';
 import { S } from '../../state.ts';
 import { Sfx, vibrate } from '../../ui/audio.ts';
 import { slotEl, slotIdx } from '../../ui/dom.ts';
@@ -9,11 +9,10 @@ import { clearSunderPresentation, markSunderVictim } from '../../ui/game/sunder-
 import { effectPause, type SpellEffect } from './types.ts';
 
 /* openStrikes is authoritative but consumes the live SUNDER mark. Preview on a
-   fresh charm instead: the board is read-only, current wards are copied, and
+   cloned charm instead: the board is read-only, current wards are preserved, and
    COLUMN SHIELD / SINGLE STRIKE remain exactly the rule the real move uses. */
 function sunderPreview(who: Player): StrikeOutcome[] {
-  const preview = freshCharm();
-  preview.wards = [S.charm.wards[0].slice(), S.charm.wards[1].slice()];
+  const preview = cloneCharm(S.charm);
   preview.sunder[who] = true;
   return openStrikes(S.boards, who, 0, S.die, S.scoring, preview);
 }

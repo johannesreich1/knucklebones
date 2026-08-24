@@ -8,7 +8,8 @@ import { DICE_FACES } from '../config.ts';
 import {
   AI, ME, SPEC, type GameState, type Player, type Mode,
   CLASSIC, ROWSWITCH, SINGLESTRIKE, BOUNTY,
-  cloneSt, applyMove, legalCols, boardTotalMode, countOf, isFull,
+  cloneCharm, cloneSt, applyMove, legalCols, boardTotalMode, countOf, isFull,
+  type CharmSt,
 } from './rules.ts';
 
 let NODES = 0;
@@ -76,6 +77,10 @@ export interface SearchOptions {
   /** Tuned default: 1.5 (55.3% vs risk-blind over 500 self-play games). */
   riskWeight?: number;
   opponentWeight?: number;
+  /** Exact one-shot charm state for this root placement only. It is cloned
+      per candidate and consumed by applyMove; deeper plies keep the search's
+      established charm-blind heuristic. */
+  rootCharm?: CharmSt;
 }
 
 interface ResolvedSearchOptions {
@@ -93,18 +98,18 @@ export function searchRoot(st: GameState, who: Player, die: number, depth: numbe
     mode: options.mode ?? CLASSIC,
     riskWeight: options.riskWeight ?? 1.5,
     opponentWeight: options.opponentWeight ?? 1,
-  });
+  }, options.rootCharm);
 }
 
 function search(st: GameState, who: Player, die: number, depth: number,
-                options: ResolvedSearchOptions): SearchResult {
+                options: ResolvedSearchOptions, rootCharm?: CharmSt): SearchResult {
   NODES++;
   const { mode, random } = options;
   const legal = legalCols(st[who]);
   let bestV = who === AI ? -1e9 : 1e9, bestC = legal[0];
   for (const c of legal) {
     const ns = cloneSt(st);
-    applyMove(ns, who, c, die, mode);
+    applyMove(ns, who, c, die, mode, rootCharm && cloneCharm(rootCharm));
     let v: number;
     if (isFull(ns[who])) {
       const d = boardTotalMode(ns[AI], mode) - boardTotalMode(ns[ME], mode);   // game over: material only
