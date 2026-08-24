@@ -46,6 +46,11 @@
    because a clip that also crops the glow shows its cut edges for the whole
    animation. */
 :where(#kbroot) .titleclip{width:100%;display:flex;justify-content:center}
+/* Tracking trails the last glyph, so centring the text box alone leaves the
+   painted verdict half a tracking unit left. A matching leading pad balances
+   that trailing space for every line, including wrapped duo translations,
+   without moving the centred transform origin used by the win stamp. */
+:where(#kbroot) #endTitle{padding-inline-start:.2em}
 :where(#kbroot) #ovEnd.lose .titleclip,:where(#kbroot) #ovEnd.draw .titleclip{overflow:hidden;padding:3px 0}
 /* NOTHING filters the title. A filter on an element that also carries
    -webkit-background-clip:text makes Safari drop the clip and paint the
@@ -77,7 +82,7 @@
   55%{opacity:.6}
   100%{transform:translateY(calc(var(--verdict) * -1.05)) scaleX(.5);opacity:0}}
 
-/* the context line: a session record locally, a points chip and ladder spot online */
+/* the context line: tutorial completion locally, points and ladder spot online */
 :where(#kbroot) .endmeta{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-align:center;
   display:flex;flex-direction:column;align-items:center;gap:7px}
 :where(#kbroot) .endmeta:empty{display:none}

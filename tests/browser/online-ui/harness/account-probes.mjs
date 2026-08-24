@@ -60,18 +60,39 @@ export async function probeAccountActions(page, { door, named }) {
     });
     await page.click('#btnAskNo');
   }
-  /* the points on the profile are a door: tapping them opens the ladder */
+  /* Rank and points are two views of the same ladder fact, so both are real,
+     accessible doors to the same board. Walk both in one account session. */
+  let rankDoor = null;
   let ptsDoor = null;
   if (door === 'chip') {
     const onAccount = await page.evaluate(() => document.querySelector('#onAccount')?.hidden === false);
     if (onAccount) {
-      await page.click('#btnLadder');
-      await page.waitForSelector('#ovOnline .lb .lrow', { timeout: 15000 });
-      ptsDoor = await page.evaluate(() => ({
+      const control = await page.evaluate(() => {
+        const button = document.getElementById('btnRank');
+        const box = button?.getBoundingClientRect();
+        return button && box ? { tag: button.tagName, label: button.getAttribute('aria-label'),
+          width: box.width, height: box.height } : null;
+      });
+      await page.click('#btnRank');
+      await page.waitForSelector('#ovOnline .lb .lrow.me', { timeout: 15000 });
+      rankDoor = await page.evaluate((control) => ({
+        control,
         board: document.querySelector('#onBoard')?.hidden === false,
         title: document.querySelector('#onTitle')?.textContent,
-      }));
+      }), control);
+      await page.click('#ovOnline .lb .lrow.me');
+      await page.waitForSelector('#onAccount:not([hidden])', { timeout: 15000 });
+      await page.click('#btnLadder');
+      await page.waitForSelector('#ovOnline .lb .lrow', { timeout: 15000 });
+      ptsDoor = await page.evaluate(() => {
+        const group = document.querySelector('#ovOnline .lrow.me .mesub b');
+        return {
+          board: document.querySelector('#onBoard')?.hidden === false,
+          title: document.querySelector('#onTitle')?.textContent,
+          group: group ? { text: group.textContent, color: getComputedStyle(group).color } : null,
+        };
+      });
     }
   }
-  return { claimFlow, askAbove, ptsDoor };
+  return { claimFlow, askAbove, rankDoor, ptsDoor };
 }

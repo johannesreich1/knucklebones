@@ -313,7 +313,7 @@ ${RULES_PAGE}
 
 <!-- END — the ONE result screen, local and ranked alike (ui/endscreen.ts).
      Everything that differs between the two is a slot the caller fills: the
-     meta line carries a session record or a points chip + ladder spot, and each
+     meta line carries tutorial completion or a points chip + ladder spot, and each
      action's label, visibility and handler come from the spec. -->
 <div class="ov" id="ovEnd">
   <i class="fwlayer" id="endFx" aria-hidden="true"></i>
@@ -334,7 +334,7 @@ ${RULES_PAGE}
   <div class="endplates" id="endPlates" hidden></div>
   <div class="endmeta" id="endMeta"></div>
   <!-- share sits WITH the thing it shares (user call): right under the two
-       plates (and local play's record line), centered with them — not down in
+       plates, centered with them — not down in
        the action stack. The stack keeps its own anchor: #btnAgain's auto
        margin, so the cluster stays centered between title and actions. -->
   <button class="linkbtn" id="btnShare" hidden>Share result</button>

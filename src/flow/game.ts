@@ -306,10 +306,10 @@ export function endGame(): void {
   else { Sfx.lose(); vibrate(220); }
   updateRecord();
   /* Still recorded, deliberately unshown: the Best/Record line above the Play
-     button was removed 2026-08-22 (user call — the offline screen is a setup
-     screen, not a trophy case), and the session record now lives on the result
-     screen alone. The high score keeps accumulating rather than being deleted,
-     because a player's history cannot be got back once it stops being written. */
+     button was removed 2026-08-22, and the duplicate session recap left the
+     result screen too. The high score keeps accumulating rather than being
+     deleted, because a player's history cannot be got back once it stops being
+     written. */
   if(!tut){                                     // a scripted round earns no records
     const best = duo ? Math.max(me,ai) : me;    // duo: best score by either player
     if(best>S.best) S.best=best;
@@ -323,14 +323,6 @@ export function endGame(): void {
     playerOneWon: p1won,
     playerOneScore: me,
     playerTwoScore: ai,
-    session: {
-      playerOneWins: S.p1,
-      playerTwoWins: S.p2,
-      ties: S.ties,
-      wins: S.wins,
-      losses: S.losses,
-      draws: S.draws,
-    },
   }, {
     /* Tutorial graduates; ordinary results offer a rematch and one quiet way
        back to the complete setup screen. */

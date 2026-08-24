@@ -1,3 +1,49 @@
+async function probeAccountFooter(page) {
+  /* Exercise the member cut from the shared guest fixture: the backend/session
+     contract is covered elsewhere; this probe owns only responsive geometry. */
+  await page.evaluate(() => {
+    document.getElementById('accClaim').hidden = true;
+    document.getElementById('accGuest').hidden = true;
+    document.getElementById('btnSignOut').hidden = false;
+  });
+  await page.evaluate(() => new Promise((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const sample = () => page.evaluate(() => {
+    const body = document.querySelector('#ovOnline .pbody');
+    const account = document.getElementById('onAccount');
+    const foot = account.querySelector('.accfoot');
+    const bodyBox = body.getBoundingClientRect();
+    const footBox = foot.getBoundingClientRect();
+    const paddingBottom = parseFloat(getComputedStyle(body).paddingBottom);
+    const usableBottom = bodyBox.bottom - paddingBottom;
+    const hit = (element) => {
+      const box = element.getBoundingClientRect();
+      const target = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+      return box.width >= 44 && box.height > 0 && !!target && element.contains(target);
+    };
+    return {
+      scrollable: body.scrollHeight > body.clientHeight + .5,
+      nestedScroller: account.scrollHeight > account.clientHeight + .5,
+      scrollTop: body.scrollTop,
+      maxScroll: body.scrollHeight - body.clientHeight,
+      usableBottom,
+      footTop: footBox.top,
+      footBottom: footBox.bottom,
+      bottomError: +(footBox.bottom - usableBottom).toFixed(2),
+      signOutHit: hit(document.getElementById('btnSignOut')),
+      deleteHit: hit(document.getElementById('btnDeleteAcc')),
+    };
+  });
+  const before = await sample();
+  await page.evaluate(() => {
+    const body = document.querySelector('#ovOnline .pbody');
+    body.scrollTop = body.scrollHeight;
+  });
+  await page.evaluate(() => new Promise((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  return { before, after: await sample() };
+}
+
 export async function runAccountLifecycleScenarios(suite) {
   const { visit, out, check } = suite;
   // 1c · the named player: the claim is spent, the card is GONE — not
@@ -9,6 +55,25 @@ export async function runAccountLifecycleScenarios(suite) {
   check(namedRun.askAbove === true,
         'the ask-card opened UNDER a later overlay — ask() lost its re-append', namedRun.askAbove);
   check(namedRun.errs.length === 0, 'page errors on the named path', namedRun.errs);
+
+  /* Spare height pins account actions; constrained height keeps the pbody as
+     the one scroller and makes those same actions reachable at its end. */
+  const tallLayout = await visit({ named: true, skipStandardProbes: true,
+    viewport: { width: 390, height: 932 }, probe: probeAccountFooter });
+  const shortLayout = await visit({ named: true, skipStandardProbes: true,
+    viewport: { width: 390, height: 568 }, probe: probeAccountFooter });
+  out.accountFooter = { tall: tallLayout.probeResult, short: shortLayout.probeResult };
+  const tall = tallLayout.probeResult;
+  check(tall && !tall.before.scrollable && !tall.before.nestedScroller
+    && Math.abs(tall.before.bottomError) <= 1
+    && tall.before.signOutHit && tall.before.deleteHit,
+  'account actions are not pinned to the usable bottom when the profile fits', tall);
+  const short = shortLayout.probeResult;
+  check(short?.before.scrollable && !short.before.nestedScroller
+    && short.after.scrollTop > 0 && Math.abs(short.after.scrollTop - short.after.maxScroll) <= 1
+    && Math.abs(short.after.bottomError) <= 1
+    && short.after.signOutHit && short.after.deleteHit,
+  'short profile does not scroll its footer into a reachable usable bottom', short);
 
   // 1d · the claim itself: confirm through the shared ask-card, the card
   // retires, the headline takes the name, and a GUEST is offered the way up

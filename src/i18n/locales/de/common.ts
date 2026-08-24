@@ -14,7 +14,7 @@ export const deCommon = {
     continue: 'Weiter',
     done: 'Fertig',
     finish: 'Beenden',
-    home: 'Start',
+    home: 'Menü',
     next: 'Weiter',
     notNow: 'Nicht jetzt',
     retry: 'Erneut versuchen',

@@ -102,9 +102,9 @@ check(after.wins === before.wins && after.losses === before.losses, 'record did 
 check(after.best === before.best, 'best score did not survive reload', { before, after });
 check(after.diffOn === 'medium', 'difficulty preference not restored', after);
 /* The Best/Record line above Play was removed 2026-08-22 (user call), so no
-   home surface states the record any more — the restored difficulty above is
-   what a player can SEE of the reload, and the session record shows on the
-   result screen at the end of the next game. */
+   surface states the record any more. The restored difficulty above is what a
+   player can SEE of the reload; the values themselves still assert that the
+   deliberately-unshown history survived. */
 await shot(page, 'pwa-start');
 
 // ---- 4. offline: cut the network entirely and reload ----

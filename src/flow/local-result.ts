@@ -1,6 +1,6 @@
 // Local result presentation. The turn controller settles state and hands this
 // module one immutable summary; this module owns the localized EndSpec only.
-import { formatNumber, t } from '../i18n/index.ts';
+import { t } from '../i18n/index.ts';
 import { showLocalizedEnd, type EndSpec } from '../ui/endscreen.ts';
 
 export interface LocalResultSummary {
@@ -10,14 +10,6 @@ export interface LocalResultSummary {
   playerOneWon: boolean;
   playerOneScore: number;
   playerTwoScore: number;
-  session: {
-    playerOneWins: number;
-    playerTwoWins: number;
-    ties: number;
-    wins: number;
-    losses: number;
-    draws: number;
-  };
 }
 
 export interface LocalResultActions {
@@ -27,7 +19,7 @@ export interface LocalResultActions {
 }
 
 function localResultSpec(result: LocalResultSummary, actions: LocalResultActions): EndSpec {
-  const { tutorial, duo, drawn, playerOneWon, session } = result;
+  const { tutorial, duo, drawn, playerOneWon } = result;
   return {
     outcome: drawn ? 'draw' : (duo || playerOneWon) ? 'win' : 'lose',
     title: drawn ? t('game', 'result.deadHeat')
@@ -47,17 +39,9 @@ function localResultSpec(result: LocalResultSummary, actions: LocalResultActions
       score: result.playerTwoScore,
       label: duo ? t('game', 'player.player2') : t('game', 'player.ai'),
     },
-    meta: tutorial ? t('game', 'result.tutorialCompleteMeta')
-      : duo ? t('game', session.ties ? 'result.sessionDuoDraws' : 'result.sessionDuo', {
-        p1: formatNumber(session.playerOneWins),
-        p2: formatNumber(session.playerTwoWins),
-        count: session.ties,
-        formatted: formatNumber(session.ties),
-      }) : t('game', session.draws ? 'result.sessionCpuDraws' : 'result.sessionCpu', {
-        wins: formatNumber(session.wins),
-        losses: formatNumber(session.losses),
-        count: formatNumber(session.draws),
-      }),
+    /* Ordinary local results need no second score recap under the scoreline.
+       Tutorial completion is distinct context and remains visible. */
+    meta: tutorial ? t('game', 'result.tutorialCompleteMeta') : undefined,
     again: tutorial
       ? { label: t('game', 'action.finish'), run: actions.finishTutorial }
       : { label: t('game', 'action.nextDuel'), run: actions.nextDuel },

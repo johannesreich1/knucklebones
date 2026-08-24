@@ -60,6 +60,7 @@ assert.equal(setLanguageOverride('de')?.locale, 'de');
 assert.equal(languageOverride(), 'de');
 assert.equal(effectiveLocale(), 'de');
 assert.equal(t('settings', 'language'), 'Sprache');
+assert.equal(t('online', 'profile.fullHistory'), 'Spielverlauf');
 assert.match(t('game', 'runes.ariaAvailable', {
   player: 'DU', name: 'SCHUBS', blurb: 'Test', count: 2,
 }), /2 Einsätze/u);

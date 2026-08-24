@@ -1,4 +1,4 @@
-import { groupFill, groupOf, inApex, peakState } from '../core/ladder.ts';
+import { boardGroup, groupFill, inApex, peakState } from '../core/ladder.ts';
 import {
   formatDate,
   formatNumber,
@@ -97,7 +97,14 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     $('#onAccErr').textContent = render();
   };
 
-  const groupName = (points: number): string => ladderGroupName(groupOf(points).id);
+  const paintGroup = (points: number, apex = false): void => {
+    /* The profile and ladder speak the same league language. In particular,
+       NEON is positional and a high-points non-apex player stays OBSIDIAN. */
+    const group = boardGroup(points, apex);
+    const label = $('#accGroup') as HTMLElement;
+    label.textContent = ladderGroupName(group.id);
+    label.style.setProperty('--gc', `var(--g-${group.id})`);
+  };
   const rankText = (standing: Standing | null, games: number, apex: boolean): string =>
     standing && games ? (apex ? ladderGroupName('neon') : '#' + formatNumber(standing.rank)) : '–';
 
@@ -126,7 +133,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     const games = ladder ? ladder.wins + ladder.losses + ladder.draws : 0;
     const apex = standing ? inApex(points, standing.rank, standing.population) : false;
     $('#accPoints').textContent = formatNumber(points);
-    $('#accGroup').textContent = groupName(points);
+    paintGroup(points, apex);
     $('#accPeak').textContent = formatNumber(peak);
     $('#accGames').textContent = games
       ? t('online', 'profile.gamesLink', { count: games, formatted: formatNumber(games) })
@@ -142,7 +149,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     if (lastAccount) paintAccount();
     else if (pendingCachedRating !== null) {
       $('#accPoints').textContent = formatNumber(pendingCachedRating);
-      $('#accGroup').textContent = groupName(pendingCachedRating);
+      paintGroup(pendingCachedRating);
     }
     if (nickError) $('#onNickErr').textContent = nickError();
     if (accountError) $('#onAccErr').textContent = accountError();
@@ -159,7 +166,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     clearNickError();
     $('#accSince').textContent = '';
     $('#accPoints').textContent = formatNumber(0);
-    $('#accGroup').textContent = groupName(0);
+    paintGroup(0);
     $('#accPeak').textContent = formatNumber(0);
     $('#accGames').textContent = t('online', 'profile.noneYet');
     $('#accRank').textContent = '–';
@@ -179,7 +186,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
         pendingCachedRating = cached;
         fillRing(ring, groupFill(cached));
         $('#accPoints').textContent = formatNumber(cached);
-        $('#accGroup').textContent = groupName(cached);
+        paintGroup(cached);
       }
     } catch { /* forgetful host — the fresh row below paints everything anyway */ }
     /* Nothing on the profile is useful half-painted. Fetch every independent
@@ -298,10 +305,12 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       Sfx.tap();
       void ports.showHistory();
     });
-    $('#btnLadder').addEventListener('click', () => {
+    const openLadder = (): void => {
       Sfx.tap();
       void ports.showBoard();
-    });
+    };
+    $('#btnLadder').addEventListener('click', openLadder);
+    $('#btnRank').addEventListener('click', openLadder);
     $('#btnDeleteAcc').addEventListener('click', async () => {
       Sfx.tap();
       clearAccountError();

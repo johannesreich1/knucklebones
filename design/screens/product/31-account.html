@@ -36,7 +36,7 @@
         <button class="avwrap"><span class="dice-static">{{die:5:p1:74}}</span><span class="avedit">✎</span></button>
         <!-- the group name sits IN the ring's bottom mouth: the 90deg gap stops
              being empty space and becomes the label -->
-        <span class="gname">BONE</span>
+        <span class="gname" style="--gc:var(--g-bone)">BONE</span>
       </div>
       <div class="accname">FrostLynx303</div>
       <!-- the points are a door too — the number names your place on the
@@ -45,9 +45,10 @@
            four digits read "1,032", never "1032". -->
       <button class="ptv"><b>465</b><span>Ladder points</span></button>
       <!-- THREE facts, not four. The win/loss tally is not here: it heads the
-           match-history list it summarises, and it is not called "record". -->
+           match-history list it summarises, and it is not called "record".
+           Rank alone is a door because it names the ladder position behind it. -->
       <div class="facts">
-        <div class="fact"><b>#12</b><span>Rank</span></div>
+        <button class="fact" type="button"><b>#12</b><span>Rank</span></button>
         <div class="fact"><b>3</b><span>Best streak</span></div>
         <div class="fact pk"><b>512</b><span>Peak</span></div>
       </div>

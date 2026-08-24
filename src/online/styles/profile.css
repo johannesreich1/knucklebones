@@ -25,14 +25,16 @@
    the 90deg mouth, which is ~70% of the ring's width at the band. */
 :where(#kbroot) #onAccount .gname{position:absolute;left:0;right:0;bottom:-1px;text-align:center;z-index:2;
   font-size:clamp(12px,3.4vw,15px);font-weight:900;letter-spacing:.18em;text-indent:.18em;
-  color:var(--txt);text-shadow:0 0 18px rgba(4,5,12,.9)}
+  color:var(--gc,var(--txt));text-shadow:0 0 18px rgba(4,5,12,.9)}
 /* what is still owed, directly under the number it is owed against */
 :where(#kbroot) #onAccount .togo{font-size:9.5px;letter-spacing:.16em;text-indent:.16em;color:var(--dim);
   text-transform:uppercase;text-align:center;margin-top:-6px}
 :where(#kbroot) #onAccount .togo b{color:var(--gold)}
 :where(#kbroot) #onAccount .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
 :where(#kbroot) #onAccount .fact{flex:1;text-align:center;padding:9px 5px;border-radius:12px;
-  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08)}
+  background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08);font-family:inherit;color:inherit}
+:where(#kbroot) #onAccount button.fact{cursor:pointer;appearance:none;-webkit-appearance:none}
+:where(#kbroot) #onAccount button.fact:focus-visible{outline:2px solid var(--p1);outline-offset:2px}
 /* nowrap matters: the record is "W 12 · L 7", which wrapped to three lines in
    a third of the width and made the row twice as tall as the other two */
 :where(#kbroot) #onAccount .fact b{display:block;font-size:clamp(13.5px,3.4vw,15px);font-weight:900;color:var(--txt);
@@ -44,18 +46,10 @@
 /* Gold is reserved for the number that is LIVE — the points you have right
    now. The peak is a fact like the others and reads white; its gold belongs on
    the ring, where the notch has to stand out against the cyan fill. */
-/* the profile STRETCHES so its foot can pin (user call): sign out + the
-   delete footnote sit at the very bottom whatever the device leaves free,
-   and the inline mini-history above fills what remains. overflow-y, because
-   the stretched panel sits in a CENTERING flex parent: content taller than
-   the screen (a guest's offer + claim cards) would otherwise clip at the TOP
-   and take the name headline with it — the gate caught exactly that. */
-/* The account panel does NOT scroll itself either — the paged body around it
-   does (one page, one scroller). It used to, because it sat in a CENTERING
-   flex parent where content taller than the screen clipped at the TOP and
-   took the name headline with it; the paged body top-aligns and scrolls, so
-   that reason is gone with it. */
-:where(#kbroot) #ovOnline #onAccount{flex:0 0 auto;margin:0}
+/* Grow through spare pbody height so the footer's auto margin can pin it to
+   the usable bottom. Auto basis + zero shrink preserves natural content height
+   on short devices, where the shared pbody remains the ONE scroller. */
+:where(#kbroot) #ovOnline #onAccount{flex:1 0 auto;margin:0}
 /* …and its children keep their NATURAL size: in a scrollable flex column,
    anything wearing overflow (the ellipsised name headline) has an automatic
    minimum of ZERO and gets crushed flat before the panel deigns to scroll —

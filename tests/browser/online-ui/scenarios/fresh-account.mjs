@@ -19,7 +19,18 @@ export async function runFreshAccountScenarios(suite) {
   check(fresh.seen.guestBox === true, 'guest was not offered the way up', fresh.seen);
   check(fresh.seen.signOut === false, 'guest offered Sign out — that discards, not signs out', fresh.seen);
   check(fresh.errs.length === 0, 'page errors on the guest path', fresh.errs);
-  // the ladder-points block is a door: tapping it lands on the board
+  // both ladder facts are doors: tapping either lands on the board
+  check(fresh.rankDoor?.board === true && fresh.rankDoor?.title === 'LADDER'
+    && fresh.rankDoor.control?.tag === 'BUTTON'
+    && fresh.rankDoor.control?.label === 'Open the ladder'
+    && fresh.rankDoor.control?.width >= 44 && fresh.rankDoor.control?.height >= 44,
+  'tapping the accessible Rank tile does not open the ladder', fresh.rankDoor);
   check(fresh.ptsDoor?.board === true && fresh.ptsDoor?.title === 'LADDER',
         'tapping the points on the profile does not open the ladder', fresh.ptsDoor);
+  check(fresh.seen.accGroup?.text === fresh.ptsDoor?.group?.text
+    && fresh.seen.accGroup?.color === fresh.ptsDoor?.group?.color,
+  'the profile league name does not use its ladder material colour', {
+    profile: fresh.seen.accGroup,
+    ladder: fresh.ptsDoor?.group,
+  });
 }

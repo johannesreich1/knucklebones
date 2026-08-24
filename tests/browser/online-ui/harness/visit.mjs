@@ -14,13 +14,14 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     named = false,
     motion = null,
     locale = 'en-US',
+    viewport = { width: 430, height: 932 },
     paginationRace = false,
     probe = null,
     skipStandardProbes = false,
   }) {
     // NO isMobile here: under WebKit it quietly disables page.route(), and a
     // stub that never fires would let this suite talk to the live backend.
-    const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, hasTouch: true,
+    const ctx = await browser.newContext({ viewport, hasTouch: true,
                                            locale,
                                            ...(motion ? { reducedMotion: motion } : {}) });
     const page = await ctx.newPage();
@@ -130,12 +131,12 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
 
     const seen = await readOnlineView(page);
     const faceoff = skipStandardProbes ? null : await probeFaceoff(page, { door, motion });
-    const { claimFlow, askAbove, ptsDoor } = skipStandardProbes
-      ? { claimFlow: null, askAbove: null, ptsDoor: null }
+    const { claimFlow, askAbove, rankDoor, ptsDoor } = skipStandardProbes
+      ? { claimFlow: null, askAbove: null, rankDoor: null, ptsDoor: null }
       : await probeAccountActions(page, { door, named });
 
     await ctx.close();
-    return { seen, errs, loading, signupCalls: routes.signupCalls(), faceoff, ptsDoor, claimFlow, askAbove, probeResult,
+    return { seen, errs, loading, signupCalls: routes.signupCalls(), faceoff, rankDoor, ptsDoor, claimFlow, askAbove, probeResult,
              homeStyles: { before: homeBeforeOnline, after: homeAfterOnline } };
   };
 }

@@ -69,7 +69,7 @@ export const deOnline = {
     deleteCheck: 'Ich verstehe, dass dies nicht rückgängig gemacht werden kann',
     openLadder: 'Rangliste öffnen',
     ladderPoints: 'Ranglistenpunkte',
-    fullHistory: 'Vollständiger Spielverlauf',
+    fullHistory: 'Spielverlauf',
     notNow: 'Nicht jetzt',
   },
   avatar: {

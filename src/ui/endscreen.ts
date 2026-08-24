@@ -1,11 +1,11 @@
 // THE result screen — one implementation for every way a game can end.
 //
 // Local play and a ranked match report the same five things: who won, in what
-// words, the two scores, one line of context, and what you may do next. They
+// words, the two scores, optional context, and what you may do next. They
 // used to do it through two overlays with two stylesheets, which is how the
 // ranked screen ended up with no fireworks at all while the local one had
 // them. Now the differences are a SPEC the caller fills — the context line is
-// a slot (a session record, or a points chip and a ladder spot), and each action
+// a slot (tutorial completion, or a points chip and a ladder spot), and each action
 // carries its own label and handler.
 //
 // Adding a third context (a tournament, a daily) is another spec, not another
@@ -29,7 +29,7 @@ export interface EndSpec {
   sub: string;                   // the one-line reason
   you: { score: number; label: string };
   them: { score: number; label: string };
-  meta?: string;                 // HTML for the context line (session record, points chip…)
+  meta?: string;                 // HTML for the context line (tutorial completion, points chip…)
   /* who played, as plates (design 36f). Ranked deals two — you with the
      delta beside the number it changed, the beaten foe stamped. Local play
      leaves it empty and keeps its score labels instead. */

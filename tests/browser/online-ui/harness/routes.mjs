@@ -67,7 +67,9 @@ export async function installOnlineRoutes(
   await page.route('**/rest/v1/rpc/player_standing*', async (r) => {
     await hold(.7);
     return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
-      { points: 465, rank: 2, population: 200, percentile: 1 },
+      /* Rank 2 of 199 is just outside floor(1%): this must agree with the
+         leaderboard row's apex:false so both surfaces resolve BONE. */
+      { points: 465, rank: 2, population: 199, percentile: 1 },
     ]) });
   });
   await page.route('**/rest/v1/rpc/best_streak*', async (r) => {

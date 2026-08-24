@@ -11,6 +11,12 @@ export function readOnlineView(page) {
          placeholder — the name you keep by never claiming. */
       accName: document.querySelector('#accName')?.textContent,
       accNameShown: vis('#accName'),
+      /* League identity is paint, not just copy: the profile must use the
+         exact material colour the same league receives on the ladder. */
+      accGroup: (() => {
+        const group = document.querySelector('#accGroup');
+        return group ? { text: group.textContent, color: getComputedStyle(group).color } : null;
+      })(),
       claim: vis('#accClaim'),
       nickValue: document.querySelector('#onNick')?.value,
       nickHint: document.querySelector('#onNick')?.placeholder,

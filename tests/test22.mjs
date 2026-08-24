@@ -147,6 +147,7 @@ try {
     scores: [document.querySelector('#endYou')?.textContent, document.querySelector('#endCpu')?.textContent],
     names: [...document.querySelectorAll('#endPlates .nm2')].map((e) => e.textContent),
     doors: [...document.querySelectorAll('#endPlates > *')].map((e) => e.tagName),
+    quiet: document.querySelector('#btnEndQuiet')?.textContent?.trim(),
     fireworks: document.getElementById('endFx').childElementCount,
   }));
 
@@ -190,6 +191,19 @@ try {
     check(out.result.room.id === 'ovEnd', 'the result screen never became the room', out.result);
     check(dealt.names[0] === PROFILE.nickname && dealt.names[1] === REPORT.opp,
           'the result screen dealt the wrong plates', dealt);
+    /* The quiet result action is HOME, not another way to begin a match. The
+       first German catalog called it bare "Start", which read as a second
+       start-game action beside NEXT DUEL. Repaint the live result in place so
+       this asserts the concise app-menu label from the reported screen. */
+    await page.evaluate(() => document.getElementById('languageNext')?.click());
+    await page.waitForFunction(() => document.documentElement.lang === 'de'
+      && document.getElementById('btnEndQuiet')?.textContent?.trim() === 'Menü');
+    out.result.germanQuiet = await page.$eval('#btnEndQuiet', (button) => button.textContent?.trim());
+    check(out.result.germanQuiet === 'Menü',
+          'the German ranked-result Home action is ambiguous or mistranslated', out.result);
+    await page.evaluate(() => document.getElementById('languagePrevious')?.click());
+    await page.waitForFunction(() => document.documentElement.lang === 'en'
+      && document.getElementById('btnEndQuiet')?.textContent?.trim() === 'Home');
 
     /* 3 · THE BUG: tap your own plate, then come back. */
     await page.click('#endPlates > *:first-child');

@@ -11,7 +11,7 @@
   .rwrap .btn:first-of-type{margin-top:auto}    /* app: #ovEnd #btnAgain */
   .rwrap .btn{width:100%;max-width:var(--w-col);min-width:0}   /* app: #ovEnd .btn */
   /* the two sizes the result screen scales up to (app: --verdict) */
-  #endTitle{font-size:clamp(34px,11.5vw,54px)}
+  #endTitle{font-size:clamp(34px,11.5vw,54px);padding-inline-start:.2em}
   .rwrap .scoreline .you,.rwrap .scoreline .cpu{font-size:clamp(34px,11vw,46px)}
   /* The gradient and — crucially — `filter:none` come from #endTitle itself.
      Never re-add a drop-shadow here: an element that clips its background to
@@ -30,7 +30,6 @@
       <span class="vs">VS</span>
       <span class="sc"><span class="cpu">33</span><em>AI</em></span>
     </div>
-    <div class="endmeta">SESSION 3–1</div>
     <button class="btn primary">Next duel</button>
     <!-- a real secondary button, not a text link, and the SHORT cut: a way out
          must not stand as tall as NEXT DUEL. Three buttons stood here until

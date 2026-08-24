@@ -24,6 +24,90 @@ const browser = await chromium.launch();
 const problems = [], out = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
 
+/* DOM boxes include the trailing letter-spacing that caused this regression,
+   so a box-centre assertion would bless visibly-left text. Paint the verdict
+   alone on black and measure the actual non-background pixel bounds. */
+async function paintedTitleCentre(page) {
+  await page.evaluate(() => {
+    const style = document.createElement('style');
+    style.textContent = `
+      #ovEnd.kb-title-centre-probe{background:#000!important}
+      #ovEnd.kb-title-centre-probe > :not(.titlewrap){visibility:hidden!important}
+      #ovEnd.kb-title-centre-probe .titlewrap::before,
+      #ovEnd.kb-title-centre-probe .sweep{display:none!important}
+      #ovEnd.kb-title-centre-probe .titleclip{overflow:visible!important}
+      #ovEnd.kb-title-centre-probe #endTitle{animation:none!important;transform:none!important;
+        opacity:1!important;background:none!important;background-clip:border-box!important;
+        -webkit-background-clip:border-box!important;color:#fff!important;
+        -webkit-text-fill-color:#fff!important;text-shadow:none!important}`;
+    document.head.appendChild(style);
+    document.getElementById('ovEnd').classList.add('kb-title-centre-probe');
+  });
+  const title = page.locator('#endTitle');
+  const box = await title.boundingBox();
+  const clip = await page.locator('#ovEnd .titleclip').boundingBox();
+  const viewport = page.viewportSize();
+  const top = Math.max(0, Math.floor((box?.y ?? 0) - 1));
+  const bottom = Math.min(viewport?.height ?? 0, Math.ceil((box?.y ?? 0) + (box?.height ?? 0) + 1));
+  /* Capture the title's horizontal lane, not the element box: an overflowing
+     translation must fail containment rather than cropping itself into a
+     deceptively-centred element screenshot. */
+  const png = await page.screenshot({ clip: {
+    x: 0, y: top, width: viewport?.width ?? 1, height: Math.max(1, bottom - top),
+  } });
+  const scan = await page.evaluate(async (source) => {
+    const image = new Image();
+    image.src = source;
+    await image.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = image.width;
+    canvas.height = image.height;
+    const context = canvas.getContext('2d');
+    context.drawImage(image, 0, 0);
+    const pixels = context.getImageData(0, 0, image.width, image.height).data;
+    let left = image.width, right = -1;
+    for (let y = 0; y < image.height; y++) for (let x = 0; x < image.width; x++) {
+      const offset = (y * image.width + x) * 4;
+      if (pixels[offset + 3] > 0 && pixels[offset] + pixels[offset + 1] + pixels[offset + 2] > 90) {
+        left = Math.min(left, x);
+        right = Math.max(right, x);
+      }
+    }
+    return {
+      width: image.width,
+      left,
+      right,
+    };
+  }, `data:image/png;base64,${png.toString('base64')}`);
+  const scale = viewport?.width ? scan.width / viewport.width : 1;
+  const inkLeft = scan.left / scale;
+  const inkRight = (scan.right + 1) / scale;
+  return {
+    ...scan,
+    box,
+    clip,
+    ink: scan.right < scan.left ? null : { left: inkLeft, right: inkRight },
+    inside: !!clip && scan.right >= scan.left
+      && inkLeft >= clip.x - .5 && inkRight <= clip.x + clip.width + .5,
+    centreError: !clip || scan.right < scan.left ? null
+      : +((inkLeft + inkRight) / 2 - (clip.x + clip.width / 2)).toFixed(2),
+  };
+}
+
+const VERDICTS = {
+  win: { en: 'VICTORY', de: 'SIEG', fr: 'VICTOIRE' },
+  lose: { en: 'DEFEAT', de: 'NIEDERLAGE', fr: 'DÉFAITE' },
+};
+async function chooseLocale(page, target) {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const current = await page.getAttribute('html', 'lang');
+    if (current === target) return;
+    await page.evaluate(() => document.getElementById('languageNext')?.click());
+    await page.waitForFunction((before) => document.documentElement.lang !== before, current);
+  }
+  throw new Error(`could not cycle result locale to ${target}`);
+}
+
 /* each case fills MY grid on the last placement — that is what ends a game */
 const cases = [
   ['cpu-win',  'cpu', [[6,6,6],[5,5,5],[4,4]], [[1],[2],[3]],         2, 'win',  false],
@@ -86,6 +170,12 @@ try {
         shown: ov.classList.contains('on'),
         outcome: [...ov.classList].filter(c => ['win', 'lose', 'draw'].includes(c)).join(''),
         title: t.textContent,
+        meta: document.getElementById('endMeta').textContent.trim(),
+        metaVisible: (() => {
+          const meta = document.getElementById('endMeta');
+          const box = meta.getBoundingClientRect();
+          return !meta.hidden && box.width > 0 && box.height > 0;
+        })(),
         titleAnim: anim(t),
         sweepAnim: anim(document.querySelector('#ovEnd .sweep')),
         shockAnim: anim(document.getElementById('endShock')),
@@ -102,6 +192,7 @@ try {
     out[label] = r;
     check(r.shown, 'the result screen never appeared: ' + label, r);
     check(r.outcome === want, 'wrong outcome for ' + label, r);
+    check(!r.metaVisible && r.meta === '', 'ordinary local result still shows a session recap: ' + label, r);
     /* TWO buttons, never three — and the same two whichever seating played:
        what waits behind the secondary is the whole setup, not one segment, so
        there is one label rather than a duo/cpu pair. */
@@ -122,6 +213,26 @@ try {
       check(/endRise/.test(r.titleAnim), 'a loss/draw must RISE: ' + label, r);
       check(/endSweep/.test(r.sweepAnim), 'the light bar never swept: ' + label, r);
       check(r.fireworks === 0, 'FIREWORKS FOR A NON-WIN: ' + label, r);
+    }
+    if (label === 'cpu-win' || label === 'cpu-lose') {
+      r.paintedTitles = {};
+      for (const size of [{ width: 320, height: 568 }, { width: 390, height: 844 }]) {
+        await page.setViewportSize(size);
+        await page.waitForTimeout(80);
+        for (const [locale, expectedTitle] of Object.entries(VERDICTS[want])) {
+          await chooseLocale(page, locale);
+          const title = await page.textContent('#endTitle');
+          const paint = await paintedTitleCentre(page);
+          const key = `${locale}-${size.width}`;
+          r.paintedTitles[key] = { title, ...paint };
+          check(title === expectedTitle, `wrong ${locale} verdict for ${label}`, r.paintedTitles[key]);
+          /* Rasterised glyph extents quantise to whole pixels; one pixel is
+             the strictest cross-string threshold that does not confuse the
+             angled V in VICTOIRE with the old half-tracking (~4–5px) bug. */
+          check(paint.inside && paint.centreError !== null && Math.abs(paint.centreError) <= 1,
+            `THE ${locale.toUpperCase()} PAINTED VERDICT IS NOT CENTRED/CONTAINED AT ${size.width}px: ${label}`, paint);
+        }
+      }
     }
     await ctx.close();
   }
