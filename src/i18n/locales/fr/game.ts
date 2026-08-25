@@ -19,6 +19,7 @@ export const frGame = {
   },
   status: {
     outOfTime: 'Temps écoulé — colonne {{column}}',
+    outOfTimeCompact: 'Temps — col. {{column}}',
     passPhone: 'Passez le téléphone',
     yourRoll: 'Votre lancer',
     aiRoll: 'Lancer de l’IA',
@@ -246,6 +247,7 @@ export const frGame = {
       blurb: 'Recomptez une colonne sans paire et bloquez une attaque.',
       detail: 'Marquez une de vos colonnes : tant que toutes ses faces diffèrent, leurs points comptent une seconde fois comme bonus de GARDE. Une paire suspend le bonus, mais la marque reste. La prochaine pose adverse identique ou un LARCIN brise GARDE sans prendre de dé. Un usage par partie.',
       aim: 'Touchez votre colonne',
+      aimCompact: 'Votre colonne',
     },
     sunder: {
       name: 'FRACTURE',

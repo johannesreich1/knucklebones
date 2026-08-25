@@ -19,6 +19,7 @@ export const deGame = {
   },
   status: {
     outOfTime: 'Zeit abgelaufen — Spalte {{column}}',
+    outOfTimeCompact: 'Zeit — Sp. {{column}}',
     passPhone: 'Handy weitergeben',
     yourRoll: 'Dein Wurf',
     aiRoll: 'KI-Wurf',
@@ -246,6 +247,7 @@ export const deGame = {
       blurb: 'Werte eine Spalte ohne Paare erneut und blocke einen Angriff.',
       detail: 'Markiere eine deiner Spalten: Solange alle Augen verschieden sind, zählen sie als SCHUTZ-Bonus ein zweites Mal. Ein Paar pausiert den Bonus, die Markierung bleibt. Die nächste passende gegnerische Platzierung oder ein RAUB bricht den SCHUTZ, ohne Würfel zu nehmen. Ein Einsatz pro Spiel.',
       aim: 'Eigene Spalte antippen',
+      aimCompact: 'Eigene Spalte',
     },
     sunder: {
       name: 'SPALTER',

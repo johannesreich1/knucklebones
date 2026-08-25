@@ -127,6 +127,7 @@ export const frOnline = {
     yourMove: 'À vous de jouer',
     opponentThinking: '{{opponent}} réfléchit',
     reconnecting: 'Reconnexion…',
+    reconnectingCompact: 'Reconnexion…',
     awayAutoPlay_one: 'Absent — coup auto dans {{formatted}} s',
     awayAutoPlay_other: 'Absent — coup auto dans {{formatted}} s',
     awayAutoPlayCompact_one: 'Absent — coup dans {{formatted}} s',

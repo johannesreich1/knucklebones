@@ -23,3 +23,13 @@
   color:var(--dim);text-transform:uppercase}
 :where(#kbroot) .faceoff.solo .fost .k{flex:1;text-align:left;padding-left:4px}
 :where(#kbroot) .faceoff.solo .fost .a{flex:0 0 auto;padding-right:4px}
+
+/* The 320px landscape surface is the face-off's tight vertical contract.
+   Two translated stat keys legitimately wrap there; keep every line, but
+   spend less of that short lane on five repeated row gutters. This remains a
+   face-off treatment rather than changing the shared sheet chrome or its
+   grabber geometry. */
+@media (orientation:landscape) and (max-height:340px){
+  :where(#kbroot) .faceoff .fostats{gap:1px}
+  :where(#kbroot) .faceoff .fost{padding:3.5px 4px}
+}

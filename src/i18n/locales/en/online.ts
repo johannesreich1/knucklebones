@@ -124,6 +124,7 @@ export const enOnline = {
     yourMove: 'Your move',
     opponentThinking: '{{opponent}} thinking',
     reconnecting: 'Reconnecting…',
+    reconnectingCompact: 'Reconnecting…',
     awayAutoPlay_one: 'Away — auto play in {{formatted}} second',
     awayAutoPlay_other: 'Away — auto play in {{formatted}} seconds',
     awayAutoPlayCompact_one: 'Away — move in {{formatted}} s',

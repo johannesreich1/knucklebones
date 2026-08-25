@@ -1,4 +1,4 @@
-import { t } from './runtime.ts';
+import { formatNumber, t } from './runtime.ts';
 
 export const MODE_COPY_IDS = [
   'classic', 'rowswitch', 'rowmult', 'colshield', 'singlestrike', 'bounty', 'limited', 'random',
@@ -53,6 +53,13 @@ export interface SpellCopy extends ModeCopy {
   readonly aimCompact: string;
 }
 
+export function outOfTimeCopy(column: number) {
+  return {
+    visible: () => t('game', 'status.outOfTimeCompact', { column: formatNumber(column) }),
+    accessible: () => t('game', 'status.outOfTime', { column: formatNumber(column) }),
+  };
+}
+
 export function spellCopy(id: string): SpellCopy {
   const key = stableId(SPELL_COPY_IDS, id, 'spell');
   return {
@@ -61,11 +68,10 @@ export function spellCopy(id: string): SpellCopy {
     blurb: t('game', `runes.${key}.blurb`),
     detail: t('game', `runes.${key}.detail`),
     aim: t('game', `runes.${key}.aim`),
-    /* PILFER's full instruction cannot fit the landscape status lane in every
-       language. Other runes keep one visible/accessibility string until a
-       measured surface needs its own explicit compact copy. */
-    aimCompact: key === 'pilfer'
-      ? t('game', 'runes.pilfer.aimCompact')
+    /* WARD and PILFER need a shorter visible instruction in the landscape
+       status lane. The complete localized aim remains its accessible name. */
+    aimCompact: key === 'ward' || key === 'pilfer'
+      ? t('game', `runes.${key}.aimCompact`)
       : t('game', `runes.${key}.aim`),
   };
 }

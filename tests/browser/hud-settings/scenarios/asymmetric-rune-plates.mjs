@@ -66,14 +66,17 @@ export async function runAsymmetricRunePlateScenarios(suite) {
       chips: chipElements.map((chip) => {
         const box = chip.getBoundingClientRect();
         const icon = chip.querySelector('svg')?.getBoundingClientRect();
+        const label = chip.querySelector('.rlab')?.getBoundingClientRect();
         return {
           lib: chip.dataset.lib ?? null, id: chip.dataset.id ?? null,
           owner: chip.dataset.owner ?? null, host: chip.parentElement?.id ?? null,
           shown: box.width > 0 && box.height > 0,
           icon: !!icon && icon.width > 0 && icon.height > 0,
+          labelShown: !!label && label.width > 0 && label.height > 0,
           info: chip.querySelector('.mi')?.textContent?.trim() ?? '',
           tappable: chip.classList.contains('tapmode'),
           ownerDot: getComputedStyle(chip, '::before').content,
+          ariaLabel: chip.getAttribute('aria-label') ?? '',
         };
       }),
     };
@@ -114,7 +117,24 @@ export async function runAsymmetricRunePlateScenarios(suite) {
   const ownerRunesUseFullHudControls = (snapshot) => {
     const ownerRunes = snapshot.chips.filter((chip) => chip.owner);
     return ownerRunes.length === 2 && ownerRunes.every((chip) => chip.host === 'rec'
-      && chip.icon && chip.info === 'ⓘ' && chip.ownerDot !== 'none');
+      && chip.shown && chip.icon && chip.info === 'ⓘ' && chip.tappable
+      && chip.ownerDot !== 'none' && chip.ariaLabel.length > 0);
+  };
+
+  const assertCentralHud = (snapshot, label, { contentMeasured = false } = {}) => {
+    const ownerRunes = snapshot.chips.filter((chip) => chip.owner);
+    check(snapshot.hudCount === 3 && snapshot.chips.length === 3
+        && snapshot.chips.every((chip) => chip.host === 'rec' && chip.shown)
+        && snapshot.rows.length === 2
+        && snapshot.rows.every((row) => !row.split && !row.rune)
+        && ownerRunesUseFullHudControls(snapshot),
+      `${label}: fallback did not keep three complete controls in the central HUD`, snapshot);
+    check(ownerRunes.every((chip) => !chip.labelShown)
+        && (!contentMeasured || snapshot.compactOwners),
+      `${label}: fallback did not compact only the two owner-labelled runes`, snapshot);
+    check(Math.abs(snapshot.geometry.badgeCenter - snapshot.geometry.hudCenter) <= .5
+        && snapshot.geometry.badgeRight <= snapshot.geometry.leaveLeft - 4,
+      `${label}: fallback badge is off-centre or intrudes on Leave`, snapshot);
   };
 
   await page.evaluate(() => {
@@ -189,11 +209,7 @@ export async function runAsymmetricRunePlateScenarios(suite) {
   await page.setViewportSize({ width: 320, height: 568 }); await page.waitForTimeout(160);
   out.badgeDualCompact = await layoutNow();
   const compact = out.badgeDualCompact;
-  check(compact.hudCount === 3 && compact.rows.every((row) => !row.split && !row.rune)
-      && ownerRunesUseFullHudControls(compact)
-      && Math.abs(compact.geometry.badgeCenter - compact.geometry.hudCenter) <= .5
-      && compact.geometry.badgeRight <= compact.geometry.leaveLeft - 4,
-    'compact portrait did not keep a centred owner-dotted rune HUD', compact);
+  assertCentralHud(compact, 'compact portrait');
 
   await page.setViewportSize({ width: 844, height: 390 }); await page.waitForTimeout(180);
   out.badgeDualLandscape = await layoutNow();
@@ -232,7 +248,11 @@ export async function runAsymmetricRunePlateScenarios(suite) {
   await dePage.waitForTimeout(180);
   out.badgeDualGerman = await layoutNow(dePage);
   const german = out.badgeDualGerman;
-  assertRoomy(german, 'German portrait');
+  if (german.compactOwners) {
+    assertCentralHud(german, 'German portrait', { contentMeasured: true });
+  } else {
+    assertRoomy(german, 'German portrait');
+  }
   check(german.labels.includes('KLASSIK') && german.labels.includes('SCHICKSAL')
       && german.labels.includes('SCHUTZ'),
     'German inline rune metadata lost its localized labels', german);

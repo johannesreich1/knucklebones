@@ -127,6 +127,7 @@ export const deOnline = {
     yourMove: 'Du bist dran',
     opponentThinking: '{{opponent}} überlegt',
     reconnecting: 'Neu verbinden …',
+    reconnectingCompact: 'Verbinden …',
     awayAutoPlay_one: 'Abwesend — Autozug in {{formatted}} s',
     awayAutoPlay_other: 'Abwesend — Autozug in {{formatted}} s',
     awayAutoPlayCompact_one: 'Abwesend — Zug in {{formatted}} s',

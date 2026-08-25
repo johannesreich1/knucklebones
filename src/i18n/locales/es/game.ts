@@ -19,6 +19,7 @@ export const esGame = {
   },
   status: {
     outOfTime: 'Tiempo agotado — columna {{column}}',
+    outOfTimeCompact: 'Tiempo — col. {{column}}',
     passPhone: 'Pasa el teléfono',
     yourRoll: 'Tu tirada',
     aiRoll: 'Tirada de la IA',
@@ -246,6 +247,7 @@ export const esGame = {
       blurb: 'Vuelve a sumar los puntos de una columna sin dados repetidos y bloquea un ataque.',
       detail: 'Marca una columna propia: mientras todas sus caras sean distintas, sus puntos se suman de nuevo como bonificación de GUARDA. Un repetido pausa la bonificación, pero conserva la marca. La siguiente colocación rival con la misma cara o SAQUEO rompe la GUARDA en vez de quitar dados. Un uso por partida.',
       aim: 'Toca una columna propia',
+      aimCompact: 'Tu columna',
     },
     sunder: {
       name: 'RUPTURA',

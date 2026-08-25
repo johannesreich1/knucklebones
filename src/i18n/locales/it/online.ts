@@ -127,6 +127,7 @@ export const itOnline = {
     yourMove: 'Tocca a te',
     opponentThinking: '{{opponent}} sta pensando',
     reconnecting: 'Riconnessione…',
+    reconnectingCompact: 'Connessione…',
     awayAutoPlay_one: 'Assente — mossa automatica tra {{formatted}} secondo',
     awayAutoPlay_other: 'Assente — mossa automatica tra {{formatted}} secondi',
     awayAutoPlayCompact_one: 'Assente — mossa tra {{formatted}} s',

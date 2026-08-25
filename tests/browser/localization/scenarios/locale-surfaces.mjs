@@ -154,9 +154,6 @@ async function showResult(page) {
 }
 
 async function inspectReveal(page) {
-  /* The prior result action is a real pointer tap; let the global ghost-click
-     guard expire before exercising Play through its click fallback. */
-  await page.waitForTimeout(650);
   await page.evaluate(() => {
     const game = window.__kb;
     game.S.gen++;
@@ -168,6 +165,8 @@ async function inspectReveal(page) {
     window.__kbTestOriginalRandom = Math.random;
     Math.random = () => 0.25;
   });
+  /* Playwright sends the bound pointerdown/up pair here, so the action does
+     not depend on tap()'s guarded click-only fallback. */
   await page.click('#btnPlay');
   await page.evaluate(() => {
     Math.random = window.__kbTestOriginalRandom;

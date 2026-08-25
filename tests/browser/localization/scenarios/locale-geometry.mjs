@@ -25,13 +25,13 @@ const statusCopies = (locale) => {
   const online = RESOURCES[locale].online;
   return [
     ...Object.entries(game.status).flatMap(([key, copy]) =>
-      typeof copy === 'string' && key !== 'playerChoose'
+      typeof copy === 'string' && !(`${key}Compact` in game.status)
         ? [[`game.status.${key}`, copy]] : []),
     ...SPELLS.map(({ id }) => {
       const copy = game.runes[id];
       return [`game.runes.${id}.aim`, 'aimCompact' in copy ? copy.aimCompact : copy.aim];
     }),
-    ...['reconnecting', 'opponentThinking', 'yourMove', 'awayAutoPlay_one',
+    ...['reconnectingCompact', 'opponentThinking', 'yourMove', 'awayAutoPlay_one',
       'awayAutoPlay_other', 'autoPlay'].flatMap((key) =>
       key.startsWith('awayAutoPlay') ? [] :
       typeof online.play[key] === 'string' ? [[`online.play.${key}`, online.play[key]]] : []),
@@ -73,6 +73,23 @@ async function prepareGame(page) {
   await page.waitForTimeout(160);
   await page.evaluate(() => window.__kb.fit());
   await frame(page);
+  /* The contract compares resting board geometry, not an ancestor's entry or
+     seating transition. Under a loaded Linux compositor, a fixed delay can
+     return between animation frames; require the two boards to hold the same
+     measured boxes for three consecutive paints before taking the baseline. */
+  await page.evaluate(async () => {
+    let previous = '';
+    let stableFrames = 0;
+    while (stableFrames < 3) {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const signature = ['topBoard', 'botBoard'].map((id) => {
+        const box = document.getElementById(id).getBoundingClientRect();
+        return [box.x, box.y, box.width, box.height].map((value) => value.toFixed(3)).join(':');
+      }).join('|');
+      stableFrames = signature === previous ? stableFrames + 1 : 0;
+      previous = signature;
+    }
+  });
 }
 
 async function snapshot(page, rootSelector, localeOwnerSelector) {
