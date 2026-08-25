@@ -87,13 +87,18 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - Apple work resumed on 2026-08-25: the paid membership is active, Sign in with
   Apple and Game Center are enabled on `com.appavaria.knucklebones`, the App
   Store Connect record exists as Apple app `6804966098`, and both Xcode
-  configurations now reference the confirmed entitlement request. Provisioning/profile
-  uptake, a signed archive and physical-device proof, Services ID and Supabase
-  switches, deletion-time token revocation, and the held Game Center backend
-  rollout remain open. The iPhone screenshot uploader is owner-local and
-  draft-gated; the universal app still needs its 13-inch iPad set before
-  submission. Android signing/upload remains deferred. See `docs/IDENTITY.md`
-  and `docs/architecture/build.md`.
+  configurations now reference the confirmed entitlement request; automatic
+  signing and a Debug build work. The editable iOS 1.0 draft now contains the
+  exact owned listing copy and six screenshots for each `en-GB`, `de-DE`, and
+  `fr-FR` locale on both iPhone 6.9-inch and iPad 13-inch (36 images total), and
+  a post-sync read confirmed no remaining metadata, upload, deletion, or order
+  change. No binary or review submission was touched. Before review, ranked
+  runes must ship and every affected future-state preview must be regenerated
+  from that shipping implementation; store-name clearance, localized public
+  legal/support URLs, a signed archive and physical-device proof, Services ID
+  and Supabase switches, deletion-time token revocation, and the held Game
+  Center backend rollout also remain open. Android signing/upload remains
+  deferred. See `docs/IDENTITY.md` and `docs/architecture/build.md`.
 - The first Android CI compile found an API-27 theme attribute in base API-24
   resources. It is now isolated in `values-v27` without raising minSdk, but the
   Android CI/AAB job must rerun green after these local changes are committed.
