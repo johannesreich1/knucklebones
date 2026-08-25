@@ -22,6 +22,7 @@ touching an area:
 | Supabase, auth, RLS, migrations, RPCs, Realtime, or Edge Functions | `docs/architecture/backend.md`, `supabase/DESIGN.md`, and the applicable Supabase skills |
 | Build artifacts, PWA, service worker, widget packaging, native, or deploy | `docs/architecture/build.md` |
 | Tests, CI, browser harnesses, live probes, or verification policy | `docs/architecture/testing.md` |
+| Claude Design cards, study lifecycle, or DesignSync | `design/README.md`, then `README.md` → Design system |
 | Game modes or their balance/odds | `docs/MODES.md` |
 | Spells or their balance/interaction rules | `docs/SPELLS.md` |
 | Ladder points, groups, bots, or matchmaking policy | `docs/LADDER.md` |

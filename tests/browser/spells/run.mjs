@@ -102,7 +102,15 @@ try {
   /* what a PLAYER can see, plus the state behind it */
   const look = () => page.evaluate(() => {
     const dice = [...document.querySelectorAll('#topBoard .die,#botBoard .die')];
-    const rune = document.querySelector('#spellBar .rune:not([hidden])');
+    const visibleRunes = [...document.querySelectorAll('#spellBar .rune:not([hidden])')]
+      .filter((element) => !!element.offsetParent);
+    /* Every dealt seat now keeps a physical card, including shared named and
+       RANDOM deals. Scenario helpers must drive/read the hand that owns the
+       turn; document order deliberately says nothing about which card is on
+       top once the two hands trade active/standby depth. */
+    const rune = visibleRunes.find((element) => element.classList.contains('hand-active'))
+      ?? visibleRunes.find((element) => Number(element.dataset.seat) === window.__kb.S.turn)
+      ?? visibleRunes[0];
     return {
       mine: JSON.stringify(window.__kb.S.boards[1]), theirs: JSON.stringify(window.__kb.S.boards[0]),
       charges: JSON.stringify(window.__kb.S.spellCharges),
@@ -115,8 +123,14 @@ try {
       runeClass: rune ? rune.className : null,
       cards: rune ? [...rune.querySelectorAll('.rune-charge')].filter((e) => !e.hidden).length : 0,
       outlines: rune ? [...rune.querySelectorAll('.rune-empty')].filter((e) => !e.hidden).length : 0,
-      visibleRunes: [...document.querySelectorAll('#spellBar .rune:not([hidden])')]
-        .filter((e) => !!e.offsetParent).length,
+      visibleRunes: visibleRunes.length,
+      runes: visibleRunes.map((element) => ({
+        seat: element.dataset.seat ?? null, spell: element.dataset.spell ?? null,
+        active: element.classList.contains('hand-active'),
+        standby: element.classList.contains('hand-standby'),
+        cards: [...element.querySelectorAll('.rune-charge')].filter((card) => !card.hidden).length,
+        outlines: [...element.querySelectorAll('.rune-empty')].filter((card) => !card.hidden).length,
+      })),
       present: dice.length,
       visible: dice.filter(d => getComputedStyle(d).visibility === 'visible' && +getComputedStyle(d).opacity > 0.05).length,
       strays: document.querySelectorAll('body > .die, body > .runeghost').length,
@@ -125,7 +139,7 @@ try {
     };
   });
   const tapCol = (c) => page.tap(`#botBoard .col[data-col="${c}"]`);
-  const tapRune = () => page.tap('#spellBar .rune:not([hidden])');
+  const tapRune = () => page.tap('#spellBar .rune.hand-active:not([hidden])');
 
 
   const suite = {

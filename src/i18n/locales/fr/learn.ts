@@ -44,7 +44,7 @@ export const frLearn = {
     },
     runes: {
       heading: 'Runes',
-      body: 'Hors ligne, une <b>rune</b> peut être distribuée près du dé courant — six sont proposées sur l’écran de configuration, sous le mode de jeu. <b>Aucune</b> est sélectionnée par défaut ; <b>aléatoire</b> tire une rune commune, tandis qu’<b>aléatoire 2</b> mélange deux fois et donne une rune différente à chaque joueur. Les deux cartes restent visibles et un point de la couleur du joueur indique leur propriétaire. Appuyez sur une rune qui agit sur votre dé pour l’utiliser immédiatement ; glissez ou touchez une rune de colonne sur une colonne illuminée. Un usage n’est pas un coup : votre dé est toujours posé ensuite. La liste complète se trouve sous <b>COMMENT JOUER → RUNES</b>. Les parties classées n’utilisent jamais de runes.',
+      body: 'Hors ligne, une <b>rune</b> peut être distribuée près du dé courant — six sont proposées sur l’écran de configuration, sous le mode de jeu. <b>Aucune</b> est sélectionnée par défaut ; les runes nommées et <b>aléatoire</b> donnent la même rune aux deux joueurs, tandis qu’<b>aléatoire 2</b> mélange deux fois et leur en donne des différentes. La pile de cartes de chaque joueur reste visible. Une bordure aux couleurs du joueur indique son propriétaire, et la main active passe devant à chaque tour. Appuyez sur une rune qui agit sur votre dé pour l’utiliser immédiatement ; glissez ou touchez une rune de colonne sur une colonne illuminée. Un usage n’est pas un coup : votre dé est toujours posé ensuite. La liste complète se trouve sous <b>COMMENT JOUER → RUNES</b>. Les parties classées n’utilisent jamais de runes.',
     },
     twoPlayers: {
       heading: 'Deux joueurs',

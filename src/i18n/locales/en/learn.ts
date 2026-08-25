@@ -41,7 +41,7 @@ export const enLearn = {
     },
     runes: {
       heading: 'Runes',
-      body: 'Offline games can deal a <b>rune</b> beside the die in play — six to choose from where you set up an offline game, right under the game mode. <b>None</b> is the default; <b>random</b> draws one shared rune, while <b>random 2</b> shuffles twice and gives each player a different rune. Both rune cards stay visible, with player-colour dots showing who owns each one. Press a rune that acts on your die to cast it immediately; drag or tap a column-targeting rune onto one of the columns that light up. A cast is not a move, so your die still lands afterwards. The full roster lives under <b>HOW TO PLAY → RUNES</b>. Ranked matches never use them.',
+      body: 'Offline games can deal a <b>rune</b> beside the die in play — six to choose from where you set up an offline game, right under the game mode. <b>None</b> is the default; named picks and <b>random</b> give both players matching runes, while <b>random 2</b> shuffles twice and gives them different ones. Each player’s card stack stays visible. A player-colour edge marks its owner, and the active hand moves to the front every turn. Press a rune that acts on your die to cast it immediately; drag or tap a column-targeting rune onto one of the columns that light up. A cast is not a move, so your die still lands afterwards. The full roster lives under <b>HOW TO PLAY → RUNES</b>. Ranked matches never use them.',
     },
     twoPlayers: {
       heading: 'Two players',

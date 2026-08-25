@@ -313,7 +313,7 @@ export async function runPilferEffectScenarios(suite) {
     await newGame({ spell: 'pilfer' }, landscape.page);
     check(await waitChoose(landscape.page), 'game never reached choose (PI5 landscape)');
     await table([[4], [], []], [[1, 2, 3], [], []], 5, landscape.page);
-    await landscape.page.tap('#spellBar .rune:not([hidden])');
+    await landscape.page.tap('#spellBar .rune.hand-active:not([hidden])');
     await landscape.page.waitForTimeout(80);
     out.pilferLandscapeGrip = await landscape.page.evaluate(pilferGripProbe);
     const lg = out.pilferLandscapeGrip;
@@ -346,7 +346,7 @@ export async function runPilferEffectScenarios(suite) {
     await newGame({ spell: 'pilfer' }, reduced.page);
     check(await waitChoose(reduced.page), 'game never reached choose (PI5 reduced)');
     await table([[4], [], []], [[1, 2, 3], [], []], 5, reduced.page);
-    await reduced.page.tap('#spellBar .rune:not([hidden])'); await reduced.page.waitForTimeout(50);
+    await reduced.page.tap('#spellBar .rune.hand-active:not([hidden])'); await reduced.page.waitForTimeout(50);
     out.pilferReducedGrip = await reduced.page.evaluate(pilferGripProbe);
     const rg = out.pilferReducedGrip;
     check(rg.count === 1 && rg.value === 3 && rg.exactTop && rg.animations === 0

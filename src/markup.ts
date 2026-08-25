@@ -22,7 +22,7 @@ const RULES_PAGE = learnPageMarkup({
     <h3 data-i18n="learn:rules.reading.heading">Reading the board</h3>
     <p data-i18n-rich="learn:rules.reading.body">The chips beside each column show its running score, and <b>×2</b>/<b>×3</b> marks a multiplied stack. Working out the best placement is the game — but the <b>tutorial</b> plays a guided round with point previews on every column.</p>
     <h3 style="color:#b18cff" data-i18n="learn:rules.runes.heading">Runes</h3>
-    <p data-i18n-rich="learn:rules.runes.body">Offline games deal both players the same <b>rune</b>, beside the die in play — six to choose from where you set up an offline game, right under the game mode (<b>none</b> by default, or <b>random</b> to have one drawn for you). Press a rune that acts on your die to cast it immediately; drag or tap a column-targeting rune onto one of the columns that light up. A cast is not a move, so your die still lands afterwards. The full roster lives under <b>HOW TO PLAY → RUNES</b>. Ranked matches never use them.</p>
+    <p data-i18n-rich="learn:rules.runes.body">Offline games can deal a <b>rune</b> beside the die in play — six to choose from where you set up an offline game, right under the game mode. <b>None</b> is the default; named picks and <b>random</b> give both players matching runes, while <b>random 2</b> shuffles twice and gives them different ones. One card per player stays visible. A player-colour edge marks its owner, and the active hand moves to the front every turn. Press a rune that acts on your die to cast it immediately; drag or tap a column-targeting rune onto one of the columns that light up. A cast is not a move, so your die still lands afterwards. The full roster lives under <b>HOW TO PLAY → RUNES</b>. Ranked matches never use them.</p>
     <h3 data-i18n="learn:rules.twoPlayers.heading">Two players</h3>
     <p data-i18n-rich="learn:rules.twoPlayers.body">Pick <b>2 PLAYERS</b> to share one phone, then choose how you sit. <b>Pass phone</b>: a pass card appears between turns and the grids swap so whoever is playing is on the bottom. <b>Face to face</b>: lay the phone flat between you — the top half is turned for Player 2, turns switch on their own, and the bright half with the rotating centre die shows who's up.</p>
   </div>`,
@@ -69,7 +69,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
           <b class="bn" id="bagNum" data-i18n-attr="aria-label=game:board.diceInBag"
             aria-label="Dice left in the bag">0</b>
         </div>
-        <!-- SPELLS: one card stack, owned by whoever is to move. -->
+        <!-- SPELLS: one rail, one persistent card hand per dealt seat. -->
         <div class="spells" id="spellBar"></div>
       </div>
       <div class="status" id="status" role="status" aria-live="polite"

@@ -25,6 +25,7 @@
 //   {{score:A:n:B:n}}           a score line — the HUD's, the ladder's, the card's
 //   {{dialnodes[:MODE]}}        the dial's whole node ring, optionally landed
 //   {{runefelt:SPELL[:up]}}     the rune deck + the card dealt off it, optionally turned
+//   {{runefaces:SPELL}}         one rail card's shared back/face anatomy
 //   {{wsettled:mode|rune:ID}}   a reveal answer that has settled: pill + its rule
 //   {{wanswer:mode|rune:ID}}    a reveal answer's name + blurb, under the stage
 //   {{library:modes|spells[:ID]}}  a whole roster of reference cards, ID ringed
@@ -43,7 +44,7 @@ import { chromeIcon } from '../src/ui/chromeicons.ts';
 import { spellIcon, spellHue } from '../src/ui/spellicons.ts';
 import { scoreLine } from '../src/ui/record.ts';
 import { dialNodes, dialBeat } from '../src/ui/modedial.ts';
-import { runeFelt, dealBeat } from '../src/ui/runedeal.ts';
+import { runeFelt, dealBeat, runeCardFaces } from '../src/ui/runedeal.ts';
 import { settledAnswer, answerLines, versus } from '../src/ui/reveal.ts';
 import { parseAvatar, AV_HUES } from '../src/ui/avatar.ts';
 import { dieMarkup } from '../src/ui/die-markup.ts';
@@ -338,6 +339,11 @@ for (const screen of screens) {
     })
     .replace(/\{\{runefelt:([a-z]+)(?::(up))?\}\}/g, (_, id, up) => {
       return runeFelt(spellOr(id), !!up);
+    })
+    /* The in-game rail wraps this shared anatomy with charge/ownership state.
+       Studies may vary that wrapper while preserving the production card. */
+    .replace(/\{\{runefaces:([a-z]+)\}\}/g, (_, id) => {
+      return runeCardFaces(spellOr(id), 12, 21, false);
     })
     .replace(/\{\{library:(modes|spells)(?::([a-z]+))?\}\}/g,
       (_, roster, now) => libraryCards(roster === 'modes' ? MODE_LIB : SPELL_LIB, now))

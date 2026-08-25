@@ -33,7 +33,7 @@ export async function runAvailabilityScenarios(suite) {
     await page.waitForTimeout(300);
     return page.evaluate((id) => {
       const k = window.__kb;
-      const card = document.querySelector(`#spellBar .rune[data-spell="${id}"]`);
+      const card = document.querySelector(`#spellBar .rune.hand-active[data-spell="${id}"]`);
       const style = getComputedStyle(card);
       const matrix = style.transform === 'none' ? new DOMMatrixReadOnly() : new DOMMatrixReadOnly(style.transform);
       const before = {

@@ -1,0 +1,179 @@
+<!-- meta name="R2C — Six ownership marks for paired rune cards" group="4h · Rune cards in play" subtitle="Selected and shipped 2026-08-25 — option 06 keeps a player-colour offset edge attached through every universal handoff and fades it before the card turns" width=430 height=1270 sizes="md" links="R2S — Spent alpha matte, Spells — aiming a rune, Offline — local play, R2O — Six homes for the player name, R2I — Six marks for two random runes" -->
+<style>
+  .r2c-scr{box-sizing:border-box;align-items:center;padding:20px 16px 18px;min-height:1128px}
+  .r2c-head{width:100%;max-width:352px;text-align:left}
+  .r2c-kicker,.r2c-num{font-size:7.5px;font-weight:900;letter-spacing:.22em;color:var(--dim)}
+  .r2c-head h1{margin:5px 0 8px;font-size:18px;text-align:left;letter-spacing:.18em}
+  .r2c-head p{margin:0;font-size:10px;line-height:1.55;letter-spacing:.085em;color:#b7c5df}
+
+  .r2c-base{display:grid;grid-template-columns:1fr 78px;align-items:center;gap:12px;width:100%;max-width:352px;
+    min-height:82px;box-sizing:border-box;margin-top:14px;padding:8px 12px;border:1px solid rgba(255,255,255,.08);
+    border-radius:13px;background:rgba(255,255,255,.025)}
+  .r2c-basetx{display:grid;gap:3px;font-size:7px;font-weight:900;letter-spacing:.18em;color:var(--dim)}
+  .r2c-basetx b{font-size:8px;color:#aebdd6;letter-spacing:.12em;line-height:1.4}
+
+  .r2c-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
+    width:100%;max-width:352px;margin-top:12px}
+  .r2c-opt{position:relative;min-height:254px;padding:14px 9px 10px;box-sizing:border-box;
+    border:1px solid rgba(255,255,255,.085);border-radius:16px;background:rgba(5,7,17,.48);
+    display:flex;flex-direction:column;align-items:center;overflow:hidden}
+  .r2c-opt::before{content:"";position:absolute;inset:0;pointer-events:none;background:
+    radial-gradient(88% 48% at 0 0,rgba(var(--p1-rgb),.05),transparent 62%),
+    radial-gradient(88% 48% at 100% 100%,rgba(var(--p2-rgb),.045),transparent 62%)}
+  .r2c-opt.chosen{border-color:rgba(40,232,255,.56);
+    box-shadow:inset 0 0 22px rgba(40,232,255,.035),0 0 0 1px rgba(40,232,255,.06)}
+  .r2c-selected{padding:3px 5px;border:1px solid rgba(40,232,255,.35);border-radius:5px;
+    background:rgba(40,232,255,.08);color:#8ef3ff;font-size:5.5px;font-weight:900;letter-spacing:.13em}
+  .r2c-num{position:absolute;top:10px;left:10px;color:rgba(233,241,255,.42)}
+  .r2c-title{font-size:9px;font-weight:900;letter-spacing:.125em;color:var(--txt)}
+  .r2c-desc{min-height:43px;margin:5px 1px 5px;font-size:7.8px;line-height:1.44;
+    letter-spacing:.045em;text-align:center;color:var(--dim)}
+  .r2c-turns{position:relative;width:100%;margin-top:auto;padding-top:9px;border-top:1px solid rgba(255,255,255,.055);
+    display:grid;grid-template-columns:1fr 1fr;gap:5px}
+  .r2c-state{min-width:0;display:grid;justify-items:center;gap:5px}
+  .r2c-state b{font-size:5.8px;line-height:1;letter-spacing:.15em;color:rgba(174,189,214,.58)}
+  .r2c-state:first-child b{color:color-mix(in srgb,var(--p1) 65%,#91a3bf)}
+  .r2c-state:last-child b{color:color-mix(in srgb,var(--p2) 65%,#91a3bf)}
+  .r2c-well{width:67px;height:78px;display:grid;place-items:center;border-radius:11px;
+    background:radial-gradient(circle,rgba(255,255,255,.025),transparent 68%)}
+
+  /* The app owns every card, charge, tilt, active/standby transform and rune
+     wash. This study only gives that real rail a local box to stand in. */
+  .r2c-stack.spells{--rw:38px;position:relative;left:auto;top:auto;width:var(--rw);
+    height:calc(var(--rw)*1.371);translate:none;display:block;z-index:0}
+  .r2c-base .r2c-stack.spells{--rw:39px;justify-self:center}
+  #kbroot .r2c-opt .spells.paired .rune::before{content:none;display:none}
+  /* Preserve the old floating-dot baseline after the selected mark ships. */
+  #kbroot .r2c-base .spells.paired .rune::before{content:"";display:block;position:absolute;z-index:5;
+    right:-3px;top:-3px;width:6px;height:6px;border:1px solid rgba(9,12,24,.92);border-radius:50%;
+    background:var(--owner);box-shadow:0 0 8px var(--owner);pointer-events:none}
+  /* Neutralize the shipped option so alternatives 01–05 remain honest. */
+  .r2c-opt .rune-charge.top::after{content:none;box-shadow:none;
+    border:0;filter:none;animation:none}
+  .r2c-opt .rune-charge.top::after{pointer-events:none}
+
+  /* 01 — a corner belongs to the card, so it follows every tilt and depth swap. */
+  .r2c-bracket .rune-charge.top::after{content:"";position:absolute;z-index:5;right:-1px;top:-1px;
+    width:10px;height:10px;box-sizing:border-box;border-top:1.5px solid var(--owner);
+    border-right:1.5px solid var(--owner);border-radius:0 calc(var(--rw)*.2) 0 0;
+    filter:drop-shadow(0 0 4px var(--owner))}
+
+  /* 02 — one integrated edge reads like a player-coloured card index. */
+  .r2c-edge .rune-charge.top::after{content:"";position:absolute;z-index:5;right:-1.5px;top:11px;
+    width:2.5px;height:16px;border-radius:99px;background:var(--owner);
+    box-shadow:0 0 6px color-mix(in srgb,var(--owner) 72%,transparent)}
+
+  /* 03 — a tiny diagonal stitch is distinct from the card's vertical geometry. */
+  .r2c-slash .rune-charge.top::after{content:"";position:absolute;z-index:5;right:1px;top:5px;
+    width:12px;height:2px;border-radius:99px;background:var(--owner);rotate:45deg;
+    box-shadow:0 0 5px color-mix(in srgb,var(--owner) 65%,transparent)}
+
+  /* 04 — shapes from the paired-card icon preserve ownership without colour alone. */
+  .r2c-sigil .rune-charge.top::after{content:"";position:absolute;z-index:5;right:4px;bottom:5px;
+    width:7px;height:7px;box-sizing:border-box;border:1.25px solid var(--owner);border-radius:50%;
+    filter:drop-shadow(0 0 3px var(--owner))}
+  .r2c-sigil .rune[data-seat="0"] .rune-charge.top::after{width:6px;height:6px;border-radius:1px;rotate:45deg}
+
+  /* 05 — two adjacent sides tint the physical card edge, not the whole face. */
+  .r2c-frame .rune-charge.top::after{content:"";position:absolute;z-index:5;inset:-1px;
+    box-sizing:border-box;border:1px solid transparent;border-top-color:var(--owner);
+    border-right-color:var(--owner);border-radius:inherit;
+    filter:drop-shadow(1px -1px 3px color-mix(in srgb,var(--owner) 45%,transparent))}
+
+  /* 06 — SELECTED. The owner becomes the colour of a second card edge
+     underneath. Production fades it before the selected card turns. */
+  .r2c-echo .rune-charge.top::after{content:"";position:absolute;z-index:-1;inset:0;border-radius:inherit;
+    box-shadow:3px 3px 0 -1px color-mix(in srgb,var(--owner) 76%,transparent),
+      3px 3px 8px color-mix(in srgb,var(--owner) 35%,transparent)}
+
+  .r2c-key{width:100%;display:flex;justify-content:center;gap:13px;margin-top:5px;font-size:6px;
+    font-weight:900;letter-spacing:.13em;color:rgba(174,189,214,.58)}
+  .r2c-key i{display:inline-block;width:6px;height:6px;margin-right:4px;border-radius:50%;vertical-align:-1px}
+  .r2c-key .p1{background:var(--p1);box-shadow:0 0 6px var(--p1)}
+  .r2c-key .p2{background:var(--p2);box-shadow:0 0 6px var(--p2)}
+  .r2c-foot{width:100%;max-width:352px;margin-top:13px;padding:10px 12px;box-sizing:border-box;
+    border-radius:13px;border:1px solid rgba(177,140,255,.19);background:rgba(177,140,255,.045);
+    color:#aebdd6;font-size:8.5px;line-height:1.5;letter-spacing:.065em}
+  .r2c-foot b{color:#d8caff}
+</style>
+
+<!-- One production-shaped paired rail. FATE stresses the two-charge stack;
+     ANVIL stresses the single card. A turn change only swaps the two hand
+     classes, exactly as flow/spell-rail.ts does in play. -->
+<template id="r2c-unused"></template>
+
+<div class="stage"><div class="bgfx"></div><div class="scr r2c-scr">
+  <header class="r2c-head">
+    <div class="r2c-kicker">SELECTED STUDY · SHIPPED 2026-08-25</div>
+    <h1>PAIRED RUNE CARDS</h1>
+    <p>Every rune deal keeps both seat hands, even when their faces match. The active and standby hands trade depth every turn; option 06 replaces the floating dot with a card-attached edge.</p>
+  </header>
+
+  <div class="r2c-base">
+    <span class="r2c-basetx"><span>CURRENT BASELINE</span><b>THE DOT SITS ON THE UNROTATED BUTTON, NOT THE CARD</b></span>
+    <div class="r2c-well"><div class="r2c-stack spells live paired">
+      <button class="rune multi hand-active" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button>
+      <button class="rune hand-standby" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-charge charge-1 top">{{runefaces:anvil}}</i></button>
+    </div></div>
+  </div>
+
+  <main id="spellBar" class="r2c-grid">
+    <article class="r2c-opt r2c-bracket">
+      <span class="r2c-num">01</span><span class="r2c-title">CORNER BRACKET</span>
+      <p class="r2c-desc">A small open corner locks to the top-right of the physical card.</p>
+      <div class="r2c-turns">
+        <div class="r2c-state"><b>YOU ACTIVE</b><div class="r2c-well"><div class="r2c-stack spells live paired"><button class="rune multi hand-active" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button><button class="rune hand-standby" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-charge charge-1 top">{{runefaces:anvil}}</i></button></div></div></div>
+        <div class="r2c-state"><b>AI ACTIVE</b><div class="r2c-well"><div class="r2c-stack spells live paired"><button class="rune multi hand-standby" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button><button class="rune hand-active" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-charge charge-1 top">{{runefaces:anvil}}</i></button></div></div></div>
+      </div>
+    </article>
+
+    <article class="r2c-opt r2c-edge">
+      <span class="r2c-num">02</span><span class="r2c-title">EDGE TICK</span>
+      <p class="r2c-desc">A short vertical index becomes part of the card’s outer edge.</p>
+      <div class="r2c-turns">
+        <div class="r2c-state"><b>YOU ACTIVE</b><div class="r2c-well"><div class="r2c-stack spells live paired"><button class="rune multi hand-active" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button><button class="rune hand-standby" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-charge charge-1 top">{{runefaces:anvil}}</i></button></div></div></div>
+        <div class="r2c-state"><b>AI ACTIVE</b><div class="r2c-well"><div class="r2c-stack spells live paired"><button class="rune multi hand-standby" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button><button class="rune hand-active" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-charge charge-1 top">{{runefaces:anvil}}</i></button></div></div></div>
+      </div>
+    </article>
+
+    <article class="r2c-opt r2c-slash">
+      <span class="r2c-num">03</span><span class="r2c-title">CORNER SLASH</span>
+      <p class="r2c-desc">One diagonal stitch adds speed without looking like a status LED.</p>
+      <div class="r2c-turns">
+        <div class="r2c-state"><b>YOU ACTIVE</b><div class="r2c-well"><div class="r2c-stack spells live paired"><button class="rune multi hand-active" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button><button class="rune hand-standby" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-charge charge-1 top">{{runefaces:anvil}}</i></button></div></div></div>
+        <div class="r2c-state"><b>AI ACTIVE</b><div class="r2c-well"><div class="r2c-stack spells live paired"><button class="rune multi hand-standby" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button><button class="rune hand-active" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-charge charge-1 top">{{runefaces:anvil}}</i></button></div></div></div>
+      </div>
+    </article>
+
+    <article class="r2c-opt r2c-sigil">
+      <span class="r2c-num">04</span><span class="r2c-title">SEAT SIGILS</span>
+      <p class="r2c-desc">Circle and diamond preserve the two-seat cue even without colour.</p>
+      <div class="r2c-turns">
+        <div class="r2c-state"><b>YOU ACTIVE</b><div class="r2c-well"><div class="r2c-stack spells live paired"><button class="rune multi hand-active" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button><button class="rune hand-standby" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-charge charge-1 top">{{runefaces:anvil}}</i></button></div></div></div>
+        <div class="r2c-state"><b>AI ACTIVE</b><div class="r2c-well"><div class="r2c-stack spells live paired"><button class="rune multi hand-standby" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button><button class="rune hand-active" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-charge charge-1 top">{{runefaces:anvil}}</i></button></div></div></div>
+      </div>
+    </article>
+
+    <article class="r2c-opt r2c-frame">
+      <span class="r2c-num">05</span><span class="r2c-title">OWNER FRAME</span>
+      <p class="r2c-desc">Only the top and right card edges carry the player colour.</p>
+      <div class="r2c-turns">
+        <div class="r2c-state"><b>YOU ACTIVE</b><div class="r2c-well"><div class="r2c-stack spells live paired"><button class="rune multi hand-active" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button><button class="rune hand-standby" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-charge charge-1 top">{{runefaces:anvil}}</i></button></div></div></div>
+        <div class="r2c-state"><b>AI ACTIVE</b><div class="r2c-well"><div class="r2c-stack spells live paired"><button class="rune multi hand-standby" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button><button class="rune hand-active" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-charge charge-1 top">{{runefaces:anvil}}</i></button></div></div></div>
+      </div>
+    </article>
+
+    <article class="r2c-opt r2c-echo chosen">
+      <span class="r2c-num">06</span><span class="r2c-title">OFFSET ECHO</span>
+      <p class="r2c-desc">A slim player-coloured edge peeks from beneath the top card.</p>
+      <span class="r2c-selected">SELECTED</span>
+      <div class="r2c-turns">
+        <div class="r2c-state"><b>YOU ACTIVE</b><div class="r2c-well"><div class="r2c-stack spells live paired"><button class="rune multi hand-active" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button><button class="rune hand-standby" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-charge charge-1 top">{{runefaces:anvil}}</i></button></div></div></div>
+        <div class="r2c-state"><b>AI ACTIVE</b><div class="r2c-well"><div class="r2c-stack spells live paired"><button class="rune multi hand-standby" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button><button class="rune hand-active" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-charge charge-1 top">{{runefaces:anvil}}</i></button></div></div></div>
+      </div>
+    </article>
+  </main>
+
+  <div class="r2c-key"><span><i class="p1"></i>YOU / PLAYER 1</span><span><i class="p2"></i>AI / PLAYER 2</span></div>
+  <footer class="r2c-foot"><b>SELECTED: 06 · OFFSET ECHO.</b> The edge moves with its physical card as the hands switch every turn, for matching shared runes and different RANDOM 2 faces alike. It fades before its card turns face-up; the spent matte carries no owner edge.</footer>
+</div></div>

@@ -111,9 +111,10 @@ export async function runLayoutScenarios(suite) {
     await vctx.close();
   }
 
-  /* ---------- 13. the card follows the board's third column ----------
-     Portrait gives the card a board-derived x coordinate, not an eyeballed
-     gap from the die. Landscape keeps its compact position above the stage. */
+  /* ---------- 13. the paired rail follows the board's third column ------
+     Portrait gives the fixed rail a board-derived x coordinate, not an
+     eyeballed gap from the die. Its two cards deliberately fan around that
+     anchor. Landscape keeps the same compact rail above the stage. */
   for (const view of [
     { name: 'card portrait 320', w: 320, h: 568, land: false },
     { name: 'card portrait 390', w: 390, h: 844, land: false },
@@ -126,27 +127,37 @@ export async function runLayoutScenarios(suite) {
       await table([[2], [], []], [[6], [], []], 4, probe.page);
       const measured = await probe.page.evaluate(() => {
         const box = (selector) => document.querySelector(selector)?.getBoundingClientRect();
-        const card = box('#spellBar .rune-charge.top');
+        const rail = box('#spellBar');
+        const cards = [...document.querySelectorAll('#spellBar .rune:not([hidden])')]
+          .filter((card) => !!card.offsetParent)
+          .map((card) => ({ seat: card.dataset.seat,
+            active: card.classList.contains('hand-active'), rect: card.getBoundingClientRect() }));
         const die = box('#dieStage');
         const third = box('#botBoard .col[data-col="2"]');
         const centerX = (rect) => rect.left + rect.width / 2;
         const centerY = (rect) => rect.top + rect.height / 2;
         const land = document.getElementById('kbroot').classList.contains('land');
         return { land,
-          x: Math.abs(centerX(card) - centerX(land ? die : third)),
-          y: Math.abs(centerY(card) - centerY(die)),
-          above: die.top - card.bottom,
-          left: card.left, right: card.right, viewport: innerWidth };
+          count: cards.length,
+          activeSeat: cards.find((card) => card.active)?.seat,
+          x: Math.abs(centerX(rail) - centerX(land ? die : third)),
+          y: Math.abs(centerY(rail) - centerY(die)),
+          above: die.top - rail.bottom,
+          left: Math.min(...cards.map((card) => card.rect.left)),
+          right: Math.max(...cards.map((card) => card.rect.right)),
+          viewport: innerWidth };
       });
       out[view.name.replaceAll(' ', '_')] = measured;
       check(measured.land === view.land, `${view.name} chose the wrong orientation`, measured);
-      check(measured.x <= 0.5, `${view.name} card is not horizontally centred on its target`, measured);
+      check(measured.count === 2 && measured.activeSeat === '1',
+        `${view.name} did not keep both seat hands around the active player`, measured);
+      check(measured.x <= 0.5, `${view.name} rail is not horizontally centred on its target`, measured);
       if (view.land) {
-        check(measured.above >= 0, 'the landscape card overlaps the die', measured);
+        check(measured.above >= 0, 'the landscape rail overlaps the die', measured);
       } else {
-        check(measured.y <= 0.5, `${view.name} card is not vertically beside the die`, measured);
+        check(measured.y <= 0.5, `${view.name} rail is not vertically beside the die`, measured);
         check(measured.left >= -0.5 && measured.right <= measured.viewport + 0.5,
-          `${view.name} card runs off screen`, measured);
+          `${view.name} paired cards run off screen`, measured);
       }
     } finally {
       await probe.ctx.close();

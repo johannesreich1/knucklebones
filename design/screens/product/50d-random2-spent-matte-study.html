@@ -1,0 +1,105 @@
+<!-- meta name="R2S — Spent alpha matte" group="4h · Rune cards in play" subtitle="Selected and shipped 2026-08-25 — the alpha-channel look uses a fully opaque neutral matte in one-spent and both-spent overlaps" width=430 height=980 sizes="md" links="R2C — Six ownership marks for paired rune cards, Spells — aiming a rune, Offline — local play" -->
+<style>
+  .r2d-scr{box-sizing:border-box;align-items:center;padding:20px 16px 18px;min-height:868px}
+  .r2d-head{width:100%;max-width:352px;text-align:left}
+  .r2d-kicker{font-size:7.5px;font-weight:900;letter-spacing:.22em;color:var(--dim)}
+  .r2d-head h1{margin:5px 0 8px;font-size:18px;text-align:left;letter-spacing:.18em}
+  .r2d-head p{margin:0;font-size:10px;line-height:1.55;letter-spacing:.085em;color:#b7c5df}
+  .r2d-rule{display:flex;align-items:center;gap:8px;width:100%;margin-top:14px;padding:8px 10px;
+    box-sizing:border-box;border:1px solid rgba(255,255,255,.08);border-radius:12px;
+    background:rgba(255,255,255,.025);font-size:7.5px;font-weight:900;letter-spacing:.12em;color:var(--dim)}
+  .r2d-swatch{width:18px;height:18px;border:1px dashed rgba(255,255,255,.42);border-radius:5px;
+    background:repeating-conic-gradient(from 45deg,#11162a 0 25%,#0b0f1f 0 50%) 50%/6px 6px;
+    box-shadow:inset 0 0 8px rgba(0,0,0,.28)}
+  .r2d-rule b{color:#d8caff}
+
+  .r2d-compare{width:100%;max-width:352px;margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .r2d-pane{position:relative;min-height:238px;padding:14px 10px 11px;box-sizing:border-box;
+    border:1px solid rgba(255,255,255,.085);border-radius:16px;background:rgba(5,7,17,.48);
+    display:flex;flex-direction:column;align-items:center;overflow:hidden}
+  .r2d-pane.proposed{border-color:rgba(177,140,255,.38);box-shadow:inset 0 0 24px rgba(177,140,255,.045)}
+  .r2d-label{font-size:8px;font-weight:900;letter-spacing:.18em;color:var(--dim)}
+  .r2d-pane.proposed .r2d-label{color:#d8caff}
+  .r2d-desc{min-height:42px;margin:6px 0 4px;font-size:8px;line-height:1.45;letter-spacing:.05em;
+    text-align:center;color:#91a3bf}
+  .r2d-well{width:110px;height:116px;margin-top:auto;display:grid;place-items:center;border-radius:15px;
+    background:radial-gradient(circle,rgba(255,255,255,.035),transparent 70%)}
+  .r2d-stack.spells{--rw:50px;position:relative;left:auto;top:auto;width:var(--rw);
+    height:calc(var(--rw)*1.371);translate:none;display:block;z-index:0}
+  #kbroot .r2d-study .spells.paired .rune::before{content:none;display:none}
+  /* Preserve the losing baseline after the selected matte ships globally. */
+  .r2d-current .rune-empty{border-color:rgba(255,255,255,.42);background:rgba(255,255,255,.02);
+    box-shadow:none}
+
+  /* THE SELECTED TREATMENT. The two close, fully opaque neutrals create the familiar
+     alpha-channel checker. It therefore reads as absence, while the matte
+     actually masks every rune face, glow and icon beneath it. */
+  .r2d-matte .rune-empty{background:
+    repeating-conic-gradient(from 45deg,#11162a 0 25%,#0b0f1f 0 50%) 50%/8px 8px;
+    background-color:#0b0f1f;
+    border-color:rgba(210,220,239,.5);box-shadow:inset 0 0 18px rgba(0,0,0,.34),
+      0 8px 20px rgba(0,0,0,.48)}
+
+  .r2d-cases{width:100%;max-width:352px;margin-top:10px;padding:13px 12px 12px;box-sizing:border-box;
+    border:1px solid rgba(255,255,255,.085);border-radius:16px;background:rgba(5,7,17,.42)}
+  .r2d-cases h2{font-size:9px;letter-spacing:.16em;text-align:left;background:none;color:var(--txt)}
+  .r2d-casegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+  .r2d-case{display:grid;justify-items:center;gap:7px;min-width:0}
+  .r2d-case .r2d-well{width:86px;height:93px;margin:0}
+  .r2d-case .r2d-stack.spells{--rw:38px}
+  .r2d-case b{font-size:6.2px;line-height:1.35;letter-spacing:.13em;text-align:center;color:#91a3bf}
+  .r2d-case em{font-style:normal;color:#d8caff}
+
+  .r2d-foot{width:100%;max-width:352px;margin-top:12px;padding:10px 12px;box-sizing:border-box;
+    border-radius:13px;border:1px solid rgba(177,140,255,.19);background:rgba(177,140,255,.045);
+    color:#aebdd6;font-size:8.5px;line-height:1.5;letter-spacing:.065em}
+  .r2d-foot b{color:#d8caff}
+</style>
+
+<div class="stage"><div class="bgfx"></div><div id="spellBar" class="scr r2d-scr r2d-study">
+  <header class="r2d-head">
+    <div class="r2d-kicker">SELECTED TREATMENT · SHIPPED 2026-08-25</div>
+    <h1>ALPHA MATTE</h1>
+    <p>Keep the ghost-card feeling, but stop a live rune below from painting through the empty card on top.</p>
+    <div class="r2d-rule"><i class="r2d-swatch"></i><span><b>LOOKS TRANSPARENT</b> · PAINTS OPAQUE</span></div>
+  </header>
+
+  <section class="r2d-compare">
+    <article class="r2d-pane r2d-current">
+      <span class="r2d-label">CURRENT</span>
+      <p class="r2d-desc">The empty outline reveals the live FATE card beneath it.</p>
+      <div class="r2d-well"><div class="r2d-stack spells live paired">
+        <button class="rune multi hand-standby" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button>
+        <button class="rune spent hand-active" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-empty charge-1"></i></button>
+      </div></div>
+    </article>
+    <article class="r2d-pane proposed r2d-matte">
+      <span class="r2d-label">SELECTED</span>
+      <p class="r2d-desc">The quiet alpha grid reads empty while fully masking FATE.</p>
+      <div class="r2d-well"><div class="r2d-stack spells live paired">
+        <button class="rune multi hand-standby" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button>
+        <button class="rune spent hand-active" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-empty charge-1"></i></button>
+      </div></div>
+    </article>
+  </section>
+
+  <section class="r2d-cases r2d-matte">
+    <h2>THE THREE OVERLAP CASES</h2>
+    <div class="r2d-casegrid">
+      <div class="r2d-case"><div class="r2d-well"><div class="r2d-stack spells live paired">
+        <button class="rune multi hand-standby" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button>
+        <button class="rune spent hand-active" data-seat="0"><i class="rune-empty charge-1"></i></button>
+      </div></div><b><em>ONE SPENT</em><br>ON TOP</b></div>
+      <div class="r2d-case"><div class="r2d-well"><div class="r2d-stack spells live paired">
+        <button class="rune multi spent hand-standby" data-seat="1"><i class="rune-empty charge-1"></i><i class="rune-empty charge-2"></i></button>
+        <button class="rune hand-active" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-charge charge-1 top">{{runefaces:anvil}}</i></button>
+      </div></div><b><em>ONE SPENT</em><br>BEHIND</b></div>
+      <div class="r2d-case"><div class="r2d-well"><div class="r2d-stack spells live paired">
+        <button class="rune multi spent hand-standby" data-seat="1"><i class="rune-empty charge-1"></i><i class="rune-empty charge-2"></i></button>
+        <button class="rune spent hand-active" data-seat="0"><i class="rune-empty charge-1"></i></button>
+      </div></div><b><em>BOTH SPENT</em><br>TWO HANDS</b></div>
+    </div>
+  </section>
+
+  <footer class="r2d-foot"><b>NO REAL TRANSPARENCY.</b> True alpha would always reveal the lower card. This uses two nearly identical opaque night tones, so the checker communicates “empty” while the matte guarantees visual separation.</footer>
+</div></div>

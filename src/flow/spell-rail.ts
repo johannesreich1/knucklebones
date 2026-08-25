@@ -1,6 +1,6 @@
-// The one turn-owned rune rail. Cast legality and state transitions stay in
-// flow/spells; this leaf renders the current hand and plays committed cards.
-import { ME, SPEC, type GameState, type Player } from '../core/rules.ts';
+// The paired-seat rune rail. Cast legality and state transitions stay in
+// flow/spells; this leaf renders both hands and plays committed cards.
+import { AI, ME, SPEC, type GameState, type Player } from '../core/rules.ts';
 import { SPELLS, spellById, type CastCtx, type SpellSpec } from '../core/spells.ts';
 import { spellCopy, t } from '../i18n/index.ts';
 import { S } from '../state.ts';
@@ -20,9 +20,9 @@ export interface SpellRailPorts {
   bindRune: (button: HTMLButtonElement, id: string) => void;
 }
 
-/* ONE SLOT, EVERY RELEVANT HAND. A shared rune is one card that follows the
-   turn. A distinct deal keeps both owner-marked cards fanned in the same slot,
-   with the active hand in front. */
+/* ONE SLOT, BOTH HANDS. Every dealt seat keeps its own physical card in the
+   rail, even when both seats received the same rune. The active hand comes to
+   the front on every turn change; RANDOM ×2 differs only in the two faces. */
 export function renderSpellRail(ports: SpellRailPorts): void {
   const bar = appRoot().querySelector<HTMLElement>('#spellBar');
   if (!bar) return;
@@ -31,51 +31,47 @@ export function renderSpellRail(ports: SpellRailPorts): void {
   const seat = S.turn as Player;
   const now = ports.caster();
   const dealtIds = S.spellCharges.map((hand) => Object.keys(hand)[0] ?? '');
-  const paired = !!dealtIds[ME] && !!dealtIds[1 - ME] && dealtIds[ME] !== dealtIds[1 - ME];
+  const paired = !!dealtIds[ME] && !!dealtIds[1 - ME];
   let shown = 0;
   for (const spell of SPELLS) {
-    const button = runeOf(spell.id);
-    if (!button) continue;
-    const owners = ([0, 1] as Player[]).filter((who) => spell.id in S.spellCharges[who]);
-    /* A shared hand still has one physical card that follows the turn. A
-       distinct deal has one persistent card per owner, so the other player's
-       rune and remaining charges never disappear between turns. */
-    const owner = owners.length === 2 ? seat : owners[0];
-    button.hidden = owner === undefined;
-    if (owner === undefined) continue;
-    shown++;
-    const currentHand = owner === seat;
-    const left = ports.chargesOf(owner, spell.id);
-    const committed = S.spellAimCommitted?.id === spell.id
-      && S.spellAimCommitted.who === owner;
-    const canCast = currentHand && owner === now && left > 0 && ports.castable(spell.id);
-    /* In CPU play the one shared card changes hands with the turn. Keep the
-       historical opponent-turn mute tied to ownership, not `canCast`: brief
-       busy/legality changes on the player's own turn must not make it blink. */
-    const offturn = S.mode === 'cpu' && owner !== ME;
-    /* `now` is null during transient phase/busy locks. Requiring the active
-       chooser here leaves those brief locks visually stable; with charges and
-       commitment ruled out, a remaining false `canCast` is registry legality. */
-    const unavailable = owner === now && left > 0 && !committed && !canCast;
-    button.dataset.seat = String(owner);
-    button.dataset.left = String(left);
-    button.classList.toggle('spent', left <= 0);
-    button.classList.toggle('committed', committed);
-    button.classList.toggle('ready', !committed && canCast);
-    button.classList.toggle('armed', S.spellArmed === spell.id && owner === now);
-    button.classList.toggle('offturn', offturn);
-    button.classList.toggle('unavailable', unavailable);
-    button.classList.toggle('hand-active', paired && currentHand);
-    button.classList.toggle('hand-standby', paired && !currentHand);
-    button.disabled = !canCast;
-    paintCharges(button, spell, left);
-    const copy = spellCopy(spell.id);
-    const values = { player: nameOf(owner), name: copy.name, blurb: copy.blurb, count: left };
-    button.setAttribute('aria-label', committed
-      ? t('game', 'runes.ariaCommitted', values)
-      : canCast ? t('game', 'runes.ariaAvailable', values)
-        : left > 0 ? t('game', 'runes.ariaUnavailable', values)
-          : t('game', 'runes.ariaSpent', values));
+    for (const owner of [ME, AI] as Player[]) {
+      const button = runeOf(owner, spell.id);
+      if (!button) continue;
+      const held = spell.id in S.spellCharges[owner];
+      button.hidden = !held;
+      if (!held) continue;
+      shown++;
+      const currentHand = owner === seat;
+      const left = ports.chargesOf(owner, spell.id);
+      const committed = S.spellAimCommitted?.id === spell.id
+        && S.spellAimCommitted.who === owner;
+      const canCast = currentHand && owner === now && left > 0 && ports.castable(spell.id);
+      /* Keep the historical CPU mute tied to the owning hand, not `canCast`:
+         brief busy/legality changes on the player's own card must not blink. */
+      const offturn = S.mode === 'cpu' && owner !== ME;
+      /* `now` is null during transient phase/busy locks. Requiring the active
+         chooser here leaves those brief locks visually stable; with charges
+         and commitment ruled out, false `canCast` is registry legality. */
+      const unavailable = owner === now && left > 0 && !committed && !canCast;
+      button.dataset.left = String(left);
+      button.classList.toggle('spent', left <= 0);
+      button.classList.toggle('committed', committed);
+      button.classList.toggle('ready', !committed && canCast);
+      button.classList.toggle('armed', S.spellArmed === spell.id && owner === now);
+      button.classList.toggle('offturn', offturn);
+      button.classList.toggle('unavailable', unavailable);
+      button.classList.toggle('hand-active', paired && currentHand);
+      button.classList.toggle('hand-standby', paired && !currentHand);
+      button.disabled = !canCast;
+      paintCharges(button, spell, left);
+      const copy = spellCopy(spell.id);
+      const values = { player: nameOf(owner), name: copy.name, blurb: copy.blurb, count: left };
+      button.setAttribute('aria-label', committed
+        ? t('game', 'runes.ariaCommitted', values)
+        : canCast ? t('game', 'runes.ariaAvailable', values)
+          : left > 0 ? t('game', 'runes.ariaUnavailable', values)
+            : t('game', 'runes.ariaSpent', values));
+    }
   }
   bar.classList.toggle('paired', paired);
   bar.classList.toggle('live', shown > 0);
@@ -92,22 +88,32 @@ export function playSpellCharge(who: Player, id: string, alreadyFaceUp = false):
   // browser happens to deliver animationend (or the safety timeout), which is
   // both visually noisy and observably non-reduced on slower renderers.
   if (REDUCED) return;
-  const button = runeOf(id);
+  const button = runeOf(who, id);
   if (!button || button.hidden || Number(button.dataset.seat) !== who) return;
   const top = button.querySelector<HTMLElement>('.rune-charge.top');
   const bar = button.parentElement;
   if (!top || !bar) return;
   const flight = top.cloneNode(true) as HTMLElement;
-  flight.className = 'rune-charge rune-played' + (alreadyFaceUp ? ' face-up' : ' turning');
-  /* The copy leaves the button that supplied currentColor. Pin that resolved
-     hue before reparenting so the played card keeps the same quiet wash. */
-  flight.style.color = getComputedStyle(button).color;
+  const flightAnimation = alreadyFaceUp ? 'runeDealUp' : 'runeTurnDeal';
+  flight.className = 'rune-charge rune-played' + (alreadyFaceUp
+    ? ' face-up owner-muted' : ' turning owner-fade');
+  flight.dataset.seat = String(who);
+  /* The copy leaves both the button that supplied currentColor and the hand
+     transform that fans it around the fixed rail. Pin both before reparenting:
+     otherwise every paired cast snaps back to the untransformed slot on its
+     first flight frame. The animation composes this matrix with its own turn. */
+  const buttonStyle = getComputedStyle(button);
+  flight.style.color = buttonStyle.color;
+  flight.style.setProperty('--rune-flight-hand', buttonStyle.transform === 'none'
+    ? 'matrix(1,0,0,1,0,0)' : buttonStyle.transform);
   flight.dataset.gen = String(S.gen);
   flight.setAttribute('aria-hidden', 'true');
   bar.appendChild(flight);
   const remove = () => flight.remove();
   flight.addEventListener('animationend', (event) => {
-    if (event.target === flight) remove();
+    /* The ownership echo has its own shorter pseudo-element animation. Ignore
+       that event or it would remove the played card before its deal finishes. */
+    if (event.target === flight && event.animationName === flightAnimation) remove();
   });
   window.setTimeout(remove, 900);
 }
@@ -162,25 +168,30 @@ export function isAimedColumn(who: Player, column: number): boolean {
 
 let built = false;
 const runes = new Map<string, HTMLButtonElement>();
-const runeOf = (id: string): HTMLButtonElement | null => runes.get(id) ?? null;
+const runeKey = (who: Player, id: string): string => `${who}:${id}`;
+const runeOf = (who: Player, id: string): HTMLButtonElement | null =>
+  runes.get(runeKey(who, id)) ?? null;
 
 function build(bindRune: SpellRailPorts['bindRune']): void {
   built = true;
   const bar = appRoot().querySelector<HTMLElement>('#spellBar');
   if (!bar) return;
   for (const spell of SPELLS) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'rune' + (spell.uses > 1 ? ' multi' : '');
-    button.dataset.spell = spell.id;
-    const outlines = Array.from({ length: spell.uses }, (_, index) =>
-      `<i class="rune-empty charge-${index + 1}" hidden></i>`).join('');
-    const charges = Array.from({ length: spell.uses }, (_, index) =>
-      `<i class="rune-charge charge-${index + 1}" data-charge="${index + 1}">`
-      + `${runeCardFaces(spell, 12, 21, false)}</i>`).join('');
-    button.innerHTML = outlines + charges;
-    bindRune(button, spell.id);
-    runes.set(spell.id, button);
-    bar.appendChild(button);
+    for (const owner of [ME, AI] as Player[]) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'rune' + (spell.uses > 1 ? ' multi' : '');
+      button.dataset.spell = spell.id;
+      button.dataset.seat = String(owner);
+      const outlines = Array.from({ length: spell.uses }, (_, index) =>
+        `<i class="rune-empty charge-${index + 1}" hidden></i>`).join('');
+      const charges = Array.from({ length: spell.uses }, (_, index) =>
+        `<i class="rune-charge charge-${index + 1}" data-charge="${index + 1}">`
+        + `${runeCardFaces(spell, 12, 21, false)}</i>`).join('');
+      button.innerHTML = outlines + charges;
+      bindRune(button, spell.id);
+      runes.set(runeKey(owner, spell.id), button);
+      bar.appendChild(button);
+    }
   }
 }

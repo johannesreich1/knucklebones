@@ -1,4 +1,4 @@
-<!-- meta name="Spells — aiming a rune" group="4 · Local play" subtitle="RC4: the turn-owned card stack shows every remaining charge, then deals the committed card away" width=412 height=2610 links="Offline — local play, Rune deal — dealt, Game modes" -->
+<!-- meta name="Spells — aiming a rune" group="4 · Local play" subtitle="RC4: both persistent seat hands switch depth every turn; the committed card loses its owner edge, turns, and deals away" width=412 height=2770 links="R2C — Six ownership marks for paired rune cards, R2S — Spent alpha matte, Offline — local play, Rune deal — dealt, Game modes" -->
 <style>
   /* The rune is PILFER, and every glyph on this card is drawn by the app
      (ui/spellicons, through the sico token). It used to hand-draw five copies
@@ -70,14 +70,18 @@
     <div class="col3 target"><div class="slot3"></div><div class="slot3"></div><div class="slot3">{{die:1:p2:50}}</div></div>
   </div>
 
-  <!-- One stack belongs to whoever is to move. It is armed here, so the top
-       card has turned face-up while the legal columns ring. -->
+  <!-- Both seats keep their matching PILFER hand. Player 1 is armed here, so
+       its top card has turned face-up and lost its owner edge while Player 2's
+       matching standby card remains visible behind it. -->
   <div class="centerrow dice-static">
     <div class="stagerow">
       {{die:4:p1:54}}
-      <div class="spells live" style="--rw:36px"><button class="rune ready armed" style="--rune-hue:{{shue:pilfer}}">
-        <i class="rune-empty charge-1" hidden></i><i class="rune-charge charge-1 top" data-charge="1">
-          <i class="rback">{{sico:pilfer:12}}</i><i class="rface">{{sico:pilfer:21}}</i></i></button></div>
+      <div class="spells live paired" style="--rw:36px">
+        <button class="rune ready armed hand-active" data-seat="1" style="--rune-hue:{{shue:pilfer}}">
+          <i class="rune-empty charge-1" hidden></i><i class="rune-charge charge-1 top" data-charge="1">{{runefaces:pilfer}}</i></button>
+        <button class="rune hand-standby" data-seat="0" style="--rune-hue:{{shue:pilfer}}">
+          <i class="rune-empty charge-1" hidden></i><i class="rune-charge charge-1 top" data-charge="1">{{runefaces:pilfer}}</i></button>
+      </div>
     </div>
     <!-- the armed status line is the registry's own `aim` string, verbatim -->
     <div class="status me">Tap an enemy column</div>
@@ -99,10 +103,10 @@
   <div class="states">
     <div class="s"><div class="rcbox"><button class="rune ready" style="--rune-hue:{{shue:pilfer}}"><i class="rune-charge top"><i class="rback">{{sico:pilfer:12}}</i><i class="rface">{{sico:pilfer:21}}</i></i></button></div><span class="cap">Held<br>face-down</span></div>
     <div class="s"><div class="rcbox"><button class="rune armed" style="--rune-hue:{{shue:pilfer}}"><i class="rune-charge top"><i class="rback">{{sico:pilfer:12}}</i><i class="rface">{{sico:pilfer:21}}</i></i></button></div><span class="cap">Playing</span></div>
-    <div class="s"><div class="rcbox"><button class="rune spent"><i class="rune-empty charge-1"></i></button></div><span class="cap">Spent<br>outline</span></div>
+    <div class="s"><div class="rcbox"><button class="rune spent"><i class="rune-empty charge-1"></i></button></div><span class="cap">Spent<br>alpha matte</span></div>
     <div class="s"><div class="rcbox"><button class="rune multi ready" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under"><i class="rback">{{sico:fate:12}}</i><i class="rface">{{sico:fate:21}}</i></i><i class="rune-charge charge-2 top"><i class="rback">{{sico:fate:12}}</i><i class="rface">{{sico:fate:21}}</i></i></button></div><span class="cap">FATE<br>two casts</span></div>
   </div>
-  <div class="statecap">The one fixed slot changes owner with the die and status</div>
+  <div class="statecap">The fixed rail keeps both seat hands; the active hand moves forward</div>
 
   <div class="note">
     <b>When.</b> Your turn, after the roll, before you place — the same gate placement
@@ -113,25 +117,31 @@
     <code>legal()</code> accepts are ringed, which is what stops a ward from advertising
     the enemy's half. A cast that would buy nothing is refused rather than spent: a second
     ward on one column, an anvil that would recast a face to itself.<br>
-    <b>One slot, one hand.</b> The card belongs to whoever is to move. In portrait its
-    centre follows the board's rightmost column while it stays vertically beside the die;
-    landscape centres it above the die. Its rune-coloured surface wash stays quiet and
-    constant — no availability pulse. Its <code>scale(1)</code>, centred transform origin
-    and zero grayscale are persistent, with transform, opacity and filter named for
-    change; this keeps the rotated rune icon on one iPhone compositing surface. For a
-    fixed viewer, the opponent-owned card eases to 95% over 250ms alongside the existing
-    42% opacity and partial grayscale, then returns to exactly 100% on the viewer's turn.
-    Today that means the machine in single-player. Online tracks the same viewer-relative
-    ownership state now, but ranked still deals NONE and hides the rail, so the cue only
-    becomes visible there if online runes are intentionally introduced.
+    <b>One slot, both hands.</b> Every dealt seat keeps a physical card stack: shared
+    named and RANDOM deals show matching runes, while RANDOM 2 shows different faces.
+    The active hand moves in front on every turn; the other stays readable behind it.
+    In portrait the rail centre follows the board's rightmost column while it stays
+    vertically beside the die; landscape centres it above the die. Its rune-coloured
+    surface wash stays quiet and constant — no availability pulse. Its
+    <code>scale(1)</code>, centred transform origin and zero grayscale are persistent,
+    with transform, opacity and filter named for change; this keeps the rotated rune
+    icon on one iPhone compositing surface. For a fixed viewer, the active opponent hand
+    eases to 95% over 250ms, then returns to exactly 100% on the viewer's turn. In
+    single-player, the machine-owned hand also keeps its existing 42% opacity and partial
+    grayscale. Online tracks the same viewer-relative scale now, but ranked still deals
+    NONE and hides the rail, so the cue only becomes visible there if online runes are
+    intentionally introduced.
     An unavailable own rune may share the mute but stays 100%, brief busy locks preserve
     the pre-lock size, and local pass-and-play or face-to-face never shrinks either human's
-    card because there is no fixed viewer. The die colour and status name the owner, so
-    the card needs no seat mark and the plates need no second readout. It is the reveal
-    card at rail size, not another rune object.<br>
+    active hand because there is no fixed viewer. A restrained player-colour offset edge
+    identifies each hand without recolouring the rune face. It stays physically attached
+    during every depth swap, fades before the selected card turns face-up, and never
+    appears on a spent charge. These remain the reveal cards at rail size, not new rune
+    objects, and the plates need no second readout.<br>
     <b>Cost.</b> <span class="k">One cast per game — two for FATE.</span> Every charge is
     a face-down card at its own tilt. Committing turns the top card once and deals it away;
-    the fully spent hand is the same stack of dashed outlines, holding the stage still.
+    the fully spent hand is the same stack of opaque alpha-checker mattes, holding the
+    stage still while completely masking any live or spent card below.
     An ordinary aim may be cancelled before a legal target commits it. No committed cast
     can be put back: self spells commit on the die, WARD and PILFER on their selected legal
     column, and ANVIL as soon as its weakest-die markings appear. Its committed rune stays

@@ -271,7 +271,7 @@ export async function runEffectScenarios(suite) {
      redraw or spend, and a full turn cycle makes it live again. */
   await newGame({ spell: 'fate' }); check(await waitChoose(), 'game never reached choose (FATE stack)');
   const fateStack = () => page.evaluate(() => {
-    const rune = document.querySelector('#spellBar .rune:not([hidden])');
+    const rune = document.querySelector('#spellBar .rune.hand-active:not([hidden])');
     return { left: rune?.dataset.left, cards: [...rune.querySelectorAll('.rune-charge')]
       .filter((e) => !e.hidden).length, outlines: [...rune.querySelectorAll('.rune-empty')]
       .filter((e) => !e.hidden).length };
@@ -284,7 +284,7 @@ export async function runEffectScenarios(suite) {
     const k = window.__kb;
     const before = { die: k.S.die, charges: JSON.stringify(k.S.spellCharges) };
     const recast = await k.spells.cast('fate', -1);
-    const rune = document.querySelector('#spellBar .rune:not([hidden])');
+    const rune = document.querySelector('#spellBar .rune.hand-active:not([hidden])');
     return { before, recast, die: k.S.die, charges: JSON.stringify(k.S.spellCharges),
       marker: k.S.spellCastThisTurn, disabled: rune?.disabled,
       unavailable: rune?.classList.contains('unavailable') };
@@ -306,7 +306,7 @@ export async function runEffectScenarios(suite) {
   await page.evaluate(() => window.__kb.place(0, 1));
   await page.waitForFunction(() => window.__kb.S.turn === 1 && window.__kb.S.phase === 'choose');
   out.fateNextTurnReady = await page.evaluate(() => {
-    const rune = document.querySelector('#spellBar .rune:not([hidden])');
+    const rune = document.querySelector('#spellBar .rune.hand-active:not([hidden])');
     return { marker: window.__kb.S.spellCastThisTurn, disabled: rune?.disabled,
       left: rune?.dataset.left };
   });

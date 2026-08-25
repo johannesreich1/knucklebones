@@ -1,6 +1,6 @@
 /* ===== SPELLS: RC4, THE CHARGE STACK (flow/spell-rail) =====
-   One fixed slot follows the turn. Cards carry remaining casts; once none are
-   left their outlines keep the slot's exact geometry, so the die cannot move. */
+   One fixed slot keeps both seat hands. Cards carry remaining casts; once none
+   are left their mattes keep the slot's exact geometry, so the die cannot move. */
 :where(#kbroot) .spells{--rw:clamp(32px,calc(var(--cell)*.59),46px);position:absolute;
   left:calc(50% + var(--cell) + var(--gap));top:50%;width:var(--rw);height:calc(var(--rw)*1.371);
   translate:-50% -50%;display:none;z-index:4}
@@ -20,25 +20,41 @@
    persistent identity transform/filter values keep Safari on one compositing
    surface instead of re-rasterizing the rotated, glowing corner icon. */
 #kbroot.opponent-turn .rune{transform:scale(.95)}
-/* RANDOM ×2 keeps both threats on the table. The current hand comes forward;
-   the other remains a smaller face-down card with its charge stack readable.
-   Turn changes trade depth in one restrained motion rather than blinking one
-   rune out and another in. */
+/* Every rune deal keeps both hands on the table, including two matching cards
+   for a shared rune. The current hand comes forward; the other remains a
+   smaller face-down threat. Turn changes trade depth in one restrained motion
+   rather than reassigning one static card. */
 #kbroot .spells.paired .rune.hand-active{z-index:3;transform:translate(7px,4px) rotate(2deg) scale(1)}
 #kbroot .spells.paired .rune.hand-standby{z-index:1;transform:translate(-9px,-6px) rotate(-5deg) scale(.82);
   opacity:.62;filter:saturate(.72) brightness(.82)}
 #kbroot.opponent-turn .spells.paired .rune.hand-active{transform:translate(7px,4px) rotate(2deg) scale(.95)}
-#kbroot .spells.paired .rune::before{content:"";position:absolute;z-index:5;right:-3px;top:-3px;
-  width:6px;height:6px;border:1px solid rgba(9,12,24,.92);border-radius:50%;
-  background:var(--owner);box-shadow:0 0 8px var(--owner);pointer-events:none}
-#kbroot .spells.paired .rune[data-seat="1"]{--owner:var(--p1)}
-#kbroot .spells.paired .rune[data-seat="0"]{--owner:var(--p2)}
+/* An opaque matte cannot mask the card below if its whole button is faded.
+   Spent hands keep full alpha in both depths; scale, position and filter still
+   separate the standby, while the checker remains a real occluder. */
+#kbroot .spells.paired .rune.spent{opacity:1;transition:transform .25s ease,filter .25s ease}
+#kbroot .spells.paired :is(.rune,.rune-played)[data-seat="1"]{--owner:var(--p1)}
+#kbroot .spells.paired :is(.rune,.rune-played)[data-seat="0"]{--owner:var(--p2)}
 :where(#kbroot) .rune-charge,:where(#kbroot) .rune-empty{position:absolute;inset:0;display:block;
   border-radius:calc(var(--rw)*.2);transform:rotate(-7deg);transform-origin:50% 50%}
 :where(#kbroot) .rune-charge[hidden],:where(#kbroot) .rune-empty[hidden]{display:none}
 :where(#kbroot) .rune-charge.under,:where(#kbroot) .rune.multi .rune-empty.charge-1{
   transform:rotate(-16deg) translate(-7px,4px)}
 :where(#kbroot) .rune-charge.top{z-index:2}
+/* The chosen ownership mark is a second edge under the physical top card. It
+   inherits that card's tilt and every handoff transform, unlike the old dot
+   attached to the unrotated button. The edge belongs to the held card only:
+   it fades before an armed card turns face-up. Direct/CPU casts carry that
+   same short fade on the outgoing clone; the neutral spent matte carries none. */
+:where(#kbroot) :where(.spells.paired .rune > .rune-charge.top)::after,
+:where(#kbroot) :where(.spells.paired > .rune-played.owner-fade)::after{content:"";position:absolute;z-index:-1;inset:0;
+  border-radius:inherit;opacity:1;pointer-events:none;transition:opacity .15s ease;
+  box-shadow:3px 3px 0 -1px color-mix(in srgb,var(--owner) 76%,transparent),
+    3px 3px 8px color-mix(in srgb,var(--owner) 35%,transparent)}
+:where(#kbroot) :where(.spells.paired .rune.armed > .rune-charge.top)::after{opacity:0}
+#kbroot.reduce-motion .spells.paired .rune.armed > .rune-charge.top::after{
+  transition:none!important;opacity:0}
+:where(#kbroot) :where(.spells.paired > .rune-played.owner-fade)::after{animation:runeOwnerAway .15s ease-out both}
+@keyframes runeOwnerAway{to{opacity:0}}
 :where(#kbroot) .rune-charge .rback,:where(#kbroot) .rune-charge .rface{
   gap:0;border-radius:inherit;box-shadow:0 8px 20px rgba(0,0,0,.6)}
 :where(#kbroot) .rune-charge .rface{opacity:0}
@@ -74,17 +90,22 @@
 :where(#kbroot) .rune-played.face-up .rface{opacity:1}
 :where(#kbroot) .rune-played.turning .rback{animation:runeBackAway .62s steps(1,end) both}
 :where(#kbroot) .rune-played.turning .rface{animation:runeFaceAway .62s steps(1,end) both}
-@keyframes runeDealUp{0%{transform:perspective(700px) rotate(0) scale(1.16);opacity:1}
-  100%{transform:perspective(700px) rotate(22deg) scale(.86) translate(26px,-40px);opacity:0}}
-@keyframes runeTurnDeal{0%{transform:perspective(700px) rotate(-7deg) rotateY(0);opacity:1}
-  25%{transform:perspective(700px) rotate(-3deg) rotateY(90deg) scale(1.1);opacity:1}
-  25.1%{transform:perspective(700px) rotate(-3deg) rotateY(-90deg) scale(1.1);opacity:1}
-  52%{transform:perspective(700px) rotate(0) rotateY(0) scale(1.16);opacity:1}
-  100%{transform:perspective(700px) rotate(22deg) rotateY(0) scale(.86) translate(26px,-40px);opacity:0}}
+@keyframes runeDealUp{0%{transform:var(--rune-flight-hand) perspective(700px) rotate(0) scale(1.16);opacity:1}
+  100%{transform:var(--rune-flight-hand) perspective(700px) rotate(22deg) scale(.86) translate(26px,-40px);opacity:0}}
+@keyframes runeTurnDeal{0%{transform:var(--rune-flight-hand) perspective(700px) rotate(-7deg) rotateY(0);opacity:1}
+  25%{transform:var(--rune-flight-hand) perspective(700px) rotate(-3deg) rotateY(90deg) scale(1.1);opacity:1}
+  25.1%{transform:var(--rune-flight-hand) perspective(700px) rotate(-3deg) rotateY(-90deg) scale(1.1);opacity:1}
+  52%{transform:var(--rune-flight-hand) perspective(700px) rotate(0) rotateY(0) scale(1.16);opacity:1}
+  100%{transform:var(--rune-flight-hand) perspective(700px) rotate(22deg) rotateY(0) scale(.86) translate(26px,-40px);opacity:0}}
 @keyframes runeBackAway{0%,24.9%{opacity:1}25%,100%{opacity:0}}
 @keyframes runeFaceAway{0%,24.9%{opacity:0}25%,100%{opacity:1}}
-/* Spent is absence with memory, not a dimmed live card. */
-:where(#kbroot) .rune-empty{border:1px dashed rgba(255,255,255,.42);background:rgba(255,255,255,.02)}
+/* Spent is absence with memory, not a dimmed live card. The close night-tone
+   checker reads like an alpha channel but resolves onto a fully opaque base,
+   so another live/spent hand below cannot shine through it. */
+:where(#kbroot) .rune-empty{overflow:hidden;border:1px dashed rgba(210,220,239,.5);
+  background:repeating-conic-gradient(from 45deg,#11162a 0 25%,#0b0f1f 0 50%) 50%/8px 8px;
+  background-color:#0b0f1f;
+  box-shadow:inset 0 0 18px rgba(0,0,0,.34),0 8px 20px rgba(0,0,0,.48)}
 :where(#kbroot) .rune-empty.charge-2{transform:rotate(-7deg)}
 :where(#kbroot) .rune.committed .rune-empty{border-color:rgba(255,209,102,.68)}
 :where(#kbroot) .rune.bump{animation:nope .32s}

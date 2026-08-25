@@ -62,9 +62,10 @@ These are structural, not taste. Breaking one is a redesign, not a tweak.
   as a wild, uneven variant and never replaces the persisted shared-RANDOM
   choice.
 - **Visible threats.** The opponent's rune and remaining charges are always on
-  screen. A shared deal needs one turn-owned card; RANDOM 2 keeps both cards in
-  the rail, owner-marked in player colours, and brings the active hand forward.
-  A spell you cannot see coming is a trap, not a duel.
+  screen. Every deal keeps one persistent card hand per seat: shared deals show
+  two matching hands, while RANDOM 2 shows two different ones. Player-colour
+  edges identify ownership and the active hand moves forward every turn. A
+  spell you cannot see coming is a trap, not a duel.
 - **Legality is the only failure path.** An illegal target is refused *before*
   anything moves, so a cast can never half-happen and leave the boards in a
   state nobody designed. A cast that would change nothing is illegal, not a
@@ -531,7 +532,7 @@ Learned from real play, each one a shipped bug:
   A changed total scales the number, and reading inside that window looks
   exactly like layout drift.
 
-### The rune in play: RC4's charge stack (selected 2026-08-23)
+### The rune in play: RC4's paired charge stack (selected 2026-08-23, paired 2026-08-25)
 
 Six alternatives remain as design history in
 `design/screens/studies/open/29a…29f`, group **"4g · The rune in play"** in
@@ -545,17 +546,20 @@ The rail now keeps that card vocabulary in play.
 
 **The frame, decided:**
 
-- **One slot, one card, and it belongs to whoever is to move.** The nameplate
-  readout goes away; the plate gives that lane back to the score. Watch
-  "Reserve, never collapse" above when it does.
+- **One slot, one persistent hand per dealt seat.** Shared named and RANDOM
+  deals keep two matching hands; RANDOM 2 keeps two different hands. The active
+  hand comes forward and the standby hand recedes on every turn change, so the
+  physical cards switch depth instead of one card changing identity. The
+  nameplate readout stays gone and the plate keeps that lane for the score.
+  Watch "Reserve, never collapse" above.
 - **The card is the reveal's card at rail size** — same face, same deck back,
   same corner index, icon centred (`.rdealt` / `.rface` / `.rback` in
   `styles/components/rune-deal.css`). Not a new object.
 - **At rest it is SMALLER than the die in play.** Same width as the button it
   replaces, buying its presence in height only, and stopping short:
   card height `--cell*.81` against a die of `--cell*.92`, about 88% of it.
-  Only the ACTIVE card passes the die, at 1.16. The die is the thing being
-  decided about; a rune that out-measures it steals the centre.
+  Only a card being activated passes the die, at 1.16. The die is the thing
+  being decided about; a rune that out-measures it steals the centre.
 - **Portrait aligns it with the board's third column.** The die keeps the
   table's centre while the card stays vertically beside it and places its own
   centre on the rightmost column's centre line (`--cell + --gap`). Landscape
@@ -568,22 +572,24 @@ The rail now keeps that card vocabulary in play.
   filter. Rather than adding those properties only when a state changes, its
   icon therefore stays on one Safari compositing surface instead of twitching
   a few pixels as iOS rerasterises the rotated SVG. For a fixed viewer's full
-  opponent turn the
-  shared card transitions over 250ms to 95% scale, 42% opacity and partial
-  grayscale, then returns to exactly 100% for the viewer's turn. This is the
-  machine turn in single-player today. Online tracks the same viewer-relative
-  ownership now, but ranked's empty hand keeps the cue invisible until online
-  runes are intentionally introduced. An own rune with no legal target uses
-  the same mute but remains 100%, so every registry spell advertises whether it
-  can be activated without pretending ownership changed. Brief busy or phase
-  locks keep the stable pre-lock appearance at its current ownership size;
-  pressing still supplies the selected flip and 1.16 enlargement. Local
-  two-player has no fixed viewer and never shrinks either active card.
-- **The face carries the rune hue; ownership is a dot.** A shared deal needs no
-  seat mark: the die beside its one card already says whose turn it is. RANDOM
-  2 keeps both cards in the slot, so each gains the same tiny player-colour dot
-  used by its HUD chip. The active hand comes forward while the other remains
-  readable behind it; neither face trades its rune identity for a seat colour.
+  opponent turn the active opponent hand transitions over 250ms to 95% scale,
+  then returns to exactly 100% for the viewer's turn. In single-player, the
+  machine-owned hand also keeps its historical 42% opacity and partial
+  grayscale. Online tracks the same viewer-relative scale now, but ranked's
+  empty hands keep the cue invisible until online runes are intentionally
+  introduced. An own rune with
+  no legal target uses the same mute but remains 100%, so every registry spell
+  advertises whether it can be activated without pretending ownership changed.
+  Brief busy or phase locks keep the stable pre-lock appearance at its current
+  ownership size; pressing still supplies the selected flip and 1.16
+  enlargement. Local two-player has no fixed viewer and never shrinks either
+  active hand.
+- **The face carries the rune hue; an offset edge carries ownership.** Every
+  hand has the same restrained player-colour echo under its top physical card,
+  including matching shared-rune hands. The edge inherits the card's tilt and
+  follows it through every active/standby depth swap; neither face trades its
+  rune identity for a seat colour. The edge fades before that card turns and
+  stays absent once the charge is spent.
 - **An unplayed rune lies FACE-DOWN**, its index enlarged for rail size — the
   deck draws that index at 26% for a card 2.5× bigger, which is a 9px smudge
   here. A played rune is face UP. That is the reading every card game already
@@ -604,11 +610,12 @@ The rail now keeps that card vocabulary in play.
 
 **RC4's distinguishing rule.** Each remaining charge is a card at its own
 tilt. Committing a cast deals the top card face-up and away; a fully spent hand
-leaves the same number of dashed outlines. FATE therefore reads as two, then
-one, then an empty two-card stack without a numeric badge. The drag ghost is
-the same face-up card, reduced motion resolves directly to the remaining hand,
-and the fixed outline keeps portrait, landscape and LIMITED stage geometry
-unchanged.
+leaves the same number of alpha-checker mattes. Those close, fully opaque night
+tones look transparent but completely mask a hand below. FATE therefore reads
+as two, then one, then an empty two-card stack without a numeric badge. The drag
+ghost is the same face-up card, reduced motion resolves directly to the
+remaining hand, and the fixed matte keeps portrait, landscape and LIMITED
+stage geometry unchanged.
 
 **The machine shows its tell.** Once the CPU has chosen a legal cast, it holds
 the card for a random **320–900ms** before activation. Declining a spell adds

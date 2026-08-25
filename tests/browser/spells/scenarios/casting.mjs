@@ -5,13 +5,16 @@ export async function runCastingScenarios(suite) {
   await table([[2], [3], []], [[6, 6], [5], []]);
   out.dealt = await look();
   check(out.dealt.runeShown, 'no rune in an offline game', out.dealt);
-  // One rail follows the turn. Plates carry scores only; the current hand is
-  // a card stack aligned with the right board column and the die says whose hand it is.
+  // One rail keeps both seat hands. Plates carry scores only; the active hand
+  // aligns with the right board column and the die says whose turn it is.
   check(out.dealt.mineHome === 'spellBar' && out.dealt.runeSeat === '1',
     'the rail does not belong to the player to move', out.dealt);
   check(out.dealt.charges === '[{"pilfer":1},{"pilfer":1}]', 'both seats hold one cast', out.dealt.charges);
-  check(out.dealt.visibleRunes === 1 && out.dealt.cards === 1 && out.dealt.outlines === 0,
-    'a single-use rune is not one face-down card in one slot', out.dealt);
+  check(out.dealt.visibleRunes === 2 && out.dealt.cards === 1 && out.dealt.outlines === 0
+      && out.dealt.runes.every((rune) => rune.spell === 'pilfer' && rune.cards === 1)
+      && out.dealt.runes.some((rune) => rune.seat === '1' && rune.active)
+      && out.dealt.runes.some((rune) => rune.seat === '0' && rune.standby),
+    'a shared single-use rune is not two persistent one-card seat hands', out.dealt);
 
   /* ---------- 2. tap to arm ---------- */
   await tapRune(); await page.waitForTimeout(420);
@@ -20,7 +23,7 @@ export async function runCastingScenarios(suite) {
   check(out.armed.casting && !out.armed.castself, 'a column spell arms the board, not the stage', out.armed);
   check(/column/i.test(out.armed.status), 'no instruction while aiming', out.armed.status);
   out.armedCard = await page.evaluate(() => {
-    const card = document.querySelector('#spellBar .rune-charge.top');
+    const card = document.querySelector('#spellBar .rune.hand-active .rune-charge.top');
     return { face: +getComputedStyle(card.querySelector('.rface')).opacity,
       back: +getComputedStyle(card.querySelector('.rback')).opacity,
       animations: card.getAnimations().map((a) => a.animationName) };
@@ -51,7 +54,7 @@ export async function runCastingScenarios(suite) {
       mine: JSON.stringify(k.S.boards[1]),
       casting: document.getElementById('kbroot').classList.contains('casting'),
       targets: document.querySelectorAll('#topBoard .col.aim').length,
-      cardArmed: document.querySelector('#spellBar .rune:not([hidden])')?.classList.contains('armed'),
+      cardArmed: document.querySelector('#spellBar .rune.hand-active:not([hidden])')?.classList.contains('armed'),
     };
   });
   check(!out.pilferLockedAim.disarmed && out.pilferLockedAim.armed === 'pilfer'
@@ -105,7 +108,7 @@ export async function runCastingScenarios(suite) {
   /* ---------- 5. drag and drop reaches the same gate ---------- */
   await newGame(); check(await waitChoose(), 'game never reached choose (drag)');
   await table([[1, 1], [], []], [[6], [], []]);
-  const box = await page.locator('#spellBar .rune:not([hidden])').boundingBox();
+  const box = await page.locator('#spellBar .rune.hand-active:not([hidden])').boundingBox();
   const target = await page.locator('#topBoard .col[data-col="0"]').boundingBox();
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down();

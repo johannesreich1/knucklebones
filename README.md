@@ -184,6 +184,12 @@ deleted from the classified source tree loses its four built files and its four
 manifest entries on the next build, so the manifest is always a statement
 about what the repo holds right now.
 
+A shipped study keeps its full comparison board: mark the selected option and
+date in the card, then move its unchanged basename from `studies/open/` to
+`product/`. The stable basename preserves its Claude Design identity while the
+unselected alternatives remain useful design history. The exact lifecycle is
+documented in `design/README.md`.
+
 ### Syncing to Claude Design
 
 The cards live in the Claude Design project **Knucklebones**. Syncing needs
