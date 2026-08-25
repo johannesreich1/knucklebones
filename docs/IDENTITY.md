@@ -37,9 +37,12 @@ learns a provider's name; the web build finds none.
 **Rung 1 — guest: LIVE.** Verified against production on 2026-08-19: a guest
 joined ranked and matched a bot with no email anywhere.
 
-**Rung 2 — Apple: core attach/restore path implemented; release work deferred.**
-The owner explicitly deferred Apple enablement and device acceptance on
-2026-08-24. iOS uses native AuthenticationServices. Android initializes the same bridge
+**Rung 2 — Apple: core attach/restore path implemented; release work resumed.**
+On 2026-08-25 the owner confirmed the paid Developer Program membership is
+active, Sign in with Apple and Game Center are enabled on the existing App ID,
+the App Store Connect record exists, and repository entitlement wiring is
+authorized. Device, provisioning, Supabase, and deletion-revocation acceptance
+remain open. iOS uses native AuthenticationServices. Android initializes the same bridge
 with Services ID `com.appavaria.knucklebones.web` and uses its HTTPS WebView
 flow. Every attempt creates a raw nonce and state; Apple receives
 `SHA-256(rawNonce)`, Supabase receives the raw nonce, and Android results must
@@ -63,40 +66,36 @@ but nothing has run on a device. The Edge Function, migration 0014, and its
 until a signed build can exercise them — an auth endpoint that has never
 answered a real request does not belong in production.
 
-### Deferred Apple owner/release checklist
+### Apple owner/release checklist
 
-Do not execute or mark this checklist complete until the owner resumes Apple
-identity work. None of it is required for the current shell-validation pass;
-all of it remains required before Apple identity is offered in a store build.
+Work resumed on 2026-08-25. Checked items below are owner-confirmed portal state
+or repository state; they do not imply that a provisioning profile, signed
+archive, device authentication, or production backend rollout succeeded.
 
 - [x] **Anonymous sign-ins → ON** — done 2026-08-19.
 - [ ] **Confirm email → OFF**, or configure SMTP. Until then "Keep it forever"
       can only get as far as *"confirm the link we sent"* — and no link is sent.
       Guest play is unaffected.
-- [ ] **A paid Apple Developer Program membership**, if `4RKFC79X48` is not one
-      already. Sign in with Apple and Game Center are both paid-only
-      capabilities; a free personal team cannot sign `App.entitlements`.
-
-      `App.entitlements` exists but is **deliberately not wired** — the Xcode
-      project has no `CODE_SIGN_ENTITLEMENTS` setting. It was wired on
-      2026-08-19 and immediately unwired: Xcode cannot create a development
-      provisioning profile for capabilities the App ID lacks, so the local
-      build failed outright with *"Cannot create a iOS App Development
-      provisioning profile"*. A capability that cannot be signed is not a
-      harmless placeholder — it stops the app compiling. Wire it back (both
-      build configurations) only AFTER the portal has the capabilities.
-- [ ] **Apple App ID:** enable Sign in with Apple for the existing
-      `com.appavaria.knucklebones` App ID.
-- [ ] **App Store Connect name:** set the localized store listing name to
-      **Knucklebones Neon**. The uploaded bundle deliberately keeps
-      `CFBundleDisplayName` as **Knucklebones** for the installed Home Screen.
+- [x] **Paid Apple Developer Program membership** for team `4RKFC79X48` — owner
+      confirmed active 2026-08-25.
+- [x] **Apple App ID capabilities:** Sign in with Apple is enabled and configured
+      as Primary App ID; Game Center is enabled on
+      `com.appavaria.knucklebones` — owner confirmed 2026-08-25.
+- [x] **App Store Connect record:** **Knucklebones Neon**, Apple app id
+      `6804966098`, SKU `knucklebones-ios-001`, bundle id
+      `com.appavaria.knucklebones`. The native app bundle deliberately keeps
+      `CFBundleDisplayName` as **Knucklebones** for the Home Screen. The record
+      exists, but store-name/trademark clearance remains open.
+- [x] **Repository entitlements:** `App.entitlements` is wired into the App
+      target's Debug and Release configurations and requests both confirmed
+      capabilities. The iOS shell contract rejects partial or stale wiring.
+- [ ] **Provisioning and signed acceptance:** let automatic signing regenerate
+      or select profiles containing both capabilities, then prove a signed
+      physical-device build and Release archive contain both entitlements.
 - [ ] **Apple Services ID:** create `com.appavaria.knucklebones.web`, associate
       it with that App ID, and register website domain
       `euzjcejbkxvqfrttgaxu.supabase.co` with return URL
       `https://euzjcejbkxvqfrttgaxu.supabase.co/auth/v1/callback`.
-- [ ] **Provisioning, then entitlements:** regenerate/confirm provisioning for
-      the App ID capability first. Only then wire the prepared
-      `App.entitlements` into both Xcode build configurations.
 - [ ] **Supabase Apple provider → ON:** list
       `com.appavaria.knucklebones.web` first and
       `com.appavaria.knucklebones` second under Client IDs.
@@ -124,7 +123,8 @@ uploaded in its place.
       **Knucklebones Neon**.
 - [ ] Enroll in Play App Signing, keep a distinct owner-held upload key, and
       configure only the ignored `native/android/keystore.properties` locally.
-- [ ] Run `npm run native:bundle:android` and manually upload its signed AAB.
+- [ ] Run `mise exec -- npm run native:bundle:android` and manually upload its
+      signed AAB.
       Do not add Play API credentials or automated publishing to CI.
 
 Apple requires an App Store app using Sign in with Apple before the associated
@@ -137,10 +137,10 @@ resolve store-name legal/trademark clearance.
 ### Then, in the repo
 
 ```bash
-npm --prefix native ci
-npm run native:verify:ios
-npm run native:verify:android
-# or: npm run native:verify
+mise exec -- npm --prefix native ci
+mise exec -- npm run native:verify:ios
+mise exec -- npm run native:verify:android
+# or: mise exec -- npm run native:verify
 ```
 
 The native package installs `plugins/gamecenter` through its tracked local

@@ -2,20 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- PREPARED, NOT WIRED. This file is deliberately NOT referenced by the
-	     Xcode project: CODE_SIGN_ENTITLEMENTS was removed on 2026-08-19 because
-	     it broke local builds — Xcode cannot create a development provisioning
-	     profile for capabilities the App ID does not have, and BOTH of these
-	     are paid-Developer-Program-only. An unusable capability is not a
-	     harmless placeholder; it stops the app compiling at all.
-
-	     To turn them on, in this order:
-	       1. paid Apple Developer Program membership for team 4RKFC79X48
-	       2. enable Sign in with Apple + Game Center on the App ID
-	          (com.appavaria.knucklebones) in the developer portal
-	       3. add back to BOTH build configurations in project.pbxproj:
-	            CODE_SIGN_ENTITLEMENTS = App/App.entitlements;
-	     See docs/IDENTITY.md. -->
+	<!-- Configured for the App target's Debug and Release configurations. The owner
+	     confirmed both capabilities on com.appavaria.knucklebones in the Apple
+	     Developer portal on 2026-08-25; the iOS shipping contract keeps this
+	     payload and both CODE_SIGN_ENTITLEMENTS settings in sync. -->
 	<key>com.apple.developer.applesignin</key>
 	<array>
 		<string>Default</string>

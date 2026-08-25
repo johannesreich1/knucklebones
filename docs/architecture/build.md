@@ -88,6 +88,55 @@ Splash Screen bridge hides it on the next task with a 200 ms fade, while the
 native five-second auto-hide remains a crash/error watchdog. The web and widget
 entries do not import a native plugin.
 
+### iOS signing and owner release
+
+The owner confirmed the paid team plus Sign in with Apple and Game Center on
+App ID `com.appavaria.knucklebones` on 2026-08-25. `App/App.entitlements` is
+therefore configured through `CODE_SIGN_ENTITLEMENTS` in both App target build
+configurations; automatic signing remains assigned to team `4RKFC79X48`. The
+iOS shell contract checks both settings and the exact entitlement payload.
+
+Portal state and repository wiring do not prove that a generated profile or
+signed product contains those capabilities. Before release, use Xcode to
+refresh signing, build on a physical device, archive Release, and inspect the
+signed app entitlements. Apple attach/restore and Game Center identity also
+remain device acceptance, while the Services ID, Supabase switches, deletion
+revocation, and held Game Center backend rollout remain separate checklist
+items in `docs/IDENTITY.md`.
+
+### App Store screenshot delivery
+
+The App Store Connect record is fixed in
+`marketing/app-store/ios/app-store-connect.json`: Apple app id `6804966098`,
+SKU `knucklebones-ios-001`, bundle id `com.appavaria.knucklebones`, and initial
+version `1.0`. Fastlane 2.238.0 is pinned by `Gemfile.lock`. This owner-local
+workflow is deliberately separate from Cloudflare deployment and from binary
+upload:
+
+| Command | Effect |
+|---|---|
+| `npm run appstore:fastlane:install` | Install the locked Ruby dependencies into ignored `vendor/bundle/` |
+| `npm run appstore:screenshots:verify` | Read-only PNG, dimensions, alpha, manifest, and SHA-256 validation |
+| `npm run appstore:screenshots:contract` | Focused listing identity, export, dependency-pin, and mutation-guard contract |
+| `npm run appstore:screenshots:test` | Pure planner safety cases, including duplicates and the ten-item capacity boundary |
+| `npm run appstore:screenshots:check` | Repeat local validation through pinned Fastlane and prove 1320 × 2868 maps to `APP_IPHONE_67` |
+| `npm run appstore:screenshots:plan` | Authenticate read-only, resolve one existing version and locale, and print an inventory-bound confirmation token |
+| `npm run appstore:screenshots:upload` | After campaign approval, synchronize only that locale's `APP_IPHONE_67` set |
+
+The upload lane never uses generic Deliver overwrite/sync, creates no version
+or localization, uploads no binary or other metadata, and never submits for
+review. It preserves every other locale and device set, uploads before deleting
+where capacity permits, and requires an exact plan token before any mutation.
+The `.p8` key stays outside the repository; `.env.appstore` is ignored.
+
+The current campaign remains machine-gated as a draft until ranked runes ship
+and the store name is cleared. Approving it requires a reviewed change to both
+the manifest status and `uploadApproved`, with all affected previews rebuilt in
+the same change. Because the Xcode target is universal, this iPhone-only lane
+does not satisfy the separate 13-inch iPad screenshot requirement. The detailed
+credential, plan, and approval procedure lives in
+`marketing/app-store/ios/README.md`.
+
 Android uses `com.appavaria.knucklebones` for both namespace and application
 id, minSdk 24, compile/target SDK 36, AGP 8.13.0, Gradle 8.14.3, and Java 21.
 Its initial release metadata is versionCode 1 and versionName `1.0`. The two
@@ -123,13 +172,26 @@ remains unresolved; a technically valid bundle is not approval to submit it.
 
 ## Node and CI
 
-`.nvmrc` is the repository Node source of truth: Node 24. `package.json`
-enforces the supported major and CI consumes `.nvmrc` rather than copying a
-second version literal. `build.mjs` also runs TypeScript and Vite with its own
-`process.execPath`, preventing a different `npx` installation from silently
-using another Node runtime. The release runner applies the same rule to both
-builds and every test/benchmark child, so entering the gate through a validated
-Node 24 executable cannot fall back to a different bare `node` found on `PATH`.
+`.nvmrc` is the repository Node source of truth: Node 24. `mise.toml` enables
+that idiomatic pin and owns the managed zsh activation, so entering the
+checkout selects the same runtime for `node`, `npm`, `npx`, Vite, Capacitor,
+and JavaScript shebangs. Run non-interactive or agent commands through
+`mise exec --`; machine-specific Node paths are not a supported entry point.
+`package.json` enforces the supported major through both `engines` and npm's
+source-worktree `devEngines` check, while CI and Cloudflare consume `.nvmrc`
+instead of copying a second version literal.
+
+This is intentionally a host toolchain rather than a Node Docker image. The
+integrated iOS path continues from the web build into host CocoaPods and Xcode;
+a Linux container would split that workflow without supplying Apple's native
+toolchain. Database isolation remains Docker-owned because it has no such
+host-native handoff.
+
+`build.mjs` runs TypeScript and Vite with its own `process.execPath`, preventing
+a child `npx` installation from silently using another Node runtime. The
+release runner applies the same rule to both builds and every test/benchmark
+child, so entering the gate through `mise exec --` cannot fall back to a
+different bare `node` found on `PATH`.
 
 Cloudflare Pages builds `main` and deploys immediately. Repository verification
 is therefore preventive: choose focused/specialized gates for a well-contained,

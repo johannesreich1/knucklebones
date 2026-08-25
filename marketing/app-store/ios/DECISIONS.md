@@ -242,3 +242,36 @@ design; the obsolete exported PNG is intentionally not part of this set.
 The campaign is ready for a new internal review only when all six exports match
 this sequence and fixture contract. App Store upload also requires the owner to
 resolve the ranked-rune launch dependency and store-name clearance.
+
+## Delivery decision
+
+The uploader is owner-local, explicit, and separate from application deploys.
+Screenshots are App Store listing metadata rather than binary content; coupling
+them to every Cloudflare push, native sync, or archive would grant store-write
+credentials to an unrelated path and could publish a draft after an ordinary
+code change.
+
+Fastlane 2.238.0 is locked because the targeted implementation uses its
+Spaceship App Store Connect models. Generic Deliver overwrite was rejected:
+this is a universal iPhone/iPad app, and that action can clear or reorder all
+screenshot sets in an included locale. The selected workflow reads the exact
+app/version/existing locale, scopes changes to `APP_IPHONE_67`, snapshots every
+other locale/device set, and verifies that snapshot after the operation.
+
+The workflow separates local check, remote read-only plan, and mutation. A
+confirmation token binds the app id, version, locale, ordered local checksums,
+and current remote inventory; a changed file or remote edit invalidates it. A
+plan additionally requires the whole marketing input/export directory to be
+tracked and clean, along with the Fastlane implementation, package commands,
+Gemfile, and lock. An unreviewed local capture or uploader edit cannot run
+against the store.
+Uploads fill spare capacity before stale target images are removed, while a
+full ten-image target deletes only one proven-stale member at a time. This makes
+partial failure recoverable without blanking the set. No lane creates a version
+or localization, uploads a binary/general metadata, or submits for review.
+
+Machine-readable draft approval is deliberately independent of credentials.
+Even a valid API key and confirmation token cannot upload until the ranked-rune
+and name dependencies are resolved in a reviewed change that updates both the
+manifest status and `uploadApproved`. The current six-image set also does not
+pretend to satisfy the separate 13-inch iPad requirement.

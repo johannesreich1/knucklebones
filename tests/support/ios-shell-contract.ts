@@ -16,6 +16,7 @@ const PODFILE = 'native/ios/App/Podfile';
 const CONFIG = 'native/capacitor.config.json';
 const XCODE = 'native/ios/App/App.xcodeproj/project.pbxproj';
 const INFO = 'native/ios/App/App/Info.plist';
+const ENTITLEMENTS = 'native/ios/App/App/App.entitlements';
 const APP_DELEGATE = 'native/ios/App/App/AppDelegate.swift';
 const SCENE_DELEGATE = 'native/ios/App/App/SceneDelegate.swift';
 const LAUNCH_SCREEN = 'native/ios/App/App/Base.lproj/LaunchScreen.storyboard';
@@ -53,6 +54,43 @@ export function verifyIosShellContract(check: Check): {
   for (const id of xcodeIds) {
     check(id === APP_ID, `${XCODE} uses PRODUCT_BUNDLE_IDENTIFIER=${id}, expected ${APP_ID}`);
   }
+  const appBuildConfigurations = [...xcode.matchAll(
+    /\t\t[A-F0-9]{24} \/\* (Debug|Release) \*\/ = \{\n([\s\S]*?)\n\t\t\};/g,
+  )]
+    .map((match) => ({ name: match[1], body: match[2] }))
+    .filter(({ body }) => new RegExp(
+      `PRODUCT_BUNDLE_IDENTIFIER\\s*=\\s*${APP_ID.replaceAll('.', '\\.')}\\s*;`,
+    ).test(body));
+  check(JSON.stringify(appBuildConfigurations.map(({ name }) => name).sort()) === JSON.stringify(['Debug', 'Release']),
+    `${XCODE} must expose exactly one App-target Debug and Release build configuration`);
+  for (const configuration of appBuildConfigurations) {
+    const signingEntitlements = [...configuration.body.matchAll(
+      /CODE_SIGN_ENTITLEMENTS\s*=\s*([^;\s]+)\s*;/g,
+    )].map((match) => match[1]);
+    check(JSON.stringify(signingEntitlements) === JSON.stringify(['App/App.entitlements']),
+      `${XCODE} App ${configuration.name} must reference App/App.entitlements exactly once; `
+      + `found ${JSON.stringify(signingEntitlements)}`);
+    check(/CODE_SIGN_STYLE\s*=\s*Automatic\s*;/.test(configuration.body)
+      && /DEVELOPMENT_TEAM\s*=\s*4RKFC79X48\s*;/.test(configuration.body),
+      `${XCODE} App ${configuration.name} must retain automatic signing on team 4RKFC79X48`);
+  }
+  const allSigningEntitlements = [...xcode.matchAll(/CODE_SIGN_ENTITLEMENTS\s*=\s*([^;\s]+)\s*;/g)]
+    .map((match) => match[1]);
+  check(allSigningEntitlements.length === 2,
+    `${XCODE} must not attach signing entitlements outside the App target Debug and Release configurations`);
+
+  const entitlements = readFileSync(ENTITLEMENTS, 'utf8');
+  const entitlementDictionary = (entitlements.match(/<dict>([\s\S]*?)<\/dict>/) || [])[1] ?? '';
+  const normalizedEntitlementPayload = entitlementDictionary
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\s+/g, '');
+  const expectedEntitlementPayload = '<key>com.apple.developer.applesignin</key>'
+    + '<array><string>Default</string></array>'
+    + '<key>com.apple.developer.game-center</key><true/>';
+  check(normalizedEntitlementPayload === expectedEntitlementPayload,
+    `${ENTITLEMENTS} must contain only default Sign in with Apple and enabled Game Center; `
+    + `found ${normalizedEntitlementPayload}`);
+
   const info = readFileSync(INFO, 'utf8');
   check(info.includes('<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>'),
     `${INFO} must derive CFBundleIdentifier from Xcode's PRODUCT_BUNDLE_IDENTIFIER`);

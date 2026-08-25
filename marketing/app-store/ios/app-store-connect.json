@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "storeName": "Knucklebones Neon",
+  "appleAppId": "6804966098",
+  "bundleId": "com.appavaria.knucklebones",
+  "sku": "knucklebones-ios-001",
+  "appVersion": "1.0",
+  "platform": "IOS",
+  "screenshotDisplayType": "APP_IPHONE_67",
+  "exportDirectory": "exports/iphone-6.9",
+  "uploadApproved": false
+}

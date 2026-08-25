@@ -1,0 +1,8 @@
+# Keep .nvmrc as the single Node version source for local shells, agents,
+# Cloudflare, and CI. mise activates it automatically inside this checkout.
+[settings]
+idiomatic_version_file_enable_tools = ["node"]
+idiomatic_version_file_disable_files = ["node:package.json"]
+
+[bootstrap.mise_shell_activate]
+zshrc = "activate"

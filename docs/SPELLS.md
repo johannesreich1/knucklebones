@@ -166,7 +166,7 @@ for each configured row (72,000 games total):
 | ANVIL / COLUMN SHIELD | 62.8% | .59 | 14.8 | 88.5% | .56 / .75 / .91 | 42.4% |
 | ANVIL / SINGLE STRIKE | 62.0% | .61 | 13.7 | 87.4% | .59 / .78 / .94 | 47.6% |
 
-Command: `/opt/homebrew/bin/node --no-warnings --experimental-strip-types tools/spellsim.ts --games 3000`,
+Command: `mise exec -- node --no-warnings --experimental-strip-types tools/spellsim.ts --games 3000`,
 depth 2, risk .9, seed `20260821`, no `--tune` or `--uses` overrides. Ordinary
 search carries persistent WARD state; `machineCastPlan` coordinates current-turn
 WARD/SUNDER effects with Normal's 5% slip; terminal scores include active WARD

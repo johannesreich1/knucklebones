@@ -7,12 +7,18 @@ const jobSource = (workflow: string, jobName: string): string => {
   return lines.slice(start, end < 0 ? lines.length : end).join('\n');
 };
 
-/** Keep the database job self-contained and on the repository's Node pin. */
-export function databaseJobUsesPinnedNode(workflow: string): boolean {
+/** Keep every Node-consuming job self-contained and on the repository pin. */
+export function nodeJobsUsePinnedNode(workflow: string): boolean {
   if (/node-version:\s*['"]?\d/.test(workflow)) return false;
-  const database = jobSource(workflow, 'database');
-  const setupAt = database.search(/uses:\s*actions\/setup-node@v5/);
-  const pinAt = database.search(/node-version-file:\s*\.nvmrc\b/);
-  const startAt = database.search(/run:\s*npm run db:start\b/);
-  return setupAt >= 0 && pinAt > setupAt && startAt > pinAt;
+  const jobNames = [...workflow.matchAll(/^  ([a-zA-Z0-9_-]+):\s*$/gm)]
+    .map((match) => match[1]);
+  const nodeJobs = jobNames
+    .map((name) => jobSource(workflow, name))
+    .filter((job) => /^\s+- run:\s*(?:node|npm|npx)\b/m.test(job));
+  return nodeJobs.length > 0 && nodeJobs.every((job) => {
+    const setupAt = job.search(/uses:\s*actions\/setup-node@v5/);
+    const pinAt = job.search(/node-version-file:\s*\.nvmrc\b/);
+    const firstNodeCommandAt = job.search(/^\s+- run:\s*(?:node|npm|npx)\b/m);
+    return setupAt >= 0 && pinAt > setupAt && firstNodeCommandAt > pinAt;
+  });
 }

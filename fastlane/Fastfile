@@ -1,0 +1,124 @@
+require "json"
+require "tmpdir"
+require_relative "lib/screenshot_sync"
+
+REPOSITORY_ROOT = File.expand_path("..", __dir__)
+SCREENSHOT_ROOT = File.join(REPOSITORY_ROOT, "marketing", "app-store", "ios")
+APP_STORE_CONTRACT = File.join(REPOSITORY_ROOT, "tests", "appstore-delivery.test.ts")
+APP_STORE_CONFIG = JSON.parse(File.read(File.join(SCREENSHOT_ROOT, "app-store-connect.json")))
+SCREENSHOT_MANIFEST = JSON.parse(File.read(File.join(SCREENSHOT_ROOT, "manifest.json")))
+APPROVED_MANIFEST_STATUS = "approved for App Store Connect upload"
+
+def required_environment(name)
+  value = ENV[name]&.strip
+  UI.user_error!("Set #{name} before using the App Store Connect lane.") if value.nil? || value.empty?
+  value
+end
+
+def screenshot_sync
+  KnucklebonesAppStore::ScreenshotSync.new(
+    config: APP_STORE_CONFIG,
+    manifest: SCREENSHOT_MANIFEST,
+    repository_root: REPOSITORY_ROOT,
+    screenshot_root: SCREENSHOT_ROOT,
+    logger: ->(message) { UI.message(message) }
+  )
+end
+
+def run_local_screenshot_check
+  node_binary = ENV.fetch("KB_NODE_BINARY", "node")
+  sh(node_binary, "--experimental-strip-types", APP_STORE_CONTRACT)
+  files = screenshot_sync.desired
+  KnucklebonesAppStore::ScreenshotPlan.build(desired: files, screenshots: [])
+  UI.success("Verified #{files.length} opaque APP_IPHONE_67 screenshots and their committed checksums")
+  files
+rescue KnucklebonesAppStore::SafetyError => error
+  UI.user_error!(error.message)
+end
+
+def target_version_and_locale
+  version = required_environment("ASC_APP_VERSION")
+  unless version == APP_STORE_CONFIG.fetch("appVersion")
+    UI.user_error!("ASC_APP_VERSION must match repository version #{APP_STORE_CONFIG.fetch('appVersion')}")
+  end
+  locale = required_environment("ASC_SCREENSHOT_LOCALE")
+  unless locale.match?(/\A[a-z]{2}-[A-Z]{2}\z/) && locale.split("-").first == SCREENSHOT_MANIFEST.fetch("locale")
+    UI.user_error!("ASC_SCREENSHOT_LOCALE must be an existing #{SCREENSHOT_MANIFEST.fetch('locale')} App Store locale")
+  end
+  [version, locale]
+end
+
+def authenticate_app_store_connect
+  key_path = File.expand_path(required_environment("ASC_KEY_PATH"))
+  if key_path.start_with?("#{REPOSITORY_ROOT}/")
+    UI.user_error!("ASC_KEY_PATH must point outside the repository, even though *.p8 is ignored")
+  end
+  UI.user_error!("ASC_KEY_PATH does not point to a readable file") unless File.file?(key_path)
+
+  issuer = ENV["ASC_ISSUER_ID"]&.strip
+  issuer = nil if issuer.nil? || issuer.empty?
+  ENV["SPACESHIP_SCREENSHOT_UPLOAD_TIMEOUT"] ||= "10"
+  app_store_connect_api_key(
+    key_id: required_environment("ASC_KEY_ID"),
+    issuer_id: issuer,
+    key_filepath: key_path,
+    duration: 1200,
+    in_house: false,
+    set_spaceship_token: true
+  )
+end
+
+def print_screenshot_plan(result, version, locale)
+  plan = result.fetch(:plan)
+  missing = plan.fetch(:missing).map { |item| item.fetch(:name) }.join(", ")
+  stale = plan.fetch(:stale).map { |shot| shot.id.to_s }.join(", ")
+  UI.header("App Store screenshot plan")
+  UI.message("App: #{APP_STORE_CONFIG.fetch('storeName')} (#{APP_STORE_CONFIG.fetch('appleAppId')})")
+  UI.message("Target: iOS #{version}, #{locale}, #{APP_STORE_CONFIG.fetch('screenshotDisplayType')}")
+  UI.message("Keep: #{plan.fetch(:keepers).length}")
+  UI.message("Upload: #{missing.empty? ? 'none' : missing}")
+  UI.message("Delete from target only: #{stale.empty? ? 'none' : stale}")
+  UI.message("Reorder target: #{plan.fetch(:reorder) ? 'yes' : 'no'}")
+  UI.message("Campaign uploadApproved: #{APP_STORE_CONFIG.fetch('uploadApproved')}")
+  UI.important("ASC_SCREENSHOT_UPLOAD_CONFIRM=#{result.fetch(:token)}")
+end
+
+default_platform(:ios)
+
+platform :ios do
+  desc "Verify the committed iPhone 6.9-inch screenshots without credentials or network writes"
+  lane :screenshots_check do
+    run_local_screenshot_check
+  end
+
+  desc "Read App Store Connect and print the exact target-only screenshot plan and confirmation token"
+  lane :screenshots_plan do
+    run_local_screenshot_check
+    version, locale = target_version_and_locale
+    authenticate_app_store_connect
+    result = screenshot_sync.plan!(version_string: version, locale: locale)
+    print_screenshot_plan(result, version, locale)
+  rescue KnucklebonesAppStore::SafetyError => error
+    UI.user_error!(error.message)
+  end
+
+  desc "Apply a confirmed idempotent sync to only one locale's APP_IPHONE_67 set"
+  lane :screenshots_upload do
+    run_local_screenshot_check
+    unless APP_STORE_CONFIG.fetch("uploadApproved") && SCREENSHOT_MANIFEST.fetch("status") == APPROVED_MANIFEST_STATUS
+      UI.user_error!("This campaign is still draft-gated; approve the manifest and app-store-connect.json in a reviewed change first.")
+    end
+    version, locale = target_version_and_locale
+    confirmation = required_environment("ASC_SCREENSHOT_UPLOAD_CONFIRM")
+
+    lock_path = File.join(Dir.tmpdir, "knucklebones-app-store-screenshots.lock")
+    File.open(lock_path, File::RDWR | File::CREAT, 0o600) do |lock|
+      UI.user_error!("another local App Store screenshot upload is running") unless lock.flock(File::LOCK_EX | File::LOCK_NB)
+      authenticate_app_store_connect
+      result = screenshot_sync.sync!(version_string: version, locale: locale, confirmation: confirmation)
+      UI.success("App Store screenshot target is exact: #{result.fetch(:count)} images; no binary, metadata, or review submission was touched")
+    end
+  rescue KnucklebonesAppStore::SafetyError => error
+    UI.user_error!(error.message)
+  end
+end

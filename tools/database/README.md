@@ -9,31 +9,32 @@ Use the guarded rollout command instead:
 
 ```sh
 # Read production history/schema and prove the exact dry-run plan. No writes.
-/opt/homebrew/bin/node --experimental-strip-types \
+mise exec -- node --experimental-strip-types \
   tools/database/production-rollout.mjs settings-locale
 
-/opt/homebrew/bin/node --experimental-strip-types \
+mise exec -- node --experimental-strip-types \
   tools/database/production-rollout.mjs match-command-retention
 
 # Apply the already-previewed allow-list, then validate history and schema.
 KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
-  /opt/homebrew/bin/node --experimental-strip-types \
+  mise exec -- node --experimental-strip-types \
   tools/database/production-rollout.mjs settings-locale --apply
 
 KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
-  /opt/homebrew/bin/node --experimental-strip-types \
+  mise exec -- node --experimental-strip-types \
   tools/database/production-rollout.mjs match-command-retention --apply
 ```
 
-`npm run db:production:settings` and `npm run db:production:commands` are the
-shorter preview commands when the npm process is already using Node 24. Add
-`-- --apply` plus the same environment opt-in to apply.
+`mise exec -- npm run db:production:settings` and
+`mise exec -- npm run db:production:commands` are the shorter preview commands.
+Add `-- --apply` plus the same environment opt-in to apply.
 
 The command is fail-closed. It:
 
 1. verifies Node 24, the configured production project, the exact
    lockfile-installed Supabase CLI, committed migration bytes, and manifest
-   SHA-256 hashes (run `npm ci` first; the command never downloads a CLI);
+   SHA-256 hashes (run `mise exec -- npm ci` first; the command never downloads
+   a CLI);
 2. reads the production history and catalog without returning player rows;
 3. creates a fresh temporary Supabase project and fetches the canonical live
    history into it;

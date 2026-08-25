@@ -62,15 +62,29 @@ online client is lazy-loaded, so the offline boot path never depends on it.
 
 ## Develop
 
+Node 24 is selected by `mise` from `.nvmrc`. One-time setup after installing
+`mise`:
+
 ```bash
-npm install
-npx vite            # dev server with hot reload
+mise trust
+mise install
+mise bootstrap mise-shell-activate apply
+mise exec -- node --version
+```
+
+The managed shell hook makes plain `node`, `npm`, `npx`, Vite, and Capacitor
+use that version whenever the shell is inside this checkout. Scripts and
+non-interactive automation should use `mise exec --` explicitly:
+
+```bash
+mise exec -- npm install
+mise exec -- npx vite            # dev server with hot reload
 ```
 
 ## Build
 
 ```bash
-npm run build       # = node build.mjs
+mise exec -- npm run build       # = node build.mjs
 ```
 
 Produces, with one content-derived build hash stamped into everything:
@@ -93,10 +107,10 @@ builds (`npm run build`, output dir `pwa`, Node pinned by `.nvmrc`) and
 deploys automatically.
 
 - **Cloudflare does not wait for GitHub CI** — never push a red gate to
-  `main`. Run `npm test` first, always.
+  `main`. Run `mise exec -- npm test` first, always.
 - The page is served network-first by the service worker, so a deploy shows
   up after a single app relaunch. Verify with the build tag on the home
-  screen — it must match what `npm run build` printed.
+  screen — it must match what `mise exec -- npm run build` printed.
 - The service-worker cache key and precache list are generated per build;
   never edit `pwa/sw.js` by hand (edit `public/sw.js`, the template).
 - `wrangler.jsonc` exists for Cloudflare's Workers-style git flow; classic
@@ -106,9 +120,9 @@ deploys automatically.
 ## Test
 
 ```bash
-npm test                                # full application gate
-npm run db:start                        # fresh database-only Supabase stack
-npm run test:db                         # pgTAP database contracts
+mise exec -- npm test                   # full application gate
+mise exec -- npm run db:start           # fresh database-only Supabase stack
+mise exec -- npm run test:db            # pgTAP database contracts
 ```
 
 The gate runs pure-core determinism/replay checks under plain Node, Playwright
@@ -145,17 +159,18 @@ What is still *not* isolated is the machine. Three concurrent gates flaked a
 drag-timing spell suite that passed alone and passed in a parallel worktree
 at the same commit; use `KB_JOBS=2` when peers are gating.
 
-Any suite also runs on its own — `node tests/test7.mjs` starts whatever server
-it needs and takes it down with the process. Nothing to launch in another
-terminal first. `npm run serve` still exists for a human who wants a stable
-URL to click (`node tests/serve.mjs [port]`, default 8123).
+Any suite also runs on its own — `mise exec -- node tests/test7.mjs` starts
+whatever server it needs and takes it down with the process. Nothing to launch in another
+terminal first. `mise exec -- npm run serve` still exists for a human who wants
+a stable URL to click (`mise exec -- node tests/serve.mjs [port]`, default
+8123).
 
 ## Design system
 
 `design/screens/` classifies hand-written card bodies as `product/`,
 `studies/open/`, or `studies/archive/`; unclassified top-level cards fail the
-build. `node design/build.mjs` discovers those directories recursively, inlines
-the app's **real** CSS, expands the `{{…}}`
+build. `mise exec -- node design/build.mjs` discovers those directories
+recursively, inlines the app's **real** CSS, and expands the `{{…}}`
 tokens into genuine markup — dice, mode and rune icons, the loading die, the
 reveal's versus line, whole rosters — by importing `src/` itself, emits each
 card at four device sizes (small phone / standard / pro-max / tablet) and
@@ -176,7 +191,7 @@ the `DesignSync` tool, which needs a claude.ai design authorization — so it
 runs from a session with an interactive terminal (`/design-login`), never from
 a cloud session, which has none.
 
-1. `node design/build.mjs` — never sync a stale `design/dist/`.
+1. `mise exec -- node design/build.mjs` — never sync a stale `design/dist/`.
 2. `DesignSync list_projects` → the project's id; `list_files` → what is up
    there now.
 3. **Deletes are computed, not remembered**: every remote `screens/*.html`
@@ -192,7 +207,8 @@ a cloud session, which has none.
 - **`colScore`/`countOf` (core/rules.ts) are the AI's hot path** (millions of
   calls per move). Hard upgrades 4-ply → 5-ply search only if 4-ply finished
   within 18 ms — slowing scoring quietly weakens the CPU on mid phones.
-  Benchmark with `node tests/bench3.mjs`; ignore the first (JIT-cold) run.
+  Benchmark with `mise exec -- node tests/bench3.mjs`; ignore the first
+  (JIT-cold) run.
 - **Player index is identity** (1 = cyan/P1, 0 = magenta/P2); which half of
   the screen a player occupies is `S.bottom`, resolved via `sideKey()`. Never
   assume P1 is at the bottom — pass mode swaps halves, face mode doesn't.
@@ -234,22 +250,22 @@ Android local work needs Android Studio Otter or newer, JDK 21, and Android SDK
 36. Install both lockfiles before the platform commands:
 
 ```bash
-npm ci
-npm --prefix native ci
-npm run native:assets:android # regenerate tracked Android icon/splash resources
-npm run native:sync:ios       # build web bytes, then cap sync ios
-npm run native:open:ios
-npm run native:verify:ios     # sync plus the iOS shipping contract
-npm run native:sync:android
-npm run native:open:android
-npm run native:verify:android # sync plus the Android shipping contract
-npm run native:verify         # both platforms
+mise exec -- npm ci
+mise exec -- npm --prefix native ci
+mise exec -- npm run native:assets:android # regenerate tracked Android icon/splash resources
+mise exec -- npm run native:sync:ios       # build web bytes, then cap sync ios
+mise exec -- npm run native:open:ios
+mise exec -- npm run native:verify:ios     # sync plus the iOS shipping contract
+mise exec -- npm run native:sync:android
+mise exec -- npm run native:open:android
+mise exec -- npm run native:verify:android # sync plus the Android shipping contract
+mise exec -- npm run native:verify         # both platforms
 ```
 
 For a Play upload, copy `native/android/keystore.properties.example` to the
 ignored `native/android/keystore.properties`, point it at Johannes's
 owner-held upload keystore (preferably outside the checkout), and run
-`npm run native:bundle:android`. The command fails when the properties or key
+`mise exec -- npm run native:bundle:android`. The command fails when the properties or key
 are absent and never substitutes the debug key. CI deliberately builds only an
 unsigned, verification-only AAB; Johannes enrolls in Play App Signing with a
 distinct upload key and manually uploads the locally signed bundle. No Play API

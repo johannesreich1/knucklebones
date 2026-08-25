@@ -4,8 +4,8 @@ Read this page before changing tests, CI, browser harnesses, or release gates.
 
 ## Release gate
 
-`npm test` runs `tests/run-all.mjs`. The runner builds first, executes pure
-Node contracts, browser behaviour suites, design checks, and the AI benchmark,
+`mise exec -- npm test` runs `tests/run-all.mjs`. The runner builds first,
+executes pure Node contracts, browser behaviour suites, design checks, and the AI benchmark,
 then restores build output changed by update tests. Use it before pushing
 cross-cutting or high-risk changes, changes without decisive focused coverage,
 and shared build/test infrastructure changes. A well-contained, low-risk
@@ -16,7 +16,8 @@ preserving the validated Node 24 runtime for the whole gate even on a machine
 with another `node` earlier on `PATH`.
 
 Database contracts are a sibling CI gate because they require Docker and a
-fresh Supabase database: `npm run db:start`, `npm run test:db`, then schema
+fresh Supabase database: `mise exec -- npm run db:start`,
+`mise exec -- npm run test:db`, then schema
 lint. The start helper mirrors the project without raw Edge Function sources
 and starts only PostgreSQL; deployable function closures are materialized and
 Deno-checked separately. Run the database sequence locally for every
@@ -69,17 +70,30 @@ not narrow the behavioural state space.
 
 ## Native release verification
 
-`npm run test:native` runs the static iOS and Android shipping contracts
-without requiring a sync. Platform release checks use
-`npm run native:verify:ios`, `npm run native:verify:android`, or the combined
-`npm run native:verify`; each rebuilds, syncs, and requires the copied native
-web payload to match. Apple identity coverage separately exercises nonce
+`mise exec -- npm run test:native` runs the static iOS and Android shipping
+contracts without requiring a sync. Platform release checks use
+`mise exec -- npm run native:verify:ios`,
+`mise exec -- npm run native:verify:android`, or the combined
+`mise exec -- npm run native:verify`; each rebuilds, syncs, and requires the
+copied native web payload to match. Apple identity coverage separately exercises nonce
 hashing, Android state validation, per-platform plugin arguments,
 restore/attach/sessionless behavior, silent cancellation, conflict handling,
 and rejection before Supabase on invalid results. A Playwright startup contract
 observes the real built Home when the native bridge receives its one splash
 hide call; the focused unit contract also verifies boot-error release and that
 widget/web startup remains independent of Capacitor.
+
+The iOS contract also requires the App target's Debug and Release
+configurations to reference the exact Sign in with Apple and Game Center
+entitlement request. App Store listing delivery stays a separate focused
+contract: `appstore:screenshots:contract` checks listing identity, exports,
+Fastlane pinning, and mutation guardrails; `appstore:screenshots:test` exercises
+the pure target-set planner; and `appstore:screenshots:check` repeats the
+contract through pinned Fastlane and proves every export maps to
+`APP_IPHONE_67`. The authenticated `plan` lane is read-only. The `upload` lane
+is an external mutation and must remain outside `npm test` and CI; it requires
+committed reviewed inputs, campaign approval, and an inventory-bound
+confirmation token.
 
 The `android` CI job is deliberately separate from the web and database gates.
 It provisions Node 24, Java 21, Android SDK/build-tools 36, installs both npm
@@ -94,17 +108,19 @@ CI has no `keystore.properties`, upload keystore, or Play API credentials, so
 bundletool 1.18.3 to inspect the AAB's own package, version, SDK, security
 metadata, and signing state before the workflow uploads
 `knucklebones-neon-unsigned-aab` as a seven-day, verification-only artifact.
-It is never a publishable substitute for `npm run native:bundle:android`, and
-there is no automatic Play publication.
+It is never a publishable substitute for
+`mise exec -- npm run native:bundle:android`, and there is no automatic Play
+publication.
 
-Before a native release, run the full Node 24 `npm test` gate, the focused
+Before a native release, run the full Node 24 `mise exec -- npm test` gate, the focused
 native/identity/startup contracts, CocoaPods plus an unsigned iOS simulator
 build, and the Android Gradle/AAB job. Repository gates do not replace device
 acceptance:
 
-Apple/Game Center device acceptance and both stores' signed-release rehearsals
-were explicitly deferred by the owner on 2026-08-24. They remain required
-release gates; the current shell-validation pass does not mark them complete.
+Apple capability activation and repository entitlement wiring were completed
+on 2026-08-25, but profile uptake, signed archive/device acceptance, Game Center
+backend rollout, and both stores' signed-release rehearsals remain required
+release gates. Static shell validation does not mark them complete.
 
 | Target | Required acceptance |
 |---|---|

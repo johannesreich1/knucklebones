@@ -28,8 +28,20 @@ keystore.properties
 *.keystore
 *.p12
 *.pfx
+*.p8
+*.ipa
+*.mobileprovision
+*.provisionprofile
+*.xcarchive/
 *.xcuserdatad/
 xcuserdata/
+.bundle/
+vendor/bundle/
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots.html
+fastlane/README.md
+fastlane/test_output/
 # agent skills: content restored via `npx skills add` + skills-lock.json
 .agents/
 .claude/skills/
@@ -48,4 +60,5 @@ tests/screens/
 .env.*
 !.env.example
 !.env.live.example
+!.env.appstore.example
 design/dist/

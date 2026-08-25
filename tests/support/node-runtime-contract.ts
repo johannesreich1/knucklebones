@@ -1,11 +1,12 @@
 import { readFileSync } from 'node:fs';
-import { databaseJobUsesPinnedNode } from './ci-workflow.ts';
+import { nodeJobsUsePinnedNode } from './ci-workflow.ts';
 
 type Check = (ok: boolean, message: string) => void;
 
 const ROOT_PKG = 'package.json';
 const ROOT_LOCK = 'package-lock.json';
 const NVMRC = '.nvmrc';
+const MISE = 'mise.toml';
 const CI = '.github/workflows/ci.yml';
 const BUILD = 'build.mjs';
 const RUN_ALL = 'tests/run-all.mjs';
@@ -26,12 +27,26 @@ export function verifyNodeRuntimeContract(check: Check): {
   check(nodePin === '24', `${NVMRC} pins ${JSON.stringify(nodePin)}, expected Node 24`);
   check(rootPkg.engines?.node === nodeRange,
     `${ROOT_PKG} engines.node=${JSON.stringify(rootPkg.engines?.node)}, expected ${nodeRange}`);
+  check(rootPkg.devEngines?.runtime?.name === 'node'
+    && rootPkg.devEngines.runtime.version === nodeRange
+    && rootPkg.devEngines.runtime.onFail === 'error',
+  ROOT_PKG + ' devEngines.runtime must fail npm commands outside ' + nodeRange);
   check(rootLock.packages?.['']?.engines?.node === nodeRange,
     `${ROOT_LOCK} does not mirror ${ROOT_PKG}'s Node engine ${nodeRange}`);
 
+  check(Number(process.versions.node.split('.')[0]) === 24,
+    'verification is running under Node ' + process.versions.node + ', expected the repository Node 24 pin');
+
+  const mise = readFileSync(MISE, 'utf8');
+  check(/^\s*idiomatic_version_file_enable_tools\s*=\s*\[\s*["']node["']\s*\]\s*$/m.test(mise)
+    && /^\s*idiomatic_version_file_disable_files\s*=\s*\[\s*["']node:package\.json["']\s*\]\s*$/m.test(mise)
+    && /^\s*zshrc\s*=\s*["']activate["']\s*$/m.test(mise)
+    && !/^\s*node\s*=/m.test(mise),
+  MISE + ' must activate Node from ' + NVMRC + ' rather than duplicate its version');
+
   const ci = readFileSync(CI, 'utf8');
-  check(databaseJobUsesPinnedNode(ci),
-    `${CI}'s database job must install Node from .nvmrc before running the database start helper`);
+  check(nodeJobsUsePinnedNode(ci),
+    CI + ' must install Node from .nvmrc before every job first uses Node/npm/npx');
 
   const buildSource = readFileSync(BUILD, 'utf8');
   check(/process\.execPath/.test(buildSource),
