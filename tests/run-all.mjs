@@ -26,6 +26,7 @@ import { acquireCheckoutLock } from './support/gate-lock.mjs';
 
 const FILE_SUITES = [
   'test4', 'test6',
+  { name: 'release-main', file: 'tests/release-main.test.mjs' },
   { name: 'native-startup-browser', file: 'tests/browser/native-startup.mjs' },
   { name: 'localization-browser', file: 'tests/browser/localization/run.mjs' },
   { name: 'test8', file: 'tests/browser/responsive/run.mjs' },

@@ -57,6 +57,13 @@ differs. A second near-copy is a design failure, not a shortcut.
   decisive focused coverage, or touches shared build/test infrastructure. Report the
   exact verification performed and say explicitly when the full gate was not
   run.
+- **Always release through the native-aware helper.** After explicitly staging
+  and committing reviewed files in a clean worktree, use
+  `mise exec -- node tools/release-main.mjs` instead of a raw push to `main`.
+  It rebuilds and syncs both Capacitor platforms, verifies their exact payloads,
+  runs the full gate, rejects tracked drift or a non-fast-forward update, and
+  pushes the verified `HEAD`. It never stages or commits files; use a dedicated
+  clean worktree when the shared checkout contains concurrent changes.
 - **One gate per working tree.** `tests/run-all.mjs` holds `.gate.lock` because
   the build output is shared. Separate worktrees may gate concurrently on
   kernel-assigned ports.
