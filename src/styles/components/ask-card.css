@@ -5,6 +5,13 @@
 :where(#kbroot) .askcard{display:flex;flex-direction:column;gap:13px;width:100%;max-width:var(--w-col);
   min-height:0;padding:0 4px 4px;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;
   -webkit-overflow-scrolling:touch}
+/* A runtime ask scrolls on this element, so its padding edge is also the hard
+   paint edge for the primary button's 30px glow. Give that light a full gutter
+   without narrowing the actions: the scrollport borrows 26px on each side and
+   replaces the old 4px inset with 30px. It remains inside the supported
+   viewport/safe-area gutter even on the 320px floor. */
+:where(#kbroot) .asksheet .askcard{width:calc(100% + 52px);max-width:none;margin-inline:-26px;
+  padding-inline:30px}
 /* Keep the one-time tutorial offer's established card. Runtime questions no
    longer paint a second frame here because .focard supplies it; #ovFirst is
    deliberately not a shared sheet and therefore still owns this treatment. */
