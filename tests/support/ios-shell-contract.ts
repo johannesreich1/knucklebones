@@ -78,6 +78,16 @@ export function verifyIosShellContract(check: Check): {
     .map((match) => match[1]);
   check(allSigningEntitlements.length === 2,
     `${XCODE} must not attach signing entitlements outside the App target Debug and Release configurations`);
+  for (const capability of ['com.apple.GameCenter', 'com.apple.SignInWithApple']) {
+    const declarations = [...xcode.matchAll(new RegExp(
+      `${capability.replaceAll('.', '\\.')}\\s*=\\s*\\{\\s*enabled\\s*=\\s*1;\\s*\\};`,
+      'g',
+    ))];
+    check(declarations.length === 1,
+      `${XCODE} must declare ${capability} exactly once as an enabled App target SystemCapability`);
+  }
+  check(/lastKnownFileType\s*=\s*text\.plist\.entitlements;\s*path\s*=\s*App\.entitlements;/.test(xcode),
+    `${XCODE} must expose App.entitlements as the target's entitlements file reference`);
 
   const entitlements = readFileSync(ENTITLEMENTS, 'utf8');
   const entitlementDictionary = (entitlements.match(/<dict>([\s\S]*?)<\/dict>/) || [])[1] ?? '';
