@@ -32,9 +32,10 @@
    opaque matte recedes at once and the remaining live hand comes forward;
    semantic active/standby ownership still follows the actual turn. */
 #kbroot .spells.paired .rune.hand-active.hand-spent-back{z-index:1;
-  transform:translate(-9px,-6px) rotate(-5deg) scale(.82);filter:saturate(.72) brightness(.82)}
+  transform:translate(-9px,-6px) rotate(-5deg) scale(.82);filter:saturate(.72) brightness(.82);
+  transition:none}
 #kbroot .spells.paired .rune.hand-standby.hand-live-front{z-index:3;
-  transform:translate(7px,4px) rotate(2deg) scale(1);opacity:1;filter:grayscale(0)}
+  transform:translate(7px,4px) rotate(2deg) scale(1);opacity:1;filter:grayscale(0);transition:none}
 /* An opaque matte cannot mask the card below if its whole button is faded.
    Spent hands keep full alpha in both depths; scale, position and filter still
    separate the standby, while the checker remains a real occluder. */

@@ -89,9 +89,12 @@ export async function runRuneCardTreatmentScenarios(suite) {
           const style = getComputedStyle(card);
           const matrix = style.transform === 'none'
             ? new DOMMatrixReadOnly() : new DOMMatrixReadOnly(style.transform);
+          const rect = card.getBoundingClientRect();
           return { seat: card.dataset.seat, spentBack: card.classList.contains('hand-spent-back'),
             liveFront: card.classList.contains('hand-live-front'), z: style.zIndex,
             opacity: Number(style.opacity), scale: Math.hypot(matrix.a, matrix.b),
+            transitionProperty: style.transitionProperty,
+            card: { cx: rect.left + rect.width / 2, cy: rect.top + rect.height / 2 },
             cards: [...card.querySelectorAll('.rune-charge')].filter((item) => !item.hidden).length,
             outlines: [...card.querySelectorAll('.rune-empty')].filter((item) => !item.hidden).length };
         });
@@ -144,6 +147,9 @@ export async function runRuneCardTreatmentScenarios(suite) {
   out.turningOwnerShadow.originDelta = flightOriginDelta;
   const spentDuringCast = out.turningOwnerShadow.railDuring?.hands.find((hand) => hand.seat === '1');
   const liveDuringCast = out.turningOwnerShadow.railDuring?.hands.find((hand) => hand.seat === '0');
+  const castHandGap = spentDuringCast && liveDuringCast
+    ? Math.hypot(spentDuringCast.card.cx - liveDuringCast.card.cx,
+      spentDuringCast.card.cy - liveDuringCast.card.cy) : 0;
   check(out.turningOwnerShadow.found
       && out.turningOwnerShadow.names.includes('runeTurnDeal')
       && out.turningOwnerShadow.samples[0].boxShadow !== 'none'
@@ -154,8 +160,12 @@ export async function runRuneCardTreatmentScenarios(suite) {
       && flightOriginDelta <= 1
       && spentDuringCast?.spentBack && spentDuringCast.z === '1'
       && spentDuringCast.cards === 0 && spentDuringCast.outlines === 1
+      && spentDuringCast.transitionProperty === 'none'
+      && Math.abs(spentDuringCast.scale - .82) <= .02
       && liveDuringCast?.liveFront && liveDuringCast.z === '3'
-      && liveDuringCast.cards === 1 && liveDuringCast.opacity > .5
+      && liveDuringCast.cards === 1 && liveDuringCast.opacity >= .99
+      && liveDuringCast.transitionProperty === 'none'
+      && Math.abs(liveDuringCast.scale - 1) <= .02 && castHandGap >= 12
       && out.turningOwnerShadow.aliveNearEnd && out.turningOwnerShadow.goneAfterFlight,
     'a direct cast lost its flight treatment or let the spent hand cover the remaining live hand',
     out.turningOwnerShadow);
@@ -185,6 +195,7 @@ export async function runRuneCardTreatmentScenarios(suite) {
       && out.spentMatteTop.count === 2 && out.spentMatteTop.opponentTurn
       && out.spentMatteTop.active.seat === '0' && out.spentMatteTop.active.offturn
       && out.spentMatteTop.active.spentBack && out.spentMatteTop.active.z === '1'
+      && out.spentMatteTop.active.transitionProperty === 'none'
       && Math.abs(out.spentMatteTop.active.scale - .82) <= .02
       && out.spentMatteTop.active.cards === 0 && out.spentMatteTop.active.outlines === 1
       && out.spentMatteTop.active.opacity >= .99
@@ -194,6 +205,7 @@ export async function runRuneCardTreatmentScenarios(suite) {
       && out.spentMatteTop.active.matte?.size.includes('8px 8px')
       && out.spentMatteTop.standby.seat === '1' && out.spentMatteTop.standby.cards === 2
       && out.spentMatteTop.standby.liveFront && out.spentMatteTop.standby.z === '3'
+      && out.spentMatteTop.standby.transitionProperty === 'none'
       && Math.abs(out.spentMatteTop.standby.scale - 1) <= .02
       && out.spentMatteTop.standby.opacity >= .99,
     'the active spent matte did not recede behind the remaining live hand immediately',
