@@ -1,6 +1,8 @@
 // RANDOM ×2 owns a responsive player/rune layout rather than the general
 // badge-card behavior. Keep its pixel, ownership, resize, and handoff contract
 // together so the broad badge interaction scenario stays focused.
+import { waitForStableGeometry } from '../../support/stable-geometry.mjs';
+
 export async function runAsymmetricRunePlateScenarios(suite) {
   const { page, browser, F, out, check, spellCopy, errs } = suite;
 
@@ -219,7 +221,10 @@ export async function runAsymmetricRunePlateScenarios(suite) {
     'landscape did not keep owner-dotted runes in the HUD', out.badgeDualLandscape);
 
   if (originalViewport) await page.setViewportSize(originalViewport);
+  /* The landscape-to-portrait resize starts the authored 420ms seat entry.
+     A timer can fire between its paints on a loaded Linux compositor. */
   await page.waitForTimeout(160);
+  await waitForStableGeometry(page, ['#sideTop', '#sideBot', '.rune-tag .rchip']);
   assertRoomy(await layoutNow(), 'portrait after resize');
   await page.tap('#btnLeave'); await page.waitForTimeout(250);
   await page.tap('#btnAskYes'); await page.waitForTimeout(400);
