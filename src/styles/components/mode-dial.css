@@ -134,6 +134,8 @@
 :where(#kbroot) #ovWheel .wsettled:empty{display:none}
 :where(#kbroot) .wsett{display:flex;flex-direction:column;align-items:center;gap:9px;
   max-width:var(--w-col);animation:wpillin .34s cubic-bezier(.2,1.4,.35,1)}
+:where(#kbroot) .wanswerhead{display:flex;flex-direction:column;align-items:center;gap:6px;
+  max-width:100%}
 /* the same line as the readout under the stage, without its reserved lane —
    up here nothing arrives later, so nothing has to be held open for it */
 :where(#kbroot) .wsett .wblurb{min-height:0;margin:0;display:block}
@@ -143,8 +145,10 @@
   background:color-mix(in srgb,currentColor 12%,transparent);
   box-shadow:0 0 14px color-mix(in srgb,currentColor 22%,transparent)}
 :where(#kbroot) .wpill svg{width:13px;height:13px}
-:where(#kbroot) .wowner{font-size:8px;line-height:1;letter-spacing:.13em;font-weight:900;
-  padding-right:7px;margin-right:1px;border-right:1px solid color-mix(in srgb,currentColor 42%,transparent)}
+:where(#kbroot) .wowner{display:inline-flex;align-items:center;gap:5px;max-width:100%;
+  font-size:8px;line-height:1;letter-spacing:.13em;font-weight:900;white-space:nowrap}
+:where(#kbroot) .wowner::before{content:"";width:4px;height:4px;flex:0 0 auto;border-radius:50%;
+  background:currentColor;box-shadow:0 0 7px currentColor}
 /* A random mode followed by RANDOM ×2 leaves two prior answers above the
    second deck. Tighten their rhythm without dropping either rule in portrait. */
 :where(#kbroot) #wheelSettled[data-count="2"]{gap:9px}
@@ -185,6 +189,10 @@
      were readable on landing and remain available in the final game badge. */
   :where(#kbroot) #ovWheel.dealing #wheelSettled[data-count="2"]{
     top:calc(env(safe-area-inset-top,0px) + 5px);transform:none;flex-direction:row;
-    justify-content:center;gap:9px}
+    align-items:flex-end;justify-content:center;gap:9px}
+  /* An owned answer gains its player eyebrow. Its rule was already held for
+     1.5 seconds before the next deal, so the tight landscape gutter keeps the
+     owner + rune head and spends no second line on copy that would clip. */
+  :where(#kbroot) #ovWheel.dealing .wsett.wowned .wblurb{display:none}
   :where(#kbroot) #wheelSettled[data-count="2"] .wblurb{display:none}
 }

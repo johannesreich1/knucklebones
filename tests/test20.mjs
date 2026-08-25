@@ -141,7 +141,7 @@ try {
         faceBg: face.backgroundImage !== 'none',
         named: document.querySelector('#wheelName').textContent.trim(),
         settled: [...document.querySelectorAll('.wsett')].map((e) => ({
-          name: e.querySelector('.wpill').textContent.trim(),
+          name: e.querySelector('.wpill b').textContent.trim(),
           rule: e.querySelector('.wblurb').textContent.trim(),
         })),
         hold: getComputedStyle(document.querySelector('.dhold')).visibility,
@@ -345,7 +345,7 @@ try {
   const revealHeld = async (mode, spell) => {
     await page.evaluate(([m, sp]) => {
       const k = window.__kb;
-      k.goHome(); k.openPractice();
+      k.goHome(); k.S.mode = 'cpu'; k.openPractice();
       document.querySelector(`#modePick button[data-v="${m}"]`).click();
       document.querySelector(`#spellPick button[data-v="${sp}"]`).click();
       k.S.timer = 0;

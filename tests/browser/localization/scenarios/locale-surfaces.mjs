@@ -166,7 +166,7 @@ async function inspectReveal(page) {
     game.openPractice();
     game.S.mode = 'cpu';
     game.S.localMode = -1;
-    game.S.spell = 'random';
+    game.S.spell = 'random2';
     window.__kbTestOriginalRandom = Math.random;
     Math.random = () => 0.25;
   });
@@ -193,7 +193,8 @@ async function inspectReveal(page) {
   await page.waitForTimeout(80);
   await frame(page);
   const held = await inspect(page, '#ovWheel', [
-    '#wheelSettled .wpill', '#wheelSettled .wblurb', '#wheelName', '#wheelBlurb',
+    '#wheelSettled .wowner', '#wheelSettled .wpill', '#wheelSettled .wblurb',
+    '#wheelName', '#wheelBlurb',
     '#wheelHold b', '#wheelHold span',
   ]);
   await page.locator('#ovWheel').dispatchEvent('pointerdown');

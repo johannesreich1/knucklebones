@@ -71,9 +71,10 @@ export function versus(me: DialSide, foe: DialSide): string {
    very same functions ({{wsettled}}, {{wanswer}}): a card that re-typed a
    mode's blurb would be one more copy of the registry. */
 export const settledAnswer = (b: Answer): string =>
-  `<div class="wsett" style="color:${b.hue}">`
-  + `<span class="wpill">${b.context ? `<small class="wowner" style="color:${b.contextHue ?? b.hue}">${esc(b.context)}</small>` : ''}`
-  + `${b.icon}<b>${esc(b.name)}</b></span>`
+  `<div class="wsett${b.context ? ' wowned' : ''}" style="color:${b.hue}">`
+  + `<span class="wanswerhead">`
+  + `${b.context ? `<small class="wowner" style="color:${b.contextHue ?? b.hue}">${esc(b.context)}</small>` : ''}`
+  + `<span class="wpill">${b.icon}<b>${esc(b.name)}</b></span></span>`
   + `<span class="wblurb">${esc(b.blurb)}</span></div>`;
 
 /** the readout under the stage — what a landed beat says, and its colour */

@@ -1,0 +1,156 @@
+<!-- meta name="R2O — Six homes for the player name" group="4h · RANDOM ×2 — player ownership" subtitle="The player colour moves outside the rune tag; six treatments compare how YOU and AI can stay unmistakable while every rune pill keeps only its own hue" width=430 height=1380 sizes="md" links="Offline — local play, Rune deal — shuffling, Rune deal — dealt, R2I — Six marks for two random runes" -->
+<style>
+  .r2o-scr{box-sizing:border-box;align-items:center;padding:20px 16px 18px;min-height:1268px}
+  .r2o-head{width:100%;max-width:352px;text-align:left}
+  .r2o-kicker,.r2o-num{font-size:7.5px;font-weight:900;letter-spacing:.22em;color:var(--dim)}
+  .r2o-head h1{margin:5px 0 8px;font-size:18px;text-align:left;letter-spacing:.18em}
+  .r2o-head p{margin:0;font-size:10px;line-height:1.55;letter-spacing:.085em;color:#b7c5df}
+  .r2o-rule{display:flex;align-items:center;gap:8px;width:100%;margin-top:14px;padding:8px 10px;
+    box-sizing:border-box;border:1px solid rgba(255,255,255,.08);border-radius:12px;
+    background:rgba(255,255,255,.025);font-size:8px;font-weight:800;letter-spacing:.12em;color:var(--dim)}
+  .r2o-rule i{width:6px;height:6px;border-radius:50%;background:var(--p1);box-shadow:0 0 8px var(--p1)}
+  .r2o-rule b{color:var(--p1)}
+  .r2o-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
+    width:100%;max-width:352px;margin-top:12px}
+  .r2o-opt{position:relative;min-height:318px;padding:15px 11px 12px;box-sizing:border-box;
+    border:1px solid rgba(255,255,255,.085);border-radius:16px;background:rgba(5,7,17,.48);
+    display:flex;flex-direction:column;align-items:center;overflow:hidden}
+  .r2o-opt::before{content:"";position:absolute;inset:0;pointer-events:none;background:
+    radial-gradient(90% 50% at 0 0,rgba(var(--p1-rgb),.055),transparent 62%),
+    radial-gradient(90% 50% at 100% 100%,rgba(var(--p2-rgb),.05),transparent 62%)}
+  .r2o-opt.chosen{border-color:rgba(40,232,255,.62);
+    box-shadow:inset 0 0 26px rgba(40,232,255,.055),0 0 18px rgba(255,47,160,.08)}
+  .r2o-opt.chosen::after{content:"SELECTED";position:absolute;top:11px;right:9px;
+    font-size:6px;font-weight:900;letter-spacing:.14em;color:var(--p1)}
+  .r2o-num{position:absolute;top:11px;left:11px;color:rgba(233,241,255,.42)}
+  .r2o-title{margin-top:0;font-size:9.5px;font-weight:900;letter-spacing:.135em;color:var(--txt)}
+  .r2o-desc{min-height:44px;margin:5px 0 9px;font-size:8.2px;line-height:1.45;
+    letter-spacing:.055em;text-align:center;color:var(--dim)}
+  .r2o-demo{position:relative;width:100%;min-height:203px;margin-top:auto;padding:10px 7px;
+    box-sizing:border-box;border-top:1px solid rgba(255,255,255,.055);display:flex;
+    flex-direction:column;justify-content:center;gap:12px}
+  .r2o-owned{--owner:var(--p1);--owner-rgb:var(--p1-rgb);position:relative;min-width:0}
+  .r2o-owned.foe{--owner:var(--p2);--owner-rgb:var(--p2-rgb)}
+  .r2o-owned .wsett{max-width:100%;gap:5px;animation:none}
+  .r2o-owned .wpill{white-space:nowrap}
+  .r2o-owned .wblurb{font-size:7.6px;line-height:1.35;letter-spacing:.045em;min-height:0;
+    max-width:144px;color:#91a3bf}
+  .r2o-owner{color:var(--owner);font-size:7.5px;line-height:1;font-weight:900;
+    letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .r2o-dot{display:inline-block;width:4px;height:4px;margin-right:5px;border-radius:50%;
+    vertical-align:1px;background:var(--owner);box-shadow:0 0 7px var(--owner)}
+
+  /* 01 — a quiet owner line crowns the rune result. */
+  .r2o-eyebrow{display:grid;justify-items:center;gap:6px}
+  .r2o-eyebrow .wsett{display:contents}
+
+  /* 02 — the shortest route: identity is a key immediately beside the answer. */
+  .r2o-inline{display:grid;grid-template-columns:minmax(0,54px) auto;align-items:start;
+    justify-content:center;column-gap:7px}
+  .r2o-inline .r2o-owner{padding-top:8px;text-align:right}
+  .r2o-inline .wsett{align-items:flex-start}
+  .r2o-inline .wblurb{text-align:left;max-width:96px}
+
+  /* 03 — a player-coloured rail owns the whole answer, not the rune chip. */
+  .r2o-rail{display:grid;grid-template-columns:31px minmax(0,1fr);align-items:center;
+    border-left:2px solid var(--owner);padding-left:7px;box-shadow:-5px 0 14px rgba(var(--owner-rgb),.08)}
+  .r2o-rail .r2o-owner{writing-mode:vertical-rl;rotate:180deg;justify-self:center;max-height:48px}
+  .r2o-rail .wsett{align-items:flex-start}
+  .r2o-rail .wblurb{text-align:left;max-width:108px}
+
+  /* 04 — seat-coloured corners frame a pure rune result without becoming a pill. */
+  .r2o-bracket{padding:8px 8px 7px}
+  .r2o-bracket .r2o-owner{display:block;margin:0 0 6px 6px}
+  .r2o-bracket.foe .r2o-owner{text-align:right;margin:0 6px 6px 0}
+  .r2o-bracket::after{content:"";position:absolute;top:0;left:0;width:18px;height:18px;
+    border-top:1px solid var(--owner);border-left:1px solid var(--owner);filter:drop-shadow(0 0 5px var(--owner))}
+  .r2o-bracket.foe::after{left:auto;right:0;border-left:0;border-right:1px solid var(--owner)}
+
+  /* 05 — a reusable seat medallion behaves like a tiny identity portrait. */
+  .r2o-medal{display:grid;grid-template-columns:30px minmax(0,1fr);align-items:start;gap:7px}
+  .r2o-seat{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:var(--owner);
+    font-size:8px;font-weight:900;border:1px solid color-mix(in srgb,var(--owner) 60%,transparent);
+    background:color-mix(in srgb,var(--owner) 10%,transparent);
+    box-shadow:0 0 12px color-mix(in srgb,var(--owner) 18%,transparent)}
+  .r2o-medalbody{display:grid;gap:4px;min-width:0}
+  .r2o-medal .r2o-owner{max-width:100%}
+  .r2o-medal .wsett{align-items:flex-start}
+  .r2o-medal .wblurb{text-align:left;max-width:105px}
+
+  /* 06 — the name owns a whole lane; the rune result sits beneath the line. */
+  .r2o-lane{padding-top:13px}
+  .r2o-lane .r2o-owner{position:absolute;top:0;left:0;right:0;display:flex;align-items:center;gap:6px}
+  .r2o-lane .r2o-owner::after{content:"";height:1px;flex:1;background:linear-gradient(90deg,var(--owner),transparent)}
+
+  .r2o-foot{width:100%;max-width:352px;margin-top:13px;padding:10px 12px;box-sizing:border-box;
+    border-radius:13px;border:1px solid rgba(177,140,255,.19);background:rgba(177,140,255,.045);
+    color:#aebdd6;font-size:8.5px;line-height:1.5;letter-spacing:.065em}
+  .r2o-foot b{color:#d8caff}
+</style>
+
+<div class="stage"><div class="bgfx"></div><div class="scr r2o-scr">
+  <header class="r2o-head">
+    <div class="r2o-kicker">SELECTED STUDY · RANDOM ×2 REVEAL</div>
+    <h1>WHO OWNS THE RUNE?</h1>
+    <p>Two players, two rune hues, one noisy little tag. Move the player name into its own visual grammar so player colour stays outside and rune hue stays inside.</p>
+    <div class="r2o-rule"><i></i><span><b>PLAYER COLOUR OUTSIDE</b> · RUNE COLOUR INSIDE</span></div>
+  </header>
+
+  <main class="r2o-grid">
+    <article class="r2o-opt chosen">
+      <span class="r2o-num">01</span><span class="r2o-title">OWNER EYEBROW</span>
+      <p class="r2o-desc">Selected. The name announces the result before the rune, with a little more air.</p>
+      <div class="r2o-demo">
+        <div class="r2o-owned r2o-eyebrow"><small class="r2o-owner"><i class="r2o-dot"></i>YOU</small>{{wsettled:rune:fate}}</div>
+        <div class="r2o-owned foe r2o-eyebrow"><small class="r2o-owner"><i class="r2o-dot"></i>AI</small>{{wsettled:rune:anvil}}</div>
+      </div>
+    </article>
+
+    <article class="r2o-opt">
+      <span class="r2o-num">02</span><span class="r2o-title">INLINE KEY</span>
+      <p class="r2o-desc">Fastest to scan and no taller than today. Best fit for short landscape.</p>
+      <div class="r2o-demo">
+        <div class="r2o-owned r2o-inline"><small class="r2o-owner"><i class="r2o-dot"></i>YOU</small>{{wsettled:rune:fate}}</div>
+        <div class="r2o-owned foe r2o-inline"><small class="r2o-owner"><i class="r2o-dot"></i>AI</small>{{wsettled:rune:anvil}}</div>
+      </div>
+    </article>
+
+    <article class="r2o-opt">
+      <span class="r2o-num">03</span><span class="r2o-title">SEAT RAIL</span>
+      <p class="r2o-desc">One strong edge assigns the entire answer to a player, rule copy included.</p>
+      <div class="r2o-demo">
+        <div class="r2o-owned r2o-rail"><small class="r2o-owner">YOU</small>{{wsettled:rune:fate}}</div>
+        <div class="r2o-owned foe r2o-rail"><small class="r2o-owner">AI</small>{{wsettled:rune:anvil}}</div>
+      </div>
+    </article>
+
+    <article class="r2o-opt">
+      <span class="r2o-num">04</span><span class="r2o-title">CORNER BRACKET</span>
+      <p class="r2o-desc">A game-board gesture. Player colour frames the answer without filling it.</p>
+      <div class="r2o-demo">
+        <div class="r2o-owned r2o-bracket"><small class="r2o-owner">YOU</small>{{wsettled:rune:fate}}</div>
+        <div class="r2o-owned foe r2o-bracket"><small class="r2o-owner">AI</small>{{wsettled:rune:anvil}}</div>
+      </div>
+    </article>
+
+    <article class="r2o-opt">
+      <span class="r2o-num">05</span><span class="r2o-title">SEAT MEDALLION</span>
+      <p class="r2o-desc">A tiny identity token—strong ownership, with a little more visual weight.</p>
+      <div class="r2o-demo">
+        <div class="r2o-owned r2o-medal"><span class="r2o-seat" aria-hidden="true">1</span><span class="r2o-medalbody"><small class="r2o-owner">YOU</small>{{wsettled:rune:fate}}</span></div>
+        <div class="r2o-owned foe r2o-medal"><span class="r2o-seat" aria-hidden="true">2</span><span class="r2o-medalbody"><small class="r2o-owner">AI</small>{{wsettled:rune:anvil}}</span></div>
+      </div>
+    </article>
+
+    <article class="r2o-opt">
+      <span class="r2o-num">06</span><span class="r2o-title">PLAYER LANE</span>
+      <p class="r2o-desc">The broadest separation. Each player gets a quiet line above their rune.</p>
+      <div class="r2o-demo">
+        <div class="r2o-owned r2o-lane"><small class="r2o-owner"><i class="r2o-dot"></i>YOU</small>{{wsettled:rune:fate}}</div>
+        <div class="r2o-owned foe r2o-lane"><small class="r2o-owner"><i class="r2o-dot"></i>AI</small>{{wsettled:rune:anvil}}</div>
+      </div>
+    </article>
+  </main>
+
+  <footer class="r2o-foot"><b>SAME CONTENT, REAL CONSTRAINT.</b> Every option is shown in an approximately 135 px content lane—the compact case. FATE stays violet, ANVIL stays rose, and player colour never enters either pill. Selected 01 is verified at 320 px portrait, short landscape, and across EN/DE/FR surfaces.</footer>
+</div></div>
