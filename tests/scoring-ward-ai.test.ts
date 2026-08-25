@@ -22,6 +22,7 @@ const original = {
   die: S.die,
   scoring: S.scoring,
   spellCharges: S.spellCharges,
+  spellCastThisTurn: S.spellCastThisTurn,
   charm: S.charm,
   tut: S.tut,
   random: Math.random,
@@ -56,6 +57,7 @@ async function runWard(
   S.die = 6;
   S.scoring = COLSHIELD;
   S.spellCharges = [{ ward: 1 }, {}];
+  S.spellCastThisTurn = null;
   S.charm = freshCharm();
   S.tut = null;
   let previewCalls = 0;
@@ -254,6 +256,7 @@ try {
   S.die = original.die;
   S.scoring = original.scoring;
   S.spellCharges = original.spellCharges;
+  S.spellCastThisTurn = original.spellCastThisTurn;
   S.charm = original.charm;
   S.tut = original.tut;
   Math.random = original.random;

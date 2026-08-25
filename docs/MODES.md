@@ -121,14 +121,17 @@ mode's blurb is a copy that will drift.
 
 ## 6. Modes × spells
 
-Offline, the player picks both, so the combinations are theirs to make. One
-hot pairing and one superseded weakness are recorded in `docs/SPELLS.md §4`:
+Offline, the player picks both, so the combinations are theirs to make. The
+current standard still exposes two COLUMN SHIELD outliers; full measurements
+are recorded in `docs/SPELLS.md §4`:
 
-- **PILFER + COLUMN SHIELD (63.1%)** — the steal un-fills a nearly-full
-  column, denying the shield the mode exists to grant.
-- **Historical no-score WARD + COLUMN SHIELD (49.5%)** — the retired WARD rule
-  could not target a shielded column and had almost nothing left to do. This is
-  retained baseline evidence, not the shipped scoring-WARD behavior.
+- **Current PILFER + COLUMN SHIELD (62.9%)** — the steal un-fills a
+  nearly-full column, denying the shield the mode exists to grant. Its earlier
+  baseline was 63.1%.
+- **Current scoring WARD + COLUMN SHIELD (50.7%)** — the new mark has a legal
+  scoring purpose, but the standard Normal policy still casts only .12 times
+  per holder-game. The historical no-score result was 49.5% under a different
+  harness and is not a controlled before/after estimate.
 
 The shipped offline WARD deliberately layers with the mode. While WARD is
 active, an all-distinct column adds its raw pips once after COLUMN SHIELD's

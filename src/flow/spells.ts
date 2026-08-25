@@ -2,14 +2,9 @@
 // Rendering, pointer gestures, and visible effects are separate leaves; every
 // entry path still ends in cast(), so legality is decided exactly once.
 import {
-  AI,
-  ME,
-  SPEC,
-  freshCharm,
-  isFull,
-  type CharmSt,
-  type GameState,
-  type Player,
+  AI, ME, SPEC,
+  freshCharm, isFull,
+  type CharmSt, type GameState, type Player,
 } from '../core/rules.ts';
 import {
   SPELLS,
@@ -120,6 +115,7 @@ export function resetSpells(dealt?: string | readonly [string, string]): void {
   clearSealPresentation();
   clearSunderPresentation();
   S.spellAimCommitted = null;
+  S.spellCastThisTurn = null;
   disarm(true);
   renderSpells();
 }
@@ -131,6 +127,7 @@ export function clearSpells(): void {
   clearSealPresentation();
   clearSunderPresentation();
   S.spellAimCommitted = null;
+  S.spellCastThisTurn = null;
   disarm(true);
   renderSpells();
 }
@@ -165,6 +162,7 @@ export function arm(id: string): boolean {
     playSpellCharge(who, id);
     S.spellCharges[who][id] = chargesOf(who, id) - 1;
     S.spellAimCommitted = { id, who };
+    S.spellCastThisTurn = who;
   }
   renderSpells();
   setStatus(() => spellCopy(spell.id).aim, who);
@@ -258,6 +256,7 @@ async function castBy(
   if (!chargeReserved) {
     playSpellCharge(who, spell.id, cardFaceUp);
     S.spellCharges[who][spell.id] = chargesOf(who, spell.id) - 1;
+    S.spellCastThisTurn = who;
   }
   S.busy = true;
   S.phase = 'anim';
@@ -291,7 +290,7 @@ export async function cast(id: string, column: number): Promise<boolean> {
   }
   const chargeReserved = !!S.spellAimCommitted
     && S.spellAimCommitted.id === id && S.spellAimCommitted.who === who;
-  if ((!chargeReserved && chargesOf(who, id) <= 0)
+  if ((!chargeReserved && (chargesOf(who, id) <= 0 || S.spellCastThisTurn === who))
       || !spell.legal(S.boards as GameState, who, column, context)) {
     Sfx.tap();
     if (spell.target === 'column' && column >= 0) nope(colEl(S.turn as Player, column));
@@ -320,7 +319,8 @@ function legalNow(spell: SpellSpec, who: Player, context: CastCtx): boolean {
 function castable(id: string): boolean {
   const spell = spellById(id);
   const who = caster();
-  if (!spell || who === null || S.spellAimCommitted || chargesOf(who, id) <= 0) return false;
+  if (!spell || who === null || S.spellAimCommitted || S.spellCastThisTurn === who
+      || chargesOf(who, id) <= 0) return false;
   return legalNow(spell, who, castContext());
 }
 

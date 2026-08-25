@@ -1,13 +1,20 @@
 // Computer rune choice and its visible tell. The shared spell controller owns
 // casting; this module owns only when and where the machine elects to cast.
 import { type CharmSt, type GameState, type Player } from '../core/rules.ts';
-import { machineCastPlan, spellById, type CastCtx, type SpellSpec } from '../core/spells.ts';
+import {
+  machineCastPlan,
+  NORMAL_CHARM_COORDINATION_SLIP_RATE,
+  spellById,
+  type CastCtx,
+  type SpellSpec,
+} from '../core/spells.ts';
 import { S } from '../state.ts';
+
+export { NORMAL_CHARM_COORDINATION_SLIP_RATE };
 
 const CPU_SPELL_DELAY_MIN = 320;
 const CPU_SPELL_DELAY_SPREAD = 580;
 const DEMANDS = { easy: 30, medium: 16, hard: 10 } as const;
-export const NORMAL_CHARM_COORDINATION_SLIP_RATE = 0.05;
 
 const pause = (milliseconds: number): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -50,7 +57,7 @@ export async function runAiSpellTurn(
   const random = ports.random ?? Math.random;
   const id = Object.keys(S.spellCharges[who]).find((key) => ports.chargesOf(who, key) > 0);
   const spell = spellById(id);
-  if (!spell) return { gameOver: false, placement: null };
+  if (!spell || S.spellCastThisTurn === who) return { gameOver: false, placement: null };
   if (S.diff === 'easy' && random() < 0.5) return { gameOver: false, placement: null };
   const context = ports.castContext();
   const plan = machineCastPlan(

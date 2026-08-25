@@ -1,4 +1,4 @@
-// SPELLS — an optional layer of one-use powers over local play.
+// SPELLS — an optional layer of limited-use powers over local play.
 //
 // One registry entry is one whole spell rule: what a cast needs, how many
 // casts a player gets, which targets are legal, what it does, and how a
@@ -31,16 +31,18 @@ export {
   immediatePlacementGain,
   machineCast,
   machineCastPlan,
+  NORMAL_CHARM_COORDINATION_SLIP_RATE,
   placeGain,
   swingOf,
 } from './spell-policy.ts';
 export type { ImmediatePlacementOptions, MachineCastPlan } from './spell-policy.ts';
 
-/* FATE: throw the die in hand back, draw another. Touches nothing but the
-   caster's own hand — the floor of the power range (sim: 56.1% one-sided at
-   two casts). In LIMITED the redraw consumes from the same finite bag (the
-   discard does not return), so the game ends one die sooner: the cost is
-   real there, and legality refuses the cast when nothing is left to draw. */
+/* FATE: throw the die in hand back, draw another. Its two charges belong to
+   the game, but the universal one-cast turn limit keeps them on separate
+   turns. Every redraw is final. It touches nothing but the caster's own hand.
+   In LIMITED the redraw consumes from the same finite bag (the discard does
+   not return), so the game ends one die sooner: the cost is real there, and
+   legality refuses the cast when nothing is left to draw. */
 const FATE: SpellSpec = {
   id: 'fate',
   target: 'self',

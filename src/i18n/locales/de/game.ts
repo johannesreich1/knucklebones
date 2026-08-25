@@ -206,7 +206,7 @@ export const deGame = {
       name: 'SCHICKSAL',
       compact: 'SCHICKSAL',
       blurb: 'Lege deinen Würfel ab und zieh einen neuen.',
-      detail: 'Lege den Würfel aus deiner Hand ab und ziehe den nächsten aus dem Vorrat. Den neuen Würfel platzierst du in diesem Zug. Der Tausch ist endgültig — nach dem Ansehen kannst du ihn nicht zurücklegen. Zwei Einsätze pro Spiel.',
+      detail: 'Lege den Würfel aus deiner Hand ab und ziehe den nächsten aus dem Vorrat. Den neuen Würfel platzierst du in diesem Zug. Der Tausch ist endgültig — nach dem Ansehen kannst du ihn nicht zurücklegen. Zwei Einsätze pro Spiel, höchstens einer pro Zug.',
       aim: 'Auf deinen Würfel ziehen',
     },
     nudge: {

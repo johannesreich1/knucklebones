@@ -11,22 +11,30 @@
 //                 and how hard does it hit when it does?
 //
 // Placement play is the offline Medium anchor (depth 2, risk .9) — the same
-// yardstick botbench measures the bot ladder against. Casting is
-// core/spells machineCast — THE policy the offline CPU ships, so what is
-// measured and what plays are never two policies. `--tune id=N` overrides
-// the demand knob per spell (the CPU's DEMANDS are easy 30 / medium 16 /
-// hard 10); results are a FLOOR — a smarter caster can only be stronger.
+// yardstick botbench measures the bot ladder against. Casting follows the
+// shipped Normal policy: machineCastPlan, persistent-WARD placement search,
+// the named 5% coordination slip, and at most one cast before each placement.
+// `--tune id=N` overrides the demand knob per spell (the CPU's DEMANDS are easy
+// 30 / medium 16 / hard 10); results are a FLOOR — a smarter caster can only be
+// stronger.
 //
 // Run: node --experimental-strip-types tools/spellsim.ts
 //      [--games N] [--depth D] [--spell id[,id]] [--seed N]
 //      [--tune id=DEMAND] [--uses id=N]
 import {
-  AI, ME, emptyBoard, applyMove, totalOf, isOver, isFull, freshCharm,
+  AI, ME, emptyBoard, applyMove, totalOf, isOver, isFull, freshCharm, cloneCharm,
   CLASSIC, ROWSWITCH, COLSHIELD, SINGLESTRIKE, BOUNTY, LIMITED,
   type GameState, type Player, type Mode,
 } from '../src/core/rules.ts';
 import { searchRoot } from '../src/core/ai.ts';
-import { SPELLS, machineCast, swingOf, type SpellSpec, type CastCtx } from '../src/core/spells.ts';
+import {
+  SPELLS,
+  machineCastPlan,
+  NORMAL_CHARM_COORDINATION_SLIP_RATE,
+  swingOf,
+  type SpellSpec,
+  type CastCtx,
+} from '../src/core/spells.ts';
 import { makeBag } from '../src/core/dice.ts';
 import { DICE_FACES } from '../src/config.ts';
 
@@ -73,31 +81,47 @@ function playGame(spell: SpellSpec, holds: [boolean, boolean], mode: Mode, first
 
   while (!over) {
     let hand = bag ? bag.shift()! : 1 + rnd(DICE_FACES);
+    let coordinatedPlacement: number | null = null;
+    const placement = (rootCharm = persistentPlacementCharm()) => searchRoot(st, turn, hand, DEPTH, {
+      mode, random: Math.random, riskWeight: 0.9, opponentWeight: 1, rootCharm,
+    }).c;
+    function persistentPlacementCharm() {
+      if (!charm.wards[AI].some(Boolean) && !charm.wards[ME].some(Boolean)) return undefined;
+      const persistent = cloneCharm(charm);
+      // Match Normal's ordinary fallback: standing WARDs remain visible, but
+      // a pending one-shot SUNDER is coordinated only through its exact plan.
+      persistent.sunder = [false, false];
+      return persistent;
+    }
     if (charges[turn] > 0) {
       const ctx: CastCtx = {
         mode, die: hand, bagLeft: bag ? bag.length : null, charm,
         setDie: (v) => { hand = v; },
         draw: () => bag ? bag.shift()! : 1 + rnd(DICE_FACES),
       };
-      const col = machineCast(st, turn, spell, ctx, TUNE[spell.id] ?? MEDIUM_DEMAND);
-      if (col !== null) {
-        const swing = swingOf(st, turn, spell, col, mode, ctx);
-        spell.apply(st, turn, col, ctx);
+      const plan = machineCastPlan(
+        st, turn, spell, ctx, TUNE[spell.id] ?? MEDIUM_DEMAND, placement,
+      );
+      if (plan.target !== null) {
+        coordinatedPlacement = plan.rootCharm && plan.placement !== null
+          && Math.random() >= NORMAL_CHARM_COORDINATION_SLIP_RATE
+          ? plan.placement : null;
+        const swing = swingOf(st, turn, spell, plan.target, mode, ctx);
+        spell.apply(st, turn, plan.target, ctx);
         charges[turn]--;
         castsAt[turn].push({ ply: plies, swing });
-        if (isFull(st[ME]) || isFull(st[AI])) { over = true; break; }
+        if (isFull(st[ME]) || isFull(st[AI])) over = true;
       }
     }
-    const col = searchRoot(st, turn, hand, DEPTH, {
-      mode, random: Math.random, riskWeight: 0.9, opponentWeight: 1,
-    }).c;
+    if (over) break;
+    const col = coordinatedPlacement ?? placement();
     banked[turn] += applyMove(st, turn, col, hand, mode, charm);
     plies++;
     if (isOver(st[turn], bag ? bag.length : null)) break;
     turn = (1 - turn) as Player;
   }
-  const a = totalOf(st[AI], mode === BOUNTY ? banked[AI] : 0, mode);
-  const m = totalOf(st[ME], mode === BOUNTY ? banked[ME] : 0, mode);
+  const a = totalOf(st[AI], mode === BOUNTY ? banked[AI] : 0, mode, charm.wards[AI]);
+  const m = totalOf(st[ME], mode === BOUNTY ? banked[ME] : 0, mode, charm.wards[ME]);
   return {
     win: a > m ? 1 : a < m ? 0 : 0.5,
     casts: castsAt.map((seat) => seat.map((c) => ({ frac: c.ply / Math.max(plies, 1), swing: c.swing }))),

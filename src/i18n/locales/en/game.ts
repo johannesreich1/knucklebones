@@ -203,7 +203,7 @@ export const enGame = {
       name: 'FATE',
       compact: 'FATE',
       blurb: 'Throw your die back and draw another.',
-      detail: 'Discard the die in hand and draw the next from the supply. The new die is yours to place this turn. The draw is final — you cannot put it back once you have seen it. Two casts per game.',
+      detail: 'Discard the die in hand and draw the next from the supply. The new die is yours to place this turn. The draw is final — you cannot put it back once you have seen it. Two casts per game, at most one per turn.',
       aim: 'Drop it on your die',
     },
     nudge: {

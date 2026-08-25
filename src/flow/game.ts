@@ -203,7 +203,7 @@ export async function place(who: Player, col: number): Promise<void> {
   if (result.interrupted || !result.placed) return;
   // LIMITED: the just-placed die may have been the bag's last — that ends it
   if (isOver(S.boards[who], S.pool ? S.pool.length : null)) { endGame(); return; }
-  S.turn = (1 - who) as Player;
+  S.turn = (1 - who) as Player; S.spellCastThisTurn = null; // placement closes the cast window
   S.busy = false;
   S.die = 0;
   void nextTurn();

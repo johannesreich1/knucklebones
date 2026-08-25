@@ -41,6 +41,7 @@ const original = {
   die: S.die,
   scoring: S.scoring,
   spellCharges: S.spellCharges,
+  spellCastThisTurn: S.spellCastThisTurn,
   charm: S.charm,
   tut: S.tut,
   random: Math.random,
@@ -58,6 +59,13 @@ interface SunderRunResult extends RunResult {
   finalPlacement: number;
 }
 
+interface FateRunResult extends RunResult {
+  contexts: Array<{ die: number; bagLeft: number | null }>;
+  die: number;
+  draws: number;
+  gameOver: boolean;
+}
+
 async function runSunder(
   diff: Diff,
   board: GameState,
@@ -72,6 +80,7 @@ async function runSunder(
   S.die = die;
   S.scoring = CLASSIC;
   S.spellCharges = [{ sunder: 1 }, {}];
+  S.spellCastThisTurn = null;
   S.charm = freshCharm();
   S.tut = null;
   let previewCalls = 0;
@@ -108,6 +117,61 @@ async function runSunder(
     previewCalls,
     previewHadSunder,
     charges: S.spellCharges[AI].sunder,
+  };
+}
+
+async function runFate(
+  supply: number[],
+  alreadyCast = false,
+): Promise<FateRunResult> {
+  S.boards = [[[], [], [3, 5]], [[], [], []]];
+  S.diff = 'medium';
+  S.die = 1;
+  S.scoring = CLASSIC;
+  S.spellCharges = [{ fate: 2 }, {}];
+  S.spellCastThisTurn = alreadyCast ? AI : null;
+  S.charm = freshCharm();
+  S.tut = null;
+  const remaining = supply.slice();
+  const contexts: Array<{ die: number; bagLeft: number | null }> = [];
+  const castTargets: number[] = [];
+  let draws = 0;
+  const result = await runAiSpellTurn(AI, {
+    chargesOf: (who, id) => S.spellCharges[who][id] ?? 0,
+    castContext: () => {
+      const bagLeft = null;
+      contexts.push({ die: S.die, bagLeft });
+      return {
+        mode: CLASSIC,
+        die: S.die,
+        bagLeft,
+        charm: S.charm,
+        setDie: (value) => { S.die = value; },
+        draw: () => {
+          const value = remaining.shift();
+          if (value === undefined) throw new Error('FATE test supply exhausted');
+          draws++;
+          return value;
+        },
+      };
+    },
+    random: () => 0.5,
+    castBy: async (who: Player, spell: SpellSpec, column: number, ctx: CastCtx) => {
+      castTargets.push(column);
+      S.spellCharges[who][spell.id]--;
+      spell.apply(S.boards as GameState, who, column, ctx);
+      return false;
+    },
+  }, false);
+  return {
+    castTargets,
+    placement: result.placement,
+    previewCalls: 0,
+    charges: S.spellCharges[AI].fate,
+    contexts,
+    die: S.die,
+    draws,
+    gameOver: result.gameOver,
   };
 }
 
@@ -239,12 +303,30 @@ try {
       && !easySunder.previewHadSunder && easySunder.placement === null
       && easySunder.finalPlacement === 1,
     'Easy must keep its existing blind SUNDER cast and placement behavior', easySunder);
+
+  /* FATE owns two game charges, but one CPU turn gets exactly one cast
+     decision and leaves the second charge for a later turn. */
+  const oneCastFate = await runFate([2, 6]);
+  check(String(oneCastFate.castTargets) === '-1'
+      && JSON.stringify(oneCastFate.contexts) === JSON.stringify([
+        { die: 1, bagLeft: null },
+      ])
+      && oneCastFate.charges === 1 && oneCastFate.die === 2
+      && oneCastFate.draws === 1 && !oneCastFate.gameOver,
+    'FATE must cast at most once before the CPU placement', oneCastFate);
+
+  const blockedFate = await runFate([2], true);
+  check(blockedFate.castTargets.length === 0 && blockedFate.contexts.length === 0
+      && blockedFate.charges === 2 && blockedFate.die === 1
+      && blockedFate.draws === 0 && !blockedFate.gameOver,
+    'a second CPU spell invocation in the same turn must be inert', blockedFate);
 } finally {
   S.boards = original.boards;
   S.diff = original.diff;
   S.die = original.die;
   S.scoring = original.scoring;
   S.spellCharges = original.spellCharges;
+  S.spellCastThisTurn = original.spellCastThisTurn;
   S.charm = original.charm;
   S.tut = original.tut;
   Math.random = original.random;

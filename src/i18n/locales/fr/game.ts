@@ -206,7 +206,7 @@ export const frGame = {
       name: 'DESTIN',
       compact: 'DESTIN',
       blurb: 'Défaussez votre dé et piochez-en un autre.',
-      detail: 'Écartez le dé en main et prenez le suivant de la réserve. Le nouveau dé doit être placé ce tour-ci. Le tirage est définitif — impossible de le rendre après l’avoir vu. Deux usages par partie.',
+      detail: 'Écartez le dé en main et prenez le suivant de la réserve. Le nouveau dé doit être placé ce tour-ci. Le tirage est définitif — impossible de le rendre après l’avoir vu. Deux usages par partie, au maximum un par tour.',
       aim: 'Glissez sur votre dé',
     },
     nudge: {

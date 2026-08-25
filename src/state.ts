@@ -118,6 +118,10 @@ export const S = {
   spellCharges: [{}, {}] as [Record<string, number>, Record<string, number>],
   spellArmed: null as string | null,
   spellAimCommitted: null as null | { id: string; who: Player },
+  /* The active turn may commit at most one cast. Player identity, rather than
+     a boolean, keeps test/host turn changes honest and lets the other seat act
+     after the real placement boundary clears this marker. */
+  spellCastThisTurn: null as Player | null,
   /* persistent spell marks (wards, a pending sunder) — core/rules CharmSt.
      Reset wherever charges are dealt (resetSpells / clearSpells); rendering
      derives WARD's live score bonus from it, and hostile actions consume it. */

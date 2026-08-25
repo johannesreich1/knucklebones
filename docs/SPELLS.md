@@ -13,8 +13,10 @@ do not expose it as a competing name for the player's rune.
 
 Spells are an **optional layer over offline play**. A named pick and RANDOM
 deal both seats the same rune. RANDOM 2 is the explicit chaos exception: the
-deck shuffles once per player and deals two distinct runes. One cast per turn
-at most, and a cast is **not a move** — your die still lands afterwards.
+deck shuffles once per player and deals two distinct runes. A cast is **not a
+move**, but each player may cast at most once per turn. The die still lands
+afterward unless the cast itself ends the game. FATE's two charges therefore
+belong to separate turns.
 
 ---
 
@@ -143,6 +145,35 @@ casting policy is a heuristic, and a smarter human can only do better.
 That historical roster spans **55.7–63.2**, against the retired swap's
 70.5/81.8.
 
+### Current standard evaluation (2026-08-25)
+
+After enforcing one cast per turn for people, bots, and the evaluator, the
+standard default-seed run completed 3,000 one-sided and 3,000 symmetric games
+for each configured row (72,000 games total):
+
+| Rune / mode | Holder win | Casts / holder game | Mean swing | Symmetric games with cast | Cast timing q25 / median / q75 | Late casts |
+|---|---:|---:|---:|---:|---:|---:|
+| FATE / Classic | 59.3% | 1.82 | 0 | 99.9% | .22 / .35 / .55 | 7.9% |
+| FATE / LIMITED | 60.8% | 1.76 | 0 | 99.9% | .29 / .41 / .60 | 10.4% |
+| NUDGE / Classic | 55.7% | .95 | 0 | 99.4% | .15 / .26 / .43 | 4.6% |
+| WARD / Classic | 58.3% | .50 | 3.0 | 75.6% | .40 / .58 / .77 | 21.3% |
+| WARD / COLUMN SHIELD | 50.7% | .12 | 0 | 22.9% | .33 / .48 / .68 | 14.1% |
+| SUNDER / Classic | 60.6% | .47 | 0 | 75.1% | .54 / .74 / .95 | 41.9% |
+| SUNDER / SINGLE STRIKE | 59.2% | .42 | 0 | 70.7% | .68 / .86 / .96 | 59.0% |
+| PILFER / Classic | 60.6% | .81 | 18.9 | 95.6% | .22 / .32 / .48 | 6.3% |
+| PILFER / COLUMN SHIELD | 62.9% | .51 | 17.9 | 75.6% | .28 / .42 / .65 | 15.9% |
+| ANVIL / Classic | 60.0% | .61 | 14.3 | 89.8% | .55 / .74 / .92 | 42.5% |
+| ANVIL / COLUMN SHIELD | 62.8% | .59 | 14.8 | 88.5% | .56 / .75 / .91 | 42.4% |
+| ANVIL / SINGLE STRIKE | 62.0% | .61 | 13.7 | 87.4% | .59 / .78 / .94 | 47.6% |
+
+Command: `/opt/homebrew/bin/node --no-warnings --experimental-strip-types tools/spellsim.ts --games 3000`,
+depth 2, risk .9, seed `20260821`, no `--tune` or `--uses` overrides. Ordinary
+search carries persistent WARD state; `machineCastPlan` coordinates current-turn
+WARD/SUNDER effects with Normal's 5% slip; terminal scores include active WARD
+bonuses. The harness keeps one global random stream across rows, so FATE's
+supply draws also shift later rows' samples. Small non-FATE changes from older
+all-roster output are not isolated mechanical effects.
+
 ### WARD: the one-hit scoring seal (updated 2026-08-25)
 
 WARD remains one cast, one visible mark, and one absorbed hostile action. Its
@@ -235,20 +266,20 @@ predictable from the board.
 
 ### Known pairing evidence
 
-Both notable measurements involve COLUMN SHIELD, but only the PILFER result
-still describes the current rules:
+Both notable measurements involve COLUMN SHIELD:
 
-- **PILFER + COLSHIELD (63.1) — too strong.** The steal un-fills a nearly-full
-  column, which denies the shield the mode exists to grant.
-- **Historical no-score WARD + COLSHIELD (49.5) — retired weakness.** The old
-  policy cast in only 61% of games because a shielded column could not be
-  warded and the mode removed much of WARD's defensive work. The scoring seal
-  supersedes that legality and score rule; retain `49.5` as baseline evidence,
-  not a current balance claim.
+- **Current PILFER + COLSHIELD (62.9) — too strong.** The steal un-fills a
+  nearly-full column, which denies the shield the mode exists to grant. Its
+  historical baseline was 63.1 under the earlier harness.
+- **Current scoring WARD + COLSHIELD (50.7) — still cold under the standard
+  bot.** The new rule fixes the missing legal/scoring purpose, but the 2026-08-25
+  run casts only .12 times per holder-game and only 22.9% of symmetric games
+  see any cast. The historical no-score result was 49.5 under a different
+  policy, so the two point estimates are not a controlled effect estimate.
 
-Both pickers still offer RANDOM. The scoring-WARD repair removes the known dead
-WARD pairing from the deal surface; PILFER + COLUMN SHIELD remains a hot result
-to keep visible when interpreting a random/random game.
+Both pickers still offer RANDOM. PILFER + COLUMN SHIELD remains hot, while WARD
++ COLUMN SHIELD remains too inactive under the standard bot to call repaired.
+Keep both visible when interpreting a random/random game.
 
 ### Rejected on principle
 
@@ -267,6 +298,11 @@ play is the offline Medium anchor (depth 2, risk 0.9), the same yardstick
 ```bash
 node --experimental-strip-types tools/spellsim.ts --games 3000
 ```
+
+The current standard follows the shipped Normal bot policy: at most one cast
+may precede each placement, placement search carries persistent WARD state,
+and registry-owned coordination uses the named 5% Normal slip. FATE can spend
+its second charge only on a later turn, after the opponent has acted.
 
 It answers three questions, and **the second matters most**:
 
@@ -697,9 +733,10 @@ grammar.
 
 The intended online path has a design outline, not an implemented protocol. A
 cast would become a logged action replayed through this same registry, and FATE
-would draw from the seeded stream. A ranked turn may then carry two actions—an
-optional cast and the placement—which is a protocol shape change the server
-validator must accept.
+would draw from the seeded stream. The authoritative grammar must allow an
+optional cast followed by placement, with a cast-terminal exception. A rune
+turn therefore has at most two logged actions, which is still a protocol shape
+change the server validator must accept.
 
 ### If ranked ever deals spells: personal runes and Rune Trial
 
@@ -715,8 +752,10 @@ online needs fewer loadout fields, but it does not avoid that action-grammar
 change. The client already has per-seat hands; the server is the hard seam.
 
 The frozen asymmetric v1 study covers all six runes, seven modes, both opener
-orientations, four seeds, and both FATE cast grammars. Under its blind Normal
-policy and the old no-score WARD, fixed pre-match PILFER strictly dominates
+orientations, four seeds, and both historical FATE cast treatments; one cast
+per turn is the selected live rule and chaining remains sensitivity evidence.
+Under v1's blind Normal policy and the old no-score WARD, fixed pre-match
+PILFER strictly dominates
 every other loadout at the point estimate; uniform-opponent wheel strength
 spans about 9.6pp from PILFER to WARD. A separate coordinated-SUNDER treatment
 moves SUNDER only +0.1788pp in Classic and +0.2503pp in BOUNTY, while

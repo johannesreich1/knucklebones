@@ -5,6 +5,11 @@ import {
 } from './rules.ts';
 import type { CastCtx, SpellSpec } from './spell-types.ts';
 
+/* Normal usually honors a registry-coordinated follow-up placement, but keeps
+   this small, measured imperfection. Flow and the standard evaluator share the
+   token so the simulated policy cannot silently drift from the shipped bot. */
+export const NORMAL_CHARM_COORDINATION_SLIP_RATE = 0.05;
+
 export interface ImmediatePlacementOptions {
   charm?: CharmSt;
   /* Some modes bank value outside the boards. Keep that policy explicit so

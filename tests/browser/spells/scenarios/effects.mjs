@@ -266,8 +266,9 @@ export async function runEffectScenarios(suite) {
   });
   check(out.btyHold.distinct === 1, 'THE BOUNTY TALLY SHOVES THE SCORE OR CARD RAIL', out.btyHold);
 
-  /* FATE is the only two-card hand: one cast exposes one card, the second
-     leaves both original tilts as empty outlines. */
+  /* FATE is the only two-card hand, but the second card belongs to a later
+     turn. One cast exposes it disabled; a direct same-turn call must not
+     redraw or spend, and a full turn cycle makes it live again. */
   await newGame({ spell: 'fate' }); check(await waitChoose(), 'game never reached choose (FATE stack)');
   const fateStack = () => page.evaluate(() => {
     const rune = document.querySelector('#spellBar .rune:not([hidden])');
@@ -276,16 +277,47 @@ export async function runEffectScenarios(suite) {
       .filter((e) => !e.hidden).length };
   });
   out.fateFull = await fateStack();
-  await page.evaluate(() => window.__kb.spells.cast('fate', -1)); await page.waitForTimeout(750);
+  out.fateFirstCast = await page.evaluate(() => window.__kb.spells.cast('fate', -1));
+  await page.waitForTimeout(750);
   out.fateOne = await fateStack();
-  await page.evaluate(() => window.__kb.spells.cast('fate', -1)); await page.waitForTimeout(750);
-  out.fateEmpty = await fateStack();
+  out.fateSameTurnBlocked = await page.evaluate(async () => {
+    const k = window.__kb;
+    const before = { die: k.S.die, charges: JSON.stringify(k.S.spellCharges) };
+    const recast = await k.spells.cast('fate', -1);
+    const rune = document.querySelector('#spellBar .rune:not([hidden])');
+    return { before, recast, die: k.S.die, charges: JSON.stringify(k.S.spellCharges),
+      marker: k.S.spellCastThisTurn, disabled: rune?.disabled,
+      unavailable: rune?.classList.contains('unavailable') };
+  });
   check(out.fateFull.left === '2' && out.fateFull.cards === 2 && out.fateFull.outlines === 0,
     'FATE was not dealt as two differently stacked cards', out.fateFull);
-  check(out.fateOne.left === '1' && out.fateOne.cards === 1 && out.fateOne.outlines === 0,
-    'FATE did not expose exactly one remaining card', out.fateOne);
+  check(out.fateFirstCast && out.fateOne.left === '1' && out.fateOne.cards === 1
+      && out.fateOne.outlines === 0,
+    'FATE did not expose exactly one later-turn card', out.fateOne);
+  check(!out.fateSameTurnBlocked.recast
+      && out.fateSameTurnBlocked.before.die === out.fateSameTurnBlocked.die
+      && out.fateSameTurnBlocked.before.charges === out.fateSameTurnBlocked.charges
+      && out.fateSameTurnBlocked.marker === 1 && out.fateSameTurnBlocked.disabled
+      && out.fateSameTurnBlocked.unavailable,
+    'FATE cast twice before the same placement', out.fateSameTurnBlocked);
+
+  await page.evaluate(() => window.__kb.place(1, 0));
+  await page.waitForFunction(() => window.__kb.S.turn === 0 && window.__kb.S.phase === 'choose');
+  await page.evaluate(() => window.__kb.place(0, 1));
+  await page.waitForFunction(() => window.__kb.S.turn === 1 && window.__kb.S.phase === 'choose');
+  out.fateNextTurnReady = await page.evaluate(() => {
+    const rune = document.querySelector('#spellBar .rune:not([hidden])');
+    return { marker: window.__kb.S.spellCastThisTurn, disabled: rune?.disabled,
+      left: rune?.dataset.left };
+  });
+  out.fateSecondCast = await page.evaluate(() => window.__kb.spells.cast('fate', -1));
+  await page.waitForTimeout(750);
+  out.fateEmpty = await fateStack();
+  check(out.fateNextTurnReady.marker === null && !out.fateNextTurnReady.disabled
+      && out.fateNextTurnReady.left === '1' && out.fateSecondCast,
+    'FATE did not become castable on its owner\'s next turn', out.fateNextTurnReady);
   check(out.fateEmpty.left === '0' && out.fateEmpty.cards === 0 && out.fateEmpty.outlines === 2,
-    'spent FATE did not leave its two-card outline', out.fateEmpty);
+    'FATE did not spend its second card on the later turn', out.fateEmpty);
 
   /* ---------- 10c. RANDOM keeps its original shared-rune promise ---------- */
   out.randomDeal = await page.evaluate(async () => {

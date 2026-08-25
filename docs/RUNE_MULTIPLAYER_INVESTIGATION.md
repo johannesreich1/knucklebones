@@ -185,36 +185,47 @@ Additional rule facts:
   afterward unless the cast itself fills a board and ends the game
   (`docs/SPELLS.md:14-16`, `src/flow/spells.ts`).
 
-#### Unresolved cast-count rule
+#### Resolved cast-count rule: at most one cast per turn
 
-FATE is the only current two-charge rune, so it is the only current rune that
-exposes a four-way disagreement:
+**OWNER DECISION (2026-08-25):** a turn follows `cast? → placement`, with a
+cast-terminal exception. Placement closes the casting window, so FATE's second
+game charge belongs to a later turn rather than a second redraw before the same
+placement.
 
-| Surface | Current behaviour | Direct evidence |
+FATE is the only current two-charge rune, so the pre-decision audit exposed a
+four-way disagreement:
+
+| Surface | Behaviour before alignment | Direct evidence |
 |---|---|---|
 | Written rule | At most one cast per turn | `docs/SPELLS.md:14-16`; `docs/history/2026-08-sprint.md:210-214` |
-| Normal human UI | Both FATE charges may be cast sequentially before placement when each redraw is legal | Gesture → charge-only legality → return to `choose` → rail re-enabled: `src/flow/spell-gestures.ts:29-89`, `src/flow/spells.ts:62-69,270-312`, `src/flow/spell-rail.ts:25-59`, `src/flow/game.ts:121-132` |
+| Normal human UI | Both FATE charges could be cast sequentially before placement when each redraw was legal | Shipped by `38c360f`, made directly tappable by `39f6df8`, and frozen as a 2 → 1 → 0 visual scenario by `15d9fab`; see the historical audit below |
 | Local CPU | At most one cast, then it chooses a column and places | One `aiSpellTurn` call per turn: `src/flow/game.ts:154-167`, `src/flow/spell-ai.ts:35-59` |
 | Maintained simulator | At most one cast attempt, then placement and turn flip | `tools/spellsim.ts:64-97` |
 
+All four surfaces are now aligned on the written one-cast rule. Local flow
+records the seat that committed a cast, blocks the rail and direct cast seam
+for that seat, and clears the marker only after placement. The CPU and standard
+simulator each make at most one cast decision before placement.
+
 Additional **FACTS**:
 
-- No current state field records “cast used this turn”; legality checks only
-  phase/busy state, current seat, charges, and rune legality
-  (`src/state.ts:107-123`, `src/flow/spells.ts:62-69,307-311`).
-- A browser scenario calls `cast('fate', -1)` twice without a placement and
-  asserts the charge stack changes 2 → 1 → 0
-  (`tests/browser/spells/scenarios/effects.mjs:269-288`). It uses an internal
-  hook rather than two physical taps, but the normal gesture path independently
-  permits the same calls.
-- Every completed human cast restarts the normal placement clock
-  (`src/boot.ts:28-31`). Under the permissive rule, chaining FATE also refreshes
-  that clock twice.
-- In LIMITED, the second chained FATE is legal only while another bag die
-  remains; a human may consume two supply draws before one placement, while the
-  CPU and simulator consume at most one.
-- Player copy says “Two casts per game”; it does not answer whether they may be
-  consecutive (`src/i18n/locales/en/game.ts:203-208`).
+- `spellCastThisTurn` records the seat that committed the current turn's cast.
+  Commitment sets it for both reserved and immediate casts; `castable`, the
+  direct cast seam, and the CPU all respect it; placement clears it
+  (`src/state.ts:121-124`, `src/flow/spells.ts:159-170,252-336`,
+  `src/flow/game.ts:204-211`, `src/flow/spell-ai.ts:52-60`).
+- Browser coverage spends FATE once, proves a direct same-turn retry changes
+  neither die nor charge and leaves the rail disabled, then completes a full
+  turn cycle and spends the remaining charge
+  (`tests/browser/spells/scenarios/effects.mjs:269-320`).
+- Every completed human cast may restart the normal placement clock
+  (`src/boot.ts:28-31`), but the one-cast guard prevents repeated refreshes
+  before that placement.
+- In LIMITED, one FATE cast may consume one additional supply draw before the
+  required placement; the second charge cannot consume another until a later
+  turn.
+- Player copy now states both the two-cast game allowance and the one-cast turn
+  limit in every shipped locale (`src/i18n/locales/*/game.ts`).
 
 Historical audit:
 
@@ -229,21 +240,19 @@ Historical audit:
 | `1bcb571` | Post-cast undo was removed roster-wide; charge-only cast gating remained. |
 | `15d9fab` | The RC4 charge-stack browser scenario explicitly spent both charges before placement to verify two cards → one card → empty outlines. It did not amend the written rule. |
 
-No inspected commit message or design record consciously selects multiple casts
-over the written one-cast rule. The RC4 test's stated purpose is visual stack
-progression, so its product-rule intent is **unknown** rather than evidence of an
-owner decision.
+No inspected earlier commit message or design record consciously selected
+multiple casts over the written one-cast rule. That historical ambiguity is
+why both treatments remain frozen in v1 evidence; it was resolved by the owner
+decision above, not inferred retroactively from the RC4 visual-stack test.
 
-**BALANCE FACT:** every retained FATE simulator number measures at most one cast
-per turn, not the larger normal-human action set. The direction and magnitude of
-the difference are unmeasured. Same-rune human-versus-CPU offline play is
-therefore action-set asymmetric for FATE today.
+**BALANCE FACT:** retained pre-alignment FATE results already measure at most
+one cast per turn. The current standard also measures the selected rule and
+reports 59.3% one-sided in Classic and 60.8% in LIMITED. Same-rune
+human-versus-CPU offline play is now action-set symmetric.
 
-**DECISION NEEDED:** authoritative multiplayer and future balance measurements
-must select and enforce either one cast per turn or multiple casts while charges
-remain. The former needs authoritative turn-level used-cast state; the latter
-needs an online grammar of zero-to-many casts before placement rather than the
-currently documented singular optional cast.
+**ONLINE REQUIREMENT:** a future authoritative protocol must implement the
+selected zero-or-one cast grammar and reject a second cast before placement,
+using ordered history or an explicit projected per-turn cast marker.
 
 ### 3.4 Current game modes and ranked weights
 
@@ -436,12 +445,21 @@ This section preserves the baseline that existed when the investigation began.
 The later asymmetric v1 instrument fills its missing pair coverage but retains
 the named policy limitations (§6.5).
 
+The selected-rule/current-policy standard was rerun on 2026-08-25 after the
+local CPU, human flow, and maintained harness were aligned. Its complete
+12-row report is recorded in `docs/SPELLS.md` §4. That 72,000-game run uses at
+most one cast before placement, persistent scoring-WARD search and score
+settlement, coordinated `machineCastPlan`, and Normal's 5% slip; it does not
+rewrite any frozen v1 artifact below. FATE reports 59.3% one-sided in Classic
+and 60.8% in LIMITED.
+
 ### 4.1 Experimental policy
 
 - **FACT:** placement uses the offline Medium anchor: depth 2, risk weight 0.9,
   opponent weight 1 (`tools/spellsim.ts:13-18`, `:91-93`).
-- **FACT:** casting uses the shipped `machineCast` heuristic at Medium demand 16
-  (`tools/spellsim.ts:50-59`, `:76-87`).
+- **HISTORICAL FACT:** casting used the then-shipped `machineCast` heuristic at
+  Medium demand 16. The current standard wraps that same cast/hold heuristic in
+  `machineCastPlan` and makes one cast decision before placement.
 - **FACT:** dice and search tie breaks use a deterministic Mulberry32 stream,
   default seed `20260821` (`tools/spellsim.ts:33-48`).
 - **FACT:** a one-sided run alternates which identity holds the rune and who
@@ -462,15 +480,15 @@ the named policy limitations (§6.5).
   resetting per rune/mode cell (`tools/spellsim.ts:47-48`, `:161-170`). Exact
   output therefore depends on the command's roster/configuration order as well
   as its seed.
-- **FACT:** `searchRoot` receives mode but not rune ids, charge counts, or charm
-  state (`src/core/ai.ts`, `tools/spellsim.ts:91-93`). It reacts to board states
-  produced by earlier casts but cannot plan a placement around an unspent enemy
-  threat or a standing WARD/SUNDER mark.
-- **FACT:** the simulator checks `machineCast` only once before each placement,
-  so it permits at most one cast per turn (`tools/spellsim.ts:74-97`). Current
-  browser flow can spend both FATE charges before placing (§3.3). The retained
-  FATE result therefore measures the written one-cast rule, not every action
-  sequence accepted by the local runtime.
+- **HISTORICAL FACT:** at this baseline, `searchRoot` received mode but not rune
+  ids, charge counts, or charm state. It reacted to boards produced by earlier
+  casts but could not plan around an unspent enemy threat or standing
+  WARD/SUNDER mark.
+- **HISTORICAL FACT:** the baseline simulator checked `machineCast` only once
+  before each placement. Its retained FATE result therefore measures the
+  one-cast treatment. The current standard uses `machineCastPlan`, persistent
+  WARD search, the Normal 5% coordination slip, and the same one-cast limit
+  (§3.3 and `docs/SPELLS.md` §5).
 - **FACT:** current policies are not equally mode-aware. WARD's cast valuation
   uses ordinary column score even in row-scoring modes. Placement and cast
   lookahead do not carry BOUNTY bank state, and ignored return values mean the
@@ -487,7 +505,7 @@ the named policy limitations (§6.5).
   policies would still not be an equally informed seven-mode or matchup
   comparison.
 
-### 4.2 Reproduced current output
+### 4.2 Reproduced pre-investigation output
 
 **REPRODUCED 2026-08-24** on Node v24.2.0:
 
@@ -989,18 +1007,19 @@ directions must also remain visible. Ranked assigns the lower-rated player the
 opening seat, and LIMITED reverses the ordinary measured opener advantage; a
 single averaged headline can hide a rune × rating-seat × mode interaction.
 
-### 6.4 Branch-safe balance scope before the owner decisions
+### 6.4 Selected cast rule and retained branch-safe evidence
 
-The unresolved FATE cast count and Rune Trial board rule are experimental
-factors, not reasons to merge incompatible assumptions. The exact scope below
-shows what can be shared and what must be measured separately.
+The frozen v1 experiment treated the then-unresolved FATE cast count and Rune
+Trial board rule as experimental factors. The owner has since selected at most
+one cast per turn for live play; the chaining branch remains below solely as a
+counterfactual/provenance treatment.
 
-#### FATE branch: at most one cast per turn
+#### Selected rule: at most one cast per turn
 
-- **FACT:** the written rule, local CPU, and maintained simulator all permit at
-  most one cast attempt before placement (§3.3–§4.1).
-- **FACT:** all reproduced current FATE power, cast-rate, timing, and swing
-  measurements therefore apply to this branch only.
+- **FACT:** the written rule, human flow, local CPU, and maintained simulator
+  all permit at most one cast attempt before placement (§3.3–§4.1).
+- **FACT:** the reproduced pre-alignment FATE power, cast-rate, timing, and
+  swing measurements apply to this rule, as does the current standard rerun.
 - **FACT:** the other five runes each have one lifetime charge. Matchups in
   which neither seat holds FATE are invariant to the cast-count decision.
 - **INFERENCE:** the turn grammar is zero or one cast followed by placement,
@@ -1010,16 +1029,18 @@ shows what can be shared and what must be measured separately.
   turn := placement | cast → placement | terminal cast
   ```
 
-- **INFERENCE:** authority must reject a second cast before the next placement,
-  using either ordered history or an explicit projected per-turn cast marker.
+- **ONLINE REQUIREMENT:** authority must reject a second cast before the next
+  placement, using either ordered history or an explicit projected per-turn
+  cast marker.
 
-#### FATE branch: same-turn casts while legal charges remain
+#### Rejected counterfactual: same-turn casts while legal charges remain
 
-- **FACT:** the normal human state flow and browser coverage permit two
-  consecutive FATE casts before placement (§3.3).
+- **HISTORICAL FACT:** the normal human state flow and browser coverage once
+  permitted two consecutive FATE casts before placement (§3.3).
 - **FACT:** the individual FATE effect, two-charge limit, injected draw seam,
-  and LIMITED bag consumption remain the same. The maintained FATE simulator
-  result and current local CPU policy do not measure this larger action set.
+  and LIMITED bag consumption remained the same in this treatment. Frozen v1
+  retains its separately seeded chain branch; current human flow, local CPU,
+  and the maintained standard simulator do not use it.
 - **FACT:** non-FATE-versus-non-FATE measurements remain mechanically
   invariant. The surviving direct PILFER–WARD historical result is therefore
   also cast-branch-independent.
@@ -1032,7 +1053,7 @@ shows what can be shared and what must be measured separately.
   action-set bound does not determine FATE/FATE, where both action sets expand.
   A fixed heuristic or human population can also use the option badly, so the
   realized direction and magnitude remain unmeasured.
-- **INFERENCE:** the turn grammar becomes:
+- **COUNTERFACTUAL GRAMMAR:** this rejected treatment would use:
 
   ```text
   turn := cast* → placement | terminal cast
@@ -1247,9 +1268,10 @@ runes. Those are policy-model outcomes, not player telemetry.
   difference is 2.27pp and only one exceeds 2pp. The branches use independent
   treatment streams, so isolated deltas also include Monte Carlo variation.
 
-**INFERENCE:** global balance does not select the FATE grammar. The action
-protocol and human expectation still must select it, while the larger
-cell-level differences justify retaining both raw branches until that decision.
+**INFERENCE:** global balance did not select the FATE grammar; the owner did.
+At most one cast per turn is the applicable production-rule baseline. The
+larger cell-level differences still justify retaining both raw branches as
+provenance and sensitivity evidence.
 
 #### Frozen-v1 Classic-backed Rune Trial results
 
@@ -1721,8 +1743,8 @@ Current runes break different parts of that invariant:
 - PILFER and ANVIL mutate a board without ending the turn.
 - PILFER can fill the caster's board and end the match before the promised
   placement (`tests/browser/spells/scenarios/casting.mjs:155-180`).
-- The unresolved one-versus-multiple-casts-per-turn rule changes how many
-  same-turn events must be legal (§3.3).
+- The selected one-cast rule requires authority to reject a second cast before
+  placement (§3.3).
 
 **INFERENCE — shared prerequisite for both proposed formats:** casts and
 placements need one authoritative total order, one monotonically advancing
@@ -1739,7 +1761,7 @@ supply, and charm; the database must append the accepted action and projection
 atomically. The client must not claim its remaining charge, FATE draw, board
 mutation, or terminal score.
 
-#### Cast-count branch effects on the protocol
+#### Cast-count decision record and protocol effects
 
 **INFERENCE — shared under either rule:** replace placement count as the sole
 ordered cursor; replay hand die, supply cursor, charges, charm, turn, and
@@ -1748,13 +1770,13 @@ cast-aware reconstruction for Realtime, reconnect, final redraw, claim, bot
 openers/replies, and settlement. FATE and PILFER already make this work
 necessary even if only one cast is allowed per turn.
 
-| Concern | At most one cast per turn | Cast repeatedly while legal charges remain |
+| Concern | **Selected:** at most one cast per turn | Historical chaining counterfactual |
 |---|---|---|
 | Authoritative grammar | `cast? → placement`, with a cast-terminal exception; reject a second pre-placement cast | `cast* → placement`, with a cast-terminal exception; commit every cast independently because each FATE redraw informs the next decision |
 | Projection | Derive or durably project `cast_used_this_turn` / place-only phase | Preserve every intermediate hand and charge state; an expected action version rejects stale or concurrent actions, while reuse of one idempotency key returns the committed response without drawing or spending twice |
 | Clock rule still needed | Decide whether the single cast refreshes the deadline at all | Decide whether each cast refreshes; if every cast refreshes, two FATE casts can extend one turn twice. A fixed turn deadline avoids that extension |
 | Bot requirement | Optional cast plus placement; bounded at two accepted actions per bot turn | A terminating cast/re-evaluate loop followed by placement; bot openers/replies become variable-length action sequences |
-| Existing policy evidence | Local CPU and simulator already have the one-attempt shape | Current local CPU and simulator do not exercise the branch |
+| Existing policy evidence | Human flow, local CPU, and standard simulator use this rule | Preserved only in frozen historical treatments |
 | Client/versioning | Disable FATE's remaining charge until the next turn; snapshot an immutable cast-rule version | Support intermediate same-turn cast states and declare that capability; snapshot the same immutable rule version |
 
 Placement itself can close the cast window in either branch. A separate
@@ -1950,7 +1972,8 @@ requires client cryptography under the current trusted-server model.
    board mutations.
 8. Clocks and reconnect use placement count, while casts retain the turn and
    Trial selection is not a turn.
-9. The one-cast rule is internally inconsistent.
+9. The selected `cast? → placement` grammar is still absent from ranked replay
+   and validation, even though local rule surfaces are now aligned.
 10. Old cached clients have no capability negotiation and cannot interpret rune
     matches.
 11. Active replay has no immutable rune rules/protocol version. A spell-rule
@@ -2117,8 +2140,9 @@ unlock rule creates them unintentionally.
 - [x] Scope both FATE cast-rule branches without duplicating invariant cells:
   329 configurations / 987,000 games at 3,000 each for the exact reduced
   two-branch design (§6.4).
-- [ ] Resolve and enforce the one-versus-multiple-casts-per-turn rule before
-  treating any FATE result as authoritative.
+- [x] Resolve and enforce the local cast-count rule: at most one cast per turn
+  is selected, and human, CPU, written rule, and standard simulator now align.
+  Ranked enforcement remains Phase D protocol work.
 - [x] Measure all six runes against all six under all seven modes under the
   frozen blind Normal policy (§6.5).
 - [x] Run both opener orientations for every distinct pair; do not add a second
@@ -2225,8 +2249,9 @@ This section intentionally remains narrow while the investigation is active.
    **INFERENCE:** the repair is correct and its balance movement is small, but
    it strengthens an existing BOUNTY specialist rather than closing the roster.
 6. **REPRODUCED:** FATE chaining changes no global ordering and moves every
-   rune's wheel strength by less than 0.08pp. **INFERENCE:** balance aggregates
-   do not choose the cast grammar; protocol clarity still must.
+   rune's wheel strength by less than 0.08pp. **DECISION:** balance aggregates
+   did not choose the cast grammar; the owner selected at most one cast per
+   turn.
 7. **REPRODUCED/DERIVED POINT ESTIMATE:** frozen v1 gives all 20 Classic-backed
    Trial offers one pure saddle. After substituting coordinated SUNDER, 16
    offers retain one mirror saddle and the four PILFER/SUNDER offers have no
@@ -2251,11 +2276,12 @@ This section intentionally remains narrow while the investigation is active.
    genuinely new mechanical Trial mode remains undetermined until its board
    rule defines the required payoff matrix, replay, bot policy, settlement, and
    compatibility rollout. Neither branch is launch-ready.
-12. **FACT:** the written, local-human, local-CPU, and simulator cast-count rules
-   are not aligned. **INFERENCE:** this must be resolved before final protocol
-   implementation and launch—unless the protocol deliberately versions and
-   supports both rules—and before one FATE branch is treated as the balance
-   baseline.
+12. **FACT:** the written, local-human, local-CPU, and standard-simulator rules
+   now align on at most one cast per turn. FATE's two game charges must be spent
+   on different turns.
+   **INFERENCE:** ranked still needs that selected grammar, immutable rule
+   versioning, and replay support before launch; frozen chaining evidence does
+   not make the rejected branch a live product rule.
 
 ### 10.1 Evidence-bounded recommendation
 
@@ -2328,8 +2354,8 @@ as launch-balanced, and do not make ranked mechanical access depend on wins.
    worst-cell matchup, or both?
 8. Are runes intended as pure horizontal identities, or may later unlocks be
    intentionally stronger?
-9. Is the authoritative rule one cast per turn, or any number while charges
-   remain?
+9. **Answered 2026-08-25:** at most one cast per turn; FATE's two game charges
+   must be spent on different turns.
 10. Is Rune Trial technically stored as Classic plus a match-format field, or
     does it deliberately become a new mechanical mode with another board rule?
 11. What happens when one Trial player does not select: auto-pick, forfeit, or
