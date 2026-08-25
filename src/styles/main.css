@@ -22,6 +22,7 @@
 @import "./game/anvil.css";
 @import "./game/pilfer.css";
 @import "./components/game-info.css";
+@import "./components/legal.css";
 @import "./screens/result.css";
 @import "./game/seating.css";
 @import "./screens/tutorial-handoff.css";

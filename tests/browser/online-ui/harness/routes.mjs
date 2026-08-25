@@ -1,8 +1,21 @@
 export async function installOnlineRoutes(
   page,
-  { anonymous, attached, dataDelay = 0, door, named, paginationRace = false, SESSION, GUEST_ID },
+  {
+    anonymous,
+    attached,
+    authDelay = 0,
+    dataDelay = 0,
+    door,
+    named,
+    paginationRace = false,
+    passwordAuth = 'error',
+    SESSION,
+    GUEST_ID,
+  },
 ) {
   let signupCalls = 0;
+  let passwordCalls = 0;
+  let profileCalls = 0;
   let leaderboardCalls = 0;
   let markPaginationStarted;
   let releasePagination;
@@ -30,6 +43,14 @@ export async function installOnlineRoutes(
       : r.fulfill({ status: 422, contentType: 'application/json',
                     body: JSON.stringify({ code: 'anonymous_provider_disabled', message: 'Anonymous sign-ins are disabled' }) });
   });
+  await page.route('**/auth/v1/token?grant_type=password', async (r) => {
+    passwordCalls++;
+    if (authDelay > 0) await new Promise((resolve) => setTimeout(resolve, authDelay));
+    return passwordAuth === 'success'
+      ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(SESSION) })
+      : r.fulfill({ status: 400, contentType: 'application/json',
+                   body: JSON.stringify({ error_code: 'invalid_credentials', message: 'Invalid login credentials' }) });
+  });
   /* stateful, like the live table: the claim PATCH flips named_at (migration
      0026's trigger stamps it server-side), and every later GET tells the
      claimed truth — nickname included */
@@ -39,6 +60,7 @@ export async function installOnlineRoutes(
       claimed = true;
       return r.fulfill({ status: 204, body: '' });
     }
+    profileCalls++;
     await hold(.35);
     return r.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify([{ id: GUEST_ID, nickname: claimed && door === 'claim' ? 'NeonKing77' : 'TestGuest001',
@@ -137,6 +159,8 @@ export async function installOnlineRoutes(
     body: JSON.stringify([{ streak: 4, since: '2026-06-01T00:00:00Z' }]) }));
   return {
     signupCalls: () => signupCalls,
+    passwordCalls: () => passwordCalls,
+    profileCalls: () => profileCalls,
     paginationStarted,
     releasePagination: () => releasePagination(),
   };

@@ -37,6 +37,21 @@
   transform:translateY(calc(var(--fo-dy) * 1px));will-change:transform;
   /* the WHOLE card is the drag surface, so nothing may steal the gesture */
   touch-action:none}
+/* A form is the sheet's interactive variant: its fields and one bounded body
+   keep ordinary scrolling/keyboard behavior, while only the grabber owns the
+   downward dismissal gesture. Dynamic viewport height keeps the card above a
+   mobile keyboard without inventing a second modal implementation. */
+:where(#kbroot) .faceoff.fointeractive .focard{max-height:calc(100vh - 28px);max-height:calc(100dvh - 28px);
+  gap:22px;touch-action:auto}
+:where(#kbroot) .faceoff.fointeractive{
+  padding:calc(env(safe-area-inset-top,0px) + 14px)
+          calc(env(safe-area-inset-right,0px) + 14px)
+          calc(env(safe-area-inset-bottom,0px) + 14px)
+          calc(env(safe-area-inset-left,0px) + 14px)}
+:where(#kbroot) .faceoff.fointeractive .focard{
+  max-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 28px);
+  max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 28px)}
+:where(#kbroot) .faceoff.fointeractive .fograb{flex:0 0 auto}
 /* the three flights — in, out, and home again — are ONE transition wearing
    three sets of numbers, handed in by sheet.ts as --fo-t/--fo-e. Absent while
    a finger is down, so the card follows it with nothing in between. */
@@ -95,6 +110,11 @@
    of its own; the card's only button is this one). The whole card is still the
    drag surface, because a press here bubbles to it. */
 :where(#kbroot) .fograb::after{content:"";position:absolute;inset:-26px 0 -4px}
+/* A viewport-filling form puts the wrapper too close to the top edge for the
+   ordinary upward-heavy target. Redistribute the invisible expansion into the
+   larger form gap: the drawing stays put and at least 44px remain hit-testable
+   even after the viewport clips the very top pixel. */
+:where(#kbroot) .faceoff.fointeractive .fograb::after{inset:-18px 0 -14px}
 :where(#kbroot) .fograb:active{cursor:grabbing}
 :where(#kbroot) .fograb:focus-visible{outline:2px solid var(--p1);outline-offset:2px}
 :where(#kbroot) .fobar{width:40px;height:4px;border-radius:99px;background:rgba(255,255,255,.22);

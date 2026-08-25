@@ -20,8 +20,17 @@
    sized between the group label above it and the gold points below */
 :where(#kbroot) #onAccount .accname{font-size:17px;font-weight:900;letter-spacing:.06em;color:var(--p1);
   text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
-:where(#kbroot) #ovOnline .acts,:where(#kbroot) #ovOnline .oneTap{display:flex;flex-direction:column;gap:12px}
-:where(#kbroot) #ovOnline .oneTap:empty{display:none}
+:where(#kbroot) #onAuth{width:100%;min-height:0;max-width:var(--w-col);display:flex;flex-direction:column;gap:14px;
+  overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:2px 3px 8px;
+  -webkit-overflow-scrolling:touch}
+:where(#kbroot) #onAuth .auth-title{margin:0;text-align:center;font-size:17px;line-height:1.25;font-weight:900;
+  letter-spacing:.18em;text-transform:uppercase;background:linear-gradient(100deg,var(--p1),#fff 50%,var(--p2));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+:where(#kbroot) #onAuth input{width:100%}
+:where(#kbroot) #onAuth .acts,:where(#kbroot) #onAuth .oneTap{display:flex;flex-direction:column;gap:12px}
+:where(#kbroot) #onAuth .oneTap:empty{display:none}
+:where(#kbroot) #onAuth .btn{width:100%;min-width:0}
+:where(#kbroot) #onAuth .authlegal .linkbtn{width:auto}
 /* Apple's own button, per its guidelines: their black-on-white, our radius */
 :where(#kbroot) #onAuth .btn.tap.apple{background:#fff;color:#000;border-color:#fff}
 :where(#kbroot) #onAuth .btn.tap.gamecenter{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.3)}

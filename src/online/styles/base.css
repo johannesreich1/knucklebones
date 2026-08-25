@@ -5,15 +5,15 @@
    centres in the actual view below the pinned header instead of centring in a
    ladder list whose height is only the die itself. */
 :where(#kbroot) #ovOnline #onLoading{flex:1 1 auto;min-height:0;align-items:center;justify-content:center;margin:0}
-:where(#kbroot) #ovOnline input{padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
+:where(#kbroot) #ovOnline input,:where(#kbroot) #onAuth input{padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,.14);
   background:rgba(255,255,255,.05);color:var(--txt);font-size:14px;font-family:inherit;outline:none}
-:where(#kbroot) #ovOnline input:focus-visible{outline:2px solid var(--p1);outline-offset:1px}
-:where(#kbroot) #ovOnline .err{min-height:16px;font-size:11px;letter-spacing:.08em;color:var(--orange);text-align:center}
+:where(#kbroot) #ovOnline input:focus-visible,:where(#kbroot) #onAuth input:focus-visible{outline:2px solid var(--p1);outline-offset:1px}
+:where(#kbroot) #ovOnline .err,:where(#kbroot) #onAuth .err{min-height:16px;font-size:11px;letter-spacing:.08em;color:var(--orange);text-align:center}
 /* an err with nothing to say is not a row: its reserved height plus the
    column gaps around it pushed buttons a whole slot away from their inputs
    (user report, the claim card). It appears — and takes its room — only
    when there is actually an error to show. */
-:where(#kbroot) #ovOnline .err:empty{display:none}
+:where(#kbroot) #ovOnline .err:empty,:where(#kbroot) #onAuth .err:empty{display:none}
 :where(#kbroot) #ovOnline .who{font-size:13px;letter-spacing:.12em;text-align:center;color:var(--txt)}
 :where(#kbroot) #ovOnline .who b{color:var(--p1)}
 :where(#kbroot) #ovOnline .who .rt{color:var(--gold);font-weight:800}

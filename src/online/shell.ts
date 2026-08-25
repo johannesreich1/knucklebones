@@ -9,13 +9,15 @@ import { $, hide, settleGlass } from '../ui/dom.ts';
 import { makeDie } from '../ui/die.ts';
 import { appRoot } from '../ui/embed.ts';
 import { loaderWait } from '../ui/loader.ts';
+import { refreshLegalUi } from '../ui/legal.ts';
+import { LEGAL_AUTH_NAV_MARKUP } from '../markup/legal.ts';
 
 const OVERLAY = `
 <div class="ov paged" id="ovOnline">
   <div class="shead">
     <button class="ico" id="btnOnlineBack" aria-label="Back"
       data-i18n-attr="aria-label=common:actions.back">‹</button>
-    <span class="ttl" id="onTitle">ONLINE</span><span class="pad"></span>
+    <span class="ttl" id="onTitle" tabindex="-1">ONLINE</span><span class="pad"></span>
   </div>
 
   <!-- the paged view's scrolling body (styles/main.css .ov.paged): the panels
@@ -29,6 +31,7 @@ const OVERLAY = `
   <div class="panel" id="onLoading" hidden aria-live="polite"></div>
 
   <div class="panel" id="onAuth" hidden>
+    <h2 class="auth-title" id="onAuthTitle"></h2>
     <div class="lbl" id="onAuthLead" style="text-align:center"></div>
     <div class="oneTap" id="onOneTap"></div>
     <input id="onEmail" type="email" autocomplete="email" placeholder="email"
@@ -37,8 +40,9 @@ const OVERLAY = `
       data-i18n-attr="placeholder=online:auth.passwordPlaceholder">
     <div class="err" id="onAuthErr"></div>
     <div class="acts" id="onAuthActs"></div>
-    <button class="btn ghost" id="btnAuthSwap" hidden></button>
+    <button type="button" class="btn ghost" id="btnAuthSwap" hidden></button>
     <div class="tiny" id="onAuthTiny"></div>
+    ${LEGAL_AUTH_NAV_MARKUP}
   </div>
 
   <div class="panel online-queue" id="onQueue" hidden>
@@ -154,7 +158,6 @@ const OVERLAY = `
 </div>`;
 
 const PANELS = {
-  onAuth: { title: 'panels.signIn', back: true },
   onQueue: { title: 'panels.matchmaking', back: false },
   onBoard: { title: 'panels.ladder', back: true },
   onAccount: { title: 'panels.profile', back: true },
@@ -186,6 +189,7 @@ export function setOnlinePanelTitle(title: LocaleKey<'online'>): void {
 export function installOnlineShell(): void {
   appRoot().insertAdjacentHTML('beforeend', OVERLAY);
   translateDom($('#ovOnline'));
+  refreshLegalUi($('#ovOnline'));
   if (!localeBound) {
     localeBound = true;
     subscribeLocale(paintOnlineShell);

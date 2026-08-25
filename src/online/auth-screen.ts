@@ -1,16 +1,19 @@
 import { subscribeLocale, t, translateDom, type LocaleKey } from '../i18n/index.ts';
 import { $ } from '../ui/dom.ts';
 import { Sfx } from '../ui/audio.ts';
+import { showSheet, type Sheet } from '../ui/sheet.ts';
+import { refreshLegalUi } from '../ui/legal.ts';
 import { availableTaps } from './identity.ts';
 import { attachEmail, signIn } from './session.ts';
-import { setOnlinePanelTitle, showOnlinePanel } from './shell.ts';
 import { onlineMessage, repaintOnlineMessage } from './message-copy.ts';
 
 export type AuthMode = 'attach' | 'restore';
+export type AuthOrigin = 'account' | 'home';
 
 export interface AuthPorts {
   entered(): Promise<void>;
   showAccount(): Promise<void>;
+  dismiss(origin: AuthOrigin): void;
 }
 
 interface AuthSpec {
@@ -29,24 +32,32 @@ interface AuthSpec {
     tiny: LocaleKey<'online'>;
     act: LocaleKey<'online'>;
   };
-  after(ports: AuthPorts): Promise<void>;
+  after(ports: AuthPorts, origin: AuthOrigin): Promise<void>;
 }
 
 let sessionless = false;
 let authMessage: string | null = null;
 let authViewRevision = 0;
 let authOperationRevision = 0;
+let authSheet: Sheet | null = null;
+let authTitle: LocaleKey<'online'> = 'auth.signInTitle';
+let authOrigin: AuthOrigin = 'home';
+let activePorts: AuthPorts | null = null;
+let authOpener: HTMLElement | null = null;
+
+function authPanel(): HTMLElement {
+  return document.getElementById('onAuth')!;
+}
 
 function setAuthBusy(busy: boolean): void {
-  document.getElementById('onAuth')?.querySelectorAll<HTMLButtonElement>('button')
+  authPanel().querySelectorAll<HTMLButtonElement>('button')
     .forEach((button) => { button.disabled = busy; });
 }
 
 function ownsAuthOperation(view: number, operation: number): boolean {
-  const panel = document.getElementById('onAuth');
-  const overlay = document.getElementById('ovOnline');
   return view === authViewRevision && operation === authOperationRevision
-    && !!panel && !panel.hidden && !!overlay?.classList.contains('on');
+    && !!authSheet?.ov.isConnected && authSheet.card.contains(authPanel())
+    && !authPanel().hidden;
 }
 
 function clearAuthError(): void {
@@ -61,9 +72,13 @@ function showAuthError(message: string): void {
 
 subscribeLocale(() => {
   const panel = document.getElementById('onAuth');
-  if (!panel || panel.hidden || !authMessage) return;
-  authMessage = repaintOnlineMessage(authMessage);
-  $('#onAuthErr').textContent = authMessage;
+  if (!panel || panel.hidden) return;
+  if (authMessage) {
+    authMessage = repaintOnlineMessage(authMessage);
+    $('#onAuthErr').textContent = authMessage;
+  }
+  $('#onAuthTitle').textContent = t('online', authTitle);
+  refreshLegalUi(panel);
 });
 
 const AUTH: Record<AuthMode, AuthSpec> = {
@@ -79,8 +94,8 @@ const AUTH: Record<AuthMode, AuthSpec> = {
       tiny: 'auth.createDetail',
       act: 'auth.createAction',
     },
-    after: async (ports) => {
-      if (sessionless) {
+    after: async (ports, origin) => {
+      if (origin === 'home') {
         sessionless = false;
         await ports.entered();
         return;
@@ -94,7 +109,9 @@ const AUTH: Record<AuthMode, AuthSpec> = {
     tiny: 'auth.signInDetail',
     acts: [{ label: 'auth.signInAction', primary: true, run: signIn }],
     swap: { label: 'auth.createAction', to: 'attach' },
-    after: (ports) => ports.entered(),
+    after: (ports, origin) => origin === 'account'
+      ? ports.showAccount()
+      : ports.entered(),
   },
 };
 
@@ -102,14 +119,44 @@ export function setSessionless(value: boolean): void {
   sessionless = value;
 }
 
-export function showAuth(mode: AuthMode, ports: AuthPorts): void {
+function closeAuthSheet(restoreOpener = true): void {
+  authSheet?.close(restoreOpener);
+}
+
+export function showAuth(
+  mode: AuthMode,
+  ports: AuthPorts,
+  origin: AuthOrigin = 'home',
+): void {
+  /* A sheet stops intercepting the room as soon as its exit starts. If that
+     room immediately opens auth again, retire the old 190ms flight before it
+     can repaint and later remove the newly requested form. */
+  const reopeningDepartingSheet = !!authSheet?.ov.classList.contains('foout');
+  if (reopeningDepartingSheet) authSheet!.close();
+  if (!authSheet && !reopeningDepartingSheet) {
+    const focused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const visibleFocused = focused && focused !== document.body
+      && focused.isConnected && !!focused.getClientRects().length;
+    /* WebKit does not necessarily focus a button when it is tapped. Account
+       still has an unambiguous semantic opener, so dismissal returns there
+       even when activeElement remained BODY. */
+    authOpener = visibleFocused ? focused
+      : origin === 'account'
+        ? document.getElementById(mode === 'restore' ? 'btnHaveAcc' : 'btnKeepAcc')
+        : document.getElementById('homeChip');
+  }
   const viewRevision = ++authViewRevision;
   authOperationRevision++;
+  authOrigin = origin;
+  activePorts = ports;
   const spec = AUTH[mode];
   const copy = sessionless && spec.fresh ? spec.fresh : spec;
-  showOnlinePanel('onAuth');
+  const panel = authPanel();
+  panel.hidden = false;
   setAuthBusy(false);
-  setOnlinePanelTitle(copy.title);
+  authTitle = copy.title;
+  $('#onAuthTitle').setAttribute('data-i18n', `online:${copy.title}`);
+  $('#onAuthTitle').textContent = t('online', copy.title);
   $('#onAuthLead').setAttribute('data-i18n', `online:${copy.lead}`);
   $('#onAuthTiny').setAttribute('data-i18n-rich', `online:${copy.tiny}`);
   clearAuthError();
@@ -139,12 +186,18 @@ export function showAuth(mode: AuthMode, ports: AuthPorts): void {
         message = onlineMessage('errors.generic');
       }
       if (!ownsAuthOperation(viewRevision, operation)) return;
-      setAuthBusy(false);
       if (message) {
+        setAuthBusy(false);
         showAuthError(message);
         return;
       }
-      await spec.after(ports);
+      /* Authentication is complete. Retire this exact modal before profile
+         loading/navigation yields, so Escape, backdrop taps, or a second
+         submit cannot dismiss the successful transition or close a later
+         auth sheet. The destination owns focus from here. */
+      sessionless = false;
+      closeAuthSheet(false);
+      await spec.after(ports, origin);
     });
     acts.appendChild(button);
   }
@@ -155,18 +208,51 @@ export function showAuth(mode: AuthMode, ports: AuthPorts): void {
     swap.textContent = t('online', spec.swap.label);
     swap.onclick = () => {
       Sfx.tap();
-      showAuth(spec.swap!.to, ports);
+      showAuth(spec.swap!.to, ports, origin);
     };
   }
-  showOneTapRow(mode, ports, viewRevision);
-  translateDom($('#onAuth'));
+  showOneTapRow(mode, ports, viewRevision, origin);
+  translateDom(panel);
+  refreshLegalUi(panel);
+  if (!authSheet) {
+    let created: Sheet;
+    created = showSheet({
+      content: panel,
+      interactive: true,
+      cls: 'authsheet',
+      label: () => t('online', authTitle),
+      restoreFocus: authOpener,
+      repaintLocale: (card) => {
+        translateDom(panel);
+        refreshLegalUi(card);
+      },
+      onDismiss: () => {
+        authViewRevision++;
+        authOperationRevision++;
+        activePorts?.dismiss(authOrigin);
+      },
+      onClose: () => {
+        panel.hidden = true;
+        if (authSheet === created) authSheet = null;
+      },
+    });
+    authSheet = created;
+  } else {
+    authSheet.card.setAttribute('aria-label', t('online', authTitle));
+  }
 }
 
-function showOneTapRow(mode: AuthMode, ports: AuthPorts, viewRevision: number): void {
+function showOneTapRow(
+  mode: AuthMode,
+  ports: AuthPorts,
+  viewRevision: number,
+  origin: AuthOrigin,
+): void {
   const row = $('#onOneTap');
   row.innerHTML = '';
   for (const method of availableTaps()) {
     const button = document.createElement('button');
+    button.type = 'button';
     button.className = 'btn tap ' + method.id;
     button.setAttribute('data-i18n', `online:${method.labelKey}`);
     button.textContent = t('online', method.labelKey);
@@ -183,12 +269,14 @@ function showOneTapRow(mode: AuthMode, ports: AuthPorts, viewRevision: number): 
         message = onlineMessage('errors.generic');
       }
       if (!ownsAuthOperation(viewRevision, operation)) return;
-      setAuthBusy(false);
       if (message !== null) {
+        setAuthBusy(false);
         if (message) showAuthError(message);
         return;
       }
-      await AUTH[mode].after(ports);
+      sessionless = false;
+      closeAuthSheet(false);
+      await AUTH[mode].after(ports, origin);
     });
     row.appendChild(button);
   }

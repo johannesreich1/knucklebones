@@ -18,6 +18,7 @@ import { repaintEndLocale } from './ui/endscreen.ts';
 import { bindBoardInput, bindKeyboard } from './boot/input-bindings.ts';
 import { bindMenus } from './boot/menu-bindings.ts';
 import { bindPlatform } from './boot/platform.ts';
+import { bindLegalPages } from './ui/legal.ts';
 import { subscribeLocale } from './i18n/index.ts';
 import { repaintPassLocale } from './flow/pass-card.ts';
 import { userPreferencesRevision } from './preferences.ts';
@@ -48,6 +49,7 @@ export function boot(embed: boolean): void {
 
   bindBoardInput();
   bindMenus(root);
+  bindLegalPages(root);
   bindKeyboard(root);
   bindPlatform(root);
   subscribeLocale(() => {

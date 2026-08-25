@@ -8,7 +8,12 @@ import { refreshHomeChip } from '../ui/homechip.ts';
 import { S } from '../state.ts';
 import { saveStats } from '../persist.ts';
 import { createAccountScreen } from './account-screen.ts';
-import { showAuth, setSessionless, type AuthMode } from './auth-screen.ts';
+import {
+  showAuth,
+  setSessionless,
+  type AuthMode,
+  type AuthOrigin,
+} from './auth-screen.ts';
 import { createAvatarScreen } from './avatar-screen.ts';
 import { showHistory } from './history-screen.ts';
 import { createLadderScreen } from './ladder-screen.ts';
@@ -16,7 +21,7 @@ import { createQueueScreen } from './queue-screen.ts';
 import { createResultScreen } from './result-screen.ts';
 import { ensureIdentity, myProfile } from './session.ts';
 import { syncAccountPreferences } from './preferences.ts';
-import { installOnlineShell } from './shell.ts';
+import { installOnlineShell, showOnlineLoading, type OnlinePanel } from './shell.ts';
 import { setFinishHandler, type FinishReport } from './play.ts';
 
 export type OnlineView = 'play' | 'board' | 'account';
@@ -24,6 +29,7 @@ export interface OnlinePorts { startTutorial: () => void }
 
 let bound = false;
 let pendingView: OnlineView | null = null;
+let entryRevision = 0;
 let exitOnline: () => void = goHome;
 let onlinePorts: OnlinePorts | null = null;
 
@@ -52,15 +58,36 @@ const result = createResultScreen({
   openProfile: openProfileFromResult,
 });
 
-function showAuthPanel(mode: AuthMode): void {
-  showAuth(mode, { entered, showAccount });
+function showAuthPanel(mode: AuthMode, origin: AuthOrigin): void {
+  if (origin === 'home') {
+    /* Every Home-origin auth flow has no current session (initial fallback,
+       sign-out, or deletion). Its attach step is registration copy, never the
+       guest-only "keep this account" copy. */
+    setSessionless(true);
+    hide('#ovOnline');
+    show('#ovStart');
+  }
+  showAuth(mode, { entered, showAccount, dismiss: dismissAuth }, origin);
+}
+
+function dismissAuth(origin: AuthOrigin): void {
+  if (origin === 'account') return;
+  pendingView = null;
+  goHome();
+}
+
+function focusOnlineTitle(): void {
+  $('#onTitle').focus({ preventScroll: true });
 }
 
 function showAccount(): Promise<void> {
-  return account.show();
+  const showing = account.show();
+  focusOnlineTitle();
+  return showing;
 }
 
 function goHome(): void {
+  entryRevision++;
   queue.stop();
   closeEnd();
   hide('#ovOnline');
@@ -89,11 +116,23 @@ async function route(view: OnlineView): Promise<void> {
   return queue.start();
 }
 
+function loadingPanel(view: OnlineView | null): OnlinePanel {
+  if (view === 'account') return 'onAccount';
+  if (view === 'board') return 'onBoard';
+  return 'onQueue';
+}
+
 async function entered(): Promise<void> {
+  const revision = ++entryRevision;
   const view = pendingView;
   pendingView = null;
+  showOnlineLoading(loadingPanel(view));
+  show('#ovOnline');
+  focusOnlineTitle();
   await myProfile();
+  if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
   await syncAccountPreferences();
+  if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
   refreshHomeChip();
   await route(view ?? 'play');
 }
@@ -129,18 +168,19 @@ export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<
   onlinePorts = ports;
   bind();
   exitOnline = goHome;
-  show('#ovOnline');
   if (view === 'board') {
+    show('#ovOnline');
     pendingView = null;
     return ladder.show();
   }
   const user = await ensureIdentity();
   setSessionless(!user);
   if (user) {
+    show('#ovOnline');
     pendingView = null;
     await syncAccountPreferences();
     return route(view);
   }
   pendingView = view;
-  showAuthPanel('restore');
+  showAuthPanel('restore', 'home');
 }

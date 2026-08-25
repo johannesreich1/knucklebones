@@ -166,6 +166,11 @@ store privacy/Data Safety answers must be derived from the same inventory.
   - external account-deletion instructions/request path.
 - Keep the same privacy and deletion links reachable inside the PWA and native
   apps, then enter them in App Store Connect and Play Console.
+- When legal publication is ready, keep Impressum and Privacy at the bottom of
+  Settings and show Privacy contextually in the shared attach/sign-in modal.
+  Opening Privacy must preserve the selected auth step and all entered values.
+  Ranked entry itself stays silent; there is no blocking legal notice in the
+  guest flow.
 - Complete App Store Privacy and Google Play Data Safety from the verified
   inventory, including Supabase, Cloudflare, Apple/store services when enabled,
   retention, and deletion.

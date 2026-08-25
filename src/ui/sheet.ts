@@ -22,20 +22,40 @@ import { Sfx } from './audio.ts';
 import { subscribeLocale, t } from '../i18n/index.ts';
 import { REDUCED } from './fx.ts';
 import { appRoot } from './embed.ts';
+import {
+  makeModalBackgroundInert,
+  restoreModalBackground,
+  type InertSnapshot,
+} from './modal-background.ts';
 
 export interface SheetSpec {
   /** the card's content, below the grabber. Trusted markup — escape first. */
-  body: string;
+  body?: string;
+  /** A stable interactive subtree. It is restored to its exact DOM slot on close. */
+  content?: HTMLElement;
   /** what a screen reader calls this dialog */
   label: string | (() => string);
   /** the variant's own class on the overlay ('faceoff', 'faceoff solo', 'libsheet') */
   cls?: string;
   /** the card's own light: a hue token that dresses border, glow and heading */
   tint?: string;
+  /** Forms scroll normally and drag only by the grabber, never by their fields. */
+  interactive?: boolean;
   /** Repaint only locale-owned descendants already mounted in the card. */
   repaintLocale?: (card: HTMLElement) => void;
+  /** Called when the player dismisses through Escape, backdrop, grabber or drag. */
+  onDismiss?: () => void;
+  /** Called after every close, including a caller-requested immediate close. */
+  onClose?: () => void;
+  /** Override the control that regains focus when the sheet is gone. */
+  restoreFocus?: HTMLElement | null;
 }
-export interface Sheet { ov: HTMLElement; card: HTMLElement; close: () => void }
+export interface Sheet {
+  ov: HTMLElement;
+  card: HTMLElement;
+  /** Close immediately. Successful transitions can suppress returning to the opener. */
+  close: (restoreOpener?: boolean) => void;
+}
 
 /* ONE SHEET AT A TIME. Nothing can currently stack them — a sheet covers
    inset:0, so the control that would open the next one is behind it — but a
@@ -47,8 +67,15 @@ export const sheetOpen = (): boolean => !!live;
 
 export function showSheet(spec: SheetSpec): Sheet {
   live?.close();
+  if ((spec.body === undefined) === (spec.content === undefined)) {
+    throw new TypeError('A sheet needs exactly one of body or content');
+  }
+  const opener = spec.restoreFocus !== undefined
+    ? spec.restoreFocus
+    : document.activeElement instanceof HTMLElement ? document.activeElement : null;
   const ov = document.createElement('div');
-  ov.className = 'faceoff' + (spec.cls ? ' ' + spec.cls : '');
+  ov.className = 'faceoff' + (spec.cls ? ' ' + spec.cls : '')
+    + (spec.interactive ? ' fointeractive' : '');
   ov.innerHTML = `<div class="focard${spec.tint ? ' hued' : ''}" role="dialog" aria-modal="true" tabindex="-1">
     <button type="button" class="fograb" aria-label="${t('common', 'actions.close')}"><span class="fobar"></span></button>
   </div>`;
@@ -59,15 +86,55 @@ export function showSheet(spec: SheetSpec): Sheet {
      from being someone else's markup */
   card.setAttribute('aria-label', resolvedLabel());
   if (spec.tint) card.style.setProperty('--mh', spec.tint);
-  card.insertAdjacentHTML('beforeend', spec.body);
+  const contentHome = spec.content ? {
+    parent: spec.content.parentNode,
+    next: spec.content.nextSibling,
+  } : null;
+  if (spec.body !== undefined) card.insertAdjacentHTML('beforeend', spec.body);
+  else card.appendChild(spec.content!);
 
   let unbindLocale = (): void => undefined;
-  const close = (): void => {
-    ov.remove(); document.removeEventListener('keydown', onKey);
-    unbindLocale();
-    if (live === sheet) live = null;
+  let closed = false;
+  let background: readonly InertSnapshot[] = [];
+  let backgroundRestored = false;
+  const releaseBackground = (): void => {
+    if (backgroundRestored) return;
+    backgroundRestored = true;
+    restoreModalBackground(background);
   };
-  const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') leave(); };
+  const close = (restoreOpener = true): void => {
+    if (closed) return;
+    closed = true;
+    document.removeEventListener('keydown', onKey);
+    unbindLocale();
+    if (spec.content && contentHome) {
+      if (contentHome.parent) {
+        if (contentHome.next?.parentNode === contentHome.parent) {
+          contentHome.parent.insertBefore(spec.content, contentHome.next);
+        } else {
+          contentHome.parent.appendChild(spec.content);
+        }
+      } else {
+        spec.content.remove();
+      }
+    }
+    ov.remove();
+    releaseBackground();
+    if (live === sheet) live = null;
+    spec.onClose?.();
+    /* Escape's own default handling can replace a synchronous focus after the
+       listener returns, so restore on the next frame. A replacement sheet wins
+       through `live`, and successful navigation calls close(false). */
+    if (restoreOpener) requestAnimationFrame(() => {
+      if (live || !opener?.isConnected || opener.inert || !opener.getClientRects().length) return;
+      opener.focus({ preventScroll: true });
+    });
+  };
+  const onKey = (e: KeyboardEvent): void => {
+    /* The legal modal is allowed to stack over a sheet. Its earlier keyboard
+       owner prevents the event after closing only that top layer. */
+    if (e.key === 'Escape' && !e.defaultPrevented) leave();
+  };
 
   /* ---- THE FLIGHT (design 30c). It comes up from the bottom and it goes back
      down there. ONE property carries the travel — `--fo-dy`, unitless px below
@@ -93,6 +160,11 @@ export function showSheet(spec: SheetSpec): Sheet {
   const leave = (): void => {
     if (going) return;
     going = true;
+    spec.onDismiss?.();
+    /* The established sheet exit stops intercepting the room underneath on
+       frame one. Inert must leave on that same frame or the room still cannot
+       receive the tap the transparent exit deliberately passes through. */
+    releaseBackground();
     /* IT STOPS TAKING TAPS THE INSTANT IT STARTS LEAVING. The exit is a 190ms
        flight and the wash reaches alpha 0 about 40% into it — but the overlay
        still covers inset:0 until close() removes it, so for the rest of the
@@ -116,7 +188,9 @@ export function showSheet(spec: SheetSpec): Sheet {
   const COMMIT = 96, FLICK = 0.5;   // px, px/ms
   let id = -1, sy = 0, y0 = 0, moved = false, ly = 0, lt = 0, vy = 0, swallow = false, captured = false;
   let fromWash = false;   // did the press that this click ends start on the backdrop?
-  card.addEventListener('pointerdown', (e) => {
+  const grabber = ov.querySelector('.fograb') as HTMLButtonElement;
+  const dragSurface = spec.interactive ? grabber : card;
+  dragSurface.addEventListener('pointerdown', (e) => {
     /* A DRAG IN PROGRESS is never hijacked — it holds the capture, so its own
        pointerup is guaranteed and it will clear this itself. A press that has
        NOT passed the slop holds nothing, and an uncaptured press released off
@@ -151,7 +225,7 @@ export function showSheet(spec: SheetSpec): Sheet {
       /* NOW it is a drag, so now it is captured — a scroll can no longer steal
          it mid-way. A synthetic pointer has no active id to capture and the
          gesture still works through these listeners, so never throw here. */
-      try { card.setPointerCapture(e.pointerId); captured = true; } catch { captured = false; }
+      try { dragSurface.setPointerCapture(e.pointerId); captured = true; } catch { captured = false; }
     }
     const dt = e.timeStamp - lt;
     if (dt > 0) { vy = (e.clientY - ly) / dt; ly = e.clientY; lt = e.timeStamp; }
@@ -161,7 +235,7 @@ export function showSheet(spec: SheetSpec): Sheet {
     if (e.pointerId !== id) return;
     id = -1;
     ov.classList.remove('fodrag');
-    try { card.releasePointerCapture(e.pointerId); } catch { /* never captured */ }
+    try { dragSurface.releasePointerCapture(e.pointerId); } catch { /* never captured */ }
     if (!moved) return;
     /* THE CHASING CLICK — after a real drag that really LIFTED, and only then.
        Where capture took, the click that follows the lift is handed to .focard
@@ -180,7 +254,10 @@ export function showSheet(spec: SheetSpec): Sheet {
        handed to .focard and is already harmless, so there was nothing to
        swallow either. The flag therefore arms in exactly one case: a lift
        from a gesture that was never captured. */
-    if (e.type === 'pointerup' && !captured) {
+    /* A captured ordinary sheet retargets the compatibility click to the
+       harmless card. An interactive sheet captures on its real grabber, so
+       that same click would be a dismissal unless it is swallowed too. */
+    if (e.type === 'pointerup' && (!captured || spec.interactive)) {
       swallow = true;
       window.setTimeout(() => { swallow = false; }, 400);
     }
@@ -215,11 +292,12 @@ export function showSheet(spec: SheetSpec): Sheet {
   ov.addEventListener('click', (e) => { if (e.target === ov && fromWash) { Sfx.tap(); leave(); } });
   // the grabber is the announceable door: a screen reader and a keyboard both
   // reach it, and a plain tap on the bar dismisses like the drag it advertises
-  (ov.querySelector('.fograb') as HTMLButtonElement)
-    .addEventListener('click', () => { Sfx.tap(); leave(); });
+  grabber.addEventListener('click', () => { Sfx.tap(); leave(); });
   document.addEventListener('keydown', onKey);
   setDy(REDUCED ? 0 : window.innerHeight);   // start off the bottom edge...
-  appRoot().appendChild(ov);
+  const root = appRoot();
+  root.appendChild(ov);
+  background = makeModalBackgroundInert(root, ov);
   unbindLocale = subscribeLocale(() => {
     (ov.querySelector('.fograb') as HTMLButtonElement)
       .setAttribute('aria-label', t('common', 'actions.close'));

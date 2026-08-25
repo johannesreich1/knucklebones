@@ -351,7 +351,7 @@ check(!/result\.(?:user|email|givenName|familyName|realUserStatus)\b/.test(ident
 const authScreenSource = readFileSync('src/online/auth-screen.ts', 'utf8');
 const oneTapHandler = authScreenSource.slice(authScreenSource.indexOf('function showOneTapRow'));
 const cancelGuardAt = oneTapHandler.indexOf('if (message !== null)');
-const successAt = oneTapHandler.indexOf('await AUTH[mode].after(ports)');
+const successAt = oneTapHandler.search(/await AUTH\[mode\]\.after\(ports(?:,\s*origin)?\)/);
 check(cancelGuardAt >= 0 && successAt > cancelGuardAt
   && oneTapHandler.slice(cancelGuardAt, successAt).includes('return;'),
 'silent Apple cancellation falls through to the authenticated success transition');

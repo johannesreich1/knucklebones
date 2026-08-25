@@ -1,19 +1,47 @@
+// Publication remains fail-closed while the checked-in notices still contain
+// release-blocking facts. Tests can inject a contextual door to exercise the
+// shared controller without exposing unfinished copy in production.
+const LEGAL_PUBLICATION_READY = false;
+
+function legalNavigationMarkup(
+  pages: readonly ('imprint' | 'privacy')[],
+  className: string,
+  idPrefix: string,
+): string {
+  if (!LEGAL_PUBLICATION_READY) return '';
+  const labels = { imprint: 'Impressum', privacy: 'Privacy' } as const;
+  return `<nav class="${className}" data-legal-navigation aria-label="Legal pages">
+    ${pages.map((page) => `<button type="button" class="linkbtn" id="${idPrefix}${page === 'imprint' ? 'Imprint' : 'Privacy'}" data-legal-open="${page}">${labels[page]}</button>`).join('\n    ')}
+  </nav>`;
+}
+
+export const LEGAL_HOME_NAV_MARKUP = legalNavigationMarkup(
+  ['imprint', 'privacy'], 'viewfoot legal-home-nav', 'btn',
+);
+export const LEGAL_SETTINGS_NAV_MARKUP = legalNavigationMarkup(
+  ['imprint', 'privacy'], 'legal-settings-nav', 'btnSettings',
+);
+export const LEGAL_AUTH_NAV_MARKUP = legalNavigationMarkup(
+  ['privacy'], 'authlegal', 'btnAuth',
+);
+
 // Legal copy is kept apart from the interactive screen shell so it can be
 // reviewed and completed without loading the board, settings, and result UI.
-export const LEGAL_MARKUP = `<!-- LEGAL. Two PAGES below Home, not sheets: they are reached from Home's foot
-     and ‹ returns there, so they wear the ‹ every other Home destination wears
-     (design: 00-navigation). They floated over nothing — the sheet clothes were
-     the same mistake Settings wore until 2026-08-21, and a bottom "Got it" is a
-     navigation button at the bottom of a screen, which this app retired.
+export const LEGAL_MARKUP = `<!-- LEGAL. Two paged modal overlays shared by every contextual
+     opener. Their visible ‹ closes only this top layer, so Settings or a stable
+     auth form remains exactly underneath; a bottom "Got it" would duplicate
+     that navigation.
      Runtime services and storage statements below follow the current code.
      The remaining bracketed email is a release blocker, not publishable copy. -->
-<div class="ov paged" id="ovImprint">
+<div class="ov paged legal-page" id="ovImprint" data-legal-page="imprint"
+  role="dialog" aria-modal="true" aria-labelledby="legal-imprint-heading">
   <div class="shead">
-    <button class="ico" id="btnImprintBack" aria-label="Back">‹</button>
+    <button class="ico" id="btnImprintBack" data-legal-close aria-label="Back">‹</button>
     <span class="ttl">IMPRESSUM</span><span class="pad"></span>
   </div>
   <div class="pbody">
-  <div class="rules">
+  <div class="rules legal-document">
+    <h1 id="legal-imprint-heading" tabindex="-1">Impressum</h1>
     <h3>Angaben gemäß § 18 Abs. 1 MStV</h3>
     <p>Johannes Reich<br>Krumpterstr. 4<br>81543 München<br>Germany</p>
     <h3>Contact</h3>
@@ -22,13 +50,15 @@ export const LEGAL_MARKUP = `<!-- LEGAL. Two PAGES below Home, not sheets: they 
   </div>
 </div>
 
-<div class="ov paged" id="ovPrivacy">
+<div class="ov paged legal-page" id="ovPrivacy" data-legal-page="privacy"
+  role="dialog" aria-modal="true" aria-labelledby="legal-privacy-heading">
   <div class="shead">
-    <button class="ico" id="btnPrivacyBack" aria-label="Back">‹</button>
+    <button class="ico" id="btnPrivacyBack" data-legal-close aria-label="Back">‹</button>
     <span class="ttl">PRIVACY</span><span class="pad"></span>
   </div>
   <div class="pbody">
-  <div class="rules">
+  <div class="rules legal-document">
+    <h1 id="legal-privacy-heading" tabindex="-1">Privacy</h1>
     <h3>Who is responsible</h3>
     <p>Johannes Reich, Krumpterstr. 4, 81543 München, Germany.<br>
        Email: [PUBLIC EMAIL REQUIRED BEFORE RELEASE]. See the Impressum for full details.</p>
