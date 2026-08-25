@@ -254,6 +254,7 @@ module KnucklebonesAppStore
         unknown = values.keys - allowed
         raise SafetyError, "metadata for #{locale} contains unowned fields: #{unknown.sort.join(', ')}" unless unknown.empty?
         values.each { |field, _value| nonempty_string!(values, field, "metadata for #{locale}") }
+        raise SafetyError, "metadata for #{locale} must include name so App Info localization can be created" unless values.key?("name")
 
         maximums = { "name" => 30, "subtitle" => 30, "promotionalText" => 170, "description" => 4000 }
         maximums.each do |field, maximum|
@@ -444,15 +445,24 @@ module KnucklebonesAppStore
       version = plan.fetch(:context).fetch(:version)
       plan.fetch(:localizations).each do |entry|
         locale = entry.fetch(:locale)
+        desired = desired_metadata(locale)
         if entry.fetch(:create_app_info)
           @logger.call("Creating App Info localization #{locale}")
-          app_info.create_app_info_localization(attributes: { locale: locale })
+          app_info.create_app_info_localization(
+            attributes: localization_creation_attributes(locale, desired.fetch(:app_info))
+          )
         end
         if entry.fetch(:create_version)
           @logger.call("Creating iOS version localization #{locale}")
-          version.create_app_store_version_localization(attributes: { locale: locale })
+          version.create_app_store_version_localization(
+            attributes: localization_creation_attributes(locale, desired.fetch(:version))
+          )
         end
       end
+    end
+
+    def localization_creation_attributes(locale, desired)
+      { locale: locale }.merge(desired.to_h { |field, value| [field.to_sym, value] })
     end
 
     def ensure_existing_owned_metadata_unchanged!(initial, current)
@@ -476,16 +486,32 @@ module KnucklebonesAppStore
       initial_by_locale = initial.fetch(:localizations).to_h { |entry| [entry.fetch(:locale), entry] }
       current.fetch(:localizations).each do |entry|
         before = initial_by_locale.fetch(entry.fetch(:locale))
-        if before.fetch(:create_app_info) &&
-           owned_values(entry.fetch(:app_info_localization), AppStorePlan::APP_INFO_FIELDS).values.any? { |value| !value.nil? }
-          raise SafetyError, "Apple populated App Info metadata while creating #{entry.fetch(:locale)}; rerun the read-only plan"
+        desired = desired_metadata(entry.fetch(:locale))
+        if before.fetch(:create_app_info) && !created_values_exact?(
+          entry.fetch(:app_info_localization), desired.fetch(:app_info), AppStorePlan::APP_INFO_FIELDS
+        )
+          raise SafetyError, "App Info metadata created for #{entry.fetch(:locale)} differs from the confirmed values; rerun the read-only plan"
         end
-        if before.fetch(:create_version) &&
-           owned_values(entry.fetch(:version_localization), AppStorePlan::VERSION_FIELDS).values.any? { |value| !value.nil? }
-          raise SafetyError, "Apple populated version metadata while creating #{entry.fetch(:locale)}; rerun the read-only plan"
+        if before.fetch(:create_version) && !created_values_exact?(
+          entry.fetch(:version_localization), desired.fetch(:version), AppStorePlan::VERSION_FIELDS
+        )
+          raise SafetyError, "version metadata created for #{entry.fetch(:locale)} differs from the confirmed values; rerun the read-only plan"
         end
       end
+    end
 
+    def desired_owned_values(desired, fields)
+      desired.to_h { |field, value| [fields.fetch(field), value] }
+    end
+
+    def current_desired_owned_values(localization, desired, fields)
+      desired_owned_values(desired, fields).keys.to_h do |attribute|
+        [attribute, localization&.public_send(attribute)]
+      end
+    end
+
+    def created_values_exact?(localization, desired, fields)
+      desired_owned_values(desired, fields) == current_desired_owned_values(localization, desired, fields)
     end
 
     def managed_screenshot_inventory(context)

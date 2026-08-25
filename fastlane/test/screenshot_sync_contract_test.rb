@@ -27,6 +27,26 @@ ContractScreenshot = Struct.new(:id, :source_file_checksum, :state, :file_name) 
   def error? = state == "FAILED"
 end
 ContractScreenshotSet = Struct.new(:app_screenshots)
+ContractLocalization = Struct.new(
+  :name, :subtitle, :promotional_text, :keywords, :description,
+  keyword_init: true
+)
+
+class LocalizationCreationRecorder
+  attr_reader :attributes
+
+  def initialize
+    @attributes = []
+  end
+
+  def create_app_info_localization(attributes:)
+    @attributes << attributes
+  end
+
+  def create_app_store_version_localization(attributes:)
+    @attributes << attributes
+  end
+end
 
 ROOT = File.expand_path("../..", __dir__)
 SCREENSHOT_ROOT = File.join(ROOT, "marketing", "app-store", "ios")
@@ -59,6 +79,47 @@ sync = KnucklebonesAppStore::ScreenshotSync.new(
 )
 assert(sync.config.fetch("locales").length == 3, "the contract must own exactly three locales")
 assert(sync.config.fetch("screenshotTargets").length == 2, "the contract must own exactly two device targets")
+
+app_info_creator = LocalizationCreationRecorder.new
+version_creator = LocalizationCreationRecorder.new
+creation_plan = {
+  context: { app_info: app_info_creator, version: version_creator },
+  localizations: [{ locale: "de-DE", create_app_info: true, create_version: true }]
+}
+sync.send(:create_missing_localizations!, creation_plan)
+assert(app_info_creator.attributes == [{
+         locale: "de-DE",
+         name: metadata.fetch("localizations").fetch("de-DE").fetch("name"),
+         subtitle: metadata.fetch("localizations").fetch("de-DE").fetch("subtitle")
+       }], "App Info creation must include Apple's required confirmed name and the confirmed subtitle")
+assert(version_creator.attributes == [{
+         locale: "de-DE",
+         promotionalText: metadata.fetch("localizations").fetch("de-DE").fetch("promotionalText"),
+         keywords: metadata.fetch("localizations").fetch("de-DE").fetch("keywords"),
+         description: metadata.fetch("localizations").fetch("de-DE").fetch("description")
+       }], "version localization creation must include only confirmed owned version fields")
+
+de_metadata = metadata.fetch("localizations").fetch("de-DE")
+initial_creation = {
+  localizations: [{ locale: "de-DE", create_app_info: true, create_version: true }]
+}
+exact_creation = {
+  localizations: [{
+    locale: "de-DE",
+    app_info_localization: ContractLocalization.new(name: de_metadata.fetch("name"), subtitle: de_metadata.fetch("subtitle")),
+    version_localization: ContractLocalization.new(
+      promotional_text: de_metadata.fetch("promotionalText"),
+      keywords: de_metadata.fetch("keywords"),
+      description: de_metadata.fetch("description")
+    )
+  }]
+}
+sync.send(:ensure_created_localization_side_effects_confirmed!, initial_creation, exact_creation)
+mismatched_creation = deep_copy(exact_creation)
+mismatched_creation.fetch(:localizations).first.fetch(:app_info_localization).name = "Unexpected Name"
+safety_error("created metadata that differs from the confirmed POST must fail closed") do
+  sync.send(:ensure_created_localization_side_effects_confirmed!, initial_creation, mismatched_creation)
+end
 
 missing_sets = { target_sets: {} }
 empty_sets = {
