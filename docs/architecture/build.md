@@ -93,8 +93,10 @@ entries do not import a native plugin.
 The owner confirmed the paid team plus Sign in with Apple and Game Center on
 App ID `com.appavaria.knucklebones` on 2026-08-25. `App/App.entitlements` is
 therefore configured through `CODE_SIGN_ENTITLEMENTS` in both App target build
-configurations; automatic signing remains assigned to team `4RKFC79X48`. The
-iOS shell contract checks both settings and the exact entitlement payload.
+configurations and exposed as the target's entitlements file; the matching
+Xcode `SystemCapabilities` entries keep Signing & Capabilities authoritative.
+Automatic signing remains assigned to team `4RKFC79X48`. The iOS shell contract
+checks those settings and the exact entitlement payload.
 
 Portal state and repository wiring do not prove that a generated profile or
 signed product contains those capabilities. Before release, use Xcode to
@@ -104,38 +106,53 @@ remain device acceptance, while the Services ID, Supabase switches, deletion
 revocation, and held Game Center backend rollout remain separate checklist
 items in `docs/IDENTITY.md`.
 
-### App Store screenshot delivery
+### App Store localized draft delivery
 
 The App Store Connect record is fixed in
 `marketing/app-store/ios/app-store-connect.json`: Apple app id `6804966098`,
 SKU `knucklebones-ios-001`, bundle id `com.appavaria.knucklebones`, and initial
 version `1.0`. Fastlane 2.238.0 is pinned by `Gemfile.lock`. This owner-local
 workflow is deliberately separate from Cloudflare deployment and from binary
-upload:
+upload. It owns five listing fields and six screenshots for each combination
+of `en-GB`, `de-DE`, and `fr-FR` with iPhone 6.9-inch and iPad 13-inch: 36
+final images across six managed screenshot sets.
 
 | Command | Effect |
 |---|---|
 | `mise exec -- npm run appstore:fastlane:install` | Install the locked Ruby dependencies into ignored `vendor/bundle/` |
-| `mise exec -- npm run appstore:screenshots:verify` | Read-only PNG, dimensions, alpha, manifest, and SHA-256 validation |
+| `mise exec -- npm run appstore:screenshots:generate` | Rebuild the runtime, capture 42 real-runtime source frames, finalize 36 exports, and verify the complete locale/device matrix |
+| `mise exec -- npm run appstore:screenshots:verify` | Read-only locale coverage, PNG, dimensions, alpha, provenance, metadata-limit, and SHA-256 validation |
 | `mise exec -- npm run appstore:screenshots:contract` | Focused listing identity, export, dependency-pin, and mutation-guard contract |
 | `mise exec -- npm run appstore:screenshots:test` | Pure planner safety cases, including duplicates and the ten-item capacity boundary |
-| `mise exec -- npm run appstore:screenshots:check` | Repeat local validation through pinned Fastlane and prove 1320 × 2868 maps to `APP_IPHONE_67` |
-| `mise exec -- npm run appstore:screenshots:plan` | Authenticate read-only, resolve one existing version and locale, and print an inventory-bound confirmation token |
-| `mise exec -- npm run appstore:screenshots:upload` | After campaign approval, synchronize only that locale's `APP_IPHONE_67` set |
+| `mise exec -- npm run appstore:screenshots:check` | Repeat local validation through pinned Fastlane and prove both Apple display-type mappings |
+| `mise exec -- npm run appstore:screenshots:plan` | Authenticate read-only and print exact localization, owned-metadata, and six-set changes plus an inventory-bound confirmation token |
+| `mise exec -- npm run appstore:screenshots:upload` | After exact draft-sync approval, create missing managed localizations, patch only owned fields, and synchronize all six screenshot sets |
 
-The upload lane never uses generic Deliver overwrite/sync, creates no version
-or localization, uploads no binary or other metadata, and never submits for
-review. It preserves every other locale and device set, uploads before deleting
-where capacity permits, and requires an exact plan token before any mutation.
-The `.p8` key stays outside the repository; `.env.appstore` is ignored.
+The lane never uses generic Deliver overwrite/sync. It creates no app or app
+version, uploads no binary, and never submits for review. It owns only
+`name`, `subtitle`, `promotionalText`, `keywords`, and `description`; support,
+privacy, privacy-choices, and marketing URLs plus update notes remain untouched.
+It preserves every other locale and device set, uploads before deleting where
+capacity permits, and requires an exact plan token before any mutation. The
+`.p8` key stays outside the repository; `.env.appstore` is ignored.
 
-The current campaign remains machine-gated as a draft until ranked runes ship
-and the store name is cleared. Approving it requires a reviewed change to both
-the manifest status and `uploadApproved`, with all affected previews rebuilt in
-the same change. Because the Xcode target is universal, this iPhone-only lane
-does not satisfy the separate 13-inch iPad screenshot requirement. The detailed
-credential, plan, and approval procedure lives in
+The machine-readable permissions deliberately separate editable-draft staging
+from release: `draftSyncApproved: true` plus manifest status
+`approved for draft App Store Connect synchronization` authorizes only the
+reviewed draft mutation, while `reviewSubmissionApproved: false` remains a
+hard gate. Ranked runes must ship and every affected preview must be
+regenerated from that shipping implementation before review submission.
+Store-name clearance and truthful localized public legal/support URLs remain
+separate submission blockers. The detailed capture, regeneration, credential,
+plan, metadata-ownership, and approval procedure lives in
 `marketing/app-store/ios/README.md`.
+
+Generated marketing images are compiler-like outputs for this workflow. If a
+product/design/localization change affects one screenshot state, regenerate
+that state for all three locales and both devices in the same change; shared
+layout, typography, framing, or pipeline changes require the complete 42-raw /
+36-final matrix. Updated raw frames, exports, checksums, provenance, and contact
+sheets must ship beside the source change. A stale preview is a failed handoff.
 
 Android uses `com.appavaria.knucklebones` for both namespace and application
 id, minSdk 24, compile/target SDK 36, AGP 8.13.0, Gradle 8.14.3, and Java 21.

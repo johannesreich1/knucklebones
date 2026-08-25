@@ -1,14 +1,16 @@
-# iOS App Store screenshot campaign — v4 decisions
+# iOS App Store campaign — v5 decisions
 
 **Decision date:** 2026-08-25
-**Status:** Draft only — not approved for App Store upload
-**Output:** Six English portrait screenshots at 1320 × 2868 px
-**Capture build:** `19d82a76`
+**Status:** Approved for editable-draft synchronization; not approved for review submission
+**Output:** 36 localized portrait screenshots: 3 locales × 2 devices × 6 frames
+**Capture build:** `304a44e6`
 
-This is the creative, fixture, and truthfulness contract for the fourth campaign
-pass. It supersedes earlier exported sequences. The order is deliberate: core
-play, mode variety, defensive rune, offensive rune, signature-mode spectacle,
-then ranked progression.
+This is the creative, fixture, localization, delivery, and truthfulness
+contract for the fifth campaign pass. It supersedes every earlier exported
+sequence. The order is deliberate: core play, mode variety, defensive rune,
+offensive rune, signature-mode spectacle, then ranked progression. The same
+six-frame story is rendered in English, German, and French for both required
+Apple device targets; it is not one English master duplicated across locales.
 
 ## Locked six-frame story
 
@@ -26,6 +28,34 @@ rune-led frames use the real `AI · NORMAL` presentation. The BOUNTY composite
 also previews the planned ranked rune rail through the production armed-card
 pose; that is why the entire campaign remains gated on ranked-rune launch. The
 preview copy makes no availability claim.
+
+## Locale and device matrix
+
+The campaign covers exactly the product's supported store locales and both
+device classes declared by the universal iOS target:
+
+| App Store locale | Runtime locale | Runtime viewport | Final export | Frames |
+|---|---|---|---|---:|
+| `en-GB` | `en` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
+| `en-GB` | `en` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
+| `de-DE` | `de` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
+| `de-DE` | `de` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
+| `fr-FR` | `fr` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
+| `fr-FR` | `fr` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
+
+Both the marketing overlay and every player-visible product string use the
+selected runtime locale. Localizing only the headline while leaving the game
+UI in English was rejected: it would look like a mockup and would not prove
+the actual German and French layouts. Adding unsupported store languages was
+also rejected; the truthful scope is the three languages users can select in
+the app.
+
+The iPad images come from a real 1032 × 1376 runtime layout with iPad safe
+areas, not an enlarged or cropped phone canvas. One deterministic capture
+pipeline owns both devices so fixture meaning stays identical while the real
+responsive product layout is allowed to differ. This produces six managed
+locale/device sets and 36 final PNGs. BOUNTY needs one extra authentic active
+source for every set, so a complete capture contains 42 raw frames.
 
 ## Exact deterministic fixtures
 
@@ -80,7 +110,7 @@ production components must render every product pixel.
   ghost and snap. Freeze only the real 1,024 ms recoil and the five WARD snap
   animations at 192 ms, where the chip flare is at its authored peak. Pause
   continuous background/multiplier loops at a fixed phase and clear the seal's
-  1,660 ms cleanup timer so independent top and bottom captures hold one state.
+  1,660 ms cleanup timer so every locale/device capture holds the same state.
 - Assert the WARD mark's computed colour is the production mint
   `#7dffc4` (`rgb(125, 255, 196)`). The matching pair may still use the game's
   normal multiplier gold; the protection mark itself remains mint.
@@ -117,9 +147,11 @@ production components must render every product pixel.
   with 40% of its ten-second track remaining. This is the later player's
   targeting decision, not a card painted into the resolving strike.
 - The final is explicitly chronological, not one simultaneous game state.
-  Source A is opaque through output row 1728, transitions linearly through the
-  empty board-to-centre gap, and is fully transparent from row 1750. Source B
-  supplies the complete centre and lower game view. No board, coin, rune, die,
+  Source A is opaque through 60.25104603% of the output, transitions linearly
+  through the empty board-to-centre gap, and is fully transparent from
+  61.0181311%. Source B supplies the complete centre and lower game view. The
+  manifest stores ratios rather than phone-only rows so the transition keeps
+  the same semantic position on iPhone and iPad. No board, coin, rune, die,
   status, clock, score, or identity pixel is painted by the export script.
 - The two visible coin strikes therefore explain the later visible `✦2` exactly.
   Using three victims made the effect and tally disagree at a glance.
@@ -199,14 +231,21 @@ design; the obsolete exported PNG is intentionally not part of this set.
    No product stylesheet or runtime behavior is changed.
 6. **BOUNTY is a disclosed chronological composite.** Its upper double-strike
    hold and lower active turn are two authentic production-rendered moments.
-   The 22 px feather sits only in the empty gap between them. The visible `4`
-   is a later legal roll; it is not restored inside the resolving move.
-7. **The campaign remains a draft while ranked runes are unshipped.** This is
-   an owner release constraint for the planned campaign even though both rune
-   images truthfully depict existing game states.
+   The manifest-ratio feather sits only in the empty gap between them. The
+   visible `4` is a later legal roll; it is not restored inside the resolving
+   move.
+7. **Draft synchronization is not release approval.** The exact campaign may
+   be staged in the editable App Store Connect draft. Ranked runes must ship
+   and the BOUNTY preview must be regenerated from that shipping implementation
+   before review submission.
 8. **Store-name clearance remains unresolved.** “Knucklebones Neon,” its
    lockup, and name-bearing metadata are provisional. A cleared name change
-   affects all six previews.
+   affects all 36 previews and three metadata localizations.
+9. **Listing ownership is narrow.** The campaign owns localized name,
+   subtitle, promotional text, keywords, and description only. It does not
+   invent support, privacy, privacy-choices, or marketing URLs while the
+   localized public destinations do not exist. Metadata describes ranked and
+   runes separately and makes no ranked-rune availability claim.
 
 ## Regeneration contract
 
@@ -220,28 +259,38 @@ design; the obsolete exported PNG is intentionally not part of this set.
    - online ladder renderer for the final frame.
 3. Set `data-ready=1` only after fonts, layout, computed colours, exact counts,
    and the intended authored animation frame have been verified.
-4. Independent top and bottom source loads must represent the same state and
-   animation time. Use overlap comparison to detect clock, loop, or effect
-   drift before joining. BOUNTY additionally requires complete `hero` and
-   `active` source pairs; the finalizer alone owns their manifest-defined
-   1728–1750 chronological transition.
-5. Keep `source.html`, `manifest.json`, raw stems, export stems, checksums,
-   capture-build tag, contact sheet, README, and this decision log synchronized
-   with the locked order.
-6. Any product or campaign design change that affects a preview requires its
-   raw segments, final PNG, checksum, and the contact sheet to be regenerated
-   in the same change. A stale generated preview is a failing handoff, even if
-   source tests pass. This rule is also mirrored in `AGENTS.md` and
-   `CLAUDE.md` so future coding agents see it before handoff.
-7. Validate six opaque sRGB PNGs at exactly 1320 × 2868, then review each at
-   full resolution and as a contact sheet for clipping, seams, stale scenes,
-   colour drift, and AI/ranked mixing.
+4. Capture one full lossless raw frame for every locale/device/hero tuple.
+   BOUNTY additionally requires complete `hero` and `active` frames for each
+   tuple; the finalizer alone owns their manifest-ratio chronological
+   transition. A complete run therefore produces 42 raw frames and 36 finals.
+5. Keep `source.html`, `manifest.json`, `metadata.json`, raw/export stems,
+   checksums, `capture-provenance.json`, six contact sheets, README, and this
+   decision log synchronized with the locked order and locale/device matrix.
+6. Any product or campaign design change that affects one scene requires that
+   scene to be regenerated in all three locales and both devices. Changes to
+   shared UI, layout, typography, localization plumbing, or capture/finalizer
+   code require the complete matrix to be regenerated with
+   `mise exec -- npm run appstore:screenshots:generate`. A BOUNTY change always
+   regenerates both sources in all six locale/device sets.
+7. Commit affected raw frames, final PNGs, checksums, provenance, and contact
+   sheets in the same change as their source. A stale generated preview is a
+   failing handoff even when source tests pass. This rule is mirrored in
+   `AGENTS.md` and `CLAUDE.md` so future coding agents see it before handoff.
+8. Validate all 36 opaque PNGs at 1320 × 2868 or 2064 × 2752, then review the
+   six contact sheets and representative finals at full resolution for
+   clipping, seams, source-language leaks, stale scenes, colour drift,
+   responsive defects, exit-button leakage, and AI/ranked mixing.
 
 ## Release acceptance
 
-The campaign is ready for a new internal review only when all six exports match
-this sequence and fixture contract. App Store upload also requires the owner to
-resolve the ranked-rune launch dependency and store-name clearance.
+The campaign is ready for editable-draft synchronization only when all 36
+exports and three metadata localizations match this contract, focused checks
+are green, every input is committed, the owner has reviewed the remote plan,
+and the confirmation token matches. That permission does not authorize review
+submission. Submission additionally requires shipping ranked runes,
+regenerating affected previews from the shipping implementation, clearing the
+store name, publishing truthful localized legal/support destinations, and an
+explicit future release decision.
 
 ## Delivery decision
 
@@ -255,23 +304,33 @@ Fastlane 2.238.0 is locked because the targeted implementation uses its
 Spaceship App Store Connect models. Generic Deliver overwrite was rejected:
 this is a universal iPhone/iPad app, and that action can clear or reorder all
 screenshot sets in an included locale. The selected workflow reads the exact
-app/version/existing locale, scopes changes to `APP_IPHONE_67`, snapshots every
-other locale/device set, and verifies that snapshot after the operation.
+app and editable iOS version, manages only `en-GB`, `de-DE`, and `fr-FR` plus
+their `APP_IPHONE_67` and `APP_IPAD_PRO_3GEN_129` sets, snapshots every unowned
+field and other locale/device set, and verifies that protected snapshot after
+the operation.
 
 The workflow separates local check, remote read-only plan, and mutation. A
-confirmation token binds the app id, version, locale, ordered local checksums,
-and current remote inventory; a changed file or remote edit invalidates it. A
-plan additionally requires the whole marketing input/export directory to be
-tracked and clean, along with the Fastlane implementation, package commands,
-Gemfile, and lock. An unreviewed local capture or uploader edit cannot run
-against the store.
+confirmation token binds the app id, version, all localized owned metadata,
+ordered checksums for six screenshot sets, and complete current remote
+inventory; a changed file or remote edit invalidates it. A plan additionally
+requires the whole marketing input/export directory to be tracked and clean,
+along with the Fastlane implementation, package commands, Gemfile, and lock.
+An unreviewed local capture or uploader edit cannot run against the store.
+
+The mutation may create only missing localizations for the three managed
+locales, patch only `name`, `subtitle`, `promotionalText`, `keywords`, and
+`description`, and synchronize six ordered screenshots per managed target.
 Uploads fill spare capacity before stale target images are removed, while a
-full ten-image target deletes only one proven-stale member at a time. This makes
-partial failure recoverable without blanking the set. No lane creates a version
-or localization, uploads a binary/general metadata, or submits for review.
+full ten-image target deletes only one proven-stale member at a time. This
+makes partial failure recoverable without blanking the set. The lane preserves
+unowned URLs, update notes, other locales, and other device inventories. It
+does not create an app/version, upload a binary, or submit for review.
 
 Machine-readable draft approval is deliberately independent of credentials.
-Even a valid API key and confirmation token cannot upload until the ranked-rune
-and name dependencies are resolved in a reviewed change that updates both the
-manifest status and `uploadApproved`. The current six-image set also does not
-pretend to satisfy the separate 13-inch iPad requirement.
+The reviewed configuration uses `draftSyncApproved: true` with manifest status
+exactly `approved for draft App Store Connect synchronization` to authorize
+this draft-only mutation. `reviewSubmissionApproved: false` is separate and
+must remain false: a valid API key, successful draft sync, and confirmation
+token are not release approval. The ranked-rune truth gate, regenerated
+shipping-state previews, store-name clearance, and public localized URLs all
+remain required before any future review-submission workflow may exist.

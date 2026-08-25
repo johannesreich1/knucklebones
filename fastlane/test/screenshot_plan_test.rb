@@ -52,21 +52,21 @@ rescue KnucklebonesAppStore::SafetyError
 end
 
 inventory = [
-  { "locale" => "en-US", "displayType" => "APP_IPHONE_67", "setId" => "target" },
-  { "locale" => "en-US", "displayType" => "APP_IPAD_PRO_3GEN_129", "setId" => "ipad" },
+  { "locale" => "en-GB", "displayType" => "APP_IPHONE_67", "setId" => "target" },
+  { "locale" => "en-GB", "displayType" => "APP_IPAD_PRO_3GEN_129", "setId" => "ipad" },
   { "locale" => "de-DE", "displayType" => "APP_IPHONE_67", "setId" => "de" }
 ]
 unrelated = KnucklebonesAppStore::ScreenshotPlan.unrelated_inventory(
-  inventory, locale: "en-US", display_type: "APP_IPHONE_67"
+  inventory, locale: "en-GB", display_type: "APP_IPHONE_67"
 )
 assert(unrelated.map { |entry| entry.fetch("setId") } == %w[ipad de],
        "only the exact target locale and display type may be excluded from the postcondition")
 
 first_token = KnucklebonesAppStore::ScreenshotPlan.confirmation_token(
-  app_id: "6804966098", version: "1.0", locale: "en-US", desired: items, screenshots: exact
+  app_id: "6804966098", version: "1.0", locale: "en-GB", desired: items, screenshots: exact
 )
 second_token = KnucklebonesAppStore::ScreenshotPlan.confirmation_token(
-  app_id: "6804966098", version: "1.0", locale: "en-US", desired: items, screenshots: reversed
+  app_id: "6804966098", version: "1.0", locale: "en-GB", desired: items, screenshots: reversed
 )
 assert(first_token != second_token, "the confirmation token must bind remote order")
 

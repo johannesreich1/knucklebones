@@ -1,12 +1,47 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "storeName": "Knucklebones Neon",
   "appleAppId": "6804966098",
   "bundleId": "com.appavaria.knucklebones",
   "sku": "knucklebones-ios-001",
   "appVersion": "1.0",
   "platform": "IOS",
-  "screenshotDisplayType": "APP_IPHONE_67",
-  "exportDirectory": "exports/iphone-6.9",
-  "uploadApproved": false
+  "metadataFile": "metadata.json",
+  "locales": [
+    {
+      "appStoreLocale": "en-GB",
+      "runtimeLocale": "en",
+      "screenshotExportRoot": "exports/en-GB"
+    },
+    {
+      "appStoreLocale": "de-DE",
+      "runtimeLocale": "de",
+      "screenshotExportRoot": "exports/de-DE"
+    },
+    {
+      "appStoreLocale": "fr-FR",
+      "runtimeLocale": "fr",
+      "screenshotExportRoot": "exports/fr-FR"
+    }
+  ],
+  "screenshotTargets": [
+    {
+      "id": "iphone-6.9",
+      "display": "iPhone 6.9-inch",
+      "displayType": "APP_IPHONE_67",
+      "width": 1320,
+      "height": 2868,
+      "exportDirectory": "iphone-6.9"
+    },
+    {
+      "id": "ipad-13",
+      "display": "iPad 13-inch",
+      "displayType": "APP_IPAD_PRO_3GEN_129",
+      "width": 2064,
+      "height": 2752,
+      "exportDirectory": "ipad-13"
+    }
+  ],
+  "draftSyncApproved": true,
+  "reviewSubmissionApproved": false
 }

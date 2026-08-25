@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "status": "approved for draft App Store Connect synchronization; not approved for review submission",
+  "ownedFields": [
+    "name",
+    "subtitle",
+    "promotionalText",
+    "keywords",
+    "description"
+  ],
+  "intentionallyUnowned": {
+    "supportUrl": "The localized public support pages and monitored public contact address do not exist yet.",
+    "privacyPolicyUrl": "The localized public privacy pages and verified processor facts do not exist yet.",
+    "privacyChoicesUrl": "No published privacy-choices route exists yet.",
+    "marketingUrl": "Optional and not needed for this first metadata synchronization.",
+    "whatsNew": "Version 1.0 is the first release; Apple does not use update notes for it."
+  },
+  "localizations": {
+    "en-GB": {
+      "name": "Knucklebones Neon",
+      "subtitle": "Tactical dice duels",
+      "promotionalText": "Stack matching dice, shatter rival columns and master six tactical runes. Seven game modes and an online ranked ladder keep every duel sharp.",
+      "keywords": "strategy,board,game,multiplayer,ranked,ladder,turn-based,puzzle,casual,logic,competitive,indie",
+      "description": "Roll. Place. Multiply. Destroy.\n\nKnucklebones Neon is a fast tactical dice duel played on two 3×3 grids. You cannot choose what you roll—only where it lands. Stack matching dice in a column to multiply their score. Place the same face opposite matching enemy dice to destroy them. When either grid fills, the higher total wins.\n\nSIMPLE RULES, SHARP DECISIONS\nEvery roll creates a choice: build your own multiplier, deny a threat or strike before a rival column gets out of reach. A guided tutorial teaches the whole game by letting you play.\n\nSEVEN GAME MODES\nThe dial spins before every ranked duel. Classic keeps the pure rules; Row Switch, Row Multiply, Column Shield, Single Strike, Bounty and Limited reshape scoring, destruction or the dice supply.\n\nSIX TACTICAL RUNES\nChange a roll with Fate or Nudge. Seal a column with Ward. Hit every matching column with Sunder. Steal a die with Pilfer. Reforge a full column with Anvil. Each rune is limited, visible and built for a decisive moment.\n\nPLAY YOUR WAY\n• Match online and climb the seasonal ranked ladder\n• Track points, rank, record, streak and match history\n• Practise against Easy, Normal or Hard AI\n• Share one phone in pass-the-phone or face-to-face play\n• Choose pip or number dice, custom colours, colour-blind mode and reduced motion\n• Play in English, German or French\n\nFree to play, with no ads or in-app purchases."
+    },
+    "de-DE": {
+      "name": "Knucklebones Neon",
+      "subtitle": "Taktische Würfelduelle",
+      "promotionalText": "Staple gleiche Würfel, zerschlage gegnerische Spalten und meistere sechs taktische Runen. Sieben Spielmodi und eine Online-Rangliste halten jedes Duell spannend.",
+      "keywords": "strategie,brettspiel,würfelspiel,mehrspieler,rangliste,rundenbasiert,logik,denkspiel,knobeln",
+      "description": "Würfeln. Setzen. Multiplizieren. Zerstören.\n\nKnucklebones Neon ist ein schnelles taktisches Würfelduell auf zwei 3×3-Rastern. Du bestimmst nicht den Wurf, sondern nur seinen Platz. Staple gleiche Würfel in einer Spalte, um ihre Punkte zu multiplizieren. Setze dieselbe Zahl passenden gegnerischen Würfeln gegenüber, um sie zu zerstören. Sobald ein Raster voll ist, gewinnt die höhere Summe.\n\nEINFACHE REGELN, HARTE ENTSCHEIDUNGEN\nJeder Wurf stellt dich vor die Wahl: den eigenen Multiplikator ausbauen, eine Gefahr abwehren oder zuschlagen, bevor eine gegnerische Spalte zu stark wird. Das geführte Tutorial bringt dir das ganze Spiel direkt beim Spielen bei.\n\nSIEBEN SPIELMODI\nVor jedem Ranglistenspiel dreht sich das Rad. Klassik bleibt beim puren Duell; Zeilenwechsel, Zeilenbonus, Spaltenschild, Einzelschlag, Kopfgeld und Begrenzt verändern Wertung, Zerstörung oder Würfelvorrat.\n\nSECHS TAKTISCHE RUNEN\nVerändere deinen Würfel mit Schicksal oder Schubs. Versiegle eine Spalte mit Schutz. Triff mit Spalter alle passenden Spalten. Stiehl mit Raub einen Würfel. Gieße mit Amboss eine volle Spalte um. Jede Rune ist begrenzt, sichtbar und für den entscheidenden Moment gemacht.\n\nSPIEL AUF DEINE ART\n• Miss dich online und steig in der saisonalen Rangliste auf\n• Verfolge Punkte, Rang, Bilanz, Serien und Spielverlauf\n• Übe gegen die KI auf Leicht, Normal oder Schwer\n• Teile ein Handy im Weitergabe- oder Gegenüber-Modus\n• Wähle Augen oder Zahlen, eigene Farben, Farbenblind-Modus und reduzierte Animationen\n• Spiele auf Deutsch, Englisch oder Französisch\n\nKostenlos, ohne Werbung und ohne In-App-Käufe."
+    },
+    "fr-FR": {
+      "name": "Knucklebones Neon",
+      "subtitle": "Duels de dés tactiques",
+      "promotionalText": "Empilez les dés identiques, brisez les colonnes adverses et maîtrisez six runes tactiques. Sept modes de jeu et un classement en ligne renouvellent chaque duel.",
+      "keywords": "stratégie,plateau,multijoueur,classement,tour par tour,logique,réflexion,compétitif,détente",
+      "description": "Lancez. Placez. Multipliez. Détruisez.\n\nKnucklebones Neon est un duel de dés tactique et rapide sur deux grilles 3×3. Vous ne choisissez pas le lancer, seulement sa destination. Empilez des dés identiques dans une colonne pour multiplier leurs points. Posez la même face en face des dés adverses identiques pour les détruire. Dès qu’une grille est pleine, le total le plus élevé l’emporte.\n\nDES RÈGLES SIMPLES, DES CHOIX DÉCISIFS\nChaque lancer impose un choix : développer votre multiplicateur, contrer une menace ou frapper avant qu’une colonne adverse devienne trop forte. Le tutoriel guidé vous apprend tout en jouant.\n\nSEPT MODES DE JEU\nLa roue tourne avant chaque partie classée. Classique conserve les règles de base ; Bascule lignes, Bonus de ligne, Bouclier colonne, Frappe unique, Prime et Limité transforment le score, la destruction ou la réserve de dés.\n\nSIX RUNES TACTIQUES\nChangez votre dé avec Destin ou Poussée. Scellez une colonne avec Garde. Frappez toutes les colonnes correspondantes avec Fracture. Volez un dé avec Larcin. Reforgez une colonne pleine avec Enclume. Chaque rune est limitée, visible et pensée pour un moment décisif.\n\nJOUEZ À VOTRE FAÇON\n• Jouez en ligne et grimpez dans le classement saisonnier\n• Suivez vos points, rang, bilan, séries et historique\n• Entraînez-vous contre l’IA en Facile, Normal ou Difficile\n• Partagez un téléphone en mode Passer le téléphone ou Face à face\n• Choisissez points ou chiffres sur les dés, vos couleurs, le mode daltonien et les animations réduites\n• Jouez en français, allemand ou anglais\n\nJeu gratuit, sans publicité ni achats intégrés."
+    }
+  }
+}

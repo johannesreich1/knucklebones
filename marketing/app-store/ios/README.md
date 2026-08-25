@@ -1,138 +1,199 @@
-# iOS App Store screenshots
+# iOS App Store campaign
 
-This set is authored at **1320 × 2868 px**, one of Apple's accepted portrait
-sizes for the 6.9-inch iPhone screenshot slot. Every app panel is staged from
-the current production single-file runtime (`knucklebones-neon.html`) through
-the repository's stable driver surfaces and source UI modules. The shared
-board, ranked mode dial, WARD strike, SUNDER targeting, BOUNTY strike, and
-ladder are application renderers rather than hand-painted imitations. The
-network fixture used for the ladder is local and deterministic; capture must
+This directory owns the localized App Store Connect draft for
+**Knucklebones Neon**. It contains localized listing copy and six portrait
+screenshots for every supported store locale and required Apple device class:
+
+| Store locale | Runtime language | iPhone 6.9-inch | iPad 13-inch | Total |
+|---|---|---:|---:|---:|
+| `en-GB` | English (`en`) | 6 | 6 | 12 |
+| `de-DE` | German (`de`) | 6 | 6 | 12 |
+| `fr-FR` | French (`fr`) | 6 | 6 | 12 |
+| **Campaign** | **3 locales** | **18** | **18** | **36** |
+
+The output matrix and App Store identifiers are declared in
+`app-store-connect.json`; creative fixtures and localized overlay copy are in
+`manifest.json`; App Store listing fields are in `metadata.json`. These are
+the app's three supported languages, not a request to fabricate localizations
+for every App Store territory.
+
+Each app panel comes from the current production single-file runtime
+(`knucklebones-neon.html`) and production renderers. The capture uses a real
+440 × 956 iPhone viewport or 1032 × 1376 iPad viewport, including the declared
+safe areas, and then exports Apple's accepted 1320 × 2868 or 2064 × 2752
+portrait PNG. The board, ranked mode dial, WARD and SUNDER states, BOUNTY
+effect, and ladder are not hand-painted imitations. Deterministic fixtures may
+supply fictional users, ratings, board states, and ladder data; capture must
 never contact the live backend.
 
-Apple's current size and format reference is the
-[Screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/)
-page in App Store Connect Help.
+Apple's current format reference is
+[Screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications/).
 
-The exported PNGs live in `exports/iphone-6.9/`. `contact-sheet.jpg` is only a
-review aid and is not an App Store upload asset.
+## Output layout
 
-## Re-export
+- `raw/{locale}/{target}/` contains 42 lossless runtime captures: six hero
+  states plus BOUNTY's separate active state, across three locales and two
+  devices.
+- `exports/{locale}/{target}/` contains the 36 opaque final PNGs and one
+  `checksums.txt` for each locale/device set. These are the upload assets.
+- `contact-sheets/{locale}-{target}.jpg` contains six review aids. Contact
+  sheets are never uploaded.
+- `capture-provenance.json` records the runtime build, browser versions,
+  viewports, raw paths, and capture count. It is written only after a complete
+  capture succeeds.
 
-1. Build the current runtime with Node 24:
+## Regenerate and verify
 
-   ```sh
-   mise exec -- node build.mjs
-   ```
+Node 24 is mandatory. From the repository root, the canonical command is:
 
-2. Start the capture server from the repository root. It serves the built
-   single-file runtime byte-for-byte and uses Vite only for the fixture's
-   source-module imports:
+```sh
+mise exec -- npm run appstore:screenshots:generate
+```
 
-   ```sh
-   mise exec -- node marketing/app-store/ios/capture-server.mjs
-   ```
+It rebuilds the product runtime, starts the loopback-only capture server,
+captures all 42 real-runtime source frames with Playwright, finalizes all 36
+App Store PNGs, rebuilds six contact sheets and checksum files, and verifies
+dimensions, opacity, provenance, locale coverage, metadata limits, and file
+order. The individual stages remain available for diagnosis:
 
-3. Open the printed `http://localhost:8765/...` URL. At an exact 1320 × 2107
-   viewport, capture each slide in two one-pass segments. The first uses
-   `source.html?slide=N`; the second adds `&offset=2107`. Save the browser's
-   JPEG segments under `raw/` with the manifest-derived stem and `-top.jpg`
-   or `-bottom.jpg`. BOUNTY requires a second complete pair from
-   `slide=5&variant=active`; save those as
-   `05-ranked-bounty-active-top.jpg` and
-   `05-ranked-bounty-active-bottom.jpg`. Set `KB_CAPTURE_PORT` only when the
-   default port is busy.
-4. Run `mise exec -- node marketing/app-store/ios/finalize.mjs`. It joins
-   each pair without resampling, then builds BOUNTY as the disclosed
-   chronological composite in `manifest.json`: the authentic double-strike
-   source is opaque through row 1728, feathers only through the empty gap, and
-   the authentic later active-turn source owns row 1750 downward. The script
-   flattens every result to opaque RGB PNG, validates 1320 × 2868 output, and
-   rebuilds the contact sheet plus SHA-256 lists for both the raw source pairs
-   and final exports. Apple accepts PNG, JPEG, and JPG, but rejects alpha
-   channels.
+```sh
+mise exec -- npm run appstore:screenshots:capture
+mise exec -- npm run appstore:screenshots:finalize
+mise exec -- npm run appstore:screenshots:verify
+```
 
-The text and ordering are defined once in `source.html` and summarized in
-`manifest.json`. The choices, exact fixtures, rejected alternatives, and draft
-conditions are recorded in `DECISIONS.md`. If a source/design change affects a
-preview, regenerate every affected raw segment, final PNG, checksum, and the
-contact sheet in the same change. The title is intentionally editable:
-`docs/STATUS.md` records that store-name/trademark clearance is still
-unresolved.
+Do not edit a raw or exported image by hand. BOUNTY is the only composite: its
+manifest-disclosed horizontal feather combines two chronological, authentic
+runtime moments. The upper state shows exactly two production BOUNTY strike
+coins; the later active state shows the matching `✦2`, an enlarged face-up
+WARD card, a newly rolled `4`, the production targeting prompt, and a
+four-second ranked countdown. The finalizer blends only the empty gap; it does
+not paint product UI.
 
-The BOUNTY preview is intentionally not represented as a single reachable
-instant. Its two production moments are chronological: two real strike coins
-above, followed by the later `✦2` targeting turn with WARD turned face-up and
-enlarged, a new die `4`, the production `TAP YOUR OWN COLUMN` prompt, and a
-4-second clock below. The campaign remains a draft until the ranked rune rail
-ships. Neither source may be replaced by painted UI, and a change to the board,
-bounty effect, rune rail, die stage, status, timer, score plate, or phone
-geometry requires both BOUNTY pairs and the final composite to be regenerated.
+### Non-negotiable preview regeneration contract
 
-## App Store Connect delivery
+Preview impact is part of the definition of done for every future agent:
 
-Screenshots are not part of the app binary and a Cloudflare or native build
-deployment cannot add them. App Store Connect accepts them through its website
-or authenticated API. This repository provides an owner-run API workflow; it
-is intentionally not triggered by a push, web deploy, archive, or CI job.
+1. A change to game UI, CSS, fonts, colors, responsive or safe-area layout,
+   modes, runes, online identity, ladder, localized product copy, screenshot
+   overlay copy, fixtures, capture code, finalization code, or campaign
+   geometry must be checked for affected previews before handoff.
+2. If one product state changes, regenerate that state in **all three locales
+   and both device targets**: six final previews, their raw sources, all six
+   affected checksum/contact-sheet entries, and capture provenance. A BOUNTY
+   change also regenerates both chronological sources for all six targets.
+3. If shared layout, typography, runtime framing, localization plumbing, or
+   the capture/finalization pipeline changes, run the canonical full generation
+   command and replace the complete 42-raw/36-export campaign.
+4. Commit every affected generated file in the same change as its source.
+   Passing source tests with a stale preview, checksum, contact sheet, or
+   provenance file is a failing handoff, not deferred follow-up work.
+5. Review all affected contact sheets and at least one full-resolution final
+   per device after generation. Check clipping, seams, source-language leaks,
+   stale states, the selected COLUMN SHIELD yellow, AI/ranked context, and the
+   absence of the exit button.
 
-The stable public listing identity is recorded once in
-`app-store-connect.json`: **Knucklebones Neon**, Apple app id `6804966098`, SKU
-`knucklebones-ios-001`, bundle id `com.appavaria.knucklebones`, and version
-`1.0`. Fastlane's internal name for Apple's current 6.9-inch dimensions is
-still `APP_IPHONE_67`; that identifier is intentional. Fastlane is pinned in
-`Gemfile.lock`; install it locally with:
+This contract is also mirrored in `AGENTS.md` and `CLAUDE.md`, so an agent
+changing a source design must regenerate the affected campaign outputs without
+waiting for a separate screenshot request.
+
+## Locked six-image story
+
+The exact fixtures and rationale live in `DECISIONS.md`; the visible contract
+is summarized here:
+
+1. Ranked ROW MULTIPLY uses named opponents, exactly one `×2` row and one
+   `×3` row, and exactly two dice in the `×2` row.
+2. The real pre-match dial lands on COLUMN SHIELD; its selected label is the
+   production yellow `#ffd166`, never white.
+3. WARD shows a mint protective seal in an `AI · NORMAL` match.
+4. SUNDER shows the contrasting wide offensive preview in an `AI · NORMAL`
+   match.
+5. Ranked BOUNTY shows exactly two destroyed dice, then the chronological
+   active WARD card, die `4`, countdown `4`, and `✦2` state.
+6. The production ranked ladder carries the localized
+   win → climb → repeat claim; there is no separate victory screenshot.
+
+Four frames use named online/ranked context, two use AI Normal, rune copy never
+labels runes as offline-only, and no frame shows the exit button.
+
+## Localized listing ownership
+
+`metadata.json` deliberately owns only these fields for `en-GB`, `de-DE`, and
+`fr-FR`:
+
+- App Info: `name`, `subtitle`
+- iOS version: `promotionalText`, `keywords`, `description`
+
+The copy describes ranked play and runes as separate features; it does not
+claim that runes are already available in ranked games. The sync intentionally
+does not own `supportUrl`, `privacyPolicyUrl`, `privacyChoicesUrl`,
+`marketingUrl`, or `whatsNew`. Localized public legal/support pages, a
+monitored public contact address, verified processor facts, and an external
+privacy-choices route do not exist yet; inventing URLs would make the listing
+less truthful. Version 1.0 also has no update notes.
+
+## App Store Connect draft sync
+
+Screenshots and listing copy are App Store metadata. A Cloudflare deployment,
+Capacitor sync, Xcode build, archive, or binary upload cannot add them. This
+repository therefore provides a separate owner-run App Store Connect API flow;
+it is never triggered automatically by a push, app deploy, archive, or CI job.
+
+The stable record is Apple app id `6804966098`, SKU
+`knucklebones-ios-001`, bundle id `com.appavaria.knucklebones`, iOS version
+`1.0`. Fastlane's target names are intentionally `APP_IPHONE_67` for iPhone
+6.9-inch and `APP_IPAD_PRO_3GEN_129` for iPad 13-inch.
+
+Install the pinned owner-local Ruby dependencies once:
 
 ```sh
 mise exec -- npm run appstore:fastlane:install
 ```
 
-The workflow has three safety levels:
+Then use the three safety levels:
 
-1. `mise exec -- npm run appstore:screenshots:check` is local and
-   credential-free. It
-   runs the focused delivery contract, then revalidates the exact manifest
-   filenames, SHA-256 values, 1320 × 2868 size, opaque PNG encoding, unique MD5
-   values, and Fastlane display type
-   `APP_IPHONE_67`. `mise exec -- npm run appstore:screenshots:test` covers
-   exact/no-op, reordering, duplicate, pending, stale, and full ten-slot planner
-   cases.
-2. Copy `.env.appstore.example` to ignored `.env.appstore`, fill the key fields,
-   exact existing App Store locale, and version, then run
-   `mise exec -- npm run appstore:screenshots:plan`. It only reads App Store
-   Connect, verifies app id plus bundle id, refuses a missing/guessed locale or non-editable
-   version, requires every marketing input/export plus the uploader, package
-   commands, and locked dependencies to be tracked and clean, and prints the
-   exact keep/upload/delete/reorder plan with a token bound to both local files
-   and current remote inventory.
-3. Only after a reviewed campaign-approval change, paste that token as
-   `ASC_SCREENSHOT_UPLOAD_CONFIRM` and run
-   `mise exec -- npm run appstore:screenshots:upload`. The lane re-reads
-   everything under a local lock before mutation and synchronizes only the chosen locale's
-   `APP_IPHONE_67` set. It uploads into free capacity first, deletes only stale
-   members of that set, restores manifest order, and proves every unrelated
-   locale/device set stayed byte-for-byte identical in the API inventory.
+1. `mise exec -- npm run appstore:screenshots:check` is credential-free. It
+   runs the focused repository contract and validates all 36 local exports,
+   metadata, target mappings, and pure sync-planner cases.
+2. Copy `.env.appstore.example` to ignored `.env.appstore`, fill the API-key
+   fields and version, and run
+   `mise exec -- npm run appstore:screenshots:plan`. The lane reads the exact
+   editable app/version and the complete remote localization, metadata, and
+   screenshot inventory. It prints the create/keep/update/upload/delete/order
+   plan for all three locales and six locale/device sets plus a confirmation
+   token bound to both desired files and that remote snapshot.
+3. After reviewing the plan and machine-readable campaign approval, paste the
+   token as `ASC_APP_STORE_SYNC_CONFIRM` and run
+   `mise exec -- npm run appstore:screenshots:upload`. It re-reads under a
+   local lock, creates only missing `en-GB`, `de-DE`, or `fr-FR`
+   localizations/target sets, patches only the five owned metadata fields, and
+   synchronizes exactly six ordered images in each of the six managed sets.
 
-Do not use Fastlane's generic screenshot overwrite or beta sync here. The app
-targets iPhone and iPad; those broad actions can clear or reorder screenshot
-sets outside this six-image iPhone campaign. The targeted lane never creates an
-app version or localization, never uploads a binary or general metadata, and
-never submits for review.
+Planning refuses dirty or untracked campaign/uploader inputs. Mutation also
+fails if the remote inventory changed after planning. Stale images are removed
+only from their exact managed locale/device set, and unowned metadata plus
+every other locale/device inventory must remain unchanged. Do not substitute
+Fastlane's generic Deliver overwrite or metadata sync.
 
-For credentials, create an App Store Connect API key with screenshot-editing
-access. Prefer an individual key owned by an app-limited user with the Marketing
-role; a team key is broader and cannot be limited to only this app. The `.p8`
-file is downloadable once: keep it outside this repository and point
-`ASC_KEY_PATH` to its absolute path. Set `ASC_KEY_ID`; set `ASC_ISSUER_ID` for a
-team key and leave it empty for an individual key. No Apple password belongs in
-this workflow. Apple's current setup instructions are in
-[App Store Connect API](https://developer.apple.com/help/app-store-connect/get-started/app-store-connect-api/);
-the permitted screenshot roles and website alternative are in
-[Upload app previews and screenshots](https://developer.apple.com/help/app-store-connect/manage-app-information/upload-app-previews-and-screenshots/).
+The machine-readable approval is deliberately split:
+`draftSyncApproved: true` authorizes only this exact editable-draft mutation,
+while `reviewSubmissionApproved: false` remains a hard release gate. The
+manifest status must be exactly
+`approved for draft App Store Connect synchronization`. The lane has no binary
+upload or review-submission operation, and successful synchronization does not
+make the app public.
 
-The upload lane currently fails closed because `uploadApproved` is false and
-the manifest is a draft. Resolve the ranked-rune dependency and store-name
-clearance, regenerate every affected preview/export, then review a change that
-sets the manifest status to `approved for App Store Connect upload` and flips
-`uploadApproved` to true. This automation covers only the current English
-iPhone 6.9-inch set. Because the app also supports iPad, a separate 13-inch iPad
-screenshot set is still required before App Store submission.
+Ranked runes are not shipped yet, so the BOUNTY image remains a future-state
+preview: it may be staged in the draft, but the app must not be submitted until
+ranked runes ship and every affected preview is regenerated from that shipping
+implementation. Store-name clearance and localized legal/support URLs are
+independent submission blockers as recorded in `docs/STATUS.md`.
+
+For credentials, keep the one-time `.p8` download outside this repository and
+point `ASC_KEY_PATH` at its absolute path. Set `ASC_KEY_ID`; set
+`ASC_ISSUER_ID` for a team key and leave it empty for an individual key. No
+Apple password belongs in this workflow. Apple's setup and localization
+references are [App Store Connect API](https://developer.apple.com/help/app-store-connect/get-started/app-store-connect-api/),
+[Localize app information](https://developer.apple.com/help/app-store-connect/manage-app-information/localize-app-information/),
+and [Upload app previews and screenshots](https://developer.apple.com/help/app-store-connect/manage-app-information/upload-app-previews-and-screenshots/).

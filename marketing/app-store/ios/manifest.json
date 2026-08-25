@@ -1,72 +1,192 @@
 {
-  "schemaVersion": 1,
-  "title": "Knucklebones Neon — iOS App Store screenshots",
-  "status": "draft pending store-name clearance and ranked-rune launch",
-  "locale": "en",
-  "target": {
-    "display": "iPhone 6.9-inch",
-    "width": 1320,
-    "height": 2868,
-    "format": "png",
-    "alpha": false
-  },
+  "schemaVersion": 2,
+  "title": "Knucklebones Neon — localized iOS App Store screenshots",
+  "status": "approved for draft App Store Connect synchronization",
   "runtimeSource": "knucklebones-neon.html",
+  "sourceFormat": "png",
+  "targets": [
+    {
+      "id": "iphone-6.9",
+      "display": "iPhone 6.9-inch",
+      "displayType": "APP_IPHONE_67",
+      "width": 1320,
+      "height": 2868,
+      "runtimeViewport": {
+        "width": 440,
+        "height": 956,
+        "safeAreaTop": 62,
+        "safeAreaBottom": 34
+      },
+      "format": "png",
+      "alpha": false
+    },
+    {
+      "id": "ipad-13",
+      "display": "iPad 13-inch",
+      "displayType": "APP_IPAD_PRO_3GEN_129",
+      "width": 2064,
+      "height": 2752,
+      "runtimeViewport": {
+        "width": 1032,
+        "height": 1376,
+        "safeAreaTop": 24,
+        "safeAreaBottom": 20
+      },
+      "format": "png",
+      "alpha": false
+    }
+  ],
   "slides": [
     {
       "index": 1,
       "slug": "ranked-row-multiply",
-      "eyebrow": "Ranked Row Multiply",
-      "headline": "MATCH DICE. MULTIPLY.",
-      "subhead": "Build two scoring rows, stack the multipliers, and turn the table.",
-      "scene": "Production Row Multiply board with one ×2 row, one ×3 row, and named rivals"
+      "scene": "rowmult",
+      "fixture": "Production Row Multiply board with one ×2 row, one ×3 row, and named rivals; the ×2 row contains exactly two dice"
     },
     {
       "index": 2,
       "slug": "ranked-mode-dial",
-      "eyebrow": "Seven game modes",
-      "headline": "SEVEN MODES. ONE SPIN.",
-      "subhead": "Every ranked duel can change the rules before the first roll.",
-      "scene": "Production ranked orbit dial landed on COLUMN SHIELD"
+      "scene": "dial",
+      "fixture": "Production ranked orbit dial landed on COLUMN SHIELD; the selected label uses the production yellow"
     },
     {
       "index": 3,
       "slug": "ward-runic-seal",
-      "eyebrow": "Six tactical runes",
-      "headline": "ONE SEAL. ZERO DAMAGE.",
-      "subhead": "Fasten one column; the next enemy strike that would destroy its dice breaks the seal instead.",
-      "scene": "Production WARD strike-contact frame with one mint runic seal against AI NORMAL"
+      "scene": "ward",
+      "fixture": "Production WARD strike-contact frame with one mint runic seal against AI Normal"
     },
     {
       "index": 4,
       "slug": "sunder-overload",
-      "eyebrow": "SUNDER rune",
-      "headline": "ONE DIE. EVERY COLUMN.",
-      "subhead": "Arm SUNDER to overload every matching enemy column at once.",
-      "scene": "Production SUNDER preview with four exact doomed dice against AI NORMAL"
+      "scene": "sunder",
+      "fixture": "Production SUNDER preview with four exact doomed dice against AI Normal"
     },
     {
       "index": 5,
       "slug": "ranked-bounty",
-      "eyebrow": "Bounty mode",
-      "headline": "EVERY STRIKE PAYS.",
-      "subhead": "Destroy matching dice and bank a permanent bounty for every one.",
-      "scene": "Chronological composite of the production BOUNTY two-die strike and its later ✦2 targeting turn with an enlarged face-up WARD, die 4, and 4-second countdown",
+      "scene": "bounty",
+      "fixture": "Chronological composite of the production BOUNTY two-die strike and its later ✦2 targeting turn with an enlarged face-up WARD, die 4, and 4-second countdown",
       "composite": {
         "kind": "chronological-horizontal-feather",
         "baseVariant": "active",
         "overlayVariant": "hero",
-        "overlayOpaqueThrough": 1728,
-        "overlayTransparentFrom": 1750,
+        "overlayOpaqueThroughRatio": 0.6025104603,
+        "overlayTransparentFromRatio": 0.610181311,
         "reason": "The strike effect and the next active-turn controls are separate authentic runtime moments; the empty gap between them carries the deterministic transition."
       }
     },
     {
       "index": 6,
       "slug": "neon-ladder",
-      "eyebrow": "Neon ladder",
-      "headline": "WIN. CLIMB. REPEAT.",
-      "subhead": "Gain points with every win, chase named rivals, and fight for the top 1%.",
-      "scene": "Production ranked ladder centered on FrostLynx303 at GOLD #4 with a +40 next-rival gap"
+      "scene": "ladder",
+      "fixture": "Production ranked ladder centered on FrostLynx303 at Gold rank 4 with a +40 next-rival gap"
     }
-  ]
+  ],
+  "localizations": {
+    "en-GB": {
+      "runtimeLocale": "en",
+      "slides": {
+        "ranked-row-multiply": {
+          "eyebrow": "Ranked Row Multiply",
+          "headlineLines": ["MATCH DICE.", "MULTIPLY."],
+          "subhead": "Build two scoring rows, stack the multipliers, and turn the table."
+        },
+        "ranked-mode-dial": {
+          "eyebrow": "Seven game modes",
+          "headlineLines": ["SEVEN MODES.", "ONE SPIN."],
+          "subhead": "Every ranked duel can change the rules before the first roll."
+        },
+        "ward-runic-seal": {
+          "eyebrow": "Six tactical runes",
+          "headlineLines": ["ONE SEAL.", "ZERO DAMAGE."],
+          "subhead": "Fasten one column; the next enemy strike that would destroy its dice breaks the seal instead."
+        },
+        "sunder-overload": {
+          "eyebrow": "SUNDER rune",
+          "headlineLines": ["ONE DIE.", "EVERY COLUMN."],
+          "subhead": "Arm SUNDER to overload every matching enemy column at once."
+        },
+        "ranked-bounty": {
+          "eyebrow": "Bounty mode",
+          "headlineLines": ["EVERY STRIKE", "PAYS."],
+          "subhead": "Destroy matching dice and bank a permanent bounty for every one."
+        },
+        "neon-ladder": {
+          "eyebrow": "Neon ladder",
+          "headlineLines": ["WIN. CLIMB.", "REPEAT."],
+          "subhead": "Gain points with every win, chase named rivals, and fight for the top 1%."
+        }
+      }
+    },
+    "de-DE": {
+      "runtimeLocale": "de",
+      "slides": {
+        "ranked-row-multiply": {
+          "eyebrow": "Ranglisten-Zeilenbonus",
+          "headlineLines": ["GLEICHE WÜRFEL.", "MEHR PUNKTE."],
+          "subhead": "Baue zwei Bonuszeilen, stapel die Multiplikatoren und drehe das Spiel."
+        },
+        "ranked-mode-dial": {
+          "eyebrow": "Sieben Spielmodi",
+          "headlineLines": ["SIEBEN MODI.", "EIN DREH."],
+          "subhead": "Jedes Ranglistenduell kann schon vor dem ersten Wurf die Regeln ändern."
+        },
+        "ward-runic-seal": {
+          "eyebrow": "Sechs taktische Runen",
+          "headlineLines": ["EIN SIEGEL.", "KEIN SCHADEN."],
+          "subhead": "Schütze eine Spalte: Der nächste gegnerische Treffer, der Würfel zerstören würde, bricht stattdessen das Siegel."
+        },
+        "sunder-overload": {
+          "eyebrow": "SPALTER-Rune",
+          "headlineLines": ["EIN WÜRFEL.", "JEDE SPALTE."],
+          "subhead": "Setze SPALTER ein und triff alle passenden gegnerischen Spalten auf einmal."
+        },
+        "ranked-bounty": {
+          "eyebrow": "Kopfgeld-Modus",
+          "headlineLines": ["JEDER TREFFER", "ZAHLT SICH AUS."],
+          "subhead": "Zerstöre gleiche Würfel und erhalte für jeden dauerhaft +1."
+        },
+        "neon-ladder": {
+          "eyebrow": "Neon-Rangliste",
+          "headlineLines": ["SIEGEN. AUFSTEIGEN.", "WIEDERHOLEN."],
+          "subhead": "Sammle mit jedem Sieg Punkte, jage deine Rivalen und kämpfe um die Top 1 %."
+        }
+      }
+    },
+    "fr-FR": {
+      "runtimeLocale": "fr",
+      "slides": {
+        "ranked-row-multiply": {
+          "eyebrow": "Bonus de ligne classé",
+          "headlineLines": ["ALIGNEZ LES DÉS.", "MULTIPLIEZ."],
+          "subhead": "Formez deux lignes gagnantes, cumulez les multiplicateurs et renversez la partie."
+        },
+        "ranked-mode-dial": {
+          "eyebrow": "Sept modes de jeu",
+          "headlineLines": ["SEPT MODES.", "UN TOUR."],
+          "subhead": "Chaque duel classé peut changer les règles avant même le premier lancer."
+        },
+        "ward-runic-seal": {
+          "eyebrow": "Six runes tactiques",
+          "headlineLines": ["UN SCEAU.", "ZÉRO DÉGÂT."],
+          "subhead": "Scellez une colonne : la prochaine frappe adverse qui détruirait ses dés brisera le sceau à leur place."
+        },
+        "sunder-overload": {
+          "eyebrow": "Rune FRACTURE",
+          "headlineLines": ["UN DÉ.", "TOUTES LES COLONNES."],
+          "subhead": "Activez FRACTURE pour frapper à la fois toutes les colonnes adverses contenant le même dé."
+        },
+        "ranked-bounty": {
+          "eyebrow": "Mode Prime",
+          "headlineLines": ["CHAQUE FRAPPE", "RAPPORTE."],
+          "subhead": "Détruisez les dés identiques et gagnez définitivement +1 pour chacun."
+        },
+        "neon-ladder": {
+          "eyebrow": "Classement Néon",
+          "headlineLines": ["GAGNEZ. GRIMPEZ.", "RECOMMENCEZ."],
+          "subhead": "Gagnez des points à chaque victoire, pourchassez vos rivaux et visez le top 1 %."
+        }
+      }
+    }
+  }
 }
