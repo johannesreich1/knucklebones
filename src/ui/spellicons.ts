@@ -62,18 +62,21 @@ export function spellHue(id: string): string {
 export function spellIcon(id: string, size = 22): string {
   if (id === RANDOM_SPELL) return modeIcon('random', size);
   if (id === RANDOM_DUAL_SPELL) {
-    /* TWO DIFFERENT DRAWS, not Random with a damaged corner. At the picker's
-       real 16px size a numeral badge cannot stay readable without covering an
-       arrowhead. Two outward-dealt cards make the count the silhouette; their
-       different sigils and player colours say that the hands are not shared. */
+    /* TWO DIFFERENT DRAWS, not Random with a damaged corner. Broad 9×13.5
+       rounded cards keep the family's soft rect language and still read as
+       cards at the picker's real 16px size; the slight outward fan makes the
+       pair one deliberate mark. Different sigils and player colours say that
+       the hands are not shared. */
     return `<svg class="sico sico-random2" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" `
       + `stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" `
       + `aria-hidden="true">`
-      + `<path class="r2card r2one" stroke="var(--p1)" d="M3.8 6.5 10.2 5.2l1.4 12.5-6.4 1.2Z"/>`
-      + `<path class="r2card r2two" stroke="var(--p2)" d="m13.8 5.2 6.4 1.3-1.4 12.4-6.4-1.2Z"/>`
-      + `<circle class="r2sigil r2one" cx="7.7" cy="12" r="1.15" fill="var(--p1)" stroke="none"/>`
-      + `<path class="r2sigil r2two" d="m16.3 10.45 1.55 1.55-1.55 1.55-1.55-1.55Z" `
-      + `fill="var(--p2)" stroke="none"/></svg>`;
+      + `<g class="r2one" color="var(--p1)" transform="rotate(-6 6.5 12)">`
+      + `<rect class="r2card" x="2" y="5.25" width="9" height="13.5" rx="1.8" stroke="currentColor"/>`
+      + `<circle class="r2sigil" cx="6.5" cy="12" r="1.3" fill="currentColor" stroke="none"/></g>`
+      + `<g class="r2two" color="var(--p2)" transform="rotate(6 17.5 12)">`
+      + `<rect class="r2card" x="13" y="5.25" width="9" height="13.5" rx="1.8" stroke="currentColor"/>`
+      + `<path class="r2sigil" d="m17.5 10.25 1.75 1.75-1.75 1.75L15.75 12Z" `
+      + `fill="currentColor" stroke="none"/></g></svg>`;
   }
   const body = PATHS[id] ?? PATHS.none;
   return `<svg class="sico" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" `

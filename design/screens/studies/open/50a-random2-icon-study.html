@@ -1,0 +1,143 @@
+<!-- meta name="R2I — Six marks for two random runes" group="4h · RANDOM ×2 — the picker mark" subtitle="The ownership colours stay; six silhouettes test how two different rune cards can speak the same rounded, low-detail language as the rest of the picker at its real 16px size" width=430 height=1120 sizes="md" links="Offline — local play, Spells — aiming a rune, Mode icons" -->
+<style>
+  .r2head{width:100%;max-width:372px;margin:4px auto 0;text-align:left}
+  .r2head h1{font-size:18px;text-align:left;margin:0 0 7px}
+  .r2head p{font-size:10px;line-height:1.55;letter-spacing:.1em;color:var(--dim);margin:0}
+  .r2base{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:372px;
+    box-sizing:border-box;margin:16px auto 0;padding:10px 12px;border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;background:rgba(255,255,255,.025)}
+  .r2basetx{display:flex;flex-direction:column;gap:2px}
+  .r2eyebrow,.r2num{font-size:8px;font-weight:800;letter-spacing:.24em;color:var(--dim)}
+  .r2base b{font-size:10px;letter-spacing:.14em}
+  .r2pair{display:flex;gap:8px;align-items:center}
+  .r2pick,.r2from button[data-v="random2"]{width:44px;height:48px;display:grid;place-items:center;border-radius:12px;
+    border:1px solid rgba(233,241,255,.22);background:rgba(255,255,255,.025);color:#e9f1ff}
+  .r2pick.on,.r2from button[data-v="random2"]{border-color:#e9f1ff;
+    box-shadow:0 0 0 2px rgba(40,232,255,.42),0 0 13px rgba(255,47,160,.22)}
+  .r2from button:not([data-v="random2"]){display:none}
+  .r2grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;
+    width:100%;max-width:372px;margin:12px auto 0}
+  .r2opt{position:relative;min-height:238px;box-sizing:border-box;padding:14px 12px 12px;
+    border:1px solid rgba(255,255,255,.085);border-radius:16px;background:rgba(255,255,255,.025);
+    display:flex;flex-direction:column;align-items:center}
+  .r2opt.chosen{border-color:rgba(40,232,255,.62);
+    box-shadow:inset 0 0 26px rgba(40,232,255,.055),0 0 18px rgba(255,47,160,.08)}
+  .r2opt.chosen::after{content:"SELECTED";position:absolute;top:10px;right:10px;font-size:6.5px;
+    font-weight:900;letter-spacing:.16em;color:var(--p1)}
+  .r2num{position:absolute;top:11px;left:12px;color:rgba(233,241,255,.46)}
+  .r2hero{width:76px;height:76px;display:grid;place-items:center;margin-top:7px;border-radius:20px;
+    border:1px solid rgba(233,241,255,.12);background:rgba(5,7,17,.6);
+    box-shadow:inset 0 0 20px rgba(142,163,192,.035)}
+  .r2hero svg{filter:drop-shadow(0 0 7px rgba(233,241,255,.16))}
+  .r2hero .r2from button[data-v="random2"]{width:48px;height:48px;border:0;border-radius:0;
+    background:transparent;box-shadow:none;padding:0}
+  .r2hero .r2from svg{width:48px;height:48px}
+  .r2title{font-size:10px;font-weight:800;letter-spacing:.14em;margin-top:10px}
+  .r2desc{min-height:44px;font-size:8.5px;line-height:1.45;letter-spacing:.07em;color:var(--dim);
+    text-align:center;margin:4px 0 9px}
+  .r2actual{display:flex;align-items:center;gap:7px;margin-top:auto}
+  .r2actual .vs{font-size:7px;font-weight:800;letter-spacing:.18em;color:rgba(233,241,255,.38)}
+  .r2actual .r2pick{width:40px;height:42px;border-radius:11px}
+  .r2actual .r2from button[data-v="random2"]{width:40px;height:42px;border-radius:11px}
+  .r2actual .r2pick:first-child{color:#e9f1ff}
+  .r2legend{display:flex;justify-content:center;gap:18px;margin:14px auto 0;font-size:8px;
+    letter-spacing:.14em;color:var(--dim)}
+  .r2legend i{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px}
+  .r2legend .p1{background:var(--p1);box-shadow:0 0 8px var(--p1)}
+  .r2legend .p2{background:var(--p2);box-shadow:0 0 8px var(--p2)}
+  .r2svg{overflow:visible;fill:none;stroke:currentColor;stroke-width:1.9;
+    stroke-linecap:round;stroke-linejoin:round}
+</style>
+
+<!-- Exploratory symbols are deliberately local to this study. Once one wins,
+     its single implementation moves to ui/spellicons.ts and this card consumes
+     that registry token instead of keeping a second drawing. -->
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <defs>
+    <symbol id="r2-twins" viewBox="0 0 24 24">
+      <rect x="1.9" y="5.25" width="9" height="13.5" rx="1.8" stroke="var(--p1)"/>
+      <rect x="13.1" y="5.25" width="9" height="13.5" rx="1.8" stroke="var(--p2)"/>
+      <circle cx="6.4" cy="12" r="1.3" fill="var(--p1)" stroke="none"/>
+      <path d="m17.6 10.25 1.75 1.75-1.75 1.75L15.85 12Z" fill="var(--p2)" stroke="none"/>
+    </symbol>
+    <symbol id="r2-stack" viewBox="0 0 24 24">
+      <g color="var(--p1)" transform="rotate(-4 9 10.8)">
+        <rect x="4.1" y="3.8" width="9.8" height="14" rx="2" stroke="currentColor"/>
+        <circle cx="8.2" cy="10.8" r="1.25" fill="currentColor" stroke="none"/>
+      </g>
+      <g color="var(--p2)" transform="rotate(4 15.2 13.2)">
+        <rect x="10.1" y="6.2" width="9.8" height="14" rx="2" stroke="currentColor"/>
+        <path d="m15.8 11.5 1.7 1.7-1.7 1.7-1.7-1.7Z" fill="currentColor" stroke="none"/>
+      </g>
+    </symbol>
+    <symbol id="r2-seals" viewBox="0 0 24 24">
+      <circle cx="6.7" cy="12" r="4.25" stroke="var(--p1)"/>
+      <circle cx="17.3" cy="12" r="4.25" stroke="var(--p2)"/>
+      <circle cx="6.7" cy="12" r="1.1" fill="var(--p1)" stroke="none"/>
+      <path d="m17.3 10.35 1.65 1.65-1.65 1.65-1.65-1.65Z" fill="var(--p2)" stroke="none"/>
+    </symbol>
+    <symbol id="r2-deal" viewBox="0 0 24 24">
+      <rect x="9.2" y="2.5" width="5.6" height="7.2" rx="1.7"/>
+      <circle cx="12" cy="6.1" r=".7" fill="currentColor" stroke="none"/>
+      <path d="M10.6 9.5C9.8 12.4 6.2 12.7 6.2 16.5" stroke="var(--p1)"/>
+      <path d="M13.4 9.5c.8 2.9 4.4 3.2 4.4 7" stroke="var(--p2)"/>
+      <circle cx="6.2" cy="19" r="2.15" stroke="var(--p1)"/>
+      <circle cx="17.8" cy="19" r="2.15" stroke="var(--p2)"/>
+      <circle cx="6.2" cy="19" r=".65" fill="var(--p1)" stroke="none"/>
+      <path d="m17.8 18.1.9.9-.9.9-.9-.9Z" fill="var(--p2)" stroke="none"/>
+    </symbol>
+    <symbol id="r2-open" viewBox="0 0 24 24">
+      <path d="M11.4 5 3.8 7.4l1.25 11.8L12 17Z" stroke="var(--p1)"/>
+      <path d="M12.6 5l7.6 2.4-1.25 11.8L12 17Z" stroke="var(--p2)"/>
+      <circle cx="7.7" cy="12.4" r="1.2" fill="var(--p1)" stroke="none"/>
+      <path d="m16.3 10.9 1.5 1.5-1.5 1.5-1.5-1.5Z" fill="var(--p2)" stroke="none"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="r2head">
+    <div class="r2eyebrow">OPEN STUDY · PICKER 16 PX</div>
+    <h1>RANDOM ×2 ICON</h1>
+    <p>Keep the cyan and magenta ownership cue. Change the silhouette, card proportion and amount of explanation until the mark feels native beside the rune family.</p>
+  </div>
+
+  <div class="r2base">
+    <span class="r2basetx"><span class="r2eyebrow">BASELINE</span><b>RANDOM / CURRENT ×2</b></span>
+    <span class="r2pair"><span class="r2pick">{{mico:random:16}}</span><span class="r2from">{{picker:spells:random2}}</span></span>
+  </div>
+
+  <div class="r2grid">
+    <article class="r2opt">
+      <span class="r2num">01</span><span class="r2hero"><svg class="r2svg" width="48" height="48" viewBox="0 0 24 24"><use href="#r2-twins"/></svg></span>
+      <span class="r2title">TWIN CARDS</span><p class="r2desc">Straight, broad and balanced. Closest to the rounded die and rune outlines.</p>
+      <span class="r2actual"><span class="r2pick">{{mico:random:16}}</span><span class="vs">VS</span><span class="r2pick on"><svg class="r2svg" width="16" height="16" viewBox="0 0 24 24"><use href="#r2-twins"/></svg></span></span>
+    </article>
+    <article class="r2opt chosen">
+      <span class="r2num">02</span><span class="r2hero"><span class="r2from">{{picker:spells:random2}}</span></span>
+      <span class="r2title">SOFT FAN</span><p class="r2desc">Selected. Broad, rounded cards keep the two-player deal and join the rune family.</p>
+      <span class="r2actual"><span class="r2pick">{{mico:random:16}}</span><span class="vs">VS</span><span class="r2from">{{picker:spells:random2}}</span></span>
+    </article>
+    <article class="r2opt">
+      <span class="r2num">03</span><span class="r2hero"><svg class="r2svg" width="48" height="48" viewBox="0 0 24 24"><use href="#r2-stack"/></svg></span>
+      <span class="r2title">OFFSET STACK</span><p class="r2desc">One draw, two cards. More motion and depth, with a busier crossing in the centre.</p>
+      <span class="r2actual"><span class="r2pick">{{mico:random:16}}</span><span class="vs">VS</span><span class="r2pick on"><svg class="r2svg" width="16" height="16" viewBox="0 0 24 24"><use href="#r2-stack"/></svg></span></span>
+    </article>
+    <article class="r2opt">
+      <span class="r2num">04</span><span class="r2hero"><svg class="r2svg" width="48" height="48" viewBox="0 0 24 24"><use href="#r2-seals"/></svg></span>
+      <span class="r2title">RUNE SEALS</span><p class="r2desc">The calmest reduction: two outcomes and two owners, with the cards abstracted away.</p>
+      <span class="r2actual"><span class="r2pick">{{mico:random:16}}</span><span class="vs">VS</span><span class="r2pick on"><svg class="r2svg" width="16" height="16" viewBox="0 0 24 24"><use href="#r2-seals"/></svg></span></span>
+    </article>
+    <article class="r2opt">
+      <span class="r2num">05</span><span class="r2hero"><svg class="r2svg" width="48" height="48" viewBox="0 0 24 24"><use href="#r2-deal"/></svg></span>
+      <span class="r2title">SPLIT DEAL</span><p class="r2desc">A neutral deck forks into one different rune for each player. Most explanatory.</p>
+      <span class="r2actual"><span class="r2pick">{{mico:random:16}}</span><span class="vs">VS</span><span class="r2pick on"><svg class="r2svg" width="16" height="16" viewBox="0 0 24 24"><use href="#r2-deal"/></svg></span></span>
+    </article>
+    <article class="r2opt">
+      <span class="r2num">06</span><span class="r2hero"><svg class="r2svg" width="48" height="48" viewBox="0 0 24 24"><use href="#r2-open"/></svg></span>
+      <span class="r2title">OPEN DEAL</span><p class="r2desc">Two cards share one centre. Bold, symmetric and closest to a single family glyph.</p>
+      <span class="r2actual"><span class="r2pick">{{mico:random:16}}</span><span class="vs">VS</span><span class="r2pick on"><svg class="r2svg" width="16" height="16" viewBox="0 0 24 24"><use href="#r2-open"/></svg></span></span>
+    </article>
+  </div>
+  <div class="r2legend"><span><i class="p1"></i>PLAYER 1</span><span><i class="p2"></i>PLAYER 2</span></div>
+</div></div>

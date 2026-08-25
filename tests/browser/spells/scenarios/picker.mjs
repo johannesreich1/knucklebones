@@ -49,6 +49,13 @@ export async function runPickerScenarios(suite) {
              dual: geom(dual), dualCards: dualCards.length,
              dualSigils: dual?.querySelectorAll('.r2sigil').length ?? 0,
              dualCardColours: dualCards.map((card) => getComputedStyle(card).stroke),
+             dualCardShapes: dualCards.map((card) => ({
+               tag: card.tagName.toLowerCase(),
+               width: Number(card.getAttribute('width')),
+               height: Number(card.getAttribute('height')),
+               radius: Number(card.getAttribute('rx')),
+               transform: card.parentElement?.getAttribute('transform') ?? '',
+             })),
              modeHue: mode?.style.getPropertyValue('--mh'),
              spellHue: spell?.style.getPropertyValue('--mh'),
              dualHue: dual?.style.getPropertyValue('--mh') };
@@ -61,6 +68,11 @@ export async function runPickerScenarios(suite) {
       && out.randomIcon.dualCards === 2 && out.randomIcon.dualSigils === 2
       && new Set(out.randomIcon.dualCardColours).size === 2,
     'RANDOM ×2 is not a distinct two-player, two-rune draw mark', out.randomIcon);
+  check(out.randomIcon.dualCardShapes.every((card) => card.tag === 'rect'
+      && card.width >= 9 && card.height / card.width <= 1.55 && card.radius >= 1.8)
+      && out.randomIcon.dualCardShapes.some((card) => card.transform.startsWith('rotate(-'))
+      && out.randomIcon.dualCardShapes.some((card) => /^rotate\([1-9]/.test(card.transform)),
+    'RANDOM ×2 lost the selected broad, rounded, outward-fanned cards', out.randomIcon);
   check(out.randomIcon.dualHue === out.randomIcon.modeHue,
     'RANDOM ×2 does not wear the neutral random hue', out.randomIcon);
   check(!out.picker.values.includes('swap'), 'the retired swap must not be pickable', out.picker.values);
