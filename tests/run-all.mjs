@@ -1,151 +1,127 @@
-// Run every suite and exit non-zero if any reports a problem.
-//
-// The suites were written for a human reading `"problems": []` — they always
-// exit 0. This runner is the machine-readable gate for CI: it builds, drives
-// each suite, parses the JSON report, and fails on any problem or page error.
-// Run from the repo root: mise exec -- node tests/run-all.mjs
-// (or: mise exec -- npm test)
-//
-// PARALLEL by default on a dev machine, SEQUENTIAL on CI: the suites are
-// independent processes (own browser, own storage, own server on a port the
-// kernel picks — tests/serve.mjs), so locally they pool JOBS at a time and the
-// wall clock is the longest chain, not the sum. CI's two-core runners are
-// where parallel browser load buys flakes instead of time, so CI (env CI=true)
-// keeps the one-at-a-time order this file always had. Override with --jobs N
-// or KB_JOBS=N. The one suite that may never share is testupdate — it MUTATES
-// pwa/ under the server every other served suite reads — so it always runs
-// alone, last.
-//
-// PARALLEL ACROSS SESSIONS, TOO — with one rule: ONE GATE AT A TIME PER
-// WORKING TREE. Every port is now per-run, so gates in different worktrees
-// cannot reach each other's servers. Gates in the SAME checkout still share
-// the build output, which no port can isolate — they queue on the lock below.
+// Complete release gate. Local runs schedule long owners first across four
+// workers; CI selects one of four coverage-checked manifests and keeps one
+// worker per isolated runner. testupdate is always exclusive and final.
 import { execFileSync, spawn } from 'node:child_process';
+import { performance } from 'node:perf_hooks';
 import { serveTree } from './serve.mjs';
 import { acquireCheckoutLock } from './support/gate-lock.mjs';
+import {
+  createGatePlan,
+  executeGatePlan,
+  parseGateArgs,
+  validateGateManifest,
+} from './support/gate-manifest.mjs';
 
-const FILE_SUITES = [
-  'test4', 'test6',
-  { name: 'release-main', file: 'tests/release-main.test.mjs' },
-  { name: 'native-startup-browser', file: 'tests/browser/native-startup.mjs' },
-  { name: 'localization-browser', file: 'tests/browser/localization/run.mjs' },
-  { name: 'online-localization-browser', file: 'tests/browser/online-localization/run.mjs' },
-  { name: 'legal-browser', file: 'tests/browser/legal.mjs' },
-  { name: 'service-worker-routing', file: 'tests/service-worker.test.mjs' },
-  { name: 'test8', file: 'tests/browser/responsive/run.mjs' },
-  'test9', 'test10',
-  { name: 'test11', file: 'tests/browser/hud-settings/run.mjs' },
-  'test12', 'test13',
-  // Local workers overlap the independent spell shards to cut wall time;
-  // CI's JOBS=1 still runs the same complete coverage sequentially.
-  { name: 'spells-defense', file: 'tests/browser/spells/run.mjs', args: ['--shard', 'defense'] },
-  { name: 'spells-interaction', file: 'tests/browser/spells/run.mjs', args: ['--shard', 'interaction'] },
-  { name: 'spells-presentation', file: 'tests/browser/spells/run.mjs', args: ['--shard', 'presentation'] },
-  { name: 'spells-advanced', file: 'tests/browser/spells/run.mjs', args: ['--shard', 'advanced'] },
-  'test15', 'test17', 'test18', 'test19', 'test20', 'test21', 'test23', 'test24',
-];
-const SERVED_SUITES = [
-  'test7',
-  { name: 'test16', file: 'tests/browser/online-ui/run.mjs' },
-  'test22',
-]; // read pwa/ over the shared server, read-only — poolable
-// testupdate reads that same server but MUTATES pwa/ — it always runs alone, last
-/* The exhaustive localization worker now covers six locales, four standalone
-   viewports, three widget widths, and every live mode/rune badge. Keep enough
-   headroom for a locally parallel Chromium pool; CI remains sequential. */
 const SUITE_TIMEOUT_MS = 480_000;
-const argJobs = process.argv.indexOf('--jobs');
-const JOBS = Math.max(1, +(argJobs > 0 ? process.argv[argJobs + 1]
-  : process.env.KB_JOBS ?? (process.env.CI ? 1 : 4)) || 1);
-
-/* the pool: N workers drain one queue. JOBS=1 is exactly the old sequential
-   runner — same code path, same order — so CI runs what it always ran. */
-async function pool(tasks) {
-  const q = [...tasks];
-  await Promise.all(Array.from({ length: Math.min(JOBS, q.length) },
-    async () => { while (q.length) await q.shift()(); }));
+let options;
+let plan;
+try {
+  // Validate the complete union before accepting a selected shard. A healthy
+  // shard may never conceal a missing or duplicate suite elsewhere.
+  validateGateManifest();
+  options = parseGateArgs(process.argv.slice(2));
+  plan = createGatePlan(options.ciShard);
+} catch (error) {
+  console.error(error instanceof Error ? error.message : error);
+  process.exit(2);
 }
 
 /* The gate is launched only after package engines/.nvmrc have selected and
-   validated Node 24. This is deliberately the only child-process seam: every
-   child inherits that exact executable instead of resolving a bare `node`
-   through PATH and silently finding another installation. */
+   validated Node 24. Every child inherits that exact executable instead of
+   resolving a bare `node` through PATH. */
 function runNode(args) {
   return new Promise(resolve => {
-    const p = spawn(process.execPath, args, { cwd: process.cwd() });
+    const started = performance.now();
+    const child = spawn(process.execPath, args, { cwd: process.cwd() });
     let out = '';
-    p.stdout.on('data', d => out += d);
-    p.stderr.on('data', d => out += d);
-    const t = setTimeout(() => { p.kill('SIGKILL'); }, SUITE_TIMEOUT_MS);
-    p.on('close', code => { clearTimeout(t); resolve({ code, out }); });
+    let settled = false;
+    let timeout;
+    const finish = (code, extra = '') => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      resolve({ code, out: out + extra, elapsedMs: performance.now() - started });
+    };
+    child.stdout.on('data', data => { out += data; });
+    child.stderr.on('data', data => { out += data; });
+    child.on('error', error => finish(1, `\n${error.stack ?? error}\n`));
+    child.on('close', code => finish(code ?? 1));
+    timeout = setTimeout(() => child.kill('SIGKILL'), SUITE_TIMEOUT_MS);
   });
 }
 
-// Each suite prints exactly one JSON.stringify(...) block (testupdate adds a
-// trailing reminder line), so first "{" to last "}" is the report.
+// Each suite prints one JSON block (testupdate adds a reminder line), so the
+// first opening brace through the last closing brace is its report.
 function parseReport(out) {
-  const a = out.indexOf('{'), b = out.lastIndexOf('}');
-  if (a < 0 || b < a) return null;
-  try { return JSON.parse(out.slice(a, b + 1)); } catch { return null; }
+  const first = out.indexOf('{');
+  const last = out.lastIndexOf('}');
+  if (first < 0 || last < first) return null;
+  try { return JSON.parse(out.slice(first, last + 1)); } catch { return null; }
 }
 
+const seconds = elapsedMs => `${(elapsedMs / 1000).toFixed(1)}s`;
+const clean = report => (report.problems || []).length === 0
+  && (report.errs || []).length === 0;
 let failed = 0;
-function judge(name, { code, out }, verdict) {
-  const rep = parseReport(out);
-  const bad = code !== 0 || !rep || !verdict(rep);
-  console.log(`${bad ? 'FAIL' : 'ok  '} ${name}`);
-  if (bad) { failed++; console.log(out.trim().split('\n').map(l => '  | ' + l).join('\n')); }
+function judge(name, result, verdict) {
+  const report = parseReport(result.out);
+  const bad = result.code !== 0 || !report || !verdict(report);
+  console.log(`${bad ? 'FAIL' : 'ok  '} ${name} (${seconds(result.elapsedMs)})`);
+  if (!bad) return;
+  failed++;
+  console.log(result.out.trim().split('\n').map(line => `  | ${line}`).join('\n'));
 }
-const clean = rep => (rep.problems || []).length === 0 && (rep.errs || []).length === 0;
 
-/* THE CHECKOUT LOCK — one gate at a time per working tree.
-   Ports stopped being shared the day tests/serve.mjs started binding port 0,
-   so two gates in two worktrees never touch. Two gates in the SAME checkout
-   still do, and no port can help: the shared thing IS the build output.
-   build.mjs rewrites pwa/ and dist/ at the start and again at the end, and
-   testupdate deliberately rewrites pwa/index.html and pwa/sw.js mid-run to
-   fake a deploy. A peer gating the same tree would read those mutations as
-   its own build — red on a change it never made, or green on a tree it never
-   built. There is nothing to isolate here, so gates queue instead.
-   Worktrees remain the recommendation: a shared checkout gates everyone's
-   uncommitted work at once, so a red suite cannot tell you WHOSE change it
-   was. The lock only promises that the answer is about one tree state.
-   Escape hatch for someone who knows their peer is idle: KB_NO_LOCK=1. */
+const announce = name => console.log(`start ${name}`);
+// Keep three explicit child seams so the Node-runtime contract can prove that
+// typed, ordinary, and benchmark suites all propagate process.execPath.
+const node = spec => async () => {
+  announce(spec.name);
+  judge(spec.name, await runNode([...spec.args, spec.file]), clean);
+};
+const suite = spec => async () => {
+  announce(spec.name);
+  judge(spec.name, await runNode([spec.file, ...spec.args]), clean);
+};
+const benchmark = spec => async () => {
+  announce(spec.name);
+  judge(spec.name, await runNode([spec.file, ...spec.args]),
+    report => report.sameResult === true);
+};
+const runners = { node, suite, benchmark };
+const run = spec => runners[spec.runner](spec)();
+
+const selected = [...plan.pooled, ...plan.final];
+const label = options.ciShard ?? 'complete';
+const gateStarted = performance.now();
+console.log(`gate ${label}: ${selected.length} suites, ${options.jobs} worker(s)`);
+
+/* One gate at a time per working tree: build output is shared. Independent CI
+   checkouts/worktrees have their own lock, outputs, server and kernel ports. */
 const release = await acquireCheckoutLock();
-execFileSync(process.execPath, ['build.mjs'], { stdio: 'inherit' }); // test6 needs harness.html, served suites need pwa/index.html
-
-/* everything except testupdate shares ONE pool: the pure-Node gates, the
-   file suites, bench3, and the two read-only served suites. pwa/ is served
-   once, in-process, before the pool starts, so test7/test16 can land whenever
-   a worker reaches them; the address travels to them in KB_URL. bench3's pass
-   criterion is an equivalence flag, not a timing threshold, so company cannot
-   fail it. */
-const { url, stop } = await serveTree('pwa');
-process.env.KB_URL = url;   // spawned suites inherit this — servedBase() reads it
 try {
-  const node = t => async () => judge(t,
-    await runNode(['--experimental-strip-types', `tests/${t}.test.ts`]), clean);
-  const suite = entry => async () => {
-    const spec = typeof entry === 'string'
-      ? { name: entry, file: `tests/${entry}.mjs` } : entry;
-    judge(spec.name, await runNode([spec.file, ...(spec.args ?? [])]), clean);
-  };
-  await pool([
-    // pure-Node gates (no browser): seeded dice determinism + PvP match core
-    ...['architecture', 'preferences', 'i18n', 'i18n-catalog', 'i18n-length-report', 'legal', 'production-migrations', 'dice', 'match', 'modes', 'spells', 'scoring-ward', 'spell-ai', 'scoring-ward-ai', 'rune-matchups', 'rune-matchup-analysis', 'rune-ward-sensitivity', 'rune-sunder-sensitivity', 'online-api', 'gcauth', 'edge-handlers', 'edge-settlement', 'cssgraph', 'cssreach', 'design-library', 'ladder', 'ladderbench', 'botbench', 'fnsync', 'iosship', 'androidship', 'apple-identity', 'native-startup', 'live-safety', 'gate-lock'].map(node),
-    ...FILE_SUITES.map(suite),
-    // bench3 is a benchmark, not a pass/fail suite — but its helper-vs-inline
-    // scoring equivalence check is a real correctness assertion.
-    async () => judge('bench3', await runNode(['tests/bench3.mjs']), rep => rep.sameResult === true),
-    ...SERVED_SUITES.map(suite),
-  ]);
-  // testupdate mutates pwa/ under the server — always alone, always last
-  await suite('testupdate')();
-} finally {
-  stop();
-}
-execFileSync(process.execPath, ['build.mjs'], { stdio: 'ignore' }); // testupdate mutated pwa/ — restore it
+  execFileSync(process.execPath, ['build.mjs'], { stdio: 'inherit' });
 
-console.log(failed ? `\n${failed} suite(s) FAILED` : '\nall suites green');
-release();
+  let stop = () => {};
+  if (selected.some(spec => spec.needsServer)) {
+    const server = await serveTree('pwa');
+    process.env.KB_URL = server.url;
+    stop = server.stop;
+  }
+  try {
+    await executeGatePlan(plan, run, options.jobs);
+  } finally {
+    stop();
+    if (plan.final.length) {
+      // testupdate mutated pwa/ under its private server; restore exact output.
+      execFileSync(process.execPath, ['build.mjs'], { stdio: 'ignore' });
+    }
+  }
+} finally {
+  release();
+}
+
+const summary = `${selected.length} suites ${failed ? 'FAILED' : 'green'} in `
+  + `${seconds(performance.now() - gateStarted)} (${label})`;
+console.log(`\n${summary}`);
 process.exit(failed ? 1 : 0);

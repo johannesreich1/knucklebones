@@ -25,20 +25,39 @@ migration, grant, RLS, or RPC change.
 
 The gate holds `.gate.lock` because build output is shared inside one working
 tree. Servers use kernel-assigned ports, so independent worktrees may gate in
-parallel. Use `KB_JOBS=2` under machine contention and repeat a timing failure
-alone before treating it as a product regression.
+parallel. A complete local run schedules the measured long owners first across
+four workers; use `KB_JOBS=2` under machine contention and repeat a timing
+failure alone before treating it as a product regression. Start/completion
+lines include per-suite elapsed time so the schedule can be rebalanced from
+evidence when an owner grows.
+
+Hosted CI selects four coverage-checked `--ci-shard` manifests. Each shard has
+its own checkout, build output, server, and kernel-assigned ports, while using
+one suite worker inside its two-core runner to avoid browser-contention flakes.
+`tests/gate-manifest.test.ts` rejects a missing, duplicated, unknown, or
+multiply assigned suite and requires the workflow matrix to match the manifest.
+An independent, dependency-free manifest preflight guards matrix startup, so a
+removed shard cannot also remove the only check capable of noticing it. The
+four runners collectively execute the same registry as an unsharded local gate.
+The Deno closure check runs alongside one shard; database and Android compiler
+gates remain independent jobs.
 
 The spell browser keeps one no-argument run for whole-suite diagnosis and also
 exposes `--only <scenario-id>` for focused iteration. The release runner uses
 four coverage-validated `--shard` selections: every scenario must belong to
 exactly one shard or startup fails. Local workers overlap those independent
-browsers; CI's `JOBS=1` runs the same shard union sequentially, so the speedup
-does not remove or narrow coverage. Successful selected runs print only their
-scenario ids; a failure keeps the full observation report for diagnosis.
+browsers; CI distributes the same shard union across its coverage-checked gate
+manifests, without removing or narrowing coverage. Successful selected runs
+print only their scenario ids; a failure keeps the full observation report for diagnosis.
 Ordinary spell scenarios also settle the opening roll synchronously after
 invalidating its delayed callback. Tutorial pacing and LIMITED's real die bag
 stay authentic, and dedicated lifecycle suites retain opening-animation
 coverage; the spell suite therefore spends its time on the state it owns.
+
+`testupdate` is the sole `exclusive-final` suite. It mutates `pwa/` through the
+shared server only after every pooled suite in its checkout has completed, and
+the runner restores generated output afterward. Manifest and executor contracts
+prove it cannot overlap a reader or be followed by another suite.
 
 Pure localization contracts keep the registry, exact catalog keys,
 interpolation placeholders, trusted rich-copy shape, typed compact labels,
