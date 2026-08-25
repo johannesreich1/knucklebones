@@ -23,6 +23,7 @@ module KnucklebonesAppStore
     ].freeze
     REQUIRED_LOCALES = %w[de-DE en-GB fr-FR].freeze
     REQUIRED_DISPLAY_TYPES = %w[APP_IPAD_PRO_3GEN_129 APP_IPHONE_67].freeze
+    AUTOMATIC_VERSION_LOCALIZATION_WAIT_SECONDS = 60
 
     attr_reader :config, :manifest, :metadata
 
@@ -101,13 +102,8 @@ module KnucklebonesAppStore
         exclude_version_locales: new_version_locales
       )
 
-      create_missing_localizations!(initial)
-      after_create_context = wait_for_localizations!(
-        version_string,
-        app_info_locales: REQUIRED_LOCALES,
-        version_locales: REQUIRED_LOCALES
-      )
-      after_create = build_plan(after_create_context, require_token: false)
+      creation = create_missing_localizations_two_phase!(initial, version_string: version_string)
+      after_create = creation.fetch(:plan)
       ensure_existing_owned_metadata_unchanged!(initial, after_create)
       ensure_protected_unchanged!(
         protected_before,
@@ -116,14 +112,22 @@ module KnucklebonesAppStore
         new_version_locales
       )
       ensure_managed_screenshots_unchanged!(initial.fetch(:context), after_create.fetch(:context), "localization creation")
-      ensure_created_localization_side_effects_confirmed!(initial, after_create)
+      ensure_direct_creation_values_confirmed!(
+        after_create,
+        app_info_locales: creation.fetch(:direct_app_info_locales),
+        version_locales: creation.fetch(:direct_version_locales)
+      )
+
+      protected_after_creation = protected_snapshot(
+        after_create.fetch(:context), exclude_app_info_locales: [], exclude_version_locales: []
+      )
 
       update_metadata!(after_create)
       after_metadata = wait_for_metadata_exact!(
         version_string,
-        protected_before,
-        new_app_info_locales,
-        new_version_locales
+        protected_after_creation,
+        [],
+        []
       )
       ensure_managed_screenshots_unchanged!(initial.fetch(:context), after_metadata.fetch(:context), "metadata update")
 
@@ -135,9 +139,9 @@ module KnucklebonesAppStore
       final = wait_for_final_exact!(
         version_string,
         expected_set_ids,
-        protected_before,
-        new_app_info_locales,
-        new_version_locales
+        protected_after_creation,
+        [],
+        []
       )
 
       { synced: true, locales: REQUIRED_LOCALES.length, targets: final.fetch(:targets).length,
@@ -440,25 +444,151 @@ module KnucklebonesAppStore
       end
     end
 
-    def create_missing_localizations!(plan)
+    def create_missing_localizations_two_phase!(initial, version_string:)
+      new_app_info_locales = initial.fetch(:localizations).filter_map do |entry|
+        entry.fetch(:locale) if entry.fetch(:create_app_info)
+      end
+      new_version_locales = initial.fetch(:localizations).filter_map do |entry|
+        entry.fetch(:locale) if entry.fetch(:create_version)
+      end
+      initially_visible_version_locales = REQUIRED_LOCALES &
+        initial.fetch(:context).fetch(:version_localizations).keys
+
+      direct_app_info_locales = create_missing_app_info_localizations!(initial)
+
+      # App Store Connect can create the matching version localization as a
+      # side effect of AppInfoLocalization creation. Re-read before deciding
+      # whether any version-localization POST is still necessary.
+      after_app_info_context = wait_for_localizations!(
+        version_string,
+        app_info_locales: REQUIRED_LOCALES,
+        version_locales: initially_visible_version_locales
+      )
+      after_app_info = validate_localization_creation_checkpoint!(
+        initial,
+        after_app_info_context,
+        new_app_info_locales: new_app_info_locales,
+        new_version_locales: new_version_locales,
+        phase: "App Info localization creation"
+      )
+      ensure_direct_creation_values_confirmed!(
+        after_app_info,
+        app_info_locales: direct_app_info_locales,
+        version_locales: []
+      )
+
+      automatic_candidates = direct_app_info_locales & new_version_locales
+      after_side_effects_context = wait_for_automatic_version_localizations(
+        version_string,
+        after_app_info_context,
+        automatic_candidates
+      )
+      validate_localization_creation_checkpoint!(
+        initial,
+        after_side_effects_context,
+        new_app_info_locales: new_app_info_locales,
+        new_version_locales: new_version_locales,
+        phase: "automatic version localization discovery"
+      )
+
+      direct_version_locales = create_missing_version_localizations!(
+        after_side_effects_context,
+        missing_required_version_locales(after_side_effects_context),
+        automatic_candidates: automatic_candidates,
+        version_string: version_string
+      )
+
+      final_context = wait_for_localizations!(
+        version_string,
+        app_info_locales: REQUIRED_LOCALES,
+        version_locales: REQUIRED_LOCALES
+      )
+      {
+        plan: build_plan(final_context, require_token: false),
+        direct_app_info_locales: direct_app_info_locales,
+        direct_version_locales: direct_version_locales
+      }
+    end
+
+    def create_missing_app_info_localizations!(plan)
       app_info = plan.fetch(:context).fetch(:app_info)
-      version = plan.fetch(:context).fetch(:version)
-      plan.fetch(:localizations).each do |entry|
+      plan.fetch(:localizations).each_with_object([]) do |entry, created|
+        next unless entry.fetch(:create_app_info)
+
         locale = entry.fetch(:locale)
         desired = desired_metadata(locale)
-        if entry.fetch(:create_app_info)
-          @logger.call("Creating App Info localization #{locale}")
-          app_info.create_app_info_localization(
-            attributes: localization_creation_attributes(locale, desired.fetch(:app_info))
-          )
-        end
-        if entry.fetch(:create_version)
-          @logger.call("Creating iOS version localization #{locale}")
+        @logger.call("Creating App Info localization #{locale}")
+        app_info.create_app_info_localization(
+          attributes: localization_creation_attributes(locale, desired.fetch(:app_info))
+        )
+        created << locale
+      end
+    end
+
+    def create_missing_version_localizations!(context, locales, automatic_candidates:, version_string:)
+      version = context.fetch(:version)
+      locales.each_with_object([]) do |locale, created|
+        desired = desired_metadata(locale)
+        @logger.call("Creating iOS version localization #{locale}")
+        begin
           version.create_app_store_version_localization(
             attributes: localization_creation_attributes(locale, desired.fetch(:version))
           )
+          created << locale
+        rescue Spaceship::UnexpectedResponse => error
+          unless conflict_response?(error) && automatic_candidates.include?(locale)
+            raise SafetyError,
+                  "version localization #{locale} changed concurrently during creation; rerun the read-only plan"
+          end
+
+          @logger.call("Adopting the version localization App Store Connect created for #{locale}")
+          wait_for_localizations!(
+            version_string,
+            app_info_locales: REQUIRED_LOCALES,
+            version_locales: [locale],
+            seconds: AUTOMATIC_VERSION_LOCALIZATION_WAIT_SECONDS
+          )
         end
       end
+    end
+
+    def missing_required_version_locales(context)
+      REQUIRED_LOCALES.reject { |locale| context.fetch(:version_localizations).key?(locale) }
+    end
+
+    def wait_for_automatic_version_localizations(version_string, context, locales,
+                                                 seconds: AUTOMATIC_VERSION_LOCALIZATION_WAIT_SECONDS,
+                                                 interval: 2)
+      return context if locales.empty? || locales.all? { |locale| context.fetch(:version_localizations).key?(locale) }
+
+      deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + seconds
+      latest = context
+      loop do
+        return latest if locales.all? { |locale| latest.fetch(:version_localizations).key?(locale) }
+        return latest if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+
+        sleep interval if interval.positive?
+        latest = discover!(version_string: version_string)
+      end
+    end
+
+    def validate_localization_creation_checkpoint!(initial, context, new_app_info_locales:,
+                                                   new_version_locales:, phase:)
+      current = build_plan(context, require_token: false)
+      ensure_existing_owned_metadata_unchanged!(initial, current)
+      protected_before = protected_snapshot(
+        initial.fetch(:context),
+        exclude_app_info_locales: new_app_info_locales,
+        exclude_version_locales: new_version_locales
+      )
+      ensure_protected_unchanged!(
+        protected_before,
+        context,
+        new_app_info_locales,
+        new_version_locales
+      )
+      ensure_managed_screenshots_unchanged!(initial.fetch(:context), context, phase)
+      current
     end
 
     def localization_creation_attributes(locale, desired)
@@ -482,20 +612,19 @@ module KnucklebonesAppStore
       end
     end
 
-    def ensure_created_localization_side_effects_confirmed!(initial, current)
-      initial_by_locale = initial.fetch(:localizations).to_h { |entry| [entry.fetch(:locale), entry] }
+    def ensure_direct_creation_values_confirmed!(current, app_info_locales:, version_locales:)
       current.fetch(:localizations).each do |entry|
-        before = initial_by_locale.fetch(entry.fetch(:locale))
-        desired = desired_metadata(entry.fetch(:locale))
-        if before.fetch(:create_app_info) && !created_values_exact?(
+        locale = entry.fetch(:locale)
+        desired = desired_metadata(locale)
+        if app_info_locales.include?(locale) && !created_values_exact?(
           entry.fetch(:app_info_localization), desired.fetch(:app_info), AppStorePlan::APP_INFO_FIELDS
         )
-          raise SafetyError, "App Info metadata created for #{entry.fetch(:locale)} differs from the confirmed values; rerun the read-only plan"
+          raise SafetyError, "App Info metadata created for #{locale} differs from the confirmed values; rerun the read-only plan"
         end
-        if before.fetch(:create_version) && !created_values_exact?(
+        if version_locales.include?(locale) && !created_values_exact?(
           entry.fetch(:version_localization), desired.fetch(:version), AppStorePlan::VERSION_FIELDS
         )
-          raise SafetyError, "version metadata created for #{entry.fetch(:locale)} differs from the confirmed values; rerun the read-only plan"
+          raise SafetyError, "version metadata created for #{locale} differs from the confirmed values; rerun the read-only plan"
         end
       end
     end
@@ -787,6 +916,11 @@ module KnucklebonesAppStore
     def not_found_response?(error)
       details = [error.message, (error.respond_to?(:error_info) ? error.error_info : nil)].compact.join(" ")
       details.match?(/(?:\b404\b|NOT_FOUND)/i)
+    end
+
+    def conflict_response?(error)
+      details = [error.message, (error.respond_to?(:error_info) ? error.error_info : nil)].compact.join(" ")
+      details.match?(/(?:\b409\b|CONFLICT)/i)
     end
 
     def wait_complete!(id, seconds: 900)

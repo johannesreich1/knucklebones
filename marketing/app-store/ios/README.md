@@ -172,10 +172,15 @@ Then use the three safety levels:
 
 Apple requires `name` in the create request for a new App Info localization.
 The lane therefore creates a missing App Info locale with its already confirmed
-localized `name` and `subtitle`, and creates the matching version locale with
-its confirmed promotional text, keywords, and description. It still omits every
-unowned URL and `whatsNew`, then verifies Apple's returned values byte-for-byte
-before continuing.
+localized `name` and `subtitle`, then re-reads App Store Connect before creating
+the matching version locale. Apple can create that version localization as a
+side effect; the lane adopts it when present and sends a version-localization
+create request only when it is still absent. A race that returns a duplicate
+conflict is re-read and adopted only for that same newly created locale.
+Directly created values must match the confirmed request byte-for-byte. After
+creation, the lane snapshots every newly visible unowned URL and `whatsNew`,
+patches only the five owned fields to their confirmed values, and verifies the
+complete state again before any screenshot work.
 
 Planning refuses dirty or untracked campaign/uploader inputs. Mutation also
 fails if the remote inventory changed after planning. Stale images are removed

@@ -48,6 +48,21 @@ class LocalizationCreationRecorder
   end
 end
 
+class ConflictingVersionCreationRecorder
+  attr_reader :attempts
+
+  def initialize
+    @attempts = 0
+  end
+
+  def create_app_store_version_localization(attributes:)
+    raise "unexpected locale" unless attributes.fetch(:locale) == "fr-FR"
+
+    @attempts += 1
+    raise Spaceship::UnexpectedResponse, "status 409 CONFLICT"
+  end
+end
+
 ROOT = File.expand_path("../..", __dir__)
 SCREENSHOT_ROOT = File.join(ROOT, "marketing", "app-store", "ios")
 
@@ -83,42 +98,133 @@ assert(sync.config.fetch("screenshotTargets").length == 2, "the contract must ow
 app_info_creator = LocalizationCreationRecorder.new
 version_creator = LocalizationCreationRecorder.new
 creation_plan = {
-  context: { app_info: app_info_creator, version: version_creator },
-  localizations: [{ locale: "de-DE", create_app_info: true, create_version: true }]
+  context: {
+    app_info: app_info_creator,
+    version: version_creator,
+    version_localizations: { "de-DE" => true, "en-GB" => true }
+  },
+  localizations: [{ locale: "fr-FR", create_app_info: true, create_version: true }]
 }
-sync.send(:create_missing_localizations!, creation_plan)
-assert(app_info_creator.attributes == [{
-         locale: "de-DE",
-         name: metadata.fetch("localizations").fetch("de-DE").fetch("name"),
-         subtitle: metadata.fetch("localizations").fetch("de-DE").fetch("subtitle")
-       }], "App Info creation must include Apple's required confirmed name and the confirmed subtitle")
-assert(version_creator.attributes == [{
-         locale: "de-DE",
-         promotionalText: metadata.fetch("localizations").fetch("de-DE").fetch("promotionalText"),
-         keywords: metadata.fetch("localizations").fetch("de-DE").fetch("keywords"),
-         description: metadata.fetch("localizations").fetch("de-DE").fetch("description")
-       }], "version localization creation must include only confirmed owned version fields")
-
-de_metadata = metadata.fetch("localizations").fetch("de-DE")
-initial_creation = {
-  localizations: [{ locale: "de-DE", create_app_info: true, create_version: true }]
+fr_metadata = metadata.fetch("localizations").fetch("fr-FR")
+auto_created_version = ContractLocalization.new
+auto_created_context = {
+  version: version_creator,
+  version_localizations: {
+    "de-DE" => true,
+    "en-GB" => true,
+    "fr-FR" => auto_created_version
+  }
 }
-exact_creation = {
+auto_created_plan = {
+  context: auto_created_context,
   localizations: [{
-    locale: "de-DE",
-    app_info_localization: ContractLocalization.new(name: de_metadata.fetch("name"), subtitle: de_metadata.fetch("subtitle")),
-    version_localization: ContractLocalization.new(
-      promotional_text: de_metadata.fetch("promotionalText"),
-      keywords: de_metadata.fetch("keywords"),
-      description: de_metadata.fetch("description")
-    )
+    locale: "fr-FR",
+    app_info_localization: ContractLocalization.new(
+      name: fr_metadata.fetch("name"), subtitle: fr_metadata.fetch("subtitle")
+    ),
+    version_localization: auto_created_version
   }]
 }
-sync.send(:ensure_created_localization_side_effects_confirmed!, initial_creation, exact_creation)
+
+coupled_sync = sync.dup
+coupled_sync.define_singleton_method(:wait_for_localizations!) do |_version_string, **_requirements|
+  auto_created_context
+end
+coupled_sync.define_singleton_method(:validate_localization_creation_checkpoint!) do |_initial, _context, **_requirements|
+  auto_created_plan
+end
+coupled_sync.define_singleton_method(:build_plan) do |_context, require_token:|
+  raise "creation rediscovery must not rebuild a confirmation token" if require_token
+  auto_created_plan
+end
+creation = coupled_sync.send(:create_missing_localizations_two_phase!, creation_plan, version_string: "1.0")
+assert(app_info_creator.attributes == [{
+         locale: "fr-FR",
+         name: fr_metadata.fetch("name"),
+         subtitle: fr_metadata.fetch("subtitle")
+       }], "App Info creation must include Apple's required confirmed name and the confirmed subtitle")
+assert(version_creator.attributes.empty?,
+       "an App Store Connect version localization auto-created with App Info must not receive a duplicate POST")
+assert(creation.fetch(:direct_app_info_locales) == ["fr-FR"] && creation.fetch(:direct_version_locales).empty?,
+       "only resources actually POSTed by the sync may be treated as direct creations")
+
+direct_version_creator = LocalizationCreationRecorder.new
+direct_versions = sync.send(
+  :create_missing_version_localizations!,
+  { version: direct_version_creator },
+  ["de-DE"],
+  automatic_candidates: [],
+  version_string: "1.0"
+)
+de_metadata = metadata.fetch("localizations").fetch("de-DE")
+assert(direct_versions == ["de-DE"], "a version localization still missing after rediscovery must be created")
+assert(direct_version_creator.attributes == [{
+         locale: "de-DE",
+         promotionalText: de_metadata.fetch("promotionalText"),
+         keywords: de_metadata.fetch("keywords"),
+         description: de_metadata.fetch("description")
+       }], "direct version localization creation must include only confirmed owned version fields")
+
+conflicting_version_creator = ConflictingVersionCreationRecorder.new
+conflict_waits = 0
+conflict_sync = sync.dup
+conflict_sync.define_singleton_method(:wait_for_localizations!) do |_version_string, **requirements|
+  conflict_waits += 1
+  raise "conflict adoption must wait for the exact locale" unless requirements.fetch(:version_locales) == ["fr-FR"]
+end
+adopted_versions = conflict_sync.send(
+  :create_missing_version_localizations!,
+  { version: conflicting_version_creator },
+  ["fr-FR"],
+  automatic_candidates: ["fr-FR"],
+  version_string: "1.0"
+)
+assert(adopted_versions.empty? && conflicting_version_creator.attempts == 1 && conflict_waits == 1,
+       "a 409 race is adopted only when the locale can be Apple's App Info side effect")
+safety_error("a 409 without a preceding direct App Info creation must fail closed") do
+  conflict_sync.send(
+    :create_missing_version_localizations!,
+    { version: ConflictingVersionCreationRecorder.new },
+    ["fr-FR"],
+    automatic_candidates: [],
+    version_string: "1.0"
+  )
+end
+
+sync.send(
+  :ensure_direct_creation_values_confirmed!,
+  auto_created_plan,
+  app_info_locales: ["fr-FR"],
+  version_locales: []
+)
+safety_error("Apple's nil auto-created version fields must fail only if misclassified as a direct creation") do
+  sync.send(
+    :ensure_direct_creation_values_confirmed!,
+    auto_created_plan,
+    app_info_locales: ["fr-FR"],
+    version_locales: ["fr-FR"]
+  )
+end
+
+exact_creation = deep_copy(auto_created_plan)
+exact_creation.fetch(:localizations).first.fetch(:version_localization).promotional_text = fr_metadata.fetch("promotionalText")
+exact_creation.fetch(:localizations).first.fetch(:version_localization).keywords = fr_metadata.fetch("keywords")
+exact_creation.fetch(:localizations).first.fetch(:version_localization).description = fr_metadata.fetch("description")
+sync.send(
+  :ensure_direct_creation_values_confirmed!,
+  exact_creation,
+  app_info_locales: ["fr-FR"],
+  version_locales: ["fr-FR"]
+)
 mismatched_creation = deep_copy(exact_creation)
 mismatched_creation.fetch(:localizations).first.fetch(:app_info_localization).name = "Unexpected Name"
-safety_error("created metadata that differs from the confirmed POST must fail closed") do
-  sync.send(:ensure_created_localization_side_effects_confirmed!, initial_creation, mismatched_creation)
+safety_error("directly created metadata that differs from the confirmed POST must fail closed") do
+  sync.send(
+    :ensure_direct_creation_values_confirmed!,
+    mismatched_creation,
+    app_info_locales: ["fr-FR"],
+    version_locales: ["fr-FR"]
+  )
 end
 
 missing_sets = { target_sets: {} }

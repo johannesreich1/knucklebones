@@ -321,9 +321,15 @@ The mutation may create only missing localizations for the three managed
 locales, patch only `name`, `subtitle`, `promotionalText`, `keywords`, and
 `description`, and synchronize six ordered screenshots per managed target.
 Because Apple's current create schema requires an App Info `name`, a missing
-locale is created atomically with the confirmed localized name and subtitle;
-the matching version locale is created with its confirmed three owned fields.
-Returned values must match the confirmed request before any screenshot work.
+locale is first created with the confirmed localized name and subtitle. The
+workflow then re-discovers the remote state because Apple may automatically
+create the matching version localization. It adopts that coupled resource when
+present and posts the version localization only if it remains absent; a
+same-locale duplicate race is likewise adopted only after a successful re-read.
+Directly created values must match their confirmed requests. Newly visible
+unowned fields are then rebound as the protected baseline, the five owned
+fields are brought to the confirmed values, and the complete state is verified
+before any screenshot work.
 Uploads fill spare capacity before stale target images are removed, while a
 full ten-image target deletes only one proven-stale member at a time. This
 makes partial failure recoverable without blanking the set. The lane preserves
