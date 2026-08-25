@@ -1,7 +1,7 @@
 // Ranked-only timing around the shared move/roll visuals. Server state decides
 // what happens; this module supplies the human-readable beat between updates.
 import { ONLINE_TURN_SECS } from '../config.ts';
-import type { Player } from '../core/rules.ts';
+import type { CharmSt, Player } from '../core/rules.ts';
 import { startTimer, stopTimer } from '../flow/timer.ts';
 import { S } from '../state.ts';
 import { $ } from '../ui/dom.ts';
@@ -40,12 +40,14 @@ export async function animateOnlineMove(
   column: number,
   die: number,
   isCurrent: () => boolean,
+  charm?: CharmSt,
 ): Promise<void> {
   if (!isCurrent()) return;
   await animateGameMove(who, column, die, {
     isCurrent,
     stageDieBeforeFlight: true,
     flyOnlyIntoOpenSlot: true,
+    charm,
   });
 }
 

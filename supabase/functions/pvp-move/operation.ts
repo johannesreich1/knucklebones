@@ -2,7 +2,7 @@ import { AI, ME, isFull, legalCols, type Player, type Mode } from "./core/rules.
 import { rebuild, matchTotal, type MatchState } from "./core/match.ts";
 import { settle, type Score } from "./core/ladder.ts";
 import { botMove } from "./core/bot.ts";
-import { modeById } from "./core/modes.ts";
+import { rankedOutcomeByMatch } from "./core/ranked-outcomes.ts";
 import { json, type AuthenticatedContext, type EdgeClient } from "../_shared/http.ts";
 import {
   commitMatchCommand,
@@ -12,9 +12,8 @@ import {
   type CommandMove,
 } from "../_shared/match-command.ts";
 import type { TerminalMatch } from "../_shared/settlement.ts";
-import type { MatchMoveRow, MatchRow, MoveInput } from "../_shared/types.ts";
+import { MATCH_COLUMNS, type MatchMoveRow, type MatchRow, type MoveInput } from "../_shared/types.ts";
 
-const MATCH_COLS = "id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at, modifier, season_id";
 
 /* An honest visible client places for itself at 10s. The extra two seconds let
    the server recover a turn only after its own clock proves the app is gone. */
@@ -73,11 +72,14 @@ export async function moveMatch(context: AuthenticatedContext, input: MoveInput)
   }
 
   const { data, error: matchError } = await svc.from("matches")
-    .select(MATCH_COLS).eq("id", input.matchId).maybeSingle();
+    .select(MATCH_COLUMNS).eq("id", input.matchId).maybeSingle();
   if (matchError) return json({ error: "match-read-failed" }, 500);
   const match = data as MatchRow | null;
   if (!match || (match.p1 !== user.id && match.p2 !== user.id)) return json({ error: "no-match" }, 404);
   if (match.status !== "active") return json({ error: "match-over" }, 409);
+  if (match.format !== "standard" || match.phase !== "playing") {
+    return json({ error: "wrong-protocol" }, 409);
+  }
   if (match.next_die == null) return json({ error: "corrupt-state" }, 500);
 
   const myIdx: Player = match.p1 === user.id ? ME : AI;
@@ -90,7 +92,9 @@ export async function moveMatch(context: AuthenticatedContext, input: MoveInput)
     return json({ error: "not-your-turn" }, 409);
   }
 
-  const mode: Mode = modeById(match.modifier).mode;
+  let mode: Mode;
+  try { mode = rankedOutcomeByMatch(match.format, match.modifier).mode; }
+  catch { return json({ error: "corrupt-state" }, 500); }
   const replay = await loadReplay(svc, input.matchId, mode);
   if (!replay || replay.state.over || replay.state.turn !== mover) {
     return json({ error: "corrupt-state" }, 500);

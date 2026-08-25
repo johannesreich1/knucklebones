@@ -9,6 +9,7 @@ export async function installOnlineRoutes(
     named,
     paginationRace = false,
     passwordAuth = 'error',
+    runes = [],
     SESSION,
     GUEST_ID,
   },
@@ -17,6 +18,17 @@ export async function installOnlineRoutes(
   let passwordCalls = 0;
   let profileCalls = 0;
   let leaderboardCalls = 0;
+  let runeCalls = 0;
+  let acknowledgeCalls = 0;
+  let deferNextRune = false;
+  let markRuneRequestStarted;
+  let releaseRuneRequest;
+  let markRuneRequestFinished;
+  let markAcknowledgeStarted;
+  const runeRequestStarted = new Promise((resolve) => { markRuneRequestStarted = resolve; });
+  const runeRequestRelease = new Promise((resolve) => { releaseRuneRequest = resolve; });
+  const runeRequestFinished = new Promise((resolve) => { markRuneRequestFinished = resolve; });
+  const acknowledgeStarted = new Promise((resolve) => { markAcknowledgeStarted = resolve; });
   let markPaginationStarted;
   let releasePagination;
   const paginationStarted = new Promise((resolve) => { markPaginationStarted = resolve; });
@@ -62,10 +74,36 @@ export async function installOnlineRoutes(
     }
     profileCalls++;
     await hold(.35);
+    if (r.request().url().includes('ranked_pool_tier')) {
+      return r.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ ranked_pool_tier: 'ivory' }) });
+    }
     return r.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify([{ id: GUEST_ID, nickname: claimed && door === 'claim' ? 'NeonKing77' : 'TestGuest001',
                               rating: 1000, created_at: new Date().toISOString(),
                               named_at: claimed ? '2026-08-01T00:00:00Z' : null }]) });
+  });
+  await page.route('**/rest/v1/player_runes*', async (r) => {
+    runeCalls++;
+    const deferred = deferNextRune;
+    if (deferred) {
+      deferNextRune = false;
+      markRuneRequestStarted();
+      await runeRequestRelease;
+    }
+    const body = runes.map((runeId, index) => ({
+      rune_id: runeId,
+      collected_at: `2026-08-${String(index + 1).padStart(2, '0')}T00:00:00Z`,
+      source_match_id: '11111111-1111-4111-8111-111111111111',
+      seen_at: null,
+    }));
+    await r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+    if (deferred) markRuneRequestFinished();
+  });
+  await page.route('**/rest/v1/rpc/acknowledge_rune_reward*', (r) => {
+    acknowledgeCalls++;
+    markAcknowledgeStarted();
+    return r.fulfill({ status: 200, contentType: 'application/json', body: 'true' });
   });
   await page.route('**/rest/v1/matches*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
   await page.route('**/functions/v1/pvp-join', (r) => r.fulfill({
@@ -161,6 +199,13 @@ export async function installOnlineRoutes(
     signupCalls: () => signupCalls,
     passwordCalls: () => passwordCalls,
     profileCalls: () => profileCalls,
+    runeCalls: () => runeCalls,
+    acknowledgeCalls: () => acknowledgeCalls,
+    deferNextRuneResponse: () => { deferNextRune = true; },
+    runeRequestStarted,
+    releaseRuneResponse: () => releaseRuneRequest(),
+    runeRequestFinished,
+    acknowledgeStarted,
     paginationStarted,
     releasePagination: () => releasePagination(),
   };

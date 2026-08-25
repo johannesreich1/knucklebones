@@ -23,9 +23,17 @@ and starts only PostgreSQL; deployable function closures are materialized and
 Deno-checked separately. Run the database sequence locally for every
 migration, grant, RLS, or RPC change.
 
+Worktree isolation does not make the local Supabase stack independent: this
+project uses fixed machine-global Docker resources and ports. Serialize
+`db:start`, reset, pgTAP, lint, and stop across all worktrees. Do not run a
+second database gate merely because its `.gate.lock` is elsewhere.
+
 The gate holds `.gate.lock` because build output is shared inside one working
 tree. Servers use kernel-assigned ports, so independent worktrees may gate in
-parallel. Use `KB_JOBS=2` under machine contention and repeat a timing failure
+parallel when they do not use the database stack. Playwright harnesses must
+also create their own browser context/storage and bind a kernel-assigned port;
+sharing a signed-in context or fixed dev-server port defeats worktree
+isolation. Use `KB_JOBS=2` under machine contention and repeat a timing failure
 alone before treating it as a product regression.
 
 The spell browser keeps one no-argument run for whole-suite diagnosis and also
@@ -109,6 +117,22 @@ typed helper expresses the common action.
 - Pure rules and replay receive deterministic seeds and cover all registered
   modes/spells through the registry rather than copied name lists where
   possible.
+- Ranked-outcome tests cover every permanent tier/capability intersection and
+  exact 40/60 integer weights, strict format/modifier resolution, all 20
+  three-of-six offers, independent same-rune choices, and deterministic
+  participant-specific auto-picks. Trial action tests replay committed aim,
+  cast, placement, FATE draw, one-cast enforcement, charm, reconnect
+  projection, ANVIL timeout resolution, and a cast-terminal game.
+- Collection/offline tests start from an empty account, distinguish no cache
+  from a verified account snapshot, reject cross-account cache reuse, and cover
+  every 0/1/2/3/6-rune setup boundary. Browser tests prove per-option locks,
+  colour-blind lock treatment, separate CPU/two-player preferences, manual and
+  RANDOM Trial, secret pass-and-pick, restart/new-duel offer lifetime, durable
+  unseen reveal, and the transient `TRY IT` return path.
+- Database Rune Trial contracts exercise grants/RLS and negative visibility,
+  idempotent selection/action retries, deadline and early-terminal auto-picks,
+  human/bot/resignation/timeout/delete settlement, duplicate versus first
+  reward, monotonic pool backfill/promotion, and legacy v1 standard matches.
 - Mocks match the authoritative API or migration result shape. A hand-written
   mock that omits a renamed field can keep a broken client green.
 - Test hooks such as `window.__kb`, `__kbOnline`, and `__kbResult` are stable

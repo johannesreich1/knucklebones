@@ -9,10 +9,10 @@
 //
 // Pure, like the rest of core/: plain data in, plain data out. No DOM, no
 // timers, no randomness — the supply is handed in as behaviour (CastCtx.draw),
-// so offline brings Math.random and a future ranked deal brings the seeded
-// stream, and a replay stays deterministic by construction. RANKED PLAY NEVER
-// CASTS today, by decision (docs/STATUS.md §6): flow/spells deals ranked an
-// empty hand, and the server validates by replaying plain move logs.
+// so offline brings Math.random and ranked Rune Trial brings the authoritative
+// seeded stream. Standard ranked formats still deal empty hands; Trial loans
+// each participant the privately selected rune and validates the ordered
+// cast/place action log with these same pure rules.
 //
 // The first roster (COLUMN SWAP) retired 2026-08-21: tools/spellsim.ts
 // measured a one-sided holder at 70.5% in classic and 81.8% under

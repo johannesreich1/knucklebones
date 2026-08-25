@@ -6,6 +6,7 @@ import { runSettingsNavigationScenarios } from './scenarios/settings-navigation.
 import { runBadgeCardScenarios } from './scenarios/badge-cards.mjs';
 import { runAsymmetricRunePlateScenarios } from './scenarios/asymmetric-rune-plates.mjs';
 import { runLanguageSelectorScenarios } from './scenarios/language-selector.mjs';
+import { runOfflineRuneTrialScenarios } from './scenarios/offline-rune-trial.mjs';
 import {
   LOCALE_REGISTRY,
   RESOURCES,
@@ -46,6 +47,7 @@ const suite = {
   page, ctx, browser, F, problems, errs, out, check,
   LOCALE_REGISTRY, RESOURCES, modeCopy, spellCopy, t,
 };
+await runOfflineRuneTrialScenarios(suite);
 await runHudPopupScenarios(suite);
 await runOfflineRestartScenarios(suite);
 await runSettingsNavigationScenarios(suite);

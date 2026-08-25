@@ -92,6 +92,16 @@ const OVERLAY = `
       <div class="fact"><b id="accStreak">0</b><span data-i18n="online:profile.bestStreak">BEST STREAK</span></div>
       <div class="fact pk"><b id="accPeak">0</b><span data-i18n="online:profile.peak">PEAK</span></div>
     </div>
+    <!-- The collection is account state, not a loadout. Six stable slots make
+         progress legible without suggesting that equipping a rune changes an
+         ordinary ranked match; Trial loans its full offer independently. -->
+    <section class="accrunes" aria-labelledby="accRunesTitle">
+      <div class="accrunes-head">
+        <b id="accRunesTitle" data-i18n="online:profile.runes">RUNES</b>
+        <span id="accRuneCount">0 / 6</span>
+      </div>
+      <div class="accrunes-grid" id="accRuneGrid"></div>
+    </section>
     <!-- Identity offers lead the match history (user call): immediately after
          the three profile facts, so the account's next step is seen before its
          past matches. The ONE-TIME name claim wears the guestbox shape because

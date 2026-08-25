@@ -14,10 +14,7 @@ import {
   type Player,
 } from '../core/rules.ts';
 import { makeBag } from '../core/dice.ts';
-import { RANDOM, pickMode } from '../core/modes.ts';
-import { RANDOM_DUAL_SPELL, RANDOM_SPELL, SPELLS, spellById } from '../core/spells.ts';
 import { formatNumber, t } from '../i18n/index.ts';
-import { reveal } from '../ui/reveal.ts';
 import { isNewcomer, offerTutorial } from '../ui/firstrun.ts';
 import { S } from '../state.ts';
 import { saveStats } from '../persist.ts';
@@ -25,6 +22,7 @@ import { Sfx, vibrate } from '../ui/audio.ts';
 import { $, show, hide } from '../ui/dom.ts';
 import { showBag, renderBag } from '../ui/bag.ts';
 import { nameOf } from '../ui/identity.ts';
+import { closeEnd } from '../ui/endscreen.ts';
 import { setStageDie } from '../ui/die.ts';
 import { renderAll } from '../ui/game/board.ts';
 import { clearHints, showHints } from '../ui/game/hints.ts';
@@ -37,11 +35,9 @@ import { fit } from '../ui/layout.ts';
 import { startTimer, stopTimer, showClock } from './timer.ts';
 import { coachShow, coachHide, clearTut, tutNextRoll, tutOnChoose } from './tutorial.ts';
 import { toMenu } from './menu.ts';
-import { closeEnd } from '../ui/endscreen.ts';
 import {
   aiSpellPlacementTurn,
   disarm,
-  drawSpellDeal,
   renderSpells,
   resetSpells,
   resolveTimedOutSpellAim,
@@ -50,8 +46,24 @@ import {
 import { aiChoose } from './game-ai.ts';
 import { showLocalResult } from './local-result.ts';
 import { hidePassCard, showPassCard } from './pass-card.ts';
+import { resolveLocalStart } from './local-start.ts';
+import {
+  backToRankedFromTryout,
+  beginRuneTryout,
+  runeTryoutActive,
+} from './rune-tryout.ts';
 
 export { aiChoose } from './game-ai.ts';
+
+/**
+ * Reward CTA seam: a transient Classic/Normal CPU duel with the awarded rune
+ * on both seats. It never writes setup or records; the result has one route
+ * back to the ranked caller and restores the exact local state it borrowed.
+ */
+export function startRuneTryout(runeId: string, onBackToRanked: () => void): boolean {
+  return beginRuneTryout(runeId, onBackToRanked, newGame);
+}
+export { backToRankedFromTryout };
 /* arm the turn clock: on expiry the die drops into a random legal column */
 export function armTimer(): void { const gen = S.gen; startTimer(() => autoPlace(gen)); }
 const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
@@ -209,37 +221,15 @@ export async function place(who: Player, col: number): Promise<void> {
   void nextTurn();
 }
 /* ===================== GAME LIFECYCLE ===================== */
-/* THE way a local game starts, and the only place RANDOM is resolved.
-   There are three ways to ask for a game — the OFFLINE sheet's Play, the
-   keyboard, and Next duel on the result screen — and the first version of this
-   taught only the Play button about RANDOM, so the rematch button quietly dealt
-   classic for the rest of the session. One door, no exceptions.
-   Every RANDOM promise is resolved here, before anything is dealt, and handed
-   to newGame as its exact answer. Drawing inside newGame instead would look
-   identical on screen and be a different game every time. */
+/* Every local setup promise is resolved before newGame receives the concrete
+   scoring rules and rune deal. Play, keyboard activation, and Next duel all
+   enter through this same door. */
 export async function startLocal(): Promise<void> {
   /* A newcomer is offered the tutorial before their first real game — once,
      ever, and never in front of the tutorial itself. */
   if(isNewcomer() && await offerTutorial()){ newGame({tutorial:true}); return; }
-  const selectedMode: number = S.localMode;
-  const mode = selectedMode === RANDOM ? pickMode(Math.random().toString(36).slice(2)) : null;
-  const randomRunes = S.spell === RANDOM_SPELL || S.spell === RANDOM_DUAL_SPELL
-    ? drawSpellDeal() : null;
-  /* Resolve every random choice in one reveal sequence and one countdown. */
-  if(mode || randomRunes){
-    hide('#ovEnd'); hide('#ovStart'); hide('#ovPractice');
-    const mine = randomRunes ? spellById(randomRunes[ME]) : null;
-    const theirs = randomRunes ? spellById(randomRunes[AI]) : null;
-    await reveal({
-      mode,
-      spell: S.spell === RANDOM_SPELL ? mine : null,
-      runes: S.spell === RANDOM_DUAL_SPELL && mine && theirs ? [
-        { spell: mine, player: ME },
-        { spell: theirs, player: AI, candidates: SPELLS.filter((spell) => spell.id !== mine.id) },
-      ] : undefined,
-    });
-  }
-  newGame({ scoring: mode?.mode, spells: randomRunes ?? undefined });
+  const resolved = await resolveLocalStart();
+  if (resolved) newGame(resolved);
 }
 
 export interface NewGameOptions {
@@ -247,6 +237,7 @@ export interface NewGameOptions {
   scoring?: Mode;
   spell?: string;
   spells?: Readonly<SpellDeal>;
+  trial?: import('../state.ts').LocalRuneTrial | null;
 }
 
 export function newGame(opts: NewGameOptions = {}): void {
@@ -257,7 +248,12 @@ export function newGame(opts: NewGameOptions = {}): void {
   // so newGame is handed the answer rather than rolling a second one.
   // opts.spells is the same bargain for the rune cards the deck turned over;
   // opts.spell remains the shared-rune convenience used by focused helpers.
-  S.scoring = tutorial ? CLASSIC : (opts.scoring ?? S.localMode);
+  S.scoring = tutorial ? CLASSIC
+    : (opts.scoring ?? (S.localMode >= CLASSIC ? S.localMode as Mode : CLASSIC));
+  S.localTrial = tutorial || !opts.trial ? null : {
+    offer: [...opts.trial.offer] as [string, string, string],
+    spells: [...opts.trial.spells] as [string, string],
+  };
   S.bounty=[0,0];
   // LIMITED offline: the same bag the ranked game deals, shuffled locally
   // (no replay validator to agree with, so plain Math.random is right here)
@@ -314,9 +310,10 @@ export function endGame(): void {
   const me=localTotal(ME), ai=localTotal(AI);
   const duo = S.mode==='duo';
   const drawn = me===ai, p1won = me>ai;      // cyan won; in CPU mode that means you
-  if(drawn && !tut) duo ? S.ties++ : S.draws++;
-  if(!drawn && !tut){ if(duo) p1won ? S.p1++ : S.p2++; else p1won ? S.wins++ : S.losses++; }
-  if(!tut) S.played=true;                    // the hub stops nagging after this
+  const tryout = runeTryoutActive();
+  if(drawn && !tut && !tryout) duo ? S.ties++ : S.draws++;
+  if(!drawn && !tut && !tryout){ if(duo) p1won ? S.p1++ : S.p2++; else p1won ? S.wins++ : S.losses++; }
+  if(!tut && !tryout) S.played=true;          // the hub stops nagging after this
   // in two-player somebody always won, so it is always a celebration
   if(drawn){ /* no fanfare for a dead heat */ }
   else if(duo || p1won){ Sfx.win(); }
@@ -327,11 +324,11 @@ export function endGame(): void {
      result screen too. The high score keeps accumulating rather than being
      deleted, because a player's history cannot be got back once it stops being
      written. */
-  if(!tut){                                     // a scripted round earns no records
+  if(!tut && !tryout){                          // scripted/tryout rounds earn no records
     const best = duo ? Math.max(me,ai) : me;    // duo: best score by either player
     if(best>S.best) S.best=best;
   }
-  saveStats();
+  if (!tryout) saveStats();
   setStatus('',null);   // the result screen announces the winner — the table says nothing twice (user call)
   showLocalResult({
     tutorial: tut,
@@ -346,5 +343,6 @@ export function endGame(): void {
     finishTutorial: () => { closeEnd(); toMenu(); },
     nextDuel: () => { void startLocal(); },
     changeSetup: () => { closeEnd(); show('#ovPractice'); },
+    backToRanked: tryout ? backToRankedFromTryout : undefined,
   });
 }

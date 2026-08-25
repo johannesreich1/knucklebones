@@ -15,6 +15,7 @@ export const deGame = {
     finish: 'Beenden',
     nextDuel: 'Nächstes Duell',
     changeSetup: 'Setup ändern',
+    backToRanked: 'Zurück zum Rangspiel',
   },
   status: {
     outOfTime: 'Zeit abgelaufen — Spalte {{column}}',
@@ -98,6 +99,7 @@ export const deGame = {
   reveal: {
     gameMode: 'SPIELMODUS',
     matchRune: 'MATCH-RUNE',
+    trialRunes: 'RUNEN DER PROBE',
     runeFor: 'RUNE FÜR',
     tapReady: 'Antippen, wenn du bereit bist',
     connecting: 'Spieler werden verbunden …',
@@ -198,6 +200,24 @@ export const deGame = {
       blurb: 'Das Rad entscheidet — mit Ranglisten-Chancen.',
       detail: 'Das Rad wählt einen Modus mit derselben Gewichtung wie in Ranglistenspielen.',
     },
+    runeTrial: {
+      name: 'RUNENPROBE',
+      compact: 'PROBE',
+      blurb: 'Wähle heimlich eine von drei Runen.',
+      detail: 'Beide Spieler sehen dieselben drei Runen und wählen heimlich eine. Die Auswahl wird gleichzeitig aufgedeckt; danach gelten die Brettregeln des Klassik-Modus.',
+    },
+  },
+  runeTrial: {
+    choosePrompt: 'Wähle eine Rune — dein Gegner kann sie nicht sehen',
+    chooseFor: '{{player}} — wähle eine Rune',
+    setupOwnChoice: 'Bei der Runenprobe erhält jeder Spieler die gewählte Rune.',
+    lockCollectThree: 'Sammle drei Runen, um die Runenprobe gegen die KI freizuschalten.',
+    lockCollectTwo: 'Sammle zwei Runen, um diese Wahl gegen die KI freizuschalten.',
+    lockTrialReachIvory: 'Erreiche ELFENBEIN: Runenprobe frei.',
+    lockReachIvory: 'Erreiche ELFENBEIN, dann gewinne diese Rune in der Probe.',
+    lockWinRune: 'Gewinne mit dieser Rune in der Probe, um sie gegen die KI zu nutzen.',
+    revealPair: 'Beide Auswahlen sind bestätigt',
+    revealed: 'Runen aufgedeckt',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Festgelegt — markierte Spalte wählen.',

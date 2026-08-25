@@ -5,7 +5,6 @@ import {
   SUPPORTED_LOCALES,
   effectiveLocale,
   setLanguageOverride,
-  subscribeLocale,
   t,
 } from '../i18n/index.ts';
 import { captureUserPreferences } from '../preferences.ts';
@@ -20,7 +19,23 @@ import {
   type Mode,
 } from '../state.ts';
 import { saveStats } from '../persist.ts';
-import { newGame, passTap, startLocal } from '../flow/game.ts';
+import {
+  RUNE_TRIAL_PICK,
+  modePickAvailable,
+  runePickAvailable,
+} from '../local-options.ts';
+import {
+  collectedRuneIds,
+  confirmedRankedPoolTier,
+  subscribeRuneCollection,
+} from '../rune-collection-cache.ts';
+import {
+  backToRankedFromTryout,
+  newGame,
+  passTap,
+  startLocal,
+  startRuneTryout,
+} from '../flow/game.ts';
 import { requestLeave, leavingForfeits } from '../flow/leave.ts';
 import { syncSettingsUI, toMenu } from '../flow/menu.ts';
 import { restartLocal } from '../flow/restart.ts';
@@ -38,15 +53,13 @@ import {
   openEntry,
   openModes,
   openSpells,
-  pickerButtons,
-  pickInfo,
-  type PickItem,
 } from '../ui/library.ts';
 import { loaderWait } from '../ui/loader.ts';
 import { bindLearnPageBack } from '../ui/learn-page.ts';
 import { tap } from '../ui/tap.ts';
 import { isEmbed } from '../ui/embed.ts';
 import { hueLabel } from '../ui/hue.ts';
+import { bindPickerRow, eventButton } from './picker-row.ts';
 
 function syncUserSettings(): void {
   if (isEmbed()) return;
@@ -55,15 +68,9 @@ function syncUserSettings(): void {
     saveAccountPreferences(snapshot));
 }
 
-function closestButton(event: Event): HTMLButtonElement | null {
-  return event.target instanceof Element
-    ? event.target.closest('button') as HTMLButtonElement | null
-    : null;
-}
-
 function bindSegment(selector: string, key: string, apply: (value: string) => void, accountSetting = false): void {
   tap($(selector), (event) => {
-    const button = closestButton(event);
+    const button = eventButton(event);
     const value = button?.dataset[key];
     if (!button || button.disabled || value === undefined) return;
     apply(value);
@@ -74,49 +81,6 @@ function bindSegment(selector: string, key: string, apply: (value: string) => vo
     Sfx.unlock();
     Sfx.tap();
   });
-}
-
-function pickerRow(
-  selector: string,
-  items: PickItem[],
-  read: () => string | number,
-  write: (value: string) => void,
-): () => void {
-  const strip = $(selector);
-  const info = $(selector + 'Info');
-  const sync = (): void => {
-    const current = String(read());
-    strip.querySelectorAll('button').forEach((button) => {
-      button.classList.toggle('on', (button as HTMLButtonElement).dataset.v === current);
-    });
-    info.textContent = pickInfo(items, current);
-  };
-  tap(strip, (event) => {
-    const button = closestButton(event);
-    const value = button?.dataset.v;
-    if (!button || value === undefined) return;
-    write(value);
-    saveStats();
-    sync();
-    Sfx.unlock();
-    Sfx.tap();
-  });
-  const refresh = (): void => {
-    const buttons = Array.from(strip.querySelectorAll<HTMLButtonElement>('button'));
-    const sameRegistry = buttons.length === items.length
-      && buttons.every((button, index) => button.dataset.v === items[index]?.v);
-    if (!sameRegistry) {
-      strip.innerHTML = pickerButtons(items);
-    } else {
-      /* Locale changes alter copy, not registry identity. Keep every button
-         (and therefore keyboard focus and the delegated gesture) in place. */
-      buttons.forEach((button, index) => button.setAttribute('aria-label', items[index].name));
-    }
-    sync();
-  };
-  subscribeLocale(refresh);
-  refresh();
-  return sync;
 }
 
 function huePicker(selector: string, write: (hue: string) => void): void {
@@ -132,7 +96,7 @@ function huePicker(selector: string, write: (hue: string) => void): void {
   picker.append(lock);
   picker.setAttribute('aria-describedby', lock.id);
   tap(picker, (event) => {
-    const button = closestButton(event);
+    const button = eventButton(event);
     const hue = button?.dataset.h;
     if (!button || button.disabled || hue === undefined) return;
     write(hue);
@@ -167,10 +131,41 @@ function bindLanguagePicker(): void {
 export function bindMenus(root: HTMLElement): void {
   tap($('#ovPass'), passTap);
 
-  const openPractice = (mode: Mode): void => {
+  let syncModePicker = (): void => undefined;
+  let syncSpellPicker = (): void => undefined;
+  const normalizeLocalChoice = (mode: Mode): void => {
+    const collected = collectedRuneIds();
+    const choice = S.localChoices[mode];
+    if (!modePickAvailable(mode, choice.localMode, collected)) choice.localMode = 0;
+    if (!runePickAvailable(mode, choice.spell, collected)) choice.spell = '';
+    S.localMode = choice.localMode;
+    S.spell = choice.spell;
+  };
+  const activateLocalChoice = (mode: Mode): void => {
     S.mode = mode;
+    normalizeLocalChoice(mode);
+  };
+  const syncPracticePicks = (): void => {
+    syncModePicker();
+    syncSpellPicker();
+    const trial = S.localMode === RUNE_TRIAL_PICK;
+    const card = $('#spellCard');
+    card.classList.toggle('choice-card--locked', trial);
+    card.setAttribute('aria-disabled', String(trial));
+    const lock = $('#spellPickLock');
+    lock.hidden = !trial;
+    if (trial) {
+      const copy = t('game', 'runeTrial.setupOwnChoice');
+      $('#spellPickInfo').textContent = copy;
+      $('#spellPickLockCopy').textContent = copy;
+    }
+  };
+
+  const openPractice = (mode: Mode): void => {
+    activateLocalChoice(mode);
     saveStats();
     syncSettingsUI();
+    syncPracticePicks();
     hide('#ovStart');
     show('#ovPractice');
   };
@@ -213,24 +208,56 @@ export function bindMenus(root: HTMLElement): void {
         ? { label: () => t('game', 'leave.restart'), run: restartLocal }
         : undefined,
     });
-    if (leave) { requestLeave(); toMenu(); }
+    if (leave) {
+      requestLeave();
+      if (!backToRankedFromTryout()) toMenu();
+    }
   });
   tap($('#btnSettingsBack'), () => { Sfx.tap(); hide('#ovSettings'); });
   tap($('#coach'), coachTap);
   root.addEventListener('pointerdown', coachTap, true);
 
-  pickerRow('#modePick', MODE_PICKS, () => S.localMode, (value) => {
-    /* MODE_PICKS is the validated source and includes RANDOM (-1), while the
-       active rules mode excludes that pre-game promise. */
-    if (MODE_PICKS.some((item) => item.v === value)) S.localMode = Number(value) as RulesMode;
+  syncModePicker = bindPickerRow('#modePick', MODE_PICKS, () => S.localMode, (value) => {
+    /* The validated picks include setup promises that are not rules modes. */
+    if (MODE_PICKS.some((item) => item.v === value)) {
+      S.localMode = Number(value) as RulesMode;
+      S.localChoices[S.mode].localMode = S.localMode;
+      syncPracticePicks();
+    }
+  }, (item) => {
+    const collected = collectedRuneIds();
+    const enabled = modePickAvailable(S.mode, Number(item.v), collected);
+    const reachedTrial = confirmedRankedPoolTier() === 'ivory' || collected.length > 0;
+    return { enabled, reason: enabled ? undefined : t('game', reachedTrial
+      ? 'runeTrial.lockCollectThree'
+      : 'runeTrial.lockTrialReachIvory') };
   });
-  pickerRow('#spellPick', SPELL_PICKS, () => S.spell, (value) => {
+  syncSpellPicker = bindPickerRow('#spellPick', SPELL_PICKS, () => S.spell, (value) => {
     S.spell = value;
+    S.localChoices[S.mode].spell = value;
     disarm();
     renderSpells();
+  }, (item) => {
+    if (S.localMode === RUNE_TRIAL_PICK) {
+      return { enabled: false, reason: t('game', 'runeTrial.setupOwnChoice') };
+    }
+    const collected = collectedRuneIds();
+    const enabled = runePickAvailable(S.mode, item.v, collected);
+    const reachedTrial = confirmedRankedPoolTier() === 'ivory' || collected.length > 0;
+    const reason = enabled ? undefined : !reachedTrial
+      ? t('game', item.v === 'random' || item.v === 'random2'
+        ? 'runeTrial.lockTrialReachIvory'
+        : 'runeTrial.lockReachIvory')
+      : item.v === 'random' || item.v === 'random2'
+        ? t('game', 'runeTrial.lockCollectTwo')
+        : t('game', 'runeTrial.lockWinRune');
+    return { enabled, reason };
   });
 
-  bindSegment('#modeSeg', 'm', (value) => { S.mode = oneOf(MODES, value, S.mode); });
+  bindSegment('#modeSeg', 'm', (value) => {
+    activateLocalChoice(oneOf(MODES, value, S.mode));
+    syncPracticePicks();
+  });
   bindSegment('#diffSeg', 'd', (value) => { S.diff = oneOf(DIFFS, value, S.diff); });
   bindSegment('#timerSeg', 't', (value) => { S.timer = oneOf(TIMERS, Number(value), S.timer); });
   bindSegment('#seatSeg', 'seat', (value) => { S.seat = oneOf(SEATS, value, S.seat); });
@@ -241,6 +268,8 @@ export function bindMenus(root: HTMLElement): void {
   huePicker('#p2Pick', (hue) => { S.p2Hue = hue; });
   bindLanguagePicker();
   syncSettingsUI();
+  syncPracticePicks();
+  subscribeRuneCollection(() => { normalizeLocalChoice(S.mode); syncPracticePicks(); saveStats(); });
   bindSegment('#cbSeg', 'b', (value) => { S.colorblind = value === '1'; }, true);
   bindSegment('#motionSeg', 'rm', (value) => { S.reducedMotion = value === '1'; }, true);
 
@@ -270,6 +299,7 @@ export function bindMenus(root: HTMLElement): void {
     show('#ovLoad');
     import('../online/ui.ts').then((online) => online.openOnline(view, {
       startTutorial: () => newGame({ tutorial: true }),
+      tryRune: (runeId, onBackToRanked) => startRuneTryout(runeId, onBackToRanked),
     }))
       .finally(() => { onlineBusy = false; hide('#ovLoad'); });
   };

@@ -19,6 +19,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     viewport = { width: 430, height: 932 },
     paginationRace = false,
     passwordAuth = 'error',
+    runes = [],
     probe = null,
     skipStandardProbes = false,
   }) {
@@ -34,7 +35,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     const routes = await installOnlineRoutes(page, {
       anonymous, attached, authDelay,
       dataDelay: inspectLoading ? 900 : dataDelay,
-      door, named, paginationRace, passwordAuth, SESSION, GUEST_ID,
+      door, named, paginationRace, passwordAuth, runes, SESSION, GUEST_ID,
     });
     if (door === 'play') {
       /* Ranked newcomers stop at the once-only tutorial offer. This probe is

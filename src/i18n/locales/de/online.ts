@@ -35,6 +35,9 @@ export const deOnline = {
     cancel: 'Abbrechen',
     opponentFound: 'Gegner gefunden',
     reconnecting: 'Verbindung zum Spiel wird wiederhergestellt …',
+    trialLocked: 'Rune gewählt — warte auf deinen Gegner',
+    trialOpponentChoosing: 'Dein Gegner wählt eine Rune …',
+    trialBothLocked: 'Beide Runen gewählt — gemeinsames Aufdecken',
   },
   profile: {
     points: 'PUNKTE',
@@ -71,6 +74,8 @@ export const deOnline = {
     ladderPoints: 'Ranglistenpunkte',
     fullHistory: 'Spielverlauf',
     notNow: 'Nicht jetzt',
+    runes: 'RUNEN',
+    runesCollected: '{{count}} / 6 gesammelt',
   },
   avatar: {
     instruction: 'Wähle eine Fläche und eine Farbe',
@@ -137,6 +142,8 @@ export const deOnline = {
     nextDuel: 'Nächstes Duell',
     forfeitStamp: 'AUFGABE',
     beatenStamp: 'BESIEGT',
+    newRune: 'NEUE RUNE',
+    tryIt: 'TESTEN',
     share: '{{title}} {{mine}}–{{theirs}} gegen {{opponent}}{{delta}} — Knucklebones, Ranglisten-Würfelduelle',
     delta_one: ' · {{points}} Punkt',
     delta_other: ' · {{points}} Punkte',

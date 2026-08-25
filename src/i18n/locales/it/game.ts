@@ -15,6 +15,7 @@ export const itGame = {
     finish: 'Termina',
     nextDuel: 'Altro duello',
     changeSetup: 'Cambia opzioni',
+    backToRanked: 'Torna alle classificate',
   },
   status: {
     outOfTime: 'Tempo scaduto — colonna {{column}}',
@@ -98,6 +99,7 @@ export const itGame = {
   reveal: {
     gameMode: 'MODALITÀ DI GIOCO',
     matchRune: 'RUNA DELLA PARTITA',
+    trialRunes: 'RUNE DELLA PROVA',
     runeFor: 'RUNA PER',
     tapReady: 'Tocca quando sei pronto',
     connecting: 'Collegamento dei giocatori…',
@@ -198,6 +200,24 @@ export const itGame = {
       blurb: 'Il selettore decide con le probabilità delle partite classificate.',
       detail: 'Il selettore sceglie una modalità con le stesse probabilità ponderate delle partite classificate.',
     },
+    runeTrial: {
+      name: 'PROVA DELLE RUNE',
+      compact: 'PROVA',
+      blurb: 'Scegli in segreto una runa tra tre.',
+      detail: 'Entrambi i giocatori vedono le stesse tre rune e ne scelgono una in segreto. Le scelte vengono rivelate insieme; poi il duello segue le regole del tabellone Classico.',
+    },
+  },
+  runeTrial: {
+    choosePrompt: 'Scegli una runa — il tuo avversario non può vederla',
+    chooseFor: '{{player}} — scegli una runa',
+    setupOwnChoice: 'La Prova delle Rune dà a ogni giocatore la runa che sceglie.',
+    lockCollectThree: 'Raccogli tre rune per sbloccare Prova delle Rune contro l’IA.',
+    lockCollectTwo: 'Raccogli due rune per sbloccare questa scelta contro l’IA.',
+    lockTrialReachIvory: 'Raggiungi AVORIO per sbloccare Prova delle Rune.',
+    lockReachIvory: 'Raggiungi AVORIO, poi conquista questa runa in Prova delle Rune.',
+    lockWinRune: 'Vinci con questa runa in Prova delle Rune per usarla contro l’IA.',
+    revealPair: 'Entrambe le scelte sono confermate',
+    revealed: 'Rune rivelate',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Attivata; scegli una colonna evidenziata.',

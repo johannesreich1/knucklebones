@@ -1,13 +1,16 @@
 # Game modes — the design rules
 
-*What a mode is allowed to be, why the current seven exist, and what an eighth
-would have to satisfy. The dated sprint history records what shipped when;
-this file records **the thinking**. Its companion is `docs/SPELLS.md` — modes
-and spells are the game's two variety layers and they interact (§6).*
+*What a mechanical mode is allowed to be, why the current seven exist, and how
+Rune Trial can appear beside them without pretending to be an eighth rules
+modifier. The dated sprint history records what shipped when; this file records
+**the thinking**. Its companion is `docs/SPELLS.md` — modes and runes are the
+game's two variety layers and they interact (§6).*
 
-A mode changes **the rules of the duel itself**, for both players, for the
-whole match. Ranked spins for one before the match starts; offline you pick it
-(or RANDOM, which spins in front of you).
+A mechanical mode changes **the rules of the duel itself**, for both players,
+for the whole match. Ranked spins for an eligible player-facing outcome before
+the match starts; offline you pick one (or RANDOM, which spins in front of
+you). Rune Trial is a selection format backed by Classic, not a mechanical
+mode (§4).
 
 ---
 
@@ -62,27 +65,68 @@ balance question, and the ~3.4-point error it corrected is smaller than the
 confusion it added. The measurement is kept in `core/modes.ts` and
 `docs/LADDER.md` — as context, explicitly not as something to act on again.
 
-Adding a mode is: the registry entry, matching catalog copy in every supported
+Adding a mechanical mode is: the registry entry, matching catalog copy in every supported
 locale, its branches in `core/rules.ts` (scoring, destruction, or supply), its
 heuristic in `core/ai.ts riskOf` if the loss maths differ, and its gate cases.
-Then **redeploy `pvp-join`** — it alone spins the wheel server-side.
+Then update the ranked-outcome registry and **redeploy the join function** —
+the server owns the real outcome draw.
 
 ## 4. Ranked odds
 
-Set in `core/modes.ts`; weights are wheel odds, not segment sizes (the dial
-draws every mode as an equal node and weights the pick).
+The seven mechanical identities live in `core/modes.ts`; progressive ranked
+outcomes and exact weights live in `core/ranked-outcomes.ts`. Weights are wheel
+odds, not segment sizes (the dial draws eligible outcomes as equal nodes and
+weights the pick).
 
-**Classic 40% (weight 4 of 10); each of the six additions 10% (weight 1).**
+**Classic is always exactly 40%; every eligible addition shares the other 60%
+equally.** Access is a permanent high-water mark derived from the player's
+historical ladder peak:
 
-Changed from 50/50 on 2026-08-19: the additions *are* the game's variety, and
-half of all matches seeing none of them made them feel rarer than intended.
-Any change here must be redeployed to `pvp-join`, which owns the real pick.
+| Permanent pool | Peak floor | Eligible outcomes | Odds |
+|---|---:|---|---|
+| STONE | 0 | Classic; Single Strike; Column Shield; Limited | Classic 40%; each addition 20% |
+| BONE | 300 | STONE + Row Switch; Row Multiply; Bounty | Classic 40%; each addition 10% |
+| IVORY | 720 | BONE + Rune Trial | Classic 40%; each addition `60/7` (about 8.571%) |
 
-`RANDOM` (`-1`) is the offline picker's eighth option — a promise to spin, not
-a mode. It is deliberately kept out of `MODES` so the dial can never land on
-it and no match can be stored under it. The spell picker's RANDOM is the same
-shape, and **wears the same mark** (`spellIcon` delegates to `modeIcon`): one
-idea, one glyph. A hand-copied glyph already drifted here once.
+Promotion affects the next match. Demotion and season turnover do not relock a
+pool. A human match draws from the lower/shared permanent pool after
+intersecting both clients' protocol capabilities; a bot match uses the human's
+pool. An IVORY pairing whose peer cannot speak the Trial protocol therefore
+keeps the ordinary seven-outcome 40/10 distribution rather than dealing an
+unreadable Trial.
+
+The BONE 40/10 distribution preserves the 2026-08-19 change from 50/50: the
+additions *are* the game's variety, and half of all matches seeing none of them
+made them feel rarer than intended. Any change here must be redeployed to the
+join function, which owns the real pick.
+
+`RANDOM` (`-1`) is an offline picker promise to spin, not a stored outcome. It
+is deliberately kept out of `MODES` so the dial can never land on RANDOM and
+no match can be stored under it. The rune picker's RANDOM is the same shape,
+and **wears the same mark** (`spellIcon` delegates to `modeIcon`): one idea,
+one glyph. A hand-copied glyph already drifted here once.
+
+### Rune Trial is a format, not an eighth modifier
+
+Rune Trial is player-facing like a mode, but persists as
+`format='rune_trial'` plus `modifier='classic'`. Scoring, destruction, supply,
+placement AI, and replay therefore stay bit-identical to Classic. Format-aware
+history and UI must never infer its label from `modifier` alone.
+
+The server derives a uniform three-distinct-rune offer: all 20 subsets of the
+six-rune roster are equally likely, and both seats receive the same offer.
+Each seat chooses independently and privately, so both may select the same
+rune. Choices reveal together. A 30-second server deadline resolves any
+missing choice with a deterministic participant-specific pick, including
+before early resignation, timeout, deletion, or other settlement. Trial loans
+the complete roster regardless of ownership. An equipped rune is ignored for
+the duel and remains equipped and unmodified afterward.
+
+Offline RANDOM follows the same 40/60 rule. Without an eligible Trial it spins
+the seven ordinary outcomes at 40/10. With Trial eligible it keeps Classic at
+40% and splits 60% equally across the six ordinary additions and Trial. Local
+two-player is always eligible; CPU play becomes eligible after three collected
+runes and offers three distinct collected runes.
 
 ## 5. Lessons burned in
 

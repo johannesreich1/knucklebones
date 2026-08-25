@@ -139,6 +139,32 @@ falling a group means genuinely losing more than you win. A floor on top of
 that would make every group boundary risk-free and the ladder inert exactly
 where it should be tense.
 
+### Permanent ranked variety pools
+
+Current points decide the visible group; the highest group floor ever reached
+decides the player's permanent ranked outcome pool. These are deliberately
+different promises: demotion remains real, but it never takes game variety
+away.
+
+| Permanent pool | Historical peak | Outcomes added |
+|---|---:|---|
+| STONE | 0 | Classic, Single Strike, Column Shield, Limited |
+| BONE | 300 | Row Switch, Row Multiply, Bounty |
+| IVORY | 720 | Rune Trial |
+
+The stored pool only moves upward. Existing accounts are backfilled from the
+greatest recorded season peak/current season row, and season turnover never
+lowers it. A promotion changes the next match, not the match whose settlement
+earned it.
+
+Human matchmaking uses the lower/shared permanent pool and then intersects
+protocol capabilities, so neither participant can be placed into an outcome
+their account or client cannot play. Bot matches use the human participant's
+pool. Within that eligible pool Classic is exactly 40%; all additions divide
+the remaining 60% equally. IVORY's seventh addition is Rune Trial, a
+Classic-backed selection format rather than another ladder group or mechanical
+mode. See `docs/MODES.md §4` and `docs/SPELLS.md §8`.
+
 ---
 
 ## 3. Seasons

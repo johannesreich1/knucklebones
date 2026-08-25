@@ -15,6 +15,7 @@ export const ptGame = {
     finish: 'Concluir',
     nextDuel: 'Novo duelo',
     changeSetup: 'Mudar ajustes',
+    backToRanked: 'Voltar ao ranqueado',
   },
   status: {
     outOfTime: 'Tempo esgotado — coluna {{column}}',
@@ -98,6 +99,7 @@ export const ptGame = {
   reveal: {
     gameMode: 'MODO DE JOGO',
     matchRune: 'RUNA DA PARTIDA',
+    trialRunes: 'RUNAS DA PROVA',
     runeFor: 'RUNA PARA',
     tapReady: 'Toque quando estiver pronto',
     connecting: 'Conectando jogadores…',
@@ -198,6 +200,24 @@ export const ptGame = {
       blurb: 'O seletor gira diante de você com as chances das partidas ranqueadas.',
       detail: 'O seletor escolhe um modo com as mesmas chances usadas nas partidas ranqueadas.',
     },
+    runeTrial: {
+      name: 'PROVA DE RUNAS',
+      compact: 'PROVA',
+      blurb: 'Escolha uma de três runas em segredo.',
+      detail: 'Os dois jogadores veem as mesmas três runas e escolhem uma em segredo. As escolhas são reveladas juntas; depois, o duelo segue as regras de tabuleiro do Clássico.',
+    },
+  },
+  runeTrial: {
+    choosePrompt: 'Escolha uma runa — seu oponente não pode vê-la',
+    chooseFor: '{{player}} — escolha uma runa',
+    setupOwnChoice: 'A Prova de Runas dá a cada jogador a runa que escolher.',
+    lockCollectThree: 'Colete três runas para liberar a Prova de Runas contra a IA.',
+    lockCollectTwo: 'Colete duas runas para liberar esta opção contra a IA.',
+    lockTrialReachIvory: 'Chegue ao MARFIM para liberar a Prova de Runas.',
+    lockReachIvory: 'Chegue ao MARFIM e depois ganhe esta runa na Prova de Runas.',
+    lockWinRune: 'Vença com esta runa na Prova de Runas para usá-la contra a IA.',
+    revealPair: 'As duas escolhas estão confirmadas',
+    revealed: 'Runas reveladas',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Ativada — escolha uma coluna marcada.',

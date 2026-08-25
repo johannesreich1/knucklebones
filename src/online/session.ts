@@ -3,6 +3,11 @@
 // the offline game's boot path must never depend on it.
 import { callFunction, supa } from './client.ts';
 import { onlineMessage } from './message-copy.ts';
+import {
+  clearRuneCollectionSnapshot,
+  readRuneCollectionSnapshot,
+} from '../rune-collection-cache.ts';
+import { invalidateRuneCollectionRefreshes } from './rune-collection.ts';
 
 export interface Profile { id: string; nickname: string; rating: number; created_at?: string; avatar?: string; named_at?: string | null; }
 
@@ -61,7 +66,12 @@ export async function signIn(email: string, password: string): Promise<string | 
   const { error } = await supa().auth.signInWithPassword({ email, password });
   return localizedAuthError(error);
 }
-export async function signOut(): Promise<void> { await supa().auth.signOut(); clearProfileCache(); }
+export async function signOut(): Promise<void> {
+  invalidateRuneCollectionRefreshes();
+  clearRuneCollectionSnapshot();
+  await supa().auth.signOut();
+  clearProfileCache();
+}
 /* Once a device has held a real account, silently minting a guest on the next
    tap would be a trap: the player signed out to sign back IN. Remembering that
    fact costs one flag and turns the silent path off for exactly those devices. */
@@ -78,7 +88,16 @@ function remember(u: Me | null): Me | null {
 
 export async function currentUser(): Promise<Me | null> {
   const { data: { session } } = await supa().auth.getSession();
-  return remember(me(session?.user));
+  const user = remember(me(session?.user));
+  const runes = readRuneCollectionSnapshot();
+  /* Supabase may replace a session directly during account recovery/sign-in.
+     Never leave the preceding account's confirmed collection active while
+     the new account's refresh is still in flight. */
+  if (!user || (runes && runes.accountId !== user.id.toLowerCase())) {
+    invalidateRuneCollectionRefreshes();
+    clearRuneCollectionSnapshot();
+  }
+  return user;
 }
 
 /* The first rung, taken silently: whoever asks for ranked without a session

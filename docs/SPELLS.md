@@ -11,12 +11,13 @@ technical document, *spell* names the castable rules effect and its engine
 (`SpellSpec`, `SPELLS`, `spellCharges`). Keep that implementation vocabulary;
 do not expose it as a competing name for the player's rune.
 
-Spells are an **optional layer over offline play**. A named pick and RANDOM
-deal both seats the same rune. RANDOM 2 is the explicit chaos exception: the
-deck shuffles once per player and deals two distinct runes. A cast is **not a
-move**, but each player may cast at most once per turn. The die still lands
-afterward unless the cast itself ends the game. FATE's two charges therefore
-belong to separate turns.
+Runes are an **optional layer over offline play** and the IVORY Rune Trial
+ranked format. A named offline pick and RANDOM deal both seats the same rune.
+RANDOM×2 is the explicit local chaos exception: the deck shuffles once per
+player and deals two distinct runes. A cast is **not a placement**, but each
+player may cast at most once per turn. The die still lands afterward unless
+the cast itself ends the game. FATE's two charges therefore belong to separate
+turns. Ordinary ranked outcomes remain rune-free.
 
 ---
 
@@ -58,12 +59,12 @@ These are structural, not taste. Breaking one is a redesign, not a tweak.
 
 - **Symmetry by default.** A named rune and RANDOM deal the same rune to both
   seats, so ordinary balance is about whether it is *fun*, never whether the
-  deal is *fair*. RANDOM 2 deliberately suspends that guarantee. It is labelled
+  deal is *fair*. RANDOM×2 deliberately suspends that guarantee. It is labelled
   as a wild, uneven variant and never replaces the persisted shared-RANDOM
   choice.
 - **Visible threats.** The opponent's rune and remaining charges are always on
   screen. Every deal keeps one persistent card hand per seat: shared deals show
-  two matching hands, while RANDOM 2 shows two different ones. Player-colour
+  two matching hands, while RANDOM×2 shows two different ones. Player-colour
   edges identify ownership and the active hand moves forward every turn. A
   spell you cannot see coming is a trap, not a duel.
 - **Legality is the only failure path.** An illegal target is refused *before*
@@ -91,10 +92,10 @@ These are structural, not taste. Breaking one is a redesign, not a tweak.
   an ordinary uncommitted aim with the charge intact. PILFER is the locked
   uncommitted exception; ANVIL cannot be backed out of after its markings are
   shown and charged.
-- **`core/` stays pure.** No DOM, no timers, no randomness. Supply arrives as
-  behaviour (`CastCtx.draw`), so offline can hand it `Math.random` and a
-  future ranked deal can hand it the seeded stream, with replay deterministic
-  either way.
+- **`core/` stays pure.** No DOM, no timers, no ambient randomness. Supply
+  arrives as behaviour (`CastCtx.draw`), so offline can hand it `Math.random`
+  and authoritative Rune Trial replay can hand it the seeded stream, with
+  deterministic outcomes either way.
 
 ---
 
@@ -205,8 +206,9 @@ same `16` before applying WARD's existing `×1.5` threshold; Hard's advantage
 comes from deeper placement search rather than accepting lower-value WARD
 casts. Persistent WARD state is scored and attacked through every search ply.
 
-This update ships **offline only**. Ranked still deals an empty rune hand and
-its placement-only server replay/action protocol is unchanged (§8).
+This update first shipped offline. Ordinary ranked outcomes still deal empty
+hands; Rune Trial protocol v2 now replays the same scoring mark, interception,
+and break semantics authoritatively (§8).
 
 ### ANVIL (added 2026-08-22)
 
@@ -326,7 +328,7 @@ It answers three questions, and **the second matters most**:
 Every number above is **holder vs a twin holding NOTHING**. `spellsim` cannot
 measure spell X against spell Y at all. That is sound for named and shared-
 RANDOM deals, where both seats hold the same rune and balance is about whether
-the spell is *fun*. It is not evidence that a RANDOM 2 pairing is fair.
+the spell is *fun*. It is not evidence that a RANDOM×2 pairing is fair.
 
 Measured 2026-08-22 with a head-to-head harness (3,000 games per cell, both
 directions averaged, noise floor 0.9pp), the then-shipped five against **each
@@ -335,7 +337,7 @@ other** in classic, as mean win% across the pool:
     sunder 54.7 · pilfer 54.7 · fate 52.0 · ward 48.2 · nudge 46.0
 
 A span of **7.7pp ≈ 54 Elo**, and the ordering is **not mode-stable**: under
-SINGLE STRIKE the span is 17.3pp and PILFER beats WARD ~67–33. RANDOM 2 can
+SINGLE STRIKE the span is 17.3pp and PILFER beats WARD ~67–33. RANDOM×2 can
 therefore create a sharply uneven individual duel by design; it must never be
 presented as a balanced competitive draft. The old no-score WARD's friendly
 56.9-vs-bare reading hid that it was the worst rune in that pool in every mode;
@@ -547,7 +549,7 @@ The rail now keeps that card vocabulary in play.
 **The frame, decided:**
 
 - **One slot, one persistent hand per dealt seat.** Shared named and RANDOM
-  deals keep two matching hands; RANDOM 2 keeps two different hands. The active
+  deals keep two matching hands; RANDOM×2 keeps two different hands. The active
   hand comes forward and the standby hand recedes on every turn change, so the
   physical cards switch depth instead of one card changing identity. If that
   front hand spends its last charge, its opaque matte recedes immediately and
@@ -579,8 +581,8 @@ The rail now keeps that card vocabulary in play.
   then returns to exactly 100% for the viewer's turn. It keeps full opacity and
   its rune colour while the opponent plays; depth and scale already communicate
   ownership without making an active rune look disabled. Online tracks the same
-  viewer-relative scale now, but ranked's empty hands keep the cue invisible
-  until online runes are intentionally introduced. An own rune with
+  viewer-relative scale: standard ranked's empty hands keep the cue invisible,
+  while Rune Trial renders the revealed assigned hands. An own rune with
   no legal target uses the same mute but remains 100%, so every registry spell
   advertises whether it can be activated without pretending ownership changed.
   Brief busy or phase locks keep the stable pre-lock appearance at its current
@@ -736,62 +738,93 @@ replaced it.
 
 ---
 
-## 8. Scope: offline only
+## 8. Offline collections and ranked Rune Trial
 
-Ranked deals an empty hand, by decision (2026-08-21). The layer is optional by
-construction — charges are dealt in exactly one place (`resetSpells`), and
-ranked, the tutorial and the NONE pick all deal `{}`, which is the single
-thing the runtime asks before showing a rail or allowing a cast.
+The comprehensive evidence record remains
+`docs/RUNE_MULTIPLAYER_INVESTIGATION.md`. This section owns the selected product
+and runtime contract.
 
-That boundary includes scoring WARD. Its bonus, PILFER interception, and
-layered COLUMN SHIELD break ship in local solo/two-player play only. Ranked
-still scores and replays its existing mode plus placement log; this offline
-rule does not smuggle charm state into `matchTotal` or change the server action
-grammar.
+### Ranked boundary
 
-The intended online path has a design outline, not an implemented protocol. A
-cast would become a logged action replayed through this same registry, and FATE
-would draw from the seeded stream. The authoritative grammar must allow an
-optional cast followed by placement, with a cast-terminal exception. A rune
-turn therefore has at most two logged actions, which is still a protocol shape
-change the server validator must accept.
+Ordinary ranked outcomes still deal empty hands. Rune Trial is the intentional
+exception and is stored as `format='rune_trial'` with
+`modifier='classic'`; it is not a personal-loadout mode and it does not enable
+an equipped rune in standard ranked play.
 
-### If ranked ever deals spells: personal runes and Rune Trial
+Both participants receive the same uniform offer of three distinct runes from
+the complete six-rune roster, independent of collection. They choose privately
+and independently, may choose the same rune, and reveal together. A server
+deadline expires after 30 seconds. Any missing selection is filled by a
+deterministic participant-specific auto-pick before gameplay or any early
+resignation, deletion, timeout, or other settlement. A future/current equipped
+rune remains equipped, is ignored in Trial, and is never overwritten by the
+loan.
 
-The comprehensive evidence and feasibility record is
-`docs/RUNE_MULTIPLAYER_INVESTIGATION.md`; this section keeps only its current
-boundary.
+Protocol v2 gives aims, casts, and placements one authoritative total order. The
+client submits intent plus an idempotency key and expected action version; the
+server reconstructs the seeded die/supply stream, rune assignment, charges,
+one-cast-per-turn state, persistent charm, legality, and terminal score before
+committing an action. FATE draws from that seeded supply. A turn is
+`cast? → placement`, except that a legal cast may end the duel. Protocol v1
+remains placement-only for ordinary matches during rollout; capability
+intersection prevents a v1 client from entering Trial.
 
-**Symmetric, personal, and Trial runes all need the same missing authoritative
-cast protocol.** The current server log records placements, not casts. It must
-version and replay cast, placement, FATE supply draws, persistent charm, and
-cast-terminal outcomes before any of the three formats is ranked. Symmetric
-online needs fewer loadout fields, but it does not avoid that action-grammar
-change. The client already has per-seat hands; the server is the hard seam.
+ANVIL's information-bearing aim is itself an authoritative action: its `aim`
+row spends the charge and persists `pending_aim`, reconnect restores the locked
+targeting state, and neither cancellation nor placement can refund or bypass
+it. A matching `cast` resolves it; after the action-stall boundary the server
+chooses the first legal target deterministically and continues with placement.
 
-The frozen asymmetric v1 study covers all six runes, seven modes, both opener
-orientations, four seeds, and both historical FATE cast treatments; one cast
-per turn is the selected live rule and chaining remains sensitivity evidence.
-Under v1's blind Normal policy and the old no-score WARD, fixed pre-match
-PILFER strictly dominates
-every other loadout at the point estimate; uniform-opponent wheel strength
-spans about 9.6pp from PILFER to WARD. A separate coordinated-SUNDER treatment
-moves SUNDER only +0.1788pp in Classic and +0.2503pp in BOUNTY, while
-confirming BOUNTY SUNDER as an existing mode specialist. The later scoring-WARD
-treatment repairs much of WARD's global weakness but preserves a sharp PILFER
-counter. None of those offline policy measurements implements the missing
-ranked action protocol or makes win-gated ownership safe by itself.
+Every settled ranked Trial win—human, bot, normal finish, resignation, or
+timeout—idempotently adds the winner's selected rune to their permanent
+collection. A loss or draw grants nothing. Owning that rune already grants no
+replacement and produces no new-reward reveal. Collections start empty for
+new and existing players; Trial loans all six precisely so collection size
+cannot change ranked options.
 
-The two proposed formats remain distinct:
+The first acquisition of a rune remains durably unseen until the account UI
+acknowledges its reveal, so reconnecting or changing devices cannot swallow the
+reward. `TRY IT` launches a fresh transient unranked Classic duel against the
+Normal AI with that rune dealt to both seats. It returns to ranked afterward,
+does not grant rewards or write normal local records, and does not overwrite
+the player's saved local setup.
 
-- **Personal-rune modes:** each player locks one equipped rune before
-  matchmaking; the shared mode and both runes are revealed after matching.
-- **Rune Trial:** equipment is ignored; both players receive the same three
-  loaned runes, choose privately, then reveal together. Equal offers remove
-  collection access inequality, but the fixed-policy Classic analysis still
-  finds at least one strictly dominated option in every offer.
+### Offline and local setup
 
-The evidence-bounded launch rule is therefore: equal ranked rune access first,
-balance and human-choice telemetry second, mechanical collection unlocks only
-after access no longer predicts option strength. Wins may safely advance
-finite cosmetic/mastery progression in the meantime.
+CPU play uses the last server-confirmed, account-bound collection cache and
+never imports the online client to start. With no confirmed cache, the
+collection is empty. Sign-out and account switching clear or swap the active
+snapshot so one account cannot lend runes to another.
+
+- NONE is always available in CPU play. A named rune requires ownership.
+- Rune RANDOM requires two collected runes and deals one collected rune to
+  both seats. RANDOM×2 also requires two and deals two distinct collected
+  runes, one per seat.
+- CPU Rune Trial requires three collected runes. Its offer contains three
+  distinct collected runes; the AI makes an independent seeded uniform choice
+  without observing the player's choice.
+- Local two-player always exposes all six named runes, both RANDOM variants,
+  and Rune Trial, whether signed in or offline. Trial uses a secret
+  pass-and-pick flow, loans the full roster, and never grants collection.
+
+Rune Trial appears in the game-mode row. Selecting it manually forces Classic
+board rules and disables the ordinary rune picker with an explanatory overlay,
+but preserves that mode's saved rune preference for later. Mode RANDOM may
+land on Trial whenever it is eligible; that resolved outcome overrides the
+current rune deal without overwriting the saved choice. Restarting a duel keeps
+its resolved Trial offer and choices, while starting the next duel produces a
+fresh offer. CPU and local-two-player setup preferences persist separately and
+are validated again when the duel starts.
+
+Locked choices stay visible with the same frosted/colour-blind lock vocabulary
+used elsewhere. Before IVORY an unowned rune explains both requirements:
+reach IVORY, then win it in Trial. After IVORY it says to win with that rune in
+Trial. Both RANDOM choices say to collect two runes; CPU Trial says to collect
+three.
+
+The frozen asymmetric-v1 study still matters as a warning about any future
+personal-equipped ranked format: under its blind Normal policy and historical
+WARD rule, fixed PILFER dominated the other loadouts at the point estimate.
+Rune Trial deliberately avoids ownership inequality by loaning its offer. It
+does not claim the roster is perfectly balanced, and human choice telemetry
+remains required before standard ranked loadouts are reconsidered.

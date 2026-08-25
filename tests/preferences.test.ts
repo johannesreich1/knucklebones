@@ -64,6 +64,34 @@ stored = JSON.stringify({ spell: 'not-a-rune' });
 loadStats();
 assert.equal(S.spell, 'random2', 'an unknown rune selector replaced the last valid pick');
 
+/* A legacy single setup seeds both new contexts once. New records keep CPU
+   and shared-phone choices independent, including the Rune Trial promise. */
+stored = JSON.stringify({ mode: 'cpu', localMode: 4, spell: 'ward' });
+loadStats();
+assert.deepEqual(S.localChoices, {
+  cpu: { localMode: 4, spell: 'ward' },
+  duo: { localMode: 4, spell: 'ward' },
+});
+stored = JSON.stringify({
+  mode: 'duo',
+  localMode: 0,
+  spell: '',
+  localChoices: {
+    cpu: { localMode: 1, spell: 'fate' },
+    duo: { localMode: -2, spell: 'pilfer' },
+  },
+});
+loadStats();
+assert.equal(S.mode, 'duo');
+assert.equal(S.localMode, -2);
+assert.equal(S.spell, 'pilfer');
+assert.deepEqual(S.localChoices.cpu, { localMode: 1, spell: 'fate' });
+saveStats();
+assert.deepEqual(JSON.parse(stored).localChoices, {
+  cpu: { localMode: 1, spell: 'fate' },
+  duo: { localMode: -2, spell: 'pilfer' },
+});
+
 function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>((done) => { resolve = done; });

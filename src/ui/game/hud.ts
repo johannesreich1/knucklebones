@@ -3,7 +3,8 @@
 import { AI, ME, type Player } from '../../core/rules.ts';
 import { modeByEnum, type ModeSpec } from '../../core/modes.ts';
 import { dealtOf, spellById, type SpellSpec } from '../../core/spells.ts';
-import { modeCopy, spellCopy } from '../../i18n/index.ts';
+import { modeCopy, runeTrialCopy, spellCopy } from '../../i18n/index.ts';
+import { RUNE_TRIAL_FORMAT } from '../../local-options.ts';
 import { S } from '../../state.ts';
 import { appRoot } from '../embed.ts';
 import { $ } from '../query.ts';
@@ -166,6 +167,16 @@ export function modeChip(mode: Pick<ModeSpec, 'id'>): BadgeChip {
   };
 }
 
+export function runeTrialChip(): BadgeChip {
+  const copy = runeTrialCopy();
+  return {
+    html: `${modeIcon(RUNE_TRIAL_FORMAT, 12)}`
+      + `<span class="rlab">${copy.compactName}</span>`,
+    lib: 'modes',
+    id: RUNE_TRIAL_FORMAT,
+  };
+}
+
 export function spellChip(spell: Pick<SpellSpec, 'id'>, owner?: Player): BadgeChip {
   const copy = spellCopy(spell.id);
   return {
@@ -194,7 +205,7 @@ export function updateRecord(): void {
     paintBadge(badgeClaim());
     return;
   }
-  const chips: BadgeChip[] = [modeChip(modeByEnum(S.scoring))];
+  const chips: BadgeChip[] = [S.localTrial ? runeTrialChip() : modeChip(modeByEnum(S.scoring))];
   const mine = spellById(dealtOf(S.spellCharges[ME]));
   const theirs = spellById(dealtOf(S.spellCharges[AI]));
   if (mine && theirs && mine.id !== theirs.id) {

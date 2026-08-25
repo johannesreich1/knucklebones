@@ -15,6 +15,7 @@ export const frGame = {
     finish: 'Finir',
     nextDuel: 'Duel suivant',
     changeSetup: 'Changer les règles',
+    backToRanked: 'Retour au classement',
   },
   status: {
     outOfTime: 'Temps écoulé — colonne {{column}}',
@@ -98,6 +99,7 @@ export const frGame = {
   reveal: {
     gameMode: 'MODE DE JEU',
     matchRune: 'RUNE DU MATCH',
+    trialRunes: 'RUNES DE L’ÉPREUVE',
     runeFor: 'RUNE POUR',
     tapReady: 'Touchez quand vous êtes prêt',
     connecting: 'Connexion des joueurs…',
@@ -198,6 +200,24 @@ export const frGame = {
       blurb: 'La roue décide — avec les chances du classement.',
       detail: 'La roue choisit un mode avec les mêmes probabilités pondérées que dans les parties classées.',
     },
+    runeTrial: {
+      name: 'ÉPREUVE DES RUNES',
+      compact: 'ÉPREUVE',
+      blurb: 'Choisissez secrètement une rune parmi trois.',
+      detail: 'Les deux joueurs voient les trois mêmes runes et en choisissent une en secret. Les choix sont révélés ensemble, puis le duel suit les règles de plateau du mode Classique.',
+    },
+  },
+  runeTrial: {
+    choosePrompt: 'Choisissez une rune — votre adversaire ne peut pas la voir',
+    chooseFor: '{{player}} — choisissez une rune',
+    setupOwnChoice: 'L’Épreuve des runes donne à chaque joueur la rune choisie.',
+    lockCollectThree: 'Collectez trois runes pour débloquer l’Épreuve des runes contre l’IA.',
+    lockCollectTwo: 'Collectez deux runes pour débloquer ce choix contre l’IA.',
+    lockTrialReachIvory: 'Atteignez IVOIRE pour débloquer l’Épreuve des runes.',
+    lockReachIvory: 'Atteignez IVOIRE, puis gagnez cette rune dans l’Épreuve des runes.',
+    lockWinRune: 'Gagnez avec cette rune dans l’Épreuve des runes pour l’utiliser contre l’IA.',
+    revealPair: 'Les deux choix sont confirmés',
+    revealed: 'Runes révélées',
   },
   runes: {
     ariaCommitted: '{{player}} : {{name}} — {{blurb}} Engagée — choisissez une colonne marquée.',

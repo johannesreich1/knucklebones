@@ -234,6 +234,18 @@ export async function runOfflineRestartScenarios(suite) {
   if (originalViewport) await page.setViewportSize(originalViewport);
   await page.waitForTimeout(120);
 
+  /* The locale probe intentionally runs without an authenticated account.
+     Its account-sync coda therefore reconciles the artificial RANDOM setup
+     to the empty offline collection. Re-arm this scenario's explicit setup
+     fixture after that unrelated async work settles; the assertions below own
+     Keep/Restart state, not collection availability. */
+  await page.evaluate(([mode, spell]) => {
+    const S = window.__kb.S;
+    S.localMode = mode;
+    S.spell = spell;
+    S.localChoices.cpu = { localMode: mode, spell };
+  }, [RANDOM_MODE, RANDOM_SPELL]);
+
   // The encouraged way back is a true cancel: not one byte of duel state moves.
   await page.tap('#btnAskNo');
   await page.waitForTimeout(120);

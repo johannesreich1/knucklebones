@@ -21,11 +21,15 @@ import { createQueueScreen } from './queue-screen.ts';
 import { createResultScreen } from './result-screen.ts';
 import { ensureIdentity, myProfile } from './session.ts';
 import { syncAccountPreferences } from './preferences.ts';
+import { refreshRuneCollection } from './rune-collection.ts';
 import { installOnlineShell, showOnlineLoading, type OnlinePanel } from './shell.ts';
 import { setFinishHandler, type FinishReport } from './play.ts';
 
 export type OnlineView = 'play' | 'board' | 'account';
-export interface OnlinePorts { startTutorial: () => void }
+export interface OnlinePorts {
+  startTutorial: () => void;
+  tryRune: (runeId: string, onBackToRanked: () => void) => boolean;
+}
 
 let bound = false;
 let pendingView: OnlineView | null = null;
@@ -56,6 +60,9 @@ const result = createResultScreen({
   goHome,
   nextDuel,
   openProfile: openProfileFromResult,
+  tryRune: (runeId, report) => {
+    onlinePorts?.tryRune(runeId, () => { void result.show(report); });
+  },
 });
 
 function showAuthPanel(mode: AuthMode, origin: AuthOrigin): void {
@@ -129,7 +136,7 @@ async function entered(): Promise<void> {
   showOnlineLoading(loadingPanel(view));
   show('#ovOnline');
   focusOnlineTitle();
-  await myProfile();
+  await Promise.all([myProfile(), refreshRuneCollection()]);
   if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
   await syncAccountPreferences();
   if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
@@ -178,7 +185,10 @@ export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<
   if (user) {
     show('#ovOnline');
     pendingView = null;
-    await syncAccountPreferences();
+    await Promise.all([
+      syncAccountPreferences(),
+      refreshRuneCollection(user.id),
+    ]);
     return route(view);
   }
   pendingView = view;

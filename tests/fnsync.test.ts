@@ -106,7 +106,10 @@ for (const slug of allSlugs()) {
     `${slug}'s deploy closure omits its deno.json`);
 }
 
-for (const slug of ['account-delete', 'pvp-join', 'pvp-move', 'pvp-claim']) {
+for (const slug of [
+  'account-delete', 'pvp-join', 'pvp-move', 'pvp-claim',
+  'pvp-rune-select', 'pvp-action',
+]) {
   check(manifest[slug]?.includes('handler.ts') && manifest[slug]?.includes('operation.ts'),
     `${slug} must deploy its testable handler and separate operation`);
   const index = readFileSync(path.join(FN_DIR, slug, 'index.ts'), 'utf8');
@@ -117,7 +120,7 @@ for (const slug of ['account-delete', 'pvp-join', 'pvp-move', 'pvp-claim']) {
 /* THE CHECK MUST BE ABLE TO FAIL. A broken import scanner would hand every
    function a one-file manifest and pass everything above vacuously, which is
    the same shape of green-on-nothing that let the prose list rot unnoticed. */
-for (const slug of ['pvp-join', 'pvp-move', 'pvp-claim']) {
+for (const slug of ['pvp-join', 'pvp-move', 'pvp-claim', 'pvp-action']) {
   check(manifest[slug]?.includes('core/rules.ts'),
     `${slug}'s manifest does not carry core/rules.ts — the import scanner is broken, `
     + `not the function (every PvP function replays the rules server-side)`);
@@ -126,11 +129,9 @@ for (const slug of ['pvp-join', 'pvp-move', 'pvp-claim']) {
     + `transitive walk in tools/fnfiles.mjs is not walking`);
 }
 
-/* Why the stale deployed copies were harmless rather than lucky: no function
-   imports the spell layer, so nothing the server replays can diverge with it.
-   Reported, not asserted — the day a function DOES need spells.ts is a real
-   change, and this line is where you will remember that the deployed copies
-   start mattering the moment it happens. */
+/* Rune Trial is the first ranked protocol that ships the spell layer. Keep it
+   visible in the report because those shared sources now participate in the
+   authoritative replay closure and must deploy with pvp-action/join/claim. */
 const spellsShipped = Object.entries(manifest)
   .filter(([, files]) => files.includes('core/spells.ts')).map(([slug]) => slug);
 

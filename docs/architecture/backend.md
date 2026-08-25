@@ -13,6 +13,9 @@ deployed function versions are not inferred from repository prose.
   never committed, logged, returned, or bundled into a client.
 - The server owns match seeds, validates requested moves by replaying the
   server-written log, and computes final scores and ladder changes.
+- For Rune Trial, the server also owns the common offer, private choices,
+  deterministic deadline auto-picks, revealed rune snapshots, and idempotent
+  collection reward. A client never chooses an offer or claims ownership.
 - A normal client action describes intent; it does not submit authoritative
   scores, dice, ratings, player identity, or match state.
 - `src/core/` is imported by Edge Functions as the same source used by the
@@ -73,6 +76,16 @@ applies, removes, or reverses schema changes.
   the six stable catalog IDs (`en`, `pt`, `es`, `de`, `fr`, `it`), never BCP-47
   presentation tags such as `pt-BR`; extend that allow-list with a forward
   migration and deploy it before any client can save a newly registered locale.
+- Permanent rune ownership lives in owner-readable `player_runes`, not in
+  `player_settings` or public profiles. New/existing players start with no
+  rows. `(player_id, rune_id)` is the idempotent ownership key; `seen_at` is a
+  durable acknowledgement of a first-unlock reveal, not a client-only badge.
+  The source-match foreign key is indexed and may become null when privacy
+  deletion removes match history without deleting the earned rune.
+- Unrevealed Trial choices live in the private schema. The participant-facing
+  match row exposes the shared offer and, only after both choices resolve, both
+  immutable assigned runes. RLS/grants must not let either participant inspect
+  the opponent's pending choice or invoke service-only command RPCs directly.
 - Privileged functions have a pinned `search_path`, explicit execute grants,
   and the narrowest useful location. `SECURITY DEFINER` is never a shortcut
   around a permissions error.
@@ -106,6 +119,14 @@ contract. A settlement failure preserves the account for retry; successful
 Auth deletion then cascades the profile, season row, and match history for
 privacy, while the opponent's already-written points and profile mirror remain.
 
+Rune Trial extends that same settlement transaction. Before any terminal path
+settles a selecting match, it deterministically fills each missing choice from
+the participant-specific auto-pick recorded with the offer. A human or bot win,
+normal finish, resignation, stall timeout, or deletion-forfeit inserts the
+winner's selected rune with `ON CONFLICT DO NOTHING`; a loss or draw inserts
+nothing, and a duplicate is not replaced. Rating/profile settlement and rune
+grant either commit together or not at all.
+
 ## Ranked lifecycle and commands
 
 - `private.active_match_players` is the database-level one-active-match seat
@@ -122,6 +143,36 @@ privacy, while the opponent's already-written points and profile mirror remain.
   an optional TypeScript-computed settlement, and records the exact response
   for explicit same-key replay. Cached legacy bodies without both new fields
   remain accepted during rollout.
+- The additive v2 path preserves those v1 placement commands for standard
+  matches. Queue entries advertise protocol version and known capabilities;
+  human matchmaking intersects both participants' permanent pool and
+  capabilities, while a bot uses its human's pool. Rune Trial is selected only
+  for two capable v2 participants (or a capable human with a bot).
+- Permanent pool access is a monotonic profile high-water mark backfilled from
+  the greatest recorded ladder peak: STONE at 0, BONE at 300, IVORY at 720.
+  Demotion or a new season never writes a lower tier. Promotion settlement may
+  raise the tier, and the newly eligible pool applies to the next match.
+- Ranked outcomes keep Classic at exactly 40% and divide 60% equally across
+  the shared eligible additions. STONE has three additions, BONE six, and
+  IVORY seven including Rune Trial. Trial persists as
+  `format='rune_trial'`, `modifier='classic'`, with an immutable rune-rules
+  version; strict readers reject an unknown format/modifier/version tuple.
+- Rune Trial begins in a private-selection phase with one uniform three-of-six
+  offer and a 30-second server deadline. Submission is idempotent and reveals
+  both assignments atomically when resolved. `selection_version` is the
+  Realtime/poll invalidation counter; public `p1_rune`/`p2_rune` remain null
+  until both private choices finalize. Reconnect returns the durable phase,
+  offer, caller submission state, and revealed assignments rather than
+  depending on a transient broadcast.
+- Protocol v2 orders `aim`, `cast`, and `place` in one `match_actions` stream. Commands
+  carry a UUID and expected `action_version`; server replay derives die/supply,
+  one-cast-per-turn state, charges, persistent charm, legality, projection, and
+  terminal score. A cast retains the turn and may end the match, so neither
+  alternating placement rows nor move count can be the v2 authority clock. The
+  ANVIL `aim` row spends its charge and persists `pending_aim`; matching cast
+  resolution or server timeout is mandatory before placement can commit. The
+  existing-style action stall boundary remains 12 seconds; it is distinct from
+  Trial's 30-second private-selection deadline.
 - Command responses are retry receipts, not match history. An hourly
   `pg_cron` job deletes at most 5,000 receipts whose command and terminal match
   are both older than seven days; active-match receipts never expire. The
@@ -160,6 +211,14 @@ followed by `20260823132611_game_center_service_grants.sql` before `gc-auth` is
 deployed. Because restore deliberately has no Supabase JWT, configure a durable
 deployment-layer rate limit first; handler input bounds and a bounded Apple
 certificate cache reduce work but are not a distributed rate limiter.
+
+Rune Trial is another database-first, forward-only rollout. The branch
+migration is `20260825205241_rune_trial_ranked_v2.sql`; it repairs the complete
+ordinary modifier allow-list and adds pool, format/phase, action, private-choice,
+and collection state. Deploy its v2 join/select/action/settlement closures and
+capable client only after the migration. Retain the v1 standard path throughout
+the compatibility window, and do not infer production deployment from the
+presence of this branch file.
 
 ## Verification
 

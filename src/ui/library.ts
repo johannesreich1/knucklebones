@@ -7,7 +7,8 @@
 // needs the online chunk.
 import { MODES, RANDOM } from '../core/modes.ts';
 import { SPELLS, RANDOM_DUAL_SPELL, RANDOM_SPELL } from '../core/spells.ts';
-import { modeCopy, spellCopy, subscribeLocale, t } from '../i18n/index.ts';
+import { RUNE_TRIAL_FORMAT, RUNE_TRIAL_PICK } from '../local-options.ts';
+import { modeCopy, runeTrialCopy, spellCopy, subscribeLocale, t } from '../i18n/index.ts';
 import { modeIcon, modeHue } from './modeicons.ts';
 import { spellIcon, spellHue } from './spellicons.ts';
 import { $, show } from './dom.ts';
@@ -21,11 +22,16 @@ export interface LibrarySpec { id: string; title: string; items: LibraryItem[] }
 /* the two rosters, each a spec of the one library. Exported because the design
    cards render them through this very function (design/build.mjs, {{library}}):
    a card that re-typed a mode's blurb would be a fifth copy of the registry. */
-const modeItems = (): LibraryItem[] => MODES.map((mode) => {
+const modeItems = (): LibraryItem[] => [...MODES.map((mode) => {
   const copy = modeCopy(mode.id);
   return { id: mode.id, name: copy.name, blurb: copy.blurb, detail: copy.detail,
     hue: modeHue(mode.id), icon: modeIcon(mode.id, 22) };
-});
+}), {
+  id: RUNE_TRIAL_FORMAT,
+  ...runeTrialCopy(),
+  hue: modeHue(RUNE_TRIAL_FORMAT),
+  icon: modeIcon(RUNE_TRIAL_FORMAT, 22),
+}];
 const spellItems = (): LibraryItem[] => SPELLS.map((spell) => {
   const copy = spellCopy(spell.id);
   return { id: spell.id, name: copy.name, blurb: copy.blurb, detail: copy.detail,
@@ -72,6 +78,9 @@ const modePicks = (): PickItem[] => [
     return { v: String(mode.mode), id: mode.id, name: copy.name, blurb: copy.blurb,
       hue: modeHue(mode.id), icon: modeIcon(mode.id, 16) };
   }),
+  { v: String(RUNE_TRIAL_PICK), id: RUNE_TRIAL_FORMAT,
+    name: runeTrialCopy().name, blurb: runeTrialCopy().blurb,
+    hue: modeHue(RUNE_TRIAL_FORMAT), icon: modeIcon(RUNE_TRIAL_FORMAT, 16) },
   { v: String(RANDOM), id: 'random', ...modeCopy('random'), hue: modeHue('random'), icon: modeIcon('random', 16) },
 ];
 const spellPicks = (): PickItem[] => [

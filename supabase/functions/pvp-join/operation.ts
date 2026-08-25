@@ -1,33 +1,30 @@
-import { diceStream, poolSequence } from "./core/dice.ts";
-import { AI, ME, LIMITED, type Mode, type Player } from "./core/rules.ts";
+import { AI, ME, type Player } from "./core/rules.ts";
 import { rebuild, matchTotal } from "./core/match.ts";
-import { botMove } from "./core/bot.ts";
 import { settle, matchBand, botPairBand, SCALE, type Score } from "./core/ladder.ts";
-import { modeById, pickMode } from "./core/modes.ts";
+import {
+  ALL_RANKED_CAPABILITIES,
+  RUNE_TRIAL_FORMAT,
+  rankedOutcomeByMatch,
+  type RankedParticipantAccess,
+  type RankedPoolTier,
+} from "./core/ranked-outcomes.ts";
+import { rankedActionTotal, rebuildRankedActions, type RankedActionRow } from "./core/ranked-actions.ts";
 import { json, type AuthenticatedContext } from "../_shared/http.ts";
 import { settleMatch } from "../_shared/settlement.ts";
-import { findOldestEligiblePartner, type QueueCandidate } from "./matchmaking.ts";
-import type {
-  JoinInput, MatchMoveRow, MatchRow, ProfileSummary,
+import {
+  findOldestEligiblePartner,
+  trialClientCompatibilityError,
+  type QueueCandidate,
+} from "./matchmaking.ts";
+import { MatchStartFailure, startProgressiveRankedMatch } from "./start.ts";
+import {
+  MATCH_COLUMNS,
+  type JoinInput, type MatchMoveRow, type MatchRow, type ProfileSummary,
 } from "../_shared/types.ts";
 
 const QUEUE_STALE_MS = 2 * 60 * 1000;
 const STALL_MS = 30 * 1000;
-const MATCH_COLS = "id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at, modifier, season_id";
-
-class MatchStartFailure extends Error {}
-
-const newSeed = () =>
-  [...crypto.getRandomValues(new Uint8Array(16))].map((byte) => byte.toString(16).padStart(2, "0")).join("");
-
-function matchPayload(value: unknown): MatchRow | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const match = (value as Record<string, unknown>).match;
-  return match && typeof match === "object" && !Array.isArray(match)
-    && typeof (match as Record<string, unknown>).id === "string"
-    ? match as MatchRow
-    : null;
-}
+const ACTION_COLUMNS = "idx, move_idx, who, kind, rune_id, target_col, placed_col, die_before, die_after";
 
 export async function joinMatch(context: AuthenticatedContext, input: JoinInput): Promise<Response> {
   const { user } = context;
@@ -48,16 +45,41 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
   };
 
   const matched = async (match: MatchRow, rejoined?: boolean | null): Promise<Response> => {
+    const compatibilityError = trialClientCompatibilityError(match, input);
+    if (compatibilityError) return json({ error: compatibilityError }, 409);
     const myIdx: Player = match.p1 === uid ? ME : AI;
     let honestRejoin = rejoined;
     if (honestRejoin === undefined) {
-      const { count, error } = await svc.from("match_moves")
+      const { count, error } = await svc.from(
+        match.format === RUNE_TRIAL_FORMAT ? "match_actions" : "match_moves",
+      )
         .select("*", { count: "exact", head: true }).eq("match_id", match.id).eq("who", myIdx);
       if (error) return json({ error: "match-read-failed" }, 500);
       honestRejoin = (count ?? 0) > 0;
     }
-    return json({ status: "matched", ...(honestRejoin === null ? {} : { rejoined: honestRejoin }), match,
-                  you: match.p1 === uid ? 1 : 0, names: await names(match.p1, match.p2) });
+    let privateMatch = match;
+    let trial: unknown;
+    if (match.format === RUNE_TRIAL_FORMAT) {
+      const { data: trialData, error: trialError } = await svc.rpc("rune_trial_state", {
+        p_match_id: match.id,
+        p_actor: uid,
+      });
+      if (trialError || !trialData || typeof trialData !== "object" || Array.isArray(trialData)) {
+        return json({ error: "match-read-failed" }, 500);
+      }
+      const payload = trialData as { match?: MatchRow; trial?: unknown };
+      if (!payload.match) return json({ error: "match-read-failed" }, 500);
+      privateMatch = payload.match;
+      trial = payload.trial;
+    }
+    return json({
+      status: "matched",
+      ...(honestRejoin === null ? {} : { rejoined: honestRejoin }),
+      match: privateMatch,
+      ...(trial === undefined ? {} : { trial }),
+      you: privateMatch.p1 === uid ? 1 : 0,
+      names: await names(privateMatch.p1, privateMatch.p2),
+    });
   };
 
   // A bot has no client to claim a human's abandoned match, so matchmaking
@@ -65,23 +87,45 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
   const forfeitStalledBotMatch = async (match: MatchRow): Promise<boolean> => {
     const oppId = match.p1 === uid ? match.p2 : match.p1;
     const myIdx: Player = match.p1 === uid ? ME : AI;
-    if (match.turn !== myIdx) return false;
+    if (match.phase !== "playing" || match.turn !== myIdx) return false;
     if (Date.now() - new Date(match.last_move_at).getTime() < STALL_MS) return false;
     const { data: opponentData, error: opponentError } = await svc.from("profiles")
       .select("is_bot").eq("id", oppId).maybeSingle();
     if (opponentError || !(opponentData as { is_bot?: boolean } | null)?.is_bot) return false;
-    const mode = modeById(match.modifier).mode;
-    const [{ data: moveData, error: moveError }, { data: seedData, error: seedError }] = await Promise.all([
+    let outcome;
+    try { outcome = rankedOutcomeByMatch(match.format, match.modifier); }
+    catch { return false; }
+    const [{ data: moveData, error: moveError }, { data: actionData, error: actionError },
+      { data: seedData, error: seedError }] = await Promise.all([
       svc.from("match_moves").select("idx, who, col").eq("match_id", match.id),
+      svc.from("match_actions").select(ACTION_COLUMNS).eq("match_id", match.id),
       svc.from("match_seeds").select("seed").eq("match_id", match.id).single(),
     ]);
-    if (moveError || seedError) return false;
+    if (moveError || actionError || seedError) return false;
     const moves = (moveData ?? []) as MatchMoveRow[];
     const seedRow = seedData as { seed: string } | null;
-    const state = seedRow && rebuild(seedRow.seed, moves, mode);
-    if (!state || state.moveCount !== moves.length || state.turn !== match.turn
-      || state.nextDie !== match.next_die) return false;
-    const p1Score = matchTotal(state, ME, mode), p2Score = matchTotal(state, AI, mode);
+    if (!seedRow) return false;
+    let p1Score: number, p2Score: number, moveCount: number;
+    if (match.format === RUNE_TRIAL_FORMAT) {
+      if (!match.p1_rune || !match.p2_rune) return false;
+      const actions = (actionData ?? []) as RankedActionRow[];
+      const state = rebuildRankedActions(
+        seedRow.seed, actions, outcome.mode, [match.p2_rune, match.p1_rune],
+      );
+      if (!state || state.actionCount !== match.action_version || state.turn !== match.turn
+          || state.nextDie !== match.next_die || state.moveCount !== moves.length
+          || state.pendingAim !== match.pending_aim) return false;
+      p1Score = rankedActionTotal(state, ME, outcome.mode);
+      p2Score = rankedActionTotal(state, AI, outcome.mode);
+      moveCount = state.moveCount;
+    } else {
+      const state = rebuild(seedRow.seed, moves, outcome.mode);
+      if (!state || state.moveCount !== moves.length || state.turn !== match.turn
+          || state.nextDie !== match.next_die) return false;
+      p1Score = matchTotal(state, ME, outcome.mode);
+      p2Score = matchTotal(state, AI, outcome.mode);
+      moveCount = moves.length;
+    }
     const p1Result: Score = myIdx === ME ? 0 : 1;
     const result = await settleMatch(svc, match, {
       status: "forfeit",
@@ -92,16 +136,18 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
     }, settle, {
       turn: match.turn,
       lastMoveAt: match.last_move_at,
-      moveCount: moves.length,
+      moveCount,
     });
     return result.match.status !== "active";
   };
 
   const { data: activeData, error: activeError } = await svc.from("matches")
-    .select(MATCH_COLS).eq("status", "active")
+    .select(MATCH_COLUMNS).eq("status", "active")
     .or(`p1.eq.${uid},p2.eq.${uid}`).limit(1).maybeSingle();
   if (activeError) return json({ error: "match-read-failed" }, 500);
   const active = activeData as MatchRow | null;
+  const compatibilityError = active && trialClientCompatibilityError(active, input);
+  if (compatibilityError) return json({ error: compatibilityError }, 409);
   if (active && !(await forfeitStalledBotMatch(active))) return matched(active);
 
   const { error: staleError } = await svc.from("matchmaking_queue").delete()
@@ -113,14 +159,23 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
   const season = (seasonNow as number) ?? 1;
 
   const { data: profileData, error: profileError } = await svc.from("profiles")
-    .select("rating").eq("id", uid).single();
+    .select("rating, ranked_pool_tier").eq("id", uid).single();
   if (profileError) return json({ error: "profile-read-failed" }, 500);
-  const myRating = (profileData as { rating?: number | null } | null)?.rating ?? 0;
+  const myProfile = profileData as {
+    rating?: number | null;
+    ranked_pool_tier?: RankedPoolTier | null;
+  } | null;
+  const myRating = myProfile?.rating ?? 0;
+  const myTier = myProfile?.ranked_pool_tier ?? "stone";
   const { data: nearRaw, error: nearError } = await svc.rpc("players_near", { p: uid, band: 150 * SCALE });
   if (nearError) return json({ error: "ladder-read-failed" }, 500);
   const band = matchBand(Number(nearRaw ?? 0));
 
-  const { data: queuedRaw, error: queueError } = await svc.rpc("enqueue_ranked_player", { p_player: uid });
+  const { data: queuedRaw, error: queueError } = await svc.rpc("enqueue_ranked_player_v2", {
+    p_player: uid,
+    p_protocol_version: input.protocolVersion,
+    p_capabilities: input.capabilities,
+  });
   if (queueError || !queuedRaw || typeof queuedRaw !== "object") {
     return json({ error: "queue-failed" }, 500);
   }
@@ -128,56 +183,24 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
   if (queueState.status === "deleting") return json({ error: "account-deleting" }, 409);
   if (queueState.status === "active" && queueState.match_id) {
     const { data: racedData, error: racedError } = await svc.from("matches")
-      .select(MATCH_COLS).eq("id", queueState.match_id).maybeSingle();
+      .select(MATCH_COLUMNS).eq("id", queueState.match_id).maybeSingle();
     if (racedError || !racedData) return json({ error: "match-read-failed" }, 500);
     return matched(racedData as MatchRow);
   }
   if (queueState.status !== "queued") return json({ error: "queue-failed" }, 500);
 
-  /* Callers name the underdog, never raw seat order: the lower-rated player
-     opens in every mode, against humans and bots alike. */
+  /* Callers name the underdog, never raw seat order. */
   const startMatch = async (
     underdog: string,
     favourite: string,
     queuedOpponent: string | null,
+    underdogAccess: RankedParticipantAccess,
+    favouriteAccess: RankedParticipantAccess,
     bot?: { id: string; rating: number },
-  ): Promise<MatchRow | null> => {
-    const seed = newSeed();
-    const spec = pickMode(seed);
-    const p1 = underdog, p2 = favourite;
-    const firstDie = spec.mode === LIMITED ? poolSequence(seed)[0] : diceStream(seed)();
-    let openingCol: number | null = null;
-    let afterTurn: Player | null = null;
-    let afterDie: number | null = null;
-    if (bot && p1 === bot.id) {
-      const state0 = rebuild(seed, [], spec.mode);
-      if (!state0) return null;
-      openingCol = botMove(state0.st, ME, state0.nextDie, bot.rating, spec.mode, Math.random);
-      const state1 = openingCol >= 0 ? rebuild(seed, [{ idx: 0, who: ME, col: openingCol }], spec.mode) : null;
-      if (!state1) return null;
-      afterTurn = state1.turn;
-      afterDie = state1.nextDie;
-    }
-    const { data: started, error } = await svc.rpc("start_ranked_match", {
-      p_requester: uid,
-      p_p1: p1,
-      p_p2: p2,
-      p_seed: seed,
-      p_next_die: firstDie,
-      p_modifier: spec.id,
-      p_season_id: season,
-      p_queued_opponent: queuedOpponent,
-      p_opening_col: openingCol,
-      p_opening_die: openingCol == null ? null : firstDie,
-      p_after_turn: afterTurn,
-      p_after_next_die: afterDie,
-    });
-    if (error?.code === "P0001") return null;
-    if (error) throw new MatchStartFailure(error.message);
-    const startedMatch = matchPayload(started);
-    if (!startedMatch) throw new MatchStartFailure("invalid start_ranked_match payload");
-    return startedMatch;
-  };
+  ): Promise<MatchRow | null> => startProgressiveRankedMatch(svc, {
+    requester: uid, season, underdog, favourite, queuedOpponent,
+    underdogAccess, favouriteAccess, bot,
+  });
 
   let partner: QueueCandidate | null;
   try {
@@ -193,7 +216,21 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
       const theirRating = (theirData as { rating?: number | null } | null)?.rating ?? 0;
       const underdog = myRating < theirRating ? uid : partner.player_id;
       const favourite = underdog === uid ? partner.player_id : uid;
-      const match = await startMatch(underdog, favourite, partner.player_id);
+      const myAccess: RankedParticipantAccess = {
+        tier: myTier,
+        capabilities: input.capabilities,
+      };
+      const partnerAccess: RankedParticipantAccess = {
+        tier: partner.pool_tier ?? "stone",
+        capabilities: partner.capabilities ?? [],
+      };
+      const match = await startMatch(
+        underdog,
+        favourite,
+        partner.player_id,
+        underdog === uid ? myAccess : partnerAccess,
+        favourite === uid ? myAccess : partnerAccess,
+      );
       if (match) return matched(match, null);
     } catch (error) {
       if (error instanceof MatchStartFailure) return json({ error: "match-start-failed" }, 500);
@@ -241,7 +278,22 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
       const underdog = myRating < bot.rating ? uid : bot.id;
       const favourite = underdog === uid ? bot.id : uid;
       try {
-        const match = await startMatch(underdog, favourite, null, bot);
+        const humanAccess: RankedParticipantAccess = {
+          tier: myTier,
+          capabilities: input.capabilities,
+        };
+        const botAccess: RankedParticipantAccess = {
+          tier: myTier,
+          capabilities: ALL_RANKED_CAPABILITIES,
+        };
+        const match = await startMatch(
+          underdog,
+          favourite,
+          null,
+          underdog === uid ? humanAccess : botAccess,
+          favourite === uid ? humanAccess : botAccess,
+          bot,
+        );
         if (match) return matched(match, null);
       } catch (error) {
         if (error instanceof MatchStartFailure) return json({ error: "match-start-failed" }, 500);

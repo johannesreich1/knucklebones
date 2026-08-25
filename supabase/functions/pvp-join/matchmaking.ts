@@ -1,13 +1,34 @@
 import type { EdgeClient } from "../_shared/http.ts";
+import type { JoinInput, MatchRow } from "../_shared/types.ts";
 
 export interface QueueCandidate {
   player_id: string;
   created_at: string;
+  /** Defaults keep rows queued by an older function safely on protocol v1. */
+  protocol_version?: 1 | 2;
+  capabilities?: string[];
+  pool_tier?: "stone" | "bone" | "ivory";
 }
 
 interface RatingRow {
   id: string;
   rating: number | null;
+}
+
+export function negotiatedProtocolVersion(
+  accesses: readonly { capabilities?: readonly string[] }[],
+): 1 | 2 {
+  return accesses.every(({ capabilities }) => capabilities?.includes("rune_trial_v1")) ? 2 : 1;
+}
+
+export function trialClientCompatibilityError(
+  match: MatchRow,
+  input: JoinInput,
+): "unsupported-rune-rules" | "incompatible-client" | null {
+  if (match.format !== "rune_trial") return null;
+  if (match.rune_rules_version !== 1) return "unsupported-rune-rules";
+  return input.protocolVersion === 2 && input.capabilities.includes("rune_trial_v1")
+    ? null : "incompatible-client";
 }
 
 /** Select the oldest queued player whose current rating is inside the band. */
@@ -37,7 +58,7 @@ export async function findOldestEligiblePartner(
   band: number,
 ): Promise<QueueCandidate | null> {
   const { data: queueData, error: queueError } = await svc.from("matchmaking_queue")
-    .select("player_id, created_at")
+    .select("player_id, created_at, protocol_version, capabilities, pool_tier")
     .neq("player_id", playerId)
     .order("created_at", { ascending: true });
   if (queueError) throw new Error(`queue read failed: ${queueError.message}`);

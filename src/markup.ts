@@ -1,6 +1,5 @@
-// The app's static markup, injected at boot by each entry point.
-// Single source of truth for standalone page and widget alike (the old build
-// derived the widget's copy from the page via regex — this is that, deleted).
+// Static markup injected by every entry point: one source for page and widget
+// (the old build derived its copy from the page via regex).
 import { chromeIcon } from './ui/chromeicons.ts';
 import { learnPageMarkup } from './ui/learn-page.ts';
 import { spellIcon } from './ui/spellicons.ts';
@@ -175,13 +174,13 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
       <div class="modepick" id="modePick"></div>
       <div class="tiny note" id="modePickInfo"></div>
     </div>
-    <div class="card">
+    <div class="card" id="spellCard">
       <div class="lbl" data-i18n="game:practice.rune">Rune</div>
       <div class="modepick" id="spellPick"></div>
       <div class="tiny note" id="spellPickInfo"></div>
+      <div class="choice-lock" id="spellPickLock" role="note" hidden><span class="hues-lock__icon" aria-hidden="true"><span class="hues-lock__shackle"></span></span><span id="spellPickLockCopy"></span></div>
     </div>
-    <!-- the one card only two-player play has: it lands at the END, so the
-         sheet GROWS rather than shuffling what is already on screen -->
+    <!-- Two-player-only card lands at the end, so the sheet grows without reshuffling. -->
     <div class="card" id="timerCard" hidden>
       <div class="lbl" data-i18n="game:practice.turnTimer">Turn timer</div>
       <div class="seg" id="timerSeg">
@@ -333,6 +332,7 @@ ${RULES_PAGE}
   </div>
   <!-- who played, as plates (design 36f) — ranked fills this, local leaves it hidden -->
   <div class="endplates" id="endPlates" hidden></div>
+  <!-- Typed result feature/reward slot. --><div class="endfeature" id="endFeature" hidden></div>
   <div class="endmeta" id="endMeta"></div>
   <!-- share sits WITH the thing it shares (user call): right under the two
        plates, centered with them — not down in

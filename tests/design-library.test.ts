@@ -13,6 +13,7 @@ import {
 import { dieMarkup } from '../src/ui/die-markup.ts';
 import { loaderDieMarkup, loaderWaitMarkup } from '../src/ui/loader.ts';
 import { MODE_PICKS, pickInfo } from '../src/ui/library.ts';
+import { dialBeat } from '../src/ui/modedial.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -80,6 +81,13 @@ try {
   }
   if (pickInfo(MODE_PICKS, MODE_PICKS[1].v) !== `${MODE_PICKS[1].name} — ${MODE_PICKS[1].blurb}`) {
     problems.push('shared picker caption does not resolve the runtime/design choice');
+  }
+  const trialDial = dialBeat({ id: 'rune_trial' }, {
+    candidates: [{ id: 'classic' }, { id: 'rune_trial' }],
+    copy: () => ({ name: 'RUNE TRIAL', blurb: 'private offer' }),
+  });
+  if (trialDial.hue !== '#b18cff' || !trialDial.stage.includes('color:#b18cff')) {
+    problems.push('ranked candidate dial derives Trial hue from a registry index instead of its stable id');
   }
 } catch (error) {
   errs.push(error instanceof Error ? error.stack ?? error.message : String(error));

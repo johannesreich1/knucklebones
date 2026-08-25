@@ -18,8 +18,6 @@ import { S } from '../state.ts';
 import { colEl } from '../ui/dom.ts';
 import { Sfx } from '../ui/audio.ts';
 import { nope } from '../ui/fx.ts';
-import { renderBag } from '../ui/bag.ts';
-import { setStageDie } from '../ui/die.ts';
 import { showHints } from '../ui/game/hints.ts';
 import { clearSealPresentation } from '../ui/game/seals.ts';
 import { clearSunderPresentation } from '../ui/game/sunder-presentation.ts';
@@ -36,9 +34,18 @@ import {
 import type { SpellInputTarget } from './spell-target.ts';
 import { runAiSpellTurn, type AiSpellTurnResult } from './spell-ai.ts';
 import { resolveSpellDeal, type SpellDeal } from './spell-deal.ts';
+import {
+  hasSpellAimTransport,
+  spellCasterAllowed,
+  transportSpellAim,
+  transportSpellCast,
+} from './spell-cast-transport.ts';
+import { currentCastContext as castContext } from './spell-context.ts';
 
 export { aiSpellDelay } from './spell-ai.ts';
 export type { SpellDeal } from './spell-deal.ts';
+export { setSpellAimTransport, setSpellCasterGuard, setSpellCastTransport,
+  type SpellAimTransport, type SpellCastTransport } from './spell-cast-transport.ts';
 
 export interface SpellFlowPorts {
   onChoice: () => void;
@@ -56,6 +63,9 @@ export function configureSpellFlow(ports: SpellFlowPorts): void {
   flowPorts = ports;
 }
 
+const requestCast = (id: string, column: number): Promise<boolean> =>
+  transportSpellCast(id, column) ?? cast(id, column);
+
 /* The player who may cast right now: their turn, their choice, nothing else
    in flight. The CPU drives its production turn through
    aiSpellPlacementTurn(). */
@@ -63,28 +73,8 @@ function caster(): Player | null {
   if (S.phase !== 'choose' || S.busy) return null;
   const who = S.turn as Player;
   if (S.mode === 'cpu' && who !== ME) return null;
+  if (!spellCasterAllowed(who)) return null;
   return who;
-}
-
-/* One live context for every caster. Local supply intentionally uses
-   Math.random; LIMITED consumes the real finite bag. */
-function castContext(): CastCtx {
-  return {
-    mode: S.scoring,
-    die: S.die,
-    setDie: (value) => {
-      S.die = value;
-      setStageDie(value, S.turn as Player);
-    },
-    draw: () => {
-      if (!S.pool) return 1 + ((Math.random() * 6) | 0);
-      const value = S.pool.shift()!;
-      renderBag(S.pool.length);
-      return value;
-    },
-    bagLeft: S.pool ? S.pool.length : null,
-    charm: S.charm,
-  };
 }
 
 export function chargesOf(who: Player, id: string): number {
@@ -96,8 +86,11 @@ export function chargesOf(who: Player, id: string): number {
    second seat from the remaining roster rather than retrying until it differs:
    it is uniform, deterministic under an injected stream, and cannot hang on a
    stub that returns the same number forever. Tuple order follows Player ids. */
-export function drawSpellDeal(random: () => number = Math.random): SpellDeal {
-  return resolveSpellDeal(S.spell, random);
+export function drawSpellDeal(
+  random: () => number = Math.random,
+  candidates: readonly SpellSpec[] = SPELLS,
+): SpellDeal {
+  return resolveSpellDeal(S.spell, random, candidates);
 }
 
 /* Kept as the singular compatibility seam for focused helpers that ask for
@@ -135,7 +128,7 @@ export function clearSpells(): void {
 const gesturePorts: SpellGesturePorts = {
   arm,
   disarm,
-  cast,
+  cast: requestCast,
   castable,
 };
 
@@ -159,10 +152,14 @@ export function arm(id: string): boolean {
   if (who === null || !spell || !castable(id)) return false;
   S.spellArmed = id;
   if (spell.commitsOnAim) {
-    playSpellCharge(who, id);
-    S.spellCharges[who][id] = chargesOf(who, id) - 1;
-    S.spellAimCommitted = { id, who };
-    S.spellCastThisTurn = who;
+    if (hasSpellAimTransport()) {
+      void transportSpellAim(id);
+    } else {
+      playSpellCharge(who, id);
+      S.spellCharges[who][id] = chargesOf(who, id) - 1;
+      S.spellAimCommitted = { id, who };
+      S.spellCastThisTurn = who;
+    }
   }
   renderSpells();
   setStatus({ visible: () => spellCopy(spell.id).aimCompact,
@@ -203,7 +200,7 @@ export function castArmed(target: SpellInputTarget | null): boolean {
     disarm();
     return true;
   }
-  void cast(id, target.kind === 'stage' ? -1 : target.column);
+  void requestCast(id, target.kind === 'stage' ? -1 : target.column);
   return true;
 }
 
@@ -229,17 +226,19 @@ export function castArmedByIndex(column: number): boolean {
 export async function resolveTimedOutSpellAim(): Promise<boolean> {
   const id = S.spellArmed;
   if (!id) return false;
-  if (!S.spellAimCommitted) {
+  const spell = spellById(id);
+  const committed = !!S.spellAimCommitted
+    || (hasSpellAimTransport() && !!spell?.commitsOnAim);
+  if (!committed) {
     disarm(true);
     return false;
   }
-  const spell = spellById(id);
   const who = caster();
   if (!spell || who === null || spell.target !== 'column') return false;
   const context = castContext();
   for (let column = 0; column < SPEC.cols; column++) {
     if (spell.legal(S.boards as GameState, who, column, context)) {
-      return cast(id, column);
+      return requestCast(id, column);
     }
   }
   return false;
@@ -343,8 +342,4 @@ export function aiSpellPlacementTurn(
   );
 }
 
-/*
- * The former spell take-back snapshot was removed when the full shipped
- * roster adopted one rule: aiming may cancel before commitment, but a cast
- * cannot be undone after commitment.
- */
+/* Aiming may cancel before commitment; a cast cannot be undone afterward. */

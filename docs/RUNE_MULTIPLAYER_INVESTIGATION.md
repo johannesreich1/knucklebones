@@ -1,10 +1,13 @@
 # Multiplayer runes — balance and feasibility investigation
 
-Status: **OFFLINE SCORING-WARD SHIPPED — the asymmetric baseline, coordinated WARD/SUNDER sensitivities, and exploratory scoring-WARD pilot are complete; ranked runes remain unimplemented pending a versioned cast/action protocol**
+Status: **DECISION COMPLETE; RUNE TRIAL AND PROTOCOL V2 IMPLEMENTED IN THE
+REPOSITORY BRANCH, PRODUCTION DEPLOYMENT PENDING.** The asymmetric baseline and
+WARD/SUNDER evidence remain historical balance context, not a claim that the
+new backend/functions are live.
 
 Started: **2026-08-24**
 
-This document investigates two proposed ranked multiplayer formats:
+This document began by investigating two proposed ranked multiplayer formats:
 
 1. **Personal-rune modes** — all seven existing game modes still apply to both
    players, while each player brings an individually equipped rune. The rune is
@@ -19,9 +22,55 @@ are the second question. Persistent unlocking, repeat-play motivation, and
 potentially compulsive reward structures are considered only far enough to
 avoid choosing a balance model that cannot support a healthy progression model.
 
-Shipped behaviour is identified explicitly. Historical measurement sections
-retain the rule version they actually tested; they do not silently become
-evidence for later rules. Nothing here enables runes in ranked play.
+Repository and deployed behaviour are identified explicitly. Historical
+measurement sections retain the rule version they actually tested; they do not
+silently become evidence for later rules. The decision record below supersedes
+the former open product questions; older feasibility sections are preserved as
+the pre-v2 evidence that led to it.
+
+---
+
+## 0. Resolved implementation record (2026-08-25)
+
+- **Progressive ranked outcomes:** permanent high-water pools are STONE
+  (Classic, Single Strike, Column Shield, Limited), BONE (+ Row Switch, Row
+  Multiply, Bounty), and IVORY (+ Rune Trial), at historical peak floors 0,
+  300, and 720. Demotion/seasons never relock them. A human match uses the
+  lower shared pool plus capability intersection; a bot uses the human's pool.
+  Classic is exactly 40% and eligible additions divide 60% equally.
+- **Selected Trial format:** Rune Trial is stored as
+  `format='rune_trial'`, `modifier='classic'`, not a new mechanical board mode.
+  It first becomes eligible at IVORY. Both seats receive the same uniformly
+  sampled three-of-six loan, choose privately and independently, may choose the
+  same rune, and reveal together. The 30-second server deadline uses a
+  deterministic participant-specific auto-pick for every missing choice,
+  including before early-terminal settlement. Equipment is ignored and left
+  unchanged; ordinary ranked has no personal-rune loadout in v1.
+- **Acquisition:** new and existing collections start empty. Every settled
+  Trial win—including bot, resignation, timeout, or deletion-forfeit—grants
+  the winner's selected rune idempotently. Loss/draw grants nothing; a
+  duplicate has no replacement. Trial always loans the complete roster, so
+  ownership never changes ranked options. First unlocks remain durably unseen
+  until revealed, then offer a transient unranked Classic/Normal `TRY IT` duel
+  that neither rewards nor overwrites normal local settings/records.
+- **Offline/local:** CPU exposes NONE plus the last server-confirmed,
+  account-bound collection. Named runes require ownership; RANDOM and
+  RANDOM×2 require two, and CPU Trial requires three collected runes and
+  offers three distinct collected runes. No cache means empty, and sign-out or
+  account switching clears/swaps the active snapshot. Local two-player always
+  exposes all six and every variant, uses secret pass-and-pick for Trial, and
+  never grants collection. CPU/two-player preferences persist separately;
+  restart keeps the resolved Trial while a new duel redraws it.
+- **Authority and compatibility:** protocol v2 logs `aim`, `cast`, and `place` under
+  one action version, deterministically replays supply/charges/charm/terminal
+  state, keeps choices server-private until simultaneous reveal, and uses
+  `selection_version` to invalidate selection reads. Public per-seat runes stay
+  null until both choices finalize. The 12-second action stall boundary remains
+  distinct from the 30-second selection deadline. Rating plus reward settle
+  atomically. The additive v1 placement-only path remains
+  available for ordinary matches; capability negotiation keeps old clients out
+  of Trial. Repository readiness does not mean the migration, Edge Functions,
+  web client, or native payload have been deployed to production.
 
 ---
 
@@ -42,7 +91,9 @@ Every substantive statement should carry one of these meanings:
 - **HYPOTHESIS** — product expectation that requires player or simulation data.
 - **UNKNOWN** — a quantity or behaviour that cannot be derived until a missing
   rule or measurement exists.
-- **DECISION NEEDED** — a product rule that has not been selected.
+- **HISTORICAL OPEN DECISION** — a marker for a product rule that was open
+  when that evidence section was written. The 2026-08-25 record above marks
+  every Trial launch rule resolved; retained counterfactuals do not reopen it.
 
 Evidence priority is current executable rule source, current reproducible
 measurements, current tests, dated design records, then hypotheses. A one-sided
@@ -50,9 +101,10 @@ rune-versus-no-rune result is not evidence that two different runes are balanced
 
 ---
 
-## 2. Working definitions of the proposed formats
+## 2. Working definitions of the investigated formats
 
-These are **user-directed proposals**, not current behaviour.
+Personal-rune modes remain an unselected future format. Rune Trial is selected
+and implemented in the repository branch under §0.
 
 ### 2.1 Personal-rune modes
 
@@ -69,8 +121,8 @@ WARD after seeing this opponent or mode.”
 
 ### 2.2 Rune Trial
 
-- Rune Trial is proposed **in addition to** the existing seven modes; it is not
-  currently proposed as a second modifier combined with each of them.
+- Rune Trial appears **in addition to** the existing seven player-facing mode
+  outcomes; it is not a second modifier combined with each of them.
 - Equipped runes are ignored for this match.
 - The server offers the same three distinct random runes to both players.
 - Both choices remain secret until both are committed, then reveal together.
@@ -82,53 +134,54 @@ changes pre-match rune assignment. Presenting it as an eighth player-facing mode
 is possible, but it knowingly broadens that ontology; under the Classic
 baseline it is mechanically a selection format that reuses Classic rules.
 
-**DECISION NEEDED:** no separate scoring, destruction, or supply rule has been
-specified for Rune Trial. This investigation therefore keeps two branches
-explicit: a Classic-backed selection format, for which exact calculations are
-possible now, and a genuinely new mechanical board mode, whose gameplay
-effects cannot be calculated until its rule exists. Classic is a neutral
-analytical baseline, not a selected design.
+**RESOLVED 2026-08-25:** the Classic-backed branch is selected. Rune Trial is
+`format='rune_trial'` plus `modifier='classic'`, so it broadens the
+player-facing outcome vocabulary without changing scoring, destruction, or
+supply. The genuinely new mechanical branch below remains only a rejected
+counterfactual.
 
-**DECISION NEEDED:** Rune Trial's wheel probability is unspecified.
+**RESOLVED 2026-08-25:** Trial enters the IVORY permanent pool. Classic keeps
+40%; Trial and the six ordinary additions each receive `60/7` there.
 
 ---
 
-## 3. Current shipped facts
+## 3. Pre-implementation baseline facts
 
 **WARD VERSION NOTE:** WARD mechanics and numbers explicitly marked historical
 in §§3.5–3.6 describe the frozen v1 no-score rule used by the original
 measurements: PILFER bypassed WARD and a zero-victim shielded hit did not spend
 it. They are historical baseline facts, not the current offline rule. The
-offline/local production rule is recorded in §6.6. Ranked still has no rune
-action protocol.
+offline/local production rule is recorded in §6.6. Statements in this section
+about missing ranked state describe the production/v1 baseline inspected on
+2026-08-24; §0 records the additive repository v2 implementation.
 
-### 3.1 Ranked currently has no runes
+### 3.1 Production/v1 ranked has no runes
 
-- **FACT:** Ranked deals both seats an empty rune hand. The status rule remains
-  that ranked must do so until casts have a server-written replayable protocol
-  (`docs/STATUS.md:30-35`, `docs/SPELLS.md:612-623`,
-  `src/flow/spells.ts:103-122`).
-- **FACT:** `matches.modifier` stores one shared mode. No match-global or
-  per-player rune field exists (`supabase/migrations/0003_pvp_pivot_v2.sql:42-55`,
+- **HISTORICAL BASELINE:** standard ranked dealt both seats an empty hand and
+  the placement-only client/server path had no cast protocol. That v1 path is
+  intentionally retained for ordinary matches during the v2 rollout.
+- **HISTORICAL BASELINE:** `matches.modifier` stored one shared mode. No
+  match-global or per-player rune field existed
+  (`supabase/migrations/0003_pvp_pivot_v2.sql:42-55`,
   `supabase/migrations/0009_match_modifier_wheel.sql:1-7`).
-- **FACT — repository ledger only:** the current `MODES` registry can draw
+- **HISTORICAL DEFECT, CLOSED IN BRANCH:** the `MODES` registry could draw
   `limited`, but the latest repository definition of `matches_modifier_check`
   accepts only `classic`, `rowswitch`, `rowmult`, `colshield`, `singlestrike`,
   and `bounty` (`src/core/modes.ts:45-53`,
-  `supabase/migrations/0010_modifier_singlestrike_bounty.sql:4-7`). No later
-  migration in the current tree adds `limited` to that constraint. A clean
-  schema from this ledger would therefore reject a match row drawn as LIMITED.
-  Live production schema state was not inspected and is **unknown**; this is not
-  a claim about what production currently accepts.
-- **FACT:** `match_moves` records placements, not casts
+  `supabase/migrations/0010_modifier_singlestrike_bounty.sql:4-7`). The Rune
+  Trial migration first repairs that allow-list. Live production schema state
+  remains unverified.
+- **HISTORICAL BASELINE:** `match_moves` records placements, not casts
   (`supabase/migrations/0003_pvp_pivot_v2.sql:64-70`,
-  `supabase/migrations/0008_pvp_move_die.sql:1-6`).
-- **FACT:** The browser submits placement intent rather than dice, scores, or
+  `supabase/migrations/0008_pvp_move_die.sql:1-6`). Protocol v2 adds an ordered
+  `match_actions` aim/cast/place stream instead of reinterpreting those rows.
+- **STILL REQUIRED:** the browser submits intent rather than dice, scores, or
   state; the server rebuilds from its seed and written log
   (`docs/architecture/backend.md:8-19`, `supabase/functions/README.md:28-33`).
-- **FACT — repository state:** no PvP Edge-function closure in the current tree
-  imports `core/spells.ts`
-  (`supabase/functions/README.md:69-77`).
+- **BRANCH STATE:** Rune Trial snapshots format, offer, revealed per-seat runes,
+  rules/protocol versions, and replays casts through shared core. Production
+  remains on the earlier deployment until the migration/functions/client are
+  explicitly rolled out.
 
 ### 3.2 Offline rune state can represent different hands
 
@@ -149,9 +202,10 @@ action protocol.
   already treats a cast as an ordered event that can precede the placement
   (`docs/SPELLS.md:64-85`, `docs/SPELLS.md:619-623`).
 
-This means the browser state shape is not the primary feasibility gap. It does
-not mean the server protocol, replay, bot policy, reconnect path, or balance is
-already solved.
+This established that the browser state shape was not the primary feasibility
+gap. The branch v2 work closes the named protocol/replay/bot/reconnect contract;
+the balance limitations in §§4–6 remain evidence limitations, not engineering
+blockers silently erased by implementation.
 
 ### 3.3 Current rune roster
 
@@ -250,16 +304,16 @@ one cast per turn. The current standard also measures the selected rule and
 reports 59.3% one-sided in Classic and 60.8% in LIMITED. Same-rune
 human-versus-CPU offline play is now action-set symmetric.
 
-**ONLINE REQUIREMENT:** a future authoritative protocol must implement the
-selected zero-or-one cast grammar and reject a second cast before placement,
-using ordered history or an explicit projected per-turn cast marker.
+**RESOLVED IN BRANCH V2:** authoritative replay implements the selected
+zero-or-one cast grammar, orders aim/cast/place actions under `action_version`, and
+rejects a second cast before placement. Production rollout remains pending.
 
-### 3.4 Current game modes and ranked weights
+### 3.4 Mechanical modes and the former/BONE weights
 
 Source of registry truth: `src/core/modes.ts:40-53`. Source of rules:
 `src/core/rules.ts:76-154`.
 
-| Mode | Current ranked probability | What changes | Measured first-mover win rate |
+| Mode | BONE-pool probability | What changes | Measured first-mover win rate |
 |---|---:|---|---:|
 | CLASSIC | 40% | Baseline scoring and destruction | 50.74% |
 | ROW SWITCH | 10% | Rows, rather than columns, determine score | 51.37% |
@@ -276,8 +330,9 @@ The seating measurements used 60,000 games per mode, three seeds, and report a
 - **FACT:** both players always play the same mode (`docs/MODES.md:31-46`).
 - **FACT:** the lower-rated player opens every ranked mode. LIMITED's measured
   inversion is deliberately not special-cased (`docs/LADDER.md:439-480`).
-- **FACT:** current weights total 10: Classic has weight 4 and each of six
-  additions has weight 1 (`src/core/modes.ts:40-53`).
+- **FACT:** these 4:1 weights remain the BONE-pool distribution. STONE instead
+  gives each of three additions 20%; IVORY gives the six additions plus Trial
+  `60/7` each. Classic remains 40% in every pool (§0).
 
 ### 3.5 Existing mode–rune interaction facts
 
@@ -691,7 +746,7 @@ Because the equipped rune is locked before the mode is drawn, the relevant
 loadout-strength summary is the weighted result across the mode wheel, not the
 best rune selected independently after each mode.
 
-For rune A against rune B under current weights:
+For rune A against rune B under the frozen-v1/BONE 40/10 weights:
 
 ```text
 weighted(A,B) = 0.40 × Classic(A,B)
@@ -776,26 +831,27 @@ These are baselines for detecting streak protection, a bagged offer rule, or
 human-selection concentration later. They are not arguments for independent
 random offers.
 
-### 5.3 Adding Rune Trial to the wheel
+### 5.3 Adding Rune Trial to the IVORY wheel
 
-The current weights already consume 100%. Adding an eighth outcome necessarily
-changes at least one existing probability.
+The former/BONE weights already consume 100%. Adding an eighth player-facing
+outcome necessarily changes at least one existing probability.
 
-| Purely mathematical interpretation | Classic | Each existing addition | Rune Trial | Personal-rune total |
+| Purely mathematical interpretation | Classic | Each existing addition | Rune Trial | Ordinary-outcome total |
 |---|---:|---:|---:|---:|
 | Keep integer weights 4:1 and add Trial at weight 1 | 36.36% | 9.09% | 9.09% | 90.91% |
 | Scale the existing wheel to 90%, give Trial 10% | 36% | 9% | 10% | 90% |
 | Preserve all six existing additions at 10%, take Trial from Classic | 30% | 10% | 10% | 90% |
-| Preserve Classic at 40%, divide the other 60% equally among seven additions | 40% | 8.57% | 8.57% | 91.43% |
+| **Selected for IVORY: preserve Classic at 40%, divide the other 60% equally among seven additions** | **40%** | **8.57%** | **8.57%** | **91.43%** |
 | Make all eight outcomes equal | 12.5% | 12.5% | 12.5% | 87.5% |
 
-These are not recommendations. They expose the probability decision that the
-phrase “one additional mode” creates.
+The non-selected rows are retained arithmetic alternatives. The bold row is
+the 2026-08-25 IVORY decision. STONE and BONE have `q=0` because Trial is not
+yet in their permanent pools.
 
-Appending Trial at weight 1 preserves the existing 40/10 mode distribution
-**conditional on receiving a personal-rune match**: the personal modes retain
-relative weights 4:1:1:1:1:1:1. Scaling the existing wheel to 90% and assigning
-Trial 10% preserves the same conditional distribution.
+In the rejected weight-1 counterfactual, appending Trial would preserve the
+existing ordinary-mode distribution conditionally: those modes retain relative
+weights 4:1:1:1:1:1:1. Scaling the old wheel to 90% and assigning Trial 10%
+would preserve the same conditional distribution.
 
 If successive ranked wheel outcomes are independent, then at Trial probability
 `q`, independent-offer baselines measured in all ranked matches become:
@@ -806,15 +862,17 @@ If successive ranked wheel outcomes are independent, then at Trial probability
 - one exact offer every `20/q` matches;
 - all six seen after approximately `4.303/q` matches on average.
 
-With simple weight-1 append (`q = 1/11`), those are approximately 11 matches per
-Trial, 22 per specified-rune exposure, and 47.3 matches to see all six through
-Trial offers.
+At IVORY's selected `q = 3/35`, those are approximately 11.67 matches per
+Trial, 23.33 per specified-rune exposure, and 50.2 matches to see all six
+through Trial offers. These are independent-offer exposure expectations, not
+guarantees or retention claims.
 
 ---
 
 ## 6. Balance questions by format
 
-No verdict is recorded yet.
+The measurements below predate the implementation decision. Their balance
+limits remain; §0 records the selected product verdict.
 
 ### 6.1 Personal-rune modes
 
@@ -1106,12 +1164,12 @@ the asymmetric tensor.
 - **DERIVATION:** no Trial-specific gameplay simulation is needed beyond the
   11 alternate-rule FATE cells already present in the Classic matrix.
 
-#### Rune Trial branch: genuinely new mechanical board mode
+#### Rejected Rune Trial branch: genuinely new mechanical board mode
 
-- **DECISION NEEDED:** scoring, destruction, supply, legal-rune, and terminal
-  rules must be defined before this branch has measurable gameplay semantics.
-  Calling Classic mechanics `modifier=trial` would be a storage alias, not a
-  new mechanical mode.
+- **RESOLVED 2026-08-25 — NOT SELECTED:** no separate scoring, destruction,
+  supply, legal-rune, or terminal rule is introduced. Trial uses explicit
+  format state plus `modifier='classic'`; the calculations below preserve the
+  cost of the rejected mechanical counterfactual rather than reopening it.
 - **DERIVATION:** if all six runes remain legal, the new rule needs its own
   `6 × 6 = 36` directed payoff cells. Seven personal modes plus mechanical
   Trial produce 288 cells, or 864,000 games at 3,000 per cell.
@@ -1506,11 +1564,11 @@ rejected before the pilot. Current offline facts are:
   The resulting cast-and-finish bonus has no reply window. The owner decision
   is to retain this behaviour; it remains a targeted human-playtest question.
 
-**IMPLEMENTATION BOUNDARY:** local cast legality and UI, authoritative offline
-scoring/results, and the Easy/Normal/Hard machine policies implement this rule.
-Hard WARD's base cast demand is floored at 16 before the existing `×1.5` Hard
-multiplier. Ranked deal, authoritative online replay, and settlement still have
-no rune action grammar and do not apply scoring WARD.
+**IMPLEMENTATION BOUNDARY AT THE TIME OF THIS PILOT:** local cast legality/UI,
+offline scoring/results, and the Easy/Normal/Hard policies implemented this
+rule. Hard WARD's base cast demand was floored at 16 before the existing
+`×1.5` Hard multiplier. Branch Rune Trial v2 now adds authoritative online
+replay and settlement without changing the historical measurement cohort.
 
 #### Exploratory pilot scope and aggregate result
 
@@ -1621,8 +1679,9 @@ only 37.19% against PILFER in SINGLE STRIKE.
 - **LIMIT:** this pilot has no humans, opponent-rune awareness, BOUNTY-bank
   search, LIMITED-horizon search, multiplicity-adjusted cell inference, or
   formal retained evidence artifact. Live local UI, scoring/results, and AI now
-  implement scoring WARD. Authoritative online replay and settlement do not;
-  ranked remains rune-free until a versioned action protocol exists.
+  implement scoring WARD. The repository's Rune Trial v2 replay/settlement now
+  implements that same rule, but this pilot does not validate the production
+  rollout or human balance of online Trial.
 - **FEASIBILITY LIMIT:** the exploratory simulation shell with recursively
   cloned charm state took approximately 70.6 seconds per 420 fixed-depth-4
   games on this machine, versus roughly 40 seconds before the treatment. That
@@ -1638,13 +1697,19 @@ production-policy treatment with explicit cast-survival telemetry, a larger
 Hard cohort, and performance checks on target devices. Human playtesting should
 specifically probe PILFER frustration, the retained COLUMN SHIELD
 cast-and-finish bonus, and whether proactive WARD building is legible rather
-than automatic. Ranked work remains separately blocked on the action protocol.
+than automatic. The former action-protocol blocker is closed in the branch;
+deployment verification and human balance evidence remain separate work.
 
 ---
 
 ## 7. Multiplayer authority and replay feasibility
 
-### 7.1 Current authority boundary — raw facts
+Sections 7.1–7.5 preserve the pre-v2 system trace used to define the work. They
+describe why the old placement protocol was insufficient, not the current
+branch architecture. The implemented resolution is summarized in §0 and
+§7.6; production rollout is still pending.
+
+### 7.1 Pre-v2 authority boundary — raw facts
 
 - **FACT:** the browser uses the public Supabase key. Authenticated Edge
   Functions, grants, and RLS are the authority boundary; only the functions use
@@ -1676,30 +1741,32 @@ Existing visibility boundaries also fit the proposed reveal timing:
   participant-visible match. This uses the existing trust boundary; it does not
   require hiding information from the server.
 
-### 7.2 Current data and rule seams — raw facts
+### 7.2 Pre-v2 data and rule seams — raw facts
 
-- **FACT:** `matches` has participants, status, turn, result, clock, shared
-  mode, and public next die. It has no match-format, offer, or per-seat rune
+- **PRE-V2 FACT:** `matches` had participants, status, turn, result, clock,
+  shared mode, and public next die. It had no match-format, offer, or per-seat rune
   fields (`supabase/migrations/0003_pvp_pivot_v2.sql:42-55`,
   `supabase/migrations/0009_match_modifier_wheel.sql:1-7`).
-- **FACT:** `matchmaking_queue` stores only `player_id` and `created_at`; it
-  cannot currently lock an equipped rune
+- **PRE-V2 FACT:** `matchmaking_queue` stored only `player_id` and
+  `created_at`; it could not advertise Trial capability or pool tier
   (`supabase/migrations/0003_pvp_pivot_v2.sql:79-84`).
-- **FACT:** `match_moves` stores ordered placements—player, column, and die—but
-  no cast or selection event (`supabase/migrations/0003_pvp_pivot_v2.sql:64-70`,
+- **PRE-V2 FACT:** `match_moves` stored ordered placements—player, column, and
+  die—but no cast or selection event
+  (`supabase/migrations/0003_pvp_pivot_v2.sql:64-70`,
   `supabase/migrations/0008_pvp_move_die.sql:1-6`).
-- **FACT:** the owner-only `player_settings` row contains presentation settings,
-  not rune equipment or ownership
+- **PRE-V2 FACT:** the owner-only `player_settings` row contained presentation
+  settings, not rune equipment or ownership
   (`supabase/migrations/20260823192604_player_settings.sql`).
-- **FACT:** there is no inventory/unlock table. Match settlement currently
-  writes the result, both season rows, and profile rating mirrors, not item
+- **PRE-V2 FACT:** there was no inventory/unlock table. Match settlement wrote
+  the result, both season rows, and profile rating mirrors, not item
   grants (`supabase/migrations/20260823112009_atomic_match_settlement.sql:98-162`).
-- **FACT:** ranked explicitly calls `clearSpells()` and reconstructs an empty
-  hand. No current repository Edge-function closure imports `core/spells.ts`
+- **PRE-V2 FACT:** ranked explicitly called `clearSpells()` and reconstructed an
+  empty hand. No inspected PvP Edge-function closure imported `core/spells.ts`
   (`src/online/play.ts:59-68`, `src/flow/spells.ts:114-122`,
   `tests/fnsync.test.ts:129-145`).
 
-The rule implementation is reusable, but its current orchestration is not:
+The investigation found the rule implementation reusable but the pre-v2
+orchestration unsuitable:
 
 - **FACT:** `CastCtx` already expresses mode, current die, an injectable draw,
   remaining finite supply, and persistent charm. Offline supplies
@@ -1711,15 +1778,15 @@ The rule implementation is reusable, but its current orchestration is not:
   `src/ui/game/move-view.ts:46-56`).
 - **FACT:** spell animation wraps one mutation callback
   (`src/flow/spell-effects.ts`, `src/flow/spell-effects/types.ts`).
-- **INFERENCE:** that presentation seam can potentially wrap a future accepted
-  server action, but no online integration currently proves it end to end.
+- **INFERENCE AT THE TIME:** that presentation seam could wrap a future accepted
+  server action; branch v2 now supplies the online integration.
 - **FACT:** the current browser spell controller itself spends charges and
   mutates state locally. It is not an online command client
   (`src/flow/spells.ts:236-296`).
 - **FACT:** no current rune asks for an opponent interrupt. Latency therefore
   need not decide a reaction race (`docs/SPELLS.md:64-69`).
 
-### 7.3 The placement-log invariant does not represent casts
+### 7.3 Why the placement-log invariant could not represent casts
 
 The current database command is narrower than the future-looking prose in
 `docs/SPELLS.md:619-623`:
@@ -1871,19 +1938,20 @@ launch risk is the unmeasured asymmetric balance tensor.
 
 ### 7.6 Format B — Rune Trial feasibility
 
-Rune Trial reuses the cast protocol but adds a durable pregame state machine:
+Rune Trial reuses the cast protocol and the branch implements the durable
+pregame state machine originally derived here:
 
-1. **INFERENCE:** the server derives three distinct rune ids from a separate
+1. **IMPLEMENTED CONTRACT:** the server derives three distinct rune ids from a separate
    seed domain and publishes one common offer. Existing mode and LIMITED supply
    randomness already use isolated suffixes, so an offer suffix can avoid
    shifting either stream (`src/core/modes.ts:69-72`, `src/core/dice.ts:35-48`).
-2. **INFERENCE:** each authenticated participant writes one choice through a
+2. **IMPLEMENTED CONTRACT:** each authenticated participant writes one choice through a
    private server boundary. An unrevealed choice remains hidden from the
    opponent, while the chooser can recover their own submitted choice.
-3. **INFERENCE:** the second accepted choice atomically snapshots both runes
+3. **IMPLEMENTED CONTRACT:** the second accepted choice atomically snapshots both runes
    onto the participant-visible match, advances to gameplay, and starts the turn
    clock.
-4. **INFERENCE:** reconnect reads durable phase, offer, and the caller's own
+4. **IMPLEMENTED CONTRACT:** reconnect reads durable phase, offer, and the caller's own
    submission state rather than relying on a broadcast or placement count.
 
 The current model already trusts the server with seeds, turns, and settlement,
@@ -1892,12 +1960,12 @@ cannot live directly on `public.matches`, whose participant RLS exposes the row
 to both players. Service-private storage or a caller-filtered RPC, idempotent
 compare-and-set submission, and atomic reveal provide the required semantics.
 
-A separate `phase` while the match remains active is safer than casually adding
-`selecting` as a new status, because current queries often treat non-active
-statuses as finished. That is an engineering inference, not a selected schema.
-The contract still needs decisions for selection timeout, auto-pick versus
-forfeit/cancel, resignation and deletion during selection, bot choice timing,
-what a first submitter sees on reconnect, and when the gameplay clock begins.
+A separate `phase` keeps the match active while selection is in progress,
+because current queries often treat non-active statuses as finished. The
+selected deadline is 30 seconds; missing choices use deterministic
+participant-specific auto-picks before deadline or early-terminal settlement.
+Bots choose independently, the first submitter can recover only their own
+pending state, and the gameplay turn clock begins when both assignments reveal.
 
 #### Classic-backed versus mechanically new Trial
 
@@ -1907,24 +1975,24 @@ immutable per-seat rune snapshots, a selection deadline, reconnect and bot
 choice behaviour, abandonment semantics, history fields, a separate offer seed
 domain, and rune-protocol capability gating.
 
-Under **Classic-backed Trial**:
+Under the selected **Classic-backed Trial**:
 
-- **INFERENCE:** represent Trial as a format discriminator plus Classic as the
-  mechanical mode—for example `format='trial'` and `modifier='classic'`. The
+- **IMPLEMENTED:** represent Trial as a format discriminator plus Classic as the
+  mechanical mode: `format='rune_trial'` and `modifier='classic'`. The
   wheel then selects a `(format, base mode)` outcome rather than only a mode id.
 - **FACT/INFERENCE:** scoring, destruction, supply, terminal logic, and
   `CastCtx.mode=CLASSIC` are reusable. No new core mode rule, mode constraint,
   or placement-AI mode heuristic follows from this branch.
-- **INFERENCE:** history and UI must use the format field; modifier alone would
+- **IMPLEMENTED CONTRACT:** history and UI use the format field; modifier alone would
   mislabel a Trial as ordinary Classic.
-- **INFERENCE:** an old client could understand the Classic board mechanics but
+- **IMPLEMENTED CONTRACT:** an old client could understand the Classic board mechanics but
   would skip private selection and runes, so capability gating remains
   mandatory despite lower mechanical replay risk.
 
-Under a **new mechanical Trial mode**:
+Under the rejected **new mechanical Trial mode** counterfactual:
 
-- **DECISION NEEDED:** define a real scoring, destruction, or supply change
-  first. Otherwise the branch is only Classic-backed Trial under another id.
+- **RESOLVED 2026-08-25 — NOT SELECTED:** no new scoring, destruction, or
+  supply change is added; the selected format is Classic-backed.
 - **INFERENCE:** add a stable mode id and database constraint, implement the
   rule in core replay and every settlement path, and provide mode-aware bot
   evaluation. A supply change also needs a deterministic supply stream/cursor
@@ -1939,59 +2007,34 @@ Under a **new mechanical Trial mode**:
   out coherently. This branch also requires the new 36-cell payoff matrix in
   §6.4.
 
-**FEASIBILITY INFERENCE:** the shared selection layer and Classic-backed Trial
-are feasible in principle, with substantial shared rune-protocol work and
-moderate-to-high format-specific complexity concentrated in setup secrecy,
-liveness, and reconnect. A genuinely new mechanical Trial cannot yet receive a
-specific feasibility verdict: its board rule, replay, AI, settlement, balance,
-and rollout scope are undefined. Neither branch is launch-ready, and neither
-requires client cryptography under the current trusted-server model.
+**IMPLEMENTATION VERDICT:** the shared selection layer and Classic-backed Trial
+are repository-ready, with the complexity concentrated in setup secrecy,
+liveness, reconnect, action replay, and settlement. The rejected mechanical
+counterfactual remains undefined. The selected format needs no client
+cryptography under the trusted-server model; it still requires database-first
+production rollout and live verification before it can be called deployed.
 
 ### 7.7 Consolidated risk inventory
 
-**Critical shared risks**
+The branch closes the original protocol risks with one versioned action log,
+seeded supply replay, persistent charm/charges, bot parity, strict rules
+snapshots, an action-version clock, private durable choices, capability
+negotiation, immutable history facts, monotonic pool state, and idempotent
+ownership grants. The migration also repairs LIMITED's old allow-list gap.
 
-1. No authoritative cast/action protocol exists; all current replay assumes
-   placements.
-2. Bots are not rune-capable and may act before a client enters.
-3. Every path that derives boards or scores must use identical rune state;
-   PILFER can settle from a cast. Non-replaying paths such as account deletion
-   still need explicit phase and authoritative-score semantics.
-4. The repository's fresh-schema LIMITED constraint mismatch (§3.1) undermines
-   the baseline claim “all seven modes.”
+The remaining risks are rollout and evidence risks:
 
-**Critical Trial-specific risk**
-
-5. The first choice and setup liveness must be durable and server-private;
-   current Realtime-ready broadcast is neither.
-
-**High risks**
-
-6. FATE breaks “one log row = one supply draw.”
-7. WARD/SUNDER require persistent replay; PILFER/ANVIL require non-placement
-   board mutations.
-8. Clocks and reconnect use placement count, while casts retain the turn and
-   Trial selection is not a turn.
-9. The selected `cast? → placement` grammar is still absent from ranked replay
-   and validation, even though local rule surfaces are now aligned.
-10. Old cached clients have no capability negotiation and cannot interpret rune
-    matches.
-11. Active replay has no immutable rune rules/protocol version. A spell-rule
-    deployment could reinterpret an existing action log unless the match
-    snapshots a version or rollout explicitly migrates/finishes active matches.
-
-**Medium risks**
-
-12. History lacks the immutable format/rune facts needed for post-launch
-    balance analysis.
-13. Equipment and ownership persistence do not exist; ownership validation and
-    any grant must be server-owned and idempotent.
-14. The production rollout spans database, all PvP function closures, web/PWA
-    clients, RLS/database tests, and live verification; repository state cannot
-    establish the currently deployed function/schema versions.
-
-These are protocol requirements and scope facts, not arguments that either
-format is infeasible.
+1. database, v2 Edge Function closures, web/PWA/native clients, and migrations
+   must ship in the documented compatibility order;
+2. v1 standard matches must remain playable while old cached clients exist,
+   and no capability intersection may admit them to Trial;
+3. pgTAP/RLS/race/idempotency, browser reconnect/selection/cast, and live
+   disposable-account verification must pass against the exact deployed
+   versions;
+4. repository state cannot prove dashboard migration/function versions or
+   clean up an already-active production match by itself; and
+5. implementation does not erase the balance and human-choice uncertainty in
+   §§4–6.
 
 ---
 
@@ -1999,17 +2042,22 @@ format is infeasible.
 
 ### 8.1 Current facts
 
-- All six runes are immediately available offline; NONE is the default
-  (`src/ui/library.ts`, `src/core/spells.ts:221-240`).
-- No inventory, equipped-rune, rune mastery, or unlock reward exists in the
-  current ranked data model.
+- Local two-player exposes all six immediately; CPU play exposes NONE plus the
+  account's last server-confirmed collected runes. No cache means an empty CPU
+  collection.
+- The branch data model starts collections empty and stores one idempotent
+  owner-readable row per collected rune, including durable unseen state and an
+  optional source match. There is no starter rune or grandfathered full roster.
+- Rune Trial loans all six online, so collection breadth does not change the
+  ranked choice set. Standard ranked remains rune-free; personal equipped-rune
+  loadouts are not part of this release.
 - The ladder already gives progression on every result and intentionally drifts
   upward at a 50% win rate (`docs/LADDER.md:20-74`).
 - Newcomer bot tuning intentionally targets a high early human win rate; the
   recorded reason is that a 50% beginner loss rate caused quit concern
   (`docs/LADDER.md:227-239`).
-- Bot matches currently settle through the same result system as human matches.
-  Any future “win” reward needs an explicit bot-win rule.
+- Bot matches settle through the same result system as human matches, and the
+  selected rule grants the same first/duplicate reward on a settled Trial win.
 
 ### 8.2 Exact pacing formulae
 
@@ -2028,8 +2076,9 @@ matches per unlock is:
 ```
 
 before accounting for whether an unowned rune appears, whether the player
-chooses it, or whether the reward has duplicate protection. At `q = 10%` and
-`p_T = 50%`, that lower bound is 20 ranked matches per unlock.
+chooses it, or whether the reward is a duplicate. At IVORY's selected
+`q = 3/35` and `p_T = 50%`, that lower bound is about 23.33 ranked matches per
+Trial win.
 
 For a uniform three-of-six Trial offer and `u` already-owned runes:
 
@@ -2054,7 +2103,8 @@ For a uniform three-of-six Trial offer and `u` already-owned runes:
 | 5 | 0.5 | 50% |
 | 6 | 0.0 | 0% |
 
-These calculations do not decide whether Trial wins should unlock runes.
+These calculations describe the selected win-gated rule; they do not establish
+that its pacing or player experience is good.
 
 If the full qualifying chain has independent per-match probability `s`, the
 wait to one unlock is geometric:
@@ -2064,11 +2114,11 @@ expected wait = 1 / s
 P(no unlock after n matches) = (1 - s)^n
 ```
 
-The earlier `q=10%`, `p_T=50%` lower-bound example gives `s=5%` before offer
-and choice restrictions. Its mean is 20 matches, but the probability of still
-having no qualifying win is 35.8% after 20 matches and 12.9% after 40. The mean
-alone therefore hides a material unlucky tail. Any additional requirement to
-see, choose, or win with a particular unowned rune lowers `s` further.
+With selected `q=3/35` and `p_T=50%`, the lower-bound success probability is
+`s=3/70` before offer, choice, and duplicate effects. Its mean is about 23.33
+matches, but the variable wait still has a material unlucky tail. Any
+requirement to see, choose, and win with a particular unowned rune lowers `s`
+further.
 
 ### 8.3 Hypotheses and risks requiring evidence
 
@@ -2086,12 +2136,15 @@ see, choose, or win with a particular unowned rune lowers `s` further.
 - **INFERENCE:** variable Trial appearance plus win-only acquisition compounds
   waiting probabilities. Pacing must be calculated from the full chain, not from
   “one rune per win” in isolation.
-- **DECISION NEEDED:** whether losses make any unlock progress.
-- **DECISION NEEDED:** whether bot wins, rematches, forfeits, and Trial wins all
-  award the same progression.
-- **DECISION NEEDED:** whether unlocks are permanent or seasonal.
-- **DECISION NEEDED:** whether Rune Trial loans every offered rune regardless of
-  ownership and whether winning with an unowned choice keeps it.
+- **RESOLVED 2026-08-25:** loss/draw makes no unlock progress.
+- **RESOLVED 2026-08-25:** every settled Trial win, including bot,
+  resignation, timeout, and deletion-forfeit, uses the same grant; a rematch is
+  a new match with no special multiplier.
+- **RESOLVED 2026-08-25:** unlocks are permanent, account-owned, and do not
+  reset with seasons.
+- **RESOLVED 2026-08-25:** Trial loans every offered rune regardless of
+  ownership; the winner keeps their selected rune, while a duplicate produces
+  no replacement.
 
 This investigation does not optimize compulsion, infinite grind, monetization,
 or variable-reward pressure. It should flag such consequences when a balance or
@@ -2114,7 +2167,11 @@ unlock rule creates them unintentionally.
 
 ---
 
-## 9. Required evidence before a product/launch verdict
+## 9. Decision checklist and remaining launch evidence
+
+The product and protocol choices are complete. Unchecked balance/human/device
+items remain evidence work; checked implementation items still require the
+normal repository gates and an explicit production rollout.
 
 ### Phase A — recover and preserve the baseline
 
@@ -2142,7 +2199,7 @@ unlock rule creates them unintentionally.
   two-branch design (§6.4).
 - [x] Resolve and enforce the local cast-count rule: at most one cast per turn
   is selected, and human, CPU, written rule, and standard simulator now align.
-  Ranked enforcement remains Phase D protocol work.
+  Phase D records the subsequent v2 ranked enforcement.
 - [x] Measure all six runes against all six under all seven modes under the
   frozen blind Normal policy (§6.5).
 - [x] Run both opener orientations for every distinct pair; do not add a second
@@ -2171,41 +2228,44 @@ unlock rule creates them unintentionally.
 
 - [x] Derive the 20 offers, 180 ordered choice contexts, Classic payoff reuse,
   and the additional 36-cell cost of a genuinely new board mode (§5.2, §6.4).
-- [ ] Confirm Rune Trial's board rule and wheel probability.
+- [x] Select Classic-backed Trial and IVORY's 40% Classic / equal-share 60%
+  distribution (§0, §5.3).
 - [x] Analyze all 20 three-rune offers from the v1 Classic payoff matrix,
   retaining their shared-cell dependency and point-estimate caveat (§6.5).
 - [x] Identify point-estimate pure saddles, dominated choices, mirror saddles,
   and unused decorative choices; bootstrap robustness and human choice remain
   unmeasured.
-- [ ] Decide whether the offer randomizer is independent, bagged, or protected
-  against recent repetition; measure the selected rule.
+- [x] Select a uniform independent three-of-six offer; all 20 subsets are
+  equally likely. Human selection concentration remains future telemetry.
 
 ### Phase D — multiplayer feasibility contract
 
-- [x] Keep scoring WARD offline-only while ranked lacks a versioned cast/action
-  protocol; no ranked rollout is ready from the local implementation alone.
+- [x] Preserve the historical offline-only boundary until a versioned protocol,
+  then implement the same scoring-WARD contract in Rune Trial v2 without
+  enabling runes in ordinary ranked.
 - [x] Trace how one-cast versus chained FATE and Classic-backed versus
   mechanically new Trial change action grammar, clock, bot, replay, and rollout
   scope (§7.3, §7.6).
-- [ ] Specify authoritative match snapshot fields without yet writing a
-  migration.
-- [ ] Reconcile the repository/live mode constraint baseline before using it as
-  the foundation for a new Rune Trial modifier; do not fold that repair into a
-  rune migration silently.
-- [ ] Specify the replay event grammar for cast, placement, FATE supply draws,
-  persistent charm, and cast-terminal matches.
-- [ ] Replace placement count as the only synchronization/version clock; trace
-  every current terminal, retry, reconnect, bot, and timeout path against the
-  new grammar.
-- [ ] Specify Rune Trial secret commitment and abandonment behaviour.
-- [ ] Define history/replay visibility, client capability negotiation, and
-  stable-rule versioning expectations.
+- [x] Snapshot format, Classic modifier, pool tier, protocol/rune-rules
+  versions, phase, offer, revealed per-seat runes, deadline, and action version
+  in the forward migration; use `selection_version` for selection invalidation.
+- [x] Repair the full ordinary modifier allow-list explicitly before adding the
+  separate Trial format.
+- [x] Implement the ordered `aim`/`cast`/`place` grammar, seeded FATE supply,
+  persistent charm/charges, one-cast rule, and cast-terminal replay.
+- [x] Replace placement count with `action_version` for v2 and cover terminal,
+  retry, reconnect, bot, timeout, resignation, and deletion settlement paths.
+- [x] Implement caller-private choice, simultaneous reveal, a 30-second
+  deadline, deterministic participant auto-pick, and early-abandonment fill.
+- [x] Persist format/rune history facts and negotiate the Trial capability while
+  retaining v1 standard compatibility.
 
 ### Phase E — limited progression validation
 
-- [ ] Select a candidate acquisition rule only after balance results exist.
-- [ ] Calculate expected unlock pacing by win rate, Trial frequency, collection
-  size, bot frequency, and duplicate policy.
+- [x] Select permanent empty-start collection plus one idempotent selected-rune
+  grant for every settled Trial win; no loss/draw/replacement grant.
+- [x] Calculate the exact independent-offer and selected-IVORY baseline pacing
+  by win rate and collection size (§8.2); validate human pacing after rollout.
 - [ ] Test whether collection incentives distort ranked rune choice.
 - [ ] Prefer finite, legible progression measurements over open-ended engagement
   claims.
@@ -2214,12 +2274,13 @@ unlock rule creates them unintentionally.
 
 ## 10. Current evidence-bounded position
 
-This section intentionally remains narrow while the investigation is active.
+The implementation decision is closed; this section keeps the remaining
+evidence limits visible.
 
-1. **FACT/INFERENCE:** one-hit scoring WARD is implemented for offline/local
-   rune games, and current rune rules fit the broad deterministic-turn model
-   without reaction-time networking. Online runes remain unimplemented end to
-   end; local implementation is not a ranked protocol.
+1. **FACT/IMPLEMENTATION:** one-hit scoring WARD is implemented for
+   offline/local rune games and branch Rune Trial v2. Current runes fit the
+   deterministic-turn model without reaction-time networking. Production is
+   not thereby deployed.
 2. **REPRODUCED:** a preserved 3,948,000-game baseline now covers all six runes,
    seven modes, both opener orientations, four seeds, and both FATE cast
    grammars. Under the frozen blind Normal policy, PILFER strictly dominates
@@ -2240,7 +2301,7 @@ This section intentionally remains narrow while the investigation is active.
    45.16% to 49.28% on the product wheel under Normal, while preserving a
    43.92% WARD result against PILFER. Its rule is now shipped offline/local,
    while those figures remain exploratory rather than a retained formal
-   evidence artifact; ranked scoring WARD remains unimplemented (§6.6).
+   evidence artifact; branch Trial replay now implements the rule (§6.6).
 5. **REPRODUCED:** the SUNDER root-placement and live-WARD defects are repaired
    by registry-owned coordination. In a separate 336,000-game treatment,
    SUNDER's uniform-opponent score moves +0.1788pp in Classic and +0.2503pp in
@@ -2260,66 +2321,59 @@ This section intentionally remains narrow while the investigation is active.
    0.0792pp, individual replications flip it, and no classification bootstrap
    or human-choice model exists. The stable conclusion is false-choice risk,
    not a deterministic Trial metagame.
-8. **PROGRESSION INFERENCE:** personal-rune unlocks are mechanically horizontal
-   only if corrected payoff value does not rise with collection breadth. The v1
-   baseline fails that condition because access to PILFER adds a strictly
-   dominant fixed option.
-9. **INFERENCE:** launch feasibility and readiness depend more on authoritative
-   event grammar, replay, bot parity, and balance than on the existing client
-   hand representation.
-10. **INFERENCE:** personal equipped runes are feasible in principle but require
-   substantial unproven shared protocol work. Their format-specific setup is
-   the smaller of the two only after that shared protocol exists.
-11. **INFERENCE:** Rune Trial's selection layer and Classic-backed branch are
-   feasible in principle. Their additional difficulty is a durable private
-   selection/liveness phase, not cryptographic commit/reveal. Feasibility of a
-   genuinely new mechanical Trial mode remains undetermined until its board
-   rule defines the required payoff matrix, replay, bot policy, settlement, and
-   compatibility rollout. Neither branch is launch-ready.
+8. **PROGRESSION INFERENCE:** personal-rune unlocks would be mechanically
+   horizontal only if corrected payoff value does not rise with collection
+   breadth. The v1 baseline fails that condition because access to PILFER adds
+   a strictly dominant fixed option. The selected Trial avoids that feedback
+   in ranked by loaning all offered runes; collection gates CPU practice
+   variety only.
+9. **IMPLEMENTATION:** the branch now provides authoritative event grammar,
+   replay, bot parity, private selection, collection, and settlement. Launch
+   readiness still depends on repository/database gates, compatibility rollout,
+   live verification, and the remaining balance evidence.
+10. **DECISION:** personal equipped runes are deferred. Ordinary ranked remains
+    rune-free, and any current/future equipped rune is ignored and unchanged in
+    Trial.
+11. **IMPLEMENTATION:** Rune Trial's Classic-backed selection/liveness path is
+    repository-ready and uses no cryptographic commit/reveal. The genuinely new
+    mechanical branch is rejected, not an unresolved launch alternative.
 12. **FACT:** the written, local-human, local-CPU, and standard-simulator rules
    now align on at most one cast per turn. FATE's two game charges must be spent
    on different turns.
-   **INFERENCE:** ranked still needs that selected grammar, immutable rule
-   versioning, and replay support before launch; frozen chaining evidence does
-   not make the rejected branch a live product rule.
+   **IMPLEMENTATION:** protocol v2 supplies that grammar, immutable rule
+   versioning, and replay; frozen chaining evidence does not make the rejected
+   branch a live product rule.
 
 ### 10.1 Evidence-bounded recommendation
 
-1. **Do not win-gate ranked mechanical access with the present roster.** Give
-   every ranked player the same six-rune access, or loan the equipped/offered
-   rune for that match. Wins can advance finite mastery, cosmetics, titles, or
-   a transparent collection track without changing the next ranked match's
-   option set.
-2. **Keep the two formats distinct.** Personal-rune matches should lock the
-   equipped rune before matchmaking and reveal the shared mode plus both runes
-   after matching. Rune Trial should ignore equipment, reveal Trial, loan the
-   same three-rune offer to both players, keep choices private, then reveal both
-   together. Trial should not silently become a modifier layered over all seven
-   modes without a new balance tensor.
-3. **Prototype personal runes first in an unranked balance lab.** They require
-   the shared cast/replay protocol but no private selection phase. Trial is the
-   fairer public acquisition surface once its extra selection/liveness state is
-   implemented, because ownership cannot change the offered options.
-4. **Keep the shipped one-hit scoring-WARD rule offline until ranked has the
-   versioned protocol.** Its exploratory Normal wheel average is close to
-   neutral without durability two, while PILFER/WARD remains polarized. The
-   Hard base-demand floor of 16 is selected and implemented offline, but still
-   needs a larger retained balance cohort and target-device performance checks.
-   SUNDER also needs BOUNTY-specific review: its coordination fix is small
-   overall but reinforces an already strong BOUNTY specialist.
+1. **Keep ranked access equal.** The selected Trial loans the complete roster;
+   wins build a finite collection without narrowing the next ranked Trial's
+   options. Do not reinterpret CPU collection locks as standard ranked
+   loadouts.
+2. **Keep the formats distinct.** Rune Trial ignores equipment, reveals one
+   common three-rune loan after private choice, and stays Classic-backed.
+   Personal-rune matchmaking remains a separate future proposal.
+3. **Evaluate personal runes only in an unranked balance lab.** The v2 grammar
+   removes one engineering prerequisite, but it does not repair the asymmetric
+   balance evidence or authorize ownership-based ranked loadouts.
+4. **Keep one-hit scoring WARD identical wherever runes are played.** Branch
+   Trial v2 now replays it authoritatively; ordinary ranked remains rune-free.
+   The larger retained balance cohort and target-device performance checks are
+   still worthwhile, and SUNDER's BOUNTY specialization still needs review.
 5. **Treat the 5% Normal SUNDER slip as flavour, not a difficulty control.** It
    changes the executed column on only about 0.7% of casts in Classic/BOUNTY.
    That is appropriately rare, but too infrequent to make Normal observably
    weaker by itself.
-6. **Build one versioned authoritative action grammar before either format is
-   ranked.** It must cover cast, placement, FATE draw, persistent charm,
-   cast-terminal games, bot actions, reconnect, and replay. Trial then adds a
-   durable private offer/selection phase; personal runes add locked loadouts.
+6. **Preserve one versioned authoritative action grammar.** Protocol v2 now
+   covers committed aim, cast, placement, FATE draw, persistent charm, cast-terminal games,
+   bot actions, reconnect, and replay. Future formats must extend that owner
+   rather than invent a parallel log.
 
-A launch verdict remains premature until the Trial board/wheel decisions and
-the Phase D protocol contract exist. The policy-sensitivity baseline is now
-complete enough for a balance verdict: do not treat the present rune numbers
-as launch-balanced, and do not make ranked mechanical access depend on wins.
+The product/architecture verdict is implemented; the production launch verdict
+waits on the exact database/function/client rollout and verification. The
+policy-sensitivity baseline remains a balance warning: do not treat the present
+rune numbers as proof of perfect balance, and do not let collection breadth
+change ranked Trial access.
 
 ---
 
@@ -2329,7 +2383,7 @@ as launch-balanced, and do not make ranked mechanical access depend on wins.
 |---|---|
 | Rune rules and policies | `src/core/spells.ts`, `src/core/spell-policy.ts`, `src/core/spell-types.ts` |
 | Scoring, destruction, charm state | `src/core/rules.ts` |
-| Mode registry and weights | `src/core/modes.ts`, `docs/MODES.md` |
+| Mechanical modes, progressive outcomes, and weights | `src/core/modes.ts`, `src/core/ranked-outcomes.ts`, `docs/MODES.md` |
 | Spell design and historical measurements | `docs/SPELLS.md`, `tools/spellsim.ts` |
 | Asymmetric v1 raw evidence | `docs/evidence/rune-matchups/v1/raw-*.json`, `tools/rune-matchups.ts` |
 | Pooled matrices and Trial analysis | `docs/evidence/rune-matchups/v1/analysis.json`, `tools/rune-matchup-analysis.ts` |
@@ -2337,42 +2391,48 @@ as launch-balanced, and do not make ranked mechanical access depend on wins.
 | Coordinated SUNDER treatment | `docs/evidence/rune-matchups/sunder-coordination-v1/`, `tools/rune-sunder-sensitivity.ts` |
 | Ladder and seating measurements | `docs/LADDER.md`, `src/core/ladder.ts` |
 | Online lifecycle and authority | `docs/architecture/backend.md`, `supabase/functions/README.md` |
-| Match schema and commands | `supabase/migrations/`, `supabase/functions/pvp-join/`, `supabase/functions/pvp-move/` |
-| Client sync, clocks, and reconnect | `src/online/play.ts`, `src/online/play-finish.ts`, `src/online/match-api.ts` |
+| Match schema and commands | `supabase/migrations/20260825205241_rune_trial_ranked_v2.sql`, `supabase/functions/`, `src/core/ranked-actions.ts` |
+| Client selection, collection, sync, and reconnect | `src/ui/trial-select.ts`, `src/online/rune-collection.ts`, `src/online/play.ts`, `src/online/match-api.ts` |
 | Browser rune behaviour | `tests/browser/spells/scenarios/` |
 | Verification policy | `docs/architecture/testing.md` |
 
-## Appendix B — owner decision register and open questions
+## Appendix B — owner decision register and remaining evidence
 
-1. Does Rune Trial use otherwise-Classic board rules?
-2. What probability should Rune Trial take from the current wheel?
-3. Is the Trial offer drawn from the full roster regardless of ownership?
-4. Does winning with an unowned Trial rune unlock it?
-5. Does a loss advance acquisition at all?
-6. Do bot wins grant identical acquisition progress?
-7. What competitive imbalance is unacceptable: weighted loadout spread,
-   worst-cell matchup, or both?
-8. Are runes intended as pure horizontal identities, or may later unlocks be
-   intentionally stronger?
-9. **Answered 2026-08-25:** at most one cast per turn; FATE's two game charges
-   must be spent on different turns.
-10. Is Rune Trial technically stored as Classic plus a match-format field, or
-    does it deliberately become a new mechanical mode with another board rule?
-11. What happens when one Trial player does not select: auto-pick, forfeit, or
-    cancellation, and when does the gameplay clock start?
-12. Must old clients negotiate a rune-protocol capability before matchmaking?
-13. Which immutable rune/format facts survive account-history deletion for
-    aggregate balance analysis, if any?
-14. How much deeper future charm state should search retain after SUNDER's
-    user-directed charm-aware root correction, beyond the already selected
-    Easy/Normal/Hard behaviour?
-15. Which runes, if any, are guaranteed in the starter collection before a
-    win-gated unlock cadence is evaluated?
-16. **RESOLVED — yes.** One-hit scoring WARD retains the pilot's
-    cast-and-finish bonus on an already-full distinct COLUMN SHIELD column; no
-    additional response window is inserted before terminal scoring.
-17. **PARTLY RESOLVED.** The Hard WARD base-demand floor of 16 is selected and
-    implemented offline before the existing `×1.5` multiplier. A larger
-    retained Hard balance study and target-device performance evidence remain
-    open; persistent charm search must continue to preserve the timed depth-5
-    branch within its budget.
+1. **RESOLVED:** Trial uses Classic board rules.
+2. **RESOLVED:** it enters at IVORY; Classic is 40% and seven additions share
+   60% equally.
+3. **RESOLVED:** every online offer is a uniform three-of-six loan from the full
+   roster, independent of ownership.
+4. **RESOLVED:** every settled win grants the winner's selected rune once;
+   duplicate means no replacement.
+5. **RESOLVED:** loss/draw grants nothing.
+6. **RESOLVED:** bot, resignation, timeout, and deletion-forfeit wins use the
+   same settlement grant.
+7. **REMAINING EVIDENCE, NOT A BLOCKING RULE:** monitor weighted choice
+   concentration and worst-cell frustration; equal loans prevent collection
+   breadth from becoming an access imbalance.
+8. **RESOLVED FOR THIS RELEASE:** collection is horizontal in ranked because
+   Trial loans all offers and standard ranked is rune-free. Future stronger
+   runes or personal loadouts require a new decision.
+9. **RESOLVED:** at most one cast per turn; FATE's two charges belong to
+   different turns.
+10. **RESOLVED:** persist `format='rune_trial'` plus
+    `modifier='classic'`; no eighth mechanical mode.
+11. **RESOLVED:** a 30-second deadline and every early-terminal path use the
+    deterministic per-participant auto-pick; gameplay clock starts at reveal.
+12. **RESOLVED:** both human clients negotiate the Trial capability; a bot uses
+    its capable human's pool. V1 clients remain in ordinary matches.
+13. **RESOLVED:** no new privacy exception is created for analytics. Account
+    deletion follows the existing history-cascade contract; an opponent's
+    already-committed settlement/reward remains, and a reward's optional source
+    link may become null.
+14. **REMAINING EVIDENCE:** future deeper charm search must preserve the chosen
+    difficulty behaviours and target-device budget; it is not a Trial product
+    decision.
+15. **RESOLVED:** no starter runes; new and existing collections start empty.
+16. **RESOLVED:** one-hit scoring WARD retains the pilot's cast-and-finish bonus
+    on an already-full distinct COLUMN SHIELD column; no response window is
+    added before terminal scoring.
+17. **PARTLY RESOLVED EVIDENCE:** Hard's WARD base-demand floor of 16 is live
+    before the existing `×1.5` multiplier. A larger retained Hard balance study
+    and target-device performance evidence remain worthwhile.

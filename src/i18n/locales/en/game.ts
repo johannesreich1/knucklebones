@@ -12,6 +12,7 @@ export const enGame = {
     finish: 'Finish',
     nextDuel: 'Next duel',
     changeSetup: 'Change setup',
+    backToRanked: 'Back to ranked',
   },
   status: {
     outOfTime: 'Out of time — column {{column}}',
@@ -95,6 +96,7 @@ export const enGame = {
   reveal: {
     gameMode: 'GAME MODE',
     matchRune: 'MATCH RUNE',
+    trialRunes: 'TRIAL RUNES',
     runeFor: 'RUNE FOR',
     tapReady: 'Tap when you are ready',
     connecting: 'Connecting players…',
@@ -195,6 +197,24 @@ export const enGame = {
       blurb: "The dial decides — ranked's odds, spun in front of you.",
       detail: 'The dial picks a mode with the same weighted odds used in ranked play.',
     },
+    runeTrial: {
+      name: 'RUNE TRIAL',
+      compact: 'TRIAL',
+      blurb: 'Choose one of three runes in secret.',
+      detail: 'Both players see the same three runes and secretly choose one. The choices reveal together, then the duel uses Classic board rules.',
+    },
+  },
+  runeTrial: {
+    choosePrompt: 'Choose one rune — your opponent cannot see it',
+    chooseFor: '{{player}} — choose one rune',
+    setupOwnChoice: 'Rune Trial deals the rune each player chooses.',
+    lockTrialReachIvory: 'Reach IVORY to unlock Rune Trial.',
+    lockCollectThree: 'Collect three runes to unlock Rune Trial versus AI.',
+    lockCollectTwo: 'Collect two runes to unlock this choice versus AI.',
+    lockReachIvory: 'Reach IVORY, then win this rune in Rune Trial.',
+    lockWinRune: 'Win with this rune in Rune Trial to use it versus AI.',
+    revealPair: 'Both choices are locked',
+    revealed: 'Runes revealed',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Committed — choose a marked column.',

@@ -10,9 +10,9 @@ decisions, and externally owned actions only. Detailed sprint history lives in
 |---|---|---|
 | Web | Live at <https://knucklebones-asg.pages.dev>; pushes to `main` deploy through Cloudflare Pages immediately | `build.mjs`, `.github/workflows/ci.yml` |
 | Game | Local solo and two-player play, tutorial, modes, optional offline spells, and shared local/ranked board rendering | `src/core/`, `src/flow/`, `src/ui/` |
-| Ranked | Server-authoritative online play with guest accounts, human matchmaking, bot backfill, seasonal ladder points, history, profiles, and account deletion | `src/online/`, `supabase/functions/`, `docs/LADDER.md` |
+| Ranked | Production has server-authoritative play, matchmaking/bot backfill, ladder, history, profiles, and deletion. This branch additionally implements permanent mode-pool progression, IVORY Rune Trial, authoritative casts, and rune collection; that branch work is not yet a production deployment | `src/online/`, `src/core/ranked-outcomes.ts`, `supabase/functions/`, `docs/LADDER.md` |
 | Localization | English, Brazilian Portuguese, Spanish, German, French, and Italian share one ordered registry, complete catalogs, native metadata, and measured eager/online mobile geometry | `src/i18n/`, `docs/architecture/localization.md` |
-| Database | The local migration ledger ends at `20260825161016_expand_player_settings_locales.sql`; its six-locale player-settings expansion is production-pending owner rollout. Production records the earlier player-settings base/locale and match-command-retention rollouts, while Game Center remains held; the focused database contracts cover the expanded allow-list locally | `supabase/migrations/`, `supabase/tests/` |
+| Database | The local ledger includes `20260825205241_rune_trial_ranked_v2.sql` after the production-pending six-locale settings expansion. It adds the Rune Trial v2 protocol, permanent pool tier, actions, choices, and collection schema in this branch only. Production records neither rollout here; Game Center remains separately held | `supabase/migrations/`, `supabase/tests/` |
 | Builds | Hosted PWA, standalone HTML, widget, and Capacitor web assets come from the same source build | `build.mjs`, `docs/architecture/build.md` |
 | Native | Capacitor 8.5 iOS and Android projects are tracked; iOS supports 15+, Android installs on API 24+ while targeting API 36 | `native/`, `docs/architecture/build.md` |
 | Design | Product cards, open studies, and archived candidates are explicitly classified and recursively built from shared application CSS/renderers | `design/screens/`, `design/build.mjs` |
@@ -28,10 +28,32 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   formulas and rank groups live in `src/core/ladder.ts` and `docs/LADDER.md`.
 - The lower-rated player opens every ranked match in every mode. Do not add a
   per-mode seating rule without a new measured decision.
-- Mode odds come only from `src/core/modes.ts`. Spell identity, legality, and
-  charges come only from `src/core/spells.ts`.
-- Spells are offline-only until casts have a server-written, replayable online
-  protocol. Ranked must continue to deal an empty spell hand meanwhile.
+- Mechanical mode identities come from `src/core/modes.ts`; progressive ranked
+  outcomes and odds come from `src/core/ranked-outcomes.ts`. Rune identity,
+  legality, and charges come only from `src/core/spells.ts`.
+- Ordinary ranked outcomes remain rune-free. The repository's v2 Rune Trial
+  path is the only ranked format that deals runes: it uses authoritative,
+  replayable aim/cast/place actions. Production must continue using its existing
+  v1 placement protocol until the database, functions, and capable client are
+  rolled out together.
+- Ranked variety unlocks permanently from the player's historical peak:
+  STONE has Classic, Single Strike, Column Shield, and Limited; BONE adds Row
+  Switch, Row Multiply, and Bounty; IVORY adds Rune Trial. Demotion and season
+  turnover never relock a pool. A human pairing uses the lower shared pool and
+  protocol-capability intersection; a bot uses its human's pool. Classic is
+  exactly 40% and eligible additions split the remaining 60% equally.
+- Rune Trial is `format='rune_trial'` with `modifier='classic'`, not an eighth
+  mechanical core mode. Both seats receive the same uniform three-of-six loan,
+  choose privately, and reveal together; a 30-second deadline resolves a
+  missing choice deterministically. Equipment is ignored and left unchanged.
+  Every settled Trial win awards the winner's selected rune once; loss/draw
+  awards nothing and a duplicate is not replaced. Collections start empty.
+- Offline CPU setup exposes NONE plus collected runes; rune RANDOM and
+  RANDOM×2 require two collected runes, and CPU Rune Trial requires three.
+  The last server-confirmed collection is cached per account for offline use.
+  Local two-player always exposes the full roster and every Trial/RANDOM
+  variant, never grants collection rewards, and keeps separate setup
+  preferences from CPU play.
 - Offline WARD is a one-hit scoring seal: while it is active, an all-distinct
   column adds its raw pips once after native mode scoring. A duplicate pauses
   that bonus without spending the mark; a matching hostile action or PILFER
@@ -58,6 +80,13 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   `20260823154719_matchmaking_read_grants.sql`; do not reapply them or use
   `--include-all`. Confirm the four ranked Edge Function versions
   independently because migration history does not establish function state.
+- Roll out Rune Trial database-first from a clean, reviewed commit, then deploy
+  the v2 join/select/action/settlement function closures and capable web/native
+  client as one compatibility window. The additive v1 path remains available
+  for old clients, but they must never enter Trial. Confirm local pgTAP, schema
+  lint, function closure/type checks, and isolated browser workflows before an
+  owner production action; nothing in this branch records that deployment as
+  complete.
 - Keep the Game Center rollout separate: apply pending migration
   `0014_game_center_ids.sql` and
   `20260823132611_game_center_service_grants.sql` together, configure a

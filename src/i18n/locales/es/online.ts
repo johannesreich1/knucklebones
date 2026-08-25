@@ -35,6 +35,9 @@ export const esOnline = {
     cancel: 'Cancelar',
     opponentFound: 'Rival encontrado',
     reconnecting: 'Reconectando con tu partida…',
+    trialLocked: 'Runa elegida — esperando a tu rival',
+    trialOpponentChoosing: 'Tu rival está eligiendo una runa…',
+    trialBothLocked: 'Dos runas elegidas — revelación conjunta',
   },
   profile: {
     points: 'PUNTOS',
@@ -71,6 +74,8 @@ export const esOnline = {
     ladderPoints: 'Puntos de clasificación',
     fullHistory: 'Historial completo',
     notNow: 'Ahora no',
+    runes: 'RUNAS',
+    runesCollected: '{{count}} / 6 conseguidas',
   },
   avatar: {
     instruction: 'Elige una cara y un color',
@@ -137,6 +142,8 @@ export const esOnline = {
     nextDuel: 'Otro duelo',
     forfeitStamp: 'ABANDONO',
     beatenStamp: 'DERROTADO',
+    newRune: 'NUEVA RUNA',
+    tryIt: 'PROBAR',
     share: '{{title}} {{mine}}–{{theirs}} vs {{opponent}}{{delta}} — Knucklebones, duelos de dados clasificatorios',
     delta_one: ' · {{points}} punto',
     delta_other: ' · {{points}} puntos',

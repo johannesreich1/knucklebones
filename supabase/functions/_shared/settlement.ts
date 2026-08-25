@@ -27,6 +27,7 @@ export interface TerminalMatch {
 export interface SettlementResult {
   applied: boolean;
   match: MatchRow;
+  reward?: { rune_id: string; newly_collected: boolean };
 }
 
 export interface SettlementPrecondition {
@@ -75,9 +76,20 @@ function payload(value: unknown): SettlementResult | null {
     return null;
   }
   const match = candidate.match as Partial<MatchRow>;
-  return typeof match.id === "string"
-    ? { applied: candidate.applied, match: match as MatchRow }
-    : null;
+  if (typeof match.id !== "string") return null;
+  const reward = (value as { reward?: unknown }).reward;
+  if (reward !== undefined) {
+    if (!reward || typeof reward !== "object" || Array.isArray(reward)
+        || typeof (reward as { rune_id?: unknown }).rune_id !== "string"
+        || typeof (reward as { newly_collected?: unknown }).newly_collected !== "boolean") return null;
+  }
+  return {
+    applied: candidate.applied,
+    match: match as MatchRow,
+    ...(reward === undefined ? {} : {
+      reward: reward as { rune_id: string; newly_collected: boolean },
+    }),
+  };
 }
 
 /**

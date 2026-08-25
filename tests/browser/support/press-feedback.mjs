@@ -52,6 +52,7 @@ const settledScale = async (button, active = null) => button.evaluate(async (ele
 export async function holdAndCancel(page, selector) {
   const button = target(page, selector);
   await button.waitFor({ state: 'visible' });
+  await button.scrollIntoViewIfNeeded();
   const box = await button.boundingBox();
   if (!box) throw new Error(`no box for ${selector}`);
   const resting = await scaleOf(page, selector);

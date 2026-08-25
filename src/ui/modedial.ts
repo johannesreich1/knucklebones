@@ -18,7 +18,7 @@
 //     blooms the found mode on landing,
 //   · the name and the blurb below are the SHELL's to write, and it writes
 //     them only once this beat's `run` has resolved.
-import { MODES, type ModeSpec } from '../core/modes.ts';
+import { MODES } from '../core/modes.ts';
 import { modeCopy, t } from '../i18n/index.ts';
 import { modeIcon, modeHue } from './modeicons.ts';
 import { $ } from './dom.ts';
@@ -26,11 +26,8 @@ import { Sfx } from './audio.ts';
 import { REDUCED } from './fx.ts';
 import type { Beat } from './reveal-types.ts';
 
-const N = MODES.length;
-const SEG = 360 / N;
 /* node k sits k*SEG clockwise from 12 o'clock, and the comet's bright head sits
    at its own rotation — so "the comet is on node k" is simply rotation ≡ k*SEG */
-const hue = (i: number) => modeHue(MODES[i].id);
 const mod360 = (d: number) => ((d % 360) + 360) % 360;
 
 /* Must match .dnode's resting opacity in main.css: a flare ends exactly on it
@@ -42,9 +39,19 @@ const DIM = 0.28;
    (design/build.mjs, {{dialnodes}}): a card can never draw a ring the app
    does not build. `found` is the card's slot — at runtime the app lights the
    winner itself, but a still needs it baked in. */
-export const dialNodes = (found?: string): string => MODES.map((m, i) =>
+export interface DialModeChoice { readonly id: string }
+export interface DialModeCopy { readonly name: string; readonly blurb: string }
+export interface DialBeatOptions {
+  readonly candidates?: readonly DialModeChoice[];
+  readonly copy?: (id: string) => DialModeCopy;
+}
+
+export const dialNodes = (found?: string, candidates: readonly DialModeChoice[] = MODES): string => {
+  const segment = 360 / candidates.length;
+  return candidates.map((m, i) =>
   `<i class="dnode${m.id === found ? ' on' : ''}" data-mode="${m.id}"`
-  + ` style="--a:${(i * SEG).toFixed(2)}deg;color:${modeHue(m.id)}">${modeIcon(m.id, 24)}</i>`).join('');
+  + ` style="--a:${(i * segment).toFixed(2)}deg;color:${modeHue(m.id)}">${modeIcon(m.id, 24)}</i>`).join('');
+};
 
 /* The comet's deceleration, in one place: the compositor animates with it and
    the frame loop below evaluates it, so the light and the flare it causes can
@@ -92,16 +99,20 @@ function flare(el: HTMLElement): void {
 let restingAt = 0;
 
 /** hunt the ring and land on the pick the caller was already handed */
-export function dialBeat(spec: ModeSpec): Beat {
-  const i = Math.max(0, MODES.findIndex((m) => m.id === spec.id));
+export function dialBeat(spec: DialModeChoice, options: DialBeatOptions = {}): Beat {
+  const candidates = options.candidates?.length ? options.candidates : MODES;
+  const segment = 360 / candidates.length;
+  const i = Math.max(0, candidates.findIndex((m) => m.id === spec.id));
+  const foundHue = modeHue(spec.id);
+  const copy = (): DialModeCopy => options.copy?.(spec.id) ?? modeCopy(spec.id);
   return {
     /* These are getters, not a locale snapshot. The shell reads them again
        when a visible reveal repaints, without rebuilding or restarting the
        dial theatre. */
     get label() { return t('game', 'reveal.gameMode'); },
-    get name() { return modeCopy(spec.id).name; },
-    get blurb() { return modeCopy(spec.id).blurb; },
-    hue: hue(i),
+    get name() { return copy().name; },
+    get blurb() { return copy().blurb; },
+    hue: foundHue,
     icon: modeIcon(spec.id, 17),
     /* the found icon rides in the markup from the first frame and is held back
        by opacity alone (#ovWheel.landed .dfound) — one place decides when the
@@ -109,15 +120,15 @@ export function dialBeat(spec: ModeSpec): Beat {
     stage: `<div class="dial" id="wheelDial">
       <i class="dring"></i>
       <i class="dcomet" id="wheelComet"><i class="dtrail"></i><i class="dhead"></i></i>
-      ${dialNodes()}
+      ${dialNodes(undefined, candidates)}
       <div class="dcore"><i class="dsonar"></i>
-        <i class="dfound" style="color:${hue(i)}">${modeIcon(spec.id, 40)}</i></div>
+        <i class="dfound" style="color:${foundHue}">${modeIcon(spec.id, 40)}</i></div>
     </div>`,
     async run(settle) {
       const comet = $('#wheelComet') as HTMLElement;
       const nodes = Array.from($('#wheelDial').querySelectorAll<HTMLElement>('.dnode'));
       const from = restingAt;
-      const target = i * SEG;
+      const target = i * segment;
       /* Two things vary so no two hunts read alike — how far it travels (4-6
          whole laps) and where it starts. Only the ending is fixed: it was
          decided before this screen appeared. */
@@ -142,8 +153,8 @@ export function dialBeat(spec: ModeSpec): Beat {
         const tick = (): void => {
           const u = Math.min(1, (performance.now() - t0) / ms);
           const at = from + sweep * easeAt(u);
-          for (let k = 0; k < N; k++) {
-            const a = k * SEG;
+          for (let k = 0; k < candidates.length; k++) {
+            const a = k * segment;
             if (Math.floor((at - a) / 360) > Math.floor((prev - a) / 360)) flare(nodes[k]);
           }
           prev = at;

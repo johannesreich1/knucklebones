@@ -10,7 +10,6 @@ import { ask } from '../ui/askcard.ts';
 import { Sfx } from '../ui/audio.ts';
 import { DEFAULT_AVATAR, paintAvatar } from '../ui/avatar.ts';
 import { $ } from '../ui/dom.ts';
-import { REDUCED } from '../ui/fx.ts';
 import { refreshHomeChip } from '../ui/homechip.ts';
 import {
   bestStreak,
@@ -28,6 +27,9 @@ import {
 } from './session.ts';
 import { historyRow } from './history-screen.ts';
 import { repaintOnlineMessage } from './message-copy.ts';
+import { refreshRuneCollection } from './rune-collection.ts';
+import { fillAccountRing } from './account-ring.ts';
+import { paintAccountRunes } from './account-runes.ts';
 import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';
 import type { AuthMode, AuthOrigin } from './auth-screen.ts';
 import type { Ladder, Standing } from './ladder-api.ts';
@@ -45,27 +47,6 @@ export interface AccountScreen {
   show(): Promise<void>;
 }
 
-const ringRun = new WeakMap<HTMLElement, number>();
-
-function fillRing(ring: HTMLElement, target: number): void {
-  const run = (ringRun.get(ring) ?? 0) + 1;
-  ringRun.set(ring, run);
-  const from = parseFloat(ring.style.getPropertyValue('--p')) || 0;
-  if (REDUCED || Math.abs(target - from) < 0.002) {
-    ring.style.setProperty('--p', String(target));
-    return;
-  }
-  const started = performance.now();
-  const duration = 850;
-  const step = (now: number): void => {
-    if (ringRun.get(ring) !== run) return;
-    const time = Math.min(1, (now - started) / duration);
-    ring.style.setProperty('--p', String(from + (target - from) * (1 - Math.pow(1 - time, 3))));
-    if (time < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
-
 export function createAccountScreen(ports: AccountPorts): AccountScreen {
   let lastAccount: {
     profile: Profile | null;
@@ -73,6 +54,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     ladder: Ladder | null;
     standing: Standing | null;
     streak: number;
+    runes: readonly string[];
   } | null = null;
   let lastRecent: Awaited<ReturnType<typeof matchHistory>> = [];
   let pendingCachedRating: number | null = null;
@@ -122,7 +104,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
 
   const paintAccount = (): void => {
     if (!lastAccount) return;
-    const { profile, user, ladder, standing, streak } = lastAccount;
+    const { profile, user, ladder, standing, streak, runes } = lastAccount;
     $('#accSince').textContent = !user?.guest && profile?.created_at
       ? t('online', 'profile.memberSince', {
         date: formatDate(new Date(profile.created_at), { month: 'long', year: 'numeric' }),
@@ -140,6 +122,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       : t('online', 'profile.noneYet');
     $('#accRank').textContent = rankText(standing, games, apex);
     $('#accStreak').textContent = formatNumber(streak);
+    paintAccountRunes(runes);
     paintRecent();
   };
 
@@ -176,6 +159,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     ($('#btnSignOut') as HTMLElement).hidden = true;
     $('#accClaim').hidden = true;
     paintAvatar($('#accDie'), DEFAULT_AVATAR);
+    paintAccountRunes([]);
     paintRecent();
     const ring = $('#accRing') as HTMLElement;
     ring.classList.remove('haspeak');
@@ -184,7 +168,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       const cached = JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null')?.rating;
       if (typeof cached === 'number') {
         pendingCachedRating = cached;
-        fillRing(ring, groupFill(cached));
+        fillAccountRing(ring, groupFill(cached));
         $('#accPoints').textContent = formatNumber(cached);
         paintGroup(cached);
       }
@@ -192,13 +176,14 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     /* Nothing on the profile is useful half-painted. Fetch every independent
        answer together while the shared die holds the view, then reveal one
        coherent card (recent matches included) in a single rendering turn. */
-    const [profile, user, ladder, standing, streak, recent] = await Promise.all([
+    const [profile, user, ladder, standing, streak, recent, runeCollection] = await Promise.all([
       myProfile(),
       currentUser(),
       myLadder(),
       myStanding(),
       bestStreak(),
       matchHistory(3),
+      refreshRuneCollection(),
     ]);
     if (!ownsRun()) return;
     refreshHomeChip();
@@ -216,7 +201,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     const peak = ladder?.peak ?? 0;
     const games = ladder ? ladder.wins + ladder.losses + ladder.draws : 0;
     const apex = standing ? inApex(points, standing.rank, standing.population) : false;
-    lastAccount = { profile, user, ladder, standing, streak };
+    lastAccount = { profile, user, ladder, standing, streak, runes: runeCollection.collected };
     lastRecent = recent;
     pendingCachedRating = null;
     paintAccount();
@@ -224,7 +209,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     refreshHomeChip();
 
     const peakPosition = peakState(points, peak);
-    fillRing(ring, groupFill(points));
+    fillAccountRing(ring, groupFill(points));
     ring.classList.toggle('haspeak', peakPosition.kind !== 'at');
     if (peakPosition.kind === 'ahead') ring.style.setProperty('--pk', String(peakPosition.fill));
     if (peakPosition.kind === 'above') ring.style.setProperty('--pk', '1');

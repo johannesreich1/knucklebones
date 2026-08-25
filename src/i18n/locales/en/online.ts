@@ -32,6 +32,9 @@ export const enOnline = {
     cancel: 'Cancel',
     opponentFound: 'Opponent found',
     reconnecting: 'Reconnecting to your match…',
+    trialLocked: 'Rune locked — waiting for your opponent',
+    trialOpponentChoosing: 'Your opponent is choosing a rune…',
+    trialBothLocked: 'Both runes locked — revealing together',
   },
   profile: {
     points: 'POINTS',
@@ -68,6 +71,8 @@ export const enOnline = {
     ladderPoints: 'Ladder points',
     fullHistory: 'Full match history',
     notNow: 'Not now',
+    runes: 'RUNES',
+    runesCollected: '{{count}} / 6 collected',
   },
   avatar: {
     instruction: 'Pick a face and a colour',
@@ -134,6 +139,8 @@ export const enOnline = {
     nextDuel: 'Next duel',
     forfeitStamp: 'FORFEIT',
     beatenStamp: 'BEATEN',
+    newRune: 'NEW RUNE',
+    tryIt: 'TRY IT',
     share: '{{title}} {{mine}}–{{theirs}} vs {{opponent}}{{delta}} — Knucklebones, ranked dice duels',
     delta_one: ' · {{points}} point',
     delta_other: ' · {{points}} points',

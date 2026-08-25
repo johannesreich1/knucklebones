@@ -37,6 +37,17 @@ export function modeCopy(id: string): ModeCopy {
   };
 }
 
+/** Presentation for the Classic-backed Rune Trial format, kept separate from
+ * the registry of mechanical scoring modes. */
+export function runeTrialCopy(): ModeCopy {
+  return {
+    name: t('game', 'modes.runeTrial.name'),
+    compactName: t('game', 'modes.runeTrial.compact'),
+    blurb: t('game', 'modes.runeTrial.blurb'),
+    detail: t('game', 'modes.runeTrial.detail'),
+  };
+}
+
 export interface SpellCopy extends ModeCopy {
   readonly aim: string;
   readonly aimCompact: string;

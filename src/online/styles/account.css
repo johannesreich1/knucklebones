@@ -20,6 +20,24 @@
    sized between the group label above it and the gold points below */
 :where(#kbroot) #onAccount .accname{font-size:17px;font-weight:900;letter-spacing:.06em;color:var(--p1);
   text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+/* Six fixed collection slots. Locked runes keep their identity and position;
+   the veil communicates ownership, not mystery, and mirrors the per-option
+   lock vocabulary in offline setup. */
+:where(#kbroot) #onAccount .accrunes{display:flex;flex-direction:column;gap:8px;width:100%}
+:where(#kbroot) #onAccount .accrunes-head{display:flex;align-items:center;justify-content:space-between;
+  padding:0 2px;color:var(--dim);font-size:9px;font-weight:900;letter-spacing:.2em}
+:where(#kbroot) #onAccount .accrunes-head b{color:var(--fg)}
+:where(#kbroot) #onAccount .accrunes-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+:where(#kbroot) #onAccount .accrune{position:relative;display:flex;align-items:center;gap:6px;min-width:0;
+  padding:8px 7px;border:1px solid color-mix(in srgb,var(--rh) 30%,transparent);border-radius:11px;
+  background:color-mix(in srgb,var(--rh) 7%,rgba(255,255,255,.02));color:var(--rh)}
+:where(#kbroot) #onAccount .accrune .sico{flex:0 0 auto;filter:drop-shadow(0 0 7px currentColor)}
+:where(#kbroot) #onAccount .accrune span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--fg);font-size:8px;font-weight:900;letter-spacing:.08em}
+:where(#kbroot) #onAccount .accrune.locked{filter:saturate(.15);opacity:.46;background:rgba(255,255,255,.018)}
+:where(#kbroot) #onAccount .accrune.locked::after{content:"";position:absolute;inset:0;border-radius:inherit;
+  background:linear-gradient(135deg,rgba(255,255,255,.09),rgba(255,255,255,.015));
+  backdrop-filter:blur(1.5px);-webkit-backdrop-filter:blur(1.5px);pointer-events:none}
 :where(#kbroot) #onAuth{width:100%;min-height:0;max-width:var(--w-col);display:flex;flex-direction:column;gap:14px;
   overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:2px 3px 8px;
   -webkit-overflow-scrolling:touch}

@@ -12,6 +12,29 @@
 :where(#kbroot) .pointschip.down{color:#fff;background:linear-gradient(100deg,var(--mg),#c9156f);
   box-shadow:0 0 24px rgba(var(--mg-rgb),.5)}
 
+/* First collection unlock: one compact result-owned card, not a second result
+   screen. The rune rises after the verdict and remains useful through TRY IT. */
+:where(#kbroot) .endfeature.rune-reward{display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;gap:10px;padding:10px 11px;border-radius:14px;
+  color:var(--feature-hue);border:1px solid color-mix(in srgb,var(--feature-hue) 42%,transparent);
+  background:linear-gradient(135deg,color-mix(in srgb,var(--feature-hue) 12%,transparent),rgba(255,255,255,.025));
+  box-shadow:0 0 28px color-mix(in srgb,var(--feature-hue) 14%,transparent)}
+:where(#kbroot) .rune-reward .endfeature-icon{display:grid;place-items:center;width:38px;height:52px;
+  border-radius:9px;background:linear-gradient(158deg,#1e2440,#0b0e1c);
+  border:1px solid color-mix(in srgb,var(--feature-hue) 48%,transparent);
+  box-shadow:0 7px 18px rgba(0,0,0,.45),0 0 16px color-mix(in srgb,var(--feature-hue) 24%,transparent)}
+:where(#kbroot) .rune-reward .endfeature-icon svg{width:23px;height:23px;filter:drop-shadow(0 0 8px currentColor)}
+:where(#kbroot) .rune-reward .endfeature-copy{display:flex;flex-direction:column;min-width:0;text-align:left;gap:2px}
+:where(#kbroot) .rune-reward .endfeature-copy small{font-size:7.5px;font-weight:900;letter-spacing:.2em;color:var(--gold)}
+:where(#kbroot) .rune-reward .endfeature-copy b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--fg);font-size:12px;letter-spacing:.1em}
+:where(#kbroot) .rune-reward .endfeature-copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--dim);font-size:8.5px;letter-spacing:.02em}
+:where(#kbroot) .rune-reward .endfeature-action{width:auto!important;min-width:74px;padding-inline:11px;margin:0}
+:where(#kbroot) #ovEnd.enter .rune-reward{animation:runeRewardRise .7s cubic-bezier(.2,1.15,.3,1) 1.15s both}
+@keyframes runeRewardRise{from{opacity:0;transform:translateY(14px) scale(.94)}to{opacity:1;transform:none}}
+#kbroot.reduce-motion #ovEnd.enter .rune-reward{animation:none}
+
 /* the mode dial moved to main.css with ui/modedial.ts — OFFLINE reaches it
    too now, and anything offline-reachable may not live in the lazy chunk */
 

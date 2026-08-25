@@ -19,6 +19,16 @@ import { fillPlate, repaintPlateLocale, type PlateSpec } from './plate.ts';
 
 export interface EndAction { label: string; run: () => void }
 
+export interface EndFeature {
+  className?: string;
+  hue?: string;
+  icon?: string;
+  kicker: string;
+  title: string;
+  body: string;
+  action?: EndAction;
+}
+
 /* an identity plate on the result (design 36f) — the home plate's spec plus
    an optional door. With a tap the row is a <button> and grows its chevron. */
 export interface EndPlate extends PlateSpec { tap?: () => void }
@@ -34,6 +44,7 @@ export interface EndSpec {
      delta beside the number it changed, the beaten foe stamped. Local play
      leaves it empty and keeps its score labels instead. */
   plates?: EndPlate[];
+  feature?: EndFeature;           // optional typed reward/feature card
   again?: EndAction;             // the primary action; absent hides it
   /* the ONE quiet way on, in the short cut — a way out should not stand as
      tall as NEXT DUEL. Ranked's is Home; local play's is the setup screen it
@@ -129,6 +140,7 @@ function presentEnd(spec: EndSpec, localize: (() => EndSpec) | null): void {
   paintCopy(spec);
   delete $('#endPlates').dataset.dealtAt;   // a NEW result: the stamp may slam again
   setPlates(spec.plates ?? []);
+  paintFeature(spec.feature);
   setTimeout(() => {
     show('#ovEnd');
     fitEndTitle();
@@ -170,11 +182,13 @@ export function repaintEndLocale(): void {
       you: copy.you,
       them: copy.them,
       meta: copy.meta,
+      feature: copy.feature,
       again: copy.again,
       quiet: copy.quiet,
       share: copy.share,
     };
     paintCopy(live);
+    paintFeature(live.feature);
   } else {
     /* A legacy caller may have corrected its meta late with setMeta(). Do not
        restore the original HTML before that caller adopts the locale factory. */
@@ -196,6 +210,42 @@ export function setMeta(html: string): void {
   const m = $('#endMeta');
   m.innerHTML = html;
   m.hidden = !html;
+}
+
+function paintFeature(feature?: EndFeature): void {
+  const box = $('#endFeature');
+  box.innerHTML = '';
+  box.hidden = !feature;
+  box.className = `endfeature${feature?.className ? ` ${feature.className}` : ''}`;
+  if (!feature) {
+    box.style.removeProperty('--feature-hue');
+    return;
+  }
+  if (feature.hue) box.style.setProperty('--feature-hue', feature.hue);
+  else box.style.removeProperty('--feature-hue');
+
+  const icon = document.createElement('i');
+  icon.className = 'endfeature-icon';
+  icon.setAttribute('aria-hidden', 'true');
+  icon.innerHTML = feature.icon ?? '';
+  const copy = document.createElement('div');
+  copy.className = 'endfeature-copy';
+  const kicker = document.createElement('small');
+  kicker.textContent = feature.kicker;
+  const title = document.createElement('b');
+  title.textContent = feature.title;
+  const body = document.createElement('span');
+  body.textContent = feature.body;
+  copy.append(kicker, title, body);
+  box.append(icon, copy);
+  if (feature.action) {
+    const action = document.createElement('button');
+    action.type = 'button';
+    action.className = 'btn small endfeature-action';
+    action.textContent = feature.action.label;
+    tap(action, () => { Sfx.tap(); feature.action?.run(); });
+    box.appendChild(action);
+  }
 }
 
 /* the plates can arrive LATE too, for the same reason — ranked deals them from
@@ -243,6 +293,7 @@ export function closeEnd(): void {
   live = null;
   localizedSpec = null;
   dealt = [];
+  paintFeature(undefined);
 }
 
 function label(sel: string, a?: EndAction): void {

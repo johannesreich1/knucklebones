@@ -89,6 +89,7 @@
 :where(#kbroot) .endmeta{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-align:center;
   display:flex;flex-direction:column;align-items:center;gap:7px}
 :where(#kbroot) .endmeta:empty{display:none}
+:where(#kbroot) .endfeature{width:100%;max-width:var(--w-col)}
 :where(#kbroot) #endTitle.win{background-image:linear-gradient(100deg,var(--p1),#fff 50%,#8dffcf)}
 :where(#kbroot) #endTitle.lose{background-image:linear-gradient(100deg,var(--p2),#fff 55%,var(--orange))}
 :where(#kbroot) #endTitle.draw{background-image:linear-gradient(100deg,#9fb2d8,#fff 50%,#9fb2d8)}
