@@ -183,6 +183,12 @@ export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<
   const user = await ensureIdentity();
   setSessionless(!user);
   if (user) {
+    /* Mount one complete destination state before exposing the lazy overlay.
+       Account preference hydration may take a network turn; showing the
+       overlay first left every panel hidden (and the title at ONLINE), so that
+       empty shell painted above the eager chunk loader for a visible flash.
+       Ladder already establishes its wait synchronously before yielding. */
+    showOnlineLoading(loadingPanel(view));
     show('#ovOnline');
     pendingView = null;
     await Promise.all([

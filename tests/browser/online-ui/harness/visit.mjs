@@ -63,6 +63,31 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
       };
     });
     const homeBeforeOnline = await homeSnapshot();
+    if (inspectLoading) {
+      await page.evaluate(() => {
+        window.__onlineEntry = { frames: 0, emptyFrames: 0, first: null };
+        const sample = () => {
+          const overlay = document.getElementById('ovOnline');
+          let visiblePanels = [];
+          if (overlay?.classList.contains('on')) {
+            visiblePanels = [...overlay.querySelectorAll('.panel')]
+              .filter((panel) => !panel.hidden && panel.getBoundingClientRect().height > 0)
+              .map((panel) => panel.id);
+            const frame = {
+              title: document.getElementById('onTitle')?.textContent ?? '',
+              visiblePanels,
+            };
+            window.__onlineEntry.frames++;
+            if (!visiblePanels.length) window.__onlineEntry.emptyFrames++;
+            window.__onlineEntry.first ??= frame;
+          }
+          if (!visiblePanels.some((id) => id !== 'onLoading')) {
+            requestAnimationFrame(sample);
+          }
+        };
+        requestAnimationFrame(sample);
+      });
+    }
     await page.click(entry);
     await page.waitForSelector('#ovOnline', { state: 'attached', timeout: 15000 });
     let loading = null;
@@ -90,6 +115,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
           visiblePanels: [...document.querySelectorAll('#ovOnline .panel:not(#onLoading)')]
             .filter((panel) => !panel.hidden && panel.getBoundingClientRect().height > 0)
             .map((panel) => panel.id),
+          entry: window.__onlineEntry ?? null,
         };
       }, door === 'board' ? 'onBoard' : 'onAccount');
     }
