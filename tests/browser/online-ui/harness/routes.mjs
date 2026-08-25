@@ -81,7 +81,14 @@ export async function installOnlineRoutes(
      one endpoint at a time. */
   await page.route('**/rest/v1/rpc/match_history*', async (r) => {
     await hold(1);
-    return r.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
+    return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
+      { id: '00000000-0000-4000-8000-000000000003', finished_at: '2026-08-21T12:00:00Z',
+        opponent: 'NovaComet992', mode: 'classic', mine: 47, theirs: 31, delta: 21, result: 'win' },
+      { id: '00000000-0000-4000-8000-000000000002', finished_at: '2026-08-20T12:00:00Z',
+        opponent: 'ZestyPixel950', mode: 'classic', mine: 22, theirs: 38, delta: -14, result: 'loss' },
+      { id: '00000000-0000-4000-8000-000000000001', finished_at: '2026-08-19T12:00:00Z',
+        opponent: 'BoldRaven393', mode: 'classic', mine: 29, theirs: 29, delta: 12, result: 'draw' },
+    ]) });
   });
   /* the 0022 shape: points/rank/apex/avatar/peak. The two rows sit in
      DIFFERENT groups (1,072 is IVORY, 465 is BONE) so the board has to draw a

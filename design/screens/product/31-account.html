@@ -52,6 +52,23 @@
         <div class="fact"><b>3</b><span>Best streak</span></div>
         <div class="fact pk"><b>512</b><span>Peak</span></div>
       </div>
+      <!-- The ONE-TIME name claim, the only name control the app has. There is
+           no rename anywhere: the 0026 trigger stamps named_at on the first
+           nickname write and refuses every later one, so this box is gone for
+           good after the claim — not disabled. This card pictures the state
+           before it, which is why the headline above still reads the minted
+           placeholder and the input carries it as a PLACEHOLDER, never a value.
+           It follows the three profile facts and leads match history, the same
+           identity-offer slot occupied by the Guest card on a guest profile.
+           No maxlength, deliberately: a silent cap eats keystrokes mid-word, so
+           the button answers an over-long name with the limit instead. -->
+      <div class="guestbox namebox">
+        <b>CLAIM YOUR NAME</b>
+        <p>One name per account — set once and kept for good. 3–16 letters, digits or underscores.</p>
+        <input autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="FrostLynx303">
+        <div class="err"></div>
+        <button class="btn primary">Claim name</button>
+      </div>
       <button class="histrow">Full match history <b>10 games ›</b></button>
       <!-- the newest matches dealt inline under the door, up to three. The rows
            are showHistory's own (histRow) — one row shape, so the list and this
@@ -66,21 +83,6 @@
            line would be a promise nobody made — which is why the app's rule
            collapses it when empty. -->
       <div class="accsince">Member since August 2026</div>
-      <!-- The ONE-TIME name claim, the only name control the app has. There is
-           no rename anywhere: the 0026 trigger stamps named_at on the first
-           nickname write and refuses every later one, so this box is gone for
-           good after the claim — not disabled. This card pictures the state
-           before it, which is why the headline above still reads the minted
-           placeholder and the input carries it as a PLACEHOLDER, never a value.
-           No maxlength, deliberately: a silent cap eats keystrokes mid-word, so
-           the button answers an over-long name with the limit instead. -->
-      <div class="guestbox namebox">
-        <b>CLAIM YOUR NAME</b>
-        <p>One name per account — set once and kept for good. 3–16 letters, digits or underscores.</p>
-        <input autocomplete="off" spellcheck="false" autocapitalize="off" placeholder="FrostLynx303">
-        <div class="err"></div>
-        <button class="btn primary">Claim name</button>
-      </div>
       <!-- Sign out is the panel's last real button and deletion sits under it
            as a FOOTNOTE — the same linkbtn row Home wears for its legal links,
            no red and no note beside it. One wrapper, so the order holds whether
@@ -96,8 +98,8 @@
 <div class="note"><b>The ring is the screen.</b> One continuous fill — the percentage of the way
   through your current group — sweeping up to its value as the profile opens, with the group name
   in the 90&deg; mouth at the bottom and the season peak as a white notch while it is still ahead
-  of you. Everything under it is a door: the avatar opens the picker, the points open the ladder,
-  the history row opens the list whose newest three are already dealt beneath it.
+  of you. After the three facts, identity comes before history; the avatar opens the picker, the
+  points open the ladder, and the history row opens the newest-three list beneath it.
   <br><br><b>Two words this screen no longer says.</b> There is no <em>rename</em> — a name is
   claimed once and kept, so the old always-there field and its Save button are one boxed offer that
   disappears for good. And there is no <em>record</em>: the win/loss tally heads the match-history

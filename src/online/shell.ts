@@ -88,17 +88,13 @@ const OVERLAY = `
       <div class="fact"><b id="accStreak">0</b><span data-i18n="online:profile.bestStreak">BEST STREAK</span></div>
       <div class="fact pk"><b id="accPeak">0</b><span data-i18n="online:profile.peak">PEAK</span></div>
     </div>
-    <button class="histrow" id="btnHistory"><span data-i18n="online:profile.fullHistory">Full match history</span> <b id="accGames">–</b></button>
-    <!-- the last few matches inline (user call): as many of the newest 0–3 as
-         the space above the pinned foot actually holds on this device. The
-         rows are showHistory's own (histRow) — one implementation. -->
-    <div class="lb minihist" id="accRecent" hidden></div>
-    <div class="accsince" id="accSince"></div>
-    <!-- the ONE-TIME name claim: it wears the guestbox shape because it is the
-         same kind of thing — a boxed offer on the profile — and it exists only
-         while the name is still the minted placeholder. Once named_at is
-         stamped (migration 0026) the card is gone for good, not disabled.
-         It leads the guest card (user call): naming yourself comes before
+    <!-- Identity offers lead the match history (user call): immediately after
+         the three profile facts, so the account's next step is seen before its
+         past matches. The ONE-TIME name claim wears the guestbox shape because
+         it is the same kind of thing — a boxed offer on the profile — and it
+         exists only while the name is still the minted placeholder. Once
+         named_at is stamped (migration 0026) the card is gone for good, not
+         disabled. It leads the guest card: naming yourself comes before
          deciding where the account lives. -->
     <div class="guestbox namebox" id="accClaim" hidden>
       <b data-i18n="online:profile.claimTitle">CLAIM YOUR NAME</b>
@@ -115,6 +111,12 @@ const OVERLAY = `
       <button class="btn primary" id="btnKeepAcc" data-i18n="online:profile.keepForever">Keep it forever</button>
       <button class="btn ghost" id="btnHaveAcc" data-i18n="online:auth.alreadyHaveAccount">I already have an account</button>
     </div>
+    <button class="histrow" id="btnHistory"><span data-i18n="online:profile.fullHistory">Full match history</span> <b id="accGames">–</b></button>
+    <!-- the last few matches inline (user call): as many of the newest 0–3 as
+         the space above the pinned foot actually holds on this device. The
+         rows are showHistory's own (histRow) — one implementation. -->
+    <div class="lb minihist" id="accRecent" hidden></div>
+    <div class="accsince" id="accSince"></div>
     <div class="err" id="onAccErr"></div>
     <!-- the foot is PINNED (user call): sign out and the delete footnote sit
          at the very bottom whatever the device leaves free, and the mini

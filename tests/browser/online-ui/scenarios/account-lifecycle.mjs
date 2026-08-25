@@ -1,3 +1,29 @@
+async function probeIdentityOfferOrder(page) {
+  await page.evaluate(() => new Promise((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  return page.evaluate(() => {
+    const bounds = (selector) => {
+      const element = document.querySelector(selector);
+      if (!element || !element.getClientRects().length) return null;
+      const box = element.getBoundingClientRect();
+      return { top: +box.top.toFixed(2), bottom: +box.bottom.toFixed(2) };
+    };
+    return {
+      facts: bounds('#onAccount .facts'),
+      claim: bounds('#accClaim'),
+      guest: bounds('#accGuest'),
+      history: bounds('#btnHistory'),
+      recent: [...document.querySelectorAll('#accRecent .history-row')]
+        .map((row) => {
+          const box = row.getBoundingClientRect();
+          return { top: +box.top.toFixed(2), bottom: +box.bottom.toFixed(2) };
+        }),
+    };
+  });
+}
+
+const precedes = (first, second) => !!first && !!second && first.bottom <= second.top;
+
 async function probeAccountFooter(page) {
   /* Exercise the member cut from the shared guest fixture: the backend/session
      contract is covered elsewhere; this probe owns only responsive geometry. */
@@ -46,12 +72,31 @@ async function probeAccountFooter(page) {
 
 export async function runAccountLifecycleScenarios(suite) {
   const { visit, out, check } = suite;
+  /* Both identity offers occupy one visible slot: directly after the three
+     facts, before the history door and its three inline rows. Use a tall view
+     so all three rows remain laid out and assert the pixels the player meets. */
+  const offerRun = await visit({ skipStandardProbes: true,
+    viewport: { width: 430, height: 1550 }, probe: probeIdentityOfferOrder });
+  const offerOrder = offerRun.probeResult;
+  out.accountIdentityOrder = offerOrder;
+  check(offerOrder?.recent.length === 3
+    && precedes(offerOrder.facts, offerOrder.claim)
+    && precedes(offerOrder.claim, offerOrder.guest)
+    && precedes(offerOrder.guest, offerOrder.history)
+    && precedes(offerOrder.history, offerOrder.recent[0]),
+  'profile identity offers do not lead Full match history and its three recent matches', offerOrder);
+
   // 1c · the named player: the claim is spent, the card is GONE — not
   // disabled, not re-offered. The headline is all that remains of the name UI.
-  const namedRun = await visit({ named: true });
-  out.named = { accName: namedRun.seen.accName, claim: namedRun.seen.claim };
+  const namedRun = await visit({ named: true, probe: probeIdentityOfferOrder });
+  out.named = { accName: namedRun.seen.accName, claim: namedRun.seen.claim,
+    order: namedRun.probeResult };
   check(namedRun.seen.accName === 'TestGuest001', 'a named player lost their headline', namedRun.seen);
   check(namedRun.seen.claim === false, 'the claim card survives after the name is set', namedRun.seen);
+  check(namedRun.probeResult?.claim === null
+    && precedes(namedRun.probeResult?.facts, namedRun.probeResult?.guest)
+    && precedes(namedRun.probeResult?.guest, namedRun.probeResult?.history),
+  'a named guest moved the Guest card out of the pre-history identity slot', namedRun.probeResult);
   check(namedRun.askAbove === true,
         'the ask-card opened UNDER a later overlay — ask() lost its re-append', namedRun.askAbove);
   check(namedRun.errs.length === 0, 'page errors on the named path', namedRun.errs);
