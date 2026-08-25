@@ -1,6 +1,6 @@
 # Project status
 
-*Current as of 2026-08-24. Keep this page short: current state, unresolved
+*Current as of 2026-08-25. Keep this page short: current state, unresolved
 decisions, and externally owned actions only. Detailed sprint history lives in
 [`docs/history/2026-08-sprint.md`](history/2026-08-sprint.md).*
 
@@ -31,6 +31,13 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   charges come only from `src/core/spells.ts`.
 - Spells are offline-only until casts have a server-written, replayable online
   protocol. Ranked must continue to deal an empty spell hand meanwhile.
+- Offline WARD is a one-hit scoring seal: while it is active, an all-distinct
+  column adds its raw pips once after native mode scoring. A duplicate pauses
+  that bonus without spending the mark; a matching hostile action or PILFER
+  spends it. A full distinct COLUMN SHIELD column may be warded and loses only
+  WARD—not dice or BOUNTY—when matched; a full matched shield is illegal.
+  Hard applies WARD's existing `×1.5` cast threshold only after flooring its
+  base demand at Normal's 16 points.
 - `src/core/` is shared with Edge Functions. Replay, scoring, and search must
   stay deterministic, explicitly seeded, and free of browser dependencies.
 - A shared player-visible concept has one implementation with explicit slots
@@ -90,9 +97,10 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   Repository splash/startup tests and the unsigned iOS compiler build are green;
   background/resume, OS process death, and physical safe areas remain device
   acceptance rather than laptop proof.
-- W3's centre-facing runic seal is now the production shield/ward treatment;
-  its closed shield, clasped Ward, and strike-only break contract are recorded
-  in `design/screens/product/39c-guard-seal.html` and `docs/SPELLS.md`.
+- W3's centre-facing runic seal is the production shield/ward treatment. Its
+  closed shield, scoring clasped Ward, matching-action/PILFER break contract,
+  and layered COLUMN SHIELD answer are recorded in
+  `design/screens/product/39c-guard-seal.html` and `docs/SPELLS.md`.
 - RC4's turn-owned charge stack is now the production rune rail. The retained
   29a–29f studies record the alternatives; `docs/SPELLS.md` owns the selected
   face-down hand, deal-away cast, FATE stack, and empty-outline contract.

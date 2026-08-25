@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { AI, type GameState, type Player } from '../src/core/rules.ts';
 import { SPELLS } from '../src/core/spells.ts';
 import {
-  DEFAULT_SEEDS, FROZEN_MATCHUP_SHA256,
+  DEFAULT_SEEDS, FROZEN_MATCHUP_SHA256, WARD_SENSITIVITY_VERSION,
   attachBaseline, parseWardSensitivityCli, planWardSensitivity,
   playWardSensitivityGame, runWardSensitivity,
   type WardSensitivityReport,
@@ -50,10 +50,10 @@ const throws = (fn: () => unknown, message: string) => {
     baseSeed: 'scripted', replication: 0, castRule: 'one' as const,
     modeId: 'colshield' as const, openerRune: 'ward', replyRune: 'nudge',
   };
-  /* WARD chooses own column 0: [6,6] is worth 24, the foe can still strike
-     it, and filling it is the registry-declared COLUMN SHIELD conflict.
-     Column 2 remains the safe alternative. The foe is one placement from a
-     terminal board, keeping each script to exactly one coordinated turn. */
+  /* WARD chooses own column 0: [6,6] is worth 24 and the foe can still strike
+     it. In v2, filling it is allowed rather than vetoed. Column 2 remains the
+     contrasting alternative. The foe is one placement from a terminal board,
+     keeping each script to exactly one coordinated turn. */
   const initialState: GameState = [
     [[6, 6], [1, 2, 3], [1, 2]],
     [[1, 2], [1, 2, 3], [1, 2, 3]],
@@ -74,18 +74,18 @@ const throws = (fn: () => unknown, message: string) => {
     && recurs.coordination[0].hazardousSuccessfulCasts === 1
     && recurs.coordination[0].vetoes === 0
     && recurs.coordination[0].previewFinalDivergences === 1
-    && recurs.coordination[0].immediateRedundantPlacements === 1
+    && recurs.coordination[0].immediateRedundantPlacements === 0
     && recurs.game.casts[0].length === 1,
-  'safe preview then forbidden independent choice records a successful but immediately redundant WARD', recurs);
+  'projected preview may diverge from final completion without making WARD redundant', recurs);
 
-  const veto = scripted([0, 2]);
-  check(veto.coordination[0].hazardPreviews === 1
-    && veto.coordination[0].vetoes === 1
-    && veto.coordination[0].hazardousSuccessfulCasts === 0
-    && veto.coordination[0].immediateRedundantPlacements === 0
-    && veto.coordination[0].previewFinalComparisons === 1
-    && veto.game.casts[0].length === 0,
-  'forbidden preview vetoes WARD while Normal still makes its independent final placement', veto);
+  const completion = scripted([0, 2]);
+  check(completion.coordination[0].hazardPreviews === 1
+    && completion.coordination[0].vetoes === 0
+    && completion.coordination[0].hazardousSuccessfulCasts === 1
+    && completion.coordination[0].immediateRedundantPlacements === 0
+    && completion.coordination[0].previewFinalComparisons === 1
+    && completion.game.casts[0].length === 1,
+  'projected completion preview keeps the WARD cast and records no obsolete veto', completion);
 
   const remainsSafe = scripted([2, 2]);
   check(remainsSafe.coordination[0].hazardPreviews === 1
@@ -95,7 +95,7 @@ const throws = (fn: () => unknown, message: string) => {
     && remainsSafe.game.casts[0].length === 1,
   'matching safe preview/final placement retains a useful WARD', remainsSafe);
 
-  check([recurs, veto, remainsSafe].every((result) =>
+  check([recurs, completion, remainsSafe].every((result) =>
     result.coordination[1].hazardPreviews === 0
     && result.game.terminalReason === 'board-full'
     && result.game.placements === 2),
@@ -110,6 +110,9 @@ let deterministicReport: WardSensitivityReport;
   const rerun = runWardSensitivity(options);
   check(JSON.stringify(deterministicReport) === JSON.stringify(rerun),
     'the same targeted request reruns byte-identically');
+  check(WARD_SENSITIVITY_VERSION === 2 && deterministicReport.instrumentVersion === 2
+    && deterministicReport.cells.every((cell) => cell.treatmentCellId.startsWith('rune-ward-sensitivity-v2#')),
+  'the changed projected-WARD treatment is explicitly versioned as instrument v2');
   check(deterministicReport.plan.mechanicalConfigurations === 13
     && deterministicReport.plan.oneCastConfigurations === 11
     && deterministicReport.plan.chainConfigurations === 2
@@ -148,10 +151,11 @@ let deterministicReport: WardSensitivityReport;
         'every hazard preview is followed by Normal final placement', { cell, role });
       check(aggregate.previewFinalDivergences <= aggregate.previewFinalComparisons,
         'preview/final divergences are bounded by comparisons', { cell, role });
-      check(aggregate.immediateRedundantPlacements <= aggregate.hazardousSuccessfulCasts,
-        'immediate redundancies are bounded by successful hazardous casts', { cell, role });
-      check(runeId === 'ward' || aggregate.hazardPreviews === 0,
-        'only the registry-declared WARD policy produces hazard previews', { cell, role });
+      check(aggregate.vetoes === 0 && aggregate.immediateRedundantPlacements === 0,
+        'v2 projected previews never revive the retired completion veto/redundancy counters', { cell, role });
+      check(aggregate.hazardPreviews === 0
+        || typeof SPELLS.find((candidate) => candidate.id === runeId)?.cpuRootCharm === 'function',
+      'every legacy-named preview counter comes from a projected-root-charm policy', { cell, role });
     }
   }
 }

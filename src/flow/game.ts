@@ -56,7 +56,7 @@ export { aiChoose } from './game-ai.ts';
 export function armTimer(): void { const gen = S.gen; startTimer(() => autoPlace(gen)); }
 const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 function localTotal(player: Player): number {
-  return totalOf(S.boards[player], S.bounty[player], S.scoring);
+  return totalOf(S.boards[player], S.bounty[player], S.scoring, S.charm.wards[player]);
 }
 
 async function autoPlace(gen: number): Promise<void> {

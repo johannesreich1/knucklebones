@@ -5,6 +5,7 @@ import {
   AI,
   ME,
   SPEC,
+  cloneCharm,
   colScore,
   legalCols,
   type CharmSt,
@@ -39,25 +40,36 @@ export function aiChoose(rootCharm?: CharmSt): number {
     return worst;
   }
 
+  /* An explicit projected charm belongs to a coordinated cast preview. An
+     ordinary choice still needs every persistent WARD, but deliberately not
+     a pending one-shot SUNDER: Normal's 5% coordination slip is defined as a
+     blind final placement for that spell. Keeping this split here also leaves
+     the charm-free hot path allocation-free. */
+  let searchCharm = rootCharm;
+  if (!searchCharm && (S.charm.wards[AI].some(Boolean) || S.charm.wards[ME].some(Boolean))) {
+    searchCharm = cloneCharm(S.charm);
+    searchCharm.sunder = [false, false];
+  }
+
   const filled = state[AI].flat().length + state[ME].flat().length;
   let column: number;
   if (S.diff === 'easy') {
     if (Math.random() < 0.5) return legal[(Math.random() * legal.length) | 0];
     column = searchRoot(state, AI, S.die, 1, {
-      mode: S.scoring, random: Math.random, riskWeight: 0, rootCharm,
+      mode: S.scoring, random: Math.random, riskWeight: 0, rootCharm: searchCharm,
     }).c;
   } else if (S.diff === 'medium') {
     column = searchRoot(state, AI, S.die, 2, {
-      mode: S.scoring, random: Math.random, riskWeight: 0.9, rootCharm,
+      mode: S.scoring, random: Math.random, riskWeight: 0.9, rootCharm: searchCharm,
     }).c;
   } else {
     const started = performance.now();
     column = searchRoot(state, AI, S.die, 4, {
-      mode: S.scoring, random: Math.random, riskWeight: 1.5, rootCharm,
+      mode: S.scoring, random: Math.random, riskWeight: 1.5, rootCharm: searchCharm,
     }).c;
     if (performance.now() - started < 18 && filled < SPEC.cols * SPEC.rows * 2 - 2) {
       column = searchRoot(state, AI, S.die, 5, {
-        mode: S.scoring, random: Math.random, riskWeight: 1.5, rootCharm,
+        mode: S.scoring, random: Math.random, riskWeight: 1.5, rootCharm: searchCharm,
       }).c;
     }
   }

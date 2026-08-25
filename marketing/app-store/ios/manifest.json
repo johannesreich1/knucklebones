@@ -18,7 +18,7 @@
       "eyebrow": "Ranked Row Multiply",
       "headline": "MATCH DICE. MULTIPLY.",
       "subhead": "Build two scoring rows, stack the multipliers, and turn the table.",
-      "scene": "Production Row Multiply board with exactly two multiplied rows and named rivals"
+      "scene": "Production Row Multiply board with one ×2 row, one ×3 row, and named rivals"
     },
     {
       "index": 2,
@@ -30,35 +30,43 @@
     },
     {
       "index": 3,
-      "slug": "sunder-overload",
+      "slug": "ward-runic-seal",
       "eyebrow": "Six tactical runes",
+      "headline": "ONE SEAL. ZERO DAMAGE.",
+      "subhead": "Fasten one column; the next enemy strike that would destroy its dice breaks the seal instead.",
+      "scene": "Production WARD strike-contact frame with one mint runic seal against AI NORMAL"
+    },
+    {
+      "index": 4,
+      "slug": "sunder-overload",
+      "eyebrow": "SUNDER rune",
       "headline": "ONE DIE. EVERY COLUMN.",
       "subhead": "Arm SUNDER to overload every matching enemy column at once.",
       "scene": "Production SUNDER preview with four exact doomed dice against AI NORMAL"
     },
     {
-      "index": 4,
+      "index": 5,
       "slug": "ranked-bounty",
       "eyebrow": "Bounty mode",
       "headline": "EVERY STRIKE PAYS.",
       "subhead": "Destroy matching dice and bank a permanent bounty for every one.",
-      "scene": "Production BOUNTY triple-strike presentation with named rivals"
-    },
-    {
-      "index": 5,
-      "slug": "ranked-victory",
-      "eyebrow": "Ranked result",
-      "headline": "WIN. CLIMB. REPEAT.",
-      "subhead": "Earn points, rise the ladder, and leave your mark on every rival.",
-      "scene": "Production ranked result with two plates, +83 delta, GOLD ranks, and BEATEN stamp"
+      "scene": "Chronological composite of the production BOUNTY two-die strike and its later ✦2 targeting turn with an enlarged face-up WARD, die 4, and 4-second countdown",
+      "composite": {
+        "kind": "chronological-horizontal-feather",
+        "baseVariant": "active",
+        "overlayVariant": "hero",
+        "overlayOpaqueThrough": 1728,
+        "overlayTransparentFrom": 1750,
+        "reason": "The strike effect and the next active-turn controls are separate authentic runtime moments; the empty gap between them carries the deterministic transition."
+      }
     },
     {
       "index": 6,
       "slug": "neon-ladder",
-      "eyebrow": "Ranked competition",
-      "headline": "CLIMB THE NEON LADDER.",
-      "subhead": "Track every rival, every rise, and the next rank within reach.",
-      "scene": "Production ranked ladder centered on FrostLynx303 and named rivals"
+      "eyebrow": "Neon ladder",
+      "headline": "WIN. CLIMB. REPEAT.",
+      "subhead": "Gain points with every win, chase named rivals, and fight for the top 1%.",
+      "scene": "Production ranked ladder centered on FrostLynx303 at GOLD #4 with a +40 next-rival gap"
     }
   ]
 }

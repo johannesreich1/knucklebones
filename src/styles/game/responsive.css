@@ -21,7 +21,7 @@
 #kbroot.land .side{flex:0 0 auto;display:grid;align-items:center;gap:4px var(--land-board-chip-gap);
   grid-template-columns:auto auto;grid-template-areas:"plate plate" "board chips"}
 #kbroot.land .side.bot{grid-template-areas:"plate plate" "chips board"}
-#kbroot.land .plate{grid-area:plate;height:20px}
+#kbroot.land .plate{grid-area:plate;height:30px}
 /* WIDE ENOUGH FOR THE WORST SCORE, ON EVERY PLATFORM. Three 17px bold digits
    grew their own box and shifted the number by 7.4px the moment anyone crossed
    100 — the same "reserve the space, never let it follow its contents" rule the
@@ -35,17 +35,24 @@
    0.52px and test8 failed on a machine no player uses. 40px clears the widest
    measured face by 2.7px. It costs nothing — .plate .sp{flex:1} absorbs the
    growth, with 84-200px of slack across every size from 568x320 to 932x430. */
-#kbroot.land .plate .tot{font-size:17px;min-width:40px}
+#kbroot.land .plate .pright{display:grid;grid-template-columns:40px;
+  grid-template-rows:7px 16px 7px;align-items:center;justify-items:end;gap:0;
+  width:40px;min-width:40px;height:30px}
+#kbroot.land .plate .tot{grid-row:2;font-size:17px;line-height:16px;min-width:40px}
+#kbroot.land .plate :is(.wpt,.bty){margin:0;font-size:8.5px;line-height:7px}
+#kbroot.land .plate .wpt{grid-row:1}
+#kbroot.land .plate .bty{grid-row:3}
+#kbroot.land .plate .wpt .sico{width:7px;height:7px}
 /* LANDSCAPE seats the boards side by side, so a plate has an OUTSIDE and an
    INSIDE: the name belongs on the outer edge and the score on the inner one,
    facing the table. The left board already reads that way; the right board is
    the same plate mirrored — including the hue dot, which stays with the name
    on the outer edge (user call). */
-#kbroot.land .side.bot .plate,#kbroot.land .side.bot .plate .who,
-#kbroot.land .side.bot .plate .pright{flex-direction:row-reverse}
+#kbroot.land .side.bot .plate,#kbroot.land .side.bot .plate .who{flex-direction:row-reverse}
+#kbroot.land .side.bot .plate .pright{justify-items:start}
 #kbroot.land .side.bot .plate .tot{text-align:left}
-/* .pright is a cluster — bounty tally plus score. Mirroring it keeps the score
-   facing the table on both halves and the optional tally outboard. */
+/* Horizontal seating mirrors the cluster's alignment, not its vertical
+   information order: WARD remains the superscript and BOUNTY the subscript. */
 #kbroot.land .plate .nm{font-size:10px;letter-spacing:.12em}
 #kbroot.land .boardwrap{grid-area:board}
 /* `.land .side .cols`, not `.land .cols`: the portrait rules that separate a

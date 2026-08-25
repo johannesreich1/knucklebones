@@ -119,7 +119,7 @@ try {
   };
   await pool([
     // pure-Node gates (no browser): seeded dice determinism + PvP match core
-    ...['architecture', 'preferences', 'i18n', 'i18n-catalog', 'production-migrations', 'dice', 'match', 'modes', 'spells', 'spell-ai', 'rune-matchups', 'rune-matchup-analysis', 'rune-ward-sensitivity', 'rune-sunder-sensitivity', 'online-api', 'gcauth', 'edge-handlers', 'edge-settlement', 'cssgraph', 'cssreach', 'design-library', 'ladder', 'ladderbench', 'botbench', 'fnsync', 'iosship', 'androidship', 'apple-identity', 'native-startup', 'live-safety', 'gate-lock'].map(node),
+    ...['architecture', 'preferences', 'i18n', 'i18n-catalog', 'production-migrations', 'dice', 'match', 'modes', 'spells', 'scoring-ward', 'spell-ai', 'scoring-ward-ai', 'rune-matchups', 'rune-matchup-analysis', 'rune-ward-sensitivity', 'rune-sunder-sensitivity', 'online-api', 'gcauth', 'edge-handlers', 'edge-settlement', 'cssgraph', 'cssreach', 'design-library', 'ladder', 'ladderbench', 'botbench', 'fnsync', 'iosship', 'androidship', 'apple-identity', 'native-startup', 'live-safety', 'gate-lock'].map(node),
     ...FILE_SUITES.map(suite),
     // bench3 is a benchmark, not a pass/fail suite — but its helper-vs-inline
     // scoring equivalence check is a real correctness assertion.

@@ -326,13 +326,17 @@ let deterministic: SunderSensitivityReport;
   const invoke = (args: string[]) => spawnSync(process.execPath, [
     '--no-warnings', '--experimental-strip-types', script, ...args,
   ], { encoding: 'utf8' });
-  const success = invoke(['--games', '1', '--seed', 'cli-smoke', '--quiet']);
-  let parsed: SunderSensitivityReport | null = null;
-  try { parsed = JSON.parse(success.stdout) as SunderSensitivityReport; } catch { /* checked below */ }
-  check(success.status === 0 && parsed?.plan.cellRecords === 28 && parsed.plan.totalGames === 28
-    && parsed.provenance.fileSha256 !== undefined,
-  'valid CLI emits one 28-cell replication with provenance', {
-    status: success.status, stderr: success.stderr, stdout: success.stdout.slice(0, 200),
+  /* Production WARD/charm policy changed after the retained SUNDER study.
+     Do not bless replacement source hashes here: the CLI must fail closed
+     until a deliberate SUNDER instrument v2 rerun establishes new pins. */
+  const driftGuard = invoke(['--games', '1', '--seed', 'cli-smoke', '--quiet']);
+  check(driftGuard.status !== 0
+    && driftGuard.stderr.includes('Production SUNDER policy source drifted:')
+    && driftGuard.stdout.trim() === '',
+  'SUNDER CLI refuses to emit evidence after production drift; v2 rerun and repin required', {
+    status: driftGuard.status,
+    stderr: driftGuard.stderr,
+    stdout: driftGuard.stdout.slice(0, 200),
   });
   const unknown = invoke(['--wat', 'x']);
   check(unknown.status !== 0 && unknown.stderr.includes('Unknown option: --wat'),

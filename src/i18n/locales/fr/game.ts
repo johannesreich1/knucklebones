@@ -84,6 +84,8 @@ export const frGame = {
     columnAvailable_one: '{{player}}, colonne {{column}}, score {{score}}, {{count}} place libre',
     columnAvailable_other: '{{player}}, colonne {{column}}, score {{score}}, {{count}} places libres',
     columnFull: '{{player}}, colonne {{column}}, score {{score}}, pleine',
+    wardBonus: 'Bonus de GARDE +{{bonus}}',
+    wardBonusDetail: ', dont +{{bonus}} grâce à GARDE',
   },
   pass: {
     passPhone: 'Passez le téléphone',
@@ -217,8 +219,8 @@ export const frGame = {
     ward: {
       name: 'GARDE',
       compact: 'GARDE',
-      blurb: 'Protégez une colonne de la prochaine frappe.',
-      detail: 'Marquez une de vos colonnes : la prochaine frappe adverse qui devrait y détruire des dés échoue, puis la garde disparaît. Un usage par partie.',
+      blurb: 'Recomptez une colonne sans paire et bloquez une attaque.',
+      detail: 'Marquez une de vos colonnes : tant que toutes ses faces diffèrent, leurs points comptent une seconde fois comme bonus de GARDE. Une paire suspend le bonus, mais la marque reste. La prochaine pose adverse identique ou un LARCIN brise GARDE sans prendre de dé. Un usage par partie.',
       aim: 'Touchez votre colonne',
     },
     sunder: {
@@ -232,7 +234,7 @@ export const frGame = {
       name: 'LARCIN',
       compact: 'LARCIN',
       blurb: 'Volez le dé supérieur d’une colonne adverse.',
-      detail: 'Glissez sur une colonne adverse : son dé supérieur passe dans votre colonne en face. Le dé volé se pose sans frapper. Votre côté doit avoir de la place ; on ne peut rien voler dans une colonne protégée. Un usage par partie.',
+      detail: 'Glissez sur une colonne adverse : son dé supérieur passe dans votre colonne en face et se pose sans frapper. Votre côté doit avoir de la place et un bouclier de colonne ne peut pas être volé. GARDE intercepte alors le sort et se brise : aucun dé ne traverse. Un usage par partie.',
       aim: 'Touchez une colonne adverse',
     },
     anvil: {

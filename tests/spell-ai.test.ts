@@ -6,7 +6,6 @@ import {
   AI,
   BOUNTY,
   CLASSIC,
-  COLSHIELD,
   applyMove,
   cloneCharm,
   cloneSt,
@@ -112,124 +111,16 @@ async function runSunder(
   };
 }
 
-async function runWard(
-  diff: Diff,
-  board: GameState,
-  preview: number,
-): Promise<RunResult> {
-  S.boards = [
-    board[0].map((column) => column.slice()),
-    board[1].map((column) => column.slice()),
-  ];
-  S.diff = diff;
-  S.die = 6;
-  S.scoring = COLSHIELD;
-  S.spellCharges = [{ ward: 1 }, {}];
-  S.charm = freshCharm();
-  let previewCalls = 0;
-  const castTargets: number[] = [];
-  const context: CastCtx = {
-    mode: COLSHIELD,
-    die: S.die,
-    setDie: (value) => { S.die = value; },
-    draw: () => 1,
-    bagLeft: null,
-    charm: S.charm,
-  };
-  const result = await runAiSpellTurn(AI, {
-    chargesOf: (who, id) => S.spellCharges[who][id] ?? 0,
-    castContext: () => context,
-    previewPlacement: () => { previewCalls++; return preview; },
-    castBy: async (who: Player, spell: SpellSpec, column: number, ctx: CastCtx) => {
-      castTargets.push(column);
-      S.spellCharges[who][spell.id]--;
-      spell.apply(S.boards as GameState, who, column, ctx);
-      return false;
-    },
-  }, false);
-  return {
-    castTargets,
-    placement: result.placement,
-    previewCalls,
-    charges: S.spellCharges[AI].ward,
-  };
-}
+const pureContext = (mode = CLASSIC, die = 6): CastCtx => ({
+  mode,
+  die,
+  setDie: () => undefined,
+  draw: () => 1,
+  bagLeft: null,
+  charm: freshCharm(),
+});
 
 try {
-  /* Pure coordinator: WARD alone owns the hazardous placement declaration;
-     unrelated modes and uncoordinated callers keep the old cast answer. */
-  const ward = spellById('ward')!;
-  const pureBoard: GameState = [[[6, 6], [], []], [[], [], []]];
-  const pureContext = (mode = COLSHIELD, die = 6): CastCtx => ({
-    mode,
-    die,
-    setDie: () => undefined,
-    draw: () => 1,
-    bagLeft: null,
-    charm: freshCharm(),
-  });
-  let purePreviews = 0;
-  const redundant = machineCastPlan(pureBoard, AI, ward, pureContext(), 16,
-    () => { purePreviews++; return 0; });
-  check(redundant.target === null && redundant.placement === 0
-      && redundant.vetoedByPlacement && purePreviews === 1,
-    'pure policy must veto WARD before immediate COLUMN SHIELD completion',
-    { redundant, purePreviews });
-  const safe = machineCastPlan(pureBoard, AI, ward, pureContext(), 16, () => 1);
-  check(safe.target === 0 && safe.placement === 1 && !safe.vetoedByPlacement,
-    'pure policy must retain WARD alongside a safe placement preview', safe);
-  let classicPreviews = 0;
-  const classic = machineCastPlan(pureBoard, AI, ward, pureContext(CLASSIC), 16,
-    () => { classicPreviews++; return 0; });
-  check(classic.target === 0 && classic.placement === null && classicPreviews === 0,
-    'WARD outside COLUMN SHIELD must not perturb placement policy',
-    { classic, classicPreviews });
-  const uncoordinated = machineCastPlan(pureBoard, AI, ward, pureContext(), 16);
-  check(uncoordinated.target === 0 && uncoordinated.placement === null,
-    'a caller without a placement preview must keep the original cast answer', uncoordinated);
-
-  /* With one board slot left, placement into the ward target is forced. Easy
-     keeps its shipped imperfection; Normal and Hard both save the charge. */
-  const forced: GameState = [[[6, 6], [1, 1, 1], [2, 2, 2]], [[], [], []]];
-  Math.random = () => 0.75; // Easy passes its existing 50% spell-skip roll.
-  const easy = await runWard('easy', forced, 0);
-  check(String(easy.castTargets) === '0' && easy.previewCalls === 0 && easy.charges === 0,
-    'Easy must keep the uncoordinated WARD imperfection', easy);
-  check(easy.placement === null, 'Easy must not retain a placement preview', easy);
-
-  const normalForced = await runWard('medium', forced, 0);
-  check(normalForced.castTargets.length === 0 && normalForced.previewCalls === 1
-      && normalForced.charges === 1,
-    'Normal must hold WARD when the preview exposes forced immediate shielding', normalForced);
-  check(normalForced.placement === null,
-    'Normal must discard its veto preview and make the final placement independently', normalForced);
-
-  const hardForced = await runWard('hard', forced, 0);
-  check(hardForced.castTargets.length === 0 && hardForced.previewCalls === 1
-      && hardForced.charges === 1 && hardForced.placement === 0,
-    'Hard must hold WARD when completion is forced and retain the exact preview', hardForced);
-
-  /* When alternatives exist, a Hard cast is permitted only alongside the
-     exact safe preview it will reuse. A hazardous preview saves the charge. */
-  const alternatives: GameState = [[[6, 6], [5, 5], []], [[], [], []]];
-  const hardHazard = await runWard('hard', alternatives, 0);
-  check(hardHazard.castTargets.length === 0 && hardHazard.charges === 1
-      && hardHazard.placement === 0,
-    'Hard must not cast WARD before its exact placement completes that column', hardHazard);
-
-  const hardSafe = await runWard('hard', alternatives, 1);
-  check(String(hardSafe.castTargets) === '0' && hardSafe.charges === 0
-      && hardSafe.placement === 1 && hardSafe.previewCalls === 1,
-    'Hard must reuse the exact safe placement preview after casting WARD', hardSafe);
-  check(!(hardSafe.castTargets[0] === hardSafe.placement),
-    'a coordinated Hard WARD may never immediately complete its own target', hardSafe);
-
-  const normalSafe = await runWard('medium', alternatives, 1);
-  check(String(normalSafe.castTargets) === '0' && normalSafe.charges === 0
-      && normalSafe.previewCalls === 1 && normalSafe.placement === null,
-    'Normal may cast after a safe preview but must still choose its final placement independently',
-    normalSafe);
-
   /* Minimal SUNDER counterexample: the cast is worth 12 only if placement
      knows the wide strike is already global. A plain search spends it in
      column 0 for no marginal effect; the exact root charm chooses column 1. */

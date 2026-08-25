@@ -62,9 +62,10 @@ export function riskOf(st: GameState, p: Player, mode: Mode = CLASSIC): number {
   return r;
 }
 
-function evalSt(st: GameState, options: ResolvedSearchOptions): number {
+function evalSt(st: GameState, options: ResolvedSearchOptions, charm?: CharmSt): number {
   const { mode, opponentWeight, riskWeight } = options;
-  let s = boardTotalMode(st[AI], mode) - opponentWeight * boardTotalMode(st[ME], mode);
+  let s = boardTotalMode(st[AI], mode, charm?.wards[AI])
+    - opponentWeight * boardTotalMode(st[ME], mode, charm?.wards[ME]);
   if (riskWeight) s += riskWeight * (riskOf(st, ME, mode) - riskOf(st, AI, mode));
   return s;
 }
@@ -77,9 +78,9 @@ export interface SearchOptions {
   /** Tuned default: 1.5 (55.3% vs risk-blind over 500 self-play games). */
   riskWeight?: number;
   opponentWeight?: number;
-  /** Exact one-shot charm state for this root placement only. It is cloned
-      per candidate and consumed by applyMove; deeper plies keep the search's
-      established charm-blind heuristic. */
+  /** Exact charm state at the root. It is cloned per candidate and carried
+      through deeper plies so persistent WARD marks remain scoreable and
+      attackable. One-shot SUNDER is naturally consumed by the root move. */
   rootCharm?: CharmSt;
 }
 
@@ -102,24 +103,26 @@ export function searchRoot(st: GameState, who: Player, die: number, depth: numbe
 }
 
 function search(st: GameState, who: Player, die: number, depth: number,
-                options: ResolvedSearchOptions, rootCharm?: CharmSt): SearchResult {
+                options: ResolvedSearchOptions, charm?: CharmSt): SearchResult {
   NODES++;
   const { mode, random } = options;
   const legal = legalCols(st[who]);
   let bestV = who === AI ? -1e9 : 1e9, bestC = legal[0];
   for (const c of legal) {
     const ns = cloneSt(st);
-    applyMove(ns, who, c, die, mode, rootCharm && cloneCharm(rootCharm));
+    const nextCharm = charm && cloneCharm(charm);
+    applyMove(ns, who, c, die, mode, nextCharm);
     let v: number;
     if (isFull(ns[who])) {
-      const d = boardTotalMode(ns[AI], mode) - boardTotalMode(ns[ME], mode);   // game over: material only
+      const d = boardTotalMode(ns[AI], mode, nextCharm?.wards[AI])
+        - boardTotalMode(ns[ME], mode, nextCharm?.wards[ME]);   // game over: material only
       v = d + (d > 0 ? 14 : d < 0 ? -14 : 0);
     } else if (depth <= 1 || NODES > BUDGET) {
-      v = evalSt(ns, options);
+      v = evalSt(ns, options, nextCharm);
     } else {
       let sum = 0;
       for (let d = 1; d <= DICE_FACES; d++) {
-        sum += search(ns, (1 - who) as Player, d, depth - 1, options).v;
+        sum += search(ns, (1 - who) as Player, d, depth - 1, options, nextCharm).v;
       }
       v = sum / DICE_FACES;
     }

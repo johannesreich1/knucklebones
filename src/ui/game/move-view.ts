@@ -1,6 +1,5 @@
-// One visible move pipeline for every driver. The caller supplies only the
-// semantic differences (cancellation identity, charms and feedback cadence);
-// placement, score feedback, protection and destruction stay one view.
+// One visible move pipeline for every driver. Callers supply cancellation,
+// charm and cadence; placement, scoring, protection and destruction stay shared.
 import {
   BOUNTY,
   SPEC,
@@ -20,6 +19,7 @@ import { setStageDie } from '../die.ts';
 import { $, colEl, slotEl, slotIdx } from '../dom.ts';
 import { REDUCED, burst, flash, floatPts, shake } from '../fx.ts';
 import { colorOf, heatOf } from '../identity.ts';
+import { spellHue } from '../spellicons.ts';
 import { renderSide } from './board.ts';
 import {
   BOUNTY_TIMING,
@@ -31,8 +31,9 @@ import {
   markBountyVictim,
   waitForBountyOffset,
 } from './bounty-presentation.ts';
-import { playWardStrike, shieldBlocked, wardBurned } from './seals.ts';
+import { playWardStrike, shieldBlocked } from './seals.ts';
 import { flyDieToSlot } from './motion.ts';
+import { settleWardBreak } from './ward-score.ts';
 import {
   clearSunderPresentation,
   markSunderVictim,
@@ -64,12 +65,10 @@ export interface GameViewResult {
   interrupted: boolean;
   destroyed: number;
 }
-
 interface DestructionResult {
   destroyed: number;
   interrupted: boolean;
 }
-
 interface DestructionPlan {
   col: number;
   victims: number[];
@@ -256,7 +255,9 @@ export async function animateGameMove(
     return { placed: false, interrupted: true, destroyed: 0 };
   }
 
-  const before = boardTotalMode(S.boards[who], S.scoring);
+  const wards = spec.charm?.wards[who];
+  const nativeBefore = boardTotalMode(S.boards[who], S.scoring);
+  const before = boardTotalMode(S.boards[who], S.scoring, wards);
   S.boards[who][col].push(die);
   spec.onPlaced?.();
   Sfx.place();
@@ -266,9 +267,13 @@ export async function animateGameMove(
   renderSide(who, !REDUCED);
   const placementLandedAt = bountyPresentationNow();
 
-  const gain = boardTotalMode(S.boards[who], S.scoring) - before;
-  const multiplied = gain > die;
-  floatPts(who, col, '+' + formatNumber(gain), multiplied ? heatOf(who) : colorOf(who));
+  const nativeGain = boardTotalMode(S.boards[who], S.scoring) - nativeBefore;
+  const gain = boardTotalMode(S.boards[who], S.scoring, wards) - before;
+  const wardDelta = gain - nativeGain;
+  // A WARD distinct-face bonus is not native ×2 matching feedback.
+  const multiplied = nativeGain > die;
+  const signedGain = (gain < 0 ? '−' : '+') + formatNumber(Math.abs(gain));
+  floatPts(who, col, signedGain, wardDelta ? spellHue('ward') : multiplied ? heatOf(who) : colorOf(who));
   if (multiplied && spec.celebrateMultiplier) {
     Sfx.mult();
     const rect = colEl(who, col)?.getBoundingClientRect();
@@ -281,11 +286,11 @@ export async function animateGameMove(
     return { placed: true, interrupted: true, destroyed: 0 };
   }
 
-  // openStrikes consumes SUNDER exactly once and is also the headless replay
-  // source of truth. Ranked omits charm, so its plan remains the plain move.
+  // openStrikes consumes SUNDER once and is replay truth; ranked omits charm.
   const strikes = openStrikes(S.boards, who, col, die, S.scoring, spec.charm);
   const foe = (1 - who) as Player;
-  if (isShielded(S.boards[foe][col], S.scoring) && S.boards[foe][col].includes(die)) {
+  const wardAnswersShield = strikes.some((strike) => strike.col === col && strike.warded);
+  if (!wardAnswersShield && isShielded(S.boards[foe][col], S.scoring) && S.boards[foe][col].includes(die)) {
     shieldBlocked(foe, col);
   }
 
@@ -304,12 +309,7 @@ export async function animateGameMove(
           targetColumn: strike.col,
           source,
           isCurrent: spec.isCurrent,
-          impact: () => {
-            spec.charm!.wards[foe][strike.col]--;
-            wardBurned(foe, strike.col);
-            Sfx.mult();
-            vibrate([14, 26, 18]);
-          },
+          impact: () => settleWardBreak(foe, strike.col, () => spec.charm!.wards[foe][strike.col]--),
         });
         if (!completed || !spec.isCurrent()) {
           return { placed: true, interrupted: true, destroyed };

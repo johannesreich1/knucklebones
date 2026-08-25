@@ -1,4 +1,4 @@
-<!-- meta name="W3 — Runic seal, closed or clasped" group="3g · Shield & ward studies" subtitle="CHOSEN AND SHIPPED 2026-08-23 — the mark the game draws on a guarded column, and the only one: the shield's seal is a CLOSED line, drawn shut the moment the column fills, with no segments and nothing to spend; the ward's is the same line held together by ONE clasp, and only an opponent strike that would take dice snaps it — the line unwinds off the column and does not come back" width=430 height=1468 sizes="md" links="Match, Game modes, Spells" -->
+<!-- meta name="W3 — Runic seal, closed or clasped" group="3g · Shield & ward studies" subtitle="CHOSEN AND SHIPPED 2026-08-23 · SCORING WARD UPDATED 2026-08-25 — the shield is one permanent CLOSED line; WARD is one scoring clasp that a matching hostile action or PILFER spends, including over a full distinct COLUMN SHIELD while its dice and gold loop remain" width=430 height=1468 sizes="md" links="Match, Game modes, Spells" -->
 <style>
   /* Card-local names only (sw*). The app pins .col/.slot/.chip/.pip with
      position and height, so a card that redeclares them loses silently —
@@ -46,15 +46,16 @@
      What the previous version of this card got WRONG: it cut the seal into
      one tick per protected row and burned them out one at a time. Nothing in
      this game is protected per row. A COLUMN SHIELD is not a count and not a
-     charge — it is the state of being full, and while it holds, nothing that
-     lands opposite can touch the column at all. A WARD is exactly one charge.
+     charge — it is the state of being full, and while it holds, nothing can
+     remove the column's dice. A WARD is exactly one scoring charge.
      So the two seals are not one mark in two colours; they are two KINDS of
      mark, and the geometry says which is which before the colour does:
 
        SHIELD — a CLOSED line. No seam, no segments, no end. There is
                 nothing on it that could be taken away, which is the rule.
        WARD   — the same line, thinner, held shut by ONE clasp. One
-                fastening, one strike, and it is open for good.  ===== */
+                fastening, one matching hostile action or PILFER, and it is
+                open for good.  ===== */
   .swseal{position:absolute;inset:-7px;width:72px;height:188px;overflow:visible;pointer-events:none}
 
   /* the shield's line: ONE stroke. It was two for a while — a hairline riding
@@ -209,7 +210,7 @@
   <div class="shead"><button class="ico">‹</button><span class="ttl">GUARDED COLUMN</span><span class="pad"></span></div>
   <div class="swwrap" style="--wd:{{shue:ward}}">
 
-    <div class="cap2">At rest — a closed line with nothing on it, and a line held by one clasp</div>
+    <div class="cap2">At rest — the closed shield preserves dice; the clasped WARD also scores distinct pips</div>
     <div class="swrow">
       <div class="swcol swgold">
         <div class="swstack">
@@ -222,7 +223,7 @@
           </svg>
         </div>
         <div class="swchip gold">22<b class="swmx">×2</b><i>{{mico:colshield:13}}</i></div>
-        <div class="swlbl">shield · closed</div>
+        <div class="swlbl">matched shield · WARD illegal</div>
       </div>
       <div class="swcol swmint">
         <div class="swstack">
@@ -238,11 +239,11 @@
           </svg>
         </div>
         <div class="swchip mint"><i>{{sico:ward:13}}</i>5</div>
-        <div class="swlbl">ward · clasped</div>
+        <div class="swlbl">ward · clasped · +5</div>
       </div>
     </div>
 
-    <div class="cap2">The beats — the column fills and the line closes; then one strike, two outcomes</div>
+    <div class="cap2">The beats — a shield stays; a matching action spends WARD; PILFER spends it without crossing</div>
     <div class="swrow">
       <div class="swcol swgold swseat">
         <div class="swlane"></div>
@@ -294,6 +295,6 @@
       </div>
     </div>
 
-    <div class="note"><b>What shipped:</b> this is the mark on a guarded column in the game, live since 2026-08-23, and the only one — nothing is drawn under it, so the seal carries the whole state. The two protections are different <b>kinds of mark</b>, not one mark wearing two hues. A <b>shield</b> is the state of being full: a closed line, no seam, no segments, no charge. It is drawn the moment the third die seats, and a strike can only make it flare, because there is nothing on it to take away. A <b>ward</b> is one charge: the same line, thinner, held shut by one modestly enlarged clasp — the only part of either seal that stirs at rest, so the eye is told in advance where it will give. That clasp always faces the centre of the table: down/up on the portrait top/bottom boards, right/left on the landscape left/right boards. Only a genuine opponent strike that would take victims sends a copy of the settled attacker to that clasp; contact spends the ward, the line swings open and unwinds off the column, the rune burns off the chip, and the true after-state is dice with no protection. A miss, an own placement, or a strike already stopped by the permanent shield never invents that attacker beat. The line sits outside the slots, so it costs the dice nothing — no tint on the faces, no pip contrast lost — and the difference between the two rules is <b>structural</b>, closed against clasped, rather than a matter of degree. Casting the ward and later placing a die in its column do not reroute the die: it always seats in the normal authoritative slot. <b>Cost:</b> the clasp carries the whole "this one can break" reading, so it must remain legible on the smallest board without becoming a second icon on the border. Under <b>reduced motion</b> the bead stops and both beats go static: closed-against-clasped still says which is which, but the breaking becomes a before-and-after the player may never see happen.</div>
+    <div class="note"><b>What ships offline:</b> the two protections are different <b>kinds of mark</b>, not one mark wearing two hues. A <b>shield</b> is the permanent state of being full: one closed line, no seam, no charge, and no hostile action can remove its dice. A <b>ward</b> is one scoring clasp. While active on an all-distinct column it adds the raw pips once after native mode scoring—this shown <b>[4,1]</b> adds <b>+5</b>; a duplicate pauses the bonus but leaves the mark. A matching hostile placement sends the settled attacker to the centre-facing clasp and burns WARD. PILFER instead tugs its selected die back into place, burns WARD and steals nothing. A full distinct COLUMN SHIELD column may carry both: a matching attack breaks only the mint clasp, creates zero victims and zero BOUNTY, and leaves the gold loop plus every die. A full matched shield, like <b>[5,5,2]</b>, cannot be warded. A nonmatching miss or own placement leaves WARD intact. The line stays outside the slots, so neither mark costs pip contrast. Under <b>reduced motion</b> the same distinctions resolve as static before/after states. Ranked still deals no runes; its action protocol is unchanged.</div>
   </div>
 </div></div>

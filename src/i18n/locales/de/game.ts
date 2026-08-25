@@ -84,6 +84,8 @@ export const deGame = {
     columnAvailable_one: '{{player}}, Spalte {{column}}, {{score}} Punkte, {{count}} Platz frei',
     columnAvailable_other: '{{player}}, Spalte {{column}}, {{score}} Punkte, {{count}} Plätze frei',
     columnFull: '{{player}}, Spalte {{column}}, {{score}} Punkte, voll',
+    wardBonus: 'SCHUTZ-Bonus +{{bonus}}',
+    wardBonusDetail: ', davon +{{bonus}} durch SCHUTZ',
   },
   pass: {
     passPhone: 'Handy weitergeben',
@@ -217,8 +219,8 @@ export const deGame = {
     ward: {
       name: 'SCHUTZ',
       compact: 'SCHUTZ',
-      blurb: 'Schütze eine Spalte vor dem nächsten Treffer.',
-      detail: 'Markiere eine deiner Spalten: Der nächste gegnerische Treffer, der dort Würfel zerstören würde, verpufft und der Schutz ist verbraucht. Ein Einsatz pro Spiel.',
+      blurb: 'Werte eine Spalte ohne Paare erneut und blocke einen Angriff.',
+      detail: 'Markiere eine deiner Spalten: Solange alle Augen verschieden sind, zählen sie als SCHUTZ-Bonus ein zweites Mal. Ein Paar pausiert den Bonus, die Markierung bleibt. Die nächste passende gegnerische Platzierung oder ein RAUB bricht den SCHUTZ, ohne Würfel zu nehmen. Ein Einsatz pro Spiel.',
       aim: 'Eigene Spalte antippen',
     },
     sunder: {
@@ -232,7 +234,7 @@ export const deGame = {
       name: 'RAUB',
       compact: 'RAUB',
       blurb: 'Stiehl den obersten Würfel einer gegnerischen Spalte.',
-      detail: 'Ziehe auf eine gegnerische Spalte: Ihr oberster Würfel wechselt in deine gegenüberliegende Spalte. Der gestohlene Würfel landet ohne Angriff. Deine Seite braucht Platz; eine geschützte Spalte kann nicht beraubt werden. Ein Einsatz pro Spiel.',
+      detail: 'Ziehe auf eine gegnerische Spalte: Ihr oberster Würfel wechselt in deine gegenüberliegende Spalte und landet ohne Angriff. Deine Seite braucht Platz, ein Spaltenschild kann nicht beraubt werden. SCHUTZ fängt den Einsatz ab und bricht — kein Würfel wechselt die Seite. Ein Einsatz pro Spiel.',
       aim: 'Gegnerische Spalte antippen',
     },
     anvil: {

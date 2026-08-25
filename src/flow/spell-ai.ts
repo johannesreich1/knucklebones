@@ -27,9 +27,8 @@ export interface AiSpellPorts {
 
 export interface AiSpellTurnResult {
   gameOver: boolean;
-  /* Hard reuses every coordinated preview exactly. Normal preserves WARD's
-     independent final choice, while root-charm spells coordinate except for
-     their explicit rare slip. Easy never previews. */
+  /* Hard reuses every coordinated preview exactly. Normal coordinates a
+     root-charm spell except for its explicit rare slip. Easy never previews. */
   placement: number | null;
 }
 

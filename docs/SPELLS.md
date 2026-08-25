@@ -66,7 +66,9 @@ These are structural, not taste. Breaking one is a redesign, not a tweak.
 - **Legality is the only failure path.** An illegal target is refused *before*
   anything moves, so a cast can never half-happen and leave the boards in a
   state nobody designed. A cast that would change nothing is illegal, not a
-  wasted charge (a second ward on one column; a ward on a shielded column).
+  wasted charge (a second ward on one column; a ward on a full matched
+  COLUMN SHIELD column). A full all-distinct shielded column is different: its
+  scoring bonus and spendable clasp both make it a legal WARD target.
 - **Never demand input outside your own turn.** No reactions, no interrupts.
   WARD is cast in *anticipation* and resolves by itself. This is also what
   makes the layer safe for a turn-based network protocol: a cast is one more
@@ -124,20 +126,55 @@ does not rescue a solved cast time.
 
 ## 4. The roster
 
-Measured 2026-08-22, 3,000 games per configuration, one-sided (a holder vs a
-bare twin) at the offline Medium anchor. These are **floors** — the casting
-policy is a heuristic, and a smarter human can only do better.
+Historical baseline measured 2026-08-22, 3,000 games per configuration,
+one-sided (a holder vs a bare twin) at the offline Medium anchor. These are
+**floors** for the rules measured then—not current scoring-WARD results—the
+casting policy is a heuristic, and a smarter human can only do better.
 
 | Spell | Uses | Target | Classic | Notable mode |
 |---|---|---|---|---|
 | **FATE** — discard the die in hand, draw the next | 2 | self | 59.3 | LIMITED 60.8 |
 | **NUDGE** — the die ticks one pip up, 6 wraps to 1 | 1 | self | 55.7 | — |
-| **WARD** — a column absorbs the next strike, then burns out | 1 | own column | 56.9 | COLSHIELD 49.5 |
+| **WARD (old no-score rule)** — a column absorbs the next victim-bearing strike | 1 | own column | 56.9 | COLSHIELD 49.5 |
 | **SUNDER** — this placement strikes *every* matching column | 1 | self | 60.6 | SINGLESTRIKE 59.3 |
 | **PILFER** — steal the top die of an enemy column | 1 | enemy column | 60.7 | COLSHIELD 63.1 |
 | **ANVIL** — recast the weakest die in a column you filled | 1 | own column | 60.2 | COLSHIELD 62.8, SINGLESTRIKE 63.2 |
 
-The roster spans **55.7–63.2**, against the retired swap's 70.5/81.8.
+That historical roster spans **55.7–63.2**, against the retired swap's
+70.5/81.8.
+
+### WARD: the one-hit scoring seal (updated 2026-08-25)
+
+WARD remains one cast, one visible mark, and one absorbed hostile action. Its
+shipped offline rule now gives the marked column a reason to be built and a
+reason for the opponent to challenge it:
+
+- While WARD is active, an all-distinct column adds its raw pip sum once after
+  the mode's native scoring. `[4,5,6]` adds `+15`; ROW MULTIPLY does not
+  multiply that bonus again. Empty columns and columns containing any
+  duplicate add zero.
+- Adding an own duplicate pauses the bonus without spending WARD. The mark
+  remains and the bonus returns if a later legal board mutation makes the
+  active column all-distinct again.
+- A matching hostile placement—including a SUNDER-expanded match—burns WARD
+  and preserves the dice it reached. PILFER aimed at a warded nonempty column
+  also burns WARD and steals nothing; it remains legal even when the receiving
+  column is full.
+- Under COLUMN SHIELD, a full all-distinct column may be warded. A later
+  matching hostile action burns WARD with zero victims and therefore zero
+  BOUNTY, while the permanent shield and every die remain. A full shielded
+  column containing a duplicate is illegal because it has neither a scoring
+  bonus nor defensive work left for WARD to buy.
+
+The score is derived from the live board plus the active mark; it is never a
+second accumulated counter. Easy keeps its deliberately loose casting policy.
+Normal keeps its 16-point demand. Hard floors WARD's base cast demand at that
+same `16` before applying WARD's existing `×1.5` threshold; Hard's advantage
+comes from deeper placement search rather than accepting lower-value WARD
+casts. Persistent WARD state is scored and attacked through every search ply.
+
+This update ships **offline only**. Ranked still deals an empty rune hand and
+its placement-only server replay/action protocol is unchanged (§8).
 
 ### ANVIL (added 2026-08-22)
 
@@ -183,7 +220,8 @@ clearest "waiting for a condition" case in the roster (§5).
 not beyond it. Both modes make full columns more common or more valuable, which
 is exactly what ANVIL feeds on. Refusing a *shielded* column was considered and
 rejected: under COLSHIELD every full column is shielded, so it would make the
-rune dead there, which is WARD + COLSHIELD's 49.5 problem in a new coat.
+rune dead there, recreating the old no-score WARD + COLSHIELD 49.5 problem in
+a new coat.
 
 **Charge counts were measured, not guessed.** NUDGE at two casts measured 61.3
 and ships at one (53.9 in that first pass); FATE stayed at two because it is
@@ -195,19 +233,22 @@ The presence of a pair does not redirect or disable the repair. Ties still go
 to the die closest to the centre line, so both the preview and the result are
 predictable from the board.
 
-### Known bad pairings
+### Known pairing evidence
 
-Both involve COLUMN SHIELD, in opposite directions, and any deal that picks
-*both* mode and spell should know them:
+Both notable measurements involve COLUMN SHIELD, but only the PILFER result
+still describes the current rules:
 
 - **PILFER + COLSHIELD (63.1) — too strong.** The steal un-fills a nearly-full
   column, which denies the shield the mode exists to grant.
-- **WARD + COLSHIELD (49.5) — worthless.** A coin flip, casting in only 61% of
-  games: the mode already protects full columns, and a shielded column may not
-  be warded, so the spell has almost nothing left to do.
+- **Historical no-score WARD + COLSHIELD (49.5) — retired weakness.** The old
+  policy cast in only 61% of games because a shielded column could not be
+  warded and the mode removed much of WARD's defensive work. The scoring seal
+  supersedes that legality and score rule; retain `49.5` as baseline evidence,
+  not a current balance claim.
 
-Both pickers now offer RANDOM, so a random/random deal can land on the dead
-pairing. Refusing it at deal time is an open decision, not a shipped rule.
+Both pickers still offer RANDOM. The scoring-WARD repair removes the known dead
+WARD pairing from the deal surface; PILFER + COLUMN SHIELD remains a hot result
+to keep visible when interpreting a random/random game.
 
 ### Rejected on principle
 
@@ -253,25 +294,27 @@ other** in classic, as mean win% across the pool:
 A span of **7.7pp ≈ 54 Elo**, and the ordering is **not mode-stable**: under
 SINGLE STRIKE the span is 17.3pp and PILFER beats WARD ~67–33. RANDOM 2 can
 therefore create a sharply uneven individual duel by design; it must never be
-presented as a balanced competitive draft. WARD's friendly
-56.9-vs-bare reading hides that it is the worst rune in the pool in every mode.
+presented as a balanced competitive draft. The old no-score WARD's friendly
+56.9-vs-bare reading hid that it was the worst rune in that pool in every mode;
+the shipped scoring repair does not retroactively change this frozen baseline.
 
 **The lesson is structural: a roster balanced against nothing systematically
 over-values defensive spells.** Against an opponent who is also gaining, swing
 beats safety. Expect any new defensive rune's one-sided number to overstate it.
 
-**Two cautions before trusting a cross-table.** `searchRoot` can receive the
-exact live charm for the immediately following root placement, which production
-uses to coordinate SUNDER, but deeper plies still omit charm, rune identity,
-and unspent charges. The frozen asymmetric v1 matrix predates that root
-coordination and is deliberately labeled blind. Under symmetry some blindness
-cancels; asymmetrically, adapting to the opponent's rune *is* part of the
-matchup. And a cell measured in one direction only carries ~1pp of seat bias;
-run both and average.
+**Two cautions before trusting a cross-table.** Production `searchRoot` now
+carries persistent WARD state through every ply and consumes one-shot SUNDER
+at its exact root placement, but it still omits future rune identity and
+unspent charges. The frozen asymmetric v1 matrix predates that coordination
+and scoring-WARD, so it remains deliberately labeled blind. Under symmetry
+some blindness cancels; asymmetrically, adapting to the opponent's rune *is*
+part of the matchup. And a cell measured in one direction only carries ~1pp
+of seat bias; run both and average.
 
-**Late is not automatically degenerate.** WARD and SUNDER cast at 83% and 74%
-through the game because they wait for a *condition* — a real threat, a die
-that matches several columns. The swap's lateness was different: hoarding was
+**Late is not automatically degenerate.** Historical no-score WARD and SUNDER
+cast late because they waited for a *condition*—a real threat or a die matching
+several columns. Scoring WARD instead gives proactive distinct-column building
+immediate value. The swap's lateness was different: hoarding was
 unconditionally correct. Distinguish "waiting for a trigger" from "waiting
 because later is always better".
 
@@ -279,10 +322,10 @@ because later is always better".
 shared cast/hold decision, but production local play now layers
 `machineCastPlan` over it for registry-declared same-turn coordination. The
 frozen v1 harness intentionally retains its earlier blind placement policy;
-WARD and SUNDER treatments live in separately versioned evidence. A spell whose
-value never shows on the boards (FATE, NUDGE, SUNDER) must provide a `cpuCast`
-hook, or the default board-swing policy will never cast it and it will measure
-as worthless.
+the scoring-WARD and coordinated-SUNDER treatments remain separately versioned
+evidence rather than rewrites of it. A spell whose value never shows on the
+boards (FATE, NUDGE, SUNDER) must provide a `cpuCast` hook, or the default
+board-swing policy will never cast it and it will measure as worthless.
 
 ---
 
@@ -318,16 +361,18 @@ the localization catalogs through the shared adapter.
   the mode. Optional everywhere, so a call site with no hand to offer simply
   omits it and any spell needing one answers "not castable here".
 - **`CharmSt`** (`core/rules.ts`) — persistent marks destruction consults.
-  `openStrikes()` returns the plan for one placement (which columns, which
-  victims, which are warded) and is read by *both* the headless `applyMove`
-  and the animated flow, so screen and state cannot tell different stories.
+  `openStrikes()` returns the plan for one placement (which hostile columns it
+  reaches, which victims exist, and which WARD answers) and is read by *both*
+  the headless `applyMove` and the animated flow, so screen and state cannot
+  tell different stories. A full COLUMN SHIELD match can therefore be a real
+  warded outcome with zero victims.
   Without a charm, `applyMove` is the pre-spell hot path, untouched.
-- **Root placement coordination** — `machineCastPlan` asks only registry hooks.
+- **Placement coordination** — `machineCastPlan` asks only registry hooks.
   Hard reuses the exact preview; Normal reuses a root-charm preview except for
-  its named 5% slip, while WARD's hazard-only preview is independently chosen
-  again; Easy does not preview. `searchRoot.rootCharm` is intentionally root
-  only, so this is exact same-turn resolution rather than a claim of fully
-  charm-aware expectimax.
+  its named 5% SUNDER slip; Easy does not preview. `searchRoot.rootCharm`
+  carries persistent WARD marks through every later ply, so placement search
+  can preserve its own bonus and challenge the opponent's. One-shot SUNDER is
+  consumed by the root move and does not become a standing future effect.
 
 ---
 
@@ -546,8 +591,11 @@ second one.
   stay synchronized. The source stack strains and releases, then the die travels
   to the facing column without a separate crossing line.
   Its arrival is a placement, not a strike: no board shake, impact burst, or
-  other destruction cue may play when it lands. PILFER and COLUMN SHIELD share
-  gold, so legality remains distinguished by form rather than hue alone.
+  other destruction cue may play when it lands. Against an active WARD, the
+  selected top die instead tugs toward the caster, meets the mint clasp and
+  recoils into its original slot; WARD burns and no die crosses, even when the
+  receiver is full. PILFER and COLUMN SHIELD share gold, so legality remains
+  distinguished by form rather than hue alone.
 - **SUNDER — SU6, Overload.** Casting marks only the exact dice the following
   placement will destroy. The preview asks `openStrikes()` with a cloned charm,
   preserving COLUMN SHIELD, SINGLE STRIKE and current WARD answers without
@@ -570,13 +618,16 @@ second one.
   the portrait top board, up on the portrait bottom board, right on the
   landscape left board, and left on the landscape right board. Casting WARD
   does not reroute a die; later placements settle into their normal
-  authoritative slot. Only a genuine opponent strike with victims animates a
-  break: a copy of the settled attacking die travels straight until its leading
-  edge meets the clasp, then follows W3's longer rebound while contact spends
-  the ward and the seal snaps. The clasp and seal provide the light; no generic
-  particle burst, die rotation, or screen flash obscures the break. A miss, an
-  own placement, or a strike already stopped by COLUMN SHIELD produces no
-  attacker ghost or false break.
+  authoritative slot. A matching hostile placement animates a break: a copy of
+  the settled attacking die travels straight until its leading edge meets the
+  clasp, then follows W3's longer rebound while contact spends the ward and the
+  seal snaps. This includes a zero-victim match against a full COLUMN SHIELD
+  column; the mint clasp leaves while the permanent gold loop and dice remain,
+  and no BOUNTY is minted. PILFER uses PI5's tug-and-recoil answer instead of
+  inventing a thrown attacker. The clasp and seal provide the light; no generic
+  screen flash or die rotation obscures the break. A nonmatching miss and an
+  own placement leave the mark intact; an own duplicate merely pauses its
+  scoring bonus.
 - **NUDGE — NU1, The pip lands.** The die shell remains completely still. Pips
   the new face no longer needs leave, and newly needed pips land in their
   cells; the diff is computed for every transition, including the full `6 → 1`
@@ -638,6 +689,12 @@ construction — charges are dealt in exactly one place (`resetSpells`), and
 ranked, the tutorial and the NONE pick all deal `{}`, which is the single
 thing the runtime asks before showing a rail or allowing a cast.
 
+That boundary includes scoring WARD. Its bonus, PILFER interception, and
+layered COLUMN SHIELD break ship in local solo/two-player play only. Ranked
+still scores and replays its existing mode plus placement log; this offline
+rule does not smuggle charm state into `matchTotal` or change the server action
+grammar.
+
 The intended online path has a design outline, not an implemented protocol. A
 cast would become a logged action replayed through this same registry, and FATE
 would draw from the seeded stream. A ranked turn may then carry two actions—an
@@ -657,14 +714,16 @@ cast-terminal outcomes before any of the three formats is ranked. Symmetric
 online needs fewer loadout fields, but it does not avoid that action-grammar
 change. The client already has per-seat hands; the server is the hard seam.
 
-The frozen asymmetric v1 study now covers all six runes, seven modes, both
-opener orientations, four seeds, and both FATE cast grammars. Under its blind
-Normal policy, fixed pre-match PILFER strictly dominates every other loadout at
-the point estimate; uniform-opponent wheel strength spans about 9.6pp from
-PILFER to WARD. A separate coordinated-SUNDER treatment moves SUNDER only
-+0.1788pp in Classic and +0.2503pp in BOUNTY, while confirming BOUNTY SUNDER as
-an existing mode specialist. Those corrections do not make the roster ready
-for win-gated ranked ownership.
+The frozen asymmetric v1 study covers all six runes, seven modes, both opener
+orientations, four seeds, and both FATE cast grammars. Under its blind Normal
+policy and the old no-score WARD, fixed pre-match PILFER strictly dominates
+every other loadout at the point estimate; uniform-opponent wheel strength
+spans about 9.6pp from PILFER to WARD. A separate coordinated-SUNDER treatment
+moves SUNDER only +0.1788pp in Classic and +0.2503pp in BOUNTY, while
+confirming BOUNTY SUNDER as an existing mode specialist. The later scoring-WARD
+treatment repairs much of WARD's global weakness but preserves a sharp PILFER
+counter. None of those offline policy measurements implements the missing
+ranked action protocol or makes win-gated ownership safe by itself.
 
 The two proposed formats remain distinct:
 

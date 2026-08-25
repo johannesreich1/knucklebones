@@ -16,6 +16,11 @@
 /* in the gutter seating the cluster is absolute, so it keeps its own placing
    transform and only adds the turn */
 #kbroot.sidepts.face:not(.land) #sideTop .plate .pright{transform:translate(50%,-50%) rotate(180deg)}
+/* The whole far cluster turns for its reader. Swap its logical rows first so
+   the transformed result still leaves WARD physically toward the board and
+   BOUNTY toward the phone edge. */
+#kbroot.face:not(.land) #sideTop .plate .wpt{grid-row:1}
+#kbroot.face:not(.land) #sideTop .plate .bty{grid-row:3}
 #kbroot.face:not(.land) #sideTop .chip{transform:rotate(180deg)}
 #kbroot.face:not(.land) #sideTop .die .num{--num-turn:180deg}
 #kbroot.face:not(.land) .die.p2flip .num{--num-turn:180deg}

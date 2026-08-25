@@ -1,4 +1,4 @@
-<!-- meta name="Spell effects — production motion" group="4 · Local play" subtitle="CHOSEN AND SHIPPED 2026-08-23 — the six selected rune effects, their protected cases, and the exact moment a cast becomes irreversible" width=430 height=1930 sizes="md" links="Spells — aiming a rune, W3 — Runic seal, closed or clasped, Match, Match — LIMITED bag" -->
+<!-- meta name="Spell effects — production motion" group="4 · Local play" subtitle="CHOSEN AND SHIPPED 2026-08-23 · SCORING WARD UPDATED 2026-08-25 — the six selected rune effects, their protected cases, and the exact moment a cast becomes irreversible" width=430 height=1980 sizes="md" links="Spells — aiming a rune, W3 — Runic seal, closed or clasped, Match, Match — LIMITED bag" -->
 <style>
   /* A production CONTRACT plate, not a seventh set of studies. Every die,
      rune, shield and mode mark below comes from the app's registries through
@@ -94,8 +94,9 @@
   .fxfacechange{font-size:16px;color:var(--fxc)}
 
   /* W3 — portrait lower-seat example: the clasp is at the TOP because that is
-     the edge facing table centre. The ordinary placement arrow goes into the
-     open slot; only the opponent ghost takes the separate line to the clasp. */
+     the edge facing table centre. An own placement goes into the normal slot;
+     a matching opponent placement takes the separate line to the clasp. PI5's
+     Ward challenge instead tugs its selected die and returns it. */
   .fxwardscene{gap:20px;min-height:112px;overflow:visible}
   .fxwardcol{display:flex;flex-direction:column;gap:4px;padding:8px 6px 6px;position:relative;
     border:1.5px solid var(--fxc);border-radius:15px;box-shadow:0 0 9px color-mix(in srgb,var(--fxc) 48%,transparent)}
@@ -170,7 +171,7 @@
           <div class="fxdepth"><div class="fxstack"><span class="fxmini">{{die:4:p2:36}}</span><span class="fxmini">{{die:2:p2:36}}</span><span class="fxmini">{{die:5:p2:36}}</span><b class="fxsnatch">↓</b></div><span class="fxbeats"><i></i><i></i></span><span class="fxcap">Depth 3<br>2 beats</span></div>
         </div>
       </div>
-      <div class="fxrule"><b>Pull, resist, release.</b> Source height alone sets the count: <code>1 → 0</code>, <code>2 → 1</code>, <code>3 → 2</code>. The stolen die then travels straight into the facing column; arriving is a landing, never an extra collision.</div>
+      <div class="fxrule"><b>Pull, resist, release.</b> Source height alone sets the count: <code>1 → 0</code>, <code>2 → 1</code>, <code>3 → 2</code>. The stolen die then travels straight into the facing column; arriving is a landing, never an extra collision. If the target has WARD, that die only tugs and recoils: WARD burns and nothing crosses, even when the receiver is full.</div>
     </section>
 
     <section class="fxcard" style="--fxc:{{shue:sunder}}">
@@ -201,11 +202,11 @@
       <div class="fxscene fxwardscene">
         <div class="fxwardcol"><i class="fxclasp"></i><span class="fxmini">{{die:4:p1:36}}</span><span class="fxmini">{{die:1:p1:36}}</span><span class="fxwardmark">{{sico:ward:15}}</span></div>
         <div class="fxwardflows">
-          <div class="fxwardflow"><span class="fxmini">{{die:3:p1:32}}</span><span class="fxarr">→</span><b>Normal slot<small>ordinary placement does not visit the clasp</small></b></div>
-          <div class="fxwardflow hit"><span class="fxmini">{{die:5:p2:32}}</span><span class="fxarr">↘</span><b>Clasp breaks<small>settled attacker is cloned only for a real hit</small></b></div>
+          <div class="fxwardflow"><span class="fxmini">{{die:3:p1:32}}</span><span class="fxarr">→</span><b>Normal slot<small>distinct pips keep or grow the bonus</small></b></div>
+          <div class="fxwardflow hit"><span class="fxmini">{{die:4:p2:32}}</span><span class="fxarr">↘</span><b>Clasp breaks<small>a matching attacker reaches WARD</small></b></div>
         </div>
       </div>
-      <div class="fxrule"><b>The clasp always faces table centre</b> — top edge for the lower portrait seat, bottom edge for the upper seat, and the equivalent inner edges in landscape. It is modestly larger at the border. Only an opponent strike with genuine victims sends a clone of the settled attacker to the clasp and consumes the Ward; a miss, own placement or shield block creates no ghost.</div>
+      <div class="fxrule"><b>One score, one answer.</b> While WARD is active, an all-distinct column adds its raw pips once after native scoring; a duplicate pauses that bonus but leaves the clasp. A matching hostile placement burns WARD. A full distinct COLUMN SHIELD target is legal and burns with zero victims or BOUNTY while its gold shield remains; a full matched shield is illegal. PILFER uses its tug-and-recoil answer, burns WARD and steals nothing. A nonmatching miss or own placement leaves the mark intact.</div>
     </section>
 
     <section class="fxcard" style="--fxc:{{shue:nudge}}">

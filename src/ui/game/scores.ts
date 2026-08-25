@@ -7,9 +7,11 @@ import {
   SPEC,
   colScore,
   counts,
+  distinctPipSum,
   isShielded,
   rowScore,
   totalOf,
+  wardBonusOf,
   type Player,
 } from '../../core/rules.ts';
 import { DICE_FACES } from '../../config.ts';
@@ -32,8 +34,12 @@ export function updateScores(who: Player): void {
   setScoringPresentation(rowSwitch ? 'row-switch' : rowMultiply ? 'row-multiply' : 'columns');
 
   /* Decide the whole shield run before dressing any column. A full protected
-     column is permanent, so adjacent runs may grow but never split mid-game. */
+     column is permanent. A scoring WARD is a spendable boundary inside such a
+     run: keeping that column span-one gives the mint clasp an honest target;
+     once its snap has finished, the surrounding gold shields can merge. */
   const sealed = board.map((column) => isShielded(column, S.scoring));
+  const wardBoundary = board.map((_, col) => S.charm.wards[who][col] > 0
+    || !!colEl(who, col)?.classList.contains('sealsnap'));
 
   for (let col = 0; col < SPEC.cols; col++) {
     const column = board[col];
@@ -83,10 +89,14 @@ export function updateScores(who: Player): void {
     /* The first shielded column owns one seal spanning its adjacent run. Every
        column keeps its own chip mark so the underlying per-column fact remains
        visible and announceable. */
-    const merged = shielded && !!sealed[col - 1];
+    const merged = shielded && !!sealed[col - 1]
+      && !wardBoundary[col - 1] && !wardBoundary[col];
     columnElement.classList.toggle('sealmerged', merged);
     let span = 1;
-    if (shielded && !merged) while (sealed[col + span]) span++;
+    if (shielded && !merged) {
+      while (sealed[col + span]
+        && !wardBoundary[col + span - 1] && !wardBoundary[col + span]) span++;
+    }
     const regrown = setSealSpan(columnElement, span);
     if (!merged && (newShield || newWard || regrown)) playSealEngage(columnElement);
 
@@ -103,13 +113,17 @@ function columnAriaLabel(who: Player, col: number): string {
     ? column.reduce((sum, value) => sum + value, 0)
     : colScore(column);
   const free = SPEC.rows - column.length;
-  return free
+  const label = free
     ? t('game', 'board.columnAvailable', {
       player: nameOf(who), column: formatNumber(col + 1), score: formatNumber(score), count: free,
     })
     : t('game', 'board.columnFull', {
       player: nameOf(who), column: formatNumber(col + 1), score: formatNumber(score),
     });
+  const wardBonus = S.charm.wards[who][col] > 0 ? distinctPipSum(column) : 0;
+  return wardBonus ? label + t('game', 'board.wardBonusDetail', {
+    bonus: formatNumber(wardBonus),
+  }) : label;
 }
 
 /** Locale-only repaint for the existing column nodes; no marks or dice move. */
@@ -118,6 +132,7 @@ export function repaintScoreLocale(): void {
     for (let col = 0; col < SPEC.cols; col++) {
       colEl(who, col)?.setAttribute('aria-label', columnAriaLabel(who, col));
     }
+    renderTotal(who);
   }
 }
 
@@ -149,9 +164,35 @@ function renderRowRail(who: Player, rowSwitch: boolean, rowMultiply: boolean): v
   }
 }
 
-function renderTotal(who: Player): void {
+export function renderTotal(who: Player): void {
   const board = S.boards[who];
   const side = sideKey(who) === 'bot' ? 'Bot' : 'Top';
+  const wards = S.charm.wards[who];
+  const wardPoints = wardBonusOf(board, wards);
+  const ward = $('#wpt' + side);
+  if (ward) {
+    // A dealt WARD reserves this lane before it is cast. The centre total must
+    // not move when the bonus appears, changes, is cancelled, or is broken.
+    const active = 'ward' in S.spellCharges[who] || wardPoints > 0;
+    const previous = Number(ward.dataset.value ?? 0);
+    ward.dataset.value = String(wardPoints);
+    ward.hidden = !active;
+    ward.style.visibility = active && wardPoints ? '' : 'hidden';
+    const amount = ward.querySelector<HTMLElement>('b');
+    if (amount) amount.textContent = '+' + formatNumber(wardPoints);
+    if (active) {
+      const label = t('game', 'board.wardBonus', { bonus: formatNumber(wardPoints) });
+      ward.setAttribute('aria-label', label);
+      ward.title = label;
+    }
+    if (wardPoints && wardPoints !== previous) {
+      const beat = wardPoints > previous ? 'ward-rise' : 'ward-drop';
+      ward.classList.remove('ward-rise', 'ward-drop');
+      void ward.offsetWidth;
+      ward.classList.add(beat);
+      setTimeout(() => ward.classList.remove(beat), 260);
+    }
+  }
   const bounty = $('#bty' + side);
   if (bounty) {
     // Reserve the lane for the whole BOUNTY game so its late tally cannot move
@@ -163,7 +204,7 @@ function renderTotal(who: Player): void {
     if (active) bounty.textContent = '✦' + formatNumber(value);
   }
 
-  const total = totalOf(board, S.bounty[who], S.scoring);
+  const total = totalOf(board, S.bounty[who], S.scoring, wards);
   const score = $('#tot' + side);
   const plate = $('#plate' + side);
   const renderedTotal = formatNumber(total);

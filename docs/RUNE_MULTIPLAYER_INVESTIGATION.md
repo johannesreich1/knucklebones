@@ -1,6 +1,6 @@
 # Multiplayer runes — balance and feasibility investigation
 
-Status: **MEASUREMENT BASELINE COMPLETE — asymmetric baseline plus WARD and SUNDER sensitivities complete; owner decisions and multiplayer protocol design remain**
+Status: **OFFLINE SCORING-WARD SHIPPED — the asymmetric baseline, coordinated WARD/SUNDER sensitivities, and exploratory scoring-WARD pilot are complete; ranked runes remain unimplemented pending a versioned cast/action protocol**
 
 Started: **2026-08-24**
 
@@ -19,7 +19,9 @@ are the second question. Persistent unlocking, repeat-play motivation, and
 potentially compulsive reward structures are considered only far enough to
 avoid choosing a balance model that cannot support a healthy progression model.
 
-No rule in this document is shipped merely because it is described here.
+Shipped behaviour is identified explicitly. Historical measurement sections
+retain the rule version they actually tested; they do not silently become
+evidence for later rules. Nothing here enables runes in ranked play.
 
 ---
 
@@ -93,6 +95,13 @@ analytical baseline, not a selected design.
 
 ## 3. Current shipped facts
 
+**WARD VERSION NOTE:** WARD mechanics and numbers explicitly marked historical
+in §§3.5–3.6 describe the frozen v1 no-score rule used by the original
+measurements: PILFER bypassed WARD and a zero-victim shielded hit did not spend
+it. They are historical baseline facts, not the current offline rule. The
+offline/local production rule is recorded in §6.6. Ranked still has no rune
+action protocol.
+
 ### 3.1 Ranked currently has no runes
 
 - **FACT:** Ranked deals both seats an empty rune hand. The status rule remains
@@ -125,8 +134,10 @@ analytical baseline, not a selected design.
 
 - **FACT:** `S.spellCharges` is a two-seat tuple of independent rune-charge
   records (`src/state.ts:107-122`).
-- **FACT:** the current dealer nevertheless gives both seats the same rune
-  (`src/flow/spells.ts:96-106`).
+- **FACT:** a named pick and RANDOM give both seats the same rune. RANDOM ×2
+  instead samples two distinct registry entries and deals one to each seat;
+  the independent tuple is written into the two hands once before reveal
+  (`src/flow/spell-deal.ts:11-22`, `src/flow/spells.ts:99-119`).
 - **FACT:** a spent hand retains the rune id at charge zero, so the rune brought
   to the match remains derivable for the entire match
   (`src/core/spells.ts:234-250`).
@@ -151,7 +162,7 @@ Source of rule truth: `src/core/spells.ts:28-221` and
 |---|---:|---|---|---|
 | FATE | 2 | own die | Discard the die in hand and draw the next supply die | Consumes the live supply; LIMITED consumes its finite bag and does not return the discard |
 | NUDGE | 1 | own die | Increase the die by one; 6 wraps to 1 | Changes the die that must later be placed |
-| WARD | 1 | own column | Absorb the next otherwise-real strike against that column | Persists until a strike with victims consumes it |
+| WARD | 1 | own column | Add an all-distinct column's raw pips after native scoring and answer one matching hostile action | Persists through own duplicates; a matching placement or PILFER consumes it |
 | SUNDER | 1 | own die | The following placement strikes every enemy column containing that face | Persists for exactly the following placement |
 | PILFER | 1 | enemy column | Move the enemy column's top die onto the facing own column | Can fill the caster's board; the moved die lands without striking |
 | ANVIL | 1 | full own column | Replace the weakest die in that full column with the die in hand | The hand die remains available for the normal placement |
@@ -160,10 +171,14 @@ Additional rule facts:
 
 - **FACT:** FATE, NUDGE, and SUNDER act on the die in hand. WARD and ANVIL target
   the owner's board. PILFER is the only current enemy-board rune.
-- **FACT:** WARD cannot target an already COLUMN SHIELD-protected full column
-  (`src/core/spells.ts:73-105`).
-- **FACT:** PILFER cannot take from a COLUMN SHIELD-protected full column and
-  cannot land in a full facing own column (`src/core/spells.ts:131-158`).
+- **FACT:** WARD may target a full all-distinct COLUMN SHIELD column, but not a
+  full matched one. A matching hostile placement burns the WARD with zero
+  victims while the permanent shield remains (`src/core/spells.ts:93-107`,
+  `src/core/rules.ts:215-263`).
+- **FACT:** PILFER normally cannot take from a COLUMN SHIELD-protected full
+  column or land in a full facing own column. Active WARD is the explicit
+  exception: it intercepts and burns before any destination is required, so no
+  die moves (`src/core/spells.ts:170-204`).
 - **FACT:** ANVIL is legal only on a full own column and refuses a replacement
   that would change nothing (`src/core/spells.ts:160-218`).
 - **FACT:** one cast never replaces the normal placement. The die still lands
@@ -275,11 +290,13 @@ twin, not rune-versus-rune matchup results.
 - **FACT:** FATE consumes an additional die from LIMITED's finite bag; the
   discarded die is not returned (`src/core/spells.ts:28-51`,
   `src/core/dice.ts:35-48`).
-- **FACT:** a WARD in one column absorbs that column's next real SUNDER strike,
-  while SUNDER may still strike matching dice in other columns
-  (`src/core/rules.ts:157-221`).
-- **FACT:** PILFER bypasses WARD because it moves a die directly rather than
-  opening a strike (`src/core/spells.ts:131-158`).
+- **CURRENT OFFLINE FACT:** a WARD in one column answers that column's next
+  matching SUNDER action, including a zero-victim hit on a full COLUMN SHIELD
+  column, while SUNDER may still strike matching dice in other columns
+  (`src/core/rules.ts:215-263`).
+- **HISTORICAL V1 FACT:** PILFER bypassed WARD because it moved a die directly.
+  Current offline PILFER instead burns WARD and steals nothing
+  (`src/core/spells.ts:170-204`, §6.6).
 - **FACT:** SUNDER can destroy dice in multiple columns and therefore bank
   multiple BOUNTY points; a WARD that prevents destruction in its column also
   prevents the corresponding bounty (`src/core/rules.ts:157-221`).
@@ -295,6 +312,11 @@ This subsection is an exhaustive mechanics audit of the 15 distinct opposing
 rune pairs across all seven current modes. It is **not win-rate evidence**. A
 rule-level counter can be rare in actual games; a pair with no special hook can
 still be highly polarized through timing, score value, or board shape.
+
+**FROZEN-V1 WARD MAP:** WARD edges below deliberately preserve the mechanics
+used by the v1 matrix. In particular, its PILFER bypass and victim-gated spend
+rules are superseded for offline/local play by §6.6; they must not be read as
+current production WARD behaviour or as a ranked specification.
 
 Here, a **direct interaction** means that one rune's cast reads, writes,
 protects, or invalidates state reached by the opposing rune. A transformed
@@ -1095,8 +1117,13 @@ branch is fun, comprehensible, or balanced.
 ### 6.5 Reproduced asymmetric v1 baseline
 
 This section records the first complete rune-versus-rune measurement. It is a
-baseline for the current shipped machine policy, not an estimate of optimal or
-human play.
+baseline for the frozen v1 machine policy, not an estimate of the current
+offline policy, optimal play, or human play.
+
+**FROZEN-V1 WARD BASELINE:** every WARD score and interaction in this section
+uses the original one-hit, no-score WARD rule. The raw reports and derived
+figures remain unchanged for reproducibility. They do not measure the current
+offline scoring-WARD rule in §6.6.
 
 #### Preserved experiment
 
@@ -1426,6 +1453,170 @@ have complete coordinated SUNDER rows and columns; the targeted COLUMN SHIELD
 cell and untouched four modes cannot recompute a production-policy seven-mode
 wheel. Both treatments remain separate, hashed sensitivities rather than
 overwriting v1.
+
+### 6.6 Offline production one-hit scoring-WARD rule + exploratory pilot
+
+The one-hit scoring rule tested by this exploratory pilot has since been
+selected and implemented for offline/local rune games. The pilot figures below
+remain exploratory fixed-policy evidence; implementation does not promote them
+into a retained multiplayer balance baseline. The durability-two branch was
+rejected before the pilot. Current offline facts are:
+
+- **OFFLINE PRODUCTION RULE:** while WARD is active, an all-distinct column
+  adds its raw pip sum once after native mode scoring. `[4,5,6]` therefore adds
+  15. Empty columns and columns containing any duplicate add zero. This is an
+  additive post-mode bonus, so ROW MULTIPLY cannot multiply it again.
+- **OFFLINE PRODUCTION RULE:** adding an own duplicate pauses the score bonus
+  without consuming WARD or removing its mark. The bonus resumes if a later
+  legal board mutation leaves that marked column all-distinct. The next
+  matching hostile placement burns WARD even when another rule leaves zero
+  victims; own placements and hostile misses do not.
+- **OFFLINE PRODUCTION RULE:** PILFER aimed at a warded nonempty column consumes
+  WARD and steals nothing. The action remains legal even when the receiver is
+  full, because no die crosses the board.
+- **OFFLINE PRODUCTION RULE:** a full all-distinct COLUMN SHIELD column may be
+  warded. A later matching placement consumes WARD while the mode shield
+  preserves all dice; the action creates zero victims and therefore zero
+  BOUNTY. A full matched column remains an illegal WARD target because it has
+  neither a score bonus nor a defensive benefit.
+- **OFFLINE PRODUCTION RULE:** a player may cast on an already-full
+  distinct shielded column and then end the match with a different placement.
+  The resulting cast-and-finish bonus has no reply window. The owner decision
+  is to retain this behaviour; it remains a targeted human-playtest question.
+
+**IMPLEMENTATION BOUNDARY:** local cast legality and UI, authoritative offline
+scoring/results, and the Easy/Normal/Hard machine policies implement this rule.
+Hard WARD's base cast demand is floored at 16 before the existing `×1.5` Hard
+multiplier. Ranked deal, authoritative online replay, and settlement still have
+no rune action grammar and do not apply scoring WARD.
+
+#### Exploratory pilot scope and aggregate result
+
+The exploratory treatment adjusted the bots with the rule rather than scoring
+an aware rune through a blind policy. Persistent WARD state enters every search
+ply and terminal/leaf evaluation; FATE and NUDGE value their held die against
+live WARDs; WARD ranks targets by
+`distinct pip bonus + strikeable native column score` and requires that value
+to clear the existing `1.5 × demand` threshold; and the placement policy can
+preserve its own bonus or attack the opponent's. Easy retains its 50% cast
+skip and 50% random placement, Normal retains depth 2/risk 0.9 and the named
+5% SUNDER coordination slip, and
+the reproducible Hard sample uses fixed depth 4/risk 1.5 rather than the
+hardware-timed depth-5 branch.
+
+The control is the frozen-v1 one-hit/no-score WARD under the same difficulty
+sampling shell. The treatment is the whole rule bundle above, not a pure
+arithmetic-only intervention. Both cover all seven modes and the 11 directed
+one-cast cells containing WARD; the mirror contributes two WARD role exposures
+but exactly 50% to the seat-neutral matchup value. Draws count as half a win.
+
+- Easy and Normal each use four named seeds and 500 games per cell: 154,000
+  physical games per arm and 168,000 WARD role exposures per arm.
+- Hard uses two seeds and 20 games per cell: 3,080 games per arm. It is a bot
+  sanity probe, not a balance estimate.
+- Easy/Normal intervals use the four paired seed aggregates and Student
+  `t(df=3)`. They describe this fixed policy and do not account for multiple
+  exploratory comparisons.
+
+| Difficulty | Uniform seven modes | Product wheel (`40%` Classic, `10%` each other mode) |
+|---|---:|---:|
+| Easy | 46.661% → 48.696%, **+2.035pp**; paired 95% interval **[+1.794,+2.275]pp** | 46.831% → 48.854%, **+2.023pp**; **[+1.852,+2.194]pp** |
+| Normal | 44.183% → 48.681%, **+4.498pp**; **[+4.374,+4.621]pp** | 45.156% → 49.279%, **+4.123pp**; **[+3.790,+4.455]pp** |
+| Hard, descriptive only | 49.955% → 50.134%, +0.179pp | 51.250% → 49.906%, -1.344pp |
+
+The Hard wheel and uniform summaries disagree in direction; its two wheel
+replication deltas are -0.833pp and -1.854pp. No directional Hard balance
+claim follows from that cohort.
+
+#### Normal detail — the primary balance anchor
+
+| Scope | No-score WARD | Scoring WARD | Change |
+|---|---:|---:|---:|
+| Classic | 47.43% | 50.67% | +3.25pp |
+| Row Switch | 41.95% | 49.87% | +7.92pp |
+| Row Multiply | 45.17% | 49.00% | +3.83pp |
+| Column Shield | 39.64% | 45.74% | +6.11pp |
+| Single Strike | 42.85% | 46.59% | +3.74pp |
+| Bounty | 47.26% | 50.70% | +3.44pp |
+| Limited | 44.99% | 48.19% | +3.20pp |
+
+Against the product-weighted opponent roster, scoring WARD records 48.68%
+against FATE, 51.44% against NUDGE, 51.84% against SUNDER, 43.92% against
+PILFER, and 49.79% against ANVIL; its mirror is 50%. Excluding that fixed
+mirror, its average against distinct runes is 49.13%. PILFER therefore remains
+a severe counter rather than being erased by the global repair; WARD reaches
+only 37.19% against PILFER in SINGLE STRIKE.
+
+#### Bot behaviour and interaction counters
+
+- Easy cast rate moves 22.17% → 24.24%; 95.77% of treatment casts remain in
+  the last 20% of the match. Its increase is almost entirely COLUMN SHIELD.
+- Normal cast rate moves 52.62% → 69.81%, while late casts fall from 65.87% to
+  38.83%. The rune changes from mostly delayed defense to a visible proactive
+  build target.
+- Hard cast rate moves 69.91% → 95.45%, and only 4.93% of casts are late. The
+  pilot's demand-10 heuristic is close to automatic; it is not the selected
+  offline production policy.
+- **HARD POLICY SENSITIVITY:** repeating the 3,080-game Hard treatment with
+  only WARD's demand raised from 10 to 16 lowers cast rate to 73.84%, moves
+  late casts to 39.62%, reduces owner duplicate cancellation from 15.53% to
+  6.45% of casts, and raises terminal bonus from 0.990 to 1.761 points per
+  exposure. Product-wheel score moves 49.906% → 51.719%; the two paired seed
+  deltas are +1.583pp and +2.042pp. This is encouraging policy evidence but
+  remains too small for a Hard balance claim. The demand-16 floor is now
+  selected and implemented offline; the larger retained Hard study remains
+  open.
+- Across Normal's 168,000 WARD role exposures, treatment casts 117,281 times,
+  receives 51,824 breaks, self-cancels its bonus 9,990 times, and carries
+  310,643 bonus points into terminal scoring: 1.849 per exposure or 2.649 per
+  cast. A break is not automatically waste—it may have absorbed a real strike.
+- A corrected, paired 24,000-exposure Normal COLUMN SHIELD rerun isolates the
+  disputed layered-shield behaviour: 2,175 WARDs break, comprising 1,369
+  matching zero-victim hits on full shielded columns, 785 ordinary
+  victim-bearing attacks absorbed by WARD, and 21 PILFER breaks. It also
+  records 2,246 owner-created duplicate cancellations and 2.817 terminal bonus
+  points per exposure. Full shielded WARD is therefore measurably answerable,
+  not an unbreakable multiplier.
+
+#### Evidence-bounded interpretation
+
+- **INFERENCE:** for the measured Normal policy, one-hit scoring WARD is a
+  promising repair. It moves the weakest frozen-v1 loadout from 45.16% to
+  49.28% on the product wheel, and no mode exceeds 50.70% against the uniform
+  roster.
+- **INFERENCE:** the bonus preserves meaningful matchup and mode texture.
+  COLUMN SHIELD and SINGLE STRIKE remain weak, and PILFER remains a large
+  personal-rune counter. The result does not make win-gated ranked ownership
+  safe by itself.
+- **INFERENCE:** durability two is not justified by this evidence. Adding a
+  second absorbed attack on top of the measured score repair would answer a
+  weakness the offline rule has already largely closed.
+- **SELECTED OFFLINE POLICY:** WARD floors Hard's base cast demand at 16,
+  equal to Normal, before Hard's existing `×1.5` multiplier. Hard's advantage
+  comes from deeper placement search and exact charm coordination, not from
+  accepting lower-value WARD casts. Selection does not turn the small pilot
+  cohort into a Hard balance claim.
+- **LIMIT:** this pilot has no humans, opponent-rune awareness, BOUNTY-bank
+  search, LIMITED-horizon search, multiplicity-adjusted cell inference, or
+  formal retained evidence artifact. Live local UI, scoring/results, and AI now
+  implement scoring WARD. Authoritative online replay and settlement do not;
+  ranked remains rune-free until a versioned action protocol exists.
+- **FEASIBILITY LIMIT:** the exploratory simulation shell with recursively
+  cloned charm state took approximately 70.6 seconds per 420 fixed-depth-4
+  games on this machine, versus roughly 40 seconds before the treatment. That
+  remains a shell-level warning, not a measurement of current live move
+  latency. A separate live-search microbenchmark measured depth 4 at
+  `6.471 → 7.705 ms` (**+19.1%**) and depth 5 at
+  `105.521 → 115.051 ms` (**+9.0%**). Larger retained Hard evidence and
+  mobile/tail-latency checks remain open.
+
+The next evidence step is not another durability variant. The offline rule and
+Hard floor are selected. The remaining balance work is a retained, versioned
+production-policy treatment with explicit cast-survival telemetry, a larger
+Hard cohort, and performance checks on target devices. Human playtesting should
+specifically probe PILFER frustration, the retained COLUMN SHIELD
+cast-and-finish bonus, and whether proactive WARD building is legible rather
+than automatic. Ranked work remains separately blocked on the action protocol.
 
 ---
 
@@ -1940,6 +2131,13 @@ unlock rule creates them unintentionally.
 - [x] Rerun SUNDER-sensitive cells with charm-aware placement, explicitly
   including Classic, BOUNTY, and SUNDER/WARD; record cast-attributable kills
   and bounty rather than win rate alone.
+- [x] Run an exploratory all-mode one-hit scoring-WARD pilot with adjusted
+  Easy/Normal/Hard policies (§6.6). Its raw figures remain exploratory.
+- [x] Ship the selected one-hit scoring-WARD rule and Hard base-demand floor of
+  16 in offline/local UI, scoring/results, and machine play (§6.6).
+- [ ] Retain a versioned production-policy WARD treatment, larger Hard cohort,
+  and target-device performance evidence; do not infer those results from the
+  exploratory pilot.
 - [ ] Compare the current charm-blind placement anchor with an opponent-aware
   policy; do not mistake either policy for optimal human play.
 - [x] Compute weighted pre-mode loadout strength, point-estimate pure dominance,
@@ -1960,6 +2158,8 @@ unlock rule creates them unintentionally.
 
 ### Phase D — multiplayer feasibility contract
 
+- [x] Keep scoring WARD offline-only while ranked lacks a versioned cast/action
+  protocol; no ranked rollout is ready from the local implementation alone.
 - [x] Trace how one-cast versus chained FATE and Classic-backed versus
   mechanically new Trial change action grammar, clock, bot, replay, and rollout
   scope (§7.3, §7.6).
@@ -1992,9 +2192,10 @@ unlock rule creates them unintentionally.
 
 This section intentionally remains narrow while the investigation is active.
 
-1. **INFERENCE:** current rune rules fit the broad deterministic-turn model and
-   require no reaction-time networking, but online runes remain unimplemented
-   end to end.
+1. **FACT/INFERENCE:** one-hit scoring WARD is implemented for offline/local
+   rune games, and current rune rules fit the broad deterministic-turn model
+   without reaction-time networking. Online runes remain unimplemented end to
+   end; local implementation is not a ranked protocol.
 2. **REPRODUCED:** a preserved 3,948,000-game baseline now covers all six runes,
    seven modes, both opener orientations, four seeds, and both FATE cast
    grammars. Under the frozen blind Normal policy, PILFER strictly dominates
@@ -2011,7 +2212,11 @@ This section intentionally remains narrow while the investigation is active.
    -0.0236pp. The recurrence rates come from different cohorts and are not a
    paired effect estimate. **INFERENCE:** the direct contracts plus treatment
    show the obvious AI defect is controlled without rescuing WARD's balance
-   position.
+   position. A later exploratory one-hit scoring-WARD bundle moves WARD from
+   45.16% to 49.28% on the product wheel under Normal, while preserving a
+   43.92% WARD result against PILFER. Its rule is now shipped offline/local,
+   while those figures remain exploratory rather than a retained formal
+   evidence artifact; ranked scoring WARD remains unimplemented (§6.6).
 5. **REPRODUCED:** the SUNDER root-placement and live-WARD defects are repaired
    by registry-owned coordination. In a separate 336,000-game treatment,
    SUNDER's uniform-opponent score moves +0.1788pp in Classic and +0.2503pp in
@@ -2069,10 +2274,13 @@ This section intentionally remains narrow while the investigation is active.
    the shared cast/replay protocol but no private selection phase. Trial is the
    fairer public acquisition surface once its extra selection/liveness state is
    implemented, because ownership cannot change the offered options.
-4. **Tune PILFER/WARD globally and SUNDER specifically in BOUNTY before ranked
-   launch.** PILFER's v1 dominance and WARD's deep weakness are much larger than
-   the measured coordination deltas. Coordinated SUNDER is a small overall
-   correction but reinforces an already strong BOUNTY specialist.
+4. **Keep the shipped one-hit scoring-WARD rule offline until ranked has the
+   versioned protocol.** Its exploratory Normal wheel average is close to
+   neutral without durability two, while PILFER/WARD remains polarized. The
+   Hard base-demand floor of 16 is selected and implemented offline, but still
+   needs a larger retained balance cohort and target-device performance checks.
+   SUNDER also needs BOUNTY-specific review: its coordination fix is small
+   overall but reinforces an already strong BOUNTY specialist.
 5. **Treat the 5% Normal SUNDER slip as flavour, not a difficulty control.** It
    changes the executed column on only about 0.7% of casts in Classic/BOUNTY.
    That is appropriately rare, but too infrequent to make Normal observably
@@ -2108,7 +2316,7 @@ as launch-balanced, and do not make ranked mechanical access depend on wins.
 | Browser rune behaviour | `tests/browser/spells/scenarios/` |
 | Verification policy | `docs/architecture/testing.md` |
 
-## Appendix B — unresolved owner decisions
+## Appendix B — owner decision register and open questions
 
 1. Does Rune Trial use otherwise-Classic board rules?
 2. What probability should Rune Trial take from the current wheel?
@@ -2134,3 +2342,11 @@ as launch-balanced, and do not make ranked mechanical access depend on wins.
     Easy/Normal/Hard behaviour?
 15. Which runes, if any, are guaranteed in the starter collection before a
     win-gated unlock cadence is evaluated?
+16. **RESOLVED — yes.** One-hit scoring WARD retains the pilot's
+    cast-and-finish bonus on an already-full distinct COLUMN SHIELD column; no
+    additional response window is inserted before terminal scoring.
+17. **PARTLY RESOLVED.** The Hard WARD base-demand floor of 16 is selected and
+    implemented offline before the existing `×1.5` multiplier. A larger
+    retained Hard balance study and target-device performance evidence remain
+    open; persistent charm search must continue to preserve the timed depth-5
+    branch within its budget.

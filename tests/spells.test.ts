@@ -93,18 +93,6 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
   check(ctx.charm.wards[ME][0] === 1, 'the mark landed on the caster side', ctx.charm.wards);
   check(!ward.legal(st, ME, 0, ctx), 'a second ward on the same column buys nothing — refused');
   check(!ward.legal(st, ME, 3, ctx), 'a column past the board is refused');
-  // COLUMN SHIELD: a full column is already untouchable, so a ward on it
-  // would spend the charge for nothing — the mode's promise, not a second
-  // rule about it (user call)
-  {
-    const full: GameState = [[[], [], []], [[4, 4, 4], [2], []]];
-    check(!ward.legal(full, ME, 0, mkCtx({ mode: COLSHIELD as Mode })),
-      'a shielded column must not be wardable — the charge would buy nothing');
-    check(ward.legal(full, ME, 1, mkCtx({ mode: COLSHIELD as Mode })),
-      'an OPEN column is still wardable under COLUMN SHIELD');
-    check(ward.legal(full, ME, 0, mkCtx()), 'the same full column is wardable outside COLUMN SHIELD');
-  }
-
   // a strike that WOULD take dice fizzles, burns the ward, and kills nothing
   const killed = applyMove(st, AI, 0, 4, CLASSIC, ctx.charm);
   check(killed === 0, 'the warded strike destroys nothing (BOUNTY would bank nothing)', killed);
@@ -122,7 +110,6 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
   applyMove(st, AI, 1, 5, CLASSIC, charm);          // a 5 into a column of 2s: no victims
   check(charm.wards[ME][1] === 1, 'a strike with no victims leaves the ward standing', charm.wards);
 }
-
 /* ---- SUNDER: the widened strike ---- */
 {
   const sunder = spell('sunder');
@@ -197,6 +184,7 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
   check(!pilfer.legal(shielded, AI, 0, mkCtx({ mode: COLSHIELD as Mode })),
     'a shielded column cannot be robbed');
   check(pilfer.legal(shielded, AI, 0, ctx), 'the same column is fair game outside COLSHIELD');
+
 }
 
 /* ---- what a cast is WORTH: the question the machine's policy asks ---- */
@@ -228,6 +216,7 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
   check(swingOf(st, AI, pilfer, 0, ROWSWITCH, ctx) !== swingOf(st, AI, pilfer, 0, CLASSIC, ctx),
     'the swing must be mode-aware', {
       classic: swingOf(st, AI, pilfer, 0, CLASSIC, ctx), row: swingOf(st, AI, pilfer, 0, ROWSWITCH, ctx) });
+
 }
 
 /* ---- ANVIL: the weakest die in a FILLED column is recast where it lies ---- */
@@ -344,11 +333,8 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
    that merge is only honest because a run can only ever GROW: if a shielded
    column could lose a die mid-game the enclosure would have to come apart,
    and nothing draws that. The permanence is not a property of the seal — it
-   is three separate refusals in core, and this is what asserts they are all
-   still there. A reviewer read docs/SPELLS.md as saying PILFER may rob a
-   shielded column (it says the opposite: the doc's case is a column not yet
-   full, which is therefore not yet shielded), so the question is settled here
-   in code rather than in prose. */
+   is core strike and unwarded theft resolution, and this is what asserts both
+   are still there. */
 {
   const full: GameState = [[[6, 6, 6], [2], []], [[1], [], []]];
   const pilfer = spellById('pilfer')!;

@@ -3,8 +3,10 @@
 // This is deliberately a separate, versioned treatment instrument. The frozen
 // rune-matchups v1 simulator remains the baseline and still owns game/replay,
 // supply, role, and terminal semantics. This module changes one policy seam:
-// production Normal previews registry-declared cast hazards, may veto the
-// cast, then independently searches for the actual placement.
+// v2 follows the projected WARD root charm used by production placement
+// search. The retired completion veto is deliberately absent; the instrument
+// still records preview/final divergence while Normal independently searches
+// for the actual placement.
 //
 // Run the final treatment cohort (four fixed replications, 3,000 games/cell):
 //   node --experimental-strip-types tools/rune-ward-sensitivity.ts \
@@ -16,7 +18,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import {
-  AI, ME, COLSHIELD, type GameState, type Mode, type Player,
+  AI, ME, COLSHIELD, type CharmSt, type GameState, type Mode, type Player,
 } from '../src/core/rules.ts';
 import { searchRoot } from '../src/core/ai.ts';
 import { randStream } from '../src/core/dice.ts';
@@ -30,7 +32,7 @@ import {
 } from './rune-matchups.ts';
 
 export const WARD_SENSITIVITY_SCHEMA_VERSION = 1;
-export const WARD_SENSITIVITY_VERSION = 1;
+export const WARD_SENSITIVITY_VERSION = 2;
 export const FROZEN_MATCHUP_SHA256 = 'a875c056c6f98071b679f184e0672e80438965148ae2bd76796b1acf42e90acf';
 export const DEFAULT_SEEDS = [
   '20260824-a', '20260824-b', '20260824-c', '20260824-d',
@@ -202,8 +204,17 @@ export interface WardGameOverrides {
   endlessDraw?: () => number;
   maxPlacements?: number;
   searchRandom?: [() => number, () => number];
-  placementDecision?: PlacementDecision;
+  placementDecision?: WardPlacementDecision;
 }
+
+type WardPlacementDecision = (
+  st: GameState,
+  who: Player,
+  die: number,
+  mode: Mode,
+  random: () => number,
+  rootCharm?: CharmSt,
+) => number;
 
 const emptyCoordination = (): CoordinationRoleCounts => ({
   hazardPreviews: 0,
@@ -286,22 +297,21 @@ function normalPlacement(
   die: number,
   mode: Mode,
   random: () => number,
+  rootCharm?: CharmSt,
 ): number {
   return searchRoot(st, who, die, DEPTH, {
-    mode, random, riskWeight: RISK_WEIGHT, opponentWeight: OPPONENT_WEIGHT,
+    mode, random, riskWeight: RISK_WEIGHT, opponentWeight: OPPONENT_WEIGHT, rootCharm,
   }).c;
 }
 
 interface PendingPreview {
   preview: number;
-  successful: boolean;
-  forbidden: readonly number[];
 }
 
-/* One production-Normal game. The same role-specific stream is handed to the
-   hazard preview and to the final placement. The preview is discarded; the
-   final placement calls the policy independently, after the preview has
-   consumed its tie-jitter samples. */
+/* One versioned Normal-policy sensitivity game. The same role-specific stream
+   is handed to the projected-charm preview and to the final placement. This
+   instrument deliberately discards the preview and records the independent
+   rerun after the preview has consumed its tie-jitter samples. */
 export function playWardSensitivityGame(
   cell: WardSensitivityPlan,
   gameIndex: number,
@@ -336,9 +346,9 @@ export function playWardSensitivityGame(
     const index = roleIndex(who, openerPlayer);
     let previewCalled = false;
     let preview = -1;
-    const plan = machineCastPlan(st, who, spell, ctx, demand, () => {
+    const plan = machineCastPlan(st, who, spell, ctx, demand, (rootCharm) => {
       previewCalled = true;
-      preview = placement(st, who, ctx.die, ctx.mode, streams[index]);
+      preview = placement(st, who, ctx.die, ctx.mode, streams[index], rootCharm);
       return preview;
     });
     if (!previewCalled) return plan.target;
@@ -348,14 +358,7 @@ export function playWardSensitivityGame(
     if (plan.vetoedByPlacement) counts.vetoes++;
     else if (plan.target !== null) counts.hazardousSuccessfulCasts++;
     else throw new Error(`Hazard preview produced neither a cast nor a veto: ${sourceGameSeed}`);
-    const forbidden = plan.target === null
-      ? []
-      : spell.cpuForbiddenPlacements?.(st, who, plan.target, ctx) ?? [];
-    pending[who] = {
-      preview,
-      successful: plan.target !== null,
-      forbidden: [...forbidden],
-    };
+    pending[who] = { preview };
     return plan.target;
   };
 
@@ -366,9 +369,6 @@ export function playWardSensitivityGame(
       const counts = coordination[roleIndex(who, openerPlayer)];
       counts.previewFinalComparisons++;
       if (held.preview !== column) counts.previewFinalDivergences++;
-      if (held.successful && held.forbidden.includes(column)) {
-        counts.immediateRedundantPlacements++;
-      }
       pending[who] = null;
     }
     return column;
@@ -517,29 +517,30 @@ export function runWardSensitivity(options: WardSensitivityOptions = {}): WardSe
       opponentWeight: OPPONENT_WEIGHT,
       cast: 'machineCastPlan',
       defaultDemand: DEFAULT_DEMAND,
-      hazardDeclaration: 'SpellSpec.cpuForbiddenPlacements',
+      previewDeclaration: 'SpellSpec.cpuRootCharm',
+      completionVeto: false,
       previewReuse: false,
       finalPlacement: 'independent rerun on the same advanced role search stream',
       opponentRuneAware: false,
-      charmAwarePlacementSearch: false,
+      charmAwarePlacementSearch: 'projected preview only',
     },
     sourceRelationship: {
       frozenGameEngine: 'tools/rune-matchups.ts simulatorVersion 1',
       frozenEmitterSha256: FROZEN_MATCHUP_SHA256,
-      treatmentSeam: 'machineCast -> machineCastPlan plus Normal preview-discard-final-rerun',
+      treatmentSeam: 'machineCast -> projected-root-charm preview plus Normal preview-discard-final-rerun',
       commonGameSeeds: true,
       commonSupplyStreams: true,
-      searchStreamDivergence: 'only after a registry-declared hazard preview consumes tie-jitter samples',
+      searchStreamDivergence: 'only after a projected-root-charm preview consumes tie-jitter samples',
     },
     seedDerivation: 'deriveGameSeed from frozen rune-matchups v1; domains #supply, #search-opener, #search-reply',
     fieldSemantics: {
       roleArrayOrder: ['opener', 'reply'],
-      hazardPreviews: 'machineCastPlan called a placement preview because the chosen cast target declared one or more forbidden placements',
-      vetoes: 'hazard preview chose a forbidden placement and machineCastPlan returned no cast target',
-      hazardousSuccessfulCasts: 'a hazard preview ran, chose a safe placement, and machineCastPlan retained the cast target',
-      immediateRedundantPlacements: 'after a hazardous successful cast, Normal independently chose a placement forbidden for that cast target',
-      previewFinalDivergences: 'hazard preview column differed from Normal final placement column',
-      immediateSwing: 'board-score swing recorded by frozen v1 at cast application; WARD itself has zero immediate board swing',
+      hazardPreviews: 'legacy schema field: machineCastPlan called a projected-root-charm placement preview',
+      vetoes: 'legacy schema field retained at zero: v2 removed WARD completion vetoes',
+      hazardousSuccessfulCasts: 'legacy schema field: a projected-root-charm preview ran and the cast target remained legal',
+      immediateRedundantPlacements: 'legacy schema field retained at zero: target completion is no longer defined as redundant',
+      previewFinalDivergences: 'projected-charm preview column differed from Normal final placement column',
+      immediateSwing: 'score swing recorded by frozen v1 game instrumentation at cast application',
     },
     roster: SPELLS.map(({ id, uses }) => ({ id, uses })),
     plan: {

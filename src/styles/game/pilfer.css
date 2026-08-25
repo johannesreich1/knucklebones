@@ -73,6 +73,7 @@
   will-change:transform;
 }
 :where(#kbroot) .col.pilfer-straining,
+:where(#kbroot) .col.pilfer-ward-challenge .die,
 :where(#kbroot) .die.pilfer-soft-settle{will-change:transform}
 
 #kbroot.reduce-motion .die.spellpreview.pilferpreview,
@@ -82,4 +83,5 @@
 }
 #kbroot.reduce-motion .die.spellpreview.pilferpreview::after{opacity:.82}
 #kbroot.reduce-motion .col.pilfer-straining,
+#kbroot.reduce-motion .col.pilfer-ward-challenge .die,
 #kbroot.reduce-motion .die.pilfer-soft-settle{will-change:auto}

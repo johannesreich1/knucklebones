@@ -154,7 +154,18 @@ export async function runProtectionLayoutScenarios(suite) {
     oneOutline(out['sealOutlines_' + view.name], view.name);
     /* ...and a run is the same geometry turned with it: across the screen in
        portrait, DOWN it in landscape. One offset token, two orientations. */
-    await vp.evaluate(() => { window.__kb.S.boards[0][1] = [6, 6, 1]; window.__kb.renderAll(false); });
+    await vp.evaluate(() => {
+      const k = window.__kb;
+      /* The clasp fixture above deliberately leaves column 1 warded. A full
+         all-distinct shield may now keep that scoring WARD, which correctly
+         forms a boundary instead of disappearing into the neighbouring shield
+         run. This block measures the plain merged-shield geometry, so settle
+         the independent WARD before growing the second permanent shield. The
+         combined shield+WARD boundary has its own scoring-WARD scenario. */
+      k.S.charm.wards[0][1] = 0;
+      k.S.boards[0][1] = [6, 6, 1];
+      k.renderAll(false);
+    });
     await vp.waitForTimeout(sealTiming.settle);
     const run = await sealOf('top', 0, vp), inside = await sealOf('top', 1, vp);
     out['sealTurnRun_' + view.name] = { run, merged: inside.merged, drawn: inside.drawn };

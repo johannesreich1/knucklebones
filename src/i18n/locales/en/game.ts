@@ -81,6 +81,8 @@ export const enGame = {
     columnAvailable_one: '{{player}} column {{column}}, score {{score}}, {{count}} space free',
     columnAvailable_other: '{{player}} column {{column}}, score {{score}}, {{count}} spaces free',
     columnFull: '{{player}} column {{column}}, score {{score}}, full',
+    wardBonus: 'WARD bonus +{{bonus}}',
+    wardBonusDetail: ', including +{{bonus}} from WARD',
   },
   pass: {
     passPhone: 'Pass the phone',
@@ -214,8 +216,8 @@ export const enGame = {
     ward: {
       name: 'WARD',
       compact: 'WARD',
-      blurb: 'Shield a column against the next strike.',
-      detail: 'Mark one of your columns: the next enemy strike that would destroy dice there fizzles instead, and the ward is spent. One cast per game.',
+      blurb: 'Score an all-distinct column again and block one attack.',
+      detail: 'Mark one of your columns: while every face in it is different, their pips score again as a WARD bonus. A duplicate pauses the bonus but leaves the mark. The next matching enemy placement or PILFER breaks WARD instead of taking dice. One cast per game.',
       aim: 'Tap your own column',
     },
     sunder: {
@@ -229,7 +231,7 @@ export const enGame = {
       name: 'PILFER',
       compact: 'PILFER',
       blurb: 'Steal the top die of an enemy column.',
-      detail: 'Drag onto an enemy column: its top die crosses to your facing column. The stolen die lands without striking. Needs room on your side; a shielded column cannot be robbed. One cast per game.',
+      detail: 'Drag onto an enemy column: its top die crosses to your facing column and lands without striking. Needs room on your side, and a Column Shield cannot be robbed. WARD intercepts the cast and breaks, so no die crosses. One cast per game.',
       aim: 'Tap an enemy column',
     },
     anvil: {

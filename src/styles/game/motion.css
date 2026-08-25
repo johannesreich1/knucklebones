@@ -14,6 +14,7 @@
 #kbroot.reduce-motion.casting .col.aim::after{display:block;animation:none}
 #kbroot.reduce-motion .col.legal>.seal>g{animation:none;opacity:1}
 #kbroot.reduce-motion .plate.bump .tot{transform:none}
+#kbroot.reduce-motion .plate .wpt:is(.ward-rise,.ward-drop){animation:none}
 #kbroot.reduce-motion .die.m3{animation:none}
 #kbroot.reduce-motion .die.dying{animation:none;opacity:1}
 #kbroot.reduce-motion .col>.seal .sb{display:none}

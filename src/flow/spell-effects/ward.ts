@@ -1,5 +1,8 @@
+import { distinctPipSum } from '../../core/rules.ts';
+import { formatNumber } from '../../i18n/index.ts';
+import { S } from '../../state.ts';
 import { Sfx, vibrate } from '../../ui/audio.ts';
-import { REDUCED, burst } from '../../ui/fx.ts';
+import { REDUCED, burst, floatPts } from '../../ui/fx.ts';
 import { renderSide } from '../../ui/game/board.ts';
 import { wardClaspRect } from '../../ui/game/seals.ts';
 import { spellHue } from '../../ui/spellicons.ts';
@@ -14,6 +17,11 @@ export const wardEffect: SpellEffect = async (who, col, apply) => {
   vibrate([10, 30, 14]);
   apply();
   renderSide(who, true);
+
+  const wardPoints = distinctPipSum(S.boards[who][col]);
+  if (wardPoints) {
+    floatPts(who, col, '+' + formatNumber(wardPoints), spellHue('ward'));
+  }
 
   const clasp = wardClaspRect(who, col);
   if (clasp) {

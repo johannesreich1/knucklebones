@@ -51,6 +51,27 @@ export function boardTotal(b: Board): number {
   return s;
 }
 
+/* WARD's scoring half rewards a column only while every face in it is
+   distinct. The empty column therefore contributes zero naturally, and a
+   duplicate cancels the bonus without touching the persistent ward mark. */
+export function distinctPipSum(col: readonly number[]): number {
+  let sum = 0;
+  for (let i = 0; i < col.length; i++) {
+    for (let j = 0; j < i; j++) if (col[j] === col[i]) return 0;
+    sum += col[i];
+  }
+  return sum;
+}
+
+export function wardBonusOf(b: Board, wards?: readonly number[]): number {
+  if (!wards) return 0;
+  let sum = 0;
+  for (let c = 0; c < b.length; c++) {
+    if ((wards[c] ?? 0) > 0) sum += distinctPipSum(b[c]);
+  }
+  return sum;
+}
+
 export function isFull(b: Board): boolean {
   let n = 0;
   for (let c = 0; c < b.length; c++) n += b[c].length;
@@ -108,14 +129,18 @@ export function rowBonus(b: Board): number {
   return s;
 }
 
-export function boardTotalMode(b: Board, mode: Mode): number {
+export function boardTotalMode(b: Board, mode: Mode, wards?: readonly number[]): number {
+  let native: number;
   if (mode === ROWSWITCH) {
     let s = 0;
     for (let r = 0; r < SPEC.rows; r++) s += rowScore(b, r);
-    return s;
+    native = s;
+  } else if (mode === ROWMULT) {
+    native = boardTotal(b) + rowBonus(b);
+  } else {
+    native = boardTotal(b);
   }
-  if (mode === ROWMULT) return boardTotal(b) + rowBonus(b);
-  return boardTotal(b);
+  return native + wardBonusOf(b, wards);
 }
 
 /* a full column under COLUMN SHIELD cannot be touched. ONE definition — the
@@ -144,8 +169,8 @@ export function victimsOf(oc: Col, die: number, mode: Mode = CLASSIC): number[] 
 /* the score a player is holding: their board under the active mode, plus any
    permanently banked bounty. Server finishes, client displays and the local
    end screen all settle here. */
-export function totalOf(b: Board, banked: number, mode: Mode): number {
-  return boardTotalMode(b, mode) + (mode === BOUNTY ? banked : 0);
+export function totalOf(b: Board, banked: number, mode: Mode, wards?: readonly number[]): number {
+  return boardTotalMode(b, mode, wards) + (mode === BOUNTY ? banked : 0);
 }
 
 /* the game is over when a mover fills their board — or, under LIMITED, when
@@ -160,7 +185,7 @@ export function isOver(b: Board, bagLeft: number | null): boolean {
    Games without spells never build one — applyMove without a charm is the
    pre-spell hot path, untouched. */
 export interface CharmSt {
-  wards: [number[], number[]];   // per player, per column: strikes it will absorb
+  wards: [number[], number[]];   // per player/column: active score-and-absorb marks
   sunder: [boolean, boolean];    // per player: their next placement strikes EVERY column
 }
 
@@ -193,8 +218,10 @@ function strike(st: GameState, o: number, col: number, die: number, mode: Mode):
    the single source both drivers read (headless applyMove, and the animated
    flow, which performs each outcome on screen). Consumes an armed SUNDER
    mark, so call it exactly once per placement: the widened strike is one
-   placement's event, never a standing state. Only columns with victims
-   appear — a shielded column, or one holding no matching dice, is silent. */
+   placement's event, never a standing state. Ordinarily only columns with
+   victims appear. A matching hostile placement also reaches a WARD on a
+   COLUMN SHIELD column: the ward burns while the permanently shielded dice
+   remain, so that zero-victim outcome must still be represented here. */
 export interface StrikeOutcome { col: number; victims: number[]; warded: boolean; }
 export function openStrikes(st: GameState, who: Player, col: number, die: number, mode: Mode, charm?: CharmSt): StrikeOutcome[] {
   const o = 1 - who;
@@ -204,8 +231,9 @@ export function openStrikes(st: GameState, who: Player, col: number, die: number
   for (let c = 0; c < SPEC.cols; c++) {
     if (!wide && c !== col) continue;
     const victims = victimsOf(st[o][c], die, mode);
-    if (!victims.length) continue;
-    plan.push({ col: c, victims, warded: !!charm && charm.wards[o][c] > 0 });
+    const warded = !!charm && charm.wards[o][c] > 0;
+    if (!victims.length && !(warded && countOf(st[o][c], die) > 0)) continue;
+    plan.push({ col: c, victims, warded });
   }
   return plan;
 }
@@ -216,9 +244,9 @@ export function openStrikes(st: GameState, who: Player, col: number, die: number
    need to. Returns how many enemy dice were destroyed (BOUNTY banks a
    permanent +1 per destroyed die; everyone else may ignore it).
    With a charm: a SUNDER mark on the mover widens this one placement to every
-   enemy column, and a ward on a struck column absorbs the strike that would
-   have taken dice there, then burns out. A ward is only spent on a strike
-   that HAD victims — a miss costs it nothing. */
+   enemy column, and a ward on a struck column absorbs the hostile action,
+   then burns out. A miss costs it nothing. Under COLUMN SHIELD a matching
+   action still burns the ward but destroys no permanently shielded dice. */
 export function applyMove(st: GameState, who: Player, col: number, die: number, mode: Mode = CLASSIC, charm?: CharmSt): number {
   st[who][col].push(die);
   const o = 1 - who;

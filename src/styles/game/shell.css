@@ -98,15 +98,39 @@
    gutter's middle. Same rule as the rune slot and BOUNTY's lane — reserve the
    space, never let it follow what happens to be in it. */
 #kbroot.sidepts .plate .pright{position:absolute;top:50%;right:calc(var(--gut,60px)/2);
-  transform:translate(50%,-50%);flex-direction:column;gap:4px;z-index:3;
+  transform:translate(50%,-50%);display:grid;grid-template-rows:13px auto 13px;
+  align-items:center;justify-items:center;gap:3px;z-index:3;
   width:var(--gut,60px);max-width:var(--gut,60px)}
 /* the number wears what the gutter affords: 27px in a wide one, easing to
    20px where ui/layout.ts let a tight-but-honest 40px gutter through */
 #kbroot.sidepts .plate .tot{font-size:clamp(20px,calc(var(--gut,60px)*.5),27px);
   min-width:0;text-align:center}
-/* BOUNTY in the gutter: banked points sit BELOW the running total, never
-   beside it (user call) — the cluster is a column, order puts the tally last */
-#kbroot.sidepts .plate .bty{margin-right:0;order:1}
+/* The two derived score lanes mirror around the running total. On the near
+   side WARD sits above it, toward the board, and BOUNTY below it, outward;
+   the far side reverses those screen rows so both bonuses keep the same
+   board-facing/outward meaning. Explicit rows reserve every centre even while
+   a zero tally is visibility:hidden. */
+#kbroot.sidepts .plate .tot{grid-row:2}
+#kbroot.sidepts .side.bot .plate .wpt{grid-row:1}
+#kbroot.sidepts .side.bot .plate .bty{grid-row:3}
+#kbroot.sidepts .side.top .plate .wpt{grid-row:3}
+#kbroot.sidepts .side.top .plate .bty{grid-row:1}
+#kbroot.sidepts .plate :is(.wpt,.bty){margin:0}
+
+/* Tight portrait keeps the same three readings in a compact fixed grid. Its
+   34px cluster overhangs the 24px plate by five pixels on each side—the space
+   already reserved between plate and board—rather than growing the table or
+   moving the board when WARD is dealt. */
+#kbroot:not(.sidepts):not(.land) .plate .pright{display:grid;
+  grid-template-columns:minmax(42px,auto);grid-template-rows:8px 18px 8px;
+  align-items:center;justify-items:end;gap:0;height:34px;min-width:42px}
+#kbroot:not(.sidepts):not(.land) .plate .tot{grid-row:2;font-size:18px;line-height:18px}
+#kbroot:not(.sidepts):not(.land) .side.bot .plate .wpt{grid-row:1}
+#kbroot:not(.sidepts):not(.land) .side.bot .plate .bty{grid-row:3}
+#kbroot:not(.sidepts):not(.land) .side.top .plate .wpt{grid-row:3}
+#kbroot:not(.sidepts):not(.land) .side.top .plate .bty{grid-row:1}
+#kbroot:not(.sidepts):not(.land) .plate :is(.wpt,.bty){margin:0;font-size:9px;line-height:8px}
+#kbroot:not(.sidepts):not(.land) .plate .wpt .sico{width:8px;height:8px}
 :where(#kbroot) .plate .tot{font-size:20px;font-weight:900;letter-spacing:.02em;color:var(--c);
   text-shadow:0 0 16px var(--c);min-width:34px;text-align:right;transition:transform .18s}
 :where(#kbroot) .plate.bump .tot{transform:scale(1.28)}

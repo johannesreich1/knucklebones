@@ -4,34 +4,28 @@ import { SPEC, type Player } from '../../core/rules.ts';
 import { S } from '../../state.ts';
 import { Sfx, vibrate } from '../../ui/audio.ts';
 import { colEl, faceRotated, slotEl, slotIdx } from '../../ui/dom.ts';
-import { REDUCED } from '../../ui/fx.ts';
+import { REDUCED, burst } from '../../ui/fx.ts';
 import { renderSide } from '../../ui/game/board.ts';
+import { wardClaspRect } from '../../ui/game/seals.ts';
 import {
   cancelSpellAnimations,
   pinDieGhost,
   playSpellAnimation,
   type SpellMotionDelta,
 } from '../../ui/game/spell-motion.ts';
+import { settleWardBreak } from '../../ui/game/ward-score.ts';
 import { spellHue } from '../../ui/spellicons.ts';
 import { effectPause, type SpellEffect } from './types.ts';
 
-interface TimedPoint extends SpellMotionDelta {
-  milliseconds: number;
-}
-
-interface PilferBlocker {
-  die: HTMLElement;
-}
-
-interface PilferPath {
-  duration: number;
-  contacts: number[];
-  points: TimedPoint[];
-}
+interface TimedPoint extends SpellMotionDelta { milliseconds: number; }
+interface PilferBlocker { die: HTMLElement; }
+interface PilferPath { duration: number; contacts: number[]; points: TimedPoint[]; }
 
 const FLIGHT_EASING = 'cubic-bezier(.7,0,.2,1)';
 const STRAIN_EASING = 'cubic-bezier(.5,0,.3,1)';
 const LANDING_EASING = 'cubic-bezier(.2,1.7,.4,1)';
+const WARD_TUG_EASING = 'cubic-bezier(.3,1.5,.4,1)';
+const WARD_TUG_MS = 320, WARD_RECOIL_MS = 720;
 
 function translated(point: SpellMotionDelta): string {
   return `translate(${point.x}px,${point.y}px) scale(${point.scale})`;
@@ -184,6 +178,69 @@ export const pilferEffect: SpellEffect = async (who, column, apply) => {
 
   Sfx.spell();
   vibrate([10, 30, 14]);
+
+  /* WARD turns PILFER into an answered theft: the selected die strains toward
+     the caster, meets the mint clasp, then settles back exactly where it was.
+     No ghost crosses the board and no destination room lights, because the
+     authoritative mutation moves no die—even when the receiver is full. */
+  if (S.charm.wards[foe][column] > 0) {
+    const commitWardBreak = (): void => {
+      if (applied || !isCurrent()) return;
+      applied = true;
+      settleWardBreak(foe, column, apply, () => {
+        const clasp = wardClaspRect(foe, column);
+        if (clasp) burst(clasp.left + clasp.width / 2, clasp.top + clasp.height / 2,
+          spellHue('pilfer'), 8);
+      });
+    };
+
+    if (REDUCED || !source || !sourceColumn || sourceIndex < 0) {
+      commitWardBreak();
+      if (applied) {
+        renderSide(foe, false);
+        renderSide(who, false);
+      }
+      await effectPause(0);
+      return;
+    }
+
+    const receivingColumn = colEl(who, column);
+    const from = source.getBoundingClientRect();
+    const toward = receivingColumn?.getBoundingClientRect();
+    const delta = toward ? {
+      x: toward.left + toward.width / 2 - from.left - from.width / 2,
+      y: toward.top + toward.height / 2 - from.top - from.height / 2,
+      scale: 1,
+    } : { x: 0, y: who === 1 ? 1 : -1, scale: 1 };
+    const unit = unitToward(delta);
+    const tug = `translate(${unit.x * 12}px,${unit.y * 12}px) scale(1.055)`;
+    sourceColumn.classList.add('pilfer-ward-challenge');
+    try {
+      const reached = await playSpellAnimation(source, [
+        { transform: 'translate(0,0) scale(1)', easing: WARD_TUG_EASING },
+        { transform: tug, easing: WARD_TUG_EASING },
+      ], { duration: WARD_TUG_MS, easing: 'linear' }, isCurrent);
+      if (!reached || !isCurrent()) return;
+      commitWardBreak();
+      if (!applied) return;
+      await playSpellAnimation(source, [
+        { transform: tug, opacity: 1, easing: WARD_TUG_EASING },
+        { transform: `translate(${unit.x * -3}px,${unit.y * -3}px) scale(.985)`,
+          opacity: .9, offset: .42, easing: WARD_TUG_EASING },
+        { transform: 'translate(0,0) scale(1)', opacity: 1, easing: WARD_TUG_EASING },
+      ], { duration: WARD_RECOIL_MS, easing: 'linear' }, isCurrent);
+      if (isCurrent()) {
+        renderSide(foe, true);
+        renderSide(who, false);
+      }
+    } finally {
+      cancelSpellAnimations(source);
+      sourceColumn.classList.remove('pilfer-ward-challenge');
+      revealColumn(who, column);
+      revealColumn(foe, column);
+    }
+    return;
+  }
 
   if (REDUCED || !source || !sourceColumn || !targetSlot || sourceIndex < 0) {
     commit();

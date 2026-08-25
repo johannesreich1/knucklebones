@@ -231,7 +231,13 @@ export function playSealEngage(column: HTMLElement): void {
    CSS geometry and drift as soon as seating changes. */
 export function wardClaspRect(who: Player, col: number): DOMRect | null {
   const rivet = colEl(who, col)?.querySelector<SVGGraphicsElement>('.smint .sv');
-  return rivet?.getBoundingClientRect() ?? null;
+  const clasp = rivet?.getBoundingClientRect();
+  if (clasp?.width && clasp.height) return clasp;
+  // Score rendering normally guarantees span-one Ward geometry, including on
+  // COLUMN SHIELD. The chip mark is a truthful last-resort target during a
+  // resize/reseal frame rather than sending an attack toward a zero rectangle.
+  return chipEl(who, col).querySelector<HTMLElement>('.wd .sico')
+    ?.getBoundingClientRect() ?? null;
 }
 
 export interface WardStrikeSpec {
@@ -243,11 +249,11 @@ export interface WardStrikeSpec {
   impact: () => void;
 }
 
-/* Only a strike that openStrikes has proved would take victims calls this.
-   The copy starts on the attacking die after it has settled, brings its leading
-   edge to the transformed centre-facing clasp, then follows W3's long recoil
-   while the clasp snaps. Ordinary placement, misses and permanent shields
-   never enter this seam. */
+/* Only a hostile action that openStrikes has proved reaches WARD calls this.
+   Usually it would take victims; on a full COLUMN SHIELD column it instead
+   burns the scoring WARD while the permanent shield keeps every die. The copy
+   starts on the settled attacker, meets the transformed centre-facing clasp,
+   then follows W3's long recoil while that spendable clasp snaps. */
 export async function playWardStrike(spec: WardStrikeSpec): Promise<boolean> {
   const target = wardClaspRect(spec.target, spec.targetColumn);
   if (REDUCED || !spec.source || !target) {

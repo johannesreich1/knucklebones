@@ -112,12 +112,11 @@
    both protection groups inside the shared frame so shield closure and Ward
    clasp obey the same centre-facing rule in every seating/orientation. */
 :where(#kbroot) .col>.seal>:is(.sgold,.smint){transform-box:view-box;transform-origin:50% 50%;transform:rotate(180deg)}
-/* A column that is BOTH shielded and warded wears the SHIELD's mark, and that
-   is the honest reading rather than a compromise: victimsOf() gives a full
-   COLUMN SHIELD column no victims at all, so openStrikes never marks it
-   warded and the charge can never be spent while the shield holds. The chip
-   still carries both runes (ward left, shield right) — the seal states what
-   is actually protecting the column. */
+/* A column that is BOTH shielded and warded keeps the permanent gold loop and
+   adds the WARD's mint clasp. It deliberately does not draw a second outline:
+   the loop says the dice cannot be removed; the clasp says the scoring WARD
+   can still be attacked and spent. Score rendering keeps such a column at
+   span one, so this target remains centred even beside a merged shield run. */
 :where(#kbroot) .col.shielded>.seal,:where(#kbroot) .col.warded>.seal,:where(#kbroot) .col.sealsnap>.seal{display:block}
 /* ...except a column INSIDE a run: its neighbour's seal already encloses it,
    and one enclosure is the whole point of merging them. */
@@ -125,14 +124,15 @@
 
 :where(#kbroot) .col>.seal>g{display:none}
 :where(#kbroot) .col.shielded>.seal>.sgold{display:block}
-:where(#kbroot) .col.warded:not(.shielded)>.seal>.smint,:where(#kbroot) .col.sealsnap:not(.shielded)>.seal>.smint{display:block}
+:where(#kbroot) .col.warded>.seal>.smint,:where(#kbroot) .col.sealsnap>.seal>.smint{display:block}
 :where(#kbroot) .col.shielded>.seal{--g:var(--mx2,var(--gold))}
-/* the ward's hue AND its heartbeat: the same two states that show the clasp at
-   all are the only two that may animate it (see .sp/.sv below).
-   .sealsnap carries the same :not(.shielded) as .warded: it intentionally
-   outlives the spent charge, and during its longer beat the foe can fill the
-   column. If that makes the column shielded, the shield's mark must win. */
-:where(#kbroot) .col.warded:not(.shielded)>.seal,:where(#kbroot) .col.sealsnap:not(.shielded)>.seal{--g:var(--wdc);--sealbreathe:sealbreathe}
+/* The mint group owns its hue independently from the parent seal. That keeps
+   the gold loop gold when both groups are visible. A combined protection shows
+   only this group's spendable clasp; its arc would be a misleading duplicate
+   outline over the permanent shield. */
+:where(#kbroot) .col:is(.warded,.sealsnap)>.seal>.smint{--g:var(--wdc);--sealbreathe:sealbreathe}
+:where(#kbroot) .col:is(.warded,.sealsnap):not(.shielded)>.seal{--g:var(--wdc);--sealbreathe:sealbreathe}
+:where(#kbroot) .col.shielded:is(.warded,.sealsnap)>.seal>.smint>.sa{display:none}
 /* ===== ONE COLUMN, ONE OUTLINE =====
    A protected column you may still play into is making two true statements at
    once — "this column is protected" and "you may play here this turn" — and
@@ -199,13 +199,10 @@
 :where(#kbroot) .seal .sv{fill:color-mix(in srgb,var(--g) 96%,transparent);
   transform-box:view-box;transform-origin:50% 0;
   filter:drop-shadow(0 0 5px color-mix(in srgb,var(--g) 85%,transparent))}
-/* THE WARD'S ALONE. A shielded column hides the whole clasp group, and this
-   used to animate it anyway: three shapes running forever inside a display:none
-   group, which is what the spells browser suite's steady-state probe reads back on a
-   shielded column. The NAME is the token (rather than play-state, which leaves
-   the animations there paused), so the beats below — which replace `animation`
-   outright and are less specific than the state selector that would otherwise
-   have to carry this — still win on the beats they own. */
+/* THE WARD'S ALONE. The NAME is the token (rather than play-state, which
+   leaves paused animations behind), so the strike/engage beats below can
+   replace it outright. A shielded+warded column now genuinely shows this
+   clasp, so its quiet breath remains a useful promise that it can be broken. */
 :where(#kbroot) .seal .sp,:where(#kbroot) .seal .sv{animation:var(--sealbreathe,none) 2.6s ease-in-out infinite}
 @keyframes sealbreathe{0%,100%{opacity:.78}50%{opacity:1}}
 /* THE MOUTH AND THE HINGE, AS FRACTIONS OF THE FRAME — 50% 0 and 50% 100%.

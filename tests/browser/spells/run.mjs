@@ -26,6 +26,7 @@ import { runBountyMintScenarios } from './scenarios/bounty-mint.mjs';
 import { runPilferAnvilEffectScenarios } from './scenarios/pilfer-anvil-effects.mjs';
 import { runProtectionScenarios } from './scenarios/protections.mjs';
 import { runLayoutScenarios } from './scenarios/layout.mjs';
+import { runScoringWardScenarios } from './scenarios/scoring-ward.mjs';
 
 const { chromium, devices } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';   // the single-file build
@@ -142,6 +143,7 @@ try {
   await runSunderOverloadScenarios(suite);
   await runPilferAnvilEffectScenarios(suite);
   await runProtectionScenarios(suite);
+  await runScoringWardScenarios(suite);
   await runLayoutScenarios(suite);
 
   console.log(JSON.stringify({ out, problems }, null, 2));

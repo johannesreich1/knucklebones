@@ -291,45 +291,46 @@
         accent: '#ffd166', accentRgb: '255, 209, 102',
       },
       3: {
-        slug: 'sunder-overload',
-        scene: 'sunder',
+        slug: 'ward-runic-seal',
+        scene: 'ward',
         count: '03 / 06',
         eyebrow: 'Six tactical runes',
+        headline: '<span class="wash">ONE SEAL.</span><br>ZERO DAMAGE.',
+        subhead: 'Fasten one column; the next enemy strike that would destroy its dice breaks the seal instead.',
+        accent: '#7dffc4', accentRgb: '125, 255, 196',
+      },
+      4: {
+        slug: 'sunder-overload',
+        scene: 'sunder',
+        count: '04 / 06',
+        eyebrow: 'SUNDER rune',
         headline: '<span class="wash">ONE DIE.</span><br>EVERY COLUMN.',
         subhead: 'Arm SUNDER to overload every matching enemy column at once.',
         accent: '#ff9d66', accentRgb: '255, 157, 102',
       },
-      4: {
+      5: {
         slug: 'ranked-bounty',
         scene: 'bounty',
-        count: '04 / 06',
+        count: '05 / 06',
         eyebrow: 'Bounty mode',
         headline: '<span class="wash">EVERY STRIKE</span><br>PAYS.',
         subhead: 'Destroy matching dice and bank a permanent bounty for every one.',
         accent: '#ffd166', accentRgb: '255, 209, 102',
       },
-      5: {
-        slug: 'ranked-victory',
-        scene: 'ranked-result',
-        count: '05 / 06',
-        eyebrow: 'Ranked result',
-        headline: '<span class="wash">WIN. CLIMB.</span><br>REPEAT.',
-        subhead: 'Earn points, rise the ladder, and leave your mark on every rival.',
-        accent: '#28e8ff', accentRgb: '40, 232, 255',
-      },
       6: {
         slug: 'neon-ladder',
         scene: 'ladder',
         count: '06 / 06',
-        eyebrow: 'Ranked competition',
-        headline: '<span class="wash">CLIMB THE</span><br>NEON LADDER.',
-        subhead: 'Track every rival, every rise, and the next rank within reach.',
+        eyebrow: 'Neon ladder',
+        headline: '<span class="wash">WIN. CLIMB.</span><br>REPEAT.',
+        subhead: 'Gain points with every win, chase named rivals, and fight for the top 1%.',
         accent: '#ff2fa0', accentRgb: '255, 47, 160',
       },
     };
 
     const params = new URLSearchParams(location.search);
     const slideNumber = Math.min(6, Math.max(1, Number(params.get('slide')) || 1));
+    const captureVariant = params.get('variant') || 'hero';
     const captureOffset = Math.min(2107, Math.max(0, Number(params.get('offset')) || 0));
     const slide = SLIDES[slideNumber];
     document.body.style.setProperty('--capture-offset', `${-captureOffset}px`);
@@ -497,8 +498,8 @@
       const board = [
         { rank: 1, nickname: 'PrismWolf771', points: 4708, wins: 88, losses: 34, games: 122, apex: true, avatar: 'die:6:gold', peak: 4708 },
         { rank: 2, nickname: 'NovaComet992', points: 3620, wins: 61, losses: 29, games: 90, apex: false, avatar: 'die:4:mg', peak: 3710 },
-        { rank: 3, nickname: 'FrostLynx303', points: 2510, wins: 35, losses: 18, games: 53, apex: false, avatar: 'die:5:cy', peak: 2570 },
-        { rank: 4, nickname: 'CipherMoth440', points: 2470, wins: 32, losses: 21, games: 53, apex: false, avatar: 'die:2:ice', peak: 2520 },
+        { rank: 3, nickname: 'CipherMoth440', points: 2550, wins: 32, losses: 21, games: 53, apex: false, avatar: 'die:2:ice', peak: 2600 },
+        { rank: 4, nickname: 'FrostLynx303', points: 2510, wins: 35, losses: 18, games: 55, apex: false, avatar: 'die:5:cy', peak: 2570 },
         { rank: 5, nickname: 'EmberCrow896', points: 2431, wins: 31, losses: 19, games: 50, apex: false, avatar: 'die:3:mg', peak: 2493 },
         { rank: 6, nickname: 'LunarFox118', points: 1940, wins: 28, losses: 22, games: 50, apex: false, avatar: 'die:6:violet', peak: 2010 },
         { rank: 7, nickname: 'OrbitHare662', points: 1540, wins: 24, losses: 20, games: 44, apex: false, avatar: 'die:1:cy', peak: 1660 },
@@ -507,8 +508,8 @@
       const fixture = {
         profile,
         standing: isResult
-          ? { points: 2510, rank: 3, population: 200, percentile: 1.5 }
-          : { points: 2510, rank: 3, population: 200, percentile: 1.5 },
+          ? { points: 2510, rank: 4, population: 199, percentile: 0.9848484848 }
+          : { points: 2510, rank: 4, population: 199, percentile: 0.9848484848 },
         ladder: isResult
           ? { points: 2510, peak: 2510, wins: 13, losses: 7, draws: 1 }
           : { points: 2510, peak: 2570, wins: 35, losses: 18, draws: 2 },
@@ -517,9 +518,9 @@
 
       win.localStorage.setItem('sb-euzjcejbkxvqfrttgaxu-auth-token', JSON.stringify(session));
       win.localStorage.setItem(PROFILE_KEY, JSON.stringify(isResult ? {
-        nickname: 'FrostLynx303', avatar: 'die:5:cy', rating: 2427, rank: 3, apex: false,
+        nickname: 'FrostLynx303', avatar: 'die:5:cy', rating: 2427, rank: 4, apex: false,
       } : {
-        nickname: 'FrostLynx303', avatar: 'die:5:cy', rating: 2510, rank: 3, apex: false,
+        nickname: 'FrostLynx303', avatar: 'die:5:cy', rating: 2510, rank: 4, apex: false,
       }));
 
       const originalFetch = win.fetch.bind(win);
@@ -561,12 +562,19 @@
       const k = await waitFor(() => win.__kb);
       const doc = win.document;
       await doc.fonts.ready;
+      const captureOverrides = doc.createElement('style');
+      captureOverrides.id = 'app-store-capture-overrides';
+      captureOverrides.textContent = `
+        #btnLeave{display:none!important}
+        #ovStart:not(.on),#ovPractice:not(.on),#ovOnline:not(.on),#ovEnd:not(.on){display:none!important}
+      `;
+      doc.head.appendChild(captureOverrides);
       applyNativeGeometry(win);
 
       if (slide.scene === 'rowmult') {
         startScene(k, {
           scoring: 2,
-          mine: [[6, 5, 1], [6, 5], [6, 5, 3]],
+          mine: [[6, 5, 1], [6, 5, 3], [6]],
           theirs: [[2, 2], [5], [1, 4]],
           die: 4,
           opponent: 'EmberCrow896',
@@ -574,6 +582,14 @@
         const multipliers = [...doc.querySelectorAll('#botRows .mx')]
           .filter((element) => element.textContent.trim());
         if (multipliers.length !== 2) throw new Error(`Expected two multiplied rows; saw ${multipliers.length}`);
+        const multiplierLabels = multipliers.map((element) => element.textContent.replace(/\s/g, '')).sort();
+        if (multiplierLabels.join(',') !== '×2,×3') {
+          throw new Error(`Expected one ×2 row and one ×3 row; saw ${multiplierLabels.join(', ')}`);
+        }
+        const twoDiceRow = k.S.boards[1].map((column) => column[1]).filter(Number.isInteger);
+        if (twoDiceRow.length !== 2 || twoDiceRow.some((value) => value !== 5)) {
+          throw new Error(`Expected the ×2 row to contain only two fives; saw ${twoDiceRow.join(', ')}`);
+        }
       } else if (slide.scene === 'dial') {
         const [{ reveal }, { modeById }, { hide }, { setReducedMotion }, { setLanguageOverride }] = await win.eval(`Promise.all([
           import('/src/ui/reveal.ts'),
@@ -599,6 +615,80 @@
         await waitFor(() => win.getComputedStyle(answer).color === 'rgb(255, 209, 102)');
         document.body.dataset.dialColor = win.getComputedStyle(answer).color;
         k.fit();
+      } else if (slide.scene === 'ward') {
+        k.S.reducedMotion = false;
+        doc.querySelector('#motionSeg button[data-rm="0"]')?.click();
+        await waitFor(() => k.reduced === false && !doc.getElementById('kbroot').classList.contains('reduce-motion'));
+        startScene(k, {
+          scoring: 0,
+          spell: 'ward',
+          mine: [[5, 2], [4, 4], [6]],
+          theirs: [[3, 3], [2], [5, 1]],
+          die: 5,
+          aiNormal: true,
+        });
+        await k.spells.cast('ward', 1);
+        await waitFor(() => doc.querySelector('#botBoard .col[data-col="1"].warded'));
+        await pause(1100);
+
+        k.S.turn = 0;
+        k.S.phase = 'choose';
+        k.S.busy = false;
+        k.S.die = 4;
+        k.applySides();
+        k.renderAll(false);
+        k.setStageDie(4, 0);
+        k.setStatus('AI thinking', 0);
+        k.showHints();
+        k.spells.render();
+        k.setActivePlate();
+        const runtimeTimeouts = new Set();
+        const nativeSetTimeout = win.setTimeout.bind(win);
+        win.setTimeout = (callback, delay, ...args) => {
+          const id = nativeSetTimeout(callback, delay, ...args);
+          runtimeTimeouts.add(id);
+          return id;
+        };
+        void k.place(0, 1);
+        await waitFor(() => doc.querySelector('.ward-strike-ghost')
+          && doc.querySelector('#botBoard .col[data-col="1"].sealsnap')
+          && doc.querySelector('.wd.block'));
+
+        const snapAnimations = new Set(['sealpop', 'sealsnapoff', 'sealunwind', 'sealburst', 'wdblock']);
+        const deterministicLoops = new Set(['drift', 'hot', 'pulse', 'sealbreathe', 'sealrun', 'sealready']);
+        for (const animation of doc.getAnimations({ subtree: true })) {
+          const target = animation.effect?.target;
+          const duration = Number(animation.effect?.getTiming().duration);
+          const recoil = target?.classList?.contains('ward-strike-ghost')
+            && animation.id === 'kb-spell-motion' && duration === 1024;
+          const snap = snapAnimations.has(animation.animationName);
+          const loop = deterministicLoops.has(animation.animationName);
+          if (!recoil && !snap && !loop) continue;
+          try {
+            animation.currentTime = loop ? 0 : 192;
+            animation.pause();
+          } catch { /* a completed non-persistent animation needs no further hold */ }
+        }
+        for (const id of runtimeTimeouts) win.clearTimeout(id);
+        win.setTimeout = nativeSetTimeout;
+        await twoFrames(win);
+        const wardMark = doc.querySelector('.wd.block');
+        if (!wardMark || win.getComputedStyle(wardMark).color !== 'rgb(125, 255, 196)') {
+          throw new Error('WARD seal did not retain its mint identity');
+        }
+        if (doc.querySelectorAll('.ward-strike-ghost.p2[data-v="4"]').length !== 1) {
+          throw new Error('WARD strike-contact frame did not hold exactly one attacker ghost');
+        }
+        if (JSON.stringify(k.S.boards[1][1]) !== '[4,4]'
+            || JSON.stringify(k.S.boards[0][1]) !== '[2,4]'
+            || k.S.charm.wards[1][1] !== 0
+            || doc.querySelector('#botBoard .col[data-col="1"] .dying')) {
+          throw new Error('WARD strike-contact fixture did not preserve the protected pair');
+        }
+        if (doc.getElementById('tagTop').textContent.trim() !== 'NORMAL') {
+          throw new Error('WARD capture is not showing AI NORMAL');
+        }
+        k.fit();
       } else if (slide.scene === 'sunder') {
         startScene(k, {
           scoring: 0,
@@ -615,51 +705,60 @@
         }
         k.fit();
       } else if (slide.scene === 'bounty') {
+        const activeTurn = captureVariant === 'active';
         startScene(k, {
           scoring: 5,
-          mine: [[6, 2], [5], [3, 1]],
-          theirs: [[4, 4, 4], [2, 5], [1, 6]],
+          spell: activeTurn ? 'ward' : '',
+          mine: activeTurn ? [[6, 2, 4], [5], [3, 1]] : [[6, 2], [5], [3, 1]],
+          theirs: activeTurn ? [[1], [2, 5], [1, 6]] : [[4, 4], [2, 5], [1, 6]],
           die: 4,
           opponent: 'EmberCrow896',
         });
-        k.S.bounty = [0, 2];
+        k.S.bounty = activeTurn ? [0, 2] : [0, 0];
         k.renderAll(false);
-        void k.place(1, 0);
-        await waitFor(() => doc.querySelectorAll('.bounty-mint.bounty-mint-static').length === 3);
-        const frozenAt = win.performance.now();
-        try {
-          Object.defineProperty(win.performance, 'now', { configurable: true, value: () => frozenAt });
-          win.setTimeout = () => 0;
-        } catch { /* the authored reduced-motion hold still leaves 320ms */ }
-        if (doc.querySelectorAll('.bounty-mint').length !== 3) throw new Error('BOUNTY triple strike did not hold');
-        k.fit();
-      } else if (slide.scene === 'ranked-result') {
-        installOnlineFixture(win, 'result');
-        hideMenus(doc);
-        const [{ setLanguageOverride }, { setReducedMotion }] = await win.eval(`Promise.all([
-          import('/src/i18n/index.ts'),
-          import('/src/ui/fx.ts')
-        ])`);
-        setLanguageOverride('en');
-        setReducedMotion(true);
-        await win.eval("import('/src/online/ui.ts')");
-        await waitFor(() => typeof win.__kbResult === 'function');
-        win.__kbResult({
-          won: true,
-          draw: false,
-          forfeit: false,
-          my: 47,
-          their: 30,
-          delta: 83,
-          opp: 'EmberCrow896',
-          oppAvatar: 'die:3:mg',
-          oppRating: 2493,
-        });
-        await waitFor(() => doc.getElementById('ovEnd')?.classList.contains('on'));
-        await waitFor(() => doc.querySelectorAll('#endPlates button').length === 2);
-        await waitFor(() => doc.querySelector('.pstamp')?.textContent.trim() === 'BEATEN');
-        await waitFor(() => [...doc.querySelectorAll('#endPlates .gpill')]
-          .some((pill) => pill.textContent.includes('GOLD') && pill.textContent.includes('#5')));
+        if (activeTurn) {
+          k.setStageDie(4, 1);
+          if (!k.spells.arm('ward')) throw new Error('BOUNTY active-turn rune did not arm');
+          const timer = doc.getElementById('timerWrap');
+          timer.classList.add('on', 'warn');
+          timer.style.setProperty('--tcbase', 'var(--p1)');
+          doc.getElementById('timerBar').style.width = '40%';
+          doc.getElementById('timerNum').textContent = '4';
+          // The production arm turn finishes face-up and enlarged. Hold that
+          // final pose so every source load captures the same card geometry.
+          await pause(400);
+          const rune = doc.querySelector('#spellBar .rune.armed[data-spell="ward"]:not([hidden])');
+          const card = rune?.querySelector('.rune-charge.top:not([hidden])');
+          const face = card?.querySelector('.rface');
+          const back = card?.querySelector('.rback');
+          if (doc.querySelectorAll('.bounty-mint').length !== 0
+              || !rune || !card || !face || !back
+              || Number(win.getComputedStyle(face).opacity) < .9
+              || Number(win.getComputedStyle(back).opacity) > .1
+              || win.getComputedStyle(card).transform === 'none'
+              || doc.querySelector('#dieStage .die')?.dataset.v !== '4'
+              || doc.getElementById('timerNum').textContent !== '4'
+              || JSON.stringify(k.S.boards[1]) !== '[[6,2,4],[5],[3,1]]'
+              || JSON.stringify(k.S.boards[0]) !== '[[1],[2,5],[1,6]]'
+              || doc.getElementById('btyBot').textContent.trim() !== '✦2') {
+            throw new Error('BOUNTY active-turn source is missing its armed rune, die, or countdown');
+          }
+        } else {
+          void k.place(1, 0);
+          await waitFor(() => doc.querySelectorAll('.bounty-mint.bounty-mint-static').length === 2);
+          const frozenAt = win.performance.now();
+          try {
+            Object.defineProperty(win.performance, 'now', { configurable: true, value: () => frozenAt });
+            win.setTimeout = () => 0;
+          } catch { /* the authored reduced-motion hold still leaves 320ms */ }
+          if (doc.querySelectorAll('.bounty-mint').length !== 2) {
+            throw new Error('BOUNTY double strike did not hold exactly two coins');
+          }
+          if (doc.getElementById('timerWrap').classList.contains('on')
+              || doc.getElementById('btyBot').textContent.trim() !== '✦0') {
+            throw new Error('BOUNTY strike source leaked active-turn furniture');
+          }
+        }
         k.fit();
       } else if (slide.scene === 'ladder') {
         installOnlineFixture(win, 'ladder');
@@ -679,14 +778,39 @@
       // The overlays deliberately leave with a short opacity transition. The
       // final still must be a settled product frame, never two screens blended
       // together halfway through that transition.
-      if (slide.scene !== 'bounty') await pause(slide.scene === 'dial' ? 140 : 500);
+      if (slide.scene !== 'bounty' || captureVariant === 'active') {
+        await pause(slide.scene === 'dial' ? 140 : 500);
+      }
+      if (slide.scene === 'ward') {
+        // fit()/ResizeObserver may rebuild the seal SVG after the first freeze.
+        // Reapply the exact authored instant only after final geometry settles,
+        // so independently loaded capture segments cannot sample two phases.
+        const snapAnimations = new Set(['sealpop', 'sealsnapoff', 'sealunwind', 'sealburst', 'wdblock']);
+        const deterministicLoops = new Set(['drift', 'hot', 'pulse', 'sealbreathe', 'sealrun', 'sealready']);
+        for (const animation of doc.getAnimations({ subtree: true })) {
+          const target = animation.effect?.target;
+          const duration = Number(animation.effect?.getTiming().duration);
+          const recoil = target?.classList?.contains('ward-strike-ghost')
+            && animation.id === 'kb-spell-motion' && duration === 1024;
+          const snap = snapAnimations.has(animation.animationName);
+          const loop = deterministicLoops.has(animation.animationName);
+          if (!recoil && !snap && !loop) continue;
+          try {
+            animation.currentTime = loop ? 0 : 192;
+            animation.pause();
+          } catch { /* a completed non-persistent animation needs no further hold */ }
+        }
+        await twoFrames(win);
+      }
 
       const visibleOverlay = [...doc.querySelectorAll('.ov.on')].map((element) => element.id);
       if (!doc.getElementById('app') || !doc.getElementById('kbroot')) {
         throw new Error('Production application root is missing');
       }
+      if (win.getComputedStyle(doc.getElementById('btnLeave')).display !== 'none') {
+        throw new Error('The in-game exit button is visible in a store preview');
+      }
       const expectedOverlay = slide.scene === 'dial' ? 'ovWheel'
-        : slide.scene === 'ranked-result' ? 'ovEnd'
         : slide.scene === 'ladder' ? 'ovOnline'
         : null;
       if (visibleOverlay.some((id) => id !== expectedOverlay)) {
@@ -696,8 +820,10 @@
       document.body.dataset.ready = '1';
       document.body.dataset.slide = String(slideNumber);
       document.body.dataset.slug = slide.slug;
-      document.title = `${slide.count} — ${slide.slug}`;
+      document.body.dataset.variant = captureVariant;
+      document.title = `${slide.count} — ${slide.slug}${captureVariant === 'hero' ? '' : ` — ${captureVariant}`}`;
       window.scrollTo(0, 0);
+      document.body.scrollTo(0, 0);
     }
 
     frame.addEventListener('load', () => {

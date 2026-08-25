@@ -17,7 +17,10 @@
 // The first roster (COLUMN SWAP) retired 2026-08-21: tools/spellsim.ts
 // measured a one-sided holder at 70.5% in classic and 81.8% under
 // SINGLESTRIKE. This roster measured 53–61% under the same harness.
-import { BOUNTY, COLSHIELD, SPEC, cloneCharm, isShielded, type CharmSt, type Player } from './rules.ts';
+import {
+  BOUNTY, SPEC, cloneCharm, distinctPipSum, isShielded,
+  type CharmSt, type Player,
+} from './rules.ts';
 import { DICE_FACES } from '../config.ts';
 import type { CastCtx, SpellSpec } from './spell-types.ts';
 import { bestTarget, colScoreOf, immediatePlacementGain, placeGain } from './spell-policy.ts';
@@ -52,9 +55,11 @@ const FATE: SpellSpec = {
   },
   cpuCast(st, who, ctx, demand) {
     let mean = 0;
-    for (let f = 1; f <= DICE_FACES; f++) mean += placeGain(st, who, f, ctx.mode) / DICE_FACES;
+    for (let f = 1; f <= DICE_FACES; f++) {
+      mean += placeGain(st, who, f, ctx.mode, ctx.charm) / DICE_FACES;
+    }
     // a hand far below the average roll is worth throwing back
-    return mean - placeGain(st, who, ctx.die, ctx.mode) >= demand / 4 ? -1 : null;
+    return mean - placeGain(st, who, ctx.die, ctx.mode, ctx.charm) >= demand / 4 ? -1 : null;
   },
 };
 
@@ -74,14 +79,20 @@ const NUDGE: SpellSpec = {
   },
   cpuCast(st, who, ctx, demand) {
     const up = ctx.die % DICE_FACES + 1;
-    return placeGain(st, who, up, ctx.mode) - placeGain(st, who, ctx.die, ctx.mode) >= demand / 3 ? -1 : null;
+    return placeGain(st, who, up, ctx.mode, ctx.charm)
+      - placeGain(st, who, ctx.die, ctx.mode, ctx.charm) >= demand / 3 ? -1 : null;
   },
 };
 
-/* WARD: one of the caster's own columns absorbs the next strike that would
-   take dice there, then burns out. Cast in anticipation, never in reaction —
-   the mark just sits in the charm until destruction consults it (core/rules
-   applyMove / openStrikes). A strike with no victims costs the ward nothing. */
+function armedWardCharm(ctx: CastCtx, who: Player, col: number): CharmSt {
+  const charm = cloneCharm(ctx.charm);
+  charm.wards[who][col] = 1;
+  return charm;
+}
+
+/* WARD: one of the caster's own columns adds its raw pip sum again while its
+   faces remain all-distinct, and absorbs the next matching hostile action.
+   A duplicate suppresses only the bonus; the mark remains until attacked. */
 const WARD: SpellSpec = {
   id: 'ward',
   target: 'column',
@@ -89,34 +100,34 @@ const WARD: SpellSpec = {
   uses: 1,
   legal(st, who, col, ctx) {
     if (!ctx || !Number.isInteger(col) || col < 0 || col >= SPEC.cols) return false;
-    // A COLUMN SHIELD column is already untouchable, so a ward on it would
-    // spend the charge and buy nothing — the same reason a second ward on
-    // one column is refused. Not an error to report: a target you cannot pick.
-    if (isShielded(st[who][col], ctx.mode)) return false;
-    return ctx.charm.wards[who][col] === 0;    // one ward per column — a second buys nothing
+    if (ctx.charm.wards[who][col] > 0) return false;
+    // A full matched COLUMN SHIELD column is already safe and earns no WARD
+    // bonus. A full all-distinct column does earn the bonus and is dispellable.
+    return !isShielded(st[who][col], ctx.mode) || distinctPipSum(st[who][col]) > 0;
   },
   apply(st, who, col, ctx) {
-    ctx!.charm.wards[who][col]++;
+    ctx!.charm.wards[who][col] = 1;
+  },
+  cpuRootCharm(st, who, castTarget, ctx) {
+    return armedWardCharm(ctx, who, castTarget);
   },
   cpuCast(st, who, ctx, demand) {
-    // guard the fattest column an enemy placement can still reach
+    /* Value the active distinct-column bonus whether or not the column can be
+       struck. Add the protected native column score only while an ordinary
+       facing placement can still reach it. WARD keeps its established ×1.5
+       registry scaling, but Hard is floored at Normal's 16-point demand so
+       deeper search does not turn the cast itself nearly automatic. */
     const foe = (1 - who) as Player;
     let bestC: number | null = null, bestV = 0;
     for (let c = 0; c < SPEC.cols; c++) {
       if (!this.legal(st, who, c, ctx)) continue;
-      if (isShielded(st[who][c], ctx.mode)) continue;          // already safe
-      if (st[foe][c].length >= SPEC.rows) continue;            // no strike can come
-      const v = colScoreOf(st[who][c]);
+      const strikeable = !isShielded(st[who][c], ctx.mode)
+        && st[foe][c].length < SPEC.rows;
+      const v = distinctPipSum(st[who][c])
+        + (strikeable ? colScoreOf(st[who][c]) : 0);
       if (v > bestV) { bestV = v; bestC = c; }
     }
-    return bestV >= demand * 1.5 ? bestC : null;
-  },
-  cpuForbiddenPlacements(st, who, castTarget, ctx) {
-    /* Filling the warded column immediately makes it permanently untouchable
-       in COLUMN SHIELD, so the fresh ward would never be able to help. */
-    return ctx.mode === COLSHIELD && st[who][castTarget].length === SPEC.rows - 1
-      ? [castTarget]
-      : [];
+    return bestV >= Math.max(demand, 16) * 1.5 ? bestC : null;
   },
 };
 
@@ -159,26 +170,36 @@ const SUNDER: SpellSpec = {
 /* PILFER: the top die of the enemy column you point at crosses the centre
    line onto your facing column. One die, not a stack — the bounded cousin of
    the swap it replaced. The stolen die LANDS, it is not thrown: only a thrown
-   die strikes, so nothing is destroyed by its arrival. A shielded column
-   cannot be touched — the mode's promise holds against spells too. */
+   die strikes, so nothing is destroyed by its arrival. A WARD answers the
+   attempt before a die moves; otherwise COLUMN SHIELD still blocks theft. */
 const PILFER: SpellSpec = {
   id: 'pilfer',
   target: 'column',
   side: 'foe',
   uses: 1,
   locksOnAim: true,
-  previewDieIndex(st, who, col) {
+  previewDieIndex(st, who, col, ctx) {
     const foe = (1 - who) as Player;
+    if (ctx && ctx.charm.wards[foe][col] > 0) return null;
     return st[foe][col].length ? st[foe][col].length - 1 : null;
   },
   legal(st, who, col, ctx) {
     if (!ctx || !Number.isInteger(col) || col < 0 || col >= SPEC.cols) return false;
     const foe = (1 - who) as Player;
-    if (!st[foe][col].length || isShielded(st[foe][col], ctx.mode)) return false;
+    if (!st[foe][col].length) return false;
+    // WARD intercepts the hostile action before a die needs a destination.
+    // It can therefore be dispelled through COLUMN SHIELD and even when the
+    // receiver is full; no die crosses in that branch.
+    if (ctx.charm.wards[foe][col] > 0) return true;
+    if (isShielded(st[foe][col], ctx.mode)) return false;
     return st[who][col].length < SPEC.rows;
   },
   apply(st, who, col, ctx) {
     const foe = (1 - who) as Player;
+    if (ctx!.charm.wards[foe][col] > 0) {
+      ctx!.charm.wards[foe][col]--;
+      return;
+    }
     st[who][col].push(st[foe][col].pop()!);
   },
   // no cpuCast: the steal shows on the boards, so the default policy —

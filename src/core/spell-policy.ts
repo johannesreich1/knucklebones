@@ -23,17 +23,27 @@ export function immediatePlacementGain(
   options: ImmediatePlacementOptions = {},
 ): number {
   const { charm, bankPerKill = 0 } = options;
-  const foe = (1 - who) as Player;
-  const lead = (s: GameState) => boardTotalMode(s[who], mode) - boardTotalMode(s[foe], mode);
+  const before = leadOf(st, who, mode, charm);
   let best = -Infinity;
   for (const c of legalCols(st[who])) {
     const ns = cloneSt(st);
     const scratch = charm && cloneCharm(charm);
     const killed = applyMove(ns, who, c, die, mode, scratch);
-    const gain = lead(ns) - lead(st) + killed * bankPerKill;
+    const gain = leadOf(ns, who, mode, scratch) - before + killed * bankPerKill;
     if (gain > best) best = gain;
   }
   return best;
+}
+
+function leadOf(
+  st: GameState,
+  who: Player,
+  mode: Mode,
+  charm?: CharmSt,
+): number {
+  const foe = (1 - who) as Player;
+  return boardTotalMode(st[who], mode, charm?.wards[who])
+    - boardTotalMode(st[foe], mode, charm?.wards[foe]);
 }
 
 /* Established board-only yardstick used by FATE/NUDGE and legacy tuning.
@@ -69,11 +79,10 @@ export function swingOf(
   mode: Mode,
   ctx?: CastCtx,
 ): number {
-  const foe = (1 - who) as Player;
-  const lead = (state: GameState) => boardTotalMode(state[who], mode) - boardTotalMode(state[foe], mode);
   const after = cloneSt(st);
-  spell.apply(after, who, col, ctx && sandbox(ctx));
-  return lead(after) - lead(st);
+  const afterCtx = ctx && sandbox(ctx);
+  spell.apply(after, who, col, afterCtx);
+  return leadOf(after, who, mode, afterCtx?.charm) - leadOf(st, who, mode, ctx?.charm);
 }
 
 function sandbox(ctx: CastCtx): CastCtx {
@@ -127,10 +136,12 @@ export function machineCast(
 
   // Never end the game on itself from behind.
   const after = cloneSt(st);
-  spell.apply(after, who, pick, sandbox(ctx));
+  const afterCtx = sandbox(ctx);
+  spell.apply(after, who, pick, afterCtx);
   if (isFull(after[ME]) || isFull(after[AI])) {
     const foe = (1 - who) as Player;
-    if (boardTotalMode(after[who], ctx.mode) <= boardTotalMode(after[foe], ctx.mode)) return null;
+    if (boardTotalMode(after[who], ctx.mode, afterCtx.charm.wards[who])
+        <= boardTotalMode(after[foe], ctx.mode, afterCtx.charm.wards[foe])) return null;
   }
   return pick;
 }
@@ -145,7 +156,7 @@ export interface MachineCastPlan {
   vetoedByPlacement: boolean;
 }
 
-/* Coordinate a spell's registry-owned placement hazards and one-shot root
+/* Coordinate a spell's registry-owned placement hazards and projected root
    charm with the ordinary placement policy. The cast decision itself stays
    machineCast's answer; only a spell that declares one of those hooks asks
    for a placement preview. */

@@ -7,7 +7,7 @@ import { $, hide, show } from '../ui/dom.ts';
 import { colorOf, nameOf } from '../ui/identity.ts';
 
 function scoreOf(player: Player): number {
-  return totalOf(S.boards[player], S.bounty[player], S.scoring);
+  return totalOf(S.boards[player], S.bounty[player], S.scoring, S.charm.wards[player]);
 }
 
 function paint(who: Player): void {

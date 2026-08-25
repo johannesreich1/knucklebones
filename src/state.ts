@@ -94,9 +94,9 @@ export const S = {
   reducedMotion: null as boolean | null,
   busy: false,
   gen: 0,                // bumped whenever a game is abandoned/restarted; async work checks it
-  /* the active scoring/destruction mode (core/rules Mode). ONLY online play
-     sets it (the ranked wheel); local play is always 0 = classic. Rendering
-     and destroy animations read it so boards/totals match the server. */
+  /* the active scoring/destruction mode (core/rules Mode). Ranked supplies it
+     from the match; offline newGame copies localMode. Rendering, effects and
+     final totals all read this one resolved value. */
   scoring: 0 as RulesMode,
   /* the OFFLINE view's mode pick — newGame copies it into scoring (persisted) */
   localMode: 0 as RulesMode,
@@ -119,8 +119,8 @@ export const S = {
   spellArmed: null as string | null,
   spellAimCommitted: null as null | { id: string; who: Player },
   /* persistent spell marks (wards, a pending sunder) — core/rules CharmSt.
-     Reset wherever charges are dealt (resetSpells / clearSpells); the render
-     paints ward chips from it, destruction consults it. */
+     Reset wherever charges are dealt (resetSpells / clearSpells); rendering
+     derives WARD's live score bonus from it, and hostile actions consume it. */
   charm: freshCharm() as CharmSt,
 };
 

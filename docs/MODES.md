@@ -18,7 +18,7 @@ not a new game.
 
 - **Scoring** — ROW SWITCH (rows score instead of columns), ROW MULTIPLY (row
   matches pay again on top), BOUNTY (destroyed dice bank a permanent +1).
-- **Destruction** — COLUMN SHIELD (a full column cannot be struck), SINGLE
+- **Destruction** — COLUMN SHIELD (a full column cannot be destroyed), SINGLE
   STRIKE (a hit takes one die, the closest to the centre).
 - **Supply and end condition** — LIMITED (one shared bag of 24; the bag ends
   the match, full boards or not).
@@ -121,20 +121,28 @@ mode's blurb is a copy that will drift.
 
 ## 6. Modes × spells
 
-Offline, the player picks both, so the combinations are theirs to make — but
-two are known-bad and are recorded in `docs/SPELLS.md §4`:
+Offline, the player picks both, so the combinations are theirs to make. One
+hot pairing and one superseded weakness are recorded in `docs/SPELLS.md §4`:
 
 - **PILFER + COLUMN SHIELD (63.1%)** — the steal un-fills a nearly-full
   column, denying the shield the mode exists to grant.
-- **WARD + COLUMN SHIELD (49.5%)** — worthless: the mode already protects full
-  columns and a shielded column may not be warded.
+- **Historical no-score WARD + COLUMN SHIELD (49.5%)** — the retired WARD rule
+  could not target a shielded column and had almost nothing left to do. This is
+  retained baseline evidence, not the shipped scoring-WARD behavior.
 
-Both pickers now offer RANDOM, so a random/random deal can land on the dead
-pairing. Whether the deal should refuse it is **open**.
+The shipped offline WARD deliberately layers with the mode. While WARD is
+active, an all-distinct column adds its raw pips once after COLUMN SHIELD's
+native score; a duplicate pauses that bonus but leaves the mark. A full
+all-distinct shielded column is a legal WARD target. A matching hostile action
+burns WARD with zero victims and zero BOUNTY while the permanent shield and all
+three dice remain. A full shielded column containing a duplicate has no WARD
+bonus or defensive work left to buy, so it is illegal. PILFER also burns an
+active WARD and steals nothing, including on a full shielded target.
 
 When adding a mode, ask what it does to each spell — particularly anything
-that changes destruction (which is what WARD and SUNDER are about) or supply
-(which is what FATE is about, and where LIMITED gives its redraw a real cost).
+that changes scoring or destruction (which is what WARD and SUNDER are about)
+or supply (which is what FATE is about, and where LIMITED gives its redraw a
+real cost).
 
 ## 7. The seven
 
@@ -156,6 +164,10 @@ BOUNTY `✦` coin in the attacker's heat. Survivors and dice protected by WARD
 or COLUMN SHIELD receive no mark. This is presentation only: victim selection,
 the permanent bank, the existing `+N ✦` feedback, scores, tallies, and replay
 remain authoritative elsewhere.
+
+A matching action against a full distinct shielded WARD spends WARD but
+destroys no dice. It therefore mints no BOUNTY and shows no BO2 victim coin;
+the gold COLUMN SHIELD remains after the mint clasp breaks.
 
 ### The timing contract
 

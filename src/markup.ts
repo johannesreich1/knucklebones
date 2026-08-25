@@ -3,6 +3,7 @@
 // derived the widget's copy from the page via regex — this is that, deleted).
 import { chromeIcon } from './ui/chromeicons.ts';
 import { learnPageMarkup } from './ui/learn-page.ts';
+import { spellIcon } from './ui/spellicons.ts';
 import { LEGAL_MARKUP } from './markup/legal.ts';
 
 const RULES_PAGE = learnPageMarkup({
@@ -51,8 +52,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
         <span class="who"><span class="dot"></span><span class="nm" id="nameTop">AI</span>
         <span class="tag" id="tagTop">HARD</span></span>
         <span class="sp"></span>
-        <span class="pright"><span class="bty" id="btyTop" hidden></span>
-        <span class="tot" id="totTop">0</span></span>
+        <span class="pright"><span class="wpt" id="wptTop" hidden>\n        ${spellIcon('ward', 11)}<b>+0</b></span><span class="bty" id="btyTop" hidden></span>\n        <span class="tot" id="totTop">0</span></span>
       </div>
       <div class="boardwrap"><div class="board" id="topBoard"></div></div>
       <div class="cols" id="topCols"></div>
@@ -87,8 +87,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
         <span class="who"><span class="dot"></span><span class="nm" id="nameBot">YOU</span>
         <span class="tag" id="tagBot" hidden></span></span>
         <span class="sp"></span>
-        <span class="pright"><span class="bty" id="btyBot" hidden></span>
-        <span class="tot" id="totBot">0</span></span>
+        <span class="pright"><span class="wpt" id="wptBot" hidden>\n        ${spellIcon('ward', 11)}<b>+0</b></span><span class="bty" id="btyBot" hidden></span>\n        <span class="tot" id="totBot">0</span></span>
       </div>
     </section>
   </div>
