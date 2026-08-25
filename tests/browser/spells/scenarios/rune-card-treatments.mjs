@@ -14,6 +14,7 @@ export async function runRuneCardTreatmentScenarios(suite) {
     const read = () => {
       const shadow = getComputedStyle(charge, '::after');
       return { shadow: Number(shadow.opacity), boxShadow: shadow.boxShadow,
+        wash: getComputedStyle(back, '::before').backgroundImage,
         duration: shadow.transitionDuration, back: Number(getComputedStyle(back).opacity),
         face: Number(getComputedStyle(face).opacity), buttonMark: getComputedStyle(card, '::before').content };
     };
@@ -28,6 +29,14 @@ export async function runRuneCardTreatmentScenarios(suite) {
     return { armed, before, samples, after, restored: read() };
   });
   const shadowFace = out.ownerShadowFade.samples.findIndex((sample) => sample.face >= .9);
+  const ambientMist = out.ownerShadowFade.before.boxShadow;
+  check(ambientMist.includes('/ 0.18) 1px 1px 7px')
+      && ambientMist.includes('/ 0.15) 3px 5px 16px -4px'),
+    'the paired rune owner highlight is not the selected soft Ambient Mist treatment', ambientMist);
+  check(out.ownerShadowFade.before.wash.includes('/ 0.1)')
+      && out.ownerShadowFade.before.wash.includes('/ 0.03)'),
+    'the rune card interior did not keep its selected low-glare colour wash',
+    out.ownerShadowFade.before.wash);
   check(out.ownerShadowFade.armed && out.ownerShadowFade.before.shadow >= .99
       && out.ownerShadowFade.before.boxShadow !== 'none'
       && out.ownerShadowFade.before.buttonMark === 'none'
@@ -82,7 +91,7 @@ export async function runRuneCardTreatmentScenarios(suite) {
   check(await waitChoose(), 'game never reached choose (turning owner-edge flight)');
   await turnTo(1);
   out.turningOwnerShadow = await page.evaluate(async () => {
-    const k = window.__kb, pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const k = window.__kb;
     const readRail = () => {
       const hands = [...document.querySelectorAll('#spellBar .rune:not([hidden])')]
         .filter((card) => !!card.offsetParent).map((card) => {
@@ -106,15 +115,18 @@ export async function runRuneCardTreatmentScenarios(suite) {
     const source = sourceBox ? { cx: sourceBox.left + sourceBox.width / 2,
       cy: sourceBox.top + sourceBox.height / 2, width: sourceBox.width, height: sourceBox.height } : null;
     const pending = k.spells.cast('nudge', -1);
-    let flight = null;
-    for (let frame = 0; frame < 12 && !flight; frame++) {
-      await new Promise(requestAnimationFrame);
-      flight = document.querySelector('#spellBar .rune-played.turning');
-    }
+    const flight = document.querySelector('#spellBar .rune-played.turning');
     if (!flight) return { found: false, source, railDuring: readRail() };
+    /* Freeze the whole flight before yielding. A saturated renderer may skip
+       from its first frame to completion between two rAF callbacks, which is
+       not evidence about the authored overlap. Seek the real animations so
+       the contract is measured at exact presentation times. */
+    const animations = flight.getAnimations({ subtree: true });
+    for (const animation of animations) {
+      animation.pause(); animation.currentTime = 0;
+    }
     const railDuring = readRail();
-    const deal = flight.getAnimations().find((animation) => animation.animationName === 'runeTurnDeal');
-    if (deal) deal.currentTime = 0;
+    const deal = animations.find((animation) => animation.animationName === 'runeTurnDeal');
     const flightBox = flight.getBoundingClientRect();
     const first = { cx: flightBox.left + flightBox.width / 2,
       cy: flightBox.top + flightBox.height / 2, width: flightBox.width, height: flightBox.height };
@@ -125,20 +137,24 @@ export async function runRuneCardTreatmentScenarios(suite) {
         back: Number(getComputedStyle(flight.querySelector('.rback')).opacity),
         face: Number(getComputedStyle(flight.querySelector('.rface')).opacity) };
     };
-    const names = flight.getAnimations().map((animation) => animation.animationName);
+    const names = animations.map((animation) => animation.animationName);
     const dealDuration = Number(deal?.effect?.getTiming().duration ?? 0);
-    const samples = [read()], started = performance.now();
-    while (performance.now() - started < 230) {
-      await new Promise(requestAnimationFrame); samples.push(read());
-    }
-    /* Surviving beyond the 150ms ownership fade proves its animationend did
-       not remove the clone. Seeking the main animation with currentTime can
-       leave Chromium's queued end event on its original timeline, so a fixed
-       500ms wall-clock probe is both redundant and flaky after the seek. */
+    const seek = (ms) => {
+      for (const animation of animations) {
+        const duration = Number(animation.effect?.getTiming().duration ?? 0);
+        animation.currentTime = Math.min(ms, duration);
+      }
+      return read();
+    };
+    const samples = [seek(0), seek(75), seek(160)];
+    /* Surviving the ownership animation's exact endpoint proves its
+       animationend did not remove the clone. Resume the deal and its faces;
+       the ordinary main-animation event must still perform cleanup. */
     const aliveAfterOwnerFade = flight.isConnected;
+    for (const animation of animations) {
+      if (animation.animationName !== 'runeOwnerAway') animation.play();
+    }
     await pending;
-    const total = performance.now() - started;
-    if (total < 760) await pause(760 - total);
     return { found: true, source, first, names, dealDuration,
       samples: samples.filter(Boolean), railDuring, aliveAfterOwnerFade,
       goneAfterFlight: !flight.isConnected };

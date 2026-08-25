@@ -17,7 +17,21 @@ export async function runAsymmetricRunePlateScenarios(suite) {
       const identity = side.querySelector('.player-id')?.getBoundingClientRect();
       const runeEl = side.querySelector('.rune-tag .rchip');
       const rune = runeEl?.getBoundingClientRect();
+      const runeIcon = runeEl?.querySelector('svg')?.getBoundingClientRect();
       const dot = side.querySelector('.player-id .dot')?.getBoundingClientRect();
+      const tagEl = side.querySelector('.tag');
+      const tagStyle = tagEl && getComputedStyle(tagEl);
+      const runeStyle = runeEl && getComputedStyle(runeEl);
+      const metadataStyle = ['fontSize', 'letterSpacing', 'paddingTop', 'paddingRight',
+        'paddingBottom', 'paddingLeft', 'borderRadius', 'borderTopWidth'];
+      const hitYs = [];
+      if (rune) {
+        const x = rune.x + rune.width / 2;
+        for (let y = Math.floor(rune.top - 32); y <= Math.ceil(rune.bottom + 32); y++) {
+          const target = document.elementFromPoint(x, y);
+          if (target && runeEl.contains(target)) hitYs.push(y);
+        }
+      }
       const hit = rune
         ? document.elementFromPoint(rune.x + rune.width / 2, rune.y + rune.height / 2)
         : null;
@@ -30,6 +44,12 @@ export async function runAsymmetricRunePlateScenarios(suite) {
         identity: identity && { left: identity.left, right: identity.right, width: identity.width },
         rune: rune && { left: rune.left, right: rune.right, width: rune.width,
                         id: runeEl.dataset.id, owner: runeEl.dataset.owner,
+                        icon: !!runeIcon && runeIcon.width > 0 && runeIcon.height > 0,
+                        info: runeEl.querySelector('.mi')?.textContent?.trim() ?? '',
+                        metadataStyle: metadataStyle.every((key) => runeStyle[key] === tagStyle[key]),
+                        hitHeight: hitYs.length ? hitYs.at(-1) - hitYs[0] + 1 : 0,
+                        clearOfBoard: hitYs.length > 0 && (side.id === 'sideTop'
+                          ? hitYs.at(-1) < board.top : hitYs[0] > board.bottom),
                         ownerDot: getComputedStyle(runeEl, '::before').content,
                         hit: runeEl.contains(hit) },
         identityDotShown: !!dot && dot.width > 0 && dot.height > 0,
@@ -45,11 +65,14 @@ export async function runAsymmetricRunePlateScenarios(suite) {
       rows,
       chips: chipElements.map((chip) => {
         const box = chip.getBoundingClientRect();
+        const icon = chip.querySelector('svg')?.getBoundingClientRect();
         return {
           lib: chip.dataset.lib ?? null, id: chip.dataset.id ?? null,
           owner: chip.dataset.owner ?? null, host: chip.parentElement?.id ?? null,
           shown: box.width > 0 && box.height > 0,
-          icon: !!chip.querySelector('svg'), tappable: chip.classList.contains('tapmode'),
+          icon: !!icon && icon.width > 0 && icon.height > 0,
+          info: chip.querySelector('.mi')?.textContent?.trim() ?? '',
+          tappable: chip.classList.contains('tapmode'),
           ownerDot: getComputedStyle(chip, '::before').content,
         };
       }),
@@ -62,7 +85,7 @@ export async function runAsymmetricRunePlateScenarios(suite) {
     check(snapshot.chips.length === 3 && snapshot.hudCount === 1
         && runes.find((chip) => chip.owner === '1')?.id === 'ward'
         && runes.find((chip) => chip.owner === '0')?.id === 'fate'
-        && runes.every((chip) => chip.host !== 'rec' && chip.shown && chip.icon && chip.tappable),
+        && runes.every((chip) => chip.host !== 'rec' && chip.shown && !chip.icon && chip.tappable),
       `${label}: asymmetric runes did not move to their player plates`, snapshot);
     check(rows.length === 2 && rows.every((row) => row.split && row.identityDotShown),
       `${label}: each player needs one split identity/rune line`, rows);
@@ -81,9 +104,17 @@ export async function runAsymmetricRunePlateScenarios(suite) {
         `${label}: rune attached to the wrong player`, row);
       check(edgeError <= .6 && identityLeads && edgePlaced,
         `${label}: player/rune line does not span its board`, row);
-      check(row.rune.ownerDot === 'none' && row.rune.hit,
-        `${label}: plate rune kept an owner dot or lost its hit target`, row);
+      check(!row.rune.icon && row.rune.info === 'ⓘ' && row.rune.metadataStyle
+          && row.rune.hitHeight >= 36 && row.rune.clearOfBoard
+          && row.rune.ownerDot === 'none' && row.rune.hit,
+        `${label}: plate rune is not a compact metadata-style info tag`, row);
     }
+  };
+
+  const ownerRunesUseFullHudControls = (snapshot) => {
+    const ownerRunes = snapshot.chips.filter((chip) => chip.owner);
+    return ownerRunes.length === 2 && ownerRunes.every((chip) => chip.host === 'rec'
+      && chip.icon && chip.info === 'ⓘ' && chip.ownerDot !== 'none');
   };
 
   await page.evaluate(() => {
@@ -144,7 +175,7 @@ export async function runAsymmetricRunePlateScenarios(suite) {
   out.badgeDualLongName = await layoutNow();
   check(out.badgeDualLongName.hudCount === 3
       && out.badgeDualLongName.rows.every((row) => !row.split && !row.rune)
-      && out.badgeDualLongName.chips.filter((chip) => chip.owner).every((chip) => chip.ownerDot !== 'none'),
+      && ownerRunesUseFullHudControls(out.badgeDualLongName),
     'an over-wide identity did not fall back to owner-dotted HUD runes', out.badgeDualLongName);
   await page.evaluate(() => { window.__kb.applySides(); window.__kb.fit(); });
   assertRoomy(await layoutNow(), 'restored roomy portrait');
@@ -153,16 +184,13 @@ export async function runAsymmetricRunePlateScenarios(suite) {
   await page.setViewportSize({ width: 360, height: 640 }); await page.waitForTimeout(160);
   out.badgeDualThreshold = await layoutNow();
   const threshold = out.badgeDualThreshold;
-  check(threshold.hudCount === 3 && threshold.compactOwners
-      && threshold.rows.every((row) => !row.split && !row.rune)
-      && threshold.geometry.badgeRight <= threshold.geometry.leaveLeft - 4,
-    'the 360px fallback did not compact before colliding with Leave', threshold);
+  assertRoomy(threshold, '360px portrait');
 
   await page.setViewportSize({ width: 320, height: 568 }); await page.waitForTimeout(160);
   out.badgeDualCompact = await layoutNow();
   const compact = out.badgeDualCompact;
   check(compact.hudCount === 3 && compact.rows.every((row) => !row.split && !row.rune)
-      && compact.chips.filter((chip) => chip.owner).every((chip) => chip.ownerDot !== 'none')
+      && ownerRunesUseFullHudControls(compact)
       && Math.abs(compact.geometry.badgeCenter - compact.geometry.hudCenter) <= .5
       && compact.geometry.badgeRight <= compact.geometry.leaveLeft - 4,
     'compact portrait did not keep a centred owner-dotted rune HUD', compact);
@@ -171,7 +199,7 @@ export async function runAsymmetricRunePlateScenarios(suite) {
   out.badgeDualLandscape = await layoutNow();
   check(out.badgeDualLandscape.hudCount === 3
       && out.badgeDualLandscape.rows.every((row) => !row.split && !row.rune)
-      && out.badgeDualLandscape.chips.filter((chip) => chip.owner).every((chip) => chip.ownerDot !== 'none'),
+      && ownerRunesUseFullHudControls(out.badgeDualLandscape),
     'landscape did not keep owner-dotted runes in the HUD', out.badgeDualLandscape);
 
   if (originalViewport) await page.setViewportSize(originalViewport);
@@ -204,9 +232,9 @@ export async function runAsymmetricRunePlateScenarios(suite) {
   await dePage.waitForTimeout(180);
   out.badgeDualGerman = await layoutNow(dePage);
   const german = out.badgeDualGerman;
+  assertRoomy(german, 'German portrait');
   check(german.labels.includes('KLASSIK') && german.labels.includes('SCHICKSAL')
-      && german.labels.includes('SCHUTZ') && german.hudCount === 3 && german.compactOwners
-      && german.geometry.badgeRight <= german.geometry.leaveLeft - 4,
-    'German asymmetric fallback overlaps Leave or did not compact its owner labels', german);
+      && german.labels.includes('SCHUTZ'),
+    'German inline rune metadata lost its localized labels', german);
   await deContext.close();
 }

@@ -85,8 +85,20 @@
 :where(#kbroot) .plate .pright{display:flex;align-items:center;gap:7px}
 :where(#kbroot) .plate .dot{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);flex:0 0 auto}
 :where(#kbroot) .plate .nm{font-size:11.5px;font-weight:800;letter-spacing:.16em;color:var(--txt);opacity:.9}
-:where(#kbroot) .plate .tag{font-size:9px;letter-spacing:.12em;color:var(--dim);border:1px solid rgba(255,255,255,.12);
-  border-radius:99px;padding:2px 6px}
+:where(#kbroot) .plate :is(.tag,.rune-tag .rchip){font-size:9px;letter-spacing:.12em;color:var(--dim);
+  border:1px solid rgba(255,255,255,.12);border-radius:99px;padding:2px 6px}
+/* On the player line a rune reads like the adjacent NORMAL/HARD metadata: its
+   compact name and info affordance are enough, because the player beside it
+   supplies the ownership context. The full rune glyph stays in the HUD
+   fallback, where three detached chips need stronger visual identification. */
+:where(#kbroot) .plate .rune-tag .rchip{gap:0;background:transparent;position:relative}
+:where(#kbroot) .plate .rune-tag .rchip .sico{display:none}
+/* The drawing is deliberately metadata-small; its finger target is not. Grow
+   an invisible 44px lane away from the adjacent board so the compact control
+   stays easy to tap without stealing the outer row of dice. */
+:where(#kbroot) .plate .rune-tag .rchip::after{content:"";position:absolute;left:50%;top:-4px;
+  width:max(44px,100%);height:44px;transform:translateX(-50%)}
+#kbroot:not(.face) .side.top .plate .rune-tag .rchip::after{top:auto;bottom:-4px}
 /* A different rune per player gets a player-local reading only when JS has
    measured that both localized identity/rune pairs fit. The line is exactly
    one board wide: identity at the left edge, that player's rune at the right.

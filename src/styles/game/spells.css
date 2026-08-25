@@ -48,16 +48,18 @@
 :where(#kbroot) .rune-charge.under,:where(#kbroot) .rune.multi .rune-empty.charge-1{
   transform:rotate(-16deg) translate(-7px,4px)}
 :where(#kbroot) .rune-charge.top{z-index:2}
-/* The chosen ownership mark is a second edge under the physical top card. It
+/* The chosen ownership mark is a quiet mist under the physical top card. It
    inherits that card's tilt and every handoff transform, unlike the old dot
-   attached to the unrotated button. The edge belongs to the held card only:
-   it fades before an armed card turns face-up. Direct/CPU casts carry that
-   same short fade on the outgoing clone; the neutral spent matte carries none. */
+   attached to the unrotated button. Two feathered layers retain the player's
+   colour without drawing a hard duplicate edge. The mist belongs to the held
+   card only: it fades before an armed card turns face-up. Direct/CPU casts
+   carry that same short fade on the outgoing clone; the neutral spent matte
+   carries none. */
 :where(#kbroot) :where(.spells.paired .rune > .rune-charge.top)::after,
 :where(#kbroot) :where(.spells.paired > .rune-played.owner-fade)::after{content:"";position:absolute;z-index:-1;inset:0;
   border-radius:inherit;opacity:1;pointer-events:none;transition:opacity .15s ease;
-  box-shadow:2px 2px 0 -1px color-mix(in srgb,var(--owner) 48%,transparent),
-    2px 2px 6px color-mix(in srgb,var(--owner) 16%,transparent)}
+  box-shadow:1px 1px 7px color-mix(in srgb,var(--owner) 18%,transparent),
+    3px 5px 16px -4px color-mix(in srgb,var(--owner) 15%,transparent)}
 :where(#kbroot) :where(.spells.paired .rune.armed > .rune-charge.top)::after{opacity:0}
 #kbroot.reduce-motion .spells.paired .rune.armed > .rune-charge.top::after{
   transition:none!important;opacity:0}
@@ -76,8 +78,8 @@
 :where(#kbroot) .runeghost .rback::before,
 :where(#kbroot) .runeghost .rface::before{content:"";position:absolute;inset:0;border-radius:inherit;
   background:radial-gradient(140% 120% at 25% 15%,
-    color-mix(in srgb,currentColor 12%,transparent) 0%,
-    color-mix(in srgb,currentColor 4%,transparent) 58%,transparent 100%);
+    color-mix(in srgb,currentColor 10%,transparent) 0%,
+    color-mix(in srgb,currentColor 3%,transparent) 58%,transparent 100%);
   pointer-events:none}
 /* Pressing turns one half-revolution and holds the played face above the die. */
 :where(#kbroot) .rune.armed .rune-charge.top{animation:runeArm .36s linear both;z-index:3}

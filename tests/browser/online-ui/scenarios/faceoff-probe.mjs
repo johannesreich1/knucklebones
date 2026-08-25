@@ -228,6 +228,7 @@ export async function probeFaceoff(page, { door, motion }) {
         return { x: Math.round(b.x + b.width / 2), y: Math.round(b.y + b.height / 2) };
       });
       await page.touchscreen.tap(tgrip.x, tgrip.y + 0);          // settle the surface
+      if (!await gone()) throw new Error('touchscreen setup tap did not dismiss the face-off');
       await open();
       await page.evaluate(async ([x, y]) => {
         const wait = (ms) => new Promise((r) => setTimeout(r, ms));
