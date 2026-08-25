@@ -16,6 +16,9 @@ export async function runOnlineLoadingPanelScenarios(suite) {
       `${name} loading die is not centred in the visible view`, loading);
     check(loading?.targetHidden === true && loading?.visiblePanels?.length === 0,
       `${name} reveals partial content behind its loading die`, loading);
+    check(loading?.entry?.frames > 0 && loading.entry.emptyFrames === 0
+      && loading.entry.first?.visiblePanels.includes('onLoading'),
+    `${name} exposed an empty lazy online shell during entry`, loading);
     check(loading?.title === title,
       `${name} loading state lost the destination title`, loading);
     if (finalPanel) {
