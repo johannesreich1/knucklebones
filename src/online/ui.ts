@@ -58,7 +58,7 @@ const result = createResultScreen({
   openProfile: openProfileFromResult,
 });
 
-function showAuthPanel(mode: AuthMode, origin: AuthOrigin): void {
+function showAuthPanel(mode: AuthMode, origin: AuthOrigin, notice: string | null = null): void {
   if (origin === 'home') {
     /* Every Home-origin auth flow has no current session (initial fallback,
        sign-out, or deletion). Its attach step is registration copy, never the
@@ -67,7 +67,7 @@ function showAuthPanel(mode: AuthMode, origin: AuthOrigin): void {
     hide('#ovOnline');
     show('#ovStart');
   }
-  showAuth(mode, { entered, showAccount, dismiss: dismissAuth }, origin);
+  showAuth(mode, { entered, showAccount, dismiss: dismissAuth }, origin, notice);
 }
 
 function dismissAuth(origin: AuthOrigin): void {
@@ -113,6 +113,12 @@ function nextDuel(): void {
 async function route(view: OnlineView): Promise<void> {
   if (view === 'board') return ladder.show();
   if (view === 'account') return account.show();
+  const user = await ensureIdentity();
+  if (!user) {
+    pendingView = 'play';
+    showAuthPanel('restore', 'home');
+    return;
+  }
   return queue.start();
 }
 

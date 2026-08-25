@@ -25,6 +25,9 @@ takes the `authenticated` role and has a normal `auth.uid()`.
 | The rungs, and what each can do | `src/online/session.ts` (guest + email) and `src/online/identity.ts` (one-tap providers) |
 | The one modal sheet that serves attach *and* restore | `AUTH` in `src/online/auth-screen.ts` over the shared `src/ui/sheet.ts` |
 | Game Center → a session | `supabase/functions/gc-auth/` (`verify.ts` is the pure crypto) |
+| Game Center lifecycle + proof bridge | `src/native/game-center.ts` and `native/plugins/gamecenter/` |
+| Public rate-limit boundary | `cloudflare/identity-gateway/` |
+| Apple code exchange + deletion revocation | `supabase/functions/apple-token-register/`, `apple-revocation-retry/`, and `_shared/apple.ts` |
 | The native bridges | `@capawesome/capacitor-apple-sign-in` plus `native/plugins/gamecenter/` |
 | Tests | `tests/apple-identity.test.ts`, `tests/browser/online-ui/run.mjs`, and `tests/gcauth.test.ts` |
 
@@ -47,34 +50,39 @@ that pending destination rather than allowing it to route later under Home.
 **Rung 1 — guest: LIVE.** Verified against production on 2026-08-19: a guest
 joined ranked and matched a bot with no email anywhere.
 
-**Rung 2 — Apple: core attach/restore path implemented; release work resumed.**
+**Rung 2 — Apple: repository implementation complete; rollout pending.**
 On 2026-08-25 the owner confirmed the paid Developer Program membership is
 active, Sign in with Apple and Game Center are enabled on the existing App ID,
 the App Store Connect record exists, and repository entitlement wiring is
 authorized. Device, provisioning, Supabase, and deletion-revocation acceptance
-remain open. iOS uses native AuthenticationServices. Android initializes the same bridge
-with Services ID `com.appavaria.knucklebones.web` and uses its HTTPS WebView
-flow. Every attempt creates a raw nonce and state; Apple receives
-`SHA-256(rawNonce)`, Supabase receives the raw nonce, and Android results must
-return an exact state match before any Supabase call. Restore uses
+remain open. This first release is deliberately iOS-only and uses native
+AuthenticationServices; Android does not expose an Apple action. Every attempt
+creates a raw nonce; Apple receives `SHA-256(rawNonce)` and Supabase receives
+the raw nonce. Restore uses
 `signInWithIdToken`; attach uses typed `linkIdentity` when a session exists and
 falls back to `signInWithIdToken` only for sessionless account creation. A link
 conflict never replaces the current guest. Client-decoded Apple claims are not
 trusted.
 
-Before this rung can ship, replace the current text-only Apple action with an
-Apple-compliant button and complete deletion-time Apple token revocation. The
-plugin returns an authorization code, but the current client discards it and
-`account-delete` removes only the Supabase account. Code exchange and revocation
-must happen server-side with an owner-held Apple `.p8` key; no Apple secret may
-enter the app bundle.
+After Supabase accepts the Apple proof, `apple-token-register` exchanges the
+single-use authorization code server-side, verifies that Apple's signed subject
+matches the Apple identity attached to the current Supabase user, and stores
+only the resulting refresh token in Supabase Vault. `account-delete` stages the
+credential before deleting the user, attempts revocation immediately, and
+queues transient failures for the cron-secret retry worker. Terminal or missing
+credentials produce localized manual-removal instructions. The owner-held
+Apple `.p8` key and generated client secrets never enter the app bundle.
 
-**Rung 3 — Game Center: code complete, deliberately NOT deployed.** The
+**Rung 3 — Game Center: repository implementation complete, not deployed.** The
 signature verification is tested against Apple's real production certificates,
 but nothing has run on a device. The Edge Function, migration 0014, and its
 `20260823132611_game_center_service_grants.sql` companion stay un-deployed
 until a signed build can exercise them — an auth endpoint that has never
-answered a real request does not belong in production.
+answered a real request does not belong in production. Native authentication
+is initialized once at launch and published as state; online restore consumes
+that state without installing a second `authenticateHandler`. Only the stable
+`teamPlayerID` is accepted. A linked session is reasserted before each new duel;
+an Apple Game Center account change fails closed and returns to account restore.
 
 ### Apple owner/release checklist
 
@@ -102,22 +110,18 @@ archive, device authentication, or production backend rollout succeeded.
 - [ ] **Provisioning and signed acceptance:** let automatic signing regenerate
       or select profiles containing both capabilities, then prove a signed
       physical-device build and Release archive contain both entitlements.
-- [ ] **Apple Services ID:** create `com.appavaria.knucklebones.web`, associate
-      it with that App ID, and register website domain
-      `euzjcejbkxvqfrttgaxu.supabase.co` with return URL
-      `https://euzjcejbkxvqfrttgaxu.supabase.co/auth/v1/callback`.
-- [ ] **Supabase Apple provider → ON:** list
-      `com.appavaria.knucklebones.web` first and
-      `com.appavaria.knucklebones` second under Client IDs.
+- [ ] **Apple key:** create/download the owner-held Sign in with Apple `.p8`
+      key and configure `APPLE_TEAM_ID`, `APPLE_KEY_ID`, and
+      `APPLE_PRIVATE_KEY` only as Edge Function secrets.
+- [ ] **Supabase Apple provider → ON:** configure native client ID
+      `com.appavaria.knucklebones`.
 - [ ] **Supabase Manual Linking → ON** (Authentication → Sign In / Providers),
       so a guest can attach Apple without losing its existing user and rating.
 
 This client sends Apple's ID token directly to Supabase
-`signInWithIdToken`/`linkIdentity`; it does not use Supabase's Apple OAuth code
-exchange. Do not create or configure an Apple OAuth client secret for this
-sign-in/linking flow. That is separate from deletion-time Apple token
-revocation, which does require a server-side Apple client secret and remains
-deferred. None of the unchecked items above is implied complete by repository
+`signInWithIdToken`/`linkIdentity`. The separate server-side authorization-code
+exchange exists solely to retain Apple's revocation credential for account
+deletion. None of the unchecked items above is implied complete by repository
 tests.
 
 ### Android/Play owner release
@@ -137,12 +141,9 @@ uploaded in its place.
       signed AAB.
       Do not add Play API credentials or automated publishing to CI.
 
-Apple requires an App Store app using Sign in with Apple before the associated
-service can be offered on other platforms. Android Apple sign-in is therefore
-release-blocked until the associated iOS app is live; a locally successful
-WebView does not remove that requirement. Using **Knucklebones Neon** for the
-store listing while the installed label remains **Knucklebones** also does not
-resolve store-name legal/trademark clearance.
+Android Apple sign-in is intentionally outside this release. Using
+**Knucklebones Neon** for the store listing while the installed label remains
+**Knucklebones** also does not resolve store-name legal/trademark clearance.
 
 ### Then, in the repo
 
@@ -165,10 +166,14 @@ Game Center remains one held owner rollout, in this order:
 1. apply pending migration `0014_game_center_ids.sql`;
 2. immediately apply `20260823132611_game_center_service_grants.sql`, which
    narrows that table to the service-role reads/inserts the function needs;
-3. configure a durable gateway/deployment-layer rate limit for `gc-auth` — its
-   Apple assertion is the authentication boundary, so Supabase JWT verification
-   is deliberately off;
-4. deploy `gc-auth`, then exercise attach and restore with a signed device.
+3. deploy `cloudflare/identity-gateway`, configure its strict web/native origin
+   allow-list, rate-limit binding, upstream URL/publishable key, and a shared
+   `GC_AUTH_ORIGIN_SECRET` also set on `gc-auth`;
+4. apply `20260825192805_apple_identity_credentials.sql`, deploy
+   `identity-status`, `apple-token-register`, `apple-revocation-retry`, and the
+   updated `account-delete`, then schedule the retry function with its secret;
+5. deploy `gc-auth`, then exercise launch restore, attach, account switching,
+   Apple repair, deletion, and revocation with a signed physical device.
 
 Hold the whole sequence until the device and rate-limit prerequisite exist.
 Repository tests do not mean any of these production actions happened.

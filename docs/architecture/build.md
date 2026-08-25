@@ -87,7 +87,7 @@ from the shared vector generators, runs Capacitor Assets 3.0.5, and writes the
 tracked legacy, round, adaptive, monochrome, light, dark, portrait, and
 landscape resources without replacing the custom iOS appearance catalog.
 
-`APP_ID`, `NATIVE_APP_NAME`, `NATIVE_STORE_NAME`, `APPLE_SERVICE_ID`, and the
+`APP_ID`, `NATIVE_APP_NAME`, `NATIVE_STORE_NAME`, and the
 Supabase-derived Apple callback in `src/config.ts` are the public sources of
 truth. Native files that cannot import TypeScript are consistency-gated copies.
 The installed iOS and Android label is **Knucklebones**, while their App Store

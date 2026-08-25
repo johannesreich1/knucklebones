@@ -21,12 +21,15 @@ export interface GameCenterVerification {
 
 export interface GcAuthDependencies {
   bundleId: string;
+  originSecret: string;
   now(): number;
   fetch(input: string, init: RequestInit): Promise<Response>;
   trust(certificate: ArrayBuffer, nowMs: number): Promise<boolean>;
   verify(certificate: ArrayBuffer, input: GameCenterVerification): Promise<string | null>;
-  complete(request: Request, playerId: string): Promise<Response>;
+  complete(request: Request, playerId: string, mode: GameCenterMode): Promise<Response>;
 }
+
+export type GameCenterMode = "sign-in" | "attach" | "assert-current";
 
 export function certUrlOk(raw: string): boolean {
   let url: URL;
@@ -131,25 +134,32 @@ export function createGcAuthHandler(dependencies: GcAuthDependencies) {
   return async (request: Request): Promise<Response> => {
     const early = postOnly(request);
     if (early) return early;
+    if (!dependencies.originSecret
+      || request.headers.get("X-Knucklebones-Origin") !== dependencies.originSecret) {
+      return json({ error: "forbidden" }, 403);
+    }
 
     const body = await requestRecord(request);
     if (body === TOO_LARGE) return json({ error: "request-too-large" }, 413);
     if (!body) return json({ error: "bad-json" }, 400);
-    const { publicKeyUrl, signature, salt, timestamp, gamePlayerID, teamPlayerID } = body ?? {};
+    const { mode, proof } = body ?? {};
+    if (mode !== "sign-in" && mode !== "attach" && mode !== "assert-current") {
+      return json({ error: "bad-mode" }, 400);
+    }
+    const assertion = record(proof);
+    if (!assertion) return json({ error: "bad-request" }, 400);
+    const { publicKeyUrl, signature, salt, timestamp, teamPlayerID } = assertion;
     if (typeof publicKeyUrl !== "string" || typeof signature !== "string"
       || typeof salt !== "string" || (typeof timestamp !== "string" && typeof timestamp !== "number")
-      || (typeof gamePlayerID !== "string" && typeof teamPlayerID !== "string")) {
+      || typeof teamPlayerID !== "string") {
       return json({ error: "bad-request" }, 400);
     }
-    const playerIds = [gamePlayerID, teamPlayerID].filter(
-      (candidate): candidate is string => typeof candidate === "string" && candidate.length > 0,
-    );
+    const playerIds = [teamPlayerID];
     if (publicKeyUrl.length > 256 || signature.length > 1400 || salt.length > 400
       || (typeof timestamp === "number" && !Number.isSafeInteger(timestamp))
       || !/^\d{1,20}$/.test(String(timestamp)) || playerIds.length === 0
       || playerIds.some((candidate) => candidate.length > MAX_PLAYER_ID_CHARS)
-      || (gamePlayerID !== undefined && typeof gamePlayerID !== "string")
-      || (teamPlayerID !== undefined && typeof teamPlayerID !== "string")) {
+      || !teamPlayerID) {
       return json({ error: "bad-request" }, 400);
     }
     if (!certUrlOk(publicKeyUrl)) return json({ error: "bad-cert-host" }, 400);
@@ -214,6 +224,6 @@ export function createGcAuthHandler(dependencies: GcAuthDependencies) {
       return json({ error: "bad-certificate" }, 400);
     }
     if (!playerId) return json({ error: "unverified" }, 401);
-    return dependencies.complete(request, playerId);
+    return dependencies.complete(request, playerId, mode);
   };
 }

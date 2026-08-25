@@ -155,11 +155,14 @@ must preview and apply the allow-listed `settings-locale` rollout described in
 and stored-value postchecks before the six-language client deploys. The legal
 publication switch is a later, independent release step.
 
-Game Center is a separate held rollout: `0014_game_center_ids.sql` must be
-followed by `20260823132611_game_center_service_grants.sql` before `gc-auth` is
-deployed. Because restore deliberately has no Supabase JWT, configure a durable
-deployment-layer rate limit first; handler input bounds and a bounded Apple
-certificate cache reduce work but are not a distributed rate limiter.
+Game Center and Apple credential lifecycle are a separate held rollout.
+`0014_game_center_ids.sql` must be followed by
+`20260823132611_game_center_service_grants.sql` and
+`20260825192805_apple_identity_credentials.sql`. Sessionless Game Center restore
+crosses the strict-origin, durably rate-limited Cloudflare identity gateway;
+only that gateway knows the shared header required by `gc-auth`. Apple refresh
+tokens live in Vault, are staged before user deletion, and have a bounded retry
+lifecycle after the user row is gone.
 
 ## Verification
 

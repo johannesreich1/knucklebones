@@ -62,6 +62,7 @@ export const EN_LEGAL: LegalLocaleContent = {
           blocks: [
             p('Supabase provides authentication, database, Edge Function, and Realtime services. The database region is {{supabaseDatabaseRegion}} and the Edge Function region is {{supabaseFunctionsRegion}}.'),
             p('Cloudflare Pages delivers the hosted PWA. Its relevant processing scope is: {{cloudflareProcessingScope}}.'),
+            p('On iOS, optional Sign in with Apple and Game Center send Apple account or team-player identifiers and signed verification material through Apple services. Game Center verification passes through a rate-limited Cloudflare Worker before Supabase; the app does not receive Game Center profile details beyond the stable team-player identifier needed to restore or protect the ranked account.'),
             p('The safeguards used for relevant international transfers are: {{transferSafeguards}}. The native app loads its bundled web assets instead of downloading them from Cloudflare.'),
             p('We integrate no advertising or behavioral-analytics SDK and no remotely hosted marketing or analytics script. Infrastructure providers may still create operational, security, and access logs.'),
           ],
@@ -72,7 +73,7 @@ export const EN_LEGAL: LegalLocaleContent = {
         },
         {
           heading: 'Retention and deletion',
-          blocks: [p('Guest and recovered accounts remain until deletion. Account deletion removes the hosted profile, settings, ladder rows, queue rows, and match and move history after any active match is settled. Local preferences and statistics stay on the device until you clear the app or site data. Security logs are retained for {{securityLogRetention}} and backups for {{backupRetention}}.')],
+          blocks: [p('Guest and recovered accounts remain until deletion. Account deletion removes the hosted profile, settings, ladder rows, queue rows, and match and move history after any active match is settled. If Sign in with Apple is linked, its stored revocation credential is used to remove Apple access; transient failures are retried, and the app gives manual removal instructions if automatic revocation cannot complete. Local preferences and statistics stay on the device until you clear the app or site data. Security logs are retained for {{securityLogRetention}} and backups for {{backupRetention}}.')],
         },
         {
           heading: 'Your rights',

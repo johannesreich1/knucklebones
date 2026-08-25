@@ -4,7 +4,12 @@ import { Sfx } from '../ui/audio.ts';
 import { showSheet, type Sheet } from '../ui/sheet.ts';
 import { refreshLegalUi } from '../ui/legal.ts';
 import { availableTaps } from './identity.ts';
-import { attachEmail, signIn } from './session.ts';
+import {
+  acknowledgeCurrentAccount,
+  attachEmail,
+  requireGameCenterAssertion,
+  signIn,
+} from './session.ts';
 import { onlineMessage, repaintOnlineMessage } from './message-copy.ts';
 
 export type AuthMode = 'attach' | 'restore';
@@ -127,6 +132,7 @@ export function showAuth(
   mode: AuthMode,
   ports: AuthPorts,
   origin: AuthOrigin = 'home',
+  notice: string | null = null,
 ): void {
   /* A sheet stops intercepting the room as soon as its exit starts. If that
      room immediately opens auth again, retire the old 190ms flight before it
@@ -160,6 +166,7 @@ export function showAuth(
   $('#onAuthLead').setAttribute('data-i18n', `online:${copy.lead}`);
   $('#onAuthTiny').setAttribute('data-i18n-rich', `online:${copy.tiny}`);
   clearAuthError();
+  if (notice) showAuthError(notice);
   const acts = $('#onAuthActs');
   acts.innerHTML = '';
   const creds = () => [
@@ -196,6 +203,7 @@ export function showAuth(
          submit cannot dismiss the successful transition or close a later
          auth sheet. The destination owns focus from here. */
       sessionless = false;
+      requireGameCenterAssertion();
       closeAuthSheet(false);
       await spec.after(ports, origin);
     });
@@ -275,6 +283,8 @@ function showOneTapRow(
         return;
       }
       sessionless = false;
+      if (method.id === 'gamecenter') acknowledgeCurrentAccount();
+      else requireGameCenterAssertion();
       closeAuthSheet(false);
       await AUTH[mode].after(ports, origin);
     });

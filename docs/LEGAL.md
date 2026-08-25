@@ -142,9 +142,13 @@ is offered; it is not included for the game by default.
   be verified and disclosed.
 - There is currently no automated 30-day anonymous-account cleanup. Do not
   claim one until an actual scheduled retention job is deployed and verified.
-- Apple identity/Game Center are deferred. Before enabling them, add Apple to
-  the data/recipient inventory and implement Apple token revocation during
-  account deletion.
+- The repository's iOS identity path sends Apple ID tokens, authorization
+  codes, and Game Center team-player assertions through Apple services. Game
+  Center assertions cross a rate-limited Cloudflare Worker before Supabase.
+  Apple refresh tokens are encrypted in Supabase Vault solely for deletion-time
+  revocation; transient failures retry for a bounded period and terminal or
+  missing credentials trigger manual-removal instructions. Production rollout
+  and final processor/region/retention facts remain owner verification items.
 
 The final GDPR notice must also state the controller/contact, processing
 purposes and legal bases, legitimate interests where relied upon, recipient

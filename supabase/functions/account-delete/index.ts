@@ -8,4 +8,7 @@ import { createAccountDeleteHandler } from "./handler.ts";
 import { deleteAccount } from "./operation.ts";
 
 const authenticate = createAuthenticator({ createClient, env: Deno.env });
-Deno.serve(createAccountDeleteHandler({ authenticate, operation: deleteAccount }));
+Deno.serve(createAccountDeleteHandler({
+  authenticate,
+  operation: (context) => deleteAccount(context, { env: Deno.env, fetch, now: Date.now }),
+}));

@@ -58,12 +58,13 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   `20260823154719_matchmaking_read_grants.sql`; do not reapply them or use
   `--include-all`. Confirm the four ranked Edge Function versions
   independently because migration history does not establish function state.
-- Keep the Game Center rollout separate: apply pending migration
-  `0014_game_center_ids.sql` and
-  `20260823132611_game_center_service_grants.sql` together, configure a
-  durable deployment-layer rate limit for the deliberately unauthenticated
-  assertion endpoint, then deploy `gc-auth` and prove it with a signed device.
-  None of those production actions is recorded as complete here.
+- Keep Apple/Game Center rollout separate: apply `0014_game_center_ids.sql`,
+  `20260823132611_game_center_service_grants.sql`, and
+  `20260825192805_apple_identity_credentials.sql`; deploy the rate-limited
+  Cloudflare identity gateway plus the identity/revocation Edge Functions;
+  configure owner-held secrets and the retry schedule; then prove launch
+  restore, attach, account-change protection, deletion, and revocation with a
+  signed device. None of those production actions is recorded as complete here.
 - A fully suspended mobile client can still leave a bot match waiting until it
   returns. A server-side sweep is the honest remaining solution.
 

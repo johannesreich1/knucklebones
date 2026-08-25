@@ -4,7 +4,7 @@ type Check = (condition: boolean, message: string, detail?: unknown) => void;
 interface FakeError { message: string }
 
 class FakeGameCenterService {
-  mapping: { player_id: string; user_id: string } | null = null;
+  mapping: { team_player_id: string; user_id: string } | null = null;
   mappingError: FakeError | null = null;
   insertError: FakeError | null = null;
   raceWinner: string | null = null;
@@ -59,9 +59,11 @@ class FakeGameCenterService {
         };
         return query;
       },
-      insert: async (row: { player_id: string; user_id: string }) => {
+      insert: async (row: { team_player_id: string; user_id: string }) => {
         if (this.insertError) {
-          if (this.raceWinner) this.mapping = { player_id: row.player_id, user_id: this.raceWinner };
+          if (this.raceWinner) this.mapping = {
+            team_player_id: row.team_player_id, user_id: this.raceWinner,
+          };
           return { error: this.insertError };
         }
         this.mapping = row;
@@ -89,7 +91,7 @@ export async function runGcAuthOperationTests(check: Check, playerId: string): P
   const recoverCreated = new FakeGameCenterService();
   recoverCreated.updateErrors.push({ message: 'temporary auth outage' });
   const failedCreated = await completeGameCenterIdentity(
-    new Request('https://edge.test'), playerId, identityDependencies(recoverCreated),
+    new Request('https://edge.test'), playerId, 'sign-in', identityDependencies(recoverCreated),
   );
   check(failedCreated.status === 409 && recoverCreated.mapping?.user_id === 'created-1',
     'a failed created-user Auth update discarded its durable mapping anchor');
@@ -97,7 +99,7 @@ export async function runGcAuthOperationTests(check: Check, playerId: string): P
     && recoverCreated.created[0]?.email !== recoverCreated.updated[0]?.email,
     'a provisional user reserved the deterministic Game Center email before winning the mapping');
   const retriedCreated = await completeGameCenterIdentity(
-    new Request('https://edge.test'), playerId, identityDependencies(recoverCreated),
+    new Request('https://edge.test'), playerId, 'sign-in', identityDependencies(recoverCreated),
   );
   check(retriedCreated.status === 200 && recoverCreated.created.length === 1
     && recoverCreated.updated.at(-1)?.id === 'created-1',
@@ -110,12 +112,12 @@ export async function runGcAuthOperationTests(check: Check, playerId: string): P
     headers: { Authorization: 'Bearer caller' },
   });
   const failedAttach = await completeGameCenterIdentity(
-    authRequest(), playerId, identityDependencies(recoverAttach, 'caller-1'),
+    authRequest(), playerId, 'attach', identityDependencies(recoverAttach, 'caller-1'),
   );
   check(failedAttach.status === 409 && recoverAttach.mapping?.user_id === 'caller-1',
     'a failed caller attach removed the mapping needed for retry');
   const retriedAttach = await completeGameCenterIdentity(
-    authRequest(), playerId, identityDependencies(recoverAttach, 'caller-1'),
+    authRequest(), playerId, 'attach', identityDependencies(recoverAttach, 'caller-1'),
   );
   check(retriedAttach.status === 200 && recoverAttach.created.length === 0
     && recoverAttach.updated.at(-1)?.id === 'caller-1',
@@ -127,7 +129,7 @@ export async function runGcAuthOperationTests(check: Check, playerId: string): P
   failedCleanup.users.set('winner-1', { is_anonymous: true });
   failedCleanup.deleteError = { message: 'auth cleanup failed' };
   const cleanupResponse = await completeGameCenterIdentity(
-    new Request('https://edge.test'), playerId, identityDependencies(failedCleanup),
+    new Request('https://edge.test'), playerId, 'sign-in', identityDependencies(failedCleanup),
   );
   check(cleanupResponse.status === 500
     && (await cleanupResponse.json()).error === 'compensation-failed'
@@ -136,7 +138,7 @@ export async function runGcAuthOperationTests(check: Check, playerId: string): P
   failedCleanup.insertError = null;
   failedCleanup.deleteError = null;
   const afterCleanupFailure = await completeGameCenterIdentity(
-    new Request('https://edge.test'), playerId, identityDependencies(failedCleanup),
+    new Request('https://edge.test'), playerId, 'sign-in', identityDependencies(failedCleanup),
   );
   check(afterCleanupFailure.status === 200
     && failedCleanup.updated.at(-1)?.id === 'winner-1'
@@ -149,18 +151,18 @@ export async function runGcAuthOperationTests(check: Check, playerId: string): P
   // never be replaced just because that metadata bit lags behind.
   preserveEmail.users.set('email-caller', { email: 'keeper@example.com', is_anonymous: true });
   const preservedResponse = await completeGameCenterIdentity(
-    authRequest(), playerId, identityDependencies(preserveEmail, 'email-caller'),
+    authRequest(), playerId, 'attach', identityDependencies(preserveEmail, 'email-caller'),
   );
   check(preservedResponse.status === 200 && preserveEmail.updated.length === 0
-    && preserveEmail.links[0] === 'keeper@example.com'
-    && (await preservedResponse.json()).email === 'keeper@example.com',
+    && preserveEmail.links.length === 0
+    && (await preservedResponse.json()).kind === 'linked',
     'Game Center attach replaced an existing account email instead of adding a proof');
 
   const linkedElsewhere = new FakeGameCenterService();
-  linkedElsewhere.mapping = { player_id: playerId, user_id: 'owner-1' };
+  linkedElsewhere.mapping = { team_player_id: playerId, user_id: 'owner-1' };
   linkedElsewhere.users.set('owner-1', { email: 'owner@example.com', is_anonymous: false });
   const conflictResponse = await completeGameCenterIdentity(
-    authRequest(), playerId, identityDependencies(linkedElsewhere, 'caller-2'),
+    authRequest(), playerId, 'attach', identityDependencies(linkedElsewhere, 'caller-2'),
   );
   check(conflictResponse.status === 409
     && (await conflictResponse.json()).error === 'identity-already-linked'
@@ -170,9 +172,24 @@ export async function runGcAuthOperationTests(check: Check, playerId: string): P
   const readFailure = new FakeGameCenterService();
   readFailure.mappingError = { message: 'permission denied' };
   const readFailureResponse = await completeGameCenterIdentity(
-    new Request('https://edge.test'), playerId, identityDependencies(readFailure),
+    new Request('https://edge.test'), playerId, 'sign-in', identityDependencies(readFailure),
   );
   check(readFailureResponse.status === 500 && readFailure.created.length === 0
     && readFailure.updated.length === 0,
     'a mapping-read failure mutated Auth instead of failing closed');
+
+  const assertion = new FakeGameCenterService();
+  assertion.mapping = { team_player_id: playerId, user_id: 'caller-1' };
+  const matched = await completeGameCenterIdentity(
+    authRequest(), playerId, 'assert-current', identityDependencies(assertion, 'caller-1'),
+  );
+  check(matched.status === 200 && (await matched.json()).status === 'match'
+    && assertion.created.length === 0 && assertion.updated.length === 0,
+  'Game Center continuity assertion mutated identity state or missed the current account');
+
+  const other = await completeGameCenterIdentity(
+    authRequest(), playerId, 'assert-current', identityDependencies(assertion, 'caller-2'),
+  );
+  check(other.status === 200 && (await other.json()).status === 'other-account',
+    'Game Center account changes were not surfaced before the next online duel');
 }

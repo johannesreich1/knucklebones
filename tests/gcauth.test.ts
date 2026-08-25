@@ -142,14 +142,19 @@ for (const url of [
 
 const NOW = Date.UTC(2026, 7, 23);
 const handlerBody = JSON.stringify({
-  publicKeyUrl: CERT_URL,
-  signature: Buffer.from([1, 2, 3]).toString('base64'),
-  salt: Buffer.from([4, 5, 6]).toString('base64'),
-  timestamp: String(NOW),
-  gamePlayerID: GAME_ID,
+  mode: 'sign-in',
+  proof: {
+    publicKeyUrl: CERT_URL,
+    signature: Buffer.from([1, 2, 3]).toString('base64'),
+    salt: Buffer.from([4, 5, 6]).toString('base64'),
+    timestamp: String(NOW),
+    teamPlayerID: GAME_ID,
+  },
 });
 const handlerRequest = () => new Request('https://edge.test/gc-auth', {
-  method: 'POST', body: handlerBody, headers: { 'Content-Type': 'application/json' },
+  method: 'POST', body: handlerBody, headers: {
+    'Content-Type': 'application/json', 'X-Knucklebones-Origin': 'gateway-secret',
+  },
 });
 const certificateResponse = (
   bytes: Uint8Array,
@@ -172,6 +177,7 @@ let trustCalls = 0;
 let handlerNow = NOW;
 const handler = createGcAuthHandler({
   bundleId: BUNDLE,
+  originSecret: 'gateway-secret',
   now: () => handlerNow,
   fetch: async (_url, init) => {
     fetchCalls++;
@@ -196,17 +202,19 @@ check((await handler(handlerRequest())).status === 200 && fetchCalls === 2,
 const fetchesBeforeBadInput = fetchCalls;
 const oversizedRequest = new Request('https://edge.test/gc-auth', {
   method: 'POST', body: JSON.stringify({ padding: 'x'.repeat(9 * 1024) }),
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 'Content-Type': 'application/json', 'X-Knucklebones-Origin': 'gateway-secret' },
 });
 check((await handler(oversizedRequest)).status === 413 && fetchCalls === fetchesBeforeBadInput,
   'an oversized unauthenticated request reached the Apple fetch boundary');
 const oversizedScalar = new Request('https://edge.test/gc-auth', {
   method: 'POST',
   body: JSON.stringify({
-    publicKeyUrl: CERT_URL, signature: 'A'.repeat(1500), salt: 'BA==',
-    timestamp: String(handlerNow), gamePlayerID: GAME_ID,
+    mode: 'sign-in', proof: {
+      publicKeyUrl: CERT_URL, signature: 'A'.repeat(1500), salt: 'BA==',
+      timestamp: String(handlerNow), teamPlayerID: GAME_ID,
+    },
   }),
-  headers: { 'Content-Type': 'application/json' },
+  headers: { 'Content-Type': 'application/json', 'X-Knucklebones-Origin': 'gateway-secret' },
 });
 check((await handler(oversizedScalar)).status === 400 && fetchCalls === fetchesBeforeBadInput,
   'an oversized assertion scalar reached certificate fetch or cryptography');
@@ -218,6 +226,7 @@ const rejectedFetch = async (
   let trusted = false;
   const guarded = createGcAuthHandler({
     bundleId: BUNDLE,
+    originSecret: 'gateway-secret',
     now: () => NOW,
     fetch: async () => response,
     trust: async () => { trusted = true; return true; },
@@ -236,6 +245,7 @@ await rejectedFetch(certificateResponse(new Uint8Array(16 * 1024 + 1)),
 
 const untrustedHandler = createGcAuthHandler({
   bundleId: BUNDLE,
+  originSecret: 'gateway-secret',
   now: () => NOW,
   fetch: async () => certificateResponse(currentLeaf),
   trust: async () => false,
@@ -244,6 +254,11 @@ const untrustedHandler = createGcAuthHandler({
 });
 check((await untrustedHandler(handlerRequest())).status === 401,
   'an untrusted certificate was not rejected at the public endpoint');
+const directRequest = new Request('https://edge.test/gc-auth', {
+  method: 'POST', body: handlerBody, headers: { 'Content-Type': 'application/json' },
+});
+check((await handler(directRequest)).status === 403,
+  'the Supabase assertion endpoint accepted a request that bypassed the rate-limited gateway');
 
 const config = readFileSync('supabase/config.toml', 'utf8');
 const jwtFlag = (slug: string) => new RegExp(
@@ -253,6 +268,11 @@ check(jwtFlag('gc-auth') === 'false', 'gc-auth is not explicitly configured for 
 for (const slug of ['account-delete', 'pvp-claim', 'pvp-join', 'pvp-move']) {
   check(jwtFlag(slug) === 'true', `${slug} is not explicitly protected by Supabase JWT verification`);
 }
+for (const slug of ['apple-token-register', 'identity-status']) {
+  check(jwtFlag(slug) === 'true', `${slug} is not explicitly protected by Supabase JWT verification`);
+}
+check(jwtFlag('apple-revocation-retry') === 'false',
+  'the cron-secret Apple revocation worker unexpectedly depends on user JWT verification');
 
 // 7 · the byte layout itself, in case a refactor "tidies" it
 const p = payload('AB', 'CD', 0x0102030405060708n, new Uint8Array([0xff]));

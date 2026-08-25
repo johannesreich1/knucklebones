@@ -8,12 +8,9 @@
 //
 //     utf8(playerId) ++ utf8(bundleId) ++ bigEndianUInt64(timestamp) ++ salt
 //
-// Two details are genuinely ambiguous in Apple's own documentation, so this
-// module does not bet on either:
-//   · WHICH player id is signed — the docs for the modern API say teamPlayerID,
-//     the Apple Arcade guidance says gamePlayerID. Callers pass both and we
-//     report which one verified.
-//   · WHICH digest — certificates issued before the 2021 rotation were SHA-1.
+// Certificates issued before the 2021 rotation were SHA-1. Trying both modern
+// and legacy digest algorithms costs one extra RSA verify on a cold path and
+// avoids failing older valid signatures.
 // Trying both costs one extra RSA verify on a cold path and removes a guess
 // that would otherwise only fail on somebody's phone.
 
@@ -224,7 +221,7 @@ export function payload(playerId: string, bundleId: string, timestamp: bigint, s
 }
 
 export interface Claim {
-  playerIds: string[];        // gamePlayerID and teamPlayerID — either may be the signed one
+  playerIds: string[];        // public handler supplies only the stable teamPlayerID
   bundleId: string;
   timestamp: bigint;
   salt: Uint8Array;

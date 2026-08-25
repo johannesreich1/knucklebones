@@ -1,9 +1,10 @@
 import {
   createServiceClient, createUserClient, json, type ClientDependencies, type EdgeClient,
 } from "../_shared/http.ts";
+import type { GameCenterMode } from "./handler.ts";
 
 interface Mapping {
-  player_id?: string;
+  team_player_id?: string;
   user_id: string;
 }
 
@@ -15,7 +16,7 @@ async function gcEmail(playerId: string): Promise<string> {
 
 async function mapping(service: EdgeClient, playerId: string): Promise<Mapping | null> {
   const { data, error } = await service.from("game_center_ids")
-    .select("player_id, user_id").eq("player_id", playerId).maybeSingle();
+    .select("team_player_id, user_id").eq("team_player_id", playerId).maybeSingle();
   if (error) throw new Error(`mapping read failed: ${error.message}`);
   return data as Mapping | null;
 }
@@ -34,11 +35,16 @@ function isProvisionalEmail(email: string): boolean {
 export async function completeGameCenterIdentity(
   request: Request,
   playerId: string,
+  mode: GameCenterMode,
   dependencies: ClientDependencies,
 ): Promise<Response> {
   const service = createServiceClient(dependencies);
   let caller: { id: string } | null = null;
-  if (request.headers.get("Authorization")) {
+  if (mode === "sign-in" && request.headers.get("Authorization")) {
+    return json({ error: "session-not-allowed" }, 400);
+  }
+  if (mode !== "sign-in") {
+    if (!request.headers.get("Authorization")) return json({ error: "unauthorized" }, 401);
     const authed = createUserClient(request, dependencies);
     const { data, error: callerError } = await authed.auth.getUser();
     if (callerError) return json({ error: "caller-check-failed" }, 500);
@@ -49,13 +55,22 @@ export async function completeGameCenterIdentity(
   try { known = await mapping(service, playerId); }
   catch { return json({ error: "mapping-read-failed" }, 500); }
 
+  if (mode === "assert-current") {
+    if (!caller) return json({ error: "unauthorized" }, 401);
+    if (!known) return json({ kind: "assertion", status: "unlinked" });
+    return json({
+      kind: "assertion",
+      status: known.user_id === caller.id ? "match" : "other-account",
+    });
+  }
+
   const email = await gcEmail(playerId);
   let ownerId = known?.user_id ?? null;
   let linked = false;
 
   if (!ownerId && caller) {
     const { error: insertError } = await service.from("game_center_ids")
-      .insert({ player_id: playerId, user_id: caller.id });
+      .insert({ team_player_id: playerId, user_id: caller.id });
     if (insertError) {
       // A simultaneous valid assertion may have claimed the mapping. Re-read
       // the winner; any other error fails closed without mutating Auth.
@@ -81,19 +96,15 @@ export async function completeGameCenterIdentity(
       // provisional Auth creation failed. Prefer that durable winner.
       try { known = await mapping(service, playerId); }
       catch { return json({ error: "create-failed" }, 500); }
-      if (!known) return json({ error: "create-failed", detail: createError?.message }, 500);
+      if (!known) return json({ error: "create-failed" }, 500);
       ownerId = known.user_id;
     } else {
       const { error: insertError } = await service.from("game_center_ids")
-        .insert({ player_id: playerId, user_id: made.user.id });
+        .insert({ team_player_id: playerId, user_id: made.user.id });
       if (insertError) {
         const cleanupError = await removeCreatedUser(service, made.user.id);
         if (cleanupError) {
-          return json({
-            error: "compensation-failed",
-            stage: "mapping-race",
-            detail: cleanupError,
-          }, 500);
+          return json({ error: "compensation-failed" }, 500);
         }
         try { known = await mapping(service, playerId); }
         catch { return json({ error: "mapping-write-failed" }, 500); }
@@ -130,15 +141,17 @@ export async function completeGameCenterIdentity(
   if (updateError) {
     // Keep a successful mapping claim as the durable recovery anchor. A retry
     // reads the same owner and idempotently completes this Auth mutation.
-    return json({ error: "link-failed", detail: updateError.message }, 409);
+    return json({ error: "link-failed" }, 409);
   }
+
+  if (mode === "attach") return json({ kind: "linked" });
 
   const { data: link, error: linkError } = await service.auth.admin.generateLink({
     type: "magiclink",
     email: sessionEmail,
   });
   if (linkError || !link.properties?.hashed_token) {
-    return json({ error: "session-failed", detail: linkError?.message }, 500);
+    return json({ error: "session-failed" }, 500);
   }
-  return json({ token_hash: link.properties.hashed_token, email: sessionEmail, linked });
+  return json({ kind: "session", tokenHash: link.properties.hashed_token, linked });
 }

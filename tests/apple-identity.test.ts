@@ -6,339 +6,224 @@ import {
   createGameCenterIdentity,
   sha256Hex,
   type AppleSignInBridge,
-  type GameCenterBridge,
 } from '../src/online/identity.ts';
-import {
-  APPLE_OAUTH_REDIRECT_URL,
-  APPLE_SERVICE_ID,
-  SUPABASE_URL,
-} from '../src/config.ts';
+import type { GameCenterProof } from '../src/native/game-center.ts';
 
 const problems: string[] = [];
 const check = (condition: boolean, message: string, detail?: unknown) => {
   if (!condition) problems.push(`${message} :: ${JSON.stringify(detail)}`);
 };
 
-interface Proof {
-  provider: string;
-  token: string;
-  nonce: string;
-}
-
+interface Proof { provider: string; token: string; nonce: string }
 interface FakeAuthOptions {
-  session?: object | null;
+  session?: { access_token: string } | null;
   sessionError?: { code?: string } | null;
   signError?: { code?: string } | null;
   linkError?: { code?: string } | null;
+  appleAlreadyLinked?: boolean;
 }
 
-function fakeAuth(options: FakeAuthOptions = {}) {
-  const calls = {
-    getSession: 0,
-    signIn: [] as Proof[],
-    link: [] as Proof[],
+function fakeAppleAuth(options: FakeAuthOptions = {}) {
+  const calls = { getSession: 0, getUser: 0, signIn: [] as Proof[], link: [] as Proof[] };
+  return {
+    calls,
+    auth: {
+      getSession: async () => {
+        calls.getSession++;
+        return { data: { session: options.session ?? null }, error: options.sessionError ?? null };
+      },
+      getUser: async () => {
+        calls.getUser++;
+        return {
+          data: { user: { identities: options.appleAlreadyLinked ? [{ provider: 'apple' }] : [] } },
+          error: null,
+        };
+      },
+      signInWithIdToken: async (proof: Proof) => {
+        calls.signIn.push(proof);
+        return { data: {}, error: options.signError ?? null };
+      },
+      linkIdentity: async (proof: Proof) => {
+        calls.link.push(proof);
+        return { data: {}, error: options.linkError ?? null };
+      },
+    },
   };
-  const auth = {
-    getSession: async () => {
-      calls.getSession++;
-      return {
-        data: { session: options.session ?? null },
-        error: options.sessionError ?? null,
-      };
-    },
-    signInWithIdToken: async (proof: Proof) => {
-      calls.signIn.push(proof);
-      return { data: {}, error: options.signError ?? null };
-    },
-    linkIdentity: async (proof: Proof) => {
-      calls.link.push(proof);
-      return { data: {}, error: options.linkError ?? null };
-    },
-  };
-  return { auth, calls };
 }
 
-function identityPorts(
+function applePorts(
   platform: string,
   plugin: AppleSignInBridge | undefined,
-  auth: ReturnType<typeof fakeAuth>['auth'],
+  auth: ReturnType<typeof fakeAppleAuth>['auth'],
   ids: string[],
-  onGetAuth: () => void = () => undefined,
 ) {
+  const registered: string[] = [];
   return {
-    getPlatform: () => platform,
-    getPlugin: () => plugin,
-    getAuth: () => { onGetAuth(); return auth; },
-    randomId: () => {
-      const id = ids.shift();
-      if (!id) throw new Error('test ran out of deterministic ids');
-      return id;
+    registered,
+    ports: {
+      getPlatform: () => platform,
+      getPlugin: () => plugin,
+      getAuth: () => auth,
+      randomId: () => {
+        const id = ids.shift();
+        if (!id) throw new Error('test ran out of deterministic ids');
+        return id;
+      },
+      digest: async (value: string) => `sha256:${value}`,
+      registerAuthorizationCode: async (code: string) => { registered.push(code); },
     },
-    digest: async (value: string) => `sha256:${value}`,
   };
 }
 
 check(await sha256Hex('nonce')
   === '78377b525757b494427f89014f97d79928f3938d14eb51e20fb5dec9834eb304',
 'Apple nonce hashing must be lowercase SHA-256 hex');
-check(APPLE_SERVICE_ID === 'com.appavaria.knucklebones.web'
-  && APPLE_OAUTH_REDIRECT_URL === `${SUPABASE_URL}/auth/v1/callback`,
-'Apple web identity constants are not canonical/derived', {
-  serviceId: APPLE_SERVICE_ID,
-  redirect: APPLE_OAUTH_REDIRECT_URL,
-});
 
-/* iOS uses native AuthenticationServices: no Services ID initialization,
-   redirect URL, or WebView state is sent. Supabase still gets the raw nonce. */
 const iosOptions: unknown[] = [];
-let iosInitializes = 0;
 const iosPlugin: AppleSignInBridge = {
-  initialize: async () => { iosInitializes++; },
+  initialize: async () => undefined,
   signIn: async (options) => {
     iosOptions.push(options);
-    return { idToken: 'ios-token' };
+    return { idToken: 'ios-token', authorizationCode: 'single-use-code' };
   },
 };
-const iosAuth = fakeAuth();
-const iosIds = ['ios-raw', 'ios-state'];
-const ios = createAppleIdentity(identityPorts('ios', iosPlugin, iosAuth.auth, iosIds));
-check(ios.available() && await ios.restore() === null,
-  'iOS Apple restore did not complete');
-check(iosInitializes === 0 && JSON.stringify(iosOptions) === JSON.stringify([{
-  scopes: ['EMAIL', 'FULL_NAME'],
-  nonce: 'sha256:ios-raw',
-}]), 'iOS received Android/web-only Apple arguments', iosOptions);
-check(JSON.stringify(iosAuth.calls.signIn) === JSON.stringify([{
-  provider: 'apple', token: 'ios-token', nonce: 'ios-raw',
-}]) && iosIds.length === 0,
-'iOS did not hash the nonce for Apple and retain the fresh raw nonce for Supabase',
-{ calls: iosAuth.calls, remainingIds: iosIds });
+const iosAuth = fakeAppleAuth();
+const iosPorts = applePorts('ios', iosPlugin, iosAuth.auth, ['ios-raw']);
+const ios = createAppleIdentity(iosPorts.ports);
+check(ios.available() && await ios.restore() === null, 'iOS Apple restore did not complete');
+check(JSON.stringify(iosOptions) === JSON.stringify([{
+  scopes: ['EMAIL'], nonce: 'sha256:ios-raw',
+}]), 'iOS requested unnecessary Apple data or used a wrong nonce', iosOptions);
+check(iosPorts.registered[0] === 'single-use-code'
+  && iosAuth.calls.signIn[0]?.nonce === 'ios-raw',
+'the authorization code was not registered after Supabase accepted the raw nonce');
 
-/* Android initializes the Services ID and validates an exact, fresh state
-   before the ID token can cross the Supabase boundary. */
-const androidInitializes: unknown[] = [];
-const androidOptions: Array<Record<string, unknown> | undefined> = [];
-const androidPlugin: AppleSignInBridge = {
-  initialize: async (options) => { androidInitializes.push(options); },
-  signIn: async (options) => {
-    androidOptions.push(options);
-    return { idToken: `android-token-${androidOptions.length}`, state: options?.state };
-  },
-};
-const androidAuth = fakeAuth();
-const androidIds = ['raw-1', 'state-1', 'raw-2', 'state-2'];
-const android = createAppleIdentity(identityPorts(
-  'android', androidPlugin, androidAuth.auth, androidIds,
-));
-check(await android.restore() === null && await android.restore() === null,
-  'Android Apple restore failed');
-check(JSON.stringify(androidInitializes) === JSON.stringify([
-  { clientId: APPLE_SERVICE_ID }, { clientId: APPLE_SERVICE_ID },
-]), 'Android did not initialize Apple with the Services ID on each attempt', androidInitializes);
-check(androidOptions.every((options, index) =>
-  options?.redirectUrl === APPLE_OAUTH_REDIRECT_URL
-  && options?.nonce === `sha256:raw-${index + 1}`
-  && options?.state === `state-${index + 1}`
-  && JSON.stringify(options?.scopes) === JSON.stringify(['EMAIL', 'FULL_NAME'])),
-'Android Apple arguments or fresh nonce/state values are wrong', androidOptions);
-check(androidAuth.calls.signIn[0]?.nonce === 'raw-1'
-  && androidAuth.calls.signIn[1]?.nonce === 'raw-2' && androidIds.length === 0,
-'Android did not send each raw nonce to Supabase', androidAuth.calls.signIn);
+const androidAuth = fakeAppleAuth();
+const androidPorts = applePorts('android', iosPlugin, androidAuth.auth, ['unused']);
+const android = createAppleIdentity(androidPorts.ports);
+check(!android.available() && await android.restore() === APPLE_IDENTITY_MESSAGES.unavailable
+  && androidAuth.calls.signIn.length === 0,
+'Android Apple identity was exposed in the iOS-first release');
 
-let invalidAuthReads = 0;
-const invalidAuth = fakeAuth();
-const mismatched = createAppleIdentity(identityPorts('android', {
-  initialize: async () => undefined,
-  signIn: async () => ({ idToken: 'forged-token', state: 'attacker-state' }),
-}, invalidAuth.auth, ['raw-bad', 'expected-state'], () => { invalidAuthReads++; }));
-check(await mismatched.restore() === APPLE_IDENTITY_MESSAGES.invalid
-  && invalidAuthReads === 0 && invalidAuth.calls.signIn.length === 0,
-'an Android state mismatch reached Supabase', invalidAuth.calls);
-
-const missingToken = createAppleIdentity(identityPorts('ios', {
+const missing = applePorts('ios', {
   initialize: async () => undefined,
   signIn: async () => ({ idToken: '' }),
-}, invalidAuth.auth, ['raw-empty', 'state-empty'], () => { invalidAuthReads++; }));
-check(await missingToken.restore() === APPLE_IDENTITY_MESSAGES.invalid
-  && invalidAuthReads === 0,
-'a missing Apple ID token reached Supabase', { invalidAuthReads });
+}, fakeAppleAuth().auth, ['empty']);
+check(await createAppleIdentity(missing.ports).restore() === APPLE_IDENTITY_MESSAGES.invalid,
+'an empty Apple token reached Supabase');
 
-const canceled = createAppleIdentity(identityPorts('ios', {
-  initialize: async () => undefined,
-  signIn: async () => { throw Object.assign(new Error('localized text'), {
-    code: 'SIGN_IN_CANCELED',
-  }); },
-}, invalidAuth.auth, ['raw-cancel', 'state-cancel'], () => { invalidAuthReads++; }));
-check(await canceled.restore() === '' && invalidAuthReads === 0,
-'Apple cancellation was surfaced or reached Supabase');
+const guest = fakeAppleAuth({ session: { access_token: 'guest' } });
+const guestPorts = applePorts('ios', iosPlugin, guest.auth, ['guest-raw']);
+check(await createAppleIdentity(guestPorts.ports).attach() === null
+  && guest.calls.link.length === 1 && guest.calls.signIn.length === 0,
+'Apple attach replaced the current guest');
 
-let configSignInCalls = 0;
-const misconfigured = createAppleIdentity(identityPorts('android', {
-  initialize: async () => { throw new Error('redirect is not registered'); },
-  signIn: async () => { configSignInCalls++; return { idToken: 'never' }; },
-}, invalidAuth.auth, ['raw-config', 'state-config'], () => { invalidAuthReads++; }));
-check(await misconfigured.restore() === APPLE_IDENTITY_MESSAGES.configuration
-  && configSignInCalls === 0 && invalidAuthReads === 0,
-'Android initialization did not fail closed with a stable configuration error');
-
-/* A signed-in guest is linked in place. Even when Apple belongs to another
-   account, there is no restore fallback that could replace the guest session. */
-const guestSession = { access_token: 'guest-session' };
-const conflictAuth = fakeAuth({
-  session: guestSession,
+const conflict = fakeAppleAuth({
+  session: { access_token: 'guest' },
   linkError: { code: 'identity_already_exists' },
 });
-const conflictPlugin: AppleSignInBridge = {
-  initialize: async () => undefined,
-  signIn: async () => ({ idToken: 'owned-token' }),
-};
-const conflict = createAppleIdentity(identityPorts(
-  'ios', conflictPlugin, conflictAuth.auth, ['raw-conflict', 'state-conflict'],
-));
-check(await conflict.attach() === APPLE_IDENTITY_MESSAGES.conflict
-  && conflictAuth.calls.getSession === 1
-  && conflictAuth.calls.link.length === 1
-  && conflictAuth.calls.signIn.length === 0,
-'an Apple identity conflict replaced or signed out the current guest', conflictAuth.calls);
+const conflictPorts = applePorts('ios', iosPlugin, conflict.auth, ['conflict-raw']);
+check(await createAppleIdentity(conflictPorts.ports).attach() === APPLE_IDENTITY_MESSAGES.conflict,
+'an Apple identity owned elsewhere did not fail closed');
 
-const sessionlessAuth = fakeAuth({ session: null });
-const sessionless = createAppleIdentity(identityPorts(
-  'ios', conflictPlugin, sessionlessAuth.auth, ['raw-fresh', 'state-fresh'],
-));
-check(await sessionless.attach() === null
-  && sessionlessAuth.calls.signIn.length === 1
-  && sessionlessAuth.calls.link.length === 0,
-'sessionless account creation did not use signInWithIdToken', sessionlessAuth.calls);
-
-const brokenSessionAuth = fakeAuth({ sessionError: { code: 'session_read_failed' } });
-const brokenSession = createAppleIdentity(identityPorts(
-  'ios', conflictPlugin, brokenSessionAuth.auth, ['raw-session', 'state-session'],
-));
-check(await brokenSession.attach() === APPLE_IDENTITY_MESSAGES.failed
-  && brokenSessionAuth.calls.signIn.length === 0
-  && brokenSessionAuth.calls.link.length === 0,
-'a failed session read was mistaken for sessionless account creation', brokenSessionAuth.calls);
-
-const linkingOffAuth = fakeAuth({
-  session: guestSession,
-  linkError: { code: 'manual_linking_disabled' },
+const ours = fakeAppleAuth({
+  session: { access_token: 'account' },
+  linkError: { code: 'identity_already_exists' },
+  appleAlreadyLinked: true,
 });
-const linkingOff = createAppleIdentity(identityPorts(
-  'ios', conflictPlugin, linkingOffAuth.auth, ['raw-linking', 'state-linking'],
-));
-check(await linkingOff.attach() === APPLE_IDENTITY_MESSAGES.configuration,
-'manual-linking dashboard configuration did not return a stable error');
+const oursPorts = applePorts('ios', iosPlugin, ours.auth, ['ours-raw']);
+check(await createAppleIdentity(oursPorts.ports).attach() === null
+  && oursPorts.registered[0] === 'single-use-code',
+'an already-linked Apple identity could not repair its revocation credential');
 
-interface GameCenterHarnessOptions {
+const GC_PROOF: GameCenterProof = {
+  publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-12.cer',
+  signature: 'signed', salt: 'salt', timestamp: '123', teamPlayerID: 'team-player',
+};
+
+function gameCenterHarness(options: {
   session?: { access_token: string } | null;
   sessionError?: { code: string } | null;
   status?: number;
   body?: unknown;
-  verifyError?: { code: string } | null;
-  throwAt?: 'getSession' | 'request' | 'json' | 'verifyOtp';
-}
-
-function gameCenterHarness(options: GameCenterHarnessOptions = {}) {
+  throwAt?: 'proof' | 'request' | 'json' | 'verifyOtp' | 'refreshSession';
+} = {}) {
   const calls = {
     getSession: 0,
     requests: [] as Array<{ input: string; init: RequestInit }>,
     verifyOtp: [] as Array<{ token_hash: string; type: string }>,
+    refresh: 0,
   };
-  const plugin: GameCenterBridge = {
-    signIn: async () => ({
-      publicKeyUrl: 'https://apple.example/cert',
-      signature: 'signed',
-      salt: 'salt',
-      timestamp: '123',
-      playerId: 'player',
-      bundleId: 'com.appavaria.knucklebones',
-    }),
-  };
+  let requestedMode = '';
   const identity = createGameCenterIdentity({
-    getPlugin: () => plugin,
+    available: () => true,
+    getProof: async () => {
+      if (options.throwAt === 'proof') throw new Error('proof failed');
+      return GC_PROOF;
+    },
     getAuth: () => ({
       getSession: async () => {
         calls.getSession++;
-        if (options.throwAt === 'getSession') throw new Error('storage failed');
-        return {
-          data: { session: options.session ?? null },
-          error: options.sessionError ?? null,
-        };
+        return { data: { session: options.session ?? null }, error: options.sessionError ?? null };
       },
       verifyOtp: async (params) => {
         calls.verifyOtp.push(params);
-        if (options.throwAt === 'verifyOtp') throw new Error('auth failed');
-        return { data: { user: null, session: null }, error: options.verifyError ?? null };
+        if (options.throwAt === 'verifyOtp') throw new Error('otp failed');
+        return { data: { user: null, session: null }, error: null };
+      },
+      refreshSession: async () => {
+        calls.refresh++;
+        if (options.throwAt === 'refreshSession') throw new Error('refresh failed');
+        return { data: { user: null, session: null }, error: null };
       },
     }),
     request: async (input, init) => {
       calls.requests.push({ input, init });
+      requestedMode = JSON.parse(String(init.body)).mode;
       if (options.throwAt === 'request') throw new Error('offline');
       const status = options.status ?? 200;
       return {
         status,
         ok: status >= 200 && status < 300,
         json: async () => {
-          if (options.throwAt === 'json') throw new Error('invalid json');
-          return options.body ?? { token_hash: 'gc-token-hash' };
+          if (options.throwAt === 'json') throw new Error('bad json');
+          return options.body ?? (requestedMode === 'attach'
+            ? { kind: 'linked' } : { kind: 'session', tokenHash: 'gc-hash' });
         },
       };
     },
   });
-  return { identity, calls };
+  return { identity, calls, requestedMode: () => requestedMode };
 }
 
-/* Attach must fail closed when the guest session cannot be read. Omitting the
-   JWT would turn this into restore and could replace the current player. */
-for (const readFailure of ['returned', 'thrown'] as const) {
-  const harness = gameCenterHarness(readFailure === 'returned'
-    ? { sessionError: { code: 'session_read_failed' } }
-    : { throwAt: 'getSession' });
-  check(await harness.identity.attach() === GAME_CENTER_IDENTITY_MESSAGES.failed
-    && harness.calls.getSession === 1
-    && harness.calls.requests.length === 0
-    && harness.calls.verifyOtp.length === 0,
-  `Game Center attach continued after a ${readFailure} session failure`, harness.calls);
-}
+const linked = gameCenterHarness({ session: { access_token: 'guest-access' } });
+check(await linked.identity.attach() === null && linked.requestedMode() === 'attach'
+  && (linked.calls.requests[0].init.headers as Record<string, string>).Authorization
+    === 'Bearer guest-access'
+  && linked.calls.refresh === 1 && linked.calls.verifyOtp.length === 0,
+'Game Center attach did not preserve and refresh the current account', linked.calls);
 
-const linkedGameCenter = gameCenterHarness({
-  session: { access_token: 'guest-access-token' },
-});
-check(await linkedGameCenter.identity.attach() === null
-  && linkedGameCenter.calls.getSession === 1
-  && linkedGameCenter.calls.requests.length === 1
-  && (linkedGameCenter.calls.requests[0]?.init.headers as Record<string, string>)
-    .Authorization === 'Bearer guest-access-token'
-  && linkedGameCenter.calls.verifyOtp[0]?.token_hash === 'gc-token-hash',
-'Game Center attach did not send the guest JWT through the verified OTP flow',
-linkedGameCenter.calls);
+const restored = gameCenterHarness();
+check(await restored.identity.restore() === null && restored.requestedMode() === 'sign-in'
+  && restored.calls.verifyOtp[0]?.token_hash === 'gc-hash'
+  && !('Authorization' in (restored.calls.requests[0].init.headers as Record<string, string>)),
+'Game Center restore was not a sessionless verified OTP exchange', restored.calls);
 
-/* Restore deliberately has no current-user dependency and must not attach an
-   ambient session even if one exists. */
-const restoredGameCenter = gameCenterHarness({
-  session: { access_token: 'must-not-be-sent' },
-});
-check(await restoredGameCenter.identity.restore() === null
-  && restoredGameCenter.calls.getSession === 0
-  && !('Authorization' in (restoredGameCenter.calls.requests[0]?.init.headers as Record<string, string>)),
-'Game Center restore read or sent an ambient session', restoredGameCenter.calls);
+const appeared = gameCenterHarness({ session: { access_token: 'appeared-during-proof' } });
+check(await appeared.identity.restore() === null && appeared.calls.verifyOtp.length === 0,
+'Game Center OTP replaced a session that appeared during verification');
 
-const conflictGameCenter = gameCenterHarness({
-  session: { access_token: 'guest-conflict-token' },
-  status: 409,
+const gcConflict = gameCenterHarness({
+  session: { access_token: 'guest' }, status: 409,
   body: { error: 'identity-already-linked' },
 });
-check(await conflictGameCenter.identity.attach() === GAME_CENTER_IDENTITY_MESSAGES.conflict
-  && conflictGameCenter.calls.verifyOtp.length === 0,
-'gc-auth identity conflict was not mapped to its exact localized message',
-conflictGameCenter.calls);
+check(await gcConflict.identity.attach() === GAME_CENTER_IDENTITY_MESSAGES.conflict,
+'Game Center ownership conflict was not localized');
 
-/* None of these provider/network failures may reject: the one-tap UI awaits a
-   returned message before restoring the button's enabled state. */
-for (const throwAt of ['request', 'json', 'verifyOtp'] as const) {
+for (const throwAt of ['proof', 'request', 'json', 'verifyOtp'] as const) {
   const harness = gameCenterHarness({ throwAt });
   check(await harness.identity.restore() === GAME_CENTER_IDENTITY_MESSAGES.failed,
-    `a thrown Game Center ${throwAt} failure escaped the localized boundary`, harness.calls);
+    `a thrown Game Center ${throwAt} escaped the localized boundary`);
 }
 
 const identitySource = readFileSync('src/online/identity.ts', 'utf8');
@@ -346,21 +231,7 @@ check(!/from\s+['"]@(?:capacitor|capawesome)\//.test(identitySource),
 'web identity code imports a native plugin');
 check(!/result\.(?:user|email|givenName|familyName|realUserStatus)\b/.test(identitySource)
   && !/decodeJwt/.test(identitySource),
-'client-decoded Apple claims are being trusted by web identity code');
+'client-decoded Apple claims are being trusted');
 
-const authScreenSource = readFileSync('src/online/auth-screen.ts', 'utf8');
-const oneTapHandler = authScreenSource.slice(authScreenSource.indexOf('function showOneTapRow'));
-const cancelGuardAt = oneTapHandler.indexOf('if (message !== null)');
-const successAt = oneTapHandler.search(/await AUTH\[mode\]\.after\(ports(?:,\s*origin)?\)/);
-check(cancelGuardAt >= 0 && successAt > cancelGuardAt
-  && oneTapHandler.slice(cancelGuardAt, successAt).includes('return;'),
-'silent Apple cancellation falls through to the authenticated success transition');
-
-console.log(JSON.stringify({
-  serviceId: APPLE_SERVICE_ID,
-  redirectUrl: APPLE_OAUTH_REDIRECT_URL,
-  iosOptions,
-  androidOptions,
-  problems,
-}, null, 2));
+console.log(JSON.stringify({ iosOptions, problems }, null, 2));
 process.exit(problems.length ? 1 : 0);

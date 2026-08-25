@@ -71,6 +71,15 @@ export async function installOnlineRoutes(
   await page.route('**/functions/v1/pvp-join', (r) => r.fulfill({
     status: 200, contentType: 'application/json', body: '{"status":"queued"}',
   }));
+  await page.route('**/functions/v1/identity-status', (r) => r.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify({
+      gameCenterLinked: false,
+      appleLinked: false,
+      appleRevocationReady: false,
+    }),
+  }));
   await page.route('**/rest/v1/rpc/leave_ranked_queue', (r) => r.fulfill({
     status: 200, contentType: 'application/json', body: '{"status":"left"}',
   }));

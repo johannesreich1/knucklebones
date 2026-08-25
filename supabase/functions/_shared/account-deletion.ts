@@ -10,6 +10,10 @@ import type { MatchRow } from "./types.ts";
 export async function deleteAccountWithSettlement(
   context: AuthenticatedContext,
   calculate: LadderSettlement,
+  lifecycle: {
+    beforeDelete?(): Promise<unknown>;
+    afterDelete?(state: unknown): Promise<Record<string, unknown>>;
+  } = {},
 ): Promise<Response> {
   const { user } = context;
   const service = context.service();
@@ -39,7 +43,14 @@ export async function deleteAccountWithSettlement(
     return json({ error: "settlement-failed" }, 500);
   }
 
+  let lifecycleState: unknown;
+  try { lifecycleState = await lifecycle.beforeDelete?.(); }
+  catch { return json({ error: "delete-failed" }, 500); }
+
   const { error } = await service.auth.admin.deleteUser(user.id);
   if (error) return json({ error: "delete-failed" }, 500);
-  return json({ deleted: true });
+  let extra: Record<string, unknown> = {};
+  try { extra = await lifecycle.afterDelete?.(lifecycleState) ?? {}; }
+  catch { extra = { appleRevocation: "pending" }; }
+  return json({ deleted: true, ...extra });
 }

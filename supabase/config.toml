@@ -377,6 +377,15 @@ allow_dynamic_registration = false
 [functions.account-delete]
 verify_jwt = true
 
+[functions.apple-token-register]
+verify_jwt = true
+
+[functions.identity-status]
+verify_jwt = true
+
+[functions.apple-revocation-retry]
+verify_jwt = false
+
 [functions.gc-auth]
 verify_jwt = false
 

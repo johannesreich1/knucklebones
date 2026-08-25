@@ -11,9 +11,10 @@ const clients = { createClient, env: Deno.env };
 
 Deno.serve(createGcAuthHandler({
   bundleId: BUNDLE_ID,
+  originSecret: Deno.env.get("GC_AUTH_ORIGIN_SECRET") ?? "",
   now: Date.now,
   fetch: (url, init) => fetch(url, init),
   trust: trustedAppleGameCenterCertificate,
   verify: verifiedPlayerId,
-  complete: (request, playerId) => completeGameCenterIdentity(request, playerId, clients),
+  complete: (request, playerId, mode) => completeGameCenterIdentity(request, playerId, mode, clients),
 }));

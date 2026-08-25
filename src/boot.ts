@@ -22,6 +22,7 @@ import { bindLegalPages } from './ui/legal.ts';
 import { subscribeLocale } from './i18n/index.ts';
 import { repaintPassLocale } from './flow/pass-card.ts';
 import { userPreferencesRevision } from './preferences.ts';
+import { initializeGameCenter } from './native/game-center.ts';
 
 export function boot(embed: boolean): void {
   configureInput({ place, castArmed });
@@ -46,6 +47,11 @@ export function boot(embed: boolean): void {
   duel.insertBefore(makeDie(5, ME), duel.firstChild);
   duel.appendChild(makeDie(3, AI));
   refreshHomeChip();
+
+  // GameKit owns device-level authentication and may already be signed in.
+  // Start it after the first Home paint, without waiting and without importing
+  // Supabase; widgets and non-iOS platforms resolve to a no-op.
+  if (!embed) void initializeGameCenter();
 
   bindBoardInput();
   bindMenus(root);

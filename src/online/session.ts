@@ -3,6 +3,8 @@
 // the offline game's boot path must never depend on it.
 import { callFunction, supa } from './client.ts';
 import { onlineMessage } from './message-copy.ts';
+import { assertCurrentGameCenter, restoreGameCenterAutomatically } from './identity.ts';
+import { gameCenterState, waitForGameCenter } from '../native/game-center.ts';
 
 export interface Profile { id: string; nickname: string; rating: number; created_at?: string; avatar?: string; named_at?: string | null; }
 
@@ -21,6 +23,11 @@ export interface Profile { id: string; nickname: string; rating: number; created
    guest exactly as for anybody else, and every RLS policy is written against
    auth.uid(). That is why guest play costs no schema. */
 export interface Me { id: string; guest: boolean; email: string | null }
+export interface IdentityStatus {
+  gameCenterLinked: boolean;
+  appleLinked: boolean;
+  appleRevocationReady: boolean;
+}
 /* An account carrying an address is NOT a guest, whatever is_anonymous says.
    Identities attached server-side (Game Center goes through the admin API) do
    not necessarily clear the flag, and a player who has attached must never be
@@ -61,7 +68,13 @@ export async function signIn(email: string, password: string): Promise<string | 
   const { error } = await supa().auth.signInWithPassword({ email, password });
   return localizedAuthError(error);
 }
-export async function signOut(): Promise<void> { await supa().auth.signOut(); clearProfileCache(); }
+const MANUAL_AUTH = 'knucklebones.online.manual-auth';
+export async function signOut(): Promise<void> {
+  await supa().auth.signOut();
+  acceptedGameCenterRevision = null;
+  try { localStorage.setItem(MANUAL_AUTH, '1'); } catch { /* forgetful host */ }
+  clearProfileCache();
+}
 /* Once a device has held a real account, silently minting a guest on the next
    tap would be a trap: the player signed out to sign back IN. Remembering that
    fact costs one flag and turns the silent path off for exactly those devices. */
@@ -71,6 +84,7 @@ export const hadRealAccount = (): boolean => {
 };
 function remember(u: Me | null): Me | null {
   try {
+    if (u) localStorage.removeItem(MANUAL_AUTH);
     if (u && !u.guest) localStorage.setItem(KNOWN, '1');
   } catch { /* forgetful host */ }
   return u;
@@ -81,14 +95,47 @@ export async function currentUser(): Promise<Me | null> {
   return remember(me(session?.user));
 }
 
+export async function identityStatus(): Promise<IdentityStatus | null> {
+  const result = await callFunction<IdentityStatus>('identity-status', {});
+  return result.status === 200 && result.data ? result.data : null;
+}
+
+let acceptedGameCenterRevision: number | null = null;
+export function acknowledgeCurrentAccount(): void {
+  acceptedGameCenterRevision = gameCenterState().revision;
+}
+export function requireGameCenterAssertion(): void {
+  acceptedGameCenterRevision = null;
+}
+
 /* The first rung, taken silently: whoever asks for ranked without a session
    becomes a guest and keeps playing. Returns null when the project has
    anonymous sign-ins switched off — the caller then falls back to the sign-in
    panel, which is exactly how this game behaved before guests existed. */
 export async function ensureIdentity(): Promise<Me | null> {
   const here = await currentUser();
-  if (here) return here;
-  if (hadRealAccount()) return null;          // they signed out to sign back IN
+  if (here) {
+    let nativeState = gameCenterState();
+    if (nativeState.status === 'unavailable') nativeState = await waitForGameCenter();
+    if (nativeState.status === 'unavailable') return here;
+    const providers = await identityStatus();
+    if (!providers?.gameCenterLinked) return here;
+    if (acceptedGameCenterRevision === nativeState.revision) return here;
+    const ownership = await assertCurrentGameCenter();
+    if (ownership === 'match') {
+      acceptedGameCenterRevision = nativeState.revision;
+      return here;
+    }
+    return null;
+  }
+  let manual = false;
+  try { manual = !!localStorage.getItem(MANUAL_AUTH); } catch { /* forgetful host */ }
+  if (manual || hadRealAccount()) return null; // they signed out to sign back IN
+
+  const gameCenter = await restoreGameCenterAutomatically();
+  if (gameCenter === 'signed-in') return currentUser();
+  if (gameCenter === 'retry') return null;
+
   const { data, error } = await supa().auth.signInAnonymously();
   if (error) return null;
   return me(data.user);
@@ -177,16 +224,28 @@ export async function setAvatar(avatar: string): Promise<string | null> {
 }
 
 /* ---- account ---- */
-export async function deleteAccount(): Promise<string | null> {
-  const r = await callFunction<{ deleted?: boolean; error?: string }>('account-delete', {});
+export type AppleRevocationState = 'complete' | 'pending' | 'manual-required';
+export async function deleteAccount(): Promise<{
+  error: string | null;
+  appleRevocation: AppleRevocationState | null;
+}> {
+  const r = await callFunction<{
+    deleted?: boolean;
+    error?: string;
+    appleRevocation?: AppleRevocationState;
+  }>('account-delete', {});
   if (r.status === 200 && r.data?.deleted) {
     await signOut();
     clearProfileCache();
     // the account is gone, so the device is a newcomer again — next tap plays
     try { localStorage.removeItem(KNOWN); } catch { /* forgetful host */ }
-    return null;
+    try { localStorage.removeItem(MANUAL_AUTH); } catch { /* forgetful host */ }
+    return { error: null, appleRevocation: r.data.appleRevocation ?? null };
   }
-  return r.status === 401
-    ? onlineMessage('errors.notSignedIn')
-    : onlineMessage('errors.deleteFailed');
+  return {
+    error: r.status === 401
+      ? onlineMessage('errors.notSignedIn')
+      : onlineMessage('errors.deleteFailed'),
+    appleRevocation: null,
+  };
 }

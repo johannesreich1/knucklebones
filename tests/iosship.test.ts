@@ -106,7 +106,10 @@ const gcSwift = readFileSync(GC_SWIFT, 'utf8');
 check(/@objc\(GameCenterPlugin\)/.test(gcSwift)
   && /jsName\s*=\s*["']GameCenter["']/.test(gcSwift)
   && /fetchItems\(forIdentityVerificationSignature:/.test(gcSwift)
-  && /func available\([\s\S]*?\["available": true\]/.test(gcSwift)
+  && /func initialize\(/.test(gcSwift)
+  && /func getAuthState\(/.test(gcSwift)
+  && /func fetchIdentityProof\(/.test(gcSwift)
+  && /notifyListeners\("authStateChanged"/.test(gcSwift)
   && /player\.authenticateHandler\s*=/.test(gcSwift),
   `${GC_SWIFT} must provide the GameCenter bridge and Apple's signed identity payload`);
 

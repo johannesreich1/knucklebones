@@ -23,18 +23,20 @@ import {
   claimName,
   currentUser,
   deleteAccount,
+  identityStatus,
   myProfile,
   signOut,
 } from './session.ts';
 import { historyRow } from './history-screen.ts';
-import { repaintOnlineMessage } from './message-copy.ts';
+import { onlineMessage, repaintOnlineMessage } from './message-copy.ts';
 import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';
 import type { AuthMode, AuthOrigin } from './auth-screen.ts';
 import type { Ladder, Standing } from './ladder-api.ts';
-import type { Me, Profile } from './session.ts';
+import type { IdentityStatus, Me, Profile } from './session.ts';
+import { paintAccountProviders } from './account-provider-view.ts';
 
 interface AccountPorts {
-  showAuth(mode: AuthMode, origin: AuthOrigin): void;
+  showAuth(mode: AuthMode, origin: AuthOrigin, notice?: string | null): void;
   showAvatar(): Promise<void>;
   showBoard(): Promise<void>;
   showHistory(): Promise<void>;
@@ -44,7 +46,6 @@ export interface AccountScreen {
   bind(): void;
   show(): Promise<void>;
 }
-
 const ringRun = new WeakMap<HTMLElement, number>();
 
 function fillRing(ring: HTMLElement, target: number): void {
@@ -73,6 +74,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     ladder: Ladder | null;
     standing: Standing | null;
     streak: number;
+    identity: IdentityStatus | null;
   } | null = null;
   let lastRecent: Awaited<ReturnType<typeof matchHistory>> = [];
   let pendingCachedRating: number | null = null;
@@ -96,7 +98,6 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     accountError = render;
     $('#onAccErr').textContent = render();
   };
-
   const paintGroup = (points: number, apex = false): void => {
     /* The profile and ladder speak the same league language. In particular,
        NEON is positional and a high-points non-apex player stays OBSIDIAN. */
@@ -122,7 +123,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
 
   const paintAccount = (): void => {
     if (!lastAccount) return;
-    const { profile, user, ladder, standing, streak } = lastAccount;
+    const { profile, user, ladder, standing, streak, identity } = lastAccount;
     $('#accSince').textContent = !user?.guest && profile?.created_at
       ? t('online', 'profile.memberSince', {
         date: formatDate(new Date(profile.created_at), { month: 'long', year: 'numeric' }),
@@ -140,6 +141,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       : t('online', 'profile.noneYet');
     $('#accRank').textContent = rankText(standing, games, apex);
     $('#accStreak').textContent = formatNumber(streak);
+    paintAccountProviders(user, identity);
     paintRecent();
   };
 
@@ -173,6 +175,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     $('#accStreak').textContent = formatNumber(0);
     $('#accName').textContent = '';
     $('#accGuest').hidden = true;
+    $('#accProviders').hidden = true;
     ($('#btnSignOut') as HTMLElement).hidden = true;
     $('#accClaim').hidden = true;
     paintAvatar($('#accDie'), DEFAULT_AVATAR);
@@ -189,16 +192,15 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
         paintGroup(cached);
       }
     } catch { /* forgetful host — the fresh row below paints everything anyway */ }
-    /* Nothing on the profile is useful half-painted. Fetch every independent
-       answer together while the shared die holds the view, then reveal one
-       coherent card (recent matches included) in a single rendering turn. */
-    const [profile, user, ladder, standing, streak, recent] = await Promise.all([
+    // Fetch independent profile data together, then reveal one coherent card.
+    const [profile, user, ladder, standing, streak, recent, identity] = await Promise.all([
       myProfile(),
       currentUser(),
       myLadder(),
       myStanding(),
       bestStreak(),
       matchHistory(3),
+      identityStatus(),
     ]);
     if (!ownsRun()) return;
     refreshHomeChip();
@@ -216,7 +218,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     const peak = ladder?.peak ?? 0;
     const games = ladder ? ladder.wins + ladder.losses + ladder.draws : 0;
     const apex = standing ? inApex(points, standing.rank, standing.population) : false;
-    lastAccount = { profile, user, ladder, standing, streak };
+    lastAccount = { profile, user, ladder, standing, streak, identity };
     lastRecent = recent;
     pendingCachedRating = null;
     paintAccount();
@@ -242,6 +244,10 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     $('#btnHaveAcc').addEventListener('click', () => {
       Sfx.tap();
       ports.showAuth('restore', 'account');
+    });
+    $('#btnLinkApple').addEventListener('click', () => {
+      Sfx.tap();
+      ports.showAuth('attach', 'account');
     });
     $('#btnClaim').addEventListener('click', async () => {
       Sfx.tap();
@@ -323,7 +329,8 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
         check: () => t('online', 'profile.deleteCheck'),
       });
       if (!confirmed) return;
-      const error = await deleteAccount();
+      const deletion = await deleteAccount();
+      const error = deletion.error;
       if (error) {
         const returned = error;
         showAccountError(() => repaintOnlineMessage(returned));
@@ -331,7 +338,11 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       }
       clearAccountError();
       refreshHomeChip();
-      ports.showAuth('restore', 'home');
+      const notice = deletion.appleRevocation === 'pending'
+        ? onlineMessage('errors.appleRevocationPending')
+        : deletion.appleRevocation === 'manual-required'
+          ? onlineMessage('errors.appleRevocationManual') : null;
+      ports.showAuth('restore', 'home', notice);
     });
   }
 

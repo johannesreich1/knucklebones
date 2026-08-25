@@ -1,0 +1,12 @@
+{
+  "name": "knucklebones-identity-gateway",
+  "main": "worker.ts",
+  "compatibility_date": "2026-08-25",
+  "ratelimits": [
+    {
+      "name": "GC_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 10, "period": 60 }
+    }
+  ]
+}

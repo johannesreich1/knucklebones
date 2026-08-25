@@ -2,8 +2,6 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import {
   APP_ID,
-  APPLE_OAUTH_REDIRECT_URL,
-  APPLE_SERVICE_ID,
   GAME_NAME,
   NATIVE_APP_NAME,
   NATIVE_STORE_NAME,
@@ -24,7 +22,8 @@ const LAUNCH_SCREEN = 'native/ios/App/App/Base.lproj/LaunchScreen.storyboard';
 const APP_ICON_CATALOG = 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/Contents.json';
 const SPLASH_CATALOG = 'native/ios/App/App/Assets.xcassets/Splash.imageset/Contents.json';
 const GC_PODSPEC = 'native/plugins/gamecenter/KnucklebonesGameCenter.podspec';
-const BROWSER_IDENTITY = 'src/online/identity.ts';
+const APPLE_IDENTITY = 'src/online/apple-identity.ts';
+const GAME_CENTER_COORDINATOR = 'src/native/game-center.ts';
 const GC_AUTH = 'supabase/functions/gc-auth/index.ts';
 
 export function verifyIosShellContract(check: Check): {
@@ -118,24 +117,17 @@ export function verifyIosShellContract(check: Check): {
     + `${expectedLocalizations.join(', ')} in registry order; `
     + `found ${JSON.stringify(localizations)}`);
 
-  const browserIdentity = readFileSync(BROWSER_IDENTITY, 'utf8');
-  const browserConfigImport = (browserIdentity.match(/import\s*\{([^}]*)\}\s*from\s*['"]\.\.\/config\.ts['"]/) || [])[1] ?? '';
-  check(/\bAPPLE_OAUTH_REDIRECT_URL\b/.test(browserConfigImport)
-    && /\bAPPLE_SERVICE_ID\b/.test(browserConfigImport)
-    && /initialize\(\{\s*clientId:\s*APPLE_SERVICE_ID\s*\}\)/.test(browserIdentity)
-    && /redirectUrl:\s*APPLE_OAUTH_REDIRECT_URL\b/.test(browserIdentity),
-    `${BROWSER_IDENTITY} must use the canonical Services ID and Supabase callback for Android Apple sign-in`);
-  check(APPLE_SERVICE_ID === `${APP_ID}.web`,
-    `APPLE_SERVICE_ID=${APPLE_SERVICE_ID} must remain associated with APP_ID=${APP_ID}`);
-  check(APPLE_OAUTH_REDIRECT_URL === 'https://euzjcejbkxvqfrttgaxu.supabase.co/auth/v1/callback',
-    `APPLE_OAUTH_REDIRECT_URL=${APPLE_OAUTH_REDIRECT_URL} is not the registered Supabase callback`);
-  check(/function gameCenterPlugin\(\)[\s\S]*?plugins\(\)\.GameCenter/.test(browserIdentity)
-    && /getPlugin:\s*gameCenterPlugin/.test(browserIdentity)
-    && /available:\s*\(\)\s*=>\s*!!ports\.getPlugin\(\)/.test(browserIdentity)
-    && /const gameCenter\s*=\s*ports\.getPlugin\(\)/.test(browserIdentity)
-    && /await gameCenter\.signIn\(\)/.test(browserIdentity),
-    `${BROWSER_IDENTITY} must expose Game Center from bridge capability alone and let signIn authenticate; `
-    + `checking GKLocalPlayer authentication before rendering would deadlock a fresh-device flow`);
+  const appleIdentity = readFileSync(APPLE_IDENTITY, 'utf8');
+  check(/getPlatform\(\)\s*!==\s*['"]ios['"]/.test(appleIdentity)
+    && /scopes:\s*\[['"]EMAIL['"]\]/.test(appleIdentity)
+    && !/FULL_NAME/.test(appleIdentity.slice(appleIdentity.indexOf('function createAppleIdentity'))),
+    `${APPLE_IDENTITY} must keep Apple account sign-in iOS-only and request only email`);
+  const coordinator = readFileSync(GAME_CENTER_COORDINATOR, 'utf8');
+  check(/initializeGameCenter/.test(coordinator)
+    && /authStateChanged/.test(coordinator)
+    && /fetchIdentityProof/.test(coordinator)
+    && !/from\s+['"][^'"]*(?:client|identity)['"]/.test(coordinator),
+    `${GAME_CENTER_COORDINATOR} must own lifecycle Game Center state without owning Supabase sessions`);
 
   const gcAuth = readFileSync(GC_AUTH, 'utf8');
   const gcBundle = (gcAuth.match(/const\s+BUNDLE_ID\s*=\s*["']([^"']+)["']/) || [])[1] ?? null;

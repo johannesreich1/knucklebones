@@ -9,7 +9,7 @@
 -- only thing that ever writes it. RLS stays ON so that a future grant can
 -- never accidentally expose it.
 create table if not exists public.game_center_ids (
-  player_id text primary key,                        -- Apple's gamePlayerID or teamPlayerID
+  team_player_id text primary key,                   -- signed non-Arcade identity
   user_id uuid not null unique references auth.users(id) on delete cascade,
   created_at timestamptz not null default now()
 );

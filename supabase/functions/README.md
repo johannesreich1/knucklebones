@@ -19,11 +19,18 @@
 - `account-delete` — settles every active opponent through the shared atomic
   contract, then deletes the authenticated account so privacy cascades remove
   its profile, ratings, queue rows, and match history.
+- `identity-status` — returns linked-provider booleans for the authenticated
+  account without exposing provider identifiers.
+- `apple-token-register` — exchanges the native one-time Apple authorization
+  code and stores the verified refresh token in Vault for deletion revocation.
+- `apple-revocation-retry` — cron-secret-protected processing of transient
+  Apple revocation failures after the Supabase account has been deleted.
 - `gc-auth` — verifies an Apple Game Center identity assertion and Apple's
   certificate signing authority, then attaches or restores the corresponding
   authenticated account. Its assertion is the auth boundary (`verify_jwt =
-  false`), so it is held until a durable deployment-layer rate limit and signed
-  device test exist.
+  false`); direct calls require the private identity-gateway header, while the
+  public Cloudflare Worker enforces strict origins and a durable per-IP rate
+  limit. It remains held until gateway deployment and a signed-device test.
 
 Anti-cheat model: new clients submit intent plus replay identity
 `{match_id, col, command_id, expected_move_count}` — no authoritative die,
@@ -38,8 +45,10 @@ Ranked rollout is database-first. Apply the ranked lifecycle/command/history
 migrations before deploying `account-delete`, `pvp-claim`, `pvp-join`, and
 `pvp-move`. Game Center is separate: apply `0014_game_center_ids.sql`, then
 `20260823132611_game_center_service_grants.sql`, configure the external rate
-limit, and only then deploy `gc-auth`. Repository checks do not prove dashboard
-state.
+limit, and only then deploy `gc-auth`. Apple identity additionally requires
+`20260825192805_apple_identity_credentials.sql`, the owner-held Apple key as
+function secrets, the identity/revocation functions, and a cron schedule for
+`apple-revocation-retry`. Repository checks do not prove dashboard state.
 
 The PvP functions import `./core/*` — src/ files uploaded VERBATIM next to
 `index.ts`, mirroring the repo layout with `src/` stripped (`src/core/rules.ts`

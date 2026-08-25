@@ -251,4 +251,12 @@ check(failedDelete.status === 500
   && payoutFailure.deleteCalls === 0,
   'account deletion removed identity after an opponent payout failure');
 
+const lifecycleFailure = new FakeService();
+const failedLifecycle = await deleteAccountWithSettlement({
+  ...deletingContext,
+  service: () => lifecycleFailure as unknown as EdgeClient,
+}, calculate, { beforeDelete: async () => { throw new Error('vault unavailable'); } });
+check(failedLifecycle.status === 500 && lifecycleFailure.deleteCalls === 0,
+  'account deletion continued after its provider-revocation state could not be prepared');
+
 console.log(JSON.stringify({ problems, errs }, null, 2));
