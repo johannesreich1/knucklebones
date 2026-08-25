@@ -146,7 +146,7 @@
   box-shadow:0 0 14px color-mix(in srgb,currentColor 22%,transparent)}
 :where(#kbroot) .wpill svg{width:13px;height:13px}
 :where(#kbroot) .wowner{display:inline-flex;align-items:center;gap:5px;max-width:100%;
-  font-size:8px;line-height:1;letter-spacing:.13em;font-weight:900;white-space:nowrap}
+  font-size:10px;line-height:1;letter-spacing:.12em;font-weight:900;white-space:nowrap}
 :where(#kbroot) .wowner::before{content:"";width:4px;height:4px;flex:0 0 auto;border-radius:50%;
   background:currentColor;box-shadow:0 0 7px currentColor}
 /* A random mode followed by RANDOM ×2 leaves two prior answers above the

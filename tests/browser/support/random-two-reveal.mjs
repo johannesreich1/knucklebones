@@ -32,6 +32,7 @@ export async function verifyRandomTwoReveal(page, out, check) {
     const pill = document.querySelector('#wheelSettled .wpill');
     const ownerBox = owner?.getBoundingClientRect();
     const pillBox = pill?.getBoundingClientRect();
+    const ownerStyle = owner ? getComputedStyle(owner) : null;
     const dot = owner ? getComputedStyle(owner, '::before') : null;
     const playerProbe = document.createElement('i');
     playerProbe.style.color = 'var(--p1)';
@@ -47,9 +48,10 @@ export async function verifyRandomTwoReveal(page, out, check) {
       ownerOutsidePill: !!owner && !owner.closest('.wpill'),
       ownerAbovePill: !!ownerBox && !!pillBox && ownerBox.bottom <= pillBox.top,
       ownerGap: ownerBox && pillBox ? Math.round((pillBox.top - ownerBox.bottom) * 10) / 10 : -1,
+      ownerFontSize: ownerStyle ? parseFloat(ownerStyle.fontSize) : 0,
       dot: dot ? {
         width: parseFloat(dot.width), height: parseFloat(dot.height),
-        color: dot.backgroundColor, ownerColor: getComputedStyle(owner).color, playerColor,
+        color: dot.backgroundColor, ownerColor: ownerStyle.color, playerColor,
       } : null,
     };
   });
@@ -117,6 +119,7 @@ export async function verifyRandomTwoReveal(page, out, check) {
       && dual.secondDeck.settledOwner === 'YOU'
       && dual.secondDeck.ownerOutsidePill && dual.secondDeck.ownerAbovePill
       && dual.secondDeck.ownerGap >= 5 && dual.secondDeck.ownerGap <= 8
+      && dual.secondDeck.ownerFontSize === 10
       && dual.secondDeck.pillText === dual.secondDeck.settledRune
       && dual.secondDeck.dot?.width >= 3.5 && dual.secondDeck.dot?.width <= 4.5
       && dual.secondDeck.dot?.height >= 3.5 && dual.secondDeck.dot?.height <= 4.5
