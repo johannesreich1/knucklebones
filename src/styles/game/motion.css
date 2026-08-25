@@ -7,6 +7,10 @@
   animation-duration:.001ms!important;animation-iteration-count:1!important;
   transition-duration:.06s!important}
 #kbroot.reduce-motion #bg::before{animation:none}
+/* Decorative primary-button sheen has no informational resting frame. Remove
+   its pseudo entirely instead of squeezing the sweep into the blanket .001ms
+   duration, which could otherwise present as a one-frame flash. */
+#kbroot.reduce-motion .btn.primary::after{content:none;animation:none!important}
 /* Ordinary placement hints are optional motion/attention cues. Spell targets
    are decisions the player explicitly armed, so their .aim ring remains. */
 #kbroot.reduce-motion .col.legal:not(.aim)::after,
