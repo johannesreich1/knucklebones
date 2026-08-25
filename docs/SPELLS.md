@@ -264,6 +264,12 @@ The presence of a pair does not redirect or disable the repair. Ties still go
 to the die closest to the centre line, so both the preview and the result are
 predictable from the board.
 
+### Candidate explorations
+
+Seven unshipped concepts and their temporary estimates are recorded in the
+[2026-08-25 rune candidate study](RUNE_CANDIDATE_STUDY.md); none is part of
+the current registry.
+
 ### Known pairing evidence
 
 Both notable measurements involve COLUMN SHIELD:

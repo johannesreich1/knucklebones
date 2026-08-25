@@ -286,8 +286,8 @@ ${RULES_PAGE}
     <div class="card">
       <div class="lbl" data-i18n="settings:diceFaces">Dice faces</div>
       <div class="seg" id="faceSeg">
-        <button data-f="pips" data-i18n="settings:pips">PIPS</button>
         <button data-f="nums" data-i18n="settings:numbers">NUMBERS</button>
+        <button data-f="pips" data-i18n="settings:pips">PIPS</button>
       </div>
     </div>
     <div class="card">
