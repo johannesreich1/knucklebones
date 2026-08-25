@@ -1,0 +1,61 @@
+import type { CatalogShape } from '../../catalog-shape.ts';
+import { enCommon } from '../en/common.ts';
+
+export const ptCommon = {
+  app: {
+    name: 'KNUCKLEBONES',
+    edition: 'Edição Neon',
+    tagline: 'Duelos de dados ranqueados',
+  },
+  actions: {
+    back: 'Voltar',
+    cancel: 'Cancelar',
+    close: 'Fechar',
+    continue: 'Continuar',
+    done: 'Pronto',
+    finish: 'Concluir',
+    home: 'Início',
+    next: 'Avançar',
+    notNow: 'Agora não',
+    retry: 'Repetir',
+    save: 'Salvar',
+  },
+  states: {
+    on: 'SIM',
+    off: 'NÃO',
+    none: 'NENHUMA',
+    random: 'ALEATÓRIO',
+    loading: 'Carregando…',
+    unavailable: 'Indisponível',
+  },
+  people: {
+    you: 'VOCÊ',
+    opponent: 'OPONENTE',
+    ai: 'IA',
+    playerOne: 'JOGADOR 1',
+    playerTwo: 'JOGADOR 2',
+    guest: 'CONVIDADO',
+  },
+  record: {
+    win: 'V',
+    loss: 'D',
+    draw: 'E',
+    wins_one: '{{count}} vitória',
+    wins_other: '{{count}} vitórias',
+    losses_one: '{{count}} derrota',
+    losses_other: '{{count}} derrotas',
+    draws_one: '{{count}} empate',
+    draws_other: '{{count}} empates',
+  },
+  units: {
+    secondShort: 'S',
+    points_one: '{{count}} ponto',
+    points_other: '{{count}} pontos',
+    games_one: '{{count}} partida',
+    games_other: '{{count}} partidas',
+    castsLeft_one: 'resta {{count}} uso',
+    castsLeft_other: 'restam {{count}} usos',
+  },
+  build: 'versão {{tag}}',
+  versus: 'VS',
+} satisfies CatalogShape<typeof enCommon>;

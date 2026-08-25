@@ -77,23 +77,36 @@ export async function runLayoutScenarios(suite) {
         const st = document.getElementById('status'), stage = document.getElementById('dieStage');
         const cssReserve = parseFloat(getComputedStyle(st).minHeight);
         const restY = stage.getBoundingClientRect().y;
+        const resting = { text: st.textContent, label: st.getAttribute('aria-label') };
         const lines = () => { const rg = document.createRange(); rg.selectNodeContents(st); return rg.getClientRects().length; };
         const armed = window.__kb.spells.arm(id);
         const b = st.getBoundingClientRect();
-        const result = { id, armed, text: st.textContent, lines: lines(), h: +b.height.toFixed(1),
+        const result = { id, armed, resting,
+          text: st.textContent, label: st.getAttribute('aria-label'),
+          lines: lines(), h: +b.height.toFixed(1),
           w: +b.width.toFixed(1), cssReserve,
           land: document.getElementById('kbroot').classList.contains('land'),
           offscreen: b.right > window.innerWidth + 0.5 || b.left < -0.5,
           dieMoved: +Math.abs(stage.getBoundingClientRect().y - restY).toFixed(1) };
         window.__kb.spells.disarm(true);
+        result.afterDisarm = {
+          text: st.textContent,
+          label: st.getAttribute('aria-label'),
+        };
         return result;
       }, spell.id);
       rows.push(row);
       reserve = row.cssReserve;
       land = row.land;
-      const expectedAim = spellCopy(spell.id).aim;
-      check(row.armed && row.text === expectedAim,
-        `the aim-lane probe never armed ${spell.id}`, { row, expected: expectedAim });
+      const expected = spellCopy(spell.id);
+      const expectedLabel = expected.aimCompact === expected.aim ? null : expected.aim;
+      check(row.armed && row.text === expected.aimCompact && row.label === expectedLabel,
+        `the aim-lane probe never exposed the compact/full copy contract for ${spell.id}`,
+        { row, expected: { text: expected.aimCompact, label: expectedLabel } });
+      check(row.afterDisarm.text === row.resting.text
+          && row.afterDisarm.label === row.resting.label,
+        `disarming ${spell.id} failed to restore the turn status contract`,
+        { before: row.resting, after: row.afterDisarm });
     }
     const lane = { land, reserve, rows };
     out['aimLane_' + view.name] = lane;

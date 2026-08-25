@@ -10,6 +10,7 @@
 /* the header's control wears the title's own gradient so it reads as the way
    back at a glance */
 :where(#kbroot) .shead .ico{color:#fff;
+  width:44px;height:44px;margin:-7px;
   background:linear-gradient(135deg,color-mix(in srgb,var(--p1) 26%,transparent),
                                     color-mix(in srgb,var(--p2) 26%,transparent));
   border-color:color-mix(in srgb,var(--p1) 40%,transparent);
@@ -224,7 +225,11 @@
 
 /* result screens (local + online share the shape): the verdict sits up top
    and LOUD, the scores hold the centre, the actions wait in the thumb zone */
-:where(#kbroot) #ovEnd{justify-content:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 7vh)}
+:where(#kbroot) #ovEnd{justify-content:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 7vh);
+  /* The verdict bloom deliberately extends past its text column. Keep that
+     decoration at the viewport edge without creating a horizontal scroller;
+     range-based browser checks still reject any clipped result copy. */
+  overflow-x:hidden}
 :where(#kbroot) #ovEnd{--verdict:clamp(34px,11.5vw,54px)}
 /* The verdict carries NO filter of its own — its glow is the bloom layer under
    it. An element that both clips its background to text AND takes a filter is

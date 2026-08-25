@@ -8,6 +8,7 @@ import {
   NATIVE_APP_NAME,
   NATIVE_STORE_NAME,
 } from '../../src/config.ts';
+import { LOCALE_REGISTRY } from '../../src/i18n/locale.ts';
 import { sameBytes } from './ios-artifacts.ts';
 
 type Check = (ok: boolean, message: string) => void;
@@ -111,8 +112,10 @@ export function verifyIosShellContract(check: Check): {
   const localizationBlock = (info.match(/<key>CFBundleLocalizations<\/key>\s*<array>([\s\S]*?)<\/array>/) || [])[1] ?? '';
   const localizations = [...localizationBlock.matchAll(/<string>([^<]+)<\/string>/g)]
     .map((match) => match[1]);
-  check(JSON.stringify(localizations) === JSON.stringify(['en', 'de', 'fr']),
-    `${INFO} must declare the JavaScript-owned runtime localizations en, de, and fr; `
+  const expectedLocalizations = LOCALE_REGISTRY.map(({ languageTag }) => languageTag);
+  check(JSON.stringify(localizations) === JSON.stringify(expectedLocalizations),
+    `${INFO} must declare the registry-owned runtime language tags `
+    + `${expectedLocalizations.join(', ')} in registry order; `
     + `found ${JSON.stringify(localizations)}`);
 
   const browserIdentity = readFileSync(BROWSER_IDENTITY, 'utf8');

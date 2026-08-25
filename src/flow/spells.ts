@@ -165,7 +165,8 @@ export function arm(id: string): boolean {
     S.spellCastThisTurn = who;
   }
   renderSpells();
-  setStatus(() => spellCopy(spell.id).aim, who);
+  setStatus({ visible: () => spellCopy(spell.id).aimCompact,
+    accessible: () => spellCopy(spell.id).aim }, who);
   return true;
 }
 

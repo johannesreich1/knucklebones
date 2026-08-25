@@ -33,6 +33,14 @@ function placeholders(value: string): string[] {
     .map((match) => match[1]).sort();
 }
 
+function richMarkup(value: string): string[] {
+  return [...value.matchAll(/<\/?[a-z][^>]*>/giu)]
+    .map((match) => match[0].replace(/\s+/gu, ' '));
+}
+
+assert.deepEqual(Object.keys(RESOURCES), [...SUPPORTED_LOCALES],
+  'catalog aggregation must follow the locale registry exactly');
+
 for (const namespace of LOCALE_NAMESPACES) {
   const english = flatten(RESOURCES.en[namespace]);
   for (const locale of SUPPORTED_LOCALES) {
@@ -44,6 +52,8 @@ for (const namespace of LOCALE_NAMESPACES) {
       assert.ok(value.trim(), `${locale}:${namespace}.${key} must not be blank`);
       assert.deepEqual(placeholders(value), placeholders(source),
         `${locale}:${namespace}.${key} must preserve interpolation placeholders`);
+      assert.deepEqual(richMarkup(value), richMarkup(source),
+        `${locale}:${namespace}.${key} must preserve trusted rich-text markup`);
     }
   }
 }
@@ -87,6 +97,7 @@ assert.deepEqual(LOCALE_NAMESPACES, ['common', 'settings', 'game', 'online', 'le
    cannot catch a misspelt namespace/key. Keep every literal hook resolvable;
    the DOM translator deliberately throws on an unknown token at startup. */
 const markupSources = [
+  readFileSync(new URL('../build.mjs', import.meta.url), 'utf8'),
   readFileSync(new URL('../src/markup.ts', import.meta.url), 'utf8'),
   readFileSync(new URL('../src/online/shell.ts', import.meta.url), 'utf8'),
   readFileSync(new URL('../src/ui/firstrun.ts', import.meta.url), 'utf8'),

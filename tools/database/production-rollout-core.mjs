@@ -9,6 +9,7 @@ const SCHEMA_FIELDS = Object.freeze([
   'baseContract',
   'localeColumn',
   'localeConstraint',
+  'localeExpanded',
   'localeComment',
   'localeValues',
 ]);
@@ -324,9 +325,9 @@ export function assertConfiguredLinkedProjectRef(configuredRef, linkedRef, expec
 }
 
 /**
- * Validate the production player-settings schema as one of three complete
- * states: 0 = absent, 1 = base table only, 2 = base plus locale. Any partial
- * or out-of-order state is unsafe and rejected.
+ * Validate the production player-settings schema as one of four complete
+ * states: 0 = absent, 1 = base table only, 2 = original locale roster, and
+ * 3 = expanded locale roster. Any partial or out-of-order state is unsafe.
  */
 export function validatePlayerSettingsSchemaStage(metadata) {
   if (!isObject(metadata)) fail('Schema metadata must be an object.');
@@ -350,8 +351,10 @@ export function validatePlayerSettingsSchemaStage(metadata) {
     metadata.localeComment,
     metadata.localeValues,
   ];
-  if (locale.every(value => value === false)) return 1;
-  if (locale.every(value => value === true)) return 2;
+  if (locale.every(value => value === false) && !metadata.localeExpanded) return 1;
+  if (locale.every(value => value === true)) {
+    return metadata.localeExpanded ? 3 : 2;
+  }
   fail('Player-settings locale schema or stored values do not match the complete postcondition.');
 }
 

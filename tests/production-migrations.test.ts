@@ -12,19 +12,14 @@ import {
   parseMigrationListJson,
   productionDbPushArgs,
   productionMigrationFetchArgs,
-  validateMatchCommandRetentionSchemaStage,
   validateMigrationFilenames,
-  validatePlayerSettingsSchemaStage,
   withTemporaryWorkspace,
 } from '../tools/database/production-rollout-core.mjs';
-import {
-  MATCH_COMMAND_RETENTION_JOB,
-  MATCH_COMMAND_RETENTION_SCHEMA,
-  SETTINGS_SCHEMA,
-} from '../tools/database/production-rollout.mjs';
+import { runProductionMigrationSchemaCases } from './support/production-migration-schema-cases.ts';
 
 const BASE = '20260823192604_player_settings.sql';
 const LOCALE = '20260824133121_player_settings_locale.sql';
+const EXPANDED_LOCALES = '20260825161016_expand_player_settings_locales.sql';
 const GAME_CENTER = '20260823132611_game_center_service_grants.sql';
 const RETENTION = '20260824212535_match_command_retention.sql';
 const PROJECT = 'euzjcejbkxvqfrttgaxu';
@@ -101,7 +96,7 @@ check('migration filenames are extracted, ordered, and path-safe', () => {
     version: '20260823192604',
     name: 'player_settings',
   });
-  assert.equal(validateMigrationFilenames([BASE, LOCALE]).length, 2);
+  assert.equal(validateMigrationFilenames([BASE, LOCALE, EXPANDED_LOCALES]).length, 3);
   guarded(() => parseMigrationFilename(`../${BASE}`), /Invalid migration filename/);
   guarded(() => validateMigrationFilenames([LOCALE, BASE]), /strictly increasing/);
   guarded(
@@ -110,85 +105,104 @@ check('migration filenames are extracted, ordered, and path-safe', () => {
   );
 });
 
-check('ordered migration state accepts complete stages zero, one, and two', () => {
-  assert.deepEqual(computeAppliedPrefixPendingSuffix([BASE, LOCALE], []), {
+check('ordered migration state accepts complete settings stages zero through three', () => {
+  assert.deepEqual(computeAppliedPrefixPendingSuffix([BASE, LOCALE, EXPANDED_LOCALES], []), {
     stage: 0,
     applied: [],
-    pending: [BASE, LOCALE],
+    pending: [BASE, LOCALE, EXPANDED_LOCALES],
   });
   assert.deepEqual(computeAppliedPrefixPendingSuffix(
-    [BASE, LOCALE],
+    [BASE, LOCALE, EXPANDED_LOCALES],
     ['20260823192604', '99999999999999'],
   ), {
     stage: 1,
     applied: [BASE],
-    pending: [LOCALE],
+    pending: [LOCALE, EXPANDED_LOCALES],
   });
   assert.deepEqual(computeAppliedPrefixPendingSuffix(
-    [BASE, LOCALE],
+    [BASE, LOCALE, EXPANDED_LOCALES],
     ['20260823192604', '20260824133121'],
   ), {
     stage: 2,
     applied: [BASE, LOCALE],
+    pending: [EXPANDED_LOCALES],
+  });
+  assert.deepEqual(computeAppliedPrefixPendingSuffix(
+    [BASE, LOCALE, EXPANDED_LOCALES],
+    ['20260823192604', '20260824133121', '20260825161016'],
+  ), {
+    stage: 3,
+    applied: [BASE, LOCALE, EXPANDED_LOCALES],
     pending: [],
   });
 });
 
 check('ordered migration state rejects a later migration without its predecessor', () => {
   guarded(
-    () => computeAppliedPrefixPendingSuffix([BASE, LOCALE], ['20260824133121']),
+    () => computeAppliedPrefixPendingSuffix(
+      [BASE, LOCALE, EXPANDED_LOCALES],
+      ['20260825161016'],
+    ),
     /selected predecessor/,
   );
 });
 
 check('exact dry-run accepts only the selected pending suffix', () => {
   assert.deepEqual(assertExactDryRun(
-    `Preparing...\n${JSON.stringify(dryRun([BASE, LOCALE]), null, 2)}`,
-    [BASE, LOCALE],
-  ), { migrations: [BASE, LOCALE] });
+    `Preparing...\n${JSON.stringify(dryRun([BASE, LOCALE, EXPANDED_LOCALES]), null, 2)}`,
+    [BASE, LOCALE, EXPANDED_LOCALES],
+  ), { migrations: [BASE, LOCALE, EXPANDED_LOCALES] });
 });
 
 check('exact dry-run rejects an extra held Game Center migration', () => {
   guarded(
-    () => assertExactDryRun(dryRun([GAME_CENTER, BASE, LOCALE]), [BASE, LOCALE]),
+    () => assertExactDryRun(
+      dryRun([GAME_CENTER, BASE, LOCALE, EXPANDED_LOCALES]),
+      [BASE, LOCALE, EXPANDED_LOCALES],
+    ),
     /allow-list and order/,
   );
 });
 
 check('exact dry-run rejects missing, reordered, seeded, and role-bearing plans', () => {
-  guarded(() => assertExactDryRun(dryRun([BASE]), [BASE, LOCALE]), /allow-list and order/);
-  guarded(() => assertExactDryRun(dryRun([LOCALE, BASE]), [BASE, LOCALE]), /strictly increasing/);
+  const expected = [BASE, LOCALE, EXPANDED_LOCALES];
+  guarded(() => assertExactDryRun(dryRun([BASE, LOCALE]), expected), /allow-list and order/);
+  guarded(() => assertExactDryRun(dryRun([LOCALE, BASE, EXPANDED_LOCALES]), expected), /strictly increasing/);
   guarded(
-    () => assertExactDryRun(dryRun([BASE, LOCALE], { seeds: ['seed.sql'] }), [BASE, LOCALE]),
+    () => assertExactDryRun(dryRun(expected, { seeds: ['seed.sql'] }), expected),
     /seeds or roles/,
   );
   guarded(
-    () => assertExactDryRun(dryRun([BASE, LOCALE], { roles: ['roles.sql'] }), [BASE, LOCALE]),
+    () => assertExactDryRun(dryRun(expected, { roles: ['roles.sql'] }), expected),
     /seeds or roles/,
   );
 });
 
 check('exact apply requires the complete non-dry-run CLI response', () => {
-  const applied = dryRun([BASE, LOCALE], { dryRun: false });
-  assert.deepEqual(assertExactApply(applied, [BASE, LOCALE]), {
-    migrations: [BASE, LOCALE],
+  const expected = [BASE, LOCALE, EXPANDED_LOCALES];
+  const applied = dryRun(expected, { dryRun: false });
+  assert.deepEqual(assertExactApply(applied, expected), {
+    migrations: expected,
   });
-  guarded(() => assertExactApply(dryRun([BASE, LOCALE]), [BASE, LOCALE]), /exact apply/);
+  guarded(() => assertExactApply(dryRun(expected), expected), /exact apply/);
   guarded(
-    () => assertExactApply({ ...applied, upToDate: true }, [BASE, LOCALE]),
+    () => assertExactApply({ ...applied, upToDate: true }, expected),
     /up-to-date state/,
   );
   const { roles: _roles, ...withoutRoles } = applied;
-  guarded(() => assertExactApply(withoutRoles, [BASE, LOCALE]), /unexpected shape/);
+  guarded(() => assertExactApply(withoutRoles, expected), /unexpected shape/);
   guarded(
-    () => assertExactApply({ ...applied, roles: null }, [BASE, LOCALE]),
+    () => assertExactApply({ ...applied, roles: null }, expected),
     /invalid field types/,
   );
   guarded(
-    () => assertExactApply({ ...applied, unexpected: true }, [BASE, LOCALE]),
+    () => assertExactApply({ ...applied, unexpected: true }, expected),
     /unexpected shape/,
   );
-  guarded(() => assertExactApply({ ...applied, migrations: [LOCALE, BASE] }, [BASE, LOCALE]), /strictly increasing/);
+  guarded(
+    () => assertExactApply({ ...applied, migrations: [LOCALE, BASE, EXPANDED_LOCALES] }, expected),
+    /strictly increasing/,
+  );
 });
 
 check('configured, linked, and explicit production refs must all agree', () => {
@@ -233,132 +247,22 @@ check('apply opt-in and repeated audit plan both fail closed', () => {
   assert.equal(assertProductionApplyOptIn(false, undefined), false);
   assert.equal(assertProductionApplyOptIn(true, '1'), true);
   guarded(() => assertProductionApplyOptIn(true, undefined), /environment opt-in/);
-  const plan = { stage: 0, applied: [], pending: [BASE, LOCALE] };
+  const plan = { stage: 0, applied: [], pending: [BASE, LOCALE, EXPANDED_LOCALES] };
   assert.deepEqual(assertSameRolloutPlan(plan, { ...plan }), plan);
   guarded(
-    () => assertSameRolloutPlan(plan, { stage: 1, applied: [BASE], pending: [LOCALE] }),
+    () => assertSameRolloutPlan(
+      plan,
+      { stage: 1, applied: [BASE], pending: [LOCALE, EXPANDED_LOCALES] },
+    ),
     /changed during planning/,
   );
 });
 
-check('schema metadata accepts only complete stages zero, one, and two', () => {
-  assert.equal(validatePlayerSettingsSchemaStage({
-    baseTable: false,
-    baseContract: false,
-    localeColumn: false,
-    localeConstraint: false,
-    localeComment: false,
-    localeValues: false,
-  }), 0);
-  assert.equal(validatePlayerSettingsSchemaStage({
-    baseTable: true,
-    baseContract: true,
-    localeColumn: false,
-    localeConstraint: false,
-    localeComment: false,
-    localeValues: false,
-  }), 1);
-  assert.equal(validatePlayerSettingsSchemaStage({
-    baseTable: true,
-    baseContract: true,
-    localeColumn: true,
-    localeConstraint: true,
-    localeComment: true,
-    localeValues: true,
-  }), 2);
-});
-
-check('schema metadata rejects partial, out-of-order, and mismatched postconditions', () => {
-  guarded(() => validatePlayerSettingsSchemaStage({
-    baseTable: true,
-    baseContract: false,
-    localeColumn: false,
-    localeConstraint: false,
-    localeComment: false,
-    localeValues: false,
-  }), /base schema is partial/);
-  guarded(() => validatePlayerSettingsSchemaStage({
-    baseTable: false,
-    baseContract: false,
-    localeColumn: true,
-    localeConstraint: true,
-    localeComment: true,
-    localeValues: true,
-  }), /out of order/);
-  guarded(() => validatePlayerSettingsSchemaStage({
-    baseTable: true,
-    baseContract: true,
-    localeColumn: true,
-    localeConstraint: true,
-    localeComment: true,
-    localeValues: false,
-  }), /stored values/);
-});
-
-check('command-retention schema accepts only absent and complete states', () => {
-  assert.equal(validateMatchCommandRetentionSchemaStage({
-    cronExtension: false,
-    retentionIndex: false,
-    cleanupFunction: false,
-    cleanupFunctionLocked: false,
-    cronJob: false,
-    cronJobContract: false,
-  }), 0);
-  assert.equal(validateMatchCommandRetentionSchemaStage({
-    cronExtension: true,
-    retentionIndex: false,
-    cleanupFunction: false,
-    cleanupFunctionLocked: false,
-    cronJob: false,
-    cronJobContract: false,
-  }), 0);
-  assert.equal(validateMatchCommandRetentionSchemaStage({
-    cronExtension: true,
-    retentionIndex: true,
-    cleanupFunction: true,
-    cleanupFunctionLocked: true,
-    cronJob: true,
-    cronJobContract: true,
-  }), 1);
-});
-
-check('command-retention schema rejects every partial contract', () => {
-  guarded(() => validateMatchCommandRetentionSchemaStage({
-    cronExtension: true,
-    retentionIndex: true,
-    cleanupFunction: true,
-    cleanupFunctionLocked: true,
-    cronJob: true,
-    cronJobContract: false,
-  }), /partial/);
-  guarded(() => validateMatchCommandRetentionSchemaStage({
-    cronExtension: false,
-    retentionIndex: true,
-    cleanupFunction: true,
-    cleanupFunctionLocked: true,
-    cronJob: true,
-    cronJobContract: true,
-  }), /partial/);
-});
-
-check('command-retention production audit pins every safety boundary', () => {
-  assert.match(MATCH_COMMAND_RETENTION_SCHEMA, /match_commands_retention_idx/);
-  assert.match(MATCH_COMMAND_RETENTION_SCHEMA, /security-invoker|not prosecdef/);
-  assert.match(MATCH_COMMAND_RETENTION_SCHEMA, /'anon', 'authenticated', 'service_role'/);
-  assert.match(MATCH_COMMAND_RETENTION_JOB, /'0 \* \* \* \*'/);
-  assert.match(MATCH_COMMAND_RETENTION_JOB, /interval ''7 days''/);
-  assert.match(MATCH_COMMAND_RETENTION_JOB, /5000/);
-  assert.deepEqual(parseMigrationFilename(RETENTION), {
-    filename: RETENTION,
-    version: '20260824212535',
-    name: 'match_command_retention',
-  });
-});
-
-check('production grant audit uses complete PostgreSQL 17 ACLs', () => {
-  assert.match(SETTINGS_SCHEMA, /aclexplode\(/);
-  assert.match(SETTINGS_SCHEMA, /'MAINTAIN'/);
-  assert.doesNotMatch(SETTINGS_SCHEMA, /information_schema\.table_privileges/);
+runProductionMigrationSchemaCases({
+  check,
+  guarded,
+  retentionMigration: RETENTION,
+  expandedLocalesMigration: EXPANDED_LOCALES,
 });
 
 await checkAsync('temporary workspace cleanup runs after success and preparation failure', async () => {

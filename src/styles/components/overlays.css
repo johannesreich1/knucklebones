@@ -40,6 +40,7 @@
 :where(#kbroot) :where(.ov button:enabled){transition:transform .15s}
 :where(#kbroot) :where(.ov button:enabled:is(:active,.pressing)){transform:scale(.97)}
 :where(#kbroot) .btn{min-width:210px;padding:16px 20px;border-radius:14px;border:1px solid rgba(255,255,255,.14);
+  min-height:44px;
   background:rgba(255,255,255,.05);color:var(--txt);font-size:13.5px;font-weight:800;letter-spacing:.16em;
   text-transform:uppercase;cursor:pointer;transition:.15s;font-family:inherit}
 :where(#kbroot) .btn:active,:where(#kbroot) .btn.pressing{transform:scale(.96)}
@@ -65,7 +66,7 @@
   93%,100%{background-position:0 0;opacity:0}}
 #kbroot [hidden]{display:none!important}
 :where(#kbroot) .seg{display:flex;gap:8px}
-:where(#kbroot) .seg button{flex:1;padding:13px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+:where(#kbroot) .seg button{flex:1;min-height:44px;padding:13px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
   background:rgba(255,255,255,.04);color:var(--dim);font-size:11.5px;font-weight:800;letter-spacing:.13em;
   cursor:pointer;font-family:inherit;transition:.15s;-webkit-appearance:none;appearance:none}
 /* a locked choice stays readable — dimmed, not restyled, and the note under

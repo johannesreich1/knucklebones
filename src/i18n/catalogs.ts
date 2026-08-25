@@ -9,11 +9,26 @@ import { enGame } from './locales/en/game.ts';
 import { enLearn } from './locales/en/learn.ts';
 import { enOnline } from './locales/en/online.ts';
 import { enSettings } from './locales/en/settings.ts';
+import { esCommon } from './locales/es/common.ts';
+import { esGame } from './locales/es/game.ts';
+import { esLearn } from './locales/es/learn.ts';
+import { esOnline } from './locales/es/online.ts';
+import { esSettings } from './locales/es/settings.ts';
 import { frCommon } from './locales/fr/common.ts';
 import { frGame } from './locales/fr/game.ts';
 import { frLearn } from './locales/fr/learn.ts';
 import { frOnline } from './locales/fr/online.ts';
 import { frSettings } from './locales/fr/settings.ts';
+import { itCommon } from './locales/it/common.ts';
+import { itGame } from './locales/it/game.ts';
+import { itLearn } from './locales/it/learn.ts';
+import { itOnline } from './locales/it/online.ts';
+import { itSettings } from './locales/it/settings.ts';
+import { ptCommon } from './locales/pt/common.ts';
+import { ptGame } from './locales/pt/game.ts';
+import { ptLearn } from './locales/pt/learn.ts';
+import { ptOnline } from './locales/pt/online.ts';
+import { ptSettings } from './locales/pt/settings.ts';
 
 export const ENGLISH_CATALOG = {
   common: enCommon,
@@ -33,6 +48,20 @@ export const LOCALE_NAMESPACES = Object.freeze(
 
 export const RESOURCES = {
   en: ENGLISH_CATALOG,
+  pt: {
+    common: ptCommon,
+    settings: ptSettings,
+    game: ptGame,
+    online: ptOnline,
+    learn: ptLearn,
+  },
+  es: {
+    common: esCommon,
+    settings: esSettings,
+    game: esGame,
+    online: esOnline,
+    learn: esLearn,
+  },
   de: {
     common: deCommon,
     settings: deSettings,
@@ -46,5 +75,12 @@ export const RESOURCES = {
     game: frGame,
     online: frOnline,
     learn: frLearn,
+  },
+  it: {
+    common: itCommon,
+    settings: itSettings,
+    game: itGame,
+    online: itOnline,
+    learn: itLearn,
   },
 } as const;

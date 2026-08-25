@@ -1,5 +1,10 @@
-const IDS = ['en', 'de', 'fr'];
-const NAMES = ['English', 'Deutsch', 'Français'];
+import { LOCALE_REGISTRY } from '../../../../src/i18n/locale.ts';
+
+const IDS = LOCALE_REGISTRY.map(({ id }) => id);
+const NAMES = LOCALE_REGISTRY.map(({ selfName }) => selfName);
+const LANGUAGE_TAGS = Object.fromEntries(
+  LOCALE_REGISTRY.map(({ id, languageTag }) => [id, languageTag]),
+);
 
 export async function runLanguageSelectorScenarios(suite) {
   const { page, ctx, F, out, check } = suite;
@@ -83,7 +88,7 @@ export async function runLanguageSelectorScenarios(suite) {
   const first = (initial + 1) % IDS.length;
   check(initial >= 0 && out.languageFirstChoice.override === IDS[first]
     && out.languageFirstChoice.value === NAMES[first]
-    && out.languageFirstChoice.lang === IDS[first],
+    && out.languageFirstChoice.lang === LANGUAGE_TAGS[IDS[first]],
         'first arrow press did not advance from the effective locale into an explicit override',
         { initial: out.languagePicker.value, result: out.languageFirstChoice });
 
@@ -97,7 +102,7 @@ export async function runLanguageSelectorScenarios(suite) {
   check(forward.length === IDS.length
     && forward.every((name, offset) => name === NAMES[(first + offset + 1) % IDS.length])
     && forward.at(-1) === NAMES[first],
-        'language next arrow does not wrap through en/de/fr', out.languageWrap);
+        'language next arrow does not wrap through every registered locale', out.languageWrap);
 
   await page.tap('#languagePrevious');
   await page.waitForTimeout(100);

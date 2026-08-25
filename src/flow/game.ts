@@ -122,7 +122,6 @@ async function rollDice(): Promise<void> {
     },
   });
 }
-
 /* What the status line says while a player is choosing a column. Two callers:
    the turn machine, and a spell handing the turn back after a cast. The rune
    rail wakes up here too — a choice starting is exactly when it becomes live,
@@ -130,9 +129,10 @@ async function rollDice(): Promise<void> {
 export function sayChoose(): void {
   const who = S.turn;
   const duo = S.mode === 'duo';
-  setStatus(() => duo
-    ? t('game', 'status.playerChoose', { player: nameOf(who) })
-    : t('game', 'status.chooseColumn'), who);
+  setStatus(duo
+    ? { visible: () => t('game', 'status.playerChooseCompact', { player: nameOf(who) }),
+      accessible: () => t('game', 'status.playerChoose', { player: nameOf(who) }) }
+    : () => t('game', 'status.chooseColumn'), who);
   renderSpells();
 }
 const gameOver = (): boolean => S.phase === 'over';

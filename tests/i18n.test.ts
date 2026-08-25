@@ -12,6 +12,7 @@ import {
   ladderGroupCompactName,
   ladderGroupCopy,
   ladderGroupName,
+  localeLanguageTag,
   languageOverride,
   localeSelfName,
   modeCopy,
@@ -30,23 +31,37 @@ import {
 import { onlineMessage, repaintOnlineMessage } from '../src/online/message-copy.ts';
 import { claimPlayerNames, nameOf } from '../src/ui/identity.ts';
 
-assert.deepEqual(SUPPORTED_LOCALES, ['en', 'de', 'fr']);
-assert.deepEqual(LOCALE_REGISTRY.map(({ selfName }) => selfName), ['English', 'Deutsch', 'Français']);
+assert.deepEqual(SUPPORTED_LOCALES, LOCALE_REGISTRY.map(({ id }) => id));
+assert.deepEqual(LOCALE_REGISTRY, [
+  { id: 'en', languageTag: 'en', selfName: 'English' },
+  { id: 'pt', languageTag: 'pt-BR', selfName: 'Português (Brasil)' },
+  { id: 'es', languageTag: 'es', selfName: 'Español' },
+  { id: 'de', languageTag: 'de', selfName: 'Deutsch' },
+  { id: 'fr', languageTag: 'fr', selfName: 'Français' },
+  { id: 'it', languageTag: 'it', selfName: 'Italiano' },
+]);
 assert.equal(localeSelfName('fr'), 'Français');
+assert.equal(localeLanguageTag('pt'), 'pt-BR');
 assert.equal(normalizeLanguageTag(' DE_at '), 'de');
 assert.deepEqual(
   navigatorLanguageTags({ languages: ['es-MX', 'de-AT', 'es-MX'], language: 'fr-FR' }),
   ['es-MX', 'de-AT', 'fr-FR'],
 );
-assert.equal(resolveSystemLocale(['es-MX', 'de-AT', 'fr-FR']), 'de');
+assert.equal(resolveSystemLocale(['es-MX', 'de-AT', 'fr-FR']), 'es');
 assert.equal(resolveSystemLocale(['fr-FR']), 'fr');
 assert.equal(resolveSystemLocale(['en-GB']), 'en');
 assert.equal(resolveSystemLocale(['en-US']), 'en');
-assert.equal(resolveSystemLocale(['pt-BR']), 'en');
+assert.equal(resolveSystemLocale(['pt-BR']), 'pt');
+assert.equal(resolveSystemLocale(['pt-PT']), 'pt');
+assert.equal(resolveSystemLocale(['it-CH']), 'it');
+assert.equal(resolveSystemLocale(['nl-NL']), 'en');
 assert.equal(resolveLocale('fr', ['de-DE']), 'fr');
 assert.equal(resolveLocale(null, ['de-DE']), 'de');
 assert.equal(isLanguageOverride(null), true);
 assert.equal(isLanguageOverride('en'), true);
+assert.equal(isLanguageOverride('pt'), true);
+assert.equal(isLanguageOverride('es'), true);
+assert.equal(isLanguageOverride('it'), true);
 assert.equal(isLanguageOverride('system'), false);
 assert.equal(isLanguageOverride('en-GB'), false);
 
@@ -79,11 +94,24 @@ assert.match(trustedStaticRich('learn', 'rules.goal.body'), /<b>/u);
 assert.throws(() => trustedStaticRich('common', 'build'), /must be static/u);
 
 const numberOptions = { minimumFractionDigits: 1 } as const;
-assert.equal(formatNumber(1234.5, numberOptions), new Intl.NumberFormat('de', numberOptions).format(1234.5));
 const dateOptions = { dateStyle: 'medium', timeZone: 'UTC' } as const;
-assert.equal(formatDate(Date.UTC(2026, 7, 24), dateOptions),
-  new Intl.DateTimeFormat('de', dateOptions).format(Date.UTC(2026, 7, 24)));
-assert.equal(formatRelativeTime(-1, 'day'), new Intl.RelativeTimeFormat('de').format(-1, 'day'));
+for (const { id, languageTag } of LOCALE_REGISTRY) {
+  setLanguageOverride(id);
+  assert.equal(formatNumber(1234.5, numberOptions),
+    new Intl.NumberFormat(languageTag, numberOptions).format(1234.5));
+  assert.equal(formatDate(Date.UTC(2026, 7, 24), dateOptions),
+    new Intl.DateTimeFormat(languageTag, dateOptions).format(Date.UTC(2026, 7, 24)));
+  assert.equal(formatRelativeTime(-1, 'day'),
+    new Intl.RelativeTimeFormat(languageTag).format(-1, 'day'));
+}
+
+setLanguageOverride('pt');
+assert.equal(t('settings', 'language'), 'Idioma');
+setLanguageOverride('es');
+assert.equal(t('game', 'practice.gameMode'), 'Modo de juego');
+setLanguageOverride('it');
+assert.equal(t('online', 'profile.ladderPoints'), 'Punti classifica');
+setLanguageOverride('de');
 
 assert.equal(modeCopy('random').name, 'ZUFALL');
 assert.equal(spellCopy('none').name, 'KEINE');

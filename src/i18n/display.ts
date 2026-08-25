@@ -37,7 +37,10 @@ export function modeCopy(id: string): ModeCopy {
   };
 }
 
-export interface SpellCopy extends ModeCopy { readonly aim: string }
+export interface SpellCopy extends ModeCopy {
+  readonly aim: string;
+  readonly aimCompact: string;
+}
 
 export function spellCopy(id: string): SpellCopy {
   const key = stableId(SPELL_COPY_IDS, id, 'spell');
@@ -47,6 +50,12 @@ export function spellCopy(id: string): SpellCopy {
     blurb: t('game', `runes.${key}.blurb`),
     detail: t('game', `runes.${key}.detail`),
     aim: t('game', `runes.${key}.aim`),
+    /* PILFER's full instruction cannot fit the landscape status lane in every
+       language. Other runes keep one visible/accessibility string until a
+       measured surface needs its own explicit compact copy. */
+    aimCompact: key === 'pilfer'
+      ? t('game', 'runes.pilfer.aimCompact')
+      : t('game', `runes.${key}.aim`),
   };
 }
 

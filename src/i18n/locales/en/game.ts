@@ -5,6 +5,9 @@ export const enGame = {
     player1: 'PLAYER 1',
     player2: 'PLAYER 2',
   },
+  widget: {
+    title: 'Playable Knucklebones dice game: two 3 by 3 grids, tap a column to place your rolled die.',
+  },
   action: {
     finish: 'Finish',
     nextDuel: 'Next duel',
@@ -16,6 +19,7 @@ export const enGame = {
     yourRoll: 'Your roll',
     aiRoll: 'AI roll',
     playerChoose: '{{player}} — tap a column',
+    playerChooseCompact: '{{player}} — choose',
     chooseColumn: 'Tap a column',
     aiThinking: 'AI thinking',
     aiSpell: 'AI — {{spell}}',
@@ -233,6 +237,7 @@ export const enGame = {
       blurb: 'Steal the top die of an enemy column.',
       detail: 'Drag onto an enemy column: its top die crosses to your facing column and lands without striking. Needs room on your side, and a Column Shield cannot be robbed. WARD intercepts the cast and breaks, so no die crosses. One cast per game.',
       aim: 'Tap an enemy column',
+      aimCompact: 'Enemy column',
     },
     anvil: {
       name: 'ANVIL',

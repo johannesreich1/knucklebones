@@ -8,6 +8,9 @@ export const deGame = {
     player1: 'SPIELER 1',
     player2: 'SPIELER 2',
   },
+  widget: {
+    title: 'Spielbares Knucklebones-Würfelspiel: zwei 3-mal-3-Raster; tippe auf eine Spalte, um deinen Wurf zu platzieren.',
+  },
   action: {
     finish: 'Beenden',
     nextDuel: 'Nächstes Duell',
@@ -19,6 +22,7 @@ export const deGame = {
     yourRoll: 'Dein Wurf',
     aiRoll: 'KI-Wurf',
     playerChoose: '{{player}} — Spalte antippen',
+    playerChooseCompact: '{{player}} — wählen',
     chooseColumn: 'Spalte antippen',
     aiThinking: 'KI denkt nach',
     aiSpell: 'KI — {{spell}}',
@@ -236,6 +240,7 @@ export const deGame = {
       blurb: 'Stiehl den obersten Würfel einer gegnerischen Spalte.',
       detail: 'Ziehe auf eine gegnerische Spalte: Ihr oberster Würfel wechselt in deine gegenüberliegende Spalte und landet ohne Angriff. Deine Seite braucht Platz, ein Spaltenschild kann nicht beraubt werden. SCHUTZ fängt den Einsatz ab und bricht — kein Würfel wechselt die Seite. Ein Einsatz pro Spiel.',
       aim: 'Gegnerische Spalte antippen',
+      aimCompact: 'Gegnerische Spalte',
     },
     anvil: {
       name: 'AMBOSS',

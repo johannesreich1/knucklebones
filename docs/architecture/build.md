@@ -39,6 +39,24 @@ or the root README.
 the PWA precache list from actual output. A build assertion must fail when an
 expected substitution or artifact is missing.
 
+Public legal pages are generated from `src/legal/`, never maintained as a
+second prose copy under `public/`. The checked-in publication state is `draft`,
+which suppresses in-app legal navigation and emits no legal files. A `ready`
+build validates every required fact and review flag, then writes the 24
+locale/page routes into `dist/pwa/` before the hosted file snapshot, build hash,
+and worker precache list are calculated. A missing fact, locale chrome label,
+page introduction, or structured body block makes the build fail; it cannot
+produce an empty or partially populated policy.
+
+The worker treats only the root and the generator-supplied legal routes as
+cacheable pages. It normalizes `/` and `/index.html` to one app-shell key and
+keeps every legal route under its own trailing-slash key. Unknown navigations
+go to the network without a Home fallback, and failed assets never fall back to
+HTML. This prevents a legal visit from poisoning offline Home and prevents a
+missing JavaScript file from being answered with the app shell.
+The fact/review blockers and ordered database, client, legal-publication, and
+store-metadata release steps live in `docs/LEGAL.md`.
+
 ## Native wrapper
 
 The Capacitor configuration, pinned dependency lock, Game Center plugin, iOS
@@ -149,7 +167,7 @@ plan, metadata-ownership, and approval procedure lives in
 
 Generated marketing images are compiler-like outputs for this workflow. If a
 product/design/localization change affects one screenshot state, regenerate
-that state for all three locales and both devices in the same change; shared
+that state for all three managed campaign locales and both devices in the same change; shared
 layout, typography, framing, or pipeline changes require the complete 42-raw /
 36-final matrix. Updated raw frames, exports, checksums, provenance, and contact
 sheets must ship beside the source change. A stale preview is a failed handoff.

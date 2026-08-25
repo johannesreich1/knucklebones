@@ -9,6 +9,7 @@ import {
 import { loadStats, saveStats } from '../src/persist.ts';
 import { S } from '../src/state.ts';
 import { createAccountPreferenceSync } from '../src/online/preferences.ts';
+import { SUPPORTED_LOCALES } from '../src/i18n/index.ts';
 
 const valid: UserPreferences = {
   localeOverride: null,
@@ -21,11 +22,13 @@ const valid: UserPreferences = {
 };
 
 assert.deepEqual(parseUserPreferences(valid), valid);
-assert.deepEqual(parseUserPreferences({ ...valid, localeOverride: 'de' }), { ...valid, localeOverride: 'de' });
-assert.deepEqual(parseUserPreferences({ ...valid, localeOverride: 'fr' }), { ...valid, localeOverride: 'fr' });
+for (const localeOverride of SUPPORTED_LOCALES) {
+  assert.deepEqual(parseUserPreferences({ ...valid, localeOverride }), { ...valid, localeOverride });
+}
 assert.equal(parseUserPreferences({ ...valid, localeOverride: 'system' }), null);
 assert.equal(parseUserPreferences({ ...valid, localeOverride: 'en-US' }), null);
-assert.equal(parseUserPreferences({ ...valid, localeOverride: 'es' }), null);
+assert.equal(parseUserPreferences({ ...valid, localeOverride: 'pt-BR' }), null);
+assert.equal(parseUserPreferences({ ...valid, localeOverride: 'nl' }), null);
 assert.equal(parseUserPreferences({ ...valid, sound: 'off' }), null);
 assert.equal(parseUserPreferences({ ...valid, p1Hue: 'pink' }), null);
 assert.equal(parseUserPreferences({ ...valid, p2Hue: 'blue' }), null);

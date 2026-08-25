@@ -36,10 +36,11 @@ export function showAwayAutoPlayCountdown(options: {
   const tick = (): void => {
     if (!options.active()) return;
     const left = Math.max(0, Math.ceil((13_000 - (Date.now() - options.lastMoveAt())) / 1000));
-    setStatus(() => left > 0 ? t('online', 'play.awayAutoPlay', {
-      count: left,
-      formatted: formatNumber(left),
-    }) : t('online', 'play.autoPlay'), options.who);
+    const values = { count: left, formatted: formatNumber(left) };
+    setStatus(left > 0 ? {
+      visible: () => t('online', 'play.awayAutoPlayCompact', values),
+      accessible: () => t('online', 'play.awayAutoPlay', values),
+    } : () => t('online', 'play.autoPlay'), options.who);
     if (left > 0) setTimeout(tick, 500);
   };
   tick();

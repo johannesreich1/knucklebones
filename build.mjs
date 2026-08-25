@@ -14,6 +14,9 @@
 import { execFileSync } from 'child_process';
 import { createHash } from 'crypto';
 import { readFileSync, writeFileSync, mkdirSync, rmSync, cpSync, readdirSync, statSync } from 'fs';
+import { dirname } from 'path';
+import { LEGAL_RELEASE } from './src/legal/config.ts';
+import { generateLegalPageFiles, generatedLegalPaths } from './src/legal/static-pages.ts';
 
 const die = m => { console.error('BUILD FAILED: ' + m); process.exit(1); };
 const nodeMajor = Number(process.versions.node.split('.')[0]);
@@ -65,6 +68,18 @@ runNode('node_modules/vite/bin/vite.js', ['build']);
 runNode('node_modules/vite/bin/vite.js', ['build', '--config', 'vite.pwa.config.mjs']);
 runNode('node_modules/vite/bin/vite.js', ['build', '--config', 'vite.widget.config.mjs']);
 
+/* Public legal pages are generated from the same typed documents as the app,
+   after Vite has assembled the hosted tree but before its file snapshot and
+   content hash. Draft is fail-closed: no legal directory survives. */
+rmSync('dist/pwa/legal', { recursive: true, force: true });
+const legalPageFiles = generateLegalPageFiles(LEGAL_RELEASE);
+for (const [name, html] of legalPageFiles) {
+  const output = `dist/pwa/${name}`;
+  mkdirSync(dirname(output), { recursive: true });
+  writeFileSync(output, html);
+}
+const LEGAL_PATHS = generatedLegalPaths(LEGAL_RELEASE);
+
 // ---- assemble every target with fixed placeholders, then hash those bytes ----
 const single = readFileSync('dist/main/index.html', 'utf8');
 const mainFiles = filesIn('dist/main');
@@ -75,12 +90,17 @@ const pwaPageDev = sub(readFileSync('dist/pwa/index.html', 'utf8'), '</head>',
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 </head>`, 'pwa link injection');
+const canonicalAsset = file => file.startsWith('legal/') && file.endsWith('/index.html')
+  ? `./${file.slice(0, -'index.html'.length)}`
+  : `./${file}`;
 const ASSETS = ['./', ...[...pwaFiles.keys()]
   .filter(file => file !== 'sw.js')
-  .map(file => `./${file}`)];
+  .map(canonicalAsset)];
 if (!ASSETS.some(asset => asset.includes('/assets/'))) die('expected hashed assets in the pwa bundle');
 const pwaSwDev = subRe(readFileSync('public/sw.js', 'utf8'), /const ASSETS = \[[\s\S]*?\];/,
   'const ASSETS = ' + JSON.stringify(ASSETS, null, 2) + ';', 'sw precache list');
+const pwaSwWithRoutes = subRe(pwaSwDev, /const LEGAL_PATHS = \[[\s\S]*?\];/,
+  'const LEGAL_PATHS = ' + JSON.stringify(LEGAL_PATHS, null, 2) + ';', 'sw legal route list');
 
 const wpage = readFileSync('dist/widget/widget-page.html', 'utf8');
 const styles = [...wpage.matchAll(/<style[^>]*>[\s\S]*?<\/style>/g)].map(match => match[0]);
@@ -90,7 +110,7 @@ if (!scriptM || scriptM[1].length < 1000) die('widget inline script');
 const fragmentDev =
   styles.join('\n') + '\n'
   + '<div id="kbroot" data-build="dev">\n'
-  + '<h2 class="sr-only">Playable Knucklebones dice game: two 3 by 3 grids, tap a column to place your rolled die.</h2>\n'
+  + '<h2 class="sr-only" data-i18n="game:widget.title">Playable Knucklebones dice game: two 3 by 3 grids, tap a column to place your rolled die.</h2>\n'
   + '</div>\n'
   + '<script type="module">\n' + scriptM[1] + '\n</script>\n';
 for (const needle of ['id="kbroot"', 'data-build="dev"', 'insertAdjacentHTML']) {
@@ -108,7 +128,7 @@ const harnessDev =
 const tagInputs = new Map([['standalone/knucklebones-neon.html', single]]);
 for (const [name, content] of mainFiles) tagInputs.set(`native/www/${name}`, content);
 for (const [name, content] of pwaFiles) {
-  tagInputs.set(`pwa/${name}`, name === 'index.html' ? pwaPageDev : name === 'sw.js' ? pwaSwDev : content);
+  tagInputs.set(`pwa/${name}`, name === 'index.html' ? pwaPageDev : name === 'sw.js' ? pwaSwWithRoutes : content);
 }
 tagInputs.set('widget.html', fragmentDev);
 tagInputs.set('harness.html', harnessDev);
@@ -136,10 +156,10 @@ rmSync('pwa', { recursive: true, force: true });
 cpSync('dist/pwa', 'pwa', { recursive: true });
 writeFileSync('pwa/index.html', stamp(pwaPageDev, 'pwa build tag'));
 writeFileSync('pwa/sw.js',
-  sub(pwaSwDev, "const VERSION = 'kb-dev';", `const VERSION = 'kb-${HASH}';`, 'sw cache key'));
+  sub(pwaSwWithRoutes, "const VERSION = 'kb-dev';", `const VERSION = 'kb-${HASH}';`, 'sw cache key'));
 
 // ---- widget fragment: extracted from our own built page, structure guaranteed ----
 writeFileSync('widget.html', stamp(fragmentDev, 'widget build tag'));
 writeFileSync('harness.html', stamp(harnessDev, 'harness build tag'));
 
-console.log(`build ok — tag ${HASH}, sw cache key kb-${HASH}, ${ASSETS.length} precached files`);
+console.log(`build ok — tag ${HASH}, sw cache key kb-${HASH}, ${ASSETS.length} precached files, ${LEGAL_PATHS.length} legal routes`);

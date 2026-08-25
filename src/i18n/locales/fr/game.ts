@@ -8,6 +8,9 @@ export const frGame = {
     player1: 'JOUEUR 1',
     player2: 'JOUEUR 2',
   },
+  widget: {
+    title: 'Jeu de dés Knucklebones jouable : deux grilles de 3 sur 3 ; touchez une colonne pour placer le dé lancé.',
+  },
   action: {
     finish: 'Finir',
     nextDuel: 'Duel suivant',
@@ -19,6 +22,7 @@ export const frGame = {
     yourRoll: 'Votre lancer',
     aiRoll: 'Lancer de l’IA',
     playerChoose: '{{player}} — choisissez',
+    playerChooseCompact: '{{player}} — choisissez',
     chooseColumn: 'Touchez une colonne',
     aiThinking: 'L’IA réfléchit',
     aiSpell: 'IA — {{spell}}',
@@ -236,6 +240,7 @@ export const frGame = {
       blurb: 'Volez le dé supérieur d’une colonne adverse.',
       detail: 'Glissez sur une colonne adverse : son dé supérieur passe dans votre colonne en face et se pose sans frapper. Votre côté doit avoir de la place et un bouclier de colonne ne peut pas être volé. GARDE intercepte alors le sort et se brise : aucun dé ne traverse. Un usage par partie.',
       aim: 'Touchez une colonne adverse',
+      aimCompact: 'Colonne adverse',
     },
     anvil: {
       name: 'ENCLUME',

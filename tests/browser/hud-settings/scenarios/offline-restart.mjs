@@ -104,7 +104,7 @@ function checkAskLayout(check, label, shape) {
 }
 
 export async function runOfflineRestartScenarios(suite) {
-  const { page, out, check } = suite;
+  const { page, out, check, LOCALE_REGISTRY, RESOURCES } = suite;
   const originalViewport = page.viewportSize();
 
   /* Selectors still promise RANDOM, but the active duel has already resolved
@@ -183,12 +183,15 @@ export async function runOfflineRestartScenarios(suite) {
       sameNodes: ids.every((id) => document.getElementById(id) === window.__askLocaleNodes[id]),
     };
   });
-  check(out.askLocaleRepaint.locale === 'de'
-    && out.askLocaleRepaint.head === 'Dieses Duell beenden?'
+  const englishIndex = LOCALE_REGISTRY.findIndex(({ id }) => id === 'en');
+  const nextLocale = LOCALE_REGISTRY[(englishIndex + 1) % LOCALE_REGISTRY.length].id;
+  const nextLeave = RESOURCES[nextLocale].game.leave;
+  check(out.askLocaleRepaint.locale === nextLocale
+    && out.askLocaleRepaint.head === nextLeave.quitTitle
     && out.askLocaleRepaint.body !== out.askLocaleRepaint.before.body
     && out.askLocaleRepaint.order.join(' -> ')
-      === 'Weiterspielen -> Duell neu starten -> Duell beenden',
-  'visible ask-card did not repaint all copy in German', out.askLocaleRepaint);
+      === [nextLeave.keepPlaying, nextLeave.restart, nextLeave.quit].join(' -> '),
+  `visible ask-card did not repaint all copy in ${nextLocale}`, out.askLocaleRepaint);
   check(out.askLocaleRepaint.sameNodes && out.askLocaleRepaint.focus === 'btnAskAlt',
     'ask-card locale repaint replaced a node or lost focus', out.askLocaleRepaint);
 

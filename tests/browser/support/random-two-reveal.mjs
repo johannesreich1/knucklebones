@@ -1,6 +1,14 @@
 // Player-visible RANDOM ×2 contracts shared by the broad reveal owner test.
 // Keep the full two-beat story together: each honest shuffle names its owner,
 // deals the card it showed, and reaches one compact final countdown.
+import {
+  gameCopyFor,
+  localeCycleFrom,
+  observeLocale,
+  repaintRandomTwoOwner,
+  verifyRandomTwoLocaleRepaint,
+} from './locale-reveal.mjs';
+
 async function inspectActiveHeading(page) {
   return page.evaluate(() => {
     const title = document.getElementById('wheelTitle');
@@ -45,6 +53,9 @@ async function inspectActiveHeading(page) {
 }
 
 export async function verifyRandomTwoReveal(page, out, check) {
+  const initialLocale = await observeLocale(page);
+  const [beforeLocale, afterLocale] = localeCycleFrom(initialLocale, 1);
+  const beforeGame = gameCopyFor(beforeLocale);
   await page.evaluate(() => {
     const k = window.__kb;
     k.goHome(); k.S.mode = 'cpu'; k.openPractice();
@@ -108,48 +119,7 @@ export async function verifyRandomTwoReveal(page, out, check) {
   null, { timeout: 1000 });
   /* Locale repaint must update the new eyebrow in place while the second deck
      is still moving. Rebuilding either node would restart the visual story. */
-  const localizedOwner = await page.evaluate(() => {
-    const owner = document.querySelector('#wheelSettled .wowner');
-    const activeOwner = document.getElementById('wheelOwner');
-    const titleCopy = document.querySelector('#wheelTitle .wtitlecopy');
-    const pill = document.querySelector('#wheelSettled .wpill');
-    const stage = document.getElementById('wheelStage');
-    const moving = [...stage.querySelectorAll('*')]
-      .flatMap((node) => node.getAnimations()).find((animation) => animation.playState === 'running') ?? null;
-    const state = () => JSON.stringify({
-      gen: window.__kb.S.gen,
-      scoring: window.__kb.S.scoring,
-      spellCharges: window.__kb.S.spellCharges,
-      boards: window.__kb.S.boards,
-    });
-    const before = {
-      owner: owner.textContent.trim(), activeOwner: activeOwner.textContent.trim(),
-      pill: pill.textContent.trim(), title: titleCopy.textContent.trim(),
-    };
-    const stateBefore = state();
-    document.getElementById('languageNext').click();
-    const after = {
-      owner: owner.textContent.trim(), activeOwner: activeOwner.textContent.trim(),
-      pill: pill.textContent.trim(), title: titleCopy.textContent.trim(),
-    };
-    const sameOwner = document.querySelector('#wheelSettled .wowner') === owner;
-    const sameActiveOwner = document.getElementById('wheelOwner') === activeOwner;
-    const sameTitleCopy = document.querySelector('#wheelTitle .wtitlecopy') === titleCopy;
-    const samePill = document.querySelector('#wheelSettled .wpill') === pill;
-    const sameStage = document.getElementById('wheelStage') === stage;
-    const sameAnimation = !moving || [...stage.querySelectorAll('*')]
-      .flatMap((node) => node.getAnimations()).includes(moving);
-    document.getElementById('languageNext').click();
-    document.getElementById('languageNext').click();
-    const restored = {
-      owner: owner.textContent.trim(),
-      activeOwner: activeOwner.textContent.trim(),
-      title: titleCopy.textContent.trim(),
-    };
-    return { before, after, restored, hadRunningAnimation: !!moving,
-      sameOwner, sameActiveOwner, sameTitleCopy, samePill, sameStage, sameAnimation,
-      stateBefore, stateAfter: state() };
-  });
+  const localizedOwner = await repaintRandomTwoOwner(page, beforeLocale);
   await page.waitForSelector('.rdealt.up', { timeout: 12000 });
   const secondMs = Date.now() - secondStarted;
   await page.waitForFunction(() => document.querySelector('#ovWheel')?.classList.contains('holding'),
@@ -174,10 +144,13 @@ export async function verifyRandomTwoReveal(page, out, check) {
   const dual = { firstMs, secondMs, firstHeading, first, secondHeading, secondDeck,
     localizedOwner, second, played };
   out.dual = dual;
-  check(dual.first.title === 'RUNE FOR' && dual.firstHeading.owner === 'YOU'
+  check(dual.first.title === beforeGame.reveal.runeFor
+      && dual.firstHeading.owner === beforeGame.player.you
       && dual.firstHeading.inlineColor === 'var(--p1)'
-      && dual.second.title === 'RUNE FOR' && dual.second.owner === 'AI'
-      && dual.secondHeading.prompt === 'RUNE FOR' && dual.secondHeading.owner === 'AI'
+      && dual.second.title === beforeGame.reveal.runeFor
+      && dual.second.owner === beforeGame.player.ai
+      && dual.secondHeading.prompt === beforeGame.reveal.runeFor
+      && dual.secondHeading.owner === beforeGame.player.ai
       && dual.secondHeading.inlineColor === 'var(--p2)'
       && !dual.firstHeading.ownerHidden && !dual.secondHeading.ownerHidden
       && dual.firstHeading.ownerClass && dual.secondHeading.ownerClass
@@ -187,7 +160,7 @@ export async function verifyRandomTwoReveal(page, out, check) {
       && dual.secondHeading.promptOwnerGap >= 5 && dual.secondHeading.promptOwnerGap <= 8
       && dual.firstHeading.titleStageGap >= 5 && dual.secondHeading.titleStageGap >= 5
       && dual.firstHeading.visualCardGap >= 5.5 && dual.secondHeading.visualCardGap >= 5.5
-      && dual.secondDeck.settledOwner === 'YOU'
+      && dual.secondDeck.settledOwner === beforeGame.player.you
       && dual.secondDeck.ownerOutsidePill && dual.secondDeck.ownerAbovePill
       && dual.secondDeck.ownerGap >= 5 && dual.secondDeck.ownerGap <= 8
       && dual.secondDeck.ownerFontSize === 10
@@ -204,21 +177,7 @@ export async function verifyRandomTwoReveal(page, out, check) {
       && dual.secondDeck.dot?.color === dual.secondDeck.dot?.ownerColor
       && dual.secondDeck.dot?.ownerColor === dual.secondDeck.dot?.playerColor,
     'the two shuffle beats do not identify which player receives each rune', dual);
-  check(dual.localizedOwner.before.owner === 'YOU'
-      && dual.localizedOwner.before.activeOwner === 'AI'
-      && dual.localizedOwner.before.title === 'RUNE FOR'
-      && dual.localizedOwner.after.owner === 'DU'
-      && dual.localizedOwner.after.activeOwner === 'KI'
-      && dual.localizedOwner.after.title === 'RUNE FÜR'
-      && dual.localizedOwner.restored.owner === dual.localizedOwner.before.owner
-      && dual.localizedOwner.restored.activeOwner === dual.localizedOwner.before.activeOwner
-      && dual.localizedOwner.restored.title === dual.localizedOwner.before.title
-      && dual.localizedOwner.hadRunningAnimation
-      && dual.localizedOwner.sameOwner && dual.localizedOwner.sameActiveOwner
-      && dual.localizedOwner.sameTitleCopy && dual.localizedOwner.samePill
-      && dual.localizedOwner.sameStage && dual.localizedOwner.sameAnimation
-      && dual.localizedOwner.stateAfter === dual.localizedOwner.stateBefore,
-    'locale repaint rebuilt, skipped, or restarted the owner eyebrow during the second shuffle', dual.localizedOwner);
+  verifyRandomTwoLocaleRepaint(dual.localizedOwner, beforeLocale, afterLocale, check);
   check(dual.first.card === dual.played.me && dual.second.card === dual.played.ai
       && dual.played.me !== dual.played.ai && dual.played.selector === 'random2',
     'the cards shown were not the distinct per-player hands actually dealt', dual);

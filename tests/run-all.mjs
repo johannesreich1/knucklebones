@@ -29,6 +29,9 @@ const FILE_SUITES = [
   { name: 'release-main', file: 'tests/release-main.test.mjs' },
   { name: 'native-startup-browser', file: 'tests/browser/native-startup.mjs' },
   { name: 'localization-browser', file: 'tests/browser/localization/run.mjs' },
+  { name: 'online-localization-browser', file: 'tests/browser/online-localization/run.mjs' },
+  { name: 'legal-browser', file: 'tests/browser/legal.mjs' },
+  { name: 'service-worker-routing', file: 'tests/service-worker.test.mjs' },
   { name: 'test8', file: 'tests/browser/responsive/run.mjs' },
   'test9', 'test10',
   { name: 'test11', file: 'tests/browser/hud-settings/run.mjs' },
@@ -47,7 +50,10 @@ const SERVED_SUITES = [
   'test22',
 ]; // read pwa/ over the shared server, read-only — poolable
 // testupdate reads that same server but MUTATES pwa/ — it always runs alone, last
-const SUITE_TIMEOUT_MS = 360_000;   // must clear test6/test10's worst-case random endgames on slow CI
+/* The exhaustive localization worker now covers six locales, four standalone
+   viewports, three widget widths, and every live mode/rune badge. Keep enough
+   headroom for a locally parallel Chromium pool; CI remains sequential. */
+const SUITE_TIMEOUT_MS = 480_000;
 const argJobs = process.argv.indexOf('--jobs');
 const JOBS = Math.max(1, +(argJobs > 0 ? process.argv[argJobs + 1]
   : process.env.KB_JOBS ?? (process.env.CI ? 1 : 4)) || 1);
@@ -126,7 +132,7 @@ try {
   };
   await pool([
     // pure-Node gates (no browser): seeded dice determinism + PvP match core
-    ...['architecture', 'preferences', 'i18n', 'i18n-catalog', 'production-migrations', 'dice', 'match', 'modes', 'spells', 'scoring-ward', 'spell-ai', 'scoring-ward-ai', 'rune-matchups', 'rune-matchup-analysis', 'rune-ward-sensitivity', 'rune-sunder-sensitivity', 'online-api', 'gcauth', 'edge-handlers', 'edge-settlement', 'cssgraph', 'cssreach', 'design-library', 'ladder', 'ladderbench', 'botbench', 'fnsync', 'iosship', 'androidship', 'apple-identity', 'native-startup', 'live-safety', 'gate-lock'].map(node),
+    ...['architecture', 'preferences', 'i18n', 'i18n-catalog', 'i18n-length-report', 'legal', 'production-migrations', 'dice', 'match', 'modes', 'spells', 'scoring-ward', 'spell-ai', 'scoring-ward-ai', 'rune-matchups', 'rune-matchup-analysis', 'rune-ward-sensitivity', 'rune-sunder-sensitivity', 'online-api', 'gcauth', 'edge-handlers', 'edge-settlement', 'cssgraph', 'cssreach', 'design-library', 'ladder', 'ladderbench', 'botbench', 'fnsync', 'iosship', 'androidship', 'apple-identity', 'native-startup', 'live-safety', 'gate-lock'].map(node),
     ...FILE_SUITES.map(suite),
     // bench3 is a benchmark, not a pass/fail suite — but its helper-vs-inline
     // scoring equivalence check is a real correctness assertion.

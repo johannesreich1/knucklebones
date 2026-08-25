@@ -8,6 +8,7 @@ import {
 import {
   SUPPORTED_LOCALES,
   isLanguageOverride,
+  localeLanguageTag,
   navigatorLanguageTags,
   resolveLocale,
   resolveSystemLocale,
@@ -155,14 +156,14 @@ export function formatNumber(
   value: number | bigint,
   options?: Intl.NumberFormatOptions,
 ): string {
-  return new Intl.NumberFormat(activeLocale, options).format(value);
+  return new Intl.NumberFormat(localeLanguageTag(activeLocale), options).format(value);
 }
 
 export function formatDate(
   value: Date | number,
   options?: Intl.DateTimeFormatOptions,
 ): string {
-  return new Intl.DateTimeFormat(activeLocale, options).format(value);
+  return new Intl.DateTimeFormat(localeLanguageTag(activeLocale), options).format(value);
 }
 
 export function formatRelativeTime(
@@ -170,5 +171,5 @@ export function formatRelativeTime(
   unit: Intl.RelativeTimeFormatUnit,
   options?: Intl.RelativeTimeFormatOptions,
 ): string {
-  return new Intl.RelativeTimeFormat(activeLocale, options).format(value, unit);
+  return new Intl.RelativeTimeFormat(localeLanguageTag(activeLocale), options).format(value, unit);
 }

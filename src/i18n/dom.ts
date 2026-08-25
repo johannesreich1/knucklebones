@@ -10,6 +10,7 @@ import {
   translationExists,
   trustedStaticRich,
 } from './runtime.ts';
+import { localeLanguageTag } from './locale.ts';
 
 function isNamespace(value: string): value is LocaleNamespace {
   return LOCALE_NAMESPACES.includes(value as LocaleNamespace);
@@ -66,7 +67,8 @@ export type LocaleRootOwnership = 'document' | 'widget';
 
 function setRootLanguage(root: HTMLElement, ownership: LocaleRootOwnership): void {
   const owner = ownership === 'document' ? root.ownerDocument.documentElement : root;
-  owner.lang = effectiveLocale();
+  owner.lang = localeLanguageTag(effectiveLocale());
+  owner.dataset.locale = effectiveLocale();
 }
 
 /** Own `<html lang>` in the app, but only the widget root when embedded. */

@@ -11,7 +11,8 @@ decisions, and externally owned actions only. Detailed sprint history lives in
 | Web | Live at <https://knucklebones-asg.pages.dev>; pushes to `main` deploy through Cloudflare Pages immediately | `build.mjs`, `.github/workflows/ci.yml` |
 | Game | Local solo and two-player play, tutorial, modes, optional offline spells, and shared local/ranked board rendering | `src/core/`, `src/flow/`, `src/ui/` |
 | Ranked | Server-authoritative online play with guest accounts, human matchmaking, bot backfill, seasonal ladder points, history, profiles, and account deletion | `src/online/`, `supabase/functions/`, `docs/LADDER.md` |
-| Database | The repository migration directory ends at `20260824212535_match_command_retention.sql`; production records the ranked migrations through `20260823154719_matchmaking_read_grants.sql`, the player-settings base/locale rollout, and the match-command retention rollout, while Game Center remains held; a clean local reset and the focused lifecycle, command, command-retention, history-plan, grant, settlement, settings, and RLS pgTAP contracts pass locally | `supabase/migrations/`, `supabase/tests/` |
+| Localization | English, Brazilian Portuguese, Spanish, German, French, and Italian share one ordered registry, complete catalogs, native metadata, and measured eager/online mobile geometry | `src/i18n/`, `docs/architecture/localization.md` |
+| Database | The local migration ledger ends at `20260825161016_expand_player_settings_locales.sql`; its six-locale player-settings expansion is production-pending owner rollout. Production records the earlier player-settings base/locale and match-command-retention rollouts, while Game Center remains held; the focused database contracts cover the expanded allow-list locally | `supabase/migrations/`, `supabase/tests/` |
 | Builds | Hosted PWA, standalone HTML, widget, and Capacitor web assets come from the same source build | `build.mjs`, `docs/architecture/build.md` |
 | Native | Capacitor 8.5 iOS and Android projects are tracked; iOS supports 15+, Android installs on API 24+ while targeting API 36 | `native/`, `docs/architecture/build.md` |
 | Design | Product cards, open studies, and archived candidates are explicitly classified and recursively built from shared application CSS/renderers | `design/screens/`, `design/build.mjs` |
@@ -74,12 +75,14 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - Resolve the product name after a real trademark review. The current app id
   is `com.appavaria.knucklebones`; `tests/iosship.test.ts` consistency-gates
   the platform copies if a rename changes it.
-- Complete and publish German, English, and French legal/privacy text before
-  store submission. The natural-person name/address, Bavaria authority,
-  non-commercial hobby model, and low-risk content profile are recorded; a public
-  support/privacy email, verified provider retention/region facts, localized
-  public pages, an external account-deletion path, and territory review remain
-  open. The interim development policy is all ages with no gate; mandatory
+- The shared legal system now contains draft provider, privacy, support, and
+  deletion documents in all six supported languages, plus a deterministic
+  24-page static generator and isolated service-worker routes. Publication is
+  fail-closed at `draft`: no in-app links or public routes ship yet. A public
+  support/privacy email, verified provider regions/retention/transfer facts,
+  deletion verification workflow, translation and German legal review, and
+  territory review remain open. The interim development policy is all ages
+  with no gate; mandatory
   child/privacy and store-audience reconsideration remains a release blocker
   before App Store or Play production submission. Mainland China and Vietnam
   require game approvals and are excluded from the initial App Store scope
@@ -138,8 +141,10 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 |---|---|
 | Frontend flow or module boundaries | [`architecture/frontend.md`](architecture/frontend.md) |
 | CSS, responsive layout, or widget isolation | [`architecture/styles.md`](architecture/styles.md) |
+| Locale model, translated copy, or translation layout budgets | [`architecture/localization.md`](architecture/localization.md) |
 | Supabase, auth, RLS, migrations, or Edge Functions | [`architecture/backend.md`](architecture/backend.md), `supabase/DESIGN.md` |
 | Build, PWA, widget, native, or deployment | [`architecture/build.md`](architecture/build.md) |
 | Tests, CI, browser verification, or live probes | [`architecture/testing.md`](architecture/testing.md) |
+| Legal publication facts, gate, or public routes | [`LEGAL.md`](LEGAL.md) |
 | Modes, spells, ladder, or identity | [`MODES.md`](MODES.md), [`SPELLS.md`](SPELLS.md), [`LADDER.md`](LADDER.md), [`IDENTITY.md`](IDENTITY.md) |
 | Why an August decision was made | [`history/2026-08-sprint.md`](history/2026-08-sprint.md) |

@@ -7,14 +7,18 @@ Frontend ownership and CSS rules remain in `frontend.md` and `styles.md`.
 ## Locale model
 
 `src/i18n/` owns locale vocabulary, catalogs, lookup, formatting, and DOM
-translation. The supported application locales are registered once as `en`,
-`de`, and `fr`. Region subtags do not select separate catalogs: for example,
-`en-GB` and `en-US` both resolve to `en`, while `de-AT` resolves to `de`.
-Unsupported or malformed values resolve to English.
+translation. The supported application locales are registered once, in picker
+order, as `en`, `pt`, `es`, `de`, `fr`, and `it`. Those stable IDs own catalogs,
+routes, and persisted settings. Each registry entry also owns the BCP-47 tag
+used by HTML, `Intl`, and native metadata. Brazilian Portuguese therefore has
+the stable ID `pt` and presentation tag `pt-BR`; the other tags currently match
+their IDs. Region subtags do not select separate catalogs: for example,
+`pt-BR` and `pt-PT` both resolve to `pt`, `es-MX` resolves to `es`, and `it-CH`
+resolves to `it`. Unsupported or malformed values resolve to English.
 
 The effective locale has this precedence:
 
-1. an explicit `en`, `de`, or `fr` user override;
+1. an explicit supported locale ID user override;
 2. the first supported language in the current platform language list;
 3. English.
 
@@ -25,16 +29,17 @@ policy. Locale resolution is synchronous at startup; all catalogs needed to
 start the app are bundled, so translation does not add a network or
 loading-screen dependency.
 
-The iOS shell declares `en`, `de`, and `fr` in `CFBundleLocalizations` because
+The iOS shell declares `en`, `pt-BR`, `es`, `de`, `fr`, and `it` in
+`CFBundleLocalizations` because
 the WebView catalogs are localizations handled manually by the app rather than
 `.lproj` resources. Keep that declaration and the native shell contract in
 sync with the registry. Android WebView language detection uses the same
 browser resolver and does not require a native locale plugin.
 
 `null` represents the absence of an explicit language choice and is never
-shown as a fourth selectable language. The Settings arrows display only the
-effective language's self-name and cycle `en`, `de`, and `fr`, wrapping at both
-ends. The first arrow press while following the system starts from the
+shown as a selectable language. The Settings arrows display only the effective
+language's self-name and cycle the registry order, wrapping at both ends. The
+first arrow press while following the system starts from the
 displayed effective locale and stores the adjacent language as an explicit
 override. After that, the user setting wins on every platform and participates
 in account Settings sync like the other user preferences.
@@ -52,8 +57,8 @@ state sources.
 Callers use the public `src/i18n/index.ts` API rather than importing a catalog
 or platform adapter directly:
 
-- `SUPPORTED_LOCALES`, `LOCALE_REGISTRY`, and `localeSelfName` drive language
-  choices and self-names (`English`, `Deutsch`, `Français`).
+- `SUPPORTED_LOCALES`, `LOCALE_REGISTRY`, `localeSelfName`, and
+  `localeLanguageTag` drive language choices, self-names, and presentation tags.
 - `languageOverride`, `effectiveLocale`, `setLanguageOverride`, and
   `refreshSystemLocale` own locale state and changes.
 - `t` returns typed plain text. `text` is the element helper. Interpolated
@@ -62,9 +67,10 @@ or platform adapter directly:
   and `data-i18n-rich` hooks. Rich entries are limited to trusted static
   catalog markup and cannot interpolate input.
 - `bindLocaleRoot` translates once, subscribes to later changes, and sets the
-  language attribute on the owned root. The standalone/PWA/native app may set
-  `document.documentElement.lang`; the widget sets `lang` on `#kbroot` only
-  and must not alter its host page.
+  BCP-47 `lang` plus stable `data-locale` on the owned root. The
+  standalone/PWA/native app may set those attributes on
+  `document.documentElement`; the widget sets them on `#kbroot` only and must
+  not alter its host page.
 - `formatNumber`, `formatDate`, and `formatRelativeTime` are the locale-aware
   formatting boundary. Game rules and persisted numeric values stay neutral.
 
@@ -79,7 +85,17 @@ Static markup needs an explicit translation hook because the runtime does not
 watch arbitrary DOM mutations. Code that creates or substantially changes a
 dynamic subtree translates or fills it at that ownership boundary. A locale
 change notifies subscribed shared renderers so currently visible copy repaints
-without a reload.
+without a reload. Build-generated player-visible markup follows the same rule:
+the widget's screen-reader heading carries a catalog hook, is translated inside
+`#kbroot`, and never inherits an English-only label from its host fragment.
+
+Legal prose is intentionally separate from the ordinary short-copy catalogs:
+`src/legal/` owns structured sections and fact slots for every registered
+locale, and the in-app and JavaScript-free static renderers consume the same
+document object. Adding a supported locale therefore also requires its complete
+legal document before publication can become ready. URL segments use the stable
+locale ID (`pt`) while HTML `lang` and `hreflang` use the registry tag
+(`pt-BR`). See `docs/LEGAL.md` for the fail-closed release gate.
 
 ## Catalog rules
 
@@ -111,15 +127,15 @@ Keep these choices consistent in gameplay, help, online surfaces, and
 accessibility copy. `Knucklebones`, player nicknames, and player-entered values
 are never translated.
 
-| Concept | English | German | French |
-|---|---|---|---|
-| computer player | AI | KI | IA |
-| ranked match | ranked match | Ranglistenspiel | partie classée |
-| ladder | ladder | Rangliste | classement |
-| rune | rune | Rune | rune |
-| game mode | game mode | Spielmodus | mode de jeu |
-| draw (result) | draw | Unentschieden | égalité |
-| ladder points | ladder points | Ranglistenpunkte | points de classement |
+| Concept | English | Portuguese (Brazil) | Spanish | German | French | Italian |
+|---|---|---|---|---|---|---|
+| computer player | AI | IA | IA | KI | IA | IA |
+| ranked match | ranked match | partida ranqueada | partida clasificatoria | Ranglistenspiel | partie classée | partita classificata |
+| ladder | ladder | ranking | clasificación | Rangliste | classement | classifica |
+| rune | rune | runa | runa | Rune | rune | runa |
+| game mode | game mode | modo de jogo | modo de juego | Spielmodus | mode de jeu | modalità di gioco |
+| draw (result) | draw | empate | empate | Unentschieden | égalité | pareggio |
+| ladder points | ladder points | pontos de ranking | puntos de clasificación | Ranglistenpunkte | points de classement | punti classifica |
 
 Mode, rune, and ladder-group IDs are machine vocabulary. Their localized
 names and compact labels live in catalogs; portable core code must never use a
@@ -133,10 +149,22 @@ not only a catalog review. Prefer a shorter equivalent when a translation is
 materially longer. Where a registry label has a genuinely different compact
 use, give the registry an explicit compact slot; do not silently clip text,
 shrink one language below the readable type scale, or create a parallel view.
+When a live status needs shorter visible copy, its typed status pair keeps the
+complete localized sentence as the element's accessible name and removes that
+name when ordinary visible copy replaces it.
+
+The report-only length audit counts visible Unicode grapheme clusters after
+removing catalog markup and interpolation placeholders. It flags a translation
+only when it is both more than 30% longer than English and at least four
+graphemes longer. Every flag is a prompt to review the owning surface, not a
+failure: natural longer copy remains valid when the rendered mobile geometry
+passes. Catalog key and placeholder parity remain hard gates, as do the compact
+label limits. Run the audit with
+`mise exec -- node --experimental-strip-types tests/i18n-length-report.test.ts`.
 
 Verify every supported locale at 320 × 568 and 390 × 844 portrait, 568 × 320
-and 667 × 375 landscape, and every supported widget width. Measure computed
-boxes and hit testing in these pressure points:
+and 667 × 375 landscape, and at widget widths 320, 390, and 520. Measure
+computed boxes and hit testing in these pressure points:
 
 - turn/status text and the portrait one-line or landscape two-line status lane;
 - mode and rune HUD chips, which must remain readable without unintended wrap;
@@ -163,6 +191,11 @@ For each new or changed game-view string, record the intended line/width budget
 next to the owning component or its focused browser assertion. Translators can
 then choose wording against a concrete constraint instead of guessing from the
 English screen.
+
+After reviewing a length warning, make a final visual pass of its constrained
+surface in the in-app Browser at 320 × 568 and 568 × 320. If the correction
+changes shared styling or a captured product state, regenerate every affected
+preview/export rather than leaving evidence from the previous layout.
 
 The geometry contract is stricter than general overflow checks: portrait game
 status owns one reserved line; landscape status owns the existing 104 px-wide,

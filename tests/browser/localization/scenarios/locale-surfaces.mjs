@@ -1,117 +1,93 @@
-const LOCALES = ['en', 'de', 'fr'];
+import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
+import { LOCALE_REGISTRY } from '../../../../src/i18n/locale.ts';
+import { checkReachableTargets, checkSurface, frame,
+  inspectSurface as inspect } from '../harness/layout-inspection.mjs';
+import { LOCALE_IDS as LOCALES, chooseLocale } from '../harness/locale-control.mjs';
+import { requiredHomeTargets, SURFACE_SIZES,
+  waitForSurface } from '../harness/surface-readiness.mjs';
 
-const frame = (page) => page.evaluate(() => new Promise((resolve) =>
-  requestAnimationFrame(() => requestAnimationFrame(resolve))));
-
-async function chooseLocale(page, locale) {
-  for (let attempt = 0; attempt < LOCALES.length + 1; attempt++) {
-    if (await page.$eval('#kbroot', (root) => root.lang || document.documentElement.lang) === locale) return;
-    await page.evaluate(() => document.getElementById('languageNext')?.click());
-    await frame(page);
-  }
-  throw new Error(`Could not cycle language to ${locale}`);
-}
-
-async function inspect(page, containerSelector, selectors) {
-  return page.evaluate(({ containerSelector, selectors }) => {
-    const container = document.querySelector(containerSelector);
-    const bounds = container.getBoundingClientRect();
-    const rect = (element) => {
-      const box = element.getBoundingClientRect();
-      return { x: box.x, y: box.y, width: box.width, height: box.height,
-        right: box.right, bottom: box.bottom };
-    };
-    const records = selectors.flatMap((selector) => (selector === ':scope'
-      ? [container] : [...container.querySelectorAll(selector)])
-      .map((element) => ({ selector, element })))
-      .filter(({ element }) => {
-        const box = element.getBoundingClientRect();
-        const style = getComputedStyle(element);
-        return box.width > 0 && box.height > 0 && style.visibility !== 'hidden'
-          && style.display !== 'none' && Number(style.opacity) !== 0;
-      })
-      .map(({ selector, element }) => {
-        const box = rect(element);
-        const style = getComputedStyle(element);
-        const range = document.createRange();
-        range.selectNodeContents(element);
-        const rangeBox = rect(range);
-        const collisionBox = element instanceof HTMLButtonElement
-          || rangeBox.width <= 0 || rangeBox.height <= 0 ? box : rangeBox;
-        return { element, item: {
-          selector,
-          text: element.textContent?.trim() ?? '',
-          box,
-          collisionBox,
-          scrollWidth: element.scrollWidth,
-          clientWidth: element.clientWidth,
-          scrollHeight: element.scrollHeight,
-          clientHeight: element.clientHeight,
-          overflowX: style.overflowX,
-          overflowY: style.overflowY,
-          textOverflow: style.textOverflow,
-          inside: box.x >= bounds.x - 0.5 && box.y >= bounds.y - 0.5
-            && box.right <= bounds.right + 0.5 && box.bottom <= bounds.bottom + 0.5,
-        } };
-      });
-    const items = records.map(({ item }) => item);
-    const overlaps = [];
-    for (let left = 0; left < items.length; left++) for (let right = left + 1; right < items.length; right++) {
-      const a = items[left].collisionBox, b = items[right].collisionBox;
-      const width = Math.min(a.right, b.right) - Math.max(a.x, b.x);
-      const height = Math.min(a.bottom, b.bottom) - Math.max(a.y, b.y);
-      /* Parent/child boxes intentionally overlap. Only sibling surfaces are a
-         collision; nested text naturally occupies its button/card. */
-      const aNode = records[left].element;
-      const bNode = records[right].element;
-      if (width > 0.5 && height > 0.5
-          && !aNode.contains(bNode) && !bNode.contains(aNode)) {
-        overlaps.push({ left: items[left], right: items[right], width, height });
-      }
-    }
-    const style = getComputedStyle(container);
-    return {
-      bounds: rect(container),
-      items,
-      overlaps,
-      scrollable: container.scrollHeight > container.clientHeight + 0.5
-        && ['auto', 'scroll'].includes(style.overflowY),
-      scrollHeight: container.scrollHeight,
-      clientHeight: container.clientHeight,
-    };
-  }, { containerSelector, selectors });
-}
-
-function checkSurface(check, label, surface, { overlap = true, allowScrollable = false } = {}) {
-  const clipped = surface.items.filter((item) => (!item.inside && !(allowScrollable && surface.scrollable))
-    || (item.scrollWidth > item.clientWidth + 0.5 && item.overflowX !== 'visible')
-    || (item.scrollHeight > item.clientHeight + 0.5 && item.overflowY !== 'visible')
-    || (item.textOverflow === 'ellipsis' && item.text));
-  check(surface.items.length > 0 && clipped.length === 0,
-    `${label} clips, truncates, or pushes localized copy outside its surface`, { clipped, surface });
-  if (overlap) check(surface.overlaps.length === 0,
-    `${label} overlaps sibling localized controls or copy`, surface.overlaps);
-}
+const FIRST_REPAINT_LOCALE = LOCALE_REGISTRY[1];
+const SECOND_REPAINT_LOCALE = LOCALE_REGISTRY[2];
 
 async function openSettings(page) {
   await page.evaluate(() => window.__kb.goHome());
+  await waitForSurface(page, '#ovStart', '#btnSettingsHome');
   await page.click('#btnSettingsHome');
-  await page.waitForSelector('#ovSettings.on');
+  await waitForSurface(page, '#ovSettings', '#languagePicker');
   await page.locator('#languagePicker').scrollIntoViewIfNeeded();
   await frame(page);
+}
+
+async function inspectLearningSurfaces(page, check, label) {
+  await page.evaluate(() => window.__kb.goHome());
+  await waitForSurface(page, '#ovStart', '#btnLearn');
+  const home = await inspect(page, '#ovStart', [
+    '.eyebrow', '.sub2', '#homeChip', '#btnOnline', '#btnBoardHome',
+    '#btnSettingsHome', '.quiet .cap', '#btnVsCpu', '#btnDuoHome', '#btnLearn',
+  ]);
+  await page.click('#btnLearn');
+  await waitForSurface(page, '#ovLearn', '#btnLearnRules');
+  const hub = await inspect(page, '#ovLearn .pbody', [
+    '.learnrow', '.lname', '.lblurb',
+  ]);
+  await checkReachableTargets(page, check, `learn-hub-${label}`,
+    ['#btnLearnTut', '#btnLearnRules', '#btnLearnModes', '#btnLearnSpells']);
+
+  await page.click('#btnLearnRules');
+  await waitForSurface(page, '#ovRules', '.rules h3');
+  const rules = await inspect(page, '#ovRules .pbody', [
+    '.rules h3', '.rules p',
+  ]);
+  await page.click('[data-learn-back="ovRules"]');
+  await frame(page);
+
+  await page.click('#btnLearnModes');
+  await waitForSurface(page, '#ovModes', '.modecard');
+  const modes = await inspect(page, '#ovModes .pbody', [
+    '.modecard',
+    '.mcname', '.mcblurb', '.mcdetail',
+  ]);
+  await page.click('[data-learn-back="ovModes"]');
+  await frame(page);
+
+  await page.click('#btnLearnSpells');
+  await waitForSurface(page, '#ovSpells', '.modecard');
+  const runes = await inspect(page, '#ovSpells .pbody', [
+    '.modecard',
+    '.mcname', '.mcblurb', '.mcdetail',
+  ]);
+  await page.click('[data-learn-back="ovSpells"]');
+  await frame(page);
+  await page.click('#btnLearnBack');
+  await waitForSurface(page, '#ovStart', '#btnLearn');
+  return { home, hub, rules, modes, runes };
 }
 
 async function inspectSetup(page) {
   await page.click('#btnSettingsBack');
   await page.evaluate(() => window.__kb.openPractice());
   await page.locator('#modePick').scrollIntoViewIfNeeded();
+  await page.locator('#modePick').evaluate((element) =>
+    element.scrollIntoView({ block: 'center', inline: 'center' }));
   await frame(page);
   const mode = await inspect(page, '#modePick', ['button']);
-  const modeInfo = await inspect(page, '#modePickInfo', [':scope']);
+  const modeInfo = [];
+  for (let index = 0; index < await page.locator('#modePick button').count(); index++) {
+    await page.locator('#modePick button').nth(index).click();
+    await frame(page);
+    modeInfo.push(await inspect(page, '#modePickInfo', [':scope']));
+  }
   await page.locator('#spellPick').scrollIntoViewIfNeeded();
+  await page.locator('#spellPick').evaluate((element) =>
+    element.scrollIntoView({ block: 'center', inline: 'center' }));
   await frame(page);
   const rune = await inspect(page, '#spellPick', ['button']);
-  const runeInfo = await inspect(page, '#spellPickInfo', [':scope']);
+  const runeInfo = [];
+  for (let index = 0; index < await page.locator('#spellPick button').count(); index++) {
+    await page.locator('#spellPick button').nth(index).click();
+    await frame(page);
+    runeInfo.push(await inspect(page, '#spellPickInfo', [':scope']));
+  }
   return { mode, modeInfo, rune, runeInfo };
 }
 
@@ -123,6 +99,28 @@ async function showTutorial(page) {
   await page.waitForFunction(() => !document.getElementById('coach')?.hidden);
   await frame(page);
   return inspect(page, '#coach', ['#coachMsg', '#coachHint']);
+}
+
+async function showPassPhone(page) {
+  await page.evaluate(() => {
+    const game = window.__kb;
+    game.S.mode = 'duo';
+    game.S.seat = 'pass';
+    game.S.bottom = 1;
+    game.applySides();
+    const coach = document.getElementById('coach');
+    if (coach) coach.hidden = true;
+    const who = document.getElementById('passWho');
+    if (who) who.textContent = game.nameOf(0);
+    document.getElementById('ovPass')?.classList.add('on');
+  });
+  await waitForSurface(page, '#ovPass', '#passWho');
+  const surface = await inspect(page, '#ovPass', [
+    '#passWho', '.hint', '.mini', '.tapline',
+  ]);
+  await page.evaluate(() => document.getElementById('ovPass')?.classList.remove('on'));
+  await frame(page);
+  return surface;
 }
 
 async function showResult(page) {
@@ -217,11 +215,11 @@ export async function runConstrainedSurfaceScenarios(suite) {
      A locale repaint during that window must translate the active state and
      let the original timer restore Share in the new locale. */
   await chooseLocale(page, 'en');
-  const revealOwners = {
-    en: { prompt: 'RUNE FOR', first: 'YOU', second: 'AI' },
-    de: { prompt: 'RUNE FÜR', first: 'DU', second: 'KI' },
-    fr: { prompt: 'RUNE POUR', first: 'VOUS', second: 'IA' },
-  };
+  const revealOwners = Object.fromEntries(LOCALES.map((locale) => [locale, {
+    prompt: RESOURCES[locale].game.reveal.runeFor,
+    first: RESOURCES[locale].game.player.you,
+    second: RESOURCES[locale].game.player.ai,
+  }]));
   await page.evaluate(() => {
     const game = window.__kb;
     game.showEnd({
@@ -244,11 +242,18 @@ export async function runConstrainedSurfaceScenarios(suite) {
   });
   await page.waitForSelector('#ovEnd.on');
   await page.click('#btnShare');
-  await page.waitForFunction(() => document.getElementById('btnShare')?.textContent?.trim() === 'Copied!');
+  await page.waitForFunction((copied) =>
+    document.getElementById('btnShare')?.textContent?.trim() === copied,
+  RESOURCES.en.game.result.copied);
   await page.waitForTimeout(700); // clear tap()'s native-click guard while feedback is still active
   await page.evaluate(() => document.getElementById('languageNext')?.click());
-  await page.waitForFunction(() => document.documentElement.lang === 'de'
-    && document.getElementById('btnShare')?.textContent?.trim() === 'Kopiert!');
+  await page.waitForFunction(({ locale, languageTag, copied }) =>
+    document.documentElement.dataset.locale === locale
+      && document.documentElement.lang === languageTag
+      && document.getElementById('btnShare')?.textContent?.trim() === copied,
+  { locale: FIRST_REPAINT_LOCALE.id,
+    languageTag: FIRST_REPAINT_LOCALE.languageTag,
+    copied: RESOURCES[FIRST_REPAINT_LOCALE.id].game.result.copied });
   out.localeShareFeedback = await page.evaluate(() => {
     const share = document.getElementById('btnShare');
     return {
@@ -257,11 +262,11 @@ export async function runConstrainedSurfaceScenarios(suite) {
       sentinel: share?.getAttribute('data-locale-sentinel'),
     };
   });
-  await page.waitForFunction(() => document.getElementById('btnShare')?.textContent?.trim()
-    === 'Ergebnis teilen', null, { timeout: 3000 });
+  await page.waitForFunction((share) => document.getElementById('btnShare')?.textContent?.trim()
+    === share, RESOURCES[FIRST_REPAINT_LOCALE.id].game.result.share, { timeout: 3000 });
   out.localeShareFeedback.restored = await page.$eval('#btnShare', (button) => button.textContent?.trim());
-  check(out.localeShareFeedback.active === 'Kopiert!'
-    && out.localeShareFeedback.restored === 'Ergebnis teilen'
+  check(out.localeShareFeedback.active === RESOURCES[FIRST_REPAINT_LOCALE.id].game.result.copied
+    && out.localeShareFeedback.restored === RESOURCES[FIRST_REPAINT_LOCALE.id].game.result.share
     && out.localeShareFeedback.sameButton && out.localeShareFeedback.sentinel === 'kept',
   'result copy feedback did not survive, translate, and expire across a locale repaint',
   out.localeShareFeedback);
@@ -269,19 +274,25 @@ export async function runConstrainedSurfaceScenarios(suite) {
     navigator.clipboard.writeText = async () => { throw new Error('denied'); };
   });
   await page.click('#btnShare');
-  await page.waitForFunction(() => document.getElementById('btnShare')?.textContent?.trim()
-    === 'Kopieren fehlgeschlagen');
+  await page.waitForFunction((copyFailed) =>
+    document.getElementById('btnShare')?.textContent?.trim() === copyFailed,
+  RESOURCES[FIRST_REPAINT_LOCALE.id].game.result.copyFailed);
   await page.waitForTimeout(700);
   await page.evaluate(() => document.getElementById('languageNext')?.click());
-  await page.waitForFunction(() => document.documentElement.lang === 'fr'
-    && document.getElementById('btnShare')?.textContent?.trim() === 'Échec de la copie');
+  await page.waitForFunction(({ locale, languageTag, copyFailed }) =>
+    document.documentElement.dataset.locale === locale
+      && document.documentElement.lang === languageTag
+      && document.getElementById('btnShare')?.textContent?.trim() === copyFailed,
+  { locale: SECOND_REPAINT_LOCALE.id,
+    languageTag: SECOND_REPAINT_LOCALE.languageTag,
+    copyFailed: RESOURCES[SECOND_REPAINT_LOCALE.id].game.result.copyFailed });
   out.localeShareFeedback.failure = await page.$eval('#btnShare', (button) => button.textContent?.trim());
-  await page.waitForFunction(() => document.getElementById('btnShare')?.textContent?.trim()
-    === 'Partager le résultat', null, { timeout: 3000 });
+  await page.waitForFunction((share) => document.getElementById('btnShare')?.textContent?.trim()
+    === share, RESOURCES[SECOND_REPAINT_LOCALE.id].game.result.share, { timeout: 3000 });
   out.localeShareFeedback.failureRestored = await page.$eval(
     '#btnShare', (button) => button.textContent?.trim());
-  check(out.localeShareFeedback.failure === 'Échec de la copie'
-    && out.localeShareFeedback.failureRestored === 'Partager le résultat',
+  check(out.localeShareFeedback.failure === RESOURCES[SECOND_REPAINT_LOCALE.id].game.result.copyFailed
+    && out.localeShareFeedback.failureRestored === RESOURCES[SECOND_REPAINT_LOCALE.id].game.result.share,
   'result copy-failure feedback did not survive, translate, and expire across a locale repaint',
   out.localeShareFeedback);
   await page.click('#btnEndQuiet');
@@ -289,69 +300,101 @@ export async function runConstrainedSurfaceScenarios(suite) {
   await chooseLocale(page, 'en');
 
   for (const locale of LOCALES) {
-    await page.setViewportSize({ width: 320, height: 568 });
-    await chooseLocale(page, locale);
-    await openSettings(page);
-    const settings = await inspect(page, '#ovSettings', [
-      '#languagePrevious', '#languageValue', '#languageNext',
-      '#languagePicker', '#sndSeg',
-    ]);
-    /* The picker contains its three children, so sibling overlap is checked by
-       the focused behavior scenario; this pass is about translated bounds. */
-    checkSurface(check, `settings-320/${locale}`, settings, { overlap: false });
-    await page.locator('#cbSeg button[data-b="1"]').scrollIntoViewIfNeeded();
-    await page.click('#cbSeg button[data-b="1"]');
-    await page.waitForSelector('#p1Pick .hues-lock:not([hidden])');
-    await page.locator('#p1Pick .hues-lock').scrollIntoViewIfNeeded();
-    await frame(page);
-    const colourLocks = await inspect(page, '#ovSettings', ['.hues-lock:not([hidden])']);
-    checkSurface(check, `colour-locks-320/${locale}`, colourLocks, { overlap: false });
-    check(colourLocks.items.length === 2 && colourLocks.items.every((item) => item.text.length > 0),
-      `colour-locks-320/${locale} did not render both localized explanations`, colourLocks);
-    await page.locator('#cbSeg button[data-b="0"]').scrollIntoViewIfNeeded();
-    await page.click('#cbSeg button[data-b="0"]');
-
-    const setup = await inspectSetup(page);
-    checkSurface(check, `mode-picker-320/${locale}`, setup.mode);
-    checkSurface(check, `mode-copy-320/${locale}`, setup.modeInfo);
-    checkSurface(check, `rune-picker-320/${locale}`, setup.rune);
-    checkSurface(check, `rune-copy-320/${locale}`, setup.runeInfo);
-
-    const tutorial = await showTutorial(page);
-    checkSurface(check, `tutorial-prompt-320/${locale}`, tutorial);
-
-    for (const size of [{ name: 'portrait', width: 320, height: 568 },
-      { name: 'landscape', width: 568, height: 320 }]) {
+    out.localeSurfaces[locale] = {};
+    for (const size of SURFACE_SIZES) {
+      const label = `${size.name}/${locale}`;
       await page.setViewportSize({ width: size.width, height: size.height });
+      await chooseLocale(page, locale);
+      const learning = await inspectLearningSurfaces(page, check, label);
+      checkSurface(check, `home-${label}`, learning.home,
+        { allowScrollable: true, targets: false });
+      const homeTargets = await requiredHomeTargets(page);
+      check(homeTargets.complete, `home-${label} does not expose every required action group`, homeTargets);
+      await checkReachableTargets(page, check, `home-${label}`, homeTargets.targets);
+      checkSurface(check, `learn-hub-${label}`, learning.hub,
+        { allowScrollable: true, targets: false });
+      checkSurface(check, `rules-${label}`, learning.rules,
+        { allowScrollable: true, targets: false });
+      checkSurface(check, `mode-library-${label}`, learning.modes,
+        { allowScrollable: true, targets: false });
+      checkSurface(check, `rune-library-${label}`, learning.runes,
+        { allowScrollable: true, targets: false });
+      await openSettings(page);
+      const settings = await inspect(page, '#ovSettings .pbody', [
+        '#languagePrevious', '#languageValue', '#languageNext',
+        '#languagePicker', '#sndSeg',
+      ]);
+      checkSurface(check, `settings-${label}`, settings,
+        { overlap: false, allowScrollable: true, targets: false });
+      await checkReachableTargets(page, check, `settings-${label}`,
+        ['#languagePrevious', '#languageNext', '#sndSeg button[data-s="1"]',
+          '#sndSeg button[data-s="0"]']);
+      await page.locator('#cbSeg button[data-b="1"]').scrollIntoViewIfNeeded();
+      await page.click('#cbSeg button[data-b="1"]');
+      await page.waitForSelector('#p1Pick .hues-lock:not([hidden])');
+      await page.locator('#p1Pick .hues-lock').scrollIntoViewIfNeeded();
+      await frame(page);
+      const colourLocks = await inspect(page, '#ovSettings', ['.hues-lock:not([hidden])']);
+      checkSurface(check, `colour-locks-${label}`, colourLocks, { overlap: false });
+      check(colourLocks.items.length === 2
+        && colourLocks.items.every((item) => item.text.length > 0),
+      `colour-locks-${label} did not render both localized explanations`, colourLocks);
+      await page.locator('#cbSeg button[data-b="0"]').scrollIntoViewIfNeeded();
+      await page.click('#cbSeg button[data-b="0"]');
+
+      const setup = await inspectSetup(page);
+      checkSurface(check, `mode-picker-${label}`, setup.mode, { targets: false });
+      await checkReachableTargets(page, check, `mode-picker-${label}`,
+        Array.from({ length: setup.mode.items.length }, (_value, index) =>
+          `#modePick button:nth-child(${index + 1})`));
+      setup.modeInfo.forEach((surface, index) =>
+        checkSurface(check, `mode-copy-${index}-${label}`, surface));
+      checkSurface(check, `rune-picker-${label}`, setup.rune, { targets: false });
+      await checkReachableTargets(page, check, `rune-picker-${label}`,
+        Array.from({ length: setup.rune.items.length }, (_value, index) =>
+          `#spellPick button:nth-child(${index + 1})`));
+      setup.runeInfo.forEach((surface, index) =>
+        checkSurface(check, `rune-copy-${index}-${label}`, surface));
+
+      const tutorial = await showTutorial(page);
+      checkSurface(check, `tutorial-prompt-${label}`, tutorial);
+      const passPhone = await showPassPhone(page);
+      checkSurface(check, `pass-phone-${label}`, passPhone);
+
       const result = await showResult(page);
-      checkSurface(check, `result-${size.name}/${locale}`, result, { allowScrollable: true });
+      checkSurface(check, `result-${label}`, result, { allowScrollable: true, targets: false });
+      await checkReachableTargets(page, check, `result-${label}`,
+        ['#btnAgain:not([hidden])', '#btnEndQuiet:not([hidden])']);
       out.localeSurfaces[`${locale}-result-${size.name}`] = result.items.map((item) => ({
         selector: item.selector, text: item.text, box: item.box,
       }));
       await page.click('#btnEndQuiet');
       await frame(page);
-    }
 
-    await page.setViewportSize({ width: 568, height: 320 });
-    const reveal = await inspectReveal(page);
-    checkSurface(check, `mode-reveal-568x320/${locale}`, reveal.wheel);
-    checkSurface(check, `rune-deal-568x320/${locale}`, reveal.deal);
-    checkSurface(check, `reveal-hold-568x320/${locale}`, reveal.held);
-    const textFor = (surface, selector) => surface.items
-      .find((item) => item.selector === selector)?.text ?? '';
-    check(textFor(reveal.deal, '#wheelTitle .wtitlecopy') === revealOwners[locale].prompt
-      && textFor(reveal.deal, '#wheelOwner') === revealOwners[locale].first
-      && textFor(reveal.held, '#wheelTitle .wtitlecopy') === revealOwners[locale].prompt
-      && textFor(reveal.held, '#wheelOwner') === revealOwners[locale].second,
-    `RANDOM ×2 did not keep its universal prompt and localized active owner in ${locale}`,
-    { deal: reveal.deal.items, held: reveal.held.items });
-    out.localeSurfaces[locale] = {
-      settings: settings.items.length,
-      modePicker: setup.mode.items.length,
-      runePicker: setup.rune.items.length,
-      tutorial: tutorial.items.map((item) => item.text),
-      reveal: reveal.held.items.map((item) => item.text),
-    };
+      const reveal = await inspectReveal(page);
+      checkSurface(check, `mode-reveal-${label}`, reveal.wheel);
+      checkSurface(check, `rune-deal-${label}`, reveal.deal);
+      checkSurface(check, `reveal-hold-${label}`, reveal.held);
+      const textFor = (surface, selector) => surface.items
+        .find((item) => item.selector === selector)?.text ?? '';
+      check(textFor(reveal.deal, '#wheelTitle .wtitlecopy') === revealOwners[locale].prompt
+        && textFor(reveal.deal, '#wheelOwner') === revealOwners[locale].first
+        && textFor(reveal.held, '#wheelTitle .wtitlecopy') === revealOwners[locale].prompt
+        && textFor(reveal.held, '#wheelOwner') === revealOwners[locale].second,
+      `RANDOM ×2 did not keep its universal prompt and localized active owner in ${locale}`,
+      { deal: reveal.deal.items, held: reveal.held.items });
+      out.localeSurfaces[locale][size.name] = {
+        settings: settings.items.length,
+        learnRows: learning.hub.items.filter((item) => item.selector === '.learnrow').length,
+        modePicker: setup.mode.items.length,
+        modeCopies: setup.modeInfo.length,
+        runePicker: setup.rune.items.length,
+        runeCopies: setup.runeInfo.length,
+        tutorial: tutorial.items.map((item) => item.text),
+        passPhone: passPhone.items.map((item) => item.text),
+        reveal: reveal.held.items.map((item) => item.text),
+      };
+    }
   }
   await context.close();
 }

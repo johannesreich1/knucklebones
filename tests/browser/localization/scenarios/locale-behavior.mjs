@@ -1,10 +1,28 @@
+import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
+import { LOCALE_REGISTRY } from '../../../../src/i18n/locale.ts';
+
+const LOCALE_BY_ID = Object.fromEntries(LOCALE_REGISTRY.map((entry) => [entry.id, entry]));
+const detectionCase = (name, tags, locale) => ({
+  name,
+  tags,
+  locale,
+  languageTag: LOCALE_BY_ID[locale].languageTag,
+  settings: RESOURCES[locale].game.home.settings,
+});
 const DETECTION_CASES = [
-  { name: 'de-DE', tags: ['de-DE'], locale: 'de', settings: 'Einstellungen' },
-  { name: 'fr-FR', tags: ['fr-FR'], locale: 'fr', settings: 'Paramètres' },
-  { name: 'en-GB', tags: ['en-GB'], locale: 'en', settings: 'Settings' },
-  { name: 'en-US', tags: ['en-US'], locale: 'en', settings: 'Settings' },
-  { name: 'unsupported', tags: ['es-MX', 'it-IT'], locale: 'en', settings: 'Settings' },
-  { name: 'mixed-order', tags: ['es-MX', 'fr-CA', 'de-DE'], locale: 'fr', settings: 'Paramètres' },
+  detectionCase('en-GB', ['en-GB'], 'en'),
+  detectionCase('pt-BR', ['pt-BR'], 'pt'),
+  detectionCase('pt-PT', ['pt-PT'], 'pt'),
+  detectionCase('es-MX', ['es-MX'], 'es'),
+  detectionCase('de-DE', ['de-DE'], 'de'),
+  detectionCase('fr-FR', ['fr-FR'], 'fr'),
+  detectionCase('it-CH', ['it-CH'], 'it'),
+  detectionCase('unsupported', ['nl-NL'], 'en'),
+  detectionCase('mixed-order', ['nl-NL', 'fr-CA', 'de-DE'], 'fr'),
+];
+const GERMAN_INDEX = LOCALE_REGISTRY.findIndex(({ id }) => id === 'de');
+const PREVIOUS_FROM_GERMAN = LOCALE_REGISTRY[
+  (GERMAN_INDEX + LOCALE_REGISTRY.length - 1) % LOCALE_REGISTRY.length
 ];
 const SUPABASE_AUTH_STORAGE_KEY = 'sb-euzjcejbkxvqfrttgaxu-auth-token';
 
@@ -24,14 +42,17 @@ export async function runLocaleBehaviorScenarios(suite) {
       first: window.__kbFirstHomeFrame,
       override: window.__kb.S.localeOverride,
       lang: document.documentElement.lang,
+      locale: document.documentElement.dataset.locale,
       rootLang: document.getElementById('kbroot')?.lang ?? '',
       settings: document.getElementById('btnSettingsHome')?.textContent?.trim() ?? '',
     }));
     out.localeDetection[scenario.name] = result;
-    check(result.override === null && result.lang === scenario.locale
+    check(result.override === null && result.locale === scenario.locale
+      && result.lang === scenario.languageTag
       && result.settings === scenario.settings,
     `${scenario.name} did not resolve to the expected base language`, { scenario, result });
-    check(result.first.visible && result.first.htmlLang === scenario.locale
+    check(result.first.visible && result.first.htmlLang === scenario.languageTag
+      && result.first.locale === scenario.locale
       && result.first.settings === scenario.settings,
     `${scenario.name} exposed an untranslated or incorrectly tagged first Home frame`, result.first);
     await context.close();
@@ -129,10 +150,11 @@ export async function runLocaleBehaviorScenarios(suite) {
     && parseFloat(out.languageKeyboardFocus.outlineWidth) >= 2,
   'language arrows do not retain visible keyboard focus', out.languageKeyboardFocus);
 
-  /* From automatic German, Previous selects explicit English. */
+  /* From automatic German, Previous selects the preceding registered locale. */
   await page.click('#languagePrevious');
-  await page.waitForFunction(() => window.__kb.S.localeOverride === 'en'
-    && document.documentElement.lang === 'en');
+  await page.waitForFunction(({ id, languageTag }) => window.__kb.S.localeOverride === id
+    && document.documentElement.lang === languageTag,
+  PREVIOUS_FROM_GERMAN);
   await page.evaluate(() => {
     window.__kbTestLanguageTags = ['fr-FR'];
     window.dispatchEvent(new Event('languagechange'));
@@ -144,22 +166,50 @@ export async function runLocaleBehaviorScenarios(suite) {
     value: document.getElementById('languageValue')?.textContent?.trim(),
     stored: JSON.parse(localStorage.getItem('knucklebones.v1') ?? '{}').localeOverride,
   }));
-  check(out.explicitPrecedence.override === 'en' && out.explicitPrecedence.lang === 'en'
-    && out.explicitPrecedence.value === 'English' && out.explicitPrecedence.stored === 'en',
+  check(out.explicitPrecedence.override === PREVIOUS_FROM_GERMAN.id
+    && out.explicitPrecedence.lang === PREVIOUS_FROM_GERMAN.languageTag
+    && out.explicitPrecedence.value === PREVIOUS_FROM_GERMAN.selfName
+    && out.explicitPrecedence.stored === PREVIOUS_FROM_GERMAN.id,
   'explicit language did not override a later system languagechange or save immediately',
   out.explicitPrecedence);
 
   await page.reload();
-  await page.waitForFunction(() => window.__kb?.S?.localeOverride === 'en');
+  await page.waitForFunction((id) => window.__kb?.S?.localeOverride === id,
+    PREVIOUS_FROM_GERMAN.id);
   out.persistedOverride = await page.evaluate(() => ({
     override: window.__kb.S.localeOverride,
     lang: document.documentElement.lang,
     settings: document.getElementById('btnSettingsHome')?.textContent?.trim(),
   }));
-  check(out.persistedOverride.override === 'en' && out.persistedOverride.lang === 'en'
-    && out.persistedOverride.settings === 'Settings',
-  'persisted explicit English did not win over the reloaded French system locale',
+  check(out.persistedOverride.override === PREVIOUS_FROM_GERMAN.id
+    && out.persistedOverride.lang === PREVIOUS_FROM_GERMAN.languageTag
+    && out.persistedOverride.settings === RESOURCES[PREVIOUS_FROM_GERMAN.id].game.home.settings,
+  'persisted explicit locale did not win over the reloaded French system locale',
   out.persistedOverride);
+  out.compactStatus = await page.evaluate(() => {
+    const game = window.__kb;
+    game.S.mode = 'duo';
+    game.S.turn = 1;
+    game.sayChoose();
+    const status = document.getElementById('status');
+    const compact = { text: status?.textContent?.trim(), label: status?.getAttribute('aria-label') };
+    game.setStatus('Ordinary status', null);
+    return {
+      compact,
+      ordinary: { text: status?.textContent?.trim(), label: status?.getAttribute('aria-label') },
+    };
+  });
+  const compactPlayer = RESOURCES[PREVIOUS_FROM_GERMAN.id].game.player.player1;
+  check(out.compactStatus.compact.text
+      === RESOURCES[PREVIOUS_FROM_GERMAN.id].game.status.playerChooseCompact
+        .replace('{{player}}', compactPlayer)
+    && out.compactStatus.compact.label
+      === RESOURCES[PREVIOUS_FROM_GERMAN.id].game.status.playerChoose
+        .replace('{{player}}', compactPlayer)
+    && out.compactStatus.ordinary.text === 'Ordinary status'
+    && out.compactStatus.ordinary.label === null,
+  'compact status did not preserve the full accessible sentence or clear it later',
+  out.compactStatus);
   await context.close();
 
   const widgetContext = await localeContext(['de-DE'], {
@@ -174,10 +224,13 @@ export async function runLocaleBehaviorScenarios(suite) {
     override: window.__kb.S.localeOverride,
     htmlLang: document.documentElement.lang,
     rootLang: document.getElementById('kbroot')?.lang,
+    rootLocale: document.getElementById('kbroot')?.dataset.locale,
     settings: document.getElementById('btnSettingsHome')?.textContent?.trim(),
+    widgetTitle: document.querySelector('#kbroot > h2.sr-only')?.textContent?.trim(),
     first: window.__kbFirstHomeFrame ?? {
       htmlLang: document.documentElement.lang,
       rootLang: document.getElementById('kbroot')?.lang,
+      locale: document.getElementById('kbroot')?.dataset.locale,
       settings: document.getElementById('btnSettingsHome')?.textContent?.trim(),
       visible: !!document.getElementById('ovStart')?.getBoundingClientRect().width,
       capturedLate: true,
@@ -186,9 +239,12 @@ export async function runLocaleBehaviorScenarios(suite) {
   check(out.widgetLanguageOwnership.override === null
     && out.widgetLanguageOwnership.htmlLang === 'es-MX'
     && out.widgetLanguageOwnership.rootLang === 'de'
+    && out.widgetLanguageOwnership.rootLocale === 'de'
     && out.widgetLanguageOwnership.settings === 'Einstellungen'
+    && out.widgetLanguageOwnership.widgetTitle === RESOURCES.de.game.widget.title
     && out.widgetLanguageOwnership.first.htmlLang === 'es-MX'
-    && out.widgetLanguageOwnership.first.rootLang === 'de',
+    && out.widgetLanguageOwnership.first.rootLang === 'de'
+    && out.widgetLanguageOwnership.first.locale === 'de',
   'widget changed its host language or failed to own its localized root',
   out.widgetLanguageOwnership);
 
@@ -200,11 +256,15 @@ export async function runLocaleBehaviorScenarios(suite) {
   out.widgetLanguageChange = await widget.evaluate(() => ({
     htmlLang: document.documentElement.lang,
     rootLang: document.getElementById('kbroot')?.lang,
+    rootLocale: document.getElementById('kbroot')?.dataset.locale,
     settings: document.getElementById('btnSettingsHome')?.textContent?.trim(),
+    widgetTitle: document.querySelector('#kbroot > h2.sr-only')?.textContent?.trim(),
   }));
   check(out.widgetLanguageChange.htmlLang === 'es-MX'
     && out.widgetLanguageChange.rootLang === 'fr'
-    && out.widgetLanguageChange.settings === 'Paramètres',
+    && out.widgetLanguageChange.rootLocale === 'fr'
+    && out.widgetLanguageChange.settings === 'Paramètres'
+    && out.widgetLanguageChange.widgetTitle === RESOURCES.fr.game.widget.title,
   'widget languagechange leaked to the host or failed to repaint its root',
   out.widgetLanguageChange);
   await widgetContext.close();
@@ -296,6 +356,7 @@ export async function runLocaleBehaviorScenarios(suite) {
       first: window.__kbFirstHomeFrame,
       override: window.__kb.S.localeOverride,
       lang: document.documentElement.lang,
+      locale: document.documentElement.dataset.locale,
       settings: document.getElementById('btnSettingsHome')?.textContent?.trim(),
       sameColumn: column === window.__remoteLocaleColumn,
       sentinel: column?.getAttribute('data-remote-locale-sentinel'),
@@ -304,8 +365,10 @@ export async function runLocaleBehaviorScenarios(suite) {
     };
   });
   check(out.remoteLocaleOverride.first?.htmlLang === 'de'
+    && out.remoteLocaleOverride.first?.locale === 'de'
     && out.remoteLocaleOverride.override === 'fr'
     && out.remoteLocaleOverride.lang === 'fr'
+    && out.remoteLocaleOverride.locale === 'fr'
     && out.remoteLocaleOverride.settings === 'Paramètres'
     && out.remoteLocaleOverride.sameColumn
     && out.remoteLocaleOverride.sentinel === 'kept'

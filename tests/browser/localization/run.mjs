@@ -83,6 +83,7 @@ async function localeContext(tags, options = {}) {
         const rect = home?.getBoundingClientRect();
         window.__kbFirstHomeFrame = {
           htmlLang: document.documentElement.lang,
+          locale: document.documentElement.dataset.locale ?? root?.dataset.locale ?? '',
           rootLang: root?.lang ?? '',
           settings: document.getElementById('btnSettingsHome')?.textContent?.trim() ?? '',
           visible: !!home && style?.display !== 'none' && style?.visibility === 'visible'

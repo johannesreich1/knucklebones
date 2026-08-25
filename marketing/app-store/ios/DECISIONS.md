@@ -3,7 +3,7 @@
 **Decision date:** 2026-08-25
 **Status:** Approved for editable-draft synchronization; not approved for review submission
 **Output:** 36 localized portrait screenshots: 3 locales × 2 devices × 6 frames
-**Capture build:** `304a44e6`
+**Capture build:** `504c1c2f`
 
 This is the creative, fixture, localization, delivery, and truthfulness
 contract for the fifth campaign pass. It supersedes every earlier exported
@@ -31,8 +31,8 @@ preview copy makes no availability claim.
 
 ## Locale and device matrix
 
-The campaign covers exactly the product's supported store locales and both
-device classes declared by the universal iOS target:
+The campaign covers its three reviewed App Store localizations and both device
+classes declared by the universal iOS target:
 
 | App Store locale | Runtime locale | Runtime viewport | Final export | Frames |
 |---|---|---|---|---:|
@@ -46,9 +46,9 @@ device classes declared by the universal iOS target:
 Both the marketing overlay and every player-visible product string use the
 selected runtime locale. Localizing only the headline while leaving the game
 UI in English was rejected: it would look like a mockup and would not prove
-the actual German and French layouts. Adding unsupported store languages was
-also rejected; the truthful scope is the three languages users can select in
-the app.
+the actual German and French layouts. The runtime now supports six product
+languages, but adding Portuguese, Spanish, or Italian listing assets without
+reviewed metadata and captures remains outside this three-locale campaign.
 
 The iPad images come from a real 1032 × 1376 runtime layout with iPad safe
 areas, not an enlarged or cropped phone canvas. One deterministic capture
@@ -267,7 +267,7 @@ design; the obsolete exported PNG is intentionally not part of this set.
    checksums, `capture-provenance.json`, six contact sheets, README, and this
    decision log synchronized with the locked order and locale/device matrix.
 6. Any product or campaign design change that affects one scene requires that
-   scene to be regenerated in all three locales and both devices. Changes to
+   scene to be regenerated in all three managed locales and both devices. Changes to
    shared UI, layout, typography, localization plumbing, or capture/finalizer
    code require the complete matrix to be regenerated with
    `mise exec -- npm run appstore:screenshots:generate`. A BOUNTY change always

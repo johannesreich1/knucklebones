@@ -1,0 +1,61 @@
+import type { CatalogShape } from '../../catalog-shape.ts';
+import { enCommon } from '../en/common.ts';
+
+export const itCommon = {
+  app: {
+    name: 'KNUCKLEBONES',
+    edition: 'Edizione Neon',
+    tagline: 'Duelli di dadi classificati',
+  },
+  actions: {
+    back: 'Torna',
+    cancel: 'Annulla',
+    close: 'Chiudi',
+    continue: 'Continua',
+    done: 'Fatto',
+    finish: 'Termina',
+    home: 'Home',
+    next: 'Avanti',
+    notNow: 'Non ora',
+    retry: 'Riprova',
+    save: 'Salva',
+  },
+  states: {
+    on: 'SÌ',
+    off: 'NO',
+    none: 'NESSUNA',
+    random: 'CASUALE',
+    loading: 'Caricamento…',
+    unavailable: 'Non disponibile',
+  },
+  people: {
+    you: 'TU',
+    opponent: 'AVVERSARIO',
+    ai: 'IA',
+    playerOne: 'GIOCATORE 1',
+    playerTwo: 'GIOCATORE 2',
+    guest: 'OSPITE',
+  },
+  record: {
+    win: 'V',
+    loss: 'S',
+    draw: 'P',
+    wins_one: '{{count}} vittoria',
+    wins_other: '{{count}} vittorie',
+    losses_one: '{{count}} sconfitta',
+    losses_other: '{{count}} sconfitte',
+    draws_one: '{{count}} pareggio',
+    draws_other: '{{count}} pareggi',
+  },
+  units: {
+    secondShort: 'S',
+    points_one: '{{count}} punto',
+    points_other: '{{count}} punti',
+    games_one: '{{count}} partita',
+    games_other: '{{count}} partite',
+    castsLeft_one: 'resta {{count}} uso',
+    castsLeft_other: 'restano {{count}} usi',
+  },
+  build: 'versione {{tag}}',
+  versus: 'VS',
+} satisfies CatalogShape<typeof enCommon>;

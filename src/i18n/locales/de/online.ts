@@ -124,6 +124,8 @@ export const deOnline = {
     reconnecting: 'Neu verbinden …',
     awayAutoPlay_one: 'Abwesend — Autozug in {{formatted}} s',
     awayAutoPlay_other: 'Abwesend — Autozug in {{formatted}} s',
+    awayAutoPlayCompact_one: 'Abwesend — Zug in {{formatted}} s',
+    awayAutoPlayCompact_other: 'Abwesend — Zug in {{formatted}} s',
     autoPlay: 'Autozug …',
   },
   result: {

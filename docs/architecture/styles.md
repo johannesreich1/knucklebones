@@ -68,6 +68,31 @@ visual parity first; semantic cleanup is a separate change.
 - Do not use `!important` to repair ownership. Fix manifest order, specificity,
   or the selector boundary.
 
+Shared interactive controls expose at least a 44 × 44 px effective hit region,
+including compact back buttons, link-style actions, and visually small colour
+swatches. A pseudo-element may expand the hit region when growing the artwork
+would damage a dense layout, but hit testing must prove that the expanded area
+belongs to the control and does not overlap a sibling target. Decorative
+result bloom may be clipped at the viewport edge; translated text may not be.
+Use text ranges and container scroll geometry together so a hidden horizontal
+scroller or an ellipsis cannot masquerade as a passing layout.
+
+## Localized and legal copy
+
+Responsive rules stay locale-neutral. Do not add language-tag selectors,
+per-locale offsets, silent clipping/ellipsis, or global font shrinking to make
+one translation pass. Prefer natural concise wording or a typed compact-copy
+slot; when the component itself is too rigid, change its shared wrapping or
+layout contract and remeasure every locale. Longer prose is valid when it wraps
+and its final action remains reachable.
+
+In-app legal documents use `src/styles/components/legal.css` inside the shared
+paged-view shell: the header remains available, `.pbody` is the one page
+scroller, prose and long links wrap, and navigation targets remain at least
+44 px. Static legal pages use the generator's self-contained CSS because they
+must work without application JavaScript, but both renderers consume the same
+typed document content.
+
 ## Widget boundary
 
 The embed must behave like a component, not a second page. Shared tokens,
@@ -81,7 +106,8 @@ elements that already happen to be descendants cannot prove isolation.
 
 ## Verification matrix
 
-At minimum compare portrait, landscape, short viewport, pass and face seating,
+At minimum compare every registered locale at 320 × 568, 390 × 844,
+568 × 320, and 667 × 375, plus widget widths 320, 390, and 520, pass and face seating,
 all mode layouts, protection and casting states, tutorial/reveal/result,
 online ladder/account/history/result, widget, numeral dice, chosen duel hues,
 colour-blind mode, and reduced motion. Use same-machine before/after captures

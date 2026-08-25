@@ -175,13 +175,13 @@
   line-height:1.45;min-height:2.9em;max-width:var(--w-col);
   margin-top:-9px}   /* the name hugs its description — they read as one unit */
 
-/* A 320px-high landscape screen has room BESIDE the centred theatre, but not
+/* A tight landscape screen has room BESIDE the centred theatre, but not
    for two independent lanes under it. During the final hold the answer owns
    the lower lane, so park the countdown in the unused right gutter. Its width
    is derived from the dealt card's actual felt, keeping an explicit gap from
    the theatre even on narrower landscape WebViews. This is positioning only:
    the stage stays on the exact same centre before and after landing. */
-@media (orientation:landscape) and (max-height:340px){
+@media (orientation:landscape) and (max-height:390px){
   :where(#kbroot) #ovWheel .dhold{position:absolute;right:var(--pad-x);top:50%;
     width:min(132px,calc(50% - var(--card)*2.3 - var(--pad-x) - 8px));
     margin:0;transform:translateY(-50%)}
@@ -190,8 +190,8 @@
      Keep its pill inside the viewport while retaining clear air above title. */
   :where(#kbroot) #ovWheel.dealing .wsettled{
     top:calc((50% - var(--stage)/2 - 34px)/2 + 3px)}
-  /* There is no vertical lane for two full settled answers on a 320px-tall
-     phone. Keep both owner/name pills across the safe top gutter; their rules
+  /* There is no vertical lane for two full settled answers on a short
+     landscape phone. Keep both owner/name pills across the safe top gutter; their rules
      were readable on landing and remain available in the final game badge. */
   :where(#kbroot) #ovWheel.dealing #wheelSettled[data-count="2"]{
     top:calc(env(safe-area-inset-top,0px) + 5px);transform:none;flex-direction:row;

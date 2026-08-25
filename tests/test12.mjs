@@ -220,38 +220,66 @@ sp.on('pageerror', e => errs.push('SMALL: ' + e.message));
 await sp.goto(F); await sp.waitForTimeout(400);
 await sp.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await sp.tap('#modeSeg button[data-m="duo"]'); await sp.waitForTimeout(300);
-/* What matters is that the LAST thing on home can be tapped on the smallest
-   screen — by scrolling to it or by it simply fitting. It used to require a
-   scroll; since the foot was pinned to the bottom the column fits, so asserting
-   "scrollable" would now be asserting the old layout rather than the goal. */
+/* Draft is a real publication state, not a maintainer warning: no production
+   legal door is rendered until the facts and review gate are complete. The
+   shared overlay remains testable through a synthetic internal opener. */
 out.small = await sp.evaluate(() => {
   const ov = document.getElementById('ovStart');
-  const b = document.getElementById('btnImprint').getBoundingClientRect();
   return { scrollable: ov.scrollHeight > ov.clientHeight, sh: ov.scrollHeight, ch: ov.clientHeight,
-           lastVisible: b.bottom <= innerHeight + 1 && b.top >= 0 };
+           publicLegalLinks: document.querySelectorAll('[data-legal-open]').length,
+           legalOverlays: document.querySelectorAll('[data-legal-page]').length };
 });
 await sp.evaluate(() => window.__kb.goHome());
-await sp.tap('#btnImprint'); await sp.waitForTimeout(400);
+check(out.small.publicLegalLinks === 0 && out.small.legalOverlays === 4,
+      'draft legal publication leaks a link or lacks the shared four-page shell', out.small);
+await sp.evaluate(() => {
+  const opener = document.createElement('button');
+  opener.id = 'legalTestOpener';
+  opener.dataset.legalOpen = 'imprint';
+  opener.textContent = 'test legal opener';
+  document.getElementById('ovStart').append(opener);
+  opener.focus();
+  opener.click();
+});
+await sp.waitForTimeout(400);
 const legalOpened = await sp.evaluate(() => document.getElementById('ovImprint').classList.contains('on'));
-check(legalOpened, 'the last button on home is unreachable on a small screen', out.small);
+check(legalOpened, 'the shared legal controller did not open its synthetic ready-state door', out.small);
 out.small.legalOpened = legalOpened;
-/* ...and it is a PAGE, not a sheet (user call, 2026-08-22): reached from Home
-   and returning there, so it wears Home's ‹ and carries no bottom dismissal.
-   test17 §nav holds the general rule; this holds the door it came through. */
+/* The controller owns one accessible path for Back and Escape: background
+   content is inert, the translated h1 receives focus, and the opener regains
+   focus after either close route. */
 out.legalPage = await sp.evaluate(() => {
   const head = document.querySelector('#ovImprint .shead');
+  const back = document.querySelector('#ovImprint #btnImprintBack');
+  const rect = back.getBoundingClientRect();
   return { back: document.querySelector('#ovImprint #btnImprintBack')?.textContent ?? '',
            first: head.firstElementChild.id,
-           gotIt: [...document.querySelectorAll('#ovImprint .btn')].map((b) => b.textContent.trim()) };
+           gotIt: [...document.querySelectorAll('#ovImprint .btn')].map((b) => b.textContent.trim()),
+           focused: document.activeElement === document.querySelector('#ovImprint h1'),
+           backgroundInert: document.getElementById('ovStart').inert,
+           backSize: [Math.round(rect.width), Math.round(rect.height)] };
 });
 check(out.legalPage.back === '\u2039' && out.legalPage.first === 'btnImprintBack',
       'Impressum is not a page: its ‹ is missing or not on the left', out.legalPage);
 check(out.legalPage.gotIt.length === 0,
       'Impressum still carries a bottom dismissal — the bottom of a screen is actions only', out.legalPage);
+check(out.legalPage.focused && out.legalPage.backgroundInert,
+      'legal open did not focus the heading and inert the background', out.legalPage);
+check(out.legalPage.backSize[0] >= 44 && out.legalPage.backSize[1] >= 44,
+      'legal Back target is smaller than 44px', out.legalPage);
 await sp.tap('#btnImprintBack'); await sp.waitForTimeout(300);
 out.legalPage.closed = await sp.evaluate(() => !document.getElementById('ovImprint').classList.contains('on')
-                                            && document.getElementById('ovStart').classList.contains('on'));
-check(out.legalPage.closed, 'Impressum\u2019s ‹ did not return to Home', out.legalPage);
+    && document.getElementById('ovStart').classList.contains('on')
+    && !document.getElementById('ovStart').inert
+    && document.activeElement?.id === 'legalTestOpener');
+check(out.legalPage.closed, 'legal Back did not restore Home, interactivity, and opener focus', out.legalPage);
+await sp.evaluate(() => document.getElementById('legalTestOpener').click());
+await sp.waitForTimeout(100);
+await sp.keyboard.press('Escape');
+await sp.waitForTimeout(300);
+out.legalPage.escapeClosed = await sp.evaluate(() => !document.getElementById('ovImprint').classList.contains('on')
+  && !document.getElementById('ovStart').inert && document.activeElement?.id === 'legalTestOpener');
+check(out.legalPage.escapeClosed, 'legal Escape bypassed the shared accessible close path', out.legalPage);
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
 await browser.close();

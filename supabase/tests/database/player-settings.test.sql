@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(22);
+select plan(26);
 
 select ok(
   not has_table_privilege('anon', 'public.player_settings', 'select'),
@@ -56,6 +56,16 @@ select lives_ok(
   'English is a valid locale override'
 );
 select lives_ok(
+  $$update public.player_settings set locale = 'pt'
+     where user_id = '61000000-0000-0000-0000-000000000001'$$,
+  'Brazilian Portuguese uses the valid stable pt locale override'
+);
+select lives_ok(
+  $$update public.player_settings set locale = 'es'
+     where user_id = '61000000-0000-0000-0000-000000000001'$$,
+  'Spanish is a valid locale override'
+);
+select lives_ok(
   $$update public.player_settings set locale = 'de'
      where user_id = '61000000-0000-0000-0000-000000000001'$$,
   'German is a valid locale override'
@@ -65,14 +75,25 @@ select lives_ok(
      where user_id = '61000000-0000-0000-0000-000000000001'$$,
   'French is a valid locale override'
 );
-select throws_ok(
-  $$update public.player_settings set locale = 'en-US'
+select lives_ok(
+  $$update public.player_settings set locale = 'it'
      where user_id = '61000000-0000-0000-0000-000000000001'$$,
-  '23514', null,
-  'regional locale variants are rejected by the database'
+  'Italian is a valid locale override'
 );
 select throws_ok(
-  $$update public.player_settings set locale = 'es'
+  $$update public.player_settings set locale = 'pt-BR'
+     where user_id = '61000000-0000-0000-0000-000000000001'$$,
+  '23514', null,
+  'the Portuguese presentation tag is rejected by the database'
+);
+select throws_ok(
+  $$update public.player_settings set locale = 'es-MX'
+     where user_id = '61000000-0000-0000-0000-000000000001'$$,
+  '23514', null,
+  'regional Spanish variants are rejected by the database'
+);
+select throws_ok(
+  $$update public.player_settings set locale = 'nl'
      where user_id = '61000000-0000-0000-0000-000000000001'$$,
   '23514', null,
   'unsupported locales are rejected by the database'

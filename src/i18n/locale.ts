@@ -1,8 +1,11 @@
 /** The only roster of supported locales. Add future languages here and add catalogs. */
 export const LOCALE_REGISTRY = [
-  { id: 'en', selfName: 'English' },
-  { id: 'de', selfName: 'Deutsch' },
-  { id: 'fr', selfName: 'Français' },
+  { id: 'en', languageTag: 'en', selfName: 'English' },
+  { id: 'pt', languageTag: 'pt-BR', selfName: 'Português (Brasil)' },
+  { id: 'es', languageTag: 'es', selfName: 'Español' },
+  { id: 'de', languageTag: 'de', selfName: 'Deutsch' },
+  { id: 'fr', languageTag: 'fr', selfName: 'Français' },
+  { id: 'it', languageTag: 'it', selfName: 'Italiano' },
 ] as const;
 
 export type SupportedLocale = typeof LOCALE_REGISTRY[number]['id'];
@@ -24,6 +27,11 @@ export function isLanguageOverride(value: unknown): value is LanguageOverride {
 
 export function localeSelfName(locale: SupportedLocale): string {
   return LOCALE_REGISTRY.find(({ id }) => id === locale)!.selfName;
+}
+
+/** BCP-47 tag for HTML, Intl, native metadata, and other presentation APIs. */
+export function localeLanguageTag(locale: SupportedLocale): string {
+  return LOCALE_REGISTRY.find(({ id }) => id === locale)!.languageTag;
 }
 
 export interface LanguageSource {

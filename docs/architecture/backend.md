@@ -69,7 +69,10 @@ applies, removes, or reverses schema changes.
 - Cross-device UI preferences live in the owner-only `player_settings` row,
   separate from the profile/avatar surface. The browser validates the complete
   shape before applying it; typed columns, hue constraints, and RLS enforce the
-  same boundary independently in PostgreSQL.
+  same boundary independently in PostgreSQL. Its locale constraint stores only
+  the six stable catalog IDs (`en`, `pt`, `es`, `de`, `fr`, `it`), never BCP-47
+  presentation tags such as `pt-BR`; extend that allow-list with a forward
+  migration and deploy it before any client can save a newly registered locale.
 - Privileged functions have a pinned `search_path`, explicit execute grants,
   and the narrowest useful location. `SECURITY DEFINER` is never a shortcut
   around a permissions error.
@@ -142,6 +145,15 @@ for both participant branches; do not claim advisor results that were not run.
 Apply ranked migrations before auto-deploying the corresponding web/function
 clients. The browser has a narrow missing-`leave_ranked_queue` fallback to the
 older RLS-protected own-row DELETE, but database-first remains the normal order.
+
+The current locale expansion is the forward-only migration
+`20260825161016_expand_player_settings_locales.sql`. It widens the original
+`en`/`de`/`fr` constraint to the registry-derived six stable IDs without
+rewriting stored values. It is locally tested but production-pending: Johannes
+must preview and apply the allow-listed `settings-locale` rollout described in
+`tools/database/README.md`, then accept its history, exact constraint, comment,
+and stored-value postchecks before the six-language client deploys. The legal
+publication switch is a later, independent release step.
 
 Game Center is a separate held rollout: `0014_game_center_ids.sql` must be
 followed by `20260823132611_game_center_service_grants.sql` before `gc-auth` is

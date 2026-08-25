@@ -6,7 +6,13 @@ import { runSettingsNavigationScenarios } from './scenarios/settings-navigation.
 import { runBadgeCardScenarios } from './scenarios/badge-cards.mjs';
 import { runAsymmetricRunePlateScenarios } from './scenarios/asymmetric-rune-plates.mjs';
 import { runLanguageSelectorScenarios } from './scenarios/language-selector.mjs';
-import { modeCopy, spellCopy, t } from '../../../src/i18n/index.ts';
+import {
+  LOCALE_REGISTRY,
+  RESOURCES,
+  modeCopy,
+  spellCopy,
+  t,
+} from '../../../src/i18n/index.ts';
 
 const { chromium, devices } = pkg;
 /* Served over LOCAL HTTP for the same reason as test10: the settings-persist
@@ -36,7 +42,10 @@ page.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
 page.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
 await page.goto(F); await page.waitForTimeout(500);
 
-const suite = { page, ctx, browser, F, problems, errs, out, check, modeCopy, spellCopy, t };
+const suite = {
+  page, ctx, browser, F, problems, errs, out, check,
+  LOCALE_REGISTRY, RESOURCES, modeCopy, spellCopy, t,
+};
 await runHudPopupScenarios(suite);
 await runOfflineRestartScenarios(suite);
 await runSettingsNavigationScenarios(suite);

@@ -20,6 +20,13 @@
 // Plus the deck's own contract: it is the WHOLE roster, cut fresh each deal.
 import pkg from 'playwright';
 import {
+  gameCopyFor,
+  localeCycleFrom,
+  observeLocale,
+  restoreLocale,
+  verifyDealLocaleRepaint,
+} from './browser/support/locale-reveal.mjs';
+import {
   verifyRandomTwoLandscape,
   verifyRandomTwoReveal,
 } from './browser/support/random-two-reveal.mjs';
@@ -36,10 +43,17 @@ try {
   page.on('pageerror', (e) => problems.push('PAGEERROR ' + e.message));
   await page.goto(F);
   await page.waitForTimeout(400);
+  const initialLocale = await observeLocale(page);
+  const initialGame = gameCopyFor(initialLocale);
 
   /* one deal, driven exactly as a player drives it: pick RANDOM in the spell
      row, press Play, and read only what is on screen */
   const deal = async (localMode, liveLocale = false) => {
+    const localeRepaint = {};
+    if (liveLocale) {
+      const dealLocale = await observeLocale(page);
+      localeRepaint.cycle = localeCycleFrom(dealLocale, 3);
+    }
     await page.evaluate((m) => {
       const k = window.__kb;
       k.goHome(); k.openPractice();
@@ -48,7 +62,6 @@ try {
       k.S.timer = 0;
     }, localMode);
     await page.click('#btnPlay');
-    const localeRepaint = {};
     if (liveLocale) {
       await page.waitForSelector('#wheelDial', { timeout: 14000 });
       await page.waitForTimeout(700); // clear tap()'s native-click guard
@@ -102,6 +115,7 @@ try {
         document.getElementById('languageNext').click();
         return {
           locale: window.__kb.S.localeOverride,
+          rune: card.dataset.rune,
           beforeTitle,
           title: document.getElementById('wheelTitle').textContent.trim(),
           before,
@@ -185,6 +199,7 @@ try {
         };
         return {
           locale: window.__kb.S.localeOverride,
+          rune: card.dataset.rune,
           before,
           after,
           sameOverlay: document.getElementById('ovWheel') === overlay,
@@ -209,13 +224,7 @@ try {
       mode: window.__kb.modeByEnum(window.__kb.S.scoring).id,
     }));
     if (liveLocale) {
-      await page.evaluate(() => {
-        window.__kb.S.localeOverride = null;
-        const key = 'knucklebones.v1';
-        const saved = JSON.parse(localStorage.getItem(key) ?? '{}');
-        saved.localeOverride = null;
-        localStorage.setItem(key, JSON.stringify(saved));
-      });
+      localeRepaint.restoredLocale = await restoreLocale(page, localeRepaint.cycle[0]);
     }
     return { shuffling, shuffleMs, turned, played, localeRepaint };
   };
@@ -223,8 +232,8 @@ try {
   // ---- a deal under a mode the player CHOSE: one beat, one countdown ----
   const solo = await deal('0');                                   // 0 = CLASSIC
   out.solo = solo;
-  check(solo.shuffling.title === 'MATCH RUNE',
-    'the shared RANDOM reveal used player-relative English copy', solo.shuffling);
+  check(solo.shuffling.title === initialGame.reveal.matchRune,
+    'the shared RANDOM reveal used the wrong locale or player-relative copy', solo.shuffling);
   check(solo.shuffling.named === '', 'the deal named its rune while still shuffling', solo.shuffling);
   check(!solo.shuffling.turned, 'the card was already face-up while still shuffling', solo.shuffling);
   check(solo.shuffling.hold === 'hidden', 'the countdown ran before anything was dealt', solo.shuffling);
@@ -265,35 +274,7 @@ try {
   check(both.turned.hold === 'visible', 'the countdown never arrived', both.turned);
   check(both.played.mode !== 'random' && both.turned.card === both.played.mine,
     'the game and the reveal disagree when BOTH were random', { turned: both.turned, played: both.played });
-  check(both.localeRepaint.mode.locale === 'de'
-    && both.localeRepaint.mode.title === 'SPIELMODUS'
-    && both.localeRepaint.mode.sameOverlay && both.localeRepaint.mode.sameStage
-    && both.localeRepaint.mode.sameDial && both.localeRepaint.mode.sameComet
-    && both.localeRepaint.mode.sameAnimation
-    && both.localeRepaint.mode.stateAfter === both.localeRepaint.mode.stateBefore,
-  'changing locale rebuilt or restarted the live mode dial', both.localeRepaint.mode);
-  check(both.localeRepaint.rune.locale === 'fr'
-    && both.localeRepaint.rune.beforeTitle === 'MATCH-RUNE'
-    && both.localeRepaint.rune.title === 'RUNE DU MATCH'
-    && both.localeRepaint.rune.label !== both.localeRepaint.rune.before
-    && both.localeRepaint.rune.sameStage && both.localeRepaint.rune.sameCard
-    && both.localeRepaint.rune.sameLabel && both.localeRepaint.rune.sameDeckCard
-    && both.localeRepaint.rune.sameAnimation
-    && both.localeRepaint.rune.stateAfter === both.localeRepaint.rune.stateBefore,
-  'changing locale rebuilt/restarted the rune deal or left its card label stale',
-  both.localeRepaint.rune);
-  check(both.localeRepaint.hold.locale === 'en'
-    && both.localeRepaint.hold.before.name !== both.localeRepaint.hold.after.name
-    && both.localeRepaint.hold.before.blurb !== both.localeRepaint.hold.after.blurb
-    && both.localeRepaint.hold.before.settled !== both.localeRepaint.hold.after.settled
-    && both.localeRepaint.hold.before.hint !== both.localeRepaint.hold.after.hint
-    && both.localeRepaint.hold.sameOverlay && both.localeRepaint.hold.sameStage
-    && both.localeRepaint.hold.sameCard && both.localeRepaint.hold.sameLabel
-    && both.localeRepaint.hold.sameName && both.localeRepaint.hold.sameBlurb
-    && both.localeRepaint.hold.sameSettled
-    && both.localeRepaint.hold.stateAfter === both.localeRepaint.hold.stateBefore,
-  'holding reveal did not repaint every answer in place or changed game state',
-  both.localeRepaint.hold);
+  verifyDealLocaleRepaint(both, initialLocale, check);
 
   await verifyRandomTwoReveal(page, out, check);
 

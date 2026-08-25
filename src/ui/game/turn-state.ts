@@ -47,14 +47,26 @@ export function repaintTurnLocale(): void {
   repaintStatus();
 }
 
-export type StatusCopy = string | (() => string);
-let liveStatusCopy: (() => string) | null = null;
+export interface StatusCopyPair {
+  /** Text painted into the deliberately constrained visual status lane. */
+  visible: () => string;
+  /** Complete equivalent announced as the status element's accessible name. */
+  accessible: () => string;
+}
+export type StatusCopy = string | (() => string) | StatusCopyPair;
+interface PaintedStatus { text: string; accessible?: string }
+let liveStatusCopy: (() => PaintedStatus) | null = null;
 let liveStatusWho: Player | null = null;
 
-function paintStatus(text: string, who: Player | null): void {
+function paintStatus(copy: PaintedStatus, who: Player | null): void {
   const status = $('#status');
   status.removeAttribute('data-i18n');
-  status.textContent = text;
+  status.textContent = copy.text;
+  if (copy.accessible && copy.accessible !== copy.text) {
+    status.setAttribute('aria-label', copy.accessible);
+  } else {
+    status.removeAttribute('aria-label');
+  }
   status.className = 'status' + (who === ME ? ' me' : who === AI ? ' ai' : '');
 }
 
@@ -67,9 +79,13 @@ function repaintStatus(): void {
    current turn's sentence from mutable game state. Raw strings remain useful
    for server/user content and deliberately have no translation semantics. */
 export function setStatus(copy: StatusCopy, who: Player | null): void {
-  liveStatusCopy = typeof copy === 'function' ? copy : null;
+  liveStatusCopy = typeof copy === 'function'
+    ? () => ({ text: copy() })
+    : typeof copy === 'object'
+      ? () => ({ text: copy.visible(), accessible: copy.accessible() })
+      : null;
   liveStatusWho = who;
-  paintStatus(typeof copy === 'function' ? copy() : copy, who);
+  paintStatus(liveStatusCopy?.() ?? { text: copy as string }, who);
 }
 
 export function setActivePlate(viewer: Player | null = S.mode === 'cpu' ? ME : null): void {

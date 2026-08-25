@@ -16,6 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SUPABASE_PROJECT_REF } from '../../src/config.ts';
+import { SUPPORTED_LOCALES } from '../../src/i18n/locale.ts';
 import { productionRead } from '../debug/production-read.mjs';
 import {
   assertConfiguredLinkedProjectRef,
@@ -42,6 +43,8 @@ const CLI = path.join(
   process.platform === 'win32' ? 'supabase.cmd' : 'supabase',
 );
 const PROD_OPT_IN = 'KB_ALLOW_PRODUCTION_DB_MIGRATIONS';
+const SQL_LOCALE_VALUES = SUPPORTED_LOCALES.map((locale) => `'${locale}'`).join(', ');
+const SQL_LOCALE_TEXT_VALUES = SUPPORTED_LOCALES.map((locale) => `'${locale}'::text`).join(', ');
 
 const ROLLOUTS = Object.freeze({
   'settings-locale': Object.freeze({
@@ -58,6 +61,12 @@ const ROLLOUTS = Object.freeze({
         name: 'player_settings_locale',
         file: 'supabase/migrations/20260824133121_player_settings_locale.sql',
         sha256: '9bf3236179c2891c729f434fbb99855aae39cf05e781bb0d13711d73f7b15ffa',
+      }),
+      Object.freeze({
+        version: '20260825161016',
+        name: 'expand_player_settings_locales',
+        file: 'supabase/migrations/20260825161016_expand_player_settings_locales.sql',
+        sha256: '48590f58f81fb75db0218da02dea18600564663d5a82275d51f5ab6c853482f3',
       }),
     ]),
   }),
@@ -201,12 +210,21 @@ select
              where table_schema = 'public' and table_name = 'player_settings'
                and column_name = 'locale'), false) as locale_shape,
   coalesce((select convalidated
-                    and pg_get_constraintdef(oid, true) =
-                      $constraint$CHECK (locale IS NULL OR (locale = ANY (ARRAY['en'::text, 'de'::text, 'fr'::text])))$constraint$
+                    and pg_get_constraintdef(oid, true) in (
+                      $original$CHECK (locale IS NULL OR (locale = ANY (ARRAY['en'::text, 'de'::text, 'fr'::text])))$original$,
+                      $expanded$CHECK (locale IS NULL OR (locale = ANY (ARRAY[${SQL_LOCALE_TEXT_VALUES}])))$expanded$
+                    )
               from pg_constraint
              where conrelid = to_regclass('public.player_settings')
                and conname = 'player_settings_locale_check'
                and contype = 'c'), false) as locale_constraint,
+  coalesce((select convalidated
+                    and pg_get_constraintdef(oid, true) =
+                      $expanded$CHECK (locale IS NULL OR (locale = ANY (ARRAY[${SQL_LOCALE_TEXT_VALUES}])))$expanded$
+              from pg_constraint
+             where conrelid = to_regclass('public.player_settings')
+               and conname = 'player_settings_locale_check'
+               and contype = 'c'), false) as locale_expanded,
   coalesce((select col_description(to_regclass('public.player_settings'), ordinal_position::integer)
                     = 'Null follows the current device language; otherwise a supported base locale override.'
               from information_schema.columns
@@ -216,7 +234,8 @@ select
 
 export const VALID_LOCALE_VALUES = String.raw`
 select count(*) filter (
-         where locale is not null and locale <> all(array['en', 'de', 'fr']::text[])
+         where locale is not null
+           and locale <> all(array[${SQL_LOCALE_VALUES}]::text[])
        )::integer as invalid_locale_count
   from public.player_settings;
 `;
@@ -300,10 +319,11 @@ async function auditPlayerSettings(plan, rollout) {
     ].every((value) => value === true),
     localeColumn: row.locale_column === true && row.locale_shape === true,
     localeConstraint: row.locale_constraint === true,
+    localeExpanded: row.locale_expanded === true,
     localeComment: row.locale_comment === true,
     localeValues: false,
   };
-  if (plan.applied.length === rollout.migrations.length) {
+  if (plan.applied.length >= 2) {
     const values = await productionRead(VALID_LOCALE_VALUES);
     evidence.localeValues = values.length === 1 && Number(values[0].invalid_locale_count) === 0;
   }

@@ -29,6 +29,7 @@
 import pkg from 'playwright';
 const { chromium } = pkg;
 import { SUPABASE_AUTH_STORAGE_KEY } from '../src/config.ts';
+import { LOCALE_REGISTRY } from '../src/i18n/locale.ts';
 import { servedBase } from './serve.mjs';
 const URL = await servedBase();
 const problems = [], out = {};
@@ -157,6 +158,16 @@ try {
      written to describe. Every step runs inside one catch, so the checks that
      already ran are the report. */
   page.setDefaultTimeout(20000);
+  const chooseLocale = async (target) => {
+    await page.evaluate(({ target, limit }) => {
+      for (let step = 0; step < limit
+        && document.documentElement.dataset.locale !== target; step++) {
+        document.getElementById('languageNext')?.click();
+      }
+    }, { target, limit: LOCALE_REGISTRY.length });
+    await page.waitForFunction((target) => document.documentElement.dataset.locale === target,
+      target);
+  };
   try {
     await page.goto(URL, { waitUntil: 'domcontentloaded' });
 
@@ -195,13 +206,13 @@ try {
        first German catalog called it bare "Start", which read as a second
        start-game action beside NEXT DUEL. Repaint the live result in place so
        this asserts the concise app-menu label from the reported screen. */
-    await page.evaluate(() => document.getElementById('languageNext')?.click());
+    await chooseLocale('de');
     await page.waitForFunction(() => document.documentElement.lang === 'de'
       && document.getElementById('btnEndQuiet')?.textContent?.trim() === 'Menü');
     out.result.germanQuiet = await page.$eval('#btnEndQuiet', (button) => button.textContent?.trim());
     check(out.result.germanQuiet === 'Menü',
           'the German ranked-result Home action is ambiguous or mistranslated', out.result);
-    await page.evaluate(() => document.getElementById('languagePrevious')?.click());
+    await chooseLocale('en');
     await page.waitForFunction(() => document.documentElement.lang === 'en'
       && document.getElementById('btnEndQuiet')?.textContent?.trim() === 'Home');
 

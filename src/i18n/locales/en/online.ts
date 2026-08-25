@@ -121,6 +121,8 @@ export const enOnline = {
     reconnecting: 'Reconnecting…',
     awayAutoPlay_one: 'Away — auto play in {{formatted}} second',
     awayAutoPlay_other: 'Away — auto play in {{formatted}} seconds',
+    awayAutoPlayCompact_one: 'Away — move in {{formatted}} s',
+    awayAutoPlayCompact_other: 'Away — move in {{formatted}} s',
     autoPlay: 'Auto play…',
   },
   result: {

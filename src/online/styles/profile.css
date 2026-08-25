@@ -61,6 +61,7 @@
    the space instead (showAccount measures the real overflow) */
 :where(#kbroot) #ovOnline .minihist{max-height:none;overflow:visible;flex:0 0 auto}
 :where(#kbroot) #onAccount .histrow{display:flex;align-items:center;width:100%;padding:12px 14px;border-radius:14px;
+  min-height:44px;
   background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);cursor:pointer;
   font-size:clamp(11px,2.8vw,12.5px);letter-spacing:.18em;color:var(--dim);text-transform:uppercase;font-family:inherit}
 :where(#kbroot) #onAccount .histrow b{color:var(--txt);margin-left:auto;letter-spacing:.06em}

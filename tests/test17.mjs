@@ -66,18 +66,15 @@ try {
       };
       colourProbe.remove();
 
-      /* The prose contract is semantic and live: both ordinary <b> copy and
-         the rules' special .k highlight follow --p2 when the chosen opponent
-         hue changes. This covers every .rules surface, not Privacy alone. */
-      const privacyBold = document.querySelector('#ovPrivacy .rules b');
+      /* The prose contract is semantic and live: the rules' highlighted copy
+         follows --p2 when the chosen opponent hue changes. Legal documents now
+         use typed plain-text blocks and links instead of raw rich HTML. */
       const rulesKeyword = document.querySelector('#ovRules .rules .k');
       const proseBefore = {
-        bold: getComputedStyle(privacyBold).color,
         keyword: getComputedStyle(rulesKeyword).color,
       };
       root.style.setProperty('--p2', '#00ff66');
       const proseAfter = {
-        bold: getComputedStyle(privacyBold).color,
         keyword: getComputedStyle(rulesKeyword).color,
       };
       root.style.removeProperty('--p2');
@@ -95,9 +92,7 @@ try {
       'a selected segment still wears the native WebKit button bevel: ' + label, r.segmentEdge);
     check(r.segmentEdge.borderLeft === r.segmentEdge.p1,
       'a selected segment leaves its bright left edge unpainted: ' + label, r.segmentEdge);
-    check(r.proseBefore.bold === r.proseBefore.keyword,
-      'informational highlights disagree before an opponent-colour change: ' + label, r.proseBefore);
-    check(r.proseAfter.bold === 'rgb(0, 255, 102)' && r.proseAfter.keyword === 'rgb(0, 255, 102)',
+    check(r.proseAfter.keyword === 'rgb(0, 255, 102)',
       'informational highlights do not follow the opponent colour: ' + label, r.proseAfter);
 
     /* ---- EVERY titled page is the SAME page ----

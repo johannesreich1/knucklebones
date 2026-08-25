@@ -40,6 +40,47 @@ invalidating its delayed callback. Tutorial pacing and LIMITED's real die bag
 stay authentic, and dedicated lifecycle suites retain opening-animation
 coverage; the spell suite therefore spends its time on the state it owns.
 
+Pure localization contracts keep the registry, exact catalog keys,
+interpolation placeholders, trusted rich-copy shape, typed compact labels,
+regional-tag normalization, persistence, and fallback aligned across all six
+locales. `tests/i18n.test.ts`, `tests/i18n-catalog.test.ts`, and
+`tests/preferences.test.ts` own those checks. The iOS shell contract derives
+`CFBundleLocalizations` expectations from that same registry;
+`tests/production-migrations.test.ts` and
+`supabase/tests/database/player-settings.test.sql` require the six stable
+database IDs and reject presentation/unsupported tags.
+
+Rendered localization has three complementary gates. The report-only grapheme audit is
+`mise exec -- node --experimental-strip-types tests/i18n-length-report.test.ts`;
+it identifies copy needing review but never replaces rendered evidence. The
+shared eager/mobile/widget matrix runs through
+`mise exec -- node tests/browser/localization/run.mjs`, while
+`mise exec -- node tests/browser/online-localization/run.mjs` uses Chromium and
+stubbed Supabase routes to measure auth, profile, avatar, history, ladder,
+face-off, and ranked-result surfaces. Both browser matrices derive their six
+locales from the registry and cover 320 × 568, 390 × 844, 568 × 320, and
+667 × 375; the eager gate also measures widget widths 320, 390, and 520, and
+renders every registered mode/rune HUD combination at each widget width. It
+also proves the widget screen-reader heading repaints inside its owned locale
+root. The online gate additionally scrolls every action into view and measures
+its effective 44 px hit region.
+
+Legal delivery has two focused pure contracts. Run
+`mise exec -- node --experimental-strip-types tests/legal.test.ts` for draft
+suppression, ready-fact validation, all 24 synthetic static pages, canonical and
+`hreflang` metadata, and shared in-app/static document parity. Run
+`mise exec -- node tests/service-worker.test.mjs` for exact root/legal cache
+keys, offline isolation, and rejection of unknown-page or missing-asset HTML
+fallback. `mise exec -- node tests/browser/legal.mjs` opens the real controller
+through a synthetic non-shipping opener because production draft intentionally
+has no legal links; that controller still renders the checked-in draft facts.
+The same run browser-renders the 24 pages generated from a complete synthetic
+ready fixture. Across 320 × 568, 390 × 844, 568 × 320, and 667 × 375 it covers
+192 in-app/static locale-page cases, shared-renderer parity, text ranges, full
+scroll reachability, a deliberately long URL, one-line compact in-app headers,
+44 px navigation targets, active-overlay language repaint, background
+inertness, heading focus, and close-path focus restoration.
+
 ## Test ownership
 
 Tests should be discoverable by what they prove rather than a growing numeric

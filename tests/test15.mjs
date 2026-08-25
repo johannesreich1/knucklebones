@@ -18,6 +18,8 @@
 // way home). The short cut is read in PIXELS: a way out that stands as tall as
 // NEXT DUEL is not a quiet one, whatever its class list says.
 import pkg from 'playwright';
+import { RESOURCES } from '../src/i18n/catalogs.ts';
+import { LOCALE_REGISTRY } from '../src/i18n/locale.ts';
 const { chromium } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
 const browser = await chromium.launch();
@@ -96,13 +98,18 @@ async function paintedTitleCentre(page) {
 }
 
 const VERDICTS = {
-  win: { en: 'VICTORY', de: 'SIEG', fr: 'VICTOIRE' },
-  lose: { en: 'DEFEAT', de: 'NIEDERLAGE', fr: 'DÉFAITE' },
+  win: Object.fromEntries(LOCALE_REGISTRY.map(({ id }) =>
+    [id, RESOURCES[id].game.result.victory])),
+  lose: Object.fromEntries(LOCALE_REGISTRY.map(({ id }) =>
+    [id, RESOURCES[id].game.result.defeat])),
 };
+const LANGUAGE_TAGS = Object.fromEntries(
+  LOCALE_REGISTRY.map(({ id, languageTag }) => [id, languageTag]),
+);
 async function chooseLocale(page, target) {
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let attempt = 0; attempt < LOCALE_REGISTRY.length + 1; attempt++) {
     const current = await page.getAttribute('html', 'lang');
-    if (current === target) return;
+    if (current === LANGUAGE_TAGS[target]) return;
     await page.evaluate(() => document.getElementById('languageNext')?.click());
     await page.waitForFunction((before) => document.documentElement.lang !== before, current);
   }

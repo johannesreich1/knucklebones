@@ -12,6 +12,7 @@
    a fluid grid for the Settings duel pickers, and this two-class rule says so
    whatever order the chunks' stylesheets land in */
 :where(#kbroot) #onAvatar .avgrid.hues{display:flex;flex-wrap:wrap;justify-content:center}
-:where(#kbroot) #onAvatar .avgrid.hues button{width:38px;height:38px;max-width:none;border-radius:50%}
+:where(#kbroot) #onAvatar .avgrid.hues button{position:relative;width:38px;height:38px;max-width:none;border-radius:50%}
+:where(#kbroot) #onAvatar .avgrid.hues button::before{content:"";position:absolute;inset:-4px;border-radius:50%}
 :where(#kbroot) #onAvatar .avgrid.hues button::after{content:"";width:20px;height:20px;border-radius:50%;background:var(--h);
   box-shadow:0 0 12px var(--h)}
