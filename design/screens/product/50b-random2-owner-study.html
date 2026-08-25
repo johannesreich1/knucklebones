@@ -1,4 +1,4 @@
-<!-- meta name="R2O — Six homes for the player name" group="4h · RANDOM ×2 — player ownership" subtitle="The player colour moves outside the rune tag; six treatments compare how YOU and AI can stay unmistakable while every rune pill keeps only its own hue" width=430 height=1380 sizes="md" links="Offline — local play, Rune deal — shuffling, Rune deal — dealt, R2I — Six marks for two random runes" -->
+<!-- meta name="R2O — Six homes for the player name" group="4h · RANDOM ×2 — player ownership" subtitle="The player colour moves outside the rune tag; the selected owner line now identifies the active draw and the settled rune while every rune pill keeps only its own hue" width=430 height=1380 sizes="md" links="Offline — local play, Rune deal — shuffling, Rune deal — dealt, R2I — Six marks for two random runes" -->
 <style>
   .r2o-scr{box-sizing:border-box;align-items:center;padding:20px 16px 18px;min-height:1268px}
   .r2o-head{width:100%;max-width:352px;text-align:left}
@@ -43,6 +43,9 @@
   /* 01 — a quiet owner line crowns the rune result. */
   .r2o-eyebrow{display:grid;justify-items:center;gap:6px}
   .r2o-eyebrow .wsett{display:contents}
+  .r2o-active{display:grid;justify-items:center;gap:6px;padding-bottom:9px;
+    border-bottom:1px solid rgba(255,255,255,.06)}
+  .r2o-activecopy{font-size:10px;line-height:1;letter-spacing:.34em;color:var(--dim)}
 
   /* 02 — the shortest route: identity is a key immediately beside the answer. */
   .r2o-inline{display:grid;grid-template-columns:minmax(0,54px) auto;align-items:start;
@@ -99,8 +102,9 @@
   <main class="r2o-grid">
     <article class="r2o-opt chosen">
       <span class="r2o-num">01</span><span class="r2o-title">OWNER EYEBROW</span>
-      <p class="r2o-desc">Selected. The name announces the result before the rune, with a little more air.</p>
+      <p class="r2o-desc">Selected. One owner line identifies the active draw, then crowns its dealt rune.</p>
       <div class="r2o-demo">
+        <div class="r2o-owned r2o-active"><span class="r2o-activecopy">RUNE FOR</span><small class="r2o-owner"><i class="r2o-dot"></i>YOU</small></div>
         <div class="r2o-owned r2o-eyebrow"><small class="r2o-owner"><i class="r2o-dot"></i>YOU</small>{{wsettled:rune:fate}}</div>
         <div class="r2o-owned foe r2o-eyebrow"><small class="r2o-owner"><i class="r2o-dot"></i>AI</small>{{wsettled:rune:anvil}}</div>
       </div>

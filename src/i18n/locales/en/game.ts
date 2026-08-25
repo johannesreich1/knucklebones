@@ -91,7 +91,7 @@ export const enGame = {
   reveal: {
     gameMode: 'GAME MODE',
     yourRune: 'YOUR RUNE',
-    runeFor: 'RUNE FOR {{player}}',
+    runeFor: 'RUNE FOR',
     tapReady: 'Tap when you are ready',
     connecting: 'Connecting players…',
     starting: 'Starting',

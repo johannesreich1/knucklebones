@@ -94,7 +94,7 @@ export const deGame = {
   reveal: {
     gameMode: 'SPIELMODUS',
     yourRune: 'DEINE RUNE',
-    runeFor: 'RUNE FÜR {{player}}',
+    runeFor: 'RUNE FÜR',
     tapReady: 'Antippen, wenn du bereit bist',
     connecting: 'Spieler werden verbunden …',
     starting: 'Spiel startet',

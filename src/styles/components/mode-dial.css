@@ -115,6 +115,10 @@
 :where(#kbroot) #ovWheel .dial{margin:0}
 :where(#kbroot) #ovWheel .wtitle{position:absolute;left:0;right:0;text-align:center;
   top:calc(50% - var(--stage)/2 - 28px)}
+:where(#kbroot) #ovWheel .wtitle.has-owner{top:calc(50% - var(--stage)/2 - 32px);
+  padding:0 var(--pad-x);box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:6px}
+:where(#kbroot) #ovWheel .wtitle.has-owner .wtitlecopy{line-height:1}
+:where(#kbroot) #ovWheel .wtitle.has-owner .wowner{max-width:var(--w-col)}
 :where(#kbroot) #ovWheel .wname{position:absolute;left:0;right:0;margin:0;
   top:calc(50% + var(--stage)/2 + 10px)}
 /* the DIRECT child is the readout under the stage; a settled answer keeps a
@@ -146,7 +150,9 @@
   box-shadow:0 0 14px color-mix(in srgb,currentColor 22%,transparent)}
 :where(#kbroot) .wpill svg{width:13px;height:13px}
 :where(#kbroot) .wowner{display:inline-flex;align-items:center;gap:5px;max-width:100%;
-  font-size:10px;line-height:1;letter-spacing:.12em;font-weight:900;white-space:nowrap}
+  min-width:0;font-size:10px;line-height:1;letter-spacing:.12em;font-weight:900;
+  text-transform:none;white-space:nowrap}
+:where(#kbroot) .wownername{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 :where(#kbroot) .wowner::before{content:"";width:4px;height:4px;flex:0 0 auto;border-radius:50%;
   background:currentColor;box-shadow:0 0 7px currentColor}
 /* A random mode followed by RANDOM ×2 leaves two prior answers above the

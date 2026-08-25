@@ -70,10 +70,18 @@ export function versus(me: DialSide, foe: DialSide): string {
    Pure, and exported, because the design build renders these two through the
    very same functions ({{wsettled}}, {{wanswer}}): a card that re-typed a
    mode's blurb would be one more copy of the registry. */
+function ownerEyebrow(context?: string, hue?: string, id?: string): string {
+  const idAttr = id ? ` id="${id}"` : '';
+  const hueAttr = hue ? ` style="color:${hue}"` : '';
+  const hiddenAttr = context ? '' : ' hidden';
+  return `<small class="wowner"${idAttr}${hueAttr}${hiddenAttr}>`
+    + `<span class="wownername">${context ? esc(context) : ''}</span></small>`;
+}
+
 export const settledAnswer = (b: Answer): string =>
   `<div class="wsett${b.context ? ' wowned' : ''}" style="color:${b.hue}">`
   + `<span class="wanswerhead">`
-  + `${b.context ? `<small class="wowner" style="color:${b.contextHue ?? b.hue}">${esc(b.context)}</small>` : ''}`
+  + `${b.context ? ownerEyebrow(b.context, b.contextHue ?? b.hue) : ''}`
   + `<span class="wpill">${b.icon}<b>${esc(b.name)}</b></span></span>`
   + `<span class="wblurb">${esc(b.blurb)}</span></div>`;
 
@@ -90,7 +98,8 @@ function build(): void {
 <div class="ov" id="ovWheel">
   <div class="dwho" id="wheelWho"></div>
   <div class="wsettled" id="wheelSettled"></div>
-  <div class="wtitle" id="wheelTitle">${t('game', 'reveal.gameMode')}</div>
+  <div class="wtitle" id="wheelTitle"><span class="wtitlecopy">${t('game', 'reveal.gameMode')}</span>
+    ${ownerEyebrow(undefined, undefined, 'wheelOwner')}</div>
   <div class="wstage" id="wheelStage"></div>
   <div class="wname" id="wheelName">&nbsp;</div>
   <div class="wblurb" id="wheelBlurb">&nbsp;</div>
@@ -115,6 +124,22 @@ function repaintRating(side: Element | null, player?: DialSide): void {
   if (rating && player?.rating != null) rating.textContent = formatNumber(player.rating);
 }
 
+/** Paint the prompt and its optional recipient without replacing either node. */
+function repaintTitle(ov: HTMLElement, beat: Beat): void {
+  const title = ov.querySelector<HTMLElement>('#wheelTitle');
+  const copy = title?.querySelector<HTMLElement>('.wtitlecopy');
+  const owner = title?.querySelector<HTMLElement>('#wheelOwner');
+  const ownerName = owner?.querySelector<HTMLElement>('.wownername');
+  const context = beat.context;
+  if (copy) copy.textContent = beat.label;
+  if (!title || !owner || !ownerName) return;
+  title.classList.toggle('has-owner', !!context);
+  owner.hidden = !context;
+  ownerName.textContent = context ?? '';
+  if (context) owner.style.color = beat.contextHue ?? beat.hue;
+  else owner.style.removeProperty('color');
+}
+
 /**
  * Repaint only locale-owned text in the live reveal. Theatre markup, settled
  * cards, avatars, listeners, and WAAPI animations remain the exact same nodes.
@@ -130,8 +155,7 @@ function repaintReveal(context: ActiveReveal): void {
   repaintRating(who?.querySelector('.dside.me') ?? null, context.me);
   repaintRating(who?.querySelector('.dside.foe') ?? null, context.foe);
 
-  const title = ov.querySelector<HTMLElement>('#wheelTitle');
-  if (title) title.textContent = beat.label;
+  repaintTitle(ov, beat);
   const stage = ov.querySelector<HTMLElement>('#wheelStage');
   if (stage) beat.repaintStage?.(stage);
 
@@ -146,7 +170,7 @@ function repaintReveal(context: ActiveReveal): void {
     const settledBeat = beats[index];
     if (!settledBeat) return;
     const name = answer.querySelector<HTMLElement>('.wpill b');
-    const owner = answer.querySelector<HTMLElement>('.wowner');
+    const owner = answer.querySelector<HTMLElement>('.wownername');
     const blurb = answer.querySelector<HTMLElement>('.wblurb');
     if (name) name.textContent = settledBeat.name;
     if (owner && settledBeat.context) owner.textContent = settledBeat.context;
@@ -247,7 +271,7 @@ export async function reveal(opts: {
   for (const rune of opts.runes ?? []) {
     beats.push(dealBeat(rune.spell, {
       candidates: rune.candidates,
-      label: () => t('game', 'reveal.runeFor', { player: nameOf(rune.player) }),
+      label: () => t('game', 'reveal.runeFor'),
       context: () => nameOf(rune.player),
       contextHue: colorOf(rune.player),
     }));
@@ -289,7 +313,7 @@ export async function reveal(opts: {
       ov.classList.remove('landed');
       ov.classList.add('hunting');
       wear(ov, beat.cls);
-      $('#wheelTitle').textContent = beat.label;
+      repaintTitle(ov, beat);
       $('#wheelName').innerHTML = '&nbsp;';
       $('#wheelName').style.color = '';
       $('#wheelBlurb').innerHTML = '&nbsp;';

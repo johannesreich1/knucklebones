@@ -94,7 +94,7 @@ export const frGame = {
   reveal: {
     gameMode: 'MODE DE JEU',
     yourRune: 'VOTRE RUNE',
-    runeFor: 'RUNE POUR {{player}}',
+    runeFor: 'RUNE POUR',
     tapReady: 'Touchez quand vous êtes prêt',
     connecting: 'Connexion des joueurs…',
     starting: 'Démarrage',

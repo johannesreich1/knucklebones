@@ -187,12 +187,14 @@ async function inspectReveal(page) {
   await page.waitForTimeout(80);
   await frame(page);
   const deal = await inspect(page, '#ovWheel', [
-    '#wheelTitle', '.rfelt', '.rdealt', '.rface .rlbl', '#wheelName', '#wheelBlurb',
+    '#wheelTitle', '#wheelTitle .wtitlecopy', '#wheelOwner',
+    '.rfelt', '.rdealt', '.rface .rlbl', '#wheelName', '#wheelBlurb',
   ]);
   await page.waitForSelector('#ovWheel.holding', { timeout: 15000 });
   await page.waitForTimeout(80);
   await frame(page);
   const held = await inspect(page, '#ovWheel', [
+    '#wheelTitle', '#wheelTitle .wtitlecopy', '#wheelOwner',
     '#wheelSettled .wowner', '#wheelSettled .wpill', '#wheelSettled .wblurb',
     '#wheelName', '#wheelBlurb',
     '#wheelHold b', '#wheelHold span',
@@ -215,6 +217,11 @@ export async function runConstrainedSurfaceScenarios(suite) {
      A locale repaint during that window must translate the active state and
      let the original timer restore Share in the new locale. */
   await chooseLocale(page, 'en');
+  const revealOwners = {
+    en: { prompt: 'RUNE FOR', first: 'YOU', second: 'AI' },
+    de: { prompt: 'RUNE FÜR', first: 'DU', second: 'KI' },
+    fr: { prompt: 'RUNE POUR', first: 'VOUS', second: 'IA' },
+  };
   await page.evaluate(() => {
     const game = window.__kb;
     game.showEnd({
@@ -330,6 +337,14 @@ export async function runConstrainedSurfaceScenarios(suite) {
     checkSurface(check, `mode-reveal-568x320/${locale}`, reveal.wheel);
     checkSurface(check, `rune-deal-568x320/${locale}`, reveal.deal);
     checkSurface(check, `reveal-hold-568x320/${locale}`, reveal.held);
+    const textFor = (surface, selector) => surface.items
+      .find((item) => item.selector === selector)?.text ?? '';
+    check(textFor(reveal.deal, '#wheelTitle .wtitlecopy') === revealOwners[locale].prompt
+      && textFor(reveal.deal, '#wheelOwner') === revealOwners[locale].first
+      && textFor(reveal.held, '#wheelTitle .wtitlecopy') === revealOwners[locale].prompt
+      && textFor(reveal.held, '#wheelOwner') === revealOwners[locale].second,
+    `RANDOM ×2 did not keep its universal prompt and localized active owner in ${locale}`,
+    { deal: reveal.deal.items, held: reveal.held.items });
     out.localeSurfaces[locale] = {
       settings: settings.items.length,
       modePicker: setup.mode.items.length,

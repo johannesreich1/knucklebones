@@ -119,6 +119,8 @@ try {
       named: document.querySelector('#wheelName').textContent.trim(),
       turned: !!document.querySelector('.rdealt.up'),
       deck: [...document.querySelectorAll('.rcard')].map((e) => e.dataset.rune),
+      owner: document.getElementById('wheelOwner')?.textContent.trim() ?? '',
+      ownerHidden: document.getElementById('wheelOwner')?.hidden ?? true,
       hold: getComputedStyle(document.querySelector('.dhold')).visibility,
     }));
     await page.waitForSelector('.rdealt.up', { timeout: 12000 });
@@ -221,6 +223,8 @@ try {
   check(solo.shuffling.named === '', 'the deal named its rune while still shuffling', solo.shuffling);
   check(!solo.shuffling.turned, 'the card was already face-up while still shuffling', solo.shuffling);
   check(solo.shuffling.hold === 'hidden', 'the countdown ran before anything was dealt', solo.shuffling);
+  check(solo.shuffling.ownerHidden && solo.shuffling.owner === '',
+    'the shared RANDOM rune inherited a stale per-player owner', solo.shuffling);
   check(solo.shuffling.deck.length === new Set(solo.shuffling.deck).size,
     'the deck deals the same rune twice', solo.shuffling.deck);
   /* THE assertion: the card, the readout and the hand all name one rune. */
@@ -289,6 +293,8 @@ try {
 
   // ---- the deck is cut fresh: three deals must not fan out identically ----
   const third = await deal('0');
+  check(third.shuffling.ownerHidden && third.shuffling.owner === '',
+    'the reveal kept RANDOM ×2 owner copy on the next shared-rune deal', third.shuffling);
   const orders = [solo, both, third].map((d) => d.shuffling.deck.join(','));
   out.orders = orders;
   /* the deck is RE-ORDERED as it is worked: the fan the player is handed is not
@@ -342,14 +348,14 @@ try {
 
   /* deal() above always draws a RUNE, which is the offline dressing. Ranked
      reveals the mode alone, so this one holds on whichever beat is last. */
-  const revealHeld = async (mode, spell) => {
-    await page.evaluate(([m, sp]) => {
+  const revealHeld = async (mode, spell, playMode = 'cpu') => {
+    await page.evaluate(([m, sp, pm]) => {
       const k = window.__kb;
-      k.goHome(); k.S.mode = 'cpu'; k.openPractice();
+      k.goHome(); k.S.mode = pm; k.openPractice();
       document.querySelector(`#modePick button[data-v="${m}"]`).click();
       document.querySelector(`#spellPick button[data-v="${sp}"]`).click();
       k.S.timer = 0;
-    }, [mode, spell]);
+    }, [mode, spell, playMode]);
     await page.click('#btnPlay');
     await page.waitForFunction(() => document.querySelector('#ovWheel')?.classList.contains('holding'), { timeout: 20000 });
     await page.waitForTimeout(250);

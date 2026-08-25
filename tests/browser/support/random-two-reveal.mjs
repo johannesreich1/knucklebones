@@ -1,6 +1,49 @@
 // Player-visible RANDOM ×2 contracts shared by the broad reveal owner test.
 // Keep the full two-beat story together: each honest shuffle names its owner,
 // deals the card it showed, and reaches one compact final countdown.
+async function inspectActiveHeading(page) {
+  return page.evaluate(() => {
+    const title = document.getElementById('wheelTitle');
+    const prompt = title?.querySelector('.wtitlecopy');
+    const owner = document.getElementById('wheelOwner');
+    const stage = document.getElementById('wheelStage');
+    const titleBox = title?.getBoundingClientRect();
+    const promptBox = prompt?.getBoundingClientRect();
+    const ownerBox = owner?.getBoundingClientRect();
+    const stageBox = stage?.getBoundingClientRect();
+    const ownerStyle = owner ? getComputedStyle(owner) : null;
+    const dot = owner ? getComputedStyle(owner, '::before') : null;
+    const visibleCards = [...document.querySelectorAll('#wheelStage .rcard, #wheelStage .rdealt')]
+      .filter((card) => {
+        const style = getComputedStyle(card);
+        return style.visibility !== 'hidden' && Number(style.opacity) > 0;
+      }).map((card) => card.getBoundingClientRect());
+    const visualCardTop = visibleCards.length
+      ? Math.min(...visibleCards.map((card) => card.top)) : stageBox?.top ?? 0;
+    return {
+      prompt: prompt?.textContent.trim() ?? '',
+      owner: owner?.textContent.trim() ?? '',
+      ownerHidden: owner?.hidden ?? true,
+      ownerClass: owner?.classList.contains('wowner') ?? false,
+      inlineColor: owner?.style.color ?? '',
+      promptOwnerGap: promptBox && ownerBox
+        ? Math.round((ownerBox.top - promptBox.bottom) * 10) / 10 : -1,
+      titleStageGap: titleBox && stageBox
+        ? Math.round((stageBox.top - titleBox.bottom) * 10) / 10 : -1,
+      promptAboveOwner: !!promptBox && !!ownerBox && promptBox.bottom <= ownerBox.top,
+      ownerAboveStage: !!ownerBox && !!stageBox && ownerBox.bottom <= stageBox.top,
+      visualCardGap: ownerBox
+        ? Math.round((visualCardTop - ownerBox.bottom) * 10) / 10 : -1,
+      paint: ownerStyle && dot ? {
+        fontSize: parseFloat(ownerStyle.fontSize), fontWeight: ownerStyle.fontWeight,
+        letterSpacing: ownerStyle.letterSpacing, lineHeight: ownerStyle.lineHeight,
+        color: ownerStyle.color, dotColor: dot.backgroundColor,
+        dotWidth: parseFloat(dot.width), dotHeight: parseFloat(dot.height),
+      } : null,
+    };
+  });
+}
+
 export async function verifyRandomTwoReveal(page, out, check) {
   await page.evaluate(() => {
     const k = window.__kb;
@@ -11,14 +54,15 @@ export async function verifyRandomTwoReveal(page, out, check) {
   });
   const started = Date.now();
   await page.click('#btnPlay');
-  await page.waitForSelector('#ovWheel.dealing', { timeout: 8000 });
+  await page.waitForSelector('#ovWheel.dealing.hunting #wheelOwner:not([hidden])', { timeout: 8000 });
+  const firstHeading = await inspectActiveHeading(page);
   await page.waitForSelector('.rdealt.up', { timeout: 12000 });
   const firstMs = Date.now() - started;
   const first = await page.evaluate(() => {
     const card = document.querySelector('.rdealt');
     return {
       card: card.dataset.rune,
-      title: document.getElementById('wheelTitle').textContent.trim(),
+      title: document.querySelector('#wheelTitle .wtitlecopy').textContent.trim(),
       deck: [...document.querySelectorAll('.rcard')].map((item) => item.dataset.rune),
     };
   });
@@ -27,6 +71,7 @@ export async function verifyRandomTwoReveal(page, out, check) {
     return card && card.dataset.rune !== firstCard && !card.classList.contains('up');
   }, first.card, { timeout: 8000 });
   const secondStarted = Date.now();
+  const secondHeading = await inspectActiveHeading(page);
   const secondDeck = await page.evaluate(() => {
     const owner = document.querySelector('#wheelSettled .wowner');
     const pill = document.querySelector('#wheelSettled .wpill');
@@ -49,16 +94,24 @@ export async function verifyRandomTwoReveal(page, out, check) {
       ownerAbovePill: !!ownerBox && !!pillBox && ownerBox.bottom <= pillBox.top,
       ownerGap: ownerBox && pillBox ? Math.round((pillBox.top - ownerBox.bottom) * 10) / 10 : -1,
       ownerFontSize: ownerStyle ? parseFloat(ownerStyle.fontSize) : 0,
+      ownerFontWeight: ownerStyle?.fontWeight ?? '',
+      ownerLetterSpacing: ownerStyle?.letterSpacing ?? '',
+      ownerLineHeight: ownerStyle?.lineHeight ?? '',
       dot: dot ? {
         width: parseFloat(dot.width), height: parseFloat(dot.height),
         color: dot.backgroundColor, ownerColor: ownerStyle.color, playerColor,
       } : null,
     };
   });
+  await page.waitForFunction(() => [...document.querySelectorAll('#wheelStage *')]
+    .some((node) => node.getAnimations().some((animation) => animation.playState === 'running')),
+  null, { timeout: 1000 });
   /* Locale repaint must update the new eyebrow in place while the second deck
      is still moving. Rebuilding either node would restart the visual story. */
   const localizedOwner = await page.evaluate(() => {
     const owner = document.querySelector('#wheelSettled .wowner');
+    const activeOwner = document.getElementById('wheelOwner');
+    const titleCopy = document.querySelector('#wheelTitle .wtitlecopy');
     const pill = document.querySelector('#wheelSettled .wpill');
     const stage = document.getElementById('wheelStage');
     const moving = [...stage.querySelectorAll('*')]
@@ -70,16 +123,18 @@ export async function verifyRandomTwoReveal(page, out, check) {
       boards: window.__kb.S.boards,
     });
     const before = {
-      owner: owner.textContent.trim(), pill: pill.textContent.trim(),
-      title: document.getElementById('wheelTitle').textContent.trim(),
+      owner: owner.textContent.trim(), activeOwner: activeOwner.textContent.trim(),
+      pill: pill.textContent.trim(), title: titleCopy.textContent.trim(),
     };
     const stateBefore = state();
     document.getElementById('languageNext').click();
     const after = {
-      owner: owner.textContent.trim(), pill: pill.textContent.trim(),
-      title: document.getElementById('wheelTitle').textContent.trim(),
+      owner: owner.textContent.trim(), activeOwner: activeOwner.textContent.trim(),
+      pill: pill.textContent.trim(), title: titleCopy.textContent.trim(),
     };
     const sameOwner = document.querySelector('#wheelSettled .wowner') === owner;
+    const sameActiveOwner = document.getElementById('wheelOwner') === activeOwner;
+    const sameTitleCopy = document.querySelector('#wheelTitle .wtitlecopy') === titleCopy;
     const samePill = document.querySelector('#wheelSettled .wpill') === pill;
     const sameStage = document.getElementById('wheelStage') === stage;
     const sameAnimation = !moving || [...stage.querySelectorAll('*')]
@@ -88,9 +143,11 @@ export async function verifyRandomTwoReveal(page, out, check) {
     document.getElementById('languageNext').click();
     const restored = {
       owner: owner.textContent.trim(),
-      title: document.getElementById('wheelTitle').textContent.trim(),
+      activeOwner: activeOwner.textContent.trim(),
+      title: titleCopy.textContent.trim(),
     };
-    return { before, after, restored, sameOwner, samePill, sameStage, sameAnimation,
+    return { before, after, restored, hadRunningAnimation: !!moving,
+      sameOwner, sameActiveOwner, sameTitleCopy, samePill, sameStage, sameAnimation,
       stateBefore, stateAfter: state() };
   });
   await page.waitForSelector('.rdealt.up', { timeout: 12000 });
@@ -99,7 +156,8 @@ export async function verifyRandomTwoReveal(page, out, check) {
     null, { timeout: 8000 });
   const second = await page.evaluate(() => ({
     card: document.querySelector('.rdealt').dataset.rune,
-    title: document.getElementById('wheelTitle').textContent.trim(),
+    title: document.querySelector('#wheelTitle .wtitlecopy').textContent.trim(),
+    owner: document.getElementById('wheelOwner').textContent.trim(),
     settled: document.querySelectorAll('#wheelSettled .wsett').length,
     hold: getComputedStyle(document.getElementById('wheelHold')).visibility,
   }));
@@ -113,24 +171,51 @@ export async function verifyRandomTwoReveal(page, out, check) {
     visibleCards: [...document.querySelectorAll('#spellBar .rune:not([hidden])')]
       .filter((card) => !!card.offsetParent).length,
   }));
-  const dual = { firstMs, secondMs, first, secondDeck, localizedOwner, second, played };
+  const dual = { firstMs, secondMs, firstHeading, first, secondHeading, secondDeck,
+    localizedOwner, second, played };
   out.dual = dual;
-  check(dual.first.title === 'RUNE FOR YOU' && dual.second.title === 'RUNE FOR AI'
+  check(dual.first.title === 'RUNE FOR' && dual.firstHeading.owner === 'YOU'
+      && dual.firstHeading.inlineColor === 'var(--p1)'
+      && dual.second.title === 'RUNE FOR' && dual.second.owner === 'AI'
+      && dual.secondHeading.prompt === 'RUNE FOR' && dual.secondHeading.owner === 'AI'
+      && dual.secondHeading.inlineColor === 'var(--p2)'
+      && !dual.firstHeading.ownerHidden && !dual.secondHeading.ownerHidden
+      && dual.firstHeading.ownerClass && dual.secondHeading.ownerClass
+      && dual.firstHeading.promptAboveOwner && dual.secondHeading.promptAboveOwner
+      && dual.firstHeading.ownerAboveStage && dual.secondHeading.ownerAboveStage
+      && dual.firstHeading.promptOwnerGap >= 5 && dual.firstHeading.promptOwnerGap <= 8
+      && dual.secondHeading.promptOwnerGap >= 5 && dual.secondHeading.promptOwnerGap <= 8
+      && dual.firstHeading.titleStageGap >= 5 && dual.secondHeading.titleStageGap >= 5
+      && dual.firstHeading.visualCardGap >= 5.5 && dual.secondHeading.visualCardGap >= 5.5
       && dual.secondDeck.settledOwner === 'YOU'
       && dual.secondDeck.ownerOutsidePill && dual.secondDeck.ownerAbovePill
       && dual.secondDeck.ownerGap >= 5 && dual.secondDeck.ownerGap <= 8
       && dual.secondDeck.ownerFontSize === 10
+      && dual.secondHeading.paint?.fontSize === dual.secondDeck.ownerFontSize
+      && dual.secondHeading.paint?.fontWeight === dual.secondDeck.ownerFontWeight
+      && dual.secondHeading.paint?.letterSpacing === dual.secondDeck.ownerLetterSpacing
+      && dual.secondHeading.paint?.lineHeight === dual.secondDeck.ownerLineHeight
+      && dual.secondHeading.paint?.dotWidth === dual.secondDeck.dot?.width
+      && dual.secondHeading.paint?.dotHeight === dual.secondDeck.dot?.height
+      && dual.secondHeading.paint?.dotColor === dual.secondHeading.paint?.color
       && dual.secondDeck.pillText === dual.secondDeck.settledRune
       && dual.secondDeck.dot?.width >= 3.5 && dual.secondDeck.dot?.width <= 4.5
       && dual.secondDeck.dot?.height >= 3.5 && dual.secondDeck.dot?.height <= 4.5
       && dual.secondDeck.dot?.color === dual.secondDeck.dot?.ownerColor
       && dual.secondDeck.dot?.ownerColor === dual.secondDeck.dot?.playerColor,
     'the two shuffle beats do not identify which player receives each rune', dual);
-  check(dual.localizedOwner.before.owner !== dual.localizedOwner.after.owner
-      && dual.localizedOwner.before.title !== dual.localizedOwner.after.title
+  check(dual.localizedOwner.before.owner === 'YOU'
+      && dual.localizedOwner.before.activeOwner === 'AI'
+      && dual.localizedOwner.before.title === 'RUNE FOR'
+      && dual.localizedOwner.after.owner === 'DU'
+      && dual.localizedOwner.after.activeOwner === 'KI'
+      && dual.localizedOwner.after.title === 'RUNE FÜR'
       && dual.localizedOwner.restored.owner === dual.localizedOwner.before.owner
+      && dual.localizedOwner.restored.activeOwner === dual.localizedOwner.before.activeOwner
       && dual.localizedOwner.restored.title === dual.localizedOwner.before.title
-      && dual.localizedOwner.sameOwner && dual.localizedOwner.samePill
+      && dual.localizedOwner.hadRunningAnimation
+      && dual.localizedOwner.sameOwner && dual.localizedOwner.sameActiveOwner
+      && dual.localizedOwner.sameTitleCopy && dual.localizedOwner.samePill
       && dual.localizedOwner.sameStage && dual.localizedOwner.sameAnimation
       && dual.localizedOwner.stateAfter === dual.localizedOwner.stateBefore,
     'locale repaint rebuilt, skipped, or restarted the owner eyebrow during the second shuffle', dual.localizedOwner);
@@ -155,6 +240,14 @@ export async function verifyRandomTwoLandscape(page, out, check, revealHeld, ove
   out.dualLandscape = await page.evaluate(() => {
     const settled = document.getElementById('wheelSettled').getBoundingClientRect();
     const title = document.getElementById('wheelTitle').getBoundingClientRect();
+    const titleCopy = document.querySelector('#wheelTitle .wtitlecopy').getBoundingClientRect();
+    const activeOwner = document.getElementById('wheelOwner');
+    const activeOwnerBox = activeOwner.getBoundingClientRect();
+    const stage = document.getElementById('wheelStage').getBoundingClientRect();
+    const visibleCards = [...document.querySelectorAll('#wheelStage .rcard, #wheelStage .rdealt')]
+      .filter((card) => Number(getComputedStyle(card).opacity) > 0
+        && getComputedStyle(card).visibility !== 'hidden')
+      .map((card) => card.getBoundingClientRect());
     const answers = [...document.querySelectorAll('#wheelSettled .wsett')];
     const answerBoxes = answers.map((answer) => answer.getBoundingClientRect());
     const pills = answers.map((answer) => answer.querySelector('.wpill').getBoundingClientRect());
@@ -167,6 +260,13 @@ export async function verifyRandomTwoLandscape(page, out, check, revealHeld, ove
       top: settled.top,
       bottom: settled.bottom,
       titleTop: title.top,
+      titleBottom: title.bottom,
+      promptBottom: titleCopy.bottom,
+      activeOwnerTop: activeOwnerBox.top,
+      activeOwnerBottom: activeOwnerBox.bottom,
+      activeOwner: activeOwner.textContent.trim(),
+      stageTop: stage.top,
+      visualCardTop: Math.min(...visibleCards.map((card) => card.top)),
       viewport: innerHeight,
       blurbs: blurbs.map((node) => getComputedStyle(node).display),
       ownerOutsidePill: !!owner && !owner.closest('.wpill'),
@@ -179,6 +279,10 @@ export async function verifyRandomTwoLandscape(page, out, check, revealHeld, ove
   check(out.dualLandscape.count === 2 && out.dualLandscape.top >= 0
       && out.dualLandscape.bottom <= out.dualLandscape.viewport
       && out.dualLandscape.bottom <= out.dualLandscape.titleTop
+      && out.dualLandscape.promptBottom <= out.dualLandscape.activeOwnerTop
+      && out.dualLandscape.titleBottom <= out.dualLandscape.stageTop
+      && out.dualLandscape.activeOwnerBottom + 8 <= out.dualLandscape.visualCardTop
+      && out.dualLandscape.activeOwner === 'AI'
       && out.dualLandscape.blurbs.length === 2
       && out.dualLandscape.blurbs.every((display) => display === 'none')
       && out.dualLandscape.ownerOutsidePill
@@ -195,6 +299,14 @@ export async function verifyRandomTwoLandscape(page, out, check, revealHeld, ove
   out.dualOwnedLandscape = await page.evaluate(() => {
     const settled = document.getElementById('wheelSettled').getBoundingClientRect();
     const title = document.getElementById('wheelTitle').getBoundingClientRect();
+    const titleCopy = document.querySelector('#wheelTitle .wtitlecopy').getBoundingClientRect();
+    const activeOwner = document.getElementById('wheelOwner');
+    const activeOwnerBox = activeOwner.getBoundingClientRect();
+    const stage = document.getElementById('wheelStage').getBoundingClientRect();
+    const visibleCards = [...document.querySelectorAll('#wheelStage .rcard, #wheelStage .rdealt')]
+      .filter((card) => Number(getComputedStyle(card).opacity) > 0
+        && getComputedStyle(card).visibility !== 'hidden')
+      .map((card) => card.getBoundingClientRect());
     const owner = document.querySelector('#wheelSettled .wowner');
     const ownerBox = owner?.getBoundingClientRect();
     const pill = document.querySelector('#wheelSettled .wpill')?.getBoundingClientRect();
@@ -202,6 +314,10 @@ export async function verifyRandomTwoLandscape(page, out, check, revealHeld, ove
     return {
       count: document.querySelectorAll('#wheelSettled .wsett').length,
       top: settled.top, bottom: settled.bottom, titleTop: title.top,
+      titleBottom: title.bottom, promptBottom: titleCopy.bottom,
+      activeOwnerTop: activeOwnerBox.top, activeOwnerBottom: activeOwnerBox.bottom,
+      activeOwner: activeOwner.textContent.trim(), stageTop: stage.top,
+      visualCardTop: Math.min(...visibleCards.map((card) => card.top)),
       ownerOutsidePill: !!owner && !owner.closest('.wpill'),
       ownerGap: ownerBox && pill ? Math.round((pill.top - ownerBox.bottom) * 10) / 10 : -1,
       blurb: blurb ? getComputedStyle(blurb).display : '',
@@ -209,6 +325,10 @@ export async function verifyRandomTwoLandscape(page, out, check, revealHeld, ove
   });
   check(out.dualOwnedLandscape.count === 1 && out.dualOwnedLandscape.top >= 0
       && out.dualOwnedLandscape.bottom <= out.dualOwnedLandscape.titleTop
+      && out.dualOwnedLandscape.promptBottom <= out.dualOwnedLandscape.activeOwnerTop
+      && out.dualOwnedLandscape.titleBottom <= out.dualOwnedLandscape.stageTop
+      && out.dualOwnedLandscape.activeOwnerBottom + 8 <= out.dualOwnedLandscape.visualCardTop
+      && out.dualOwnedLandscape.activeOwner === 'AI'
       && out.dualOwnedLandscape.ownerOutsidePill
       && out.dualOwnedLandscape.ownerGap >= 5 && out.dualOwnedLandscape.ownerGap <= 8
       && out.dualOwnedLandscape.blurb === 'none',
@@ -216,11 +336,19 @@ export async function verifyRandomTwoLandscape(page, out, check, revealHeld, ove
   await dismiss();
 
   await page.setViewportSize({ width: 320, height: 568 });
-  await revealHeld('0', 'random2');
+  await revealHeld('0', 'random2', 'duo');
   await overlaps(page, 'dual-owned-320x568');
   out.dualOwnedPortrait = await page.evaluate(() => {
     const settled = document.getElementById('wheelSettled').getBoundingClientRect();
     const title = document.getElementById('wheelTitle').getBoundingClientRect();
+    const titleCopy = document.querySelector('#wheelTitle .wtitlecopy').getBoundingClientRect();
+    const activeOwner = document.getElementById('wheelOwner');
+    const activeOwnerBox = activeOwner.getBoundingClientRect();
+    const stage = document.getElementById('wheelStage').getBoundingClientRect();
+    const visibleCards = [...document.querySelectorAll('#wheelStage .rcard, #wheelStage .rdealt')]
+      .filter((card) => Number(getComputedStyle(card).opacity) > 0
+        && getComputedStyle(card).visibility !== 'hidden')
+      .map((card) => card.getBoundingClientRect());
     const owner = document.querySelector('#wheelSettled .wowner');
     const ownerBox = owner?.getBoundingClientRect();
     const pill = document.querySelector('#wheelSettled .wpill')?.getBoundingClientRect();
@@ -228,6 +356,11 @@ export async function verifyRandomTwoLandscape(page, out, check, revealHeld, ove
     return {
       count: document.querySelectorAll('#wheelSettled .wsett').length,
       top: settled.top, bottom: settled.bottom, titleTop: title.top,
+      titleBottom: title.bottom, promptBottom: titleCopy.bottom,
+      activeOwnerTop: activeOwnerBox.top, activeOwnerBottom: activeOwnerBox.bottom,
+      activeOwner: activeOwner.textContent.trim(),
+      settledOwner: owner?.textContent.trim() ?? '', stageTop: stage.top,
+      visualCardTop: Math.min(...visibleCards.map((card) => card.top)),
       ownerOutsidePill: !!owner && !owner.closest('.wpill'),
       ownerGap: ownerBox && pill ? Math.round((pill.top - ownerBox.bottom) * 10) / 10 : -1,
       blurb: blurb ? getComputedStyle(blurb).display : '',
@@ -235,6 +368,11 @@ export async function verifyRandomTwoLandscape(page, out, check, revealHeld, ove
   });
   check(out.dualOwnedPortrait.count === 1 && out.dualOwnedPortrait.top >= 0
       && out.dualOwnedPortrait.bottom <= out.dualOwnedPortrait.titleTop
+      && out.dualOwnedPortrait.promptBottom <= out.dualOwnedPortrait.activeOwnerTop
+      && out.dualOwnedPortrait.titleBottom <= out.dualOwnedPortrait.stageTop
+      && out.dualOwnedPortrait.activeOwnerBottom + 8 <= out.dualOwnedPortrait.visualCardTop
+      && out.dualOwnedPortrait.settledOwner === 'PLAYER 1'
+      && out.dualOwnedPortrait.activeOwner === 'PLAYER 2'
       && out.dualOwnedPortrait.ownerOutsidePill
       && out.dualOwnedPortrait.ownerGap >= 5 && out.dualOwnedPortrait.ownerGap <= 8
       && out.dualOwnedPortrait.blurb !== 'none',
