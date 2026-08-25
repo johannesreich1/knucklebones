@@ -1,5 +1,5 @@
 export async function runPickerScenarios(suite) {
-  const { page, out, check, SPELLS, RANDOM_SPELL, RANDOM_DUAL_SPELL } = suite;
+  const { page, out, check, SPELLS, RANDOM_SPELL, RANDOM_DUAL_SPELL, newGame, waitChoose } = suite;
   /* ---------- 0. the picker: NONE by default, one slice per spell ----------
      Same component as the game-mode row, and the slice wears the SAME rune the
      game draws — so what you pick and what lands on the rail cannot disagree. */
@@ -91,4 +91,51 @@ export async function runPickerScenarios(suite) {
   check(/^PILFER — /.test(out.picked.info), 'a picked spell needs its name and line', out.picked.info);
   await page.evaluate(() => window.__kb.goHome());
 
+  /* The shared fixture skips only the opener's real-time presentation. Pin its
+     cancellation contract here: once ready, the invalidated 650ms callback may
+     not begin a stale roll or repaint any player-visible game state. */
+  await newGame({ spell: 'fate' });
+  check(await waitChoose(), 'the fast-ready game did not reach the choice phase');
+  const fastReadySnapshot = () => page.evaluate(() => {
+    const k = window.__kb;
+    const rail = document.getElementById('spellBar');
+    const boardDice = [...document.querySelectorAll('#topBoard .die,#botBoard .die')];
+    const visibleRunes = [...rail.querySelectorAll('.rune:not([hidden])')]
+      .filter((element) => !!element.offsetParent);
+    return {
+      phase: k.S.phase,
+      die: k.S.die,
+      boards: k.S.boards.map((board) => board.map((column) => [...column])),
+      pool: k.S.pool ? [...k.S.pool] : null,
+      charges: k.S.spellCharges.map((hand) => ({ ...hand })),
+      boardDice: {
+        present: boardDice.length,
+        visible: boardDice.filter((die) => getComputedStyle(die).visibility === 'visible'
+          && Number(getComputedStyle(die).opacity) > 0.05).length,
+      },
+      visibleRail: {
+        shown: !!rail.offsetParent,
+        runes: visibleRunes.map((element) => ({
+          seat: element.dataset.seat ?? null,
+          spell: element.dataset.spell ?? null,
+          cards: [...element.querySelectorAll('.rune-charge')].filter((card) => !card.hidden).length,
+        })),
+      },
+      status: document.getElementById('status').textContent,
+    };
+  });
+  const beforeStaleOpener = await fastReadySnapshot();
+  await page.waitForTimeout(850);
+  const afterStaleOpener = await fastReadySnapshot();
+  out.fastReady = { before: beforeStaleOpener, after: afterStaleOpener };
+  check(beforeStaleOpener.phase === 'choose' && beforeStaleOpener.die === 4
+      && beforeStaleOpener.boards.every((board) => board.every((column) => column.length === 0))
+      && beforeStaleOpener.pool === null
+      && beforeStaleOpener.boardDice.present === 0 && beforeStaleOpener.boardDice.visible === 0
+      && beforeStaleOpener.visibleRail.shown && beforeStaleOpener.visibleRail.runes.length === 2
+      && beforeStaleOpener.status.length > 0,
+    'the fast-ready fixture did not establish an ordinary visible choice', beforeStaleOpener);
+  check(JSON.stringify(afterStaleOpener) === JSON.stringify(beforeStaleOpener),
+    'the invalidated opener mutated the fast-ready game after 650ms', out.fastReady);
+  await page.evaluate(() => window.__kb.goHome());
 }

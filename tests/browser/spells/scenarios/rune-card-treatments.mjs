@@ -126,17 +126,21 @@ export async function runRuneCardTreatmentScenarios(suite) {
         face: Number(getComputedStyle(flight.querySelector('.rface')).opacity) };
     };
     const names = flight.getAnimations().map((animation) => animation.animationName);
+    const dealDuration = Number(deal?.effect?.getTiming().duration ?? 0);
     const samples = [read()], started = performance.now();
     while (performance.now() - started < 230) {
       await new Promise(requestAnimationFrame); samples.push(read());
     }
-    const elapsed = performance.now() - started;
-    if (elapsed < 500) await pause(500 - elapsed);
-    const aliveNearEnd = flight.isConnected;
+    /* Surviving beyond the 150ms ownership fade proves its animationend did
+       not remove the clone. Seeking the main animation with currentTime can
+       leave Chromium's queued end event on its original timeline, so a fixed
+       500ms wall-clock probe is both redundant and flaky after the seek. */
+    const aliveAfterOwnerFade = flight.isConnected;
     await pending;
     const total = performance.now() - started;
     if (total < 760) await pause(760 - total);
-    return { found: true, source, first, names, samples: samples.filter(Boolean), railDuring, aliveNearEnd,
+    return { found: true, source, first, names, dealDuration,
+      samples: samples.filter(Boolean), railDuring, aliveAfterOwnerFade,
       goneAfterFlight: !flight.isConnected };
   });
   const playedFace = out.turningOwnerShadow.samples?.findIndex((sample) => sample.face >= .9) ?? -1;
@@ -166,7 +170,8 @@ export async function runRuneCardTreatmentScenarios(suite) {
       && liveDuringCast.cards === 1 && liveDuringCast.opacity >= .99
       && liveDuringCast.transitionProperty === 'none'
       && Math.abs(liveDuringCast.scale - 1) <= .02 && castHandGap >= 12
-      && out.turningOwnerShadow.aliveNearEnd && out.turningOwnerShadow.goneAfterFlight,
+      && out.turningOwnerShadow.dealDuration >= 600
+      && out.turningOwnerShadow.aliveAfterOwnerFade && out.turningOwnerShadow.goneAfterFlight,
     'a direct cast lost its flight treatment or let the spent hand cover the remaining live hand',
     out.turningOwnerShadow);
 

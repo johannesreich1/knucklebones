@@ -17,13 +17,22 @@ export async function runCastingScenarios(suite) {
     'a shared single-use rune is not two persistent one-card seat hands', out.dealt);
 
   /* ---------- 2. tap to arm ---------- */
-  await tapRune(); await page.waitForTimeout(420);
+  await tapRune();
   out.armed = await look();
   check(out.armed.armed === 'pilfer', 'tapping the rune did not arm it', out.armed);
   check(out.armed.casting && !out.armed.castself, 'a column spell arms the board, not the stage', out.armed);
   check(/column/i.test(out.armed.status), 'no instruction while aiming', out.armed.status);
+  /* Wait for the pixels, not a nominal wall-clock delay. Parallel Chromium
+     workers can defer animation frames under load even though JS timers have
+     advanced; the player-visible contract is the face overtaking the back. */
+  await page.waitForFunction(() => {
+    const card = document.querySelector('#spellBar .rune.hand-active:not([hidden]) .rune-charge.top');
+    return card && +getComputedStyle(card.querySelector('.rface')).opacity
+      > +getComputedStyle(card.querySelector('.rback')).opacity
+      && card.getAnimations().some((animation) => animation.animationName === 'runeArm');
+  }, null, { timeout: 3000 }).catch(() => {});
   out.armedCard = await page.evaluate(() => {
-    const card = document.querySelector('#spellBar .rune.hand-active .rune-charge.top');
+    const card = document.querySelector('#spellBar .rune.hand-active:not([hidden]) .rune-charge.top');
     return { face: +getComputedStyle(card.querySelector('.rface')).opacity,
       back: +getComputedStyle(card.querySelector('.rback')).opacity,
       animations: card.getAnimations().map((a) => a.animationName) };

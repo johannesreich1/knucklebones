@@ -33,7 +33,12 @@ const FILE_SUITES = [
   'test9', 'test10',
   { name: 'test11', file: 'tests/browser/hud-settings/run.mjs' },
   'test12', 'test13',
-  { name: 'spells-browser', file: 'tests/browser/spells/run.mjs' },
+  // Local workers overlap the independent spell shards to cut wall time;
+  // CI's JOBS=1 still runs the same complete coverage sequentially.
+  { name: 'spells-defense', file: 'tests/browser/spells/run.mjs', args: ['--shard', 'defense'] },
+  { name: 'spells-interaction', file: 'tests/browser/spells/run.mjs', args: ['--shard', 'interaction'] },
+  { name: 'spells-presentation', file: 'tests/browser/spells/run.mjs', args: ['--shard', 'presentation'] },
+  { name: 'spells-advanced', file: 'tests/browser/spells/run.mjs', args: ['--shard', 'advanced'] },
   'test15', 'test17', 'test18', 'test19', 'test20', 'test21', 'test23', 'test24',
 ];
 const SERVED_SUITES = [
@@ -117,7 +122,7 @@ try {
   const suite = entry => async () => {
     const spec = typeof entry === 'string'
       ? { name: entry, file: `tests/${entry}.mjs` } : entry;
-    judge(spec.name, await runNode([spec.file]), clean);
+    judge(spec.name, await runNode([spec.file, ...(spec.args ?? [])]), clean);
   };
   await pool([
     // pure-Node gates (no browser): seeded dice determinism + PvP match core

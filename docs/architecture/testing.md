@@ -28,6 +28,18 @@ tree. Servers use kernel-assigned ports, so independent worktrees may gate in
 parallel. Use `KB_JOBS=2` under machine contention and repeat a timing failure
 alone before treating it as a product regression.
 
+The spell browser keeps one no-argument run for whole-suite diagnosis and also
+exposes `--only <scenario-id>` for focused iteration. The release runner uses
+four coverage-validated `--shard` selections: every scenario must belong to
+exactly one shard or startup fails. Local workers overlap those independent
+browsers; CI's `JOBS=1` runs the same shard union sequentially, so the speedup
+does not remove or narrow coverage. Successful selected runs print only their
+scenario ids; a failure keeps the full observation report for diagnosis.
+Ordinary spell scenarios also settle the opening roll synchronously after
+invalidating its delayed callback. Tutorial pacing and LIMITED's real die bag
+stay authentic, and dedicated lifecycle suites retain opening-animation
+coverage; the spell suite therefore spends its time on the state it owns.
+
 ## Test ownership
 
 Tests should be discoverable by what they prove rather than a growing numeric

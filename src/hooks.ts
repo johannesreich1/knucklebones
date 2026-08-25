@@ -13,7 +13,7 @@ import { showHints } from './ui/game/hints.ts';
 import { applySides, setStatus, setActivePlate } from './ui/game/turn-state.ts';
 import { fit } from './ui/layout.ts';
 import { closeEnd, showEnd } from './ui/endscreen.ts';
-import { aiChoose, newGame, place } from './flow/game.ts';
+import { aiChoose, newGame, place, sayChoose } from './flow/game.ts';
 import {
   cast,
   arm,
@@ -28,7 +28,7 @@ import {
 import { modeByEnum } from './core/modes.ts';
 
 export function hooks(){
-  return { S, colScore, boardTotal, searchRoot, aiChoose, newGame, place, isFull,
+  return { S, colScore, boardTotal, searchRoot, aiChoose, newGame, place, sayChoose, isFull,
            applyMove, cloneSt, riskOf, nodes,
            sideKey, faceRotated, applySides, renderAll, showHints, setStageDie, loaderDie, setStatus, setActivePlate, nameOf,
            burst, get reduced(){ return REDUCED; }, fit,

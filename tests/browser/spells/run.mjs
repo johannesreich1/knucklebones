@@ -28,6 +28,77 @@ import { runProtectionScenarios } from './scenarios/protections.mjs';
 import { runLayoutScenarios } from './scenarios/layout.mjs';
 import { runScoringWardScenarios } from './scenarios/scoring-ward.mjs';
 
+const SCENARIOS = Object.freeze([
+  { id: 'picker', run: runPickerScenarios },
+  { id: 'casting', run: runCastingScenarios },
+  { id: 'turn-presentation', run: runTurnPresentationScenarios },
+  { id: 'availability', run: runAvailabilityScenarios },
+  { id: 'effects', run: runEffectScenarios },
+  { id: 'stage-effects', run: runStageEffectScenarios },
+  { id: 'bounty-mint', run: runBountyMintScenarios },
+  { id: 'sunder-overload', run: runSunderOverloadScenarios },
+  { id: 'pilfer-anvil-effects', run: runPilferAnvilEffectScenarios },
+  { id: 'protections', run: runProtectionScenarios },
+  { id: 'scoring-ward', run: runScoringWardScenarios },
+  { id: 'layout', run: runLayoutScenarios },
+]);
+
+const SHARDS = Object.freeze({
+  defense: Object.freeze(['protections', 'availability']),
+  interaction: Object.freeze(['picker', 'casting', 'layout']),
+  presentation: Object.freeze(['turn-presentation', 'effects', 'stage-effects']),
+  advanced: Object.freeze(['bounty-mint', 'sunder-overload', 'pilfer-anvil-effects', 'scoring-ward']),
+});
+
+function validateShards() {
+  const memberships = new Map(SCENARIOS.map(({ id }) => [id, 0]));
+  if (memberships.size !== SCENARIOS.length) {
+    throw new Error('Spell browser scenario IDs must be unique');
+  }
+  for (const [shard, ids] of Object.entries(SHARDS)) {
+    for (const id of ids) {
+      if (!memberships.has(id)) {
+        throw new Error(`Spell browser shard "${shard}" references unknown scenario "${id}"`);
+      }
+      memberships.set(id, memberships.get(id) + 1);
+    }
+  }
+  for (const [id, count] of memberships) {
+    if (count !== 1) {
+      throw new Error(`Spell browser scenario "${id}" belongs to ${count} shards; expected exactly one`);
+    }
+  }
+}
+
+function selectedScenarios(argv) {
+  if (argv.length === 0) return SCENARIOS;
+  if (argv.length !== 2 || !argv[1]) {
+    throw new Error('Usage: run.mjs [--only <scenario-id> | --shard <name>]');
+  }
+
+  const [flag, value] = argv;
+  if (flag === '--only') {
+    const scenario = SCENARIOS.find(({ id }) => id === value);
+    if (!scenario) throw new Error(`Unknown spell browser scenario "${value}"`);
+    return [scenario];
+  }
+  if (flag === '--shard') {
+    const ids = SHARDS[value];
+    if (!ids) throw new Error(`Unknown spell browser shard "${value}"`);
+    return ids.map((id) => SCENARIOS.find((scenario) => scenario.id === id));
+  }
+  throw new Error(`Unknown spell browser argument "${flag}"`);
+}
+
+validateShards();
+let scenarios;
+try {
+  scenarios = selectedScenarios(process.argv.slice(2));
+} catch (error) {
+  console.error(error.message);
+  process.exit(2);
+}
+
 const { chromium, devices } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';   // the single-file build
 const browser = await chromium.launch();
@@ -58,6 +129,16 @@ try {
        side — a flake that reads as a layout regression. */
     k.S.starter = 1;                                          // ME opens every game in this probe
     k.newGame(o.tutorial ? { tutorial: true } : undefined);
+    /* Ordinary scenarios assert the ready table, not the opener's real-time
+       pause and roll. Invalidate the generation captured by newGame's 650ms
+       callback before making that exact settled state synchronously. Tutorial
+       pacing is product behaviour, and LIMITED must consume its real die bag,
+       so those two paths deliberately keep the authentic opener. */
+    if (!o.tutorial && (o.mode ?? 0) !== 6) {
+      k.S.gen += 1;
+      k.S.turn = 1; k.S.bottom = 1; k.S.busy = false; k.S.phase = 'choose'; k.S.die = o.die ?? 4;
+      k.renderAll(false); k.applySides(); k.setStageDie(k.S.die, 1); k.sayChoose(); k.showHints();
+    }
   }, opts);
   const waitChoose = async (pg = page) => {
     for (let i = 0; i < 60; i++) {
@@ -147,19 +228,14 @@ try {
     SPELLS, RANDOM_SPELL, RANDOM_DUAL_SPELL, spellCopy, newGame, waitChoose, table, guard, sidePage,
     look, tapCol, tapRune,
   };
-  await runPickerScenarios(suite);
-  await runCastingScenarios(suite);
-  await runTurnPresentationScenarios(suite);
-  await runAvailabilityScenarios(suite);
-  await runEffectScenarios(suite);
-  await runStageEffectScenarios(suite);
-  await runBountyMintScenarios(suite);
-  await runSunderOverloadScenarios(suite);
-  await runPilferAnvilEffectScenarios(suite);
-  await runProtectionScenarios(suite);
-  await runScoringWardScenarios(suite);
-  await runLayoutScenarios(suite);
+  for (const scenario of scenarios) await scenario.run(suite);
 
-  console.log(JSON.stringify({ out, problems }, null, 2));
+  /* Selected runs are the fast iteration/release path. Keep their successful
+     report tiny so the parent gate does not buffer and parse hundreds of KB;
+     failures retain the full observations needed to diagnose the scenario.
+     The no-argument diagnostic contract remains byte-for-shape unchanged. */
+  const reportOut = scenarios.length === SCENARIOS.length || problems.length
+    ? out : { scenarios: scenarios.map(({ id }) => id) };
+  console.log(JSON.stringify({ out: reportOut, problems }, null, 2));
 } finally { await browser.close(); }
 process.exit(problems.length ? 1 : 0);
