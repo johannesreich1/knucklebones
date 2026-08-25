@@ -65,7 +65,8 @@ async function inspectLearningSurfaces(page, check, label) {
 
 async function inspectSetup(page) {
   await page.click('#btnSettingsBack');
-  await page.evaluate(() => { window.__kb.openPractice(); document.querySelector('#modeSeg button[data-m="duo"]')?.click(); });
+  await page.evaluate(() => { window.__kb.openPractice(); });
+  await page.click('#modeSeg button[data-m="duo"]');
   await page.locator('#modePick').scrollIntoViewIfNeeded();
   await page.locator('#modePick').evaluate((element) =>
     element.scrollIntoView({ block: 'center', inline: 'center' }));

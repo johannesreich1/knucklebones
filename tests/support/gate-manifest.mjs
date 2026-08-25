@@ -79,6 +79,8 @@ export const GATE_SUITES = Object.freeze([
   typed('rune-ward-sensitivity'),
   typed('rune-sunder-sensitivity'),
   typed('online-api'),
+  typed('online-watchdog'),
+  typed('idempotent-command'),
   typed('gcauth'),
   typed('edge-handlers'),
   typed('edge-settlement'),
@@ -119,7 +121,7 @@ export const CI_SHARDS = Object.freeze({
     'spells-interaction', 'test18', 'legal-browser', 'test19', 'live-safety',
     'rune-sunder-sensitivity', 'i18n', 'androidship', 'iosship', 'ladderbench',
     'edge-settlement', 'scoring-ward', 'match', 'rune-collection-guard',
-    'ranked-actions',
+    'ranked-actions', 'online-watchdog', 'idempotent-command',
   ]),
   'ci-3': Object.freeze([
     'online-localization-browser', 'test4', 'test8', 'test10', 'spells-advanced',

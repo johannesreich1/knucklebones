@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import type { RankedActionRow } from '../src/core/ranked-actions.ts';
 import type { MatchRow } from '../src/online/match-api.ts';
 import {
+  isEmptyTerminalTrialSnapshot,
   retryCoherentTrialSnapshot,
   trialSnapshotCoherent,
   type TrialSnapshot,
@@ -25,6 +26,15 @@ const coherent: TrialSnapshot = { rows: [row(0), row(1)], match: match(2) };
 assert.equal(trialSnapshotCoherent(behindRows), false);
 assert.equal(trialSnapshotCoherent(behindMatch), false);
 assert.equal(trialSnapshotCoherent(coherent), true);
+const emptyTerminal = { rows: [], match: { ...match(0), status: 'forfeit' as const } };
+assert.equal(isEmptyTerminalTrialSnapshot(emptyTerminal), true);
+assert.equal(isEmptyTerminalTrialSnapshot({ rows: [], match: match(0) }), false);
+assert.equal(isEmptyTerminalTrialSnapshot({ rows: [row(0)], match: {
+  ...match(1), status: 'done',
+} }), false);
+assert.equal(isEmptyTerminalTrialSnapshot({ rows: [], match: {
+  ...match(1), status: 'done',
+} }), false);
 
 let reads = 0;
 const waits: number[] = [];

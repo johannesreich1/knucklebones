@@ -244,12 +244,11 @@ export function bindMenus(root: HTMLElement): void {
     const collected = collectedRuneIds();
     const enabled = runePickAvailable(S.mode, item.v, collected);
     const reachedTrial = confirmedRankedPoolTier() === 'ivory' || collected.length > 0;
-    const reason = enabled ? undefined : !reachedTrial
-      ? t('game', item.v === 'random' || item.v === 'random2'
-        ? 'runeTrial.lockTrialReachIvory'
-        : 'runeTrial.lockReachIvory')
-      : item.v === 'random' || item.v === 'random2'
-        ? t('game', 'runeTrial.lockCollectTwo')
+    const random = item.v === 'random' || item.v === 'random2';
+    const reason = enabled ? undefined : random
+      ? t('game', 'runeTrial.lockCollectTwo')
+      : !reachedTrial
+        ? t('game', 'runeTrial.lockReachIvory')
         : t('game', 'runeTrial.lockWinRune');
     return { enabled, reason };
   });

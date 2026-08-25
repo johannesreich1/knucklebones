@@ -1,6 +1,7 @@
 // Fast Node-side tests for the runtime-free Edge HTTP boundary. Operations are
 // injected, so these exercise methods, CORS, auth, JSON parsing and typed input
 // without a Deno global, network, or database.
+import { readFileSync } from 'node:fs';
 import {
   CORS_HEADERS, createAuthenticator, json, postOnly, record,
   type AuthenticatedContext,
@@ -12,9 +13,11 @@ import { createPvpClaimHandler } from '../supabase/functions/pvp-claim/handler.t
 import { createPvpRuneSelectHandler } from '../supabase/functions/pvp-rune-select/handler.ts';
 import { selectRuneTrial } from '../supabase/functions/pvp-rune-select/operation.ts';
 import { createPvpActionHandler } from '../supabase/functions/pvp-action/handler.ts';
+import { verifyRuneTrialBotOpening } from './support/rune-trial-bot-opening-edge.ts';
 import {
   negotiatedProtocolVersion,
   oldestEligibleCandidate,
+  rankedSeatOrder,
   trialClientCompatibilityError,
 } from '../supabase/functions/pvp-join/matchmaking.ts';
 import type {
@@ -44,6 +47,9 @@ check(negotiatedProtocolVersion([
   { tier: 'ivory', capabilities: ['rune_trial_v1'] },
   { tier: 'ivory', capabilities: [] },
 ]) === 1, 'an old peer did not negotiate the standard protocol-v1 contract');
+check(JSON.stringify(rankedSeatOrder('lower-rated-bot', 'higher-rated-human'))
+    === JSON.stringify({ p1: 'lower-rated-bot', p2: 'higher-rated-human' }),
+  'ranked bot seating displaced the lower-rated participant from the opening seat');
 const compatibleTrial = {
   format: 'rune_trial', rune_rules_version: 1,
 } as MatchRow;
@@ -264,6 +270,35 @@ check(terminalResume.status === 200
   && resumeCalls[0].input.p_match_id === 'trial-1'
   && resumeCalls[0].input.p_actor === 'player-1',
   'terminal Trial resume mutated matchmaking or failed to return the settled row');
+let finalizerCalls = 0;
+const finalizedResume = await selectRuneTrial(resumeContext, {
+  kind: 'read', matchId: 'trial-1',
+}, async (received, payload) => {
+  finalizerCalls++;
+  check(received === resumeContext, 'Rune Trial finalizer received the wrong auth context');
+  return payload;
+});
+check(finalizedResume.status === 200 && finalizerCalls === 1,
+  'Rune Trial selection response bypassed its authoritative post-reveal finalizer');
+
+const startSource = readFileSync('supabase/functions/pvp-join/start.ts', 'utf8');
+check(startSource.includes('rankedSeatOrder(input.underdog, input.favourite)')
+    && !startSource.includes('p1 = input.requester'),
+  'ranked start still forces a human opener instead of preserving underdog p1');
+const selectIndex = readFileSync('supabase/functions/pvp-rune-select/index.ts', 'utf8');
+const joinOperation = readFileSync('supabase/functions/pvp-join/operation.ts', 'utf8');
+const botOpeningSource = readFileSync(
+  'supabase/functions/_shared/rune-trial-bot-opening.ts', 'utf8',
+);
+check(selectIndex.includes('ensureRuneTrialBotOpening')
+    && joinOperation.includes('ensureRuneTrialBotOpening'),
+  'selection finalization or reconnect no longer heals a missing ranked bot opener');
+check(botOpeningSource.includes('appendRankedBotTurn(')
+    && botOpeningSource.includes('commitMatchAction(')
+    && botOpeningSource.includes('actor: match.p1')
+    && botOpeningSource.includes('expectedActionVersion: before.actionCount'),
+  'ranked Trial bot opener bypasses shared replay or the atomic action command');
+await verifyRuneTrialBotOpening(check);
 
 const actionInputs: ActionInput[] = [];
 const actionHandler = createPvpActionHandler({

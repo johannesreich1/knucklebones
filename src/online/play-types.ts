@@ -23,6 +23,10 @@ export interface OnlineState {
   lastMoveAt: number;
   busySync: boolean;
   animating: boolean;
+  /** Keep input frozen until an uncertain/committed command is projected. */
+  recoverySync: boolean;
+  /** A confirmed action response may require a particular log version. */
+  recoveryActionVersion: number | null;
   pendingRow: MatchRow | null;
   finalizing: boolean;
   done: boolean;

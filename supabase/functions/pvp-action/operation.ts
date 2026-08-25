@@ -1,4 +1,3 @@
-import { botMove } from "./core/bot.ts";
 import { settle, type Score } from "./core/ladder.ts";
 import {
   appendRankedAction,
@@ -8,9 +7,9 @@ import {
   type RankedActionRow,
   type RankedRuneDeal,
 } from "./core/ranked-actions.ts";
+import { appendRankedBotTurn } from "./core/ranked-bot-turn.ts";
 import { rankedOutcomeByMatch } from "./core/ranked-outcomes.ts";
 import { AI, ME, legalCols, type Player } from "./core/rules.ts";
-import { machineCastPlan, spellById } from "./core/spells.ts";
 import { json, type AuthenticatedContext } from "../_shared/http.ts";
 import {
   commitMatchAction,
@@ -100,7 +99,7 @@ export async function actionMatch(context: AuthenticatedContext, input: ActionIn
       svc.from("match_seeds").select("seed").eq("match_id", match.id).single(),
     ]);
   if (actionError || seedError) return json({ error: "match-read-failed" }, 500);
-  const rows = (actionData ?? []) as RankedActionRow[];
+  const rows = (actionData ?? []) as unknown as RankedActionRow[];
   const seed = (seedData as { seed?: string } | null)?.seed;
   const dealt: RankedRuneDeal = [match.p2_rune, match.p1_rune];
   const before = seed && rebuildRankedActions(seed, rows, outcome.mode, dealt);
@@ -157,69 +156,20 @@ export async function actionMatch(context: AuthenticatedContext, input: ActionIn
     if (profileError) return json({ error: "profile-read-failed" }, 500);
     const profile = profileData as ProfileSummary | null;
     if (profile?.is_bot) {
-      const botIdx = state.turn;
-      const spell = spellById(dealt[botIdx]);
-      let coordinatedPlacement: number | null = null;
-      if (spell && (state.charges[botIdx][spell.id] ?? 0) > 0 && state.nextDie !== null) {
-        const contextForCast = {
-          mode: outcome.mode,
-          die: state.nextDie,
-          setDie: () => undefined,
-          draw: () => state.nextDie!,
-          bagLeft: null,
-          charm: state.charm,
-        };
-        const plan = machineCastPlan(
-          state.st,
-          botIdx,
-          spell,
-          contextForCast,
-          16,
-          (rootCharm) => botMove(
-            state.st, botIdx, state.nextDie!, profile.rating ?? 0,
-            outcome.mode, Math.random, rootCharm,
-          ),
-        );
-        coordinatedPlacement = plan.placement;
-        if (plan.target !== null) {
-          if (spell.commitsOnAim) {
-            const aim = appendRankedAction(seed, allRows, outcome.mode, dealt, {
-              kind: "aim", rune_id: spell.id,
-            });
-            if (!aim) return json({ error: "corrupt-state" }, 500);
-            committed.push(aim.row);
-            botActions.push(aim.row);
-            allRows.push(aim.row);
-            state = aim.state;
-          }
-          const cast = appendRankedAction(seed, allRows, outcome.mode, dealt, {
-            kind: "cast", rune_id: spell.id, target_col: plan.target,
-          });
-          if (!cast) return json({ error: "corrupt-state" }, 500);
-          committed.push(cast.row);
-          botActions.push(cast.row);
-          allRows.push(cast.row);
-          state = cast.state;
-        }
-      }
-      if (!state.over && state.nextDie !== null) {
-        const col = coordinatedPlacement ?? botMove(
-          state.st,
-          botIdx,
-          state.nextDie,
-          profile.rating ?? 0,
-          outcome.mode,
-          Math.random,
-        );
-        const place = appendRankedAction(seed, allRows, outcome.mode, dealt, {
-          kind: "place", placed_col: col,
-        });
-        if (!place) return json({ error: "corrupt-state" }, 500);
-        committed.push(place.row);
-        botActions.push(place.row);
-        allRows.push(place.row);
-        state = place.state;
-      }
+      const turn = appendRankedBotTurn({
+        seed,
+        rows: allRows,
+        state,
+        mode: outcome.mode,
+        dealt,
+        rating: profile.rating ?? 0,
+        random: Math.random,
+      });
+      if (!turn) return json({ error: "corrupt-state" }, 500);
+      committed.push(...turn.actions);
+      botActions.push(...turn.actions);
+      allRows.push(...turn.actions);
+      state = turn.state;
     }
   }
 

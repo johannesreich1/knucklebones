@@ -30,18 +30,33 @@ export function bindPickerRow(
       button.classList.toggle('on', (button as HTMLButtonElement).dataset.v === current);
       const item = items.find((candidate) => candidate.v === (button as HTMLButtonElement).dataset.v);
       const state = item ? available(item) : { enabled: false };
-      (button as HTMLButtonElement).disabled = !state.enabled;
+      /* Keep locked choices focusable/tappable so touch and keyboard players
+         can reveal the reason below the row. aria-disabled communicates that
+         the choice cannot be selected; the delegated handler enforces it. */
+      (button as HTMLButtonElement).disabled = false;
+      button.setAttribute('aria-disabled', String(!state.enabled));
       button.classList.toggle('locked', !state.enabled);
       if (item) button.setAttribute('aria-label', state.reason ? `${item.name}. ${state.reason}` : item.name);
-      if (state.reason) button.setAttribute('title', state.reason);
-      else button.removeAttribute('title');
+      if (state.reason) {
+        button.setAttribute('title', state.reason);
+        (button as HTMLButtonElement).dataset.lockReason = state.reason;
+      } else {
+        button.removeAttribute('title');
+        delete (button as HTMLButtonElement).dataset.lockReason;
+      }
     });
     info.textContent = pickInfo(items, current);
   };
   tap(strip, (event) => {
     const button = eventButton(event);
     const value = button?.dataset.v;
-    if (!button || button.disabled || value === undefined) return;
+    if (!button || value === undefined) return;
+    if (button.getAttribute('aria-disabled') === 'true') {
+      info.textContent = button.dataset.lockReason ?? button.getAttribute('title') ?? '';
+      Sfx.unlock();
+      Sfx.tap();
+      return;
+    }
     write(value);
     saveStats();
     sync();

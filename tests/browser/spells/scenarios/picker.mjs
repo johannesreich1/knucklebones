@@ -80,6 +80,10 @@ export async function runPickerScenarios(suite) {
   check(out.picker.info === 'NONE — No rune — the pure game.',
     'NONE must describe the absence of a rune', out.picker.info);
   check(out.picker.sameComponent, 'the spell row must reuse the game-mode row', out.picker);
+  /* CPU practice now admits only a verified collection. This scenario owns
+     the full rune interaction roster, so use local multiplayer's deliberately
+     unrestricted library before selecting a named rune. */
+  await page.tap('#modeSeg button[data-m="duo"]');
   // picking the spell names it, with its own blurb
   await page.tap('#spellPick button[data-v="pilfer"]'); await page.waitForTimeout(200);
   out.picked = await page.evaluate(() => ({

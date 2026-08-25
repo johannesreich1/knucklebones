@@ -1,6 +1,5 @@
 import { inApex } from '../core/ladder.ts';
-import { spellById, type SpellSpec } from '../core/spells.ts';
-import { formatNumber, spellCopy, t } from '../i18n/index.ts';
+import { formatNumber, t } from '../i18n/index.ts';
 import { $, hide } from '../ui/dom.ts';
 import {
   repaintEndLocale,
@@ -9,7 +8,6 @@ import {
   type EndSpec,
 } from '../ui/endscreen.ts';
 import { refreshHomeChip } from '../ui/homechip.ts';
-import { spellHue, spellIcon } from '../ui/spellicons.ts';
 import {
   myLadder,
   myStanding,
@@ -19,12 +17,19 @@ import {
 import { showFaceoff, type MySide } from './faceoff.ts';
 import { cacheStanding, myProfile } from './session.ts';
 import { acknowledgeRuneReward, refreshRuneCollection } from './rune-collection.ts';
+import {
+  acknowledgeRuneRewardWhenPresented,
+  firstUnseenRuneReward,
+  runeRewardFeature,
+  type RuneRewardAcknowledgement,
+  type RuneRewardPresentation,
+} from './rune-reward-presentation.ts';
 import type { FinishReport } from './play.ts';
 
 interface ResultPorts {
   goHome(): void;
   nextDuel(): void;
-  openProfile(): void;
+  openProfile(onReturn: () => void): void;
   tryRune(runeId: string, report: FinishReport): void;
 }
 
@@ -37,12 +42,66 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
   async function show(report: FinishReport): Promise<void> {
     const revision = ++showRevision;
     hide('#ovOnline');
-    let rewardRune: SpellSpec | null = null;
+    let reward: RuneRewardPresentation | null = null;
+    let rewardAcknowledgement: RuneRewardAcknowledgement | null = null;
+    let rewardExplicitlyAcknowledged = false;
+    let foreground = true;
     const opponentName = (): string => report.opponentName?.() ?? report.opp;
-    const depart = (run: () => void) => (): void => {
+    const depart = (run: () => void, before?: () => void) => (): void => {
       if (revision !== showRevision) return;
+      before?.();
+      foreground = false;
+      rewardAcknowledgement?.cancel();
+      rewardAcknowledgement = null;
       showRevision++;
       run();
+    };
+    const armRewardAcknowledgement = (): void => {
+      if (!reward || !foreground || revision !== showRevision) return;
+      rewardAcknowledgement?.cancel();
+      rewardAcknowledgement = acknowledgeRuneRewardWhenPresented(
+        reward,
+        $('#endFeature'),
+        () => foreground && revision === showRevision && $('#ovEnd').classList.contains('on'),
+      );
+    };
+    const acknowledgeRewardForAction = (): void => {
+      if (!reward || rewardExplicitlyAcknowledged) return;
+      rewardExplicitlyAcknowledged = true;
+      const submitted = rewardAcknowledgement?.acknowledge() ?? null;
+      rewardAcknowledgement = null;
+      if (submitted) {
+        void submitted.then((acknowledged) => {
+          if (!acknowledged) void acknowledgeRuneReward(reward!.accountId, reward!.rune.id);
+        });
+        return;
+      }
+      /* A temporary cover cancels the visibility watcher. Its return refresh
+         can still be pending when the player immediately chooses TRY IT, so
+         bind that explicit action directly to the already-presented reward. */
+      void acknowledgeRuneReward(reward.accountId, reward.rune.id);
+    };
+    const resumeReward = (): void => {
+      if (revision !== showRevision) return;
+      foreground = true;
+      const expectedRune = reward?.rune.id;
+      if (!expectedRune) return;
+      /* Profile may have presented/acknowledged the same durable row while it
+         covered this result. Re-read before rearming, avoiding a stale second
+         RPC while still restoring an unseen reward after a dismissed cover. */
+      void refreshRuneCollection().then((collection) => {
+        if (!foreground || revision !== showRevision) return;
+        if (firstUnseenRuneReward(collection)?.rune.id === expectedRune) {
+          armRewardAcknowledgement();
+        }
+      }).catch(() => undefined);
+    };
+    const cover = (run: (onReturn: () => void) => void): void => {
+      if (revision !== showRevision) return;
+      foreground = false;
+      rewardAcknowledgement?.cancel();
+      rewardAcknowledgement = null;
+      run(resumeReward);
     };
     let cache: {
       nickname?: string;
@@ -72,7 +131,7 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
         delta: report.delta,
         won: report.won,
         lost: !report.won && !report.draw,
-        tap: ports.openProfile,
+        tap: () => cover(ports.openProfile),
       },
       {
         name: opponentName(),
@@ -85,7 +144,7 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
         lost: report.won,
         stamp: report.won ? (report.forfeit
           ? t('online', 'result.forfeitStamp') : t('online', 'result.beatenStamp')) : undefined,
-        tap: visibleFoe && visibleFoe.points != null && visibleFoe.rank != null ? () => showFaceoff({
+        tap: visibleFoe && visibleFoe.points != null && visibleFoe.rank != null ? () => cover((onReturn) => showFaceoff({
           nickname: opponentName(),
           points: visibleFoe!.points!,
           wins: visibleFoe!.wins ?? 0,
@@ -95,7 +154,7 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
           apex: visibleFoe!.apex,
           avatar: report.oppAvatar,
           peak: visibleFoe!.peak ?? 0,
-        }, visibleMine) : undefined,
+        }, visibleMine, onReturn)) : undefined,
       },
     ];
     const endSpec = (): EndSpec => {
@@ -118,18 +177,13 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
         you: { score: report.my, label: '' },
         them: { score: report.their, label: '' },
         plates: plates(),
-        feature: rewardRune ? {
-          className: 'rune-reward',
-          hue: spellHue(rewardRune.id),
-          icon: spellIcon(rewardRune.id, 24),
-          kicker: t('online', 'result.newRune'),
-          title: spellCopy(rewardRune.id).name,
-          body: spellCopy(rewardRune.id).blurb,
-          action: {
-            label: t('online', 'result.tryIt'),
-            run: depart(() => ports.tryRune(rewardRune!.id, report)),
-          },
-        } : undefined,
+        feature: reward ? runeRewardFeature(
+          reward,
+          depart(
+            () => ports.tryRune(reward!.rune.id, report),
+            acknowledgeRewardForAction,
+          ),
+        ) : undefined,
         again: { label: t('online', 'result.nextDuel'), run: depart(ports.nextDuel) },
         quiet: { label: t('common', 'actions.home'), run: depart(ports.goHome) },
         share: t('online', 'result.share', {
@@ -145,16 +199,14 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
 
     void refreshRuneCollection().then((collection) => {
       if (revision !== showRevision) return;
-      rewardRune = spellById(collection.unseen[0]?.rune_id);
-      if (!rewardRune) return;
+      /* A durable reward may predate this result. Never label that older win
+         as a reward for the loss/draw currently on screen; entry/profile owns
+         recovery when this report itself is not a settled win. */
+      if (!report.won) return;
+      reward = firstUnseenRuneReward(collection);
+      if (!reward) return;
       repaintEndLocale();
-      const shownRune = rewardRune;
-      setTimeout(() => {
-        if (revision === showRevision && !$('#endFeature').hidden
-            && $('#ovEnd').classList.contains('on')) {
-          void acknowledgeRuneReward(shownRune.id);
-        }
-      }, 0);
+      armRewardAcknowledgement();
     }).catch(() => undefined);
 
     void Promise.all([myProfile(), myStanding(), myLadder(), playerCard(opponentName())])

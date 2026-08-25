@@ -14,6 +14,8 @@ import {
   type MatchRow,
   type RuneTrialState,
 } from './match-api.ts';
+import { recoverIdempotentCommand } from './idempotent-command.ts';
+import { randomUuid } from './random-id.ts';
 
 type Matched = Extract<JoinResult, { status: 'matched' }>;
 
@@ -140,8 +142,26 @@ export async function resolveRankedTrial(
       } else if (!raced.value) {
         return null;
       } else {
-        const committed = await selectRune(current.match.id, raced.value);
+        const selectedRune = raced.value;
+        const commandId = randomUuid();
+        let committed = await selectRune(current.match.id, selectedRune, commandId);
         if (!ports.owns()) return null;
+        const uncertain = (response: typeof committed | null): boolean => !response
+          || response.status === 0 || response.status >= 500
+          || (response.status === 200 && !response.data);
+        if (uncertain(committed)) {
+          const recovered = await recoverIdempotentCommand(committed, {
+            owns: ports.owns,
+            uncertain,
+            observe: async () => await refresh()
+              && (!!current.trial?.your_choice || playing(current)
+                || trialSelectionSettled(current.match)),
+            replay: async () => await selectRune(current.match.id, selectedRune, commandId),
+          });
+          if (recovered.kind === 'cancelled') return null;
+          if (recovered.kind === 'observed') continue;
+          committed = recovered.response;
+        }
         if (committed.status === 200 && committed.data) current = mergeTrial(current, committed.data);
         else await refresh(); // lost idempotent response or a terminal opponent update
       }

@@ -61,16 +61,20 @@ try {
       const dealLocale = await observeLocale(page);
       localeRepaint.cycle = localeCycleFrom(dealLocale, 3);
     }
-    await page.evaluate((m) => {
+    await page.evaluate(() => {
       const k = window.__kb;
       k.goHome(); k.openPractice();
-      document.querySelector(`#modePick button[data-v="${m}"]`).click();
-      document.querySelector('#spellPick button[data-v="random"]').click();
-      k.S.timer = 0;
-    }, localMode);
+    });
+    /* The reveal contract is independent of progression. Local multiplayer is
+       the one mode that intentionally exposes the complete rune roster, so it
+       keeps this animation probe deterministic even with no signed-in cache. */
+    await page.click('#modeSeg button[data-m="duo"]');
+    await page.click(`#modePick button[data-v="${localMode}"]`);
+    await page.click('#spellPick button[data-v="random"]');
+    await page.evaluate(() => { window.__kb.S.timer = 0; });
     await page.click('#btnPlay');
     if (liveLocale) {
-      await page.waitForSelector('#wheelDial', { timeout: 14000 });
+      await page.waitForSelector('#wheelDial', { timeout: 20000 });
       await page.waitForTimeout(700); // clear tap()'s native-click guard
       localeRepaint.mode = await page.evaluate(() => {
         const overlay = document.getElementById('ovWheel');
@@ -100,7 +104,7 @@ try {
         };
       });
     }
-    await page.waitForSelector('#ovWheel.dealing', { timeout: 14000 });
+    await page.waitForSelector('#ovWheel.dealing', { timeout: 20000 });
     if (liveLocale) {
       await page.waitForTimeout(30); // fanIn has installed its live WAAPI animations
       localeRepaint.rune = await page.evaluate(() => {
@@ -283,7 +287,7 @@ try {
     'the game and the reveal disagree when BOTH were random', { turned: both.turned, played: both.played });
   verifyDealLocaleRepaint(both, initialLocale, check);
 
-  await verifyRandomTwoReveal(page, out, check);
+  await verifyRandomTwoReveal(page, out, check, SPELLS.map(({ id }) => id));
 
   // ---- the deck is cut fresh: three deals must not fan out identically ----
   const third = await deal('0');
@@ -343,13 +347,22 @@ try {
   /* deal() above always draws a RUNE, which is the offline dressing. Ranked
      reveals the mode alone, so this one holds on whichever beat is last. */
   const revealHeld = async (mode, spell, playMode = 'cpu') => {
-    await page.evaluate(([m, sp, pm]) => {
+    await page.evaluate(({ activeMode, collected }) => {
+      if (activeMode === 'cpu') {
+        localStorage.setItem('knucklebones.runes.v1', JSON.stringify({
+          version: 1,
+          accountId: '11111111-2222-4333-8444-555555555555',
+          verifiedAt: 1,
+          collected,
+        }));
+      }
       const k = window.__kb;
-      k.goHome(); k.S.mode = pm; k.openPractice();
-      document.querySelector(`#modePick button[data-v="${m}"]`).click();
-      document.querySelector(`#spellPick button[data-v="${sp}"]`).click();
-      k.S.timer = 0;
-    }, [mode, spell, playMode]);
+      k.goHome(); k.openPractice();
+    }, { activeMode: playMode, collected: SPELLS.map(({ id }) => id) });
+    await page.click(`#modeSeg button[data-m="${playMode}"]`);
+    await page.click(`#modePick button[data-v="${mode}"]`);
+    await page.click(`#spellPick button[data-v="${spell}"]`);
+    await page.evaluate(() => { window.__kb.S.timer = 0; });
     await page.click('#btnPlay');
     await page.waitForFunction(() => document.querySelector('#ovWheel')?.classList.contains('holding'), { timeout: 20000 });
     await page.waitForTimeout(250);

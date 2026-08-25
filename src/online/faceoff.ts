@@ -22,7 +22,11 @@ export interface MySide {
 let paintOpenFaceoff: (() => void) | null = null;
 subscribeLocale(() => { paintOpenFaceoff?.(); });
 
-export function showFaceoff(row: LeaderboardRow, mine: MySide | null): void {
+export function showFaceoff(
+  row: LeaderboardRow,
+  mine: MySide | null,
+  onClose?: () => void,
+): void {
   const group = boardGroup(row.points, row.apex);
   const myGroup = mine ? boardGroup(mine.lad.points, false) : null;
   const myGames = mine ? mine.lad.wins + mine.lad.losses + mine.lad.draws : 0;
@@ -51,6 +55,7 @@ export function showFaceoff(row: LeaderboardRow, mine: MySide | null): void {
       ${stat('peak', '', mine && '')}
       ${stat('rate', '', mine && '')}
     </div>`,
+    onClose,
   });
   let theirStreak: number | null | undefined;
   let myStreak: number | null | undefined;

@@ -41,6 +41,8 @@ export function createOnlineState(
     lastMoveAt: Date.parse(result.match.last_move_at),
     busySync: false,
     animating: false,
+    recoverySync: false,
+    recoveryActionVersion: null,
     pendingRow: null,
     finalizing: false,
     done: false,

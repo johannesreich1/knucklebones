@@ -263,6 +263,7 @@ async function probeCredentialTransition(page, routes) {
     settled,
     passwordCalls: routes.passwordCalls(),
     profileCalls: routes.profileCalls(),
+    tierProfileCalls: routes.tierProfileCalls(),
   };
 }
 
@@ -280,7 +281,11 @@ async function probeCancelledTransition(page, routes) {
       .filter((panel) => !panel.hidden && panel.id !== 'onLoading')
       .map((panel) => panel.id),
   }));
-  return { ...state, profileCalls: routes.profileCalls() };
+  return {
+    ...state,
+    profileCalls: routes.profileCalls(),
+    tierProfileCalls: routes.tierProfileCalls(),
+  };
 }
 
 async function probeAccountCredentialSuccess(page, routes) {
@@ -365,7 +370,8 @@ export async function runAuthModalScenarios(suite) {
   check(c?.passwordCalls === 1 && c.transition.onlineOn && c.transition.loadingVisible
     && c.transition.authRestored && c.transition.authHidden && c.transition.focused === 'onTitle',
   'successful credentials did not atomically leave auth for the owned loading view', c);
-  check(c?.profileCalls >= 2 && c.settled.secondSheetOpen && c.settled.accountVisible
+  check(c?.profileCalls >= 2 && c.tierProfileCalls >= 2
+    && c.settled.secondSheetOpen && c.settled.accountVisible
     && c.settled.onlineInert,
   'an older successful transition closed or displaced a newer auth sheet', c);
 
@@ -373,7 +379,8 @@ export async function runAuthModalScenarios(suite) {
     skipStandardProbes: true, probe: probeCancelledTransition });
   out.authCredentialCancelled = cancelled.probeResult;
   const x = cancelled.probeResult;
-  check(x?.homeOn && !x.onlineOn && x.profileCalls === 1 && x.visiblePanels.length === 0,
+  check(x?.homeOn && !x.onlineOn && x.profileCalls === 1 && x.tierProfileCalls === 1
+    && x.visiblePanels.length === 0,
     'Back during credential loading allowed the stale destination route to continue', x);
 
   const accountSuccess = await visit({ passwordAuth: 'success', skipStandardProbes: true,

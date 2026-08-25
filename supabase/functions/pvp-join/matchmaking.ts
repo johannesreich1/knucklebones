@@ -15,6 +15,11 @@ interface RatingRow {
   rating: number | null;
 }
 
+/** Ranked always seats the lower-rated participant as p1, including bots. */
+export function rankedSeatOrder(underdog: string, favourite: string) {
+  return { p1: underdog, p2: favourite } as const;
+}
+
 export function negotiatedProtocolVersion(
   accesses: readonly { capabilities?: readonly string[] }[],
 ): 1 | 2 {

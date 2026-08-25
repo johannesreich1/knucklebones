@@ -13,7 +13,7 @@ import {
 } from "./core/ranked-outcomes.ts";
 import type { EdgeClient } from "../_shared/http.ts";
 import type { MatchRow } from "../_shared/types.ts";
-import { negotiatedProtocolVersion } from "./matchmaking.ts";
+import { negotiatedProtocolVersion, rankedSeatOrder } from "./matchmaking.ts";
 
 export class MatchStartFailure extends Error {}
 
@@ -50,13 +50,7 @@ export async function startProgressiveRankedMatch(
   const accesses = [input.underdogAccess, input.favouriteAccess] as const;
   const spec = pickRankedOutcome(seed, accesses);
   const protocolVersion = negotiatedProtocolVersion(accesses);
-  let p1 = input.underdog, p2 = input.favourite;
-  // Trial starts only after both private choices reveal. Keep the human in
-  // the opening seat against a bot so no invisible bot opener is needed.
-  if (input.bot && spec.format === RUNE_TRIAL_FORMAT) {
-    p1 = input.requester;
-    p2 = input.bot.id;
-  }
+  const { p1, p2 } = rankedSeatOrder(input.underdog, input.favourite);
   const firstDie = spec.mode === LIMITED ? poolSequence(seed)[0] : diceStream(seed)();
   let openingCol: number | null = null;
   let afterTurn: Player | null = null;

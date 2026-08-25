@@ -3,6 +3,7 @@
 // setup never has to import this lazy online chunk.
 import { spellById } from '../core/spells.ts';
 import type { RankedPoolTier } from '../core/ranked-outcomes.ts';
+import { SUPABASE_KEY, SUPABASE_URL } from '../config.ts';
 import {
   clearRuneCollectionSnapshot,
   collectedRuneIds,
@@ -11,8 +12,24 @@ import {
 } from '../rune-collection-cache.ts';
 import { supa } from './client.ts';
 import { createCollectionRefreshGuard } from './rune-collection-guard.ts';
+import { acknowledgeRuneRewardForAccount } from './rune-reward-ack.ts';
+import type { ActiveRuneRewardAccount } from './rune-reward-ack.ts';
 
 const refreshGuard = createCollectionRefreshGuard();
+const pendingRewardAcknowledgements = new Map<string, Promise<boolean>>();
+const RUNE_REWARD_ACK_TIMEOUT_MS = 3000;
+
+function rewardAcknowledgementKey(accountId: string, runeId: string): string {
+  return `${accountId.toLowerCase()}:${runeId}`;
+}
+
+async function waitForRewardAcknowledgements(accountId: string): Promise<void> {
+  const prefix = `${accountId.toLowerCase()}:`;
+  const pending = [...pendingRewardAcknowledgements]
+    .filter(([key]) => key.startsWith(prefix))
+    .map(([, acknowledgement]) => acknowledgement);
+  if (pending.length) await Promise.allSettled(pending);
+}
 
 export function invalidateRuneCollectionRefreshes(): void {
   refreshGuard.invalidate();
@@ -55,6 +72,13 @@ async function sessionAccountId(): Promise<string | null> {
   return error ? null : data.session?.user.id ?? null;
 }
 
+async function activeRuneRewardAccount(): Promise<ActiveRuneRewardAccount | null> {
+  const { data, error } = await supa().auth.getSession();
+  const session = data.session;
+  if (error || !session?.user.id || !session.access_token) return null;
+  return { accountId: session.user.id, accessToken: session.access_token };
+}
+
 /**
  * Refresh the collection for the active account. A cached collection from a
  * different account is removed before the request, so an outage can retain
@@ -65,13 +89,20 @@ export async function refreshRuneCollection(
 ): Promise<RuneCollectionRefresh> {
   const id = accountId ?? await sessionAccountId();
   if (!id) {
-    clearRuneCollectionSnapshot();
+    const retained = readRuneCollectionSnapshot();
+    if (retained) clearRuneCollectionSnapshot(retained.accountId);
     return { accountId: null, collected: [], unseen: [], verified: false, poolTier: null };
   }
+  /* Result/profile navigation may race a just-visible reward's durable ACK.
+     Query only after that account's in-flight writes settle: success removes
+     the unseen row, while failure deliberately leaves it recoverable. */
+  await waitForRewardAcknowledgements(id);
   const token = refreshGuard.begin(id);
 
   const cached = readRuneCollectionSnapshot();
-  if (cached && cached.accountId !== id.toLowerCase()) clearRuneCollectionSnapshot();
+  if (cached && cached.accountId !== id.toLowerCase()) {
+    clearRuneCollectionSnapshot(cached.accountId);
+  }
 
   const [runeResult, profileResult] = await Promise.all([
     supa().from('player_runes')
@@ -84,7 +115,23 @@ export async function refreshRuneCollection(
       .maybeSingle(),
   ]);
   if (runeResult.error) {
+    const activeAccountId = await sessionAccountId();
     const retained = readRuneCollectionSnapshot();
+    const ownership = refreshGuard.settle(token, activeAccountId, retained?.accountId ?? null);
+    if (!ownership.owns) {
+      /* An implicit A -> B session replacement does not pass through signOut's
+         eager invalidation. Never hand A's retained runes to B after A's
+         failed request; remove only the stale A snapshot, preserving a newer
+         B refresh if one already won the race. */
+      if (ownership.discardRetained) clearRuneCollectionSnapshot(id);
+      return {
+        accountId: null,
+        collected: [],
+        unseen: [],
+        verified: false,
+        poolTier: null,
+      };
+    }
     const sameAccount = retained?.accountId === id.toLowerCase() ? retained : null;
     return {
       accountId: id,
@@ -102,15 +149,16 @@ export async function refreshRuneCollection(
     ? cachedTier
     : usablePoolTier(profileResult.data?.ranked_pool_tier);
   const activeAccountId = await sessionAccountId();
-  if (!refreshGuard.owns(token, activeAccountId)) {
-    const retained = readRuneCollectionSnapshot();
-    const sameAccount = retained?.accountId === id.toLowerCase() ? retained : null;
+  const retained = readRuneCollectionSnapshot();
+  const ownership = refreshGuard.settle(token, activeAccountId, retained?.accountId ?? null);
+  if (!ownership.owns) {
+    if (ownership.discardRetained) clearRuneCollectionSnapshot(id);
     return {
-      accountId: id,
-      collected: sameAccount?.collected ?? [],
+      accountId: null,
+      collected: [],
       unseen: [],
       verified: false,
-      poolTier: sameAccount?.poolTier ?? null,
+      poolTier: null,
     };
   }
   writeRuneCollectionSnapshot(id, collected, Date.now(), poolTier);
@@ -124,10 +172,55 @@ export async function refreshRuneCollection(
 }
 
 /** Mark a shown first-unlock reward seen without granting broad table UPDATE. */
-export async function acknowledgeRuneReward(runeId: string): Promise<boolean> {
-  if (!spellById(runeId)) return false;
-  const { data, error } = await supa().rpc('acknowledge_rune_reward', {
-    reward_rune_id: runeId,
+async function sendRuneRewardAcknowledgement(
+  expectedAccountId: string,
+  runeId: string,
+): Promise<boolean> {
+  return acknowledgeRuneRewardForAccount(expectedAccountId, runeId, {
+    activeAccount: activeRuneRewardAccount,
+    acknowledge: async (rewardRuneId, account) => {
+      /* Bind the write to the token captured by the immediately preceding
+         identity check. supabase-js resolves ambient auth when a builder is
+         executed, which would otherwise leave a small A -> B retarget window. */
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), RUNE_REWARD_ACK_TIMEOUT_MS);
+      try {
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/acknowledge_rune_reward`, {
+          method: 'POST',
+          signal: controller.signal,
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${account.accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ reward_rune_id: rewardRuneId }),
+        });
+        if (!response.ok) return false;
+        try { return await response.json() === true; } catch { return false; }
+      } catch {
+        return false;
+      } finally {
+        clearTimeout(timeout);
+      }
+    },
   });
-  return !error && data === true;
+}
+
+export function acknowledgeRuneReward(
+  expectedAccountId: string,
+  runeId: string,
+): Promise<boolean> {
+  if (!spellById(runeId)) return Promise.resolve(false);
+  const key = rewardAcknowledgementKey(expectedAccountId, runeId);
+  const existing = pendingRewardAcknowledgements.get(key);
+  if (existing) return existing;
+  let pending!: Promise<boolean>;
+  pending = sendRuneRewardAcknowledgement(expectedAccountId, runeId)
+    .finally(() => {
+      if (pendingRewardAcknowledgements.get(key) === pending) {
+        pendingRewardAcknowledgements.delete(key);
+      }
+    });
+  pendingRewardAcknowledgements.set(key, pending);
+  return pending;
 }

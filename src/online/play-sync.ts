@@ -14,8 +14,10 @@ import { supa } from './client.ts';
 import type { MatchRow } from './match-api.ts';
 import { newerMatchProjection, readMatchSyncSnapshot } from './match-sync.ts';
 import { animateOnlineMove } from './play-motion.ts';
+import { projectionRecoveryVersionReached } from './play-recovery.ts';
 import type { OnlineState } from './play-types.ts';
 import {
+  isEmptyTerminalTrialSnapshot,
   retryCoherentTrialSnapshot,
   type TrialSnapshot,
 } from './trial-snapshot.ts';
@@ -114,7 +116,7 @@ function installTrialProjection(
   /* A resignation/deletion can settle during private selection. There was no
      opening action (and therefore no public next die to seed replay), but the
      empty board is already the complete authoritative projection. */
-  if (match.status !== 'active' && rows.length === 0 && (match.action_version ?? 0) === 0) {
+  if (isEmptyTerminalTrialSnapshot({ rows, match })) {
     disarm(true);
     S.boards = [emptyBoard(), emptyBoard()];
     S.bounty = [0, 0];
@@ -176,6 +178,9 @@ async function syncTrial(
     if (!ports.isCurrent(online)) return false;
   }
   if (!installTrialProjection(online, snapshot.rows, snapshot.match)) return false;
+  /* A command response can be newer than the first post-outage read. Keep the
+     old input gate closed until the confirmed action version is visible. */
+  if (!projectionRecoveryVersionReached(online)) return false;
   online.pendingRow = newerMatchProjection(online.pendingRow, snapshot.match);
   return true;
 }

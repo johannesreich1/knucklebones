@@ -1,9 +1,22 @@
 import { json, type AuthenticatedContext } from "../_shared/http.ts";
-import type { RuneTrialSelectInput } from "../_shared/types.ts";
+import type { MatchRow, RuneTrialSelectInput } from "../_shared/types.ts";
+
+export interface RuneTrialSelectionPayload {
+  match: MatchRow;
+  trial?: unknown;
+}
+
+export type RuneTrialSelectionFinalizer = (
+  context: AuthenticatedContext,
+  payload: RuneTrialSelectionPayload,
+) => Promise<RuneTrialSelectionPayload>;
+
+const keepSelectionPayload: RuneTrialSelectionFinalizer = async (_context, payload) => payload;
 
 export async function selectRuneTrial(
   context: AuthenticatedContext,
   input: RuneTrialSelectInput,
+  finalize: RuneTrialSelectionFinalizer = keepSelectionPayload,
 ): Promise<Response> {
   const { data, error } = input.kind === "read"
     ? await context.service().rpc("rune_trial_state", {
@@ -35,5 +48,13 @@ export async function selectRuneTrial(
   if ((match as { rune_rules_version?: unknown }).rune_rules_version !== 1) {
     return json({ error: "unsupported-rune-rules" }, 409);
   }
-  return json(data);
+  try {
+    const finalized = await finalize(context, data as unknown as RuneTrialSelectionPayload);
+    if (!finalized?.match || typeof finalized.match !== "object") {
+      return json({ error: "selection-failed" }, 500);
+    }
+    return json(finalized);
+  } catch {
+    return json({ error: "selection-failed" }, 500);
+  }
 }

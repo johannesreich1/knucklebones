@@ -111,8 +111,17 @@ check(trialSelectionSource.includes('readRuneTrialState(current.match.id)')
   'Rune Trial selection recovery can mutate matchmaking instead of reading its known match');
 const trialActionSource = readFileSync('src/online/play-trial-actions.ts', 'utf8');
 check(trialActionSource.includes('online.actionApplied >= committedVersion')
-  && trialActionSource.includes('boundedAction('),
+  && trialActionSource.includes('boundedAction(')
+  && trialActionSource.includes('requireProjectionRecovery(online, committedVersion)')
+  && trialActionSource.includes('recoverIdempotentCommand(response')
+  && (trialActionSource.match(/submittedAtVersion, action, commandId/g) ?? []).length === 2,
   'Rune Trial input can reopen before its authoritative action version projects');
+check(trialSelectionSource.includes('recoverIdempotentCommand(committed')
+  && (trialSelectionSource.match(/selectedRune, commandId/g) ?? []).length === 2,
+  'Rune Trial selection can replace an uncertain command with a fresh choice');
+const trialSyncSource = readFileSync('src/online/play-sync.ts', 'utf8');
+check(trialSyncSource.includes('projectionRecoveryVersionReached(online)'),
+  'a version-behind Rune Trial snapshot can reopen input during action recovery');
 check(playSource.includes('sync: () => sync(true)') && !playSource.includes('if (res.rejoined)'),
   'fresh matches do not sync a possible old-backend bot opening move before input');
 check(playSource.includes('newerMatchProjection(online.pendingRow, r.data.match)')

@@ -10,6 +10,7 @@ import {
   type RankedActionRow,
   type RankedRuneDeal,
 } from '../src/core/ranked-actions.ts';
+import { appendRankedBotTurn } from '../src/core/ranked-bot-turn.ts';
 import { AI, BOUNTY, CLASSIC, LIMITED, ME } from '../src/core/rules.ts';
 
 const problems: string[] = [];
@@ -98,6 +99,36 @@ check(projectRankedActions([], CLASSIC, deal) === null,
   'an empty public log guessed the private opening die');
 eq(projectRankedActions([], CLASSIC, deal, initial.nextDie), initial,
   'empty public projection did not accept the explicitly revealed opening die');
+
+// The same bot turn builder drives the immediate lower-rated bot opener and
+// replies after human placements. It must finish one complete opening turn
+// from replay truth, whether or not its rune policy elects to cast first.
+const botOpening = appendRankedBotTurn({
+  seed,
+  rows: [],
+  state: initial,
+  mode: CLASSIC,
+  dealt: deal,
+  rating: 800,
+  random: () => 0,
+});
+check(botOpening !== null && botOpening.actions.at(-1)?.kind === 'place'
+  && botOpening.state.moveCount === 1 && botOpening.state.turn === AI
+  && botOpening.state.actionCount === botOpening.actions.length,
+  'ranked bot opener did not commit one complete turn before handing input to p2', botOpening);
+if (botOpening) {
+  eq(rebuildRankedActions(seed, botOpening.actions, CLASSIC, deal), botOpening.state,
+    'ranked bot opener diverged from the shared authoritative replay');
+}
+check(appendRankedBotTurn({
+  seed,
+  rows: [],
+  state: { ...initial, actionCount: 1 },
+  mode: CLASSIC,
+  dealt: deal,
+  rating: 800,
+  random: () => 0,
+}) === null, 'ranked bot opener accepted a state/version mismatch');
 
 // FATE is the one transition the public log cannot independently predict.
 // The browser may consume the committed value; the server still rejects any

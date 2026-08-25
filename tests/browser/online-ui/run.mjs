@@ -24,12 +24,15 @@ import { runOnlineMenuPressFeedbackScenarios } from './scenarios/menu-press-feed
 import { runOnlineLoadingPanelScenarios } from './scenarios/loading-panels.mjs';
 import { runAuthModalScenarios } from './scenarios/auth-modal.mjs';
 import { runRuneTrialUiScenarios } from './scenarios/rune-trial-ui.mjs';
+import { runRuneRewardRaceScenarios } from './scenarios/rune-reward-races.mjs';
 
 const { webkit } = pkg;
 const args = process.argv.slice(2);
 const runeTrialOnly = args.length === 2 && args[0] === '--only' && args[1] === 'rune-trial';
-if (args.length && !runeTrialOnly) {
-  throw new Error('Usage: run.mjs [--only rune-trial]');
+const runeRewardRaceOnly = args.length === 2
+  && args[0] === '--only' && args[1] === 'rune-reward-races';
+if (args.length && !runeTrialOnly && !runeRewardRaceOnly) {
+  throw new Error('Usage: run.mjs [--only rune-trial|rune-reward-races]');
 }
 // the origin comes from run-all (KB_URL) or from a server this suite starts —
 // a kernel-picked port either way, so a peer's gate cannot answer it
@@ -56,7 +59,7 @@ const visit = createVisit({ browser, URL, SESSION, GUEST_ID });
 const suite = { visit, out, check };
 
 try {
-  if (!runeTrialOnly) {
+  if (!runeTrialOnly && !runeRewardRaceOnly) {
     await runMatchmakingScenarios(suite);
     await runFreshAccountScenarios(suite);
     await runLadderFaceoffScenarios(suite);
@@ -65,7 +68,8 @@ try {
     await runOnlineLoadingPanelScenarios(suite);
     await runAuthModalScenarios(suite);
   }
-  await runRuneTrialUiScenarios(suite);
+  if (runeRewardRaceOnly) await runRuneRewardRaceScenarios(suite);
+  else await runRuneTrialUiScenarios(suite);
 } catch (e) {
   problems.push('THREW :: ' + e.message);
 }

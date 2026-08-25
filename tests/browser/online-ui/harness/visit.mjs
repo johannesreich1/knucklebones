@@ -20,6 +20,9 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     paginationRace = false,
     passwordAuth = 'error',
     runes = [],
+    unseenRunes = [],
+    markRunesSeenAfterFirstRead = false,
+    expectReward = false,
     probe = null,
     skipStandardProbes = false,
   }) {
@@ -34,8 +37,8 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
 
     const routes = await installOnlineRoutes(page, {
       anonymous, attached, authDelay,
-      dataDelay: inspectLoading ? 900 : dataDelay,
-      door, named, paginationRace, passwordAuth, runes, SESSION, GUEST_ID,
+      dataDelay: inspectLoading ? 900 : dataDelay, markRunesSeenAfterFirstRead,
+      door, named, paginationRace, passwordAuth, runes, unseenRunes, SESSION, GUEST_ID,
     });
     if (door === 'play') {
       /* Ranked newcomers stop at the once-only tutorial offer. This probe is
@@ -120,7 +123,9 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
       }, door === 'board' ? 'onBoard' : 'onAccount');
     }
     if (door === 'play') {
-      await page.waitForSelector('#onQueue:not([hidden])', { timeout: 15000 });
+      await page.waitForSelector(expectReward
+        ? '.rune-reward-sheet .focard'
+        : '#onQueue:not([hidden])', { timeout: 15000 });
     } else if (door === 'board') {
       await page.waitForSelector('#ovOnline .lb .lrow', { timeout: 15000 });
     } else {
@@ -129,7 +134,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
         return (a && !a.hidden) || (s && !s.hidden);
       }, null, { timeout: 15000 });
     }
-    await page.waitForTimeout(250);
+    if (!expectReward) await page.waitForTimeout(250);
     // online.css has now landed. Its selectors may style its own screens and
     // body-level sheets, but must not repaint the eager Home hiding underneath.
     const homeAfterOnline = await homeSnapshot();
@@ -165,7 +170,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
       const rootLang = await page.locator('html').getAttribute('lang');
       await ctx.close();
       return { queueLabel: samples, queueCancel, errs, loading, signupCalls: routes.signupCalls(),
-               rootLang,
+               rootLang, probeResult,
                homeStyles: { before: homeBeforeOnline, after: homeAfterOnline } };
     }
 

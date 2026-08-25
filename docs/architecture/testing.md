@@ -144,14 +144,24 @@ typed helper expresses the common action.
   projection, ANVIL timeout resolution, and a cast-terminal game.
 - Collection/offline tests start from an empty account, distinguish no cache
   from a verified account snapshot, reject cross-account cache reuse, and cover
-  every 0/1/2/3/6-rune setup boundary. Browser tests prove per-option locks,
-  colour-blind lock treatment, separate CPU/two-player preferences, manual and
-  RANDOM Trial, secret pass-and-pick, restart/new-duel offer lifetime, durable
-  unseen reveal, and the transient `TRY IT` return path.
+  every 0/1/2/3/6-rune setup boundary. Browser tests prove focusable per-option
+  locks and their visible reasons, a non-hue lock treatment, separate
+  CPU/two-player preferences, local secret pass-and-pick, restart preserving the
+  current deal, durable unseen reward presentation, and the transient `TRY IT`
+  return path. Pure outcome coverage owns RANDOM's Trial admission and odds;
+  do not claim a browser workflow until it actually drives that workflow.
 - Database Rune Trial contracts exercise grants/RLS and negative visibility,
-  idempotent selection/action retries, deadline and early-terminal auto-picks,
-  human/bot/resignation/timeout/delete settlement, duplicate versus first
-  reward, monotonic pool backfill/promotion, and legacy v1 standard matches.
+  v1/v2 queue capability isolation, stale-claim rejection, idempotent
+  selection/action retries, deadline auto-picks, atomic terminal action reward,
+  duplicate versus first reward, durable acknowledgement, monotonic
+  promotion/no-demotion, ANVIL reservation plus bot follow-up, and the legacy
+  LIMITED constraint. Resignation, timeout, deletion, draw/loss no-reward,
+  historical backfill, and full bot-Trial settlement need explicit pgTAP cases
+  before this page may describe them as database-covered.
+- Client idempotency coverage holds Rune Trial selection, aim, cast, and place
+  input closed across a lost response plus an unchanged authoritative read,
+  and proves every retry reuses the original command id until the delayed
+  commit is observed or the server returns a definitive rejection.
 - Mocks match the authoritative API or migration result shape. A hand-written
   mock that omits a renamed field can keep a broken client green.
 - Test hooks such as `window.__kb`, `__kbOnline`, and `__kbResult` are stable

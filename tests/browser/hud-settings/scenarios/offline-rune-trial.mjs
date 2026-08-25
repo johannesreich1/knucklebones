@@ -6,9 +6,12 @@ async function practiceSnapshot(page) {
     const state = window.__kb.S;
     const buttons = (selector) => [...document.querySelectorAll(`${selector} button`)].map((button) => ({
       value: button.dataset.v,
-      disabled: button.disabled,
+      disabled: button.getAttribute('aria-disabled') === 'true',
+      nativeDisabled: button.disabled,
+      tabIndex: button.tabIndex,
       on: button.classList.contains('on'),
       label: button.getAttribute('aria-label'),
+      reason: button.dataset.lockReason ?? '',
     }));
     return {
       playMode: state.mode,
@@ -18,6 +21,7 @@ async function practiceSnapshot(page) {
       modes: buttons('#modePick'),
       runes: buttons('#spellPick'),
       runeOverlay: !document.getElementById('spellPickLock').hidden,
+      runeInfo: document.getElementById('spellPickInfo').textContent.trim(),
     };
   });
 }
@@ -45,6 +49,34 @@ export async function runOfflineRuneTrialScenarios({ page, out, check, t }) {
   const emptyEnabled = out.runeLocksEmpty.runes.filter(({ disabled }) => !disabled).map(({ value }) => value);
   check(String(emptyEnabled) === '' && out.runeLocksEmpty.modes.find(({ value }) => value === '-2')?.disabled,
     'CPU practice without a verified collection did not fail closed to NONE/no Trial', out.runeLocksEmpty);
+  const lockedFate = out.runeLocksEmpty.runes.find(({ value }) => value === 'fate');
+  const lockedRandom = out.runeLocksEmpty.runes.find(({ value }) => value === 'random');
+  check(lockedFate && !lockedFate.nativeDisabled && lockedFate.tabIndex >= 0
+      && lockedRandom && !lockedRandom.nativeDisabled && lockedRandom.tabIndex >= 0,
+    'locked rune choices are not focusable explanation controls', out.runeLocksEmpty);
+  /* Playwright treats aria-disabled as an actionability veto even though the
+     native button deliberately remains enabled so a real tap can explain the
+     lock. Force only bypasses that semantic pre-check; the touch still lands
+     on the rendered control and exercises the delegated tap handler. */
+  await page.tap('#spellPick button[data-v="fate"]', { force: true });
+  out.namedLockReason = await practiceSnapshot(page);
+  check(out.namedLockReason.spell === ''
+      && out.namedLockReason.runeInfo === t('game', 'runeTrial.lockReachIvory'),
+    'tapping a locked named rune changed selection or hid its reason', out.namedLockReason);
+  await page.tap('#spellPick button[data-v="random"]', { force: true });
+  out.randomLockReason = await practiceSnapshot(page);
+  check(out.randomLockReason.spell === ''
+      && out.randomLockReason.runeInfo === t('game', 'runeTrial.lockCollectTwo'),
+    'RANDOM did not consistently explain its two-collected-rune requirement', out.randomLockReason);
+  out.lockTreatment = await page.$eval('#spellPick button[data-v="fate"]', (button) => ({
+    opacity: getComputedStyle(button).opacity,
+    lockBody: getComputedStyle(button, '::after').content,
+    lockShackle: getComputedStyle(button, '::before').content,
+  }));
+  check(Number(out.lockTreatment.opacity) < 1
+      && out.lockTreatment.lockBody !== 'none' && out.lockTreatment.lockBody !== 'normal'
+      && out.lockTreatment.lockShackle !== 'none' && out.lockTreatment.lockShackle !== 'normal',
+    'locked choices rely on hue alone instead of a visible lock treatment', out.lockTreatment);
 
   /* Startup account reconciliation deliberately clears an orphaned cache.
      Install this verified snapshot after that asynchronous boot check, then

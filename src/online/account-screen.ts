@@ -27,7 +27,7 @@ import {
 } from './session.ts';
 import { historyRow } from './history-screen.ts';
 import { repaintOnlineMessage } from './message-copy.ts';
-import { refreshRuneCollection } from './rune-collection.ts';
+import { refreshRuneCollection, type RuneCollectionRefresh } from './rune-collection.ts';
 import { fillAccountRing } from './account-ring.ts';
 import { paintAccountRunes } from './account-runes.ts';
 import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';
@@ -40,11 +40,12 @@ interface AccountPorts {
   showAvatar(): Promise<void>;
   showBoard(): Promise<void>;
   showHistory(): Promise<void>;
+  presentRuneReward(collection: RuneCollectionRefresh, owns: () => boolean): void;
 }
 
 export interface AccountScreen {
   bind(): void;
-  show(): Promise<void>;
+  show(): Promise<RuneCollectionRefresh | null>;
 }
 
 export function createAccountScreen(ports: AccountPorts): AccountScreen {
@@ -138,7 +139,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     if (accountError) $('#onAccErr').textContent = accountError();
   });
 
-  async function show(): Promise<void> {
+  async function show(): Promise<RuneCollectionRefresh | null> {
     const run = ++showRevision;
     const ownsRun = (): boolean => run === showRevision && isOnlinePanelCurrent('onAccount');
     showOnlineLoading('onAccount');
@@ -185,7 +186,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       matchHistory(3),
       refreshRuneCollection(),
     ]);
-    if (!ownsRun()) return;
+    if (!ownsRun()) return null;
     refreshHomeChip();
     $('#accGuest').hidden = !user?.guest;
     ($('#btnSignOut') as HTMLElement).hidden = !!user?.guest;
@@ -217,6 +218,8 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     /* The hidden panel has no measurable viewport, so trim the already-loaded
        recent rows once, immediately after the atomic reveal. */
     paintRecent();
+    ports.presentRuneReward(runeCollection, ownsRun);
+    return runeCollection;
   }
 
   function bind(): void {

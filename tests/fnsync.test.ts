@@ -120,7 +120,9 @@ for (const slug of [
 /* THE CHECK MUST BE ABLE TO FAIL. A broken import scanner would hand every
    function a one-file manifest and pass everything above vacuously, which is
    the same shape of green-on-nothing that let the prose list rot unnoticed. */
-for (const slug of ['pvp-join', 'pvp-move', 'pvp-claim', 'pvp-action']) {
+for (const slug of [
+  'pvp-join', 'pvp-move', 'pvp-claim', 'pvp-rune-select', 'pvp-action',
+]) {
   check(manifest[slug]?.includes('core/rules.ts'),
     `${slug}'s manifest does not carry core/rules.ts — the import scanner is broken, `
     + `not the function (every PvP function replays the rules server-side)`);
@@ -129,9 +131,14 @@ for (const slug of ['pvp-join', 'pvp-move', 'pvp-claim', 'pvp-action']) {
     + `transitive walk in tools/fnfiles.mjs is not walking`);
 }
 
+for (const slug of ['pvp-join', 'pvp-rune-select', 'pvp-action']) {
+  check(manifest[slug]?.includes('core/ranked-bot-turn.ts'),
+    `${slug}'s deploy closure lost the shared authoritative ranked bot-turn builder`);
+}
+
 /* Rune Trial is the first ranked protocol that ships the spell layer. Keep it
    visible in the report because those shared sources now participate in the
-   authoritative replay closure and must deploy with pvp-action/join/claim. */
+   authoritative replay closure and must deploy with action/join/claim/select. */
 const spellsShipped = Object.entries(manifest)
   .filter(([, files]) => files.includes('core/spells.ts')).map(([slug]) => slug);
 

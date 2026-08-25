@@ -14,6 +14,15 @@ export function trialSnapshotCoherent(snapshot: TrialSnapshot): boolean {
     && snapshot.match.action_version === snapshot.rows.length;
 }
 
+/** A Trial may settle during private selection before any die/action exists. */
+export function isEmptyTerminalTrialSnapshot(
+  snapshot: { rows: readonly RankedActionRow[]; match: MatchRow },
+): boolean {
+  return snapshot.match.status !== 'active'
+    && snapshot.rows.length === 0
+    && snapshot.match.action_version === 0;
+}
+
 export async function retryCoherentTrialSnapshot(
   read: () => Promise<TrialSnapshot | null>,
   wait: (attempt: number) => Promise<void>,

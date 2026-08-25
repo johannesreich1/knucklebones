@@ -10,6 +10,7 @@ import {
 } from "./core/ranked-outcomes.ts";
 import { rankedActionTotal, rebuildRankedActions, type RankedActionRow } from "./core/ranked-actions.ts";
 import { json, type AuthenticatedContext } from "../_shared/http.ts";
+import { ensureRuneTrialBotOpening } from "../_shared/rune-trial-bot-opening.ts";
 import { settleMatch } from "../_shared/settlement.ts";
 import {
   findOldestEligiblePartner,
@@ -69,8 +70,17 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
       }
       const payload = trialData as { match?: MatchRow; trial?: unknown };
       if (!payload.match) return json({ error: "match-read-failed" }, 500);
-      privateMatch = payload.match;
-      trial = payload.trial;
+      let opened: { match: MatchRow; trial?: unknown };
+      try {
+        opened = await ensureRuneTrialBotOpening(context, {
+          match: payload.match,
+          trial: payload.trial,
+        });
+      } catch {
+        return json({ error: "match-read-failed" }, 500);
+      }
+      privateMatch = opened.match;
+      trial = opened.trial;
     }
     return json({
       status: "matched",
@@ -185,7 +195,7 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
     const { data: racedData, error: racedError } = await svc.from("matches")
       .select(MATCH_COLUMNS).eq("id", queueState.match_id).maybeSingle();
     if (racedError || !racedData) return json({ error: "match-read-failed" }, 500);
-    return matched(racedData as MatchRow);
+    return matched(racedData as unknown as MatchRow);
   }
   if (queueState.status !== "queued") return json({ error: "queue-failed" }, 500);
 

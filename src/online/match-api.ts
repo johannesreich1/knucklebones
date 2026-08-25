@@ -184,10 +184,11 @@ export async function rankedAction(
   matchId: string,
   expectedActionVersion: number,
   action: MatchAction,
+  commandId: string = randomUuid(),
 ): Promise<{ status: number; data: MoveResult | null }> {
   return callFunction<MoveResult>('pvp-action', {
     match_id: matchId,
-    command_id: randomUuid(),
+    command_id: commandId,
     expected_action_version: expectedActionVersion,
     action,
   });
@@ -208,11 +209,12 @@ export async function nudgeRankedAction(
 export async function selectRune(
   matchId: string,
   runeId: string,
+  commandId: string = randomUuid(),
 ): Promise<{ status: number; data: { match: MatchRow; trial: RuneTrialState } | null }> {
   return callFunction('pvp-rune-select', {
     match_id: matchId,
     rune_id: runeId,
-    command_id: randomUuid(),
+    command_id: commandId,
   });
 }
 
