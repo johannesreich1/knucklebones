@@ -4,7 +4,7 @@
 // existing exceptions are named below with a removal reason. A refactor can
 // delete an exception without changing this file; a new exception requires an
 // explicit, reviewable edit here. Run from the repository root:
-//   node --experimental-strip-types tests/architecture.test.ts
+//   mise exec -- node --experimental-strip-types tests/architecture.test.ts
 import {
   readFileSync,
   readdirSync,

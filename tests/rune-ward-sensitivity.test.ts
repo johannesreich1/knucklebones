@@ -1,5 +1,5 @@
 // Focused contract for tools/rune-ward-sensitivity.ts.
-// Run: node --experimental-strip-types tests/rune-ward-sensitivity.test.ts
+// Run: mise exec -- node --experimental-strip-types tests/rune-ward-sensitivity.test.ts
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { AI, type GameState, type Player } from '../src/core/rules.ts';

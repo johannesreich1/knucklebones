@@ -5,6 +5,13 @@
   "engines": {
     "node": ">=24 <25"
   },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": ">=24 <25",
+      "onFail": "error"
+    }
+  },
   "description": "Capacitor shell around the built web app in native/www (produced by ../build.mjs)",
   "scripts": {
     "sync": "cap sync",

@@ -1,5 +1,5 @@
 // Focused owner for scoring-WARD casting and placement policy at all strengths.
-// Run: node --experimental-strip-types tests/scoring-ward-ai.test.ts
+// Run: mise exec -- node --experimental-strip-types tests/scoring-ward-ai.test.ts
 import {
   AI, CLASSIC, COLSHIELD, cloneCharm, cloneSt, freshCharm,
   type GameState, type Player,

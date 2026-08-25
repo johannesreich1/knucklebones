@@ -3,7 +3,8 @@
 // The suites were written for a human reading `"problems": []` — they always
 // exit 0. This runner is the machine-readable gate for CI: it builds, drives
 // each suite, parses the JSON report, and fails on any problem or page error.
-// Run from the repo root: node tests/run-all.mjs  (or: npm test)
+// Run from the repo root: mise exec -- node tests/run-all.mjs
+// (or: mise exec -- npm test)
 //
 // PARALLEL by default on a dev machine, SEQUENTIAL on CI: the suites are
 // independent processes (own browser, own storage, own server on a port the

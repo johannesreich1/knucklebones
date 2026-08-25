@@ -2,7 +2,7 @@
 // and the server replays stored games under them — so like the dice stream,
 // mode math is pinned: a drift here breaks replay validation of every stored
 // modded match. Classic (mode 0) must stay bit-identical to the pre-mode game.
-// Run: node --experimental-strip-types tests/modes.test.ts
+// Run: mise exec -- node --experimental-strip-types tests/modes.test.ts
 import {
   CLASSIC, ROWSWITCH, ROWMULT, COLSHIELD, SINGLESTRIKE, BOUNTY, LIMITED, type Mode,
   type GameState, type Board, AI, ME,

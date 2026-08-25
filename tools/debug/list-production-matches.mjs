@@ -36,7 +36,7 @@ select left(md5(r.id::text), 16) as match_key,
 
 function usage(message, code = 64) {
   if (message) console.error(message);
-  console.error('Usage: node --experimental-strip-types tools/debug/list-production-matches.mjs [1-25]');
+  console.error('Usage: mise exec -- node --experimental-strip-types tools/debug/list-production-matches.mjs [1-25]');
   process.exitCode = code;
 }
 

@@ -98,7 +98,7 @@ export async function servedBase() {
   return process.env.KB_URL ?? (await serveTree('pwa')).url;
 }
 
-// `npm run serve`: a human wants a stable address to click, so this keeps the
+// `mise exec -- npm run serve`: a human wants a stable address to click, so this keeps the
 // old 8123 default (and takes a port argument when that one is busy).
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const port = Number(process.argv[2] ?? 8123) || 8123;
@@ -108,7 +108,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
     setInterval(() => {}, 1 << 30);   // suites let their server go; this one waits for Ctrl-C
   } catch (e) {
     console.error(e.code === 'EADDRINUSE'
-      ? `port ${port} is busy — try: node tests/serve.mjs ${port + 1}` : e.message);
+      ? `port ${port} is busy — try: mise exec -- node tests/serve.mjs ${port + 1}` : e.message);
     process.exit(1);
   }
 }

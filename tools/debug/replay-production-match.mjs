@@ -38,7 +38,7 @@ select c.candidate_count,
 
 function usage(message, code = 64) {
   if (message) console.error(message);
-  console.error('Usage: node --experimental-strip-types tools/debug/replay-production-match.mjs <10-32 hex match key> [--all]');
+  console.error('Usage: mise exec -- node --experimental-strip-types tools/debug/replay-production-match.mjs <10-32 hex match key> [--all]');
   process.exitCode = code;
 }
 

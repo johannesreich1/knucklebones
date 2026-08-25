@@ -346,10 +346,10 @@ export async function runMotionSafeAreaScenarios(suite) {
     try { return JSON.parse(localStorage.getItem('knucklebones.v1') ?? '{}').reducedMotion === true; }
     catch { return false; }
   });
-  // file:// can discard the sole document's just-written storage area during
-  // reload on a slow CI runner. Keep a second document bound to the origin,
-  // matching the other persistence browser contracts, and poll the observable
-  // restored state instead of sleeping through the teardown race.
+  // file:// has discarded this just-written storage area on slow CI runners
+  // even through a keeper, so the suite now uses one live HTTP origin. Retain
+  // the same-origin keeper while reloading so only the origin semantics change,
+  // and poll the observable restored state instead of sleeping through it.
   out.reducedSetting.persisted = await reloadReducedMotionWithKeeper(manual, mp, F);
   check(out.reducedSetting.state && out.reducedSetting.jsFlag && out.reducedSetting.rootClass
     && out.reducedSetting.selected === '1' && out.reducedSetting.ambient === 'none'

@@ -15,6 +15,7 @@ const XCODE = 'native/ios/App/App.xcodeproj/project.pbxproj';
 const APP_STORE_CONFIG = 'marketing/app-store/ios/app-store-connect.json';
 const APP_STORE_MANIFEST = 'marketing/app-store/ios/manifest.json';
 const APP_STORE_VERIFY = 'marketing/app-store/ios/verify-exports.mjs';
+const APP_STORE_ENV_EXAMPLE = '.env.appstore.example';
 const FASTFILE = 'fastlane/Fastfile';
 const SCREENSHOT_SYNC = 'fastlane/lib/screenshot_sync.rb';
 const GEMFILE = 'Gemfile';
@@ -54,6 +55,7 @@ check(rootPackage.scripts?.['appstore:screenshots:contract']?.includes('appstore
   && rootPackage.scripts?.['appstore:screenshots:upload']?.includes('screenshots_upload'),
   `${ROOT_PACKAGE} must expose separate contract, local-check, read-only-plan, and confirmed-upload commands`);
 const fastfile = readRepositoryFile(FASTFILE);
+const appStoreEnvExample = readRepositoryFile(APP_STORE_ENV_EXAMPLE);
 const screenshotSync = readRepositoryFile(SCREENSHOT_SYNC);
 const forbiddenBroadUpload = /upload_to_app_store|overwrite_screenshots|sync_screenshots|ensure_version!|create_app_store_version_localization/;
 check(!forbiddenBroadUpload.test(`${fastfile}\n${screenshotSync}`),
@@ -61,6 +63,8 @@ check(!forbiddenBroadUpload.test(`${fastfile}\n${screenshotSync}`),
 check(/ASC_SCREENSHOT_UPLOAD_CONFIRM/.test(fastfile)
   && /uploadApproved/.test(fastfile)
   && /APP_IPHONE_67/.test(fastfile)
+  && /sh\("mise", "exec", "--", "node",/.test(fastfile)
+  && !/KB_NODE_BINARY/.test(`${fastfile}\n${appStoreEnvExample}`)
   && !/UI\.user_error\(/.test(fastfile)
   && /commit every App Store marketing and uploader input/.test(screenshotSync)
   && /"mise\.toml"/.test(screenshotSync)

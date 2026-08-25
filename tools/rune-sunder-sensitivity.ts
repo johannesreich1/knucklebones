@@ -1240,7 +1240,7 @@ function collectProvenance(): Record<string, unknown> {
 }
 
 function help(): string {
-  return `Usage: node --experimental-strip-types tools/rune-sunder-sensitivity.ts [options]
+  return `Usage: mise exec -- node --experimental-strip-types tools/rune-sunder-sensitivity.ts [options]
 
 Fixed design:
   Classic and Bounty: 11 directed one-cast SUNDER cells plus both directed

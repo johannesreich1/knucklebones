@@ -1,6 +1,6 @@
 // Focused contract for tools/rune-matchups.ts — plan coverage, deterministic
 // streams, cast grammar, finite supply, terminal casts, and raw reconciliation.
-// Run: node --experimental-strip-types tests/rune-matchups.test.ts
+// Run: mise exec -- node --experimental-strip-types tests/rune-matchups.test.ts
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {

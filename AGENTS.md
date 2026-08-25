@@ -82,11 +82,12 @@ differs. A second near-copy is a design failure, not a shortcut.
 ## Verification entry points
 
 Node 24 is required. `mise.toml` activates the `.nvmrc` pin for local shells;
-agents and other non-interactive automation must launch every Node-, npm-,
+agents and other local non-interactive automation must launch every Node-, npm-,
 npx-, Vite-, Capacitor-, or JavaScript-backed command through `mise exec --`.
-Do not hard-code a machine-specific Node path. For example, the full gate is
-`mise exec -- npm test`; the validated `process.execPath` then propagates to
-every child build and test.
+Hosted CI/deploy may invoke them directly only after selecting `.nvmrc` in that
+job or build environment. Do not hard-code a machine-specific Node path. For
+example, the full gate is `mise exec -- npm test`; the validated
+`process.execPath` then propagates to every child build and test.
 
 ```text
 mise exec -- npm run dev       local Vite server

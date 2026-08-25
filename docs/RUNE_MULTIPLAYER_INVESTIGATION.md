@@ -510,7 +510,7 @@ and 60.8% in LIMITED.
 **REPRODUCED 2026-08-24** on Node v24.2.0:
 
 ```text
-/opt/homebrew/bin/node --experimental-strip-types tools/spellsim.ts --games 3000
+mise exec -- node --experimental-strip-types tools/spellsim.ts --games 3000
 ```
 
 Each configured row runs 3,000 one-sided games plus 3,000 symmetric timing
@@ -541,7 +541,7 @@ process and does not reset it between rune/mode cells. A focused ANVIL run at
 the default seed reproduces the published values exactly:
 
 ```text
-/opt/homebrew/bin/node --experimental-strip-types tools/spellsim.ts \
+mise exec -- node --experimental-strip-types tools/spellsim.ts \
   --games 3000 --spell anvil --seed 20260821
 
 Classic 60.2% · Column Shield 62.8% · Single Strike 63.2%
@@ -553,7 +553,7 @@ Classic 60.2% · Column Shield 62.8% · Single Strike 63.2%
 separate spell-focused process at seeds 20260821–20260824:
 
 ```text
-/opt/homebrew/bin/node --experimental-strip-types tools/spellsim.ts \
+mise exec -- node --experimental-strip-types tools/spellsim.ts \
   --games 3000 --spell <rune> --seed <seed>
 ```
 

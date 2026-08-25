@@ -1,6 +1,6 @@
 // Gate for the PvP match core: log rebuilding mirrors real play exactly, log
 // corruption is refused, and the ladder math behaves.
-// Run: node --experimental-strip-types tests/match.test.ts
+// Run: mise exec -- node --experimental-strip-types tests/match.test.ts
 import { ME, AI, type GameState, type Player, emptyBoard, legalCols, isFull, applyMove, boardTotal } from '../src/core/rules.ts';
 import { diceStream } from '../src/core/dice.ts';
 import { rebuild, type MoveRow } from '../src/core/match.ts';

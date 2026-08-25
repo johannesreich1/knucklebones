@@ -51,7 +51,7 @@ rules that no test covers — `tests/fnsync.test.ts` fails on one.
 **Which files** is computed, never remembered:
 
 ```bash
-node tools/fnfiles.mjs pvp-join
+mise exec -- node tools/fnfiles.mjs pvp-join
 ```
 
 This list used to be written out here in prose, and prose cannot be re-checked:
@@ -63,7 +63,7 @@ Deploys go through the Supabase MCP (`deploy_edge_function`). Its `files`
 argument is exactly what the tool prints:
 
 ```bash
-node tools/fnfiles.mjs pvp-join --json
+mise exec -- node tools/fnfiles.mjs pvp-join --json
 ```
 
 ### Deployed is not repo — read it back

@@ -1,7 +1,7 @@
 // Focused gate for local CPU rune/placement coordination. Pure core decides
 // which follow-up columns make a cast self-defeating; this flow seam decides
 // how much each difficulty is allowed to coordinate.
-// Run: node --experimental-strip-types tests/spell-ai.test.ts
+// Run: mise exec -- node --experimental-strip-types tests/spell-ai.test.ts
 import {
   AI,
   BOUNTY,

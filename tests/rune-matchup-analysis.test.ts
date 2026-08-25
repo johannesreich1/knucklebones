@@ -1,5 +1,5 @@
 // Focused contract for tools/rune-matchup-analysis.ts.
-// Run: node --experimental-strip-types tests/rune-matchup-analysis.test.ts
+// Run: mise exec -- node --experimental-strip-types tests/rune-matchup-analysis.test.ts
 import { analyzeRuneMatchupReports, approximateZeroSum } from '../tools/rune-matchup-analysis.ts';
 import { MODES } from '../src/core/modes.ts';
 import { SPELLS } from '../src/core/spells.ts';

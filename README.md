@@ -84,7 +84,7 @@ mise exec -- npx vite            # dev server with hot reload
 ## Build
 
 ```bash
-mise exec -- npm run build       # = node build.mjs
+mise exec -- npm run build       # invokes build.mjs under the pinned Node
 ```
 
 Produces, with one content-derived build hash stamped into everything:

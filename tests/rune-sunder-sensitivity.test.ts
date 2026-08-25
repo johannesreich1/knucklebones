@@ -1,5 +1,5 @@
 // Focused contract for tools/rune-sunder-sensitivity.ts.
-// Run: node --experimental-strip-types tests/rune-sunder-sensitivity.test.ts
+// Run: mise exec -- node --experimental-strip-types tests/rune-sunder-sensitivity.test.ts
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {

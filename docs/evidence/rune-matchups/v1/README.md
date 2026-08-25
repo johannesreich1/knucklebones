@@ -24,7 +24,7 @@ simulator SHA is
 ## Regenerate the derivative analysis
 
 ```text
-/opt/homebrew/bin/node --no-warnings --experimental-strip-types \
+mise exec -- node --no-warnings --experimental-strip-types \
   tools/rune-matchup-analysis.ts \
   docs/evidence/rune-matchups/v1/raw-classic.json \
   docs/evidence/rune-matchups/v1/raw-rowswitch.json \

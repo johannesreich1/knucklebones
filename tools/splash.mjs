@@ -1,9 +1,9 @@
 // The iOS launch screen, generated from the SAME vector as the app icon —
 // tools/appicon.mjs's iconSVG — so the two can never drift apart.
 //
-//   node tools/splash.mjs            regenerate native/ios Splash.imageset
-//   node tools/splash.mjs --dry      render splash-preview.png, write nothing
-//   node tools/splash.mjs --android  render @capacitor/assets Android inputs only
+//   mise exec -- node tools/splash.mjs            regenerate native/ios Splash.imageset
+//   mise exec -- node tools/splash.mjs --dry      render splash-preview.png, write nothing
+//   mise exec -- node tools/splash.mjs --android  render @capacitor/assets Android inputs only
 //
 // An iOS launch screen is static by platform law: the storyboard renders
 // before a single line of the app runs, so no animation is possible here.

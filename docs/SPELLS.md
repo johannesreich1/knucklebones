@@ -302,7 +302,7 @@ play is the offline Medium anchor (depth 2, risk 0.9), the same yardstick
 `tests/botbench.test.ts` measures the bot ladder against.
 
 ```bash
-node --experimental-strip-types tools/spellsim.ts --games 3000
+mise exec -- node --experimental-strip-types tools/spellsim.ts --games 3000
 ```
 
 The current standard follows the shipped Normal bot policy: at most one cast

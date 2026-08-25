@@ -8,7 +8,7 @@
 //   Q(i,j) — rune i's score against rune j after averaging who opens.
 //
 // Run:
-//   node --experimental-strip-types tools/rune-matchup-analysis.ts \
+//   mise exec -- node --experimental-strip-types tools/rune-matchup-analysis.ts \
 //     report-a.json report-b.json --output analysis.json
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
@@ -941,7 +941,7 @@ export function analyzeRuneMatchupReports(values: unknown[], options: AnalysisOp
 }
 
 function help(): string {
-  return `Usage: node --experimental-strip-types tools/rune-matchup-analysis.ts [options] report.json [report-2.json ...]
+  return `Usage: mise exec -- node --experimental-strip-types tools/rune-matchup-analysis.ts [options] report.json [report-2.json ...]
 
 Options:
   --output PATH                    write JSON here; otherwise stdout

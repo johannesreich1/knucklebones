@@ -27,7 +27,7 @@ and artifact exactly.
 Regenerate:
 
 ```text
-/opt/homebrew/bin/node --no-warnings --experimental-strip-types \
+mise exec -- node --no-warnings --experimental-strip-types \
   tools/rune-ward-sensitivity.ts \
   --baseline docs/evidence/rune-matchups/v1/raw-colshield.json \
   --output docs/evidence/rune-matchups/ward-coordination-v1/raw-colshield.json

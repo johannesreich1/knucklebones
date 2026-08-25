@@ -1,5 +1,5 @@
 // Focused pure-rule owner for scoring-WARD and its hostile interactions.
-// Run: node --experimental-strip-types tests/scoring-ward.test.ts
+// Run: mise exec -- node --experimental-strip-types tests/scoring-ward.test.ts
 import {
   AI, ME,
   CLASSIC, ROWSWITCH, ROWMULT, COLSHIELD, SINGLESTRIKE, BOUNTY, LIMITED,

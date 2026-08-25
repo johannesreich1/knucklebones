@@ -276,7 +276,7 @@ select
 
 function usage(message, code = 64) {
   if (message) console.error(message);
-  console.error('Usage: node --experimental-strip-types tools/database/production-rollout.mjs <settings-locale|match-command-retention> [--apply]');
+  console.error('Usage: mise exec -- node --experimental-strip-types tools/database/production-rollout.mjs <settings-locale|match-command-retention> [--apply]');
   console.error(`Apply requires ${PROD_OPT_IN}=1.`);
   process.exitCode = code;
 }
@@ -376,7 +376,7 @@ function verifyRuntime() {
   const major = Number(process.versions.node.split('.')[0]);
   if (major !== 24) throw new Error(`Node 24 is required; found ${process.version}.`);
   if (!existsSync(CLI)) {
-    throw new Error('The lockfile-pinned Supabase CLI is missing; run npm ci with Node 24.');
+    throw new Error('The lockfile-pinned Supabase CLI is missing; run mise exec -- npm ci.');
   }
   const packageJson = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
   const packageLock = JSON.parse(readFileSync(path.join(ROOT, 'package-lock.json'), 'utf8'));

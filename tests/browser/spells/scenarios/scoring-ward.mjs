@@ -172,8 +172,25 @@ export async function runScoringWardScenarios(suite) {
       k.renderAll(false); k.spells.render();
       const before = JSON.stringify(k.S.boards);
       await k.spells.cast('pilfer', 0);
-      await new Promise((resolve) => setTimeout(resolve, 90));
       const ward = document.getElementById('wptTop');
+      /* Reduced motion gives every changed property one 60ms settle. A loaded
+         Linux compositor can trail a JS wall-clock sleep, so wait for the
+         score lane's actual visibility transition before reading its still. */
+      const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
+      getComputedStyle(ward).visibility;
+      await frame();
+      for (let pass = 0; pass < 3; pass++) {
+        const running = ward.getAnimations().filter((animation) =>
+          animation.playState === 'pending' || animation.playState === 'running');
+        if (!running.length) {
+          await frame();
+          if (!ward.getAnimations().some((animation) =>
+            animation.playState === 'pending' || animation.playState === 'running')) break;
+          continue;
+        }
+        await Promise.allSettled(running.map((animation) => animation.finished));
+        await frame();
+      }
       return {
         reduced: k.reduced, before, after: JSON.stringify(k.S.boards),
         wards: JSON.stringify(k.S.charm.wards), score: document.getElementById('totTop').textContent,

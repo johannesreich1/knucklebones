@@ -18,7 +18,7 @@
 // 30 / medium 16 / hard 10); results are a FLOOR — a smarter caster can only be
 // stronger.
 //
-// Run: node --experimental-strip-types tools/spellsim.ts
+// Run: mise exec -- node --experimental-strip-types tools/spellsim.ts
 //      [--games N] [--depth D] [--spell id[,id]] [--seed N]
 //      [--tune id=DEMAND] [--uses id=N]
 import {

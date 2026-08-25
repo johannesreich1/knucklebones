@@ -5,9 +5,11 @@ type Check = (ok: boolean, message: string) => void;
 
 const ROOT_PKG = 'package.json';
 const ROOT_LOCK = 'package-lock.json';
+const NATIVE_PKG = 'native/package.json';
 const NVMRC = '.nvmrc';
 const MISE = 'mise.toml';
 const CI = '.github/workflows/ci.yml';
+const CLAUDE_LAUNCH = '.claude/launch.json';
 const BUILD = 'build.mjs';
 const RUN_ALL = 'tests/run-all.mjs';
 const DESIGN_CARD_SUITE = 'tests/test23.mjs';
@@ -23,6 +25,7 @@ export function verifyNodeRuntimeContract(check: Check): {
   const nodeRange = '>=24 <25';
   const rootPkg = JSON.parse(readFileSync(ROOT_PKG, 'utf8'));
   const rootLock = JSON.parse(readFileSync(ROOT_LOCK, 'utf8'));
+  const nativePkg = JSON.parse(readFileSync(NATIVE_PKG, 'utf8'));
 
   check(nodePin === '24', `${NVMRC} pins ${JSON.stringify(nodePin)}, expected Node 24`);
   check(rootPkg.engines?.node === nodeRange,
@@ -33,6 +36,10 @@ export function verifyNodeRuntimeContract(check: Check): {
   ROOT_PKG + ' devEngines.runtime must fail npm commands outside ' + nodeRange);
   check(rootLock.packages?.['']?.engines?.node === nodeRange,
     `${ROOT_LOCK} does not mirror ${ROOT_PKG}'s Node engine ${nodeRange}`);
+  check(nativePkg.devEngines?.runtime?.name === 'node'
+    && nativePkg.devEngines.runtime.version === nodeRange
+    && nativePkg.devEngines.runtime.onFail === 'error',
+  NATIVE_PKG + ' devEngines.runtime must fail npm commands outside ' + nodeRange);
 
   check(Number(process.versions.node.split('.')[0]) === 24,
     'verification is running under Node ' + process.versions.node + ', expected the repository Node 24 pin');
@@ -47,6 +54,23 @@ export function verifyNodeRuntimeContract(check: Check): {
   const ci = readFileSync(CI, 'utf8');
   check(nodeJobsUsePinnedNode(ci),
     CI + ' must install Node from .nvmrc before every job first uses Node/npm/npx');
+  const bypasses = [
+    ['multiline npm', '      - run: |\n          npm test'],
+    ['environment-prefixed npm', '      - run: CI=true npm test'],
+    ['direct Vite', '      - run: vite build'],
+    ['direct Capacitor', '      - run: cap sync ios'],
+  ];
+  for (const [label, step] of bypasses) {
+    const unpinnedJob = `\n  unpinned_${label.replace(/\W+/g, '_')}:\n    runs-on: ubuntu-latest\n    steps:\n${step}\n`;
+    check(!nodeJobsUsePinnedNode(ci + unpinnedJob),
+      `${CI} runtime ratchet missed an unpinned ${label} command`);
+  }
+
+  const claudeLaunch = JSON.parse(readFileSync(CLAUDE_LAUNCH, 'utf8'));
+  const devLaunch = claudeLaunch.configurations?.find((entry: { name?: string }) => entry.name === 'dev');
+  check(devLaunch?.runtimeExecutable === 'mise'
+    && JSON.stringify(devLaunch.runtimeArgs) === JSON.stringify(['exec', '--', 'npm', 'run', 'dev']),
+  `${CLAUDE_LAUNCH} must launch the Node-backed dev server through mise`);
 
   const buildSource = readFileSync(BUILD, 'utf8');
   check(/process\.execPath/.test(buildSource),

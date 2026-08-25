@@ -5,7 +5,7 @@
 // SQL-created confirmed users — see e2e instructions in the repo README).
 // Participant queues and active matches are cleaned before and after the run;
 // persistent history/ladder rows still belong to the target's owner policy.
-//   npm run test:live:pvp   (reads the gitignored .env.live)
+//   mise exec -- npm run test:live:pvp   (reads the gitignored .env.live)
 import { readLivePvpConfig } from './support/live-pvp-config.mjs';
 import { cleanupLivePvpState } from './support/live-pvp-cleanup.mjs';
 

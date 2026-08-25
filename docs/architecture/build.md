@@ -47,15 +47,15 @@ catalogs under `native/` are tracked compiler input. `native/www/`,
 `node_modules`, Pods, Gradle output, derived data, local SDK paths, keystores,
 and `keystore.properties` are ignored.
 
-`npm run build` generates `native/www/` but never invokes Capacitor. This keeps
+`mise exec -- npm run build` generates `native/www/` but never invokes Capacitor. This keeps
 the deterministic web build independent of local CocoaPods/Xcode state.
 The root scripts make the native mutation explicit:
 
 | Scope | Sync | Open | Verify |
 |---|---|---|---|
-| both | `npm run native:sync` | — | `npm run native:verify` |
-| iOS | `npm run native:sync:ios` | `npm run native:open:ios` | `npm run native:verify:ios` |
-| Android | `npm run native:sync:android` | `npm run native:open:android` | `npm run native:verify:android` |
+| both | `mise exec -- npm run native:sync` | — | `mise exec -- npm run native:verify` |
+| iOS | `mise exec -- npm run native:sync:ios` | `mise exec -- npm run native:open:ios` | `mise exec -- npm run native:verify:ios` |
+| Android | `mise exec -- npm run native:sync:android` | `mise exec -- npm run native:open:android` | `mise exec -- npm run native:verify:android` |
 
 Every sync first rebuilds `native/www/`; failures are not swallowed. Verify
 then checks the platform's tracked manifests, plugins, assets, versions,
@@ -64,7 +64,7 @@ security settings, and the exact web bytes copied by Capacitor. The tracked
 implementation; iOS verification requires Capacitor and CocoaPods to register
 it rather than accepting an unwired source directory.
 
-`npm run native:assets:android` renders Android-only custom icon/splash inputs
+`mise exec -- npm run native:assets:android` renders Android-only custom icon/splash inputs
 from the shared vector generators, runs Capacitor Assets 3.0.5, and writes the
 tracked legacy, round, adaptive, monochrome, light, dark, portrait, and
 landscape resources without replacing the custom iOS appearance catalog.
@@ -115,13 +115,13 @@ upload:
 
 | Command | Effect |
 |---|---|
-| `npm run appstore:fastlane:install` | Install the locked Ruby dependencies into ignored `vendor/bundle/` |
-| `npm run appstore:screenshots:verify` | Read-only PNG, dimensions, alpha, manifest, and SHA-256 validation |
-| `npm run appstore:screenshots:contract` | Focused listing identity, export, dependency-pin, and mutation-guard contract |
-| `npm run appstore:screenshots:test` | Pure planner safety cases, including duplicates and the ten-item capacity boundary |
-| `npm run appstore:screenshots:check` | Repeat local validation through pinned Fastlane and prove 1320 × 2868 maps to `APP_IPHONE_67` |
-| `npm run appstore:screenshots:plan` | Authenticate read-only, resolve one existing version and locale, and print an inventory-bound confirmation token |
-| `npm run appstore:screenshots:upload` | After campaign approval, synchronize only that locale's `APP_IPHONE_67` set |
+| `mise exec -- npm run appstore:fastlane:install` | Install the locked Ruby dependencies into ignored `vendor/bundle/` |
+| `mise exec -- npm run appstore:screenshots:verify` | Read-only PNG, dimensions, alpha, manifest, and SHA-256 validation |
+| `mise exec -- npm run appstore:screenshots:contract` | Focused listing identity, export, dependency-pin, and mutation-guard contract |
+| `mise exec -- npm run appstore:screenshots:test` | Pure planner safety cases, including duplicates and the ten-item capacity boundary |
+| `mise exec -- npm run appstore:screenshots:check` | Repeat local validation through pinned Fastlane and prove 1320 × 2868 maps to `APP_IPHONE_67` |
+| `mise exec -- npm run appstore:screenshots:plan` | Authenticate read-only, resolve one existing version and locale, and print an inventory-bound confirmation token |
+| `mise exec -- npm run appstore:screenshots:upload` | After campaign approval, synchronize only that locale's `APP_IPHONE_67` set |
 
 The upload lane never uses generic Deliver overwrite/sync, creates no version
 or localization, uploads no binary or other metadata, and never submits for
@@ -156,7 +156,7 @@ This owner/store rehearsal is explicitly deferred as of 2026-08-24. The
 configuration remains release-gated below; an unsigned CI bundle is not a
 substitute for completing it before the first store submission.
 
-`npm run native:bundle:android` syncs Android, then invokes the guarded release
+`mise exec -- npm run native:bundle:android` syncs Android, then invokes the guarded release
 builder. It requires ignored `native/android/keystore.properties` with all four
 values from `keystore.properties.example`, builds `bundleRelease`, and verifies
 the resulting AAB signature. Missing or incomplete secrets are fatal; the
@@ -181,6 +181,17 @@ and JavaScript shebangs. Run non-interactive or agent commands through
 source-worktree `devEngines` check, while CI and Cloudflare consume `.nvmrc`
 instead of copying a second version literal.
 
+Runnable local recipes, agent launch configurations, and tool help text use
+`mise exec --` at their outer boundary. Bare `node`, `npm`, Vite, and Capacitor
+names inside package scripts are deliberate children of that selected runtime;
+GitHub Actions and Cloudflare may also invoke them directly only after their
+environment has selected `.nvmrc`.
+
+Hash-pinned historical evidence sources keep their frozen bytes, including any
+embedded legacy command examples: changing those strings would invalidate the
+recorded provenance without rerunning the study. Their current regeneration
+recipes live in the surrounding evidence documentation and use `mise exec --`.
+
 This is intentionally a host toolchain rather than a Node Docker image. The
 integrated iOS path continues from the web build into host CocoaPods and Xcode;
 a Linux container would split that workflow without supplying Apple's native
@@ -195,9 +206,9 @@ different bare `node` found on `PATH`.
 
 Cloudflare Pages builds `main` and deploys immediately. Repository verification
 is therefore preventive: choose focused/specialized gates for a well-contained,
-low-risk change and `npm test` when the change is cross-cutting, high-risk, or
-lacks decisive focused coverage. Deployment instructions or dashboard state
-are not encoded into generated public artifacts.
+low-risk change and `mise exec -- npm test` when the change is cross-cutting,
+high-risk, or lacks decisive focused coverage. Deployment instructions or
+dashboard state are not encoded into generated public artifacts.
 
 The separate `android` CI job consumes both npm lockfiles under Node 24, uses
 Temurin Java 21 and Android SDK/build-tools 36, syncs Android, runs the native

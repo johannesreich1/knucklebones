@@ -28,7 +28,7 @@ valuation added after that baseline.
 Regenerate:
 
 ```text
-/opt/homebrew/bin/node --no-warnings --experimental-strip-types \
+mise exec -- node --no-warnings --experimental-strip-types \
   tools/rune-sunder-sensitivity.ts \
   --baseline docs/evidence/rune-matchups/v1/raw-classic.json \
   --baseline docs/evidence/rune-matchups/v1/raw-bounty.json \

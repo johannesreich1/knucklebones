@@ -184,14 +184,14 @@ for (const [pod, path] of locked) {
   if (!pkgName) continue;   // a pod from some source other than node_modules
   check(pkgName in deps,
     `pod '${pod}' builds from ${pkgName}, which ${PKG} does not declare — `
-    + `\`npm install\` in native/ would not produce it`);
+    + `\`mise exec -- npm --prefix native install\` would not produce it`);
 }
 
 /* ================= 3. THE WEB PAYLOAD ================= */
 /* run-all builds before it gates, so native/www is always present here. Guard
    anyway: absent, every assertion below would pass by iterating nothing. */
 const built = existsSync(`${WWW}/index.html`);
-check(built, `${WWW}/index.html does not exist — run \`node build.mjs\` before this gate`);
+check(built, `${WWW}/index.html does not exist — run \`mise exec -- node build.mjs\` before this gate`);
 
 if (built) {
   const nativeIndex = readFileSync(`${WWW}/index.html`, 'utf8');
@@ -265,7 +265,7 @@ if (built) {
      an assets/ directory. That mistake shipped repeatedly on 2026-08-21. */
   check(!/<script[^>]+src="\.?\/?assets\//.test(nativeIndex) && !existsSync(`${WWW}/assets`),
     `${WWW} holds the CHUNKED pwa layout, not the single-file build — someone `
-    + `rsynced dist/pwa/ over it. Re-run \`node build.mjs\`, which copies dist/main.`);
+    + `rsynced dist/pwa/ over it. Re-run \`mise exec -- node build.mjs\`, which copies dist/main.`);
 
   /* the service worker inside the payload must be versioned like every other
      deliverable. Left at 'kb-dev' the bytes never change between builds, so iOS

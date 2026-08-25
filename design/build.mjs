@@ -5,7 +5,7 @@
 // Design and product share CSS by construction — a token change in src/styles/
 // re-skins every design card on the next build.
 //
-//   node design/build.mjs
+//   mise exec -- node design/build.mjs
 //
 // Screen file format: first line is a meta comment —
 //   <!-- meta name="…" group="…" subtitle="…" width=400 height=900 links="A,B" -->

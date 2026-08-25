@@ -5,7 +5,7 @@
 // something), and that the machine's shared policy (machineCast — the CPU
 // and the balance harness both ask it) weighs casts the way the measured
 // numbers assumed.
-// Run: node --experimental-strip-types tests/spells.test.ts
+// Run: mise exec -- node --experimental-strip-types tests/spells.test.ts
 import { SPEC, emptyBoard, boardTotal, applyMove, openStrikes, freshCharm,
          CLASSIC, ROWSWITCH, COLSHIELD,
          type GameState, type Mode, AI, ME } from '../src/core/rules.ts';

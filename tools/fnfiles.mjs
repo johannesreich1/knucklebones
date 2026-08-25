@@ -13,9 +13,9 @@
 // on its first request. So the list is derived from the imports instead, by
 // the same code the gate runs (tests/fnsync.test.ts).
 //
-//   node tools/fnfiles.mjs                 # every function, as a table
-//   node tools/fnfiles.mjs pvp-join        # one function
-//   node tools/fnfiles.mjs pvp-join --json # exactly what deploy_edge_function wants
+//   mise exec -- node tools/fnfiles.mjs                 # every function, as a table
+//   mise exec -- node tools/fnfiles.mjs pvp-join        # one function
+//   mise exec -- node tools/fnfiles.mjs pvp-join --json # exactly what deploy_edge_function wants
 //
 // The --json form is the deploy: its output is the `files` argument, so the
 // upload can neither miss a file nor carry a hand-edited one.

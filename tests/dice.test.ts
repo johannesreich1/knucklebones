@@ -3,7 +3,7 @@
 // validator (Deno) MUST derive identical rolls. The golden sequence pins that:
 // if it ever changes, the PRNG changed, and every stored ranked game's replay
 // breaks — that is a red build, not a snapshot to update casually.
-// Run: node --experimental-strip-types tests/dice.test.ts
+// Run: mise exec -- node --experimental-strip-types tests/dice.test.ts
 import { diceStream } from '../src/core/dice.ts';
 
 const problems: string[] = [];

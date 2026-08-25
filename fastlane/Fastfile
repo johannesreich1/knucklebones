@@ -26,8 +26,7 @@ def screenshot_sync
 end
 
 def run_local_screenshot_check
-  node_binary = ENV.fetch("KB_NODE_BINARY", "node")
-  sh(node_binary, "--experimental-strip-types", APP_STORE_CONTRACT)
+  sh("mise", "exec", "--", "node", "--experimental-strip-types", APP_STORE_CONTRACT)
   files = screenshot_sync.desired
   KnucklebonesAppStore::ScreenshotPlan.build(desired: files, screenshots: [])
   UI.success("Verified #{files.length} opaque APP_IPHONE_67 screenshots and their committed checksums")

@@ -9,9 +9,9 @@ Run them from the repository root with the Node 24 version required by this
 project:
 
 ```sh
-node --experimental-strip-types tools/debug/list-production-matches.mjs 10
-node --experimental-strip-types tools/debug/replay-production-match.mjs <match-key>
-node --experimental-strip-types tools/debug/replay-production-match.mjs <match-key> --all
+mise exec -- node --experimental-strip-types tools/debug/list-production-matches.mjs 10
+mise exec -- node --experimental-strip-types tools/debug/replay-production-match.mjs <match-key>
+mise exec -- node --experimental-strip-types tools/debug/replay-production-match.mjs <match-key> --all
 ```
 
 The list command returns a 16-character opaque match key. The replay command
@@ -28,7 +28,7 @@ token as a command-line argument or commit one to the repository.
 The pure sanitized regression can run without credentials or network access:
 
 ```sh
-node --experimental-strip-types tools/debug/match-replay.test.mjs
+mise exec -- node --experimental-strip-types tools/debug/match-replay.test.mjs
 ```
 
 These are explicit live diagnostics, not part of `npm test`.

@@ -9,7 +9,7 @@
 // for the actual placement.
 //
 // Run the final treatment cohort (four fixed replications, 3,000 games/cell):
-//   node --experimental-strip-types tools/rune-ward-sensitivity.ts \
+//   mise exec -- node --experimental-strip-types tools/rune-ward-sensitivity.ts \
 //     --baseline docs/evidence/rune-matchups/v1/raw-colshield.json \
 //     --output ward-sensitivity.json
 import { createHash } from 'node:crypto';
@@ -900,7 +900,7 @@ function collectProvenance(): Record<string, unknown> {
 }
 
 function help(): string {
-  return `Usage: node --experimental-strip-types tools/rune-ward-sensitivity.ts [options]
+  return `Usage: mise exec -- node --experimental-strip-types tools/rune-ward-sensitivity.ts [options]
 
 Fixed design:
   COLUMN SHIELD; 11 directed one-cast WARD cells; chain only for

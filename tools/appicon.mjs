@@ -2,10 +2,10 @@
 // game's own cyan/magenta diagonal. Every size the PWA, Android and iOS ask for
 // comes out of the SAME vector, so they can never drift apart.
 //
-//   node tools/appicon.mjs           regenerate the shipped icon (SHIPPED below)
-//   node tools/appicon.mjs a         try another variant without editing anything
-//   node tools/appicon.mjs c --dry   render a side-by-side sheet, write nothing
-//   node tools/appicon.mjs --android render @capacitor/assets Android inputs only
+//   mise exec -- node tools/appicon.mjs           regenerate the shipped icon (SHIPPED below)
+//   mise exec -- node tools/appicon.mjs a         try another variant without editing anything
+//   mise exec -- node tools/appicon.mjs c --dry   render a side-by-side sheet, write nothing
+//   mise exec -- node tools/appicon.mjs --android render @capacitor/assets Android inputs only
 //
 // Variants are kept on purpose: the choice between them is a taste call that
 // gets revisited, and re-deriving the two not chosen is the annoying part.
