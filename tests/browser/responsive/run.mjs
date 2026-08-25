@@ -4,6 +4,7 @@ import { runLandscapeScenarios } from './scenarios/landscape.mjs';
 import { runInputAccessibilityScenarios } from './scenarios/input-accessibility.mjs';
 import { runMotionSafeAreaScenarios } from './scenarios/motion-safe-areas.mjs';
 import { runMenuPressFeedbackScenarios } from './scenarios/menu-press-feedback.mjs';
+import { runPrimaryCtaGlintScenarios } from './scenarios/primary-cta-glint.mjs';
 
 const { chromium, devices } = pkg;
 /* The reduced-motion settings coda reloads the app. Chromium's file://
@@ -35,6 +36,7 @@ await runLandscapeScenarios(suite);
 await runInputAccessibilityScenarios(suite);
 await runMotionSafeAreaScenarios(suite);
 await runMenuPressFeedbackScenarios(suite);
+await runPrimaryCtaGlintScenarios(suite);
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
 await browser.close();

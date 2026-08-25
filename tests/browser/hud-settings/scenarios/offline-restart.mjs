@@ -42,12 +42,19 @@ const askShape = () => {
     if (!visible(element)) return null;
     const rect = element.getBoundingClientRect();
     const style = getComputedStyle(element);
+    const sheen = getComputedStyle(element, '::after');
     const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
     return {
       id,
       text: element.textContent.trim(),
       height: rect.height,
       hit: hit === element || element.contains(hit),
+      glint: {
+        content: sheen.content,
+        animationName: sheen.animationName,
+        running: element.getAnimations({ subtree: true })
+          .some((animation) => animation.animationName === 'primaryGlint'),
+      },
       style: {
         paddingTop: style.paddingTop,
         paddingRight: style.paddingRight,
@@ -87,6 +94,9 @@ function checkAskLayout(check, label, shape) {
     `${label}: offline quit actions are missing or out of order`, shape);
   check(shape.restart?.hit === true && shape.quit?.hit === true,
     `${label}: Restart duel or Quit duel is not the painted hit target`, shape);
+  check(shape.keep?.glint.animationName === 'primaryGlint' && shape.keep.glint.running
+    && shape.restart?.glint.animationName === 'none' && shape.quit?.glint.animationName === 'none',
+  `${label}: Keep playing is not the modal's sole animated two-colour action`, shape);
   check(!!shape.restart && !!shape.quit
     && Math.abs(shape.restart.height - shape.quit.height) < 0.5
     && JSON.stringify(shape.restart.style) === JSON.stringify(shape.quit.style),

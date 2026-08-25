@@ -43,8 +43,26 @@
   background:rgba(255,255,255,.05);color:var(--txt);font-size:13.5px;font-weight:800;letter-spacing:.16em;
   text-transform:uppercase;cursor:pointer;transition:.15s;font-family:inherit}
 :where(#kbroot) .btn:active,:where(#kbroot) .btn.pressing{transform:scale(.96)}
-:where(#kbroot) .btn.primary{background:linear-gradient(100deg,var(--p1),var(--p1-hi) 40%,var(--p2));color:#04101a;border:none;
+:where(#kbroot) .btn.primary{position:relative;isolation:isolate;
+  background:linear-gradient(100deg,var(--p1),var(--p1-hi) 40%,var(--p2));color:#04101a;border:none;
   box-shadow:0 10px 30px rgba(var(--p1-rgb),.28),0 0 0 1px rgba(255,255,255,.12) inset}
+/* The duel gradient is every primary action's identity. A quiet glass glint
+   crosses that existing fill once per long beat (user pick: direction 02),
+   without moving the label or the button itself. Only the topmost open room
+   runs it: Home does not shimmer under Settings, and a result waits through
+   its title/bloom theatre because the first 72% of the cycle is deliberately
+   still. Disabled actions never advertise themselves. */
+:where(#kbroot) .btn.primary:enabled::after{content:"";position:absolute;z-index:1;inset:0;
+  border-radius:inherit;pointer-events:none;opacity:0;
+  background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.15) 50%,transparent 58%);
+  background-repeat:no-repeat;background-size:260% 100%;background-position:100% 0}
+:where(#kbroot) .ov.on:not(:has(~ .ov.on)) .btn.primary:enabled::after{
+  animation:primaryGlint 5.2s ease-in-out infinite}
+@keyframes primaryGlint{
+  0%,72%{background-position:100% 0;opacity:0}
+  76%{opacity:1}
+  89%{background-position:0 0;opacity:1}
+  93%,100%{background-position:0 0;opacity:0}}
 #kbroot [hidden]{display:none!important}
 :where(#kbroot) .seg{display:flex;gap:8px}
 :where(#kbroot) .seg button{flex:1;padding:13px 14px;border-radius:12px;border:1px solid rgba(255,255,255,.12);

@@ -133,6 +133,11 @@ body{display:flex;flex-direction:column;align-items:center;gap:14px;padding:18px
   border:1px dashed rgba(255,255,255,.22);border-radius:99px;padding:3px 9px}
 .flows .fc b{color:var(--cy);font-weight:800}
 .dice-static .die{animation:none}
+/* Product cards are compact stages rather than runtime .ov rooms. Start the
+   same shared primary-button beat here so Home, results, auth, Offline, and
+   question cards preview the shipped motion instead of freezing its base
+   pseudo outside the app's topmost-overlay selector. */
+.stage .btn.primary:enabled::after{animation:primaryGlint 5.2s ease-in-out infinite}
 /* the app's gradient title is scoped .ov h1 (overlay); cards have no .ov,
    so the chrome provides the same look for bare card headings — reading the
    DUEL PAIR, not the raw hues: .ov h1 tracks --p1/--p2, so a chrome pinned to
