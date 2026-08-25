@@ -4,8 +4,9 @@ export async function runAvailabilityScenarios(suite) {
   /* Every registry spell advertises real availability. The flow already asks
      each spec's legal() before arming. Pin the player-visible half of that
      contract as well: every spell is fully present when it has a legal answer,
-     and every spell that can have no answer shares the opponent card's exact
-     mute. NUDGE is intentionally always legal. */
+     and every spell that can have no answer uses the same unavailable cue.
+     Opponent-owned cards remain fully coloured; NUDGE is intentionally always
+     legal. */
   const blockedFixtures = new Set(['fate', 'ward', 'sunder', 'pilfer', 'anvil']);
   check(SPELLS.every((spell) => spell.id === 'nudge' || blockedFixtures.has(spell.id)),
     'a new conditionally legal spell needs an unavailable-card fixture', SPELLS.map((spell) => spell.id));
@@ -70,6 +71,6 @@ export async function runAvailabilityScenarios(suite) {
         && blocked.opacity >= .40 && blocked.opacity <= .44
         && blocked.filter === 'grayscale(0.6)' && /not available right now/i.test(blocked.aria || '')
         && !blocked.armed && blocked.aim === null,
-      `${spellCopy(spell.id).name} did not use the opponent-card cue when it had no legal target`, blocked);
+      `${spellCopy(spell.id).name} did not use the unavailable cue when it had no legal target`, blocked);
   }
 }

@@ -23,10 +23,10 @@ export async function runTurnHandoffScenarios(suite) {
   check(out.theirTurn.active.disabled && out.theirTurn.active.cards === 1
       && out.theirTurn.active.offturn && !out.theirTurn.active.unavailable
       && out.theirTurn.opponentTurn && Math.abs(out.theirTurn.active.scale - .95) <= .002
-      && out.theirTurn.active.opacity >= .40 && out.theirTurn.active.opacity <= .44
-      && out.theirTurn.active.filter === 'grayscale(0.6)'
+      && out.theirTurn.active.opacity >= .99
+      && out.theirTurn.active.filter === 'grayscale(0)'
       && Math.abs(out.theirTurn.standby.scale - .82) <= .002,
-    'the active CPU card did not retain its viewer-relative mute while the other hand stood behind it',
+    'the active CPU card looked disabled instead of retaining its full rune treatment',
     out.theirTurn);
   check(out.myTurn.paired && out.myTurn.count === 2
       && out.myTurn.active?.seat === '1' && out.myTurn.standby?.seat === '0'

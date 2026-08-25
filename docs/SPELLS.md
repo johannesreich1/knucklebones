@@ -573,11 +573,11 @@ The rail now keeps that card vocabulary in play.
   icon therefore stays on one Safari compositing surface instead of twitching
   a few pixels as iOS rerasterises the rotated SVG. For a fixed viewer's full
   opponent turn the active opponent hand transitions over 250ms to 95% scale,
-  then returns to exactly 100% for the viewer's turn. In single-player, the
-  machine-owned hand also keeps its historical 42% opacity and partial
-  grayscale. Online tracks the same viewer-relative scale now, but ranked's
-  empty hands keep the cue invisible until online runes are intentionally
-  introduced. An own rune with
+  then returns to exactly 100% for the viewer's turn. It keeps full opacity and
+  its rune colour while the opponent plays; depth and scale already communicate
+  ownership without making an active rune look disabled. Online tracks the same
+  viewer-relative scale now, but ranked's empty hands keep the cue invisible
+  until online runes are intentionally introduced. An own rune with
   no legal target uses the same mute but remains 100%, so every registry spell
   advertises whether it can be activated without pretending ownership changed.
   Brief busy or phase locks keep the stable pre-lock appearance at its current
@@ -585,7 +585,7 @@ The rail now keeps that card vocabulary in play.
   enlargement. Local two-player has no fixed viewer and never shrinks either
   active hand.
 - **The face carries the rune hue; an offset edge carries ownership.** Every
-  hand has the same restrained player-colour echo under its top physical card,
+  hand has the same soft player-colour echo under its top physical card,
   including matching shared-rune hands. The edge inherits the card's tilt and
   follows it through every active/standby depth swap; neither face trades its
   rune identity for a seat colour. The edge fades before that card turns and

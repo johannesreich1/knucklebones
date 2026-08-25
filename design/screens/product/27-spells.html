@@ -126,11 +126,11 @@
     <code>scale(1)</code>, centred transform origin and zero grayscale are persistent,
     with transform, opacity and filter named for change; this keeps the rotated rune
     icon on one iPhone compositing surface. For a fixed viewer, the active opponent hand
-    eases to 95% over 250ms, then returns to exactly 100% on the viewer's turn. In
-    single-player, the machine-owned hand also keeps its existing 42% opacity and partial
-    grayscale. Online tracks the same viewer-relative scale now, but ranked still deals
-    NONE and hides the rail, so the cue only becomes visible there if online runes are
-    intentionally introduced.
+    eases to 95% over 250ms, then returns to exactly 100% on the viewer's turn. It keeps
+    full opacity and its rune colour while the opponent plays; depth and scale already
+    communicate ownership without making an active rune look disabled. Online tracks the
+    same viewer-relative scale now, but ranked still deals NONE and hides the rail, so the
+    cue only becomes visible there if online runes are intentionally introduced.
     An unavailable own rune may share the mute but stays 100%, brief busy locks preserve
     the pre-lock size, and local pass-and-play or face-to-face never shrinks either human's
     active hand because there is no fixed viewer. A restrained player-colour offset edge
