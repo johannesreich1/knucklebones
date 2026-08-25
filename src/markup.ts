@@ -49,8 +49,8 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     <!-- far side of the table -->
     <section class="side top" id="sideTop" data-owner="0">
       <div class="plate" id="plateTop">
-        <span class="who"><span class="dot"></span><span class="nm" id="nameTop">AI</span>
-        <span class="tag" id="tagTop">HARD</span></span>
+        <span class="who"><span class="player-id"><span class="dot"></span><span class="nm" id="nameTop">AI</span>
+        <span class="tag" id="tagTop">HARD</span></span><span class="rune-tag" id="runeTagTop"></span></span>
         <span class="sp"></span>
         <span class="pright"><span class="wpt" id="wptTop" hidden>\n        ${spellIcon('ward', 11)}<b>+0</b></span><span class="bty" id="btyTop" hidden></span>\n        <span class="tot" id="totTop">0</span></span>
       </div>
@@ -84,8 +84,8 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
       <div class="cols" id="botCols"></div>
       <div class="boardwrap"><div class="board" id="botBoard"></div></div>
       <div class="plate" id="plateBot">
-        <span class="who"><span class="dot"></span><span class="nm" id="nameBot">YOU</span>
-        <span class="tag" id="tagBot" hidden></span></span>
+        <span class="who"><span class="player-id"><span class="dot"></span><span class="nm" id="nameBot">YOU</span>
+        <span class="tag" id="tagBot" hidden></span></span><span class="rune-tag" id="runeTagBot"></span></span>
         <span class="sp"></span>
         <span class="pright"><span class="wpt" id="wptBot" hidden>\n        ${spellIcon('ward', 11)}<b>+0</b></span><span class="bty" id="btyBot" hidden></span>\n        <span class="tot" id="totBot">0</span></span>
       </div>

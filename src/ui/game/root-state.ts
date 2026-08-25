@@ -61,6 +61,10 @@ export function isLandscapeLayout(): boolean {
   return appRoot().classList.contains('land');
 }
 
+export function isSidePointsLayout(): boolean {
+  return appRoot().classList.contains('sidepts');
+}
+
 export type CastingPresentation = 'none' | 'column' | 'self';
 
 export function setCastingPresentation(target: CastingPresentation): void {

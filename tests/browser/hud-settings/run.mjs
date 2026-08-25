@@ -4,6 +4,7 @@ import { runHudPopupScenarios } from './scenarios/hud-popups.mjs';
 import { runOfflineRestartScenarios } from './scenarios/offline-restart.mjs';
 import { runSettingsNavigationScenarios } from './scenarios/settings-navigation.mjs';
 import { runBadgeCardScenarios } from './scenarios/badge-cards.mjs';
+import { runAsymmetricRunePlateScenarios } from './scenarios/asymmetric-rune-plates.mjs';
 import { runLanguageSelectorScenarios } from './scenarios/language-selector.mjs';
 import { modeCopy, spellCopy, t } from '../../../src/i18n/index.ts';
 
@@ -35,11 +36,12 @@ page.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
 page.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
 await page.goto(F); await page.waitForTimeout(500);
 
-const suite = { page, ctx, F, problems, errs, out, check, modeCopy, spellCopy, t };
+const suite = { page, ctx, browser, F, problems, errs, out, check, modeCopy, spellCopy, t };
 await runHudPopupScenarios(suite);
 await runOfflineRestartScenarios(suite);
 await runSettingsNavigationScenarios(suite);
 await runBadgeCardScenarios(suite);
+await runAsymmetricRunePlateScenarios(suite);
 await runLanguageSelectorScenarios(suite);
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));

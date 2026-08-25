@@ -51,6 +51,10 @@ export const dialNodes = (found?: string): string => MODES.map((m, i) =>
    never drift apart. */
 const EASE: readonly [number, number, number, number] = [0.1, 0.62, 0.05, 1];
 const CSS_EASE = `cubic-bezier(${EASE.join(',')})`;
+/* Let the eye register the selected node and centre bloom before the shell
+   writes the mode name and rule below it. This is an information beat, not
+   extra motion, so reduced-motion players keep the same readable sequence. */
+const ANSWER_BEAT_MS = 360;
 
 /** the same curve the browser is running, as a function of elapsed fraction */
 function bezier(x1: number, y1: number, x2: number, y2: number): (x: number) => number {
@@ -158,6 +162,7 @@ export function dialBeat(spec: ModeSpec): Beat {
       nodes[i]?.getAnimations().forEach((a) => a.cancel());
       nodes[i]?.classList.add('on');
       Sfx.place();
+      await new Promise<void>((resolve) => setTimeout(resolve, ANSWER_BEAT_MS));
     },
   };
 }

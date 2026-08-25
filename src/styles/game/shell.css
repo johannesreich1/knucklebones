@@ -33,6 +33,12 @@
   :where(#kbroot) .ico{width:27px;height:27px;border-radius:9px;font-size:12px}
   :where(#kbroot) .hud{gap:6px}
 }
+/* A content-measured fallback covers the widths just above that device query
+   and longer translations at any portrait width. JS adds this only when the
+   full owner labels would intrude on Leave; icons, owner dots and accessible
+   labels keep both compact controls unambiguous. */
+:where(#kbroot) .rec[data-compact-owners] .rchip[data-owner] .rlab{display:none}
+:where(#kbroot) .rec[data-compact-owners] .rchip[data-owner]{padding-inline:5px}
 /* a score line's two numbers (ui/record.ts): the shape is theirs everywhere,
    the colour belongs to wherever the line lands. The HUD no longer carries one
    — it names what is being played, never the tally — so the only cyan/magenta
@@ -44,12 +50,12 @@
 :where(#kbroot) .rchip.tapmode:active{transform:scale(.94)}
 /* tap() holds the press class on the ROW it is bound to, exactly as the picker
    rows do — one chip pressed, the badge acknowledges */
-:where(#kbroot) .rec.pressing .rchip.tapmode{transform:scale(.94)}
+:where(#kbroot) :is(.rec,.rune-tag).pressing .rchip.tapmode{transform:scale(.94)}
 :where(#kbroot) .rchip .mi{color:var(--dim);font-weight:800;margin-left:2px}
-/* A distinct two-rune deal adds one chip per hand. The owner dot repeats the
-   nameplate colour, keeping both controls compact while making the mapping
-   explicit in VS AI, pass-the-phone, and face-to-face play. */
-:where(#kbroot) .rchip[data-owner]::before{content:"";width:5px;height:5px;border-radius:50%;flex:0 0 auto;
+/* In the compact HUD fallback, a distinct two-rune deal needs an owner dot to
+   make its two controls unambiguous. Roomy portrait puts each rune on its own
+   player plate instead, where the adjacent identity already says whose it is. */
+:where(#kbroot) #rec .rchip[data-owner]::before{content:"";width:5px;height:5px;border-radius:50%;flex:0 0 auto;
   background:var(--owner);box-shadow:0 0 7px var(--owner)}
 :where(#kbroot) .rchip[data-owner="1"]{--owner:var(--p1)}
 :where(#kbroot) .rchip[data-owner="0"]{--owner:var(--p2)}
@@ -73,12 +79,22 @@
    right (user call: only where there is room). */
 :where(#kbroot) .plate{display:flex;align-items:center;gap:7px;padding:0 3px;height:24px;flex:0 0 auto}
 :where(#kbroot) .plate .who{display:flex;align-items:center;gap:7px;min-width:0}
+:where(#kbroot) .plate .player-id{display:flex;align-items:center;gap:7px;min-width:0;flex:0 0 auto}
+:where(#kbroot) .plate .rune-tag{display:none;align-items:center;flex:0 0 auto}
 :where(#kbroot) .plate .sp{flex:1}
 :where(#kbroot) .plate .pright{display:flex;align-items:center;gap:7px}
 :where(#kbroot) .plate .dot{width:8px;height:8px;border-radius:50%;background:var(--c);box-shadow:0 0 10px var(--c);flex:0 0 auto}
 :where(#kbroot) .plate .nm{font-size:11.5px;font-weight:800;letter-spacing:.16em;color:var(--txt);opacity:.9}
 :where(#kbroot) .plate .tag{font-size:9px;letter-spacing:.12em;color:var(--dim);border:1px solid rgba(255,255,255,.12);
   border-radius:99px;padding:2px 6px}
+/* A different rune per player gets a player-local reading only when JS has
+   measured that both localized identity/rune pairs fit. The line is exactly
+   one board wide: identity at the left edge, that player's rune at the right.
+   `sidepts` is also required so the live score already owns the outer gutter
+   and cannot compete with this line. */
+#kbroot.sidepts:not(.land) .plate.rune-meta .who{width:calc(var(--cell)*3 + var(--gap)*2);
+  justify-content:space-between;gap:10px}
+#kbroot.sidepts:not(.land) .plate.rune-meta .rune-tag{display:flex}
 /* the roomy seating: the score cluster leaves the plate for the gutter beside
    the board, vertically centred on the side; --gut (ui/layout.ts) is the
    gutter's true width, so the cluster sits in its middle. Anchored to the

@@ -7,6 +7,7 @@ import { $ } from '../dom.ts';
 import { nameOf } from '../identity.ts';
 import { buildBoards, renderAll } from './board.ts';
 import { clearHints } from './hints.ts';
+import { reflowBadge } from './hud.ts';
 import {
   isFaceToFace,
   setOpponentTurnPresentation,
@@ -25,6 +26,9 @@ export function applySides(): void {
   buildBoards();
   renderAll(false);
   setActivePlate();
+  /* Pass-phone swaps screen ownership without dealing new runes. Move the
+     existing owner buttons to the newly matching player plates afterwards. */
+  reflowBadge();
 }
 
 /** Repaint locale-owned turn chrome without rebuilding either live board. */

@@ -48,7 +48,8 @@
    facing the table. The left board already reads that way; the right board is
    the same plate mirrored — including the hue dot, which stays with the name
    on the outer edge (user call). */
-#kbroot.land .side.bot .plate,#kbroot.land .side.bot .plate .who{flex-direction:row-reverse}
+#kbroot.land .side.bot .plate,#kbroot.land .side.bot .plate .who,
+#kbroot.land .side.bot .plate .player-id{flex-direction:row-reverse}
 #kbroot.land .side.bot .plate .pright{justify-items:start}
 #kbroot.land .side.bot .plate .tot{text-align:left}
 /* Horizontal seating mirrors the cluster's alignment, not its vertical

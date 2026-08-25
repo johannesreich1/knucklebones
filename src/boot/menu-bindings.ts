@@ -247,12 +247,17 @@ export function bindMenus(root: HTMLElement): void {
 
   tap($('#btnPlay'), () => { Sfx.unlock(); Sfx.tap(); void startLocal(); });
   bindEnd();
-  tap($('#rec'), (event) => {
+  const openBadgeEntry = (event: Event): void => {
     const chip = event.target instanceof Element
       ? event.target.closest('.rchip[data-lib]') as HTMLElement | null
       : null;
     if (chip?.dataset.lib && chip.dataset.id
         && openEntry(chip.dataset.lib, chip.dataset.id)) Sfx.tap();
+  };
+  /* Asymmetric rune buttons move between these three stable hosts as the
+     viewport and seat ownership change; the one delegated action follows. */
+  ['#rec', '#runeTagTop', '#runeTagBot'].forEach((selector) => {
+    tap($(selector), openBadgeEntry);
   });
 
   let onlineBusy = false;

@@ -5,10 +5,12 @@ import { modeByEnum, type ModeSpec } from '../../core/modes.ts';
 import { dealtOf, spellById, type SpellSpec } from '../../core/spells.ts';
 import { modeCopy, spellCopy } from '../../i18n/index.ts';
 import { S } from '../../state.ts';
+import { appRoot } from '../embed.ts';
 import { $ } from '../query.ts';
 import { modeIcon } from '../modeicons.ts';
 import { spellIcon } from '../spellicons.ts';
 import { nameOf } from '../identity.ts';
+import { isLandscapeLayout, isSidePointsLayout } from './root-state.ts';
 
 export type BadgeChip =
   | { html: string; lib: 'modes' | 'spells'; id: string; owner?: Player; ariaLabel?: string }
@@ -40,10 +42,77 @@ function updateChip(element: HTMLElement, chip: BadgeChip): void {
   if (element.innerHTML !== chip.html) element.innerHTML = chip.html;
 }
 
+function badgeHosts(): HTMLElement[] {
+  return [$('#rec'), $('#runeTagTop'), $('#runeTagBot')];
+}
+
+function orderIn(container: HTMLElement, elements: readonly HTMLElement[]): void {
+  elements.forEach((element, index) => {
+    const current = container.children[index];
+    if (current !== element) container.insertBefore(element, current ?? null);
+  });
+}
+
+function clearPlateRunes(): void {
+  appRoot().querySelectorAll<HTMLElement>('.plate.rune-meta').forEach((plate) => {
+    plate.classList.remove('rune-meta');
+  });
+}
+
+/**
+ * Give each asymmetric rune to its player's nameplate only when the real,
+ * localized contents fit across both boards. Returning false leaves the same
+ * buttons in the compact central HUD, where their owner dots disambiguate them.
+ */
+function placePlayerRunes(chips: readonly BadgeChip[], elements: readonly HTMLElement[]): boolean {
+  if (isLandscapeLayout() || !isSidePointsLayout()) return false;
+  const owned = chips.flatMap((chip, index) =>
+    chip.lib === 'spells' && chip.owner !== undefined ? [{ chip, element: elements[index] }] : []);
+  if (owned.length !== 2 || owned[0].chip.owner === owned[1].chip.owner) return false;
+
+  const placements = owned.map(({ chip, element }) => {
+    const side = appRoot().querySelector<HTMLElement>(`.side[data-owner="${chip.owner}"]`);
+    return {
+      element,
+      plate: side?.querySelector<HTMLElement>('.plate') ?? null,
+      host: side?.querySelector<HTMLElement>('.rune-tag') ?? null,
+      identity: side?.querySelector<HTMLElement>('.player-id') ?? null,
+      who: side?.querySelector<HTMLElement>('.who') ?? null,
+      board: side?.querySelector<HTMLElement>('.board') ?? null,
+    };
+  });
+  if (placements.some(({ plate, host, identity, who, board }) =>
+    !plate || !host || !identity || !who || !board)) return false;
+
+  placements.forEach(({ plate, host, element }) => {
+    plate!.classList.add('rune-meta');
+    host!.appendChild(element);
+  });
+  const fits = placements.every(({ identity, who, board, element }) => {
+    const boardWidth = board!.getBoundingClientRect().width;
+    const identityWidth = identity!.getBoundingClientRect().width;
+    const runeWidth = element.getBoundingClientRect().width;
+    const gap = parseFloat(getComputedStyle(who!).columnGap) || 0;
+    return boardWidth > 0 && identityWidth + runeWidth + gap <= boardWidth + .5;
+  });
+  if (!fits) placements.forEach(({ plate }) => plate!.classList.remove('rune-meta'));
+  return fits;
+}
+
+let lastBadgeChips: readonly BadgeChip[] = [];
+
 function paintBadge(chips: readonly BadgeChip[]): void {
+  lastBadgeChips = [...chips];
   const badge = $('#rec');
+  const hosts = badgeHosts();
+  const focused = document.activeElement instanceof HTMLElement
+    && appRoot().contains(document.activeElement) ? document.activeElement : null;
+  /* Count the full fallback while reconciling. At <=359px this lets CSS reduce
+     owner chips to their icon before we decide whether the central row fits. */
   badge.dataset.count = String(chips.length);
-  const existing = new Map(Array.from(badge.children, (child, index) => [
+  delete badge.dataset.compactOwners;
+  const currentElements = hosts.flatMap((host) => Array.from(host.children) as HTMLElement[]);
+  const existing = new Map(currentElements.map((child, index) => [
     (child as HTMLElement).dataset.badgeKey ?? `legacy:${index}`,
     child as HTMLElement,
   ]));
@@ -60,15 +129,33 @@ function paintBadge(chips: readonly BadgeChip[]): void {
   });
 
   /* Locale changes only alter chip copy. Reconcile by stable mode/rune key so
-     focused buttons and any listeners attached to them survive the repaint. */
-  desired.forEach((element, index) => {
-    const current = badge.children[index];
-    if (current !== element) badge.insertBefore(element, current ?? null);
-  });
+     focused buttons survive both the repaint and a HUD/plate relocation. */
+  clearPlateRunes();
+  orderIn(badge, desired);
   const keep = new Set(desired);
-  Array.from(badge.children).forEach((child) => {
+  currentElements.forEach((child) => {
     if (!keep.has(child as HTMLElement)) child.remove();
   });
+  const split = placePlayerRunes(chips, desired);
+  if (!split) orderIn(badge, desired);
+  badge.dataset.count = String(badge.children.length);
+  /* A localized three-chip fallback can be wider than a nominally roomy phone.
+     Read the painted row against the real Leave control and compact only its
+     already owner-marked rune labels when the two would collide. */
+  if (!split && !isLandscapeLayout() && badge.children.length === 3
+      && badge.getBoundingClientRect().right > $('#btnLeave').getBoundingClientRect().left - 4) {
+    badge.dataset.compactOwners = '';
+  }
+  /* Reparenting a focused button makes browsers focus <body>. Put keyboard
+     focus back on the same surviving control without scrolling the board. */
+  if (focused && keep.has(focused) && document.activeElement !== focused) {
+    focused.focus({ preventScroll: true });
+  }
+}
+
+/** Re-evaluate the measured portrait placement after resize or seat changes. */
+export function reflowBadge(): void {
+  if (lastBadgeChips.length) paintBadge(lastBadgeChips);
 }
 
 export function modeChip(mode: Pick<ModeSpec, 'id'>): BadgeChip {

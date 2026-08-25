@@ -9,6 +9,7 @@ import {
   setShortViewport,
   setSidePointsLayout,
 } from './game/root-state.ts';
+import { reflowBadge } from './game/hud.ts';
 /* the row rail's pill (main.css .rowchips .rc min-width) plus its 9px offset */
 const RAIL_LANE = 50;
 /* The board is a screen body like any other, so it stops at the SAME column as
@@ -129,4 +130,8 @@ export function fit(): void {
   const sidepts = !land && gut >= (rowmode ? RAIL_LANE : 40);
   setSidePointsLayout(sidepts);
   appRoot().style.setProperty('--gut', gut+'px');
+  /* The asymmetric-rune nameplates use the board's measured width, localized
+     identity, and localized rune label. Re-evaluate only after every geometry
+     token and layout fact for this fit has settled. */
+  reflowBadge();
 }

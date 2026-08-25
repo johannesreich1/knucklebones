@@ -69,6 +69,31 @@ await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(lo
   await page.click('#btnPlay');
   await page.waitForSelector('#ovWheel.hunting', { timeout: 4000 });
 
+  /* Selection and explanation are two visible beats. Timestamp DOM changes in
+     the page so Playwright polling or a busy test host cannot manufacture the
+     gap we are trying to prove. */
+  await page.evaluate(() => {
+    const overlay = document.getElementById('ovWheel');
+    const name = document.getElementById('wheelName');
+    const blurb = document.getElementById('wheelBlurb');
+    const timing = { selected: null, name: null, blurb: null, early: null };
+    const sample = () => {
+      const now = performance.now();
+      if (timing.selected === null && overlay.querySelector('.dnode.on')) {
+        timing.selected = now;
+        setTimeout(() => {
+          timing.early = { named: name.textContent.trim(), described: blurb.textContent.trim() };
+        }, 180);
+      }
+      if (timing.name === null && name.textContent.trim()) timing.name = now;
+      if (timing.blurb === null && blurb.textContent.trim()) timing.blurb = now;
+    };
+    const observer = new MutationObserver(sample);
+    observer.observe(overlay, { attributes: true, childList: true, characterData: true, subtree: true });
+    window.__wheelAnswerTiming = { observer, timing };
+    sample();
+  });
+
   /* The comet has to ride ON the ring, not beside it. This shipped wrong twice:
      first the mask measured from the farthest CORNER (so the trail orbited at
      35% of the width, a visibly smaller circle than the ring), then the round
@@ -119,17 +144,34 @@ await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(lo
   check(hunting.found === 0, 'the centre showed the answer while still hunting', hunting);
   check(hunting.lit === 0, 'a node was already marked as found mid-hunt', hunting);
 
-  await page.waitForSelector('#ovWheel.landed', { timeout: 12000 });
+  await page.waitForSelector('#ovWheel.landed .dnode.on', { timeout: 12000 });
+  await page.waitForFunction(() => document.querySelector('#wheelName')?.textContent.trim()
+    && document.querySelector('#wheelBlurb')?.textContent.trim(), null, { timeout: 2000 });
   const landed = await page.evaluate(() => ({
     dial: (() => { const r = document.querySelector('.dial').getBoundingClientRect();
       return Math.round(r.top) + ',' + Math.round(r.left); })(),
     named: document.querySelector('#wheelName').textContent.trim(),
+    described: document.querySelector('#wheelBlurb').textContent.trim(),
     lit: [...document.querySelectorAll('#wheelDial .dnode')]
       .filter((e) => e.classList.contains('on')).length,
   }));
+  const revealTiming = await page.evaluate(() => {
+    const watched = window.__wheelAnswerTiming;
+    watched.observer.disconnect();
+    const { selected, name, blurb, early } = watched.timing;
+    return { selected, name, blurb, early,
+      nameGap: name - selected, blurbGap: blurb - selected };
+  });
   out.landed = landed;
-  check(landed.named.length > 0, 'the dial landed without naming anything', landed);
+  out.revealTiming = revealTiming;
+  check(revealTiming.early?.named === '' && revealTiming.early?.described === '',
+    'the dial explained the mode before its selection had room to land', revealTiming);
+  check(landed.named.length > 0 && landed.described.length > 0,
+    'the dial landed without naming and explaining the mode', landed);
   check(landed.lit === 1, 'exactly one node should be lit on landing', landed);
+  check(revealTiming.nameGap >= 300 && revealTiming.blurbGap >= 300
+      && Math.abs(revealTiming.name - revealTiming.blurb) < 40,
+    'the mode name and description did not arrive together after the selection beat', revealTiming);
   /* The dial must not MOVE when the result arrives. The name, the blurb and the
      countdown all appear at once, and in a centred column anything that appears
      pushes everything else — including the thing the player is watching. */
