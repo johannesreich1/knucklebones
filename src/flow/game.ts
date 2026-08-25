@@ -16,7 +16,7 @@ import {
 import { makeBag } from '../core/dice.ts';
 import { RANDOM, pickMode } from '../core/modes.ts';
 import { RANDOM_DUAL_SPELL, RANDOM_SPELL, SPELLS, spellById } from '../core/spells.ts';
-import { formatNumber, t } from '../i18n/index.ts';
+import { outOfTimeCopy, t } from '../i18n/index.ts';
 import { reveal } from '../ui/reveal.ts';
 import { isNewcomer, offerTutorial } from '../ui/firstrun.ts';
 import { S } from '../state.ts';
@@ -67,7 +67,7 @@ async function autoPlace(gen: number): Promise<void> {
   const legal=legalCols(S.boards[who]);
   if(!legal.length) return;
   const c=legal[(Math.random()*legal.length)|0];
-  setStatus(() => t('game', 'status.outOfTime', { column: formatNumber(c + 1) }), who);
+  setStatus(outOfTimeCopy(c + 1), who);
   vibrate([30,40,30]);
   void place(who, c);
 }

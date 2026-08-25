@@ -158,6 +158,11 @@ export function showSheet(spec: SheetSpec): Sheet {
     ov.style.setProperty('--fo-t', ms + 'ms');
     ov.style.setProperty('--fo-e', ease);
     ov.classList.add('fofly');
+    /* WebKit may otherwise coalesce the transition class and destination into
+       one style update, so the card simply appears at `to`. Commit the shared
+       flight styles while the current dy is still the rendered start. This
+       belongs here because arrival, spring-back and exit all use fly(). */
+    void card.offsetHeight;
     setDy(to);
   };
   // how far below the fold the card's resting top is — rect.top already
@@ -323,8 +328,7 @@ export function showSheet(spec: SheetSpec): Sheet {
     spec.repaintLocale?.(card);
     refreshInteractiveDragMode();
   });
-  void card.offsetHeight;                    // ...resolved as a real start...
-  fly(0, 340, 'cubic-bezier(.16,1,.3,1)');   // ...and up it comes, wash with it
+  fly(0, 340, 'cubic-bezier(.16,1,.3,1)');   // ...resolved, then up it comes with the wash
   card.focus();
 
   const sheet: Sheet = { ov, card, close };

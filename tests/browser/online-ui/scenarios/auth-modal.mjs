@@ -74,7 +74,8 @@ async function probeSessionlessModal(page) {
 
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => !document.getElementById('ovPrivacy').classList.contains('on'));
-  await page.waitForTimeout(30);
+  await page.waitForFunction(() => document.activeElement?.id === 'btnAuthPrivacy',
+    null, { timeout: 2000 }).catch(() => { /* the observation below owns the failure detail */ });
   const afterPrivacy = await page.evaluate(() => ({
     authOpen: !!document.querySelector('.authsheet:not(.foout)'),
     focused: document.activeElement?.id,

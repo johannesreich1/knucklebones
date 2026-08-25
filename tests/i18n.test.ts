@@ -18,6 +18,7 @@ import {
   modeCopy,
   navigatorLanguageTags,
   normalizeLanguageTag,
+  outOfTimeCopy,
   refreshSystemLocale,
   resolveLocale,
   resolveSystemLocale,
@@ -29,6 +30,7 @@ import {
   trustedStaticRich,
 } from '../src/i18n/index.ts';
 import { onlineMessage, repaintOnlineMessage } from '../src/online/message-copy.ts';
+import { reconnectingCopy } from '../src/online/play-copy.ts';
 import { claimPlayerNames, nameOf } from '../src/ui/identity.ts';
 
 assert.deepEqual(SUPPORTED_LOCALES, LOCALE_REGISTRY.map(({ id }) => id));
@@ -116,6 +118,17 @@ setLanguageOverride('de');
 assert.equal(modeCopy('random').name, 'ZUFALL');
 assert.equal(spellCopy('none').name, 'KEINE');
 assert.equal(spellCopy('random2').name, 'ZUFALL ×2');
+const timedOut = outOfTimeCopy(3);
+assert.equal(timedOut.visible(), 'Zeit — Sp. 3');
+assert.equal(timedOut.accessible(), 'Zeit abgelaufen — Spalte 3');
+assert.equal(reconnectingCopy.visible(), 'Verbinden …');
+assert.equal(reconnectingCopy.accessible(), 'Neu verbinden …');
+setLanguageOverride('pt');
+assert.equal(timedOut.visible(), 'Tempo — col. 3', 'compact status copy was not locale-live');
+assert.equal(timedOut.accessible(), 'Tempo esgotado — coluna 3');
+assert.equal(reconnectingCopy.visible(), 'Conectando…');
+assert.equal(reconnectingCopy.accessible(), 'Reconectando…');
+setLanguageOverride('de');
 assert.equal(ladderGroupName('obsidian'), 'OBSIDIAN');
 assert.deepEqual(ladderGroupCopy('stone'), { name: 'STEIN', compactName: 'STEIN' });
 assert.equal(ladderGroupCompactName('ivory'), 'ELFENBEIN');

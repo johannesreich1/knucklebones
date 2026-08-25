@@ -122,6 +122,7 @@ export const ptOnline = {
     yourMove: 'Sua vez',
     opponentThinking: '{{opponent}} está pensando',
     reconnecting: 'Reconectando…',
+    reconnectingCompact: 'Conectando…',
     awayAutoPlay_one: 'Ausente — jogada automática em {{formatted}} segundo',
     awayAutoPlay_other: 'Ausente — jogada automática em {{formatted}} segundos',
     awayAutoPlayCompact_one: 'Ausente — jogada em {{formatted}} s',

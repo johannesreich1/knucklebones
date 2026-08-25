@@ -2,7 +2,7 @@ import type { ModeSpec } from '../core/modes.ts';
 import type { Player } from '../core/rules.ts';
 import { formatNumber, t } from '../i18n/index.ts';
 import { modeChip, type BadgeChip } from '../ui/game/hud.ts';
-import { setStatus } from '../ui/game/turn-state.ts';
+import { setStatus, type StatusCopyPair } from '../ui/game/turn-state.ts';
 import type { MatchNames } from './play-types.ts';
 
 export function defaultOnlineNames(): MatchNames {
@@ -17,7 +17,10 @@ export function rankedBadge(mode: Pick<ModeSpec, 'id'>): () => readonly BadgeChi
   return () => [modeChip(mode)];
 }
 
-export const reconnectingCopy = (): string => t('online', 'play.reconnecting');
+export const reconnectingCopy: StatusCopyPair = {
+  visible: () => t('online', 'play.reconnectingCompact'),
+  accessible: () => t('online', 'play.reconnecting'),
+};
 
 export function opponentThinkingCopy(opponent: () => string): () => string {
   return () => t('online', 'play.opponentThinking', { opponent: opponent() });

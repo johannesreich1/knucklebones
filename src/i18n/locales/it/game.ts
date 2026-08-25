@@ -18,6 +18,7 @@ export const itGame = {
   },
   status: {
     outOfTime: 'Tempo scaduto — colonna {{column}}',
+    outOfTimeCompact: 'Tempo — col. {{column}}',
     passPhone: 'Passa il telefono',
     yourRoll: 'Il tuo lancio',
     aiRoll: "Lancio dell'IA",
@@ -226,6 +227,7 @@ export const itGame = {
       blurb: 'Somma di nuovo i punti di una colonna senza doppioni e blocca un attacco.',
       detail: 'Marca una tua colonna: finché tutte le facce sono diverse, i punti si sommano di nuovo come bonus GUARDIA. Un doppione sospende il bonus, ma lascia il marchio. Il prossimo piazzamento avversario con la stessa faccia o FURTO rompe la GUARDIA invece di prendere dadi. Un uso per partita.',
       aim: 'Tocca una tua colonna',
+      aimCompact: 'La tua colonna',
     },
     sunder: {
       name: 'FRATTURA',

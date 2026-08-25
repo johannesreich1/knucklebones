@@ -122,6 +122,7 @@ export const esOnline = {
     yourMove: 'Tu turno',
     opponentThinking: '{{opponent}} está pensando',
     reconnecting: 'Reconectando…',
+    reconnectingCompact: 'Conectando…',
     awayAutoPlay_one: 'Ausente — jugada automática en {{formatted}} segundo',
     awayAutoPlay_other: 'Ausente — jugada automática en {{formatted}} segundos',
     awayAutoPlayCompact_one: 'Ausente — jugada en {{formatted}} s',

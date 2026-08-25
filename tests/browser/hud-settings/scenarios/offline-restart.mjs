@@ -1,3 +1,8 @@
+import {
+  checkOfflineAskLayout,
+  readOfflineAskShape,
+} from '../support/offline-ask.mjs';
+
 const LIMITED = 6;
 const RANDOM_MODE = -1;
 const RANDOM_SPELL = 'random';
@@ -27,86 +32,6 @@ const stableGameState = () => {
     }),
   };
 };
-
-const askShape = () => {
-  const card = document.querySelector('#ovAsk .askcard');
-  const visible = (element) => {
-    if (!element || element.hidden) return false;
-    const rect = element.getBoundingClientRect();
-    const style = getComputedStyle(element);
-    return rect.width > 0 && rect.height > 0
-      && style.display !== 'none' && style.visibility !== 'hidden';
-  };
-  const buttonShape = (id) => {
-    const element = document.getElementById(id);
-    if (!visible(element)) return null;
-    const rect = element.getBoundingClientRect();
-    const style = getComputedStyle(element);
-    const sheen = getComputedStyle(element, '::after');
-    const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
-    return {
-      id,
-      text: element.textContent.trim(),
-      height: rect.height,
-      hit: hit === element || element.contains(hit),
-      glint: {
-        content: sheen.content,
-        animationName: sheen.animationName,
-        running: element.getAnimations({ subtree: true })
-          .some((animation) => animation.animationName === 'primaryGlint'),
-      },
-      style: {
-        paddingTop: style.paddingTop,
-        paddingRight: style.paddingRight,
-        paddingBottom: style.paddingBottom,
-        paddingLeft: style.paddingLeft,
-        backgroundColor: style.backgroundColor,
-        backgroundImage: style.backgroundImage,
-        boxShadow: style.boxShadow,
-        color: style.color,
-        borderTopWidth: style.borderTopWidth,
-        borderTopStyle: style.borderTopStyle,
-        borderTopColor: style.borderTopColor,
-        borderRadius: style.borderRadius,
-        fontFamily: style.fontFamily,
-        fontSize: style.fontSize,
-        fontWeight: style.fontWeight,
-        lineHeight: style.lineHeight,
-        letterSpacing: style.letterSpacing,
-      },
-    };
-  };
-  return {
-    on: document.getElementById('ovAsk')?.classList.contains('on') ?? false,
-    head: document.getElementById('askHead')?.textContent?.trim() ?? '',
-    sharedSheet: !!card?.closest('.faceoff.asksheet')
-      && card.closest('.focard')?.getAttribute('role') === 'dialog'
-      && !!card.closest('.focard')?.querySelector(':scope > .fograb'),
-    order: [...(card?.querySelectorAll(':scope > button') ?? [])]
-      .filter(visible).map((button) => button.textContent.trim()),
-    keep: buttonShape('btnAskNo'),
-    restart: buttonShape('btnAskAlt'),
-    quit: buttonShape('btnAskYes'),
-  };
-};
-
-function checkAskLayout(check, label, shape) {
-  check(shape.on && shape.head === 'Quit this duel?',
-    `${label}: offline quit question copy is wrong`, shape);
-  check(shape.sharedSheet,
-    `${label}: offline quit did not use the shared draggable sheet`, shape);
-  check(shape.order.join(' -> ') === 'Keep playing -> Restart duel -> Quit duel',
-    `${label}: offline quit actions are missing or out of order`, shape);
-  check(shape.restart?.hit === true && shape.quit?.hit === true,
-    `${label}: Restart duel or Quit duel is not the painted hit target`, shape);
-  check(shape.keep?.glint.animationName === 'primaryGlint' && shape.keep.glint.running
-    && shape.restart?.glint.animationName === 'none' && shape.quit?.glint.animationName === 'none',
-  `${label}: Keep playing is not the modal's sole animated two-colour action`, shape);
-  check(!!shape.restart && !!shape.quit
-    && Math.abs(shape.restart.height - shape.quit.height) < 0.5
-    && JSON.stringify(shape.restart.style) === JSON.stringify(shape.quit.style),
-  `${label}: Restart duel does not match Quit duel in height and computed style`, shape);
-}
 
 export async function runOfflineRestartScenarios(suite) {
   const { page, out, check, LOCALE_REGISTRY, RESOURCES } = suite;
@@ -162,8 +87,8 @@ export async function runOfflineRestartScenarios(suite) {
     const transform = getComputedStyle(card).transform;
     return transform === 'none' || Math.abs(new DOMMatrixReadOnly(transform).m42) < 0.5;
   });
-  out.offlineAskRegular = await page.evaluate(askShape);
-  checkAskLayout(check, 'regular phone', out.offlineAskRegular);
+  out.offlineAskRegular = await page.evaluate(readOfflineAskShape);
+  checkOfflineAskLayout(check, 'regular phone', out.offlineAskRegular);
 
   /* The shared question remains live while language changes. Only its text
      nodes repaint: focus, the modal/buttons, and their already-bound actions
@@ -229,8 +154,12 @@ export async function runOfflineRestartScenarios(suite) {
 
   await page.setViewportSize({ width: originalViewport?.width ?? 390, height: 620 });
   await page.waitForTimeout(120);
-  out.offlineAskShort = await page.evaluate(askShape);
-  checkAskLayout(check, 'short phone', out.offlineAskShort);
+  out.offlineAskShort = await page.evaluate(readOfflineAskShape);
+  checkOfflineAskLayout(check, 'short phone', out.offlineAskShort);
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.waitForTimeout(120);
+  out.offlineAskCompact = await page.evaluate(readOfflineAskShape);
+  checkOfflineAskLayout(check, 'compact phone', out.offlineAskCompact);
   if (originalViewport) await page.setViewportSize(originalViewport);
   await page.waitForTimeout(120);
 
@@ -385,7 +314,7 @@ export async function runOfflineRestartScenarios(suite) {
     const transform = getComputedStyle(card).transform;
     return transform === 'none' || Math.abs(new DOMMatrixReadOnly(transform).m42) < 0.5;
   });
-  out.tutorialAsk = await page.evaluate(askShape);
+  out.tutorialAsk = await page.evaluate(readOfflineAskShape);
   check(out.tutorialAsk.order.join(' -> ') === 'Keep playing -> Quit tutorial'
     && out.tutorialAsk.restart === null && out.tutorialAsk.keep?.hit && out.tutorialAsk.quit?.hit,
   'the tutorial ask-card does not name its tutorial exit or leaked restart', out.tutorialAsk);

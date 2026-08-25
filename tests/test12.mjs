@@ -1,4 +1,5 @@
 import pkg from 'playwright';
+import { waitForOverlayTransitions } from './browser/support/overlay-transitions.mjs';
 const { chromium, devices } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
 const browser = await chromium.launch();
@@ -230,6 +231,7 @@ out.small = await sp.evaluate(() => {
            legalOverlays: document.querySelectorAll('[data-legal-page]').length };
 });
 await sp.evaluate(() => window.__kb.goHome());
+await waitForOverlayTransitions(sp, '#ovStart, #ovPractice');
 check(out.small.publicLegalLinks === 2 && out.small.legalOverlays === 4,
       'eager Settings placeholder doors or the shared four-page shell are incomplete', out.small);
 /* The accessibility target may be 44px without repainting every secondary

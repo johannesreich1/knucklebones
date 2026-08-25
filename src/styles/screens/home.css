@@ -19,7 +19,7 @@
   margin-top:26px}
 :where(#kbroot) .hrow{display:flex;gap:8px;width:100%}
 :where(#kbroot) .hrow .btn{position:relative;flex:1;min-width:0;min-height:0;padding:12px 6px;
-  font-size:11px;letter-spacing:.12em}
+  font-size:11px;line-height:13px;letter-spacing:.12em}
 /* Keep the compact secondary artwork that belongs beside/below the hero
    action, but let a finger reach a centred 44px lane. The row gaps are wider
    than the invisible expansion, so neighbouring actions never overlap. */

@@ -18,6 +18,7 @@ export const ptGame = {
   },
   status: {
     outOfTime: 'Tempo esgotado — coluna {{column}}',
+    outOfTimeCompact: 'Tempo — col. {{column}}',
     passPhone: 'Passe o celular',
     yourRoll: 'Seu lançamento',
     aiRoll: 'Lançamento da IA',
@@ -226,6 +227,7 @@ export const ptGame = {
       blurb: 'Some novamente os pontos de uma coluna sem dados repetidos e bloqueie um ataque.',
       detail: 'Marque uma coluna sua: enquanto todas as faces forem diferentes, os pontos valem de novo como bônus da GUARDA. Uma repetição pausa o bônus, mas mantém a marca. A próxima colocação inimiga com face igual ou FURTO quebra a GUARDA em vez de levar dados. Um uso por partida.',
       aim: 'Toque numa coluna sua',
+      aimCompact: 'Sua coluna',
     },
     sunder: {
       name: 'RUPTURA',

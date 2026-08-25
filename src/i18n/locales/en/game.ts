@@ -15,6 +15,7 @@ export const enGame = {
   },
   status: {
     outOfTime: 'Out of time — column {{column}}',
+    outOfTimeCompact: 'Time — col. {{column}}',
     passPhone: 'Pass the phone',
     yourRoll: 'Your roll',
     aiRoll: 'AI roll',
@@ -223,6 +224,7 @@ export const enGame = {
       blurb: 'Score an all-distinct column again and block one attack.',
       detail: 'Mark one of your columns: while every face in it is different, their pips score again as a WARD bonus. A duplicate pauses the bonus but leaves the mark. The next matching enemy placement or PILFER breaks WARD instead of taking dice. One cast per game.',
       aim: 'Tap your own column',
+      aimCompact: 'Your column',
     },
     sunder: {
       name: 'SUNDER',
