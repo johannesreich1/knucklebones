@@ -1,4 +1,4 @@
-<!-- meta name="Spells — aiming a rune" group="4 · Local play" subtitle="RC4: both persistent seat hands switch depth every turn; the committed card loses its owner edge, turns, and deals away" width=412 height=2770 links="R2C — Six ownership marks for paired rune cards, R2S — Spent alpha matte, Offline — local play, Rune deal — dealt, Game modes" -->
+<!-- meta name="Spells — aiming a rune" group="4 · Local play" subtitle="RC4: persistent seat hands switch depth; a spent hand recedes while its committed card turns and deals away" width=412 height=2870 links="R2C — Six ownership marks for paired rune cards, R2S — Spent alpha matte, Offline — local play, Rune deal — dealt, Game modes" -->
 <style>
   /* The rune is PILFER, and every glyph on this card is drawn by the app
      (ui/spellicons, through the sico token). It used to hand-draw five copies
@@ -136,12 +136,14 @@
     active hand because there is no fixed viewer. A restrained player-colour offset edge
     identifies each hand without recolouring the rune face. It stays physically attached
     during every depth swap, fades before the selected card turns face-up, and never
-    appears on a spent charge. These remain the reveal cards at rail size, not new rune
+    appears on a spent charge. When a front hand spends its final charge, its matte
+    recedes immediately and the other live hand comes forward beneath the departing cast;
+    game-turn ownership itself does not change. These remain the reveal cards at rail size, not new rune
     objects, and the plates need no second readout.<br>
     <b>Cost.</b> <span class="k">One cast per game — two for FATE.</span> Every charge is
     a face-down card at its own tilt. Committing turns the top card once and deals it away;
     the fully spent hand is the same stack of opaque alpha-checker mattes, holding the
-    stage still while completely masking any live or spent card below.
+    stage still while completely masking any card below whenever a matte is on top.
     An ordinary aim may be cancelled before a legal target commits it. No committed cast
     can be put back: self spells commit on the die, WARD and PILFER on their selected legal
     column, and ANVIL as soon as its weakest-die markings appear. Its committed rune stays

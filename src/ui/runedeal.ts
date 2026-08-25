@@ -256,7 +256,7 @@ export function dealBeat(spec: SpellSpec, options: RuneDealOptions = {}): Beat {
   return {
     /* Locale-live getters let the reveal repaint copy without creating a new
        beat (which would also reshuffle the deck). */
-    get label() { return options.label?.() ?? t('game', 'reveal.yourRune'); },
+    get label() { return options.label?.() ?? t('game', 'reveal.matchRune'); },
     cls: 'dealing',
     get name() { return spellCopy(spec.id).name; },
     get blurb() { return spellCopy(spec.id).blurb; },

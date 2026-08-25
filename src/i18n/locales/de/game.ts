@@ -93,7 +93,7 @@ export const deGame = {
   },
   reveal: {
     gameMode: 'SPIELMODUS',
-    yourRune: 'DEINE RUNE',
+    matchRune: 'MATCH-RUNE',
     runeFor: 'RUNE FÜR',
     tapReady: 'Antippen, wenn du bereit bist',
     connecting: 'Spieler werden verbunden …',

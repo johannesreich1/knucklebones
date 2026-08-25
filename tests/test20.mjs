@@ -97,10 +97,12 @@ try {
           boards: window.__kb.S.boards,
         });
         const stateBefore = state();
+        const beforeTitle = document.getElementById('wheelTitle').textContent.trim();
         Object.assign(window.__localeReveal, { runeStage: stage, card, label, deckCard, animation });
         document.getElementById('languageNext').click();
         return {
           locale: window.__kb.S.localeOverride,
+          beforeTitle,
           title: document.getElementById('wheelTitle').textContent.trim(),
           before,
           label: label.textContent.trim(),
@@ -116,6 +118,7 @@ try {
     }
     const t0 = Date.now();
     const shuffling = await page.evaluate(() => ({
+      title: document.querySelector('#wheelTitle .wtitlecopy').textContent.trim(),
       named: document.querySelector('#wheelName').textContent.trim(),
       turned: !!document.querySelector('.rdealt.up'),
       deck: [...document.querySelectorAll('.rcard')].map((e) => e.dataset.rune),
@@ -220,6 +223,8 @@ try {
   // ---- a deal under a mode the player CHOSE: one beat, one countdown ----
   const solo = await deal('0');                                   // 0 = CLASSIC
   out.solo = solo;
+  check(solo.shuffling.title === 'MATCH RUNE',
+    'the shared RANDOM reveal used player-relative English copy', solo.shuffling);
   check(solo.shuffling.named === '', 'the deal named its rune while still shuffling', solo.shuffling);
   check(!solo.shuffling.turned, 'the card was already face-up while still shuffling', solo.shuffling);
   check(solo.shuffling.hold === 'hidden', 'the countdown ran before anything was dealt', solo.shuffling);
@@ -268,7 +273,8 @@ try {
     && both.localeRepaint.mode.stateAfter === both.localeRepaint.mode.stateBefore,
   'changing locale rebuilt or restarted the live mode dial', both.localeRepaint.mode);
   check(both.localeRepaint.rune.locale === 'fr'
-    && both.localeRepaint.rune.title === 'VOTRE RUNE'
+    && both.localeRepaint.rune.beforeTitle === 'MATCH-RUNE'
+    && both.localeRepaint.rune.title === 'RUNE DU MATCH'
     && both.localeRepaint.rune.label !== both.localeRepaint.rune.before
     && both.localeRepaint.rune.sameStage && both.localeRepaint.rune.sameCard
     && both.localeRepaint.rune.sameLabel && both.localeRepaint.rune.sameDeckCard

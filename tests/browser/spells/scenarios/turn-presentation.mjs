@@ -36,6 +36,8 @@ function createTurnPresentationProbes(page) {
         seat: card.dataset.seat, spell: card.dataset.spell, probe: card.dataset.handoffProbe ?? null,
         active: card.classList.contains('hand-active'),
         standby: card.classList.contains('hand-standby'),
+        spentBack: card.classList.contains('hand-spent-back'),
+        liveFront: card.classList.contains('hand-live-front'),
         disabled: card.disabled, offturn: card.classList.contains('offturn'),
         unavailable: card.classList.contains('unavailable'),
         opacity: Number(style.opacity), filter: style.filter, transform: style.transform,

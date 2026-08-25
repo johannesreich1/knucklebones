@@ -1,4 +1,4 @@
-<!-- meta name="R2S — Spent alpha matte" group="4h · Rune cards in play" subtitle="Selected and shipped 2026-08-25 — the alpha-channel look uses a fully opaque neutral matte in one-spent and both-spent overlaps" width=430 height=980 sizes="md" links="R2C — Six ownership marks for paired rune cards, Spells — aiming a rune, Offline — local play" -->
+<!-- meta name="R2S — Spent alpha matte" group="4h · Rune cards in play" subtitle="Selected and shipped 2026-08-25 — opaque alpha-channel mattes recede behind a remaining live hand and mask the lower matte when both are spent" width=430 height=980 sizes="md" links="R2C — Six ownership marks for paired rune cards, Spells — aiming a rune, Offline — local play" -->
 <style>
   .r2d-scr{box-sizing:border-box;align-items:center;padding:20px 16px 18px;min-height:868px}
   .r2d-head{width:100%;max-width:352px;text-align:left}
@@ -60,7 +60,7 @@
   <header class="r2d-head">
     <div class="r2d-kicker">SELECTED TREATMENT · SHIPPED 2026-08-25</div>
     <h1>ALPHA MATTE</h1>
-    <p>Keep the ghost-card feeling, but stop a live rune below from painting through the empty card on top.</p>
+    <p>Keep the ghost-card feeling, recede it behind a remaining live hand, and still mask the lower card whenever a spent matte is on top.</p>
     <div class="r2d-rule"><i class="r2d-swatch"></i><span><b>LOOKS TRANSPARENT</b> · PAINTS OPAQUE</span></div>
   </header>
 
@@ -75,25 +75,25 @@
     </article>
     <article class="r2d-pane proposed r2d-matte">
       <span class="r2d-label">SELECTED</span>
-      <p class="r2d-desc">The quiet alpha grid reads empty while fully masking FATE.</p>
+      <p class="r2d-desc">The quiet matte recedes immediately, so live FATE remains visible in front.</p>
       <div class="r2d-well"><div class="r2d-stack spells live paired">
-        <button class="rune multi hand-standby" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button>
-        <button class="rune spent hand-active" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-empty charge-1"></i></button>
+        <button class="rune multi hand-standby hand-live-front" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button>
+        <button class="rune spent hand-active hand-spent-back" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-empty charge-1"></i></button>
       </div></div>
     </article>
   </section>
 
   <section class="r2d-cases r2d-matte">
-    <h2>THE THREE OVERLAP CASES</h2>
+    <h2>THE THREE SHIPPING STATES</h2>
     <div class="r2d-casegrid">
       <div class="r2d-case"><div class="r2d-well"><div class="r2d-stack spells live paired">
-        <button class="rune multi hand-standby" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button>
-        <button class="rune spent hand-active" data-seat="0"><i class="rune-empty charge-1"></i></button>
-      </div></div><b><em>ONE SPENT</em><br>ON TOP</b></div>
+        <button class="rune multi hand-standby hand-live-front" data-seat="1" style="--rune-hue:{{shue:fate}}"><i class="rune-charge charge-1 under">{{runefaces:fate}}</i><i class="rune-charge charge-2 top">{{runefaces:fate}}</i></button>
+        <button class="rune spent hand-active hand-spent-back" data-seat="0"><i class="rune-empty charge-1"></i></button>
+      </div></div><b><em>JUST SPENT</em><br>RECEDES</b></div>
       <div class="r2d-case"><div class="r2d-well"><div class="r2d-stack spells live paired">
         <button class="rune multi spent hand-standby" data-seat="1"><i class="rune-empty charge-1"></i><i class="rune-empty charge-2"></i></button>
         <button class="rune hand-active" data-seat="0" style="--rune-hue:{{shue:anvil}}"><i class="rune-charge charge-1 top">{{runefaces:anvil}}</i></button>
-      </div></div><b><em>ONE SPENT</em><br>BEHIND</b></div>
+      </div></div><b><em>AFTER HANDOFF</em><br>STAYS BEHIND</b></div>
       <div class="r2d-case"><div class="r2d-well"><div class="r2d-stack spells live paired">
         <button class="rune multi spent hand-standby" data-seat="1"><i class="rune-empty charge-1"></i><i class="rune-empty charge-2"></i></button>
         <button class="rune spent hand-active" data-seat="0"><i class="rune-empty charge-1"></i></button>
@@ -101,5 +101,5 @@
     </div>
   </section>
 
-  <footer class="r2d-foot"><b>NO REAL TRANSPARENCY.</b> True alpha would always reveal the lower card. This uses two nearly identical opaque night tones, so the checker communicates “empty” while the matte guarantees visual separation.</footer>
+  <footer class="r2d-foot"><b>NO REAL TRANSPARENCY.</b> True alpha would always reveal the lower card. The spent hand moves behind any live hand immediately; where mattes overlap, two nearly identical opaque night tones guarantee separation.</footer>
 </div></div>

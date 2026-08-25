@@ -549,7 +549,10 @@ The rail now keeps that card vocabulary in play.
 - **One slot, one persistent hand per dealt seat.** Shared named and RANDOM
   deals keep two matching hands; RANDOM 2 keeps two different hands. The active
   hand comes forward and the standby hand recedes on every turn change, so the
-  physical cards switch depth instead of one card changing identity. The
+  physical cards switch depth instead of one card changing identity. If that
+  front hand spends its last charge, its opaque matte recedes immediately and
+  the other live hand comes forward while the cast card deals away; semantic
+  turn ownership does not change. The
   nameplate readout stays gone and the plate keeps that lane for the score.
   Watch "Reserve, never collapse" above.
 - **The card is the reveal's card at rail size** — same face, same deck back,
@@ -611,11 +614,13 @@ The rail now keeps that card vocabulary in play.
 **RC4's distinguishing rule.** Each remaining charge is a card at its own
 tilt. Committing a cast deals the top card face-up and away; a fully spent hand
 leaves the same number of alpha-checker mattes. Those close, fully opaque night
-tones look transparent but completely mask a hand below. FATE therefore reads
-as two, then one, then an empty two-card stack without a numeric badge. The drag
-ghost is the same face-up card, reduced motion resolves directly to the
-remaining hand, and the fixed matte keeps portrait, landscape and LIMITED
-stage geometry unchanged.
+tones look transparent but completely mask a hand below. A just-spent hand
+recedes behind the other live hand immediately, keeping both hands visible
+during the deal-away; when both hands are spent, the active matte stays opaque
+above the other matte. FATE therefore reads as two, then one, then an empty
+two-card stack without a numeric badge. The drag ghost is the same face-up card,
+reduced motion resolves directly to the remaining hand, and the fixed matte
+keeps portrait, landscape and LIMITED stage geometry unchanged.
 
 **The machine shows its tell.** Once the CPU has chosen a legal cast, it holds
 the card for a random **320–900ms** before activation. Declining a spell adds

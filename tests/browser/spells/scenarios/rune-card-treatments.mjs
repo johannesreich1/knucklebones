@@ -83,6 +83,20 @@ export async function runRuneCardTreatmentScenarios(suite) {
   await turnTo(1);
   out.turningOwnerShadow = await page.evaluate(async () => {
     const k = window.__kb, pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const readRail = () => {
+      const hands = [...document.querySelectorAll('#spellBar .rune:not([hidden])')]
+        .filter((card) => !!card.offsetParent).map((card) => {
+          const style = getComputedStyle(card);
+          const matrix = style.transform === 'none'
+            ? new DOMMatrixReadOnly() : new DOMMatrixReadOnly(style.transform);
+          return { seat: card.dataset.seat, spentBack: card.classList.contains('hand-spent-back'),
+            liveFront: card.classList.contains('hand-live-front'), z: style.zIndex,
+            opacity: Number(style.opacity), scale: Math.hypot(matrix.a, matrix.b),
+            cards: [...card.querySelectorAll('.rune-charge')].filter((item) => !item.hidden).length,
+            outlines: [...card.querySelectorAll('.rune-empty')].filter((item) => !item.hidden).length };
+        });
+      return { hands };
+    };
     const sourceCharge = document.querySelector(
       '#spellBar .rune.hand-active:not([hidden]) .rune-charge.top');
     const sourceBox = sourceCharge?.getBoundingClientRect();
@@ -94,7 +108,8 @@ export async function runRuneCardTreatmentScenarios(suite) {
       await new Promise(requestAnimationFrame);
       flight = document.querySelector('#spellBar .rune-played.turning');
     }
-    if (!flight) return { found: false, source };
+    if (!flight) return { found: false, source, railDuring: readRail() };
+    const railDuring = readRail();
     const deal = flight.getAnimations().find((animation) => animation.animationName === 'runeTurnDeal');
     if (deal) deal.currentTime = 0;
     const flightBox = flight.getBoundingClientRect();
@@ -118,7 +133,7 @@ export async function runRuneCardTreatmentScenarios(suite) {
     await pending;
     const total = performance.now() - started;
     if (total < 760) await pause(760 - total);
-    return { found: true, source, first, names, samples: samples.filter(Boolean), aliveNearEnd,
+    return { found: true, source, first, names, samples: samples.filter(Boolean), railDuring, aliveNearEnd,
       goneAfterFlight: !flight.isConnected };
   });
   const playedFace = out.turningOwnerShadow.samples?.findIndex((sample) => sample.face >= .9) ?? -1;
@@ -127,6 +142,8 @@ export async function runRuneCardTreatmentScenarios(suite) {
       Math.abs(out.turningOwnerShadow.first[key] - out.turningOwnerShadow.source[key])))
     : Number.POSITIVE_INFINITY;
   out.turningOwnerShadow.originDelta = flightOriginDelta;
+  const spentDuringCast = out.turningOwnerShadow.railDuring?.hands.find((hand) => hand.seat === '1');
+  const liveDuringCast = out.turningOwnerShadow.railDuring?.hands.find((hand) => hand.seat === '0');
   check(out.turningOwnerShadow.found
       && out.turningOwnerShadow.names.includes('runeTurnDeal')
       && out.turningOwnerShadow.samples[0].boxShadow !== 'none'
@@ -135,13 +152,17 @@ export async function runRuneCardTreatmentScenarios(suite) {
         && sample.face <= .05)
       && playedFace >= 0 && out.turningOwnerShadow.samples[playedFace].shadow <= .08
       && flightOriginDelta <= 1
+      && spentDuringCast?.spentBack && spentDuringCast.z === '1'
+      && spentDuringCast.cards === 0 && spentDuringCast.outlines === 1
+      && liveDuringCast?.liveFront && liveDuringCast.z === '3'
+      && liveDuringCast.cards === 1 && liveDuringCast.opacity > .5
       && out.turningOwnerShadow.aliveNearEnd && out.turningOwnerShadow.goneAfterFlight,
-    'a direct turning cast moved from its hand, lost its owner edge, or ended the flight early',
+    'a direct cast lost its flight treatment or let the spent hand cover the remaining live hand',
     out.turningOwnerShadow);
 
-  /* The alpha-channel look is a fully opaque neutral matte. Exercise the
-     dangerous overlap: an off-turn CPU hand is spent on top of a live player
-     hand. Its effective card opacity and its own base must both be opaque. */
+  /* The alpha-channel look is a fully opaque neutral matte. As soon as the
+     active hand is exhausted it must recede behind the other live hand, even
+     before the turn handoff finishes, so both physical hands stay readable. */
   await page.evaluate(() => {
     const k = window.__kb;
     k.S.spell = 'random2'; k.S.spellCharges = [{ anvil: 1 }, { fate: 2 }];
@@ -159,31 +180,12 @@ export async function runRuneCardTreatmentScenarios(suite) {
       background: getComputedStyle(empty).backgroundColor };
   });
   out.spentMatteTop = await rail();
-  const matteBox = await page.locator(
-    '#spellBar .rune.hand-active[data-seat="0"] .rune-empty:not([hidden])').boundingBox();
-  const matteClip = { x: matteBox.x + 8, y: matteBox.y + 8,
-    width: matteBox.width - 16, height: matteBox.height - 16 };
-  const matteBefore = await page.screenshot({ clip: matteClip, animations: 'disabled' });
-  await page.evaluate(() => {
-    const lower = document.querySelector('#spellBar .rune.hand-standby[data-seat="1"]');
-    for (const face of lower.querySelectorAll('.rback,.rface')) {
-      face.style.background = 'rgb(255,0,255)';
-      face.style.boxShadow = 'inset 0 0 0 999px rgb(255,0,255)';
-    }
-  });
-  await page.waitForTimeout(40);
-  const matteAfter = await page.screenshot({ clip: matteClip, animations: 'disabled' });
-  out.spentMattePixelMask = matteBefore.equals(matteAfter);
-  await page.evaluate(() => {
-    const lower = document.querySelector('#spellBar .rune.hand-standby[data-seat="1"]');
-    for (const face of lower.querySelectorAll('.rback,.rface')) {
-      face.style.removeProperty('background'); face.style.removeProperty('box-shadow');
-    }
-  });
   check(out.spentMatteImmediate.cardOpacity >= .99 && out.spentMatteImmediate.matteOpacity === 1
       && out.spentMatteImmediate.background !== 'rgba(0, 0, 0, 0)'
       && out.spentMatteTop.count === 2 && out.spentMatteTop.opponentTurn
       && out.spentMatteTop.active.seat === '0' && out.spentMatteTop.active.offturn
+      && out.spentMatteTop.active.spentBack && out.spentMatteTop.active.z === '1'
+      && Math.abs(out.spentMatteTop.active.scale - .82) <= .02
       && out.spentMatteTop.active.cards === 0 && out.spentMatteTop.active.outlines === 1
       && out.spentMatteTop.active.opacity >= .99
       && out.spentMatteTop.active.matte?.opacity === 1
@@ -191,9 +193,11 @@ export async function runRuneCardTreatmentScenarios(suite) {
       && out.spentMatteTop.active.matte?.image !== 'none'
       && out.spentMatteTop.active.matte?.size.includes('8px 8px')
       && out.spentMatteTop.standby.seat === '1' && out.spentMatteTop.standby.cards === 2
-      && out.spentMattePixelMask,
-    'the active CPU spent matte let the live standby rune paint through it',
-    { rail: out.spentMatteTop, pixelsEqual: out.spentMattePixelMask });
+      && out.spentMatteTop.standby.liveFront && out.spentMatteTop.standby.z === '3'
+      && Math.abs(out.spentMatteTop.standby.scale - 1) <= .02
+      && out.spentMatteTop.standby.opacity >= .99,
+    'the active spent matte did not recede behind the remaining live hand immediately',
+    out.spentMatteTop);
 
   await page.evaluate(() => {
     const k = window.__kb;
@@ -209,6 +213,34 @@ export async function runRuneCardTreatmentScenarios(suite) {
   });
   await page.waitForTimeout(320);
   out.bothSpentMattes = await rail();
+  const topMatte = await page.locator(
+    '#spellBar .rune.hand-active[data-seat="0"] .rune-empty:not([hidden])').boundingBox();
+  const lowerMatte = await page.locator(
+    '#spellBar .rune.hand-standby[data-seat="1"] .rune-empty:not([hidden])').last().boundingBox();
+  const overlap = {
+    left: Math.max(topMatte.x, lowerMatte.x), top: Math.max(topMatte.y, lowerMatte.y),
+    right: Math.min(topMatte.x + topMatte.width, lowerMatte.x + lowerMatte.width),
+    bottom: Math.min(topMatte.y + topMatte.height, lowerMatte.y + lowerMatte.height),
+  };
+  const matteClip = { x: overlap.left + 4, y: overlap.top + 4,
+    width: overlap.right - overlap.left - 8, height: overlap.bottom - overlap.top - 8 };
+  const matteBefore = await page.screenshot({ clip: matteClip, animations: 'disabled' });
+  await page.evaluate(() => {
+    const lower = document.querySelector('#spellBar .rune.hand-standby[data-seat="1"]');
+    for (const matte of lower.querySelectorAll('.rune-empty:not([hidden])')) {
+      matte.style.background = 'rgb(255,0,255)';
+      matte.style.boxShadow = 'inset 0 0 0 999px rgb(255,0,255)';
+    }
+  });
+  await page.waitForTimeout(40);
+  const matteAfter = await page.screenshot({ clip: matteClip, animations: 'disabled' });
+  out.spentMattePixelMask = matteBefore.equals(matteAfter);
+  await page.evaluate(() => {
+    const lower = document.querySelector('#spellBar .rune.hand-standby[data-seat="1"]');
+    for (const matte of lower.querySelectorAll('.rune-empty:not([hidden])')) {
+      matte.style.removeProperty('background'); matte.style.removeProperty('box-shadow');
+    }
+  });
   check(out.spentMatteBehind.active.seat === '1' && out.spentMatteBehind.active.cards === 2
       && out.spentMatteBehind.standby.seat === '0' && out.spentMatteBehind.standby.outlines === 1
       && out.spentMatteBehind.standby.matte?.backgroundAlpha === 1,
@@ -218,7 +250,8 @@ export async function runRuneCardTreatmentScenarios(suite) {
       && out.bothSpentMattes.cards.reduce((sum, card) => sum + card.cards, 0) === 0
       && out.bothSpentMattes.cards.reduce((sum, card) => sum + card.outlines, 0) === 3
       && out.bothSpentMattes.cards.every((card) => card.matte?.opacity === 1
-        && card.matte?.backgroundAlpha === 1 && card.matte?.image !== 'none'),
+        && card.matte?.backgroundAlpha === 1 && card.matte?.image !== 'none')
+      && out.spentMattePixelMask,
     'the both-spent overlap did not keep two opaque owner hands and all three empty cards',
-    out.bothSpentMattes);
+    { rail: out.bothSpentMattes, pixelsEqual: out.spentMattePixelMask });
 }

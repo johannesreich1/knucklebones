@@ -28,6 +28,13 @@
 #kbroot .spells.paired .rune.hand-standby{z-index:1;transform:translate(-9px,-6px) rotate(-5deg) scale(.82);
   opacity:.62;filter:saturate(.72) brightness(.82)}
 #kbroot.opponent-turn .spells.paired .rune.hand-active{transform:translate(7px,4px) rotate(2deg) scale(.95)}
+/* Spending the front hand must not collapse two visible hands into one. Its
+   opaque matte recedes at once and the remaining live hand comes forward;
+   semantic active/standby ownership still follows the actual turn. */
+#kbroot .spells.paired .rune.hand-active.hand-spent-back{z-index:1;
+  transform:translate(-9px,-6px) rotate(-5deg) scale(.82);filter:saturate(.72) brightness(.82)}
+#kbroot .spells.paired .rune.hand-standby.hand-live-front{z-index:3;
+  transform:translate(7px,4px) rotate(2deg) scale(1);opacity:1;filter:grayscale(0)}
 /* An opaque matte cannot mask the card below if its whole button is faded.
    Spent hands keep full alpha in both depths; scale, position and filter still
    separate the standby, while the checker remains a real occluder. */
@@ -148,3 +155,7 @@
 #kbroot.land .spells.paired .rune.hand-active{transform:translate(8px,1px) rotate(3deg) scale(1)}
 #kbroot.land .spells.paired .rune.hand-standby{transform:translate(-8px,-3px) rotate(-5deg) scale(.82)}
 #kbroot.land.opponent-turn .spells.paired .rune.hand-active{transform:translate(8px,1px) rotate(3deg) scale(.95)}
+#kbroot.land .spells.paired .rune.hand-active.hand-spent-back{
+  transform:translate(-8px,-3px) rotate(-5deg) scale(.82)}
+#kbroot.land .spells.paired .rune.hand-standby.hand-live-front{
+  transform:translate(8px,1px) rotate(3deg) scale(1)}

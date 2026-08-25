@@ -32,6 +32,13 @@ export function renderSpellRail(ports: SpellRailPorts): void {
   const now = ports.caster();
   const dealtIds = S.spellCharges.map((hand) => Object.keys(hand)[0] ?? '');
   const paired = !!dealtIds[ME] && !!dealtIds[1 - ME];
+  const otherSeat = (1 - seat) as Player;
+  const turnLeft = dealtIds[seat] ? ports.chargesOf(seat, dealtIds[seat]) : 0;
+  const otherLeft = dealtIds[otherSeat] ? ports.chargesOf(otherSeat, dealtIds[otherSeat]) : 0;
+  /* A fully spent turn hand is an opaque matte. Let it recede immediately
+     behind the still-live hand instead of masking that card until the turn
+     changes; the departing clone remains above both during its deal-away. */
+  const spentTurnHandRecedes = paired && turnLeft <= 0 && otherLeft > 0;
   let shown = 0;
   for (const spell of SPELLS) {
     for (const owner of [ME, AI] as Player[]) {
@@ -62,6 +69,8 @@ export function renderSpellRail(ports: SpellRailPorts): void {
       button.classList.toggle('unavailable', unavailable);
       button.classList.toggle('hand-active', paired && currentHand);
       button.classList.toggle('hand-standby', paired && !currentHand);
+      button.classList.toggle('hand-spent-back', spentTurnHandRecedes && currentHand);
+      button.classList.toggle('hand-live-front', spentTurnHandRecedes && !currentHand);
       button.disabled = !canCast;
       paintCharges(button, spell, left);
       const copy = spellCopy(spell.id);
