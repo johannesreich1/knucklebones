@@ -190,11 +190,6 @@ export function bindMenus(root: HTMLElement): void {
   tap($('#btnLearnModes'), () => { Sfx.tap(); openModes(); });
   tap($('#btnLearnSpells'), () => { Sfx.tap(); openSpells(); });
   bindLearnPageBack('ovRules');
-  tap($('#btnImprint'), () => { Sfx.tap(); show('#ovImprint'); });
-  tap($('#btnPrivacy'), () => { Sfx.tap(); show('#ovPrivacy'); });
-  for (const id of ['Imprint', 'Privacy']) {
-    tap($('#btn' + id + 'Back'), () => { Sfx.tap(); hide('#ov' + id); });
-  }
   tap($('#btnPracticeBack'), () => { Sfx.tap(); hide('#ovPractice'); show('#ovStart'); });
 
   tap($('#btnLeave'), async () => {

@@ -9,6 +9,8 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
   return async function visit({
     anonymous = 200,
     attached = false,
+    authDelay = 0,
+    dataDelay = 0,
     door = 'chip',
     inspectLoading = false,
     named = false,
@@ -16,6 +18,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     locale = 'en-US',
     viewport = { width: 430, height: 932 },
     paginationRace = false,
+    passwordAuth = 'error',
     probe = null,
     skipStandardProbes = false,
   }) {
@@ -29,8 +32,9 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     page.on('pageerror', (e) => errs.push(e.message));
 
     const routes = await installOnlineRoutes(page, {
-      anonymous, attached, dataDelay: inspectLoading ? 900 : 0,
-      door, named, paginationRace, SESSION, GUEST_ID,
+      anonymous, attached, authDelay,
+      dataDelay: inspectLoading ? 900 : dataDelay,
+      door, named, paginationRace, passwordAuth, SESSION, GUEST_ID,
     });
     if (door === 'play') {
       /* Ranked newcomers stop at the once-only tutorial offer. This probe is

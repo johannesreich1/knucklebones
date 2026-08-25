@@ -9,6 +9,7 @@ import { boardDown, boardUp, clearPress, commitColumn } from '../ui/input.ts';
 import { sheetOpen } from '../ui/sheet.ts';
 import { startLocal } from '../flow/game.ts';
 import { castArmedByIndex, disarm } from '../flow/spells.ts';
+import { closeOpenLegalPage } from '../ui/legal.ts';
 
 function eventElement(target: EventTarget | null): Element | null {
   return target instanceof Element ? target : null;
@@ -70,7 +71,7 @@ export function bindKeyboard(root: HTMLElement): void {
       const pass = $('#ovPass');
       if (pass.classList.contains('on')) {
         pass.click();
-      } else if (!root.querySelector('[aria-modal="true"]')) {
+      } else if (!root.querySelector('.faceoff [aria-modal="true"],.ov.on[aria-modal="true"]')) {
         /* #ovStart stays on beneath nested rooms. Only the last visible room
            may claim replay/start, and a modal owns the key while present. */
         const rooms = root.querySelectorAll<HTMLElement>('.ov.on');
@@ -83,14 +84,17 @@ export function bindKeyboard(root: HTMLElement): void {
       return;
     }
 
-    if (rawEvent.key !== 'Escape' || sheetOpen()) return;
+    if (rawEvent.key !== 'Escape') return;
+    if (closeOpenLegalPage()) {
+      rawEvent.preventDefault();
+      return;
+    }
+    if (sheetOpen()) return;
     disarm();
     hide('#ovRules');
     hide('#ovSettings');
     hide('#ovLearn');
     dismissAsk();
-    hide('#ovImprint');
-    hide('#ovPrivacy');
     for (const id of ['ovModes', 'ovSpells']) {
       if (root.querySelector('#' + id)) hide('#' + id);
     }

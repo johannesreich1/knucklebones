@@ -29,12 +29,12 @@ import {
 import { historyRow } from './history-screen.ts';
 import { repaintOnlineMessage } from './message-copy.ts';
 import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';
-import type { AuthMode } from './auth-screen.ts';
+import type { AuthMode, AuthOrigin } from './auth-screen.ts';
 import type { Ladder, Standing } from './ladder-api.ts';
 import type { Me, Profile } from './session.ts';
 
 interface AccountPorts {
-  showAuth(mode: AuthMode): void;
+  showAuth(mode: AuthMode, origin: AuthOrigin): void;
   showAvatar(): Promise<void>;
   showBoard(): Promise<void>;
   showHistory(): Promise<void>;
@@ -237,11 +237,11 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
   function bind(): void {
     $('#btnKeepAcc').addEventListener('click', () => {
       Sfx.tap();
-      ports.showAuth('attach');
+      ports.showAuth('attach', 'account');
     });
     $('#btnHaveAcc').addEventListener('click', () => {
       Sfx.tap();
-      ports.showAuth('restore');
+      ports.showAuth('restore', 'account');
     });
     $('#btnClaim').addEventListener('click', async () => {
       Sfx.tap();
@@ -288,14 +288,14 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
           cancel: () => t('online', 'profile.notNow'),
           loud: true,
         });
-        if (upgrade) ports.showAuth('attach');
+        if (upgrade) ports.showAuth('attach', 'account');
       }
     });
     $('#btnSignOut').addEventListener('click', async () => {
       Sfx.tap();
       await signOut();
       refreshHomeChip();
-      ports.showAuth('restore');
+      ports.showAuth('restore', 'home');
     });
     $('#btnAvatar').addEventListener('click', () => {
       Sfx.tap();
@@ -331,7 +331,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       }
       clearAccountError();
       refreshHomeChip();
-      ports.showAuth('restore');
+      ports.showAuth('restore', 'home');
     });
   }
 

@@ -1,29 +1,28 @@
 # Legal and privacy release checklist
 
-*Current as of 2026-08-24. This is an engineering/completeness checklist, not
+*Current as of 2026-08-25. This is an engineering/completeness checklist, not
 individual legal advice. Final publication should receive a German legal
 review.*
 
 ## Release status and language decision
 
 Johannes's legal name, physical address, federal state, private/hobby status,
-and v1 business model are now recorded. The current in-app Impressum/Privacy
-copy is still **not releasable** until a dedicated public email address replaces
-the remaining explicit placeholder. The hosted app, App Store listing, and Play
-listing also need stable public HTML URLs for the privacy notice; Google Play
-additionally requires an external account-deletion resource for every app that
-lets users create accounts.
+and v1 business model are recorded. One typed legal document system now covers
+provider information, privacy, support, and account deletion in English,
+Brazilian Portuguese, Spanish, German, French, and Italian. Its checked-in
+publication status is deliberately **draft**: the application renders no legal
+navigation and the build emits no public legal routes until every required fact
+and review flag passes the fail-closed gate.
 
-The repository runtime is currently English-only; German, English, and French
-are the planned first product/store languages. Neither store requires a
+Neither store requires a
 separate translation merely because the app is downloadable in a country, but
 GDPR information must be concise, intelligible, easily accessible, and written
-in clear language for the people addressed. V1 therefore publishes one
-factually identical notice in **German, English, and French** if all three
-product/store localizations ship. A translation into every store-territory
-language is not planned. Every later actively supported or marketed language
-adds a matching legal translation before that localization launches. Apple
-metadata can point each localization to the corresponding policy URL.
+in clear language for the people addressed. V1 therefore prepares one
+factually identical notice in all **six supported product languages**. A
+translation into every store-territory language is not planned. Every later
+actively supported or marketed language adds a matching legal translation
+before that localization launches. Apple metadata can point each localization
+to the corresponding policy URL.
 
 Worldwide availability is the requested distribution scope, not proof that one
 privacy notice satisfies every country's consumer, game-registration, child,
@@ -46,8 +45,8 @@ for Vietnam. Add them only after those approvals actually exist.
   profession to publish.
 - V1 is entirely free, with no paid download, in-app purchases, subscriptions,
   donations, advertising, or other monetisation.
-- Planned distribution is worldwide. Planned first languages are German,
-  English, and French, with further European languages later.
+- Planned distribution is worldwide. Supported languages are English,
+  Brazilian Portuguese, Spanish, German, French, and Italian.
 - The game contains no adult-only material. Store content ratings must come
   from truthful answers about the actual dice game and must not be raised merely
   to simplify privacy/account compliance.
@@ -66,8 +65,8 @@ business connection reopens the assessment.
 
 Do not guess or publish missing values:
 
-1. Create a dedicated public support/privacy email address and replace every
-   `[PUBLIC EMAIL REQUIRED BEFORE RELEASE]` marker. A free mailbox is acceptable;
+1. Create a dedicated public support/privacy email address and set the typed
+   `publicEmail` legal fact. A free mailbox is acceptable;
    a custom-domain mailbox is preferable but not legally necessary. It must be
    monitored, and it will be public in the app, privacy policy, support page,
    and Google Play developer profile.
@@ -94,8 +93,10 @@ Do not guess or publish missing values:
    subprocessors, log and backup retention; Cloudflare transfer/logging/DPA
    settings; and any production SMTP provider before finalising the processor,
    transfer, and retention paragraphs.
-6. Choose the public domain/routes and an identity-verification workflow for
-   privacy/support/account-deletion requests received outside the app.
+6. The canonical public origin is
+   `https://knucklebones-asg.pages.dev`. Choose and document the
+   identity-verification workflow for privacy/support/account-deletion requests
+   received outside the app.
 7. Configure store availability for the intended broad release while excluding
    mainland China and Vietnam until their game approvals are obtained. Review
    any other territory-specific store warnings rather than blindly selecting
@@ -158,38 +159,93 @@ store privacy/Data Safety answers must be derived from the same inventory.
 - Confirm whether a consumer-dispute statement is needed under the current
   business model and VSBG employee exception; omit it until that is confirmed
   and do not use a generic generator.
-- Publish accessible, non-geofenced HTML in German, English, and French for
-  every one of these resources when all three localizations ship:
+- Publish accessible, non-geofenced HTML in all six supported languages for
+  every one of these resources when the publication gate becomes ready:
   - Impressum/provider details;
   - privacy policy;
   - support/contact information;
   - external account-deletion instructions/request path.
 - Keep the same privacy and deletion links reachable inside the PWA and native
   apps, then enter them in App Store Connect and Play Console.
+- When the publication gate is ready, keep Impressum and Privacy reachable at
+  the bottom of Settings and show Privacy contextually in the shared
+  attach/sign-in modal. Opening it must preserve the selected auth step and all
+  entered values. Ranked entry itself stays silent; there is no blocking legal
+  notice in the guest flow.
 - Complete App Store Privacy and Google Play Data Safety from the verified
   inventory, including Supabase, Cloudflare, Apple/store services when enabled,
   retention, and deletion.
 
 ### Public-page delivery contract
 
-Use the shared application locale registry and one legal-content source for the
-in-app copy and generated static pages. The intended route matrix is:
+`src/legal/` is the only legal-content source for both the in-app renderer and
+generated static pages. Facts that must not be guessed live in
+`src/legal/config.ts`; `draft` produces no links or routes, while `ready` first
+requires a public email, processor regions and retention facts, localized
+transfer/deletion facts, and completed legal, translation, processor,
+child-privacy, and deletion-workflow reviews. It also revalidates the complete
+localized content registry at publication time: every locale chrome label,
+page title, description, introduction, section, heading, paragraph, and list
+item must be present and nonblank, so a ready build cannot emit an empty or
+partially translated legal page.
+
+The intended route matrix is:
 
 ```text
-/legal/{de,en,fr}/imprint/
-/legal/{de,en,fr}/privacy/
-/legal/{de,en,fr}/support/
-/legal/{de,en,fr}/delete-account/
+/legal/{en,pt,es,de,fr,it}/imprint/
+/legal/{en,pt,es,de,fr,it}/privacy/
+/legal/{en,pt,es,de,fr,it}/support/
+/legal/{en,pt,es,de,fr,it}/delete-account/
 ```
 
-The current Cloudflare Pages fallback serves the game Home page for unknown
-deep paths, so none of those URLs exists merely because the root PWA exists.
-Generate real static HTML with canonical and `hreflang` links; do not maintain a
-second prose copy in `public/`. Before adding the routes, fix the service worker
-so only `/` and `/index.html` can replace the cached app shell and each legal
-page caches under its own URL. Otherwise visiting a privacy page can poison the
-offline Home cache. The public support and deletion pages remain blocked on the
-monitored public email/request channel.
+The generator creates exactly 24 JavaScript-free, semantic HTML pages with a
+self-canonical link, six locale alternates plus English `x-default`, page and
+language navigation, and the correct BCP-47 `lang` (`pt-BR` while the URL uses
+stable ID `pt`). It runs before the PWA file snapshot and content hash, so ready
+pages participate in versioning and precaching.
+
+When publication is ready, the same documents open in the application as
+shared paged overlays. Opening makes the rest of the application inert and
+focuses the document heading; the visible Back control and Escape use one close
+path that restores the opener's focus. The page body is the only scroller,
+long links wrap, and Back plus related-page buttons retain an effective 44 px
+hit area. Public page and language navigation use the same target minimum.
+Draft keeps these production entry points absent even though focused tests can
+drive the shared controller with a synthetic non-shipping opener.
+
+The service worker recognizes only `/`, `/index.html`, and the generated route
+list as cacheable navigations. Root and each legal route retain separate cache
+keys. Unknown navigations use the network response without an app-shell
+fallback, and a failed asset request never receives HTML. Public support and
+deletion pages remain blocked on the monitored public email/request channel.
+
+`tests/legal.test.ts` exercises draft suppression, the ready gate, the complete
+synthetic 24-page matrix, shared renderer parity, metadata, and unresolved-fact
+rejection. `tests/service-worker.test.mjs` proves root/legal cache isolation and
+the absence of arbitrary navigation or asset fallback. The focused legal
+browser matrix measures both the in-app controller with its checked-in draft
+facts and the generated static pages from a complete non-shipping ready fixture:
+every locale/page at all four supported mobile viewports (192 rendered cases).
+It also covers an active-overlay language repaint and a deliberately long URL.
+Its first run found the French deletion header wrapping at 320 px, so the
+compact header label is intentionally `Suppression` while the document keeps
+its full title.
+
+### Release sequence
+
+1. Apply and validate the six-ID `player_settings.locale` expansion in
+   production before deploying a client that can persist `pt`, `es`, or `it`.
+2. Deploy the six-language client while `LEGAL_RELEASE.status` remains `draft`;
+   this release has neither public legal routes nor production legal links.
+3. Complete the public contact channel, provider/processor/retention/transfer
+   facts, deletion workflow, territory review, all translations, and German
+   legal review. Change the status to `ready` only in a separately reviewed
+   change that passes the ready fixture, static-page, browser, service-worker,
+   and full release gates.
+4. After deployment, verify all 24 canonical URLs without JavaScript and then
+   enter the localized privacy/support URLs in App Store Connect and the public
+   privacy/deletion URLs in Play Console. Dashboard entry is not evidence that
+   the repository publication gate passed.
 
 ## Primary references
 

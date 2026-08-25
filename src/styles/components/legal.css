@@ -1,0 +1,26 @@
+/* In-app and public legal pages consume the same structured document. The app
+   provides only the shared game chrome here; prose remains one scrolling body. */
+:where(#kbroot) .legal-document{width:100%;max-width:var(--w-col);padding:16px 18px;border-radius:16px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);color:#c6d3ee;
+  font-size:13.5px;line-height:1.6;overflow-wrap:anywhere;user-select:text}
+:where(#kbroot) .legal-document h1{margin:0 0 12px;color:var(--txt);font-size:22px;line-height:1.2;
+  letter-spacing:.04em;text-align:left;background:none;-webkit-text-fill-color:currentColor;filter:none}
+:where(#kbroot) .legal-document h1:focus{outline:none}
+:where(#kbroot) .legal-document h2{margin:20px 0 7px;color:var(--p1);font-size:12px;line-height:1.35;
+  letter-spacing:.14em;text-transform:uppercase}
+:where(#kbroot) .legal-document p,:where(#kbroot) .legal-document ul{margin:0 0 11px}
+:where(#kbroot) .legal-document ul{padding-left:20px}
+:where(#kbroot) .legal-document li+li{margin-top:5px}
+:where(#kbroot) .legal-document a{color:var(--prose-highlight);overflow-wrap:anywhere}
+:where(#kbroot) .legal-document a:focus-visible{outline:2px solid var(--p1);outline-offset:2px;border-radius:3px}
+:where(#kbroot) .legal-intro{color:var(--txt);font-size:14px}
+:where(#kbroot) .legal-related{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;
+  width:100%;max-width:var(--w-col)}
+:where(#kbroot) .legal-related .linkbtn{display:inline-flex;align-items:center;justify-content:center;
+  min-height:44px;padding:8px}
+:where(#kbroot) .legal-home-nav{flex-wrap:wrap;gap:2px 10px}
+:where(#kbroot) .legal-home-nav .linkbtn{display:inline-flex;align-items:center;min-height:44px;padding:8px}
+:where(#kbroot) .legal-page.on{z-index:100}
+:where(#kbroot) .legal-settings-nav,:where(#kbroot) .authlegal{display:flex;align-items:center;justify-content:center;
+  flex-wrap:wrap;gap:2px 10px}
+:where(#kbroot) .legal-settings-nav .linkbtn,:where(#kbroot) .authlegal .linkbtn{padding:8px;min-height:44px}

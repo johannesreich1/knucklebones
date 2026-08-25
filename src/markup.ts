@@ -4,7 +4,11 @@
 import { chromeIcon } from './ui/chromeicons.ts';
 import { learnPageMarkup } from './ui/learn-page.ts';
 import { spellIcon } from './ui/spellicons.ts';
-import { LEGAL_MARKUP } from './markup/legal.ts';
+import {
+  LEGAL_HOME_NAV_MARKUP,
+  LEGAL_MARKUP,
+  LEGAL_SETTINGS_NAV_MARKUP,
+} from './markup/legal.ts';
 
 const RULES_PAGE = learnPageMarkup({
   id: 'ovRules',
@@ -96,8 +100,6 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
 <div id="fx"></div>
 <div class="flash" id="flash"></div>
 
-
-
 <!-- HOME: online-first. The duel is the hero, PLAY ONLINE the one primary
      action; local play sits behind the quiet PRACTICE strip. -->
 <div class="ov on" id="ovStart">
@@ -128,10 +130,7 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
   <!-- everything teachable moved behind HOW TO PLAY, so the foot carries only
        what the law requires — and it sits at the very bottom, where nobody
        looks for it and nobody has to. -->
-  <div class="viewfoot">
-    <button class="linkbtn" id="btnImprint" data-i18n="game:home.imprint">Impressum</button>
-    <button class="linkbtn" id="btnPrivacy" data-i18n="game:home.privacy">Privacy</button>
-  </div>
+  ${LEGAL_HOME_NAV_MARKUP || '<div class="viewfoot"></div>'}
 </div>
 
 <!-- OFFLINE: the local-play configuration (was the old title screen).
@@ -307,7 +306,10 @@ ${RULES_PAGE}
   </div>
   <!-- deploy truth lives here now: the screen you open when something looks
        wrong is the screen that should tell you WHICH build is wrong -->
-  <div class="viewfoot"><div class="tiny" id="buildTag">build dev</div></div>
+  <div class="viewfoot settings-foot">
+    ${LEGAL_SETTINGS_NAV_MARKUP}
+    <div class="tiny" id="buildTag">build dev</div>
+  </div>
 </div>
 
 <!-- END — the ONE result screen, local and ranked alike (ui/endscreen.ts).

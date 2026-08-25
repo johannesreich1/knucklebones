@@ -4,7 +4,9 @@ export function readOnlineView(page) {
       const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0; };
     return {
       panel: document.querySelector('#onAccount')?.hidden === false ? 'account' : 'auth',
-      title: document.querySelector('#onTitle')?.textContent,
+      title: document.querySelector('#onAuth')?.hidden === false
+        ? document.querySelector('#onAuthTitle')?.textContent
+        : document.querySelector('#onTitle')?.textContent,
       /* the profile shows the name ONCE, as the headline under the ring. The
          claim card exists only while the name is still the minted placeholder
          (migration 0026): its input starts EMPTY, with the current name as the

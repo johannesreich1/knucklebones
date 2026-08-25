@@ -212,14 +212,67 @@ export async function runSettingsNavigationScenarios(suite) {
     title: document.querySelector('#ovSettings .shead .ttl')?.textContent ?? '',
     quitInSheet: !!document.querySelector('#ovSettings #btnMenu'),
     buildTag: !!document.querySelector('#ovSettings #buildTag'),
+    draftLegalDoors: document.querySelectorAll('#ovSettings [data-legal-open]').length,
+    homeFoot: !!document.querySelector('#ovStart > .viewfoot'),
   }));
   check(!out.sheet.quitInSheet, 'Quit is still inside the Settings sheet', out.sheet);
   check(out.sheet.buildTag, 'the build tag is not at the bottom of Settings', out.sheet);
+  check(out.sheet.draftLegalDoors === 0,
+    'draft legal publication exposed a Settings door', out.sheet);
+  check(out.sheet.homeFoot,
+    'draft legal publication removed Home structural spacing', out.sheet);
   check(!out.sheet.reset, 'Reset record still in Settings', out.sheet);
   check(!out.sheet.done, 'Settings still has a bottom Done button', out.sheet);
   // Settings is a PAGE below Home now (user call, 2026-08-21): ‹ left like
   // OFFLINE and the ladder, not the old sheet ✕ on the right
   check(out.sheet.back === '‹' && out.sheet.title === 'SETTINGS', 'Settings page header wrong', out.sheet);
+  /* Production stays fail-closed, so exercise the ready-state placement with
+     synthetic doors wearing the exact shipped classes and real controller. */
+  out.settingsLegal = await page.evaluate(() => {
+    const footer = document.querySelector('#ovSettings .settings-foot');
+    footer.insertAdjacentHTML('afterbegin', `<nav class="legal-settings-nav" data-legal-navigation aria-label="Legal pages">
+      <button type="button" class="linkbtn" id="settingsImprintTest" data-legal-open="imprint">Imprint</button>
+      <button type="button" class="linkbtn" id="settingsPrivacyTest" data-legal-open="privacy">Privacy</button>
+    </nav>`);
+    const buttons = [...footer.querySelectorAll('[data-legal-open]')];
+    const footBox = footer.getBoundingClientRect();
+    const viewBox = document.getElementById('ovSettings').getBoundingClientRect();
+    return {
+      pages: buttons.map((button) => button.dataset.legalOpen),
+      beforeBuild: footer.querySelector('.legal-settings-nav')?.nextElementSibling?.id === 'buildTag',
+      atBottom: Math.abs(footBox.bottom - viewBox.bottom) <= 2,
+      targets: buttons.map((button) => {
+        const box = button.getBoundingClientRect();
+        const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+        return { width: box.width, height: box.height, hit: hit === button || button.contains(hit) };
+      }),
+    };
+  });
+  check(out.settingsLegal.pages.join() === 'imprint,privacy' && out.settingsLegal.beforeBuild
+    && out.settingsLegal.atBottom
+    && out.settingsLegal.targets.every((target) => target.width >= 44 && target.height >= 44 && target.hit),
+  'ready legal doors are not a reachable Imprint/Privacy pair at the Settings bottom', out.settingsLegal);
+  await page.tap('#settingsPrivacyTest'); await page.waitForTimeout(100);
+  out.settingsPrivacy = await page.evaluate(() => {
+    const overlay = document.getElementById('ovPrivacy');
+    const heading = overlay.querySelector('h1');
+    const box = heading.getBoundingClientRect();
+    const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+    return {
+      open: overlay.classList.contains('on'),
+      topmost: !!hit && overlay.contains(hit),
+      settingsInert: document.getElementById('ovSettings').inert,
+    };
+  });
+  check(out.settingsPrivacy.open && out.settingsPrivacy.topmost && out.settingsPrivacy.settingsInert,
+    'Privacy did not open above Settings as the active modal', out.settingsPrivacy);
+  await page.tap('#ovPrivacy [data-legal-close]'); await page.waitForTimeout(50);
+  out.settingsPrivacy.focusRestored = await page.evaluate(() =>
+    document.activeElement?.id === 'settingsPrivacyTest'
+      && document.getElementById('ovSettings').classList.contains('on')
+      && !document.getElementById('ovSettings').inert);
+  check(out.settingsPrivacy.focusRestored,
+    'closing Privacy did not restore the Settings door and page', out.settingsPrivacy);
   await page.tap('#btnSettingsBack'); await page.waitForTimeout(300);
   out.sheetClosed = await page.evaluate(() => !document.getElementById('ovSettings').classList.contains('on'));
   check(out.sheetClosed, 'Settings ‹ did not close the page', out.sheetClosed);
