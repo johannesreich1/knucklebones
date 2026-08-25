@@ -16,6 +16,18 @@ export async function probeAccountActions(page, { door, named }) {
   let claimFlow = null;
   if (door === 'claim') {
     await page.fill('#onNick', 'NeonKing77');
+    /* WebKit touch activation need not focus the tapped button. Open once from
+       a deliberately unfocused synthetic tap and prove the semantic opener is
+       restored before exercising the successful path. */
+    await page.evaluate(() => {
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      document.getElementById('btnClaim').click();
+    });
+    await page.waitForSelector('#ovAsk.on', { timeout: 5000 });
+    await page.click('#btnAskNo');
+    await page.waitForFunction(() => !document.getElementById('ovAsk')
+      && document.activeElement?.id === 'btnClaim');
+    const cancelFocus = await page.evaluate(() => document.activeElement?.id);
     await page.click('#btnClaim');
     await page.waitForSelector('#ovAsk.on', { timeout: 5000 });
     await assertNoOfflineRestart('nickname claim');
@@ -36,23 +48,33 @@ export async function probeAccountActions(page, { door, named }) {
     });
     await page.click('#btnAskYes'); // "Create account" — the way up
     await page.waitForFunction(() => document.querySelector('#onAuth')?.hidden === false, null, { timeout: 5000 });
-    claimFlow = { confirmHead, ...state, authShown: true };
+    claimFlow = { cancelFocus, confirmHead, ...state, authShown: true };
   }
-  /* the ask-card vs later overlays: every .ov shares one z-index, so DOM order
-     paints. Recreate the hazard (an overlay re-appended AFTER #ovAsk — the
-     offline-quit-then-profile ordering) and assert the card wins the PIXEL:
-     ask() re-appends itself on every open. test13's lesson — state and DOM can
-     agree while the player sees neither. */
+  /* The shared sheet owns a z-index above every paged overlay. Recreate the
+     historical hazard (Online moved to the end before the question reopens),
+     wait for the sheet's intentional arrival flight, and assert it wins the
+     pixel. State and DOM can agree while the player sees neither. */
   let askAbove = null;
   if (named) {
-    await page.click('#btnDeleteAcc');
+    await page.evaluate(() => {
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      document.getElementById('btnDeleteAcc').click();
+    });
     await page.waitForSelector('#ovAsk.on', { timeout: 5000 });
     await assertNoOfflineRestart('account deletion');
     await page.click('#btnAskNo');
+    await page.waitForFunction(() => !document.getElementById('ovAsk')
+      && document.activeElement?.id === 'btnDeleteAcc');
     await page.evaluate(() => document.getElementById('kbroot').appendChild(document.querySelector('#ovOnline')));
     await page.click('#btnDeleteAcc');
     await page.waitForSelector('#ovAsk.on', { timeout: 5000 });
     await assertNoOfflineRestart('reopened account deletion');
+    await page.waitForFunction(() => {
+      const node = document.querySelector('#ovAsk .focard');
+      if (!node) return false;
+      const transform = getComputedStyle(node).transform;
+      return transform === 'none' || Math.abs(new DOMMatrixReadOnly(transform).m42) < 0.5;
+    });
     askAbove = await page.evaluate(() => {
       const card = document.querySelector('#ovAsk .askcard');
       const rc = card.getBoundingClientRect();

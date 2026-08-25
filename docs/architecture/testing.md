@@ -67,13 +67,14 @@ its effective 44 px hit region.
 
 Legal delivery has two focused pure contracts. Run
 `mise exec -- node --experimental-strip-types tests/legal.test.ts` for draft
-suppression, ready-fact validation, all 24 synthetic static pages, canonical and
+public-route suppression, exact Settings/auth placeholder doors, ready-fact
+validation, all 24 synthetic static pages, canonical and
 `hreflang` metadata, and shared in-app/static document parity. Run
 `mise exec -- node tests/service-worker.test.mjs` for exact root/legal cache
 keys, offline isolation, and rejection of unknown-page or missing-asset HTML
 fallback. `mise exec -- node tests/browser/legal.mjs` opens the real controller
-through a synthetic non-shipping opener because production draft intentionally
-has no legal links; that controller still renders the checked-in draft facts.
+through a synthetic non-shipping opener so all four documents are covered;
+production draft exposes only Imprint/Privacy in Settings and Privacy in auth.
 The same run browser-renders the 24 pages generated from a complete synthetic
 ready fixture. Across 320 × 568, 390 × 844, 568 × 320, and 667 × 375 it covers
 192 in-app/static locale-page cases, shared-renderer parity, text ranges, full

@@ -220,9 +220,9 @@ sp.on('pageerror', e => errs.push('SMALL: ' + e.message));
 await sp.goto(F); await sp.waitForTimeout(400);
 await sp.evaluate(() => window.__kb.openPractice());  // local controls live in the Practice overlay now
 await sp.tap('#modeSeg button[data-m="duo"]'); await sp.waitForTimeout(300);
-/* Draft is a real publication state, not a maintainer warning: no production
-   legal door is rendered until the facts and review gate are complete. The
-   shared overlay remains testable through a synthetic internal opener. */
+/* Draft still blocks public routes and Home navigation. The owner-approved
+   Settings/auth placeholder doors are present, and the shared four-page
+   controller remains testable here through a synthetic internal opener. */
 out.small = await sp.evaluate(() => {
   const ov = document.getElementById('ovStart');
   return { scrollable: ov.scrollHeight > ov.clientHeight, sh: ov.scrollHeight, ch: ov.clientHeight,
@@ -230,8 +230,37 @@ out.small = await sp.evaluate(() => {
            legalOverlays: document.querySelectorAll('[data-legal-page]').length };
 });
 await sp.evaluate(() => window.__kb.goHome());
-check(out.small.publicLegalLinks === 0 && out.small.legalOverlays === 4,
-      'draft legal publication leaks a link or lacks the shared four-page shell', out.small);
+check(out.small.publicLegalLinks === 2 && out.small.legalOverlays === 4,
+      'eager Settings placeholder doors or the shared four-page shell are incomplete', out.small);
+/* The accessibility target may be 44px without repainting every secondary
+   Home action as a hero-sized button. Measure both the visible hierarchy and
+   actual hit ownership so the generic .btn min-height cannot regress it. */
+out.homeButtons = await sp.evaluate(() => {
+  const probe = (id) => {
+    const button = document.getElementById(id);
+    button.scrollIntoView({ block: 'center' });
+    const rect = button.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+    const owns = (x, y) => {
+      const hit = document.elementFromPoint(x, y);
+      return hit === button || button.contains(hit);
+    };
+    return { id, width: rect.width, height: rect.height,
+      effective44: [[cx - 21, cy], [cx + 21, cy], [cx, cy - 21], [cx, cy + 21]]
+        .every(([x, y]) => owns(x, y)) };
+  };
+  return {
+    hero: probe('btnOnline'),
+    main: ['btnBoardHome', 'btnSettingsHome'].map(probe),
+    quiet: ['btnVsCpu', 'btnDuoHome', 'btnLearn'].map(probe),
+  };
+});
+check(out.homeButtons.hero.height >= 47
+  && out.homeButtons.main.every((button) => button.height >= 38 && button.height <= 40.5
+    && button.effective44)
+  && out.homeButtons.quiet.every((button) => button.height >= 33 && button.height <= 35.5
+    && button.effective44),
+      'Home secondary artwork or its effective 44px target regressed', out.homeButtons);
 await sp.evaluate(() => {
   const opener = document.createElement('button');
   opener.id = 'legalTestOpener';
@@ -243,7 +272,7 @@ await sp.evaluate(() => {
 });
 await sp.waitForTimeout(400);
 const legalOpened = await sp.evaluate(() => document.getElementById('ovImprint').classList.contains('on'));
-check(legalOpened, 'the shared legal controller did not open its synthetic ready-state door', out.small);
+check(legalOpened, 'the shared legal controller did not open its synthetic matrix door', out.small);
 out.small.legalOpened = legalOpened;
 /* The controller owns one accessible path for Back and Escape: background
    content is inert, the translated h1 receives focus, and the opener regains
@@ -252,12 +281,19 @@ out.legalPage = await sp.evaluate(() => {
   const head = document.querySelector('#ovImprint .shead');
   const back = document.querySelector('#ovImprint #btnImprintBack');
   const rect = back.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+  const owns = (x, y) => {
+    const hit = document.elementFromPoint(x, y);
+    return hit === back || back.contains(hit);
+  };
   return { back: document.querySelector('#ovImprint #btnImprintBack')?.textContent ?? '',
            first: head.firstElementChild.id,
            gotIt: [...document.querySelectorAll('#ovImprint .btn')].map((b) => b.textContent.trim()),
            focused: document.activeElement === document.querySelector('#ovImprint h1'),
            backgroundInert: document.getElementById('ovStart').inert,
-           backSize: [Math.round(rect.width), Math.round(rect.height)] };
+           backSize: [Math.round(rect.width), Math.round(rect.height)],
+           effective44: [[cx - 21, cy], [cx + 21, cy], [cx, cy - 21], [cx, cy + 21]]
+             .every(([x, y]) => owns(x, y)) };
 });
 check(out.legalPage.back === '\u2039' && out.legalPage.first === 'btnImprintBack',
       'Impressum is not a page: its ‹ is missing or not on the left', out.legalPage);
@@ -265,8 +301,9 @@ check(out.legalPage.gotIt.length === 0,
       'Impressum still carries a bottom dismissal — the bottom of a screen is actions only', out.legalPage);
 check(out.legalPage.focused && out.legalPage.backgroundInert,
       'legal open did not focus the heading and inert the background', out.legalPage);
-check(out.legalPage.backSize[0] >= 44 && out.legalPage.backSize[1] >= 44,
-      'legal Back target is smaller than 44px', out.legalPage);
+check(out.legalPage.backSize[0] <= 30 && out.legalPage.backSize[1] <= 30
+  && out.legalPage.effective44,
+      'legal Back artwork or its effective 44px target regressed', out.legalPage);
 await sp.tap('#btnImprintBack'); await sp.waitForTimeout(300);
 out.legalPage.closed = await sp.evaluate(() => !document.getElementById('ovImprint').classList.contains('on')
     && document.getElementById('ovStart').classList.contains('on')

@@ -1,7 +1,7 @@
-// Draft hides production legal links, so this suite supplies one synthetic
-// opener and drives the real in-app controller/document renderer underneath.
-// A complete test-only release fixture supplies the 24 static pages; production
-// remains draft. Both paths run at every locale/page/mobile viewport.
+// Draft keeps public routes and Home navigation closed while Settings/auth show
+// the owner-approved placeholder doors. This matrix supplies one synthetic
+// opener to drive all four real in-app documents; a complete test-only fixture
+// supplies the 24 static pages. Both paths run at every locale/page/mobile viewport.
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -261,7 +261,10 @@ try {
     const page = await context.newPage();
     page.on('pageerror', (error) => errs.push(`${viewport}: ${error.message}`));
     await page.goto(FILE);
-    await page.waitForTimeout(180);
+    // Hit-test the settled Home/overlay stack. The shared room fade is 280ms;
+    // probing its compact Back target mid-fade makes the previous room own the
+    // pseudo-element's outer pixels even though the final 44px lane is sound.
+    await page.waitForTimeout(320);
     await page.evaluate(() => {
       const opener = document.createElement('button');
       opener.id = 'legalMatrixOpener';
@@ -298,6 +301,9 @@ try {
             && document.activeElement === overlay.querySelector('h1');
         }, legalPage);
         const observation = await page.evaluate(async ({ locale, legalPage, sharedBody }) => {
+          // Let the newly stacked page paint before asking elementFromPoint
+          // about the transparent edge of the compact Back control.
+          await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
           const overlay = document.querySelector(`[data-legal-page="${legalPage}"]`);
           const body = overlay.querySelector('.pbody');
           const heading = overlay.querySelector('h1');
@@ -323,7 +329,16 @@ try {
           const targets = [...body.querySelectorAll('button'), overlay.querySelector('[data-legal-close]')]
             .map((button) => {
               const rect = button.getBoundingClientRect();
-              return { text: button.textContent.trim(), width: rect.width, height: rect.height };
+              const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+              const owns = (x, y) => {
+                const hit = document.elementFromPoint(x, y);
+                return hit === button || button.contains(hit);
+              };
+              const effective44 = rect.width >= 44 && rect.height >= 44
+                || [[cx - 21, cy], [cx + 21, cy], [cx, cy - 21], [cx, cy + 21]]
+                  .every(([x, y]) => owns(x, y));
+              return { text: button.textContent.trim(), width: rect.width, height: rect.height,
+                effective44 };
             });
           body.scrollTop = body.scrollHeight;
           const last = body.querySelector('.legal-related button:last-child');
@@ -372,7 +387,7 @@ try {
           `${label}: legal copy overflows horizontally`, observation);
         check(observation.focused && observation.backgroundInert,
           `${label}: open focus/inert contract failed`, observation);
-        check(observation.targets.every((target) => target.width >= 44 && target.height >= 44),
+        check(observation.targets.every((target) => target.effective44),
           `${label}: an interactive target is below 44px`, observation.targets);
         check(observation.lastReachable, `${label}: final related link is unreachable`, observation);
         check(observation.nestedScroller === 'visible',

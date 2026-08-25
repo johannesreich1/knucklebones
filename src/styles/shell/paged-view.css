@@ -9,9 +9,13 @@
 :where(#kbroot) .shead .pad{width:30px;flex:0 0 auto}
 /* the header's control wears the title's own gradient so it reads as the way
    back at a glance */
-:where(#kbroot) .shead .ico{color:#fff;
-  width:44px;height:44px;margin:-7px;
-  background:linear-gradient(135deg,color-mix(in srgb,var(--p1) 26%,transparent),
+:where(#kbroot) .shead .ico{position:relative;color:#fff}
+/* The shared icon stays visually 30px (27px on the narrow-phone rule) while
+   the transparent target reaches 44px. Making the painted button itself 44px
+   was the merge regression the player could see. */
+:where(#kbroot) .shead .ico::after{content:"";position:absolute;z-index:2;left:50%;top:50%;width:44px;height:44px;
+  translate:-50% -50%;border-radius:14px}
+:where(#kbroot) .shead .ico{background:linear-gradient(135deg,color-mix(in srgb,var(--p1) 26%,transparent),
                                     color-mix(in srgb,var(--p2) 26%,transparent));
   border-color:color-mix(in srgb,var(--p1) 40%,transparent);
   box-shadow:0 0 16px color-mix(in srgb,var(--p1) 22%,transparent)}

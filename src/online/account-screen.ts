@@ -263,6 +263,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
         confirm: () => t('online', 'profile.claimIt'),
         cancel: () => t('online', 'profile.notYet'),
         loud: true,
+        restoreFocus: $('#btnClaim'),
       });
       if (!confirmed) return;
       const button = $('#btnClaim') as HTMLButtonElement;
@@ -287,6 +288,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
           confirm: () => t('online', 'auth.createAction'),
           cancel: () => t('online', 'profile.notNow'),
           loud: true,
+          restoreFocus: $('#btnKeepAcc'),
         });
         if (upgrade) ports.showAuth('attach', 'account');
       }
@@ -321,6 +323,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
         cancel: () => t('online', 'profile.keepAccount'),
         danger: true,
         check: () => t('online', 'profile.deleteCheck'),
+        restoreFocus: $('#btnDeleteAcc'),
       });
       if (!confirmed) return;
       const error = await deleteAccount();

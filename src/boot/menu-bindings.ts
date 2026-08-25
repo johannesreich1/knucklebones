@@ -205,6 +205,10 @@ export function bindMenus(root: HTMLElement): void {
         ? t('game', 'leave.forfeit')
         : t('game', tutorial ? 'leave.quitTutorial' : 'leave.quit'),
       cancel: () => t('game', 'leave.keepPlaying'),
+      /* A touch activation does not consistently focus its button. Name the
+         actual opener so cancellation, backdrop, Escape, and a short drag all
+         return keyboard/screen-reader position to the in-game leave control. */
+      restoreFocus: $('#btnLeave'),
       alternate: !ranked && !tutorial
         ? { label: () => t('game', 'leave.restart'), run: restartLocal }
         : undefined,

@@ -78,7 +78,9 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - The shared legal system now contains draft provider, privacy, support, and
   deletion documents in all six supported languages, plus a deterministic
   24-page static generator and isolated service-worker routes. Publication is
-  fail-closed at `draft`: no in-app links or public routes ship yet. A public
+  fail-closed at `draft`: no public routes or Home door ship yet. By owner
+  decision, Settings/auth expose the localized placeholder Imprint/Privacy
+  documents in-app while the public
   support/privacy email, verified provider regions/retention/transfer facts,
   deletion verification workflow, translation and German legal review, and
   territory review remain open. The interim development policy is all ages

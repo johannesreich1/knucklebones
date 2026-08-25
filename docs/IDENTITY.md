@@ -35,9 +35,9 @@ learns a provider's name; the web build finds none.
 Attach and restore repaint one stable form inside the shared modal sheet, so
 switching steps or opening the nested Privacy page does not clear the email or
 password fields. Dismissing a sheet opened from a guest profile returns to that
-profile; initial sessionless fallback, sign-out, and deletion return Home. The
-Privacy door uses the legal publication gate and therefore remains absent while
-`LEGAL_RELEASE.status` is `draft`. On success the sheet retires before profile
+profile; initial sessionless fallback, sign-out, and deletion return Home.
+Privacy uses the owner-approved in-app placeholder door while public legal URLs
+remain gated by `LEGAL_RELEASE.status`. On success the sheet retires before profile
 loading begins: Profile-origin restore refreshes Profile, while Home-origin
 auth continues the destination the player originally requested. Back cancels
 that pending destination rather than allowing it to route later under Home.

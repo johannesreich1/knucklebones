@@ -27,6 +27,10 @@ import {
   restoreModalBackground,
   type InertSnapshot,
 } from './modal-background.ts';
+import {
+  observeInteractiveSheetLayout,
+  type InteractiveSheetLayout,
+} from './sheet-interactive-layout.ts';
 
 export interface SheetSpec {
   /** the card's content, below the grabber. Trusted markup — escape first. */
@@ -39,7 +43,7 @@ export interface SheetSpec {
   cls?: string;
   /** the card's own light: a hue token that dresses border, glow and heading */
   tint?: string;
-  /** Forms scroll normally and drag only by the grabber, never by their fields. */
+  /** Forms keep working controls and scroll only when their bounded body overflows. */
   interactive?: boolean;
   /** Repaint only locale-owned descendants already mounted in the card. */
   repaintLocale?: (card: HTMLElement) => void;
@@ -94,6 +98,7 @@ export function showSheet(spec: SheetSpec): Sheet {
   else card.appendChild(spec.content!);
 
   let unbindLocale = (): void => undefined;
+  let interactiveLayout: InteractiveSheetLayout | null = null;
   let closed = false;
   let background: readonly InertSnapshot[] = [];
   let backgroundRestored = false;
@@ -107,6 +112,7 @@ export function showSheet(spec: SheetSpec): Sheet {
     closed = true;
     document.removeEventListener('keydown', onKey);
     unbindLocale();
+    interactiveLayout?.disconnect();
     if (spec.content && contentHome) {
       if (contentHome.parent) {
         if (contentHome.next?.parentNode === contentHome.parent) {
@@ -178,25 +184,34 @@ export function showSheet(spec: SheetSpec): Sheet {
     window.setTimeout(close, 190);
   };
 
-  /* THE DRAG. The whole card is the surface (touch-action:none on it, and
-     pointer capture from the first move) so a scroll can never steal the
-     gesture mid-way. Past 96px of travel the release sends it out; short of
-     that it springs home with a small overshoot — but a FAST flick commits
-     from anywhere, because a quick flick that springs back feels stuck. The
-     velocity is only trusted if the finger was still moving when it lifted:
-     a slow drag that paused at 40px is a change of mind, not a flick. */
+  /* THE DRAG. A plain sheet owns its whole card. An interactive sheet does the
+     same while its content fits, except that a real control always keeps its
+     tap. Once the bounded body overflows, native scrolling wins and the full-
+     width grabber remains the unambiguous drag surface. That is one policy for
+     auth, confirmations, and every later form rather than a private gesture in
+     each caller. Past 96px of travel the release sends it out; short of that it
+     springs home with a small overshoot — but a FAST flick commits from
+     anywhere, because a quick flick that springs back feels stuck. */
   const COMMIT = 96, FLICK = 0.5;   // px, px/ms
   let id = -1, sy = 0, y0 = 0, moved = false, ly = 0, lt = 0, vy = 0, swallow = false, captured = false;
   let fromWash = false;   // did the press that this click ends start on the backdrop?
   const grabber = ov.querySelector('.fograb') as HTMLButtonElement;
-  const dragSurface = spec.interactive ? grabber : card;
-  dragSurface.addEventListener('pointerdown', (e) => {
+  let captureSurface: HTMLElement = card;
+  const refreshInteractiveDragMode = (): void => interactiveLayout?.refresh();
+  const ownsControl = (target: EventTarget | null): boolean => target instanceof Element
+    && !!target.closest('button,input,select,textarea,a,label,[contenteditable="true"],[role="button"]');
+  card.addEventListener('pointerdown', (e) => {
     /* A DRAG IN PROGRESS is never hijacked — it holds the capture, so its own
        pointerup is guaranteed and it will clear this itself. A press that has
        NOT passed the slop holds nothing, and an uncaptured press released off
        the window never reports back at all, so a new press takes the gesture
        over rather than finding the card permanently undraggable. */
     if (going || (id !== -1 && moved) || e.button > 0) return;
+    refreshInteractiveDragMode();
+    const fromGrabber = e.target instanceof Node && grabber.contains(e.target);
+    if (spec.interactive && !fromGrabber
+        && (ov.classList.contains('fooverflow') || ownsControl(e.target))) return;
+    captureSurface = fromGrabber ? grabber : card;
     /* a finger that lands MID-FLIGHT — on the way in, or on a spring-back —
        takes the card from where it IS, not from where the flight was headed,
        or the card jumps to meet the finger */
@@ -225,7 +240,7 @@ export function showSheet(spec: SheetSpec): Sheet {
       /* NOW it is a drag, so now it is captured — a scroll can no longer steal
          it mid-way. A synthetic pointer has no active id to capture and the
          gesture still works through these listeners, so never throw here. */
-      try { dragSurface.setPointerCapture(e.pointerId); captured = true; } catch { captured = false; }
+      try { captureSurface.setPointerCapture(e.pointerId); captured = true; } catch { captured = false; }
     }
     const dt = e.timeStamp - lt;
     if (dt > 0) { vy = (e.clientY - ly) / dt; ly = e.clientY; lt = e.timeStamp; }
@@ -235,7 +250,7 @@ export function showSheet(spec: SheetSpec): Sheet {
     if (e.pointerId !== id) return;
     id = -1;
     ov.classList.remove('fodrag');
-    try { dragSurface.releasePointerCapture(e.pointerId); } catch { /* never captured */ }
+    try { captureSurface.releasePointerCapture(e.pointerId); } catch { /* never captured */ }
     if (!moved) return;
     /* THE CHASING CLICK — after a real drag that really LIFTED, and only then.
        Where capture took, the click that follows the lift is handed to .focard
@@ -254,10 +269,10 @@ export function showSheet(spec: SheetSpec): Sheet {
        handed to .focard and is already harmless, so there was nothing to
        swallow either. The flag therefore arms in exactly one case: a lift
        from a gesture that was never captured. */
-    /* A captured ordinary sheet retargets the compatibility click to the
-       harmless card. An interactive sheet captures on its real grabber, so
-       that same click would be a dismissal unless it is swallowed too. */
-    if (e.type === 'pointerup' && (!captured || spec.interactive)) {
+    /* A captured card drag retargets the compatibility click to the harmless
+       card. A grabber capture retargets it to the dismissal button, so that
+       same click must be swallowed after a spring-back. */
+    if (e.type === 'pointerup' && (!captured || captureSurface === grabber)) {
       swallow = true;
       window.setTimeout(() => { swallow = false; }, 400);
     }
@@ -298,11 +313,15 @@ export function showSheet(spec: SheetSpec): Sheet {
   const root = appRoot();
   root.appendChild(ov);
   background = makeModalBackgroundInert(root, ov);
+  if (spec.interactive && spec.content) {
+    interactiveLayout = observeInteractiveSheetLayout(ov, card, spec.content);
+  }
   unbindLocale = subscribeLocale(() => {
     (ov.querySelector('.fograb') as HTMLButtonElement)
       .setAttribute('aria-label', t('common', 'actions.close'));
     card.setAttribute('aria-label', resolvedLabel());
     spec.repaintLocale?.(card);
+    refreshInteractiveDragMode();
   });
   void card.offsetHeight;                    // ...resolved as a real start...
   fly(0, 340, 'cubic-bezier(.16,1,.3,1)');   // ...and up it comes, wash with it

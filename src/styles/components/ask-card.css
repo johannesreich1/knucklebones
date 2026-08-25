@@ -1,14 +1,25 @@
-/* ---- ask-cards: a modal that puts ONE question with a way back. The first-run
-   offer and shared runtime questions differ through their supplied words and
-   actions, which is the whole point of there being one card. ---- */
-:where(#kbroot) #ovFirst,:where(#kbroot) #ovAsk{background:rgba(4,5,12,.93)}   /* a question deserves a quiet room */
+/* ---- ask content: ONE question model mounted in the shared sheet. The sheet
+   owns the card, wash, motion, drag and focus; this owns only copy and actions.
+   The first-run offer predates that component and keeps its quiet room. ---- */
+:where(#kbroot) #ovFirst{background:rgba(4,5,12,.93)}
 :where(#kbroot) .askcard{display:flex;flex-direction:column;gap:13px;width:100%;max-width:var(--w-col);
-  padding:22px 20px;border-radius:20px;background:rgba(255,255,255,.035);
-  border:1px solid color-mix(in srgb,var(--p1) 26%,transparent);
+  min-height:0;padding:0 4px 4px;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;
+  -webkit-overflow-scrolling:touch}
+/* Keep the one-time tutorial offer's established card. Runtime questions no
+   longer paint a second frame here because .focard supplies it; #ovFirst is
+   deliberately not a shared sheet and therefore still owns this treatment. */
+:where(#kbroot) #ovFirst .askcard{padding:22px 20px;border-radius:20px;overflow:visible;touch-action:auto;
+  background:rgba(255,255,255,.035);border:1px solid color-mix(in srgb,var(--p1) 26%,transparent);
   box-shadow:0 0 40px rgba(var(--p1-rgb),.10)}
 :where(#kbroot) .askcard .fh{font-size:19px;font-weight:900;letter-spacing:.1em;color:var(--p1)}
 :where(#kbroot) .askcard .fp{margin:0;font-size:12.5px;line-height:1.6;color:var(--dim)}
 :where(#kbroot) .askcard .btn{width:100%;min-width:0}
+/* The shared sheet is above every .ov rather than one of them, so the generic
+   "topmost open room" selector cannot see its encouraged action. A live ask
+   is necessarily the top room; keep the same single primary glint it had in
+   the former overlay without teaching the shared sheet about ask semantics. */
+:where(#kbroot) .asksheet .askcard .btn.primary:enabled::after{
+  animation:primaryGlint 5.2s ease-in-out infinite}
 /* the actions are one STACK. The card's 13px gap separates thought-groups
    (headline, body, actions) — but between the actions themselves it read as
    drift (user call: "too far apart"), so each following action pulls up */

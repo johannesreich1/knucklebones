@@ -79,6 +79,9 @@ const askShape = () => {
   return {
     on: document.getElementById('ovAsk')?.classList.contains('on') ?? false,
     head: document.getElementById('askHead')?.textContent?.trim() ?? '',
+    sharedSheet: !!card?.closest('.faceoff.asksheet')
+      && card.closest('.focard')?.getAttribute('role') === 'dialog'
+      && !!card.closest('.focard')?.querySelector(':scope > .fograb'),
     order: [...(card?.querySelectorAll(':scope > button') ?? [])]
       .filter(visible).map((button) => button.textContent.trim()),
     keep: buttonShape('btnAskNo'),
@@ -90,6 +93,8 @@ const askShape = () => {
 function checkAskLayout(check, label, shape) {
   check(shape.on && shape.head === 'Quit this duel?',
     `${label}: offline quit question copy is wrong`, shape);
+  check(shape.sharedSheet,
+    `${label}: offline quit did not use the shared draggable sheet`, shape);
   check(shape.order.join(' -> ') === 'Keep playing -> Restart duel -> Quit duel',
     `${label}: offline quit actions are missing or out of order`, shape);
   check(shape.restart?.hit === true && shape.quit?.hit === true,
@@ -151,6 +156,12 @@ export async function runOfflineRestartScenarios(suite) {
   await page.waitForTimeout(120);
   await page.tap('#btnLeave');
   await page.waitForSelector('#ovAsk.on');
+  await page.waitForFunction(() => {
+    const card = document.querySelector('#ovAsk .focard');
+    if (!card) return false;
+    const transform = getComputedStyle(card).transform;
+    return transform === 'none' || Math.abs(new DOMMatrixReadOnly(transform).m42) < 0.5;
+  });
   out.offlineAskRegular = await page.evaluate(askShape);
   checkAskLayout(check, 'regular phone', out.offlineAskRegular);
 
@@ -230,11 +241,13 @@ export async function runOfflineRestartScenarios(suite) {
   out.keepPlaying = {
     before: beforeKeep,
     after: afterKeep,
-    askGone: await page.locator('#ovAsk').evaluate((node) => !node.classList.contains('on')),
+    askGone: await page.locator('#ovAsk').count() === 0,
+    focus: await page.evaluate(() => document.activeElement?.id),
   };
   check(out.keepPlaying.askGone
+    && out.keepPlaying.focus === 'btnLeave'
     && JSON.stringify(out.keepPlaying.before) === JSON.stringify(out.keepPlaying.after),
-  'Keep playing changed the in-progress duel', out.keepPlaying);
+  'Keep playing changed the in-progress duel or failed to restore its opener', out.keepPlaying);
 
   /* Record even a transient reveal: checking only the final class would miss a
      flash that disappeared before the fresh opening roll reached CHOOSE. */
@@ -294,7 +307,7 @@ export async function runOfflineRestartScenarios(suite) {
         && S.charm.sunder.every((value) => value === false)
         && S.spellArmed === null && S.spellAimCommitted === null,
       bag: { left: S.pool?.length ?? null, faceCounts },
-      askGone: !document.getElementById('ovAsk').classList.contains('on'),
+      askGone: !document.querySelector('#ovAsk.on'),
       revealOn: document.querySelector('#ovWheel.on') !== null,
       revealSeen: window.__restartRevealSeen,
     };
@@ -366,9 +379,15 @@ export async function runOfflineRestartScenarios(suite) {
   await page.waitForFunction(() => window.__kb.S.phase === 'choose', null, { timeout: 10000 });
   await page.tap('#btnLeave');
   await page.waitForSelector('#ovAsk.on');
+  await page.waitForFunction(() => {
+    const card = document.querySelector('#ovAsk .focard');
+    if (!card) return false;
+    const transform = getComputedStyle(card).transform;
+    return transform === 'none' || Math.abs(new DOMMatrixReadOnly(transform).m42) < 0.5;
+  });
   out.tutorialAsk = await page.evaluate(askShape);
   check(out.tutorialAsk.order.join(' -> ') === 'Keep playing -> Quit tutorial'
-    && out.tutorialAsk.restart === null,
+    && out.tutorialAsk.restart === null && out.tutorialAsk.keep?.hit && out.tutorialAsk.quit?.hit,
   'the tutorial ask-card does not name its tutorial exit or leaked restart', out.tutorialAsk);
   await page.tap('#btnAskYes');
   await page.waitForTimeout(300);

@@ -41,7 +41,8 @@ expected substitution or artifact is missing.
 
 Public legal pages are generated from `src/legal/`, never maintained as a
 second prose copy under `public/`. The checked-in publication state is `draft`,
-which suppresses in-app legal navigation and emits no legal files. A `ready`
+which emits no legal files or Home door; Settings/auth deliberately expose the
+same document with pending-fact placeholders. A `ready`
 build validates every required fact and review flag, then writes the 24
 locale/page routes into `dist/pwa/` before the hosted file snapshot, build hash,
 and worker precache list are calculated. A missing fact, locale chrome label,

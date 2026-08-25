@@ -28,6 +28,9 @@
   .dicerow2{display:flex;gap:14px;align-items:center}
   .dleg{font-size:10px;line-height:1.6;color:var(--dim);letter-spacing:.06em}
   .btnrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+  /* Keep the runtime class chain so the component sample inherits the shared
+     interactive-sheet frame and grabber; flatten only its fixed positioning. */
+  .ask-sample.faceoff{position:relative;inset:auto;z-index:auto;width:100%;padding:14px;background:transparent}
 </style>
 <div class="fgrid">
   <div class="fcard span2">
@@ -104,12 +107,18 @@
     <!-- .danger is SCOPED (main.css: .askcard .btn.danger): a bare
          <button class="btn danger"> renders as an ordinary button, so a swatch
          standing on its own would show the wrong thing. It appears in its real
-         container, where the pairing rule is visible too — the encouraged
-         answer leads at full size, the destructive one trails small and quiet. -->
-    <div class="askcard" style="max-width:400px">
-      <div class="fh">Delete your account?</div>
-      <button class="btn primary">Keep my account</button>
-      <button class="btn soft small danger">Delete everything</button>
+         shared-sheet container, where the pairing rule is visible too — the
+         encouraged answer leads at full size, the destructive one trails
+         small and quiet. -->
+    <div class="ask-sample faceoff fointeractive focarddrag asksheet">
+      <div class="focard">
+        <button class="fograb" aria-label="Close"><span class="fobar"></span></button>
+        <div class="askcard">
+          <div class="fh">Delete your account?</div>
+          <button class="btn primary">Keep my account</button>
+          <button class="btn soft small danger">Delete everything</button>
+        </div>
+      </div>
     </div>
   </div>
 </div>

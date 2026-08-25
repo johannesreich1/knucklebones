@@ -37,12 +37,15 @@
   transform:translateY(calc(var(--fo-dy) * 1px));will-change:transform;
   /* the WHOLE card is the drag surface, so nothing may steal the gesture */
   touch-action:none}
-/* A form is the sheet's interactive variant: its fields and one bounded body
-   keep ordinary scrolling/keyboard behavior, while only the grabber owns the
-   downward dismissal gesture. Dynamic viewport height keeps the card above a
-   mobile keyboard without inventing a second modal implementation. */
+/* A form is the sheet's interactive variant. While its bounded body fits, the
+   whole card follows a downward drag and actual controls retain their taps.
+   When that body overflows, the shared controller marks .fooverflow: native
+   scrolling wins and the full-width grabber remains the dismissal surface.
+   Dynamic viewport height keeps the card above a mobile keyboard without
+   inventing a second modal implementation. */
 :where(#kbroot) .faceoff.fointeractive .focard{max-height:calc(100vh - 28px);max-height:calc(100dvh - 28px);
   gap:22px;touch-action:auto}
+:where(#kbroot) .faceoff.fointeractive.focarddrag .focard{touch-action:none}
 :where(#kbroot) .faceoff.fointeractive{
   padding:calc(env(safe-area-inset-top,0px) + 14px)
           calc(env(safe-area-inset-right,0px) + 14px)
@@ -51,7 +54,7 @@
 :where(#kbroot) .faceoff.fointeractive .focard{
   max-height:calc(100vh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 28px);
   max-height:calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 28px)}
-:where(#kbroot) .faceoff.fointeractive .fograb{flex:0 0 auto}
+:where(#kbroot) .faceoff.fointeractive .fograb{flex:0 0 auto;width:100%}
 /* the three flights — in, out, and home again — are ONE transition wearing
    three sets of numbers, handed in by sheet.ts as --fo-t/--fo-e. Absent while
    a finger is down, so the card follows it with nothing in between. */

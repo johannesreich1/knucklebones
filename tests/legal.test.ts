@@ -26,6 +26,8 @@ const problems: string[] = [];
 const check = (condition: unknown, message: string): void => {
   if (!condition) problems.push(message);
 };
+const navigationPages = (markup: string): string[] =>
+  [...markup.matchAll(/data-legal-open="([^"]+)"/gu)].map((match) => match[1]);
 
 check(LEGAL_RELEASE.status === 'draft', 'checked-in legal publication status is not draft');
 check(generateLegalPageFiles(LEGAL_RELEASE).size === 0,
@@ -34,8 +36,11 @@ check(generatedLegalPaths(LEGAL_RELEASE).length === 0,
   'draft publication exposed service-worker legal routes');
 check(legalPublicationProblems(LEGAL_RELEASE).length > 0,
   'draft production facts accidentally satisfy the release gate');
-check(!LEGAL_HOME_NAV_MARKUP && !LEGAL_SETTINGS_NAV_MARKUP && !LEGAL_AUTH_NAV_MARKUP,
-  'draft publication exposed an in-app legal door');
+check(!LEGAL_HOME_NAV_MARKUP,
+  'draft publication exposed a Home legal door');
+check(navigationPages(LEGAL_SETTINGS_NAV_MARKUP).join() === 'imprint,privacy'
+  && navigationPages(LEGAL_AUTH_NAV_MARKUP).join() === 'privacy',
+  'draft placeholder doors are not exactly Settings Imprint/Privacy plus auth Privacy');
 const expectedGermanyNames = {
   en: 'Germany', pt: 'Alemanha', es: 'Alemania',
   de: 'Deutschland', fr: 'Allemagne', it: 'Germania',
@@ -70,8 +75,6 @@ const authNavigation = legalNavigationMarkup(fixture, {
   className: 'authlegal',
   idPrefix: 'btnAuth',
 });
-const navigationPages = (markup: string): string[] =>
-  [...markup.matchAll(/data-legal-open="([^"]+)"/gu)].map((match) => match[1]);
 check(navigationPages(homeNavigation).join() === LEGAL_PAGE_IDS.join(),
   'ready Home navigation does not expose the complete public resource set');
 check(navigationPages(settingsNavigation).join() === 'imprint,privacy',
