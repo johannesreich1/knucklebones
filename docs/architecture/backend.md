@@ -158,6 +158,12 @@ grant either commit together or not at all.
   the greatest recorded ladder peak: STONE at 0, BONE at 300, IVORY at 720.
   Demotion or a new season never writes a lower tier. Promotion settlement may
   raise the tier, and the newly eligible pool applies to the next match.
+- Seeded opponents can carry a private, season-scoped best-streak baseline
+  without fabricated match rows. `player_card()` returns the greater of that
+  baseline and the longest real current-season winning run; `best_streak()`
+  delegates to it. The locked baseline table cascades from `season_ratings`
+  and stays separate because settlement's stale-write check serializes that
+  public row's exact five-field rating shape.
 - Ranked outcomes keep Classic at exactly 40% and divide 60% equally across
   the shared eligible additions. STONE has three additions, BONE six, and
   IVORY seven including Rune Trial. Trial persists as
@@ -213,9 +219,9 @@ release step.
 
 Game Center and Apple credential lifecycle are a separate held rollout.
 The guarded `apple-game-center` selection applies
-`20260826102600_game_center_ids.sql`,
-`20260826102601_game_center_service_grants.sql`, and
-`20260826102602_apple_identity_credentials.sql` as one strictly ordered,
+`20260826153100_game_center_ids.sql`,
+`20260826153101_game_center_service_grants.sql`, and
+`20260826153102_apple_identity_credentials.sql` as one strictly ordered,
 post-Rune-Trial allow-list. Sessionless Game Center restore crosses the
 strict-origin, durably rate-limited Cloudflare identity gateway; only that
 gateway knows the shared header required by `gc-auth`. Apple refresh tokens

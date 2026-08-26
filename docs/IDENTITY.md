@@ -76,8 +76,8 @@ Apple `.p8` key and generated client secrets never enter the app bundle.
 **Rung 3 — Game Center: repository implementation complete, not deployed.** The
 signature verification is tested against Apple's real production certificates,
 but nothing has run on a device. The Edge Function and the held
-`20260826102600_game_center_ids.sql` plus
-`20260826102601_game_center_service_grants.sql` migrations stay un-deployed
+`20260826153100_game_center_ids.sql` plus
+`20260826153101_game_center_service_grants.sql` migrations stay un-deployed
 until a signed build can exercise them — an auth endpoint that has never
 answered a real request does not belong in production. Native authentication
 is initialized once at launch and published as state; online restore consumes
@@ -166,9 +166,9 @@ Game Center remains one held owner rollout, in this order:
 
 1. preview `mise exec -- npm run db:production:apple-game-center`, then apply
    the guarded `apple-game-center` allow-list with the explicit production
-   opt-in. It contains `20260826102600_game_center_ids.sql`,
-   `20260826102601_game_center_service_grants.sql`, and
-   `20260826102602_apple_identity_credentials.sql` in that order;
+   opt-in. It contains `20260826153100_game_center_ids.sql`,
+   `20260826153101_game_center_service_grants.sql`, and
+   `20260826153102_apple_identity_credentials.sql` in that order;
 2. deploy `cloudflare/identity-gateway`, configure its strict web/native origin
    allow-list, rate-limit binding, upstream URL/publishable key, and a shared
    `GC_AUTH_ORIGIN_SECRET` also set on `gc-auth`;

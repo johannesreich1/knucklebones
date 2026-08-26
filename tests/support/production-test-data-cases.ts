@@ -56,6 +56,18 @@ export const runeStage = (value: boolean, overrides: Record<string, boolean> = {
   ...overrides,
 });
 
+export const streakBaselineStage = (
+  value: boolean,
+  overrides: Record<string, boolean> = {},
+) => ({
+  migrationHistory: value,
+  baselineTable: value,
+  baselineColumns: value,
+  baselineConstraints: value,
+  playerCardBaseline: value,
+  ...overrides,
+});
+
 export const emptyRune = (overrides: Record<string, number> = {}) => ({
   playerRunes: 0,
   matchActions: 0,
@@ -81,12 +93,37 @@ export function seededAudit(overrides: Record<string, number> = {}) {
     inconsistentRatingRows: 0,
     inconsistentTierRows: 0,
     invalidStatsRows: 0,
+    streakBaselines: PRODUCTION_BOT_COUNT,
+    orphanStreakBaselines: 0,
+    inconsistentStreakCards: 0,
     distinctPoints: PRODUCTION_BOT_COUNT,
     minPoints: 0,
     maxPoints: PRODUCTION_BOT_MAX_POINTS,
     distinctWins: new Set(PRODUCTION_BOT_SEED_PLAN.map(row => row.wins)).size,
     distinctLosses: new Set(PRODUCTION_BOT_SEED_PLAN.map(row => row.losses)).size,
     distinctDraws: new Set(PRODUCTION_BOT_SEED_PLAN.map(row => row.draws)).size,
+    atPeakBots: PRODUCTION_BOT_SEED_PLAN.filter(row => row.peak === row.points).length,
+    peakAheadBots: PRODUCTION_BOT_SEED_PLAN.filter(row => row.peak > row.points).length,
+    maxPeakGap: Math.max(...PRODUCTION_BOT_SEED_PLAN.map(row => row.peak - row.points)),
+    distinctBestStreaks: new Set(PRODUCTION_BOT_SEED_PLAN.map(row => row.bestStreak)).size,
+    minBestStreak: Math.min(...PRODUCTION_BOT_SEED_PLAN.map(row => row.bestStreak)),
+    maxBestStreak: Math.max(...PRODUCTION_BOT_SEED_PLAN.map(row => row.bestStreak)),
+    minGames: Math.min(...PRODUCTION_BOT_SEED_PLAN.map(
+      row => row.wins + row.losses + row.draws,
+    )),
+    maxGames: Math.max(...PRODUCTION_BOT_SEED_PLAN.map(
+      row => row.wins + row.losses + row.draws,
+    )),
+    totalGames: PRODUCTION_BOT_SEED_PLAN.reduce(
+      (sum, row) => sum + row.wins + row.losses + row.draws,
+      0,
+    ),
+    minWinRateBps: Math.floor(Math.min(...PRODUCTION_BOT_SEED_PLAN.map(
+      row => row.wins * 10000 / (row.wins + row.losses + row.draws),
+    ))),
+    maxWinRateBps: Math.floor(Math.max(...PRODUCTION_BOT_SEED_PLAN.map(
+      row => row.wins * 10000 / (row.wins + row.losses + row.draws),
+    ))),
     stoneBots: groupCount(0, 300),
     boneBots: groupCount(300, 720),
     ivoryBots: groupCount(720, 1260),
@@ -97,3 +134,19 @@ export function seededAudit(overrides: Record<string, number> = {}) {
     ...overrides,
   };
 }
+
+export const refreshAudit = (
+  state: 'legacy' | 'refreshed',
+  overrides: Record<string, number> = {},
+) => ({
+  expectedRows: PRODUCTION_BOT_COUNT,
+  actualRows: PRODUCTION_BOT_COUNT,
+  actualDistinctPoints: PRODUCTION_BOT_COUNT,
+  joinedRows: PRODUCTION_BOT_COUNT,
+  canonicalRows: PRODUCTION_BOT_COUNT,
+  legacyRows: state === 'legacy' ? PRODUCTION_BOT_COUNT : 0,
+  refreshedRows: state === 'refreshed' ? PRODUCTION_BOT_COUNT : 0,
+  baselineRows: state === 'refreshed' ? PRODUCTION_BOT_COUNT : 0,
+  orphanBaselineRows: 0,
+  ...overrides,
+});

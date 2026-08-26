@@ -18,21 +18,26 @@ import { fileURLToPath } from 'node:url';
 import { SUPABASE_PROJECT_REF } from '../../src/config.ts';
 import { productionRead } from '../debug/production-read.mjs';
 import {
+  auditLadderStreakBaselines,
   auditRuneTrial,
   auditRuneTrialPostApplyData,
 } from './production-rollout.mjs';
 import {
   BASE_PRODUCTION_TEST_DATA_AUDIT_SQL,
   EMPTY_RUNE_TRIAL_DATA_AUDIT_SQL,
+  LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL,
   PRODUCTION_TEST_DATA_CLI_VERSION,
   PRODUCTION_TEST_DATA_OPT_INS,
   PRODUCTION_TEST_DATA_PROJECT_REF,
   RUNE_TRIAL_PRODUCTION_STAGE_SQL,
+  REFRESH_PRODUCTION_BOT_PROFILES_AUDIT_SQL,
+  REFRESH_PRODUCTION_BOT_PROFILES_SQL,
   SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL,
   SEED_PRODUCTION_BOTS_SQL,
   WIPE_PRODUCTION_ACCOUNTS_SQL,
   assertPinnedProductionCli,
   assertProductionBotSeedComplete,
+  assertProductionBotProfilesRefreshable,
   assertProductionProjectBinding,
   assertProductionRepositoryState,
   assertProductionTestDataOptIn,
@@ -41,8 +46,10 @@ import {
   productionTestDataQueryArgs,
   validateBaseProductionTestDataAudit,
   validateEmptyRuneTrialDataAudit,
+  validateLadderStreakBaselineProductionStage,
   validateProductionTestDataPhase,
   validateRuneTrialProductionStage,
+  validateRefreshProductionBotProfilesAudit,
   validateSeededProductionTestDataAudit,
 } from './production-test-data-core.mjs';
 
@@ -58,6 +65,10 @@ const CLI = path.join(
 const CONTROL_FILES = Object.freeze([
   'package.json',
   'package-lock.json',
+  'src/core/ladder.ts',
+  'supabase/migrations/20260826153000_ladder_streak_baselines.sql',
+  'tools/database/production-rollout-core.mjs',
+  'tools/database/production-rollout.mjs',
   'tools/database/production-test-data-core.mjs',
   'tools/database/production-test-data.mjs',
   'tests/production-test-data.test.ts',
@@ -160,8 +171,10 @@ export function executeFixedProductionTestDataSql(sql, {
   createTemp = () => mkdtempSync(path.join(os.tmpdir(), TEMP_PREFIX)),
   removeTemp = directory => rmSync(directory, { recursive: true, force: true }),
 } = {}) {
-  if (sql !== WIPE_PRODUCTION_ACCOUNTS_SQL && sql !== SEED_PRODUCTION_BOTS_SQL) {
-    throw new Error('Production test-data executor accepts only its two fixed SQL programs.');
+  if (sql !== WIPE_PRODUCTION_ACCOUNTS_SQL
+      && sql !== SEED_PRODUCTION_BOTS_SQL
+      && sql !== REFRESH_PRODUCTION_BOT_PROFILES_SQL) {
+    throw new Error('Production test-data executor accepts only its fixed SQL programs.');
   }
   let directory;
   let tempValidated = false;
@@ -196,12 +209,32 @@ export async function auditExactRuneTrialProduction(read = productionRead) {
   return Object.freeze({ ledgerStage, evidence: exact.evidence });
 }
 
+export async function auditExactLadderStreakBaselineProduction(read = productionRead) {
+  const ledgerStage = validateLadderStreakBaselineProductionStage(
+    await read(LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL),
+  );
+  if (ledgerStage !== 1) {
+    throw new Error('Ladder streak-baseline production migration ledger is not complete.');
+  }
+  const exact = await auditLadderStreakBaselines(read);
+  if (exact.schemaStage !== 1) {
+    throw new Error('Ladder streak-baseline exact catalog/security/function contract is incomplete.');
+  }
+  return Object.freeze({ ledgerStage, evidence: exact.evidence });
+}
+
+export async function auditExactBotSeedProduction(read = productionRead) {
+  const rune = await auditExactRuneTrialProduction(read);
+  const streakBaseline = await auditExactLadderStreakBaselineProduction(read);
+  return Object.freeze({ ledgerStage: 1, rune, streakBaseline });
+}
+
 export async function rolloutProductionTestData({
   phase,
   apply = false,
   optIn,
   read = productionRead,
-  exactRunePrerequisite = auditExactRuneTrialProduction,
+  exactBotSeedPrerequisite = auditExactBotSeedProduction,
   verifyEnvironment = verifyProductionTestDataEnvironment,
   execute = executeFixedProductionTestDataSql,
   log = message => console.log(message),
@@ -211,7 +244,12 @@ export async function rolloutProductionTestData({
   assertProductionTestDataOptIn(selected, apply, optIn ?? process.env[optInContract.name]);
   verifyEnvironment();
 
-  const stage = validateRuneTrialProductionStage(await read(RUNE_TRIAL_PRODUCTION_STAGE_SQL));
+  const runeStage = validateRuneTrialProductionStage(
+    await read(RUNE_TRIAL_PRODUCTION_STAGE_SQL),
+  );
+  const streakBaselineStage = validateLadderStreakBaselineProductionStage(
+    await read(LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL),
+  );
   const before = validateBaseProductionTestDataAudit(
     await read(BASE_PRODUCTION_TEST_DATA_AUDIT_SQL),
   );
@@ -221,7 +259,9 @@ export async function rolloutProductionTestData({
     if (!apply) {
       log(`Preview only: wipe ${before.authUsers} Auth accounts (${before.humans} humans, ${before.bots} bots) and ${before.matches} matches.`);
       log(`Set ${optInContract.name}=${optInContract.value} and pass --apply to execute the fixed transaction.`);
-      return Object.freeze({ phase: selected, applied: false, runeStage: stage, before });
+      return Object.freeze({
+        phase: selected, applied: false, runeStage, streakBaselineStage, before,
+      });
     }
 
     execute(WIPE_PRODUCTION_ACCOUNTS_SQL);
@@ -229,46 +269,110 @@ export async function rolloutProductionTestData({
       await read(BASE_PRODUCTION_TEST_DATA_AUDIT_SQL),
     );
     assertProductionWipeComplete(after);
-    if (stage === 1) {
+    if (runeStage === 1) {
       validateEmptyRuneTrialDataAudit(await read(EMPTY_RUNE_TRIAL_DATA_AUDIT_SQL));
     }
     log('Production account wipe verified: zero humans, bots, Auth sessions, matches, ratings, queue, settings, and rune rows.');
-    return Object.freeze({ phase: selected, applied: true, runeStage: stage, before, after });
+    return Object.freeze({
+      phase: selected, applied: true, runeStage, streakBaselineStage, before, after,
+    });
   }
 
-  if (stage !== 1) throw new Error('Rune Trial production migration must be complete before seed-bots.');
-  assertProductionWipeComplete(before);
-  validateEmptyRuneTrialDataAudit(await read(EMPTY_RUNE_TRIAL_DATA_AUDIT_SQL));
-  const exactBefore = await exactRunePrerequisite(read);
+  if (runeStage !== 1 || streakBaselineStage !== 1) {
+    throw new Error('Rune Trial and streak-baseline production migrations must be complete before bot population work.');
+  }
+  const emptyRune = validateEmptyRuneTrialDataAudit(
+    await read(EMPTY_RUNE_TRIAL_DATA_AUDIT_SQL),
+  );
+  const exactBefore = await exactBotSeedPrerequisite(read);
   if (exactBefore?.ledgerStage !== 1) {
-    throw new Error('Rune Trial exact prerequisite returned an invalid stage.');
-  }
-  if (!apply) {
-    log('Preview only: seed exactly 150 bot Auth/profile/current-season rows across the complete ladder.');
-    log(`Set ${optInContract.name}=${optInContract.value} and pass --apply to execute the fixed transaction.`);
-    return Object.freeze({ phase: selected, applied: false, runeStage: stage, before });
+    throw new Error('Exact bot-population prerequisite returned an invalid stage.');
   }
 
-  const exactImmediatelyBefore = await exactRunePrerequisite(read);
+  if (selected === 'refresh-bot-profiles') {
+    const refreshBefore = validateRefreshProductionBotProfilesAudit(
+      await read(REFRESH_PRODUCTION_BOT_PROFILES_AUDIT_SQL),
+    );
+    const refreshState = assertProductionBotProfilesRefreshable(
+      before,
+      emptyRune,
+      refreshBefore,
+    );
+    if (!apply) {
+      log(`Preview only: ${refreshState === 'legacy' ? 'refresh' : 'retain'} the exact 150 unplayed bot profiles with toned-down records, varied peaks, and streak baselines.`);
+      log(`Set ${optInContract.name}=${optInContract.value} and pass --apply to execute the fixed transaction.`);
+      return Object.freeze({
+        phase: selected,
+        applied: false,
+        runeStage,
+        streakBaselineStage,
+        refreshState,
+        before,
+        refreshBefore,
+      });
+    }
+    const exactImmediatelyBefore = await exactBotSeedPrerequisite(read);
+    if (exactImmediatelyBefore?.ledgerStage !== 1) {
+      throw new Error('Production schema changed before bot-profile refresh.');
+    }
+    execute(REFRESH_PRODUCTION_BOT_PROFILES_SQL);
+    const exactAfter = await exactBotSeedPrerequisite(read);
+    if (exactAfter?.ledgerStage !== 1) {
+      throw new Error('Production schema changed during bot-profile refresh.');
+    }
+    const after = validateSeededProductionTestDataAudit(
+      await read(SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL),
+    );
+    assertProductionBotSeedComplete(after);
+    log('Production bot-profile refresh verified: 150 unplayed bots, 41–54% win rates, modest peaks, streaks 2–7, and no invented matches.');
+    return Object.freeze({
+      phase: selected,
+      applied: true,
+      refreshState,
+      runeStage,
+      streakBaselineStage,
+      before,
+      after,
+    });
+  }
+
+  assertProductionWipeComplete(before);
+  if (!apply) {
+    log('Preview only: seed exactly 150 bots with toned-down records, varied peaks, and streak baselines across the complete ladder.');
+    log(`Set ${optInContract.name}=${optInContract.value} and pass --apply to execute the fixed transaction.`);
+    return Object.freeze({
+      phase: selected, applied: false, runeStage, streakBaselineStage, before,
+    });
+  }
+
+  const exactImmediatelyBefore = await exactBotSeedPrerequisite(read);
   if (exactImmediatelyBefore?.ledgerStage !== 1) {
-    throw new Error('Rune Trial exact prerequisite changed before bot seeding.');
+    throw new Error('Production schema changed before bot seeding.');
   }
   execute(SEED_PRODUCTION_BOTS_SQL);
-  const exactAfter = await exactRunePrerequisite(read);
+  const exactAfter = await exactBotSeedPrerequisite(read);
   const afterStage = exactAfter?.ledgerStage;
-  if (afterStage !== 1) throw new Error('Rune Trial production schema changed during bot seeding.');
+  if (afterStage !== 1) throw new Error('Production schema changed during bot seeding.');
   const after = validateSeededProductionTestDataAudit(
     await read(SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL),
   );
   assertProductionBotSeedComplete(after);
-  log('Production bot seed verified: zero humans and exactly 150 valid bots with unique points across every ladder group.');
-  return Object.freeze({ phase: selected, applied: true, runeStage: afterStage, before, after });
+  log('Production bot seed verified: zero humans and exactly 150 toned-down bots with realistic aggregate histories across every ladder group.');
+  return Object.freeze({
+    phase: selected,
+    applied: true,
+    runeStage,
+    streakBaselineStage: afterStage,
+    before,
+    after,
+  });
 }
 
 function usage() {
-  console.error('Usage: production-test-data.mjs <wipe|seed-bots> [--apply]');
+  console.error('Usage: production-test-data.mjs <wipe|seed-bots|refresh-bot-profiles> [--apply]');
   console.error(`  wipe apply: ${PRODUCTION_TEST_DATA_OPT_INS.wipe.name}=${PRODUCTION_TEST_DATA_OPT_INS.wipe.value}`);
   console.error(`  seed apply: ${PRODUCTION_TEST_DATA_OPT_INS['seed-bots'].name}=${PRODUCTION_TEST_DATA_OPT_INS['seed-bots'].value}`);
+  console.error(`  refresh apply: ${PRODUCTION_TEST_DATA_OPT_INS['refresh-bot-profiles'].name}=${PRODUCTION_TEST_DATA_OPT_INS['refresh-bot-profiles'].value}`);
 }
 
 function parseArgs(argv) {

@@ -10,9 +10,9 @@ decisions, and externally owned actions only. Detailed sprint history lives in
 |---|---|---|
 | Web | Live at <https://knucklebones-asg.pages.dev>; pushes to `main` deploy through Cloudflare Pages immediately | `build.mjs`, `.github/workflows/ci.yml` |
 | Game | Local solo and two-player play, tutorial, modes, optional offline spells, and shared local/ranked board rendering | `src/core/`, `src/flow/`, `src/ui/` |
-| Ranked | Production has server-authoritative play, matchmaking/bot backfill, ladder, history, profiles, deletion, permanent mode-pool progression, IVORY Rune Trial, authoritative casts, and rune collection. The disposable test population was reset and seeded with 150 bots spanning the ladder; their starting aggregate records now change only through ordinary settlement | `src/online/`, `src/core/ranked-outcomes.ts`, `supabase/functions/`, `docs/LADDER.md` |
+| Ranked | Production has server-authoritative play, matchmaking/bot backfill, ladder, history, profiles, deletion, permanent mode-pool progression, IVORY Rune Trial, authoritative casts, and rune collection. The disposable test population has 150 bots spanning the ladder with deliberately beatable 41–54% aggregate win rates, streaks 2–7, and modest varied peaks; real play then updates the ordinary aggregates | `src/online/`, `src/core/ranked-outcomes.ts`, `supabase/functions/`, `docs/LADDER.md` |
 | Localization | English, Brazilian Portuguese, Spanish, German, French, and Italian share one ordered registry, complete catalogs, native metadata, and measured eager/online mobile geometry | `src/i18n/`, `docs/architecture/localization.md` |
-| Database | Production records the six-locale settings expansion and `20260825205241_rune_trial_ranked_v2.sql`; the guarded post-deploy catalog, security, data, Realtime, and cron audits pass. Game Center remains separately held | `supabase/migrations/`, `supabase/tests/` |
+| Database | Production records the six-locale settings expansion, `20260825205241_rune_trial_ranked_v2.sql`, and the private `20260826153000_ladder_streak_baselines.sql`; guarded catalog, security, data, Realtime, and cron audits pass. Game Center remains separately held | `supabase/migrations/`, `supabase/tests/` |
 | Builds | Hosted PWA, standalone HTML, widget, and Capacitor web assets come from the same source build | `build.mjs`, `docs/architecture/build.md` |
 | Native | Capacitor 8.5 iOS and Android projects are tracked; iOS supports 15+, Android installs on API 24+ while targeting API 36 | `native/`, `docs/architecture/build.md` |
 | Design | Product cards, open studies, and archived candidates are explicitly classified and recursively built from shared application CSS/renderers | `design/screens/`, `design/build.mjs` |
@@ -81,9 +81,9 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   because migration history does not establish function state.
 - Keep Apple/Game Center rollout separate: preview the guarded
   `db:production:apple-game-center` selection for
-  `20260826102600_game_center_ids.sql`,
-  `20260826102601_game_center_service_grants.sql`, and
-  `20260826102602_apple_identity_credentials.sql`; then deploy the rate-limited
+  `20260826153100_game_center_ids.sql`,
+  `20260826153101_game_center_service_grants.sql`, and
+  `20260826153102_apple_identity_credentials.sql`; then deploy the rate-limited
   Cloudflare identity gateway plus the identity/revocation Edge Functions,
   configure owner-held secrets and the retry schedule, and prove launch restore,
   attach, account-change protection, deletion, and revocation with a signed device.

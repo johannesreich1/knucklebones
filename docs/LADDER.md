@@ -191,6 +191,12 @@ season_ratings(
   primary key (season_id, player)
 )
 
+private.season_streak_baselines(
+  season_id, player,                       -- composite FK to season_ratings
+  best_streak integer not null check (best_streak >= 0),
+  primary key (season_id, player)
+)
+
 matches.season_id smallint references seasons   -- stamped at creation
 ```
 
@@ -319,7 +325,13 @@ labelled "record": in English that means both a win-loss tally and a personal
 best, and in German only the second, so the word was quietly promising the
 streak while showing the tally. `best_streak()` (migration 0021) computes the
 longest run of wins over the whole season, so it cannot shrink as old matches
-scroll out of a window.
+scroll out of a window. Seeded opponents may also have a private per-season
+baseline representing aggregate history imported without match rows;
+`player_card()` shows the greater of that baseline and the real run. The
+baseline is deliberately outside `season_ratings`: atomic settlement compares
+that table's complete five-field rating snapshot, so widening it would break
+the compare-and-set contract. A longer real run naturally supersedes the
+baseline, and deleting the season rating cascades it away.
 
 There is **no "N to the next group"** line. The ring already says how far
 along you are, and the exact remainder was a number nobody was going to act on.

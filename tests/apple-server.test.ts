@@ -12,7 +12,7 @@ const check = (ok: boolean, message: string, detail?: unknown) => {
   if (!ok) problems.push(`${message} :: ${JSON.stringify(detail)}`);
 };
 const migration = readFileSync(
-  'supabase/migrations/20260826102602_apple_identity_credentials.sql', 'utf8',
+  'supabase/migrations/20260826153102_apple_identity_credentials.sql', 'utf8',
 );
 check(/create table private\.apple_revocation_credentials/.test(migration)
   && /references auth\.users\(id\) on delete set null/.test(migration)

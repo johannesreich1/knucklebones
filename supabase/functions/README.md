@@ -45,9 +45,9 @@ Ranked rollout is database-first. Apply the ranked lifecycle/command/history
 migrations before deploying `account-delete`, `pvp-claim`, `pvp-join`, and
 `pvp-move`. Game Center and Apple identity use the separate guarded
 `apple-game-center` database rollout: it applies
-`20260826102600_game_center_ids.sql`,
-`20260826102601_game_center_service_grants.sql`, and
-`20260826102602_apple_identity_credentials.sql` in that order. Configure the
+`20260826153100_game_center_ids.sql`,
+`20260826153101_game_center_service_grants.sql`, and
+`20260826153102_apple_identity_credentials.sql` in that order. Configure the
 external rate limit before deploying `gc-auth`; the Apple half additionally
 requires the owner-held Apple key as function secrets, the identity/revocation
 functions, and a cron schedule for `apple-revocation-retry`. Repository checks

@@ -16,9 +16,9 @@ type Check = (name: string, run: () => void) => void;
 type Guarded = (run: () => unknown, pattern: RegExp) => void;
 
 const MIGRATIONS = Object.freeze([
-  '20260826102600_game_center_ids.sql',
-  '20260826102601_game_center_service_grants.sql',
-  '20260826102602_apple_identity_credentials.sql',
+  '20260826153100_game_center_ids.sql',
+  '20260826153101_game_center_service_grants.sql',
+  '20260826153102_apple_identity_credentials.sql',
 ]);
 
 export function runAppleGameCenterProductionMigrationCases(options: {
@@ -27,14 +27,14 @@ export function runAppleGameCenterProductionMigrationCases(options: {
 }): void {
   const { check, guarded } = options;
 
-  check('Apple/Game Center rollout pins three post-Rune-Trial migrations byte-for-byte', () => {
+  check('Apple/Game Center rollout pins three post-ladder migrations byte-for-byte', () => {
     const parsed = validateMigrationFilenames(MIGRATIONS);
     assert.deepEqual(parsed.map(({ version, name }) => [version, name]), [
-      ['20260826102600', 'game_center_ids'],
-      ['20260826102601', 'game_center_service_grants'],
-      ['20260826102602', 'apple_identity_credentials'],
+      ['20260826153100', 'game_center_ids'],
+      ['20260826153101', 'game_center_service_grants'],
+      ['20260826153102', 'apple_identity_credentials'],
     ]);
-    assert.ok(parsed.every(({ version }) => version > '20260825205241'));
+    assert.ok(parsed.every(({ version }) => version > '20260826153000'));
 
     const expectedHashes = [
       APPLE_GAME_CENTER_MIGRATION_SHA256.gameCenterIds,
@@ -143,7 +143,7 @@ export function runAppleGameCenterProductionMigrationCases(options: {
       encoding: 'utf8',
     });
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stderr, /rune-trial\|apple-game-center/);
+    assert.match(result.stderr, /ladder-streak-baselines\|apple-game-center/);
     assert.match(result.stderr, /KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1/);
   });
 }

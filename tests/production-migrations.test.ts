@@ -22,11 +22,14 @@ import {
 import {
   runRuneTrialProductionMigrationCases,
 } from './support/rune-trial-production-migration-cases.ts';
+import {
+  runLadderStreakBaselineProductionMigrationCases,
+} from './support/ladder-streak-baselines-production-migration-cases.ts';
 
 const BASE = '20260823192604_player_settings.sql';
 const LOCALE = '20260824133121_player_settings_locale.sql';
 const EXPANDED_LOCALES = '20260825161016_expand_player_settings_locales.sql';
-const GAME_CENTER = '20260826102601_game_center_service_grants.sql';
+const GAME_CENTER = '20260826153101_game_center_service_grants.sql';
 const RETENTION = '20260824212535_match_command_retention.sql';
 const PROJECT = 'euzjcejbkxvqfrttgaxu';
 const checked: string[] = [];
@@ -274,6 +277,8 @@ runProductionMigrationSchemaCases({
   retentionMigration: RETENTION,
   expandedLocalesMigration: EXPANDED_LOCALES,
 });
+
+await runLadderStreakBaselineProductionMigrationCases({ check, checkAsync, guarded });
 
 await checkAsync('temporary workspace cleanup runs after success and preparation failure', async () => {
   const removed: string[] = [];

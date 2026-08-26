@@ -30,6 +30,7 @@ import {
   productionDbPushArgs,
   productionMigrationFetchArgs,
   validateAppleGameCenterSchemaStage,
+  validateLadderStreakBaselineSchemaStage,
   validateMatchCommandRetentionSchemaStage,
   validatePlayerSettingsSchemaStage,
   validateRuneTrialSchemaStage,
@@ -53,6 +54,8 @@ export const APPLE_GAME_CENTER_MIGRATION_SHA256 = Object.freeze({
   appleIdentityCredentials: '9c3c887b061f520f875b870fe79bd3d7ad94dd58c0d0c17662c4641efc099760',
 });
 export const RUNE_TRIAL_MIGRATION_SHA256 = '930c4c52979df8e94bb0e59e033203c3973401f433f1d7ac3594cac20291cc33';
+export const LADDER_STREAK_BASELINES_MIGRATION_SHA256 =
+  '1b132572fde4df5f451e0c1780077c0e07156300fbd91b24833614a8d2e6c827';
 
 const ROLLOUTS = Object.freeze({
   'settings-locale': Object.freeze({
@@ -100,25 +103,36 @@ const ROLLOUTS = Object.freeze({
       }),
     ]),
   }),
+  'ladder-streak-baselines': Object.freeze({
+    audit: 'ladder-streak-baselines',
+    migrations: Object.freeze([
+      Object.freeze({
+        version: '20260826153000',
+        name: 'ladder_streak_baselines',
+        file: 'supabase/migrations/20260826153000_ladder_streak_baselines.sql',
+        sha256: LADDER_STREAK_BASELINES_MIGRATION_SHA256,
+      }),
+    ]),
+  }),
   'apple-game-center': Object.freeze({
     audit: 'apple-game-center',
     migrations: Object.freeze([
       Object.freeze({
-        version: '20260826102600',
+        version: '20260826153100',
         name: 'game_center_ids',
-        file: 'supabase/migrations/20260826102600_game_center_ids.sql',
+        file: 'supabase/migrations/20260826153100_game_center_ids.sql',
         sha256: APPLE_GAME_CENTER_MIGRATION_SHA256.gameCenterIds,
       }),
       Object.freeze({
-        version: '20260826102601',
+        version: '20260826153101',
         name: 'game_center_service_grants',
-        file: 'supabase/migrations/20260826102601_game_center_service_grants.sql',
+        file: 'supabase/migrations/20260826153101_game_center_service_grants.sql',
         sha256: APPLE_GAME_CENTER_MIGRATION_SHA256.gameCenterServiceGrants,
       }),
       Object.freeze({
-        version: '20260826102602',
+        version: '20260826153102',
         name: 'apple_identity_credentials',
-        file: 'supabase/migrations/20260826102602_apple_identity_credentials.sql',
+        file: 'supabase/migrations/20260826153102_apple_identity_credentials.sql',
         sha256: APPLE_GAME_CENTER_MIGRATION_SHA256.appleIdentityCredentials,
       }),
     ]),
@@ -1283,9 +1297,227 @@ select
   ) as new_tables_empty;
 `;
 
+export const LADDER_STREAK_BASELINES_SCHEMA = String.raw`
+with baseline_table as (
+  select c.oid, c.relowner, c.relacl, c.relkind, c.relpersistence,
+         c.relispartition, c.relrowsecurity, c.relforcerowsecurity
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+   where n.nspname = 'private'
+     and c.relname = 'season_streak_baselines'
+),
+player_card as (
+  select p.*, language.lanname, owner_role.rolname as owner_name
+    from pg_proc p
+    join pg_language language on language.oid = p.prolang
+    join pg_roles owner_role on owner_role.oid = p.proowner
+   where p.oid = to_regprocedure('public.player_card(text)')
+),
+player_card_access as (
+  select coalesce(role.rolname, 'PUBLIC') as role_name,
+         acl.privilege_type, acl.is_grantable
+    from player_card p
+    cross join lateral aclexplode(
+      coalesce(p.proacl, acldefault('f', p.proowner))
+    ) acl
+    left join pg_roles role on role.oid = acl.grantee
+   where acl.grantee <> p.proowner
+),
+best_streak as (
+  select p.*, language.lanname, owner_role.rolname as owner_name
+    from pg_proc p
+    join pg_language language on language.oid = p.prolang
+    join pg_roles owner_role on owner_role.oid = p.proowner
+   where p.oid = to_regprocedure('public.best_streak()')
+),
+best_streak_access as (
+  select coalesce(role.rolname, 'PUBLIC') as role_name,
+         acl.privilege_type, acl.is_grantable
+    from best_streak p
+    cross join lateral aclexplode(
+      coalesce(p.proacl, acldefault('f', p.proowner))
+    ) acl
+    left join pg_roles role on role.oid = acl.grantee
+   where acl.grantee <> p.proowner
+)
+select
+  exists (select 1 from baseline_table) as table_exists,
+  exists (select 1 from baseline_table)
+    and (
+      select count(*) = 3
+        and count(*) filter (
+          where ordinal_position = 1 and column_name = 'season_id'
+            and data_type = 'smallint' and udt_schema = 'pg_catalog'
+            and udt_name = 'int2' and is_nullable = 'NO'
+            and column_default is null and is_identity = 'NO'
+            and is_generated = 'NEVER'
+        ) = 1
+        and count(*) filter (
+          where ordinal_position = 2 and column_name = 'player'
+            and data_type = 'uuid' and udt_schema = 'pg_catalog'
+            and udt_name = 'uuid' and is_nullable = 'NO'
+            and column_default is null and is_identity = 'NO'
+            and is_generated = 'NEVER'
+        ) = 1
+        and count(*) filter (
+          where ordinal_position = 3 and column_name = 'best_streak'
+            and data_type = 'integer' and udt_schema = 'pg_catalog'
+            and udt_name = 'int4' and is_nullable = 'NO'
+            and column_default is null and is_identity = 'NO'
+            and is_generated = 'NEVER'
+        ) = 1
+        from information_schema.columns
+       where table_schema = 'private'
+         and table_name = 'season_streak_baselines'
+    ) as table_columns,
+  exists (select 1 from baseline_table)
+    and (
+      select count(*) = 1
+        from pg_constraint
+       where conrelid = to_regclass('private.season_streak_baselines')
+         and conname = 'season_streak_baselines_pkey'
+         and contype = 'p' and convalidated
+         and not condeferrable and not condeferred
+         and conkey = array[1, 2]::smallint[]
+    ) as table_primary_key,
+  exists (select 1 from baseline_table)
+    and (
+      select count(*) = 1
+        from pg_constraint
+       where conrelid = to_regclass('private.season_streak_baselines')
+         and conname = 'season_streak_baselines_rating_fkey'
+         and contype = 'f' and convalidated
+         and not condeferrable and not condeferred
+         and confrelid = to_regclass('public.season_ratings')
+         and conkey = array[1, 2]::smallint[]
+         and confkey = array[1, 2]::smallint[]
+         and confupdtype = 'a' and confdeltype = 'c' and confmatchtype = 's'
+    ) as table_rating_foreign_key,
+  exists (select 1 from baseline_table)
+    and (
+      select count(*) = 3
+        and count(*) filter (
+          where conname = 'season_streak_baselines_best_streak_check'
+            and contype = 'c' and convalidated and not connoinherit
+            and pg_get_constraintdef(oid, true) = 'CHECK (best_streak >= 0)'
+        ) = 1
+        from pg_constraint
+       where conrelid = to_regclass('private.season_streak_baselines')
+    ) as table_check,
+  exists (select 1 from baseline_table)
+    and obj_description(
+      to_regclass('private.season_streak_baselines'), 'pg_class'
+    ) = 'Imported per-season lower bound for the displayed best streak; absence means zero and no match history is implied.'
+    as table_comment,
+  coalesce((
+    select relkind = 'r' and relpersistence = 'p' and not relispartition
+           and not relrowsecurity and not relforcerowsecurity
+           and pg_get_userbyid(relowner) = 'postgres'
+      from baseline_table
+  ), false) as table_owner,
+  exists (select 1 from baseline_table)
+    and not exists (
+      select 1
+        from baseline_table c
+        cross join lateral aclexplode(
+          coalesce(c.relacl, acldefault('r', c.relowner))
+        ) acl
+       where acl.grantee <> c.relowner
+    )
+    and not exists (
+      select 1
+        from baseline_table c
+        join pg_attribute attribute on attribute.attrelid = c.oid
+        cross join lateral aclexplode(attribute.attacl) acl
+       where attribute.attnum > 0 and not attribute.attisdropped
+         and attribute.attacl is not null
+         and acl.grantee <> c.relowner
+    ) as table_grants,
+  exists (select 1 from baseline_table)
+    and coalesce((
+      select owner_name = 'postgres' and lanname = 'sql'
+             and prosecdef and provolatile = 's' and prokind = 'f'
+             and proretset and not proisstrict and not proleakproof
+             and proparallel = 'u' and pronargdefaults = 0
+             and proconfig = array['search_path=""']::text[]
+             and pg_get_function_identity_arguments(oid) = 'nick text'
+             and pg_get_function_result(oid) =
+               'TABLE(streak integer, since timestamp with time zone, points integer, wins bigint, losses bigint, games bigint, rank bigint, apex boolean, peak integer)'
+        from player_card
+    ), false)
+    and (
+      select count(*) = 1
+        from pg_proc procedure
+        join pg_namespace namespace on namespace.oid = procedure.pronamespace
+       where namespace.nspname = 'public' and procedure.proname = 'player_card'
+    ) as player_card_contract,
+  exists (select 1 from baseline_table)
+    and coalesce((select md5(prosrc) = '08b41fc75ee2fd8fd4cd0c463c438fbd'
+                    from player_card), false)
+    as player_card_body,
+  exists (select 1 from baseline_table)
+    and (
+      select coalesce(
+               array_agg(
+                 role_name || ':' || privilege_type || ':' || is_grantable::text
+                 order by role_name, privilege_type, is_grantable
+               ),
+               array[]::text[]
+             ) = array[
+               'anon:EXECUTE:false',
+               'authenticated:EXECUTE:false'
+             ]::text[]
+        from player_card_access
+    ) as player_card_grants,
+  exists (select 1 from baseline_table)
+    and coalesce((
+      select owner_name = 'postgres' and lanname = 'sql'
+             and prosecdef and provolatile = 's' and prokind = 'f'
+             and not proretset and not proisstrict and not proleakproof
+             and proparallel = 'u' and pronargdefaults = 0
+             and proconfig = array['search_path=""']::text[]
+             and pg_get_function_identity_arguments(oid) = ''
+             and pg_get_function_result(oid) = 'integer'
+             and md5(prosrc) = 'bf58986f9cd949e67012b9cd89d87d08'
+        from best_streak
+    ), false)
+    and (
+      select count(*) = 1
+        from pg_proc procedure
+        join pg_namespace namespace on namespace.oid = procedure.pronamespace
+       where namespace.nspname = 'public' and procedure.proname = 'best_streak'
+    )
+    and (
+      select coalesce(
+               array_agg(
+                 role_name || ':' || privilege_type || ':' || is_grantable::text
+                 order by role_name, privilege_type, is_grantable
+               ),
+               array[]::text[]
+             ) = array['authenticated:EXECUTE:false']::text[]
+        from best_streak_access
+    ) as best_streak_delegate;
+`;
+
+export const LADDER_STREAK_BASELINES_DATA = String.raw`
+select
+  count(*)::bigint as baseline_count,
+  not exists (
+    select 1
+      from private.season_streak_baselines baseline
+      left join public.season_ratings rating
+        on rating.season_id = baseline.season_id
+       and rating.player = baseline.player
+     where rating.player is null
+        or baseline.best_streak < 0
+        or baseline.best_streak > rating.wins
+  ) as baselines_valid
+  from private.season_streak_baselines;
+`;
+
 function usage(message, code = 64) {
   if (message) console.error(message);
-  console.error('Usage: mise exec -- node --experimental-strip-types tools/database/production-rollout.mjs <settings-locale|match-command-retention|rune-trial|apple-game-center> [--apply]');
+  console.error('Usage: mise exec -- node --experimental-strip-types tools/database/production-rollout.mjs <settings-locale|match-command-retention|rune-trial|ladder-streak-baselines|apple-game-center> [--apply]');
   console.error(`Apply requires ${PROD_OPT_IN}=1.`);
   process.exitCode = code;
 }
@@ -1435,6 +1667,65 @@ export async function auditRuneTrialPostApplyData(readProduction = productionRea
   return evidence;
 }
 
+export async function auditLadderStreakBaselineData(readProduction = productionRead) {
+  const rows = await readProduction(LADDER_STREAK_BASELINES_DATA);
+  if (rows.length !== 1) {
+    throw new Error('Production ladder-streak baseline data audit returned an unexpected shape.');
+  }
+  const row = rows[0];
+  const countText = typeof row.baseline_count === 'string'
+    ? row.baseline_count
+    : String(row.baseline_count);
+  if (!/^(0|[1-9][0-9]*)$/u.test(countText)) {
+    throw new Error('Production ladder-streak baseline count is invalid.');
+  }
+  const baselineCount = Number(countText);
+  if (!Number.isSafeInteger(baselineCount) || row.baselines_valid !== true) {
+    throw new Error('Production ladder-streak baseline rows are invalid.');
+  }
+  return Object.freeze({
+    baselinesValid: true,
+    baselineCount,
+  });
+}
+
+export async function auditLadderStreakBaselines(readProduction = productionRead) {
+  const rows = await readProduction(LADDER_STREAK_BASELINES_SCHEMA);
+  if (rows.length !== 1) {
+    throw new Error('Production ladder-streak baseline schema audit returned an unexpected shape.');
+  }
+  const row = rows[0];
+  const tableExists = row.table_exists === true;
+  const evidence = {
+    tableColumns: tableExists && row.table_columns === true,
+    tablePrimaryKey: tableExists && row.table_primary_key === true,
+    tableRatingForeignKey: tableExists && row.table_rating_foreign_key === true,
+    tableCheck: tableExists && row.table_check === true,
+    tableComment: tableExists && row.table_comment === true,
+    tableOwner: tableExists && row.table_owner === true,
+    tableGrants: tableExists && row.table_grants === true,
+    playerCardContract: tableExists && row.player_card_contract === true,
+    playerCardBody: tableExists && row.player_card_body === true,
+    playerCardGrants: tableExists && row.player_card_grants === true,
+    bestStreakDelegate: tableExists && row.best_streak_delegate === true,
+  };
+  const schemaStage = validateLadderStreakBaselineSchemaStage(evidence);
+  const data = schemaStage === 1
+    ? await auditLadderStreakBaselineData(readProduction)
+    : undefined;
+  return { evidence, schemaStage, data };
+}
+
+export async function auditLadderStreakBaselinesPostApplyData(
+  readProduction = productionRead,
+) {
+  const evidence = await auditLadderStreakBaselineData(readProduction);
+  if (evidence.baselineCount !== 0) {
+    throw new Error('New ladder-streak baseline table was not empty after migration.');
+  }
+  return evidence;
+}
+
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
 }
@@ -1551,16 +1842,22 @@ async function auditProduction(rollout) {
     audited = await auditMatchCommandRetention();
   } else if (rollout.audit === 'rune-trial') {
     audited = await auditRuneTrial();
+  } else if (rollout.audit === 'ladder-streak-baselines') {
+    audited = await auditLadderStreakBaselines();
   } else if (rollout.audit === 'apple-game-center') {
     audited = await auditAppleGameCenter();
   } else {
     throw new Error(`Unknown production schema audit: ${String(rollout.audit)}.`);
   }
-  const { evidence, schemaStage } = audited;
+  const { evidence, schemaStage, data } = audited;
   if (schemaStage !== plan.stage) {
     throw new Error(`Production schema stage ${schemaStage} does not match migration stage ${plan.stage}.`);
   }
-  return { history, plan, evidence };
+  return {
+    history,
+    plan,
+    evidence: data ? { ...evidence, data } : evidence,
+  };
 }
 
 function prepareWorkspace(temp, rollout, plan) {
@@ -1662,7 +1959,9 @@ async function main() {
       }
       const postApplyData = rollout.audit === 'rune-trial'
         ? await auditRuneTrialPostApplyData()
-        : undefined;
+        : rollout.audit === 'ladder-streak-baselines'
+          ? await auditLadderStreakBaselinesPostApplyData()
+          : undefined;
       process.stdout.write(JSON.stringify({
         rollout: rolloutName,
         status: 'applied',
