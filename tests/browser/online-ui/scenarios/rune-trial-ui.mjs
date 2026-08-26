@@ -1,3 +1,4 @@
+import { SPELLS } from '../../../../src/core/spells.ts';
 import {
   resultRewardFaceoffOcclusionProbe,
   resultRewardProfileOcclusionProbe,
@@ -329,6 +330,8 @@ export async function runRuneTrialUiScenarios({ visit, out, check }) {
   out.runeCollectionProfile = profile.probeResult;
   const slots = profile.probeResult?.slots ?? [];
   check(slots.length === 6
+      && JSON.stringify(slots.map(({ rune }) => rune))
+        === JSON.stringify(SPELLS.map(({ id }) => id))
       && slots.every(({ visible, label }) => visible && !!label)
       && slots.filter(({ collected, disabled }) => collected && disabled === null).length === 2
       && slots.filter(({ locked, disabled }) => locked && disabled === null).length === 4
@@ -336,7 +339,7 @@ export async function runRuneTrialUiScenarios({ visit, out, check }) {
         tag === 'BUTTON' && !nativeDisabled && tabIndex >= 0 && centreHit && height >= 44)
       && profile.probeResult?.count === '2 / 6'
       && profile.probeResult?.gridLabel?.includes('2'),
-    'profile did not render six visible 44px rune buttons with owned/locked state',
+    'profile did not render canonical-order visible 44px rune buttons with owned/locked state',
     profile.probeResult);
   check(profile.probeResult?.labelMinimum >= 10
       && profile.probeResult.titleFontSize >= 10

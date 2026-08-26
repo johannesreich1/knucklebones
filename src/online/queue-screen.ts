@@ -2,7 +2,7 @@ import { modeById } from '../core/modes.ts';
 import {
   RUNE_TRIAL_CAPABILITY,
   RUNE_TRIAL_FORMAT,
-  rankedOutcomePool,
+  rankedOutcomeRoster,
 } from '../core/ranked-outcomes.ts';
 import { spellById } from '../core/spells.ts';
 import { formatNumber, modeCopy, t } from '../i18n/index.ts';
@@ -54,10 +54,10 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
   const revealCandidates = (result: Extract<JoinResult, { status: 'matched' }>) => {
     const tier = result.match.pool_tier;
     if (!tier) return undefined;
-    return rankedOutcomePool([{
+    return rankedOutcomeRoster([{
       tier,
       capabilities: result.match.protocol_version === 2 ? [RUNE_TRIAL_CAPABILITY] : [],
-    }]).map(({ outcome }) => ({ id: outcome.id }));
+    }]).map(({ id }) => ({ id }));
   };
 
   const revealCopy = (id: string) => id === RUNE_TRIAL_FORMAT
