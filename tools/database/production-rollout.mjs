@@ -31,6 +31,7 @@ import {
   productionMigrationFetchArgs,
   validateMatchCommandRetentionSchemaStage,
   validatePlayerSettingsSchemaStage,
+  validateRuneTrialSchemaStage,
   withTemporaryWorkspace,
 } from './production-rollout-core.mjs';
 
@@ -45,6 +46,7 @@ const CLI = path.join(
 const PROD_OPT_IN = 'KB_ALLOW_PRODUCTION_DB_MIGRATIONS';
 const SQL_LOCALE_VALUES = SUPPORTED_LOCALES.map((locale) => `'${locale}'`).join(', ');
 const SQL_LOCALE_TEXT_VALUES = SUPPORTED_LOCALES.map((locale) => `'${locale}'::text`).join(', ');
+export const RUNE_TRIAL_MIGRATION_SHA256 = '930c4c52979df8e94bb0e59e033203c3973401f433f1d7ac3594cac20291cc33';
 
 const ROLLOUTS = Object.freeze({
   'settings-locale': Object.freeze({
@@ -78,6 +80,17 @@ const ROLLOUTS = Object.freeze({
         name: 'match_command_retention',
         file: 'supabase/migrations/20260824212535_match_command_retention.sql',
         sha256: '58f3cc83fcde8b29ccbd5a34d462fe18b219e423d52849b86139e05582bf4523',
+      }),
+    ]),
+  }),
+  'rune-trial': Object.freeze({
+    audit: 'rune-trial',
+    migrations: Object.freeze([
+      Object.freeze({
+        version: '20260825205241',
+        name: 'rune_trial_ranked_v2',
+        file: 'supabase/migrations/20260825205241_rune_trial_ranked_v2.sql',
+        sha256: RUNE_TRIAL_MIGRATION_SHA256,
       }),
     ]),
   }),
@@ -293,9 +306,650 @@ select
  where jobname = 'purge-expired-match-commands';
 `;
 
+export const RUNE_TRIAL_SCHEMA = String.raw`
+select
+  (
+    exists (
+      select 1
+        from information_schema.columns
+       where table_schema = 'public' and table_name = 'profiles'
+         and column_name = 'ranked_pool_tier' and data_type = 'text'
+         and is_nullable = 'NO' and column_default = '''stone''::text'
+         and is_identity = 'NO' and is_generated = 'NEVER'
+    )
+    and exists (
+      select 1
+        from pg_constraint
+       where conrelid = to_regclass('public.profiles')
+         and conname = 'profiles_ranked_pool_tier_check'
+         and contype = 'c' and convalidated
+         and pg_get_constraintdef(oid, true) =
+           $check$CHECK (ranked_pool_tier = ANY (ARRAY['stone'::text, 'bone'::text, 'ivory'::text]))$check$
+    )
+  ) as profile_progression,
+  (
+    (
+      select count(*) = 12
+        and count(*) filter (where column_name = 'format' and data_type = 'text'
+          and is_nullable = 'NO' and column_default = '''standard''::text') = 1
+        and count(*) filter (where column_name = 'protocol_version' and data_type = 'smallint'
+          and is_nullable = 'NO' and column_default = '1') = 1
+        and count(*) filter (where column_name = 'rune_rules_version' and data_type = 'smallint'
+          and is_nullable = 'YES' and column_default is null) = 1
+        and count(*) filter (where column_name = 'pool_tier' and data_type = 'text'
+          and is_nullable = 'NO' and column_default = '''stone''::text') = 1
+        and count(*) filter (where column_name = 'phase' and data_type = 'text'
+          and is_nullable = 'NO' and column_default = '''playing''::text') = 1
+        and count(*) filter (where column_name = 'trial_offer' and data_type = 'ARRAY'
+          and udt_name = '_text' and is_nullable = 'YES' and column_default is null) = 1
+        and count(*) filter (where column_name in ('p1_rune', 'p2_rune', 'pending_aim')
+          and data_type = 'text' and is_nullable = 'YES' and column_default is null) = 3
+        and count(*) filter (where column_name = 'selection_deadline'
+          and data_type = 'timestamp with time zone' and is_nullable = 'YES'
+          and column_default is null) = 1
+        and count(*) filter (where column_name in ('selection_version', 'action_version')
+          and data_type = 'integer' and is_nullable = 'NO' and column_default = '0') = 2
+        from information_schema.columns
+       where table_schema = 'public' and table_name = 'matches'
+         and column_name in (
+           'format', 'protocol_version', 'rune_rules_version', 'pool_tier', 'phase',
+           'trial_offer', 'p1_rune', 'p2_rune', 'selection_deadline',
+           'selection_version', 'action_version', 'pending_aim'
+         )
+    )
+    and (
+      select count(*) = 12 and bool_and(convalidated)
+        and count(*) filter (
+          where conname = 'matches_modifier_check'
+            and pg_get_constraintdef(oid, true) =
+              $check$CHECK (modifier = ANY (ARRAY['classic'::text, 'rowswitch'::text, 'rowmult'::text, 'colshield'::text, 'singlestrike'::text, 'bounty'::text, 'limited'::text]))$check$
+        ) = 1
+        and count(*) filter (
+          where conname = 'matches_format_check'
+            and pg_get_constraintdef(oid, true) =
+              $check$CHECK (format = ANY (ARRAY['standard'::text, 'rune_trial'::text]))$check$
+        ) = 1
+        and count(*) filter (
+          where conname = 'matches_protocol_version_check'
+            and pg_get_constraintdef(oid, true) =
+              $check$CHECK (protocol_version = ANY (ARRAY[1, 2]))$check$
+        ) = 1
+        and count(*) filter (
+          where conname = 'matches_rune_rules_version_check'
+            and pg_get_constraintdef(oid, true) =
+              'CHECK (rune_rules_version IS NULL OR rune_rules_version = 1)'
+        ) = 1
+        and count(*) filter (
+          where conname = 'matches_pool_tier_check'
+            and pg_get_constraintdef(oid, true) =
+              $check$CHECK (pool_tier = ANY (ARRAY['stone'::text, 'bone'::text, 'ivory'::text]))$check$
+        ) = 1
+        and count(*) filter (
+          where conname = 'matches_phase_check'
+            and pg_get_constraintdef(oid, true) =
+              $check$CHECK (phase = ANY (ARRAY['selection'::text, 'playing'::text]))$check$
+        ) = 1
+        and count(*) filter (
+          where conname = 'matches_selection_version_check'
+            and pg_get_constraintdef(oid, true) = 'CHECK (selection_version >= 0)'
+        ) = 1
+        and count(*) filter (
+          where conname = 'matches_action_version_check'
+            and pg_get_constraintdef(oid, true) = 'CHECK (action_version >= 0)'
+        ) = 1
+        and count(*) filter (
+          where conname = 'matches_trial_offer_check'
+            and pg_get_constraintdef(oid, true) like '%cardinality(trial_offer) = 3%'
+            and pg_get_constraintdef(oid, true) like '%array_position(trial_offer, NULL::text) IS NULL%'
+            and pg_get_constraintdef(oid, true) like '%''fate''::text%'
+            and pg_get_constraintdef(oid, true) like '%''anvil''::text%'
+        ) = 1
+        and count(*) filter (
+          where conname = 'matches_trial_runes_check'
+            and pg_get_constraintdef(oid, true) like '%p1_rune%'
+            and pg_get_constraintdef(oid, true) like '%p2_rune%'
+            and pg_get_constraintdef(oid, true) like '%''fate''::text%'
+            and pg_get_constraintdef(oid, true) like '%''anvil''::text%'
+        ) = 1
+        and count(*) filter (
+          where conname = 'matches_pending_aim_check'
+            and pg_get_constraintdef(oid, true) like '%pending_aim = ''anvil''::text%'
+            and pg_get_constraintdef(oid, true) like '%CASE%WHEN turn = 1 THEN p1_rune%'
+        ) = 1
+        and count(*) filter (
+          where conname = 'matches_format_state_check'
+            and pg_get_constraintdef(oid, true) like '%format = ''standard''::text%'
+            and pg_get_constraintdef(oid, true) like '%format = ''rune_trial''::text%'
+            and pg_get_constraintdef(oid, true) like '%pool_tier = ''ivory''::text%'
+            and pg_get_constraintdef(oid, true) like '%protocol_version = 2%'
+        ) = 1
+        from pg_constraint
+       where conrelid = to_regclass('public.matches')
+         and contype = 'c'
+         and conname in (
+           'matches_modifier_check', 'matches_format_check',
+           'matches_protocol_version_check', 'matches_rune_rules_version_check',
+           'matches_pool_tier_check', 'matches_phase_check',
+           'matches_selection_version_check', 'matches_action_version_check',
+           'matches_trial_offer_check', 'matches_trial_runes_check',
+           'matches_pending_aim_check', 'matches_format_state_check'
+         )
+    )
+  ) as match_protocol,
+  (
+    (
+      select count(*) = 3
+        and count(*) filter (where column_name = 'protocol_version'
+          and data_type = 'smallint' and is_nullable = 'NO' and column_default = '1') = 1
+        and count(*) filter (where column_name = 'capabilities'
+          and data_type = 'ARRAY' and udt_name = '_text' and is_nullable = 'NO'
+          and column_default = '''{}''::text[]') = 1
+        and count(*) filter (where column_name = 'pool_tier'
+          and data_type = 'text' and is_nullable = 'NO'
+          and column_default = '''stone''::text') = 1
+        from information_schema.columns
+       where table_schema = 'public' and table_name = 'matchmaking_queue'
+         and column_name in ('protocol_version', 'capabilities', 'pool_tier')
+    )
+    and (
+      select count(*) = 3 and bool_and(convalidated)
+        and count(*) filter (
+          where conname = 'matchmaking_queue_protocol_version_check'
+            and pg_get_constraintdef(oid, true) =
+              'CHECK (protocol_version = ANY (ARRAY[1, 2]))'
+        ) = 1
+        and count(*) filter (
+          where conname = 'matchmaking_queue_capabilities_check'
+            and pg_get_constraintdef(oid, true) like '%rune_trial_v1%'
+            and pg_get_constraintdef(oid, true) like '%cardinality(capabilities) <= 1%'
+        ) = 1
+        and count(*) filter (
+          where conname = 'matchmaking_queue_pool_tier_check'
+            and pg_get_constraintdef(oid, true) =
+              $check$CHECK (pool_tier = ANY (ARRAY['stone'::text, 'bone'::text, 'ivory'::text]))$check$
+        ) = 1
+        from pg_constraint
+       where conrelid = to_regclass('public.matchmaking_queue')
+         and conname in (
+           'matchmaking_queue_protocol_version_check',
+           'matchmaking_queue_capabilities_check',
+           'matchmaking_queue_pool_tier_check'
+         )
+    )
+  ) as queue_protocol,
+  (
+    to_regclass('public.player_runes') is not null
+    and coalesce((
+      select c.relrowsecurity and pg_get_userbyid(c.relowner) = 'postgres'
+        from pg_class c
+       where c.oid = to_regclass('public.player_runes')
+    ), false)
+    and (
+      select count(*) = 5
+        and count(*) filter (where column_name = 'player_id' and data_type = 'uuid'
+          and is_nullable = 'NO' and column_default is null) = 1
+        and count(*) filter (where column_name = 'rune_id' and data_type = 'text'
+          and is_nullable = 'NO' and column_default is null) = 1
+        and count(*) filter (where column_name = 'source_match_id' and data_type = 'uuid'
+          and is_nullable = 'YES' and column_default is null) = 1
+        and count(*) filter (where column_name = 'collected_at'
+          and data_type = 'timestamp with time zone' and is_nullable = 'NO'
+          and column_default = 'now()') = 1
+        and count(*) filter (where column_name = 'seen_at'
+          and data_type = 'timestamp with time zone' and is_nullable = 'YES'
+          and column_default is null) = 1
+        from information_schema.columns
+       where table_schema = 'public' and table_name = 'player_runes'
+    )
+    and (
+      select count(*) = 5 and bool_and(convalidated)
+        and count(*) filter (where contype = 'p'
+          and pg_get_constraintdef(oid, true) = 'PRIMARY KEY (player_id, rune_id)') = 1
+        and count(*) filter (where contype = 'f'
+          and pg_get_constraintdef(oid, true) =
+            'FOREIGN KEY (player_id) REFERENCES profiles(id) ON DELETE CASCADE') = 1
+        and count(*) filter (where contype = 'f'
+          and pg_get_constraintdef(oid, true) =
+            'FOREIGN KEY (source_match_id) REFERENCES matches(id) ON DELETE SET NULL') = 1
+        and count(*) filter (where contype = 'c'
+          and pg_get_constraintdef(oid, true) like '%rune_id%'
+          and pg_get_constraintdef(oid, true) like '%''fate''::text%'
+          and pg_get_constraintdef(oid, true) like '%''anvil''::text%') = 1
+        and count(*) filter (where contype = 'c'
+          and pg_get_constraintdef(oid, true) =
+            'CHECK (seen_at IS NULL OR seen_at >= collected_at)') = 1
+        from pg_constraint
+       where conrelid = to_regclass('public.player_runes')
+    )
+  ) as player_runes_table,
+  (
+    to_regclass('public.match_actions') is not null
+    and coalesce((
+      select c.relrowsecurity and pg_get_userbyid(c.relowner) = 'postgres'
+        from pg_class c
+       where c.oid = to_regclass('public.match_actions')
+    ), false)
+    and (
+      select count(*) = 11
+        and count(*) filter (where column_name in ('match_id')
+          and data_type = 'uuid' and is_nullable = 'NO' and column_default is null) = 1
+        and count(*) filter (where column_name = 'idx' and data_type = 'integer'
+          and is_nullable = 'NO' and column_default is null) = 1
+        and count(*) filter (where column_name = 'move_idx' and data_type = 'integer'
+          and is_nullable = 'YES' and column_default is null) = 1
+        and count(*) filter (where column_name in ('who', 'target_col', 'placed_col',
+          'die_before', 'die_after') and data_type = 'smallint') = 5
+        and count(*) filter (where column_name = 'kind' and data_type = 'text'
+          and is_nullable = 'NO' and column_default is null) = 1
+        and count(*) filter (where column_name = 'rune_id' and data_type = 'text'
+          and is_nullable = 'YES' and column_default is null) = 1
+        and count(*) filter (where column_name = 'created_at'
+          and data_type = 'timestamp with time zone' and is_nullable = 'NO'
+          and column_default = 'now()') = 1
+        from information_schema.columns
+       where table_schema = 'public' and table_name = 'match_actions'
+    )
+    and (
+      select count(*) = 10 and bool_and(convalidated)
+        and count(*) filter (where contype = 'p'
+          and pg_get_constraintdef(oid, true) = 'PRIMARY KEY (match_id, idx)') = 1
+        and count(*) filter (where contype = 'u'
+          and pg_get_constraintdef(oid, true) = 'UNIQUE (match_id, move_idx)') = 1
+        and count(*) filter (where contype = 'f'
+          and pg_get_constraintdef(oid, true) =
+            'FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE') = 1
+        and count(*) filter (where contype = 'c'
+          and pg_get_constraintdef(oid, true) like '%kind = ''aim''::text%'
+          and pg_get_constraintdef(oid, true) like '%kind = ''cast''::text%'
+          and pg_get_constraintdef(oid, true) like '%kind = ''place''::text%') = 1
+        from pg_constraint
+       where conrelid = to_regclass('public.match_actions')
+    )
+  ) as match_actions_table,
+  (
+    to_regclass('private.rune_trial_choices') is not null
+    and to_regclass('private.rune_trial_selection_commands') is not null
+    and to_regclass('private.match_action_commands') is not null
+    and (
+      select count(*) = 3 and bool_and(pg_get_userbyid(c.relowner) = 'postgres')
+        from pg_class c
+        join pg_namespace n on n.oid = c.relnamespace
+       where n.nspname = 'private'
+         and c.relname in (
+           'rune_trial_choices',
+           'rune_trial_selection_commands',
+           'match_action_commands'
+         )
+         and c.relkind in ('r', 'p')
+    )
+    and (
+      select count(*) = 7
+        and count(*) filter (where column_name = 'match_id' and data_type = 'uuid'
+          and is_nullable = 'NO' and column_default is null) = 1
+        and count(*) filter (where column_name in ('p1_choice', 'p2_choice')
+          and data_type = 'text' and is_nullable = 'YES' and column_default is null) = 2
+        and count(*) filter (where column_name in ('p1_auto_rune', 'p2_auto_rune')
+          and data_type = 'text' and is_nullable = 'NO' and column_default is null) = 2
+        and count(*) filter (where column_name in ('created_at', 'updated_at')
+          and data_type = 'timestamp with time zone' and is_nullable = 'NO'
+          and column_default = 'now()') = 2
+        from information_schema.columns
+       where table_schema = 'private' and table_name = 'rune_trial_choices'
+    )
+    and (
+      select count(*) = 7
+        and count(*) filter (where column_name in ('match_id', 'command_id', 'actor')
+          and data_type = 'uuid' and is_nullable = 'NO' and column_default is null) = 3
+        and count(*) filter (where column_name = 'rune_id' and data_type = 'text'
+          and is_nullable = 'YES' and column_default is null) = 1
+        and count(*) filter (where column_name = 'auto' and data_type = 'boolean'
+          and is_nullable = 'NO' and column_default is null) = 1
+        and count(*) filter (where column_name = 'response' and data_type = 'jsonb'
+          and is_nullable = 'NO' and column_default is null) = 1
+        and count(*) filter (where column_name = 'created_at'
+          and data_type = 'timestamp with time zone' and is_nullable = 'NO'
+          and column_default = 'now()') = 1
+        from information_schema.columns
+       where table_schema = 'private' and table_name = 'rune_trial_selection_commands'
+    )
+    and (
+      select count(*) = 8
+        and count(*) filter (where column_name in ('match_id', 'command_id', 'actor')
+          and data_type = 'uuid' and is_nullable = 'NO' and column_default is null) = 3
+        and count(*) filter (where column_name = 'auto' and data_type = 'boolean'
+          and is_nullable = 'NO' and column_default is null) = 1
+        and count(*) filter (where column_name = 'expected_action_version'
+          and data_type = 'integer' and is_nullable = 'NO' and column_default is null) = 1
+        and count(*) filter (where column_name = 'requested_action' and data_type = 'jsonb'
+          and is_nullable = 'YES' and column_default is null) = 1
+        and count(*) filter (where column_name = 'response' and data_type = 'jsonb'
+          and is_nullable = 'NO' and column_default is null) = 1
+        and count(*) filter (where column_name = 'created_at'
+          and data_type = 'timestamp with time zone' and is_nullable = 'NO'
+          and column_default = 'now()') = 1
+        from information_schema.columns
+       where table_schema = 'private' and table_name = 'match_action_commands'
+    )
+    and (select count(*) = 6 and bool_and(convalidated)
+           from pg_constraint
+          where conrelid = to_regclass('private.rune_trial_choices'))
+    and (select count(*) = 4 and bool_and(convalidated)
+           from pg_constraint
+          where conrelid = to_regclass('private.rune_trial_selection_commands'))
+    and (select count(*) = 6 and bool_and(convalidated)
+           from pg_constraint
+          where conrelid = to_regclass('private.match_action_commands'))
+  ) as private_tables,
+  (
+    coalesce((
+      select indisvalid and indisready and not indisunique
+        and pg_get_indexdef(indexrelid) like
+          'CREATE INDEX player_runes_source_match_idx ON public.player_runes USING btree (source_match_id)%'
+        and pg_get_expr(indpred, indrelid, true) = 'source_match_id IS NOT NULL'
+        from pg_index
+       where indexrelid = to_regclass('public.player_runes_source_match_idx')
+    ), false)
+    and coalesce((
+      select count(*) = 4 and bool_and(indisvalid and indisready and not indisunique)
+        from pg_index
+       where indexrelid in (
+         to_regclass('private.rune_trial_selection_commands_retention_idx'),
+         to_regclass('private.rune_trial_selection_commands_actor_idx'),
+         to_regclass('private.match_action_commands_retention_idx'),
+         to_regclass('private.match_action_commands_actor_idx')
+       )
+        and pg_get_indexdef(indexrelid) in (
+          'CREATE INDEX rune_trial_selection_commands_retention_idx ON private.rune_trial_selection_commands USING btree (created_at, match_id, command_id)',
+          'CREATE INDEX rune_trial_selection_commands_actor_idx ON private.rune_trial_selection_commands USING btree (actor)',
+          'CREATE INDEX match_action_commands_retention_idx ON private.match_action_commands USING btree (created_at, match_id, command_id)',
+          'CREATE INDEX match_action_commands_actor_idx ON private.match_action_commands USING btree (actor)'
+        )
+    ), false)
+  ) as indexes,
+  (
+    (select count(*) = 1
+       and count(*) filter (
+         where policyname = 'player_runes_select_own'
+           and permissive = 'PERMISSIVE'
+           and roles = array['authenticated']::name[]
+           and cmd = 'SELECT'
+           and qual = $predicate$(player_id = ( SELECT auth.uid() AS uid))$predicate$
+           and with_check is null
+       ) = 1
+       from pg_policies
+      where schemaname = 'public' and tablename = 'player_runes')
+    and
+    (select count(*) = 1
+       and count(*) filter (
+         where policyname = 'match_actions_select_participant'
+           and permissive = 'PERMISSIVE'
+           and roles = array['authenticated']::name[]
+           and cmd = 'SELECT' and with_check is null
+           and qual like '%match.id = match_actions.match_id%'
+           and qual like '%match.p1 = ( SELECT auth.uid() AS uid)%'
+           and qual like '%match.p2 = ( SELECT auth.uid() AS uid)%'
+       ) = 1
+       from pg_policies
+      where schemaname = 'public' and tablename = 'match_actions')
+  ) as policies,
+  (
+    select count(*) = 3
+      and count(*) filter (
+        where role_name = 'authenticated' and privilege_type = 'SELECT'
+          and not is_grantable
+      ) = 2
+      and count(*) filter (
+        where role_name = 'service_role' and table_name = 'match_actions'
+          and privilege_type = 'SELECT'
+          and not is_grantable
+      ) = 1
+      and count(*) filter (
+        where role_name = 'service_role' and table_name = 'player_runes'
+      ) = 0
+      from (
+        select c.relname as table_name, coalesce(r.rolname, 'PUBLIC') as role_name,
+               acl.privilege_type, acl.is_grantable
+          from pg_class c
+          join pg_namespace n on n.oid = c.relnamespace
+          cross join lateral aclexplode(
+            coalesce(c.relacl, acldefault('r', c.relowner))
+          ) acl
+          left join pg_roles r on r.oid = acl.grantee
+         where n.nspname = 'public' and c.relname in ('player_runes', 'match_actions')
+           and acl.grantee <> c.relowner
+      ) grants
+  ) as table_grants,
+  (
+    (select count(*) = 3
+       from pg_class c
+       join pg_namespace n on n.oid = c.relnamespace
+      where n.nspname = 'private'
+        and c.relname in (
+          'rune_trial_choices', 'rune_trial_selection_commands',
+          'match_action_commands'
+        ))
+    and not exists (
+      select 1
+        from pg_class c
+        join pg_namespace n on n.oid = c.relnamespace
+        cross join lateral aclexplode(
+          coalesce(c.relacl, acldefault('r', c.relowner))
+        ) acl
+       where n.nspname = 'private'
+         and c.relname in (
+           'rune_trial_choices', 'rune_trial_selection_commands',
+           'match_action_commands'
+         )
+         and acl.grantee <> c.relowner
+    )
+  ) as private_tables_locked,
+  exists (
+    select 1
+      from pg_publication_rel relation
+      join pg_publication publication on publication.oid = relation.prpubid
+     where publication.pubname = 'supabase_realtime'
+       and relation.prrelid = to_regclass('public.match_actions')
+  ) as realtime_publication,
+  exists (select 1 from pg_extension where extname = 'pg_cron') as cron_extension;
+`;
+
+export const RUNE_TRIAL_FUNCTIONS = String.raw`
+with expected(
+  signature, schema_name, function_name, language_name, security_definer,
+  volatility, return_type, argument_defaults, body_md5
+) as (
+  values
+    ('private.ranked_pool_tier_for_peak(integer)', 'private',
+      'ranked_pool_tier_for_peak', 'sql', false, 'i', 'text', 0,
+      'ff03a2512b40e447699b2ba4f8ca9625'),
+    ('public.acknowledge_rune_reward(text)', 'public',
+      'acknowledge_rune_reward', 'plpgsql', true, 'v', 'boolean', 0,
+      'a66f2b1863080172a137f77f15f48e8c'),
+    ('public.enqueue_ranked_player_v2(uuid,smallint,text[])', 'public',
+      'enqueue_ranked_player_v2', 'plpgsql', true, 'v', 'jsonb', 0,
+      '47d0f0d3803e4411a4ab72f88710da2c'),
+    ('public.start_ranked_match_v2(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text)',
+      'public', 'start_ranked_match_v2', 'plpgsql', true, 'v', 'jsonb', 0,
+      'a774ada104b131c0eefdc840d5a026d3'),
+    ('private.finalize_rune_trial_locked(uuid,boolean)', 'private',
+      'finalize_rune_trial_locked', 'plpgsql', true, 'v', 'public.matches', 1,
+      '9a692011627169211f21317324015650'),
+    ('private.rune_trial_payload(uuid,uuid)', 'private',
+      'rune_trial_payload', 'plpgsql', true, 's', 'jsonb', 0,
+      '589c07689e57ac2ca17d847a2f91a709'),
+    ('public.rune_trial_state(uuid,uuid)', 'public',
+      'rune_trial_state', 'plpgsql', true, 'v', 'jsonb', 0,
+      'f8d6ae222bb50b868d4d688f244da62e'),
+    ('public.commit_rune_trial_choice(uuid,uuid,uuid,text,boolean)', 'public',
+      'commit_rune_trial_choice', 'plpgsql', true, 'v', 'jsonb', 0,
+      'a622803213bf639775f8363a6c91c029'),
+    ('public.settle_match(uuid,text,uuid,integer,integer,integer,integer,jsonb,jsonb,jsonb,jsonb)',
+      'public', 'settle_match', 'plpgsql', true, 'v', 'jsonb', 0,
+      '2b34ae6429ae876839c20909e43cbf5a'),
+    ('public.match_action_result(uuid,uuid,uuid,boolean,integer,jsonb)', 'public',
+      'match_action_result', 'plpgsql', true, 's', 'jsonb', 0,
+      'd12d6153ad37b7f50b89b1d550e8ab39'),
+    ('public.commit_match_action(uuid,uuid,uuid,boolean,integer,smallint,smallint,timestamptz,jsonb,jsonb,smallint,smallint,jsonb,jsonb)',
+      'public', 'commit_match_action', 'plpgsql', true, 'v', 'jsonb', 1,
+      '058de4f7f07704b03f6737f4b9398bd6'),
+    ('private.purge_expired_rune_trial_commands(timestamptz,integer)', 'private',
+      'purge_expired_rune_trial_commands', 'plpgsql', false, 'v', 'integer', 1,
+      '89732767ac693a980498119d66e77c95')
+),
+catalog as (
+  select expected.*, p.oid, p.proowner, p.prosrc, p.proacl,
+         p.prosecdef, p.provolatile, p.prokind, p.pronargdefaults,
+         p.prorettype, p.proconfig, p.proname, namespace.nspname,
+         language.lanname, owner_role.rolname as owner_name
+    from expected
+    left join pg_proc p on p.oid = to_regprocedure(expected.signature)
+    left join pg_namespace namespace on namespace.oid = p.pronamespace
+    left join pg_language language on language.oid = p.prolang
+    left join pg_roles owner_role on owner_role.oid = p.proowner
+),
+access as (
+  select catalog.signature, coalesce(role.rolname, 'PUBLIC') as role_name,
+         acl.privilege_type, acl.is_grantable
+    from catalog
+    cross join lateral aclexplode(
+      coalesce(catalog.proacl, acldefault('f', catalog.proowner))
+    ) acl
+    left join pg_roles role on role.oid = acl.grantee
+   where catalog.oid is not null and acl.grantee <> catalog.proowner
+)
+select
+  (
+    select count(*) = 12
+      and bool_and(
+        oid is not null
+        and owner_name = 'postgres'
+        and nspname = schema_name
+        and proname = function_name
+        and lanname = language_name
+        and prosecdef = security_definer
+        and provolatile = volatility::"char"
+        and prokind = 'f'
+        and prorettype = to_regtype(return_type)
+        and pronargdefaults = argument_defaults
+        and proconfig = array['search_path=""']::text[]
+      )
+      from catalog
+  ) and (
+    select count(*) = 12
+      from pg_proc procedure
+      join pg_namespace namespace on namespace.oid = procedure.pronamespace
+     where (namespace.nspname, procedure.proname) in (
+       ('private', 'ranked_pool_tier_for_peak'),
+       ('public', 'acknowledge_rune_reward'),
+       ('public', 'enqueue_ranked_player_v2'),
+       ('public', 'start_ranked_match_v2'),
+       ('private', 'finalize_rune_trial_locked'),
+       ('private', 'rune_trial_payload'),
+       ('public', 'rune_trial_state'),
+       ('public', 'commit_rune_trial_choice'),
+       ('public', 'settle_match'),
+       ('public', 'match_action_result'),
+       ('public', 'commit_match_action'),
+       ('private', 'purge_expired_rune_trial_commands')
+     )
+  ) as function_contracts,
+  (select count(*) = 12 and bool_and(md5(prosrc) = body_md5) from catalog)
+    as function_bodies,
+  (
+    select count(*) = 8
+      and count(*) filter (
+        where signature = 'public.acknowledge_rune_reward(text)'
+          and role_name = 'authenticated'
+          and privilege_type = 'EXECUTE' and not is_grantable
+      ) = 1
+      and count(*) filter (
+        where signature in (
+          'public.enqueue_ranked_player_v2(uuid,smallint,text[])',
+          'public.start_ranked_match_v2(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text)',
+          'public.rune_trial_state(uuid,uuid)',
+          'public.commit_rune_trial_choice(uuid,uuid,uuid,text,boolean)',
+          'public.settle_match(uuid,text,uuid,integer,integer,integer,integer,jsonb,jsonb,jsonb,jsonb)',
+          'public.match_action_result(uuid,uuid,uuid,boolean,integer,jsonb)',
+          'public.commit_match_action(uuid,uuid,uuid,boolean,integer,smallint,smallint,timestamptz,jsonb,jsonb,smallint,smallint,jsonb,jsonb)'
+        )
+          and role_name = 'service_role'
+          and privilege_type = 'EXECUTE' and not is_grantable
+      ) = 7
+      from access
+  ) as function_grants;
+`;
+
+export const RUNE_TRIAL_JOB = String.raw`
+select
+  count(*) = 1 as cron_job,
+  count(*) filter (
+    where active
+      and schedule = '7 * * * *'
+      and database = current_database()
+      and username = 'postgres'
+      and nodename = 'localhost'
+      and nodeport = current_setting('port')::integer
+      and btrim(regexp_replace(command, '[[:space:]]+', ' ', 'g')) =
+        'select private.purge_expired_rune_trial_commands( clock_timestamp() - interval ''7 days'', 5000 );'
+  ) = 1 as cron_job_contract
+  from cron.job
+ where jobname = 'purge-expired-rune-trial-commands';
+`;
+
+export const RUNE_TRIAL_POST_APPLY_DATA = String.raw`
+with historical as (
+  select player, max(peak)::integer as peak
+    from public.season_ratings
+   group by player
+)
+select
+  not exists (
+    select 1
+      from public.profiles profile
+      join historical on historical.player = profile.id
+     where case profile.ranked_pool_tier
+       when 'stone' then 0 when 'bone' then 1 when 'ivory' then 2 else -1
+     end < case
+       when historical.peak >= 720 then 2
+       when historical.peak >= 300 then 1
+       else 0
+     end
+  ) as profile_backfill,
+  not exists (
+    select 1
+      from public.matches match
+     where match.format is distinct from 'standard'
+        or match.protocol_version is distinct from 1
+        or match.rune_rules_version is not null
+        or match.pool_tier is distinct from 'stone'
+        or match.phase is distinct from 'playing'
+        or match.trial_offer is not null
+        or match.p1_rune is not null
+        or match.p2_rune is not null
+        or match.selection_deadline is not null
+        or match.selection_version is distinct from 0
+        or match.action_version is distinct from 0
+        or match.pending_aim is not null
+  ) as legacy_matches,
+  not exists (
+    select 1
+      from public.matchmaking_queue queue
+     where queue.protocol_version is distinct from 1
+        or queue.capabilities is distinct from '{}'::text[]
+        or queue.pool_tier is distinct from 'stone'
+  ) as legacy_queue,
+  (
+    (select count(*) from public.player_runes) = 0
+    and (select count(*) from public.match_actions) = 0
+    and (select count(*) from private.rune_trial_choices) = 0
+    and (select count(*) from private.rune_trial_selection_commands) = 0
+    and (select count(*) from private.match_action_commands) = 0
+  ) as new_tables_empty;
+`;
+
 function usage(message, code = 64) {
   if (message) console.error(message);
-  console.error('Usage: mise exec -- node --experimental-strip-types tools/database/production-rollout.mjs <settings-locale|match-command-retention> [--apply]');
+  console.error('Usage: mise exec -- node --experimental-strip-types tools/database/production-rollout.mjs <settings-locale|match-command-retention|rune-trial> [--apply]');
   console.error(`Apply requires ${PROD_OPT_IN}=1.`);
   process.exitCode = code;
 }
@@ -361,6 +1015,68 @@ async function auditMatchCommandRetention() {
     evidence,
     schemaStage: validateMatchCommandRetentionSchemaStage(evidence),
   };
+}
+
+export async function auditRuneTrial(readProduction = productionRead) {
+  const schemaRows = await readProduction(RUNE_TRIAL_SCHEMA);
+  if (schemaRows.length !== 1) {
+    throw new Error('Production Rune Trial schema audit returned an unexpected shape.');
+  }
+  const schema = schemaRows[0];
+  if (schema.cron_extension !== true) {
+    throw new Error('Rune Trial rollout requires the already-reviewed pg_cron extension.');
+  }
+
+  const functionRows = await readProduction(RUNE_TRIAL_FUNCTIONS);
+  if (functionRows.length !== 1) {
+    throw new Error('Production Rune Trial function audit returned an unexpected shape.');
+  }
+  const functions = functionRows[0];
+  const jobRows = await readProduction(RUNE_TRIAL_JOB);
+  if (jobRows.length !== 1) {
+    throw new Error('Production Rune Trial cron audit returned an unexpected shape.');
+  }
+  const job = jobRows[0];
+  const evidence = {
+    profileProgression: schema.profile_progression === true,
+    matchProtocol: schema.match_protocol === true,
+    queueProtocol: schema.queue_protocol === true,
+    playerRunesTable: schema.player_runes_table === true,
+    matchActionsTable: schema.match_actions_table === true,
+    privateTables: schema.private_tables === true,
+    indexes: schema.indexes === true,
+    policies: schema.policies === true,
+    tableGrants: schema.table_grants === true,
+    privateTablesLocked: schema.private_tables_locked === true,
+    functionContracts: functions.function_contracts === true,
+    functionBodies: functions.function_bodies === true,
+    functionGrants: functions.function_grants === true,
+    realtimePublication: schema.realtime_publication === true,
+    cronJob: job.cron_job === true,
+    cronJobContract: job.cron_job_contract === true,
+  };
+  return {
+    evidence,
+    schemaStage: validateRuneTrialSchemaStage(evidence),
+  };
+}
+
+export async function auditRuneTrialPostApplyData(readProduction = productionRead) {
+  const rows = await readProduction(RUNE_TRIAL_POST_APPLY_DATA);
+  if (rows.length !== 1) {
+    throw new Error('Production Rune Trial post-apply data audit returned an unexpected shape.');
+  }
+  const row = rows[0];
+  const evidence = {
+    profileBackfill: row.profile_backfill === true,
+    legacyMatches: row.legacy_matches === true,
+    legacyQueue: row.legacy_queue === true,
+    newTablesEmpty: row.new_tables_empty === true,
+  };
+  if (Object.values(evidence).some(value => value !== true)) {
+    throw new Error('Production Rune Trial post-apply data is not at the exact pre-function baseline.');
+  }
+  return evidence;
 }
 
 function sha256(value) {
@@ -477,6 +1193,8 @@ async function auditProduction(rollout) {
     audited = await auditPlayerSettings(plan, rollout);
   } else if (rollout.audit === 'match-command-retention') {
     audited = await auditMatchCommandRetention();
+  } else if (rollout.audit === 'rune-trial') {
+    audited = await auditRuneTrial();
   } else {
     throw new Error(`Unknown production schema audit: ${String(rollout.audit)}.`);
   }
@@ -584,11 +1302,15 @@ async function main() {
       if (after.plan.pending.length) {
         throw new Error('Production still reports pending rollout migrations.');
       }
+      const postApplyData = rollout.audit === 'rune-trial'
+        ? await auditRuneTrialPostApplyData()
+        : undefined;
       process.stdout.write(JSON.stringify({
         rollout: rolloutName,
         status: 'applied',
         migrations: immediatelyBefore.plan.pending.map(({ file }) => path.basename(file)),
         checks: after.evidence,
+        ...(postApplyData ? { postApplyData } : {}),
       }, null, 2) + '\n');
     },
   );

@@ -16,6 +16,9 @@ import {
   withTemporaryWorkspace,
 } from '../tools/database/production-rollout-core.mjs';
 import { runProductionMigrationSchemaCases } from './support/production-migration-schema-cases.ts';
+import {
+  runRuneTrialProductionMigrationCases,
+} from './support/rune-trial-production-migration-cases.ts';
 
 const BASE = '20260823192604_player_settings.sql';
 const LOCALE = '20260824133121_player_settings_locale.sql';
@@ -257,6 +260,8 @@ check('apply opt-in and repeated audit plan both fail closed', () => {
     /changed during planning/,
   );
 });
+
+runRuneTrialProductionMigrationCases({ check, guarded });
 
 runProductionMigrationSchemaCases({
   check,

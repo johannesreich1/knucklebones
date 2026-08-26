@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(57);
+select plan(59);
 
 select is(private.ranked_pool_tier_for_peak(299), 'stone',
   'STONE owns peaks below 300');
@@ -17,15 +17,33 @@ select ok(not has_table_privilege('authenticated', 'public.player_runes', 'inser
   'clients cannot award themselves runes');
 select ok(not has_table_privilege('authenticated', 'public.player_runes', 'update'),
   'clients cannot mutate reward metadata directly');
-select ok(
-  has_table_privilege('service_role', 'public.player_runes', 'insert')
-  and has_table_privilege('service_role', 'public.player_runes', 'update'),
-  'the settlement service can persist and acknowledge reward metadata'
-);
+select ok(not (
+  has_table_privilege('service_role', 'public.player_runes', 'select')
+  or has_table_privilege('service_role', 'public.player_runes', 'insert')
+  or has_table_privilege('service_role', 'public.player_runes', 'update')
+  or has_table_privilege('service_role', 'public.player_runes', 'delete')
+), 'the service role reaches rune rewards only through validated RPCs');
+select ok(not (
+  has_table_privilege('service_role', 'public.player_runes', 'truncate')
+  or has_table_privilege('service_role', 'public.player_runes', 'references')
+  or has_table_privilege('service_role', 'public.player_runes', 'trigger')
+  or has_table_privilege('service_role', 'public.player_runes', 'maintain')
+), 'the settlement service has no schema-administration privileges');
 select ok(has_table_privilege('authenticated', 'public.match_actions', 'select'),
   'participants can read the public protocol-v2 action log');
 select ok(not has_table_privilege('authenticated', 'public.match_actions', 'insert'),
   'clients cannot append authoritative actions directly');
+select ok(
+  has_table_privilege('service_role', 'public.match_actions', 'select')
+  and not has_table_privilege('service_role', 'public.match_actions', 'insert')
+  and not has_table_privilege('service_role', 'public.match_actions', 'update')
+  and not has_table_privilege('service_role', 'public.match_actions', 'delete')
+  and not has_table_privilege('service_role', 'public.match_actions', 'truncate')
+  and not has_table_privilege('service_role', 'public.match_actions', 'references')
+  and not has_table_privilege('service_role', 'public.match_actions', 'trigger')
+  and not has_table_privilege('service_role', 'public.match_actions', 'maintain'),
+  'the action service can read replay rows but cannot forge or administer them'
+);
 select ok(not has_table_privilege('authenticated', 'private.rune_trial_choices', 'select'),
   'private choices are not directly readable by clients');
 select ok(has_function_privilege(

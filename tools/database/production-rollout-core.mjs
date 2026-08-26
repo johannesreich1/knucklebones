@@ -21,6 +21,24 @@ const MATCH_COMMAND_RETENTION_FIELDS = Object.freeze([
   'cronJob',
   'cronJobContract',
 ]);
+const RUNE_TRIAL_FIELDS = Object.freeze([
+  'profileProgression',
+  'matchProtocol',
+  'queueProtocol',
+  'playerRunesTable',
+  'matchActionsTable',
+  'privateTables',
+  'indexes',
+  'policies',
+  'tableGrants',
+  'privateTablesLocked',
+  'functionContracts',
+  'functionBodies',
+  'functionGrants',
+  'realtimePublication',
+  'cronJob',
+  'cronJobContract',
+]);
 
 export class ProductionRolloutGuardError extends Error {
   constructor(message) {
@@ -386,4 +404,24 @@ export function validateMatchCommandRetentionSchemaStage(metadata) {
   if (owned.every(value => value === false)) return 0;
   if (metadata.cronExtension && owned.every(value => value === true)) return 1;
   fail('Match-command retention schema or cron job is partial.');
+}
+
+/**
+ * Validate the Rune Trial v2 database surface as absent or complete. Every
+ * migration-owned table, column, constraint, index, policy, grant, function,
+ * function body, publication member, and cron job must move together.
+ */
+export function validateRuneTrialSchemaStage(metadata) {
+  if (!isObject(metadata)) fail('Rune Trial metadata must be an object.');
+  assertOnlyKeys(metadata, RUNE_TRIAL_FIELDS, 'Rune Trial metadata');
+  for (const field of RUNE_TRIAL_FIELDS) {
+    if (typeof metadata[field] !== 'boolean') {
+      fail(`Rune Trial metadata field ${field} must be boolean.`);
+    }
+  }
+
+  const values = RUNE_TRIAL_FIELDS.map(field => metadata[field]);
+  if (values.every(value => value === false)) return 0;
+  if (values.every(value => value === true)) return 1;
+  fail('Rune Trial schema, security boundary, function contract, or cron job is partial.');
 }

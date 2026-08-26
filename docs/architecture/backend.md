@@ -53,6 +53,10 @@ only committed manifest files, requires an exact dry run, applies through the
 official pinned CLI, and validates history plus schema afterward. See
 `tools/database/README.md`. Never use `--include-all` from the repository root
 to work around a history mismatch; that can cross a deliberately held rollout.
+The Rune Trial rollout is the explicit `rune-trial` selection (or
+`npm run db:production:rune-trial`), never an arbitrary filename passed by a
+caller. Its committed hash and post-deploy catalog/security/data contract are
+fixed in the tool before the database owner opts in to the apply.
 
 For a disposable local database, `supabase migration down --local --last 1`
 can step back and `supabase migration up --local` can reapply pending files;

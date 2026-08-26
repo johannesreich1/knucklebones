@@ -65,6 +65,8 @@ export const GATE_SUITES = Object.freeze([
   typed('i18n-length-report'),
   typed('legal'),
   typed('production-migrations'),
+  typed('production-functions'),
+  typed('production-test-data'),
   typed('dice'),
   typed('match'),
   typed('modes'),
@@ -134,6 +136,7 @@ export const CI_SHARDS = Object.freeze({
     'test13', 'test21', 'bench3', 'rune-matchups', 'gate-lock', 'gcauth',
     'apple-identity', 'i18n-length-report', 'spell-ai', 'modes',
     'production-migrations', 'native-startup', 'trial-snapshot',
+    'production-functions', 'production-test-data',
   ]),
 });
 

@@ -176,9 +176,9 @@ create policy player_runes_select_own on public.player_runes
   for select to authenticated
   using (player_id = (select auth.uid()));
 
-revoke all on table public.player_runes from public, anon, authenticated;
+revoke all on table public.player_runes
+  from public, anon, authenticated, service_role;
 grant select on table public.player_runes to authenticated;
-grant select, insert, update, delete on table public.player_runes to service_role;
 
 create table public.match_actions (
   match_id uuid not null references public.matches(id) on delete cascade,
@@ -234,9 +234,10 @@ create policy match_actions_select_participant on public.match_actions
     )
   );
 
-revoke all on table public.match_actions from public, anon, authenticated;
+revoke all on table public.match_actions
+  from public, anon, authenticated, service_role;
 grant select on table public.match_actions to authenticated;
-grant select, insert, update, delete on table public.match_actions to service_role;
+grant select on table public.match_actions to service_role;
 
 alter publication supabase_realtime add table public.match_actions;
 
