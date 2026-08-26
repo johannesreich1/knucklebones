@@ -1,0 +1,341 @@
+<!-- meta name="S4 — Running cuts" group="4i · The rune shuffle" subtitle="Hindu-style strip cuts on the table: three two-card strips milked off the BOTTOM of the squared deck, each hung a beat and slapped onto a new pile — pull–slap ×3, then the pile fans back out; shuffle ~2.9s, whole beat ~4.4s (today: 1.25s / 2.9s)" width=430 height=1300 sizes="md" links="Offline — local play, Spells" -->
+<style>
+  /* Card-local names only (shd*). The stage is card 28's: the app's own
+     reveal overlay classes, the app's own felt token — nothing is dealt,
+     this study pictures the SHUFFLE. Cards are animated through compound
+     selectors (.shd .rcard:nth-child(N)) and only ever override translate,
+     rotate and z-index; opacity is pinned to 1 below, matching the deck the
+     player actually watches. */
+  .scr{align-items:center;justify-content:center;gap:12px}
+  #ovWheel{--card:76px;position:relative;height:520px;box-sizing:border-box;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:16px 0 4px}
+  .wblurb{max-width:262px}
+
+  /* fanIn() animates each card to opacity:1 with fill:'both' — the riffling
+     deck is FULLY OPAQUE; the CSS resting .62 is only the pre-fan still. */
+  .shd .rcard{opacity:1}
+
+  /* ===== S4 · RUNNING CUTS =====================================
+     One hand holds the squared deck at the LEFT; the free hand milks a
+     two-card strip off the BOTTOM, carries it right, hangs a beat, and
+     SLAPS it onto a growing pile — three times. Bottom pulls keep the pile
+     honest with DOM paint alone: a strip in flight always paints UNDER the
+     deck it left (it came from the bottom) and OVER the pile it joins, and
+     the finished pile is [1..6] bottom-to-top — which is exactly why the
+     old loop composed to identity. The re-order lives in the REFAN: the
+     pile is DEALT OFF THE TOP, left to right, each card placed on top of
+     the one before — a deal-off spread REVERSES the deck. SIGMA is the
+     mechanic's own answer: card n lands in slot 7−n (all six move), and a
+     reversal is an involution, so the SECOND pass is the same running cut
+     again and carries every card home. Foreign-slot stacking is handed
+     over per card with z-index (base z-index:n from DOM order; z-index:m
+     while resting in or flying into foreign slot m — it steps discretely
+     mid-flight, between the pull and the arc apex, never at a rest).
+
+     LOOP 10000ms → 1% = 100ms. TWO passes of the same running cut, each
+     playing the proposed beats 1:1 (SQUARE 280 · CUT 700 ×3 · REFAN 550 =
+     shuffle 2930ms — the beat strip below stays the app-side proposal):
+       0–2%          0–200      home rest fan (tail of the hold; the seam)
+       2–5.5%        200–550    GATHER ≈ SQUARE 280 · fan sweeps closed right-to-left
+       5.75–12.75%   575–1275   CUT 1 = 700 · strip 1+2: pull 325 · hang 160 · SLAP 70 · settle 145
+       12.75–19.75%  1275–1975  CUT 2 = 700 · strip 3+4; the pile compresses under the slap
+       19.75–26.75%  1975–2675  CUT 3 = 700 · strip 5+6 (the whole remainder, on top)
+       27.5–32.5%    2750–3250  REFAN A ≈ 550 · pile dealt off the TOP, laid left→right:
+                                full reversal — card n lands slot 7−n, z-index m
+       32.5–45.5%    3250–4550  PERMUTED REST (13%) — same fan, runes in new places
+       45.5–49%      4550–4900  GATHER B (the permuted fan squares up)
+       49.25–56.25%  4925–5625  CUT 1' · bottom strip is now cards 6+5
+       56.25–63.25%  5625–6325  CUT 2' · cards 4+3
+       63.25–70.25%  6325–7025  CUT 3' · cards 2+1
+       71–76%        7100–7600  REFAN B ≈ 550 · the same deal-off reverses again — home
+       76–100%       7600–10000 home rest fan (26% with the 0–2% head)
+     Easing: slow pull (long in-out), near-vertical drop for the slap
+     (cubic-bezier(.7,0,1,.55)), +4px overshoot into the landing. Source
+     deck settles down 2px each time a strip leaves its bottom; the tabled
+     pile dips 1.5px under each slap. Phase B is phase A with the roles
+     mirrored (card n plays card 7−n's slot part), so both passes look like
+     the same pair of hands. Every card starts and ends the loop at its
+     inline rest pose (var(--x)/var(--y)/var(--o)) with its own z-index. */
+
+  .shd .rcard:nth-child(1){z-index:1;animation:shd-c1 10s linear infinite}
+  .shd .rcard:nth-child(2){z-index:2;animation:shd-c2 10s linear infinite}
+  .shd .rcard:nth-child(3){z-index:3;animation:shd-c3 10s linear infinite}
+  .shd .rcard:nth-child(4){z-index:4;animation:shd-c4 10s linear infinite}
+  .shd .rcard:nth-child(5){z-index:5;animation:shd-c5 10s linear infinite}
+  .shd .rcard:nth-child(6){z-index:6;animation:shd-c6 10s linear infinite}
+
+  /* card 1 — strip 1 leader in pass A; dealt LAST off pile A → slot 6;
+     plays card 6's part in pass B (top strip), first card dealt home */
+  @keyframes shd-c1{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:1}
+    3.25%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.4,.08,.3,1)}
+    5.5%{translate:-54% 0px;rotate:-2deg}
+    5.75%{translate:-54% 0px;rotate:-2deg;animation-timing-function:cubic-bezier(.55,.05,.55,.95)}
+    7.5%{translate:-18% 2px;rotate:2deg;animation-timing-function:cubic-bezier(.3,.4,.25,1)}
+    9%{translate:9% -24px;rotate:8deg;animation-timing-function:ease-in-out}
+    10.6%{translate:11% -26px;rotate:8.5deg;animation-timing-function:cubic-bezier(.7,0,1,.55)}
+    11.3%{translate:50% 18px;rotate:-2.5deg;animation-timing-function:cubic-bezier(.2,.85,.3,1)}
+    12%{translate:50% 13.4px;rotate:-2.5deg;animation-timing-function:ease-out}
+    12.75%{translate:50% 14px;rotate:-2.5deg}
+    18.3%{translate:50% 14px;rotate:-2.5deg;animation-timing-function:ease-out}
+    18.7%{translate:50% 15.5px;rotate:-2.5deg;animation-timing-function:ease-out}
+    19.5%{translate:50% 14px;rotate:-2.5deg}
+    25.3%{translate:50% 14px;rotate:-2.5deg;animation-timing-function:ease-out}
+    25.7%{translate:50% 15.5px;rotate:-2.5deg;animation-timing-function:ease-out}
+    26.5%{translate:50% 14px;rotate:-2.5deg}
+    30.25%{translate:50% 14px;rotate:-2.5deg;z-index:1;animation-timing-function:cubic-bezier(.45,.1,.6,1)}
+    31.375%{translate:75% -18px;rotate:5deg;z-index:6;animation-timing-function:cubic-bezier(.25,.6,.2,1)}
+    32.5%{translate:95% -5px;rotate:13.75deg;z-index:6}
+    45.5%{translate:95% -5px;rotate:13.75deg;z-index:6;animation-timing-function:cubic-bezier(.4,.08,.3,1)}
+    47.75%{translate:-50.5% -5px;rotate:1deg}
+    53.1%{translate:-50.5% -5px;rotate:1deg;animation-timing-function:ease-out}
+    54.35%{translate:-50.5% -3px;rotate:1.5deg}
+    60.1%{translate:-50.5% -3px;rotate:1.5deg;animation-timing-function:ease-out}
+    61.35%{translate:-50.5% -1px;rotate:1deg}
+    63.6%{translate:-50.5% -1px;rotate:1deg;animation-timing-function:cubic-bezier(.55,.05,.55,.95)}
+    65.35%{translate:-14% 0px;rotate:3deg;animation-timing-function:cubic-bezier(.3,.4,.25,1)}
+    66.85%{translate:11% -28px;rotate:10deg;animation-timing-function:ease-in-out}
+    68.45%{translate:13% -30px;rotate:10.5deg;animation-timing-function:cubic-bezier(.7,0,1,.55)}
+    69.15%{translate:52% 9px;rotate:0deg;animation-timing-function:cubic-bezier(.2,.85,.3,1)}
+    69.85%{translate:52% 4.4px;rotate:0deg;animation-timing-function:ease-out}
+    70.6%{translate:52% 5px;rotate:0deg}
+    71%{translate:52% 5px;rotate:0deg;z-index:6;animation-timing-function:cubic-bezier(.45,.1,.6,1)}
+    72.125%{translate:-20% -26px;rotate:-8deg;z-index:1;animation-timing-function:cubic-bezier(.25,.6,.2,1)}
+    73.25%{translate:var(--x) var(--y);rotate:var(--o);z-index:1}
+    100%{translate:var(--x) var(--y);rotate:var(--o);z-index:1}
+  }
+  /* card 2 — strip 1 upper card in pass A; dealt fifth → slot 5;
+     plays card 5's part in pass B (strip 3 leader) */
+  @keyframes shd-c2{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:2}
+    3%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.4,.08,.3,1)}
+    5.25%{translate:-51% -1px;rotate:1.5deg}
+    6.1%{translate:-51% -1px;rotate:1.5deg;animation-timing-function:cubic-bezier(.55,.05,.55,.95)}
+    7.85%{translate:-16% 1px;rotate:3deg;animation-timing-function:cubic-bezier(.3,.4,.25,1)}
+    9.35%{translate:11% -26px;rotate:9.5deg;animation-timing-function:ease-in-out}
+    10.95%{translate:13% -28px;rotate:10deg;animation-timing-function:cubic-bezier(.7,0,1,.55)}
+    11.65%{translate:52.5% 17px;rotate:-1deg;animation-timing-function:cubic-bezier(.2,.85,.3,1)}
+    12.35%{translate:52.5% 12.4px;rotate:-1deg;animation-timing-function:ease-out}
+    13.1%{translate:52.5% 13px;rotate:-1deg}
+    18.3%{translate:52.5% 13px;rotate:-1deg;animation-timing-function:ease-out}
+    18.7%{translate:52.5% 14.5px;rotate:-1deg;animation-timing-function:ease-out}
+    19.5%{translate:52.5% 13px;rotate:-1deg}
+    25.3%{translate:52.5% 13px;rotate:-1deg;animation-timing-function:ease-out}
+    25.7%{translate:52.5% 14.5px;rotate:-1deg;animation-timing-function:ease-out}
+    26.5%{translate:52.5% 13px;rotate:-1deg}
+    29.7%{translate:52.5% 13px;rotate:-1deg;z-index:2;animation-timing-function:cubic-bezier(.45,.1,.6,1)}
+    30.825%{translate:56% -16px;rotate:3deg;z-index:5;animation-timing-function:cubic-bezier(.25,.6,.2,1)}
+    31.95%{translate:57% -4px;rotate:8.25deg;z-index:5}
+    45.75%{translate:57% -4px;rotate:8.25deg;z-index:5;animation-timing-function:cubic-bezier(.4,.08,.3,1)}
+    48%{translate:-52.5% -4px;rotate:-1.5deg}
+    52.75%{translate:-52.5% -4px;rotate:-1.5deg;animation-timing-function:ease-out}
+    54%{translate:-52.5% -2px;rotate:-.8deg}
+    59.75%{translate:-52.5% -2px;rotate:-.8deg;animation-timing-function:ease-out}
+    61%{translate:-52.5% 0px;rotate:-2deg}
+    63.25%{translate:-52.5% 0px;rotate:-2deg;animation-timing-function:cubic-bezier(.55,.05,.55,.95)}
+    65%{translate:-16% 1px;rotate:2deg;animation-timing-function:cubic-bezier(.3,.4,.25,1)}
+    66.5%{translate:9% -26px;rotate:8.5deg;animation-timing-function:ease-in-out}
+    68.1%{translate:11% -28px;rotate:9deg;animation-timing-function:cubic-bezier(.7,0,1,.55)}
+    68.8%{translate:50.5% 10px;rotate:-1.5deg;animation-timing-function:cubic-bezier(.2,.85,.3,1)}
+    69.5%{translate:50.5% 5.4px;rotate:-1.5deg;animation-timing-function:ease-out}
+    70.25%{translate:50.5% 6px;rotate:-1.5deg}
+    71.55%{translate:50.5% 6px;rotate:-1.5deg;z-index:5;animation-timing-function:cubic-bezier(.45,.1,.6,1)}
+    72.675%{translate:0% -24px;rotate:0deg;z-index:2;animation-timing-function:cubic-bezier(.25,.6,.2,1)}
+    73.8%{translate:var(--x) var(--y);rotate:var(--o);z-index:2}
+    100%{translate:var(--x) var(--y);rotate:var(--o);z-index:2}
+  }
+  /* card 3 — strip 2 leader in pass A; dealt fourth → slot 4;
+     plays card 4's part in pass B (strip 2 upper card) */
+  @keyframes shd-c3{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:3}
+    2.75%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.4,.08,.3,1)}
+    5%{translate:-53% -2px;rotate:-1deg}
+    9.25%{translate:-53% -2px;rotate:-1deg;animation-timing-function:ease-out}
+    10.5%{translate:-53% 0px;rotate:-1.8deg}
+    12.75%{translate:-53% 0px;rotate:-1.8deg;animation-timing-function:cubic-bezier(.55,.05,.55,.95)}
+    14.5%{translate:-18% 2px;rotate:2.5deg;animation-timing-function:cubic-bezier(.3,.4,.25,1)}
+    16%{translate:8.5% -24px;rotate:8deg;animation-timing-function:ease-in-out}
+    17.6%{translate:10.5% -26px;rotate:8.5deg;animation-timing-function:cubic-bezier(.7,0,1,.55)}
+    18.3%{translate:51% 14px;rotate:2deg;animation-timing-function:cubic-bezier(.2,.85,.3,1)}
+    19%{translate:51% 9.4px;rotate:2deg;animation-timing-function:ease-out}
+    19.75%{translate:51% 10px;rotate:2deg}
+    25.3%{translate:51% 10px;rotate:2deg;animation-timing-function:ease-out}
+    25.7%{translate:51% 11.5px;rotate:2deg;animation-timing-function:ease-out}
+    26.5%{translate:51% 10px;rotate:2deg}
+    29.15%{translate:51% 10px;rotate:2deg;z-index:3;animation-timing-function:cubic-bezier(.45,.1,.6,1)}
+    30.275%{translate:33% -20px;rotate:3deg;z-index:4;animation-timing-function:cubic-bezier(.25,.6,.2,1)}
+    31.4%{translate:19% -3px;rotate:2.75deg;z-index:4}
+    46%{translate:19% -3px;rotate:2.75deg;z-index:4;animation-timing-function:cubic-bezier(.4,.08,.3,1)}
+    48.25%{translate:-51% -3px;rotate:2deg}
+    53.1%{translate:-51% -3px;rotate:2deg;animation-timing-function:ease-out}
+    54.35%{translate:-51% -1px;rotate:2.8deg}
+    56.6%{translate:-51% -1px;rotate:2.8deg;animation-timing-function:cubic-bezier(.55,.05,.55,.95)}
+    58.35%{translate:-16% 1px;rotate:3.5deg;animation-timing-function:cubic-bezier(.3,.4,.25,1)}
+    59.85%{translate:10.5% -26px;rotate:9.5deg;animation-timing-function:ease-in-out}
+    61.45%{translate:12.5% -28px;rotate:10deg;animation-timing-function:cubic-bezier(.7,0,1,.55)}
+    62.15%{translate:53% 13px;rotate:3deg;animation-timing-function:cubic-bezier(.2,.85,.3,1)}
+    62.85%{translate:53% 8.4px;rotate:3deg;animation-timing-function:ease-out}
+    63.6%{translate:53% 9px;rotate:3deg}
+    68.8%{translate:53% 9px;rotate:3deg;animation-timing-function:ease-out}
+    69.2%{translate:53% 10.5px;rotate:3deg;animation-timing-function:ease-out}
+    70%{translate:53% 9px;rotate:3deg}
+    72.1%{translate:53% 9px;rotate:3deg;z-index:4;animation-timing-function:cubic-bezier(.45,.1,.6,1)}
+    73.225%{translate:15% -22px;rotate:0deg;z-index:3;animation-timing-function:cubic-bezier(.25,.6,.2,1)}
+    74.35%{translate:var(--x) var(--y);rotate:var(--o);z-index:3}
+    100%{translate:var(--x) var(--y);rotate:var(--o);z-index:3}
+  }
+  /* card 4 — strip 2 upper card in pass A; dealt third → slot 3;
+     plays card 3's part in pass B (strip 2 leader) */
+  @keyframes shd-c4{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:4}
+    2.5%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.4,.08,.3,1)}
+    4.75%{translate:-51% -3px;rotate:2deg}
+    9.6%{translate:-51% -3px;rotate:2deg;animation-timing-function:ease-out}
+    10.85%{translate:-51% -1px;rotate:2.8deg}
+    13.1%{translate:-51% -1px;rotate:2.8deg;animation-timing-function:cubic-bezier(.55,.05,.55,.95)}
+    14.85%{translate:-16% 1px;rotate:3.5deg;animation-timing-function:cubic-bezier(.3,.4,.25,1)}
+    16.35%{translate:10.5% -26px;rotate:9.5deg;animation-timing-function:ease-in-out}
+    17.95%{translate:12.5% -28px;rotate:10deg;animation-timing-function:cubic-bezier(.7,0,1,.55)}
+    18.65%{translate:53% 13px;rotate:3deg;animation-timing-function:cubic-bezier(.2,.85,.3,1)}
+    19.35%{translate:53% 8.4px;rotate:3deg;animation-timing-function:ease-out}
+    20.1%{translate:53% 9px;rotate:3deg}
+    25.3%{translate:53% 9px;rotate:3deg;animation-timing-function:ease-out}
+    25.7%{translate:53% 10.5px;rotate:3deg;animation-timing-function:ease-out}
+    26.5%{translate:53% 9px;rotate:3deg}
+    28.6%{translate:53% 9px;rotate:3deg;z-index:4;animation-timing-function:cubic-bezier(.45,.1,.6,1)}
+    29.725%{translate:15% -22px;rotate:0deg;z-index:3;animation-timing-function:cubic-bezier(.25,.6,.2,1)}
+    30.85%{translate:-19% -2px;rotate:-2.75deg;z-index:3}
+    46.25%{translate:-19% -2px;rotate:-2.75deg;z-index:3;animation-timing-function:cubic-bezier(.4,.08,.3,1)}
+    48.5%{translate:-53% -2px;rotate:-1deg}
+    52.75%{translate:-53% -2px;rotate:-1deg;animation-timing-function:ease-out}
+    54%{translate:-53% 0px;rotate:-1.8deg}
+    56.25%{translate:-53% 0px;rotate:-1.8deg;animation-timing-function:cubic-bezier(.55,.05,.55,.95)}
+    58%{translate:-18% 2px;rotate:2.5deg;animation-timing-function:cubic-bezier(.3,.4,.25,1)}
+    59.5%{translate:8.5% -24px;rotate:8deg;animation-timing-function:ease-in-out}
+    61.1%{translate:10.5% -26px;rotate:8.5deg;animation-timing-function:cubic-bezier(.7,0,1,.55)}
+    61.8%{translate:51% 14px;rotate:2deg;animation-timing-function:cubic-bezier(.2,.85,.3,1)}
+    62.5%{translate:51% 9.4px;rotate:2deg;animation-timing-function:ease-out}
+    63.25%{translate:51% 10px;rotate:2deg}
+    68.8%{translate:51% 10px;rotate:2deg;animation-timing-function:ease-out}
+    69.2%{translate:51% 11.5px;rotate:2deg;animation-timing-function:ease-out}
+    70%{translate:51% 10px;rotate:2deg}
+    72.65%{translate:51% 10px;rotate:2deg;z-index:3;animation-timing-function:cubic-bezier(.45,.1,.6,1)}
+    73.775%{translate:33% -20px;rotate:3deg;z-index:4;animation-timing-function:cubic-bezier(.25,.6,.2,1)}
+    74.9%{translate:var(--x) var(--y);rotate:var(--o);z-index:4}
+    100%{translate:var(--x) var(--y);rotate:var(--o);z-index:4}
+  }
+  /* card 5 — strip 3 leader in pass A; dealt second → slot 2;
+     plays card 2's part in pass B (strip 1 upper card) */
+  @keyframes shd-c5{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:5}
+    2.25%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.4,.08,.3,1)}
+    4.5%{translate:-52.5% -4px;rotate:-1.5deg}
+    9.25%{translate:-52.5% -4px;rotate:-1.5deg;animation-timing-function:ease-out}
+    10.5%{translate:-52.5% -2px;rotate:-.8deg}
+    16.25%{translate:-52.5% -2px;rotate:-.8deg;animation-timing-function:ease-out}
+    17.5%{translate:-52.5% 0px;rotate:-2deg}
+    19.75%{translate:-52.5% 0px;rotate:-2deg;animation-timing-function:cubic-bezier(.55,.05,.55,.95)}
+    21.5%{translate:-16% 1px;rotate:2deg;animation-timing-function:cubic-bezier(.3,.4,.25,1)}
+    23%{translate:9% -26px;rotate:8.5deg;animation-timing-function:ease-in-out}
+    24.6%{translate:11% -28px;rotate:9deg;animation-timing-function:cubic-bezier(.7,0,1,.55)}
+    25.3%{translate:50.5% 10px;rotate:-1.5deg;animation-timing-function:cubic-bezier(.2,.85,.3,1)}
+    26%{translate:50.5% 5.4px;rotate:-1.5deg;animation-timing-function:ease-out}
+    26.75%{translate:50.5% 6px;rotate:-1.5deg}
+    28.05%{translate:50.5% 6px;rotate:-1.5deg;z-index:5;animation-timing-function:cubic-bezier(.45,.1,.6,1)}
+    29.175%{translate:0% -24px;rotate:0deg;z-index:2;animation-timing-function:cubic-bezier(.25,.6,.2,1)}
+    30.3%{translate:-57% -1px;rotate:-8.25deg;z-index:2}
+    46.5%{translate:-57% -1px;rotate:-8.25deg;z-index:2;animation-timing-function:cubic-bezier(.4,.08,.3,1)}
+    48.75%{translate:-51% -1px;rotate:1.5deg}
+    49.6%{translate:-51% -1px;rotate:1.5deg;animation-timing-function:cubic-bezier(.55,.05,.55,.95)}
+    51.35%{translate:-16% 1px;rotate:3deg;animation-timing-function:cubic-bezier(.3,.4,.25,1)}
+    52.85%{translate:11% -26px;rotate:9.5deg;animation-timing-function:ease-in-out}
+    54.45%{translate:13% -28px;rotate:10deg;animation-timing-function:cubic-bezier(.7,0,1,.55)}
+    55.15%{translate:52.5% 17px;rotate:-1deg;animation-timing-function:cubic-bezier(.2,.85,.3,1)}
+    55.85%{translate:52.5% 12.4px;rotate:-1deg;animation-timing-function:ease-out}
+    56.6%{translate:52.5% 13px;rotate:-1deg}
+    61.8%{translate:52.5% 13px;rotate:-1deg;animation-timing-function:ease-out}
+    62.2%{translate:52.5% 14.5px;rotate:-1deg;animation-timing-function:ease-out}
+    63%{translate:52.5% 13px;rotate:-1deg}
+    68.8%{translate:52.5% 13px;rotate:-1deg;animation-timing-function:ease-out}
+    69.2%{translate:52.5% 14.5px;rotate:-1deg;animation-timing-function:ease-out}
+    70%{translate:52.5% 13px;rotate:-1deg}
+    73.2%{translate:52.5% 13px;rotate:-1deg;z-index:2;animation-timing-function:cubic-bezier(.45,.1,.6,1)}
+    74.325%{translate:56% -16px;rotate:3deg;z-index:5;animation-timing-function:cubic-bezier(.25,.6,.2,1)}
+    75.45%{translate:var(--x) var(--y);rotate:var(--o);z-index:5}
+    100%{translate:var(--x) var(--y);rotate:var(--o);z-index:5}
+  }
+  /* card 6 — strip 3 upper card in pass A; tops pile A, dealt FIRST → slot 1;
+     plays card 1's part in pass B (strip 1 leader), last card dealt home */
+  @keyframes shd-c6{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:6}
+    2%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.4,.08,.3,1)}
+    4.25%{translate:-50.5% -5px;rotate:1deg}
+    9.6%{translate:-50.5% -5px;rotate:1deg;animation-timing-function:ease-out}
+    10.85%{translate:-50.5% -3px;rotate:1.5deg}
+    16.6%{translate:-50.5% -3px;rotate:1.5deg;animation-timing-function:ease-out}
+    17.85%{translate:-50.5% -1px;rotate:1deg}
+    20.1%{translate:-50.5% -1px;rotate:1deg;animation-timing-function:cubic-bezier(.55,.05,.55,.95)}
+    21.85%{translate:-14% 0px;rotate:3deg;animation-timing-function:cubic-bezier(.3,.4,.25,1)}
+    23.35%{translate:11% -28px;rotate:10deg;animation-timing-function:ease-in-out}
+    24.95%{translate:13% -30px;rotate:10.5deg;animation-timing-function:cubic-bezier(.7,0,1,.55)}
+    25.65%{translate:52% 9px;rotate:0deg;animation-timing-function:cubic-bezier(.2,.85,.3,1)}
+    26.35%{translate:52% 4.4px;rotate:0deg;animation-timing-function:ease-out}
+    27.1%{translate:52% 5px;rotate:0deg}
+    27.5%{translate:52% 5px;rotate:0deg;z-index:6;animation-timing-function:cubic-bezier(.45,.1,.6,1)}
+    28.625%{translate:-20% -26px;rotate:-8deg;z-index:1;animation-timing-function:cubic-bezier(.25,.6,.2,1)}
+    29.75%{translate:-95% 0px;rotate:-13.75deg;z-index:1}
+    46.75%{translate:-95% 0px;rotate:-13.75deg;z-index:1;animation-timing-function:cubic-bezier(.4,.08,.3,1)}
+    49%{translate:-54% 0px;rotate:-2deg}
+    49.25%{translate:-54% 0px;rotate:-2deg;animation-timing-function:cubic-bezier(.55,.05,.55,.95)}
+    51%{translate:-18% 2px;rotate:2deg;animation-timing-function:cubic-bezier(.3,.4,.25,1)}
+    52.5%{translate:9% -24px;rotate:8deg;animation-timing-function:ease-in-out}
+    54.1%{translate:11% -26px;rotate:8.5deg;animation-timing-function:cubic-bezier(.7,0,1,.55)}
+    54.8%{translate:50% 18px;rotate:-2.5deg;animation-timing-function:cubic-bezier(.2,.85,.3,1)}
+    55.5%{translate:50% 13.4px;rotate:-2.5deg;animation-timing-function:ease-out}
+    56.25%{translate:50% 14px;rotate:-2.5deg}
+    61.8%{translate:50% 14px;rotate:-2.5deg;animation-timing-function:ease-out}
+    62.2%{translate:50% 15.5px;rotate:-2.5deg;animation-timing-function:ease-out}
+    63%{translate:50% 14px;rotate:-2.5deg}
+    68.8%{translate:50% 14px;rotate:-2.5deg;animation-timing-function:ease-out}
+    69.2%{translate:50% 15.5px;rotate:-2.5deg;animation-timing-function:ease-out}
+    70%{translate:50% 14px;rotate:-2.5deg}
+    73.75%{translate:50% 14px;rotate:-2.5deg;z-index:1;animation-timing-function:cubic-bezier(.45,.1,.6,1)}
+    74.875%{translate:75% -18px;rotate:5deg;z-index:6;animation-timing-function:cubic-bezier(.25,.6,.2,1)}
+    76%{translate:var(--x) var(--y);rotate:var(--o);z-index:6}
+    100%{translate:var(--x) var(--y);rotate:var(--o);z-index:6}
+  }
+
+  /* ===== the beat strip — quiet, proportional, one row ===== */
+  .shd-strip{display:flex;align-items:stretch;gap:1px;width:100%;max-width:352px;margin:0 auto}
+  .shd-b{flex-grow:1;flex-basis:0;min-width:0;overflow:hidden;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:2px;padding:4px 0 3px;border-radius:4px;
+    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);
+    font-size:6px;letter-spacing:.08em;line-height:1;text-transform:uppercase;color:var(--dim)}
+  .shd-b b{font-weight:700;font-size:6.5px;color:#a9b6d4}
+  .shd-on{background:rgba(255,255,255,.075);border-color:rgba(255,255,255,.15)}
+  .shd-on b{color:#c6d3ee}
+  .shd-tot{flex:0 0 auto;align-self:center;padding-left:5px;font-size:6.5px;letter-spacing:.1em;
+    text-transform:uppercase;color:var(--dim);text-align:right}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div id="ovWheel" class="dealing hunting shd">
+    <div class="wsettled">{{wsettled:mode:singlestrike}}</div>
+    <div class="wtitle">MATCH RUNE</div>
+    <div class="wstage">{{runefelt:fate}}</div>
+    <div class="wname">&nbsp;</div>
+    <div class="wblurb">&nbsp;</div>
+    <div class="dhold"><b>&nbsp;</b><span>&nbsp;</span></div>
+  </div>
+  <div class="cap2">S4 · running cuts — strips milked off the bottom, slapped into a new pile ×3</div>
+  <div class="shd-strip">
+    <div class="shd-b" style="flex-grow:380"><span>Fan</span><b>380</b></div>
+    <div class="shd-b shd-on" style="flex-grow:280"><span>Sq</span><b>280</b></div>
+    <div class="shd-b shd-on" style="flex-grow:700"><span>Cut</span><b>700</b></div>
+    <div class="shd-b shd-on" style="flex-grow:700"><span>Cut</span><b>700</b></div>
+    <div class="shd-b shd-on" style="flex-grow:700"><span>Cut</span><b>700</b></div>
+    <div class="shd-b shd-on" style="flex-grow:550"><span>Refan</span><b>550</b></div>
+    <div class="shd-b" style="flex-grow:560"><span>Deal</span><b>560</b></div>
+    <div class="shd-b" style="flex-grow:520"><span>Flip</span><b>520</b></div>
+    <div class="shd-tot">Total 4390</div>
+  </div>
+  <div class="note"><b>The hands:</b> a tabled Hindu shuffle — running cuts. The fan closes into a squared deck at the left; the free hand milks a two-card strip off the <b>bottom</b>, carries it right, hangs a beat, and slaps it onto a new pile — pull–slap, pull–slap, pull–slap — then the pile is dealt back out into the fan off the top. Bottom pulls keep the picture honest: a strip always paints under the deck it leaves and over the pile it joins, and the deal-off refan peels top-first. <b>Beats:</b> FAN 380 · SQUARE 280 · CUT 700 ×3 (pull 320 · hang 160 · slap+settle 220) · REFAN 550 · DEAL 560 · FLIP 520 — shuffle 2930ms, fan→flip 4390ms (today 1250 / 2900). <b>Honest re-order:</b> each SLAP is a redeal() moment — the strip turns over its new runes the frame it hits the pile, three swaps on-screen instead of today's two; dealBeat's orders grow from [fanned, riffled, settled] to one fresh order per slap, the settled fan is the third slap's deck, and the draw reaches into it. This card loops the shuffle twice — out through the deal-off's full reversal (card n to slot 7−n) and back home — because a CSS study cannot relabel runes the way redeal() does; in the app a single pass plus redeal()'s icon swaps achieves the same visible re-order. <b>Cost vs S1 retime:</b> the crispest, most percussive read, and it lands 1:1 on the existing riffle SFX ticks (one per slap) — but the deck spends ~2s squared, hiding the six-rune offer longer than any riffle variant, and it needs a third shuffle order plus a new WAAPI phase where S1 only retimes. <b>Seam:</b> still WAAPI in ui/runedeal.ts — riffle()+cut() become one stripCut(felt, next, strip) called three times, with the two pile anchors as constants beside restOf(); restOf() itself unchanged.</div>
+</div></div>

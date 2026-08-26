@@ -1,0 +1,337 @@
+<!-- meta name="S8 — Pile deal" group="4i · The rune shuffle" subtitle="The plainest proof of re-order in card games: the deck is dealt card by card into three piles, the piles are stacked back into one deck and refanned — casino legibility, metronome pacing; shuffle ~2.9s, whole beat ~4.4s (today: 1.25s / 2.9s)" width=430 height=1435 sizes="md" links="Offline — local play, Spells" -->
+<style>
+  /* Card-local names only (shh*). The deck is the app's own .rfelt/.rcard
+     markup; this card animates translate/rotate/z-index per card and touches
+     nothing else — every card starts and ends each loop at its inline
+     --x/--y/--o rest pose, so the still this loop settles on IS the deck
+     rune-deal.css draws. The .rdealt stays invisible: nothing is drawn here. */
+  .scr{align-items:center;justify-content:center;gap:12px}
+  #ovWheel{--card:76px;position:relative;height:520px;box-sizing:border-box;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px 0}
+  .wblurb{max-width:262px}
+
+  /* fanIn() animates every card to opacity:1 with fill:'both' — the deck the
+     player watches shuffle is FULLY OPAQUE; .rcard's .62 rest is only the
+     pre-fan still / reduced motion / design stills. */
+  .shh .rcard{opacity:1}
+
+  /* ===== S8 · PILE DEAL — one master loop, 9600ms (1% = 96ms), every card
+     the same duration, delay 0, staggered purely by keyframe offsets.
+     The loop plays the pile deal TWICE, because pure CSS cannot relabel runes
+     the way redeal() does — so the re-order is shown by cards landing in new
+     SLOTS: pass A deals the fan out through the round-robin restack's own
+     permutation σ (card→slot: 1→6, 2→2, 3→4, 4→5, 5→1, 6→3 — the deck dealt
+     off the top 6,5,4,3,2,1 into left/centre/right piles, left onto centre,
+     right on top, refanned bottom-to-top; 5 of 6 cards move, card2 is the
+     deal's own fixed point), holds that PERMUTED fan, then pass B — the
+     mirrored deal, off the top into right/centre/left, right onto centre,
+     left on top — brings every rune home, and holds. Each pass keeps the
+     proposed beat table played ~18% slower (as before) so each flick stays
+     readable.
+     Pass A map (the old 4500ms loop's offsets × 0.469):
+       0–3.14      SQUARE — the fan gathers into one deck   (app SQ 280ms)
+       3.14–4.69   regrip beat (inside SQ)
+       4.69–20.3   PILE ×6 (app 1380ms, 230ms cadence): flicks launch at
+                   4.69 / 7.31 / 9.89 / 12.52 / 15.09 / 17.72 — cards
+                   6,5,4,3,2,1 off the TOP of the deck, one in flight at a
+                   time — round-robin left, centre, right
+       20.3–22.17  hands move to the piles (inside STACK 730ms)
+       22.17–25.22 HOP 1: left pile (cards 6+3) onto the centre pile
+       25.83–28.88 HOP 2: right pile (cards 4+1) onto the combined stack
+       28.88–29.67 the stack takes the weight (2px sink)
+       30.09–35.81 REFAN (app 510ms) into the PERMUTED fan, left-to-right —
+                   in the app this is where redeal()'s icon swaps land
+       35.81–50    PERMUTED REST — same fan, runes in new slots; this hold
+                   is the frame where the re-order is READ (14.19%)
+     Pass B = the same map + 50, mirrored piles, landing home:
+       50–53.14 SQUARE · 54.69–70.3 PILE ×6 (cards 1,4,3,6,2,5 off the top,
+       round-robin right, centre, left) · 72.17–75.22 HOP 1 (cards 1+6,
+       right pile onto centre) · 75.83–78.88 HOP 2 (cards 3+5, left pile
+       onto the stack) · 78.88–79.67 sink · 80.09–85.81 REFAN home ·
+       85.81–100 HOME REST (14.19%)
+     App beats not depicted: FAN 380 before, DEAL 560 + FLIP 520 after.
+     PAINT ORDER: base z-index:n is the DOM cascade; a card resting in (or
+     flying to) a foreign slot m carries z-index:m at that pose — z jumps
+     discretely mid-flight, never at a rest, and both rests paint as a
+     correct left-under-right cascade. */
+  .shh .rcard:nth-child(1){z-index:1;animation:shh1 9600ms linear infinite}
+  .shh .rcard:nth-child(2){z-index:2;animation:shh2 9600ms linear infinite}
+  .shh .rcard:nth-child(3){z-index:3;animation:shh3 9600ms linear infinite}
+  .shh .rcard:nth-child(4){z-index:4;animation:shh4 9600ms linear infinite}
+  .shh .rcard:nth-child(5){z-index:5;animation:shh5 9600ms linear infinite}
+  .shh .rcard:nth-child(6){z-index:6;animation:shh6 9600ms linear infinite}
+
+  /* card1 — A: dealt LAST off the top (lap 2), right pile top; hop 2 tops the
+     whole stack; refans last, into SLOT 6 (z 1→6 mid-flick).
+     B: dealt first, right pile bottom; hop 1; refans first, home (z 6→3→1).
+     rest -95% 0px -13.75deg · squared A -2% 0 -2deg · squared B (slot6)
+     -1% -5px 1deg · pile R top 121% 27px · pile R bottom 124% 30px */
+  @keyframes shh1{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:1;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    3.14%{translate:-2% 0px;rotate:-2deg;z-index:1}
+    17.72%{translate:-2% 0px;rotate:-2deg;z-index:1;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    18.56%{translate:60% -17px;rotate:14deg;z-index:6;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    19.59%{translate:121% 27px;rotate:15deg;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    20.3%{translate:121% 27px;rotate:11deg;z-index:6}
+    25.83%{translate:121% 27px;rotate:11deg;z-index:6;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    27.19%{translate:60% -6px;rotate:15deg;z-index:6;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    28.31%{translate:2% 17px;rotate:7deg;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    28.88%{translate:2% 15px;rotate:4deg;z-index:6}
+    32.44%{translate:2% 15px;rotate:4deg;z-index:6;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    33.56%{translate:50% -6px;rotate:18deg;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    34.88%{translate:95% -5px;rotate:17.75deg;z-index:6}
+    35.81%{translate:95% -5px;rotate:13.75deg;z-index:6}
+    50%{translate:95% -5px;rotate:13.75deg;z-index:6;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    53.14%{translate:-1% -5px;rotate:1deg;z-index:6}
+    54.69%{translate:-1% -5px;rotate:1deg;z-index:6;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    55.53%{translate:62% -18px;rotate:11deg;z-index:3;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    56.56%{translate:124% 30px;rotate:10deg;z-index:3;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    57.27%{translate:124% 30px;rotate:6deg;z-index:3}
+    72.17%{translate:124% 30px;rotate:6deg;z-index:3;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    73.53%{translate:62% -4px;rotate:12deg;z-index:3;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    74.66%{translate:0% 20px;rotate:-5deg;z-index:3;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    75.22%{translate:0% 18px;rotate:-2deg;z-index:3}
+    78.31%{translate:0% 18px;rotate:-2deg;z-index:3}
+    78.88%{translate:0% 20px;rotate:-2deg;z-index:3}
+    79.67%{translate:0% 18px;rotate:-2deg;z-index:3}
+    80.09%{translate:0% 18px;rotate:-2deg;z-index:3;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    81.22%{translate:-50% -2px;rotate:-20deg;z-index:1;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    82.53%{translate:var(--x) var(--y);rotate:calc(var(--o) - 3deg);z-index:1}
+    83.47%{translate:var(--x) var(--y);rotate:var(--o);z-index:1}
+    100%{translate:var(--x) var(--y);rotate:var(--o);z-index:1}
+  }
+  /* card2 — σ's fixed point: dealt 5th in BOTH passes, centre pile top both
+     times, never hops (its pile is the base), sinks 2px each time a pile
+     lands, refans 2nd to its OWN slot twice. z-index:2 the whole loop.
+     rest -57% -1px -8.25deg · squared 1% -1px 1.5deg · pile C top 4% 27px */
+  @keyframes shh2{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:2;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    3.14%{translate:1% -1px;rotate:1.5deg;z-index:2}
+    15.09%{translate:1% -1px;rotate:1.5deg;z-index:2;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    15.94%{translate:2% -15px;rotate:5deg;z-index:2;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    16.97%{translate:4% 27px;rotate:-8deg;z-index:2;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    17.67%{translate:4% 27px;rotate:-4deg;z-index:2}
+    24.66%{translate:4% 27px;rotate:-4deg;z-index:2}
+    25.22%{translate:4% 29px;rotate:-4deg;z-index:2}
+    26.06%{translate:4% 27px;rotate:-4deg;z-index:2}
+    28.31%{translate:4% 27px;rotate:-4deg;z-index:2}
+    28.88%{translate:4% 29px;rotate:-4deg;z-index:2}
+    29.67%{translate:4% 27px;rotate:-4deg;z-index:2}
+    30.56%{translate:4% 27px;rotate:-4deg;z-index:2;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    31.69%{translate:-28% 2px;rotate:-14deg;z-index:2;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    33%{translate:var(--x) var(--y);rotate:calc(var(--o) - 3deg);z-index:2}
+    33.94%{translate:var(--x) var(--y);rotate:var(--o);z-index:2}
+    50%{translate:var(--x) var(--y);rotate:var(--o);z-index:2;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    53.14%{translate:1% -1px;rotate:1.5deg;z-index:2}
+    65.09%{translate:1% -1px;rotate:1.5deg;z-index:2;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    65.94%{translate:2% -15px;rotate:5deg;z-index:2;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    66.97%{translate:4% 27px;rotate:-8deg;z-index:2;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    67.67%{translate:4% 27px;rotate:-4deg;z-index:2}
+    74.66%{translate:4% 27px;rotate:-4deg;z-index:2}
+    75.22%{translate:4% 29px;rotate:-4deg;z-index:2}
+    76.06%{translate:4% 27px;rotate:-4deg;z-index:2}
+    78.31%{translate:4% 27px;rotate:-4deg;z-index:2}
+    78.88%{translate:4% 29px;rotate:-4deg;z-index:2}
+    79.67%{translate:4% 27px;rotate:-4deg;z-index:2}
+    80.56%{translate:4% 27px;rotate:-4deg;z-index:2;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    81.69%{translate:-28% 2px;rotate:-14deg;z-index:2;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    83%{translate:var(--x) var(--y);rotate:calc(var(--o) - 3deg);z-index:2}
+    83.94%{translate:var(--x) var(--y);rotate:var(--o);z-index:2}
+    100%{translate:var(--x) var(--y);rotate:var(--o);z-index:2}
+  }
+  /* card3 — A: dealt 4th, left pile TOP (lap 2 lands on card6 — the tell);
+     hop 1; refans 4th, into SLOT 4 (z 3→4 mid-flick).
+     B: dealt 3rd, left pile bottom; hop 2; refans 3rd home (z 4→5→3).
+     rest -19% -2px -2.75deg · squared A -1% -2px -1deg · squared B (slot4)
+     2% -3px 2deg · pile L top -126% 27px · pile L bottom -122% 30px */
+  @keyframes shh3{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:3;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    3.14%{translate:-1% -2px;rotate:-1deg;z-index:3}
+    12.52%{translate:-1% -2px;rotate:-1deg;z-index:3;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    13.36%{translate:-62% -19px;rotate:-10deg;z-index:4;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    14.39%{translate:-126% 27px;rotate:8deg;z-index:4;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    15.09%{translate:-126% 27px;rotate:4deg;z-index:4}
+    22.17%{translate:-126% 27px;rotate:4deg;z-index:4;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    23.53%{translate:-62% -3px;rotate:-11deg;z-index:4;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    24.66%{translate:1% 23px;rotate:5deg;z-index:4;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    25.22%{translate:1% 21px;rotate:2deg;z-index:4}
+    28.31%{translate:1% 21px;rotate:2deg;z-index:4}
+    28.88%{translate:1% 23px;rotate:2deg;z-index:4}
+    29.67%{translate:1% 21px;rotate:2deg;z-index:4}
+    31.5%{translate:1% 21px;rotate:2deg;z-index:4;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    32.63%{translate:10% -3px;rotate:9deg;z-index:4;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    33.94%{translate:19% -3px;rotate:5.75deg;z-index:4}
+    34.88%{translate:19% -3px;rotate:2.75deg;z-index:4}
+    50%{translate:19% -3px;rotate:2.75deg;z-index:4;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    53.14%{translate:2% -3px;rotate:2deg;z-index:4}
+    59.89%{translate:2% -3px;rotate:2deg;z-index:4;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    60.73%{translate:-62% -18px;rotate:-11deg;z-index:5;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    61.77%{translate:-122% 30px;rotate:-9deg;z-index:5;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    62.47%{translate:-122% 30px;rotate:-5deg;z-index:5}
+    75.83%{translate:-122% 30px;rotate:-5deg;z-index:5;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    77.19%{translate:-60% -2px;rotate:-12deg;z-index:5;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    78.31%{translate:0% 20px;rotate:-5deg;z-index:5;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    78.88%{translate:0% 18px;rotate:-2deg;z-index:5}
+    81.03%{translate:0% 18px;rotate:-2deg;z-index:5;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    82.16%{translate:-10% -4px;rotate:-8deg;z-index:3;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    83.47%{translate:var(--x) var(--y);rotate:calc(var(--o) - 3deg);z-index:3}
+    84.41%{translate:var(--x) var(--y);rotate:var(--o);z-index:3}
+    100%{translate:var(--x) var(--y);rotate:var(--o);z-index:3}
+  }
+  /* card4 — A: dealt 3rd, right pile bottom; hop 2; refans 5th, into SLOT 5
+     (z 4→5 mid-flick).
+     B: dealt 2nd, centre pile BOTTOM (the stack's new base — z 5→1
+     mid-flick), sinks under both hops; refans 4th home (z 1→4).
+     rest 19% -3px 2.75deg · squared A 2% -3px 2deg · squared B (slot5)
+     0% -4px -1.5deg · pile R bottom 124% 30px · pile C bottom 1% 30px */
+  @keyframes shh4{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:4;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    3.14%{translate:2% -3px;rotate:2deg;z-index:4}
+    9.89%{translate:2% -3px;rotate:2deg;z-index:4;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    10.73%{translate:62% -18px;rotate:11deg;z-index:5;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    11.77%{translate:124% 30px;rotate:10deg;z-index:5;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    12.47%{translate:124% 30px;rotate:6deg;z-index:5}
+    25.83%{translate:124% 30px;rotate:6deg;z-index:5;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    27.19%{translate:62% -4px;rotate:12deg;z-index:5;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    28.31%{translate:0% 20px;rotate:-5deg;z-index:5;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    28.88%{translate:0% 18px;rotate:-2deg;z-index:5}
+    31.97%{translate:0% 18px;rotate:-2deg;z-index:5;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    33.09%{translate:30% 0px;rotate:12deg;z-index:5;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    34.41%{translate:57% -4px;rotate:11.25deg;z-index:5}
+    35.34%{translate:57% -4px;rotate:8.25deg;z-index:5}
+    50%{translate:57% -4px;rotate:8.25deg;z-index:5;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    53.14%{translate:0% -4px;rotate:-1.5deg;z-index:5}
+    57.31%{translate:0% -4px;rotate:-1.5deg;z-index:5;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    58.16%{translate:0% -16px;rotate:7deg;z-index:1;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    59.19%{translate:1% 30px;rotate:8deg;z-index:1;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    59.89%{translate:1% 30px;rotate:3deg;z-index:1}
+    74.66%{translate:1% 30px;rotate:3deg;z-index:1}
+    75.22%{translate:1% 32px;rotate:3deg;z-index:1}
+    76.06%{translate:1% 30px;rotate:3deg;z-index:1}
+    78.31%{translate:1% 30px;rotate:3deg;z-index:1}
+    78.88%{translate:1% 32px;rotate:3deg;z-index:1}
+    79.67%{translate:1% 30px;rotate:3deg;z-index:1}
+    81.5%{translate:1% 30px;rotate:3deg;z-index:1;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    82.63%{translate:10% -3px;rotate:9deg;z-index:4;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    83.94%{translate:var(--x) var(--y);rotate:calc(var(--o) + 3deg);z-index:4}
+    84.88%{translate:var(--x) var(--y);rotate:var(--o);z-index:4}
+    100%{translate:var(--x) var(--y);rotate:var(--o);z-index:4}
+  }
+  /* card5 — A: dealt 2nd, centre pile BOTTOM (the stack's new base — z 5→1
+     mid-flick), sinks under both hops; refans FIRST, into SLOT 1.
+     B: dealt LAST, left pile top; hop 2 tops the stack (z 1→6); refans 5th
+     home (z 6→5).
+     rest 57% -4px 8.25deg · squared A 0% -4px -1.5deg · squared B (slot1)
+     -2% 0px -2deg · pile C bottom 1% 30px · pile L top -126% 27px */
+  @keyframes shh5{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:5;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    3.14%{translate:0% -4px;rotate:-1.5deg;z-index:5}
+    7.31%{translate:0% -4px;rotate:-1.5deg;z-index:5;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    8.16%{translate:0% -16px;rotate:7deg;z-index:1;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    9.19%{translate:1% 30px;rotate:8deg;z-index:1;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    9.89%{translate:1% 30px;rotate:3deg;z-index:1}
+    24.66%{translate:1% 30px;rotate:3deg;z-index:1}
+    25.22%{translate:1% 32px;rotate:3deg;z-index:1}
+    26.06%{translate:1% 30px;rotate:3deg;z-index:1}
+    28.31%{translate:1% 30px;rotate:3deg;z-index:1}
+    28.88%{translate:1% 32px;rotate:3deg;z-index:1}
+    29.67%{translate:1% 30px;rotate:3deg;z-index:1}
+    30.09%{translate:1% 30px;rotate:3deg;z-index:1;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    31.22%{translate:-50% -2px;rotate:-20deg;z-index:1;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    32.53%{translate:-95% 0px;rotate:-16.75deg;z-index:1}
+    33.47%{translate:-95% 0px;rotate:-13.75deg;z-index:1}
+    50%{translate:-95% 0px;rotate:-13.75deg;z-index:1;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    53.14%{translate:-2% 0px;rotate:-2deg;z-index:1}
+    67.72%{translate:-2% 0px;rotate:-2deg;z-index:1;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    68.56%{translate:-62% -19px;rotate:-10deg;z-index:6;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    69.59%{translate:-126% 27px;rotate:8deg;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    70.3%{translate:-126% 27px;rotate:4deg;z-index:6}
+    75.83%{translate:-126% 27px;rotate:4deg;z-index:6;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    77.19%{translate:-62% -3px;rotate:-11deg;z-index:6;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    78.31%{translate:2% 17px;rotate:7deg;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    78.88%{translate:2% 15px;rotate:4deg;z-index:6}
+    81.97%{translate:2% 15px;rotate:4deg;z-index:6;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    83.09%{translate:30% 0px;rotate:12deg;z-index:5;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    84.41%{translate:var(--x) var(--y);rotate:calc(var(--o) + 3deg);z-index:5}
+    85.34%{translate:var(--x) var(--y);rotate:var(--o);z-index:5}
+    100%{translate:var(--x) var(--y);rotate:var(--o);z-index:5}
+  }
+  /* card6 — A: dealt FIRST (off the top of the squared deck), left pile
+     bottom (z 6→3 mid-flick); hop 1; refans 3rd, into SLOT 3.
+     B: dealt 4th, right pile TOP (lap 2 lands on card1 — the tell, mirrored);
+     hop 1 (z 3→4); refans LAST home (z 4→6).
+     rest 95% -5px 13.75deg · squared A -1% -5px 1deg · squared B (slot3)
+     -1% -2px -1deg · pile L bottom -122% 30px · pile R top 121% 27px */
+  @keyframes shh6{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:6;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    3.14%{translate:-1% -5px;rotate:1deg;z-index:6}
+    4.69%{translate:-1% -5px;rotate:1deg;z-index:6;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    5.53%{translate:-62% -18px;rotate:-11deg;z-index:3;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    6.56%{translate:-122% 30px;rotate:-9deg;z-index:3;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    7.27%{translate:-122% 30px;rotate:-5deg;z-index:3}
+    22.17%{translate:-122% 30px;rotate:-5deg;z-index:3;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    23.53%{translate:-60% -2px;rotate:-12deg;z-index:3;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    24.66%{translate:-2% 26px;rotate:-6deg;z-index:3;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    25.22%{translate:-2% 24px;rotate:-3deg;z-index:3}
+    28.31%{translate:-2% 24px;rotate:-3deg;z-index:3}
+    28.88%{translate:-2% 26px;rotate:-3deg;z-index:3}
+    29.67%{translate:-2% 24px;rotate:-3deg;z-index:3}
+    31.03%{translate:-2% 24px;rotate:-3deg;z-index:3;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    32.16%{translate:-10% -4px;rotate:-8deg;z-index:3;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    33.47%{translate:-19% -2px;rotate:-5.75deg;z-index:3}
+    34.41%{translate:-19% -2px;rotate:-2.75deg;z-index:3}
+    50%{translate:-19% -2px;rotate:-2.75deg;z-index:3;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    53.14%{translate:-1% -2px;rotate:-1deg;z-index:3}
+    62.52%{translate:-1% -2px;rotate:-1deg;z-index:3;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    63.36%{translate:60% -17px;rotate:14deg;z-index:4;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    64.39%{translate:121% 27px;rotate:15deg;z-index:4;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    65.09%{translate:121% 27px;rotate:11deg;z-index:4}
+    72.17%{translate:121% 27px;rotate:11deg;z-index:4;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    73.53%{translate:60% -6px;rotate:15deg;z-index:4;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    74.66%{translate:1% 23px;rotate:5deg;z-index:4;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    75.22%{translate:1% 21px;rotate:2deg;z-index:4}
+    78.31%{translate:1% 21px;rotate:2deg;z-index:4}
+    78.88%{translate:1% 23px;rotate:2deg;z-index:4}
+    79.67%{translate:1% 21px;rotate:2deg;z-index:4}
+    82.44%{translate:1% 21px;rotate:2deg;z-index:4;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    83.56%{translate:50% -6px;rotate:18deg;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    84.88%{translate:var(--x) var(--y);rotate:calc(var(--o) + 4deg);z-index:6}
+    85.81%{translate:var(--x) var(--y);rotate:var(--o);z-index:6}
+    100%{translate:var(--x) var(--y);rotate:var(--o);z-index:6}
+  }
+
+  /* ===== the beat strip: one quiet row, cell width = beat ms. Dim cells are
+     today's beats kept as they are; lit cells are the 2900ms shuffle. ===== */
+  .shh-strip{display:flex;align-items:stretch;gap:1px;width:100%;max-width:352px}
+  .shh-b{flex-basis:0;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:1px;padding:4px 1px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09);
+    border-radius:3px;font-size:7.5px;letter-spacing:.06em;color:var(--dim);text-transform:uppercase;
+    font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
+  .shh-b b{font-weight:800;color:#c6d3ee;letter-spacing:.1em}
+  .shh-b.dim{opacity:.5}
+  .shh-tot{flex:0 0 auto;align-self:center;margin-left:4px;font-size:7.5px;letter-spacing:.1em;
+    color:var(--dim);text-transform:uppercase;font-variant-numeric:tabular-nums;text-align:right}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div id="ovWheel" class="dealing hunting shh">
+    <div class="wsettled">{{wsettled:mode:singlestrike}}</div>
+    <div class="wtitle">MATCH RUNE</div>
+    <div class="wstage">{{runefelt:fate}}</div>
+    <div class="wname">&nbsp;</div>
+    <div class="wblurb">&nbsp;</div>
+    <div class="dhold"><b>&nbsp;</b><span>&nbsp;</span></div>
+  </div>
+
+  <div class="cap2">S8 · Pile deal — square up, six flicks into three piles, stack the piles, refan</div>
+  <div class="shh-strip">
+    <span class="shh-b dim" style="flex-grow:380"><b>FAN</b>380</span>
+    <span class="shh-b" style="flex-grow:280"><b>SQ</b>280</span>
+    <span class="shh-b" style="flex-grow:1380"><b>PILE ×6</b>1380</span>
+    <span class="shh-b" style="flex-grow:730"><b>STACK</b>730</span>
+    <span class="shh-b" style="flex-grow:510"><b>REFAN</b>510</span>
+    <span class="shh-b dim" style="flex-grow:560"><b>DEAL</b>560</span>
+    <span class="shh-b dim" style="flex-grow:520"><b>FLIP</b>520</span>
+    <span class="shh-tot">TOTAL<br>4360</span>
+  </div>
+
+  <div class="note"><b>The hands:</b> a pile shuffle, the casino's cure for sequence memory — the fan is squared into one deck, dealt out <b>one card at a time</b>, round-robin, into three little piles (left, centre, right, then left again), the left pile is dropped onto the centre, the right pile on top of that, and the rebuilt deck fans back out. Card 1 and card 4 leave on different laps and land in the <b>same pile</b>; no other table gesture states "the order changed" this plainly. <b>Beats:</b> FAN 380 → SQUARE 280 → PILE ×6 1380 (230ms cadence, 170ms flick, strictly one card in flight) → STACK 730 (two ~270ms hops) → REFAN 510 → DEAL 560 → FLIP 520 — shuffle portion <b>2900ms</b>, whole beat <b>4360ms</b> (today 1250 / 2900). The loop above plays each shuffle pass ~18% slower than proposed so each flick stays readable, and holds each settled fan for a seventh of the loop. <b>Honest re-order:</b> redeal()'s icon swaps land once per card, at the instant it leaves the combined stack on the REFAN — the same seam riffle() uses at its half-beat — so the fan is rebuilt card by card already wearing the interleave the piles just performed, and the draw reaches into a slot this pass visibly decided. The loop above therefore plays the shuffle twice — pass one deals the fan out through the pile permutation, pass two, a mirrored deal, brings every rune home — because a CSS study cannot relabel runes the way redeal() does; in the app a single pass plus redeal()'s icon swaps achieves the same visible re-order. <b>Cost vs S1:</b> the longest of the eight and the most serial — one card in flight at a time is the whole argument, but it is also a metronome, and by the tenth reveal it may read as waiting where S1's retimed riffle still reads as flourish; it is the most new choreography (six flicks, two hops) and needs ±96px of felt side-room, the most of the set (still inside the 58px --card floor). <b>Seam:</b> still WAAPI in ui/runedeal.ts — riffle()/cut() give way to pileDeal() and stackPiles() reading the same restOf(); the three pile anchors are one local const; restOf() unchanged; Sfx.tick per flick, Sfx.place per hop.</div>
+</div></div>

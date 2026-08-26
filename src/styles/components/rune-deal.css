@@ -1,12 +1,14 @@
 /* ===================== THE RUNE DEAL =====================
-   The reveal's second beat (ui/runedeal.ts): the roster riffles as a deck and
-   one card is turned over. Sizing is ONE number — --card drives the deck, the
+   The reveal's second beat (ui/runedeal.ts): the roster is dealt into piles,
+   gathered, and the top card is turned over (the S9 pile deal, 2026-08-26).
+   Sizing is ONE number — --card drives the deck, the
    dealt card, the felt they sit on and the label on the face — and it is
    bounded by BOTH axes for the same reason --dial is: a landscape phone has
    width to spare and no height at all.
    This file owns the deck AT REST; the shuffle is WAAPI in ui/runedeal.ts,
    built from the same geometry, so a still (a design card, a reduced-motion
-   player) shows exactly the deck the animation settles onto. */
+   player) shows exactly what the animation settles onto — the spread before
+   the deal, the assembled stack after it. */
 :where(#kbroot) #ovWheel{--card:clamp(58px,min(19vw,12.5vh),96px)}
 :where(#kbroot) #ovWheel.dealing{--stage:calc(var(--card)*2.62)}
 :where(#kbroot) .rfelt{position:relative;width:calc(var(--card)*4.6);height:calc(var(--card)*2.62);
@@ -42,7 +44,7 @@
 :where(#kbroot) .rdealt.up .rface{opacity:1}
 :where(#kbroot) .rdealt.up .rback{opacity:0}
 /* the back is a DECK card's back, index and all: the dealt card is the card
-   that was drawn out of the fan, and it grows out of that slot */
+   that came off the deck's top, and it grows out of that stack */
 :where(#kbroot) .rback{background:linear-gradient(160deg,#181d34,#090c18);
   border:1px solid rgba(255,255,255,.12);box-shadow:0 14px 34px rgba(0,0,0,.6)}
 :where(#kbroot) .rback svg{position:absolute;top:8%;left:7%;width:26%;height:26%;

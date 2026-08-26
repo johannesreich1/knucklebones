@@ -11,9 +11,10 @@
 //     backdrop-filter) flattened the 3D context, so the card turned and showed
 //     its BACK while the readout named the rune. State and DOM agreed perfectly
 //     the whole time — only a computed style can see it.
-//   · the card comes out of the SLOT the shuffle put it in. A card that always
-//     appeared from the middle made the shuffle decoration — nothing that
-//     happened to the deck could have decided anything.
+//   · the card comes off the TOP of the deck the shuffle assembled (the S9
+//     pile deal, 2026-08-26). A card that always appeared from the middle made
+//     the shuffle decoration — nothing that happened to the deck could have
+//     decided anything; here the last gather the player watched decides it.
 //   · the shuffle takes real time. "Too quick" is the note the whole beat
 //     exists to answer, and a shuffle is the one part a screenshot cannot check.
 //
@@ -31,6 +32,7 @@ import {
   verifyRandomTwoReveal,
 } from './browser/support/random-two-reveal.mjs';
 import { SPELLS } from '../src/core/spells.ts';
+import { readTurnedDeal, checkDealPhysique } from './browser/support/deal-stack.mjs';
 const { chromium } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
 const problems = [], out = {};
@@ -158,29 +160,7 @@ try {
     await page.waitForSelector('.rdealt.up', { timeout: 12000 });
     const shuffleMs = Date.now() - t0;
     await page.waitForTimeout(700);          // the turn itself
-    const turned = await page.evaluate(() => {
-      const d = document.querySelector('.rdealt');
-      const face = getComputedStyle(d.querySelector('.rface'));
-      const back = getComputedStyle(d.querySelector('.rback'));
-      const deck = [...document.querySelectorAll('.rcard')];
-      return {
-        card: d.dataset.rune,
-        label: d.querySelector('.rlbl').textContent.trim(),
-        // which slot of the fan the card came out of, and that only one left
-        drawnSlot: deck.findIndex((e) => e.classList.contains('drawn')),
-        drawnRune: deck.find((e) => e.classList.contains('drawn'))?.dataset.rune ?? null,
-        deck: deck.map((e) => e.dataset.rune),
-        stillInFan: deck.filter((e) => getComputedStyle(e).visibility === 'visible').length,
-        faceOpacity: +face.opacity, backOpacity: +back.opacity,
-        faceBg: face.backgroundImage !== 'none',
-        named: document.querySelector('#wheelName').textContent.trim(),
-        settled: [...document.querySelectorAll('.wsett')].map((e) => ({
-          name: e.querySelector('.wpill b').textContent.trim(),
-          rule: e.querySelector('.wblurb').textContent.trim(),
-        })),
-        hold: getComputedStyle(document.querySelector('.dhold')).visibility,
-      };
-    });
+    const turned = await page.evaluate(readTurnedDeal);
     if (liveLocale) {
       await page.waitForFunction(() => document.querySelector('#ovWheel')?.classList.contains('holding'),
         null, { timeout: 8000 });
@@ -298,13 +278,10 @@ try {
     'the reveal kept RANDOM ×2 owner copy on the next shared-rune deal', third.shuffling);
   const orders = [solo, both, third].map((d) => d.shuffling.deck.join(','));
   out.orders = orders;
-  /* the deck is RE-ORDERED as it is worked: the fan the player is handed is not
-     the fan the card is drawn out of. Asked across three deals because two
-     independent shuffles of six can coincide, and a gate may not roll dice. */
-  out.reordered = [solo, both, third].map((d) => d.shuffling.deck.join(',') !== d.turned.deck.join(','));
-  check(out.reordered.some(Boolean),
-    'the shuffle never re-ordered the deck — the cards moved and nothing changed',
-    { before: orders, after: [solo, both, third].map((d) => d.turned.deck.join(',')) });
+  /* the deck is PHYSICALLY re-ordered as it is worked (the S9 pile deal,
+     2026-08-26): runes carried, one squared stack, drawn card off its top —
+     the contract lives in browser/support/deal-stack.mjs */
+  out.carried = checkDealPhysique([solo, both, third], check);
   out.slots = [solo, both, third].map((d) => d.turned.drawnSlot);
   check(new Set(orders).size > 1, 'the deck fans out in the same order every deal', orders);
   check(out.slots.every((i) => i >= 0), 'a deal took no card out of the fan at all', out.slots);

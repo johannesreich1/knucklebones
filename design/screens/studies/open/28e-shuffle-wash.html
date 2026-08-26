@@ -1,0 +1,368 @@
+<!-- meta name="S5 — The wash" group="4i · The rune shuffle" subtitle="The casino wash: the fan breaks and all six cards smear around the felt in crossing ellipses — the order is not swapped behind a moving block, it is visibly scrubbed out on the table and gathered back — shuffle ~2.8s, whole beat ~4.3s (today: 1.25s / 2.9s)" width=430 height=1300 sizes="md" links="Offline — local play, Spells" -->
+<style>
+  /* Card-local names only (.she*). The deck is the app's own markup (runefelt
+     token); this card animates it purely through .she compound selectors, and
+     every keyframe track starts AND ends on the inline rest pose
+     (translate:var(--x) var(--y); rotate:var(--o)) so the loop opens and
+     closes on exactly the fan main.css draws. The dealt card stays untouched
+     and invisible — this study pictures the SHUFFLE, nothing is drawn. */
+  .scr{align-items:center;justify-content:center;gap:12px}
+  #ovWheel{--card:76px;position:relative;height:520px;box-sizing:border-box;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px 0}
+  .wblurb{max-width:262px}
+
+  /* ===== THE WASH, OUT AND BACK. One master loop, 9000ms, 1% = 90ms.
+     A CSS study cannot relabel runes the way redeal() does, so the loop
+     washes TWICE: pass A scrubs the fan and gathers it PERMUTED
+     (σ: 1→4 2→3 3→5 4→2 5→6 6→1 — a single 6-cycle, no card survives in
+     place), holds that mis-ordered fan long enough to read, then pass B
+     (the same wash in retrograde) scrubs every card back to its own slot
+     so the loop can close on exactly the fan main.css draws.
+     Map to the real timeline (the beat strip stays the app-side proposal):
+       0–6.9%     (620ms)  the fan at rest — FAN 380 landed plus a breath
+       6.9–10.4%  (320ms)  BREAK A — the fan loosens, rippling left→right
+                           (+0.2%/card by keyframe offset)
+       10.4–31.6% (1900ms) WASH A — per-card ellipses around the deck anchor
+                           (rx 34–88px, ry 15–24px), directions alternating,
+                           30° waypoints on a linear clock
+       31.6–38%   (580ms)  GATHER A — the spiral tightens and every card
+                           lands in its σ-slot, presses staggered 36.6→37.6%
+       38–51.6%   (1220ms) PERMUTED REST ≥12% — the frame where the re-order
+                           is READ: the same fan, runes in new places
+       51.6–57.6% (540ms)  LAUNCH — gather A reversed: un-press, spiral out
+       57.6–78.7% (1900ms) WASH B — the same orbits, opposite direction
+       78.7–82.2% (320ms)  SETTLE — break A reversed, pressing home
+       82.2–100%  (1600ms) HOME REST — plus the opening 620ms over the seam
+     Each pass keeps the proposed shuffle BREAK 320 + WASH 1900 + GATHER 580
+     = 2800ms; the app's FAN→FLIP beat stays 4260ms — a single pass plus
+     redeal()'s icon swaps does there what this still needs two passes for. ===== */
+  /* fanIn() animates every card to opacity:1 with fill:'both' — the deck the player watches shuffle is fully opaque; .62 is only the pre-fan still */
+  .she .rcard{opacity:1}
+  /* DOM order is z order in the fan (left under right); a card resting in a
+     foreign slot m carries z-index:m at that pose so BOTH rests cascade */
+  .she .rcard:nth-child(1){z-index:1;animation:she-c1 9s linear infinite}
+  .she .rcard:nth-child(2){z-index:2;animation:she-c2 9s linear infinite}
+  .she .rcard:nth-child(3){z-index:3;animation:she-c3 9s linear infinite}
+  .she .rcard:nth-child(4){z-index:4;animation:she-c4 9s linear infinite}
+  .she .rcard:nth-child(5){z-index:5;animation:she-c5 9s linear infinite}
+  .she .rcard:nth-child(6){z-index:6;animation:she-c6 9s linear infinite}
+
+  /* big left orbit, clockwise — sweeps the whole deck, gathers into slot 4 */
+  @keyframes she-c1{
+    0%,6.9%{translate:var(--x) var(--y);rotate:var(--o);z-index:1;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    10.4%{translate:-110.5% -6.0px;rotate:-20.6deg;animation-timing-function:linear}
+    11.81%{translate:-95.7% -17.0px;rotate:-17.2deg;animation-timing-function:linear}
+    13.23%{translate:-55.3% -25.1px;rotate:-12.2deg;animation-timing-function:linear}
+    14.64%{translate:0.0% -28.0px;rotate:-5.9deg;animation-timing-function:linear}
+    16.05%{translate:55.3% -25.1px;rotate:0.9deg;animation-timing-function:linear}
+    17.47%{translate:95.7% -17.0px;rotate:7.7deg;animation-timing-function:linear}
+    18.88%{translate:110.5% -6.0px;rotate:13.7deg;animation-timing-function:linear}
+    20.29%{translate:95.7% 5.0px;rotate:18.3deg;animation-timing-function:linear}
+    21.71%{translate:55.3% 13.1px;rotate:21.2deg;animation-timing-function:linear}
+    23.12%{translate:0.0% 16.0px;rotate:22.0deg;animation-timing-function:linear}
+    24.53%{translate:-55.3% 13.1px;rotate:20.6deg;animation-timing-function:linear}
+    25.95%{translate:-95.7% 5.0px;rotate:17.2deg;animation-timing-function:linear}
+    27.36%{translate:-110.5% -6.0px;rotate:12.2deg;animation-timing-function:linear}
+    28.77%{translate:-95.7% -17.0px;rotate:5.9deg;animation-timing-function:linear}
+    30.19%{translate:-55.3% -25.1px;rotate:-0.9deg;animation-timing-function:linear}
+    31.6%{translate:0.0% -28.0px;rotate:-7.7deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    33.4%{translate:37.1% -20.8px;rotate:-4.04deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    35.2%{translate:0.4% -8.5px;rotate:0.14deg;animation-timing-function:cubic-bezier(.2,.6,.3,1)}
+    36.6%{translate:21.0% -1.0px;rotate:0.25deg;z-index:4;animation-timing-function:ease-out}
+    38%,52.6%{translate:19% -3px;rotate:2.75deg;z-index:4;animation-timing-function:ease-in}
+    53.1%{translate:21.0% -1.0px;rotate:0.25deg;z-index:4;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    53.9%{translate:0.4% -8.5px;rotate:0.14deg;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    55.8%{translate:37.1% -20.8px;rotate:-4.04deg;animation-timing-function:cubic-bezier(.55,.1,.8,.6)}
+    57.6%{translate:0.0% -28.0px;rotate:-7.7deg;animation-timing-function:linear}
+    59.01%{translate:-55.3% -25.1px;rotate:-0.9deg;animation-timing-function:linear}
+    60.41%{translate:-95.7% -17.0px;rotate:5.9deg;animation-timing-function:linear}
+    61.82%{translate:-110.5% -6.0px;rotate:12.2deg;animation-timing-function:linear}
+    63.23%{translate:-95.7% 5.0px;rotate:17.2deg;animation-timing-function:linear}
+    64.63%{translate:-55.3% 13.1px;rotate:20.6deg;animation-timing-function:linear}
+    66.04%{translate:0.0% 16.0px;rotate:22.0deg;animation-timing-function:linear}
+    67.45%{translate:55.3% 13.1px;rotate:21.2deg;animation-timing-function:linear}
+    68.85%{translate:95.7% 5.0px;rotate:18.3deg;animation-timing-function:linear}
+    70.26%{translate:110.5% -6.0px;rotate:13.7deg;animation-timing-function:linear}
+    71.67%{translate:95.7% -17.0px;rotate:7.7deg;animation-timing-function:linear}
+    73.07%{translate:55.3% -25.1px;rotate:0.9deg;animation-timing-function:linear}
+    74.48%{translate:0.0% -28.0px;rotate:-5.9deg;animation-timing-function:linear}
+    75.89%{translate:-55.3% -25.1px;rotate:-12.2deg;animation-timing-function:linear}
+    77.29%{translate:-95.7% -17.0px;rotate:-17.2deg;animation-timing-function:linear}
+    78.7%{translate:-110.5% -6.0px;rotate:-20.6deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    80.4%{translate:calc(var(--x) + 2%) calc(var(--y) + 2px);rotate:calc(var(--o) - 2.5deg);z-index:1;animation-timing-function:ease-out}
+    81.6%,100%{translate:var(--x) var(--y);rotate:var(--o);z-index:1}
+  }
+  /* mid orbit, counter-clockwise — crosses c1 twice per turn, lands slot 3 */
+  @keyframes she-c2{
+    0%,7.1%{translate:var(--x) var(--y);rotate:var(--o);z-index:2;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    10.4%{translate:-65.8% -4.0px;rotate:-12.4deg;animation-timing-function:linear}
+    11.81%{translate:-57.0% 4.5px;rotate:-15.8deg;animation-timing-function:linear}
+    13.23%{translate:-32.9% 10.7px;rotate:-17.7deg;animation-timing-function:linear}
+    14.64%{translate:0.0% 13.0px;rotate:-17.8deg;animation-timing-function:linear}
+    16.05%{translate:32.9% 10.7px;rotate:-16.3deg;animation-timing-function:linear}
+    17.47%{translate:57.0% 4.5px;rotate:-13.1deg;animation-timing-function:linear}
+    18.88%{translate:65.8% -4.0px;rotate:-8.6deg;animation-timing-function:linear}
+    20.29%{translate:57.0% -12.5px;rotate:-3.3deg;animation-timing-function:linear}
+    21.71%{translate:32.9% -18.7px;rotate:2.3deg;animation-timing-function:linear}
+    23.12%{translate:0.0% -21.0px;rotate:7.7deg;animation-timing-function:linear}
+    24.53%{translate:-32.9% -18.7px;rotate:12.4deg;animation-timing-function:linear}
+    25.95%{translate:-57.0% -12.5px;rotate:15.8deg;animation-timing-function:linear}
+    27.36%{translate:-65.8% -4.0px;rotate:17.7deg;animation-timing-function:linear}
+    28.77%{translate:-57.0% 4.5px;rotate:17.8deg;animation-timing-function:linear}
+    30.19%{translate:-32.9% 10.7px;rotate:16.3deg;animation-timing-function:linear}
+    31.6%{translate:0.0% 13.0px;rotate:13.1deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    33.4%{translate:11.4% 9.0px;rotate:7.55deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    35.2%{translate:-22.5% 1.2px;rotate:1.21deg;animation-timing-function:cubic-bezier(.2,.6,.3,1)}
+    36.8%{translate:-21.0% 0.0px;rotate:-0.25deg;z-index:3;animation-timing-function:ease-out}
+    38%,52.4%{translate:-19% -2px;rotate:-2.75deg;z-index:3;animation-timing-function:ease-in}
+    52.9%{translate:-21.0% 0.0px;rotate:-0.25deg;z-index:3;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    53.9%{translate:-22.5% 1.2px;rotate:1.21deg;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    55.8%{translate:11.4% 9.0px;rotate:7.55deg;animation-timing-function:cubic-bezier(.55,.1,.8,.6)}
+    57.6%{translate:0.0% 13.0px;rotate:13.1deg;animation-timing-function:linear}
+    59.01%{translate:-32.9% 10.7px;rotate:16.3deg;animation-timing-function:linear}
+    60.41%{translate:-57.0% 4.5px;rotate:17.8deg;animation-timing-function:linear}
+    61.82%{translate:-65.8% -4.0px;rotate:17.7deg;animation-timing-function:linear}
+    63.23%{translate:-57.0% -12.5px;rotate:15.8deg;animation-timing-function:linear}
+    64.63%{translate:-32.9% -18.7px;rotate:12.4deg;animation-timing-function:linear}
+    66.04%{translate:0.0% -21.0px;rotate:7.7deg;animation-timing-function:linear}
+    67.45%{translate:32.9% -18.7px;rotate:2.3deg;animation-timing-function:linear}
+    68.85%{translate:57.0% -12.5px;rotate:-3.3deg;animation-timing-function:linear}
+    70.26%{translate:65.8% -4.0px;rotate:-8.6deg;animation-timing-function:linear}
+    71.67%{translate:57.0% 4.5px;rotate:-13.1deg;animation-timing-function:linear}
+    73.07%{translate:32.9% 10.7px;rotate:-16.3deg;animation-timing-function:linear}
+    74.48%{translate:0.0% 13.0px;rotate:-17.8deg;animation-timing-function:linear}
+    75.89%{translate:-32.9% 10.7px;rotate:-17.7deg;animation-timing-function:linear}
+    77.29%{translate:-57.0% 4.5px;rotate:-15.8deg;animation-timing-function:linear}
+    78.7%{translate:-65.8% -4.0px;rotate:-12.4deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    80.6%{translate:calc(var(--x) - 2%) calc(var(--y) + 2px);rotate:calc(var(--o) + 2.5deg);z-index:2;animation-timing-function:ease-out}
+    81.8%,100%{translate:var(--x) var(--y);rotate:var(--o);z-index:2}
+  }
+  /* tight centre orbit, 1.5 turns — ends right of centre and keeps going to
+     slot 5: c3 and c4 trade sides on the gather, the frame that proves it */
+  @keyframes she-c3{
+    0%,7.3%{translate:var(--x) var(--y);rotate:var(--o);z-index:3;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    10.4%{translate:-42.0% -15.2px;rotate:-4.1deg;animation-timing-function:linear}
+    11.58%{translate:-28.8% -25.4px;rotate:4.0deg;animation-timing-function:linear}
+    12.76%{translate:-7.8% -30.6px;rotate:11.8deg;animation-timing-function:linear}
+    13.93%{translate:15.3% -29.6px;rotate:18.3deg;animation-timing-function:linear}
+    15.11%{translate:34.3% -22.4px;rotate:23.1deg;animation-timing-function:linear}
+    16.29%{translate:44.1% -11.2px;rotate:25.7deg;animation-timing-function:linear}
+    17.47%{translate:42.0% 1.2px;rotate:25.7deg;animation-timing-function:linear}
+    18.64%{translate:28.8% 11.4px;rotate:23.2deg;animation-timing-function:linear}
+    19.82%{translate:7.8% 16.6px;rotate:18.4deg;animation-timing-function:linear}
+    21%{translate:-15.3% 15.6px;rotate:11.9deg;animation-timing-function:linear}
+    22.18%{translate:-34.3% 8.4px;rotate:4.1deg;animation-timing-function:linear}
+    23.36%{translate:-44.1% -2.8px;rotate:-4.0deg;animation-timing-function:linear}
+    24.53%{translate:-42.0% -15.2px;rotate:-11.8deg;animation-timing-function:linear}
+    25.71%{translate:-28.8% -25.4px;rotate:-18.3deg;animation-timing-function:linear}
+    26.89%{translate:-7.8% -30.6px;rotate:-23.1deg;animation-timing-function:linear}
+    28.07%{translate:15.3% -29.6px;rotate:-25.7deg;animation-timing-function:linear}
+    29.24%{translate:34.3% -22.4px;rotate:-25.7deg;animation-timing-function:linear}
+    30.42%{translate:44.1% -11.2px;rotate:-23.2deg;animation-timing-function:linear}
+    31.6%{translate:42.0% 1.2px;rotate:-18.4deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    33.4%{translate:46.1% 6.2px;rotate:-9.07deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    35.2%{translate:53.8% -5.8px;rotate:1.59deg;animation-timing-function:cubic-bezier(.2,.6,.3,1)}
+    37%{translate:59.0% -2.0px;rotate:5.75deg;z-index:5;animation-timing-function:ease-out}
+    38%,52.2%{translate:57% -4px;rotate:8.25deg;z-index:5;animation-timing-function:ease-in}
+    52.7%{translate:59.0% -2.0px;rotate:5.75deg;z-index:5;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    53.9%{translate:53.8% -5.8px;rotate:1.59deg;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    55.8%{translate:46.1% 6.2px;rotate:-9.07deg;animation-timing-function:cubic-bezier(.55,.1,.8,.6)}
+    57.6%{translate:42.0% 1.2px;rotate:-18.4deg;animation-timing-function:linear}
+    58.77%{translate:44.1% -11.2px;rotate:-23.2deg;animation-timing-function:linear}
+    59.94%{translate:34.3% -22.4px;rotate:-25.7deg;animation-timing-function:linear}
+    61.12%{translate:15.3% -29.6px;rotate:-25.7deg;animation-timing-function:linear}
+    62.29%{translate:-7.8% -30.6px;rotate:-23.1deg;animation-timing-function:linear}
+    63.46%{translate:-28.8% -25.4px;rotate:-18.3deg;animation-timing-function:linear}
+    64.63%{translate:-42.0% -15.2px;rotate:-11.8deg;animation-timing-function:linear}
+    65.81%{translate:-44.1% -2.8px;rotate:-4.0deg;animation-timing-function:linear}
+    66.98%{translate:-34.3% 8.4px;rotate:4.1deg;animation-timing-function:linear}
+    68.15%{translate:-15.3% 15.6px;rotate:11.9deg;animation-timing-function:linear}
+    69.32%{translate:7.8% 16.6px;rotate:18.4deg;animation-timing-function:linear}
+    70.49%{translate:28.8% 11.4px;rotate:23.2deg;animation-timing-function:linear}
+    71.67%{translate:42.0% 1.2px;rotate:25.7deg;animation-timing-function:linear}
+    72.84%{translate:44.1% -11.2px;rotate:25.7deg;animation-timing-function:linear}
+    74.01%{translate:34.3% -22.4px;rotate:23.1deg;animation-timing-function:linear}
+    75.18%{translate:15.3% -29.6px;rotate:18.3deg;animation-timing-function:linear}
+    76.36%{translate:-7.8% -30.6px;rotate:11.8deg;animation-timing-function:linear}
+    77.53%{translate:-28.8% -25.4px;rotate:4.0deg;animation-timing-function:linear}
+    78.7%{translate:-42.0% -15.2px;rotate:-4.1deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    80.8%{translate:calc(var(--x) + 2%) calc(var(--y) + 2px);rotate:calc(var(--o) - 2.5deg);z-index:3;animation-timing-function:ease-out}
+    82%,100%{translate:var(--x) var(--y);rotate:var(--o);z-index:3}
+  }
+  /* centre-right orbit, counter-clockwise, 1.5 turns — ends left, lands slot 2 */
+  @keyframes she-c4{
+    0%,7.5%{translate:var(--x) var(--y);rotate:var(--o);z-index:4;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    10.4%{translate:51.9% 1.2px;rotate:4.1deg;animation-timing-function:linear}
+    11.58%{translate:54.4% -11.2px;rotate:-3.4deg;animation-timing-function:linear}
+    12.76%{translate:42.3% -22.4px;rotate:-10.6deg;animation-timing-function:linear}
+    13.93%{translate:18.9% -29.6px;rotate:-16.7deg;animation-timing-function:linear}
+    15.11%{translate:-9.6% -30.6px;rotate:-21.2deg;animation-timing-function:linear}
+    16.29%{translate:-35.5% -25.4px;rotate:-23.6deg;animation-timing-function:linear}
+    17.47%{translate:-51.9% -15.2px;rotate:-23.8deg;animation-timing-function:linear}
+    18.64%{translate:-54.4% -2.8px;rotate:-21.6deg;animation-timing-function:linear}
+    19.82%{translate:-42.3% 8.4px;rotate:-17.2deg;animation-timing-function:linear}
+    21%{translate:-18.9% 15.6px;rotate:-11.2deg;animation-timing-function:linear}
+    22.18%{translate:9.6% 16.6px;rotate:-4.1deg;animation-timing-function:linear}
+    23.36%{translate:35.5% 11.4px;rotate:3.4deg;animation-timing-function:linear}
+    24.53%{translate:51.9% 1.2px;rotate:10.6deg;animation-timing-function:linear}
+    25.71%{translate:54.4% -11.2px;rotate:16.7deg;animation-timing-function:linear}
+    26.89%{translate:42.3% -22.4px;rotate:21.2deg;animation-timing-function:linear}
+    28.07%{translate:18.9% -29.6px;rotate:23.6deg;animation-timing-function:linear}
+    29.24%{translate:-9.6% -30.6px;rotate:23.8deg;animation-timing-function:linear}
+    30.42%{translate:-35.5% -25.4px;rotate:21.6deg;animation-timing-function:linear}
+    31.6%{translate:-51.9% -15.2px;rotate:17.2deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    33.4%{translate:-62.7% -4.6px;rotate:8.29deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    35.2%{translate:-51.6% -7.1px;rotate:-1.89deg;animation-timing-function:cubic-bezier(.2,.6,.3,1)}
+    37.2%{translate:-59.0% 1.0px;rotate:-5.75deg;z-index:2;animation-timing-function:ease-out}
+    38%,52%{translate:-57% -1px;rotate:-8.25deg;z-index:2;animation-timing-function:ease-in}
+    52.5%{translate:-59.0% 1.0px;rotate:-5.75deg;z-index:2;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    53.9%{translate:-51.6% -7.1px;rotate:-1.89deg;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    55.8%{translate:-62.7% -4.6px;rotate:8.29deg;animation-timing-function:cubic-bezier(.55,.1,.8,.6)}
+    57.6%{translate:-51.9% -15.2px;rotate:17.2deg;animation-timing-function:linear}
+    58.77%{translate:-35.5% -25.4px;rotate:21.6deg;animation-timing-function:linear}
+    59.94%{translate:-9.6% -30.6px;rotate:23.8deg;animation-timing-function:linear}
+    61.12%{translate:18.9% -29.6px;rotate:23.6deg;animation-timing-function:linear}
+    62.29%{translate:42.3% -22.4px;rotate:21.2deg;animation-timing-function:linear}
+    63.46%{translate:54.4% -11.2px;rotate:16.7deg;animation-timing-function:linear}
+    64.63%{translate:51.9% 1.2px;rotate:10.6deg;animation-timing-function:linear}
+    65.81%{translate:35.5% 11.4px;rotate:3.4deg;animation-timing-function:linear}
+    66.98%{translate:9.6% 16.6px;rotate:-4.1deg;animation-timing-function:linear}
+    68.15%{translate:-18.9% 15.6px;rotate:-11.2deg;animation-timing-function:linear}
+    69.32%{translate:-42.3% 8.4px;rotate:-17.2deg;animation-timing-function:linear}
+    70.49%{translate:-54.4% -2.8px;rotate:-21.6deg;animation-timing-function:linear}
+    71.67%{translate:-51.9% -15.2px;rotate:-23.8deg;animation-timing-function:linear}
+    72.84%{translate:-35.5% -25.4px;rotate:-23.6deg;animation-timing-function:linear}
+    74.01%{translate:-9.6% -30.6px;rotate:-21.2deg;animation-timing-function:linear}
+    75.18%{translate:18.9% -29.6px;rotate:-16.7deg;animation-timing-function:linear}
+    76.36%{translate:42.3% -22.4px;rotate:-10.6deg;animation-timing-function:linear}
+    77.53%{translate:54.4% -11.2px;rotate:-3.4deg;animation-timing-function:linear}
+    78.7%{translate:51.9% 1.2px;rotate:4.1deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    81%{translate:calc(var(--x) - 2%) calc(var(--y) + 2px);rotate:calc(var(--o) + 2.5deg);z-index:4;animation-timing-function:ease-out}
+    82.2%,100%{translate:var(--x) var(--y);rotate:var(--o);z-index:4}
+  }
+  /* flat skimming orbit, clockwise — swept all the way out to slot 6 */
+  @keyframes she-c5{
+    0%,7.7%{translate:var(--x) var(--y);rotate:var(--o);z-index:5;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    10.4%{translate:81.6% -3.0px;rotate:12.4deg;animation-timing-function:linear}
+    11.81%{translate:70.6% 4.5px;rotate:15.4deg;animation-timing-function:linear}
+    13.23%{translate:40.8% 10.0px;rotate:16.9deg;animation-timing-function:linear}
+    14.64%{translate:0.0% 12.0px;rotate:16.7deg;animation-timing-function:linear}
+    16.05%{translate:-40.8% 10.0px;rotate:14.9deg;animation-timing-function:linear}
+    17.47%{translate:-70.6% 4.5px;rotate:11.7deg;animation-timing-function:linear}
+    18.88%{translate:-81.6% -3.0px;rotate:7.3deg;animation-timing-function:linear}
+    20.29%{translate:-70.6% -10.5px;rotate:2.2deg;animation-timing-function:linear}
+    21.71%{translate:-40.8% -16.0px;rotate:-3.2deg;animation-timing-function:linear}
+    23.12%{translate:0.0% -18.0px;rotate:-8.2deg;animation-timing-function:linear}
+    24.53%{translate:40.8% -16.0px;rotate:-12.4deg;animation-timing-function:linear}
+    25.95%{translate:70.6% -10.5px;rotate:-15.4deg;animation-timing-function:linear}
+    27.36%{translate:81.6% -3.0px;rotate:-16.9deg;animation-timing-function:linear}
+    28.77%{translate:70.6% 4.5px;rotate:-16.7deg;animation-timing-function:linear}
+    30.19%{translate:40.8% 10.0px;rotate:-14.9deg;animation-timing-function:linear}
+    31.6%{translate:0.0% 12.0px;rotate:-11.7deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    33.4%{translate:10.8% 7.2px;rotate:-2.79deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    35.2%{translate:81.5% -1.3px;rotate:7.39deg;animation-timing-function:cubic-bezier(.2,.6,.3,1)}
+    37.4%{translate:97.0% -3.0px;rotate:11.25deg;z-index:6;animation-timing-function:ease-out}
+    38%,51.8%{translate:95% -5px;rotate:13.75deg;z-index:6;animation-timing-function:ease-in}
+    52.3%{translate:97.0% -3.0px;rotate:11.25deg;z-index:6;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    53.9%{translate:81.5% -1.3px;rotate:7.39deg;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    55.8%{translate:10.8% 7.2px;rotate:-2.79deg;animation-timing-function:cubic-bezier(.55,.1,.8,.6)}
+    57.6%{translate:0.0% 12.0px;rotate:-11.7deg;animation-timing-function:linear}
+    59.01%{translate:40.8% 10.0px;rotate:-14.9deg;animation-timing-function:linear}
+    60.41%{translate:70.6% 4.5px;rotate:-16.7deg;animation-timing-function:linear}
+    61.82%{translate:81.6% -3.0px;rotate:-16.9deg;animation-timing-function:linear}
+    63.23%{translate:70.6% -10.5px;rotate:-15.4deg;animation-timing-function:linear}
+    64.63%{translate:40.8% -16.0px;rotate:-12.4deg;animation-timing-function:linear}
+    66.04%{translate:0.0% -18.0px;rotate:-8.2deg;animation-timing-function:linear}
+    67.45%{translate:-40.8% -16.0px;rotate:-3.2deg;animation-timing-function:linear}
+    68.85%{translate:-70.6% -10.5px;rotate:2.2deg;animation-timing-function:linear}
+    70.26%{translate:-81.6% -3.0px;rotate:7.3deg;animation-timing-function:linear}
+    71.67%{translate:-70.6% 4.5px;rotate:11.7deg;animation-timing-function:linear}
+    73.07%{translate:-40.8% 10.0px;rotate:14.9deg;animation-timing-function:linear}
+    74.48%{translate:0.0% 12.0px;rotate:16.7deg;animation-timing-function:linear}
+    75.89%{translate:40.8% 10.0px;rotate:16.9deg;animation-timing-function:linear}
+    77.29%{translate:70.6% 4.5px;rotate:15.4deg;animation-timing-function:linear}
+    78.7%{translate:81.6% -3.0px;rotate:12.4deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    81.2%{translate:calc(var(--x) + 2%) calc(var(--y) + 2px);rotate:calc(var(--o) - 2.5deg);z-index:5;animation-timing-function:ease-out}
+    82.4%,100%{translate:var(--x) var(--y);rotate:var(--o);z-index:5}
+  }
+  /* widest orbit, counter-clockwise — the last to break, and it crosses the
+     whole fan to land in slot 1 */
+  @keyframes she-c6{
+    0%,7.9%{translate:var(--x) var(--y);rotate:var(--o);z-index:6;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    10.4%{translate:115.8% -5.0px;rotate:19.0deg;animation-timing-function:linear}
+    11.81%{translate:100.3% -15.0px;rotate:16.1deg;animation-timing-function:linear}
+    13.23%{translate:57.9% -22.3px;rotate:11.7deg;animation-timing-function:linear}
+    14.64%{translate:0.0% -25.0px;rotate:6.1deg;animation-timing-function:linear}
+    16.05%{translate:-57.9% -22.3px;rotate:-0.1deg;animation-timing-function:linear}
+    17.47%{translate:-100.3% -15.0px;rotate:-6.2deg;animation-timing-function:linear}
+    18.88%{translate:-115.8% -5.0px;rotate:-11.8deg;animation-timing-function:linear}
+    20.29%{translate:-100.3% 5.0px;rotate:-16.2deg;animation-timing-function:linear}
+    21.71%{translate:-57.9% 12.3px;rotate:-19.0deg;animation-timing-function:linear}
+    23.12%{translate:0.0% 15.0px;rotate:-20.0deg;animation-timing-function:linear}
+    24.53%{translate:57.9% 12.3px;rotate:-19.0deg;animation-timing-function:linear}
+    25.95%{translate:100.3% 5.0px;rotate:-16.1deg;animation-timing-function:linear}
+    27.36%{translate:115.8% -5.0px;rotate:-11.7deg;animation-timing-function:linear}
+    28.77%{translate:100.3% -15.0px;rotate:-6.1deg;animation-timing-function:linear}
+    30.19%{translate:57.9% -22.3px;rotate:0.1deg;animation-timing-function:linear}
+    31.6%{translate:0.0% -25.0px;rotate:6.2deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    33.4%{translate:-65.1% -17.7px;rotate:-0.78deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    35.2%{translate:-56.8% -5.6px;rotate:-8.76deg;animation-timing-function:cubic-bezier(.2,.6,.3,1)}
+    37.6%{translate:-97.0% 2.0px;rotate:-11.25deg;z-index:1;animation-timing-function:ease-out}
+    38%,51.6%{translate:-95% 0px;rotate:-13.75deg;z-index:1;animation-timing-function:ease-in}
+    52.1%{translate:-97.0% 2.0px;rotate:-11.25deg;z-index:1;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    53.9%{translate:-56.8% -5.6px;rotate:-8.76deg;animation-timing-function:cubic-bezier(.5,.05,.55,.95)}
+    55.8%{translate:-65.1% -17.7px;rotate:-0.78deg;animation-timing-function:cubic-bezier(.55,.1,.8,.6)}
+    57.6%{translate:0.0% -25.0px;rotate:6.2deg;animation-timing-function:linear}
+    59.01%{translate:57.9% -22.3px;rotate:0.1deg;animation-timing-function:linear}
+    60.41%{translate:100.3% -15.0px;rotate:-6.1deg;animation-timing-function:linear}
+    61.82%{translate:115.8% -5.0px;rotate:-11.7deg;animation-timing-function:linear}
+    63.23%{translate:100.3% 5.0px;rotate:-16.1deg;animation-timing-function:linear}
+    64.63%{translate:57.9% 12.3px;rotate:-19.0deg;animation-timing-function:linear}
+    66.04%{translate:0.0% 15.0px;rotate:-20.0deg;animation-timing-function:linear}
+    67.45%{translate:-57.9% 12.3px;rotate:-19.0deg;animation-timing-function:linear}
+    68.85%{translate:-100.3% 5.0px;rotate:-16.2deg;animation-timing-function:linear}
+    70.26%{translate:-115.8% -5.0px;rotate:-11.8deg;animation-timing-function:linear}
+    71.67%{translate:-100.3% -15.0px;rotate:-6.2deg;animation-timing-function:linear}
+    73.07%{translate:-57.9% -22.3px;rotate:-0.1deg;animation-timing-function:linear}
+    74.48%{translate:0.0% -25.0px;rotate:6.1deg;animation-timing-function:linear}
+    75.89%{translate:57.9% -22.3px;rotate:11.7deg;animation-timing-function:linear}
+    77.29%{translate:100.3% -15.0px;rotate:16.1deg;animation-timing-function:linear}
+    78.7%{translate:115.8% -5.0px;rotate:19.0deg;animation-timing-function:cubic-bezier(.25,.4,.35,1)}
+    81.4%{translate:calc(var(--x) - 2%) calc(var(--y) + 2px);rotate:calc(var(--o) + 2.5deg);z-index:6;animation-timing-function:ease-out}
+    82.6%,100%{translate:var(--x) var(--y);rotate:var(--o);z-index:6}
+  }
+
+  /* ===== BEAT STRIP — one row, cells grow by ms (inline flex-grow) ===== */
+  .she-strip{display:flex;align-items:stretch;gap:1px;width:100%;max-width:352px}
+  .she-b{flex-basis:0;min-width:0;overflow:hidden;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:1px;padding:3px 1px;text-align:center;
+    background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:4px}
+  .she-b b{font-size:7px;letter-spacing:.05em;font-weight:800;color:var(--dim);
+    text-transform:uppercase;line-height:1}
+  .she-b i{font-style:normal;font-size:7px;line-height:1;color:#8fa0c4;
+    font-variant-numeric:tabular-nums}
+  .she-b.new{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.16)}
+  .she-tot{flex:0 0 auto;display:flex;align-items:center;padding-left:5px;
+    font-size:7px;letter-spacing:.05em;font-weight:800;color:var(--dim);
+    text-transform:uppercase;text-align:right;font-variant-numeric:tabular-nums}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div id="ovWheel" class="dealing hunting she">
+    <div class="wsettled">{{wsettled:mode:singlestrike}}</div>
+    <div class="wtitle">MATCH RUNE</div>
+    <div class="wstage">{{runefelt:fate}}</div>
+    <div class="wname">&nbsp;</div>
+    <div class="wblurb">&nbsp;</div>
+    <div class="dhold"><b>&nbsp;</b><span>&nbsp;</span></div>
+  </div>
+  <div class="cap2">The wash — six cards smeared in crossing circles, gathered back into the fan</div>
+  <div class="she-strip">
+    <span class="she-b" style="flex-grow:380"><b>Fan</b><i>380</i></span>
+    <span class="she-b new" style="flex-grow:320"><b>Break</b><i>320</i></span>
+    <span class="she-b new" style="flex-grow:1900"><b>Wash</b><i>1900</i></span>
+    <span class="she-b new" style="flex-grow:580"><b>Gather</b><i>580</i></span>
+    <span class="she-b" style="flex-grow:560"><b>Deal</b><i>560</i></span>
+    <span class="she-b" style="flex-grow:520"><b>Flip</b><i>520</i></span>
+    <span class="she-tot">Total 4260</span>
+  </div>
+  <div class="note"><b>The hands:</b> a table wash — both palms flat on the cards, smearing all six around the felt in overlapping circles before sweeping them back into a fan. It is the casino's answer to a deck someone might have tracked, and the strongest possible statement that the order is truly gone: nothing splits into tidy halves, every card is loose on the table at once. <b>Beats:</b> FAN 380 → BREAK 320 → WASH 1900 → GATHER 580 → DEAL 560 → FLIP 520; shuffle portion 2800ms, fan→flip 4260ms (today 1250 / 2900). <b>Honest re-order:</b> the two redeal waves of ui/runedeal.ts land where the riffle's and the cut's do today — each card takes the intermediate order mid-wash, on the far side of its orbit where its corner index moves fastest under a crossing neighbour, and takes the settled order as it spirals back in on the gather, exactly the "turns over its new rune as it zips back in" moment the cut uses now. Cards 3 and 4 literally trade sides on the way home, so the re-ordering is watched, not implied. This card loops the shuffle twice — out through the permutation and back home — because a CSS study cannot relabel runes the way redeal() does; in the app a single pass plus redeal()'s icon swaps achieves the same visible re-order. <b>Cost vs S1:</b> the slowest and busiest of the set — a riffle says technique, a wash says chaos; six cards in continuous motion for 1.9s risks reading as noise at 76px, and it adds ~1.4s to every reveal. <b>Seam:</b> still WAAPI in ui/runedeal.ts — riffle()+cut() become break/wash/gather driven by a per-slot ellipse table (rx, ry, direction, phase); restOf unchanged, the wash orbits the deck anchor and lands on exactly the fan the CSS draws.</div>
+</div></div>

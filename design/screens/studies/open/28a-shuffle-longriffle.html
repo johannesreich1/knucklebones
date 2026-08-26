@@ -1,0 +1,308 @@
+<!-- meta name="S1 — Longhand riffle (baseline retime)" group="4i · The rune shuffle" subtitle="The 'just slow it down' answer and the floor every other study must beat: today's riffle-and-cut vocabulary untouched but given time to read — two mirrored riffles with wider arcs, a deeper 45ms card lag and a slower cut — shuffle ~2.8s, whole beat ~4.4s (today: 1.25s / 2.9s)" width=430 height=1410 sizes="md" links="Offline — local play, Spells" -->
+<style>
+  /* Card-local names only (sha*). The deck is the app's own (.rfelt/.rdeck/
+     .rcard via the runefelt token); this card scopes every animation under the
+     .sha class on #ovWheel and never redeclares a bare app class. Keyframes
+     override ONLY translate + rotate + z-index, and every card starts and ends
+     each loop at its inline rest pose (translate:var(--x) var(--y);
+     rotate:var(--o); z-index = its child index), so the loop seam is invisible
+     and the still equals the app's resting fan. */
+  .scr{align-items:center;justify-content:center;gap:12px}
+  #ovWheel{--card:76px;position:relative;height:520px;box-sizing:border-box;align-self:stretch;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px 0}
+  .wblurb{max-width:262px}
+
+  /* fanIn() animates every card to opacity:1 with fill:'both' — the deck the
+     player watches riffle is FULLY OPAQUE; main.css's .62 is only the pre-fan
+     still / reduced-motion / design-still state. */
+  .sha .rcard{opacity:1}
+
+  /* ===== ONE 9600ms MASTER LOOP — all six cards run 9.6s, delay 0, infinite.
+     Stagger lives in the keyframe percentages, never in animation-delay.
+     TWO shuffles composing to identity: shuffle A retargets every card into a
+     foreign slot (σ), a long PERMUTED REST lets the re-order be READ — same
+     fan, runes in new places — and shuffle B, the same vocabulary with the
+     arcs mirrored, carries every card back to its own slot. σ is the split
+     riffle's own interleave: the odd wing (arcing left in pass 1, right in
+     pass 2) squares up as the RIGHT block, the even wing as the LEFT block, so
+     σ = 1→4 2→1 3→5 4→2 5→6 6→3 (all six cards move); shuffle B applies σ⁻¹.
+     A card resting in (or flying to) a foreign slot m carries that slot's pose
+     literals AND z-index:m — DOM order is z order in the app's fan, so both
+     rests must paint the left-under-right cascade; z-index steps in discrete
+     jumps mid-segment, which only ever happens while cards are in flight.
+     %→ms map (1% = 96ms); per-shuffle beats keep the S1 proposal untouched
+     (FAN 380, RIFFLE 780 ×2, CUT 560, SQUARE 150, staggers 45/24ms):
+        0.0– 2.9%      0– 280   GATHER   loop seam only: the fan scoops square
+                                          (in the app each deal starts empty)
+        2.9– 8.3%    280– 800   FAN 380   card i leaves the pile +28ms·i
+        8.9–20.4%    860–1960   RIFFLE A1 780   odd cards arc left, even right,
+                                          zip home +45ms·i
+       20.4–33.1%   1960–3180   RIFFLE A2 780   mirrored — and the wings STAY
+                                          traded: each card zips into slot σ(i)
+       33.1–39.6%   3180–3800   CUT A 560   the permuted deck aside as a block,
+                                          +24ms·i
+       39.6–42.2%   3800–4050   SQUARE A 150   the tap that squares the deck
+       42.2–54.6%   4050–5245   PERMUTED REST   ≥12% still: the frame the
+                                          re-order is read in
+       54.6–66.1%   5245–6350   RIFFLE B1 780   the permuted fan riffles in
+                                          place, arcs mirrored
+       66.1–77.6%   6350–7450   RIFFLE B2 780   σ⁻¹ — every card zips back to
+                                          its own slot
+       77.6–85.3%   7450–8190   CUT B 560   the home deck aside and back
+       85.3–87.9%   8190–8440   SQUARE B 150
+       87.9– 100%   8440–9600   HOME REST   the settled fan, ≥12% of the loop
+     DEAL 560 / FLIP 520 are the unchanged tail and are not pictured: this
+     study is the SHUFFLE, nothing is drawn. Easings quote ui/runedeal.ts:
+     EASE_SHUFFLE cubic-bezier(.35,.05,.3,1) out, EASE_LAND
+     cubic-bezier(.2,.9,.24,1) home; the zip accelerates through
+     cubic-bezier(.5,.08,.72,.45) so the return reads as gravity, not a tween.
+     Rest→rest keyframe pairs are holds; the easing they carry only governs the
+     following moving segment. ===== */
+  .sha .rcard:nth-child(1){z-index:1;animation:sha-c1 9.6s linear infinite}
+  .sha .rcard:nth-child(2){z-index:2;animation:sha-c2 9.6s linear infinite}
+  .sha .rcard:nth-child(3){z-index:3;animation:sha-c3 9.6s linear infinite}
+  .sha .rcard:nth-child(4){z-index:4;animation:sha-c4 9.6s linear infinite}
+  .sha .rcard:nth-child(5){z-index:5;animation:sha-c5 9.6s linear infinite}
+  .sha .rcard:nth-child(6){z-index:6;animation:sha-c6 9.6s linear infinite}
+
+  /* card 1 — home s1 · σ→s4 · A: riffle 1 LEFT, riffle 2 RIGHT lands slot 4 · B mirrored */
+  @keyframes sha-c1{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:1;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    2.9%{translate:0% var(--y);rotate:0deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    6.9%,8.9%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    11.1%{translate:calc(var(--x) - 90%) calc(var(--y) - 30px);rotate:-14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    13.7%{translate:calc(var(--x) - 72%) calc(var(--y) + 10px);rotate:-6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    15.9%{translate:calc(var(--x) + 7%) var(--y);rotate:calc(var(--o) + 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    17.1%,20.4%{translate:var(--x) var(--y);rotate:var(--o);z-index:1;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    22.6%{translate:calc(var(--x) + 90%) calc(var(--y) - 30px);rotate:14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    25.1%{translate:calc(var(--x) + 72%) calc(var(--y) + 10px);rotate:6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    27.3%{translate:26% -3px;rotate:5.75deg;z-index:4;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    28.5%,31.9%{translate:19% -3px;rotate:2.75deg;z-index:4;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    33.6%{translate:114% -19px;rotate:11deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    35.5%{translate:114% 15px;rotate:4deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    37%{translate:19% 1px;rotate:-0.25deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    37.7%,39.6%{translate:19% -3px;rotate:2.75deg;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    40.5%{translate:19% -1px;rotate:1.25deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    42.2%,54.6%{translate:19% -3px;rotate:2.75deg;z-index:4;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    56.8%{translate:109% -33px;rotate:14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    59.4%{translate:91% 7px;rotate:6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    61.6%{translate:12% -3px;rotate:-0.25deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    62.8%,66.1%{translate:19% -3px;rotate:2.75deg;z-index:4;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    68.3%{translate:-71% -33px;rotate:-14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    70.8%{translate:-53% 7px;rotate:-6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    73%{translate:calc(var(--x) - 7%) var(--y);rotate:calc(var(--o) - 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    74.2%,77.6%{translate:var(--x) var(--y);rotate:var(--o);z-index:1;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    79.3%{translate:calc(var(--x) + 95%) calc(var(--y) - 16px);rotate:11deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    81.2%{translate:calc(var(--x) + 95%) calc(var(--y) + 18px);rotate:4deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    82.7%{translate:var(--x) calc(var(--y) + 4px);rotate:calc(var(--o) - 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    83.4%,85.3%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    86.2%{translate:var(--x) calc(var(--y) + 2px);rotate:calc(var(--o) - 1.5deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    87.9%,100%{translate:var(--x) var(--y);rotate:var(--o);z-index:1}
+  }
+  /* card 2 — home s2 · σ→s1 · A: riffle 1 RIGHT, riffle 2 LEFT lands slot 1 · B mirrored */
+  @keyframes sha-c2{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:2;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    2.9%,3.2%{translate:0% var(--y);rotate:0deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    7.1%,9.5%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    11.5%{translate:calc(var(--x) + 90%) calc(var(--y) - 30px);rotate:14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    14.1%{translate:calc(var(--x) + 72%) calc(var(--y) + 10px);rotate:6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    16.3%{translate:calc(var(--x) - 7%) var(--y);rotate:calc(var(--o) - 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    17.6%,20.9%{translate:var(--x) var(--y);rotate:var(--o);z-index:2;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    23%{translate:calc(var(--x) - 90%) calc(var(--y) - 30px);rotate:-14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    25.6%{translate:calc(var(--x) - 72%) calc(var(--y) + 10px);rotate:-6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    27.8%{translate:-88% 0px;rotate:-10.75deg;z-index:1;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    29%,32.1%{translate:-95% 0px;rotate:-13.75deg;z-index:1;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    33.9%{translate:0% -16px;rotate:11deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    35.7%{translate:0% 18px;rotate:4deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    37.2%{translate:-95% 4px;rotate:-16.75deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    38%,39.6%{translate:-95% 0px;rotate:-13.75deg;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    40.5%{translate:-95% 2px;rotate:-15.25deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    42.2%,55.2%{translate:-95% 0px;rotate:-13.75deg;z-index:1;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    57.2%{translate:-185% -30px;rotate:-14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    59.8%{translate:-167% 10px;rotate:-6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    62%{translate:-88% 0px;rotate:-10.75deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    63.3%,66.6%{translate:-95% 0px;rotate:-13.75deg;z-index:1;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    68.7%{translate:-5% -30px;rotate:14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    71.3%{translate:-23% 10px;rotate:6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    73.5%{translate:calc(var(--x) - 7%) var(--y);rotate:calc(var(--o) - 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    74.7%,77.8%{translate:var(--x) var(--y);rotate:var(--o);z-index:2;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    79.6%{translate:calc(var(--x) + 95%) calc(var(--y) - 16px);rotate:11deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    81.4%{translate:calc(var(--x) + 95%) calc(var(--y) + 18px);rotate:4deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    82.9%{translate:var(--x) calc(var(--y) + 4px);rotate:calc(var(--o) - 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    83.7%,85.3%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    86.2%{translate:var(--x) calc(var(--y) + 2px);rotate:calc(var(--o) - 1.5deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    87.9%,100%{translate:var(--x) var(--y);rotate:var(--o);z-index:2}
+  }
+  /* card 3 — home s3 · σ→s5 · A: riffle 1 LEFT, riffle 2 RIGHT lands slot 5 · B mirrored */
+  @keyframes sha-c3{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:3;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    2.9%,3.5%{translate:0% var(--y);rotate:0deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    7.5%,9.9%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    12%{translate:calc(var(--x) - 90%) calc(var(--y) - 30px);rotate:-14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    14.6%{translate:calc(var(--x) - 72%) calc(var(--y) + 10px);rotate:-6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    16.8%{translate:calc(var(--x) + 7%) var(--y);rotate:calc(var(--o) + 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    18%,21.4%{translate:var(--x) var(--y);rotate:var(--o);z-index:3;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    23.5%{translate:calc(var(--x) + 90%) calc(var(--y) - 30px);rotate:14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    26%{translate:calc(var(--x) + 72%) calc(var(--y) + 10px);rotate:6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    28.2%{translate:64% -4px;rotate:11.25deg;z-index:5;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    29.5%,32.4%{translate:57% -4px;rotate:8.25deg;z-index:5;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    34.1%{translate:152% -20px;rotate:11deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    36%{translate:152% 14px;rotate:4deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    37.5%{translate:57% 0px;rotate:5.25deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    38.2%,39.6%{translate:57% -4px;rotate:8.25deg;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    40.5%{translate:57% -2px;rotate:6.75deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    42.2%,55.6%{translate:57% -4px;rotate:8.25deg;z-index:5;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    57.7%{translate:147% -34px;rotate:14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    60.3%{translate:129% 6px;rotate:6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    62.5%{translate:50% -4px;rotate:5.25deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    63.7%,67.1%{translate:57% -4px;rotate:8.25deg;z-index:5;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    69.2%{translate:-33% -34px;rotate:-14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    71.7%{translate:-15% 6px;rotate:-6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    73.9%{translate:calc(var(--x) - 7%) var(--y);rotate:calc(var(--o) - 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    75.2%,78.1%{translate:var(--x) var(--y);rotate:var(--o);z-index:3;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    79.8%{translate:calc(var(--x) + 95%) calc(var(--y) - 16px);rotate:11deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    81.7%{translate:calc(var(--x) + 95%) calc(var(--y) + 18px);rotate:4deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    83.2%{translate:var(--x) calc(var(--y) + 4px);rotate:calc(var(--o) - 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    83.9%,85.3%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    86.2%{translate:var(--x) calc(var(--y) + 2px);rotate:calc(var(--o) - 1.5deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    87.9%,100%{translate:var(--x) var(--y);rotate:var(--o);z-index:3}
+  }
+  /* card 4 — home s4 · σ→s2 · A: riffle 1 RIGHT, riffle 2 LEFT lands slot 2 · B mirrored */
+  @keyframes sha-c4{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:4;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    2.9%,3.8%{translate:0% var(--y);rotate:0deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    7.8%,10.4%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    12.5%{translate:calc(var(--x) + 90%) calc(var(--y) - 30px);rotate:14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    15.1%{translate:calc(var(--x) + 72%) calc(var(--y) + 10px);rotate:6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    17.3%{translate:calc(var(--x) - 7%) var(--y);rotate:calc(var(--o) - 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    18.5%,21.8%{translate:var(--x) var(--y);rotate:var(--o);z-index:4;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    24%{translate:calc(var(--x) - 90%) calc(var(--y) - 30px);rotate:-14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    26.6%{translate:calc(var(--x) - 72%) calc(var(--y) + 10px);rotate:-6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    28.7%{translate:-64% -1px;rotate:-11.25deg;z-index:2;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    29.9%,32.6%{translate:-57% -1px;rotate:-8.25deg;z-index:2;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    34.4%{translate:38% -17px;rotate:11deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    36.2%{translate:38% 17px;rotate:4deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    37.7%{translate:-57% 3px;rotate:-11.25deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    38.5%,39.6%{translate:-57% -1px;rotate:-8.25deg;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    40.5%{translate:-57% 1px;rotate:-9.75deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    42.2%,56.1%{translate:-57% -1px;rotate:-8.25deg;z-index:2;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    58.2%{translate:-147% -31px;rotate:-14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    60.8%{translate:-129% 9px;rotate:-6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    63%{translate:-50% -1px;rotate:-5.25deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    64.2%,67.5%{translate:-57% -1px;rotate:-8.25deg;z-index:2;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    69.7%{translate:33% -31px;rotate:14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    72.3%{translate:15% 9px;rotate:6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    74.4%{translate:calc(var(--x) + 7%) var(--y);rotate:calc(var(--o) + 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    75.6%,78.3%{translate:var(--x) var(--y);rotate:var(--o);z-index:4;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    80.1%{translate:calc(var(--x) + 95%) calc(var(--y) - 16px);rotate:11deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    81.9%{translate:calc(var(--x) + 95%) calc(var(--y) + 18px);rotate:4deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    83.4%{translate:var(--x) calc(var(--y) + 4px);rotate:calc(var(--o) - 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    84.2%,85.3%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    86.2%{translate:var(--x) calc(var(--y) + 2px);rotate:calc(var(--o) - 1.5deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    87.9%,100%{translate:var(--x) var(--y);rotate:var(--o);z-index:4}
+  }
+  /* card 5 — home s5 · σ→s6 · A: riffle 1 LEFT, riffle 2 RIGHT lands slot 6 · B mirrored */
+  @keyframes sha-c5{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:5;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    2.9%,4.1%{translate:0% var(--y);rotate:0deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    8%,10.9%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    12.9%{translate:calc(var(--x) - 90%) calc(var(--y) - 30px);rotate:-14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    15.5%{translate:calc(var(--x) - 72%) calc(var(--y) + 10px);rotate:-6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    17.7%{translate:calc(var(--x) + 7%) var(--y);rotate:calc(var(--o) + 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    19%,22.3%{translate:var(--x) var(--y);rotate:var(--o);z-index:5;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    24.4%{translate:calc(var(--x) + 90%) calc(var(--y) - 30px);rotate:14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    27%{translate:calc(var(--x) + 72%) calc(var(--y) + 10px);rotate:6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    29.2%{translate:88% -5px;rotate:10.75deg;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    30.4%,32.9%{translate:95% -5px;rotate:13.75deg;z-index:6;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    34.7%{translate:190% -21px;rotate:11deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    36.5%{translate:190% 13px;rotate:4deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    38%{translate:95% -1px;rotate:10.75deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    38.7%,39.6%{translate:95% -5px;rotate:13.75deg;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    40.5%{translate:95% -3px;rotate:12.25deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    42.2%,56.6%{translate:95% -5px;rotate:13.75deg;z-index:6;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    58.6%{translate:185% -35px;rotate:14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    61.2%{translate:167% 5px;rotate:6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    63.4%{translate:88% -5px;rotate:10.75deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    64.7%,68%{translate:95% -5px;rotate:13.75deg;z-index:6;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    70.1%{translate:5% -35px;rotate:-14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    72.7%{translate:23% 5px;rotate:-6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    74.9%{translate:calc(var(--x) + 7%) var(--y);rotate:calc(var(--o) + 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    76.1%,78.6%{translate:var(--x) var(--y);rotate:var(--o);z-index:5;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    80.4%{translate:calc(var(--x) + 95%) calc(var(--y) - 16px);rotate:11deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    82.2%{translate:calc(var(--x) + 95%) calc(var(--y) + 18px);rotate:4deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    83.7%{translate:var(--x) calc(var(--y) + 4px);rotate:calc(var(--o) - 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    84.4%,85.3%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    86.2%{translate:var(--x) calc(var(--y) + 2px);rotate:calc(var(--o) - 1.5deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    87.9%,100%{translate:var(--x) var(--y);rotate:var(--o);z-index:5}
+  }
+  /* card 6 — home s6 · σ→s3 · A: riffle 1 RIGHT, riffle 2 LEFT lands slot 3 · B mirrored */
+  @keyframes sha-c6{
+    0%{translate:var(--x) var(--y);rotate:var(--o);z-index:6;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    2.9%,4.4%{translate:0% var(--y);rotate:0deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    8.3%,11.3%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    13.4%{translate:calc(var(--x) + 90%) calc(var(--y) - 30px);rotate:14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    16%{translate:calc(var(--x) + 72%) calc(var(--y) + 10px);rotate:6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    18.2%{translate:calc(var(--x) - 7%) var(--y);rotate:calc(var(--o) - 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    19.4%,22.8%{translate:var(--x) var(--y);rotate:var(--o);z-index:6;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    24.9%{translate:calc(var(--x) - 90%) calc(var(--y) - 30px);rotate:-14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    27.5%{translate:calc(var(--x) - 72%) calc(var(--y) + 10px);rotate:-6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    29.6%{translate:-26% -2px;rotate:-5.75deg;z-index:3;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    30.9%,33.1%{translate:-19% -2px;rotate:-2.75deg;z-index:3;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    34.9%{translate:76% -18px;rotate:11deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    36.7%{translate:76% 16px;rotate:4deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    38.3%{translate:-19% 2px;rotate:-5.75deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    39%,39.6%{translate:-19% -2px;rotate:-2.75deg;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    40.5%{translate:-19% 0px;rotate:-4.25deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    42.2%,57%{translate:-19% -2px;rotate:-2.75deg;z-index:3;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    59.1%{translate:-109% -32px;rotate:-14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    61.7%{translate:-91% 8px;rotate:-6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    63.9%{translate:-12% -2px;rotate:0.25deg;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    65.1%,68.5%{translate:-19% -2px;rotate:-2.75deg;z-index:3;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    70.6%{translate:71% -32px;rotate:14deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    73.2%{translate:53% 8px;rotate:6deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    75.3%{translate:calc(var(--x) + 7%) var(--y);rotate:calc(var(--o) + 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    76.6%,78.8%{translate:var(--x) var(--y);rotate:var(--o);z-index:6;animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    80.6%{translate:calc(var(--x) + 95%) calc(var(--y) - 16px);rotate:11deg;animation-timing-function:cubic-bezier(.5,.08,.72,.45)}
+    82.4%{translate:calc(var(--x) + 95%) calc(var(--y) + 18px);rotate:4deg;animation-timing-function:cubic-bezier(.3,.25,.4,1)}
+    84%{translate:var(--x) calc(var(--y) + 4px);rotate:calc(var(--o) - 3deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    84.7%,85.3%{translate:var(--x) var(--y);rotate:var(--o);animation-timing-function:cubic-bezier(.35,.05,.3,1)}
+    86.2%{translate:var(--x) calc(var(--y) + 2px);rotate:calc(var(--o) - 1.5deg);animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    87.9%,100%{translate:var(--x) var(--y);rotate:var(--o);z-index:6}
+  }
+
+  /* ===== BEAT STRIP — one quiet row, cells grow proportional to ms ===== */
+  .sha-strip{display:flex;gap:1px;width:100%;max-width:352px;align-items:stretch}
+  .sha-strip b{flex:1 1 0;min-width:0;height:30px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:1px;font-weight:800;font-size:7.5px;
+    letter-spacing:.08em;text-transform:uppercase;color:#c6d3ee;
+    background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)}
+  .sha-strip b i{font-style:normal;font-weight:600;font-size:6.5px;letter-spacing:.02em;color:var(--dim)}
+  .sha-strip b:first-child{border-radius:7px 0 0 7px}
+  .sha-strip b:nth-last-child(2){border-radius:0 7px 7px 0}
+  .sha-strip .sha-tail{background:rgba(255,255,255,.02);color:var(--dim)}
+  .sha-strip .sha-total{flex:0 0 auto;background:none;border:none;
+    align-items:flex-end;padding-left:7px;color:var(--dim)}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div id="ovWheel" class="dealing hunting sha">
+    <div class="wsettled">{{wsettled:mode:singlestrike}}</div>
+    <div class="wtitle">MATCH RUNE</div>
+    <div class="wstage">{{runefelt:fate}}</div>
+    <div class="wname">&nbsp;</div>
+    <div class="wblurb">&nbsp;</div>
+    <div class="dhold"><b>&nbsp;</b><span>&nbsp;</span></div>
+  </div>
+
+  <div class="cap2">S1 · scoop — fan — riffle — riffle (mirrored) — cut — tap square · today's moves at reading speed</div>
+  <div class="sha-strip">
+    <b style="flex-grow:380">FAN<i>380</i></b>
+    <b style="flex-grow:780">RIFFLE<i>780</i></b>
+    <b style="flex-grow:780">RIFFLE<i>780</i></b>
+    <b style="flex-grow:560">CUT<i>560</i></b>
+    <b style="flex-grow:150">SQ<i>150</i></b>
+    <b class="sha-tail" style="flex-grow:560">DEAL<i>560</i></b>
+    <b class="sha-tail" style="flex-grow:520">FLIP<i>520</i></b>
+    <b class="sha-total">TOTAL<i>~4.4s</i></b>
+  </div>
+
+  <div class="note"><b>The hands:</b> the fan is scooped square, fanned back out, then riffled twice — the deck splits into alternating halves that arch apart, hang for a breath, and zip home one card at a time (45ms apart), the second pass mirrored so the wings trade sides through the middle — then one slow cut carries the whole deck aside as a block and drops it back squared, with a tap. No new vocabulary: it is today's riffle-and-cut given time to read as hands instead of two mirrored blocks. <b>Beats:</b> FAN 380 (+26ms/card) → RIFFLE 780 ×2 (+45ms/card) → CUT 560 (+24ms/card) → SQUARE 150 → DEAL 560 → FLIP 520; shuffle ≈2840ms, whole beat ≈4430ms (today ≈1390 / 2940). <b>Honest re-order:</b> redeal()'s icon swaps keep their exact moment — each card turns over its new rune as it zips back into the fan (the zip of each riffle, loop ≈25–33% and ≈66–78% here) and again mid-cut, so dealBeat grows one extra shuffledOrder (fanned → riffle 1 → riffle 2 → settled) and the slot the draw reaches into is still decided by the last motion the player watched. This card loops the shuffle twice — out through the permutation and back home — because a CSS study cannot relabel runes the way redeal() does; in the app a single pass plus redeal()'s icon swaps achieves the same visible re-order. <b>Cost:</b> this IS the baseline the other studies must beat — +1.5s of held breath before every match (twice under RANDOM ×2), and it re-opens the shipped call that a second riffle was "one shuffle too much"; it has to earn the wait purely through pacing, because it adds no new idea. Complexity and regression risk are the lowest of any variant. <b>Seam:</b> still WAAPI in ui/runedeal.ts, restOf() untouched — constants only (FAN 380, RIFFLE 780, RIFFLES 2, CUT 560, SQUARE 150, staggers 45/24ms) plus a direction sign on riffle() for the mirrored pass and the fourth order in dealBeat. The scoop at this card's loop seam is presentation only; in the app each deal still starts from an empty felt.</div>
+</div></div>

@@ -1,0 +1,408 @@
+<!-- meta name="S6 — Cascade" group="4i · The rune shuffle" subtitle="A dealer's spring flourish: the fan squares into a left-hand stack and every card leaps the gap one at a time — six arcs over, six arcs back in a new order, two to three airborne at once — before fanning back out; shuffle 3.0s, whole beat ~4.4s (today: 1.25s / 2.9s)" width=430 height=1410 sizes="md" links="Offline — local play, Spells" -->
+<style>
+  /* S6 — CASCADE. Card-local classes only (shf*); the deck is the app's own
+     .rfelt/.rdeck/.rcard markup and this card animates it purely through
+     compound selectors under .shf. Keyframes override translate/rotate (and
+     z-index in flight — never opacity); every card starts AND ends the loop
+     on its inline rest pose (translate:var(--x) var(--y); rotate:var(--o)).
+
+     TWO PASSES THAT COMPOSE TO IDENTITY. Dealing a squared stack across one
+     card at a time REVERSES it (the first card over becomes the bottom of the
+     far stack), and gather/refan both preserve stack order — so one pass out
+     lands the fan in the mirror order, and the mirrored pass deals it back.
+     SIGMA is the reversal the cascade's own mechanics force: 1↔6, 2↔5, 3↔4 —
+     all six cards move. At the permuted rest the SAME fan holds every rune in
+     a new slot; that frame is where the re-order is read.
+
+     ONE MASTER LOOP, 9000ms, every card the same duration, delay 0, staggered
+     only by keyframe offsets. 1% = 90ms. Mapping to the proposed beat table
+     (each pass keeps the app-side beats — the strip and ms table are the
+     app proposal and do not change):
+
+       0.0 –  6.0%   HOME READ — the settled fan (stands for FAN's arrival)
+       6.0 –  8.2%   SQUARE   200ms  the fan tightens: anticipation
+       8.2 – 12.9%   GATHER   420ms  fan collapses into a LEFT stack, c1 first,
+                                     c6 sweeps in last and lands on top
+      12.9 – 22.2%   CASCADE→ 840ms  six spring arcs left→right, top-down
+                                     (6,5,4,3,2,1), launched every ~105ms,
+                                     each ~300ms — 2-3 airborne at once; the
+                                     right stack builds bottom-up 6..1
+      22.2 – 24.0%   BREATH   160ms  the right stack squares; last thock lands
+      24.0 – 30.0%   REFAN    540ms  the right stack blooms out top-first —
+                                     and the deal-across has REVERSED it:
+                                     card n lands in slot 7−n
+      30.0 – 45.0%   PERMUTED REST 1350ms (15%) — same fan, runes in new places
+      45.0 – 47.2%   SQUARE   200ms  the reversed fan tightens
+      47.2 – 51.9%   GATHER   420ms  mirrored: collapses into a RIGHT stack,
+                                     near card first, far cards slide UNDER
+      51.9 – 61.2%   CASCADE← 840ms  six arcs right→left, top-down (1,2,..,6):
+                                     the second deal-across reverses again
+      61.2 – 63.0%   BREATH   160ms  the left stack squares
+      63.0 – 69.0%   REFAN    540ms  blooms home: every card back in its slot
+      69.0 –100.0%   HOME REST 2790ms (31%) — the deck the draw would reach into
+
+     App beats proposed (ms): FAN 340 · SQUARE 200 · GATHER 420 · CASCADE→ 840
+     · BREATH 160 · CASCADE← 840 · REFAN 540 · DEAL 560 · FLIP 520.
+     Shuffle portion 3000ms, whole beat 4420ms.
+
+     Geometry: stacks sit at x = ∓80% (60.8px of the 76px card — inside the
+     ±150px bound); stack thickness is a y ladder +9.5px (bottom) → +0.5px
+     (top) in arrival order. Arc apexes peak at y −22..−24px with |tilt| ≤
+     14.5° — a 76×107 card at 14.5° inflates ~8px above its box, and the rest
+     pose already sits 20.5px below the felt's top edge, so the highest corner
+     stays inside the 12px gap under the MATCH RUNE title.
+
+     PAINT ORDER: the fan cascades left-under-right because DOM order is z
+     order; the base rule gives nth-child(n) z-index:n. A card resting in
+     foreign slot m carries z-index:m; the swap is declared at each cascade's
+     launch (old z) and landing (new z), so the discrete jump happens in
+     flight and BOTH rests paint as a correct cascade. */
+  .scr{align-items:center;justify-content:center;gap:12px}
+  #ovWheel{--card:76px;position:relative;height:520px;box-sizing:border-box;align-self:stretch;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:12px;padding:20px 0}
+  .wblurb{max-width:262px}
+
+  /* fanIn() animates every card to opacity:1 with fill:'both' — the deck the
+     player watches shuffle is FULLY OPAQUE; .62 is only the pre-fan still. */
+  .shf .rcard{opacity:1}
+
+  .shf .rcard:nth-child(1){z-index:1;animation:shf1 9s linear infinite}
+  .shf .rcard:nth-child(2){z-index:2;animation:shf2 9s linear infinite}
+  .shf .rcard:nth-child(3){z-index:3;animation:shf3 9s linear infinite}
+  .shf .rcard:nth-child(4){z-index:4;animation:shf4 9s linear infinite}
+  .shf .rcard:nth-child(5){z-index:5;animation:shf5 9s linear infinite}
+  .shf .rcard:nth-child(6){z-index:6;animation:shf6 9s linear infinite}
+
+  /* Easings: launch cubic-bezier(.25,.6,.35,1) — fast leave, floating into
+     the apex; fall cubic-bezier(.5,.05,.75,.4) — gravity; touchdown
+     cubic-bezier(.2,.75,.3,1) into a landing pose that OVERSHOOTS (y +2.5px,
+     rotation ~3.5° past), then a 54ms settle — the thock. Gather sweeps
+     accelerate off the squared fan; both refans loft low (−14..−16px). The
+     permuted-rest poses are the slot literals: slot m is
+     translate:(m−3.5)·38% −(m−1)px; rotate:(m−3.5)·5.5deg. */
+
+  /* card 1 — leftmost. Gathers first (left-stack bottom), flies LAST across
+     and lands right-stack TOP, leads the reversed refan out to SLOT 6 (z 6);
+     first across coming home (left-stack bottom), refans home last. */
+  @keyframes shf1{
+    0%{translate:var(--x) var(--y);rotate:var(--o)}
+    6%{translate:var(--x) var(--y);rotate:var(--o);
+      animation-timing-function:cubic-bezier(.45,.05,.35,1)}
+    8.2%{translate:calc(var(--x)*.55) calc(var(--y) + 2px);rotate:calc(var(--o)*.5);
+      animation-timing-function:cubic-bezier(.5,.06,.22,1)}
+    10.5%{translate:-80% 9.5px;rotate:-8deg}
+    18.4%{translate:-80% 9.5px;rotate:-8deg;z-index:1;
+      animation-timing-function:cubic-bezier(.25,.6,.35,1)}
+    20%{translate:0% -24px;rotate:13deg;
+      animation-timing-function:cubic-bezier(.5,.05,.75,.4)}
+    21.6%{translate:80% 3px;rotate:9deg;z-index:6;
+      animation-timing-function:cubic-bezier(.2,.75,.3,1)}
+    22.2%{translate:80% .5px;rotate:5.5deg;z-index:6}
+    24%{translate:80% .5px;rotate:5.5deg;z-index:6;
+      animation-timing-function:cubic-bezier(.45,.05,.3,1)}
+    25.5%{translate:88% -16px;rotate:9deg;
+      animation-timing-function:cubic-bezier(.25,.7,.3,1)}
+    27%{translate:95% -5px;rotate:13.75deg;z-index:6}
+    45%{translate:95% -5px;rotate:13.75deg;z-index:6;
+      animation-timing-function:cubic-bezier(.45,.05,.35,1)}
+    47.2%{translate:52% -3px;rotate:6.9deg;
+      animation-timing-function:cubic-bezier(.5,.06,.22,1)}
+    49.5%{translate:80% .5px;rotate:5.5deg;z-index:6}
+    51.9%{translate:80% .5px;rotate:5.5deg;z-index:6;
+      animation-timing-function:cubic-bezier(.25,.6,.35,1)}
+    53.5%{translate:0% -24px;rotate:-13deg;
+      animation-timing-function:cubic-bezier(.5,.05,.75,.4)}
+    55.1%{translate:-80% 12px;rotate:-9.5deg;z-index:1;
+      animation-timing-function:cubic-bezier(.2,.75,.3,1)}
+    55.7%{translate:-80% 9.5px;rotate:-6deg;z-index:1}
+    65.5%{translate:-80% 9.5px;rotate:-6deg;
+      animation-timing-function:cubic-bezier(.45,.05,.3,1)}
+    67%{translate:calc(var(--x)/2 - 40%) calc(var(--y) - 14px);
+      rotate:calc(var(--o)*.55 - 2deg);
+      animation-timing-function:cubic-bezier(.25,.7,.3,1)}
+    68.5%,100%{translate:var(--x) var(--y);rotate:var(--o)}
+  }
+  /* card 2 — out to SLOT 5 (z 5), home from the right-stack second */
+  @keyframes shf2{
+    0%{translate:var(--x) var(--y);rotate:var(--o)}
+    6%{translate:var(--x) var(--y);rotate:var(--o);
+      animation-timing-function:cubic-bezier(.45,.05,.35,1)}
+    8.2%{translate:calc(var(--x)*.55) calc(var(--y) + 2px);rotate:calc(var(--o)*.5)}
+    8.7%{translate:calc(var(--x)*.55) calc(var(--y) + 2px);rotate:calc(var(--o)*.5);
+      animation-timing-function:cubic-bezier(.5,.06,.22,1)}
+    11%{translate:-80% 7.7px;rotate:-6.5deg}
+    17.3%{translate:-80% 7.7px;rotate:-6.5deg;z-index:2;
+      animation-timing-function:cubic-bezier(.25,.6,.35,1)}
+    18.9%{translate:0% -22px;rotate:14deg;
+      animation-timing-function:cubic-bezier(.5,.05,.75,.4)}
+    20.5%{translate:80% 4.8px;rotate:11deg;z-index:5;
+      animation-timing-function:cubic-bezier(.2,.75,.3,1)}
+    21.1%{translate:80% 2.3px;rotate:7.5deg;z-index:5}
+    24.5%{translate:80% 2.3px;rotate:7.5deg;z-index:5;
+      animation-timing-function:cubic-bezier(.45,.05,.3,1)}
+    26%{translate:68% -15px;rotate:8deg;
+      animation-timing-function:cubic-bezier(.25,.7,.3,1)}
+    27.5%{translate:57% -4px;rotate:8.25deg;z-index:5}
+    45%{translate:57% -4px;rotate:8.25deg;z-index:5;
+      animation-timing-function:cubic-bezier(.45,.05,.35,1)}
+    47.2%{translate:31% -2px;rotate:4.1deg}
+    47.7%{translate:31% -2px;rotate:4.1deg;
+      animation-timing-function:cubic-bezier(.5,.06,.22,1)}
+    50%{translate:80% 2.3px;rotate:7.5deg;z-index:5}
+    53%{translate:80% 2.3px;rotate:7.5deg;z-index:5;
+      animation-timing-function:cubic-bezier(.25,.6,.35,1)}
+    54.6%{translate:0% -24px;rotate:-14deg;
+      animation-timing-function:cubic-bezier(.5,.05,.75,.4)}
+    56.2%{translate:-80% 10.2px;rotate:-11deg;z-index:2;
+      animation-timing-function:cubic-bezier(.2,.75,.3,1)}
+    56.8%{translate:-80% 7.7px;rotate:-7.5deg;z-index:2}
+    65%{translate:-80% 7.7px;rotate:-7.5deg;
+      animation-timing-function:cubic-bezier(.45,.05,.3,1)}
+    66.5%{translate:calc(var(--x)/2 - 40%) calc(var(--y) - 14px);
+      rotate:calc(var(--o)*.55 - 2deg);
+      animation-timing-function:cubic-bezier(.25,.7,.3,1)}
+    68%,100%{translate:var(--x) var(--y);rotate:var(--o)}
+  }
+  /* card 3 — out to SLOT 4 (z 4) */
+  @keyframes shf3{
+    0%{translate:var(--x) var(--y);rotate:var(--o)}
+    6%{translate:var(--x) var(--y);rotate:var(--o);
+      animation-timing-function:cubic-bezier(.45,.05,.35,1)}
+    8.2%{translate:calc(var(--x)*.55) calc(var(--y) + 2px);rotate:calc(var(--o)*.5)}
+    9.2%{translate:calc(var(--x)*.55) calc(var(--y) + 2px);rotate:calc(var(--o)*.5);
+      animation-timing-function:cubic-bezier(.5,.06,.22,1)}
+    11.5%{translate:-80% 5.9px;rotate:-7.5deg}
+    16.2%{translate:-80% 5.9px;rotate:-7.5deg;z-index:3;
+      animation-timing-function:cubic-bezier(.25,.6,.35,1)}
+    17.8%{translate:0% -23px;rotate:13.5deg;
+      animation-timing-function:cubic-bezier(.5,.05,.75,.4)}
+    19.4%{translate:80% 6.6px;rotate:9.5deg;z-index:4;
+      animation-timing-function:cubic-bezier(.2,.75,.3,1)}
+    20%{translate:80% 4.1px;rotate:6deg;z-index:4}
+    25%{translate:80% 4.1px;rotate:6deg;z-index:4;
+      animation-timing-function:cubic-bezier(.45,.05,.3,1)}
+    26.5%{translate:50% -15px;rotate:4deg;
+      animation-timing-function:cubic-bezier(.25,.7,.3,1)}
+    28%{translate:19% -3px;rotate:2.75deg;z-index:4}
+    45%{translate:19% -3px;rotate:2.75deg;z-index:4;
+      animation-timing-function:cubic-bezier(.45,.05,.35,1)}
+    47.2%{translate:10% -1px;rotate:1.4deg}
+    48.2%{translate:10% -1px;rotate:1.4deg;
+      animation-timing-function:cubic-bezier(.5,.06,.22,1)}
+    50.5%{translate:80% 4.1px;rotate:6deg;z-index:4}
+    54.1%{translate:80% 4.1px;rotate:6deg;z-index:4;
+      animation-timing-function:cubic-bezier(.25,.6,.35,1)}
+    55.7%{translate:0% -22px;rotate:-13.5deg;
+      animation-timing-function:cubic-bezier(.5,.05,.75,.4)}
+    57.3%{translate:-80% 8.4px;rotate:-9.5deg;z-index:3;
+      animation-timing-function:cubic-bezier(.2,.75,.3,1)}
+    57.9%{translate:-80% 5.9px;rotate:-6deg;z-index:3}
+    64.5%{translate:-80% 5.9px;rotate:-6deg;
+      animation-timing-function:cubic-bezier(.45,.05,.3,1)}
+    66%{translate:calc(var(--x)/2 - 40%) calc(var(--y) - 14px);
+      rotate:calc(var(--o)*.55 - 2deg);
+      animation-timing-function:cubic-bezier(.25,.7,.3,1)}
+    67.5%,100%{translate:var(--x) var(--y);rotate:var(--o)}
+  }
+  /* card 4 — long gather travels: lifted sweep keyframes on the way in;
+     out to SLOT 3 (z 3) */
+  @keyframes shf4{
+    0%{translate:var(--x) var(--y);rotate:var(--o)}
+    6%{translate:var(--x) var(--y);rotate:var(--o);
+      animation-timing-function:cubic-bezier(.45,.05,.35,1)}
+    8.2%{translate:calc(var(--x)*.55) calc(var(--y) + 2px);rotate:calc(var(--o)*.5)}
+    9.7%{translate:calc(var(--x)*.55) calc(var(--y) + 2px);rotate:calc(var(--o)*.5);
+      animation-timing-function:cubic-bezier(.4,.05,.6,1)}
+    10.9%{translate:-30% -8px;rotate:-11deg;
+      animation-timing-function:cubic-bezier(.2,.6,.3,1)}
+    12%{translate:-80% 4.1px;rotate:-6deg}
+    15.1%{translate:-80% 4.1px;rotate:-6deg;z-index:4;
+      animation-timing-function:cubic-bezier(.25,.6,.35,1)}
+    16.7%{translate:0% -24px;rotate:14deg;
+      animation-timing-function:cubic-bezier(.5,.05,.75,.4)}
+    18.3%{translate:80% 8.4px;rotate:12deg;z-index:3;
+      animation-timing-function:cubic-bezier(.2,.75,.3,1)}
+    18.9%{translate:80% 5.9px;rotate:8deg;z-index:3}
+    25.5%{translate:80% 5.9px;rotate:8deg;z-index:3;
+      animation-timing-function:cubic-bezier(.45,.05,.3,1)}
+    27%{translate:30% -15px;rotate:2deg;
+      animation-timing-function:cubic-bezier(.25,.7,.3,1)}
+    28.5%{translate:-19% -2px;rotate:-2.75deg;z-index:3}
+    45%{translate:-19% -2px;rotate:-2.75deg;z-index:3;
+      animation-timing-function:cubic-bezier(.45,.05,.35,1)}
+    47.2%{translate:-10% 0px;rotate:-1.4deg}
+    48.7%{translate:-10% 0px;rotate:-1.4deg;
+      animation-timing-function:cubic-bezier(.4,.05,.6,1)}
+    49.9%{translate:30% -8px;rotate:10deg;
+      animation-timing-function:cubic-bezier(.2,.6,.3,1)}
+    51%{translate:80% 5.9px;rotate:8deg;z-index:3}
+    55.2%{translate:80% 5.9px;rotate:8deg;z-index:3;
+      animation-timing-function:cubic-bezier(.25,.6,.35,1)}
+    56.8%{translate:0% -23px;rotate:-14deg;
+      animation-timing-function:cubic-bezier(.5,.05,.75,.4)}
+    58.4%{translate:-80% 6.6px;rotate:-10.5deg;z-index:4;
+      animation-timing-function:cubic-bezier(.2,.75,.3,1)}
+    59%{translate:-80% 4.1px;rotate:-7deg;z-index:4}
+    64%{translate:-80% 4.1px;rotate:-7deg;
+      animation-timing-function:cubic-bezier(.45,.05,.3,1)}
+    65.5%{translate:calc(var(--x)/2 - 40%) calc(var(--y) - 14px);
+      rotate:calc(var(--o)*.55 - 2deg);
+      animation-timing-function:cubic-bezier(.25,.7,.3,1)}
+    67%,100%{translate:var(--x) var(--y);rotate:var(--o)}
+  }
+  /* card 5 — out to SLOT 2 (z 2) */
+  @keyframes shf5{
+    0%{translate:var(--x) var(--y);rotate:var(--o)}
+    6%{translate:var(--x) var(--y);rotate:var(--o);
+      animation-timing-function:cubic-bezier(.45,.05,.35,1)}
+    8.2%{translate:calc(var(--x)*.55) calc(var(--y) + 2px);rotate:calc(var(--o)*.5)}
+    10.2%{translate:calc(var(--x)*.55) calc(var(--y) + 2px);rotate:calc(var(--o)*.5);
+      animation-timing-function:cubic-bezier(.4,.05,.6,1)}
+    11.4%{translate:-22% -9px;rotate:-12deg;
+      animation-timing-function:cubic-bezier(.2,.6,.3,1)}
+    12.5%{translate:-80% 2.3px;rotate:-7deg}
+    14%{translate:-80% 2.3px;rotate:-7deg;z-index:5;
+      animation-timing-function:cubic-bezier(.25,.6,.35,1)}
+    15.6%{translate:0% -22px;rotate:13deg;
+      animation-timing-function:cubic-bezier(.5,.05,.75,.4)}
+    17.2%{translate:80% 10.2px;rotate:9deg;z-index:2;
+      animation-timing-function:cubic-bezier(.2,.75,.3,1)}
+    17.8%{translate:80% 7.7px;rotate:5.5deg;z-index:2}
+    26%{translate:80% 7.7px;rotate:5.5deg;z-index:2;
+      animation-timing-function:cubic-bezier(.45,.05,.3,1)}
+    27.5%{translate:11% -14px;rotate:-2deg;
+      animation-timing-function:cubic-bezier(.25,.7,.3,1)}
+    29%{translate:-57% -1px;rotate:-8.25deg;z-index:2}
+    45%{translate:-57% -1px;rotate:-8.25deg;z-index:2;
+      animation-timing-function:cubic-bezier(.45,.05,.35,1)}
+    47.2%{translate:-31% 1px;rotate:-4.1deg}
+    49.2%{translate:-31% 1px;rotate:-4.1deg;
+      animation-timing-function:cubic-bezier(.4,.05,.6,1)}
+    50.4%{translate:25% -9px;rotate:11deg;
+      animation-timing-function:cubic-bezier(.2,.6,.3,1)}
+    51.5%{translate:80% 7.7px;rotate:5.5deg;z-index:2}
+    56.3%{translate:80% 7.7px;rotate:5.5deg;z-index:2;
+      animation-timing-function:cubic-bezier(.25,.6,.35,1)}
+    57.9%{translate:0% -24px;rotate:-13deg;
+      animation-timing-function:cubic-bezier(.5,.05,.75,.4)}
+    59.5%{translate:-80% 4.8px;rotate:-11.5deg;z-index:5;
+      animation-timing-function:cubic-bezier(.2,.75,.3,1)}
+    60.1%{translate:-80% 2.3px;rotate:-8deg;z-index:5}
+    63.5%{translate:-80% 2.3px;rotate:-8deg;
+      animation-timing-function:cubic-bezier(.45,.05,.3,1)}
+    65%{translate:calc(var(--x)/2 - 40%) calc(var(--y) - 14px);
+      rotate:calc(var(--o)*.55 - 2deg);
+      animation-timing-function:cubic-bezier(.25,.7,.3,1)}
+    66.5%,100%{translate:var(--x) var(--y);rotate:var(--o)}
+  }
+  /* card 6 — rightmost: sweeps in last onto the left-stack top and is FIRST
+     across (right-stack bottom); refans last, out to SLOT 1 (z 1); last home
+     on the return (left-stack top) and leads the home refan. */
+  @keyframes shf6{
+    0%{translate:var(--x) var(--y);rotate:var(--o)}
+    6%{translate:var(--x) var(--y);rotate:var(--o);
+      animation-timing-function:cubic-bezier(.45,.05,.35,1)}
+    8.2%{translate:calc(var(--x)*.55) calc(var(--y) + 2px);rotate:calc(var(--o)*.5)}
+    10.7%{translate:calc(var(--x)*.55) calc(var(--y) + 2px);rotate:calc(var(--o)*.5);
+      animation-timing-function:cubic-bezier(.4,.05,.6,1)}
+    11.7%{translate:-18% -10px;rotate:-13deg;
+      animation-timing-function:cubic-bezier(.2,.6,.3,1)}
+    12.6%{translate:-80% .5px;rotate:-5.5deg}
+    12.9%{translate:-80% .5px;rotate:-5.5deg;z-index:6;
+      animation-timing-function:cubic-bezier(.25,.6,.35,1)}
+    14.5%{translate:0% -24px;rotate:14.5deg;
+      animation-timing-function:cubic-bezier(.5,.05,.75,.4)}
+    16.1%{translate:80% 12px;rotate:10.5deg;z-index:1;
+      animation-timing-function:cubic-bezier(.2,.75,.3,1)}
+    16.7%{translate:80% 9.5px;rotate:7deg;z-index:1}
+    26.5%{translate:80% 9.5px;rotate:7deg;z-index:1;
+      animation-timing-function:cubic-bezier(.45,.05,.3,1)}
+    28%{translate:-8% -14px;rotate:-4deg;
+      animation-timing-function:cubic-bezier(.25,.7,.3,1)}
+    29.5%{translate:-95% 0px;rotate:-13.75deg;z-index:1}
+    45%{translate:-95% 0px;rotate:-13.75deg;z-index:1;
+      animation-timing-function:cubic-bezier(.45,.05,.35,1)}
+    47.2%{translate:-52% 2px;rotate:-6.9deg}
+    49.7%{translate:-52% 2px;rotate:-6.9deg;
+      animation-timing-function:cubic-bezier(.4,.05,.6,1)}
+    50.9%{translate:20% -10px;rotate:12deg;
+      animation-timing-function:cubic-bezier(.2,.6,.3,1)}
+    51.8%{translate:80% 9.5px;rotate:7deg;z-index:1}
+    57.4%{translate:80% 9.5px;rotate:7deg;z-index:1;
+      animation-timing-function:cubic-bezier(.25,.6,.35,1)}
+    59%{translate:0% -22px;rotate:-14.5deg;
+      animation-timing-function:cubic-bezier(.5,.05,.75,.4)}
+    60.6%{translate:-80% 3px;rotate:-10deg;z-index:6;
+      animation-timing-function:cubic-bezier(.2,.75,.3,1)}
+    61.2%{translate:-80% .5px;rotate:-6.5deg;z-index:6}
+    63%{translate:-80% .5px;rotate:-6.5deg;
+      animation-timing-function:cubic-bezier(.45,.05,.3,1)}
+    64.5%{translate:calc(var(--x)/2 - 40%) calc(var(--y) - 14px);
+      rotate:calc(var(--o)*.55 - 2deg);
+      animation-timing-function:cubic-bezier(.25,.7,.3,1)}
+    66%,100%{translate:var(--x) var(--y);rotate:var(--o)}
+  }
+
+  /* the beat strip: one quiet row, cells grown by their milliseconds */
+  .shf-strip{display:flex;gap:1px;width:100%;max-width:352px;align-items:stretch}
+  .shf-strip i{flex-grow:var(--ms);flex-basis:0;min-width:0;display:flex;
+    flex-direction:column;align-items:center;gap:1px;padding:3px 0 2px;
+    font-style:normal;font-size:6.5px;letter-spacing:.04em;text-transform:uppercase;
+    color:var(--dim);background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.07);border-radius:3px;
+    overflow:hidden;white-space:nowrap}
+  .shf-strip i b{font-weight:800;letter-spacing:.08em;color:#c6d3ee}
+  .shf-strip i.tail{opacity:.55}
+  .shf-tot{flex:0 0 auto;align-self:center;padding-left:6px;font-size:7px;
+    letter-spacing:.12em;color:var(--dim);text-transform:uppercase}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div id="ovWheel" class="dealing hunting shf">
+    <div class="wsettled">{{wsettled:mode:singlestrike}}</div>
+    <div class="wtitle">MATCH RUNE</div>
+    <div class="wstage">{{runefelt:fate}}</div>
+    <div class="wname">&nbsp;</div>
+    <div class="wblurb">&nbsp;</div>
+    <div class="dhold"><b>&nbsp;</b><span>&nbsp;</span></div>
+  </div>
+  <div class="cap2">S6 · cascade — gather left, spring across card by card, and back</div>
+  <div class="shf-strip">
+    <i style="--ms:340"><b>fan</b>340</i>
+    <i style="--ms:200"><b>sq</b>200</i>
+    <i style="--ms:420"><b>gather</b>420</i>
+    <i style="--ms:840"><b>casc ›</b>840</i>
+    <i style="--ms:160"><b>br</b>160</i>
+    <i style="--ms:840"><b>‹ casc</b>840</i>
+    <i style="--ms:540"><b>refan</b>540</i>
+    <i style="--ms:560" class="tail"><b>deal</b>560</i>
+    <i style="--ms:520" class="tail"><b>flip</b>520</i>
+    <span class="shf-tot">total 4420</span>
+  </div>
+  <div class="note"><b>The hands:</b> a dealer's spring flourish — the fan squares
+    up, collapses into the left hand, and the cards leap the gap one at a time in
+    high arcs into the right (two to three airborne at once), then spring straight
+    back in the other order before the deck is laid back down as the fan. Every
+    card visibly travels; nothing teleports, and the top card of each stack is
+    always the next to fly. <b>Beats (ms):</b> FAN 340 · SQUARE 200 · GATHER 420
+    · CASCADE→ 840 · BREATH 160 · CASCADE← 840 · REFAN 540 · DEAL 560 · FLIP 520
+    — shuffle portion 3000 (today 1250), whole beat 4420 (today 2890).
+    <b>Honest re-order:</b> redeal() moves from mid-beat to each card's landing
+    thock — the first cascade writes the intermediate order across six spaced
+    touchdowns (16.1–21.6% of the loop here), the return cascade writes
+    <b>settled</b> across six more (55.1–60.6%), so every icon swap rides a card
+    that just arrived somewhere new, and the slot the draw reaches into was fixed
+    by the last arc the player watched. This card loops the flourish twice — one
+    cascade out to a fan that rests with every rune in a new slot, and a mirrored
+    cascade back home — because a CSS study cannot relabel runes the way redeal()
+    does; in the app a single pass plus redeal()'s icon swaps achieves the same
+    visible re-order. <b>Cost vs S1:</b> the longest shuffle of
+    the set, at the 3.0s cap, and the busiest — twelve arcs at ~16 keyframe
+    segments per card against the riffle's five; the one-at-a-time gesture is
+    maximally legible ("every card moved" is literally shown) but repeats the
+    same hop twelve times, so it trades suspense for showmanship and risks
+    reading mechanical by the hundredth deal. Arc height is capped by the stage:
+    apexes stop ~11px short of the MATCH RUNE title. <b>Seam:</b> still WAAPI in
+    ui/runedeal.ts — riffle()/cut() give way to gather(), cascade(dir, next) and
+    refan(); restOf() unchanged (the ±80% stacks are two constants beside it);
+    Sfx gains a per-landing tick in place of the single riffle wash.</div>
+</div></div>
