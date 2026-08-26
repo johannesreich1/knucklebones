@@ -5,7 +5,10 @@
 // The repository's raw function directories are not deployable by the CLI:
 // their synthetic ./core imports resolve to root src/. Materialize the exact
 // normalized closure that tools/fnfiles.mjs gates, deploy one function at a
-// time through the pinned API bundler, then download and compare every byte.
+// time through the pinned API bundler, then download and compare every runtime
+// byte. Supabase omits two known type-only files from readback; their expected
+// source hashes are pinned below so a future runtime change fails closed.
+import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import {
   existsSync,
@@ -39,6 +42,10 @@ export const FUNCTION_DEPLOY_OPT_IN = 'KB_ALLOW_PRODUCTION_RUNE_FUNCTIONS';
 export const PRODUCTION_PROJECT_REF = 'euzjcejbkxvqfrttgaxu';
 export const RUNE_TRIAL_MIGRATION_VERSION = '20260825205241';
 export const RUNE_TRIAL_MIGRATION_NAME = 'rune_trial_ranked_v2';
+export const SUPABASE_TYPE_ONLY_READBACK_OMISSIONS = Object.freeze({
+  'core/ranked-action-types.ts': 'b2876e639391167cda7cfd070955adcca63f2be5798cdff0f1576ae27aea198c',
+  'core/spell-types.ts': 'b56906dd5fc6c9ad56aaa7b8329a0365cc23c80f6d44814d04ebce9165ab35d6',
+});
 
 const REQUIRED_NODE_MAJOR = 24;
 const TEMP_PREFIX = 'knucklebones-production-functions-';
@@ -266,10 +273,16 @@ export function assertExactDownloadedClosure(functionRoot, slug, payload) {
   const expected = [...validatePayload(slug, payload)].sort((a, b) => a.name.localeCompare(b.name));
   const actualNames = filesBelow(functionRoot).sort((a, b) => a.localeCompare(b));
   const expectedNames = expected.map(file => file.name);
-  if (JSON.stringify(actualNames) !== JSON.stringify(expectedNames)) {
+  const actualSet = new Set(actualNames);
+  const expectedSet = new Set(expectedNames);
+  const unexpected = actualNames.filter(name => !expectedSet.has(name));
+  const unsafeMissing = expected.filter(file => !actualSet.has(file.name)
+    && SUPABASE_TYPE_ONLY_READBACK_OMISSIONS[file.name]
+      !== createHash('sha256').update(file.content).digest('hex'));
+  if (unexpected.length || unsafeMissing.length) {
     fail(`${slug} downloaded paths differ from its deploy closure.\nExpected: ${expectedNames.join(', ')}\nActual: ${actualNames.join(', ')}`);
   }
-  for (const file of expected) {
+  for (const file of expected.filter(({ name }) => actualSet.has(name))) {
     const actual = readFileSync(path.join(functionRoot, ...file.name.split('/')));
     if (!actual.equals(Buffer.from(file.content))) {
       fail(`${slug} downloaded bytes differ for ${file.name}.`);
@@ -449,7 +462,7 @@ export async function rolloutProductionFunctions({
         payloads.get(slug),
       );
       deployed.push(metadata);
-      log(`Verified ${slug} v${metadata.version}: ACTIVE, JWT required, exact closure read back.`);
+      log(`Verified ${slug} v${metadata.version}: ACTIVE, JWT required, exact runtime closure read back.`);
     }
     return Object.freeze({
       applied: true,

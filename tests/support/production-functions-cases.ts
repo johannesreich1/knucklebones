@@ -16,6 +16,7 @@ import {
   RUNE_TRIAL_MIGRATION_VERSION,
   RUNE_TRIAL_PREREQUISITE_FIELDS,
   RUNE_TRIAL_PRODUCTION_PREREQUISITE,
+  SUPABASE_TYPE_ONLY_READBACK_OMISSIONS,
   assertExactDownloadedClosure,
 } from '../../tools/functions/production-rollout.mjs';
 
@@ -160,7 +161,10 @@ export function makeRunner({ corruptSlug }: { corruptSlug?: string } = {}) {
         if (slug === corruptSlug) {
           payload[0] = { ...payload[0], content: `${payload[0].content}\ncorrupt` };
         }
-        writeClosure(workdir, slug, payload);
+        const functionRoot = writeClosure(workdir, slug, payload);
+        for (const name of Object.keys(SUPABASE_TYPE_ONLY_READBACK_OMISSIONS)) {
+          rmSync(path.join(functionRoot, ...name.split('/')), { force: true });
+        }
         return;
       }
       return assert.fail(`unexpected run: ${command} ${args.join(' ')}`);

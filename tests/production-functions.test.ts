@@ -7,6 +7,7 @@ import {
   FUNCTION_DEPLOY_OPT_IN,
   FUNCTION_ROLLOUT_SLUGS,
   PRODUCTION_PROJECT_REF,
+  SUPABASE_TYPE_ONLY_READBACK_OMISSIONS,
   assertActiveFunctionMetadata,
   assertExactDownloadedClosure,
   assertFunctionDeployOptIn,
@@ -160,6 +161,25 @@ try {
         path.join(root, 'supabase', 'functions', slug), slug, payloads.get(slug),
       );
     }
+    for (const name of Object.keys(SUPABASE_TYPE_ONLY_READBACK_OMISSIONS)) {
+      rmSync(path.join(root, 'supabase', 'functions', 'pvp-action', ...name.split('/')));
+    }
+    assert.equal(assertExactDownloadedClosure(
+      path.join(root, 'supabase', 'functions', 'pvp-action'),
+      'pvp-action',
+      payloads.get('pvp-action'),
+    ), true);
+    const changedTypePayload = payloads.get('pvp-action')!.map(file => file.name === 'core/spell-types.ts'
+      ? { ...file, content: `${file.content}\nexport const runtimeValue = true;\n` }
+      : file);
+    assert.throws(
+      () => assertExactDownloadedClosure(
+        path.join(root, 'supabase', 'functions', 'pvp-action'),
+        'pvp-action',
+        changedTypePayload,
+      ),
+      /downloaded paths differ/,
+    );
     writeFileSync(path.join(root, 'supabase', 'functions', 'pvp-action', 'extra.ts'), 'extra');
     assert.throws(
       () => assertExactDownloadedClosure(

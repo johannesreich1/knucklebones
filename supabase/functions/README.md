@@ -76,7 +76,9 @@ The helper deploys `pvp-rune-select`, `pvp-action`, `account-delete`,
 activate before every authority endpoint is ready. It requires committed
 closures and the pinned CLI, reuses the database rollout's exact history,
 owner, RLS, ACL, function-body, Realtime, and cron audit, deploys every closure
-whole, then downloads and compares every path and byte before continuing.
+whole, then downloads and compares every runtime path and byte before
+continuing. Supabase's readback prunes two type-only modules; the helper accepts
+only those exact omissions while pinning their committed source hashes.
 
 Other explicitly reviewed deploys may go through the Supabase MCP
 (`deploy_edge_function`). Its `files` argument is exactly what the tool prints:
