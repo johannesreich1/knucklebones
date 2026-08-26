@@ -32,7 +32,12 @@ import {
   verifyRandomTwoReveal,
 } from './browser/support/random-two-reveal.mjs';
 import { SPELLS } from '../src/core/spells.ts';
-import { readTurnedDeal, checkDealPhysique } from './browser/support/deal-stack.mjs';
+import { squaredOf, stackOf } from '../src/ui/runefelt.ts';
+import {
+  readTurnedDeal,
+  checkDealPhysique,
+  probePileDealClearance,
+} from './browser/support/deal-stack.mjs';
 const { chromium } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
 const problems = [], out = {};
@@ -369,6 +374,40 @@ try {
   }
   /* The hardest geometry is random mode + two runes on a short landscape. */
   await verifyRandomTwoLandscape(page, out, check, revealHeld, overlaps, dismiss);
+
+  /* Rebuild the two tight readable rests from runefelt's shared poses and
+     measure the rotated, painted bodies — unrotated offsets missed the
+     overlap this guards. After two flicks the centre pile first shares the
+     stock's horizontal lane; after three, all three upper piles are present. */
+  const clearanceFrames = [2, 3].map((dealt) => ({
+    dealt,
+    pilePoses: Array.from({ length: dealt }, (_, step) =>
+      stackOf(step % 3, Math.floor(step / 3))),
+    stockPoses: Array.from({ length: 6 - dealt }, (_, depth) => squaredOf(depth)),
+  }));
+  out.pileDealClearance = {};
+  for (const [width, height] of [[390, 844], [568, 320]]) {
+    await page.setViewportSize({ width, height });
+    await revealHeld('0', 'random');
+    for (const frame of clearanceFrames) {
+      const label = `${width}x${height}/after-${frame.dealt}`;
+      const measured = await probePileDealClearance(
+        page,
+        frame.pilePoses,
+        frame.stockPoses,
+      );
+      out.pileDealClearance[label] = measured;
+      /* A hairline non-overlap is not the requested breathing room. Keep a
+         small card-relative floor so the gap remains visible as --card scales. */
+      check(measured.gaps.length === frame.dealt
+        && measured.gaps.every((gap) => gap >= measured.cardWidth * .04),
+        `${label}: the remaining rune stock crowds a landed pile`, measured);
+      check(measured.pilesInsideStage && measured.stockInsideRoot && measured.feltInsideRoot
+        && measured.titleInsideRoot && measured.titleGap >= 1,
+      `${label}: the separated pile deal escaped its stage or title bounds`, measured);
+    }
+    await dismiss();
+  }
 } catch (e) {
   problems.push('THREW :: ' + e.message);
 } finally { await browser.close(); }

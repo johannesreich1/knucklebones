@@ -176,9 +176,11 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
     </div>
     <div class="card" id="spellCard">
       <div class="lbl" data-i18n="game:practice.rune">Rune</div>
-      <div class="modepick" id="spellPick"></div>
+      <div class="choice-field">
+        <div class="modepick" id="spellPick"></div>
+        <div class="choice-lock" id="spellPickLock" role="note" hidden><span class="hues-lock__icon" aria-hidden="true"><span class="hues-lock__shackle"></span></span><span id="spellPickLockCopy"></span></div>
+      </div>
       <div class="tiny note" id="spellPickInfo"></div>
-      <div class="choice-lock" id="spellPickLock" role="note" hidden><span class="hues-lock__icon" aria-hidden="true"><span class="hues-lock__shackle"></span></span><span id="spellPickLockCopy"></span></div>
     </div>
     <!-- Two-player-only card lands at the end, so the sheet grows without reshuffling. -->
     <div class="card" id="timerCard" hidden>

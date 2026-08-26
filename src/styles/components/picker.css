@@ -21,8 +21,15 @@
 :where(#kbroot) .modepick button.locked::before{content:"";position:absolute;z-index:1;right:7px;bottom:11px;
   box-sizing:border-box;width:5px;height:5px;border:1px solid currentColor;border-bottom:0;border-radius:5px 5px 0 0}
 
-:where(#kbroot) #spellCard{position:relative;isolation:isolate}
-:where(#kbroot) .choice-lock{position:absolute;z-index:3;inset:24px -2px -3px;display:flex;align-items:center;
+:where(#kbroot) #spellCard{isolation:isolate}
+:where(#kbroot) .choice-field{position:relative;width:100%}
+:where(#kbroot) .choice-card--locked #spellPickInfo{visibility:hidden;max-height:2.9em;overflow:hidden}
+/* The Ritual note is a banner, not a second card. Keep its authored padding
+   around the localized copy and centre that intrinsic box on the disabled
+   rune grid itself; the card's label and reserved note lane are not part of
+   the covered choice. */
+:where(#kbroot) .choice-lock{position:absolute;z-index:3;top:50%;left:0;right:0;translate:0 -50%;
+  box-sizing:border-box;display:flex;align-items:center;
   justify-content:center;gap:9px;padding:8px 11px;border:1px solid rgba(255,255,255,.18);border-radius:14px;
   color:var(--txt);background:linear-gradient(100deg,rgba(177,140,255,.2),rgba(5,6,14,.92) 34%,
   rgba(5,6,14,.92) 66%,rgba(var(--cy-rgb),.16));box-shadow:0 0 24px rgba(177,140,255,.12),

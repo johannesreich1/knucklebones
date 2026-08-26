@@ -3,6 +3,7 @@ import { serveTree } from '../../serve.mjs';
 import { runLocaleBehaviorScenarios } from './scenarios/locale-behavior.mjs';
 import { runLocaleGeometryScenarios } from './scenarios/locale-geometry.mjs';
 import { runConstrainedSurfaceScenarios } from './scenarios/locale-surfaces.mjs';
+import { runRuneRitualLockScenarios } from './scenarios/rune-ritual-lock.mjs';
 
 const { chromium } = pkg;
 const { url, stop } = await serveTree('.');
@@ -114,6 +115,7 @@ try {
     ['behavior', runLocaleBehaviorScenarios],
     ['geometry', runLocaleGeometryScenarios],
     ['constrained-surfaces', runConstrainedSurfaceScenarios],
+    ['rune-ritual-lock', runRuneRitualLockScenarios],
   ]) {
     try {
       await scenario[1](suite);
