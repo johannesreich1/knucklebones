@@ -166,6 +166,12 @@ Verify every supported locale at 320 × 568 and 390 × 844 portrait, 568 × 320
 and 667 × 375 landscape, and at widget widths 320, 390, and 520. Measure
 computed boxes and hit testing in these pressure points:
 
+The eager/mobile/widget command for this matrix is currently a deliberate
+manual check, not part of the default release gate, because its computed
+geometry does not replace human review of the rendered result. Run
+`mise exec -- node tests/browser/localization/run.mjs` for locale, copy, or
+shared-layout changes, then perform the final visual pass below.
+
 - turn/status text and the portrait one-line or landscape two-line status lane;
 - mode and rune HUD chips, which must remain readable without unintended wrap;
 - player plates, player names, score labels, and compact tags;

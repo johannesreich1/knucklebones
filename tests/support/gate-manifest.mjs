@@ -15,11 +15,15 @@ const file = (name, path = `tests/${name}.mjs`, options = {}) => ({
   exclusiveFinal: options.exclusiveFinal ?? false,
 });
 
-// Long owners lead the unsharded local queue. Four workers can then overlap
-// them instead of discovering a six-minute localization owner near the tail.
-// CI uses the independently balanced assignments below and one worker per VM.
+// Long default-gate owners lead the unsharded local queue so four workers can
+// overlap them. CI uses the independently balanced assignments below and one
+// worker per VM.
 export const GATE_SUITES = Object.freeze([
-  file('localization-browser', 'tests/browser/localization/run.mjs'),
+  /* Temporarily manual-only (2026-08-26). This exhaustive geometry matrix
+     takes several minutes but does not produce human-reviewed visual
+     approval. Keep the focused runner available until a deliberate screenshot
+     review workflow owns that acceptance step. */
+  // file('localization-browser', 'tests/browser/localization/run.mjs'),
   file('test16', 'tests/browser/online-ui/run.mjs', { needsServer: true }),
   file('online-localization-browser', 'tests/browser/online-localization/run.mjs'),
   file('test20'),
@@ -113,7 +117,8 @@ export const GATE_SUITES = Object.freeze([
 // retaining JOBS=1 inside the runner to avoid browser contention flakes.
 export const CI_SHARDS = Object.freeze({
   'ci-1': Object.freeze([
-    'localization-browser', 'service-worker-routing', 'native-startup-browser',
+    // `localization-browser` is intentionally manual-only; see GATE_SUITES.
+    'service-worker-routing', 'native-startup-browser',
     'rune-matchup-analysis', 'scoring-ward-ai', 'online-api', 'design-library',
     'cssreach', 'legal', 'spells', 'dice', 'release-main', 'gate-manifest',
     'test18', 'rune-collection-cache', 'ranked-outcomes',

@@ -2,6 +2,8 @@ const WARD_APPROACH_MS = 640;
 const WARD_RECOIL_MS = 1024;
 const WARD_REBOUND_MS = 384;
 const WARD_EASE = 'cubic-bezier(0.3,1.5,0.4,1)';
+const WARD_OBSERVER_EARLY_SLACK_MS = 80;
+const WARD_OBSERVER_LATE_SLACK_MS = 160;
 
 const compact = (value) => String(value).replace(/\s+/g, '');
 
@@ -54,6 +56,7 @@ export function inspectWardStrike(page, { side, col, who, at, ticks }) {
       });
       return { duration, effectEasing: compact(animation.effect.getTiming().easing), frames: details };
     };
+    const priorGhosts = new Set(document.querySelectorAll('.ward-strike-ghost'));
     const animations = new Set(), marks = new Set(), flare = new Set();
     const hostAnimations = new Set(), hostMarks = new Set();
     let approach = null, recoil = null, burn = null, unwind = null, source = null, sourceStart = null;
@@ -87,7 +90,8 @@ export function inspectWardStrike(page, { side, col, who, at, ticks }) {
       particles ||= !!document.querySelector('#fx .particle');
       flash ||= document.getElementById('flash').getAnimations().some((animation) => animation.playState === 'running');
 
-      const ghost = document.querySelector('.ward-strike-ghost');
+      const ghost = [...document.querySelectorAll('.ward-strike-ghost')]
+        .find((candidate) => !priorGhosts.has(candidate));
       if (ghost) {
         ghostFilters.add(compact(getComputedStyle(ghost).filter));
         if (firstGhostAt === null) firstGhostAt = now;
@@ -161,6 +165,7 @@ export function inspectWardStrike(page, { side, col, who, at, ticks }) {
       anims: [...animations].sort(), marks: [...marks].sort(), flare: [...flare].sort(),
       hostAnims: [...hostAnimations].sort(), hostMarks: [...hostMarks].sort(),
       approach, recoil, burn, unwind, contact, ghostValue, ghostOwner,
+      priorGhosts: priorGhosts.size,
       sawWardGhost: firstGhostAt !== null, ghostFilters: [...ghostFilters],
       approachElapsed: firstGhostAt !== null && spentAt !== null ? +(spentAt - firstGhostAt).toFixed(0) : null,
       recoilElapsed: spentAt !== null && goneAt !== null ? +(goneAt - spentAt).toFixed(0) : null,
@@ -185,6 +190,17 @@ export function wardMotionMatchesW3(strike) {
     && strike.recoil.frames.some((frame) => frame.time === WARD_REBOUND_MS)
     && clean(strike.approach) && clean(strike.recoil)
     && strike.ghostFilters?.every((filter) => filter === 'none');
+}
+
+/* Authored WAAPI durations stay exact in wardMotionMatchesW3. This separate
+   painted-lifetime check allows bounded event-loop and 40ms sampling delay on
+   shared runners without turning an actually lingering ghost into a pass. */
+export function wardObservedTimingMatchesW3(strike) {
+  const withinObservedLifetime = (elapsed, duration) => Number.isFinite(elapsed)
+    && elapsed >= duration - WARD_OBSERVER_EARLY_SLACK_MS
+    && elapsed <= duration + WARD_OBSERVER_LATE_SLACK_MS;
+  return withinObservedLifetime(strike.approachElapsed, WARD_APPROACH_MS)
+    && withinObservedLifetime(strike.recoilElapsed, WARD_RECOIL_MS);
 }
 
 export async function inspectReducedWardStrike(page) {
