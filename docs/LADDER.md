@@ -232,6 +232,14 @@ a 784-point IVORY bot were indistinguishable — the rank badge was theater.
 And on a 17-row season (13 seeded bots, 4 humans) the "bottom 20%" band
 ended at ~99 points, a third of the way through STONE.*
 
+*Corrected again 2026-08-26 after a 0–0 first-match loss. STONE's negative
+opponent weight had only meant "spare the human" while the bot occupied the
+historical AI/p2 seat. An equal-rating tiebreak put the bot in p1, where the
+fixed-seat evaluator reversed that mercy into aggression. The old onboarding
+bench masked it by always seating the bot p2 and by calling a p1 destroyer a
+"stacking newcomer." The live match replay made the inversion visible: the bot
+countered four times, including a pair of sixes.*
+
 Now **a bot plays the shape of its own group** — the shape is a field of the
 group registry (`core/ladder.ts GROUPS[].bot`, read by `botShapeAt(points)`),
 so the label IS the strength. Difficulty still tracks the player, but through
@@ -241,20 +249,28 @@ Bots' points move through real settles, so a bot whose shape loses drifts
 down toward the group that plays like it — the label stays honest by
 construction.
 
-| group | depth | risk | sees your board | slip | win% vs random |
-|---|---|---|---|---|---|
-| STONE | 1 | 0 | **spares it** (`oppW -0.5`) | 55% | **42** |
-| BONE | 1 | 0 | yes | 45% | 66 |
-| IVORY | 1 | 0.25 | yes | 15% | 74 |
-| SILVER | 1 | 0.6 | yes | 5% | 74 |
-| GOLD | 2 | 1.2 | yes | — | 80 |
-| OBSIDIAN | 3 | 1.2 | yes | — | 82 |
-| NEON | 4 | 1.2 | yes | — | 81 |
+The shape changes **at group boundaries, not continuously per point**. A
+301-point BONE bot and a 700-point BONE bot therefore make decisions with the
+same policy; their points still affect pairing and which group policy applies.
 
-Every number measured (seeded, `tests/botbench.test.ts` in the gate keeps
-the ordering honest; `tests/ladder.test.ts` pins the shape numbers). The
-deep groups separate against stronger anchors instead — NEON holds ≥50%
-against the offline Medium.
+| group | depth | risk | sees your board | slip p2 / p1 | human opens | bot opens |
+|---|---:|---:|---|---:|---:|---:|
+| STONE | 1 | 0 | **spares it** (`oppW -0.5`) | 70 / 70% | **79.0%** | **66.9%** |
+| BONE | 1 | 0 | builds blind (`oppW 0`) | 70 / 70% | **62.1%** | **63.8%** |
+| IVORY | 1 | 0.25 | glances (`oppW 0.05`) | 60 / 60% | **56.1%** | **57.2%** |
+| SILVER | 1 | 0.6 | yes | 72 / 67.5% | **54.2%** | **55.7%** |
+| GOLD | 2 | 1.2 | yes | 68 / 67% | **53.1%** | **55.0%** |
+| OBSIDIAN | 3 | 1.2 | yes | 68 / 66% | **~52.7%** | **53.7%** |
+| NEON | 4 | 1.2 | yes | 66 / 65% | **52.1%** | **53.1%** |
+
+The last two columns are the **human's production-weighted board-policy share**
+against the same simple, seat-neutral builder (a draw contributes half); Rune
+Trial uses its Classic board cell here and receives the separate production-
+path spell check below. This is the balancing contract: bots get stronger by
+league and approach parity, but their calibrated aggregate share never exceeds
+50% in either legal seat. The seeded calibration used at least 800 games per
+outcome, with larger confirmation runs. `tests/botbench.test.ts` keeps both
+seat curves honest and `tests/ladder.test.ts` pins the shape numbers.
 
 **`oppW` is the floor's knob, and NEGATIVE is the floor's floor** (retuned
 2026-08-21: "if I lose 50% in the beginning, I quit"). Slip alone cannot
@@ -262,13 +278,31 @@ make a gentle bot: the un-slipped half of a depth-1 greedy still takes every
 kill, and even at 90% slip it holds random-parity (measured). At `oppW 0`
 the eval never *aims* a destroy; below 0 it actively prefers placements that
 SPARE the player's dice — passivity, the one below-random weakness that
-reads as a beginner rather than a drunk. On a passive bot, slip is where
-accidental kills sneak back in, so the gentlest honest shape is high-slip
-AND kill-averse. In the production lens (the human is p1 and moves first vs
-a bot): a newcomer who merely stacks beats STONE **76.6%** and even a random
-mover wins 56.1%; against the slackened BONE the stacker still wins 59.0% —
-the first promotion reads "harder now", never "losing now". Both rates are
-gate-pinned (botbench §1c).
+reads as a beginner rather than a drunk.
+
+That meaning is now **root-player-relative**, so it survives either seat.
+STONE's random slip also honours it: the bot still builds in a random column,
+but only among columns that cost the opponent the least visible score. The old
+any-column slip is how a nominal blunder produced the live double-six wipe.
+Higher groups retain the ordinary any-column slip when seated second.
+
+A genuinely lower-rated bot may still earn the opening seat — this change does
+**not** restore "human always opens." Instead, every bot opener gets a measured
+seat adjustment: its slipped moves use the same safe random-build rule. That
+cancels the opening advantage without changing matchmaking, and is why the
+bot-opens column above stays human-favoured too.
+
+The gate uses the real `botMove`, derives the exact outcome weights from the
+ranked registry, and measures both seat orders. Rune Trial gets the same
+league/seat slip on the bot's cast decision: a slipped bot passes that cast
+window but still places. The 1,000-game-per-seat production replay in
+`tests/rune-bot-fairness.test.ts` puts a simple active human at 54.3–61.0% in
+every IVORY+ league/seat (NEON: 54.7% / 58.3%). A player who never uses a dealt
+rune can still be an underdog in that outcome; the permanent-pool gate
+therefore substitutes an even harsher 38% / 40% Rune share and proves the
+league aggregate remains human-favoured. A random mover also remains favoured
+in STONE (about 69.6% when opening, 54.3% when the bot opens), so the first
+league supports learning by play rather than requiring the builder model.
 
 **Matchmaking width** (humans) is unchanged: few players near you → widen the
 band; crowded → keep it tight (`players_near` + `matchBand`). Percentile
@@ -476,9 +510,10 @@ bench in step 3 is what keeps these honest going forward.
 
 ### Seating — who moves first, and why it is a handicap
 
-**One rule, everywhere: the lower-rated player opens.** Every mode, human
-opponent or bot. It is a deliberate equalizer, and its whole appeal is that it
-fits in one sentence.
+**One rule in every mode: the lower-rated player opens.** The existing
+human–bot equality tiebreak is unchanged, so at 0–0 the bot may still open.
+Onboarding balance comes from the bot's opener policy, not from restoring a
+human-always-opens exception.
 
 The advantage is **not the opening placement** — an empty board's three columns
 are symmetric, so the first die carries no information. It is the **last word**:
@@ -515,7 +550,14 @@ and the human was p1 in every bot match whatever either side was rated. With a
 thin player pool most ranked matches are against bots, so "the handicap applies
 except where most matches are" was the wrong shape. `pvp-join openForBot()` now
 plays a bot's opening move at match creation, so a bot that is rated lower opens
-exactly as a human would.
+exactly as a human would. At equal ratings the existing bot-opening tiebreak
+still applies.
+
+The **seat is the same; the bot policy compensates for it**. A bot in the
+opening ME/p1 seat still uses its own league shape, but a slipped move is
+restricted to the columns causing the least opponent-score loss. The
+production-weighted two-seat bench is the guardrail: even NEON remains just
+under 50% bot outcome share whether the human or the bot opens.
 
 That required lifting the bot's move decision out of `pvp-move` into
 `core/bot.ts` — one implementation, two callers — rather than copying it.

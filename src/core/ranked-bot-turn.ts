@@ -1,7 +1,7 @@
 // One authoritative protocol-v2 bot turn. Ranked Edge Functions use this
-// helper both after a human placement and when a lower-rated bot opens a Rune
-// Trial immediately after the private choices reveal.
-import { botMove } from './bot.ts';
+// helper both after a human placement and when a bot opens a Rune Trial
+// immediately after the private choices reveal.
+import { botMove, botSlip } from './bot.ts';
 import {
   appendRankedAction,
   type RankedActionRow,
@@ -9,6 +9,7 @@ import {
   type RankedRuneDeal,
 } from './ranked-actions.ts';
 import { poolSequence } from './dice.ts';
+import { botShapeAt } from './ladder.ts';
 import { LIMITED, legalCols, type Mode } from './rules.ts';
 import { machineCastPlan, spellById } from './spells.ts';
 
@@ -39,7 +40,15 @@ export function appendRankedBotTurn(
   const spell = spellById(input.dealt[who]);
   let coordinatedPlacement: number | null = null;
 
-  if (spell && (state.charges[who][spell.id] ?? 0) > 0) {
+  /* Rune spells are a second source of strength on top of the calibrated
+     placement policy. Give them the same league/seat handicap: on a slip the
+     bot passes this cast window, then still makes its mandatory placement.
+     This keeps Rune Trial human-favoured in both seats without changing who
+     opens. The placement makes its own independent slip decision below. */
+  const canCast = spell !== null && (state.charges[who][spell.id] ?? 0) > 0;
+  const skipsCast = canCast
+    && input.random() < botSlip(botShapeAt(input.rating), who);
+  if (spell && canCast && !skipsCast) {
     const bagLeft = input.mode === LIMITED
       ? poolSequence(input.seed).length - state.drawCount
       : null;

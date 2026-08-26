@@ -73,11 +73,12 @@ export function settle(a: LadderRow, b: LadderRow, aScore: Score): Settled {
 /* ---- groups --------------------------------------------------------- */
 
 /* How a bot of this group plays. The shape belongs to the GROUP, not to the
-   player it faces: a STONE bot is genuinely simple and a GOLD bot is genuinely
-   hard, whoever sits across the board — the label IS the strength. (The first
-   ladder derived difficulty from the human's percentile instead, which made a
-   98-point bot and a 784-point bot play identically in the same session — the
-   rank badge was theater, and it read as "STONE bots are too strong".)
+   player it faces: a STONE bot is genuinely simpler than a GOLD bot, whoever
+   sits across the board — the label IS the strength. Every bot remains a
+   calibrated underdog; "stronger" approaches an even match, never crosses it.
+   The first ladder derived difficulty from the human's percentile instead,
+   which made a 98-point bot and a 784-point bot play identically in the same
+   session — the rank badge was theater, and it read as "STONE bots are too strong".
      depth — expectimax plies (core/ai.ts searchRoot)
      risk  — RISK_W: how much it fears what you can destroy (0 = blind)
      oppW  — OPP_W: how much of YOUR board its eval sees. 0 is a builder that
@@ -86,10 +87,20 @@ export function settle(a: LadderRow, b: LadderRow, aScore: Score): Settled {
              below-random weakness that reads as a beginner rather than a
              drunk, and it is what lets a brand-new player actually win
              (decided 2026-08-21: "if I lose 50% in the beginning, I quit").
-     slip  — share of moves played as a pure coin-flip column. On a PASSIVE
-             bot slip is where accidental kills sneak back in, so the gentlest
-             honest shape is high-slip AND kill-averse, not low-slip. */
-export interface BotShape { depth: number; risk: number; oppW: number; slip: number }
+     slip  — share of moves played as a random build when the bot is p2.
+     openerSlip — the corresponding share when the bot opens as p1. For the
+             negative-oppW STONE floor, botMove restricts that random choice
+             to columns with the least opponent score loss, so "blunder"
+             cannot reverse the group's explicit promise to spare the player.
+             The same safe-slip adjustment applies whenever a bot opens,
+             cancelling that seat advantage without changing who opens. */
+export interface BotShape {
+  depth: number;
+  risk: number;
+  oppW: number;
+  slip: number;
+  openerSlip: number;
+}
 
 export interface Group {
   id: string;
@@ -104,21 +115,24 @@ export interface Group {
    pays less when you outrank your opponent, and a group costs more than the
    last. Widths stay round numbers out of habit rather than need — the ring is
    one continuous fill now, so nothing has to divide evenly into it.
-   Bot shapes: tuned by simulation (tests/botbench.test.ts keeps the ordering
-   honest) — win% vs a random mover climbs STONE→NEON, and each group beats
-   the one two below it. The bottom two retuned 2026-08-21 for the onboarding
-   promise, measured in the PRODUCTION lens (vs a bot the human is p1 and
-   moves first): vs kill-averse STONE a newcomer who merely stacks wins 76.6%
-   and even a random mover wins 56.1%; vs the softened BONE the stacker still
-   wins 59.0% — promotion reads "harder now", never "losing now". */
+   Bot shapes: tuned by simulation (tests/botbench.test.ts keeps the curve
+   honest). A live 0–0 first-match loss on 2026-08-26 exposed two false
+   assumptions in the old bench: it always seated the bot as AI/p2, and its
+   supposed stacking newcomer was actually minimizing the bot's score. The
+   replacement uses the real weighted outcome pools, a genuinely seat-neutral
+   builder, and both legal seat orders. From the human-opening seat, measured
+   human outcome share (draws split) is about
+   79 / 62 / 57 / 54 / 53 / 52 / 52% from STONE through NEON. When a
+   bot opens, safe slips keep every group on the human-favoured
+   side too. */
 export const GROUPS: readonly Group[] = [
-  { id: 'stone',    floor: 0,    width: 300,  bot: { depth: 1, risk: 0,    oppW: -0.5, slip: 0.55 } },
-  { id: 'bone',     floor: 300,  width: 420,  bot: { depth: 1, risk: 0,    oppW: 1, slip: 0.45 } },
-  { id: 'ivory',    floor: 720,  width: 540,  bot: { depth: 1, risk: 0.25, oppW: 1, slip: 0.15 } },
-  { id: 'silver',   floor: 1260, width: 750,  bot: { depth: 1, risk: 0.6,  oppW: 1, slip: 0.05 } },
-  { id: 'gold',     floor: 2010, width: 990,  bot: { depth: 2, risk: 1.2,  oppW: 1, slip: 0 } },
-  { id: 'obsidian', floor: 3000, width: 1350, bot: { depth: 3, risk: 1.2,  oppW: 1, slip: 0 } },
-  { id: 'neon',     floor: 4350, width: 0,    bot: { depth: 4, risk: 1.2,  oppW: 1, slip: 0 } },
+  { id: 'stone',    floor: 0,    width: 300,  bot: { depth: 1, risk: 0,    oppW: -0.5, slip: 0.70, openerSlip: 0.70 } },
+  { id: 'bone',     floor: 300,  width: 420,  bot: { depth: 1, risk: 0,    oppW: 0, slip: 0.70, openerSlip: 0.70 } },
+  { id: 'ivory',    floor: 720,  width: 540,  bot: { depth: 1, risk: 0.25, oppW: 0.05, slip: 0.60, openerSlip: 0.60 } },
+  { id: 'silver',   floor: 1260, width: 750,  bot: { depth: 1, risk: 0.6,  oppW: 1, slip: 0.72, openerSlip: 0.675 } },
+  { id: 'gold',     floor: 2010, width: 990,  bot: { depth: 2, risk: 1.2,  oppW: 1, slip: 0.68, openerSlip: 0.67 } },
+  { id: 'obsidian', floor: 3000, width: 1350, bot: { depth: 3, risk: 1.2,  oppW: 1, slip: 0.68, openerSlip: 0.66 } },
+  { id: 'neon',     floor: 4350, width: 0,    bot: { depth: 4, risk: 1.2,  oppW: 1, slip: 0.66, openerSlip: 0.65 } },
 ];
 
 /* NEON is a POSITION, not a threshold. An always-climbing ladder is a ratchet:

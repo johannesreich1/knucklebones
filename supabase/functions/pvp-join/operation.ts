@@ -14,6 +14,7 @@ import { ensureRuneTrialBotOpening } from "../_shared/rune-trial-bot-opening.ts"
 import { settleMatch } from "../_shared/settlement.ts";
 import {
   findOldestEligiblePartner,
+  rankedBotSides,
   trialClientCompatibilityError,
   type QueueCandidate,
 } from "./matchmaking.ts";
@@ -285,8 +286,7 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
       }
     }
     if (bot) {
-      const underdog = myRating < bot.rating ? uid : bot.id;
-      const favourite = underdog === uid ? bot.id : uid;
+      const { underdog, favourite } = rankedBotSides(uid, myRating, bot.id, bot.rating);
       try {
         const humanAccess: RankedParticipantAccess = {
           tier: myTier,

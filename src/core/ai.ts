@@ -6,7 +6,7 @@
 // the first JIT-cold run when reading its numbers).
 import { DICE_FACES } from '../config.ts';
 import {
-  AI, ME, SPEC, type GameState, type Player, type Mode,
+  SPEC, type GameState, type Player, type Mode,
   CLASSIC, ROWSWITCH, SINGLESTRIKE, BOUNTY,
   cloneCharm, cloneSt, applyMove, legalCols, boardTotalMode, countOf, isFull,
   type CharmSt,
@@ -21,7 +21,11 @@ const BUDGET = 500000;                  // node cap: search degrades, never hang
    that reads as a beginner rather than a drunk (slip alone cannot get below
    random-parity, because the un-slipped half of a greedy still takes every
    kill — measured: d1 slip .5 wins 60% vs random). STONE ships at -0.5.
-   AI-seat perspective, like the eval itself: every bot in the game sits there. */
+
+   The perspective is the player passed to searchRoot, not the historical AI
+   seat. Ranked bots may open as P1/ME, and applying a negative opponent weight
+   from the fixed AI seat reverses its meaning: "spare the newcomer" becomes
+   "minimise the newcomer's score" exactly when the gentle bot opens. */
 
 export const nodes = () => NODES;
 
@@ -63,10 +67,13 @@ export function riskOf(st: GameState, p: Player, mode: Mode = CLASSIC): number {
 }
 
 function evalSt(st: GameState, options: ResolvedSearchOptions, charm?: CharmSt): number {
-  const { mode, opponentWeight, riskWeight } = options;
-  let s = boardTotalMode(st[AI], mode, charm?.wards[AI])
-    - opponentWeight * boardTotalMode(st[ME], mode, charm?.wards[ME]);
-  if (riskWeight) s += riskWeight * (riskOf(st, ME, mode) - riskOf(st, AI, mode));
+  const { perspective, mode, opponentWeight, riskWeight } = options;
+  const opponent = (1 - perspective) as Player;
+  let s = boardTotalMode(st[perspective], mode, charm?.wards[perspective])
+    - opponentWeight * boardTotalMode(st[opponent], mode, charm?.wards[opponent]);
+  if (riskWeight) {
+    s += riskWeight * (riskOf(st, opponent, mode) - riskOf(st, perspective, mode));
+  }
   return s;
 }
 
@@ -85,6 +92,7 @@ export interface SearchOptions {
 }
 
 interface ResolvedSearchOptions {
+  perspective: Player;
   random: () => number;
   mode: Mode;
   riskWeight: number;
@@ -95,6 +103,7 @@ export function searchRoot(st: GameState, who: Player, die: number, depth: numbe
                            options: SearchOptions): SearchResult {
   NODES = 0;
   return search(st, who, die, depth, {
+    perspective: who,
     random: options.random,
     mode: options.mode ?? CLASSIC,
     riskWeight: options.riskWeight ?? 1.5,
@@ -105,17 +114,19 @@ export function searchRoot(st: GameState, who: Player, die: number, depth: numbe
 function search(st: GameState, who: Player, die: number, depth: number,
                 options: ResolvedSearchOptions, charm?: CharmSt): SearchResult {
   NODES++;
-  const { mode, random } = options;
+  const { perspective, mode, random } = options;
   const legal = legalCols(st[who]);
-  let bestV = who === AI ? -1e9 : 1e9, bestC = legal[0];
+  const maximizing = who === perspective;
+  let bestV = maximizing ? -1e9 : 1e9, bestC = legal[0];
   for (const c of legal) {
     const ns = cloneSt(st);
     const nextCharm = charm && cloneCharm(charm);
     applyMove(ns, who, c, die, mode, nextCharm);
     let v: number;
     if (isFull(ns[who])) {
-      const d = boardTotalMode(ns[AI], mode, nextCharm?.wards[AI])
-        - boardTotalMode(ns[ME], mode, nextCharm?.wards[ME]);   // game over: material only
+      const opponent = (1 - perspective) as Player;
+      const d = boardTotalMode(ns[perspective], mode, nextCharm?.wards[perspective])
+        - boardTotalMode(ns[opponent], mode, nextCharm?.wards[opponent]); // game over: material only
       v = d + (d > 0 ? 14 : d < 0 ? -14 : 0);
     } else if (depth <= 1 || NODES > BUDGET) {
       v = evalSt(ns, options, nextCharm);
@@ -127,7 +138,7 @@ function search(st: GameState, who: Player, die: number, depth: number,
       v = sum / DICE_FACES;
     }
     v += (random() - 0.5) * 1e-4;                         // tie-break jitter
-    if (who === AI ? v > bestV : v < bestV) { bestV = v; bestC = c; }
+    if (maximizing ? v > bestV : v < bestV) { bestV = v; bestC = c; }
   }
   return { v: bestV, c: bestC };
 }

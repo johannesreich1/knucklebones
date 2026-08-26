@@ -3,9 +3,11 @@
 // state from the same log + seed through exactly this code.
 //
 // Match conventions (enforced server-side, honoured by clients):
-//   p1 = core index 1 (ME) and ALWAYS makes the first move; vs a bot the
-//   human is always p1. Each move consumes exactly one roll from the seed's
-//   dice stream. The game ends the instant a mover fills their board.
+//   p1 = core index 1 (ME) and ALWAYS makes the first move. Ranked seating
+//   gives p1 to the lower-rated participant, including a bot; the ranked bot
+//   tiebreak also leaves an equal-rated bot in p1. Each move consumes exactly
+//   one roll from the seed's dice stream. The game ends the instant a mover
+//   fills their board.
 import { type GameState, type Player, type Mode, CLASSIC, BOUNTY, LIMITED, ME, emptyBoard, legalCols, isOver, applyMove, totalOf } from './rules.ts';
 import { diceStream, poolSequence } from './dice.ts';
 

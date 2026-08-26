@@ -20,6 +20,22 @@ export function rankedSeatOrder(underdog: string, favourite: string) {
   return { p1: underdog, p2: favourite } as const;
 }
 
+/** Lower rating opens; preserve the existing bot-opening tiebreak at equality.
+ *
+ * Opening balance belongs to the bot policy, not to a human-always-opens
+ * exception. In particular, a 0–0 bot may still open against a newcomer. */
+export function rankedBotSides(
+  humanId: string,
+  humanRating: number,
+  botId: string,
+  botRating: number,
+) {
+  const humanOpens = humanRating < botRating;
+  return humanOpens
+    ? { underdog: humanId, favourite: botId } as const
+    : { underdog: botId, favourite: humanId } as const;
+}
+
 export function negotiatedProtocolVersion(
   accesses: readonly { capabilities?: readonly string[] }[],
 ): 1 | 2 {

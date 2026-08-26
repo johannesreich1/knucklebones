@@ -173,12 +173,13 @@ eq(even.da + even.db > 0, true, 'the ladder stopped climbing');
 
 /* ---- §4 difficulty and matchmaking ------------------------------------- */
 /* A bot plays the shape of its OWN group — the label IS the strength. The
-   numbers were tuned by simulation (2026-08-20; floor retuned 2026-08-21 for
-   the onboarding promise); tests/botbench.test.ts keeps their ORDERING and
-   the newcomer win rates honest, this table just pins them. */
-eq(GROUPS.map((g) => [g.bot.depth, g.bot.risk, g.bot.oppW, g.bot.slip]), [
-  [1, 0, -0.5, 0.55], [1, 0, 1, 0.45], [1, 0.25, 1, 0.15], [1, 0.6, 1, 0.05],
-  [2, 1.2, 1, 0], [3, 1.2, 1, 0], [4, 1.2, 1, 0],
+   numbers were tuned by simulation (2026-08-20; full curve corrected
+   2026-08-26 after the 0–0 seat-perspective report); botbench keeps the
+   human-favoured outcome curve honest, this table just pins the shapes. */
+eq(GROUPS.map((g) => [g.bot.depth, g.bot.risk, g.bot.oppW, g.bot.slip, g.bot.openerSlip]), [
+  [1, 0, -0.5, 0.70, 0.70], [1, 0, 0, 0.70, 0.70], [1, 0.25, 0.05, 0.60, 0.60],
+  [1, 0.6, 1, 0.72, 0.675], [2, 1.2, 1, 0.68, 0.67],
+  [3, 1.2, 1, 0.68, 0.66], [4, 1.2, 1, 0.66, 0.65],
 ], 'the per-group bot shapes drifted from LADDER.md §4');
 eq(botShapeAt(148), GROUPS[0].bot, 'a bot with STONE points must play the STONE shape');
 eq(botShapeAt(9999), APEX.bot, 'a bot above the apex floor must play the NEON shape');
@@ -188,15 +189,15 @@ eq(botShapeAt(9999), APEX.bot, 'a bot above the apex floor must play the NEON sh
    weakness that reads as a beginner rather than a drunk */
 eq(botShapeAt(0).oppW < 0, true, 'the STONE bot must actively spare the player');
 eq(botShapeAt(0).slip >= 0.3, true, 'a brand-new player must meet a bot that blunders');
-eq(botShapeAt(4350).slip, 0, 'the top of the ladder must meet a bot that does not blunder');
-/* every knob only ever tightens on the way up */
+eq(botShapeAt(4350).slip, 0.66, 'NEON must approach parity from the human-favoured side');
+/* Search understanding still tightens on the way up. Slip is the measured
+   counterweight that keeps deeper search from making any bot the favourite. */
 {
   let pv = GROUPS[0].bot;
   for (const g of GROUPS) {
     if (g.bot.depth < pv.depth) problems.push(`${g.id}: search depth fell`);
     if (g.bot.risk < pv.risk - 1e-9) problems.push(`${g.id}: risk sense fell`);
     if (g.bot.oppW < pv.oppW) problems.push(`${g.id}: board sight fell`);
-    if (g.bot.slip > pv.slip + 1e-9) problems.push(`${g.id}: slip rose`);
     pv = g.bot;
   }
 }

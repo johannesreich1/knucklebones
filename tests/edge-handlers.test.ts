@@ -17,6 +17,7 @@ import { verifyRuneTrialBotOpening } from './support/rune-trial-bot-opening-edge
 import {
   negotiatedProtocolVersion,
   oldestEligibleCandidate,
+  rankedBotSides,
   rankedSeatOrder,
   trialClientCompatibilityError,
 } from '../supabase/functions/pvp-join/matchmaking.ts';
@@ -50,6 +51,15 @@ check(negotiatedProtocolVersion([
 check(JSON.stringify(rankedSeatOrder('lower-rated-bot', 'higher-rated-human'))
     === JSON.stringify({ p1: 'lower-rated-bot', p2: 'higher-rated-human' }),
   'ranked bot seating displaced the lower-rated participant from the opening seat');
+check(JSON.stringify(rankedBotSides('human', 0, 'bot', 0))
+    === JSON.stringify({ underdog: 'bot', favourite: 'human' }),
+  'the existing bot-opening tiebreak was replaced by human-always-opens');
+check(JSON.stringify(rankedBotSides('human', 50, 'bot', 0))
+    === JSON.stringify({ underdog: 'bot', favourite: 'human' }),
+  'a genuinely lower-rated bot lost the ranked opening handicap');
+check(JSON.stringify(rankedBotSides('human', 0, 'bot', 50))
+    === JSON.stringify({ underdog: 'human', favourite: 'bot' }),
+  'a genuinely lower-rated human lost the ranked opening handicap');
 const compatibleTrial = {
   format: 'rune_trial', rune_rules_version: 1,
 } as MatchRow;

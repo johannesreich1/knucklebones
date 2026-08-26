@@ -130,6 +130,100 @@ check(appendRankedBotTurn({
   random: () => 0,
 }) === null, 'ranked bot opener accepted a state/version mismatch');
 
+// A ranked bot's league slip also passes its Rune cast window. The low draw
+// proves the handicap; the high draw proves it did not disable spells. This
+// built replay reaches an AI/p2 FATE turn where the production planner casts.
+const castSlipSeed = 'cast-fixture-0';
+const castSlipDeal: RankedRuneDeal = ['fate', 'ward'];
+const castSlipRows: RankedActionRow[] = [];
+let castSlipState = rebuildRankedActions(castSlipSeed, castSlipRows, CLASSIC, castSlipDeal);
+if (!castSlipState) throw new Error('cast-slip fixture did not initialize');
+for (const placed_col of [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1]) {
+  const appended = appendRankedAction(
+    castSlipSeed, castSlipRows, CLASSIC, castSlipDeal, { kind: 'place', placed_col },
+  );
+  if (!appended) throw new Error('cast-slip fixture placement did not append');
+  castSlipRows.push(appended.row);
+  castSlipState = appended.state;
+}
+check(castSlipState.turn === AI && castSlipState.nextDie === 1,
+  'cast-slip fixture did not reach the intended bot FATE turn', castSlipState);
+const skippedCast = appendRankedBotTurn({
+  seed: castSlipSeed,
+  rows: castSlipRows,
+  state: castSlipState,
+  mode: CLASSIC,
+  dealt: castSlipDeal,
+  rating: 800,
+  random: () => 0,
+});
+let castDraw = 0;
+const keptCast = appendRankedBotTurn({
+  seed: castSlipSeed,
+  rows: castSlipRows,
+  state: castSlipState,
+  mode: CLASSIC,
+  dealt: castSlipDeal,
+  rating: 800,
+  random: () => castDraw++ === 0 ? 0.99 : 0.5,
+});
+check(skippedCast?.actions.length === 1 && skippedCast.actions[0].kind === 'place'
+  && skippedCast.state.charges[AI].fate === 2,
+  'a bot cast through its league slip instead of passing the Rune window', skippedCast);
+check(keptCast?.actions.some(({ kind, rune_id }) => kind === 'cast' && rune_id === 'fate')
+  && keptCast.state.charges[AI].fate === 1,
+  'the Rune handicap disabled casting instead of making it probabilistic', keptCast);
+
+const openerCastSeed = 'cast-slip-fixture-1-fate-0';
+const openerCastDeal: RankedRuneDeal = ['nudge', 'fate'];
+const openerCastRows: RankedActionRow[] = [];
+let openerCastState = rebuildRankedActions(
+  openerCastSeed, openerCastRows, CLASSIC, openerCastDeal,
+);
+if (!openerCastState) throw new Error('opener cast-slip fixture did not initialize');
+const openerPattern = [1, 1, 0];
+for (let step = 0; step < 10; step++) {
+  const legal = legalCols(openerCastState.st[openerCastState.turn]);
+  const appended = appendRankedAction(
+    openerCastSeed, openerCastRows, CLASSIC, openerCastDeal,
+    { kind: 'place', placed_col: legal[openerPattern[step % openerPattern.length] % legal.length] },
+  );
+  if (!appended) throw new Error('opener cast-slip fixture placement did not append');
+  openerCastRows.push(appended.row);
+  openerCastState = appended.state;
+}
+check(openerCastState.turn === ME && openerCastState.nextDie === 1,
+  'opener cast-slip fixture did not reach the intended bot FATE turn', openerCastState);
+const skippedOpenerCast = appendRankedBotTurn({
+  seed: openerCastSeed,
+  rows: openerCastRows,
+  state: openerCastState,
+  mode: CLASSIC,
+  dealt: openerCastDeal,
+  rating: 800,
+  random: () => 0,
+});
+let openerCastDraw = 0;
+const keptOpenerCast = appendRankedBotTurn({
+  seed: openerCastSeed,
+  rows: openerCastRows,
+  state: openerCastState,
+  mode: CLASSIC,
+  dealt: openerCastDeal,
+  rating: 800,
+  random: () => openerCastDraw++ === 0 ? 0.99 : 0.5,
+});
+check(skippedOpenerCast?.actions.length === 1
+  && skippedOpenerCast.actions[0].kind === 'place'
+  && skippedOpenerCast.state.charges[ME].fate === 2,
+  'a bot opener cast through its league slip instead of passing the Rune window',
+  skippedOpenerCast);
+check(keptOpenerCast?.actions.some(
+  ({ kind, rune_id }) => kind === 'cast' && rune_id === 'fate',
+) && keptOpenerCast.state.charges[ME].fate === 1,
+  'the opener Rune handicap disabled casting instead of making it probabilistic',
+  keptOpenerCast);
+
 // The die already in hand counts as drawn. On the final LIMITED turn FATE
 // must see an empty bag, decline its redraw, and let the bot place that die.
 const limitedBotSeed = 'audit-31';
