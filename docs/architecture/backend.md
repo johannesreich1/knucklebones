@@ -204,11 +204,10 @@ older RLS-protected own-row DELETE, but database-first remains the normal order.
 The current locale expansion is the forward-only migration
 `20260825161016_expand_player_settings_locales.sql`. It widens the original
 `en`/`de`/`fr` constraint to the registry-derived six stable IDs without
-rewriting stored values. It is locally tested but production-pending: Johannes
-must preview and apply the allow-listed `settings-locale` rollout described in
-`tools/database/README.md`, then accept its history, exact constraint, comment,
-and stored-value postchecks before the six-language client deploys. The legal
-publication switch is a later, independent release step.
+rewriting stored values. Production records it, and the allow-listed
+`settings-locale` audit confirms its history, exact constraint, comment, and
+stored-value contract. The legal publication switch is a later, independent
+release step.
 
 Game Center is a separate held rollout: `0014_game_center_ids.sql` must be
 followed by `20260823132611_game_center_service_grants.sql` before `gc-auth` is
@@ -216,13 +215,13 @@ deployed. Because restore deliberately has no Supabase JWT, configure a durable
 deployment-layer rate limit first; handler input bounds and a bounded Apple
 certificate cache reduce work but are not a distributed rate limiter.
 
-Rune Trial is another database-first, forward-only rollout. The branch
-migration is `20260825205241_rune_trial_ranked_v2.sql`; it repairs the complete
+Rune Trial is another database-first, forward-only rollout. Production records
+`20260825205241_rune_trial_ranked_v2.sql`; it repairs the complete
 ordinary modifier allow-list and adds pool, format/phase, action, private-choice,
-and collection state. Deploy its v2 join/select/action/settlement closures and
-capable client only after the migration. Retain the v1 standard path throughout
-the compatibility window, and do not infer production deployment from the
-presence of this branch file.
+and collection state. Its exact catalog/security/data/Realtime/cron audit and
+the byte-verified v2 join/select/action/settlement function rollout completed
+before the capable client release. Retain the v1 standard path throughout the
+compatibility window so old clients remain standard-only.
 
 ## Verification
 
