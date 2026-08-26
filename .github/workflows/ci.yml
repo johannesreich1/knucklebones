@@ -7,6 +7,13 @@ on:
     branches: [main]
   pull_request:
 
+# A newer commit owns the current result for a branch or PR. Verification jobs
+# use isolated hosted resources, so a superseded run is safe to cancel rather
+# than letting it publish stale checks or an obsolete Android artifact.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   manifest:
     name: test / manifest
@@ -56,7 +63,8 @@ jobs:
   # downstream automation while the detailed shard checks stay visible.
   test:
     name: test
-    if: ${{ always() }}
+    # Aggregate ordinary failures, but never outlive a superseding revision.
+    if: ${{ !cancelled() }}
     needs: [manifest, test_shard]
     runs-on: ubuntu-latest
     timeout-minutes: 5

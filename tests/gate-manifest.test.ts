@@ -126,11 +126,14 @@ try {
   check(/\n  manifest:\n[\s\S]*?tests\/gate-manifest\.test\.ts/.test(workflow)
     && /\n  test_shard:\n[\s\S]*?needs:\s*manifest/.test(workflow),
   'CI shards are not guarded by the independent manifest preflight');
-  check(/\n  test:\n[\s\S]*?name:\s*test\n[\s\S]*?needs:\s*\[manifest, test_shard\]/.test(workflow),
+  check(/\n  test:\n[\s\S]*?name:\s*test\n[\s\S]*?if:\s*\$\{\{ !cancelled\(\) \}\}\n[\s\S]*?needs:\s*\[manifest, test_shard\]/.test(workflow),
     'CI lost the stable aggregate test check used by branch protection');
   check(/fail-fast:\s*false/.test(workflow)
     && /npm test -- --ci-shard "\$\{\{ matrix\.shard \}\}"/.test(workflow),
   'CI does not run every selected manifest shard without fail-fast cancellation');
+  check(workflow.includes('group: ${{ github.workflow }}-${{ github.ref }}')
+    && /concurrency:\s*\n\s*group:[^\n]+\n\s*cancel-in-progress:\s*true/.test(workflow),
+  'CI does not cancel a superseded run for the same branch or pull request');
 
   const invalidCli = spawnSync(process.execPath, ['tests/run-all.mjs', '--not-a-gate-option'], {
     encoding: 'utf8',

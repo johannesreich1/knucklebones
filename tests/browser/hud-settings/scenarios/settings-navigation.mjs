@@ -268,7 +268,13 @@ export async function runSettingsNavigationScenarios(suite) {
   });
   check(out.settingsPrivacy.open && out.settingsPrivacy.topmost && out.settingsPrivacy.settingsInert,
     'Privacy did not open above Settings as the active modal', out.settingsPrivacy);
-  await page.tap('#ovPrivacy [data-legal-close]'); await page.waitForTimeout(50);
+  await page.tap('#ovPrivacy [data-legal-close]');
+  /* Production restores the opener on the next animation frame. Wait for that
+     player-visible state instead of assuming a busy browser paints within an
+     arbitrary 50ms sleep; retain a short bound so a real focus loss fails. */
+  await page.waitForFunction(() => document.activeElement?.id === 'btnSettingsPrivacy'
+    && document.getElementById('ovSettings').classList.contains('on')
+    && !document.getElementById('ovSettings').inert, null, { timeout: 1000 }).catch(() => {});
   out.settingsPrivacy.focusRestored = await page.evaluate(() =>
     document.activeElement?.id === 'btnSettingsPrivacy'
       && document.getElementById('ovSettings').classList.contains('on')

@@ -2,6 +2,7 @@ import {
   inspectReducedWardStrike,
   inspectWardStrike,
   wardMotionMatchesW3,
+  wardObservedTimingMatchesW3,
 } from './ward-hit.mjs';
 
 export async function runProtectionBeatScenarios(suite) {
@@ -67,9 +68,9 @@ export async function runProtectionBeatScenarios(suite) {
       && out.wardStruck.sourceAnchorError !== null && out.wardStruck.sourceAnchorError < .75
       && out.wardStruck.sourceVisible && out.wardStruck.sourceAfterVisible && out.wardStruck.sourceDrift < .75,
     'the Ward contact copy was not cloned from the settled attacking die', out.wardStruck);
-  check(wardMotionMatchesW3(out.wardStruck)
-      && out.wardStruck.approachElapsed >= 570 && out.wardStruck.approachElapsed <= 700
-      && out.wardStruck.recoilElapsed >= 950 && out.wardStruck.recoilElapsed <= 1100
+  check(out.wardStruck.priorGhosts === 0,
+    'a previous Ward strike ghost survived into the current action', out.wardStruck);
+  check(wardMotionMatchesW3(out.wardStruck) && wardObservedTimingMatchesW3(out.wardStruck)
       && Math.abs(out.wardStruck.contact.reboundProgress - 130 / 174) < .002,
     'W3 LOST ITS 640ms APPROACH / 384ms REBOUND / 1024ms WITHDRAWAL', out.wardStruck);
   check(!out.wardStruck.particles && !out.wardStruck.flash,

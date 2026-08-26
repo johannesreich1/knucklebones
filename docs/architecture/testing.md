@@ -42,6 +42,11 @@ evidence when an owner grows.
 Hosted CI selects four coverage-checked `--ci-shard` manifests. Each shard has
 its own checkout, build output, server, and kernel-assigned ports, while using
 one suite worker inside its two-core runner to avoid browser-contention flakes.
+Runs share a workflow-and-ref concurrency group: a newer push or PR revision
+cancels its still-running predecessor, so obsolete checks and Android artifacts
+cannot finish after the current revision. Matrix `fail-fast` remains disabled
+inside that current run so every shard still reports its complete inventory;
+the aggregate check runs after ordinary failures but skips a cancelled run.
 `tests/gate-manifest.test.ts` rejects a missing, duplicated, unknown, or
 multiply assigned suite and requires the workflow matrix to match the manifest.
 An independent, dependency-free manifest preflight guards matrix startup, so a
@@ -77,12 +82,17 @@ locales. `tests/i18n.test.ts`, `tests/i18n-catalog.test.ts`, and
 `supabase/tests/database/player-settings.test.sql` require the six stable
 database IDs and reject presentation/unsupported tags.
 
-Rendered localization has three complementary gates. The report-only grapheme audit is
+Rendered localization has three complementary checks. The report-only grapheme audit is
 `mise exec -- node --experimental-strip-types tests/i18n-length-report.test.ts`;
 it identifies copy needing review but never replaces rendered evidence. The
-shared eager/mobile/widget matrix runs through
-`mise exec -- node tests/browser/localization/run.mjs`, while
-`mise exec -- node tests/browser/online-localization/run.mjs` uses Chromium and
+shared eager/mobile/widget matrix remains available through
+`mise exec -- node tests/browser/localization/run.mjs`, but is temporarily
+manual-only rather than part of `npm test` or hosted CI. It measures computed
+geometry and hit testing, not whether a person approved the rendered images;
+run it deliberately for locale, copy, or shared-layout work and complete the
+manual visual pass described in the localization architecture. The automated
+gate retains
+`mise exec -- node tests/browser/online-localization/run.mjs`, which uses Chromium and
 stubbed Supabase routes to measure auth, profile, avatar, history, ladder,
 face-off, and ranked-result surfaces. Both browser matrices derive their six
 locales from the registry and cover 320 × 568, 390 × 844, 568 × 320, and

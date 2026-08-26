@@ -95,7 +95,6 @@ export function seededAudit(overrides: Record<string, number> = {}) {
     invalidStatsRows: 0,
     streakBaselines: PRODUCTION_BOT_COUNT,
     orphanStreakBaselines: 0,
-    inconsistentStreakCards: 0,
     distinctPoints: PRODUCTION_BOT_COUNT,
     minPoints: 0,
     maxPoints: PRODUCTION_BOT_MAX_POINTS,

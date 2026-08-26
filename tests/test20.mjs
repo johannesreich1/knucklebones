@@ -74,7 +74,7 @@ try {
     await page.evaluate(() => { window.__kb.S.timer = 0; });
     await page.click('#btnPlay');
     if (liveLocale) {
-      await page.waitForSelector('#wheelDial', { timeout: 20000 });
+      await page.waitForSelector('#ovWheel.on #wheelDial', { timeout: 20000 }); // never stale hidden DOM
       await page.waitForTimeout(700); // clear tap()'s native-click guard
       localeRepaint.mode = await page.evaluate(() => {
         const overlay = document.getElementById('ovWheel');

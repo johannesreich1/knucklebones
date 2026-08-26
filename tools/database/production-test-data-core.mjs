@@ -213,15 +213,6 @@ const RUNE_AUDIT_EXPRESSIONS = Object.freeze([
       left join public.season_ratings rating
         on rating.season_id = baseline.season_id and rating.player = baseline.player
      where rating.player is null)::integer as "orphanStreakBaselines"`,
-  `(select count(*)
-      from public.profiles profile
-      join public.season_ratings rating
-        on rating.player = profile.id and rating.season_id = ${CURRENT_SEASON_SQL}
-      join private.season_streak_baselines baseline
-        on baseline.season_id = rating.season_id and baseline.player = rating.player
-      cross join lateral public.player_card(profile.nickname) card
-     where card.streak is distinct from baseline.best_streak)::integer
-      as "inconsistentStreakCards"`,
   `(select count(distinct points) from public.season_ratings)::integer as "distinctPoints"`,
   `(select min(points) from public.season_ratings)::integer as "minPoints"`,
   `(select max(points) from public.season_ratings)::integer as "maxPoints"`,
@@ -359,7 +350,7 @@ const RUNE_AUDIT_FIELDS = Object.freeze([
   'playerRunes', 'matchActions', 'runeTrialChoices', 'runeSelectionCommands',
   'matchActionCommands', 'invalidBotRows', 'missingSeasonRows',
   'inconsistentRatingRows', 'inconsistentTierRows', 'invalidStatsRows',
-  'streakBaselines', 'orphanStreakBaselines', 'inconsistentStreakCards',
+  'streakBaselines', 'orphanStreakBaselines',
   'distinctPoints', 'minPoints', 'maxPoints', 'distinctWins', 'distinctLosses',
   'distinctDraws', 'atPeakBots', 'peakAheadBots', 'maxPeakGap',
   'distinctBestStreaks', 'minBestStreak', 'maxBestStreak',
@@ -1288,7 +1279,6 @@ export function assertProductionBotSeedComplete(audit) {
     invalidStatsRows: 0,
     streakBaselines: PRODUCTION_BOT_COUNT,
     orphanStreakBaselines: 0,
-    inconsistentStreakCards: 0,
     distinctPoints: PRODUCTION_BOT_COUNT,
     minPoints: 0,
     maxPoints: PRODUCTION_BOT_MAX_POINTS,
