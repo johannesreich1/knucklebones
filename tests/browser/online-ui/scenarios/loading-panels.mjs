@@ -78,8 +78,9 @@ export async function runOnlineLoadingPanelScenarios(suite) {
     'page errors during the deferred ladder pagination race', paginationRace.errs);
 
   /* Ladder is a retained panel inside one reused overlay. Hold the first
-     identity request so the browser must paint the pre-identity state instead
-     of letting a fast local mock conceal it in the same frame. */
+     identity request so the browser must paint the pre-identity state — for a
+     returning player that is the queue's searching panel, not the loading
+     die — instead of letting a fast local mock conceal it in the same frame. */
   const rankedAfterLadder = await visit({
     door: 'board',
     skipStandardProbes: true,
@@ -129,7 +130,7 @@ export async function runOnlineLoadingPanelScenarios(suite) {
   out.onlineLoading.rankedAfterLadder = rankedAfterLadder.probeResult;
   check(rankedAfterLadder.probeResult?.onlineOn
       && rankedAfterLadder.probeResult.title === 'MATCHMAKING'
-      && rankedAfterLadder.probeResult.visiblePanels?.join() === 'onLoading'
+      && rankedAfterLadder.probeResult.visiblePanels?.join() === 'onQueue'
       && rankedAfterLadder.probeResult.boardHidden
       && rankedAfterLadder.probeResult.boardRects === 0
       && !rankedAfterLadder.probeResult.eagerLoading,

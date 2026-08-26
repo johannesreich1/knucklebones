@@ -27,6 +27,7 @@ import { resolveRankedTrial } from './trial-offer.ts';
 
 export interface QueueScreen {
   bind(): void;
+  showSearching(): void;
   start(): Promise<void>;
   stop(): void;
 }
@@ -50,6 +51,7 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
   let tick: ReturnType<typeof setInterval> | null = null;
   let pendingJoin: Promise<JoinResult | null> | null = null;
   let queueMayExist = false;
+  let searchShownAt: number | null = null;
 
   const revealCandidates = (result: Extract<JoinResult, { status: 'matched' }>) => {
     const tier = result.match.pool_tier;
@@ -101,7 +103,37 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
     runs.cancel();
     cancelTrialSelection();
     clearWaiting();
+    searchShownAt = null;
     if (queueMayExist) void cancellation.cleanup();
+  }
+
+  /* The ONE looking-state paint. Entry shows it before identity and preference
+     checks have resolved, and start() re-issues it when the join loop actually
+     begins. Its clock is the VISIBLE one — #qTime and the 7s "inviting" sub
+     run from the first paint, and a later call ADOPTS the running clock rather
+     than restarting it. Matchmaking policy never reads this clock: the bot
+     backfill threshold (docs/LADDER.md) is measured in start()'s join loop. */
+  function showSearching(): void {
+    searchShownAt ??= Date.now();
+    const shownAt = searchShownAt;
+    showOnlinePanel('onQueue');
+    document.addEventListener('visibilitychange', hidden);
+    const message = $('#onQueue .qmsg');
+    message.setAttribute('data-i18n', 'online:matchmaking.looking');
+    message.textContent = t('online', 'matchmaking.looking');
+    $('#qSub').removeAttribute('data-i18n');
+    $('#qSub').innerHTML = '&nbsp;';
+    const paint = (): void => {
+      const seconds = Math.floor((Date.now() - shownAt) / 1000);
+      $('#qTime').textContent = queueTime(seconds);
+      if (seconds >= 7) {
+        $('#qSub').setAttribute('data-i18n', 'online:matchmaking.inviting');
+        $('#qSub').textContent = t('online', 'matchmaking.inviting');
+      }
+    };
+    paint();
+    if (tick) clearInterval(tick);
+    tick = setInterval(paint, 250);
   }
 
   async function start(): Promise<void> {
@@ -124,26 +156,13 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
       ports.startTutorial();
       return;
     }
-    showOnlinePanel('onQueue');
-    document.addEventListener('visibilitychange', hidden);
-    const started = Date.now();
-    const message = $('#onQueue .qmsg');
-    message.setAttribute('data-i18n', 'online:matchmaking.looking');
-    message.textContent = t('online', 'matchmaking.looking');
-    $('#qTime').textContent = queueTime(0);
-    $('#qSub').removeAttribute('data-i18n');
-    $('#qSub').innerHTML = '&nbsp;';
-    if (tick) clearInterval(tick);
-    tick = setInterval(() => {
-      const seconds = Math.floor((Date.now() - started) / 1000);
-      $('#qTime').textContent = queueTime(seconds);
-      if (seconds >= 7) {
-        $('#qSub').setAttribute('data-i18n', 'online:matchmaking.inviting');
-        $('#qSub').textContent = t('online', 'matchmaking.inviting');
-      }
-    }, 250);
+    showSearching();
+    /* The join clock is matchmaking POLICY, not display: the visible timer may
+       have been running since entry painted the search, but the bot-backfill
+       threshold counts how long this run has actually been enqueued. */
+    const joinStarted = Date.now();
     while (runs.owns(run)) {
-      const waited = Date.now() - started;
+      const waited = Date.now() - joinStarted;
       queueMayExist = true;
       const request = (async (): Promise<JoinResult | null> => {
         try {
@@ -220,6 +239,7 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
           if (!runs.owns(run)) return;
         }
         queueMayExist = false; // ownership moves from the queue to play.ts
+        searchShownAt = null; // the next search starts its display clock fresh
         await enterMatch(match);
         return;
       }
@@ -234,5 +254,5 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
     });
   }
 
-  return { bind, start, stop };
+  return { bind, showSearching, start, stop };
 }

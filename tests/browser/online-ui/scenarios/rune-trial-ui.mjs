@@ -220,7 +220,10 @@ async function entryRewardProbe(page, routes) {
     const card = document.querySelector('.rune-reward-sheet .focard');
     const matrix = new DOMMatrixReadOnly(getComputedStyle(card).transform);
     return {
-      queueHidden: document.getElementById('onQueue')?.hidden,
+      /* the sheet pops over the already-searching queue, never over the die */
+      queueSearching: document.getElementById('onQueue')?.hidden === false
+        && document.querySelector('#onQueue .qmsg')?.textContent?.trim() === 'Looking for an opponent',
+      loadingHidden: document.getElementById('onLoading')?.hidden === true,
       kicker: card.querySelector('.rune-reward-sheet__kicker')?.textContent?.trim(),
       title: card.querySelector('.rune-reward-sheet__title')?.textContent?.trim(),
       continueLabel: card.querySelector('.rune-reward-sheet__continue')?.textContent?.trim(),
@@ -228,7 +231,9 @@ async function entryRewardProbe(page, routes) {
       animations: card.getAnimations().map(({ playState }) => playState),
     };
   });
+  const joinCallsBeforeClick = routes.joinCalls();
   const acknowledgementsBeforeClick = routes.acknowledgeCalls();
+  const joined = page.waitForRequest((request) => request.url().includes('/functions/v1/pvp-join'));
   await page.click('.rune-reward-sheet__continue');
   await Promise.race([
     routes.acknowledgeStarted,
@@ -236,10 +241,9 @@ async function entryRewardProbe(page, routes) {
       'an explicit Continue did not acknowledge its rune reward',
     )), 5000)),
   ]);
-  await page.waitForSelector('#onQueue:not([hidden])', { timeout: 15000 });
+  await joined;
   return {
-    beforeClick,
-    acknowledgementsBeforeClick,
+    beforeClick, joinCallsBeforeClick, acknowledgementsBeforeClick,
     acknowledgementsAfterClick: routes.acknowledgeCalls(),
     queueVisible: await page.$eval('#onQueue', (element) => !element.hidden),
   };
@@ -344,11 +348,13 @@ export async function runRuneTrialUiScenarios({ visit, out, check }) {
     probe: entryRewardProbe,
   });
   out.runeRewardEntry = entryReward.probeResult;
-  check(entryReward.probeResult?.beforeClick?.queueHidden
+  check(entryReward.probeResult?.beforeClick?.queueSearching
+      && entryReward.probeResult.beforeClick.loadingHidden
       && entryReward.probeResult.beforeClick.kicker === 'NEW RUNE'
       && entryReward.probeResult.beforeClick.title === 'WARD'
       && entryReward.probeResult.beforeClick.continueLabel === 'Continue'
       && entryReward.probeResult.beforeClick.transformY > 0
+      && entryReward.probeResult.joinCallsBeforeClick === 0
       && entryReward.probeResult.acknowledgementsBeforeClick === 0
       && entryReward.probeResult.acknowledgementsAfterClick === 1
       && entryReward.probeResult.queueVisible,

@@ -4,6 +4,7 @@ import './online.css';
 import { Sfx } from '../ui/audio.ts';
 import { $, hide, show } from '../ui/dom.ts';
 import { closeEnd, replayPlates } from '../ui/endscreen.ts';
+import { isNewcomer } from '../ui/firstrun.ts';
 import { refreshHomeChip } from '../ui/homechip.ts';
 import { S } from '../state.ts';
 import { saveStats } from '../persist.ts';
@@ -35,7 +36,6 @@ import {
   installOnlineShell,
   isOnlinePanelCurrent,
   showOnlineLoading,
-  type OnlinePanel,
 } from './shell.ts';
 import { setFinishHandler, type FinishReport } from './play.ts';
 
@@ -85,8 +85,10 @@ function showAuthPanel(mode: AuthMode, origin: AuthOrigin, notice: string | null
   if (origin === 'home') {
     /* Every Home-origin auth flow has no current session (initial fallback,
        sign-out, or deletion). Its attach step is registration copy, never the
-       guest-only "keep this account" copy. */
+       guest-only "keep this account" copy. A play entry may already be
+       painting its searching queue; that search ends here, clock included. */
     setSessionless(true);
+    queue.stop();
     hide('#ovOnline');
     show('#ovStart');
   }
@@ -252,17 +254,21 @@ async function routeWithRuneReward(
   await route(view);
 }
 
-function loadingPanel(view: OnlineView | null): OnlinePanel {
-  if (view === 'account') return 'onAccount';
-  if (view === 'board') return 'onBoard';
-  return 'onQueue';
+function showEntryWait(view: OnlineView | null): void {
+  if (view === 'account') return showOnlineLoading('onAccount');
+  if (view === 'board') return showOnlineLoading('onBoard');
+  /* Play paints its real destination at once: the queue's searching state
+     shows nothing account-derived, so it need not wait for identity. Only
+     newcomers keep the die — the tutorial offer may still route them away. */
+  if (isNewcomer()) return showOnlineLoading('onQueue');
+  queue.showSearching();
 }
 
 async function entered(): Promise<void> {
   const revision = ++entryRevision;
   const view = pendingView;
   pendingView = null;
-  showOnlineLoading(loadingPanel(view));
+  showEntryWait(view);
   show('#ovOnline');
   focusOnlineTitle();
   const [, collection] = await Promise.all([myProfile(), refreshRuneCollection()]);
@@ -315,18 +321,18 @@ export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<
     return ladder.show();
   }
   /* The online overlay is reused, so its last panel may still be fading out
-     when Home opens it again. Establish the new destination before identity
-     or Game Center can yield; otherwise a retained Ladder can paint during
-     that wait. */
+     when Home opens it again. Establish the new destination — play's searching
+     queue, or a held loading die — before identity or Game Center can yield;
+     otherwise a retained Ladder can paint during that wait. */
   pendingView = null;
-  showOnlineLoading(loadingPanel(view));
+  showEntryWait(view);
   show('#ovOnline');
   const user = await ensureIdentity();
   if (revision !== entryRevision) return;
   setSessionless(!user);
   if (user) {
-    /* Keep the shared wait up until preference and collection hydration have
-       produced one complete destination; never reveal partial account data. */
+    /* Hydration stays behind the current hold — the searching queue for play,
+       the die otherwise; partial account data never paints either way. */
     const [, collection] = await Promise.all([
       syncAccountPreferences(),
       refreshRuneCollection(user.id),

@@ -203,10 +203,19 @@ export async function installOnlineRoutes(
     }
     deferred?.markFinished();
   });
-  await page.route('**/rest/v1/matches*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
-  await page.route('**/functions/v1/pvp-join', (r) => r.fulfill({
-    status: 200, contentType: 'application/json', body: '{"status":"queued"}',
+  /* The settings row stays absent: seeding succeeds, hydration applies
+     nothing, and no request escapes to a live backend. */
+  await page.route('**/rest/v1/player_settings*', (r) => r.fulfill({
+    status: r.request().method() === 'GET' ? 200 : 201,
+    contentType: 'application/json',
+    body: '[]',
   }));
+  await page.route('**/rest/v1/matches*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
+  let joinCalls = 0;
+  await page.route('**/functions/v1/pvp-join', (r) => {
+    joinCalls++;
+    return r.fulfill({ status: 200, contentType: 'application/json', body: '{"status":"queued"}' });
+  });
   await page.route('**/functions/v1/identity-status', (r) => r.fulfill({
     status: 200,
     contentType: 'application/json',
@@ -341,6 +350,7 @@ export async function installOnlineRoutes(
     passwordCalls: () => passwordCalls,
     profileCalls: () => profileCalls,
     tierProfileCalls: () => tierProfileCalls,
+    joinCalls: () => joinCalls,
     runeCalls: () => runeCalls,
     acknowledgeCalls: () => acknowledgeCalls,
     deferNextRuneResponse: () => { deferNextRune = true; },
