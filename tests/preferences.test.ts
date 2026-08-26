@@ -230,6 +230,9 @@ assert.equal(crossAccountApplies, 0,
 
 state({ ...valid, localeOverride: 'de', sound: true });
 let initialized: Readonly<UserPreferences> | null = null;
+// Reading through a function restores the declared type: the assignment in
+// the seed fake below is invisible to control-flow narrowing.
+const seededPreferences = (): Readonly<UserPreferences> | null => initialized;
 const firstDevice = createAccountPreferenceSync({
   currentUser: async () => ({ id: 'player-2' }),
   readLocal: userPreferences,
@@ -240,7 +243,7 @@ const firstDevice = createAccountPreferenceSync({
   apply: state,
 });
 await firstDevice.sync();
-assert.equal(initialized?.localeOverride, 'de');
+assert.equal(seededPreferences()?.localeOverride, 'de');
 assert.equal(S.localeOverride, 'de');
 
 /* Signed-out Settings stay fully functional locally, but neither hydration nor

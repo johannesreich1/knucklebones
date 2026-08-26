@@ -15,6 +15,12 @@ propagates `process.execPath` to every child build, suite, and benchmark,
 preserving the validated Node 24 runtime for the whole gate even on a machine
 with another `node` earlier on `PATH`.
 
+TypeScript under `tests/` and `tools/` executes through
+`node --experimental-strip-types`, which erases annotations without checking
+them, so the gate suite `typecheck-tests` runs the dedicated
+`tsconfig.tests.json` project through the pinned compiler; the root
+`tsconfig.json` continues to gate `src/` inside `build.mjs`.
+
 Database contracts are a sibling CI gate because they require Docker and a
 fresh Supabase database: `mise exec -- npm run db:start`,
 `mise exec -- npm run test:db`, then schema
@@ -58,7 +64,11 @@ gates remain independent jobs.
 The spell browser keeps one no-argument run for whole-suite diagnosis and also
 exposes `--only <scenario-id>` for focused iteration. The release runner uses
 four coverage-validated `--shard` selections: every scenario must belong to
-exactly one shard or startup fails. Local workers overlap those independent
+exactly one shard or startup fails. The `--only`/`--shard` grammar and the
+shard-coverage validator live in `tests/support/browser-scenarios.mjs`; the
+online-ui and hud-settings trees expose the same `--only` for focused
+iteration, and any new multi-scenario tree should adopt the shared module
+rather than growing a private parser. Local workers overlap those independent
 browsers; CI distributes the same shard union across its coverage-checked gate
 manifests, without removing or narrowing coverage. Successful selected runs
 print only their scenario ids; a failure keeps the full observation report for diagnosis.
@@ -67,10 +77,11 @@ invalidating its delayed callback. Tutorial pacing and LIMITED's real die bag
 stay authentic, and dedicated lifecycle suites retain opening-animation
 coverage; the spell suite therefore spends its time on the state it owns.
 
-`testupdate` is the sole `exclusive-final` suite. It mutates `pwa/` through the
-shared server only after every pooled suite in its checkout has completed, and
-the runner restores generated output afterward. Manifest and executor contracts
-prove it cannot overlap a reader or be followed by another suite.
+`pwa-update` (`tests/testupdate.mjs`) is the sole `exclusive-final` suite. It
+mutates `pwa/` through the shared server only after every pooled suite in its
+checkout has completed, and the runner restores generated output afterward.
+Manifest and executor contracts prove it cannot overlap a reader or be
+followed by another suite.
 
 Pure localization contracts keep the registry, exact catalog keys,
 interpolation placeholders, trusted rich-copy shape, typed compact labels,
@@ -90,8 +101,12 @@ shared eager/mobile/widget matrix remains available through
 manual-only rather than part of `npm test` or hosted CI. It measures computed
 geometry and hit testing, not whether a person approved the rendered images;
 run it deliberately for locale, copy, or shared-layout work and complete the
-manual visual pass described in the localization architecture. The automated
-gate retains
+manual visual pass described in the localization architecture. The gate keeps
+the same runner's `--smoke` mode as the `localization-smoke` suite: one
+locale (German) on one viewport, proving the server, the harness modules, and
+the i18n exports this tree stands on still fit together, so the manual matrix
+cannot silently rot. The smoke never replaces the manual matrix or its visual
+pass. The automated gate retains
 `mise exec -- node tests/browser/online-localization/run.mjs`, which uses Chromium and
 stubbed Supabase routes to measure auth, profile, avatar, history, ladder,
 face-off, and ranked-result surfaces. Both browser matrices derive their six
@@ -133,6 +148,11 @@ tests/
   live/         explicit external probes, never part of the default gate
   support/      server, report, browser-app, and Supabase mock helpers
 ```
+
+The gate manifest already reports every suite under a descriptive name
+(`single-strike-visibility`, not `test13`): legacy numbered files keep their
+paths until they migrate into this tree, and `tests/support/gate-manifest.mjs`
+maps each name to its file.
 
 Large browser scripts split into focused scenario modules while sharing one
 browser/session runner. Do not introduce a page-object framework when a small

@@ -1,18 +1,14 @@
 import pkg from 'playwright';
 import { serveTree } from '../../serve.mjs';
+import { createBrowserReport } from '../../support/browser-report.mjs';
 import { runOnlineLocalizationScenarios } from './scenarios/online-surfaces.mjs';
 
 const { chromium } = pkg;
 const { url, stop } = await serveTree('.');
 const browser = await chromium.launch();
-const problems = [];
-const errs = [];
-const out = {};
-const check = (condition, message, detail) => {
-  if (condition) return;
-  const encoded = JSON.stringify(detail);
-  problems.push(`${message} :: ${encoded.length > 2400 ? `${encoded.slice(0, 2400)}…` : encoded}`);
-};
+/* This tree's failure details carry whole rendered-surface inventories; the
+   shared report clips them so one failed check stays a readable line. */
+const { problems, errs, out, check } = createBrowserReport({ maxDetailChars: 2400 });
 
 try {
   await runOnlineLocalizationScenarios({

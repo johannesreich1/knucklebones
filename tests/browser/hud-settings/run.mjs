@@ -1,5 +1,7 @@
 import pkg from 'playwright';
 import { serveTree } from '../../serve.mjs';
+import { createBrowserReport, capturePageErrors } from '../../support/browser-report.mjs';
+import { selectScenarios, validateScenarioShards } from '../../support/browser-scenarios.mjs';
 import { runHudPopupScenarios } from './scenarios/hud-popups.mjs';
 import { runOfflineRestartScenarios } from './scenarios/offline-restart.mjs';
 import { runSettingsNavigationScenarios } from './scenarios/settings-navigation.mjs';
@@ -15,6 +17,24 @@ import {
   t,
 } from '../../../src/i18n/index.ts';
 
+const SCENARIOS = Object.freeze([
+  { id: 'offline-rune-trial', run: runOfflineRuneTrialScenarios },
+  { id: 'hud-popups', run: runHudPopupScenarios },
+  { id: 'offline-restart', run: runOfflineRestartScenarios },
+  { id: 'settings-navigation', run: runSettingsNavigationScenarios },
+  { id: 'badge-cards', run: runBadgeCardScenarios },
+  { id: 'asymmetric-rune-plates', run: runAsymmetricRunePlateScenarios },
+  { id: 'language-selector', run: runLanguageSelectorScenarios },
+]);
+validateScenarioShards('HUD settings browser', SCENARIOS);
+let scenarios;
+try {
+  scenarios = selectScenarios('HUD settings browser', SCENARIOS, process.argv.slice(2));
+} catch (error) {
+  console.error(error.message);
+  process.exit(2);
+}
+
 const { chromium, devices } = pkg;
 /* Served over LOCAL HTTP for the same reason as test10: the settings-persist
    coda reloads and asserts the flags came back, and Chromium's file://
@@ -27,8 +47,7 @@ const { chromium, devices } = pkg;
 const { url } = await serveTree('.');
 const F = url + 'knucklebones-neon.html';
 const browser = await chromium.launch();
-const problems = [], errs = [], out = {};
-const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
+const { problems, errs, out, check } = createBrowserReport();
 
 const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
   locale: 'en-US' });
@@ -39,21 +58,14 @@ const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, 
 await ctx.addInitScript(() => { try { delete Navigator.prototype.serviceWorker; } catch { /* strict hosts keep it */ } });
 await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });
 const page = await ctx.newPage();
-page.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
-page.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
+capturePageErrors(page, errs, '', { console: true });
 await page.goto(F); await page.waitForTimeout(500);
 
 const suite = {
   page, ctx, browser, F, problems, errs, out, check,
   LOCALE_REGISTRY, RESOURCES, modeCopy, spellCopy, t,
 };
-await runOfflineRuneTrialScenarios(suite);
-await runHudPopupScenarios(suite);
-await runOfflineRestartScenarios(suite);
-await runSettingsNavigationScenarios(suite);
-await runBadgeCardScenarios(suite);
-await runAsymmetricRunePlateScenarios(suite);
-await runLanguageSelectorScenarios(suite);
+for (const scenario of scenarios) await scenario.run(suite);
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
 await browser.close();   // the server is in-process and unref'd — it goes with us

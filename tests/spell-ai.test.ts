@@ -11,6 +11,7 @@ import {
   cloneSt,
   freshCharm,
   type GameState,
+  type Mode,
   type Player,
 } from '../src/core/rules.ts';
 import { searchRoot } from '../src/core/ai.ts';
@@ -175,7 +176,7 @@ async function runFate(
   };
 }
 
-const pureContext = (mode = CLASSIC, die = 6): CastCtx => ({
+const pureContext = (mode: Mode = CLASSIC, die = 6): CastCtx => ({
   mode,
   die,
   setDie: () => undefined,

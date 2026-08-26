@@ -1,7 +1,7 @@
 import {
   checkOfflineAskLayout,
   readOfflineAskShape,
-} from '../support/offline-ask.mjs';
+} from '../harness/offline-ask.mjs';
 
 const LIMITED = 6;
 const RANDOM_MODE = -1;

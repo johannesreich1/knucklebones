@@ -2,7 +2,7 @@
 // full match through pvp-move and verify ladder payouts; then a bot-backfill match;
 // plus the adversarial paths (out-of-turn, illegal column, rating tampering,
 // seed secrecy). NOT part of the automated gate (mutates live data; needs two
-// SQL-created confirmed users — see e2e instructions in the repo README).
+// SQL-created confirmed users — see docs/architecture/testing.md, Live tests).
 // Participant queues and active matches are cleaned before and after the run;
 // persistent history/ladder rows still belong to the target's owner policy.
 //   mise exec -- npm run test:live:pvp   (reads the gitignored .env.live)

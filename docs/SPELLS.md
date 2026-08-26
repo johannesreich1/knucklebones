@@ -503,7 +503,8 @@ Learned from real play, each one a shipped bug:
   preference — the status box is *reserved* at that size (`.status` /
   `.land .status` min-height, a fixed 104px lane in landscape), and a line
   past the reserve grows the box and walks the stage die up the screen: the
-  same drift `test8` guards for ordinary turns. So the catalog's `aim` says
+  same drift `responsive-browser` guards for ordinary turns. So the catalog's
+  `aim` says
   WHICH column the tap wants and stops. The verb is already on the rune the
   player just pressed — its localized name, icon, and `blurb` — and the board
   rings the legal targets in gold. What the rings *cannot* say is why they are silent, which is exactly

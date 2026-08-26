@@ -1,5 +1,6 @@
 import pkg from 'playwright';
 import { serveTree } from '../../serve.mjs';
+import { createBrowserReport } from '../../support/browser-report.mjs';
 import { runLandscapeScenarios } from './scenarios/landscape.mjs';
 import { runInputAccessibilityScenarios } from './scenarios/input-accessibility.mjs';
 import { runMotionSafeAreaScenarios } from './scenarios/motion-safe-areas.mjs';
@@ -15,9 +16,7 @@ const { chromium, devices } = pkg;
 const { url } = await serveTree('.');
 const F = url + 'knucklebones-neon.html';
 const browser = await chromium.launch();
-const problems = [], errs = [];
-const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
-const out = {};
+const { problems, errs, out, check } = createBrowserReport();
 
 const markExperienced = (context) => context.addInitScript(() => {
   // HTTP would otherwise register the production service worker; it is not

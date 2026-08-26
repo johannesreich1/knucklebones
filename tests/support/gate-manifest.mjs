@@ -22,16 +22,18 @@ export const GATE_SUITES = Object.freeze([
   /* Temporarily manual-only (2026-08-26). This exhaustive geometry matrix
      takes several minutes but does not produce human-reviewed visual
      approval. Keep the focused runner available until a deliberate screenshot
-     review workflow owns that acceptance step. */
+     review workflow owns that acceptance step. The same runner's cheap
+     `--smoke` mode stays in the gate below as `localization-smoke`, so the
+     manual matrix cannot silently rot. */
   // file('localization-browser', 'tests/browser/localization/run.mjs'),
-  file('test16', 'tests/browser/online-ui/run.mjs', { needsServer: true }),
+  file('online-ui-browser', 'tests/browser/online-ui/run.mjs', { needsServer: true }),
   file('online-localization-browser', 'tests/browser/online-localization/run.mjs'),
-  file('test20'),
-  file('test6'),
-  file('test4'),
-  file('test11', 'tests/browser/hud-settings/run.mjs'),
-  file('test8', 'tests/browser/responsive/run.mjs'),
-  file('test9'),
+  file('rune-deal-reveal', 'tests/test20.mjs'),
+  file('widget-isolation', 'tests/test6.mjs'),
+  file('duo-pass-and-play', 'tests/test4.mjs'),
+  file('hud-settings-browser', 'tests/browser/hud-settings/run.mjs'),
+  file('responsive-browser', 'tests/browser/responsive/run.mjs'),
+  file('hud-timer', 'tests/test9.mjs'),
   file('spells-presentation', 'tests/browser/spells/run.mjs', {
     args: ['--shard', 'presentation'],
   }),
@@ -39,25 +41,30 @@ export const GATE_SUITES = Object.freeze([
     args: ['--shard', 'defense'],
   }),
   file('legal-browser', 'tests/browser/legal.mjs'),
-  file('test10'),
-  file('test7', undefined, { needsServer: true }),
-  file('test12'),
+  file('tutorial-persistence', 'tests/test10.mjs'),
+  file('pwa-service-worker', 'tests/test7.mjs', { needsServer: true }),
+  file('duo-face-seating', 'tests/test12.mjs'),
   file('spells-advanced', 'tests/browser/spells/run.mjs', {
     args: ['--shard', 'advanced'],
   }),
-  file('test15'),
-  file('test17'),
-  file('test23'),
+  file('result-screen', 'tests/test15.mjs'),
+  file('practice-sheet-stability', 'tests/test17.mjs'),
+  file('design-cards-render', 'tests/test23.mjs'),
   file('spells-interaction', 'tests/browser/spells/run.mjs', {
     args: ['--shard', 'interaction'],
   }),
-  file('test24'),
+  file('limited-bag-gauge', 'tests/test24.mjs'),
   typed('botbench'),
-  file('test18'),
-  file('test22', undefined, { needsServer: true }),
-  file('test13'),
-  file('test21'),
-  file('test19'),
+  file('random-mode-dial', 'tests/test18.mjs'),
+  file('profile-back-navigation', 'tests/test22.mjs', { needsServer: true }),
+  file('single-strike-visibility', 'tests/test13.mjs'),
+  file('row-multiply-bracket', 'tests/test21.mjs'),
+  file('first-run-offer', 'tests/test19.mjs'),
+  // The rot guard for the manual-only localization matrix above: one locale,
+  // one viewport, same runner and harness.
+  file('localization-smoke', 'tests/browser/localization/run.mjs', {
+    args: ['--smoke'],
+  }),
   typed('architecture'),
   typed('preferences'),
   typed('rune-collection-cache'),
@@ -87,10 +94,12 @@ export const GATE_SUITES = Object.freeze([
   typed('rune-bot-fairness'),
   typed('online-api'),
   typed('online-watchdog'),
+  typed('play-sync'),
   typed('idempotent-command'),
   typed('gcauth'),
   typed('edge-handlers'),
   typed('edge-settlement'),
+  typed('edge-operations'),
   typed('cssgraph'),
   typed('cssreach'),
   typed('design-library'),
@@ -106,13 +115,14 @@ export const GATE_SUITES = Object.freeze([
   typed('live-safety'),
   typed('gate-lock'),
   typed('gate-manifest'),
+  typed('typecheck-tests'),
   file('release-main', 'tests/release-main.test.mjs'),
   file('native-startup-browser', 'tests/browser/native-startup.mjs'),
   file('service-worker-routing', 'tests/service-worker.test.mjs'),
-  file('bench3', 'tests/bench3.mjs', { runner: 'benchmark' }),
+  file('col-score-bench', 'tests/bench3.mjs', { runner: 'benchmark' }),
   // This changes pwa/index.html and pwa/sw.js. The executor never puts an
   // exclusive-final suite in the worker pool and runs it only after the pool.
-  file('testupdate', undefined, { needsServer: true, exclusiveFinal: true }),
+  file('pwa-update', 'tests/testupdate.mjs', { needsServer: true, exclusiveFinal: true }),
 ]);
 
 // These assignments are longest-processing-time bins from a sequential CI
@@ -120,28 +130,35 @@ export const GATE_SUITES = Object.freeze([
 // retaining JOBS=1 inside the runner to avoid browser contention flakes.
 export const CI_SHARDS = Object.freeze({
   'ci-1': Object.freeze([
-    // `localization-browser` is intentionally manual-only; see GATE_SUITES.
-    'service-worker-routing', 'native-startup-browser',
+    // The full `localization-browser` matrix is intentionally manual-only;
+    // `localization-smoke` is its in-gate rot guard. See GATE_SUITES.
+    'localization-smoke', 'service-worker-routing', 'native-startup-browser',
     'rune-matchup-analysis', 'scoring-ward-ai', 'online-api', 'design-library',
     'cssreach', 'legal', 'spells', 'dice', 'release-main', 'gate-manifest',
-    'test18', 'rune-collection-cache', 'ranked-outcomes',
+    'random-mode-dial', 'rune-collection-cache', 'ranked-outcomes',
+    'typecheck-tests',
   ]),
   'ci-2': Object.freeze([
-    'test16', 'test11', 'spells-presentation', 'test7',
-    'spells-interaction', 'legal-browser', 'test19', 'live-safety',
+    'online-ui-browser', 'hud-settings-browser', 'spells-presentation',
+    'pwa-service-worker',
+    'spells-interaction', 'legal-browser', 'first-run-offer', 'live-safety',
     'rune-sunder-sensitivity', 'i18n', 'androidship', 'iosship', 'ladderbench',
     'edge-settlement', 'scoring-ward', 'match', 'rune-collection-guard',
-    'ranked-actions', 'online-watchdog', 'idempotent-command',
+    'ranked-actions', 'online-watchdog', 'idempotent-command', 'play-sync',
   ]),
   'ci-3': Object.freeze([
-    'online-localization-browser', 'test4', 'test8', 'test10', 'spells-advanced',
-    'test23', 'botbench', 'test22', 'test24', 'architecture', 'rune-ward-sensitivity',
-    'preferences', 'i18n-catalog', 'edge-handlers', 'cssgraph', 'fnsync',
-    'ladder', 'local-options', 'testupdate',
+    'online-localization-browser', 'duo-pass-and-play', 'responsive-browser',
+    'tutorial-persistence', 'spells-advanced',
+    'design-cards-render', 'botbench', 'profile-back-navigation',
+    'limited-bag-gauge', 'architecture', 'rune-ward-sensitivity',
+    'preferences', 'i18n-catalog', 'edge-handlers', 'edge-operations',
+    'cssgraph', 'fnsync', 'ladder', 'local-options', 'pwa-update',
   ]),
   'ci-4': Object.freeze([
-    'test20', 'test6', 'test9', 'spells-defense', 'test12', 'test17', 'test15',
-    'test13', 'test21', 'bench3', 'rune-matchups', 'gate-lock', 'gcauth',
+    'rune-deal-reveal', 'widget-isolation', 'hud-timer', 'spells-defense',
+    'duo-face-seating', 'practice-sheet-stability', 'result-screen',
+    'single-strike-visibility', 'row-multiply-bracket', 'col-score-bench',
+    'rune-matchups', 'gate-lock', 'gcauth',
     'apple-identity', 'i18n-length-report', 'spell-ai', 'modes',
     'production-migrations', 'native-startup', 'trial-snapshot',
     'production-functions', 'production-test-data', 'apple-server',
@@ -194,8 +211,8 @@ export function validateGateManifest(suites = GATE_SUITES, shards = CI_SHARDS) {
   }
 
   const final = suites.filter(suite => suite.exclusiveFinal);
-  if (final.length !== 1 || final[0]?.name !== 'testupdate' || !final[0]?.needsServer) {
-    problems.push('testupdate must be the one server-backed exclusive-final suite');
+  if (final.length !== 1 || final[0]?.name !== 'pwa-update' || !final[0]?.needsServer) {
+    problems.push('pwa-update must be the one server-backed exclusive-final suite');
   }
   if (problems.length) throw new Error(`Invalid gate manifest:\n- ${problems.join('\n- ')}`);
 }

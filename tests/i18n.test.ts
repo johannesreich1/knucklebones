@@ -160,6 +160,9 @@ assert.equal(
 const events: string[] = [];
 let systemTags: readonly string[] = ['fr-FR'];
 let languageChange: EventListener | null = null;
+// Calling through a function restores the declared type: the assignment in
+// addEventListener below is invisible to control-flow narrowing.
+const fireLanguageChange = (): void => { languageChange?.(new Event('languagechange')); };
 const fakeLanguageTarget = {
   addEventListener: (name: string, listener: EventListenerOrEventListenerObject) => {
     events.push(`add:${name}`);
@@ -175,11 +178,11 @@ const unbind = bindSystemLanguageChanges(
   fakeLanguageTarget as unknown as EventTarget,
   () => systemTags,
 );
-languageChange?.(new Event('languagechange'));
+fireLanguageChange();
 assert.equal(effectiveLocale(), 'fr', 'languagechange did not refresh an automatic locale');
 setLanguageOverride('de');
 systemTags = ['en-US'];
-languageChange?.(new Event('languagechange'));
+fireLanguageChange();
 assert.equal(effectiveLocale(), 'de', 'languagechange overrode an explicit preference');
 unbind();
 assert.deepEqual(events, ['add:languagechange', 'remove:languagechange']);

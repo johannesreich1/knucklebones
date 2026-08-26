@@ -5,8 +5,8 @@ import {
   RANDOM_SPELL,
   spellById,
   freshCharges,
-} from '../src/core/spells.ts';
-import { resolveSpellDeal } from '../src/flow/spell-deal.ts';
+} from '../../src/core/spells.ts';
+import { resolveSpellDeal } from '../../src/flow/spell-deal.ts';
 
 type Check = (condition: boolean, message: string, extra?: unknown) => void;
 

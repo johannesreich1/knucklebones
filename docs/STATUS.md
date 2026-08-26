@@ -93,6 +93,13 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 
 ### Product and release decisions
 
+- The `localization-browser` geometry matrix is manual-only since 2026-08-26
+  (owner: Johannes): run
+  `mise exec -- node tests/browser/localization/run.mjs` plus the manual
+  visual pass for any locale, copy, or shared-layout change. The gate keeps
+  `localization-smoke` (the same runner's `--smoke` mode) as a rot guard.
+  Re-enable the full matrix in `tests/support/gate-manifest.mjs` once a
+  screenshot-review workflow owns visual acceptance.
 - Configure production SMTP through Resend and verify the attach-email loop.
   DNS, provider credentials, rate limits, and dashboard settings are owner
   actions.

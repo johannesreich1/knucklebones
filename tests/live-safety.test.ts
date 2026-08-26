@@ -152,7 +152,7 @@ try {
   problems.push(`valid IPv6 loopback live config was rejected: ${String(error)}`);
 }
 
-const LIVE_SUITES = ['tests/e2e-pvp.mjs', 'tests/e2e-pvp-ui.mjs'];
+const LIVE_SUITES = ['tests/live-pvp.mjs', 'tests/live-pvp-ui.mjs'];
 const LIVE_FILES = [
   ...LIVE_SUITES,
   'tests/support/live-pvp-config.mjs',
@@ -267,7 +267,7 @@ try {
   globalThis.fetch = originalFetch;
 }
 
-const uiSource = readFileSync('tests/e2e-pvp-ui.mjs', 'utf8');
+const uiSource = readFileSync('tests/live-pvp-ui.mjs', 'utf8');
 check(/liveConfig\.target\s*!==\s*['"]production['"]/.test(uiSource),
   'the UI live probe is not restricted to its production-configured app build');
 

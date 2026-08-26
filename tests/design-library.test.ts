@@ -24,6 +24,14 @@ const writeCard = (relative: string) => {
   mkdirSync(path.dirname(file), { recursive: true });
   writeFileSync(file, '<!-- meta name="fixture" -->\n');
 };
+/** Discovered card shape from the untyped design/screen-library.mjs helper. */
+interface DesignScreen {
+  file: string;
+  basename: string;
+  relativePath: string;
+  classification: string;
+}
+
 const expectFailure = (label: string, pattern: RegExp) => {
   try {
     discoverDesignScreens(fixture);
@@ -38,15 +46,15 @@ try {
   const repositoryScreens = discoverDesignScreens(path.join(process.cwd(), 'design', 'screens'));
   repositoryCounts = Object.fromEntries(DESIGN_CLASSIFICATIONS.map((classification) => [
     classification,
-    repositoryScreens.filter((screen) => screen.classification === classification).length,
+    repositoryScreens.filter((screen: DesignScreen) => screen.classification === classification).length,
   ]));
 
   writeCard('product/deeper/40-product.html');
   writeCard('studies/open/20-open.html');
   writeCard('studies/archive/30-archive.html');
   const found = discoverDesignScreens(fixture);
-  const order = found.map((screen) => screen.basename);
-  const classifications = found.map((screen) => screen.classification);
+  const order = found.map((screen: DesignScreen) => screen.basename);
+  const classifications = found.map((screen: DesignScreen) => screen.classification);
   if (order.join(',') !== '20-open.html,30-archive.html,40-product.html') {
     problems.push(`basename order changed: ${order.join(',')}`);
   }

@@ -32,7 +32,8 @@ export async function runInputAccessibilityScenarios(suite) {
   const gp = await g.newPage();
   gp.on('pageerror', e => errs.push('INPUT: ' + e.message));
   await gp.goto(F); await gp.waitForTimeout(400);
-  // numerals is a HOME setting now — the in-game gear became the quit modal (test11)
+  // numerals is a HOME setting now — the in-game gear became the quit modal
+  // (hud-settings' settings-navigation scenario)
   await gp.tap('#btnSettingsHome'); await gp.waitForTimeout(400);
   await gp.tap('#faceSeg button[data-f="nums"]'); await gp.waitForTimeout(250);
   await gp.tap('#btnSettingsBack'); await gp.waitForTimeout(400);

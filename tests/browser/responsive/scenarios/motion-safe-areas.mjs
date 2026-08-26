@@ -2,7 +2,7 @@ import {
   beginReducedRollProbe,
   readReducedRollProbe,
   reloadReducedMotionWithKeeper,
-} from '../reduced-motion-support.mjs';
+} from '../harness/reduced-motion-support.mjs';
 
 export async function runMotionSafeAreaScenarios(suite) {
   const { browser, devices, F, errs, out, check, markExperienced } = suite;

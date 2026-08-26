@@ -149,7 +149,8 @@ export async function runBadgeCardScenarios(suite) {
      the sheet the ladder's face-off rides in (ui/sheet) — the SAME component, so
      the arrival, the wash, the 96px commit line, the flick, the spring home, the
      backdrop tap and the grabber are one implementation guarded in two suites
-     (test16 drives the face-off's copy of these very numbers).
+     (online-ui's ladder-faceoff scenario drives the face-off's copy of these
+     very numbers).
      Every line below reads PIXELS: a card that merely appeared in the DOM, a
      tint that never reached the paint, or a drag the card ignored all agree with
      the DOM perfectly (test13's lesson). And both chips walk the same steps,

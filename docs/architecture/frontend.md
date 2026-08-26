@@ -20,6 +20,13 @@ module move. Product rules live in `docs/MODES.md`, `docs/SPELLS.md`, and
 - `src/core/` contains rules, replay, dice streams, modes, spells, ladder
   policy, and AI shared by browser, Node tests, and Deno Edge Functions.
 
+**Vocabulary boundary.** Non-ranked play has one player-facing label,
+**OFFLINE**; its code surface says `local` (`src/local-options.ts`,
+`src/flow/local-start.ts`). The DOM/i18n layer still carries legacy
+`practice` names (`#ovPractice`, `openPractice()`, the `practice` i18n
+namespace) — fold those into `local` when that layer is next touched, and do
+not add new `practice` identifiers meanwhile.
+
 ## Dependency direction
 
 ```text

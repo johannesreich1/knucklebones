@@ -15,6 +15,7 @@ import pkg from 'playwright';
 import { RANDOM_DUAL_SPELL, SPELLS, RANDOM_SPELL } from '../../../src/core/spells.ts';
 import { spellCopy } from '../../../src/i18n/index.ts';
 import { createBrowserReport, capturePageErrors } from '../../support/browser-report.mjs';
+import { selectScenarios, validateScenarioShards } from '../../support/browser-scenarios.mjs';
 import { runPickerScenarios } from './scenarios/picker.mjs';
 import { runCastingScenarios } from './scenarios/casting.mjs';
 import { runTurnPresentationScenarios } from './scenarios/turn-presentation.mjs';
@@ -50,50 +51,10 @@ const SHARDS = Object.freeze({
   advanced: Object.freeze(['bounty-mint', 'sunder-overload', 'pilfer-anvil-effects', 'scoring-ward']),
 });
 
-function validateShards() {
-  const memberships = new Map(SCENARIOS.map(({ id }) => [id, 0]));
-  if (memberships.size !== SCENARIOS.length) {
-    throw new Error('Spell browser scenario IDs must be unique');
-  }
-  for (const [shard, ids] of Object.entries(SHARDS)) {
-    for (const id of ids) {
-      if (!memberships.has(id)) {
-        throw new Error(`Spell browser shard "${shard}" references unknown scenario "${id}"`);
-      }
-      memberships.set(id, memberships.get(id) + 1);
-    }
-  }
-  for (const [id, count] of memberships) {
-    if (count !== 1) {
-      throw new Error(`Spell browser scenario "${id}" belongs to ${count} shards; expected exactly one`);
-    }
-  }
-}
-
-function selectedScenarios(argv) {
-  if (argv.length === 0) return SCENARIOS;
-  if (argv.length !== 2 || !argv[1]) {
-    throw new Error('Usage: run.mjs [--only <scenario-id> | --shard <name>]');
-  }
-
-  const [flag, value] = argv;
-  if (flag === '--only') {
-    const scenario = SCENARIOS.find(({ id }) => id === value);
-    if (!scenario) throw new Error(`Unknown spell browser scenario "${value}"`);
-    return [scenario];
-  }
-  if (flag === '--shard') {
-    const ids = SHARDS[value];
-    if (!ids) throw new Error(`Unknown spell browser shard "${value}"`);
-    return ids.map((id) => SCENARIOS.find((scenario) => scenario.id === id));
-  }
-  throw new Error(`Unknown spell browser argument "${flag}"`);
-}
-
-validateShards();
+validateScenarioShards('spell browser', SCENARIOS, SHARDS);
 let scenarios;
 try {
-  scenarios = selectedScenarios(process.argv.slice(2));
+  scenarios = selectScenarios('spell browser', SCENARIOS, process.argv.slice(2), SHARDS);
 } catch (error) {
   console.error(error.message);
   process.exit(2);

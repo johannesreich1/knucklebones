@@ -3,7 +3,7 @@
 // mutates live data). Participant queues/active matches are cleaned before and
 // after every run, including failures. Match history and season-rating cleanup
 // remain explicit owner actions when the target must not retain probe records.
-// See e2e-pvp.mjs for the API-level version. Run: mise exec -- npm run test:live:pvp-ui
+// See live-pvp.mjs for the API-level version. Run: mise exec -- npm run test:live:pvp-ui
 // two browser contexts, one live PvP match, then a bot match
 import pkg from 'playwright';
 const { chromium, devices } = pkg;

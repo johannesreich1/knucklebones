@@ -15,6 +15,7 @@
 // is stubbed at the network edge — this asserts OUR decisions, not theirs.
 import pkg from 'playwright';
 import { servedBase } from '../../serve.mjs';
+import { selectScenarios, validateScenarioShards } from '../../support/browser-scenarios.mjs';
 import { createVisit } from './harness/visit.mjs';
 import { runMatchmakingScenarios } from './scenarios/matchmaking.mjs';
 import { runFreshAccountScenarios } from './scenarios/fresh-account.mjs';
@@ -27,10 +28,26 @@ import { runRuneTrialUiScenarios } from './scenarios/rune-trial-ui.mjs';
 import { runRuneRewardRaceScenarios } from './scenarios/rune-reward-races.mjs';
 
 const { webkit } = pkg;
-const args = process.argv.slice(2);
-const only = args.length === 2 && args[0] === '--only' ? args[1] : null;
-if (args.length && !['auth-modal', 'loading-panels', 'rune-trial', 'rune-reward-races'].includes(only)) {
-  throw new Error('Usage: run.mjs [--only auth-modal|loading-panels|rune-trial|rune-reward-races]');
+const SCENARIOS = Object.freeze([
+  { id: 'matchmaking', run: runMatchmakingScenarios },
+  { id: 'fresh-account', run: runFreshAccountScenarios },
+  { id: 'ladder-faceoff', run: runLadderFaceoffScenarios },
+  { id: 'account-lifecycle', run: runAccountLifecycleScenarios },
+  { id: 'menu-press-feedback', run: runOnlineMenuPressFeedbackScenarios },
+  { id: 'loading-panels', run: runOnlineLoadingPanelScenarios },
+  { id: 'auth-modal', run: runAuthModalScenarios },
+  { id: 'rune-trial', run: runRuneTrialUiScenarios },
+  // Deliberately outside the no-argument gate run: the reward-race probes are
+  // a focused investigation surface, reached only through an explicit --only.
+  { id: 'rune-reward-races', run: runRuneRewardRaceScenarios, manual: true },
+]);
+validateScenarioShards('online UI browser', SCENARIOS);
+let scenarios;
+try {
+  scenarios = selectScenarios('online UI browser', SCENARIOS, process.argv.slice(2));
+} catch (error) {
+  console.error(error.message);
+  process.exit(2);
 }
 // the origin comes from run-all (KB_URL) or from a server this suite starts —
 // a kernel-picked port either way, so a peer's gate cannot answer it
@@ -57,21 +74,7 @@ const visit = createVisit({ browser, URL, SESSION, GUEST_ID });
 const suite = { visit, out, check };
 
 try {
-  if (only === 'auth-modal') {
-    await runAuthModalScenarios(suite);
-  } else if (only === 'loading-panels') {
-    await runOnlineLoadingPanelScenarios(suite);
-  } else if (!only) {
-    await runMatchmakingScenarios(suite);
-    await runFreshAccountScenarios(suite);
-    await runLadderFaceoffScenarios(suite);
-    await runAccountLifecycleScenarios(suite);
-    await runOnlineMenuPressFeedbackScenarios(suite);
-    await runOnlineLoadingPanelScenarios(suite);
-    await runAuthModalScenarios(suite);
-  }
-  if (only === 'rune-reward-races') await runRuneRewardRaceScenarios(suite);
-  else if (only === 'rune-trial' || !only) await runRuneTrialUiScenarios(suite);
+  for (const scenario of scenarios) await scenario.run(suite);
 } catch (e) {
   problems.push('THREW :: ' + e.message);
 }

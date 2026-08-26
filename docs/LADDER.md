@@ -409,7 +409,7 @@ invisible; the ladder does not change behaviour until step 4.
    `divisionOf()`, the band table. Pure, so it runs in the browser, in Node
    for the gate, and in Deno for the Edge Functions, like `core/modes.ts`.
    Ships with a test suite that pins the numbers in §1 and §2, and a
-   simulation bench like `bench3` that fails if fidelity drops below 0.89.
+   simulation bench like `col-score-bench` that fails if fidelity drops below 0.89.
 4. **`pvp-move` v11** — writes `season_ratings.points` and `peak` through
    `core/ladder.ts`, stamps `matches.season_id`, and swaps its three absolute
    difficulty constants for `player_percentile()`. `profiles.rating` keeps

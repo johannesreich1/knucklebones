@@ -11,7 +11,7 @@ import { SPEC, emptyBoard, boardTotal, applyMove, openStrikes, freshCharm,
          type GameState, type Mode, AI, ME } from '../src/core/rules.ts';
 import { SPELLS, spellById, swingOf, bestTarget, machineCast,
          anvilTargetIndex, type CastCtx } from '../src/core/spells.ts';
-import { checkSpellRegistryContract } from './spell-registry-contract.ts';
+import { checkSpellRegistryContract } from './support/spell-registry-contract.ts';
 
 const problems: string[] = [];
 const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -156,7 +156,8 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
   const wide = openStrikes(st, AI, 1, 4, CLASSIC, charm);
   check(wide.length === 2 && wide[0].warded && !wide[1].warded,
     'the sundered plan covers every matching column, wards flagged per column', wide);
-  check(charm.sunder[AI] === false, 'reading the plan consumed the sunder — one placement, one strike');
+  // openStrikes mutated the charm; widen past the stale `true` narrowing.
+  check((charm.sunder[AI] as boolean) === false, 'reading the plan consumed the sunder — one placement, one strike');
   check(openStrikes(st, AI, 1, 4, CLASSIC, charm).length === 1,
     'the next plan is narrow again', charm.sunder);
 }

@@ -26,7 +26,7 @@ src/
 ├── flow/            # game (turn state machine), menu, timer, tutorial
 ├── online/          # lazy auth/ladder/match APIs and ranked screen controllers
 ├── boot.ts + boot/  # typed composition and focused browser bindings
-├── hooks.ts         # the stable test-hook surface (window.__kb)
+├── test-hooks.ts    # the stable test-hook surface (window.__kb)
 └── main.ts / widget.ts   # entry points: page vs embeddable widget
 supabase/            # immutable migration ledger + Edge Functions + design history
 design/              # every screen as a live card, built from the app's real CSS,
@@ -136,7 +136,8 @@ migration ledger, runs every pgTAP contract, and lints the resulting schema.
 
 **Game-completion loops use budgets of 900–1200 ticks on purpose.** Random,
 destruction-heavy endgames run long and CI runners are slow — 300–400-tick
-budgets have flaked on CI three separate times (test6, test8, test10). Never
+budgets have flaked on CI three separate times (widget-isolation,
+responsive-browser, tutorial-persistence). Never
 "optimize" these down.
 
 **Two sessions can gate at the same time.** Every server the gate needs binds
@@ -150,7 +151,8 @@ wrong tree.
 Inside ONE working tree the gate takes `.gate.lock` and a second run queues
 behind it ("another gate holds this checkout — waiting for it"), because what
 is shared there is the build output: `build.mjs` rewrites `pwa/` and `dist/`,
-and `testupdate` rewrites `pwa/index.html` and `pwa/sw.js` mid-run. A stale
+and `pwa-update` (`tests/testupdate.mjs`) rewrites `pwa/index.html` and
+`pwa/sw.js` mid-run. A stale
 lock from a killed gate is detected by pid and taken; `KB_NO_LOCK=1` skips it.
 Worktrees stay the recommendation anyway — a shared checkout gates everyone's
 uncommitted work at once, so a red suite cannot tell you whose change it was.
@@ -231,11 +233,11 @@ a cloud session, which has none.
 - **Board dimensions come from `BoardSpec`** (`src/config.ts`) everywhere in
   JS. The CSS `repeat(3,…)` literals are the one remaining 3×3 assumption —
   see the note atop `src/styles/foundations/tokens.css` before adding a new board shape,
-  and re-tune AI depth budgets (`bench3`) for any new spec.
-- **`window.__kb`** (src/hooks.ts) is the test suites' driving surface — keep
+  and re-tune AI depth budgets (`col-score-bench`) for any new spec.
+- **`window.__kb`** (src/test-hooks.ts) is the test suites' driving surface — keep
   its member names stable. Suites reach the relocated local-play controls via
   `__kb.openPractice()` / `__kb.goHome()`. The lazy online chunk cannot be
-  reached from there (hooks.ts must never import it), so it publishes its own
+  reached from there (test-hooks.ts must never import it), so it publishes its own
   two on load: `__kbOnline()` introspects the live match (`online/play.ts`) and
   `__kbResult(report)` deals the Result screen without one
   (`online/result-screen.ts`).

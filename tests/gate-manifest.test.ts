@@ -23,7 +23,7 @@ const expectInvalid = (
   pattern: RegExp,
 ) => {
   try {
-    validateGateManifest(suites, shards);
+    validateGateManifest(suites, shards as typeof CI_SHARDS);
     problems.push(`${label} was accepted`);
   } catch (error) {
     check(pattern.test(String(error)), `${label} failed for the wrong reason: ${error}`);
@@ -47,14 +47,14 @@ try {
   check(JSON.stringify([...full.pooled, ...full.final].map(suite => suite.name))
     === JSON.stringify(GATE_SUITES.map(suite => suite.name)),
   'the complete plan changed the registered suite identities or order');
-  check(full.final.length === 1 && full.final[0].name === 'testupdate',
-    'the complete plan does not isolate testupdate as its final batch');
+  check(full.final.length === 1 && full.final[0].name === 'pwa-update',
+    'the complete plan does not isolate pwa-update as its final batch');
   for (const shard of CI_SHARD_NAMES) {
     const selected = createGatePlan(shard);
     const actual = [...selected.pooled, ...selected.final].map(suite => suite.name);
-    check(JSON.stringify(actual) === JSON.stringify(CI_SHARDS[shard]),
+    check(JSON.stringify(actual) === JSON.stringify(CI_SHARDS[shard as keyof typeof CI_SHARDS]),
       `${shard} selection changed its declared order or membership`);
-    check(selected.final.length === 0 || selected.final[0].name === 'testupdate',
+    check(selected.final.length === 0 || selected.final[0].name === 'pwa-update',
       `${shard} selected a non-update suite as exclusive-final`);
   }
 
@@ -71,7 +71,7 @@ try {
   expectInvalid('duplicate invocation', [...GATE_SUITES, duplicateInvocation] as typeof GATE_SUITES,
     invocationShards, /duplicate invocation/);
 
-  const missingFile = GATE_SUITES.map(suite => suite.name === 'test4'
+  const missingFile = GATE_SUITES.map(suite => suite.name === 'duo-pass-and-play'
     ? { ...suite, file: 'tests/definitely-missing-gate-probe.mjs' } : suite);
   expectInvalid('missing suite file', missingFile as typeof GATE_SUITES,
     CI_SHARDS, /references missing file/);
@@ -88,15 +88,15 @@ try {
   repeatedShards['ci-2'].push(CI_SHARDS['ci-1'][0]);
   expectInvalid('repeated suite assignment', GATE_SUITES, repeatedShards, /belongs to 2 CI shards/);
 
-  const noFinal = GATE_SUITES.map(suite => suite.name === 'testupdate'
+  const noFinal = GATE_SUITES.map(suite => suite.name === 'pwa-update'
     ? { ...suite, exclusiveFinal: false } : suite);
   expectInvalid('missing exclusive-final update', noFinal as typeof GATE_SUITES,
     CI_SHARDS, /one server-backed exclusive-final/);
-  const unservedFinal = GATE_SUITES.map(suite => suite.name === 'testupdate'
+  const unservedFinal = GATE_SUITES.map(suite => suite.name === 'pwa-update'
     ? { ...suite, needsServer: false } : suite);
   expectInvalid('unserved exclusive-final update', unservedFinal as typeof GATE_SUITES,
     CI_SHARDS, /one server-backed exclusive-final/);
-  const secondFinal = GATE_SUITES.map(suite => suite.name === 'test4'
+  const secondFinal = GATE_SUITES.map(suite => suite.name === 'duo-pass-and-play'
     ? { ...suite, exclusiveFinal: true } : suite);
   expectInvalid('second exclusive-final suite', secondFinal as typeof GATE_SUITES,
     CI_SHARDS, /one server-backed exclusive-final/);
@@ -146,10 +146,10 @@ try {
   const events: string[] = [];
   await executeGatePlan({
     pooled: [{ name: 'a' }, { name: 'b' }, { name: 'c' }],
-    final: [{ name: 'testupdate', exclusiveFinal: true }],
+    final: [{ name: 'pwa-update', exclusiveFinal: true }],
   }, async (suite: { name: string; exclusiveFinal?: boolean }) => {
     if (suite.exclusiveFinal) {
-      check(active === 0, 'testupdate started while a pooled suite was active');
+      check(active === 0, 'pwa-update started while a pooled suite was active');
       events.push(suite.name);
       return;
     }
@@ -159,7 +159,7 @@ try {
     active--;
     events.push(`end-${suite.name}`);
   }, 2);
-  check(events.at(-1) === 'testupdate', 'a suite started after the exclusive-final update');
+  check(events.at(-1) === 'pwa-update', 'a suite started after the exclusive-final update');
 } catch (error) {
   errs.push(error instanceof Error ? error.stack ?? error.message : String(error));
 }

@@ -170,7 +170,8 @@ const keptCast = appendRankedBotTurn({
 check(skippedCast?.actions.length === 1 && skippedCast.actions[0].kind === 'place'
   && skippedCast.state.charges[AI].fate === 2,
   'a bot cast through its league slip instead of passing the Rune window', skippedCast);
-check(keptCast?.actions.some(({ kind, rune_id }) => kind === 'cast' && rune_id === 'fate')
+check(keptCast !== null
+  && keptCast.actions.some(({ kind, rune_id }) => kind === 'cast' && rune_id === 'fate')
   && keptCast.state.charges[AI].fate === 1,
   'the Rune handicap disabled casting instead of making it probabilistic', keptCast);
 
@@ -218,7 +219,7 @@ check(skippedOpenerCast?.actions.length === 1
   && skippedOpenerCast.state.charges[ME].fate === 2,
   'a bot opener cast through its league slip instead of passing the Rune window',
   skippedOpenerCast);
-check(keptOpenerCast?.actions.some(
+check(keptOpenerCast !== null && keptOpenerCast.actions.some(
   ({ kind, rune_id }) => kind === 'cast' && rune_id === 'fate',
 ) && keptOpenerCast.state.charges[ME].fate === 1,
   'the opener Rune handicap disabled casting instead of making it probabilistic',

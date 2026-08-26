@@ -2,7 +2,7 @@
 // Run: mise exec -- node --experimental-strip-types tests/scoring-ward-ai.test.ts
 import {
   AI, CLASSIC, COLSHIELD, cloneCharm, cloneSt, freshCharm,
-  type GameState, type Player,
+  type GameState, type Mode, type Player,
 } from '../src/core/rules.ts';
 import { searchRoot } from '../src/core/ai.ts';
 import {
@@ -37,7 +37,7 @@ interface WardRunResult {
   charges: number;
 }
 
-const pureContext = (mode = COLSHIELD, die = 6): CastCtx => ({
+const pureContext = (mode: Mode = COLSHIELD, die = 6): CastCtx => ({
   mode,
   die,
   setDie: () => undefined,

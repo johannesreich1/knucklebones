@@ -1,0 +1,25 @@
+{
+  /* Second checked project: tests/ and tools/ execute through
+     `node --experimental-strip-types`, which erases annotations without
+     checking them. This project makes "new TypeScript is typed"
+     machine-enforced there too; tests/typecheck-tests.test.ts runs it as a
+     gate suite. Options mirror how Node 24 actually executes these files:
+     real ESM resolution with explicit extensions and the current runtime
+     library. `allowJs` admits the imported .mjs helpers into the program;
+     `checkJs` stays off — those are executed, not typechecked. */
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "types": ["node"],
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "allowJs": true,
+    "checkJs": false,
+    "skipLibCheck": true,
+    "strict": true
+  },
+  "include": ["tests/**/*.ts", "tools/**/*.ts"]
+}

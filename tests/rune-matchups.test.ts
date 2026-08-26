@@ -4,7 +4,7 @@
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import {
-  AI, BOUNTY, CLASSIC, LIMITED, legalCols, type GameState, type Player,
+  AI, BOUNTY, CLASSIC, LIMITED, legalCols, type GameState, type Mode, type Player,
 } from '../src/core/rules.ts';
 import { MODES } from '../src/core/modes.ts';
 import { SPELLS, type CastCtx, type SpellSpec } from '../src/core/spells.ts';
@@ -122,7 +122,8 @@ const target: CellPlan = {
 /* ---- one-cast versus chained FATE, with fresh contexts ---- */
 {
   const common = {
-    gameSeed: 'fate-grammar', mode: CLASSIC, openerRune: rune('fate'), replyRune: null,
+    // Object-literal properties widen the CLASSIC literal to number; pin Mode.
+    gameSeed: 'fate-grammar', mode: CLASSIC as Mode, openerRune: rune('fate'), replyRune: null,
     openerPlayer: AI as Player, endlessDraw: sequence([1, 1, 6]), decideCast: alwaysCast,
     choosePlacement: firstLegal,
   };
@@ -150,7 +151,7 @@ const target: CellPlan = {
     'a declined second cast is evaluated against the refreshed hand', seen.slice(0, 2));
 
   const nonFate = {
-    gameSeed: 'invariant', mode: CLASSIC, openerRune: rune('ward'), replyRune: rune('pilfer'),
+    gameSeed: 'invariant', mode: CLASSIC as Mode, openerRune: rune('ward'), replyRune: rune('pilfer'),
     openerPlayer: AI as Player, depth: 1,
   };
   check(JSON.stringify(playMatchupGame({ ...nonFate, castRule: 'one' }))

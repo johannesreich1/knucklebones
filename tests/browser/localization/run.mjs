@@ -1,25 +1,33 @@
 import pkg from 'playwright';
 import { serveTree } from '../../serve.mjs';
+import { createBrowserReport, capturePageErrors } from '../../support/browser-report.mjs';
+import { LOCALE_IDS } from './harness/locale-control.mjs';
+import { requiredHomeTargets } from './harness/surface-readiness.mjs';
+import { LOCALE_REGISTRY } from '../../../src/i18n/locale.ts';
+import { RESOURCES } from '../../../src/i18n/catalogs.ts';
 import { runLocaleBehaviorScenarios } from './scenarios/locale-behavior.mjs';
 import { runLocaleGeometryScenarios } from './scenarios/locale-geometry.mjs';
 import { runConstrainedSurfaceScenarios } from './scenarios/locale-surfaces.mjs';
 
+/* Two run shapes. The no-argument run is the exhaustive geometry matrix,
+   deliberately manual-only (see gate-manifest.mjs). `--smoke` is the cheap
+   rot guard the gate keeps: one locale, one viewport, proving the server,
+   the harness modules, and the i18n exports this tree stands on still fit
+   together — so a refactor cannot silently strand the manual matrix. */
+const argv = process.argv.slice(2);
+const smoke = argv.length === 1 && argv[0] === '--smoke';
+if (argv.length && !smoke) {
+  console.error('Usage: run.mjs [--smoke]');
+  process.exit(2);
+}
+
 const { chromium } = pkg;
 const { url, stop } = await serveTree('.');
 const browser = await chromium.launch();
-const problems = [];
-const errs = [];
-const out = {};
-const check = (condition, message, detail) => {
-  if (!condition) problems.push(`${message} :: ${JSON.stringify(detail)}`);
-};
+const { problems, errs, out, check } = createBrowserReport();
 
 const attachErrors = (page, label = '') => {
-  const prefix = label ? `${label} ` : '';
-  page.on('pageerror', (error) => errs.push(`${prefix}PAGEERROR: ${error.message}`));
-  page.on('console', (message) => {
-    if (message.type() === 'error') errs.push(`${prefix}CONSOLE: ${message.text()}`);
-  });
+  capturePageErrors(page, errs, label, { console: true });
   return page;
 };
 
@@ -109,12 +117,44 @@ const suite = {
   localeContext,
 };
 
+/* German is the registry's long-copy stress locale; one boot on the default
+   phone viewport is enough to prove the plumbing without re-measuring the
+   matrix the manual pass owns. */
+async function runLocaleSmokeScenario({ standaloneUrl }) {
+  const registered = LOCALE_REGISTRY.find(({ id }) => id === 'de');
+  check(LOCALE_IDS.includes('de') && !!registered,
+    'the smoke locale left the registry — point the smoke at a registered locale', LOCALE_IDS);
+  if (!registered) return;
+  const context = await localeContext(['de-DE']);
+  const page = attachErrors(await context.newPage(), 'smoke');
+  await page.goto(standaloneUrl);
+  await page.waitForFunction(() => window.__kb && window.__kbFirstHomeFrame);
+  const result = await page.evaluate(() => ({
+    first: window.__kbFirstHomeFrame,
+    locale: document.documentElement.dataset.locale,
+    lang: document.documentElement.lang,
+    settings: document.getElementById('btnSettingsHome')?.textContent?.trim() ?? '',
+  }));
+  const home = await requiredHomeTargets(page);
+  out.smoke = { ...result, targets: home.targets };
+  check(result.locale === 'de' && result.lang === registered.languageTag
+    && result.settings === RESOURCES.de.game.home.settings,
+  'the German device language did not localize the served standalone build', result);
+  check(result.first.visible && result.first.locale === 'de',
+    'the first Home frame was not visible and localized', result.first);
+  check(home.complete,
+    'the localized Home did not render its required targets', home.targets);
+  await context.close();
+}
+
+const scenarios = smoke ? [['smoke', runLocaleSmokeScenario]] : [
+  ['behavior', runLocaleBehaviorScenarios],
+  ['geometry', runLocaleGeometryScenarios],
+  ['constrained-surfaces', runConstrainedSurfaceScenarios],
+];
+
 try {
-  for (const scenario of [
-    ['behavior', runLocaleBehaviorScenarios],
-    ['geometry', runLocaleGeometryScenarios],
-    ['constrained-surfaces', runConstrainedSurfaceScenarios],
-  ]) {
+  for (const scenario of scenarios) {
     try {
       await scenario[1](suite);
     } catch (error) {
