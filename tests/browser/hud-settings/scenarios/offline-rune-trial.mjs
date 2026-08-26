@@ -151,7 +151,7 @@ export async function runOfflineRuneTrialScenarios({ page, out, check, t }) {
       && new Set(out.localTrial.trial.offer).size === 3
       && out.localTrial.trial.spells[0] === first && out.localTrial.trial.spells[1] === first
       && out.localTrial.scoring === 0 && out.localTrial.savedSpell === 'pilfer'
-      && out.localTrial.badge.includes('TRIAL'),
+      && out.localTrial.badge.includes(t('game', 'modes.runeTrial.compact')),
     'local Trial did not keep a private same-offer choice on Classic rules', out.localTrial);
 
   await page.tap('#btnLeave'); await page.waitForSelector('#ovAsk.on');
