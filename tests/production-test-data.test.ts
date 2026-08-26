@@ -3,7 +3,7 @@ import os from 'node:os';
 import {
   BASE_PRODUCTION_TEST_DATA_AUDIT_SQL,
   EMPTY_RUNE_TRIAL_DATA_AUDIT_SQL,
-  PRODUCTION_BOT_SEED_PLAN,
+  LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL,
   PRODUCTION_TEST_DATA_CLI_VERSION,
   PRODUCTION_TEST_DATA_OPT_INS,
   PRODUCTION_TEST_DATA_PROJECT_REF,
@@ -13,7 +13,6 @@ import {
   SEED_PRODUCTION_BOTS_SQL,
   WIPE_PRODUCTION_ACCOUNTS_SQL,
   assertPinnedProductionCli,
-  assertProductionBotSeedComplete,
   assertProductionProjectBinding,
   assertProductionRepositoryState,
   assertProductionTestDataOptIn,
@@ -24,7 +23,6 @@ import {
   validateEmptyRuneTrialDataAudit,
   validateProductionTestDataPhase,
   validateRuneTrialProductionStage,
-  validateSeededProductionTestDataAudit,
 } from '../tools/database/production-test-data-core.mjs';
 import {
   auditExactRuneTrialProduction,
@@ -42,7 +40,18 @@ import {
   emptyRune,
   runeStage,
   seededAudit,
+  streakBaselineStage,
 } from './support/production-test-data-cases.ts';
+import {
+  assertBotProfileRefreshOrchestration,
+  assertBotProfileRefreshSql,
+  assertBotSeedSql,
+  assertExactSeedAudit,
+  assertExactStreakBaselinePrerequisite,
+  assertRealisticBotSeedPlan,
+  assertRefreshAudit,
+  assertStreakBaselineStage,
+} from './support/production-test-data-bot-profile-cases.ts';
 
 const checked: string[] = [];
 const problems: string[] = [];
@@ -73,6 +82,7 @@ function guarded(run: () => unknown, pattern: RegExp) {
 check('phases and phase-specific literal opt-ins are fail-closed', () => {
   assert.equal(validateProductionTestDataPhase('wipe'), 'wipe');
   assert.equal(validateProductionTestDataPhase('seed-bots'), 'seed-bots');
+  assert.equal(validateProductionTestDataPhase('refresh-bot-profiles'), 'refresh-bot-profiles');
   guarded(() => validateProductionTestDataPhase('reset'), /must be one of/);
   assert.equal(assertProductionTestDataOptIn('wipe', false, undefined), false);
   assert.equal(assertProductionTestDataOptIn(
@@ -82,6 +92,9 @@ check('phases and phase-specific literal opt-ins are fail-closed', () => {
     'wipe', true, PRODUCTION_TEST_DATA_OPT_INS['seed-bots'].value,
   ), /WIPE_ALL_ACCOUNTS/);
   guarded(() => assertProductionTestDataOptIn('seed-bots', true, '150'), /SEED_EXACTLY_150_BOTS/);
+  guarded(() => assertProductionTestDataOptIn(
+    'refresh-bot-profiles', true, 'refresh',
+  ), /REFRESH_EXACT_150_UNPLAYED_BOTS/);
 });
 
 check('project, main, clean-worktree, and pinned-CLI guards are exact', () => {
@@ -130,20 +143,8 @@ check('database query argv is fixed to the linked production project and SQL fil
   guarded(() => productionTestDataQueryArgs('../bad.sql', 'aaaaaaaaaaaaaaaaaaaa'), /project ref mismatch/);
 });
 
-check('canonical seed has exactly 150 unique deterministic points and varied records in all groups', () => {
-  assert.equal(PRODUCTION_BOT_SEED_PLAN.length, 150);
-  assert.equal(new Set(PRODUCTION_BOT_SEED_PLAN.map(row => row.points)).size, 150);
-  assert.equal(PRODUCTION_BOT_SEED_PLAN[0].points, 0);
-  assert.equal(PRODUCTION_BOT_SEED_PLAN.at(-1)?.points, 4600);
-  assert.ok(PRODUCTION_BOT_SEED_PLAN.every((row, index) => row.ordinal === index + 1));
-  assert.ok(PRODUCTION_BOT_SEED_PLAN.every(row => row.wins > 0 && row.losses > 0 && row.draws >= 0));
-  assert.ok(new Set(PRODUCTION_BOT_SEED_PLAN.map(row => row.wins)).size >= 20);
-  assert.ok(new Set(PRODUCTION_BOT_SEED_PLAN.map(row => row.losses)).size >= 20);
-  assert.equal(new Set(PRODUCTION_BOT_SEED_PLAN.map(row => row.draws)).size, 4);
-  for (const [min, max] of [[0, 300], [300, 720], [720, 1260], [1260, 2010],
-    [2010, 3000], [3000, 4350], [4350, Number.POSITIVE_INFINITY]]) {
-    assert.ok(PRODUCTION_BOT_SEED_PLAN.some(row => row.points >= min && row.points < max));
-  }
+check('canonical seed has toned-down realistic histories across every ladder group', () => {
+  assertRealisticBotSeedPlan();
 });
 
 check('wipe SQL is one bounded transaction with pre/postchecks and explicit safe deletion order', () => {
@@ -159,6 +160,7 @@ check('wipe SQL is one bounded transaction with pre/postchecks and explicit safe
     'auth.flow_state', 'auth.oauth_client_states', 'auth.saml_relay_states',
     'public.season_ratings', 'public.player_settings',
     'private.match_commands', 'public.player_runes', 'private.match_action_commands',
+    'private.season_streak_baselines',
   ]) assert.ok(WIPE_PRODUCTION_ACCOUNTS_SQL.includes(table));
   assert.match(WIPE_PRODUCTION_ACCOUNTS_SQL, /with recursive account_graph/);
   assert.match(WIPE_PRODUCTION_ACCOUNTS_SQL, /pg_constraint/);
@@ -167,18 +169,11 @@ check('wipe SQL is one bounded transaction with pre/postchecks and explicit safe
 });
 
 check('seed SQL uses canonical minting and writes rating, season, tier, stats, and all postchecks atomically', () => {
-  assert.match(SEED_PRODUCTION_BOTS_SQL, /^\s*begin;/);
-  assert.match(SEED_PRODUCTION_BOTS_SQL, /commit;\s*$/);
-  assert.match(SEED_PRODUCTION_BOTS_SQL, /public\.mint_bot\(seed_row\.points\)/);
-  assert.match(SEED_PRODUCTION_BOTS_SQL, /insert into public\.season_ratings/);
-  assert.match(SEED_PRODUCTION_BOTS_SQL, /ranked_pool_tier = \(case/);
-  assert.match(SEED_PRODUCTION_BOTS_SQL, /count\(distinct points\).*<> 150/s);
-  assert.match(SEED_PRODUCTION_BOTS_SQL, /max\(points\).*<> 4600/s);
-  assert.match(SEED_PRODUCTION_BOTS_SQL, /seed created unexpected Auth or ranked rows/);
-  assert.doesNotMatch(SEED_PRODUCTION_BOTS_SQL, /public\.current_season\(\)/);
-  assert.doesNotMatch(SEED_PRODUCTION_BOTS_SQL, /private\.ranked_pool_tier_for_peak\((?:rating|seed_row)/);
-  assert.doesNotMatch(SEED_PRODUCTION_BOTS_SQL, /generate_series|\btruncate\b/i);
-  assert.equal((SEED_PRODUCTION_BOTS_SQL.match(/^\s*\(\d+, \d+, \d+, \d+, \d+\),?$/gm) ?? []).length, 150);
+  assertBotSeedSql();
+});
+
+check('profile refresh is update-only, exact, idempotent, and permanently blocks real play', () => {
+  assertBotProfileRefreshSql();
 });
 
 check('base audits enforce Auth/profile consistency, Storage safety, and complete wipe', () => {
@@ -208,18 +203,22 @@ check('Rune stage permits only wholly absent or exact presence and empty tables 
   guarded(() => validateEmptyRuneTrialDataAudit([emptyRune({ playerRunes: 1 })]), /not empty/);
 });
 
-check('seed audit proves exact cardinality, no humans/orphans/data, unique points, and varied stats', () => {
-  const audit = validateSeededProductionTestDataAudit([seededAudit()]);
-  assert.equal(assertProductionBotSeedComplete(audit), audit);
-  guarded(() => assertProductionBotSeedComplete({ ...audit, humans: 1, bots: 149 }), /bots=149|ownership graph/);
-  guarded(() => assertProductionBotSeedComplete({ ...audit, playerRunes: 1 }), /playerRunes/);
-  guarded(() => assertProductionBotSeedComplete({ ...audit, neonPointBots: 0 }), /neonPointBots/);
+check('streak-baseline stage permits only wholly absent or exact presence', () => {
+  assertStreakBaselineStage(guarded);
 });
 
-check('executor rejects every SQL program outside the two reviewed constants', () => {
+check('seed audit proves exact cardinality, no humans/orphans/data, unique points, and varied stats', () => {
+  assertExactSeedAudit(guarded);
+});
+
+check('refresh audit accepts only the exact untouched or exact refreshed 150-bot states', () => {
+  assertRefreshAudit(guarded);
+});
+
+check('executor rejects every SQL program outside the reviewed constants', () => {
   assert.throws(
     () => executeFixedProductionTestDataSql('delete from auth.users;'),
-    /only its two fixed SQL programs/,
+    /only its fixed SQL programs/,
   );
 
   let removed = false;
@@ -280,11 +279,16 @@ await checkAsync('exact Rune prerequisite reuses full schema, body, grant, RLS, 
   );
 });
 
+await checkAsync('exact streak-baseline prerequisite reuses catalog, ACL, body, and data audits', async () => {
+  await assertExactStreakBaselinePrerequisite();
+});
+
 await checkAsync('wipe orchestration previews without writes and applies only through the fixed SQL', async () => {
   const before = baseAudit({ authUsers: 54, profiles: 54, bots: 14, humans: 40, matches: 230 });
   const after = baseAudit();
   const reads = new Map<string, unknown[][]>([
     [RUNE_TRIAL_PRODUCTION_STAGE_SQL, [[runeStage(false)]]],
+    [LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL, [[streakBaselineStage(false)]]],
     [BASE_PRODUCTION_TEST_DATA_AUDIT_SQL, [[before], [after]]],
   ]);
   const read = async (query: string) => reads.get(query)!.shift()!;
@@ -306,8 +310,13 @@ await checkAsync('wipe orchestration previews without writes and applies only th
   let previewWrites = 0;
   await rolloutProductionTestData({
     phase: 'wipe',
-    read: async query => query === RUNE_TRIAL_PRODUCTION_STAGE_SQL
-      ? [runeStage(false)] : [before],
+    read: async query => {
+      if (query === RUNE_TRIAL_PRODUCTION_STAGE_SQL) return [runeStage(false)];
+      if (query === LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL) {
+        return [streakBaselineStage(false)];
+      }
+      return [before];
+    },
     verifyEnvironment: () => {},
     execute: () => { previewWrites++; },
     log: () => {},
@@ -321,17 +330,25 @@ await checkAsync('seed orchestration hard-blocks absent migration and rechecks e
     phase: 'seed-bots',
     apply: true,
     optIn: PRODUCTION_TEST_DATA_OPT_INS['seed-bots'].value,
-    read: async query => query === RUNE_TRIAL_PRODUCTION_STAGE_SQL
-      ? [runeStage(false)] : [baseAudit()],
+    read: async query => {
+      if (query === RUNE_TRIAL_PRODUCTION_STAGE_SQL) return [runeStage(false)];
+      if (query === LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL) {
+        return [streakBaselineStage(false)];
+      }
+      return [baseAudit()];
+    },
     verifyEnvironment: () => {},
-    exactRunePrerequisite: async () => { throw new Error('must not run'); },
+    exactBotSeedPrerequisite: async () => { throw new Error('must not run'); },
     execute: () => { writes++; },
     log: () => {},
-  }), /migration must be complete/);
+  }), /migrations must be complete/);
   assert.equal(writes, 0);
 
   const read = async (query: string) => {
     if (query === RUNE_TRIAL_PRODUCTION_STAGE_SQL) return [runeStage(true)];
+    if (query === LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL) {
+      return [streakBaselineStage(true)];
+    }
     if (query === BASE_PRODUCTION_TEST_DATA_AUDIT_SQL) return [baseAudit()];
     if (query === EMPTY_RUNE_TRIAL_DATA_AUDIT_SQL) return [emptyRune()];
     if (query === SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL) return [seededAudit()];
@@ -345,13 +362,17 @@ await checkAsync('seed orchestration hard-blocks absent migration and rechecks e
     optIn: PRODUCTION_TEST_DATA_OPT_INS['seed-bots'].value,
     read,
     verifyEnvironment: () => {},
-    exactRunePrerequisite: async () => { exactChecks++; return { ledgerStage: 1 }; },
+    exactBotSeedPrerequisite: async () => { exactChecks++; return { ledgerStage: 1 }; },
     execute: sql => { executed.push(sql); },
     log: () => {},
   });
   assert.equal(result.applied, true);
   assert.equal(exactChecks, 3);
   assert.deepEqual(executed, [SEED_PRODUCTION_BOTS_SQL]);
+});
+
+await checkAsync('profile refresh writes only the exact legacy seed and no-ops when already current', async () => {
+  await assertBotProfileRefreshOrchestration();
 });
 
 if (problems.length) {

@@ -19,6 +19,9 @@ import { runProductionMigrationSchemaCases } from './support/production-migratio
 import {
   runRuneTrialProductionMigrationCases,
 } from './support/rune-trial-production-migration-cases.ts';
+import {
+  runLadderStreakBaselineProductionMigrationCases,
+} from './support/ladder-streak-baselines-production-migration-cases.ts';
 
 const BASE = '20260823192604_player_settings.sql';
 const LOCALE = '20260824133121_player_settings_locale.sql';
@@ -269,6 +272,8 @@ runProductionMigrationSchemaCases({
   retentionMigration: RETENTION,
   expandedLocalesMigration: EXPANDED_LOCALES,
 });
+
+await runLadderStreakBaselineProductionMigrationCases({ check, checkAsync, guarded });
 
 await checkAsync('temporary workspace cleanup runs after success and preparation failure', async () => {
   const removed: string[] = [];

@@ -39,6 +39,19 @@ const RUNE_TRIAL_FIELDS = Object.freeze([
   'cronJob',
   'cronJobContract',
 ]);
+const LADDER_STREAK_BASELINE_FIELDS = Object.freeze([
+  'tableColumns',
+  'tablePrimaryKey',
+  'tableRatingForeignKey',
+  'tableCheck',
+  'tableComment',
+  'tableOwner',
+  'tableGrants',
+  'playerCardContract',
+  'playerCardBody',
+  'playerCardGrants',
+  'bestStreakDelegate',
+]);
 
 export class ProductionRolloutGuardError extends Error {
   constructor(message) {
@@ -424,4 +437,29 @@ export function validateRuneTrialSchemaStage(metadata) {
   if (values.every(value => value === false)) return 0;
   if (values.every(value => value === true)) return 1;
   fail('Rune Trial schema, security boundary, function contract, or cron job is partial.');
+}
+
+/**
+ * Validate the imported ladder-streak surface as absent or complete. The
+ * audit caller gates the pre-existing player-card/best-streak contracts on
+ * the baseline table's presence, so an absent migration is represented by an
+ * all-false object and any partial catalog state fails closed.
+ */
+export function validateLadderStreakBaselineSchemaStage(metadata) {
+  if (!isObject(metadata)) fail('Ladder-streak baseline metadata must be an object.');
+  assertOnlyKeys(
+    metadata,
+    LADDER_STREAK_BASELINE_FIELDS,
+    'Ladder-streak baseline metadata',
+  );
+  for (const field of LADDER_STREAK_BASELINE_FIELDS) {
+    if (typeof metadata[field] !== 'boolean') {
+      fail(`Ladder-streak baseline metadata field ${field} must be boolean.`);
+    }
+  }
+
+  const values = LADDER_STREAK_BASELINE_FIELDS.map(field => metadata[field]);
+  if (values.every(value => value === false)) return 0;
+  if (values.every(value => value === true)) return 1;
+  fail('Ladder-streak baseline table, function contract, or security boundary is partial.');
 }

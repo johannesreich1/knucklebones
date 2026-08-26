@@ -18,6 +18,9 @@ mise exec -- node --experimental-strip-types \
 mise exec -- node --experimental-strip-types \
   tools/database/production-rollout.mjs rune-trial
 
+mise exec -- node --experimental-strip-types \
+  tools/database/production-rollout.mjs ladder-streak-baselines
+
 # Apply the already-previewed allow-list, then validate history and schema.
 KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
   mise exec -- node --experimental-strip-types \
@@ -30,11 +33,16 @@ KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
 KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
   mise exec -- node --experimental-strip-types \
   tools/database/production-rollout.mjs rune-trial --apply
+
+KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
+  mise exec -- node --experimental-strip-types \
+  tools/database/production-rollout.mjs ladder-streak-baselines --apply
 ```
 
 `mise exec -- npm run db:production:settings`,
 `mise exec -- npm run db:production:commands`, and
-`mise exec -- npm run db:production:rune-trial` are the shorter preview commands.
+`mise exec -- npm run db:production:rune-trial`, and
+`mise exec -- npm run db:production:streak-baselines` are the shorter preview commands.
 Add `-- --apply` plus the same environment opt-in to apply.
 
 The `settings-locale` allow-list currently has three ordered stages: the base
@@ -71,6 +79,15 @@ cron contract. Immediately after an apply it also proves the historical tier
 backfill, safe v1 defaults for live matches/queue rows, and that all five new
 tables are still empty before the v2 functions are deployed.
 
+The `ladder-streak-baselines` allow-list contains only
+`20260826153000_ladder_streak_baselines.sql`. Its validator pins the private
+three-column table, composite cascade key, check and comment; proves that no
+Data API role has direct access; and pins the unchanged public player-card and
+best-streak signatures, bodies, ownership, search paths, and grants. A later
+audit accepts non-empty baseline data only while every row still belongs to a
+season rating and does not exceed that row's wins. Only the immediate migration
+postcheck requires the new table to be empty.
+
 Supabase CLI 2.115.0 has no documented `db push` lock-timeout flag. The guarded
 command therefore does not pretend to set one through an unsupported
 environment variable; interrupt a blocked owner operation and inspect database
@@ -87,13 +104,14 @@ Do not accept arbitrary SQL or arbitrary filenames from command-line input.
 
 ## Test-account reset and bot population
 
-The pre-launch production test population has its own two-phase guarded helper.
-Both phases require committed clean `main`, the exact linked/configured project,
+The pre-launch production test population has its own three-phase guarded helper.
+Every phase requires committed clean `main`, the exact linked/configured project,
 the pinned CLI, and a phase-specific literal opt-in. Preview first:
 
 ```sh
 mise exec -- npm run db:production:test-data -- wipe
 mise exec -- npm run db:production:test-data -- seed-bots
+mise exec -- npm run db:production:test-data -- refresh-bot-profiles
 ```
 
 The wipe removes matches first, then all Auth users and their cascading account,
@@ -107,13 +125,27 @@ KB_ALLOW_PRODUCTION_ACCOUNT_WIPE=WIPE_ALL_ACCOUNTS \
   mise exec -- npm run db:production:test-data -- wipe --apply
 ```
 
-After the exact Rune Trial migration audit passes, the seed phase requires the
-account/ranked graph to be empty and creates exactly 150 bots with unique
-0–4600 points, plausible varied starting win/loss/draw aggregates, a matching
-current-season row and profile mirror, and the historical-peak pool tier. It
-does not invent match history; ordinary settlement owns every later change.
+After the exact Rune Trial and streak-baseline migration audits pass, the seed
+phase requires the account/ranked graph to be empty and creates exactly 150
+bots with unique 0–4600 points. Their deterministic aggregate history is
+deliberately beatable: displayed win rates span about 41–54%, games span
+18–410, best streaks span 2–7, and exactly half have a modest prior peak above
+current points. It does not invent match rows; ordinary settlement owns every
+later rating/record change, while a longer real winning run supersedes the
+private baseline.
 
 ```sh
 KB_ALLOW_PRODUCTION_BOT_SEED=SEED_EXACTLY_150_BOTS \
   mise exec -- npm run db:production:test-data -- seed-bots --apply
+```
+
+The update-only refresh phase exists for the exact original 150-bot seed. It
+refuses any human, match, move, queue, rune, setting, session, token, or owned
+Storage data; matches the complete old or already-refreshed fixed plan; never
+deletes an account; and becomes permanently unavailable as soon as real play
+exists.
+
+```sh
+KB_ALLOW_PRODUCTION_BOT_PROFILE_REFRESH=REFRESH_EXACT_150_UNPLAYED_BOTS \
+  mise exec -- npm run db:production:test-data -- refresh-bot-profiles --apply
 ```
