@@ -26,6 +26,48 @@ async function practiceSnapshot(page) {
   });
 }
 
+async function runeTrialIconSnapshot(page) {
+  return page.$eval('#modePick button[data-v="-2"] svg', (svg) => {
+    const border = svg.querySelector('path');
+    const dots = [...svg.querySelectorAll('circle')];
+    const matrix = border.getScreenCTM();
+    const scale = Math.hypot(matrix.a, matrix.b);
+    const toScreen = ({ x, y }) => ({
+      x: matrix.a * x + matrix.c * y + matrix.e,
+      y: matrix.b * x + matrix.d * y + matrix.f,
+    });
+    const perimeter = border.getTotalLength();
+    const edge = Array.from({ length: 4097 }, (_, index) =>
+      toScreen(border.getPointAtLength(perimeter * index / 4096)));
+    const centers = dots.map((dot) => toScreen({
+      x: dot.cx.baseVal.value,
+      y: dot.cy.baseVal.value,
+    }));
+    const halfStroke = parseFloat(getComputedStyle(border).strokeWidth) * scale / 2;
+    const paintGaps = dots.map((dot, index) => {
+      const centre = centers[index];
+      const toBorder = Math.min(...edge.map((point) => Math.hypot(
+        centre.x - point.x, centre.y - point.y,
+      )));
+      return toBorder - halfStroke - dot.r.baseVal.value * scale;
+    });
+    const borderBox = border.getBBox();
+    const borderCentre = toScreen({
+      x: borderBox.x + borderBox.width / 2,
+      y: borderBox.y + borderBox.height / 2,
+    });
+    const pipCentre = centers.reduce((sum, point) => ({
+      x: sum.x + point.x / centers.length,
+      y: sum.y + point.y / centers.length,
+    }), { x: 0, y: 0 });
+    return {
+      size: svg.getBoundingClientRect().width,
+      paintGaps,
+      centreDelta: Math.hypot(pipCentre.x - borderCentre.x, pipCentre.y - borderCentre.y),
+    };
+  });
+}
+
 export async function runOfflineRuneTrialScenarios({ page, out, check, t }) {
   const storageBefore = await page.evaluate((runeKey) => ({
     stats: localStorage.getItem('knucklebones.v1'),
@@ -46,6 +88,14 @@ export async function runOfflineRuneTrialScenarios({ page, out, check, t }) {
   await page.reload(); await page.waitForTimeout(400);
   await page.tap('#btnVsCpu'); await page.waitForTimeout(150);
   out.runeLocksEmpty = await practiceSnapshot(page);
+  out.runeTrialIcon = await runeTrialIconSnapshot(page);
+  const iconGapSpread = Math.max(...out.runeTrialIcon.paintGaps)
+    - Math.min(...out.runeTrialIcon.paintGaps);
+  check(out.runeTrialIcon.size === 16
+      && Math.min(...out.runeTrialIcon.paintGaps) >= 0.7
+      && iconGapSpread <= 0.1
+      && out.runeTrialIcon.centreDelta <= 0.05,
+    'Rune Ritual pips are not evenly inset and centred inside their stone', out.runeTrialIcon);
   const emptyEnabled = out.runeLocksEmpty.runes.filter(({ disabled }) => !disabled).map(({ value }) => value);
   check(String(emptyEnabled) === '' && out.runeLocksEmpty.modes.find(({ value }) => value === '-2')?.disabled,
     'CPU practice without a verified collection did not fail closed to NONE/no Trial', out.runeLocksEmpty);

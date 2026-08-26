@@ -8,6 +8,7 @@ import { RESOURCES } from '../../../src/i18n/catalogs.ts';
 import { runLocaleBehaviorScenarios } from './scenarios/locale-behavior.mjs';
 import { runLocaleGeometryScenarios } from './scenarios/locale-geometry.mjs';
 import { runConstrainedSurfaceScenarios } from './scenarios/locale-surfaces.mjs';
+import { runRuneRitualLockScenarios } from './scenarios/rune-ritual-lock.mjs';
 
 /* Two run shapes. The no-argument run is the exhaustive geometry matrix,
    deliberately manual-only (see gate-manifest.mjs). `--smoke` is the cheap
@@ -151,6 +152,7 @@ const scenarios = smoke ? [['smoke', runLocaleSmokeScenario]] : [
   ['behavior', runLocaleBehaviorScenarios],
   ['geometry', runLocaleGeometryScenarios],
   ['constrained-surfaces', runConstrainedSurfaceScenarios],
+  ['rune-ritual-lock', runRuneRitualLockScenarios],
 ];
 
 try {

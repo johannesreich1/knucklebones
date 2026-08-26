@@ -24,10 +24,12 @@ const PATHS: Record<string, string> = {
   /* a small stack of dice — the finite bag */
   limited: '<rect x="4.4" y="13" width="6.6" height="6.6" rx="1.8"/><rect x="13" y="13" width="6.6" height="6.6" rx="1.8"/>'
     + '<rect x="8.7" y="4.4" width="6.6" height="6.6" rx="1.8"/><circle class="f" cx="12" cy="7.7" r="1.2"/>',
-  /* three offered rune stones around one hidden choice */
+  /* three offered runes held inside one ritual stone. The stone's visual
+     centre is (12,11); all three pips share one slightly inset orbit so their
+     clearance from the surrounding edge is even. */
   rune_trial: '<path d="M12 3.5 18.5 7.2v7.6L12 18.5 5.5 14.8V7.2Z"/>'
-    + '<circle class="f" cx="12" cy="7.5" r="1.25"/><circle class="f" cx="8.4" cy="13.7" r="1.25"/>'
-    + '<circle class="f" cx="15.6" cy="13.7" r="1.25"/>',
+    + '<circle class="f" cx="12" cy="7.7" r="1.25"/><circle class="f" cx="9.14" cy="12.65" r="1.25"/>'
+    + '<circle class="f" cx="14.86" cy="12.65" r="1.25"/>',
   /* two arrows crossing — the dial will decide */
   random: '<path d="M3.4 7.6h3.9l9.3 8.8h3.9M3.4 16.4h3.9l9.3-8.8h3.9"/>'
     + '<path d="M18.1 4.6 20.9 7.6 18.1 10.6M18.1 13.4 20.9 16.4 18.1 19.4"/>',

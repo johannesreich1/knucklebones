@@ -221,6 +221,17 @@ export function rankedOutcomePool(
   })));
 }
 
+/* The pool order above is seed-sensitive and must not double as presentation
+   order. Wheels and rosters follow the canonical outcome registry (ordinary
+   MODES, then Rune Trial) while reusing the pool as the sole eligibility and
+   capability boundary. */
+export function rankedOutcomeRoster(
+  participants: readonly RankedParticipantAccess[],
+): readonly Readonly<RankedOutcomeSpec>[] {
+  const eligible = new Set(rankedOutcomePool(participants).map(({ outcome }) => outcome.id));
+  return Object.freeze(RANKED_OUTCOMES.filter(({ id }) => eligible.has(id)));
+}
+
 function unitDraw(random: () => number, label: string): number {
   const draw = random();
   if (!Number.isFinite(draw) || draw < 0 || draw >= 1) {

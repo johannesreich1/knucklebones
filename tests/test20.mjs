@@ -32,7 +32,11 @@ import {
   verifyRandomTwoReveal,
 } from './browser/support/random-two-reveal.mjs';
 import { SPELLS } from '../src/core/spells.ts';
-import { readTurnedDeal, checkDealPhysique } from './browser/support/deal-stack.mjs';
+import {
+  readTurnedDeal,
+  checkDealPhysique,
+  verifyPileDealClearance,
+} from './browser/support/deal-stack.mjs';
 const { chromium } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
 const problems = [], out = {};
@@ -369,6 +373,8 @@ try {
   }
   /* The hardest geometry is random mode + two runes on a short landscape. */
   await verifyRandomTwoLandscape(page, out, check, revealHeld, overlaps, dismiss);
+  /* The rotated painted bodies of the pile deal, at the two tight rests. */
+  await verifyPileDealClearance(page, out, check, revealHeld, dismiss);
 } catch (e) {
   problems.push('THREW :: ' + e.message);
 } finally { await browser.close(); }

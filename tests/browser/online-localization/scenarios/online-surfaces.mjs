@@ -3,6 +3,7 @@ import { LOCALE_REGISTRY } from '../../../../src/i18n/locale.ts';
 import { installOnlineRoutes } from '../../online-ui/harness/routes.mjs';
 import { checkReachableTargets, checkSurface, frame,
   inspectSurface } from '../../localization/harness/layout-inspection.mjs';
+import { inspectRuneSheets } from './profile-rune-sheets.mjs';
 
 const VIEWPORTS = [
   { name: '320x568', width: 320, height: 568 },
@@ -13,6 +14,7 @@ const VIEWPORTS = [
 const GUEST_ID = '00000000-0000-4000-8000-00000000cafe';
 const PROFILE_TARGETS = [
   '#btnAvatar', '#btnLadder', '#btnRank', '#onNick', '#btnClaim',
+  '#accRuneGrid .accrune[data-rune="fate"]', '#accRuneGrid .accrune[data-rune="nudge"]',
   '#btnKeepAcc', '#btnHaveAcc', '#btnHistory', '#btnDeleteAcc',
 ];
 
@@ -101,6 +103,7 @@ async function installFixtures(page, localeId) {
     attached: false,
     door: 'chip',
     named: false,
+    runes: ['fate'],
     SESSION: session(),
     GUEST_ID,
   });
@@ -109,7 +112,7 @@ async function installFixtures(page, localeId) {
 async function inspectAccount(suite, page, label) {
   const surface = await assertPanel(suite, page, `profile-${label}`, [
     '#accGroup', '#btnLadder', '#btnLadder span', '.fact span',
-    '#accRunesTitle', '#accRuneCount',
+    '#accRunesTitle', '#accRuneCount', '.accrune',
     '#accClaim b', '#accClaim p', '#onNick', '#btnClaim',
     '#accGuest b', '#accGuest p', '#btnKeepAcc', '#btnHaveAcc',
     '#btnHistory', '#accSince', '#btnDeleteAcc',
@@ -276,6 +279,7 @@ async function runViewport(suite, locale, viewport) {
   const account = await inspectAccount(suite, page, label);
   check(account.heading.items[0]?.text === RESOURCES[locale.id].online.panels.profile,
     `${label} profile title did not use its locale`, account.heading.items);
+  const runeSheets = await inspectRuneSheets(suite, page, label, locale);
 
   await page.click('#btnHaveAcc');
   await page.waitForSelector('.authsheet #onAuth', { timeout: 15000 });
@@ -323,6 +327,7 @@ async function runViewport(suite, locale, viewport) {
   await context.close();
   return {
     profileItems: account.content.items.length,
+    runeSheetItems: runeSheets.unlocked.surface.items.length + runeSheets.locked.surface.items.length,
     authItems: auth.content.items.length,
     ladderItems: ladder.content.items.length,
     resultItems: result.items.length,

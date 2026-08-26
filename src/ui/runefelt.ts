@@ -28,7 +28,7 @@ export const restOf = (i: number, count: number) => {
    that a stack reads as cards rather than as one thick card, without a second
    source of randomness.
    EVERY y here is a PERCENTAGE OF THE CARD'S OWN HEIGHT (translate y%), never
-   px: --card runs 58..96px and drops to ~40px on a short landscape phone, and
+   px: --card runs 58..96px and reaches its 58px floor on a short landscape phone, and
    a fixed-px row offset that cleared the title at 76px escaped the stage at
    40px (test20's 320px lanes caught it). Percentages keep the table identical
    at every size. */
@@ -37,15 +37,18 @@ export const PILES = [-122, 0, 122] as const;    // % of the card's own width
    inside the stage box on the 320px lanes — higher rows read nicer at 430px
    but test20's short-landscape check is the boundary that matters */
 export const PILE_Y = -9;                        // the pile row, % above the fan line
-export const DECK_Y = 92;                        // the dealing deck, at the felt's bottom
+/* 102 leaves a visible body gap after rotation between the remaining source
+   stock and every pile card. At 92 their axis-aligned bodies still crossed by
+   several pixels even though the unrotated card boxes only just cleared. */
+export const DECK_Y = 102;                       // the dealing deck, at the felt's bottom
 export const stackOf = (p: number, k: number) => ({
   x: PILES[p] + ((k % 3) - 1) * 1.4,
   y: PILE_Y - k * 0.75,
   rot: ((k * 7) % 9) - 4,
 });
 /* the deck squared IN HAND (between the scoop and the pile deal), at the
-   bottom, fully below the pile row it deals up into (92 is the smallest y
-   whose deck top clears the row's k=0 card bottom) */
+   bottom, fully below the pile row it deals up into, including rotated card
+   corners rather than only the unrotated boxes */
 export const squaredOf = (k: number) => ({
   x: ((k % 3) - 1) * 1.4,
   y: DECK_Y - k * 1.1,

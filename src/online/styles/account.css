@@ -33,8 +33,11 @@
 :where(#kbroot) #onAccount .accrunes-head b{color:var(--fg)}
 :where(#kbroot) #onAccount .accrunes-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
 :where(#kbroot) #onAccount .accrune{position:relative;display:flex;align-items:center;gap:6px;min-width:0;
-  padding:8px 7px;border:1px solid color-mix(in srgb,var(--rh) 30%,transparent);border-radius:11px;
-  background:color-mix(in srgb,var(--rh) 7%,rgba(255,255,255,.02));color:var(--rh)}
+  width:100%;min-height:44px;margin:0;padding:8px 7px;border:1px solid color-mix(in srgb,var(--rh) 30%,transparent);
+  border-radius:11px;background:color-mix(in srgb,var(--rh) 7%,rgba(255,255,255,.02));color:var(--rh);
+  font:inherit;text-align:left;-webkit-appearance:none;appearance:none;cursor:pointer}
+:where(#kbroot) #onAccount .accrune:focus-visible{outline:2px solid var(--rh);outline-offset:2px}
+:where(#kbroot) #onAccount .accrune:active{transform:translateY(1px)}
 :where(#kbroot) #onAccount .accrune .sico{flex:0 0 auto;filter:drop-shadow(0 0 7px currentColor)}
 :where(#kbroot) #onAccount .accrune span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   color:var(--fg);font-size:8px;font-weight:900;letter-spacing:.08em}

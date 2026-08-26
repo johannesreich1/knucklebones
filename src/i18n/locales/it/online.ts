@@ -84,6 +84,9 @@ export const itOnline = {
     repairApple: 'Ripara accesso Apple',
     runes: 'RUNE',
     runesCollected: '{{count}} / 6 raccolte',
+    runeLocked: 'BLOCCATA',
+    runeLockedDetail: 'Vinci questa runa in {{mode}} per sbloccarla.',
+    runeUnlockedAt: 'Sbloccata il {{date}}',
   },
   avatar: {
     instruction: 'Scegli una faccia e un colore',

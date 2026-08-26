@@ -24,6 +24,7 @@ import { runAccountLifecycleScenarios } from './scenarios/account-lifecycle.mjs'
 import { runOnlineMenuPressFeedbackScenarios } from './scenarios/menu-press-feedback.mjs';
 import { runOnlineLoadingPanelScenarios } from './scenarios/loading-panels.mjs';
 import { runAuthModalScenarios } from './scenarios/auth-modal.mjs';
+import { runProfileRuneSheetScenarios } from './scenarios/profile-rune-sheet.mjs';
 import { runRuneTrialUiScenarios } from './scenarios/rune-trial-ui.mjs';
 import { runRuneRewardRaceScenarios } from './scenarios/rune-reward-races.mjs';
 
@@ -36,6 +37,7 @@ const SCENARIOS = Object.freeze([
   { id: 'menu-press-feedback', run: runOnlineMenuPressFeedbackScenarios },
   { id: 'loading-panels', run: runOnlineLoadingPanelScenarios },
   { id: 'auth-modal', run: runAuthModalScenarios },
+  { id: 'profile-rune-sheet', run: runProfileRuneSheetScenarios },
   { id: 'rune-trial', run: runRuneTrialUiScenarios },
   // Deliberately outside the no-argument gate run: the reward-race probes are
   // a focused investigation surface, reached only through an explicit --only.

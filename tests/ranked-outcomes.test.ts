@@ -21,6 +21,7 @@ import {
   rankedOutcomeById,
   rankedOutcomeByMatch,
   rankedOutcomePool,
+  rankedOutcomeRoster,
   rankedPoolTierById,
   rankedPoolTierForPeak,
   seededRuneTrialAutoPick,
@@ -55,6 +56,8 @@ const access = (
 
 const summarizedPool = (participants: readonly RankedParticipantAccess[]) =>
   rankedOutcomePool(participants).map(({ outcome, weight }) => [outcome.id, weight]);
+const summarizedRoster = (participants: readonly RankedParticipantAccess[]) =>
+  rankedOutcomeRoster(participants).map(({ id }) => id);
 
 /* ---- outcome registry: Trial is a format, not a mechanical mode -------- */
 eq(RANKED_OUTCOMES.filter(({ format }) => format === STANDARD_FORMAT).map(({ id }) => id),
@@ -120,6 +123,24 @@ eq(summarizedPool([access('ivory')]), [
   ['classic', 14], ['singlestrike', 3], ['colshield', 3], ['limited', 3],
   ['rowswitch', 3], ['rowmult', 3], ['bounty', 3], ['rune_trial', 3],
 ], 'IVORY weights are not exactly 40% plus seven equal additions');
+
+/* A ranked draw retains the permanent seed-sensitive pool sequence above;
+   the displayed spinner uses canonical registry order, matching offline. */
+eq(summarizedRoster([access('stone')]), [
+  'classic', 'colshield', 'singlestrike', 'limited',
+], 'STONE spinner roster drifted from canonical mode order');
+eq(summarizedRoster([access('bone')]), [
+  'classic', 'rowswitch', 'rowmult', 'colshield', 'singlestrike', 'bounty', 'limited',
+], 'BONE spinner roster drifted from canonical mode order');
+eq(summarizedRoster([access('ivory')]), [
+  'classic', 'rowswitch', 'rowmult', 'colshield', 'singlestrike', 'bounty', 'limited',
+  'rune_trial',
+], 'IVORY spinner roster drifted from canonical outcome order');
+eq(summarizedRoster([
+  access('ivory', [RUNE_TRIAL_CAPABILITY]),
+  access('ivory', []),
+]), summarizedRoster([access('bone')]),
+  'capability filtering did not carry through to the displayed spinner roster');
 
 for (const tier of ['stone', 'bone', 'ivory'] as const) {
   const pool = rankedOutcomePool([access(tier)]);

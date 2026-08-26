@@ -53,6 +53,8 @@ export interface PlayerRuneRow {
 export interface RuneCollectionRefresh {
   accountId: string | null;
   collected: readonly string[];
+  /** Authoritative rows from the latest successful refresh, including first-unlock time. */
+  rows: readonly PlayerRuneRow[];
   unseen: readonly PlayerRuneRow[];
   verified: boolean;
   poolTier: RankedPoolTier | null;
@@ -110,7 +112,7 @@ export async function refreshRuneCollection(
   if (!id) {
     const retained = readRuneCollectionSnapshot();
     if (retained) clearRuneCollectionSnapshot(retained.accountId);
-    return { accountId: null, collected: [], unseen: [], verified: false, poolTier: null };
+    return { accountId: null, collected: [], rows: [], unseen: [], verified: false, poolTier: null };
   }
   /* Own the refresh before entering the acknowledgement barrier. If A waits
      here while the session changes and B refreshes, B's later revision must
@@ -129,7 +131,7 @@ export async function refreshRuneCollection(
   );
   if (!barrierOwnership.owns) {
     if (barrierOwnership.discardRetained) clearRuneCollectionSnapshot(id);
-    return { accountId: null, collected: [], unseen: [], verified: false, poolTier: null };
+    return { accountId: null, collected: [], rows: [], unseen: [], verified: false, poolTier: null };
   }
 
   const cached = readRuneCollectionSnapshot();
@@ -160,6 +162,7 @@ export async function refreshRuneCollection(
       return {
         accountId: null,
         collected: [],
+        rows: [],
         unseen: [],
         verified: false,
         poolTier: null,
@@ -169,6 +172,7 @@ export async function refreshRuneCollection(
     return {
       accountId: id,
       collected: sameAccount?.collected ?? [],
+      rows: [],
       unseen: [],
       verified: false,
       poolTier: sameAccount?.poolTier ?? null,
@@ -189,6 +193,7 @@ export async function refreshRuneCollection(
     return {
       accountId: null,
       collected: [],
+      rows: [],
       unseen: [],
       verified: false,
       poolTier: null,
@@ -198,6 +203,7 @@ export async function refreshRuneCollection(
   return {
     accountId: id,
     collected,
+    rows,
     unseen: rows.filter(({ seen_at }) => seen_at === null),
     verified: true,
     poolTier,

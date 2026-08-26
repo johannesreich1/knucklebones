@@ -17,36 +17,6 @@ const REPORT = {
   oppRating: 1072,
 };
 
-async function profileRuneProbe(page) {
-  return page.evaluate(() => {
-    const visible = (element) => {
-      const box = element.getBoundingClientRect();
-      return box.width > 0 && box.height > 0;
-    };
-    const slots = [...document.querySelectorAll('#accRuneGrid .accrune')].map((slot) => ({
-      label: slot.getAttribute('aria-label'),
-      disabled: slot.getAttribute('aria-disabled'),
-      collected: slot.classList.contains('collected'),
-      locked: slot.classList.contains('locked'),
-      visible: visible(slot),
-      opacity: getComputedStyle(slot).opacity,
-    }));
-    const title = document.getElementById('accRunesTitle');
-    const count = document.getElementById('accRuneCount');
-    const root = document.getElementById('kbroot');
-    return {
-      count: count?.textContent?.trim(),
-      titleFontSize: title ? parseFloat(getComputedStyle(title).fontSize) : 0,
-      countFontSize: count ? parseFloat(getComputedStyle(count).fontSize) : 0,
-      labelMinimum: root
-        ? parseFloat(getComputedStyle(root).getPropertyValue('--font-label-min'))
-        : 0,
-      gridLabel: document.getElementById('accRuneGrid')?.getAttribute('aria-label'),
-      slots,
-    };
-  });
-}
-
 async function resultRewardRecoveryProbe(page, routes) {
   routes.makeRuneUnseen('fate');
   routes.deferNextRuneResponse();
@@ -249,32 +219,10 @@ async function entryRewardProbe(page, routes) {
   };
 }
 
+/* The profile rune collection grid and its shared detail sheet moved to
+   profile-rune-sheet.mjs; this file keeps the reward delivery and recovery
+   races around the ranked result screen. */
 export async function runRuneTrialUiScenarios({ visit, out, check }) {
-  const profile = await visit({
-    named: true,
-    runes: ['fate', 'ward'],
-    skipStandardProbes: true,
-    probe: profileRuneProbe,
-  });
-  out.runeCollectionProfile = profile.probeResult;
-  const slots = profile.probeResult?.slots ?? [];
-  check(slots.length === 6
-      && slots.every(({ visible, label }) => visible && !!label)
-      && slots.filter(({ collected, disabled }) => collected && disabled === null).length === 2
-      && slots.filter(({ locked, disabled }) => locked && disabled === 'true').length === 4
-      && profile.probeResult?.count === '2 / 6'
-      && profile.probeResult?.gridLabel?.includes('2'),
-    'profile did not render six visible rune collection slots with owned/locked state',
-    profile.probeResult);
-  check(profile.probeResult?.labelMinimum >= 10
-      && profile.probeResult.titleFontSize >= 10
-      && profile.probeResult.countFontSize >= 10
-      && profile.probeResult.titleFontSize >= profile.probeResult.labelMinimum
-      && profile.probeResult.countFontSize >= profile.probeResult.labelMinimum,
-    'profile rune heading and count fell below the shared compact-label minimum',
-    profile.probeResult);
-  check(profile.errs.length === 0, 'page errors while rendering the rune collection profile', profile.errs);
-
   const result = await visit({
     named: true,
     runes: ['fate'],
