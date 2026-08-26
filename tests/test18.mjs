@@ -49,6 +49,10 @@ await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(lo
   // the picker's last chip is RANDOM, and it is not one of the seven modes
   await page.evaluate(() => window.__kb.openPractice());
   await page.waitForTimeout(150);
+  /* Rune Trial's selection lifecycle has its own owners. Keep this dial owner
+     on the ordinary CPU pool (an empty collection cannot admit Trial). */
+  await page.click('#modeSeg button[data-m="cpu"]');
+  await page.waitForTimeout(650); // clear tap()'s global native-click guard
   const picker = await page.evaluate(() => {
     const btns = [...document.querySelectorAll('#modePick button')];
     return { count: btns.length, values: btns.map((b) => b.dataset.v) };
