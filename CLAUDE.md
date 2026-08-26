@@ -57,6 +57,10 @@ differs. A second near-copy is a design failure, not a shortcut.
   decisive focused coverage, or touches shared build/test infrastructure. Report the
   exact verification performed and say explicitly when the full gate was not
   run.
+- **Do not wait for hosted GitHub checks by default.** Once the required local
+  verification and release flow are complete, hand off immediately. Inspect
+  GitHub Actions only when requested or when a concrete failure or uncertainty
+  makes the hosted result useful.
 - **Always release through the native-aware helper.** After explicitly staging
   and committing reviewed files in a clean worktree, use
   `mise exec -- node tools/release-main.mjs` instead of a raw push to `main`.
