@@ -1,3 +1,4 @@
+-- Held Apple/Game Center rollout stage 1 of 3, ordered after Rune Trial.
 -- Game Center identities: the map from Apple's player id to a player here.
 --
 -- NOT applied yet — it waits on a signed iOS build to exercise it (see

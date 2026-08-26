@@ -24,6 +24,7 @@ public class GameCenterPlugin: CAPPlugin, CAPBridgedPlugin {
 
     private var initialized = false
     private var status = "unavailable"
+    private var playerIdentity: String?
     private var revision = 0
 
     @objc func available(_ call: CAPPluginCall) {
@@ -34,9 +35,10 @@ public class GameCenterPlugin: CAPPlugin, CAPBridgedPlugin {
         return ["status": status, "revision": revision]
     }
 
-    private func updateStatus(_ next: String) {
-        guard next != status else { return }
+    private func updateStatus(_ next: String, playerIdentity nextIdentity: String? = nil) {
+        guard next != status || nextIdentity != playerIdentity else { return }
         status = next
+        playerIdentity = nextIdentity
         revision += 1
         notifyListeners("authStateChanged", data: authState())
     }
@@ -53,7 +55,10 @@ public class GameCenterPlugin: CAPPlugin, CAPBridgedPlugin {
                     return
                 }
                 if player.isAuthenticated {
-                    self.updateStatus("authenticated")
+                    // Account changes can keep isAuthenticated=true. Track the
+                    // scoped identity privately so the web layer's revision
+                    // changes and it requests a fresh server assertion.
+                    self.updateStatus("authenticated", playerIdentity: player.teamPlayerID)
                 } else if let gameError = error as? GKError, gameError.code == .cancelled {
                     self.updateStatus("declined")
                 } else if error != nil {

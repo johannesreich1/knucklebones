@@ -14,7 +14,7 @@ export const PT_LEGAL: LegalLocaleContent = {
   pages: {
     imprint: {
       title: 'Informações do responsável',
-      shortTitle: 'Informações legais',
+      shortTitle: 'Aviso legal',
       description: 'Informações do responsável e de contato do Knucklebones Neon.',
       intro: 'Dados da pessoa responsável por este projeto de jogo privado e sem fins comerciais.',
       sections: [

@@ -15,9 +15,11 @@ export const esGame = {
     finish: 'Terminar',
     nextDuel: 'Otro duelo',
     changeSetup: 'Cambiar ajustes',
+    backToRanked: 'Volver a clasificatorias',
   },
   status: {
     outOfTime: 'Tiempo agotado — columna {{column}}',
+    outOfTimeCompact: 'Tiempo — col. {{column}}',
     passPhone: 'Pasa el teléfono',
     yourRoll: 'Tu tirada',
     aiRoll: 'Tirada de la IA',
@@ -98,6 +100,7 @@ export const esGame = {
   reveal: {
     gameMode: 'MODO DE JUEGO',
     matchRune: 'RUNA DE LA PARTIDA',
+    trialRunes: 'RUNAS DE PRUEBA',
     runeFor: 'RUNA PARA',
     tapReady: 'Toca cuando estés listo',
     connecting: 'Conectando jugadores…',
@@ -198,6 +201,24 @@ export const esGame = {
       blurb: 'El selector decide con las probabilidades de las partidas clasificatorias.',
       detail: 'El selector elige un modo con las mismas probabilidades ponderadas de las partidas clasificatorias.',
     },
+    runeTrial: {
+      name: 'PRUEBA DE RUNAS',
+      compact: 'PRUEBA',
+      blurb: 'Elige una de tres runas en secreto.',
+      detail: 'Ambos jugadores ven las mismas tres runas y eligen una en secreto. Las elecciones se revelan a la vez; después, el duelo usa las reglas de tablero del modo Clásico.',
+    },
+  },
+  runeTrial: {
+    choosePrompt: 'Elige una runa — tu rival no puede verla',
+    chooseFor: '{{player}} — elige una runa',
+    setupOwnChoice: 'La Prueba de Runas da a cada jugador la runa que elija.',
+    lockCollectThree: 'Consigue tres runas para desbloquear Prueba de Runas contra la IA.',
+    lockCollectTwo: 'Consigue dos runas para desbloquear esta opción contra la IA.',
+    lockTrialReachIvory: 'Alcanza MARFIL para desbloquear Prueba de Runas.',
+    lockReachIvory: 'Alcanza MARFIL y luego gana esta runa en Prueba de Runas.',
+    lockWinRune: 'Gana con esta runa en Prueba de Runas para usarla contra la IA.',
+    revealPair: 'Las dos elecciones están confirmadas',
+    revealed: 'Runas reveladas',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Activada; elige una columna marcada.',
@@ -226,6 +247,7 @@ export const esGame = {
       blurb: 'Vuelve a sumar los puntos de una columna sin dados repetidos y bloquea un ataque.',
       detail: 'Marca una columna propia: mientras todas sus caras sean distintas, sus puntos se suman de nuevo como bonificación de GUARDA. Un repetido pausa la bonificación, pero conserva la marca. La siguiente colocación rival con la misma cara o SAQUEO rompe la GUARDA en vez de quitar dados. Un uso por partida.',
       aim: 'Toca una columna propia',
+      aimCompact: 'Tu columna',
     },
     sunder: {
       name: 'RUPTURA',

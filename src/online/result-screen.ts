@@ -1,7 +1,12 @@
 import { inApex } from '../core/ladder.ts';
 import { formatNumber, t } from '../i18n/index.ts';
-import { hide } from '../ui/dom.ts';
-import { showLocalizedEnd, setPlates, type EndSpec } from '../ui/endscreen.ts';
+import { $, hide } from '../ui/dom.ts';
+import {
+  repaintEndLocale,
+  showLocalizedEnd,
+  setPlates,
+  type EndSpec,
+} from '../ui/endscreen.ts';
 import { refreshHomeChip } from '../ui/homechip.ts';
 import {
   myLadder,
@@ -11,12 +16,25 @@ import {
 } from './ladder-api.ts';
 import { showFaceoff, type MySide } from './faceoff.ts';
 import { cacheStanding, myProfile } from './session.ts';
+import {
+  acknowledgeRuneReward,
+  refreshRuneCollection,
+  runeCollectionMatchesActiveAccount,
+} from './rune-collection.ts';
+import {
+  acknowledgeRuneRewardWhenPresented,
+  firstUnseenRuneReward,
+  runeRewardFeature,
+  type RuneRewardAcknowledgement,
+  type RuneRewardPresentation,
+} from './rune-reward-presentation.ts';
 import type { FinishReport } from './play.ts';
 
 interface ResultPorts {
   goHome(): void;
   nextDuel(): void;
-  openProfile(): void;
+  openProfile(onReturn: () => void): void;
+  tryRune(runeId: string, report: FinishReport): void;
 }
 
 export interface ResultScreen {
@@ -24,9 +42,78 @@ export interface ResultScreen {
 }
 
 export function createResultScreen(ports: ResultPorts): ResultScreen {
+  let showRevision = 0;
   async function show(report: FinishReport): Promise<void> {
+    const revision = ++showRevision;
     hide('#ovOnline');
+    let reward: RuneRewardPresentation | null = null;
+    let rewardAcknowledgement: RuneRewardAcknowledgement | null = null;
+    let rewardExplicitlyAcknowledged = false;
+    let foreground = true;
     const opponentName = (): string => report.opponentName?.() ?? report.opp;
+    const depart = (run: () => void, before?: () => void) => (): void => {
+      if (revision !== showRevision) return;
+      before?.();
+      foreground = false;
+      rewardAcknowledgement?.cancel();
+      rewardAcknowledgement = null;
+      showRevision++;
+      run();
+    };
+    const armRewardAcknowledgement = (): void => {
+      if (!reward || !foreground || revision !== showRevision) return;
+      rewardAcknowledgement?.cancel();
+      rewardAcknowledgement = acknowledgeRuneRewardWhenPresented(
+        reward,
+        $('#endFeature'),
+        () => foreground && revision === showRevision && $('#ovEnd').classList.contains('on'),
+      );
+    };
+    const acknowledgeRewardForAction = (): void => {
+      if (!reward || rewardExplicitlyAcknowledged) return;
+      rewardExplicitlyAcknowledged = true;
+      const presentedReward = reward;
+      const submitted = rewardAcknowledgement?.acknowledge() ?? null;
+      rewardAcknowledgement = null;
+      /* A temporary cover cancels the visibility watcher. Its return refresh
+         can still be pending when the player immediately chooses TRY IT, so
+         bind that explicit action directly to the already-presented reward.
+         Both paths retry a failed/deadlined ACK after its de-duplication entry
+         has cleared; an explicit CTA must durably consume the presentation. */
+      const acknowledgement = submitted ?? acknowledgeRuneReward(
+        presentedReward.accountId,
+        presentedReward.rune.id,
+      );
+      void acknowledgement.then((acknowledged) => {
+        if (!acknowledged) {
+          void acknowledgeRuneReward(presentedReward.accountId, presentedReward.rune.id);
+        }
+      });
+    };
+    const resumeReward = (): void => {
+      if (revision !== showRevision) return;
+      foreground = true;
+      const expectedRune = reward?.rune.id;
+      if (!expectedRune) return;
+      /* Profile may have presented/acknowledged the same durable row while it
+         covered this result. Re-read before rearming, avoiding a stale second
+         RPC while still restoring an unseen reward after a dismissed cover. */
+      void refreshRuneCollection().then(async (collection) => {
+        if (!foreground || revision !== showRevision) return;
+        const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
+        if (!ownsCollection || !foreground || revision !== showRevision) return;
+        if (firstUnseenRuneReward(collection)?.rune.id === expectedRune) {
+          armRewardAcknowledgement();
+        }
+      }).catch(() => undefined);
+    };
+    const cover = (run: (onReturn: () => void) => void): void => {
+      if (revision !== showRevision) return;
+      foreground = false;
+      rewardAcknowledgement?.cancel();
+      rewardAcknowledgement = null;
+      run(resumeReward);
+    };
     let cache: {
       nickname?: string;
       rating?: number;
@@ -55,7 +142,7 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
         delta: report.delta,
         won: report.won,
         lost: !report.won && !report.draw,
-        tap: ports.openProfile,
+        tap: () => cover(ports.openProfile),
       },
       {
         name: opponentName(),
@@ -68,7 +155,7 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
         lost: report.won,
         stamp: report.won ? (report.forfeit
           ? t('online', 'result.forfeitStamp') : t('online', 'result.beatenStamp')) : undefined,
-        tap: visibleFoe && visibleFoe.points != null && visibleFoe.rank != null ? () => showFaceoff({
+        tap: visibleFoe && visibleFoe.points != null && visibleFoe.rank != null ? () => cover((onReturn) => showFaceoff({
           nickname: opponentName(),
           points: visibleFoe!.points!,
           wins: visibleFoe!.wins ?? 0,
@@ -78,7 +165,7 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
           apex: visibleFoe!.apex,
           avatar: report.oppAvatar,
           peak: visibleFoe!.peak ?? 0,
-        }, visibleMine) : undefined,
+        }, visibleMine, onReturn)) : undefined,
       },
     ];
     const endSpec = (): EndSpec => {
@@ -101,8 +188,15 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
         you: { score: report.my, label: '' },
         them: { score: report.their, label: '' },
         plates: plates(),
-        again: { label: t('online', 'result.nextDuel'), run: ports.nextDuel },
-        quiet: { label: t('common', 'actions.home'), run: ports.goHome },
+        feature: reward ? runeRewardFeature(
+          reward,
+          depart(
+            () => ports.tryRune(reward!.rune.id, report),
+            acknowledgeRewardForAction,
+          ),
+        ) : undefined,
+        again: { label: t('online', 'result.nextDuel'), run: depart(ports.nextDuel) },
+        quiet: { label: t('common', 'actions.home'), run: depart(ports.goHome) },
         share: t('online', 'result.share', {
           title,
           mine: formatNumber(report.my),
@@ -113,33 +207,41 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
       };
     };
     showLocalizedEnd(endSpec);
-    const [profile, standing, ladder, foe] = await Promise.all([
-      myProfile(),
-      myStanding(),
-      myLadder(),
-      playerCard(opponentName()),
-    ]);
-    if (profile) {
-      cache = {
-        ...cache,
-        nickname: profile.nickname,
-        avatar: profile.avatar ?? null,
-        rating: profile.rating,
-      };
-    }
-    const points = standing?.points ?? profile?.rating ?? cachedRating;
-    const apex = standing ? inApex(points ?? 0, standing.rank, standing.population) : false;
-    cacheStanding(standing?.rank ?? null, apex);
-    refreshHomeChip();
-    const mine: MySide | null = profile && ladder
-      ? { name: profile.nickname, avatar: profile.avatar ?? null, lad: ladder }
-      : null;
-    visiblePoints = points;
-    visibleRank = standing?.rank ?? null;
-    visibleApex = apex;
-    visibleFoe = foe;
-    visibleMine = mine;
-    setPlates(plates());
+
+    void refreshRuneCollection().then(async (collection) => {
+      if (revision !== showRevision) return;
+      const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
+      if (!ownsCollection || revision !== showRevision) return;
+      /* A durable reward may predate this result. Never label that older win
+         as a reward for the loss/draw currently on screen; entry/profile owns
+         recovery when this report itself is not a settled win. */
+      if (!report.won) return;
+      reward = firstUnseenRuneReward(collection);
+      if (!reward) return;
+      repaintEndLocale();
+      armRewardAcknowledgement();
+    }).catch(() => undefined);
+
+    void Promise.all([myProfile(), myStanding(), myLadder(), playerCard(opponentName())])
+      .then(([profile, standing, ladder, foe]) => {
+        if (revision !== showRevision) return;
+        if (profile) {
+          cache = { ...cache, nickname: profile.nickname, avatar: profile.avatar ?? null,
+            rating: profile.rating };
+        }
+        const points = standing?.points ?? profile?.rating ?? cachedRating;
+        const apex = standing ? inApex(points ?? 0, standing.rank, standing.population) : false;
+        cacheStanding(standing?.rank ?? null, apex);
+        refreshHomeChip();
+        visiblePoints = points;
+        visibleRank = standing?.rank ?? null;
+        visibleApex = apex;
+        visibleFoe = foe;
+        visibleMine = profile && ladder
+          ? { name: profile.nickname, avatar: profile.avatar ?? null, lad: ladder }
+          : null;
+        setPlates(plates());
+      }).catch(() => undefined);
   }
 
   return { show };

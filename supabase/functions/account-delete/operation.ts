@@ -24,7 +24,11 @@ export async function deleteAccount(
       const { data, error } = await service.rpc("stage_apple_revocation", {
         p_user: context.user.id,
       });
-      return { appleLinked, credentialId: error || typeof data !== "number" ? null : data };
+      if (error) throw new Error("apple-revocation-stage-failed");
+      if (data !== null && typeof data !== "number") {
+        throw new Error("apple-revocation-stage-invalid");
+      }
+      return { appleLinked, credentialId: data };
     },
     afterDelete: async (raw) => {
       const state = raw as { appleLinked?: boolean; credentialId?: number | null } | null;

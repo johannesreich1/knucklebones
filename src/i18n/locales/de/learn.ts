@@ -44,7 +44,7 @@ export const deLearn = {
     },
     runes: {
       heading: 'Runen',
-      body: 'Offline-Spiele können eine <b>Rune</b> neben dem aktuellen Würfel austeilen — sechs stehen im Offline-Setup direkt unter dem Spielmodus zur Wahl. <b>Keine</b> ist Standard; benannte Runen und <b>Zufall</b> geben beiden Spielern dieselbe Rune, <b>Zufall 2</b> mischt zweimal und gibt ihnen verschiedene. Der Kartenstapel jedes Spielers bleibt sichtbar. Eine Kante in Spielerfarbe kennzeichnet den Besitzer, und mit jedem Zug rückt die aktive Hand nach vorn. Tippe eine Rune, die auf deinen Würfel wirkt, um sie sofort einzusetzen; ziehe oder tippe eine Spaltenrune auf eine leuchtende Spalte. Ein Einsatz ist kein Zug, dein Würfel landet also danach noch. Die vollständige Übersicht findest du unter <b>SPIELREGELN → RUNEN</b>. Ranglistenspiele verwenden nie Runen.',
+      body: 'Offline-Spiele können eine <b>Rune</b> neben dem aktuellen Würfel austeilen. Im lokalen Mehrspielermodus sind immer alle sechs verfügbar; gegen die KI kannst du nur online gesammelte Runen nutzen. <b>Keine</b> ist Standard; benannte Runen und <b>Zufall</b> geben beiden Spielern dieselbe Rune, <b>Zufall 2</b> gibt ihnen verschiedene. In der <b>Runenprobe</b> wählen beide heimlich aus denselben drei Runen und decken sie gleichzeitig auf. Gewinne eine Runenprobe im Ranglistenmodus, um deine gewählte Rune zu sammeln; andere Ranglistenmodi ignorieren ausgerüstete Runen. Tippe eine Rune, die auf deinen Würfel wirkt, um sie sofort einzusetzen; ziehe oder tippe eine Spaltenrune auf eine leuchtende Spalte. Ein Einsatz ist kein Zug, dein Würfel landet also danach noch. Die vollständige Übersicht findest du unter <b>SPIELREGELN → RUNEN</b>.',
     },
     twoPlayers: {
       heading: 'Zwei Spieler',

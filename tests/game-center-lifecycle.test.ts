@@ -3,6 +3,8 @@ import type {
   GameCenterBridge,
   GameCenterProof,
 } from '../src/native/game-center.ts';
+import { gameCenterSessionAction } from '../src/online/session.ts';
+import { readFileSync } from 'node:fs';
 
 const problems: string[] = [];
 const check = (ok: boolean, message: string) => { if (!ok) problems.push(message); };
@@ -46,6 +48,41 @@ let rejected = false;
 try { await coordinator.fetchGameCenterProof(); } catch { rejected = true; }
 check(rejected && proofCalls === 1,
   'Game Center proof remained available after the native account signed out');
+
+const swift = readFileSync(
+  'native/plugins/gamecenter/ios/Sources/GameCenterPlugin/GameCenterPlugin.swift',
+  'utf8',
+);
+check(/private var playerIdentity: String\?/.test(swift)
+  && /next != status \|\| nextIdentity != playerIdentity/.test(swift)
+  && /updateStatus\("authenticated", playerIdentity: player\.teamPlayerID\)/.test(swift),
+'the native lifecycle revision does not detect an authenticated Game Center account change');
+
+(globalThis as typeof globalThis & { Capacitor?: unknown }).Capacitor = {
+  getPlatform: () => 'ios',
+  Plugins: {
+    GameCenter: {
+      ...bridge,
+      addListener: async () => { throw new Error('listener unavailable'); },
+    },
+  },
+};
+const listenerFailure = await import('../src/native/game-center.ts?listener-failure-test');
+check((await listenerFailure.initializeGameCenter()).status === 'failed',
+  'Game Center launch leaked a rejected native-listener setup');
+
+const linkedStatus = {
+  gameCenterLinked: true,
+  appleLinked: false,
+  appleRevocationReady: false,
+};
+check(gameCenterSessionAction(null, 2, 3) === 'retry',
+  'an unknown identity-status read allowed a changed Game Center account to continue');
+check(gameCenterSessionAction({ ...linkedStatus, gameCenterLinked: false }, 2, 3) === 'continue',
+  'a confirmed unlinked account was incorrectly blocked by Game Center reassertion');
+check(gameCenterSessionAction(linkedStatus, 2, 3) === 'assert'
+  && gameCenterSessionAction(linkedStatus, 3, 3) === 'continue',
+  'a linked account did not reassert exactly when the native Game Center revision changed');
 
 delete (globalThis as typeof globalThis & { Capacitor?: unknown }).Capacitor;
 console.log(JSON.stringify({ problems }, null, 2));

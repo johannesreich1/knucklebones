@@ -44,7 +44,7 @@ export const esLearn = {
     },
     runes: {
       heading: 'Runas',
-      body: 'Las partidas sin conexión pueden dar una <b>runa</b> junto al dado; puedes elegir entre seis runas en la configuración, bajo el modo de juego. <b>Ninguna</b> es la opción predeterminada; las opciones con nombre y <b>aleatoria</b> dan la misma runa a ambos, mientras <b>aleatoria 2</b> sortea dos distintas. La pila de cartas de cada jugador permanece visible. Un borde de su color marca al dueño y la mano activa pasa delante cada turno. Pulsa una runa que actúe sobre el dado para usarla al instante; arrastra o toca una runa de columna y luego una columna iluminada. Usar una runa no es una jugada, así que después aún colocas el dado. La lista completa está en <b>CÓMO JUGAR → RUNAS</b>. Las partidas clasificatorias nunca usan runas.',
+      body: 'Las partidas sin conexión pueden dar una <b>runa</b> junto al dado. En multijugador local siempre están disponibles las seis; contra la IA, solo puedes usar las runas conseguidas en línea. <b>Ninguna</b> es la opción predeterminada; las opciones con nombre y <b>aleatoria</b> dan runas iguales a ambos jugadores, mientras <b>aleatoria 2</b> les da runas distintas. En la <b>Prueba de Runas</b>, ambos eligen en secreto entre las mismas tres runas y las revelan a la vez. Gana una Prueba clasificatoria para conseguir la runa elegida; los demás modos clasificatorios ignoran las runas equipadas. Pulsa una runa que actúe sobre el dado para usarla al instante; arrastra o toca una runa de columna y luego una columna iluminada. Usar una runa no es una jugada, así que después aún colocas el dado. La lista completa está en <b>CÓMO JUGAR → RUNAS</b>.',
     },
     twoPlayers: {
       heading: 'Dos jugadores',

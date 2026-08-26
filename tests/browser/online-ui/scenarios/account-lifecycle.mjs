@@ -98,7 +98,7 @@ export async function runAccountLifecycleScenarios(suite) {
     && precedes(namedRun.probeResult?.guest, namedRun.probeResult?.history),
   'a named guest moved the Guest card out of the pre-history identity slot', namedRun.probeResult);
   check(namedRun.askAbove === true,
-        'the ask-card opened UNDER a later overlay — ask() lost its re-append', namedRun.askAbove);
+        'the shared ask sheet opened UNDER a later overlay', namedRun.askAbove);
   check(namedRun.errs.length === 0, 'page errors on the named path', namedRun.errs);
 
   /* Spare height pins account actions; constrained height keeps the pbody as
@@ -126,6 +126,8 @@ export async function runAccountLifecycleScenarios(suite) {
   out.claim = claimRun.claimFlow;
   check(claimRun.claimFlow?.confirmHead === 'Play as NeonKing77?',
         'claiming does not ask the deliberate question', claimRun.claimFlow);
+  check(claimRun.claimFlow?.cancelFocus === 'btnClaim',
+        'a touch-opened claim question did not restore its semantic opener', claimRun.claimFlow);
   check(claimRun.claimFlow?.head === 'Keep NeonKing77 forever?',
         'a guest claim did not offer the way up', claimRun.claimFlow);
   check(claimRun.claimFlow?.claimGone === true, 'the claim card survived its own success', claimRun.claimFlow);

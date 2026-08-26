@@ -1,28 +1,39 @@
 // Shared ranked view; the server owns turns and its die-carrying log heals missed events.
-import { ME, CLASSIC, BOUNTY, LIMITED, emptyBoard, applyMove, legalCols, type Player } from '../core/rules.ts';
+import { ME, CLASSIC, LIMITED, emptyBoard, legalCols, type Player } from '../core/rules.ts';
 import { modeById } from '../core/modes.ts';
+import { spellById } from '../core/spells.ts';
 import { ONLINE_TURN_SECS } from '../config.ts';
 import { S } from '../state.ts';
 import { startTimer, stopTimer, showClock } from '../flow/timer.ts';
-import { clearSpells } from '../flow/spells.ts';
+import { clearSpells, renderSpells, resetSpells, resolveTimedOutSpellAim,
+  setSpellAimTransport, setSpellCastTransport, setSpellCasterGuard } from '../flow/spells.ts';
 import { setLeaveInterceptor } from '../flow/leave.ts';
 import { $, show, hide } from '../ui/dom.ts';
 import { showBag, renderBag, BAG_SIZE } from '../ui/bag.ts';
 import { buildBoards, renderAll } from '../ui/game/board.ts';
 import { clearHints, showHints } from '../ui/game/hints.ts';
-import { claimBadge, releaseBadge } from '../ui/game/hud.ts';
+import { claimBadge, releaseBadge, runeTrialChip, spellChip } from '../ui/game/hud.ts';
 import { setActivePlate, setStatus } from '../ui/game/turn-state.ts';
 import { fit } from '../ui/layout.ts';
 import { setPlaceHandler } from '../ui/input.ts';
 import { setOpponentTurnPresentation, setSeatingPresentation, setTurnPresentation, setTutorialPresentation } from '../ui/game/root-state.ts';
-import { supa } from './client.ts';
-import { move, claim, resign, nudge, watchMatch, type MatchRow, type JoinResult } from './match-api.ts';
+import {
+  move,
+  resign,
+  watchMatch,
+  type MatchRow,
+  type JoinResult,
+} from './match-api.ts';
 import { createInitialSyncBoundary, type InitialSyncBoundary } from './initial-sync.ts';
-import { newerMatchProjection, readMatchSyncSnapshot } from './match-sync.ts';
+import { newerMatchProjection } from './match-sync.ts';
 import { animateOnlineMove, cancelOnlineReveal, playBotReply, revealOnlineDie } from './play-motion.ts';
 import { finishOnlineMatch } from './play-finish.ts';
 import { rankedBadge, reconnectingCopy, showAwayAutoPlayCountdown, turnCopy } from './play-copy.ts';
 import { createOnlineState } from './play-state.ts';
+import { createOnlineSynchronizer } from './play-sync.ts';
+import { createTrialActionSubmitter } from './play-trial-actions.ts';
+import { drainTerminalProjection } from './play-terminal.ts';
+import { runOnlineWatchdog } from './play-watchdog.ts';
 import { claimOnlinePlayerNames, onlineOpponentName, onlineOpponentSeat, onlinePlayerName } from './play-identity.ts';
 import type { FinishReport, OnlineState } from './play-types.ts';
 
@@ -42,6 +53,30 @@ export type { FinishReport } from './play-types.ts';
 let onFinished: ((r: FinishReport) => void) | null = null;
 export function setFinishHandler(f: typeof onFinished): void { onFinished = f; }
 
+const sync = createOnlineSynchronizer({
+  current: () => O,
+  isCurrent: isCurrentOnline,
+  applyMatchRow,
+  renderPool,
+});
+
+const watchdog = (): Promise<void> => runOnlineWatchdog({
+  current: () => O,
+  isCurrent: isCurrentOnline,
+  initialPending: () => initialSync?.pending() ?? false,
+  retryInitial: () => initialSync?.retry() ?? Promise.resolve(false),
+  sync,
+  applyMatchRow,
+  teardown,
+});
+
+const trialActions = createTrialActionSubmitter({
+  current: () => O,
+  isCurrent: isCurrentOnline,
+  sync,
+  applyMatchRow,
+});
+
 /* Quitting a live ranked match forfeits it — at the SERVER, immediately. The
    confirmation is the quit modal (flow/leave → boot); by the time this runs
    the player has said "Forfeit", so the resign goes out and the match is
@@ -58,16 +93,28 @@ function leaveTap(): boolean {
 
 export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>): Promise<void> {
   teardown();
+  const restoreMode = S.mode;
   S.gen++;                       // abandon any local game mid-flight
   S.tut = null; S.mode = 'duo';  // input gating: taps allowed for whoever S.turn says
   S.busy = true;                   // input opens only after the first authoritative log read
-  clearSpells();                 // ranked replays a plain move log — no casting here
   S.boards = [emptyBoard(), emptyBoard()];
   S.turn = res.match.turn;
   S.bottom = res.you;
-  O = createOnlineState(res, S.gen);
+  O = createOnlineState(res, S.gen, restoreMode);
   releasePlayerNames = claimOnlinePlayerNames(() => O);
   const online = O;
+
+  if (online.trial && online.trialRunes) {
+    resetSpells(online.trialRunes);
+    setSpellAimTransport((id) => trialActions.aim(id));
+    setSpellCastTransport((id, column) => trialActions.cast(id, column));
+    setSpellCasterGuard((who) => O === online && who === online.you);
+  } else {
+    clearSpells();
+    setSpellAimTransport(null);
+    setSpellCastTransport(null);
+    setSpellCasterGuard(null);
+  }
 
   const spec = modeById(res.match.modifier);
   S.scoring = spec.mode;           // rendering/destroy animations follow the server's mode
@@ -89,15 +136,24 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   $('#nameTop').textContent = oppName();
   ($('#tagTop') as HTMLElement).hidden = true;
   ($('#tagBot') as HTMLElement).hidden = true;
-  // Ranked names the mode only; the shared chip opens its rules in every flow.
-  claimBadge(rankedBadge(spec));
+  // Trial is a format chip plus one public rune per owner. Ordinary ranked
+  // remains the established single mechanical-mode chip.
+  if (O.trial && O.trialRunes) {
+    const p2 = spellById(O.trialRunes[0]);
+    const p1 = spellById(O.trialRunes[1]);
+    claimBadge(() => [runeTrialChip(),
+      ...(p1 ? [spellChip(p1, ME)] : []),
+      ...(p2 ? [spellChip(p2, 0)] : []),
+    ]);
+  } else claimBadge(rankedBadge(spec));
   fit();
   buildBoards();
   setPlaceHandler(onlinePlace);
   setLeaveInterceptor(leaveTap);
   O.channel = watchMatch(O.matchId,
     () => { void sync(false); },
-    (m) => { void onMatchUpdate(m); });
+    (m) => { void onMatchUpdate(m); },
+    () => { void sync(false); });
   O.tick = setInterval(() => { void watchdog(); }, 5000);
 
   initialSync = createInitialSyncBoundary({
@@ -123,8 +179,10 @@ function refreshTurnUI(): void {
   const mine = S.turn === O.you;
   S.phase = mine ? 'choose' : 'anim';
   S.busy = false;
+  S.die = O.pendingDie ?? 0;
   if (O.pendingDie) revealOnlineDie(O.pendingDie, S.turn);
   renderPool();
+  renderSpells();
   // a calm static status — the countdown bar below carries the motion
   setStatus(turnCopy(mine, () => oppName()), S.turn);
   setActivePlate(O.you);
@@ -146,13 +204,15 @@ function oppStalled(): void {
   });
 }
 
-function autoPlace(): void {
+async function autoPlace(): Promise<void> {
   if (!O || O.done || S.busy || S.turn !== O.you) return;
   // A hidden page must not drive the optimistic pipeline: flyDie awaits a
   // WAAPI finish that never comes without rendering frames, so the flow would
   // wedge mid-move. The watchdog's self-nudge owns away turns — the server
   // places the same uniform legal die this line would have picked.
   if (document.hidden) return;
+  if (O.trial && await resolveTimedOutSpellAim()) return;
+  if (!O || O.done || S.busy || S.turn !== O.you) return;
   const lg = legalCols(S.boards[O.you]);
   if (lg.length) void onlinePlace(O.you, lg[(Math.random() * lg.length) | 0]);
 }
@@ -163,6 +223,10 @@ function autoPlace(): void {
    reverts the optimistic board. */
 async function onlinePlace(who: Player, col: number): Promise<void> {
   if (!O || O.done || S.busy || who !== O.you || S.turn !== O.you) return;
+  if (O.trial) {
+    await trialActions.place(col);
+    return;
+  }
   const online = O;
   const die = online.pendingDie;
   if (!die) return;
@@ -209,13 +273,25 @@ function isDone(m: MatchRow): boolean { return m.status !== 'active'; }
 function freezeMatchInput(): void { S.busy = true; S.phase = 'anim'; stopTimer(); clearHints(); }
 async function onMatchUpdate(m: MatchRow): Promise<void> {
   if (!O || m.id !== O.matchId) return;
-  if (isDone(m)) freezeMatchInput(); // terminal is known; the log fetch may still animate
   const online = O;
-  await sync(false);
-  if (isCurrentOnline(online)) applyMatchRow(m);
+  if (isDone(m)) {
+    freezeMatchInput();
+    await drainTerminalProjection(online, m, { isCurrent: isCurrentOnline, sync, applyMatchRow });
+    return;
+  }
+  const synced = await sync(false);
+  const complete = !online.trial
+    || online.actionApplied >= (m.action_version ?? online.actionApplied);
+  if (isCurrentOnline(online) && synced && complete) applyMatchRow(m);
+  else if (isCurrentOnline(online)) online.pendingRow = newerMatchProjection(online.pendingRow, m);
 }
 function applyMatchRow(m: MatchRow): void {
   if (!O || O.done || m.id !== O.matchId) return;
+  if (isDone(m) && O.finalizing) {
+    O.pendingRow = newerMatchProjection(O.pendingRow, m);
+    freezeMatchInput();
+    return;
+  }
   // board mutations OR a sync fetch in flight: defer — sync's tail drains it
   if (O.animating || O.busySync) {
     O.pendingRow = newerMatchProjection(O.pendingRow, m);
@@ -223,98 +299,11 @@ function applyMatchRow(m: MatchRow): void {
     return;
   }
   O.pendingDie = m.next_die;
+  O.actionVersion = m.action_version ?? O.actionVersion;
   O.lastMoveAt = Date.parse(m.last_move_at);
   S.turn = m.turn;
   if (isDone(m)) return finishUI(m);
   refreshTurnUI();
-}
-
-/* Apply whatever the local board has not seen; animate one fresh opponent move. */
-async function sync(fullRedraw: boolean): Promise<boolean> {
-  if (!O || O.busySync || O.animating) return false;
-  const online = O;
-  online.busySync = true;
-  try {
-    const snapshot = await readMatchSyncSnapshot<{ idx: number; who: number; col: number; die: number }, MatchRow>({
-      moves: async () => await supa().from('match_moves').select('idx, who, col, die').eq('match_id', online.matchId).order('idx'),
-      match: async () => await supa().from('matches').select('id, p1, p2, status, turn, winner, p1_score, p2_score, p1_rating_delta, p2_rating_delta, next_die, last_move_at, modifier').eq('id', online.matchId).maybeSingle(),
-    });
-    if (!isCurrentOnline(online) || !snapshot || online.animating) return false;
-    const rows = snapshot.moves;
-    const fresh = rows.filter((r) => r.idx >= online.applied);
-    if (fresh.length === 1 && !fullRedraw && fresh[0].who !== online.you) {
-      online.applied = fresh[0].idx + 1;
-      online.animating = true;
-      try {
-        await animateOnlineMove(fresh[0].who as Player, fresh[0].col, fresh[0].die,
-          () => isCurrentOnline(online));
-      }
-      finally { online.animating = false; }
-      if (!isCurrentOnline(online)) return false;
-    } else if (fresh.length || fullRedraw) {
-      S.boards = [emptyBoard(), emptyBoard()];
-      S.bounty = [0, 0];
-      for (const r of rows) {
-        const d = applyMove(S.boards, r.who as Player, r.col, r.die, S.scoring);
-        if (S.scoring === BOUNTY) S.bounty[r.who as Player] += d;
-      }
-      online.applied = rows.length;
-      renderAll(false);
-      renderPool();
-    }
-    online.pendingRow = newerMatchProjection(online.pendingRow, snapshot.match);
-  } finally { online.busySync = false; }
-  // drain: anything deferred during the fetch/animation applies now, once
-  if (isCurrentOnline(online) && online.pendingRow && !online.animating && !online.busySync) {
-    const m = online.pendingRow; online.pendingRow = null;
-    applyMatchRow(m);
-  }
-  return isCurrentOnline(online);
-}
-
-/* stalled opponent → automatic forfeit claim; abandoned local state → teardown */
-async function watchdog(): Promise<void> {
-  if (!O) return;
-  const online = O;
-  if (S.gen !== online.gen) return teardown();          // a local game started over us
-  if (online.done) return;
-  if (initialSync?.pending()) { await initialSync.retry(); return; }
-  if (S.turn !== online.you && Date.now() - online.lastMoveAt > 13_000) {
-    /* Their clock ran out and their own client did not answer for it — so the
-       game goes on WITHOUT them rather than stopping dead. The server proves
-       the stall itself and answers 425 until it is real, so calling this on
-       every tick costs nothing. Leaving no longer wins the leaver a way out;
-       it just hands their turns to a die. */
-    const r = await nudge(online.matchId, online.applied);
-    if (!isCurrentOnline(online)) return;
-    if (r.status === 200 && r.data?.match) { applyMatchRow(r.data.match); return; }
-    if (r.status === 425) return;                  // not stalled yet by the server's clock
-    /* The deployed function may predate auto-place (it answers 400 for a body
-       with no column). Fall back to the forfeit claim so this client is never
-       WORSE than the one before it, whatever the server is running. */
-    if (Date.now() - online.lastMoveAt > 35_000) {
-      const f = await claim(online.matchId);
-      if (!isCurrentOnline(online)) return;
-      if (f.status === 200 && f.data?.match) { applyMatchRow(f.data.match); return; }
-    }
-    void sync(false);
-  } else if (S.turn !== online.you) {
-    void sync(false);                              // belt-and-braces vs missed events
-  } else if (document.hidden && Date.now() - online.lastMoveAt > 13_000) {
-    /* MY turn, and this page is hidden — the turn clock that keeps an honest
-       client's promise is throttled or frozen back there, and vs a bot no
-       other client exists to hand my turn to a die (in PvP the opponent asks;
-       a bot cannot). So the away client asks for ITSELF. The server still
-       proves the stall on its own clock (425 until real) and places the same
-       uniform legal die the local clock would have — a visible turn is never
-       touched, present players place their own dice. A pvp-move from before
-       self-nudge answers 409 — harmless, the client just keeps the old
-       behaviour — so this never has to race a deploy. */
-    const r = await nudge(online.matchId, online.applied);
-    if (!isCurrentOnline(online)) return;
-    if (r.status === 200 && r.data?.match) applyMatchRow(r.data.match);
-    void sync(false);       // pull the moves realtime may have dropped while hidden
-  }
 }
 
 function finishUI(m: MatchRow): void {
@@ -338,12 +327,19 @@ export function teardown(): void {
   S.scoring = CLASSIC;             // local play is always classic
   O.channel?.unsubscribe();
   if (O.tick) clearInterval(O.tick);
+  setSpellAimTransport(null);
+  setSpellCastTransport(null);
+  setSpellCasterGuard(null);
+  clearSpells();
   setPlaceHandler(null);
   setLeaveInterceptor(null);
   releaseBadge();                  // hands #rec back to the local record
   showBag(false);
   showClock(false);
-  if (ownsPresentation) setOpponentTurnPresentation(false);
+  if (ownsPresentation) {
+    S.mode = O.restoreMode;
+    setOpponentTurnPresentation(false);
+  }
   releasePlayerNames();
   releasePlayerNames = (): void => undefined;
   O = null;

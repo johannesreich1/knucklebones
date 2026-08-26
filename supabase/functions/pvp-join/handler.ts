@@ -17,6 +17,21 @@ export function createPvpJoinHandler(dependencies: JoinDependencies) {
 
     let body: Record<string, unknown> | null = null;
     try { body = record(await request.json()); } catch { /* an empty body is valid */ }
-    return dependencies.operation(context, { allowBot: body?.allow_bot === true });
+    const suppliedProtocol = body?.protocol_version;
+    const protocolVersion = suppliedProtocol === undefined ? 1 : suppliedProtocol;
+    const suppliedCapabilities = body?.capabilities;
+    const capabilities = suppliedCapabilities === undefined ? [] : suppliedCapabilities;
+    if ((protocolVersion !== 1 && protocolVersion !== 2)
+        || !Array.isArray(capabilities)
+        || !capabilities.every((capability) => capability === "rune_trial_v1")
+        || new Set(capabilities).size !== capabilities.length
+        || (capabilities.includes("rune_trial_v1") && protocolVersion !== 2)) {
+      return json({ error: "bad-request" }, 400);
+    }
+    return dependencies.operation(context, {
+      allowBot: body?.allow_bot === true,
+      protocolVersion,
+      capabilities,
+    });
   };
 }

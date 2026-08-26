@@ -13,7 +13,8 @@ module move. Product rules live in `docs/MODES.md`, `docs/SPELLS.md`, and
 - `src/state.ts` holds the current application/game state vocabulary.
 - `src/flow/` owns local lifecycle and turn orchestration.
 - `src/online/` is lazy-loaded and owns authentication, remote persistence,
-  matchmaking, and the ranked controller.
+  matchmaking, collection synchronization, Rune Trial selection, and the
+  ranked controller.
 - `src/ui/` renders shared player-visible concepts and supplies small browser
   primitives.
 - `src/core/` contains rules, replay, dice streams, modes, spells, ladder
@@ -43,6 +44,13 @@ state, protections, spell effects, move motion, and result primitives each
 have one implementation. A controller supplies a small spec or callbacks for
 what genuinely differs; it does not paint its own sibling version.
 
+Rune Trial follows the same rule. `src/ui/trial-select.ts` owns the shared
+three-card selector; local CPU, face-to-face pass-and-pick, and online private
+selection provide timing, secrecy, AI/server submission, and reveal callbacks.
+The shared board then receives the revealed per-seat hands. Trial is carried as
+an explicit format backed by Classic, never inferred by adding a fake entry to
+the mechanical mode registry.
+
 When extracting code from a large module:
 
 1. Name one responsibility and its inputs/outputs.
@@ -63,8 +71,28 @@ not need a framework store, event bus, or dependency-injection container.
 - Online synchronization has additional ordering rules documented beside the
   implementation in `src/online/play.ts`. Preserve the applied-log counter,
   animation gate, and teardown/generation checks when decomposing it.
+- Protocol-v1 standard matches continue to synchronize their placement log.
+  Rune Trial protocol v2 synchronizes the ordered aim/cast/place action log and
+  `action_version`; casts retain the turn, so placement count is not a valid v2
+  clock. Both clients must advertise the Trial capability before matchmaking
+  may choose that format.
 - Persist only through `src/persist.ts`; corrupt or outdated blobs must fail
   closed rather than become an alternate state model.
+- CPU and local-two-player setup preferences are separate persisted records.
+  The start boundary revalidates both the selected format and rune against the
+  active collection instead of trusting an older picker state. Trial may
+  override a duel's resolved rune deal without overwriting either preference;
+  restart preserves the resolved offer/choices and a new duel replaces them.
+- `src/rune-collection-cache.ts` is the eager, Supabase-free collection seam.
+  It stores the last server-confirmed rune ids and permanent ranked-pool tier
+  with their account id.
+  Offline setup treats a missing snapshot as an empty collection, and sign-out
+  or account change clears/swaps the active snapshot before another account can
+  read it. Durable unseen/reward state remains server-owned.
+- The post-reward `TRY IT` route is transient local state: a fresh unranked
+  Classic duel against Normal AI with the new rune on both seats. It returns to
+  ranked, grants nothing, does not enter ordinary local records, and must not
+  mutate saved CPU or two-player settings.
 
 ## Size and context budget
 

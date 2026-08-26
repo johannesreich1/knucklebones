@@ -10,7 +10,6 @@ import { ask } from '../ui/askcard.ts';
 import { Sfx } from '../ui/audio.ts';
 import { DEFAULT_AVATAR, paintAvatar } from '../ui/avatar.ts';
 import { $ } from '../ui/dom.ts';
-import { REDUCED } from '../ui/fx.ts';
 import { refreshHomeChip } from '../ui/homechip.ts';
 import {
   bestStreak,
@@ -22,49 +21,37 @@ import {
   cacheStanding,
   claimName,
   currentUser,
-  deleteAccount,
   identityStatus,
   myProfile,
   signOut,
 } from './session.ts';
 import { historyRow } from './history-screen.ts';
-import { onlineMessage, repaintOnlineMessage } from './message-copy.ts';
+import { repaintOnlineMessage } from './message-copy.ts';
+import {
+  refreshRuneCollection,
+  runeCollectionMatchesActiveAccount,
+  type RuneCollectionRefresh,
+} from './rune-collection.ts';
+import { fillAccountRing } from './account-ring.ts';
+import { paintAccountRunes } from './account-runes.ts';
 import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';
 import type { AuthMode, AuthOrigin } from './auth-screen.ts';
 import type { Ladder, Standing } from './ladder-api.ts';
 import type { IdentityStatus, Me, Profile } from './session.ts';
 import { paintAccountProviders } from './account-provider-view.ts';
+import { bindAccountDelete } from './account-delete-flow.ts';
 
 interface AccountPorts {
   showAuth(mode: AuthMode, origin: AuthOrigin, notice?: string | null): void;
   showAvatar(): Promise<void>;
   showBoard(): Promise<void>;
   showHistory(): Promise<void>;
+  presentRuneReward(collection: RuneCollectionRefresh, owns: () => boolean): void;
 }
 
 export interface AccountScreen {
   bind(): void;
-  show(): Promise<void>;
-}
-const ringRun = new WeakMap<HTMLElement, number>();
-
-function fillRing(ring: HTMLElement, target: number): void {
-  const run = (ringRun.get(ring) ?? 0) + 1;
-  ringRun.set(ring, run);
-  const from = parseFloat(ring.style.getPropertyValue('--p')) || 0;
-  if (REDUCED || Math.abs(target - from) < 0.002) {
-    ring.style.setProperty('--p', String(target));
-    return;
-  }
-  const started = performance.now();
-  const duration = 850;
-  const step = (now: number): void => {
-    if (ringRun.get(ring) !== run) return;
-    const time = Math.min(1, (now - started) / duration);
-    ring.style.setProperty('--p', String(from + (target - from) * (1 - Math.pow(1 - time, 3))));
-    if (time < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
+  show(): Promise<RuneCollectionRefresh | null>;
 }
 
 export function createAccountScreen(ports: AccountPorts): AccountScreen {
@@ -75,6 +62,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     standing: Standing | null;
     streak: number;
     identity: IdentityStatus | null;
+    runes: readonly string[];
   } | null = null;
   let lastRecent: Awaited<ReturnType<typeof matchHistory>> = [];
   let pendingCachedRating: number | null = null;
@@ -123,7 +111,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
 
   const paintAccount = (): void => {
     if (!lastAccount) return;
-    const { profile, user, ladder, standing, streak, identity } = lastAccount;
+    const { profile, user, ladder, standing, streak, identity, runes } = lastAccount;
     $('#accSince').textContent = !user?.guest && profile?.created_at
       ? t('online', 'profile.memberSince', {
         date: formatDate(new Date(profile.created_at), { month: 'long', year: 'numeric' }),
@@ -142,6 +130,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     $('#accRank').textContent = rankText(standing, games, apex);
     $('#accStreak').textContent = formatNumber(streak);
     paintAccountProviders(user, identity);
+    paintAccountRunes(runes);
     paintRecent();
   };
 
@@ -157,7 +146,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     if (accountError) $('#onAccErr').textContent = accountError();
   });
 
-  async function show(): Promise<void> {
+  async function show(): Promise<RuneCollectionRefresh | null> {
     const run = ++showRevision;
     const ownsRun = (): boolean => run === showRevision && isOnlinePanelCurrent('onAccount');
     showOnlineLoading('onAccount');
@@ -179,6 +168,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     ($('#btnSignOut') as HTMLElement).hidden = true;
     $('#accClaim').hidden = true;
     paintAvatar($('#accDie'), DEFAULT_AVATAR);
+    paintAccountRunes([]);
     paintRecent();
     const ring = $('#accRing') as HTMLElement;
     ring.classList.remove('haspeak');
@@ -187,13 +177,16 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       const cached = JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null')?.rating;
       if (typeof cached === 'number') {
         pendingCachedRating = cached;
-        fillRing(ring, groupFill(cached));
+        fillAccountRing(ring, groupFill(cached));
         $('#accPoints').textContent = formatNumber(cached);
         paintGroup(cached);
       }
     } catch { /* forgetful host — the fresh row below paints everything anyway */ }
-    // Fetch independent profile data together, then reveal one coherent card.
-    const [profile, user, ladder, standing, streak, recent, identity] = await Promise.all([
+    /* Nothing on the profile is useful half-painted. Fetch every independent
+       answer together while the shared die holds the view, then reveal one
+       coherent card (recent matches included) in a single rendering turn. */
+    const [profile, user, ladder, standing, streak, recent, identity, runeCollection]
+      = await Promise.all([
       myProfile(),
       currentUser(),
       myLadder(),
@@ -201,8 +194,14 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       bestStreak(),
       matchHistory(3),
       identityStatus(),
+      refreshRuneCollection(),
     ]);
-    if (!ownsRun()) return;
+    const collectionAccountId = runeCollection.accountId?.toLowerCase() ?? null;
+    if (!ownsRun() || !collectionAccountId
+        || user?.id.toLowerCase() !== collectionAccountId
+        || (profile && profile.id.toLowerCase() !== collectionAccountId)) return null;
+    const ownsCollection = await runeCollectionMatchesActiveAccount(runeCollection);
+    if (!ownsCollection || !ownsRun()) return null;
     refreshHomeChip();
     $('#accGuest').hidden = !user?.guest;
     ($('#btnSignOut') as HTMLElement).hidden = !!user?.guest;
@@ -218,7 +217,15 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     const peak = ladder?.peak ?? 0;
     const games = ladder ? ladder.wins + ladder.losses + ladder.draws : 0;
     const apex = standing ? inApex(points, standing.rank, standing.population) : false;
-    lastAccount = { profile, user, ladder, standing, streak, identity };
+    lastAccount = {
+      profile,
+      user,
+      ladder,
+      standing,
+      streak,
+      identity,
+      runes: runeCollection.collected,
+    };
     lastRecent = recent;
     pendingCachedRating = null;
     paintAccount();
@@ -226,7 +233,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     refreshHomeChip();
 
     const peakPosition = peakState(points, peak);
-    fillRing(ring, groupFill(points));
+    fillAccountRing(ring, groupFill(points));
     ring.classList.toggle('haspeak', peakPosition.kind !== 'at');
     if (peakPosition.kind === 'ahead') ring.style.setProperty('--pk', String(peakPosition.fill));
     if (peakPosition.kind === 'above') ring.style.setProperty('--pk', '1');
@@ -234,6 +241,8 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     /* The hidden panel has no measurable viewport, so trim the already-loaded
        recent rows once, immediately after the atomic reveal. */
     paintRecent();
+    ports.presentRuneReward(runeCollection, ownsRun);
+    return runeCollection;
   }
 
   function bind(): void {
@@ -269,6 +278,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
         confirm: () => t('online', 'profile.claimIt'),
         cancel: () => t('online', 'profile.notYet'),
         loud: true,
+        restoreFocus: $('#btnClaim'),
       });
       if (!confirmed) return;
       const button = $('#btnClaim') as HTMLButtonElement;
@@ -293,6 +303,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
           confirm: () => t('online', 'auth.createAction'),
           cancel: () => t('online', 'profile.notNow'),
           loud: true,
+          restoreFocus: $('#btnKeepAcc'),
         });
         if (upgrade) ports.showAuth('attach', 'account');
       }
@@ -317,32 +328,10 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     };
     $('#btnLadder').addEventListener('click', openLadder);
     $('#btnRank').addEventListener('click', openLadder);
-    $('#btnDeleteAcc').addEventListener('click', async () => {
-      Sfx.tap();
-      clearAccountError();
-      const confirmed = await ask({
-        head: () => t('online', 'profile.deleteTitle'),
-        body: () => t('online', 'profile.deleteDetail'),
-        confirm: () => t('online', 'profile.deleteEverything'),
-        cancel: () => t('online', 'profile.keepAccount'),
-        danger: true,
-        check: () => t('online', 'profile.deleteCheck'),
-      });
-      if (!confirmed) return;
-      const deletion = await deleteAccount();
-      const error = deletion.error;
-      if (error) {
-        const returned = error;
-        showAccountError(() => repaintOnlineMessage(returned));
-        return;
-      }
-      clearAccountError();
-      refreshHomeChip();
-      const notice = deletion.appleRevocation === 'pending'
-        ? onlineMessage('errors.appleRevocationPending')
-        : deletion.appleRevocation === 'manual-required'
-          ? onlineMessage('errors.appleRevocationManual') : null;
-      ports.showAuth('restore', 'home', notice);
+    bindAccountDelete({
+      clearError: clearAccountError,
+      showError: showAccountError,
+      showAuth: ports.showAuth,
     });
   }
 

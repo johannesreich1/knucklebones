@@ -44,7 +44,7 @@ export const itLearn = {
     },
     runes: {
       heading: 'Rune',
-      body: 'Le partite offline possono dare una <b>runa</b> accanto al dado; ce ne sono sei nella configurazione, sotto la modalità di gioco. <b>Nessuna</b> è la scelta predefinita; quelle con nome e <b>casuale</b> danno la stessa runa a entrambi, mentre <b>casuale 2</b> ne estrae due diverse. Le carte di ogni giocatore restano visibili. Un bordo del suo colore indica il proprietario e la mano attiva passa davanti a ogni turno. Premi una runa che agisce sul dado per usarla subito; trascina o tocca una runa di colonna e poi una colonna illuminata. Usare una runa non è una mossa, quindi dopo piazzi ancora il dado. La lista completa è in <b>COME SI GIOCA → RUNE</b>. Le partite classificate non usano mai rune.',
+      body: 'Le partite offline possono dare una <b>runa</b> accanto al dado. In multigiocatore locale sono sempre disponibili tutte e sei; contro l’IA puoi usare solo le rune raccolte online. <b>Nessuna</b> è la scelta predefinita; quelle con nome e <b>casuale</b> danno la stessa runa a entrambi, mentre <b>casuale 2</b> ne dà due diverse. Nella <b>Prova delle Rune</b>, entrambi scelgono in segreto tra le stesse tre rune e le rivelano insieme. Vinci una Prova classificata per raccogliere la runa scelta; le altre modalità classificate ignorano le rune equipaggiate. Premi una runa che agisce sul dado per usarla subito; trascina o tocca una runa di colonna e poi una colonna illuminata. Usare una runa non è una mossa, quindi dopo piazzi ancora il dado. La lista completa è in <b>COME SI GIOCA → RUNE</b>.',
     },
     twoPlayers: {
       heading: 'Due giocatori',

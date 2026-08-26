@@ -1,8 +1,15 @@
 import { modeById } from '../core/modes.ts';
-import { formatNumber, t } from '../i18n/index.ts';
+import {
+  RUNE_TRIAL_CAPABILITY,
+  RUNE_TRIAL_FORMAT,
+  rankedOutcomePool,
+} from '../core/ranked-outcomes.ts';
+import { spellById } from '../core/spells.ts';
+import { formatNumber, modeCopy, t } from '../i18n/index.ts';
 import { Sfx } from '../ui/audio.ts';
 import { $, hide } from '../ui/dom.ts';
 import { reveal } from '../ui/reveal.ts';
+import { cancelTrialSelection } from '../ui/trial-select.ts';
 import { isNewcomer, offerTutorial } from '../ui/firstrun.ts';
 import { enterMatch } from './play.ts';
 import {
@@ -16,6 +23,7 @@ import {
 import { createQueueCancellation } from './queue-cancellation.ts';
 import { createRunGeneration } from './run-generation.ts';
 import { showOnlinePanel } from './shell.ts';
+import { resolveRankedTrial } from './trial-selection.ts';
 
 export interface QueueScreen {
   bind(): void;
@@ -43,6 +51,40 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
   let pendingJoin: Promise<JoinResult | null> | null = null;
   let queueMayExist = false;
 
+  const revealCandidates = (result: Extract<JoinResult, { status: 'matched' }>) => {
+    const tier = result.match.pool_tier;
+    if (!tier) return undefined;
+    return rankedOutcomePool([{
+      tier,
+      capabilities: result.match.protocol_version === 2 ? [RUNE_TRIAL_CAPABILITY] : [],
+    }]).map(({ outcome }) => ({ id: outcome.id }));
+  };
+
+  const revealCopy = (id: string) => id === RUNE_TRIAL_FORMAT
+    ? {
+      name: t('game', 'modes.runeTrial.name'),
+      blurb: t('game', 'modes.runeTrial.blurb'),
+    }
+    : modeCopy(id);
+
+  const trialWaiting = (deadline: string | null, opponentCommitted: boolean): void => {
+    showOnlinePanel('onQueue');
+    $('#qSub').removeAttribute('data-i18n');
+    $('#qSub').textContent = opponentCommitted
+      ? t('online', 'matchmaking.trialBothLocked')
+      : t('online', 'matchmaking.trialOpponentChoosing');
+    const paint = (): void => {
+      const at = deadline ? Date.parse(deadline) : NaN;
+      const seconds = Number.isFinite(at) ? Math.max(0, Math.ceil((at - Date.now()) / 1000)) : 0;
+      $('#qTime').textContent = queueTime(seconds);
+      const message = $('#onQueue .qmsg');
+      message.textContent = t('online', 'matchmaking.trialLocked');
+    };
+    paint();
+    if (tick) clearInterval(tick);
+    tick = setInterval(paint, 250);
+  };
+
   const hidden = (): void => {
     if (document.hidden && tick) ports.goHome();
   };
@@ -57,6 +99,7 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
 
   function stop(): void {
     runs.cancel();
+    cancelTrialSelection();
     clearWaiting();
     if (queueMayExist) void cancellation.cleanup();
   }
@@ -84,6 +127,9 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
     showOnlinePanel('onQueue');
     document.addEventListener('visibilitychange', hidden);
     const started = Date.now();
+    const message = $('#onQueue .qmsg');
+    message.setAttribute('data-i18n', 'online:matchmaking.looking');
+    message.textContent = t('online', 'matchmaking.looking');
     $('#qTime').textContent = queueTime(0);
     $('#qSub').removeAttribute('data-i18n');
     $('#qSub').innerHTML = '&nbsp;';
@@ -125,32 +171,56 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
         if (pendingJoin === request) pendingJoin = null;
       }
       if (!runs.owns(run)) return;
+      if (result?.status === 'incompatible') {
+        queueMayExist = false;
+        clearWaiting();
+        ports.goHome();
+        return;
+      }
       if (result?.status === 'matched') {
         if (result.rejoined) {
           const over = await resignedOver(result.match.id);
           if (!runs.owns(run)) return;
           if (over) continue;
         }
+        const showReveal = !result.rejoined || result.match.phase === 'selection';
         clearWaiting();
-        if (!result.rejoined) {
+        const selected = await resolveRankedTrial(result, {
+          owns: () => runs.owns(run),
+          onWaiting: trialWaiting,
+        });
+        if (!selected || !runs.owns(run)) return;
+        const match = selected;
+        clearWaiting();
+        if (showReveal) {
           hide('#ovOnline');
-          const mine = result.you === 1 ? 'p1' : 'p2';
+          const mine = match.you === 1 ? 'p1' : 'p2';
           const theirs = mine === 'p1' ? 'p2' : 'p1';
           const side = (seat: 'p1' | 'p2') => ({
-            name: result.names[seat],
-            rating: result.names.ratings?.[seat] ?? null,
-            avatar: result.names.avatars?.[seat] ?? null,
+            name: match.names[seat],
+            rating: match.names.ratings?.[seat] ?? null,
+            avatar: match.names.avatars?.[seat] ?? null,
           });
+          const myRune = spellById(mine === 'p1' ? match.match.p1_rune : match.match.p2_rune);
+          const theirRune = spellById(theirs === 'p1' ? match.match.p1_rune : match.match.p2_rune);
           await reveal({
-            mode: modeById(result.match.modifier),
+            mode: { id: match.match.format === RUNE_TRIAL_FORMAT
+              ? RUNE_TRIAL_FORMAT : modeById(match.match.modifier).id },
+            modeCandidates: revealCandidates(match),
+            modeCopy: revealCopy,
+            trialRunes: match.match.format === RUNE_TRIAL_FORMAT && myRune && theirRune
+              ? [
+                { spell: myRune, name: () => side(mine).name, hue: 'var(--p1)' },
+                { spell: theirRune, name: () => side(theirs).name, hue: 'var(--p2)' },
+              ] : undefined,
             me: side(mine),
             foe: side(theirs),
-            peer: readyPeer(result.match.id),
+            peer: readyPeer(match.match.id),
           });
           if (!runs.owns(run)) return;
         }
         queueMayExist = false; // ownership moves from the queue to play.ts
-        await enterMatch(result);
+        await enterMatch(match);
         return;
       }
       await new Promise((resolve) => setTimeout(resolve, 2500));

@@ -1,3 +1,8 @@
+import {
+  checkOfflineAskLayout,
+  readOfflineAskShape,
+} from '../support/offline-ask.mjs';
+
 const LIMITED = 6;
 const RANDOM_MODE = -1;
 const RANDOM_SPELL = 'random';
@@ -27,81 +32,6 @@ const stableGameState = () => {
     }),
   };
 };
-
-const askShape = () => {
-  const card = document.querySelector('#ovAsk .askcard');
-  const visible = (element) => {
-    if (!element || element.hidden) return false;
-    const rect = element.getBoundingClientRect();
-    const style = getComputedStyle(element);
-    return rect.width > 0 && rect.height > 0
-      && style.display !== 'none' && style.visibility !== 'hidden';
-  };
-  const buttonShape = (id) => {
-    const element = document.getElementById(id);
-    if (!visible(element)) return null;
-    const rect = element.getBoundingClientRect();
-    const style = getComputedStyle(element);
-    const sheen = getComputedStyle(element, '::after');
-    const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
-    return {
-      id,
-      text: element.textContent.trim(),
-      height: rect.height,
-      hit: hit === element || element.contains(hit),
-      glint: {
-        content: sheen.content,
-        animationName: sheen.animationName,
-        running: element.getAnimations({ subtree: true })
-          .some((animation) => animation.animationName === 'primaryGlint'),
-      },
-      style: {
-        paddingTop: style.paddingTop,
-        paddingRight: style.paddingRight,
-        paddingBottom: style.paddingBottom,
-        paddingLeft: style.paddingLeft,
-        backgroundColor: style.backgroundColor,
-        backgroundImage: style.backgroundImage,
-        boxShadow: style.boxShadow,
-        color: style.color,
-        borderTopWidth: style.borderTopWidth,
-        borderTopStyle: style.borderTopStyle,
-        borderTopColor: style.borderTopColor,
-        borderRadius: style.borderRadius,
-        fontFamily: style.fontFamily,
-        fontSize: style.fontSize,
-        fontWeight: style.fontWeight,
-        lineHeight: style.lineHeight,
-        letterSpacing: style.letterSpacing,
-      },
-    };
-  };
-  return {
-    on: document.getElementById('ovAsk')?.classList.contains('on') ?? false,
-    head: document.getElementById('askHead')?.textContent?.trim() ?? '',
-    order: [...(card?.querySelectorAll(':scope > button') ?? [])]
-      .filter(visible).map((button) => button.textContent.trim()),
-    keep: buttonShape('btnAskNo'),
-    restart: buttonShape('btnAskAlt'),
-    quit: buttonShape('btnAskYes'),
-  };
-};
-
-function checkAskLayout(check, label, shape) {
-  check(shape.on && shape.head === 'Quit this duel?',
-    `${label}: offline quit question copy is wrong`, shape);
-  check(shape.order.join(' -> ') === 'Keep playing -> Restart duel -> Quit duel',
-    `${label}: offline quit actions are missing or out of order`, shape);
-  check(shape.restart?.hit === true && shape.quit?.hit === true,
-    `${label}: Restart duel or Quit duel is not the painted hit target`, shape);
-  check(shape.keep?.glint.animationName === 'primaryGlint' && shape.keep.glint.running
-    && shape.restart?.glint.animationName === 'none' && shape.quit?.glint.animationName === 'none',
-  `${label}: Keep playing is not the modal's sole animated two-colour action`, shape);
-  check(!!shape.restart && !!shape.quit
-    && Math.abs(shape.restart.height - shape.quit.height) < 0.5
-    && JSON.stringify(shape.restart.style) === JSON.stringify(shape.quit.style),
-  `${label}: Restart duel does not match Quit duel in height and computed style`, shape);
-}
 
 export async function runOfflineRestartScenarios(suite) {
   const { page, out, check, LOCALE_REGISTRY, RESOURCES } = suite;
@@ -151,8 +81,14 @@ export async function runOfflineRestartScenarios(suite) {
   await page.waitForTimeout(120);
   await page.tap('#btnLeave');
   await page.waitForSelector('#ovAsk.on');
-  out.offlineAskRegular = await page.evaluate(askShape);
-  checkAskLayout(check, 'regular phone', out.offlineAskRegular);
+  await page.waitForFunction(() => {
+    const card = document.querySelector('#ovAsk .focard');
+    if (!card) return false;
+    const transform = getComputedStyle(card).transform;
+    return transform === 'none' || Math.abs(new DOMMatrixReadOnly(transform).m42) < 0.5;
+  });
+  out.offlineAskRegular = await page.evaluate(readOfflineAskShape);
+  checkOfflineAskLayout(check, 'regular phone', out.offlineAskRegular);
 
   /* The shared question remains live while language changes. Only its text
      nodes repaint: focus, the modal/buttons, and their already-bound actions
@@ -218,10 +154,26 @@ export async function runOfflineRestartScenarios(suite) {
 
   await page.setViewportSize({ width: originalViewport?.width ?? 390, height: 620 });
   await page.waitForTimeout(120);
-  out.offlineAskShort = await page.evaluate(askShape);
-  checkAskLayout(check, 'short phone', out.offlineAskShort);
+  out.offlineAskShort = await page.evaluate(readOfflineAskShape);
+  checkOfflineAskLayout(check, 'short phone', out.offlineAskShort);
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.waitForTimeout(120);
+  out.offlineAskCompact = await page.evaluate(readOfflineAskShape);
+  checkOfflineAskLayout(check, 'compact phone', out.offlineAskCompact);
   if (originalViewport) await page.setViewportSize(originalViewport);
   await page.waitForTimeout(120);
+
+  /* The locale probe intentionally runs without an authenticated account.
+     Its account-sync coda therefore reconciles the artificial RANDOM setup
+     to the empty offline collection. Re-arm this scenario's explicit setup
+     fixture after that unrelated async work settles; the assertions below own
+     Keep/Restart state, not collection availability. */
+  await page.evaluate(([mode, spell]) => {
+    const S = window.__kb.S;
+    S.localMode = mode;
+    S.spell = spell;
+    S.localChoices.cpu = { localMode: mode, spell };
+  }, [RANDOM_MODE, RANDOM_SPELL]);
 
   // The encouraged way back is a true cancel: not one byte of duel state moves.
   await page.tap('#btnAskNo');
@@ -230,11 +182,13 @@ export async function runOfflineRestartScenarios(suite) {
   out.keepPlaying = {
     before: beforeKeep,
     after: afterKeep,
-    askGone: await page.locator('#ovAsk').evaluate((node) => !node.classList.contains('on')),
+    askGone: await page.locator('#ovAsk').count() === 0,
+    focus: await page.evaluate(() => document.activeElement?.id),
   };
   check(out.keepPlaying.askGone
+    && out.keepPlaying.focus === 'btnLeave'
     && JSON.stringify(out.keepPlaying.before) === JSON.stringify(out.keepPlaying.after),
-  'Keep playing changed the in-progress duel', out.keepPlaying);
+  'Keep playing changed the in-progress duel or failed to restore its opener', out.keepPlaying);
 
   /* Record even a transient reveal: checking only the final class would miss a
      flash that disappeared before the fresh opening roll reached CHOOSE. */
@@ -294,7 +248,7 @@ export async function runOfflineRestartScenarios(suite) {
         && S.charm.sunder.every((value) => value === false)
         && S.spellArmed === null && S.spellAimCommitted === null,
       bag: { left: S.pool?.length ?? null, faceCounts },
-      askGone: !document.getElementById('ovAsk').classList.contains('on'),
+      askGone: !document.querySelector('#ovAsk.on'),
       revealOn: document.querySelector('#ovWheel.on') !== null,
       revealSeen: window.__restartRevealSeen,
     };
@@ -366,9 +320,15 @@ export async function runOfflineRestartScenarios(suite) {
   await page.waitForFunction(() => window.__kb.S.phase === 'choose', null, { timeout: 10000 });
   await page.tap('#btnLeave');
   await page.waitForSelector('#ovAsk.on');
-  out.tutorialAsk = await page.evaluate(askShape);
+  await page.waitForFunction(() => {
+    const card = document.querySelector('#ovAsk .focard');
+    if (!card) return false;
+    const transform = getComputedStyle(card).transform;
+    return transform === 'none' || Math.abs(new DOMMatrixReadOnly(transform).m42) < 0.5;
+  });
+  out.tutorialAsk = await page.evaluate(readOfflineAskShape);
   check(out.tutorialAsk.order.join(' -> ') === 'Keep playing -> Quit tutorial'
-    && out.tutorialAsk.restart === null,
+    && out.tutorialAsk.restart === null && out.tutorialAsk.keep?.hit && out.tutorialAsk.quit?.hit,
   'the tutorial ask-card does not name its tutorial exit or leaked restart', out.tutorialAsk);
   await page.tap('#btnAskYes');
   await page.waitForTimeout(300);

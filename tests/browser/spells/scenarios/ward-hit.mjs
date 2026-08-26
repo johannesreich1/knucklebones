@@ -56,7 +56,8 @@ export function inspectWardStrike(page, { side, col, who, at, ticks }) {
     };
     const animations = new Set(), marks = new Set(), flare = new Set();
     const hostAnimations = new Set(), hostMarks = new Set();
-    let approach = null, recoil = null, burn = null, unwind = null, source = null, sourceStart = null;
+    let approach = null, recoil = null, burn = null, unwind = null;
+    let source = null, sourceStart = null, pinnedSize = null;
     let firstGhostAt = null, spentAt = null, goneAt = null, sourceVisible = true, sourceDrift = 0;
     let sourceAnchorError = Infinity, ghostValue = null, ghostOwner = null;
     let outlived = false, gone = false, particles = false, flash = false;
@@ -89,6 +90,15 @@ export function inspectWardStrike(page, { side, col, who, at, ticks }) {
 
       const ghost = document.querySelector('.ward-strike-ghost');
       if (ghost) {
+        /* Production pins the ghost from the source's live rectangle before
+           the animation begins. The board's scale settle can advance before
+           this 40ms sampler sees the source, so use the pinned inline size for
+           leading-edge contact rather than a later, differently scaled die. */
+        const pinnedWidth = parseFloat(ghost.style.width);
+        const pinnedHeight = parseFloat(ghost.style.height);
+        if (!pinnedSize && pinnedWidth > 0 && pinnedHeight > 0) {
+          pinnedSize = { w: pinnedWidth, h: pinnedHeight };
+        }
         ghostFilters.add(compact(getComputedStyle(ghost).filter));
         if (firstGhostAt === null) firstGhostAt = now;
         ghostValue ??= ghost.dataset.v || null;
@@ -143,7 +153,8 @@ export function inspectWardStrike(page, { side, col, who, at, ticks }) {
       const distance = Math.hypot(dx, dy), ux = dx / distance, uy = dy / distance;
       const contactCenter = { x: sourceCenter.x + last.x, y: sourceCenter.y + last.y };
       const remaining = { x: targetCenter.x - contactCenter.x, y: targetCenter.y - contactCenter.y };
-      const half = (Math.abs(ux) * sourceStart.w + Math.abs(uy) * sourceStart.h) / 2;
+      const half = (Math.abs(ux) * (pinnedSize?.w ?? sourceStart.w)
+        + Math.abs(uy) * (pinnedSize?.h ?? sourceStart.h)) / 2;
       const rebound = recoil?.frames.find((frame) => frame.time === WARD_REBOUND_MS);
       contact = {
         axis: Math.abs(dx) > Math.abs(dy) ? 'x' : 'y',

@@ -104,8 +104,16 @@ const F = 'file://' + process.cwd() + '/knucklebones-neon.html';   // the single
 const browser = await chromium.launch();
 const { problems, out, check } = createBrowserReport();
 try {
-  const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
+const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
     locale: 'en-US' });
+const fullRuneCache = {
+  version: 1,
+  accountId: '11111111-2222-4333-8444-555555555555',
+  verifiedAt: 1,
+  collected: SPELLS.map(({ id }) => id),
+};
+await ctx.addInitScript((snapshot) => localStorage.setItem('knucklebones.runes.v1', JSON.stringify(snapshot)),
+  fullRuneCache);
   const page = await ctx.newPage();
   capturePageErrors(page, problems);
   await page.goto(F); await page.waitForTimeout(400);
@@ -169,6 +177,8 @@ try {
     const c = await browser.newContext({ hasTouch: true, isMobile: true, deviceScaleFactor: 2,
       locale: 'en-US',
       ...(view.device || { viewport: { width: view.w, height: view.h } }), ...(view.opts || {}) });
+    await c.addInitScript((snapshot) => localStorage.setItem('knucklebones.runes.v1', JSON.stringify(snapshot)),
+      fullRuneCache);
     await c.addInitScript(() => { const k = 'knucklebones.v1', cf = JSON.parse(localStorage.getItem(k) || '{}'); cf.played = true; localStorage.setItem(k, JSON.stringify(cf)); });
     if (view.noPointer) await c.addInitScript(() => {
       /* Exercise the semantic click seam used by accessibility/legacy hosts,

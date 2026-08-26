@@ -1,3 +1,4 @@
+-- Held Apple/Game Center rollout stage 3 of 3: deletion-safe Apple credentials.
 create extension if not exists supabase_vault with schema vault;
 
 create table private.apple_revocation_credentials (
@@ -34,8 +35,8 @@ revoke all on sequence private.apple_revocation_credentials_id_seq
 grant select, insert, update, delete on private.apple_revocation_credentials to service_role;
 grant usage, select on sequence private.apple_revocation_credentials_id_seq to service_role;
 grant usage on schema private, vault to service_role;
-grant execute on function vault.create_secret(text, text, text) to service_role;
-grant execute on function vault.update_secret(uuid, text, text, text) to service_role;
+grant execute on function vault.create_secret(text, text, text, uuid) to service_role;
+grant execute on function vault.update_secret(uuid, text, text, text, uuid) to service_role;
 grant select, delete on vault.secrets to service_role;
 grant select on vault.decrypted_secrets to service_role;
 

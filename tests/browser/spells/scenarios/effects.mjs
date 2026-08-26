@@ -1,3 +1,5 @@
+import { waitForStableGeometry } from '../../support/stable-geometry.mjs';
+
 export async function runEffectScenarios(suite) {
   const { page, out, check, newGame, waitChoose, table, look, tapCol, tapRune } = suite;
   /* ---------- 9. a SELF spell has ONE target, so pressing it casts it ----------
@@ -168,20 +170,26 @@ export async function runEffectScenarios(suite) {
      The rail changes owner without entering either plate. Handover must move
      neither score nor the fixed slot aligned with the right board column. */
   await newGame({ spell: 'fate' }); check(await waitChoose(), 'game never reached choose (plate)');
-  out.plateHold = await page.evaluate(async () => {
-    const k = window.__kb;
-    const ys = [], turns = [];
-    for (const turn of [1, 0, 1, 0]) {
-      k.S.turn = turn; k.S.phase = 'choose'; k.S.busy = false;
+  out.plateHold = { ys: [], turns: [] };
+  for (const turn of [1, 0, 1, 0]) {
+    await page.evaluate((nextTurn) => {
+      const k = window.__kb;
+      k.S.turn = nextTurn; k.S.phase = 'choose'; k.S.busy = false;
       k.applySides(); k.spells.render(); k.renderAll(false);
-      await new Promise((r) => setTimeout(r, 360));
-      ys.push([+document.getElementById('totTop').getBoundingClientRect().y.toFixed(1),
-               +document.getElementById('totBot').getBoundingClientRect().y.toFixed(1),
-               +document.getElementById('spellBar').getBoundingClientRect().y.toFixed(1)].join('/'));
-      turns.push(getComputedStyle(document.getElementById('spellBar')).transform);
-    }
-    return { ys, turns, distinct: [...new Set(ys)].length };
-  });
+    }, turn);
+    await waitForStableGeometry(page, [
+      '#sideTop', '#sideBot', '#totTop', '#totBot', '#spellBar',
+    ]);
+    const resting = await page.evaluate(() => ({
+      y: [+document.getElementById('totTop').getBoundingClientRect().y.toFixed(1),
+        +document.getElementById('totBot').getBoundingClientRect().y.toFixed(1),
+        +document.getElementById('spellBar').getBoundingClientRect().y.toFixed(1)].join('/'),
+      turn: getComputedStyle(document.getElementById('spellBar')).transform,
+    }));
+    out.plateHold.ys.push(resting.y);
+    out.plateHold.turns.push(resting.turn);
+  }
+  out.plateHold.distinct = [...new Set(out.plateHold.ys)].length;
   check(out.plateHold.distinct === 1, 'THE SCORE MOVES WHEN THE RUNE CHANGES HANDS', out.plateHold);
   check(out.plateHold.turns[0] === 'none' && out.plateHold.turns[1] !== 'none'
       && out.plateHold.turns[2] === 'none' && out.plateHold.turns[3] !== 'none',

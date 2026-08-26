@@ -9,6 +9,9 @@ export async function installOnlineRoutes(
     named,
     paginationRace = false,
     passwordAuth = 'error',
+    runes = [],
+    unseenRunes = [],
+    markRunesSeenAfterFirstRead = false,
     SESSION,
     GUEST_ID,
   },
@@ -16,7 +19,52 @@ export async function installOnlineRoutes(
   let signupCalls = 0;
   let passwordCalls = 0;
   let profileCalls = 0;
+  let tierProfileCalls = 0;
   let leaderboardCalls = 0;
+  let runeCalls = 0;
+  let acknowledgeCalls = 0;
+  const collectedRunes = [...runes];
+  const seenRunes = new Set(runes.filter((runeId) => !unseenRunes.includes(runeId)));
+  let deferNextRune = false;
+  let markRuneRequestStarted;
+  let releaseRuneRequest;
+  let markRuneRequestFinished;
+  let deferNextAccountProfile = false;
+  let markAccountProfileStarted;
+  let releaseAccountProfile;
+  let markAccountProfileFinished;
+  let markAcknowledgeStarted;
+  let markAcknowledgeFinished;
+  let failNextAcknowledge = false;
+  const acknowledgeDeferrals = [];
+  let firstAcknowledgeDeferral = null;
+  const runeRequestStarted = new Promise((resolve) => { markRuneRequestStarted = resolve; });
+  const runeRequestRelease = new Promise((resolve) => { releaseRuneRequest = resolve; });
+  const runeRequestFinished = new Promise((resolve) => { markRuneRequestFinished = resolve; });
+  const accountProfileStarted = new Promise((resolve) => { markAccountProfileStarted = resolve; });
+  const accountProfileRelease = new Promise((resolve) => { releaseAccountProfile = resolve; });
+  const accountProfileFinished = new Promise((resolve) => { markAccountProfileFinished = resolve; });
+  const acknowledgeStarted = new Promise((resolve) => { markAcknowledgeStarted = resolve; });
+  const acknowledgeFinished = new Promise((resolve) => { markAcknowledgeFinished = resolve; });
+  const deferAcknowledge = () => {
+    let markStarted;
+    let release;
+    let markFinished;
+    const control = {
+      started: new Promise((resolve) => { markStarted = resolve; }),
+      wait: new Promise((resolve) => { release = resolve; }),
+      finished: new Promise((resolve) => { markFinished = resolve; }),
+      markStarted: () => markStarted(),
+      release: () => release(),
+      markFinished: () => markFinished(),
+    };
+    acknowledgeDeferrals.push(control);
+    if (!firstAcknowledgeDeferral) {
+      firstAcknowledgeDeferral = control;
+      void control.finished.then(markAcknowledgeFinished);
+    }
+    return { started: control.started, release: control.release, finished: control.finished };
+  };
   let markPaginationStarted;
   let releasePagination;
   const paginationStarted = new Promise((resolve) => { markPaginationStarted = resolve; });
@@ -60,12 +108,67 @@ export async function installOnlineRoutes(
       claimed = true;
       return r.fulfill({ status: 204, body: '' });
     }
-    profileCalls++;
+    const tierRead = r.request().url().includes('ranked_pool_tier');
+    const deferred = !tierRead && deferNextAccountProfile;
+    if (deferred) {
+      deferNextAccountProfile = false;
+      markAccountProfileStarted();
+      await accountProfileRelease;
+    }
     await hold(.35);
-    return r.fulfill({ status: 200, contentType: 'application/json',
+    if (tierRead) {
+      tierProfileCalls++;
+      return r.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ ranked_pool_tier: 'ivory' }) });
+    }
+    profileCalls++;
+    const response = r.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify([{ id: GUEST_ID, nickname: claimed && door === 'claim' ? 'NeonKing77' : 'TestGuest001',
                               rating: 1000, created_at: new Date().toISOString(),
                               named_at: claimed ? '2026-08-01T00:00:00Z' : null }]) });
+    if (deferred) void response.then(markAccountProfileFinished);
+    return response;
+  });
+  await page.route('**/rest/v1/player_runes*', async (r) => {
+    runeCalls++;
+    if (markRunesSeenAfterFirstRead && runeCalls > 1) {
+      for (const runeId of collectedRunes) seenRunes.add(runeId);
+    }
+    const deferred = deferNextRune;
+    if (deferred) {
+      deferNextRune = false;
+      markRuneRequestStarted();
+      await runeRequestRelease;
+    }
+    const body = collectedRunes.map((runeId, index) => ({
+      rune_id: runeId,
+      collected_at: `2026-08-${String(index + 1).padStart(2, '0')}T00:00:00Z`,
+      source_match_id: '11111111-1111-4111-8111-111111111111',
+      seen_at: seenRunes.has(runeId) ? '2026-08-24T00:00:00Z' : null,
+    }));
+    await r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+    if (deferred) markRuneRequestFinished();
+  });
+  await page.route('**/rest/v1/rpc/acknowledge_rune_reward*', async (r) => {
+    acknowledgeCalls++;
+    const runeId = r.request().postDataJSON()?.reward_rune_id;
+    markAcknowledgeStarted();
+    const deferred = acknowledgeDeferrals.shift() ?? null;
+    deferred?.markStarted();
+    if (deferred) await deferred.wait;
+    const fails = failNextAcknowledge;
+    failNextAcknowledge = false;
+    if (!fails && typeof runeId === 'string') seenRunes.add(runeId);
+    try {
+      await r.fulfill({
+        status: fails ? 503 : 200,
+        contentType: 'application/json',
+        body: fails ? 'false' : 'true',
+      });
+    } catch {
+      /* A hung-ACK liveness probe deliberately lets the client abort first. */
+    }
+    deferred?.markFinished();
   });
   await page.route('**/rest/v1/matches*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
   await page.route('**/functions/v1/pvp-join', (r) => r.fulfill({
@@ -165,11 +268,41 @@ export async function installOnlineRoutes(
     });
   });
   await page.route('**/rest/v1/rpc/player_card*', (r) => r.fulfill({ status: 200, contentType: 'application/json',
-    body: JSON.stringify([{ streak: 4, since: '2026-06-01T00:00:00Z' }]) }));
+    body: JSON.stringify([{
+      streak: 4,
+      since: '2026-06-01T00:00:00Z',
+      points: 1072,
+      wins: 7,
+      losses: 2,
+      games: 9,
+      rank: 1,
+      apex: false,
+      peak: 1100,
+    }]) }));
   return {
     signupCalls: () => signupCalls,
     passwordCalls: () => passwordCalls,
     profileCalls: () => profileCalls,
+    tierProfileCalls: () => tierProfileCalls,
+    runeCalls: () => runeCalls,
+    acknowledgeCalls: () => acknowledgeCalls,
+    deferNextRuneResponse: () => { deferNextRune = true; },
+    runeRequestStarted,
+    releaseRuneResponse: () => releaseRuneRequest(),
+    runeRequestFinished,
+    deferNextAccountProfileResponse: () => { deferNextAccountProfile = true; },
+    accountProfileStarted,
+    releaseAccountProfileResponse: () => releaseAccountProfile(),
+    accountProfileFinished,
+    acknowledgeStarted,
+    deferNextAcknowledge: deferAcknowledge,
+    failNextAcknowledge: () => { failNextAcknowledge = true; },
+    releaseAcknowledge: () => firstAcknowledgeDeferral?.release(),
+    acknowledgeFinished,
+    makeRuneUnseen: (runeId) => {
+      if (!collectedRunes.includes(runeId)) collectedRunes.push(runeId);
+      seenRunes.delete(runeId);
+    },
     paginationStarted,
     releasePagination: () => releasePagination(),
   };

@@ -31,6 +31,17 @@ export type Mode = typeof MODES[number];
 export type Seat = typeof SEATS[number];
 export type Phase = 'menu' | 'roll' | 'choose' | 'pass' | 'anim' | 'over';
 
+export interface LocalSetupChoice {
+  /* Includes the two setup-only promises: RANDOM (-1) and Rune Trial (-2). */
+  localMode: number;
+  spell: string;
+}
+
+export interface LocalRuneTrial {
+  readonly offer: readonly [string, string, string];
+  readonly spells: readonly [ai: string, me: string];
+}
+
 export interface TutState {
   turnNo: number;
   prolls: number[];   // scripted player rolls
@@ -99,7 +110,19 @@ export const S = {
      final totals all read this one resolved value. */
   scoring: 0 as RulesMode,
   /* the OFFLINE view's mode pick — newGame copies it into scoring (persisted) */
-  localMode: 0 as RulesMode,
+  localMode: 0 as number,
+  /* CPU and two-player are different setup contexts. Keep their promises
+     separately so switching to the unrestricted shared-phone sandbox cannot
+     overwrite the collection-filtered AI choice (or vice versa). `localMode`
+     and `spell` below remain the active compatibility view used by the game
+     lifecycle and older focused tests. */
+  localChoices: {
+    cpu: { localMode: 0, spell: '' },
+    duo: { localMode: 0, spell: '' },
+  } as Record<Mode, LocalSetupChoice>,
+  /* Present only for a resolved local Rune Trial. Restart reuses this exact
+     offer/deal; Next duel enters startLocal and replaces it with a fresh one. */
+  localTrial: null as LocalRuneTrial | null,
   /* LIMITED offline: the remaining undrawn bag; null in every other context */
   pool: null as number[] | null,
   /* BOUNTY mode's banked +1s per Player — permanent, survives destruction */

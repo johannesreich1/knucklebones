@@ -16,11 +16,17 @@ import {
   withTemporaryWorkspace,
 } from '../tools/database/production-rollout-core.mjs';
 import { runProductionMigrationSchemaCases } from './support/production-migration-schema-cases.ts';
+import {
+  runAppleGameCenterProductionMigrationCases,
+} from './support/apple-game-center-production-migration-cases.ts';
+import {
+  runRuneTrialProductionMigrationCases,
+} from './support/rune-trial-production-migration-cases.ts';
 
 const BASE = '20260823192604_player_settings.sql';
 const LOCALE = '20260824133121_player_settings_locale.sql';
 const EXPANDED_LOCALES = '20260825161016_expand_player_settings_locales.sql';
-const GAME_CENTER = '20260823132611_game_center_service_grants.sql';
+const GAME_CENTER = '20260826102601_game_center_service_grants.sql';
 const RETENTION = '20260824212535_match_command_retention.sql';
 const PROJECT = 'euzjcejbkxvqfrttgaxu';
 const checked: string[] = [];
@@ -157,7 +163,7 @@ check('exact dry-run accepts only the selected pending suffix', () => {
 check('exact dry-run rejects an extra held Game Center migration', () => {
   guarded(
     () => assertExactDryRun(
-      dryRun([GAME_CENTER, BASE, LOCALE, EXPANDED_LOCALES]),
+      dryRun([BASE, LOCALE, EXPANDED_LOCALES, GAME_CENTER]),
       [BASE, LOCALE, EXPANDED_LOCALES],
     ),
     /allow-list and order/,
@@ -257,6 +263,10 @@ check('apply opt-in and repeated audit plan both fail closed', () => {
     /changed during planning/,
   );
 });
+
+runRuneTrialProductionMigrationCases({ check, guarded });
+
+runAppleGameCenterProductionMigrationCases({ check, guarded });
 
 runProductionMigrationSchemaCases({
   check,

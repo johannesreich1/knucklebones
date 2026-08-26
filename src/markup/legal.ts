@@ -14,19 +14,22 @@ export interface LegalNavigationSpec {
   readonly pages: readonly LegalPageId[];
   readonly className: string;
   readonly idPrefix: string;
+  /** Explicitly expose in-app placeholder copy without publishing public URLs. */
+  readonly showDraft?: boolean;
 }
 
 /**
- * Every public door is emitted through the same fail-closed release gate.
- * Keeping the config injectable lets tests exercise the ready contract while
- * the checked-in production facts remain a draft.
+ * Public/legal-route navigation remains fail-closed. Settings and auth may
+ * deliberately expose the checked-in placeholder document in-app while the
+ * release is still draft; that exception is explicit at each contextual door
+ * and never makes the static-page generator publish an unfinished URL.
  */
 export function legalNavigationMarkup(
   config: LegalPublicationConfig,
   spec: LegalNavigationSpec,
 ): string {
-  if (config.status === 'draft') return '';
-  assertLegalPublicationReady(config);
+  if (config.status === 'draft' && !spec.showDraft) return '';
+  if (config.status === 'ready') assertLegalPublicationReady(config);
   return `<nav class="${spec.className}" data-legal-navigation aria-label="${initial.pageNavigationLabel}">
     ${spec.pages.map((id) => {
       const { domSuffix } = legalPageSpec(id);
@@ -45,18 +48,21 @@ export const LEGAL_SETTINGS_NAV_MARKUP = legalNavigationMarkup(LEGAL_RELEASE, {
   pages: ['imprint', 'privacy'],
   className: 'legal-settings-nav',
   idPrefix: 'btnSettings',
+  showDraft: true,
 });
 
 export const LEGAL_AUTH_NAV_MARKUP = legalNavigationMarkup(LEGAL_RELEASE, {
   pages: ['privacy'],
   className: 'authlegal',
   idPrefix: 'btnAuth',
+  showDraft: true,
 });
 
 /**
  * The overlays stay in the shared shell so a reviewed ready build can expose
- * them without a second implementation. Draft builds contain no navigation
- * to them, and the static generator emits no public route.
+ * them without a second implementation. The approved Settings/auth doors can
+ * show draft placeholders, while the static generator still emits no public
+ * route until the verified release gate passes.
  */
 export const LEGAL_MARKUP = LEGAL_PAGE_REGISTRY.map(({ id, domSuffix }) => {
   const title = initial.pages[id].shortTitle;

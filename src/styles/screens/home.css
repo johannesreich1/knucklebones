@@ -18,7 +18,13 @@
 :where(#kbroot) .homestack{display:flex;flex-direction:column;gap:12px;width:100%;max-width:var(--w-col);
   margin-top:26px}
 :where(#kbroot) .hrow{display:flex;gap:8px;width:100%}
-:where(#kbroot) .hrow .btn{flex:1;min-width:0;padding:12px 6px;font-size:11px;letter-spacing:.12em}
+:where(#kbroot) .hrow .btn{position:relative;flex:1;min-width:0;min-height:0;padding:12px 6px;
+  font-size:11px;line-height:13px;letter-spacing:.12em}
+/* Keep the compact secondary artwork that belongs beside/below the hero
+   action, but let a finger reach a centred 44px lane. The row gaps are wider
+   than the invisible expansion, so neighbouring actions never overlap. */
+:where(#kbroot) .hrow .btn::before{content:"";position:absolute;z-index:2;left:0;right:0;top:50%;height:44px;
+  translate:0 -50%}
 :where(#kbroot) .quiet{margin-top:20px;display:flex;flex-direction:column;gap:11px;width:100%;max-width:var(--w-col)}
 :where(#kbroot) .quiet .cap{display:flex;align-items:center;gap:10px;font-size:9px;letter-spacing:.3em;
   color:var(--dim);text-transform:uppercase}
@@ -26,12 +32,18 @@
   background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent)}
 :where(#kbroot) .quiet .hrow .btn{padding:10px 4px;font-size:10px;letter-spacing:.08em;
   background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.09);color:var(--dim)}
-/* Pinned to the bottom, above the build tag. #ovStart centres its content
-   between two auto-margin spacers (:259-260); margin-top:auto pushes the foot
-   past the lower one so the legal links sit where legal links belong —
-   findable, and never in the way of the game. */
-/* a view's footer strip: whatever a screen carries at its very bottom — the
-   legal links on home, the build tag in settings. One rule, two rosters.
+/* At the 320px supported floor, the longest translated practice label can
+   wrap and stretch all three flex siblings back to a 46px painted height.
+   Keep this quiet tier on its intended single 34px line; its absolute
+   44px hit lane above remains unchanged. */
+@media (max-width:340px){
+  :where(#kbroot) .quiet .hrow .btn{font-size:9px;line-height:12px;letter-spacing:0;white-space:nowrap}
+}
+/* Pinned to the bottom. #ovStart centres its content between two auto-margin
+   spacers (:259-260); the empty Home foot preserves that balance while legal
+   placeholder doors live in Settings, out of the game's way. */
+/* a view's footer strip: whatever a screen carries at its very bottom — Home's
+   structural spacer, or Settings legal links/build tag. One rule, two rosters.
    It pins itself with margin-top:auto, so a sibling that centres itself with
    auto margins (.pbody) simply shares the free space with it. */
 :where(#kbroot) .viewfoot{display:flex;align-items:center;justify-content:center;gap:16px;

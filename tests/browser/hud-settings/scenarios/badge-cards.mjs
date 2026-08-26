@@ -88,6 +88,16 @@ export async function runBadgeCardScenarios(suite) {
 
   const playLocal = async (mode, spell) => {
     await page.evaluate(([m, s]) => {
+      /* This scenario owns HUD cards, not collection gating. Re-establish its
+         all-runes account fixture after any preceding reload reconciled an
+         orphaned cache away. */
+      localStorage.setItem('knucklebones.runes.v1', JSON.stringify({
+        version: 1,
+        accountId: '11111111-2222-4333-8444-555555555555',
+        verifiedAt: 1,
+        collected: ['fate', 'nudge', 'ward', 'sunder', 'pilfer', 'anvil'],
+        poolTier: 'ivory',
+      }));
       window.__kb.S.localMode = m; window.__kb.S.spell = s; window.__kb.openPractice();
     }, [mode, spell]);
     await page.tap('#btnPlay'); await page.waitForTimeout(1200);

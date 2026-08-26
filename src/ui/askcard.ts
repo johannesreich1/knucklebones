@@ -1,4 +1,4 @@
-// The ask-card: ONE modal that puts a single question with a way back.
+// The ask-card: ONE question model mounted in the shared sheet.
 //
 // Callers differ only in their words, emphasis, and optional guard/action. A
 // normal offline duel adds one quiet restart between the way back and the way
@@ -6,12 +6,14 @@
 // deletion guard exists because that answer wants a deliberate act, not a
 // second tap in the same place the first one landed.
 //
-// Lives in ui/ (not online/) because the quit modal is offline-reachable, and
-// anything the offline game can open must not pull in the online chunk.
-import { $, show, hide } from './dom.ts';
-import { subscribeLocale, t } from '../i18n/index.ts';
+// The sheet owns modal geometry, entrance/exit, drag, backdrop, Escape,
+// background inertness, and focus restoration. This module owns only the
+// question's stable content and answer semantics. It lives in ui/ (not
+// online/) because the quit question is offline-reachable, and anything the
+// offline game can open must not pull in the online chunk.
+import { t } from '../i18n/index.ts';
 import { Sfx } from './audio.ts';
-import { appRoot } from './embed.ts';
+import { showSheet, type Sheet } from './sheet.ts';
 
 /** A callback is re-read when the visible card's locale changes. */
 export type AskText = string | (() => string);
@@ -35,18 +37,19 @@ export interface Ask {
      the loud button on the way OUT (default); an INVITATION flips it, so the
      yes wears primary and the no goes quiet. */
   loud?: boolean;
+  /** Explicit opener for touch flows, where tapping a button need not focus it. */
+  restoreFocus?: HTMLElement | null;
   /* an optional third path. It stays quiet like the trailing answer and runs
      only after the card has dismissed and resolved as "no" to its caller. */
   alternate?: AskAction;
 }
 
-let built = false;
-function build(): void {
-  if (built) return;
-  built = true;
-  appRoot().insertAdjacentHTML('beforeend', `
-<div class="ov" id="ovAsk">
-  <div class="askcard">
+let card: HTMLElement | null = null;
+function build(): HTMLElement {
+  if (card) return card;
+  card = document.createElement('div');
+  card.className = 'askcard';
+  card.innerHTML = `
     <div class="fh" id="askHead"></div>
     <p class="fp" id="askBody"></p>
     <label class="askcheck" id="askCheckRow" hidden>
@@ -54,57 +57,58 @@ function build(): void {
     </label>
     <button class="btn soft" id="btnAskYes"></button>
     <button class="btn soft small" id="btnAskAlt" hidden></button>
-    <button class="btn primary" id="btnAskNo"></button>
-  </div>
-</div>`);
+    <button class="btn primary" id="btnAskNo"></button>`;
+  return card;
+}
+
+function askElement<T extends HTMLElement = HTMLElement>(selector: string): T {
+  return build().querySelector(selector) as T;
 }
 
 let settle: ((ok: boolean) => void) | null = null;
 let activeAsk: Ask | null = null;
+let activeSheet: Sheet | null = null;
 
 const resolveText = (value: AskText): string =>
   typeof value === 'function' ? value() : value;
 
 /** Repaint copy only: checkbox state, focus, actions, and card nodes stay put. */
 function repaintAskCopy(spec: Ask): void {
-  $('#askHead').textContent = resolveText(spec.head);
-  $('#askBody').textContent = resolveText(spec.body);
-  $('#btnAskYes').textContent = resolveText(spec.confirm);
-  $('#btnAskAlt').textContent = spec.alternate ? resolveText(spec.alternate.label) : '';
-  $('#btnAskNo').textContent = spec.cancel !== undefined
+  askElement('#askHead').textContent = resolveText(spec.head);
+  askElement('#askBody').textContent = resolveText(spec.body);
+  askElement('#btnAskYes').textContent = resolveText(spec.confirm);
+  askElement('#btnAskAlt').textContent = spec.alternate ? resolveText(spec.alternate.label) : '';
+  askElement('#btnAskNo').textContent = spec.cancel !== undefined
     ? resolveText(spec.cancel)
     : t('common', 'actions.cancel');
-  $('#askCheckText').textContent = spec.check !== undefined ? resolveText(spec.check) : '';
+  askElement('#askCheckText').textContent = spec.check !== undefined ? resolveText(spec.check) : '';
 }
 
-subscribeLocale(() => {
-  if (activeAsk && appRoot().querySelector('#ovAsk')?.classList.contains('on')) {
-    repaintAskCopy(activeAsk);
-  }
-});
+function resolveAsk(ok: boolean): void {
+  activeAsk = null;
+  const finish = settle;
+  settle = null;
+  finish?.(ok);
+}
+
+function answer(ok: boolean, restoreOpener = !ok): void {
+  const sheet = activeSheet;
+  activeSheet = null;
+  resolveAsk(ok);
+  sheet?.close(restoreOpener);
+}
 
 /* Resolves TRUE when the question is answered yes. Never rejects: a dismissed
    question is a no, which is the answer that changes nothing. */
 export function ask(spec: Ask): Promise<boolean> {
-  build();
-  /* every .ov shares one z-index, so paint order is DOM order — and overlays
-     injected AFTER the first ask() (the online panel, for one) would otherwise
-     cover the question. Re-appending moves the existing node last, so the card
-     opens above whatever is on screen, listeners intact. */
-  appRoot().appendChild($('#ovAsk'));
-  const done = (ok: boolean): void => {
-    hide('#ovAsk');
-    activeAsk = null;
-    const f = settle; settle = null;
-    f?.(ok);
-  };
   /* a question already on screen is answered NO before the next one opens —
      leaving a stale promise unsettled would hang whatever awaited it */
-  settle?.(false);
+  if (activeSheet || settle) answer(false);
 
-  const yes = $('#btnAskYes') as HTMLButtonElement;
-  const alternate = $('#btnAskAlt') as HTMLButtonElement;
-  const no = $('#btnAskNo') as HTMLButtonElement;
+  const content = build();
+  const yes = askElement<HTMLButtonElement>('#btnAskYes');
+  const alternate = askElement<HTMLButtonElement>('#btnAskAlt');
+  const no = askElement<HTMLButtonElement>('#btnAskNo');
   const action = spec.alternate;
   activeAsk = spec;
   repaintAskCopy(spec);
@@ -126,31 +130,54 @@ export function ask(spec: Ask): Promise<boolean> {
     ? [yes, alternate, no]
     : [no, alternate, yes]));
 
-  const box = $('#askCheck') as HTMLInputElement;
-  $('#askCheckRow').hidden = spec.check === undefined;
+  const box = askElement<HTMLInputElement>('#askCheck');
+  askElement('#askCheckRow').hidden = spec.check === undefined;
   box.checked = false;
   /* the guard: disabled until ticked, and re-armed every time the card opens
      so a previous yes can never carry over */
   yes.disabled = spec.check !== undefined;
   box.onchange = () => { yes.disabled = spec.check !== undefined && !box.checked; };
 
-  yes.onclick = () => { if (yes.disabled) return; Sfx.tap(); done(true); };
+  yes.onclick = () => { if (yes.disabled) return; Sfx.tap(); answer(true); };
   alternate.onclick = action ? () => {
     Sfx.tap();
-    done(false);
+    answer(false);
     action.run();
   } : null;
-  no.onclick = () => { Sfx.tap(); done(false); };
+  no.onclick = () => { Sfx.tap(); answer(false); };
 
-  show('#ovAsk');
-  return new Promise<boolean>((resolve) => { settle = resolve; });
+  const pending = new Promise<boolean>((resolve) => { settle = resolve; });
+  let sheet!: Sheet;
+  sheet = showSheet({
+    content,
+    interactive: true,
+    cls: 'asksheet',
+    label: () => resolveText(spec.head),
+    restoreFocus: spec.restoreFocus,
+    repaintLocale: () => {
+      if (activeAsk === spec) repaintAskCopy(spec);
+    },
+    /* A sheet gesture is a no. Let the shared sheet finish its own exit flight;
+       onClose is the final fallback for a sheet replaced by another caller. */
+    onDismiss: () => {
+      if (activeSheet === sheet) resolveAsk(false);
+    },
+    onClose: () => {
+      if (activeSheet === sheet) activeSheet = null;
+      if (activeAsk === spec) resolveAsk(false);
+    },
+  });
+  /* Keep the stable public hook while changing its implementation. Existing
+     input/layout contracts and focused browser tests can still identify the
+     live question, but it is now visibly and behaviorally the shared sheet. */
+  sheet.ov.id = 'ovAsk';
+  sheet.ov.classList.add('on');
+  activeSheet = sheet;
+  return pending;
 }
 
 /* Escape and any other global dismissal answers no. */
 export function dismissAsk(): void {
-  if (!appRoot().querySelector('#ovAsk')?.classList.contains('on')) return;
-  hide('#ovAsk');
-  activeAsk = null;
-  const f = settle; settle = null;
-  f?.(false);
+  if (!activeSheet) return;
+  answer(false);
 }

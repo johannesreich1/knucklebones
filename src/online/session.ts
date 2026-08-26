@@ -5,6 +5,11 @@ import { callFunction, supa } from './client.ts';
 import { onlineMessage } from './message-copy.ts';
 import { assertCurrentGameCenter, restoreGameCenterAutomatically } from './identity.ts';
 import { gameCenterState, waitForGameCenter } from '../native/game-center.ts';
+import {
+  clearRuneCollectionSnapshot,
+  readRuneCollectionSnapshot,
+} from '../rune-collection-cache.ts';
+import { invalidateRuneCollectionRefreshes } from './rune-collection.ts';
 
 export interface Profile { id: string; nickname: string; rating: number; created_at?: string; avatar?: string; named_at?: string | null; }
 
@@ -70,6 +75,8 @@ export async function signIn(email: string, password: string): Promise<string | 
 }
 const MANUAL_AUTH = 'knucklebones.online.manual-auth';
 export async function signOut(): Promise<void> {
+  invalidateRuneCollectionRefreshes();
+  clearRuneCollectionSnapshot();
   await supa().auth.signOut();
   acceptedGameCenterRevision = null;
   try { localStorage.setItem(MANUAL_AUTH, '1'); } catch { /* forgetful host */ }
@@ -92,7 +99,16 @@ function remember(u: Me | null): Me | null {
 
 export async function currentUser(): Promise<Me | null> {
   const { data: { session } } = await supa().auth.getSession();
-  return remember(me(session?.user));
+  const user = remember(me(session?.user));
+  const runes = readRuneCollectionSnapshot();
+  /* Supabase may replace a session directly during account recovery/sign-in.
+     Never leave the preceding account's confirmed collection active while
+     the new account's refresh is still in flight. */
+  if (!user || (runes && runes.accountId !== user.id.toLowerCase())) {
+    invalidateRuneCollectionRefreshes();
+    clearRuneCollectionSnapshot();
+  }
+  return user;
 }
 
 export async function identityStatus(): Promise<IdentityStatus | null> {
@@ -108,6 +124,23 @@ export function requireGameCenterAssertion(): void {
   acceptedGameCenterRevision = null;
 }
 
+export type GameCenterSessionAction = 'continue' | 'assert' | 'retry';
+
+/* A failed identity-status read is not proof that this Supabase account is
+   unlinked. In particular, after GameKit publishes a new revision it could
+   otherwise let a switched Game Center player continue under the old account.
+   Keep this decision explicit so the unknown and genuinely-unlinked states
+   cannot collapse back into the same optional-chain branch. */
+export function gameCenterSessionAction(
+  status: IdentityStatus | null,
+  acceptedRevision: number | null,
+  nativeRevision: number,
+): GameCenterSessionAction {
+  if (!status) return 'retry';
+  if (!status.gameCenterLinked || acceptedRevision === nativeRevision) return 'continue';
+  return 'assert';
+}
+
 /* The first rung, taken silently: whoever asks for ranked without a session
    becomes a guest and keeps playing. Returns null when the project has
    anonymous sign-ins switched off — the caller then falls back to the sign-in
@@ -119,8 +152,13 @@ export async function ensureIdentity(): Promise<Me | null> {
     if (nativeState.status === 'unavailable') nativeState = await waitForGameCenter();
     if (nativeState.status === 'unavailable') return here;
     const providers = await identityStatus();
-    if (!providers?.gameCenterLinked) return here;
-    if (acceptedGameCenterRevision === nativeState.revision) return here;
+    const action = gameCenterSessionAction(
+      providers,
+      acceptedGameCenterRevision,
+      nativeState.revision,
+    );
+    if (action === 'retry') return null;
+    if (action === 'continue') return here;
     const ownership = await assertCurrentGameCenter();
     if (ownership === 'match') {
       acceptedGameCenterRevision = nativeState.revision;

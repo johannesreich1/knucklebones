@@ -1,6 +1,5 @@
-// The app's static markup, injected at boot by each entry point.
-// Single source of truth for standalone page and widget alike (the old build
-// derived the widget's copy from the page via regex — this is that, deleted).
+// Static markup injected by every entry point: one source for page and widget
+// (the old build derived its copy from the page via regex).
 import { chromeIcon } from './ui/chromeicons.ts';
 import { learnPageMarkup } from './ui/learn-page.ts';
 import { spellIcon } from './ui/spellicons.ts';
@@ -26,7 +25,7 @@ const RULES_PAGE = learnPageMarkup({
     <h3 data-i18n="learn:rules.reading.heading">Reading the board</h3>
     <p data-i18n-rich="learn:rules.reading.body">The chips beside each column show its running score, and <b>×2</b>/<b>×3</b> marks a multiplied stack. Working out the best placement is the game — but the <b>tutorial</b> plays a guided round with point previews on every column.</p>
     <h3 style="color:#b18cff" data-i18n="learn:rules.runes.heading">Runes</h3>
-    <p data-i18n-rich="learn:rules.runes.body">Offline games can deal a <b>rune</b> beside the die in play — six to choose from where you set up an offline game, right under the game mode. <b>None</b> is the default; named picks and <b>random</b> give both players matching runes, while <b>random 2</b> shuffles twice and gives them different ones. One card per player stays visible. A player-colour edge marks its owner, and the active hand moves to the front every turn. Press a rune that acts on your die to cast it immediately; drag or tap a column-targeting rune onto one of the columns that light up. A cast is not a move, so your die still lands afterwards. The full roster lives under <b>HOW TO PLAY → RUNES</b>. Ranked matches never use them.</p>
+    <p data-i18n-rich="learn:rules.runes.body">A <b>rune</b> grants limited powers during a duel. Local multiplayer always has all six; games versus AI only offer runes you have collected. Ordinary ranked keeps your equipped rune but does not use it. From IVORY, <b>Rune Trial</b> can deal both players the same three-rune offer for a private pick. Win that ranked duel to add your chosen rune to your collection. One card per player stays visible. Press a rune that acts on your die to cast it immediately; drag or tap a column-targeting rune onto one of the columns that light up. A cast is not a move, so your die still lands afterwards. The full roster lives under <b>HOW TO PLAY → RUNES</b>.</p>
     <h3 data-i18n="learn:rules.twoPlayers.heading">Two players</h3>
     <p data-i18n-rich="learn:rules.twoPlayers.body">Pick <b>2 PLAYERS</b> to share one phone, then choose how you sit. <b>Pass phone</b>: a pass card appears between turns and the grids swap so whoever is playing is on the bottom. <b>Face to face</b>: lay the phone flat between you — the top half is turned for Player 2, turns switch on their own, and the bright half with the rotating centre die shows who's up.</p>
   </div>`,
@@ -175,13 +174,13 @@ export const MARKUP = `<div id="bg"></div><div id="vig"></div>
       <div class="modepick" id="modePick"></div>
       <div class="tiny note" id="modePickInfo"></div>
     </div>
-    <div class="card">
+    <div class="card" id="spellCard">
       <div class="lbl" data-i18n="game:practice.rune">Rune</div>
       <div class="modepick" id="spellPick"></div>
       <div class="tiny note" id="spellPickInfo"></div>
+      <div class="choice-lock" id="spellPickLock" role="note" hidden><span class="hues-lock__icon" aria-hidden="true"><span class="hues-lock__shackle"></span></span><span id="spellPickLockCopy"></span></div>
     </div>
-    <!-- the one card only two-player play has: it lands at the END, so the
-         sheet GROWS rather than shuffling what is already on screen -->
+    <!-- Two-player-only card lands at the end, so the sheet grows without reshuffling. -->
     <div class="card" id="timerCard" hidden>
       <div class="lbl" data-i18n="game:practice.turnTimer">Turn timer</div>
       <div class="seg" id="timerSeg">
@@ -333,6 +332,7 @@ ${RULES_PAGE}
   </div>
   <!-- who played, as plates (design 36f) — ranked fills this, local leaves it hidden -->
   <div class="endplates" id="endPlates" hidden></div>
+  <!-- Typed result feature/reward slot. --><div class="endfeature" id="endFeature" hidden></div>
   <div class="endmeta" id="endMeta"></div>
   <!-- share sits WITH the thing it shares (user call): right under the two
        plates, centered with them — not down in

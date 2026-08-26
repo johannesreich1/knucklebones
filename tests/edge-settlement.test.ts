@@ -31,6 +31,18 @@ const match: MatchRow = {
   last_move_at: '2026-08-23T10:00:00.000Z',
   modifier: 'classic',
   season_id: 1,
+  format: 'standard',
+  protocol_version: 1,
+  rune_rules_version: null,
+  pool_tier: 'stone',
+  phase: 'playing',
+  trial_offer: null,
+  p1_rune: null,
+  p2_rune: null,
+  selection_deadline: null,
+  selection_version: 0,
+  action_version: 0,
+  pending_aim: null,
 };
 
 interface RpcReply {
@@ -129,7 +141,11 @@ const calculate: LadderSettlement = (p1, p2, result) => {
 
 const service = new FakeService();
 service.replies = [{
-  data: { applied: true, match: { ...match, status: 'done', winner: match.p1 } },
+  data: {
+    applied: true,
+    match: { ...match, status: 'done', winner: match.p1 },
+    reward: { rune_id: 'ward', newly_collected: true },
+  },
 }];
 const completed = await settleMatch(service as unknown as EdgeClient, match, {
   status: 'done',
@@ -141,6 +157,8 @@ const completed = await settleMatch(service as unknown as EdgeClient, match, {
 
 check(completed.applied && completed.match.status === 'done',
   'successful settlement did not return the terminal RPC row');
+check(completed.reward?.rune_id === 'ward' && completed.reward.newly_collected,
+  'settlement parser dropped the atomic Rune Trial reward');
 check(service.upserts.length === 2 && service.rpcCalls.length === 1,
   'settlement did not load both ladder rows once before committing');
 check(calculations.length === 1 && calculations[0].p1 === 80
@@ -212,7 +230,8 @@ for (const file of terminalOperations) {
     `${file} still performs a sequential ladder/profile payout outside the atomic RPC`);
 }
 const claimOperation = readFileSync('supabase/functions/pvp-claim/operation.ts', 'utf8');
-check(claimOperation.includes('moveCount: moves.length')
+check(claimOperation.includes('moveCount,')
+  && claimOperation.includes('state.moveCount !== moves.length')
   && !claimOperation.includes('input.resign ? undefined'),
   'resignation can settle scores from a replay that lost a concurrent move race');
 const moveOperation = readFileSync('supabase/functions/pvp-move/operation.ts', 'utf8');
@@ -222,6 +241,16 @@ check(moveOperation.includes('commitMatchCommand(')
 const deletion = readFileSync('supabase/functions/_shared/account-deletion.ts', 'utf8');
 check(deletion.indexOf('settleMatch(') < deletion.indexOf('deleteUser('),
   'account deletion removes auth identity before settling active opponents');
+const accountDeleteOperation = readFileSync('supabase/functions/account-delete/operation.ts', 'utf8');
+const stageFailureGuard = accountDeleteOperation.indexOf(
+  'if (error) throw new Error("apple-revocation-stage-failed")',
+);
+const stagedCredentialReturn = accountDeleteOperation.indexOf(
+  'return { appleLinked, credentialId: data }',
+);
+check(stageFailureGuard !== -1 && stageFailureGuard < stagedCredentialReturn
+  && accountDeleteOperation.includes('data !== null && typeof data !== "number"'),
+  'account deletion can discard an Apple revocation staging failure before deleting auth identity');
 
 const deleting = new FakeService();
 deleting.activeMatches = [{ ...match }];

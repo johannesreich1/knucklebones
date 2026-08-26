@@ -1,7 +1,7 @@
 // Settle the ranked client view after the server has already settled the
 // match. This never computes authoritative scores or points; it only renders
 // the returned row and heals the final board from the server-written log.
-import { BOUNTY, ME, applyMove, boardTotalMode, emptyBoard, type Player } from '../core/rules.ts';
+import { BOUNTY, ME, applyMove, emptyBoard, totalOf, type Player } from '../core/rules.ts';
 import { stopTimer } from '../flow/timer.ts';
 import { S } from '../state.ts';
 import { renderAll } from '../ui/game/board.ts';
@@ -24,7 +24,7 @@ export function finishOnlineMatch(options: {
   online.done = true;
   stopTimer();
 
-  void (async () => {
+  if (!online.trial) void (async () => {
     const { data: rows } = await supa().from('match_moves')
       .select('idx, who, col, die').eq('match_id', online.matchId).order('idx');
     if (!rows || !options.isCurrent()) return;
@@ -41,9 +41,9 @@ export function finishOnlineMatch(options: {
   const meIsP1 = online.you === ME;
   const opponent = (1 - online.you) as Player;
   const mine = (meIsP1 ? match.p1_score : match.p2_score)
-    ?? boardTotalMode(S.boards[online.you], S.scoring) + bountyOf(online.you);
+    ?? totalOf(S.boards[online.you], bountyOf(online.you), S.scoring, S.charm.wards[online.you]);
   const theirs = (meIsP1 ? match.p2_score : match.p1_score)
-    ?? boardTotalMode(S.boards[opponent], S.scoring) + bountyOf(opponent);
+    ?? totalOf(S.boards[opponent], bountyOf(opponent), S.scoring, S.charm.wards[opponent]);
   const delta = (meIsP1 ? (match as any).p1_rating_delta : (match as any).p2_rating_delta) as number | null;
   const opponentDelta = (meIsP1 ? (match as any).p2_rating_delta : (match as any).p1_rating_delta) as number | null;
   const won = match.winner !== null

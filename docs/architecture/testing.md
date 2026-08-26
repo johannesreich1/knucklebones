@@ -23,22 +23,49 @@ and starts only PostgreSQL; deployable function closures are materialized and
 Deno-checked separately. Run the database sequence locally for every
 migration, grant, RLS, or RPC change.
 
+Worktree isolation does not make the local Supabase stack independent: this
+project uses fixed machine-global Docker resources and ports. Serialize
+`db:start`, reset, pgTAP, lint, and stop across all worktrees. Do not run a
+second database gate merely because its `.gate.lock` is elsewhere.
+
 The gate holds `.gate.lock` because build output is shared inside one working
 tree. Servers use kernel-assigned ports, so independent worktrees may gate in
-parallel. Use `KB_JOBS=2` under machine contention and repeat a timing failure
-alone before treating it as a product regression.
+parallel when they do not use the database stack. Playwright harnesses must
+also create their own browser context/storage and bind a kernel-assigned port;
+sharing a signed-in context or fixed dev-server port defeats worktree
+isolation. A complete local run schedules the measured long owners first
+across four workers; use `KB_JOBS=2` under machine contention and repeat a timing
+failure alone before treating it as a product regression. Start/completion
+lines include per-suite elapsed time so the schedule can be rebalanced from
+evidence when an owner grows.
+
+Hosted CI selects four coverage-checked `--ci-shard` manifests. Each shard has
+its own checkout, build output, server, and kernel-assigned ports, while using
+one suite worker inside its two-core runner to avoid browser-contention flakes.
+`tests/gate-manifest.test.ts` rejects a missing, duplicated, unknown, or
+multiply assigned suite and requires the workflow matrix to match the manifest.
+An independent, dependency-free manifest preflight guards matrix startup, so a
+removed shard cannot also remove the only check capable of noticing it. The
+four runners collectively execute the same registry as an unsharded local gate.
+The Deno closure check runs alongside one shard; database and Android compiler
+gates remain independent jobs.
 
 The spell browser keeps one no-argument run for whole-suite diagnosis and also
 exposes `--only <scenario-id>` for focused iteration. The release runner uses
 four coverage-validated `--shard` selections: every scenario must belong to
 exactly one shard or startup fails. Local workers overlap those independent
-browsers; CI's `JOBS=1` runs the same shard union sequentially, so the speedup
-does not remove or narrow coverage. Successful selected runs print only their
-scenario ids; a failure keeps the full observation report for diagnosis.
+browsers; CI distributes the same shard union across its coverage-checked gate
+manifests, without removing or narrowing coverage. Successful selected runs
+print only their scenario ids; a failure keeps the full observation report for diagnosis.
 Ordinary spell scenarios also settle the opening roll synchronously after
 invalidating its delayed callback. Tutorial pacing and LIMITED's real die bag
 stay authentic, and dedicated lifecycle suites retain opening-animation
 coverage; the spell suite therefore spends its time on the state it owns.
+
+`testupdate` is the sole `exclusive-final` suite. It mutates `pwa/` through the
+shared server only after every pooled suite in its checkout has completed, and
+the runner restores generated output afterward. Manifest and executor contracts
+prove it cannot overlap a reader or be followed by another suite.
 
 Pure localization contracts keep the registry, exact catalog keys,
 interpolation placeholders, trusted rich-copy shape, typed compact labels,
@@ -67,13 +94,14 @@ its effective 44 px hit region.
 
 Legal delivery has two focused pure contracts. Run
 `mise exec -- node --experimental-strip-types tests/legal.test.ts` for draft
-suppression, ready-fact validation, all 24 synthetic static pages, canonical and
+public-route suppression, exact Settings/auth placeholder doors, ready-fact
+validation, all 24 synthetic static pages, canonical and
 `hreflang` metadata, and shared in-app/static document parity. Run
 `mise exec -- node tests/service-worker.test.mjs` for exact root/legal cache
 keys, offline isolation, and rejection of unknown-page or missing-asset HTML
 fallback. `mise exec -- node tests/browser/legal.mjs` opens the real controller
-through a synthetic non-shipping opener because production draft intentionally
-has no legal links; that controller still renders the checked-in draft facts.
+through a synthetic non-shipping opener so all four documents are covered;
+production draft exposes only Imprint/Privacy in Settings and Privacy in auth.
 The same run browser-renders the 24 pages generated from a complete synthetic
 ready fixture. Across 320 × 568, 390 × 844, 568 × 320, and 667 × 375 it covers
 192 in-app/static locale-page cases, shared-renderer parity, text ranges, full
@@ -108,6 +136,32 @@ typed helper expresses the common action.
 - Pure rules and replay receive deterministic seeds and cover all registered
   modes/spells through the registry rather than copied name lists where
   possible.
+- Ranked-outcome tests cover every permanent tier/capability intersection and
+  exact 40/60 integer weights, strict format/modifier resolution, all 20
+  three-of-six offers, independent same-rune choices, and deterministic
+  participant-specific auto-picks. Trial action tests replay committed aim,
+  cast, placement, FATE draw, one-cast enforcement, charm, reconnect
+  projection, ANVIL timeout resolution, and a cast-terminal game.
+- Collection/offline tests start from an empty account, distinguish no cache
+  from a verified account snapshot, reject cross-account cache reuse, and cover
+  every 0/1/2/3/6-rune setup boundary. Browser tests prove focusable per-option
+  locks and their visible reasons, a non-hue lock treatment, separate
+  CPU/two-player preferences, local secret pass-and-pick, restart preserving the
+  current deal, durable unseen reward presentation, and the transient `TRY IT`
+  return path. Pure outcome coverage owns RANDOM's Trial admission and odds;
+  do not claim a browser workflow until it actually drives that workflow.
+- Database Rune Trial contracts exercise grants/RLS and negative visibility,
+  v1/v2 queue capability isolation, stale-claim rejection, idempotent
+  selection/action retries, deadline auto-picks, atomic terminal action reward,
+  duplicate versus first reward, durable acknowledgement, monotonic
+  promotion/no-demotion, ANVIL reservation plus bot follow-up, and the legacy
+  LIMITED constraint. Resignation, timeout, deletion, draw/loss no-reward,
+  historical backfill, and full bot-Trial settlement need explicit pgTAP cases
+  before this page may describe them as database-covered.
+- Client idempotency coverage holds Rune Trial selection, aim, cast, and place
+  input closed across a lost response plus an unchanged authoritative read,
+  and proves every retry reuses the original command id until the delayed
+  commit is observed or the server returns a definitive rejection.
 - Mocks match the authoritative API or migration result shape. A hand-written
   mock that omits a renamed field can keep a broken client green.
 - Test hooks such as `window.__kb`, `__kbOnline`, and `__kbResult` are stable

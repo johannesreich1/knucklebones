@@ -398,6 +398,12 @@ verify_jwt = true
 [functions.pvp-move]
 verify_jwt = true
 
+[functions.pvp-rune-select]
+verify_jwt = true
+
+[functions.pvp-action]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

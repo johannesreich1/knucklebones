@@ -21,17 +21,36 @@ import { createQueueScreen } from './queue-screen.ts';
 import { createResultScreen } from './result-screen.ts';
 import { ensureIdentity, myProfile } from './session.ts';
 import { syncAccountPreferences } from './preferences.ts';
-import { installOnlineShell, showOnlineLoading, type OnlinePanel } from './shell.ts';
+import {
+  refreshRuneCollection,
+  runeCollectionMatchesActiveAccount,
+  type RuneCollectionRefresh,
+} from './rune-collection.ts';
+import {
+  firstUnseenRuneReward,
+  showRuneRewardSheet,
+  type RuneRewardSheet,
+} from './rune-reward-presentation.ts';
+import {
+  installOnlineShell,
+  isOnlinePanelCurrent,
+  showOnlineLoading,
+  type OnlinePanel,
+} from './shell.ts';
 import { setFinishHandler, type FinishReport } from './play.ts';
 
 export type OnlineView = 'play' | 'board' | 'account';
-export interface OnlinePorts { startTutorial: () => void }
+export interface OnlinePorts {
+  startTutorial: () => void;
+  tryRune: (runeId: string, onBackToRanked: () => void) => boolean;
+}
 
 let bound = false;
 let pendingView: OnlineView | null = null;
 let entryRevision = 0;
 let exitOnline: () => void = goHome;
 let onlinePorts: OnlinePorts | null = null;
+let activeRuneReward: RuneRewardSheet | null = null;
 
 const queue = createQueueScreen({
   goHome,
@@ -51,11 +70,15 @@ const account = createAccountScreen({
   showAvatar: avatar.show,
   showBoard: ladder.show,
   showHistory,
+  presentRuneReward: presentAccountRuneReward,
 });
 const result = createResultScreen({
   goHome,
   nextDuel,
   openProfile: openProfileFromResult,
+  tryRune: (runeId, report) => {
+    onlinePorts?.tryRune(runeId, () => { void result.show(report); });
+  },
 });
 
 function showAuthPanel(mode: AuthMode, origin: AuthOrigin, notice: string | null = null): void {
@@ -80,14 +103,65 @@ function focusOnlineTitle(): void {
   $('#onTitle').focus({ preventScroll: true });
 }
 
-function showAccount(): Promise<void> {
+async function showAccount(): Promise<void> {
   const showing = account.show();
   focusOnlineTitle();
-  return showing;
+  await showing;
+}
+
+function closeRuneReward(): void {
+  const active = activeRuneReward;
+  activeRuneReward = null;
+  active?.close();
+}
+
+function presentRuneReward(
+  collection: RuneCollectionRefresh,
+  owns: () => boolean,
+  onContinue: () => void,
+  onBackFromTryout: () => void,
+): boolean {
+  const reward = firstUnseenRuneReward(collection);
+  const ports = onlinePorts;
+  if (!reward || !ports || !owns()) return false;
+  closeRuneReward();
+  let presentation!: RuneRewardSheet;
+  const release = (): void => {
+    if (activeRuneReward === presentation) activeRuneReward = null;
+  };
+  presentation = showRuneRewardSheet(reward, {
+    owns: () => activeRuneReward === presentation && owns(),
+    onContinue: () => { release(); onContinue(); },
+    onTry: (runeId) => {
+      release();
+      return ports.tryRune(runeId, onBackFromTryout);
+    },
+  });
+  activeRuneReward = presentation;
+  return true;
+}
+
+function presentAccountRuneReward(
+  collection: RuneCollectionRefresh,
+  ownsAccount: () => boolean,
+): void {
+  const revision = entryRevision;
+  const stillCurrent = (): boolean => revision === entryRevision && ownsAccount();
+  void presentRuneReward(
+    collection,
+    stillCurrent,
+    () => undefined, // the fully painted profile is already under the sheet
+    () => {
+      if (revision !== entryRevision) return;
+      show('#ovOnline');
+      void account.show();
+    },
+  );
 }
 
 function goHome(): void {
   entryRevision++;
+  closeRuneReward();
   queue.stop();
   closeEnd();
   hide('#ovOnline');
@@ -95,24 +169,49 @@ function goHome(): void {
   exitOnline = goHome;
 }
 
-function openProfileFromResult(): void {
+function openProfileFromResult(onReturn: () => void): void {
+  entryRevision++;
+  closeRuneReward();
   exitOnline = () => {
+    exitOnline = goHome;
     hide('#ovOnline');
     replayPlates();
+    onReturn();
   };
   show('#ovOnline');
   void route('account');
 }
 
 function nextDuel(): void {
+  const revision = ++entryRevision;
+  exitOnline = goHome;
+  closeRuneReward();
   closeEnd();
+  showOnlineLoading('onQueue');
   show('#ovOnline');
-  void route('play');
+  focusOnlineTitle();
+  /* A result request can still be in flight, and a visible reward can still be
+     inside its entrance. Verify durable unseen rows again before matchmaking;
+     queueing never starts behind a reward that Next Duel just covered. */
+  void refreshRuneCollection().then(async (collection) => {
+    if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
+    const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
+    if (!ownsCollection || revision !== entryRevision
+        || !$('#ovOnline').classList.contains('on')) return;
+    await routeWithRuneReward('play', collection, revision);
+  }).catch(() => {
+    if (revision === entryRevision && $('#ovOnline').classList.contains('on')) {
+      void route('play');
+    }
+  });
 }
 
 async function route(view: OnlineView): Promise<void> {
   if (view === 'board') return ladder.show();
-  if (view === 'account') return account.show();
+  if (view === 'account') {
+    await account.show();
+    return;
+  }
   const user = await ensureIdentity();
   if (!user) {
     pendingView = 'play';
@@ -120,6 +219,37 @@ async function route(view: OnlineView): Promise<void> {
     return;
   }
   return queue.start();
+}
+
+async function routeWithRuneReward(
+  view: OnlineView,
+  collection: RuneCollectionRefresh,
+  revision: number,
+): Promise<void> {
+  /* Account paints one coherent profile first and presents from its own fresh
+     collection response. Queue/reconnect must not begin behind a modal reward,
+     so those destinations wait until Continue or the borrowed tryout returns. */
+  if (view === 'account') {
+    const refreshed = await account.show();
+    /* Account normally presents its own freshest collection. If that second
+       refresh failed after entry already verified an unseen row, keep the
+       verified discovery instead of silently throwing it away. */
+    if (revision === entryRevision && !activeRuneReward
+        && refreshed && !refreshed.verified && refreshed.accountId
+        && refreshed.accountId.toLowerCase() === collection.accountId?.toLowerCase()) {
+      presentAccountRuneReward(collection, () => isOnlinePanelCurrent('onAccount'));
+    }
+    return;
+  }
+  const current = (): boolean => revision === entryRevision
+    && $('#ovOnline').classList.contains('on');
+  const resume = (): void => {
+    if (revision !== entryRevision) return;
+    show('#ovOnline');
+    void route(view);
+  };
+  if (presentRuneReward(collection, current, resume, resume)) return;
+  await route(view);
 }
 
 function loadingPanel(view: OnlineView | null): OnlinePanel {
@@ -135,12 +265,15 @@ async function entered(): Promise<void> {
   showOnlineLoading(loadingPanel(view));
   show('#ovOnline');
   focusOnlineTitle();
-  await myProfile();
+  const [, collection] = await Promise.all([myProfile(), refreshRuneCollection()]);
   if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
   await syncAccountPreferences();
   if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
+  const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
+  if (!ownsCollection || revision !== entryRevision
+      || !$('#ovOnline').classList.contains('on')) return;
   refreshHomeChip();
-  await route(view ?? 'play');
+  await routeWithRuneReward(view ?? 'play', collection, revision);
 }
 
 function bind(): void {
@@ -173,6 +306,8 @@ if (typeof window !== 'undefined') {
 export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<void> {
   onlinePorts = ports;
   bind();
+  const revision = ++entryRevision;
+  closeRuneReward();
   exitOnline = goHome;
   if (view === 'board') {
     show('#ovOnline');
@@ -180,12 +315,27 @@ export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<
     return ladder.show();
   }
   const user = await ensureIdentity();
+  if (revision !== entryRevision) return;
   setSessionless(!user);
   if (user) {
+    /* Mount one complete destination state before exposing the lazy overlay.
+       Account preference hydration may take a network turn; showing the
+       overlay first left every panel hidden (and the title at ONLINE), so that
+       empty shell painted above the eager chunk loader for a visible flash.
+       Ladder already establishes its wait synchronously before yielding. */
+    showOnlineLoading(loadingPanel(view));
     show('#ovOnline');
     pendingView = null;
-    await syncAccountPreferences();
-    return route(view);
+    const [, collection] = await Promise.all([
+      syncAccountPreferences(),
+      refreshRuneCollection(user.id),
+    ]);
+    if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
+    if (collection.accountId?.toLowerCase() !== user.id.toLowerCase()) return;
+    const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
+    if (!ownsCollection || revision !== entryRevision
+        || !$('#ovOnline').classList.contains('on')) return;
+    return routeWithRuneReward(view, collection, revision);
   }
   pendingView = view;
   showAuthPanel('restore', 'home');

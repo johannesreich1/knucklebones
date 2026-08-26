@@ -9,6 +9,45 @@ import {
   verifyRandomTwoLocaleRepaint,
 } from './locale-reveal.mjs';
 
+export async function lendCollectedRunes(page, collected) {
+  return page.evaluate((runes) => {
+    const cacheKey = 'knucklebones.runes.v1';
+    const previous = localStorage.getItem(cacheKey);
+    localStorage.setItem(cacheKey, JSON.stringify({
+      version: 1,
+      accountId: '11111111-2222-4333-8444-555555555555',
+      verifiedAt: 1,
+      collected: runes,
+      poolTier: null,
+    }));
+    return previous;
+  }, collected);
+}
+
+export async function restoreCollectedRunes(page, previous) {
+  await page.evaluate((cached) => {
+    const cacheKey = 'knucklebones.runes.v1';
+    if (cached === null) localStorage.removeItem(cacheKey);
+    else localStorage.setItem(cacheKey, cached);
+  }, previous);
+}
+
+export async function prepareCollectedRandomTwoReveal(page) {
+  const previous = await lendCollectedRunes(page, ['fate', 'ward']);
+  await page.evaluate(() => {
+    const game = window.__kb;
+    game.S.gen++;
+    game.goHome();
+    game.openPractice();
+    game.S.mode = 'cpu';
+    game.S.localMode = -1;
+    game.S.spell = 'random2';
+    window.__kbTestOriginalRandom = Math.random;
+    Math.random = () => 0.25;
+  });
+  return previous;
+}
+
 async function inspectActiveHeading(page) {
   return page.evaluate(() => {
     const title = document.getElementById('wheelTitle');
@@ -52,17 +91,38 @@ async function inspectActiveHeading(page) {
   });
 }
 
-export async function verifyRandomTwoReveal(page, out, check) {
+export async function verifyRandomTwoReveal(page, out, check, collected) {
   const initialLocale = await observeLocale(page);
   const [beforeLocale, afterLocale] = localeCycleFrom(initialLocale, 1);
   const beforeGame = gameCopyFor(beforeLocale);
-  await page.evaluate(() => {
+  /* Boot hydrates account preferences lazily. Its session check correctly
+     removes a cache that is not bound to a live account, so let that one-time
+     reconciliation consume the init-script sentinel before installing this
+     scenario's returning-player fixture. */
+  await page.waitForFunction(() => !localStorage.getItem('knucklebones.runes.v1'),
+    null, { timeout: 20000 });
+  await page.evaluate((runes) => {
+    /* This CPU scenario owns the two-player labels. Reinstall its verified
+       collection after startup reconciliation so RANDOM ×2 is admitted for
+       the same reason it is admitted for a returning player. */
+    localStorage.setItem('knucklebones.runes.v1', JSON.stringify({
+      version: 1,
+      accountId: '11111111-2222-4333-8444-555555555555',
+      verifiedAt: 1,
+      collected: runes,
+    }));
     const k = window.__kb;
-    k.goHome(); k.S.mode = 'cpu'; k.openPractice();
-    document.querySelector('#modePick button[data-v="0"]').click();
-    document.querySelector('#spellPick button[data-v="random2"]').click();
-    k.S.timer = 0;
-  });
+    k.goHome(); k.openPractice();
+  }, collected);
+  /* Use the setup controls so changing from the preceding local-duo scenario
+     activates the CPU choice slot before selecting RANDOM x2. Assigning
+     S.mode directly bypasses that slot switch and startLocal() correctly
+     restores the old empty CPU rune choice. */
+  await page.click('#modeSeg button[data-m="cpu"]');
+  await page.click('#modePick button[data-v="0"]');
+  await page.click('#spellPick button[data-v="random2"]');
+  await page.evaluate(() => { window.__kb.S.timer = 0; });
+  const selectedSpell = await page.evaluate(() => window.__kb.S.spell);
   const started = Date.now();
   await page.click('#btnPlay');
   await page.waitForSelector('#ovWheel.dealing.hunting #wheelOwner:not([hidden])', { timeout: 8000 });
@@ -141,7 +201,7 @@ export async function verifyRandomTwoReveal(page, out, check) {
     visibleCards: [...document.querySelectorAll('#spellBar .rune:not([hidden])')]
       .filter((card) => !!card.offsetParent).length,
   }));
-  const dual = { firstMs, secondMs, firstHeading, first, secondHeading, secondDeck,
+  const dual = { selectedSpell, firstMs, secondMs, firstHeading, first, secondHeading, secondDeck,
     localizedOwner, second, played };
   out.dual = dual;
   check(dual.first.title === beforeGame.reveal.runeFor
@@ -179,7 +239,7 @@ export async function verifyRandomTwoReveal(page, out, check) {
     'the two shuffle beats do not identify which player receives each rune', dual);
   verifyRandomTwoLocaleRepaint(dual.localizedOwner, beforeLocale, afterLocale, check);
   check(dual.first.card === dual.played.me && dual.second.card === dual.played.ai
-      && dual.played.me !== dual.played.ai && dual.played.selector === 'random2',
+      && dual.played.me !== dual.played.ai && dual.selectedSpell === 'random2',
     'the cards shown were not the distinct per-player hands actually dealt', dual);
   check(dual.first.deck.length === 6 && new Set(dual.first.deck).size === 6
       && dual.secondDeck.deck.length === 5 && new Set(dual.secondDeck.deck).size === 5

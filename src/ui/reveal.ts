@@ -1,30 +1,16 @@
-// THE PRE-GAME REVEAL: the one screen that answers "what am I about to play?"
-//
-// ONE screen, a SEQUENCE OF BEATS. Ranked leaves one thing to chance (the
-// mode the server drew) and offline can leave up to three answers (the mode
-// and one distinct rune per player) — so this is not "the mode wheel plus a
-// spell wheel", it is one
-// reveal that runs a beat per unanswered question and then holds ONCE.
-// Two overlays with two five-second countdowns is the same screen shown
-// twice, and the player would have watched the mode's answer scroll away
-// before the rune arrived.
-//
-// What a beat owns: its theatre and its answer. What this shell owns and no
-// beat may re-implement: the overlay, the title line, the readout under the
-// stage, the settled strip, the countdown, and THE RULE THE WHOLE SCREEN
-// OBEYS — it must not spoil itself. The name, the blurb and the colour of
-// the answer are written by `land`, never by a beat's own markup, so a beat
-// physically cannot leak its result early.
-//
-// The overlay's id is `#ovWheel` for the same reason `matches.modifier` is
-// still called that: it is the name the tests, the CSS and the design cards
-// already know, and renaming it buys the player nothing.
+// THE PRE-GAME REVEAL answers "what am I about to play?" with one sequence of
+// beats and one countdown. Each beat owns its theatre and answer; this shell
+// alone owns the overlay, title, settled strip, readout, hold, and anti-spoiler
+// rule. Answers are written only after landing, so a beat cannot leak early.
+// `#ovWheel` stays stable because tests, CSS, and design cards already share it.
 import type { ModeSpec } from '../core/modes.ts';
 import type { Player } from '../core/rules.ts';
 import type { SpellSpec } from '../core/spells.ts';
 import { formatNumber, subscribeLocale, t } from '../i18n/index.ts';
 import { dialBeat } from './modedial.ts';
+import type { DialModeChoice, DialModeCopy } from './modedial.ts';
 import { dealBeat } from './runedeal.ts';
+import { trialRuneRevealBeat, type TrialRevealSide } from './trial-reveal.ts';
 import { paintAvatar } from './avatar.ts';
 import { $, show, hide } from './dom.ts';
 import { appRoot } from './embed.ts';
@@ -256,17 +242,23 @@ const SWAP_MS = 260;
 
 /** run the reveal for whatever was left to chance; resolves when the player is done */
 export async function reveal(opts: {
-  mode?: ModeSpec | null;
+  mode?: Pick<ModeSpec, 'id'> | null;
+  modeCandidates?: readonly DialModeChoice[];
+  modeCopy?: (id: string) => DialModeCopy;
   spell?: SpellSpec | null;
   runes?: readonly {
     spell: SpellSpec;
     player: Player;
     candidates?: readonly SpellSpec[];
   }[];
+  trialRunes?: readonly [TrialRevealSide, TrialRevealSide];
   peer?: DialPeer; me?: DialSide; foe?: DialSide;
 }): Promise<void> {
   const beats: Beat[] = [];
-  if (opts.mode) beats.push(dialBeat(opts.mode));
+  if (opts.mode) beats.push(dialBeat(opts.mode, {
+    candidates: opts.modeCandidates,
+    copy: opts.modeCopy,
+  }));
   if (opts.spell) beats.push(dealBeat(opts.spell));
   for (const rune of opts.runes ?? []) {
     beats.push(dealBeat(rune.spell, {
@@ -276,6 +268,7 @@ export async function reveal(opts: {
       contextHue: colorOf(rune.player),
     }));
   }
+  if (opts.trialRunes) beats.push(trialRuneRevealBeat(opts.trialRunes));
   if (!beats.length) return;               // nothing was left to chance
   build();
   const ov = $('#ovWheel');

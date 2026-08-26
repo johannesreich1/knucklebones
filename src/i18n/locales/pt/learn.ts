@@ -44,7 +44,7 @@ export const ptLearn = {
     },
     runes: {
       heading: 'Runas',
-      body: 'Partidas offline podem dar uma <b>runa</b> ao lado do dado — há seis runas à escolha na configuração, logo abaixo do modo de jogo. <b>Nenhuma</b> é o padrão; opções nomeadas e <b>aleatória</b> dão a mesma runa aos dois, enquanto <b>aleatória 2</b> sorteia duas diferentes. A pilha de cartas de cada jogador fica visível. Uma borda da cor do jogador indica o dono, e a mão ativa vem para a frente a cada turno. Pressione uma runa que age no dado para usá-la de imediato; arraste ou toque numa runa de coluna e depois numa coluna iluminada. Usar uma runa não é uma jogada, então você ainda coloca o dado. A lista completa está em <b>COMO JOGAR → RUNAS</b>. Partidas ranqueadas nunca usam runas.',
+      body: 'Partidas offline podem dar uma <b>runa</b> ao lado do dado. No multijogador local, as seis estão sempre disponíveis; contra a IA, só é possível usar runas coletadas online. <b>Nenhuma</b> é o padrão; opções nomeadas e <b>aleatória</b> dão runas iguais aos dois jogadores, enquanto <b>aleatória 2</b> dá runas diferentes. Na <b>Prova de Runas</b>, os dois escolhem em segredo entre as mesmas três runas e revelam juntos. Vença uma Prova ranqueada para coletar a runa escolhida; outros modos ranqueados ignoram runas equipadas. Pressione uma runa que age no dado para usá-la de imediato; arraste ou toque numa runa de coluna e depois numa coluna iluminada. Usar uma runa não é uma jogada, então você ainda coloca o dado. A lista completa está em <b>COMO JOGAR → RUNAS</b>.',
     },
     twoPlayers: {
       heading: 'Dois jogadores',

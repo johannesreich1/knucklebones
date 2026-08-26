@@ -67,7 +67,13 @@ export async function runSettingsNavigationScenarios(suite) {
         'the section spacing is not attached to the Accessibility heading', out.settingsOpen);
   check(!out.settingsOpen.instantMessage, 'the redundant instant-apply message is still in Settings', out.settingsOpen);
 
-  const accessibilityTop = () => page.$eval('#accessibilityHeading', (heading) => heading.getBoundingClientRect().top);
+  /* Playwright may scroll the bounded Settings body just enough to tap a
+     near-bottom segment once the legal footer is present. Compare the
+     heading's content coordinate, not its transient viewport coordinate. */
+  const accessibilityTop = () => page.$eval('#accessibilityHeading', (heading) => {
+    const body = heading.closest('.pbody');
+    return heading.getBoundingClientRect().top + (body?.scrollTop ?? 0);
+  });
   const topBeforeColourBlind = await accessibilityTop();
   await page.tap('#cbSeg button[data-b="1"]'); await page.waitForTimeout(150);
   out.colourBlindLocks = await page.evaluate(() => [...document.querySelectorAll('#ovSettings .hues')].map((picker) => {
@@ -212,13 +218,13 @@ export async function runSettingsNavigationScenarios(suite) {
     title: document.querySelector('#ovSettings .shead .ttl')?.textContent ?? '',
     quitInSheet: !!document.querySelector('#ovSettings #btnMenu'),
     buildTag: !!document.querySelector('#ovSettings #buildTag'),
-    draftLegalDoors: document.querySelectorAll('#ovSettings [data-legal-open]').length,
+    placeholderLegalDoors: document.querySelectorAll('#ovSettings [data-legal-open]').length,
     homeFoot: !!document.querySelector('#ovStart > .viewfoot'),
   }));
   check(!out.sheet.quitInSheet, 'Quit is still inside the Settings sheet', out.sheet);
   check(out.sheet.buildTag, 'the build tag is not at the bottom of Settings', out.sheet);
-  check(out.sheet.draftLegalDoors === 0,
-    'draft legal publication exposed a Settings door', out.sheet);
+  check(out.sheet.placeholderLegalDoors === 2,
+    'Settings does not expose exactly the approved Imprint/Privacy placeholder doors', out.sheet);
   check(out.sheet.homeFoot,
     'draft legal publication removed Home structural spacing', out.sheet);
   check(!out.sheet.reset, 'Reset record still in Settings', out.sheet);
@@ -226,14 +232,10 @@ export async function runSettingsNavigationScenarios(suite) {
   // Settings is a PAGE below Home now (user call, 2026-08-21): ‹ left like
   // OFFLINE and the ladder, not the old sheet ✕ on the right
   check(out.sheet.back === '‹' && out.sheet.title === 'SETTINGS', 'Settings page header wrong', out.sheet);
-  /* Production stays fail-closed, so exercise the ready-state placement with
-     synthetic doors wearing the exact shipped classes and real controller. */
+  /* Public routes stay fail-closed, while the owner-approved in-app placeholder
+     doors use the same controller and final Settings placement. */
   out.settingsLegal = await page.evaluate(() => {
     const footer = document.querySelector('#ovSettings .settings-foot');
-    footer.insertAdjacentHTML('afterbegin', `<nav class="legal-settings-nav" data-legal-navigation aria-label="Legal pages">
-      <button type="button" class="linkbtn" id="settingsImprintTest" data-legal-open="imprint">Imprint</button>
-      <button type="button" class="linkbtn" id="settingsPrivacyTest" data-legal-open="privacy">Privacy</button>
-    </nav>`);
     const buttons = [...footer.querySelectorAll('[data-legal-open]')];
     const footBox = footer.getBoundingClientRect();
     const viewBox = document.getElementById('ovSettings').getBoundingClientRect();
@@ -251,8 +253,8 @@ export async function runSettingsNavigationScenarios(suite) {
   check(out.settingsLegal.pages.join() === 'imprint,privacy' && out.settingsLegal.beforeBuild
     && out.settingsLegal.atBottom
     && out.settingsLegal.targets.every((target) => target.width >= 44 && target.height >= 44 && target.hit),
-  'ready legal doors are not a reachable Imprint/Privacy pair at the Settings bottom', out.settingsLegal);
-  await page.tap('#settingsPrivacyTest'); await page.waitForTimeout(100);
+  'placeholder legal doors are not a reachable Imprint/Privacy pair at the Settings bottom', out.settingsLegal);
+  await page.tap('#btnSettingsPrivacy'); await page.waitForTimeout(100);
   out.settingsPrivacy = await page.evaluate(() => {
     const overlay = document.getElementById('ovPrivacy');
     const heading = overlay.querySelector('h1');
@@ -268,7 +270,7 @@ export async function runSettingsNavigationScenarios(suite) {
     'Privacy did not open above Settings as the active modal', out.settingsPrivacy);
   await page.tap('#ovPrivacy [data-legal-close]'); await page.waitForTimeout(50);
   out.settingsPrivacy.focusRestored = await page.evaluate(() =>
-    document.activeElement?.id === 'settingsPrivacyTest'
+    document.activeElement?.id === 'btnSettingsPrivacy'
       && document.getElementById('ovSettings').classList.contains('on')
       && !document.getElementById('ovSettings').inert);
   check(out.settingsPrivacy.focusRestored,

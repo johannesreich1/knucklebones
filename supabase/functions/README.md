@@ -43,12 +43,15 @@ scores and ladder changes are computed from the server-written move log;
 
 Ranked rollout is database-first. Apply the ranked lifecycle/command/history
 migrations before deploying `account-delete`, `pvp-claim`, `pvp-join`, and
-`pvp-move`. Game Center is separate: apply `0014_game_center_ids.sql`, then
-`20260823132611_game_center_service_grants.sql`, configure the external rate
-limit, and only then deploy `gc-auth`. Apple identity additionally requires
-`20260825192805_apple_identity_credentials.sql`, the owner-held Apple key as
-function secrets, the identity/revocation functions, and a cron schedule for
-`apple-revocation-retry`. Repository checks do not prove dashboard state.
+`pvp-move`. Game Center and Apple identity use the separate guarded
+`apple-game-center` database rollout: it applies
+`20260826102600_game_center_ids.sql`,
+`20260826102601_game_center_service_grants.sql`, and
+`20260826102602_apple_identity_credentials.sql` in that order. Configure the
+external rate limit before deploying `gc-auth`; the Apple half additionally
+requires the owner-held Apple key as function secrets, the identity/revocation
+functions, and a cron schedule for `apple-revocation-retry`. Repository checks
+do not prove dashboard state.
 
 The PvP functions import `./core/*` — src/ files uploaded VERBATIM next to
 `index.ts`, mirroring the repo layout with `src/` stripped (`src/core/rules.ts`
@@ -68,8 +71,30 @@ it still named `elo.ts` (deleted long before) and omitted `ladder.ts` and
 `modes.ts`, which every PvP function imports. `tests/fnsync.test.ts` now walks
 the same imports and fails when one resolves to nothing.
 
-Deploys go through the Supabase MCP (`deploy_edge_function`). Its `files`
-argument is exactly what the tool prints:
+The Rune Trial compatibility rollout uses the guarded whole-closure helper,
+not a sequence of hand-built deploy calls:
+
+```bash
+# Preview the exact six-function plan. No production write.
+mise exec -- npm run functions:production:rune-trial
+
+# Apply only after the guarded Rune Trial database migration is exact.
+KB_ALLOW_PRODUCTION_RUNE_FUNCTIONS=1 \
+  mise exec -- npm run functions:production:rune-trial -- --apply
+```
+
+The helper deploys `pvp-rune-select`, `pvp-action`, `account-delete`,
+`pvp-claim`, `pvp-move`, then `pvp-join` last so Trial matchmaking cannot
+activate before every authority endpoint is ready. It requires committed
+closures and the pinned CLI, reuses the database rollout's exact history,
+owner, RLS, ACL, function-body, Realtime, and cron audit, deploys every closure
+whole, then downloads and compares every runtime path and byte before
+continuing. Supabase's readback prunes some per-function type-only inputs; the
+helper accepts only the exact path/function combinations whose committed source
+hashes are pinned.
+
+Other explicitly reviewed deploys may go through the Supabase MCP
+(`deploy_edge_function`). Its `files` argument is exactly what the tool prints:
 
 ```bash
 mise exec -- node tools/fnfiles.mjs pvp-join --json

@@ -11,16 +11,35 @@ import { newerMatchProjection, readMatchSyncSnapshot } from '../src/online/match
 import { randomUuid } from '../src/online/random-id.ts';
 import {
   isMissingQueueLifecycleRpc,
+  joinResultFromResponse,
   leaveQueueWithClient,
 } from '../src/online/match-api.ts';
 import { localizedAuthError } from '../src/online/session.ts';
 import { rankedBadge } from '../src/online/play-copy.ts';
+import { supportsRankedClientRules } from '../src/online/play-state.ts';
+import { trialSelectionSettled } from '../src/online/trial-selection.ts';
 import { setLanguageOverride, t } from '../src/i18n/index.ts';
 
 const problems: string[] = [];
 const check = (condition: boolean, message: string, detail?: unknown) => {
   if (!condition) problems.push(`${message} :: ${JSON.stringify(detail)}`);
 };
+
+check(joinResultFromResponse(409, { error: 'incompatible-client' })?.status === 'incompatible'
+  && joinResultFromResponse(409, { error: 'unsupported-rune-rules' })?.status === 'incompatible'
+  && joinResultFromResponse(500, { error: 'incompatible-client' }) === null,
+  'join compatibility failures were not classified narrowly');
+check(supportsRankedClientRules({ format: 'rune_trial', protocol_version: 2,
+  rune_rules_version: 1 } as never)
+  && !supportsRankedClientRules({ format: 'rune_trial', protocol_version: 1,
+    rune_rules_version: 1 } as never)
+  && !supportsRankedClientRules({ format: 'rune_trial', protocol_version: 2,
+    rune_rules_version: 2 } as never),
+  'the client did not fail closed on incompatible Rune Trial replay rules');
+check(!trialSelectionSettled({ status: 'active' })
+  && trialSelectionSettled({ status: 'done' })
+  && trialSelectionSettled({ status: 'forfeit' }),
+  'selection did not treat every server-terminal Trial as resolved');
 
 const first = historyPageArgs(30);
 check(JSON.stringify(first) === JSON.stringify({ limit_n: 30 }),
@@ -74,6 +93,10 @@ check(deterministicUuid === '00010203-0405-4607-8809-0a0b0c0d0e0f'
   'the iOS-14-compatible command/nonce generator is not RFC 4122 UUIDv4', deterministicUuid);
 
 const matchApiSource = readFileSync('src/online/match-api.ts', 'utf8');
+const onlineClientSource = readFileSync('src/online/client.ts', 'utf8');
+check(onlineClientSource.includes('new AbortController()')
+  && onlineClientSource.includes('Promise.race([request, timeout])'),
+  'online function calls have no bounded abort/recovery boundary');
 const moveTransport = matchApiSource.slice(
   matchApiSource.indexOf('async function moveCommand'),
   matchApiSource.indexOf('export async function move('),
@@ -82,10 +105,28 @@ check(!moveTransport.includes('status === 0')
   && (moveTransport.match(/callFunction<MoveResult>\('pvp-move'/g) ?? []).length === 1,
   'new web can automatically replay a move against the old non-idempotent Edge Function');
 const playSource = readFileSync('src/online/play.ts', 'utf8');
+const trialSelectionSource = readFileSync('src/online/trial-selection.ts', 'utf8');
+check(trialSelectionSource.includes('readRuneTrialState(current.match.id)')
+  && !trialSelectionSource.includes('join(false)'),
+  'Rune Trial selection recovery can mutate matchmaking instead of reading its known match');
+const trialActionSource = readFileSync('src/online/play-trial-actions.ts', 'utf8');
+check(trialActionSource.includes('online.actionApplied >= committedVersion')
+  && trialActionSource.includes('boundedAction(')
+  && trialActionSource.includes('requireProjectionRecovery(online, committedVersion)')
+  && trialActionSource.includes('recoverIdempotentCommand(response')
+  && (trialActionSource.match(/submittedAtVersion, action, commandId/g) ?? []).length === 2,
+  'Rune Trial input can reopen before its authoritative action version projects');
+check(trialSelectionSource.includes('recoverIdempotentCommand(committed')
+  && (trialSelectionSource.match(/selectedRune, commandId/g) ?? []).length === 2,
+  'Rune Trial selection can replace an uncertain command with a fresh choice');
+const trialSyncSource = readFileSync('src/online/play-sync.ts', 'utf8');
+check(trialSyncSource.includes('projectionRecoveryVersionReached(online)'),
+  'a version-behind Rune Trial snapshot can reopen input during action recovery');
 check(playSource.includes('sync: () => sync(true)') && !playSource.includes('if (res.rejoined)'),
   'fresh matches do not sync a possible old-backend bot opening move before input');
 check(playSource.includes('newerMatchProjection(online.pendingRow, r.data.match)')
-  && playSource.includes('if (isDone(m)) freezeMatchInput()'),
+  && playSource.includes('freezeMatchInput();')
+  && playSource.includes('drainTerminalProjection(online, m'),
   'ranked play is not consuming the monotonic terminal projection/input gate');
 
 let initialAttempts = 0;
@@ -211,6 +252,10 @@ check(leaveCalls === 1, 'cancel cleanups ran concurrently across the join race',
 releaseFirstLeave();
 await Promise.all([firstCleanup, settledCleanup]);
 check(leaveCalls === 2, 'a queued join result did not receive post-settlement cleanup', leaveCalls);
+
+await serialCancellation.cleanup({ status: 'incompatible' });
+check(leaveCalls === 2,
+  'an incompatible active-match response mutated queue lifecycle state', leaveCalls);
 
 /* If matching committed before cancellation, either the lifecycle RPC or the
    join response can discover it. Both routes converge on one confirmed resign

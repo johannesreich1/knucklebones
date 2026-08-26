@@ -52,6 +52,13 @@ const settledScale = async (button, active = null) => button.evaluate(async (ele
 export async function holdAndCancel(page, selector) {
   const button = target(page, selector);
   await button.waitFor({ state: 'visible' });
+  /* `visible` includes a partly clipped control. On Linux the History button
+     can begin at y=922 in a 932px viewport, putting its box centre below the
+     screen; raw mouse coordinates then press nothing and native :active never
+     starts. Bring the whole target into view and let Playwright prove the
+     current hit stack is stable before taking over with the held press. */
+  await button.scrollIntoViewIfNeeded();
+  await button.hover();
   const box = await button.boundingBox();
   if (!box) throw new Error(`no box for ${selector}`);
   const resting = await scaleOf(page, selector);

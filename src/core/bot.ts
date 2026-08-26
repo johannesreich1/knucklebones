@@ -11,7 +11,7 @@
 // reached for, so a caller can seed it and replay the same choice. Callers in
 // production pass Math.random; the gate passes a seeded stream to prove the
 // extraction changed nothing.
-import { legalCols, type GameState, type Mode, type Player } from './rules.ts';
+import { legalCols, type CharmSt, type GameState, type Mode, type Player } from './rules.ts';
 import { searchRoot } from './ai.ts';
 import { botShapeAt } from './ladder.ts';
 
@@ -22,7 +22,7 @@ import { botShapeAt } from './ladder.ts';
    Search configuration is per call. The same injected random stream drives
    slips and tie-break jitter, so a caller can replay the whole decision. */
 export function botMove(st: GameState, botIdx: Player, die: number, rating: number,
-                        mode: Mode, rand: () => number): number {
+                        mode: Mode, rand: () => number, rootCharm?: CharmSt): number {
   const shape = botShapeAt(rating);
   const legal = legalCols(st[botIdx]);
   if (!legal.length) return -1;                 // nothing to play: the caller is asking too late
@@ -39,6 +39,7 @@ export function botMove(st: GameState, botIdx: Player, die: number, rating: numb
     random: rand,
     riskWeight: shape.risk,
     opponentWeight: shape.oppW,
+    rootCharm,
   }).c;
   return col;
 }

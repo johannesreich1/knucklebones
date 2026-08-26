@@ -1,13 +1,39 @@
-function injectPrivacyDoor(page) {
-  return page.evaluate(() => {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'linkbtn';
-    button.id = 'authPrivacyTestDoor';
-    button.dataset.legalOpen = 'privacy';
-    button.textContent = 'Privacy';
-    document.getElementById('onAuth').append(button);
-  });
+async function beginTouchDrag(page, locator, distance, pointerId) {
+  const box = await locator.boundingBox();
+  if (!box) return null;
+  const drag = {
+    x: Math.round(box.x + box.width / 2),
+    y: Math.round(box.y + box.height / 2),
+    endY: Math.round(box.y + box.height / 2 + distance),
+    pointerId,
+  };
+  await page.evaluate(async ({ x, y, endY, pointerId }) => {
+    const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const fire = (type, clientY) => document.elementFromPoint(x, Math.min(clientY, innerHeight - 1))
+      ?.dispatchEvent(new PointerEvent(type, {
+        pointerId, pointerType: 'touch', isPrimary: true,
+        clientX: x, clientY, button: 0, buttons: type === 'pointerup' ? 0 : 1,
+        bubbles: true, cancelable: true,
+      }));
+    fire('pointerdown', y);
+    for (let step = 1; step <= 8; step++) {
+      await wait(30);
+      fire('pointermove', y + ((endY - y) * step) / 8);
+    }
+  }, drag);
+  return drag;
+}
+
+async function endTouchDrag(page, drag) {
+  if (!drag) return;
+  await page.evaluate(({ x, endY, pointerId }) => {
+    document.elementFromPoint(x, Math.min(endY, innerHeight - 1))
+      ?.dispatchEvent(new PointerEvent('pointerup', {
+        pointerId, pointerType: 'touch', isPrimary: true,
+        clientX: x, clientY: endY, button: 0, buttons: 0,
+        bubbles: true, cancelable: true,
+      }));
+  }, drag);
 }
 
 async function probeSessionlessModal(page) {
@@ -16,7 +42,7 @@ async function probeSessionlessModal(page) {
   await page.fill('#onPass', 'unchanged-secret');
   const before = await page.evaluate(() => ({
     title: document.getElementById('onAuthTitle')?.textContent,
-    draftPrivacyDoors: document.querySelectorAll('#onAuth [data-legal-open="privacy"]').length,
+    placeholderPrivacyDoors: document.querySelectorAll('#onAuth [data-legal-open="privacy"]').length,
     homeOn: document.getElementById('ovStart')?.classList.contains('on'),
     homeInert: document.getElementById('ovStart')?.inert,
     onlineOn: document.getElementById('ovOnline')?.classList.contains('on'),
@@ -31,8 +57,7 @@ async function probeSessionlessModal(page) {
     password: document.getElementById('onPass')?.value,
   }));
 
-  await injectPrivacyDoor(page);
-  await page.click('#authPrivacyTestDoor');
+  await page.click('#btnAuthPrivacy');
   await page.waitForSelector('#ovPrivacy.on');
   const nested = await page.evaluate(() => {
     const overlay = document.getElementById('ovPrivacy');
@@ -49,7 +74,8 @@ async function probeSessionlessModal(page) {
 
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => !document.getElementById('ovPrivacy').classList.contains('on'));
-  await page.waitForTimeout(30);
+  await page.waitForFunction(() => document.activeElement?.id === 'btnAuthPrivacy',
+    null, { timeout: 2000 }).catch(() => { /* the observation below owns the failure detail */ });
   const afterPrivacy = await page.evaluate(() => ({
     authOpen: !!document.querySelector('.authsheet:not(.foout)'),
     focused: document.activeElement?.id,
@@ -107,7 +133,6 @@ async function probeAccountOrigin(page) {
 
 async function probeShortModal(page) {
   await page.waitForSelector('.authsheet .focard');
-  await injectPrivacyDoor(page);
   const grabber = page.locator('.authsheet .fograb');
   const box = await grabber.boundingBox();
   if (box) {
@@ -126,8 +151,9 @@ async function probeShortModal(page) {
     if (!card || !panel || !grab) return { missing: true };
     const cardBox = card.getBoundingClientRect();
     panel.scrollTop = panel.scrollHeight;
-    const privacy = document.getElementById('authPrivacyTestDoor');
+    const privacy = document.getElementById('btnAuthPrivacy');
     const privacyBox = privacy.getBoundingClientRect();
+    const grabBox = grab.getBoundingClientRect();
     const hit = document.elementFromPoint(
       privacyBox.left + privacyBox.width / 2,
       privacyBox.top + privacyBox.height / 2,
@@ -135,14 +161,55 @@ async function probeShortModal(page) {
     return {
       cardInViewport: cardBox.top >= -1 && cardBox.bottom <= innerHeight + 1,
       internalScroll: panel.scrollHeight > panel.clientHeight + 1,
+      overflowMode: card.parentElement?.classList.contains('fooverflow'),
       finalReachable: privacyBox.top >= cardBox.top && privacyBox.bottom <= cardBox.bottom
         && !!hit && privacy.contains(hit),
+      fullWidthHandle: grabBox.width >= cardBox.width - 36,
       cardTouch: getComputedStyle(card).touchAction,
       panelTouch: getComputedStyle(panel).touchAction,
       grabTouch: getComputedStyle(grab).touchAction,
     };
   });
-  return { afterShortDrag, geometry };
+  const handleDrag = await beginTouchDrag(page, grabber, 120, 31);
+  await endTouchDrag(page, handleDrag);
+  await page.waitForFunction(() => !document.querySelector('.authsheet'));
+  const handleDismissed = await page.evaluate(() => !document.getElementById('ovStart')?.inert);
+  return { afterShortDrag, geometry, handleDismissed };
+}
+
+async function probeCardDrag(page) {
+  await page.waitForSelector('.authsheet .focard');
+  await page.waitForTimeout(380);
+  const title = page.locator('#onAuthTitle');
+  const first = await title.boundingBox();
+  if (!first) return { missing: true };
+  const shortDrag = await beginTouchDrag(page, title, 48, 32);
+  const held = await page.evaluate(() => ({
+    dy: Number.parseFloat(document.querySelector('.authsheet')?.style.getPropertyValue('--fo-dy') || '0'),
+    cardDragMode: document.querySelector('.authsheet')?.classList.contains('focarddrag'),
+    overflowMode: document.querySelector('.authsheet')?.classList.contains('fooverflow'),
+  }));
+  /* A held partial pull springs home; without this pause it is intentionally a
+     fast flick and the shared sheet correctly commits the dismissal. */
+  await page.waitForTimeout(100);
+  await endTouchDrag(page, shortDrag);
+  await page.waitForTimeout(260);
+  const sprung = await page.evaluate(() => ({
+    open: !!document.querySelector('.authsheet:not(.foout)'),
+    dy: Number.parseFloat(document.querySelector('.authsheet')?.style.getPropertyValue('--fo-dy') || '0'),
+  }));
+
+  const second = await title.boundingBox();
+  if (second) {
+    const longDrag = await beginTouchDrag(page, title, 124, 33);
+    await endTouchDrag(page, longDrag);
+  }
+  await page.waitForFunction(() => !document.querySelector('.authsheet'));
+  const dismissed = await page.evaluate(() => ({
+    homeInert: document.getElementById('ovStart')?.inert,
+    authRestored: document.getElementById('onAuth')?.parentElement?.classList.contains('pbody'),
+  }));
+  return { held, sprung, dismissed };
 }
 
 async function submitCredentials(page) {
@@ -196,6 +263,7 @@ async function probeCredentialTransition(page, routes) {
     settled,
     passwordCalls: routes.passwordCalls(),
     profileCalls: routes.profileCalls(),
+    tierProfileCalls: routes.tierProfileCalls(),
   };
 }
 
@@ -213,7 +281,11 @@ async function probeCancelledTransition(page, routes) {
       .filter((panel) => !panel.hidden && panel.id !== 'onLoading')
       .map((panel) => panel.id),
   }));
-  return { ...state, profileCalls: routes.profileCalls() };
+  return {
+    ...state,
+    profileCalls: routes.profileCalls(),
+    tierProfileCalls: routes.tierProfileCalls(),
+  };
 }
 
 async function probeAccountCredentialSuccess(page, routes) {
@@ -237,9 +309,9 @@ export async function runAuthModalScenarios(suite) {
     probe: probeSessionlessModal });
   out.authModalSessionless = sessionless.probeResult;
   const s = sessionless.probeResult;
-  check(s?.before.draftPrivacyDoors === 0 && s.before.homeOn && s.before.homeInert
+  check(s?.before.placeholderPrivacyDoors === 1 && s.before.homeOn && s.before.homeInert
     && !s.before.onlineOn && s.before.modal === 'true',
-  'sessionless auth is not a modal over inert Home or leaked a draft legal door', s?.before);
+  'sessionless auth is not a modal over inert Home or lacks its placeholder Privacy door', s?.before);
   check(s?.swapped.title === 'CREATE ACCOUNT' && s.swapped.action === 'Create account'
     && s.swapped.email === 'player@example.test' && s.swapped.password === 'unchanged-secret',
   'switching auth step rebuilt the form or lost sessionless copy', s?.swapped);
@@ -247,7 +319,7 @@ export async function runAuthModalScenarios(suite) {
     && s.nested.email === s.swapped.email && s.nested.password === s.swapped.password
     && s.nested.title === s.swapped.title,
   'Privacy did not stack above and preserve the auth form', s?.nested);
-  check(s?.afterPrivacy.authOpen && s.afterPrivacy.focused === 'authPrivacyTestDoor'
+  check(s?.afterPrivacy.authOpen && s.afterPrivacy.focused === 'btnAuthPrivacy'
     && s.afterPrivacy.homeInert && s.afterPrivacy.email === s.swapped.email
     && s.afterPrivacy.password === s.swapped.password && s.afterPrivacy.title === s.swapped.title,
   'first Escape dismissed auth or lost its step/input instead of only closing Privacy', s?.afterPrivacy);
@@ -270,9 +342,18 @@ export async function runAuthModalScenarios(suite) {
     viewport: { width: 568, height: 320 }, probe: probeShortModal });
   out.authModalShort = short.probeResult;
   const g = short.probeResult?.geometry;
-  check(short.probeResult?.afterShortDrag && g?.cardInViewport && g.internalScroll && g.finalReachable
-    && g.cardTouch === 'auto' && g.panelTouch === 'pan-y' && g.grabTouch === 'none',
+  check(short.probeResult?.afterShortDrag && short.probeResult.handleDismissed
+    && g?.cardInViewport && g.internalScroll && g.overflowMode && g.finalReachable
+    && g.fullWidthHandle && g.cardTouch === 'auto' && g.panelTouch === 'pan-y'
+    && g.grabTouch === 'none',
   'short auth form is clipped, unscrollable, or a short handle drag dismissed it', short.probeResult);
+
+  const drag = await visit({ anonymous: 422, skipStandardProbes: true, probe: probeCardDrag });
+  out.authModalCardDrag = drag.probeResult;
+  const d = drag.probeResult;
+  check(d?.held.cardDragMode && !d.held.overflowMode && d.held.dy >= 35
+    && d.sprung.open && d.sprung.dy <= 1 && !d.dismissed.homeInert && d.dismissed.authRestored,
+  'a fitting auth sheet did not follow, spring back, and dismiss from its shared card surface', d);
 
   const error = await visit({ anonymous: 422, passwordAuth: 'error', skipStandardProbes: true,
     probe: probeCredentialError });
@@ -289,7 +370,8 @@ export async function runAuthModalScenarios(suite) {
   check(c?.passwordCalls === 1 && c.transition.onlineOn && c.transition.loadingVisible
     && c.transition.authRestored && c.transition.authHidden && c.transition.focused === 'onTitle',
   'successful credentials did not atomically leave auth for the owned loading view', c);
-  check(c?.profileCalls >= 2 && c.settled.secondSheetOpen && c.settled.accountVisible
+  check(c?.profileCalls >= 2 && c.tierProfileCalls >= 2
+    && c.settled.secondSheetOpen && c.settled.accountVisible
     && c.settled.onlineInert,
   'an older successful transition closed or displaced a newer auth sheet', c);
 
@@ -297,7 +379,8 @@ export async function runAuthModalScenarios(suite) {
     skipStandardProbes: true, probe: probeCancelledTransition });
   out.authCredentialCancelled = cancelled.probeResult;
   const x = cancelled.probeResult;
-  check(x?.homeOn && !x.onlineOn && x.profileCalls === 1 && x.visiblePanels.length === 0,
+  check(x?.homeOn && !x.onlineOn && x.profileCalls === 1 && x.tierProfileCalls === 1
+    && x.visiblePanels.length === 0,
     'Back during credential loading allowed the stale destination route to continue', x);
 
   const accountSuccess = await visit({ passwordAuth: 'success', skipStandardProbes: true,

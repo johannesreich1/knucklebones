@@ -10,9 +10,12 @@ Johannes's legal name, physical address, federal state, private/hobby status,
 and v1 business model are recorded. One typed legal document system now covers
 provider information, privacy, support, and account deletion in English,
 Brazilian Portuguese, Spanish, German, French, and Italian. Its checked-in
-publication status is deliberately **draft**: the application renders no legal
-navigation and the build emits no public legal routes until every required fact
-and review flag passes the fail-closed gate.
+publication status is deliberately **draft**. By owner decision, Settings now
+shows Imprint and Privacy and the attach/sign-in modal shows Privacy using the
+localized placeholder document. The build still emits no public legal routes
+until every required fact and review flag passes the fail-closed gate. These
+in-app placeholders are an interim discoverability measure, not a completed or
+reviewed legal publication.
 
 Neither store requires a
 separate translation merely because the app is downloadable in a country, but
@@ -66,7 +69,8 @@ business connection reopens the assessment.
 Do not guess or publish missing values:
 
 1. Create a dedicated public support/privacy email address and set the typed
-   `publicEmail` legal fact. A free mailbox is acceptable;
+   `publicEmail` legal fact, replacing the visible placeholder. A free mailbox
+   is acceptable;
    a custom-domain mailbox is preferable but not legally necessary. It must be
    monitored, and it will be public in the app, privacy policy, support page,
    and Google Play developer profile.
@@ -184,7 +188,8 @@ store privacy/Data Safety answers must be derived from the same inventory.
 
 `src/legal/` is the only legal-content source for both the in-app renderer and
 generated static pages. Facts that must not be guessed live in
-`src/legal/config.ts`; `draft` produces no links or routes, while `ready` first
+`src/legal/config.ts`; `draft` produces no public routes and exposes only the
+owner-approved in-app placeholder doors in Settings/auth, while `ready` first
 requires a public email, processor regions and retention facts, localized
 transfer/deletion facts, and completed legal, translation, processor,
 child-privacy, and deletion-workflow reviews. It also revalidates the complete
@@ -214,8 +219,10 @@ focuses the document heading; the visible Back control and Escape use one close
 path that restores the opener's focus. The page body is the only scroller,
 long links wrap, and Back plus related-page buttons retain an effective 44 px
 hit area. Public page and language navigation use the same target minimum.
-Draft keeps these production entry points absent even though focused tests can
-drive the shared controller with a synthetic non-shipping opener.
+Draft keeps public URLs and the Home entry point absent. Settings/auth expose
+the explicitly approved placeholder doors; focused tests also use a synthetic
+opener to exercise all four shared document types without widening production
+navigation.
 
 The service worker recognizes only `/`, `/index.html`, and the generated route
 list as cacheable navigations. Root and each legal route retain separate cache

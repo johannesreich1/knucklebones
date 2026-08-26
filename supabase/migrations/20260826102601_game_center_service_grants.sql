@@ -1,4 +1,4 @@
--- Device-gated with gc-auth and migration 0014. RLS bypass does not replace
+-- Held Apple/Game Center rollout stage 2 of 3. RLS bypass does not replace
 -- ordinary table privileges: the Edge Function needs explicit access on clean
 -- projects whose public entities are not auto-exposed.
 

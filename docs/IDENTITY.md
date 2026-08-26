@@ -38,9 +38,9 @@ learns a provider's name; the web build finds none.
 Attach and restore repaint one stable form inside the shared modal sheet, so
 switching steps or opening the nested Privacy page does not clear the email or
 password fields. Dismissing a sheet opened from a guest profile returns to that
-profile; initial sessionless fallback, sign-out, and deletion return Home. The
-Privacy door uses the legal publication gate and therefore remains absent while
-`LEGAL_RELEASE.status` is `draft`. On success the sheet retires before profile
+profile; initial sessionless fallback, sign-out, and deletion return Home.
+Privacy uses the owner-approved in-app placeholder door while public legal URLs
+remain gated by `LEGAL_RELEASE.status`. On success the sheet retires before profile
 loading begins: Profile-origin restore refreshes Profile, while Home-origin
 auth continues the destination the player originally requested. Back cancels
 that pending destination rather than allowing it to route later under Home.
@@ -75,8 +75,9 @@ Apple `.p8` key and generated client secrets never enter the app bundle.
 
 **Rung 3 — Game Center: repository implementation complete, not deployed.** The
 signature verification is tested against Apple's real production certificates,
-but nothing has run on a device. The Edge Function, migration 0014, and its
-`20260823132611_game_center_service_grants.sql` companion stay un-deployed
+but nothing has run on a device. The Edge Function and the held
+`20260826102600_game_center_ids.sql` plus
+`20260826102601_game_center_service_grants.sql` migrations stay un-deployed
 until a signed build can exercise them — an auth endpoint that has never
 answered a real request does not belong in production. Native authentication
 is initialized once at launch and published as state; online restore consumes
@@ -163,16 +164,18 @@ Capacitor bridge; web code imports no native plugin.
 
 Game Center remains one held owner rollout, in this order:
 
-1. apply pending migration `0014_game_center_ids.sql`;
-2. immediately apply `20260823132611_game_center_service_grants.sql`, which
-   narrows that table to the service-role reads/inserts the function needs;
-3. deploy `cloudflare/identity-gateway`, configure its strict web/native origin
+1. preview `mise exec -- npm run db:production:apple-game-center`, then apply
+   the guarded `apple-game-center` allow-list with the explicit production
+   opt-in. It contains `20260826102600_game_center_ids.sql`,
+   `20260826102601_game_center_service_grants.sql`, and
+   `20260826102602_apple_identity_credentials.sql` in that order;
+2. deploy `cloudflare/identity-gateway`, configure its strict web/native origin
    allow-list, rate-limit binding, upstream URL/publishable key, and a shared
    `GC_AUTH_ORIGIN_SECRET` also set on `gc-auth`;
-4. apply `20260825192805_apple_identity_credentials.sql`, deploy
-   `identity-status`, `apple-token-register`, `apple-revocation-retry`, and the
-   updated `account-delete`, then schedule the retry function with its secret;
-5. deploy `gc-auth`, then exercise launch restore, attach, account switching,
+3. deploy `identity-status`, `apple-token-register`, `apple-revocation-retry`,
+   and the updated `account-delete`, then schedule the retry function with its
+   secret;
+4. deploy `gc-auth`, then exercise launch restore, attach, account switching,
    Apple repair, deletion, and revocation with a signed physical device.
 
 Hold the whole sequence until the device and rate-limit prerequisite exist.

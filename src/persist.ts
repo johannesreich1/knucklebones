@@ -6,6 +6,18 @@ import { S, DIFFS, MODES, TIMERS, SEATS, HUE_IDS, oneOf } from './state.ts';
 import { spellById, RANDOM_DUAL_SPELL, RANDOM_SPELL } from './core/spells.ts';
 import { isLanguageOverride, setLanguageOverride } from './i18n/index.ts';
 
+const RUNE_TRIAL_PICK = -2;
+
+function localModePick(value: unknown, fallback: number): number {
+  return Number.isInteger(value) && Number(value) >= RUNE_TRIAL_PICK && Number(value) <= 6
+    ? Number(value) : fallback;
+}
+
+function spellPick(value: unknown, fallback: string): string {
+  return value === '' || value === RANDOM_SPELL || value === RANDOM_DUAL_SPELL || spellById(value as string)
+    ? String(value) : fallback;
+}
+
 const Store = {
   KEY: 'knucklebones.v1',
   read(): Record<string, unknown> {
@@ -23,6 +35,10 @@ export function saveStats(): void {
                 localeOverride: S.localeOverride,
                 numerals: S.numerals, timer: S.timer, seat: S.seat, tutDone: S.tutDone, played: S.played,
                 localMode: S.localMode, spell: S.spell,
+                localChoices: {
+                  cpu: { ...S.localChoices.cpu },
+                  duo: { ...S.localChoices.duo },
+                },
                 p1Hue: S.p1Hue, p2Hue: S.p2Hue, colorblind: S.colorblind,
                 reducedMotion: S.reducedMotion });
 }
@@ -45,14 +61,30 @@ export function loadStats(): void {
   if (S.p1Hue === S.p2Hue) S.p2Hue = S.p1Hue === 'mg' ? 'cy' : 'mg';
   if (typeof d.colorblind === 'boolean') S.colorblind = d.colorblind;
   if (typeof d.reducedMotion === 'boolean') S.reducedMotion = d.reducedMotion;
-  // '' is NONE; any other value must still be a spell this build knows about
-  if (d.spell === '' || d.spell === RANDOM_SPELL || d.spell === RANDOM_DUAL_SPELL
-      || spellById(d.spell)) S.spell = d.spell;
+  // Legacy builds stored one setup for both contexts. Start both new slots
+  // from that validated value, then let a complete per-context slot override.
+  const legacyMode = localModePick(d.localMode, S.localMode);
+  const legacySpell = spellPick(d.spell, S.spell);
+  S.localChoices = {
+    cpu: { localMode: legacyMode, spell: legacySpell },
+    duo: { localMode: legacyMode, spell: legacySpell },
+  };
+  if (d.localChoices && typeof d.localChoices === 'object') {
+    for (const mode of MODES) {
+      const choice = d.localChoices[mode];
+      if (!choice || typeof choice !== 'object') continue;
+      S.localChoices[mode] = {
+        localMode: localModePick(choice.localMode, S.localChoices[mode].localMode),
+        spell: spellPick(choice.spell, S.localChoices[mode].spell),
+      };
+    }
+  }
+  S.localMode = S.localChoices[S.mode].localMode;
+  S.spell = S.localChoices[S.mode].spell;
   if (typeof d.tutDone === 'boolean') S.tutDone = d.tutDone;
   if (typeof d.played === 'boolean') S.played = d.played;
   // a player with a record from before this flag existed has obviously played
   if (S.wins + S.losses + S.draws + S.p1 + S.p2 + S.ties > 0) S.played = true;
-  if (Number.isInteger(d.localMode) && d.localMode >= -1 && d.localMode <= 6) S.localMode = d.localMode;
 }
 
 /* one-time hygiene: earlier builds stored an in-progress game here */

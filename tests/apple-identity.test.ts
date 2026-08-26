@@ -7,6 +7,7 @@ import {
   sha256Hex,
   type AppleSignInBridge,
 } from '../src/online/identity.ts';
+import { runOneTapFromAuthSheet } from '../src/online/auth-screen.ts';
 import type { GameCenterProof } from '../src/native/game-center.ts';
 
 const problems: string[] = [];
@@ -208,6 +209,27 @@ check(await restored.identity.restore() === null && restored.requestedMode() ===
   && restored.calls.verifyOtp[0]?.token_hash === 'gc-hash'
   && !('Authorization' in (restored.calls.requests[0].init.headers as Record<string, string>)),
 'Game Center restore was not a sessionless verified OTP exchange', restored.calls);
+
+const sessionlessSheet = gameCenterHarness();
+check(await runOneTapFromAuthSheet(
+  sessionlessSheet.identity,
+  'attach',
+  async () => null,
+) === null && sessionlessSheet.requestedMode() === 'sign-in'
+  && sessionlessSheet.calls.verifyOtp[0]?.token_hash === 'gc-hash',
+'the sessionless CREATE ACCOUNT sheet did not restore the Game Center player',
+sessionlessSheet.calls);
+
+const attachedSheet = gameCenterHarness({ session: { access_token: 'guest-access' } });
+check(await runOneTapFromAuthSheet(
+  attachedSheet.identity,
+  'attach',
+  async () => ({ id: 'guest', guest: true, email: null }),
+) === null && attachedSheet.requestedMode() === 'attach'
+  && (attachedSheet.calls.requests[0].init.headers as Record<string, string>).Authorization
+    === 'Bearer guest-access',
+'the account sheet did not preserve Game Center attach for its current session',
+attachedSheet.calls);
 
 const appeared = gameCenterHarness({ session: { access_token: 'appeared-during-proof' } });
 check(await appeared.identity.restore() === null && appeared.calls.verifyOtp.length === 0,

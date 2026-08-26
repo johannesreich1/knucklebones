@@ -12,5 +12,5 @@ export function restartLocal(): void {
   /* S.starter points at the NEXT opener. Reverse it for this restart; newGame's
      normal flip restores the queued next opener without advancing rotation. */
   S.starter = (1 - S.starter) as Player;
-  newGame({ scoring, spells });
+  newGame({ scoring, spells, trial: S.localTrial });
 }

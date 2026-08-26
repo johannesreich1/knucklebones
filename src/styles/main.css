@@ -13,6 +13,7 @@
 @import "./components/mode-dial.css";
 @import "./components/rune-deal.css";
 @import "./components/picker.css";
+@import "./components/trial-select.css";
 @import "./game/guards.css";
 @import "./game/spell-effects-ward-sunder.css";
 @import "./game/row-modes.css";

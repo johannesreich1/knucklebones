@@ -1,5 +1,6 @@
-# Build + full behavioural test run on every push and PR.
-# The gate is tests/run-all.mjs — it fails on any suite problem or page error.
+# Build + the complete sharded behavioural gate on every push and PR.
+# tests/run-all.mjs fails on any suite problem or page error; its manifest
+# proves the four isolated jobs are exactly the same inventory as a local run.
 name: CI
 on:
   push:
@@ -7,9 +8,29 @@ on:
   pull_request:
 
 jobs:
-  test:
+  manifest:
+    name: test / manifest
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+      # Bootstrap the matrix independently: dropping a shard also has to pass
+      # the exact-union and workflow-matrix contract before expensive jobs run.
+      - run: node --experimental-strip-types tests/gate-manifest.test.ts
+
+  test_shard:
+    name: test / ${{ matrix.shard }}
+    needs: manifest
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      # Each shard reports its complete inventory even when a peer is red.
+      fail-fast: false
+      matrix:
+        shard: [ci-1, ci-2, ci-3, ci-4]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -17,17 +38,33 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       # Hosted Edge Functions run the Deno 2.1-compatible runtime. Check the
-      # exact computed deploy closures, including _shared and shared core.
+      # exact computed deploy closures once, alongside the first web shard.
       - uses: denoland/setup-deno@v2
+        if: matrix.shard == 'ci-1'
         with:
           deno-version: v2.1.14
       - run: npm ci
       - run: node tools/check-functions.mjs
+        if: matrix.shard == 'ci-1'
       # chromium for the file/served suites and bench3; webkit because
-      # test16/test17 launch it — missing here, they die on browser
-      # provisioning while green locally (three red runs, 2026-08-20)
+      # test16/test17 launch it. Runners are isolated and keep JOBS=1 inside
+      # each balanced shard, avoiding browser contention in a two-core VM.
       - run: npx playwright install --with-deps chromium webkit
-      - run: npm test
+      - run: npm test -- --ci-shard "${{ matrix.shard }}"
+
+  # Preserve the historical stable `test` check for branch protection and
+  # downstream automation while the detailed shard checks stay visible.
+  test:
+    name: test
+    if: ${{ always() }}
+    needs: [manifest, test_shard]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require manifest and every test shard
+        run: |
+          test "${{ needs.manifest.result }}" = success
+          test "${{ needs.test_shard.result }}" = success
 
   database:
     runs-on: ubuntu-latest

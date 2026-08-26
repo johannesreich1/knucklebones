@@ -7,9 +7,11 @@ import { availableTaps } from './identity.ts';
 import {
   acknowledgeCurrentAccount,
   attachEmail,
+  currentUser,
   requireGameCenterAssertion,
   signIn,
 } from './session.ts';
+import type { OneTap } from './identity-provider.ts';
 import { onlineMessage, repaintOnlineMessage } from './message-copy.ts';
 
 export type AuthMode = 'attach' | 'restore';
@@ -122,6 +124,19 @@ const AUTH: Record<AuthMode, AuthSpec> = {
 
 export function setSessionless(value: boolean): void {
   sessionless = value;
+}
+
+export async function runOneTapFromAuthSheet(
+  method: Pick<OneTap, 'id' | 'restore' | 'attach'>,
+  mode: AuthMode,
+  readCurrentUser: typeof currentUser = currentUser,
+): Promise<string | null> {
+  /* Home's sessionless CREATE ACCOUNT sheet uses attach copy, but Game Center
+     has no account to attach to there. Restore its authenticated native player
+     instead; a real guest/account session keeps the explicit attach path. */
+  const effectiveMode = method.id === 'gamecenter' && mode === 'attach'
+    && !(await readCurrentUser()) ? 'restore' : mode;
+  return method[effectiveMode]();
 }
 
 function closeAuthSheet(restoreOpener = true): void {
@@ -272,7 +287,7 @@ function showOneTapRow(
       setAuthBusy(true);
       let message: string | null;
       try {
-        message = await method[mode]();
+        message = await runOneTapFromAuthSheet(method, mode);
       } catch {
         message = onlineMessage('errors.generic');
       }

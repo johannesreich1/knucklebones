@@ -64,10 +64,10 @@ export function initializeGameCenter(): Promise<GameCenterAuthState> {
   const bridge = plugin();
   if (!bridge) return Promise.resolve(state);
   started = (async () => {
-    if (bridge.addListener) {
-      await bridge.addListener('authStateChanged', publish);
-    }
     try {
+      if (bridge.addListener) {
+        await bridge.addListener('authStateChanged', publish);
+      }
       const initial = await bridge.initialize();
       publish(initial);
     } catch {

@@ -5,6 +5,7 @@
 export type CanceledJoinResult =
   | { status: 'queued' }
   | { status: 'matched'; match: { id: string } }
+  | { status: 'incompatible' }
   | null;
 
 export type QueueLeaveResult =
@@ -42,6 +43,7 @@ export function createQueueCancellation(ports: QueueCancellationPorts): QueueCan
   };
 
   const cleanup = async (settledJoin: CanceledJoinResult): Promise<void> => {
+    if (settledJoin?.status === 'incompatible') return;
     if (settledJoin?.status === 'matched') {
       await resignOnce(settledJoin.match.id);
       return;

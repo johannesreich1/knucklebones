@@ -168,7 +168,7 @@ async function inspectLadder(suite, page, label) {
 
 async function inspectFaceoff(suite, page, label) {
   const surface = await inspectSurface(page, '.faceoff', [
-    '.fograb', '.gpill', '.fost', '.fogap', '.fovs',
+    '.focard', '.fograb', '.gpill', '.fost', '.fogap', '.fovs',
   ]);
   checkSurface(suite.check, `faceoff-${label}`, surface, { targets: false });
   const focus = await page.evaluate(() => {

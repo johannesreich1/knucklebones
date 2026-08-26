@@ -19,6 +19,10 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     viewport = { width: 430, height: 932 },
     paginationRace = false,
     passwordAuth = 'error',
+    runes = [],
+    unseenRunes = [],
+    markRunesSeenAfterFirstRead = false,
+    expectReward = false,
     probe = null,
     skipStandardProbes = false,
   }) {
@@ -33,8 +37,8 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
 
     const routes = await installOnlineRoutes(page, {
       anonymous, attached, authDelay,
-      dataDelay: inspectLoading ? 900 : dataDelay,
-      door, named, paginationRace, passwordAuth, SESSION, GUEST_ID,
+      dataDelay: inspectLoading ? 900 : dataDelay, markRunesSeenAfterFirstRead,
+      door, named, paginationRace, passwordAuth, runes, unseenRunes, SESSION, GUEST_ID,
     });
     if (door === 'play') {
       /* Ranked newcomers stop at the once-only tutorial offer. This probe is
@@ -62,6 +66,31 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
       };
     });
     const homeBeforeOnline = await homeSnapshot();
+    if (inspectLoading) {
+      await page.evaluate(() => {
+        window.__onlineEntry = { frames: 0, emptyFrames: 0, first: null };
+        const sample = () => {
+          const overlay = document.getElementById('ovOnline');
+          let visiblePanels = [];
+          if (overlay?.classList.contains('on')) {
+            visiblePanels = [...overlay.querySelectorAll('.panel')]
+              .filter((panel) => !panel.hidden && panel.getBoundingClientRect().height > 0)
+              .map((panel) => panel.id);
+            const frame = {
+              title: document.getElementById('onTitle')?.textContent ?? '',
+              visiblePanels,
+            };
+            window.__onlineEntry.frames++;
+            if (!visiblePanels.length) window.__onlineEntry.emptyFrames++;
+            window.__onlineEntry.first ??= frame;
+          }
+          if (!visiblePanels.some((id) => id !== 'onLoading')) {
+            requestAnimationFrame(sample);
+          }
+        };
+        requestAnimationFrame(sample);
+      });
+    }
     await page.click(entry);
     await page.waitForSelector('#ovOnline', { state: 'attached', timeout: 15000 });
     let loading = null;
@@ -89,11 +118,14 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
           visiblePanels: [...document.querySelectorAll('#ovOnline .panel:not(#onLoading)')]
             .filter((panel) => !panel.hidden && panel.getBoundingClientRect().height > 0)
             .map((panel) => panel.id),
+          entry: window.__onlineEntry ?? null,
         };
       }, door === 'board' ? 'onBoard' : 'onAccount');
     }
     if (door === 'play') {
-      await page.waitForSelector('#onQueue:not([hidden])', { timeout: 15000 });
+      await page.waitForSelector(expectReward
+        ? '.rune-reward-sheet .focard'
+        : '#onQueue:not([hidden])', { timeout: 15000 });
     } else if (door === 'board') {
       await page.waitForSelector('#ovOnline .lb .lrow', { timeout: 15000 });
     } else {
@@ -102,7 +134,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
         return (a && !a.hidden) || (s && !s.hidden);
       }, null, { timeout: 15000 });
     }
-    await page.waitForTimeout(250);
+    if (!expectReward) await page.waitForTimeout(250);
     // online.css has now landed. Its selectors may style its own screens and
     // body-level sheets, but must not repaint the eager Home hiding underneath.
     const homeAfterOnline = await homeSnapshot();
@@ -138,7 +170,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
       const rootLang = await page.locator('html').getAttribute('lang');
       await ctx.close();
       return { queueLabel: samples, queueCancel, errs, loading, signupCalls: routes.signupCalls(),
-               rootLang,
+               rootLang, probeResult,
                homeStyles: { before: homeBeforeOnline, after: homeAfterOnline } };
     }
 

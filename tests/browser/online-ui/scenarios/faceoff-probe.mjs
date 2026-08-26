@@ -36,7 +36,16 @@ export async function probeFaceoff(page, { door, motion }) {
       await page.click('#ovOnline .lb .lrow');
       await page.waitForFunction(() =>
         /\d/.test(document.querySelector('.faceoff .fostreak')?.textContent ?? ''), null, { timeout: 15000 });
-      await page.waitForTimeout(450);
+      await page.waitForFunction(() => {
+        const ov = document.querySelector('.faceoff:not(.foout)');
+        const card = ov?.querySelector('.focard');
+        if (!ov || !card) return false;
+        const box = card.getBoundingClientRect();
+        const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+        const transform = getComputedStyle(card).transform;
+        const dy = transform && transform !== 'none' ? new DOMMatrixReadOnly(transform).m42 : 0;
+        return box.width > 0 && box.height > 0 && !!hit && ov.contains(hit) && Math.abs(dy) <= 1;
+      }, null, { timeout: 3000 });
     };
     const gone = () => page.waitForFunction(() => !document.querySelector('.faceoff'),
                                             null, { timeout: 4000 }).then(() => true, () => false);
@@ -290,7 +299,13 @@ export async function probeFaceoff(page, { door, motion }) {
         };
         requestAnimationFrame(tick);
       });
-      await page.waitForTimeout(60);
+      /* Do not press Escape until the renderer has actually painted the
+         resting hit stack. A fixed sleep can expire without a single rAF on
+         a contended Linux runner, producing `rested: 0` without exercising
+         either side of the pointer-events contract. The assertion below
+         still requires every captured resting frame to belong to the sheet. */
+      await page.waitForFunction(() => window.__exit.f.length >= 2,
+                                 null, { timeout: 3000 });
       await page.evaluate(() => { window.__exit.pressed = window.__exit.f.length; });
       await page.keyboard.press('Escape');
       await page.waitForTimeout(320);

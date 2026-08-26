@@ -1,6 +1,7 @@
 // Fast Node-side tests for the runtime-free Edge HTTP boundary. Operations are
 // injected, so these exercise methods, CORS, auth, JSON parsing and typed input
 // without a Deno global, network, or database.
+import { readFileSync } from 'node:fs';
 import {
   CORS_HEADERS, createAuthenticator, json, postOnly, record,
   type AuthenticatedContext,
@@ -9,8 +10,23 @@ import { createAccountDeleteHandler } from '../supabase/functions/account-delete
 import { createPvpJoinHandler } from '../supabase/functions/pvp-join/handler.ts';
 import { createPvpMoveHandler } from '../supabase/functions/pvp-move/handler.ts';
 import { createPvpClaimHandler } from '../supabase/functions/pvp-claim/handler.ts';
-import { oldestEligibleCandidate } from '../supabase/functions/pvp-join/matchmaking.ts';
-import type { MoveInput } from '../supabase/functions/_shared/types.ts';
+import { createPvpRuneSelectHandler } from '../supabase/functions/pvp-rune-select/handler.ts';
+import { selectRuneTrial } from '../supabase/functions/pvp-rune-select/operation.ts';
+import { createPvpActionHandler } from '../supabase/functions/pvp-action/handler.ts';
+import { verifyRuneTrialBotOpening } from './support/rune-trial-bot-opening-edge.ts';
+import {
+  negotiatedProtocolVersion,
+  oldestEligibleCandidate,
+  rankedSeatOrder,
+  trialClientCompatibilityError,
+} from '../supabase/functions/pvp-join/matchmaking.ts';
+import type {
+  ActionInput,
+  JoinInput,
+  MatchRow,
+  MoveInput,
+  RuneTrialSelectInput,
+} from '../supabase/functions/_shared/types.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -22,6 +38,32 @@ const context = {
 } as unknown as AuthenticatedContext;
 const allowed = async () => context;
 const denied = async () => null;
+
+check(negotiatedProtocolVersion([
+  { tier: 'ivory', capabilities: ['rune_trial_v1'] },
+  { tier: 'stone', capabilities: ['rune_trial_v1'] },
+]) === 2, 'two Trial-capable peers did not preserve protocol v2 on standard outcomes');
+check(negotiatedProtocolVersion([
+  { tier: 'ivory', capabilities: ['rune_trial_v1'] },
+  { tier: 'ivory', capabilities: [] },
+]) === 1, 'an old peer did not negotiate the standard protocol-v1 contract');
+check(JSON.stringify(rankedSeatOrder('lower-rated-bot', 'higher-rated-human'))
+    === JSON.stringify({ p1: 'lower-rated-bot', p2: 'higher-rated-human' }),
+  'ranked bot seating displaced the lower-rated participant from the opening seat');
+const compatibleTrial = {
+  format: 'rune_trial', rune_rules_version: 1,
+} as MatchRow;
+check(trialClientCompatibilityError(compatibleTrial, {
+  allowBot: false, protocolVersion: 1, capabilities: [],
+}) === 'incompatible-client', 'a legacy client can rejoin an active Trial');
+check(trialClientCompatibilityError(compatibleTrial, {
+  allowBot: false, protocolVersion: 2, capabilities: ['rune_trial_v1'],
+}) === null, 'a Trial-capable client is rejected from its active Trial');
+check(trialClientCompatibilityError({
+  ...compatibleTrial, rune_rules_version: 2,
+} as unknown as MatchRow, {
+  allowBot: false, protocolVersion: 2, capabilities: ['rune_trial_v1'],
+}) === 'unsupported-rune-rules', 'an unknown Trial rules version did not fail closed');
 
 const made = json({ ok: true }, 201);
 check(made.status === 201, 'json() lost its explicit status');
@@ -78,17 +120,31 @@ const deniedDelete = createAccountDeleteHandler({ authenticate: denied, operatio
 check((await deniedDelete(new Request('https://edge.test', { method: 'POST' }))).status === 401,
   'delete handler no longer rejects an unauthenticated request');
 
-const joinInputs: boolean[] = [];
+const joinInputs: JoinInput[] = [];
 const joinHandler = createPvpJoinHandler({
   authenticate: allowed,
-  operation: async (_received, input) => { joinInputs.push(input.allowBot); return json({ status: 'queued' }); },
+  operation: async (_received, input) => { joinInputs.push(input); return json({ status: 'queued' }); },
 });
 await joinHandler(new Request('https://edge.test', { method: 'POST' }));
 await joinHandler(new Request('https://edge.test', {
-  method: 'POST', body: JSON.stringify({ allow_bot: true }),
+  method: 'POST', body: JSON.stringify({
+    allow_bot: true,
+    protocol_version: 2,
+    capabilities: ['rune_trial_v1'],
+  }),
 }));
-check(joinInputs.length === 2 && joinInputs[0] === false && joinInputs[1] === true,
-  'join handler changed empty-body or allow_bot parsing');
+check(joinInputs.length === 2
+  && joinInputs[0].allowBot === false && joinInputs[0].protocolVersion === 1
+  && joinInputs[0].capabilities.length === 0
+  && joinInputs[1].allowBot === true && joinInputs[1].protocolVersion === 2
+  && joinInputs[1].capabilities[0] === 'rune_trial_v1',
+  'join handler changed legacy defaults or v2 capability parsing');
+check((await joinHandler(new Request('https://edge.test', {
+  method: 'POST', body: JSON.stringify({
+    protocol_version: 1,
+    capabilities: ['rune_trial_v1'],
+  }),
+}))).status === 400, 'protocol v1 can advertise Rune Trial capability');
 
 const moveInputs: MoveInput[] = [];
 const moveHandler = createPvpMoveHandler({
@@ -146,6 +202,164 @@ await claimHandler(new Request('https://edge.test', {
 }));
 check(claimInputs.length === 2 && claimInputs[0].resign === false && claimInputs[1].resign === true,
   'claim handler changed strict resign parsing');
+
+const selectInputs: RuneTrialSelectInput[] = [];
+const selectHandler = createPvpRuneSelectHandler({
+  authenticate: allowed,
+  operation: async (_received, input) => {
+    selectInputs.push(input);
+    return json({ match: {}, trial: {} });
+  },
+});
+await selectHandler(new Request('https://edge.test', {
+  method: 'POST',
+  headers: { 'Idempotency-Key': commandId },
+  body: JSON.stringify({ match_id: 'trial-1', rune_id: 'ward' }),
+}));
+const autoSelectId = '93000000-0000-4000-8000-000000000002';
+await selectHandler(new Request('https://edge.test', {
+  method: 'POST',
+  body: JSON.stringify({ match_id: 'trial-1', command_id: autoSelectId, auto: true }),
+}));
+await selectHandler(new Request('https://edge.test', {
+  method: 'POST', body: JSON.stringify({ match_id: 'trial-1', read: true }),
+}));
+check(selectInputs.length === 3
+  && selectInputs[0].kind === 'commit' && selectInputs[0].runeId === 'ward'
+  && !selectInputs[0].auto
+  && selectInputs[1].kind === 'commit' && selectInputs[1].runeId === null
+  && selectInputs[1].auto
+  && selectInputs[2].kind === 'read' && selectInputs[2].matchId === 'trial-1',
+  'Rune Trial selection handler lost manual choice or deadline auto-fill input');
+check((await selectHandler(new Request('https://edge.test', {
+  method: 'POST', body: JSON.stringify({
+    match_id: 'trial-1', command_id: autoSelectId, auto: true, rune_id: 'ward',
+  }),
+}))).status === 400, 'deadline auto-selection accepts a caller-selected rune');
+check((await selectHandler(new Request('https://edge.test', {
+  method: 'POST', body: JSON.stringify({
+    match_id: 'trial-1', command_id: autoSelectId, rune_id: 'unknown',
+  }),
+}))).status === 400, 'Rune Trial selection accepts an unknown rune');
+check((await selectHandler(new Request('https://edge.test', {
+  method: 'POST', body: JSON.stringify({
+    match_id: 'trial-1', read: true, command_id: autoSelectId,
+  }),
+}))).status === 400, 'read-only Trial resume accepts mutating command fields');
+
+const resumeCalls: Array<{ name: string; input: Record<string, unknown> }> = [];
+const terminalTrial = {
+  match: { id: 'trial-1', status: 'forfeit', format: 'rune_trial', rune_rules_version: 1 },
+  trial: { your_choice: 'ward' },
+};
+const resumeContext = {
+  user: { id: 'player-1' }, authed: {},
+  service: () => ({
+    rpc: async (name: string, input: Record<string, unknown>) => {
+      resumeCalls.push({ name, input });
+      return { data: terminalTrial, error: null };
+    },
+  }),
+} as unknown as AuthenticatedContext;
+const terminalResume = await selectRuneTrial(resumeContext, {
+  kind: 'read', matchId: 'trial-1',
+});
+check(terminalResume.status === 200
+  && (await responseBody(terminalResume)).match.status === 'forfeit'
+  && resumeCalls.length === 1 && resumeCalls[0].name === 'rune_trial_state'
+  && resumeCalls[0].input.p_match_id === 'trial-1'
+  && resumeCalls[0].input.p_actor === 'player-1',
+  'terminal Trial resume mutated matchmaking or failed to return the settled row');
+let finalizerCalls = 0;
+const finalizedResume = await selectRuneTrial(resumeContext, {
+  kind: 'read', matchId: 'trial-1',
+}, async (received, payload) => {
+  finalizerCalls++;
+  check(received === resumeContext, 'Rune Trial finalizer received the wrong auth context');
+  return payload;
+});
+check(finalizedResume.status === 200 && finalizerCalls === 1,
+  'Rune Trial selection response bypassed its authoritative post-reveal finalizer');
+
+const startSource = readFileSync('supabase/functions/pvp-join/start.ts', 'utf8');
+check(startSource.includes('rankedSeatOrder(input.underdog, input.favourite)')
+    && !startSource.includes('p1 = input.requester'),
+  'ranked start still forces a human opener instead of preserving underdog p1');
+const selectIndex = readFileSync('supabase/functions/pvp-rune-select/index.ts', 'utf8');
+const joinOperation = readFileSync('supabase/functions/pvp-join/operation.ts', 'utf8');
+const botOpeningSource = readFileSync(
+  'supabase/functions/_shared/rune-trial-bot-opening.ts', 'utf8',
+);
+check(selectIndex.includes('ensureRuneTrialBotOpening')
+    && joinOperation.includes('ensureRuneTrialBotOpening'),
+  'selection finalization or reconnect no longer heals a missing ranked bot opener');
+check(botOpeningSource.includes('appendRankedBotTurn(')
+    && botOpeningSource.includes('commitMatchAction(')
+    && botOpeningSource.includes('actor: match.p1')
+    && botOpeningSource.includes('expectedActionVersion: before.actionCount'),
+  'ranked Trial bot opener bypasses shared replay or the atomic action command');
+await verifyRuneTrialBotOpening(check);
+
+const actionInputs: ActionInput[] = [];
+const actionHandler = createPvpActionHandler({
+  authenticate: allowed,
+  operation: async (_received, input) => {
+    actionInputs.push(input);
+    return json({ match: {}, actions: [], action_version: input.expectedActionVersion + 1 });
+  },
+});
+await actionHandler(new Request('https://edge.test', {
+  method: 'POST',
+  body: JSON.stringify({
+    match_id: 'trial-1',
+    command_id: commandId,
+    expected_action_version: 0,
+    action: { kind: 'cast', rune_id: 'nudge', target_col: -1 },
+  }),
+}));
+const aimActionId = '93000000-0000-4000-8000-000000000004';
+await actionHandler(new Request('https://edge.test', {
+  method: 'POST',
+  body: JSON.stringify({
+    match_id: 'trial-2', command_id: aimActionId,
+    expected_action_version: 0,
+    action: { kind: 'aim', rune_id: 'anvil' },
+  }),
+}));
+const autoActionId = '93000000-0000-4000-8000-000000000003';
+await actionHandler(new Request('https://edge.test', {
+  method: 'POST',
+  body: JSON.stringify({
+    match_id: 'trial-1', command_id: autoActionId,
+    expected_action_version: 1, auto: true,
+  }),
+}));
+check(actionInputs.length === 3
+  && actionInputs[0].action?.kind === 'cast' && actionInputs[0].expectedActionVersion === 0
+  && actionInputs[1].action?.kind === 'aim' && actionInputs[1].action.rune_id === 'anvil'
+  && actionInputs[2].action === null && actionInputs[2].auto,
+  'v2 action handler lost cast, authoritative aim, or stalled auto-recovery input');
+check((await actionHandler(new Request('https://edge.test', {
+  method: 'POST', body: JSON.stringify({
+    match_id: 'trial-1', command_id: autoActionId,
+    expected_action_version: 1, auto: true,
+    action: { kind: 'place', placed_col: 0 },
+  }),
+}))).status === 400, 'automatic action accepts caller-controlled placement');
+check((await actionHandler(new Request('https://edge.test', {
+  method: 'POST', body: JSON.stringify({
+    match_id: 'trial-1', command_id: autoActionId,
+    expected_action_version: 1,
+    action: { kind: 'cast', rune_id: 'ward', target_col: 4 },
+  }),
+}))).status === 400, 'v2 action accepts an out-of-range target');
+check((await actionHandler(new Request('https://edge.test', {
+  method: 'POST', body: JSON.stringify({
+    match_id: 'trial-1', command_id: autoActionId,
+    expected_action_version: 1,
+    action: { kind: 'aim', rune_id: 'anvil', target_col: 0 },
+  }),
+}))).status === 400, 'authoritative aim accepts a premature target');
 
 let optionsAuthenticated = false;
 const optionsHandler = createPvpMoveHandler({
