@@ -124,7 +124,7 @@
 /* the DIRECT child is the readout under the stage; a settled answer keeps a
    .wblurb of its own up top, and it must not be dragged down here */
 :where(#kbroot) #ovWheel > .wblurb{position:absolute;left:50%;transform:translateX(-50%);margin:0;
-  top:calc(50% + var(--stage)/2 + 42px)}
+  width:calc(100% - 2 * var(--pad-x));top:calc(50% + var(--stage)/2 + 42px)}
 /* AN ANSWER THAT IS DONE BEING LOOKED AT, kept — the name AND the rule, because
    "COLUMN SHIELD" alone is a label and the line under it is the half that says
    what you are about to play. It sits centred in the space ABOVE the deck's

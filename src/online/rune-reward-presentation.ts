@@ -85,6 +85,18 @@ function visiblyPresented(element: HTMLElement): boolean {
     && rect.right > 0 && rect.left < window.innerWidth;
   if (!onScreen || style.display === 'none' || style.visibility === 'hidden'
       || Number(style.opacity) < .98) return false;
+  /* WebKit can report a CSS transition's Animation as `finished` while its
+     compositor still paints an intermediate transform. The reward has not
+     landed in that state, regardless of the animation bookkeeping. Both
+     presentation owners rest at the identity transform, so use the rendered
+     pixels as the final arrival gate. */
+  if (style.transform !== 'none') {
+    try {
+      if (!new DOMMatrixReadOnly(style.transform).isIdentity) return false;
+    } catch {
+      return false;
+    }
+  }
   const animations = typeof element.getAnimations === 'function'
     ? element.getAnimations().filter(({ playState }) =>
       playState === 'running')

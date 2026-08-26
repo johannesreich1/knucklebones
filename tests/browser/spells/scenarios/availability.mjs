@@ -31,7 +31,19 @@ export async function runAvailabilityScenarios(suite) {
       if (id === 'anvil' && !blockedNow) k.S.boards[1][0] = [1, 2, 3];
       k.applySides(); k.renderAll(false); k.setStageDie(4, 1); k.showHints(); k.spells.render();
     }, { id: spell.id, uses: spell.uses, blockedNow: blocked });
-    await page.waitForTimeout(300);
+    /* A fixed sleep can observe the filter on its final interpolation frame on
+       a busy hosted browser. Wait for the settled player-visible cue instead:
+       this still verifies the real transition and computed style, while making
+       the assertion independent of how quickly Chromium schedules frames. */
+    await page.waitForFunction(({ id, blockedNow }) => {
+      const card = document.querySelector(`#spellBar .rune.hand-active[data-spell="${id}"]`);
+      if (!card) return false;
+      const style = getComputedStyle(card);
+      const opacity = Number(style.opacity);
+      return blockedNow
+        ? Math.abs(opacity - .42) <= .002 && style.filter === 'grayscale(0.6)'
+        : opacity >= .99 && style.filter === 'grayscale(0)';
+    }, { id: spell.id, blockedNow: blocked }, { timeout: 2_000 });
     return page.evaluate((id) => {
       const k = window.__kb;
       const card = document.querySelector(`#spellBar .rune.hand-active[data-spell="${id}"]`);

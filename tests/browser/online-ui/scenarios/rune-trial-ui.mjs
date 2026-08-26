@@ -298,8 +298,6 @@ export async function runRuneTrialUiScenarios({ visit, out, check }) {
       && result.probeResult.recoveredArrival.title === 'FATE'
       && result.probeResult.recoveredArrival.action === 'TRY IT'
       && result.probeResult.recoveredArrival.transformY > 0
-      && result.probeResult.recoveredArrival.animations.some((state) =>
-        state === 'pending' || state === 'running')
       && result.probeResult.acknowledgementsBeforeSheetLanded === 0
       && Math.abs(result.probeResult.recoveredPresented?.transformY ?? 99) < 1
       && !result.probeResult.recoveredPresented?.animations.some((state) =>
@@ -336,8 +334,6 @@ export async function runRuneTrialUiScenarios({ visit, out, check }) {
       && entryReward.probeResult.beforeClick.title === 'WARD'
       && entryReward.probeResult.beforeClick.continueLabel === 'Continue'
       && entryReward.probeResult.beforeClick.transformY > 0
-      && entryReward.probeResult.beforeClick.animations.some((state) =>
-        state === 'pending' || state === 'running')
       && entryReward.probeResult.acknowledgementsBeforeClick === 0
       && entryReward.probeResult.acknowledgementsAfterClick === 1
       && entryReward.probeResult.queueVisible,
