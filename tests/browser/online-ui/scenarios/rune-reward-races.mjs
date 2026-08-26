@@ -108,6 +108,65 @@ async function hungAckProbe(page, routes) {
   return { recovered, acknowledgements: routes.acknowledgeCalls() };
 }
 
+async function failedAckRetryProbe(page, routes) {
+  routes.makeRuneUnseen('fate');
+  routes.failNextAcknowledge();
+  const firstAck = routes.deferNextAcknowledge();
+  await showWinningResult(page);
+  await page.waitForSelector('#ovEnd.on #endFeature:not([hidden])', { timeout: 15000 });
+  await bounded(firstAck.started, 'failed ACK1 never started');
+  await page.$eval('#endPlates > button:nth-child(2)', (button) => button.click());
+  await page.waitForSelector('.faceoff:not(.rune-reward-sheet) .focard', { timeout: 15000 });
+  await page.click('.faceoff:not(.rune-reward-sheet) .fograb');
+  await page.waitForSelector('#ovEnd.on #endFeature:not([hidden])', { timeout: 15000 });
+  /* The cover canceled the watcher, so TRY IT takes the fallback branch while
+     its original ACK is still the de-duplicated in-flight promise. */
+  const secondAck = routes.deferNextAcknowledge();
+  await page.click('#endFeature .endfeature-action');
+  await page.waitForFunction(() => window.__kb.S.mode === 'cpu', null, { timeout: 15000 });
+  await page.evaluate(async () => {
+    const game = window.__kb;
+    game.S.gen++;
+    game.S.boards[1] = [[6, 6, 6], [6, 6, 6], [6, 6]];
+    game.S.boards[0] = [[1], [1], [1]];
+    game.S.turn = 1;
+    game.S.bottom = 1;
+    game.S.phase = 'choose';
+    game.S.busy = false;
+    game.S.die = 6;
+    game.renderAll(false);
+    game.applySides();
+    game.setStageDie(6, 1);
+    await game.place(1, 2);
+  });
+  await page.waitForSelector('#ovEnd.on', { timeout: 15000 });
+  const readsBeforeReturn = routes.runeCalls();
+  await page.click('#btnAgain');
+  await page.waitForTimeout(100);
+  const readsWhileFirstHeld = routes.runeCalls();
+  firstAck.release();
+  await bounded(firstAck.finished, 'failed ACK1 fixture did not finish');
+  await bounded(secondAck.started, 'explicit TRY IT did not start ACK2');
+  await page.waitForTimeout(100);
+  const readsWhileRetryHeld = routes.runeCalls();
+  secondAck.release();
+  await bounded(secondAck.finished, 'held ACK2 fixture did not finish');
+  const deadline = Date.now() + 7000;
+  while (routes.runeCalls() === readsBeforeReturn && Date.now() < deadline) {
+    await page.waitForTimeout(25);
+  }
+  await page.waitForTimeout(100);
+  return {
+    readsBeforeReturn,
+    readsWhileFirstHeld,
+    readsWhileRetryHeld,
+    readsAfterRetry: routes.runeCalls(),
+    acknowledgements: routes.acknowledgeCalls(),
+    rewardVisible: await page.$eval('#endFeature', (feature) => !feature.hidden),
+    rewardSheetOpen: !!await page.$('.rune-reward-sheet'),
+  };
+}
+
 async function verifiedEmptyProbe(page, routes) {
   return {
     accountVisible: await page.$eval('#onAccount', (panel) => !panel.hidden),
@@ -115,6 +174,47 @@ async function verifiedEmptyProbe(page, routes) {
     acknowledgements: routes.acknowledgeCalls(),
     runeReads: routes.runeCalls(),
   };
+}
+
+async function accountSwitchAfterRuneProbe(page, routes) {
+  const accountB = '11111111-2222-4333-8444-555555555555';
+  routes.makeRuneUnseen('fate');
+  await showWinningResult(page);
+  await page.waitForSelector('#ovEnd.on #endFeature:not([hidden])', { timeout: 15000 });
+  routes.deferNextAccountProfileResponse();
+  const readsBeforeProfile = routes.runeCalls();
+  await page.$eval('#endPlates > button:first-child', (button) => button.click());
+  await bounded(routes.accountProfileStarted, 'held A profile read never started');
+  const deadline = Date.now() + 7000;
+  while (routes.runeCalls() === readsBeforeProfile && Date.now() < deadline) {
+    await page.waitForTimeout(25);
+  }
+  const switched = await page.evaluate((nextAccountId) => {
+    const key = Object.keys(localStorage)
+      .find((candidate) => candidate.startsWith('sb-') && candidate.endsWith('-auth-token'));
+    if (!key) return false;
+    const stored = JSON.parse(localStorage.getItem(key));
+    const session = stored?.currentSession ?? stored;
+    if (!session?.user) return false;
+    session.user.id = nextAccountId;
+    localStorage.setItem(key, JSON.stringify(stored));
+    return true;
+  }, accountB);
+  routes.releaseAccountProfileResponse();
+  await bounded(routes.accountProfileFinished, 'held A profile read did not finish');
+  await page.waitForTimeout(300);
+  return page.evaluate(({ didSwitch, accountA }) => {
+    const cache = JSON.parse(localStorage.getItem('knucklebones.runes.v1') ?? 'null');
+    return {
+      switched: didSwitch,
+      accountVisible: document.getElementById('onAccount')?.hidden === false,
+      loadingVisible: document.getElementById('onLoading')?.hidden === false,
+      name: document.getElementById('accName')?.textContent?.trim(),
+      cachedAccount: cache?.accountId ?? null,
+      staleCache: cache?.accountId === accountA.toLowerCase(),
+      rewardSheetOpen: !!document.querySelector('.rune-reward-sheet'),
+    };
+  }, { didSwitch: switched, accountA: '00000000-0000-4000-8000-00000000beef' });
 }
 
 async function profileExitProbe(page) {
@@ -161,6 +261,16 @@ export async function runRuneRewardRaceScenarios({ visit, out, check }) {
       && hung.probeResult.recovered.queueHidden && hung.probeResult.acknowledgements === 2,
     'a hung reward ACK froze navigation or lost durable recovery', hung.probeResult);
 
+  const retry = await visit({ named: true, runes: ['fate'], skipStandardProbes: true,
+    probe: failedAckRetryProbe });
+  out.runeRewardFailedAckRetry = retry.probeResult;
+  check(retry.probeResult?.readsBeforeReturn === retry.probeResult.readsWhileFirstHeld
+      && retry.probeResult.readsBeforeReturn === retry.probeResult.readsWhileRetryHeld
+      && retry.probeResult.readsAfterRetry > retry.probeResult.readsBeforeReturn
+      && retry.probeResult.acknowledgements === 2
+      && !retry.probeResult.rewardVisible && !retry.probeResult.rewardSheetOpen,
+    'return refresh read between failed ACK1 and held ACK2', retry.probeResult);
+
   const empty = await visit({ named: true, runes: ['fate'], unseenRunes: ['fate'],
     markRunesSeenAfterFirstRead: true, skipStandardProbes: true, probe: verifiedEmptyProbe });
   out.runeRewardFreshEmpty = empty.probeResult;
@@ -168,13 +278,21 @@ export async function runRuneRewardRaceScenarios({ visit, out, check }) {
       && empty.probeResult.acknowledgements === 0 && empty.probeResult.runeReads >= 2,
     'an older unseen entry read overrode a newer verified-empty Profile read', empty.probeResult);
 
+  const switched = await visit({ named: true, runes: ['fate'], skipStandardProbes: true,
+    probe: accountSwitchAfterRuneProbe });
+  out.runeRewardAccountSwitch = switched.probeResult;
+  check(switched.probeResult?.switched && !switched.probeResult.accountVisible
+      && switched.probeResult.loadingVisible && !switched.probeResult.name
+      && !switched.probeResult.staleCache && !switched.probeResult.rewardSheetOpen,
+    'account A runes/profile painted after the active session changed to B', switched.probeResult);
+
   const exit = await visit({ named: true, runes: ['fate'], skipStandardProbes: true,
     probe: profileExitProbe });
   out.runeRewardProfileExit = exit.probeResult;
   check(exit.probeResult?.homeVisible && !exit.probeResult.onlineVisible,
     'Profile return left Next Duel with a stale online exit handler', exit.probeResult);
 
-  for (const run of [resume, inFlight, hung, empty, exit]) {
-    check(run.errs.length === 0, 'page errors during rune reward race coverage', run.errs);
+  for (const [name, run] of Object.entries({ resume, inFlight, hung, retry, empty, switched, exit })) {
+    check(run.errs.length === 0, `page errors during ${name} reward-race coverage`, run.errs);
   }
 }

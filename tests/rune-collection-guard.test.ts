@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { createCollectionRefreshGuard } from '../src/online/rune-collection-guard.ts';
 import { acknowledgeRuneRewardForAccount } from '../src/online/rune-reward-ack.ts';
+import { withRuneRewardAcknowledgementDeadline } from '../src/online/rune-reward-ack.ts';
 
 const guard = createCollectionRefreshGuard();
 const accountA = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
@@ -30,6 +31,20 @@ assert.deepEqual(guard.settle(newerB, accountA, accountA), {
   owns: false,
   discardRetained: false,
 }, 'a stale B refresh discarded the active A refresh\'s cache');
+
+/* The refresh token is acquired before an ACK barrier. A can wake only after
+   B has completed, but that must not let A become the newest revision. */
+const barrierGuard = createCollectionRefreshGuard();
+let releaseHeldA!: () => void;
+const heldA = new Promise<void>((resolve) => { releaseHeldA = resolve; });
+const waitingA = barrierGuard.begin(accountA);
+const staleA = heldA.then(() => barrierGuard.settle(waitingA, accountB, accountB));
+const completedB = barrierGuard.begin(accountB);
+releaseHeldA();
+assert.deepEqual(await staleA, { owns: false, discardRetained: false },
+  'A superseded B after waking from A\'s held acknowledgement');
+assert.equal(barrierGuard.owns(completedB, accountB), true,
+  'A waking from its acknowledgement invalidated B\'s current refresh');
 
 let activeAccount: string | null = accountB;
 const acknowledgements: string[] = [];
@@ -82,5 +97,16 @@ assert.equal(await acknowledgeRuneRewardForAccount(accountA, 'nudge', {
 }), true);
 assert.deepEqual(boundCredentials, [`token:a/${accountB}`],
   'a post-check A -> B replacement retargeted the write away from A\'s captured token');
+
+let deadlineAborted = false;
+const deadlineStarted = Date.now();
+assert.equal(await withRuneRewardAcknowledgementDeadline(
+  () => new Promise<boolean>(() => undefined),
+  10,
+  () => { deadlineAborted = true; },
+), false, 'a hanging session lookup kept the reward acknowledgement alive forever');
+assert.equal(deadlineAborted, true, 'the whole-ack deadline did not cancel its transport');
+assert.ok(Date.now() - deadlineStarted < 1000,
+  'the whole-ack deadline did not release collection refreshes promptly');
 
 console.log(JSON.stringify({ problems: [] }));

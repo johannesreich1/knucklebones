@@ -8,7 +8,8 @@ import {
   type RankedActionState,
   type RankedRuneDeal,
 } from './ranked-actions.ts';
-import { legalCols, type Mode } from './rules.ts';
+import { poolSequence } from './dice.ts';
+import { LIMITED, legalCols, type Mode } from './rules.ts';
 import { machineCastPlan, spellById } from './spells.ts';
 
 export interface RankedBotTurnInput {
@@ -39,12 +40,15 @@ export function appendRankedBotTurn(
   let coordinatedPlacement: number | null = null;
 
   if (spell && (state.charges[who][spell.id] ?? 0) > 0) {
+    const bagLeft = input.mode === LIMITED
+      ? poolSequence(input.seed).length - state.drawCount
+      : null;
     const castContext = {
       mode: input.mode,
       die: state.nextDie,
       setDie: () => undefined,
       draw: () => state.nextDie!,
-      bagLeft: null,
+      bagLeft,
       charm: state.charm,
     };
     const plan = machineCastPlan(

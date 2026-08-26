@@ -208,6 +208,26 @@ const ordinary = createAccountPreferenceSync({
 await ordinary.sync();
 assert.deepEqual(remoteApplied, [ordinaryRemote]);
 
+/* A completed A read may not repaint after auth storage changes to B while
+   hydration is still resolving. */
+let preferenceAccount = 'player-a';
+let crossAccountApplies = 0;
+const switchedAccount = createAccountPreferenceSync({
+  currentUser: async () => ({ id: preferenceAccount }),
+  readLocal: userPreferences,
+  currentRevision: userPreferencesRevision,
+  seed: async () => true,
+  load: async () => {
+    preferenceAccount = 'player-b';
+    return ordinaryRemote;
+  },
+  write: async () => undefined,
+  apply: () => { crossAccountApplies++; },
+});
+await switchedAccount.sync();
+assert.equal(crossAccountApplies, 0,
+  'account A preferences painted after the active session changed to B');
+
 state({ ...valid, localeOverride: 'de', sound: true });
 let initialized: Readonly<UserPreferences> | null = null;
 const firstDevice = createAccountPreferenceSync({

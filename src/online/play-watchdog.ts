@@ -73,7 +73,14 @@ export async function runOnlineWatchdog(ports: OnlineWatchdogPorts): Promise<voi
       }
       return;
     }
-    if (response.status === 425) return;
+    if (response.status === 425) {
+      /* The client only asks after its server-derived clock looks stalled.
+         An authoritative "too early" therefore proves this projection is
+         stale. Repair it without escalating to the claim/forfeit fallback. */
+      requireProjectionRecovery(online);
+      await recoverProjection(true);
+      return;
+    }
     /* A conflict or transport failure often means this client missed the
        projection that changed the turn. Make that repair survive visibility
        changes and future watchdog ticks. */

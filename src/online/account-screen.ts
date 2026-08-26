@@ -27,7 +27,11 @@ import {
 } from './session.ts';
 import { historyRow } from './history-screen.ts';
 import { repaintOnlineMessage } from './message-copy.ts';
-import { refreshRuneCollection, type RuneCollectionRefresh } from './rune-collection.ts';
+import {
+  refreshRuneCollection,
+  runeCollectionMatchesActiveAccount,
+  type RuneCollectionRefresh,
+} from './rune-collection.ts';
 import { fillAccountRing } from './account-ring.ts';
 import { paintAccountRunes } from './account-runes.ts';
 import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';
@@ -186,7 +190,12 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       matchHistory(3),
       refreshRuneCollection(),
     ]);
-    if (!ownsRun()) return null;
+    const collectionAccountId = runeCollection.accountId?.toLowerCase() ?? null;
+    if (!ownsRun() || !collectionAccountId
+        || user?.id.toLowerCase() !== collectionAccountId
+        || (profile && profile.id.toLowerCase() !== collectionAccountId)) return null;
+    const ownsCollection = await runeCollectionMatchesActiveAccount(runeCollection);
+    if (!ownsCollection || !ownsRun()) return null;
     refreshHomeChip();
     $('#accGuest').hidden = !user?.guest;
     ($('#btnSignOut') as HTMLElement).hidden = !!user?.guest;

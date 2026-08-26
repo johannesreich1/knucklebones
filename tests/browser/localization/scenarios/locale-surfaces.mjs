@@ -5,6 +5,10 @@ import { checkReachableTargets, checkSurface, frame,
 import { LOCALE_IDS as LOCALES, chooseLocale } from '../harness/locale-control.mjs';
 import { requiredHomeTargets, SURFACE_SIZES,
   waitForSurface } from '../harness/surface-readiness.mjs';
+import {
+  prepareCollectedRandomTwoReveal,
+  restoreCollectedRunes,
+} from '../../support/random-two-reveal.mjs';
 
 const FIRST_REPAINT_LOCALE = LOCALE_REGISTRY[1];
 const SECOND_REPAINT_LOCALE = LOCALE_REGISTRY[2];
@@ -155,17 +159,9 @@ async function showResult(page) {
 }
 
 async function inspectReveal(page) {
-  await page.evaluate(() => {
-    const game = window.__kb;
-    game.S.gen++;
-    game.goHome();
-    game.openPractice();
-    game.S.mode = 'cpu';
-    game.S.localMode = -1;
-    game.S.spell = 'random2';
-    window.__kbTestOriginalRandom = Math.random;
-    Math.random = () => 0.25;
-  });
+  /* CPU practice exposes only collected runes. Lend exactly two: enough for
+     RANDOM x2, while Rune Trial correctly remains unavailable. */
+  const previousRuneCache = await prepareCollectedRandomTwoReveal(page);
   /* Playwright sends the bound pointerdown/up pair here, so the action does
      not depend on tap()'s guarded click-only fallback. */
   await page.click('#btnPlay');
@@ -200,6 +196,7 @@ async function inspectReveal(page) {
   await page.locator('#ovWheel').dispatchEvent('pointerdown');
   await page.waitForFunction(() => !document.getElementById('ovWheel')?.classList.contains('on'));
   await page.evaluate(() => { window.__kb.S.gen++; });
+  await restoreCollectedRunes(page, previousRuneCache);
   return { wheel, deal, held };
 }
 

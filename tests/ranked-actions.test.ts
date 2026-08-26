@@ -11,7 +11,7 @@ import {
   type RankedRuneDeal,
 } from '../src/core/ranked-actions.ts';
 import { appendRankedBotTurn } from '../src/core/ranked-bot-turn.ts';
-import { AI, BOUNTY, CLASSIC, LIMITED, ME } from '../src/core/rules.ts';
+import { AI, BOUNTY, CLASSIC, LIMITED, ME, legalCols } from '../src/core/rules.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -129,6 +129,38 @@ check(appendRankedBotTurn({
   rating: 800,
   random: () => 0,
 }) === null, 'ranked bot opener accepted a state/version mismatch');
+
+// The die already in hand counts as drawn. On the final LIMITED turn FATE
+// must see an empty bag, decline its redraw, and let the bot place that die.
+const limitedBotSeed = 'audit-31';
+const limitedBotDeal: RankedRuneDeal = ['fate', 'ward'];
+const limitedBotRows: RankedActionRow[] = [];
+let limitedBotState = rebuildRankedActions(limitedBotSeed, limitedBotRows, LIMITED, limitedBotDeal);
+if (!limitedBotState) throw new Error('LIMITED bot fixture did not initialize');
+for (let step = 0; step < 23; step++) {
+  const legal = legalCols(limitedBotState.st[limitedBotState.turn]);
+  const appended = appendRankedAction(limitedBotSeed, limitedBotRows, LIMITED, limitedBotDeal, {
+    kind: 'place', placed_col: legal[(31 + step * 7) % legal.length],
+  });
+  if (!appended) throw new Error(`LIMITED bot fixture stopped at placement ${step}`);
+  limitedBotRows.push(appended.row);
+  limitedBotState = appended.state;
+}
+check(limitedBotState.drawCount === 24 && limitedBotState.nextDie === 1
+  && limitedBotState.turn === AI,
+  'LIMITED bot fixture did not reach FATE holding the final live die', limitedBotState);
+const finalLimitedTurn = appendRankedBotTurn({
+  seed: limitedBotSeed,
+  rows: limitedBotRows,
+  state: limitedBotState,
+  mode: LIMITED,
+  dealt: limitedBotDeal,
+  rating: 800,
+  random: () => 0,
+});
+check(finalLimitedTurn !== null && finalLimitedTurn.actions.length === 1
+  && finalLimitedTurn.actions[0].kind === 'place' && finalLimitedTurn.state.over,
+  'ranked bot tried to cast FATE after the LIMITED bag was exhausted', finalLimitedTurn);
 
 // FATE is the one transition the public log cannot independently predict.
 // The browser may consume the committed value; the server still rejects any

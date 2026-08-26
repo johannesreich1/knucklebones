@@ -9,6 +9,45 @@ import {
   verifyRandomTwoLocaleRepaint,
 } from './locale-reveal.mjs';
 
+export async function lendCollectedRunes(page, collected) {
+  return page.evaluate((runes) => {
+    const cacheKey = 'knucklebones.runes.v1';
+    const previous = localStorage.getItem(cacheKey);
+    localStorage.setItem(cacheKey, JSON.stringify({
+      version: 1,
+      accountId: '11111111-2222-4333-8444-555555555555',
+      verifiedAt: 1,
+      collected: runes,
+      poolTier: null,
+    }));
+    return previous;
+  }, collected);
+}
+
+export async function restoreCollectedRunes(page, previous) {
+  await page.evaluate((cached) => {
+    const cacheKey = 'knucklebones.runes.v1';
+    if (cached === null) localStorage.removeItem(cacheKey);
+    else localStorage.setItem(cacheKey, cached);
+  }, previous);
+}
+
+export async function prepareCollectedRandomTwoReveal(page) {
+  const previous = await lendCollectedRunes(page, ['fate', 'ward']);
+  await page.evaluate(() => {
+    const game = window.__kb;
+    game.S.gen++;
+    game.goHome();
+    game.openPractice();
+    game.S.mode = 'cpu';
+    game.S.localMode = -1;
+    game.S.spell = 'random2';
+    window.__kbTestOriginalRandom = Math.random;
+    Math.random = () => 0.25;
+  });
+  return previous;
+}
+
 async function inspectActiveHeading(page) {
   return page.evaluate(() => {
     const title = document.getElementById('wheelTitle');

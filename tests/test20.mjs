@@ -239,7 +239,6 @@ try {
     }
     return { shuffling, shuffleMs, turned, played, localeRepaint };
   };
-
   // ---- a deal under a mode the player CHOSE: one beat, one countdown ----
   const solo = await deal('0');                                   // 0 = CLASSIC
   out.solo = solo;
@@ -344,8 +343,7 @@ try {
     }
   };
 
-  /* deal() above always draws a RUNE, which is the offline dressing. Ranked
-     reveals the mode alone, so this one holds on whichever beat is last. */
+  /* Hold the reveal on whichever beat is last. */
   const revealHeld = async (mode, spell, playMode = 'cpu') => {
     await page.evaluate(({ activeMode, collected }) => {
       if (activeMode === 'cpu') {
@@ -362,7 +360,11 @@ try {
     await page.click(`#modeSeg button[data-m="${playMode}"]`);
     await page.click(`#modePick button[data-v="${mode}"]`);
     await page.click(`#spellPick button[data-v="${spell}"]`);
-    await page.evaluate(() => { window.__kb.S.timer = 0; });
+    await page.evaluate((randomMode) => {
+      const natural = Math.random;
+      if (randomMode) Math.random = () => { Math.random = natural; return .5; };
+      window.__kb.S.timer = 0;
+    }, mode === '-1');
     await page.click('#btnPlay');
     await page.waitForFunction(() => document.querySelector('#ovWheel')?.classList.contains('holding'), { timeout: 20000 });
     await page.waitForTimeout(250);
@@ -388,9 +390,7 @@ try {
     await overlaps(page, `ranked-${w}x${h}`);
     await dismiss();
   }
-  /* The hardest geometry is random mode + two runes on a short landscape
-     phone: two prior answers must share the safe top gutter above the final
-     five-card deck. */
+  /* The hardest geometry is random mode + two runes on a short landscape. */
   await verifyRandomTwoLandscape(page, out, check, revealHeld, overlaps, dismiss);
 } catch (e) {
   problems.push('THREW :: ' + e.message);

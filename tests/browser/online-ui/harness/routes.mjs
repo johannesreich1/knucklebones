@@ -29,16 +29,42 @@ export async function installOnlineRoutes(
   let markRuneRequestStarted;
   let releaseRuneRequest;
   let markRuneRequestFinished;
+  let deferNextAccountProfile = false;
+  let markAccountProfileStarted;
+  let releaseAccountProfile;
+  let markAccountProfileFinished;
   let markAcknowledgeStarted;
-  let deferNextAcknowledge = false;
-  let releaseAcknowledge;
   let markAcknowledgeFinished;
+  let failNextAcknowledge = false;
+  const acknowledgeDeferrals = [];
+  let firstAcknowledgeDeferral = null;
   const runeRequestStarted = new Promise((resolve) => { markRuneRequestStarted = resolve; });
   const runeRequestRelease = new Promise((resolve) => { releaseRuneRequest = resolve; });
   const runeRequestFinished = new Promise((resolve) => { markRuneRequestFinished = resolve; });
+  const accountProfileStarted = new Promise((resolve) => { markAccountProfileStarted = resolve; });
+  const accountProfileRelease = new Promise((resolve) => { releaseAccountProfile = resolve; });
+  const accountProfileFinished = new Promise((resolve) => { markAccountProfileFinished = resolve; });
   const acknowledgeStarted = new Promise((resolve) => { markAcknowledgeStarted = resolve; });
-  const acknowledgeRelease = new Promise((resolve) => { releaseAcknowledge = resolve; });
   const acknowledgeFinished = new Promise((resolve) => { markAcknowledgeFinished = resolve; });
+  const deferAcknowledge = () => {
+    let markStarted;
+    let release;
+    let markFinished;
+    const control = {
+      started: new Promise((resolve) => { markStarted = resolve; }),
+      wait: new Promise((resolve) => { release = resolve; }),
+      finished: new Promise((resolve) => { markFinished = resolve; }),
+      markStarted: () => markStarted(),
+      release: () => release(),
+      markFinished: () => markFinished(),
+    };
+    acknowledgeDeferrals.push(control);
+    if (!firstAcknowledgeDeferral) {
+      firstAcknowledgeDeferral = control;
+      void control.finished.then(markAcknowledgeFinished);
+    }
+    return { started: control.started, release: control.release, finished: control.finished };
+  };
   let markPaginationStarted;
   let releasePagination;
   const paginationStarted = new Promise((resolve) => { markPaginationStarted = resolve; });
@@ -82,17 +108,26 @@ export async function installOnlineRoutes(
       claimed = true;
       return r.fulfill({ status: 204, body: '' });
     }
+    const tierRead = r.request().url().includes('ranked_pool_tier');
+    const deferred = !tierRead && deferNextAccountProfile;
+    if (deferred) {
+      deferNextAccountProfile = false;
+      markAccountProfileStarted();
+      await accountProfileRelease;
+    }
     await hold(.35);
-    if (r.request().url().includes('ranked_pool_tier')) {
+    if (tierRead) {
       tierProfileCalls++;
       return r.fulfill({ status: 200, contentType: 'application/json',
         body: JSON.stringify({ ranked_pool_tier: 'ivory' }) });
     }
     profileCalls++;
-    return r.fulfill({ status: 200, contentType: 'application/json',
+    const response = r.fulfill({ status: 200, contentType: 'application/json',
       body: JSON.stringify([{ id: GUEST_ID, nickname: claimed && door === 'claim' ? 'NeonKing77' : 'TestGuest001',
                               rating: 1000, created_at: new Date().toISOString(),
                               named_at: claimed ? '2026-08-01T00:00:00Z' : null }]) });
+    if (deferred) void response.then(markAccountProfileFinished);
+    return response;
   });
   await page.route('**/rest/v1/player_runes*', async (r) => {
     runeCalls++;
@@ -118,18 +153,22 @@ export async function installOnlineRoutes(
     acknowledgeCalls++;
     const runeId = r.request().postDataJSON()?.reward_rune_id;
     markAcknowledgeStarted();
-    const deferred = deferNextAcknowledge;
-    if (deferred) {
-      deferNextAcknowledge = false;
-      await acknowledgeRelease;
-    }
-    if (typeof runeId === 'string') seenRunes.add(runeId);
+    const deferred = acknowledgeDeferrals.shift() ?? null;
+    deferred?.markStarted();
+    if (deferred) await deferred.wait;
+    const fails = failNextAcknowledge;
+    failNextAcknowledge = false;
+    if (!fails && typeof runeId === 'string') seenRunes.add(runeId);
     try {
-      await r.fulfill({ status: 200, contentType: 'application/json', body: 'true' });
+      await r.fulfill({
+        status: fails ? 503 : 200,
+        contentType: 'application/json',
+        body: fails ? 'false' : 'true',
+      });
     } catch {
       /* A hung-ACK liveness probe deliberately lets the client abort first. */
     }
-    if (deferred) markAcknowledgeFinished();
+    deferred?.markFinished();
   });
   await page.route('**/rest/v1/matches*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
   await page.route('**/functions/v1/pvp-join', (r) => r.fulfill({
@@ -242,9 +281,14 @@ export async function installOnlineRoutes(
     runeRequestStarted,
     releaseRuneResponse: () => releaseRuneRequest(),
     runeRequestFinished,
+    deferNextAccountProfileResponse: () => { deferNextAccountProfile = true; },
+    accountProfileStarted,
+    releaseAccountProfileResponse: () => releaseAccountProfile(),
+    accountProfileFinished,
     acknowledgeStarted,
-    deferNextAcknowledge: () => { deferNextAcknowledge = true; },
-    releaseAcknowledge: () => releaseAcknowledge(),
+    deferNextAcknowledge: deferAcknowledge,
+    failNextAcknowledge: () => { failNextAcknowledge = true; },
+    releaseAcknowledge: () => firstAcknowledgeDeferral?.release(),
     acknowledgeFinished,
     makeRuneUnseen: (runeId) => {
       if (!collectedRunes.includes(runeId)) collectedRunes.push(runeId);

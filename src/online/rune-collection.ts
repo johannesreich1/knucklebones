@@ -12,7 +12,10 @@ import {
 } from '../rune-collection-cache.ts';
 import { supa } from './client.ts';
 import { createCollectionRefreshGuard } from './rune-collection-guard.ts';
-import { acknowledgeRuneRewardForAccount } from './rune-reward-ack.ts';
+import {
+  acknowledgeRuneRewardForAccount,
+  withRuneRewardAcknowledgementDeadline,
+} from './rune-reward-ack.ts';
 import type { ActiveRuneRewardAccount } from './rune-reward-ack.ts';
 
 const refreshGuard = createCollectionRefreshGuard();
@@ -25,10 +28,16 @@ function rewardAcknowledgementKey(accountId: string, runeId: string): string {
 
 async function waitForRewardAcknowledgements(accountId: string): Promise<void> {
   const prefix = `${accountId.toLowerCase()}:`;
-  const pending = [...pendingRewardAcknowledgements]
-    .filter(([key]) => key.startsWith(prefix))
-    .map(([, acknowledgement]) => acknowledgement);
-  if (pending.length) await Promise.allSettled(pending);
+  /* A failed acknowledgement can synchronously register its retry while the
+     batch we are awaiting settles. Drain until the account has no registered
+     write, otherwise a return refresh can read between ACK1 and ACK2. */
+  while (true) {
+    const pending = [...pendingRewardAcknowledgements]
+      .filter(([key]) => key.startsWith(prefix))
+      .map(([, acknowledgement]) => acknowledgement);
+    if (!pending.length) return;
+    await Promise.allSettled(pending);
+  }
 }
 
 export function invalidateRuneCollectionRefreshes(): void {
@@ -48,6 +57,17 @@ export interface RuneCollectionRefresh {
   unseen: readonly PlayerRuneRow[];
   verified: boolean;
   poolTier: RankedPoolTier | null;
+}
+
+/** Recheck identity at the eventual paint/presentation boundary. */
+export async function runeCollectionMatchesActiveAccount(
+  collection: RuneCollectionRefresh,
+): Promise<boolean> {
+  if (!collection.accountId) return false;
+  const activeAccountId = await sessionAccountId();
+  const matches = activeAccountId?.toLowerCase() === collection.accountId.toLowerCase();
+  if (!matches) clearRuneCollectionSnapshot(collection.accountId);
+  return matches;
 }
 
 function usablePoolTier(value: unknown): RankedPoolTier | null {
@@ -93,11 +113,25 @@ export async function refreshRuneCollection(
     if (retained) clearRuneCollectionSnapshot(retained.accountId);
     return { accountId: null, collected: [], unseen: [], verified: false, poolTier: null };
   }
+  /* Own the refresh before entering the acknowledgement barrier. If A waits
+     here while the session changes and B refreshes, B's later revision must
+     remain authoritative when A wakes up. */
+  const token = refreshGuard.begin(id);
   /* Result/profile navigation may race a just-visible reward's durable ACK.
      Query only after that account's in-flight writes settle: success removes
      the unseen row, while failure deliberately leaves it recoverable. */
   await waitForRewardAcknowledgements(id);
-  const token = refreshGuard.begin(id);
+  const barrierActiveAccountId = await sessionAccountId();
+  const barrierRetained = readRuneCollectionSnapshot();
+  const barrierOwnership = refreshGuard.settle(
+    token,
+    barrierActiveAccountId,
+    barrierRetained?.accountId ?? null,
+  );
+  if (!barrierOwnership.owns) {
+    if (barrierOwnership.discardRetained) clearRuneCollectionSnapshot(id);
+    return { accountId: null, collected: [], unseen: [], verified: false, poolTier: null };
+  }
 
   const cached = readRuneCollectionSnapshot();
   if (cached && cached.accountId !== id.toLowerCase()) {
@@ -176,34 +210,35 @@ async function sendRuneRewardAcknowledgement(
   expectedAccountId: string,
   runeId: string,
 ): Promise<boolean> {
-  return acknowledgeRuneRewardForAccount(expectedAccountId, runeId, {
-    activeAccount: activeRuneRewardAccount,
-    acknowledge: async (rewardRuneId, account) => {
-      /* Bind the write to the token captured by the immediately preceding
-         identity check. supabase-js resolves ambient auth when a builder is
-         executed, which would otherwise leave a small A -> B retarget window. */
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), RUNE_REWARD_ACK_TIMEOUT_MS);
-      try {
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/acknowledge_rune_reward`, {
-          method: 'POST',
-          signal: controller.signal,
-          headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${account.accessToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ reward_rune_id: rewardRuneId }),
-        });
-        if (!response.ok) return false;
-        try { return await response.json() === true; } catch { return false; }
-      } catch {
-        return false;
-      } finally {
-        clearTimeout(timeout);
-      }
-    },
-  });
+  const controller = new AbortController();
+  return withRuneRewardAcknowledgementDeadline(
+    () => acknowledgeRuneRewardForAccount(expectedAccountId, runeId, {
+      activeAccount: activeRuneRewardAccount,
+      acknowledge: async (rewardRuneId, account) => {
+        /* Bind the write to the token captured by the immediately preceding
+           identity check. supabase-js resolves ambient auth when a builder is
+           executed, which would otherwise leave a small A -> B retarget window. */
+        try {
+          const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/acknowledge_rune_reward`, {
+            method: 'POST',
+            signal: controller.signal,
+            headers: {
+              apikey: SUPABASE_KEY,
+              Authorization: `Bearer ${account.accessToken}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ reward_rune_id: rewardRuneId }),
+          });
+          if (!response.ok) return false;
+          try { return await response.json() === true; } catch { return false; }
+        } catch {
+          return false;
+        }
+      },
+    }),
+    RUNE_REWARD_ACK_TIMEOUT_MS,
+    () => controller.abort(),
+  );
 }
 
 export function acknowledgeRuneReward(

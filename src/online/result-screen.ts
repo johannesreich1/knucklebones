@@ -16,7 +16,11 @@ import {
 } from './ladder-api.ts';
 import { showFaceoff, type MySide } from './faceoff.ts';
 import { cacheStanding, myProfile } from './session.ts';
-import { acknowledgeRuneReward, refreshRuneCollection } from './rune-collection.ts';
+import {
+  acknowledgeRuneReward,
+  refreshRuneCollection,
+  runeCollectionMatchesActiveAccount,
+} from './rune-collection.ts';
 import {
   acknowledgeRuneRewardWhenPresented,
   firstUnseenRuneReward,
@@ -68,18 +72,23 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
     const acknowledgeRewardForAction = (): void => {
       if (!reward || rewardExplicitlyAcknowledged) return;
       rewardExplicitlyAcknowledged = true;
+      const presentedReward = reward;
       const submitted = rewardAcknowledgement?.acknowledge() ?? null;
       rewardAcknowledgement = null;
-      if (submitted) {
-        void submitted.then((acknowledged) => {
-          if (!acknowledged) void acknowledgeRuneReward(reward!.accountId, reward!.rune.id);
-        });
-        return;
-      }
       /* A temporary cover cancels the visibility watcher. Its return refresh
          can still be pending when the player immediately chooses TRY IT, so
-         bind that explicit action directly to the already-presented reward. */
-      void acknowledgeRuneReward(reward.accountId, reward.rune.id);
+         bind that explicit action directly to the already-presented reward.
+         Both paths retry a failed/deadlined ACK after its de-duplication entry
+         has cleared; an explicit CTA must durably consume the presentation. */
+      const acknowledgement = submitted ?? acknowledgeRuneReward(
+        presentedReward.accountId,
+        presentedReward.rune.id,
+      );
+      void acknowledgement.then((acknowledged) => {
+        if (!acknowledged) {
+          void acknowledgeRuneReward(presentedReward.accountId, presentedReward.rune.id);
+        }
+      });
     };
     const resumeReward = (): void => {
       if (revision !== showRevision) return;
@@ -89,8 +98,10 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
       /* Profile may have presented/acknowledged the same durable row while it
          covered this result. Re-read before rearming, avoiding a stale second
          RPC while still restoring an unseen reward after a dismissed cover. */
-      void refreshRuneCollection().then((collection) => {
+      void refreshRuneCollection().then(async (collection) => {
         if (!foreground || revision !== showRevision) return;
+        const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
+        if (!ownsCollection || !foreground || revision !== showRevision) return;
         if (firstUnseenRuneReward(collection)?.rune.id === expectedRune) {
           armRewardAcknowledgement();
         }
@@ -197,8 +208,10 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
     };
     showLocalizedEnd(endSpec);
 
-    void refreshRuneCollection().then((collection) => {
+    void refreshRuneCollection().then(async (collection) => {
       if (revision !== showRevision) return;
+      const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
+      if (!ownsCollection || revision !== showRevision) return;
       /* A durable reward may predate this result. Never label that older win
          as a reward for the loss/draw currently on screen; entry/profile owns
          recovery when this report itself is not a settled win. */

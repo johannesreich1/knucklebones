@@ -88,6 +88,56 @@ await runOnlineWatchdog({
 check(!recoveryOnline.recoverySync && staleRecoveryReads === 2,
   'visible own-turn watchdog recovery stayed wedged after the outage healed');
 
+/* A 425 says the authoritative stall clock is still young, despite this
+   client's older server-derived timestamp. That contradiction requires a
+   projection read; if the read fails, it must survive a turn/visibility
+   change and must never reach the longer claim fallback. */
+recoveryOnline.recoverySync = false;
+recoveryOnline.recoveryActionVersion = null;
+recoveryOnline.lastMoveAt = 1_000;
+S.turn = 0;
+let earlyRecoveryReads = 0;
+let earlyNudges = 0;
+let earlyClaims = 0;
+const earlyPorts = {
+  ...recoveryPorts,
+  now: () => 40_000,
+  sync: async () => {
+    earlyRecoveryReads++;
+    if (earlyRecoveryReads === 1) return false;
+    recoveryOnline.lastMoveAt = 35_000;
+    S.turn = recoveryOnline.you;
+    return true;
+  },
+  nudgeAction: async () => {
+    earlyNudges++;
+    return { status: 425, data: null };
+  },
+  claim: async () => {
+    earlyClaims++;
+    return { status: 200, data: null };
+  },
+};
+await runOnlineWatchdog(earlyPorts);
+check(recoveryOnline.recoverySync && earlyRecoveryReads === 1,
+  'a 425 did not make its failed stale-projection read durable', {
+    earlyRecoveryReads,
+    recoverySync: recoveryOnline.recoverySync,
+  });
+S.turn = recoveryOnline.you;
+await runOnlineWatchdog(earlyPorts);
+check(!recoveryOnline.recoverySync && earlyRecoveryReads === 2
+    && earlyNudges === 1 && earlyClaims === 0
+    && recoveryOnline.lastMoveAt === 35_000 && S.turn === recoveryOnline.you,
+  'the durable 425 recovery did not install the authoritative advancement', {
+    earlyClaims,
+    earlyNudges,
+    earlyRecoveryReads,
+    lastMoveAt: recoveryOnline.lastMoveAt,
+    recoverySync: recoveryOnline.recoverySync,
+    turn: S.turn,
+  });
+
 /* A healthy read can still confirm the exact same stalled projection. That is
    not progress and must not permanently bypass the legacy authoritative claim
    fallback once its longer window has elapsed. */

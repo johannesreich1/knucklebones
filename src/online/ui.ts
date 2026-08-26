@@ -21,7 +21,11 @@ import { createQueueScreen } from './queue-screen.ts';
 import { createResultScreen } from './result-screen.ts';
 import { ensureIdentity, myProfile } from './session.ts';
 import { syncAccountPreferences } from './preferences.ts';
-import { refreshRuneCollection, type RuneCollectionRefresh } from './rune-collection.ts';
+import {
+  refreshRuneCollection,
+  runeCollectionMatchesActiveAccount,
+  type RuneCollectionRefresh,
+} from './rune-collection.ts';
 import {
   firstUnseenRuneReward,
   showRuneRewardSheet,
@@ -191,6 +195,9 @@ function nextDuel(): void {
      queueing never starts behind a reward that Next Duel just covered. */
   void refreshRuneCollection().then(async (collection) => {
     if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
+    const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
+    if (!ownsCollection || revision !== entryRevision
+        || !$('#ovOnline').classList.contains('on')) return;
     await routeWithRuneReward('play', collection, revision);
   }).catch(() => {
     if (revision === entryRevision && $('#ovOnline').classList.contains('on')) {
@@ -256,6 +263,9 @@ async function entered(): Promise<void> {
   if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
   await syncAccountPreferences();
   if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
+  const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
+  if (!ownsCollection || revision !== entryRevision
+      || !$('#ovOnline').classList.contains('on')) return;
   refreshHomeChip();
   await routeWithRuneReward(view ?? 'play', collection, revision);
 }
@@ -315,6 +325,10 @@ export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<
       refreshRuneCollection(user.id),
     ]);
     if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
+    if (collection.accountId?.toLowerCase() !== user.id.toLowerCase()) return;
+    const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
+    if (!ownsCollection || revision !== entryRevision
+        || !$('#ovOnline').classList.contains('on')) return;
     return routeWithRuneReward(view, collection, revision);
   }
   pendingView = view;

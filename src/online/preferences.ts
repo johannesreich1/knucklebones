@@ -87,7 +87,9 @@ export function createAccountPreferenceSync(ports: AccountPreferenceSyncPorts): 
       const user = await ports.currentUser();
       if (!user || !await ports.seed(user.id, initialLocal)) return;
       const saved = await ports.load(user.id);
-      if (!saved || ports.currentRevision() !== startedRevision) return;
+      const activeUser = await ports.currentUser();
+      if (!saved || activeUser?.id.toLowerCase() !== user.id.toLowerCase()
+          || ports.currentRevision() !== startedRevision) return;
       ports.apply(saved);
     });
   };

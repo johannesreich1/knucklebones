@@ -13,6 +13,28 @@ export interface RuneRewardAcknowledgementPorts {
   acknowledge(runeId: string, account: ActiveRuneRewardAccount): Promise<boolean>;
 }
 
+/** Bound the complete identity-check + write operation, not only its fetch. */
+export async function withRuneRewardAcknowledgementDeadline(
+  run: () => Promise<boolean>,
+  timeoutMs: number,
+  onTimeout: () => void = () => undefined,
+): Promise<boolean> {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  try {
+    return await Promise.race([
+      Promise.resolve().then(run).catch(() => false),
+      new Promise<boolean>((resolve) => {
+        timeout = setTimeout(() => {
+          try { onTimeout(); } catch { /* timeout still settles fail-closed */ }
+          resolve(false);
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
 export async function acknowledgeRuneRewardForAccount(
   expectedAccountId: string,
   runeId: string,
