@@ -69,6 +69,14 @@ export interface Sheet {
 let live: Sheet | null = null;
 export const sheetOpen = (): boolean => !!live;
 
+/** Close the one shared sheet before a higher-priority route takes the room. */
+export function closeOpenSheet(restoreOpener = true): boolean {
+  const active = live;
+  if (!active) return false;
+  active.close(restoreOpener);
+  return true;
+}
+
 export function showSheet(spec: SheetSpec): Sheet {
   live?.close();
   if ((spec.body === undefined) === (spec.content === undefined)) {

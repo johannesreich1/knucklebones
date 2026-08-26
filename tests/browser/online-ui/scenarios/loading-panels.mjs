@@ -76,4 +76,112 @@ export async function runOnlineLoadingPanelScenarios(suite) {
   );
   check(paginationRace.errs.length === 0,
     'page errors during the deferred ladder pagination race', paginationRace.errs);
+
+  /* Ladder is a retained panel inside one reused overlay. Hold the first
+     identity request so the browser must paint the pre-identity state instead
+     of letting a fast local mock conceal it in the same frame. */
+  const rankedAfterLadder = await visit({
+    door: 'board',
+    skipStandardProbes: true,
+    probe: async (page, routes) => {
+      await page.evaluate(() => { window.__kb.S.played = true; });
+      routes.deferNextSignupResponse();
+      await page.click('#btnOnlineBack');
+      await page.waitForSelector('#ovStart.on', { timeout: 15000 });
+      await page.evaluate(() => {
+        window.__rankedEntryFrame = null;
+        document.getElementById('btnOnline')?.addEventListener('pointerup', () => {
+          requestAnimationFrame(() => {
+            const overlay = document.getElementById('ovOnline');
+            const board = document.getElementById('onBoard');
+            const style = overlay ? getComputedStyle(overlay) : null;
+            window.__rankedEntryFrame = {
+              onlineOn: overlay?.classList.contains('on') ?? false,
+              title: document.getElementById('onTitle')?.textContent ?? null,
+              visiblePanels: [...document.querySelectorAll('#ovOnline .panel')]
+                .filter((panel) => !panel.hidden && panel.getClientRects().length > 0)
+                .map((panel) => panel.id),
+              boardHidden: board?.hidden ?? null,
+              boardRects: board?.getClientRects().length ?? null,
+              opacity: Number(style?.opacity ?? 0),
+              visibility: style?.visibility ?? null,
+              eagerLoading: document.getElementById('ovLoad')?.classList.contains('on') ?? false,
+            };
+          });
+        }, { capture: true, once: true });
+      });
+      await page.click('#btnOnline');
+      await Promise.race([
+        routes.signupRequestStarted,
+        new Promise((_, reject) => setTimeout(() => reject(new Error(
+          'ranked entry never started its deferred identity request',
+        )), 5000)),
+      ]);
+      await page.waitForFunction(() => window.__rankedEntryFrame !== null);
+      const frame = await page.evaluate(() => window.__rankedEntryFrame);
+      routes.releaseSignupResponse();
+      await routes.signupRequestFinished;
+      await page.waitForSelector('#onQueue:not([hidden])', { timeout: 15000 });
+      await page.click('#btnQueueCancel');
+      return frame;
+    },
+  });
+  out.onlineLoading.rankedAfterLadder = rankedAfterLadder.probeResult;
+  check(rankedAfterLadder.probeResult?.onlineOn
+      && rankedAfterLadder.probeResult.title === 'MATCHMAKING'
+      && rankedAfterLadder.probeResult.visiblePanels?.join() === 'onLoading'
+      && rankedAfterLadder.probeResult.boardHidden
+      && rankedAfterLadder.probeResult.boardRects === 0
+      && !rankedAfterLadder.probeResult.eagerLoading,
+    'Ranked entry repainted the retained Ladder while identity was pending',
+    rankedAfterLadder.probeResult);
+  check(rankedAfterLadder.errs.length === 0,
+    'page errors while Ranked replaced a retained Ladder', rankedAfterLadder.errs);
+
+  /* A first-game decision is a route boundary, not a second sheet layer. Force
+     that boundary with a live face-off and verify the prompt owns the hit. */
+  const firstGameAboveSheet = await visit({
+    door: 'board',
+    skipStandardProbes: true,
+    probe: async (page) => {
+      await page.click('#onBoardList .lrow:not(.me)');
+      await page.waitForSelector('.faceoff [aria-modal="true"]', { timeout: 15000 });
+      await page.evaluate(() => {
+        window.__kb.S.played = false;
+        window.__kb.S.tutDone = false;
+        const play = document.getElementById('btnPlay');
+        const rect = play?.getBoundingClientRect();
+        const at = rect ? {
+          bubbles: true,
+          clientX: rect.left + rect.width / 2,
+          clientY: rect.top + rect.height / 2,
+        } : { bubbles: true };
+        play?.dispatchEvent(new PointerEvent('pointerdown', at));
+        play?.dispatchEvent(new PointerEvent('pointerup', at));
+      });
+      await page.waitForSelector('#ovFirst.on', { timeout: 15000 });
+      return page.evaluate(() => {
+        const card = document.querySelector('#ovFirst .askcard');
+        const rect = card?.getBoundingClientRect();
+        const hit = rect ? document.elementFromPoint(
+          rect.left + rect.width / 2,
+          rect.top + rect.height / 2,
+        ) : null;
+        return {
+          sheetAbsent: !document.querySelector('.faceoff'),
+          promptOwnsHit: !!hit && !!card?.contains(hit),
+          phase: window.__kb.S.phase,
+        };
+      });
+    },
+  });
+  out.onlineLoading.firstGameAboveSheet = firstGameAboveSheet.probeResult;
+  check(firstGameAboveSheet.probeResult?.sheetAbsent
+      && firstGameAboveSheet.probeResult.promptOwnsHit
+      && firstGameAboveSheet.probeResult.phase === 'menu',
+    'the first-game prompt remained underneath a comparison sheet',
+    firstGameAboveSheet.probeResult);
+  check(firstGameAboveSheet.errs.length === 0,
+    'page errors while the first-game prompt replaced a comparison sheet',
+    firstGameAboveSheet.errs);
 }

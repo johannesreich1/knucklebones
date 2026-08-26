@@ -8,6 +8,7 @@ import { t } from '../i18n/index.ts';
 import { $, show, hide } from './dom.ts';
 import { Sfx } from './audio.ts';
 import { appRoot } from './embed.ts';
+import { closeOpenSheet } from './sheet.ts';
 
 /* Nothing to offer somebody who has already played, or who has already been
    taught. Both facts are persisted, so this is a once-in-a-lifetime prompt. */
@@ -32,6 +33,10 @@ function build(): void {
    who taps past this must land in the game they asked for. */
 export function offerTutorial(): Promise<boolean> {
   build();
+  /* The first-game choice owns the next route. A Ladder comparison left in
+     flight is a z90 sheet, so letting it survive would cover this z80 room and
+     leave the player answering two stacked interactions. */
+  closeOpenSheet(false);
   show('#ovFirst');
   return new Promise<boolean>((resolve) => {
     const done = (yes: boolean) => () => {

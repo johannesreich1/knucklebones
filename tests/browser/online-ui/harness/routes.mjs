@@ -23,6 +23,10 @@ export async function installOnlineRoutes(
   let leaderboardCalls = 0;
   let runeCalls = 0;
   let acknowledgeCalls = 0;
+  let deferNextSignup = false;
+  let markSignupRequestStarted;
+  let releaseSignupRequest;
+  let markSignupRequestFinished;
   const collectedRunes = [...runes];
   const seenRunes = new Set(runes.filter((runeId) => !unseenRunes.includes(runeId)));
   let deferNextRune = false;
@@ -38,6 +42,9 @@ export async function installOnlineRoutes(
   let failNextAcknowledge = false;
   const acknowledgeDeferrals = [];
   let firstAcknowledgeDeferral = null;
+  const signupRequestStarted = new Promise((resolve) => { markSignupRequestStarted = resolve; });
+  const signupRequestRelease = new Promise((resolve) => { releaseSignupRequest = resolve; });
+  const signupRequestFinished = new Promise((resolve) => { markSignupRequestFinished = resolve; });
   const runeRequestStarted = new Promise((resolve) => { markRuneRequestStarted = resolve; });
   const runeRequestRelease = new Promise((resolve) => { releaseRuneRequest = resolve; });
   const runeRequestFinished = new Promise((resolve) => { markRuneRequestFinished = resolve; });
@@ -84,12 +91,19 @@ export async function installOnlineRoutes(
     });
   });
   if (attached) await page.addInitScript(() => localStorage.setItem('knucklebones.online.attached', '1'));
-  await page.route('**/auth/v1/signup*', (r) => {
+  await page.route('**/auth/v1/signup*', async (r) => {
     signupCalls++;
-    return anonymous === 200
+    const deferred = deferNextSignup;
+    if (deferred) {
+      deferNextSignup = false;
+      markSignupRequestStarted();
+      await signupRequestRelease;
+    }
+    await (anonymous === 200
       ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(SESSION) })
       : r.fulfill({ status: 422, contentType: 'application/json',
-                    body: JSON.stringify({ code: 'anonymous_provider_disabled', message: 'Anonymous sign-ins are disabled' }) });
+                    body: JSON.stringify({ code: 'anonymous_provider_disabled', message: 'Anonymous sign-ins are disabled' }) }));
+    if (deferred) markSignupRequestFinished();
   });
   await page.route('**/auth/v1/token?grant_type=password', async (r) => {
     passwordCalls++;
@@ -281,6 +295,10 @@ export async function installOnlineRoutes(
     }]) }));
   return {
     signupCalls: () => signupCalls,
+    deferNextSignupResponse: () => { deferNextSignup = true; },
+    signupRequestStarted,
+    releaseSignupResponse: () => releaseSignupRequest(),
+    signupRequestFinished,
     passwordCalls: () => passwordCalls,
     profileCalls: () => profileCalls,
     tierProfileCalls: () => tierProfileCalls,

@@ -157,6 +157,8 @@ export async function runLadderFaceoffScenarios(suite) {
         'the face-off has no announceable way out now that the ✕ is gone', fo?.grab);
   check(fo?.focused === true && fo?.keyClosed === true,
         'the grabber cannot be focused and pressed to close', fo);
+  check(fo?.keyRoute?.firstRunVisible === false && fo?.keyRoute?.phase === 'menu',
+        'closing the comparison with Enter also activated the game underneath', fo?.keyRoute);
   /* THE PLAIN TAP, which is the door most players will use and the one the
      keyboard path above cannot vouch for: the click must land ON the grabber
      — not on the card that captured the pointer out from under it — and the

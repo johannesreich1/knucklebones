@@ -68,6 +68,12 @@ export function bindKeyboard(root: HTMLElement): void {
     }
 
     if (rawEvent.key === 'Enter' || rawEvent.key === ' ') {
+      /* Native controls already turn these keys into their own click. Letting
+         the document shortcut answer too made a focused Ranked button start a
+         local first-game offer and the online route from one key press. */
+      if (eventElement(rawEvent.target)?.closest(
+        'button,a[href],input,select,textarea,[role="button"],[contenteditable="true"]',
+      )) return;
       const pass = $('#ovPass');
       if (pass.classList.contains('on')) {
         pass.click();

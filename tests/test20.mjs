@@ -35,6 +35,10 @@ const { chromium } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
 const problems = [], out = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
+const primeRandomStart = (randomMode) => {
+  const natural = Math.random; if (randomMode) Math.random = () => { Math.random = natural; return .5; };
+  window.__kb.S.timer = 0;
+};
 
 const browser = await chromium.launch();
 try {
@@ -71,7 +75,7 @@ try {
     await page.click('#modeSeg button[data-m="duo"]');
     await page.click(`#modePick button[data-v="${localMode}"]`);
     await page.click('#spellPick button[data-v="random"]');
-    await page.evaluate(() => { window.__kb.S.timer = 0; });
+    await page.evaluate(primeRandomStart, localMode === '-1');
     await page.click('#btnPlay');
     if (liveLocale) {
       await page.waitForSelector('#ovWheel.on #wheelDial', { timeout: 20000 }); // never stale hidden DOM
@@ -360,11 +364,7 @@ try {
     await page.click(`#modeSeg button[data-m="${playMode}"]`);
     await page.click(`#modePick button[data-v="${mode}"]`);
     await page.click(`#spellPick button[data-v="${spell}"]`);
-    await page.evaluate((randomMode) => {
-      const natural = Math.random;
-      if (randomMode) Math.random = () => { Math.random = natural; return .5; };
-      window.__kb.S.timer = 0;
-    }, mode === '-1');
+    await page.evaluate(primeRandomStart, mode === '-1');
     await page.click('#btnPlay');
     await page.waitForFunction(() => document.querySelector('#ovWheel')?.classList.contains('holding'), { timeout: 20000 });
     await page.waitForTimeout(250);

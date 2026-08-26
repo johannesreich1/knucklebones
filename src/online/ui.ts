@@ -314,18 +314,19 @@ export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<
     pendingView = null;
     return ladder.show();
   }
+  /* The online overlay is reused, so its last panel may still be fading out
+     when Home opens it again. Establish the new destination before identity
+     or Game Center can yield; otherwise a retained Ladder can paint during
+     that wait. */
+  pendingView = null;
+  showOnlineLoading(loadingPanel(view));
+  show('#ovOnline');
   const user = await ensureIdentity();
   if (revision !== entryRevision) return;
   setSessionless(!user);
   if (user) {
-    /* Mount one complete destination state before exposing the lazy overlay.
-       Account preference hydration may take a network turn; showing the
-       overlay first left every panel hidden (and the title at ONLINE), so that
-       empty shell painted above the eager chunk loader for a visible flash.
-       Ladder already establishes its wait synchronously before yielding. */
-    showOnlineLoading(loadingPanel(view));
-    show('#ovOnline');
-    pendingView = null;
+    /* Keep the shared wait up until preference and collection hydration have
+       produced one complete destination; never reveal partial account data. */
     const [, collection] = await Promise.all([
       syncAccountPreferences(),
       refreshRuneCollection(user.id),

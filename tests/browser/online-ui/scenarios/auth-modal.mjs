@@ -87,7 +87,8 @@ async function probeSessionlessModal(page) {
 
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => !document.querySelector('.authsheet'));
-  await page.waitForTimeout(30);
+  await page.waitForFunction(() => document.activeElement?.id === 'homeChip',
+    null, { timeout: 2000 }).catch(() => { /* the observation below owns the failure detail */ });
   const dismissed = await page.evaluate(() => ({
     homeOn: document.getElementById('ovStart')?.classList.contains('on'),
     homeInert: document.getElementById('ovStart')?.inert,
@@ -121,7 +122,8 @@ async function probeAccountOrigin(page) {
   }));
   await page.keyboard.press('Escape');
   await page.waitForFunction(() => !document.querySelector('.authsheet'));
-  await page.waitForTimeout(30);
+  await page.waitForFunction(() => document.activeElement?.id === 'btnHaveAcc',
+    null, { timeout: 2000 }).catch(() => { /* the observation below owns the failure detail */ });
   const closed = await page.evaluate(() => ({
     accountVisible: document.getElementById('onAccount')?.hidden === false,
     onlineOn: document.getElementById('ovOnline')?.classList.contains('on'),

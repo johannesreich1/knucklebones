@@ -5,9 +5,17 @@ import { fit } from '../ui/layout.ts';
 import { bindSwipeBack } from '../ui/swipeback.ts';
 
 export function bindPlatform(root: HTMLElement): void {
-  window.addEventListener('resize', fit);
-  window.addEventListener('orientationchange', () => setTimeout(fit, 120));
-  if (window.ResizeObserver) new ResizeObserver(fit).observe($('#app'));
+  let fitFrame = 0;
+  const scheduleFit = (): void => {
+    if (fitFrame) return;
+    fitFrame = requestAnimationFrame(() => {
+      fitFrame = 0;
+      fit();
+    });
+  };
+  window.addEventListener('resize', scheduleFit);
+  window.addEventListener('orientationchange', () => setTimeout(scheduleFit, 120));
+  if (window.ResizeObserver) new ResizeObserver(scheduleFit).observe($('#app'));
 
   if (isEmbed()) {
     root.addEventListener('contextmenu', (event) => event.preventDefault());

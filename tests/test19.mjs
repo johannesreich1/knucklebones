@@ -17,6 +17,25 @@ const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x
 
 const browser = await chromium.launch();
 try {
+  /* A focused native button owns Enter/Space. The document-level Home
+     shortcut must not also begin the game hiding behind that button's route. */
+  const keyCtx = await browser.newContext({ viewport: { width: 430, height: 932 }, locale: 'en-US' });
+  const keyPage = await keyCtx.newPage();
+  keyPage.on('pageerror', (e) => problems.push('KEY PAGEERROR ' + e.message));
+  await keyPage.goto(F);
+  await keyPage.locator('#btnVsCpu').focus();
+  await keyPage.keyboard.press('Enter');
+  await keyPage.waitForTimeout(100);
+  out.controlOwnsEnter = await keyPage.evaluate(() => ({
+    practice: document.querySelector('#ovPractice').classList.contains('on'),
+    offered: document.querySelector('#ovFirst')?.classList.contains('on') ?? false,
+    phase: window.__kb.S.phase,
+  }));
+  check(out.controlOwnsEnter.practice && !out.controlOwnsEnter.offered
+      && out.controlOwnsEnter.phase === 'menu',
+    'Enter on a Home control also fired the global start shortcut', out.controlOwnsEnter);
+  await keyCtx.close();
+
   // ---- a brand-new player: empty storage, nothing played, nothing taught ----
   const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, locale: 'en-US' });
   const page = await ctx.newPage();

@@ -354,12 +354,8 @@ export async function probeFaceoff(page, { door, motion }) {
       /* (g) THE ANNOUNCEABLE DOOR. With the ✕ gone the gesture is the only exit
          a sighted mouse user can see, and a gesture is nothing to a screen
          reader. The grabber is therefore a real button: it takes focus, it has
-         a name, and Enter on it dismisses through the same close().
-         LAST, and it has to be: Home's own Enter shortcut (boot.ts) fires
-         through every overlay above it, so this press also starts a local game
-         and puts the first-run tutorial offer over the ladder. That is not
-         this card's doing and not this suite's business — but anything that
-         needs the ladder must happen before it. */
+         a name, and Enter on it dismisses through the same close(). The modal
+         owns that key: dismissing it must not also reach Home's game shortcut. */
       await open();
       faceoff.focused = await page.evaluate(() => {
         const b = document.querySelector('.fograb');
@@ -368,6 +364,10 @@ export async function probeFaceoff(page, { door, motion }) {
       });
       await page.keyboard.press('Enter');
       faceoff.keyClosed = await gone();
+      faceoff.keyRoute = await page.evaluate(() => ({
+        firstRunVisible: document.getElementById('ovFirst')?.classList.contains('on') ?? false,
+        phase: window.__kb.S.phase,
+      }));
     }
   }
   return faceoff;
