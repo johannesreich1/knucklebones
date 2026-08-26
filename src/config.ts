@@ -47,5 +47,7 @@ export const SUPABASE_AUTH_STORAGE_KEY = `sb-${SUPABASE_PROJECT_REF}-auth-token`
    value keeps Game Center account exchange unavailable rather than bypassing
    the gateway. */
 export const IDENTITY_GATEWAY_URL = String(
-  import.meta.env?.VITE_IDENTITY_GATEWAY_URL ?? '',
+  (import.meta as ImportMeta & {
+    readonly env?: { readonly VITE_IDENTITY_GATEWAY_URL?: string };
+  }).env?.VITE_IDENTITY_GATEWAY_URL ?? '',
 ).replace(/\/$/, '');
