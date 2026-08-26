@@ -12,12 +12,25 @@ import { modeCopy, runeTrialCopy, spellCopy, subscribeLocale, t } from '../i18n/
 import { modeIcon, modeHue } from './modeicons.ts';
 import { spellIcon, spellHue } from './spellicons.ts';
 import { $, show } from './dom.ts';
-import { showSheet } from './sheet.ts';
+import { showSheet, type SheetSpec } from './sheet.ts';
 import { appRoot } from './embed.ts';
 import { bindLearnPageBack, learnPageMarkup } from './learn-page.ts';
 
 export interface LibraryItem { id: string; name: string; blurb: string; detail: string; hue: string; icon: string }
 export interface LibrarySpec { id: string; title: string; items: LibraryItem[] }
+export interface LibraryEntryPresentation {
+  /** Replace the registry's one-line summary for this caller only. */
+  blurb?: string;
+  /** Replace the registry's rule text for this caller only. */
+  detail?: string;
+  /** Optional separate line below the description. */
+  meta?: string | null;
+}
+export interface OpenEntryOptions {
+  /** Resolve on open and locale changes so caller-owned copy stays current. */
+  presentation?: () => LibraryEntryPresentation;
+  restoreFocus?: SheetSpec['restoreFocus'];
+}
 
 /* the two rosters, each a spec of the one library. Exported because the design
    cards render them through this very function (design/build.mjs, {{library}}):
@@ -172,22 +185,34 @@ export const openSpells = (highlight?: string): void => openLibrary(SPELL_LIB, h
    registry entry needs no code here at all. The rosters keep their overlay:
    HOW TO PLAY is where you go to read them ALL. */
 const LIBS: Record<string, LibrarySpec> = { modes: MODE_LIB, spells: SPELL_LIB };
-export function openEntry(lib: string, id: string): boolean {
+export function openEntry(lib: string, id: string, options: OpenEntryOptions = {}): boolean {
   const current = (): LibraryItem | undefined => LIBS[lib]?.items.find((i) => i.id === id);
   const it = current();
   if (!it) return false;   // a chip naming something the registry retired opens nothing
-  showSheet({
+  const repaint = (card: HTMLElement): void => {
+    const copy = current();
+    if (!copy) return;
+    const presentation = options.presentation?.() ?? {};
+    card.querySelector<HTMLElement>('.mcname')!.textContent = copy.name;
+    card.querySelector<HTMLElement>('.mcblurb')!.textContent = presentation.blurb ?? copy.blurb;
+    card.querySelector<HTMLElement>('.mcdetail')!.textContent = presentation.detail ?? copy.detail;
+    const meta = card.querySelector<HTMLElement>('.mcmeta');
+    if (meta) {
+      const text = presentation.meta?.trim() ?? '';
+      meta.textContent = text;
+      meta.hidden = !text;
+    }
+  };
+  const sheet = showSheet({
     cls: 'libsheet',
     label: () => current()?.name ?? it.name,
     tint: it.hue,
-    body: libraryBody(it),
-    repaintLocale: (card) => {
-      const copy = current();
-      if (!copy) return;
-      card.querySelector<HTMLElement>('.mcname')!.textContent = copy.name;
-      card.querySelector<HTMLElement>('.mcblurb')!.textContent = copy.blurb;
-      card.querySelector<HTMLElement>('.mcdetail')!.textContent = copy.detail;
-    },
+    body: libraryBody(it) + (options.presentation ? '<div class="mcmeta" hidden></div>' : ''),
+    repaintLocale: repaint,
+    restoreFocus: options.restoreFocus,
   });
+  /* showSheet mounts synchronously. Paint caller-owned text in the same turn,
+     before the browser can show the registry fallback for a locked entry. */
+  repaint(sheet.card);
   return true;
 }

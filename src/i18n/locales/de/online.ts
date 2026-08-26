@@ -84,6 +84,9 @@ export const deOnline = {
     repairApple: 'Apple-Zugriff reparieren',
     runes: 'RUNEN',
     runesCollected: '{{count}} / 6 gesammelt',
+    runeLocked: 'GESPERRT',
+    runeLockedDetail: 'Gewinne diese Rune im {{mode}}, um sie freizuschalten.',
+    runeUnlockedAt: 'Freigeschaltet am {{date}}',
   },
   avatar: {
     instruction: 'Wähle eine Fläche und eine Farbe',

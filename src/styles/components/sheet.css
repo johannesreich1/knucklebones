@@ -137,6 +137,12 @@
 :where(#kbroot) .libsheet .mcname{font-size:14.5px}
 :where(#kbroot) .libsheet .mcblurb{font-size:10px}
 :where(#kbroot) .libsheet .mcdetail{font-size:13px;line-height:1.62}
+:where(#kbroot) .libsheet .mcmeta{display:flex;align-items:center;gap:8px;margin-top:3px;padding-top:10px;
+  border-top:1px solid color-mix(in srgb,var(--mh) 24%,transparent);color:color-mix(in srgb,var(--mh) 58%,var(--dim));
+  font-size:10px;font-weight:800;line-height:1.35;letter-spacing:.06em}
+:where(#kbroot) .libsheet .mcmeta::before{content:"";width:5px;height:5px;flex:0 0 auto;border:1px solid var(--mh);
+  transform:rotate(45deg);box-shadow:0 0 8px color-mix(in srgb,var(--mh) 65%,transparent)}
+:where(#kbroot) .libsheet .mcmeta[hidden]{display:none}
 /* the icon rides the heading's colour (currentColor, ui/modeicons) and is
    given the same glow the mode wheel gives it, so the card is lit by the
    thing it names rather than merely labelled with it */

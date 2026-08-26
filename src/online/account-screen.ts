@@ -33,7 +33,7 @@ import {
   type RuneCollectionRefresh,
 } from './rune-collection.ts';
 import { fillAccountRing } from './account-ring.ts';
-import { paintAccountRunes } from './account-runes.ts';
+import { bindAccountRuneSheets, paintAccountRunes } from './account-runes.ts';
 import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';
 import type { AuthMode, AuthOrigin } from './auth-screen.ts';
 import type { Ladder, Standing } from './ladder-api.ts';
@@ -63,6 +63,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     streak: number;
     identity: IdentityStatus | null;
     runes: readonly string[];
+    runeRows: RuneCollectionRefresh['rows'];
   } | null = null;
   let lastRecent: Awaited<ReturnType<typeof matchHistory>> = [];
   let pendingCachedRating: number | null = null;
@@ -111,7 +112,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
 
   const paintAccount = (): void => {
     if (!lastAccount) return;
-    const { profile, user, ladder, standing, streak, identity, runes } = lastAccount;
+    const { profile, user, ladder, standing, streak, identity, runes, runeRows } = lastAccount;
     $('#accSince').textContent = !user?.guest && profile?.created_at
       ? t('online', 'profile.memberSince', {
         date: formatDate(new Date(profile.created_at), { month: 'long', year: 'numeric' }),
@@ -130,7 +131,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     $('#accRank').textContent = rankText(standing, games, apex);
     $('#accStreak').textContent = formatNumber(streak);
     paintAccountProviders(user, identity);
-    paintAccountRunes(runes);
+    paintAccountRunes(runes, runeRows);
     paintRecent();
   };
 
@@ -225,6 +226,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       streak,
       identity,
       runes: runeCollection.collected,
+      runeRows: runeCollection.rows,
     };
     lastRecent = recent;
     pendingCachedRating = null;
@@ -246,6 +248,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
   }
 
   function bind(): void {
+    bindAccountRuneSheets();
     $('#btnKeepAcc').addEventListener('click', () => {
       Sfx.tap();
       ports.showAuth('attach', 'account');

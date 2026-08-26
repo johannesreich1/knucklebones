@@ -51,8 +51,9 @@ export interface SheetSpec {
   onDismiss?: () => void;
   /** Called after every close, including a caller-requested immediate close. */
   onClose?: () => void;
-  /** Override the control that regains focus when the sheet is gone. */
-  restoreFocus?: HTMLElement | null;
+  /** Override the control that regains focus when the sheet is gone.
+   * A resolver survives callers that repaint their opener while this sheet is open. */
+  restoreFocus?: HTMLElement | null | (() => HTMLElement | null);
 }
 export interface Sheet {
   ov: HTMLElement;
@@ -140,8 +141,9 @@ export function showSheet(spec: SheetSpec): Sheet {
        listener returns, so restore on the next frame. A replacement sheet wins
        through `live`, and successful navigation calls close(false). */
     if (restoreOpener) requestAnimationFrame(() => {
-      if (live || !opener?.isConnected || opener.inert || !opener.getClientRects().length) return;
-      opener.focus({ preventScroll: true });
+      const target = typeof opener === 'function' ? opener() : opener;
+      if (live || !target?.isConnected || target.inert || !target.getClientRects().length) return;
+      target.focus({ preventScroll: true });
     });
   };
   const onKey = (e: KeyboardEvent): void => {
