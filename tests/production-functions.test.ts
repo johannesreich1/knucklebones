@@ -7,7 +7,6 @@ import {
   FUNCTION_DEPLOY_OPT_IN,
   FUNCTION_ROLLOUT_SLUGS,
   PRODUCTION_PROJECT_REF,
-  SUPABASE_TYPE_ONLY_READBACK_OMISSIONS,
   assertActiveFunctionMetadata,
   assertExactDownloadedClosure,
   assertFunctionDeployOptIn,
@@ -19,6 +18,7 @@ import {
   materializeFunctionProject,
   requireNode24,
   rolloutProductionFunctions,
+  supabaseReadbackOmissionPaths,
 } from '../tools/functions/production-rollout.mjs';
 import {
   CLI,
@@ -161,7 +161,7 @@ try {
         path.join(root, 'supabase', 'functions', slug), slug, payloads.get(slug),
       );
     }
-    for (const name of Object.keys(SUPABASE_TYPE_ONLY_READBACK_OMISSIONS)) {
+    for (const name of supabaseReadbackOmissionPaths('pvp-action')) {
       rmSync(path.join(root, 'supabase', 'functions', 'pvp-action', ...name.split('/')));
     }
     assert.equal(assertExactDownloadedClosure(

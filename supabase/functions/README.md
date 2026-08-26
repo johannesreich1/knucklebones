@@ -77,8 +77,9 @@ activate before every authority endpoint is ready. It requires committed
 closures and the pinned CLI, reuses the database rollout's exact history,
 owner, RLS, ACL, function-body, Realtime, and cron audit, deploys every closure
 whole, then downloads and compares every runtime path and byte before
-continuing. Supabase's readback prunes two type-only modules; the helper accepts
-only those exact omissions while pinning their committed source hashes.
+continuing. Supabase's readback prunes some per-function type-only inputs; the
+helper accepts only the exact path/function combinations whose committed source
+hashes are pinned.
 
 Other explicitly reviewed deploys may go through the Supabase MCP
 (`deploy_edge_function`). Its `files` argument is exactly what the tool prints:

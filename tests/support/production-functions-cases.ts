@@ -16,8 +16,8 @@ import {
   RUNE_TRIAL_MIGRATION_VERSION,
   RUNE_TRIAL_PREREQUISITE_FIELDS,
   RUNE_TRIAL_PRODUCTION_PREREQUISITE,
-  SUPABASE_TYPE_ONLY_READBACK_OMISSIONS,
   assertExactDownloadedClosure,
+  supabaseReadbackOmissionPaths,
 } from '../../tools/functions/production-rollout.mjs';
 
 export const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -162,7 +162,7 @@ export function makeRunner({ corruptSlug }: { corruptSlug?: string } = {}) {
           payload[0] = { ...payload[0], content: `${payload[0].content}\ncorrupt` };
         }
         const functionRoot = writeClosure(workdir, slug, payload);
-        for (const name of Object.keys(SUPABASE_TYPE_ONLY_READBACK_OMISSIONS)) {
+        for (const name of supabaseReadbackOmissionPaths(slug)) {
           rmSync(path.join(functionRoot, ...name.split('/')), { force: true });
         }
         return;
