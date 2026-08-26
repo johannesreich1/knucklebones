@@ -6,9 +6,9 @@ import { ONLINE_TURN_SECS } from '../config.ts';
 import { S } from '../state.ts';
 import { startTimer, stopTimer, showClock } from '../flow/timer.ts';
 import { clearSpells, renderSpells, resetSpells, resolveTimedOutSpellAim,
-  setSpellAimTransport, setSpellCastTransport, setSpellCasterGuard } from '../flow/spells.ts';
+  setSpellTransport } from '../flow/spells.ts';
 import { setLeaveInterceptor } from '../flow/leave.ts';
-import { $, show, hide } from '../ui/dom.ts';
+import { $, hide } from '../ui/dom.ts';
 import { showBag, renderBag, BAG_SIZE } from '../ui/bag.ts';
 import { buildBoards, renderAll } from '../ui/game/board.ts';
 import { clearHints, showHints } from '../ui/game/hints.ts';
@@ -106,14 +106,14 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
 
   if (online.trial && online.trialRunes) {
     resetSpells(online.trialRunes);
-    setSpellAimTransport((id) => trialActions.aim(id));
-    setSpellCastTransport((id, column) => trialActions.cast(id, column));
-    setSpellCasterGuard((who) => O === online && who === online.you);
+    setSpellTransport({
+      aim: (id) => trialActions.aim(id),
+      cast: (id, column) => trialActions.cast(id, column),
+      casterAllowed: (who) => O === online && who === online.you,
+    });
   } else {
     clearSpells();
-    setSpellAimTransport(null);
-    setSpellCastTransport(null);
-    setSpellCasterGuard(null);
+    setSpellTransport(null);
   }
 
   const spec = modeById(res.match.modifier);
@@ -327,9 +327,7 @@ export function teardown(): void {
   S.scoring = CLASSIC;             // local play is always classic
   O.channel?.unsubscribe();
   if (O.tick) clearInterval(O.tick);
-  setSpellAimTransport(null);
-  setSpellCastTransport(null);
-  setSpellCasterGuard(null);
+  setSpellTransport(null);
   clearSpells();
   setPlaceHandler(null);
   setLeaveInterceptor(null);

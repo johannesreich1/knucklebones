@@ -17,14 +17,10 @@ export interface DiePipDiff {
   added: readonly number[];
 }
 
-/* The face map has one owner. Motion studies and production effects ask this
-   helper which cells changed instead of growing their own remembered version
-   of a die face (the wrap from six to one is where that drift is easiest to
-   miss). Returned arrays are fresh so callers may decorate them safely. */
-export function diePipCells(value: number): readonly number[] {
-  return [...(PIPS[value] ?? [])];
-}
-
+/* The face map has one owner. The NUDGE morph (flow/spell-effects/nudge.ts)
+   asks which cells changed instead of growing its own remembered version of a
+   die face (the wrap from six to one is where that drift is easiest to miss).
+   Returned arrays are fresh so callers may decorate them safely. */
 export function diePipDiff(from: number, to: number): DiePipDiff {
   const before = new Set(PIPS[from] ?? []);
   const after = new Set(PIPS[to] ?? []);

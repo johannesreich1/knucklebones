@@ -5,20 +5,14 @@
 import {
   RUNE_TRIAL_CAPABILITY,
   RUNE_TRIAL_FORMAT,
-  RUNE_TRIAL_OUTCOME,
   pickRankedOutcome,
   type RankedOutcomeSpec,
 } from './core/ranked-outcomes.ts';
-import { RANDOM } from './core/modes.ts';
 import { RANDOM_DUAL_SPELL, RANDOM_SPELL, SPELLS, spellById, type SpellSpec } from './core/spells.ts';
 import type { Mode as PlayMode } from './state.ts';
 
 export const RUNE_TRIAL_PICK = -2;
 export { RUNE_TRIAL_FORMAT };
-
-export function isLocalModePick(value: unknown): boolean {
-  return Number.isInteger(value) && Number(value) >= RUNE_TRIAL_PICK && Number(value) <= 6;
-}
 
 export function isLocalSpellPick(value: unknown): value is string {
   return value === '' || value === RANDOM_SPELL || value === RANDOM_DUAL_SPELL
@@ -61,12 +55,4 @@ export function pickLocalOutcome(seed: string, trialEligible: boolean): Readonly
 
 export function isRuneTrialOutcome(outcome: Pick<RankedOutcomeSpec, 'format'> | null | undefined): boolean {
   return outcome?.format === RUNE_TRIAL_FORMAT;
-}
-
-export function selectedLocalOutcome(selected: number): Readonly<RankedOutcomeSpec> | null {
-  return selected === RUNE_TRIAL_PICK ? RUNE_TRIAL_OUTCOME : null;
-}
-
-export function modePromise(selected: number): boolean {
-  return selected === RANDOM || selected === RUNE_TRIAL_PICK;
 }

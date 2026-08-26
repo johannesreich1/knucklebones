@@ -7,7 +7,7 @@ import { Sfx } from '../ui/audio.ts';
 import { colEl, ownerOf } from '../ui/dom.ts';
 import { fxRoot } from '../ui/fx.ts';
 import { rootElementFromPoint } from '../ui/query.ts';
-import { spellHue } from '../ui/spellicons.ts';
+import { PREVIEW_CLASSES, spellHue } from '../ui/spellicons.ts';
 import { runeCardFaces } from '../ui/runedeal.ts';
 import { isAimedColumn } from './spell-rail.ts';
 import type { SpellInputTarget } from './spell-target.ts';
@@ -158,7 +158,7 @@ export function clearSpellTargets(): void {
   setHot(null);
   setStageHot(false);
   appRoot().querySelectorAll('.spellpreview').forEach((die) => {
-    die.classList.remove('spellpreview', 'anvilpreview', 'pilferpreview');
+    die.classList.remove(...PREVIEW_CLASSES);
     (die as HTMLElement).style.removeProperty('--spell-hue');
   });
 }

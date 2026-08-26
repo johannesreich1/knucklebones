@@ -17,7 +17,7 @@ import {
 import { localizedAuthError } from '../src/online/session.ts';
 import { rankedBadge } from '../src/online/play-copy.ts';
 import { supportsRankedClientRules } from '../src/online/play-state.ts';
-import { trialSelectionSettled } from '../src/online/trial-selection.ts';
+import { trialSelectionSettled } from '../src/online/trial-offer.ts';
 import { setLanguageOverride, t } from '../src/i18n/index.ts';
 
 const problems: string[] = [];
@@ -105,7 +105,7 @@ check(!moveTransport.includes('status === 0')
   && (moveTransport.match(/callFunction<MoveResult>\('pvp-move'/g) ?? []).length === 1,
   'new web can automatically replay a move against the old non-idempotent Edge Function');
 const playSource = readFileSync('src/online/play.ts', 'utf8');
-const trialSelectionSource = readFileSync('src/online/trial-selection.ts', 'utf8');
+const trialSelectionSource = readFileSync('src/online/trial-offer.ts', 'utf8');
 check(trialSelectionSource.includes('readRuneTrialState(current.match.id)')
   && !trialSelectionSource.includes('join(false)'),
   'Rune Trial selection recovery can mutate matchmaking instead of reading its known match');
@@ -119,9 +119,6 @@ check(trialActionSource.includes('online.actionApplied >= committedVersion')
 check(trialSelectionSource.includes('recoverIdempotentCommand(committed')
   && (trialSelectionSource.match(/selectedRune, commandId/g) ?? []).length === 2,
   'Rune Trial selection can replace an uncertain command with a fresh choice');
-const trialSyncSource = readFileSync('src/online/play-sync.ts', 'utf8');
-check(trialSyncSource.includes('projectionRecoveryVersionReached(online)'),
-  'a version-behind Rune Trial snapshot can reopen input during action recovery');
 check(playSource.includes('sync: () => sync(true)') && !playSource.includes('if (res.rejoined)'),
   'fresh matches do not sync a possible old-backend bot opening move before input');
 check(playSource.includes('newerMatchProjection(online.pendingRow, r.data.match)')

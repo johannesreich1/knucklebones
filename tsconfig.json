@@ -8,10 +8,11 @@
     "allowImportingTsExtensions": true,
     "isolatedModules": true,
     "skipLibCheck": true,
-    /* Strict everywhere. The moved-verbatim flow/ui modules still carry
-       file-level @ts-nocheck headers — removing those (and typing the file)
-       is the remaining ratchet; never add a new nocheck. */
-    "strict": true
+    /* Strict everywhere; the @ts-nocheck ratchet completed and
+       tests/architecture.test.ts rejects any new one. noUnusedLocals keeps
+       dead imports and locals from accumulating silently again. */
+    "strict": true,
+    "noUnusedLocals": true
   },
   "include": ["src"]
 }

@@ -5,7 +5,7 @@ import {
   translateDom,
   type LocaleKey,
 } from '../i18n/index.ts';
-import { $, hide, settleGlass } from '../ui/dom.ts';
+import { $, byId, hide, settleGlass } from '../ui/dom.ts';
 import { makeDie } from '../ui/die.ts';
 import { appRoot } from '../ui/embed.ts';
 import { loaderWait } from '../ui/loader.ts';
@@ -186,13 +186,8 @@ function paintPanelTitle(): void {
 }
 
 function paintOnlineShell(): void {
-  const overlay = document.getElementById('ovOnline');
+  const overlay = byId('ovOnline');
   if (overlay) translateDom(overlay);
-  paintPanelTitle();
-}
-
-export function setOnlinePanelTitle(title: LocaleKey<'online'>): void {
-  activeTitle = title;
   paintPanelTitle();
 }
 
@@ -239,6 +234,6 @@ export function showOnlineLoading(which: OnlinePanel): void {
 
 /** Async painters may finish after Back or another panel has won the view. */
 export function isOnlinePanelCurrent(which: OnlinePanel): boolean {
-  return !!document.getElementById('ovOnline')?.classList.contains('on')
+  return !!byId('ovOnline')?.classList.contains('on')
     && (activePanel === which || loadingFor === which);
 }

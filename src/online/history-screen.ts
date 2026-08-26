@@ -1,5 +1,5 @@
 import { formatDate, formatNumber, subscribeLocale, t } from '../i18n/index.ts';
-import { $ } from '../ui/dom.ts';
+import { $, byId } from '../ui/dom.ts';
 import { loaderWait } from '../ui/loader.ts';
 import { recordHtml } from '../ui/record.ts';
 import { matchHistory, myLadder, type HistoryRow } from './ladder-api.ts';
@@ -27,7 +27,7 @@ let visibleRows: HistoryRow[] = [];
 let visibleLadder: Awaited<ReturnType<typeof myLadder>> = null;
 
 function paintHistory(): void {
-  const panel = document.getElementById('onHistory');
+  const panel = byId('onHistory');
   if (!panel || panel.hidden) return;
   const list = $('#onHistoryList');
   const scrollTop = list.scrollTop;

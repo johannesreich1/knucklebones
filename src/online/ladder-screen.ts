@@ -6,7 +6,7 @@ import {
   t,
 } from '../i18n/index.ts';
 import { Sfx } from '../ui/audio.ts';
-import { $ } from '../ui/dom.ts';
+import { $, byId } from '../ui/dom.ts';
 import { paintAvatar } from '../ui/avatar.ts';
 import { recordHtml } from '../ui/record.ts';
 import {
@@ -49,7 +49,7 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
   let paintVisible: (() => void) | null = null;
   let showRevision = 0;
   subscribeLocale(() => {
-    const panel = document.getElementById('onBoard');
+    const panel = byId('onBoard');
     if (panel && !panel.hidden) paintVisible?.();
   });
 

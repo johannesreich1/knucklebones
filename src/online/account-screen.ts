@@ -9,7 +9,7 @@ import {
 import { ask } from '../ui/askcard.ts';
 import { Sfx } from '../ui/audio.ts';
 import { DEFAULT_AVATAR, paintAvatar } from '../ui/avatar.ts';
-import { $ } from '../ui/dom.ts';
+import { $, byId } from '../ui/dom.ts';
 import { refreshHomeChip } from '../ui/homechip.ts';
 import {
   bestStreak,
@@ -135,7 +135,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
   };
 
   subscribeLocale(() => {
-    const panel = document.getElementById('onAccount');
+    const panel = byId('onAccount');
     if (!panel || panel.hidden) return;
     if (lastAccount) paintAccount();
     else if (pendingCachedRating !== null) {
@@ -215,7 +215,6 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     paintAvatar($('#accDie'), profile?.avatar ?? DEFAULT_AVATAR);
     const points = ladder?.points ?? 0;
     const peak = ladder?.peak ?? 0;
-    const games = ladder ? ladder.wins + ladder.losses + ladder.draws : 0;
     const apex = standing ? inApex(points, standing.rank, standing.population) : false;
     lastAccount = {
       profile,

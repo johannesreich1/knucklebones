@@ -4,9 +4,8 @@
 import { BOUNTY, applyMove, emptyBoard, type Player } from '../core/rules.ts';
 import { projectRankedActions, type RankedActionRow } from '../core/ranked-actions.ts';
 import { spellById } from '../core/spells.ts';
-import { disarm, renderSpells } from '../flow/spells.ts';
+import { applyAimPresentation, disarm, renderSpells, spendChargePresentation } from '../flow/spells.ts';
 import { runSpellEffect } from '../flow/spell-effects.ts';
-import { playSpellCharge } from '../flow/spell-rail.ts';
 import { S } from '../state.ts';
 import { setStageDie } from '../ui/die.ts';
 import { renderAll } from '../ui/game/board.ts';
@@ -67,12 +66,7 @@ async function animateTrialAction(
   if (row.kind === 'aim' && row.rune_id) {
     const spell = spellById(row.rune_id);
     if (!spell?.commitsOnAim) return;
-    playSpellCharge(row.who, spell.id, S.spellArmed === spell.id);
-    S.spellCharges[row.who][spell.id] = Math.max(0,
-      (S.spellCharges[row.who][spell.id] ?? 0) - 1);
-    S.spellArmed = spell.id;
-    S.spellAimCommitted = { id: spell.id, who: row.who };
-    S.spellCastThisTurn = row.who;
+    applyAimPresentation(row.who, spell, S.spellArmed === spell.id);
     renderSpells();
     return;
   }
@@ -81,11 +75,7 @@ async function animateTrialAction(
   if (!spell) return;
   const reserved = S.spellAimCommitted?.id === spell.id
     && S.spellAimCommitted.who === row.who;
-  if (!reserved) {
-    playSpellCharge(row.who, spell.id, S.spellArmed === spell.id);
-    S.spellCharges[row.who][spell.id] = Math.max(0,
-      (S.spellCharges[row.who][spell.id] ?? 0) - 1);
-  }
+  if (!reserved) spendChargePresentation(row.who, spell, S.spellArmed === spell.id);
   if (reserved) disarm(true);
   S.spellCastThisTurn = row.who;
   let die = row.die_before;

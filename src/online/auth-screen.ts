@@ -1,5 +1,5 @@
 import { subscribeLocale, t, translateDom, type LocaleKey } from '../i18n/index.ts';
-import { $ } from '../ui/dom.ts';
+import { $, byId } from '../ui/dom.ts';
 import { Sfx } from '../ui/audio.ts';
 import { showSheet, type Sheet } from '../ui/sheet.ts';
 import { refreshLegalUi } from '../ui/legal.ts';
@@ -53,7 +53,7 @@ let activePorts: AuthPorts | null = null;
 let authOpener: HTMLElement | null = null;
 
 function authPanel(): HTMLElement {
-  return document.getElementById('onAuth')!;
+  return byId('onAuth')!;
 }
 
 function setAuthBusy(busy: boolean): void {
@@ -78,7 +78,7 @@ function showAuthError(message: string): void {
 }
 
 subscribeLocale(() => {
-  const panel = document.getElementById('onAuth');
+  const panel = byId('onAuth');
   if (!panel || panel.hidden) return;
   if (authMessage) {
     authMessage = repaintOnlineMessage(authMessage);
@@ -163,8 +163,8 @@ export function showAuth(
        even when activeElement remained BODY. */
     authOpener = visibleFocused ? focused
       : origin === 'account'
-        ? document.getElementById(mode === 'restore' ? 'btnHaveAcc' : 'btnKeepAcc')
-        : document.getElementById('homeChip');
+        ? byId(mode === 'restore' ? 'btnHaveAcc' : 'btnKeepAcc')
+        : byId('homeChip');
   }
   const viewRevision = ++authViewRevision;
   authOperationRevision++;

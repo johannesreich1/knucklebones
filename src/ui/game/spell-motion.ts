@@ -3,6 +3,7 @@
 // to obey the same standalone/widget coordinate boundary and generation
 // cleanup contract.
 import { fxRoot, pin } from '../fx.ts';
+import { PREVIEW_CLASSES } from '../spellicons.ts';
 
 export interface SpellMotionDelta {
   x: number;
@@ -36,7 +37,7 @@ export function pinDieGhost(
 ): PinnedDieGhost {
   const sourceRect = source.getBoundingClientRect();
   const ghost = source.cloneNode(true) as HTMLElement;
-  ghost.classList.remove('settle', 'dying', 'spellpreview', 'anvilpreview', 'pilferpreview');
+  ghost.classList.remove('settle', 'dying', ...PREVIEW_CLASSES);
   ghost.classList.add(...(options.classes ?? []));
   ghost.removeAttribute('role');
   ghost.removeAttribute('aria-label');

@@ -6,7 +6,13 @@ import { ownerOf } from './dom.ts';
 import { nope } from './fx.ts';
 import { Sfx } from './audio.ts';
 import { rootElementFromPoint } from './query.ts';
-import type { SpellInputTarget } from '../flow/spell-target.ts';
+
+/* A physical spell target keeps the board owner as well as the numeric
+   column. Dropping the owner was enough to let an opposite-board column with
+   the same index activate a legal target on the caster's side. */
+export type SpellInputTarget =
+  | { kind: 'stage' }
+  | { kind: 'column'; who: Player; column: number };
 
 export type PlaceHandler = (who: Player, col: number) => void | Promise<void>;
 export type CastArmedHandler = (target: SpellInputTarget | null) => boolean;

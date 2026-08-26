@@ -39,7 +39,7 @@ import { appRoot } from './embed.ts';
    what the deck IS, this one owns what the hands DO to it. The felt exports
    are re-exported so every existing consumer keeps its seam. */
 import { restOf, stackOf, squaredOf, PILES, PILE_Y, runeFelt } from './runefelt.ts';
-export { deckCards, runeCardFaces, dealtCard, runeFelt } from './runefelt.ts';
+export { runeCardFaces, runeFelt } from './runefelt.ts';
 
 const pause = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 

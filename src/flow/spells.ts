@@ -44,8 +44,7 @@ import { currentCastContext as castContext } from './spell-context.ts';
 
 export { aiSpellDelay } from './spell-ai.ts';
 export type { SpellDeal } from './spell-deal.ts';
-export { setSpellAimTransport, setSpellCasterGuard, setSpellCastTransport,
-  type SpellAimTransport, type SpellCastTransport } from './spell-cast-transport.ts';
+export { setSpellTransport, type SpellTransport } from './spell-cast-transport.ts';
 
 export interface SpellFlowPorts {
   onChoice: () => void;
@@ -86,17 +85,11 @@ export function chargesOf(who: Player, id: string): number {
    second seat from the remaining roster rather than retrying until it differs:
    it is uniform, deterministic under an injected stream, and cannot hang on a
    stub that returns the same number forever. Tuple order follows Player ids. */
-export function drawSpellDeal(
+function drawSpellDeal(
   random: () => number = Math.random,
   candidates: readonly SpellSpec[] = SPELLS,
 ): SpellDeal {
   return resolveSpellDeal(S.spell, random, candidates);
-}
-
-/* Kept as the singular compatibility seam for focused helpers that ask for
-   the selected/shared answer. New lifecycle code passes the full deal. */
-export function drawSpell(random: () => number = Math.random): string {
-  return drawSpellDeal(random)[ME];
 }
 
 export function resetSpells(dealt?: string | readonly [string, string]): void {
@@ -144,6 +137,22 @@ export function renderSpells(): void {
   renderSpellRail(railPorts);
 }
 
+/* The visible spend of one charge: the outgoing card copy plus the counters
+   the rail renders from. Shared with the ranked replay (online/play-sync) so
+   the charge beat cannot drift between the two drivers. */
+export function spendChargePresentation(who: Player, spell: SpellSpec, faceUp = false): void {
+  playSpellCharge(who, spell.id, faceUp);
+  S.spellCharges[who][spell.id] = Math.max(0, chargesOf(who, spell.id) - 1);
+  S.spellCastThisTurn = who;
+}
+
+/* A committed aim spends its charge immediately and reserves it for the cast. */
+export function applyAimPresentation(who: Player, spell: SpellSpec, faceUp = false): void {
+  spendChargePresentation(who, spell, faceUp);
+  S.spellArmed = spell.id;
+  S.spellAimCommitted = { id: spell.id, who };
+}
+
 export function arm(id: string): boolean {
   if (S.spellArmed === id) return true;
   if (S.spellAimCommitted) return false;
@@ -155,10 +164,7 @@ export function arm(id: string): boolean {
     if (hasSpellAimTransport()) {
       void transportSpellAim(id);
     } else {
-      playSpellCharge(who, id);
-      S.spellCharges[who][id] = chargesOf(who, id) - 1;
-      S.spellAimCommitted = { id, who };
-      S.spellCastThisTurn = who;
+      applyAimPresentation(who, spell);
     }
   }
   renderSpells();
@@ -253,11 +259,7 @@ async function castBy(
   chargeReserved = false,
   cardFaceUp = false,
 ): Promise<boolean> {
-  if (!chargeReserved) {
-    playSpellCharge(who, spell.id, cardFaceUp);
-    S.spellCharges[who][spell.id] = chargesOf(who, spell.id) - 1;
-    S.spellCastThisTurn = who;
-  }
+  if (!chargeReserved) spendChargePresentation(who, spell, cardFaceUp);
   S.busy = true;
   S.phase = 'anim';
   stopTimer();

@@ -7,7 +7,7 @@ import { S } from '../state.ts';
 import { colEl, slotEl, slotIdx } from '../ui/dom.ts';
 import { appRoot } from '../ui/embed.ts';
 import { REDUCED } from '../ui/fx.ts';
-import { spellHue } from '../ui/spellicons.ts';
+import { PREVIEW_CLASSES, spellHue } from '../ui/spellicons.ts';
 import { nameOf } from '../ui/identity.ts';
 import { setCastingPresentation } from '../ui/game/root-state.ts';
 import { runeCardFaces } from '../ui/runedeal.ts';
@@ -150,7 +150,7 @@ function paintCharges(button: HTMLButtonElement, spell: SpellSpec, left: number)
 function markAim(spell: SpellSpec | null, ports: SpellRailPorts): void {
   appRoot().querySelectorAll('.col.aim').forEach((column) => column.classList.remove('aim'));
   appRoot().querySelectorAll('.spellpreview').forEach((die) => {
-    die.classList.remove('spellpreview', 'anvilpreview', 'pilferpreview');
+    die.classList.remove(...PREVIEW_CLASSES);
     (die as HTMLElement).style.removeProperty('--spell-hue');
   });
   const who = ports.caster();

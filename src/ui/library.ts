@@ -11,7 +11,7 @@ import { RUNE_TRIAL_FORMAT, RUNE_TRIAL_PICK } from '../local-options.ts';
 import { modeCopy, runeTrialCopy, spellCopy, subscribeLocale, t } from '../i18n/index.ts';
 import { modeIcon, modeHue } from './modeicons.ts';
 import { spellIcon, spellHue } from './spellicons.ts';
-import { $, show } from './dom.ts';
+import { show } from './dom.ts';
 import { showSheet } from './sheet.ts';
 import { appRoot } from './embed.ts';
 import { bindLearnPageBack, learnPageMarkup } from './learn-page.ts';

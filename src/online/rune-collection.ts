@@ -6,7 +6,6 @@ import type { RankedPoolTier } from '../core/ranked-outcomes.ts';
 import { SUPABASE_KEY, SUPABASE_URL } from '../config.ts';
 import {
   clearRuneCollectionSnapshot,
-  collectedRuneIds,
   readRuneCollectionSnapshot,
   writeRuneCollectionSnapshot,
 } from '../rune-collection-cache.ts';

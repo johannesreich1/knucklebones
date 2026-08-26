@@ -4,7 +4,6 @@ import {
   AI,
   ME,
   CLASSIC,
-  BOUNTY,
   LIMITED,
   emptyBoard,
   isOver,

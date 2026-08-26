@@ -148,10 +148,11 @@ for (const file of sourceFiles.filter((candidate) => /\.tsx?$/.test(candidate)))
     problems.push(`${name} reads or writes the application-root state classes directly. Add a narrow `
       + `semantic operation to ${ROOT_STATE_OWNER} instead of growing a second JS→CSS contract.`);
   }
-  if (/\bdocument\s*\.\s*querySelector(?:All)?\s*\(/.test(clean)) {
+  if (/\bdocument\s*\.\s*querySelector(?:All)?\s*\(/.test(clean)
+      || (name !== 'src/ui/embed.ts' && /\bdocument\s*\.\s*getElementById\s*\(/.test(clean))) {
     rootQueryEscapes.push(name);
-    problems.push(`${name} queries the host document for application elements. Scope the query beneath `
-      + `appRoot() so a widget cannot read or mutate matching host markup.`);
+    problems.push(`${name} queries the host document for application elements. Scope the lookup beneath `
+      + `appRoot() (the $/byId helpers in src/ui) so a widget cannot touch matching host markup.`);
   }
   if (name !== 'src/ui/query.ts' && /\bdocument\s*\.\s*elementFromPoint\s*\(/.test(clean)) {
     rootHitTestEscapes.push(name);
@@ -160,12 +161,12 @@ for (const file of sourceFiles.filter((candidate) => /\.tsx?$/.test(candidate)))
   }
 }
 
+const STATIC_IMPORT = /\b(?:import|export)\s+(?:type\s+)?(?:[^'";]*?\s+from\s*)?['"]([^'"]+)['"]/g;
+const DYNAMIC_IMPORT = /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
 function importSpecifiers(source: string): string[] {
   const clean = withoutComments(source);
   const specs = new Set<string>();
-  const staticImport = /\b(?:import|export)\s+(?:type\s+)?(?:[^'";]*?\s+from\s*)?['"]([^'"]+)['"]/g;
-  const dynamicImport = /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g;
-  for (const re of [staticImport, dynamicImport]) {
+  for (const re of [STATIC_IMPORT, DYNAMIC_IMPORT]) {
     for (const match of clean.matchAll(re)) specs.add(match[1]);
   }
   return [...specs];
@@ -232,6 +233,22 @@ for (const file of graphFiles.map(relative).filter((name) => name.startsWith('sr
     problems.push(`${file} imports the concrete local-game flow. Inject cross-flow actions from `
       + `src/boot.ts or its binding modules instead.`);
   }
+}
+
+/* src/online is a LAZY chunk: one static import from the eagerly bundled layers
+   (core/flow/ui/i18n/legal and the root modules) would merge the Supabase client
+   into every local/widget load. Only boot's dynamic import() entries are legal. */
+const EAGER_BUNDLE = /^src\/(?:core|flow|ui|i18n|legal)\/|^src\/[^/]+\.tsx?$/;
+const onlineChunkEscapes: string[] = [];
+for (const file of graphFiles.filter((candidate) => EAGER_BUNDLE.test(relative(candidate)))) {
+  const staticOnline = [...new Set([...withoutComments(readFileSync(file, 'utf8')).matchAll(STATIC_IMPORT)]
+    .map((match) => resolveLocal(path.resolve(file), match[1]))
+    .filter((target): target is string => !!target && relative(target).startsWith('src/online/'))
+    .map(relative))];
+  if (!staticOnline.length) continue;
+  onlineChunkEscapes.push(relative(file));
+  problems.push(`${relative(file)} statically imports ${staticOnline.join(', ')}; reach the lazy `
+    + `online chunk only through boot's dynamic import() entries or an injected typed port.`);
 }
 
 const gameViewEscapes: string[] = [];
@@ -373,6 +390,7 @@ console.log(JSON.stringify({
     rootQueryEscapes,
     rootHitTestEscapes,
     gameViewEscapes,
+    onlineChunkEscapes,
     corePurity: coreFindings,
   },
   problems,

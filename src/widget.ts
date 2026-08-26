@@ -5,7 +5,7 @@ import './styles/main.css';
 import './styles/widget-embed.css';
 import { MARKUP } from './markup.ts';
 import { boot } from './boot.ts';
-import { hooks } from './hooks.ts';
+import { hooks } from './test-hooks.ts';
 import { bindLocaleRoot, bindSystemLanguageChanges, setLanguageOverride } from './i18n/index.ts';
 import { loadStats } from './persist.ts';
 import { S } from './state.ts';

@@ -2,7 +2,13 @@
 // currentColor, keyed off the registry's stable ids, so the shared core stays
 // free of markup and a spell can be re-skinned without touching its rules.
 import { modeIcon, modeHue } from './modeicons.ts';
-import { RANDOM_DUAL_SPELL, RANDOM_SPELL } from '../core/spells.ts';
+import { RANDOM_DUAL_SPELL, RANDOM_SPELL, SPELLS } from '../core/spells.ts';
+
+/* Every class an aim preview may pin on a die: the shared marker plus one
+   per-rune variant for each spell that previews a target die. Derived from
+   the registry, so every cleanup path drops a new rune's class for free. */
+export const PREVIEW_CLASSES: readonly string[] = ['spellpreview',
+  ...SPELLS.filter((spell) => spell.previewDieIndex).map((spell) => `${spell.id}preview`)];
 const PATHS: Record<string, string> = {
   /* NONE: the picker's first slice — no rune at all */
   none: '<circle cx="12" cy="12" r="8.4"/><path d="M6.1 6.1 17.9 17.9"/>',

@@ -1,40 +1,36 @@
+// Ranked play routes spell input to the server instead of the local cast()
+// path. The transport is installed and torn down as ONE bundle — cast, aim
+// and the caster guard always travel together, so a half-installed transport
+// is unrepresentable. Local play simply leaves it null.
 import type { Player } from '../core/rules.ts';
 
 export type SpellCastTransport = (id: string, column: number) => Promise<boolean>;
 export type SpellAimTransport = (id: string) => Promise<boolean>;
 
-let transport: SpellCastTransport | null = null;
-let aimTransport: SpellAimTransport | null = null;
-let casterGuard: ((who: Player) => boolean) | null = null;
+export interface SpellTransport {
+  cast: SpellCastTransport;
+  aim: SpellAimTransport;
+  casterAllowed: (who: Player) => boolean;
+}
 
-export function setSpellCastTransport(next: SpellCastTransport | null): void {
+let transport: SpellTransport | null = null;
+
+export function setSpellTransport(next: SpellTransport | null): void {
   transport = next;
 }
 
-export function setSpellAimTransport(next: SpellAimTransport | null): void {
-  aimTransport = next;
-}
-
-export function setSpellCasterGuard(next: ((who: Player) => boolean) | null): void {
-  casterGuard = next;
-}
-
-export function hasSpellCastTransport(): boolean {
+export function hasSpellAimTransport(): boolean {
   return transport !== null;
 }
 
-export function hasSpellAimTransport(): boolean {
-  return aimTransport !== null;
-}
-
 export function transportSpellCast(id: string, column: number): Promise<boolean> | null {
-  return transport?.(id, column) ?? null;
+  return transport?.cast(id, column) ?? null;
 }
 
 export function transportSpellAim(id: string): Promise<boolean> | null {
-  return aimTransport?.(id) ?? null;
+  return transport?.aim(id) ?? null;
 }
 
 export function spellCasterAllowed(who: Player): boolean {
-  return casterGuard?.(who) ?? true;
+  return transport?.casterAllowed(who) ?? true;
 }

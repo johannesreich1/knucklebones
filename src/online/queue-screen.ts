@@ -23,7 +23,7 @@ import {
 import { createQueueCancellation } from './queue-cancellation.ts';
 import { createRunGeneration } from './run-generation.ts';
 import { showOnlinePanel } from './shell.ts';
-import { resolveRankedTrial } from './trial-selection.ts';
+import { resolveRankedTrial } from './trial-offer.ts';
 
 export interface QueueScreen {
   bind(): void;

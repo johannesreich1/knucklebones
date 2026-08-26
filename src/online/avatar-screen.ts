@@ -3,7 +3,7 @@ import { formatNumber, subscribeLocale, t } from '../i18n/index.ts';
 import { Sfx } from '../ui/audio.ts';
 import { AV_HUES, DEFAULT_AVATAR, parseAvatar, paintAvatar } from '../ui/avatar.ts';
 import { makeDie } from '../ui/die.ts';
-import { $ } from '../ui/dom.ts';
+import { $, byId } from '../ui/dom.ts';
 import { loaderDie } from '../ui/loader.ts';
 import { repaintOnlineMessage } from './message-copy.ts';
 import { myProfile, setAvatar } from './session.ts';
@@ -35,7 +35,7 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
   } as const;
 
   const paintLabels = (): void => {
-    const panel = document.getElementById('onAvatar');
+    const panel = byId('onAvatar');
     if (!panel) return;
     $('#avFaces').querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
       button.setAttribute('aria-label', t('online', 'avatar.faceLabel', {
@@ -51,7 +51,7 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
   };
   subscribeLocale(() => {
     paintLabels();
-    const panel = document.getElementById('onAvatar');
+    const panel = byId('onAvatar');
     if (panel && !panel.hidden && avatarError) $('#onAvErr').textContent = avatarError();
   });
 

@@ -11,6 +11,13 @@ import { appRoot } from './embed.ts';
 
 export { $ } from './query.ts';
 
+/* An id is an application query, never a document one: an embedding host may
+   carry its own colliding ids. Application ids are literal alphanumerics, so
+   the selector needs no escaping. */
+export function byId(id: string): HTMLElement | null {
+  return appRoot().querySelector('#' + id);
+}
+
 /* THE HEADER GLASS ARRIVES WITH THE CONTENT. At rest the bar is plain and the
    aurora behind it is unobstructed (user call — frosting a view nobody has
    moved dims the background for nothing). Past that it is a CONTINUOUS function

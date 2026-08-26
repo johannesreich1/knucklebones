@@ -67,7 +67,7 @@ const faceOf = (pick: number) => {
    deal left behind — squared on a side pile, one card short off the top,
    clear of the dealt card — because that is what the animation comes to rest
    on. DOM order is stack order there, so the still needs no z-index. */
-export const deckCards = (order?: readonly number[], drawn?: string): string =>
+const deckCards = (order?: readonly number[], drawn?: string): string =>
   (order ?? SPELLS.map((_, i) => i)).map((pick, i, picks) => {
     const f = faceOf(pick), r = drawn ? stackOf(2, i) : restOf(i, picks.length);
     return `<i class="rcard${f.id === drawn ? ' drawn' : ''}" data-rune="${f.id}"`
@@ -94,7 +94,7 @@ export function runeCardFaces(
    grows out of the deck from there, so the two have to be the same object to
    look at. Nothing leaks early — the whole card is transparent until the draw
    begins, and by then the spread has already shown every rune it holds. */
-export const dealtCard = (spec: SpellSpec, up = false): string =>
+const dealtCard = (spec: SpellSpec, up = false): string =>
   `<div class="rdealt${up ? ' up' : ''}" data-rune="${spec.id}" style="color:${spellHue(spec.id)}">`
   + `${runeCardFaces(spec)}</div>`;
 
