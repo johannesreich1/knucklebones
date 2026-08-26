@@ -1,4 +1,5 @@
 import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
+import { checkCompactLabelFloor } from '../../support/label-floor.mjs';
 import { LOCALE_REGISTRY } from '../../../../src/i18n/locale.ts';
 import { checkReachableTargets, checkSurface, frame,
   inspectSurface as inspect } from '../harness/layout-inspection.mjs';
@@ -323,23 +324,7 @@ export async function runConstrainedSurfaceScenarios(suite) {
       ]);
       checkSurface(check, `settings-${label}`, settings,
         { overlap: false, allowScrollable: true, targets: false });
-      const settingsLabels = await page.evaluate(() => {
-        const root = document.getElementById('kbroot');
-        const minimum = root
-          ? parseFloat(getComputedStyle(root).getPropertyValue('--font-label-min'))
-          : 0;
-        const sizes = [...document.querySelectorAll('#ovSettings .lbl')]
-          .filter((element) => {
-            const style = getComputedStyle(element);
-            return style.display !== 'none' && style.visibility !== 'hidden';
-          })
-          .map((element) => parseFloat(getComputedStyle(element).fontSize));
-        return { minimum, sizes };
-      });
-      check(settingsLabels.minimum >= 10
-        && settingsLabels.sizes.length > 0
-        && settingsLabels.sizes.every((size) => size >= settingsLabels.minimum),
-      `settings-${label} label fell below the shared compact-label minimum`, settingsLabels);
+      await checkCompactLabelFloor(page, check, `settings-${label}`, '#ovSettings .lbl');
       await checkReachableTargets(page, check, `settings-${label}`,
         ['#languagePrevious', '#languageNext', '#sndSeg button[data-s="1"]',
           '#sndSeg button[data-s="0"]']);
