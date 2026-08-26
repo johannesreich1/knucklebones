@@ -27,6 +27,12 @@ export class ProductionTestDataGuardError extends Error {
 
 const fail = message => { throw new ProductionTestDataGuardError(message); };
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+const CURRENT_SEASON_SQL = '(select id from public.seasons where ends_at is null order by id desc limit 1)';
+const rankedPoolTierSql = peak => `(case
+  when coalesce(${peak}, 0) >= 720 then 'ivory'
+  when coalesce(${peak}, 0) >= 300 then 'bone'
+  else 'stone'
+end)`;
 
 export function validateProductionTestDataPhase(phase) {
   if (!PRODUCTION_TEST_DATA_PHASES.includes(phase)) {
@@ -136,7 +142,7 @@ const BASE_AUDIT_EXPRESSIONS = Object.freeze([
   `(select count(*) from public.profiles profile left join auth.users account on account.id = profile.id
       where account.id is null)::integer as "profileWithoutAuth"`,
   `(select count(*) from public.seasons where ends_at is null)::integer as "openSeasons"`,
-  `public.current_season()::integer as "currentSeason"`,
+  `${CURRENT_SEASON_SQL}::integer as "currentSeason"`,
 ]);
 
 const RUNE_AUDIT_EXPRESSIONS = Object.freeze([
@@ -159,19 +165,19 @@ const RUNE_AUDIT_EXPRESSIONS = Object.freeze([
   `(select count(*)
       from public.profiles profile
       left join public.season_ratings rating
-        on rating.player = profile.id and rating.season_id = public.current_season()
+        on rating.player = profile.id and rating.season_id = ${CURRENT_SEASON_SQL}
      where rating.player is null)::integer as "missingSeasonRows"`,
   `(select count(*)
       from public.profiles profile
       join public.season_ratings rating
-        on rating.player = profile.id and rating.season_id = public.current_season()
+        on rating.player = profile.id and rating.season_id = ${CURRENT_SEASON_SQL}
      where profile.rating is distinct from rating.points
         or rating.peak is distinct from rating.points)::integer as "inconsistentRatingRows"`,
   `(select count(*)
       from public.profiles profile
       join public.season_ratings rating
-        on rating.player = profile.id and rating.season_id = public.current_season()
-     where profile.ranked_pool_tier is distinct from private.ranked_pool_tier_for_peak(rating.peak))::integer
+        on rating.player = profile.id and rating.season_id = ${CURRENT_SEASON_SQL}
+     where profile.ranked_pool_tier is distinct from ${rankedPoolTierSql('rating.peak')})::integer
       as "inconsistentTierRows"`,
   `(select count(*) from public.season_ratings
      where wins < 0 or losses < 0 or draws < 0 or wins + losses + draws = 0)::integer
@@ -436,7 +442,7 @@ begin
     raise exception 'production account wipe precheck failed';
   end if;
   if (select count(*) from public.seasons where ends_at is null) <> 1
-     or public.current_season() is null then
+     or ${CURRENT_SEASON_SQL} is null then
     raise exception 'production current-season precheck failed';
   end if;
 end;
@@ -534,7 +540,7 @@ begin
   end loop;
 
   if (select count(*) from public.seasons where ends_at is null) <> 1
-     or public.current_season() is null then
+     or ${CURRENT_SEASON_SQL} is null then
     raise exception 'production account wipe damaged season reference data';
   end if;
 end;
@@ -594,7 +600,7 @@ begin
   if (select count(*) from public.seasons where ends_at is null) <> 1 then
     raise exception 'production must have exactly one current season';
   end if;
-  current_season_id := public.current_season();
+  current_season_id := ${CURRENT_SEASON_SQL};
   if current_season_id is null then raise exception 'production current season is missing'; end if;
 
   for seed_row in
@@ -615,7 +621,7 @@ begin
 
     update public.profiles
        set rating = seed_row.points,
-           ranked_pool_tier = private.ranked_pool_tier_for_peak(seed_row.points)
+           ranked_pool_tier = ${rankedPoolTierSql('seed_row.points')}
      where id = bot_id and is_bot = true;
     if not found then raise exception 'minted bot profile is invalid at ordinal %', seed_row.ordinal; end if;
   end loop;
@@ -673,7 +679,7 @@ begin
         or account.email is distinct from 'bot-' || account.id::text || '@internal.invalid'
         or profile.rating is distinct from rating.points
         or rating.peak is distinct from rating.points
-        or profile.ranked_pool_tier is distinct from private.ranked_pool_tier_for_peak(rating.peak)
+        or profile.ranked_pool_tier is distinct from ${rankedPoolTierSql('rating.peak')}
         or profile.nickname !~ '^[A-Za-z0-9_]{3,16}$'
         or profile.avatar !~ '^die:[1-6]:(cy|mg|gold|green|violet|orange)$'
         or rating.wins < 0 or rating.losses < 0 or rating.draws < 0

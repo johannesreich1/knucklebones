@@ -162,6 +162,7 @@ check('wipe SQL is one bounded transaction with pre/postchecks and explicit safe
   ]) assert.ok(WIPE_PRODUCTION_ACCOUNTS_SQL.includes(table));
   assert.match(WIPE_PRODUCTION_ACCOUNTS_SQL, /with recursive account_graph/);
   assert.match(WIPE_PRODUCTION_ACCOUNTS_SQL, /pg_constraint/);
+  assert.doesNotMatch(WIPE_PRODUCTION_ACCOUNTS_SQL, /public\.current_season\(\)/);
   assert.doesNotMatch(WIPE_PRODUCTION_ACCOUNTS_SQL, /delete from auth\.(oauth_clients|sso_providers|sso_domains|saml_providers|custom_oauth_providers)/);
 });
 
@@ -170,15 +171,19 @@ check('seed SQL uses canonical minting and writes rating, season, tier, stats, a
   assert.match(SEED_PRODUCTION_BOTS_SQL, /commit;\s*$/);
   assert.match(SEED_PRODUCTION_BOTS_SQL, /public\.mint_bot\(seed_row\.points\)/);
   assert.match(SEED_PRODUCTION_BOTS_SQL, /insert into public\.season_ratings/);
-  assert.match(SEED_PRODUCTION_BOTS_SQL, /ranked_pool_tier = private\.ranked_pool_tier_for_peak/);
+  assert.match(SEED_PRODUCTION_BOTS_SQL, /ranked_pool_tier = \(case/);
   assert.match(SEED_PRODUCTION_BOTS_SQL, /count\(distinct points\).*<> 150/s);
   assert.match(SEED_PRODUCTION_BOTS_SQL, /max\(points\).*<> 4600/s);
   assert.match(SEED_PRODUCTION_BOTS_SQL, /seed created unexpected Auth or ranked rows/);
+  assert.doesNotMatch(SEED_PRODUCTION_BOTS_SQL, /public\.current_season\(\)/);
+  assert.doesNotMatch(SEED_PRODUCTION_BOTS_SQL, /private\.ranked_pool_tier_for_peak\((?:rating|seed_row)/);
   assert.doesNotMatch(SEED_PRODUCTION_BOTS_SQL, /generate_series|\btruncate\b/i);
   assert.equal((SEED_PRODUCTION_BOTS_SQL.match(/^\s*\(\d+, \d+, \d+, \d+, \d+\),?$/gm) ?? []).length, 150);
 });
 
 check('base audits enforce Auth/profile consistency, Storage safety, and complete wipe', () => {
+  assert.doesNotMatch(BASE_PRODUCTION_TEST_DATA_AUDIT_SQL, /public\.current_season\(\)/);
+  assert.doesNotMatch(SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL, /(?:public\.current_season|private\.ranked_pool_tier_for_peak)\(/);
   const before = validateBaseProductionTestDataAudit([baseAudit({
     authUsers: 54, profiles: 54, bots: 14, humans: 40,
     authIdentities: 5, authSessions: 76, matches: 230,
