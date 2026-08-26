@@ -85,6 +85,11 @@ export function assertRealisticBotSeedPlan() {
 }
 
 export function assertBotSeedSql() {
+  assert.doesNotMatch(
+    SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL,
+    /public\.player_card\s*\(/,
+    'management read-only audits must not execute the player-facing RPC',
+  );
   assert.match(SEED_PRODUCTION_BOTS_SQL, /^\s*begin;/);
   assert.match(SEED_PRODUCTION_BOTS_SQL, /commit;\s*$/);
   assert.match(SEED_PRODUCTION_BOTS_SQL, /public\.mint_bot\(seed_row\.points\)/);
