@@ -28,13 +28,16 @@
   filter:drop-shadow(0 0 6px currentColor)}
 /* the slot the answer came out of, once it has been taken */
 :where(#kbroot) .rcard.drawn{visibility:hidden}
-/* THE DEALT CARD, face-down until the turn. Its hue is on the container, which
+/* THE DEALT CARD, face-down until the turn. z 24 because the shuffle stamps
+   z 8..13 on the assembled deck and 20 on a card in flight (ui/runedeal.ts) —
+   anything lower and the draw slides out from UNDER the stack it was taken
+   off the top of. Its hue is on the container, which
    only the FACE reads — the back is deliberately in nobody's colour, or the
    deal would announce its answer through the card it is hiding it behind.
    Which face is lit is one class (ui/runedeal swaps it edge-on, mid-turn), NOT
    backface-visibility: any grouping property in this overlay's ancestry — and
    .ov carries a backdrop-filter — flattens the 3D context and shows the back. */
-:where(#kbroot) .rdealt{position:relative;z-index:3;width:calc(var(--card)*1.4);height:calc(var(--card)*1.92);
+:where(#kbroot) .rdealt{position:relative;z-index:24;width:calc(var(--card)*1.4);height:calc(var(--card)*1.92);
   border-radius:calc(var(--card)*.2);opacity:0}
 :where(#kbroot) .rdealt.up{opacity:1}
 :where(#kbroot) .rback,:where(#kbroot) .rface{position:absolute;inset:0;border-radius:inherit;

@@ -1,4 +1,4 @@
-<!-- meta name="S9 — Pile deal, top draw" group="4i · The rune shuffle" subtitle="CHOSEN AND SHIPPED 2026-08-26 — S8's pile deal without the refan: the scrambled spread squares up, six flicks off the top into three piles, the piles gather in a random-reading order, and the draw takes the TOP of the assembled stack — three-card-monte legibility: whoever tracked the piles knows the answer, everyone else feels the order is gone; FAN 380 → SQ 280 → PILE ×6 1380 → STACK 730 → DEAL 560 → FLIP 520, shuffle ~2.4s, whole beat ~3.85s (today: 1.25s / 2.9s)" width=430 height=1720 sizes="md" links="Offline — local play, Spells" -->
+<!-- meta name="S9 — Pile deal, top draw" group="4i · The rune shuffle" subtitle="CHOSEN AND SHIPPED 2026-08-26 — S8's pile deal without the refan: the scrambled spread squares up, six flicks off the top into three piles, the piles gather in a random-reading order, and the draw takes the TOP of the assembled stack — three-card-monte legibility: whoever tracked the piles knows the answer, everyone else feels the order is gone; FAN 380 → SQ 280 → PILE ×6 1380 → STACK 730 → DEAL 560 → FLIP 520, shuffle ~2.4s, whole beat ~3.85s (today: 1.25s / 2.9s)" width=430 height=1868 sizes="md" links="Offline — local play, Spells" -->
 <style>
   /* Card-local names only (shi*). The deck is the app's own .rfelt/.rcard
      markup; this card animates translate/rotate/z-index (and, for the drawn
@@ -48,41 +48,90 @@
        RESPREAD leaves the stack top-first (c5 c3 c2 c6 c4 c1) and rebuilds
        exactly R1; each card swaps back to its slot z at its arc's midpoint.
 
+     THE GEOMETRY (2026-08-26 refit, runefelt.ts verbatim): the DEALING deck
+     squares at the felt's BOTTOM, fully below the PILE ROW it deals UP
+     into — the row is the display space (dealt cards land there, the
+     assembled stack waits there), the deck is the source, never again
+     overlaid by its own piles. EVERY y is a PERCENTAGE OF THE CARD'S OWN
+     HEIGHT (translate y% resolves against the element box): production
+     moved off px because a fixed row offset that cleared the title at
+     --card 76px escaped the stage on test20's 320px lanes, where --card
+     drops to ~40px. This card pins --card:76px (card box 76 × 106.8px),
+     so the SAME percent literals are quoted verbatim; 1% of y ≈ 1.07px
+     in every px figure below.
+       squaredOf(k) = ((k%3)-1)·1.4% · 92 - k·1.1 (%h) · ((k·5)%7)-3deg
+       stackOf(p,k) = PILES[p] + ((k%3)-1)·1.4% · -9 - k·0.75 (%h) ·
+         ((k·7)%9)-4deg, PILES -122/0/+122, PILE_Y -9, DECK_Y 92 (the
+         x/y are taken verbatim; the rots stay this card's own).
+       SQUARED, bottom→top (k = scoop position):
+         k0 c4 -1.4% 92% -3° · k1 c2 0% 90.9% 2° · k2 c5 1.4% 89.8% 0° ·
+         k3 c1 -1.4% 88.7% -2° · k4 c6 0% 87.6% 3° · k5 c3 1.4% 86.5% 1°
+       PILE ROW: within-0 lands at base-1.4% -9%, within-1 at base -9.75%
+         → L: c3 -123.4% / c5 -122% · C: c6 -1.4% / c2 0% ·
+           R: c1 120.6% / c4 122%
+       FINAL STACK, stackOf(2,k): c1 120.6% -9 · c4 122% -9.75 ·
+         c6 123.4% -10.5 · c2 120.6% -11.25 · c3 122% -12 · c5 123.4% -12.75
+       Flick apexes at mid-x, landing-9.4% (-18.4 / -19.15 — production's
+       own to.y - 9.4); hop apexes at mid-x, -16.5% (PILE_Y - 7.5); the
+       weight sinks/presses are 2% (the card's own beat, ≈2px). Every arc
+       keeps this card's rotation language — and the px draft's two
+       apex-tilt trims (c4 14→8deg, c5 -10→-7deg) are REVERTED: the row now
+       rides at -9% (≈-9.6px, not -22px), the within-1 apex at -19.15% ≈
+       -20.4px, and the worst tilted corner (c4 at 14deg) peaks at ≈-81.5px
+     — 10px clear of the title's ink (see BOUNDS).
+
      %→ms MAP (×100):
        0–15        HOME REST — the R1 spread                      (1500ms)
-       15–18       SQUARE — the spread scoops into one deck    (app SQ 280)
+       15–18       SQUARE — the spread scoops DOWN into one
+                   deck at the felt's bottom                   (app SQ 280)
        18–19.6     regrip beat (inside SQ)
        19.6–35.6   PILE ×6 (app 1380ms, 230ms cadence; here 270ms — ~17%
                    slower so each flick stays readable): launches at
                    19.6 / 22.3 / 25.0 / 27.7 / 30.4 / 33.1, each flick
                    arcs .9, lands 1.9, settles 2.5 — the previous card has
-                   settled before the next leaves
+                   settled before the next leaves; every flick flies UP,
+                   bottom deck to pile row
        35.6–37.6   hands move to the piles (inside STACK 730ms)
        37.6–40.5   HOP 1: centre pile (c6+c2) onto the right pile
        41.4–44.6   HOP 2: left pile (c3+c5) onto the combined stack
-       44.0–45.4   the stack takes the weight (2px sink)
-       46.2–48.2   TOP DRAW: c5 lifts off the stack — up and forward
-                   (scale 1→1.18; scale returns to 1 before the respread)
+       44.0–45.4   the stack takes the weight (2% sink)
+       46.2–48.2   TOP DRAW: c5 lifts off the stack — outward, a hair
+                   above the row (scale 1→1.18; back to 1 by the respread)
        48.2–56.4   PRESENTED (8.2% hold — the answer, shown)
        56.4–58.8   c5 settles back onto the stack (the app FLIPs instead)
        60–70.2     RESPREAD, top-first, back to R1 — stands in for the
                    NEXT deal's FAN 380
        70.2–100    HOME REST again (0% pose == 100% pose)         (2980ms)
 
-     BOUNDS: x within ±142% of --card (±108px), y within -44..+32px, and the
-     presented card rises straight off the stack with a slight OUTWARD drift
-     (124%→142%) rather than toward the felt centre: at scale 1.18 a -44px
-     pose anywhere over x -135..+135% puts the card's top corner onto the
-     MATCH RUNE title (title glyphs sit ~88px above the deck anchor; the
-     lifted card's half-extent is ~68px), so the honest presentation is the
-     lift-and-show a dealer does in place, clear of the title.
+     BOUNDS: x unchanged (centres -123.4..+142% of --card, within ±108px);
+     y now -19.15%..+92% of the card's own height (≈ -20.5..+98.3px here).
+     DEEP END: the squared deck at y 86.5..92% puts c4's bottom corner at
+     98.3 + 55.3 (tilted half-diagonal of the 106.8px-tall card) ≈ +154px
+     below the anchor — past the felt's own box (+125), 18px into the wname
+     lane (top +135) which is BLANK here exactly as production's is
+     mid-deal, 13px short of the (also blank) wblurb lane (+167), and 112px
+     inside the wheel's padding edge (+266). HIGH END: the title's ink
+     bottoms out ≈ -92px above the anchor (10px caps, line-top -102). The
+     percent row clears it OUTRIGHT, no hairs left: held poses top out at
+     c5's stack top -12.75% ≈ -13.6px (top edge ≈ -68); the flick apexes
+     put their tilted top corners at -77..-81.5; and the PRESENTED card
+     (142% -18% 7deg, scale 1.18, half-extent ~68px) tops out at
+     -19.2 - 68 = -87.2 — under the ink line even before the horizontal
+     berth (top corner 48.4% inboard of 142% = 93.6%, past the glyphs' end)
+     that the px draft depended on. The show stays OUTWARD off a stack
+     riding the row, with a ~5.6px rise (-12.75% → -18%).
 
      PAINT ORDER: rest z-index = the card's R1 slot, so both rests paint as a
      correct left-under-right cascade; z jumps discretely mid-flight, never at
-     a rest. One knowing tie: while c6 rests at the centre-pile bottom with
-     z3 (24.2–27.7), c5 still holds z3 inside the shrinking deck; DOM order
-     breaks the tie in c6's favour (the pile paints in front of the deck) —
-     the same tie S8 leans on for its centre-pile base. */
+     a rest. The percent row keeps ONE knowing sliver: at -9% the centre
+     pile's bottom edge (c6 settled, ≈+46) runs ~6px below the deck's top
+     card's top edge (c1 squared, ≈+40), so while c1 (z4) is still
+     deck-bound (24.2–25.9, ~170ms) it clips that hair of c6 (z3) — then c1
+     flicks away, the tie against c5 (also z3) falls to DOM order (c6 is
+     later, the pile wins), and every remaining overlap paints
+     pile-over-deck, matching production's stronger scheme (dealt cards
+     z 8+ over the deck's 1..6, the dealt card itself z 24) — the draw
+     visibly comes off the top of a stack that never covers it. */
   .shi .rcard:nth-child(1){z-index:4;animation:shi1 10000ms linear infinite}
   .shi .rcard:nth-child(2){z-index:2;animation:shi2 10000ms linear infinite}
   .shi .rcard:nth-child(3){z-index:6;animation:shi3 10000ms linear infinite}
@@ -90,157 +139,172 @@
   .shi .rcard:nth-child(5){z-index:3;animation:shi5 10000ms linear infinite}
   .shi .rcard:nth-child(6){z-index:5;animation:shi6 10000ms linear infinite}
 
-  /* card1 — rests in SLOT 4 (19% -3px 2.75deg, z4) · squared 2% -3px 2deg ·
-     flick 3 (z 4→1 mid-arc): first card to the RIGHT pile, its bottom —
-     the base the whole deck reassembles onto · sinks under both hops ·
-     departs LAST in the respread, home to slot 4 (z 1→4 mid-arc). */
+  /* card1 — rests in SLOT 4 (19% -3% 2.75deg, z4) · squared k3: -1.4%
+     88.7% -2deg · flick 3 (z 4→1 mid-arc): first card to the RIGHT pile,
+     its bottom — the base the whole deck reassembles onto · sinks under
+     both hops (the sink is -9% → -7%: down is still +y) · departs LAST
+     in the respread, home to slot 4 (z 1→4 mid-arc). */
   @keyframes shi1{
-    0%{translate:19% -3px;rotate:2.75deg;z-index:4}
-    15%{translate:19% -3px;rotate:2.75deg;z-index:4;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
-    18%{translate:2% -3px;rotate:2deg;z-index:4}
-    25%{translate:2% -3px;rotate:2deg;z-index:4;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    25.9%{translate:62% -18px;rotate:11deg;z-index:1;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
-    26.9%{translate:124% 30px;rotate:10deg;z-index:1;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    27.5%{translate:124% 30px;rotate:6deg;z-index:1}
-    39.9%{translate:124% 30px;rotate:6deg;z-index:1}
-    40.5%{translate:124% 32px;rotate:6deg;z-index:1}
-    41.3%{translate:124% 30px;rotate:6deg;z-index:1}
-    44%{translate:124% 30px;rotate:6deg;z-index:1}
-    44.6%{translate:124% 32px;rotate:6deg;z-index:1}
-    45.4%{translate:124% 30px;rotate:6deg;z-index:1}
-    67%{translate:124% 30px;rotate:6deg;z-index:1;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    68.1%{translate:66% -16px;rotate:9deg;z-index:4;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    69.3%{translate:19% -3px;rotate:5.75deg;z-index:4}
-    70.2%{translate:19% -3px;rotate:2.75deg;z-index:4}
-    100%{translate:19% -3px;rotate:2.75deg;z-index:4}
+    0%{translate:19% -3%;rotate:2.75deg;z-index:4}
+    15%{translate:19% -3%;rotate:2.75deg;z-index:4;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    18%{translate:-1.4% 88.7%;rotate:-2deg;z-index:4}
+    25%{translate:-1.4% 88.7%;rotate:-2deg;z-index:4;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    25.9%{translate:59.6% -18.4%;rotate:11deg;z-index:1;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    26.9%{translate:120.6% -9%;rotate:10deg;z-index:1;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    27.5%{translate:120.6% -9%;rotate:6deg;z-index:1}
+    39.9%{translate:120.6% -9%;rotate:6deg;z-index:1}
+    40.5%{translate:120.6% -7%;rotate:6deg;z-index:1}
+    41.3%{translate:120.6% -9%;rotate:6deg;z-index:1}
+    44%{translate:120.6% -9%;rotate:6deg;z-index:1}
+    44.6%{translate:120.6% -7%;rotate:6deg;z-index:1}
+    45.4%{translate:120.6% -9%;rotate:6deg;z-index:1}
+    67%{translate:120.6% -9%;rotate:6deg;z-index:1;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    68.1%{translate:66% -15%;rotate:9deg;z-index:4;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    69.3%{translate:19% -3%;rotate:5.75deg;z-index:4}
+    70.2%{translate:19% -3%;rotate:2.75deg;z-index:4}
+    100%{translate:19% -3%;rotate:2.75deg;z-index:4}
   }
-  /* card2 — R1's only fixed point: rests in its OWN slot 2 (the inline vars),
-     z2 · squared 1% -1px 1.5deg · flick 5 (z 2→4 mid-arc): centre pile TOP ·
-     hop 1 carries it onto the right pile (no z change — the pile deal already
-     did it) · sinks under hop 2 · respreads 3rd, home (z 4→2 mid-arc). */
+  /* card2 — R1's only fixed point: rests in its OWN slot 2 (the inline vars,
+     which the build now emits with y in %), z2 · squared k1: 0% 90.9% 2deg ·
+     flick 5 (z 2→4 mid-arc): centre pile TOP — its apex (0% -19.15%) passes
+     dead under the title; at 5deg the top corner peaks at ≈-77px, 15px
+     under the ink · hop 1 carries it onto the right pile (no z change — the
+     pile deal already did it) · sinks under hop 2 · respreads 3rd, home
+     (z 4→2 mid-arc). */
   @keyframes shi2{
     0%{translate:var(--x) var(--y);rotate:var(--o);z-index:2}
     15%{translate:var(--x) var(--y);rotate:var(--o);z-index:2;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
-    18%{translate:1% -1px;rotate:1.5deg;z-index:2}
-    30.4%{translate:1% -1px;rotate:1.5deg;z-index:2;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    31.3%{translate:2% -15px;rotate:5deg;z-index:4;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
-    32.3%{translate:4% 27px;rotate:-8deg;z-index:4;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    33%{translate:4% 27px;rotate:-4deg;z-index:4}
-    37.6%{translate:4% 27px;rotate:-4deg;z-index:4;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    38.9%{translate:60% 2px;rotate:6deg;z-index:4;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
-    39.9%{translate:120% 23px;rotate:-7deg;z-index:4;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    40.5%{translate:120% 21px;rotate:-4deg;z-index:4}
-    44%{translate:120% 21px;rotate:-4deg;z-index:4}
-    44.6%{translate:120% 23px;rotate:-4deg;z-index:4}
-    45.4%{translate:120% 21px;rotate:-4deg;z-index:4}
-    62.8%{translate:120% 21px;rotate:-4deg;z-index:4;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    63.9%{translate:30% -16px;rotate:-13deg;z-index:2;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    65.1%{translate:-57% -1px;rotate:-11.25deg;z-index:2}
+    18%{translate:0% 90.9%;rotate:2deg;z-index:2}
+    30.4%{translate:0% 90.9%;rotate:2deg;z-index:2;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    31.3%{translate:0% -19.15%;rotate:5deg;z-index:4;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    32.3%{translate:0% -9.75%;rotate:-8deg;z-index:4;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    33%{translate:0% -9.75%;rotate:-4deg;z-index:4}
+    37.6%{translate:0% -9.75%;rotate:-4deg;z-index:4;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    38.9%{translate:60.3% -16.5%;rotate:6deg;z-index:4;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    39.9%{translate:120.6% -9.25%;rotate:-7deg;z-index:4;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    40.5%{translate:120.6% -11.25%;rotate:-4deg;z-index:4}
+    44%{translate:120.6% -11.25%;rotate:-4deg;z-index:4}
+    44.6%{translate:120.6% -9.25%;rotate:-4deg;z-index:4}
+    45.4%{translate:120.6% -11.25%;rotate:-4deg;z-index:4}
+    62.8%{translate:120.6% -11.25%;rotate:-4deg;z-index:4;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    63.9%{translate:30% -15%;rotate:-13deg;z-index:2;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    65.1%{translate:-57% -1%;rotate:-11.25deg;z-index:2}
     66%{translate:var(--x) var(--y);rotate:var(--o);z-index:2}
     100%{translate:var(--x) var(--y);rotate:var(--o);z-index:2}
   }
-  /* card3 — rests in SLOT 6 (95% -5px 13.75deg, z6): TOP of the scooped deck,
-     so flick 1 (z 6→5 mid-arc): LEFT pile bottom · hop 2 carries it clean
-     across the felt onto the stack · respreads 2nd — the shortest flight of
-     the fan, tipping off the stack into the neighbouring slot 6 (z 5→6). */
+  /* card3 — rests in SLOT 6 (95% -5% 13.75deg, z6): TOP of the scooped deck
+     (squared k5: 1.4% 86.5% 1deg), so flick 1 (z 6→5 mid-arc): LEFT pile
+     bottom · hop 2 carries it clean across the felt onto the stack ·
+     respreads 2nd — the shortest flight of the fan, tipping off the stack
+     into the neighbouring slot 6 (z 5→6). */
   @keyframes shi3{
-    0%{translate:95% -5px;rotate:13.75deg;z-index:6}
-    15%{translate:95% -5px;rotate:13.75deg;z-index:6;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
-    18%{translate:-1% -5px;rotate:1deg;z-index:6}
-    19.6%{translate:-1% -5px;rotate:1deg;z-index:6;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    20.5%{translate:-62% -18px;rotate:-11deg;z-index:5;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
-    21.5%{translate:-122% 30px;rotate:-9deg;z-index:5;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    22.1%{translate:-122% 30px;rotate:-5deg;z-index:5}
-    41.4%{translate:-122% 30px;rotate:-5deg;z-index:5;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    42.9%{translate:0% -6px;rotate:4deg;z-index:5;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
-    44%{translate:122% 20px;rotate:-6deg;z-index:5;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    44.6%{translate:122% 18px;rotate:-3deg;z-index:5}
-    61.4%{translate:122% 18px;rotate:-3deg;z-index:5;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    62.5%{translate:106% -14px;rotate:9deg;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    63.7%{translate:95% -5px;rotate:16.75deg;z-index:6}
-    64.6%{translate:95% -5px;rotate:13.75deg;z-index:6}
-    100%{translate:95% -5px;rotate:13.75deg;z-index:6}
+    0%{translate:95% -5%;rotate:13.75deg;z-index:6}
+    15%{translate:95% -5%;rotate:13.75deg;z-index:6;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    18%{translate:1.4% 86.5%;rotate:1deg;z-index:6}
+    19.6%{translate:1.4% 86.5%;rotate:1deg;z-index:6;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    20.5%{translate:-61% -18.4%;rotate:-11deg;z-index:5;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    21.5%{translate:-123.4% -9%;rotate:-9deg;z-index:5;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    22.1%{translate:-123.4% -9%;rotate:-5deg;z-index:5}
+    41.4%{translate:-123.4% -9%;rotate:-5deg;z-index:5;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    42.9%{translate:-0.7% -16.5%;rotate:4deg;z-index:5;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    44%{translate:122% -10%;rotate:-6deg;z-index:5;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    44.6%{translate:122% -12%;rotate:-3deg;z-index:5}
+    61.4%{translate:122% -12%;rotate:-3deg;z-index:5;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    62.5%{translate:106% -13%;rotate:9deg;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    63.7%{translate:95% -5%;rotate:16.75deg;z-index:6}
+    64.6%{translate:95% -5%;rotate:13.75deg;z-index:6}
+    100%{translate:95% -5%;rotate:13.75deg;z-index:6}
   }
-  /* card4 — rests in SLOT 1 (-95% 0px -13.75deg, z1): BOTTOM of the scooped
-     deck, so flick 6, the last (z 1→2 mid-arc): RIGHT pile top — both hops
-     then land ON it, and it sinks twice · respreads 5th, the long slide out
-     to the far end of the fan (z 2→1 mid-arc). */
+  /* card4 — rests in SLOT 1 (-95% 0% -13.75deg, z1): BOTTOM of the scooped
+     deck (squared k0: -1.4% 92% -3deg), so flick 6, the last (z 1→2
+     mid-arc): RIGHT pile top — both hops then land ON it, and it sinks
+     twice · the px draft trimmed this apex tilt to 8deg for the title; at
+     the percent apex (-19.15% ≈ -20.4px) the original 14deg corner peaks
+     at ≈-81.5, 10px clear of the ink, so 14deg is BACK · respreads 5th,
+     the long slide out to the far end of the fan (z 2→1 mid-arc). */
   @keyframes shi4{
-    0%{translate:-95% 0px;rotate:-13.75deg;z-index:1}
-    15%{translate:-95% 0px;rotate:-13.75deg;z-index:1;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
-    18%{translate:-2% 0px;rotate:-2deg;z-index:1}
-    33.1%{translate:-2% 0px;rotate:-2deg;z-index:1;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    34%{translate:60% -17px;rotate:14deg;z-index:2;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
-    35%{translate:121% 27px;rotate:15deg;z-index:2;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    35.6%{translate:121% 27px;rotate:11deg;z-index:2}
-    39.9%{translate:121% 27px;rotate:11deg;z-index:2}
-    40.5%{translate:121% 29px;rotate:11deg;z-index:2}
-    41.3%{translate:121% 27px;rotate:11deg;z-index:2}
-    44%{translate:121% 27px;rotate:11deg;z-index:2}
-    44.6%{translate:121% 29px;rotate:11deg;z-index:2}
-    45.4%{translate:121% 27px;rotate:11deg;z-index:2}
-    65.6%{translate:121% 27px;rotate:11deg;z-index:2;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    66.7%{translate:0% -18px;rotate:-15deg;z-index:1;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    67.9%{translate:-95% 0px;rotate:-16.75deg;z-index:1}
-    68.8%{translate:-95% 0px;rotate:-13.75deg;z-index:1}
-    100%{translate:-95% 0px;rotate:-13.75deg;z-index:1}
+    0%{translate:-95% 0%;rotate:-13.75deg;z-index:1}
+    15%{translate:-95% 0%;rotate:-13.75deg;z-index:1;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    18%{translate:-1.4% 92%;rotate:-3deg;z-index:1}
+    33.1%{translate:-1.4% 92%;rotate:-3deg;z-index:1;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    34%{translate:60.3% -19.15%;rotate:14deg;z-index:2;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    35%{translate:122% -9.75%;rotate:15deg;z-index:2;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    35.6%{translate:122% -9.75%;rotate:11deg;z-index:2}
+    39.9%{translate:122% -9.75%;rotate:11deg;z-index:2}
+    40.5%{translate:122% -7.75%;rotate:11deg;z-index:2}
+    41.3%{translate:122% -9.75%;rotate:11deg;z-index:2}
+    44%{translate:122% -9.75%;rotate:11deg;z-index:2}
+    44.6%{translate:122% -7.75%;rotate:11deg;z-index:2}
+    45.4%{translate:122% -9.75%;rotate:11deg;z-index:2}
+    65.6%{translate:122% -9.75%;rotate:11deg;z-index:2;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    66.7%{translate:0% -17%;rotate:-15deg;z-index:1;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    67.9%{translate:-95% 0%;rotate:-16.75deg;z-index:1}
+    68.8%{translate:-95% 0%;rotate:-13.75deg;z-index:1}
+    100%{translate:-95% 0%;rotate:-13.75deg;z-index:1}
   }
-  /* card5 — THE ANSWER. Rests in SLOT 3 (-19% -2px -2.75deg, z3) · flick 4
-     (z 3→6 mid-arc): LEFT pile TOP · hop 2 rides the last gather — the hop
-     the whole trick hinges on — landing it on TOP of the assembled stack ·
-     THE DRAW: it lifts straight off the stack, up and forward (scale 1→1.18,
-     drifting 124%→142% outward, clear of the MATCH RUNE title), hangs 8.2%
-     as the presented answer, settles back (scale is 1 again by 58.2%) ·
-     then it leads the respread, first off the top, home to slot 3 (z 6→3). */
+  /* card5 — THE ANSWER. Rests in SLOT 3 (-19% -2% -2.75deg, z3) · squared
+     k2: 1.4% 89.8% 0deg · flick 4 (z 3→6 mid-arc): LEFT pile TOP — the px
+     draft trimmed this apex tilt to -7deg; at the percent apex (-19.15%)
+     the original -10deg corner peaks at ≈-79.7, 12px clear of the ink, so
+     -10deg is BACK · hop 2 rides the last gather — the hop the whole trick
+     hinges on — landing it on TOP of the assembled stack at 123.4% -12.75%
+     · THE DRAW: the stack already rides the pile row, so the show is
+     OUTWARD, not upward — it drifts 123.4%→142% with a ~5.6px rise
+     (scale 1→1.18): presented at 142% -18% 7deg, top corner at
+     -19.2 - 68 = -87.2, under the title's ink (≈-92) outright AND 93.6%
+     out, past the glyphs' end (see BOUNDS) — hangs 8.2% as the presented
+     answer, settles back (scale is 1 again by 58.2%) · then it leads the
+     respread, first off the top, home to slot 3 (z 6→3). */
   @keyframes shi5{
-    0%{translate:-19% -2px;rotate:-2.75deg;scale:1;z-index:3}
-    15%{translate:-19% -2px;rotate:-2.75deg;z-index:3;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
-    18%{translate:-1% -2px;rotate:-1deg;z-index:3}
-    27.7%{translate:-1% -2px;rotate:-1deg;z-index:3;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    28.6%{translate:-62% -19px;rotate:-10deg;z-index:6;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
-    29.6%{translate:-126% 27px;rotate:8deg;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    30.2%{translate:-126% 27px;rotate:4deg;z-index:6}
-    41.4%{translate:-126% 27px;rotate:4deg;z-index:6;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    42.9%{translate:-4% -10px;rotate:10deg;z-index:6;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
-    44%{translate:124% 17px;rotate:5deg;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    44.6%{translate:124% 15px;rotate:2deg;z-index:6}
-    46.2%{translate:124% 15px;rotate:2deg;scale:1;z-index:6;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    47%{translate:132% -20px;rotate:0deg;scale:1.09;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    48.2%{translate:142% -44px;rotate:7deg;scale:1.18;z-index:6}
-    56.4%{translate:142% -44px;rotate:7deg;scale:1.18;z-index:6;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    57.4%{translate:130% -12px;rotate:3deg;scale:1.06;z-index:6;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
-    58.2%{translate:124% 17px;rotate:2deg;scale:1;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    58.8%{translate:124% 15px;rotate:2deg;z-index:6}
-    60%{translate:124% 15px;rotate:2deg;z-index:6;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    61.1%{translate:52% -20px;rotate:-9deg;z-index:3;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    62.3%{translate:-19% -2px;rotate:-5.75deg;z-index:3}
-    63.2%{translate:-19% -2px;rotate:-2.75deg;z-index:3}
-    100%{translate:-19% -2px;rotate:-2.75deg;scale:1;z-index:3}
+    0%{translate:-19% -2%;rotate:-2.75deg;scale:1;z-index:3}
+    15%{translate:-19% -2%;rotate:-2.75deg;z-index:3;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    18%{translate:1.4% 89.8%;rotate:0deg;z-index:3}
+    27.7%{translate:1.4% 89.8%;rotate:0deg;z-index:3;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    28.6%{translate:-60.3% -19.15%;rotate:-10deg;z-index:6;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    29.6%{translate:-122% -9.75%;rotate:8deg;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    30.2%{translate:-122% -9.75%;rotate:4deg;z-index:6}
+    41.4%{translate:-122% -9.75%;rotate:4deg;z-index:6;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    42.9%{translate:0.7% -16.5%;rotate:10deg;z-index:6;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    44%{translate:123.4% -10.75%;rotate:5deg;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    44.6%{translate:123.4% -12.75%;rotate:2deg;z-index:6}
+    46.2%{translate:123.4% -12.75%;rotate:2deg;scale:1;z-index:6;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    47%{translate:132% -16%;rotate:0deg;scale:1.09;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    48.2%{translate:142% -18%;rotate:7deg;scale:1.18;z-index:6}
+    56.4%{translate:142% -18%;rotate:7deg;scale:1.18;z-index:6;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    57.4%{translate:131% -16%;rotate:3deg;scale:1.06;z-index:6;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    58.2%{translate:123.4% -10.75%;rotate:2deg;scale:1;z-index:6;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    58.8%{translate:123.4% -12.75%;rotate:2deg;z-index:6}
+    60%{translate:123.4% -12.75%;rotate:2deg;z-index:6;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    61.1%{translate:52% -18.5%;rotate:-9deg;z-index:3;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    62.3%{translate:-19% -2%;rotate:-5.75deg;z-index:3}
+    63.2%{translate:-19% -2%;rotate:-2.75deg;z-index:3}
+    100%{translate:-19% -2%;rotate:-2.75deg;scale:1;z-index:3}
   }
-  /* card6 — rests in SLOT 5 (57% -4px 8.25deg, z5) · flick 2 (z 5→3
-     mid-arc): centre pile bottom — the z3 tie with c5 noted above · hop 1
-     carries it onto the right pile · sinks under hop 2 · respreads 4th,
-     home to slot 5 (z 3→5 mid-arc), sliding in UNDER card3 at slot 6. */
+  /* card6 — rests in SLOT 5 (57% -4% 8.25deg, z5) · squared k4: 0% 87.6%
+     3deg · flick 2 (z 5→3 mid-arc): centre pile bottom — the ~6px paint
+     sliver noted above · hop 1 carries it onto the right pile · sinks
+     under hop 2 · respreads 4th, home to slot 5 (z 3→5 mid-arc), sliding
+     in UNDER card3 at slot 6. */
   @keyframes shi6{
-    0%{translate:57% -4px;rotate:8.25deg;z-index:5}
-    15%{translate:57% -4px;rotate:8.25deg;z-index:5;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
-    18%{translate:0% -4px;rotate:-1.5deg;z-index:5}
-    22.3%{translate:0% -4px;rotate:-1.5deg;z-index:5;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    23.2%{translate:0% -16px;rotate:7deg;z-index:3;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
-    24.2%{translate:1% 30px;rotate:8deg;z-index:3;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    24.8%{translate:1% 30px;rotate:3deg;z-index:3}
-    37.6%{translate:1% 30px;rotate:3deg;z-index:3;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    38.9%{translate:58% 4px;rotate:8deg;z-index:3;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
-    39.9%{translate:123% 26px;rotate:6deg;z-index:3;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    40.5%{translate:123% 24px;rotate:3deg;z-index:3}
-    44%{translate:123% 24px;rotate:3deg;z-index:3}
-    44.6%{translate:123% 26px;rotate:3deg;z-index:3}
-    45.4%{translate:123% 24px;rotate:3deg;z-index:3}
-    64.2%{translate:123% 24px;rotate:3deg;z-index:3;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
-    65.3%{translate:92% -16px;rotate:13deg;z-index:5;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
-    66.5%{translate:57% -4px;rotate:11.25deg;z-index:5}
-    67.4%{translate:57% -4px;rotate:8.25deg;z-index:5}
-    100%{translate:57% -4px;rotate:8.25deg;z-index:5}
+    0%{translate:57% -4%;rotate:8.25deg;z-index:5}
+    15%{translate:57% -4%;rotate:8.25deg;z-index:5;animation-timing-function:cubic-bezier(.45,.05,.25,1)}
+    18%{translate:0% 87.6%;rotate:3deg;z-index:5}
+    22.3%{translate:0% 87.6%;rotate:3deg;z-index:5;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    23.2%{translate:-0.7% -18.4%;rotate:7deg;z-index:3;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    24.2%{translate:-1.4% -9%;rotate:8deg;z-index:3;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    24.8%{translate:-1.4% -9%;rotate:3deg;z-index:3}
+    37.6%{translate:-1.4% -9%;rotate:3deg;z-index:3;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    38.9%{translate:61% -16.5%;rotate:8deg;z-index:3;animation-timing-function:cubic-bezier(.5,.05,.7,.4)}
+    39.9%{translate:123.4% -8.5%;rotate:6deg;z-index:3;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    40.5%{translate:123.4% -10.5%;rotate:3deg;z-index:3}
+    44%{translate:123.4% -10.5%;rotate:3deg;z-index:3}
+    44.6%{translate:123.4% -8.5%;rotate:3deg;z-index:3}
+    45.4%{translate:123.4% -10.5%;rotate:3deg;z-index:3}
+    64.2%{translate:123.4% -10.5%;rotate:3deg;z-index:3;animation-timing-function:cubic-bezier(.2,.7,.4,1)}
+    65.3%{translate:92% -15%;rotate:13deg;z-index:5;animation-timing-function:cubic-bezier(.2,.9,.24,1)}
+    66.5%{translate:57% -4%;rotate:11.25deg;z-index:5}
+    67.4%{translate:57% -4%;rotate:8.25deg;z-index:5}
+    100%{translate:57% -4%;rotate:8.25deg;z-index:5}
   }
 
   /* ===== the beat strip: one quiet row, cell width = beat ms. Dim cells are
@@ -276,5 +340,5 @@
     <span class="shi-tot">TOTAL<br>3850</span>
   </div>
 
-  <div class="note"><b>The hands:</b> the three-card monte's shuffle, played straight. The spread — already in a scrambled order, because production fans shuffledOrder() and a registry-ordered still is the lie — squares into one deck, is dealt <b>one card at a time off the TOP</b>, round-robin, into three piles, and the piles are gathered back in a random-reading order (here: centre onto right, then left onto that) — so which card ends on top is genuinely undecidable until the last gather lands. Then the draw takes the <b>top card of the stack</b> — no refan. A player who tracked the piles CAN call it (the top of the deck is the top of the last pile gathered — here the fourth flick, the spread's third card); everyone else feels the order is simply gone. <b>Beats:</b> FAN 380 → SQUARE 280 → PILE ×6 1380 (230ms cadence, strictly one card in flight) → STACK 730 (two ~290ms hops, gather order random per deal) → DEAL 560 (off the stack top) → FLIP 520 — shuffle portion <b>2390ms</b>, whole beat <b>3850ms</b> (today 1250 / 2900), the shortest of the set because the refan is gone. The loop plays the shuffle ~17% slower and holds the presented top card for ~0.8s. <b>Honest re-order:</b> in the app the initial fan order and the gather order are both shuffledOrder()-random and everything between them is mechanical — the top of the deck is decided by the gather the player just watched. redeal()'s icon swaps are not needed at all: the cards physically carry their runes through the piles, this variant's honesty advantage over every refanning cousin (S8 relabels per flick on its REFAN). What dealBeat still needs instead: one order per beat (fanned only — the riffled/settled arrays go), a random gather order, and the inverse map — compose square→deal→gather into a permutation, find which fan slot it sends to the top, and seat the answer in that slot before shuffling the rest, so the watched shuffle genuinely produces the drawn rune. <b>The loop seam:</b> the respread is presentation — the deck fans back out to the same scrambled spread, standing in for the NEXT deal's fan, because a CSS study cannot relabel runes; in the app there is no respread (the FLIP follows the draw). <b>Cost vs S8:</b> the six-rune offer is shown only in the opening spread — no refan means no second read of the roster before the draw — and the draw leaves the deck squared, off-centre at the gather spot, and one card short; the monte read also cuts both ways: a sharp eye knows the answer before the FLIP turns it. <b>Seam:</b> still WAAPI in ui/runedeal.ts — draw() already measures the journey off an element rect, so drawing off the stack is the same measurement off the stack's top card; the one new requirement is that pileDeal()/gatherPiles() (replacing riffle()/cut()) keep their end pose where riffle sprang back to the fan with fill:'none', because there is no refan to return to; restOf() unchanged for the spread; Sfx.tick per flick, Sfx.place per hop.</div>
+  <div class="note"><b>The hands:</b> the three-card monte's shuffle, played straight. The spread — already in a scrambled order, because production fans shuffledOrder() and a registry-ordered still is the lie — squares into one deck, is dealt <b>one card at a time off the TOP</b>, round-robin, into three piles, and the piles are gathered back in a random-reading order (here: centre onto right, then left onto that) — so which card ends on top is genuinely undecidable until the last gather lands. Then the draw takes the <b>top card of the stack</b> — no refan. A player who tracked the piles CAN call it (the top of the deck is the top of the last pile gathered — here the fourth flick, the spread's third card); everyone else feels the order is simply gone. <b>Beats:</b> FAN 380 → SQUARE 280 → PILE ×6 1380 (230ms cadence, strictly one card in flight) → STACK 730 (two ~290ms hops, gather order random per deal) → DEAL 560 (off the stack top) → FLIP 520 — shuffle portion <b>2390ms</b>, whole beat <b>3850ms</b> (today 1250 / 2900), the shortest of the set because the refan is gone. The loop plays the shuffle ~17% slower and holds the presented top card for ~0.8s. <b>Honest re-order:</b> in the app the initial fan order and the gather order are both shuffledOrder()-random and everything between them is mechanical — the top of the deck is decided by the gather the player just watched. redeal()'s icon swaps are not needed at all: the cards physically carry their runes through the piles, this variant's honesty advantage over every refanning cousin (S8 relabels per flick on its REFAN). What dealBeat still needs instead: one order per beat (fanned only — the riffled/settled arrays go), a random gather order, and the inverse map — compose square→deal→gather into a permutation, find which fan slot it sends to the top, and seat the answer in that slot before shuffling the rest, so the watched shuffle genuinely produces the drawn rune. <b>The loop seam:</b> the respread is presentation — the deck fans back out to the same scrambled spread, standing in for the NEXT deal's fan, because a CSS study cannot relabel runes; in the app there is no respread (the FLIP follows the draw). <b>Cost vs S8:</b> the six-rune offer is shown only in the opening spread — no refan means no second read of the roster before the draw — and the draw leaves the deck squared, off-centre at the gather spot, and one card short; the monte read also cuts both ways: a sharp eye knows the answer before the FLIP turns it. <b>Seam:</b> still WAAPI in ui/runedeal.ts — draw() already measures the journey off an element rect, so drawing off the stack is the same measurement off the stack's top card; the one new requirement is that pileDeal()/gatherPiles() (replacing riffle()/cut()) keep their end pose where riffle sprang back to the fan with fill:'none', because there is no refan to return to; restOf() unchanged for the spread; Sfx.tick per flick, Sfx.place per hop. <b>Geometry refit (2026-08-26, shipped):</b> the dealing deck now squares at the felt's BOTTOM (squaredOf, y 92 − k·1.1% of card height), fully clear of the pile row riding high at PILE_Y −9% where the dealt cards land and the assembled stack waits — so the source is never overlaid by the piles it deals — and the dealt card carries z-index 24 above the deck's 8..13 and the flight's 20, so the draw visibly comes off the TOP instead of arriving from down under.</div>
 </div></div>

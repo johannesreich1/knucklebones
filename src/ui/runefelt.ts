@@ -18,20 +18,39 @@ export const restOf = (i: number, count: number) => {
   return { x: (i - middle) * 38, y: -i, rot: (i - middle) * 5.5 };
 };
 
-/* The TABLE geometry of the shuffle: three pile anchors below the fan line,
-   and where stack position k of a squared deck sits on anchor p (0 = bottom).
-   The jitter is deterministic and small — enough that a stack reads as cards
-   rather than as one thick card, without a second source of randomness. */
+/* The TABLE geometry of the shuffle: the pile row rides high on the felt —
+   it is the DISPLAY space, where the dealt cards land and where the assembled
+   deck waits for the draw — and the DEALING deck squares up at the bottom,
+   fully below that row, so the source is never overlaid by the cards it deals
+   (user call 2026-08-26: the deck used to sit on the fan line with the centre
+   pile growing straight through it). stackOf(p, k) is stack position k on
+   pile anchor p (0 = bottom). The jitter is deterministic and small — enough
+   that a stack reads as cards rather than as one thick card, without a second
+   source of randomness.
+   EVERY y here is a PERCENTAGE OF THE CARD'S OWN HEIGHT (translate y%), never
+   px: --card runs 58..96px and drops to ~40px on a short landscape phone, and
+   a fixed-px row offset that cleared the title at 76px escaped the stage at
+   40px (test20's 320px lanes caught it). Percentages keep the table identical
+   at every size. */
 export const PILES = [-122, 0, 122] as const;    // % of the card's own width
-export const PILE_Y = 30;                        // px below the fan line
+/* -9 with a 0.75 step keeps the ASSEMBLED stack's top card (k=5, rotated ±4°)
+   inside the stage box on the 320px lanes — higher rows read nicer at 430px
+   but test20's short-landscape check is the boundary that matters */
+export const PILE_Y = -9;                        // the pile row, % above the fan line
+export const DECK_Y = 92;                        // the dealing deck, at the felt's bottom
 export const stackOf = (p: number, k: number) => ({
   x: PILES[p] + ((k % 3) - 1) * 1.4,
-  y: PILE_Y - k * 1.6,
+  y: PILE_Y - k * 0.75,
   rot: ((k * 7) % 9) - 4,
 });
-/* the deck squared IN HAND (between the scoop and the pile deal) sits on the
-   fan line, not down at the piles */
-export const squaredOf = (k: number) => ({ x: ((k % 3) - 1) * 1.4, y: -k, rot: ((k * 5) % 7) - 3 });
+/* the deck squared IN HAND (between the scoop and the pile deal), at the
+   bottom, fully below the pile row it deals up into (92 is the smallest y
+   whose deck top clears the row's k=0 card bottom) */
+export const squaredOf = (k: number) => ({
+  x: ((k % 3) - 1) * 1.4,
+  y: DECK_Y - k * 1.1,
+  rot: ((k * 5) % 7) - 3,
+});
 
 /* WHICH RUNE a slot is holding, as the three things that say so. */
 const faceOf = (pick: number) => {
@@ -52,7 +71,7 @@ export const deckCards = (order?: readonly number[], drawn?: string): string =>
   (order ?? SPELLS.map((_, i) => i)).map((pick, i, picks) => {
     const f = faceOf(pick), r = drawn ? stackOf(2, i) : restOf(i, picks.length);
     return `<i class="rcard${f.id === drawn ? ' drawn' : ''}" data-rune="${f.id}"`
-      + ` style="--x:${r.x}%;--y:${r.y}px;--o:${r.rot}deg;color:${f.hue}">${f.icon}</i>`;
+      + ` style="--x:${r.x}%;--y:${r.y}%;--o:${r.rot}deg;color:${f.hue}">${f.icon}</i>`;
   }).join('');
 
 /* One card anatomy for the reveal, the in-game charge stack and its drag

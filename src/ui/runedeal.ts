@@ -100,15 +100,15 @@ const cardsIn = (felt: HTMLElement) =>
   Array.from(felt.querySelectorAll<HTMLElement>('.rcard'));
 
 const pose = (p: { x: number; y: number; rot: number }) =>
-  ({ translate: `${p.x}% ${p.y}px`, rotate: `${p.rot}deg` });
+  ({ translate: `${p.x}% ${p.y}%`, rotate: `${p.rot}deg` });
 
 /** the deck arrives on the felt, card by card */
 function fanIn(felt: HTMLElement): void {
   const cards = cardsIn(felt);
   cards.forEach((el, i) => {
     const r = restOf(i, cards.length);
-    el.animate([{ translate: '0% 0px', rotate: '0deg', opacity: 0 },
-                { translate: `${r.x}% ${r.y}px`, rotate: `${r.rot}deg`, opacity: 1 }],
+    el.animate([{ translate: '0% 0%', rotate: '0deg', opacity: 0 },
+                { translate: `${r.x}% ${r.y}%`, rotate: `${r.rot}deg`, opacity: 1 }],
       { duration: FAN, delay: i * 26, easing: EASE_LAND, fill: 'both' });
   });
 }
@@ -146,8 +146,10 @@ function pileDeal(felt: HTMLElement, plan: ShufflePlan): void {
     setTimeout(() => { el.style.zIndex = '20'; Sfx.tick(); }, k * FLICK);
     setTimeout(() => { el.style.zIndex = String(8 + plan.finalStack.indexOf(slot)); },
       k * FLICK + FLIGHT);
+    /* the deal flicks UPWARD, bottom deck to pile row; the apex clears the
+       row by a hair only — any higher and the card brushes the title */
     el.animate([
-      { translate: `${(from.x + to.x) / 2}% ${Math.min(from.y, to.y) - 16}px`,
+      { translate: `${(from.x + to.x) / 2}% ${to.y - 9.4}%`,
         rotate: `${to.rot + (to.x < from.x ? -7 : 7)}deg`, offset: 0.55 },
       pose(to)],
       { duration: FLIGHT + 90, delay: k * FLICK, easing: EASE_LAND, fill: 'both' });
@@ -164,7 +166,7 @@ function gatherPiles(felt: HTMLElement, plan: ShufflePlan): void {
     plan.piles[p].forEach((slot, within) => {
       const to = stackOf(base, height + within);
       cards[slot].animate([
-        { translate: `${(PILES[p] + PILES[base]) / 2}% ${PILE_Y - 24}px`,
+        { translate: `${(PILES[p] + PILES[base]) / 2}% ${PILE_Y - 7.5}%`,
           rotate: `${to.rot - 5}deg`, offset: 0.5 },
         pose(to)],
         { duration: HOP, delay: hop * HOP_GAP + within * 24, easing: EASE_SHUFFLE, fill: 'both' });
@@ -273,7 +275,7 @@ export function dealBeat(spec: SpellSpec, options: RuneDealOptions = {}): Beat {
         plan.finalStack.forEach((slot, k) => {
           const el = cards[slot], p = stackOf(plan.gather[0], k);
           el.style.setProperty('--x', `${p.x}%`);
-          el.style.setProperty('--y', `${p.y}px`);
+          el.style.setProperty('--y', `${p.y}%`);
           el.style.setProperty('--o', `${p.rot}deg`);
           el.style.zIndex = String(k + 1);
         });
