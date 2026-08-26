@@ -10,7 +10,6 @@
 // expected source hashes are pinned below so a future runtime change fails
 // closed.
 import { createHash } from 'node:crypto';
-import { spawnSync } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -24,6 +23,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SUPABASE_PROJECT_REF } from '../../src/config.ts';
+import { createCliRunner, readJson } from '../database/cli-runner.mjs';
 import {
   auditRuneTrial,
 } from '../database/production-rollout.mjs';
@@ -55,6 +55,7 @@ const ROLLOUT_CONTROL_FILES = Object.freeze([
   'package.json',
   'package-lock.json',
   'supabase/migrations/20260825205241_rune_trial_ranked_v2.sql',
+  'tools/database/cli-runner.mjs',
   'tools/database/production-rollout-core.mjs',
   'tools/database/production-rollout.mjs',
   'tools/debug/production-read.mjs',
@@ -95,46 +96,6 @@ const CLI = path.join(
 
 const fail = message => { throw new Error(message); };
 const isObject = value => typeof value === 'object' && value !== null && !Array.isArray(value);
-const displayCommand = (command, args) => [command, ...args]
-  .map(value => (/^[A-Za-z0-9_./:@=-]+$/.test(value) ? value : JSON.stringify(value)))
-  .join(' ');
-
-export function createCommandRunner({
-  cwd = REPOSITORY_ROOT,
-  env = process.env,
-  spawn = spawnSync,
-  announce = message => console.log(message),
-} = {}) {
-  const invoke = (command, args, options) => {
-    announce(`$ ${displayCommand(command, args)}`);
-    const result = spawn(command, args, {
-      cwd,
-      env: { ...env, SUPABASE_TELEMETRY_DISABLED: '1' },
-      shell: false,
-      ...options,
-    });
-    if (result.status !== 0 || result.error || result.signal) {
-      const detail = String(result.stderr || result.stdout || '').trim();
-      const state = result.error
-        ? `could not start: ${result.error.message}`
-        : result.signal ? `was terminated by ${result.signal}` : `exited with ${result.status}`;
-      throw new Error(`${displayCommand(command, args)} ${state}${detail ? `\n${detail}` : ''}`);
-    }
-    return result;
-  };
-  return {
-    capture(command, args) {
-      const result = invoke(command, args, {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
-      return String(result.stdout || '').trim();
-    },
-    run(command, args) {
-      invoke(command, args, { stdio: 'inherit' });
-    },
-  };
-}
 
 export function requireNode24(version = process.versions.node) {
   if (Number.parseInt(version.split('.')[0], 10) !== REQUIRED_NODE_MAJOR) {
@@ -325,12 +286,6 @@ export function assertActiveFunctionMetadata(output, slug) {
   return Object.freeze({ slug, version: row.version, updatedAt: row.updated_at });
 }
 
-function readJson(file) {
-  try { return JSON.parse(readFileSync(file, 'utf8')); } catch (error) {
-    fail(`Could not read ${path.relative(REPOSITORY_ROOT, file)}: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
 export function assertPinnedSupabaseLock(packageJson, lock) {
   const lockedPackage = lock?.packages?.['node_modules/supabase'];
   if (packageJson?.devDependencies?.supabase !== FUNCTION_CLI_VERSION
@@ -345,8 +300,8 @@ export function assertPinnedSupabaseLock(packageJson, lock) {
 }
 
 function assertPinnedCli(runner, cli = CLI) {
-  const packageJson = readJson(path.join(REPOSITORY_ROOT, 'package.json'));
-  const lock = readJson(path.join(REPOSITORY_ROOT, 'package-lock.json'));
+  const packageJson = readJson(path.join(REPOSITORY_ROOT, 'package.json'), 'package.json');
+  const lock = readJson(path.join(REPOSITORY_ROOT, 'package-lock.json'), 'package-lock.json');
   assertPinnedSupabaseLock(packageJson, lock);
   if (!existsSync(cli)) fail('Install the lockfile dependencies before the function rollout.');
   const installed = runner.capture(cli, ['--version']);
@@ -414,7 +369,7 @@ export async function rolloutProductionFunctions({
   apply = false,
   optIn = process.env[FUNCTION_DEPLOY_OPT_IN],
   nodeVersion = process.versions.node,
-  runner = createCommandRunner(),
+  runner = createCliRunner(),
   cli = CLI,
   createTemp = () => mkdtempSync(path.join(os.tmpdir(), TEMP_PREFIX)),
   removeTemp = root => rmSync(root, { recursive: true, force: true }),

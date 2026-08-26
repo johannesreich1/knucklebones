@@ -10,36 +10,65 @@ import {
 import {
   APPLE_GAME_CENTER_MIGRATION_SHA256,
   APPLE_GAME_CENTER_SCHEMA,
+  auditAppleGameCenter,
 } from '../../tools/database/production-rollout.mjs';
 
 type Check = (name: string, run: () => void) => void;
+type CheckAsync = (name: string, run: () => Promise<void>) => Promise<void>;
 type Guarded = (run: () => unknown, pattern: RegExp) => void;
 
 const MIGRATIONS = Object.freeze([
   '20260826153100_game_center_ids.sql',
   '20260826153101_game_center_service_grants.sql',
   '20260826153102_apple_identity_credentials.sql',
+  '20260826181000_apple_revocation_unstage.sql',
 ]);
 
-export function runAppleGameCenterProductionMigrationCases(options: {
-  readonly check: Check;
-  readonly guarded: Guarded;
-}): void {
-  const { check, guarded } = options;
+/** One raw audit row the way APPLE_GAME_CENTER_SCHEMA returns it. */
+const appleAuditRow = (overrides: Record<string, boolean> = {}) => ({
+  game_center_table: false,
+  game_center_service_grant: false,
+  apple_credential_table: false,
+  apple_credential_functions: false,
+  apple_credential_function_bodies: false,
+  apple_credential_grants: false,
+  apple_unstage_function_present: false,
+  apple_unstage_function: false,
+  ...overrides,
+});
 
-  check('Apple/Game Center rollout pins three post-ladder migrations byte-for-byte', () => {
+const credentialPrefixRow = (overrides: Record<string, boolean> = {}) => appleAuditRow({
+  game_center_table: true,
+  game_center_service_grant: true,
+  apple_credential_table: true,
+  apple_credential_functions: true,
+  apple_credential_function_bodies: true,
+  apple_credential_grants: true,
+  ...overrides,
+});
+
+export async function runAppleGameCenterProductionMigrationCases(options: {
+  readonly check: Check;
+  readonly checkAsync: CheckAsync;
+  readonly guarded: Guarded;
+}): Promise<void> {
+  const { check, checkAsync, guarded } = options;
+
+  check('Apple/Game Center rollout pins four post-ladder migrations byte-for-byte', () => {
     const parsed = validateMigrationFilenames(MIGRATIONS);
-    assert.deepEqual(parsed.map(({ version, name }) => [version, name]), [
+    assert.deepEqual(parsed.map(({ version, name }: { version: string; name: string }) => [version, name]), [
       ['20260826153100', 'game_center_ids'],
       ['20260826153101', 'game_center_service_grants'],
       ['20260826153102', 'apple_identity_credentials'],
+      ['20260826181000', 'apple_revocation_unstage'],
     ]);
-    assert.ok(parsed.every(({ version }) => version > '20260826153000'));
+    assert.ok(parsed.every(({ version }: { version: string }) => version > '20260826153000'));
 
     const expectedHashes = [
       APPLE_GAME_CENTER_MIGRATION_SHA256.gameCenterIds,
       APPLE_GAME_CENTER_MIGRATION_SHA256.gameCenterServiceGrants,
       APPLE_GAME_CENTER_MIGRATION_SHA256.appleIdentityCredentials,
+      APPLE_GAME_CENTER_MIGRATION_SHA256.appleRevocationUnstage,
     ];
     for (const [index, migration] of MIGRATIONS.entries()) {
       assert.deepEqual(parseMigrationFilename(migration), parsed[index]);
@@ -99,6 +128,46 @@ export function runAppleGameCenterProductionMigrationCases(options: {
     );
   });
 
+  await checkAsync('Apple/Game Center audit extends the prefix to the exact stage-four unstage function', async () => {
+    const read = (row: Record<string, boolean>) => async () => [row];
+    assert.deepEqual(await auditAppleGameCenter(read(appleAuditRow())), {
+      evidence: {
+        gameCenterTable: false,
+        gameCenterServiceGrant: false,
+        appleCredentialTable: false,
+        appleCredentialFunctions: false,
+        appleCredentialFunctionBodies: false,
+        appleCredentialGrants: false,
+        appleUnstageFunction: false,
+      },
+      schemaStage: 0,
+    });
+    const staged = await auditAppleGameCenter(read(credentialPrefixRow()));
+    assert.equal(staged.schemaStage, 3);
+    assert.equal(staged.evidence.appleUnstageFunction, false);
+    const complete = await auditAppleGameCenter(read(credentialPrefixRow({
+      apple_unstage_function_present: true,
+      apple_unstage_function: true,
+    })));
+    assert.equal(complete.schemaStage, 4);
+    assert.equal(complete.evidence.appleUnstageFunction, true);
+    await assert.rejects(
+      () => auditAppleGameCenter(read(credentialPrefixRow({
+        apple_unstage_function_present: true,
+      }))),
+      /does not match the reviewed contract/,
+    );
+    await assert.rejects(
+      () => auditAppleGameCenter(read(appleAuditRow({
+        game_center_table: true,
+        game_center_service_grant: true,
+        apple_unstage_function_present: true,
+        apple_unstage_function: true,
+      }))),
+      /before its credential prefix/,
+    );
+  });
+
   check('Apple/Game Center production audit pins identity and revocation security boundaries', () => {
     for (const marker of [
       'public.game_center_ids',
@@ -115,6 +184,8 @@ export function runAppleGameCenterProductionMigrationCases(options: {
       'public.take_apple_revocation(bigint)',
       'public.claim_apple_revocations(integer)',
       'public.finish_apple_revocation(bigint,text)',
+      'public.unstage_apple_revocation(uuid)',
+      'a7277a021de3892315a3204c70295ef4',
       'md5(prosrc)',
       'aclexplode',
       "'anon', 'authenticated'",

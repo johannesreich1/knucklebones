@@ -20,6 +20,9 @@ import {
   runAppleGameCenterProductionMigrationCases,
 } from './support/apple-game-center-production-migration-cases.ts';
 import {
+  runMatchCommandStallCheckProductionMigrationCases,
+} from './support/match-command-stall-check-production-migration-cases.ts';
+import {
   runRuneTrialProductionMigrationCases,
 } from './support/rune-trial-production-migration-cases.ts';
 import {
@@ -88,7 +91,9 @@ check('migration-list JSON exposes validated local and remote versions', () => {
     ],
     message: 'Migrations listed',
   }, null, 2)}`);
-  assert.deepEqual(parsed.migrations.map(row => [row.local, row.remote]), [
+  assert.deepEqual(parsed.migrations.map(
+    (row: { local: string; remote: string }) => [row.local, row.remote],
+  ), [
     ['20260823192604', '20260823192604'],
     ['20260824133121', ''],
   ]);
@@ -269,7 +274,9 @@ check('apply opt-in and repeated audit plan both fail closed', () => {
 
 runRuneTrialProductionMigrationCases({ check, guarded });
 
-runAppleGameCenterProductionMigrationCases({ check, guarded });
+await runAppleGameCenterProductionMigrationCases({ check, checkAsync, guarded });
+
+await runMatchCommandStallCheckProductionMigrationCases({ check, checkAsync });
 
 runProductionMigrationSchemaCases({
   check,
@@ -284,8 +291,8 @@ await checkAsync('temporary workspace cleanup runs after success and preparation
   const removed: string[] = [];
   const result = await withTemporaryWorkspace(
     () => '/tmp/kb-created',
-    (workdir) => removed.push(workdir),
-    async (workdir) => `${workdir}/done`,
+    (workdir: string) => removed.push(workdir),
+    async (workdir: string) => `${workdir}/done`,
   );
   assert.equal(result, '/tmp/kb-created/done');
   assert.deepEqual(removed, ['/tmp/kb-created']);
@@ -293,7 +300,7 @@ await checkAsync('temporary workspace cleanup runs after success and preparation
   await assert.rejects(
     withTemporaryWorkspace(
       () => '/tmp/kb-failed',
-      (workdir) => removed.push(workdir),
+      (workdir: string) => removed.push(workdir),
       async () => { throw new Error('fetch failed'); },
     ),
     /fetch failed/,

@@ -2,6 +2,7 @@
 // population. Transport and credentials stay in production-test-data.mjs.
 
 import { GROUPS } from '../../src/core/ladder.ts';
+import { RANKED_POOL_TIERS } from '../../src/core/ranked-outcomes.ts';
 
 export const PRODUCTION_TEST_DATA_PROJECT_REF = 'euzjcejbkxvqfrttgaxu';
 export const PRODUCTION_TEST_DATA_CLI_VERSION = '2.115.0';
@@ -31,6 +32,17 @@ export const PRODUCTION_TEST_DATA_OPT_INS = Object.freeze({
   }),
 });
 
+/* Every account the test-data helper ever creates is a bot: the fixed seed
+   plan mints PRODUCTION_BOT_COUNT bots and zero humans, and both seed
+   postchecks pin `humans` to 0. A test-data database therefore holds no
+   non-bot profiles at all, so the ceiling the standard wipe tolerates is
+   zero — any human account belongs to a live player, and the game is live. */
+export const PRODUCTION_WIPE_HUMAN_ACCOUNT_CEILING = 0;
+export const PRODUCTION_HUMAN_WIPE_OPT_IN = Object.freeze({
+  name: 'KB_ALLOW_PRODUCTION_HUMAN_ACCOUNT_WIPE',
+  value: 'WIPE_REAL_HUMAN_ACCOUNTS',
+});
+
 export class ProductionTestDataGuardError extends Error {
   constructor(message) {
     super(message);
@@ -41,10 +53,23 @@ export class ProductionTestDataGuardError extends Error {
 const fail = message => { throw new ProductionTestDataGuardError(message); };
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const CURRENT_SEASON_SQL = '(select id from public.seasons where ends_at is null order by id desc limit 1)';
+
+/* The registry owns the tier floors: every generated `ranked_pool_tier`
+   predicate is built from RANKED_POOL_TIERS descending by floor, so a retuned
+   floor in src/core/ladder.ts propagates here instead of silently drifting.
+   The lowest tier is the catch-all else branch, so its floor must stay 0. */
+const POOL_TIERS_BY_FLOOR_DESCENDING = Object.freeze(
+  [...RANKED_POOL_TIERS].sort((a, b) => b.floor - a.floor),
+);
+if (POOL_TIERS_BY_FLOOR_DESCENDING.length < 2
+    || POOL_TIERS_BY_FLOOR_DESCENDING.at(-1).floor !== 0) {
+  fail('Ranked pool tier registry no longer has a floor-zero catch-all tier.');
+}
 const rankedPoolTierSql = peak => `(case
-  when coalesce(${peak}, 0) >= 720 then 'ivory'
-  when coalesce(${peak}, 0) >= 300 then 'bone'
-  else 'stone'
+${POOL_TIERS_BY_FLOOR_DESCENDING.slice(0, -1)
+    .map(tier => `  when coalesce(${peak}, 0) >= ${tier.floor} then '${tier.id}'`)
+    .join('\n')}
+  else '${POOL_TIERS_BY_FLOOR_DESCENDING.at(-1).id}'
 end)`;
 
 export function validateProductionTestDataPhase(phase) {
@@ -62,6 +87,22 @@ export function assertProductionTestDataOptIn(phase, apply, value) {
     fail(`Production ${selected} requires ${optIn.name}=${optIn.value} and --apply.`);
   }
   return apply;
+}
+
+/* Second, distinct wipe opt-in: deleting live human players never rides on
+   the ordinary test-data literal alone. Returns which fixed program the wipe
+   must run — false for the standard ceiling-guarded SQL, true for the
+   human-account program that only this separate literal unlocks. */
+export function assertProductionWipeHumanOptIn(humans, apply, value) {
+  if (!Number.isSafeInteger(humans) || humans < 0) {
+    fail('Production wipe human-account count must be a non-negative integer.');
+  }
+  if (typeof apply !== 'boolean') fail('Production test-data apply intent must be boolean.');
+  if (humans <= PRODUCTION_WIPE_HUMAN_ACCOUNT_CEILING) return false;
+  if (apply && value !== PRODUCTION_HUMAN_WIPE_OPT_IN.value) {
+    fail(`Production wipe found ${humans} human accounts over the test-data ceiling of ${PRODUCTION_WIPE_HUMAN_ACCOUNT_CEILING}; deleting live players additionally requires ${PRODUCTION_HUMAN_WIPE_OPT_IN.name}=${PRODUCTION_HUMAN_WIPE_OPT_IN.value}.`);
+  }
+  return true;
 }
 
 export function assertProductionProjectBinding(configured, linked, expected = PRODUCTION_TEST_DATA_PROJECT_REF) {
@@ -710,7 +751,19 @@ export function validateRefreshProductionBotProfilesAudit(rows) {
   return Object.freeze({ ...row });
 }
 
-export const WIPE_PRODUCTION_ACCOUNTS_SQL = String.raw`
+/* The ceiling is re-checked inside the locked transaction, so a human account
+   created between the preflight audit and the wipe still aborts the standard
+   program. Only the separate human-account program omits this guard. */
+const WIPE_HUMAN_CEILING_GUARD_SQL = String.raw`  -- Launch guard: the fixed seed plan mints bots only, so any non-bot
+  -- profile belongs to a live player and the standard wipe must refuse.
+  if (select count(*) from public.profiles where not is_bot)
+       > ${PRODUCTION_WIPE_HUMAN_ACCOUNT_CEILING} then
+    raise exception 'production account wipe found % human accounts over the test-data ceiling of ${PRODUCTION_WIPE_HUMAN_ACCOUNT_CEILING}',
+      (select count(*) from public.profiles where not is_bot);
+  end if;
+`;
+
+const wipeProductionAccountsSql = humanCeilingGuard => String.raw`
 begin;
 set local lock_timeout = '10s';
 set local statement_timeout = '60s';
@@ -730,7 +783,7 @@ begin
      ) then
     raise exception 'production account wipe precheck failed';
   end if;
-  if (select count(*) from public.seasons where ends_at is null) <> 1
+${humanCeilingGuard}  if (select count(*) from public.seasons where ends_at is null) <> 1
      or ${CURRENT_SEASON_SQL} is null then
     raise exception 'production current-season precheck failed';
   end if;
@@ -838,6 +891,13 @@ $guard$;
 
 commit;
 `;
+
+export const WIPE_PRODUCTION_ACCOUNTS_SQL = wipeProductionAccountsSql(WIPE_HUMAN_CEILING_GUARD_SQL);
+/* Identical transaction without the ceiling guard. The executor accepts it as
+   a fixed program, but the orchestration selects it only when the audit shows
+   humans over the ceiling AND the distinct PRODUCTION_HUMAN_WIPE_OPT_IN
+   literal is present. */
+export const WIPE_PRODUCTION_HUMAN_ACCOUNTS_SQL = wipeProductionAccountsSql('');
 
 export const SEED_PRODUCTION_BOTS_SQL = String.raw`
 begin;

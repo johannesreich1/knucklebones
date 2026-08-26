@@ -52,10 +52,13 @@ export const APPLE_GAME_CENTER_MIGRATION_SHA256 = Object.freeze({
   gameCenterIds: '0119452d927c1f20f69dee84dc9428b6506d1d4de228488e32c03a3fc15bf2a7',
   gameCenterServiceGrants: '817312cee43a0acf5169fa7638b78b9e91d8c1a97270dfcfad5e405cb5ff5cd4',
   appleIdentityCredentials: '9c3c887b061f520f875b870fe79bd3d7ad94dd58c0d0c17662c4641efc099760',
+  appleRevocationUnstage: 'a3350911d5661e77bfa83045e5b52760d9114fc0dcd9c8522f27720f020f7f09',
 });
 export const RUNE_TRIAL_MIGRATION_SHA256 = '930c4c52979df8e94bb0e59e033203c3973401f433f1d7ac3594cac20291cc33';
 export const LADDER_STREAK_BASELINES_MIGRATION_SHA256 =
   '1b132572fde4df5f451e0c1780077c0e07156300fbd91b24833614a8d2e6c827';
+export const MATCH_COMMAND_STALL_CHECK_MIGRATION_SHA256 =
+  'ea067e3e3f63e94bed0ae4370317017b9530327697860f2fe961b52a42d295cd';
 
 const ROLLOUTS = Object.freeze({
   'settings-locale': Object.freeze({
@@ -134,6 +137,23 @@ const ROLLOUTS = Object.freeze({
         name: 'apple_identity_credentials',
         file: 'supabase/migrations/20260826153102_apple_identity_credentials.sql',
         sha256: APPLE_GAME_CENTER_MIGRATION_SHA256.appleIdentityCredentials,
+      }),
+      Object.freeze({
+        version: '20260826181000',
+        name: 'apple_revocation_unstage',
+        file: 'supabase/migrations/20260826181000_apple_revocation_unstage.sql',
+        sha256: APPLE_GAME_CENTER_MIGRATION_SHA256.appleRevocationUnstage,
+      }),
+    ]),
+  }),
+  'match-command-stall-check': Object.freeze({
+    audit: 'match-command-stall-check',
+    migrations: Object.freeze([
+      Object.freeze({
+        version: '20260826181500',
+        name: 'match_command_stall_check',
+        file: 'supabase/migrations/20260826181500_match_command_stall_check.sql',
+        sha256: MATCH_COMMAND_STALL_CHECK_MIGRATION_SHA256,
       }),
     ]),
   }),
@@ -347,6 +367,68 @@ select
   ) = 1 as cron_job_contract
   from cron.job
  where jobname = 'purge-expired-match-commands';
+`;
+
+/* Classic auto-move stall recovery: the 13-argument commit_match_command is
+   replaced by a 14-argument version whose trailing timestamptz precondition
+   lets the database clock re-verify the 12-second stall. Stage 0 is the exact
+   reviewed legacy function; stage 1 is the exact reviewed replacement; any
+   other combination is a partial or foreign state and fails closed. */
+export const MATCH_COMMAND_STALL_CHECK_SCHEMA = String.raw`
+with legacy_command as (
+  select procedure.*
+    from pg_proc procedure
+   where procedure.oid = to_regprocedure(
+     'public.commit_match_command(uuid,uuid,uuid,smallint,boolean,integer,smallint,smallint,jsonb,smallint,smallint,jsonb,jsonb)'
+   )
+),
+stall_command as (
+  select procedure.*, language.lanname
+    from pg_proc procedure
+    join pg_language language on language.oid = procedure.prolang
+   where procedure.oid = to_regprocedure(
+     'public.commit_match_command(uuid,uuid,uuid,smallint,boolean,integer,smallint,smallint,jsonb,smallint,smallint,jsonb,jsonb,timestamptz)'
+   )
+)
+select
+  coalesce((
+    select md5(prosrc) = '7b0d24c0fcb9457c2233c092d4087878' from legacy_command
+  ), false) as legacy_command_function,
+  coalesce((
+    select pg_get_userbyid(proowner) = 'postgres'
+           and lanname = 'plpgsql'
+           and prosecdef
+           and provolatile = 'v'
+           and prokind = 'f'
+           and prorettype = to_regtype('jsonb')
+           and pronargdefaults = 2
+           and proconfig = array['search_path=""']::text[]
+      from stall_command
+  ), false) as stall_command_function,
+  coalesce((
+    select md5(prosrc) = 'e3b5d937d8761cc5c636e67078a570cd' from stall_command
+  ), false) as stall_command_body,
+  coalesce((
+    select count(*) = 1
+      and bool_and(
+        coalesce(role.rolname, 'PUBLIC') = 'service_role'
+        and access.privilege_type = 'EXECUTE'
+        and not access.is_grantable
+      )
+      from stall_command procedure
+      cross join lateral aclexplode(
+        coalesce(procedure.proacl, acldefault('f', procedure.proowner))
+      ) access
+      left join pg_roles role on role.oid = access.grantee
+     where access.grantee <> procedure.proowner
+  ), false) as stall_command_grants,
+  (
+    select count(*) = 1
+      from pg_proc procedure
+      join pg_namespace namespace on namespace.oid = procedure.pronamespace
+     where namespace.nspname = 'public'
+       and procedure.proname = 'commit_match_command'
+  ) as single_command_function;
 `;
 
 export const APPLE_GAME_CENTER_SCHEMA = String.raw`
@@ -653,7 +735,40 @@ select
         )
         from apple_function_access
     )
-  ) as apple_credential_grants;
+  ) as apple_credential_grants,
+  to_regprocedure('public.unstage_apple_revocation(uuid)') is not null
+    as apple_unstage_function_present,
+  (
+    coalesce((
+      select pg_get_userbyid(procedure.proowner) = 'postgres'
+             and language.lanname = 'plpgsql'
+             and not procedure.prosecdef
+             and procedure.provolatile = 'v'
+             and procedure.prokind = 'f'
+             and procedure.prorettype = to_regtype('bigint')
+             and procedure.pronargdefaults = 0
+             and procedure.proconfig = array['search_path=""']::text[]
+             and md5(procedure.prosrc) = 'a7277a021de3892315a3204c70295ef4'
+        from pg_proc procedure
+        join pg_language language on language.oid = procedure.prolang
+       where procedure.oid = to_regprocedure('public.unstage_apple_revocation(uuid)')
+    ), false)
+    and coalesce((
+      select count(*) = 1
+        and bool_and(
+          coalesce(role.rolname, 'PUBLIC') = 'service_role'
+          and access.privilege_type = 'EXECUTE'
+          and not access.is_grantable
+        )
+        from pg_proc procedure
+        cross join lateral aclexplode(
+          coalesce(procedure.proacl, acldefault('f', procedure.proowner))
+        ) access
+        left join pg_roles role on role.oid = access.grantee
+       where procedure.oid = to_regprocedure('public.unstage_apple_revocation(uuid)')
+         and access.grantee <> procedure.proowner
+    ), false)
+  ) as apple_unstage_function;
 `;
 
 export const RUNE_TRIAL_SCHEMA = String.raw`
@@ -1517,7 +1632,7 @@ select
 
 function usage(message, code = 64) {
   if (message) console.error(message);
-  console.error('Usage: mise exec -- node --experimental-strip-types tools/database/production-rollout.mjs <settings-locale|match-command-retention|rune-trial|ladder-streak-baselines|apple-game-center> [--apply]');
+  console.error('Usage: mise exec -- node --experimental-strip-types tools/database/production-rollout.mjs <settings-locale|match-command-retention|match-command-stall-check|rune-trial|ladder-streak-baselines|apple-game-center> [--apply]');
   console.error(`Apply requires ${PROD_OPT_IN}=1.`);
   process.exitCode = code;
 }
@@ -1585,13 +1700,50 @@ async function auditMatchCommandRetention() {
   };
 }
 
+/**
+ * Audit the stall-check replacement of commit_match_command as one of two
+ * exact states: 0 = the reviewed legacy 13-argument function, 1 = the
+ * reviewed 14-argument replacement. Both require commit_match_command to be
+ * a single function; every other combination fails closed.
+ */
+export async function auditMatchCommandStallCheck(readProduction = productionRead) {
+  const rows = await readProduction(MATCH_COMMAND_STALL_CHECK_SCHEMA);
+  if (rows.length !== 1) {
+    throw new Error('Production match-command stall-check audit returned an unexpected shape.');
+  }
+  const row = rows[0];
+  const evidence = {
+    legacyCommandFunction: row.legacy_command_function === true,
+    stallCommandFunction: row.stall_command_function === true,
+    stallCommandBody: row.stall_command_body === true,
+    stallCommandGrants: row.stall_command_grants === true,
+    singleCommandFunction: row.single_command_function === true,
+  };
+  const stall = [
+    evidence.stallCommandFunction,
+    evidence.stallCommandBody,
+    evidence.stallCommandGrants,
+  ];
+  let schemaStage;
+  if (evidence.legacyCommandFunction && evidence.singleCommandFunction
+      && stall.every(value => value === false)) {
+    schemaStage = 0;
+  } else if (!evidence.legacyCommandFunction && evidence.singleCommandFunction
+      && stall.every(value => value === true)) {
+    schemaStage = 1;
+  } else {
+    throw new Error('Production commit_match_command does not match either reviewed stall-check state.');
+  }
+  return { evidence, schemaStage };
+}
+
 export async function auditAppleGameCenter(readProduction = productionRead) {
   const rows = await readProduction(APPLE_GAME_CENTER_SCHEMA);
   if (rows.length !== 1) {
     throw new Error('Production Apple/Game Center schema audit returned an unexpected shape.');
   }
   const row = rows[0];
-  const evidence = {
+  const coreEvidence = {
     gameCenterTable: row.game_center_table === true,
     gameCenterServiceGrant: row.game_center_service_grant === true,
     appleCredentialTable: row.apple_credential_table === true,
@@ -1599,9 +1751,22 @@ export async function auditAppleGameCenter(readProduction = productionRead) {
     appleCredentialFunctionBodies: row.apple_credential_function_bodies === true,
     appleCredentialGrants: row.apple_credential_grants === true,
   };
+  /* Stages 0-3 stay owned by the shared prefix validator over the original
+     six booleans; the fourth migration's unstage RPC extends the ordered
+     prefix to stage 4 here — with it, the audit expects all seven Apple
+     credential functions. A present-but-divergent or out-of-order unstage
+     function is never folded into a lower stage; it fails closed. */
+  const coreStage = validateAppleGameCenterSchemaStage(coreEvidence);
+  const unstageComplete = row.apple_unstage_function === true;
+  if (row.apple_unstage_function_present === true && !unstageComplete) {
+    throw new Error('Production unstage_apple_revocation does not match the reviewed contract.');
+  }
+  if (unstageComplete && coreStage !== 3) {
+    throw new Error('Production unstage_apple_revocation was applied before its credential prefix.');
+  }
   return {
-    evidence,
-    schemaStage: validateAppleGameCenterSchemaStage(evidence),
+    evidence: { ...coreEvidence, appleUnstageFunction: unstageComplete },
+    schemaStage: unstageComplete ? 4 : coreStage,
   };
 }
 
@@ -1840,6 +2005,8 @@ async function auditProduction(rollout) {
     audited = await auditPlayerSettings(plan, rollout);
   } else if (rollout.audit === 'match-command-retention') {
     audited = await auditMatchCommandRetention();
+  } else if (rollout.audit === 'match-command-stall-check') {
+    audited = await auditMatchCommandStallCheck();
   } else if (rollout.audit === 'rune-trial') {
     audited = await auditRuneTrial();
   } else if (rollout.audit === 'ladder-streak-baselines') {

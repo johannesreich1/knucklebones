@@ -16,6 +16,9 @@ mise exec -- node --experimental-strip-types \
   tools/database/production-rollout.mjs match-command-retention
 
 mise exec -- node --experimental-strip-types \
+  tools/database/production-rollout.mjs match-command-stall-check
+
+mise exec -- node --experimental-strip-types \
   tools/database/production-rollout.mjs rune-trial
 
 mise exec -- node --experimental-strip-types \
@@ -32,6 +35,10 @@ KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
 KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
   mise exec -- node --experimental-strip-types \
   tools/database/production-rollout.mjs match-command-retention --apply
+
+KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
+  mise exec -- node --experimental-strip-types \
+  tools/database/production-rollout.mjs match-command-stall-check --apply
 
 KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
   mise exec -- node --experimental-strip-types \
@@ -99,12 +106,25 @@ postcheck requires the new table to be empty.
 
 The held `apple-game-center` allow-list contains exactly
 `20260826153100_game_center_ids.sql`,
-`20260826153101_game_center_service_grants.sql`, and
-`20260826153102_apple_identity_credentials.sql`. All three timestamps follow
+`20260826153101_game_center_service_grants.sql`,
+`20260826153102_apple_identity_credentials.sql`, and
+`20260826181000_apple_revocation_unstage.sql`. All four timestamps follow
 the deployed ladder-streak baseline migration. Its stage audit accepts only
 the complete ordered prefixes: absent, Game Center table only, table plus the
-exact service-role grant, or the full Vault-backed Apple revocation lifecycle.
+exact service-role grant, the full Vault-backed Apple revocation lifecycle
+with its six credential functions, or that lifecycle plus the exact
+`unstage_apple_revocation` compensator — all seven credential functions.
 Any partial table, function, index, RLS, or ACL state blocks preview and apply.
+
+The `match-command-stall-check` allow-list contains exactly
+`20260826181500_match_command_stall_check.sql`, which replaces the 13-argument
+`commit_match_command` with the 14-argument version whose trailing
+`timestamptz` precondition re-verifies the auto-move stall on the database
+clock. Its audit accepts exactly two states — the reviewed legacy function or
+the reviewed replacement, each as the single `commit_match_command` — and
+fails closed on any other body, grant, or overload. The trailing null default
+keeps the currently-deployed `pvp-move` valid, so apply this migration before
+deploying the Edge function that passes the new argument.
 
 Supabase CLI 2.115.0 has no documented `db push` lock-timeout flag. The guarded
 command therefore does not pretend to set one through an unsupported
@@ -140,6 +160,19 @@ pre-launch test population:
 
 ```sh
 KB_ALLOW_PRODUCTION_ACCOUNT_WIPE=WIPE_ALL_ACCOUNTS \
+  mise exec -- npm run db:production:test-data -- wipe --apply
+```
+
+The game is live, so the standard wipe additionally refuses — inside its
+locked transaction — any non-bot profile: the fixed seed plan mints bots only,
+which makes the human-account ceiling zero. Deleting live human players
+requires a second, distinct literal on top of the ordinary wipe opt-in, and it
+selects a separate fixed program whose only difference is that omitted ceiling
+guard:
+
+```sh
+KB_ALLOW_PRODUCTION_ACCOUNT_WIPE=WIPE_ALL_ACCOUNTS \
+KB_ALLOW_PRODUCTION_HUMAN_ACCOUNT_WIPE=WIPE_REAL_HUMAN_ACCOUNTS \
   mise exec -- npm run db:production:test-data -- wipe --apply
 ```
 

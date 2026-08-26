@@ -1,22 +1,25 @@
 import assert from 'node:assert/strict';
 import os from 'node:os';
+import { createCliRunner } from '../tools/database/cli-runner.mjs';
 import {
   BASE_PRODUCTION_TEST_DATA_AUDIT_SQL,
-  EMPTY_RUNE_TRIAL_DATA_AUDIT_SQL,
-  LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL,
+  PRODUCTION_HUMAN_WIPE_OPT_IN,
   PRODUCTION_TEST_DATA_CLI_VERSION,
   PRODUCTION_TEST_DATA_OPT_INS,
   PRODUCTION_TEST_DATA_PROJECT_REF,
+  PRODUCTION_WIPE_HUMAN_ACCOUNT_CEILING,
   ProductionTestDataGuardError,
-  RUNE_TRIAL_PRODUCTION_STAGE_SQL,
+  REFRESH_PRODUCTION_BOT_PROFILES_SQL,
   SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL,
   SEED_PRODUCTION_BOTS_SQL,
   WIPE_PRODUCTION_ACCOUNTS_SQL,
+  WIPE_PRODUCTION_HUMAN_ACCOUNTS_SQL,
   assertPinnedProductionCli,
   assertProductionProjectBinding,
   assertProductionRepositoryState,
   assertProductionTestDataOptIn,
   assertProductionWipeComplete,
+  assertProductionWipeHumanOptIn,
   assertProductionWipePreflight,
   productionTestDataQueryArgs,
   validateBaseProductionTestDataAudit,
@@ -25,23 +28,19 @@ import {
   validateRuneTrialProductionStage,
 } from '../tools/database/production-test-data-core.mjs';
 import {
-  auditExactRuneTrialProduction,
   executeFixedProductionTestDataSql,
-  rolloutProductionTestData,
 } from '../tools/database/production-test-data.mjs';
-import {
-  RUNE_TRIAL_FUNCTIONS,
-  RUNE_TRIAL_JOB,
-  RUNE_TRIAL_POST_APPLY_DATA,
-  RUNE_TRIAL_SCHEMA,
-} from '../tools/database/production-rollout.mjs';
 import {
   baseAudit,
   emptyRune,
   runeStage,
-  seededAudit,
-  streakBaselineStage,
 } from './support/production-test-data-cases.ts';
+import {
+  assertExactRuneTrialPrerequisite,
+  assertHumanWipeOverride,
+  assertSeedOrchestration,
+  assertWipeOrchestration,
+} from './support/production-test-data-orchestration-cases.ts';
 import {
   assertBotProfileRefreshOrchestration,
   assertBotProfileRefreshSql,
@@ -95,6 +94,49 @@ check('phases and phase-specific literal opt-ins are fail-closed', () => {
   guarded(() => assertProductionTestDataOptIn(
     'refresh-bot-profiles', true, 'refresh',
   ), /REFRESH_EXACT_150_UNPLAYED_BOTS/);
+});
+
+check('human-account ceiling admits only the second distinct literal opt-in', () => {
+  assert.equal(PRODUCTION_WIPE_HUMAN_ACCOUNT_CEILING, 0);
+  assert.notEqual(PRODUCTION_HUMAN_WIPE_OPT_IN.name, PRODUCTION_TEST_DATA_OPT_INS.wipe.name);
+  assert.notEqual(PRODUCTION_HUMAN_WIPE_OPT_IN.value, PRODUCTION_TEST_DATA_OPT_INS.wipe.value);
+  assert.equal(assertProductionWipeHumanOptIn(0, true, undefined), false);
+  assert.equal(assertProductionWipeHumanOptIn(1, false, undefined), true);
+  assert.equal(assertProductionWipeHumanOptIn(40, true, PRODUCTION_HUMAN_WIPE_OPT_IN.value), true);
+  guarded(() => assertProductionWipeHumanOptIn(
+    1, true, undefined,
+  ), /human accounts over the test-data ceiling/);
+  guarded(() => assertProductionWipeHumanOptIn(
+    1, true, PRODUCTION_TEST_DATA_OPT_INS.wipe.value,
+  ), /WIPE_REAL_HUMAN_ACCOUNTS/);
+  guarded(() => assertProductionWipeHumanOptIn(-1, true, undefined), /non-negative integer/);
+});
+
+check('shared CLI runner announces, disables telemetry, and fails closed on any exit state', () => {
+  const announced: string[] = [];
+  const environments: Array<Record<string, string | undefined>> = [];
+  const runner = createCliRunner({
+    env: { PATH: '/usr/bin' },
+    spawn: ((command: string, args: string[], options: { env: Record<string, string> }) => {
+      environments.push(options.env);
+      return { status: 0, stdout: ' ok \n', stderr: '', signal: null };
+    }) as never,
+    announce: (message: string) => { announced.push(message); },
+  });
+  assert.equal(runner.capture('git', ['status', 'a b']), 'ok');
+  assert.deepEqual(announced, ['$ git status "a b"']);
+  assert.equal(environments[0].SUPABASE_TELEMETRY_DISABLED, '1');
+  assert.equal(environments[0].PATH, '/usr/bin');
+  const failing = createCliRunner({
+    spawn: (() => ({ status: 1, stdout: '', stderr: 'boom', signal: null })) as never,
+    announce: () => {},
+  });
+  assert.throws(() => failing.run('supabase', ['db', 'query']), /supabase db query exited with 1\nboom/);
+  const killed = createCliRunner({
+    spawn: (() => ({ status: null, stdout: '', stderr: '', signal: 'SIGKILL' })) as never,
+    announce: () => {},
+  });
+  assert.throws(() => killed.capture('supabase', ['--version']), /was terminated by SIGKILL/);
 });
 
 check('project, main, clean-worktree, and pinned-CLI guards are exact', () => {
@@ -168,6 +210,37 @@ check('wipe SQL is one bounded transaction with pre/postchecks and explicit safe
   assert.doesNotMatch(WIPE_PRODUCTION_ACCOUNTS_SQL, /delete from auth\.(oauth_clients|sso_providers|sso_domains|saml_providers|custom_oauth_providers)/);
 });
 
+check('standard wipe refuses humans inside the transaction; only the override program omits the guard', () => {
+  assert.ok(WIPE_PRODUCTION_ACCOUNTS_SQL.includes(
+    `(select count(*) from public.profiles where not is_bot)\n       > ${PRODUCTION_WIPE_HUMAN_ACCOUNT_CEILING} then`,
+  ));
+  assert.match(WIPE_PRODUCTION_ACCOUNTS_SQL, /human accounts over the test-data ceiling/);
+  assert.doesNotMatch(WIPE_PRODUCTION_HUMAN_ACCOUNTS_SQL, /test-data ceiling/);
+  // The override program must be the standard transaction minus exactly the
+  // ceiling guard — nothing else may diverge between the two fixed programs.
+  const guardStart = WIPE_PRODUCTION_ACCOUNTS_SQL.indexOf('  -- Launch guard');
+  const guardEnd = WIPE_PRODUCTION_ACCOUNTS_SQL.indexOf(
+    '  if (select count(*) from public.seasons', guardStart,
+  );
+  assert.ok(guardStart > 0 && guardEnd > guardStart);
+  assert.equal(
+    WIPE_PRODUCTION_ACCOUNTS_SQL.slice(0, guardStart)
+      + WIPE_PRODUCTION_ACCOUNTS_SQL.slice(guardEnd),
+    WIPE_PRODUCTION_HUMAN_ACCOUNTS_SQL,
+  );
+});
+
+check('ranked pool tier CASE is registry-derived and byte-identical to the reviewed literals', () => {
+  const tierCase = (peak: string) => `(case
+  when coalesce(${peak}, 0) >= 720 then 'ivory'
+  when coalesce(${peak}, 0) >= 300 then 'bone'
+  else 'stone'
+end)`;
+  assert.ok(SEED_PRODUCTION_BOTS_SQL.includes(`ranked_pool_tier = ${tierCase('seed_row.peak')}`));
+  assert.ok(SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL.includes(tierCase('rating.peak')));
+  assert.ok(REFRESH_PRODUCTION_BOT_PROFILES_SQL.includes(tierCase('plan.new_peak')));
+});
+
 check('seed SQL uses canonical minting and writes rating, season, tier, stats, and all postchecks atomically', () => {
   assertBotSeedSql();
 });
@@ -227,56 +300,18 @@ check('executor rejects every SQL program outside the reviewed constants', () =>
     removeTemp: () => { removed = true; },
   }), /Refusing unsafe production test-data temporary directory/);
   assert.equal(removed, false, 'an unvalidated broad path was recursively removed');
+
+  // The human-account override is a fixed reviewed program too: it must pass
+  // the allow-list and then stop at the same temp-directory validation.
+  assert.throws(() => executeFixedProductionTestDataSql(WIPE_PRODUCTION_HUMAN_ACCOUNTS_SQL, {
+    createTemp: () => os.tmpdir(),
+    removeTemp: () => { removed = true; },
+  }), /Refusing unsafe production test-data temporary directory/);
+  assert.equal(removed, false, 'an unvalidated broad path was recursively removed');
 });
 
 await checkAsync('exact Rune prerequisite reuses full schema, body, grant, RLS, publication, cron, and baseline audits', async () => {
-  const fullSchema = {
-    cron_extension: true,
-    profile_progression: true,
-    match_protocol: true,
-    queue_protocol: true,
-    player_runes_table: true,
-    match_actions_table: true,
-    private_tables: true,
-    indexes: true,
-    policies: true,
-    table_grants: true,
-    private_tables_locked: true,
-    realtime_publication: true,
-  };
-  const responses = new Map<string, unknown[]>([
-    [RUNE_TRIAL_PRODUCTION_STAGE_SQL, [runeStage(true)]],
-    [RUNE_TRIAL_SCHEMA, [fullSchema]],
-    [RUNE_TRIAL_FUNCTIONS, [{
-      function_contracts: true, function_bodies: true, function_grants: true,
-    }]],
-    [RUNE_TRIAL_JOB, [{ cron_job: true, cron_job_contract: true }]],
-    [RUNE_TRIAL_POST_APPLY_DATA, [{
-      profile_backfill: true, legacy_matches: true, legacy_queue: true, new_tables_empty: true,
-    }]],
-  ]);
-  const seen: string[] = [];
-  const result = await auditExactRuneTrialProduction(async (query) => {
-    seen.push(query);
-    const rows = responses.get(query);
-    if (!rows) throw new Error('unexpected query');
-    return rows;
-  });
-  assert.equal(result.ledgerStage, 1);
-  assert.deepEqual(seen, [
-    RUNE_TRIAL_PRODUCTION_STAGE_SQL,
-    RUNE_TRIAL_SCHEMA,
-    RUNE_TRIAL_FUNCTIONS,
-    RUNE_TRIAL_JOB,
-    RUNE_TRIAL_POST_APPLY_DATA,
-  ]);
-  responses.set(RUNE_TRIAL_FUNCTIONS, [{
-    function_contracts: true, function_bodies: false, function_grants: true,
-  }]);
-  await assert.rejects(
-    () => auditExactRuneTrialProduction(async query => responses.get(query)!),
-    /partial|incomplete/,
-  );
+  await assertExactRuneTrialPrerequisite();
 });
 
 await checkAsync('exact streak-baseline prerequisite reuses catalog, ACL, body, and data audits', async () => {
@@ -284,91 +319,15 @@ await checkAsync('exact streak-baseline prerequisite reuses catalog, ACL, body, 
 });
 
 await checkAsync('wipe orchestration previews without writes and applies only through the fixed SQL', async () => {
-  const before = baseAudit({ authUsers: 54, profiles: 54, bots: 14, humans: 40, matches: 230 });
-  const after = baseAudit();
-  const reads = new Map<string, unknown[][]>([
-    [RUNE_TRIAL_PRODUCTION_STAGE_SQL, [[runeStage(false)]]],
-    [LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL, [[streakBaselineStage(false)]]],
-    [BASE_PRODUCTION_TEST_DATA_AUDIT_SQL, [[before], [after]]],
-  ]);
-  const read = async (query: string) => reads.get(query)!.shift()!;
-  const executed: string[] = [];
-  let verified = 0;
-  const result = await rolloutProductionTestData({
-    phase: 'wipe',
-    apply: true,
-    optIn: PRODUCTION_TEST_DATA_OPT_INS.wipe.value,
-    read,
-    verifyEnvironment: () => { verified++; },
-    execute: sql => { executed.push(sql); },
-    log: () => {},
-  });
-  assert.equal(result.applied, true);
-  assert.equal(verified, 1);
-  assert.deepEqual(executed, [WIPE_PRODUCTION_ACCOUNTS_SQL]);
+  await assertWipeOrchestration();
+});
 
-  let previewWrites = 0;
-  await rolloutProductionTestData({
-    phase: 'wipe',
-    read: async query => {
-      if (query === RUNE_TRIAL_PRODUCTION_STAGE_SQL) return [runeStage(false)];
-      if (query === LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL) {
-        return [streakBaselineStage(false)];
-      }
-      return [before];
-    },
-    verifyEnvironment: () => {},
-    execute: () => { previewWrites++; },
-    log: () => {},
-  });
-  assert.equal(previewWrites, 0);
+await checkAsync('wipe refuses live human accounts unless the distinct override literal is present', async () => {
+  await assertHumanWipeOverride();
 });
 
 await checkAsync('seed orchestration hard-blocks absent migration and rechecks exact prerequisite before its fixed write', async () => {
-  let writes = 0;
-  await assert.rejects(() => rolloutProductionTestData({
-    phase: 'seed-bots',
-    apply: true,
-    optIn: PRODUCTION_TEST_DATA_OPT_INS['seed-bots'].value,
-    read: async query => {
-      if (query === RUNE_TRIAL_PRODUCTION_STAGE_SQL) return [runeStage(false)];
-      if (query === LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL) {
-        return [streakBaselineStage(false)];
-      }
-      return [baseAudit()];
-    },
-    verifyEnvironment: () => {},
-    exactBotSeedPrerequisite: async () => { throw new Error('must not run'); },
-    execute: () => { writes++; },
-    log: () => {},
-  }), /migrations must be complete/);
-  assert.equal(writes, 0);
-
-  const read = async (query: string) => {
-    if (query === RUNE_TRIAL_PRODUCTION_STAGE_SQL) return [runeStage(true)];
-    if (query === LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL) {
-      return [streakBaselineStage(true)];
-    }
-    if (query === BASE_PRODUCTION_TEST_DATA_AUDIT_SQL) return [baseAudit()];
-    if (query === EMPTY_RUNE_TRIAL_DATA_AUDIT_SQL) return [emptyRune()];
-    if (query === SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL) return [seededAudit()];
-    throw new Error('unexpected query');
-  };
-  let exactChecks = 0;
-  const executed: string[] = [];
-  const result = await rolloutProductionTestData({
-    phase: 'seed-bots',
-    apply: true,
-    optIn: PRODUCTION_TEST_DATA_OPT_INS['seed-bots'].value,
-    read,
-    verifyEnvironment: () => {},
-    exactBotSeedPrerequisite: async () => { exactChecks++; return { ledgerStage: 1 }; },
-    execute: sql => { executed.push(sql); },
-    log: () => {},
-  });
-  assert.equal(result.applied, true);
-  assert.equal(exactChecks, 3);
-  assert.deepEqual(executed, [SEED_PRODUCTION_BOTS_SQL]);
+  await assertSeedOrchestration();
 });
 
 await checkAsync('profile refresh writes only the exact legacy seed and no-ops when already current', async () => {

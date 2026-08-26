@@ -145,7 +145,10 @@ export function runRuneTrialProductionMigrationCases(options: {
       encoding: 'utf8',
     });
     assert.equal(result.status, 0, result.stderr);
-    assert.match(result.stderr, /settings-locale\|match-command-retention\|rune-trial/);
+    assert.match(
+      result.stderr,
+      /settings-locale\|match-command-retention\|match-command-stall-check\|rune-trial/,
+    );
     assert.match(result.stderr, /KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1/);
   });
 }

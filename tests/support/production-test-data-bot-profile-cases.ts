@@ -257,9 +257,9 @@ export async function assertBotProfileRefreshOrchestration() {
     read: readFor('legacy'),
     verifyEnvironment: () => {},
     exactBotSeedPrerequisite: async () => { exactChecks++; return { ledgerStage: 1 }; },
-    execute: sql => { executed.push(sql); },
+    execute: (sql: string) => { executed.push(sql); },
     log: () => {},
-  });
+  } as never);
   assert.equal(result.applied, true);
   assert.equal(exactChecks, 3);
   assert.deepEqual(executed, [REFRESH_PRODUCTION_BOT_PROFILES_SQL]);
@@ -272,10 +272,10 @@ export async function assertBotProfileRefreshOrchestration() {
     read: readFor('refreshed'),
     verifyEnvironment: () => {},
     exactBotSeedPrerequisite: async () => ({ ledgerStage: 1 }),
-    execute: sql => { repeatWrites.push(sql); },
+    execute: (sql: string) => { repeatWrites.push(sql); },
     log: () => {},
-  });
+  } as never);
   assert.equal(already.applied, true);
-  assert.equal(already.refreshState, 'refreshed');
+  assert.equal((already as { refreshState?: string }).refreshState, 'refreshed');
   assert.deepEqual(repeatWrites, [REFRESH_PRODUCTION_BOT_PROFILES_SQL]);
 }

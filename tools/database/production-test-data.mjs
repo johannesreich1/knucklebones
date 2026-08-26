@@ -4,11 +4,9 @@
 // either fixed phase requires a clean committed main branch and a distinct
 // literal environment opt-in; no caller-provided SQL or row count is accepted.
 
-import { spawnSync } from 'node:child_process';
 import {
   existsSync,
   mkdtempSync,
-  readFileSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -17,6 +15,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SUPABASE_PROJECT_REF } from '../../src/config.ts';
 import { productionRead } from '../debug/production-read.mjs';
+import { createCliRunner, readJson } from './cli-runner.mjs';
 import {
   auditLadderStreakBaselines,
   auditRuneTrial,
@@ -26,15 +25,18 @@ import {
   BASE_PRODUCTION_TEST_DATA_AUDIT_SQL,
   EMPTY_RUNE_TRIAL_DATA_AUDIT_SQL,
   LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL,
+  PRODUCTION_HUMAN_WIPE_OPT_IN,
   PRODUCTION_TEST_DATA_CLI_VERSION,
   PRODUCTION_TEST_DATA_OPT_INS,
   PRODUCTION_TEST_DATA_PROJECT_REF,
+  PRODUCTION_WIPE_HUMAN_ACCOUNT_CEILING,
   RUNE_TRIAL_PRODUCTION_STAGE_SQL,
   REFRESH_PRODUCTION_BOT_PROFILES_AUDIT_SQL,
   REFRESH_PRODUCTION_BOT_PROFILES_SQL,
   SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL,
   SEED_PRODUCTION_BOTS_SQL,
   WIPE_PRODUCTION_ACCOUNTS_SQL,
+  WIPE_PRODUCTION_HUMAN_ACCOUNTS_SQL,
   assertPinnedProductionCli,
   assertProductionBotSeedComplete,
   assertProductionBotProfilesRefreshable,
@@ -42,6 +44,7 @@ import {
   assertProductionRepositoryState,
   assertProductionTestDataOptIn,
   assertProductionWipeComplete,
+  assertProductionWipeHumanOptIn,
   assertProductionWipePreflight,
   productionTestDataQueryArgs,
   validateBaseProductionTestDataAudit,
@@ -66,7 +69,9 @@ const CONTROL_FILES = Object.freeze([
   'package.json',
   'package-lock.json',
   'src/core/ladder.ts',
+  'src/core/ranked-outcomes.ts',
   'supabase/migrations/20260826153000_ladder_streak_baselines.sql',
+  'tools/database/cli-runner.mjs',
   'tools/database/production-rollout-core.mjs',
   'tools/database/production-rollout.mjs',
   'tools/database/production-test-data-core.mjs',
@@ -74,59 +79,8 @@ const CONTROL_FILES = Object.freeze([
   'tests/production-test-data.test.ts',
 ]);
 
-function displayCommand(command, args) {
-  return [command, ...args]
-    .map(value => (/^[A-Za-z0-9_./:@=-]+$/.test(value) ? value : JSON.stringify(value)))
-    .join(' ');
-}
-
-export function createProductionTestDataRunner({
-  cwd = REPOSITORY_ROOT,
-  env = process.env,
-  spawn = spawnSync,
-  announce = message => console.log(message),
-} = {}) {
-  const invoke = (command, args, options) => {
-    announce(`$ ${displayCommand(command, args)}`);
-    const result = spawn(command, args, {
-      cwd,
-      env: { ...env, SUPABASE_TELEMETRY_DISABLED: '1' },
-      shell: false,
-      ...options,
-    });
-    if (result.status !== 0 || result.error || result.signal) {
-      const detail = String(result.stderr || result.stdout || '').trim();
-      const state = result.error
-        ? `could not start: ${result.error.message}`
-        : result.signal ? `was terminated by ${result.signal}` : `exited with ${result.status}`;
-      throw new Error(`${displayCommand(command, args)} ${state}${detail ? `\n${detail}` : ''}`);
-    }
-    return result;
-  };
-  return Object.freeze({
-    capture(command, args) {
-      const result = invoke(command, args, {
-        encoding: 'utf8',
-        stdio: ['ignore', 'pipe', 'pipe'],
-      });
-      return String(result.stdout || '').trim();
-    },
-    run(command, args) {
-      invoke(command, args, { stdio: 'inherit' });
-    },
-  });
-}
-
-function readJson(file, label) {
-  try {
-    return JSON.parse(readFileSync(file, 'utf8'));
-  } catch (error) {
-    throw new Error(`${label} is unreadable: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
 export function verifyProductionTestDataEnvironment({
-  runner = createProductionTestDataRunner(),
+  runner = createCliRunner(),
   nodeVersion = process.versions.node,
   root = REPOSITORY_ROOT,
   cwd = process.cwd(),
@@ -167,11 +121,12 @@ export function verifyProductionTestDataEnvironment({
 
 export function executeFixedProductionTestDataSql(sql, {
   cli = CLI,
-  runner = createProductionTestDataRunner(),
+  runner = createCliRunner(),
   createTemp = () => mkdtempSync(path.join(os.tmpdir(), TEMP_PREFIX)),
   removeTemp = directory => rmSync(directory, { recursive: true, force: true }),
 } = {}) {
   if (sql !== WIPE_PRODUCTION_ACCOUNTS_SQL
+      && sql !== WIPE_PRODUCTION_HUMAN_ACCOUNTS_SQL
       && sql !== SEED_PRODUCTION_BOTS_SQL
       && sql !== REFRESH_PRODUCTION_BOT_PROFILES_SQL) {
     throw new Error('Production test-data executor accepts only its fixed SQL programs.');
@@ -233,6 +188,7 @@ export async function rolloutProductionTestData({
   phase,
   apply = false,
   optIn,
+  humanWipeOptIn,
   read = productionRead,
   exactBotSeedPrerequisite = auditExactBotSeedProduction,
   verifyEnvironment = verifyProductionTestDataEnvironment,
@@ -256,15 +212,23 @@ export async function rolloutProductionTestData({
 
   if (selected === 'wipe') {
     assertProductionWipePreflight(before);
+    const humanWipe = assertProductionWipeHumanOptIn(
+      before.humans,
+      apply,
+      humanWipeOptIn ?? process.env[PRODUCTION_HUMAN_WIPE_OPT_IN.name],
+    );
     if (!apply) {
       log(`Preview only: wipe ${before.authUsers} Auth accounts (${before.humans} humans, ${before.bots} bots) and ${before.matches} matches.`);
+      if (humanWipe) {
+        log(`${before.humans} human accounts exceed the test-data ceiling of ${PRODUCTION_WIPE_HUMAN_ACCOUNT_CEILING}; applying additionally requires ${PRODUCTION_HUMAN_WIPE_OPT_IN.name}=${PRODUCTION_HUMAN_WIPE_OPT_IN.value}.`);
+      }
       log(`Set ${optInContract.name}=${optInContract.value} and pass --apply to execute the fixed transaction.`);
       return Object.freeze({
         phase: selected, applied: false, runeStage, streakBaselineStage, before,
       });
     }
 
-    execute(WIPE_PRODUCTION_ACCOUNTS_SQL);
+    execute(humanWipe ? WIPE_PRODUCTION_HUMAN_ACCOUNTS_SQL : WIPE_PRODUCTION_ACCOUNTS_SQL);
     const after = validateBaseProductionTestDataAudit(
       await read(BASE_PRODUCTION_TEST_DATA_AUDIT_SQL),
     );
@@ -371,6 +335,7 @@ export async function rolloutProductionTestData({
 function usage() {
   console.error('Usage: production-test-data.mjs <wipe|seed-bots|refresh-bot-profiles> [--apply]');
   console.error(`  wipe apply: ${PRODUCTION_TEST_DATA_OPT_INS.wipe.name}=${PRODUCTION_TEST_DATA_OPT_INS.wipe.value}`);
+  console.error(`  wipe over the ${PRODUCTION_WIPE_HUMAN_ACCOUNT_CEILING}-human ceiling additionally: ${PRODUCTION_HUMAN_WIPE_OPT_IN.name}=${PRODUCTION_HUMAN_WIPE_OPT_IN.value}`);
   console.error(`  seed apply: ${PRODUCTION_TEST_DATA_OPT_INS['seed-bots'].name}=${PRODUCTION_TEST_DATA_OPT_INS['seed-bots'].value}`);
   console.error(`  refresh apply: ${PRODUCTION_TEST_DATA_OPT_INS['refresh-bot-profiles'].name}=${PRODUCTION_TEST_DATA_OPT_INS['refresh-bot-profiles'].value}`);
 }
