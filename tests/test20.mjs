@@ -74,7 +74,10 @@ try {
     await page.evaluate(() => { window.__kb.S.timer = 0; });
     await page.click('#btnPlay');
     if (liveLocale) {
-      await page.waitForSelector('#wheelDial', { timeout: 20000 });
+      /* The stable reveal shell deliberately retains the prior beat's stage
+         while hidden. Require the newly opened overlay, or this wait can
+         resolve against that stale dial and miss the following dealing beat. */
+      await page.waitForSelector('#ovWheel.on #wheelDial', { timeout: 20000 });
       await page.waitForTimeout(700); // clear tap()'s native-click guard
       localeRepaint.mode = await page.evaluate(() => {
         const overlay = document.getElementById('ovWheel');
