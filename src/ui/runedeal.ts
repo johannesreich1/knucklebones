@@ -90,7 +90,8 @@ function planShuffle(count: number): ShufflePlan {
    counts, so it is strict — one card in flight at a time, the previous card
    settled before the next leaves. Measured against S9's study loop (which
    plays ~17% slower so a looping card stays readable); the totals here are
-   the study's proposed app beats: shuffle ≈ 2.4s, whole beat ≈ 3.85s. */
+   the study's proposed app beats, with the TURN riding inside the draw:
+   shuffle ≈ 2.4s, whole beat ≈ 3.33s (FLIP runs within DEAL, not after). */
 const FAN = 380, SQUARE = 280, FLICK = 230, FLIGHT = 170, HOP = 290, HOP_GAP = 330,
   STACK = 730, DEAL = 560, FLIP = 520;
 const EASE_SHUFFLE = 'cubic-bezier(.35,.05,.3,1)';
@@ -181,7 +182,11 @@ function gatherPiles(felt: HTMLElement, plan: ShufflePlan): void {
    card then turns and shows its BACK, which is exactly what the first build
    did. So the card turns to edge-on, swaps which face is lit, and turns back:
    two halves of one gesture, and there is no state of the DOM in which the
-   wrong face can be showing. */
+   wrong face can be showing.
+   It runs CONCURRENTLY with draw(): the turn is `transform` (rotateY under
+   perspective) while the draw is translate/scale/rotate — separate channels
+   that compose, so the card turns over as it travels and grows, and FLIP 520
+   inside DEAL 560 finishes the turn just before the landing. */
 function flip(card: HTMLElement): Promise<void> {
   const half = { duration: FLIP / 2, easing: 'linear' as const, fill: 'both' as const };
   return card.animate([{ transform: 'perspective(900px) rotateY(0deg)' },
@@ -294,12 +299,17 @@ export function dealBeat(spec: SpellSpec, options: RuneDealOptions = {}): Beat {
       gatherPiles(felt, plan);                    // Sfx.place, one per hop
       await pause(STACK);
       Sfx.tick();
+      /* the TURN rides the draw (user call 2026-08-26): one gesture — the card
+         turns over WHILE it comes to the table and grows, finishing the turn a
+         beat before it lands, instead of landing face-down and flipping as a
+         second step */
       draw(card, cardsIn(felt)[plan.topSlot], stackOf(plan.gather[0], count - 1).rot);
+      const turned = flip(card);
       await pause(DEAL);
       settle();
       Sfx.place();
       vibrate(18);
-      await flip(card);
+      await turned;
     },
   };
 }
