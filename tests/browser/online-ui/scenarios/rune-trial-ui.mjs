@@ -31,8 +31,16 @@ async function profileRuneProbe(page) {
       visible: visible(slot),
       opacity: getComputedStyle(slot).opacity,
     }));
+    const title = document.getElementById('accRunesTitle');
+    const count = document.getElementById('accRuneCount');
+    const root = document.getElementById('kbroot');
     return {
-      count: document.getElementById('accRuneCount')?.textContent?.trim(),
+      count: count?.textContent?.trim(),
+      titleFontSize: title ? parseFloat(getComputedStyle(title).fontSize) : 0,
+      countFontSize: count ? parseFloat(getComputedStyle(count).fontSize) : 0,
+      labelMinimum: root
+        ? parseFloat(getComputedStyle(root).getPropertyValue('--font-label-min'))
+        : 0,
       gridLabel: document.getElementById('accRuneGrid')?.getAttribute('aria-label'),
       slots,
     };
@@ -253,6 +261,13 @@ export async function runRuneTrialUiScenarios({ visit, out, check }) {
       && profile.probeResult?.count === '2 / 6'
       && profile.probeResult?.gridLabel?.includes('2'),
     'profile did not render six visible rune collection slots with owned/locked state',
+    profile.probeResult);
+  check(profile.probeResult?.labelMinimum >= 10
+      && profile.probeResult.titleFontSize >= 10
+      && profile.probeResult.countFontSize >= 10
+      && profile.probeResult.titleFontSize >= profile.probeResult.labelMinimum
+      && profile.probeResult.countFontSize >= profile.probeResult.labelMinimum,
+    'profile rune heading and count fell below the shared compact-label minimum',
     profile.probeResult);
   check(profile.errs.length === 0, 'page errors while rendering the rune collection profile', profile.errs);
 

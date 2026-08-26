@@ -3,6 +3,7 @@
    optically centred. Every titled view puts the one navigation control left. ---- */
 :where(#kbroot) .shead{display:flex;align-items:center;width:100%;max-width:var(--w-col);margin:0 auto;flex:0 0 auto}
 :where(#kbroot) .shead .ttl{flex:1;text-align:center;font-size:16px;letter-spacing:.26em;font-weight:900;
+  text-transform:uppercase;
   background:linear-gradient(100deg,var(--p1),#fff 50%,var(--p2));
   -webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 0 18px rgba(var(--p1-rgb),.3))}

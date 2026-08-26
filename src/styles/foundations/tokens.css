@@ -66,6 +66,11 @@
   --wdc:var(--wdc-mint);
   --txt:#e9f1ff;
   --dim:#7c88a8;
+  /* Shared compact labels have one readable floor. Profile's collection
+     heading/count joins the .lbl consumers used by Settings and setup; dense
+     game metadata may stay smaller when a larger primary label supplies its
+     context, so this is deliberately not a minimum for every glyph. */
+  --font-label-min:10px;
   /* the LADDER GROUP palette. Root-scoped on purpose: the identity plate
      paints these on Home and on the result screen, both outside #ovOnline —
      the palette's first home, where a plate on document.body once silently

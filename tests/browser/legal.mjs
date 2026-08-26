@@ -246,6 +246,7 @@ try {
             locale,
             legalPage,
             title: title.textContent,
+            titleTransform: titleStyle.textTransform,
             titleLines: title.getBoundingClientRect().height / titleLineHeight,
             titleFits: title.scrollWidth <= title.clientWidth + 1,
             horizontal: body.scrollWidth - body.clientWidth,
@@ -281,6 +282,8 @@ try {
         const label = `${viewport}/${locale.id}/${legalPage}`;
         check(observation.titleLines <= 1.1 && observation.titleFits,
           `${label}: compact header wrapped or clipped`, observation);
+        check(observation.titleTransform === 'uppercase',
+          `${label}: legal view header is not uppercase`, observation);
         check(observation.horizontal <= 1 && observation.textOverflow.length === 0,
           `${label}: legal copy overflows horizontally`, observation);
         check(observation.focused && observation.backgroundInert,

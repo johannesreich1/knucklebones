@@ -37,10 +37,10 @@ export async function runOnlineLoadingPanelScenarios(suite) {
     skipStandardProbes: true,
     probe: async (page, routes) => {
       await page.evaluate(() => {
-        const list = document.querySelector('#onBoardList');
-        if (!list) throw new Error('ladder list missing before pagination race');
-        list.scrollTop = list.scrollHeight;
-        list.dispatchEvent(new Event('scroll'));
+        const body = document.querySelector('#ovOnline .pbody');
+        if (!body) throw new Error('ladder page scroller missing before pagination race');
+        body.scrollTop = body.scrollHeight;
+        body.dispatchEvent(new Event('scroll'));
       });
       await Promise.race([
         routes.paginationStarted,

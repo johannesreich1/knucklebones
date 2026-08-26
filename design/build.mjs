@@ -19,6 +19,7 @@
 //   {{mhue:MODE}}               a mode's hue — likewise
 //   {{sico:SPELL[:px]}}         a rune icon — the APP's (ui/spellicons.ts)
 //   {{shue:SPELL}}              a rune's hue — likewise
+//   {{account-runes:SPELL,…}}   the Profile collection, owned ids after ':'
 //   {{loader[:px][:label]}}     the ONE loading die, in loaderWait's own shape
 //   {{versus:N:R:die:F:H|N:R:die:F:H}}  the reveal's me-VS-foe line, the APP's
 //   {{ico:NAME[:px]}}           a chrome glyph (the HUD's way out)
@@ -49,6 +50,7 @@ import { settledAnswer, answerLines, versus } from '../src/ui/reveal.ts';
 import { parseAvatar, AV_HUES } from '../src/ui/avatar.ts';
 import { dieMarkup } from '../src/ui/die-markup.ts';
 import { loaderWaitMarkup } from '../src/ui/loader.ts';
+import { accountRunesMarkup } from '../src/online/account-runes.ts';
 import { spellById } from '../src/core/spells.ts';
 import { modeById } from '../src/core/modes.ts';
 import { libraryCards, pickerButtons, pickInfo, MODE_LIB, SPELL_LIB, MODE_PICKS, SPELL_PICKS } from '../src/ui/library.ts';
@@ -317,6 +319,11 @@ for (const screen of screens) {
     .replace(/\{\{sico:([a-z]+)(?::(\d+))?\}\}/g,
       (_, id, size) => (spellOr(id), spellIcon(id, size ? +size : 22)))
     .replace(/\{\{shue:([a-z]+)\}\}/g, (_, id) => (spellOr(id), spellHue(id)))
+    .replace(/\{\{account-runes:([a-z]+(?:,[a-z]+)*)\}\}/g, (_, spec) => {
+      const collected = spec.split(',');
+      for (const id of collected) spellOr(id);
+      return accountRunesMarkup(collected, 'preview');
+    })
     /* THE LOADER, compiled through ui/loader.ts's pure markup seam: the card
        and runtime share the die, wrapper, label and accessibility structure. */
     /* THE VERSUS LINE, from ui/reveal.ts itself. Both dial cards used to hand-

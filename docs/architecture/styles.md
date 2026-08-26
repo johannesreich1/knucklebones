@@ -77,6 +77,12 @@ result bloom may be clipped at the viewport edge; translated text may not be.
 Use text ranges and container scroll geometry together so a hidden horizontal
 scroller or an ellipsis cannot masquerade as a passing layout.
 
+The shared compact-label floor is `--font-label-min` (10 px). `.lbl` consumers,
+including Settings control labels, and the Profile rune heading/count may not
+compute below it across their localization viewport matrices. This is scoped,
+not a blanket minimum for dense game metadata: smaller secondary metadata
+remains component-specific and needs a larger primary label for context.
+
 ## Localized and legal copy
 
 Responsive rules stay locale-neutral. Do not add language-tag selectors,

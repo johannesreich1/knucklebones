@@ -1,3 +1,37 @@
+async function ladderOpeningProbe(page) {
+  await page.click('#btnLadder');
+  await page.waitForSelector('#onBoard:not([hidden]) #onBoardList .lrow.me', { timeout: 15000 });
+  await page.waitForTimeout(100);
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() =>
+    requestAnimationFrame(resolve))));
+  return page.evaluate(() => {
+    const body = document.querySelector('#ovOnline .pbody');
+    const head = document.querySelector('#ovOnline .shead');
+    const me = document.querySelector('#onBoardList .lrow.me');
+    if (!(body instanceof HTMLElement) || !(head instanceof HTMLElement)
+        || !(me instanceof HTMLElement)) throw new Error('ladder opening geometry is missing');
+    const bodyBox = body.getBoundingClientRect();
+    const headBox = head.getBoundingClientRect();
+    const meBox = me.getBoundingClientRect();
+    const maximum = Math.max(0, body.scrollHeight - body.clientHeight);
+    const contentCenter = body.scrollTop + meBox.top - bodyBox.top + meBox.height / 2;
+    const desired = contentCenter - body.clientHeight / 2;
+    const expected = Math.max(0, Math.min(maximum, desired));
+    const hit = document.elementFromPoint(meBox.left + meBox.width / 2,
+      meBox.top + meBox.height / 2);
+    return {
+      rank: me.querySelector('.rk2')?.textContent?.trim(),
+      rowCount: document.querySelectorAll('#onBoardList .lrow').length,
+      scrollTop: body.scrollTop,
+      maximum,
+      expected,
+      centerError: meBox.top + meBox.height / 2 - (bodyBox.top + body.clientHeight / 2),
+      fullyVisible: meBox.top >= headBox.bottom - 1 && meBox.bottom <= bodyBox.bottom + 1,
+      centerHit: me.contains(hit),
+    };
+  });
+}
+
 export async function runLadderFaceoffScenarios(suite) {
   const { visit, out, check } = suite;
   // 1b · the ladder that same guest lands on: a row states BOTH sides
@@ -71,6 +105,43 @@ export async function runLadderFaceoffScenarios(suite) {
   // the groups, as structure: one horizon per material change, and the board opens with one
   check(board.seen.horizons.join() === 'IVORY,BONE', 'the group horizons are missing or wrong', board.seen.horizons);
   check(board.seen.firstIsHorizon === true, 'the board does not open with its group horizon', board.seen);
+
+  /* A real near-bottom standing has a full page above it but only a short tail.
+     The paged body is the one scroller; preserving/centering against the inner
+     overflow-visible list lets a prepend push the player's row off screen. */
+  const opening = {};
+  for (const viewport of [
+    { name: 'centred', width: 390, height: 568 },
+    { name: 'bottom-clamped', width: 390, height: 844 },
+  ]) {
+    const run = await visit({
+      named: true,
+      ladderNearBottom: true,
+      viewport,
+      skipStandardProbes: true,
+      probe: ladderOpeningProbe,
+    });
+    opening[viewport.name] = run.probeResult;
+    const geometry = run.probeResult;
+    check(geometry?.rank === 'Rank #145'
+        && geometry.rowCount === 27
+        && geometry.fullyVisible
+        && geometry.centerHit
+        && Math.abs(geometry.scrollTop - geometry.expected) <= 2,
+    `the 145/151 ladder opening did not center or clamp its player row at ${viewport.height}px`,
+    geometry);
+    check(run.errs.length === 0,
+      `page errors while opening the 145/151 ladder at ${viewport.height}px`, run.errs);
+  }
+  out.ladderOpening = opening;
+  check(Math.abs(opening.centred?.centerError ?? 999) <= 2
+      && (opening.centred?.scrollTop ?? 0) < (opening.centred?.maximum ?? 0) - 2,
+    'the player row was not centered when the ladder had room on both sides', opening.centred);
+  check(Math.abs((opening['bottom-clamped']?.scrollTop ?? -1)
+      - (opening['bottom-clamped']?.maximum ?? -2)) <= 2,
+    'the near-bottom player row was not clamped fully visible at the list end',
+    opening['bottom-clamped']);
+
   // the tap: a row deals the face-off, one-column for a signed-out reader
   check(board.faceoff?.visible === true, 'tapping a row does not deal the face-off', board.faceoff);
   check(board.faceoff?.solo === true && board.faceoff?.vsShown === false,

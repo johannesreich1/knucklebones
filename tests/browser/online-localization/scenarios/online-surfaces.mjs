@@ -107,12 +107,31 @@ async function installFixtures(page, localeId) {
 }
 
 async function inspectAccount(suite, page, label) {
-  return assertPanel(suite, page, `profile-${label}`, [
+  const surface = await assertPanel(suite, page, `profile-${label}`, [
     '#accGroup', '#btnLadder', '#btnLadder span', '.fact span',
+    '#accRunesTitle', '#accRuneCount',
     '#accClaim b', '#accClaim p', '#onNick', '#btnClaim',
     '#accGuest b', '#accGuest p', '#btnKeepAcc', '#btnHaveAcc',
     '#btnHistory', '#accSince', '#btnDeleteAcc',
   ], PROFILE_TARGETS);
+  const runeHeading = await page.evaluate(() => {
+    const root = document.getElementById('kbroot');
+    const title = document.getElementById('accRunesTitle');
+    const count = document.getElementById('accRuneCount');
+    return {
+      minimum: root
+        ? parseFloat(getComputedStyle(root).getPropertyValue('--font-label-min'))
+        : 0,
+      title: title ? parseFloat(getComputedStyle(title).fontSize) : 0,
+      count: count ? parseFloat(getComputedStyle(count).fontSize) : 0,
+    };
+  });
+  suite.check(runeHeading.minimum >= 10
+      && runeHeading.title >= runeHeading.minimum
+      && runeHeading.count >= runeHeading.minimum,
+    `profile-${label} rune heading fell below the shared compact-label minimum`,
+    runeHeading);
+  return { ...surface, runeHeading };
 }
 
 async function inspectAuth(suite, page, label, locale) {

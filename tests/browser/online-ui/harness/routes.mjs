@@ -7,6 +7,7 @@ export async function installOnlineRoutes(
     dataDelay = 0,
     door,
     named,
+    ladderNearBottom = false,
     paginationRace = false,
     passwordAuth = 'error',
     runes = [],
@@ -79,6 +80,24 @@ export async function installOnlineRoutes(
   const hold = (share = 1) => dataDelay > 0
     ? new Promise((resolve) => setTimeout(resolve, dataDelay * share))
     : Promise.resolve();
+  const nearBottomBoard = ladderNearBottom
+    ? Array.from({ length: 151 }, (_, index) => {
+      const rank = index + 1;
+      const points = 610 - rank;
+      const mine = rank === 145;
+      return {
+        nickname: mine ? 'TestGuest001' : `Player${String(rank).padStart(3, '0')}`,
+        points,
+        wins: mine ? 42 : rank % 17,
+        losses: mine ? 61 : rank % 13,
+        games: mine ? 103 : rank % 17 + rank % 13,
+        rank,
+        apex: rank === 1,
+        avatar: mine ? 'die:5:cy' : null,
+        peak: mine ? 700 : points + 20,
+      };
+    })
+    : null;
   /* Kill the service worker before app code runs. Once it controls the page it
      re-issues requests from the worker, where page.route() cannot see them —
      and whether it has claimed the page by the time of the tap is a race, so a
@@ -217,7 +236,9 @@ export async function installOnlineRoutes(
     return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
       /* Rank 2 of 199 is just outside floor(1%): this must agree with the
          leaderboard row's apex:false so both surfaces resolve BONE. */
-      { points: 465, rank: 2, population: 199, percentile: 1 },
+      ladderNearBottom
+        ? { points: 465, rank: 145, population: 151, percentile: 96 }
+        : { points: 465, rank: 2, population: 199, percentile: 1 },
     ]) });
   });
   await page.route('**/rest/v1/rpc/best_streak*', async (r) => {
@@ -248,7 +269,25 @@ export async function installOnlineRoutes(
       { nickname: 'NovaComet992', points: 1072, wins: 7, losses: 2, games: 9, rank: 1, apex: false, avatar: 'die:3:mg', peak: 1100 },
       { nickname: 'TestGuest001', points: 465, wins: 42, losses: 61, games: 103, rank: 2, apex: false, avatar: 'die:5:cy', peak: 700 },
     ];
-    let board = before ? [] : ordinary;
+    let board;
+    if (nearBottomBoard) {
+      const args = r.request().postDataJSON() ?? {};
+      const limit = Number(args.limit_n ?? 50);
+      if (before) {
+        const boundary = Number(args.before_rank ?? 1);
+        const nickname = String(args.before_nickname ?? '');
+        board = nearBottomBoard.filter((row) => row.rank < boundary
+          || (row.rank === boundary && row.nickname < nickname)).slice(-limit);
+      } else {
+        const boundary = Number(args.from_rank ?? 1);
+        const nickname = typeof args.after_nickname === 'string' ? args.after_nickname : null;
+        board = nearBottomBoard.filter((row) => nickname
+          ? row.rank > boundary || (row.rank === boundary && row.nickname > nickname)
+          : row.rank >= boundary).slice(0, limit);
+      }
+    } else {
+      board = before ? [] : ordinary;
+    }
     let headers;
     if (paginationRace && !before) {
       leaderboardCalls++;

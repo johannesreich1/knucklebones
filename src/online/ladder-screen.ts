@@ -36,6 +36,15 @@ const gapHtml = (distance: number): string =>
   : distance < 0 ? `<span class="gap"><b class="down">${esc(t('online', 'ladder.behind', { points: pts(-distance) }))}</b></span>`
   : `<span class="gap">${esc(t('online', 'ladder.levelWithYou'))}</span>`;
 
+function centerInScroller(scroller: HTMLElement, target: HTMLElement): void {
+  const scrollBox = scroller.getBoundingClientRect();
+  const targetBox = target.getBoundingClientRect();
+  const contentCenter = scroller.scrollTop + targetBox.top - scrollBox.top + targetBox.height / 2;
+  const desired = contentCenter - scroller.clientHeight / 2;
+  const maximum = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+  scroller.scrollTop = Math.max(0, Math.min(maximum, desired));
+}
+
 export function createLadderScreen(ports: LadderPorts): LadderScreen {
   let paintVisible: (() => void) | null = null;
   let showRevision = 0;
@@ -49,6 +58,9 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
     paintVisible = null;
     showOnlineLoading('onBoard');
     const list = $('#onBoardList');
+    const scroller = list.closest<HTMLElement>('.pbody');
+    if (!scroller) throw new Error('ladder page scroller is missing');
+    scroller.onscroll = null;
     list.innerHTML = '';
     const PAGE = 50;
     const ABOVE_ME = 20;
@@ -232,7 +244,7 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
           bottomGroup = next.last;
           list.appendChild(next.frag);
         }
-        if (list.scrollHeight <= list.clientHeight + 60) {
+        if (scroller.scrollHeight <= scroller.clientHeight + 60) {
           if (!bottomDry) growDown();
           else growUp();
         }
@@ -255,23 +267,24 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
         const next = chunk(fresh, '');
         const oldHead = list.firstElementChild as HTMLElement | null;
         if (oldHead?.classList.contains('ghor') && oldHead.dataset.g === next.last) oldHead.remove();
-        const before = list.scrollHeight;
+        const before = scroller.scrollHeight;
         list.insertBefore(next.frag, list.firstChild);
-        list.scrollTop += list.scrollHeight - before;
-        if (list.scrollHeight <= list.clientHeight + 60 && !topDry) growUp();
+        scroller.scrollTop += scroller.scrollHeight - before;
+        if (scroller.scrollHeight <= scroller.clientHeight + 60 && !topDry) growUp();
       });
     };
 
-    list.onscroll = () => {
-      if (list.scrollTop + list.clientHeight > list.scrollHeight - 400) growDown();
-      else if (list.scrollTop < 400) growUp();
+    scroller.onscroll = () => {
+      if (run !== showRevision || !isOnlinePanelCurrent('onBoard')) return;
+      if (scroller.scrollTop + scroller.clientHeight > scroller.scrollHeight - 400) growDown();
+      else if (scroller.scrollTop < 400) growUp();
     };
     showOnlinePanel('onBoard');
-    if (list.scrollHeight <= list.clientHeight + 60) {
+    if (scroller.scrollHeight <= scroller.clientHeight + 60) {
       if (!bottomDry) growDown();
       else growUp();
     }
-    (meElement as HTMLElement | null)?.scrollIntoView({ block: 'center' });
+    if (meElement) centerInScroller(scroller, meElement);
   }
 
   return { show };

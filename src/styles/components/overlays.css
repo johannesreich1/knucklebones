@@ -108,7 +108,7 @@
   width:8px;height:7px;translate:-50% 0;border:1.5px solid currentColor;border-bottom:0;border-radius:6px 6px 0 0}
 :where(#kbroot) .seg button.on{color:#04101a;background:linear-gradient(100deg,var(--p1),var(--p1-hi));border-color:var(--p1);
   box-shadow:0 6px 18px rgba(var(--p1-rgb),.3)}
-:where(#kbroot) .lbl{font-size:10px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
+:where(#kbroot) .lbl{font-size:var(--font-label-min);letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
 :where(#kbroot) .card{width:100%;max-width:var(--w-col);display:flex;flex-direction:column;gap:12px}
 /* A card's note reserves TWO lines whether it needs them or not. Descriptions
    wrap differently per device — five of the seven game modes take two lines at

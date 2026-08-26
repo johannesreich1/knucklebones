@@ -23,7 +23,7 @@
   .t-title{font-size:22px;letter-spacing:.24em;font-weight:900;
     background:linear-gradient(100deg,var(--p1),#fff 50%,var(--p2));
     -webkit-background-clip:text;background-clip:text;color:transparent}
-  .t-lbl{font-size:10px;letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
+  .t-lbl{font-size:var(--font-label-min);letter-spacing:.24em;color:var(--dim);text-transform:uppercase}
   .t-num{font-size:20px;font-weight:900;color:var(--gold)}
   .dicerow2{display:flex;gap:14px;align-items:center}
   .dleg{font-size:10px;line-height:1.6;color:var(--dim);letter-spacing:.06em}
@@ -69,7 +69,7 @@
     <div class="fcap">Type — ui-rounded, uppercase, letterspaced</div>
     <div class="trow">
       <span class="t-title">KNUCKLEBONES</span>
-      <span class="t-lbl">Section label · 0.24em tracking</span>
+      <span class="t-lbl">Section label · 10 px floor · 0.24em tracking</span>
       <!-- the app's own .status.me, worn rather than re-typed: the card used to
            carry a byte-for-byte copy that pinned the colour to --cy and dropped
            the glow. Only the centring is overridden, so it aligns with the

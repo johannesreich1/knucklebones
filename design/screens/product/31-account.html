@@ -1,4 +1,4 @@
-<!-- meta name="Profile" group="3 · Ladder & profile" subtitle="The ring is the screen: the group fill under the avatar, the name it crowns, the points a door to the ladder — the name is claimed once, and deletion is a footnote at the foot" width=412 height=1590 links="Home, Ladder, Match history, Avatar" -->
+<!-- meta name="Profile" group="3 · Ladder & profile" subtitle="The ring is the screen: group progress, identity, ladder doors and the six-slot rune collection — the name is claimed once, and deletion is a footnote at the foot" width=412 height=1590 links="Home, Ladder, Match history, Avatar" -->
 <style>
   /* The profile is the app's own panel: #onAccount inside #ovOnline from
      online.css, plus the ladder ring (.ringwrap/.lring/.lpeak), which lives in
@@ -52,6 +52,10 @@
         <div class="fact"><b>3</b><span>Best streak</span></div>
         <div class="fact pk"><b>512</b><span>Peak</span></div>
       </div>
+      <!-- Account progress, not a loadout: the builder asks the runtime's own
+           Profile renderer for the six stable slots, with FATE and WARD owned.
+           Registry order, labels, count, icons and locked state cannot drift. -->
+      {{account-runes:fate,ward}}
       <!-- The ONE-TIME name claim, the only name control the app has. There is
            no rename anywhere: the 0026 trigger stamps named_at on the first
            nickname write and refuses every later one, so this box is gone for
@@ -98,8 +102,9 @@
 <div class="note"><b>The ring is the screen.</b> One continuous fill — the percentage of the way
   through your current group — sweeping up to its value as the profile opens, with the group name
   in the 90&deg; mouth at the bottom and the season peak as a white notch while it is still ahead
-  of you. After the three facts, identity comes before history; the avatar opens the picker, the
-  points open the ladder, and the history row opens the newest-three list beneath it.
+  of you. After the three facts, the stable six-slot rune collection shows account progress before
+  identity and history; the avatar opens the picker, the points open the ladder, and the history
+  row opens the newest-three list beneath it.
   <br><br><b>Two words this screen no longer says.</b> There is no <em>rename</em> — a name is
   claimed once and kept, so the old always-there field and its Save button are one boxed offer that
   disappears for good. And there is no <em>record</em>: the win/loss tally heads the match-history

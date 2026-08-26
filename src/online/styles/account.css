@@ -29,7 +29,7 @@
    lock vocabulary in offline setup. */
 :where(#kbroot) #onAccount .accrunes{display:flex;flex-direction:column;gap:8px;width:100%}
 :where(#kbroot) #onAccount .accrunes-head{display:flex;align-items:center;justify-content:space-between;
-  padding:0 2px;color:var(--dim);font-size:9px;font-weight:900;letter-spacing:.2em}
+  padding:0 2px;color:var(--dim);font-size:var(--font-label-min);font-weight:900;letter-spacing:.2em}
 :where(#kbroot) #onAccount .accrunes-head b{color:var(--fg)}
 :where(#kbroot) #onAccount .accrunes-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
 :where(#kbroot) #onAccount .accrune{position:relative;display:flex;align-items:center;gap:6px;min-width:0;
