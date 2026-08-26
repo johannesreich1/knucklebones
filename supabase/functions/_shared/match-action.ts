@@ -1,7 +1,11 @@
 import type { EdgeClient } from "./http.ts";
 import {
-  loadLadderRow,
+  buildSettlementSnapshot,
+  RETRY_SETTLEMENT,
+  retryOnSerialization,
+  SERIALIZATION_FAILURE,
   type LadderSettlement,
+  type SettlementSnapshot,
   type TerminalMatch,
 } from "./settlement.ts";
 import type { MatchActionInput, MatchActionRow, MatchRow, PlayerIndex } from "./types.ts";
@@ -38,10 +42,8 @@ export interface MatchActionResponse extends ActionMetadata {
 
 export class MatchActionConflict extends Error {}
 
-const SERIALIZATION_FAILURE = "40001";
 const COMMAND_CONFLICT = "P0001";
 const COMMAND_REUSE = "22023";
-const MAX_ATTEMPTS = 3;
 
 const message = (error: { message?: string } | null | undefined): string =>
   error?.message ?? "unknown database error";
@@ -85,27 +87,12 @@ export async function commitMatchAction(
   command: MatchActionCommand,
   calculate: LadderSettlement,
 ): Promise<MatchActionResponse> {
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    let settlement: Record<string, unknown> | null = null;
+  return retryOnSerialization(async (isFinal) => {
+    let settlement: SettlementSnapshot | null = null;
     if (command.terminal) {
-      const season = command.match.season_id ?? 1;
-      const [p1, p2] = await Promise.all([
-        loadLadderRow(service, season, command.match.p1),
-        loadLadderRow(service, season, command.match.p2),
-      ]);
-      const next = calculate(p1, p2, command.terminal.p1Result);
-      settlement = {
-        status: command.terminal.status,
-        winner: command.terminal.winner,
-        p1_score: command.terminal.p1Score,
-        p2_score: command.terminal.p2Score,
-        p1_delta: next.da,
-        p2_delta: next.db,
-        expected_p1: p1,
-        expected_p2: p2,
-        next_p1: next.a,
-        next_p2: next.b,
-      };
+      settlement = await buildSettlementSnapshot(
+        service, command.match, command.terminal, calculate,
+      );
     }
 
     const { data, error } = await service.rpc("commit_match_action", {
@@ -124,7 +111,9 @@ export async function commitMatchAction(
       p_settlement: settlement,
       p_response_meta: command.metadata,
     });
-    if (error?.code === SERIALIZATION_FAILURE && command.terminal && attempt < MAX_ATTEMPTS) continue;
+    if (error?.code === SERIALIZATION_FAILURE && command.terminal && !isFinal) {
+      return RETRY_SETTLEMENT;
+    }
     if (error?.code === COMMAND_CONFLICT || error?.code === COMMAND_REUSE) {
       throw new MatchActionConflict(message(error));
     }
@@ -132,6 +121,5 @@ export async function commitMatchAction(
     const parsed = parsedResponse(data);
     if (!parsed) throw new Error("atomic match action returned an invalid payload");
     return parsed;
-  }
-  throw new Error("atomic match action retry budget exhausted");
+  }, "atomic match action retry budget exhausted");
 }

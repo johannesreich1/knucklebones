@@ -37,7 +37,10 @@ export async function selectRuneTrial(
     return json({ error: "not-stalled-yet" }, 425);
   }
   if (error?.code === "P0001") return json({ error: "selection-over" }, 409);
-  if (error) return json({ error: "selection-failed" }, 500);
+  if (error) {
+    console.error("pvp-rune-select selection failed:", error.message);
+    return json({ error: "selection-failed" }, 500);
+  }
   if (!data || typeof data !== "object" || Array.isArray(data)) {
     return json({ error: "selection-failed" }, 500);
   }
@@ -54,7 +57,8 @@ export async function selectRuneTrial(
       return json({ error: "selection-failed" }, 500);
     }
     return json(finalized);
-  } catch {
+  } catch (finalizeError) {
+    console.error("pvp-rune-select finalization failed:", finalizeError);
     return json({ error: "selection-failed" }, 500);
   }
 }

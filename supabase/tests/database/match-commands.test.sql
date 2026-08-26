@@ -3,12 +3,12 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(23);
+select plan(27);
 
 select ok(
   not has_function_privilege(
     'anon',
-    'public.commit_match_command(uuid,uuid,uuid,smallint,boolean,integer,smallint,smallint,jsonb,smallint,smallint,jsonb,jsonb)',
+    'public.commit_match_command(uuid,uuid,uuid,smallint,boolean,integer,smallint,smallint,jsonb,smallint,smallint,jsonb,jsonb,timestamp with time zone)',
     'execute'
   ),
   'anonymous callers cannot commit authoritative match commands'
@@ -16,7 +16,7 @@ select ok(
 select ok(
   not has_function_privilege(
     'authenticated',
-    'public.commit_match_command(uuid,uuid,uuid,smallint,boolean,integer,smallint,smallint,jsonb,smallint,smallint,jsonb,jsonb)',
+    'public.commit_match_command(uuid,uuid,uuid,smallint,boolean,integer,smallint,smallint,jsonb,smallint,smallint,jsonb,jsonb,timestamp with time zone)',
     'execute'
   ),
   'authenticated callers cannot commit authoritative match commands directly'
@@ -24,7 +24,7 @@ select ok(
 select ok(
   has_function_privilege(
     'service_role',
-    'public.commit_match_command(uuid,uuid,uuid,smallint,boolean,integer,smallint,smallint,jsonb,smallint,smallint,jsonb,jsonb)',
+    'public.commit_match_command(uuid,uuid,uuid,smallint,boolean,integer,smallint,smallint,jsonb,smallint,smallint,jsonb,jsonb,timestamp with time zone)',
     'execute'
   ),
   'the move Edge Function can commit the atomic command'
@@ -307,6 +307,84 @@ select is(
      from legacy_split_claim),
   'false/true/active',
   'checked settlement rejects a legacy append before its separate projection write'
+);
+
+-- The classic auto path carries the projection it judged stalled; the database
+-- clock is then the authority on the 12-second gate. A null precondition is
+-- the deployed legacy caller and skips the re-check entirely (covered above:
+-- every earlier command in this file omits the trailing parameter).
+insert into auth.users (id, email, created_at, updated_at)
+values
+  ('90000000-0000-0000-0000-000000000007', 'command-7@example.invalid', now(), now()),
+  ('90000000-0000-0000-0000-000000000008', 'command-8@example.invalid', now(), now());
+insert into public.matches (id, p1, p2, status, turn, next_die, season_id)
+values
+  ('91000000-0000-0000-0000-000000000004',
+   '90000000-0000-0000-0000-000000000007',
+   '90000000-0000-0000-0000-000000000008', 'active', 1, 3, 1);
+
+select throws_ok(
+  $$select public.commit_match_command(
+    '91000000-0000-0000-0000-000000000004',
+    '92000000-0000-4000-8000-000000000006',
+    '90000000-0000-0000-0000-000000000008',
+    (-1)::smallint, true, 0, 1::smallint, 3::smallint,
+    '[{"idx":0,"who":1,"col":0,"die":3}]',
+    0::smallint, 2::smallint, null, '{"your_die":3,"auto":true}',
+    (select last_move_at from public.matches
+      where id = '91000000-0000-0000-0000-000000000004')
+  )$$,
+  'P0001',
+  'command is not stalled yet',
+  'the database clock rejects an auto move before twelve authoritative seconds'
+);
+select throws_ok(
+  $$select public.commit_match_command(
+    '91000000-0000-0000-0000-000000000004',
+    '92000000-0000-4000-8000-000000000007',
+    '90000000-0000-0000-0000-000000000008',
+    0::smallint, false, 0, 1::smallint, 3::smallint,
+    '[{"idx":0,"who":1,"col":0,"die":3}]',
+    0::smallint, 2::smallint, null, '{"your_die":3}',
+    clock_timestamp()
+  )$$,
+  '22023',
+  'manual command carries a stall precondition',
+  'a manual command cannot smuggle the auto stall waiver'
+);
+update public.matches
+   set last_move_at = clock_timestamp() - interval '13 seconds'
+ where id = '91000000-0000-0000-0000-000000000004';
+select throws_ok(
+  $$select public.commit_match_command(
+    '91000000-0000-0000-0000-000000000004',
+    '92000000-0000-4000-8000-000000000008',
+    '90000000-0000-0000-0000-000000000008',
+    (-1)::smallint, true, 0, 1::smallint, 3::smallint,
+    '[{"idx":0,"who":1,"col":0,"die":3}]',
+    0::smallint, 2::smallint, null, '{"your_die":3,"auto":true}',
+    clock_timestamp()
+  )$$,
+  'P0001',
+  'command is not stalled yet',
+  'a drifted stall projection is rejected even after the interval elapses'
+);
+create temporary table stalled_auto as
+select public.commit_match_command(
+  '91000000-0000-0000-0000-000000000004',
+  '92000000-0000-4000-8000-000000000009',
+  '90000000-0000-0000-0000-000000000008',
+  (-1)::smallint, true, 0, 1::smallint, 3::smallint,
+  '[{"idx":0,"who":1,"col":0,"die":3}]',
+  0::smallint, 2::smallint, null, '{"your_die":3,"auto":true}',
+  (select last_move_at from public.matches
+    where id = '91000000-0000-0000-0000-000000000004')
+) as payload;
+select is(
+  (select concat(payload->'match'->>'turn', '/', payload->>'auto')
+     from stalled_auto),
+  '0/true',
+  'a genuinely stalled auto move passes the database stall gate'
 );
 
 select * from finish();

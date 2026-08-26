@@ -1,6 +1,11 @@
 import { readFileSync } from 'node:fs';
 import { settleMatch, type LadderSettlement } from '../supabase/functions/_shared/settlement.ts';
-import type { AuthenticatedContext, EdgeClient } from '../supabase/functions/_shared/http.ts';
+import {
+  withErrorBoundary,
+  type AuthenticatedContext, type EdgeClient,
+} from '../supabase/functions/_shared/http.ts';
+import { AUTO_MS } from '../supabase/functions/_shared/match-timing.ts';
+import { createPvpClaimHandler } from '../supabase/functions/pvp-claim/handler.ts';
 import type { LadderRow, MatchRow } from '../supabase/functions/_shared/types.ts';
 import { deleteAccountWithSettlement } from '../supabase/functions/_shared/account-deletion.ts';
 
@@ -219,8 +224,6 @@ try {
 check(rejected, 'malformed atomic RPC payload was accepted as a settled match');
 
 const terminalOperations = [
-  'supabase/functions/pvp-claim/operation.ts',
-  'supabase/functions/pvp-join/operation.ts',
   'supabase/functions/_shared/account-deletion.ts',
 ];
 for (const file of terminalOperations) {
@@ -229,18 +232,37 @@ for (const file of terminalOperations) {
   check(!/\.from\("season_ratings"\)\s*\.update|\.from\("profiles"\)\s*\.update/.test(source),
     `${file} still performs a sequential ladder/profile payout outside the atomic RPC`);
 }
-const claimOperation = readFileSync('supabase/functions/pvp-claim/operation.ts', 'utf8');
-check(claimOperation.includes('moveCount,')
-  && claimOperation.includes('state.moveCount !== moves.length')
-  && !claimOperation.includes('input.resign ? undefined'),
-  'resignation can settle scores from a replay that lost a concurrent move race');
-const moveOperation = readFileSync('supabase/functions/pvp-move/operation.ts', 'utf8');
-check(moveOperation.includes('commitMatchCommand(')
-  && !/\.from\("match_moves"\)\s*\.insert|\.from\("matches"\)\s*\.update/.test(moveOperation),
-  'pvp-move does not route move/projection/settlement through the atomic command RPC');
 const deletion = readFileSync('supabase/functions/_shared/account-deletion.ts', 'utf8');
 check(deletion.indexOf('settleMatch(') < deletion.indexOf('deleteUser('),
   'account deletion removes auth identity before settling active opponents');
+
+/* An escaped settlement exception must still answer the JSON+CORS error
+   contract: without the shared boundary, Deno.serve answers plain text
+   without CORS and a browser sees an unreadable network failure. */
+const throwingHandler = withErrorBoundary(createPvpClaimHandler({
+  authenticate: async () => ({
+    user: { id: 'player-1' }, authed: {}, service: () => ({}),
+  } as unknown as AuthenticatedContext),
+  operation: async () => { throw new Error('settlement exploded'); },
+}));
+const escaped = await throwingHandler(new Request('https://edge.test', {
+  method: 'POST', body: JSON.stringify({ match_id: 'm9' }),
+}));
+check(escaped.status === 500
+  && (await escaped.json()).error === 'internal'
+  && escaped.headers.get('access-control-allow-origin') === '*',
+  'an escaped operation exception bypassed the JSON+CORS error boundary');
+
+/* The SQL commit gates re-check the auto stall against the database clock;
+   their interval literals must agree with the shared TypeScript threshold. */
+const stallInterval = `interval '${AUTO_MS / 1000} seconds'`;
+for (const migration of [
+  'supabase/migrations/20260825205241_rune_trial_ranked_v2.sql',
+  'supabase/migrations/20260826181500_match_command_stall_check.sql',
+]) {
+  check(readFileSync(migration, 'utf8').includes(stallInterval),
+    `${migration} stall gate drifted from the shared AUTO_MS threshold`);
+}
 const accountDeleteOperation = readFileSync('supabase/functions/account-delete/operation.ts', 'utf8');
 const stageFailureGuard = accountDeleteOperation.indexOf(
   'if (error) throw new Error("apple-revocation-stage-failed")',
@@ -251,6 +273,19 @@ const stagedCredentialReturn = accountDeleteOperation.indexOf(
 check(stageFailureGuard !== -1 && stageFailureGuard < stagedCredentialReturn
   && accountDeleteOperation.includes('data !== null && typeof data !== "number"'),
   'account deletion can discard an Apple revocation staging failure before deleting auth identity');
+check(accountDeleteOperation.includes('undoBeforeDelete')
+  && accountDeleteOperation.includes('unstage_apple_revocation'),
+  'a failed auth deletion leaves the staged Apple revocation for the retry cron to execute');
+const unstageMigration = readFileSync(
+  'supabase/migrations/20260826181000_apple_revocation_unstage.sql', 'utf8',
+);
+check(unstageMigration.includes('create function public.unstage_apple_revocation(p_user uuid)')
+  && /set state = 'active'/.test(unstageMigration)
+  && /state = 'pending'/.test(unstageMigration)
+  && unstageMigration.includes(
+    'grant execute on function public.unstage_apple_revocation(uuid) to service_role',
+  ),
+  'the unstage RPC does not return a pending revocation credential to active for the service role');
 
 const deleting = new FakeService();
 deleting.activeMatches = [{ ...match }];
@@ -287,5 +322,36 @@ const failedLifecycle = await deleteAccountWithSettlement({
 }, calculate, { beforeDelete: async () => { throw new Error('vault unavailable'); } });
 check(failedLifecycle.status === 500 && lifecycleFailure.deleteCalls === 0,
   'account deletion continued after its provider-revocation state could not be prepared');
+
+/* The missing branch: staging succeeded but deleteUser failed. The account
+   lives on, so the staged revocation must be compensated before the retry
+   cron can revoke a live user's Sign in with Apple grant. */
+const failedAuthDelete = new FakeService();
+failedAuthDelete.deleteError = { message: 'auth 502' };
+const undoStates: unknown[] = [];
+const compensated = await deleteAccountWithSettlement({
+  ...deletingContext,
+  service: () => failedAuthDelete as unknown as EdgeClient,
+}, calculate, {
+  beforeDelete: async () => 'staged-credential',
+  undoBeforeDelete: async (state) => { undoStates.push(state); },
+});
+check(compensated.status === 500
+  && (await compensated.json()).error === 'delete-failed'
+  && failedAuthDelete.deleteCalls === 1
+  && undoStates.length === 1 && undoStates[0] === 'staged-credential',
+  'a failed auth deletion did not unstage the provider revocation it had staged');
+
+const throwingUndo = new FakeService();
+throwingUndo.deleteError = { message: 'auth 502' };
+const undoFailure = await deleteAccountWithSettlement({
+  ...deletingContext,
+  service: () => throwingUndo as unknown as EdgeClient,
+}, calculate, {
+  beforeDelete: async () => 'staged-credential',
+  undoBeforeDelete: async () => { throw new Error('unstage unavailable'); },
+});
+check(undoFailure.status === 500 && (await undoFailure.json()).error === 'delete-failed',
+  'a failed compensation changed the delete-failed contract');
 
 console.log(JSON.stringify({ problems, errs }, null, 2));

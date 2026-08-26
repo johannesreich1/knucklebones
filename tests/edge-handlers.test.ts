@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs';
 import {
   CORS_HEADERS, createAuthenticator, json, postOnly, record,
-  type AuthenticatedContext,
+  type AuthenticatedContext, type EdgeClient,
 } from '../supabase/functions/_shared/http.ts';
 import { createAccountDeleteHandler } from '../supabase/functions/account-delete/handler.ts';
 import { createPvpJoinHandler } from '../supabase/functions/pvp-join/handler.ts';
@@ -40,14 +40,15 @@ const context = {
 const allowed = async () => context;
 const denied = async () => null;
 
-check(negotiatedProtocolVersion([
-  { tier: 'ivory', capabilities: ['rune_trial_v1'] },
-  { tier: 'stone', capabilities: ['rune_trial_v1'] },
-]) === 2, 'two Trial-capable peers did not preserve protocol v2 on standard outcomes');
-check(negotiatedProtocolVersion([
-  { tier: 'ivory', capabilities: ['rune_trial_v1'] },
-  { tier: 'ivory', capabilities: [] },
-]) === 1, 'an old peer did not negotiate the standard protocol-v1 contract');
+// Realistic queue rows carry a tier the negotiation must ignore; the helper
+// widens the fresh literals so that field survives excess-property checks.
+const peers = (...rows: Array<{ tier: string; capabilities: string[] }>) => rows;
+check(negotiatedProtocolVersion(peers(
+  { tier: 'ivory', capabilities: ['rune_trial_v1'] }, { tier: 'stone', capabilities: ['rune_trial_v1'] },
+)) === 2, 'two Trial-capable peers did not preserve protocol v2 on standard outcomes');
+check(negotiatedProtocolVersion(peers(
+  { tier: 'ivory', capabilities: ['rune_trial_v1'] }, { tier: 'ivory', capabilities: [] },
+)) === 1, 'an old peer did not negotiate the standard protocol-v1 contract');
 check(JSON.stringify(rankedSeatOrder('lower-rated-bot', 'higher-rated-human'))
     === JSON.stringify({ p1: 'lower-rated-bot', p2: 'higher-rated-human' }),
   'ranked bot seating displaced the lower-rated participant from the opening seat');
@@ -95,7 +96,7 @@ check(record({ value: 1 })?.value === 1 && record([]) === null && record(null) =
 
 const clientCalls: Array<{ url: string; key: string; authorization?: string }> = [];
 const authedClient = { auth: { getUser: async () => ({ data: { user: { id: 'player-1' } } }) } };
-const serviceClient = { marker: 'service' };
+const serviceClient = { marker: 'service' } as unknown as EdgeClient;
 const factory = ((url: string, key: string, options?: { global?: { headers?: { Authorization?: string } } }) => {
   clientCalls.push({ url, key, authorization: options?.global?.headers?.Authorization });
   return key === 'anon-key' ? authedClient : serviceClient;

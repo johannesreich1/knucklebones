@@ -12,6 +12,15 @@ const check = (ok: boolean, message: string) => { if (!ok) problems.push(message
 let initializeCalls = 0;
 let proofCalls = 0;
 let listener: ((state: GameCenterAuthState) => void) | null = null;
+// Calling through a function restores the declared type: the assignment in
+// addListener below is invisible to control-flow narrowing at the call sites.
+const notifyListener = (state: GameCenterAuthState): void => { listener?.(state); };
+// Query-string suffixes force a fresh module instance per scenario; resolve
+// through a widened specifier so tsc types the module without the suffix.
+const importFreshCoordinator = (
+  query: string,
+): Promise<typeof import('../src/native/game-center.ts')> =>
+  import(`../src/native/game-center.ts?${query}`);
 const proof: GameCenterProof = {
   publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-12.cer',
   signature: 'signature', salt: 'salt', timestamp: '123', teamPlayerID: 'team-player',
@@ -28,7 +37,7 @@ const bridge: GameCenterBridge = {
 (globalThis as typeof globalThis & { Capacitor?: unknown }).Capacitor = {
   getPlatform: () => 'ios', Plugins: { GameCenter: bridge },
 };
-const coordinator = await import('../src/native/game-center.ts?lifecycle-test');
+const coordinator = await importFreshCoordinator('lifecycle-test');
 const first = coordinator.initializeGameCenter();
 const second = coordinator.initializeGameCenter();
 check(first === second, 'Game Center launch initialization is not idempotent');
@@ -37,13 +46,13 @@ check(initializeCalls === 1 && coordinator.gameCenterState().status === 'authent
   'Game Center lifecycle did not publish the bridge initialization state');
 
 const waiting = coordinator.waitForGameCenter(1_000);
-listener?.({ status: 'authenticated', revision: 2 });
+notifyListener({ status: 'authenticated', revision: 2 });
 check((await waiting).status === 'authenticated',
   'Game Center lifecycle did not wake when native authentication completed');
 check((await coordinator.fetchGameCenterProof()).teamPlayerID === 'team-player' && proofCalls === 1,
   'Game Center proof was not gated by the shared authenticated lifecycle state');
 
-listener?.({ status: 'signed-out', revision: 3 });
+notifyListener({ status: 'signed-out', revision: 3 });
 let rejected = false;
 try { await coordinator.fetchGameCenterProof(); } catch { rejected = true; }
 check(rejected && proofCalls === 1,
@@ -67,7 +76,7 @@ check(/private var playerIdentity: String\?/.test(swift)
     },
   },
 };
-const listenerFailure = await import('../src/native/game-center.ts?listener-failure-test');
+const listenerFailure = await importFreshCoordinator('listener-failure-test');
 check((await listenerFailure.initializeGameCenter()).status === 'failed',
   'Game Center launch leaked a rejected native-listener setup');
 

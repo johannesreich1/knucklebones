@@ -141,18 +141,20 @@ for (const url of [
 ]) check(!certUrlOk(url), `an unsafe certificate URL was accepted: ${url}`);
 
 const NOW = Date.UTC(2026, 7, 23);
-const handlerBody = JSON.stringify({
+const handlerProof = (salt: Uint8Array) => JSON.stringify({
   mode: 'sign-in',
   proof: {
     publicKeyUrl: CERT_URL,
     signature: Buffer.from([1, 2, 3]).toString('base64'),
-    salt: Buffer.from([4, 5, 6]).toString('base64'),
+    salt: Buffer.from(salt).toString('base64'),
     timestamp: String(NOW),
     teamPlayerID: GAME_ID,
   },
 });
+/* every accepted proof is single-use, so each request carries a fresh salt */
+let handlerSalt = 0;
 const handlerRequest = () => new Request('https://edge.test/gc-auth', {
-  method: 'POST', body: handlerBody, headers: {
+  method: 'POST', body: handlerProof(Uint8Array.from([4, 5, 6, ++handlerSalt])), headers: {
     'Content-Type': 'application/json', 'X-Knucklebones-Origin': 'gateway-secret',
   },
 });
@@ -172,6 +174,9 @@ const certificateResponse = (
   return response;
 };
 let fetchInit: RequestInit | null = null;
+// Reading through a function restores the declared type: the assignment in
+// the fetch fake below is invisible to control-flow narrowing.
+const capturedFetchInit = (): RequestInit | null => fetchInit;
 let fetchCalls = 0;
 let trustCalls = 0;
 let handlerNow = NOW;
@@ -191,7 +196,7 @@ const handler = createGcAuthHandler({
 const handled = await handler(handlerRequest());
 check(handled.status === 200 && (await handled.json()).complete === true,
   'a trusted Game Center assertion did not reach identity completion');
-check(fetchInit?.redirect === 'manual' && trustCalls === 1,
+check(capturedFetchInit()?.redirect === 'manual' && trustCalls === 1,
   'the certificate fetch may follow redirects or skipped authority validation');
 check((await handler(handlerRequest())).status === 200 && fetchCalls === 1 && trustCalls === 2,
   'a current trusted Apple certificate was fetched again inside its bounded max-age cache');
@@ -255,10 +260,34 @@ const untrustedHandler = createGcAuthHandler({
 check((await untrustedHandler(handlerRequest())).status === 401,
   'an untrusted certificate was not rejected at the public endpoint');
 const directRequest = new Request('https://edge.test/gc-auth', {
-  method: 'POST', body: handlerBody, headers: { 'Content-Type': 'application/json' },
+  method: 'POST', body: handlerProof(Uint8Array.from([4, 5, 6, 99])),
+  headers: { 'Content-Type': 'application/json' },
 });
 check((await handler(directRequest)).status === 403,
   'the Supabase assertion endpoint accepted a request that bypassed the rate-limited gateway');
+
+// the identical signed proof is single-use inside the ±10 minute freshness
+// window: a captured assertion must not mint a second session
+const replayBody = handlerProof(Uint8Array.from([7, 7, 7, 7]));
+const replayRequest = () => new Request('https://edge.test/gc-auth', {
+  method: 'POST', body: replayBody, headers: {
+    'Content-Type': 'application/json', 'X-Knucklebones-Origin': 'gateway-secret',
+  },
+});
+const replayHandler = createGcAuthHandler({
+  bundleId: BUNDLE,
+  originSecret: 'gateway-secret',
+  now: () => NOW,
+  fetch: async () => certificateResponse(currentLeaf),
+  trust: async () => true,
+  verify: async () => GAME_ID,
+  complete: async () => new Response(JSON.stringify({ complete: true })),
+});
+check((await replayHandler(replayRequest())).status === 200,
+  'a fresh Game Center proof was rejected by the replay ledger');
+const replayed = await replayHandler(replayRequest());
+check(replayed.status === 401 && (await replayed.json()).error === 'replayed-signature',
+  'the identical signed Game Center proof was accepted twice inside its freshness window');
 
 const config = readFileSync('supabase/config.toml', 'utf8');
 const jwtFlag = (slug: string) => new RegExp(

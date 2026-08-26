@@ -1,4 +1,4 @@
-import { json, postOnly, type Authenticate, type AuthenticatedContext } from "../_shared/http.ts";
+import { authenticatedPost, type Authenticate, type AuthenticatedContext } from "../_shared/http.ts";
 
 export type DeleteAccountOperation = (context: AuthenticatedContext) => Promise<Response>;
 
@@ -9,10 +9,9 @@ export interface AccountDeleteDependencies {
 
 export function createAccountDeleteHandler(dependencies: AccountDeleteDependencies) {
   return async (request: Request): Promise<Response> => {
-    const early = postOnly(request);
-    if (early) return early;
-    const context = await dependencies.authenticate(request);
-    if (!context) return json({ error: "unauthorized" }, 401);
-    return dependencies.operation(context);
+    /* deletion takes no payload; a body-less POST must keep working */
+    const prologue = await authenticatedPost(request, dependencies.authenticate, { optionalBody: true });
+    if (prologue instanceof Response) return prologue;
+    return dependencies.operation(prologue.context);
   };
 }

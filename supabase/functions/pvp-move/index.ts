@@ -2,9 +2,9 @@
 // handler owns HTTP/auth validation; the operation owns existing game logic.
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "@supabase/supabase-js";
-import { createAuthenticator } from "../_shared/http.ts";
+import { createAuthenticator, withErrorBoundary } from "../_shared/http.ts";
 import { createPvpMoveHandler } from "./handler.ts";
 import { moveMatch } from "./operation.ts";
 
 const authenticate = createAuthenticator({ createClient, env: Deno.env });
-Deno.serve(createPvpMoveHandler({ authenticate, operation: moveMatch }));
+Deno.serve(withErrorBoundary(createPvpMoveHandler({ authenticate, operation: moveMatch })));

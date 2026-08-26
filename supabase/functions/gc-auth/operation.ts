@@ -53,7 +53,10 @@ export async function completeGameCenterIdentity(
 
   let known: Mapping | null;
   try { known = await mapping(service, playerId); }
-  catch { return json({ error: "mapping-read-failed" }, 500); }
+  catch (error) {
+    console.error("gc-auth mapping read failed:", error);
+    return json({ error: "mapping-read-failed" }, 500);
+  }
 
   if (mode === "assert-current") {
     if (!caller) return json({ error: "unauthorized" }, 401);
@@ -75,7 +78,10 @@ export async function completeGameCenterIdentity(
       // A simultaneous valid assertion may have claimed the mapping. Re-read
       // the winner; any other error fails closed without mutating Auth.
       try { known = await mapping(service, playerId); }
-      catch { return json({ error: "mapping-write-failed" }, 500); }
+      catch (error) {
+        console.error("gc-auth mapping re-read failed:", error);
+        return json({ error: "mapping-write-failed" }, 500);
+      }
       if (!known) return json({ error: "mapping-write-failed" }, 500);
       ownerId = known.user_id;
     } else {
@@ -95,7 +101,10 @@ export async function completeGameCenterIdentity(
       // A concurrent assertion may have completed the mapping while this
       // provisional Auth creation failed. Prefer that durable winner.
       try { known = await mapping(service, playerId); }
-      catch { return json({ error: "create-failed" }, 500); }
+      catch (error) {
+        console.error("gc-auth mapping re-read failed:", error);
+        return json({ error: "create-failed" }, 500);
+      }
       if (!known) return json({ error: "create-failed" }, 500);
       ownerId = known.user_id;
     } else {
@@ -107,7 +116,10 @@ export async function completeGameCenterIdentity(
           return json({ error: "compensation-failed" }, 500);
         }
         try { known = await mapping(service, playerId); }
-        catch { return json({ error: "mapping-write-failed" }, 500); }
+        catch (error) {
+          console.error("gc-auth mapping re-read failed:", error);
+          return json({ error: "mapping-write-failed" }, 500);
+        }
         if (!known) return json({ error: "mapping-write-failed" }, 500);
         ownerId = known.user_id;
       } else {

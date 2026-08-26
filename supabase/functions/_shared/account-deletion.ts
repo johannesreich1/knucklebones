@@ -12,6 +12,7 @@ export async function deleteAccountWithSettlement(
   calculate: LadderSettlement,
   lifecycle: {
     beforeDelete?(): Promise<unknown>;
+    undoBeforeDelete?(state: unknown): Promise<void>;
     afterDelete?(state: unknown): Promise<Record<string, unknown>>;
   } = {},
 ): Promise<Response> {
@@ -39,18 +40,33 @@ export async function deleteAccountWithSettlement(
         p1Result,
       }, calculate);
     }
-  } catch {
+  } catch (settlementError) {
+    console.error("account deletion payout failed:", settlementError);
     return json({ error: "settlement-failed" }, 500);
   }
 
   let lifecycleState: unknown;
   try { lifecycleState = await lifecycle.beforeDelete?.(); }
-  catch { return json({ error: "delete-failed" }, 500); }
+  catch (lifecycleError) {
+    console.error("account deletion staging failed:", lifecycleError);
+    return json({ error: "delete-failed" }, 500);
+  }
 
   const { error } = await service.auth.admin.deleteUser(user.id);
-  if (error) return json({ error: "delete-failed" }, 500);
+  if (error) {
+    console.error("auth user deletion failed:", error.message);
+    // The account lives on, so compensate whatever beforeDelete staged — a
+    // still-staged Apple revocation would otherwise be executed by the retry
+    // cron against a live user.
+    try { await lifecycle.undoBeforeDelete?.(lifecycleState); }
+    catch (undoError) { console.error("account deletion compensation failed:", undoError); }
+    return json({ error: "delete-failed" }, 500);
+  }
   let extra: Record<string, unknown> = {};
   try { extra = await lifecycle.afterDelete?.(lifecycleState) ?? {}; }
-  catch { extra = { appleRevocation: "pending" }; }
+  catch (afterError) {
+    console.error("account deletion revocation follow-up failed:", afterError);
+    extra = { appleRevocation: "pending" };
+  }
   return json({ deleted: true, ...extra });
 }

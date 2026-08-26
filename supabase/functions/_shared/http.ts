@@ -26,6 +26,33 @@ export function record(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
+/** The one accepted idempotency-key shape, shared by every command handler. */
+export const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** Caller-supplied command id: the body field wins, the header is the retry
+    fallback. Returns undefined (never null) when neither was supplied, so
+    callers can branch on `!== undefined` as well as on `typeof`. */
+export function commandId(body: Record<string, unknown> | null, request: Request): unknown {
+  return body?.command_id ?? request.headers.get("Idempotency-Key") ?? undefined;
+}
+
+/** Convert any escaped exception into the JSON+CORS error contract. Every
+    failure a handler understands is already a structured json(); anything
+    that still throws would otherwise reach Deno.serve as a plain-text 500
+    without CORS, which a browser reads as an opaque network failure. */
+export function withErrorBoundary(
+  handler: (request: Request) => Promise<Response>,
+): (request: Request) => Promise<Response> {
+  return async (request) => {
+    try {
+      return await handler(request);
+    } catch (error) {
+      console.error("unhandled edge function error:", error);
+      return json({ error: "internal" }, 500);
+    }
+  };
+}
+
 export type EdgeClient = SupabaseClient;
 export type EdgeUser = Pick<User, "id">;
 export type ClientFactory = typeof createClient;
@@ -46,6 +73,25 @@ export interface AuthenticatedContext {
 }
 
 export type Authenticate = (request: Request) => Promise<AuthenticatedContext | null>;
+
+/** The shared POST prologue: preflight/method, authentication, JSON body.
+    Returns the early Response whenever the request must not reach an
+    operation. Functions whose contract accepts an absent or malformed body
+    (join, delete) opt out of the bad-json rejection with `optionalBody`. */
+export async function authenticatedPost(
+  request: Request,
+  authenticate: Authenticate,
+  options: { optionalBody?: boolean } = {},
+): Promise<{ context: AuthenticatedContext; body: Record<string, unknown> | null } | Response> {
+  const early = postOnly(request);
+  if (early) return early;
+  const context = await authenticate(request);
+  if (!context) return json({ error: "unauthorized" }, 401);
+  let body: Record<string, unknown> | null = null;
+  try { body = record(await request.json()); }
+  catch { if (!options.optionalBody) return json({ error: "bad-json" }, 400); }
+  return { context, body };
+}
 
 const value = (env: Environment, name: string): string => env.get(name)!;
 

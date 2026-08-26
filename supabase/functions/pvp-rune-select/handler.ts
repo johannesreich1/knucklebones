@@ -1,4 +1,8 @@
-import { json, postOnly, record, type Authenticate, type AuthenticatedContext } from "../_shared/http.ts";
+import {
+  authenticatedPost, commandId, json, UUID,
+  type Authenticate, type AuthenticatedContext,
+} from "../_shared/http.ts";
+import { RUNE_IDS } from "../_shared/rune-ids.ts";
 import type { RuneTrialSelectInput } from "../_shared/types.ts";
 
 export type RuneSelectOperation = (
@@ -11,18 +15,13 @@ export interface RuneSelectDependencies {
   operation: RuneSelectOperation;
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const RUNES = new Set(["fate", "nudge", "ward", "sunder", "pilfer", "anvil"]);
+const RUNES = new Set(RUNE_IDS);
 
 export function createPvpRuneSelectHandler(dependencies: RuneSelectDependencies) {
   return async (request: Request): Promise<Response> => {
-    const early = postOnly(request);
-    if (early) return early;
-    const context = await dependencies.authenticate(request);
-    if (!context) return json({ error: "unauthorized" }, 401);
-
-    let body: Record<string, unknown> | null;
-    try { body = record(await request.json()); } catch { return json({ error: "bad-json" }, 400); }
+    const prologue = await authenticatedPost(request, dependencies.authenticate);
+    if (prologue instanceof Response) return prologue;
+    const { context, body } = prologue;
     const matchId = body?.match_id;
     if (typeof matchId !== "string") return json({ error: "bad-request" }, 400);
     if (body?.read === true) {
@@ -30,10 +29,10 @@ export function createPvpRuneSelectHandler(dependencies: RuneSelectDependencies)
           || body.auto !== undefined) return json({ error: "bad-request" }, 400);
       return dependencies.operation(context, { kind: "read", matchId });
     }
-    const commandId = body?.command_id ?? request.headers.get("Idempotency-Key");
+    const suppliedCommand = commandId(body, request);
     const auto = body?.auto === true;
     const runeId = body?.rune_id;
-    if (typeof commandId !== "string" || !UUID.test(commandId)) {
+    if (typeof suppliedCommand !== "string" || !UUID.test(suppliedCommand)) {
       return json({ error: "bad-request" }, 400);
     }
     if (auto ? runeId !== undefined : typeof runeId !== "string" || !RUNES.has(runeId)) {
@@ -42,7 +41,7 @@ export function createPvpRuneSelectHandler(dependencies: RuneSelectDependencies)
     return dependencies.operation(context, {
       kind: "commit",
       matchId,
-      commandId,
+      commandId: suppliedCommand,
       runeId: auto ? null : runeId as string,
       auto,
     });

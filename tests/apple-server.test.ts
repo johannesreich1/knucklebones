@@ -52,13 +52,16 @@ check(await crypto.subtle.verify(
 ), 'Apple client secret signature is not verifiable');
 
 let tokenForm: URLSearchParams | null = null;
+// Reading through a function restores the declared type: assignments inside
+// the fetch callback are invisible to control-flow narrowing.
+const capturedTokenForm = (): URLSearchParams | null => tokenForm;
 const exchange = await exchangeAppleAuthorizationCode('single-use', 'com.example.app', secret,
   (async (_url: string | URL | Request, init?: RequestInit) => {
     tokenForm = init?.body as URLSearchParams;
     return Response.json({ refresh_token: 'refresh-token', id_token: 'identity-token' });
   }) as typeof fetch);
-check(exchange.refreshToken === 'refresh-token' && tokenForm?.get('code') === 'single-use'
-  && tokenForm?.get('grant_type') === 'authorization_code',
+check(exchange.refreshToken === 'refresh-token' && capturedTokenForm()?.get('code') === 'single-use'
+  && capturedTokenForm()?.get('grant_type') === 'authorization_code',
 'Apple authorization-code exchange did not request and retain the refresh token');
 
 const rsaPair = await crypto.subtle.generateKey(

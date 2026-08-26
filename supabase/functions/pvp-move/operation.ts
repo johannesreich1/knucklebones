@@ -11,13 +11,9 @@ import {
   type CommandMetadata,
   type CommandMove,
 } from "../_shared/match-command.ts";
+import { AUTO_MS } from "../_shared/match-timing.ts";
 import type { TerminalMatch } from "../_shared/settlement.ts";
 import { MATCH_COLUMNS, type MatchMoveRow, type MatchRow, type MoveInput } from "../_shared/types.ts";
-
-
-/* An honest visible client places for itself at 10s. The extra two seconds let
-   the server recover a turn only after its own clock proves the app is gone. */
-const AUTO_MS = 12 * 1000;
 
 interface Replay {
   seed: string;
@@ -67,6 +63,7 @@ export async function moveMatch(context: AuthenticatedContext, input: MoveInput)
       if (prior) return json(prior);
     } catch (error) {
       if (error instanceof MatchCommandConflict) return json({ error: "command-conflict" }, 409);
+      console.error("pvp-move command lookup failed:", error);
       return json({ error: "command-lookup-failed" }, 500);
     }
   }
@@ -94,7 +91,10 @@ export async function moveMatch(context: AuthenticatedContext, input: MoveInput)
 
   let mode: Mode;
   try { mode = rankedOutcomeByMatch(match.format, match.modifier).mode; }
-  catch { return json({ error: "corrupt-state" }, 500); }
+  catch (error) {
+    console.error("pvp-move found an unknown ranked outcome:", error);
+    return json({ error: "corrupt-state" }, 500);
+  }
   const replay = await loadReplay(svc, input.matchId, mode);
   if (!replay || replay.state.over || replay.state.turn !== mover) {
     return json({ error: "corrupt-state" }, 500);
@@ -164,6 +164,9 @@ export async function moveMatch(context: AuthenticatedContext, input: MoveInput)
       expectedMoveCount,
       expectedTurn: replay.state.turn,
       expectedNextDie: replay.state.nextDie,
+      // The database clock re-verifies the auto stall inside the locked
+      // transaction, so a fast Edge clock cannot force a move early.
+      expectedLastMoveAt: input.auto ? match.last_move_at : null,
       moves: commandMoves,
       nextTurn: terminal ? null : state.turn,
       nextDie: terminal ? null : state.nextDie,
@@ -172,7 +175,11 @@ export async function moveMatch(context: AuthenticatedContext, input: MoveInput)
     }, settle);
     return json(committed);
   } catch (error) {
-    if (error instanceof MatchCommandConflict) return json({ error: "race-lost" }, 409);
+    if (error instanceof MatchCommandConflict) {
+      return json({ error: error.message.includes("stalled") ? "not-stalled-yet" : "race-lost" },
+        error.message.includes("stalled") ? 425 : 409);
+    }
+    console.error("pvp-move command commit failed:", error);
     return json({ error: "command-failed" }, 500);
   }
 }

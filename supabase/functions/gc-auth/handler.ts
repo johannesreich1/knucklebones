@@ -1,10 +1,12 @@
 import { json, postOnly, record } from "../_shared/http.ts";
+import { secretEquals } from "../_shared/secret-equal.ts";
 
 const FRESH_MS = 10 * 60 * 1000;
 const MAX_BODY_BYTES = 8 * 1024;
 const MAX_CERT_BYTES = 16 * 1024;
 const MAX_CERT_CACHE_MS = 60 * 60 * 1000;
 const MAX_CERT_CACHE_ENTRIES = 4;
+const MAX_SEEN_PROOF_ENTRIES = 4096;
 const MAX_PLAYER_ID_CHARS = 512;
 const MAX_SIGNATURE_BYTES = 1024;
 const MAX_SALT_BYTES = 256;
@@ -131,11 +133,18 @@ async function certificateBytes(response: Response, expectedUrl: string): Promis
 
 export function createGcAuthHandler(dependencies: GcAuthDependencies) {
   const certificates = new Map<string, { bytes: ArrayBuffer; expiresAt: number }>();
+  /* Verified proofs are single-use: signature+salt hash -> when the proof
+     itself goes stale. Only proofs that passed signature verification are
+     recorded, so the ledger cannot be flooded with garbage. */
+  const seenProofs = new Map<string, number>();
   return async (request: Request): Promise<Response> => {
     const early = postOnly(request);
     if (early) return early;
     if (!dependencies.originSecret
-      || request.headers.get("X-Knucklebones-Origin") !== dependencies.originSecret) {
+      || !(await secretEquals(
+        request.headers.get("X-Knucklebones-Origin") ?? "",
+        dependencies.originSecret,
+      ))) {
       return json({ error: "forbidden" }, 403);
     }
 
@@ -193,7 +202,8 @@ export function createGcAuthHandler(dependencies: GcAuthDependencies) {
         const bounded = await certificateBytes(certificateResponse, publicKeyUrl);
         if (!bounded) return json({ error: "bad-certificate-response" }, 502);
         certificate = bounded;
-      } catch {
+      } catch (fetchError) {
+        console.error("gc-auth certificate fetch failed:", fetchError);
         return json({ error: "cert-unavailable" }, 502);
       }
     }
@@ -220,10 +230,30 @@ export function createGcAuthHandler(dependencies: GcAuthDependencies) {
         salt: parsedSalt,
         signature: parsedSignature,
       });
-    } catch {
+    } catch (verifyError) {
+      console.error("gc-auth certificate verification failed:", verifyError);
       return json({ error: "bad-certificate" }, 400);
     }
     if (!playerId) return json({ error: "unverified" }, 401);
+
+    /* A verified assertion is single-use. The freshness window would accept
+       the identical signed proof for up to ±10 minutes, so remember each
+       accepted signature until the stale-signature gate rejects it anyway. */
+    for (const [key, staleAt] of seenProofs) {
+      if (staleAt < now) seenProofs.delete(key);
+    }
+    const proofBytes = new Uint8Array(parsedSignature.length + parsedSalt.length);
+    proofBytes.set(parsedSignature, 0);
+    proofBytes.set(parsedSalt, parsedSignature.length);
+    const proofDigest = new Uint8Array(await crypto.subtle.digest("SHA-256", proofBytes as BufferSource));
+    const proofKey = [...proofDigest].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+    if (seenProofs.has(proofKey)) return json({ error: "replayed-signature" }, 401);
+    while (seenProofs.size >= MAX_SEEN_PROOF_ENTRIES) {
+      const oldest = seenProofs.keys().next().value as string | undefined;
+      if (oldest === undefined) break;
+      seenProofs.delete(oldest);
+    }
+    seenProofs.set(proofKey, Number(parsedTimestamp) + FRESH_MS);
     return dependencies.complete(request, playerId, mode);
   };
 }

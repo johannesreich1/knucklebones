@@ -17,6 +17,7 @@ import {
   MatchActionConflict,
   type ActionMetadata,
 } from "../_shared/match-action.ts";
+import { AUTO_MS } from "../_shared/match-timing.ts";
 import type { TerminalMatch } from "../_shared/settlement.ts";
 import {
   MATCH_COLUMNS,
@@ -26,7 +27,6 @@ import {
   type ProfileSummary,
 } from "../_shared/types.ts";
 
-const AUTO_MS = 12 * 1000;
 const ACTION_COLUMNS = "idx, move_idx, who, kind, rune_id, target_col, placed_col, "
   + "die_before, die_after, created_at";
 
@@ -58,6 +58,7 @@ export async function actionMatch(context: AuthenticatedContext, input: ActionIn
     if (prior) return json(prior);
   } catch (error) {
     if (error instanceof MatchActionConflict) return json({ error: "command-conflict" }, 409);
+    console.error("pvp-action command lookup failed:", error);
     return json({ error: "command-lookup-failed" }, 500);
   }
 
@@ -92,7 +93,10 @@ export async function actionMatch(context: AuthenticatedContext, input: ActionIn
 
   let outcome;
   try { outcome = rankedOutcomeByMatch(match.format, match.modifier); }
-  catch { return json({ error: "corrupt-state" }, 500); }
+  catch (error) {
+    console.error("pvp-action found an unknown ranked outcome:", error);
+    return json({ error: "corrupt-state" }, 500);
+  }
   const [{ data: actionData, error: actionError }, { data: seedData, error: seedError }] =
     await Promise.all([
       svc.from("match_actions").select(ACTION_COLUMNS).eq("match_id", match.id).order("idx"),
@@ -202,6 +206,7 @@ export async function actionMatch(context: AuthenticatedContext, input: ActionIn
       return json({ error: error.message.includes("stalled") ? "not-stalled-yet" : "race-lost" },
         error.message.includes("stalled") ? 425 : 409);
     }
+    console.error("pvp-action command commit failed:", error);
     return json({ error: "command-failed" }, 500);
   }
 }

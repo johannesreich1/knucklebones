@@ -5,7 +5,9 @@ import {
   createAppleIdentity,
   createGameCenterIdentity,
   sha256Hex,
+  type AppleIdentityPorts,
   type AppleSignInBridge,
+  type GameCenterIdentityPorts,
 } from '../src/online/identity.ts';
 import { runOneTapFromAuthSheet } from '../src/online/auth-screen.ts';
 import type { GameCenterProof } from '../src/native/game-center.ts';
@@ -64,7 +66,9 @@ function applePorts(
     ports: {
       getPlatform: () => platform,
       getPlugin: () => plugin,
-      getAuth: () => auth,
+      // The fake returns only the fields the code under test reads; the real
+      // supabase-js auth surface is far wider, so widen at this boundary only.
+      getAuth: () => auth as unknown as ReturnType<AppleIdentityPorts['getAuth']>,
       randomId: () => {
         const id = ids.shift();
         if (!id) throw new Error('test ran out of deterministic ids');
@@ -162,12 +166,14 @@ function gameCenterHarness(options: {
       if (options.throwAt === 'proof') throw new Error('proof failed');
       return GC_PROOF;
     },
+    // Same boundary widening as the Apple fake: the stub speaks the narrow
+    // protocol the identity code exercises, not the full supabase-js types.
     getAuth: () => ({
       getSession: async () => {
         calls.getSession++;
         return { data: { session: options.session ?? null }, error: options.sessionError ?? null };
       },
-      verifyOtp: async (params) => {
+      verifyOtp: async (params: { token_hash: string; type: string }) => {
         calls.verifyOtp.push(params);
         if (options.throwAt === 'verifyOtp') throw new Error('otp failed');
         return { data: { user: null, session: null }, error: null };
@@ -177,7 +183,7 @@ function gameCenterHarness(options: {
         if (options.throwAt === 'refreshSession') throw new Error('refresh failed');
         return { data: { user: null, session: null }, error: null };
       },
-    }),
+    }) as unknown as ReturnType<GameCenterIdentityPorts['getAuth']>,
     request: async (input, init) => {
       calls.requests.push({ input, init });
       requestedMode = JSON.parse(String(init.body)).mode;

@@ -43,10 +43,12 @@ export async function registerAppleToken(
       p_client_id: CLIENT_ID,
       p_refresh_token: exchanged.refreshToken,
     });
+    if (storeError) console.error("apple credential store failed:", storeError.message);
     return storeError
       ? json({ error: "credential-store-failed" }, 500)
       : json({ registered: true });
-  } catch {
+  } catch (error) {
+    console.error("apple token registration failed:", error);
     return json({ error: "apple-registration-failed" }, 502);
   }
 }

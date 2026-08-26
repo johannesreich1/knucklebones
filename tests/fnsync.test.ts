@@ -24,6 +24,8 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { deployContent, fnFiles, allSlugs, FN_DIR, uploadPayload } from '../tools/fnfiles.mjs';
+import { RUNE_IDS } from '../src/core/ranked-outcomes.ts';
+import { RUNE_IDS as SERVER_RUNE_IDS } from '../supabase/functions/_shared/rune-ids.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -116,6 +118,20 @@ for (const slug of [
   check(!/\.from\(|\.rpc\(|request\.json\(|req\.json\(/.test(index),
     `${slug}/index.ts contains request or database logic instead of a thin Deno.serve adapter`);
 }
+
+/* An exception that escapes a handler must still answer the JSON+CORS error
+   contract; every entry seam wraps itself in the shared boundary. */
+for (const slug of allSlugs()) {
+  const index = readFileSync(path.join(FN_DIR, slug, 'index.ts'), 'utf8');
+  check(index.includes('withErrorBoundary('),
+    `${slug}/index.ts does not wrap its entry in the shared JSON+CORS error boundary`);
+}
+
+/* SPELLS is the one rune roster. The handlers validate against the literal in
+   _shared/rune-ids.ts (they cannot import ./core outside the deploy closure),
+   so a seventh rune must never be client-complete but server-rejected. */
+check(JSON.stringify([...SERVER_RUNE_IDS]) === JSON.stringify([...RUNE_IDS]),
+  '_shared/rune-ids.ts drifted from the SPELLS registry — ranked play would 400 a legal rune');
 
 /* THE CHECK MUST BE ABLE TO FAIL. A broken import scanner would hand every
    function a one-file manifest and pass everything above vacuously, which is

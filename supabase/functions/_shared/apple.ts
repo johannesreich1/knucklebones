@@ -150,7 +150,8 @@ export async function revokeAppleRefreshToken(
     });
     if (response.ok) return "complete";
     return response.status >= 500 || response.status === 429 ? "retry" : "terminal";
-  } catch {
+  } catch (error) {
+    console.error("apple revocation request failed:", error);
     return "retry";
   }
 }

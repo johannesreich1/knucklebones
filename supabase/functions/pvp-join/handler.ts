@@ -1,4 +1,4 @@
-import { json, postOnly, record, type Authenticate, type AuthenticatedContext } from "../_shared/http.ts";
+import { authenticatedPost, json, type Authenticate, type AuthenticatedContext } from "../_shared/http.ts";
 import type { JoinInput } from "../_shared/types.ts";
 
 export type JoinOperation = (context: AuthenticatedContext, input: JoinInput) => Promise<Response>;
@@ -10,13 +10,10 @@ export interface JoinDependencies {
 
 export function createPvpJoinHandler(dependencies: JoinDependencies) {
   return async (request: Request): Promise<Response> => {
-    const early = postOnly(request);
-    if (early) return early;
-    const context = await dependencies.authenticate(request);
-    if (!context) return json({ error: "unauthorized" }, 401);
-
-    let body: Record<string, unknown> | null = null;
-    try { body = record(await request.json()); } catch { /* an empty body is valid */ }
+    /* an empty body is valid: a legacy client joins with no payload at all */
+    const prologue = await authenticatedPost(request, dependencies.authenticate, { optionalBody: true });
+    if (prologue instanceof Response) return prologue;
+    const { context, body } = prologue;
     const suppliedProtocol = body?.protocol_version;
     const protocolVersion = suppliedProtocol === undefined ? 1 : suppliedProtocol;
     const suppliedCapabilities = body?.capabilities;

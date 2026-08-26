@@ -30,6 +30,16 @@ export async function deleteAccount(
       }
       return { appleLinked, credentialId: data };
     },
+    undoBeforeDelete: async (raw) => {
+      const state = raw as { credentialId?: number | null } | null;
+      if (!state?.credentialId) return;
+      // The deletion failed, so the account lives on; return its staged Apple
+      // credential to 'active' before the revocation cron can claim it.
+      const { error } = await service.rpc("unstage_apple_revocation", {
+        p_user: context.user.id,
+      });
+      if (error) console.error("apple revocation unstage failed:", error.message);
+    },
     afterDelete: async (raw) => {
       const state = raw as { appleLinked?: boolean; credentialId?: number | null } | null;
       if (!state?.appleLinked) return { appleRevocation: "complete" };
@@ -47,7 +57,10 @@ export async function deleteAccount(
       try {
         const secret = await appleClientSecret(dependencies.env, clientId, dependencies.now());
         result = await revokeAppleRefreshToken(refreshToken, clientId, secret, dependencies.fetch);
-      } catch { /* the scheduled retry owns transient failure */ }
+      } catch (revokeError) {
+        /* the scheduled retry owns transient failure */
+        console.error("inline apple revocation failed:", revokeError);
+      }
       await service.rpc("finish_apple_revocation", {
         p_credential_id: state.credentialId,
         p_result: result,

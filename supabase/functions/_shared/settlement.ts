@@ -37,11 +37,78 @@ export interface SettlementPrecondition {
 }
 
 const LADDER_COLUMNS = "points, peak, wins, losses, draws";
-const SERIALIZATION_FAILURE = "40001";
+export const SERIALIZATION_FAILURE = "40001";
 const MAX_ATTEMPTS = 3;
 
 function errorMessage(error: { message?: string } | null | undefined): string {
   return error?.message ?? "unknown database error";
+}
+
+/** Sentinel an attempt returns when a fresh snapshot may still win. */
+export const RETRY_SETTLEMENT: unique symbol = Symbol("retry-settlement");
+
+/**
+ * Run one optimistic settlement attempt up to three times. The attempt
+ * returns RETRY_SETTLEMENT when PostgreSQL reported a serialization failure
+ * (40001) and it is not the final try; each call recomputes its snapshot from
+ * fresh reads. The final attempt maps the database error itself, so genuine
+ * exhaustion surfaces the database message rather than this generic one.
+ */
+export async function retryOnSerialization<T>(
+  attempt: (isFinal: boolean) => Promise<T | typeof RETRY_SETTLEMENT>,
+  exhausted: string,
+): Promise<T> {
+  for (let index = 1; index <= MAX_ATTEMPTS; index++) {
+    const result = await attempt(index === MAX_ATTEMPTS);
+    if (result !== RETRY_SETTLEMENT) return result;
+  }
+  throw new Error(exhausted);
+}
+
+/** The exact terminal fields every settlement RPC compare-and-sets. */
+export interface SettlementSnapshot {
+  status: "done" | "forfeit";
+  winner: string | null;
+  p1_score: number;
+  p2_score: number;
+  p1_delta: number;
+  p2_delta: number;
+  expected_p1: LadderRow;
+  expected_p2: LadderRow;
+  next_p1: LadderRow;
+  next_p2: LadderRow;
+}
+
+/**
+ * Load both ladder snapshots for the match's season and compute the terminal
+ * payload in shared TypeScript. Every terminal writer — move command, action
+ * command, and direct settlement — builds this identical shape once per
+ * serialization attempt.
+ */
+export async function buildSettlementSnapshot(
+  service: EdgeClient,
+  match: MatchRow,
+  terminal: TerminalMatch,
+  calculate: LadderSettlement,
+): Promise<SettlementSnapshot> {
+  const season = match.season_id ?? 1;
+  const [p1, p2] = await Promise.all([
+    loadLadderRow(service, season, match.p1),
+    loadLadderRow(service, season, match.p2),
+  ]);
+  const next = calculate(p1, p2, terminal.p1Result);
+  return {
+    status: terminal.status,
+    winner: terminal.winner,
+    p1_score: terminal.p1Score,
+    p2_score: terminal.p2Score,
+    p1_delta: next.da,
+    p2_delta: next.db,
+    expected_p1: p1,
+    expected_p2: p2,
+    next_p1: next.a,
+    next_p2: next.b,
+  };
 }
 
 /** Read the exact ladder snapshot that the database RPC will compare-and-set. */
@@ -107,25 +174,14 @@ export async function settleMatch(
   calculate: LadderSettlement,
   precondition?: SettlementPrecondition,
 ): Promise<SettlementResult> {
-  const season = match.season_id ?? 1;
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    const [p1, p2] = await Promise.all([
-      loadLadderRow(service, season, match.p1),
-      loadLadderRow(service, season, match.p2),
-    ]);
-    const next = calculate(p1, p2, terminal.p1Result);
+  return retryOnSerialization(async (isFinal) => {
+    const snapshot = await buildSettlementSnapshot(service, match, terminal, calculate);
+    // The RPC parameter names are exactly the snapshot fields, p_-prefixed.
     const settlement = {
       p_match_id: match.id,
-      p_status: terminal.status,
-      p_winner: terminal.winner,
-      p_p1_score: terminal.p1Score,
-      p_p2_score: terminal.p2Score,
-      p_p1_delta: next.da,
-      p_p2_delta: next.db,
-      p_expected_p1: p1,
-      p_expected_p2: p2,
-      p_next_p1: next.a,
-      p_next_p2: next.b,
+      ...Object.fromEntries(
+        Object.entries(snapshot).map(([field, value]) => [`p_${field}`, value]),
+      ),
     };
     const { data, error } = precondition
       ? await service.rpc("settle_match_checked", {
@@ -135,11 +191,10 @@ export async function settleMatch(
         ...settlement,
       })
       : await service.rpc("settle_match", settlement);
-    if (error?.code === SERIALIZATION_FAILURE && attempt < MAX_ATTEMPTS) continue;
+    if (error?.code === SERIALIZATION_FAILURE && !isFinal) return RETRY_SETTLEMENT;
     if (error) throw new Error(`atomic settlement failed: ${errorMessage(error)}`);
     const result = payload(data);
     if (!result) throw new Error("atomic settlement returned an invalid payload");
     return result;
-  }
-  throw new Error("atomic settlement retry budget exhausted");
+  }, "atomic settlement retry budget exhausted");
 }

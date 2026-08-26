@@ -1,4 +1,8 @@
-import { json, postOnly, record, type Authenticate, type AuthenticatedContext } from "../_shared/http.ts";
+import {
+  authenticatedPost, commandId, json, record, UUID,
+  type Authenticate, type AuthenticatedContext,
+} from "../_shared/http.ts";
+import { RUNE_IDS } from "../_shared/rune-ids.ts";
 import type { ActionInput, MatchActionInput } from "../_shared/types.ts";
 
 export type ActionOperation = (context: AuthenticatedContext, input: ActionInput) => Promise<Response>;
@@ -8,8 +12,7 @@ export interface ActionDependencies {
   operation: ActionOperation;
 }
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const RUNES = new Set(["fate", "nudge", "ward", "sunder", "pilfer", "anvil"]);
+const RUNES = new Set(RUNE_IDS);
 
 function actionInput(value: unknown): MatchActionInput | null {
   const action = record(value);
@@ -36,26 +39,23 @@ function actionInput(value: unknown): MatchActionInput | null {
 
 export function createPvpActionHandler(dependencies: ActionDependencies) {
   return async (request: Request): Promise<Response> => {
-    const early = postOnly(request);
-    if (early) return early;
-    const context = await dependencies.authenticate(request);
-    if (!context) return json({ error: "unauthorized" }, 401);
-
-    let body: Record<string, unknown> | null;
-    try { body = record(await request.json()); } catch { return json({ error: "bad-json" }, 400); }
+    const prologue = await authenticatedPost(request, dependencies.authenticate);
+    if (prologue instanceof Response) return prologue;
+    const { context, body } = prologue;
     const matchId = body?.match_id;
-    const commandId = body?.command_id ?? request.headers.get("Idempotency-Key");
+    const suppliedCommand = commandId(body, request);
     const expected = body?.expected_action_version;
     const auto = body?.auto === true;
     const action = auto ? null : actionInput(body?.action);
-    if (typeof matchId !== "string" || typeof commandId !== "string" || !UUID.test(commandId)
+    if (typeof matchId !== "string" || typeof suppliedCommand !== "string"
+        || !UUID.test(suppliedCommand)
         || !Number.isInteger(expected) || (expected as number) < 0
         || (auto ? body?.action !== undefined : action === null)) {
       return json({ error: "bad-request" }, 400);
     }
     return dependencies.operation(context, {
       matchId,
-      commandId,
+      commandId: suppliedCommand,
       expectedActionVersion: expected as number,
       auto,
       action,

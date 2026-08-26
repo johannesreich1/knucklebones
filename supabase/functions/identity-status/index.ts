@@ -1,11 +1,11 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "@supabase/supabase-js";
-import { createAuthenticator, json, postOnly } from "../_shared/http.ts";
+import { createAuthenticator, json, postOnly, withErrorBoundary } from "../_shared/http.ts";
 
 const clients = { createClient, env: Deno.env };
 const authenticate = createAuthenticator(clients);
 
-Deno.serve(async (request) => {
+Deno.serve(withErrorBoundary(async (request) => {
   const early = postOnly(request);
   if (early) return early;
   const context = await authenticate(request);
@@ -17,6 +17,8 @@ Deno.serve(async (request) => {
     service.rpc("apple_revocation_ready", { p_user: context.user.id }),
   ]);
   if (mapping.error || user.error || revocation.error || !user.data.user) {
+    console.error("identity-status read failed:",
+      (mapping.error ?? user.error ?? revocation.error)?.message);
     return json({ error: "identity-status-failed" }, 500);
   }
   return json({
@@ -24,4 +26,4 @@ Deno.serve(async (request) => {
     appleLinked: (user.data.user.identities ?? []).some((identity) => identity.provider === "apple"),
     appleRevocationReady: revocation.data === true,
   });
-});
+}));

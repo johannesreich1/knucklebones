@@ -10,6 +10,7 @@ import {
 } from "./core/ranked-outcomes.ts";
 import { rankedActionTotal, rebuildRankedActions, type RankedActionRow } from "./core/ranked-actions.ts";
 import { json, type AuthenticatedContext } from "../_shared/http.ts";
+import { STALL_MS } from "../_shared/match-timing.ts";
 import { ensureRuneTrialBotOpening } from "../_shared/rune-trial-bot-opening.ts";
 import { settleMatch } from "../_shared/settlement.ts";
 import {
@@ -25,7 +26,6 @@ import {
 } from "../_shared/types.ts";
 
 const QUEUE_STALE_MS = 2 * 60 * 1000;
-const STALL_MS = 30 * 1000;
 const ACTION_COLUMNS = "idx, move_idx, who, kind, rune_id, target_col, placed_col, die_before, die_after";
 
 export async function joinMatch(context: AuthenticatedContext, input: JoinInput): Promise<Response> {
@@ -77,7 +77,8 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
           match: payload.match,
           trial: payload.trial,
         });
-      } catch {
+      } catch (error) {
+        console.error("pvp-join bot opening failed:", error);
         return json({ error: "match-read-failed" }, 500);
       }
       privateMatch = opened.match;
@@ -105,7 +106,10 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
     if (opponentError || !(opponentData as { is_bot?: boolean } | null)?.is_bot) return false;
     let outcome;
     try { outcome = rankedOutcomeByMatch(match.format, match.modifier); }
-    catch { return false; }
+    catch (error) {
+      console.error("pvp-join found an unknown ranked outcome:", error);
+      return false;
+    }
     const [{ data: moveData, error: moveError }, { data: actionData, error: actionError },
       { data: seedData, error: seedError }] = await Promise.all([
       svc.from("match_moves").select("idx, who, col").eq("match_id", match.id),
@@ -216,7 +220,8 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
   let partner: QueueCandidate | null;
   try {
     partner = await findOldestEligiblePartner(svc, uid, myRating, band);
-  } catch {
+  } catch (error) {
+    console.error("pvp-join partner search failed:", error);
     return json({ error: "queue-failed" }, 500);
   }
   if (partner) {
@@ -244,7 +249,10 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
       );
       if (match) return matched(match, null);
     } catch (error) {
-      if (error instanceof MatchStartFailure) return json({ error: "match-start-failed" }, 500);
+      if (error instanceof MatchStartFailure) {
+        console.error("pvp-join match start failed:", error);
+        return json({ error: "match-start-failed" }, 500);
+      }
       throw error;
     }
   }
@@ -306,7 +314,10 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
         );
         if (match) return matched(match, null);
       } catch (error) {
-        if (error instanceof MatchStartFailure) return json({ error: "match-start-failed" }, 500);
+        if (error instanceof MatchStartFailure) {
+          console.error("pvp-join match start failed:", error);
+          return json({ error: "match-start-failed" }, 500);
+        }
         throw error;
       }
     }
