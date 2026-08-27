@@ -162,7 +162,13 @@ jobs:
       - run: npm ci
       # Publish what this repository's own build produces under the pinned
       # Node, not a separately configured dashboard build of the same commit.
+      # The gateway origin is a build-time Vite value, so it has to be present
+      # HERE: an unset variable is not an error, it silently produces a bundle
+      # whose Game Center linking posts to a relative path and never works.
+      # It is a variable rather than a secret because it ships in the bundle.
       - run: npm run build
+        env:
+          VITE_IDENTITY_GATEWAY_URL: ${{ vars.VITE_IDENTITY_GATEWAY_URL }}
       # The live site is a classic Pages project, so `pages deploy` — not
       # `wrangler deploy`, which would publish an unrelated Workers script.
       # `wrangler.jsonc` stays inert here: wrangler ignores a config without
