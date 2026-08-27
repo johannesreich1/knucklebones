@@ -17,6 +17,7 @@ import { RANDOM_DUAL_SPELL, SPELLS, RANDOM_SPELL } from '../../../src/core/spell
 import { spellCopy } from '../../../src/i18n/index.ts';
 import { createBrowserReport, capturePageErrors } from '../../support/browser-report.mjs';
 import { selectScenarios, validateScenarioShards } from '../../support/browser-scenarios.mjs';
+import { guardRoomAfter } from '../../support/modal-room.mjs';
 import { runPickerScenarios } from './scenarios/picker.mjs';
 import { runCastingScenarios } from './scenarios/casting.mjs';
 import { runTurnPresentationScenarios } from './scenarios/turn-presentation.mjs';
@@ -201,7 +202,15 @@ await ctx.addInitScript((snapshot) => localStorage.setItem('knucklebones.runes.v
     SPELLS, RANDOM_SPELL, RANDOM_DUAL_SPELL, spellCopy, newGame, waitChoose, table, guard, sidePage,
     look, tapCol, tapRune,
   };
-  for (const scenario of scenarios) await scenario.run(suite);
+  /* All twelve scenarios share the one `page` above. A sheet left up (the quit
+     question, the badge card a rune plate deals) covers inset:0 and eats the
+     next scenario's taps, so the room is checked — and put back — between
+     them, named against whoever left it. See tests/support/modal-room.mjs. */
+  for (const scenario of scenarios) {
+    await scenario.run(suite);
+    await guardRoomAfter(page, `spell scenario "${scenario.id}"`, problems,
+      { endsWithModal: scenario.endsWithModal === true });
+  }
 
   /* Selected runs are the fast iteration/release path. Keep their successful
      report tiny so the parent gate does not buffer and parse hundreds of KB;

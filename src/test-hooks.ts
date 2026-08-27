@@ -13,6 +13,7 @@ import { showHints } from './ui/game/hints.ts';
 import { applySides, setStatus, setActivePlate } from './ui/game/turn-state.ts';
 import { fit } from './ui/layout.ts';
 import { closeEnd, showEnd } from './ui/endscreen.ts';
+import { closeOpenSheet, sheetOpen } from './ui/sheet.ts';
 import { aiChoose, newGame, place, sayChoose, startRuneTryout, backToRankedFromTryout } from './flow/game.ts';
 import {
   cast,
@@ -34,6 +35,13 @@ export function hooks(){
            sideKey, faceRotated, applySides, renderAll, showHints, setStageDie, loaderDie, setStatus, setActivePlate, nameOf,
            burst, get reduced(){ return REDUCED; }, fit,
            showEnd, closeEnd,
+           /* The one shared modal sheet, published so a suite can ask the APP
+              whether a card is still up instead of guessing at class names —
+              a settled sheet and a dismissing one wear the same `fofly`. The
+              close is `closeOpenSheet`, the same door ui/firstrun.ts uses, so
+              a harness tidying up between scenarios goes out the way a player
+              would rather than deleting the node. */
+           sheet: { open: sheetOpen, close: closeOpenSheet },
            spells: {
              cast,
              arm,
