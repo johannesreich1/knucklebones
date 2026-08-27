@@ -191,7 +191,7 @@ try {
      the shared sheet, online-queue is also worn by design card 21,
      and pointschip remains for the active result study 36d. History uses an exact
      two-screen :is() root because one row implementation serves both lists. */
-  const onlineIds = /^(?:#ovOnline|#onAuth|#onQueue|#onBoard|#onAccount|#onAvatar|#onHistory)(?:\b|[.#:[>+~ ])/;
+  const onlineIds = /^(?:#ovOnline|#onAuth|#onQueue|#onLadder|#onAccount|#onAvatar|#onHistory)(?:\b|[.#:[>+~ ])/;
   const classRoots = /^(?:\.faceoff|\.online-queue|\.pointschip)(?:\b|[.#:[>+~ ])/;
   const historyRoot = /^:is\(#onAccount,#onHistory\)\s+\.history-row(?:\b|[.#:[>+~ ])/;
   const withoutApplicationRoot = (selector: string): string => selector

@@ -54,11 +54,11 @@ import {
   openModes,
   openSpells,
 } from '../ui/library.ts';
-import { loaderWait } from '../ui/loader.ts';
 import { bindLearnPageBack } from '../ui/learn-page.ts';
 import { tap } from '../ui/tap.ts';
 import { isEmbed } from '../ui/embed.ts';
 import { hueLabel } from '../ui/hue.ts';
+import { bindOnlineDoors } from './online-door.ts';
 import { bindPickerRow, eventButton } from './picker-row.ts';
 
 function syncUserSettings(): void {
@@ -287,23 +287,9 @@ export function bindMenus(root: HTMLElement): void {
     tap($(selector), openBadgeEntry);
   });
 
-  let onlineBusy = false;
-  const goOnline = (view: 'play' | 'board' | 'account'): void => {
-    Sfx.unlock();
-    Sfx.tap();
-    if (onlineBusy) return;
-    onlineBusy = true;
-    const loading = $('#ovLoad');
-    if (!loading.firstChild) loading.appendChild(loaderWait(56));
-    show('#ovLoad');
-    import('../online/ui.ts').then((online) => online.openOnline(view, {
-      startTutorial: () => newGame({ tutorial: true }),
-      tryRune: (runeId, onBackToRanked) => startRuneTryout(runeId, onBackToRanked),
-    }))
-      .finally(() => { onlineBusy = false; hide('#ovLoad'); });
-  };
-  tap($('#btnOnline'), () => goOnline('play'));
-  tap($('#btnBoardHome'), () => goOnline('board'));
+  bindOnlineDoors({
+    startTutorial: () => newGame({ tutorial: true }),
+    tryRune: (runeId, onBackToRanked) => startRuneTryout(runeId, onBackToRanked),
+  });
   tap($('#btnSettingsHome'), () => { Sfx.unlock(); Sfx.tap(); show('#ovSettings'); });
-  tap($('#homeChip'), () => goOnline('account'));
 }

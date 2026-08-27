@@ -198,7 +198,7 @@ for (const file of graphFiles) {
 
 const MOVE_VIEW_OWNER = 'src/ui/game/move-view.ts';
 const MOTION_OWNER = 'src/ui/game/motion.ts';
-const GAME_DRIVERS = ['src/flow/game.ts', 'src/online/play.ts'];
+const GAME_DRIVERS = ['src/flow/game.ts', 'src/online/play/play.ts'];
 const reachableFrom = (entry: string): Set<string> => {
   const reached = new Set<string>();
   const pending = [...(graph.get(path.resolve(ROOT, entry)) ?? [])];

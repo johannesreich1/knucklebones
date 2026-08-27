@@ -18,7 +18,8 @@ export const NATIVE_STORE_NAME = 'Knucklebones Neon';
 /* The classic board. Game modes with other shapes (e.g. 4 columns) become a
    different spec carried by the mode — the rules and AI read dimensions from
    here and never hard-code them. Balancing and AI depth budgets are NOT
-   automatic: re-measure with tests/bench3.mjs when introducing a new spec. */
+   automatic: re-measure with tests/col-score-bench.mjs when introducing a new
+   spec. */
 export interface BoardSpec {
   readonly cols: number;
   readonly rows: number;

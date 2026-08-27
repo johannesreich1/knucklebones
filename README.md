@@ -24,7 +24,13 @@ src/
 ├── persist.ts       # stats + in-progress save (corrupt blobs rejected)
 ├── ui/              # shared game view/motion, DOM, input, layout, audio, embed
 ├── flow/            # game (turn state machine), menu, timer, tutorial
-├── online/          # lazy auth/ladder/match APIs and ranked screen controllers
+├── online/          # LAZY ranked chunk, entered only via import() from boot/
+│   ├── api/         #   Supabase client, RPC wrappers, request-lifecycle seams
+│   ├── identity/    #   session, guest upgrade, one-tap providers, Game Center
+│   ├── play/        #   the ranked match controller, synchronizer, watchdog
+│   ├── runes/       #   collection, reward acks, Rune Trial offer
+│   ├── screens/     #   the ONLINE overlay shell and every panel it paints
+│   └── styles/      #   one stylesheet per screen, behind online.css
 ├── boot.ts + boot/  # typed composition and focused browser bindings
 ├── test-hooks.ts    # the stable test-hook surface (window.__kb)
 └── main.ts / widget.ts   # entry points: page vs embeddable widget
@@ -55,7 +61,7 @@ in a service-only table, and `pvp-move` rebuilds the board from the
 die-carrying move log on every request — a hacked client can lose stylishly
 but cannot cheat. When matchmaking needs to backfill the pool, a server-side
 bot (same `core/ai.ts`, disguised behind a generated nickname) takes the
-seat; bot games rate the human, bot accounts never appear on the leaderboard.
+seat; bot games rate the human, bot accounts never appear on the ladder.
 Absent-human auto-play and forfeits are enforced against server time by the
 Edge Functions; their constants, not prose, are authoritative. The whole
 online client is lazy-loaded, so the offline boot path never depends on it.
@@ -151,7 +157,7 @@ wrong tree.
 Inside ONE working tree the gate takes `.gate.lock` and a second run queues
 behind it ("another gate holds this checkout — waiting for it"), because what
 is shared there is the build output: `build.mjs` rewrites `pwa/` and `dist/`,
-and `pwa-update` (`tests/testupdate.mjs`) rewrites `pwa/index.html` and
+and `pwa-update` (`tests/pwa-update.mjs`) rewrites `pwa/index.html` and
 `pwa/sw.js` mid-run. A stale
 lock from a killed gate is detected by pid and taken; `KB_NO_LOCK=1` skips it.
 Worktrees stay the recommendation anyway — a shared checkout gates everyone's
@@ -161,7 +167,7 @@ What is still *not* isolated is the machine. Three concurrent gates flaked a
 drag-timing spell suite that passed alone and passed in a parallel worktree
 at the same commit; use `KB_JOBS=2` when peers are gating.
 
-Any suite also runs on its own — `mise exec -- node tests/test7.mjs` starts
+Any suite also runs on its own — `mise exec -- node tests/pwa-service-worker.mjs` starts
 whatever server it needs and takes it down with the process. Nothing to launch in another
 terminal first. `mise exec -- npm run serve` still exists for a human who wants
 a stable URL to click (`mise exec -- node tests/serve.mjs [port]`, default
@@ -215,12 +221,12 @@ a cloud session, which has none.
 - **`colScore`/`countOf` (core/rules.ts) are the AI's hot path** (millions of
   calls per move). Hard upgrades 4-ply → 5-ply search only if 4-ply finished
   within 18 ms — slowing scoring quietly weakens the CPU on mid phones.
-  Benchmark with `mise exec -- node tests/bench3.mjs`; ignore the first
+  Benchmark with `mise exec -- node tests/col-score-bench.mjs`; ignore the first
   (JIT-cold) run.
 - **Player index is identity** (1 = cyan/P1, 0 = magenta/P2); which half of
   the screen a player occupies is `S.bottom`, resolved via `sideKey()`. Never
   assume P1 is at the bottom — pass mode swaps halves, face mode doesn't.
-- **Online concurrency is subtle.** `src/online/play.ts` documents its
+- **Online concurrency is subtle.** `src/online/play/play.ts` documents its
   invariants inline (the `animating` gate goes up *before* the move request,
   the applied-counter is claimed *before* animating, deferred match rows
   drain in exactly one place). They were each earned through a live race —
@@ -238,9 +244,9 @@ a cloud session, which has none.
   its member names stable. Suites reach the relocated local-play controls via
   `__kb.openPractice()` / `__kb.goHome()`. The lazy online chunk cannot be
   reached from there (test-hooks.ts must never import it), so it publishes its own
-  two on load: `__kbOnline()` introspects the live match (`online/play.ts`) and
+  two on load: `__kbOnline()` introspects the live match (`online/play/play.ts`) and
   `__kbResult(report)` deals the Result screen without one
-  (`online/result-screen.ts`).
+  (`online/screens/result-screen.ts`).
 
 ## Native (iOS / Android)
 

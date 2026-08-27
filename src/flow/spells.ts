@@ -138,7 +138,7 @@ export function renderSpells(): void {
 }
 
 /* The visible spend of one charge: the outgoing card copy plus the counters
-   the rail renders from. Shared with the ranked replay (online/play-sync) so
+   the rail renders from. Shared with the ranked replay (online/play/play-sync) so
    the charge beat cannot drift between the two drivers. */
 export function spendChargePresentation(who: Player, spell: SpellSpec, faceUp = false): void {
   playSpellCharge(who, spell.id, faceUp);

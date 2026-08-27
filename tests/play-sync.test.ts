@@ -1,4 +1,4 @@
-// Owner test for the ranked in-match synchronizer (src/online/play-sync.ts).
+// Owner test for the ranked in-match synchronizer (src/online/play/play-sync.ts).
 // The module is driven purely through its OnlineSyncPorts plus a stubbed
 // global fetch that serves PostgREST-shaped snapshots — no network, no live
 // backend, no browser. Animations are never entered (every sync here is a
@@ -6,10 +6,10 @@
 // snapshots install, which are refused, and when the drained match row may
 // reopen input.
 import { CLASSIC, emptyBoard, freshCharm } from '../src/core/rules.ts';
-import type { MatchRow } from '../src/online/match-api.ts';
-import { requireProjectionRecovery } from '../src/online/play-recovery.ts';
-import { createOnlineSynchronizer } from '../src/online/play-sync.ts';
-import type { OnlineState } from '../src/online/play-types.ts';
+import type { MatchRow } from '../src/online/api/match-api.ts';
+import { requireProjectionRecovery } from '../src/online/play/play-recovery.ts';
+import { createOnlineSynchronizer } from '../src/online/play/play-sync.ts';
+import type { OnlineState } from '../src/online/play/play-types.ts';
 import { S } from '../src/state.ts';
 import { installFakeDom } from './support/fake-dom.ts';
 

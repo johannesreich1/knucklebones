@@ -25,8 +25,14 @@ styles/
   components/     controls, sheets, pickers, identity, loader
   game/           board, dice, stage, effects, guards, modes, spells, layout
   screens/        home, reveal, tutorial, handoff, result, learn
-online/styles/    auth, matchmaking, ladder, faceoff, profile, history, result
+online/styles/    base, ladder, faceoff, matchmaking, account, result, profile,
+                  avatar, history
 ```
+
+One screen owns one stylesheet. The ladder was the counter-example — a
+`ladder.css` and a `leaderboard.css` whose relative cascade was decided by the
+`@import` order in `online.css` and therefore visible from neither file — and
+they are now one file in that same order.
 
 `main.css` and `online.css` remain the public manifests so runtime imports,
 the design builder, and CSS reachability checks share one dependency graph.

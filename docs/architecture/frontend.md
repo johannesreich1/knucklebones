@@ -14,7 +14,31 @@ module move. Product rules live in `docs/MODES.md`, `docs/SPELLS.md`, and
 - `src/flow/` owns local lifecycle and turn orchestration.
 - `src/online/` is lazy-loaded and owns authentication, remote persistence,
   matchmaking, collection synchronization, Rune Trial selection, and the
-  ranked controller.
+  ranked controller. It is grouped by ownership, not by file count:
+
+```text
+online/
+  api/        the Supabase client, the RPC wrappers, and the request-lifecycle
+              seams that keep restartable calls honest (idempotent commands,
+              run generations, the join/leave cancellation race)
+  identity/   session, guest upgrade, one-tap providers, Game Center
+  play/       the ranked match controller, its synchronizer, and its watchdog
+  runes/      collection, reward acknowledgement, and the Rune Trial offer
+  screens/    the ONLINE overlay shell and every panel it paints, plus the
+              face-off sheet and the row formatters those panels share
+  styles/     one stylesheet per screen, behind the online.css manifest
+```
+
+  `message-copy.ts` and `preferences.ts` stay at the folder root because they
+  are the two modules no single cluster owns: localized online errors are read
+  by screens and identity alike, and preference sync is a boot-level entry that
+  bridges local persistence with the account row.
+
+  The chunk boundary is the point of all this: the only edges into
+  `src/online/` are the `import()` calls in `src/boot/*`. A static import from
+  `core/`, `flow/`, `ui/`, `i18n/`, `legal/`, or a root module would merge the
+  Supabase client into every local and widget load; `tests/architecture.test.ts`
+  fails on one.
 - `src/ui/` renders shared player-visible concepts and supplies small browser
   primitives.
 - `src/core/` contains rules, replay, dice streams, modes, spells, ladder
@@ -26,6 +50,15 @@ module move. Product rules live in `docs/MODES.md`, `docs/SPELLS.md`, and
 `practice` names (`#ovPractice`, `openPractice()`, the `practice` i18n
 namespace) — fold those into `local` when that layer is next touched, and do
 not add new `practice` identifiers meanwhile.
+
+The ranked standings had the same problem and are now settled: one concept,
+one word, **ladder**. The route is `'ladder'`, the panel is `#onLadder` with
+`#onLadderList`, the stylesheet is `online/styles/ladder.css`, and the API
+reads `ladderPage()`/`ladderPageBefore()` returning `LadderRow`. The words
+`board` and `leaderboard` survive only where they are not ours to rename: the
+deployed `leaderboard`/`leaderboard_before` SQL functions, the `#btnBoardHome`
+element id, and the `.lb`/`.lrow` classes. Do not reintroduce either word for
+anything new.
 
 ## Dependency direction
 
@@ -76,7 +109,7 @@ not need a framework store, event bus, or dependency-injection container.
 - `S.gen` invalidates stale local asynchronous work. New delayed work must
   capture and re-check the relevant generation.
 - Online synchronization has additional ordering rules documented beside the
-  implementation in `src/online/play.ts`. Preserve the applied-log counter,
+  implementation in `src/online/play/play.ts`. Preserve the applied-log counter,
   animation gate, and teardown/generation checks when decomposing it.
 - Protocol-v1 standard matches continue to synchronize their placement log.
   Rune Trial protocol v2 synchronizes the ordered aim/cast/place action log and

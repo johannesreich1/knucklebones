@@ -274,7 +274,7 @@ export async function reveal(opts: {
   const ov = $('#ovWheel');
   /* A ranked match is a comparison, so the screen shows the comparison: both
      players, both ratings — each wearing the profile avatar they chose, the
-     same face the leaderboard and the face-off card show for them. */
+     same face the ladder and the face-off card show for them. */
   const who = $('#wheelWho');
   who.innerHTML = opts.foe && opts.me ? versus(opts.me, opts.foe) : '';
   if (opts.foe && opts.me) {

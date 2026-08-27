@@ -2,8 +2,8 @@
 // PERFORMANCE: this is the game's hot path. colScore/countOf run millions of
 // times per move; Hard decides whether to search a 5th ply by timing the 4th
 // against an 18ms budget, so slowing anything here quietly weakens the CPU on
-// mid-range phones. Benchmark with tests/bench3.mjs before changing (and skip
-// the first JIT-cold run when reading its numbers).
+// mid-range phones. Benchmark with tests/col-score-bench.mjs before changing
+// (and skip the first JIT-cold run when reading its numbers).
 import { DICE_FACES } from '../config.ts';
 import {
   SPEC, type GameState, type Player, type Mode,

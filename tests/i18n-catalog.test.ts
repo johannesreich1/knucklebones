@@ -99,7 +99,7 @@ assert.deepEqual(LOCALE_NAMESPACES, ['common', 'settings', 'game', 'online', 'le
 const markupSources = [
   readFileSync(new URL('../build.mjs', import.meta.url), 'utf8'),
   readFileSync(new URL('../src/markup.ts', import.meta.url), 'utf8'),
-  readFileSync(new URL('../src/online/shell.ts', import.meta.url), 'utf8'),
+  readFileSync(new URL('../src/online/screens/shell.ts', import.meta.url), 'utf8'),
   readFileSync(new URL('../src/ui/firstrun.ts', import.meta.url), 'utf8'),
   readFileSync(new URL('../src/ui/learn-page.ts', import.meta.url), 'utf8'),
   readFileSync(new URL('../src/ui/loader.ts', import.meta.url), 'utf8'),

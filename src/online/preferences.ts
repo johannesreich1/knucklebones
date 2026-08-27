@@ -13,8 +13,8 @@ import {
 import { saveStats } from '../persist.ts';
 import { syncSettingsUI } from '../flow/menu.ts';
 import { updateRecord } from '../ui/game/hud.ts';
-import { supa } from './client.ts';
-import { currentUser } from './session.ts';
+import { supa } from './api/client.ts';
+import { currentUser } from './identity/session.ts';
 
 interface SettingsRow {
   user_id: string;

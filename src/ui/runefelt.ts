@@ -30,12 +30,12 @@ export const restOf = (i: number, count: number) => {
    EVERY y here is a PERCENTAGE OF THE CARD'S OWN HEIGHT (translate y%), never
    px: --card runs 58..96px and reaches its 58px floor on a short landscape phone, and
    a fixed-px row offset that cleared the title at 76px escaped the stage at
-   40px (test20's 320px lanes caught it). Percentages keep the table identical
+   40px (rune-deal-reveal's 320px lanes caught it). Percentages keep the table identical
    at every size. */
 export const PILES = [-122, 0, 122] as const;    // % of the card's own width
 /* -9 with a 0.75 step keeps the ASSEMBLED stack's top card (k=5, rotated ±4°)
    inside the stage box on the 320px lanes — higher rows read nicer at 430px
-   but test20's short-landscape check is the boundary that matters */
+   but rune-deal-reveal's short-landscape check is the boundary that matters */
 export const PILE_Y = -9;                        // the pile row, % above the fan line
 /* 102 leaves a visible body gap after rotation between the remaining source
    stock and every pile card. At 92 their axis-aligned bodies still crossed by

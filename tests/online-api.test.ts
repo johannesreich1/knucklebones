@@ -1,23 +1,23 @@
 import {
   historyPageArgs,
-  leaderboardBeforePageArgs,
-  leaderboardPageArgs,
-} from '../src/online/ladder-api.ts';
+  ladderPageArgs,
+  ladderPageBeforeArgs,
+} from '../src/online/api/ladder-api.ts';
 import { readFileSync } from 'node:fs';
-import { createRunGeneration } from '../src/online/run-generation.ts';
-import { createQueueCancellation } from '../src/online/queue-cancellation.ts';
-import { createInitialSyncBoundary } from '../src/online/initial-sync.ts';
-import { newerMatchProjection, readMatchSyncSnapshot } from '../src/online/match-sync.ts';
-import { randomUuid } from '../src/online/random-id.ts';
+import { createRunGeneration } from '../src/online/api/run-generation.ts';
+import { createQueueCancellation } from '../src/online/api/queue-cancellation.ts';
+import { createInitialSyncBoundary } from '../src/online/play/initial-sync.ts';
+import { newerMatchProjection, readMatchSyncSnapshot } from '../src/online/play/match-sync.ts';
+import { randomUuid } from '../src/online/api/random-id.ts';
 import {
   isMissingQueueLifecycleRpc,
   joinResultFromResponse,
   leaveQueueWithClient,
-} from '../src/online/match-api.ts';
-import { localizedAuthError } from '../src/online/session.ts';
-import { rankedBadge } from '../src/online/play-copy.ts';
-import { supportsRankedClientRules } from '../src/online/play-state.ts';
-import { trialSelectionSettled } from '../src/online/trial-offer.ts';
+} from '../src/online/api/match-api.ts';
+import { localizedAuthError } from '../src/online/identity/session.ts';
+import { rankedBadge } from '../src/online/play/play-copy.ts';
+import { supportsRankedClientRules } from '../src/online/play/play-state.ts';
+import { trialSelectionSettled } from '../src/online/runes/trial-offer.ts';
 import { setLanguageOverride, t } from '../src/i18n/index.ts';
 
 const problems: string[] = [];
@@ -52,23 +52,23 @@ check(next.before_t === cursor.when && next.before_id === cursor.id,
 check(Object.keys(next).sort().join(',') === 'before_id,before_t,limit_n',
   'history pagination sent an unexpected RPC argument', next);
 
-const ladder = leaderboardPageArgs(25, 76, 'ZestyFalcon614');
+const ladder = ladderPageArgs(25, 76, 'ZestyFalcon614');
 check(JSON.stringify(ladder) === JSON.stringify({
   limit_n: 25,
   from_rank: 76,
   after_nickname: 'ZestyFalcon614',
 }),
-  'leaderboard pagination must match the SQL RPC argument names', ladder);
-check(!('after_nickname' in leaderboardPageArgs(25, 76)),
-  'the first leaderboard window must include its requested rank');
+  'ladder pagination must match the SQL RPC argument names', ladder);
+check(!('after_nickname' in ladderPageArgs(25, 76)),
+  'the first ladder window must include its requested rank');
 
-const ladderBefore = leaderboardBeforePageArgs(25, 76, 'ZestyFalcon614');
+const ladderBefore = ladderPageBeforeArgs(25, 76, 'ZestyFalcon614');
 check(JSON.stringify(ladderBefore) === JSON.stringify({
   limit_n: 25,
   before_rank: 76,
   before_nickname: 'ZestyFalcon614',
 }),
-  'reverse leaderboard pagination must send both members of the stable cursor', ladderBefore);
+  'reverse ladder pagination must send both members of the stable cursor', ladderBefore);
 
 /* A boolean cancellation flag can become "active" again when a replacement
    run starts. Generations only move forward, so neither cancel nor begin can
@@ -92,8 +92,8 @@ check(deterministicUuid === '00010203-0405-4607-8809-0a0b0c0d0e0f'
   && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(deterministicUuid),
   'the iOS-14-compatible command/nonce generator is not RFC 4122 UUIDv4', deterministicUuid);
 
-const matchApiSource = readFileSync('src/online/match-api.ts', 'utf8');
-const onlineClientSource = readFileSync('src/online/client.ts', 'utf8');
+const matchApiSource = readFileSync('src/online/api/match-api.ts', 'utf8');
+const onlineClientSource = readFileSync('src/online/api/client.ts', 'utf8');
 check(onlineClientSource.includes('new AbortController()')
   && onlineClientSource.includes('Promise.race([request, timeout])'),
   'online function calls have no bounded abort/recovery boundary');
@@ -104,12 +104,12 @@ const moveTransport = matchApiSource.slice(
 check(!moveTransport.includes('status === 0')
   && (moveTransport.match(/callFunction<MoveResult>\('pvp-move'/g) ?? []).length === 1,
   'new web can automatically replay a move against the old non-idempotent Edge Function');
-const playSource = readFileSync('src/online/play.ts', 'utf8');
-const trialSelectionSource = readFileSync('src/online/trial-offer.ts', 'utf8');
+const playSource = readFileSync('src/online/play/play.ts', 'utf8');
+const trialSelectionSource = readFileSync('src/online/runes/trial-offer.ts', 'utf8');
 check(trialSelectionSource.includes('readRuneTrialState(current.match.id)')
   && !trialSelectionSource.includes('join(false)'),
   'Rune Trial selection recovery can mutate matchmaking instead of reading its known match');
-const trialActionSource = readFileSync('src/online/play-trial-actions.ts', 'utf8');
+const trialActionSource = readFileSync('src/online/play/play-trial-actions.ts', 'utf8');
 check(trialActionSource.includes('online.actionApplied >= committedVersion')
   && trialActionSource.includes('boundedAction(')
   && trialActionSource.includes('requireProjectionRecovery(online, committedVersion)')

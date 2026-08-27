@@ -169,7 +169,7 @@ export function boardGroup(points: number, apex: boolean): Group {
    you are in and how far the next one is — so "GOLD II" beside a bar reading
    47% was a second, worse way of saying the same fact. Nothing functional ever
    read them: matchmaking pairs on points, bot difficulty on the bot's own
-   group, the leaderboard and the apex on points and rank. */
+   group, the ladder and the apex on points and rank. */
 
 export function groupOf(points: number): Group {
   let found = GROUPS[0];

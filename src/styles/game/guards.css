@@ -255,7 +255,7 @@
 
 /* ===== STRUCK. Both beats ride the SAME moment the chip's mark already flares
    on (ui/game/seals.ts shieldBlocked / wardBurned, called by flow/game.ts and
-   online/play.ts alike) — the seal is the column's dress and the mark is the
+   online/play/play.ts alike) — the seal is the column's dress and the mark is the
    chip's, and they answer one strike together. =====
 
    SHIELD STRUCK: the line does not thin, does not gap, loses nothing. It

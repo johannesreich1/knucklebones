@@ -50,7 +50,7 @@ import { settledAnswer, answerLines, versus } from '../src/ui/reveal.ts';
 import { parseAvatar, AV_HUES } from '../src/ui/avatar.ts';
 import { dieMarkup } from '../src/ui/die-markup.ts';
 import { loaderWaitMarkup } from '../src/ui/loader.ts';
-import { accountRunesMarkup } from '../src/online/account-runes.ts';
+import { accountRunesMarkup } from '../src/online/screens/account-runes.ts';
 import { spellById } from '../src/core/spells.ts';
 import { modeById } from '../src/core/modes.ts';
 import { libraryCards, pickerButtons, pickInfo, MODE_LIB, SPELL_LIB, MODE_PICKS, SPELL_PICKS } from '../src/ui/library.ts';

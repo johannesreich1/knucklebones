@@ -8,8 +8,8 @@ import {
   type AppleIdentityPorts,
   type AppleSignInBridge,
   type GameCenterIdentityPorts,
-} from '../src/online/identity.ts';
-import { runOneTapFromAuthSheet } from '../src/online/auth-screen.ts';
+} from '../src/online/identity/identity.ts';
+import { runOneTapFromAuthSheet } from '../src/online/screens/auth-screen.ts';
 import type { GameCenterProof } from '../src/native/game-center.ts';
 
 const problems: string[] = [];
@@ -254,7 +254,7 @@ for (const throwAt of ['proof', 'request', 'json', 'verifyOtp'] as const) {
     `a thrown Game Center ${throwAt} escaped the localized boundary`);
 }
 
-const identitySource = readFileSync('src/online/identity.ts', 'utf8');
+const identitySource = readFileSync('src/online/identity/identity.ts', 'utf8');
 check(!/from\s+['"]@(?:capacitor|capawesome)\//.test(identitySource),
 'web identity code imports a native plugin');
 check(!/result\.(?:user|email|givenName|familyName|realUserStatus)\b/.test(identitySource)

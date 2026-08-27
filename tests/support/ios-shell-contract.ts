@@ -22,7 +22,7 @@ const LAUNCH_SCREEN = 'native/ios/App/App/Base.lproj/LaunchScreen.storyboard';
 const APP_ICON_CATALOG = 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/Contents.json';
 const SPLASH_CATALOG = 'native/ios/App/App/Assets.xcassets/Splash.imageset/Contents.json';
 const GC_PODSPEC = 'native/plugins/gamecenter/KnucklebonesGameCenter.podspec';
-const APPLE_IDENTITY = 'src/online/apple-identity.ts';
+const APPLE_IDENTITY = 'src/online/identity/apple-identity.ts';
 const GAME_CENTER_COORDINATOR = 'src/native/game-center.ts';
 const GC_AUTH = 'supabase/functions/gc-auth/index.ts';
 

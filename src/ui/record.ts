@@ -1,7 +1,7 @@
 // A player's record, in ONE shape.
 //
 // Three screens state the same fact — the HUD badge, the account card, and
-// every leaderboard row — and they had drifted into three phrasings: the
+// every ladder row — and they had drifted into three phrasings: the
 // ladder said "42W/103", wins over games, so a LOSS never appeared on it at
 // all. One string now, and the caller's CSS decides how loud it is: the HUD
 // tints .n1 cyan and .n2 magenta, and the same markup renders plain wherever

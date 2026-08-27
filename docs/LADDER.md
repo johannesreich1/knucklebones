@@ -86,7 +86,7 @@ cutting the ring into three segments. Once the ring fills as a **continuous
 percentage of the group**, the bar already shows which part of it you are in
 and how far the next one is — so "GOLD II" printed beside a ring reading 49%
 was a second, worse way of saying the same fact. Nothing functional ever read
-them: matchmaking pairs on points, the bots on their own group (§4), the leaderboard and
+them: matchmaking pairs on points, the bots on their own group (§4), the ladder and
 the apex on points and rank. They are gone.
 
 What that costs is promotion *frequency* — group to group is 37 games at the
@@ -209,8 +209,12 @@ matches.season_id smallint references seasons   -- stamped at creation
   cursor because ladder ranks can tie.
 - `leaderboard_before(limit_n, before_rank, before_nickname)` walks that same
   total order upward and returns the nearest preceding rows in display order.
-  `player_standing()` is projected from the identical visible board, so its
+  `player_standing()` is projected from the identical visible list, so its
   rank is always a valid anchor even when bot visibility or unplayed rows differ.
+- Those two SQL names are the deployed contract and stay as written. The client
+  says **ladder** everywhere else: `ladderPage()` and `ladderPageBefore()` in
+  `src/online/api/ladder-api.ts` are the only callers, and they return
+  `LadderRow`.
 - The UI shows no season control until `count(seasons) > 1`. The profile
   already has the slot, hidden (design card 92d).
 
@@ -320,7 +324,8 @@ re-mirrored from `season_ratings`).
 ## 5. The profile
 
 Design: card **92d** (`design/screens/product/92d-arc-season.html`). Built in
-`online/ladder-screen.ts` + `online/online.css`.
+`online/screens/account-screen.ts` (the sweep itself in
+`online/screens/account-ring.ts`) over `online/styles/profile.css`.
 
 **The ring is the screen.** ONE continuous fill — the percentage of the way
 through your current group — and it **sweeps up to its value when the profile
@@ -382,10 +387,10 @@ only, so the line would be a promise nobody made.
 match *actually* paid. It goes through the `match_history()` definer function
 (migration 0020), because `profiles` is own-row only — a client-side join for
 opponent nicknames returns nothing and every row reads "???", which is exactly
-why the leaderboard is a definer function too.
+why the ladder window is a definer function too.
 
 **The result screen** names what the match paid in **points**, not Elo, and the
-rank comes from `player_standing()` rather than scanning a leaderboard page for
+rank comes from `player_standing()` rather than scanning a ladder page for
 your own nickname — which silently found nothing past rank 50.
 
 **One ask-card** (`ui/askcard.ts`) serves every either/or question: quitting,

@@ -117,7 +117,8 @@
      used to snap to full on the first scrolled pixel, which read as a slab
      dropping in (user report, from the ladder).
      THE FALLBACK 0 IS LOAD-BEARING. A view can be measured before any scroll
-     has ever fired — tests/test17 opens views by hand, and assigning a body's
+     has ever fired — tests/practice-sheet-stability.mjs opens views by hand,
+     and assigning a body's
      scrollTop the 0 it already holds fires no event — so --sc is genuinely
      unset at rest. Without the fallback the declaration is invalid at
      computed-value time and opacity falls back to its INITIAL value, 1,
