@@ -119,11 +119,14 @@ const OVERLAY = `
       <button class="btn primary" id="btnKeepAcc" data-i18n="online:profile.keepForever">Keep it forever</button>
       <button class="btn ghost" id="btnHaveAcc" data-i18n="online:auth.alreadyHaveAccount">I already have an account</button>
     </div>
+    <!-- Every row here is painted in or out by account-provider-view: the box
+         exists only while something in it is actionable, so each row starts
+         hidden rather than stating a provider fact nobody has checked yet. -->
     <div class="guestbox providerbox" id="accProviders" hidden>
       <b data-i18n="online:profile.accountAccess">ACCOUNT ACCESS</b>
-      <p id="accGameCenterState"></p>
-      <p id="accAppleState"></p>
-      <button class="btn apple" id="btnLinkApple" data-i18n="online:profile.addApple">Add Apple sign-in</button>
+      <p id="accGameCenterState" hidden></p>
+      <p id="accAppleState" hidden></p>
+      <button class="btn apple" id="btnLinkApple" data-i18n="online:profile.addApple" hidden>Add Apple sign-in</button>
     </div>
     <button class="histrow" id="btnHistory"><span data-i18n="online:profile.fullHistory">Full match history</span> <b id="accGames">–</b></button>
     <!-- the last few matches inline (user call): as many of the newest 0–3 as

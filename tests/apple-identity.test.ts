@@ -10,6 +10,7 @@ import {
   type GameCenterIdentityPorts,
 } from '../src/online/identity/identity.ts';
 import { registerAppleAuthorizationCode } from '../src/online/identity/apple-identity.ts';
+import { accountProviderView } from '../src/online/screens/account-provider-view.ts';
 import { runOneTapFromAuthSheet } from '../src/online/screens/auth-screen.ts';
 import { CORS_HEADERS } from '../supabase/functions/_shared/http.ts';
 import type { GameCenterProof } from '../src/native/game-center.ts';
@@ -338,6 +339,46 @@ for (const throwAt of ['proof', 'request', 'json', 'verifyOtp'] as const) {
   const harness = gameCenterHarness({ throwAt });
   check(await harness.identity.restore() === GAME_CENTER_IDENTITY_MESSAGES.failed,
     `a thrown Game Center ${throwAt} escaped the localized boundary`);
+}
+
+/* ---- what the profile's ACCOUNT ACCESS box may say ----
+   The box opens for what the player can DO here, never for a fact — reach is a
+   parameter, so iOS, the web and the build whose identity gateway origin is
+   finally set are all decidable without a device. The last column is the offer;
+   null means no box at all. Game Center drives the box open once linking can
+   complete, and a healthy Apple link then rides along to finish the answer —
+   but never opens the box by itself (the iOS/web healthy rows). */
+const MEMBER = { id: 'p', guest: false, email: 'p@example.test' };
+const linkage = (apple: boolean, ready: boolean, gameCenter = false) =>
+  ({ gameCenterLinked: gameCenter, appleLinked: apple, appleRevocationReady: ready });
+const IOS = { apple: true, gameCenter: false };
+const WEB = { apple: false, gameCenter: false };
+const GATEWAY = { apple: true, gameCenter: true };
+for (const [why, user, linked, reach, offer] of [
+  ['a guest is answered by the GUEST card, not this box',
+    { id: 'p', guest: true, email: null }, linkage(false, false), IOS, null],
+  ['a healthy Apple account on iOS has nothing left to do',
+    MEMBER, linkage(true, true), IOS, null],
+  ['the same account on the web has nothing to offer either',
+    MEMBER, linkage(true, true), WEB, null],
+  ['a missing deletion credential is only repairable where Apple runs',
+    MEMBER, linkage(true, false), WEB, null],
+  ['an unlinked account on the web cannot be offered Apple',
+    MEMBER, linkage(false, false), WEB, null],
+  ['a fully linked account leaves even the gateway build nothing to do',
+    MEMBER, linkage(true, true, true), GATEWAY, null],
+  ['a missing deletion credential is repaired where Apple runs',
+    MEMBER, linkage(true, false), IOS,
+    { gameCenter: null, apple: 'profile.appleRepair', action: 'profile.repairApple' }],
+  ['an unlinked account is offered Apple where the provider runs',
+    MEMBER, linkage(false, false), IOS,
+    { gameCenter: null, apple: 'profile.appleNotLinked', action: 'profile.addApple' }],
+  ['the gateway build offers Game Center beside the healthy Apple link',
+    MEMBER, linkage(true, true), GATEWAY,
+    { gameCenter: 'profile.gameCenterNotLinked', apple: 'profile.appleLinked', action: null }],
+] as const) {
+  const view = accountProviderView(user, linked, reach);
+  check(JSON.stringify(view ?? null) === JSON.stringify(offer), why, view);
 }
 
 const identitySource = readFileSync('src/online/identity/identity.ts', 'utf8');

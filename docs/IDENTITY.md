@@ -87,6 +87,22 @@ of opening the guest-upgrade sheet — the account already has Apple, so only th
 credential is missing. Success re-reads `identity-status` and repaints, so the
 warning clears without a reload.
 
+The profile's ACCOUNT ACCESS box (`src/online/screens/account-provider-view.ts`)
+paints only what this build and device can actually perform. A row is a *driver*
+when the player can act on it here — add Apple sign-in, repair its deletion
+credential, link Game Center — and only a driver opens the box; a *passenger*
+row reports a link that already works and never opens the box alone. Reach comes
+from `availableTaps()`, the same capability list the auth sheet offers buttons
+from, so the Apple row appears only where the Capacitor plugin does and the Game
+Center row only once `VITE_IDENTITY_GATEWAY_URL` is set and GameKit is present.
+A healthy Apple-linked account therefore sees no box at all, and no player is
+told "Game Center not connected" while linking cannot succeed — iOS signing the
+local player in at launch is a different fact from attaching that identity to a
+Knucklebones account. `tests/apple-identity.test.ts` decides the whole matrix
+without a device; `tests/browser/online-ui/scenarios/account-access.mjs` reads
+the painted rows. When rung 3 deploys, the Game Center row appears with the copy
+it already has and needs its own connect control.
+
 **Rung 3 — Game Center: repository implementation complete, not deployed.** The
 signature verification is tested against Apple's real production certificates,
 but nothing has run on a device. The Edge Function and the held
