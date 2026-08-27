@@ -1,4 +1,4 @@
-import { recoverIdempotentCommand } from '../src/online/idempotent-command.ts';
+import { recoverIdempotentCommand } from '../src/online/api/idempotent-command.ts';
 
 const problems: string[] = [];
 const check = (condition: boolean, message: string, detail?: unknown): void => {

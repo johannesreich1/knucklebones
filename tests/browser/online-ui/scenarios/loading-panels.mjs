@@ -53,9 +53,9 @@ export async function runOnlineLoadingPanelScenarios(suite) {
       await page.click('#homeChip');
       await page.waitForSelector('#onAccount:not([hidden])', { timeout: 15000 });
       await page.click('#btnLadder');
-      await page.waitForSelector('#onBoard:not([hidden])', { timeout: 15000 });
-      await page.waitForFunction(() => document.querySelectorAll('#onBoardList .lrow').length === 2);
-      const names = () => page.locator('#onBoardList .lrow .nm').allTextContents();
+      await page.waitForSelector('#onLadder:not([hidden])', { timeout: 15000 });
+      await page.waitForFunction(() => document.querySelectorAll('#onLadderList .lrow').length === 2);
+      const names = () => page.locator('#onLadderList .lrow .nm').allTextContents();
       const before = await names();
       const staleResponse = page.waitForResponse((response) =>
         response.headers()['x-kb-fixture'] === 'stale-run-a');
@@ -94,7 +94,7 @@ export async function runOnlineLoadingPanelScenarios(suite) {
         document.getElementById('btnOnline')?.addEventListener('pointerup', () => {
           requestAnimationFrame(() => {
             const overlay = document.getElementById('ovOnline');
-            const board = document.getElementById('onBoard');
+            const board = document.getElementById('onLadder');
             const style = overlay ? getComputedStyle(overlay) : null;
             window.__rankedEntryFrame = {
               onlineOn: overlay?.classList.contains('on') ?? false,
@@ -145,7 +145,7 @@ export async function runOnlineLoadingPanelScenarios(suite) {
     door: 'board',
     skipStandardProbes: true,
     probe: async (page) => {
-      await page.click('#onBoardList .lrow:not(.me)');
+      await page.click('#onLadderList .lrow:not(.me)');
       await page.waitForSelector('.faceoff [aria-modal="true"]', { timeout: 15000 });
       await page.evaluate(() => {
         window.__kb.S.played = false;

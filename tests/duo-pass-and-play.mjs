@@ -5,7 +5,7 @@ const browser = await chromium.launch();
 const errs = [];
 const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
   locale: 'en-US' });
-await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
+await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: tests/first-run-offer.mjs owns the first-run offer
 const page = await ctx.newPage();
 page.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
 page.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
@@ -70,7 +70,7 @@ await page.click('#btnPlay');
 await page.waitForTimeout(900);
 
 let handoffs = 0, placements = 0, seenBottoms = new Set();
-for (let i = 0; i < 1200; i++) {  // generous on purpose: random endgames + slow machines (see test6)
+for (let i = 0; i < 1200; i++) {  // generous on purpose: random endgames + slow machines (see widget-isolation)
   const s = await snap();
   audit(s, 'duo#' + i);
   seenBottoms.add(s.bottom);
@@ -135,7 +135,7 @@ await page.waitForTimeout(200);
 const diffBack = await page.evaluate(() => !document.getElementById('diffCard').hidden);
 await page.click('#btnPlay'); await page.waitForTimeout(900);
 let cpuTurns = 0;
-for (let i = 0; i < 1200; i++) {  // generous on purpose: random endgames + slow machines (see test6)
+for (let i = 0; i < 1200; i++) {  // generous on purpose: random endgames + slow machines (see widget-isolation)
   const s = await snap();
   audit(s, 'cpu#' + i);
   check(!s.passOn, 'pass card appeared in CPU mode', s);

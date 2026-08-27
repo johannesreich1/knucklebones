@@ -21,7 +21,7 @@ export async function installOnlineRoutes(
   let passwordCalls = 0;
   let profileCalls = 0;
   let tierProfileCalls = 0;
-  let leaderboardCalls = 0;
+  let ladderPageCalls = 0;
   let runeCalls = 0;
   let acknowledgeCalls = 0;
   let deferNextSignup = false;
@@ -244,7 +244,7 @@ export async function installOnlineRoutes(
     await hold(.7);
     return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
       /* Rank 2 of 199 is just outside floor(1%): this must agree with the
-         leaderboard row's apex:false so both surfaces resolve BONE. */
+         ladder row's apex:false so both surfaces resolve BONE. */
       ladderNearBottom
         ? { points: 465, rank: 145, population: 151, percentile: 96 }
         : { points: 465, rank: 2, population: 199, percentile: 1 },
@@ -299,8 +299,8 @@ export async function installOnlineRoutes(
     }
     let headers;
     if (paginationRace && !before) {
-      leaderboardCalls++;
-      if (leaderboardCalls === 1) {
+      ladderPageCalls++;
+      if (ladderPageCalls === 1) {
         board = [...ordinary, ...Array.from({ length: 48 }, (_, index) => ({
           nickname: `RunA${String(index + 3).padStart(2, '0')}`,
           points: 460 - index,
@@ -312,7 +312,7 @@ export async function installOnlineRoutes(
           avatar: null,
           peak: 460 - index,
         }))];
-      } else if (leaderboardCalls === 2) {
+      } else if (ladderPageCalls === 2) {
         markPaginationStarted();
         await paginationRelease;
         board = [{

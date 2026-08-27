@@ -3,7 +3,7 @@ import type {
   GameCenterBridge,
   GameCenterProof,
 } from '../src/native/game-center.ts';
-import { gameCenterSessionAction } from '../src/online/session.ts';
+import { gameCenterSessionAction } from '../src/online/identity/session.ts';
 import { readFileSync } from 'node:fs';
 
 const problems: string[] = [];

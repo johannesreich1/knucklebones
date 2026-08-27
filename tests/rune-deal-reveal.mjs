@@ -49,7 +49,7 @@ const primeRandomStart = (randomMode) => {
 const browser = await chromium.launch();
 try {
   const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, locale: 'en-US' });
-  await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the tutorial offer is test19's subject
+  await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: tests/first-run-offer.mjs owns the first-run offer
   await ctx.addInitScript((collected) => localStorage.setItem('knucklebones.runes.v1', JSON.stringify({
     version: 1,
     accountId: '11111111-2222-4333-8444-555555555555',

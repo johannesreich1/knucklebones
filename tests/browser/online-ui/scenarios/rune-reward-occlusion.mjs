@@ -123,11 +123,15 @@ async function nextDuelRewardProbe(page, routes) {
   ]);
   await page.click('#btnAgain');
   await page.waitForSelector('.rune-reward-sheet .focard', { timeout: 15000 });
+  /* "Matchmaking has not started" is a JOIN count, not a hidden panel. Entry
+     now paints the searching queue as its wait — the reward sheet covers it —
+     so the panel says nothing about whether this player is in a queue. */
   const beforeContinue = await page.evaluate(() => ({
-    queueHidden: document.getElementById('onQueue')?.hidden,
+    rewardOwnsTheView: !!document.querySelector('.rune-reward-sheet .focard'),
     resultOpen: document.getElementById('ovEnd')?.classList.contains('on'),
     reward: document.querySelector('.rune-reward-sheet__title')?.textContent?.trim(),
   }));
+  const joinsBeforeContinue = routes.joinCalls();
   const acknowledgementsBeforeContinue = routes.acknowledgeCalls();
   await page.click('.rune-reward-sheet__continue');
   await Promise.all([
@@ -149,6 +153,8 @@ async function nextDuelRewardProbe(page, routes) {
   await page.waitForTimeout(100);
   return {
     beforeContinue,
+    joinsBeforeContinue,
+    joinsAfterContinue: routes.joinCalls(),
     acknowledgementsBeforeContinue,
     acknowledgementsAfterContinue: routes.acknowledgeCalls(),
     queueVisible: await page.$eval('#onQueue', (element) => !element.hidden),
@@ -164,9 +170,11 @@ export async function runNextDuelRewardScenario({ visit, out, check }) {
     probe: nextDuelRewardProbe,
   });
   out.runeRewardNextDuel = result.probeResult;
-  check(result.probeResult?.beforeContinue?.queueHidden
+  check(result.probeResult?.beforeContinue?.rewardOwnsTheView
       && !result.probeResult.beforeContinue.resultOpen
       && result.probeResult.beforeContinue.reward === 'FATE'
+      && result.probeResult.joinsBeforeContinue === 0
+      && result.probeResult.joinsAfterContinue > 0
       && result.probeResult.acknowledgementsBeforeContinue === 0
       && result.probeResult.acknowledgementsAfterContinue === 1
       && result.probeResult.queueVisible

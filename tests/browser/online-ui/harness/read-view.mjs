@@ -42,7 +42,7 @@ export function readOnlineView(page) {
                  pts: r.querySelector('.rt')?.textContent ?? '' };
       }),
       /* the groups, as the reader meets them: a horizon labels each material
-         change, and the board OPENS with one — a list that starts with a bare
+         change, and the ladder OPENS with one — a list that starts with a bare
          row has lost its structure */
       horizons: [...document.querySelectorAll('#ovOnline .lb .ghor .gn')].map((e) => e.textContent),
       firstIsHorizon: !!document.querySelector('#ovOnline .lb')?.firstElementChild?.classList.contains('ghor'),

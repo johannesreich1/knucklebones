@@ -1,13 +1,13 @@
 async function ladderOpeningProbe(page) {
   await page.click('#btnLadder');
-  await page.waitForSelector('#onBoard:not([hidden]) #onBoardList .lrow.me', { timeout: 15000 });
+  await page.waitForSelector('#onLadder:not([hidden]) #onLadderList .lrow.me', { timeout: 15000 });
   await page.waitForTimeout(100);
   await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() =>
     requestAnimationFrame(resolve))));
   return page.evaluate(() => {
     const body = document.querySelector('#ovOnline .pbody');
     const head = document.querySelector('#ovOnline .shead');
-    const me = document.querySelector('#onBoardList .lrow.me');
+    const me = document.querySelector('#onLadderList .lrow.me');
     if (!(body instanceof HTMLElement) || !(head instanceof HTMLElement)
         || !(me instanceof HTMLElement)) throw new Error('ladder opening geometry is missing');
     const bodyBox = body.getBoundingClientRect();
@@ -21,7 +21,7 @@ async function ladderOpeningProbe(page) {
       meBox.top + meBox.height / 2);
     return {
       rank: me.querySelector('.rk2')?.textContent?.trim(),
-      rowCount: document.querySelectorAll('#onBoardList .lrow').length,
+      rowCount: document.querySelectorAll('#onLadderList .lrow').length,
       scrollTop: body.scrollTop,
       maximum,
       expected,
@@ -41,9 +41,9 @@ export async function runLadderFaceoffScenarios(suite) {
       if (request.url().includes('/rpc/leaderboard')) localeRequests++;
     };
     page.on('request', countRequest);
-    await page.locator('#onBoardList .lrow').first().focus();
+    await page.locator('#onLadderList .lrow').first().focus();
     await page.evaluate(() => {
-      window.__kbLocaleRow = document.querySelector('#onBoardList .lrow');
+      window.__kbLocaleRow = document.querySelector('#onLadderList .lrow');
       Object.defineProperty(navigator, 'languages', {
         configurable: true, get: () => ['de-DE', 'en-US'],
       });
@@ -54,12 +54,12 @@ export async function runLadderFaceoffScenarios(suite) {
     });
     await page.waitForFunction(() => document.querySelector('#onTitle')?.textContent === 'RANGLISTE');
     const german = await page.evaluate(() => {
-      const row = document.querySelector('#onBoardList .lrow');
+      const row = document.querySelector('#onLadderList .lrow');
       return {
         title: document.querySelector('#onTitle')?.textContent,
         record: row?.querySelector('.ws')?.textContent,
         points: row?.querySelector('.rt')?.textContent,
-        horizon: document.querySelector('#onBoardList .ghor .gn')?.textContent,
+        horizon: document.querySelector('#onLadderList .ghor .gn')?.textContent,
         sameRow: row === window.__kbLocaleRow,
         focused: document.activeElement === row,
       };
@@ -75,7 +75,7 @@ export async function runLadderFaceoffScenarios(suite) {
     });
     await page.waitForFunction(() => document.querySelector('#onTitle')?.textContent === 'LADDER');
     const restored = await page.evaluate(() => {
-      const row = document.querySelector('#onBoardList .lrow');
+      const row = document.querySelector('#onLadderList .lrow');
       return { sameRow: row === window.__kbLocaleRow, focused: document.activeElement === row };
     });
     page.off('request', countRequest);

@@ -1,6 +1,6 @@
 // Complete release gate. Local runs schedule long owners first across four
 // workers; CI selects one of four coverage-checked manifests and keeps one
-// worker per isolated runner. testupdate is always exclusive and final.
+// worker per isolated runner. pwa-update is always exclusive and final.
 import { execFileSync, spawn } from 'node:child_process';
 import { performance } from 'node:perf_hooks';
 import { serveTree } from './serve.mjs';
@@ -50,7 +50,7 @@ function runNode(args) {
   });
 }
 
-// Each suite prints one JSON block (testupdate adds a reminder line), so the
+// Each suite prints one JSON block (pwa-update adds a reminder line), so the
 // first opening brace through the last closing brace is its report.
 function parseReport(out) {
   const first = out.indexOf('{');
@@ -113,7 +113,7 @@ try {
   } finally {
     stop();
     if (plan.final.length) {
-      // testupdate mutated pwa/ under its private server; restore exact output.
+      // pwa-update mutated pwa/ under its private server; restore exact output.
       execFileSync(process.execPath, ['build.mjs'], { stdio: 'ignore' });
     }
   }

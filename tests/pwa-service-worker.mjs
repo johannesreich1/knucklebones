@@ -12,7 +12,7 @@ const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
   locale: 'en-US' });
-await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
+await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: tests/first-run-offer.mjs owns the first-run offer
 const page = await ctx.newPage();
 page.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
 page.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
@@ -64,7 +64,7 @@ check(appleIcon.status === 200, 'apple-touch-icon missing', appleIcon);
 async function playToEnd(p) {
   // Budget is generous on purpose: random destruction-heavy endgames run long
   // and loaded machines/CI run slow. 400 flaked here just like it did in
-  // test6/test8/test10 — never "optimize" these down.
+  // widget-isolation and tutorial-persistence — never "optimize" these down.
   for (let i = 0; i < 1200; i++) {
     const s = await p.evaluate(() => ({ ph: window.__kb.S.phase, t: window.__kb.S.turn, b: window.__kb.S.boards[1] }));
     if (s.ph === 'over') return true;
@@ -131,7 +131,7 @@ await ctx.setOffline(false);
 
 // ---- 5. desktop viewport sanity (same bundle, wider screen) ----
 const ctx2 = await browser.newContext({ viewport: { width: 1024, height: 800 }, locale: 'en-US' });
-await ctx2.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
+await ctx2.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: tests/first-run-offer.mjs owns the first-run offer
 const p2 = await ctx2.newPage();
 p2.on('pageerror', e => errs.push('DESKTOP PAGEERROR: ' + e.message));
 await p2.goto(URL);

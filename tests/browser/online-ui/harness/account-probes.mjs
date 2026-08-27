@@ -99,7 +99,7 @@ export async function probeAccountActions(page, { door, named }) {
       await page.waitForSelector('#ovOnline .lb .lrow.me', { timeout: 15000 });
       rankDoor = await page.evaluate((control) => ({
         control,
-        board: document.querySelector('#onBoard')?.hidden === false,
+        board: document.querySelector('#onLadder')?.hidden === false,
         title: document.querySelector('#onTitle')?.textContent,
       }), control);
       await page.click('#ovOnline .lb .lrow.me');
@@ -109,7 +109,7 @@ export async function probeAccountActions(page, { door, named }) {
       ptsDoor = await page.evaluate(() => {
         const group = document.querySelector('#ovOnline .lrow.me .mesub b');
         return {
-          board: document.querySelector('#onBoard')?.hidden === false,
+          board: document.querySelector('#onLadder')?.hidden === false,
           title: document.querySelector('#onTitle')?.textContent,
           group: group ? { text: group.textContent, color: getComputedStyle(group).color } : null,
         };

@@ -2,8 +2,8 @@ import pkg from 'playwright';
 const { chromium, devices } = pkg;
 import { shot } from './shot.mjs';
 import { serveTree } from './serve.mjs';
-/* Served over LOCAL HTTP like test10/test11, and for the same reason: the
-   timer-persistence step reloads and asserts the settings came back, and
+/* Served over LOCAL HTTP like tutorial-persistence, and for the same reason:
+   the timer-persistence step reloads and asserts the settings came back, and
    Chromium's file:// DOMStorage can hydrate the reloaded document from a
    stale disk commit (run 32489123998: the reload lost the saved duo mode,
    the timer card rendered hidden, and the next tap starved for 30s). One
@@ -26,7 +26,7 @@ const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x
 async function overlapCheck(w, h, label) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: true,
     isMobile: true, deviceScaleFactor: 2, locale: 'en-US' });
-await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
+await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: tests/first-run-offer.mjs owns the first-run offer
 await ctx.addInitScript(noSW);
   const p = await ctx.newPage();
   p.on('pageerror', e => errs.push(label + ': ' + e.message));
@@ -80,7 +80,7 @@ for (const [k, r] of Object.entries(out)) {
 // ===== 2. the turn clock =====
 const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
   locale: 'en-US' });
-await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
+await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: tests/first-run-offer.mjs owns the first-run offer
 await ctx.addInitScript(noSW);
 const p = await ctx.newPage();
 p.on('pageerror', e => errs.push('TIMER: ' + e.message));

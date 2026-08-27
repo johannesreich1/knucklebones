@@ -174,7 +174,8 @@ export async function runSettingsNavigationScenarios(suite) {
         'Rules Back did not return to HOW TO PLAY without closing it', out.helpBack);
 
   // Choices persist across reload — but WAIT FOR THE WRITE first: this reload
-  // raced the save on CI's slow runner (2026-08-20, same class as test10's).
+  // raced the save on CI's slow runner (2026-08-20, same class as
+  // tutorial-persistence's).
   // The poll makes the wait deterministic and names the true failure when the
   // save itself never lands.
   await page.waitForFunction(() => {
@@ -187,7 +188,8 @@ export async function runSettingsNavigationScenarios(suite) {
     return d.sound === false && d.numerals === true;
   });
   check(out.savedSettings, 'settings were never SAVED — the write itself is missing', out);
-  // Same reload hazard as test10: over file:// this page is the origin's only
+  // Same reload hazard as tutorial-persistence: over file:// this page is the
+  // origin's only
   // document, and its teardown races the storage area's disk commit (CI reds
   // 2026-08-21, defaults-after-reload while the poll above passed). The keeper
   // pins the area across the reload; the read-back is polled, not slept for.

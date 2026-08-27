@@ -5,7 +5,8 @@
 // both gestures (tap-to-arm, drag-and-drop) reach the same one gate — for a
 // COLUMN spell (PILFER) and for a SELF spell aimed at the die in play (FATE)
 // — that the board a player can SEE matches the state after a cast (the
-// test13 lesson: assert computed pixels, never merely the DOM), that a charge
+// single-strike-visibility lesson: assert computed pixels, never merely the
+// DOM), that a charge
 // is spent exactly once, and — the promise the feature is built on — that
 // switching spells OFF leaves the table indistinguishable from the game
 // before spells existed.
@@ -92,8 +93,9 @@ await ctx.addInitScript((snapshot) => localStorage.setItem('knucklebones.runes.v
        alternates from there (src/state.ts) — right for play, useless for a
        probe: face-to-face keeps the rune in the plate of whoever is NOT to
        move, so a random opener relocates the very thing half these assertions
-       measure. This suite is about layout, not seating; test15/18/19 pin
-       S.turn for the same reason. Without this the failure is a null
+       measure. This suite is about layout, not seating; result-screen,
+       random-mode-dial and first-run-offer pin S.turn for the same reason.
+       Without this the failure is a null
        getBoundingClientRect in whichever block happens to draw the wrong
        side — a flake that reads as a layout regression. */
     k.S.starter = 1;                                          // ME opens every game in this probe

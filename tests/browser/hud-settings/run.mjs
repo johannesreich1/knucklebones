@@ -36,11 +36,12 @@ try {
 }
 
 const { chromium, devices } = pkg;
-/* Served over LOCAL HTTP for the same reason as test10: the settings-persist
-   coda reloads and asserts the flags came back, and Chromium's file://
-   DOMStorage can hydrate the reloaded document from a stale disk commit
-   straight through the keeper page (run 32486960831 lost this suite's write
-   the same afternoon test10 lost its own twice). One live http-origin area,
+/* Served over LOCAL HTTP for the same reason as tutorial-persistence: the
+   settings-persist coda reloads and asserts the flags came back, and
+   Chromium's file:// DOMStorage can hydrate the reloaded document from a stale
+   disk commit straight through the keeper page (run 32486960831 lost this
+   suite's write the same afternoon tutorial-persistence lost its own twice).
+   One live http-origin area,
    no disk race. Own server on a kernel-picked port, gone with the process
    (tests/serve.mjs), so no peer session's gate can answer it. The remaining
    file suites keep covering file://. */

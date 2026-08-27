@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import type { RankedActionRow } from '../src/core/ranked-actions.ts';
-import type { MatchRow } from '../src/online/match-api.ts';
+import type { MatchRow } from '../src/online/api/match-api.ts';
 import {
   isEmptyTerminalTrialSnapshot,
   retryCoherentTrialSnapshot,
   trialSnapshotCoherent,
   type TrialSnapshot,
-} from '../src/online/trial-snapshot.ts';
+} from '../src/online/runes/trial-snapshot.ts';
 
 const row = (idx: number): RankedActionRow => ({
   idx, move_idx: idx, who: (1 - (idx % 2)) as 0 | 1, kind: 'place',

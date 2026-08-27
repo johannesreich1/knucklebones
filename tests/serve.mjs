@@ -1,9 +1,10 @@
 // THE ONE STATIC SERVER — and the reason a peer's gate can run beside yours.
 //
-// Why any server at all: service workers refuse file:// pages (test7, test16,
-// testupdate), and Chromium's file:// DOMStorage can hydrate a reloaded
-// document from a stale disk commit — that race ate test9/test10/test11's
-// persistence coda repeatedly. Both want a real http origin.
+// Why any server at all: service workers refuse file:// pages
+// (pwa-service-worker, pwa-update), and Chromium's file:// DOMStorage can
+// hydrate a reloaded document from a stale disk commit — that race ate
+// hud-timer's and tutorial-persistence's persistence codas repeatedly. Both
+// want a real http origin.
 //
 // WHY AN EPHEMERAL PORT. The origin used to be a constant: 8123 for the pwa
 // tree, 8124-6 for the three suites that bring their own server. A port
@@ -14,7 +15,7 @@
 //   · 8123 failed SILENTLY. serve.py lost the bind and died, and the runner's
 //     waitForPort(8123) then connected happily to the NEIGHBOUR's server. The
 //     service-worker suites read the neighbour's pwa/ while that neighbour's
-//     testupdate rewrote it underneath them. Green meant nothing; red meant
+//     pwa-update rewrote it underneath them. Green meant nothing; red meant
 //     nothing either.
 // Binding port 0 hands the choice to the kernel. Not a scan for a free port —
 // a scan still races between the look and the bind. There is no number to
@@ -22,9 +23,10 @@
 // the orphan-server class of bug are gone rather than handled.
 //
 // WHY NODE, NOT PYTHON. There were three servers: serve.py, which fixed the
-// .webmanifest mime type and sent no-cache (test7 asserts both), plus two bare
-// `python3 -m http.server` spawns that did neither. One implementation, one
-// set of headers, and no child process to wait for, kill, or orphan.
+// .webmanifest mime type and sent no-cache (pwa-service-worker asserts both),
+// plus two bare `python3 -m http.server` spawns that did neither. One
+// implementation, one set of headers, and no child process to wait for, kill,
+// or orphan.
 //
 // Paths are resolved against the CURRENT WORKING DIRECTORY, which every suite
 // and the runner set to the repo root — so a worktree serves its own build.
@@ -35,7 +37,8 @@ import { pathToFileURL } from 'node:url';
 
 /* serve.py had to spell out .js and .webmanifest and so do we: some Python
    installs still call .js text/plain, and a text/plain module never executes;
-   .webmanifest they do not know at all, and test7 asserts that exact type. */
+   .webmanifest they do not know at all, and pwa-service-worker asserts that
+   exact type. */
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
@@ -55,7 +58,7 @@ export function serveTree(dir, { port = 0 } = {}) {
   const root = path.resolve(dir);
   const server = http.createServer((req, res) => {
     const send = (code, body, type = 'text/plain; charset=utf-8') => {
-      // no-cache: testupdate rewrites files under a running page and reloads —
+      // no-cache: pwa-update rewrites files under a running page and reloads —
       // it must be served the new bytes, not the ones the browser remembers.
       res.writeHead(code, { 'Content-Type': type, 'Cache-Control': 'no-cache' });
       res.end(req.method === 'HEAD' ? undefined : body);

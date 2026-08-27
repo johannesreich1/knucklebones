@@ -1,8 +1,8 @@
 import {
   requireProjectionRecovery,
-} from '../src/online/play-recovery.ts';
-import { runOnlineWatchdog } from '../src/online/play-watchdog.ts';
-import type { OnlineState } from '../src/online/play-types.ts';
+} from '../src/online/play/play-recovery.ts';
+import { runOnlineWatchdog } from '../src/online/play/play-watchdog.ts';
+import type { OnlineState } from '../src/online/play/play-types.ts';
 import { S } from '../src/state.ts';
 
 const problems: string[] = [];

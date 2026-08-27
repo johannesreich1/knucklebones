@@ -122,7 +122,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
             .map((panel) => panel.id),
           entry: window.__onlineEntry ?? null,
         };
-      }, door === 'board' ? 'onBoard' : 'onAccount');
+      }, door === 'board' ? 'onLadder' : 'onAccount');
     }
     if (door === 'play') {
       await page.waitForSelector(expectReward

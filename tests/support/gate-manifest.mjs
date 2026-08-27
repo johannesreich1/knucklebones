@@ -6,14 +6,23 @@ const typed = name => ({
   args: ['--experimental-strip-types'],
   runner: 'node',
 });
-const file = (name, path = `tests/${name}.mjs`, options = {}) => ({
-  name,
-  file: path,
-  args: options.args ?? [],
-  runner: options.runner ?? 'suite',
-  needsServer: options.needsServer ?? false,
-  exclusiveFinal: options.exclusiveFinal ?? false,
-});
+/* A suite whose file is named after the subject it proves needs no path at all
+   — `tests/<name>.mjs` IS the path, which is why the second argument may be the
+   options object directly. Only a suite that lives somewhere else (a browser
+   tree's `run.mjs`, a `.test.mjs`) still spells its file out. */
+const file = (name, pathOrOptions, maybeOptions = {}) => {
+  const named = typeof pathOrOptions === 'string';
+  const path = named ? pathOrOptions : `tests/${name}.mjs`;
+  const options = named ? maybeOptions : (pathOrOptions ?? {});
+  return {
+    name,
+    file: path,
+    args: options.args ?? [],
+    runner: options.runner ?? 'suite',
+    needsServer: options.needsServer ?? false,
+    exclusiveFinal: options.exclusiveFinal ?? false,
+  };
+};
 
 // Long default-gate owners lead the unsharded local queue so four workers can
 // overlap them. CI uses the independently balanced assignments below and one
@@ -28,12 +37,12 @@ export const GATE_SUITES = Object.freeze([
   // file('localization-browser', 'tests/browser/localization/run.mjs'),
   file('online-ui-browser', 'tests/browser/online-ui/run.mjs', { needsServer: true }),
   file('online-localization-browser', 'tests/browser/online-localization/run.mjs'),
-  file('rune-deal-reveal', 'tests/test20.mjs'),
-  file('widget-isolation', 'tests/test6.mjs'),
-  file('duo-pass-and-play', 'tests/test4.mjs'),
+  file('rune-deal-reveal'),
+  file('widget-isolation'),
+  file('duo-pass-and-play'),
   file('hud-settings-browser', 'tests/browser/hud-settings/run.mjs'),
   file('responsive-browser', 'tests/browser/responsive/run.mjs'),
-  file('hud-timer', 'tests/test9.mjs'),
+  file('hud-timer'),
   file('spells-presentation', 'tests/browser/spells/run.mjs', {
     args: ['--shard', 'presentation'],
   }),
@@ -41,25 +50,25 @@ export const GATE_SUITES = Object.freeze([
     args: ['--shard', 'defense'],
   }),
   file('legal-browser', 'tests/browser/legal.mjs'),
-  file('tutorial-persistence', 'tests/test10.mjs'),
-  file('pwa-service-worker', 'tests/test7.mjs', { needsServer: true }),
-  file('duo-face-seating', 'tests/test12.mjs'),
+  file('tutorial-persistence'),
+  file('pwa-service-worker', { needsServer: true }),
+  file('duo-face-seating'),
   file('spells-advanced', 'tests/browser/spells/run.mjs', {
     args: ['--shard', 'advanced'],
   }),
-  file('result-screen', 'tests/test15.mjs'),
-  file('practice-sheet-stability', 'tests/test17.mjs'),
-  file('design-cards-render', 'tests/test23.mjs'),
+  file('result-screen'),
+  file('practice-sheet-stability'),
+  file('design-cards-render'),
   file('spells-interaction', 'tests/browser/spells/run.mjs', {
     args: ['--shard', 'interaction'],
   }),
-  file('limited-bag-gauge', 'tests/test24.mjs'),
+  file('limited-bag-gauge'),
   typed('botbench'),
-  file('random-mode-dial', 'tests/test18.mjs'),
-  file('profile-back-navigation', 'tests/test22.mjs', { needsServer: true }),
-  file('single-strike-visibility', 'tests/test13.mjs'),
-  file('row-multiply-bracket', 'tests/test21.mjs'),
-  file('first-run-offer', 'tests/test19.mjs'),
+  file('random-mode-dial'),
+  file('profile-back-navigation', { needsServer: true }),
+  file('single-strike-visibility'),
+  file('row-multiply-bracket'),
+  file('first-run-offer'),
   // The rot guard for the manual-only localization matrix above: one locale,
   // one viewport, same runner and harness.
   file('localization-smoke', 'tests/browser/localization/run.mjs', {
@@ -119,10 +128,10 @@ export const GATE_SUITES = Object.freeze([
   file('release-main', 'tests/release-main.test.mjs'),
   file('native-startup-browser', 'tests/browser/native-startup.mjs'),
   file('service-worker-routing', 'tests/service-worker.test.mjs'),
-  file('col-score-bench', 'tests/bench3.mjs', { runner: 'benchmark' }),
+  file('col-score-bench', { runner: 'benchmark' }),
   // This changes pwa/index.html and pwa/sw.js. The executor never puts an
   // exclusive-final suite in the worker pool and runs it only after the pool.
-  file('pwa-update', 'tests/testupdate.mjs', { needsServer: true, exclusiveFinal: true }),
+  file('pwa-update', { needsServer: true, exclusiveFinal: true }),
 ]);
 
 // These assignments are longest-processing-time bins from a sequential CI

@@ -1,4 +1,5 @@
-// The dealt deck, read and judged as the player sees it (test20's owner).
+// The dealt deck, read and judged as the player sees it (rune-deal-reveal's
+// owner).
 //
 // Since the S9 pile deal (2026-08-26) the shuffle is PHYSICAL: the runes never
 // relabel — each card carries its rune through the piles — so proving the

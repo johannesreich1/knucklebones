@@ -5,7 +5,7 @@ export async function runInputAccessibilityScenarios(suite) {
   // ================= RESUME =================
   const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
     locale: 'en-US' });
-  await markExperienced(ctx);   // an experienced player: the first-run tutorial offer is test19's subject
+  await markExperienced(ctx);   // an experienced player: tests/first-run-offer.mjs owns the first-run offer
   const p = await ctx.newPage();
   p.on('pageerror', e => errs.push('RESUME: ' + e.message));
   p.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
@@ -23,7 +23,7 @@ export async function runInputAccessibilityScenarios(suite) {
   // ================= PLACE ON RELEASE =================
   const g = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
     locale: 'en-US' });
-  await markExperienced(g);   // an experienced player: the first-run tutorial offer is test19's subject
+  await markExperienced(g);   // an experienced player: tests/first-run-offer.mjs owns the first-run offer
   // Paint a real cached profile avatar on Home without pulling the online
   // chunk into this offline presentation suite.
   await g.addInitScript(() => localStorage.setItem('knucklebones.online.profile', JSON.stringify({

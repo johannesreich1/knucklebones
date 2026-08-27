@@ -154,7 +154,7 @@ fallbacks on both sides (`flow/menu.ts` writes `--p1-mx2…` inline on `<html>`;
 `.die.p1` / `.die.p2` map them to `--mx2` / `--mx3` per side). So a mode mark
 reads those tokens off the die and never a literal — otherwise it is correct
 for the default pair and wrong for every player who picked gold, and wrong for
-every colour blind player twice over. `tests/test21.mjs` pins all three cases
+every colour blind player twice over. `tests/row-multiply-bracket.mjs` pins all three cases
 in computed pixels, because nothing about a hard-coded colour looks broken
 until someone changes a setting.
 
@@ -311,7 +311,7 @@ gutter survives at every depth, and the counting claim is gone.
 **Nothing in the gauge carries a hue.** Seven duel colours are pickable and
 colour blind mode repoints the pair, so a gauge reading `--p1`/`--p2` would
 mean different things on two phones. Repointing the pair must not move a
-channel of it — `tests/test24.mjs` asserts exactly that.
+channel of it — `tests/limited-bag-gauge.mjs` asserts exactly that.
 
 ### The draw comes off the top
 

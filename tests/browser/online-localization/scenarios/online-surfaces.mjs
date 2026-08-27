@@ -183,9 +183,9 @@ async function inspectHistory(suite, page, label) {
 
 async function inspectLadder(suite, page, label) {
   return assertPanel(suite, page, `ladder-${label}`, [
-    '#onBoardList .ghor', '#onBoardList .lrow',
-    '#onBoardList .ws', '#onBoardList .rt',
-  ], ['#onBoardList button.lrow:first-of-type']);
+    '#onLadderList .ghor', '#onLadderList .lrow',
+    '#onLadderList .ws', '#onLadderList .rt',
+  ], ['#onLadderList button.lrow:first-of-type']);
 }
 
 async function inspectFaceoff(suite, page, label) {
@@ -308,11 +308,11 @@ async function runViewport(suite, locale, viewport) {
   await waitForPanel(page, 'onAccount', PROFILE_TARGETS);
 
   await page.click('#btnLadder');
-  await waitForPanel(page, 'onBoard');
+  await waitForPanel(page, 'onLadder');
   const ladder = await inspectLadder(suite, page, label);
   check(ladder.heading.items[0]?.text === RESOURCES[locale.id].online.panels.ladder,
     `${label} ladder title did not use its locale`, ladder.heading.items);
-  await page.click('#onBoardList button.lrow:first-of-type');
+  await page.click('#onLadderList button.lrow:first-of-type');
   await page.waitForSelector('.faceoff .focard');
   await page.waitForFunction(() => /\d/u.test(document.querySelector('.faceoff .fostreak')?.textContent ?? ''));
   await frame(page);

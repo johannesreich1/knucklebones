@@ -6,7 +6,7 @@ export async function probeFaceoff(page, { door, motion }) {
      anywhere, a grabber on its top edge, up from the bottom on arrival and
      back down there on a drag. Every line below reads PIXELS — a sheet that
      merely appeared, or a drag the card ignored, agrees with the DOM
-     perfectly (test13's lesson). */
+     perfectly (single-strike-visibility's lesson). */
   let faceoff = null;
   if (door === 'board') {
     /* THE ARRIVAL, sampled frame by frame — armed BEFORE the tap, because the

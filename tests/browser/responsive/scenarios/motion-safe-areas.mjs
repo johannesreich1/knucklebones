@@ -9,7 +9,7 @@ export async function runMotionSafeAreaScenarios(suite) {
   // ================= REDUCED MOTION =================
   const rm = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
     reducedMotion: 'reduce', locale: 'en-US' });
-  await markExperienced(rm);   // an experienced player: the first-run tutorial offer is test19's subject
+  await markExperienced(rm);   // an experienced player: tests/first-run-offer.mjs owns the first-run offer
   const rp = await rm.newPage();
   rp.on('pageerror', e => errs.push('RM: ' + e.message));
   await rp.goto(F); await rp.waitForTimeout(400);
@@ -374,7 +374,7 @@ export async function runMotionSafeAreaScenarios(suite) {
   for (const d of SAFE_DEVICES) {
     const sc = await browser.newContext({ viewport: { width: d.w, height: d.h }, hasTouch: true,
       isMobile: true, deviceScaleFactor: 3, locale: 'en-US' });
-  await markExperienced(sc);   // an experienced player: the first-run tutorial offer is test19's subject
+  await markExperienced(sc);   // an experienced player: tests/first-run-offer.mjs owns the first-run offer
     const sp = await sc.newPage();
     sp.on('pageerror', e => errs.push('SAFE: ' + e.message));
     await sp.goto(F); await sp.waitForTimeout(400);

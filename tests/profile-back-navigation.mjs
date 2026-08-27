@@ -20,8 +20,9 @@
 //   · from Home's identity chip, ‹ still lands on Home,
 //   · and Home means home — the result screen may not float above it.
 //
-// Asserted in PIXELS, the test13 lesson: every .ov shares one z-index, so a
-// screen can be `.on`, correct in the DOM, and completely covered. What comes
+// Asserted in PIXELS, the single-strike-visibility lesson: every .ov shares one
+// z-index, so a screen can be `.on`, correct in the DOM, and completely
+// covered. What comes
 // back from elementFromPoint is the room the player is actually looking at.
 //
 // Served suite: the online chunk is lazy, so it needs a real origin. Supabase
@@ -185,7 +186,7 @@ try {
           'the home chip did not open the profile', out.fromHome);
     check(out.fromHome.back.id === 'ovStart', '‹ from a profile opened at Home must land on Home', out.fromHome);
 
-    /* 2 · a match ends. enterMatch takes every menu down (online/play.ts) and the
+    /* 2 · a match ends. enterMatch takes every menu down (online/play/play.ts) and the
        result screen opens over the table — stand the stage up the same way. */
     await page.evaluate((r) => {
       document.getElementById('ovStart').classList.remove('on');
@@ -281,7 +282,7 @@ try {
        that is why these checks read the TITLE as well as the room, since
        #ovOnline is the room for the profile and the ladder alike. */
     await page.click('#btnBoardHome');
-    await page.waitForFunction(() => document.querySelector('#onBoard')?.hidden === false
+    await page.waitForFunction(() => document.querySelector('#onLadder')?.hidden === false
       && document.querySelectorAll('.lrow.me').length === 1);
     await page.waitForTimeout(300);
     out.ladder = { board: await room() };

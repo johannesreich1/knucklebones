@@ -5,7 +5,7 @@ export async function runLandscapeScenarios(suite) {
   // ================= LANDSCAPE =================
   const land = await browser.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true,
     isMobile: true, deviceScaleFactor: 2, locale: 'en-US' });
-  await markExperienced(land);   // an experienced player: the first-run tutorial offer is test19's subject
+  await markExperienced(land);   // an experienced player: tests/first-run-offer.mjs owns the first-run offer
   const lp = await land.newPage();
   lp.on('pageerror', e => errs.push('LAND: ' + e.message));
   await lp.goto(F); await lp.waitForTimeout(500);

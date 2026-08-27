@@ -34,8 +34,9 @@ export async function runProtectionScenarios(suite) {
      be spent, ever. A ward is exactly one charge.
 
      Which is why the block above is not enough on its own. It asks whether the
-     column carries `.warded`, and that is the DOM-deep assertion test13 exists
-     to warn against: it passed for BOTH rules on every day the two drew the
+     column carries `.warded`, and that is the DOM-deep assertion
+     single-strike-visibility exists to warn against: it passed for BOTH rules
+     on every day the two drew the
      same ring. So this measures the SHAPE a player sees — one closed line
      against a line held by one clasp — and then measures what a strike leaves
      behind, which is where the two rules actually part company.

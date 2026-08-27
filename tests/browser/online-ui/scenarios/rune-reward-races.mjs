@@ -64,11 +64,17 @@ async function inFlightAckProbe(page, routes) {
   const readsBeforeNext = routes.runeCalls();
   await page.click('#btnAgain');
   await page.waitForTimeout(250);
-  const pending = await page.evaluate(() => ({
-    loading: document.getElementById('onLoading')?.hidden === false,
-    queueHidden: document.getElementById('onQueue')?.hidden,
-    duplicateReward: !!document.querySelector('.rune-reward-sheet'),
-  }));
+  /* Entry now holds this wait in the searching queue rather than behind the
+     shell die, so neither panel says whether matchmaking began. The join count
+     does, and it is what "raced the ACK" actually means. */
+  const pending = {
+    ...await page.evaluate(() => ({
+      loading: document.getElementById('onLoading')?.hidden === false,
+      searching: document.getElementById('onQueue')?.hidden === false,
+      duplicateReward: !!document.querySelector('.rune-reward-sheet'),
+    })),
+    joins: routes.joinCalls(),
+  };
   const readsWhileAckPending = routes.runeCalls();
   routes.releaseAcknowledge();
   await bounded(routes.acknowledgeFinished, 'held reward ACK did not finish');
@@ -97,10 +103,13 @@ async function hungAckProbe(page, routes) {
   await bounded(routes.acknowledgeStarted, 'hung reward ACK never began');
   await page.click('#btnAgain');
   await page.waitForSelector('.rune-reward-sheet .focard', { timeout: 8000 });
-  const recovered = await page.evaluate(() => ({
-    title: document.querySelector('.rune-reward-sheet__title')?.textContent?.trim(),
-    queueHidden: document.getElementById('onQueue')?.hidden,
-  }));
+  const recovered = {
+    ...await page.evaluate(() => ({
+      title: document.querySelector('.rune-reward-sheet__title')?.textContent?.trim(),
+    })),
+    // the searching panel is the entry's wait; the join is what must not start
+    joins: routes.joinCalls(),
+  };
   routes.releaseAcknowledge();
   await bounded(routes.acknowledgeFinished, 'aborted ACK fixture did not release');
   await page.click('.rune-reward-sheet__continue');
@@ -247,7 +256,8 @@ export async function runRuneRewardRaceScenarios({ visit, out, check }) {
   const inFlight = await visit({ named: true, runes: ['fate'], skipStandardProbes: true,
     probe: inFlightAckProbe });
   out.runeRewardInFlightAck = inFlight.probeResult;
-  check(inFlight.probeResult?.pending?.loading && inFlight.probeResult.pending.queueHidden
+  check(inFlight.probeResult?.pending?.searching && !inFlight.probeResult.pending.loading
+      && inFlight.probeResult.pending.joins === 0
       && !inFlight.probeResult.pending.duplicateReward
       && inFlight.probeResult.readsBeforeNext === inFlight.probeResult.readsWhileAckPending
       && inFlight.probeResult.acknowledgements === 1
@@ -258,7 +268,7 @@ export async function runRuneRewardRaceScenarios({ visit, out, check }) {
     probe: hungAckProbe });
   out.runeRewardHungAck = hung.probeResult;
   check(hung.probeResult?.recovered?.title === 'FATE'
-      && hung.probeResult.recovered.queueHidden && hung.probeResult.acknowledgements === 2,
+      && hung.probeResult.recovered.joins === 0 && hung.probeResult.acknowledgements === 2,
     'a hung reward ACK froze navigation or lost durable recovery', hung.probeResult);
 
   const retry = await visit({ named: true, runes: ['fate'], skipStandardProbes: true,

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { createCollectionRefreshGuard } from '../src/online/rune-collection-guard.ts';
-import { acknowledgeRuneRewardForAccount } from '../src/online/rune-reward-ack.ts';
-import { withRuneRewardAcknowledgementDeadline } from '../src/online/rune-reward-ack.ts';
+import { createCollectionRefreshGuard } from '../src/online/runes/rune-collection-guard.ts';
+import { acknowledgeRuneRewardForAccount } from '../src/online/runes/rune-reward-ack.ts';
+import { withRuneRewardAcknowledgementDeadline } from '../src/online/runes/rune-reward-ack.ts';
 
 const guard = createCollectionRefreshGuard();
 const accountA = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';

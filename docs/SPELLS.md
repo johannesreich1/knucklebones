@@ -719,7 +719,7 @@ each one paid for:
   app: any grouping property above the card (this overlay carries a
   `backdrop-filter`) flattens the 3D context, and the card then turns and shows
   its BACK while the readout names the rune. State and DOM agreed perfectly the
-  whole time; only a computed style could see it (`tests/test20.mjs`).
+  whole time; only a computed style could see it (`tests/rune-deal-reveal.mjs`).
 - **The shuffle carries the beat, not the flip.** A flip alone is ~0.5s and
   read as a stutter; the deck now works for ~2.8s (fan, riffle, cut, draw) with
   a voice — `Sfx.riffle()` — because three silent seconds read as a hang. One

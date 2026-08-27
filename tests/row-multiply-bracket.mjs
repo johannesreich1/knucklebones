@@ -14,7 +14,8 @@
 // Asserting the CLASSES would prove none of it: the middle die of a ×3 wore a
 // solid slab through a stylesheet that set every class correctly, because an
 // absolutely positioned ::before with no left/right still paints. So this reads
-// computed pseudo-element pixels, per the rule test13 exists to enforce.
+// computed pseudo-element pixels, per the rule single-strike-visibility exists
+// to enforce.
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';   // the single-file build

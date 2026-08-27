@@ -12,7 +12,7 @@ const CI = '.github/workflows/ci.yml';
 const CLAUDE_LAUNCH = '.claude/launch.json';
 const BUILD = 'build.mjs';
 const RUN_ALL = 'tests/run-all.mjs';
-const DESIGN_CARD_SUITE = 'tests/test23.mjs';
+const DESIGN_CARD_SUITE = 'tests/design-cards-render.mjs';
 
 /* One contract owns the runtime from repository pin through the deepest gate
    child. Keeping this out of the iOS manifest assertions also prevents native

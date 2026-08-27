@@ -30,7 +30,7 @@ import {
   trustedStaticRich,
 } from '../src/i18n/index.ts';
 import { onlineMessage, repaintOnlineMessage } from '../src/online/message-copy.ts';
-import { reconnectingCopy } from '../src/online/play-copy.ts';
+import { reconnectingCopy } from '../src/online/play/play-copy.ts';
 import { claimPlayerNames, nameOf } from '../src/ui/identity.ts';
 
 assert.deepEqual(SUPPORTED_LOCALES, LOCALE_REGISTRY.map(({ id }) => id));

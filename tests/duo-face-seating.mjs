@@ -9,7 +9,7 @@ const ROT = t => t === 'matrix(-1, 0, 0, -1, 0, 0)';   // computed rotate(180deg
 
 const ctx = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
   locale: 'en-US' });
-await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
+await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: tests/first-run-offer.mjs owns the first-run offer
 const page = await ctx.newPage();
 page.on('pageerror', e => errs.push('PAGEERROR: ' + e.message));
 page.on('console', m => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
@@ -115,7 +115,7 @@ check(out.faceSrc.settingsStillFace && !out.faceSrc.online.js,
 
 // play a full game: each player taps their OWN half, no pass card ever
 let p2Placed = 0, sawPass = false, bottomMoved = false, turnChecks = [];
-for (let i = 0; i < 1200; i++) {  // generous on purpose: random endgames + slow machines (see test6)
+for (let i = 0; i < 1200; i++) {  // generous on purpose: random endgames + slow machines (see widget-isolation)
   const s = await snap();
   if (s.pass) sawPass = true;
   if (s.bottom !== 1) bottomMoved = true;
@@ -215,7 +215,7 @@ await page.tap('#btnLeave'); await page.waitForTimeout(300); await page.tap('#bt
 // ===== E. small screen: duo title with 3 cards must stay reachable =====
 const small = await browser.newContext({ viewport: { width: 320, height: 568 }, hasTouch: true,
   isMobile: true, locale: 'en-US' });
-await small.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: the first-run tutorial offer is test19's subject
+await small.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(localStorage.getItem(k) || '{}'); if (!cur.played) { cur.played = true; localStorage.setItem(k, JSON.stringify(cur)); } });   // an experienced player: tests/first-run-offer.mjs owns the first-run offer
 const sp = await small.newPage();
 sp.on('pageerror', e => errs.push('SMALL: ' + e.message));
 await sp.goto(F); await sp.waitForTimeout(400);

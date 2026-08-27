@@ -77,7 +77,7 @@ invalidating its delayed callback. Tutorial pacing and LIMITED's real die bag
 stay authentic, and dedicated lifecycle suites retain opening-animation
 coverage; the spell suite therefore spends its time on the state it owns.
 
-`pwa-update` (`tests/testupdate.mjs`) is the sole `exclusive-final` suite. It
+`pwa-update` (`tests/pwa-update.mjs`) is the sole `exclusive-final` suite. It
 mutates `pwa/` through the shared server only after every pooled suite in its
 checkout has completed, and the runner restores generated output afterward.
 Manifest and executor contracts prove it cannot overlap a reader or be
@@ -136,23 +136,32 @@ inertness, heading focus, and close-path focus restoration.
 
 ## Test ownership
 
-Tests should be discoverable by what they prove rather than a growing numeric
-sequence. The target organization is:
+A test is discoverable by what it proves, not by a position in a numeric
+sequence. Every suite is named for its subject, and the file is named for the
+suite:
 
 ```text
 tests/
-  core/         rules, replay, modes, spells, ladder, AI contracts
-  browser/      screens, input, responsive layout, accessibility, PWA
-  contracts/    architecture, CSS graph/reach, function sync, native identity
-  e2e/          isolated end-to-end workflows
-  live/         explicit external probes, never part of the default gate
-  support/      server, report, browser-app, and Supabase mock helpers
+  <subject>.test.ts   pure Node contract, run with --experimental-strip-types
+  <subject>.mjs       single-subject browser suite (Playwright)
+  browser/<tree>/     multi-scenario browser tree: one run.mjs, focused scenarios
+  live-*.mjs          explicit external probes, never part of the default gate
+  support/            server, gate manifest/lock, report, and mock helpers
+  fixtures/           static inputs a contract reads
+  screens/            screenshots suites write for humans (gitignored)
 ```
 
-The gate manifest already reports every suite under a descriptive name
-(`single-strike-visibility`, not `test13`): legacy numbered files keep their
-paths until they migrate into this tree, and `tests/support/gate-manifest.mjs`
-maps each name to its file.
+`tests/support/gate-manifest.mjs` maps each suite name to its file, and the
+mapping is now an identity for every single-subject suite: `file('hud-timer')`
+resolves to `tests/hud-timer.mjs`, so a suite whose file drifts from its name
+is visible in the manifest as an explicit path. Only a suite that genuinely
+lives elsewhere — a browser tree's `run.mjs`, a `.test.mjs` — still spells its
+file out.
+
+Grouping the flat suites further (a `core/`, `browser/`, `contracts/` split)
+remains available if the root file list becomes hard to scan. It buys nothing
+today, costs every path reference in the repository, and is deliberately not
+scheduled.
 
 Large browser scripts split into focused scenario modules while sharing one
 browser/session runner. Do not introduce a page-object framework when a small

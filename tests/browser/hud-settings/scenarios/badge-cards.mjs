@@ -153,7 +153,8 @@ export async function runBadgeCardScenarios(suite) {
      very numbers).
      Every line below reads PIXELS: a card that merely appeared in the DOM, a
      tint that never reached the paint, or a drag the card ignored all agree with
-     the DOM perfectly (test13's lesson). And both chips walk the same steps,
+     the DOM perfectly (single-strike-visibility's lesson). And both chips walk
+     the same steps,
      because a row of chips that behaves differently per roster is the bug the
      badge was made a row to prevent. */
   const armFlight = () => page.evaluate(() => {

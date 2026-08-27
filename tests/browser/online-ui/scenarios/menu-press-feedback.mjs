@@ -49,10 +49,10 @@ export async function runOnlineMenuPressFeedbackScenarios(suite) {
   const board = await visit({
     door: 'board',
     probe: async (page) => {
-      const row = await holdAndCancel(page, '#onBoardList .lrow');
+      const row = await holdAndCancel(page, '#onLadderList .lrow');
       return {
         row,
-        boardStillOpen: await page.locator('#onBoard').evaluate((panel) => !panel.hidden),
+        boardStillOpen: await page.locator('#onLadder').evaluate((panel) => !panel.hidden),
         faceoffAbsent: await page.locator('.faceoff').count() === 0,
       };
     },
