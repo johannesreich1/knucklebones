@@ -342,3 +342,33 @@ additionally require same-machine before/after visual or computed style
 comparison. Backend changes require authorization, race/idempotency, and
 rollback coverage. Build/native changes require artifact-level checks rather
 than treating a successful TypeScript compile as delivery proof.
+
+## One suite, two engines
+
+`tests/browser/online-ui/` runs WebKit. That is why a Chromium-only scroll
+bug — native scroll anchoring compensating a prepend that the ladder was
+already compensating by hand — shipped and stayed shipped: the suite is
+structurally incapable of seeing an effect the engine does not implement. When
+a change turns on behaviour that only one engine has, the check belongs in that
+engine, and it must also assert the engine can express the feature at all, or a
+negative reading is indistinguishable from ignorance. See `styles.md`.
+
+Two harness traps worth knowing before writing a scroll probe here:
+
+- **Never give this suite `isMobile` / `devices['iPhone 13']`.** Every other
+  browser tree does, but under WebKit it silently disables `page.route()` — the
+  Supabase stubs stop firing and the suite talks to the live backend — and it
+  makes `page.mouse.wheel` throw outright. `harness/visit.mjs` says so where it
+  omits the flag.
+- **Shadowing `scrollTop` does not observe scrolling.** An own accessor on the
+  element sees assignments only: measured in this harness, a wheel took the
+  scroller from 580 to 980 with an empty write log, and `scrollTo` and
+  `scrollIntoView` are invisible to it too. A scroll JUMP produces no assignment
+  at all, so such a probe reports "no writes" and proves nothing. Record a
+  `scroll`-event timeline instead and keep the accessor, if at all, as an
+  annotation on top of it.
+
+Fixtures for the ladder carry the RPC's dense `pos` and `population`. A mock
+that omits a field a migration added keeps a broken client green — and this one
+is load-bearing, because the client places a page by `pos` and would otherwise
+fall back to counting from a cursor.

@@ -7,6 +7,9 @@
 
 import type { Ruler } from './virtual-ruler.ts';
 
+/** One place that decides how a length is written into a style. */
+export const px = (n: number): string => `${Math.max(0, Math.round(n * 100) / 100)}px`;
+
 export interface VirtualSlots<T> {
   key(item: T): string;
   /** Build the element once, wired. Identity lives here so a repaint, a data
@@ -57,7 +60,7 @@ export function createMountedSlots<T>(
        inside the box that gets measured. */
     wrapper.style.display = 'flex';
     wrapper.style.flexDirection = 'column';
-    wrapper.style.rowGap = `${gap}px`;
+    wrapper.style.rowGap = px(gap);
     wrapper.dataset.slot = String(position);
     const element = slots.create(position);
     wrapper.appendChild(element);
@@ -97,9 +100,20 @@ export function createMountedSlots<T>(
       mounted.set(position, slot);
       paint(slot, position);
       /* Inserted in position order so the DOM reads top to bottom, which keeps
-         tab order and screen-reader order honest. */
-      const below = mounted.get(position + 1);
-      if (below) list.insertBefore(slot.wrapper, below.wrapper);
+         tab order and screen-reader order honest.
+         The anchor is the NEAREST mounted position below, not position + 1. A
+         window growing upward is mounted in ascending order, so when slot 89
+         arrives slot 90 does not exist yet — anchoring on the immediate
+         successor fell through to appendChild and put every new row at the
+         BOTTOM of the list. The pads still shrank as if the rows had gone in
+         above, so the reader's row crept upward by exactly the pad's delta on
+         every step of an upward crawl. */
+      let anchor = null;
+      let nearest = Infinity;
+      for (const [at, other] of mounted) {
+        if (at > position && at < nearest) { nearest = at; anchor = other; }
+      }
+      if (anchor) list.insertBefore(slot.wrapper, anchor.wrapper);
       else list.appendChild(slot.wrapper);
     },
 

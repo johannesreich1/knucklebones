@@ -26,7 +26,7 @@
 
 import { createRuler } from './virtual-ruler.ts';
 import { watchScrollSettled } from './scroll-settled.ts';
-import { createMountedSlots, type VirtualSlots } from './virtual-slot.ts';
+import { createMountedSlots, px, type VirtualSlots } from './virtual-slot.ts';
 import {
   createVirtualCache,
   type VirtualAnchor,
@@ -71,8 +71,6 @@ export interface VirtualList {
   restore(place: VirtualPlace | null): void;
   destroy(): void;
 }
-
-const px = (n: number): string => `${Math.max(0, Math.round(n * 100) / 100)}px`;
 
 export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
   const { scroller, list, source, slots } = spec;
@@ -136,7 +134,7 @@ export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
   function frame(): void {
     if (dead || !alive()) return;
     /* A hidden panel has no box: every rect reads 0, and recording that would
-       poison the ruler and every pad derived from it. */
+       poison the ruler and every pad built from it. */
     const viewHeight = scroller.clientHeight;
     if (!viewHeight || !list.offsetParent) return;
 
@@ -208,11 +206,16 @@ export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
     list.style.paddingTop = px(padTop);
     list.style.paddingBottom = px(ruler.total - (ruler.top(last + 1) - gap));
 
-    /* Drift is only settled where the pad has nowhere left to give: at the very
-       top, where the first row would otherwise float in a phantom gap, and at
-       the very end, where it would push past the content. */
+    /* Settled only where the pad has nowhere left to give: at the top of the
+       board, and at the bottom ONLY once the reader has actually arrived there.
+       Being merely near the end is not enough — starting a crawl from the last
+       page keeps `last === count - 1` true for its whole length, and re-paying
+       the drift every frame moves the scroll under the reader in lockstep with
+       their own wheel. Measured: the row they were looking at stayed pinned to
+       the top of the screen while the scroll fell 1,050px. */
     const carried = drift();
-    if (carried !== 0 && (first === 0 || last === count - 1)) owed = -carried;
+    const atEnd = scrollTop >= scroller.scrollHeight - viewHeight - 2;
+    if (carried !== 0 && (first === 0 || (last === count - 1 && atEnd))) owed = -carried;
     /* The wait exists ONLY to protect touch momentum. A reader who has never
        touched this scroller — a trackpad, a mouse, the opening jump itself —
        has no fling to cancel, so making them wait out a 150ms quiet window

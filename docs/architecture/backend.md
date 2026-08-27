@@ -102,6 +102,19 @@ applies, removes, or reverses schema changes.
   timestamp-only and rank-only seams can skip or repeat rows. Reverse ladder
   paging uses its own compound-cursor RPC rather than subtracting numeric ranks,
   because `rank()` leaves gaps after ties.
+- **`rank` is never an offset.** Sequential ladder paging keeps the
+  `(rank, nickname)` keyset; RANDOM access — what a dragged scrollbar produces —
+  uses the dense `pos` added by `20260827203007_ladder_dense_positions`, with
+  `from_pos` on `leaderboard`. `rank - 1` is only ever the position of a tie
+  group's FIRST member, and `leaderboard_before`'s cursor deliberately enters a
+  group part-way, so its first row is the k-th member: measured on the pgTAP
+  fixture's 60-player tie, fifty rows all report rank 1 while sitting at
+  positions 11 to 60. Both board RPCs also return `population`, because the
+  ladder is public and `player_standing` needs a uuid the reader never has.
+  Cost, honestly: the `pos` predicate cannot be pushed below the window, so a
+  page sorts and numbers the whole board where `from_rank` filtered first. It
+  does not change the complexity class — `ladder_board` already runs `rank()`
+  and `count(*)` across the board on every request — but it is a real constant.
 - Add indexes from an observed query and verified plan/advisor evidence, not
   from column-name intuition.
 - Keep transactions short. External HTTP calls, animation, or client waits do

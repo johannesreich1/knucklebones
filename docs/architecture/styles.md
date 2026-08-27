@@ -116,6 +116,27 @@ Verification includes host-page sentinel styles, every fixed/absolute overlay
 remaining under the root, and opening/closing all lazy panels. Merely checking
 elements that already happen to be descendants cannot prove isolation.
 
+## Effects one engine renders and another does not
+
+Some declarations are invisible to a suite that runs a single engine, and a
+rule that reads as a no-op gets deleted. `paged-view.css` records the first
+instance: headless WebKit renders no `backdrop-filter` at all, so the header
+band was once torn out on the strength of WebKit screenshots.
+
+The general rule: **an effect only one engine implements must be verified in
+that engine, and the check must prove the engine can express it at all.**
+
+- `overflow-anchor` on `#ovOnline.listview .pbody` turns off native scroll
+  anchoring, which would otherwise compensate a windowed list's prepend a second
+  time on top of the list's own pad. WebKit shipped anchoring only in Safari 27,
+  so on an older engine the rule is a no-op and a WebKit-only run cannot see it.
+  It is asserted in Chromium, guarded by `CSS.supports('overflow-anchor','none')`
+  so an engine that has never heard of the property cannot pass by accident.
+- The rule is keyed to `listview`, the class `screens/shell.ts` already toggles
+  for exactly the two list panels and clears on the way out — so there is no
+  extra state to leak, and the scroller's other tenants (OFFLINE, HOW TO PLAY,
+  SETTINGS, legal, learn) keep anchoring.
+
 ## Verification matrix
 
 At minimum compare every registered locale at 320 × 568, 390 × 844,

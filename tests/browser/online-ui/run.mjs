@@ -20,6 +20,7 @@ import { createVisit } from './harness/visit.mjs';
 import { runMatchmakingScenarios } from './scenarios/matchmaking.mjs';
 import { runFreshAccountScenarios } from './scenarios/fresh-account.mjs';
 import { runLadderFaceoffScenarios } from './scenarios/ladder-faceoff.mjs';
+import { runLadderScrollScenarios } from './scenarios/ladder-scroll.mjs';
 import { runAccountLifecycleScenarios } from './scenarios/account-lifecycle.mjs';
 import { runOnlineMenuPressFeedbackScenarios } from './scenarios/menu-press-feedback.mjs';
 import { runOnlineLoadingPanelScenarios } from './scenarios/loading-panels.mjs';
@@ -36,11 +37,12 @@ import { runProfileRuneSheetScenarios } from './scenarios/profile-rune-sheet.mjs
 import { runRuneTrialUiScenarios } from './scenarios/rune-trial-ui.mjs';
 import { runRuneRewardRaceScenarios } from './scenarios/rune-reward-races.mjs';
 
-const { webkit } = pkg;
+const { webkit, chromium } = pkg;
 const SCENARIOS = Object.freeze([
   { id: 'matchmaking', run: runMatchmakingScenarios },
   { id: 'fresh-account', run: runFreshAccountScenarios },
   { id: 'ladder-faceoff', run: runLadderFaceoffScenarios },
+  { id: 'ladder-scroll', run: runLadderScrollScenarios },
   { id: 'account-lifecycle', run: runAccountLifecycleScenarios },
   { id: 'menu-press-feedback', run: runOnlineMenuPressFeedbackScenarios },
   { id: 'loading-panels', run: runOnlineLoadingPanelScenarios },
@@ -87,7 +89,19 @@ const SESSION = {
 
 const browser = await webkit.launch();
 const visit = createVisit({ browser, URL, SESSION, GUEST_ID });
-const suite = { visit, out, check };
+/* A SECOND ENGINE, LAUNCHED ONLY IF A SCENARIO ASKS FOR ONE. This suite is
+   WebKit, and that is exactly why a Chromium scroll-anchoring bug shipped: the
+   bug cannot exist in an engine that has not implemented the feature. One
+   scenario needs Chromium; the others must not pay for a second launch, so it
+   is memoised on first use. Scenarios run sequentially, so no lock is needed. */
+let chrome = null;
+let chromeVisit = null;
+const visitChromium = async (options) => {
+  chrome ??= await chromium.launch();
+  chromeVisit ??= createVisit({ browser: chrome, URL, SESSION, GUEST_ID });
+  return chromeVisit(options);
+};
+const suite = { visit, visitChromium, out, check };
 
 try {
   for (const scenario of scenarios) await scenario.run(suite);
@@ -95,5 +109,6 @@ try {
   problems.push('THREW :: ' + e.message);
 }
 await browser.close();
+await chrome?.close();
 console.log(JSON.stringify({ out, problems }, null, 2));
 process.exit(problems.length ? 1 : 0);

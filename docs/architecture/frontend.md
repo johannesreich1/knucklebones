@@ -41,6 +41,27 @@ online/
   fails on one.
 - `src/ui/` renders shared player-visible concepts and supplies small browser
   primitives.
+- **The windowed list** (`src/ui/virtual-list.ts`, with `virtual-cache.ts`,
+  `virtual-slot.ts`, `virtual-ruler.ts`, `scroll-settled.ts`) is the one
+  implementation behind both list screens — the ladder and match history. The
+  screen owns what a row MEANS (copy, formatting, groups, taps, the RPC
+  adapter); the module owns pixels and indices (the mounted window, measured
+  pads, the row cache, every `scrollTop` write). A consumer declares which
+  directions its sequence can travel by which of `after`/`before`/`seek` it
+  supplies: match history has only `after`, so it grows at the tail and cannot
+  be jumped into, which is correct for a list whose thumb cannot be turned back
+  into a query.
+  Three rules the module depends on, none of them obvious:
+  - **The source owns positions.** Pages carry the position of their first row.
+    Inferring it from a cursor is how a tie block shears — `rank` is not an
+    ordinal (see `backend.md`).
+  - **No `scrollTop` write during a gesture.** iOS reads one as "cancel the
+    fling". Trimming and restoring cost no write at all because the top pad
+    moves only by measured extents; the rare correction waits for a moment with
+    no momentum to lose, and is paired with the pad in one synchronous block.
+  - **The cache holds data, never nodes.** A pool of detached elements would
+    strand pre-`languagechange` copy, so crawling away and back in another
+    language would hand the reader stale words.
 - `src/core/` contains rules, replay, dice streams, modes, spells, ladder
   policy, and AI shared by browser, Node tests, and Deno Edge Functions.
 
