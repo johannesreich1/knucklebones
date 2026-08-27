@@ -39,6 +39,7 @@ import type { AuthMode, AuthOrigin } from './auth-screen.ts';
 import type { Ladder, Standing } from '../api/ladder-api.ts';
 import type { IdentityStatus, Me, Profile } from '../identity/session.ts';
 import { paintAccountProviders } from './account-provider-view.ts';
+import { bindAccountAppleRepair } from './account-apple-repair.ts';
 import { bindAccountDelete } from './account-delete-flow.ts';
 
 interface AccountPorts {
@@ -261,9 +262,10 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       Sfx.tap();
       ports.showAuth('restore', 'account');
     });
-    $('#btnLinkApple').addEventListener('click', () => {
-      Sfx.tap();
-      ports.showAuth('attach', 'account');
+    bindAccountAppleRepair({
+      clearError: clearAccountError,
+      showError: showAccountError,
+      refresh: show,
     });
     $('#btnClaim').addEventListener('click', async () => {
       Sfx.tap();

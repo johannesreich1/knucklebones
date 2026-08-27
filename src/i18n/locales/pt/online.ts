@@ -179,6 +179,7 @@ export const ptOnline = {
     appleInvalid: 'Não foi possível verificar o login com Apple. Tente novamente.',
     appleConflict: 'Esta conta Apple já está vinculada a outro jogador.',
     appleFailed: 'O login com Apple falhou. Tente novamente.',
+    appleRevocationSetup: 'O Apple está ligado, mas não foi possível configurar o acesso de eliminação. Tente novamente.',
     appleRevocationPending: 'Sua conta foi excluída. A remoção do acesso da Apple será repetida automaticamente; você também pode remover o Knucklebones agora em Ajustes › Conta Apple › Iniciar Sessão com a Apple.',
     appleRevocationManual: 'Sua conta foi excluída, mas o acesso da Apple não pôde ser removido automaticamente. Remova o Knucklebones em Ajustes › Conta Apple › Iniciar Sessão com a Apple.',
     gameCenterUnavailable: 'O Game Center não está disponível.',

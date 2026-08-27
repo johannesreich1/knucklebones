@@ -134,6 +134,7 @@ const ROOT_STATE_CLASS = /['"](?:rowmode|rowswitch|face|p2turn|opponent-turn|lan
 const rootStateEscapes: string[] = [];
 const rootQueryEscapes: string[] = [];
 const rootHitTestEscapes: string[] = [];
+const edgeTransportEscapes: string[] = [];
 for (const file of sourceFiles.filter((candidate) => /\.tsx?$/.test(candidate))) {
   const name = relative(file);
   if (name === ROOT_STATE_OWNER) continue;
@@ -158,6 +159,15 @@ for (const file of sourceFiles.filter((candidate) => /\.tsx?$/.test(candidate)))
     rootHitTestEscapes.push(name);
     problems.push(`${name} hit-tests the host document directly. Route coordinates through `
       + `rootElementFromPoint() so matching host markup cannot become an application target.`);
+  }
+  /* supabase-js's FunctionsClient attaches an x-client-info header that the
+     Edge CORS allow-list did not name, so the browser answered a successful
+     preflight by dropping the POST — no request, no error, no log. */
+  if (/\bfunctions\s*\.\s*invoke\s*\(/.test(clean)) {
+    edgeTransportEscapes.push(name);
+    problems.push(`${name} calls functions.invoke(). Send every Edge Function request through `
+      + `callFunction() in src/online/api/client.ts, whose headers the shared CORS allow-list `
+      + `names; a library-added header makes the browser silently drop the POST.`);
   }
 }
 
@@ -374,24 +384,14 @@ for (const finding of coreFindings) {
     + `inside core/; ${remedy}. Existing debt is counted explicitly in CORE_DEBT.`);
 }
 
+const coreModules = sourceFiles.filter((file) => relative(file).startsWith('src/core/')).length;
 console.log(JSON.stringify({
-  scanned: {
-    typedSources: typedSources.length,
-    authoredModules: authored.length,
-    graphModules: graphFiles.length,
-    coreModules: sourceFiles.filter((file) => relative(file).startsWith('src/core/')).length,
-  },
+  scanned: { typedSources: typedSources.length, authoredModules: authored.length,
+             graphModules: graphFiles.length, coreModules },
   currentDebt: {
-    tsNoCheck: noCheckFiles,
-    oversized: sizeDebt,
-    importCycles: cyclicComponents,
-    cyclicEdges,
-    rootStateEscapes,
-    rootQueryEscapes,
-    rootHitTestEscapes,
-    gameViewEscapes,
-    onlineChunkEscapes,
-    corePurity: coreFindings,
+    tsNoCheck: noCheckFiles, oversized: sizeDebt, importCycles: cyclicComponents, cyclicEdges,
+    rootStateEscapes, rootQueryEscapes, rootHitTestEscapes, edgeTransportEscapes,
+    gameViewEscapes, onlineChunkEscapes, corePurity: coreFindings,
   },
   problems,
   errs: [],

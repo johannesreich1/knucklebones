@@ -179,6 +179,7 @@ export const frOnline = {
     appleInvalid: 'La connexion Apple n’a pas pu être vérifiée. Veuillez réessayer.',
     appleConflict: 'Ce compte Apple est déjà associé à un autre joueur.',
     appleFailed: 'La connexion Apple a échoué. Veuillez réessayer.',
+    appleRevocationSetup: 'La connexion Apple est associée, mais l’accès de suppression manque encore. Veuillez réessayer.',
     appleRevocationPending: 'Votre compte a été supprimé. La révocation de l’accès Apple sera retentée automatiquement ; vous pouvez aussi retirer Knucklebones dans Réglages › Compte Apple › Connexion avec Apple.',
     appleRevocationManual: 'Votre compte a été supprimé, mais l’accès Apple n’a pas pu être révoqué automatiquement. Retirez Knucklebones dans Réglages › Compte Apple › Connexion avec Apple.',
     gameCenterUnavailable: 'Game Center n’est pas disponible.',

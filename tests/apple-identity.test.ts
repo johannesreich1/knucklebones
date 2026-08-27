@@ -9,7 +9,9 @@ import {
   type AppleSignInBridge,
   type GameCenterIdentityPorts,
 } from '../src/online/identity/identity.ts';
+import { registerAppleAuthorizationCode } from '../src/online/identity/apple-identity.ts';
 import { runOneTapFromAuthSheet } from '../src/online/screens/auth-screen.ts';
+import { CORS_HEADERS } from '../supabase/functions/_shared/http.ts';
 import type { GameCenterProof } from '../src/native/game-center.ts';
 
 const problems: string[] = [];
@@ -59,6 +61,9 @@ function applePorts(
   plugin: AppleSignInBridge | undefined,
   auth: ReturnType<typeof fakeAppleAuth>['auth'],
   ids: string[],
+  // How the deletion-credential registration answers: stored, refused, or a
+  // rejected promise. A refusal is a real outcome, not an absent one.
+  registration: boolean | 'throws' = true,
 ) {
   const registered: string[] = [];
   return {
@@ -75,7 +80,11 @@ function applePorts(
         return id;
       },
       digest: async (value: string) => `sha256:${value}`,
-      registerAuthorizationCode: async (code: string) => { registered.push(code); },
+      registerAuthorizationCode: async (code: string) => {
+        registered.push(code);
+        if (registration === 'throws') throw new Error('registration transport failed');
+        return registration;
+      },
     },
   };
 }
@@ -140,6 +149,83 @@ const oursPorts = applePorts('ios', iosPlugin, ours.auth, ['ours-raw']);
 check(await createAppleIdentity(oursPorts.ports).attach() === null
   && oursPorts.registered[0] === 'single-use-code',
 'an already-linked Apple identity could not repair its revocation credential');
+
+/* The credential is the WHOLE point of the repair, and Apple hands out the
+   single-use code once. A refused registration that reports success leaves the
+   player tapping REPAIR APPLE ACCESS forever against an unchanged warning —
+   which is exactly how this shipped broken. It must reach them as copy. */
+const refused = fakeAppleAuth({
+  session: { access_token: 'account' },
+  linkError: { code: 'identity_already_exists' },
+  appleAlreadyLinked: true,
+});
+const refusedPorts = applePorts('ios', iosPlugin, refused.auth, ['refused-raw'], false);
+check(await createAppleIdentity(refusedPorts.ports).repair()
+  === APPLE_IDENTITY_MESSAGES.revocationSetup
+  && refusedPorts.registered[0] === 'single-use-code',
+'a refused deletion-credential registration was reported to the player as a repair');
+
+const threwPorts = applePorts('ios', iosPlugin, fakeAppleAuth().auth, ['threw-raw'], 'throws');
+check(await createAppleIdentity(threwPorts.ports).repair()
+  === APPLE_IDENTITY_MESSAGES.revocationSetup,
+'a rejected registration was reported when the player asked for a repair');
+
+/* Signing in and upgrading promise an IDENTITY, and Supabase has already
+   granted it by this point. A credential that will not store must not hold the
+   sheet open over an account that now exists — the profile's standing "deletion
+   access needs repair" row carries it, and REPAIR is where it is answered.
+   Without this, a server-side Apple misconfiguration would trap every sign-in. */
+const signInPorts = applePorts('ios', iosPlugin, fakeAppleAuth().auth, ['signin-raw'], false);
+check(await createAppleIdentity(signInPorts.ports).restore() === null
+  && signInPorts.registered[0] === 'single-use-code',
+'a refused registration blocked a sign-in that had already succeeded');
+
+const upgradePorts = applePorts('ios', iosPlugin, fakeAppleAuth({
+  session: { access_token: 'account' },
+}).auth, ['upgrade-raw'], 'throws');
+check(await createAppleIdentity(upgradePorts.ports).attach() === null,
+'a rejected registration blocked an account upgrade that had already succeeded');
+
+check(APPLE_IDENTITY_MESSAGES.revocationSetup !== APPLE_IDENTITY_MESSAGES.failed
+  && !!APPLE_IDENTITY_MESSAGES.revocationSetup.trim(),
+'the credential failure borrows sign-in copy, so the player is told the wrong thing');
+
+/* The bug itself: supabase-js's functions.invoke() adds x-client-info, the
+   allow-list did not name it, and the browser answered a 200 preflight by
+   never sending the POST. Drive the REAL registration path and prove every
+   header it sends is one the shared Edge allow-list permits. */
+const requests: Array<{ url: string; init: RequestInit }> = [];
+const liveFetch = globalThis.fetch;
+let registerStatus = 200;
+globalThis.fetch = (async (input: RequestInfo | URL, init: RequestInit = {}) => {
+  requests.push({ url: String(input), init });
+  return { status: registerStatus, json: async () => ({ registered: registerStatus === 200 }) };
+}) as unknown as typeof fetch;
+let storedCode: boolean;
+let refusedCode: boolean;
+try {
+  storedCode = await registerAppleAuthorizationCode('single-use-code');
+  registerStatus = 502;
+  refusedCode = await registerAppleAuthorizationCode('single-use-code');
+} finally {
+  globalThis.fetch = liveFetch;
+}
+const registerPosts = requests
+  .filter((request) => request.url.endsWith('/functions/v1/apple-token-register'));
+check(storedCode === true && refusedCode === false && registerPosts.length === 2,
+'the Apple authorization code does not reach apple-token-register through the shared seam',
+requests.map((request) => request.url));
+check(registerPosts[0]?.init.method === 'POST'
+  && String(registerPosts[0]?.init.body) === JSON.stringify({ authorizationCode: 'single-use-code' }),
+'the registration POST did not carry the single-use authorization code', registerPosts[0]?.init);
+const allowedHeaders = new Set(CORS_HEADERS['Access-Control-Allow-Headers']
+  .split(',').map((name) => name.trim().toLowerCase()));
+const sentHeaders = Object.keys(registerPosts[0]?.init.headers ?? {})
+  .map((name) => name.toLowerCase());
+check(sentHeaders.length > 0 && sentHeaders.every((name) => allowedHeaders.has(name)),
+'the registration POST sends a header the Edge CORS allow-list does not name; the browser '
+  + 'passes the preflight and then drops the request entirely',
+{ sentHeaders, allowed: [...allowedHeaders] });
 
 const GC_PROOF: GameCenterProof = {
   publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-12.cer',

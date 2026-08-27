@@ -73,6 +73,20 @@ queues transient failures for the cron-secret retry worker. Terminal or missing
 credentials produce localized manual-removal instructions. The owner-held
 Apple `.p8` key and generated client secrets never enter the app bundle.
 
+The client posts that code through the shared `callFunction` seam in
+`src/online/api/client.ts`, never through supabase-js `functions.invoke`: its
+`FunctionsClient` adds an `x-client-info` header, and any request header the
+Edge CORS allow-list does not name makes the browser pass the preflight and
+then drop the POST with no request, error, or log. `tests/architecture.test.ts`
+forbids `functions.invoke` anywhere under `src/`, and `_shared/http.ts` now
+allow-lists `x-client-info` as a second line of defence. A registration that
+does not answer 2xx is reported to the player (`errors.appleRevocationSetup`)
+rather than swallowed, and the profile's REPAIR APPLE ACCESS button runs the
+Apple provider directly (`src/online/screens/account-apple-repair.ts`) instead
+of opening the guest-upgrade sheet — the account already has Apple, so only the
+credential is missing. Success re-reads `identity-status` and repaints, so the
+warning clears without a reload.
+
 **Rung 3 — Game Center: repository implementation complete, not deployed.** The
 signature verification is tested against Apple's real production certificates,
 but nothing has run on a device. The Edge Function and the held

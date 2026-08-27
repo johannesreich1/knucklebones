@@ -7,6 +7,10 @@ export async function installOnlineRoutes(
     dataDelay = 0,
     door,
     named,
+    /* An account that is past the guest rung: the profile only paints its
+       ACCOUNT ACCESS box for a player who is not a guest. */
+    member = false,
+    identity = { gameCenterLinked: false, appleLinked: false, appleRevocationReady: false },
     ladderNearBottom = false,
     paginationRace = false,
     passwordAuth = 'error',
@@ -17,6 +21,9 @@ export async function installOnlineRoutes(
     GUEST_ID,
   },
 ) {
+  const session = member
+    ? { ...SESSION, user: { ...SESSION.user, email: 'player@example.test', is_anonymous: false } }
+    : SESSION;
   let signupCalls = 0;
   let passwordCalls = 0;
   let profileCalls = 0;
@@ -119,7 +126,7 @@ export async function installOnlineRoutes(
       await signupRequestRelease;
     }
     await (anonymous === 200
-      ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(SESSION) })
+      ? r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(session) })
       : r.fulfill({ status: 422, contentType: 'application/json',
                     body: JSON.stringify({ code: 'anonymous_provider_disabled', message: 'Anonymous sign-ins are disabled' }) }));
     if (deferred) markSignupRequestFinished();
@@ -217,13 +224,7 @@ export async function installOnlineRoutes(
     return r.fulfill({ status: 200, contentType: 'application/json', body: '{"status":"queued"}' });
   });
   await page.route('**/functions/v1/identity-status', (r) => r.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify({
-      gameCenterLinked: false,
-      appleLinked: false,
-      appleRevocationReady: false,
-    }),
+    status: 200, contentType: 'application/json', body: JSON.stringify(identity),
   }));
   await page.route('**/rest/v1/rpc/leave_ranked_queue', (r) => r.fulfill({
     status: 200, contentType: 'application/json', body: '{"status":"left"}',

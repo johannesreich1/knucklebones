@@ -1,9 +1,16 @@
 import type { createClient, SupabaseClient, User } from "@supabase/supabase-js";
 
-/** Headers returned by every public Edge Function, including preflight. */
+/** Headers returned by every public Edge Function, including preflight.
+    x-client-info is named even though this repo's own transport never sends
+    it: supabase-js attaches it to every request its FunctionsClient makes, and
+    a request header missing from this list makes the browser answer a
+    perfectly successful preflight by silently dropping the POST. That failure
+    reaches no log and no error handler, so the allow-list stays ahead of the
+    client library rather than one incident behind it. */
 export const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, apikey, content-type, idempotency-key",
+  "Access-Control-Allow-Headers":
+    "authorization, apikey, content-type, idempotency-key, x-client-info",
 } as const;
 
 export function json(body: unknown, status = 200): Response {

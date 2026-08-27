@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { t } from '../../i18n/index.ts';
-import { supa } from '../api/client.ts';
+import { callFunction, supa } from '../api/client.ts';
 import { onlineMessage } from '../message-copy.ts';
 import { randomUuid } from '../api/random-id.ts';
 import type { OneTap } from './identity-provider.ts';
@@ -32,6 +32,7 @@ export const APPLE_IDENTITY_MESSAGES = {
   get invalid(): string { return onlineMessage('errors.appleInvalid'); },
   get conflict(): string { return onlineMessage('errors.appleConflict'); },
   get failed(): string { return onlineMessage('errors.appleFailed'); },
+  get revocationSetup(): string { return onlineMessage('errors.appleRevocationSetup'); },
 } as const;
 
 export async function sha256Hex(value: string): Promise<string> {
@@ -46,7 +47,11 @@ export interface AppleIdentityPorts {
   getAuth(): AppleAuth;
   randomId(): string;
   digest(value: string): Promise<string>;
-  registerAuthorizationCode(code: string): Promise<void>;
+  /* Resolves true only when the deletion credential is stored. Apple requires
+     the app to revoke its own access at account deletion, and the single-use
+     authorization code is the ONLY moment that credential can be obtained —
+     so a refusal here is the player's business, never a swallowed detail. */
+  registerAuthorizationCode(code: string): Promise<boolean>;
 }
 
 type AppleCredential = { token: string; rawNonce: string; authorizationCode?: string };
@@ -87,8 +92,25 @@ async function requestAppleCredential(ports: AppleIdentityPorts): Promise<AppleC
   };
 }
 
-export function createAppleIdentity(ports: AppleIdentityPorts): OneTap {
-  const authenticate = async (mode: 'restore' | 'attach'): Promise<string | null> => {
+/* Apple is the one provider that owns a server-side credential beyond the
+   identity, so it answers a wider contract than OneTap: `repair` re-runs the
+   authorization for the credential alone. */
+export interface AppleIdentity extends OneTap {
+  repair(): Promise<string | null>;
+}
+
+export function createAppleIdentity(ports: AppleIdentityPorts): AppleIdentity {
+  /* `reportRegistration` separates two different promises to the player. A
+     sign-in or an upgrade promises an identity: once Supabase has linked it,
+     the player IS signed in, so a failed deletion-credential write must not
+     hold the sheet open on an account that already exists — the profile's
+     "deletion access needs repair" row is that failure's standing surface.
+     Repair promises the credential itself, so there the failure is the answer
+     and the profile reports it inline. */
+  const authenticate = async (
+    mode: 'restore' | 'attach',
+    reportRegistration = false,
+  ): Promise<string | null> => {
     const credential = await requestAppleCredential(ports);
     if (typeof credential === 'string') return credential;
     const auth = ports.getAuth();
@@ -112,7 +134,9 @@ export function createAppleIdentity(ports: AppleIdentityPorts): OneTap {
       const message = authErrorMessage(error);
       if (message) return message;
       if (credential.authorizationCode) {
-        await ports.registerAuthorizationCode(credential.authorizationCode).catch(() => undefined);
+        const stored = await ports.registerAuthorizationCode(credential.authorizationCode)
+          .catch(() => false);
+        if (!stored && reportRegistration) return APPLE_IDENTITY_MESSAGES.revocationSetup;
       }
       return null;
     } catch { return APPLE_IDENTITY_MESSAGES.failed; }
@@ -122,7 +146,19 @@ export function createAppleIdentity(ports: AppleIdentityPorts): OneTap {
     get label(): string { return t('online', 'auth.continueApple'); },
     available: () => !!ports.getPlugin() && ports.getPlatform() === 'ios',
     restore: () => authenticate('restore'), attach: () => authenticate('attach'),
+    repair: () => authenticate('attach', true),
   };
+}
+
+/* The shared Edge seam, NOT supabase-js functions.invoke(): its
+   FunctionsClient attaches an x-client-info header, and a request header the
+   server's CORS allow-list does not name makes the browser pass the preflight
+   and then never send the POST — a total, silent failure. callFunction sends
+   only allow-listed headers and reports status 0 for its own timeout/abort,
+   which is a failed registration exactly like any non-2xx answer. */
+export async function registerAppleAuthorizationCode(code: string): Promise<boolean> {
+  const { status } = await callFunction('apple-token-register', { authorizationCode: code });
+  return status >= 200 && status < 300;
 }
 
 export const APPLE = createAppleIdentity({
@@ -131,10 +167,5 @@ export const APPLE = createAppleIdentity({
   getAuth: () => supa().auth,
   randomId: randomUuid,
   digest: sha256Hex,
-  registerAuthorizationCode: async (authorizationCode) => {
-    const { error } = await supa().functions.invoke('apple-token-register', {
-      body: { authorizationCode },
-    });
-    if (error) throw error;
-  },
+  registerAuthorizationCode: registerAppleAuthorizationCode,
 });
