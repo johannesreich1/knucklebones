@@ -10,6 +10,12 @@ import {
   type GameCenterIdentityPorts,
 } from '../src/online/identity/identity.ts';
 import { gameCenterSessionAction } from '../src/online/identity/session.ts';
+import { gameCenterCannotIdentify, initializeGameCenter } from '../src/native/game-center.ts';
+import {
+  accountProviderView,
+  gameCenterUnidentified,
+  providerReach,
+} from '../src/online/screens/account-provider-view.ts';
 import { runGameCenterRecoveryTests } from './support/game-center-recovery.ts';
 import { readFileSync } from 'node:fs';
 
@@ -78,8 +84,23 @@ const swift = readFileSync(
 );
 check(/private var playerIdentity: String\?/.test(swift)
   && /next != status \|\| nextIdentity != playerIdentity/.test(swift)
-  && /updateStatus\("authenticated", playerIdentity: player\.teamPlayerID\)/.test(swift),
+  && /updateStatus\("authenticated", playerIdentity: player\.teamPlayerID,\s*\n\s*persistent: player\.scopedIDsArePersistent\(\)\)/.test(swift),
 'the native lifecycle revision does not detect an authenticated Game Center account change');
+
+/* THE READING THE PLAYER SHOULD NEVER HAVE HAD TO TAP FOR.
+   `scopedIDsArePersistent()` decides whether an identity may be bound at all,
+   and the plugin used to consult it only inside fetchIdentityProof — so the
+   only way to learn it was to offer a control and let it fail. It now rides on
+   the auth state, published at LAUNCH and re-read whenever the state is asked
+   for, because Screen Time can be applied or lifted while the app runs. */
+check(/"persistentIdentity": persistentIdentity/.test(swift)
+  && /guard status == "authenticated" else \{ return \}/.test(swift)
+  && (swift.match(/self\.refreshPersistence\(\)/g) ?? []).length === 3,
+'the native auth state does not report what GameKit will vouch for, before a proof is asked for');
+/* The revision is WHICH PLAYER, not what may be signed for them: a persistence
+   flip must not spend an account assertion the player already made. */
+check(/if playerChanged \{ revision \+= 1 \}/.test(swift),
+'a persistence change moves the native revision and forces a needless reassertion');
 
 /* ---- WHAT THE DEVICE SAID, AND WHAT THE PLAYER IS THEREFORE TOLD ----
    A refused proof never leaves the phone: no gateway request, no Edge log,
@@ -239,6 +260,81 @@ delete (globalThis as typeof globalThis & { Capacitor?: unknown }).Capacitor;
 /* What the same lifecycle means for a player who cannot yet prove who they
    are: arriving with no account, and reinstalling with only a guest token. */
 await runGameCenterRecoveryTests(check);
+
+/* ---- AUTHENTICATED, AND STILL NOT SOMEONE THIS APP MAY BIND ----
+   The owner's own device: GameKit authenticated the local player — iOS showed
+   its banner — and then refused to vouch for a stable identifier, which is a
+   correct refusal and never something to work around. What was wrong was that
+   the only way to LEARN it was to press a control and watch it fail. */
+const identifiable = (persistentIdentity: boolean | null | undefined) => ({
+  getPlatform: () => 'ios',
+  Plugins: {
+    GameCenter: {
+      initialize: async () => ({ status: 'authenticated', revision: 1, persistentIdentity }),
+      getAuthState: async () => ({ status: 'authenticated', revision: 1, persistentIdentity }),
+      addListener: async () => ({ remove() { /* nothing to release */ } }),
+      fetchIdentityProof: async () => proof,
+    },
+  },
+});
+for (const [why, persistent, refused] of [
+  ['a player GameKit will not identify', false, true],
+  ['a player GameKit vouches for', true, false],
+  /* An older installed binary sends two fields where this payload expects
+     three. Absent is UNKNOWN, never a refusal: standing a warning the device
+     never made would withdraw a control that works perfectly on that build,
+     and the plugin still refuses the bind at proof time either way. */
+  ['a binary that predates the reading', undefined, false],
+  ['a binary that answered null', null, false],
+] as const) {
+  (globalThis as typeof globalThis & { Capacitor?: unknown }).Capacitor =
+    identifiable(persistent);
+  const module = await importFreshCoordinator(`persistence-${String(persistent)}`);
+  const published = await module.initializeGameCenter();
+  check(published.status === 'authenticated' && module.gameCenterCannotIdentify() === refused,
+    `${why} was classified wrong`, published);
+  /* The classification may never cost the player their remedy: this device is
+     signed in, so the lifecycle must still let the proof through and let the
+     DEVICE be the one that refuses, with its own reason. */
+  check((await module.fetchGameCenterProof()).teamPlayerID === 'team-player',
+    `${why} was refused by the lifecycle instead of by the device`);
+}
+delete (globalThis as typeof globalThis & { Capacitor?: unknown }).Capacitor;
+
+/* WHAT THE PROFILE DOES WITH IT. A control known to fail is the dead end the
+   ACCOUNT ACCESS rewrite exists to prevent, so the offer is withheld — and
+   because everything a link needs IS present, the absence is explained rather
+   than left as a silence that reads like a bug. */
+const MEMBER = { id: 'p', guest: false, email: 'p@example.test' };
+const GUEST = { id: 'p', guest: true, email: null };
+const UNLINKED = { gameCenterLinked: false, appleLinked: true, appleRevocationReady: true };
+const BLOCKED = { apple: false, gameCenter: false, gameCenterUnidentified: true };
+check(gameCenterUnidentified(MEMBER, UNLINKED, BLOCKED) === true,
+'an account that cannot link Game Center was told nothing about why');
+check(accountProviderView(MEMBER, UNLINKED, BLOCKED) === null,
+'the withheld Game Center offer was painted as a row with a control anyway',
+accountProviderView(MEMBER, UNLINKED, BLOCKED));
+check(gameCenterUnidentified(MEMBER, { ...UNLINKED, gameCenterLinked: true }, BLOCKED) === false,
+'an account that already linked Game Center was warned it cannot');
+/* A guest is never OFFERED the link — the app attaches theirs silently, and
+   linkGuestGameCenter refuses this player there too — so a warning about a
+   control they were never going to see is noise. */
+check(gameCenterUnidentified(GUEST, UNLINKED, BLOCKED) === false,
+'a guest was warned about a Game Center control the profile never offers them');
+check(gameCenterUnidentified(MEMBER, UNLINKED,
+  { apple: false, gameCenter: true, gameCenterUnidentified: false }) === false,
+'a reachable Game Center link was explained away instead of offered');
+/* And a build that could never offer Game Center explains nothing: there is no
+   missing control to account for. */
+check(providerReach().gameCenter === false && providerReach().gameCenterUnidentified === false,
+'a build with no identity gateway origin explained a Game Center offer it never makes',
+providerReach());
+/* The real coordinator, driven exactly as the app drives it at launch. */
+(globalThis as typeof globalThis & { Capacitor?: unknown }).Capacitor = identifiable(false);
+await initializeGameCenter();
+check(gameCenterCannotIdentify() === true,
+'the launch lifecycle did not carry the device\'s refusal to the profile');
+delete (globalThis as typeof globalThis & { Capacitor?: unknown }).Capacitor;
 
 console.log(JSON.stringify({ problems }, null, 2));
 process.exit(problems.length ? 1 : 0);

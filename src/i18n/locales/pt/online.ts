@@ -76,6 +76,7 @@ export const ptOnline = {
     notNow: 'Agora não',
     accountAccess: 'ACESSO À CONTA',
     actionFailed: 'Não foi possível concluir',
+    gameCenterBlocked: 'O Game Center não pode ser associado',
     gameCenterLinked: 'Game Center associado a esta conta',
     gameCenterNotLinked: 'Game Center não associado a esta conta',
     connectGameCenter: 'Associar Game Center',

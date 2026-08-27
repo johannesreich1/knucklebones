@@ -10,9 +10,30 @@ export type GameCenterStatus =
   | 'declined'
   | 'failed';
 
+/* WHY PERSISTENCE IS A FLAG ON THE STATE AND NOT A SEVENTH STATUS.
+   `status` answers one question — what did GameKit's authentication of the
+   LOCAL PLAYER come to — and for this device it came to `authenticated`: iOS
+   showed its banner and greeted the player by name. What GameKit additionally
+   refuses is to vouch for a stable identifier for them (Screen Time's
+   multiplayer limit is the usual cause), and spelling that as a status value
+   would make every `status === 'authenticated'` test in this app answer "no".
+   Two of those tests are load-bearing: fetchGameCenterProof would refuse with
+   `not-authenticated`, telling a signed-in player to go and sign in, and
+   ensureIdentity would stop distinguishing a device with no GameKit from one
+   whose player it simply may not bind.
+
+   `null` is not `false`. The plugin is compiled into the app and this payload
+   is not, so a device can run today's bundle against a binary that predates
+   the reading — and a profile that stood a refusal the device never made would
+   withdraw a control that works. Only an explicit `false` is a refusal. */
 export interface GameCenterAuthState {
   readonly status: GameCenterStatus;
   readonly revision: number;
+  /* Whether GameKit will vouch for a stable id. OPTIONAL because this is the
+     shape the native plugin sends and an older installed binary sends two
+     fields, not three; absent and null both mean "did not say", and only an
+     explicit `false` is a refusal anyone may act on. */
+  readonly persistentIdentity?: boolean | null;
 }
 
 export interface GameCenterProof {
@@ -100,10 +121,27 @@ interface CapacitorBridge {
 const capacitor = (): CapacitorBridge | undefined =>
   (globalThis as typeof globalThis & { Capacitor?: CapacitorBridge }).Capacitor;
 
-let state: GameCenterAuthState = { status: 'unavailable', revision: 0 };
+let state: GameCenterAuthState = { status: 'unavailable', revision: 0, persistentIdentity: null };
 let started: Promise<GameCenterAuthState> | null = null;
 const subscribers = new Set<(state: GameCenterAuthState) => void>();
 
+/* Read at the native boundary rather than trusted verbatim: an older installed
+   binary sends two fields where this one expects three, and an absent flag is
+   UNKNOWN. The plugin still enforces persistence at proof time either way, so
+   nothing about binding relaxes — only the standing copy stays unspoken. */
+function readState(next: GameCenterAuthState): GameCenterAuthState {
+  return {
+    status: next.status,
+    revision: next.revision,
+    persistentIdentity: typeof next.persistentIdentity === 'boolean'
+      ? next.persistentIdentity : null,
+  };
+}
+
+/* An EQUAL revision is accepted, and that is the contract the native side
+   depends on: GameKit re-publishes at the same revision when only persistence
+   changed, because the player did not. Only a revision that has gone backwards
+   is a late listener overwriting a newer read. */
 function publish(next: GameCenterAuthState): void {
   if (next.revision < state.revision) return;
   state = next;
@@ -123,12 +161,12 @@ export function initializeGameCenter(): Promise<GameCenterAuthState> {
   started = (async () => {
     try {
       if (bridge.addListener) {
-        await bridge.addListener('authStateChanged', publish);
+        await bridge.addListener('authStateChanged', (next) => publish(readState(next)));
       }
       const initial = await bridge.initialize();
-      publish(initial);
+      publish(readState(initial));
     } catch {
-      publish({ status: 'failed', revision: state.revision + 1 });
+      publish({ status: 'failed', revision: state.revision + 1, persistentIdentity: null });
     }
     return state;
   })();
@@ -136,6 +174,16 @@ export function initializeGameCenter(): Promise<GameCenterAuthState> {
 }
 
 export function gameCenterState(): GameCenterAuthState { return state; }
+
+/* THE ONE STATE THAT IS NEITHER A YES NOR A RETRY.
+   GameKit authenticated this player and then said it will not vouch for a
+   stable identifier for them, so every offer to LINK Game Center to an account
+   is known to fail before it is made — and binding anyway would weld an
+   account to an identifier that rotates. Nothing about playing is affected;
+   this only decides what the app may offer. */
+export function gameCenterCannotIdentify(current: GameCenterAuthState = state): boolean {
+  return current.status === 'authenticated' && current.persistentIdentity === false;
+}
 
 export async function waitForGameCenter(
   timeoutMs = 8_000,

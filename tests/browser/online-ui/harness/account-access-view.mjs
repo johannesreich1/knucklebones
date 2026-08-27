@@ -45,6 +45,62 @@ export const readAccountAccess = (page) => page.evaluate(() => {
   };
 });
 
+/* THE STANDING WARNING, read as GEOMETRY rather than as document order.
+ *
+ * "this card, only for this status, should be shown at the bottom before the
+ * sign out button, after the match history" (user call 2026-08-27) is a claim
+ * about where the player's eye finds it, and a DOM sibling can still paint
+ * anywhere — `.accfoot` is pinned with `margin-top:auto`, the mini history
+ * above it is trimmed to fit, and a box that ends up below the fold has told
+ * nobody anything. So the rects of the three elements are compared directly,
+ * and the middle of the box is hit-tested the same way the dealt card is.
+ *
+ * The other half is that this is NOT the card: no dialog role, no backdrop, no
+ * focus taken. A standing element with nothing focusable inside it cannot trap
+ * a keyboard player, which is the strongest form of that claim available. */
+export const readStandingWarning = (page) => page.evaluate(() => {
+  const note = document.querySelector('#accGameCenterBlocked');
+  const box = (selector) => {
+    const element = document.querySelector(selector);
+    if (!element || element.hidden) return null;
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0
+      ? { top: rect.top, bottom: rect.bottom, left: rect.left, width: rect.width } : null;
+  };
+  if (!note) return { present: false };
+  const rect = note.getBoundingClientRect();
+  const style = getComputedStyle(note);
+  const head = note.querySelector('.wshead');
+  const glyph = head?.querySelector('svg')?.getBoundingClientRect();
+  const rgba = (value) => (String(value).match(/[\d.]+/g) ?? []).map(Number);
+  const middle = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+  const active = document.activeElement;
+  return {
+    present: true,
+    shown: rect.width > 0 && rect.height > 0 && style.display !== 'none'
+      && style.visibility !== 'hidden' && Number(style.opacity) > 0,
+    inView: rect.top >= 0 && rect.bottom <= innerHeight,
+    hit: !!middle && note.contains(middle),
+    title: note.querySelector('.wstitle')?.textContent?.trim() ?? '',
+    message: note.querySelector('.wsbody')?.textContent?.trim() ?? '',
+    border: rgba(style.borderTopColor),
+    borderWidth: style.borderTopWidth,
+    headColor: rgba(head ? getComputedStyle(head).color : ''),
+    glyph: !!glyph && glyph.width > 0 && glyph.height > 0,
+    // it is a panel element, not a second modal
+    role: note.getAttribute('role'),
+    modal: note.getAttribute('aria-modal'),
+    sheets: document.querySelectorAll('.faceoff').length,
+    focusables: note.querySelectorAll('a,button,input,select,textarea,[tabindex]').length,
+    holdsFocus: !!active && note.contains(active),
+    // where it stands, in the only order the player can see
+    rect: { top: rect.top, bottom: rect.bottom },
+    history: box('#btnHistory'),
+    recent: box('#accRecent'),
+    signOut: box('#btnSignOut'),
+  };
+});
+
 /* THE WARNING CARD, read as paint rather than as DOM.
  *
  * A `.warnsheet` in the document proves nothing: the sheet arrives from below

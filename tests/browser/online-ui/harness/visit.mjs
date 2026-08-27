@@ -26,6 +26,14 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
        greeted the player by name at launch. 'linked' | 'conflict' also chooses
        how the gateway answers the attach (see identity-routes). */
     gameCenterBridge = null,
+    /* What the DEVICE says about vouching for a stable identifier, on the auth
+       state itself — `scopedIDsArePersistent()` as GameCenterPlugin.swift now
+       publishes it, rather than something only a failed proof could reveal.
+       `false` is the owner's own phone: GameKit authenticates the local player
+       (iOS shows its banner) and then declines to identify them, which Screen
+       Time's multiplayer limit routinely causes. `null` stands an installed
+       binary older than that reading, which sends the field not at all. */
+    gameCenterPersistent = true,
     /* How the DEVICE refuses to sign, as `{ code, message, afterProofs }` —
        `{ code, message }` being the exact shape GameCenterPlugin.swift rejects
        with. A refusal never reaches the gateway at all, which is the failure
@@ -73,7 +81,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
        and two init scripts each installing their own would leave whichever ran
        last as the only device the app can see. */
     if (appleBridge || gameCenterBridge) {
-      await page.addInitScript(({ apple, gameCenter, refusal }) => {
+      await page.addInitScript(({ apple, gameCenter, refusal, persistent }) => {
         const Plugins = {};
         if (apple) {
           Plugins.AppleSignIn = {
@@ -87,7 +95,10 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
         }
         if (gameCenter) {
           globalThis.__gameCenter = { proofs: 0 };
+          // an older binary omits the field entirely, which is not the same
+          // claim as sending `false` — so it is genuinely absent here too
           const state = { status: 'authenticated', revision: 1 };
+          if (persistent !== null) state.persistentIdentity = persistent;
           Plugins.GameCenter = {
             initialize: async () => state,
             getAuthState: async () => state,
@@ -108,7 +119,8 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
           };
         }
         globalThis.Capacitor = { getPlatform: () => 'ios', Plugins };
-      }, { apple: appleBridge, gameCenter: !!gameCenterBridge, refusal: proofRefusal });
+      }, { apple: appleBridge, gameCenter: !!gameCenterBridge, refusal: proofRefusal,
+           persistent: gameCenterPersistent });
     }
     if (door === 'play') {
       /* Ranked newcomers stop at the once-only tutorial offer. This probe is

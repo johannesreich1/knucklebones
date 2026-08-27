@@ -76,6 +76,7 @@ export const deOnline = {
     notNow: 'Nicht jetzt',
     accountAccess: 'KONTOZUGRIFF',
     actionFailed: 'Das hat nicht geklappt',
+    gameCenterBlocked: 'Game Center kann nicht verknüpft werden',
     gameCenterLinked: 'Game Center mit diesem Konto verknüpft',
     gameCenterNotLinked: 'Game Center nicht mit diesem Konto verknüpft',
     connectGameCenter: 'Game Center verknüpfen',

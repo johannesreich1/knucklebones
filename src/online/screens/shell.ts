@@ -11,6 +11,7 @@ import { appRoot } from '../../ui/embed.ts';
 import { loaderWait } from '../../ui/loader.ts';
 import { refreshLegalUi } from '../../ui/legal.ts';
 import { LEGAL_AUTH_NAV_MARKUP } from '../../markup/legal.ts';
+import { WARNING_NOTE_MARKUP } from './warning-note.ts';
 
 const OVERLAY = `
 <div class="ov paged" id="ovOnline">
@@ -148,6 +149,19 @@ const OVERLAY = `
          history above fills what remains. One wrapper so the pin holds
          whether or not Sign out is hidden (guests). -->
     <div class="accfoot">
+      <!-- THE ONE STANDING WARNING (user call 2026-08-27): "this card, only for
+           this status, should be shown at the bottom before the sign out
+           button, after the match history". GameKit authenticated this player
+           and then refused to vouch for a stable identifier for them, so the
+           Connect Game Center offer above is withheld rather than left as a
+           control that is known to fail — and the reason takes its place here,
+           standing, instead of waiting for the tap that proves it.
+           It is a PANEL ELEMENT, not the dealt card: same glyph, same amber,
+           same two lines of type (warning-note.ts), but no role=dialog, no
+           backdrop, no focus to steal. Inside the pinned foot so it sits
+           directly above Sign out on every device rather than floating in
+           whatever gap the mini history leaves. -->
+      <div class="warnbox" id="accGameCenterBlocked" hidden>${WARNING_NOTE_MARKUP}</div>
       <button class="btn" id="btnSignOut" data-i18n="online:profile.signOut">Sign out</button>
       <!-- deleting is a FOOTNOTE, not an action to advertise: the same linkbtn
            row as home's legal links. The red lives on the confirm ask-card,
