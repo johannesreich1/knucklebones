@@ -121,7 +121,13 @@ export async function runOnlineWatchdog(ports: OnlineWatchdogPorts): Promise<voi
     await askForAuto();
   } else if (S.turn !== online.you) {
     void ports.sync(false).catch(() => undefined);
-  } else if ((ports.hidden?.() ?? document.hidden) && stalled) {
+  } else if (online.selfAutoDue || ((ports.hidden?.() ?? document.hidden) && stalled)) {
+    /* Own turn. Either this page is away and stalled, or its one-shot turn
+       clock already expired — a flag rather than the clock, because
+       startTimer stops before it fires and nothing re-arms it, which used to
+       leave a visible turn with no clock and no coverage at all. The flag
+       outlives that gap and is cleared only by a projection that moves the
+       turn on. */
     await askForAuto();
   }
 }

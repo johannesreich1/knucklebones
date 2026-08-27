@@ -147,6 +147,9 @@ export const esOnline = {
     awayAutoPlayCompact_one: 'Ausente — jugada en {{formatted}} s',
     awayAutoPlayCompact_other: 'Ausente — jugada en {{formatted}} s',
     autoPlay: 'Jugada automática…',
+    awayWarnTitle: '¿SIGUES AHÍ?',
+    awayWarnBody: 'Tu turno se jugó por ti. Pierde uno más y abandonas.',
+    awayWarnDismiss: 'Toca donde sea para seguir jugando',
   },
   result: {
     opponentForfeited: '{{opponent}} ha abandonado',
@@ -157,6 +160,7 @@ export const esOnline = {
     nextDuel: 'Otro duelo',
     forfeitStamp: 'ABANDONO',
     beatenStamp: 'DERROTADO',
+    forfeitedStamp: 'ABANDONADA',
     newRune: 'NUEVA RUNA',
     tryIt: 'PROBAR',
     share: '{{title}} {{mine}}–{{theirs}} vs {{opponent}}{{delta}} — Knucklebones, duelos de dados clasificatorios',

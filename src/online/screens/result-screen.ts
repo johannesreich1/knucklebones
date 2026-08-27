@@ -142,6 +142,12 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
         delta: report.delta,
         won: report.won,
         lost: !report.won && !report.draw,
+        /* The winner's screen has always stamped the foe. A forfeit is the one
+           ending the loser needs named on their OWN plate too — quitting, or
+           being away too long, is not the same defeat as being out-rolled, and
+           the scoreline alone cannot say which happened. */
+        stamp: !report.won && !report.draw && report.forfeit
+          ? t('online', 'result.forfeitedStamp') : undefined,
         tap: () => cover(ports.openProfile),
       },
       {

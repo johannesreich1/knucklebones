@@ -28,6 +28,13 @@ export interface OnlineState {
   /** A confirmed action response may require a particular log version. */
   recoveryActionVersion: number | null;
   pendingRow: MatchRow | null;
+  /** This turn's clock expired and the server has not taken the turn yet. It
+      outlives the one-shot clock, so a visible turn cannot go silent. */
+  selfAutoDue: boolean;
+  /** A resignation is in flight; the Leave control must not fire a second. */
+  resigning: boolean;
+  /** Automatic placements already spent by this player, from the match row. */
+  autoStreak: number;
   finalizing: boolean;
   done: boolean;
   limited: boolean;

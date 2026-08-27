@@ -399,6 +399,22 @@ whether the confirm is guarded. Deletion uses that guard — a checkbox — rath
 than a two-tap arm, which asks for the second tap in the very place the first
 one landed: the one gesture a mis-tap repeats for free.
 
+**Going away costs the match, and it is counted, not timed.** The turn clock
+plays two turns for an absent player; the third time it would have to, the
+match is forfeited to the opponent and paid out through the ordinary
+settlement. A warning appears on the last covered turn. Two, rather than a
+number of seconds, because every automatic placement refreshes the stall clock
+the timeout is measured from — so a seconds-based rule can never fire against
+a player whose app is still running, which is exactly how an away player used
+to be auto-played forever. See `docs/architecture/backend.md` for the
+mechanism.
+
+**Every forfeit is a finished match, including the one you chose.** Quitting,
+being claimed after a stall, and running out the away allowance all settle the
+same way and all land on the result screen — the loser's own plate carries a
+`FORFEITED` stamp, because a scoreline alone cannot say whether they were
+out-rolled or simply left.
+
 ## 6. Migration plan
 
 Ordered so the app is never broken between steps. Steps 1–3 are additive and

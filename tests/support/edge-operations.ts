@@ -226,6 +226,7 @@ export const standardMatch = (overrides: Partial<MatchRow> = {}): MatchRow => ({
   pool_tier: 'stone', phase: 'playing', trial_offer: null,
   p1_rune: null, p2_rune: null, selection_deadline: null, selection_version: 0,
   action_version: 0, pending_aim: null,
+  p1_auto_streak: 0, p2_auto_streak: 0,
   ...overrides,
 });
 

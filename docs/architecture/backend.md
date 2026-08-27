@@ -198,6 +198,26 @@ grant either commit together or not at all.
   `last_move_at`, and move count). The legacy move-insert trigger advances
   `last_move_at` in the append transaction, so a split writer cannot be
   forfeited while its separate projection update is still pending.
+- Auto play covers a bounded absence, counted rather than timed.
+  `p{1,2}_auto_streak` records consecutive automatic placements per seat; a
+  genuine move resets the mover's count, and a bot reply committed in the same
+  command never touches the human's. At `AUTO_FORFEIT_STREAK` the operation
+  settles a forfeit against that seat instead of appending a move, so two
+  automatic placements land and the third attempt is the loss. It must not be
+  a wall clock: every automatic placement writes `last_move_at`, so a
+  seconds-based threshold measured from it resets before it can be reached —
+  which is why an away player used to be auto-played indefinitely. There is no
+  scheduled sweep, and none is wanted; the decision happens wherever a client
+  asks the server to take a turn. Only a client that stopped calling home
+  entirely in a bot match has no caller, and `pvp-join`'s
+  `forfeitStalledBotMatch` already settles that on their next queue attempt,
+  which the one-active-match seat invariant forces them through.
+- `AUTO_MS` gates a RECOVERY only — one party placing for another. A client
+  placing on its own expired turn clock sends `auto` with a null
+  `p_expected_last_move_at`, and the commit RPCs check turn ownership instead
+  of a stall; a 10s turn clock could otherwise never satisfy a 12s gate, which
+  is what forced the visible client to report its timer as a tap and left the
+  count unenforceable.
 
 History pages use the tuple cursor `(finished_at, id)` and participant indexes
 ordered `finished_at DESC NULLS LAST, id DESC`. pgTAP keeps an `EXPLAIN` contract

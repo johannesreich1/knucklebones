@@ -4,7 +4,8 @@ export type PlayerIndex = 0 | 1;
 export const MATCH_COLUMNS = "id, p1, p2, status, turn, winner, p1_score, p2_score, "
   + "p1_rating_delta, p2_rating_delta, next_die, last_move_at, modifier, season_id, "
   + "format, protocol_version, rune_rules_version, pool_tier, phase, trial_offer, "
-  + "p1_rune, p2_rune, selection_deadline, selection_version, action_version, pending_aim";
+  + "p1_rune, p2_rune, selection_deadline, selection_version, action_version, pending_aim, "
+  + "p1_auto_streak, p2_auto_streak";
 
 export interface MatchRow {
   id: string;
@@ -33,6 +34,10 @@ export interface MatchRow {
   selection_version: number;
   action_version: number;
   pending_aim: string | null;
+  /** Consecutive automatic placements per seat, reset by any genuine move.
+      Public on purpose: each side may see that the other is away. */
+  p1_auto_streak: number;
+  p2_auto_streak: number;
 }
 
 export interface MatchMoveRow {

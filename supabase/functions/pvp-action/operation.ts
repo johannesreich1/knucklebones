@@ -17,6 +17,7 @@ import {
   MatchActionConflict,
   type ActionMetadata,
 } from "../_shared/match-action.ts";
+import { autoForfeitsNow, settleAutoForfeit } from "../_shared/auto-forfeit.ts";
 import { AUTO_MS } from "../_shared/match-timing.ts";
 import type { TerminalMatch } from "../_shared/settlement.ts";
 import {
@@ -83,7 +84,11 @@ export async function actionMatch(context: AuthenticatedContext, input: ActionIn
 
   const myIdx: Player = match.p1 === context.user.id ? ME : AI;
   const mover: Player = input.auto ? match.turn : myIdx;
-  if (input.auto) {
+  /* Recovering somebody ELSE's turn needs proof their app is gone. Placing for
+     yourself because your own turn clock ran out needs no such proof, so it
+     carries no stall precondition and is gated only by owning the turn. */
+  const recovery = input.auto && mover !== myIdx;
+  if (recovery) {
     if (Date.now() - new Date(match.last_move_at).getTime() < AUTO_MS) {
       return json({ error: "not-stalled-yet" }, 425);
     }
@@ -112,6 +117,28 @@ export async function actionMatch(context: AuthenticatedContext, input: ActionIn
       || before.actionCount !== match.action_version
       || input.expectedActionVersion !== before.actionCount) {
     return json({ error: "race-lost" }, 409);
+  }
+
+  /* Two automatic actions already covered this absence, so the third is the
+     loss instead of an action. Same decision and same settlement contract as
+     the classic path — see _shared/auto-forfeit.ts. */
+  if (input.auto && autoForfeitsNow(match, mover)) {
+    const forfeited = await settleAutoForfeit(
+      svc,
+      match,
+      mover,
+      rankedActionTotal(before, ME, outcome.mode),
+      rankedActionTotal(before, AI, outcome.mode),
+      { turn: match.turn, lastMoveAt: match.last_move_at, moveCount: before.moveCount },
+      settle,
+    );
+    if (!forfeited.applied && forfeited.match.status === "active") {
+      return json({ error: "race-lost" }, 409);
+    }
+    return json({
+      match: forfeited.match,
+      ...(forfeited.reward ? { reward: forfeited.reward } : {}),
+    });
   }
 
   let requested: RankedActionIntent = input.action!;
@@ -192,7 +219,9 @@ export async function actionMatch(context: AuthenticatedContext, input: ActionIn
       expectedActionVersion: input.expectedActionVersion,
       expectedTurn: before.turn,
       expectedNextDie: before.nextDie,
-      expectedLastMoveAt: input.auto ? match.last_move_at : null,
+      // Only a recovery proves a stall; a self placement is checked for turn
+      // ownership by the RPC instead. See pvp-move for the same split.
+      expectedLastMoveAt: recovery ? match.last_move_at : null,
       requestedAction: input.action,
       actions: committed as MatchActionRow[],
       nextTurn: terminal ? null : state.turn,

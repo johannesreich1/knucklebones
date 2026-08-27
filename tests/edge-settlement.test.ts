@@ -4,7 +4,10 @@ import {
   withErrorBoundary,
   type AuthenticatedContext, type EdgeClient,
 } from '../supabase/functions/_shared/http.ts';
-import { AUTO_MS } from '../supabase/functions/_shared/match-timing.ts';
+import { ONLINE_AUTO_FORFEIT_STREAK } from '../src/config.ts';
+import {
+  AUTO_FORFEIT_STREAK, AUTO_MS,
+} from '../supabase/functions/_shared/match-timing.ts';
 import { createPvpClaimHandler } from '../supabase/functions/pvp-claim/handler.ts';
 import type { LadderRow, MatchRow } from '../supabase/functions/_shared/types.ts';
 import { deleteAccountWithSettlement } from '../supabase/functions/_shared/account-deletion.ts';
@@ -48,6 +51,8 @@ const match: MatchRow = {
   selection_version: 0,
   action_version: 0,
   pending_aim: null,
+  p1_auto_streak: 0,
+  p2_auto_streak: 0,
 };
 
 interface RpcReply {
@@ -259,10 +264,20 @@ const stallInterval = `interval '${AUTO_MS / 1000} seconds'`;
 for (const migration of [
   'supabase/migrations/20260825205241_rune_trial_ranked_v2.sql',
   'supabase/migrations/20260826181500_match_command_stall_check.sql',
+  // Recreates BOTH commit functions, so it carries both gates forward.
+  'supabase/migrations/20260827160000_auto_forfeit_streak.sql',
 ]) {
   check(readFileSync(migration, 'utf8').includes(stallInterval),
     `${migration} stall gate drifted from the shared AUTO_MS threshold`);
 }
+
+/* The web bundle cannot import the Edge module, so it keeps its own copy of
+   the away allowance to decide when to warn. The server remains the authority;
+   this is the pin that stops the warning from drifting off the turn that
+   actually precedes the forfeit. */
+check(ONLINE_AUTO_FORFEIT_STREAK === AUTO_FORFEIT_STREAK,
+  'the web away-forfeit allowance drifted from the authoritative server one: '
+    + `web ${ONLINE_AUTO_FORFEIT_STREAK}, server ${AUTO_FORFEIT_STREAK}`);
 const accountDeleteOperation = readFileSync('supabase/functions/account-delete/operation.ts', 'utf8');
 const stageFailureGuard = accountDeleteOperation.indexOf(
   'if (error) throw new Error("apple-revocation-stage-failed")',
