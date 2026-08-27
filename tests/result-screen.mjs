@@ -246,6 +246,87 @@ try {
     }
     await ctx.close();
   }
+
+  /* THE WIN ENTRANCE MUST NOT SHRINK THE WORD IT IS ENLARGING.
+     endStamp opens at transform:scale(3.2). The verdict fitter watches
+     .titleclip with a ResizeObserver, so any late layout settle during that
+     1.05s wakes it mid-animation — and a bounding rect INCLUDES the transform,
+     so a 299px word measured 958px, "overflowed", and was permanently refitted
+     to ~20px. It shipped: the same phone showed a half-size VICTORY one round
+     and a full-size one the next, depending only on whether something resized
+     while the title was still flying in. Measure the untransformed layout box. */
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 },
+                                           hasTouch: true, isMobile: true, locale: 'en-US' });
+    const page = await ctx.newPage();
+    page.on('pageerror', e => problems.push('PAGEERROR entrance-fit: ' + e.message));
+    await page.goto(F); await page.waitForTimeout(400);
+    await page.evaluate(() => {
+      const k = window.__kb;
+      k.S.spell = ''; k.S.timer = 0; k.S.mode = 'cpu'; k.S.seat = 'face'; k.newGame();
+    });
+    for (let i = 0; i < 40; i++) {
+      if (await page.evaluate(() => window.__kb.S.phase === 'choose')) break;
+      await page.waitForTimeout(120);
+    }
+    await page.evaluate(() => {
+      const k = window.__kb;
+      k.S.boards[1] = [[6, 6, 6], [5, 5, 5], [4, 4]]; k.S.boards[0] = [[1], [2], [3]];
+      k.S.turn = 1; k.S.bottom = 1; k.S.busy = false; k.S.phase = 'choose'; k.S.die = 2;
+      k.applySides(); k.renderAll(false); k.setStageDie(2, 1);
+    });
+    await page.evaluate(() => window.__kb.place(1, 2));
+    await page.waitForSelector('#ovEnd.on');
+    /* Hold the title at the stamp's opening frame rather than racing the real
+       one: the entrance is short and delayed, so a timing-based probe would
+       flake in CI and could bless the bug by sampling after it. The claim is
+       simply "a resize while the title is transformed must not resize it", and
+       scale(3.2) IS endStamp's 0% keyframe. */
+    const entranceFit = await page.evaluate(() => new Promise((resolve) => {
+      const title = document.getElementById('endTitle');
+      const clip = document.querySelector('#ovEnd .titleclip');
+      /* !important, because a finished animation with fill:both still pins
+         transform and outranks an ordinary inline declaration. */
+      title.style.setProperty('transform', 'scale(3.2)', 'important');
+      const scaledRect = Math.round(title.getBoundingClientRect().width);
+      clip.style.paddingLeft = '1px';         // any real change wakes the observer
+      setTimeout(() => {
+        clip.style.removeProperty('padding-left');
+        setTimeout(() => {
+          const read = {
+            scaledRect,
+            fitted: title.style.getPropertyValue('--fitted-verdict') || '',
+            font: parseFloat(getComputedStyle(title).fontSize),
+            offsetWidth: title.offsetWidth,
+            clipWidth: clip.clientWidth,
+          };
+          title.style.removeProperty('transform');
+          resolve(read);
+        }, 160);
+      }, 40);
+    }));
+    // The transform must actually inflate a bounding rect, or nothing is pinned.
+    const scaledMidFlight = entranceFit.scaledRect > entranceFit.offsetWidth * 2;
+    await page.waitForTimeout(1400);
+    const settledFit = await page.evaluate(() => {
+      const title = document.getElementById('endTitle');
+      return {
+        fitted: title.style.getPropertyValue('--fitted-verdict') || '',
+        font: parseFloat(getComputedStyle(title).fontSize),
+        width: Math.round(title.getBoundingClientRect().width),
+      };
+    });
+    out.entranceFit = { scaledMidFlight, entranceFit, settledFit };
+    check(scaledMidFlight,
+      'a transformed title no longer inflates its bounding rect, so this pins nothing',
+      out.entranceFit);
+    check(entranceFit.fitted === '' && entranceFit.font === settledFit.font,
+      'A RESIZE DURING THE WIN ENTRANCE SHRANK THE VERDICT', out.entranceFit);
+    check(entranceFit.offsetWidth <= entranceFit.clipWidth,
+      'this viewport genuinely overflows, so the probe proves nothing', out.entranceFit);
+    await ctx.close();
+  }
+
   console.log(JSON.stringify({ out, problems }, null, 2));
 } finally { await browser.close(); }
 process.exit(problems.length ? 1 : 0);
