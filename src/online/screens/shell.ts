@@ -137,7 +137,12 @@ const OVERLAY = `
          rows are showHistory's own (histRow) — one implementation. -->
     <div class="lb minihist" id="accRecent" hidden></div>
     <div class="accsince" id="accSince"></div>
-    <div class="err" id="onAccErr"></div>
+    <!-- NO error line here. Every refusal this panel can produce — a provider
+         link, a deletion — is dealt as the shared warning card over the panel
+         (account-problem-sheet.ts). A reply pinned down here, below the recent
+         matches and often below the fold, was an answer the player had to go
+         hunting for (user call 2026-08-26). Nickname validation keeps its own
+         line, because that one sits under the field being typed in. -->
     <!-- the foot is PINNED (user call): sign out and the delete footnote sit
          at the very bottom whatever the device leaves free, and the mini
          history above fills what remains. One wrapper so the pin holds

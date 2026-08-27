@@ -9,10 +9,9 @@
 import { Sfx } from '../../ui/audio.ts';
 import { $ } from '../../ui/dom.ts';
 import { repaintOnlineMessage } from '../message-copy.ts';
+import { showAccountProblem } from './account-problem-sheet.ts';
 
 export interface AccountProviderPorts {
-  clearError(): void;
-  showError(render: () => string): void;
   /* Re-reads identity-status and repaints the provider rows, so a completed
      link loses its offer (and its button) without a manual reload. */
   refresh(): Promise<unknown>;
@@ -31,7 +30,6 @@ export function bindAccountProviderControl(ports: AccountProviderControl): void 
   const button = $(ports.control) as HTMLButtonElement;
   button.addEventListener('click', async () => {
     Sfx.tap();
-    ports.clearError();
     button.disabled = true;
     let message: string | null;
     try {
@@ -43,11 +41,14 @@ export function bindAccountProviderControl(ports: AccountProviderControl): void 
     /* Same contract as the auth sheet's one-tap row: null is success, '' is a
        player-cancelled native sheet with nothing to report, anything else is
        copy the player must read. A failure never refreshes: the account is
-       unchanged, and repainting it would replace the reply with silence. */
+       unchanged, and repainting it would replace the reply with silence.
+       The reply is DEALT AS A CARD over the panel rather than written into a
+       line the player has to go looking for — one treatment for every control
+       in the box, and the opener gets its focus back when the card goes. */
     if (message !== null) {
       if (message) {
         const returned = message;
-        ports.showError(() => repaintOnlineMessage(returned));
+        showAccountProblem(() => repaintOnlineMessage(returned), button);
       }
       return;
     }

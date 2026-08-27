@@ -70,9 +70,14 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
   let lastRecent: Awaited<ReturnType<typeof matchHistory>> = [];
   let pendingCachedRating: number | null = null;
   let nickError: (() => string) | null = null;
-  let accountError: (() => string) | null = null;
   let showRevision = 0;
 
+  /* The profile's ONE remaining inline error line, and it is the only kind
+     that belongs inline: nickname validation answers a field the player is
+     still typing in, directly beneath it. Everything the ACCOUNT ACCESS box
+     can refuse — a provider link, a deletion — is dealt as a warning card
+     instead (account-problem-sheet.ts), because that answer arrived from
+     somewhere else and has to be READ, not noticed. */
   const clearNickError = (): void => {
     nickError = null;
     $('#onNickErr').textContent = '';
@@ -80,14 +85,6 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
   const showNickError = (render: () => string): void => {
     nickError = render;
     $('#onNickErr').textContent = render();
-  };
-  const clearAccountError = (): void => {
-    accountError = null;
-    $('#onAccErr').textContent = '';
-  };
-  const showAccountError = (render: () => string): void => {
-    accountError = render;
-    $('#onAccErr').textContent = render();
   };
   const paintGroup = (points: number, apex = false): void => {
     /* The profile and ladder speak the same league language. In particular,
@@ -151,7 +148,6 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       paintGroup(pendingCachedRating);
     }
     if (nickError) $('#onNickErr').textContent = nickError();
-    if (accountError) $('#onAccErr').textContent = accountError();
   });
 
   async function show(): Promise<RuneCollectionRefresh | null> {
@@ -161,7 +157,6 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     lastAccount = null;
     pendingCachedRating = null;
     lastRecent = [];
-    clearAccountError();
     clearNickError();
     $('#accSince').textContent = '';
     $('#accPoints').textContent = formatNumber(0);
@@ -263,9 +258,9 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       Sfx.tap();
       ports.showAuth('restore', 'account');
     });
-    /* Every ACCOUNT ACCESS control answers on the profile's own error line and
+    /* Every ACCOUNT ACCESS control answers on the shared warning card and
        repaints the box from a fresh identity-status read. */
-    const provider = { clearError: clearAccountError, showError: showAccountError, refresh: show };
+    const provider = { refresh: show };
     bindAccountAppleRepair(provider);
     bindAccountGameCenterLink(provider);
     $('#btnClaim').addEventListener('click', async () => {
@@ -338,11 +333,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     };
     $('#btnLadder').addEventListener('click', openLadder);
     $('#btnRank').addEventListener('click', openLadder);
-    bindAccountDelete({
-      clearError: clearAccountError,
-      showError: showAccountError,
-      showAuth: ports.showAuth,
-    });
+    bindAccountDelete({ showAuth: ports.showAuth });
   }
 
   return { bind, show };

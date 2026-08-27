@@ -10,10 +10,12 @@ import {
 import { t } from '../../i18n/index.ts';
 import {
   fetchGameCenterProof,
+  gameCenterProofReason,
   gameCenterState,
   waitForGameCenter,
   type GameCenterAuthState,
   type GameCenterProof,
+  type GameCenterProofReason,
 } from '../../native/game-center.ts';
 import { supa } from '../api/client.ts';
 import { onlineMessage } from '../message-copy.ts';
@@ -51,7 +53,34 @@ export const GAME_CENTER_IDENTITY_MESSAGES = {
   get failed(): string { return onlineMessage('errors.gameCenterFailed'); },
   get invalid(): string { return onlineMessage('errors.gameCenterInvalid'); },
   get conflict(): string { return onlineMessage('errors.gameCenterConflict'); },
+  /* The two the player can act on, and the one they cannot. GameKit knows
+     which of these it refused for; before this map every one of them reached
+     the player as "sign-in failed, please try again" — advice that cannot work
+     for a device that is simply not signed in to Game Center. */
+  get signIn(): string { return onlineMessage('errors.gameCenterSignIn'); },
+  get identifiers(): string { return onlineMessage('errors.gameCenterIdentifiers'); },
+  get signature(): string { return onlineMessage('errors.gameCenterSignature'); },
 } as const;
+
+const PROOF_COPY: Record<GameCenterProofReason, () => string> = {
+  'unavailable': () => GAME_CENTER_IDENTITY_MESSAGES.unavailable,
+  'not-authenticated': () => GAME_CENTER_IDENTITY_MESSAGES.signIn,
+  'identifiers-not-persistent': () => GAME_CENTER_IDENTITY_MESSAGES.identifiers,
+  'signature': () => GAME_CENTER_IDENTITY_MESSAGES.signature,
+};
+
+/* The device's own words are the only diagnosis anyone gets: a proof that
+   never leaves the phone leaves NOTHING in the gateway or Edge logs, which is
+   exactly how a real refusal on a real device came back as four words that
+   named none of it. These are GameKit diagnostics, not credentials, so they
+   are printed rather than swallowed. */
+function reportProofFailure(error: unknown): string {
+  const reason = gameCenterProofReason(error);
+  console.error('[game-center] identity proof refused',
+    reason ?? 'unknown',
+    error instanceof Error ? error.message : String(error));
+  return reason ? PROOF_COPY[reason]() : GAME_CENTER_IDENTITY_MESSAGES.failed;
+}
 
 function isGameCenterSession(value: unknown): value is { kind: 'session'; tokenHash: string } {
   return !!value && typeof value === 'object'
@@ -75,8 +104,8 @@ export function createGameCenterIdentity(ports: GameCenterIdentityPorts): OneTap
     let signed: GameCenterProof;
     try {
       signed = await ports.getProof();
-    } catch {
-      return GAME_CENTER_IDENTITY_MESSAGES.failed;
+    } catch (error) {
+      return reportProofFailure(error);
     }
 
     try {
@@ -123,10 +152,13 @@ export function createGameCenterIdentity(ports: GameCenterIdentityPorts): OneTap
         type: 'magiclink',
       });
       return error ? GAME_CENTER_IDENTITY_MESSAGES.invalid : null;
-    } catch {
+    } catch (error) {
       // Supabase session reads, fetch, body decoding, and OTP verification can
       // all reject. Provider methods return copy rather than leaking a rejected
-      // promise, so the one-tap UI always reaches its re-enable path.
+      // promise, so the one-tap UI always reaches its re-enable path — but the
+      // rejection itself is printed, or the generic copy is all anyone ever has.
+      console.error('[game-center] identity exchange failed',
+        error instanceof Error ? error.message : String(error));
       return GAME_CENTER_IDENTITY_MESSAGES.failed;
     }
   };

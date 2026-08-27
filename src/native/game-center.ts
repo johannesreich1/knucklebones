@@ -23,6 +23,63 @@ export interface GameCenterProof {
   readonly teamPlayerID: string;
 }
 
+/* WHY A REASON AND NOT A MESSAGE.
+   GameKit refuses a proof for four genuinely different things, and two of them
+   the player can FIX: sign in to Game Center in iOS Settings, or lift whatever
+   is keeping the scoped identifiers from persisting. The other two — no plugin
+   at all, and a signature Apple would not produce — have no user remedy, and
+   telling that player to "try again" is a lie the app repeats forever. The
+   device already knows which it is; this type is how that fact survives the
+   trip to the copy layer instead of being flattened into one catch. */
+export type GameCenterProofReason =
+  | 'unavailable'
+  | 'not-authenticated'
+  | 'identifiers-not-persistent'
+  | 'signature';
+
+const REASONS = new Set<GameCenterProofReason>([
+  'unavailable', 'not-authenticated', 'identifiers-not-persistent', 'signature',
+]);
+
+/** The reason a proof attempt failed, or null for a rejection from elsewhere. */
+export function gameCenterProofReason(error: unknown): GameCenterProofReason | null {
+  const reason = (error as { gameCenterProof?: unknown } | null)?.gameCenterProof;
+  return typeof reason === 'string' && REASONS.has(reason as GameCenterProofReason)
+    ? reason as GameCenterProofReason : null;
+}
+
+/* Duck-typed rather than an `instanceof` class: the coordinator is imported
+   with a cache-busting query in tests and could exist twice, and a reason that
+   only survives one module instance is exactly the diagnosis being lost. */
+function proofFailure(reason: GameCenterProofReason, detail: string): Error {
+  const error = new Error(`game-center-${reason}: ${detail}`) as Error
+    & { gameCenterProof: GameCenterProofReason };
+  error.gameCenterProof = reason;
+  return error;
+}
+
+/* The plugin rejects with a STABLE CODE (GameCenterPlugin.swift); the message
+   beside it is a human diagnostic and, for Apple's own failure, localized —
+   so it is carried for the log and never parsed for meaning. The literal
+   fallbacks below read the three messages this repo writes itself, so a web
+   payload newer than the installed binary still classifies rather than
+   collapsing every refusal into the signature bucket. */
+const NATIVE_REASONS: Record<string, GameCenterProofReason> = {
+  'not-authenticated': 'not-authenticated',
+  'identifiers-not-persistent': 'identifiers-not-persistent',
+  'signature-unavailable': 'signature',
+};
+function classifyNative(error: unknown): Error {
+  const code = (error as { code?: unknown } | null)?.code;
+  const message = error instanceof Error ? error.message
+    : typeof error === 'string' ? error : String((error as { message?: unknown })?.message ?? '');
+  const reason = (typeof code === 'string' ? NATIVE_REASONS[code] : undefined)
+    ?? (/not signed in to Game Center/i.test(message) ? 'not-authenticated'
+      : /identifiers are not persistent/i.test(message) ? 'identifiers-not-persistent'
+        : 'signature');
+  return proofFailure(reason, message || (typeof code === 'string' ? code : 'no detail'));
+}
+
 interface ListenerHandle { remove(): Promise<void> | void }
 
 export interface GameCenterBridge {
@@ -106,8 +163,15 @@ export async function waitForGameCenter(
 
 export async function fetchGameCenterProof(): Promise<GameCenterProof> {
   const bridge = plugin();
-  if (!bridge) throw new Error('game-center-unavailable');
+  if (!bridge) throw proofFailure('unavailable', 'no GameCenter plugin on this platform');
   const current = await waitForGameCenter();
-  if (current.status !== 'authenticated') throw new Error('game-center-not-authenticated');
-  return bridge.fetchIdentityProof();
+  /* Every lifecycle state short of authenticated points the player at the same
+     place — Game Center in iOS Settings — so they share one remedy, while the
+     state that actually occurred rides along as the detail the log prints. */
+  if (current.status !== 'authenticated') {
+    throw proofFailure('not-authenticated', `lifecycle status ${current.status}`);
+  }
+  try {
+    return await bridge.fetchIdentityProof();
+  } catch (error) { throw classifyNative(error); }
 }

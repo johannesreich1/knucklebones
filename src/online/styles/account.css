@@ -63,3 +63,36 @@
 :where(#kbroot) #onAuth .btn.tap.apple{background:#fff;color:#000;border-color:#fff;position:relative}
 :where(#kbroot) #onAuth .btn.tap.apple::before{content:'';font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:1.2em;line-height:1;margin-right:.5em}
 :where(#kbroot) #onAuth .btn.tap.gamecenter{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.3)}
+
+/* ---- THE WARNING CARD (screens/account-problem-sheet.ts) ----
+   The profile's refusals — a provider link that could not complete, a deletion
+   that failed — dealt as the SHARED sheet rather than written into a line
+   below the fold (user call 2026-08-26). Nothing about the card itself is
+   here: its arrival, wash, grabber, drag and three doors are the one component
+   in styles/components/sheet.css, and the frame's amber is that component's
+   own `hued` tint, handed `var(--orange)` — the very token the retired error
+   line wore. This file therefore adds ONLY the two lines of type on it.
+   Narrow like the library's card, because a sentence reads badly at 356px.
+   Every rule is written from `.faceoff`, the shared overlay this variant rides
+   on: it is the sanctioned lazy-CSS root (tests/cssgraph) and it says out loud
+   that nothing here is a second modal. */
+:where(#kbroot) .faceoff.warnsheet .focard{max-width:330px;gap:11px;padding:18px 18px 20px}
+/* the glyph rides the heading's colour (currentColor, ui/chromeicons) and
+   catches the same glow the tint gives the frame, so the card is LIT by the
+   warning rather than merely labelled with one. Matched on the ELEMENT rather
+   than on the chrome icon's own class: that class belongs to a glyph the
+   OFFLINE bundle paints too, and an offline class styled from the lazy sheet
+   is a rule that arrives late or not at all (tests/cssreach). */
+:where(#kbroot) .faceoff.warnsheet .wshead{display:flex;align-items:center;gap:9px;color:var(--orange);
+  filter:drop-shadow(0 0 10px color-mix(in srgb,var(--orange) 55%,transparent))}
+:where(#kbroot) .faceoff.warnsheet .wshead svg{flex:0 0 auto}
+:where(#kbroot) .faceoff.warnsheet .wstitle{min-width:0;font-size:11px;font-weight:900;letter-spacing:.2em;
+  text-transform:uppercase}
+/* The sentence stays the roster's reading colour, never the tint: amber body
+   text is amber body text nobody finishes, and this is the half that matters.
+   #c6d3ee is this repo's standing literal for reading text on a card (.rules,
+   .mcdetail, the legal box) rather than a colour invented here; it has no
+   token yet, and minting one for a fifth caller would leave two spellings of
+   the same value across the eager and lazy bundles. */
+:where(#kbroot) .faceoff.warnsheet .wsbody{margin:0;font-size:13px;line-height:1.62;color:#c6d3ee;
+  letter-spacing:.02em}

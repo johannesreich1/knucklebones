@@ -75,6 +75,7 @@ export const deOnline = {
     fullHistory: 'Spielverlauf',
     notNow: 'Nicht jetzt',
     accountAccess: 'KONTOZUGRIFF',
+    actionFailed: 'Das hat nicht geklappt',
     gameCenterLinked: 'Game Center mit diesem Konto verknüpft',
     gameCenterNotLinked: 'Game Center nicht mit diesem Konto verknüpft',
     connectGameCenter: 'Game Center verknüpfen',
@@ -187,5 +188,8 @@ export const deOnline = {
     gameCenterFailed: 'Die Game-Center-Anmeldung ist fehlgeschlagen. Bitte versuche es erneut.',
     gameCenterInvalid: 'Game Center konnte nicht bestätigt werden. Bitte versuche es erneut.',
     gameCenterConflict: 'Dieses Game-Center-Konto ist bereits mit einem anderen Spieler verknüpft.',
+    gameCenterSignIn: 'Nicht bei Game Center angemeldet. Öffne Einstellungen › Game Center, melde dich an und versuche es erneut.',
+    gameCenterIdentifiers: 'Game Center identifiziert diesen Spieler nicht. Prüfe Einstellungen › Game Center und mögliche Bildschirmzeit-Limits für Mehrspieler.',
+    gameCenterSignature: 'Game Center konnte dieses Gerät nicht bestätigen. Es wurde nichts geändert.',
   },
 } satisfies CatalogShape<typeof enOnline>;

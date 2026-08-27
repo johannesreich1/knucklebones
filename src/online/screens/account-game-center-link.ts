@@ -24,9 +24,12 @@
    belongs to another account fails closed (`conflict`) rather than moving, so
    the automatic version could not even repair itself.
 
-   Everything the provider distinguishes — unavailable, failed, invalid,
-   conflict — is copy it returns, and the shared control shows it verbatim
-   without refreshing, so a refused link leaves the account exactly as it was.
+   Everything the provider distinguishes — the device having no GameKit at all,
+   a local player not signed in, identifiers GameKit will not vouch for, a
+   signature Apple would not produce, an unverifiable exchange, an identity
+   already owned elsewhere — is copy it returns, and the shared control deals
+   it as a warning card without refreshing, so a refused link leaves the
+   account exactly as it was.
 */
 import { GAME_CENTER, GAME_CENTER_IDENTITY_MESSAGES } from '../identity/identity.ts';
 import { acknowledgeCurrentAccount } from '../identity/session.ts';
@@ -43,8 +46,6 @@ export interface AccountGameCenterPorts extends AccountProviderPorts {
 export function bindAccountGameCenterLink(ports: AccountGameCenterPorts): void {
   const provider = ports.gameCenter ?? GAME_CENTER;
   bindAccountProviderControl({
-    clearError: ports.clearError,
-    showError: ports.showError,
     refresh: ports.refresh,
     control: '#btnLinkGameCenter',
     run: async () => {
