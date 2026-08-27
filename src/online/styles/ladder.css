@@ -40,6 +40,25 @@
    the one top edge there is. A second scroller here would slide rows out from
    under a band that could not reach them. The body already carries the side
    padding and the over-scroll room. */
+/* SCROLL ANCHORING IS OFF WHERE A LIST OWNS THE SCROLLER.
+   The ladder and match history absorb a prepend by shortening their own top
+   padding (ui/virtual-list.ts). The browser's scroll anchoring would ALSO
+   compensate that same insertion, and the two adjustments stack: measured as
+   roughly a page of unasked-for travel every time the reader pulled toward the
+   top of the board (user report, place 121 of 150).
+   Keyed to .listview because screens/shell.ts already toggles exactly that
+   class for exactly these two panels, and clears it on the way out — so there
+   is no second piece of state to add, leak, or forget on a teardown path. The
+   scroller is SHARED with OFFLINE, HOW TO PLAY, SETTINGS and the legal and
+   learn pages, which keep anchoring.
+   VERIFYING THIS: WebKit shipped anchoring only in Safari 27, so on an older
+   engine this rule reads as a no-op and a WebKit-only suite cannot see it — the
+   same trap paged-view.css records for backdrop-filter. It is asserted in
+   CHROMIUM (tests/browser/online-ui/scenarios/ladder-scroll.mjs), guarded by
+   CSS.supports so an engine that cannot express the property cannot pass by
+   accident. Do NOT delete this as unused. */
+:where(#kbroot) #ovOnline.listview .pbody{overflow-anchor:none}
+
 :where(#kbroot) #ovOnline.listview .lb{max-height:none;overflow:visible;padding:0}
 :where(#kbroot) #ovOnline.listview .lb > *{width:100%;max-width:var(--w-col);margin-inline:auto}
 :where(#kbroot) #ovOnline .lb .row{display:flex;gap:10px;align-items:center;font-size:clamp(13px,3.3vw,14.5px);padding:9px 12px;
@@ -76,8 +95,16 @@
    leading BETWEEN groups, and on the first horizon it just stacks on the
    reserve above it, the same way the panel's margin did. The list keeps its
    rhythm; only its first line moves up. Flex does not collapse margins, so
-   this has to be said. */
-:where(#kbroot) #ovOnline .lb > .ghor:first-child{margin-top:0}
+   this has to be said.
+   KEYED TO THE SLOT, NOT TO :first-child. The list is windowed now, so
+   :first-child means "the first MOUNTED row", which is wherever the reader
+   happens to be — it would strip 9px from whichever horizon sat at the window's
+   edge and hand it back when the window moved, i.e. a height that depends on
+   its neighbours. data-slot="0" is the top of the BOARD and stays put.
+   The #ovOnline prefix is load-bearing twice over: without it this loses on
+   specificity to the .ghor margin above (measured: every row shifts down 9px)
+   and it fails cssgraph's rooting rules. */
+:where(#kbroot) #ovOnline [data-slot="0"] .ghor{margin-top:0}
 :where(#kbroot) #ovOnline .ghor::before,:where(#kbroot) #ovOnline .ghor::after{content:"";height:1px;background:
   linear-gradient(90deg,transparent,var(--gc) 30%,var(--gc) 70%,transparent);opacity:.45}
 :where(#kbroot) #ovOnline .ghor::before{flex:0 0 18px}

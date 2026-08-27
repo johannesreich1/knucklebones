@@ -45,7 +45,17 @@ export function readOnlineView(page) {
          change, and the ladder OPENS with one — a list that starts with a bare
          row has lost its structure */
       horizons: [...document.querySelectorAll('#ovOnline .lb .ghor .gn')].map((e) => e.textContent),
-      firstIsHorizon: !!document.querySelector('#ovOnline .lb')?.firstElementChild?.classList.contains('ghor'),
+      /* The board still OPENS with its group horizon — but the list is windowed
+         now, so the horizon lives inside the first slot's wrapper rather than
+         being the list's own first child. What matters to the reader is
+         unchanged: the first thing painted at the top of the board is a
+         horizon, above the first row. */
+      firstIsHorizon: (() => {
+        const head = document.querySelector('#ovOnline .lb')?.firstElementChild;
+        if (!head) return false;
+        const inner = head.classList.contains('ghor') ? head : head.firstElementChild;
+        return !!inner?.classList.contains('ghor');
+      })(),
     };
   });
 }

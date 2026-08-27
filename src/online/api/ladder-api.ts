@@ -96,6 +96,15 @@ export interface LadderRow {
   losses: number;
   games: number;
   rank: number;
+  /* A DENSE ordinal, 1-based, added by 20260827203007. rank() gaps after ties
+     and leaderboard_before's cursor enters a tie group part-way, so rank can
+     never be turned into a position — see the migration's header. Older
+     deployments answer without it, so it is optional and the caller falls back
+     to counting from a cursor. */
+  pos?: number;
+  /** Rows on the whole board. The ladder is public, so player_standing — which
+      needs a uuid — cannot be the source of this for a signed-out reader. */
+  population?: number;
   apex: boolean;
   avatar: string | null;
   peak: number;
@@ -105,7 +114,12 @@ export function ladderPageArgs(
   limit = 50,
   fromRank = 1,
   afterNickname?: string,
+  fromPos?: number,
 ): Record<string, number | string> {
+  /* from_pos is the RANDOM entry point — what a dragged thumb produces — and it
+     replaces the rank cursor rather than joining it: the RPC branches on which
+     one is present, so sending both would be sending two different questions. */
+  if (fromPos !== undefined) return { limit_n: limit, from_pos: fromPos };
   const args: Record<string, number | string> = { limit_n: limit, from_rank: fromRank };
   if (afterNickname) args.after_nickname = afterNickname;
   return args;
@@ -127,10 +141,11 @@ export async function ladderPage(
   limit = 50,
   fromRank = 1,
   afterNickname?: string,
+  fromPos?: number,
 ): Promise<LadderRow[]> {
   const { data } = await supa().rpc(
     'leaderboard',
-    ladderPageArgs(limit, fromRank, afterNickname),
+    ladderPageArgs(limit, fromRank, afterNickname, fromPos),
   );
   return (data as LadderRow[]) ?? [];
 }

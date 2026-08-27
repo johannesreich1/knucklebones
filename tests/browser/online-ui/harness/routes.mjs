@@ -102,6 +102,13 @@ export async function installOnlineRoutes(
         losses: mine ? 61 : rank % 13,
         games: mine ? 103 : rank % 17 + rank % 13,
         rank,
+        /* The dense ordinal and the board size, exactly as the deployed RPC
+           answers since 20260827203007. A mock that omits a new field keeps a
+           broken client green, and this one is load-bearing: the client reads
+           pos to place a page and would otherwise silently fall back to
+           counting from a cursor. */
+        pos: rank,
+        population: 151,
         apex: rank === 1,
         avatar: mine ? 'die:5:cy' : null,
         peak: mine ? 700 : points + 20,
@@ -279,8 +286,8 @@ export async function installOnlineRoutes(
     await hold(1);
     const before = r.request().url().includes('/rpc/leaderboard_before');
     const ordinary = [
-      { nickname: 'NovaComet992', points: 1072, wins: 7, losses: 2, games: 9, rank: 1, apex: false, avatar: 'die:3:mg', peak: 1100 },
-      { nickname: 'TestGuest001', points: 465, wins: 42, losses: 61, games: 103, rank: 2, apex: false, avatar: 'die:5:cy', peak: 700 },
+      { nickname: 'NovaComet992', points: 1072, wins: 7, losses: 2, games: 9, rank: 1, pos: 1, population: 2, apex: false, avatar: 'die:3:mg', peak: 1100 },
+      { nickname: 'TestGuest001', points: 465, wins: 42, losses: 61, games: 103, rank: 2, pos: 2, population: 2, apex: false, avatar: 'die:5:cy', peak: 700 },
     ];
     let board;
     if (nearBottomBoard) {
@@ -291,6 +298,13 @@ export async function installOnlineRoutes(
         const nickname = String(args.before_nickname ?? '');
         board = nearBottomBoard.filter((row) => row.rank < boundary
           || (row.rank === boundary && row.nickname < nickname)).slice(-limit);
+      } else if (args.from_pos != null) {
+        /* THE SEEK. from_pos addresses a row directly, which is what a dragged
+           thumb produces; the rank cursor cannot, because rank() gaps after
+           ties. It REPLACES the rank cursor rather than joining it, exactly as
+           the SQL branches. */
+        const from = Number(args.from_pos);
+        board = nearBottomBoard.filter((row) => row.pos >= from).slice(0, limit);
       } else {
         const boundary = Number(args.from_rank ?? 1);
         const nickname = typeof args.after_nickname === 'string' ? args.after_nickname : null;

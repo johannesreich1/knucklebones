@@ -93,6 +93,7 @@ export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
   let owed = 0;                       // scroll px waiting for a settled moment
   let frameId = 0;
   let dead = false;
+  let wanted: { index: number; align: VirtualAlign } | null = null;
   let settleReady: (() => void) | null = null;
   const ready = new Promise<void>((resolve) => { settleReady = resolve; });
 
@@ -135,6 +136,8 @@ export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
        poison the ruler and every pad derived from it. */
     const viewHeight = scroller.clientHeight;
     if (!viewHeight || !list.offsetParent) return;
+
+    applyTarget();
 
     // ---- READ (one layout; nothing written yet) ----
     const scrollTop = scroller.scrollTop;
@@ -207,7 +210,14 @@ export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
        the very end, where it would push past the content. */
     const carried = drift();
     if (carried !== 0 && (first === 0 || last === count - 1)) owed = -carried;
-    if (owed !== 0 && settled.settled()) {
+    /* The wait exists ONLY to protect touch momentum. A reader who has never
+       touched this scroller — a trackpad, a mouse, the opening jump itself —
+       has no fling to cancel, so making them wait out a 150ms quiet window
+       just leaves the list visibly unsquared for a beat. It also punished our
+       OWN programmatic write, which starts the quiet timer like any other
+       scroll: that is why opening on rank 145 settled 31px short of the end. */
+    const mayWrite = settled.touchDriven() ? settled.settled() : !settled.elastic();
+    if (owed !== 0 && mayWrite) {
       /* THE PAIRED WRITE. Pad and scroll move by the same number inside one
          synchronous block, so the content stays exactly where the reader left
          it. Splitting these across a frame is the jolt this module deletes. */
@@ -237,20 +247,52 @@ export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
   });
   boxes?.observe(scroller);
 
+  /* A jump is only meaningful once the list HAS a box. Asked for while the
+     panel is still behind its loading die, scrollHeight is the loader's and the
+     clamp below silently truncates the jump to a few pixels — which is exactly
+     how opening the ladder on rank 145 landed on rank 1. So a jump asked for
+     too early is remembered and applied by the first frame that has a box. */
   const target = (index: number, align: VirtualAlign): void => {
+    wanted = { index, align };
+    if (!applyTarget()) schedule();
+  };
+
+  function applyTarget(): boolean {
+    if (!wanted) return false;
+    if (!scroller.clientHeight || !list.offsetParent) return false;
+    const { index, align } = wanted;
     const count = cache.count();
-    if (count === 0) return;
+    if (count === 0) return false;
+    wanted = null;
     const k = Math.max(0, Math.min(count - 1, index));
+    /* RESEED FIRST, THEN SCROLL. A jump is only meaningful against geometry
+       that already describes the whole board: before the first frame the ruler
+       still has no rows and the pads have not been written, so both ruler.top()
+       and the scrollHeight clamp would answer about a board of nothing and the
+       jump would land at the top. Opening the ladder on rank 145 did exactly
+       that — it asked for row 144 and got row 0.
+       Emptying the window first also makes this free of drift by construction:
+       with nothing mounted the two pads ARE the whole content. */
+    if (count !== ruler.count) ruler.resize(count);
+    mountedSlots.clear();
+    first = k;
+    last = k - 1;
+    padTop = ruler.top(k);
+    owed = 0;
+    list.style.paddingTop = px(padTop);
+    list.style.paddingBottom = px(Math.max(0, ruler.total - padTop));
+
     const height = ruler.top(k + 1) - ruler.top(k) - gap;
     const view = scroller.clientHeight;
-    const wanted = align === 'center' ? ruler.top(k) - (view - height) / 2
+    const goal = align === 'center' ? ruler.top(k) - (view - height) / 2
       : align === 'end' ? ruler.top(k) - view + height
       : ruler.top(k);
     const maximum = Math.max(0, scroller.scrollHeight - view);
-    scroller.scrollTop = Math.max(0, Math.min(maximum, wanted + drift() + origin()));
+    scroller.scrollTop = Math.max(0, Math.min(maximum, goal + origin()));
     cache.request(k);
     schedule();
-  };
+    return true;
+  }
 
   schedule();
 
@@ -287,7 +329,9 @@ export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
          corrected while the panel was away, and a stored offset would then
          point somewhere else entirely. */
       target(position, 'start');
-      scroller.scrollTop = Math.max(0, scroller.scrollTop - place.offset);
+      if (scroller.clientHeight && list.offsetParent) {
+        scroller.scrollTop = Math.max(0, scroller.scrollTop - place.offset);
+      }
       schedule();
     },
     destroy(): void {

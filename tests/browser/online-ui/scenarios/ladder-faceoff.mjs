@@ -19,7 +19,33 @@ async function ladderOpeningProbe(page) {
     const expected = Math.max(0, Math.min(maximum, desired));
     const hit = document.elementFromPoint(meBox.left + meBox.width / 2,
       meBox.top + meBox.height / 2);
+    /* NO HOLES ANYWHERE THE READER IS LOOKING. A windowed list can only fail
+       one way that matters here — a gap where a row should be — so sweep the
+       visible column and demand every sample land inside the list. This is
+       strictly stronger than the row count it replaces, which only ever
+       described the arithmetic of the old hand-rolled opening. */
+    const list = document.querySelector('#onLadderList');
+    const x = bodyBox.left + bodyBox.width / 2;
+    /* Bounded by the ROWS, not by the scroller. .pbody reserves real space at
+       the bottom for the home indicator (paged-view.css), and at the end of the
+       board that reserve is legitimately empty — sweeping into it would call
+       the app's own safe-area padding a hole. */
+    const listBox = list?.getBoundingClientRect();
+    const top = Math.max(headBox.bottom + 2, bodyBox.top + 2, (listBox?.top ?? 0) + 2);
+    const bottom = Math.min(bodyBox.bottom - 2, (listBox?.bottom ?? 0) - 2);
+    let samples = 0;
+    let holes = 0;
+    for (let y = top; y < bottom; y += 20) {
+      samples++;
+      if (!list?.contains(document.elementFromPoint(x, y))) holes++;
+    }
+    const slots = [...(list?.querySelectorAll('[data-slot]') ?? [])]
+      .map((slot) => Number(slot.dataset.slot));
     return {
+      samples,
+      holes,
+      mounted: slots.length,
+      window: slots.length ? [Math.min(...slots), Math.max(...slots)] : null,
       rank: me.querySelector('.rk2')?.textContent?.trim(),
       rowCount: document.querySelectorAll('#onLadderList .lrow').length,
       scrollTop: body.scrollTop,
@@ -124,12 +150,21 @@ export async function runLadderFaceoffScenarios(suite) {
     opening[viewport.name] = run.probeResult;
     const geometry = run.probeResult;
     check(geometry?.rank === 'Rank #145'
-        && geometry.rowCount === 27
         && geometry.fullyVisible
         && geometry.centerHit
         && Math.abs(geometry.scrollTop - geometry.expected) <= 2,
     `the 145/151 ladder opening did not center or clamp its player row at ${viewport.height}px`,
     geometry);
+    /* The list is WINDOWED: it mounts a few screens of rows, not the board. The
+       old `rowCount === 27` was the arithmetic of the hand-rolled opening (20
+       above + 30 below, less dedupe and horizons) and was never a fact about
+       what the player sees. These two are. */
+    check(geometry?.samples > 10 && geometry.holes === 0,
+      `the windowed ladder left a hole in the visible column at ${viewport.height}px`,
+      geometry);
+    check(geometry?.mounted > 0 && geometry.mounted < 151,
+      `the ladder mounted the whole board instead of a window at ${viewport.height}px`,
+      geometry);
     check(run.errs.length === 0,
       `page errors while opening the 145/151 ladder at ${viewport.height}px`, run.errs);
   }

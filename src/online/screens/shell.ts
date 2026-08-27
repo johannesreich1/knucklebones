@@ -186,7 +186,8 @@ const OVERLAY = `
     <!-- the win/loss tally heads the LIST it summarises, rather than sitting on
          the profile as a fourth tile competing with the rank and the streak -->
     <div class="htotal" id="onHistoryTotal">&nbsp;</div>
-    <div class="lb neonscroll" id="onHistoryList"></div>
+    <div class="row" id="onHistoryEmpty" data-i18n="online:history.empty" hidden></div>
+      <div class="lb neonscroll" id="onHistoryList"></div>
   </div>
   </div>
 
