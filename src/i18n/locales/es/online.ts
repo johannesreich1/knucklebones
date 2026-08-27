@@ -75,6 +75,7 @@ export const esOnline = {
     fullHistory: 'Historial completo',
     notNow: 'Ahora no',
     accountAccess: 'ACCESO A LA CUENTA',
+    actionFailed: 'No se ha podido completar',
     gameCenterLinked: 'Game Center vinculado a esta cuenta',
     gameCenterNotLinked: 'Game Center no vinculado a esta cuenta',
     connectGameCenter: 'Vincular Game Center',
@@ -187,5 +188,8 @@ export const esOnline = {
     gameCenterFailed: 'El inicio de sesión con Game Center ha fallado. Inténtalo de nuevo.',
     gameCenterInvalid: 'No se pudo verificar Game Center. Inténtalo de nuevo.',
     gameCenterConflict: 'Esa cuenta de Game Center ya está vinculada a otro jugador.',
+    gameCenterSignIn: 'No has iniciado sesión en Game Center. Abre Ajustes › Game Center, inicia sesión e inténtalo de nuevo.',
+    gameCenterIdentifiers: 'Game Center no identifica a este jugador. Revisa Ajustes › Game Center y los límites de Tiempo de uso para el modo multijugador.',
+    gameCenterSignature: 'Game Center no ha podido confirmar este dispositivo. No se ha cambiado nada.',
   },
 } satisfies CatalogShape<typeof enOnline>;

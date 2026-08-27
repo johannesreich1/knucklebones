@@ -88,18 +88,27 @@ public class GameCenterPlugin: CAPPlugin, CAPBridgedPlugin {
         DispatchQueue.main.async {
             self.installHandler()
             let player = GKLocalPlayer.local
+            // EVERY REFUSAL CARRIES A STABLE CODE. The message is a human
+            // diagnostic — Apple's is even localized — so the web layer reads
+            // the code and shows the player copy matched to what they can
+            // actually DO about it (src/native/game-center.ts). Collapsing
+            // these into one rejection is how "please try again" ended up
+            // being the app's answer to a device that needed a Settings trip.
             guard player.isAuthenticated else {
-                call.reject("not signed in to Game Center")
+                call.reject("not signed in to Game Center", "not-authenticated")
                 return
             }
             guard player.scopedIDsArePersistent() else {
-                call.reject("Game Center identifiers are not persistent")
+                call.reject("Game Center identifiers are not persistent", "identifiers-not-persistent")
                 return
             }
             player.fetchItems(forIdentityVerificationSignature: { url, signature, salt, timestamp, error in
-                if let error = error { call.reject(error.localizedDescription); return }
+                if let error = error {
+                    call.reject(error.localizedDescription, "signature-unavailable", error)
+                    return
+                }
                 guard let url = url, let signature = signature, let salt = salt else {
-                    call.reject("Game Center returned no signature")
+                    call.reject("Game Center returned no signature", "signature-unavailable")
                     return
                 }
                 call.resolve([

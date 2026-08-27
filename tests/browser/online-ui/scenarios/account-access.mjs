@@ -12,8 +12,9 @@
 // The repair control is also not the guest-upgrade offer: it used to call the
 // same showAuth('attach') as the GUEST card's "Keep it forever", answering a
 // player whose account is already attached with "KEEP ACCOUNT · add an email".
-// It runs the Apple provider instead, and its failure lands on the profile's
-// own error line.
+// It runs the Apple provider instead, and its failure is dealt as the shared
+// warning card (account-error-sheet.mjs owns what that card must look like;
+// here it is only evidence that the right provider ran and answered).
 //
 // Everything below is read as PAINT (see harness/account-access-view.mjs):
 // `hidden` on a row inside .providerbox is a claim about the DOM, and
@@ -88,7 +89,7 @@ export async function runAccountAccessScenarios(suite) {
   'the profile does not offer repair for a linked account with no deletion credential', before);
   check(before?.gameCenter?.shown === false && before?.gameCenter?.text === '',
   'the repair box carried a Game Center row this device cannot link', before?.gameCenter);
-  check(before?.error?.text === '',
+  check(!before?.error?.shown && before?.problemSheets === 0,
   'the profile carried a stale error before the repair tap', before);
 
   // The bug: the repair control opened the guest-upgrade sheet.
@@ -96,9 +97,8 @@ export async function runAccountAccessScenarios(suite) {
   'the repair control opened the guest-upgrade sheet instead of running Apple', after);
   check(after?.appleCalls === 1,
   'the repair control did not run the Apple provider', after?.appleCalls);
-  check(after?.error?.text === 'Apple sign-in could not be verified. Please try again.'
-    && after.error.inView === true,
-  'the repair attempt reported nothing the player can read', after);
+  check(after?.problemSheets === 1 && !after.error?.shown,
+  'the repair attempt reported nothing the player can read, or answered in two places', after);
   check(repair.errs.length === 0, 'page errors on the Apple repair path', repair.errs);
 
   /* (c) Nothing linked, and Apple can run here: the box offers the way to add

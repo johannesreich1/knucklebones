@@ -26,6 +26,17 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
        greeted the player by name at launch. 'linked' | 'conflict' also chooses
        how the gateway answers the attach (see identity-routes). */
     gameCenterBridge = null,
+    /* How the DEVICE refuses to sign, as `{ code, message, afterProofs }` —
+       `{ code, message }` being the exact shape GameCenterPlugin.swift rejects
+       with. A refusal never reaches the gateway at all, which is the failure
+       the owner actually hit: no request, no server log, and (before this) one
+       generic sentence for four different causes.
+       `afterProofs` exists because the launch sign-in exchange is what
+       establishes this harness's session at all: a device that could never
+       sign a proof never reaches the profile, which is the sign-in sheet's
+       story rather than the profile's. Sign that many proofs, then refuse —
+       so the refusal under test is the one the player's TAP asks for. */
+    proofRefusal = null,
     identity = { gameCenterLinked: false, appleLinked: false, appleRevocationReady: false },
     inspectLoading = false,
     member = false,
@@ -62,7 +73,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
        and two init scripts each installing their own would leave whichever ran
        last as the only device the app can see. */
     if (appleBridge || gameCenterBridge) {
-      await page.addInitScript(({ apple, gameCenter }) => {
+      await page.addInitScript(({ apple, gameCenter, refusal }) => {
         const Plugins = {};
         if (apple) {
           Plugins.AppleSignIn = {
@@ -83,6 +94,13 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
             addListener: () => ({ remove() {} }),
             fetchIdentityProof: async () => {
               globalThis.__gameCenter.proofs++;
+              if (refusal && globalThis.__gameCenter.proofs > (refusal.afterProofs ?? 0)) {
+                // Capacitor surfaces a plugin reject() as an Error carrying the
+                // plugin's code; the web layer classifies on that code.
+                const error = new Error(refusal.message);
+                if (refusal.code) error.code = refusal.code;
+                throw error;
+              }
               return { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-12.cer',
                        signature: 'signed', salt: 'salt', timestamp: '123',
                        teamPlayerID: 'team-player' };
@@ -90,7 +108,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
           };
         }
         globalThis.Capacitor = { getPlatform: () => 'ios', Plugins };
-      }, { apple: appleBridge, gameCenter: !!gameCenterBridge });
+      }, { apple: appleBridge, gameCenter: !!gameCenterBridge, refusal: proofRefusal });
     }
     if (door === 'play') {
       /* Ranked newcomers stop at the once-only tutorial offer. This probe is

@@ -62,12 +62,22 @@ function errorCode(error: unknown): string | undefined {
   return typeof code === 'string' || typeof code === 'number' ? String(code) : undefined;
 }
 
+/* Apple's own refusals ARE already separated where a separation is real: the
+   plugin resolves a user cancel to SIGN_IN_CANCELED (its AppleSignIn.swift maps
+   ASAuthorizationError.canceled itself), and Supabase's linking errors carry
+   codes this maps to conflict/configuration copy. What was thrown away is the
+   REASON behind everything else — an ASAuthorizationError raw code, or a
+   Supabase code nobody has seen yet — which then reaches support as the same
+   six words as every other failure. There is no honest remedy to print for
+   those, so the copy stays general and the code is logged instead of invented
+   into advice. */
 function authErrorMessage(error: { code?: string } | null): string | null {
   if (!error) return null;
   if (error.code === 'identity_already_exists') return APPLE_IDENTITY_MESSAGES.conflict;
   if (error.code === 'manual_linking_disabled'
     || error.code === 'provider_disabled'
     || error.code === 'oauth_provider_not_supported') return APPLE_IDENTITY_MESSAGES.configuration;
+  console.error('[apple] identity link refused', error.code ?? 'no code');
   return APPLE_IDENTITY_MESSAGES.failed;
 }
 
@@ -79,7 +89,14 @@ async function requestAppleCredential(ports: AppleIdentityPorts): Promise<AppleC
   try {
     result = await plugin.signIn({ scopes: ['EMAIL'], nonce: await ports.digest(rawNonce) });
   } catch (error) {
-    return errorCode(error) === 'SIGN_IN_CANCELED' ? '' : APPLE_IDENTITY_MESSAGES.failed;
+    const code = errorCode(error);
+    if (code === 'SIGN_IN_CANCELED') return '';
+    /* An ASAuthorizationError raw value (1000 unknown … 1005 notInteractive)
+       or nothing at all. None of them maps to a step the player can take, so
+       the code goes to the log and the copy stays the one honest sentence. */
+    console.error('[apple] sign-in rejected', code ?? 'no code',
+      error instanceof Error ? error.message : String(error));
+    return APPLE_IDENTITY_MESSAGES.failed;
   }
   if (typeof result.idToken !== 'string' || !result.idToken.trim()) {
     return APPLE_IDENTITY_MESSAGES.invalid;

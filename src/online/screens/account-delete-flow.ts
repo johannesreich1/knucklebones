@@ -6,17 +6,15 @@ import type { AuthMode, AuthOrigin } from './auth-screen.ts';
 import { onlineMessage, repaintOnlineMessage } from '../message-copy.ts';
 import { deleteAccount } from '../identity/session.ts';
 import { refreshHomeChip } from '../../ui/homechip.ts';
+import { showAccountProblem } from './account-problem-sheet.ts';
 
 interface AccountDeletePorts {
-  clearError(): void;
-  showError(render: () => string): void;
   showAuth(mode: AuthMode, origin: AuthOrigin, notice?: string | null): void;
 }
 
 export function bindAccountDelete(ports: AccountDeletePorts): void {
   $('#btnDeleteAcc').addEventListener('click', async () => {
     Sfx.tap();
-    ports.clearError();
     const confirmed = await ask({
       head: () => t('online', 'profile.deleteTitle'),
       body: () => t('online', 'profile.deleteDetail'),
@@ -29,11 +27,13 @@ export function bindAccountDelete(ports: AccountDeletePorts): void {
     if (!confirmed) return;
     const deletion = await deleteAccount();
     if (deletion.error) {
+      /* Same answer shape as a refused provider link — the tap did not happen
+         and the account is untouched — so it wears the same warning card
+         rather than a second failure surface with its own position. */
       const returned = deletion.error;
-      ports.showError(() => repaintOnlineMessage(returned));
+      showAccountProblem(() => repaintOnlineMessage(returned), $('#btnDeleteAcc'));
       return;
     }
-    ports.clearError();
     refreshHomeChip();
     const notice = deletion.appleRevocation === 'pending'
       ? onlineMessage('errors.appleRevocationPending')

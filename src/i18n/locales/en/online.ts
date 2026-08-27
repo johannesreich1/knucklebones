@@ -72,6 +72,10 @@ export const enOnline = {
     fullHistory: 'Full match history',
     notNow: 'Not now',
     accountAccess: 'ACCOUNT ACCESS',
+    /* The warning card's heading. Deliberately says the tap did not happen
+       rather than naming a provider: one card answers every control in the
+       box, and the sentence below it is where the specifics live. */
+    actionFailed: 'That did not go through',
     /* "to this account" is load-bearing: iOS greets the local player at
        launch, so a bare "Game Center not connected" reads as a contradiction
        of something the player just watched happen. This row is only ever
@@ -188,5 +192,12 @@ export const enOnline = {
     gameCenterFailed: 'Game Center sign-in failed. Please try again.',
     gameCenterInvalid: 'Game Center could not be verified. Please try again.',
     gameCenterConflict: 'That Game Center account is already linked to another player.',
+    /* The two GameKit refusals the player can actually act on, and the one
+       they cannot. "Please try again" was the app's answer to all three, which
+       is advice that can never work for a device that is simply not signed in.
+       Each names the Settings screen that changes the answer. */
+    gameCenterSignIn: 'Not signed in to Game Center. Open Settings › Game Center, sign in, then try again.',
+    gameCenterIdentifiers: 'Game Center will not identify this player. Check Settings › Game Center and any Screen Time limits on multiplayer.',
+    gameCenterSignature: 'Game Center could not confirm this device. Nothing was changed.',
   },
 } as const;

@@ -21,8 +21,6 @@ export interface AccountAppleRepairPorts extends AccountProviderPorts {
 export function bindAccountAppleRepair(ports: AccountAppleRepairPorts): void {
   const provider = ports.apple ?? APPLE;
   bindAccountProviderControl({
-    clearError: ports.clearError,
-    showError: ports.showError,
     refresh: ports.refresh,
     control: '#btnLinkApple',
     run: () => provider.repair(),

@@ -21,7 +21,7 @@
 // the gateway at all. A build that carries the origin runs the whole link
 // flow; a build without one must offer nothing anywhere, which is the other
 // half of the same promise and is asserted just as hard.
-import { readAccountAccess } from '../harness/account-access-view.mjs';
+import { readAccountAccess, readAccountProblem } from '../harness/account-access-view.mjs';
 
 /* Apple linked but its deletion credential missing: a second driver, so the
    box stays open after Game Center links and its row can be read as the
@@ -39,15 +39,16 @@ async function probeConnect(page, routes) {
   if (before.gameCenterButton?.shown === true) {
     await page.click('#btnLinkGameCenter');
     /* Settles either way: a success hides the control behind a fresh profile
-       read, a refusal fills the profile's error line. */
+       read, a refusal deals the shared warning card. */
     await page.waitForFunction(() => document.getElementById('btnLinkGameCenter')?.hidden === true
-      || (document.getElementById('onAccErr')?.textContent ?? '') !== '',
+      || !!document.querySelector('.faceoff.warnsheet .focard'),
     null, { timeout: 15000 }).catch(() => {});
     await page.waitForTimeout(350);
   }
   return {
     before,
     after: await readAccountAccess(page),
+    problem: await readAccountProblem(page),
     launchModes,
     modes: routes.gameCenterModes(),
     identity: routes.identityState(),
@@ -101,7 +102,7 @@ export async function runAccountGameCenterScenarios(suite) {
   'the Game Center row was painted with nothing to tap', before?.gameCenterButton);
   check(before?.appleButton?.shown === true && before.apple?.shown === true,
   'the Game Center offer displaced the Apple control beside it', before);
-  check(before?.error?.text === '',
+  check(!before?.error?.shown && before?.problemSheets === 0,
   'the profile carried a stale error before the Game Center tap', before);
   /* Deliberately NOT automatic: reaching the account screen with an
      authenticated local player must not have attached anything by itself. */
@@ -124,7 +125,7 @@ export async function runAccountGameCenterScenarios(suite) {
   'the Connect Game Center control survived the link it completed', after?.gameCenterButton);
   check(after?.box?.shown === true && after.appleButton?.shown === true,
   'linking Game Center swallowed the Apple repair still owed to this account', after);
-  check(after?.error?.text === '' && after.authSheets === 0,
+  check(!after?.error?.shown && after.problemSheets === 0 && after.authSheets === 0,
   'a completed Game Center link reported an error or opened a sheet', after);
 
   /* (c) The identity belongs to somebody else. Fail closed: copy the player
@@ -134,8 +135,10 @@ export async function runAccountGameCenterScenarios(suite) {
     probe: probeConnect });
   out.gameCenterConflict = clash.probeResult;
   const refused = clash.probeResult ?? {};
-  check(refused.after?.error?.text === CONFLICT && refused.after.error.inView === true,
-  'a Game Center identity owned elsewhere reported nothing the player can read', refused.after);
+  check(refused.problem?.open === true && refused.problem.message === CONFLICT
+    && refused.problem.inView === true,
+  'a Game Center identity owned elsewhere reported nothing the player can read',
+  refused.problem);
   check(refused.identity?.gameCenterLinked === false && refused.refreshed === false,
   'a refused Game Center link moved the identity or repainted over the reply', refused);
   check(refused.after?.gameCenter?.text === UNLINKED
