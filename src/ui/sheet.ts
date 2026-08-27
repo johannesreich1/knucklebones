@@ -328,6 +328,12 @@ export function showSheet(spec: SheetSpec): Sheet {
   const root = appRoot();
   root.appendChild(ov);
   background = makeModalBackgroundInert(root, ov);
+  /* CLAIMED BEFORE ANYTHING BELOW CAN THROW: from the line above the overlay
+     covers the room and every sibling is inert, and closeOpenSheet() reaches
+     the only way out through `live`. Registering last left a card nobody could
+     dismiss standing over an inert app if the lines below ever threw. */
+  const sheet: Sheet = { ov, card, close };
+  live = sheet;
   if (spec.interactive && spec.content) {
     interactiveLayout = observeInteractiveSheetLayout(ov, card, spec.content);
   }
@@ -340,8 +346,5 @@ export function showSheet(spec: SheetSpec): Sheet {
   });
   fly(0, 340, 'cubic-bezier(.16,1,.3,1)');   // ...resolved, then up it comes with the wash
   card.focus();
-
-  const sheet: Sheet = { ov, card, close };
-  live = sheet;
   return sheet;
 }
