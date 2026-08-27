@@ -89,6 +89,14 @@ export async function showHistory(): Promise<void> {
   paintTotal();
 
   const PAGE = 30;
+  /* Fetched here rather than by the window, so the list is revealed with rows
+     on it and the empty line — which is not a slot, because the window owns the
+     list's children — can be decided from the one page that settles it. */
+  const opening = await matchHistory(PAGE);
+  if (run !== showRevision || !isOnlinePanelCurrent('onHistory')) return;
+  const emptyLine = byId('onHistoryEmpty');
+  if (emptyLine) emptyLine.hidden = opening.length > 0;
+
   virtual = mountVirtualList<HistoryRow>({
     scroller,
     list,
@@ -99,20 +107,15 @@ export async function showHistory(): Promise<void> {
        jumped into, which is the honest behaviour for a list whose thumb cannot
        be turned back into a query. */
     total: null,
+    seed: { rows: opening, position: 0 },
     alive: () => run === showRevision && isOnlinePanelCurrent('onHistory'),
     source: {
-      after: async (anchor, count) => {
+      after: async (anchor, count) => ({
         /* least(greatest(limit_n,1),100) in SQL: asking for more than 100 would
            come back short and be read as the end of the list. */
-        const rows = await matchHistory(Math.min(count, 100), anchor?.item);
-        /* The empty line is not a slot — the window owns the list's children —
-           so the only thing that can decide it is the first page itself. */
-        if (!anchor) {
-          const empty = byId('onHistoryEmpty');
-          if (empty) empty.hidden = rows.length > 0;
-        }
-        return { rows, position: anchor ? anchor.position + 1 : 0 };
-      },
+        rows: await matchHistory(Math.min(count, 100), anchor?.item),
+        position: anchor ? anchor.position + 1 : 0,
+      }),
     },
     slots: {
       key: (row) => row.id,

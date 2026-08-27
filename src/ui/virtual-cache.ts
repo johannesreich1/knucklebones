@@ -51,6 +51,10 @@ export interface VirtualCacheSpec<T> {
   key(item: T): string;
   page: number;
   total?: number | null;
+  /** A page already in hand. The caller fetches it so it can hold its view
+      behind the shared loading die and reveal ONE complete screen, rather than
+      showing an empty panel that fills in afterwards. */
+  seed?: VirtualPage<T> | null;
   /** Positions whose data just arrived, so their boxes need re-measuring. */
   changed(positions: readonly number[]): void;
 }
@@ -66,6 +70,7 @@ export function createVirtualCache<T>(spec: VirtualCacheSpec<T>): VirtualCache<T
   let declared: number | null = spec.total ?? null;
   let dead = false;
 
+  let seeding = true;
   const remember = (result: VirtualPage<T>): void => {
     const touched: number[] = [];
     result.rows.forEach((item, offset) => {
@@ -91,7 +96,7 @@ export function createVirtualCache<T>(spec: VirtualCacheSpec<T>): VirtualCache<T
       const reached = result.position + result.rows.length;
       if (end === null || reached > end) end = reached;
     }
-    if (touched.length) spec.changed(touched);
+    if (touched.length && !seeding) spec.changed(touched);
   };
 
   const fetch = (kind: string, from: number, run: () => Promise<VirtualPage<T>>): void => {
@@ -112,6 +117,9 @@ export function createVirtualCache<T>(spec: VirtualCacheSpec<T>): VirtualCache<T
       });
     inFlight.set(id, job);
   };
+
+  if (spec.seed) remember(spec.seed);
+  seeding = false;
 
   return {
     get: (position) => rows.get(position),

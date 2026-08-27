@@ -45,6 +45,8 @@ export interface VirtualListSpec<T> {
   slots: VirtualSlots<T>;
   /** Rows in the whole sequence, when known. null means "discover the end". */
   total?: number | null;
+  /** A first page already fetched, so the caller can reveal one complete view. */
+  seed?: VirtualPage<T> | null;
   page?: number;
   /** Viewports of rows kept mounted on each side of the view. */
   keep?: number;
@@ -107,6 +109,7 @@ export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
     key: slots.key,
     page: PAGE,
     total: spec.total ?? null,
+    seed: spec.seed ?? null,
     changed(positions) {
       /* Repaint only what is ALREADY mounted — mounting here would insert
          slots outside the window. The frame loop owns which rows exist; this

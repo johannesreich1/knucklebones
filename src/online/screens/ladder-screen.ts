@@ -93,27 +93,42 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
       };
     };
 
-    virtual = mountVirtualList<LadderRow>({
-      scroller,
-      list: listElement,
-      total: standing?.population ?? null,
-      alive,
-      source: {
-        after: async (anchor, count) => positioned(
+    const PAGE = 25;
+    const source = {
+      after: async (anchor: { item: LadderRow; position: number } | null, count: number) =>
+        positioned(
           anchor
             ? await ladderPage(count, Number(anchor.item.rank), anchor.item.nickname)
             : await ladderPage(count, 1),
           anchor ? anchor.position + 1 : 0,
         ),
-        before: async (anchor, count) => {
-          const rows = await ladderPageBefore(
-            count, Number(anchor.item.rank), anchor.item.nickname);
-          return positioned(rows, Math.max(0, anchor.position - rows.length));
-        },
-        /* The thumb drag. from_pos is 1-based in SQL. */
-        seek: async (position, count) =>
-          positioned(await ladderPage(count, 1, undefined, position + 1), position),
+      before: async (anchor: { item: LadderRow; position: number }, count: number) => {
+        const rows = await ladderPageBefore(
+          count, Number(anchor.item.rank), anchor.item.nickname);
+        return positioned(rows, Math.max(0, anchor.position - rows.length));
       },
+      /* The thumb drag. from_pos is 1-based in SQL. */
+      seek: async (position: number, count: number) =>
+        positioned(await ladderPage(count, 1, undefined, position + 1), position),
+    };
+
+    /* ONE COMPLETE VIEW, NOT A PANEL THAT FILLS IN. The first page is fetched
+       here, behind the shared loading die, and handed to the window as a seed —
+       so the ladder is revealed with rows already on it. Mounting first and
+       letting the window fetch would show an empty board for a round trip. */
+    const opening = standing?.rank
+      ? await source.seek(Math.max(0, standing.rank - 1 - (PAGE >> 1)), PAGE)
+      : await source.after(null, PAGE);
+    if (run !== showRevision || !isOnlinePanelCurrent('onLadder')) return;
+
+    virtual = mountVirtualList<LadderRow>({
+      scroller,
+      list: listElement,
+      page: PAGE,
+      total: standing?.population ?? null,
+      seed: opening,
+      alive,
+      source,
       slots: {
         key: (row) => row.nickname,
         create: () => {
