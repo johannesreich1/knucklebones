@@ -68,6 +68,16 @@ differs. A second near-copy is a design failure, not a shortcut.
   runs the full gate, rejects tracked drift or a non-fast-forward update, and
   pushes the verified `HEAD`. It never stages or commits files; use a dedicated
   clean worktree when the shared checkout contains concurrent changes.
+- **A release does not reach the installed app.** `native/www/` and
+  `native/ios/App/App/public/` are gitignored build output, so pulling `main`
+  leaves every checkout — and every device — on its last synced payload. The
+  helper syncs only the tree it ran in. After each release, sync the checkout
+  Johannes builds from and hand him the expected tag:
+  `LANG=en_US.UTF-8 mise exec -- npm run native:sync:ios` (CocoaPods needs the
+  UTF-8 locale), then `native:verify:ios`, then report the `data-build` value
+  now in `native/ios/App/App/public/index.html` — the title screen renders it,
+  so he can confirm the device actually took the build. Say explicitly that
+  Xcode needs Clean Build Folder first; it reuses a stale bundle otherwise.
 - **One gate per working tree.** `tests/run-all.mjs` holds `.gate.lock` because
   the build output is shared. Separate worktrees may gate concurrently on
   kernel-assigned ports.
