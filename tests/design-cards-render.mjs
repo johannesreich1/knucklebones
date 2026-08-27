@@ -23,6 +23,7 @@ const { chromium } = pkg;
 import { execFileSync } from 'node:child_process';
 import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
+import { checkRenderingFont } from './support/rendering-font.mjs';
 
 const problems = [], errs = [], out = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -44,6 +45,16 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 900, height: 600 }, locale: 'en-US' });
 page.on('pageerror', (e) => errs.push('PAGEERROR: ' + e.message));
 page.on('console', (m) => { if (m.type() === 'error') errs.push('CONSOLE: ' + m.text()); });
+
+/* EVERY height below is a font measurement. A host rendering the cards in a
+   face the app never names does not produce a smaller set of true failures —
+   it produces a list of cards that are "12px too tall" and sends the reader
+   off to edit card declarations. Name the cause once, here, before the loop. */
+const font = await checkRenderingFont(page);
+out.font = font;
+check(!font.problem,
+  'not rendering in a font the app names, so every height below is measured '
+  + 'against a face no player has', font);
 
 const clipped = [], unexpanded = [];
 let pilferStudy = null;

@@ -71,6 +71,19 @@ async function profileRuneProbe(page) {
     };
   });
 
+  /* The sheet hands focus back on the animation frame AFTER it leaves the DOM
+     (ui/sheet.ts close()), and the detached report can be delivered before that
+     frame runs — measured 1 in 5 locally. Sampling activeElement once at a
+     fixed offset therefore measures the machine's frame cadence, not the
+     sheet; wait for the restored focus itself. */
+  const focusReturnedTo = async (rune) => {
+    await page.waitForSelector('.faceoff.libsheet', { state: 'detached', timeout: 5000 });
+    return page.waitForFunction(
+      (id) => document.activeElement?.matches(`#accRuneGrid .accrune[data-rune="${id}"]`) === true,
+      rune, { timeout: 5000 },
+    ).then(() => true, () => false);
+  };
+
   await page.click('#accRuneGrid .accrune[data-rune="fate"]');
   await page.waitForSelector('.faceoff.libsheet .focard', { timeout: 5000 });
   await page.waitForTimeout(380);
@@ -80,10 +93,7 @@ async function profileRuneProbe(page) {
     { dateStyle: 'medium', timeStyle: 'short' },
   ).format(new Date('2026-08-01T00:00:00Z'))}`);
   await page.keyboard.press('Escape');
-  await page.waitForSelector('.faceoff.libsheet', { state: 'detached', timeout: 5000 });
-  await page.waitForTimeout(50);
-  unlocked.focusRestored = await page.evaluate(() =>
-    document.activeElement?.matches('#accRuneGrid .accrune[data-rune="fate"]'));
+  unlocked.focusRestored = await focusReturnedTo('fate');
 
   await page.focus('#accRuneGrid .accrune[data-rune="nudge"]');
   await page.keyboard.press('Enter');
@@ -97,10 +107,7 @@ async function profileRuneProbe(page) {
   await page.waitForFunction(() => document.documentElement.dataset.locale === 'de');
   locked.localized = await readSheet();
   await page.keyboard.press('Escape');
-  await page.waitForSelector('.faceoff.libsheet', { state: 'detached', timeout: 5000 });
-  await page.waitForTimeout(50);
-  locked.focusRestored = await page.evaluate(() =>
-    document.activeElement?.matches('#accRuneGrid .accrune[data-rune="nudge"]'));
+  locked.focusRestored = await focusReturnedTo('nudge');
   await page.evaluate(() => {
     Object.defineProperty(navigator, 'languages', { configurable: true, get: () => ['en-US'] });
     window.dispatchEvent(new Event('languagechange'));

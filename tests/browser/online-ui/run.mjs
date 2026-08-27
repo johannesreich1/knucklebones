@@ -25,6 +25,7 @@ import { runOnlineMenuPressFeedbackScenarios } from './scenarios/menu-press-feed
 import { runOnlineLoadingPanelScenarios } from './scenarios/loading-panels.mjs';
 import { runEntryWithoutDieScenarios } from './scenarios/entry-without-die.mjs';
 import { runAuthModalScenarios } from './scenarios/auth-modal.mjs';
+import { runAuthCredentialScenarios } from './scenarios/auth-credentials.mjs';
 import { runAccountAccessScenarios } from './scenarios/account-access.mjs';
 import { runAccountGameCenterScenarios } from './scenarios/account-game-center.mjs';
 import { runProfileRuneSheetScenarios } from './scenarios/profile-rune-sheet.mjs';
@@ -41,6 +42,7 @@ const SCENARIOS = Object.freeze([
   { id: 'loading-panels', run: runOnlineLoadingPanelScenarios },
   { id: 'entry-without-die', run: runEntryWithoutDieScenarios },
   { id: 'auth-modal', run: runAuthModalScenarios },
+  { id: 'auth-credentials', run: runAuthCredentialScenarios },
   { id: 'account-access', run: runAccountAccessScenarios },
   { id: 'account-game-center', run: runAccountGameCenterScenarios },
   { id: 'profile-rune-sheet', run: runProfileRuneSheetScenarios },
