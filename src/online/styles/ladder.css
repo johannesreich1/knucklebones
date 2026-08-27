@@ -103,8 +103,14 @@
    its neighbours. data-slot="0" is the top of the BOARD and stays put.
    The #ovOnline prefix is load-bearing twice over: without it this loses on
    specificity to the .ghor margin above (measured: every row shifts down 9px)
-   and it fails cssgraph's rooting rules. */
-:where(#kbroot) #ovOnline [data-slot="0"] .ghor{margin-top:0}
+   and it fails cssgraph's rooting rules.
+   BOTH SHAPES, one intent. The app builds slots; the design card
+   (design/screens/product/30-leaderboard.html) deliberately hand-writes the
+   list flat so it wears these rules rather than a private copy of them. Naming
+   only the slot would hand the card's top horizon its 9px back and desync it
+   from the app it exists to mirror — silently, because the card's frame is
+   pinned at its declared height and nothing in the gate would catch it. */
+:where(#kbroot) #ovOnline :is(.lb > .ghor:first-child, [data-slot="0"] .ghor){margin-top:0}
 :where(#kbroot) #ovOnline .ghor::before,:where(#kbroot) #ovOnline .ghor::after{content:"";height:1px;background:
   linear-gradient(90deg,transparent,var(--gc) 30%,var(--gc) 70%,transparent);opacity:.45}
 :where(#kbroot) #ovOnline .ghor::before{flex:0 0 18px}
