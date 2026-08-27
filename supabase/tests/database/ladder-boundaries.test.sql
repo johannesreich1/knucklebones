@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(26);
+select plan(35);
 
 select ok(
   not has_table_privilege('anon', 'public.season_ratings', 'select'),
@@ -58,7 +58,7 @@ select ok(
   'authenticated clients cannot call the internal board function'
 );
 select ok(
-  has_function_privilege('anon', 'public.leaderboard(integer,integer,text)', 'execute'),
+  has_function_privilege('anon', 'public.leaderboard(integer,integer,text,bigint)', 'execute'),
   'the shaped public leaderboard remains anonymous'
 );
 select ok(
@@ -221,6 +221,83 @@ select is(
   (select array_agg('Tie' || lpad(n::text, 4, '0') order by n)
      from generate_series(1, 60) n),
   'a tied rank larger than one page is traversed backward without gaps or duplicates'
+);
+
+-- ---- DENSE POSITIONS (20260827203007_ladder_dense_positions) --------------
+-- A scrollbar measures ORDINALS, and rank() is not one: it gaps after ties, and
+-- the fixture above is exactly the shape that breaks the arithmetic — sixty
+-- players share rank 1, so rank-1 claims position 0 for all sixty of them.
+-- Every count below is derived from the board itself, so these stay true if the
+-- fixture above ever grows.
+
+select is(
+  (select min(lb.pos)::text || '/' || max(lb.pos)::text || '/' || count(*)::text
+     from public.leaderboard(100, 1, null) lb),
+  (select '1/' || count(*)::text || '/' || count(*)::text
+     from public.leaderboard(100, 1, null)),
+  'pos is dense and contiguous from 1 across the whole visible board'
+);
+select is(
+  (select count(*)::text
+     from (select lb.pos,
+                  row_number() over (order by lb.rank, lb.nickname) as expected
+             from public.leaderboard(100, 1, null) lb) numbered
+    where numbered.pos <> numbered.expected),
+  '0'::text,
+  'pos agrees with the order the rows are actually returned in'
+);
+
+-- THE CASE rank-1 CANNOT ANSWER. Every row on this page reports rank 1; their
+-- true positions run 11..60. A client deriving position from rank would stack
+-- all fifty of them at the top of the board, off by as much as 59.
+select is(
+  (select min(lb.rank)::text || '..' || max(lb.rank)::text
+     from public.leaderboard_before(50, 2, '') lb),
+  '1..1'::text,
+  'the reverse page inside a tied block reports one single rank'
+);
+select is(
+  (select min(lb.pos)::text || '..' || max(lb.pos)::text
+     from public.leaderboard_before(50, 2, '') lb),
+  '11..60'::text,
+  'the reverse page inside a tied block still reports its TRUE positions'
+);
+
+-- from_pos addresses a row directly, which is what a dragged thumb produces.
+select is(
+  (select lb.nickname from public.leaderboard(1, null, null, 25) lb),
+  (select board.nickname from public.leaderboard(100, 1, null) board where board.pos = 25),
+  'from_pos lands on the row holding that exact position'
+);
+select is(
+  (select min(lb.pos)::text from public.leaderboard(10, null, null, 30) lb),
+  '30'::text,
+  'from_pos seeks INTO a tied block, where from_rank can only reach its first member'
+);
+
+-- population lets a signed-out reader size the track. player_standing cannot:
+-- a public ladder reader never obtains a uuid to ask about.
+select is(
+  (select count(distinct lb.population)::text || '/' || max(lb.population)::text
+     from public.leaderboard(100, 1, null) lb),
+  (select '1/' || count(*)::text from public.leaderboard(100, 1, null)),
+  'every row carries the same population, and it is the board size'
+);
+
+-- The old 3-argument signature must be GONE: leaving it beside the new one
+-- would make every existing client call ambiguous and PostgREST answers 300.
+select is(
+  (select count(*)::text
+     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'leaderboard'),
+  '1'::text,
+  'exactly one leaderboard signature exists, so no existing call is ambiguous'
+);
+select ok(
+  has_function_privilege('anon', 'public.leaderboard(integer,integer,text,bigint)', 'execute')
+  and has_function_privilege('authenticated', 'public.leaderboard(integer,integer,text,bigint)', 'execute')
+  and not has_function_privilege('public', 'public.leaderboard(integer,integer,text,bigint)', 'execute'),
+  'the seeking leaderboard is granted to readers and revoked from public'
 );
 
 select * from finish();
