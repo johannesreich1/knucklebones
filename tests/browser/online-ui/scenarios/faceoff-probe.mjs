@@ -33,6 +33,13 @@ export async function probeFaceoff(page, { door, motion }) {
     // one door in, used for every reopen below: tap a row, wait for the RPC's
     // digits, then let the 340ms arrival land before anything is measured
     const open = async () => {
+      /* Every reopen shares this door, so it has to start from a room with no
+         card in it. A settled sheet keeps `fofly` (only a drag takes it off)
+         and covers inset:0, so a reopen that raced the previous close spent
+         its whole timeout clicking a row an OPEN faceoff was swallowing —
+         which a four-worker gate reaches and a quiet machine does not. */
+      await page.waitForFunction(() => !document.querySelector('.faceoff'),
+        null, { timeout: 15000 });
       await page.click('#ovOnline .lb .lrow');
       await page.waitForFunction(() =>
         /\d/.test(document.querySelector('.faceoff .fostreak')?.textContent ?? ''), null, { timeout: 15000 });
