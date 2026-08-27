@@ -25,7 +25,7 @@ import { runOnlineMenuPressFeedbackScenarios } from './scenarios/menu-press-feed
 import { runOnlineLoadingPanelScenarios } from './scenarios/loading-panels.mjs';
 import { runEntryWithoutDieScenarios } from './scenarios/entry-without-die.mjs';
 import { runAuthModalScenarios } from './scenarios/auth-modal.mjs';
-import { runAppleRepairScenarios } from './scenarios/apple-repair.mjs';
+import { runAccountAccessScenarios } from './scenarios/account-access.mjs';
 import { runProfileRuneSheetScenarios } from './scenarios/profile-rune-sheet.mjs';
 import { runRuneTrialUiScenarios } from './scenarios/rune-trial-ui.mjs';
 import { runRuneRewardRaceScenarios } from './scenarios/rune-reward-races.mjs';
@@ -40,7 +40,7 @@ const SCENARIOS = Object.freeze([
   { id: 'loading-panels', run: runOnlineLoadingPanelScenarios },
   { id: 'entry-without-die', run: runEntryWithoutDieScenarios },
   { id: 'auth-modal', run: runAuthModalScenarios },
-  { id: 'apple-repair', run: runAppleRepairScenarios },
+  { id: 'account-access', run: runAccountAccessScenarios },
   { id: 'profile-rune-sheet', run: runProfileRuneSheetScenarios },
   { id: 'rune-trial', run: runRuneTrialUiScenarios },
   // Deliberately outside the no-argument gate run: the reward-race probes are

@@ -8,6 +8,14 @@ import { probeAccountActions } from './account-probes.mjs';
 export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
   return async function visit({
     anonymous = 200,
+    /* The Apple provider is reachable only where the Capacitor plugin is —
+       iOS. WebKit has no bridge, which is the honest default here and the
+       state the web/Android player is really in; set this to stand a device
+       that DOES have one up, so the profile's Apple offers can be met. The
+       stub answers with a credential the app must reject, so a tap runs the
+       whole provider path and lands on the profile's own error line rather
+       than reaching Apple. */
+    appleBridge = false,
     attached = false,
     authDelay = 0,
     dataDelay = 0,
@@ -44,6 +52,23 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
       door, identity, member, named, ladderNearBottom, paginationRace, passwordAuth,
       runes, unseenRunes, SESSION, GUEST_ID,
     });
+    if (appleBridge) {
+      await page.addInitScript(() => {
+        globalThis.Capacitor = {
+          getPlatform: () => 'ios',
+          Plugins: {
+            AppleSignIn: {
+              initialize: async () => {},
+              signIn: async (options) => {
+                globalThis.__appleSignIn = { calls: (globalThis.__appleSignIn?.calls ?? 0) + 1,
+                                             options: options ?? null };
+                return { idToken: '' };
+              },
+            },
+          },
+        };
+      });
+    }
     if (door === 'play') {
       /* Ranked newcomers stop at the once-only tutorial offer. This probe is
          about the queue the returning player sees, so enter as a played device. */
