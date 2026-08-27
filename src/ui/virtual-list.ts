@@ -206,13 +206,11 @@ export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
     list.style.paddingTop = px(padTop);
     list.style.paddingBottom = px(ruler.total - (ruler.top(last + 1) - gap));
 
-    /* Settled only where the pad has nowhere left to give: at the top of the
-       board, and at the bottom ONLY once the reader has actually arrived there.
-       Being merely near the end is not enough — starting a crawl from the last
-       page keeps `last === count - 1` true for its whole length, and re-paying
-       the drift every frame moves the scroll under the reader in lockstep with
-       their own wheel. Measured: the row they were looking at stayed pinned to
-       the top of the screen while the scroll fell 1,050px. */
+    /* At the bottom, only once the reader has ARRIVED there: merely having the
+       last row mounted stays true for a whole crawl that starts at the end of
+       the board, and re-paying drift every frame drags the scroll along with
+       the reader's own wheel (measured: their row pinned to the top of the
+       screen while the scroll fell 1,050px). */
     const carried = drift();
     const atEnd = scrollTop >= scroller.scrollHeight - viewHeight - 2;
     if (carried !== 0 && (first === 0 || (last === count - 1 && atEnd))) owed = -carried;
@@ -253,11 +251,11 @@ export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
   });
   boxes?.observe(scroller);
 
-  /* A jump is only meaningful once the list HAS a box. Asked for while the
-     panel is still behind its loading die, scrollHeight is the loader's and the
-     clamp below silently truncates the jump to a few pixels — which is exactly
-     how opening the ladder on rank 145 landed on rank 1. So a jump asked for
-     too early is remembered and applied by the first frame that has a box. */
+  /* A jump is only meaningful once the list HAS a box: asked for while the
+     panel is still behind its loading die, the clamp below measures the
+     loader's scrollHeight and truncates it to a few pixels — which is how
+     opening on rank 145 once landed on rank 1. Remembered, then applied by the
+     first frame that has a box. */
   const target = (index: number, align: VirtualAlign): void => {
     wanted = { index, align };
     if (!applyTarget()) schedule();
@@ -271,14 +269,10 @@ export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
     if (count === 0) return false;
     wanted = null;
     const k = Math.max(0, Math.min(count - 1, index));
-    /* RESEED FIRST, THEN SCROLL. A jump is only meaningful against geometry
-       that already describes the whole board: before the first frame the ruler
-       still has no rows and the pads have not been written, so both ruler.top()
-       and the scrollHeight clamp would answer about a board of nothing and the
-       jump would land at the top. Opening the ladder on rank 145 did exactly
-       that — it asked for row 144 and got row 0.
-       Emptying the window first also makes this free of drift by construction:
-       with nothing mounted the two pads ARE the whole content. */
+    /* RESEED FIRST, THEN SCROLL, against geometry that already describes the
+       whole board — otherwise ruler.top() and the clamp both answer about a
+       board of nothing. Emptying the window also zeroes the drift by
+       construction: with nothing mounted, the two pads ARE the content. */
     if (count !== ruler.count) ruler.resize(count);
     mountedSlots.clear();
     first = k;
