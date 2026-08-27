@@ -58,7 +58,9 @@ export async function runMatchCommandStallCheckProductionMigrationCases(options:
       'public.commit_match_command(uuid,uuid,uuid,smallint,boolean,integer,smallint,smallint,jsonb,smallint,smallint,jsonb,jsonb)',
       'public.commit_match_command(uuid,uuid,uuid,smallint,boolean,integer,smallint,smallint,jsonb,smallint,smallint,jsonb,jsonb,timestamptz)',
       '7b0d24c0fcb9457c2233c092d4087878',
-      'e3b5d937d8761cc5c636e67078a570cd',
+      // Stage 1's body, re-pinned by 20260827160000_auto_forfeit_streak, which
+      // replaces this same signature in place to maintain the away allowance.
+      'e3fd9a2600e539dfcbf796c6717993fd',
       'pronargdefaults = 2',
       'prosecdef',
       'search_path=""',

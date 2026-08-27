@@ -373,7 +373,15 @@ select
    replaced by a 14-argument version whose trailing timestamptz precondition
    lets the database clock re-verify the 12-second stall. Stage 0 is the exact
    reviewed legacy function; stage 1 is the exact reviewed replacement; any
-   other combination is a partial or foreign state and fails closed. */
+   other combination is a partial or foreign state and fails closed.
+
+   Stage 1's body was re-pinned 2026-08-27 by
+   20260827160000_auto_forfeit_streak, which supersedes the stall-check
+   migration in place: the same 14-argument signature now also maintains
+   p{1,2}_auto_streak, and reads a null precondition as an own-turn self
+   placement to be checked for turn ownership rather than a stall. A database
+   carrying only the stall-check migration therefore no longer matches stage 1
+   — correctly, since that is no longer the reviewed state. */
 export const MATCH_COMMAND_STALL_CHECK_SCHEMA = String.raw`
 with legacy_command as (
   select procedure.*
@@ -406,7 +414,7 @@ select
       from stall_command
   ), false) as stall_command_function,
   coalesce((
-    select md5(prosrc) = 'e3b5d937d8761cc5c636e67078a570cd' from stall_command
+    select md5(prosrc) = 'e3fd9a2600e539dfcbf796c6717993fd' from stall_command
   ), false) as stall_command_body,
   coalesce((
     select count(*) = 1
@@ -1254,9 +1262,12 @@ with expected(
     ('public.match_action_result(uuid,uuid,uuid,boolean,integer,jsonb)', 'public',
       'match_action_result', 'plpgsql', true, 's', 'jsonb', 0,
       'd12d6153ad37b7f50b89b1d550e8ab39'),
+    -- Re-pinned 2026-08-27 by 20260827160000_auto_forfeit_streak: the action
+    -- commit now maintains p{1,2}_auto_streak and admits an own-turn auto with
+    -- a null stall precondition.
     ('public.commit_match_action(uuid,uuid,uuid,boolean,integer,smallint,smallint,timestamptz,jsonb,jsonb,smallint,smallint,jsonb,jsonb)',
       'public', 'commit_match_action', 'plpgsql', true, 'v', 'jsonb', 1,
-      '058de4f7f07704b03f6737f4b9398bd6'),
+      '223f4df6134ba6fbce4487143933f4e8'),
     ('private.purge_expired_rune_trial_commands(timestamptz,integer)', 'private',
       'purge_expired_rune_trial_commands', 'plpgsql', false, 'v', 'integer', 1,
       '89732767ac693a980498119d66e77c95')
