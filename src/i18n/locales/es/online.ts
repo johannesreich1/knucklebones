@@ -179,6 +179,7 @@ export const esOnline = {
     appleInvalid: 'No se pudo verificar el inicio de sesión con Apple. Inténtalo de nuevo.',
     appleConflict: 'Esa cuenta de Apple ya está vinculada a otro jugador.',
     appleFailed: 'El inicio de sesión con Apple ha fallado. Inténtalo de nuevo.',
+    appleRevocationSetup: 'Apple está conectado, pero no se pudo configurar el acceso de eliminación. Inténtalo de nuevo.',
     appleRevocationPending: 'Tu cuenta se eliminó. La retirada del acceso de Apple se reintentará automáticamente; también puedes eliminar Knucklebones ahora en Ajustes › Cuenta de Apple › Iniciar sesión con Apple.',
     appleRevocationManual: 'Tu cuenta se eliminó, pero no se pudo retirar automáticamente el acceso de Apple. Elimina Knucklebones en Ajustes › Cuenta de Apple › Iniciar sesión con Apple.',
     gameCenterUnavailable: 'Game Center no está disponible.',

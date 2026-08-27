@@ -179,6 +179,7 @@ export const itOnline = {
     appleInvalid: "Impossibile verificare l'accesso con Apple. Riprova.",
     appleConflict: 'Questo account Apple è già collegato a un altro giocatore.',
     appleFailed: "L'accesso con Apple non è riuscito. Riprova.",
+    appleRevocationSetup: "Apple è collegato, ma manca ancora l'accesso per l'eliminazione. Riprova.",
     appleRevocationPending: 'Il tuo account è stato eliminato. La rimozione dell’accesso Apple verrà ritentata automaticamente; puoi anche rimuovere Knucklebones ora in Impostazioni › Account Apple › Accedi con Apple.',
     appleRevocationManual: 'Il tuo account è stato eliminato, ma non è stato possibile rimuovere automaticamente l’accesso Apple. Rimuovi Knucklebones in Impostazioni › Account Apple › Accedi con Apple.',
     gameCenterUnavailable: 'Game Center non è disponibile.',

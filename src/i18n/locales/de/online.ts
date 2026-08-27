@@ -179,6 +179,7 @@ export const deOnline = {
     appleInvalid: 'Die Apple-Anmeldung konnte nicht bestätigt werden. Bitte versuche es erneut.',
     appleConflict: 'Dieses Apple-Konto ist bereits mit einem anderen Spieler verknüpft.',
     appleFailed: 'Die Apple-Anmeldung ist fehlgeschlagen. Bitte versuche es erneut.',
+    appleRevocationSetup: 'Die Apple-Anmeldung ist verbunden, aber der Löschzugriff fehlt noch. Bitte versuche es erneut.',
     appleRevocationPending: 'Dein Konto wurde gelöscht. Das Entfernen des Apple-Zugriffs wird automatisch erneut versucht; du kannst Knucklebones auch jetzt unter Einstellungen › Apple Account › Mit Apple anmelden entfernen.',
     appleRevocationManual: 'Dein Konto wurde gelöscht, aber der Apple-Zugriff konnte nicht automatisch entfernt werden. Entferne Knucklebones unter Einstellungen › Apple Account › Mit Apple anmelden.',
     gameCenterUnavailable: 'Game Center ist nicht verfügbar.',

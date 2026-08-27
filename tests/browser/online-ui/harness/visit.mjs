@@ -12,7 +12,9 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     authDelay = 0,
     dataDelay = 0,
     door = 'chip',
+    identity = { gameCenterLinked: false, appleLinked: false, appleRevocationReady: false },
     inspectLoading = false,
+    member = false,
     named = false,
     motion = null,
     locale = 'en-US',
@@ -39,7 +41,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     const routes = await installOnlineRoutes(page, {
       anonymous, attached, authDelay,
       dataDelay: inspectLoading ? 900 : dataDelay, markRunesSeenAfterFirstRead,
-      door, named, ladderNearBottom, paginationRace, passwordAuth,
+      door, identity, member, named, ladderNearBottom, paginationRace, passwordAuth,
       runes, unseenRunes, SESSION, GUEST_ID,
     });
     if (door === 'play') {

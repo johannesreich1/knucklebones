@@ -176,6 +176,7 @@ export const enOnline = {
     appleInvalid: 'Apple sign-in could not be verified. Please try again.',
     appleConflict: 'That Apple account is already linked to another player.',
     appleFailed: 'Apple sign-in failed. Please try again.',
+    appleRevocationSetup: 'Apple sign-in is connected, but deletion access could not be set up. Please try again.',
     appleRevocationPending: 'Your account was deleted. Apple access removal will retry automatically; you can also remove Knucklebones now in Settings › Apple Account › Sign in with Apple.',
     appleRevocationManual: 'Your account was deleted, but Apple access could not be removed automatically. Remove Knucklebones in Settings › Apple Account › Sign in with Apple.',
     gameCenterUnavailable: 'Game Center is not available.',
