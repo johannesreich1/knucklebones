@@ -240,11 +240,28 @@ release runner applies the same rule to both builds and every test/benchmark
 child, so entering the gate through `mise exec --` cannot fall back to a
 different bare `node` found on `PATH`.
 
-Cloudflare Pages builds `main` and deploys immediately. Repository verification
-is therefore preventive: choose focused/specialized gates for a well-contained,
-low-risk change and `mise exec -- npm test` when the change is cross-cutting,
-high-risk, or lacks decisive focused coverage. Deployment instructions or
-dashboard state are not encoded into generated public artifacts.
+Cloudflare's dashboard git integration builds `main` and deploys immediately,
+without waiting for CI. The `deploy` job in `.github/workflows/ci.yml` exists to
+end that: on a push to `main` it waits for the manifest preflight and all four
+shards, rebuilds `pwa/` with this repository's own `npm run build` under
+`.nvmrc` Node, and publishes that exact output with a pinned
+`wrangler pages deploy`. The live site is a classic Pages project, so it is
+`pages deploy` and not `wrangler deploy`; `wrangler.jsonc` is inert for this
+command and must not be turned into the deploy source.
+
+That job is deliberately not live yet. Its condition also requires the
+`DEPLOY_VIA_ACTIONS` repository variable to equal `true`, so it is skipped until
+Johannes adds the Cloudflare credentials, sets the variable, and disconnects the
+dashboard build — the ordered owner action in `docs/STATUS.md`. Pull requests
+never reach it, so PR cost is unchanged, and unsetting the variable reverts to
+the dashboard path without a code change.
+
+Until that variable is set, repository verification is the only thing keeping an
+unverified commit off the live site, so it stays preventive: choose
+focused/specialized gates for a well-contained, low-risk change and
+`mise exec -- npm test` when the change is cross-cutting, high-risk, or lacks
+decisive focused coverage. Deployment instructions or dashboard state are not
+encoded into generated public artifacts.
 
 The separate `android` CI job consumes both npm lockfiles under Node 24, uses
 Temurin Java 21 and Android SDK/build-tools 36, syncs Android, runs the native

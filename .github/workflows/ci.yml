@@ -53,8 +53,9 @@ jobs:
       - run: npm ci
       - run: node tools/check-functions.mjs
         if: matrix.shard == 'ci-1'
-      # chromium for the file/served suites and bench3; webkit because
-      # test16/test17 launch it. Runners are isolated and keep JOBS=1 inside
+      # chromium for the file/served suites and col-score-bench; webkit because
+      # practice-sheet-stability and the online-ui tree launch it. Runners are
+      # isolated and keep JOBS=1 inside
       # each balanced shard, avoiding browser contention in a two-core VM.
       - run: npx playwright install --with-deps chromium webkit
       - run: npm test -- --ci-shard "${{ matrix.shard }}"
@@ -137,3 +138,44 @@ jobs:
           path: native/android/app/build/outputs/bundle/release/app-release.aab
           if-no-files-found: error
           retention-days: 7
+
+  # Make production a consequence of a green gate instead of a race with it.
+  # Cloudflare's dashboard git integration publishes `main` the moment it is
+  # pushed, so today only local discipline keeps an unverified commit off the
+  # live site. This job publishes the same `pwa/` output after the manifest
+  # preflight and every shard passed, and stays skipped until the
+  # DEPLOY_VIA_ACTIONS repository variable opts in — so landing it changes
+  # nothing until Johannes adds the Cloudflare credentials, sets the variable,
+  # and then disconnects the dashboard build. Pull requests never reach it.
+  deploy:
+    name: deploy / production
+    needs: [manifest, test_shard]
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_VIA_ACTIONS == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Publish what this repository's own build produces under the pinned
+      # Node, not a separately configured dashboard build of the same commit.
+      - run: npm run build
+      # The live site is a classic Pages project, so `pages deploy` — not
+      # `wrangler deploy`, which would publish an unrelated Workers script.
+      # `wrangler.jsonc` stays inert here: wrangler ignores a config without
+      # `pages_build_output_dir` for this command. The CLI is pinned like the
+      # Supabase and bundletool verifiers above; `--branch` is explicit because
+      # the checkout is detached and only the production branch reaches the
+      # live hostname. Override the project name with a repository variable if
+      # the dashboard ever renames it.
+      - run: >-
+          npx --yes wrangler@4.126.0 pages deploy ./pwa
+          --project-name "${{ vars.CLOUDFLARE_PAGES_PROJECT || 'knucklebones-asg' }}"
+          --branch main
+          --commit-hash "${{ github.sha }}"
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -8,7 +8,7 @@ decisions, and externally owned actions only. Detailed sprint history lives in
 
 | Area | State | Authoritative source |
 |---|---|---|
-| Web | Live at <https://knucklebones-asg.pages.dev>; pushes to `main` deploy through Cloudflare Pages immediately | `build.mjs`, `.github/workflows/ci.yml` |
+| Web | Live at <https://knucklebones-asg.pages.dev>; pushes to `main` still deploy through the Cloudflare Pages dashboard build immediately, ahead of CI. The gated `deploy` job is merged but skipped until `DEPLOY_VIA_ACTIONS` is set | `build.mjs`, `.github/workflows/ci.yml` |
 | Game | Local solo and two-player play, tutorial, modes, optional offline spells, and shared local/ranked board rendering | `src/core/`, `src/flow/`, `src/ui/` |
 | Ranked | Production has server-authoritative play, matchmaking/bot backfill, ladder, history, profiles, deletion, permanent mode-pool progression, IVORY Rune Trial, authoritative casts, and rune collection. The disposable test population has 150 bots spanning the ladder with deliberately beatable 41–54% aggregate win rates, streaks 2–7, and modest varied peaks; real play then updates the ordinary aggregates | `src/online/`, `src/core/ranked-outcomes.ts`, `supabase/functions/`, `docs/LADDER.md` |
 | Localization | English, Brazilian Portuguese, Spanish, German, French, and Italian share one ordered registry, complete catalogs, native metadata, and measured eager/online mobile geometry | `src/i18n/`, `docs/architecture/localization.md` |
@@ -100,6 +100,19 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   `localization-smoke` (the same runner's `--smoke` mode) as a rot guard.
   Re-enable the full matrix in `tests/support/gate-manifest.mjs` once a
   screenshot-review workflow owns visual acceptance.
+- Switch production onto the gated deploy (owner: Johannes). The `deploy` job in
+  `.github/workflows/ci.yml` is merged but skipped, so the dashboard build still
+  publishes `main` ahead of CI. In order: (1) create a Cloudflare API token with
+  Pages edit rights and note the account id; (2) add repository secrets
+  `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, and repository variable
+  `DEPLOY_VIA_ACTIONS=true` — plus `CLOUDFLARE_PAGES_PROJECT` only if the Pages
+  project is not named `knucklebones-asg`; (3) push to `main` and confirm the
+  `deploy / production` job publishes the live site; (4) only then disconnect the
+  dashboard git build, so the two paths never both own a deploy. Steps 2 and 3
+  publish each commit twice, which is harmless because both publish the same
+  build. Rollback at any point is unsetting `DEPLOY_VIA_ACTIONS` and re-enabling
+  the dashboard build. Not verifiable in the repository: no CI run can execute
+  this job until the variable exists.
 - Configure production SMTP through Resend and verify the attach-email loop.
   DNS, provider credentials, rate limits, and dashboard settings are owner
   actions.
@@ -158,7 +171,8 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   supply gauge: a 2px achromatic column at the pile's left edge whose length is
   `n/24`, plus a draw that always lifts the shell that was on top. The
   contract lives in `docs/MODES.md §9` and
-  `design/screens/product/47j-limited-gutter.html`, and `tests/test24.mjs`
+  `design/screens/product/47j-limited-gutter.html`, and
+  `tests/limited-bag-gauge.mjs`
   measures both. 47a–47l retain the rival proposals — including 47g/47h, which
   combine LI1's draw with LI4's endgame escalation under the constraint that
   **no text may change**, and 47i/47k/47l, each of which was proposed, refuted
