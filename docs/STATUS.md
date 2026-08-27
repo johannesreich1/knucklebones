@@ -106,7 +106,9 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   Pages edit rights and note the account id; (2) add repository secrets
   `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`, and repository variable
   `DEPLOY_VIA_ACTIONS=true` — plus `CLOUDFLARE_PAGES_PROJECT` only if the Pages
-  project is not named `knucklebones-asg`; (3) push to `main` and confirm the
+  project is ever renamed away from `knucklebones` (confirmed in the dashboard
+  on 2026-08-27: the project is `knucklebones`, matching `wrangler.jsonc`; only
+  its hostname is `knucklebones-asg.pages.dev`); (3) push to `main` and confirm the
   `deploy / production` job publishes the live site; (4) only then disconnect the
   dashboard git build, so the two paths never both own a deploy. Steps 2 and 3
   publish each commit twice, which is harmless because both publish the same

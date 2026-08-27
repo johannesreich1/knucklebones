@@ -173,7 +173,7 @@ jobs:
       # the dashboard ever renames it.
       - run: >-
           npx --yes wrangler@4.126.0 pages deploy ./pwa
-          --project-name "${{ vars.CLOUDFLARE_PAGES_PROJECT || 'knucklebones-asg' }}"
+          --project-name "${{ vars.CLOUDFLARE_PAGES_PROJECT || 'knucklebones' }}"
           --branch main
           --commit-hash "${{ github.sha }}"
         env:
