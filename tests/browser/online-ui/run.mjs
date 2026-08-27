@@ -26,6 +26,7 @@ import { runOnlineLoadingPanelScenarios } from './scenarios/loading-panels.mjs';
 import { runEntryWithoutDieScenarios } from './scenarios/entry-without-die.mjs';
 import { runAuthModalScenarios } from './scenarios/auth-modal.mjs';
 import { runAccountAccessScenarios } from './scenarios/account-access.mjs';
+import { runAccountGameCenterScenarios } from './scenarios/account-game-center.mjs';
 import { runProfileRuneSheetScenarios } from './scenarios/profile-rune-sheet.mjs';
 import { runRuneTrialUiScenarios } from './scenarios/rune-trial-ui.mjs';
 import { runRuneRewardRaceScenarios } from './scenarios/rune-reward-races.mjs';
@@ -41,6 +42,7 @@ const SCENARIOS = Object.freeze([
   { id: 'entry-without-die', run: runEntryWithoutDieScenarios },
   { id: 'auth-modal', run: runAuthModalScenarios },
   { id: 'account-access', run: runAccountAccessScenarios },
+  { id: 'account-game-center', run: runAccountGameCenterScenarios },
   { id: 'profile-rune-sheet', run: runProfileRuneSheetScenarios },
   { id: 'rune-trial', run: runRuneTrialUiScenarios },
   // Deliberately outside the no-argument gate run: the reward-race probes are

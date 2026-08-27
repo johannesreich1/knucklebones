@@ -40,6 +40,7 @@ import type { Ladder, Standing } from '../api/ladder-api.ts';
 import type { IdentityStatus, Me, Profile } from '../identity/session.ts';
 import { paintAccountProviders } from './account-provider-view.ts';
 import { bindAccountAppleRepair } from './account-apple-repair.ts';
+import { bindAccountGameCenterLink } from './account-game-center-link.ts';
 import { bindAccountDelete } from './account-delete-flow.ts';
 
 interface AccountPorts {
@@ -262,11 +263,11 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       Sfx.tap();
       ports.showAuth('restore', 'account');
     });
-    bindAccountAppleRepair({
-      clearError: clearAccountError,
-      showError: showAccountError,
-      refresh: show,
-    });
+    /* Every ACCOUNT ACCESS control answers on the profile's own error line and
+       repaints the box from a fresh identity-status read. */
+    const provider = { clearError: clearAccountError, showError: showAccountError, refresh: show };
+    bindAccountAppleRepair(provider);
+    bindAccountGameCenterLink(provider);
     $('#btnClaim').addEventListener('click', async () => {
       Sfx.tap();
       clearNickError();

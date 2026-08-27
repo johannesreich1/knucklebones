@@ -6,6 +6,7 @@ import {
   FUNCTION_CLI_VERSION,
   FUNCTION_DEPLOY_OPT_IN,
   FUNCTION_ROLLOUT_SLUGS,
+  GAME_CENTER_ROLLOUT_SELECTOR,
   PRODUCTION_PROJECT_REF,
   assertActiveFunctionMetadata,
   assertExactDownloadedClosure,
@@ -17,6 +18,7 @@ import {
   functionListArgs,
   materializeFunctionProject,
   requireNode24,
+  rolloutPlan,
   rolloutProductionFunctions,
   supabaseReadbackOmissionPaths,
 } from '../tools/functions/production-rollout.mjs';
@@ -30,6 +32,14 @@ import {
   readyProductionRead,
   temp,
 } from './support/production-functions-cases.ts';
+import {
+  assertGameCenterPlanContract,
+  assertIdentityPlanContract,
+} from './support/production-identity-cases.ts';
+import {
+  assertDistinctPlanOptIns,
+  assertPlanEntryPoints,
+} from './support/production-plan-cases.ts';
 
 try {
   requireNode24('24.8.0');
@@ -126,7 +136,7 @@ try {
   ]);
   assert.equal(deployArgs.includes('--prune'), false);
   assert.equal(deployArgs.includes('--no-verify-jwt'), false);
-  assert.throws(() => functionDeployArgs('gc-auth', '/tmp/deploy'), /allow-list/);
+  assert.throws(() => functionDeployArgs('_shared', '/tmp/deploy'), /not in any production rollout allow-list/);
   assert.throws(
     () => functionDeployArgs('pvp-action', '/tmp/deploy', 'abcdefghijklmnopqrst'),
     /target must be/,
@@ -245,8 +255,13 @@ try {
       readProduction: async () => assert.fail('preview performed a production read'),
       log: () => {},
     });
-    assert.deepEqual(result, { applied: false, slugs: FUNCTION_ROLLOUT_SLUGS });
-    assert.deepEqual(events, []);
+    assert.deepEqual(result, {
+      applied: false,
+      selector: 'rune-trial',
+      slugs: FUNCTION_ROLLOUT_SLUGS,
+      current: FUNCTION_ROLLOUT_SLUGS.map(slug => ({ slug, version: 7 })),
+    });
+    assert.deepEqual(events, ['list:'], 'preview did more than probe deployed versions');
     assert.deepEqual(removed, [root]);
     assert.equal(existsSync(root), false);
   }
@@ -328,6 +343,35 @@ try {
     assert.equal(events.includes('deploy:pvp-join'), false);
     assert.equal(existsSync(root), false);
   }
+
+  // Every plan rolls out on its own selector, its own opt-in and its own
+  // package.json entry point, so an operator who exports one variable can only
+  // ever deploy the one set that variable names.
+  assertDistinctPlanOptIns();
+  assert.equal(
+    assertPlanEntryPoints().get(GAME_CENTER_ROLLOUT_SELECTOR),
+    'functions:production:game-center',
+  );
+  const identity = rolloutPlan('identity-hardening');
+  assert.deepEqual(identity.slugs, [
+    'identity-status', 'apple-token-register', 'apple-revocation-retry',
+  ]);
+  assert.equal(identity.optIn, 'KB_ALLOW_PRODUCTION_IDENTITY_FUNCTIONS');
+
+  // gc-auth is the auth boundary, so it is its own plan and nothing else is in
+  // it: deploying it is always a deliberate, single act. It is no longer held —
+  // the signed-device pass is the ACCEPTANCE step that runs after this deploy,
+  // because the device exercises the deployed function. Every readback check
+  // the other plans get, it gets too.
+  const gameCenter = rolloutPlan(GAME_CENTER_ROLLOUT_SELECTOR);
+  assert.equal(GAME_CENTER_ROLLOUT_SELECTOR, 'game-center');
+  assert.deepEqual(functionDownloadArgs('gc-auth', '/tmp/readback'), [
+    'functions', 'download', 'gc-auth', '--project-ref', PRODUCTION_PROJECT_REF,
+    '--use-api', '--workdir', '/tmp/readback',
+  ]);
+
+  assert.equal((await assertIdentityPlanContract(identity)).prerequisite.schemaStage, 4);
+  assert.equal((await assertGameCenterPlanContract(gameCenter)).prerequisite.schemaStage, 4);
 } finally {
   cleanupTemps();
 }

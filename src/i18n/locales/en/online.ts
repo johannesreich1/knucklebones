@@ -72,8 +72,13 @@ export const enOnline = {
     fullHistory: 'Full match history',
     notNow: 'Not now',
     accountAccess: 'ACCOUNT ACCESS',
-    gameCenterLinked: 'Game Center connected',
-    gameCenterNotLinked: 'Game Center not connected',
+    /* "to this account" is load-bearing: iOS greets the local player at
+       launch, so a bare "Game Center not connected" reads as a contradiction
+       of something the player just watched happen. This row is only ever
+       about whether that identity is linked HERE. */
+    gameCenterLinked: 'Game Center linked to this account',
+    gameCenterNotLinked: 'Game Center not linked to this account',
+    connectGameCenter: 'Connect Game Center',
     appleLinked: 'Apple sign-in connected',
     appleNotLinked: 'Apple sign-in not connected',
     appleRepair: 'Apple sign-in connected · deletion access needs repair',

@@ -20,6 +20,12 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     authDelay = 0,
     dataDelay = 0,
     door = 'chip',
+    /* Game Center is reachable only where GameKit is AND the build carries an
+       identity gateway origin. This stands the device half up: an iOS bridge
+       whose local player is already authenticated, exactly as the phone that
+       greeted the player by name at launch. 'linked' | 'conflict' also chooses
+       how the gateway answers the attach (see identity-routes). */
+    gameCenterBridge = null,
     identity = { gameCenterLinked: false, appleLinked: false, appleRevocationReady: false },
     inspectLoading = false,
     member = false,
@@ -49,25 +55,42 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     const routes = await installOnlineRoutes(page, {
       anonymous, attached, authDelay,
       dataDelay: inspectLoading ? 900 : dataDelay, markRunesSeenAfterFirstRead,
-      door, identity, member, named, ladderNearBottom, paginationRace, passwordAuth,
-      runes, unseenRunes, SESSION, GUEST_ID,
+      door, gameCenterBridge, identity, member, named, ladderNearBottom, paginationRace,
+      passwordAuth, runes, unseenRunes, SESSION, GUEST_ID,
     });
-    if (appleBridge) {
-      await page.addInitScript(() => {
-        globalThis.Capacitor = {
-          getPlatform: () => 'ios',
-          Plugins: {
-            AppleSignIn: {
-              initialize: async () => {},
-              signIn: async (options) => {
-                globalThis.__appleSignIn = { calls: (globalThis.__appleSignIn?.calls ?? 0) + 1,
-                                             options: options ?? null };
-                return { idToken: '' };
-              },
+    /* ONE Capacitor object: the native bridges are plugins on the same global,
+       and two init scripts each installing their own would leave whichever ran
+       last as the only device the app can see. */
+    if (appleBridge || gameCenterBridge) {
+      await page.addInitScript(({ apple, gameCenter }) => {
+        const Plugins = {};
+        if (apple) {
+          Plugins.AppleSignIn = {
+            initialize: async () => {},
+            signIn: async (options) => {
+              globalThis.__appleSignIn = { calls: (globalThis.__appleSignIn?.calls ?? 0) + 1,
+                                           options: options ?? null };
+              return { idToken: '' };
             },
-          },
-        };
-      });
+          };
+        }
+        if (gameCenter) {
+          globalThis.__gameCenter = { proofs: 0 };
+          const state = { status: 'authenticated', revision: 1 };
+          Plugins.GameCenter = {
+            initialize: async () => state,
+            getAuthState: async () => state,
+            addListener: () => ({ remove() {} }),
+            fetchIdentityProof: async () => {
+              globalThis.__gameCenter.proofs++;
+              return { publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-12.cer',
+                       signature: 'signed', salt: 'salt', timestamp: '123',
+                       teamPlayerID: 'team-player' };
+            },
+          };
+        }
+        globalThis.Capacitor = { getPlatform: () => 'ios', Plugins };
+      }, { apple: appleBridge, gameCenter: !!gameCenterBridge });
     }
     if (door === 'play') {
       /* Ranked newcomers stop at the once-only tutorial offer. This probe is
