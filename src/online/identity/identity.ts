@@ -12,6 +12,7 @@ import {
   fetchGameCenterProof,
   gameCenterState,
   waitForGameCenter,
+  type GameCenterAuthState,
   type GameCenterProof,
 } from '../../native/game-center.ts';
 import { supa } from '../api/client.ts';
@@ -140,7 +141,7 @@ export function createGameCenterIdentity(ports: GameCenterIdentityPorts): OneTap
   };
 }
 
-const GAME_CENTER = createGameCenterIdentity({
+export const GAME_CENTER = createGameCenterIdentity({
   available: () => !!IDENTITY_GATEWAY_URL
     && gameCenterState().status !== 'unavailable',
   getProof: fetchGameCenterProof,
@@ -151,15 +152,94 @@ const GAME_CENTER = createGameCenterIdentity({
 export const ONE_TAP: OneTap[] = [GAME_CENTER, APPLE];
 export const availableTaps = (): OneTap[] => ONE_TAP.filter((method) => method.available());
 
-export async function restoreGameCenterAutomatically(): Promise<
-  'signed-in' | 'unavailable' | 'retry'
-> {
-  if (!IDENTITY_GATEWAY_URL) return 'unavailable';
-  const state = await waitForGameCenter();
+/* There is deliberately NO "this Game Center player has no account yet"
+   failure to distinguish here. gc-auth answers `sign-in` for an unknown player
+   by PROVISIONING one and returning a session (functions/gc-auth/operation.ts,
+   the branch with neither a mapping nor a caller), so a first-time player is
+   signed in rather than refused — nothing about being unlinked can reach the
+   sign-in panel. 'retry' therefore only ever means a genuinely unresolved
+   answer: a lifecycle still authenticating, or restore copy from a network,
+   verification or session failure. Every state GameKit reports as not
+   authenticated is 'unavailable' and falls through to the silent guest. */
+export interface GameCenterRestorePorts {
+  configured(): boolean;
+  waitForState(): Promise<GameCenterAuthState>;
+  restore(): Promise<string | null>;
+}
+
+const RESTORE_PORTS: GameCenterRestorePorts = {
+  configured: () => !!IDENTITY_GATEWAY_URL,
+  waitForState: () => waitForGameCenter(),
+  restore: () => GAME_CENTER.restore(),
+};
+
+export async function restoreGameCenterAutomatically(
+  ports: GameCenterRestorePorts = RESTORE_PORTS,
+): Promise<'signed-in' | 'unavailable' | 'retry'> {
+  if (!ports.configured()) return 'unavailable';
+  const state = await ports.waitForState();
   if (state.status !== 'authenticated') {
     return state.status === 'authenticating' ? 'retry' : 'unavailable';
   }
-  return await GAME_CENTER.restore() === null ? 'signed-in' : 'retry';
+  return await ports.restore() === null ? 'signed-in' : 'retry';
+}
+
+/* ---- the guest's lifeline ----
+   A guest's entire claim to their rating, streak, history and runes is the
+   token in this device's storage, and a reinstall destroys it. Nothing on the
+   server can then be shown to be theirs: the next launch finds no mapping for
+   this Game Center player, restoreGameCenterAutomatically has gc-auth
+   provision a BRAND NEW account, and the old row is stranded with nobody able
+   to prove they own it. So a guest — and ONLY a guest — attaches the
+   authenticated local player automatically, while the device still holds the
+   session proving that account is theirs. It is the recovery identity a guest
+   otherwise entirely lacks.
+
+   An account already carrying Apple or email is deliberately EXCLUDED: it
+   survives a reinstall already, so a silent bind buys it nothing, while on a
+   shared or family device the Game Center player signed in at launch is often
+   not the person holding the phone — and a bind is permanent. Those accounts
+   keep the explicit one-tap control (screens/account-game-center-link.ts).
+
+   'other-account' is refused rather than resolved, for the same reason in the
+   other direction: the guest has local progress and that Game Center player
+   already owns an account carrying its own, so silently picking either
+   strands the other. The explicit control reports that conflict; this must
+   never pre-empt it. And nothing here may block play — every refusal, failure
+   and rejection leaves the guest exactly as they were. */
+export interface GuestGameCenterPorts {
+  assert(): Promise<GameCenterOwnership>;
+  attach(): Promise<string | null>;
+  acknowledge(): void;
+}
+
+/** Named, so the two account facts behind the decision cannot be transposed. */
+export interface GuestGameCenterAccount {
+  readonly guest: boolean;
+  /** null when identity-status could not be read: never assume "unlinked". */
+  readonly gameCenterLinked: boolean | null;
+}
+
+/* One attempt per app run, spent even when it fails: a guest still stranded is
+   recovered by the NEXT launch, never by retrying the gateway from inside
+   ranked entry. signOut() hands the account after it its own attempt. */
+let guestGameCenterAttempted = false;
+export function resetGuestGameCenterLink(): void { guestGameCenterAttempted = false; }
+
+export async function linkGuestGameCenter(
+  account: GuestGameCenterAccount,
+  native: GameCenterAuthState,
+  ports: GuestGameCenterPorts,
+): Promise<boolean> {
+  if (guestGameCenterAttempted || !account.guest || account.gameCenterLinked !== false
+    || native.status !== 'authenticated') return false;
+  guestGameCenterAttempted = true;
+  try {
+    if (await ports.assert() !== 'unlinked') return false;
+    if (await ports.attach() !== null) return false;
+    ports.acknowledge();
+    return true;
+  } catch { return false; }
 }
 
 export type GameCenterOwnership = 'match' | 'unlinked' | 'other-account' | 'unavailable' | 'retry';

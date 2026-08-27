@@ -1,3 +1,5 @@
+import { installIdentityRoutes } from './identity-routes.mjs';
+
 export async function installOnlineRoutes(
   page,
   {
@@ -6,6 +8,7 @@ export async function installOnlineRoutes(
     authDelay = 0,
     dataDelay = 0,
     door,
+    gameCenterBridge = null,
     named,
     /* An account that is past the guest rung: the profile only paints its
        ACCOUNT ACCESS box for a player who is not a guest. */
@@ -223,9 +226,9 @@ export async function installOnlineRoutes(
     joinCalls++;
     return r.fulfill({ status: 200, contentType: 'application/json', body: '{"status":"queued"}' });
   });
-  await page.route('**/functions/v1/identity-status', (r) => r.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify(identity),
-  }));
+  const identityRoutes = await installIdentityRoutes(page, {
+    identity, gameCenter: gameCenterBridge, session,
+  });
   await page.route('**/rest/v1/rpc/leave_ranked_queue', (r) => r.fulfill({
     status: 200, contentType: 'application/json', body: '{"status":"left"}',
   }));
@@ -343,6 +346,7 @@ export async function installOnlineRoutes(
       peak: 1100,
     }]) }));
   return {
+    ...identityRoutes,
     signupCalls: () => signupCalls,
     deferNextSignupResponse: () => { deferNextSignup = true; },
     signupRequestStarted,

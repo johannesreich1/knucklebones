@@ -120,6 +120,7 @@ export const GATE_SUITES = Object.freeze([
   typed('apple-identity'),
   typed('apple-server'),
   typed('game-center-lifecycle'),
+  typed('identity-gateway-origins'),
   typed('native-startup'),
   typed('live-safety'),
   typed('gate-lock'),
@@ -145,7 +146,7 @@ export const CI_SHARDS = Object.freeze({
     'rune-matchup-analysis', 'scoring-ward-ai', 'online-api', 'design-library',
     'cssreach', 'legal', 'spells', 'dice', 'release-main', 'gate-manifest',
     'random-mode-dial', 'rune-collection-cache', 'ranked-outcomes',
-    'typecheck-tests',
+    'typecheck-tests', 'identity-gateway-origins',
   ]),
   'ci-2': Object.freeze([
     'online-ui-browser', 'hud-settings-browser', 'spells-presentation',

@@ -4,10 +4,13 @@ import type {
   GameCenterProof,
 } from '../src/native/game-center.ts';
 import { gameCenterSessionAction } from '../src/online/identity/session.ts';
+import { runGameCenterRecoveryTests } from './support/game-center-recovery.ts';
 import { readFileSync } from 'node:fs';
 
 const problems: string[] = [];
-const check = (ok: boolean, message: string) => { if (!ok) problems.push(message); };
+const check = (ok: boolean, message: string, detail?: unknown) => {
+  if (!ok) problems.push(detail === undefined ? message : `${message} :: ${JSON.stringify(detail)}`);
+};
 
 let initializeCalls = 0;
 let proofCalls = 0;
@@ -94,5 +97,10 @@ check(gameCenterSessionAction(linkedStatus, 2, 3) === 'assert'
   'a linked account did not reassert exactly when the native Game Center revision changed');
 
 delete (globalThis as typeof globalThis & { Capacitor?: unknown }).Capacitor;
+
+/* What the same lifecycle means for a player who cannot yet prove who they
+   are: arriving with no account, and reinstalling with only a guest token. */
+await runGameCenterRecoveryTests(check);
+
 console.log(JSON.stringify({ problems }, null, 2));
 process.exit(problems.length ? 1 : 0);

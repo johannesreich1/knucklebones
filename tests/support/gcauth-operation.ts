@@ -3,7 +3,7 @@ import { completeGameCenterIdentity } from '../../supabase/functions/gc-auth/ope
 type Check = (condition: boolean, message: string, detail?: unknown) => void;
 interface FakeError { message: string }
 
-class FakeGameCenterService {
+export class FakeGameCenterService {
   mapping: { team_player_id: string; user_id: string } | null = null;
   mappingError: FakeError | null = null;
   insertError: FakeError | null = null;
@@ -73,7 +73,10 @@ class FakeGameCenterService {
   }
 }
 
-const identityDependencies = (service: FakeGameCenterService, callerId: string | null = null) => ({
+export const identityDependencies = (
+  service: FakeGameCenterService,
+  callerId: string | null = null,
+) => ({
   createClient: ((_url: string, key: string) => key === 'service-key'
     ? service
     : { auth: { getUser: async () => ({

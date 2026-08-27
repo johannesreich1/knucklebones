@@ -11,13 +11,17 @@
                 the box is open and never keeps it open on its own.
 
    So a fully healthy account sees NO box, and no player is ever shown a
-   provider line with nothing behind it. In particular "Game Center not
-   connected" is not a fact about this account until linking can succeed:
+   provider line with nothing behind it. In particular "Game Center not linked
+   to this account" is not a fact worth painting until linking can succeed:
    iOS signs the LOCAL PLAYER in at launch, which is a different thing from
    attaching that identity here, and while the gateway origin is unset the
    attach cannot complete anywhere. Reach is read from the one-tap registry —
    the same capability list the auth sheet offers its buttons from — so this
-   view cannot drift from what the app can really perform. */
+   view cannot drift from what the app can really perform.
+
+   Every driver therefore carries its own control: a row and the tap that
+   answers it are ONE offer, which is why they are modelled as one value
+   instead of a row list plus a single privileged button. */
 import { t, type LocaleKey } from '../../i18n/index.ts';
 import { $ } from '../../ui/dom.ts';
 import { availableTaps } from '../identity/identity.ts';
@@ -28,10 +32,12 @@ type Copy = LocaleKey<'online'>;
 /** Whether each provider could actually complete an account link right here. */
 export interface ProviderReach { apple: boolean; gameCenter: boolean }
 
+/** What one provider row says, and the tap (if any) that changes it. */
+export interface ProviderOffer { state: Copy; action: Copy | null }
+
 export interface AccountProviderView {
-  gameCenter: Copy | null;
-  apple: Copy | null;
-  action: Copy | null;
+  gameCenter: ProviderOffer | null;
+  apple: ProviderOffer | null;
 }
 
 export function providerReach(): ProviderReach {
@@ -53,18 +59,30 @@ export function accountProviderView(
   const gameCenterDriver = reach.gameCenter && !gameCenterLinked;
   if (!appleDriver && !gameCenterDriver) return null;
   return {
-    gameCenter: gameCenterDriver ? 'profile.gameCenterNotLinked'
-      : gameCenterLinked ? 'profile.gameCenterLinked' : null,
-    apple: appleDriver ? (appleLinked ? 'profile.appleRepair' : 'profile.appleNotLinked')
-      : appleLinked ? 'profile.appleLinked' : null,
-    action: appleDriver ? (appleLinked ? 'profile.repairApple' : 'profile.addApple') : null,
+    gameCenter: gameCenterDriver
+      ? { state: 'profile.gameCenterNotLinked', action: 'profile.connectGameCenter' }
+      : gameCenterLinked ? { state: 'profile.gameCenterLinked', action: null } : null,
+    apple: appleDriver
+      ? {
+        state: appleLinked ? 'profile.appleRepair' : 'profile.appleNotLinked',
+        action: appleLinked ? 'profile.repairApple' : 'profile.addApple',
+      }
+      : appleLinked ? { state: 'profile.appleLinked', action: null } : null,
   };
 }
 
-function paintRow(selector: string, key: Copy | null): void {
-  const row = $(selector);
-  row.hidden = !key;
-  row.textContent = key ? t('online', key) : '';
+/* Row and control are painted together and UNCONDITIONALLY: a control left
+   un-hidden inside a hidden box is still an offer as far as any query for it
+   — or any stray tap on a re-shown box — is concerned. */
+function paintOffer(row: string, control: string, offer: ProviderOffer | null): void {
+  const line = $(row);
+  line.hidden = !offer;
+  line.textContent = offer ? t('online', offer.state) : '';
+  const button = $(control) as HTMLButtonElement;
+  button.hidden = !offer?.action;
+  if (!offer?.action) return;
+  button.setAttribute('data-i18n', `online:${offer.action}`);
+  button.textContent = t('online', offer.action);
 }
 
 export function paintAccountProviders(
@@ -74,13 +92,6 @@ export function paintAccountProviders(
 ): void {
   const view = accountProviderView(user, identity, reach);
   $('#accProviders').hidden = !view;
-  paintRow('#accGameCenterState', view?.gameCenter ?? null);
-  paintRow('#accAppleState', view?.apple ?? null);
-  /* Set unconditionally: a control left un-hidden inside a hidden box is still
-     an offer as far as any query for it is concerned. */
-  const apple = $('#btnLinkApple') as HTMLButtonElement;
-  apple.hidden = !view?.action;
-  if (!view?.action) return;
-  apple.setAttribute('data-i18n', `online:${view.action}`);
-  apple.textContent = t('online', view.action);
+  paintOffer('#accGameCenterState', '#btnLinkGameCenter', view?.gameCenter ?? null);
+  paintOffer('#accAppleState', '#btnLinkApple', view?.apple ?? null);
 }

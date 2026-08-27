@@ -15,43 +15,14 @@
 // It runs the Apple provider instead, and its failure lands on the profile's
 // own error line.
 //
-// Everything below is read as PAINT — rect plus computed display/visibility —
-// because `hidden` on a row inside .providerbox is a claim about the DOM, and
+// Everything below is read as PAINT (see harness/account-access-view.mjs):
+// `hidden` on a row inside .providerbox is a claim about the DOM, and
 // `.providerbox p{display:flex}` outranks the attribute on specificity alone.
+import { readAccountAccess as readAccess } from '../harness/account-access-view.mjs';
 
 const HEALTHY = { gameCenterLinked: false, appleLinked: true, appleRevocationReady: true };
 const REPAIRABLE = { gameCenterLinked: false, appleLinked: true, appleRevocationReady: false };
 const BARE = { gameCenterLinked: false, appleLinked: false, appleRevocationReady: false };
-
-const readAccess = (page) => page.evaluate(() => {
-  const seen = (selector) => {
-    const element = document.querySelector(selector);
-    if (!element) return null;
-    const box = element.getBoundingClientRect();
-    const style = getComputedStyle(element);
-    const painted = box.width > 0 && box.height > 0
-      && style.display !== 'none' && style.visibility !== 'hidden'
-      && Number(style.opacity) > 0;
-    return {
-      text: element.textContent?.trim() ?? '',
-      shown: painted,
-      // A reply the player must scroll to find has not been delivered.
-      inView: painted && box.top < innerHeight && box.bottom > 0,
-    };
-  };
-  return {
-    box: seen('#accProviders'),
-    gameCenter: seen('#accGameCenterState'),
-    apple: seen('#accAppleState'),
-    button: seen('#btnLinkApple'),
-    guestCard: seen('#accGuest'),
-    error: seen('#onAccErr'),
-    authSheets: document.querySelectorAll('.authsheet').length,
-    authTitle: document.getElementById('onAuthTitle')?.textContent ?? '',
-    accountShown: document.getElementById('onAccount')?.hidden === false,
-    appleCalls: globalThis.__appleSignIn?.calls ?? 0,
-  };
-});
 
 async function probeAppleTap(page) {
   await page.waitForSelector('#btnLinkApple:not([hidden])');
@@ -82,8 +53,8 @@ async function probeGuestUpgradeIntact(page) {
 function checkNoBox(check, label, state) {
   check(state?.accountShown === true && state.box?.shown === false,
   `${label} was still shown the ACCOUNT ACCESS box`, state);
-  check(state?.button?.shown === false,
-  `${label} was offered an Apple control`, state?.button);
+  check(state?.appleButton?.shown === false && state?.gameCenterButton?.shown === false,
+  `${label} was offered a provider control`, state);
   check(state?.gameCenter?.shown === false && state?.gameCenter?.text === '',
   `${label} was told about Game Center linking it cannot perform`, state?.gameCenter);
   check(state?.apple?.shown === false && state?.apple?.text === '',
@@ -113,10 +84,10 @@ export async function runAccountAccessScenarios(suite) {
   'a linked member was shown the guest card instead of ACCOUNT ACCESS', before);
   check(before?.apple?.text === 'Apple sign-in connected · deletion access needs repair'
     && before.apple.shown === true
-    && before.button?.shown === true && before.button.text === 'Repair Apple access',
+    && before.appleButton?.shown === true && before.appleButton.text === 'Repair Apple access',
   'the profile does not offer repair for a linked account with no deletion credential', before);
   check(before?.gameCenter?.shown === false && before?.gameCenter?.text === '',
-  'the repair box carried a Game Center row this build cannot link', before?.gameCenter);
+  'the repair box carried a Game Center row this device cannot link', before?.gameCenter);
   check(before?.error?.text === '',
   'the profile carried a stale error before the repair tap', before);
 
@@ -139,10 +110,10 @@ export async function runAccountAccessScenarios(suite) {
   check(bareBefore?.box?.shown === true
     && bareBefore.apple?.text === 'Apple sign-in not connected'
     && bareBefore.apple.shown === true
-    && bareBefore.button?.shown === true && bareBefore.button.text === 'Add Apple sign-in',
+    && bareBefore.appleButton?.shown === true && bareBefore.appleButton.text === 'Add Apple sign-in',
   'an unlinked member with a working Apple provider was not offered it', bareBefore);
   check(bareBefore?.gameCenter?.shown === false && bareBefore?.gameCenter?.text === '',
-  'the add box carried a Game Center row this build cannot link', bareBefore?.gameCenter);
+  'the add box carried a Game Center row this device cannot link', bareBefore?.gameCenter);
   check(add.probeResult?.after?.appleCalls === 1
     && add.probeResult.after.authSheets === 0,
   'Add Apple sign-in did not run the Apple provider', add.probeResult?.after);

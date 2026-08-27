@@ -100,16 +100,18 @@ told "Game Center not connected" while linking cannot succeed — iOS signing th
 local player in at launch is a different fact from attaching that identity to a
 Knucklebones account. `tests/apple-identity.test.ts` decides the whole matrix
 without a device; `tests/browser/online-ui/scenarios/account-access.mjs` reads
-the painted rows. When rung 3 deploys, the Game Center row appears with the copy
-it already has and needs its own connect control.
+the painted rows. The Game Center row carries its own connect control
+(`src/online/screens/account-game-center-link.ts`), so it appears already
+answerable the moment the gateway origin makes linking reachable.
 
-**Rung 3 — Game Center: repository implementation complete, not deployed.** The
-signature verification is tested against Apple's real production certificates,
-but nothing has run on a device. The Edge Function and the held
-`20260826153100_game_center_ids.sql` plus
-`20260826153101_game_center_service_grants.sql` migrations stay un-deployed
-until a signed build can exercise them — an auth endpoint that has never
-answered a real request does not belong in production. Native authentication
+**Rung 3 — Game Center: turned on; deploying.** The signature verification is
+tested against Apple's real production certificates, and as of 2026-08-27 the
+owner has lifted the hold: `20260826153100_game_center_ids.sql` and
+`20260826153101_game_center_service_grants.sql` are applied, and the identity
+gateway is deployed with a probe-verified origin allow-list. What remains is
+the `gc-auth` deploy itself and the signed-device pass that accepts it — in
+that order, because a device can only exercise a *deployed* function. See
+[the Game Center rollout](#the-game-center-rollout). Native authentication
 is initialized once at launch and published as state; online restore consumes
 that state without installing a second `authenticateHandler`. Only the stable
 `teamPlayerID` is accepted. A linked session is reasserted before each new duel;
@@ -192,23 +194,80 @@ plugins, assets, ids, versions, and synced web bytes agree. The Apple button
 appears in native builds only because `available()` looks for the global
 Capacitor bridge; web code imports no native plugin.
 
-Game Center remains one held owner rollout, in this order:
+### The Game Center rollout
 
-1. preview `mise exec -- npm run db:production:apple-game-center`, then apply
-   the guarded `apple-game-center` allow-list with the explicit production
-   opt-in. It contains `20260826153100_game_center_ids.sql`,
-   `20260826153101_game_center_service_grants.sql`, and
-   `20260826153102_apple_identity_credentials.sql` in that order;
-2. deploy `cloudflare/identity-gateway`, configure its strict web/native origin
-   allow-list, rate-limit binding, upstream URL/publishable key, and a shared
-   `GC_AUTH_ORIGIN_SECRET` also set on `gc-auth`;
-3. deploy `identity-status`, `apple-token-register`, `apple-revocation-retry`,
-   and the updated `account-delete`, then schedule the retry function with its
-   secret;
-4. deploy `gc-auth`, then exercise launch restore, attach, account switching,
-   Apple repair, deletion, and revocation with a signed physical device.
+**The hold is lifted.** The owner turned Game Center sign-in on, and the three
+prerequisites that blocked it were verified in production on 2026-08-27:
 
-Hold the whole sequence until the device and rate-limit prerequisite exist.
+| Prerequisite | Verified state |
+|---|---|
+| Apple/Game Center migrations | **applied** — `20260826153100_game_center_ids.sql`, `20260826153101_game_center_service_grants.sql`, `20260826153102_apple_identity_credentials.sql`, `20260826181000_apple_revocation_unstage.sql` |
+| `cloudflare/identity-gateway` | **deployed** at `https://knucklebones-identity-gateway.reichjoh.workers.dev`, with all four secrets/bindings configured: the rate-limit binding, the upstream URL, the upstream publishable key, and the shared `GC_AUTH_ORIGIN_SECRET` also set on `gc-auth` |
+| Gateway origin allow-list | **corrected and probe-verified** — see below |
+
+The allow-list is now this exact value:
+
+```text
+ALLOWED_ORIGINS=https://knucklebones-asg.pages.dev,https://localhost
+```
+
+and a live `OPTIONS` probe against the deployed Worker answered:
+
+| `Origin:` sent | Response |
+|---|---|
+| `https://knucklebones-asg.pages.dev` | 200 |
+| `https://localhost` | 200 |
+| `capacitor://localhost` | **403** |
+| anything else | **403** |
+
+The third row is the point. The native entry is **derived, not chosen**:
+Capacitor serves the WebView from `<scheme>://localhost`, where the scheme is
+`server.iosScheme` / `server.androidScheme` in `native/capacitor.config.json`;
+both are `https` here, so the shipped app's origin is `https://localhost` and
+**not** `capacitor://localhost` — that is only iOS's default while `iosScheme`
+is unset, and this repository overrides it. The Worker matches the `Origin`
+header as an exact string, so allow-listing the wrong one is a silent 403
+`origin-not-allowed` on every Game Center exchange from the shipped app while
+the web build keeps working. Flip either scheme and this allow-list must move
+with it. `tests/identity-gateway-origins.test.ts` pins that derivation against
+this list and `cloudflare/identity-gateway/README.md`; no repository test can
+read the deployed Worker, so the dashboard value is applied by hand and
+re-probed as above.
+
+`VITE_IDENTITY_GATEWAY_URL` must be set to that Worker origin where each
+surface is *built* — the Cloudflare Pages project's environment variables for
+web, the GitHub Actions build, and the shell that runs `npm run build` before
+`native:sync:ios` / `native:sync:android` for an archive. An empty value leaves
+`src/config.ts` posting to a relative `/v1/game-center` and simply never offers
+the Game Center row.
+
+#### Remaining steps, in this order
+
+1. **Identity set.** Preview
+   `mise exec -- npm run functions:production:identity`, then apply it with
+   `KB_ALLOW_PRODUCTION_IDENTITY_FUNCTIONS=1 … -- --apply`. It deploys
+   `identity-status`, `apple-token-register` and `apple-revocation-retry`. The
+   updated `account-delete` is **not** in that set — it belongs to the ranked
+   plan and ships through `functions:production:rune-trial`. Then schedule
+   `apple-revocation-retry` with its cron secret.
+2. **The auth boundary, alone.** Preview
+   `mise exec -- npm run functions:production:game-center`, then apply it with
+   `KB_ALLOW_PRODUCTION_GAME_CENTER_FUNCTIONS=1 … -- --apply`. That plan
+   contains `gc-auth` and nothing else, on its own opt-in and its own database
+   gate (the `game_center_ids` mapping plus its service grants), because
+   `gc-auth` answers unauthenticated requests — `verify_jwt = false` — and a
+   bad deploy of it is an open door rather than a degraded feature. The rollout
+   deploys it, re-reads its row as `ACTIVE` with that exact posture, then
+   downloads the deployed closure and byte-compares it against what was
+   uploaded.
+3. **Acceptance, immediately after step 2.** On a signed physical device,
+   exercise launch restore, attach, account switching, Apple repair, deletion
+   and revocation through the gateway. This pass is the *acceptance* step for
+   `gc-auth`, not a precondition for deploying it: the device exercises the
+   deployed function, so requiring the pass first is a condition no rollout
+   could ever satisfy. If it fails, the fix is a corrected redeploy of the same
+   single-function plan.
+
 Repository tests do not mean any of these production actions happened.
 
 ## Housekeeping this creates

@@ -3,7 +3,10 @@
 // the offline game's boot path must never depend on it.
 import { callFunction, supa } from '../api/client.ts';
 import { onlineMessage } from '../message-copy.ts';
-import { assertCurrentGameCenter, restoreGameCenterAutomatically } from './identity.ts';
+import {
+  GAME_CENTER, assertCurrentGameCenter, linkGuestGameCenter,
+  resetGuestGameCenterLink, restoreGameCenterAutomatically,
+} from './identity.ts';
 import { gameCenterState, waitForGameCenter } from '../../native/game-center.ts';
 import {
   clearRuneCollectionSnapshot,
@@ -79,6 +82,7 @@ export async function signOut(): Promise<void> {
   clearRuneCollectionSnapshot();
   await supa().auth.signOut();
   acceptedGameCenterRevision = null;
+  resetGuestGameCenterLink();
   try { localStorage.setItem(MANUAL_AUTH, '1'); } catch { /* forgetful host */ }
   clearProfileCache();
 }
@@ -144,7 +148,24 @@ export function gameCenterSessionAction(
 /* The first rung, taken silently: whoever asks for ranked without a session
    becomes a guest and keeps playing. Returns null when the project has
    anonymous sign-ins switched off — the caller then falls back to the sign-in
-   panel, which is exactly how this game behaved before guests existed. */
+   panel, which is exactly how this game behaved before guests existed.
+
+   THE ASYMMETRY BELOW IS DELIBERATE. Signing a device's Game Center player in
+   when there is NO session is automatic (restoreGameCenterAutomatically), and
+   safe: it can only hand the player the account that identity already owns.
+   Attaching that identity to an account that already exists is automatic for
+   exactly ONE kind of account — a GUEST, whose only proof of ownership dies
+   with this install and which therefore has no way back in at all
+   (identity.ts's linkGuestGameCenter carries the full reasoning).
+
+   Every account already carrying Apple or email is deliberately EXCLUDED and
+   keeps the profile's explicit one-tap control
+   (screens/account-game-center-link.ts): it already survives a reinstall, so a
+   silent bind buys it nothing, while the Game Center player signed in on a
+   shared or family device is often not the person holding it — and a bind is
+   permanent. What ensureIdentity does for such a session is otherwise only the
+   reverse check: assert that the CURRENT native player still owns this
+   account, and refuse to keep playing when they do not. */
 export async function ensureIdentity(): Promise<Me | null> {
   const here = await currentUser();
   if (here) {
@@ -158,7 +179,17 @@ export async function ensureIdentity(): Promise<Me | null> {
       nativeState.revision,
     );
     if (action === 'retry') return null;
-    if (action === 'continue') return here;
+    if (action === 'continue') {
+      const attached = await linkGuestGameCenter(
+        { guest: here.guest, gameCenterLinked: providers?.gameCenterLinked ?? null },
+        nativeState,
+        { assert: assertCurrentGameCenter, attach: () => GAME_CENTER.attach(),
+          acknowledge: acknowledgeCurrentAccount },
+      );
+      /* A completed attach hangs an address on this account, so the Me read
+         above is stale — re-read rather than reporting a guest who is not. */
+      return attached ? (await currentUser() ?? here) : here;
+    }
     const ownership = await assertCurrentGameCenter();
     if (ownership === 'match') {
       acceptedGameCenterRevision = nativeState.revision;

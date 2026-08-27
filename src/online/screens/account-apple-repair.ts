@@ -7,44 +7,25 @@
    account that lacks it is that same one step, which is why both labels of
    #btnLinkApple share this implementation instead of forking a second flow.
    #btnKeepAcc keeps the upgrade sheet; it is a different question. */
-import { Sfx } from '../../ui/audio.ts';
-import { $ } from '../../ui/dom.ts';
 import { APPLE, type AppleIdentity } from '../identity/apple-identity.ts';
-import { onlineMessage, repaintOnlineMessage } from '../message-copy.ts';
+import { onlineMessage } from '../message-copy.ts';
+import {
+  bindAccountProviderControl,
+  type AccountProviderPorts,
+} from './account-provider-control.ts';
 
-export interface AccountAppleRepairPorts {
-  clearError(): void;
-  showError(render: () => string): void;
-  /* Re-reads identity-status and repaints the provider rows, so a repaired
-     account loses its warning (and its button) without a manual reload. */
-  refresh(): Promise<unknown>;
+export interface AccountAppleRepairPorts extends AccountProviderPorts {
   apple?: Pick<AppleIdentity, 'repair'>;
 }
 
 export function bindAccountAppleRepair(ports: AccountAppleRepairPorts): void {
   const provider = ports.apple ?? APPLE;
-  const button = $('#btnLinkApple') as HTMLButtonElement;
-  button.addEventListener('click', async () => {
-    Sfx.tap();
-    ports.clearError();
-    button.disabled = true;
-    let message: string | null;
-    try {
-      message = await provider.repair();
-    } catch {
-      message = onlineMessage('errors.appleFailed');
-    }
-    button.disabled = false;
-    /* Same contract as the auth sheet's one-tap row: null is success, '' is a
-       player-cancelled native sheet with nothing to report, anything else is
-       copy the player must read. */
-    if (message !== null) {
-      if (message) {
-        const returned = message;
-        ports.showError(() => repaintOnlineMessage(returned));
-      }
-      return;
-    }
-    await ports.refresh();
+  bindAccountProviderControl({
+    clearError: ports.clearError,
+    showError: ports.showError,
+    refresh: ports.refresh,
+    control: '#btnLinkApple',
+    run: () => provider.repair(),
+    rejected: () => onlineMessage('errors.appleFailed'),
   });
 }

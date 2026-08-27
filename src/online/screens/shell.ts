@@ -121,10 +121,13 @@ const OVERLAY = `
     </div>
     <!-- Every row here is painted in or out by account-provider-view: the box
          exists only while something in it is actionable, so each row starts
-         hidden rather than stating a provider fact nobody has checked yet. -->
+         hidden rather than stating a provider fact nobody has checked yet.
+         Each control sits directly under the row it answers — the pair is one
+         offer, and neither half is ever painted without the other. -->
     <div class="guestbox providerbox" id="accProviders" hidden>
       <b data-i18n="online:profile.accountAccess">ACCOUNT ACCESS</b>
       <p id="accGameCenterState" hidden></p>
+      <button class="btn gamecenter" id="btnLinkGameCenter" data-i18n="online:profile.connectGameCenter" hidden>Connect Game Center</button>
       <p id="accAppleState" hidden></p>
       <button class="btn apple" id="btnLinkApple" data-i18n="online:profile.addApple" hidden>Add Apple sign-in</button>
     </div>
