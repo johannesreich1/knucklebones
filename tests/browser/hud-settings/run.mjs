@@ -2,6 +2,7 @@ import pkg from 'playwright';
 import { serveTree } from '../../serve.mjs';
 import { createBrowserReport, capturePageErrors } from '../../support/browser-report.mjs';
 import { selectScenarios, validateScenarioShards } from '../../support/browser-scenarios.mjs';
+import { guardRoomAfter } from '../../support/modal-room.mjs';
 import { runHudPopupScenarios } from './scenarios/hud-popups.mjs';
 import { runOfflineRestartScenarios } from './scenarios/offline-restart.mjs';
 import { runSettingsNavigationScenarios } from './scenarios/settings-navigation.mjs';
@@ -66,7 +67,16 @@ const suite = {
   page, ctx, browser, F, problems, errs, out, check,
   LOCALE_REGISTRY, RESOURCES, modeCopy, spellCopy, t,
 };
-for (const scenario of scenarios) await scenario.run(suite);
+/* EVERY SCENARIO HERE DRIVES THE SAME PAGE, and this tree opens real sheets
+   (the offline quit question, the in-game badge card). A card left standing
+   swallows the next scenario's every tap, so the room is checked — and put
+   back — between them, against the scenario that left it. See
+   tests/support/modal-room.mjs. */
+for (const scenario of scenarios) {
+  await scenario.run(suite);
+  await guardRoomAfter(page, `HUD settings scenario "${scenario.id}"`, problems,
+    { endsWithModal: scenario.endsWithModal === true });
+}
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));
 await browser.close();   // the server is in-process and unref'd — it goes with us
