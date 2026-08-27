@@ -53,6 +53,45 @@ jobs:
       - run: npm ci
       - run: node tools/check-functions.mjs
         if: matrix.shard == 'ci-1'
+      # THE APP SHIPS NO FONT FILES. src/styles/page.css names only OS faces:
+      #   ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI",
+      #   Roboto, sans-serif
+      # A hosted runner has none of the first five, and on Linux `system-ui` is
+      # not a font — it is whatever fontconfig ranks first. On this image that
+      # is DejaVu Sans; on the bare Playwright image it is WenQuanYi Zen Hei, a
+      # Chinese bitmap face. So the pixel suites were measuring a rendering no
+      # player will ever see and reporting its metrics as layout defects.
+      #
+      # Roboto is the one family in the app's OWN stack that is redistributable
+      # and packaged (Apple's are neither), and it is exactly what `system-ui`
+      # resolves to on Android — so binding the generics to it makes these jobs
+      # measure the shipping Android rendering instead of a Linux accident.
+      # Installing the package is NOT enough on its own: `system-ui` precedes
+      # `Roboto` in the stack, so without the alias below the runner still binds
+      # DejaVu Sans and every number stays exactly as wrong as before.
+      #
+      # `<alias><prefer>` is deliberately narrower than a `prepend_first` match
+      # rule: it rewrites ONLY these two generic names, so a test that asks for
+      # an explicit `font-family: "DejaVu Sans"` still gets DejaVu Sans.
+      # Pinned like the bundletool, Supabase and wrangler verifiers above.
+      - name: Render in a font the app's own stack names
+        env:
+          FONTS_ROBOTO_VERSION: '2:0~20170802-3'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            "fonts-roboto-unhinted=${FONTS_ROBOTO_VERSION}"
+          printf '%s\n' \
+            '<?xml version="1.0"?>' \
+            '<!DOCTYPE fontconfig SYSTEM "urn:fontconfig:fonts.dtd">' \
+            '<fontconfig>' \
+            '  <alias binding="strong"><family>sans-serif</family><prefer><family>Roboto</family></prefer></alias>' \
+            '  <alias binding="strong"><family>system-ui</family><prefer><family>Roboto</family></prefer></alias>' \
+            '</fontconfig>' \
+            | sudo tee /etc/fonts/conf.d/59-knucklebones-app-stack.conf >/dev/null
+          # Fail HERE with the cause rather than 300 lines later as geometry.
+          fc-match system-ui | grep -q '"Roboto"'
+          fc-match sans-serif | grep -q '"Roboto"'
       # chromium for the file/served suites and col-score-bench; webkit because
       # practice-sheet-stability and the online-ui tree launch it. Runners are
       # isolated and keep JOBS=1 inside

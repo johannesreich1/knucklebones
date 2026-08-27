@@ -1,6 +1,7 @@
 import pkg from 'playwright';
 import { serveTree } from '../../serve.mjs';
 import { createBrowserReport, capturePageErrors } from '../../support/browser-report.mjs';
+import { checkRenderingFont } from '../../support/rendering-font.mjs';
 import { LOCALE_IDS } from './harness/locale-control.mjs';
 import { requiredHomeTargets } from './harness/surface-readiness.mjs';
 import { LOCALE_REGISTRY } from '../../../src/i18n/locale.ts';
@@ -154,6 +155,20 @@ const scenarios = smoke ? [['smoke', runLocaleSmokeScenario]] : [
   ['constrained-surfaces', runConstrainedSurfaceScenarios],
   ['rune-ritual-lock', runRuneRitualLockScenarios],
 ];
+
+/* This tree measures wrapped titles, clipped surfaces and 44px hit targets —
+   all of them font metrics. On a host rendering a face the app never names
+   those numbers describe nobody's phone, so say so instead of reporting a
+   translation as too long. See tests/support/rendering-font.mjs. */
+{
+  const page = await browser.newPage();
+  const font = await checkRenderingFont(page);
+  out.font = font;
+  check(!font.problem,
+    'not rendering in a font the app names, so every geometry number below is '
+    + 'measured against a face no player has', font);
+  await page.close();
+}
 
 try {
   for (const scenario of scenarios) {

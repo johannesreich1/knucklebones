@@ -1,3 +1,7 @@
+// THE AUTH SHEET AS A SHEET: how it stands over Home or Profile, what it
+// stacks under, what a drag and an Escape do to it, and where focus lands when
+// it goes. What SUBMITTING it does to the flow lives in auth-credentials.mjs.
+
 async function beginTouchDrag(page, locator, distance, pointerId) {
   const box = await locator.boundingBox();
   if (!box) return null;
@@ -214,97 +218,6 @@ async function probeCardDrag(page) {
   return { held, sprung, dismissed };
 }
 
-async function submitCredentials(page) {
-  await page.fill('#onEmail', 'player@example.test');
-  await page.fill('#onPass', 'unchanged-secret');
-  await page.click('#onAuthActs .primary');
-}
-
-async function probeCredentialError(page, routes) {
-  await submitCredentials(page);
-  await page.waitForFunction(() => document.getElementById('onAuthErr')?.textContent?.trim());
-  const state = await page.evaluate(() => ({
-    sheetOpen: !!document.querySelector('.authsheet:not(.foout)'),
-    email: document.getElementById('onEmail')?.value,
-    password: document.getElementById('onPass')?.value,
-    error: document.getElementById('onAuthErr')?.textContent?.trim(),
-    buttonsEnabled: [...document.querySelectorAll('#onAuth button')]
-      .filter((button) => !button.hidden)
-      .every((button) => !button.disabled),
-  }));
-  return { ...state, passwordCalls: routes.passwordCalls() };
-}
-
-async function probeCredentialTransition(page, routes) {
-  await submitCredentials(page);
-  await page.waitForFunction(() => !document.querySelector('.authsheet'));
-  await page.waitForSelector('#onLoading:not([hidden])');
-  const transition = await page.evaluate(() => ({
-    onlineOn: document.getElementById('ovOnline')?.classList.contains('on'),
-    loadingVisible: document.getElementById('onLoading')?.hidden === false,
-    authRestored: document.getElementById('onAuth')?.parentElement?.classList.contains('pbody'),
-    authHidden: document.getElementById('onAuth')?.hidden,
-    focused: document.activeElement?.id,
-  }));
-
-  /* Reopen auth while the successful run is still loading Profile. The old
-     continuation must never target this newer sheet when it eventually
-     finishes. A real tap cannot reach the still-hidden account button yet;
-     invoking its bound action directly creates the exact ownership race. */
-  await page.evaluate(() => document.getElementById('btnHaveAcc').click());
-  await page.waitForSelector('.authsheet:not(.foout)');
-  await page.waitForFunction(() => document.getElementById('onAccount')?.hidden === false,
-    null, { timeout: 4000 }).catch(() => { /* the assertion below reports the state */ });
-  const settled = await page.evaluate(() => ({
-    secondSheetOpen: !!document.querySelector('.authsheet:not(.foout)'),
-    accountVisible: document.getElementById('onAccount')?.hidden === false,
-    onlineInert: document.getElementById('ovOnline')?.inert,
-  }));
-  return {
-    transition,
-    settled,
-    passwordCalls: routes.passwordCalls(),
-    profileCalls: routes.profileCalls(),
-    tierProfileCalls: routes.tierProfileCalls(),
-  };
-}
-
-async function probeCancelledTransition(page, routes) {
-  await submitCredentials(page);
-  await page.waitForFunction(() => !document.querySelector('.authsheet'));
-  await page.waitForSelector('#onLoading:not([hidden])');
-  await page.click('#btnOnlineBack');
-  await page.waitForFunction(() => !document.getElementById('ovOnline')?.classList.contains('on'));
-  await page.waitForTimeout(500);
-  const state = await page.evaluate(() => ({
-    homeOn: document.getElementById('ovStart')?.classList.contains('on'),
-    onlineOn: document.getElementById('ovOnline')?.classList.contains('on'),
-    visiblePanels: [...document.querySelectorAll('#ovOnline .panel')]
-      .filter((panel) => !panel.hidden && panel.id !== 'onLoading')
-      .map((panel) => panel.id),
-  }));
-  return {
-    ...state,
-    profileCalls: routes.profileCalls(),
-    tierProfileCalls: routes.tierProfileCalls(),
-  };
-}
-
-async function probeAccountCredentialSuccess(page, routes) {
-  await page.click('#btnHaveAcc');
-  await submitCredentials(page);
-  await page.waitForFunction(() => !document.querySelector('.authsheet'));
-  await page.waitForSelector('#onAccount:not([hidden])');
-  return page.evaluate((passwordCalls) => ({
-    passwordCalls,
-    onlineOn: document.getElementById('ovOnline')?.classList.contains('on'),
-    accountVisible: document.getElementById('onAccount')?.hidden === false,
-    queueVisible: document.getElementById('onQueue')?.hidden === false,
-    title: document.getElementById('onTitle')?.textContent,
-    focused: document.activeElement?.id,
-  }), routes.passwordCalls());
-}
-
 export async function runAuthModalScenarios(suite) {
   const { visit, out, check } = suite;
   const sessionless = await visit({ anonymous: 422, skipStandardProbes: true,
@@ -356,40 +269,4 @@ export async function runAuthModalScenarios(suite) {
   check(d?.held.cardDragMode && !d.held.overflowMode && d.held.dy >= 35
     && d.sprung.open && d.sprung.dy <= 1 && !d.dismissed.homeInert && d.dismissed.authRestored,
   'a fitting auth sheet did not follow, spring back, and dismiss from its shared card surface', d);
-
-  const error = await visit({ anonymous: 422, passwordAuth: 'error', skipStandardProbes: true,
-    probe: probeCredentialError });
-  out.authCredentialError = error.probeResult;
-  const e = error.probeResult;
-  check(e?.passwordCalls === 1 && e.sheetOpen && e.error && e.buttonsEnabled
-    && e.email === 'player@example.test' && e.password === 'unchanged-secret',
-  'credential error dismissed, locked, or rebuilt the auth form', e);
-
-  const transition = await visit({ anonymous: 422, passwordAuth: 'success', dataDelay: 700,
-    skipStandardProbes: true, probe: probeCredentialTransition });
-  out.authCredentialTransition = transition.probeResult;
-  const c = transition.probeResult;
-  check(c?.passwordCalls === 1 && c.transition.onlineOn && c.transition.loadingVisible
-    && c.transition.authRestored && c.transition.authHidden && c.transition.focused === 'onTitle',
-  'successful credentials did not atomically leave auth for the owned loading view', c);
-  check(c?.profileCalls >= 2 && c.tierProfileCalls >= 2
-    && c.settled.secondSheetOpen && c.settled.accountVisible
-    && c.settled.onlineInert,
-  'an older successful transition closed or displaced a newer auth sheet', c);
-
-  const cancelled = await visit({ anonymous: 422, passwordAuth: 'success', dataDelay: 700,
-    skipStandardProbes: true, probe: probeCancelledTransition });
-  out.authCredentialCancelled = cancelled.probeResult;
-  const x = cancelled.probeResult;
-  check(x?.homeOn && !x.onlineOn && x.profileCalls === 1 && x.tierProfileCalls === 1
-    && x.visiblePanels.length === 0,
-    'Back during credential loading allowed the stale destination route to continue', x);
-
-  const accountSuccess = await visit({ passwordAuth: 'success', skipStandardProbes: true,
-    probe: probeAccountCredentialSuccess });
-  out.authCredentialAccount = accountSuccess.probeResult;
-  const p = accountSuccess.probeResult;
-  check(p?.passwordCalls === 1 && p.onlineOn && p.accountVisible && !p.queueVisible
-    && p.title === 'PROFILE' && p.focused === 'onTitle',
-  'account-origin sign-in did not return to Profile', p);
 }
