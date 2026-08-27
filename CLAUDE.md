@@ -122,3 +122,30 @@ whether focused/specialized gates cover the affected surface decisively; use
 the full gate when the scope or remaining risk warrants it, not automatically
 for every localized change. Live tests are explicit, environment-driven, and
 never part of the default gate.
+
+**A green local gate is not a green pipeline.** The gate here runs on macOS;
+hosted CI runs on `ubuntu-latest`, and the two disagree about anything the
+operating system supplies — fonts above all, since the app ships none and its
+stack asks for faces only Apple provides. Hosted CI can therefore be red for
+days while every local run passes. Read `gh run list --branch main` before
+claiming the pipeline is green, before wiring anything to CI, and before
+reporting a release as verified.
+
+**Let CI judge what only CI can judge.** The workflow runs on `pull_request`
+as well as on pushes to `main`, so a change whose whole point is the hosted
+environment — a CI config, a Linux rendering fix — belongs on a branch with a
+PR first. That returns a real ubuntu-latest verdict without a release, a
+native sync, or a deploy, and it costs about half the time of finding out
+through `main`. Release once it is actually green. Everything else still ships
+through `tools/release-main.mjs`: `main` deploys on push, so a normal change
+still earns the full gate before it goes.
+
+**Never answer a rendering failure by moving the number.** A geometry
+assertion that fails only on the hosted runner is usually measuring the wrong
+font, not a layout that grew. Widening a budget, or editing a declared card
+height until CI agrees, bakes that runner's metrics into source and makes the
+app wrong for the players it was already right for — this repo has done it
+twice (`e0539dc`, `829ee7d` inflated eight design cards by 28-110px). Find
+which face the stack actually bound before touching a measurement;
+`tests/support/rendering-font.mjs` names a wrong-font host as the first
+problem so the misdiagnosis is not available.

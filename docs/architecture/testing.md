@@ -45,6 +45,15 @@ failure alone before treating it as a product regression. Start/completion
 lines include per-suite elapsed time so the schedule can be rebalanced from
 evidence when an owner grows.
 
+The workflow runs on `pull_request` as well as on pushes to `main`, which is
+the cheap way to verify anything whose subject is the hosted environment
+itself — a CI change, or a rendering fix for Linux. Push a branch, open a PR,
+and read the shards: an ubuntu-latest verdict costs no release, no native
+sync, and no deploy, and the macOS gate cannot answer the question anyway.
+Release once the shards are green rather than learning through `main`. And
+because that gate is macOS while CI is Linux, a green local run says nothing
+about the pipeline: read `gh run list --branch main` before calling it green.
+
 Hosted CI selects four coverage-checked `--ci-shard` manifests. Each shard has
 its own checkout, build output, server, and kernel-assigned ports, while using
 one suite worker inside its two-core runner to avoid browser-contention flakes.
