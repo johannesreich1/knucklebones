@@ -291,6 +291,12 @@ export function productionMigrationFetchArgs(workdir, projectRef) {
   ]);
 }
 
+/* Rollouts are applied in dependency order, which is not always timestamp
+   order: a later-stamped migration can reach production first and leave an
+   earlier-stamped peer unable to insert behind it. The CLI refuses that
+   without --include-all. It is safe here precisely because the workdir is the
+   allow-list: only the migrations this rollout copied in can be applied at
+   all, and every one of them is sha256-pinned and audited afterwards. */
 /** Build the complete, fixed argv for a safe migration-only push. */
 export function productionDbPushArgs(workdir, projectRef, dryRun) {
   const directory = normalizeWorkdir(workdir);
@@ -299,7 +305,7 @@ export function productionDbPushArgs(workdir, projectRef, dryRun) {
   return Object.freeze([
     'db', 'push', '--workdir', directory, '--linked', '--project-ref', ref,
     ...(dryRun ? ['--dry-run'] : []),
-    '--skip-vault', '--yes',
+    '--include-all', '--skip-vault', '--yes',
   ]);
 }
 

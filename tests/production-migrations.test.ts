@@ -238,16 +238,20 @@ check('production CLI argv is explicitly bound and excludes expansive inputs', (
   assert.deepEqual(fetch, [
     'migration', 'fetch', '--workdir', '/tmp/kb-safe', '--linked', '--project-ref', PROJECT,
   ]);
+  /* --include-all is scoped by the workdir, which IS the allow-list: only the
+     migrations this rollout copied in exist there, so the flag can never reach
+     a file the plan did not pin. It is required because rollouts apply in
+     dependency order, so an earlier-stamped migration can legitimately need to
+     insert behind a later-stamped one that shipped first. */
   assert.deepEqual(preview, [
     'db', 'push', '--workdir', '/tmp/kb-safe', '--linked', '--project-ref', PROJECT,
-    '--dry-run', '--skip-vault', '--yes',
+    '--dry-run', '--include-all', '--skip-vault', '--yes',
   ]);
   assert.deepEqual(apply, [
     'db', 'push', '--workdir', '/tmp/kb-safe', '--linked', '--project-ref', PROJECT,
-    '--skip-vault', '--yes',
+    '--include-all', '--skip-vault', '--yes',
   ]);
   for (const args of [fetch, preview, apply]) {
-    assert.equal(args.includes('--include-all'), false);
     assert.equal(args.includes('--include-seed'), false);
     assert.equal(args.includes('--include-roles'), false);
     assert.equal(args.includes('reset'), false);
