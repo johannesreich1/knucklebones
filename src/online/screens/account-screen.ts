@@ -167,7 +167,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     $('#accStreak').textContent = formatNumber(0);
     $('#accName').textContent = '';
     $('#accGuest').hidden = true;
-    $('#accProviders').hidden = true;
+    paintAccountProviders(null, null);
     ($('#btnSignOut') as HTMLElement).hidden = true;
     $('#accClaim').hidden = true;
     paintAvatar($('#accDie'), DEFAULT_AVATAR);

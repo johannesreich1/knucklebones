@@ -76,6 +76,7 @@ export const esOnline = {
     notNow: 'Ahora no',
     accountAccess: 'ACCESO A LA CUENTA',
     actionFailed: 'No se ha podido completar',
+    gameCenterBlocked: 'Game Center no se puede vincular',
     gameCenterLinked: 'Game Center vinculado a esta cuenta',
     gameCenterNotLinked: 'Game Center no vinculado a esta cuenta',
     connectGameCenter: 'Vincular Game Center',

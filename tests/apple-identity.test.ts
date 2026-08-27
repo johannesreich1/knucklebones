@@ -346,9 +346,9 @@ const MEMBER = { id: 'p', guest: false, email: 'p@example.test' };
 const GUEST = { id: 'p', guest: true, email: null };
 const linkage = (apple: boolean, ready: boolean, gameCenter = false) =>
   ({ gameCenterLinked: gameCenter, appleLinked: apple, appleRevocationReady: ready });
-const IOS = { apple: true, gameCenter: false };
-const WEB = { apple: false, gameCenter: false };
-const GATEWAY = { apple: true, gameCenter: true };
+const IOS = { apple: true, gameCenter: false, gameCenterUnidentified: false };
+const WEB = { apple: false, gameCenter: false, gameCenterUnidentified: false };
+const GATEWAY = { apple: true, gameCenter: true, gameCenterUnidentified: false };
 const OFFERS = {
   gcLink: { state: 'profile.gameCenterNotLinked', action: 'profile.connectGameCenter' },
   gcDone: { state: 'profile.gameCenterLinked', action: null },
@@ -375,7 +375,8 @@ for (const [why, user, linked, reach, offer] of [
   ['a linked Game Center identity is a way back in, not a second offer',
     MEMBER, linkage(true, false, true), GATEWAY, { gameCenter: OFFERS.gcDone, apple: OFFERS.appleFix }],
   ['the gateway build without Apple still offers Game Center alone',
-    MEMBER, linkage(false, false), { apple: false, gameCenter: true },
+    MEMBER, linkage(false, false), { apple: false, gameCenter: true,
+                                     gameCenterUnidentified: false },
     { gameCenter: OFFERS.gcLink, apple: null }],
 ] as const) {
   const view = accountProviderView(user, linked, reach);

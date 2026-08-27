@@ -5,7 +5,8 @@
    rating it exists to protect, and sits above the account's own controls.
    The sign-in panel stacks the same way whether it is attaching an identity or
    restoring one, because it is one panel (see AUTH in auth-screen.ts). */
-:where(#kbroot) #onAccount .guestbox{display:flex;flex-direction:column;gap:11px;padding:15px;border-radius:16px;
+:where(#kbroot) #onAccount .guestbox,
+:where(#kbroot) #onAccount .warnbox{display:flex;flex-direction:column;gap:11px;padding:15px;border-radius:16px;
   background:rgba(255,209,102,.06);border:1px solid rgba(255,209,102,.22)}
 :where(#kbroot) #onAccount .guestbox b{font-size:10px;letter-spacing:.24em;color:var(--gold)}
 :where(#kbroot) #onAccount .guestbox p{margin:0;font-size:11.5px;line-height:1.55;color:var(--dim);letter-spacing:.02em}
@@ -23,6 +24,14 @@
    claimed (migration 0026), so no "disabled" state exists to style. */
 :where(#kbroot) #onAccount .namebox{background:rgba(var(--p1-rgb),.05);border-color:rgba(var(--p1-rgb),.22)}
 :where(#kbroot) #onAccount .namebox b{color:var(--p1)}
+/* THE STANDING WARNING wears the profile's own boxed shape — same padding,
+   radius and column as the guest, name and provider boxes, because it is the
+   same kind of thing sitting in the same stack — recoloured to the dealt
+   card's amber at the dealt card's own alphas (sheet.css `hued`: 42% frame),
+   so the player who saw the card and the player who never taps are looking at
+   one design. The type inside it is literally the sheet's, below. */
+:where(#kbroot) #onAccount .warnbox{background:color-mix(in srgb,var(--orange) 8%,transparent);
+  border-color:color-mix(in srgb,var(--orange) 42%,transparent)}
 /* the name headline under the ring: identity reads cyan (like the home chip),
    sized between the group label above it and the gold points below */
 :where(#kbroot) #onAccount .accname{font-size:17px;font-weight:900;letter-spacing:.06em;color:var(--p1);
@@ -64,29 +73,42 @@
 :where(#kbroot) #onAuth .btn.tap.apple::before{content:'';font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:1.2em;line-height:1;margin-right:.5em}
 :where(#kbroot) #onAuth .btn.tap.gamecenter{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.3)}
 
-/* ---- THE WARNING CARD (screens/account-problem-sheet.ts) ----
-   The profile's refusals — a provider link that could not complete, a deletion
-   that failed — dealt as the SHARED sheet rather than written into a line
-   below the fold (user call 2026-08-26). Nothing about the card itself is
-   here: its arrival, wash, grabber, drag and three doors are the one component
-   in styles/components/sheet.css, and the frame's amber is that component's
-   own `hued` tint, handed `var(--orange)` — the very token the retired error
-   line wore. This file therefore adds ONLY the two lines of type on it.
+/* ---- THE AMBER WARNING (screens/warning-note.ts) ----
+   The profile says one kind of thing in two postures, and the type below is
+   shared between them so they cannot drift into two designs that merely happen
+   to be orange:
+
+     DEALT    a refusal that answers a tap — a provider link that could not
+              complete, a deletion that failed — on the SHARED sheet rather
+              than written into a line below the fold (user call 2026-08-26).
+     STANDING the profile's `.warnbox` above: true before anything is tapped,
+              painted where the withheld control would have been.
+
+   Nothing about the CARD itself is here: its arrival, wash, grabber, drag and
+   three doors are the one component in styles/components/sheet.css, and the
+   frame's amber is that component's own `hued` tint, handed `var(--orange)` —
+   the very token the retired error line wore. This file adds ONLY the two
+   lines of type, and the standing box's frame beside them.
    Narrow like the library's card, because a sentence reads badly at 356px.
-   Every rule is written from `.faceoff`, the shared overlay this variant rides
-   on: it is the sanctioned lazy-CSS root (tests/cssgraph) and it says out loud
-   that nothing here is a second modal. */
+   Each rule is rooted TWICE rather than at a shared class, because the lazy
+   bundle may only be rooted at a screen id or a sanctioned component
+   (tests/cssgraph): `.faceoff` is the shared overlay this variant rides on and
+   `#onAccount` is the panel the standing box lives in. Two roots, one
+   declaration block — and it says out loud that neither is a second modal. */
 :where(#kbroot) .faceoff.warnsheet .focard{max-width:330px;gap:11px;padding:18px 18px 20px}
 /* the glyph rides the heading's colour (currentColor, ui/chromeicons) and
-   catches the same glow the tint gives the frame, so the card is LIT by the
-   warning rather than merely labelled with one. Matched on the ELEMENT rather
-   than on the chrome icon's own class: that class belongs to a glyph the
-   OFFLINE bundle paints too, and an offline class styled from the lazy sheet
-   is a rule that arrives late or not at all (tests/cssreach). */
-:where(#kbroot) .faceoff.warnsheet .wshead{display:flex;align-items:center;gap:9px;color:var(--orange);
+   catches the same glow the tint gives the frame, so the warning is LIT rather
+   than merely labelled. Matched on the ELEMENT rather than on the chrome
+   icon's own class: that class belongs to a glyph the OFFLINE bundle paints
+   too, and an offline class styled from the lazy sheet is a rule that arrives
+   late or not at all (tests/cssreach). */
+:where(#kbroot) .faceoff.warnsheet .wshead,
+:where(#kbroot) #onAccount .wshead{display:flex;align-items:center;gap:9px;color:var(--orange);
   filter:drop-shadow(0 0 10px color-mix(in srgb,var(--orange) 55%,transparent))}
-:where(#kbroot) .faceoff.warnsheet .wshead svg{flex:0 0 auto}
-:where(#kbroot) .faceoff.warnsheet .wstitle{min-width:0;font-size:11px;font-weight:900;letter-spacing:.2em;
+:where(#kbroot) .faceoff.warnsheet .wshead svg,
+:where(#kbroot) #onAccount .wshead svg{flex:0 0 auto}
+:where(#kbroot) .faceoff.warnsheet .wstitle,
+:where(#kbroot) #onAccount .wstitle{min-width:0;font-size:11px;font-weight:900;letter-spacing:.2em;
   text-transform:uppercase}
 /* The sentence stays the roster's reading colour, never the tint: amber body
    text is amber body text nobody finishes, and this is the half that matters.
@@ -94,5 +116,6 @@
    .mcdetail, the legal box) rather than a colour invented here; it has no
    token yet, and minting one for a fifth caller would leave two spellings of
    the same value across the eager and lazy bundles. */
-:where(#kbroot) .faceoff.warnsheet .wsbody{margin:0;font-size:13px;line-height:1.62;color:#c6d3ee;
+:where(#kbroot) .faceoff.warnsheet .wsbody,
+:where(#kbroot) #onAccount .wsbody{margin:0;font-size:13px;line-height:1.62;color:#c6d3ee;
   letter-spacing:.02em}

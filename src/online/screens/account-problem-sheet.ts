@@ -20,8 +20,8 @@
    why dismissal returns focus to the control that opened it rather than
    anywhere else — the player's next move is to read the advice and try again. */
 import { t } from '../../i18n/index.ts';
-import { chromeIcon } from '../../ui/chromeicons.ts';
 import { showSheet } from '../../ui/sheet.ts';
+import { WARNING_NOTE_MARKUP, paintWarningNote } from './warning-note.ts';
 
 const TITLE = (): string => t('online', 'profile.actionFailed');
 
@@ -32,19 +32,12 @@ const TITLE = (): string => t('online', 'profile.actionFailed');
  * @param opener the control to hand focus back to when the card is gone.
  */
 export function showAccountProblem(render: () => string, opener: HTMLElement | null): void {
-  /* Caller-owned text is SET, never interpolated: a provider message can carry
-     a nickname or a server string, and markup built by concatenation is one
-     quote away from being someone else's. */
-  const paint = (card: HTMLElement): void => {
-    card.querySelector<HTMLElement>('.wstitle')!.textContent = TITLE();
-    card.querySelector<HTMLElement>('.wsbody')!.textContent = render();
-  };
+  const paint = (card: HTMLElement): void => paintWarningNote(card, TITLE(), render());
   const sheet = showSheet({
     cls: 'warnsheet',
     tint: 'var(--orange)',
     label: TITLE,
-    body: `<div class="wshead">${chromeIcon('warn', 22)}<span class="wstitle"></span></div>
-      <p class="wsbody"></p>`,
+    body: WARNING_NOTE_MARKUP,
     repaintLocale: paint,
     restoreFocus: opener,
   });

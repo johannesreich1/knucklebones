@@ -76,6 +76,11 @@ export const enOnline = {
        rather than naming a provider: one card answers every control in the
        box, and the sentence below it is where the specifics live. */
     actionFailed: 'That did not go through',
+    /* The STANDING warning's heading, and deliberately not actionFailed: that
+       one reports a tap that did not work, and this states why there is no tap
+       to make. Same amber, same glyph, different sentence — because it is
+       already true when the player arrives. */
+    gameCenterBlocked: 'Game Center cannot be connected',
     /* "to this account" is load-bearing: iOS greets the local player at
        launch, so a bare "Game Center not connected" reads as a contradiction
        of something the player just watched happen. This row is only ever
