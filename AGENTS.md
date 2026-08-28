@@ -109,6 +109,13 @@ differs. A second near-copy is a design failure, not a shortcut.
   animation, verify computed pixels/hit testing rather than DOM or state alone.
 - **Measure tunable behaviour.** Difficulty, balance, layout budgets, and
   animation timing require evidence, not intuition.
+- **Every bug fix ships with a test that fails without it.** Write the test
+  first and watch it fail against the unfixed code — a regression test that was
+  never seen red proves nothing. Pin the fact the player reported, at the level
+  they reported it: a wrong colour is asserted as a computed colour, not as the
+  state that was supposed to produce one. If a bug reached a player, the gate
+  had a hole; the fix closes the hole as well as the bug. Say in the commit
+  which test now fails without the change.
 - **Do not spread unchecked code.** New/extracted TypeScript is typed and may
   not inherit `@ts-nocheck`. Prefer focused modules; split by responsibility,
   not an arbitrary line counter.

@@ -340,6 +340,27 @@ matches even after an assertion or browser failure. Review the report for
 cleanup errors and remove any accounts a probe creates. Never commit live
 credentials or make a live probe part of `npm test`.
 
+## Regression coverage for bug fixes
+
+Every bug fix carries a test that fails without the fix. Write it first and
+watch it go red against the unfixed code; a regression test that was never seen
+red is only a description of current behaviour, and will keep passing when the
+bug returns.
+
+Pin the fact the player reported, at the level they reported it. A player who
+says "my board is the wrong colour" is reporting a computed colour, so the test
+resolves a computed colour — asserting the state that was supposed to produce it
+re-tests the half that was already right. This is the assertion policy above
+applied to the specific claim that failed.
+
+A bug that reached a player also means the gate had a hole, and the hole is
+usually a case the suites never varied. Ranked seats are the worked example: the
+board's colours were only ever exercised from the seat offline play uses, so a
+mismatch that appears in the other seat was invisible for as long as the feature
+existed. Close the hole as well as the bug — cover both sides of whatever
+variable went untested — and name in the commit which test now fails without the
+change.
+
 ## Change verification
 
 Run the narrow owner suite while iterating. Before handoff or deployment,
