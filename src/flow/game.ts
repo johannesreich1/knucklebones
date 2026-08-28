@@ -42,6 +42,7 @@ import {
   resolveTimedOutSpellAim,
   type SpellDeal,
 } from './spells.ts';
+import { handTurnTo } from './turn.ts';
 import { aiChoose } from './game-ai.ts';
 import { showLocalResult } from './local-result.ts';
 import { hidePassCard, showPassCard } from './pass-card.ts';
@@ -136,8 +137,9 @@ export async function nextTurn(): Promise<void> {
   const gen=S.gen;
   if(S.phase==='over') return;
   renderAll(false);   // same repaint belt online uses: state wins every turn
-  renderSpells();     // ...and the rail belongs to the turn: the seat that just
-                      // lost it dims here. sayChoose() repaints it again when a
+  handTurnTo(S.turn); // ...and the rail and plate belong to the turn: the seat
+                      // that just lost it dims here, through the same seam
+                      // ranked uses. sayChoose() repaints the rail again when a
                       // HUMAN gets the choice; on the machine's turn nothing
                       // else would, and the rune stayed lit through it.
   if(S.mode==='duo' && S.seat==='pass' && S.turn!==S.bottom){

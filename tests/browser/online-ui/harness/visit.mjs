@@ -1,4 +1,5 @@
 import { installOnlineRoutes } from './routes.mjs';
+import { installTrialMatchRoutes } from './trial-match.mjs';
 import { readOnlineView } from './read-view.mjs';
 import { probeFaceoff } from '../scenarios/faceoff-probe.mjs';
 import { probeAccountActions } from './account-probes.mjs';
@@ -63,6 +64,9 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     expectReward = false,
     probe = null,
     skipStandardProbes = false,
+    /* `door: 'match'` needs a match to enter. Pass `true` for the standard
+       Rune Trial fixture, or an options object for trial-match.mjs. */
+    trialMatch = null,
   }) {
     // NO isMobile here: under WebKit it quietly disables page.route(), and a
     // stub that never fires would let this suite talk to the live backend.
@@ -80,6 +84,14 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
       paginationRace,
       passwordAuth, runes, unseenRunes, SESSION, GUEST_ID,
     });
+    /* Registered AFTER the base stub on purpose: Playwright gives the most
+       recent handler precedence, so the in-match fixture takes over pvp-join
+       and `matches` while every other endpoint keeps answering as before. */
+    if (trialMatch) {
+      Object.assign(routes, await installTrialMatchRoutes(page, {
+        GUEST_ID, ...(trialMatch === true ? {} : trialMatch),
+      }));
+    }
     /* ONE Capacitor object: the native bridges are plugins on the same global,
        and two init scripts each installing their own would leave whichever ran
        last as the only device the app can see. */
@@ -125,7 +137,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
       }, { apple: appleBridge, gameCenter: !!gameCenterBridge, refusal: proofRefusal,
            persistent: gameCenterPersistent });
     }
-    if (door === 'play') {
+    if (door === 'play' || door === 'match') {
       /* Ranked newcomers stop at the once-only tutorial offer. This probe is
          about the queue the returning player sees, so enter as a played device. */
       await page.addInitScript(() => localStorage.setItem(
@@ -135,7 +147,8 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
 
     await page.goto(URL, { waitUntil: 'domcontentloaded' });
     // the home chip carrying the player's identity IS the door to the account view
-    const entry = door === 'board' ? '#btnBoardHome' : door === 'play' ? '#btnOnline' : '#homeChip';
+    const entry = door === 'board' ? '#btnBoardHome'
+      : door === 'play' || door === 'match' ? '#btnOnline' : '#homeChip';
     await page.waitForSelector(entry);
     const homeSnapshot = () => page.evaluate(() => {
       const row = document.querySelector('#ovStart .hrow');
@@ -211,6 +224,15 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
       await page.waitForSelector(expectReward
         ? '.rune-reward-sheet .focard'
         : '#onQueue:not([hidden])', { timeout: 15000 });
+    } else if (door === 'match') {
+      /* Past the queue and onto the ranked TABLE: the match exists, the rail
+         holds both dealt hands, and input has been opened by the first
+         authoritative projection. Anything earlier probes a half-dealt board. */
+      await page.waitForFunction(() => !!window.__kbOnline?.(), null, { timeout: 15000 });
+      await page.waitForSelector('#spellBar.paired.live', { timeout: 15000 });
+      await page.waitForFunction(
+        () => window.__kb.S.phase === 'choose' && !window.__kb.S.busy,
+        null, { timeout: 15000 });
     } else if (door === 'board') {
       await page.waitForSelector('#ovOnline .lb .lrow', { timeout: 15000 });
     } else {
@@ -224,6 +246,11 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     // body-level sheets, but must not repaint the eager Home hiding underneath.
     const homeAfterOnline = await homeSnapshot();
     const probeResult = probe ? await probe(page, routes) : null;
+
+    if (door === 'match') {
+      await ctx.close();
+      return { probeResult, errs, rootLang: null };
+    }
 
     if (door === 'play') {
       const samples = [];
