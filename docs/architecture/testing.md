@@ -34,9 +34,16 @@ project uses fixed machine-global Docker resources and ports. Serialize
 `db:start`, reset, pgTAP, lint, and stop across all worktrees. Do not run a
 second database gate merely because its `.gate.lock` is elsewhere.
 
-The gate holds `.gate.lock` because build output is shared inside one working
-tree. Servers use kernel-assigned ports, so independent worktrees may gate in
-parallel when they do not use the database stack. Playwright harnesses must
+The gate holds one lock per REPOSITORY — a file in the temp directory named
+after the shared `.git` directory — so every worktree of this clone queues and
+a separate clone stays independent. Build output is shared inside a tree, and
+the machine is shared between them. Servers use kernel-assigned ports, so
+parallel worktree gates are correct; they are not affordable. Three at once
+reached load average 284 here and failed on starvation alone — 30s waits for
+buttons already in the markup, screenshots timing out after fonts had loaded,
+benches 40-50% over budget — and one release took five attempts to find a quiet
+moment. Serial gates finish sooner than contended ones plus their retries, and
+they do not lie. `KB_NO_LOCK=1` skips the wait for one deliberate run. Playwright harnesses must
 also create their own browser context/storage and bind a kernel-assigned port;
 sharing a signed-in context or fixed dev-server port defeats worktree
 isolation. A complete local run schedules the measured long owners first

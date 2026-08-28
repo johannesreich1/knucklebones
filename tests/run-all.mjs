@@ -4,7 +4,7 @@
 import { execFileSync, spawn } from 'node:child_process';
 import { performance } from 'node:perf_hooks';
 import { serveTree } from './serve.mjs';
-import { acquireCheckoutLock } from './support/gate-lock.mjs';
+import { acquireGateLock } from './support/gate-lock.mjs';
 import {
   createGatePlan,
   executeGatePlan,
@@ -96,9 +96,12 @@ const label = options.ciShard ?? 'complete';
 const gateStarted = performance.now();
 console.log(`gate ${label}: ${selected.length} suites, ${options.jobs} worker(s)`);
 
-/* One gate at a time per working tree: build output is shared. Independent CI
-   checkouts/worktrees have their own lock, outputs, server and kernel ports. */
-const release = await acquireCheckoutLock();
+/* ONE GATE AT A TIME PER REPOSITORY. Build output is shared inside a tree, and
+   the machine is shared between them: worktrees may gate in parallel without
+   corrupting anything, and doing so still starves every one of them into
+   failures that are indistinguishable from defects. A separate clone keeps its
+   own lock, so independent CI checkouts are unaffected. */
+const release = await acquireGateLock();
 try {
   execFileSync(process.execPath, ['build.mjs'], { stdio: 'inherit' });
 
