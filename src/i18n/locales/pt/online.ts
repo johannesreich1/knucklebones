@@ -147,6 +147,9 @@ export const ptOnline = {
     awayAutoPlayCompact_one: 'Ausente — jogada em {{formatted}} s',
     awayAutoPlayCompact_other: 'Ausente — jogada em {{formatted}} s',
     autoPlay: 'Jogada automática…',
+    awayWarnTitle: 'AINDA AÍ?',
+    awayWarnBody: 'Sua jogada foi feita por você. Perca mais uma e você desiste.',
+    awayWarnDismiss: 'Toque em qualquer lugar para continuar',
   },
   result: {
     opponentForfeited: '{{opponent}} desistiu',
@@ -157,6 +160,7 @@ export const ptOnline = {
     nextDuel: 'Novo duelo',
     forfeitStamp: 'DESISTÊNCIA',
     beatenStamp: 'DERROTADO',
+    forfeitedStamp: 'ABANDONADA',
     newRune: 'NOVA RUNA',
     tryIt: 'TESTAR',
     share: '{{title}} {{mine}}–{{theirs}} vs {{opponent}}{{delta}} — Knucklebones, duelos de dados ranqueados',

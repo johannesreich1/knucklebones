@@ -8,6 +8,7 @@ import {
   LEGAL_MARKUP,
   LEGAL_SETTINGS_NAV_MARKUP,
 } from './markup/legal.ts';
+import { OVERLAY_CARDS_MARKUP } from './markup/overlay-cards.ts';
 
 const RULES_PAGE = learnPageMarkup({
   id: 'ovRules',
@@ -233,15 +234,7 @@ ${LEGAL_MARKUP}
 <!-- RULES: one instance of the same Learn-detail page Game Modes and Spells use. -->
 ${RULES_PAGE}
 
-<!-- HAND-OFF -->
-<div class="ov" id="ovPass">
-  <div class="glow"></div>
-  <div class="swapicon">⇅</div>
-  <div class="who" id="passWho">PLAYER 2</div>
-  <div class="hint" data-i18n="game:pass.passPhone">Pass the phone</div>
-  <div class="mini"><b class="a" id="passP1">0</b><span>—</span><b class="b" id="passP2">0</b></div>
-  <div class="tapline" data-i18n="game:pass.tapReady">Tap anywhere when ready</div>
-</div>
+${OVERLAY_CARDS_MARKUP}
 
 <!-- SETTINGS: a page below Home like OFFLINE — ‹ goes back, toggles apply instantly -->
 

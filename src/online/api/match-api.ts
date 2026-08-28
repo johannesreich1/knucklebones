@@ -39,6 +39,11 @@ export interface MatchRow {
   pending_aim?: string | null;
   p1_rating_delta?: number | null;
   p2_rating_delta?: number | null;
+  /* Automatic placements spent per seat. Optional at the web boundary for the
+     same rollout reason as the Trial fields above: a row written before the
+     column existed simply reads as an untouched allowance. */
+  p1_auto_streak?: number;
+  p2_auto_streak?: number;
 }
 
 export interface RuneTrialState {
@@ -167,6 +172,10 @@ async function moveCommand(body: Record<string, unknown>): Promise<{ status: num
   return callFunction<MoveResult>('pvp-move', body);
 }
 
+/* A tap, and only a tap. A turn clock that ran out goes through `nudge`
+   instead: the server counts automatic placements per seat and forfeits rather
+   than playing a third in a row, so a self placement reported as a finger
+   would let an away player be auto-played forever. */
 export async function move(
   matchId: string,
   col: number,
@@ -250,24 +259,44 @@ export async function claim(matchId: string): Promise<{ status: number; data: { 
   return callFunction('pvp-claim', { match_id: matchId });
 }
 
-let resigned: { matchId: string; over: Promise<boolean> } | null = null;
+/** A finished resignation: whether the match is over, and the settled row when
+    this call is the one that settled it. "match-over" means somebody else got
+    there first, so there is no row here — read the authoritative one. */
+interface Resignation { over: boolean; match: MatchRow | null }
 
-const resignCall = async (matchId: string): Promise<boolean> => {
+let resigned: { matchId: string; done: Promise<Resignation> } | null = null;
+
+const resignCall = async (matchId: string): Promise<Resignation> => {
   const response = await callFunction<{ match?: MatchRow; error?: string }>(
     'pvp-claim', { match_id: matchId, resign: true },
   );
-  return response.status === 200 || response.data?.error === 'match-over';
+  return {
+    over: response.status === 200 || response.data?.error === 'match-over',
+    match: response.status === 200 ? response.data?.match ?? null : null,
+  };
 };
 
 export function resign(matchId: string): void {
-  resigned = { matchId, over: resignCall(matchId) };
+  resigned = { matchId, done: resignCall(matchId) };
+}
+
+async function resignation(matchId: string): Promise<Resignation> {
+  if (resigned?.matchId !== matchId) return { over: false, match: null };
+  const first = await resigned.done;
+  if (first.over) return first;
+  resigned = { matchId, done: resignCall(matchId) };
+  return resigned.done;
 }
 
 export async function resignedOver(matchId: string): Promise<boolean> {
-  if (resigned?.matchId !== matchId) return false;
-  if (await resigned.over) return true;
-  resigned = { matchId, over: resignCall(matchId) };
-  return resigned.over;
+  return (await resignation(matchId)).over;
+}
+
+/** Resign and wait for the terminal row, so the player who chose to forfeit
+    reaches the same result screen their opponent does. */
+export async function resignedMatch(matchId: string): Promise<MatchRow | null> {
+  resign(matchId);
+  return (await resignation(matchId)).match;
 }
 
 export function readyPeer(matchId: string): { announce(): void; onPeer(cb: () => void): () => void } {

@@ -30,10 +30,18 @@ export const CLASSIC: BoardSpec = { cols: 3, rows: 3 };
    averages both derive from this. */
 export const DICE_FACES = 6;
 
-/* Online turn clock, seconds. Client-enforced pace: an honest client
-   auto-places when it expires; the server's 30s stall forfeit remains the
-   backstop for clients that vanish entirely (see pvp-claim / pvp-join). */
+/* Online turn clock, seconds. When it expires an honest client asks the server
+   to take the turn rather than placing behind its back; the server's 30s stall
+   forfeit remains the backstop for clients that vanish entirely (see
+   pvp-claim / pvp-join). */
 export const ONLINE_TURN_SECS = 10;
+
+/* How many consecutive automatic placements the server allows before it
+   forfeits the match instead of playing a third. Mirrors AUTO_FORFEIT_STREAK
+   in supabase/functions/_shared/match-timing.ts, which is the authority; the
+   web copy only decides when to warn the player, and tests/edge-handlers
+   pins the two together. The warning shows on the last covered turn. */
+export const ONLINE_AUTO_FORFEIT_STREAK = 3;
 
 /* Supabase project — both values are public BY DESIGN (the publishable key is
    made to ship in clients; row security lives in RLS + Edge Functions).

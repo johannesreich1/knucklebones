@@ -109,6 +109,7 @@ export const GATE_SUITES = Object.freeze([
   typed('edge-handlers'),
   typed('edge-settlement'),
   typed('edge-operations'),
+  typed('edge-auto-forfeit'),
   typed('cssgraph'),
   typed('cssreach'),
   typed('design-library'),
@@ -165,6 +166,7 @@ export const CI_SHARDS = Object.freeze({
     'design-cards-render', 'botbench', 'profile-back-navigation',
     'limited-bag-gauge', 'architecture', 'rune-ward-sensitivity',
     'preferences', 'i18n-catalog', 'edge-handlers', 'edge-operations',
+    'edge-auto-forfeit',
     'cssgraph', 'fnsync', 'ladder', 'local-options', 'pwa-update',
   ]),
   'ci-4': Object.freeze([

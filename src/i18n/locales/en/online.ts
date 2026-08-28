@@ -155,6 +155,9 @@ export const enOnline = {
     awayAutoPlayCompact_one: 'Away — move in {{formatted}} s',
     awayAutoPlayCompact_other: 'Away — move in {{formatted}} s',
     autoPlay: 'Auto play…',
+    awayWarnTitle: 'STILL THERE?',
+    awayWarnBody: 'Your turn was played for you. Miss one more and you forfeit.',
+    awayWarnDismiss: 'Tap anywhere to keep playing',
   },
   result: {
     opponentForfeited: '{{opponent}} forfeited',
@@ -165,6 +168,7 @@ export const enOnline = {
     nextDuel: 'Next duel',
     forfeitStamp: 'FORFEIT',
     beatenStamp: 'BEATEN',
+    forfeitedStamp: 'FORFEITED',
     newRune: 'NEW RUNE',
     tryIt: 'TRY IT',
     share: '{{title}} {{mine}}–{{theirs}} vs {{opponent}}{{delta}} — Knucklebones, ranked dice duels',

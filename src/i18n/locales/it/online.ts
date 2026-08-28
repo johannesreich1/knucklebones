@@ -147,6 +147,9 @@ export const itOnline = {
     awayAutoPlayCompact_one: 'Assente — mossa tra {{formatted}} s',
     awayAutoPlayCompact_other: 'Assente — mossa tra {{formatted}} s',
     autoPlay: 'Mossa automatica…',
+    awayWarnTitle: 'CI SEI ANCORA?',
+    awayWarnBody: 'Il tuo turno è stato giocato per te. Un altro e abbandoni.',
+    awayWarnDismiss: 'Tocca ovunque per continuare',
   },
   result: {
     opponentForfeited: '{{opponent}} ha abbandonato',
@@ -157,6 +160,7 @@ export const itOnline = {
     nextDuel: 'Altro duello',
     forfeitStamp: 'ABBANDONO',
     beatenStamp: 'SCONFITTO',
+    forfeitedStamp: 'ABBANDONATA',
     newRune: 'NUOVA RUNA',
     tryIt: 'PROVALA',
     share: '{{title}} {{mine}}–{{theirs}} vs {{opponent}}{{delta}} — Knucklebones, duelli classificati con i dadi',

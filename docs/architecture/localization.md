@@ -186,6 +186,13 @@ of the owned app root, recalculating after locale and viewport changes; do not
 replace that neutral fitter with locale selectors or per-language offsets.
 Multi-word player-result titles retain their intentional wrapping.
 
+The fitter must measure the verdict's **untransformed layout box**
+(`offsetWidth`), never a bounding rect. Its ResizeObserver fires on any late
+layout settle, including one inside the win entrance — and that animation opens
+at `scale(3.2)`, which a bounding rect includes. Measuring the transform made a
+299px word read as 958px and permanently refitted English VICTORY to ~20px on
+some rounds and not others. `tests/result-screen.mjs` pins it.
+
 A test passes only when visible text stays inside its reserved box, required
 lines are not clipped, interactive targets remain reachable and at least 44 px,
 and translated copy does not overlap another visible element. DOM presence or

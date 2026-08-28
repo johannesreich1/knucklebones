@@ -1,14 +1,14 @@
 // Shared ranked view; the server owns turns and its die-carrying log heals missed events.
-import { ME, CLASSIC, LIMITED, emptyBoard, legalCols, type Player } from '../../core/rules.ts';
+import { ME, CLASSIC, LIMITED, emptyBoard, type Player } from '../../core/rules.ts';
 import { modeById } from '../../core/modes.ts';
 import { spellById } from '../../core/spells.ts';
-import { ONLINE_TURN_SECS } from '../../config.ts';
+import { ONLINE_AUTO_FORFEIT_STREAK, ONLINE_TURN_SECS } from '../../config.ts';
 import { S } from '../../state.ts';
 import { startTimer, stopTimer, showClock } from '../../flow/timer.ts';
 import { clearSpells, renderSpells, resetSpells, resolveTimedOutSpellAim,
   setSpellTransport } from '../../flow/spells.ts';
 import { setLeaveInterceptor } from '../../flow/leave.ts';
-import { $, hide } from '../../ui/dom.ts';
+import { $, hide, show } from '../../ui/dom.ts';
 import { showBag, renderBag, BAG_SIZE } from '../../ui/bag.ts';
 import { buildBoards, renderAll } from '../../ui/game/board.ts';
 import { clearHints, showHints } from '../../ui/game/hints.ts';
@@ -19,7 +19,6 @@ import { setPlaceHandler } from '../../ui/input.ts';
 import { setOpponentTurnPresentation, setSeatingPresentation, setTurnPresentation, setTutorialPresentation } from '../../ui/game/root-state.ts';
 import {
   move,
-  resign,
   watchMatch,
   type MatchRow,
   type JoinResult,
@@ -32,6 +31,7 @@ import { rankedBadge, reconnectingCopy, showAwayAutoPlayCountdown, turnCopy } fr
 import { createOnlineState } from './play-state.ts';
 import { createOnlineSynchronizer } from './play-sync.ts';
 import { createTrialActionSubmitter } from './play-trial-actions.ts';
+import { leaveRankedMatch } from './play-leave.ts';
 import { drainTerminalProjection } from './play-terminal.ts';
 import { runOnlineWatchdog } from './play-watchdog.ts';
 import { claimOnlinePlayerNames, onlineOpponentName, onlineOpponentSeat, onlinePlayerName } from './play-identity.ts';
@@ -77,19 +77,13 @@ const trialActions = createTrialActionSubmitter({
   applyMatchRow,
 });
 
-/* Quitting a live ranked match forfeits it — at the SERVER, immediately. The
-   confirmation is the quit modal (flow/leave → boot); by the time this runs
-   the player has said "Forfeit", so the resign goes out and the match is
-   flipped: the opponent's client hears the row change and celebrates its win
-   right away instead of waiting out the stall clock, and the next pvp-join
-   finds no active match to drag this player back into. Fire-and-forget —
-   session.ts remembers the outcome so matchmaking can wait for it. */
-function leaveTap(): boolean {
-  if (!O || O.done) return false;
-  resign(O.matchId);
-  teardown();
-  return false;
-}
+const leaveTap = (): boolean => leaveRankedMatch({
+  current: () => O,
+  isCurrent: isCurrentOnline,
+  freezeInput: freezeMatchInput,
+  sync,
+  applyMatchRow,
+});
 
 export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>): Promise<void> {
   teardown();
@@ -188,6 +182,10 @@ function refreshTurnUI(): void {
   setActivePlate(O.you);
   clearHints();
   if (mine) showHints();
+  /* One automatic placement left before the match is lost. A warning only —
+     the clock below keeps running, and its next expiry is what ends this. */
+  if (mine && O.autoStreak >= ONLINE_AUTO_FORFEIT_STREAK - 1) show('#ovAway');
+  else hide('#ovAway');
   // The 10s turn clock, both sides. Mine auto-places at zero (an honest
   // client never stalls); theirs just downgrades the status to "waiting" —
   // the 30s watchdog/forfeit handles an opponent who is truly gone.
@@ -204,17 +202,21 @@ function oppStalled(): void {
   });
 }
 
+/* The turn clock ran out. Do not place from here — arm the watchdog's own-turn
+   branch and kick it, so a visible self placement, an away page's self-nudge,
+   and a clock that died without firing all reach the server through the one
+   authoritative request. The server picks the same uniform legal column this
+   used to pick locally, counts it against the away allowance, and past that
+   allowance answers with a settled forfeit instead of a move. */
 async function autoPlace(): Promise<void> {
   if (!O || O.done || S.busy || S.turn !== O.you) return;
-  // A hidden page must not drive the optimistic pipeline: flyDie awaits a
-  // WAAPI finish that never comes without rendering frames, so the flow would
-  // wedge mid-move. The watchdog's self-nudge owns away turns — the server
-  // places the same uniform legal die this line would have picked.
-  if (document.hidden) return;
-  if (O.trial && await resolveTimedOutSpellAim()) return;
-  if (!O || O.done || S.busy || S.turn !== O.you) return;
-  const lg = legalCols(S.boards[O.you]);
-  if (lg.length) void onlinePlace(O.you, lg[(Math.random() * lg.length) | 0]);
+  const online = O;
+  // A committed rune aim was the player's own choice; resolve it before the
+  // turn is handed over. An armed-but-uncommitted one only disarms.
+  if (online.trial && await resolveTimedOutSpellAim()) return;
+  if (!isCurrentOnline(online) || online.done || S.busy || S.turn !== online.you) return;
+  online.selfAutoDue = true;
+  await watchdog();
 }
 
 /* my move: animate IMMEDIATELY, in parallel with the server request — the die
@@ -301,6 +303,9 @@ function applyMatchRow(m: MatchRow): void {
   O.pendingDie = m.next_die;
   O.actionVersion = m.action_version ?? O.actionVersion;
   O.lastMoveAt = Date.parse(m.last_move_at);
+  O.autoStreak = (O.you === ME ? m.p1_auto_streak : m.p2_auto_streak) ?? 0;
+  // This projection is a fresh turn, and refreshTurnUI gives it a fresh clock.
+  O.selfAutoDue = false;
   S.turn = m.turn;
   if (isDone(m)) return finishUI(m);
   refreshTurnUI();
@@ -334,6 +339,7 @@ export function teardown(): void {
   releaseBadge();                  // hands #rec back to the local record
   showBag(false);
   showClock(false);
+  hide('#ovAway');
   if (ownsPresentation) {
     S.mode = O.restoreMode;
     setOpponentTurnPresentation(false);

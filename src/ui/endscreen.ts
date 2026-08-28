@@ -101,7 +101,11 @@ function fitEndTitle(): void {
   const root = title.closest('#kbroot') as HTMLElement | null;
   const viewportWidth = root?.getBoundingClientRect().width || window.innerWidth;
   const limit = Math.min(clip.clientWidth, viewportWidth * .9);
-  const naturalWidth = title.getBoundingClientRect().width;
+  /* The UNTRANSFORMED box. A bounding rect includes the win entrance's opening
+     scale(3.2), so an observer waking mid-animation read a 299px word as 958px
+     and permanently refitted VICTORY to 20px — on some rounds and not others.
+     The h1 is a flex item, so offsetWidth shrink-wraps to its text. */
+  const naturalWidth = title.offsetWidth;
   if (!(limit > 0 && naturalWidth > limit)) return;
   const naturalSize = parseFloat(getComputedStyle(title).fontSize);
   title.style.setProperty('--fitted-verdict', `${naturalSize * limit / naturalWidth}px`);

@@ -147,6 +147,9 @@ export const deOnline = {
     awayAutoPlayCompact_one: 'Abwesend — Zug in {{formatted}} s',
     awayAutoPlayCompact_other: 'Abwesend — Zug in {{formatted}} s',
     autoPlay: 'Autozug …',
+    awayWarnTitle: 'NOCH DA?',
+    awayWarnBody: 'Dein Zug wurde für dich gespielt. Noch einer und du gibst auf.',
+    awayWarnDismiss: 'Tippe irgendwo, um weiterzuspielen',
   },
   result: {
     opponentForfeited: '{{opponent}} hat aufgegeben',
@@ -157,6 +160,7 @@ export const deOnline = {
     nextDuel: 'Nächstes Duell',
     forfeitStamp: 'AUFGABE',
     beatenStamp: 'BESIEGT',
+    forfeitedStamp: 'AUFGEGEBEN',
     newRune: 'NEUE RUNE',
     tryIt: 'TESTEN',
     share: '{{title}} {{mine}}–{{theirs}} gegen {{opponent}}{{delta}} — Knucklebones, Ranglisten-Würfelduelle',

@@ -11,6 +11,7 @@ import {
   type CommandMetadata,
   type CommandMove,
 } from "../_shared/match-command.ts";
+import { autoForfeitsNow, settleAutoForfeit } from "../_shared/auto-forfeit.ts";
 import { AUTO_MS } from "../_shared/match-timing.ts";
 import type { TerminalMatch } from "../_shared/settlement.ts";
 import { MATCH_COLUMNS, type MatchMoveRow, type MatchRow, type MoveInput } from "../_shared/types.ts";
@@ -81,7 +82,11 @@ export async function moveMatch(context: AuthenticatedContext, input: MoveInput)
 
   const myIdx: Player = match.p1 === user.id ? ME : AI;
   const mover: Player = input.auto ? match.turn as Player : myIdx;
-  if (input.auto) {
+  /* Recovering somebody ELSE's turn needs proof their app is gone. Placing for
+     yourself because your own turn clock ran out needs no such proof, so it
+     carries no stall precondition and is gated only by owning the turn. */
+  const recovery = input.auto && mover !== myIdx;
+  if (recovery) {
     if (Date.now() - new Date(match.last_move_at).getTime() < AUTO_MS) {
       return json({ error: "not-stalled-yet" }, 425);
     }
@@ -102,6 +107,29 @@ export async function moveMatch(context: AuthenticatedContext, input: MoveInput)
   const expectedMoveCount = input.expectedMoveCount ?? replay.state.moveCount;
   if (replay.state.moveCount !== expectedMoveCount) {
     return json({ error: "race-lost" }, 409);
+  }
+
+  /* Two automatic placements already covered this absence, so the third is the
+     loss instead of a move. Decided here rather than in the commit RPC because
+     TypeScript owns the ladder arithmetic; the checked precondition makes a
+     real move racing this decision win. */
+  if (input.auto && autoForfeitsNow(match, mover)) {
+    const forfeited = await settleAutoForfeit(
+      svc,
+      match,
+      mover,
+      matchTotal(replay.state, ME, mode),
+      matchTotal(replay.state, AI, mode),
+      { turn: match.turn, lastMoveAt: match.last_move_at, moveCount: replay.state.moveCount },
+      settle,
+    );
+    if (!forfeited.applied && forfeited.match.status === "active") {
+      return json({ error: "race-lost" }, 409);
+    }
+    return json({
+      match: forfeited.match,
+      ...(forfeited.reward ? { reward: forfeited.reward } : {}),
+    });
   }
 
   const legal = legalCols(replay.state.st[mover]);
@@ -165,8 +193,10 @@ export async function moveMatch(context: AuthenticatedContext, input: MoveInput)
       expectedTurn: replay.state.turn,
       expectedNextDie: replay.state.nextDie,
       // The database clock re-verifies the auto stall inside the locked
-      // transaction, so a fast Edge clock cannot force a move early.
-      expectedLastMoveAt: input.auto ? match.last_move_at : null,
+      // transaction, so a fast Edge clock cannot force a move early. Only a
+      // recovery carries it; a null here tells the RPC this is a self
+      // placement to be checked for turn ownership instead.
+      expectedLastMoveAt: recovery ? match.last_move_at : null,
       moves: commandMoves,
       nextTurn: terminal ? null : state.turn,
       nextDie: terminal ? null : state.nextDie,

@@ -119,6 +119,8 @@ const openingMatch: MatchRow = {
   selection_version: 2,
   action_version: 0,
   pending_aim: null,
+  p1_auto_streak: 0,
+  p2_auto_streak: 0,
 };
 
 export async function verifyRuneTrialBotOpening(check: Check): Promise<void> {

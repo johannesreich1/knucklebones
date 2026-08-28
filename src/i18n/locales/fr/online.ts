@@ -147,6 +147,9 @@ export const frOnline = {
     awayAutoPlayCompact_one: 'Absent — coup dans {{formatted}} s',
     awayAutoPlayCompact_other: 'Absent — coup dans {{formatted}} s',
     autoPlay: 'Coup auto…',
+    awayWarnTitle: 'TOUJOURS LÀ ?',
+    awayWarnBody: 'Votre tour a été joué pour vous. Un de plus et vous abandonnez.',
+    awayWarnDismiss: 'Touchez n’importe où pour continuer',
   },
   result: {
     opponentForfeited: '{{opponent}} a abandonné',
@@ -157,6 +160,7 @@ export const frOnline = {
     nextDuel: 'Duel suivant',
     forfeitStamp: 'ABANDON',
     beatenStamp: 'BATTU',
+    forfeitedStamp: 'ABANDONNÉ',
     newRune: 'NOUVELLE RUNE',
     tryIt: 'ESSAYER',
     share: '{{title}} {{mine}}–{{theirs}} contre {{opponent}}{{delta}} — Knucklebones, duels de dés classés',

@@ -130,6 +130,11 @@ function bindLanguagePicker(): void {
 
 export function bindMenus(root: HTMLElement): void {
   tap($('#ovPass'), passTap);
+  /* The away warning is an acknowledgement, not a gate: dismissing it does not
+     place a die, and the turn clock underneath keeps running. Bound here with
+     the other static overlays so boot never has to reach into the lazy-loaded
+     online chunk; the match driver only decides when to show it. */
+  tap($('#ovAway'), () => { Sfx.tap(); hide('#ovAway'); });
 
   let syncModePicker = (): void => undefined;
   let syncSpellPicker = (): void => undefined;
@@ -208,8 +213,11 @@ export function bindMenus(root: HTMLElement): void {
         ? { label: () => t('game', 'leave.restart'), run: restartLocal }
         : undefined,
     });
-    if (leave) {
-      requestLeave();
+    /* An interceptor that returns true has HANDLED the departure — ranked
+       keeps the player on the board so the settled forfeit can open the same
+       result screen the winner gets. Only an unhandled quit navigates from
+       here, which is the contract flow/leave has always documented. */
+    if (leave && !requestLeave()) {
       if (!backToRankedFromTryout()) toMenu();
     }
   });

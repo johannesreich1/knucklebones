@@ -167,6 +167,40 @@ check(unchangedReads === 1 && fallbackClaims === 1,
     fallbackClaims,
   });
 
+/* The turn clock is one-shot: startTimer stops before it fires, and nothing
+   re-arms it. A visible own turn whose clock already expired therefore has no
+   clock and — before selfAutoDue — matched no watchdog branch either, which is
+   how a match against a bot could sit untouched forever. The flag must reach
+   the server without waiting to look stalled, and a visible own turn without
+   it must still stay quiet. */
+recoveryOnline.recoverySync = false;
+recoveryOnline.recoveryActionVersion = null;
+recoveryOnline.actionApplied = 2;
+recoveryOnline.actionVersion = 2;
+recoveryOnline.done = false;
+recoveryOnline.selfAutoDue = false;
+recoveryOnline.lastMoveAt = 19_000;          // one second old: nowhere near stalled
+S.turn = recoveryOnline.you;
+let idleNudges = 0;
+const idlePorts = {
+  ...recoveryPorts,
+  sync: async () => true,
+  nudgeAction: async () => {
+    idleNudges++;
+    return { status: 200, data: null };
+  },
+};
+await runOnlineWatchdog(idlePorts);
+check(idleNudges === 0,
+  'a visible own turn with a live clock asked the server to take it anyway');
+
+recoveryOnline.selfAutoDue = true;
+await runOnlineWatchdog(idlePorts);
+check(idleNudges === 1,
+  'an expired turn clock never reached the server on a visible own turn', {
+    idleNudges,
+  });
+
 S.gen = savedOnlineGlobals.gen;
 S.turn = savedOnlineGlobals.turn;
 S.busy = savedOnlineGlobals.busy;
