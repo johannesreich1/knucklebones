@@ -100,6 +100,27 @@ additions *are* the game's variety, and half of all matches seeing none of them
 made them feel rarer than intended. Any change here must be redeployed to the
 join function, which owns the real pick.
 
+### Offline draws from the same pool
+
+**What a player may pick offline versus the AI is the pool their ladder peak
+has already unlocked** — the table above, read through
+`confirmedRankedPoolTier()`. A device with no confirmed tier (signed out, never
+online, fresh install) is treated as STONE: it fails closed, exactly as its
+rune collection reads empty rather than complete. Local pass-and-play (`duo`)
+is the one setup that exposes the whole game, the same exception
+`availableRuneSpecs` already makes for runes.
+
+One function decides it — `localPoolAccess()` in `src/local-options.ts` returns
+the ranked pool's own `RankedParticipantAccess` record, and the picker's locks,
+the RANDOM dial's ring, and the RANDOM draw all read that one roster through
+`rankedOutcomeRoster()` / `pickRankedOutcome()`. This is not decoration: a ring
+built from its own list is how a wheel comes to spin across a mode its own
+picker locks. Rune Trial keeps both of its conditions — the IVORY tier *and*
+three collected runes, since offline has to be able to deal the Trial's offer.
+
+A pick the ladder has taken back resets to Classic (`normalizeLocalChoice`),
+which is in every tier.
+
 `RANDOM` (`-1`) is an offline picker promise to spin, not a stored outcome. It
 is deliberately kept out of `MODES` so the dial can never land on RANDOM and
 no match can be stored under it. The rune picker's RANDOM is the same shape,

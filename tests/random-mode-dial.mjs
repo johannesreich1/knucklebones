@@ -61,6 +61,27 @@ await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(lo
   check(picker.values.at(-1) === '-1', 'RANDOM is not the last chip in the picker', picker);
   check(new Set(picker.values).size === picker.count, 'the picker has a duplicate value', picker);
 
+  /* ---- THE OFFLINE ROSTER IS WHAT THE LADDER HAS GIVEN THIS DEVICE ----
+     No rune cache at all is the STONE case: four modes, and the wheel may not
+     show a fifth. A dial that spins across a mode its own picker locks is the
+     same dishonest shuffle the rune deal exists to avoid. */
+  out.stonePicker = await page.evaluate(() => Object.fromEntries(
+    [...document.querySelectorAll('#modePick button')].map((b) => [b.dataset.v, {
+      locked: b.classList.contains('locked'),
+      aria: b.getAttribute('aria-disabled'),
+      reason: b.dataset.lockReason ?? '',
+    }])));
+  const STONE_OPEN = ['0', '4', '3', '6'];       // classic, singlestrike, colshield, limited
+  const STONE_HELD = ['1', '2', '5'];            // rowswitch, rowmult, bounty
+  check(STONE_OPEN.every((v) => out.stonePicker[v] && !out.stonePicker[v].locked),
+    'STONE locked a mode every player starts with', out.stonePicker);
+  check(STONE_HELD.every((v) => out.stonePicker[v]?.locked
+      && out.stonePicker[v].aria === 'true' && /BONE/.test(out.stonePicker[v].reason)),
+    'STONE offered a mode the ladder has not unlocked, or locked it without a reason',
+    out.stonePicker);
+  check(out.stonePicker['-2']?.locked && !out.stonePicker['-1']?.locked,
+    'the Ritual was offered below IVORY, or RANDOM itself was locked', out.stonePicker);
+
   // pick it, play, and watch the dial do the choosing
   await page.evaluate(() => {
     document.querySelector('#modePick button[data-v="-1"]').click();
@@ -72,6 +93,13 @@ await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(lo
 
   await page.click('#btnPlay');
   await page.waitForSelector('#ovWheel.hunting', { timeout: 4000 });
+
+  out.stoneRing = await page.evaluate(() =>
+    [...document.querySelectorAll('#wheelDial .dnode')].map((n) => n.dataset.mode));
+  check(out.stoneRing.length === 4 && new Set(out.stoneRing).size === 4
+      && STONE_OPEN.length === out.stoneRing.length
+      && !out.stoneRing.includes('bounty') && !out.stoneRing.includes('rune_trial'),
+    'the STONE wheel carried modes this device has not unlocked', out.stoneRing);
 
   /* Selection and explanation are two visible beats. Timestamp DOM changes in
      the page so Playwright polling or a busy test host cannot manufacture the
@@ -344,6 +372,52 @@ await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(lo
   });
   check(out.revealThrew.threw && !out.revealThrew.on && !out.revealThrew.hit,
     'a rejected act left the reveal on screen with nothing to dismiss it', out.revealThrew);
+
+  /* ---- AND A PROMOTION WIDENS BOTH, TOGETHER ----
+     BONE is the tier that hands over the last three ordinary modes. The picker
+     and the wheel read one roster, so proving they widen together is the whole
+     point: a ring built from its own list is how they drift. */
+  await page.evaluate(() => {
+    localStorage.setItem('knucklebones.runes.v1', JSON.stringify({
+      version: 1,
+      accountId: '11111111-2222-4333-8444-555555555555',
+      verifiedAt: 1,
+      collected: [],
+      poolTier: 'bone',
+    }));
+    window.__kb.goHome(); window.__kb.openPractice();
+  });
+  await page.waitForTimeout(700);          // clear tap()'s global native-click guard
+  /* DRIVE IT THE WAY A PLAYER DOES. In the app a confirmed collection arrives
+     through writeRuneCollectionSnapshot, which publishes to the rows; a test
+     that writes the cache key directly has skipped that, so it must activate
+     the choice slot with the real control. __kb.openPractice() only shows the
+     sheet — it is a visibility hook, not the menu's openPractice. */
+  await page.click('#modeSeg button[data-m="cpu"]');
+  await page.waitForTimeout(150);
+  out.bonePicker = await page.evaluate(() => Object.fromEntries(
+    [...document.querySelectorAll('#modePick button')].map((b) => [b.dataset.v,
+      b.classList.contains('locked')])));
+  check(['0', '1', '2', '3', '4', '5', '6'].every((v) => out.bonePicker[v] === false),
+    'BONE still locked one of the seven ordinary modes', out.bonePicker);
+  check(out.bonePicker['-2'] === true,
+    'BONE offered Rune Ritual, which belongs to IVORY', out.bonePicker);
+
+  await page.click('#modePick button[data-v="-1"]');
+  await page.evaluate(() => {
+    window.__kb.S.spell = ''; window.__kb.S.timer = 0;
+    const play = document.getElementById('btnPlay');
+    const box = play.getBoundingClientRect();
+    const at = { bubbles: true, clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 };
+    play.dispatchEvent(new PointerEvent('pointerdown', at));
+    play.dispatchEvent(new PointerEvent('pointerup', at));
+  });
+  await page.waitForSelector('#ovWheel.hunting', { timeout: 8000 });
+  out.boneRing = await page.evaluate(() =>
+    [...document.querySelectorAll('#wheelDial .dnode')].map((n) => n.dataset.mode));
+  check(out.boneRing.length === 7 && new Set(out.boneRing).size === 7
+      && out.boneRing.includes('bounty') && !out.boneRing.includes('rune_trial'),
+    'the BONE wheel did not widen to the seven ordinary modes', out.boneRing);
 } catch (e) {
   problems.push('THREW :: ' + e.message);
 } finally { await browser.close(); }

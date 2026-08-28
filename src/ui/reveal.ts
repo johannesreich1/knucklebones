@@ -28,6 +28,17 @@ import type { Beat, DialPeer, DialSide } from './reveal-types.ts';
 
 const pause = (ms: number): Promise<void> => new Promise((r) => setTimeout(() => r(), ms));
 
+/* One rune beat: what was drawn, for whom, and the deck the shuffle may show.
+   `player` is what makes a deal OWNED — a shared RANDOM rune simply omits it
+   and keeps the deal's own title with no eyebrow. `candidates` must be the
+   roster the draw could actually have come from, or the shuffle fans cards it
+   could never have turned over. */
+export interface RuneDeal {
+  readonly spell: SpellSpec;
+  readonly player?: Player;
+  readonly candidates?: readonly SpellSpec[];
+}
+
 /* One beat of the reveal: a question, its theatre, and its answer.
    `run` resolves when the answer is on screen and the readout may be written;
    it calls `settle` at the moment the theatre stops hunting, which is what
@@ -177,12 +188,7 @@ export async function reveal(opts: {
   mode?: Pick<ModeSpec, 'id'> | null;
   modeCandidates?: readonly DialModeChoice[];
   modeCopy?: (id: string) => DialModeCopy;
-  spell?: SpellSpec | null;
-  runes?: readonly {
-    spell: SpellSpec;
-    player: Player;
-    candidates?: readonly SpellSpec[];
-  }[];
+  runes?: readonly RuneDeal[];
   trial?: {
     /* Runs while the mode it belongs to is still on the stage. `note` writes
        one line under the readout — the opponent's clock — and is cleared for
@@ -197,13 +203,13 @@ export async function reveal(opts: {
     candidates: opts.modeCandidates,
     copy: opts.modeCopy,
   }));
-  if (opts.spell) acts.push(dealBeat(opts.spell));
   for (const rune of opts.runes ?? []) {
-    acts.push(dealBeat(rune.spell, {
+    const owner = rune.player;
+    acts.push(dealBeat(rune.spell, owner === undefined ? { candidates: rune.candidates } : {
       candidates: rune.candidates,
       label: () => t('game', 'reveal.runeFor'),
-      context: () => nameOf(rune.player),
-      contextHue: colorOf(rune.player),
+      context: () => nameOf(owner),
+      contextHue: colorOf(owner),
     }));
   }
   const trial = opts.trial;

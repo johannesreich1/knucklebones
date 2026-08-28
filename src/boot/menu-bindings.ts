@@ -21,6 +21,7 @@ import {
 import { saveStats } from '../persist.ts';
 import {
   RUNE_TRIAL_PICK,
+  localPoolAccess,
   modePickAvailable,
   runePickAvailable,
 } from '../local-options.ts';
@@ -132,10 +133,17 @@ export function bindMenus(root: HTMLElement): void {
 
   let syncModePicker = (): void => undefined;
   let syncSpellPicker = (): void => undefined;
+  /* The one roster a local setup may draw from, rebuilt on demand: the cache
+     carries both the collection and the confirmed tier, and subscribeRuneCollection
+     below re-syncs the rows the moment either changes. */
+  const localAccess = (mode: Mode = S.mode) =>
+    localPoolAccess(mode, collectedRuneIds(), confirmedRankedPoolTier());
   const normalizeLocalChoice = (mode: Mode): void => {
     const collected = collectedRuneIds();
     const choice = S.localChoices[mode];
-    if (!modePickAvailable(mode, choice.localMode, collected)) choice.localMode = 0;
+    /* CLASSIC is in every tier, so a pick the ladder has taken back always has
+       somewhere to land. */
+    if (!modePickAvailable(choice.localMode, localAccess(mode))) choice.localMode = 0;
     if (!runePickAvailable(mode, choice.spell, collected)) choice.spell = '';
     S.localMode = choice.localMode;
     S.spell = choice.spell;
@@ -225,10 +233,15 @@ export function bindMenus(root: HTMLElement): void {
       syncPracticePicks();
     }
   }, (item) => {
+    const selected = Number(item.v);
+    const enabled = modePickAvailable(selected, localAccess());
+    if (enabled) return { enabled };
+    /* An ordinary mode is held by the ladder alone; only Rune Ritual can also
+       be waiting on a collection, so only it needs the two-reason split. */
+    if (selected !== RUNE_TRIAL_PICK) return { enabled, reason: t('game', 'modeLock.reachBone') };
     const collected = collectedRuneIds();
-    const enabled = modePickAvailable(S.mode, Number(item.v), collected);
     const reachedTrial = confirmedRankedPoolTier() === 'ivory' || collected.length > 0;
-    return { enabled, reason: enabled ? undefined : t('game', reachedTrial
+    return { enabled, reason: t('game', reachedTrial
       ? 'runeTrial.lockCollectThree'
       : 'runeTrial.lockTrialReachIvory') };
   });

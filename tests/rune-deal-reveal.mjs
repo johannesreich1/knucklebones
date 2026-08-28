@@ -305,6 +305,85 @@ try {
   out.slots = [solo, both, third].map((d) => d.turned.drawnSlot);
   check(new Set(orders).size > 1, 'the deck fans out in the same order every deal', orders);
   check(out.slots.every((i) => i >= 0), 'a deal took no card out of the fan at all', out.slots);
+
+  /* ---- THE DECK IS THE COLLECTION, NOT THE REGISTRY ----
+     Everything above deals in local multiplayer, which deliberately exposes the
+     whole roster. Versus the AI the deck must be exactly what could have been
+     drawn: a fan showing a rune this device has never collected is a shuffle
+     that cannot produce what it is offering. Both ×2 decks got that wrong until
+     2026-08-28 — only the SECOND was ever handed its candidates, so a player
+     holding two runes watched six cards, then one. */
+  const collectedDeal = async (collected, spell) => {
+    await page.evaluate((runes) => {
+      localStorage.setItem('knucklebones.runes.v1', JSON.stringify({
+        version: 1,
+        accountId: '11111111-2222-4333-8444-555555555555',
+        verifiedAt: 1,
+        collected: runes,
+      }));
+      const k = window.__kb;
+      k.goHome(); k.openPractice();
+    }, collected);
+    await page.click('#modeSeg button[data-m="cpu"]');
+    await page.click('#modePick button[data-v="0"]');   // a CHOSEN mode: no dial to wait through
+    await page.click(`#spellPick button[data-v="${spell}"]`);
+    await page.evaluate(() => { window.__kb.S.timer = 0; });
+    await page.click('#btnPlay');
+    await page.waitForSelector('#ovWheel.dealing .rdealt.up', { timeout: 15000 });
+    const first = await page.evaluate(() => ({
+      card: document.querySelector('.rdealt').dataset.rune,
+      deck: [...document.querySelectorAll('.rcard')].map((e) => e.dataset.rune),
+    }));
+    let second = null;
+    if (spell === 'random2') {
+      await page.waitForFunction((shown) => {
+        const card = document.querySelector('.rdealt');
+        return card && card.dataset.rune !== shown && !card.classList.contains('up');
+      }, first.card, { timeout: 10000 });
+      second = await page.evaluate(() => ({
+        deck: [...document.querySelectorAll('.rcard')].map((e) => e.dataset.rune),
+      }));
+      await page.waitForSelector('.rdealt.up', { timeout: 15000 });
+      second.card = await page.evaluate(() => document.querySelector('.rdealt').dataset.rune);
+    }
+    await page.waitForFunction(() => document.querySelector('#ovWheel')?.classList.contains('holding'),
+      null, { timeout: 10000 });
+    await page.click('#ovWheel');
+    await page.waitForFunction(() => !document.querySelector('#ovWheel')?.classList.contains('on'),
+      null, { timeout: 8000 });
+    await page.evaluate(() => { window.__kb.S.gen++; });
+    return { first, second };
+  };
+
+  const held = SPELLS.slice(0, 3).map(({ id }) => id);
+  out.collectedDual = await collectedDeal(held, 'random2');
+  check(out.collectedDual.first.deck.length === held.length
+      && out.collectedDual.first.deck.every((rune) => held.includes(rune))
+      && new Set(out.collectedDual.first.deck).size === held.length,
+    'the first ×2 deck showed runes this device has not collected', out.collectedDual.first);
+  check(out.collectedDual.second.deck.length === held.length - 1
+      && out.collectedDual.second.deck.every((rune) => held.includes(rune))
+      && !out.collectedDual.second.deck.includes(out.collectedDual.first.card),
+    'the second ×2 deck was not the rest of the collection', out.collectedDual);
+
+  const pair = SPELLS.slice(2, 4).map(({ id }) => id);
+  out.collectedShared = await collectedDeal(pair, 'random');
+  check(out.collectedShared.first.deck.length === pair.length
+      && out.collectedShared.first.deck.every((rune) => pair.includes(rune))
+      && pair.includes(out.collectedShared.first.card),
+    'the shared RANDOM deck showed the whole registry instead of the collection',
+    out.collectedShared.first);
+
+  /* Put the whole roster back: everything after this measures the six-card
+     felt's geometry, and a two-card fan is a different table. */
+  await page.evaluate((runes) => {
+    localStorage.setItem('knucklebones.runes.v1', JSON.stringify({
+      version: 1,
+      accountId: '11111111-2222-4333-8444-555555555555',
+      verifiedAt: 1,
+      collected: runes,
+    }));
+  }, SPELLS.map(({ id }) => id));
   /* ---- THE REVEAL'S PARTS DO NOT SIT ON EACH OTHER ----
      Every part of this screen is absolutely positioned against the stage's
      edge through --stage, which is what lets a beat change the stage's size

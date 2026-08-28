@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
+import { CLASSIC, BOUNTY, ROWMULT, ROWSWITCH } from '../src/core/rules.ts';
+import { RANDOM } from '../src/core/modes.ts';
 import { RUNE_TRIAL_FORMAT } from '../src/core/ranked-outcomes.ts';
 import { RANDOM_DUAL_SPELL, RANDOM_SPELL, SPELLS } from '../src/core/spells.ts';
 import {
   RUNE_TRIAL_PICK,
   availableRuneSpecs,
+  localPoolAccess,
   modePickAvailable,
   pickLocalOutcome,
   runePickAvailable,
@@ -20,8 +23,39 @@ assert.equal(runePickAvailable('cpu', RANDOM_SPELL, [ids[0]]), false);
 assert.equal(runePickAvailable('cpu', RANDOM_DUAL_SPELL, ids.slice(0, 2)), true);
 assert.equal(runeTrialAvailable('cpu', ids.slice(0, 2)), false);
 assert.equal(runeTrialAvailable('cpu', ids.slice(0, 3)), true);
-assert.equal(modePickAvailable('cpu', RUNE_TRIAL_PICK, ids.slice(0, 2)), false);
-assert.equal(modePickAvailable('duo', RUNE_TRIAL_PICK, []), true);
+
+/* WHAT THE LADDER HAS GIVEN THIS DEVICE, and nothing else: the offline dial's
+   ring, the RANDOM draw and the picker's locks all read this one roster. */
+const three = ids.slice(0, 3);
+const stone = localPoolAccess('cpu', three, 'stone');
+const bone = localPoolAccess('cpu', three, 'bone');
+const ivory = localPoolAccess('cpu', three, 'ivory');
+/* An unconfirmed tier fails closed to STONE — a device that has never verified
+   an account has earned nothing, exactly as its rune collection reads empty. */
+assert.deepEqual(localPoolAccess('cpu', three, null), stone,
+  'an unknown pool tier was treated as something other than STONE');
+
+assert.equal(modePickAvailable(CLASSIC, stone), true);
+assert.equal(modePickAvailable(BOUNTY, stone), false,
+  'STONE offered a mode the ladder has not unlocked yet');
+assert.equal(modePickAvailable(ROWSWITCH, stone), false);
+assert.equal(modePickAvailable(ROWMULT, bone), true);
+assert.equal(modePickAvailable(BOUNTY, bone), true);
+/* The promise to spin is always offered; only what it may land on narrows. */
+assert.equal(modePickAvailable(RANDOM, stone), true);
+
+/* Rune Ritual needs BOTH halves: the IVORY tier and three collected runes. */
+assert.equal(modePickAvailable(RUNE_TRIAL_PICK, ivory), true);
+assert.equal(modePickAvailable(RUNE_TRIAL_PICK, bone), false,
+  'Rune Ritual was offered below IVORY');
+assert.equal(modePickAvailable(RUNE_TRIAL_PICK, localPoolAccess('cpu', ids.slice(0, 2), 'ivory')),
+  false, 'Rune Ritual was offered with too few collected runes');
+
+/* Pass-and-play is the one local mode that exposes the whole game, the same
+   exception availableRuneSpecs already makes for runes. */
+const duo = localPoolAccess('duo', [], null);
+assert.equal(modePickAvailable(BOUNTY, duo), true);
+assert.equal(modePickAvailable(RUNE_TRIAL_PICK, duo), true);
 for (const id of ['', ...ids, RANDOM_SPELL, RANDOM_DUAL_SPELL]) {
   assert.equal(runePickAvailable('duo', id, []), true, `duo unexpectedly locked ${id || 'NONE'}`);
 }
@@ -35,11 +69,20 @@ assert.deepEqual(dual, [two[0].id, two[1].id]);
 assert.notEqual(dual[0], dual[1]);
 assert.deepEqual(resolveSpellDeal(RANDOM_DUAL_SPELL, () => 0, two.slice(0, 1)), ['', '']);
 
+/* The draw may only ever answer with something the picker would have offered:
+   ring and answer come from one roster, so they cannot drift apart. */
 for (let index = 0; index < 500; index++) {
-  assert.notEqual(pickLocalOutcome(`ordinary-${index}`, false).format, RUNE_TRIAL_FORMAT,
+  const drawn = pickLocalOutcome(`stone-${index}`, stone);
+  assert.notEqual(drawn.format, RUNE_TRIAL_FORMAT,
+    'an ineligible local RANDOM draw landed on Rune Trial');
+  assert.equal(modePickAvailable(drawn.mode, stone), true,
+    `STONE's RANDOM drew ${drawn.id}, which its own picker locks`);
+}
+for (let index = 0; index < 500; index++) {
+  assert.notEqual(pickLocalOutcome(`ordinary-${index}`, bone).format, RUNE_TRIAL_FORMAT,
     'an ineligible local RANDOM draw landed on Rune Trial');
 }
-assert.ok(Array.from({ length: 500 }, (_, index) => pickLocalOutcome(`trial-${index}`, true))
+assert.ok(Array.from({ length: 500 }, (_, index) => pickLocalOutcome(`trial-${index}`, ivory))
   .some(({ format }) => format === RUNE_TRIAL_FORMAT),
   'eligible local RANDOM never admitted Rune Trial');
 

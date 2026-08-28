@@ -3,10 +3,11 @@
 // game.ts receives only concrete scoring and rune deals.
 import { CLASSIC, ME, AI, type Mode } from '../core/rules.ts';
 import { randStream } from '../core/dice.ts';
-import { MODES, RANDOM, modeById } from '../core/modes.ts';
+import { RANDOM, modeById } from '../core/modes.ts';
 import {
   makeRuneTrialOffer,
   pickRuneTrialChoice,
+  rankedOutcomeRoster,
   RUNE_TRIAL_OUTCOME,
 } from '../core/ranked-outcomes.ts';
 import { RANDOM_DUAL_SPELL, RANDOM_SPELL, spellById, type SpellSpec } from '../core/spells.ts';
@@ -16,16 +17,16 @@ import {
   RUNE_TRIAL_FORMAT,
   availableRuneSpecs,
   isRuneTrialOutcome,
+  localPoolAccess,
   modePickAvailable,
   pickLocalOutcome,
   runePickAvailable,
-  runeTrialAvailable,
 } from '../local-options.ts';
-import { collectedRuneIds } from '../rune-collection-cache.ts';
+import { collectedRuneIds, confirmedRankedPoolTier } from '../rune-collection-cache.ts';
 import { S, type LocalRuneTrial } from '../state.ts';
 import { colorOf, nameOf } from '../ui/identity.ts';
 import { hide, show } from '../ui/dom.ts';
-import { reveal } from '../ui/reveal.ts';
+import { reveal, type RuneDeal } from '../ui/reveal.ts';
 import { awaitTrialHandoff, requestTrialRuneChoice } from '../ui/trial-select.ts';
 import { resolveSpellDeal, type SpellDeal } from './spell-deal.ts';
 
@@ -88,10 +89,12 @@ const trialSides = (picked: LocalRuneTrial) => [
 export async function resolveLocalStart(): Promise<ResolvedLocalStart | null> {
   const collected = collectedRuneIds();
   const candidates = availableRuneSpecs(S.mode, collected);
-  const trialEligible = runeTrialAvailable(S.mode, collected);
-  const selectedMode = modePickAvailable(S.mode, S.localMode, collected) ? S.localMode : CLASSIC;
+  /* ONE roster decides everything a local setup may land on: the dial's ring
+     below, the RANDOM draw, and whether the stored pick is still legal. */
+  const access = localPoolAccess(S.mode, collected, confirmedRankedPoolTier());
+  const selectedMode = modePickAvailable(S.localMode, access) ? S.localMode : CLASSIC;
   const seed = Math.random().toString(36).slice(2);
-  const outcome = selectedMode === RANDOM ? pickLocalOutcome(seed, trialEligible)
+  const outcome = selectedMode === RANDOM ? pickLocalOutcome(seed, access)
     : selectedMode === RUNE_TRIAL_PICK ? RUNE_TRIAL_OUTCOME : null;
   const trial = isRuneTrialOutcome(outcome);
   const mode = selectedMode === RANDOM && outcome && !trial ? modeById(outcome.modifier) : null;
@@ -113,33 +116,32 @@ export async function resolveLocalStart(): Promise<ResolvedLocalStart | null> {
       return chosen.trial ? trialSides(chosen.trial) : null;
     },
   };
+  /* EVERY DECK IS THE ROSTER IT COULD HAVE DEALT FROM. Built once, here, so a
+     beat cannot be constructed without the candidates that make it honest —
+     which is exactly how the first ×2 deck came to fan all six runes to a
+     player who had collected two. A shared RANDOM rune is the same beat with no
+     owner: without `player` the deal keeps its own title and no eyebrow. */
+  const dealtRunes: readonly RuneDeal[] | undefined = !trial && randomRunes
+    ? effectiveSpell === RANDOM_DUAL_SPELL
+      ? [
+        { spell: spellById(randomRunes[ME])!, player: ME, candidates },
+        { spell: spellById(randomRunes[AI])!, player: AI,
+          candidates: candidates.filter((spell) => spell.id !== randomRunes[ME]) },
+      ]
+      : [{ spell: spellById(randomRunes[ME])!, candidates }]
+    : undefined;
   if (selectedMode === RANDOM && outcome) {
     await reveal({
       mode: trial ? RUNE_TRIAL_OUTCOME : mode,
-      modeCandidates: trialEligible ? [...MODES, RUNE_TRIAL_OUTCOME] : MODES,
+      modeCandidates: rankedOutcomeRoster([access]),
       modeCopy: localModeCopy,
-      spell: !trial && effectiveSpell === RANDOM_SPELL && randomRunes
-        ? spellById(randomRunes[ME]) : null,
-      runes: !trial && effectiveSpell === RANDOM_DUAL_SPELL && randomRunes ? [
-        { spell: spellById(randomRunes[ME])!, player: ME },
-        { spell: spellById(randomRunes[AI])!, player: AI,
-          candidates: candidates.filter((spell) => spell.id !== randomRunes[ME]) },
-      ] : undefined,
+      runes: dealtRunes,
       trial: trial ? trialAct : undefined,
     });
   } else if (trial) {
     await reveal({ trial: trialAct });
-  } else if (randomRunes) {
-    const mine = spellById(randomRunes[ME]);
-    const theirs = spellById(randomRunes[AI]);
-    await reveal({
-      spell: effectiveSpell === RANDOM_SPELL ? mine : null,
-      runes: effectiveSpell === RANDOM_DUAL_SPELL && mine && theirs ? [
-        { spell: mine, player: ME },
-        { spell: theirs, player: AI,
-          candidates: candidates.filter((spell) => spell.id !== mine.id) },
-      ] : undefined,
-    });
+  } else if (dealtRunes) {
+    await reveal({ runes: dealtRunes });
   }
 
   if (trial) {

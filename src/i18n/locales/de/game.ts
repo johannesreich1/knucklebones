@@ -207,6 +207,9 @@ export const deGame = {
       detail: 'Beide Spieler sehen dieselben drei Runen und wählen heimlich je eine aus. Beide gewählten Runen werden gleichzeitig aufgedeckt; danach gelten die Brettregeln des Klassik-Modus.',
     },
   },
+  modeLock: {
+    reachBone: 'Erreiche KNOCHEN, um diesen Modus gegen die KI freizuschalten.',
+  },
   runeTrial: {
     choosePrompt: 'Wähle eine Rune — dein Gegner kann sie nicht sehen',
     chooseFor: '{{player}} — wähle eine Rune',

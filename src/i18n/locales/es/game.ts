@@ -207,6 +207,9 @@ export const esGame = {
       detail: 'Ambos jugadores ven las mismas tres runas y cada uno elige una en secreto. Las dos elecciones se revelan a la vez; después, el duelo sigue las reglas del tablero Clásico.',
     },
   },
+  modeLock: {
+    reachBone: 'Alcanza HUESO para desbloquear este modo contra la IA.',
+  },
   runeTrial: {
     choosePrompt: 'Elige una runa — tu rival no puede verla',
     chooseFor: '{{player}} — elige una runa',
