@@ -149,3 +149,30 @@ export function createRuler(count: number, gap: number, seed: number): Ruler {
     },
   };
 }
+
+/* WHICH SLOTS SHOULD BE MOUNTED for a given view. Pure, so the one piece of
+   arithmetic that decides what the reader can see is testable without a DOM.
+   `detached` means the view has left everything currently mounted behind — a
+   dragged thumb, a fling that outran its fetches, a deep link. The planner does
+   not care which: it asks whether what is held is still being looked at, and
+   every cause gets the same repair. */
+export interface WindowPlan { first: number; last: number; detached: boolean }
+
+export function planWindow(
+  ruler: Ruler,
+  viewTop: number,
+  viewHeight: number,
+  keep: number,
+  count: number,
+  mountedFirst: number,
+  mountedLast: number,
+): WindowPlan {
+  const margin = keep * viewHeight;
+  const first = Math.max(0, ruler.at(viewTop - margin));
+  const last = Math.min(count - 1, ruler.at(viewTop + viewHeight + margin));
+  return {
+    first,
+    last,
+    detached: mountedLast < mountedFirst || last < mountedFirst - 1 || first > mountedLast + 1,
+  };
+}

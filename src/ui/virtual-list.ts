@@ -24,7 +24,7 @@
    a second mechanism computing the same answer, and two answers drift. Layout
    changes that are not scrolls schedule a frame directly instead. */
 
-import { createRuler } from './virtual-ruler.ts';
+import { createRuler, planWindow } from './virtual-ruler.ts';
 import { watchScrollSettled } from './scroll-settled.ts';
 import { createMountedSlots, px, type VirtualSlots } from './virtual-slot.ts';
 import {
@@ -50,6 +50,9 @@ export interface VirtualListSpec<T> {
   page?: number;
   /** Viewports of rows kept mounted on each side of the view. */
   keep?: number;
+  /** Where to open. Applied BEFORE the first paint, against measured heights —
+      see the priming pass in mountVirtualList. */
+  focus?: { index: number; align: VirtualAlign } | null;
   /** True while this list is the view the reader is actually looking at. */
   alive?(): boolean;
 }
@@ -155,15 +158,10 @@ export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
 
     // ---- PLAN (pure) ----
     const viewTop = scrollTop - listTop - drift();          // ruler coordinates
-    const keepPx = KEEP * viewHeight;
-    const wantFirst = Math.max(0, ruler.at(viewTop - keepPx));
-    const wantLast = Math.min(count - 1, ruler.at(viewTop + viewHeight + keepPx));
-
-    /* Detached: the reader is more than a screen from anything mounted — a
-       dragged thumb, a fling that outran its fetches, a deep link. The module
-       never asks WHY; it asks whether what it holds is still being looked at,
-       and every cause gets the same repair. */
-    const detached = last < first || wantLast < first - 1 || wantFirst > last + 1;
+    const plan = planWindow(ruler, viewTop, viewHeight, KEEP, count, first, last);
+    const wantFirst = plan.first;
+    const wantLast = plan.last;
+    const detached = plan.detached;
 
     // ---- COMMIT (writes only) ----
     if (detached) {
@@ -294,6 +292,24 @@ export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
     return true;
   }
 
+  /* OPEN ON THE RIGHT ROW, IN ONE PAINT.
+     A jump computed before anything is measured uses the seed estimate for
+     every row above it, and that error compounds: on a 151-row board a 49px
+     guess against ~45px rows put the opening 704px out, so the reader saw the
+     panel appear empty, slide, and only then fill with rows (user report).
+     Measuring needs layout, and layout needs the panel visible — so the caller
+     reveals it first and this runs the whole mount/measure/re-aim cycle
+     SYNCHRONOUSLY, before the browser has a chance to paint the intermediate
+     state. Each pass re-aims with a ruler that knows more than the last; three
+     is enough to converge because the second already has real heights for the
+     rows around the target, and the estimate for everything else is then a
+     measured average rather than a guess. */
+  if (spec.focus) {
+    for (let pass = 0; pass < 3; pass++) {
+      wanted = { index: spec.focus.index, align: spec.focus.align };
+      frame();
+    }
+  }
   schedule();
 
   return {

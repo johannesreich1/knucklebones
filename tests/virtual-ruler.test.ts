@@ -2,7 +2,7 @@
 // pads it writes, the scrollbar it spans and the row a dropped thumb lands on
 // are all differences of top(). Everything here is pure, so it runs in Node and
 // fails loudly long before a browser is involved.
-import { createRuler } from '../src/ui/virtual-ruler.ts';
+import { createRuler, planWindow } from '../src/ui/virtual-ruler.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -109,5 +109,39 @@ edges.measure(9999, 90);
 eq(edges.measured, 0, 'measurements outside the board are ignored');
 near(edges.top(-3), 0, 'top() clamps below the board');
 near(edges.top(99), edges.top(4), 'top() clamps above the board');
+
+/* ---- the window planner ------------------------------------------------ */
+/* Extracting this from the frame loop is what makes the one piece of
+   arithmetic deciding what the reader can see testable without a browser. */
+{
+  const board = createRuler(1000, 5, 50);   // 55px per slot, nothing measured
+  const view = 800;
+  const keep = 2;                            // 1600px of runway each side
+
+  const mid = planWindow(board, 10_000, view, keep, 1000, 150, 200);
+  eq([mid.first, mid.last], [152, 225],
+     'the window spans the view plus its runway on both sides');
+  eq(mid.detached, false, 'a view overlapping what is mounted is not detached');
+
+  const top = planWindow(board, 0, view, keep, 1000, 0, 50);
+  eq(top.first, 0, 'the window cannot start above the board');
+  const bottom = planWindow(board, 60_000, view, keep, 1000, 900, 999);
+  eq(bottom.last, 999, 'the window cannot run past the last row');
+
+  /* A thumb dragged far from anything mounted, in both directions. */
+  eq(planWindow(board, 40_000, view, keep, 1000, 0, 60).detached, true,
+     'a view far BELOW everything mounted is detached');
+  eq(planWindow(board, 100, view, keep, 1000, 800, 900).detached, true,
+     'a view far ABOVE everything mounted is detached');
+  /* An empty mounted range is detached by definition — there is nothing to
+     hold on to, which is the state a freshly opened list starts in. */
+  eq(planWindow(board, 10_000, view, keep, 1000, 5, 4).detached, true,
+     'an empty mounted range is detached');
+  /* Adjacent, not overlapping: the window has moved on by one row. Trimming
+     and mounting can carry that; it must NOT be treated as a jump, or an
+     ordinary crawl would tear the window down and rebuild it every frame. */
+  const nudged = planWindow(board, 10_000, view, keep, 1000, 225, 300);
+  eq(nudged.detached, false, 'a window one row away is a slide, not a jump');
+}
 
 console.log(JSON.stringify({ problems, errs }, null, 2));

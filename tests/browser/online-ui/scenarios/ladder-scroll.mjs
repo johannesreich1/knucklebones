@@ -47,6 +47,27 @@ export async function runLadderScrollScenarios(suite) {
       probe: async (page) => {
         let requests = 0;
         page.on('request', (r) => { if (r.url().includes('/rpc/leaderboard')) requests++; });
+        /* THE OPENING, FRAME BY FRAME. The ladder must arrive in ONE painted
+           frame, already on the reader's row. It used to reveal an empty panel
+           aimed from pure estimates, then slide 704px as real heights arrived —
+           a 49px guess against ~45px rows, compounded over 144 of them (user
+           report: "a load then a kind of little bit up scrolling"). The
+           recorder is installed BEFORE the tap so the first frame is captured. */
+        await page.evaluate(() => {
+          window.__open = [];
+          const tick = () => {
+            const body = document.querySelector('#ovOnline .pbody');
+            const list = document.querySelector('#onLadderList');
+            if (body && list && document.getElementById('onLadder')?.hidden === false) {
+              window.__open.push({
+                top: Math.round(body.scrollTop),
+                slots: list.querySelectorAll('[data-slot]').length,
+              });
+            }
+            if (window.__open.length < 40) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        });
         /* The default door is the profile; the ladder is one tap further in. */
         await page.click('#btnLadder');
         await page.waitForSelector('#onLadder:not([hidden]) #onLadderList .lrow.me',
@@ -57,6 +78,16 @@ export async function runLadderScrollScenarios(suite) {
            CSS.supports is the load-bearing half: without it an 'auto' reading
            cannot be told apart from "this engine never heard of the property",
            which is exactly how paged-view.css lost its band once. */
+        const opening = await page.evaluate(() => {
+          const seen = window.__open ?? [];
+          const painted = seen.filter((f) => f.slots > 0);
+          return {
+            frames: seen.length,
+            emptyFramesBeforeRows: seen.findIndex((f) => f.slots > 0),
+            travelAfterFirstRows: painted.length
+              ? Math.max(...painted.map((f) => Math.abs(f.top - painted[0].top))) : null,
+          };
+        });
         const anchor = await page.evaluate(() => ({
           supported: CSS.supports('overflow-anchor', 'none'),
           onLadder: getComputedStyle(document.querySelector('#ovOnline .pbody')).overflowAnchor,
@@ -160,13 +191,24 @@ export async function runLadderScrollScenarios(suite) {
         const backRequests = requests - upRequests;
         const meBack = await page.evaluate(() =>
           !!document.querySelector('#onLadderList .lrow.me'));
-        return { anchor, before, start, after, steps, shortEnd, grewAbove, frames, top, home, scrolled,
+        return { opening, anchor, before, start, after, steps, shortEnd, grewAbove, frames, top, home, scrolled,
                  upRequests, backRequests, meBack };
       },
     });
     const r = run.probeResult;
     out.ladderScroll[engine] = r;
 
+    check(r?.opening?.frames > 0,
+      `[${engine}] the opening was never sampled — the two checks below are vacuous`,
+      r?.opening);
+    check(r?.opening?.emptyFramesBeforeRows === 0,
+      `[${engine}] the ladder painted an EMPTY panel before its rows arrived`, r?.opening);
+    /* Once rows are up the view must not travel. A few pixels is the estimate
+       being replaced by measurement; hundreds is the opening aiming itself with
+       a ruler that had measured nothing. */
+    check((r?.opening?.travelAfterFirstRows ?? 1e9) <= 8,
+      `[${engine}] the ladder slid after opening instead of arriving in place`,
+      r?.opening);
     check(r?.start?.scrollTop > 0 && r?.steps?.length === 4
       && r.steps.some((step) => step.top !== r.before.top),
       `[${engine}] the wheel did not move this scroller — every assertion below is vacuous`, r);

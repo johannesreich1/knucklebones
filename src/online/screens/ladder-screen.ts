@@ -75,7 +75,6 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
        item — a tombstone becomes a row, and a shifting board can re-seat it —
        so the tap has to read the CURRENT row rather than close over the first. */
     const showing = new WeakMap<HTMLElement, LadderRow>();
-    let centred = false;
 
     /* ---- the board, as a sequence ---------------------------------------
        Positions come from the RPC's dense `pos` (migration 20260827203007),
@@ -121,12 +120,26 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
       : await source.after(null, PAGE);
     if (run !== showRevision || !isOnlinePanelCurrent('onLadder')) return;
 
+    /* THE EXACT ROW, FROM THE SEED. standing.rank - 1 is the position of a tie
+       group's FIRST member, not necessarily mine — but the page we just fetched
+       carries every row's dense `pos`, so my own position is already known and
+       the opening needs no second, corrective jump. */
+    const mine = me ? opening.rows.find((row) => row.nickname === me.nickname) : undefined;
+    const focusIndex = mine?.pos !== undefined ? mine.pos - 1
+      : standing?.rank ? standing.rank - 1 : 0;
+
+    /* Revealed BEFORE the list is built: mountVirtualList measures and aims
+       synchronously from here, so the first frame the browser paints is already
+       in the right place. */
+    showOnlinePanel('onLadder');
+
     virtual = mountVirtualList<LadderRow>({
       scroller,
       list: listElement,
       page: PAGE,
       total: standing?.population ?? null,
       seed: opening,
+      focus: me || standing?.rank ? { index: focusIndex, align: 'center' } : null,
       alive,
       source,
       slots: {
@@ -201,14 +214,6 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
               + `<span class="nm">${esc(row.nickname)}</span>${middle}<span class="rt">${pts(row.points)}</span>`;
           }
           paintAvatar(element.querySelector('.av') as HTMLElement, row.avatar, isMe ? 34 : 24);
-          /* THE EXACT LANDING. standing.rank - 1 is the position of a tie
-             group's FIRST member, not necessarily mine, so the opening seek is
-             only an approximation. The moment my own row is actually painted we
-             know its true position, and centring on the key is exact. Once. */
-          if (isMe && !centred) {
-            centred = true;
-            queueMicrotask(() => virtual?.scrollToKey(row.nickname, 'center'));
-          }
         },
         lead: (row, previous, index) => {
           const group = boardGroup(row.points, row.apex);
@@ -233,10 +238,6 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
       },
     });
 
-    showOnlinePanel('onLadder');
-    /* Approximate first, exact second: seek to where my rank says I am, and let
-       render() re-centre on my actual row when it arrives. */
-    if (standing?.rank) virtual.scrollToIndex(standing.rank - 1, 'center');
     await virtual.ready;
   }
 
