@@ -1,0 +1,329 @@
+<!-- meta name="EQ3 — The standing card" group="3k · The equipped rune" subtitle="One card in the collection stands up out of its slot — the six stay six, no furniture and no height are added, and the SILVER gate is the difference between a card face-down and a card turned over" width=412 height=1690 sizes="md" links="Profile, Match reveal, Rune Ritual" -->
+<style>
+  /* Card-local names only (eq3*). The Profile anatomy is the APP's
+     (src/online/styles/account.css and profile.css, both scoped #onAccount), so
+     the card wears that ancestor chain instead of copying rules out of it, and
+     the six-slot grid comes from the runtime's own accountRunesMarkup() through
+     {{account-runes:…}}. 31-account.html paid for that lesson already: the
+     version before it hung a private wrapper off .scr, every #onAccount rule
+     fell out of reach, and the hand-typed replacements are exactly what went
+     stale. Glue only below.
+
+     One reader across all eight cards: FrostLynx303, 1,412 points, SILVER,
+     rank #12, best streak 3, peak 1,455, owning WARD and FATE. --p is
+     groupOf()'s fill for 1,412 inside SILVER (core/ladder.ts:174) and --pk the
+     1,455 peak still ahead of it, so .haspeak draws the notch. */
+
+  /* stands in for .pbody, the paged view's scrolling body: only its centring,
+     because the rest of .pbody is scroll chrome derived from .ov.paged's header
+     vars, which the preview stage has no header bar to reserve room for. */
+  #ovOnline{display:flex;flex-direction:column;align-items:center;width:100%}
+  .shead{margin-bottom:10px}
+  .scr{gap:6px}                      /* chrome's .stage .scr never sets gap */
+
+  /* ===== THE IDEA. The obvious move is to add something — a seventh tile, a
+     bed under the grid, a badge in a corner. This card adds NOTHING. One of the
+     six slots you already tap lifts out of its own bed, tilts, and drops a
+     shadow into the hole it left, and that is the whole equip mark: the object
+     was already in the grid, it just stands up. So the collection stops being a
+     reference you can equip from and becomes a loadout you can read from, and
+     the tap that used to describe now commits.
+     The standing thing is the DEALT CARD's face, not a new picture of a rune:
+     opaque linear-gradient(158deg,#1e2440,#0b0e1c), a 46% hue edge and a 26%
+     bloom, all of it inherited by wearing .rdealt / .rback / .rface from
+     styles/components/rune-deal.css:52-60 around the markup {{runefaces:…}}
+     emits. Nothing here redraws a card. ===== */
+
+  /* The block reserves its standing headroom in EVERY state — 5px of lift plus
+     about 3px of corner from the -3deg tilt on a 112px-wide slot. Without the
+     reservation the whole panel below jumps 5px the first time anyone equips,
+     and #onAccount already scrolls past two screens. In the app this padding
+     belongs on the .accrunes section itself, unconditionally, not on an
+     equipped state. */
+  .eq3grid{position:relative;width:100%;padding-top:8px}
+
+  /* WHY THE SEAT IS ANCHORED FROM THE BOTTOM. WARD is third in registry order
+     (core/spells.ts:272) so it lands in row 1, column 3 of a
+     repeat(3,minmax(0,1fr)) grid with a 7px gap (account.css:46). Measuring
+     down from the top would mean guessing the height of the RUNES / 2 of 6
+     head row, which is a 10px label whose box changes with the locale. From the
+     BOTTOM the arithmetic is fixed: row 2 is 44px, the gap is 7px, so the top
+     row's floor is 51px up, whatever the head does. */
+  .eq3seat{position:absolute;left:calc((100% - 14px)/3*2 + 14px);
+    width:calc((100% - 14px)/3);bottom:51px;height:44px;
+    color:var(--hue);pointer-events:none}
+
+  /* THE BED THE CARD LEFT. Once the card is up, the slot beneath it has to read
+     as empty — otherwise the real .accrune's icon and label sit there in full
+     health and the picture says the rune is in two places. A dark recess with
+     the shadow falling INTO it is the cheapest way to say "this is where it was
+     lying". It is transparent while the card is down, so the flat state is
+     exactly today's grid, pixel for pixel. */
+  .eq3bed{position:absolute;inset:0;border-radius:11px;
+    background:rgba(3,5,12,.86);box-shadow:inset 0 4px 10px rgba(0,0,0,.72);opacity:0}
+
+  /* THE CARD. It wears .rdealt so the app's own seam decides which face is lit:
+     :where(#kbroot) .rdealt.up .rface{opacity:1} and .rdealt.up .rback{opacity:0}
+     at (0,2,0). That is deliberate — a rule of this card's naming .rface would
+     be a second author for a class the app pins opacity:0 on, and the whole
+     point of wearing the anatomy is that nobody gets to have their own copy of
+     it. What IS overridden here is only geometry: .rdealt sizes itself off
+     --card, which exists on #ovWheel and nowhere else, so position, width,
+     height, border-radius and the resting opacity are restated for a card whose
+     footprint is a profile SLOT — landscape, not the reveal's portrait.
+     --card survives only to feed .rlbl's font-size formula below. */
+  .eq3stand{position:absolute;left:0;top:0;width:100%;height:100%;opacity:1;
+    border-radius:11px;transform-origin:22% 92%;--card:55px}
+  /* the compact name, wearing .rlbl (rune-deal.css:62) at a --card that resolves
+     it to 7.98px — inside 0.02px of .accrune span's 8px, so the standing card
+     says the same word at the same size as the slot it came out of. It rides at
+     the card's right edge like a playing card's index, because .rface centres
+     its glyph and the two must not fight for the middle. */
+  .eq3lbl{position:absolute;right:8px;top:50%;transform:translateY(-50%);
+    z-index:3;color:var(--hue);opacity:0}
+  .eq3stand.up .eq3lbl{opacity:1}
+  /* THE REFERENCE HAS TO MOVE. If the tap commits, the library sheet needs its
+     own target, and the app already owns a glyph for exactly that: the ⓘ the
+     HUD's mode and rune chips wear (styles/game/shell.css:54, .rchip .mi). Same
+     mark, same dim, in the slot's free corner — the card's back keeps its own
+     index at top-left (rune-deal.css:58), so top-right is empty on both faces. */
+  .eq3mi{position:absolute;font-size:9px;font-weight:800;line-height:1;color:var(--dim)}
+  .eq3micard{top:3px;right:5px;z-index:4}
+  /* FATE is first in registry order: row 1, column 1 — the same 51px floor. */
+  .eq3mifate{bottom:80px;left:calc((100% - 14px)/3 - 13px)}
+
+  /* the sentence the grid gains, in the app's own "NAME — blurb" shape: the
+     {{pickinfo:…}} token resolves it through ui/library.ts:122-125, the same
+     pure function the offline setup row calls, so the wording cannot drift from
+     the picker's. Sentence case, so it is not a .splbl — and ONE colour for the
+     whole string, name included, because that is how #spellPickInfo already
+     reads offline. Tinting the name to the rune's hue here would be a second
+     treatment for a sentence the app already knows how to draw. */
+  .eq3say{width:100%;max-width:var(--w-col);text-align:center;font-size:11px;
+    line-height:1.5;color:#c6d3ee;padding:0 4px;box-sizing:border-box}
+
+  /* ===== THE LOOP: 3.0s — ONE claim per movement =====
+       0–18%    FLAT. The card element is transparent and the real .accrune is
+                what you see, so the un-equipped grid is not a drawing of the
+                grid, it IS the grid.
+       18–33%   THE STAND-UP, 0.45s: the far edge lifts, the card rises 5px into
+                a -3deg tilt, and the bed darkens under it.
+       33–86%   STANDING. Held, because this is the state the player lives in.
+       86–100%  It lies back down — the second tap. Equipping is reversible and
+                the loop has to show that the same gesture undoes it.
+     The SILVER turn is NOT in here. It is beat two, below, on its own seat and
+     its own caption: standing and turning are two different claims and a reader
+     who sees them in one movement will read them as one thing. */
+  .eq3stand{animation:eq3stand 3s cubic-bezier(.3,0,.25,1) infinite}
+  @keyframes eq3stand{
+    0%,18%  {opacity:0;transform:perspective(700px) translateY(0) rotate(0deg)}
+    19%     {opacity:1;transform:perspective(700px) translateY(-1px) rotate(-.7deg)}
+    33%,86% {opacity:1;transform:perspective(700px) translateY(-5px) rotate(-3deg)}
+    99%     {opacity:1;transform:perspective(700px) translateY(0) rotate(0deg)}
+    100%    {opacity:0;transform:perspective(700px) translateY(0) rotate(0deg)}}
+  .eq3bed{animation:eq3bed 3s cubic-bezier(.3,0,.25,1) infinite}
+  @keyframes eq3bed{0%,18%{opacity:0}33%,86%{opacity:1}99%,100%{opacity:0}}
+
+  /* ===== BEAT TWO: THE SILVER TURN, 3.0s, separately captioned =====
+     Below 1,260 the card stands but stays face-down; at SILVER it turns over.
+     The turn is the app's own half-turn (ui/runedeal.ts flip): 0 → 90deg, the
+     lit face swapped while the card is edge-on, then -90 → 0. Never a spin, and
+     never backface-visibility — rune-deal.css:31-35 records why: any grouping
+     property in the ancestry flattens the 3D context and the wrong face shows.
+     The two faces are addressed POSITIONALLY, as the token's own first and
+     second child, for the same reason the resting states are left to
+     .rdealt.up: naming .rface in a selector would make this card a second
+     author for an app class that is pinned opacity:0. */
+  .eq3turnrow{display:flex;align-items:center;justify-content:center;gap:9px;
+    width:100%;margin-top:2px}
+  .eq3side{width:98px;flex:0 0 auto;font-size:8px;letter-spacing:.13em;line-height:1.55;
+    text-transform:uppercase;color:var(--dim);text-align:center}
+  .eq3side b{display:block;color:var(--txt);letter-spacing:.16em}
+  .eq3side.on b{color:var(--g-silver)}
+  .eq3turnseat{position:relative;width:112px;height:52px;flex:0 0 auto;color:var(--hue)}
+  .eq3turnseat .eq3seat{left:0;right:0;bottom:0;width:auto}
+  .eq3turnseat .eq3bed{opacity:1}
+  .eq3turnseat .eq3stand{animation:eq3half 3s cubic-bezier(.3,0,.25,1) infinite}
+  @keyframes eq3half{
+    0%,38%  {transform:perspective(700px) translateY(-5px) rotate(-3deg) rotateY(0deg)}
+    47.9%   {transform:perspective(700px) translateY(-5px) rotate(-3deg) rotateY(90deg)}
+    48%     {transform:perspective(700px) translateY(-5px) rotate(-3deg) rotateY(-90deg)}
+    58%,100%{transform:perspective(700px) translateY(-5px) rotate(-3deg) rotateY(0deg)}}
+  .eq3turnseat .eq3stand > i:nth-child(1){animation:eq3backaway 3s steps(1,end) infinite}
+  .eq3turnseat .eq3stand > i:nth-child(2){animation:eq3faceon 3s steps(1,end) infinite}
+  .eq3turnseat .eq3lbl{animation:eq3faceon 3s steps(1,end) infinite}
+  @keyframes eq3backaway{0%,47.9%{opacity:1}48%,100%{opacity:0}}
+  @keyframes eq3faceon{0%,47.9%{opacity:0}48%,100%{opacity:1}}
+
+  /* ===== THE STATES, side by side and still — the actual comparison. An idea
+     has to be readable in ONE frame, because that is how a player takes it in,
+     and because a reduced-motion player never sees the loop at all.
+     These beds are drawn at FULL SLOT SIZE — 112x44 is what the real grid gives
+     a column in a 384px stage — because a scaled-down still turns the 8px
+     compact label into 4px of grey mush, and the label is half of what a slot
+     is. .scr leaves exactly 350px, so the column gap is 6px and not the row's
+     14: three slots plus two gaps is 348, and at 8px it is 352 — measured, and
+     the row silently wrapped 2 + 2 + 1 and grew 123px. */
+  .eq3states{display:flex;flex-wrap:wrap;justify-content:center;gap:14px 6px;
+    width:100%;margin-top:10px}
+  .eq3st{display:flex;flex-direction:column;align-items:center;gap:8px;width:112px}
+  .eq3st .cap{font-size:8px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;
+    text-align:center;line-height:1.55}
+  .eq3box{position:relative;width:112px;height:52px}
+  .eq3box .eq3seat{left:0;right:0;bottom:0;width:auto}
+  /* THE STILLS ARE STILL. Every mark below is driven by the loop's keyframes,
+     and an animation's FILLED VALUE sits in the animation origin, above every
+     author declaration except !important — so a plain rule, however specific,
+     loses and each "state" shows whatever frame the shared loop happens to be
+     on. It has to reach descendants and both pseudo-elements, because the
+     locked veil is an ::after. 29c-rail-slot.html records measuring this three
+     times before writing the rule. */
+  .eq3box,.eq3box *,.eq3box *::before,.eq3box *::after{animation:none!important}
+  .eq3box .eq3bed{opacity:1}
+  .eq3box .eq3stand{opacity:1;transform:perspective(700px) translateY(-5px) rotate(-3deg)}
+
+  /* The mini bed is the one place this card restates the app instead of asking
+     it: {{account-runes:…}} renders all six slots or none, and a still needs
+     exactly one. So these four values are copied from account.css:47-55 and
+     NOTHING else is — border color-mix 30%, background color-mix 7%, radius 11,
+     and the 8px/900/.08em compact label. The colour is var(--txt), not the
+     var(--fg) account.css asks for: no stylesheet in the repo defines --fg, so
+     that declaration is invalid at computed-value time and the real slot's
+     label is inheriting rather than resolving. Copying the bug would make the
+     still lie about the shipped screen in the other direction. */
+  .eq3slot{position:absolute;left:0;right:0;bottom:0;height:44px;box-sizing:border-box;
+    display:flex;align-items:center;gap:6px;padding:8px 7px;border-radius:11px;
+    border:1px solid color-mix(in srgb,var(--hue) 30%,transparent);
+    background:color-mix(in srgb,var(--hue) 7%,rgba(255,255,255,.02));color:var(--hue)}
+  .eq3slot svg{flex:0 0 auto;filter:drop-shadow(0 0 7px currentColor)}
+  .eq3slot span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    color:var(--txt);font-size:8px;font-weight:900;letter-spacing:.08em}
+  /* the veil, account.css:56-59 — a locked slot keeps its identity and its
+     position, which is exactly why it can never stand: there is no card in it */
+  .eq3lock .eq3slot{filter:saturate(.15);opacity:.46;background:rgba(255,255,255,.018)}
+  .eq3lock .eq3slot::after{content:"";position:absolute;inset:0;border-radius:inherit;
+    background:linear-gradient(135deg,rgba(255,255,255,.09),rgba(255,255,255,.015));
+    backdrop-filter:blur(1.5px);-webkit-backdrop-filter:blur(1.5px)}
+
+  /* MORE THAN ONE CHARGE IS MORE THAN ONE CARD. FATE casts twice
+     (core/spells.ts:46) and every other rune once, so its stack is two cards at
+     DELIBERATELY UNEQUAL tilts — two cards at the same angle read as one thick
+     card, a mistake 29c-rail-slot.html already wrote down. It is the deck's own
+     back (rune-deal.css:52-54), not a third card treatment.
+     It lives on the FIRST RUNE still rather than the equipped one because that
+     is where the reader's FATE actually is: FATE was won first and equipped
+     itself, WARD came later and was chosen. One still, both facts. */
+  .eq3edge{position:absolute;inset:0;border-radius:11px;
+    background:linear-gradient(160deg,#181d34,#090c18);
+    border:1px solid rgba(255,255,255,.12);box-shadow:0 6px 16px rgba(0,0,0,.55);
+    transform:perspective(700px) translateY(-2px) rotate(-7deg)}
+  /* the reward moment: the card arrives already standing, and the only thing
+     added is the gold the NEW RUNE kicker is written in (online.ts:172) */
+  .eq3first .eq3stand{box-shadow:0 0 20px rgba(var(--gold-rgb),.5)}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">PROFILE</span><span class="pad"></span></div>
+
+  <div class="cap2">One tap stands a card up out of its slot. The six stay six.</div>
+
+  <div id="ovOnline">
+    <div class="panel" id="onAccount">
+      <div class="ringwrap haspeak" style="--p:.2027;--pk:.26">
+        <i class="lring"></i><i class="lpeak"></i>
+        <button class="avwrap"><span class="dice-static">{{die:5:p1:74}}</span><span class="avedit">✎</span></button>
+        <span class="gname" style="--gc:var(--g-silver)">SILVER</span>
+      </div>
+      <div class="accname">FrostLynx303</div>
+      <button class="ptv"><b>1,412</b><span>Ladder points</span></button>
+      <div class="facts">
+        <button class="fact" type="button"><b>#12</b><span>Rank</span></button>
+        <div class="fact"><b>3</b><span>Best streak</span></div>
+        <div class="fact pk"><b>1,455</b><span>Peak</span></div>
+      </div>
+
+      <!-- The real six-slot collection, asked of the runtime's own
+           accountRunesMarkup(): registry order, real labels, the real 2 / 6
+           count, the real veil on the four that are not owned. The card adds
+           one absolutely positioned seat over the WARD slot and two ⓘ marks.
+           The shipped comment above #accRunes (screens/shell.ts:96-98) says
+           "The collection is account state, not a loadout" — this idea is the
+           one that has to rewrite that sentence, and it should be rewritten in
+           the same change rather than left contradicting the code. -->
+      <div class="eq3grid" style="--hue:{{shue:ward}}">
+        {{account-runes:ward,fate}}
+        <span class="eq3mi eq3mifate">ⓘ</span>
+        <i class="eq3seat">
+          <i class="eq3bed"></i>
+          <i class="eq3stand rdealt up">{{runefaces:ward}}<span class="rlbl eq3lbl">WARD</span><span class="eq3mi eq3micard">ⓘ</span></i>
+        </i>
+      </div>
+
+      <div class="eq3say">{{pickinfo:spells:ward}}</div>
+      <div class="splbl">two of six collected · one carried · silver, so it comes with you</div>
+    </div>
+  </div>
+
+  <div class="cap2" style="margin-top:12px">Beat two, on its own seat: SILVER is the card turning over</div>
+  <div class="eq3turnrow" style="--hue:{{shue:ward}}">
+    <span class="eq3side">Below 1,260<br><b>Face-down</b><br>chosen, not in play</span>
+    <div class="eq3turnseat">
+      <i class="eq3seat">
+        <i class="eq3bed"></i>
+        <i class="eq3stand rdealt">{{runefaces:ward}}<span class="rlbl eq3lbl">WARD</span><span class="eq3mi eq3micard">ⓘ</span></i>
+      </i>
+    </div>
+    <span class="eq3side on">1,260 and up<br><b>Silver</b><br>turned over, in play</span>
+  </div>
+
+  <div class="cap2" style="margin-top:14px">The five states one standing card has to carry</div>
+  <div class="eq3states">
+    <div class="eq3st">
+      <div class="eq3box" style="--hue:{{shue:ward}}">
+        <i class="eq3slot">{{sico:ward:19}}<span>WARD</span></i>
+      </div>
+      <span class="cap">Nothing equipped<br>the grid as it ships</span>
+    </div>
+    <div class="eq3st">
+      <div class="eq3box" style="--hue:{{shue:ward}}">
+        <i class="eq3slot">{{sico:ward:19}}<span>WARD</span></i>
+        <i class="eq3seat">
+          <i class="eq3bed"></i>
+          <i class="eq3stand rdealt up">{{runefaces:ward}}<span class="rlbl eq3lbl">WARD</span></i>
+        </i>
+      </div>
+      <span class="cap">Equipped<br>standing, turned</span>
+    </div>
+    <div class="eq3st">
+      <div class="eq3box" style="--hue:{{shue:ward}}">
+        <i class="eq3slot">{{sico:ward:19}}<span>WARD</span></i>
+        <i class="eq3seat">
+          <i class="eq3bed"></i>
+          <i class="eq3stand rdealt">{{runefaces:ward}}<span class="rlbl eq3lbl">WARD</span></i>
+        </i>
+      </div>
+      <span class="cap">Below SILVER<br>standing, face-down</span>
+    </div>
+    <div class="eq3st">
+      <div class="eq3box eq3lock" style="--hue:{{shue:sunder}}">
+        <i class="eq3slot">{{sico:sunder:19}}<span>SUNDER</span></i>
+      </div>
+      <span class="cap">Not collected<br>a veiled slot cannot stand</span>
+    </div>
+    <div class="eq3st">
+      <div class="eq3box eq3first" style="--hue:{{shue:fate}}">
+        <i class="eq3slot">{{sico:fate:19}}<span>FATE</span></i>
+        <i class="eq3seat">
+          <i class="eq3bed"></i>
+          <i class="eq3edge"></i>
+          <i class="eq3stand rdealt up">{{runefaces:fate}}<span class="rlbl eq3lbl">FATE</span></i>
+        </i>
+      </div>
+      <span class="cap">First rune<br>arrives standing · two casts</span>
+    </div>
+  </div>
+
+</div></div>
+<div class="note"><b>What it says:</b> <b>the one you carry is the only card you can see the edge of.</b> No seventh slot and no new symbol — the object was already in the collection and it stands up. That makes this the cheapest of the eight in pixels and the only one that leaves the profile's height alone. The tap changing meaning costs one glyph: the reference moves into the ⓘ in the slot's corner, the app's own mark for that on the HUD chips.<br>
+<b>SILVER is a card turned over.</b> Below 1,260 it stands face-down — chosen, in position, doing nothing, because a card you have not turned over is not in play. At SILVER it turns with the half-turn <code>ui/runedeal.ts</code> already owns, never a spin and never <code>backface-visibility</code>. The first rune needs no new picture either: <code>rune-reward-sheet__icon</code> is already a 64&times;82 tile in the dealt card's face treatment, so it arrives standing and nothing on the pixel-gated element moves.<br>
+<b>Cost: face-down already means something else here.</b> It is the Ritual's word for a <i>secret choice</i> — what both cards wear until the pair is revealed together — so "chosen, waiting for SILVER" is a second meaning for one picture, four screens away. Smaller: one standing card breaks the grid's six-of-a-kind, and a card that stands overlaps the row above it, so the block must reserve 8px of headroom in <b>every</b> state or the panel jumps the first time anyone equips.<br>
+<b>The state easiest to get wrong: Rune Ritual.</b> The trial loans three cards nobody owns and never consults or overwrites what you carry, so the carried card stays standing right through it — four cards in one frame, and position is all that separates them: the carried one is the one still in a slot.</div>

@@ -1,0 +1,255 @@
+<!-- meta name="EQ1 — The lit slot" group="3k · The equipped rune" subtitle="The six collection slots become the loadout — one of them wears the offline picker's own selection ring, and one line under the grid says whether that choice is in play yet" width=412 height=1570 sizes="md" links="Profile, Match reveal, Rune Ritual" -->
+<style>
+  /* Card-local names only (eq1*). The Profile anatomy is the APP's — the panel
+     is src/online/styles/base.css's #ovOnline .panel, the points and facts are
+     src/online/styles/profile.css, the six slots are src/online/styles/account.css
+     — and every one of those rules is scoped :where(#kbroot) #onAccount …, so
+     the card WEARS that ancestor chain instead of copying rules out of it. The
+     grid itself is the runtime's own accountRunesMarkup() through the
+     account-runes token: registry order, the real 8px compact labels, the real
+     "2 / 6" count and the real frosted locked veil, none of which a hand-typed
+     grid stays honest about. Card 31-account learned that the expensive way —
+     its predecessor hand-typed an identity card, a RATING row and a Save-name
+     field the app never rendered. Glue only below. */
+
+  /* stands in for .pbody, the paged view's scrolling body: only its centring,
+     because the rest of .pbody is scroll chrome derived from .ov.paged's header
+     vars, which the preview stage has no header bar to reserve room for. */
+  #ovOnline{display:flex;flex-direction:column;align-items:center;width:100%}
+  /* chrome's .stage .scr is (0,2,0) and beats this bare rule on padding and
+     min-height — but it never sets gap, so this one lands. Everything in the
+     column is spaced from here rather than from per-element margins. */
+  .scr{gap:10px}
+
+  /* ===== THE IDEA =====
+     The obvious alternative is a seventh control: an EQUIPPED row above the
+     grid, or a picker copied onto the profile. Both add a place to learn. The
+     six slots are ALREADY buttons — account-runes.ts builds each one as
+     <button class="accrune" aria-haspopup="dialog"> at the 44px target the
+     localization budget demands (docs/architecture/localization.md:200) — laid
+     out in registry order, and the player who wants to change what they carry
+     is already looking at them. So the loadout is not a new control. It is a
+     STATE on the control that exists.
+     The lit frame is not invented either. It is the OFFLINE picker's own
+     selection recipe, verbatim from styles/components/picker.css:13-15:
+       border-color  color-mix(in srgb, --mh 65%, transparent)
+       background    color-mix(in srgb, --mh 12%, transparent)
+       box-shadow    0 0 14px color-mix(in srgb, --mh 30%, transparent)
+     recoloured from the picker's --mh to the slot's own inline --rh. The
+     recolour is deliberate and it is the honest half of the borrowing: the
+     slot already carries the registry hue (spellHue, set inline by the token),
+     and a selection ring in a second colour would say the mark belongs to
+     something other than the rune it is drawn around. The dishonest half —
+     that the same 65/12/14 mark means a SYMMETRIC deal in the picker and a
+     personal loadout here — is named in the note, not hidden. ===== */
+
+  /* THE LIT SLOT, and the same mark on the still swatch, declared once.
+     The live slot has to be reached through #onAccount: the app's own rule is
+     :where(#kbroot) #onAccount .accrune, which is (1,1,0) because :where()
+     contributes nothing and the id does — a purely card-local (0,3,0) selector
+     LOSES that comparison on the id alone, the border would stay at 30%, and
+     the card would ship looking like it had no idea in it. .eq1 rides on the
+     panel element so this is still a card-scoped layer over the token's grid
+     rather than a standing redefinition of .accrune. */
+  #onAccount.eq1 .accrune[data-rune="ward"],
+  .eq1sw.on{border-color:color-mix(in srgb,var(--rh) 65%,transparent);
+    background:color-mix(in srgb,var(--rh) 12%,transparent);
+    box-shadow:0 0 14px color-mix(in srgb,var(--rh) 30%,transparent)}
+
+  /* ===== THE FOCUS PULL: 480ms, once, as the panel settles =====
+       0ms      the grid as it ships — six slots, all at 30% frame
+       260ms    the pull starts
+       740ms    the chosen slot has bloomed to 65% + a 14px hue glow, and the
+                others have stepped back
+     It animates the only thing that matters, one of six, and the STILL carries
+     it anyway: 30% against 65% is legible with every frame frozen, which is
+     the whole test a reduce-motion reader applies.
+     The step-back is NOT one flat opacity for the five. The four locked slots
+     already sit at .46 (account.css:56); flattening every unchosen slot to .88
+     would erase the difference between LOCKED and merely unchosen, which is
+     exactly the distinction this design depends on. So each group is scaled by
+     the same .88 instead: 1 → .88, and .46 → .405. */
+  #onAccount.eq1 .accrune[data-rune="ward"]{animation:eq1lit .48s cubic-bezier(.3,0,.25,1) .26s both}
+  @keyframes eq1lit{
+    from{border-color:color-mix(in srgb,var(--rh) 30%,transparent);
+      background:color-mix(in srgb,var(--rh) 7%,rgba(255,255,255,.02));
+      box-shadow:0 0 0 color-mix(in srgb,var(--rh) 30%,transparent)}
+    to{border-color:color-mix(in srgb,var(--rh) 65%,transparent);
+      background:color-mix(in srgb,var(--rh) 12%,transparent);
+      box-shadow:0 0 14px color-mix(in srgb,var(--rh) 30%,transparent)}}
+  #onAccount.eq1 .accrune.collected:not([data-rune="ward"]){animation:eq1step .48s cubic-bezier(.3,0,.25,1) .26s both}
+  @keyframes eq1step{from{opacity:1}to{opacity:.88}}
+  #onAccount.eq1 .accrune.locked{animation:eq1lock .48s cubic-bezier(.3,0,.25,1) .26s both}
+  @keyframes eq1lock{from{opacity:.46}to{opacity:.405}}
+
+  /* THE SENTENCE UNDER THE GRID. The runtime element it copies is the offline
+     picker's, <div class="tiny note" id="spellPickInfo"> (markup.ts:182), and
+     its text is pickInfo()'s "NAME — blurb" (library.ts:122-125) — plain, with
+     no bold, which is why nothing here is bolded either. It wears .tiny ONLY:
+     .note is preview chrome in a design card (design/build.mjs draws the
+     argument box with it), so wearing both would drop the sentence into a
+     bordered panel, and the app defines nothing for .note in the first place —
+     the whole look is .tiny at result.css:126. */
+  .eq1line{line-height:1.5;padding:0 4px}
+
+  /* THE WAITING LINE wears the profile's own unused voice. .togo is real —
+     :where(#kbroot) #onAccount .togo, profile.css:30-32, "what is still owed",
+     9.5px dim uppercase with a gold <b> — and NOTHING in src/ paints it: this
+     idea would be its first caller. The copy strip below the stills sits
+     outside the panel (one #onAccount per card; duplicating an id to borrow a
+     rule is not a design), where the class would match nothing, so its four
+     values are restated here and named at source rather than worn out of
+     scope and rendered as unstyled prose. */
+  .eq1togo{font-size:9.5px;letter-spacing:.16em;text-indent:.16em;color:var(--dim);
+    text-transform:uppercase;text-align:center;margin-top:-6px}
+  .eq1togo b{color:var(--gold)}
+
+  /* ===== THE STATE ROW =====
+     Laid out on the real grid's geometry, not a convenient one: three columns
+     at 7px gap, so each swatch is (352 - 14) / 3 = 112.67px — the exact width
+     .accrunes-grid gives a slot on this stage. A five-across row would have
+     been 63px, and at 63px the 8px compact label ellipsises SUNDER, which the
+     shipped grid never does. The states would then be arguing about a clipping
+     the design does not cause. */
+  .eq1states{display:flex;flex-wrap:wrap;justify-content:center;gap:7px;width:100%}
+  .eq1st{width:calc((100% - 14px)/3);display:flex;flex-direction:column;align-items:center;gap:7px}
+  .eq1st .cap{font-size:8px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;
+    text-align:center;line-height:1.5}
+  /* The swatch restates .accrune's four box values (account.css:47-50) because
+     the account-runes token emits a whole six-slot <section> and there is no
+     single-slot seam to ask for — this is the one place in the card that
+     copies rather than wears, and it is bounded to those four values.
+     NOTE the label deliberately sets no colour. The app writes
+     `color:var(--fg)` on .accrune span and NO stylesheet defines --fg, so that
+     declaration is invalid at computed-value time and the label inherits the
+     slot's own --rh. The swatch reproduces what the grid actually renders, not
+     what its source says it does. */
+  .eq1sw{position:relative;box-sizing:border-box;display:flex;align-items:center;gap:6px;
+    width:100%;min-height:44px;padding:8px 7px;border-radius:11px;
+    border:1px solid color-mix(in srgb,var(--rh) 30%,transparent);
+    background:color-mix(in srgb,var(--rh) 7%,rgba(255,255,255,.02));color:var(--rh)}
+  .eq1sw svg{flex:0 0 auto;filter:drop-shadow(0 0 7px currentColor)}
+  .eq1sw span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-size:8px;font-weight:900;letter-spacing:.08em}
+  /* WAITING keeps the 65% frame and the 12% fill — the choice is made and
+     visible — and withholds only the 14px bloom. Chosen, not yet in play. */
+  .eq1sw.on.wait{box-shadow:none}
+  /* NOT COLLECTED is untouched from account.css:56-59: saturate(.15), .46, and
+     the frosted ::after veil. Keeping it exactly as shipped is what keeps
+     LOCKED and WAITING two different pictures rather than two dim ones. */
+  .eq1sw.lock{filter:saturate(.15);opacity:.46;background:rgba(255,255,255,.018)}
+  .eq1sw.lock::after{content:"";position:absolute;inset:0;border-radius:inherit;
+    background:linear-gradient(135deg,rgba(255,255,255,.09),rgba(255,255,255,.015));
+    backdrop-filter:blur(1.5px);-webkit-backdrop-filter:blur(1.5px);pointer-events:none}
+
+  /* THE STILLS ARE STILL. The lit mark is driven by eq1lit's keyframes on the
+     live slot, and an animation's filled value beats a plain declaration
+     however specific it is — only !important outranks the animation origin. A
+     swatch sharing the eq1* namespace would otherwise be at the mercy of any
+     keyframe that later grows to reach it, and would show whatever frame the
+     loop is on rather than the state its caption names. It has to reach
+     descendants and both pseudo-elements: the locked veil is an ::after. */
+  .eq1states,.eq1states *,.eq1states *::before,.eq1states *::after,
+  .eq1reward,.eq1reward *,.eq1reward *::before,.eq1reward *::after{animation:none!important}
+
+  /* the two sentence states this reader's own profile cannot show */
+  .eq1copy{display:flex;flex-direction:column;gap:11px;width:100%}
+  .eq1row{display:flex;flex-direction:column;gap:5px}
+  .eq1tag{font-size:8px;font-weight:900;letter-spacing:.18em;text-indent:.18em;
+    color:var(--dim);text-transform:uppercase;text-align:center;opacity:.72}
+
+  /* THE FIRST RUNE lands on the result screen, in the shipped EndFeature card
+     (result.css:103-119) — the card is worn whole, hue and all, rather than
+     redrawn. The added line is an <i>, not a second <span>: the app's own
+     .rune-reward .endfeature-copy span pins nowrap + ellipsis at (0,2,1) for
+     a one-line blurb, and this sentence has to wrap. Wearing a different
+     element beats out-specifying a rule the card agrees with.
+     It is STATIC on purpose. visiblyPresented() (runes/rune-reward-presentation.ts)
+     refuses the durable seen-ACK while anything on that element is animating
+     or below opacity .98, so a flourish here would silently stop the server
+     ever marking the reward seen — and the row would be re-presented forever. */
+  .eq1reward{width:100%}
+  .eq1worn{font-style:normal;margin-top:3px;font-size:8.5px;line-height:1.45;
+    letter-spacing:.02em;color:var(--gold)}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">PROFILE</span><span class="pad"></span></div>
+
+  <div class="cap2">The six slots you already tap are the loadout. One of them is lit.</div>
+
+  <div id="ovOnline">
+    <!-- the profile from .ptv down: the ring, the avatar and the name headline
+         are unchanged by this idea and every pixel they take is a pixel the
+         five states cannot have. The group is named in the line under the
+         stage instead — SILVER is the only fact about it this card needs. -->
+    <div class="panel eq1" id="onAccount">
+      <button class="ptv"><b>1,412</b><span>Ladder points</span></button>
+      <div class="facts">
+        <button class="fact" type="button"><b>#12</b><span>Rank</span></button>
+        <div class="fact"><b>3</b><span>Best streak</span></div>
+        <div class="fact pk"><b>1,455</b><span>Peak</span></div>
+      </div>
+      <!-- THE GRID IS THE RUNTIME'S. FATE and WARD owned, so registry order
+           puts WARD in slot 3 and leaves nudge, sunder, pilfer and anvil
+           veiled. Nothing about the markup changes — the lit state is a layer
+           in card CSS on the slot the loadout points at. -->
+      {{account-runes:fate,ward}}
+      <div class="tiny eq1line">WARD — Score an all-distinct column again and block one attack.</div>
+    </div>
+  </div>
+
+  <div class="splbl">1,412 points · SILVER · two of six collected · WARD lit, and at SILVER it enters play</div>
+
+  <div class="cap2" style="margin-top:4px">The five states the one slot has to carry</div>
+  <div class="eq1states">
+    <div class="eq1st">
+      <div class="eq1sw" style="--rh:{{shue:ward}}">{{sico:ward:19}}<span>WARD</span></div>
+      <span class="cap">Nothing<br>equipped</span>
+    </div>
+    <div class="eq1st">
+      <div class="eq1sw on" style="--rh:{{shue:ward}}">{{sico:ward:19}}<span>WARD</span></div>
+      <span class="cap">Equipped<br>in play</span>
+    </div>
+    <div class="eq1st">
+      <div class="eq1sw on wait" style="--rh:{{shue:ward}}">{{sico:ward:19}}<span>WARD</span></div>
+      <span class="cap">Equipped<br>below SILVER</span>
+    </div>
+    <div class="eq1st">
+      <div class="eq1sw lock" style="--rh:{{shue:sunder}}">{{sico:sunder:19}}<span>SUNDER</span></div>
+      <span class="cap">Not<br>collected</span>
+    </div>
+    <div class="eq1st">
+      <div class="eq1sw on" style="--rh:{{shue:fate}}">{{sico:fate:19}}<span>FATE</span></div>
+      <span class="cap">First rune<br>lit on arrival</span>
+    </div>
+  </div>
+
+  <div class="cap2" style="margin-top:6px">The line under the grid, in the two states this reader is not in</div>
+  <div class="eq1copy">
+    <div class="eq1row">
+      <div class="eq1tag">Nothing equipped</div>
+      <div class="tiny eq1line">NONE — No rune — the pure game.</div>
+    </div>
+    <div class="eq1row">
+      <div class="eq1tag">Equipped, below SILVER</div>
+      <div class="tiny eq1line">WARD — Score an all-distinct column again and block one attack.</div>
+      <div class="eq1togo">In play from <b>SILVER</b></div>
+    </div>
+  </div>
+
+  <div class="cap2" style="margin-top:6px">The first rune you ever win equips itself — said once, here</div>
+  <div class="endfeature rune-reward eq1reward" style="--feature-hue:{{shue:ward}}">
+    <i class="endfeature-icon" aria-hidden="true">{{sico:ward:24}}</i>
+    <div class="endfeature-copy">
+      <small>NEW RUNE</small>
+      <b>WARD</b>
+      <span>Score an all-distinct column again and block one attack.</span>
+      <i class="eq1worn">Equipped — you carry it into ranked from SILVER.</i>
+    </div>
+    <button type="button" class="btn small endfeature-action">TRY IT</button>
+  </div>
+</div></div>
+<div class="note"><b>What it says:</b> <b>the slot you already tap is the one you carry.</b> Six buttons in registry order, one of them wearing the offline picker's own 65/12/14 selection mark in its own registry hue, and one sentence under the grid in the picker's voice. A tap still opens the library sheet it opens today; the sheet grows an EQUIP button, and UNEQUIP on the slot already lit — so NONE stays a choice, not a hole.<br>
+<b>Why it survives:</b> it is the smallest change on the board — one CSS state on a button that exists, one action in a sheet that already opens, one sentence already translated. No new place, no new gesture, and all six are seen at once. That matters: the roster is not horizontal, PILFER measures 54.84% against WARD's 45.16%, and a 9.68pp spread is not a choice to make one rune at a time.<br>
+<b>Cost:</b> the grid now means two things at once, and the comment shipped above <code>#accRunes</code> says the opposite in as many words — <i>"The collection is account state, not a loadout. Six stable slots make progress legible without suggesting that equipping a rune changes an ordinary ranked match"</i> (<code>shell.ts:96-98</code>). This design deletes it in the same change or ships a lie in its own source. A tap that was pure reference gains a consequence one layer down, and 65/12/14 is the picker's mark for a <em>symmetric</em> deal handing both seats the same rune — worn for a personal loadout, one look carries two promises.<br>
+<b>Below SILVER:</b> the lit frame stays and only the bloom is withheld, under the unused <code>.togo</code> line (<code>profile.css:30-32</code>) reading IN PLAY FROM SILVER. It says waiting, never LOCKED — which is why the gate must not borrow <code>.modepick button.locked</code>'s padlock: nothing is unavailable, it is early. It names the threshold, never a deficit; this reader's 598 points are owed to GOLD. A demotion out of SILVER simply re-withholds the bloom, and nothing is lost.</div>

@@ -1,0 +1,237 @@
+<!-- meta name="EQ5 — The marked die" group="3k · The equipped rune" subtitle="You drop the rune on your own die, the way the game already tells you to, and the mark stays cut into it — so your avatar carries what you bring to every screen the app already paints" width=412 height=1640 sizes="md" links="Profile, Match reveal, Rune Ritual" -->
+<style>
+  /* Card-local names only (eq5*). The Profile anatomy is the APP's — the panel
+     and collection from src/online/styles/account.css, the points and group
+     name from profile.css, the ring from styles/components/identity.css, all
+     scoped #onAccount — so the card WEARS that ancestor chain instead of
+     copying rules out of it. The six slots come from the runtime's own
+     accountRunesMarkup() through the account-runes token, the die from
+     dieMarkup() through the die token, and the glyph from ui/spellicons.ts
+     through the rune-icon token. Nothing below draws a rune. Glue only. */
+
+  /* stands in for .pbody, the paged view's scrolling body: only its centring,
+     the way 31-account.html does it — the rest of .pbody is scroll chrome
+     derived from .ov.paged's header vars, and the stage has no header bar. */
+  #ovOnline{display:flex;flex-direction:column;align-items:center;width:100%}
+  .shead{margin-bottom:8px}
+  .scr{gap:8px}                    /* chrome's .stage .scr never sets gap */
+
+  /* ===== THE IDEA. Every other card in this study grows a NEW control — a lit
+     slot, a picker row, a socket in the ring's mouth, a card at the queue. This
+     one grows nothing, because the app has already taught the gesture: a rune
+     that resolves on the caster's own die aims with the words "Drop it on your
+     die", and FATE, NUDGE and SUNDER all say exactly that
+     (src/i18n/locales/en/game.ts:232,239,254). So equipping is that cast,
+     performed on the profile, and the thing it lands on is the one object the
+     app already carries everywhere: paintAvatar() (src/ui/avatar.ts) paints the
+     same die into the profile ring's 74px centre, the reveal's 44px .dav and
+     every plate's 18px slot. Mark the die and no plate, chip, reveal beat or
+     panel has to grow a place to put a rune. ===== */
+
+  /* The wrapper is the die's own box. A card cannot put a class on a token, so
+     the mark hangs on a wrapper — the same move the chrome's .spmark makes.
+     --eqs is the die's edge and every value below is a fraction of it, so ONE
+     element serves 74px, 44px and 18px rather than three near-copies. */
+  .eq5die{position:relative;display:block;width:var(--eqs);height:var(--eqs);line-height:0;
+    transform-origin:50% 100%}
+
+  /* THE HUE HAIRLINE, one pixel inside the die's own border. The corner is
+     board.css:10's formula restated — min(var(--r), --cell*.25 + 1.5px) —
+     because the wrapper cannot see the --cell the die sets on itself, and a
+     square ring inside a rounded die is the kind of thing nobody notices until
+     the 18px size makes it a lump. Base value = LIT: the loop and the stills
+     both override from here, so reduced motion lands on the resting state
+     rather than on frame zero. */
+  .eq5rim{position:absolute;inset:1px;pointer-events:none;
+    border-radius:min(var(--r),calc(var(--eqs)*.25 + 1.5px));
+    box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--hue) 34%,transparent),
+      inset 0 0 calc(var(--eqs)*.12) color-mix(in srgb,var(--hue) 16%,transparent)}
+
+  /* THE ETCH, at 46% of the face. It is DARK with a one-pixel light lip under
+     it, not a bright glyph: the die's face is a translucent white wash over the
+     stage's near-black (styles/game/dice.css .die), so at the centre it sits
+     around rgb(20,24,34) and a dark mark has almost nothing left to darken —
+     the highlight below the groove is what the eye actually reads as "cut in".
+     The first pass tried to put the mark UNDER the pips, behind the face, since
+     the face is translucent; behind it the groove lost the same contrast twice
+     over and read as a stain. It lies on the face instead, which is honest
+     about what it costs and is named in the note. */
+  .eq5cut{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;
+    color:rgba(3,5,12,.92)}
+  .eq5cut svg{width:calc(var(--eqs)*.46);height:calc(var(--eqs)*.46);
+    filter:drop-shadow(0 1px 0 rgba(255,255,255,.3))
+      drop-shadow(0 0 calc(var(--eqs)*.07) color-mix(in srgb,var(--hue) 82%,transparent))
+      drop-shadow(0 0 calc(var(--eqs)*.17) color-mix(in srgb,var(--hue) 36%,transparent))}
+
+  /* the glyph in the air, before it lands — the same registry icon, lit, at the
+     hue's own colour. Spent the instant the etch takes over. */
+  .eq5fall{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;
+    color:var(--hue);opacity:0}
+  .eq5fall svg{width:calc(var(--eqs)*.46);height:calc(var(--eqs)*.46);
+    filter:drop-shadow(0 0 calc(var(--eqs)*.16) currentColor)}
+
+  /* ===== THE LOOP: 3.0s, of which 0.6s is the event =====
+       0–4%     the die every player has today: plain, unmarked
+       4–12%    the glyph falls, 0.24s, from a third of a face above
+       12%      impact — a 2px squash on a 74px die and no more (scaleY .973,
+                origin at the bottom edge, so the die squats instead of drifting
+                inside the ring it is centred in). This is a mark being struck
+                into bone, not a card being played.
+       12–18%   the etch darkens in, 0.18s: the falling glyph is spent and the
+                groove takes its place
+       12–20%   one hue flash runs the rim and settles at its resting value
+       20–100%  at rest, cut and lit — which is the frame the stills show
+     Nothing outside 0–20% moves, so five sixths of the loop is the state the
+     player actually lives in. ===== */
+  .eq5live{animation:eq5strike 3s cubic-bezier(.3,0,.25,1) infinite}
+  @keyframes eq5strike{0%,12%{transform:scaleY(1)}
+    14%{transform:scaleY(.973) scaleX(1.027)}
+    20%,100%{transform:scaleY(1)}}
+  .eq5live .eq5fall{animation:eq5drop 3s cubic-bezier(.35,0,.2,1) infinite}
+  @keyframes eq5drop{0%,4%{opacity:0;transform:translateY(calc(var(--eqs)*-.34)) scale(1.5)}
+    10%{opacity:1}
+    12%{opacity:1;transform:translateY(0) scale(1)}
+    16%,100%{opacity:0;transform:translateY(0) scale(1)}}
+  .eq5live .eq5cut{animation:eq5ink 3s linear infinite}
+  @keyframes eq5ink{0%,12%{opacity:0}18%,100%{opacity:1}}
+  .eq5live .eq5rim{animation:eq5flash 3s ease-out infinite}
+  @keyframes eq5flash{0%,12%{box-shadow:inset 0 0 0 1px rgba(255,255,255,0)}
+    15%{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--hue) 92%,transparent),
+      inset 0 0 calc(var(--eqs)*.3) color-mix(in srgb,var(--hue) 48%,transparent)}
+    20%,100%{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--hue) 34%,transparent),
+      inset 0 0 calc(var(--eqs)*.12) color-mix(in srgb,var(--hue) 16%,transparent)}}
+  /* REDUCED MOTION shows the cut die and the lit rim with no fall. It is one
+     rule and no second set of values, because every base declaration above is
+     already the resting state — the keyframes are what take it away. */
+  @media (prefers-reduced-motion:reduce){
+    .eq5live,.eq5live *{animation:none!important}
+    .eq5live .eq5fall{opacity:0}}
+
+  /* THE STILLS ARE STILL. This card hangs its keyframes on .eq5live only, so a
+     still that never wears it is already frozen — the rule stays, and stays
+     !important, because the loop is one edit away from being hung on .eq5die
+     instead, and on that day every still would silently start showing whatever
+     frame the loop is on: an animation's filled value sits above every author
+     declaration except !important, however specific the declaration is.
+     29c-rail-slot.html records measuring exactly that three times. It has to
+     reach descendants and both pseudo-elements. */
+  .eq5box,.eq5box *,.eq5box *::before,.eq5box *::after{animation:none!important}
+  .eq5box .eq5fall{opacity:0}
+  /* NOTHING EQUIPPED — and NOT COLLECTED, which paints the same plain die.
+     That is not a shortcut in the card; it is the idea's blind spot, drawn. */
+  .eq5box.eq5none .eq5cut,.eq5box.eq5none .eq5rim{opacity:0}
+  /* WAITING, below SILVER: the groove is identical — same depth, same position,
+     fully legible — and nothing comes out of it. Engraved, not charged. A gate
+     made of shade alone is what the dropped wax-seal candidate lost its slot
+     for: a desaturated mark reads as a mark in shadow, never as an absent one
+     (29e-rail-seal.html:141-143). */
+  .eq5box.eq5wait .eq5cut svg{filter:drop-shadow(0 1px 0 rgba(255,255,255,.3))}
+  .eq5box.eq5wait .eq5rim{opacity:0}
+  /* FIRST RUNE, auto-equipped: the only time the mark arrives without being
+     asked for, so it wears the app's reward colour rather than the rune's. */
+  .eq5box.eq5first .eq5rim{box-shadow:inset 0 0 0 1px rgba(var(--gold-rgb),.6),
+    inset 0 0 calc(var(--eqs)*.34) rgba(var(--gold-rgb),.3)}
+
+  /* THE SIZE ROW IS THIS CARD'S ARGUMENT AND ITS COST IN ONE OBJECT. Three
+     columns, not four: the plate's ring is 36px but the DIE inside it is 18px —
+     fillPlate calls paintAvatar(el, avatar, 18) at ui/plate.ts:80 — so a 36px
+     column would be picturing the ring, not the mark. 74 / 44 / 18 is every
+     size the one renderer actually paints: the profile ring's centre, the
+     reveal's .dav (design/build.mjs hands avatarHtml 44) and every plate alike,
+     home chip and both result rows. They sit on one floor so the reader
+     compares marks, not baselines. */
+  .eq5sizes{display:flex;justify-content:center;align-items:flex-end;gap:20px;width:100%;
+    margin-top:6px}
+  .eq5sz,.eq5st{display:flex;flex-direction:column;align-items:center;gap:9px}
+  .eq5sz .cap,.eq5st .cap{font-size:8px;letter-spacing:.14em;color:var(--dim);
+    text-transform:uppercase;text-align:center;line-height:1.5;max-width:74px}
+  .eq5states{display:flex;justify-content:center;align-items:flex-start;gap:11px;width:100%;
+    margin-top:6px}
+
+  /* THE EQUIPPED SLOT IN THE COLLECTION takes the same cut-in treatment, so the
+     slot and the die read as ONE object rather than as two announcements. The
+     only property overridden is the one the app's own rule sets on that icon —
+     account.css:53 gives every .accrune .sico a drop-shadow(0 0 7px
+     currentColor) — plus the colour that shadow reads from. Targeted by the
+     runtime's own data-rune attribute (account-runes.ts:29), because the grid
+     is the runtime's markup and this card may not add a class to it. */
+  #onAccount .accrune[data-rune="ward"] .sico{color:rgba(3,5,12,.92);
+    filter:drop-shadow(0 1px 0 rgba(255,255,255,.34))
+      drop-shadow(0 0 5px color-mix(in srgb,var(--rh) 80%,transparent))}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">PROFILE</span><span class="pad"></span></div>
+
+  <div class="cap2">Drop it on your die — the app's own words for a self-cast — and the mark stays</div>
+
+  <div id="ovOnline"><div class="panel" id="onAccount">
+    <!-- the reader of all eight cards: FrostLynx303, 1,412 points, SILVER,
+         peak 1,455 still ahead. --p is groupFill (ladder.ts:174) for 1,412
+         inside SILVER, --pk the peak, .haspeak because the peak is ahead. -->
+    <div class="ringwrap haspeak" style="--p:0.2027;--pk:0.26">
+      <i class="lring"></i><i class="lpeak"></i>
+      <!-- the avatar stays a DOOR — the pencil badge is the accessible twin of
+           the drag: .avwrap already opens the face-and-hue picker, and the rune
+           becomes its third row (the die's face, its colour, and what is cut
+           into it) with NONE as the first slice, the shape the offline rune row
+           already has (ui/library.ts:99-112). -->
+      <button class="avwrap"><span class="dice-static"><i class="eq5die eq5live" style="--eqs:74px;--hue:{{shue:ward}}">{{die:5:p1:74}}<i class="eq5rim"></i><i class="eq5cut">{{sico:ward:34}}</i><i class="eq5fall">{{sico:ward:34}}</i></i></span><span class="avedit">✎</span></button>
+      <span class="gname" style="--gc:var(--g-silver)">SILVER</span>
+    </div>
+    <div class="accname">FrostLynx303</div>
+    <button class="ptv"><b>1,412</b><span>Ladder points</span></button>
+    <!-- The collection stays what its comment says it is (shell.ts:96-98): six
+         stable slots, account progress, registry order, real labels and count.
+         The loadout is not in here — it is on the die above. All the equipped
+         slot does is stop shouting: WARD's icon drops its 7px glow and takes
+         the die's cut-in shadow. -->
+    {{account-runes:fate,ward}}
+  </div></div>
+
+  <div class="splbl">two of six collected · WARD cut into your die · SILVER, so it enters play</div>
+
+  <div class="cap2" style="margin-top:8px">Every size the one avatar renderer paints — this is the cost, not a boast</div>
+  <div class="eq5sizes dice-static">
+    <div class="eq5sz">
+      <i class="eq5die eq5box" style="--eqs:74px;--hue:{{shue:ward}}">{{die:5:p1:74}}<i class="eq5rim"></i><i class="eq5cut">{{sico:ward:34}}</i></i>
+      <span class="cap">74px<br>profile ring</span>
+    </div>
+    <div class="eq5sz">
+      <i class="eq5die eq5box" style="--eqs:44px;--hue:{{shue:ward}}">{{die:5:p1:44}}<i class="eq5rim"></i><i class="eq5cut">{{sico:ward:34}}</i></i>
+      <span class="cap">44px<br>match reveal</span>
+    </div>
+    <div class="eq5sz">
+      <i class="eq5die eq5box" style="--eqs:18px;--hue:{{shue:ward}}">{{die:5:p1:18}}<i class="eq5rim"></i><i class="eq5cut">{{sico:ward:34}}</i></i>
+      <span class="cap">18px<br>every plate<br>a smudge</span>
+    </div>
+  </div>
+
+  <div class="cap2" style="margin-top:10px">The five states the one die has to carry</div>
+  <div class="eq5states dice-static">
+    <div class="eq5st">
+      <i class="eq5die eq5box eq5none" style="--eqs:44px;--hue:{{shue:ward}}">{{die:5:p1:44}}<i class="eq5rim"></i><i class="eq5cut">{{sico:ward:34}}</i></i>
+      <span class="cap">Nothing<br>equipped</span>
+    </div>
+    <div class="eq5st">
+      <i class="eq5die eq5box" style="--eqs:44px;--hue:{{shue:ward}}">{{die:5:p1:44}}<i class="eq5rim"></i><i class="eq5cut">{{sico:ward:34}}</i></i>
+      <span class="cap">Equipped<br>cut and lit</span>
+    </div>
+    <div class="eq5st">
+      <i class="eq5die eq5box eq5wait" style="--eqs:44px;--hue:{{shue:ward}}">{{die:5:p1:44}}<i class="eq5rim"></i><i class="eq5cut">{{sico:ward:34}}</i></i>
+      <span class="cap">Below SILVER<br>cut, unlit</span>
+    </div>
+    <div class="eq5st">
+      <i class="eq5die eq5box eq5none" style="--eqs:44px;--hue:{{shue:sunder}}">{{die:5:p1:44}}<i class="eq5rim"></i><i class="eq5cut">{{sico:sunder:34}}</i></i>
+      <span class="cap">Not collected<br>the same die</span>
+    </div>
+    <div class="eq5st">
+      <i class="eq5die eq5box eq5first" style="--eqs:44px;--hue:{{shue:fate}}">{{die:5:p1:44}}<i class="eq5rim"></i><i class="eq5cut">{{sico:fate:34}}</i></i>
+      <span class="cap">First rune<br>auto-equipped</span>
+    </div>
+  </div>
+</div></div>
+<div class="note"><b>What it says:</b> <b>the loadout is not a setting, it is a mark on you.</b> The rune is dropped on your own die — the gesture the game already teaches in shipped copy, since FATE, NUDGE and SUNDER all aim with <code>Drop it on your die</code> (<code>en/game.ts:232,239,254</code>). Nothing else grows a control, because <code>paintAvatar</code> already carries one die to the profile ring at 74px, the reveal’s <code>.dav</code> at 44px and every plate at 18px (<code>ui/plate.ts:80</code>): queue, reveal, home chip and both result rows are marked the day the mark exists. The collection stays exactly what <code>shell.ts:96-98</code> says it is.<br>
+<b>The SILVER gate is a light, not a veil.</b> Below SILVER the etch is in the bone at full depth and full legibility and simply does not shine — no banner, no veil, no words. A gate made of shade alone is what the dropped wax-seal candidate lost its slot for: a desaturated mark reads as a mark <i>in shadow</i>, never as an absent one (<code>29e-rail-seal.html:141-143</code>).<br>
+<b>Cost, and there are five.</b> The avatar is <b>chosen identity</b> and this writes ladder state onto it. <b>18px is a smudge</b> — the size row is the measurement, not a boast — leaving a hue-only rim in a game whose colour-blind mode pins the duel pair. <b>It lies on the pips, not under them:</b> the face is a translucent wash over near-black, so a groove behind it has nothing left to darken, and at 46% the mark covers the centre pip of face 5 — a die whose pips are its number can then be read as a different face. <b>Boot order:</b> <code>paintAvatar</code> runs before any online code exists, so the mark drags the rune registry into the eager bundle. And <b><code>makeDie</code> paints every rolled die too</b>: one pixel of leak is a rune that looks cast.<br>
+<b>The state easiest to get wrong:</b> nothing equipped and not collected are <b>the same plain die</b> — the first and fourth stills are identical on purpose — and because the equipped slot loses its glow rather than gaining an announcement, the collection cannot answer “which one am I carrying?” either. Nothing-equipped is still the cheapest none available: it is what every player has today.<br>
+<b>Rune Ritual:</b> the die keeps its mark while the HUD chip reads the loaned rune (<code>docs/SPELLS.md</code>, Ranked boundary). That disagreement is what “never overwritten” looks like on a screen.</div>

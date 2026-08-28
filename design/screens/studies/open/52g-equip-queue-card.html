@@ -1,0 +1,256 @@
+<!-- meta name="EQ7 — The last quiet second" group="3k · The equipped rune" subtitle="The queue is the only calm moment before a duel, so it shows the rune you are bringing as a face-up card and locks it the instant an opponent is found" width=412 height=1646 sizes="md" links="Profile, Match reveal, Rune Ritual" -->
+<style>
+  /* Card-local names only (eq7*). THE STAGE IS THE QUEUE, not the profile:
+     src/online/styles/matchmaking.css scopes every rule as
+     `.online-queue .qdice / .qmsg / .qtime / .qsub`, so this card wears the
+     runtime's own `<div class="panel online-queue" id="onQueue">` and inherits
+     the real 58px dice, the deliberately still 11px label, the 24px cyan clock
+     and the 13px reserved sub lane rather than restating any of them. The rune
+     card is the DECK's own object (styles/components/rune-deal.css .rdealt /
+     .rback / .rface, emitted by ui/runefelt.ts through the runefaces token),
+     and the frosted bar is the offline picker's own .choice-lock
+     (styles/components/picker.css:31). Glue only below.
+
+     One reader across all eight cards: FrostLynx303 — 1,412 points, SILVER,
+     rank #12, best streak 3, peak 1,455, owning WARD and FATE. This card never
+     draws the profile, so only the equipped rune (WARD) and the group are
+     visible here; the two numbers must still not contradict the other seven. */
+
+  /* stands in for .pbody, the paged view's scrolling body: only its centring.
+     The rest of .pbody is scroll chrome derived from .ov.paged's header vars,
+     and the preview stage has no pinned header bar to reserve room for. */
+  #ovOnline{display:flex;flex-direction:column;align-items:center;width:100%}
+  .shead{margin-bottom:10px}
+  .scr{gap:6px}                  /* chrome's `.stage .scr` never sets gap */
+
+  /* THE DICE ARE NOT FROZEN — and .dice-static could not freeze them anyway.
+     matchmaking.css:4 is `:where(#kbroot) .online-queue .qdice .die` at
+     (0,3,0); the chrome's `.dice-static .die{animation:none}` is (0,2,0), so
+     the app wins the cascade and qspin keeps bouncing whatever the wrapper
+     wears. That is the correct answer here rather than a workaround: the spin
+     is this screen's shipped hero and the idea changes nothing about it. The
+     frozen frame lives in the stills row below, which holds no dice at all. */
+
+  /* ===== THE IDEA. The queue is the last calm second before a duel and the
+     only screen in ranked whose whole job is to say "hold on". The obvious
+     alternative — a socket on the Profile (EQ1) or the picker row moved onto
+     it whole (EQ2) — makes the choice on a settings screen the player may
+     never open, so the rune stays an abstraction until it appears mid-match.
+     Here the rune is seated in the queue as a FACE-UP CARD between the clock
+     and Cancel: it is the last thing you see before the reveal turns it over,
+     which is the same card object turning in the same anatomy.
+     Sizing is the deck's one number, --card, which rune-deal.css defines only
+     on #ovWheel — so the seat sets it locally. 48px is the deck's small floor:
+     the dealt card is --card*1.4 by --card*1.92 = 67 x 92, and the face icon
+     the build's runefaces token hard-codes at 21px is then 31% of the card
+     width, the same proportion the reveal draws at --card:96 (44/134). Larger
+     and the card out-measures the two 58px dice above it, which are the
+     screen's subject; this one has to sit under them. ===== */
+  .eq7seat{position:relative;width:100%;display:flex;justify-content:center}
+  /* the tap affordance while the search is still running: a hairline seat, the
+     board's empty-slot idea at card scale. It is drawn OUTSIDE the card so the
+     card itself is never redrawn — .rdealt owns its own edges. */
+  .eq7card::after{content:"";position:absolute;inset:-7px;border-radius:14px;
+    border:1px dashed rgba(255,255,255,.16)}
+  /* THE NAME ON THE FACE. runefaces is compiled with labelled=false
+     (design/build.mjs, runeCardFaces(spec, 12, 21, false)), so the app's own
+     .rlbl is not emitted and cannot be reached into — the token returns a
+     fixed string. The name is therefore a sibling laid over the face, and its
+     size is PINNED at 8px rather than copied from .rlbl's calc(--card*.145):
+     that formula is written for the reveal's 96px card and returns 7.0px at
+     this floor, below anything the app asks a player to read. 8px/900/.16em is
+     the profile grid's own tightest label (account.css .accrune span). */
+  .eq7name{position:absolute;left:0;right:0;bottom:9%;text-align:center;
+    font-size:8px;font-weight:900;letter-spacing:.16em}
+
+  /* THE MESSAGE LANE HAS TO BE TOLD ITS WIDTH. #onQueue is align-items:center
+     (matchmaking.css:2), so every panel child is shrink-to-fit — and a .qmsg
+     whose only content is two absolutely-positioned states measures ZERO and
+     wraps both sentences one word per line. Measured: 0 x 26.4px before this
+     rule. The width goes on a card-local class worn beside .qmsg rather than
+     on .qmsg itself, which is the app's.
+     The lane also reserves TWO LINES: "Looking for an opponent" is 22
+     characters, "Rune locked — waiting for your opponent" is 38, and at
+     11px/.2em uppercase the second one takes two lines in this 350px column.
+     Stacking them keeps the clock, the card and Cancel still — but the app's
+     real .qmsg reserves nothing, so in production everything below it drops a
+     line the instant the match is found. The note names that. */
+  .eq7msg{width:100%}
+  .eq7swap{position:relative;display:block;min-height:2.4em}
+  .eq7swap > span{position:absolute;left:0;right:0;top:0}
+
+  /* ===== THE LOOP: 4.2s — ONE BEAT, the lock.
+       0–62%    SEARCHING. Face-up card in its hairline seat, tappable; the
+                message is the shipped "Looking for an opponent" and the sub
+                lane is genuinely empty.
+       62–67%   THE LOCK (~210ms, the picker press's own acknowledgement):
+                the frosted banner slides in from the left across the card and
+                the card settles 1.03 → 1.
+       67–100%  FOUND. The card is no longer a control; the message becomes
+                matchmaking.trialLocked and holds until the reveal takes over.
+     Everything outside 62–67% is a still frame on purpose: the reader should
+     be able to look away and still read the card. ===== */
+  /* THE BANNER HAS TO CLEAR THE CARD. .rdealt carries z-index:24
+     (rune-deal.css:40) because the shuffle stamps 8–13 on the assembled deck
+     and 20 on a card in flight — so a bar drawn at .choice-lock's own z-index:3
+     lands UNDERNEATH the card it is supposed to cover. Screenshotted: the card
+     ate the middle of "LOCKED FOR THIS MATCH" and left two legible ends. 25
+     clears 24 and nothing else in this card stacks. Screenshotted again after
+     the fix: .choice-lock's gradient is rgba(5,6,14,.92) across its middle
+     third, so the bar does NOT leave the icon showing through the frost — it
+     covers it, exactly as it covers the rune buttons on the offline card. What
+     keeps the rune identifiable under the bar is the name at the card's foot,
+     which is why that label is not decoration. The note says so. */
+  .eq7lock{z-index:25;animation:eq7lockin 4.2s cubic-bezier(.3,0,.25,1) infinite}
+  /* .choice-lock centres itself with `translate:0 -50%`, so the slide has to
+     animate that property and carry the -50% through every keyframe — writing
+     it as a transform instead would leave the app's translate in place and the
+     banner would sit half a card too low. */
+  @keyframes eq7lockin{
+    0%,62%{opacity:0;translate:-16px -50%}
+    67%,100%{opacity:1;translate:0 -50%}}
+  /* the settle uses `scale`, not `transform`: .rdealt sets neither, and an
+     independent property cannot collide with one a future app rule adds. */
+  .eq7card{animation:eq7settle 4.2s cubic-bezier(.3,0,.25,1) infinite}
+  @keyframes eq7settle{0%,62%{scale:1}63.5%{scale:1.03}67%,100%{scale:1}}
+  /* the seat's dashed hairline is the "you may still change this" mark, so it
+     leaves at the same instant the choice stops being one */
+  .eq7card::after{animation:eq7tap 4.2s steps(1,end) infinite}
+  @keyframes eq7tap{0%,61.9%{opacity:1}62%,100%{opacity:0}}
+  .eq7m1{animation:eq7m1 4.2s steps(1,end) infinite}
+  .eq7m2{animation:eq7m2 4.2s steps(1,end) infinite}
+  @keyframes eq7m1{0%,61.9%{opacity:1}62%,100%{opacity:0}}
+  @keyframes eq7m2{0%,61.9%{opacity:0}62%,100%{opacity:1}}
+
+  /* ===== THE STATES, side by side and still — the actual comparison. An idea
+     has to be readable in ONE frame, because that is how a player takes it
+     in. ===== */
+  .eq7states{display:flex;justify-content:center;gap:9px;width:100%;margin-top:10px}
+  .eq7st{display:flex;flex-direction:column;align-items:center;gap:9px}
+  .eq7st .cap{font-size:8px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;
+    text-align:center;line-height:1.5;max-width:58px}
+  .eq7box{position:relative;width:47px;height:64px;display:flex;
+    align-items:center;justify-content:center}
+  /* THE STILLS ARE STILL. Every mark in this row is driven by the loop's
+     keyframes, and an animation's filled value sits in the animation origin —
+     above every author declaration except !important — so a plain rule loses
+     however specific it is and each "still" would show whatever frame the loop
+     happens to be on rather than the state its caption names. It has to reach
+     descendants and both pseudo-elements, because the seat ring is an ::after. */
+  .eq7box,.eq7box *,.eq7box *::before,.eq7box *::after{animation:none!important}
+  /* NOTHING EQUIPPED is not an empty box: the queue draws one dim line where
+     the card would be, carrying the shipped "No rune — the pure game."
+     (game.ts runes.none.blurb), and that line is still tappable. At 47px the
+     sentence cannot be set, so the still draws the LINE and the note quotes
+     the copy. */
+  .eq7line{display:block;width:37px;height:0;border-top:1px dashed rgba(255,255,255,.24)}
+  /* the band, at still scale. The real bar is .choice-lock — 9px copy inside
+     11px of padding beside a 14px lock icon — which is wider than this whole
+     column, so the row shows the BAND and the gallery under it shows the real
+     banner at real width. Values are .choice-lock's own, minus the copy. */
+  .eq7band{position:absolute;z-index:25;left:-4px;right:-4px;top:50%;translate:0 -50%;height:15px;
+    border-radius:6px;border:1px solid rgba(255,255,255,.28);
+    background:linear-gradient(100deg,rgba(177,140,255,.2),rgba(5,6,14,.92) 34%,
+      rgba(5,6,14,.92) 66%,rgba(var(--cy-rgb),.16));
+    box-shadow:0 0 18px rgba(177,140,255,.16),inset 0 1px 0 rgba(255,255,255,.1);
+    -webkit-backdrop-filter:blur(4px) saturate(.75);backdrop-filter:blur(4px) saturate(.75)}
+  /* the first rune is not announced with a badge — it is simply already there,
+     lit. Gold is the app's own "this is new" heat (--gold), the same colour the
+     NEW RUNE feature card uses on the result screen. */
+  .eq7box.first .eq7cardsm{box-shadow:0 0 0 1px rgba(var(--gold-rgb),.66),
+    0 0 20px rgba(var(--gold-rgb),.34)}
+
+  /* ===== ONE BANNER, THREE REASONS — the honest half of the idea. The same
+     .choice-lock object covers the choice for three unrelated causes, and a
+     player who meets two of them learns that a frosted bar means "not now"
+     without ever learning which "not now". Drawn at real width and real copy
+     so the collision is visible rather than argued. Each bar is its own
+     positioned box because .choice-lock is position:absolute and needs a
+     card-local parent — wearing it is fine, declaring it is not. ===== */
+  .eq7bars{display:flex;flex-direction:column;gap:7px;width:100%;margin-top:10px}
+  .eq7bar{position:relative;display:block;width:100%;height:33px}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <!-- the online shell's own header. MATCHMAKING is the panel title
+       showOnlinePanel() sets (shell.ts PANELS.onQueue), and the back chevron is
+       hidden rather than removed on this one panel — you cannot back out of a
+       search, you cancel it. -->
+  <div class="shead"><button class="ico" style="visibility:hidden">‹</button><span class="ttl">MATCHMAKING</span><span class="pad"></span></div>
+
+  <div class="cap2">Four seconds into a search — and the second it locks</div>
+
+  <div id="ovOnline">
+    <div class="panel online-queue" id="onQueue">
+      <!-- the shipped pair: makeDie(2, ME) and makeDie(6, AI) in installOnlineShell().
+           No size on the token — matchmaking.css sizes them 58px and sets
+           --cell, so the card proves the app rule instead of restating it. -->
+      <div class="qdice">{{die:2:p1}}{{die:6:p2}}</div>
+      <div class="qmsg eq7msg"><span class="eq7swap">
+        <span class="eq7m1">Looking for an opponent</span>
+        <span class="eq7m2">Rune locked — waiting for your opponent</span>
+      </span></div>
+      <!-- 0:04, NOT 0:07. showSearching() flips the sub lane to "Inviting
+           anyone available…" the moment the clock reaches seven seconds
+           (queue-screen.ts), so a card drawn at 0:07 with an empty lane would
+           be picturing a state the code cannot produce. The clock stops where
+           it stood when the match was found. -->
+      <div class="qtime">0:04</div>
+
+      <!-- THE CARD, seated between the clock and Cancel. It is the deck's own
+           dealt card wearing .rdealt.up, because a rune you are bringing is a
+           card already turned face-up — .rdealt alone is opacity:0 and .up is
+           what the app uses for exactly this still. -->
+      <div class="eq7seat">
+        <div class="rdealt up eq7card" style="--card:48px;color:{{shue:ward}}">{{runefaces:ward}}<span class="eq7name">WARD</span></div>
+        <div class="choice-lock eq7lock"><span class="hues-lock__icon" aria-hidden="true"><span class="hues-lock__shackle"></span></span><span>Locked for this match</span></div>
+      </div>
+
+      <!-- the reserved lane, empty at four seconds. matchmaking.css gives it
+           min-height:13px so nothing below it moves when it fills — which is
+           the lane the first-rune sentence borrows for one queue only. -->
+      <div class="qsub">&nbsp;</div>
+      <button class="btn">Cancel</button>
+    </div>
+  </div>
+
+  <div class="splbl">tappable while it searches · locked when the opponent lands · turned over at the reveal</div>
+
+  <div class="cap2" style="margin-top:10px">The five states the one seat has to carry</div>
+  <div class="eq7states">
+    <div class="eq7st">
+      <div class="eq7box"><i class="eq7line"></i></div>
+      <span class="cap">Nothing<br>equipped</span>
+    </div>
+    <div class="eq7st">
+      <div class="eq7box"><div class="rdealt up eq7cardsm" style="--card:33px;color:{{shue:ward}}">{{runefaces:ward}}</div></div>
+      <span class="cap">Equipped</span>
+    </div>
+    <div class="eq7st">
+      <div class="eq7box"><div class="rdealt up eq7cardsm" style="--card:33px;color:{{shue:ward}}">{{runefaces:ward}}</div><i class="eq7band"></i></div>
+      <span class="cap">Below<br>SILVER</span>
+    </div>
+    <!-- deliberately empty: a player who has never won a rune sees the queue
+         that ships today, with nothing added and nothing to explain -->
+    <div class="eq7st">
+      <div class="eq7box"></div>
+      <span class="cap">None collected<br>nothing drawn</span>
+    </div>
+    <div class="eq7st">
+      <div class="eq7box first"><div class="rdealt up eq7cardsm" style="--card:33px;color:{{shue:ward}}">{{runefaces:ward}}</div></div>
+      <span class="cap">First rune<br>already there</span>
+    </div>
+  </div>
+
+  <div class="splbl">first queue after the winning Ritual — the sub lane, blank for seven seconds today, reads: WARD comes with you now</div>
+
+  <div class="cap2" style="margin-top:10px">One frosted bar, three different reasons</div>
+  <div class="eq7bars">
+    <i class="eq7bar"><div class="choice-lock"><span class="hues-lock__icon" aria-hidden="true"><span class="hues-lock__shackle"></span></span><span>Locked for this match</span></div></i>
+    <i class="eq7bar"><div class="choice-lock"><span class="hues-lock__icon" aria-hidden="true"><span class="hues-lock__shackle"></span></span><span>Reach SILVER to bring it into play</span></div></i>
+    <i class="eq7bar"><div class="choice-lock"><span class="hues-lock__icon" aria-hidden="true"><span class="hues-lock__shackle"></span></span><span>Rune Ritual deals its own</span></div></i>
+  </div>
+</div></div>
+<div class="note"><b>What it says:</b> <b>this is what you are bringing.</b> The queue is ranked's only calm second and the only screen whose whole job is to say hold on, so it is the one place a loadout can be shown without competing with a board. The rune sits there as the deck's own face-up card — the same <code>.rdealt</code> the reveal turns over a moment later — so choice, lock and reveal are three views of one object rather than a settings row that reappears as a chip mid-match.<br>
+<b>Why it survives:</b> it is the only idea on this board where the choice is made where it starts to matter and is then visibly carried into the duel. Three shipped objects, verbatim: the dealt card, the picker's <code>.choice-lock</code>, and <code>matchmaking.trialLocked</code>. And it answers the state the others have to argue about — a player with no runes at all — by not drawing.<br>
+<b>Cost:</b> the queue is the worst place in the app to ask for a decision. The median wait is a handful of seconds, so a tappable control turns waiting into fidgeting — and this one punishes the tap: changing the rune re-submits the join intent so the server can validate and snapshot the loadout, which means <b>the search genuinely restarts and the clock goes back to 0:00</b>. Tap at second six, lose your place, and the feature reads as a trap. Borrowing <code>matchmaking.trialLocked</code> also loads one sentence with two jobs — today it means "your Ritual rune is committed", here it would also mean "your equipped rune is committed" on a screen where nothing was chosen — and the frosted bar takes a third meaning below SILVER. That bar is near-opaque across its middle third, so it covers the icon it crosses — below SILVER the name under it is all that still says <i>which</i> rune is waiting. The card also competes for vertical band with two 58px dice that are the screen's hero, and the message lane grows a line at the find because the app reserves no height for the longer sentence.<br>
+<b>The state easiest to get wrong:</b> below SILVER. The temptation is to hide the card until the choice does something, which teaches nothing. It stays <i>face-up</i> under the picker's own covered-choice banner instead, so the player spends every search watching their rune wait on a named group — louder than a dim icon on a screen they may never open. The picker row is not drawn here: it opens from the card, and <b>EQ2</b> pictures it whole.</div>

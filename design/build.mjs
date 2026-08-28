@@ -30,6 +30,7 @@
 //   {{wsettled:mode|rune:ID}}   a reveal answer that has settled: pill + its rule
 //   {{wanswer:mode|rune:ID}}    a reveal answer's name + blurb, under the stage
 //   {{library:modes|spells[:ID]}}  a whole roster of reference cards, ID ringed
+//   {{libentry:modes|spells:ID}}   ONE entry's three lines — the body of the sheet
 //   {{picker:modes|spells[:V]}}    an OFFLINE pick row, V selected
 //   {{pickinfo:modes|spells[:V]}}  the line under it that names the choice
 //
@@ -53,7 +54,7 @@ import { loaderWaitMarkup } from '../src/ui/loader.ts';
 import { accountRunesMarkup } from '../src/online/screens/account-runes.ts';
 import { spellById } from '../src/core/spells.ts';
 import { modeById } from '../src/core/modes.ts';
-import { libraryCards, pickerButtons, pickInfo, MODE_LIB, SPELL_LIB, MODE_PICKS, SPELL_PICKS } from '../src/ui/library.ts';
+import { libraryBody, libraryCards, pickerButtons, pickInfo, MODE_LIB, SPELL_LIB, MODE_PICKS, SPELL_PICKS } from '../src/ui/library.ts';
 import { inlineCssGraph } from '../tools/css-graph.mjs';
 import { discoverDesignScreens } from './screen-library.mjs';
 
@@ -359,6 +360,20 @@ for (const screen of screens) {
     })
     .replace(/\{\{library:(modes|spells)(?::([a-z]+))?\}\}/g,
       (_, roster, now) => libraryCards(roster === 'modes' ? MODE_LIB : SPELL_LIB, now))
+    /* ONE entry, as the SHEET's body. {{library}} above deals a whole roster;
+       the sheet ui/library openEntry() throws up holds exactly one entry, and
+       a card picturing that sheet would otherwise re-type a rune's rule text —
+       the fifth copy of the registry this file exists to prevent (card 27 held
+       five copies of a rune that had already been retired). Both go through
+       libraryBody(), so the sheet on a card and the sheet in the app are the
+       same three lines. An id the roster does not carry fails the build, which
+       is exactly what the runtime does with it: openEntry() returns false on an
+       id LIBS does not hold. */
+    .replace(/\{\{libentry:(modes|spells):([a-z_]+)\}\}/g, (_, roster, id) => {
+      const spec = roster === 'modes' ? MODE_LIB : SPELL_LIB;
+      const item = spec.items.find((entry) => entry.id === id);
+      return item ? libraryBody(item) : die(`no such ${roster} library entry: ${id}`);
+    })
     .replace(/\{\{picker:(modes|spells)(?::(-?\w+))?\}\}/g,
       (_, roster, now) => pickerButtons(roster === 'modes' ? MODE_PICKS : SPELL_PICKS, now ?? ''))
     .replace(/\{\{pickinfo:(modes|spells)(?::(-?\w+))?\}\}/g, (_, roster, now) => {

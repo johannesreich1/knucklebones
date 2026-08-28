@@ -1,0 +1,284 @@
+<!-- meta name="EQ2 — The picker row" group="3k · The equipped rune" subtitle="The rune control the player already uses offline is brought onto the Profile whole — label, icon row, sentence and lock banner — so every state this feature needs is already drawn and already translated" width=412 height=1800 sizes="md" links="Profile, Match reveal, Rune Ritual" -->
+<style>
+  /* Card-local names only (eq2*). Everything that carries a MEANING here is
+     the app's own: the six-slot collection is the runtime's
+     accountRunesMarkup() through the account-runes token, and every button in
+     both rune rows is the runtime's pickerButtons() through the picker token
+     (src/ui/library.ts:116-118) — same registry order, same icons, same hues,
+     same NONE slice, same "NAME — blurb" sentence from pickInfo at :122. This
+     card's entire claim is that the control already exists, so a hand-copied
+     row would be the one thing it could not say. Glue and state paint only.
+
+     The reader is FrostLynx303 — 1,412 points, SILVER, rank #12, best streak
+     3, peak 1,455, owns FATE and WARD. Same reader as card 31 and as the other
+     seven cards in this group; the numbers may not disagree between them. */
+
+  /* stands in for .pbody, the paged view's scrolling body: only its centring,
+     the way card 31 does it. The rest of .pbody is scroll chrome derived from
+     .ov.paged's header vars, and the preview stage has no header bar. */
+  #ovOnline{display:flex;flex-direction:column;align-items:center;width:100%}
+  .shead{margin-bottom:10px}
+  .scr{gap:8px}                    /* chrome's .stage .scr never sets gap */
+
+  /* ===== THE CROP. The ladder ring, the avatar, the three facts, the history
+     door and the pinned footer are card 31's and are deliberately not drawn:
+     this idea lives entirely BELOW the collection grid, and 206px of ring at
+     the top would push the two covered variants off the stage without adding
+     a word to the argument. The panel keeps the name and the points because
+     the points are the whole gate — 1,412 is past SILVER's 1,260 floor
+     (core/ladder.ts:132), which is why the live row's pick is in play. ===== */
+
+  /* ===== THE BORROWED CARD — src/markup.ts:178-182, brought over whole:
+     .card wrapping .lbl "Rune", .choice-field wrapping .modepick, and the
+     .tiny.note sentence lane under it. Not one of those names is declared
+     here; the card wears them and picker.css paints them. No ids either: the
+     app's row is #spellPick and its lane #spellPickInfo, and this card draws
+     that stack THREE times, so ids would be duplicated in one document. Every
+     rule below that needs to reach one of the three copies is keyed on a
+     card-local class instead, and each substitution is recorded where it
+     happens. ===== */
+
+  /* THE WRAP IS NOT STAGED. Nothing here forces or fakes a line break: the row
+     is .modepick's own flex-wrap, and seven 52px buttons with six 9px gaps are
+     418px against a measured 350px column, so it falls 5 + 2 — measured in the
+     built card, not guessed. picker.css:36-39 already fights this fight for
+     nine slices ("never a lonely ninth button") by narrowing the row under
+     360px; at 384px that media query does not apply, and a seven-slice row has
+     no such rescue. The tail is the headline cost of this idea and it is drawn
+     where it actually lands. */
+
+  /* The sentence lane collides BY NAME with the preview chrome. This study's
+     argument box under the stage is also called .note (design/build.mjs's
+     chrome block), and chrome is inlined after the app's CSS — so the app's
+     in-card lane arrives here wearing a bordered, 13px-padded box it never
+     wears in the game. Undo the box, then restate what the lane actually
+     computes to in the app: .tiny's 10.5px/.14em (screens/result.css:126)
+     under .card .note's left-aligned 1.45 line and reserved 2.9em
+     (overlays.css:117) — two lines held open whether the blurb needs them or
+     not, so nothing below the row moves when the pick changes. */
+  .eq2card .eq2info{background:none;border:0;border-radius:0;padding:0;
+    font-size:10.5px;letter-spacing:.14em;line-height:1.45;color:var(--dim);
+    text-align:left;min-height:2.9em}
+  /* two readings of one lane, stacked so the swap cannot resize it */
+  .eq2stx{position:relative;display:block}
+  .eq2stx .eq2s2{position:absolute;left:0;right:0;top:0}
+
+  /* ===== THE TWO SLICES THAT DO NOT COME ACROSS. Offline, RANDOM and
+     RANDOM x2 are a promise to DEAL rather than a rune, and offline the deal
+     is SYMMETRIC — a named pick hands both seats the same rune, and RANDOM x2
+     exists only as the explicit exception (core/spells.ts:274-280). A personal
+     loadout has neither property: it is one seat's alone, and a random one
+     would have to be rolled server-side at join, where the seed lives. So this
+     row is the app's row minus its last two slices — which is the precise
+     measurement of how much this is a NEAR-copy rather than the same control.
+     They are hidden rather than absent because the picker token has no
+     argument for a subset; shipping this needs pickerButtons to accept the
+     roster it is drawing, which is a runtime seam, not a card trick. ===== */
+  .eq2pick button[data-v="random"],
+  .eq2pick button[data-v="random2"]{display:none}
+
+  /* ===== WHAT THE RUNTIME PAINTS AND THE TOKEN CANNOT. bindPickerRow
+     (boot/picker-row.ts:27-47) walks the row on every sync and sets
+     aria-disabled plus .locked per item from available(); pickerButtons emits
+     the buttons only, so a card has no way to ask for that pass. Replicated
+     here off data-v, which pickerButtons DOES emit — the padlock geometry is
+     picker.css:19-23 verbatim and the dimming is its [aria-disabled="true"]
+     rule at :14. Copying six lines of app CSS is the thing this card is
+     otherwise built to avoid, and it is left visible on purpose: it is the
+     study's finding. This idea cannot ship until pickerButtons is told which
+     ids are locked. FrostLynx303 owns FATE and WARD, so SUNDER, PILFER and
+     ANVIL wear the mark — in place, in registry order, never reordered or
+     removed, exactly as the collection grid above them keeps them. ===== */
+  .eq2pick button[data-v="sunder"],
+  .eq2pick button[data-v="pilfer"],
+  .eq2pick button[data-v="anvil"]{position:relative;cursor:help;opacity:.36;filter:saturate(.35)}
+  .eq2pick button[data-v="sunder"]::after,
+  .eq2pick button[data-v="pilfer"]::after,
+  .eq2pick button[data-v="anvil"]::after{content:"";position:absolute;right:5px;bottom:5px;
+    box-sizing:border-box;width:9px;height:7px;border:1px solid currentColor;border-radius:2px;
+    background:rgba(4,5,12,.82);box-shadow:0 0 7px rgba(255,255,255,.12)}
+  .eq2pick button[data-v="sunder"]::before,
+  .eq2pick button[data-v="pilfer"]::before,
+  .eq2pick button[data-v="anvil"]::before{content:"";position:absolute;z-index:1;right:7px;bottom:11px;
+    box-sizing:border-box;width:5px;height:5px;border:1px solid currentColor;border-bottom:0;
+    border-radius:5px 5px 0 0}
+
+  /* ===== THE LOOP: 6s, and it is deliberately almost nothing =====
+       0–48.4%     WARD is the pick, and the lane reads WARD's blurb
+       46–48.5%    the NONE slice is pressed: scale(.92) over 150ms, which is
+                   picker.css's transition:transform .15s and the ONLY thing
+                   that transition covers
+       48.5%       the highlight SNAPS to NONE and the sentence is rewritten in
+                   the same instant — un-equipping is not a special act, it is
+                   the row's first slice taken with the same single tap
+       48.5–96.4%  NONE is the pick — "No rune — the pure game."
+       94–96.5%    the WARD slice is pressed
+       96.5–100%   WARD again, so the loop closes where it opened
+     The highlight does not fade, and that is a shipped decision rather than a
+     card's taste: picker.css:6-9 records that a blanket .15s transition made
+     the old and the new selection crossfade half-lit on every pick, so the
+     transition was narrowed to the press (user call: highlight, don't flash).
+     Two animations per button rather than one, because the halves need
+     different timing functions — steps(1,end) for a state that snaps, eased
+     for the 150ms squeeze that does not. Everything outside those two presses
+     is a still frame, which is the honest picture of this control. ===== */
+  .eq2live .eq2pick button[data-v="ward"]{
+    animation:eq2wardon 6s steps(1,end) infinite,eq2wardpress 6s cubic-bezier(.3,0,.25,1) infinite}
+  .eq2live .eq2pick button[data-v=""]{
+    animation:eq2noneon 6s steps(1,end) infinite,eq2nonepress 6s cubic-bezier(.3,0,.25,1) infinite}
+  /* the .on look and the base look, both picker.css:10-13 — restated as
+     keyframes because an animation is the only way a card can move a class the
+     runtime owns. --mh is the per-rune hue pickerButtons already wrote inline,
+     so these frames stay registry-coloured for whichever slice wears them. */
+  @keyframes eq2wardon{
+    0%,48.4%{border-color:color-mix(in srgb,var(--mh) 65%,transparent);
+      background:color-mix(in srgb,var(--mh) 12%,transparent);
+      box-shadow:0 0 14px color-mix(in srgb,var(--mh) 30%,transparent)}
+    48.5%,96.4%{border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.04);box-shadow:none}
+    96.5%,100%{border-color:color-mix(in srgb,var(--mh) 65%,transparent);
+      background:color-mix(in srgb,var(--mh) 12%,transparent);
+      box-shadow:0 0 14px color-mix(in srgb,var(--mh) 30%,transparent)}}
+  @keyframes eq2noneon{
+    0%,48.4%{border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.04);box-shadow:none}
+    48.5%,96.4%{border-color:color-mix(in srgb,var(--mh) 65%,transparent);
+      background:color-mix(in srgb,var(--mh) 12%,transparent);
+      box-shadow:0 0 14px color-mix(in srgb,var(--mh) 30%,transparent)}
+    96.5%,100%{border-color:rgba(255,255,255,.12);background:rgba(255,255,255,.04);box-shadow:none}}
+  @keyframes eq2nonepress{0%,45.9%{transform:none}47.2%{transform:scale(.92)}48.5%,100%{transform:none}}
+  @keyframes eq2wardpress{0%,93.9%{transform:none}95.2%{transform:scale(.92)}96.5%,100%{transform:none}}
+  .eq2live .eq2s1{animation:eq2say1 6s steps(1,end) infinite}
+  .eq2live .eq2s2{animation:eq2say2 6s steps(1,end) infinite}
+  @keyframes eq2say1{0%,48.4%{opacity:1}48.5%,96.4%{opacity:0}96.5%,100%{opacity:1}}
+  @keyframes eq2say2{0%,48.4%{opacity:0}48.5%,96.4%{opacity:1}96.5%,100%{opacity:0}}
+
+  /* ===== THE COVER, TWICE — and it is not the same cover. Rune Ritual already
+     covers this exact card today: syncPracticePicks (boot/menu-bindings.ts:
+     153-167) toggles choice-card--locked, sets aria-disabled and unhides
+     .choice-lock, which lies across the ROW only and never over the label or
+     the reserved lane (picker.css:28-31). The SILVER gate wants that banner
+     unchanged and one new string in the runeTrial.lock* voice.
+     What it must NOT borrow is the last line of the Ritual lock:
+     .choice-card--locked #spellPickInfo hides the sentence (picker.css:26),
+     because under Ritual the choice does not apply at all. Below SILVER the
+     choice is made, saved and true — it is simply not in play yet — so the
+     sentence stays readable, and that difference is the whole distance between
+     "you may not choose" and "your choice is not in play here". Both are drawn
+     below so the difference is one glance rather than an argument. ===== */
+  .eq2card--locked .eq2pick button{opacity:.36;filter:saturate(.35);transform:none;cursor:help}
+  /* picker.css:26 keyed on an id this card cannot carry three times over —
+     same three declarations, card-local class. Substitution recorded. */
+  .eq2card--ritual .eq2info{visibility:hidden;max-height:2.9em;overflow:hidden}
+  .eq2pair{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%}
+
+  /* ===== THE STATES, side by side and still — an idea has to be readable in
+     ONE frame, because that is how a player takes it in. Each still is the
+     REAL row, cropped by a 52px window to the single button whose state is
+     being named: a still cannot show a button shape, hue or glyph the runtime
+     would not emit, because it IS the runtime's row with six siblings outside
+     the frame. Offset is 61px per slice — picker.css's 52px button plus its
+     9px gap — and nowrap keeps that arithmetic true inside the window. ===== */
+  .eq2states{display:flex;justify-content:center;gap:13px;width:100%;margin-top:2px}
+  .eq2st{display:flex;flex-direction:column;align-items:center;gap:8px}
+  /* 64px, not the 58 this started at: at 58 the fifth caption fell to three
+     lines while the other four held two, and a stills row whose captions are
+     different heights reads as five states of different weight. Only the
+     widest caption grows its column — the other four stay the 52px button —
+     so the row still measures 331px inside 350. */
+  .eq2cap{font-size:8px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;
+    text-align:center;line-height:1.5;max-width:64px}
+  .eq2box{position:relative;width:52px;height:48px}
+  /* THE STILLS ARE STILL. The live row's highlight is driven by keyframes, and
+     an animation's filled value beats a plain declaration however specific it
+     is — so without this a still would show whatever frame the loop happens to
+     be on rather than the state its caption names. !important is required
+     because an animation loses to nothing else, and it has to reach
+     descendants and both pseudo-elements: the padlock is a ::before and an
+     ::after. */
+  .eq2box,.eq2box *,.eq2box *::before,.eq2box *::after{animation:none!important}
+  .eq2win{position:relative;width:52px;height:48px;overflow:hidden}
+  .eq2crop{position:absolute;top:0;left:calc(var(--eq2i,0) * -61px);width:max-content;flex-wrap:nowrap}
+  /* the WAITING still wears the SAME .choice-lock element as the card above
+     it, cropped to its own padlock: at 52px the banner's 9px/900/.1em copy has
+     nowhere to go, and the sentence it would carry is already readable at full
+     size in the covered card. Only the padding and gap are card-local. */
+  .eq2locksm{padding:5px 3px;gap:0}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">PROFILE</span><span class="pad"></span></div>
+
+  <div class="cap2">One tap, in a row the player has used since their first offline game</div>
+
+  <div id="ovOnline"><div class="panel" id="onAccount">
+    <div class="accname">FrostLynx303</div>
+    <!-- the points are the gate: 1,412 is past SILVER's 1,260 floor, so the
+         row below is not a promise, it is what enters the next ranked match -->
+    <button class="ptv"><b>1,412</b><span>Ladder points</span></button>
+
+    <!-- UNTOUCHED. The collection stays a collection — six stable slots,
+         registry order, real count, real locked veil — which is the one
+         commitment in shell.ts:96-98 this idea does not have to rewrite. -->
+    {{account-runes:fate,ward}}
+
+    <!-- …and the loadout is the control the player already knows, moved here
+         whole rather than invented: label, icon row, sentence. -->
+    <div class="card eq2card eq2live">
+      <div class="lbl">Rune</div>
+      <div class="choice-field">
+        <div class="modepick eq2pick">{{picker:spells:ward}}</div>
+      </div>
+      <div class="tiny note eq2info"><span class="eq2stx"><span class="eq2s1">{{pickinfo:spells:ward}}</span><span class="eq2s2">{{pickinfo:spells}}</span></span></div>
+    </div>
+  </div></div>
+
+  <div class="splbl">two of six collected · WARD equipped · 1,412 points, past SILVER — so it enters play</div>
+
+  <div class="cap2" style="margin-top:8px">The same card, covered twice — and the two covers do not mean the same thing</div>
+  <div class="eq2pair">
+    <div class="splbl">Below SILVER — chosen, saved, waiting. The sentence stays readable.</div>
+    <div class="card eq2card eq2card--locked">
+      <div class="lbl">Rune</div>
+      <div class="choice-field">
+        <div class="modepick eq2pick">{{picker:spells:ward}}</div>
+        <div class="choice-lock" role="note"><span class="hues-lock__icon" aria-hidden="true"><span class="hues-lock__shackle"></span></span><span>Reach SILVER to bring your rune into ranked.</span></div>
+      </div>
+      <div class="tiny note eq2info">{{pickinfo:spells:ward}}</div>
+    </div>
+    <div class="splbl">Rune Ritual, shipped today — the choice does not apply, so the sentence goes</div>
+    <div class="card eq2card eq2card--locked eq2card--ritual">
+      <div class="lbl">Rune</div>
+      <div class="choice-field">
+        <div class="modepick eq2pick">{{picker:spells:ward}}</div>
+        <div class="choice-lock" role="note"><span class="hues-lock__icon" aria-hidden="true"><span class="hues-lock__shackle"></span></span><span>In Rune Ritual, both players see the same three runes, each secretly chooses one, and both choices are revealed together.</span></div>
+      </div>
+      <div class="tiny note eq2info">In Rune Ritual, both players see the same three runes, each secretly chooses one, and both choices are revealed together.</div>
+    </div>
+  </div>
+
+  <div class="cap2" style="margin-top:10px">The five states, still — every one of them already drawn, already translated</div>
+  <div class="eq2states">
+    <div class="eq2st">
+      <div class="eq2box"><div class="eq2win"><div class="modepick eq2pick eq2crop" style="--eq2i:0">{{picker:spells}}</div></div></div>
+      <span class="eq2cap">Nothing<br>equipped</span>
+    </div>
+    <div class="eq2st">
+      <div class="eq2box"><div class="eq2win"><div class="modepick eq2pick eq2crop" style="--eq2i:3">{{picker:spells:ward}}</div></div></div>
+      <span class="eq2cap">Equipped</span>
+    </div>
+    <div class="eq2st">
+      <div class="eq2box"><div class="eq2win"><div class="modepick eq2pick eq2crop" style="--eq2i:3">{{picker:spells:ward}}</div></div><span class="choice-lock eq2locksm" aria-hidden="true"><span class="hues-lock__icon"><span class="hues-lock__shackle"></span></span></span></div>
+      <span class="eq2cap">Below<br>SILVER</span>
+    </div>
+    <div class="eq2st">
+      <div class="eq2box"><div class="eq2win"><div class="modepick eq2pick eq2crop" style="--eq2i:4">{{picker:spells:ward}}</div></div></div>
+      <span class="eq2cap">Not<br>collected</span>
+    </div>
+    <div class="eq2st">
+      <div class="eq2box"><div class="eq2win"><div class="modepick eq2pick eq2crop" style="--eq2i:1">{{picker:spells:fate}}</div></div></div>
+      <span class="eq2cap">First rune,<br>already on</span>
+    </div>
+  </div>
+</div></div>
+<div class="note"><b>What it says: you already know this control.</b> The offline rune picker — label, icon row, NONE first, the sentence that names the pick — moves onto the Profile under a collection grid left exactly as it is. Nothing new is drawn for the first rune either: the row arrives with it already lit and already named, which is what <i>told, not asked</i> looks like when the answer is a control you can see is set. NONE sits first, so un-equipping is one tap on a slice, not a hatch to find.<br>
+<b>Why it survives:</b> no new visual vocabulary at all. Selected, none, locked-per-item, gated-as-a-whole and gated-for-Ritual are already drawn in <code>picker.css</code>, already translated, and already known from offline setup, so the SILVER gate costs one string in the existing <code>runeTrial.lock</code> voice. It also leaves <code>shell.ts:96-98</code> nearly honest: the collection above stays a collection.<br>
+<b>Cost — the most furniture of the eight.</b> Two rune rosters on one screen, and a player may fairly read them as one control shown twice. The row does not fit: seven 52px buttons and six 9px gaps are 418px against a measured 350px column, so it lands 5 + 2 — the lonely tail <code>picker.css</code>'s own comment was written to prevent. The meaning is borrowed imperfectly too: offline a named pick is a <i>symmetric deal</i> handing both seats the same rune, while this is one seat's loadout. RANDOM and RANDOM x2 have to go, and both that subset and the per-item padlocks need arguments <code>pickerButtons</code> does not have.<br>
+<b>The state easiest to get wrong: waiting.</b> The banner is the right object, but the Ritual lock it is borrowed from also hides the sentence, and copying that would say the wrong thing — below SILVER the choice is made and saved and merely not in play, so its name must stay readable. Two covers, two meanings, one element: the second and third cards above differ in exactly that line. A demotion re-deals the banner over a selection nobody touched.</div>

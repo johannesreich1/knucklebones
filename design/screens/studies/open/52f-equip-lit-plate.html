@@ -1,0 +1,402 @@
+<!-- meta name="EQ6 — The lit plate" group="3k · The equipped rune" subtitle="The HOME half of EQ4 — the same round seat the ring's mouth holds on the Profile, carried at plate scale into the identity plate one hairline past the group pill, on the row already docked to PLAY RANKED MATCH" width=412 height=1810 sizes="md" links="Profile, Match reveal, Rune Ritual" -->
+<style>
+  /* ===== THIS CARD IS NOT AN ALTERNATIVE ANY MORE. EQ4 — The ring socket is
+     the selected design, and this is its other half: EQ4 seats the rune in the
+     ladder ring's 90-degree mouth on the PROFILE, where you choose it; this
+     carries the identical seat into the identity plate on HOME, where you
+     leave from. So the two cards share one vocabulary on purpose — the disc,
+     its three states and their exact values are EQ4's, restated here rather
+     than re-decided:
+       empty   .eq6dash — dashed, --dim at 72%, the .pplate.anon language
+       full    .eq6rim  — .rface's own alphas (rune-deal.css:57-60)
+       waiting the ring track's opaque #464c5c (identity.css:36) + the pill
+     THE MARK IS ROUND, and that is the one thing this revision changed. The
+     first draft of this card wore a rounded slot lifted from the collection
+     grid (account.css:47-53, 9px radius) because the plate is a row of
+     rectangles. A square chip on Home and a disc on the Profile would be two
+     marks meaning one thing, which CLAUDE.md names as a design failure, not a
+     shortcut. The chip lost to EQ4's disc on that rule, not on taste. The word
+     NONE went with it: the empty seat is now drawn, not lettered, and the
+     shipped NONE copy (game.ts:271) belongs to the sheet the seat opens.
+
+     Card-local names only (eq6*). The row is the APP's identity plate —
+     .pplate and everything inside it (.ringwrap.mini, .lring, .nm2, .meta2,
+     .gpill, .mrow) comes from src/styles/components/identity.css, and the
+     card WEARS that chain rather than copying rules out of it. Card 13d, the
+     plate's own product card, predates the shipped component and still carries
+     a hand-typed .pplate/.mring copy: that copy is now three values out of
+     date (padding, the pill's clamp, the mini ring's mask). This card declares
+     no app class at all. Where a plate value has to change, the override rides
+     a card-local class sitting on the SAME element (.eq6plate on the .pplate
+     button), which wins on source order at equal specificity.
+     Every rune glyph and hue is the registry's, through the tokens.
+
+     THE READER, as on the rest of the board: FrostLynx303, 1,412 points,
+     SILVER, rank #12, peak 1,455, WARD and FATE collected. Ring fill 0.2027 is
+     groupFill(1412) run through src/core/ladder.ts, not a guess. ONE deliberate
+     exception, declared here because a second set of numbers is normally the
+     failure these cards exist to prevent: the WAITING row needs a player below
+     SILVER, and our reader is not one. It uses a foil — EmberCrow896, 465
+     points, BONE, groupFill 0.3929 — rather than demoting FrostLynx303 for one
+     row and contradicting the other seven cards. ===== */
+
+  /* the only chrome tweak: the stage column centres. .stage .scr is (0,2,0) and
+     sets neither align-items nor gap, so this one-name rule is enough. */
+  .scr{align-items:center}
+
+  /* ===== THE FRAME. Two controls, one plate.
+     The plate on Home is already a button (#homeChip, src/markup.ts:115), and a
+     button cannot nest a button — so the seat CANNOT be a child of the plate.
+     It is a SIBLING. That is the load-bearing structural claim of this card:
+     the frame moves out to a wrapper, both buttons sit inside it with their own
+     hit areas, and the border and background that used to belong to .pplate now
+     belong to the wrapper. The eye reads one plate; the DOM holds two doors —
+     which matters more after the revision than before, because the seat is a
+     door in EQ4 too (it opens the library sheet in its three presentations) and
+     both halves of the design have to be able to open it. Values are
+     identity.css's own .pplate: 14px radius, 1px rgba(255,255,255,.10),
+     rgba(255,255,255,.035) ground, 7px inset — the left 7px still exists to
+     seat the 36px mini ring. ===== */
+  /* MEASURED IN THE BUILT CARD at the 384px md stage, both rows drawn in the
+     same column with the name forced long enough to fill its lane: the shipped
+     plate leaves .nm2 a 118px lane and this one leaves it 86px. (The first
+     draft of this card wrote 116 and 84; re-measured here, the lane is 118 and
+     86 — the same 32px difference, two pixels higher on both sides. The number
+     is corrected rather than kept, because a card that carries its cost as
+     evidence has to carry the measurement it actually made.) The whole 53px the
+     seat, the seam and their two gaps take is not what is lost — dropping the
+     chevron and its gap gives 16px back and the frame's inset gives 5px more —
+     but 32px goes, and 32px is one character of FrostLynx303 and four of a
+     16-character claim. The disc is EQ4's 34px unchanged, so the revision did
+     not move this number: a round seat takes the lane the square chip took. */
+  .eq6frame{position:relative;display:flex;align-items:center;gap:9px;width:100%;
+    box-sizing:border-box;padding:7px;border-radius:14px;
+    border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.035)}
+  /* the neutraliser, on the same element as .pplate. It gives up the frame it
+     no longer owns and keeps everything else the component does — flex, the
+     10px gap, align-items, the type. appearance:none because a bare <button>
+     without a border of its own picks the host's up again (account.css:49
+     carries the same line on .accrune for the same reason). */
+  .eq6plate{flex:1 1 auto;min-width:0;width:auto;padding:0;border:0;border-radius:0;
+    background:none;-webkit-appearance:none;appearance:none}
+  /* the seam. One hairline in the plate's own border colour, full stop — not a
+     gap, not a second background. A gap alone read as two chips that happened
+     to be near each other; a drawn line reads as one object divided. */
+  .eq6seam{flex:0 0 auto;width:1px;height:24px;background:rgba(255,255,255,.10)}
+
+  /* THE PILL CLOSES THE ROW. identity.css:  the slim cut puts .gpill on
+     order:-1 so "the pill leads, points close". This proposal overturns that
+     one decision and says why: the whole argument of this card is that the
+     group and the rune are read TOGETHER, and a gate you have to look past a
+     four-digit number to find is not a gate anybody learns. So the pill takes
+     order:0 and lands against the seam, with the seat one hairline beyond it.
+     This is also what buys Home the state EQ4 has to spell out: on the Profile
+     the waiting seat has to HANG a SILVER pill under itself to name the
+     threshold, because the ring's mouth holds the group NAME and not the gate.
+     Here the pill is already in the row.
+     The app's rule is :where(#kbroot) .pplate .meta2 .gpill — three classes —
+     so the override has to be three deep too. It names only card-local
+     classes; .gpill is worn, never declared. */
+  .eq6frame .eq6plate .eq6pill{order:0}
+
+  /* NO CHEVRON on this row, and that is a decision rather than an omission.
+     PlateSpec.chev (src/ui/plate.ts:25) exists to say "this row is a door", and
+     it is drawn at the far right. With two doors in one frame the far right
+     belongs to the seat, so a chevron there would point at the wrong one and a
+     chevron anywhere else points at nothing. The frame stops claiming to be a
+     single door; each control carries its own affordance. The cost is real and
+     is named in the note. */
+
+  /* ===== THE SEAT. EQ4's disc, at the other end of the app, at the same size:
+     34px drawn, a 22px registry glyph, a 9px bloom. It was tempting to shrink
+     it — the ring it sits in on the Profile is 206px and this row measures 52px
+     — but a mark that changes size between two places starts becoming two
+     marks again, and 34px fits the row's 36px content height with a pixel to
+     spare on each side. What the plate scale actually changes is the hit
+     target, handled below. ===== */
+  .eq6seat{position:relative;flex:0 0 auto;width:34px;height:34px;display:grid;place-items:center;
+    box-sizing:border-box;padding:0;border:0;border-radius:50%;background:none;
+    color:var(--hue);font:inherit;cursor:pointer;-webkit-appearance:none;appearance:none}
+  /* 34px is under the 44px floor docs/architecture/localization.md:200-203
+     requires of anything tappable, so the seat buys the missing 10px the way
+     Home's own row already does: an invisible 44px lane, src/styles/screens/
+     home.css:26. EQ4 buys the same 10px with inset:-5px on its own seat. The
+     lane is wider than the disc and narrower than the 9px gaps beside it, so it
+     never overlaps the plate's hit area. */
+  .eq6seat::before{content:"";position:absolute;left:-5px;right:-5px;top:50%;height:44px;
+    translate:0 -50%}
+  /* THE SEAT WHEN IT IS FULL — the dealt card's own recipe, EQ4's rim verbatim.
+     rune-deal.css:57-60 paints .rface as an opaque body with a 46% frame, a
+     26% outer bloom and a 10% inset in the rune's registry hue, and the reveal
+     is where a player last saw this rune as an OBJECT. Repeating those exact
+     alphas is what makes the seat read as the same thing turned over, rather
+     than as a coloured dot that happens to share a colour. */
+  .eq6rim,.eq6dash{grid-area:1/1;width:34px;height:34px;box-sizing:border-box;border-radius:50%}
+  .eq6rim{background:linear-gradient(158deg,#1e2440,#0b0e1c);
+    border:1px solid color-mix(in srgb,var(--hue) 46%,transparent);
+    box-shadow:0 0 18px color-mix(in srgb,var(--hue) 26%,transparent),
+      inset 0 0 14px color-mix(in srgb,var(--hue) 10%,transparent)}
+  /* THE SEAT WHEN IT IS EMPTY. "None" is a legitimate choice, so an empty seat
+     may not read as a fault — and the app already owns a vocabulary for a drawn
+     place with nobody in it: .pplate.anon, the dashed plate around no account
+     (identity.css:104), which is dashed and --dim and reads as an offer. That
+     vocabulary is doubly at home HERE: the plate this seat rides on is the very
+     element that wears .anon when nobody is signed in, so the empty seat speaks
+     the plate's own dashed language at 34px. Same two values as EQ4. */
+  .eq6dash{opacity:0;border:1px dashed color-mix(in srgb,var(--dim) 72%,transparent)}
+  /* the glyph. NEVER hand-drawn: {{sico}} is ui/spellicons.ts, so the seat here,
+     the seat in the ring and the slot in the collection grid are one registry
+     entry at three sizes. The bloom sits on the WRAPPER, not on .sico: .sico is
+     the app's own class and a card that styles it is redefining a shared name
+     for one page. A filter on the parent renders identically because the parent
+     holds nothing but the icon, and currentColor is the same colour either way. */
+  .eq6glyph{grid-area:1/1;display:grid;place-items:center;line-height:0;
+    filter:drop-shadow(0 0 9px currentColor)}
+  .eq6seat svg{display:block}
+  /* NOTHING EQUIPPED: rim off, dash on, nothing in the seat. --hue falls back to
+     --dim so the 44px lane and the focus ring have a colour to use. */
+  .eq6seat.eq6empty{--hue:var(--dim)}
+  .eq6empty .eq6rim{opacity:0}
+  .eq6empty .eq6dash{opacity:1}
+  /* WAITING — equipped, below SILVER. EQ4's exact treatment, and its exact
+     argument: it may not differ from IN PLAY by SHADE, because a merely dimmed
+     mark reads as a mark in shadow rather than as one that is waiting, so all
+     three differences are changes of KIND.
+       CHROMA    the frame drops the registry hue for the ring track's own
+                 opaque #464c5c (identity.css:36), the ladder's established
+                 colour for ground you have not covered yet, and the glyph goes
+                 --dim because #464c5c is a background value that falls under
+                 the readable floor at 22px of stroke.
+       FOOTPRINT the outer bloom is removed outright, so the disc stops spilling
+                 light along the row and its silhouette ends at its own edge —
+                 which is the difference the eye actually catches in a 52px row.
+       OBJECT    a .gpill names the threshold. This is the one place the two
+                 halves of the design differ in EFFORT rather than in look: EQ4
+                 has to hang that pill under its disc, because the ring's mouth
+                 holds the group NAME, not the gate. Home does not — the plate
+                 was already carrying .gpill 19px away, which is the whole
+                 reason this card exists. The stills below hang it, since a
+                 seat cut out of its row has to bring its own.
+     Nothing is taken away: the choice is made and visible, the ladder has simply
+     not switched it on, and the seat keeps its full edge because it is still a
+     door — a fully dimmed button would say "disabled", which this is not. */
+  .eq6wait .eq6rim{border-color:#464c5c;box-shadow:none}
+  .eq6wait .eq6glyph{color:var(--dim);filter:none}
+
+  /* ===== THE ONE BEAT: the plate repaints, 4.2s — EQ4's clock exactly, so the
+     two halves of this design loop in step when the pane shows them side by
+     side.
+       0-30%     the seat is dashed and empty
+       30-44.8%  620ms on cubic-bezier(.3,0,.25,1): the glyph falls the last 5px
+                 into the seat and the dashed border resolves to the hued frame
+                 as it arrives
+       44.8-53%  the bloom swells once, 9px to 18px. EQ4 does not need this: its
+                 glyph FLIES in from the tray, so the arrival announces itself.
+                 Home has no tray to fly from, so the arrival is announced in
+                 place, in one beat, and never a second one.
+       53-100%   lit, and still for two seconds.
+     Fired in the app whenever the plate paints a rune it was not previously
+     holding: after the first rune seals itself, and after any later change made
+     in EQ4's ring. The moment itself is not announced here — announcing the
+     first rune is EQ8's threshold card, and this row's job is to be already
+     carrying it the next time you look at Home. The long still tail is the
+     point: this card is a still frame that admits how it got there. ===== */
+  .eq6live .eq6glyph{animation:eq6drop 4.2s linear infinite}
+  @keyframes eq6drop{
+    0%,30%{opacity:0;transform:translateY(-5px) scale(.86);filter:drop-shadow(0 0 0 currentColor)}
+    30.01%{opacity:1;transform:translateY(-5px) scale(.86);filter:drop-shadow(0 0 0 currentColor);
+      animation-timing-function:cubic-bezier(.3,0,.25,1)}
+    44.8%{opacity:1;transform:none;filter:drop-shadow(0 0 9px currentColor)}
+    53%{opacity:1;transform:none;filter:drop-shadow(0 0 18px currentColor)}
+    62%,100%{opacity:1;transform:none;filter:drop-shadow(0 0 9px currentColor)}}
+  .eq6live .eq6rim{animation:eq6rimin 4.2s linear infinite}
+  @keyframes eq6rimin{0%,30%{opacity:0}44.8%,100%{opacity:1}}
+  .eq6live .eq6dash{animation:eq6dashout 4.2s linear infinite}
+  @keyframes eq6dashout{0%,30%{opacity:1}44.8%,100%{opacity:0}}
+
+  /* ===== THE STACKED ROWS. Three whole plates, not three cropped seats: the
+     claim is adjacency, and adjacency cannot be shown by an object on its own.
+     Each row is the real width the phone gives it, so the name's lane is the
+     real lane and its ellipsis is the real ellipsis. The three rows are the
+     three states, in EQ4's order. ===== */
+  .eq6vars{display:flex;flex-direction:column;gap:11px;width:100%;max-width:var(--w-col);margin-top:9px}
+  .eq6var{display:flex;flex-direction:column;width:100%}
+
+  /* THE STILLS ARE STILL. The loop above is already scoped to .eq6live, so in
+     principle nothing else can move — but the stills exist to hold ONE labelled
+     frame, and an animation's filled value beats a plain declaration however
+     specific it is, so any future rule that widens the loop's selector would
+     silently show these whatever frame it is on instead. Only !important
+     outranks the animation origin. 29c-rail-slot.html records measuring this
+     three times before writing the same rule; this card is not measuring it a
+     fourth. It has to reach descendants and both pseudo-elements, because
+     .endplates keyframes ride any .pplate. */
+  .eq6frz,.eq6frz *,.eq6frz *::before,.eq6frz *::after{animation:none!important}
+
+  /* ===== THE STATE ROW: THREE frames, and it is deliberately the same object
+     EQ4's state row is, so the two can be laid beside each other and compared
+     mark for mark. Three, not six. The three that were dropped were dropped for
+     the reasons EQ4 drops its own extras:
+       SIGNED OUT     — there is no plate at all. #homeChip wears .pplate.anon
+                        and reads NOT SIGNED IN (markup.ts:115); a row with no
+                        standing in it has no standing to carry a rune with.
+       NOT HELD       — cannot happen in a seat. The seat only ever holds a rune
+                        the account owns; an unowned rune is a veiled slot in the
+                        collection grid, and that veil is the GRID's job
+                        (account.css:56-59).
+       FIRST RUNE     — visually identical to EQUIPPED, because it IS equipped.
+                        The auto-equip is an event to announce (EQ8), not a
+                        second picture of one seat; the loop above shows the
+                        repaint and the note says the rest in a line.
+     Three fixed rows, and the middle one is reserved whether the state uses it
+     or not — EQ4's own grid. Only WAITING hangs a .gpill under its disc, and as
+     a flow child that pill pushed its caption below the two beside it; three
+     states whose captions do not share a baseline read as three unrelated
+     pictures rather than one comparison. ===== */
+  .eq6stills{display:flex;justify-content:center;gap:22px;width:100%;margin-top:11px}
+  .eq6st{display:grid;grid-template-rows:44px 17px auto;row-gap:4px;justify-items:center}
+  .eq6box{grid-row:1;position:relative;width:44px;height:44px;display:grid;place-items:center}
+  .eq6st .eq6pill{grid-row:2;align-self:center}
+  .eq6st .eq6cap{grid-row:3;font-size:8px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;
+    text-align:center;line-height:1.5;max-width:96px}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="hero dice-static">
+    <div class="eyebrow">Neon Edition</div>
+    <h1>KNUCKLEBONES</h1>
+    <div class="duel">{{die:5:p1:74}}<span class="vs">VS</span>{{die:3:p2:74}}</div>
+    <div class="sub2">Ranked dice duels</div>
+  </div>
+
+  <div class="cap2">EQ4's seat, at plate scale: the plate repaints and the rune is already in it</div>
+
+  <div class="homestack dice-static">
+    <!-- TWO BUTTONS, ONE FRAME. #homeChip keeps its whole job — tap the plate,
+         the account opens — and the seat is its sibling, sharing the border and
+         the ground, opening the same sheet EQ4's seat opens. -->
+    <div class="eq6frame eq6live">
+      <button type="button" class="pplate eq6plate">
+        <span class="ringwrap mini" style="--p:0.2027"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+        <span class="nm2">FrostLynx303</span>
+        <span class="meta2"><span class="mrow"><b>1,412</b></span><span class="gpill eq6pill" style="--gc:var(--g-silver)">SILVER · #12</span></span>
+      </button>
+      <i class="eq6seam"></i>
+      <button type="button" class="eq6seat" style="--hue:{{shue:ward}}" aria-label="Equipped rune, WARD">
+        <i class="eq6rim"></i><i class="eq6dash"></i><i class="eq6glyph">{{sico:ward:22}}</i>
+      </button>
+    </div>
+    <button class="btn primary">Play ranked match</button>
+    <div class="hrow">
+      <button class="btn">Ladder</button>
+      <button class="btn">Settings</button>
+    </div>
+  </div>
+
+  <div class="splbl">the seat is one hairline from the group that switches it on, one row above the button that spends it</div>
+
+  <div class="cap2" style="margin-top:15px">The same row at three standings — the gate is the two objects side by side</div>
+  <div class="eq6vars eq6frz dice-static">
+    <div class="eq6var">
+      <div class="eq6frame">
+        <button type="button" class="pplate eq6plate">
+          <span class="ringwrap mini" style="--p:0.2027"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+          <span class="nm2">FrostLynx303</span>
+          <span class="meta2"><span class="mrow"><b>1,412</b></span><span class="gpill eq6pill" style="--gc:var(--g-silver)">SILVER · #12</span></span>
+        </button>
+        <i class="eq6seam"></i>
+        <button type="button" class="eq6seat eq6empty" aria-label="No rune equipped">
+          <i class="eq6rim"></i><i class="eq6dash"></i>
+        </button>
+      </div>
+      <div class="splbl">nothing equipped — a drawn empty place, dashed like the plate around no account, so it reads as an offer and not as a hole</div>
+    </div>
+    <div class="eq6var">
+      <div class="eq6frame">
+        <button type="button" class="pplate eq6plate">
+          <span class="ringwrap mini" style="--p:0.2027"><i class="lring"></i><span class="pav">{{die:5:p1:18}}</span></span>
+          <span class="nm2">FrostLynx303</span>
+          <span class="meta2"><span class="mrow"><b>1,412</b></span><span class="gpill eq6pill" style="--gc:var(--g-silver)">SILVER · #12</span></span>
+        </button>
+        <i class="eq6seam"></i>
+        <button type="button" class="eq6seat" style="--hue:{{shue:ward}}" aria-label="Equipped rune, WARD">
+          <i class="eq6rim"></i><i class="eq6dash"></i><i class="eq6glyph">{{sico:ward:22}}</i>
+        </button>
+      </div>
+      <div class="splbl hit" style="--hue:{{shue:ward}}">equipped · SILVER — lit, and in play in every ordinary ranked match</div>
+    </div>
+    <!-- A FOIL, not our reader. EmberCrow896 sits at 465 points, deep in BONE
+         (floor 300, src/core/ladder.ts), ring fill 0.3929. Demoting
+         FrostLynx303 for one row would have contradicted the other seven cards
+         in this group; borrowing a second player costs one name and keeps the
+         board's numbers true. -->
+    <div class="eq6var">
+      <div class="eq6frame">
+        <button type="button" class="pplate eq6plate">
+          <span class="ringwrap mini" style="--p:0.3929"><i class="lring"></i><span class="pav">{{die:2:p1:18}}</span></span>
+          <span class="nm2">EmberCrow896</span>
+          <span class="meta2"><span class="mrow"><b>465</b></span><span class="gpill eq6pill" style="--gc:var(--g-bone)">BONE · #341</span></span>
+        </button>
+        <i class="eq6seam"></i>
+        <button type="button" class="eq6seat eq6wait" style="--hue:{{shue:fate}}" aria-label="Equipped rune, FATE, not yet in play">
+          <i class="eq6rim"></i><i class="eq6dash"></i><i class="eq6glyph">{{sico:fate:22}}</i>
+        </button>
+      </div>
+      <div class="splbl no">equipped · BONE — chosen, unlit, waiting: the group that would light it is the pill against the seam</div>
+    </div>
+  </div>
+
+  <div class="cap2" style="margin-top:15px">The three frames the seat carries — EQ4's three, at plate scale</div>
+  <div class="eq6stills eq6frz">
+    <div class="eq6st">
+      <div class="eq6box">
+        <span class="eq6seat eq6empty"><i class="eq6rim"></i><i class="eq6dash"></i></span>
+      </div>
+      <span class="eq6cap">Nothing<br>equipped</span>
+    </div>
+    <div class="eq6st">
+      <div class="eq6box">
+        <span class="eq6seat" style="--hue:{{shue:ward}}"><i class="eq6rim"></i><i class="eq6dash"></i><i class="eq6glyph">{{sico:ward:22}}</i></span>
+      </div>
+      <span class="eq6cap">Equipped<br>in play</span>
+    </div>
+    <div class="eq6st">
+      <div class="eq6box">
+        <span class="eq6seat eq6wait" style="--hue:{{shue:ward}}"><i class="eq6rim"></i><i class="eq6dash"></i><i class="eq6glyph">{{sico:ward:22}}</i></span>
+      </div>
+      <span class="gpill eq6pill" style="--gc:var(--g-silver)">SILVER</span>
+      <span class="eq6cap">Equipped<br>below SILVER</span>
+    </div>
+  </div>
+</div></div>
+<div class="note"><b>What it says:</b> <b>an equipped rune is part of your standing.</b> Not a
+  rival to <b>EQ4 — The ring socket</b> but its other half: EQ4 cuts the seat into the ladder
+  ring's mouth on the Profile, where the rune is chosen, and this carries the identical seat into
+  the identity plate on Home — the block that already holds your position and the button that
+  moves it (<code>identity.css</code>, design 13d). The mark is round for that reason: it is EQ4's
+  disc at EQ4's 34px, with EQ4's three states drawn from EQ4's values. A square chip on Home and a
+  disc on the Profile would be two marks meaning one thing, which <code>CLAUDE.md</code> names as
+  a design failure.
+  <br><b>Why it survives:</b> the gate needs no sentence on Home. The plate already carries
+  <code>.gpill</code> and the seat lands 19px past it — where EQ4's waiting seat must HANG a SILVER
+  pill under itself to name the threshold, as the state row above does. The seat is a door here as
+  it is there, onto the same sheet in its three presentations, so Home adds no runtime seam of its
+  own; and the frame is two buttons because <code>#homeChip</code> is already a
+  <code>&lt;button&gt;</code> and a button cannot nest a button, so the border and ground move out
+  to a wrapper and each control keeps its own hit area and its own 44px lane.
+  <br><b>Cost:</b> measured at the 384px stage, the name's lane falls from <b>118px to 86px</b> —
+  not the disc's doing, since a round 34px seat takes the lane the 34px chip took. FrostLynx303 is
+  12 characters and 89px of ink: the shipped lane draws it whole, this one fits <b>11</b>, so the
+  name is clipped in all three plates above. The claim box allows 16
+  (<code>account-screen.ts:270</code>), and <code>localization.md:176-182</code> names plates as a
+  translation pressure point. The row also gives up its chevron and stops announcing itself as a
+  door, and <code>fillPlate</code> paints three contexts from one spec, so <code>PlateSpec</code>
+  grows a rune field the result screen's two plates must be told to draw inert.
+  <br><b>The state easiest to get wrong:</b> waiting, and it may not differ from IN PLAY by shade
+  — a merely dimmed mark reads as one in shadow, never as one that is waiting. So all three
+  differences are changes of kind, EQ4's three: chroma (<code>#464c5c</code> frame,
+  <code>--dim</code> glyph), footprint (the bloom removed outright, the silhouette ending at its
+  own edge), and the pill. The edge itself stays full, because the rune is out of play but the
+  control is still a door. That row borrows a foil, EmberCrow896 at 465 points in BONE, since our
+  reader is SILVER. Three states are deliberately undrawn: signed out has no plate at all, not-held cannot
+  reach a seat that holds only what the account owns, and the first rune sealing itself IS the
+  equipped frame — the loop shows the repaint; announcing the moment is EQ8's job.</div>
