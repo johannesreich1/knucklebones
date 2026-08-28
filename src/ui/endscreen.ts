@@ -19,14 +19,17 @@ import { fillPlate, repaintPlateLocale, type PlateSpec } from './plate.ts';
 
 export interface EndAction { label: string; run: () => void }
 
+/* A feature card is a DOOR: two lines name what was won and the whole card
+   opens whatever already owns the full description. No body and no CTA — a
+   printed explanation would be a second copy of that owner's text, and a
+   button beside a tappable card is two targets for one destination. */
 export interface EndFeature {
   className?: string;
   hue?: string;
   icon?: string;
   kicker: string;
   title: string;
-  body: string;
-  action?: EndAction;
+  tap: () => void;
 }
 
 /* an identity plate on the result (design 36f) — the home plate's spec plus
@@ -80,6 +83,8 @@ export function bindEnd(): void {
   tap($('#btnAgain'), () => act(live?.again));
   tap($('#btnEndQuiet'), () => act(live?.quiet));
   tap($('#btnShare'), () => { Sfx.tap(); void shareResult(); });
+  // bound once like the rest: a listener per paint stacks up one per result
+  tap($('#endFeature'), () => { Sfx.tap(); live?.feature?.tap(); });
   if (typeof ResizeObserver !== 'undefined') {
     titleResizeObserver ??= new ResizeObserver(() => fitEndTitle());
     titleResizeObserver.observe($('#ovEnd .titleclip'));
@@ -238,18 +243,13 @@ function paintFeature(feature?: EndFeature): void {
   kicker.textContent = feature.kicker;
   const title = document.createElement('b');
   title.textContent = feature.title;
-  const body = document.createElement('span');
-  body.textContent = feature.body;
-  copy.append(kicker, title, body);
-  box.append(icon, copy);
-  if (feature.action) {
-    const action = document.createElement('button');
-    action.type = 'button';
-    action.className = 'btn small endfeature-action';
-    action.textContent = feature.action.label;
-    tap(action, () => { Sfx.tap(); feature.action?.run(); });
-    box.appendChild(action);
-  }
+  copy.append(kicker, title);
+  // the plates' own mark for a row that opens something (ui/plate.ts)
+  const chev = document.createElement('span');
+  chev.className = 'chev';
+  chev.setAttribute('aria-hidden', 'true');
+  chev.textContent = '›';
+  box.append(icon, copy, chev);
 }
 
 /* the plates can arrive LATE too, for the same reason — ranked deals them from

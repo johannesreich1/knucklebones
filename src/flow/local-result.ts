@@ -16,7 +16,6 @@ export interface LocalResultActions {
   finishTutorial: () => void;
   nextDuel: () => void;
   changeSetup: () => void;
-  backToRanked?: () => void;
 }
 
 function localResultSpec(result: LocalResultSummary, actions: LocalResultActions): EndSpec {
@@ -43,12 +42,10 @@ function localResultSpec(result: LocalResultSummary, actions: LocalResultActions
     /* Ordinary local results need no second score recap under the scoreline.
        Tutorial completion is distinct context and remains visible. */
     meta: tutorial ? t('game', 'result.tutorialCompleteMeta') : undefined,
-    again: actions.backToRanked
-      ? { label: t('game', 'action.backToRanked'), run: actions.backToRanked }
-      : tutorial
+    again: tutorial
       ? { label: t('game', 'action.finish'), run: actions.finishTutorial }
       : { label: t('game', 'action.nextDuel'), run: actions.nextDuel },
-    quiet: tutorial || actions.backToRanked
+    quiet: tutorial
       ? undefined
       : { label: t('game', 'action.changeSetup'), run: actions.changeSetup },
     delay: 900,

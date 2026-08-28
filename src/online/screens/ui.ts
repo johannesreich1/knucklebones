@@ -42,7 +42,6 @@ import { setFinishHandler, type FinishReport } from '../play/play.ts';
 export type OnlineView = 'play' | 'ladder' | 'account';
 export interface OnlinePorts {
   startTutorial: () => void;
-  tryRune: (runeId: string, onBackToRanked: () => void) => boolean;
 }
 
 let bound = false;
@@ -76,9 +75,6 @@ const result = createResultScreen({
   goHome,
   nextDuel,
   openProfile: openProfileFromResult,
-  tryRune: (runeId, report) => {
-    onlinePorts?.tryRune(runeId, () => { void result.show(report); });
-  },
 });
 
 function showAuthPanel(mode: AuthMode, origin: AuthOrigin, notice: string | null = null): void {
@@ -121,11 +117,9 @@ function presentRuneReward(
   collection: RuneCollectionRefresh,
   owns: () => boolean,
   onContinue: () => void,
-  onBackFromTryout: () => void,
 ): boolean {
   const reward = firstUnseenRuneReward(collection);
-  const ports = onlinePorts;
-  if (!reward || !ports || !owns()) return false;
+  if (!reward || !owns()) return false;
   closeRuneReward();
   let presentation!: RuneRewardSheet;
   const release = (): void => {
@@ -134,10 +128,6 @@ function presentRuneReward(
   presentation = showRuneRewardSheet(reward, {
     owns: () => activeRuneReward === presentation && owns(),
     onContinue: () => { release(); onContinue(); },
-    onTry: (runeId) => {
-      release();
-      return ports.tryRune(runeId, onBackFromTryout);
-    },
   });
   activeRuneReward = presentation;
   return true;
@@ -149,16 +139,8 @@ function presentAccountRuneReward(
 ): void {
   const revision = entryRevision;
   const stillCurrent = (): boolean => revision === entryRevision && ownsAccount();
-  void presentRuneReward(
-    collection,
-    stillCurrent,
-    () => undefined, // the fully painted profile is already under the sheet
-    () => {
-      if (revision !== entryRevision) return;
-      show('#ovOnline');
-      void account.show();
-    },
-  );
+  // the fully painted profile is already under the sheet
+  void presentRuneReward(collection, stillCurrent, () => undefined);
 }
 
 function goHome(): void {
@@ -231,7 +213,7 @@ async function routeWithRuneReward(
 ): Promise<void> {
   /* Account paints one coherent profile first and presents from its own fresh
      collection response. Queue/reconnect must not begin behind a modal reward,
-     so those destinations wait until Continue or the borrowed tryout returns. */
+     so those destinations wait until Continue closes the reward. */
   if (view === 'account') {
     const refreshed = await account.show();
     /* Account normally presents its own freshest collection. If that second
@@ -251,7 +233,7 @@ async function routeWithRuneReward(
     show('#ovOnline');
     void route(view);
   };
-  if (presentRuneReward(collection, current, resume, resume)) return;
+  if (presentRuneReward(collection, current, resume)) return;
   await route(view);
 }
 

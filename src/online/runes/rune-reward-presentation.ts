@@ -6,6 +6,7 @@ import { spellById, type SpellSpec } from '../../core/spells.ts';
 import { spellCopy, t } from '../../i18n/index.ts';
 import { Sfx } from '../../ui/audio.ts';
 import type { EndFeature } from '../../ui/endscreen.ts';
+import { openEntry } from '../../ui/library.ts';
 import { showSheet, type Sheet } from '../../ui/sheet.ts';
 import { spellHue, spellIcon } from '../../ui/spellicons.ts';
 import { rootElementFromPoint } from '../../ui/query.ts';
@@ -24,7 +25,6 @@ export interface RuneRewardPresentation {
 export interface RuneRewardSheetPorts {
   owns(): boolean;
   onContinue(): void;
-  onTry(runeId: string): boolean;
 }
 
 export interface RuneRewardSheet {
@@ -55,14 +55,19 @@ function copyFor(reward: RuneRewardPresentation) {
     kicker: t('online', 'result.newRune'),
     title: copy.name,
     body: copy.blurb,
-    tryIt: t('online', 'result.tryIt'),
     continue: t('common', 'actions.continue'),
   };
 }
 
+/**
+ * The result's reward card: two lines naming the rune, and a tap that opens the
+ * SAME entry sheet the in-game badge and the profile collection open. What the
+ * rune does is written once, in the registry, and read there.
+ * `onPresented` runs first — an explicit tap is proof the card was seen.
+ */
 export function runeRewardFeature(
   reward: RuneRewardPresentation,
-  onTry: () => void,
+  onPresented: () => void,
 ): EndFeature {
   const copy = copyFor(reward);
   return {
@@ -71,8 +76,10 @@ export function runeRewardFeature(
     icon: spellIcon(reward.rune.id, 24),
     kicker: copy.kicker,
     title: copy.title,
-    body: copy.body,
-    action: { label: copy.tryIt, run: onTry },
+    tap: () => {
+      onPresented();
+      openEntry('spells', reward.rune.id);
+    },
   };
 }
 
@@ -153,7 +160,6 @@ export function acknowledgeRuneRewardWhenPresented(
 
 function rewardSheetContent(reward: RuneRewardPresentation): {
   content: HTMLElement;
-  tryButton: HTMLButtonElement;
   continueButton: HTMLButtonElement;
   repaint: () => void;
 } {
@@ -163,9 +169,7 @@ function rewardSheetContent(reward: RuneRewardPresentation): {
     <i class="rune-reward-sheet__icon" aria-hidden="true"></i>
     <h2 class="rune-reward-sheet__title"></h2>
     <p class="rune-reward-sheet__body"></p>
-    <button type="button" class="btn primary rune-reward-sheet__try"></button>
-    <button type="button" class="btn soft small rune-reward-sheet__continue"></button>`;
-  const tryButton = content.querySelector<HTMLButtonElement>('.rune-reward-sheet__try')!;
+    <button type="button" class="btn primary rune-reward-sheet__continue"></button>`;
   const continueButton = content.querySelector<HTMLButtonElement>('.rune-reward-sheet__continue')!;
   const repaint = (): void => {
     const copy = copyFor(reward);
@@ -174,11 +178,10 @@ function rewardSheetContent(reward: RuneRewardPresentation): {
       spellIcon(reward.rune.id, 34);
     content.querySelector<HTMLElement>('.rune-reward-sheet__title')!.textContent = copy.title;
     content.querySelector<HTMLElement>('.rune-reward-sheet__body')!.textContent = copy.body;
-    tryButton.textContent = copy.tryIt;
     continueButton.textContent = copy.continue;
   };
   repaint();
-  return { content, tryButton, continueButton, repaint };
+  return { content, continueButton, repaint };
 }
 
 export function showRuneRewardSheet(
@@ -201,10 +204,6 @@ export function showRuneRewardSheet(
     action();
   };
   const continueFlow = (): void => ports.onContinue();
-  view.tryButton.addEventListener('click', () => {
-    Sfx.tap();
-    choose(() => { if (!ports.onTry(reward.rune.id)) continueFlow(); });
-  });
   view.continueButton.addEventListener('click', () => {
     Sfx.tap();
     choose(continueFlow);

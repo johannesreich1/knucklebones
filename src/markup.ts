@@ -325,7 +325,9 @@ ${OVERLAY_CARDS_MARKUP}
   </div>
   <!-- who played, as plates (design 36f) — ranked fills this, local leaves it hidden -->
   <div class="endplates" id="endPlates" hidden></div>
-  <!-- Typed result feature/reward slot. --><div class="endfeature" id="endFeature" hidden></div>
+  <!-- Typed result feature/reward slot. The whole card is the control: it
+       opens the entry that describes what the card names. -->
+  <button type="button" class="endfeature" id="endFeature" aria-haspopup="dialog" hidden></button>
   <div class="endmeta" id="endMeta"></div>
   <!-- share sits WITH the thing it shares (user call): right under the two
        plates, centered with them — not down in

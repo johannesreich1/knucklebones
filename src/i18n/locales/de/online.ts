@@ -162,7 +162,6 @@ export const deOnline = {
     beatenStamp: 'BESIEGT',
     forfeitedStamp: 'AUFGEGEBEN',
     newRune: 'NEUE RUNE',
-    tryIt: 'TESTEN',
     share: '{{title}} {{mine}}–{{theirs}} gegen {{opponent}}{{delta}} — Knucklebones, Ranglisten-Würfelduelle',
     delta_one: ' · {{points}} Punkt',
     delta_other: ' · {{points}} Punkte',

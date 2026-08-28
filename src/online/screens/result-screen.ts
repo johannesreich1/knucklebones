@@ -34,7 +34,6 @@ interface ResultPorts {
   goHome(): void;
   nextDuel(): void;
   openProfile(onReturn: () => void): void;
-  tryRune(runeId: string, report: FinishReport): void;
 }
 
 export interface ResultScreen {
@@ -76,10 +75,11 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
       const submitted = rewardAcknowledgement?.acknowledge() ?? null;
       rewardAcknowledgement = null;
       /* A temporary cover cancels the visibility watcher. Its return refresh
-         can still be pending when the player immediately chooses TRY IT, so
-         bind that explicit action directly to the already-presented reward.
-         Both paths retry a failed/deadlined ACK after its de-duplication entry
-         has cleared; an explicit CTA must durably consume the presentation. */
+         can still be pending when the player immediately opens the reward
+         card, so bind that explicit action directly to the already-presented
+         reward. Both paths retry a failed/deadlined ACK after its
+         de-duplication entry has cleared; an explicit tap must durably consume
+         the presentation. */
       const acknowledgement = submitted ?? acknowledgeRuneReward(
         presentedReward.accountId,
         presentedReward.rune.id,
@@ -194,13 +194,9 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
         you: { score: report.my, label: '' },
         them: { score: report.their, label: '' },
         plates: plates(),
-        feature: reward ? runeRewardFeature(
-          reward,
-          depart(
-            () => ports.tryRune(reward!.rune.id, report),
-            acknowledgeRewardForAction,
-          ),
-        ) : undefined,
+        /* The card opens the rune's own entry over this screen — a cover, not
+           a departure, so the result is still here when the sheet closes. */
+        feature: reward ? runeRewardFeature(reward, acknowledgeRewardForAction) : undefined,
         again: { label: t('online', 'result.nextDuel'), run: depart(ports.nextDuel) },
         quiet: { label: t('common', 'actions.home'), run: depart(ports.goHome) },
         share: t('online', 'result.share', {

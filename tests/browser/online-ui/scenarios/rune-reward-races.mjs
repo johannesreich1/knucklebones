@@ -20,7 +20,7 @@ const showWinningResult = (page) => page.evaluate((report) => {
   window.__kbResult(report);
 }, REPORT);
 
-async function resumeTryProbe(page, routes) {
+async function resumeCardProbe(page, routes) {
   routes.makeRuneUnseen('fate');
   await showWinningResult(page);
   await page.waitForSelector('#ovEnd.on #endFeature:not([hidden])', { timeout: 15000 });
@@ -31,27 +31,30 @@ async function resumeTryProbe(page, routes) {
   const acknowledgementsWhileCovered = routes.acknowledgeCalls();
   await page.click('.faceoff:not(.rune-reward-sheet) .fograb');
   await bounded(routes.runeRequestStarted, 'result resume did not refresh its reward');
-  const beforeTry = await page.evaluate(() => {
-    const action = document.querySelector('#endFeature .endfeature-action');
-    const rect = action?.getBoundingClientRect();
+  const beforeOpen = await page.evaluate(() => {
+    const card = document.getElementById('endFeature');
+    const rect = card?.getBoundingClientRect();
     const hit = rect ? document.elementFromPoint(rect.left + rect.width / 2,
       rect.top + rect.height / 2) : null;
-    return { action: action?.textContent, hit: hit?.className, mode: window.__kb.S.mode };
+    return { ownsHit: !!hit && !!card?.contains(hit), hit: hit?.tagName };
   });
-  await page.click('#endFeature .endfeature-action');
-  await page.waitForTimeout(500);
-  const afterTry = await page.evaluate(() => ({
-    mode: window.__kb.S.mode,
-    charges: window.__kb.S.spellCharges.map((hand) => hand.fate ?? 0),
+  await page.click('#endFeature');
+  await page.waitForSelector('.faceoff.libsheet .focard', { timeout: 15000 });
+  const afterOpen = await page.evaluate(() => ({
+    rune: document.querySelector('.faceoff.libsheet .mcname')?.textContent?.trim(),
+    detail: document.querySelector('.faceoff.libsheet .mcdetail')?.textContent?.trim().length ?? 0,
+    /* the entry COVERS the result rather than leaving it: the screen the
+       player was on is still there behind the sheet */
+    resultStillOpen: document.getElementById('ovEnd')?.classList.contains('on'),
   }));
   routes.releaseRuneResponse();
   await bounded(routes.runeRequestFinished, 'held result-resume refresh did not finish');
-  await bounded(routes.acknowledgeStarted, 'immediate TRY IT did not acknowledge the reward');
+  await bounded(routes.acknowledgeStarted, 'opening the reward card did not acknowledge it');
   return {
     acknowledgementsWhileCovered,
-    acknowledgementsAfterTry: routes.acknowledgeCalls(),
-    beforeTry,
-    afterTry,
+    acknowledgementsAfterOpen: routes.acknowledgeCalls(),
+    beforeOpen,
+    afterOpen,
   };
 }
 
@@ -128,34 +131,21 @@ async function failedAckRetryProbe(page, routes) {
   await page.waitForSelector('.faceoff:not(.rune-reward-sheet) .focard', { timeout: 15000 });
   await page.click('.faceoff:not(.rune-reward-sheet) .fograb');
   await page.waitForSelector('#ovEnd.on #endFeature:not([hidden])', { timeout: 15000 });
-  /* The cover canceled the watcher, so TRY IT takes the fallback branch while
-     its original ACK is still the de-duplicated in-flight promise. */
+  /* The cover canceled the watcher, so opening the card takes the fallback
+     branch while its original ACK is still the de-duplicated in-flight
+     promise. */
   const secondAck = routes.deferNextAcknowledge();
-  await page.click('#endFeature .endfeature-action');
-  await page.waitForFunction(() => window.__kb.S.mode === 'cpu', null, { timeout: 15000 });
-  await page.evaluate(async () => {
-    const game = window.__kb;
-    game.S.gen++;
-    game.S.boards[1] = [[6, 6, 6], [6, 6, 6], [6, 6]];
-    game.S.boards[0] = [[1], [1], [1]];
-    game.S.turn = 1;
-    game.S.bottom = 1;
-    game.S.phase = 'choose';
-    game.S.busy = false;
-    game.S.die = 6;
-    game.renderAll(false);
-    game.applySides();
-    game.setStageDie(6, 1);
-    await game.place(1, 2);
-  });
-  await page.waitForSelector('#ovEnd.on', { timeout: 15000 });
+  await page.click('#endFeature');
+  await page.waitForSelector('.faceoff.libsheet .focard', { timeout: 15000 });
+  await page.click('.faceoff.libsheet .fograb');
+  await page.waitForSelector('.faceoff.libsheet', { state: 'detached', timeout: 15000 });
   const readsBeforeReturn = routes.runeCalls();
   await page.click('#btnAgain');
   await page.waitForTimeout(100);
   const readsWhileFirstHeld = routes.runeCalls();
   firstAck.release();
   await bounded(firstAck.finished, 'failed ACK1 fixture did not finish');
-  await bounded(secondAck.started, 'explicit TRY IT did not start ACK2');
+  await bounded(secondAck.started, 'the explicit card open did not start ACK2');
   await page.waitForTimeout(100);
   const readsWhileRetryHeld = routes.runeCalls();
   secondAck.release();
@@ -245,13 +235,16 @@ async function profileExitProbe(page) {
 
 export async function runRuneRewardRaceScenarios({ visit, out, check }) {
   const resume = await visit({ named: true, runes: ['fate'], skipStandardProbes: true,
-    probe: resumeTryProbe });
-  out.runeRewardImmediateTry = resume.probeResult;
+    probe: resumeCardProbe });
+  out.runeRewardImmediateOpen = resume.probeResult;
   check(resume.probeResult?.acknowledgementsWhileCovered === 0
-      && resume.probeResult.acknowledgementsAfterTry === 1
-      && resume.probeResult.afterTry?.mode === 'cpu'
-      && resume.probeResult.afterTry.charges.every((charge) => charge === 2),
-    'TRY IT during reward resume refresh left the durable row unseen', resume.probeResult);
+      && resume.probeResult.acknowledgementsAfterOpen === 1
+      && resume.probeResult.beforeOpen?.ownsHit
+      && resume.probeResult.afterOpen?.rune === 'FATE'
+      && resume.probeResult.afterOpen.detail > 0
+      && resume.probeResult.afterOpen.resultStillOpen,
+    'opening the reward card during a resume refresh left the durable row unseen',
+    resume.probeResult);
 
   const inFlight = await visit({ named: true, runes: ['fate'], skipStandardProbes: true,
     probe: inFlightAckProbe });

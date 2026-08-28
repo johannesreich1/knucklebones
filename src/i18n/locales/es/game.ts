@@ -15,7 +15,6 @@ export const esGame = {
     finish: 'Terminar',
     nextDuel: 'Otro duelo',
     changeSetup: 'Cambiar ajustes',
-    backToRanked: 'Volver a clasificatorias',
   },
   status: {
     outOfTime: 'Tiempo agotado — columna {{column}}',

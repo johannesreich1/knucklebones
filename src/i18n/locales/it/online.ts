@@ -162,7 +162,6 @@ export const itOnline = {
     beatenStamp: 'SCONFITTO',
     forfeitedStamp: 'ABBANDONATA',
     newRune: 'NUOVA RUNA',
-    tryIt: 'PROVALA',
     share: '{{title}} {{mine}}–{{theirs}} vs {{opponent}}{{delta}} — Knucklebones, duelli classificati con i dadi',
     delta_one: ' · {{points}} punto',
     delta_other: ' · {{points}} punti',

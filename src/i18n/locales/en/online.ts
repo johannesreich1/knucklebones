@@ -170,7 +170,6 @@ export const enOnline = {
     beatenStamp: 'BEATEN',
     forfeitedStamp: 'FORFEITED',
     newRune: 'NEW RUNE',
-    tryIt: 'TRY IT',
     share: '{{title}} {{mine}}–{{theirs}} vs {{opponent}}{{delta}} — Knucklebones, ranked dice duels',
     delta_one: ' · {{points}} point',
     delta_other: ' · {{points}} points',

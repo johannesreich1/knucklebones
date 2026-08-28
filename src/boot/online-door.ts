@@ -24,7 +24,6 @@ type OnlineChunk = typeof import('../online/screens/ui.ts');
 /** Cross-flow actions online borrows from local play; injected, never imported. */
 export interface OnlineDoorPorts {
   startTutorial: () => void;
-  tryRune: (runeId: string, onBackToRanked: () => void) => boolean;
 }
 
 export function bindOnlineDoors(ports: OnlineDoorPorts): void {

@@ -785,10 +785,9 @@ cannot change ranked options.
 
 The first acquisition of a rune remains durably unseen until the account UI
 acknowledges its reveal, so reconnecting or changing devices cannot swallow the
-reward. `TRY IT` launches a fresh transient unranked Classic duel against the
-Normal AI with that rune dealt to both seats. It returns to ranked afterward,
-does not grant rewards or write normal local records, and does not overwrite
-the player's saved local setup.
+reward. The result's reward card names the rune and opens the same rune entry
+sheet the in-game badge and the profile collection open; opening it
+acknowledges the reveal and returns to the result underneath.
 
 ### Offline and local setup
 

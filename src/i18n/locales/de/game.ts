@@ -15,7 +15,6 @@ export const deGame = {
     finish: 'Beenden',
     nextDuel: 'Nächstes Duell',
     changeSetup: 'Setup ändern',
-    backToRanked: 'Zurück zum Rangspiel',
   },
   status: {
     outOfTime: 'Zeit abgelaufen — Spalte {{column}}',

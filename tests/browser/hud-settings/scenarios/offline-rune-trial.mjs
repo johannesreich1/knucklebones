@@ -216,64 +216,6 @@ export async function runOfflineRuneTrialScenarios({ page, out, check, t }) {
 
   await page.tap('#btnLeave'); await page.waitForSelector('#ovAsk.on');
   await page.tap('#btnAskYes'); await page.waitForSelector('#ovStart.on');
-  out.tryoutBefore = await page.evaluate(() => {
-    const S = window.__kb.S;
-    const setup = { mode: S.mode, diff: S.diff, localMode: S.localMode, spell: S.spell, starter: S.starter };
-    const stats = [S.wins, S.losses, S.draws, S.p1, S.p2, S.ties, S.best, S.played];
-    window.__tryoutBack = false;
-    return { setup, stats, started: window.__kb.startRuneTryout('ward', () => {
-      window.__tryoutBack = true;
-      window.__kb.goHome();
-    }) };
-  });
-  await page.waitForTimeout(100);
-  out.tryoutStarted = await page.evaluate(() => ({
-    mode: window.__kb.S.mode,
-    diff: window.__kb.S.diff,
-    scoring: window.__kb.S.scoring,
-    hands: window.__kb.S.spellCharges.map((hand) => Object.keys(hand)),
-  }));
-  check(out.tryoutBefore.started && out.tryoutStarted.mode === 'cpu' && out.tryoutStarted.diff === 'medium'
-      && out.tryoutStarted.scoring === 0
-      && out.tryoutStarted.hands.every((hand) => hand[0] === 'ward'),
-    'TRY IT did not start a fresh Classic/Normal symmetric-rune AI duel', out.tryoutStarted);
-
-  await page.evaluate(async () => {
-    const k = window.__kb;
-    k.S.gen++;
-    k.S.boards[1] = [[6, 6, 6], [6, 6, 6], [6, 6]];
-    k.S.boards[0] = [[1], [1], [1]];
-    k.S.turn = 1; k.S.bottom = 1; k.S.phase = 'choose'; k.S.busy = false; k.S.die = 6;
-    k.renderAll(false); k.applySides(); k.setStageDie(6, 1);
-    await k.place(1, 2);
-  });
-  await page.waitForSelector('#ovEnd.on');
-  out.tryoutResult = await page.evaluate(() => ({
-    action: document.getElementById('btnAgain').textContent.trim(),
-    quietHidden: document.getElementById('btnEndQuiet').hidden,
-    stats: [
-      window.__kb.S.wins, window.__kb.S.losses, window.__kb.S.draws,
-      window.__kb.S.p1, window.__kb.S.p2, window.__kb.S.ties,
-      window.__kb.S.best, window.__kb.S.played,
-    ],
-  }));
-  check(out.tryoutResult.action === t('game', 'action.backToRanked') && out.tryoutResult.quietHidden
-      && JSON.stringify(out.tryoutResult.stats) === JSON.stringify(out.tryoutBefore.stats),
-    'TRY IT wrote local records or exposed the ordinary rematch/setup exits', out.tryoutResult);
-  await page.tap('#btnAgain'); await page.waitForTimeout(100);
-  out.tryoutBack = await page.evaluate(() => ({
-    callback: window.__tryoutBack,
-    setup: {
-      mode: window.__kb.S.mode,
-      diff: window.__kb.S.diff,
-      localMode: window.__kb.S.localMode,
-      spell: window.__kb.S.spell,
-      starter: window.__kb.S.starter,
-    },
-  }));
-  check(out.tryoutBack.callback
-      && JSON.stringify(out.tryoutBack.setup) === JSON.stringify(out.tryoutBefore.setup),
-    'BACK TO RANKED did not restore the borrowed local setup', out.tryoutBack);
   await page.evaluate(([cacheKey, before]) => {
     if (before.stats === null) localStorage.removeItem('knucklebones.v1');
     else localStorage.setItem('knucklebones.v1', before.stats);

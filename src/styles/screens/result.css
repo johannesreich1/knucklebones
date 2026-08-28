@@ -89,13 +89,16 @@
 :where(#kbroot) .endmeta{font-size:10.5px;letter-spacing:.14em;color:var(--dim);text-align:center;
   display:flex;flex-direction:column;align-items:center;gap:7px}
 :where(#kbroot) .endmeta:empty{display:none}
-:where(#kbroot) .endfeature{width:100%;max-width:var(--w-col)}
 /* EndFeature is a shared typed result slot even though Rune Trial is its first
    caller. Keep its structural primitives in the eager result stylesheet; a
-   feature-specific skin may remain in the lazy owner that supplies it. */
+   feature-specific skin may remain in the lazy owner that supplies it.
+   The slot is a BUTTON — the card opens what it names — so it starts from bare
+   control defaults and lets its skin dress it. */
+:where(#kbroot) .endfeature{width:100%;max-width:var(--w-col);font:inherit;color:inherit;
+  text-align:left;padding:0;border:0;background:none;cursor:pointer;
+  -webkit-appearance:none;appearance:none}
 :where(#kbroot) .endfeature-icon{display:grid;place-items:center}
 :where(#kbroot) .endfeature-copy{min-width:0}
-:where(#kbroot) .endfeature-action{margin:0}
 /* First collection unlock: the optional EndFeature is painted by ranked code,
    but it lives in the shared result DOM and can be repainted before the lazy
    online sheet styles finish. Keep the complete card and entrance with its
@@ -110,13 +113,21 @@
   border:1px solid color-mix(in srgb,var(--feature-hue) 48%,transparent);
   box-shadow:0 7px 18px rgba(0,0,0,.45),0 0 16px color-mix(in srgb,var(--feature-hue) 24%,transparent)}
 :where(#kbroot) .rune-reward .endfeature-icon svg{width:23px;height:23px;filter:drop-shadow(0 0 8px currentColor)}
-:where(#kbroot) .rune-reward .endfeature-copy{display:flex;flex-direction:column;text-align:left;gap:2px}
-:where(#kbroot) .rune-reward .endfeature-copy small{font-size:7.5px;font-weight:900;letter-spacing:.2em;color:var(--gold)}
+/* TWO LINES, at the sizes the rest of the app already uses for them: the
+   kicker sits on the shared compact-label floor, and the rune wears the same
+   14.5px its own sheet gives it — the card and the entry it opens name the
+   thing identically. The row lost its blurb and its button, so the space they
+   held goes to the type rather than to a taller card.
+   BOTH LINES SPEAK THE RUNE'S COLOUR, like the frame, the glow and the icon
+   around them (user call): what is new here is the rune, not a trophy. The
+   card sets that colour, so the name simply inherits it — it used to name a
+   `--fg` that this app never defines, which is the same hue by accident and
+   would have flipped to white the day somebody defined the token. */
+:where(#kbroot) .rune-reward .endfeature-copy{display:flex;flex-direction:column;text-align:left;gap:3px}
+:where(#kbroot) .rune-reward .endfeature-copy small{font-size:var(--font-label-min);font-weight:900;
+  letter-spacing:.2em;color:var(--feature-hue)}
 :where(#kbroot) .rune-reward .endfeature-copy b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  color:var(--fg);font-size:12px;letter-spacing:.1em}
-:where(#kbroot) .rune-reward .endfeature-copy span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-  color:var(--dim);font-size:8.5px;letter-spacing:.02em}
-:where(#kbroot) .rune-reward .endfeature-action{width:auto!important;min-width:74px;padding-inline:11px}
+  font-size:14.5px;letter-spacing:.1em}
 :where(#kbroot) #ovEnd.enter .rune-reward{animation:runeRewardRise .7s cubic-bezier(.2,1.15,.3,1) 1.15s both}
 @keyframes runeRewardRise{from{opacity:0;transform:translateY(14px) scale(.94)}to{opacity:1;transform:none}}
 #kbroot.reduce-motion #ovEnd.enter .rune-reward{animation:none}

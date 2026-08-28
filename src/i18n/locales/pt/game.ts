@@ -15,7 +15,6 @@ export const ptGame = {
     finish: 'Concluir',
     nextDuel: 'Novo duelo',
     changeSetup: 'Mudar ajustes',
-    backToRanked: 'Voltar ao ranqueado',
   },
   status: {
     outOfTime: 'Tempo esgotado — coluna {{column}}',

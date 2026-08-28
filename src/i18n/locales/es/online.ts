@@ -162,7 +162,6 @@ export const esOnline = {
     beatenStamp: 'DERROTADO',
     forfeitedStamp: 'ABANDONADA',
     newRune: 'NUEVA RUNA',
-    tryIt: 'PROBAR',
     share: '{{title}} {{mine}}–{{theirs}} vs {{opponent}}{{delta}} — Knucklebones, duelos de dados clasificatorios',
     delta_one: ' · {{points}} punto',
     delta_other: ' · {{points}} puntos',

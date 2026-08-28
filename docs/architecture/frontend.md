@@ -150,10 +150,11 @@ not need a framework store, event bus, or dependency-injection container.
   Offline setup treats a missing snapshot as an empty collection, and sign-out
   or account change clears/swaps the active snapshot before another account can
   read it. Durable unseen/reward state remains server-owned.
-- The post-reward `TRY IT` route is transient local state: a fresh unranked
-  Classic duel against Normal AI with the new rune on both seats. It returns to
-  ranked, grants nothing, does not enter ordinary local records, and must not
-  mutate saved CPU or two-player settings.
+- The result's reward card is a door, not a leaflet: it names the new rune in
+  two lines and opens the SHARED library entry (`ui/library.ts openEntry`) that
+  the in-game badge and the profile collection open. It covers the result
+  rather than leaving it, and the tap is explicit proof of presentation, so it
+  acknowledges the durable unseen row.
 
 ## Size and context budget
 
