@@ -28,12 +28,32 @@ async function profileRuneProbe(page) {
         centreHit: slot === hit || slot.contains(hit),
         height: box.height,
         opacity: getComputedStyle(slot).opacity,
+        slotColor: getComputedStyle(slot).color,
+        nameColor: (() => {
+          const name = slot.querySelector('span');
+          return name ? getComputedStyle(name).color : '';
+        })(),
       };
     });
     const title = document.getElementById('accRunesTitle');
     const count = document.getElementById('accRuneCount');
     const root = document.getElementById('kbroot');
+    /* Paint the token to compare like with like: getComputedStyle reports a
+       used colour, and an UNDEFINED custom property reports the inherited one
+       rather than failing — which is how `--fg` hid here for so long. */
+    const resolve = (value) => {
+      const probe = document.createElement('span');
+      probe.style.color = value;
+      root.appendChild(probe);
+      const painted = getComputedStyle(probe).color;
+      probe.remove();
+      return painted;
+    };
     return {
+      titleColor: title ? getComputedStyle(title).color : '',
+      countColor: count ? getComputedStyle(count).color : '',
+      txtColor: resolve('var(--txt)'),
+      dimColor: resolve('var(--dim)'),
       count: count?.textContent?.trim(),
       titleFontSize: title ? parseFloat(getComputedStyle(title).fontSize) : 0,
       countFontSize: count ? parseFloat(getComputedStyle(count).fontSize) : 0,
@@ -145,6 +165,23 @@ export async function runProfileRuneSheetScenarios({ visit, out, check }) {
       && profile.probeResult.countFontSize >= profile.probeResult.labelMinimum,
     'profile rune heading and count fell below the shared compact-label minimum',
     profile.probeResult);
+  /* The head has a bright half and a dim half. Asserting the COMPUTED colour,
+     not the declaration: an undefined token silently inherits instead of
+     failing, so the heading read --dim like its own count for as long as it
+     asked for `--fg`. */
+  check(profile.probeResult?.titleColor === profile.probeResult?.txtColor
+      && profile.probeResult?.countColor === profile.probeResult?.dimColor
+      && profile.probeResult?.titleColor !== profile.probeResult?.countColor,
+    'the profile rune heading did not stand out from the dim count beside it',
+    profile.probeResult);
+  /* Every slot's name SPEAKS ITS RUNE'S COLOUR, like the frame and sigil round
+     it — so the name matches the slot, and the six do not all agree. */
+  check(profile.probeResult?.slots?.length === SPELLS.length
+      && profile.probeResult.slots.every(({ nameColor, slotColor }) =>
+        !!nameColor && nameColor === slotColor)
+      && new Set(profile.probeResult.slots.map((slot) => slot.nameColor)).size > 1,
+    'profile rune names did not wear their own rune hue',
+    profile.probeResult?.slots);
   const unlocked = profile.probeResult?.unlocked;
   check(unlocked?.open && unlocked.classes.includes('libsheet') && !unlocked.rosterOpen
       && unlocked.role === 'dialog' && unlocked.modal === 'true'
