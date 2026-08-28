@@ -15,6 +15,11 @@ export interface RuneCollectionSnapshot {
   readonly collected: readonly string[];
   /** Last server-confirmed permanent variety tier. Null means unknown/pre-v2. */
   readonly poolTier: RankedPoolTier | null;
+  /* The rune this account carries into ranked from SILVER up. Null is BOTH
+     "nothing equipped" (a deliberate choice) and "not known yet" — the seat
+     draws the same empty disc either way, so the UI needs no third state and
+     an account whose server has not grown the column simply shows none. */
+  readonly equippedRune: string | null;
 }
 
 type Listener = (snapshot: RuneCollectionSnapshot | null) => void;
@@ -55,6 +60,12 @@ function parse(value: unknown): RuneCollectionSnapshot | null {
     poolTier: knownPoolTiers.has(candidate.poolTier as RankedPoolTier)
       ? candidate.poolTier as RankedPoolTier
       : null,
+    /* An id the registry retired must not survive in a cache and re-appear in
+       the seat; unknown reads as nothing equipped. */
+    equippedRune: typeof candidate.equippedRune === 'string'
+      && knownRuneIds.has(candidate.equippedRune)
+      ? candidate.equippedRune
+      : null,
   });
 }
 
@@ -81,6 +92,11 @@ export function confirmedRankedPoolTier(): RankedPoolTier | null {
   return readRuneCollectionSnapshot()?.poolTier ?? null;
 }
 
+/** The rune carried into ranked from SILVER up, or null for nothing equipped. */
+export function equippedRuneId(): string | null {
+  return readRuneCollectionSnapshot()?.equippedRune ?? null;
+}
+
 function publish(): void {
   const snapshot = readRuneCollectionSnapshot();
   listeners.forEach((listener) => listener(snapshot));
@@ -92,16 +108,24 @@ export function writeRuneCollectionSnapshot(
   ids: readonly string[],
   verifiedAt: number = Date.now(),
   poolTier: RankedPoolTier | null = null,
+  equippedRune: string | null = null,
 ): boolean {
   const collected = normalizedIds(ids);
   if (!UUID.test(accountId) || !collected || !Number.isSafeInteger(verifiedAt) || verifiedAt < 0
-      || (poolTier !== null && !knownPoolTiers.has(poolTier))) return false;
+      || (poolTier !== null && !knownPoolTiers.has(poolTier))
+      || (equippedRune !== null && !knownRuneIds.has(equippedRune))) return false;
   const snapshot: RuneCollectionSnapshot = {
     version: RUNE_COLLECTION_CACHE_VERSION,
     accountId: accountId.toLowerCase(),
     verifiedAt,
     collected,
     poolTier,
+    /* A rune can only be carried once it is owned. Enforced in the database by
+       the composite key on (id, equipped_rune); mirrored here so a stale cache
+       cannot show a seat the account has no claim to. */
+    equippedRune: equippedRune !== null && collected.includes(equippedRune)
+      ? equippedRune
+      : null,
   };
   const store = storage();
   if (!store) return false;

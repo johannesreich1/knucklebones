@@ -30,6 +30,15 @@ export interface OpenEntryOptions {
   /** Resolve on open and locale changes so caller-owned copy stays current. */
   presentation?: () => LibraryEntryPresentation;
   restoreFocus?: SheetSpec['restoreFocus'];
+  /* ONE optional action at the foot of the sheet. The equipped rune needs
+     "carry this" and "stop carrying this" to live where the rune is already
+     explained, rather than as a seventh control beside a grid that means
+     something else. Resolved like the copy above so the label follows the
+     locale; the sheet closes once it settles. */
+  action?: {
+    label: () => string;
+    run: () => void | Promise<void>;
+  };
 }
 
 /* the two rosters, each a spec of the one library. Exported because the design
@@ -196,6 +205,8 @@ export function openEntry(lib: string, id: string, options: OpenEntryOptions = {
     card.querySelector<HTMLElement>('.mcname')!.textContent = copy.name;
     card.querySelector<HTMLElement>('.mcblurb')!.textContent = presentation.blurb ?? copy.blurb;
     card.querySelector<HTMLElement>('.mcdetail')!.textContent = presentation.detail ?? copy.detail;
+    const action = card.querySelector<HTMLElement>('.mcact');
+    if (action && options.action) action.textContent = options.action.label();
     const meta = card.querySelector<HTMLElement>('.mcmeta');
     if (meta) {
       const text = presentation.meta?.trim() ?? '';
@@ -207,10 +218,23 @@ export function openEntry(lib: string, id: string, options: OpenEntryOptions = {
     cls: 'libsheet',
     label: () => current()?.name ?? it.name,
     tint: it.hue,
-    body: libraryBody(it) + (options.presentation ? '<div class="mcmeta" hidden></div>' : ''),
+    body: libraryBody(it)
+      + (options.presentation ? '<div class="mcmeta" hidden></div>' : '')
+      + (options.action ? '<button type="button" class="btn mcact"></button>' : ''),
     repaintLocale: repaint,
     restoreFocus: options.restoreFocus,
   });
+  const act = options.action;
+  const button = act ? sheet.card.querySelector<HTMLButtonElement>('.mcact') : null;
+  if (act && button) {
+    button.textContent = act.label();
+    /* Disabled on the way out: an action that writes must not be able to run
+       twice because the sheet took a moment to close. */
+    button.addEventListener('click', () => {
+      button.disabled = true;
+      void Promise.resolve(act.run()).finally(() => sheet.close());
+    });
+  }
   /* showSheet mounts synchronously. Paint caller-owned text in the same turn,
      before the browser can show the registry fallback for a locked entry. */
   repaint(sheet.card);

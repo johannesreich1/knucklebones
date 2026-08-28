@@ -90,6 +90,13 @@ export const esOnline = {
     runeLocked: 'BLOQUEADA',
     runeLockedDetail: 'Gana esta runa en {{mode}} para desbloquearla.',
     runeUnlockedAt: 'Desbloqueada el {{date}}',
+    equippedRune: 'Runa equipada',
+    equipThis: 'Llevar esta runa',
+    unequipThis: 'Dejar de llevar esta runa',
+    equippedMeta: 'Te acompaña en cada partida clasificatoria',
+    equippedWaiting: 'Llega a PLATA y te acompañará',
+    seatEmpty: 'SIN RUNA',
+    seatEmptyDetail: 'El hueco está vacío por elección y la clasificatoria funciona igual. Abre una runa que hayas conseguido y llévala; ocupará este hueco desde PLATA.',
   },
   avatar: {
     instruction: 'Elige una cara y un color',

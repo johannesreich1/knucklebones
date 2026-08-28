@@ -90,6 +90,13 @@ export const frOnline = {
     runeLocked: 'VERROUILLÉE',
     runeLockedDetail: 'Gagnez cette rune dans le {{mode}} pour la déverrouiller.',
     runeUnlockedAt: 'Déverrouillée le {{date}}',
+    equippedRune: 'Rune équipée',
+    equipThis: 'Emporter cette rune',
+    unequipThis: 'Ne plus emporter cette rune',
+    equippedMeta: 'Vous accompagne dans chaque partie classée',
+    equippedWaiting: 'Atteignez ARGENT et elle vous suivra',
+    seatEmpty: 'AUCUNE RUNE',
+    seatEmptyDetail: "L'emplacement est vide par choix et le classé se joue très bien ainsi. Ouvrez une rune récoltée et emportez-la ; elle prendra cette place à partir d'ARGENT.",
   },
   avatar: {
     instruction: 'Choisissez une face et une couleur',

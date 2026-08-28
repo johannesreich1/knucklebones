@@ -90,6 +90,13 @@ export const deOnline = {
     runeLocked: 'GESPERRT',
     runeLockedDetail: 'Gewinne diese Rune im {{mode}}, um sie freizuschalten.',
     runeUnlockedAt: 'Freigeschaltet am {{date}}',
+    equippedRune: 'Ausgerüstete Rune',
+    equipThis: 'Diese Rune mitnehmen',
+    unequipThis: 'Diese Rune nicht mehr mitnehmen',
+    equippedMeta: 'Kommt in jedem Ranglistenspiel mit',
+    equippedWaiting: 'Erreiche SILBER, dann kommt sie mit',
+    seatEmpty: 'KEINE RUNE',
+    seatEmptyDetail: 'Der Platz ist bewusst leer und die Rangliste spielt sich auch ohne. Öffne eine gesammelte Rune und nimm sie dort mit; ab SILBER besetzt sie diesen Platz.',
   },
   avatar: {
     instruction: 'Wähle eine Fläche und eine Farbe',

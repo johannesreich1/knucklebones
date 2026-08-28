@@ -90,6 +90,13 @@ export const itOnline = {
     runeLocked: 'BLOCCATA',
     runeLockedDetail: 'Vinci questa runa in {{mode}} per sbloccarla.',
     runeUnlockedAt: 'Sbloccata il {{date}}',
+    equippedRune: 'Runa equipaggiata',
+    equipThis: 'Porta questa runa',
+    unequipThis: 'Non portare più questa runa',
+    equippedMeta: 'Ti accompagna in ogni partita classificata',
+    equippedWaiting: 'Raggiungi ARGENTO e ti accompagnerà',
+    seatEmpty: 'NESSUNA RUNA',
+    seatEmptyDetail: 'Il posto è vuoto per scelta e la classificata funziona lo stesso. Apri una runa raccolta e portala con te; occuperà questo posto da ARGENTO in su.',
   },
   avatar: {
     instruction: 'Scegli una faccia e un colore',

@@ -90,6 +90,13 @@ export const ptOnline = {
     runeLocked: 'BLOQUEADA',
     runeLockedDetail: 'Ganhe esta runa no {{mode}} para desbloqueá-la.',
     runeUnlockedAt: 'Desbloqueada em {{date}}',
+    equippedRune: 'Runa equipada',
+    equipThis: 'Levar esta runa',
+    unequipThis: 'Parar de levar esta runa',
+    equippedMeta: 'Acompanha você em cada partida ranqueada',
+    equippedWaiting: 'Chegue a PRATA e ela virá junto',
+    seatEmpty: 'SEM RUNA',
+    seatEmptyDetail: 'O espaço está vazio por escolha e o ranqueado funciona bem assim. Abra uma runa coletada e leve-a; ela ocupa este espaço a partir de PRATA.',
   },
   avatar: {
     instruction: 'Escolha uma face e uma cor',

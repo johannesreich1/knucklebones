@@ -11,6 +11,7 @@ import {
 } from '../../rune-collection-cache.ts';
 import { supa } from '../api/client.ts';
 import { createCollectionRefreshGuard } from './rune-collection-guard.ts';
+import { autoEquipFirstRune, usableEquippedRune } from './rune-equip.ts';
 import {
   acknowledgeRuneRewardForAccount,
   withRuneRewardAcknowledgementDeadline,
@@ -58,6 +59,8 @@ export interface RuneCollectionRefresh {
   unseen: readonly PlayerRuneRow[];
   verified: boolean;
   poolTier: RankedPoolTier | null;
+  /** The rune carried into ranked from SILVER up; null is nothing equipped. */
+  equippedRune: string | null;
 }
 
 /** Recheck identity at the eventual paint/presentation boundary. */
@@ -74,6 +77,7 @@ export async function runeCollectionMatchesActiveAccount(
 function usablePoolTier(value: unknown): RankedPoolTier | null {
   return value === 'stone' || value === 'bone' || value === 'ivory' ? value : null;
 }
+
 
 function usableRows(value: unknown): PlayerRuneRow[] {
   if (!Array.isArray(value)) return [];
@@ -112,7 +116,10 @@ export async function refreshRuneCollection(
   if (!id) {
     const retained = readRuneCollectionSnapshot();
     if (retained) clearRuneCollectionSnapshot(retained.accountId);
-    return { accountId: null, collected: [], rows: [], unseen: [], verified: false, poolTier: null };
+    return {
+      accountId: null, collected: [], rows: [], unseen: [],
+      verified: false, poolTier: null, equippedRune: null,
+    };
   }
   /* Own the refresh before entering the acknowledgement barrier. If A waits
      here while the session changes and B refreshes, B's later revision must
@@ -131,7 +138,10 @@ export async function refreshRuneCollection(
   );
   if (!barrierOwnership.owns) {
     if (barrierOwnership.discardRetained) clearRuneCollectionSnapshot(id);
-    return { accountId: null, collected: [], rows: [], unseen: [], verified: false, poolTier: null };
+    return {
+      accountId: null, collected: [], rows: [], unseen: [],
+      verified: false, poolTier: null, equippedRune: null,
+    };
   }
 
   const cached = readRuneCollectionSnapshot();
@@ -139,13 +149,22 @@ export async function refreshRuneCollection(
     clearRuneCollectionSnapshot(cached.accountId);
   }
 
-  const [runeResult, profileResult] = await Promise.all([
+  /* The equipped rune is read SEPARATELY from the pool tier, and that is not an
+     accident. Adding `equipped_rune` to the profile select would make the whole
+     select fail on a server whose migration has not landed yet — taking the
+     pool tier down with it and degrading ranked variety for every live player
+     over a column nobody is using. Its own request fails alone. */
+  const [runeResult, profileResult, equippedResult] = await Promise.all([
     supa().from('player_runes')
       .select('rune_id, collected_at, source_match_id, seen_at')
       .eq('player_id', id)
       .order('collected_at', { ascending: true }),
     supa().from('profiles')
       .select('ranked_pool_tier')
+      .eq('id', id)
+      .maybeSingle(),
+    supa().from('profiles')
+      .select('equipped_rune')
       .eq('id', id)
       .maybeSingle(),
   ]);
@@ -166,6 +185,7 @@ export async function refreshRuneCollection(
         unseen: [],
         verified: false,
         poolTier: null,
+        equippedRune: null,
       };
     }
     const sameAccount = retained?.accountId === id.toLowerCase() ? retained : null;
@@ -176,6 +196,7 @@ export async function refreshRuneCollection(
       unseen: [],
       verified: false,
       poolTier: sameAccount?.poolTier ?? null,
+      equippedRune: sameAccount?.equippedRune ?? null,
     };
   }
 
@@ -185,6 +206,12 @@ export async function refreshRuneCollection(
   const poolTier = profileResult.error
     ? cachedTier
     : usablePoolTier(profileResult.data?.ranked_pool_tier);
+  /* Fail closed: an errored read (no column yet, RLS, offline) keeps whatever
+     the cache last confirmed rather than silently un-equipping the account. */
+  const cachedEquipped = readRuneCollectionSnapshot()?.equippedRune ?? null;
+  const equippedRune = equippedResult.error
+    ? cachedEquipped
+    : usableEquippedRune(equippedResult.data?.equipped_rune, collected);
   const activeAccountId = await sessionAccountId();
   const retained = readRuneCollectionSnapshot();
   const ownership = refreshGuard.settle(token, activeAccountId, retained?.accountId ?? null);
@@ -197,17 +224,26 @@ export async function refreshRuneCollection(
       unseen: [],
       verified: false,
       poolTier: null,
+      equippedRune: null,
     };
   }
-  writeRuneCollectionSnapshot(id, collected, Date.now(), poolTier);
-  return {
+  writeRuneCollectionSnapshot(id, collected, Date.now(), poolTier, equippedRune);
+  const refresh: RuneCollectionRefresh = {
     accountId: id,
     collected,
     rows,
     unseen: rows.filter(({ seen_at }) => seen_at === null),
     verified: true,
     poolTier,
+    equippedRune,
   };
+  /* The auto-equip lives HERE, at the one point every caller already passes
+     through, rather than at each screen that happens to care. It is
+     fire-and-forget on purpose: a refresh must never wait on, or fail because
+     of, a convenience write. Idempotent — it does nothing unless the account
+     holds exactly one rune and the seat is empty. */
+  void autoEquipFirstRune(id, collected, equippedRune);
+  return refresh;
 }
 
 /** Mark a shown first-unlock reward seen without granting broad table UPDATE. */

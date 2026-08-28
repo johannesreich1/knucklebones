@@ -75,6 +75,15 @@ const OVERLAY = `
            already there to keep the ring from closing; giving it the rank makes
            the ring self-describing instead of merely open. -->
       <span class="gname" id="accGroup"></span>
+      <!-- THE EQUIPPED RUNE SITS IN THE RING'S MOUTH (design 52d, EQ4). The
+           90deg opening already names your group, so a seat cut into it says
+           "this comes with you into ranked" without a sentence under it: the
+           rune and the standing that switches it on are one glance. The seat is
+           a DOOR, not a control — it opens the same library sheet the grid and
+           the in-game badge open, in whichever of three states it is in. -->
+      <button class="accseat" id="accSeat" type="button" hidden
+        aria-label="Equipped rune"
+        data-i18n-attr="aria-label=online:profile.equippedRune"></button>
     </div>
     <!-- the name the ring crowns. Until it is claimed this is the minted
          placeholder; after the claim it is the one line the old edit-field

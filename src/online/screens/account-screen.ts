@@ -33,7 +33,12 @@ import {
   type RuneCollectionRefresh,
 } from '../runes/rune-collection.ts';
 import { fillAccountRing } from './account-ring.ts';
-import { bindAccountRuneSheets, paintAccountRunes } from './account-runes.ts';
+import {
+  bindAccountRuneSheets,
+  bindEquippedSeat,
+  paintAccountRunes,
+  paintEquippedSeat,
+} from './account-runes.ts';
 import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';
 import type { AuthMode, AuthOrigin } from './auth-screen.ts';
 import type { Ladder, Standing } from '../api/ladder-api.ts';
@@ -134,6 +139,9 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     $('#accStreak').textContent = formatNumber(streak);
     paintAccountProviders(user, identity);
     paintAccountRunes(runes, runeRows);
+    /* The seat reads the group the ring is already showing: one standing, one
+       answer to "is this in play yet". */
+    paintEquippedSeat(boardGroup(points, apex).id);
     paintRecent();
   };
 
@@ -170,6 +178,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     $('#accClaim').hidden = true;
     paintAvatar($('#accDie'), DEFAULT_AVATAR);
     paintAccountRunes([]);
+    paintEquippedSeat(null);
     paintRecent();
     const ring = $('#accRing') as HTMLElement;
     ring.classList.remove('haspeak');
@@ -244,7 +253,10 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
   }
 
   function bind(): void {
-    bindAccountRuneSheets();
+    /* Equipping from either door repaints the whole panel, so the seat, the
+       grid and the ring can never disagree about what is carried. */
+    bindAccountRuneSheets(() => paintAccount());
+    bindEquippedSeat(() => paintAccount());
     $('#btnKeepAcc').addEventListener('click', () => {
       Sfx.tap();
       ports.showAuth('attach', 'account');

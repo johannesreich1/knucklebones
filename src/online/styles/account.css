@@ -134,3 +134,36 @@
 :where(#kbroot) .faceoff.warnsheet .wsbody,
 :where(#kbroot) #onAccount .wsbody{margin:0;font-size:13px;line-height:1.62;color:#c6d3ee;
   letter-spacing:.02em}
+
+/* ===== THE EQUIPPED RUNE'S SEAT (design 52d, EQ4) =====
+   Cut into the ladder ring's 90deg mouth, between the avatar's lower edge and
+   the group name. Measured at the 384px stage: .ringwrap resolves to 206px, the
+   74px avatar's lower edge lands at y=140 and .gname's box starts at y=190, so
+   a 34px disc spans 148-182 with 8px of clear air above and below, and clears
+   .avedit (x 123-149) by sitting at x 86-120. Nothing moved to make room. */
+:where(#kbroot) #onAccount .accseat{position:absolute;left:50%;top:calc(50% + 22px);
+  width:34px;height:34px;margin-left:-17px;padding:0;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(circle at 50% 35%,rgba(12,16,30,.96),rgba(6,8,16,.99));
+  border:1px solid color-mix(in srgb,var(--rh,var(--dim)) 46%,transparent);
+  color:var(--rh,var(--dim));font:inherit;cursor:pointer;z-index:3;
+  -webkit-appearance:none;appearance:none;
+  box-shadow:0 0 26px color-mix(in srgb,var(--rh,transparent) 26%,transparent),
+    inset 0 0 16px color-mix(in srgb,var(--rh,transparent) 10%,transparent);
+  transition:box-shadow .2s ease,border-color .2s ease,filter .2s ease}
+:where(#kbroot) #onAccount .accseat .sico{filter:drop-shadow(0 0 9px currentColor)}
+:where(#kbroot) #onAccount .accseat:focus-visible{outline:2px solid var(--rh,var(--fg));
+  outline-offset:3px}
+/* NOTHING EQUIPPED is a place with nobody in it, drawn — the dashed ring the
+   app already uses for an account-less plate (identity.css .pplate.anon) —
+   never an absence. Drawn as absence it reads as a bug in the ring; drawn as a
+   fault it argues with the premise that "none" is a legitimate choice. */
+:where(#kbroot) #onAccount .accseat.none{border-style:dashed;
+  border-color:color-mix(in srgb,var(--dim) 72%,transparent);box-shadow:none}
+/* BELOW SILVER: chosen, saved, waiting. It must differ from live by SHAPE and
+   CHROMA, not shade alone — a merely dimmed mark reads as a mark in shadow,
+   never as one that is not in play yet. So the bloom is removed outright and
+   the rim takes the ring track's own grey, with the group pill naming the
+   threshold beside it. */
+:where(#kbroot) #onAccount .accseat.waiting{border-color:#464c5c;box-shadow:none}
+:where(#kbroot) #onAccount .accseat.waiting .sico{color:var(--dim);filter:none}

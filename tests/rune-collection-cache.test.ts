@@ -3,6 +3,7 @@ import {
   RUNE_COLLECTION_CACHE_KEY,
   clearRuneCollectionSnapshot,
   collectedRuneCount,
+  equippedRuneId,
   collectedRuneIds,
   confirmedRankedPoolTier,
   hasCollectedRune,
@@ -30,11 +31,25 @@ assert.deepEqual(readRuneCollectionSnapshot(), {
   verifiedAt: 123,
   collected: ['fate', 'ward'],
   poolTier: 'bone',
+  equippedRune: null,
 });
 assert.equal(confirmedRankedPoolTier(), 'bone');
 assert.equal(hasCollectedRune('fate'), true);
 assert.equal(hasCollectedRune('pilfer'), false);
 assert.equal(collectedRuneCount(), 2);
+
+/* THE SEAT MAY ONLY HOLD A RUNE THE ACCOUNT OWNS. The database guarantees it
+   through the composite key on (id, equipped_rune); the cache refuses to
+   REMEMBER a claim it cannot back, so a stale or tampered snapshot cannot show
+   a seat that ranked would not honour. */
+assert.equal(writeRuneCollectionSnapshot(account, ['fate', 'ward'], 123, 'bone', 'ward'), true);
+assert.equal(equippedRuneId(), 'ward');
+assert.equal(writeRuneCollectionSnapshot(account, ['fate'], 123, 'bone', 'ward'), true);
+assert.equal(equippedRuneId(), null, 'a rune the account no longer owns cannot stay seated');
+assert.equal(writeRuneCollectionSnapshot(account, ['fate'], 123, 'bone', 'unknown'), false,
+  'an id the registry does not know is refused outright');
+assert.equal(writeRuneCollectionSnapshot(account, ['fate', 'ward'], 123, 'bone'), true);
+assert.equal(equippedRuneId(), null, 'omitting the seat clears it rather than retaining a stale one');
 
 assert.equal(writeRuneCollectionSnapshot(account, ['unknown']), false);
 assert.deepEqual(collectedRuneIds(), ['fate', 'ward'], 'an invalid write replaced the verified cache');

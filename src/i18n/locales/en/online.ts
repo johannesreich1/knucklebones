@@ -98,6 +98,13 @@ export const enOnline = {
     runeLocked: 'LOCKED',
     runeLockedDetail: 'Win this rune in {{mode}} to unlock it.',
     runeUnlockedAt: 'Unlocked at {{date}}',
+    equippedRune: 'Equipped rune',
+    equipThis: 'Carry this rune',
+    unequipThis: 'Stop carrying this rune',
+    equippedMeta: 'Comes with you into every ranked match',
+    equippedWaiting: 'Reach SILVER and it comes with you',
+    seatEmpty: 'NO RUNE',
+    seatEmptyDetail: 'The seat is empty by choice and ranked plays fine without it. Open any rune you have collected and carry it there; it takes this seat from SILVER upward.',
   },
   avatar: {
     instruction: 'Pick a face and a colour',
