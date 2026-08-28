@@ -15,6 +15,9 @@ export async function installOnlineRoutes(
     member = false,
     identity = { gameCenterLinked: false, appleLinked: false, appleRevocationReady: false },
     ladderNearBottom = false,
+    /* Extra season matches beyond the fixed three, so a test can reach page two.
+       Zero by default: every existing probe sees exactly what it always saw. */
+    historyDepth = 0,
     paginationRace = false,
     passwordAuth = 'error',
     runes = [],
@@ -270,14 +273,46 @@ export async function installOnlineRoutes(
      one endpoint at a time. */
   await page.route('**/rest/v1/rpc/match_history*', async (r) => {
     await hold(1);
-    return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
+    /* A REAL KEYSET, not a fixed page. The old stub answered three rows and
+       ignored limit_n/before_t/before_id, so `3 < PAGE` marked the list
+       finished on its first response and the paging branch was unreachable in
+       every test — which is how match history shipped capped at thirty rows,
+       silently, for as long as the paged-view refactor has been in. The first
+       three rows are byte-identical to what it used to serve so the profile's
+       RECENT strip and the localization probes keep asserting what they did.
+       Mirrors the leaderboard stub's compound-cursor shape. */
+    const HEAD = [
       { id: '00000000-0000-4000-8000-000000000003', finished_at: '2026-08-21T12:00:00Z',
         opponent: 'NovaComet992', mode: 'classic', mine: 47, theirs: 31, delta: 21, result: 'win' },
       { id: '00000000-0000-4000-8000-000000000002', finished_at: '2026-08-20T12:00:00Z',
         opponent: 'ZestyPixel950', mode: 'classic', mine: 22, theirs: 38, delta: -14, result: 'loss' },
       { id: '00000000-0000-4000-8000-000000000001', finished_at: '2026-08-19T12:00:00Z',
         opponent: 'BoldRaven393', mode: 'classic', mine: 29, theirs: 29, delta: 12, result: 'draw' },
-    ]) });
+    ];
+    const season = [...HEAD, ...Array.from({ length: historyDepth }, (_, index) => {
+      const n = index + 4;
+      const day = String(18 - (index % 17)).padStart(2, '0');
+      return {
+        id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`,
+        finished_at: `2026-08-${day}T${String(23 - (index % 24)).padStart(2, '0')}:00:00Z`,
+        opponent: `Rival${String(n).padStart(3, '0')}`,
+        mode: 'classic',
+        mine: 20 + (n % 30), theirs: 15 + (n % 25), delta: (n % 7) - 3,
+        result: n % 3 === 0 ? 'win' : n % 3 === 1 ? 'loss' : 'draw',
+      };
+    })];
+    /* finished_at desc, id desc — the order 20260823132602_history_index_order
+       gives, and the order the compound cursor walks. */
+    const key = (row) => `${row.finished_at}|${row.id}`;
+    season.sort((a, b) => (key(a) < key(b) ? 1 : key(a) > key(b) ? -1 : 0));
+    const args = r.request().postDataJSON() ?? {};
+    const limit = Math.min(Number(args.limit_n ?? 40), 100);
+    const beforeT = args.before_t ?? null;
+    const beforeId = args.before_id ?? null;
+    const page = (beforeT
+      ? season.filter((row) => key(row) < `${beforeT}|${beforeId ?? ''}`)
+      : season).slice(0, limit);
+    return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(page) });
   });
   /* the 0022 shape: points/rank/apex/avatar/peak. The two rows sit in
      DIFFERENT groups (1,072 is IVORY, 465 is BONE) so the board has to draw a

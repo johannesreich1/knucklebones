@@ -21,6 +21,7 @@ import { runMatchmakingScenarios } from './scenarios/matchmaking.mjs';
 import { runFreshAccountScenarios } from './scenarios/fresh-account.mjs';
 import { runLadderFaceoffScenarios } from './scenarios/ladder-faceoff.mjs';
 import { runLadderScrollScenarios } from './scenarios/ladder-scroll.mjs';
+import { runHistoryCrawlScenarios } from './scenarios/history-crawl.mjs';
 import { runAccountLifecycleScenarios } from './scenarios/account-lifecycle.mjs';
 import { runOnlineMenuPressFeedbackScenarios } from './scenarios/menu-press-feedback.mjs';
 import { runOnlineLoadingPanelScenarios } from './scenarios/loading-panels.mjs';
@@ -44,6 +45,7 @@ const SCENARIOS = Object.freeze([
   { id: 'fresh-account', run: runFreshAccountScenarios },
   { id: 'ladder-faceoff', run: runLadderFaceoffScenarios },
   { id: 'ladder-scroll', run: runLadderScrollScenarios },
+  { id: 'history-crawl', run: runHistoryCrawlScenarios },
   { id: 'account-lifecycle', run: runAccountLifecycleScenarios },
   { id: 'menu-press-feedback', run: runOnlineMenuPressFeedbackScenarios },
   { id: 'loading-panels', run: runOnlineLoadingPanelScenarios },

@@ -53,6 +53,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     locale = 'en-US',
     viewport = { width: 430, height: 932 },
     ladderNearBottom = false,
+    historyDepth = 0,
     paginationRace = false,
     passwordAuth = 'error',
     runes = [],
@@ -74,7 +75,8 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     const routes = await installOnlineRoutes(page, {
       anonymous, attached, authDelay,
       dataDelay: inspectLoading ? 900 : dataDelay, markRunesSeenAfterFirstRead,
-      door, gameCenterBridge, identity, member, named, ladderNearBottom, paginationRace,
+      door, gameCenterBridge, identity, member, named, ladderNearBottom, historyDepth,
+      paginationRace,
       passwordAuth, runes, unseenRunes, SESSION, GUEST_ID,
     });
     /* ONE Capacitor object: the native bridges are plugins on the same global,
