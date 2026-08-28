@@ -29,16 +29,24 @@ try {
 /* The gate is launched only after package engines/.nvmrc have selected and
    validated Node 24. Every child inherits that exact executable instead of
    resolving a bare `node` through PATH. */
+/* Every suite process currently in flight. The gate stops at the FIRST failure
+   (see `judge`), and stopping means killing what is already running — with four
+   jobs, three siblings are mid-suite when one goes red, and waiting them out can
+   cost the full SUITE_TIMEOUT_MS apiece. A killed child still resolves through
+   `finish`, so the pool unwinds normally and both teardown blocks below run. */
+const live = new Set();
 function runNode(args) {
   return new Promise(resolve => {
     const started = performance.now();
     const child = spawn(process.execPath, args, { cwd: process.cwd() });
+    live.add(child);
     let out = '';
     let settled = false;
     let timeout;
     const finish = (code, extra = '') => {
       if (settled) return;
       settled = true;
+      live.delete(child);
       clearTimeout(timeout);
       resolve({ code, out: out + extra, elapsedMs: performance.now() - started });
     };
@@ -63,13 +71,32 @@ const seconds = elapsedMs => `${(elapsedMs / 1000).toFixed(1)}s`;
 const clean = report => (report.problems || []).length === 0
   && (report.errs || []).length === 0;
 let failed = 0;
+let ran = 0;
+/* THE GATE STOPS AT THE FIRST RED, ALWAYS. A release that is going to be
+   refused should say so in seconds, not after all 87 suites have run: the
+   verdict cannot improve, and `tools/release-main.mjs` throws on the first
+   non-zero anyway, so everything after the first failure is time spent proving
+   something already decided. Twice in one day that cost ten minutes apiece.
+   No flag — `parseGateArgs` keeps its exact shape, which gate-manifest.test.ts
+   asserts, and there is no mode in which finishing a doomed run is wanted. */
+let aborted = null;
+export const gateAborted = () => aborted !== null;
 function judge(name, result, verdict) {
   const report = parseReport(result.out);
   const bad = result.code !== 0 || !report || !verdict(report);
+  /* A suite killed BY the abort reports its own failure on the way down; only
+     the first one is a real verdict, and the rest are noise about our own
+     SIGKILL. */
+  if (aborted) return;
+  ran++;
   console.log(`${bad ? 'FAIL' : 'ok  '} ${name} (${seconds(result.elapsedMs)})`);
   if (!bad) return;
   failed++;
   console.log(result.out.trim().split('\n').map(line => `  | ${line}`).join('\n'));
+  aborted = name;
+  for (const child of live) child.kill('SIGKILL');
+  console.log(`\nSTOPPED at the first failure: ${name}. `
+    + 'Remaining suites were not run — fix this one and gate again.');
 }
 
 const announce = name => console.log(`start ${name}`);
@@ -112,7 +139,7 @@ try {
     stop = server.stop;
   }
   try {
-    await executeGatePlan(plan, run, options.jobs);
+    await executeGatePlan(plan, run, options.jobs, gateAborted);
   } finally {
     stop();
     if (plan.final.length) {
@@ -124,7 +151,13 @@ try {
   release();
 }
 
-const summary = `${selected.length} suites ${failed ? 'FAILED' : 'green'} in `
-  + `${seconds(performance.now() - gateStarted)} (${label})`;
+/* Say what actually RAN. "87 suites FAILED" after stopping at the fourth one
+   reads as a catastrophe and hides which suite to go and fix. */
+const summary = aborted
+  ? `STOPPED at ${aborted} after ${ran} of ${selected.length} suites in `
+    + `${seconds(performance.now() - gateStarted)} (${label}) — `
+    + `${selected.length - ran} not run`
+  : `${selected.length} suites ${failed ? 'FAILED' : 'green'} in `
+    + `${seconds(performance.now() - gateStarted)} (${label})`;
 console.log(`\n${summary}`);
 process.exit(failed ? 1 : 0);

@@ -278,10 +278,18 @@ export function createGatePlan(ciShard, suites = GATE_SUITES, shards = CI_SHARDS
   };
 }
 
-export async function executeGatePlan(plan, run, jobs) {
+/* `shouldStop` is optional so the existing direct test — a fake `run` at
+   jobs = 2, asserting the exclusive-final suite runs alone and last — keeps its
+   call shape. Omitted, this behaves exactly as before. Supplied, both loops
+   stop claiming work as soon as the gate has its verdict; the caller is
+   responsible for the suites already in flight. */
+export async function executeGatePlan(plan, run, jobs, shouldStop = () => false) {
   const queue = [...plan.pooled];
   await Promise.all(Array.from({ length: Math.min(jobs, queue.length) }, async () => {
-    while (queue.length) await run(queue.shift());
+    while (queue.length && !shouldStop()) await run(queue.shift());
   }));
-  for (const suite of plan.final) await run(suite);
+  for (const suite of plan.final) {
+    if (shouldStop()) break;
+    await run(suite);
+  }
 }
