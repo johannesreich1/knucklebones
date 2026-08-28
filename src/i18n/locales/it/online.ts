@@ -35,7 +35,6 @@ export const itOnline = {
     cancel: 'Annulla',
     opponentFound: 'Avversario trovato',
     reconnecting: 'Riconnessione alla partita…',
-    trialLocked: "Runa scelta — in attesa dell'avversario",
     trialOpponentChoosing: "L'avversario sta scegliendo una runa…",
     trialBothLocked: 'Rune scelte — rivelazione simultanea',
   },

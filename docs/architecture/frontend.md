@@ -112,6 +112,15 @@ The shared board then receives the revealed per-seat hands. Trial is carried as
 an explicit format backed by Classic, never inferred by adding a fake entry to
 the mechanical mode registry.
 
+The Trial's whole pre-game is ONE reveal. `ui/reveal.ts` accepts a `trial` act
+alongside its beats: a beat that does not exist until the one before it has
+been read. The dial lands on RUNE RITUAL, the selector opens over the overlay
+that is still showing it, and the two answers turn over on that same stage
+under a single countdown — with the wait for a remote opponent written into
+the reveal's own note line rather than sending the player back to the queue
+panel. A second overlay for the runes is the shape this replaced; a caller that
+reveals a mode, closes, and then reveals the choices has rebuilt it.
+
 When extracting code from a large module:
 
 1. Name one responsibility and its inputs/outputs.

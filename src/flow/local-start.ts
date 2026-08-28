@@ -75,14 +75,14 @@ async function chooseLocalTrial(
     }
   }
   if (!mine || !theirs) return null;
-  await reveal({
-    trialRunes: [
-      { spell: spellById(mine)!, name: () => nameOf(ME), hue: colorOf(ME) },
-      { spell: spellById(theirs)!, name: () => nameOf(AI), hue: colorOf(AI) },
-    ],
-  });
   return { offer, spells: [theirs, mine] };
 }
+
+/* The two committed hands, in the seating the reveal turns them over in. */
+const trialSides = (picked: LocalRuneTrial) => [
+  { spell: spellById(picked.spells[ME])!, name: () => nameOf(ME), hue: colorOf(ME) },
+  { spell: spellById(picked.spells[AI])!, name: () => nameOf(AI), hue: colorOf(AI) },
+] as const;
 
 /** Resolve a local setup into one immutable duel deal; null means selection was cancelled. */
 export async function resolveLocalStart(): Promise<ResolvedLocalStart | null> {
@@ -102,6 +102,17 @@ export async function resolveLocalStart(): Promise<ResolvedLocalStart | null> {
   if (mode || randomRunes || trial) {
     hide('#ovEnd'); hide('#ovStart'); hide('#ovPractice');
   }
+  /* The Trial's choice is a BEAT of the reveal, not a screen after it: the dial
+     lands on RUNE TRIAL, the cards open over it, and both hands turn over on
+     the stage the mode is still sitting on. Picked outright there is no dial,
+     so the same act runs as the only beat. */
+  const chosen: { trial: LocalRuneTrial | null } = { trial: null };
+  const trialAct = {
+    resolve: async () => {
+      chosen.trial = await chooseLocalTrial(seed, candidates);
+      return chosen.trial ? trialSides(chosen.trial) : null;
+    },
+  };
   if (selectedMode === RANDOM && outcome) {
     await reveal({
       mode: trial ? RUNE_TRIAL_OUTCOME : mode,
@@ -114,7 +125,10 @@ export async function resolveLocalStart(): Promise<ResolvedLocalStart | null> {
         { spell: spellById(randomRunes[AI])!, player: AI,
           candidates: candidates.filter((spell) => spell.id !== randomRunes[ME]) },
       ] : undefined,
+      trial: trial ? trialAct : undefined,
     });
+  } else if (trial) {
+    await reveal({ trial: trialAct });
   } else if (randomRunes) {
     const mine = spellById(randomRunes[ME]);
     const theirs = spellById(randomRunes[AI]);
@@ -129,9 +143,9 @@ export async function resolveLocalStart(): Promise<ResolvedLocalStart | null> {
   }
 
   if (trial) {
-    const resolved = await chooseLocalTrial(seed, candidates);
-    if (!resolved) { show('#ovPractice'); return null; }
-    return { scoring: CLASSIC, spells: resolved.spells, trial: resolved };
+    const picked = chosen.trial;
+    if (!picked) { show('#ovPractice'); return null; }
+    return { scoring: CLASSIC, spells: picked.spells, trial: picked };
   }
   return {
     scoring: mode?.mode ?? selectedMode as Mode,

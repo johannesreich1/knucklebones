@@ -69,22 +69,58 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
     }
     : modeCopy(id);
 
-  const trialWaiting = (deadline: string | null, opponentCommitted: boolean): void => {
-    showOnlinePanel('onQueue');
-    $('#qSub').removeAttribute('data-i18n');
-    $('#qSub').textContent = opponentCommitted
-      ? t('online', 'matchmaking.trialBothLocked')
-      : t('online', 'matchmaking.trialOpponentChoosing');
+  /* THE SERVER'S OWN DEADLINE IS THE ESCAPE HATCH, so this is how long past it
+     we are willing to sit before deciding nobody is coming. The wait is now
+     inside the reveal, which has no cancel button of its own; the queue panel
+     it replaced had one, and losing it silently would turn a backend that
+     never publishes the second choice into an overlay with no way out. Going
+     home is exactly what that button did. */
+  const TRIAL_STALL_GRACE_MS = 20000;
+  let stall: ReturnType<typeof setTimeout> | null = null;
+  const clearStall = (): void => {
+    if (stall) clearTimeout(stall);
+    stall = null;
+  };
+
+  /* The wait for the opponent's private choice happens with the reveal already
+     on screen, so it is written INTO the reveal — pulling the player back to
+     the queue panel for it would be the second surface this flow just lost. */
+  const trialWaiting = (
+    note: (text: string | null) => void,
+    deadline: string | null,
+    opponentCommitted: boolean,
+  ): void => {
+    const at = deadline ? Date.parse(deadline) : NaN;
     const paint = (): void => {
-      const at = deadline ? Date.parse(deadline) : NaN;
       const seconds = Number.isFinite(at) ? Math.max(0, Math.ceil((at - Date.now()) / 1000)) : 0;
-      $('#qTime').textContent = queueTime(seconds);
-      const message = $('#onQueue .qmsg');
-      message.textContent = t('online', 'matchmaking.trialLocked');
+      note(`${opponentCommitted
+        ? t('online', 'matchmaking.trialBothLocked')
+        : t('online', 'matchmaking.trialOpponentChoosing')} · ${queueTime(seconds)}`);
     };
     paint();
     if (tick) clearInterval(tick);
     tick = setInterval(paint, 250);
+    /* Armed ONCE for the whole wait, deliberately: this repaints on every
+       refresh, and re-arming there would push the deadline out by a grace
+       period roughly once a second and never fire. */
+    stall ??= setTimeout(() => ports.goHome(),
+      Math.max(0, (Number.isFinite(at) ? at - Date.now() : 30000)) + TRIAL_STALL_GRACE_MS);
+  };
+
+  /* Both public choices, in the seating the reveal reads: mine first, in my
+     colour. Null when the row is missing one — the resolver only returns after
+     the server has published both, so this is a contract check, not a state. */
+  const trialSides = (match: Extract<JoinResult, { status: 'matched' }>) => {
+    const mine = match.you === 1 ? 'p1' : 'p2';
+    const theirs = mine === 'p1' ? 'p2' : 'p1';
+    const rune = (seat: 'p1' | 'p2') =>
+      spellById(seat === 'p1' ? match.match.p1_rune : match.match.p2_rune);
+    const [myRune, theirRune] = [rune(mine), rune(theirs)];
+    if (!myRune || !theirRune) return null;
+    return [
+      { spell: myRune, name: () => match.names[mine], hue: 'var(--p1)' },
+      { spell: theirRune, name: () => match.names[theirs], hue: 'var(--p2)' },
+    ] as const;
   };
 
   const hidden = (): void => {
@@ -96,6 +132,7 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
       clearInterval(tick);
       tick = null;
     }
+    clearStall();
     document.removeEventListener('visibilitychange', hidden);
   }
 
@@ -204,40 +241,61 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
         }
         const showReveal = !result.rejoined || result.match.phase === 'selection';
         clearWaiting();
-        const selected = await resolveRankedTrial(result, {
-          owns: () => runs.owns(run),
-          onWaiting: trialWaiting,
-        });
-        if (!selected || !runs.owns(run)) return;
-        const match = selected;
-        clearWaiting();
+        /* The private choice belongs INSIDE the reveal: the dial lands on RUNE
+           TRIAL, the three cards open over the mode it just found, and the two
+           answers turn over on the same stage. One overlay, one spin, one
+           countdown. `match` is what the choice settled on — the reveal cannot
+           return it, so the act writes it here. */
+        let match = result;
+        let abandoned = false;
+        let unreadable = false;
+        const trialChoice = async (note: (text: string | null) => void) => {
+          const selected = await resolveRankedTrial(match, {
+            owns: () => runs.owns(run),
+            onWaiting: (deadline, committed) => trialWaiting(note, deadline, committed),
+          });
+          clearWaiting();
+          if (!selected || !runs.owns(run)) { abandoned = true; return null; }
+          match = selected;
+          const sides = trialSides(match);
+          /* Two runes this build cannot name are not a reveal we can shorten:
+             the board would not be able to hand them out either. Leave the way
+             a cancelled selection leaves, rather than entering a match whose
+             hands are unreadable. */
+          if (!sides) unreadable = true;
+          return sides;
+        };
         if (showReveal) {
           hide('#ovOnline');
           const mine = match.you === 1 ? 'p1' : 'p2';
-          const theirs = mine === 'p1' ? 'p2' : 'p1';
           const side = (seat: 'p1' | 'p2') => ({
             name: match.names[seat],
             rating: match.names.ratings?.[seat] ?? null,
             avatar: match.names.avatars?.[seat] ?? null,
           });
-          const myRune = spellById(mine === 'p1' ? match.match.p1_rune : match.match.p2_rune);
-          const theirRune = spellById(theirs === 'p1' ? match.match.p1_rune : match.match.p2_rune);
           await reveal({
             mode: { id: match.match.format === RUNE_TRIAL_FORMAT
               ? RUNE_TRIAL_FORMAT : modeById(match.match.modifier).id },
             modeCandidates: revealCandidates(match),
             modeCopy: revealCopy,
-            trialRunes: match.match.format === RUNE_TRIAL_FORMAT && myRune && theirRune
-              ? [
-                { spell: myRune, name: () => side(mine).name, hue: 'var(--p1)' },
-                { spell: theirRune, name: () => side(theirs).name, hue: 'var(--p2)' },
-              ] : undefined,
+            trial: match.match.format === RUNE_TRIAL_FORMAT
+              ? { resolve: trialChoice } : undefined,
             me: side(mine),
-            foe: side(theirs),
+            foe: side(mine === 'p1' ? 'p2' : 'p1'),
             peer: readyPeer(match.match.id),
           });
-          if (!runs.owns(run)) return;
+        } else {
+          /* No reveal to run: a rejoin past the selection phase, where the
+             resolver only confirms what the server already settled. */
+          const settled = await resolveRankedTrial(match, {
+            owns: () => runs.owns(run),
+            onWaiting: () => undefined,
+          });
+          if (!settled) return;
+          match = settled;
         }
+        if (unreadable) { ports.goHome(); return; }
+        if (abandoned || !runs.owns(run)) return;
         queueMayExist = false; // ownership moves from the queue to play.ts
         searchShownAt = null; // the next search starts its display clock fresh
         await enterMatch(match);

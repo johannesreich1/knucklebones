@@ -32,7 +32,6 @@ export const enOnline = {
     cancel: 'Cancel',
     opponentFound: 'Opponent found',
     reconnecting: 'Reconnecting to your match…',
-    trialLocked: 'Rune locked — waiting for your opponent',
     trialOpponentChoosing: 'Your opponent is choosing a rune…',
     trialBothLocked: 'Both runes locked — revealing together',
   },

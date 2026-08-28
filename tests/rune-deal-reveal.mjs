@@ -41,9 +41,26 @@ const { chromium } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
 const problems = [], out = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
+/* The ONE draw this fixes is the offline RANDOM seed, and it is fixed to a
+   value that lands on an ordinary mode: Rune Trial answers RANDOM with a
+   private choice instead of a rune deal, so a seed that reaches it would leave
+   this test waiting for a deck that is never dealt. Verified under both the
+   permanent 40/60 weights and the temporary Trial share. */
+/* PRIMED AND PRESSED IN ONE TASK: the stub restores itself on first use, so
+   anything that draws before Play is pressed eats the fixed seed and the mode
+   goes back to chance — a previous duel's timer is exactly that thief, and a
+   Playwright click's round trip is all the room it needs. Since Rune Ritual is
+   temporarily 60% of the draw, a stolen seed usually lands there, and the
+   Ritual answers RANDOM with a private choice instead of a rune deal: this
+   test would then wait for a deck that is never dealt. */
 const primeRandomStart = (randomMode) => {
-  const natural = Math.random; if (randomMode) Math.random = () => { Math.random = natural; return .5; };
+  const natural = Math.random; if (randomMode) Math.random = () => { Math.random = natural; return .375; };
   window.__kb.S.timer = 0;
+  const play = document.getElementById('btnPlay');
+  const box = play.getBoundingClientRect();
+  const at = { bubbles: true, clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 };
+  play.dispatchEvent(new PointerEvent('pointerdown', at));
+  play.dispatchEvent(new PointerEvent('pointerup', at));
 };
 
 const browser = await chromium.launch();
@@ -82,7 +99,6 @@ try {
     await page.click(`#modePick button[data-v="${localMode}"]`);
     await page.click('#spellPick button[data-v="random"]');
     await page.evaluate(primeRandomStart, localMode === '-1');
-    await page.click('#btnPlay');
     if (liveLocale) {
       await page.waitForSelector('#ovWheel.on #wheelDial', { timeout: 20000 }); // never stale hidden DOM
       await page.waitForTimeout(700); // clear tap()'s native-click guard
@@ -346,7 +362,6 @@ try {
     await page.click(`#modePick button[data-v="${mode}"]`);
     await page.click(`#spellPick button[data-v="${spell}"]`);
     await page.evaluate(primeRandomStart, mode === '-1');
-    await page.click('#btnPlay');
     await page.waitForFunction(() => document.querySelector('#ovWheel')?.classList.contains('holding'), { timeout: 20000 });
     await page.waitForTimeout(250);
   };

@@ -35,7 +35,6 @@ export const deOnline = {
     cancel: 'Abbrechen',
     opponentFound: 'Gegner gefunden',
     reconnecting: 'Verbindung zum Spiel wird wiederhergestellt …',
-    trialLocked: 'Rune gewählt — warte auf deinen Gegner',
     trialOpponentChoosing: 'Dein Gegner wählt eine Rune …',
     trialBothLocked: 'Beide Runen gewählt — gemeinsames Aufdecken',
   },

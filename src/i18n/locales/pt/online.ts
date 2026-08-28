@@ -35,7 +35,6 @@ export const ptOnline = {
     cancel: 'Cancelar',
     opponentFound: 'Rival encontrado',
     reconnecting: 'Reconectando à partida…',
-    trialLocked: 'Runa escolhida — aguardando seu oponente',
     trialOpponentChoosing: 'Seu oponente está escolhendo uma runa…',
     trialBothLocked: 'Duas runas escolhidas — revelando juntas',
   },

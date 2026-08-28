@@ -125,6 +125,15 @@
    .wblurb of its own up top, and it must not be dragged down here */
 :where(#kbroot) #ovWheel > .wblurb{position:absolute;left:50%;transform:translateX(-50%);margin:0;
   width:calc(100% - 2 * var(--pad-x));top:calc(50% + var(--stage)/2 + 42px)}
+/* A WAIT, not an answer: the line the reveal shows while it is holding a beat
+   open for someone else — the opponent still choosing a rune behind their own
+   card. It hangs one line below the readout, is absent until there is something
+   to wait for, and never moves the stage, like everything else on this screen. */
+:where(#kbroot) #ovWheel .wnote{position:absolute;left:50%;transform:translateX(-50%);
+  width:calc(100% - 2 * var(--pad-x));top:calc(50% + var(--stage)/2 + 68px);
+  font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);
+  text-align:center}
+:where(#kbroot) #ovWheel .wnote[hidden]{display:none}
 /* AN ANSWER THAT IS DONE BEING LOOKED AT, kept — the name AND the rule, because
    "COLUMN SHIELD" alone is a label and the line under it is the half that says
    what you are about to play. It sits centred in the space ABOVE the deck's

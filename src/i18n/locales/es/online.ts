@@ -35,7 +35,6 @@ export const esOnline = {
     cancel: 'Cancelar',
     opponentFound: 'Rival encontrado',
     reconnecting: 'Reconectando con tu partida…',
-    trialLocked: 'Runa elegida — esperando a tu rival',
     trialOpponentChoosing: 'Tu rival está eligiendo una runa…',
     trialBothLocked: 'Dos runas elegidas — revelación conjunta',
   },
