@@ -70,7 +70,11 @@ differs. A second near-copy is a design failure, not a shortcut.
   the one that was requested, or when Johannes said to hold.
 - **Always release through the native-aware helper.** After explicitly staging
   and committing reviewed files in a clean worktree, use
-  `mise exec -- node tools/release-main.mjs` instead of a raw push to `main`.
+  `LANG=en_US.UTF-8 mise exec -- node tools/release-main.mjs` instead of a raw
+  push to `main`. The locale is not optional: the helper runs `native:verify`,
+  whose `pod install` aborts on a non-UTF-8 terminal, and an agent shell
+  usually has `LANG` unset — the release then stops before the gate, having
+  proved nothing.
   It rebuilds and syncs both Capacitor platforms, verifies their exact payloads,
   runs the full gate, rejects tracked drift or a non-fast-forward update, and
   pushes the verified `HEAD`. It never stages or commits files; use a dedicated
