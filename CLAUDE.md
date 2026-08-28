@@ -75,9 +75,15 @@ differs. A second near-copy is a design failure, not a shortcut.
   Johannes builds from and hand him the expected tag:
   `LANG=en_US.UTF-8 mise exec -- npm run native:sync:ios` (CocoaPods needs the
   UTF-8 locale), then `native:verify:ios`, then report the `data-build` value
-  now in `native/ios/App/App/public/index.html` — the title screen renders it,
-  so he can confirm the device actually took the build. Say explicitly that
-  Xcode needs Clean Build Folder first; it reuses a stale bundle otherwise.
+  now in `native/ios/App/App/public/index.html` — **Settings** renders it, in the
+  footer under the legal links (`#buildTag`, `src/markup.ts`, painted by
+  `stampBuild()` in `src/ui/dom.ts`), so he can confirm the device actually took
+  the build. Not the title screen. Say explicitly that Xcode needs Clean Build
+  Folder first; it reuses a stale bundle otherwise.
+  **Sync from the checkout that has `.env`.** A worktree has none, so a payload
+  built there bakes an EMPTY identity-gateway URL and its `data-build` differs
+  from the one the device should run — report the tag from the tree the sync
+  actually ran in, never the release worktree's.
 - **One gate per repository, and it queues.** `tests/run-all.mjs` takes a lock
   named after the shared `.git` directory, so every worktree of this clone
   waits its turn; a separate clone is unaffected. Worktrees CAN gate in
