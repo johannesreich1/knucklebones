@@ -78,9 +78,13 @@ differs. A second near-copy is a design failure, not a shortcut.
   now in `native/ios/App/App/public/index.html` — the title screen renders it,
   so he can confirm the device actually took the build. Say explicitly that
   Xcode needs Clean Build Folder first; it reuses a stale bundle otherwise.
-- **One gate per working tree.** `tests/run-all.mjs` holds `.gate.lock` because
-  the build output is shared. Separate worktrees may gate concurrently on
-  kernel-assigned ports.
+- **One gate per repository, and it queues.** `tests/run-all.mjs` takes a lock
+  named after the shared `.git` directory, so every worktree of this clone
+  waits its turn; a separate clone is unaffected. Worktrees CAN gate in
+  parallel — kernel-assigned ports made that correct in August 2026 — but this
+  machine cannot afford it: three at once reached load 284 and produced
+  starvation failures indistinguishable from defects. Do not work around the
+  wait; `KB_NO_LOCK=1` exists for a single deliberate run, not for a habit.
 - **Keep `src/core/` portable.** No DOM or timers. Replay/scoring are
   deterministic across browser, Node, and Deno; any AI/dice randomness stays
   explicit, injectable, and outside authoritative replay outcomes.

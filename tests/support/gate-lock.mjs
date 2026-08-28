@@ -1,6 +1,8 @@
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { createHash, randomUUID } from 'node:crypto';
 
 const DEFAULT_TIMEOUT_MS = 20 * 60_000;
 
@@ -107,12 +109,40 @@ function recoverStaleLock(lock, recovery, expected) {
   }
 }
 
+/* ONE LOCK PER REPOSITORY, not per working tree — every worktree of the same
+   clone queues on the same file, and an unrelated clone (a second CI checkout)
+   still gates independently. The shared `.git` directory is what "the same
+   repository" means, so the lock is named after it and lives in the temp
+   directory rather than in any one tree.
+
+   Worktrees were deliberately allowed to gate in parallel on 2026-08-22, once
+   kernel-assigned ports made it CORRECT. It is still correct; it is not
+   affordable. Three concurrent gates on this Mac put the load average at 284
+   and produced failures that were pure starvation — 30s waits for buttons that
+   were in the markup, screenshots timing out after fonts had loaded, benches
+   40-50% over budget — while a peer's release needed five attempts to find a
+   quiet moment. Serial gates finish sooner than contended ones plus their
+   retries, and they never lie. Sessions had been coordinating this by hand,
+   which works exactly as long as everyone remembers. */
+function repositoryLock(cwd) {
+  let key;
+  try {
+    key = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'],
+      { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim();
+  } catch {
+    key = path.resolve(cwd);        // not a checkout: fall back to this tree alone
+  }
+  const digest = createHash('sha1').update(key).digest('hex').slice(0, 12);
+  return path.join(os.tmpdir(), `knucklebones-gate-${digest}.lock`);
+}
+
 /**
- * Serialize gates that share generated build output in one checkout.
- * Different worktrees have different lock paths and remain independent.
+ * Serialize gates across every working tree of one repository, because the
+ * machine they share is the scarce resource. `lock` names the file explicitly;
+ * tests pass their own so they never queue behind a real gate.
  */
-export async function acquireCheckoutLock({
-  cwd = process.cwd(),
+export async function acquireGateLock({
+  lock = repositoryLock(process.cwd()),
   bypass = process.env.KB_NO_LOCK === '1',
   timeoutMs = DEFAULT_TIMEOUT_MS,
   livePollMs = 2_000,
@@ -121,7 +151,6 @@ export async function acquireCheckoutLock({
 } = {}) {
   if (bypass) return () => {};
 
-  const lock = path.join(cwd, '.gate.lock');
   const recovery = `${lock}.recovery`;
   const deadline = Date.now() + timeoutMs;
   let announced = false;
@@ -145,12 +174,12 @@ export async function acquireCheckoutLock({
 
     if (!processIsAlive(ownerPid(held))) {
       if (recoverStaleLock(lock, recovery, held)) {
-        announce(`stale .gate.lock (${held}) — that gate is gone, taking it`);
+        announce(`stale gate lock (${held}) — that gate is gone, taking it`);
         break;
       }
       if (Date.now() > deadline) {
         throw new Error(
-          `stale .gate.lock recovery stayed busy for ${timeoutMs}ms — delete ${recovery} if no gate is recovering`,
+          `stale gate-lock recovery stayed busy for ${timeoutMs}ms — delete ${recovery} if no gate is recovering`,
         );
       }
       await delay(recoveryPollMs);
@@ -158,11 +187,11 @@ export async function acquireCheckoutLock({
     }
 
     if (!announced) {
-      announce(`another gate holds this checkout (${held}) — waiting for it`);
+      announce(`another gate on this repository holds ${lock} (${held}) — waiting for it`);
       announced = true;
     }
     if (Date.now() > deadline) {
-      throw new Error(`.gate.lock still held by ${held} after ${timeoutMs}ms — delete it if that gate is gone`);
+      throw new Error(`${lock} still held by ${held} after ${timeoutMs}ms — delete it if that gate is gone`);
     }
     await delay(livePollMs);
   }

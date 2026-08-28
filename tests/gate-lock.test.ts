@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { acquireCheckoutLock } from './support/gate-lock.mjs';
+import { acquireGateLock } from './support/gate-lock.mjs';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -15,8 +15,8 @@ const workerAt = process.argv.indexOf('--worker');
 if (workerAt >= 0) {
   const cwd = process.argv[workerAt + 1];
   try {
-    const release = await acquireCheckoutLock({
-      cwd,
+    const release = await acquireGateLock({
+      lock: path.join(cwd, '.gate.lock'),
       timeoutMs: 5_000,
       livePollMs: 5,
       recoveryPollMs: 2,
@@ -74,8 +74,8 @@ try {
   // owner died. A uniquely named dead claim is safely recoverable.
   fs.writeFileSync(lock, '2147483647 stale-owner\n');
   fs.mkdirSync(`${recovery}.claim-1-2147483647-orphan`);
-  const releaseAfterOrphan = await acquireCheckoutLock({
-    cwd: temp,
+  const releaseAfterOrphan = await acquireGateLock({
+    lock,
     timeoutMs: 100,
     recoveryPollMs: 2,
     announce: () => {},
@@ -94,8 +94,8 @@ try {
   let recoveryTimedOut = false;
   let unexpectedRelease: (() => void) | undefined;
   try {
-    unexpectedRelease = await acquireCheckoutLock({
-      cwd: temp,
+    unexpectedRelease = await acquireGateLock({
+      lock,
       timeoutMs: 20,
       recoveryPollMs: 2,
       announce: () => {},
@@ -112,11 +112,11 @@ try {
   fs.rmSync(lock);
 
   // A live owner must never be treated as stale, even under a very short wait.
-  const release = await acquireCheckoutLock({ cwd: temp, announce: () => {} });
+  const release = await acquireGateLock({ lock, announce: () => {} });
   let timedOut = false;
   try {
-    await acquireCheckoutLock({
-      cwd: temp,
+    await acquireGateLock({
+      lock,
       timeoutMs: 20,
       livePollMs: 2,
       recoveryPollMs: 2,
