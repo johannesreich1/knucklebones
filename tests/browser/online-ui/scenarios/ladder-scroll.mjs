@@ -266,4 +266,83 @@ export async function runLadderScrollScenarios(suite) {
     }
     check(run.errs.length === 0, `[${engine}] page errors while crawling the ladder`, run.errs);
   }
+
+  /* THE GENTLE PULL, which the crawl above cannot see. Every wheel step there is
+     hundreds of pixels, and a jump lands the window's first wanted position
+     several rows above what is held — so the fetch is routed through `seek`
+     (virtual-cache.ts:146) and the BACKWARD cursor is never used near the top of
+     the board. A slow drag, and the decaying tail of every iOS fling, steps
+     about one row per frame and takes `before` every time.
+     That route used to announce the top of the board as its END: a page shorter
+     than PAGE was read as the end of the sequence in either direction, so
+     reaching rank 1 shortened the board to the size of that last upward page.
+     Everything below it vanished and stayed gone — the frame loop clamps its
+     window to count(), so no request was ever issued for the missing rows again
+     (user report, on device: "past 40 I see nothing anymore and it doesn't load
+     anything"). One engine is enough; this is cache arithmetic, not compositor
+     behaviour. A SMALL board keeps it cheap: opening on rank 55 of 60 seeds from
+     position 4, so the top is a handful of one-row steps away. */
+  const pull = await visit({
+    named: true,
+    ladderBoard: { population: 60, myRank: 55 },
+    viewport: { width: 390, height: 844 },
+    skipStandardProbes: true,
+    probe: async (page) => {
+      let backward = 0;
+      page.on('request', (r) => {
+        if (r.url().includes('/rpc/leaderboard_before')) backward += 1;
+      });
+      const span = () => page.evaluate(() =>
+        document.querySelector('#ovOnline .pbody').scrollHeight);
+
+      await page.click('#btnLadder');
+      await page.waitForSelector('#onLadder:not([hidden]) #onLadderList .lrow.me',
+        { timeout: 15000 });
+      await settle(page);
+      const opened = await span();
+
+      /* Under one row per step (rows are ~49px plus a 5px gap), which is what
+         puts the window's first wanted position exactly one above what is held. */
+      for (let i = 0; i < 24; i += 1) {
+        await wheel(page, -45);
+        await page.waitForTimeout(60);
+      }
+      await page.waitForTimeout(400);
+      await settle(page);
+      const pulled = await span();
+      const top = await geometry(page);
+
+      /* The board is only proven whole if the way back still exists. */
+      for (let i = 0; i < 14; i += 1) await wheel(page, 400);
+      await page.waitForTimeout(400);
+      await settle(page);
+      const meBack = await page.evaluate(() =>
+        !!document.querySelector('#onLadderList .lrow.me'));
+      const deepest = await page.evaluate(() => {
+        const slots = [...document.querySelectorAll('#onLadderList [data-slot]')]
+          .map((slot) => Number(slot.dataset.slot));
+        return slots.length ? Math.max(...slots) : null;
+      });
+      return { backward, opened, pulled, top, meBack, deepest };
+    },
+  });
+  const p = pull.probeResult;
+  out.ladderScroll.gentlePull = p;
+
+  check(p?.opened > 0 && p?.backward > 0,
+    'the gentle pull never reached the BACKWARD cursor, so every assertion below is vacuous '
+    + '— it is measuring the seek route the wheel crawl already covers',
+    { backward: p?.backward, opened: p?.opened });
+  /* The modelled board must still span the whole season. A few percent is
+     estimates being replaced by measurements as rows mount; a collapse is an
+     order of magnitude — 60 rows became 4. */
+  check((p?.pulled ?? 0) >= (p?.opened ?? 0) * 0.9,
+    'PULLING UP TO RANK 1 SHORTENED THE BOARD. A backward page is short exactly when it '
+    + 'reaches the top; read as the end of the sequence it deletes every row below the '
+    + 'reader, and the window clamps itself to count() so they are never asked for again.',
+    { opened: p?.opened, pulled: p?.pulled, mounted: p?.top?.mounted });
+  check(p?.meBack === true && (p?.deepest ?? -1) >= 40,
+    'after a gentle pull to the top the reader could not get back down to their own row',
+    { meBack: p?.meBack, deepest: p?.deepest });
+  check(pull.errs.length === 0, 'page errors during the gentle pull', pull.errs);
 }

@@ -26,7 +26,7 @@ import {
 } from '../api/match-api.ts';
 import { createInitialSyncBoundary, type InitialSyncBoundary } from './initial-sync.ts';
 import { newerMatchProjection } from './match-sync.ts';
-import { animateOnlineMove, cancelOnlineReveal, playBotReply, revealOnlineDie, raiseAwayWarning } from './play-motion.ts';
+import { animateOnlineMove, cancelOnlineReveal, openOpponentTurn, playBotReply, revealOnlineDie, raiseAwayWarning } from './play-motion.ts';
 import { finishOnlineMatch } from './play-finish.ts';
 import { rankedBadge, reconnectingCopy, showAwayAutoPlayCountdown, turnCopy } from './play-copy.ts';
 import { createOnlineState } from './play-state.ts';
@@ -59,6 +59,15 @@ const sync = createOnlineSynchronizer({
   isCurrent: isCurrentOnline,
   applyMatchRow,
   renderPool,
+  // The Trial replay knows WHEN the opponent takes over; the status copy, the
+  // clock and this match's name live here. Bound to the match being replayed,
+  // never to the module global.
+  openOpponentBeat: (online, die) => openOpponentTurn((1 - online.you) as Player, die, {
+    you: online.you,
+    isCurrent: () => isCurrentOnline(online),
+    opponentName: onlineOpponentName(online),
+    onOpponentStalled: oppStalled,
+  }),
 });
 
 const watchdog = (): Promise<void> => runOnlineWatchdog({
@@ -260,7 +269,7 @@ async function onlinePlace(who: Player, col: number): Promise<void> {
     if (bot) await playBotReply(bot, {
       you: online.you,
       isCurrent: () => isCurrentOnline(online),
-      opponentName: () => oppName(),
+      opponentName: onlineOpponentName(online),
       onOpponentStalled: oppStalled,
     });
   } finally { if (isCurrentOnline(online)) online.animating = false; }

@@ -204,6 +204,9 @@ export const enGame = {
       detail: 'Both players see the same three runes and each secretly chooses one. Both choices are revealed together; then the duel uses Classic board rules.',
     },
   },
+  modeLock: {
+    reachBone: 'Reach BONE to unlock this mode versus AI.',
+  },
   runeTrial: {
     choosePrompt: 'Choose one rune — your opponent cannot see it',
     chooseFor: '{{player}} — choose one rune',

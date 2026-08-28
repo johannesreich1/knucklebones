@@ -20,6 +20,8 @@
 const INSTALL_RAIL_PROBE = () => {
   const bar = document.getElementById('spellBar');
   const root = document.getElementById('kbroot');
+  const clockWrap = document.getElementById('timerWrap');
+  const clockBar = document.getElementById('timerBar');
   const probe = { events: [], frames: [], running: true };
   window.__railProbe = probe;
   for (const type of ['transitionrun', 'transitionstart', 'transitionend', 'transitioncancel']) {
@@ -47,6 +49,13 @@ const INSTALL_RAIL_PROBE = () => {
       display: style.display,
     };
   };
+  /* The countdown is the other half of "a turn was taken": it lights only
+     while somebody is on the clock, and it wears the mover's own colour. */
+  const clock = () => ({
+    on: clockWrap.classList.contains('on'),
+    base: clockWrap.style.getPropertyValue('--tcbase').trim(),
+    width: Math.round(parseFloat(clockBar.style.width) || 0),
+  });
   const sample = () => {
     const cards = [...bar.querySelectorAll('.rune:not([hidden])')]
       .filter((card) => !!card.offsetParent);
@@ -56,6 +65,7 @@ const INSTALL_RAIL_PROBE = () => {
       opponentTurn: root.classList.contains('opponent-turn'),
       bar: bar.className,
       count: cards.length,
+      clock: clock(),
       seats: Object.fromEntries(cards.map((card) => [card.dataset.seat, read(card)])),
     });
     if (probe.running) requestAnimationFrame(sample);
@@ -89,8 +99,23 @@ const READ_RAIL_PROBE = () => {
     };
   };
   const transform = probe.events.filter((event) => event.property === 'transform');
+  /* The opponent's beat, in wall clock and in pixels: how long the table
+     actually held their turn, and whether their countdown ran while it did. */
+  const you = window.__kbOnline()?.you ?? 1;
+  const theirs = frames.filter((frame) => frame.turn !== you);
+  const theirClock = theirs.filter((frame) => frame.clock.on);
+  const clockWidths = runs(theirClock.map((frame) => frame.clock.width));
   return {
     frames: frames.length,
+    opponentTurnMs: theirs.length ? theirs[theirs.length - 1].at - theirs[0].at : 0,
+    clockOnFrames: theirClock.length,
+    clockBases: [...new Set(theirClock.map((frame) => frame.clock.base))],
+    myClockBases: [...new Set(frames
+      .filter((frame) => frame.turn === you && frame.clock.on)
+      .map((frame) => frame.clock.base))],
+    clockWidths,
+    clockDrained: clockWidths.length > 2
+      && clockWidths.every((value, index) => index === 0 || value < clockWidths[index - 1]),
     turnPath: runs(frames.map((frame) => frame.turn)),
     opponentTurnPath: runs(frames.map((frame) => frame.opponentTurn)),
     barClasses: [...new Set(frames.map((frame) => frame.bar))],
@@ -190,6 +215,27 @@ export async function runRuneTrialRailScenarios({ visit, out, check }) {
   'a rune card was rebuilt, hidden, or lost its paired rail during the ranked handoff',
   { counts: swap?.cardCounts, bar: swap?.barClasses,
     identities: [swap?.seat0.identities, swap?.seat1.identities] });
+
+  /* THE BOT TAKES A TURN INSTEAD OF ANSWERING IN THE PLAYER'S OWN FRAME. Its
+     reply is committed inside the player's action command, so replayed raw it
+     lands with no handoff to see at all — which is what 478de18 shipped. The
+     floor here is 260+340+260ms of guaranteed beat; measured, not asserted
+     against a stub. */
+  check(!!swap && swap.opponentTurnMs >= 700,
+  'the ranked Trial bot answered instantly instead of taking a visible turn',
+  { opponentTurnMs: swap?.opponentTurnMs, frames: swap?.frames });
+
+  /* The countdown ran for them, in THEIR colour — the same clock a human
+     opponent gets, not a dark strip. */
+  check(!!swap && swap.clockOnFrames > 0 && swap.clockBases.length === 1
+      && swap.myClockBases.length === 1
+      && swap.clockBases[0] !== swap.myClockBases[0],
+  'the turn clock never lit in the opponent’s colour while the bot was thinking',
+  { theirs: swap?.clockBases, mine: swap?.myClockBases, on: swap?.clockOnFrames });
+
+  check(!!swap && swap.clockDrained,
+  'the opponent’s countdown bar never drained across their turn',
+  swap?.clockWidths);
 
   check(result?.settled?.turn === 1 && result.settled.phase === 'choose'
       && result.settled.opponentTurn === false,

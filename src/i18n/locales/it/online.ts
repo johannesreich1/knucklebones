@@ -72,6 +72,7 @@ export const itOnline = {
     openLadder: 'Apri la classifica',
     ladderPoints: 'Punti classifica',
     fullHistory: 'Cronologia completa',
+    pastDuels: 'ULTIMI DUELLI',
     notNow: 'Non ora',
     accountAccess: 'ACCESSO ALL’ACCOUNT',
     actionFailed: 'Operazione non riuscita',

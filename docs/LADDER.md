@@ -31,8 +31,9 @@ one genuinely good idea: what a match is worth depends on who you played.
 | Maximum loss | **−120** |
 
 ```
+if score = 0.5 -> delta = 0                          a draw settles nothing
 expected  = 1 / (1 + 10 ^ ((opponent - me) / 2000))
-raw       = round(160 * (score - expected))          score = 1 | 0.5 | 0
+raw       = round(160 * (score - expected))          score = 1 | 0
 delta     = raw > 0 ? max(raw, 30) : max(round(raw * 0.75), -120)
 points    = max(0, points + delta)
 ```
@@ -50,15 +51,30 @@ Never previewed anywhere in the UI — it depends on the opponent, so any number
 shown *before* a match is wrong about half the time. It appears after: on the
 result screen, and in match history.
 
-| opponent | win | loss |
-|---|---|---|
-| 2,000 above you | +145 | −11 |
-| 1,000 above you | +122 | −28 |
-| 500 above you | +102 | −43 |
-| level with you | **+80** | **−60** |
-| 500 below you | +58 | −76 |
-| 1,000 below you | +38 | −91 |
-| 2,000 below you | +30 | −109 |
+| opponent | win | loss | draw |
+|---|---|---|---|
+| 2,000 above you | +145 | −11 | 0 |
+| 1,000 above you | +122 | −28 | 0 |
+| 500 above you | +102 | −43 | 0 |
+| level with you | **+80** | **−60** | 0 |
+| 500 below you | +58 | −76 | 0 |
+| 1,000 below you | +38 | −91 | 0 |
+| 2,000 below you | +30 | −109 | 0 |
+
+### A draw pays nothing, to either side
+
+*Decided 2026-08-28.* Elo would pay for a draw against a mismatch, and the
+arithmetic is not silly: holding a player 2,000 above you used to pay **+65**,
+and failing to convert against one 2,000 below cost **49**. Two things retired
+it. Those numbers are reachable only by dice in this game — production has
+recorded **no drawn match at all** in the first 30 played out — and a payout
+nobody can aim for is the hardest of all to explain on a result screen.
+
+Simulated at draw rates from 3% to 30% (skill-independent draws, 800 players,
+250 games), ignoring them costs no skill fidelity and slightly gains it:
+**+0.006** at a 3% draw rate, **+0.030** at 30%. A dice-driven result carries
+no signal, so propagating it only propagates noise. `settle()` still records
+the draw in the win/loss/draw tally; only the points stand still.
 
 ### Why a win pays more than a loss takes
 
@@ -312,6 +328,31 @@ league supports learning by play rather than requiring the builder model.
 band; crowded → keep it tight (`players_near` + `matchBand`). Percentile
 still exists where it belongs — `player_standing()` resolves the positional
 apex and the profile's rank line.
+
+**Inside the cap, the bot is drawn uniformly** (2026-08-28). `pvp-join` used to
+sort the free bots by proximity and pick one of the nearest **three**, which
+held the median rating gap at **37 points**. A ladder delta is a function of
+that gap, so every win paid about +80: measured over 3,000 simulated matches,
+**76%** of wins landed within ±3 of each other. Human pairing never had the
+problem — `oldestEligibleCandidate` takes the oldest queued player inside the
+band, never the nearest, and measures a median gap near **340** whether two
+players are queued or sixty.
+
+Sampling the whole eligible band gives bot matches that same spread, and it is
+free in both directions that matter:
+
+| | nearest-three | band-uniform |
+|---|---:|---:|
+| median rating gap | 37 | 330 |
+| win payout | +75..+84 | **+53..+103** |
+| payout spread (sd) | 5.1 | **17.9** |
+| wins within ±3 of each other | 76% | **12%** |
+| skill fidelity | 0.906 | **0.906** |
+| human win rate | 56.0% | 56.2% |
+
+Fidelity is untouched because none of this reaches `delta()`, and `botPairBand`
+still caps the distance — so this cannot re-create the IVORY-bot-in-STONE
+pairing that §4 was written to fix.
 
 **The mirror must start at 0.** `profiles.rating` kept its pre-ladder default
 of 1000 through the cutover, so every new signup entered matchmaking rated

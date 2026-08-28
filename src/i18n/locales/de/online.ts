@@ -72,6 +72,7 @@ export const deOnline = {
     openLadder: 'Rangliste öffnen',
     ladderPoints: 'Ranglistenpunkte',
     fullHistory: 'Spielverlauf',
+    pastDuels: 'LETZTE DUELLE',
     notNow: 'Nicht jetzt',
     accountAccess: 'KONTOZUGRIFF',
     actionFailed: 'Das hat nicht geklappt',

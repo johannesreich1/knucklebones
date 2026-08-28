@@ -32,8 +32,8 @@ export function accountRunesMarkup(
       + `<span>${esc(copy.compactName)}</span></button>`;
   }).join('');
   const titleId = `${idPrefix}RunesTitle`;
-  return `<section class="accrunes" aria-labelledby="${titleId}">`
-    + `<div class="accrunes-head"><b id="${titleId}">${esc(t('online', 'profile.runes'))}</b>`
+  return `<section class="accsec" aria-labelledby="${titleId}">`
+    + `<div class="acchead"><b id="${titleId}">${esc(t('online', 'profile.runes'))}</b>`
     + `<span id="${idPrefix}RuneCount">${esc(count)}</span></div>`
     + `<div class="accrunes-grid" id="${idPrefix}RuneGrid" aria-label="${esc(gridLabel)}">`
     + `${slots}</div></section>`;

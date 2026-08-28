@@ -207,6 +207,9 @@ export const frGame = {
       detail: 'Les deux joueurs voient les mêmes trois runes et chacun en choisit une en secret. Les deux choix sont révélés simultanément ; le duel suit ensuite les règles du plateau Classique.',
     },
   },
+  modeLock: {
+    reachBone: 'Atteignez OS pour débloquer ce mode contre l’IA.',
+  },
   runeTrial: {
     choosePrompt: 'Choisissez une rune — votre adversaire ne peut pas la voir',
     chooseFor: '{{player}} — choisissez une rune',

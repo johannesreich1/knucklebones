@@ -60,27 +60,48 @@ function botThinkMilliseconds(): number {
   return Math.min(duration, ONLINE_TURN_SECS * 1000 - 1200);
 }
 
-export async function playBotReply(
-  bot: { col: number; die: number },
-  options: {
-    you: Player;
-    isCurrent: () => boolean;
-    opponentName: () => string;
-    onOpponentStalled: () => void;
-  },
-): Promise<void> {
-  if (!options.isCurrent()) return;
-  const opponent = (1 - options.you) as Player;
+export interface OpponentTurnOptions {
+  you: Player;
+  isCurrent: () => boolean;
+  opponentName: () => string;
+  onOpponentStalled: () => void;
+}
+
+/* THE OPPONENT'S TURN IS PERFORMED, NOT ANNOUNCED. A bot has no request loop,
+   so the server commits its whole reply inside the human's own command — in
+   ordinary ranked as `bot_move`, in a Rune Trial as extra rows on the action
+   log. Replayed as they arrive, the machine answers in the same frame the
+   player taps, which is exactly what gives a bot away.
+   So the beat is shared rather than owned by one driver: the seat changes
+   hands (the rune rail's forward card follows it), the status names who is
+   thinking, their die is rolled in the open, the countdown runs in THEIR
+   colour, and the think is drawn at random. Answers false once the match this
+   was opened for is no longer the one on screen. */
+export async function openOpponentTurn(
+  opponent: Player,
+  die: number | null,
+  options: OpponentTurnOptions,
+): Promise<boolean> {
+  if (!options.isCurrent()) return false;
   handTurnTo(opponent, options.you);
   setStatus(opponentThinkingCopy(options.opponentName), opponent);
   startTimer(options.onOpponentStalled, ONLINE_TURN_SECS);
   await pause(260);
-  if (!options.isCurrent()) return;
-  revealOnlineDie(bot.die, opponent);
+  if (!options.isCurrent()) return false;
+  if (die) revealOnlineDie(die, opponent);
   await pause(340);
   await pause(botThinkMilliseconds());
-  if (!options.isCurrent()) return;
+  if (!options.isCurrent()) return false;
   stopTimer();
+  return true;
+}
+
+export async function playBotReply(
+  bot: { col: number; die: number },
+  options: OpponentTurnOptions,
+): Promise<void> {
+  const opponent = (1 - options.you) as Player;
+  if (!await openOpponentTurn(opponent, bot.die, options)) return;
   await animateOnlineMove(opponent, bot.col, bot.die, options.isCurrent);
 }
 

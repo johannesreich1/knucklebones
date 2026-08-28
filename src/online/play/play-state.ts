@@ -46,6 +46,7 @@ export function createOnlineState(
     pendingRow: null,
     selfAutoDue: false,
     resigning: false,
+    botBeatDue: false,
     autoStreak: 0,
     finalizing: false,
     done: false,

@@ -115,6 +115,7 @@ async function inspectAccount(suite, page, label) {
     '#accRunesTitle', '#accRuneCount', '.accrune',
     '#accClaim b', '#accClaim p', '#onNick', '#btnClaim',
     '#accGuest b', '#accGuest p', '#btnKeepAcc', '#btnHaveAcc',
+    '#accRecentTitle',
     '#btnHistory', '#accSince', '#btnDeleteAcc',
   ], PROFILE_TARGETS);
   const runeHeading = await page.evaluate(() => {

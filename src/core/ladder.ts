@@ -32,6 +32,16 @@ export type Score = 0 | 0.5 | 1;      // loss | draw | win, from my side
 /* What one match pays. Never shown before a match — it depends on the
    opponent, so any number previewed is wrong about half the time. */
 export function delta(mine: number, theirs: number, score: Score): number {
+  /* A draw settles NOTHING, whoever it was against. Elo disagrees, and it is
+     not obviously wrong to: holding a player 2000 above you used to pay +65,
+     and failing to convert against one 2000 below cost 49. But those numbers
+     were only ever reachable by dice — production has recorded no drawn match
+     at all in 30 played out — and paying them means the one outcome nobody
+     earns is also the one hardest to explain. Simulated at draw rates from 3%
+     to 30%, ignoring them costs no skill fidelity and slightly gains it
+     (+0.006 at 3%, +0.030 at 30%), because a dice-driven result carries no
+     signal to propagate. settle() still records the draw in the tally. */
+  if (score === 0.5) return 0;
   const expected = 1 / (1 + Math.pow(10, (theirs - mine) / DENOM));
   const raw = Math.round(K * (score - expected));
   return raw > 0 ? Math.max(raw, MIN_GAIN) : Math.max(Math.round(raw * LOSS_MULT), -MAX_LOSS);

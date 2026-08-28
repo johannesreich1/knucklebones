@@ -45,11 +45,11 @@ const isOrange = (channels) => {
 
 /* Read where the player LANDS, then again at the foot of the panel.
    This profile scrolls — Sign out itself starts below the fold on a 932px
-   device once the ACCOUNT ACCESS box is open, and the mini history above has
-   already been trimmed to nothing — so "fully in view" is a claim about the
-   bottom of the panel, where Sign out and this box both live. What must hold
-   on arrival is weaker and just as load-bearing: the box is real paint the
-   player's own finger would land on, not a ghost under something else. */
+   device once the ACCOUNT ACCESS box is open, and PAST DUELS above it now
+   states three duels on every device rather than shrinking to make room — so
+   "fully in view" is a claim about the bottom of the panel, where Sign out and
+   this box both live. What must hold on arrival is weaker and just as
+   load-bearing: the box is real paint, not a ghost under something else. */
 const probe = async (page, routes) => {
   const access = await readAccountAccess(page);
   const note = await readStandingWarning(page);
@@ -91,16 +91,28 @@ export async function runAccountGameCenterBlockedScenarios(suite) {
 
   const note = shown.note;
   const foot = shown.atFoot;
-  check(note?.shown === true && note.hit === true,
+  /* ON ARRIVAL the profile is now longer than the phone. PAST DUELS states the
+     three newest duels on EVERY device (user call 2026-08-28) instead of
+     trimming itself row by row against the pinned foot, so the section holds
+     its ~127px and this box — like Sign out, which the probe above already
+     expects below the fold — starts off-screen on a 430x932 device. That is
+     the accepted shape: the shared .pbody scrolls them into reach, and the
+     foot reading below is where "fully readable" is proved.
+     So hit-testing is asserted exactly where it can answer. elementFromPoint
+     returns null outside the viewport, and demanding a hit there would assert
+     the retired layout rather than occlusion. A box that IS in view and still
+     cannot be touched is a ghost under something else, and still fails. */
+  check(note?.shown === true && (note.inView === false || note.hit === true),
   'the standing warning is not paint the player could put a finger on', note);
   check(foot?.shown === true && foot.inView === true && foot.hit === true,
   'the standing warning is never fully readable, even at the foot of the panel', foot);
   check(note?.title === TITLE && note.message === MESSAGE,
   'the standing warning did not say what the device refused', note);
 
-  /* WHERE IT STANDS. After the full-history row (and the recent matches under
-     it), above Sign out — measured in both readings, because every element
-     here moves: the foot is pinned and the mini history is trimmed to fit. */
+  /* WHERE IT STANDS. After the full-history row (and the recent matches above
+     it), below Sign out's own top — measured in BOTH readings, because the
+     panel moves under the player: the foot is pinned and everything above it
+     scrolls. */
   for (const [where, seen] of [['on arrival', note], ['at the foot', foot]]) {
     check(!!seen?.history && !!seen.signOut
       && seen.rect.top >= seen.history.bottom

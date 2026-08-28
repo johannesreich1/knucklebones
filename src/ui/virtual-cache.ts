@@ -51,10 +51,14 @@ export interface VirtualCacheSpec<T> {
   key(item: T): string;
   page: number;
   total?: number | null;
-  /** A page already in hand. The caller fetches it so it can hold its view
-      behind the shared loading die and reveal ONE complete screen, rather than
-      showing an empty panel that fills in afterwards. */
-  seed?: VirtualPage<T> | null;
+  /** A page already in hand, and HOW MANY ROWS IT ASKED FOR. The caller fetches
+      it so it can hold its view behind the shared loading die and reveal ONE
+      complete screen, rather than showing an empty panel that fills in
+      afterwards. `asked` is not decoration: a page shorter than its ask is how
+      the end of a sequence announces itself, and an opening page is deliberately
+      larger than PAGE, so measuring it against PAGE reads a final page as a full
+      one and leaves the board believing in rows that are not there. */
+  seed?: (VirtualPage<T> & { asked: number }) | null;
   /** Positions whose data just arrived, so their boxes need re-measuring. */
   changed(positions: readonly number[]): void;
 }
@@ -71,7 +75,9 @@ export function createVirtualCache<T>(spec: VirtualCacheSpec<T>): VirtualCache<T
   let dead = false;
 
   let seeding = true;
-  const remember = (result: VirtualPage<T>): void => {
+  /* `asked` is how many rows the page requested, or null for a page that cannot
+     speak about where the sequence ends. See the end-detection below. */
+  const remember = (result: VirtualPage<T>, asked: number | null): void => {
     const touched: number[] = [];
     result.rows.forEach((item, offset) => {
       const position = result.position + offset;
@@ -90,9 +96,19 @@ export function createVirtualCache<T>(spec: VirtualCacheSpec<T>): VirtualCache<T
       if (position > furthest) furthest = position;
       touched.push(position);
     });
-    /* A short page is how the end of a sequence announces itself. It is the
-       only authority: `total` is a hint and can be stale or absent. */
-    if (result.rows.length < PAGE) {
+    /* A page shorter than IT ASKED FOR is how the end of a sequence announces
+       itself, and it outranks `total`, which is a hint and can be stale.
+       Measured against its own ask, not against PAGE: an opening page asks for
+       more than PAGE, so PAGE would read a final page of 59 as a full one.
+
+       ONLY A FORWARD PAGE MAY SAY THIS. A backward page is short exactly when it
+       reaches the TOP of the board — it has run out of sequence at the start,
+       not at the end — and reading that as the end collapsed the ladder to its
+       first 19 rows the moment a gentle pull up from rank 145 reached rank 20
+       (user report, on device). Everything below vanished and stayed gone: the
+       window clamps itself to count(), so no row past the false end was ever
+       requested again. Hence `asked === null` for `before`. */
+    if (asked !== null && result.rows.length < asked) {
       const reached = result.position + result.rows.length;
       if (end === null || reached > end) end = reached;
     }
@@ -104,7 +120,11 @@ export function createVirtualCache<T>(spec: VirtualCacheSpec<T>): VirtualCache<T
      [p+1-PAGE, p], ending where the request began. Claiming the wrong span left
      every row the page was already bringing unclaimed, so the next frame asked
      for them again — measured at 11 requests for a board that needs 6. */
-  const fetch = (kind: string, from: number, run: () => Promise<VirtualPage<T>>): void => {
+  const fetch = (
+    kind: 'after' | 'before' | 'seek',
+    from: number,
+    run: () => Promise<VirtualPage<T>>,
+  ): void => {
     const id = `${kind}:${from}`;
     /* Identical requests share one promise, and the range they will fill is
        claimed, so a second frame does not re-ask for rows already on the way.
@@ -113,7 +133,7 @@ export function createVirtualCache<T>(spec: VirtualCacheSpec<T>): VirtualCache<T
     if (inFlight.has(id)) return;
     for (let i = Math.max(0, from); i < from + PAGE; i++) claimed.add(i);
     const job = run()
-      .then((result) => { if (!dead) remember(result); })
+      .then((result) => { if (!dead) remember(result, kind === 'before' ? null : PAGE); })
       .catch(() => { /* the slot stays a tombstone; a later frame retries */ })
       .finally(() => {
         inFlight.delete(id);
@@ -123,7 +143,7 @@ export function createVirtualCache<T>(spec: VirtualCacheSpec<T>): VirtualCache<T
     inFlight.set(id, job);
   };
 
-  if (spec.seed) remember(spec.seed);
+  if (spec.seed) remember(spec.seed, spec.seed.asked);
   seeding = false;
 
   return {
@@ -156,11 +176,16 @@ export function createVirtualCache<T>(spec: VirtualCacheSpec<T>): VirtualCache<T
     },
 
     count(): number {
-      if (end !== null) return end;
-      if (declared !== null) return declared;
+      /* NEVER FEWER ROWS THAN ARE IN HAND. A sequence cannot end above rows the
+         cache is holding, and a count that says otherwise unmounts what the
+         reader is looking at and then never asks for it again. Belt to the
+         braces above: a misread page costs a stale row, not a blank screen. */
+      const held = furthest + 1;
+      if (end !== null) return Math.max(end, held);
+      if (declared !== null) return Math.max(declared, held);
       /* Nothing has told us where this ends, so believe in one page beyond the
          furthest row held. The board grows as the reader travels. */
-      return furthest + 1 + PAGE;
+      return held + PAGE;
     },
 
     setTotal(total: number | null): void { declared = total; },

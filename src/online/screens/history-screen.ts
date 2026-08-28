@@ -7,11 +7,11 @@ import { esc } from './format.ts';
 import { isOnlinePanelCurrent, showOnlinePanel } from './shell.ts';
 
 /* ONE ROW, TWO HOMES. The panel's list mounts a window of these, and the
-   profile's RECENT strip (account-screen.ts) builds three of them by hand and
-   must not be virtualised — it is trimmed against the page until the profile
-   stops overflowing. So the row is split into the element and the paint, and
-   historyRow() below composes them for the profile: one implementation, with
-   the difference named rather than copied. */
+   profile's PAST DUELS section (account-screen.ts) builds its three by hand —
+   a fixed, unvirtualised three, because there is nothing there to scroll. So
+   the row is split into the element and the paint, and historyRow() below
+   composes them for the profile: one implementation, with the difference named
+   rather than copied. */
 export function historyElement(): HTMLElement {
   const element = document.createElement('div');
   element.className = 'row history-row';
@@ -107,7 +107,7 @@ export async function showHistory(): Promise<void> {
        jumped into, which is the honest behaviour for a list whose thumb cannot
        be turned back into a query. */
     total: null,
-    seed: { rows: opening, position: 0 },
+    seed: { rows: opening, position: 0, asked: PAGE },
     alive: () => run === showRevision && isOnlinePanelCurrent('onHistory'),
     source: {
       after: async (anchor, count) => ({

@@ -132,11 +132,18 @@ const OVERLAY = `
       <p id="accAppleState" hidden></p>
       <button class="btn apple" id="btnLinkApple" data-i18n="online:profile.addApple" hidden>Add Apple sign-in</button>
     </div>
+    <!-- PAST DUELS: the three newest matches, newest first, on EVERY device
+         (user call 2026-08-28). They used to be dealt unlabelled below the door
+         and trimmed row by row against the space the pinned foot left, so a
+         short phone showed two, one or none — a section that quietly varied by
+         hardware. It is now a named section like the runes above it, and it
+         leads the door it summarises instead of trailing it. The rows are
+         showHistory's own (historyRow) — one implementation. -->
+    <section class="accsec" id="accRecentBox" aria-labelledby="accRecentTitle" hidden>
+      <div class="acchead"><b id="accRecentTitle" data-i18n="online:profile.pastDuels">PAST DUELS</b></div>
+      <div class="lb minihist" id="accRecent"></div>
+    </section>
     <button class="histrow" id="btnHistory"><span data-i18n="online:profile.fullHistory">Full match history</span> <b id="accGames">–</b></button>
-    <!-- the last few matches inline (user call): as many of the newest 0–3 as
-         the space above the pinned foot actually holds on this device. The
-         rows are showHistory's own (histRow) — one implementation. -->
-    <div class="lb minihist" id="accRecent" hidden></div>
     <div class="accsince" id="accSince"></div>
     <!-- NO error line here. Every refusal this panel can produce — a provider
          link, a deletion — is dealt as the shared warning card over the panel
@@ -145,9 +152,10 @@ const OVERLAY = `
          hunting for (user call 2026-08-26). Nickname validation keeps its own
          line, because that one sits under the field being typed in. -->
     <!-- the foot is PINNED (user call): sign out and the delete footnote sit
-         at the very bottom whatever the device leaves free, and the mini
-         history above fills what remains. One wrapper so the pin holds
-         whether or not Sign out is hidden (guests). -->
+         at the very bottom whatever the device leaves free — and where the
+         profile outgrows the device, the shared .pbody scrolls them into
+         reach. One wrapper so the pin holds whether or not Sign out is hidden
+         (guests). -->
     <div class="accfoot">
       <!-- THE ONE STANDING WARNING (user call 2026-08-27): "this card, only for
            this status, should be shown at the bottom before the sign out
