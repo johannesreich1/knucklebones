@@ -1,3 +1,4 @@
+import { chromeIcon } from '../ui/chromeicons.ts';
 /* The full-screen tap-to-dismiss cards. Both interrupt the board with one
    message and one instruction, wear the same .ov skeleton (glow, icon, who,
    hint, tapline), and are dismissed by tapping anywhere — so they belong
@@ -12,7 +13,7 @@ export const OVERLAY_CARDS_MARKUP = `
      turn, and the next one it plays ends the match instead. -->
 <div class="ov" id="ovAway">
   <div class="glow"></div>
-  <div class="awayicon">⏳</div>
+  <div class="awayicon">${chromeIcon('hourglass', 26)}</div>
   <div class="who" data-i18n="online:play.awayWarnTitle">STILL THERE?</div>
   <div class="hint" data-i18n="online:play.awayWarnBody">Miss one more turn and you forfeit</div>
   <div class="tapline" data-i18n="online:play.awayWarnDismiss">Tap anywhere to keep playing</div>

@@ -98,6 +98,33 @@ async function awayWarningProbe(page) {
       busyBefore,
       busyWhileShown: window.__kb.S.busy,
       titleColor: getComputedStyle(title).color,
+      /* The glyph is one of ours, not whichever hourglass the platform ships.
+
+         An emoji here wears a colour and a weight the app never chose, beside
+
+         icons that are all one stroke language — and it cannot take the
+
+         player's colour, because it is not drawn on currentColor. */
+
+      icon: (() => {
+
+        const box = document.querySelector('#ovAway .awayicon');
+
+        const svg = box?.querySelector('svg');
+
+        return {
+
+          svg: !!svg,
+
+          stroke: svg ? getComputedStyle(svg).stroke : null,
+
+          text: (box?.textContent ?? '').trim(),
+
+          drawn: (svg?.querySelectorAll('path').length ?? 0),
+
+        };
+
+      })(),
       expectedColor: expected,
       title: (title.textContent || '').trim(),
       body: (overlay.querySelector('.hint').textContent || '').trim(),
@@ -139,6 +166,10 @@ export async function runAwayForfeitScenarios({ visit, out, check }) {
   const seen = warning.probeResult;
   check(seen?.title === COPY.play.awayWarnTitle && seen?.body === COPY.play.awayWarnBody,
     'the away warning did not render its localized copy', seen);
+  check(!!seen?.icon?.svg && seen.icon.drawn >= 3 && seen.icon.text === '',
+    'the away card is not wearing one of our own stroke icons', seen?.icon);
+  check(seen?.icon?.stroke === seen?.expectedColor,
+    'the away icon does not take the player\u2019s colour through currentColor', seen?.icon);
   check(!!seen && seen.titleColor === seen.expectedColor,
     'the away warning is not wearing the player\u2019s own colour', seen);
   check(!!seen && seen.ownsHit && seen.width > 0 && seen.height > 0,

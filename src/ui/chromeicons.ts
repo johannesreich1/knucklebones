@@ -18,6 +18,16 @@ const PATHS: Record<string, string> = {
      that shows it — today the account screen's warning sheet — supplies the
      amber rather than the glyph baking a second orange into source. */
   warn: '<path d="M12 4.3 2.9 19.4h18.2Z"/><path d="M12 10v4.2"/><path d="M12 17.4h.01"/>',
+  /* Time running out, for the away card. It replaced an ⏳ emoji, which wore
+     whichever hourglass the platform happened to ship — a colour and a weight
+     the app never chose, beside glyphs that are all one stroke. The waist
+     pinches at the centre so the shape still reads at 26px, and the sand is
+     the same stroke rather than a fill, so it inherits the player's colour
+     with everything else on the card. */
+  hourglass: '<path d="M7.2 4.2h9.6"/><path d="M7.2 19.8h9.6"/>'
+    + '<path d="M8.4 4.2v2.7c0 1.5 1.1 2.5 2.5 3.7L12 12l-1.1 1.4c-1.4 1.2-2.5 2.2-2.5 3.7v2.7"/>'
+    + '<path d="M15.6 4.2v2.7c0 1.5-1.1 2.5-2.5 3.7L12 12l1.1 1.4c1.4 1.2 2.5 2.2 2.5 3.7v2.7"/>'
+    + '<path d="M10.3 17.6h3.4"/>',
 };
 
 export function chromeIcon(id: string, size = 15): string {
