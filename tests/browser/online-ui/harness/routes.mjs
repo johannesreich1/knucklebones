@@ -1,3 +1,4 @@
+import { historySeasonFixture, ladderBoardFixture } from './board-fixtures.mjs';
 import { installIdentityRoutes } from './identity-routes.mjs';
 
 export async function installOnlineRoutes(
@@ -93,31 +94,7 @@ export async function installOnlineRoutes(
   const hold = (share = 1) => dataDelay > 0
     ? new Promise((resolve) => setTimeout(resolve, dataDelay * share))
     : Promise.resolve();
-  const nearBottomBoard = ladderNearBottom
-    ? Array.from({ length: 151 }, (_, index) => {
-      const rank = index + 1;
-      const points = 610 - rank;
-      const mine = rank === 145;
-      return {
-        nickname: mine ? 'TestGuest001' : `Player${String(rank).padStart(3, '0')}`,
-        points,
-        wins: mine ? 42 : rank % 17,
-        losses: mine ? 61 : rank % 13,
-        games: mine ? 103 : rank % 17 + rank % 13,
-        rank,
-        /* The dense ordinal and the board size, exactly as the deployed RPC
-           answers since 20260827203007. A mock that omits a new field keeps a
-           broken client green, and this one is load-bearing: the client reads
-           pos to place a page and would otherwise silently fall back to
-           counting from a cursor. */
-        pos: rank,
-        population: 151,
-        apex: rank === 1,
-        avatar: mine ? 'die:5:cy' : null,
-        peak: mine ? 700 : points + 20,
-      };
-    })
-    : null;
+  const nearBottomBoard = ladderBoardFixture(ladderNearBottom);
   /* Kill the service worker before app code runs. Once it controls the page it
      re-issues requests from the worker, where page.route() cannot see them —
      and whether it has claimed the page by the time of the tap is a race, so a
@@ -281,34 +258,12 @@ export async function installOnlineRoutes(
        three rows are byte-identical to what it used to serve so the profile's
        RECENT strip and the localization probes keep asserting what they did.
        Mirrors the leaderboard stub's compound-cursor shape. */
-    const HEAD = [
-      { id: '00000000-0000-4000-8000-000000000003', finished_at: '2026-08-21T12:00:00Z',
-        opponent: 'NovaComet992', mode: 'classic', mine: 47, theirs: 31, delta: 21, result: 'win' },
-      { id: '00000000-0000-4000-8000-000000000002', finished_at: '2026-08-20T12:00:00Z',
-        opponent: 'ZestyPixel950', mode: 'classic', mine: 22, theirs: 38, delta: -14, result: 'loss' },
-      { id: '00000000-0000-4000-8000-000000000001', finished_at: '2026-08-19T12:00:00Z',
-        opponent: 'BoldRaven393', mode: 'classic', mine: 29, theirs: 29, delta: 12, result: 'draw' },
-    ];
-    const season = [...HEAD, ...Array.from({ length: historyDepth }, (_, index) => {
-      const n = index + 4;
-      const day = String(18 - (index % 17)).padStart(2, '0');
-      return {
-        id: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`,
-        finished_at: `2026-08-${day}T${String(23 - (index % 24)).padStart(2, '0')}:00:00Z`,
-        opponent: `Rival${String(n).padStart(3, '0')}`,
-        mode: 'classic',
-        mine: 20 + (n % 30), theirs: 15 + (n % 25), delta: (n % 7) - 3,
-        result: n % 3 === 0 ? 'win' : n % 3 === 1 ? 'loss' : 'draw',
-      };
-    })];
-    /* finished_at desc, id desc — the order 20260823132602_history_index_order
-       gives, and the order the compound cursor walks. */
-    const key = (row) => `${row.finished_at}|${row.id}`;
-    season.sort((a, b) => (key(a) < key(b) ? 1 : key(a) > key(b) ? -1 : 0));
+    const season = historySeasonFixture(historyDepth);
     const args = r.request().postDataJSON() ?? {};
     const limit = Math.min(Number(args.limit_n ?? 40), 100);
     const beforeT = args.before_t ?? null;
     const beforeId = args.before_id ?? null;
+    const key = (row) => `${row.finished_at}|${row.id}`;
     const page = (beforeT
       ? season.filter((row) => key(row) < `${beforeT}|${beforeId ?? ''}`)
       : season).slice(0, limit);
