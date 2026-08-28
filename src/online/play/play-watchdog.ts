@@ -67,6 +67,9 @@ export async function runOnlineWatchdog(ports: OnlineWatchdogPorts): Promise<voi
       requireProjectionRecovery(online, online.trial
         ? response.data.action_version ?? response.data.match.action_version ?? null
         : null);
+      // A turn the clock took for the player still hands the bot its own, and
+      // that answer deserves the same beat a tapped turn gets.
+      online.botBeatDue = !!response.data.bot_actions?.length;
       const recovered = await recoverProjection(false);
       if (recovered) {
         ports.applyMatchRow(response.data.match);

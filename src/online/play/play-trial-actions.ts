@@ -59,6 +59,7 @@ export function createTrialActionSubmitter(ports: TrialActionPorts) {
         || S.busy || S.turn !== online.you) return false;
     const submittedAtVersion = online.actionVersion;
     const commandId = randomUuid();
+    online.botBeatDue = false;
     requireProjectionRecovery(online);
     stopTimer();
     cancelOnlineReveal();
@@ -114,6 +115,10 @@ export function createTrialActionSubmitter(ports: TrialActionPorts) {
       ?? response.data.match.action_version ?? submittedAtVersion + 1;
     requireProjectionRecovery(online, committedVersion);
     online.actionVersion = committedVersion;
+    /* The bot's whole reply rode along inside this command. The rows are the
+       server's, but the TURN is ours to perform — the replay below is the only
+       place it can happen. Set before the sync that replays them. */
+    online.botBeatDue = !!response.data.bot_actions?.length;
     online.lastMoveAt = Date.now();
     online.pendingRow = newerMatchProjection(online.pendingRow, response.data.match);
     const synced = await safeSync(ports, false);

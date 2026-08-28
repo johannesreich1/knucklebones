@@ -33,6 +33,11 @@ export interface OnlineState {
   selfAutoDue: boolean;
   /** A resignation is in flight; the Leave control must not fire a second. */
   resigning: boolean;
+  /** The server answered this command with a BOT's committed reply, so the
+      replay of those rows owes the player a visible opponent turn. A human
+      opponent never sets it: their row arrives when they actually played, and
+      a fake think would both lie and delay the player's own turn. */
+  botBeatDue: boolean;
   /** Automatic placements already spent by this player, from the match row. */
   autoStreak: number;
   /** The away card has been raised for this streak; the tap retires it. */

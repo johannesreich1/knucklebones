@@ -27,6 +27,10 @@ export interface OnlineSyncPorts {
   isCurrent(online: OnlineState): boolean;
   applyMatchRow(match: MatchRow): void;
   renderPool(): void;
+  /** Hand the turn to the opponent and perform it: their card forward, their
+      die rolled in the open, their clock running, a real think. Answers false
+      once this match is no longer the one on screen. */
+  openOpponentBeat(online: OnlineState, die: number | null): Promise<boolean>;
 }
 
 const pause = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
@@ -58,11 +62,6 @@ async function animateTrialAction(
   if (!ports.isCurrent(online)) return;
   S.die = row.die_before;
   online.pendingDie = row.die_before;
-  /* The row's seat OWNS the beat that follows, including a bot's whole reply
-     inside the player's own action command. Hand the turn over through the
-     shared seam before any of it animates, or the rail and plate stay with
-     whoever moved last while the board plays for somebody else. */
-  handTurnTo(row.who, online.you);
   if (row.kind === 'place' && row.placed_col !== null) {
     await animateOnlineMove(row.who, row.placed_col, row.die_before,
       () => ports.isCurrent(online), S.charm);
@@ -155,6 +154,34 @@ function installTrialProjection(
   return true;
 }
 
+/* One batch of the action log, played out in order. A row's seat OWNS the beat
+   that follows, so the seat CHANGE — not every row — is where the turn is
+   handed over, and that single paint is the rail swap the player watches.
+   A bot's whole reply is committed inside the player's own command, so it
+   arrives in this same batch with nothing between it and the player's own
+   placement. That crossing is the one that gets the full opponent turn. */
+async function replayTrialActions(
+  online: OnlineState,
+  fresh: readonly RankedActionRow[],
+  ports: OnlineSyncPorts,
+): Promise<void> {
+  /* Claimed once per batch. A refused projection replays the same rows, and
+     nobody sits through a second think for a turn they already watched. */
+  const botReply = online.botBeatDue;
+  online.botBeatDue = false;
+  let seat: Player | null = null;
+  for (const row of fresh) {
+    if (!ports.isCurrent(online)) return;
+    if (row.who !== seat) {
+      seat = row.who;
+      if (botReply && row.who !== online.you) {
+        if (!await ports.openOpponentBeat(online, row.die_before)) return;
+      } else handTurnTo(row.who, online.you);
+    }
+    await animateTrialAction(online, row, ports);
+  }
+}
+
 async function syncTrial(
   online: OnlineState,
   fullRedraw: boolean,
@@ -166,7 +193,7 @@ async function syncTrial(
   if (fresh.length && !fullRedraw) {
     online.animating = true;
     try {
-      for (const row of fresh) await animateTrialAction(online, row, ports);
+      await replayTrialActions(online, fresh, ports);
     } finally { online.animating = false; }
     if (!ports.isCurrent(online)) return false;
   }

@@ -63,11 +63,15 @@ const trialRow = (overrides: Partial<MatchRow> = {}): MatchRow => matchRow({
 let online = onlineState({});
 const appliedRows: MatchRow[] = [];
 let poolRenders = 0;
+let opponentBeats = 0;
 const sync = createOnlineSynchronizer({
   current: () => online,
   isCurrent: (candidate) => candidate === online,
   applyMatchRow: (row) => { appliedRows.push(row); },
   renderPool: () => { poolRenders++; },
+  // Every sync below is a full redraw, so no replay — and therefore no beat.
+  // The counter proves that rather than assuming it.
+  openOpponentBeat: async () => { opponentBeats++; return true; },
 });
 
 const savedGlobals = { turn: S.turn, die: S.die, scoring: S.scoring };
@@ -212,6 +216,10 @@ check(await sync(true)
   && appliedRows[4].winner === 'p2-id',
   'a stale active read outranked the terminal projection and could reopen a turn',
   appliedRows[4]);
+
+check(opponentBeats === 0,
+  'a full-redraw projection performed an opponent turn instead of installing state',
+  opponentBeats);
 
 S.turn = savedGlobals.turn;
 S.die = savedGlobals.die;
