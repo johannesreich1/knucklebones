@@ -69,6 +69,7 @@ export const enOnline = {
     openLadder: 'Open the ladder',
     ladderPoints: 'Ladder points',
     fullHistory: 'Full match history',
+    pastDuels: 'PAST DUELS',
     notNow: 'Not now',
     accountAccess: 'ACCOUNT ACCESS',
     /* The warning card's heading. Deliberately says the tap did not happen

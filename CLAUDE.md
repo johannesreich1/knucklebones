@@ -61,6 +61,13 @@ differs. A second near-copy is a design failure, not a shortcut.
   verification and release flow are complete, hand off immediately. Inspect
   GitHub Actions only when requested or when a concrete failure or uncertainty
   makes the hosted result useful.
+- **A green gate ships, without being asked again.** When the work the owner
+  asked for is done and the verification it warrants passes, carry it all the
+  way out: stage and commit the reviewed files, release through the helper
+  below, then put the payload on the device (the bullet after it). Do not stop
+  at a green gate to ask whether to push — the request was the authorisation.
+  Ask first only when the gate is red or was not run, when the change is not
+  the one that was requested, or when Johannes said to hold.
 - **Always release through the native-aware helper.** After explicitly staging
   and committing reviewed files in a clean worktree, use
   `mise exec -- node tools/release-main.mjs` instead of a raw push to `main`.

@@ -97,21 +97,19 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
   const rankText = (standing: Standing | null, games: number, apex: boolean): string =>
     standing && games ? (apex ? ladderGroupName('neon') : '#' + formatNumber(standing.rank)) : '–';
 
+  /* THREE, NEWEST FIRST, ON EVERY DEVICE (user call 2026-08-28). The strip used
+     to paint three rows and then remove them one at a time while the shared
+     .pbody overflowed, which made the section's length a property of the
+     hardware. It is a section with a heading now: it either states the three
+     newest duels or — for a player who has none — is not there at all. Where
+     the profile no longer fits, the .pbody scrolls, exactly as it already does
+     for a short device. matchHistory answers newest-first, so appending in
+     order puts the latest duel on top. */
   const paintRecent = (): void => {
     const recent = $('#accRecent');
     recent.innerHTML = '';
     for (const row of lastRecent.slice(0, 3)) recent.appendChild(historyRow(row));
-    recent.hidden = !recent.childElementCount;
-    /* Trim against the box that OWNS the scroll: the rows may only fill the
-       gap, never be the reason the profile starts scrolling. Since the
-       paged-view refactor that owner is the shared .pbody — the panel itself
-       is a flex child that grows with its content, so measuring the panel
-       could never see the overflow and the trim silently stopped trimming. */
-    const scroller = $('#onAccount').closest('.pbody') ?? $('#onAccount');
-    while (recent.lastChild && scroller.scrollHeight > scroller.clientHeight + 1) {
-      recent.removeChild(recent.lastChild);
-    }
-    recent.hidden = !recent.childElementCount;
+    $('#accRecentBox').hidden = !recent.childElementCount;
   };
 
   const paintAccount = (): void => {
@@ -241,9 +239,6 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     if (peakPosition.kind === 'ahead') ring.style.setProperty('--pk', String(peakPosition.fill));
     if (peakPosition.kind === 'above') ring.style.setProperty('--pk', '1');
     showOnlinePanel('onAccount');
-    /* The hidden panel has no measurable viewport, so trim the already-loaded
-       recent rows once, immediately after the atomic reveal. */
-    paintRecent();
     ports.presentRuneReward(runeCollection, ownsRun);
     return runeCollection;
   }

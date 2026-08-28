@@ -57,8 +57,8 @@
 :where(#kbroot) #ovOnline #onAccount > *{flex-shrink:0}
 :where(#kbroot) #onAccount .accfoot{margin-top:auto;display:flex;flex-direction:column;gap:12px;width:100%}
 :where(#kbroot) #onAccount .accfoot .viewfoot{margin-top:0;padding-bottom:0}
-/* the mini list reuses .lb's row chrome but never scrolls — it is trimmed to
-   the space instead (showAccount measures the real overflow) */
+/* the PAST DUELS rows reuse .lb's row chrome but are never a list of their own:
+   three rows, no scroller, no cap — where they no longer fit, the page scrolls */
 :where(#kbroot) #ovOnline .minihist{max-height:none;overflow:visible;flex:0 0 auto}
 :where(#kbroot) #onAccount .histrow{display:flex;align-items:center;width:100%;padding:12px 14px;border-radius:14px;
   min-height:44px;

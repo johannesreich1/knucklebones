@@ -72,6 +72,7 @@ export const ptOnline = {
     openLadder: 'Abrir o ranking',
     ladderPoints: 'Pontos de ranking',
     fullHistory: 'Histórico completo',
+    pastDuels: 'ÚLTIMOS DUELOS',
     notNow: 'Agora não',
     accountAccess: 'ACESSO À CONTA',
     actionFailed: 'Não foi possível concluir',

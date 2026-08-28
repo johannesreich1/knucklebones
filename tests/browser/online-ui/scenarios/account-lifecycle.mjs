@@ -12,17 +12,25 @@ async function probeIdentityOfferOrder(page) {
       facts: bounds('#onAccount .facts'),
       claim: bounds('#accClaim'),
       guest: bounds('#accGuest'),
+      duels: bounds('#accRecentTitle'),
       history: bounds('#btnHistory'),
       recent: [...document.querySelectorAll('#accRecent .history-row')]
         .map((row) => {
           const box = row.getBoundingClientRect();
-          return { top: +box.top.toFixed(2), bottom: +box.bottom.toFixed(2) };
+          return { top: +box.top.toFixed(2), bottom: +box.bottom.toFixed(2),
+                   opponent: row.querySelector('.nm')?.textContent ?? '' };
         }),
     };
   });
 }
 
 const precedes = (first, second) => !!first && !!second && first.bottom <= second.top;
+/* The stub's three newest matches, in the order the RPC answers them
+   (finished_at desc): the strip claims the LATEST duel is the top row, so the
+   probe reads the names rather than trusting the array it was handed. */
+const NEWEST_FIRST = ['NovaComet992', 'ZestyPixel950', 'BoldRaven393'];
+const dealsNewestFirst = (order) =>
+  order?.recent.map((row) => row.opponent).join() === NEWEST_FIRST.join();
 
 async function probeAccountFooter(page) {
   /* Exercise the member cut from the shared guest fixture: the backend/session
@@ -73,18 +81,31 @@ async function probeAccountFooter(page) {
 export async function runAccountLifecycleScenarios(suite) {
   const { visit, out, check } = suite;
   /* Both identity offers occupy one visible slot: directly after the three
-     facts, before the history door and its three inline rows. Use a tall view
-     so all three rows remain laid out and assert the pixels the player meets. */
+     facts, and PAST DUELS follows them with the door it summarises beneath it.
+     Use a tall view so nothing about the reading depends on the fold. */
   const offerRun = await visit({ skipStandardProbes: true,
     viewport: { width: 430, height: 1550 }, probe: probeIdentityOfferOrder });
   const offerOrder = offerRun.probeResult;
   out.accountIdentityOrder = offerOrder;
   check(offerOrder?.recent.length === 3
+    && dealsNewestFirst(offerOrder)
     && precedes(offerOrder.facts, offerOrder.claim)
     && precedes(offerOrder.claim, offerOrder.guest)
-    && precedes(offerOrder.guest, offerOrder.history)
-    && precedes(offerOrder.history, offerOrder.recent[0]),
-  'profile identity offers do not lead Full match history and its three recent matches', offerOrder);
+    && precedes(offerOrder.guest, offerOrder.duels)
+    && precedes(offerOrder.duels, offerOrder.recent[0])
+    && precedes(offerOrder.recent[2], offerOrder.history),
+  'profile identity offers, PAST DUELS and the history door are out of order', offerOrder);
+
+  /* THREE ON EVERY DEVICE (user call 2026-08-28). The strip used to be trimmed
+     row by row against the page, so the shortest phone in the suite is exactly
+     where it lost rows — and the only place that proves the trim is gone. */
+  const shortDuels = await visit({ named: true, skipStandardProbes: true,
+    viewport: { width: 390, height: 568 }, probe: probeIdentityOfferOrder });
+  out.accountShortDuels = shortDuels.probeResult;
+  check(shortDuels.probeResult?.recent.length === 3
+    && dealsNewestFirst(shortDuels.probeResult)
+    && precedes(shortDuels.probeResult.duels, shortDuels.probeResult.recent[0]),
+  'a short device is served fewer than the three newest duels', shortDuels.probeResult);
 
   // 1c · the named player: the claim is spent, the card is GONE — not
   // disabled, not re-offered. The headline is all that remains of the name UI.
@@ -95,30 +116,40 @@ export async function runAccountLifecycleScenarios(suite) {
   check(namedRun.seen.claim === false, 'the claim card survives after the name is set', namedRun.seen);
   check(namedRun.probeResult?.claim === null
     && precedes(namedRun.probeResult?.facts, namedRun.probeResult?.guest)
-    && precedes(namedRun.probeResult?.guest, namedRun.probeResult?.history),
+    && precedes(namedRun.probeResult?.guest, namedRun.probeResult?.duels),
   'a named guest moved the Guest card out of the pre-history identity slot', namedRun.probeResult);
   check(namedRun.askAbove === true,
         'the shared ask sheet opened UNDER a later overlay', namedRun.askAbove);
   check(namedRun.errs.length === 0, 'page errors on the named path', namedRun.errs);
 
-  /* Spare height pins account actions; constrained height keeps the pbody as
-     the one scroller and makes those same actions reachable at its end. */
-  const tallLayout = await visit({ named: true, skipStandardProbes: true,
-    viewport: { width: 390, height: 932 }, probe: probeAccountFooter });
-  const shortLayout = await visit({ named: true, skipStandardProbes: true,
-    viewport: { width: 390, height: 568 }, probe: probeAccountFooter });
-  out.accountFooter = { tall: tallLayout.probeResult, short: shortLayout.probeResult };
-  const tall = tallLayout.probeResult;
-  check(tall && !tall.before.scrollable && !tall.before.nestedScroller
-    && Math.abs(tall.before.bottomError) <= 1
-    && tall.before.signOutHit && tall.before.deleteHit,
-  'account actions are not pinned to the usable bottom when the profile fits', tall);
-  const short = shortLayout.probeResult;
-  check(short?.before.scrollable && !short.before.nestedScroller
-    && short.after.scrollTop > 0 && Math.abs(short.after.scrollTop - short.after.maxScroll) <= 1
-    && Math.abs(short.after.bottomError) <= 1
-    && short.after.signOutHit && short.after.deleteHit,
-  'short profile does not scroll its footer into a reachable usable bottom', short);
+  /* Spare height pins account actions; a device the profile outgrows keeps the
+     pbody as the ONE scroller and carries those same actions into reach at its
+     end. Since PAST DUELS deals its third row on every device, the profile is
+     31px taller than a 390x932 phone can hold (measured), so the pin is
+     asserted where there is genuinely room to pin against — a tablet in
+     portrait — and both phone shapes assert the scroll. */
+  const roomyLayout = await visit({ named: true, skipStandardProbes: true,
+    viewport: { width: 820, height: 1180 }, probe: probeAccountFooter });
+  const phoneLayouts = [];
+  for (const viewport of [{ width: 390, height: 932 }, { width: 390, height: 568 }]) {
+    const run = await visit({ named: true, skipStandardProbes: true,
+      viewport, probe: probeAccountFooter });
+    phoneLayouts.push({ viewport, ...run.probeResult });
+  }
+  out.accountFooter = { roomy: roomyLayout.probeResult, phones: phoneLayouts };
+  const roomy = roomyLayout.probeResult;
+  check(roomy && !roomy.before.scrollable && !roomy.before.nestedScroller
+    && Math.abs(roomy.before.bottomError) <= 1
+    && roomy.before.signOutHit && roomy.before.deleteHit,
+  'account actions are not pinned to the usable bottom when the profile fits', roomy);
+  for (const phone of phoneLayouts) {
+    check(phone.before?.scrollable && !phone.before.nestedScroller
+      && phone.after.scrollTop > 0
+      && Math.abs(phone.after.scrollTop - phone.after.maxScroll) <= 1
+      && Math.abs(phone.after.bottomError) <= 1
+      && phone.after.signOutHit && phone.after.deleteHit,
+    'a profile taller than the phone does not scroll its footer into reach', phone);
+  }
 
   // 1d · the claim itself: confirm through the shared ask-card, the card
   // retires, the headline takes the name, and a GUEST is offered the way up

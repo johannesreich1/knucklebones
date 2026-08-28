@@ -1,4 +1,4 @@
-<!-- meta name="Profile" group="3 · Ladder & profile" subtitle="The ring is the screen: group progress, identity, ladder doors and the six-slot rune collection — the name is claimed once, and deletion is a footnote at the foot" width=412 height=1730 links="Home, Ladder, Match history, Avatar" -->
+<!-- meta name="Profile" group="3 · Ladder & profile" subtitle="The ring is the screen: group progress, identity, ladder doors and the six-slot rune collection — the name is claimed once, and deletion is a footnote at the foot" width=412 height=1790 links="Home, Ladder, Match history, Avatar" -->
 <style>
   /* The profile is the app's own panel: #onAccount inside #ovOnline from
      online.css, plus the ladder ring (.ringwrap/.lring/.lpeak), which lives in
@@ -73,15 +73,20 @@
         <div class="err"></div>
         <button class="btn primary">Claim name</button>
       </div>
+      <!-- PAST DUELS: a named section like the runes above it, always the three
+           newest matches with the latest on top, on every device — it leads the
+           door it summarises rather than trailing it. The rows are showHistory's
+           own (historyRow) — one row shape, so the list and this summary of it
+           cannot drift. -->
+      <section class="accsec">
+        <div class="acchead"><b>PAST DUELS</b></div>
+        <div class="lb minihist">
+          <div class="row history-row win"><span class="hres">W</span><span class="nm">NovaComet992</span><span class="hsc">47–31</span><span class="hd">+21</span><span class="hwhen">21 Aug</span></div>
+          <div class="row history-row loss"><span class="hres">L</span><span class="nm">ZestyPixel950</span><span class="hsc">22–38</span><span class="hd">-14</span><span class="hwhen">20 Aug</span></div>
+          <div class="row history-row draw"><span class="hres">D</span><span class="nm">BoldRaven393</span><span class="hsc">29–29</span><span class="hd">+12</span><span class="hwhen">19 Aug</span></div>
+        </div>
+      </section>
       <button class="histrow">Full match history <b>10 games ›</b></button>
-      <!-- the newest matches dealt inline under the door, up to three. The rows
-           are showHistory's own (histRow) — one row shape, so the list and this
-           summary of it cannot drift. -->
-      <div class="lb minihist">
-        <div class="row history-row win"><span class="hres">W</span><span class="nm">NovaComet992</span><span class="hsc">47–31</span><span class="hd">+21</span><span class="hwhen">21 Aug</span></div>
-        <div class="row history-row loss"><span class="hres">L</span><span class="nm">ZestyPixel950</span><span class="hsc">22–38</span><span class="hd">-14</span><span class="hwhen">20 Aug</span></div>
-        <div class="row history-row draw"><span class="hres">D</span><span class="nm">BoldRaven393</span><span class="hsc">29–29</span><span class="hd">+12</span><span class="hwhen">19 Aug</span></div>
-      </div>
       <!-- the full month, centred and low: "Member since August 2026". It is
            blank for a guest — their account lives on this device only, so the
            line would be a promise nobody made — which is why the app's rule
@@ -103,8 +108,9 @@
   through your current group — sweeping up to its value as the profile opens, with the group name
   in the 90&deg; mouth at the bottom and the season peak as a white notch while it is still ahead
   of you. After the three facts, the stable six-slot rune collection shows account progress before
-  identity and history; the avatar opens the picker, the points open the ladder, and the history
-  row opens the newest-three list beneath it.
+  identity; then PAST DUELS names the three newest matches — latest on top, three on every device,
+  never trimmed to fit — and the door beneath them opens the full list. The avatar opens the
+  picker and the points open the ladder.
   <br><br><b>Two words this screen no longer says.</b> There is no <em>rename</em> — a name is
   claimed once and kept, so the old always-there field and its Save button are one boxed offer that
   disappears for good. And there is no <em>record</em>: the win/loss tally heads the match-history
