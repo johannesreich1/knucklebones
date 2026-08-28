@@ -155,6 +155,19 @@ eq([even.a.wins, even.a.losses, even.b.wins, even.b.losses], [1, 0, 0, 1], 'the 
 const drawn = settle(row(1000), row(1000), 0.5);
 eq([drawn.da, drawn.db, drawn.a.draws, drawn.b.draws], [0, 0, 1, 1], 'a draw was settled as something else');
 
+/* ...and it moves nothing between MISMATCHED players either, which is the part
+   Elo would argue with. Holding someone 2000 above once paid +65 and failing to
+   convert against someone 2000 below cost 49; both are now 0. The tally still
+   records it. Reachable only by dice in this game (no drawn match in the first
+   30 played out in production), so the signal being discarded is noise. */
+const lopsided = settle(row(0), row(4000), 0.5);
+eq([lopsided.da, lopsided.db], [0, 0], 'a draw between mismatched players still paid');
+eq([lopsided.a.draws, lopsided.b.draws], [1, 1], 'a mismatched draw was not recorded');
+eq([lopsided.a.points, lopsided.b.points], [0, 4000], 'a draw moved the points');
+for (const [mine, theirs] of [[0, 4000], [4000, 0], [300, 720], [2000, 2000]] as const) {
+  eq(delta(mine, theirs, 0.5), 0, `a draw at ${mine} vs ${theirs} paid something`);
+}
+
 /* peak is a high-water mark: it survives the loss that follows it */
 const fell = settle(row(1000, 1400), row(1000), 0);
 eq(fell.a.peak, 1400, 'the peak was lowered by a loss');
