@@ -386,9 +386,12 @@ unique per bot (the seed postcheck pins `count(distinct points)`), so it is just
 as stable, and unlike a hash it is reproducible in SQL — which is what lets the
 whole grant be one reviewable statement instead of 11KB of literals.
 
-**The seat** is the first rune won, auto-equipped, exactly as a player's own
-first winning is. It is set even below SILVER: the rune is carried but not in
-play, so a bot that climbs arrives already holding it.
+**The seat** is the first rune won, seated by the seed itself. This is a
+FIXTURE, not shared behaviour: a human's first win no longer seats anything
+(the auto-equip was removed 2026-08-28, to be solved differently), so a seeded
+bot is deliberately further along than a new player of the same age. It is set
+even below SILVER: the rune is carried but not in play, so a bot that climbs
+arrives already holding it.
 
 The population as seeded (200 bots, 539 rune rows, 155 carrying a seat):
 

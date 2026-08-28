@@ -1,4 +1,6 @@
-import { historySeasonFixture, ladderBoardFixture } from './board-fixtures.mjs';
+import { ladderBoardFixture } from './board-fixtures.mjs';
+import { installLadderRoutes } from './ladder-routes.mjs';
+import { installProfileRoutes } from './profile-routes.mjs';
 import { installIdentityRoutes } from './identity-routes.mjs';
 
 export async function installOnlineRoutes(
@@ -23,6 +25,9 @@ export async function installOnlineRoutes(
     paginationRace = false,
     passwordAuth = 'error',
     runes = [],
+    /* Which rune the account carries, as the profiles row reports it. */
+    equippedRune = null,
+    standingPoints = null,
     unseenRunes = [],
     markRunesSeenAfterFirstRead = false,
     SESSION,
@@ -36,10 +41,7 @@ export async function installOnlineRoutes(
   let passwordCalls = 0;
   let profileCalls = 0;
   let tierProfileCalls = 0;
-  let ladderPageCalls = 0;
-  /* The season run A is paging through. Must match the player_standing stub
-     below, which is the other place a client can learn the board's size. */
-  const RUN_A_POPULATION = 199;
+  let equippedProfileCalls = 0;
   let runeCalls = 0;
   let acknowledgeCalls = 0;
   let deferNextSignup = false;
@@ -91,10 +93,6 @@ export async function installOnlineRoutes(
     }
     return { started: control.started, release: control.release, finished: control.finished };
   };
-  let markPaginationStarted;
-  let releasePagination;
-  const paginationStarted = new Promise((resolve) => { markPaginationStarted = resolve; });
-  const paginationRelease = new Promise((resolve) => { releasePagination = resolve; });
   const hold = (share = 1) => dataDelay > 0
     ? new Promise((resolve) => setTimeout(resolve, dataDelay * share))
     : Promise.resolve();
@@ -142,8 +140,17 @@ export async function installOnlineRoutes(
       claimed = true;
       return r.fulfill({ status: 204, body: '' });
     }
-    const tierRead = r.request().url().includes('ranked_pool_tier');
-    const deferred = !tierRead && deferNextAccountProfile;
+    /* THREE different reads hit this one table, and they are told apart by the
+       columns they ask for. "Not the tier read" stopped meaning "the account
+       profile read" when the equipped rune arrived (20260828210000): a third
+       query appeared, and answering it as the account profile both miscounted
+       the account reads and handed the client a row with no equipped_rune in
+       it — so nothing could see whether the seat worked. Name all three. */
+    const url = r.request().url();
+    const tierRead = url.includes('ranked_pool_tier');
+    const equipRead = url.includes('equipped_rune');
+    const accountRead = !tierRead && !equipRead;
+    const deferred = accountRead && deferNextAccountProfile;
     if (deferred) {
       deferNextAccountProfile = false;
       markAccountProfileStarted();
@@ -154,6 +161,11 @@ export async function installOnlineRoutes(
       tierProfileCalls++;
       return r.fulfill({ status: 200, contentType: 'application/json',
         body: JSON.stringify({ ranked_pool_tier: 'ivory' }) });
+    }
+    if (equipRead) {
+      equippedProfileCalls++;
+      return r.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ equipped_rune: equippedRune }) });
     }
     profileCalls++;
     const response = r.fulfill({ status: 200, contentType: 'application/json',
@@ -223,157 +235,19 @@ export async function installOnlineRoutes(
   await page.route('**/rest/v1/rpc/leave_ranked_queue', (r) => r.fulfill({
     status: 200, contentType: 'application/json', body: '{"status":"left"}',
   }));
+  /* Both read the same board: the standing is derived from the rows the
+     leaderboard serves, never restated beside them. */
+  await installProfileRoutes(page, { hold, nearBottomBoard, historyDepth, standingPoints });
+  const ladder = await installLadderRoutes(page, { hold, nearBottomBoard, paginationRace });
   await page.route('**/auth/v1/.well-known/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"keys":[]}' }));
   await page.route('**/rest/v1/rpc/current_season*', async (r) => {
     await hold(.55);
     return r.fulfill({ status: 200, contentType: 'application/json',
       body: '"11111111-1111-4111-8111-111111111111"' });
   });
-  await page.route('**/rest/v1/season_ratings*', async (r) => {
-    await hold(.65);
-    return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
-      { points: 465, peak: 700, wins: 42, losses: 61, draws: 0 },
-    ]) });
-  });
-  await page.route('**/rest/v1/rpc/player_standing*', async (r) => {
-    await hold(.7);
-    return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
-      /* Rank 2 of 199 is just outside floor(1%): this must agree with the
-         ladder row's apex:false so both surfaces resolve BONE. */
-      /* Derived from the board rather than restated beside it: a hand-kept
-         copy of the rank and population silently disagrees with the rows the
-         moment a case names its own board. */
-      nearBottomBoard
-        ? (() => {
-          const me = nearBottomBoard.find((row) => row.nickname === 'TestGuest001');
-          return { points: me?.points ?? 465, rank: me?.rank ?? 1,
-                   population: nearBottomBoard.length, percentile: 96 };
-        })()
-        : { points: 465, rank: 2, population: 199, percentile: 1 },
-    ]) });
-  });
-  await page.route('**/rest/v1/rpc/best_streak*', async (r) => {
-    await hold(.8);
-    return r.fulfill({ status: 200, contentType: 'application/json', body: '4' });
-  });
-  /* Deliberately last during loading probes: the profile must keep its die up
-     after identity and ladder facts have arrived, rather than revealing rows
-     one endpoint at a time. */
-  await page.route('**/rest/v1/rpc/match_history*', async (r) => {
-    await hold(1);
-    /* A REAL KEYSET, not a fixed page. The old stub answered three rows and
-       ignored limit_n/before_t/before_id, so `3 < PAGE` marked the list
-       finished on its first response and the paging branch was unreachable in
-       every test — which is how match history shipped capped at thirty rows,
-       silently, for as long as the paged-view refactor has been in. The first
-       three rows are byte-identical to what it used to serve so the profile's
-       RECENT strip and the localization probes keep asserting what they did.
-       Mirrors the leaderboard stub's compound-cursor shape. */
-    const season = historySeasonFixture(historyDepth);
-    const args = r.request().postDataJSON() ?? {};
-    const limit = Math.min(Number(args.limit_n ?? 40), 100);
-    const beforeT = args.before_t ?? null;
-    const beforeId = args.before_id ?? null;
-    const key = (row) => `${row.finished_at}|${row.id}`;
-    const page = (beforeT
-      ? season.filter((row) => key(row) < `${beforeT}|${beforeId ?? ''}`)
-      : season).slice(0, limit);
-    return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(page) });
-  });
-  /* the 0022 shape: points/rank/apex/avatar/peak. The two rows sit in
-     DIFFERENT groups (1,072 is IVORY, 465 is BONE) so the board has to draw a
-     horizon for each — the group structure is asserted below. */
-  await page.route('**/rest/v1/rpc/leaderboard*', async (r) => {
-    await hold(1);
-    const before = r.request().url().includes('/rpc/leaderboard_before');
-    const ordinary = [
-      { nickname: 'NovaComet992', points: 1072, wins: 7, losses: 2, games: 9, rank: 1, pos: 1, population: 2, apex: false, avatar: 'die:3:mg', peak: 1100 },
-      { nickname: 'TestGuest001', points: 465, wins: 42, losses: 61, games: 103, rank: 2, pos: 2, population: 2, apex: false, avatar: 'die:5:cy', peak: 700 },
-    ];
-    let board;
-    if (nearBottomBoard) {
-      const args = r.request().postDataJSON() ?? {};
-      const limit = Number(args.limit_n ?? 50);
-      if (before) {
-        const boundary = Number(args.before_rank ?? 1);
-        const nickname = String(args.before_nickname ?? '');
-        board = nearBottomBoard.filter((row) => row.rank < boundary
-          || (row.rank === boundary && row.nickname < nickname)).slice(-limit);
-      } else if (args.from_pos != null) {
-        /* THE SEEK. from_pos addresses a row directly, which is what a dragged
-           thumb produces; the rank cursor cannot, because rank() gaps after
-           ties. It REPLACES the rank cursor rather than joining it, exactly as
-           the SQL branches. */
-        const from = Number(args.from_pos);
-        board = nearBottomBoard.filter((row) => row.pos >= from).slice(0, limit);
-      } else {
-        const boundary = Number(args.from_rank ?? 1);
-        const nickname = typeof args.after_nickname === 'string' ? args.after_nickname : null;
-        board = nearBottomBoard.filter((row) => nickname
-          ? row.rank > boundary || (row.rank === boundary && row.nickname > nickname)
-          : row.rank >= boundary).slice(0, limit);
-      }
-    } else {
-      board = before ? [] : ordinary;
-    }
-    let headers;
-    if (paginationRace && !before) {
-      ladderPageCalls++;
-      if (ladderPageCalls === 1) {
-        /* A FULL page ON A BOARD THAT CONTINUES, because run A must have
-           somewhere left to go. Two things say "there is more" and both have to
-           agree with the standing stub's 199, or the client stops at this page
-           and the race never starts:
-             · the page fills its ask — the opening asks for the RPC's own
-               ceiling of 100 (ladder-screen's OPEN_PAGE), and a page shorter
-               than its ask is how the end of a board announces itself;
-             · every row carries the real `population`, which the client reads
-               to size the scrollbar for a signed-out reader.
-           `ordinary` describes a two-player season, so its 2 must not ride along
-           on a hundred-row page: the rows are restamped below rather than left
-           to contradict the board they are part of. */
-        board = [...ordinary, ...Array.from({ length: 98 }, (_, index) => ({
-          nickname: `RunA${String(index + 3).padStart(2, '0')}`,
-          points: 460 - index,
-          wins: 1,
-          losses: 1,
-          games: 2,
-          rank: index + 3,
-          apex: false,
-          avatar: null,
-          peak: 460 - index,
-        }))].map((row, index) => ({ ...row, pos: index + 1, population: RUN_A_POPULATION }));
-      } else if (ladderPageCalls === 2) {
-        markPaginationStarted();
-        await paginationRelease;
-        board = [{
-          nickname: 'StaleRunA', points: 100, wins: 1, losses: 2, games: 3,
-          rank: 51, apex: false, avatar: null, peak: 100,
-        }];
-        headers = { 'x-kb-fixture': 'stale-run-a' };
-      }
-    }
-    return r.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      ...(headers ? { headers } : {}),
-      body: JSON.stringify(board),
-    });
-  });
-  await page.route('**/rest/v1/rpc/player_card*', (r) => r.fulfill({ status: 200, contentType: 'application/json',
-    body: JSON.stringify([{
-      streak: 4,
-      since: '2026-06-01T00:00:00Z',
-      points: 1072,
-      wins: 7,
-      losses: 2,
-      games: 9,
-      rank: 1,
-      apex: false,
-      peak: 1100,
-    }]) }));
   return {
     ...identityRoutes,
+    ...ladder,
     signupCalls: () => signupCalls,
     deferNextSignupResponse: () => { deferNextSignup = true; },
     signupRequestStarted,
@@ -382,6 +256,7 @@ export async function installOnlineRoutes(
     passwordCalls: () => passwordCalls,
     profileCalls: () => profileCalls,
     tierProfileCalls: () => tierProfileCalls,
+    equippedProfileCalls: () => equippedProfileCalls,
     joinCalls: () => joinCalls,
     runeCalls: () => runeCalls,
     acknowledgeCalls: () => acknowledgeCalls,
@@ -402,7 +277,5 @@ export async function installOnlineRoutes(
       if (!collectedRunes.includes(runeId)) collectedRunes.push(runeId);
       seenRunes.delete(runeId);
     },
-    paginationStarted,
-    releasePagination: () => releasePagination(),
   };
 }

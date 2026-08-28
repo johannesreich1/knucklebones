@@ -3,49 +3,40 @@
 import {
   AI,
   ME,
-  CLASSIC,
-  LIMITED,
-  emptyBoard,
   isOver,
   legalCols,
   totalOf,
-  type Mode,
   type Player,
 } from '../core/rules.ts';
-import { makeBag } from '../core/dice.ts';
 import { outOfTimeCopy, t } from '../i18n/index.ts';
 import { isNewcomer, offerTutorial } from '../ui/firstrun.ts';
 import { S } from '../state.ts';
 import { saveStats } from '../persist.ts';
 import { Sfx, vibrate } from '../ui/audio.ts';
-import { $, show, hide } from '../ui/dom.ts';
-import { showBag, renderBag } from '../ui/bag.ts';
+import { show } from '../ui/dom.ts';
+import { renderBag } from '../ui/bag.ts';
 import { nameOf } from '../ui/identity.ts';
 import { closeEnd } from '../ui/endscreen.ts';
-import { setStageDie } from '../ui/die.ts';
 import { renderAll } from '../ui/game/board.ts';
 import { clearHints, showHints } from '../ui/game/hints.ts';
 import { updateRecord } from '../ui/game/hud.ts';
 import { animateGameMove } from '../ui/game/move-view.ts';
 import { animateStageRoll } from '../ui/game/motion.ts';
-import { setTutorialPresentation } from '../ui/game/root-state.ts';
-import { applySides, setActivePlate, setStatus, settleBoard } from '../ui/game/turn-state.ts';
-import { fit } from '../ui/layout.ts';
-import { startTimer, stopTimer, showClock } from './timer.ts';
+import { setActivePlate, setStatus, settleBoard } from '../ui/game/turn-state.ts';
+import { startTimer, stopTimer } from './timer.ts';
 import { coachShow, coachHide, clearTut, tutNextRoll, tutOnChoose } from './tutorial.ts';
 import { toMenu } from './menu.ts';
 import {
   aiSpellPlacementTurn,
   disarm,
   renderSpells,
-  resetSpells,
   resolveTimedOutSpellAim,
-  type SpellDeal,
 } from './spells.ts';
 import { aiChoose } from './game-ai.ts';
 import { showLocalResult } from './local-result.ts';
-import { hidePassCard, showPassCard } from './pass-card.ts';
+import { handOff } from './pass-card.ts';
 import { resolveLocalStart } from './local-start.ts';
+import { dealNewGame, type NewGameOptions } from './new-game.ts';
 
 export { aiChoose } from './game-ai.ts';
 /* arm the turn clock: on expiry the die drops into a random legal column */
@@ -67,37 +58,6 @@ async function autoPlace(gen: number): Promise<void> {
   vibrate([30,40,30]);
   void place(who, c);
 }
-let passResolve: (() => void) | null = null;
-function handOff(who: Player): Promise<boolean> {
-  return new Promise<boolean>((resolve) => {
-    const gen=S.gen;
-    S.phase='pass';
-    stopTimer();
-    clearHints();
-    setStageDie(0);
-    setStatus(() => t('game', 'status.passPhone'), who);
-    showPassCard(who);
-    Sfx.pass();
-    const go=()=>{
-      hidePassCard();
-      if(S.gen!==gen) { resolve(false); return; }
-      S.bottom=who;
-      applySides();
-      const table=$('#tableEl');
-      table.classList.remove('swap'); void table.offsetWidth; table.classList.add('swap');
-      setTimeout(()=>table.classList.remove('swap'),480);
-      Sfx.tap(); vibrate(10);
-      resolve(true);
-    };
-    passResolve=go;      // consumed by the single listener bound in boot()
-  });
-}
-/* the whole hand-off card is the one continue target; it has no corner control */
-export function passTap(): void {
-  if(passResolve){ const f=passResolve; passResolve=null; f(); }
-}
-/* abandoning mid-hand-off (quit to menu): drop the pending resolver */
-export function cancelPass(): void { passResolve=null; }
 async function rollDice(): Promise<void> {
   const gen = S.gen;
   const who = S.turn;
@@ -226,66 +186,11 @@ export async function startLocal(): Promise<void> {
   if (resolved) newGame(resolved);
 }
 
-export interface NewGameOptions {
-  tutorial?: boolean;
-  scoring?: Mode;
-  spell?: string;
-  spells?: Readonly<SpellDeal>;
-  trial?: import('../state.ts').LocalRuneTrial | null;
-}
-
+/* The deal itself belongs to new-game.ts; what is left here is the opener. It
+   runs on the generation that deal claimed, so a setup started in the meantime
+   silently wins instead of two games racing for the first turn. */
 export function newGame(opts: NewGameOptions = {}): void {
-  const tutorial = !!opts.tutorial;
-  const gen = ++S.gen;
-  // the OFFLINE view's selector picks the mode; the tutorial teaches classic.
-  // opts.scoring is how RANDOM arrives — already rolled and shown on the dial,
-  // so newGame is handed the answer rather than rolling a second one.
-  // opts.spells is the same bargain for the rune cards the deck turned over;
-  // opts.spell remains the shared-rune convenience used by focused helpers.
-  S.scoring = tutorial ? CLASSIC
-    : (opts.scoring ?? (S.localMode >= CLASSIC ? S.localMode as Mode : CLASSIC));
-  S.localTrial = tutorial || !opts.trial ? null : {
-    offer: [...opts.trial.offer] as [string, string, string],
-    spells: [...opts.trial.spells] as [string, string],
-  };
-  S.bounty=[0,0];
-  // LIMITED offline: the same bag the ranked game deals, shuffled locally
-  // (no replay validator to agree with, so plain Math.random is right here)
-  S.pool = S.scoring===LIMITED ? makeBag(Math.random) : null;
-  showBag(!!S.pool);
-  if(S.pool) renderBag(S.pool.length);
-  stopTimer();
-  if(tutorial){
-    S.mode='cpu';
-    S.starter=ME;                            // the lessons assume you move first
-    S.tut={ turnNo:-1, prolls:[4,4,5], crolls:[2,5], cmoves:[2,1],
-            firstCol:null, restrict:null };
-  }else{
-    clearTut();
-  }
-  setTutorialPresentation(!!S.tut);
-  S.boards=[emptyBoard(),emptyBoard()];
-  S.die=0; S.phase='roll'; S.busy=false;
-  S.turn=S.starter;
-  resetSpells(opts.spells ?? opts.spell);    // deal this game's charges (none in a lesson)
-  S.starter = (1 - S.starter) as Player;
-  // pass mode: whoever starts holds the phone. face mode: halves never move.
-  S.bottom = (S.mode==='duo' && S.seat==='pass') ? S.turn : ME;
-  clearHints();
-  setStageDie(0);
-  showClock();                               // reserve the clock lane only if this game has one
-  fit();                                     // the tutorial's pill lane changes cell size
-  applySides();
-  updateRecord();
-  hide('#ovEnd'); hide('#ovStart'); hide('#ovRules'); hide('#ovPass'); hide('#ovPractice');
-  hide('#ovLearn');   // the hub the tutorial is started FROM, or it stays over the board
-  const openingPlayer = S.turn;
-  const duo = S.mode === 'duo';
-  setStatus(() => duo
-    ? t('game', 'status.playerStarts', { player: nameOf(openingPlayer) })
-    : (openingPlayer === ME ? t('game', 'status.youFirst') : t('game', 'status.aiFirst')),
-  openingPlayer);
-  setActivePlate();
+  const { tutorial, gen } = dealNewGame(opts);
   if(tutorial){
     coachShow(() => t('learn', 'tutorial.welcome'), true)
       .then(() => { if (S.gen === gen) void nextTurn(); });

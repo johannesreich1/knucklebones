@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { GROUPS } from '../src/core/ladder.ts';
 import { MODES } from '../src/core/modes.ts';
 import { SPELLS } from '../src/core/spells.ts';
@@ -96,9 +96,16 @@ assert.deepEqual(LOCALE_NAMESPACES, ['common', 'settings', 'game', 'online', 'le
 /* Static bindings are string attributes rather than t() calls, so TypeScript
    cannot catch a misspelt namespace/key. Keep every literal hook resolvable;
    the DOM translator deliberately throws on an unknown token at startup. */
+const markupDirectory = new URL('../src/markup/', import.meta.url);
 const markupSources = [
   readFileSync(new URL('../build.mjs', import.meta.url), 'utf8'),
   readFileSync(new URL('../src/markup.ts', import.meta.url), 'utf8'),
+  /* The screens beside markup.ts are read by DIRECTORY, never by a list. They
+     were split out of markup.ts one at a time, and a hand-written list drops
+     each screen's tokens the day it moves — silently, because the test still
+     passes on whatever is left behind. */
+  ...readdirSync(markupDirectory).filter((name) => name.endsWith('.ts'))
+    .map((name) => readFileSync(new URL(name, markupDirectory), 'utf8')),
   readFileSync(new URL('../src/online/screens/shell.ts', import.meta.url), 'utf8'),
   readFileSync(new URL('../src/ui/firstrun.ts', import.meta.url), 'utf8'),
   readFileSync(new URL('../src/ui/learn-page.ts', import.meta.url), 'utf8'),

@@ -11,7 +11,7 @@ import {
 } from '../../rune-collection-cache.ts';
 import { supa } from '../api/client.ts';
 import { createCollectionRefreshGuard } from './rune-collection-guard.ts';
-import { autoEquipFirstRune, usableEquippedRune } from './rune-equip.ts';
+import { usableEquippedRune } from './rune-equip.ts';
 import {
   acknowledgeRuneRewardForAccount,
   withRuneRewardAcknowledgementDeadline,
@@ -237,12 +237,6 @@ export async function refreshRuneCollection(
     poolTier,
     equippedRune,
   };
-  /* The auto-equip lives HERE, at the one point every caller already passes
-     through, rather than at each screen that happens to care. It is
-     fire-and-forget on purpose: a refresh must never wait on, or fail because
-     of, a convenience write. Idempotent — it does nothing unless the account
-     holds exactly one rune and the seat is empty. */
-  void autoEquipFirstRune(id, collected, equippedRune);
   return refresh;
 }
 

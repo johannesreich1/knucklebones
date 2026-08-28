@@ -1,17 +1,26 @@
 import { AI, ME, type Player } from "./core/rules.ts";
-import { rebuild, matchTotal, type MatchState } from "./core/match.ts";
 import { settle, type Score } from "./core/ladder.ts";
-import { rankedActionTotal, rebuildRankedActions, type RankedActionRow } from "./core/ranked-actions.ts";
 import { RUNE_TRIAL_FORMAT, rankedOutcomeByMatch } from "./core/ranked-outcomes.ts";
 import { json, type AuthenticatedContext, type EdgeClient } from "../_shared/http.ts";
+import { replayAuthoritativeMatch, type ReplayRejection } from "../_shared/match-replay.ts";
 import { STALL_MS } from "../_shared/match-timing.ts";
 import { settleMatch, type SettlementPrecondition } from "../_shared/settlement.ts";
 import {
   MATCH_COLUMNS,
-  type ClaimInput, type MatchMoveRow, type MatchRow,
+  type ClaimInput, type MatchRow,
 } from "../_shared/types.ts";
 
-const ACTION_COLUMNS = "idx, move_idx, who, kind, rune_id, target_col, placed_col, die_before, die_after";
+/* What a claim answers when the shared replay refuses. Only the wording of
+   these three lines is claim's own: pvp-join collapses the same reasons to
+   "leave the match alone". */
+const REPLAY_FAILURES: Record<ReplayRejection, { error: string; status: number }> = {
+  "read-failed": { error: "match-read-failed", status: 500 },
+  "corrupt-state": { error: "corrupt-state", status: 500 },
+  /* A move landed under this claim, so the log no longer replays to the row
+     it was read against. The bounded client retry reloads and claims the
+     newer authoritative state. */
+  "stale": { error: "race-lost", status: 409 },
+};
 
 async function finishClaim(
   svc: EdgeClient,
@@ -77,44 +86,15 @@ export async function claimMatch(context: AuthenticatedContext, input: ClaimInpu
     console.error("pvp-claim found an unknown ranked outcome:", error);
     return json({ error: "corrupt-state" }, 500);
   }
-  const [{ data: moveData, error: moveError }, { data: actionData, error: actionError },
-    { data: seedData, error: seedError }] = await Promise.all([
-    svc.from("match_moves").select("idx, who, col").eq("match_id", match.id),
-    svc.from("match_actions").select(ACTION_COLUMNS).eq("match_id", match.id),
-    svc.from("match_seeds").select("seed").eq("match_id", match.id).single(),
-  ]);
-  if (moveError || actionError || seedError) {
-    console.error("pvp-claim replay read failed:",
-      (moveError ?? actionError ?? seedError)?.message);
-    return json({ error: "match-read-failed" }, 500);
-  }
-  const moves = (moveData ?? []) as MatchMoveRow[];
-  const seedRow = seedData as { seed: string } | null;
-  if (!seedRow) return json({ error: "corrupt-state" }, 500);
-  let p1Score = 0, p2Score = 0, moveCount = moves.length;
-  if (match.phase === "playing" && match.format === RUNE_TRIAL_FORMAT) {
-    if (!match.p1_rune || !match.p2_rune) return json({ error: "corrupt-state" }, 500);
-    const actions = (actionData ?? []) as RankedActionRow[];
-    const state = rebuildRankedActions(
-      seedRow.seed, actions, outcome.mode, [match.p2_rune, match.p1_rune],
-    );
-    if (!state || state.actionCount !== match.action_version || state.moveCount !== moves.length
-        || state.turn !== match.turn || state.nextDie !== match.next_die
-        || state.pendingAim !== match.pending_aim) {
-      return json({ error: "race-lost" }, 409);
+  const replay = await replayAuthoritativeMatch(svc, match, outcome.mode);
+  if (!replay.ok) {
+    if (replay.reason === "read-failed") {
+      console.error("pvp-claim replay read failed:", replay.detail);
     }
-    p1Score = rankedActionTotal(state, ME, outcome.mode);
-    p2Score = rankedActionTotal(state, AI, outcome.mode);
-    moveCount = state.moveCount;
-  } else if (match.phase === "playing") {
-    const state: MatchState | null = rebuild(seedRow.seed, moves, outcome.mode);
-    if (!state || state.moveCount !== moves.length || state.turn !== match.turn
-        || state.nextDie !== match.next_die) {
-      return json({ error: "race-lost" }, 409);
-    }
-    p1Score = matchTotal(state, ME, outcome.mode);
-    p2Score = matchTotal(state, AI, outcome.mode);
+    const failure = REPLAY_FAILURES[replay.reason];
+    return json({ error: failure.error }, failure.status);
   }
+  const { p1Score, p2Score, moveCount } = replay;
 
   const winnerId = input.resign ? oppId : user.id;
   // Resignation is intentional, but its score snapshot must still be from the

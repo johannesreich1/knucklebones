@@ -30,10 +30,10 @@
 // What it cannot see: whether pod sources resolve, what Xcode links, or what
 // Apple actually receives. Those need a Mac and a real `pod install`. This
 // proves the repo's own iOS manifests agree with each other and with the build.
-import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { APP_ID } from '../src/config.ts';
-import { filesUnder, recomputeArtifactTag, sameBytes, tagIn } from './support/ios-artifacts.ts';
+import { verifyIosPayloadContract } from './support/ios-payload-contract.ts';
+import { verifyIosPodContract, verifyPodParsersCouldFail } from './support/ios-pod-contract.ts';
 import { verifyIosShellContract } from './support/ios-shell-contract.ts';
 import { verifyNodeRuntimeContract } from './support/node-runtime-contract.ts';
 
@@ -41,26 +41,15 @@ const problems: string[] = [];
 const errs: string[] = [];
 const check = (ok: boolean, msg: string) => { if (!ok) problems.push(msg); };
 
-const PODFILE = 'native/ios/App/Podfile';
-const LOCK = 'native/ios/App/Podfile.lock';
 const PKG = 'native/package.json';
 const NATIVE_LOCK = 'native/package-lock.json';
 const GC_PKG = 'native/plugins/gamecenter/package.json';
 const GC_SWIFT = 'native/plugins/gamecenter/ios/Sources/GameCenterPlugin/GameCenterPlugin.swift';
 const ROOT_PKG = 'package.json';
 const CONFIG = 'native/capacitor.config.json';
-const WWW = 'native/www';
-const SYNCED = 'native/ios/App/App/public';   // what cap sync copied into Xcode
 const SYNCED_CONFIG = 'native/ios/App/App/capacitor.config.json';
-const STANDALONE = 'knucklebones-neon.html';
-const PWA_INDEX = 'pwa/index.html';
-const PWA_SW = 'pwa/sw.js';
-const WIDGET = 'widget.html';
-const HARNESS = 'harness.html';
 const REQUIRE_SYNCED = process.argv.includes('--require-synced');
 
-const podfile = readFileSync(PODFILE, 'utf8');
-const lock = readFileSync(LOCK, 'utf8');
 const pkg = JSON.parse(readFileSync(PKG, 'utf8'));
 const nativeLock = JSON.parse(readFileSync(NATIVE_LOCK, 'utf8'));
 const gcPkg = JSON.parse(readFileSync(GC_PKG, 'utf8'));
@@ -92,7 +81,6 @@ check(rootPkg.scripts?.['native:verify']?.includes('native:sync')
   `${ROOT_PKG} native:verify must sync first and require the generated Xcode payload`);
 
 const GC_PACKAGE = 'knucklebones-game-center';
-const GC_POD = 'KnucklebonesGameCenter';
 check(pkg.dependencies?.[GC_PACKAGE] === 'file:plugins/gamecenter',
   `${PKG} must install the tracked Game Center bridge as ${GC_PACKAGE}=file:plugins/gamecenter`);
 check(nativeLock.packages?.['']?.dependencies?.[GC_PACKAGE] === 'file:plugins/gamecenter',
@@ -119,199 +107,10 @@ const { xcodeIds, gcBundle } = verifyIosShellContract(check);
 
 /* ================= 2. PODS ================= */
 
-/* the exact question, in one comparison: was this lock generated from this Podfile? */
-const stamped = (lock.match(/^PODFILE CHECKSUM: (\w+)$/m) || [])[1] ?? null;
-const podfileSha = createHash('sha1').update(podfile).digest('hex');
-check(stamped === podfileSha,
-  `${LOCK} carries PODFILE CHECKSUM ${stamped}, but ${PODFILE} hashes to ${podfileSha}. `
-  + `The lock was generated from a DIFFERENT Podfile than the one committed — run `
-  + `\`pod install\` in native/ios/App and commit the result.`);
-
-// `pod 'CapawesomeCapacitorAppleSignIn', :path => '../../node_modules/@capawesome/capacitor-apple-sign-in'`
-const declared = new Map<string, string>();
-for (const m of podfile.matchAll(/^\s*pod\s+'([^']+)'\s*,\s*:path\s*=>\s*'([^']+)'/gm)) {
-  declared.set(m[1], m[2]);
-}
-
-// EXTERNAL SOURCES maps each locked pod back to the path it was built from.
-const externalBlock = (lock.match(/^EXTERNAL SOURCES:\n((?:[ \t].*\n?)*)/m) || [])[1] ?? '';
-const locked = new Map<string, string>();
-let currentPod: string | null = null;
-for (const line of externalBlock.split('\n')) {
-  const head = line.match(/^ {2}(\S+):\s*$/);
-  if (head) { currentPod = head[1]; continue; }
-  const p = line.match(/^ {4}:path:\s*"?([^"\n]+?)"?\s*$/);
-  if (p && currentPod) locked.set(currentPod, p[1]);
-}
-
-const checksums = new Set<string>();
-const sumBlock = (lock.match(/^SPEC CHECKSUMS:\n((?:[ \t].*\n?)*)/m) || [])[1] ?? '';
-for (const m of sumBlock.matchAll(/^ {2}(\S+):/gm)) checksums.add(m[1]);
-
-check(declared.get(GC_POD) === '../../plugins/gamecenter',
-  `${PODFILE} must declare ${GC_POD} from the tracked ../../plugins/gamecenter package`);
-check(declared.get('CapawesomeCapacitorAppleSignIn') === '../../node_modules/@capawesome/capacitor-apple-sign-in',
-  `${PODFILE} must declare the Capawesome Apple Sign-In pod from its installed package`);
-check(declared.get('CapacitorSplashScreen') === '../../node_modules/@capacitor/splash-screen',
-  `${PODFILE} must declare CapacitorSplashScreen from its installed package`);
-check(!declared.has('CapacitorCommunityAppleSignIn'),
-  `${PODFILE} must not retain the replaced iOS-only community Apple Sign-In pod`);
-check(locked.get(GC_POD) === '../../plugins/gamecenter',
-  `${LOCK} must lock ${GC_POD} to the tracked ../../plugins/gamecenter package`);
-check(checksums.has(GC_POD),
-  `${LOCK} has no SPEC CHECKSUM for the tracked ${GC_POD} bridge`);
-
-for (const [pod, path] of declared) {
-  check(locked.has(pod),
-    `the Podfile declares pod '${pod}' but ${LOCK} has no EXTERNAL SOURCES entry for it — `
-    + `the lock predates that pod; run \`pod install\` and commit`);
-  if (locked.has(pod)) {
-    check(locked.get(pod) === path,
-      `pod '${pod}' is declared at ${path} but locked at ${locked.get(pod)}`);
-  }
-  check(checksums.has(pod),
-    `pod '${pod}' has no SPEC CHECKSUM in ${LOCK} — the lock is internally incoherent`);
-}
-for (const pod of locked.keys()) {
-  check(declared.has(pod),
-    `${LOCK} locks pod '${pod}' that no longer appears in the Podfile — a plugin was `
-    + `removed without re-running \`pod install\``);
-}
-
-/* a locked path must name a package native/package.json installs. The paths point
-   into native/node_modules, gitignored and absent on a fresh checkout, so resolve
-   the CLAIM rather than the directory — this stays a pure-Node gate. */
-const deps: Record<string, string> = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
-for (const [pod, path] of locked) {
-  const pkgName = (path.match(/node_modules\/(@[^/]+\/[^/]+|[^/]+)/) || [])[1];
-  if (!pkgName) continue;   // a pod from some source other than node_modules
-  check(pkgName in deps,
-    `pod '${pod}' builds from ${pkgName}, which ${PKG} does not declare — `
-    + `\`mise exec -- npm --prefix native install\` would not produce it`);
-}
+const pods = verifyIosPodContract(check);
 
 /* ================= 3. THE WEB PAYLOAD ================= */
-/* run-all builds before it gates, so native/www is always present here. Guard
-   anyway: absent, every assertion below would pass by iterating nothing. */
-const built = existsSync(`${WWW}/index.html`);
-check(built, `${WWW}/index.html does not exist — run \`mise exec -- node build.mjs\` before this gate`);
-
-if (built) {
-  const nativeIndex = readFileSync(`${WWW}/index.html`, 'utf8');
-  const artifactTags = {
-    standalone: tagIn(STANDALONE),
-    pwa: tagIn(PWA_INDEX),
-    native: tagIn(`${WWW}/index.html`),
-    widget: tagIn(WIDGET),
-    harness: tagIn(HARNESS),
-  };
-  const tags = Object.values(artifactTags);
-  check(tags.every((tag) => tag !== null && /^[a-f0-9]{8}$/.test(tag)),
-    `every built artifact must carry a non-dev content tag: ${JSON.stringify(artifactTags)}`);
-  check(new Set(tags).size === 1,
-    `built artifacts disagree on release identity: ${JSON.stringify(artifactTags)}`);
-  const tag = artifactTags.native;
-
-  /* Native/www is a generated mirror, not an accumulating deployment folder.
-     Compare the complete file set with the clean Vite source before checking
-     bytes, so a deleted public note cannot survive forever in the app binary. */
-  const expectedFiles = filesUnder('dist/main');
-  const nativeFiles = filesUnder(WWW);
-  const missingNative = expectedFiles.filter((file) => !nativeFiles.includes(file));
-  const extraNative = nativeFiles.filter((file) => !expectedFiles.includes(file));
-  check(expectedFiles.includes('index.html') && expectedFiles.includes('sw.js')
-    && expectedFiles.includes('manifest.webmanifest'),
-  'dist/main is incomplete — the native payload comparison would be vacuous');
-  check(missingNative.length === 0 && extraNative.length === 0,
-    `${WWW} differs from clean dist/main; missing=${missingNative.join(',') || 'none'}; `
-    + `stale=${extraNative.join(',') || 'none'}`);
-
-  /* Agreement alone is a false green: a hard-coded tag would agree everywhere.
-     Independently reconstruct build.mjs's pre-stamp deliverables from the
-     shipped bytes, then hash their logical names, lengths, and content. This
-     also makes any omitted icon/manifest/widget/native byte fail the verifier. */
-  if (tag) {
-    const expectedTag = recomputeArtifactTag({
-      tag,
-      nativeDir: WWW,
-      standalone: STANDALONE,
-      pwaDir: 'pwa',
-      widget: WIDGET,
-      harness: HARNESS,
-    });
-    check(tag === expectedTag,
-      `built artifacts carry tag ${tag}, but their independently recomputed content tag is ${expectedTag}`);
-  }
-  for (const file of expectedFiles) {
-    const source = `dist/main/${file}`;
-    const shipped = `${WWW}/${file}`;
-    if (!existsSync(shipped)) continue;
-    if (file === 'index.html') {
-      const normalized = tag
-        ? readFileSync(shipped, 'utf8').replace(`data-build="${tag}"`, 'data-build="dev"')
-        : readFileSync(shipped, 'utf8');
-      check(normalized === readFileSync(source, 'utf8'),
-        `${shipped} is not the stamped dist/main single-file page`);
-    } else if (file === 'sw.js') {
-      const normalized = tag
-        ? readFileSync(shipped, 'utf8').replace(`'kb-${tag}'`, "'kb-dev'")
-        : readFileSync(shipped, 'utf8');
-      check(normalized === readFileSync(source, 'utf8'),
-        `${shipped} is not the version-stamped dist/main service worker`);
-    } else {
-      check(sameBytes(source, shipped), `${shipped} differs byte-for-byte from ${source}`);
-    }
-  }
-
-  /* the single-file build inlines everything. The chunked PWA bundle does not,
-     so a stray `rsync dist/pwa/ → native/www/` shows up as chunk references and
-     an assets/ directory. That mistake shipped repeatedly on 2026-08-21. */
-  check(!/<script[^>]+src="\.?\/?assets\//.test(nativeIndex) && !existsSync(`${WWW}/assets`),
-    `${WWW} holds the CHUNKED pwa layout, not the single-file build — someone `
-    + `rsynced dist/pwa/ over it. Re-run \`mise exec -- node build.mjs\`, which copies dist/main.`);
-
-  /* the service worker inside the payload must be versioned like every other
-     deliverable. Left at 'kb-dev' the bytes never change between builds, so iOS
-     never installs a new worker and the cache-first icons and manifest from
-     first launch outlive every app update. */
-  if (existsSync(`${WWW}/sw.js`)) {
-    const nativeSw = readFileSync(`${WWW}/sw.js`, 'utf8');
-    check(!/const VERSION = 'kb-dev';/.test(nativeSw),
-      `${WWW}/sw.js still carries the dev cache key 'kb-dev' — a dev service worker `
-      + `inside the shipped iOS bundle. build.mjs stamps it with the build hash.`);
-    if (tag) {
-      check(nativeSw.includes(`'kb-${tag}'`),
-        `${WWW}/sw.js cache key does not match the payload's build tag ${tag} — `
-        + `the worker and the page it caches come from different builds`);
-    }
-  }
-
-  const pwaSw = existsSync(PWA_SW) ? readFileSync(PWA_SW, 'utf8') : '';
-  check(!!tag && pwaSw.includes(`'kb-${tag}'`),
-    `${PWA_SW} cache key does not match the shared artifact tag ${tag}`);
-
-  /* cap sync copies the payload into the Xcode project; compare every source
-     byte. Capacitor itself adds exactly the two Cordova compatibility shims. */
-  const syncedIndexExists = existsSync(`${SYNCED}/index.html`);
-  if (REQUIRE_SYNCED) {
-    check(syncedIndexExists,
-      `${SYNCED}/index.html is absent — explicit native verification requires a successful cap sync`);
-  }
-  if (REQUIRE_SYNCED && syncedIndexExists) {
-    const syncedFiles = filesUnder(SYNCED);
-    const allowedGenerated = new Set(['cordova.js', 'cordova_plugins.js']);
-    const missingSynced = nativeFiles.filter((file) => !syncedFiles.includes(file));
-    const extraSynced = syncedFiles.filter((file) => !nativeFiles.includes(file));
-    check(missingSynced.length === 0,
-      `${SYNCED} omits native payload files: ${missingSynced.join(',')}`);
-    check(extraSynced.every((file) => allowedGenerated.has(file)),
-      `${SYNCED} contains stale/non-Capacitor files: ${extraSynced.join(',')}`);
-    for (const file of nativeFiles) {
-      check(sameBytes(`${WWW}/${file}`, `${SYNCED}/${file}`),
-        `${SYNCED}/${file} differs from the payload cap sync was asked to copy`);
-    }
-  }
-}
+verifyIosPayloadContract(check, { requireSynced: REQUIRE_SYNCED });
 
 /* ================= 4. NO DEV BUILD IN THE BINARY ================= */
 /* Capacitor's live-reload writes server.url pointing at a dev machine. Ship it
@@ -346,23 +145,14 @@ if (existsSync(CONFIG)) {
   }
 }
 
-/* THE CHECK MUST BE ABLE TO FAIL. Every pod assertion loops over a parsed
-   collection, so a regex that quietly stops matching turns this suite green by
-   iterating nothing — the same vacuous pass that let the lock rot unnoticed.
-   Anchor on both Capacitor pods plus the required local Game Center pod. */
-for (const pod of ['Capacitor', 'CapacitorCordova', GC_POD]) {
-  check(declared.has(pod), `the Podfile parser found no pod '${pod}' — the parser is broken, not the Podfile`);
-  check(locked.has(pod), `the EXTERNAL SOURCES parser found no '${pod}' — the parser is broken, not the lock`);
-}
-check(stamped !== null, `no PODFILE CHECKSUM line in ${LOCK} — truncated, or the format changed`);
-check(checksums.size > 0, 'the SPEC CHECKSUMS parser found nothing — the parser is broken');
+verifyPodParsersCouldFail(check, pods);
 
 console.log(JSON.stringify({
   nodePin, nodeRange,
   appId: APP_ID, xcodeIds, gcBundle, requireSynced: REQUIRE_SYNCED,
   gameCenterPackage: GC_PACKAGE,
-  podfileSha, stampedSha: stamped,
-  declared: Object.fromEntries(declared), locked: Object.fromEntries(locked),
+  podfileSha: pods.podfileSha, stampedSha: pods.stamped,
+  declared: Object.fromEntries(pods.declared), locked: Object.fromEntries(pods.locked),
   problems, errs,
 }, null, 2));
 process.exit(problems.length || errs.length ? 1 : 0);

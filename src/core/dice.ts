@@ -27,6 +27,19 @@ export function randStream(seed: string): () => number {
   };
 }
 
+/* One draw off any caller-supplied source, checked before it is used. Every
+   secondary draw here scales the result into an index or a weight, so a source
+   returning NaN, 1, or a negative silently lands out of range instead of
+   throwing. The label names the draw in the error, because the caller that
+   passed the bad source is usually several frames up. */
+export function unitDraw(random: () => number, label: string): number {
+  const draw = random();
+  if (!Number.isFinite(draw) || draw < 0 || draw >= 1) {
+    throw new RangeError(`${label} random source must return a finite number in [0, 1).`);
+  }
+  return draw;
+}
+
 export function diceStream(seed: string): () => number {
   const rand = randStream(seed);
   return () => 1 + Math.floor(rand() * DICE_FACES);

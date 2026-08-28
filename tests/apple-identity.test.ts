@@ -1,19 +1,15 @@
 import { readFileSync } from 'node:fs';
 import {
   APPLE_IDENTITY_MESSAGES,
-  GAME_CENTER_IDENTITY_MESSAGES,
   createAppleIdentity,
-  createGameCenterIdentity,
   sha256Hex,
   type AppleIdentityPorts,
   type AppleSignInBridge,
-  type GameCenterIdentityPorts,
 } from '../src/online/identity/identity.ts';
 import { registerAppleAuthorizationCode } from '../src/online/identity/apple-identity.ts';
-import { accountProviderView, providerReach } from '../src/online/screens/account-provider-view.ts';
-import { runOneTapFromAuthSheet } from '../src/online/screens/auth-screen.ts';
 import { CORS_HEADERS } from '../supabase/functions/_shared/http.ts';
-import type { GameCenterProof } from '../src/native/game-center.ts';
+import { runAccountProviderOfferTests } from './support/account-provider-offers.ts';
+import { runGameCenterClientContractTests } from './support/game-center-client-contract.ts';
 
 const problems: string[] = [];
 const check = (condition: boolean, message: string, detail?: unknown) => {
@@ -220,174 +216,11 @@ check(sentHeaders.length > 0 && sentHeaders.every((name) => allowedHeaders.has(n
   + 'passes the preflight and then drops the request entirely',
 { sentHeaders, allowed: [...allowedHeaders] });
 
-const GC_PROOF: GameCenterProof = {
-  publicKeyUrl: 'https://static.gc.apple.com/public-key/gc-prod-12.cer',
-  signature: 'signed', salt: 'salt', timestamp: '123', teamPlayerID: 'team-player',
-};
-
-function gameCenterHarness(options: {
-  session?: { access_token: string } | null;
-  sessionError?: { code: string } | null;
-  status?: number;
-  body?: unknown;
-  throwAt?: 'proof' | 'request' | 'json' | 'verifyOtp' | 'refreshSession';
-} = {}) {
-  const calls = {
-    getSession: 0,
-    requests: [] as Array<{ input: string; init: RequestInit }>,
-    verifyOtp: [] as Array<{ token_hash: string; type: string }>,
-    refresh: 0,
-  };
-  let requestedMode = '';
-  const identity = createGameCenterIdentity({
-    available: () => true,
-    getProof: async () => {
-      if (options.throwAt === 'proof') throw new Error('proof failed');
-      return GC_PROOF;
-    },
-    // Same boundary widening as the Apple fake: the stub speaks the narrow
-    // protocol the identity code exercises, not the full supabase-js types.
-    getAuth: () => ({
-      getSession: async () => {
-        calls.getSession++;
-        return { data: { session: options.session ?? null }, error: options.sessionError ?? null };
-      },
-      verifyOtp: async (params: { token_hash: string; type: string }) => {
-        calls.verifyOtp.push(params);
-        if (options.throwAt === 'verifyOtp') throw new Error('otp failed');
-        return { data: { user: null, session: null }, error: null };
-      },
-      refreshSession: async () => {
-        calls.refresh++;
-        if (options.throwAt === 'refreshSession') throw new Error('refresh failed');
-        return { data: { user: null, session: null }, error: null };
-      },
-    }) as unknown as ReturnType<GameCenterIdentityPorts['getAuth']>,
-    request: async (input, init) => {
-      calls.requests.push({ input, init });
-      requestedMode = JSON.parse(String(init.body)).mode;
-      if (options.throwAt === 'request') throw new Error('offline');
-      const status = options.status ?? 200;
-      return {
-        status,
-        ok: status >= 200 && status < 300,
-        json: async () => {
-          if (options.throwAt === 'json') throw new Error('bad json');
-          return options.body ?? (requestedMode === 'attach'
-            ? { kind: 'linked' } : { kind: 'session', tokenHash: 'gc-hash' });
-        },
-      };
-    },
-  });
-  return { identity, calls, requestedMode: () => requestedMode };
-}
-
-const linked = gameCenterHarness({ session: { access_token: 'guest-access' } });
-check(await linked.identity.attach() === null && linked.requestedMode() === 'attach'
-  && (linked.calls.requests[0].init.headers as Record<string, string>).Authorization
-    === 'Bearer guest-access'
-  && linked.calls.refresh === 1 && linked.calls.verifyOtp.length === 0,
-'Game Center attach did not preserve and refresh the current account', linked.calls);
-
-const restored = gameCenterHarness();
-check(await restored.identity.restore() === null && restored.requestedMode() === 'sign-in'
-  && restored.calls.verifyOtp[0]?.token_hash === 'gc-hash'
-  && !('Authorization' in (restored.calls.requests[0].init.headers as Record<string, string>)),
-'Game Center restore was not a sessionless verified OTP exchange', restored.calls);
-
-const sessionlessSheet = gameCenterHarness();
-check(await runOneTapFromAuthSheet(
-  sessionlessSheet.identity,
-  'attach',
-  async () => null,
-) === null && sessionlessSheet.requestedMode() === 'sign-in'
-  && sessionlessSheet.calls.verifyOtp[0]?.token_hash === 'gc-hash',
-'the sessionless CREATE ACCOUNT sheet did not restore the Game Center player',
-sessionlessSheet.calls);
-
-const attachedSheet = gameCenterHarness({ session: { access_token: 'guest-access' } });
-check(await runOneTapFromAuthSheet(
-  attachedSheet.identity,
-  'attach',
-  async () => ({ id: 'guest', guest: true, email: null }),
-) === null && attachedSheet.requestedMode() === 'attach'
-  && (attachedSheet.calls.requests[0].init.headers as Record<string, string>).Authorization
-    === 'Bearer guest-access',
-'the account sheet did not preserve Game Center attach for its current session',
-attachedSheet.calls);
-
-const appeared = gameCenterHarness({ session: { access_token: 'appeared-during-proof' } });
-check(await appeared.identity.restore() === null && appeared.calls.verifyOtp.length === 0,
-'Game Center OTP replaced a session that appeared during verification');
-
-const gcConflict = gameCenterHarness({
-  session: { access_token: 'guest' }, status: 409,
-  body: { error: 'identity-already-linked' },
-});
-check(await gcConflict.identity.attach() === GAME_CENTER_IDENTITY_MESSAGES.conflict,
-'Game Center ownership conflict was not localized');
-
-for (const throwAt of ['proof', 'request', 'json', 'verifyOtp'] as const) {
-  const harness = gameCenterHarness({ throwAt });
-  check(await harness.identity.restore() === GAME_CENTER_IDENTITY_MESSAGES.failed,
-    `a thrown Game Center ${throwAt} escaped the localized boundary`);
-}
-
-/* ---- what the profile's ACCOUNT ACCESS box may say ----
-   The box opens for what the player can DO here, never for a fact — reach is a
-   parameter, so iOS, the web and the build whose identity gateway origin is
-   finally set are all decidable without a device. The last column is the offer;
-   null means no box at all, and every painted row carries its OWN control (or
-   null, for a way back in that already works) — before the Game Center control
-   existed, its row could only ever state "not linked" at a player with nothing
-   to tap. Game Center drives the box open once linking can complete; a healthy
-   Apple link rides along but never opens it alone (the iOS/web healthy rows). */
-const MEMBER = { id: 'p', guest: false, email: 'p@example.test' };
-const GUEST = { id: 'p', guest: true, email: null };
-const linkage = (apple: boolean, ready: boolean, gameCenter = false) =>
-  ({ gameCenterLinked: gameCenter, appleLinked: apple, appleRevocationReady: ready });
-const IOS = { apple: true, gameCenter: false, gameCenterUnidentified: false };
-const WEB = { apple: false, gameCenter: false, gameCenterUnidentified: false };
-const GATEWAY = { apple: true, gameCenter: true, gameCenterUnidentified: false };
-const OFFERS = {
-  gcLink: { state: 'profile.gameCenterNotLinked', action: 'profile.connectGameCenter' },
-  gcDone: { state: 'profile.gameCenterLinked', action: null },
-  appleAdd: { state: 'profile.appleNotLinked', action: 'profile.addApple' },
-  appleFix: { state: 'profile.appleRepair', action: 'profile.repairApple' },
-  appleDone: { state: 'profile.appleLinked', action: null },
-} as const;
-for (const [why, user, linked, reach, offer] of [
-  ['a guest is answered by the GUEST card, not this box', GUEST, linkage(false, false), IOS, null],
-  ['a healthy Apple account on iOS has nothing left to do', MEMBER, linkage(true, true), IOS, null],
-  ['the same account on the web has nothing to offer', MEMBER, linkage(true, true), WEB, null],
-  ['a missing credential is only repairable where Apple runs', MEMBER, linkage(true, false), WEB, null],
-  ['an unlinked account on the web cannot be offered Apple', MEMBER, linkage(false, false), WEB, null],
-  ['a fully linked account leaves the gateway build nothing to do',
-    MEMBER, linkage(true, true, true), GATEWAY, null],
-  ['a missing deletion credential is repaired where Apple runs',
-    MEMBER, linkage(true, false), IOS, { gameCenter: null, apple: OFFERS.appleFix }],
-  ['an unlinked account is offered Apple where the provider runs',
-    MEMBER, linkage(false, false), IOS, { gameCenter: null, apple: OFFERS.appleAdd }],
-  ['the gateway build offers Game Center beside the healthy Apple link',
-    MEMBER, linkage(true, true), GATEWAY, { gameCenter: OFFERS.gcLink, apple: OFFERS.appleDone }],
-  ['a bare account in the gateway build is offered both, each with its control',
-    MEMBER, linkage(false, false), GATEWAY, { gameCenter: OFFERS.gcLink, apple: OFFERS.appleAdd }],
-  ['a linked Game Center identity is a way back in, not a second offer',
-    MEMBER, linkage(true, false, true), GATEWAY, { gameCenter: OFFERS.gcDone, apple: OFFERS.appleFix }],
-  ['the gateway build without Apple still offers Game Center alone',
-    MEMBER, linkage(false, false), { apple: false, gameCenter: true,
-                                     gameCenterUnidentified: false },
-    { gameCenter: OFFERS.gcLink, apple: null }],
-] as const) {
-  const view = accountProviderView(user, linked, reach);
-  check(JSON.stringify(view ?? null) === JSON.stringify(offer), why, view);
-}
-
-/* Reach is not a hopeful guess: with no gateway origin compiled in, Game
-   Center is not a tap this build offers anywhere, so the driver rows above are
-   unreachable rather than merely unlikely. */
-check(providerReach().gameCenter === false,
-'an unconfigured identity gateway still advertised Game Center as reachable', providerReach());
+/* The two neighbouring identity contracts this suite also decides live in
+   their own modules; both run on injected ports, so they are safely after
+   the globalThis.fetch swap above has been restored. */
+await runGameCenterClientContractTests(check);
+runAccountProviderOfferTests(check);
 
 const identitySource = readFileSync('src/online/identity/identity.ts', 'utf8');
 check(!/from\s+['"]@(?:capacitor|capawesome)\//.test(identitySource),

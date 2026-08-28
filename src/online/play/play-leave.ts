@@ -1,7 +1,8 @@
 // Leaving a live ranked match. The confirmation already happened (flow/leave →
 // boot, which asks what quitting costs); this is only what a confirmed forfeit
 // then does.
-import { resignedMatch, type MatchRow } from '../api/match-api.ts';
+import type { MatchRow } from '../api/match-api.ts';
+import { resignedMatch } from '../api/match-resignation.ts';
 import type { OnlineState } from './play-types.ts';
 
 export interface OnlineLeavePorts {

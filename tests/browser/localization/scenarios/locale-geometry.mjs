@@ -1,7 +1,7 @@
-import { MODES } from '../../../../src/core/modes.ts';
-import { SPELLS } from '../../../../src/core/spells.ts';
-import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
+import { checkCompactChipVariants } from '../harness/compact-chips.mjs';
+import { prepareLiveDuel } from '../harness/live-duel.mjs';
 import { LOCALE_IDS as LOCALES, chooseLocale } from '../harness/locale-control.mjs';
+import { checkStatusLaneBox, checkStatusLaneCopies } from '../harness/status-lane.mjs';
 
 const STANDALONE_SIZES = [
   { name: 'portrait-320x568', width: 320, height: 568, landscape: false },
@@ -10,87 +10,12 @@ const STANDALONE_SIZES = [
   { name: 'landscape-667x375', width: 667, height: 375, landscape: true },
 ];
 const WIDGET_WIDTHS = [320, 390, 520];
-const MODE_VARIANTS = MODES.map(({ mode, id }) => ({ mode, id }));
-const RUNE_VARIANTS = SPELLS.map(({ id }) => id);
-const interpolateSample = (copy, player) => copy.replace(/\{\{([^}]+)\}\}/gu, (_match, name) => ({
-  column: '3',
-  player,
-  spell: 'COLUMN SHIELD',
-  opponent: 'NovaComet992',
-  count: '12',
-  formatted: '12',
-}[name] ?? '12'));
-const statusCopies = (locale) => {
-  const game = RESOURCES[locale].game;
-  const online = RESOURCES[locale].online;
-  return [
-    ...Object.entries(game.status).flatMap(([key, copy]) =>
-      typeof copy === 'string' && !(`${key}Compact` in game.status)
-        ? [[`game.status.${key}`, copy]] : []),
-    ...SPELLS.map(({ id }) => {
-      const copy = game.runes[id];
-      return [`game.runes.${id}.aim`, 'aimCompact' in copy ? copy.aimCompact : copy.aim];
-    }),
-    ...['reconnectingCompact', 'opponentThinking', 'yourMove', 'awayAutoPlay_one',
-      'awayAutoPlay_other', 'autoPlay'].flatMap((key) =>
-      key.startsWith('awayAutoPlay') ? [] :
-      typeof online.play[key] === 'string' ? [[`online.play.${key}`, online.play[key]]] : []),
-    ...['awayAutoPlayCompact_one', 'awayAutoPlayCompact_other'].map((key) =>
-      [`online.play.${key}`, online.play[key]]),
-  ].map(([key, copy]) => ({ key, copy: interpolateSample(copy, game.player.player2) }));
-};
+
 const GEOMETRY_SELECTORS = [
   '#topBoard', '#botBoard', '#dieStage',
   '#topBoard .slot', '#botBoard .slot',
   '#topBoard .die', '#botBoard .die', '#dieStage .die',
 ];
-
-const frame = (page) => page.evaluate(() => new Promise((resolve) =>
-  requestAnimationFrame(() => requestAnimationFrame(resolve))));
-
-async function prepareGame(page) {
-  await page.evaluate(() => {
-    const game = window.__kb;
-    const state = game.S;
-    state.mode = 'duo';
-    state.seat = 'pass';
-    state.starter = 0;
-    state.localMode = 0;
-    state.spell = 'ward';
-    state.timer = 0;
-    game.newGame({ spell: 'ward' });
-    state.gen++; // keep the localized opening status stable and cancel the roll
-    state.boards[0][0] = [4];
-    state.boards[1][1] = [5];
-    game.renderAll(false);
-    game.setStageDie(6);
-    document.querySelector('#topBoard .die')?.setAttribute('data-locale-sentinel', 'top');
-    document.querySelector('#botBoard .die')?.setAttribute('data-locale-sentinel', 'bottom');
-    game.fit();
-  });
-  /* ResizeObserver and the 120ms orientation fallback both converge through
-     fit(). Compare settled geometry, not a viewport's transitional old cell. */
-  await page.waitForTimeout(160);
-  await page.evaluate(() => window.__kb.fit());
-  await frame(page);
-  /* The contract compares resting board geometry, not an ancestor's entry or
-     seating transition. Under a loaded Linux compositor, a fixed delay can
-     return between animation frames; require the two boards to hold the same
-     measured boxes for three consecutive paints before taking the baseline. */
-  await page.evaluate(async () => {
-    let previous = '';
-    let stableFrames = 0;
-    while (stableFrames < 3) {
-      await new Promise((resolve) => requestAnimationFrame(resolve));
-      const signature = ['topBoard', 'botBoard'].map((id) => {
-        const box = document.getElementById(id).getBoundingClientRect();
-        return [box.x, box.y, box.width, box.height].map((value) => value.toFixed(3)).join(':');
-      }).join('|');
-      stableFrames = signature === previous ? stableFrames + 1 : 0;
-      previous = signature;
-    }
-  });
-}
 
 async function snapshot(page, rootSelector, localeOwnerSelector) {
   return page.evaluate(({ rootSelector, localeOwnerSelector, geometrySelectors }) => {
@@ -185,112 +110,7 @@ function checkSnapshot(check, label, expectedLandscape, view) {
     `${label} chose the wrong game orientation`, { expectedLandscape, view });
   check(clipped.length === 0,
     `${label} clips or pushes constrained game copy outside its root`, clipped);
-  if (expectedLandscape) {
-    check(Math.abs(view.status.box.width - 104) <= 0.5
-      && Math.abs(view.status.box.height - 26) <= 0.5
-      && view.status.lines <= 2,
-    `${label} exceeded the 104px/two-line landscape status lane`, view.status);
-  } else {
-    check(view.status.lines <= 1,
-      `${label} wrapped the reserved portrait status line`, view.status);
-  }
-}
-
-async function measureStatusCopies(page, rootSelector, locale, label, expectedLandscape, check) {
-  const failures = [];
-  for (const candidate of statusCopies(locale)) {
-    const view = await page.evaluate(({ selector, copy }) => {
-      const root = document.querySelector(selector);
-      const status = root.querySelector('#status');
-      status.textContent = copy;
-      const box = status.getBoundingClientRect();
-      const range = document.createRange();
-      range.selectNodeContents(status);
-      const text = range.getBoundingClientRect();
-      const lines = new Set([...range.getClientRects()].map((line) => line.top.toFixed(2))).size;
-      return {
-        box: { x: box.x, y: box.y, width: box.width, height: box.height,
-          right: box.right, bottom: box.bottom },
-        text: { x: text.x, y: text.y, width: text.width, height: text.height,
-          right: text.right, bottom: text.bottom },
-        lines,
-        scrollWidth: status.scrollWidth,
-        clientWidth: status.clientWidth,
-        scrollHeight: status.scrollHeight,
-        clientHeight: status.clientHeight,
-      };
-    }, { selector: rootSelector, copy: candidate.copy });
-    const contained = view.text.x >= view.box.x - 0.5 && view.text.right <= view.box.right + 0.5
-      && view.text.y >= view.box.y - 0.5 && view.text.bottom <= view.box.bottom + 0.5
-      && view.scrollWidth <= view.clientWidth + 0.5
-      && view.scrollHeight <= view.clientHeight + 0.5;
-    if (!contained || (expectedLandscape ? view.lines > 2 : view.lines > 1)) {
-      failures.push({ ...candidate, view });
-    }
-  }
-  check(failures.length === 0,
-    `${label}/${locale} exceeds the reserved status lane`, failures);
-}
-
-async function badgeSnapshot(page, rootSelector) {
-  return page.evaluate((selector) => {
-    const root = document.querySelector(selector);
-    const rootBox = root.getBoundingClientRect();
-    const row = root.querySelector('#rec');
-    const chips = [...root.querySelectorAll('#rec .rchip')].map((chip) => {
-      const box = chip.getBoundingClientRect();
-      const range = document.createRange();
-      range.selectNodeContents(chip);
-      const text = range.getBoundingClientRect();
-      return {
-        text: chip.textContent?.trim(),
-        width: box.width,
-        height: box.height,
-        scrollWidth: chip.scrollWidth,
-        clientWidth: chip.clientWidth,
-        textInside: text.x >= box.x - 0.5 && text.right <= box.right + 0.5
-          && text.y >= box.y - 0.5 && text.bottom <= box.bottom + 0.5,
-        insideRoot: box.x >= rootBox.x - 0.5 && box.right <= rootBox.right + 0.5,
-      };
-    });
-    return {
-      chips,
-      row: row ? { scrollWidth: row.scrollWidth, clientWidth: row.clientWidth } : null,
-    };
-  }, rootSelector);
-}
-
-async function measureBadgeVariants(page, rootSelector, localeOwnerSelector, label, check) {
-  const failures = [];
-  for (const locale of LOCALES) {
-    await chooseLocale(page, locale, localeOwnerSelector);
-    for (const variant of [
-      ...MODE_VARIANTS.map(({ mode, id }) => ({ kind: 'mode', id, scoring: mode, spells: ['', ''] })),
-      ...RUNE_VARIANTS.map((id) => ({ kind: 'rune', id, scoring: 0, spells: [id, id] })),
-      { kind: 'rune-pair', id: `${RUNE_VARIANTS[0]}+${RUNE_VARIANTS[1]}`,
-        scoring: 0, spells: [RUNE_VARIANTS[0], RUNE_VARIANTS[1]] },
-    ]) {
-      await page.evaluate(({ scoring, spells }) => {
-        const game = window.__kb;
-        game.S.mode = 'duo';
-        game.S.seat = 'pass';
-        game.newGame({ scoring, spells });
-        game.S.gen++;
-        game.renderAll(false);
-        game.fit();
-      }, variant);
-      await frame(page);
-      const view = await badgeSnapshot(page, rootSelector);
-      if (!view.row || view.row.scrollWidth > view.row.clientWidth + 0.5
-          || view.chips.length === 0
-          || view.chips.some((chip) => !chip.text || !chip.textInside || !chip.insideRoot
-            || chip.scrollWidth > chip.clientWidth + 0.5)) {
-        failures.push({ locale, variant, view });
-      }
-    }
-  }
-  check(failures.length === 0,
-    `${label} clips a registered mode/rune compact chip`, failures);
+  checkStatusLaneBox(check, label, expectedLandscape, view.status);
 }
 
 async function measureLocaleMatrix(
@@ -306,7 +126,9 @@ async function measureLocaleMatrix(
     await chooseLocale(page, locale, localeOwnerSelector);
     views[locale] = await snapshot(page, rootSelector, localeOwnerSelector);
     checkSnapshot(check, `${label}/${locale}`, expectedLandscape, views[locale]);
-    await measureStatusCopies(page, rootSelector, locale, label, expectedLandscape, check);
+    /* The sweep writes each candidate into the live #status and leaves the
+       last one there, so take this locale's frame before running it. */
+    await checkStatusLaneCopies(page, rootSelector, locale, label, expectedLandscape, check);
   }
   const deltas = Object.fromEntries(LOCALES.filter((locale) => locale !== 'en').map((locale) =>
     [locale, maxGeometryDelta(views.en, views[locale])]));
@@ -343,12 +165,12 @@ export async function runLocaleGeometryScenarios(suite) {
   await page.waitForFunction(() => window.__kb);
   for (const size of STANDALONE_SIZES) {
     await page.setViewportSize({ width: size.width, height: size.height });
-    await prepareGame(page);
+    await prepareLiveDuel(page);
     out.localeGeometry.standalone[size.name] = await measureLocaleMatrix(
       page, '#kbroot', 'html', size.name, size.landscape, check,
     );
     if (size.width === 320 || (size.width === 568 && size.height === 320)) {
-      await measureBadgeVariants(page, '#kbroot', 'html', size.name, check);
+      await checkCompactChipVariants(page, '#kbroot', 'html', size.name, check);
     }
   }
   await context.close();
@@ -362,14 +184,14 @@ export async function runLocaleGeometryScenarios(suite) {
   await widget.waitForFunction(() => window.__kb);
   for (const width of WIDGET_WIDTHS) {
     await widget.setViewportSize({ width: width + 16, height: 680 });
-    await prepareGame(widget);
+    await prepareLiveDuel(widget);
     const rootWidth = await widget.$eval('#kbroot', (root) => root.getBoundingClientRect().width);
     check(Math.abs(rootWidth - width) <= 0.5,
       `widget-${width} did not expose the requested supported content width`, { rootWidth, width });
     out.localeGeometry.widget[String(width)] = await measureLocaleMatrix(
       widget, '#kbroot', '#kbroot', `widget-${width}`, false, check,
     );
-    await measureBadgeVariants(widget, '#kbroot', '#kbroot', `widget-${width}`, check);
+    await checkCompactChipVariants(widget, '#kbroot', '#kbroot', `widget-${width}`, check);
     const ownership = await widget.evaluate(() => ({
       htmlLang: document.documentElement.lang,
       rootLang: document.getElementById('kbroot')?.lang,

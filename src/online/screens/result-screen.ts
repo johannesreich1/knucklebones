@@ -4,9 +4,9 @@ import { $, hide } from '../../ui/dom.ts';
 import {
   repaintEndLocale,
   showLocalizedEnd,
-  setPlates,
   type EndSpec,
 } from '../../ui/endscreen.ts';
+import { setPlates } from '../../ui/endscreen-plates.ts';
 import { refreshHomeChip } from '../../ui/homechip.ts';
 import {
   myLadder,
@@ -15,7 +15,8 @@ import {
   type PlayerCard,
 } from '../api/ladder-api.ts';
 import { showFaceoff, type MySide } from './faceoff.ts';
-import { cacheStanding, myProfile } from '../identity/session.ts';
+import { myProfile } from '../identity/profile.ts';
+import { cacheStanding, readProfileCache } from '../../profile-cache.ts';
 import {
   acknowledgeRuneReward,
   refreshRuneCollection,
@@ -114,16 +115,7 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
       rewardAcknowledgement = null;
       run(resumeReward);
     };
-    let cache: {
-      nickname?: string;
-      rating?: number;
-      avatar?: string | null;
-      rank?: number;
-      apex?: boolean;
-    } | null = null;
-    try {
-      cache = JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null');
-    } catch { /* forgetful host */ }
+    let cache = readProfileCache();
     const cachedRating = typeof cache?.rating === 'number' && report.delta != null
       ? cache.rating + report.delta : null;
     let visiblePoints: number | null = cachedRating;

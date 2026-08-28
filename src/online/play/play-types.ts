@@ -38,6 +38,10 @@ export interface OnlineState {
       opponent never sets it: their row arrives when they actually played, and
       a fake think would both lie and delay the player's own turn. */
   botBeatDue: boolean;
+  /* A placement this client already painted at tap time, so the authoritative
+     replay does not paint it a second time. Cleared as soon as it is matched,
+     or when the action is refused. */
+  optimisticPlace: { who: Player; col: number; die: number } | null;
   /** Automatic placements already spent by this player, from the match row. */
   autoStreak: number;
   /** The away card has been raised for this streak; the tap retires it. */

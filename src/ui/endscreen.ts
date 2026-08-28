@@ -11,30 +11,20 @@
 // Adding a third context (a tournament, a daily) is another spec, not another
 // screen.
 import { $, show, hide } from './dom.ts';
-import { formatNumber, t } from '../i18n/index.ts';
+import { formatNumber } from '../i18n/index.ts';
 import { tap } from './tap.ts';
 import { Sfx, vibrate } from './audio.ts';
 import { fireworks } from './fx.ts';
-import { fillPlate, repaintPlateLocale, type PlateSpec } from './plate.ts';
+import { paintFeature, type EndFeature } from './endscreen-feature.ts';
+import {
+  dealFreshPlates,
+  forgetPlates,
+  repaintPlatesLocale,
+  type EndPlate,
+} from './endscreen-plates.ts';
+import { repaintShareLabel, resetShare, setShareText, shareResult } from './endscreen-share.ts';
 
 export interface EndAction { label: string; run: () => void }
-
-/* A feature card is a DOOR: two lines name what was won and the whole card
-   opens whatever already owns the full description. No body and no CTA — a
-   printed explanation would be a second copy of that owner's text, and a
-   button beside a tappable card is two targets for one destination. */
-export interface EndFeature {
-  className?: string;
-  hue?: string;
-  icon?: string;
-  kicker: string;
-  title: string;
-  tap: () => void;
-}
-
-/* an identity plate on the result (design 36f) — the home plate's spec plus
-   an optional door. With a tap the row is a <button> and grows its chevron. */
-export interface EndPlate extends PlateSpec { tap?: () => void }
 
 export interface EndSpec {
   outcome: 'win' | 'lose' | 'draw';
@@ -68,15 +58,7 @@ let live: EndSpec | null = null;
    only its copy-bearing fields; outcome classes, plates, timing, focus, and
    the one-time entrance theatre stay exactly where they are. */
 let localizedSpec: (() => EndSpec) | null = null;
-let shareText = '';
-type ShareFeedback = 'idle' | 'copied' | 'copyFailed';
-let shareFeedback: ShareFeedback = 'idle';
-let shareFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
-let presentationRevision = 0;
 let titleResizeObserver: ResizeObserver | null = null;
-/* the last deal, kept so the theatre can run again on a screen that was only
-   covered — the plates are the one thing here that is worth a second showing */
-let dealt: EndPlate[] = [];
 
 export function bindEnd(): void {
   const act = (a?: EndAction) => { Sfx.tap(); a?.run(); };
@@ -128,15 +110,11 @@ function paintCopy(spec: EndSpec): void {
   setMeta(spec.meta ?? '');
   label('#btnAgain', spec.again);
   label('#btnEndQuiet', spec.quiet);
-  shareText = spec.share ?? '';
-  const share = $('#btnShare') as HTMLButtonElement;
-  share.hidden = !spec.share;
-  paintShareFeedback();
+  setShareText(spec.share);
 }
 
 function presentEnd(spec: EndSpec, localize: (() => EndSpec) | null): void {
-  presentationRevision++;
-  resetShareFeedback();
+  resetShare();
   live = spec;
   localizedSpec = localize;
   const title = $('#endTitle');
@@ -147,8 +125,7 @@ function presentEnd(spec: EndSpec, localize: (() => EndSpec) | null): void {
   ov.classList.remove('win', 'lose', 'draw', 'settled');
   ov.classList.add(spec.outcome);
   paintCopy(spec);
-  delete $('#endPlates').dataset.dealtAt;   // a NEW result: the stamp may slam again
-  setPlates(spec.plates ?? []);
+  dealFreshPlates(spec.plates ?? []);
   paintFeature(spec.feature);
   setTimeout(() => {
     show('#ovEnd');
@@ -203,14 +180,9 @@ export function repaintEndLocale(): void {
        restore the original HTML before that caller adopts the locale factory. */
     $('#endYou').textContent = formatNumber(live.you.score);
     $('#endCpu').textContent = formatNumber(live.them.score);
-    paintShareFeedback();
+    repaintShareLabel();
   }
-  if (localizedPlates?.length === dealt.length) dealt = localizedPlates;
-  const box = $('#endPlates');
-  Array.from(box.children).forEach((plate, index) => {
-    const spec = dealt[index];
-    if (spec) repaintPlateLocale(plate as HTMLElement, { large: true, ...spec });
-  });
+  repaintPlatesLocale(localizedPlates);
 }
 
 /* the context line can arrive LATE — ranked paints a points chip from cache and
@@ -221,82 +193,12 @@ export function setMeta(html: string): void {
   m.hidden = !html;
 }
 
-function paintFeature(feature?: EndFeature): void {
-  const box = $('#endFeature');
-  box.innerHTML = '';
-  box.hidden = !feature;
-  box.className = `endfeature${feature?.className ? ` ${feature.className}` : ''}`;
-  if (!feature) {
-    box.style.removeProperty('--feature-hue');
-    return;
-  }
-  if (feature.hue) box.style.setProperty('--feature-hue', feature.hue);
-  else box.style.removeProperty('--feature-hue');
-
-  const icon = document.createElement('i');
-  icon.className = 'endfeature-icon';
-  icon.setAttribute('aria-hidden', 'true');
-  icon.innerHTML = feature.icon ?? '';
-  const copy = document.createElement('div');
-  copy.className = 'endfeature-copy';
-  const kicker = document.createElement('small');
-  kicker.textContent = feature.kicker;
-  const title = document.createElement('b');
-  title.textContent = feature.title;
-  copy.append(kicker, title);
-  // the plates' own mark for a row that opens something (ui/plate.ts)
-  const chev = document.createElement('span');
-  chev.className = 'chev';
-  chev.setAttribute('aria-hidden', 'true');
-  chev.textContent = '›';
-  box.append(icon, copy, chev);
-}
-
-/* the plates can arrive LATE too, for the same reason — ranked deals them from
-   cache and re-deals once the fresh standing lands */
-export function setPlates(plates: EndPlate[]): void {
-  const box = $('#endPlates');
-  dealt = plates;
-  /* the slam (styles: .pstamp) plays ONCE per result — a re-deal carries
-     fresh numbers, not a fresh verdict. But only once it truly played: a
-     re-deal landing inside the slam's delay+duration window (~1.7s) rebuilds
-     the stamp before it ever rendered, so there the animation restarts
-     instead of being suppressed — the player still sees exactly one slam. */
-  const first = Number(box.dataset.dealtAt || 0);
-  box.classList.toggle('restamp', !!first && performance.now() - first > 1700);
-  if (plates.length && !first) box.dataset.dealtAt = String(performance.now());
-  box.innerHTML = '';
-  box.hidden = !plates.length;
-  for (const p of plates) {
-    const el = document.createElement(p.tap ? 'button' : 'div');
-    // the result's plates wear the roomier cut by default; a spec may override
-    fillPlate(el, { large: true, ...p, chev: p.chev ?? !!p.tap });
-    if (p.tap) el.addEventListener('click', () => { Sfx.tap(); p.tap!(); });
-    box.appendChild(el);
-  }
-}
-
-/* THE PLATES' THEATRE, RUN AGAIN — and nothing else on the screen with it.
-   A screen that was merely COVERED (the own plate's door to the profile, see
-   online/ui) comes back to a still frame, so it gets one beat of life: the
-   cards deal in turn, the stamp slams, the beaten row takes the hit. The
-   title landed once and the fireworks fired once — replaying those would
-   announce a second verdict rather than resume the one already given (user
-   call). Dropping dealtAt is what re-arms the slam; setPlates does the rest,
-   because rebuilding a node is what restarts a CSS animation. */
-export function replayPlates(): void {
-  if (!dealt.length) return;
-  delete $('#endPlates').dataset.dealtAt;
-  setPlates(dealt);
-}
-
 export function closeEnd(): void {
   hide('#ovEnd');
-  presentationRevision++;
-  resetShareFeedback();
+  resetShare();
   live = null;
   localizedSpec = null;
-  dealt = [];
+  forgetPlates();
   paintFeature(undefined);
 }
 
@@ -311,38 +213,4 @@ function replay(el: HTMLElement, cls: string): void {
   el.classList.remove(cls);
   void el.offsetWidth;
   el.classList.add(cls);
-}
-
-async function shareResult(): Promise<void> {
-  const revision = presentationRevision;
-  const url = location.origin + location.pathname;
-  try {
-    if (navigator.share) { await navigator.share({ text: shareText, url }); return; }
-    await navigator.clipboard.writeText(shareText + ' ' + url);
-    if (presentationRevision === revision) showShareFeedback('copied');
-  } catch {
-    if (presentationRevision === revision) showShareFeedback('copyFailed');
-  }
-}
-
-function paintShareFeedback(): void {
-  const key = shareFeedback === 'idle' ? 'result.share' : `result.${shareFeedback}` as const;
-  $('#btnShare').textContent = t('game', key);
-}
-
-function resetShareFeedback(): void {
-  if (shareFeedbackTimer !== null) clearTimeout(shareFeedbackTimer);
-  shareFeedbackTimer = null;
-  shareFeedback = 'idle';
-}
-
-function showShareFeedback(feedback: Exclude<ShareFeedback, 'idle'>): void {
-  resetShareFeedback();
-  shareFeedback = feedback;
-  paintShareFeedback();
-  shareFeedbackTimer = setTimeout(() => {
-    shareFeedbackTimer = null;
-    shareFeedback = 'idle';
-    paintShareFeedback();
-  }, 1500);
 }

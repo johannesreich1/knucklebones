@@ -9,11 +9,11 @@ import { createQueueCancellation } from '../src/online/api/queue-cancellation.ts
 import { createInitialSyncBoundary } from '../src/online/play/initial-sync.ts';
 import { newerMatchProjection, readMatchSyncSnapshot } from '../src/online/play/match-sync.ts';
 import { randomUuid } from '../src/online/api/random-id.ts';
+import { joinResultFromResponse } from '../src/online/api/match-api.ts';
 import {
   isMissingQueueLifecycleRpc,
-  joinResultFromResponse,
   leaveQueueWithClient,
-} from '../src/online/api/match-api.ts';
+} from '../src/online/api/queue-lifecycle.ts';
 import { localizedAuthError } from '../src/online/identity/session.ts';
 import { rankedBadge } from '../src/online/play/play-copy.ts';
 import { supportsRankedClientRules } from '../src/online/play/play-state.ts';
@@ -121,7 +121,11 @@ check(trialSelectionSource.includes('recoverIdempotentCommand(committed')
   'Rune Trial selection can replace an uncertain command with a fresh choice');
 check(playSource.includes('sync: () => sync(true)') && !playSource.includes('if (res.rejoined)'),
   'fresh matches do not sync a possible old-backend bot opening move before input');
-check(playSource.includes('newerMatchProjection(online.pendingRow, r.data.match)')
+/* The optimistic move lives in play-move.ts; the terminal drain and the input
+   freeze stay with the view that owns the match. Both halves of the gate are
+   pinned, each where it actually is. */
+const moveSource = readFileSync('src/online/play/play-move.ts', 'utf8');
+check(moveSource.includes('newerMatchProjection(online.pendingRow, r.data.match)')
   && playSource.includes('freezeMatchInput();')
   && playSource.includes('drainTerminalProjection(online, m'),
   'ranked play is not consuming the monotonic terminal projection/input gate');

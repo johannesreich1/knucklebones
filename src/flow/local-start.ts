@@ -4,12 +4,8 @@
 import { CLASSIC, ME, AI, type Mode } from '../core/rules.ts';
 import { randStream } from '../core/dice.ts';
 import { RANDOM, modeById } from '../core/modes.ts';
-import {
-  makeRuneTrialOffer,
-  pickRuneTrialChoice,
-  rankedOutcomeRoster,
-  RUNE_TRIAL_OUTCOME,
-} from '../core/ranked-outcomes.ts';
+import { rankedOutcomeRoster, RUNE_TRIAL_OUTCOME } from '../core/ranked-outcomes.ts';
+import { makeRuneTrialOffer, pickRuneTrialChoice } from '../core/rune-trial-offer.ts';
 import { RANDOM_DUAL_SPELL, RANDOM_SPELL, spellById, type SpellSpec } from '../core/spells.ts';
 import { modeCopy, runeTrialCopy } from '../i18n/index.ts';
 import {

@@ -35,55 +35,16 @@ import { REDUCED } from './fx.ts';
 import type { Beat } from './reveal-types.ts';
 import { appRoot } from './embed.ts';
 
-/* The deck's geometry and markup live in ui/runefelt.ts — one module owns
-   what the deck IS, this one owns what the hands DO to it. The felt exports
-   are re-exported so every existing consumer keeps its seam. */
+/* Three modules, three questions: ui/runefelt.ts owns what the deck IS (its
+   geometry and markup), ui/runeplan.ts owns what one shuffle DECIDES (pure
+   data — which fan slot the mechanics carry to the top), and this one owns
+   what the hands DO. The felt exports are re-exported so every existing
+   consumer keeps its seam. */
 import { restOf, stackOf, squaredOf, PILES, PILE_Y, runeFelt } from './runefelt.ts';
+import { planShuffle, shuffledOrder, type ShufflePlan } from './runeplan.ts';
 export { runeCardFaces, runeFelt } from './runefelt.ts';
 
 const pause = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
-
-/** a fresh cut of the roster — Fisher-Yates, because ui/ may hold randomness */
-function shuffledOrder(candidates: readonly number[]): number[] {
-  const o = [...candidates];
-  for (let i = o.length - 1; i > 0; i--) {
-    const j = (Math.random() * (i + 1)) | 0;
-    [o[i], o[j]] = [o[j], o[i]];
-  }
-  return o;
-}
-
-/* THE PLAN of one shuffle, decided up front so the animation, the reduced-
-   motion still and the draw all read the same physics. Slots are DOM indices
-   (the spread, left to right). Randomness enters exactly three times — the
-   fan order (dealBeat), the scoop direction and the gather order — and the
-   rest is mechanical:
-   - the spread squares from either end (a dealer scoops left- or right-handed;
-     without this the round-robin provably always tops a card from the same
-     half of the spread — a tell the monte framing would make worse),
-   - flick k takes the CURRENT TOP of the deck, round-robin across the piles,
-   - the piles reassemble in gather order; the last pile's top card is the
-     deck's top, and the deck's top is the answer. */
-interface ShufflePlan {
-  stackSlots: number[];   // the scooped deck, bottom → top
-  piles: number[][];      // each pile's slots, bottom → top
-  gather: number[];       // [the base pile, then the two hopped onto it]
-  finalStack: number[];   // the assembled deck, bottom → top
-  topSlot: number;        // the slot whose card ends on top — the answer's
-}
-function planShuffle(count: number): ShufflePlan {
-  const slots = [...Array(count).keys()];
-  const stackSlots = Math.random() < 0.5 ? slots.reverse() : slots;
-  const piles: number[][] = [[], [], []];
-  for (let k = 0; k < count; k++) piles[k % 3].push(stackSlots[count - 1 - k]);
-  /* the deck reassembles on a SIDE pile only: the dealt card grows over the
-     felt's centre, and a stack gathered there would vanish behind the very
-     card it produced. A dealer pulls the deck aside to deal off it anyway. */
-  const base = Math.random() < 0.5 ? 0 : 2;
-  const gather = [base, ...shuffledOrder([0, 1, 2].filter((p) => p !== base))];
-  const finalStack = gather.flatMap((p) => piles[p]);
-  return { stackSlots, piles, gather, finalStack, topSlot: finalStack[finalStack.length - 1] };
-}
 
 /* The shuffle, in beats: fan the deck out, square it, deal it into piles,
    gather them, draw the top. The pile cadence (FLICK) is the beat the eye

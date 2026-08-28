@@ -9,11 +9,11 @@ import {
   autoSelectRune,
   readRuneTrialState,
   selectRune,
-  watchMatch,
   type JoinResult,
   type MatchRow,
   type RuneTrialState,
 } from '../api/match-api.ts';
+import { watchMatch } from '../api/match-realtime.ts';
 import { recoverIdempotentCommand } from '../api/idempotent-command.ts';
 import { randomUuid } from '../api/random-id.ts';
 

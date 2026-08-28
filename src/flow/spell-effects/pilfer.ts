@@ -11,132 +11,17 @@ import {
   cancelSpellAnimations,
   pinDieGhost,
   playSpellAnimation,
-  type SpellMotionDelta,
 } from '../../ui/game/spell-motion.ts';
 import { settleWardBreak } from '../../ui/game/ward-score.ts';
 import { spellHue } from '../../ui/spellicons.ts';
+import { pilferFlight, pilferStrain, unitToward } from './pilfer-path.ts';
 import { effectPause, type SpellEffect } from './types.ts';
 
-interface TimedPoint extends SpellMotionDelta { milliseconds: number; }
 interface PilferBlocker { die: HTMLElement; }
-interface PilferPath { duration: number; contacts: number[]; points: TimedPoint[]; }
 
-const FLIGHT_EASING = 'cubic-bezier(.7,0,.2,1)';
-const STRAIN_EASING = 'cubic-bezier(.5,0,.3,1)';
 const LANDING_EASING = 'cubic-bezier(.2,1.7,.4,1)';
 const WARD_TUG_EASING = 'cubic-bezier(.3,1.5,.4,1)';
 const WARD_TUG_MS = 320, WARD_RECOIL_MS = 720;
-
-function translated(point: SpellMotionDelta): string {
-  return `translate(${point.x}px,${point.y}px) scale(${point.scale})`;
-}
-
-function unitToward(delta: SpellMotionDelta): { x: number; y: number } {
-  const distance = Math.hypot(delta.x, delta.y) || 1;
-  return { x: delta.x / distance, y: delta.y / distance };
-}
-
-function flightPoints(
-  blockerCount: number,
-  target: SpellMotionDelta,
-): PilferPath {
-  const toward = unitToward(target);
-  const points: TimedPoint[] = [{ x: 0, y: 0, scale: 1, milliseconds: 0 }];
-  const contacts: number[] = [];
-
-  if (blockerCount === 0) {
-    // Nothing sits between this die and the centre line: no resistance beat,
-    // no staged hold. It releases on tap and takes PI5's 480ms crossing.
-  } else {
-    // PI5's selected one-blocker study spends 1.024s pulling locally before
-    // release: +10, -3, +13, +4 pixels. Extra depth repeats only that local
-    // resistance beat; the flying die never visits a blocker's centre.
-    points.push({
-      x: toward.x * 10,
-      y: toward.y * 10,
-      scale: 1.04,
-      milliseconds: 288,
-    });
-    points.push({
-      x: toward.x * -3,
-      y: toward.y * -3,
-      scale: .99,
-      milliseconds: 544,
-    });
-    for (let index = 0; index < blockerCount; index++) {
-      const contact = 800 + index * 512;
-      contacts.push(contact);
-      points.push({
-        x: toward.x * 13,
-        y: toward.y * 13,
-        scale: 1.06,
-        milliseconds: contact,
-      });
-      points.push({
-        x: toward.x * 4,
-        y: toward.y * 4,
-        scale: 1,
-        milliseconds: contact + 224,
-      });
-    }
-  }
-
-  const release = blockerCount === 0 ? 0 : 512 + blockerCount * 512;
-  const duration = release + 480;
-  points.push({ ...target, milliseconds: duration });
-  return { duration, contacts, points };
-}
-
-function flightKeyframes(points: readonly TimedPoint[], duration: number): Keyframe[] {
-  return points.map((point) => ({
-    transform: translated(point),
-    offset: point.milliseconds / duration,
-    easing: FLIGHT_EASING,
-  }));
-}
-
-function strainKeyframes(
-  contacts: readonly number[],
-  flightDuration: number,
-  horizontal: boolean,
-): { duration: number; frames: Keyframe[] } {
-  const scale = (amount: number): string => horizontal
-    ? `scaleX(${amount})`
-    : `scaleY(${amount})`;
-  const duration = flightDuration + 256;
-  const frames: Array<Keyframe & { milliseconds?: number }> = [
-    { transform: scale(1), milliseconds: 0 },
-  ];
-  contacts.forEach((contact) => {
-    frames.push({
-      transform: scale(1.045),
-      milliseconds: contact,
-    }, {
-      transform: scale(1.02),
-      milliseconds: contact + 224,
-    }, {
-      transform: scale(.975),
-      milliseconds: contact + 384,
-    });
-  });
-  frames.push({
-    transform: scale(1.01),
-    milliseconds: flightDuration - 64,
-  }, {
-    transform: scale(1),
-    milliseconds: duration,
-  });
-  return {
-    duration,
-    frames: frames
-      .sort((a, b) => Number(a.milliseconds) - Number(b.milliseconds))
-      .map(({ milliseconds = 0, ...frame }) => ({
-        ...frame,
-        offset: milliseconds / duration,
-        easing: STRAIN_EASING,
-      })),
-  };
-}
 
 function revealColumn(who: Player, column: number): void {
   for (let index = 0; index < SPEC.rows; index++) {
@@ -268,7 +153,7 @@ export const pilferEffect: SpellEffect = async (who, column, apply) => {
     if (die) blockers.push({ die });
   }
   const target = pinned.deltaTo(targetSlot);
-  const path = flightPoints(blockers.length, target);
+  const flight = pilferFlight(blockers.length, target);
   const toward = unitToward(target);
   const horizontal = Math.abs(toward.x) > Math.abs(toward.y);
   const oldOrigin = sourceColumn.style.transformOrigin;
@@ -284,8 +169,8 @@ export const pilferEffect: SpellEffect = async (who, column, apply) => {
   });
 
   const sideAnimations: Promise<boolean>[] = [];
-  if (path.contacts.length > 0) {
-    const strain = strainKeyframes(path.contacts, path.duration, horizontal);
+  if (flight.contacts.length > 0) {
+    const strain = pilferStrain(flight.contacts, flight.duration, horizontal);
     sideAnimations.push(playSpellAnimation(
       sourceColumn,
       strain.frames,
@@ -296,11 +181,11 @@ export const pilferEffect: SpellEffect = async (who, column, apply) => {
   try {
     const arrived = await playSpellAnimation(
       pinned.ghost,
-      flightKeyframes(path.points, path.duration),
+      flight.frames,
       // Keep the authored millisecond waypoints literal. An effect-level
       // curve remaps every keyframe offset and makes the die start crossing
       // the board before the visible resistance/release beat.
-      { duration: path.duration, easing: 'linear' },
+      { duration: flight.duration, easing: 'linear' },
       isCurrent,
     );
     if (!arrived || !isCurrent()) return;

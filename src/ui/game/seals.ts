@@ -1,12 +1,11 @@
 // Protection-seal geometry and its one-shot beats. Both local and ranked
 // drivers repaint through this owner; neither flow paints a seal privately.
 import { type Player } from '../../core/rules.ts';
-import { chipEl, colEl, faceRotated } from '../dom.ts';
+import { chipEl, colEl } from '../dom.ts';
 import { REDUCED } from '../fx.ts';
 import { modeIcon } from '../modeicons.ts';
 import { spellIcon } from '../spellicons.ts';
 import { appRoot } from '../embed.ts';
-import { pinDieGhost, playSpellAnimation } from './spell-motion.ts';
 
 /* The clasp is the ward's one spendable part, so it must survive the board's
    visual noise. W3's first production pass landed a little too fine at the
@@ -14,12 +13,6 @@ import { pinDieGhost, playSpellAnimation } from './spell-motion.ts';
    without changing the seal's stand-off or the shield geometry beside it. */
 const SEAL_MOUTH = 5;
 const SEAL_SLACK_MS = 60;
-const WARD_APPROACH_MS = 640;
-const WARD_RECOIL_MS = 1024;
-const WARD_REBOUND_MS = 384;
-const WARD_CONTACT_GAP = 4;
-const WARD_REBOUND_PROGRESS = 130 / 174;
-const WARD_HIT_EASING = 'cubic-bezier(.3,1.5,.4,1)';
 
 interface SealMetrics {
   cell: number;
@@ -210,6 +203,8 @@ export function clearSealPresentation(): void {
     .forEach((element) => element.classList.remove('sealon', 'sealhit', 'sealsnap'));
   appRoot().querySelectorAll<HTMLElement>('.sh.block,.wd.block')
     .forEach((element) => element.classList.remove('block'));
+  // The travelling copy is authored by ward-strike.ts; a superseded strike can
+  // leave one pinned in the FX layer, so the sweep names its class here too.
   appRoot().querySelectorAll<HTMLElement>('.ward-strike-ghost')
     .forEach((element) => element.remove());
 }
@@ -238,79 +233,6 @@ export function wardClaspRect(who: Player, col: number): DOMRect | null {
   // resize/reseal frame rather than sending an attack toward a zero rectangle.
   return chipEl(who, col).querySelector<HTMLElement>('.wd .sico')
     ?.getBoundingClientRect() ?? null;
-}
-
-export interface WardStrikeSpec {
-  attacker: Player;
-  target: Player;
-  targetColumn: number;
-  source: HTMLElement | null;
-  isCurrent: () => boolean;
-  impact: () => void;
-}
-
-/* Only a hostile action that openStrikes has proved reaches WARD calls this.
-   Usually it would take victims; on a full COLUMN SHIELD column it instead
-   burns the scoring WARD while the permanent shield keeps every die. The copy
-   starts on the settled attacker, meets the transformed centre-facing clasp,
-   then follows W3's long recoil while that spendable clasp snaps. */
-export async function playWardStrike(spec: WardStrikeSpec): Promise<boolean> {
-  const target = wardClaspRect(spec.target, spec.targetColumn);
-  if (REDUCED || !spec.source || !target) {
-    if (!spec.isCurrent()) return false;
-    spec.impact();
-    return true;
-  }
-
-  const classes = ['ward-strike-ghost'];
-  if (faceRotated(spec.attacker)) classes.push('p2flip');
-  const pinned = pinDieGhost(spec.source, { classes, zIndex: 66 });
-  const centreDelta = pinned.deltaTo(target);
-  const distance = Math.hypot(centreDelta.x, centreDelta.y) || 1;
-  const unit = { x: centreDelta.x / distance, y: centreDelta.y / distance };
-  /* W3 lands the die's leading edge just shy of the clasp. Centre-to-centre
-     made a full die dive halfway through the tiny rivet and obscured the one
-     piece of the seal the strike is meant to explain. */
-  const edge = Math.abs(unit.x) * pinned.sourceRect.width / 2
-    + Math.abs(unit.y) * pinned.sourceRect.height / 2;
-  const contact = {
-    x: centreDelta.x - unit.x * (edge + WARD_CONTACT_GAP),
-    y: centreDelta.y - unit.y * (edge + WARD_CONTACT_GAP),
-  };
-  const translated = (amount: number): string =>
-    `translate(${contact.x * amount}px,${contact.y * amount}px)`;
-
-  try {
-    const arrived = await playSpellAnimation(pinned.ghost, [
-      { transform: translated(0), opacity: 1, easing: WARD_HIT_EASING },
-      { transform: translated(1), opacity: 1, easing: WARD_HIT_EASING },
-    ], { duration: WARD_APPROACH_MS, easing: 'linear' }, spec.isCurrent);
-    if (!arrived || !spec.isCurrent()) return false;
-
-    spec.impact();
-
-    const recoiled = await playSpellAnimation(pinned.ghost, [
-      {
-        transform: translated(1),
-        opacity: 1,
-        easing: WARD_HIT_EASING,
-      },
-      {
-        transform: translated(WARD_REBOUND_PROGRESS),
-        offset: WARD_REBOUND_MS / WARD_RECOIL_MS,
-        opacity: .72,
-        easing: WARD_HIT_EASING,
-      },
-      {
-        transform: translated(0),
-        opacity: 0,
-        easing: WARD_HIT_EASING,
-      },
-    ], { duration: WARD_RECOIL_MS, easing: 'linear' }, spec.isCurrent);
-    return recoiled;
-  } finally {
-    pinned.remove();
-  }
 }
 
 export function shieldBlocked(who: Player, col: number): void {

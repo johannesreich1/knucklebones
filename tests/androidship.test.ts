@@ -1,17 +1,12 @@
 // Static Android release contract. The default gate needs no Android SDK;
 // --require-synced verifies Capacitor's copied web/plugin payload, while
 // --require-built verifies the compiler outputs produced by the Android CI job.
-import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
-import {
-  existsSync,
-  readFileSync,
-  readdirSync,
-  statSync,
-} from 'node:fs';
-import { join, relative } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 import { APP_ID, GAME_NAME, NATIVE_APP_NAME, NATIVE_STORE_NAME } from '../src/config.ts';
-import { sameBytes } from './support/ios-artifacts.ts';
+import { verifyAndroidBuiltArtifacts } from './support/android-artifact-contract.ts';
+import { verifyAndroidResourceContract } from './support/android-resource-contract.ts';
+import { filesUnder, sameBytes } from './support/ios-artifacts.ts';
 import { verifyNodeRuntimeContract } from './support/node-runtime-contract.ts';
 
 const problems: string[] = [];
@@ -43,40 +38,6 @@ const pkg = json(NATIVE_PACKAGE);
 const lock = json(NATIVE_LOCK);
 const rootPkg = json(ROOT_PACKAGE);
 const cap = json(CAP_CONFIG);
-
-function filesUnder(root: string): string[] {
-  if (!existsSync(root)) return [];
-  const output: string[] = [];
-  const walk = (dir: string) => {
-    for (const entry of readdirSync(dir).sort()) {
-      const path = join(dir, entry);
-      if (statSync(path).isDirectory()) walk(path);
-      else output.push(relative(root, path).replaceAll('\\', '/'));
-    }
-  };
-  walk(root);
-  return output;
-}
-
-function pngInfo(file: string): { width: number; height: number; colorType: number } | null {
-  if (!existsSync(file)) return null;
-  const bytes = readFileSync(file);
-  if (bytes.length < 26 || bytes.subarray(1, 4).toString('ascii') !== 'PNG') return null;
-  return {
-    width: bytes.readUInt32BE(16),
-    height: bytes.readUInt32BE(20),
-    colorType: bytes[25]!,
-  };
-}
-
-function ignored(file: string): boolean {
-  try {
-    execFileSync('git', ['check-ignore', '--quiet', '--', file]);
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 const { nodePin, nodeRange } = verifyNodeRuntimeContract(check);
 check(pkg.engines?.node === nodeRange && lock.packages?.['']?.engines?.node === nodeRange,
@@ -237,52 +198,7 @@ check(!trackedAndroid.some((file) => file.endsWith('/keystore.properties')
 'Git tracks Android signing secrets or a keystore');
 
 /* -------------------- branded generated resource inputs -------------------- */
-const densities: Array<[string, number]> = [
-  ['ldpi', 36], ['mdpi', 48], ['hdpi', 72], ['xhdpi', 96],
-  ['xxhdpi', 144], ['xxxhdpi', 192],
-];
-for (const [density, size] of densities) {
-  for (const name of [
-    'ic_launcher.png',
-    'ic_launcher_round.png',
-    'ic_launcher_foreground.png',
-    'ic_launcher_background.png',
-    'ic_launcher_monochrome.png',
-  ]) {
-    const file = `${RES}/mipmap-${density}/${name}`;
-    const info = pngInfo(file);
-    check(info?.width === size && info.height === size,
-      `${file} must be a ${size}x${size} generated PNG, found ${JSON.stringify(info)}`);
-    check(!ignored(file), `${file} is ignored and would be absent from a clean release checkout`);
-  }
-  const alpha = pngInfo(`${RES}/mipmap-${density}/ic_launcher_monochrome.png`)?.colorType;
-  check(alpha === 4 || alpha === 6,
-    `${RES}/mipmap-${density}/ic_launcher_monochrome.png must retain an alpha channel`);
-}
-for (const launcher of ['ic_launcher.xml', 'ic_launcher_round.xml']) {
-  const file = `${RES}/mipmap-anydpi-v33/${launcher}`;
-  check(read(file).includes('<monochrome android:drawable="@mipmap/ic_launcher_monochrome" />'),
-    `${file} must expose the Android 13 monochrome launcher layer`);
-  check(!ignored(file), `${file} is ignored and would not ship`);
-}
-const iconGenerator = read('tools/appicon.mjs');
-check(iconGenerator.includes('ANDROID_ADAPTIVE_ICON_FILES')
-  && iconGenerator.includes('mipmap-anydpi-v33/ic_launcher.xml')
-  && iconGenerator.includes('mipmap-anydpi-v33/ic_launcher_round.xml')
-  && iconGenerator.includes('writeFileSync(file, ANDROID_ADAPTIVE_ICON_XML)'),
-'tools/appicon.mjs must regenerate both Android 13 themed-launcher XML resources');
-const splashFiles = filesUnder(RES).filter((file) => /(?:^|\/)splash\.png$/.test(file));
-check(splashFiles.length === 26,
-  `Android must carry all 26 normal/night portrait/landscape splash renditions, found ${splashFiles.length}`);
-for (const file of splashFiles) {
-  check(pngInfo(`${RES}/${file}`) !== null, `${RES}/${file} is not a readable PNG`);
-  check(!ignored(`${RES}/${file}`), `${RES}/${file} is ignored and would not ship`);
-}
-const normalSplash = readFileSync(`${RES}/drawable-port-mdpi/splash.png`);
-const darkSplash = readFileSync(`${RES}/drawable-port-night-mdpi/splash.png`);
-check(createHash('sha256').update(normalSplash).digest('hex')
-  === createHash('sha256').update(darkSplash).digest('hex'),
-'normal and dark Android splash art must preserve the same #05060e branded continuity');
+const { splashRenditions } = verifyAndroidResourceContract(check, RES);
 
 /* -------------------- explicitly synced Capacitor payload -------------------- */
 if (REQUIRE_SYNCED) {
@@ -323,50 +239,7 @@ if (REQUIRE_SYNCED) {
 
 /* -------------------- compiler-produced CI artifact -------------------- */
 if (REQUIRE_BUILT) {
-  check(existsSync(AAB), `${AAB} was not produced`);
-  check(existsSync(DEBUG_APK), `${DEBUG_APK} was not produced`);
-  if (existsSync(AAB)) {
-    let entries: string[] = [];
-    try {
-      entries = execFileSync('unzip', ['-Z1', AAB], { encoding: 'utf8' })
-        .trim().split('\n').filter(Boolean);
-    } catch (error) {
-      errs.push(`could not inspect ${AAB}: ${String(error)}`);
-    }
-    check(entries.includes('base/manifest/AndroidManifest.xml')
-      && entries.includes('base/assets/public/index.html'),
-    `${AAB} is missing its base manifest or offline web payload`);
-    check(!entries.some((entry) => /^META-INF\/.*\.(?:RSA|DSA|EC|SF)$/i.test(entry)),
-      `${AAB} is signed; CI must upload a verification-only unsigned artifact`);
-
-    const bundletool = process.env.BUNDLETOOL_JAR;
-    check(!!bundletool && existsSync(bundletool),
-      'BUNDLETOOL_JAR must point to CI\'s checksum-verified bundletool JAR');
-    if (bundletool && existsSync(bundletool)) {
-      let bundledManifest = '';
-      try {
-        bundledManifest = execFileSync('java', [
-          '-jar', bundletool,
-          'dump', 'manifest',
-          `--bundle=${AAB}`,
-        ], { encoding: 'utf8' });
-      } catch (error) {
-        errs.push(`bundletool could not inspect ${AAB}: ${String(error)}`);
-      }
-      check(bundledManifest.includes(`package="${APP_ID}"`),
-        `the AAB manifest package is not ${APP_ID}`);
-      check(/android:versionCode="1"/.test(bundledManifest)
-        && /android:versionName="1\.0"/.test(bundledManifest),
-      'the AAB manifest is not versionCode 1 / versionName 1.0');
-      check(/android:minSdkVersion="24"/.test(bundledManifest)
-        && /android:targetSdkVersion="36"/.test(bundledManifest),
-      'the AAB manifest is not minSdk 24 / targetSdk 36');
-      check(/android:allowBackup="false"/.test(bundledManifest)
-        && /android:usesCleartextTraffic="false"/.test(bundledManifest)
-        && !/android:debuggable="true"/.test(bundledManifest),
-      'the AAB manifest permits backup, cleartext, or debugging');
-    }
-  }
+  errs.push(...verifyAndroidBuiltArtifacts(check, { aab: AAB, debugApk: DEBUG_APK }).errs);
 }
 
 console.log(JSON.stringify({
@@ -378,7 +251,7 @@ console.log(JSON.stringify({
   requireSynced: REQUIRE_SYNCED,
   requireBuilt: REQUIRE_BUILT,
   permissions,
-  splashRenditions: splashFiles.length,
+  splashRenditions,
   problems,
   errs,
 }, null, 2));

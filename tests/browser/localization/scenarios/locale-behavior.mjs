@@ -1,5 +1,8 @@
 import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
 import { LOCALE_REGISTRY } from '../../../../src/i18n/locale.ts';
+import { frame } from '../harness/layout-inspection.mjs';
+import { readWidgetLocaleOwnership } from '../harness/widget-locale-ownership.mjs';
+import { readRemoteLocaleSync } from '../harness/remote-locale-sync.mjs';
 
 const LOCALE_BY_ID = Object.fromEntries(LOCALE_REGISTRY.map((entry) => [entry.id, entry]));
 const detectionCase = (name, tags, locale) => ({
@@ -24,13 +27,9 @@ const GERMAN_INDEX = LOCALE_REGISTRY.findIndex(({ id }) => id === 'de');
 const PREVIOUS_FROM_GERMAN = LOCALE_REGISTRY[
   (GERMAN_INDEX + LOCALE_REGISTRY.length - 1) % LOCALE_REGISTRY.length
 ];
-const SUPABASE_AUTH_STORAGE_KEY = 'sb-euzjcejbkxvqfrttgaxu-auth-token';
-
-const nextFrame = (page) => page.evaluate(() => new Promise((resolve) =>
-  requestAnimationFrame(() => requestAnimationFrame(resolve))));
 
 export async function runLocaleBehaviorScenarios(suite) {
-  const { standaloneUrl, widgetUrl, out, check, attachErrors, localeContext } = suite;
+  const { standaloneUrl, out, check, attachErrors, localeContext } = suite;
   out.localeDetection = {};
 
   for (const scenario of DETECTION_CASES) {
@@ -159,7 +158,7 @@ export async function runLocaleBehaviorScenarios(suite) {
     window.__kbTestLanguageTags = ['fr-FR'];
     window.dispatchEvent(new Event('languagechange'));
   });
-  await nextFrame(page);
+  await frame(page);
   out.explicitPrecedence = await page.evaluate(() => ({
     override: window.__kb.S.localeOverride,
     lang: document.documentElement.lang,
@@ -212,30 +211,9 @@ export async function runLocaleBehaviorScenarios(suite) {
   out.compactStatus);
   await context.close();
 
-  const widgetContext = await localeContext(['de-DE'], {
-    viewport: { width: 406, height: 680 },
-    hostLanguage: 'es-MX',
-  });
-  const widget = attachErrors(await widgetContext.newPage(), 'widget-locale');
-  await widget.goto(widgetUrl);
-  await widget.waitForFunction(() => window.__kb);
-  await nextFrame(widget);
-  out.widgetLanguageOwnership = await widget.evaluate(() => ({
-    override: window.__kb.S.localeOverride,
-    htmlLang: document.documentElement.lang,
-    rootLang: document.getElementById('kbroot')?.lang,
-    rootLocale: document.getElementById('kbroot')?.dataset.locale,
-    settings: document.getElementById('btnSettingsHome')?.textContent?.trim(),
-    widgetTitle: document.querySelector('#kbroot > h2.sr-only')?.textContent?.trim(),
-    first: window.__kbFirstHomeFrame ?? {
-      htmlLang: document.documentElement.lang,
-      rootLang: document.getElementById('kbroot')?.lang,
-      locale: document.getElementById('kbroot')?.dataset.locale,
-      settings: document.getElementById('btnSettingsHome')?.textContent?.trim(),
-      visible: !!document.getElementById('ovStart')?.getBoundingClientRect().width,
-      capturedLate: true,
-    },
-  }));
+  const widget = await readWidgetLocaleOwnership(suite);
+  out.widgetLanguageOwnership = widget.ownership;
+  out.widgetLanguageChange = widget.change;
   check(out.widgetLanguageOwnership.override === null
     && out.widgetLanguageOwnership.htmlLang === 'es-MX'
     && out.widgetLanguageOwnership.rootLang === 'de'
@@ -248,18 +226,6 @@ export async function runLocaleBehaviorScenarios(suite) {
   'widget changed its host language or failed to own its localized root',
   out.widgetLanguageOwnership);
 
-  await widget.evaluate(() => {
-    window.__kbTestLanguageTags = ['fr-FR'];
-    window.dispatchEvent(new Event('languagechange'));
-  });
-  await widget.waitForFunction(() => document.getElementById('kbroot')?.lang === 'fr');
-  out.widgetLanguageChange = await widget.evaluate(() => ({
-    htmlLang: document.documentElement.lang,
-    rootLang: document.getElementById('kbroot')?.lang,
-    rootLocale: document.getElementById('kbroot')?.dataset.locale,
-    settings: document.getElementById('btnSettingsHome')?.textContent?.trim(),
-    widgetTitle: document.querySelector('#kbroot > h2.sr-only')?.textContent?.trim(),
-  }));
   check(out.widgetLanguageChange.htmlLang === 'es-MX'
     && out.widgetLanguageChange.rootLang === 'fr'
     && out.widgetLanguageChange.rootLocale === 'fr'
@@ -267,103 +233,8 @@ export async function runLocaleBehaviorScenarios(suite) {
     && out.widgetLanguageChange.widgetTitle === RESOURCES.fr.game.widget.title,
   'widget languagechange leaked to the host or failed to repaint its root',
   out.widgetLanguageChange);
-  await widgetContext.close();
 
-  /* Browser integration for the account path: first paint follows the German
-     device, then a delayed existing player_settings row applies French in
-     place. Unit tests own the race matrix; this proves the real lazy Supabase
-     client, persistence and DOM-root subscription are wired together. */
-  const remoteContext = await localeContext(['de-DE']);
-  const remoteUser = '00000000-0000-4000-8000-00000000f123';
-  const encode = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
-  const remoteSession = {
-    access_token: `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({
-      sub: remoteUser,
-      aud: 'authenticated',
-      role: 'authenticated',
-      is_anonymous: true,
-      exp: Math.floor(Date.now() / 1000) + 3600,
-    })}.stub`,
-    token_type: 'bearer',
-    expires_in: 3600,
-    expires_at: Math.floor(Date.now() / 1000) + 3600,
-    refresh_token: 'stub',
-    user: {
-      id: remoteUser,
-      aud: 'authenticated',
-      role: 'authenticated',
-      email: null,
-      is_anonymous: true,
-      created_at: '2026-08-24T00:00:00Z',
-      app_metadata: {},
-      user_metadata: {},
-      identities: [],
-    },
-  };
-  await remoteContext.addInitScript(([storageKey, session]) => {
-    localStorage.setItem(storageKey, JSON.stringify(session));
-  }, [SUPABASE_AUTH_STORAGE_KEY, remoteSession]);
-  const remote = attachErrors(await remoteContext.newPage(), 'remote-locale');
-  let releaseRemote;
-  let markRemoteRead;
-  const remoteGate = new Promise((resolve) => { releaseRemote = resolve; });
-  const remoteRead = new Promise((resolve) => { markRemoteRead = resolve; });
-  await remote.route('**/auth/v1/**', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    body: JSON.stringify(route.request().url().includes('/user')
-      ? remoteSession.user : remoteSession),
-  }));
-  await remote.route('**/rest/v1/**', async (route) => {
-    const request = route.request();
-    if (request.url().includes('/player_settings')) {
-      if (request.method() !== 'GET') {
-        return route.fulfill({ status: 201, contentType: 'application/json', body: '[]' });
-      }
-      markRemoteRead();
-      await remoteGate;
-      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([{
-        user_id: remoteUser,
-        locale: 'fr',
-        sound: true,
-        numerals: false,
-        p1_hue: 'cy',
-        p2_hue: 'mg',
-        colorblind: false,
-        reduced_motion: false,
-      }]) });
-    }
-    return route.fulfill({ status: 200, contentType: 'application/json', body: '[]' });
-  });
-  await remote.goto(standaloneUrl);
-  await remote.waitForFunction(() => window.__kb && document.documentElement.lang === 'de');
-  await Promise.race([
-    remoteRead,
-    new Promise((_, reject) => setTimeout(() => reject(new Error('remote locale read did not start')), 8000)),
-  ]);
-  await remote.evaluate(() => {
-    const column = document.querySelector('#topBoard .col');
-    window.__remoteLocaleColumn = column;
-    column?.setAttribute('data-remote-locale-sentinel', 'kept');
-    document.getElementById('btnSettingsHome')?.focus();
-  });
-  releaseRemote();
-  await remote.waitForFunction(() => window.__kb.S.localeOverride === 'fr'
-    && document.documentElement.lang === 'fr');
-  out.remoteLocaleOverride = await remote.evaluate(() => {
-    const column = document.querySelector('#topBoard .col');
-    return {
-      first: window.__kbFirstHomeFrame,
-      override: window.__kb.S.localeOverride,
-      lang: document.documentElement.lang,
-      locale: document.documentElement.dataset.locale,
-      settings: document.getElementById('btnSettingsHome')?.textContent?.trim(),
-      sameColumn: column === window.__remoteLocaleColumn,
-      sentinel: column?.getAttribute('data-remote-locale-sentinel'),
-      focused: document.activeElement?.id,
-      stored: JSON.parse(localStorage.getItem('knucklebones.v1') ?? '{}').localeOverride,
-    };
-  });
+  out.remoteLocaleOverride = await readRemoteLocaleSync(suite);
   check(out.remoteLocaleOverride.first?.htmlLang === 'de'
     && out.remoteLocaleOverride.first?.locale === 'de'
     && out.remoteLocaleOverride.override === 'fr'
@@ -376,5 +247,4 @@ export async function runLocaleBehaviorScenarios(suite) {
     && out.remoteLocaleOverride.stored === 'fr',
   'synced French override did not win over German device language in place',
   out.remoteLocaleOverride);
-  await remoteContext.close();
 }

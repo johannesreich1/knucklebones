@@ -1,13 +1,13 @@
-// Thin ranked-match transport over server-authoritative Edge Functions and
-// Realtime. Match lifecycle/rendering belongs to play.ts, not this API seam.
-import type { RealtimeChannel } from '@supabase/supabase-js';
+// Thin ranked-match transport over server-authoritative Edge Functions: one
+// request in, its wire row out. Match lifecycle/rendering belongs to play.ts,
+// not this API seam; the push side lives in match-realtime.ts.
 import {
   RUNE_TRIAL_CAPABILITY,
   type RankedMatchFormat,
   type RankedPoolTier,
 } from '../../core/ranked-outcomes.ts';
 import type { RankedActionIntent, RankedActionRow } from '../../core/ranked-actions.ts';
-import { callFunction, supa } from './client.ts';
+import { callFunction } from './client.ts';
 import { randomUuid } from './random-id.ts';
 
 export interface MatchRow {
@@ -89,60 +89,6 @@ export async function join(allowBot: boolean): Promise<JoinResult | null> {
     capabilities: [RUNE_TRIAL_CAPABILITY],
   });
   return joinResultFromResponse(response.status, response.data);
-}
-
-export type LeaveResult =
-  | { status: 'left' }
-  | { status: 'matched'; match_id: string };
-
-interface QueueRpcError { code?: string; message?: string }
-interface QueueLifecycleClient {
-  rpc(name: string): Promise<{ data: unknown; error: QueueRpcError | null }>;
-  auth: {
-    getSession(): Promise<{
-      data: { session: { user: { id: string } } | null };
-      error: unknown | null;
-    }>;
-  };
-  from(table: string): {
-    delete(): {
-      eq(column: string, value: string): PromiseLike<{ error: unknown | null }>;
-    };
-  };
-}
-
-export function isMissingQueueLifecycleRpc(error: QueueRpcError | null): boolean {
-  if (!error || !['PGRST202', '42883'].includes(error.code ?? '')) return false;
-  return (error.message ?? '').toLowerCase().includes('leave_ranked_queue');
-}
-
-async function legacyLeaveQueue(client: QueueLifecycleClient): Promise<LeaveResult | null> {
-  const { data, error: sessionError } = await client.auth.getSession();
-  const playerId = data.session?.user.id;
-  if (sessionError || !playerId) return null;
-  const { error } = await client.from('matchmaking_queue').delete().eq('player_id', playerId);
-  return error ? null : { status: 'left' };
-}
-
-export async function leaveQueueWithClient(client: QueueLifecycleClient): Promise<LeaveResult | null> {
-  let { data, error } = await client.rpc('leave_ranked_queue');
-  // The web deploy can briefly precede the owner-applied migration. Only the
-  // precise old-schema error falls back to the already-RLS-protected own-row
-  // DELETE; authorization/outage errors are never reclassified as success.
-  if (isMissingQueueLifecycleRpc(error)) return legacyLeaveQueue(client);
-  if (error || data == null) ({ data, error } = await client.rpc('leave_ranked_queue'));
-  if (isMissingQueueLifecycleRpc(error)) return legacyLeaveQueue(client);
-  if (error || !data || typeof data !== 'object') return null;
-  const result = data as Record<string, unknown>;
-  if (result.status === 'left') return { status: 'left' };
-  if (result.status === 'matched' && typeof result.match_id === 'string') {
-    return { status: 'matched', match_id: result.match_id };
-  }
-  return null;
-}
-
-export async function leaveQueue(): Promise<LeaveResult | null> {
-  return leaveQueueWithClient(supa() as unknown as QueueLifecycleClient);
 }
 
 export interface MoveResult {
@@ -257,78 +203,4 @@ export async function nudge(
 
 export async function claim(matchId: string): Promise<{ status: number; data: { match: MatchRow } | null }> {
   return callFunction('pvp-claim', { match_id: matchId });
-}
-
-/** A finished resignation: whether the match is over, and the settled row when
-    this call is the one that settled it. "match-over" means somebody else got
-    there first, so there is no row here — read the authoritative one. */
-interface Resignation { over: boolean; match: MatchRow | null }
-
-let resigned: { matchId: string; done: Promise<Resignation> } | null = null;
-
-const resignCall = async (matchId: string): Promise<Resignation> => {
-  const response = await callFunction<{ match?: MatchRow; error?: string }>(
-    'pvp-claim', { match_id: matchId, resign: true },
-  );
-  return {
-    over: response.status === 200 || response.data?.error === 'match-over',
-    match: response.status === 200 ? response.data?.match ?? null : null,
-  };
-};
-
-export function resign(matchId: string): void {
-  resigned = { matchId, done: resignCall(matchId) };
-}
-
-async function resignation(matchId: string): Promise<Resignation> {
-  if (resigned?.matchId !== matchId) return { over: false, match: null };
-  const first = await resigned.done;
-  if (first.over) return first;
-  resigned = { matchId, done: resignCall(matchId) };
-  return resigned.done;
-}
-
-export async function resignedOver(matchId: string): Promise<boolean> {
-  return (await resignation(matchId)).over;
-}
-
-/** Resign and wait for the terminal row, so the player who chose to forfeit
-    reaches the same result screen their opponent does. */
-export async function resignedMatch(matchId: string): Promise<MatchRow | null> {
-  resign(matchId);
-  return (await resignation(matchId)).match;
-}
-
-export function readyPeer(matchId: string): { announce(): void; onPeer(cb: () => void): () => void } {
-  let hit: (() => void) | null = null;
-  const channel = supa()
-    .channel(`ready-${matchId}`, { config: { broadcast: { self: false } } })
-    .on('broadcast', { event: 'ready' }, () => hit?.())
-    .subscribe();
-  return {
-    announce() { void channel.send({ type: 'broadcast', event: 'ready', payload: {} }); },
-    onPeer(callback) {
-      hit = callback;
-      return () => { hit = null; void supa().removeChannel(channel); };
-    },
-  };
-}
-
-export function watchMatch(
-  matchId: string,
-  onMove: (move: { idx: number; who: number; col: number }) => void,
-  onMatch: (match: MatchRow) => void,
-  onAction?: (action: MatchActionRow) => void,
-): RealtimeChannel {
-  const channel = supa().channel(`match-${matchId}`)
-    .on('postgres_changes',
-      { event: 'INSERT', schema: 'public', table: 'match_moves', filter: `match_id=eq.${matchId}` },
-      (payload) => onMove(payload.new as { idx: number; who: number; col: number }))
-    .on('postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'matches', filter: `id=eq.${matchId}` },
-      (payload) => onMatch(payload.new as unknown as MatchRow));
-  if (onAction) channel.on('postgres_changes',
-    { event: 'INSERT', schema: 'public', table: 'match_actions', filter: `match_id=eq.${matchId}` },
-    (payload) => onAction(payload.new as unknown as MatchActionRow));
-  return channel.subscribe();
 }

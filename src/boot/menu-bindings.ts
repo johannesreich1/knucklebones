@@ -30,9 +30,10 @@ import {
   confirmedRankedPoolTier,
   subscribeRuneCollection,
 } from '../rune-collection-cache.ts';
-import { newGame, passTap, startLocal } from '../flow/game.ts';
+import { newGame, startLocal } from '../flow/game.ts';
 import { requestLeave, leavingForfeits } from '../flow/leave.ts';
 import { syncSettingsUI, toMenu } from '../flow/menu.ts';
+import { passTap } from '../flow/pass-card.ts';
 import { restartLocal } from '../flow/restart.ts';
 import { coachTap } from '../flow/tutorial.ts';
 import { disarm, renderSpells } from '../flow/spells.ts';

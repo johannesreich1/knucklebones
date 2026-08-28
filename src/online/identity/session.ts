@@ -1,4 +1,6 @@
-// The online identity session: authentication and the player's own profile.
+// The online identity session: which auth.users row this device's player is,
+// and how the app proves it. What hangs off that row once the ladder has
+// answered — the profiles row itself — lives beside it in profile.ts.
 // This module (and supabase-js with it) is loaded ONLY via dynamic import —
 // the offline game's boot path must never depend on it.
 import { callFunction, supa } from '../api/client.ts';
@@ -13,8 +15,7 @@ import {
   readRuneCollectionSnapshot,
 } from '../../rune-collection-cache.ts';
 import { invalidateRuneCollectionRefreshes } from '../runes/rune-collection.ts';
-
-export interface Profile { id: string; nickname: string; rating: number; created_at?: string; avatar?: string; named_at?: string | null; }
+import { clearProfileCache } from '../../profile-cache.ts';
 
 /* ---- auth ----
 
@@ -231,65 +232,6 @@ export async function attachEmail(email: string, password: string): Promise<stri
   if (!data.user?.email) return onlineMessage('errors.confirmEmailThenPassword');
   const { error: pw } = await supa().auth.updateUser({ password });
   return localizedAuthError(pw);
-}
-
-/* ---- profile ---- */
-/* the home screen's identity chip reads this cache at boot — a stale rating
-   beats putting a network call in the offline game's boot path */
-const PROFILE_CACHE = 'knucklebones.online.profile';
-
-export async function myProfile(): Promise<Profile | null> {
-  const user = await currentUser();
-  if (!user) return null;
-  const { data } = await supa().from('profiles').select('id, nickname, rating, created_at, avatar, named_at').eq('id', user.id).maybeSingle();
-  try {
-    // merged over the old entry, not replaced: rank/apex (cacheStanding) come
-    // from a different RPC and must survive a profile refetch
-    if (data) localStorage.setItem(PROFILE_CACHE, JSON.stringify({
-      ...JSON.parse(localStorage.getItem(PROFILE_CACHE) ?? '{}'),
-      nickname: data.nickname, rating: data.rating, avatar: data.avatar }));
-  } catch { /* forgetful host */ }
-  return data as Profile | null;
-}
-
-/* the home chip paints before any RPC answers, from this cache — when a
-   standing lands anywhere (result, profile), its rank/apex are stashed beside
-   the profile so the chip's group pill can carry "BONE · #13" at next boot */
-export function cacheStanding(rank: number | null, apex: boolean): void {
-  try {
-    const c = JSON.parse(localStorage.getItem(PROFILE_CACHE) ?? 'null');
-    if (c) localStorage.setItem(PROFILE_CACHE, JSON.stringify({ ...c, rank, apex }));
-  } catch { /* forgetful host */ }
-}
-
-function clearProfileCache(): void {
-  try { localStorage.removeItem(PROFILE_CACHE); } catch { /* forgetful host */ }
-}
-/* A name is claimed ONCE: the 0026 trigger stamps named_at on the first
-   nickname write and refuses every later one, so this can only succeed for a
-   profile whose name is still the minted placeholder. The P0001 branch is the
-   backstop for a claim raced from two devices — the UI never offers a second. */
-export async function claimName(nickname: string): Promise<string | null> {
-  const user = await currentUser();
-  if (!user) return onlineMessage('errors.notSignedIn');
-  const { error } = await supa().from('profiles').update({ nickname }).eq('id', user.id);
-  if (!error) return null;
-  return error.code === '23505' ? onlineMessage('errors.nameTaken')
-    : error.code === '23514' ? onlineMessage('profile.nameInvalid')
-    : error.code === 'P0001' ? onlineMessage('errors.nameAlreadySet')
-    : onlineMessage('errors.generic');
-}
-
-/* The avatar is a die face and a hue — "die:5:cy". 36 identities, no storage
-   bucket, no moderation, and no user-generated-image obligations at review.
-   The string shape is the seam: a later value can be "img:<path>". */
-export async function setAvatar(avatar: string): Promise<string | null> {
-  const user = await currentUser();
-  if (!user) return onlineMessage('errors.notSignedIn');
-  const { error } = await supa().from('profiles').update({ avatar }).eq('id', user.id);
-  if (error) return onlineMessage('errors.generic');
-  clearProfileCache();
-  return null;
 }
 
 /* ---- account ---- */

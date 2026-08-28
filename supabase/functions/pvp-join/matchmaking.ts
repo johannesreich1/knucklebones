@@ -1,5 +1,5 @@
 import type { EdgeClient } from "../_shared/http.ts";
-import type { JoinInput, MatchRow } from "../_shared/types.ts";
+import type { JoinInput, MatchRow, ProfileSummary } from "../_shared/types.ts";
 
 export interface QueueCandidate {
   player_id: string;
@@ -94,4 +94,116 @@ export async function findOldestEligiblePartner(
     ((profileData ?? []) as RatingRow[]).map((profile) => [profile.id, profile.rating ?? 0]),
   );
   return oldestEligibleCandidate(queue, ratings, playerRating, band);
+}
+
+/* ------------------------------------------------------------------------
+ * The same question with a synthetic opponent: who does this player face
+ * when no human is queued inside the band?
+ * --------------------------------------------------------------------- */
+
+export interface BotOpponent {
+  id: string;
+  rating: number;
+}
+
+export type BotOpponentChoice =
+  /** A free bot sits inside the cap: play it. */
+  | { kind: "pick"; bot: BotOpponent }
+  /**
+   * Nothing free sits inside the cap: mint one at `rating`. `nearest` is the
+   * closest free bot of any rating, offered only if minting yields nothing.
+   */
+  | { kind: "mint"; rating: number; nearest: BotOpponent | null };
+
+/**
+ * Decide which bot a ranked player meets, given the roster that is free right
+ * now. Pure so the sampling policy it carries can be measured; `random` is a
+ * parameter for the same reason start.ts threads Math.random into botMove.
+ */
+export function botOpponentChoice(
+  free: readonly ProfileSummary[],
+  playerRating: number,
+  cap: number,
+  random: () => number,
+): BotOpponentChoice {
+  const inRange = free.filter((bot) => Math.abs(bot.rating! - playerRating) <= cap);
+  if (inRange.length) {
+    /* Sample the WHOLE eligible band. This used to sort by proximity and take
+       one of the nearest three, which drove the median rating gap down to 37
+       points — and since a ladder delta is a function of that gap, every win
+       paid about +80 and the number stopped carrying information. Human
+       pairing never had the problem: oldestEligibleCandidate takes the oldest
+       queued player inside the band, never the nearest, and measures a median
+       gap near 340 whether two players are queued or sixty. Uniform sampling
+       gives bot matches that same spread (payout sd 5.1 -> 17.9) at no cost
+       to skill fidelity (0.906, unchanged, because none of this touches
+       delta()) and none to difficulty (human win rate 56.0% -> 56.2%).
+       botPairBand still caps the distance, so a STONE player cannot be handed
+       the IVORY bot that caused the 2026-08-20 report. */
+    const picked = inRange[Math.floor(random() * inRange.length)];
+    return { kind: "pick", bot: { id: picked.id, rating: picked.rating ?? 0 } };
+  }
+  const offset = Math.round(cap * (0.15 + random() * 0.35)) * (random() < 0.5 ? -1 : 1);
+  /* Last resort, for a mint that comes back empty: nothing sits inside the cap,
+     so the closest free bot is taken anyway. Spelled out because the pick
+     above is deliberately uniform — this is the one place that still wants the
+     nearest, and it used to ride on a sort that no longer exists. */
+  const nearest = free.length
+    ? free.reduce((best, candidate) =>
+      Math.abs((candidate.rating ?? 0) - playerRating)
+          < Math.abs((best.rating ?? 0) - playerRating)
+        ? candidate
+        : best)
+    : null;
+  return {
+    kind: "mint",
+    rating: Math.max(0, playerRating + offset),
+    nearest: nearest ? { id: nearest.id, rating: nearest.rating ?? 0 } : null,
+  };
+}
+
+export type BotSearch =
+  | { ok: true; bot: BotOpponent | null }
+  | { ok: false; error: "bot-read-failed" | "bot-create-failed" };
+
+/**
+ * Read the bots nobody is currently playing, apply the policy above, and mint
+ * an opponent when the band is empty. The mint fallback stays inside this call
+ * on purpose: a mint that returns no row must still be able to reach for the
+ * nearest free bot, which a caller holding only the outcome could not do.
+ *
+ * `band` is the caller's already-narrowed bot pairing width, the same division
+ * of labour findOldestEligiblePartner uses — and the reason this module stays
+ * free of ./core, which resolves only in a deployed function tree.
+ */
+export async function findRankedBotOpponent(
+  svc: EdgeClient,
+  playerRating: number,
+  band: number,
+  random: () => number = Math.random,
+): Promise<BotSearch> {
+  const [{ data: botData, error: botError }, { data: busyData, error: busyError }] =
+    await Promise.all([
+      svc.from("profiles").select("id, rating").eq("is_bot", true),
+      svc.from("matches").select("p1, p2").eq("status", "active"),
+    ]);
+  if (botError || busyError) return { ok: false, error: "bot-read-failed" };
+  const bots = (botData ?? []) as ProfileSummary[];
+  const busy = (busyData ?? []) as Array<Pick<MatchRow, "p1" | "p2">>;
+  const busyIds = new Set(busy.flatMap((match) => [match.p1, match.p2]));
+  const free = bots.filter((bot) => !busyIds.has(bot.id));
+  const choice = botOpponentChoice(free, playerRating, band, random);
+  if (choice.kind === "pick") return { ok: true, bot: choice.bot };
+
+  const { data: mintedData, error: mintError } = await svc.rpc("mint_bot", {
+    target_rating: choice.rating,
+  });
+  if (mintError) return { ok: false, error: "bot-create-failed" };
+  const minted = mintedData as string | null;
+  if (!minted) return { ok: true, bot: choice.nearest };
+  const { data: mintedProfile, error: mintedError } = await svc.from("profiles")
+    .select("rating").eq("id", minted).maybeSingle();
+  if (mintedError) return { ok: false, error: "bot-read-failed" };
+  const rating = (mintedProfile as { rating?: number | null } | null)?.rating ?? choice.rating;
+  return { ok: true, bot: { id: minted, rating } };
 }

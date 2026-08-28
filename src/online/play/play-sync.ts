@@ -54,6 +54,19 @@ async function readTrialSnapshot(online: OnlineState): Promise<TrialSnapshot | n
   }, (attempt) => pause(60 * attempt));
 }
 
+/* Did this client already draw this exact row at tap time? Matched on seat,
+   column and die rather than an index, because the index the row lands at is
+   the server's answer and is not known when the paint starts. Consumed on the
+   first match: a later identical placement is a different tap and must animate. */
+function alreadyPainted(online: OnlineState, row: RankedActionRow): boolean {
+  const painted = online.optimisticPlace;
+  if (!painted || row.kind !== 'place') return false;
+  if (painted.who !== row.who || painted.col !== row.placed_col
+      || painted.die !== row.die_before) return false;
+  online.optimisticPlace = null;
+  return true;
+}
+
 async function animateTrialAction(
   online: OnlineState,
   row: RankedActionRow,
@@ -63,6 +76,9 @@ async function animateTrialAction(
   S.die = row.die_before;
   online.pendingDie = row.die_before;
   if (row.kind === 'place' && row.placed_col !== null) {
+    /* The projection that follows this replay owns the board absolutely, so a
+       row we already drew is skipped rather than drawn a second time. */
+    if (alreadyPainted(online, row)) return;
     await animateOnlineMove(row.who, row.placed_col, row.die_before,
       () => ports.isCurrent(online), S.charm);
     return;

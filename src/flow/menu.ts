@@ -8,6 +8,7 @@ import { clearTut } from './tutorial.ts';
 import { clearHints } from '../ui/game/hints.ts';
 import { setNumeralPresentation, setOpponentTurnPresentation } from '../ui/game/root-state.ts';
 import { appRoot } from '../ui/embed.ts';
+import { paintHuePair } from '../ui/hues.ts';
 import { REDUCED, setReducedMotion } from '../ui/fx.ts';
 import { effectiveLocale, localeSelfName, t } from '../i18n/index.ts';
 import { hueLabel } from '../ui/hue.ts';
@@ -56,23 +57,13 @@ export function syncSettingsUI(): void {
   $('#languageValue').textContent = localeSelfName(effectiveLocale());
 
   /* Colour blind mode overrides the displayed pair without changing the
-     stored picks. Multiplier fallbacks remain distinct from each side. */
+     stored picks; paintHuePair owns that substitution and the multiplier
+     fallbacks, because a ranked table paints the same pair swapped. */
   const p1 = S.colorblind ? 'cy' : S.p1Hue;
   const p2 = S.colorblind ? 'gold' : S.p2Hue;
   const style = appRoot().style;
   style.setProperty('--wdc', `var(--${S.colorblind ? 'red' : 'wdc-mint'})`);
-  const pairs: Array<readonly ['p1' | 'p2', string]> = [['p1', p1], ['p2', p2]];
-  for (const [slot, hue] of pairs) {
-    style.setProperty(`--${slot}`, `var(--${hue})`);
-    style.setProperty(`--${slot}-rgb`, `var(--${hue}-rgb)`);
-    style.setProperty(`--${slot}-hi`, `var(--${hue}-hi)`);
-    const mx2 = S.colorblind || hue === 'gold' ? 'ice' : 'gold';
-    const mx3 = S.colorblind || hue === 'orange' ? 'red' : 'orange';
-    style.setProperty(`--${slot}-mx2`, `var(--${mx2})`);
-    style.setProperty(`--${slot}-mx2-rgb`, `var(--${mx2}-rgb)`);
-    style.setProperty(`--${slot}-mx3`, `var(--${mx3})`);
-    style.setProperty(`--${slot}-mx3-rgb`, `var(--${mx3}-rgb)`);
-  }
+  paintHuePair(style, [S.p1Hue, S.p2Hue], S.colorblind);
 
   const syncPick = (selector: string, mine: string, other: string): void => {
     const picker = $(selector);

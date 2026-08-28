@@ -16,9 +16,11 @@ import { showSheet } from '../../ui/sheet.ts';
 import type { PlayerRuneRow } from '../runes/rune-collection.ts';
 
 /* THE SEAT IN THE RING'S MOUTH (design 52d, EQ4) — three states and no more.
-   Two that an earlier draft carried are not states at all: a rune the account
-   does not own can never be seated (that is the GRID's veiled slot), and the
-   first-rune auto-equip IS the equipped state with an announcement elsewhere. */
+   A fourth that an earlier draft carried is not a state at all: a rune the
+   account does not own can never be seated, which is the GRID's veiled slot.
+   An empty seat is a legitimate answer and stays reachable — winning a first
+   rune no longer seats it (removed 2026-08-28, owner call: the behaviour is
+   to be solved differently), so 'none' is where every new collection starts. */
 export type SeatState = 'none' | 'live' | 'waiting';
 
 /* The rune enters play from SILVER up. Below it the choice is made, saved and

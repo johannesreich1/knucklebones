@@ -27,41 +27,17 @@ import {
   restoreLocale,
   verifyDealLocaleRepaint,
 } from './browser/support/locale-reveal.mjs';
-import {
-  verifyRandomTwoLandscape,
-  verifyRandomTwoReveal,
-} from './browser/support/random-two-reveal.mjs';
+import { verifyRandomTwoReveal } from './browser/support/random-two-reveal.mjs';
 import { SPELLS } from '../src/core/spells.ts';
-import {
-  readTurnedDeal,
-  checkDealPhysique,
-  verifyPileDealClearance,
-} from './browser/support/deal-stack.mjs';
+import { readTurnedDeal, checkDealPhysique } from './browser/support/deal-stack.mjs';
+import { primeRandomStart, SEED_AVOIDS_RITUAL } from './browser/support/random-start.mjs';
+import { verifyCollectedDecks } from './browser/support/deal-collection.mjs';
+import { verifyRevealGeometry } from './browser/support/reveal-geometry.mjs';
+import { emitReport } from './support/emit-report.mjs';
 const { chromium } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
 const problems = [], out = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
-/* The ONE draw this fixes is the offline RANDOM seed, and it is fixed to a
-   value that lands on an ordinary mode: Rune Trial answers RANDOM with a
-   private choice instead of a rune deal, so a seed that reaches it would leave
-   this test waiting for a deck that is never dealt. Verified under both the
-   permanent 40/60 weights and the temporary Trial share. */
-/* PRIMED AND PRESSED IN ONE TASK: the stub restores itself on first use, so
-   anything that draws before Play is pressed eats the fixed seed and the mode
-   goes back to chance — a previous duel's timer is exactly that thief, and a
-   Playwright click's round trip is all the room it needs. Since Rune Ritual is
-   temporarily 60% of the draw, a stolen seed usually lands there, and the
-   Ritual answers RANDOM with a private choice instead of a rune deal: this
-   test would then wait for a deck that is never dealt. */
-const primeRandomStart = (randomMode) => {
-  const natural = Math.random; if (randomMode) Math.random = () => { Math.random = natural; return .375; };
-  window.__kb.S.timer = 0;
-  const play = document.getElementById('btnPlay');
-  const box = play.getBoundingClientRect();
-  const at = { bubbles: true, clientX: box.left + box.width / 2, clientY: box.top + box.height / 2 };
-  play.dispatchEvent(new PointerEvent('pointerdown', at));
-  play.dispatchEvent(new PointerEvent('pointerup', at));
-};
 
 const browser = await chromium.launch();
 try {
@@ -98,7 +74,7 @@ try {
     await page.click('#modeSeg button[data-m="duo"]');
     await page.click(`#modePick button[data-v="${localMode}"]`);
     await page.click('#spellPick button[data-v="random"]');
-    await page.evaluate(primeRandomStart, localMode === '-1');
+    await page.evaluate(primeRandomStart, localMode === '-1' ? SEED_AVOIDS_RITUAL : null);
     if (liveLocale) {
       await page.waitForSelector('#ovWheel.on #wheelDial', { timeout: 20000 }); // never stale hidden DOM
       await page.waitForTimeout(700); // clear tap()'s native-click guard
@@ -306,172 +282,14 @@ try {
   check(new Set(orders).size > 1, 'the deck fans out in the same order every deal', orders);
   check(out.slots.every((i) => i >= 0), 'a deal took no card out of the fan at all', out.slots);
 
-  /* ---- THE DECK IS THE COLLECTION, NOT THE REGISTRY ----
-     Everything above deals in local multiplayer, which deliberately exposes the
-     whole roster. Versus the AI the deck must be exactly what could have been
-     drawn: a fan showing a rune this device has never collected is a shuffle
-     that cannot produce what it is offering. Both ×2 decks got that wrong until
-     2026-08-28 — only the SECOND was ever handed its candidates, so a player
-     holding two runes watched six cards, then one. */
-  const collectedDeal = async (collected, spell) => {
-    await page.evaluate((runes) => {
-      localStorage.setItem('knucklebones.runes.v1', JSON.stringify({
-        version: 1,
-        accountId: '11111111-2222-4333-8444-555555555555',
-        verifiedAt: 1,
-        collected: runes,
-      }));
-      const k = window.__kb;
-      k.goHome(); k.openPractice();
-    }, collected);
-    await page.click('#modeSeg button[data-m="cpu"]');
-    await page.click('#modePick button[data-v="0"]');   // a CHOSEN mode: no dial to wait through
-    await page.click(`#spellPick button[data-v="${spell}"]`);
-    await page.evaluate(() => { window.__kb.S.timer = 0; });
-    await page.click('#btnPlay');
-    await page.waitForSelector('#ovWheel.dealing .rdealt.up', { timeout: 15000 });
-    const first = await page.evaluate(() => ({
-      card: document.querySelector('.rdealt').dataset.rune,
-      deck: [...document.querySelectorAll('.rcard')].map((e) => e.dataset.rune),
-    }));
-    let second = null;
-    if (spell === 'random2') {
-      await page.waitForFunction((shown) => {
-        const card = document.querySelector('.rdealt');
-        return card && card.dataset.rune !== shown && !card.classList.contains('up');
-      }, first.card, { timeout: 10000 });
-      second = await page.evaluate(() => ({
-        deck: [...document.querySelectorAll('.rcard')].map((e) => e.dataset.rune),
-      }));
-      await page.waitForSelector('.rdealt.up', { timeout: 15000 });
-      second.card = await page.evaluate(() => document.querySelector('.rdealt').dataset.rune);
-    }
-    await page.waitForFunction(() => document.querySelector('#ovWheel')?.classList.contains('holding'),
-      null, { timeout: 10000 });
-    await page.click('#ovWheel');
-    await page.waitForFunction(() => !document.querySelector('#ovWheel')?.classList.contains('on'),
-      null, { timeout: 8000 });
-    await page.evaluate(() => { window.__kb.S.gen++; });
-    return { first, second };
-  };
+  /* The deck versus the AI is the COLLECTION, not the registry; it puts the
+     whole roster back before anything measures the six-card felt. */
+  await verifyCollectedDecks(page, out, check);
 
-  const held = SPELLS.slice(0, 3).map(({ id }) => id);
-  out.collectedDual = await collectedDeal(held, 'random2');
-  check(out.collectedDual.first.deck.length === held.length
-      && out.collectedDual.first.deck.every((rune) => held.includes(rune))
-      && new Set(out.collectedDual.first.deck).size === held.length,
-    'the first ×2 deck showed runes this device has not collected', out.collectedDual.first);
-  check(out.collectedDual.second.deck.length === held.length - 1
-      && out.collectedDual.second.deck.every((rune) => held.includes(rune))
-      && !out.collectedDual.second.deck.includes(out.collectedDual.first.card),
-    'the second ×2 deck was not the rest of the collection', out.collectedDual);
-
-  const pair = SPELLS.slice(2, 4).map(({ id }) => id);
-  out.collectedShared = await collectedDeal(pair, 'random');
-  check(out.collectedShared.first.deck.length === pair.length
-      && out.collectedShared.first.deck.every((rune) => pair.includes(rune))
-      && pair.includes(out.collectedShared.first.card),
-    'the shared RANDOM deck showed the whole registry instead of the collection',
-    out.collectedShared.first);
-
-  /* Put the whole roster back: everything after this measures the six-card
-     felt's geometry, and a two-card fan is a different table. */
-  await page.evaluate((runes) => {
-    localStorage.setItem('knucklebones.runes.v1', JSON.stringify({
-      version: 1,
-      accountId: '11111111-2222-4333-8444-555555555555',
-      verifiedAt: 1,
-      collected: runes,
-    }));
-  }, SPELLS.map(({ id }) => id));
-  /* ---- THE REVEAL'S PARTS DO NOT SIT ON EACH OTHER ----
-     Every part of this screen is absolutely positioned against the stage's
-     edge through --stage, which is what lets a beat change the stage's size
-     without the readout jumping. The failure mode of that design is total: if
-     --stage ever fails to resolve for one of them, its calc() is invalid, `top`
-     falls back to auto, and an absolutely positioned child of a centred flex
-     column lands in the MIDDLE — the title and the answer printed across the
-     dial they describe. Nothing about the markup or the classes would look
-     wrong, so this is measured in pixels, at two sizes, in BOTH dressings: the
-     ranked one carries a versus line the offline one does not. */
-  const overlaps = async (page, label) => {
-    const r = await page.evaluate(() => {
-      const box = (q) => { const e = document.querySelector(q); if (!e) return null;
-        const b = e.getBoundingClientRect();
-        return (e.textContent || '').trim() && b.height > 0
-          ? { left: b.left, right: b.right, top: b.top, bot: b.bottom }
-          : null; };
-      const st = document.querySelector('#wheelStage').getBoundingClientRect();
-      const stage = { left: st.left, right: st.right, top: st.top, bot: st.bottom };
-      /* A short landscape phone deliberately puts the hold in the free right
-         gutter at the stage's vertical midpoint. Measure rectangle overlap,
-         not vertical-range overlap, or that valid side-by-side layout reads
-         as though the copy were painted across the cards. */
-      const over = (a) => a ? Math.round(Math.min(
-        Math.max(0, Math.min(a.right, stage.right) - Math.max(a.left, stage.left)),
-        Math.max(0, Math.min(a.bot, stage.bot) - Math.max(a.top, stage.top)),
-      )) : 0;
-      return { title: over(box('#wheelTitle')), name: over(box('#wheelName')),
-               blurb: over(box('#wheelBlurb')), settled: over(box('#wheelSettled')),
-               who: over(box('#wheelWho')), hold: over(box('#wheelHold')),
-               stageH: Math.round(st.height) };
-    });
-    out['overlap_' + label] = r;
-    check(r.stageH > 0, `${label}: the reveal has no stage at all`, r);
-    for (const part of ['title', 'name', 'blurb', 'settled', 'who', 'hold']) {
-      check(r[part] === 0, `${label}: the reveal's ${part} is printed across the stage`, r);
-    }
-  };
-
-  /* Hold the reveal on whichever beat is last. */
-  const revealHeld = async (mode, spell, playMode = 'cpu') => {
-    await page.evaluate(({ activeMode, collected }) => {
-      if (activeMode === 'cpu') {
-        localStorage.setItem('knucklebones.runes.v1', JSON.stringify({
-          version: 1,
-          accountId: '11111111-2222-4333-8444-555555555555',
-          verifiedAt: 1,
-          collected,
-        }));
-      }
-      const k = window.__kb;
-      k.goHome(); k.openPractice();
-    }, { activeMode: playMode, collected: SPELLS.map(({ id }) => id) });
-    await page.click(`#modeSeg button[data-m="${playMode}"]`);
-    await page.click(`#modePick button[data-v="${mode}"]`);
-    await page.click(`#spellPick button[data-v="${spell}"]`);
-    await page.evaluate(primeRandomStart, mode === '-1');
-    await page.waitForFunction(() => document.querySelector('#ovWheel')?.classList.contains('holding'), { timeout: 20000 });
-    await page.waitForTimeout(250);
-  };
-  const dismiss = async () => {
-    await page.click('#ovWheel');
-    await page.waitForFunction(() => !document.querySelector('#ovWheel')?.classList.contains('on'), { timeout: 12000 });
-  };
-
-  for (const [w, h] of [[390, 844], [375, 667]]) {
-    await page.setViewportSize({ width: w, height: h });
-    // OFFLINE dressing: mode then rune, so the settled strip is on screen too
-    await revealHeld('-1', 'random');
-    await overlaps(page, `offline-${w}x${h}`);
-    await dismiss();
-    // RANKED dressing: the mode alone, plus the versus line ranked fills in
-    await revealHeld('-1', 'ward');
-    await page.evaluate(() => { document.querySelector('#wheelWho').innerHTML =
-      '<div class="dside me"><span class="dav"></span><span class="dnm">FrostLynx303</span><span class="rt">1284</span></div>'
-      + '<span class="dvs">VS</span>'
-      + '<div class="dside foe"><span class="dav"></span><span class="dnm">EmberCrow896</span><span class="rt">1310</span></div>'; });
-    await page.waitForTimeout(200);
-    await overlaps(page, `ranked-${w}x${h}`);
-    await dismiss();
-  }
-  /* The hardest geometry is random mode + two runes on a short landscape. */
-  await verifyRandomTwoLandscape(page, out, check, revealHeld, overlaps, dismiss);
-  /* The rotated painted bodies of the pile deal, at the two tight rests. */
-  await verifyPileDealClearance(page, out, check, revealHeld, dismiss);
+  /* Nothing on the reveal is printed across the stage it describes. */
+  await verifyRevealGeometry(page, out, check);
 } catch (e) {
   problems.push('THREW :: ' + e.message);
 } finally { await browser.close(); }
 
-console.log(JSON.stringify({ out, problems }, null, 2));
-process.exit(problems.length ? 1 : 0);
+emitReport({ out, problems }, problems.length);

@@ -9,75 +9,20 @@
 // mood. The margins below sit well under the tuned values (the current seeded
 // cells are printed below), so they catch a broken retune, not simulation
 // drift.
-import {
-  AI, ME, emptyBoard, legalCols, applyMove, totalOf, isOver,
-  CLASSIC, COLSHIELD, BOUNTY, LIMITED,
-  type Mode, type GameState, type Player,
-} from '../src/core/rules.ts';
-import { searchRoot } from '../src/core/ai.ts';
-import { makeBag } from '../src/core/dice.ts';
-import { GROUPS, botShapeAt, type BotShape } from '../src/core/ladder.ts';
-import { botMove } from '../src/core/bot.ts';
+import { COLSHIELD } from '../src/core/rules.ts';
+import { GROUPS } from '../src/core/ladder.ts';
 import {
   ALL_RANKED_CAPABILITIES, rankedOutcomePool, type RankedPoolTier,
 } from '../src/core/ranked-outcomes.ts';
+import {
+  duel, rankedBotPool, seeded, type Policy, type WeightedMode,
+} from './support/policy-duel-bench.ts';
+import { checkBotMoveContract } from './support/bot-move-contract.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
 
-/* mulberry32, NOT a bare LCG: MINSTD's lattice swung near-deterministic
-   policy duels by ±7pp run to run (the colshield decomposition, 2026-08-21
-   — 60.6% one stream, 46.0% the next, far beyond sampling error). These
-   thresholds may not depend on which stream position a duel starts at. */
-const seeded = (a: number) => () => {
-  a |= 0; a = (a + 0x6D2B79F5) | 0;
-  let t = Math.imul(a ^ (a >>> 15), 1 | a);
-  t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-};
 Math.random = seeded(20260820);
-
-interface Policy extends Partial<BotShape> { random?: boolean; mode?: Mode; botRating?: number }
-const rnd = (n: number, random: () => number = Math.random) => Math.floor(random() * n);
-
-function pick(p: Policy, st: ReturnType<typeof emptyBoard>[], who: 0 | 1, die: number,
-              random: () => number = Math.random): number {
-  if (p.botRating !== undefined) {
-    return botMove(st as GameState, who, die, p.botRating, p.mode ?? CLASSIC, random);
-  }
-  const legal = legalCols(st[who]);
-  if (p.random || (p.slip && random() < p.slip)) return legal[rnd(legal.length, random)];
-  return searchRoot(st as never, who, die, p.depth ?? 1, {
-    mode: p.mode ?? CLASSIC,
-    random,
-    riskWeight: p.risk ?? 0,
-    opponentWeight: p.oppW ?? 1,
-  }).c;
-}
-
-/* seatME moves first; returns the AI seat's score for one game. world is the
-   mode the GAME obeys — a policy
-   may search a different one (that mismatch is what §4 measures). */
-function play(seatAI: Policy, seatME: Policy, world: Mode = CLASSIC): number {
-  const st = [emptyBoard(), emptyBoard()];
-  let turn: 0 | 1 = ME as 1, i = 0;
-  for (;;) {
-    const die = 1 + rnd(6);
-    applyMove(st as never, turn, pick(turn === AI ? seatAI : seatME, st, turn, die), die, world);
-    i++;
-    if (isOver(st[turn], null)) break;
-    turn = (1 - turn) as 0 | 1;
-  }
-  const a = totalOf(st[AI], 0, world), m = totalOf(st[ME], 0, world);
-  return a > m ? 1 : a < m ? 0 : 0.5;
-}
-
-/* seats alternate so the first-move edge cancels; share for a */
-const duel = (a: Policy, b: Policy, n: number, world: Mode = CLASSIC) => {
-  let w = 0;
-  for (let g = 0; g < n; g++) w += g % 2 ? 1 - play(b, a, world) : play(a, b, world);
-  return w / n;
-};
 
 const RANDOM: Policy = { random: true };
 const rankedBot = (index: number): Policy => ({ botRating: GROUPS[index].floor });
@@ -94,8 +39,6 @@ const rankedBot = (index: number): Policy => ({ botRating: GROUPS[index].floor }
    in the opening seat, so that seat must be gentle in its own right. */
 const NEWCOMER: Policy = { depth: 1, oppW: 0, risk: 0, slip: 0 };
 
-type WeightedMode = readonly [name: string, mode: Mode, weight: number];
-
 /* Read the real wheel instead of copying its 40/60 weights here. Rune Trial
    remains a distinct reported outcome, while its underlying board correctly
    uses Classic; dedicated rune benches own the spell decisions. */
@@ -111,63 +54,6 @@ function productionPool(tier: RankedPoolTier): readonly WeightedMode[] {
 const STONE_POOL = productionPool('stone');
 const BONE_POOL = productionPool('bone');
 const IVORY_POOL = productionPool('ivory');
-
-function policyGame(bot: Policy, human: Policy, humanFirst: boolean, mode: Mode,
-                    gameSeed: number): number {
-  const st: GameState = [emptyBoard(), emptyBoard()];
-  const bounty: [number, number] = [0, 0];
-  const humanIdx: Player = humanFirst ? ME : AI;
-  const botIdx = (1 - humanIdx) as Player;
-  const humanPolicy = { ...human, mode };
-  const botPolicy: Policy = { ...bot, mode };
-  /* Production dice are seeded match truth; bot slips/tie breaks are ambient
-     decision randomness. Keep dice and both policies on independent keyed
-     streams so changing a shape cannot quietly change the rolls it receives.
-     The same gameSeed in the reverse seat uses the same dice. */
-  const diceRandom = seeded(gameSeed ^ 0x243F6A88);
-  const humanRandom = seeded(gameSeed ^ 0x85A308D3);
-  const botRandom = seeded(gameSeed ^ 0x13198A2E);
-  const bag = mode === LIMITED ? makeBag(diceRandom) : null;
-  let turn: Player = ME;
-  for (;;) {
-    const die = bag ? bag.shift()! : 1 + rnd(6, diceRandom);
-    const policy = turn === humanIdx ? humanPolicy : botPolicy;
-    const decisionRandom = turn === humanIdx ? humanRandom : botRandom;
-    const destroyed = applyMove(st, turn, pick(policy, st, turn, die, decisionRandom), die, mode);
-    if (mode === BOUNTY) bounty[turn] += destroyed;
-    if (isOver(st[turn], bag ? bag.length : null)) break;
-    turn = (1 - turn) as Player;
-  }
-  const mine = totalOf(st[humanIdx], bounty[humanIdx], mode);
-  const theirs = totalOf(st[botIdx], bounty[botIdx], mode);
-  return mine > theirs ? 1 : mine < theirs ? 0 : 0.5;
-}
-
-function rankedBotGame(botRating: number, human: Policy, humanFirst: boolean, mode: Mode,
-                       gameSeed: number): number {
-  return policyGame({ botRating }, human, humanFirst, mode, gameSeed);
-}
-
-function rankedBotPool(botRating: number, pool: readonly WeightedMode[],
-                       human: Policy, humanFirst: boolean, gamesPerMode: number,
-                       baseSeed: number) {
-  const modes: Record<string, number> = {};
-  let weighted = 0;
-  for (let outcomeIndex = 0; outcomeIndex < pool.length; outcomeIndex++) {
-    const [name, mode, weight] = pool[outcomeIndex];
-    let outcome = 0;
-    for (let game = 0; game < gamesPerMode; game++) {
-      const gameSeed = (baseSeed
-        + Math.imul(outcomeIndex + 1, 0x9E3779B1)
-        + Math.imul(game + 1, 0x6D2B79F5)) | 0;
-      outcome += rankedBotGame(botRating, human, humanFirst, mode, gameSeed);
-    }
-    const rate = outcome / gamesPerMode;
-    modes[name] = rate;
-    weighted += rate * weight;
-  }
-  return { modes, weighted };
-}
 
 /* 2 · the first promotion must be felt: BONE stops actively sparing your
    board and beats kill-averse STONE clearly. This is the seam the whole
@@ -299,79 +185,7 @@ if (stonePoolRandomFirst.weighted < 0.60 || stonePoolRandomSecond.weighted < 0.5
     + `${(stonePoolRandomSecond.weighted * 100).toFixed(1)}% by seat`);
 }
 
-/* ---- core/bot botMove(): the ONE implementation both Edge Functions ask ----
-   Extracted from pvp-move 2026-08-22 so pvp-join can play a bot's OPENING move
-   (a bot can be seated first now that the seat handicap applies to bots too).
-   Equivalence to the block it replaced was proven off-gate at 113,400 calls
-   across all 7 modes and all 7 groups, 0 differences; what is pinned HERE is
-   the contract that keeps it safe to call from two places. */
-{
-  const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
-  const seeded = (a: number) => () => {
-    a |= 0; a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-  const st0: GameState = [emptyBoard(), emptyBoard()];
-  // an OPENING move on an empty board is the case pvp-join newly depends on
-  for (const g of GROUPS) {
-    const c = botMove(st0, ME, 4, g.floor + 10, CLASSIC, seeded(7));
-    check(c >= 0 && c < 3, 'botMove must open with a legal column: ' + g.id, c);
-  }
-  // deterministic given the SAME stream — replay and the gate both need this.
-  const mid: GameState = [[[5, 5], [2], []], [[4], [6, 6], [1]]];
-  for (const mode of [CLASSIC, COLSHIELD] as Mode[]) {
-    const a = botMove(mid, AI, 4, 2020, mode, seeded(99));
-    const b = botMove(mid, AI, 4, 2020, mode, seeded(99));
-    check(a === b, 'botMove must be deterministic on one seeded stream', { mode, a, b });
-  }
-  // STONE's negative opponent weight is a promise across BOTH branches and
-  // BOTH seats. A random slip may build badly; it may not become a perfect
-  // attack when a score-preserving column exists. The same safe-slip rule is
-  // the explicit handicap for any bot that opens as ME/p1.
-  const draws = (...values: number[]) => {
-    let index = 0;
-    return () => values[index++] ?? 0;
-  };
-  const botAsAI: GameState = [[[], [], []], [[6, 6], [], []]];
-  const botAsME: GameState = [[[6, 6], [], []], [[], [], []]];
-  const sparedFromAI = botMove(botAsAI, AI, 6, 0, CLASSIC, draws(0, 0));
-  const sparedFromME = botMove(botAsME, ME, 6, 0, CLASSIC, draws(0, 0));
-  check(sparedFromAI !== 0 && sparedFromME !== 0 && sparedFromAI === sparedFromME,
-    'STONE random slip attacked a double six or changed meaning with its seat',
-    { sparedFromAI, sparedFromME });
-  const searchedFromAI = botMove(botAsAI, AI, 6, 0, CLASSIC, draws(0.99, 0.5, 0.5, 0.5));
-  const searchedFromME = botMove(botAsME, ME, 6, 0, CLASSIC, draws(0.99, 0.5, 0.5, 0.5));
-  check(searchedFromAI === 1 && searchedFromME === 1,
-    'STONE search reversed its negative opponent weight when the bot became p1/ME',
-    { searchedFromAI, searchedFromME });
-  const boneAttack = botMove(botAsAI, AI, 6, GROUPS[1].floor, CLASSIC, draws(0, 0));
-  check(boneAttack === 0,
-    'the bot-opener handicap leaked into a promoted bot seated second', boneAttack);
-  const boneOpenerSpared = botMove(botAsME, ME, 6, GROUPS[1].floor, CLASSIC, draws(0, 0));
-  check(boneOpenerSpared !== 0,
-    'a promoted bot opener turned its handicap slip into a double-six attack', boneOpenerSpared);
-  // it must never answer with a column it cannot play
-  const nearlyFull: GameState = [[[1, 2, 3], [1, 2, 3], [4]], [[], [], []]];
-  for (let i = 0; i < 60; i++) {
-    const c = botMove(nearlyFull, AI, 1 + (i % 6), GROUPS[i % GROUPS.length].floor + 10, CLASSIC, seeded(i));
-    check(legalCols(nearlyFull[AI]).includes(c), 'botMove returned an illegal column', { i, c });
-  }
-  // a full board has nothing to answer with, and says so rather than guessing
-  const full: GameState = [[[1, 2, 3], [1, 2, 3], [1, 2, 3]], [[], [], []]];
-  check(botMove(full, AI, 4, 0, CLASSIC, seeded(1)) === -1, 'a bot with no legal column must return -1');
-  // Search options are per call: a ranked bot cannot change how the next
-  // offline search in the same process plays.
-  const independent = () => searchRoot(mid, AI, 4, 2, {
-    mode: CLASSIC, random: seeded(515), riskWeight: 0.9, opponentWeight: 1,
-  }).c;
-  const before = independent();
-  botMove(mid, AI, 4, 0, CLASSIC, seeded(3));          // STONE: risk 0, oppW -0.5
-  const after = independent();
-  check(before === after, 'botMove leaked configuration into an independent search', { before, after });
-  check(botShapeAt(0).oppW === -0.5, 'STONE is still the kill-averse shape botMove borrows', botShapeAt(0));
-}
+checkBotMoveContract((c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); });
 
 console.log(JSON.stringify({
   stonePool: {

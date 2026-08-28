@@ -10,6 +10,7 @@
 // and the hub's highlight. Two flags would drift the first time somebody's
 // first game was ranked.
 import pkg from 'playwright';
+import { emitReport } from './support/emit-report.mjs';
 const { chromium } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
 const problems = [], out = {};
@@ -119,5 +120,4 @@ try {
   problems.push('THREW :: ' + e.message);
 } finally { await browser.close(); }
 
-console.log(JSON.stringify({ out, problems }, null, 2));
-process.exit(problems.length ? 1 : 0);
+emitReport({ out, problems }, problems.length);

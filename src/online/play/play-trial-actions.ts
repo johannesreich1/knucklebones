@@ -9,7 +9,7 @@ import { clearHints } from '../../ui/game/hints.ts';
 import { rankedAction, type MatchRow } from '../api/match-api.ts';
 import { recoverIdempotentCommand } from '../api/idempotent-command.ts';
 import { newerMatchProjection } from './match-sync.ts';
-import { cancelOnlineReveal } from './play-motion.ts';
+import { animateOnlineMove, cancelOnlineReveal } from './play-motion.ts';
 import {
   completeProjectionRecovery,
   requireProjectionRecovery,
@@ -53,7 +53,14 @@ async function boundedAction(
 }
 
 export function createTrialActionSubmitter(ports: TrialActionPorts) {
-  const submit = async (action: RankedActionIntent): Promise<boolean> => {
+  /* `paint` is this client's own optimistic animation. It starts next to the
+     request, exactly as the ordinary ranked path does with Promise.all, and is
+     always awaited before anything syncs — the authoritative replay must never
+     run while a paint is still in flight. */
+  const submit = async (
+    action: RankedActionIntent,
+    paint?: () => Promise<void>,
+  ): Promise<boolean> => {
     const online = ports.current();
     if (!online?.trial || online.done || online.recoverySync
         || S.busy || S.turn !== online.you) return false;
@@ -69,11 +76,14 @@ export function createTrialActionSubmitter(ports: TrialActionPorts) {
     renderSpells();
     online.animating = true;
     let response: Awaited<ReturnType<typeof rankedAction>> | null = null;
+    const request = boundedAction(
+      rankedAction(online.matchId, submittedAtVersion, action, commandId),
+    );
+    const painted = paint ? paint() : null;
     try {
-      response = await boundedAction(
-        rankedAction(online.matchId, submittedAtVersion, action, commandId),
-      );
+      response = await request;
     } catch { /* the authoritative log read below owns network recovery */ }
+    if (painted) await painted;
     if (!ports.isCurrent(online)) return false;
     online.animating = false;
     const uncertain = (candidate: typeof response): boolean => !candidate
@@ -141,10 +151,34 @@ export function createTrialActionSubmitter(ports: TrialActionPorts) {
       disarm(true);
       return submit({ kind: 'cast', rune_id: id, target_col: column });
     },
+    /* A PLACEMENT IS NOT A CAST. A cast's outcome belongs to the server — which
+       dice SUNDER destroys, what FATE rerolls — so it must wait for the log. A
+       placement does not: the die is already public in `pendingDie` and the
+       column is the tap, which is exactly what ordinary ranked animates from.
+       Waiting here cost the player the whole round trip on the majority of
+       their taps (measured: die on the board 336ms AFTER the response), on the
+       path that is becoming the common one. Paint it next to the request, and
+       let the replay skip the row this already drew. */
     place: async (column: number): Promise<boolean> => {
       if (S.spellAimCommitted) return false;
       disarm(true);
-      return submit({ kind: 'place', placed_col: column });
+      const online = ports.current();
+      /* The die is this path's ONLY extra precondition — there is nothing to
+         paint without one. Every other reason to refuse belongs to submit, and
+         it refuses before the paint is ever started, so stating them here too
+         would only be a second copy to drift. */
+      const die = online?.pendingDie ?? 0;
+      if (!online || die <= 0) return submit({ kind: 'place', placed_col: column });
+      online.optimisticPlace = { who: online.you, col: column, die };
+      const placed = await submit(
+        { kind: 'place', placed_col: column },
+        () => animateOnlineMove(online.you, column, die,
+          () => ports.isCurrent(online), S.charm),
+      );
+      /* A refused placement never entered the log, so nothing will arrive to
+         match the marker; drop it or it would swallow a later real row. */
+      if (!placed) online.optimisticPlace = null;
+      return placed;
     },
   };
 }

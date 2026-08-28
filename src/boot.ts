@@ -1,6 +1,6 @@
 // One typed composition root shared by the standalone and widget entries.
 import { AI, ME } from './core/rules.ts';
-import { cancelPass, endGame, place, sayChoose, armTimer } from './flow/game.ts';
+import { endGame, place, sayChoose, armTimer } from './flow/game.ts';
 import { configureMenu, syncSettingsUI } from './flow/menu.ts';
 import { castArmed, configureSpellFlow, renderSpells } from './flow/spells.ts';
 import { configureInput } from './ui/input.ts';
@@ -20,7 +20,7 @@ import { bindMenus } from './boot/menu-bindings.ts';
 import { bindPlatform } from './boot/platform.ts';
 import { bindLegalPages } from './ui/legal.ts';
 import { subscribeLocale } from './i18n/index.ts';
-import { repaintPassLocale } from './flow/pass-card.ts';
+import { cancelPass, repaintPassLocale } from './flow/pass-card.ts';
 import { userPreferencesRevision } from './preferences.ts';
 import { initializeGameCenter } from './native/game-center.ts';
 

@@ -3,8 +3,8 @@
 // renders, and the reduced-motion player. One module owns what the deck IS —
 // where a card sits fanned, squared, piled or stacked, and how a card, its
 // faces and the whole felt are drawn — so the animation, the CSS rest and
-// every still read the same table. The shuffle itself (the plan, the beats,
-// the draw) lives in ui/runedeal.ts.
+// every still read the same table. The shuffle itself lives next door: what it
+// DECIDES in ui/runeplan.ts, the beats and the draw in ui/runedeal.ts.
 import { SPELLS, type SpellSpec } from '../core/spells.ts';
 import { spellCopy } from '../i18n/index.ts';
 import { spellIcon, spellHue } from './spellicons.ts';

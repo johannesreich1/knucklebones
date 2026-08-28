@@ -1,32 +1,28 @@
 import { AI, ME, type Player } from "./core/rules.ts";
-import { rebuild, matchTotal } from "./core/match.ts";
-import { settle, matchBand, botPairBand, SCALE, type Score } from "./core/ladder.ts";
+import { botPairBand, matchBand, SCALE } from "./core/ladder.ts";
 import {
   ALL_RANKED_CAPABILITIES,
   RUNE_TRIAL_FORMAT,
-  rankedOutcomeByMatch,
   type RankedParticipantAccess,
   type RankedPoolTier,
 } from "./core/ranked-outcomes.ts";
-import { rankedActionTotal, rebuildRankedActions, type RankedActionRow } from "./core/ranked-actions.ts";
 import { json, type AuthenticatedContext } from "../_shared/http.ts";
-import { STALL_MS } from "../_shared/match-timing.ts";
 import { ensureRuneTrialBotOpening } from "../_shared/rune-trial-bot-opening.ts";
-import { settleMatch } from "../_shared/settlement.ts";
 import {
   findOldestEligiblePartner,
+  findRankedBotOpponent,
   rankedBotSides,
   trialClientCompatibilityError,
   type QueueCandidate,
 } from "./matchmaking.ts";
 import { MatchStartFailure, startProgressiveRankedMatch } from "./start.ts";
+import { settleAbandonedBotMatch } from "./stalled-bot-match.ts";
 import {
   MATCH_COLUMNS,
-  type JoinInput, type MatchMoveRow, type MatchRow, type ProfileSummary,
+  type JoinInput, type MatchRow, type ProfileSummary,
 } from "../_shared/types.ts";
 
 const QUEUE_STALE_MS = 2 * 60 * 1000;
-const ACTION_COLUMNS = "idx, move_idx, who, kind, rune_id, target_col, placed_col, die_before, die_after";
 
 export async function joinMatch(context: AuthenticatedContext, input: JoinInput): Promise<Response> {
   const { user } = context;
@@ -94,68 +90,6 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
     });
   };
 
-  // A bot has no client to claim a human's abandoned match, so matchmaking
-  // applies the same loss lazily when that human returns.
-  const forfeitStalledBotMatch = async (match: MatchRow): Promise<boolean> => {
-    const oppId = match.p1 === uid ? match.p2 : match.p1;
-    const myIdx: Player = match.p1 === uid ? ME : AI;
-    if (match.phase !== "playing" || match.turn !== myIdx) return false;
-    if (Date.now() - new Date(match.last_move_at).getTime() < STALL_MS) return false;
-    const { data: opponentData, error: opponentError } = await svc.from("profiles")
-      .select("is_bot").eq("id", oppId).maybeSingle();
-    if (opponentError || !(opponentData as { is_bot?: boolean } | null)?.is_bot) return false;
-    let outcome;
-    try { outcome = rankedOutcomeByMatch(match.format, match.modifier); }
-    catch (error) {
-      console.error("pvp-join found an unknown ranked outcome:", error);
-      return false;
-    }
-    const [{ data: moveData, error: moveError }, { data: actionData, error: actionError },
-      { data: seedData, error: seedError }] = await Promise.all([
-      svc.from("match_moves").select("idx, who, col").eq("match_id", match.id),
-      svc.from("match_actions").select(ACTION_COLUMNS).eq("match_id", match.id),
-      svc.from("match_seeds").select("seed").eq("match_id", match.id).single(),
-    ]);
-    if (moveError || actionError || seedError) return false;
-    const moves = (moveData ?? []) as MatchMoveRow[];
-    const seedRow = seedData as { seed: string } | null;
-    if (!seedRow) return false;
-    let p1Score: number, p2Score: number, moveCount: number;
-    if (match.format === RUNE_TRIAL_FORMAT) {
-      if (!match.p1_rune || !match.p2_rune) return false;
-      const actions = (actionData ?? []) as RankedActionRow[];
-      const state = rebuildRankedActions(
-        seedRow.seed, actions, outcome.mode, [match.p2_rune, match.p1_rune],
-      );
-      if (!state || state.actionCount !== match.action_version || state.turn !== match.turn
-          || state.nextDie !== match.next_die || state.moveCount !== moves.length
-          || state.pendingAim !== match.pending_aim) return false;
-      p1Score = rankedActionTotal(state, ME, outcome.mode);
-      p2Score = rankedActionTotal(state, AI, outcome.mode);
-      moveCount = state.moveCount;
-    } else {
-      const state = rebuild(seedRow.seed, moves, outcome.mode);
-      if (!state || state.moveCount !== moves.length || state.turn !== match.turn
-          || state.nextDie !== match.next_die) return false;
-      p1Score = matchTotal(state, ME, outcome.mode);
-      p2Score = matchTotal(state, AI, outcome.mode);
-      moveCount = moves.length;
-    }
-    const p1Result: Score = myIdx === ME ? 0 : 1;
-    const result = await settleMatch(svc, match, {
-      status: "forfeit",
-      winner: oppId,
-      p1Score,
-      p2Score,
-      p1Result,
-    }, settle, {
-      turn: match.turn,
-      lastMoveAt: match.last_move_at,
-      moveCount,
-    });
-    return result.match.status !== "active";
-  };
-
   const { data: activeData, error: activeError } = await svc.from("matches")
     .select(MATCH_COLUMNS).eq("status", "active")
     .or(`p1.eq.${uid},p2.eq.${uid}`).limit(1).maybeSingle();
@@ -163,7 +97,7 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
   const active = activeData as MatchRow | null;
   const compatibilityError = active && trialClientCompatibilityError(active, input);
   if (compatibilityError) return json({ error: compatibilityError }, 409);
-  if (active && !(await forfeitStalledBotMatch(active))) return matched(active);
+  if (active && !(await settleAbandonedBotMatch(svc, active, uid))) return matched(active);
 
   const { error: staleError } = await svc.from("matchmaking_queue").delete()
     .lt("created_at", new Date(Date.now() - QUEUE_STALE_MS).toISOString());
@@ -258,59 +192,11 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
   }
 
   if (input.allowBot) {
-    const [{ data: botData, error: botError }, { data: busyData, error: busyError }] = await Promise.all([
-      svc.from("profiles").select("id, rating").eq("is_bot", true),
-      svc.from("matches").select("p1, p2").eq("status", "active"),
-    ]);
-    if (botError || busyError) return json({ error: "bot-read-failed" }, 500);
-    const bots = (botData ?? []) as ProfileSummary[];
-    const busy = (busyData ?? []) as Array<Pick<MatchRow, "p1" | "p2">>;
-    const busyIds = new Set(busy.flatMap((match) => [match.p1, match.p2]));
-    const free = bots.filter((bot) => !busyIds.has(bot.id));
-    const cap = Math.min(band, botPairBand(myRating));
-    const inRange = free.filter((bot) => Math.abs(bot.rating! - myRating) <= cap);
-    let bot: { id: string; rating: number } | null = null;
-    if (inRange.length) {
-      /* Sample the WHOLE eligible band. This used to sort by proximity and take
-         one of the nearest three, which drove the median rating gap down to 37
-         points — and since a ladder delta is a function of that gap, every win
-         paid about +80 and the number stopped carrying information. Human
-         pairing never had the problem: oldestEligibleCandidate takes the oldest
-         queued player inside the band, never the nearest, and measures a median
-         gap near 340 whether two players are queued or sixty. Uniform sampling
-         gives bot matches that same spread (payout sd 5.1 -> 17.9) at no cost
-         to skill fidelity (0.906, unchanged, because none of this touches
-         delta()) and none to difficulty (human win rate 56.0% -> 56.2%).
-         botPairBand still caps the distance, so a STONE player cannot be handed
-         the IVORY bot that caused the 2026-08-20 report. */
-      const picked = inRange[Math.floor(Math.random() * inRange.length)];
-      bot = { id: picked.id, rating: picked.rating ?? 0 };
-    } else {
-      const offset = Math.round(cap * (0.15 + Math.random() * 0.35)) * (Math.random() < 0.5 ? -1 : 1);
-      const { data: mintedData, error: mintError } = await svc.rpc("mint_bot", {
-        target_rating: Math.max(0, myRating + offset),
-      });
-      if (mintError) return json({ error: "bot-create-failed" }, 500);
-      const minted = mintedData as string | null;
-      if (minted) {
-        const { data: mintedProfile, error: mintedError } = await svc.from("profiles")
-          .select("rating").eq("id", minted).maybeSingle();
-        if (mintedError) return json({ error: "bot-read-failed" }, 500);
-        const rating = (mintedProfile as { rating?: number | null } | null)?.rating
-          ?? Math.max(0, myRating + offset);
-        bot = { id: minted, rating };
-      } else if (free.length) {
-        /* Last resort: minting failed and nothing sits inside the cap, so take
-           the closest free bot anyway. Spelled out because the pick above is
-           deliberately uniform — this is the one place that still wants the
-           nearest, and it used to ride on a sort that no longer exists. */
-        const nearest = free.reduce((best, candidate) =>
-          Math.abs((candidate.rating ?? 0) - myRating) < Math.abs((best.rating ?? 0) - myRating)
-            ? candidate
-            : best);
-        bot = { id: nearest.id, rating: nearest.rating ?? 0 };
-      }
-    }
+    const search = await findRankedBotOpponent(
+      svc, myRating, Math.min(band, botPairBand(myRating)),
+    );
+    if (!search.ok) return json({ error: search.error }, 500);
+    const bot = search.bot;
     if (bot) {
       const { underdog, favourite } = rankedBotSides(uid, myRating, bot.id, bot.rating);
       try {

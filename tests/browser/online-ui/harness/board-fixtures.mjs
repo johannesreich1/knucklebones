@@ -3,6 +3,12 @@
    a rank, a season depth — while routes.mjs is the cursor arithmetic that
    serves them. */
 
+/* The season run A is paging through. The leaderboard stub stamps it on every
+   row and the player_standing stub reports it as the board's size — the two
+   are the only places a client can learn that number, so they read it from
+   here rather than each keeping a copy that drifts. */
+export const RUN_A_POPULATION = 199;
+
 /** The ladder as the RPC returns it, including the dense `pos` and the
     population added by 20260827203007. A mock that omits a field a migration
     added keeps a broken client green, and `pos` is load-bearing: the client

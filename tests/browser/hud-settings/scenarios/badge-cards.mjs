@@ -1,3 +1,6 @@
+import { armSheetArrival, dragSheetAndHold, sheetGone } from '../../support/sheet-card.mjs';
+import { readLearnLibraryEntry } from '../harness/learn-library.mjs';
+
 export async function runBadgeCardScenarios(suite) {
   const { page, out, check, modeCopy, spellCopy, t } = suite;
   // ===== the HUD badge names what is in play, and explains each of it =====
@@ -39,39 +42,8 @@ export async function runBadgeCardScenarios(suite) {
      markup the roster card is made of), and they are the door that had to SURVIVE
      the badge changing destination: a chip no longer opens a roster, so if the
      Learn hub had come along with it the whole library would be unreachable. */
-  const rosterEntry = async (btn, ov, id) => {
-    await page.tap('#btnLearn'); await page.waitForTimeout(320);
-    await page.tap(btn); await page.waitForTimeout(420);
-    const r = await page.evaluate(([ov, id]) => {
-      const o = document.getElementById(ov);
-      const c = o?.querySelector(`.modecard[data-mode="${id}"]`);
-      const h = c?.querySelector('.mchead');
-      const head = o?.querySelector('.shead');
-      const buttons = [...(head?.querySelectorAll('button') ?? [])];
-      const back = head?.querySelector(`[data-learn-back="${ov}"]`);
-      return { on: o?.classList.contains('on') ?? false,
-               title: head?.querySelector('.ttl')?.textContent?.trim() ?? '',
-               name: c?.querySelector('.mcname')?.textContent?.trim() ?? '',
-               detail: c?.querySelector('.mcdetail')?.textContent?.trim() ?? '',
-               // the entry's OWN hue, as painted — not the token it came from
-               hue: h ? getComputedStyle(h).color : '',
-               nav: { buttons: buttons.length,
-                      backs: head?.querySelectorAll(`[data-learn-back="${ov}"]`).length ?? 0,
-                      glyph: back?.textContent?.trim() ?? '',
-                      label: back?.getAttribute('aria-label') ?? '',
-                      left: head?.firstElementChild === back,
-                      noX: !buttons.some((button) => button.textContent?.includes('✕')) } };
-    }, [ov, id]);
-    await page.tap(`[data-learn-back="${ov}"]`); await page.waitForTimeout(300);
-    r.back = await page.evaluate((ov) => ({
-      child: document.getElementById(ov)?.classList.contains('on') ?? false,
-      learn: document.getElementById('ovLearn').classList.contains('on'),
-    }), ov);
-    await page.tap('#btnLearnBack'); await page.waitForTimeout(340);
-    return r;
-  };
-  out.rosterMode = await rosterEntry('#btnLearnModes', 'ovModes', 'singlestrike');
-  out.rosterSpell = await rosterEntry('#btnLearnSpells', 'ovSpells', 'ward');
+  out.rosterMode = await readLearnLibraryEntry(page, '#btnLearnModes', 'ovModes', 'singlestrike');
+  out.rosterSpell = await readLearnLibraryEntry(page, '#btnLearnSpells', 'ovSpells', 'ward');
   check(out.rosterMode.title === t('learn', 'library.gameModes')
       && out.rosterSpell.title === t('learn', 'library.runes'),
     'the Learn libraries do not use their player-facing category names',
@@ -150,33 +122,18 @@ export async function runBadgeCardScenarios(suite) {
      the arrival, the wash, the 96px commit line, the flick, the spring home, the
      backdrop tap and the grabber are one implementation guarded in two suites
      (online-ui's ladder-faceoff scenario drives the face-off's copy of these
-     very numbers).
+     very numbers, and both suites clock the arrival and pull the card down
+     through the one support/sheet-card.mjs).
      Every line below reads PIXELS: a card that merely appeared in the DOM, a
      tint that never reached the paint, or a drag the card ignored all agree with
      the DOM perfectly (single-strike-visibility's lesson). And both chips walk
      the same steps,
      because a row of chips that behaves differently per roster is the bug the
      badge was made a row to prevent. */
-  const armFlight = () => page.evaluate(() => {
-    window.__fo = { vh: window.innerHeight, frames: [] };
-    const alpha = (c) => {
-      const m = /rgba?\(([^)]+)\)/.exec(c || '');
-      if (!m) return 1;
-      const p = m[1].split(',');
-      return p.length > 3 ? parseFloat(p[3]) : 1;
-    };
-    const tick = () => {
-      const c = document.querySelector('.focard'), ov = document.querySelector('.faceoff');
-      if (c && ov) window.__fo.frames.push({ top: Math.round(c.getBoundingClientRect().top),
-                                             a: alpha(getComputedStyle(ov).backgroundColor) });
-      if (window.__fo.frames.length < 36) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  });
   // one door in, used for every reopen below: arm the sampler, tap the chip, and
   // let the 340ms arrival land before anything is measured
   const openCard = async (lib) => {
-    await armFlight();
+    await armSheetArrival(page);
     await page.tap(`#rec .rchip[data-lib="${lib}"]`);
     await page.waitForTimeout(520);
     /* A chip must deal a CARD, not a roster. Whatever else the tap threw up is
@@ -192,8 +149,6 @@ export async function runBadgeCardScenarios(suite) {
     }
     return left;
   };
-  const cardGone = () => page.waitForFunction(() => !document.querySelector('.faceoff'),
-                                              null, { timeout: 4000 }).then(() => true, () => false);
   const readCard = () => page.evaluate(() => {
     const ov = document.querySelector('.faceoff'), c = ov?.querySelector('.focard');
     if (!ov || !c) return null;
@@ -203,7 +158,6 @@ export async function runBadgeCardScenarios(suite) {
        PLAYER gets. */
     const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
     const head = ov.querySelector('.mchead');
-    const f = window.__fo.frames;
     return {
       visible: r.width > 0 && r.height > 0 && ov.contains(hit),
       role: c.getAttribute('role'), modal: c.getAttribute('aria-modal'),
@@ -218,13 +172,7 @@ export async function runBadgeCardScenarios(suite) {
       hue: head ? getComputedStyle(head).color : '',
       border: getComputedStyle(c).borderTopColor,
       detailColor: getComputedStyle(ov.querySelector('.mcdetail')).color,
-      /* IT CAME UP FROM THE BOTTOM. Not "a class was added": the card's own box
-         started far below where it settled and climbed, and the wash was thinner
-         then than it is now. The first sample is whatever frame the rAF caught,
-         so this is about DISTANCE TRAVELLED, not about catching frame zero. */
-      arrive: f.length ? { first: f[0].top, last: f[f.length - 1].top, vh: window.__fo.vh,
-                           washFirst: f[0].a, washLast: f[f.length - 1].a,
-                           rose: f.every((s, i) => i === 0 || s.top <= f[i - 1].top + 1) } : null,
+      arrive: window.__fo.arrival(),
       rest: Math.round(r.top),
     };
   });
@@ -259,7 +207,7 @@ export async function runBadgeCardScenarios(suite) {
       `the ${lib} card is not an announceable dialog naming its entry`, c);
     // and the same way out on both: a tap outside
     await page.mouse.click(8, 8);
-    out['cardBackdrop_' + lib] = await cardGone();
+    out['cardBackdrop_' + lib] = await sheetGone(page);
     check(out['cardBackdrop_' + lib], `a tap outside does not dismiss the ${lib} card`, null);
   }
   // the two cards are LIT DIFFERENTLY — one tint for the mode, another for the
@@ -281,16 +229,8 @@ export async function runBadgeCardScenarios(suite) {
   });
   check(!!grip, 'the mode chip dealt no card to drag', null);
   if (grip) {
-    const dragTo = async (dist, steps = 8, pace = 16) => {
-      await page.mouse.move(grip.x, grip.y);
-      await page.mouse.down();
-      for (let i = 1; i <= steps; i++) {
-        await page.mouse.move(grip.x, grip.y + Math.round((dist * i) / steps));
-        if (pace) await page.waitForTimeout(pace);
-      }
-    };
     // (a) 44px, short of the line: the card follows the finger, then springs home
-    await dragTo(44);
+    await dragSheetAndHold(page, grip, 44);
     out.cardHeld = await page.evaluate(() => {
       const c = document.querySelector('.focard')?.getBoundingClientRect();
       return c ? Math.round(c.top) : null;
@@ -308,10 +248,10 @@ export async function runBadgeCardScenarios(suite) {
     check(out.cardSprung.alive && Math.abs(out.cardSprung.top - grip.rest) <= 2,
       'a short drag did not spring the card home', { ...out.cardSprung, rest: grip.rest });
     // (b) 150px, past the line: released, it goes
-    await dragTo(150);
+    await dragSheetAndHold(page, grip, 150);
     await page.waitForTimeout(160);
     await page.mouse.up();
-    out.cardDragClosed = await cardGone();
+    out.cardDragClosed = await sheetGone(page);
     check(out.cardDragClosed, 'a drag past the commit line did not dismiss the card', null);
   }
 
@@ -329,7 +269,7 @@ export async function runBadgeCardScenarios(suite) {
         out.cardGrab?.focusable && out.cardGrab?.focused,
     'the card has no announceable, focusable way out', out.cardGrab);
   await page.keyboard.press('Enter');
-  out.cardKeyClosed = await cardGone();
+  out.cardKeyClosed = await sheetGone(page);
   check(out.cardKeyClosed, 'the keyboard door does not dismiss the card', null);
   /* Escape too — and, the half that matters, IT MUST NOT REACH PAST THE CARD.
      boot.ts stands its own Escape handler down while a sheet is up, because that
@@ -347,7 +287,7 @@ export async function runBadgeCardScenarios(suite) {
     casting: document.getElementById('kbroot').classList.contains('casting'),
   }));
   await page.keyboard.press('Escape');
-  out.cardEscClosed = await cardGone();
+  out.cardEscClosed = await sheetGone(page);
   out.armedAfterEsc = await page.evaluate(() => ({
     armed: window.__kb.S.spellArmed,
     casting: document.getElementById('kbroot').classList.contains('casting'),

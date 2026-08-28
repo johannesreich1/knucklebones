@@ -6,8 +6,6 @@ import {
   subscribeLocale,
   t,
 } from '../../i18n/index.ts';
-import { ask } from '../../ui/askcard.ts';
-import { Sfx } from '../../ui/audio.ts';
 import { DEFAULT_AVATAR, paintAvatar } from '../../ui/avatar.ts';
 import { $, byId } from '../../ui/dom.ts';
 import { refreshHomeChip } from '../../ui/homechip.ts';
@@ -17,16 +15,10 @@ import {
   myLadder,
   myStanding,
 } from '../api/ladder-api.ts';
-import {
-  cacheStanding,
-  claimName,
-  currentUser,
-  identityStatus,
-  myProfile,
-  signOut,
-} from '../identity/session.ts';
+import { currentUser, identityStatus } from '../identity/session.ts';
+import { myProfile } from '../identity/profile.ts';
+import { cacheStanding, readProfileCache } from '../../profile-cache.ts';
 import { historyRow } from './history-screen.ts';
-import { repaintOnlineMessage } from '../message-copy.ts';
 import {
   refreshRuneCollection,
   runeCollectionMatchesActiveAccount,
@@ -34,19 +26,16 @@ import {
 } from '../runes/rune-collection.ts';
 import { fillAccountRing } from './account-ring.ts';
 import {
-  bindAccountRuneSheets,
-  bindEquippedSeat,
   paintAccountRunes,
   paintEquippedSeat,
 } from './account-runes.ts';
 import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';
 import type { AuthMode, AuthOrigin } from './auth-screen.ts';
 import type { Ladder, Standing } from '../api/ladder-api.ts';
-import type { IdentityStatus, Me, Profile } from '../identity/session.ts';
+import type { IdentityStatus, Me } from '../identity/session.ts';
+import type { Profile } from '../identity/profile.ts';
 import { paintAccountProviders } from './account-provider-view.ts';
-import { bindAccountAppleRepair } from './account-apple-repair.ts';
-import { bindAccountGameCenterLink } from './account-game-center-link.ts';
-import { bindAccountDelete } from './account-delete-flow.ts';
+import { bindAccountScreen } from './account-bindings.ts';
 
 interface AccountPorts {
   showAuth(mode: AuthMode, origin: AuthOrigin, notice?: string | null): void;
@@ -183,15 +172,15 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     const ring = $('#accRing') as HTMLElement;
     ring.classList.remove('haspeak');
     ring.style.setProperty('--p', '0');
-    try {
-      const cached = JSON.parse(localStorage.getItem('knucklebones.online.profile') ?? 'null')?.rating;
-      if (typeof cached === 'number') {
-        pendingCachedRating = cached;
-        fillAccountRing(ring, groupFill(cached));
-        $('#accPoints').textContent = formatNumber(cached);
-        paintGroup(cached);
-      }
-    } catch { /* forgetful host — the fresh row below paints everything anyway */ }
+    // A forgetful host simply reads as nothing cached; the fresh row below
+    // paints everything anyway.
+    const cached = readProfileCache()?.rating;
+    if (typeof cached === 'number') {
+      pendingCachedRating = cached;
+      fillAccountRing(ring, groupFill(cached));
+      $('#accPoints').textContent = formatNumber(cached);
+      paintGroup(cached);
+    }
     /* Nothing on the profile is useful half-painted. Fetch every independent
        answer together while the shared die holds the view, then reveal one
        coherent card (recent matches included) in a single rendering turn. */
@@ -252,96 +241,17 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     return runeCollection;
   }
 
-  function bind(): void {
-    /* Equipping from either door repaints the whole panel, so the seat, the
-       grid and the ring can never disagree about what is carried. */
-    bindAccountRuneSheets(() => paintAccount());
-    bindEquippedSeat(() => paintAccount());
-    $('#btnKeepAcc').addEventListener('click', () => {
-      Sfx.tap();
-      ports.showAuth('attach', 'account');
-    });
-    $('#btnHaveAcc').addEventListener('click', () => {
-      Sfx.tap();
-      ports.showAuth('restore', 'account');
-    });
-    /* Every ACCOUNT ACCESS control answers on the shared warning card and
-       repaints the box from a fresh identity-status read. */
-    const provider = { refresh: show };
-    bindAccountAppleRepair(provider);
-    bindAccountGameCenterLink(provider);
-    $('#btnClaim').addEventListener('click', async () => {
-      Sfx.tap();
-      clearNickError();
-      const name = ($('#onNick') as HTMLInputElement).value.trim();
-      if (name.length > 16) {
-        showNickError(() => t('online', 'profile.nameTooLong', {
-          count: formatNumber(name.length),
-        }));
-        return;
-      }
-      if (!/^[A-Za-z0-9_]{3,16}$/.test(name)) {
-        showNickError(() => t('online', 'profile.nameInvalid'));
-        return;
-      }
-      const confirmed = await ask({
-        head: () => t('online', 'profile.claimQuestion', { name }),
-        body: () => t('online', 'profile.claimWarning'),
-        confirm: () => t('online', 'profile.claimIt'),
-        cancel: () => t('online', 'profile.notYet'),
-        loud: true,
-        restoreFocus: $('#btnClaim'),
-      });
-      if (!confirmed) return;
-      const button = $('#btnClaim') as HTMLButtonElement;
-      button.disabled = true;
-      const error = await claimName(name);
-      if (error) {
-        button.disabled = false;
-        const returned = error;
-        showNickError(() => repaintOnlineMessage(returned));
-        return;
-      }
-      clearNickError();
-      $('#accClaim').hidden = true;
-      $('#accName').textContent = name;
-      button.disabled = false;
-      await show();
-      const user = await currentUser();
-      if (user?.guest) {
-        const upgrade = await ask({
-          head: () => t('online', 'profile.keepNameTitle', { name }),
-          body: () => t('online', 'profile.keepNameDetail'),
-          confirm: () => t('online', 'auth.createAction'),
-          cancel: () => t('online', 'profile.notNow'),
-          loud: true,
-          restoreFocus: $('#btnKeepAcc'),
-        });
-        if (upgrade) ports.showAuth('attach', 'account');
-      }
-    });
-    $('#btnSignOut').addEventListener('click', async () => {
-      Sfx.tap();
-      await signOut();
-      refreshHomeChip();
-      ports.showAuth('restore', 'home');
-    });
-    $('#btnAvatar').addEventListener('click', () => {
-      Sfx.tap();
-      void ports.showAvatar();
-    });
-    $('#btnHistory').addEventListener('click', () => {
-      Sfx.tap();
-      void ports.showHistory();
-    });
-    const openLadder = (): void => {
-      Sfx.tap();
-      void ports.showLadder();
-    };
-    $('#btnLadder').addEventListener('click', openLadder);
-    $('#btnRank').addEventListener('click', openLadder);
-    bindAccountDelete({ showAuth: ports.showAuth });
-  }
+
+  const bind = (): void => bindAccountScreen({
+    showAuth: ports.showAuth,
+    showAvatar: () => ports.showAvatar(),
+    showLadder: () => ports.showLadder(),
+    showHistory: () => ports.showHistory(),
+    refresh: show,
+    repaint: paintAccount,
+    clearNickError,
+    showNickError,
+  });
 
   return { bind, show };
 }

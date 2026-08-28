@@ -22,7 +22,7 @@ import {
   myStanding,
   type LadderRow,
 } from '../api/ladder-api.ts';
-import { myProfile } from '../identity/session.ts';
+import { myProfile } from '../identity/profile.ts';
 import { esc, pts, rank } from './format.ts';
 import { showFaceoff } from './faceoff.ts';
 import { isOnlinePanelCurrent, showOnlineLoading, showOnlinePanel } from './shell.ts';

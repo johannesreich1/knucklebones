@@ -5,7 +5,7 @@
 import { spellById, type SpellSpec } from '../../core/spells.ts';
 import { spellCopy, t } from '../../i18n/index.ts';
 import { Sfx } from '../../ui/audio.ts';
-import type { EndFeature } from '../../ui/endscreen.ts';
+import type { EndFeature } from '../../ui/endscreen-feature.ts';
 import { openEntry } from '../../ui/library.ts';
 import { showSheet, type Sheet } from '../../ui/sheet.ts';
 import { spellHue, spellIcon } from '../../ui/spellicons.ts';

@@ -28,6 +28,9 @@ export async function installTrialMatchRoutes(page, {
   myRune = 'pilfer',
   foeRune = 'pilfer',
   opponentName = 'NovaComet992',
+  /* Hold the committed action back, so a probe can tell a board that filled
+     at tap time apart from one that waited for the server. */
+  actionDelay = 0,
 } = {}) {
   const boards = [emptyBoard(), emptyBoard()];
   const rows = [];
@@ -116,6 +119,7 @@ export async function installTrialMatchRoutes(page, {
 
   await page.route('**/functions/v1/pvp-action', async (route) => {
     actionCalls++;
+    if (actionDelay) await new Promise((resolve) => setTimeout(resolve, actionDelay));
     const body = route.request().postDataJSON() ?? {};
     const action = body.action ?? {};
     if (action.kind !== 'place' || !legalCols(boards[match.turn]).includes(action.placed_col)) {

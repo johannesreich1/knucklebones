@@ -3,7 +3,8 @@
 import '../online.css';
 import { Sfx } from '../../ui/audio.ts';
 import { $, hide, show } from '../../ui/dom.ts';
-import { closeEnd, replayPlates } from '../../ui/endscreen.ts';
+import { closeEnd } from '../../ui/endscreen.ts';
+import { replayPlates } from '../../ui/endscreen-plates.ts';
 import { isNewcomer } from '../../ui/firstrun.ts';
 import { refreshHomeChip } from '../../ui/homechip.ts';
 import { S } from '../../state.ts';
@@ -20,7 +21,8 @@ import { showHistory } from './history-screen.ts';
 import { createLadderScreen } from './ladder-screen.ts';
 import { createQueueScreen } from './queue-screen.ts';
 import { createResultScreen } from './result-screen.ts';
-import { ensureIdentity, myProfile } from '../identity/session.ts';
+import { ensureIdentity } from '../identity/session.ts';
+import { myProfile } from '../identity/profile.ts';
 import { syncAccountPreferences } from '../preferences.ts';
 import {
   refreshRuneCollection,

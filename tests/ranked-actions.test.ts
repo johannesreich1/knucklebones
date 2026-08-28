@@ -10,8 +10,8 @@ import {
   type RankedActionRow,
   type RankedRuneDeal,
 } from '../src/core/ranked-actions.ts';
-import { appendRankedBotTurn } from '../src/core/ranked-bot-turn.ts';
-import { AI, BOUNTY, CLASSIC, LIMITED, ME, legalCols } from '../src/core/rules.ts';
+import { AI, BOUNTY, CLASSIC, LIMITED, ME } from '../src/core/rules.ts';
+import { runRankedBotTurnCases } from './support/ranked-bot-turn-cases.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -100,162 +100,9 @@ check(projectRankedActions([], CLASSIC, deal) === null,
 eq(projectRankedActions([], CLASSIC, deal, initial.nextDie), initial,
   'empty public projection did not accept the explicitly revealed opening die');
 
-// The same bot turn builder drives the immediate lower-rated bot opener and
-// replies after human placements. It must finish one complete opening turn
-// from replay truth, whether or not its rune policy elects to cast first.
-const botOpening = appendRankedBotTurn({
-  seed,
-  rows: [],
-  state: initial,
-  mode: CLASSIC,
-  dealt: deal,
-  rating: 800,
-  random: () => 0,
-});
-check(botOpening !== null && botOpening.actions.at(-1)?.kind === 'place'
-  && botOpening.state.moveCount === 1 && botOpening.state.turn === AI
-  && botOpening.state.actionCount === botOpening.actions.length,
-  'ranked bot opener did not commit one complete turn before handing input to p2', botOpening);
-if (botOpening) {
-  eq(rebuildRankedActions(seed, botOpening.actions, CLASSIC, deal), botOpening.state,
-    'ranked bot opener diverged from the shared authoritative replay');
-}
-check(appendRankedBotTurn({
-  seed,
-  rows: [],
-  state: { ...initial, actionCount: 1 },
-  mode: CLASSIC,
-  dealt: deal,
-  rating: 800,
-  random: () => 0,
-}) === null, 'ranked bot opener accepted a state/version mismatch');
-
-// A ranked bot's league slip also passes its Rune cast window. The low draw
-// proves the handicap; the high draw proves it did not disable spells. This
-// built replay reaches an AI/p2 FATE turn where the production planner casts.
-const castSlipSeed = 'cast-fixture-0';
-const castSlipDeal: RankedRuneDeal = ['fate', 'ward'];
-const castSlipRows: RankedActionRow[] = [];
-let castSlipState = rebuildRankedActions(castSlipSeed, castSlipRows, CLASSIC, castSlipDeal);
-if (!castSlipState) throw new Error('cast-slip fixture did not initialize');
-for (const placed_col of [0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1]) {
-  const appended = appendRankedAction(
-    castSlipSeed, castSlipRows, CLASSIC, castSlipDeal, { kind: 'place', placed_col },
-  );
-  if (!appended) throw new Error('cast-slip fixture placement did not append');
-  castSlipRows.push(appended.row);
-  castSlipState = appended.state;
-}
-check(castSlipState.turn === AI && castSlipState.nextDie === 1,
-  'cast-slip fixture did not reach the intended bot FATE turn', castSlipState);
-const skippedCast = appendRankedBotTurn({
-  seed: castSlipSeed,
-  rows: castSlipRows,
-  state: castSlipState,
-  mode: CLASSIC,
-  dealt: castSlipDeal,
-  rating: 800,
-  random: () => 0,
-});
-let castDraw = 0;
-const keptCast = appendRankedBotTurn({
-  seed: castSlipSeed,
-  rows: castSlipRows,
-  state: castSlipState,
-  mode: CLASSIC,
-  dealt: castSlipDeal,
-  rating: 800,
-  random: () => castDraw++ === 0 ? 0.99 : 0.5,
-});
-check(skippedCast?.actions.length === 1 && skippedCast.actions[0].kind === 'place'
-  && skippedCast.state.charges[AI].fate === 2,
-  'a bot cast through its league slip instead of passing the Rune window', skippedCast);
-check(keptCast !== null
-  && keptCast.actions.some(({ kind, rune_id }) => kind === 'cast' && rune_id === 'fate')
-  && keptCast.state.charges[AI].fate === 1,
-  'the Rune handicap disabled casting instead of making it probabilistic', keptCast);
-
-const openerCastSeed = 'cast-slip-fixture-1-fate-0';
-const openerCastDeal: RankedRuneDeal = ['nudge', 'fate'];
-const openerCastRows: RankedActionRow[] = [];
-let openerCastState = rebuildRankedActions(
-  openerCastSeed, openerCastRows, CLASSIC, openerCastDeal,
-);
-if (!openerCastState) throw new Error('opener cast-slip fixture did not initialize');
-const openerPattern = [1, 1, 0];
-for (let step = 0; step < 10; step++) {
-  const legal = legalCols(openerCastState.st[openerCastState.turn]);
-  const appended = appendRankedAction(
-    openerCastSeed, openerCastRows, CLASSIC, openerCastDeal,
-    { kind: 'place', placed_col: legal[openerPattern[step % openerPattern.length] % legal.length] },
-  );
-  if (!appended) throw new Error('opener cast-slip fixture placement did not append');
-  openerCastRows.push(appended.row);
-  openerCastState = appended.state;
-}
-check(openerCastState.turn === ME && openerCastState.nextDie === 1,
-  'opener cast-slip fixture did not reach the intended bot FATE turn', openerCastState);
-const skippedOpenerCast = appendRankedBotTurn({
-  seed: openerCastSeed,
-  rows: openerCastRows,
-  state: openerCastState,
-  mode: CLASSIC,
-  dealt: openerCastDeal,
-  rating: 800,
-  random: () => 0,
-});
-let openerCastDraw = 0;
-const keptOpenerCast = appendRankedBotTurn({
-  seed: openerCastSeed,
-  rows: openerCastRows,
-  state: openerCastState,
-  mode: CLASSIC,
-  dealt: openerCastDeal,
-  rating: 800,
-  random: () => openerCastDraw++ === 0 ? 0.99 : 0.5,
-});
-check(skippedOpenerCast?.actions.length === 1
-  && skippedOpenerCast.actions[0].kind === 'place'
-  && skippedOpenerCast.state.charges[ME].fate === 2,
-  'a bot opener cast through its league slip instead of passing the Rune window',
-  skippedOpenerCast);
-check(keptOpenerCast !== null && keptOpenerCast.actions.some(
-  ({ kind, rune_id }) => kind === 'cast' && rune_id === 'fate',
-) && keptOpenerCast.state.charges[ME].fate === 1,
-  'the opener Rune handicap disabled casting instead of making it probabilistic',
-  keptOpenerCast);
-
-// The die already in hand counts as drawn. On the final LIMITED turn FATE
-// must see an empty bag, decline its redraw, and let the bot place that die.
-const limitedBotSeed = 'audit-31';
-const limitedBotDeal: RankedRuneDeal = ['fate', 'ward'];
-const limitedBotRows: RankedActionRow[] = [];
-let limitedBotState = rebuildRankedActions(limitedBotSeed, limitedBotRows, LIMITED, limitedBotDeal);
-if (!limitedBotState) throw new Error('LIMITED bot fixture did not initialize');
-for (let step = 0; step < 23; step++) {
-  const legal = legalCols(limitedBotState.st[limitedBotState.turn]);
-  const appended = appendRankedAction(limitedBotSeed, limitedBotRows, LIMITED, limitedBotDeal, {
-    kind: 'place', placed_col: legal[(31 + step * 7) % legal.length],
-  });
-  if (!appended) throw new Error(`LIMITED bot fixture stopped at placement ${step}`);
-  limitedBotRows.push(appended.row);
-  limitedBotState = appended.state;
-}
-check(limitedBotState.drawCount === 24 && limitedBotState.nextDie === 1
-  && limitedBotState.turn === AI,
-  'LIMITED bot fixture did not reach FATE holding the final live die', limitedBotState);
-const finalLimitedTurn = appendRankedBotTurn({
-  seed: limitedBotSeed,
-  rows: limitedBotRows,
-  state: limitedBotState,
-  mode: LIMITED,
-  dealt: limitedBotDeal,
-  rating: 800,
-  random: () => 0,
-});
-check(finalLimitedTurn !== null && finalLimitedTurn.actions.length === 1
-  && finalLimitedTurn.actions[0].kind === 'place' && finalLimitedTurn.state.over,
-  'ranked bot tried to cast FATE after the LIMITED bag was exhausted', finalLimitedTurn);
+// Every ranked bot commit — opener, reply, league slip, exhausted LIMITED bag
+// — is one shared builder's contract and is gated as one block.
+runRankedBotTurnCases({ check, eq, seed, dealt: deal, opening: initial });
 
 // FATE is the one transition the public log cannot independently predict.
 // The browser may consume the committed value; the server still rejects any

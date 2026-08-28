@@ -18,7 +18,7 @@ import { appendRankedBotTurn } from '../src/core/ranked-bot-turn.ts';
 import {
   seededRuneTrialAutoPick,
   seededRuneTrialOffer,
-} from '../src/core/ranked-outcomes.ts';
+} from '../src/core/rune-trial-offer.ts';
 import {
   AI, CLASSIC, ME, legalCols,
   type CharmSt, type Player,

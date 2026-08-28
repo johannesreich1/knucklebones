@@ -3,8 +3,12 @@ import {
   readReducedRollProbe,
   reloadReducedMotionWithKeeper,
 } from '../harness/reduced-motion-support.mjs';
+import {
+  readDestroyedDieFeedback,
+  readFarSeatFeedback,
+} from '../harness/numeral-feedback-probe.mjs';
 
-export async function runMotionSafeAreaScenarios(suite) {
+export async function runReducedMotionScenarios(suite) {
   const { browser, devices, F, errs, out, check, markExperienced } = suite;
   // ================= REDUCED MOTION =================
   const rm = await browser.newContext({ ...devices['iPhone 13'], hasTouch: true, isMobile: true,
@@ -146,119 +150,11 @@ export async function runMotionSafeAreaScenarios(suite) {
     };
   }, beforePlacement);
 
-  /* The far face-to-face seat is the distinct floatPts branch: its die and
-     feedback both turn, and the score leaves through the physical bottom of
-     the die so it remains the player's reading-top edge. Exercise the real
-     placement path rather than a private effect hook. */
-  out.reducedFarPoint = await rp.evaluate(async () => {
-    const k = window.__kb;
-    k.S.gen += 1;                 // cancel the near placement's continuation
-    k.S.mode = 'duo';
-    k.S.seat = 'face';
-    k.S.timer = 0;
-    k.S.bottom = 1;
-    k.S.turn = 0;
-    k.S.phase = 'choose';
-    k.S.busy = false;
-    k.S.die = 4;
-    k.S.boards = [[[], [], []], [[], [], []]];
-    k.applySides();
-    k.setStageDie(4, 0);
-    k.showHints();
-    await k.place(0, 0);
-
-    const die = document.querySelector('#topBoard .col[data-col="0"] .die');
-    const point = document.querySelector('#topBoard .col[data-col="0"] .pts');
-    const numeral = die?.querySelector('.num');
-    const inkRect = (element) => {
-      if (!element) return null;
-      const range = document.createRange();
-      range.selectNodeContents(element);
-      return range.getBoundingClientRect();
-    };
-    const dieRect = die?.getBoundingClientRect();
-    const pointBox = point?.getBoundingClientRect();
-    const pointInk = inkRect(point);
-    const numeralInk = inkRect(numeral);
-    const matrix = point ? new DOMMatrix(getComputedStyle(point).transform) : null;
-    return dieRect && pointBox && pointInk && numeralInk && matrix ? {
-      text: point.textContent,
-      numeralDisplay: getComputedStyle(numeral).display,
-      turned: matrix.a < -.99 && matrix.d < -.99,
-      inside: pointBox.top >= dieRect.top - .5 && pointBox.bottom <= dieRect.bottom + .5
-        && pointBox.left >= dieRect.left - .5 && pointBox.right <= dieRect.right + .5,
-      edgeInset: dieRect.bottom - pointBox.bottom,
-      halfGap: pointBox.top - (dieRect.top + dieRect.height / 2),
-      gap: pointInk.top - numeralInk.bottom,
-      centreError: Math.abs((pointInk.left + pointInk.width / 2)
-        - (numeralInk.left + numeralInk.width / 2)),
-    } : null;
-  });
-
-  /* Minus feedback uses the same numeral header, but it belongs to a real
-     victim rather than the last surviving die in that column. Use a stack
-     where the matched 5 is not last so a wrong anchor cannot accidentally
-     pass the geometry check. */
-  out.reducedMinusPoint = await rp.evaluate(async () => {
-    const k = window.__kb;
-    k.S.gen += 1;
-    k.S.mode = 'duo';
-    k.S.seat = 'pass';
-    k.S.scoring = 0;
-    k.S.timer = 0;
-    k.S.bottom = 1;
-    k.S.turn = 1;
-    k.S.phase = 'choose';
-    k.S.busy = false;
-    k.S.die = 5;
-    k.S.boards = [[[5, 2], [], []], [[], [], []]];
-    k.S.charm.wards = [[0, 0, 0], [0, 0, 0]];
-    k.applySides();
-    k.renderAll(false);
-    k.setStageDie(5, 1);
-    k.showHints();
-    const placement = k.place(1, 0);
-    let point = null;
-    for (let tick = 0; tick < 60; tick++) {
-      await new Promise((resolve) => setTimeout(resolve, 10));
-      point = [...document.querySelectorAll('#topBoard .pts')]
-        .find((node) => node.textContent.startsWith('−'));
-      if (point) break;
-    }
-    const victim = document.querySelector('#topBoard .col[data-col="0"] .slot[data-slot="2"] .die');
-    const survivor = document.querySelector('#topBoard .col[data-col="0"] .slot[data-slot="1"] .die');
-    const numeral = victim?.querySelector('.num');
-    const inkRect = (element) => {
-      if (!element) return null;
-      const range = document.createRange();
-      range.selectNodeContents(element);
-      return range.getBoundingClientRect();
-    };
-    const dieRect = victim?.getBoundingClientRect();
-    const survivorRect = survivor?.getBoundingClientRect();
-    const pointBox = point?.getBoundingClientRect();
-    const pointInk = inkRect(point);
-    const numeralInk = inkRect(numeral);
-    const result = dieRect && survivorRect && pointBox && pointInk && numeralInk ? {
-      text: point.textContent,
-      victim: numeral.textContent,
-      survivor: survivor.querySelector('.num')?.textContent,
-      victimOpacity: getComputedStyle(victim).opacity,
-      inside: pointBox.top >= dieRect.top - .5 && pointBox.bottom <= dieRect.bottom + .5
-        && pointBox.left >= dieRect.left - .5 && pointBox.right <= dieRect.right + .5,
-      edgeInset: pointBox.top - dieRect.top,
-      halfGap: dieRect.top + dieRect.height / 2 - pointBox.bottom,
-      gap: numeralInk.top - pointInk.bottom,
-      victimCentreError: Math.abs((pointInk.left + pointInk.width / 2)
-        - (numeralInk.left + numeralInk.width / 2)),
-      survivorDistance: Math.hypot(
-        (pointInk.left + pointInk.width / 2) - (survivorRect.left + survivorRect.width / 2),
-        (pointInk.top + pointInk.height / 2) - (survivorRect.top + survivorRect.height / 2)),
-    } : null;
-    k.S.gen += 1;
-    await placement;
-    return result;
-  });
+  /* Both probes below re-seat this same practice game to reach the other two
+     floatPts branches — the turned far seat, and a destroyed victim — so they
+     run in this order, on this page, after the near placement above. */
+  out.reducedFarPoint = await readFarSeatFeedback(rp);
+  out.reducedMinusPoint = await readDestroyedDieFeedback(rp);
   out.reduced = await rp.evaluate(() => ({
     jsFlag: window.__kb.reduced,
     particlesAfterBurst: (window.__kb.burst(100, 100, '#fff', 20), document.querySelectorAll('#fx .particle').length),
@@ -358,43 +254,4 @@ export async function runMotionSafeAreaScenarios(suite) {
     && out.reducedSetting.persisted.jsFlag && out.reducedSetting.persisted.rootClass,
     'the Reduced Motion setting did not apply or persist across JS and CSS', out.reducedSetting);
   await manual.close();
-
-  // ================= SAFE AREAS (notched phones, PWA + native shell) =================
-  // fit() sizes the cell from #app.clientHeight, which INCLUDES #app's padding —
-  // and that padding carries the Dynamic Island and home-indicator strips. Counted
-  // as usable, the board grew until the near nameplate sat UNDER the home
-  // indicator: measured 9px under on a 390x844 iPhone, 10px on a 375x812. The cell
-  // cap hid it on the largest phones, which is why it survived so long.
-  const SAFE_DEVICES = [
-    { w: 375, h: 812, top: 47, bottom: 34, name: 'iPhone X / 13 mini' },
-    { w: 390, h: 844, top: 47, bottom: 34, name: 'iPhone 14 / 15 / 16' },
-    { w: 440, h: 956, top: 62, bottom: 34, name: 'iPhone 17 Pro Max' },
-  ];
-  out.safeAreas = [];
-  for (const d of SAFE_DEVICES) {
-    const sc = await browser.newContext({ viewport: { width: d.w, height: d.h }, hasTouch: true,
-      isMobile: true, deviceScaleFactor: 3, locale: 'en-US' });
-  await markExperienced(sc);   // an experienced player: tests/first-run-offer.mjs owns the first-run offer
-    const sp = await sc.newPage();
-    sp.on('pageerror', e => errs.push('SAFE: ' + e.message));
-    await sp.goto(F); await sp.waitForTimeout(400);
-    await sp.evaluate(() => window.__kb.openPractice());
-    await sp.tap('#btnPlay'); await sp.waitForTimeout(1500);
-    const r = await sp.evaluate(([top, bottom, h]) => {
-      // emulate the device insets the way iOS hands them to env(safe-area-inset-*)
-      const app = document.getElementById('app');
-      app.style.paddingTop = `calc(${top}px + 6px)`;
-      app.style.paddingBottom = `calc(${bottom}px + 6px)`;
-      window.__kb.fit();
-      const hud = document.querySelector('.hud').getBoundingClientRect();
-      const plate = document.getElementById('plateBot').getBoundingClientRect();
-      return { cell: parseFloat(getComputedStyle(document.getElementById('kbroot')).getPropertyValue('--cell')),
-               clearTop: +(hud.top - top).toFixed(1), clearBottom: +((h - bottom) - plate.bottom).toFixed(1) };
-    }, [d.top, d.bottom, d.h]);
-    out.safeAreas.push({ name: d.name, ...r });
-    check(r.clearBottom >= 0, `${d.name}: board runs under the home indicator`, r);
-    check(r.clearTop >= 0, `${d.name}: hud runs under the notch`, r);
-    await sc.close();
-  }
-
 }

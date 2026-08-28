@@ -659,10 +659,17 @@ begin
   insert into kb_bot_rune_plan (points, rune_id, seat) values
     ${rows.join(',\n    ')};
 
+  /* JOIN THE BOTS, NOT WHOEVER SHARES THEIR SCORE. Points identify a bot only
+     because the seed makes them unique AMONG BOTS — nothing stops a human from
+     holding the same number, and this statement grants a rune with no match
+     behind it. The two guards above mean it cannot reach a live population
+     today, but they are the only thing standing between this join and handing
+     a player a rune they never won, so say is_bot here as well. */
   insert into public.player_runes (player_id, rune_id, source_match_id)
   select r.player, p.rune_id, null
     from kb_bot_rune_plan p
-    join public.season_ratings r on r.points = p.points;
+    join public.season_ratings r on r.points = p.points
+    join public.profiles bp on bp.id = r.player and bp.is_bot;
   get diagnostics granted = row_count;
 
   /* The seat is the FIRST rune the bot won, which is what a player's own first
@@ -672,7 +679,7 @@ begin
      set equipped_rune = p.rune_id
     from kb_bot_rune_plan p
     join public.season_ratings r on r.points = p.points
-   where pr.id = r.player and p.seat;
+   where pr.id = r.player and p.seat and pr.is_bot;
   get diagnostics seated = row_count;
 
   if granted <> ${rows.length} then

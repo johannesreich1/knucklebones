@@ -6,11 +6,10 @@ import {
   RANKED_POOL_TIERS,
   RUNE_TRIAL_FORMAT,
   pickRankedOutcome,
-  seededRuneTrialAutoPick,
-  seededRuneTrialOffer,
   type RankedParticipantAccess,
   type RankedPoolTier,
 } from "./core/ranked-outcomes.ts";
+import { seededRuneTrialAutoPick, seededRuneTrialOffer } from "./core/rune-trial-offer.ts";
 import type { EdgeClient } from "../_shared/http.ts";
 import type { MatchRow } from "../_shared/types.ts";
 import { negotiatedProtocolVersion, rankedSeatOrder } from "./matchmaking.ts";

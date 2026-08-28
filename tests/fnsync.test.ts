@@ -24,7 +24,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { deployContent, fnFiles, allSlugs, FN_DIR, uploadPayload } from '../tools/fnfiles.mjs';
-import { RUNE_IDS } from '../src/core/ranked-outcomes.ts';
+import { RUNE_IDS } from '../src/core/rune-trial-offer.ts';
 import { RUNE_IDS as SERVER_RUNE_IDS } from '../supabase/functions/_shared/rune-ids.ts';
 
 const problems: string[] = [];

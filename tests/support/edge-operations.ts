@@ -15,6 +15,7 @@ import type {
   ActionInput, ClaimInput, JoinInput, LadderRow, MatchRow, MoveInput,
 } from '../../supabase/functions/_shared/types.ts';
 import { rebuild, type MoveRow } from '../../src/core/match.ts';
+import { rankedOutcomeByMatch } from '../../src/core/ranked-outcomes.ts';
 import { legalCols, type Mode } from '../../src/core/rules.ts';
 import { uploadPayload } from '../../tools/fnfiles.mjs';
 
@@ -153,6 +154,11 @@ export class EdgeOperationsService {
   }
 }
 
+/** Every operation answers with a Response; every assertion here reads the
+    JSON body it carries. */
+export const jsonBody = async (response: Response) =>
+  await response.json() as Record<string, unknown>;
+
 export function edgeContext(userId: string, service: EdgeOperationsService): AuthenticatedContext {
   return {
     user: { id: userId }, authed: {},
@@ -164,6 +170,15 @@ export const ladderRow = (points: number): LadderRow =>
   ({ points, peak: points, wins: 1, losses: 1, draws: 0 });
 
 export const EDGE_SEED = 'edge-operations-seed';
+/** The rules mode a standardMatch is played under — format 'standard' with
+    modifier 'classic' — resolved through the same registry the operations
+    resolve it through, never restated as a literal. */
+export const EDGE_MODE = rankedOutcomeByMatch('standard', 'classic').mode;
+/** A join from a client speaking the pre-Trial protocol and asking for a human:
+    the shape every join case that is not about protocol negotiation sends. */
+export const standardJoinInput: JoinInput = {
+  allowBot: false, protocolVersion: 1, capabilities: [],
+};
 /** Timestamps a fixed 4s on either side of a stall threshold, wide enough
     that wall-clock drift inside one test run cannot flip the comparison. */
 export const beforeThreshold = (ms: number) => new Date(Date.now() - ms + 4_000).toISOString();

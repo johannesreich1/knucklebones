@@ -271,7 +271,7 @@ Additional **FACTS**:
 - Browser coverage spends FATE once, proves a direct same-turn retry changes
   neither die nor charge and leaves the rail disabled, then completes a full
   turn cycle and spends the remaining charge
-  (`tests/browser/spells/scenarios/effects.mjs:269-320`).
+  (`tests/browser/spells/scenarios/hand-deals.mjs:7-58`).
 - Every completed human cast may restart the normal placement clock
   (`src/boot.ts:28-31`), but the one-cast guard prevents repeated refreshes
   before that placement.

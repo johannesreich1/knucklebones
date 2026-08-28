@@ -1,7 +1,6 @@
 // Fast Node-side tests for the runtime-free Edge HTTP boundary. Operations are
 // injected, so these exercise methods, CORS, auth, JSON parsing and typed input
 // without a Deno global, network, or database.
-import { readFileSync } from 'node:fs';
 import {
   CORS_HEADERS, createAuthenticator, json, postOnly, record,
   type AuthenticatedContext, type EdgeClient,
@@ -11,20 +10,12 @@ import { createPvpJoinHandler } from '../supabase/functions/pvp-join/handler.ts'
 import { createPvpMoveHandler } from '../supabase/functions/pvp-move/handler.ts';
 import { createPvpClaimHandler } from '../supabase/functions/pvp-claim/handler.ts';
 import { createPvpRuneSelectHandler } from '../supabase/functions/pvp-rune-select/handler.ts';
-import { selectRuneTrial } from '../supabase/functions/pvp-rune-select/operation.ts';
 import { createPvpActionHandler } from '../supabase/functions/pvp-action/handler.ts';
-import { verifyRuneTrialBotOpening } from './support/rune-trial-bot-opening-edge.ts';
-import {
-  negotiatedProtocolVersion,
-  oldestEligibleCandidate,
-  rankedBotSides,
-  rankedSeatOrder,
-  trialClientCompatibilityError,
-} from '../supabase/functions/pvp-join/matchmaking.ts';
+import { verifyJoinMatchmakingPolicy } from './support/join-matchmaking-cases.ts';
+import { verifyRuneTrialSelectOperation } from './support/rune-trial-select-operation-cases.ts';
 import type {
   ActionInput,
   JoinInput,
-  MatchRow,
   MoveInput,
   RuneTrialSelectInput,
 } from '../supabase/functions/_shared/types.ts';
@@ -40,41 +31,7 @@ const context = {
 const allowed = async () => context;
 const denied = async () => null;
 
-// Realistic queue rows carry a tier the negotiation must ignore; the helper
-// widens the fresh literals so that field survives excess-property checks.
-const peers = (...rows: Array<{ tier: string; capabilities: string[] }>) => rows;
-check(negotiatedProtocolVersion(peers(
-  { tier: 'ivory', capabilities: ['rune_trial_v1'] }, { tier: 'stone', capabilities: ['rune_trial_v1'] },
-)) === 2, 'two Trial-capable peers did not preserve protocol v2 on standard outcomes');
-check(negotiatedProtocolVersion(peers(
-  { tier: 'ivory', capabilities: ['rune_trial_v1'] }, { tier: 'ivory', capabilities: [] },
-)) === 1, 'an old peer did not negotiate the standard protocol-v1 contract');
-check(JSON.stringify(rankedSeatOrder('lower-rated-bot', 'higher-rated-human'))
-    === JSON.stringify({ p1: 'lower-rated-bot', p2: 'higher-rated-human' }),
-  'ranked bot seating displaced the lower-rated participant from the opening seat');
-check(JSON.stringify(rankedBotSides('human', 0, 'bot', 0))
-    === JSON.stringify({ underdog: 'bot', favourite: 'human' }),
-  'the existing bot-opening tiebreak was replaced by human-always-opens');
-check(JSON.stringify(rankedBotSides('human', 50, 'bot', 0))
-    === JSON.stringify({ underdog: 'bot', favourite: 'human' }),
-  'a genuinely lower-rated bot lost the ranked opening handicap');
-check(JSON.stringify(rankedBotSides('human', 0, 'bot', 50))
-    === JSON.stringify({ underdog: 'human', favourite: 'bot' }),
-  'a genuinely lower-rated human lost the ranked opening handicap');
-const compatibleTrial = {
-  format: 'rune_trial', rune_rules_version: 1,
-} as MatchRow;
-check(trialClientCompatibilityError(compatibleTrial, {
-  allowBot: false, protocolVersion: 1, capabilities: [],
-}) === 'incompatible-client', 'a legacy client can rejoin an active Trial');
-check(trialClientCompatibilityError(compatibleTrial, {
-  allowBot: false, protocolVersion: 2, capabilities: ['rune_trial_v1'],
-}) === null, 'a Trial-capable client is rejected from its active Trial');
-check(trialClientCompatibilityError({
-  ...compatibleTrial, rune_rules_version: 2,
-} as unknown as MatchRow, {
-  allowBot: false, protocolVersion: 2, capabilities: ['rune_trial_v1'],
-}) === 'unsupported-rune-rules', 'an unknown Trial rules version did not fail closed');
+verifyJoinMatchmakingPolicy(check);
 
 const made = json({ ok: true }, 201);
 check(made.status === 201, 'json() lost its explicit status');
@@ -258,58 +215,7 @@ check((await selectHandler(new Request('https://edge.test', {
   }),
 }))).status === 400, 'read-only Trial resume accepts mutating command fields');
 
-const resumeCalls: Array<{ name: string; input: Record<string, unknown> }> = [];
-const terminalTrial = {
-  match: { id: 'trial-1', status: 'forfeit', format: 'rune_trial', rune_rules_version: 1 },
-  trial: { your_choice: 'ward' },
-};
-const resumeContext = {
-  user: { id: 'player-1' }, authed: {},
-  service: () => ({
-    rpc: async (name: string, input: Record<string, unknown>) => {
-      resumeCalls.push({ name, input });
-      return { data: terminalTrial, error: null };
-    },
-  }),
-} as unknown as AuthenticatedContext;
-const terminalResume = await selectRuneTrial(resumeContext, {
-  kind: 'read', matchId: 'trial-1',
-});
-check(terminalResume.status === 200
-  && (await responseBody(terminalResume)).match.status === 'forfeit'
-  && resumeCalls.length === 1 && resumeCalls[0].name === 'rune_trial_state'
-  && resumeCalls[0].input.p_match_id === 'trial-1'
-  && resumeCalls[0].input.p_actor === 'player-1',
-  'terminal Trial resume mutated matchmaking or failed to return the settled row');
-let finalizerCalls = 0;
-const finalizedResume = await selectRuneTrial(resumeContext, {
-  kind: 'read', matchId: 'trial-1',
-}, async (received, payload) => {
-  finalizerCalls++;
-  check(received === resumeContext, 'Rune Trial finalizer received the wrong auth context');
-  return payload;
-});
-check(finalizedResume.status === 200 && finalizerCalls === 1,
-  'Rune Trial selection response bypassed its authoritative post-reveal finalizer');
-
-const startSource = readFileSync('supabase/functions/pvp-join/start.ts', 'utf8');
-check(startSource.includes('rankedSeatOrder(input.underdog, input.favourite)')
-    && !startSource.includes('p1 = input.requester'),
-  'ranked start still forces a human opener instead of preserving underdog p1');
-const selectIndex = readFileSync('supabase/functions/pvp-rune-select/index.ts', 'utf8');
-const joinOperation = readFileSync('supabase/functions/pvp-join/operation.ts', 'utf8');
-const botOpeningSource = readFileSync(
-  'supabase/functions/_shared/rune-trial-bot-opening.ts', 'utf8',
-);
-check(selectIndex.includes('ensureRuneTrialBotOpening')
-    && joinOperation.includes('ensureRuneTrialBotOpening'),
-  'selection finalization or reconnect no longer heals a missing ranked bot opener');
-check(botOpeningSource.includes('appendRankedBotTurn(')
-    && botOpeningSource.includes('commitMatchAction(')
-    && botOpeningSource.includes('actor: match.p1')
-    && botOpeningSource.includes('expectedActionVersion: before.actionCount'),
-  'ranked Trial bot opener bypasses shared replay or the atomic action command');
-await verifyRuneTrialBotOpening(check);
+await verifyRuneTrialSelectOperation(check);
 
 const actionInputs: ActionInput[] = [];
 const actionHandler = createPvpActionHandler({
@@ -380,18 +286,5 @@ const optionsHandler = createPvpMoveHandler({
 const optionsResponse = await optionsHandler(new Request('https://edge.test', { method: 'OPTIONS' }));
 check(optionsResponse.status === 200 && !optionsAuthenticated,
   'handler authenticates OPTIONS instead of ending at the CORS boundary');
-
-const queue = [
-  { player_id: 'old-outside', created_at: '2026-08-23T10:00:00.000Z' },
-  { player_id: 'new-inside', created_at: '2026-08-23T10:01:00.000Z' },
-  { player_id: 'newest-inside', created_at: '2026-08-23T10:02:00.000Z' },
-];
-const ratings = new Map([['old-outside', 1301], ['new-inside', 1150], ['newest-inside', 1050]]);
-check(oldestEligibleCandidate(queue, ratings, 1000, 150)?.player_id === 'new-inside',
-  'matchmaking does not choose the oldest player inside the computed rating band');
-check(oldestEligibleCandidate(queue, ratings, 1000, 49) === null,
-  'matchmaking accepts a player outside the computed rating band');
-check(oldestEligibleCandidate([...queue].reverse(), ratings, 1000, 150)?.player_id === 'new-inside',
-  'matchmaking eligibility depends on incidental query order instead of queue age');
 
 console.log(JSON.stringify({ problems, errs }, null, 2));

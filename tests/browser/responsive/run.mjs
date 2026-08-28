@@ -3,7 +3,8 @@ import { serveTree } from '../../serve.mjs';
 import { createBrowserReport } from '../../support/browser-report.mjs';
 import { runLandscapeScenarios } from './scenarios/landscape.mjs';
 import { runInputAccessibilityScenarios } from './scenarios/input-accessibility.mjs';
-import { runMotionSafeAreaScenarios } from './scenarios/motion-safe-areas.mjs';
+import { runReducedMotionScenarios } from './scenarios/reduced-motion.mjs';
+import { runSafeAreaScenarios } from './scenarios/safe-areas.mjs';
 import { runMenuPressFeedbackScenarios } from './scenarios/menu-press-feedback.mjs';
 import { runPrimaryCtaGlintScenarios } from './scenarios/primary-cta-glint.mjs';
 
@@ -33,7 +34,8 @@ const markExperienced = (context) => context.addInitScript(() => {
 const suite = { browser, devices, F, problems, errs, out, check, markExperienced };
 await runLandscapeScenarios(suite);
 await runInputAccessibilityScenarios(suite);
-await runMotionSafeAreaScenarios(suite);
+await runReducedMotionScenarios(suite);
+await runSafeAreaScenarios(suite);
 await runMenuPressFeedbackScenarios(suite);
 await runPrimaryCtaGlintScenarios(suite);
 

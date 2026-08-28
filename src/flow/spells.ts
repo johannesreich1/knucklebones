@@ -1,8 +1,9 @@
-// Spell orchestration: hands, legality, commitment, and turn lifecycle.
-// Rendering, pointer gestures, and visible effects are separate leaves; every
+// Spell orchestration: the dealt hands, the leaf wiring, the visible spend of
+// a charge, and the cast that performs a rune. Aiming, legality queries,
+// rendering, pointer gestures, and visible effects are separate leaves; every
 // entry path still ends in cast(), so legality is decided exactly once.
 import {
-  AI, ME, SPEC,
+  AI, ME,
   freshCharm, isFull,
   type CharmSt, type GameState, type Player,
 } from '../core/rules.ts';
@@ -24,25 +25,21 @@ import { clearSunderPresentation } from '../ui/game/sunder-presentation.ts';
 import { setStatus } from '../ui/game/turn-state.ts';
 import { stopTimer } from './timer.ts';
 import { runSpellEffect } from './spell-effects.ts';
-import { bindSpellGesture, clearSpellTargets, type SpellGesturePorts } from './spell-gestures.ts';
+import { bindSpellGesture, type SpellGesturePorts } from './spell-gestures.ts';
 import {
-  isAimedColumn,
   playSpellCharge,
   renderSpellRail,
   type SpellRailPorts,
 } from './spell-rail.ts';
-import type { SpellInputTarget } from './spell-target.ts';
+import { createSpellAim } from './spell-aim.ts';
+import { castable, caster, chargesOf } from './spell-legality.ts';
 import { runAiSpellTurn, type AiSpellTurnResult } from './spell-ai.ts';
 import { resolveSpellDeal, type SpellDeal } from './spell-deal.ts';
-import {
-  hasSpellAimTransport,
-  spellCasterAllowed,
-  transportSpellAim,
-  transportSpellCast,
-} from './spell-cast-transport.ts';
+import { transportSpellCast } from './spell-cast-transport.ts';
 import { currentCastContext as castContext } from './spell-context.ts';
 
 export { aiSpellDelay } from './spell-ai.ts';
+export { chargesOf } from './spell-legality.ts';
 export type { SpellDeal } from './spell-deal.ts';
 export { setSpellTransport, type SpellTransport } from './spell-cast-transport.ts';
 
@@ -65,20 +62,18 @@ export function configureSpellFlow(ports: SpellFlowPorts): void {
 const requestCast = (id: string, column: number): Promise<boolean> =>
   transportSpellCast(id, column) ?? cast(id, column);
 
-/* The player who may cast right now: their turn, their choice, nothing else
-   in flight. The CPU drives its production turn through
-   aiSpellPlacementTurn(). */
-function caster(): Player | null {
-  if (S.phase !== 'choose' || S.busy) return null;
-  const who = S.turn as Player;
-  if (S.mode === 'cpu' && who !== ME) return null;
-  if (!spellCasterAllowed(who)) return null;
-  return who;
-}
-
-export function chargesOf(who: Player, id: string): number {
-  return S.spellCharges[who][id] ?? 0;
-}
+/* Bound before gesturePorts below, which reads arm/disarm at module init. */
+const aim = createSpellAim({
+  cast: requestCast,
+  render: renderSpells,
+  onChoice: () => flowPorts.onChoice(),
+  spendCharge: spendChargePresentation,
+});
+export const {
+  applyAimPresentation, arm, castArmed, castArmedByIndex, disarm,
+  resolveTimedOutSpellAim,
+} = aim;
+const { clearAim } = aim;
 
 /* Resolve the setup promise ONCE before the reveal so every card shown is the
    hand actually dealt. Existing RANDOM remains shared. RANDOM ×2 samples the
@@ -92,11 +87,10 @@ function drawSpellDeal(
   return resolveSpellDeal(S.spell, random, candidates);
 }
 
-export function resetSpells(dealt?: string | readonly [string, string]): void {
-  const ids: readonly [string, string] = S.tut ? ['', '']
-    : typeof dealt === 'string' ? [dealt, dealt]
-      : dealt ?? drawSpellDeal();
-  S.spellCharges = [freshCharges(ids[AI]), freshCharges(ids[ME])];
+/* Both starts install a hand over the same clean slate — no aim, no charm, no
+   leftover seal or sunder presentation. Only the charges differ. */
+function installHands(charges: [Record<string, number>, Record<string, number>]): void {
+  S.spellCharges = charges;
   S.charm = freshCharm();
   clearSealPresentation();
   clearSunderPresentation();
@@ -106,16 +100,16 @@ export function resetSpells(dealt?: string | readonly [string, string]): void {
   renderSpells();
 }
 
+export function resetSpells(dealt?: string | readonly [string, string]): void {
+  const ids: readonly [string, string] = S.tut ? ['', '']
+    : typeof dealt === 'string' ? [dealt, dealt]
+      : dealt ?? drawSpellDeal();
+  installHands([freshCharges(ids[AI]), freshCharges(ids[ME])]);
+}
+
 /* Ranked play has no spell layer. */
 export function clearSpells(): void {
-  S.spellCharges = [{}, {}];
-  S.charm = freshCharm();
-  clearSealPresentation();
-  clearSunderPresentation();
-  S.spellAimCommitted = null;
-  S.spellCastThisTurn = null;
-  disarm(true);
-  renderSpells();
+  installHands([{}, {}]);
 }
 
 const gesturePorts: SpellGesturePorts = {
@@ -144,110 +138,6 @@ export function spendChargePresentation(who: Player, spell: SpellSpec, faceUp = 
   playSpellCharge(who, spell.id, faceUp);
   S.spellCharges[who][spell.id] = Math.max(0, chargesOf(who, spell.id) - 1);
   S.spellCastThisTurn = who;
-}
-
-/* A committed aim spends its charge immediately and reserves it for the cast. */
-export function applyAimPresentation(who: Player, spell: SpellSpec, faceUp = false): void {
-  spendChargePresentation(who, spell, faceUp);
-  S.spellArmed = spell.id;
-  S.spellAimCommitted = { id: spell.id, who };
-}
-
-export function arm(id: string): boolean {
-  if (S.spellArmed === id) return true;
-  if (S.spellAimCommitted) return false;
-  const who = caster();
-  const spell = spellById(id);
-  if (who === null || !spell || !castable(id)) return false;
-  S.spellArmed = id;
-  if (spell.commitsOnAim) {
-    if (hasSpellAimTransport()) {
-      void transportSpellAim(id);
-    } else {
-      applyAimPresentation(who, spell);
-    }
-  }
-  renderSpells();
-  setStatus({ visible: () => spellCopy(spell.id).aimCompact,
-    accessible: () => spellCopy(spell.id).aim }, who);
-  return true;
-}
-
-function clearAimState(): void {
-  S.spellArmed = null;
-  S.spellAimCommitted = null;
-  clearSpellTargets();
-}
-
-export function disarm(force = false): boolean {
-  if ((S.spellAimCommitted || spellById(S.spellArmed)?.locksOnAim) && !force) return false;
-  if (!S.spellArmed && !S.spellAimCommitted) return true;
-  clearAimState();
-  renderSpells();
-  if (S.phase === 'choose') flowPorts.onChoice();
-  return true;
-}
-
-/* An armed spell claims board input before placement. Wrong or empty targets
-   consume the input event; ordinary aims cancel, while a registry-locked aim
-   stays open until it receives a legal answer. */
-export function castArmed(target: SpellInputTarget | null): boolean {
-  const id = S.spellArmed;
-  if (!id) return false;
-  const spell = spellById(id);
-  const who = S.turn as Player;
-  const targetSide = spell?.side === 'foe' ? (1 - who) as Player : who;
-  const fits = !!target && !!spell && (spell.target === 'self'
-    ? target.kind === 'stage'
-    : target.kind === 'column' && target.who === targetSide
-      && isAimedColumn(target.who, target.column));
-  if (!fits) {
-    Sfx.tap();
-    disarm();
-    return true;
-  }
-  void requestCast(id, target.kind === 'stage' ? -1 : target.column);
-  return true;
-}
-
-/* Number keys select the uniquely expected side for the armed spell. Physical
-   pointer paths carry their actual side through SpellInputTarget instead. */
-export function castArmedByIndex(column: number): boolean {
-  const spell = spellById(S.spellArmed);
-  if (!spell) return false;
-  /* An armed self spell still owns the number key. A column key is the wrong
-     target for it, so feed that mismatch through the normal cancellation path
-     instead of falling through to ordinary placement. */
-  if (spell.target !== 'column') return castArmed(null);
-  const who = S.turn as Player;
-  const side = (spell.side === 'foe' ? 1 - who : who) as Player;
-  return castArmed({ kind: 'column', who: side, column });
-}
-
-/* The normal turn clock keeps running while a rune is aimed. An ordinary aim
-   simply falls away at expiry; an information-bearing ANVIL aim has already
-   committed, so expiry selects its first legal marked column instead of
-   refunding it or letting the duel stall forever. A completed cast receives
-   the usual fresh placement clock through onCastComplete(). */
-export async function resolveTimedOutSpellAim(): Promise<boolean> {
-  const id = S.spellArmed;
-  if (!id) return false;
-  const spell = spellById(id);
-  const committed = !!S.spellAimCommitted
-    || (hasSpellAimTransport() && !!spell?.commitsOnAim);
-  if (!committed) {
-    disarm(true);
-    return false;
-  }
-  const who = caster();
-  if (!spell || who === null || spell.target !== 'column') return false;
-  const context = castContext();
-  for (let column = 0; column < SPEC.cols; column++) {
-    if (spell.legal(S.boards as GameState, who, column, context)) {
-      return requestCast(id, column);
-    }
-  }
-  return false;
 }
 
 /* Spend and perform for either a player gesture or the CPU. */
@@ -300,7 +190,7 @@ export async function cast(id: string, column: number): Promise<boolean> {
     return false;
   }
   const cardFaceUp = S.spellArmed === id && !chargeReserved;
-  clearAimState();
+  clearAim();
   const over = await castBy(who, spell, column, context, chargeReserved, cardFaceUp);
   if (over) return true;
   S.busy = false;
@@ -308,22 +198,6 @@ export async function cast(id: string, column: number): Promise<boolean> {
   showHints();
   flowPorts.onCastComplete();
   return true;
-}
-
-function legalNow(spell: SpellSpec, who: Player, context: CastCtx): boolean {
-  if (spell.target === 'self') return spell.legal(S.boards as GameState, who, -1, context);
-  for (let column = 0; column < SPEC.cols; column++) {
-    if (spell.legal(S.boards as GameState, who, column, context)) return true;
-  }
-  return false;
-}
-
-function castable(id: string): boolean {
-  const spell = spellById(id);
-  const who = caster();
-  if (!spell || who === null || S.spellAimCommitted || S.spellCastThisTurn === who
-      || chargesOf(who, id) <= 0) return false;
-  return legalNow(spell, who, castContext());
 }
 
 export async function aiSpellTurn(who: Player, waitForTell = true): Promise<boolean> {
@@ -343,5 +217,3 @@ export function aiSpellPlacementTurn(
     waitForTell,
   );
 }
-
-/* Aiming may cancel before commitment; a cast cannot be undone afterward. */

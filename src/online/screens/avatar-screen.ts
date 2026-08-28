@@ -6,7 +6,7 @@ import { makeDie } from '../../ui/die.ts';
 import { $, byId } from '../../ui/dom.ts';
 import { loaderDie } from '../../ui/loader.ts';
 import { repaintOnlineMessage } from '../message-copy.ts';
-import { myProfile, setAvatar } from '../identity/session.ts';
+import { myProfile, setAvatar } from '../identity/profile.ts';
 import { showOnlinePanel } from './shell.ts';
 
 export interface AvatarScreen {

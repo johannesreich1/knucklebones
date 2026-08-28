@@ -39,6 +39,10 @@ import { runRuneTrialUiScenarios } from './scenarios/rune-trial-ui.mjs';
 import { runRuneTrialRailScenarios } from './scenarios/rune-trial-rail.mjs';
 import { runRuneRewardRaceScenarios } from './scenarios/rune-reward-races.mjs';
 import { runAwayForfeitScenarios } from './scenarios/away-forfeit.mjs';
+import { runSeatColourScenarios } from './scenarios/seat-colours.mjs';
+import { runEquippedSeatScenarios } from './scenarios/equipped-seat.mjs';
+import { runTrialMoveLatencyScenarios } from './scenarios/trial-move-latency.mjs';
+import { emitReport } from '../../support/emit-report.mjs';
 
 const { webkit, chromium } = pkg;
 const SCENARIOS = Object.freeze([
@@ -61,6 +65,9 @@ const SCENARIOS = Object.freeze([
   { id: 'rune-trial', run: runRuneTrialUiScenarios },
   { id: 'rune-trial-rail', run: runRuneTrialRailScenarios },
   { id: 'away-forfeit', run: runAwayForfeitScenarios },
+  { id: 'seat-colours', run: runSeatColourScenarios },
+  { id: 'equipped-seat', run: runEquippedSeatScenarios },
+  { id: 'trial-move-latency', run: runTrialMoveLatencyScenarios },
   // Deliberately outside the no-argument gate run: the reward-race probes are
   // a focused investigation surface, reached only through an explicit --only.
   { id: 'rune-reward-races', run: runRuneRewardRaceScenarios, manual: true },
@@ -116,5 +123,4 @@ try {
 }
 await browser.close();
 await chrome?.close();
-console.log(JSON.stringify({ out, problems }, null, 2));
-process.exit(problems.length ? 1 : 0);
+emitReport({ out, problems }, problems.length);

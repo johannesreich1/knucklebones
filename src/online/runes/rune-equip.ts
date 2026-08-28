@@ -52,21 +52,3 @@ export async function equipRune(accountId: string, runeId: string | null): Promi
   }
   return runeId;
 }
-
-/**
- * THE FIRST RUNE YOU EVER WIN SEATS ITSELF. Told, not asked — a player who has
- * exactly one rune and an empty seat has no decision to make, and sending them
- * to find the control that expresses the only available answer is a worse
- * screen. Every later change is theirs.
- *
- * Deliberately silent about failure: this is a convenience on top of a refresh,
- * never a precondition for one.
- */
-export async function autoEquipFirstRune(
-  accountId: string | null,
-  collected: readonly string[],
-  equipped: string | null,
-): Promise<void> {
-  if (!accountId || equipped !== null || collected.length !== 1) return;
-  await equipRune(accountId, collected[0]);
-}
