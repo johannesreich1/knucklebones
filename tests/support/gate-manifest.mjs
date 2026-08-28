@@ -115,6 +115,7 @@ export const GATE_SUITES = Object.freeze([
   typed('design-library'),
   typed('ladder'),
   typed('virtual-ruler'),
+  typed('virtual-cache'),
   typed('scroll-settled'),
   typed('ladderbench'),
   typed('fnsync'),
@@ -150,7 +151,7 @@ export const CI_SHARDS = Object.freeze({
     'cssreach', 'legal', 'spells', 'dice', 'release-main', 'gate-manifest',
     'random-mode-dial', 'rune-collection-cache', 'ranked-outcomes',
     'typecheck-tests', 'identity-gateway-origins', 'virtual-ruler',
-    'scroll-settled',
+    'virtual-cache', 'scroll-settled',
   ]),
   'ci-2': Object.freeze([
     'online-ui-browser', 'hud-settings-browser', 'spells-presentation',

@@ -45,8 +45,11 @@ export interface VirtualListSpec<T> {
   slots: VirtualSlots<T>;
   /** Rows in the whole sequence, when known. null means "discover the end". */
   total?: number | null;
-  /** A first page already fetched, so the caller can reveal one complete view. */
-  seed?: VirtualPage<T> | null;
+  /** A first page already fetched, so the caller can reveal one complete view,
+      and the number of rows it ASKED for — a page shorter than its ask is how
+      the end of the board announces itself, and an opening page is deliberately
+      larger than `page`. */
+  seed?: (VirtualPage<T> & { asked: number }) | null;
   page?: number;
   /** Viewports of rows kept mounted on each side of the view. */
   keep?: number;

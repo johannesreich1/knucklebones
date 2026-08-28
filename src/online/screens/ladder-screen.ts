@@ -147,8 +147,15 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
       scroller,
       list: listElement,
       page: PAGE,
-      total: standing?.population ?? null,
-      seed: opening,
+      /* THE SEED KNOWS THE BOARD'S SIZE TOO. Every row has carried `population`
+         since 20260827203007 precisely because the ladder is public: a
+         signed-out reader has no uuid, so player_standing cannot answer for
+         them, and without this they get a band of tombstones under the last
+         real row until a short page happens to settle it. positioned()'s
+         setTotal cannot do this job for the OPENING page — `virtual` is still
+         null while it is being fetched. */
+      total: standing?.population ?? opening.rows[0]?.population ?? null,
+      seed: { ...opening, asked: OPEN_PAGE },
       focus: me || standing?.rank ? { index: focusIndex, align: 'center' } : null,
       alive,
       source,

@@ -37,6 +37,9 @@ export async function installOnlineRoutes(
   let profileCalls = 0;
   let tierProfileCalls = 0;
   let ladderPageCalls = 0;
+  /* The season run A is paging through. Must match the player_standing stub
+     below, which is the other place a client can learn the board's size. */
+  const RUN_A_POPULATION = 199;
   let runeCalls = 0;
   let acknowledgeCalls = 0;
   let deferNextSignup = false;
@@ -317,7 +320,19 @@ export async function installOnlineRoutes(
     if (paginationRace && !before) {
       ladderPageCalls++;
       if (ladderPageCalls === 1) {
-        board = [...ordinary, ...Array.from({ length: 48 }, (_, index) => ({
+        /* A FULL page ON A BOARD THAT CONTINUES, because run A must have
+           somewhere left to go. Two things say "there is more" and both have to
+           agree with the standing stub's 199, or the client stops at this page
+           and the race never starts:
+             · the page fills its ask — the opening asks for the RPC's own
+               ceiling of 100 (ladder-screen's OPEN_PAGE), and a page shorter
+               than its ask is how the end of a board announces itself;
+             · every row carries the real `population`, which the client reads
+               to size the scrollbar for a signed-out reader.
+           `ordinary` describes a two-player season, so its 2 must not ride along
+           on a hundred-row page: the rows are restamped below rather than left
+           to contradict the board they are part of. */
+        board = [...ordinary, ...Array.from({ length: 98 }, (_, index) => ({
           nickname: `RunA${String(index + 3).padStart(2, '0')}`,
           points: 460 - index,
           wins: 1,
@@ -327,7 +342,7 @@ export async function installOnlineRoutes(
           apex: false,
           avatar: null,
           peak: 460 - index,
-        }))];
+        }))].map((row, index) => ({ ...row, pos: index + 1, population: RUN_A_POPULATION }));
       } else if (ladderPageCalls === 2) {
         markPaginationStarted();
         await paginationRelease;

@@ -107,7 +107,7 @@ export async function showHistory(): Promise<void> {
        jumped into, which is the honest behaviour for a list whose thumb cannot
        be turned back into a query. */
     total: null,
-    seed: { rows: opening, position: 0 },
+    seed: { rows: opening, position: 0, asked: PAGE },
     alive: () => run === showRevision && isOnlinePanelCurrent('onHistory'),
     source: {
       after: async (anchor, count) => ({
