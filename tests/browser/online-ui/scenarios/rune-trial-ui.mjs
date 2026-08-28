@@ -80,15 +80,35 @@ async function resultRewardRecoveryProbe(page, routes) {
 
   await page.evaluate((report) => window.__kbResult(report), REPORT);
   await page.waitForSelector('#ovEnd.on #endFeature:not([hidden])', { timeout: 15000 });
-  const delayedReward = await page.evaluate(() => ({
-    title: document.querySelector('#endFeature .endfeature-copy b')?.textContent?.trim(),
-    kicker: document.querySelector('#endFeature .endfeature-copy small')?.textContent?.trim(),
-    action: document.querySelector('#endFeature .endfeature-action')?.textContent?.trim(),
-    featureVisible: document.getElementById('endFeature')?.hidden === false,
-    opacity: getComputedStyle(document.getElementById('endFeature')).opacity,
-    animations: document.getElementById('endFeature').getAnimations()
-      .map(({ playState }) => playState),
-  }));
+  const delayedReward = await page.evaluate(() => {
+    const card = document.getElementById('endFeature');
+    const copy = card?.querySelector('.endfeature-copy');
+    const kicker = copy?.querySelector('small');
+    const title = copy?.querySelector('b');
+    const plateName = document.querySelector('#endPlates .nm2');
+    const root = document.getElementById('kbroot');
+    const size = (element) => element ? parseFloat(getComputedStyle(element).fontSize) : 0;
+    return {
+      title: title?.textContent?.trim(),
+      kicker: kicker?.textContent?.trim(),
+      /* THE CARD IS THE CONTROL: one button, no CTA of its own, and the rule
+         text behind the tap rather than printed in the row. */
+      tag: card?.tagName,
+      opensDialog: card?.getAttribute('aria-haspopup'),
+      buttons: card?.querySelectorAll('button').length,
+      copyLines: copy?.childElementCount,
+      chevron: copy?.nextElementSibling?.className,
+      labelMinimum: root
+        ? parseFloat(getComputedStyle(root).getPropertyValue('--font-label-min'))
+        : 0,
+      kickerSize: size(kicker),
+      titleSize: size(title),
+      plateNameSize: size(plateName),
+      featureVisible: card?.hidden === false,
+      opacity: getComputedStyle(card).opacity,
+      animations: card.getAnimations().map(({ playState }) => playState),
+    };
+  });
   const acknowledgementsDuringDelay = routes.acknowledgeCalls();
   await page.click('#btnEndQuiet');
   await page.waitForSelector('#ovStart.on', { timeout: 15000 });
@@ -106,7 +126,7 @@ async function resultRewardRecoveryProbe(page, routes) {
     return {
       kicker: card.querySelector('.rune-reward-sheet__kicker')?.textContent?.trim(),
       title: card.querySelector('.rune-reward-sheet__title')?.textContent?.trim(),
-      action: card.querySelector('.rune-reward-sheet__try')?.textContent?.trim(),
+      continueLabel: card.querySelector('.rune-reward-sheet__continue')?.textContent?.trim(),
       transformY: matrix.m42,
       animations: card.getAnimations().map(({ playState }) => playState),
     };
@@ -129,41 +149,10 @@ async function resultRewardRecoveryProbe(page, routes) {
   });
   const acknowledgementsAfterSheetLanded = routes.acknowledgeCalls();
 
-  await page.click('.rune-reward-sheet__try');
-  await page.waitForFunction(() => {
-    const state = window.__kb.S;
-    return state.mode === 'cpu' && state.diff === 'medium' && state.scoring === 0;
-  }, null, { timeout: 15000 });
-  const tryoutStarted = await page.evaluate(() => ({
-    mode: window.__kb.S.mode,
-    difficulty: window.__kb.S.diff,
-    scoring: window.__kb.S.scoring,
-    hands: window.__kb.S.spellCharges.map((hand) => Object.keys(hand)),
-  }));
-  await page.evaluate(async () => {
-    const game = window.__kb;
-    game.S.gen++;
-    game.S.boards[1] = [[6, 6, 6], [6, 6, 6], [6, 6]];
-    game.S.boards[0] = [[1], [1], [1]];
-    game.S.turn = 1;
-    game.S.bottom = 1;
-    game.S.phase = 'choose';
-    game.S.busy = false;
-    game.S.die = 6;
-    game.renderAll(false);
-    game.applySides();
-    game.setStageDie(6, 1);
-    await game.place(1, 2);
-  });
-  await page.waitForSelector('#ovEnd.on', { timeout: 15000 });
-  const tryoutResult = await page.evaluate(() => ({
-    action: document.getElementById('btnAgain')?.textContent?.trim(),
-    quietHidden: document.getElementById('btnEndQuiet')?.hidden,
-  }));
-  await page.click('#btnAgain');
-  await page.waitForSelector('#ovOnline.on #onAccount:not([hidden])', { timeout: 15000 });
+  await page.click('.rune-reward-sheet__continue');
+  await page.waitForSelector('.rune-reward-sheet', { state: 'detached', timeout: 15000 });
   await page.waitForTimeout(300);
-  const rankedReturn = await page.evaluate(() => ({
+  const recoveredContinue = await page.evaluate(() => ({
     accountVisible: document.getElementById('onAccount')?.hidden === false,
     rewardSheetOpen: !!document.querySelector('.rune-reward-sheet'),
   }));
@@ -178,9 +167,7 @@ async function resultRewardRecoveryProbe(page, routes) {
     acknowledgementsBeforeSheetLanded,
     recoveredPresented,
     acknowledgementsAfterSheetLanded,
-    tryoutStarted,
-    tryoutResult,
-    rankedReturn,
+    recoveredContinue,
     acknowledgeCalls: routes.acknowledgeCalls(),
   };
 }
@@ -252,7 +239,6 @@ export async function runRuneTrialUiScenarios({ visit, out, check }) {
   check(result.probeResult?.delayedReward?.featureVisible
       && result.probeResult.delayedReward.kicker === 'NEW RUNE'
       && result.probeResult.delayedReward.title === 'FATE'
-      && result.probeResult.delayedReward.action === 'TRY IT'
       && result.probeResult.delayedReward.opacity === '0'
       && result.probeResult.delayedReward.animations.some((state) =>
         state === 'pending' || state === 'running')
@@ -261,9 +247,23 @@ export async function runRuneTrialUiScenarios({ visit, out, check }) {
       && result.probeResult.afterDelayedClose.acknowledgeCalls === 0,
     'closing during the delayed result reward acknowledged a card the player had not seen',
     result.probeResult);
+  /* The card is the door and the rune's rules live behind it: one button, two
+     lines, and type that outranks the plates it sits under. */
+  check(result.probeResult?.delayedReward?.tag === 'BUTTON'
+      && result.probeResult.delayedReward.opensDialog === 'dialog'
+      && result.probeResult.delayedReward.buttons === 0
+      && result.probeResult.delayedReward.copyLines === 2
+      && result.probeResult.delayedReward.chevron === 'chev'
+      && result.probeResult.delayedReward.labelMinimum >= 10
+      && result.probeResult.delayedReward.kickerSize
+        >= result.probeResult.delayedReward.labelMinimum
+      && result.probeResult.delayedReward.titleSize
+        > result.probeResult.delayedReward.plateNameSize,
+    'the result reward card kept a CTA, an inline explanation, or shrunken type',
+    result.probeResult?.delayedReward);
   check(result.probeResult?.recoveredArrival?.kicker === 'NEW RUNE'
       && result.probeResult.recoveredArrival.title === 'FATE'
-      && result.probeResult.recoveredArrival.action === 'TRY IT'
+      && result.probeResult.recoveredArrival.continueLabel === 'Continue'
       && result.probeResult.recoveredArrival.transformY > 0
       && result.probeResult.acknowledgementsBeforeSheetLanded === 0
       && Math.abs(result.probeResult.recoveredPresented?.transformY ?? 99) < 1
@@ -273,16 +273,10 @@ export async function runRuneTrialUiScenarios({ visit, out, check }) {
       && result.probeResult.acknowledgementsAfterSheetLanded === 1,
     'profile recovery did not present the durable reward before acknowledging it',
     result.probeResult);
-  check(result.probeResult?.tryoutStarted?.mode === 'cpu'
-      && result.probeResult.tryoutStarted.difficulty === 'medium'
-      && result.probeResult.tryoutStarted.scoring === 0
-      && result.probeResult.tryoutStarted.hands.every((hand) => hand[0] === 'fate')
-      && result.probeResult.tryoutResult?.action === 'Back to ranked'
-      && result.probeResult.tryoutResult.quietHidden
-      && result.probeResult.rankedReturn?.accountVisible
-      && !result.probeResult.rankedReturn.rewardSheetOpen
+  check(result.probeResult?.recoveredContinue?.accountVisible
+      && !result.probeResult.recoveredContinue.rewardSheetOpen
       && result.probeResult.acknowledgeCalls === 1,
-    'recovered TRY IT did not return to the profile or acknowledged the reward twice',
+    'recovered Continue left the profile or acknowledged the reward twice',
     result.probeResult);
   check(result.errs.length === 0, 'page errors during the delayed rune reward transition', result.errs);
 

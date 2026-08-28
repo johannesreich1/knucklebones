@@ -1,6 +1,6 @@
 # Project status
 
-*Current as of 2026-08-26. Keep this page short: current state, unresolved
+*Current as of 2026-08-28. Keep this page short: current state, unresolved
 decisions, and externally owned actions only. Detailed sprint history lives in
 [`docs/history/2026-08-sprint.md`](history/2026-08-sprint.md).*
 
@@ -40,7 +40,8 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   Switch, Row Multiply, and Bounty; IVORY adds Rune Trial. Demotion and season
   turnover never relock a pool. A human pairing uses the lower shared pool and
   protocol-capability intersection; a bot uses its human's pool. Classic is
-  exactly 40% and eligible additions split the remaining 60% equally.
+  exactly 40% and eligible additions split the remaining 60% equally —
+  temporarily suspended for IVORY by the Rune Trial test share below.
 - Rune Trial is `format='rune_trial'` with `modifier='classic'`, not an eighth
   mechanical core mode. Both seats receive the same uniform three-of-six loan,
   choose privately, and reveal together; a 30-second deadline resolves a
@@ -93,6 +94,20 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 
 ### Product and release decisions
 
+- **RELEASE BLOCKER — revert the Rune Trial test weighting before the App
+  Store build (added 2026-08-28, owner decision).** `src/core/rune-trial-test-share.ts`
+  gives Rune Trial 60% of every DRAW that may contain it, so the pre-game flow
+  can be judged by playing rather than by seeding. It biases only the draw;
+  `rankedOutcomePool` still returns the shipped 40/60 weights, so
+  `tests/botbench.test.ts` keeps calibrating the bots against the real ladder.
+  That bench also states the cost: at 60%, IVORY's modelled novice-with-a-rune
+  human takes ~45% of outcomes, so ranked is bot-favoured while the share is
+  live. **Reverting is one line: set `RUNE_TRIAL_TEST_SHARE` to `null`.** The
+  draw returns to the shipped weights and `tests/ranked-outcomes.test.ts`
+  follows the constant to its permanent expectations with no edit. Deleting the
+  file outright is a later tidy-up and is not one line — the header of
+  `rune-trial-test-share.ts` lists what else has to move. Ranked keeps the
+  temporary share until the PvP functions are redeployed again without it.
 - The `localization-browser` geometry matrix is manual-only since 2026-08-26
   (owner: Johannes): run
   `mise exec -- node tests/browser/localization/run.mjs` plus the manual

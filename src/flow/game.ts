@@ -46,23 +46,8 @@ import { aiChoose } from './game-ai.ts';
 import { showLocalResult } from './local-result.ts';
 import { hidePassCard, showPassCard } from './pass-card.ts';
 import { resolveLocalStart } from './local-start.ts';
-import {
-  backToRankedFromTryout,
-  beginRuneTryout,
-  runeTryoutActive,
-} from './rune-tryout.ts';
 
 export { aiChoose } from './game-ai.ts';
-
-/**
- * Reward CTA seam: a transient Classic/Normal CPU duel with the awarded rune
- * on both seats. It never writes setup or records; the result has one route
- * back to the ranked caller and restores the exact local state it borrowed.
- */
-export function startRuneTryout(runeId: string, onBackToRanked: () => void): boolean {
-  return beginRuneTryout(runeId, onBackToRanked, newGame);
-}
-export { backToRankedFromTryout };
 /* arm the turn clock: on expiry the die drops into a random legal column */
 export function armTimer(): void { const gen = S.gen; startTimer(() => autoPlace(gen)); }
 const wait = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
@@ -309,10 +294,9 @@ export function endGame(): void {
   const me=localTotal(ME), ai=localTotal(AI);
   const duo = S.mode==='duo';
   const drawn = me===ai, p1won = me>ai;      // cyan won; in CPU mode that means you
-  const tryout = runeTryoutActive();
-  if(drawn && !tut && !tryout) duo ? S.ties++ : S.draws++;
-  if(!drawn && !tut && !tryout){ if(duo) p1won ? S.p1++ : S.p2++; else p1won ? S.wins++ : S.losses++; }
-  if(!tut && !tryout) S.played=true;          // the hub stops nagging after this
+  if(drawn && !tut) duo ? S.ties++ : S.draws++;
+  if(!drawn && !tut){ if(duo) p1won ? S.p1++ : S.p2++; else p1won ? S.wins++ : S.losses++; }
+  if(!tut) S.played=true;          // the hub stops nagging after this
   // in two-player somebody always won, so it is always a celebration
   if(drawn){ /* no fanfare for a dead heat */ }
   else if(duo || p1won){ Sfx.win(); }
@@ -323,11 +307,11 @@ export function endGame(): void {
      result screen too. The high score keeps accumulating rather than being
      deleted, because a player's history cannot be got back once it stops being
      written. */
-  if(!tut && !tryout){                          // scripted/tryout rounds earn no records
+  if(!tut){                                     // scripted rounds earn no records
     const best = duo ? Math.max(me,ai) : me;    // duo: best score by either player
     if(best>S.best) S.best=best;
   }
-  if (!tryout) saveStats();
+  saveStats();
   setStatus('',null);   // the result screen announces the winner — the table says nothing twice (user call)
   showLocalResult({
     tutorial: tut,
@@ -342,6 +326,5 @@ export function endGame(): void {
     finishTutorial: () => { closeEnd(); toMenu(); },
     nextDuel: () => { void startLocal(); },
     changeSetup: () => { closeEnd(); show('#ovPractice'); },
-    backToRanked: tryout ? backToRankedFromTryout : undefined,
   });
 }

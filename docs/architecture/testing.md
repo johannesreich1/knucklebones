@@ -223,8 +223,8 @@ typed helper expresses the common action.
   every 0/1/2/3/6-rune setup boundary. Browser tests prove focusable per-option
   locks and their visible reasons, a non-hue lock treatment, separate
   CPU/two-player preferences, local secret pass-and-pick, restart preserving the
-  current deal, durable unseen reward presentation, and the transient `TRY IT`
-  return path. Pure outcome coverage owns RANDOM's Trial admission and odds;
+  current deal, durable unseen reward presentation, and the reward card's door
+  into the shared rune entry. Pure outcome coverage owns RANDOM's Trial admission and odds;
   do not claim a browser workflow until it actually drives that workflow.
 - Database Rune Trial contracts exercise grants/RLS and negative visibility,
   v1/v2 queue capability isolation, stale-claim rejection, idempotent

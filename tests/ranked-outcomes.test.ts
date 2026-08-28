@@ -29,6 +29,7 @@ import {
   type RankedParticipantAccess,
   type RankedPoolTier,
 } from '../src/core/ranked-outcomes.ts';
+import { RUNE_TRIAL_TEST_SHARE } from '../src/core/rune-trial-test-share.ts';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -152,6 +153,27 @@ for (const tier of ['stone', 'bone', 'ivory'] as const) {
     `${tier} additions do not share the remaining 60%`, pool);
 }
 
+/* ---- the temporary Rune Trial test share ------------------------------- */
+
+/* It biases the DRAW and leaves the shipped pool above untouched, so the pool
+   assertions never move and tests/botbench.test.ts keeps calibrating the bots
+   against the real ladder. Deleting core/rune-trial-test-share.ts puts every
+   line below back on the permanent answer without an edit here.
+   IVORY's draw runs the registry order, so Rune Trial is last and owns the top
+   of [0, 1): its boundary IS its share. */
+check(RUNE_TRIAL_TEST_SHARE === null || RUNE_TRIAL_TEST_SHARE === 0.6,
+  'the temporary Rune Trial test share changed without its gate', RUNE_TRIAL_TEST_SHARE);
+const ivory = [access('ivory')];
+const trialBoundary = 1 - (RUNE_TRIAL_TEST_SHARE ?? 3 / 35);
+eq([
+  pickRankedOutcomeWithRandom(ivory, () => trialBoundary).id,
+  pickRankedOutcomeWithRandom(ivory, () => trialBoundary - 1e-9).id,
+  pickRankedOutcomeWithRandom(ivory, () => 0.999999999).id,
+], ['rune_trial', 'bounty', 'rune_trial'],
+  'the Rune Trial draw does not take exactly its share of IVORY');
+eq(summarizedPool([access('bone')]).map(([id]) => id).includes(RUNE_TRIAL_FORMAT), false,
+  'BONE gained a Trial to bias');
+
 const stoneIvory = summarizedPool([access('stone'), access('ivory')]);
 eq(stoneIvory, summarizedPool([access('ivory'), access('stone')]),
   'cross-tier pool depends on participant order');
@@ -186,8 +208,14 @@ eq([
   pickRankedOutcomeWithRandom(stone, () => 0.999999999).id,
 ], ['classic', 'classic', 'singlestrike', 'colshield', 'limited', 'limited'],
   'STONE weighted boundaries drifted');
-eq(pickRankedOutcome('ranked-pick-gate', [access('ivory')]).id, 'classic',
+/* BONE carries no Trial, so this pin is the override-independent one: it fails
+   only if the seeded draw itself drifts. IVORY's answer is a function of the
+   weights, and moves with the temporary share by design. */
+eq(pickRankedOutcome('ranked-pick-gate', [access('bone')]).id, 'classic',
   'seeded outcome pick drifted');
+eq(pickRankedOutcome('ranked-pick-gate', [access('ivory')]).id,
+  RUNE_TRIAL_TEST_SHARE === null ? 'classic' : 'rowmult',
+  'seeded IVORY pick drifted from its pool weights');
 throws(() => pickRankedOutcome('', stone), 'empty outcome seed was accepted');
 throws(() => pickRankedOutcomeWithRandom(stone, () => 1), 'random draw 1 was accepted');
 throws(() => pickRankedOutcomeWithRandom(stone, () => -0.01), 'negative random draw was accepted');

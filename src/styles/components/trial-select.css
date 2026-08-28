@@ -1,4 +1,13 @@
-:where(#kbroot) .trial-select{gap:12px;text-align:center}
+/* The choice opens ON TOP of a reveal that is still running: the dial has landed
+   on RUNE RITUAL and stays mounted underneath, so dismissing this returns to
+   that answer settling rather than to a screen that has to be built again.
+   It still paints its own opaque ground like any .ov — tried letting the dial
+   show through, and the ambience rule that grounds the topmost overlay
+   (components/overlays.css) is deliberate enough that beating it takes a
+   specificity trick for a decoration. Both overlays are .ov and stack by DOM
+   order alone; the z-index states the intent so a build order that mounts this
+   one first cannot bury it. */
+:where(#kbroot) .trial-select{gap:12px;text-align:center;z-index:81}
 :where(#kbroot) .trial-select__eyebrow{min-height:1.3em;font-size:11px;font-weight:900;
   letter-spacing:.18em;text-transform:uppercase}
 :where(#kbroot) .trial-select__title{margin:0;color:#b18cff;font-size:clamp(22px,7vw,32px);

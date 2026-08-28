@@ -12,7 +12,6 @@ export const enGame = {
     finish: 'Finish',
     nextDuel: 'Next duel',
     changeSetup: 'Change setup',
-    backToRanked: 'Back to ranked',
   },
   status: {
     outOfTime: 'Out of time — column {{column}}',

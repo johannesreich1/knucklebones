@@ -15,7 +15,6 @@ export const itGame = {
     finish: 'Termina',
     nextDuel: 'Altro duello',
     changeSetup: 'Cambia opzioni',
-    backToRanked: 'Torna alle classificate',
   },
   status: {
     outOfTime: 'Tempo scaduto — colonna {{column}}',

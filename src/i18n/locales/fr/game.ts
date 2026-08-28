@@ -15,7 +15,6 @@ export const frGame = {
     finish: 'Finir',
     nextDuel: 'Duel suivant',
     changeSetup: 'Changer les règles',
-    backToRanked: 'Retour au classement',
   },
   status: {
     outOfTime: 'Temps écoulé — colonne {{column}}',

@@ -113,6 +113,21 @@ Rune Trial is player-facing like a mode, but persists as
 placement AI, and replay therefore stay bit-identical to Classic. Format-aware
 history and UI must never infer its label from `modifier` alone.
 
+**TEMPORARY (2026-08-28): Rune Trial takes 60% of every DRAW that may contain
+it.** `src/core/rune-trial-test-share.ts` biases the draw so the flow can be
+judged by playing it; the ordinary outcomes keep their ratios and share the
+remaining 40% (Classic 17.5%, each addition 3.75%). The shipped pool weights
+are untouched, so the bot calibration bench still measures the real ladder —
+and it says what the share costs: at 60%, IVORY's modelled novice-with-a-rune
+human takes ~45% of outcomes, so the bots are the favourites while it is live.
+It reaches offline RANDOM through the app bundle and ranked once the PvP
+functions are redeployed. **This must be reverted before the App Store
+build** — see `docs/STATUS.md`.
+
+The Trial's pre-game is one reveal: the dial lands on RUNE RITUAL, the three
+cards open over it, and both choices turn over on the same stage under one
+countdown. The dial spins once and the overlay opens once.
+
 The server derives a uniform three-distinct-rune offer: all 20 subsets of the
 six-rune roster are equally likely, and both seats receive the same offer.
 Each seat chooses independently and privately, so both may select the same

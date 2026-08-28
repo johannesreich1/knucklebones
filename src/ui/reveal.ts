@@ -1,7 +1,14 @@
 // THE PRE-GAME REVEAL answers "what am I about to play?" with one sequence of
-// beats and one countdown. Each beat owns its theatre and answer; this shell
-// alone owns the overlay, title, settled strip, readout, hold, and anti-spoiler
-// rule. Answers are written only after landing, so a beat cannot leak early.
+// beats and ONE countdown (ui/reveal-hold.ts). Each beat owns its theatre and
+// answer; this shell alone owns the overlay, title, settled strip, readout,
+// note line, sequencing, and anti-spoiler rule. Answers are written only after
+// landing, so a beat cannot leak early.
+//
+// A beat may also be DEFERRED — see `Act` below. Everything the player is asked
+// between two answers belongs inside this one overlay: the Rune Trial's private
+// choice opens over the mode the dial just found and turns both hands over on
+// the same stage. Closing the overlay to ask a question and opening it again to
+// answer it is the shape that was here before, and it read as a second spin.
 // `#ovWheel` stays stable because tests, CSS, and design cards already share it.
 import type { ModeSpec } from '../core/modes.ts';
 import type { Player } from '../core/rules.ts';
@@ -15,8 +22,9 @@ import { paintAvatar } from './avatar.ts';
 import { $, show, hide } from './dom.ts';
 import { appRoot } from './embed.ts';
 import { colorOf, nameOf } from './identity.ts';
-import { Sfx } from './audio.ts';
-import type { Answer, Beat, DialPeer, DialSide } from './reveal-types.ts';
+import { hold } from './reveal-hold.ts';
+import { ownerEyebrow, settledAnswer, versus } from './reveal-answer.ts';
+import type { Beat, DialPeer, DialSide } from './reveal-types.ts';
 
 const pause = (ms: number): Promise<void> => new Promise((r) => setTimeout(() => r(), ms));
 
@@ -26,56 +34,6 @@ const pause = (ms: number): Promise<void> => new Promise((r) => setTimeout(() =>
    flips the overlay from `.hunting` to `.landed`. Splitting those two lets a
    beat land its own last frame (the dial holds its winner's flare through
    one more frame) without the shell knowing how. */
-const esc = (t: string): string => t.replace(/[&<>"']/g, (c) =>
-  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
-
-/* one side of the versus line — the .dav slot is filled by paintAvatar after
-   the innerHTML write, so the avatar has exactly one renderer (ui/avatar.ts) */
-function sideHtml(p: DialSide, cls: 'me' | 'foe'): string {
-  const rating = p.rating != null ? `<span class="rt">${formatNumber(p.rating)}</span>` : '';
-  return `<span class="dside ${cls}"><span class="dav"></span>` +
-         `<span class="dnm">${esc(p.name)}</span>${rating}</span>`;
-}
-/* Both ratings are shown; the DIFFERENCE between them is not. It is arithmetic
-   the player can do if they care, and printing it turns a duel into a forecast.
-   Exported for the same reason settledAnswer and answerLines below are: the
-   design build renders the pairing through THIS function ({{versus}}), and the
-   two dial cards had been carrying a hand-written one-line "Opponent NAME ·
-   RATING" — the pre-study treatment this replaced — for as long as it existed. */
-export function versus(me: DialSide, foe: DialSide): string {
-  return sideHtml(me, 'me') + `<span class="dvs">${t('common', 'versus')}</span>` + sideHtml(foe, 'foe');
-}
-
-/* An answer that is done being looked at, kept where it can still be read. It
-   exists so a second beat does not erase the first one's result: the mode
-   settles into the top half and is still on screen — RULE AND ALL — when the
-   rune is dealt, which is what makes ONE countdown honest for BOTH answers.
-   It keeps the blurb, not just the name: "COLUMN SHIELD" on its own is a label,
-   and the line under it is the half that says what you are about to play. Same
-   line, same class, as the readout under the stage.
-   Pure, and exported, because the design build renders these two through the
-   very same functions ({{wsettled}}, {{wanswer}}): a card that re-typed a
-   mode's blurb would be one more copy of the registry. */
-function ownerEyebrow(context?: string, hue?: string, id?: string): string {
-  const idAttr = id ? ` id="${id}"` : '';
-  const hueAttr = hue ? ` style="color:${hue}"` : '';
-  const hiddenAttr = context ? '' : ' hidden';
-  return `<small class="wowner"${idAttr}${hueAttr}${hiddenAttr}>`
-    + `<span class="wownername">${context ? esc(context) : ''}</span></small>`;
-}
-
-export const settledAnswer = (b: Answer): string =>
-  `<div class="wsett${b.context ? ' wowned' : ''}" style="color:${b.hue}">`
-  + `<span class="wanswerhead">`
-  + `${b.context ? ownerEyebrow(b.context, b.contextHue ?? b.hue) : ''}`
-  + `<span class="wpill">${b.icon}<b>${esc(b.name)}</b></span></span>`
-  + `<span class="wblurb">${esc(b.blurb)}</span></div>`;
-
-/** the readout under the stage — what a landed beat says, and its colour */
-export const answerLines = (b: Answer): string =>
-  `<div class="wname" style="color:${b.hue}">${b.icon} ${esc(b.name)}</div>`
-  + `<div class="wblurb">${esc(b.blurb)}</div>`;
-
 let built = false;
 function build(): void {
   if (built) return;
@@ -89,13 +47,25 @@ function build(): void {
   <div class="wstage" id="wheelStage"></div>
   <div class="wname" id="wheelName">&nbsp;</div>
   <div class="wblurb" id="wheelBlurb">&nbsp;</div>
+  <div class="wnote" id="wheelNote" hidden></div>
   <div class="dhold" id="wheelHold"><b id="wheelCount">&nbsp;</b><span id="wheelHint">&nbsp;</span></div>
 </div>`);
 }
 
+/* One line under the readout for something that is neither an answer nor a
+   question: a wait the player did not ask for and cannot shorten. It is the
+   shell's, not a beat's, because a beat has ended by the time it is needed. */
+function note(text: string | null): void {
+  if (!built) return;
+  const line = appRoot().querySelector<HTMLElement>('#wheelNote');
+  if (!line) return;
+  line.textContent = text ?? '';
+  line.hidden = !text;
+}
+
 interface ActiveReveal {
   readonly ov: HTMLElement;
-  readonly beats: readonly Beat[];
+  readonly beats: Beat[];
   readonly me?: DialSide;
   readonly foe?: DialSide;
   activeIndex: number;
@@ -187,58 +157,20 @@ function wear(ov: HTMLElement, cls?: string): void {
   if (worn) ov.classList.add(worn);
 }
 
-const HOLD_SECS = 5;
-
-/* The result has to be READ, not glimpsed. It holds for five seconds with a
-   countdown under it, and a tap says "I have read it" — once everyone has, the
-   wait ends there. */
-function hold(ov: HTMLElement, context: ActiveReveal, peer?: DialPeer): Promise<void> {
-  const count = $('#wheelCount'), hint = $('#wheelHint');
-  let left = HOLD_SECS;
-  let mine = false;
-  let theirs = !peer;                      // nobody to wait for when alone
-  const paint = (): void => {
-    count.textContent = formatNumber(Math.max(0, left));
-    hint.textContent = !mine ? t('game', 'reveal.tapReady')
-      : theirs ? t('game', 'reveal.starting') : t('game', 'reveal.readyWaiting');
-    ov.classList.toggle('ready', mine);
-  };
-  context.repaintHold = paint;
-  paint();
-  return new Promise<void>((resolve) => {
-    let ticker = 0, off: (() => void) | null = null;
-    const done = (): void => {
-      clearInterval(ticker);
-      ov.removeEventListener('pointerdown', tap);
-      off?.();
-      if (context.repaintHold === paint) context.repaintHold = undefined;
-      resolve();
-    };
-    const both = (): void => { if (mine && theirs) done(); };
-    function tap(): void {
-      if (mine) return;
-      mine = true;
-      Sfx.tap();
-      peer?.announce();
-      paint();
-      both();
-    }
-    ticker = setInterval(() => {
-      left -= 1;
-      paint();
-      if (left <= 0) done();
-    }, 1000) as unknown as number;
-    ov.addEventListener('pointerdown', tap);
-    off = peer?.onPeer(() => { theirs = true; paint(); both(); }) ?? null;
-  });
-}
-
 /* How long a landed answer stays ALONE on the stage before the next beat takes
    it. Long enough to actually read the name and the rule that just arrived —
    at a second it was a glimpse, and the eye was still on the dial when the
    deck replaced it (user call). */
 const READ_MS = 1500;
 const SWAP_MS = 260;
+
+/* A beat that does not exist yet: it is produced only once the beat before it
+   has been read. That is the Rune Trial's whole shape — the mode lands, the
+   choice is made ON TOP of the overlay that is still showing it, and only then
+   is there a pair of runes to turn over. Resolving to null means the sequence
+   was abandoned (the queue generation was replaced, the player backed out) and
+   the overlay leaves without a hold. */
+type Act = Beat | (() => Promise<Beat | null>);
 
 /** run the reveal for whatever was left to chance; resolves when the player is done */
 export async function reveal(opts: {
@@ -251,25 +183,35 @@ export async function reveal(opts: {
     player: Player;
     candidates?: readonly SpellSpec[];
   }[];
-  trialRunes?: readonly [TrialRevealSide, TrialRevealSide];
+  trial?: {
+    /* Runs while the mode it belongs to is still on the stage. `note` writes
+       one line under the readout — the opponent's clock — and is cleared for
+       whatever comes next. */
+    resolve: (note: (text: string | null) => void) =>
+      Promise<readonly [TrialRevealSide, TrialRevealSide] | null>;
+  };
   peer?: DialPeer; me?: DialSide; foe?: DialSide;
 }): Promise<void> {
-  const beats: Beat[] = [];
-  if (opts.mode) beats.push(dialBeat(opts.mode, {
+  const acts: Act[] = [];
+  if (opts.mode) acts.push(dialBeat(opts.mode, {
     candidates: opts.modeCandidates,
     copy: opts.modeCopy,
   }));
-  if (opts.spell) beats.push(dealBeat(opts.spell));
+  if (opts.spell) acts.push(dealBeat(opts.spell));
   for (const rune of opts.runes ?? []) {
-    beats.push(dealBeat(rune.spell, {
+    acts.push(dealBeat(rune.spell, {
       candidates: rune.candidates,
       label: () => t('game', 'reveal.runeFor'),
       context: () => nameOf(rune.player),
       contextHue: colorOf(rune.player),
     }));
   }
-  if (opts.trialRunes) beats.push(trialRuneRevealBeat(opts.trialRunes));
-  if (!beats.length) return;               // nothing was left to chance
+  const trial = opts.trial;
+  if (trial) acts.push(async () => {
+    const sides = await trial.resolve(note);
+    return sides ? trialRuneRevealBeat(sides) : null;
+  });
+  if (!acts.length) return;                // nothing was left to chance
   build();
   const ov = $('#ovWheel');
   /* A ranked match is a comparison, so the screen shows the comparison: both
@@ -285,8 +227,10 @@ export async function reveal(opts: {
   settled.innerHTML = '';
   settled.removeAttribute('data-count');
   ov.classList.remove('landed', 'ready', 'holding');
+  note(null);
   wear(ov);                       // whatever the LAST reveal left on, whoever ran it
   show('#ovWheel');
+  const beats: Beat[] = [];
   const context: ActiveReveal = {
     ov,
     beats,
@@ -296,10 +240,26 @@ export async function reveal(opts: {
     landed: false,
   };
   activeReveal = context;
+  let held = false;
 
   try {
-    for (let k = 0; k < beats.length; k++) {
-      const beat = beats[k];
+    for (let k = 0; k < acts.length; k++) {
+      const act = acts[k];
+      /* Resolved BEFORE the beat it follows is retired, so a deferred act runs
+         over a stage that still shows the answer it belongs to, and what it
+         opened dismisses onto the settled strip rather than onto nothing. */
+      const beat = typeof act === 'function' ? await act() : act;
+      if (!beat) return;                     // abandoned; the finally undresses
+      if (k > 0) {
+        note(null);
+        settled.insertAdjacentHTML('beforeend', settledAnswer(beats[k - 1]));
+        settled.dataset.count = String(settled.children.length);
+        stage.classList.add('out');
+        await pause(SWAP_MS);
+        stage.classList.remove('out');
+        wear(ov);
+      }
+      beats.push(beat);
       context.activeIndex = k;
       context.landed = false;
       // the hunting state: nothing named, nothing lit, nothing in the middle
@@ -322,20 +282,20 @@ export async function reveal(opts: {
       context.landed = true;
       repaintReveal(context);
 
-      if (k === beats.length - 1) break;
-      await pause(READ_MS);
-      settled.insertAdjacentHTML('beforeend', settledAnswer(beat));
-      settled.dataset.count = String(settled.children.length);
-      stage.classList.add('out');
-      await pause(SWAP_MS);
-      stage.classList.remove('out');
-      wear(ov);
+      if (k < acts.length - 1) await pause(READ_MS);
     }
     ov.classList.add('holding');
+    held = true;
     await hold(ov, context, opts.peer);
-    wear(ov);                       // and it leaves the way it arrived
-    hide('#ovWheel');
   } finally {
     if (activeReveal === context) activeReveal = null;
+    /* THE OVERLAY COMES OFF ON EVERY EXIT — hence a finally, not three tidy
+       endings. A deferred act can REJECT (ranked throws on a Trial offer this
+       build cannot read), and the hold installs the only dismissal there is,
+       so an escaping throw left a full-screen #ovWheel with no countdown and
+       nothing listening, over a queue panel already hidden: a reload. */
+    if (!held) opts.peer?.onPeer(() => undefined)();   // hold owns that teardown
+    wear(ov);                       // and it leaves the way it arrived
+    hide('#ovWheel');
   }
 }

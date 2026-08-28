@@ -112,6 +112,15 @@ The shared board then receives the revealed per-seat hands. Trial is carried as
 an explicit format backed by Classic, never inferred by adding a fake entry to
 the mechanical mode registry.
 
+The Trial's whole pre-game is ONE reveal. `ui/reveal.ts` accepts a `trial` act
+alongside its beats: a beat that does not exist until the one before it has
+been read. The dial lands on RUNE RITUAL, the selector opens over the overlay
+that is still showing it, and the two answers turn over on that same stage
+under a single countdown — with the wait for a remote opponent written into
+the reveal's own note line rather than sending the player back to the queue
+panel. A second overlay for the runes is the shape this replaced; a caller that
+reveals a mode, closes, and then reveals the choices has rebuilt it.
+
 When extracting code from a large module:
 
 1. Name one responsibility and its inputs/outputs.
@@ -150,10 +159,11 @@ not need a framework store, event bus, or dependency-injection container.
   Offline setup treats a missing snapshot as an empty collection, and sign-out
   or account change clears/swaps the active snapshot before another account can
   read it. Durable unseen/reward state remains server-owned.
-- The post-reward `TRY IT` route is transient local state: a fresh unranked
-  Classic duel against Normal AI with the new rune on both seats. It returns to
-  ranked, grants nothing, does not enter ordinary local records, and must not
-  mutate saved CPU or two-player settings.
+- The result's reward card is a door, not a leaflet: it names the new rune in
+  two lines and opens the SHARED library entry (`ui/library.ts openEntry`) that
+  the in-game badge and the profile collection open. It covers the result
+  rather than leaving it, and the tap is explicit proof of presentation, so it
+  acknowledges the durable unseen row.
 
 ## Size and context budget
 

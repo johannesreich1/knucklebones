@@ -47,7 +47,7 @@ import { spellIcon, spellHue } from '../src/ui/spellicons.ts';
 import { scoreLine } from '../src/ui/record.ts';
 import { dialNodes, dialBeat } from '../src/ui/modedial.ts';
 import { runeFelt, dealBeat, runeCardFaces } from '../src/ui/runedeal.ts';
-import { settledAnswer, answerLines, versus } from '../src/ui/reveal.ts';
+import { settledAnswer, answerLines, versus } from '../src/ui/reveal-answer.ts';
 import { parseAvatar, AV_HUES } from '../src/ui/avatar.ts';
 import { dieMarkup } from '../src/ui/die-markup.ts';
 import { loaderWaitMarkup } from '../src/ui/loader.ts';

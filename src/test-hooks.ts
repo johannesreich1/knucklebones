@@ -14,7 +14,8 @@ import { applySides, setStatus, setActivePlate } from './ui/game/turn-state.ts';
 import { fit } from './ui/layout.ts';
 import { closeEnd, showEnd } from './ui/endscreen.ts';
 import { closeOpenSheet, sheetOpen } from './ui/sheet.ts';
-import { aiChoose, newGame, place, sayChoose, startRuneTryout, backToRankedFromTryout } from './flow/game.ts';
+import { reveal } from './ui/reveal.ts';
+import { aiChoose, newGame, place, sayChoose } from './flow/game.ts';
 import {
   cast,
   arm,
@@ -29,12 +30,16 @@ import {
 import { modeByEnum } from './core/modes.ts';
 
 export function hooks(){
-  return { S, colScore, boardTotal, searchRoot, aiChoose, newGame, place, sayChoose,
-           startRuneTryout, backToRankedFromTryout, isFull,
+  return { S, colScore, boardTotal, searchRoot, aiChoose, newGame, place, sayChoose, isFull,
            applyMove, cloneSt, riskOf, nodes,
            sideKey, faceRotated, applySides, renderAll, showHints, setStageDie, loaderDie, setStatus, setActivePlate, nameOf,
            burst, get reduced(){ return REDUCED; }, fit,
            showEnd, closeEnd,
+           /* The pre-game reveal, so a suite can drive the one thing no player
+              can reach on purpose: a deferred act that REJECTS. The overlay is
+              full-screen and its only dismissal is the hold's tap, so "it comes
+              off on every exit" is a contract, not an implementation detail. */
+           reveal,
            /* The one shared modal sheet, published so a suite can ask the APP
               whether a card is still up instead of guessing at class names —
               a settled sheet and a dismissing one wear the same `fofly`. The

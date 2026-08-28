@@ -29,13 +29,7 @@ import {
   confirmedRankedPoolTier,
   subscribeRuneCollection,
 } from '../rune-collection-cache.ts';
-import {
-  backToRankedFromTryout,
-  newGame,
-  passTap,
-  startLocal,
-  startRuneTryout,
-} from '../flow/game.ts';
+import { newGame, passTap, startLocal } from '../flow/game.ts';
 import { requestLeave, leavingForfeits } from '../flow/leave.ts';
 import { syncSettingsUI, toMenu } from '../flow/menu.ts';
 import { restartLocal } from '../flow/restart.ts';
@@ -217,9 +211,7 @@ export function bindMenus(root: HTMLElement): void {
        keeps the player on the board so the settled forfeit can open the same
        result screen the winner gets. Only an unhandled quit navigates from
        here, which is the contract flow/leave has always documented. */
-    if (leave && !requestLeave()) {
-      if (!backToRankedFromTryout()) toMenu();
-    }
+    if (leave && !requestLeave()) toMenu();
   });
   tap($('#btnSettingsBack'), () => { Sfx.tap(); hide('#ovSettings'); });
   tap($('#coach'), coachTap);
@@ -295,9 +287,6 @@ export function bindMenus(root: HTMLElement): void {
     tap($(selector), openBadgeEntry);
   });
 
-  bindOnlineDoors({
-    startTutorial: () => newGame({ tutorial: true }),
-    tryRune: (runeId, onBackToRanked) => startRuneTryout(runeId, onBackToRanked),
-  });
+  bindOnlineDoors({ startTutorial: () => newGame({ tutorial: true }) });
   tap($('#btnSettingsHome'), () => { Sfx.unlock(); Sfx.tap(); show('#ovSettings'); });
 }

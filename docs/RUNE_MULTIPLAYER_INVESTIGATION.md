@@ -51,8 +51,8 @@ the pre-v2 evidence that led to it.
   the winner's selected rune idempotently. Loss/draw grants nothing; a
   duplicate has no replacement. Trial always loans the complete roster, so
   ownership never changes ranked options. First unlocks remain durably unseen
-  until revealed, then offer a transient unranked Classic/Normal `TRY IT` duel
-  that neither rewards nor overwrites normal local settings/records.
+  until revealed; the reward card opens the rune's shared entry sheet, which
+  is what acknowledges the reveal.
 - **Offline/local:** CPU exposes NONE plus the last server-confirmed,
   account-bound collection. Named runes require ownership; RANDOM and
   RANDOM×2 require two, and CPU Trial requires three collected runes and
