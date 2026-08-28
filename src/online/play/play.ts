@@ -5,16 +5,15 @@ import { spellById } from '../../core/spells.ts';
 import { ONLINE_AUTO_FORFEIT_STREAK, ONLINE_TURN_SECS } from '../../config.ts';
 import { S } from '../../state.ts';
 import { startTimer, stopTimer, showClock } from '../../flow/timer.ts';
-import { clearSpells, resetSpells, resolveTimedOutSpellAim,
+import { clearSpells, renderSpells, resetSpells, resolveTimedOutSpellAim,
   setSpellTransport } from '../../flow/spells.ts';
-import { handTurnTo } from '../../flow/turn.ts';
 import { setLeaveInterceptor } from '../../flow/leave.ts';
 import { $, hide } from '../../ui/dom.ts';
 import { showBag, renderBag, BAG_SIZE } from '../../ui/bag.ts';
 import { buildBoards, renderAll } from '../../ui/game/board.ts';
 import { clearHints, showHints } from '../../ui/game/hints.ts';
 import { claimBadge, releaseBadge, runeTrialChip, spellChip } from '../../ui/game/hud.ts';
-import { setStatus } from '../../ui/game/turn-state.ts';
+import { setActivePlate, setStatus } from '../../ui/game/turn-state.ts';
 import { fit } from '../../ui/layout.ts';
 import { setPlaceHandler } from '../../ui/input.ts';
 import { setOpponentTurnPresentation, setSeatingPresentation, setTurnPresentation, setTutorialPresentation } from '../../ui/game/root-state.ts';
@@ -178,9 +177,10 @@ function refreshTurnUI(): void {
   S.die = O.pendingDie ?? 0;
   if (O.pendingDie) revealOnlineDie(O.pendingDie, S.turn);
   renderPool();
-  handTurnTo(S.turn, O.you);   // the rail and plate follow the seat to move
+  renderSpells();
   // a calm static status — the countdown bar below carries the motion
   setStatus(turnCopy(mine, () => oppName()), S.turn);
+  setActivePlate(O.you);
   clearHints();
   if (mine) showHints();
   // One automatic placement left before the match is lost — a warning only.

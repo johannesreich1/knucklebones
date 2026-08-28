@@ -74,7 +74,32 @@ function createTurnPresentationProbes(page) {
       k.S.phase = next === 1 ? 'choose' : 'anim'; k.S.die = 3;
       k.applySides(); k.setActivePlate(); k.spells.render();
     }, turn);
-    await page.waitForTimeout(320);
+    /* WAIT FOR THE SWAP TO LAND, do not guess at it. This was a flat 320ms
+       against a .25s transition (styles/game/spells.css:11) — 70ms of slack,
+       which a loaded machine eats. The probe then caught a card mid-tween and
+       read one CSS rule half-applied: hand-standby's opacity and filter live
+       but its transform still near identity, reported as "the active CPU card
+       looked disabled". Measured on 2026-08-28: the same build passed and
+       failed in the same minute. Ask the browser when its animations are
+       actually finished instead. */
+    await page.evaluate(async () => {
+      const cards = () => [...document.querySelectorAll('#spellBar .rune:not([hidden])')];
+      /* two frames: one for the class change to commit, one for the
+         transitions it starts to exist and be reported as running */
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const deadline = performance.now() + 2000;
+      while (performance.now() < deadline) {
+        const running = cards().flatMap((el) => el.getAnimations())
+          .filter((a) => a.playState === 'running');
+        if (!running.length) return;
+        /* allSettled: a transition replaced mid-flight REJECTS its finished
+           promise, and that is a normal outcome here, not a failure */
+        await Promise.race([
+          Promise.allSettled(running.map((a) => a.finished)),
+          new Promise((r) => setTimeout(r, 120)),
+        ]);
+      }
+    });
   };
   return { rail, turnTo };
 }

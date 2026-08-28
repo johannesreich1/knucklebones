@@ -3,13 +3,12 @@
 import { ONLINE_TURN_SECS } from '../../config.ts';
 import type { CharmSt, Player } from '../../core/rules.ts';
 import { startTimer, stopTimer } from '../../flow/timer.ts';
-import { handTurnTo } from '../../flow/turn.ts';
 import { S } from '../../state.ts';
 import { $, show } from '../../ui/dom.ts';
 import { setStageDie } from '../../ui/die.ts';
 import { animateGameMove } from '../../ui/game/move-view.ts';
 import { animateStageRoll, clearStageRoll } from '../../ui/game/motion.ts';
-import { setStatus } from '../../ui/game/turn-state.ts';
+import { setActivePlate, setStatus } from '../../ui/game/turn-state.ts';
 import { opponentThinkingCopy } from './play-copy.ts';
 
 let revealSequence = 0;
@@ -71,7 +70,8 @@ export async function playBotReply(
 ): Promise<void> {
   if (!options.isCurrent()) return;
   const opponent = (1 - options.you) as Player;
-  handTurnTo(opponent, options.you);
+  S.turn = opponent;
+  setActivePlate(options.you);
   setStatus(opponentThinkingCopy(options.opponentName), opponent);
   startTimer(options.onOpponentStalled, ONLINE_TURN_SECS);
   await pause(260);
