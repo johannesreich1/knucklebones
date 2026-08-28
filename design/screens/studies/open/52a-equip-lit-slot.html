@@ -1,4 +1,4 @@
-<!-- meta name="EQ1 — The lit slot" group="3k · The equipped rune" subtitle="The six collection slots become the loadout — one of them wears the offline picker's own selection ring, and one line under the grid says whether that choice is in play yet" width=412 height=1570 sizes="md" links="Profile, Match reveal, Rune Ritual" -->
+<!-- meta name="EQ1 — The lit slot" group="3k · The equipped rune" subtitle="The six collection slots become the loadout — one of them wears the offline picker's own selection ring, and one line under the grid says whether that choice is in play yet" width=412 height=2126 sizes="md" links="Profile, Match reveal, Rune Ritual" -->
 <style>
   /* Card-local names only (eq1*). The Profile anatomy is the APP's — the panel
      is src/online/styles/base.css's #ovOnline .panel, the points and facts are
@@ -152,22 +152,37 @@
   .eq1states,.eq1states *,.eq1states *::before,.eq1states *::after,
   .eq1reward,.eq1reward *,.eq1reward *::before,.eq1reward *::after{animation:none!important}
 
-  /* the two sentence states this reader's own profile cannot show */
-  .eq1copy{display:flex;flex-direction:column;gap:11px;width:100%}
+  /* the two sentence states this reader's own profile cannot show, and the
+     before/after pair of result cards below them */
+  .eq1copy,.eq1rewards{display:flex;flex-direction:column;gap:11px;width:100%}
   .eq1row{display:flex;flex-direction:column;gap:5px}
   .eq1tag{font-size:8px;font-weight:900;letter-spacing:.18em;text-indent:.18em;
     color:var(--dim);text-transform:uppercase;text-align:center;opacity:.72}
 
-  /* THE FIRST RUNE lands on the result screen, in the shipped EndFeature card
-     (result.css:103-119) — the card is worn whole, hue and all, rather than
-     redrawn. The added line is an <i>, not a second <span>: the app's own
-     .rune-reward .endfeature-copy span pins nowrap + ellipsis at (0,2,1) for
-     a one-line blurb, and this sentence has to wrap. Wearing a different
-     element beats out-specifying a rule the card agrees with.
-     It is STATIC on purpose. visiblyPresented() (runes/rune-reward-presentation.ts)
+  /* ===== THE FIRST RUNE lands on the result screen, and that screen MOVED.
+     This card used to draw a four-line reward with a TRY IT button beside it.
+     `d42b869` retired both: `src/flow/rune-tryout.ts` — the transient duel the
+     button launched — is DELETED, and EndFeature is now exactly
+       { className?, hue?, icon?, kicker, title, tap }   (endscreen.ts:26)
+     so what paints is an icon tile, NEW RUNE, the rune's name, a `.chev`, and
+     a whole-card tap into openEntry (result.css:106-130, paintFeature at
+     endscreen.ts:224). A design card picturing the retired control would be
+     the exact drift design/build.mjs exists to catch, so BOTH rows below are
+     the shipped anatomy worn whole — hue, icon tile, chevron — and the second
+     row adds the one line this idea is asking for, so the ask is measurable
+     rather than described.
+     THE ADDED LINE IS AN <i>. The only two elements the app styles inside
+     .endfeature-copy are `small` (the kicker) and `b` (the name), and `b` pins
+     nowrap + ellipsis at 14.5px — a third line that wraps may be neither of
+     them. Wearing a different element beats out-specifying a rule the card
+     agrees with. In shipped code it would not be an element at all: it is a
+     field EndFeature does not have, which is this half of the idea's whole
+     cost and is named as such in the note.
+     IT IS STATIC on purpose. visiblyPresented() (rune-reward-presentation.ts)
      refuses the durable seen-ACK while anything on that element is animating
      or below opacity .98, so a flourish here would silently stop the server
-     ever marking the reward seen — and the row would be re-presented forever. */
+     ever marking the reward seen — and the row would be re-presented forever.
+     ===== */
   .eq1reward{width:100%}
   .eq1worn{font-style:normal;margin-top:3px;font-size:8.5px;line-height:1.45;
     letter-spacing:.02em;color:var(--gold)}
@@ -238,18 +253,34 @@
   </div>
 
   <div class="cap2" style="margin-top:6px">The first rune you ever win equips itself — said once, here</div>
-  <div class="endfeature rune-reward eq1reward" style="--feature-hue:{{shue:ward}}">
-    <i class="endfeature-icon" aria-hidden="true">{{sico:ward:24}}</i>
-    <div class="endfeature-copy">
-      <small>NEW RUNE</small>
-      <b>WARD</b>
-      <span>Score an all-distinct column again and block one attack.</span>
-      <i class="eq1worn">Equipped — you carry it into ranked from SILVER.</i>
+  <div class="eq1rewards">
+    <!-- SHIPPED, since d42b869: icon, kicker, name, chevron, and the whole
+         card is the door to the rune's own entry. No blurb (the sheet behind
+         the tap says it), no TRY IT (the duel it launched is deleted). -->
+    <div class="eq1row">
+      <div class="eq1tag">The reward card as it ships</div>
+      <div class="endfeature rune-reward eq1reward" style="--feature-hue:{{shue:ward}}">
+        <i class="endfeature-icon" aria-hidden="true">{{sico:ward:24}}</i>
+        <div class="endfeature-copy"><small>NEW RUNE</small><b>WARD</b></div>
+        <span class="chev" aria-hidden="true">›</span>
+      </div>
     </div>
-    <button type="button" class="btn small endfeature-action">TRY IT</button>
+    <!-- WHAT EQ1 ASKS FOR: the same card, one line longer. No new screen, no
+         new step, no second CTA — and no second copy of the registry, because
+         what WARD does is still only behind the tap. -->
+    <div class="eq1row">
+      <div class="eq1tag">Everything EQ1 adds to it</div>
+      <div class="endfeature rune-reward eq1reward" style="--feature-hue:{{shue:ward}}">
+        <i class="endfeature-icon" aria-hidden="true">{{sico:ward:24}}</i>
+        <div class="endfeature-copy"><small>NEW RUNE</small><b>WARD</b>
+          <i class="eq1worn">Equipped — you carry it into ranked from SILVER.</i></div>
+        <span class="chev" aria-hidden="true">›</span>
+      </div>
+    </div>
   </div>
 </div></div>
 <div class="note"><b>What it says:</b> <b>the slot you already tap is the one you carry.</b> Six buttons in registry order, one of them wearing the offline picker's own 65/12/14 selection mark in its own registry hue, and one sentence under the grid in the picker's voice. A tap still opens the library sheet it opens today; the sheet grows an EQUIP button, and UNEQUIP on the slot already lit — so NONE stays a choice, not a hole.<br>
 <b>Why it survives:</b> it is the smallest change on the board — one CSS state on a button that exists, one action in a sheet that already opens, one sentence already translated. No new place, no new gesture, and all six are seen at once. That matters: the roster is not horizontal, PILFER measures 54.84% against WARD's 45.16%, and a 9.68pp spread is not a choice to make one rune at a time.<br>
 <b>Cost:</b> the grid now means two things at once, and the comment shipped above <code>#accRunes</code> says the opposite in as many words — <i>"The collection is account state, not a loadout. Six stable slots make progress legible without suggesting that equipping a rune changes an ordinary ranked match"</i> (<code>shell.ts:96-98</code>). This design deletes it in the same change or ships a lie in its own source. A tap that was pure reference gains a consequence one layer down, and 65/12/14 is the picker's mark for a <em>symmetric</em> deal handing both seats the same rune — worn for a personal loadout, one look carries two promises.<br>
+<b>The first rune:</b> the reward card is not this study's to invent — <code>d42b869</code> rebuilt it after this card was drawn. <code>EndFeature</code> is now <code>{className, hue, icon, kicker, title, tap}</code> (<code>endscreen.ts:26</code>): an icon, NEW RUNE, the rune's name, a chevron, and a whole-card tap into the rune's own entry. The blurb is gone and TRY IT with it — <code>flow/rune-tryout.ts</code> is deleted. That makes this half of the idea <b>cheaper</b>: it still asks for one line and no new screen, and with the blurb retired that line is the card's only body text rather than its fourth. It does not even cost height — both rows above measure <b>74px</b> at 412, because the 38×52 icon tile sets the row and the copy column sits inside it. Not free, though. <b><code>EndFeature</code> has no field to put it in</b> — no <code>body</code>, no <code>detail</code>, no <code>meta</code> — so the line edits a typed spec that had just lost a body line on purpose (<i>"the row lost its blurb and its button, so the space they held goes to the type rather than to a taller card"</i>, <code>result.css:119</code>). Putting one back argues against a deliberate decision, and the only honest argument for it is that being equipped is news, and this is the one screen nobody has to go looking for. <b>That tap is also the case for EQ4:</b> it calls <code>openEntry('spells', id)</code> (<code>library.ts:188</code>) — the same sheet the in-game badge (<code>menu-bindings.ts:282</code>) and the profile slot (<code>account-runes.ts:69</code>) already deal. Three doors, one sheet, shipped; EQ4's ring seat would be the fourth. Worth saying from a rival card: <b>"the seat is a door" is the grammar this app just converged on, not a new idea</b> — which also settles where EQ1's equip action belongs, inside that sheet and never as a seventh control beside it.<br>
 <b>Below SILVER:</b> the lit frame stays and only the bloom is withheld, under the unused <code>.togo</code> line (<code>profile.css:30-32</code>) reading IN PLAY FROM SILVER. It says waiting, never LOCKED — which is why the gate must not borrow <code>.modepick button.locked</code>'s padlock: nothing is unavailable, it is early. It names the threshold, never a deficit; this reader's 598 points are owed to GOLD. A demotion out of SILVER simply re-withholds the bloom, and nothing is lost.</div>

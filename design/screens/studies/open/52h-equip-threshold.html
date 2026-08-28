@@ -1,4 +1,4 @@
-<!-- meta name="EQ8 — The threshold card" group="3k · The equipped rune" subtitle="SILVER stops being a number and becomes a moment: the match that promotes you deals a card on the result screen that hands you the slot and names the rune now coming with you" width=412 height=2088 sizes="md" links="Profile, Match reveal, Rune Ritual" -->
+<!-- meta name="EQ8 — The threshold card" group="3k · The equipped rune" subtitle="SILVER stops being a number and becomes a moment: the promoting match deals one more card in the result's own reward slot — drawn beside the two-line door that slot deals today, and honest about which is which" width=412 height=2788 sizes="md" links="Profile, Match reveal, Rune Ritual" -->
 <style>
   /* Card-local names only (eq8*). Everything with a shape here is the APP's:
      the verdict and its clip (styles/screens/result.css), the score line
@@ -75,23 +75,58 @@
      equipped-and-waiting; at the crossing a card says so; after it nothing
      needs saying, because the rune is simply in play. ===== */
 
-  /* THE KICKER IS THE GROUP, NOT GOLD. result.css:114 paints
-     .rune-reward .endfeature-copy small in --gold, and on this screen gold is
-     already spoken for twice — the ladder points and the NEW RUNE kicker
-     directly below. docs/LADDER.md's rule is that gold names the ladder's own
-     currency; a threshold card that borrowed it would be the third gold thing
-     in 90px. It takes the group's own token instead. The override needs the
-     app rule's own weight (0,3,0) without naming an app class in a selector,
-     so the copy block and the kicker each carry a card-local class alongside
-     their app ones — equal specificity, inlined later, wins. */
+  /* THE KICKER IS THE GROUP, NOT THE RUNE — and it is the ONLY thing this
+     card changes about a row the app already deals. Since d42b869 BOTH lines
+     speak --feature-hue (result.css:127-130): "what is new here is the rune,
+     not a trophy". On a THRESHOLD deal what is new is the GROUP, so the kicker
+     takes the group's own token and the name keeps the rune's. One colour, one
+     declaration, no seam — worth holding against the body line and the button
+     further down, which are neither. (This comment used to argue against a
+     GOLD kicker, quoting a --gold rule at result.css:114. That rule no longer
+     exists; d42b869 repainted it. A card is only as true as its last read.)
+     The app rule is `.rune-reward .endfeature-copy small` inside :where(), so
+     (0,2,1); copy block and kicker each carry a card-local class, which lands
+     this at (0,3,0) without naming an app class in a selector. */
   .eq8feat .eq8copy .eq8kick{color:var(--g-silver)}
-  /* the first-rune card's added line. A <div>, deliberately: the copy block's
-     own <small> and <span> are already claimed by result.css:114 and :117 at
-     (0,3,0), and an element neither rule can see is cheaper than out-weighing
-     them. Values are the kicker's, 7.5px/.2em, in the rune's hue rather than
-     gold so it reads as part of the card it is added to. */
-  .eq8feat .eq8copy .eq8eq{font-size:7.5px;font-weight:900;letter-spacing:.2em;
-    color:var(--feature-hue);margin-top:2px}
+
+  /* ===== WHAT SHIPS AND WHAT IS ASKED FOR, TOLD APART IN INK =====
+     EndFeature is now { className, hue, icon, kicker, title, tap }
+     (endscreen.ts:26) and paintFeature() appends exactly icon + copy + chev
+     into `<button type="button" id="endFeature">` (markup.ts:330,
+     endscreen.ts:224-252). d42b869 DELETED the blurb and the CTA from this row
+     two commits ago, deliberately — "a printed explanation would be a second
+     copy of that owner's text, and a button beside a tappable card is two
+     targets for one destination". EQ8 wants both back. That is a disagreement
+     with a decision, not an extension of a spec, and a study that draws its
+     wish in the product's own skin is exactly how card 27 shipped five copies
+     of a rune that had already been retired. So every mark this card ASKS FOR
+     wears the dashed frame and a tag; everything drawn plain is drawn as it
+     deals today. ===== */
+  .eq8pro{outline:1px dashed color-mix(in srgb,var(--feature-hue) 55%,transparent);
+    outline-offset:3px}
+  .eq8tag{display:inline-block;font-size:7px;font-weight:900;letter-spacing:.16em;
+    text-transform:uppercase;padding:2px 5px;border-radius:999px;line-height:1.4;
+    margin-inline-end:5px;white-space:nowrap}
+  .eq8tag.pro{color:var(--g-silver);border:1px dashed color-mix(in srgb,var(--g-silver) 50%,transparent)}
+  .eq8tag.ship{color:var(--dim);border:1px solid rgba(255,255,255,.14)}
+  .eq8tagline{width:100%;max-width:var(--w-col);display:flex;flex-wrap:wrap;gap:4px;
+    margin-top:-7px}
+  /* THE BODY LINE THE SPEC NO LONGER HAS. A <div>, so neither result.css:127
+     (small) nor :129 (b) can reach it — a third element type is cheaper than
+     out-weighing two rules, and it keeps the fiction visibly a fiction. --dim
+     rather than the hue, because the two hued lines are the two the app really
+     paints and this one should not pass for them. */
+  .eq8body{font-size:9.5px;letter-spacing:.05em;color:var(--dim);line-height:1.35}
+  /* THE PROPOSED CTA. Its old class here was `endfeature-action`, which no
+     longer exists anywhere in the stylesheet at all — d42b869 took it out with
+     the button it dressed, and the card kept wearing the corpse. A card-local
+     name says out loud that this control belongs to the study, not to the app.
+     min-width:0 is the one borrowed reset: .btn ships min-width:210px
+     (overlays.css:42) and only `#ovEnd .btn` clears it (paged-view.css:249),
+     an ancestor a card body cannot be inside. Without it the auto third
+     column took 210px, the copy's minmax(0,1fr) collapsed to 58px and the
+     rune's name sat alone over a three-line wrap — measured, not guessed. */
+  .eq8action{white-space:nowrap;min-width:0}
 
   /* ===== THE ONE BEAT, already shipped: runeRewardRise .7s
      cubic-bezier(.2,1.15,.3,1) 1.15s both, from result.css:120. No new
@@ -105,18 +140,26 @@
   .eq8rise{animation:runeRewardRise .7s cubic-bezier(.2,1.15,.3,1) 1.15s both}
   #kbroot.reduce-motion .eq8rise{animation:none}
 
-  /* ===== THE OTHER THREE DEALS. A captioned column rather than a row: the
-     feature card is 352px wide and three of them side by side would be three
-     illegible slivers. The EQUIPPED-AT-CROSSING deal is not repeated here —
-     it is the one dealt above, full size, with the beat on it. ===== */
+  /* ===== THE OTHER DEALS, IN TWO ZONES. A captioned column rather than a
+     row: the feature card is a full --w-col wide and four of them side by side
+     would be four illegible slivers. The first zone is the same news the hero
+     carries, plus the first-rune deal, drawn INSIDE the shipped spec — two
+     lines and a chevron, no body, no button. The second zone is what EQ8 asks
+     for beyond it. Putting them in one column at one size is the comparison;
+     describing the difference in prose would let the reader take the drawing
+     for the product, which is the failure this whole revision is repairing.
+     Captions are left-aligned and un-uppercased because each now carries a
+     tag pill and a clause, not a two-word label. ===== */
   .eq8col{display:flex;flex-direction:column;gap:13px;width:100%;align-items:center}
-  .eq8var{display:flex;flex-direction:column;gap:5px;width:100%;align-items:center}
-  .eq8cap{font-size:8px;letter-spacing:.14em;color:var(--dim);text-transform:uppercase;
-    text-align:center;line-height:1.5}
+  .eq8var{display:flex;flex-direction:column;gap:6px;width:100%;align-items:center}
+  .eq8cap{font-size:8.5px;letter-spacing:.06em;color:var(--dim);line-height:1.6;
+    width:100%;max-width:var(--w-col);text-align:left}
   /* NEUTRAL HUE for the two deals that name no rune. #8ea3c0 is the offline
      picker's own unchosen colour (picker.css:8 .modepick button --mh), not a
      grey picked by eye — an empty tile and a not-yet tile are the same
-     "nothing chosen" the picker already draws. */
+     "nothing chosen" the picker already draws. It is also what the dashed
+     proposal outline mixes from on those two, so the frame never invents a
+     colour of its own. */
   .eq8none{--feature-hue:#8ea3c0}
   /* NOTHING OWNED gets a veiled rune rather than a mode mark. The mode-icon
      token only accepts a lowercase mode id from core/modes.ts and RUNE RITUAL
@@ -252,74 +295,109 @@
       </button>
     </div>
 
-    <!-- THE THRESHOLD CARD. Nothing here is new furniture: .endfeature is the
-         shared typed result slot, .rune-reward is the skin already written for
-         it, and --feature-hue is the same inline custom property
-         paintFeature() sets (ui/endscreen.ts:229). Icon tile / copy / action,
-         in that order, because that is the grid the shipped rule declares. -->
-    <div class="endfeature rune-reward eq8feat eq8rise" style="--feature-hue:{{shue:ward}}">
+    <!-- THE THRESHOLD CARD, AS EQ8 ASKS FOR IT — and the dashes are the
+         honest part. The SLOT and the SKIN are the app's: .endfeature is the
+         shared typed result slot, .rune-reward its written skin, --feature-hue
+         the same inline custom property paintFeature() sets
+         (endscreen.ts:233). Three of the four things inside are too — the icon
+         tile, the kicker and the name. The BODY LINE and the CHANGE button are
+         not: EndFeature carries neither since d42b869, which removed exactly
+         those two on the argument that a printed blurb duplicates the sheet it
+         opens and a button beside a tappable card is two targets for one
+         destination. Drawn straight, this row would read as a screenshot of
+         something that exists. It is a request, so it is dashed and tagged.
+         A second, quieter tell: the shipped slot IS the <button>
+         (markup.ts:330), and a button cannot contain a button — so CHANGE
+         cannot be added to today's element at all, only to a rebuilt one. -->
+    <div class="endfeature rune-reward eq8feat eq8pro eq8rise" style="--feature-hue:{{shue:ward}}">
       <i class="endfeature-icon" aria-hidden="true">{{sico:ward:23}}</i>
       <div class="endfeature-copy eq8copy">
         <small class="eq8kick">SILVER</small>
         <b>WARD</b>
-        <span>Now comes with you in ranked</span>
+        <div class="eq8body">Now comes with you in ranked</div>
       </div>
-      <button type="button" class="btn small endfeature-action">Change</button>
+      <button type="button" class="btn small eq8action">Change</button>
     </div>
+    <div class="eq8tagline"><span class="eq8tag pro">Proposed · the body line and CHANGE</span><span class="eq8tag ship">Ships today · slot, skin, icon, kicker, name</span></div>
 
     <button class="btn primary eq8act">Next duel</button>
     <button class="btn small eq8act">Home</button>
   </div>
 
-  <div class="splbl">one card, one action — the rune was already yours; SILVER is what changed</div>
+  <div class="splbl">the crossing announced where the app already announces rune news — at the price of a line and a target the slot gave up two commits ago</div>
 
-  <div class="cap2" style="margin-top:6px">The same slot, the other three ways it deals</div>
+  <div class="cap2" style="margin-top:6px">The same slot, drawn as it deals today</div>
   <div class="eq8col eq8freeze">
     <div class="eq8var">
-      <div class="endfeature rune-reward eq8feat eq8none">
+      <!-- THE CROSSING, INSIDE THE SPEC IT WOULD OTHERWISE ARGUE WITH: kicker,
+           name, chevron, and the whole card is the door — the exact anatomy
+           paintFeature() builds today. The sentence the hero prints is not
+           dropped, it MOVES: openEntry('spells','ward') already accepts a
+           presentation() that supplies .mcmeta (library.ts:188-205), which is
+           the same seam EQ4's revision uses for its seat and account-runes.ts
+           already uses for a locked rune. This variant needs no migration of
+           the spec at all. -->
+      <div class="endfeature rune-reward eq8feat" style="--feature-hue:{{shue:ward}}">
+        <i class="endfeature-icon" aria-hidden="true">{{sico:ward:23}}</i>
+        <div class="endfeature-copy eq8copy">
+          <small class="eq8kick">SILVER</small>
+          <b>WARD</b>
+        </div>
+        <span class="chev" aria-hidden="true">›</span>
+      </div>
+      <div class="eq8cap"><span class="eq8tag ship">Ships today</span>The crossing as a door. Two lines and a chevron; the tap opens the rune's own entry sheet, and "comes with you in every ranked match" is that sheet's meta line — the seam EQ4 uses for its seat.</div>
+    </div>
+    <div class="eq8var">
+      <!-- THE FIRST RUNE IS NOT A THRESHOLD CARD, and after d42b869 it needs
+           nothing new to say so. The auto-equip rides in the KICKER STRING —
+           t('online','result.newRune') is one locale key, six files, no
+           element and no spec change. Nothing overlays the row and nothing
+           extra animates on it, so the pixel-gated visiblyPresented()
+           acknowledgement (rune-reward-presentation.ts:96-152) still fires
+           exactly as today, on the same tap that opens the entry. -->
+      <div class="endfeature rune-reward eq8feat" style="--feature-hue:{{shue:fate}}">
+        <i class="endfeature-icon" aria-hidden="true">{{sico:fate:23}}</i>
+        <div class="endfeature-copy eq8copy">
+          <small>NEW RUNE · EQUIPPED</small>
+          <b>FATE</b>
+        </div>
+        <span class="chev" aria-hidden="true">›</span>
+      </div>
+      <div class="eq8cap"><span class="eq8tag ship">Ships today</span>The first rune ever won, dealt exactly as it is dealt now. "It equipped itself" is a longer kicker string, not new furniture — the cheapest true sentence on this card.</div>
+    </div>
+  </div>
+
+  <div class="cap2" style="margin-top:6px">The two deals that cannot fit in it</div>
+  <div class="eq8col eq8freeze">
+    <div class="eq8var">
+      <div class="endfeature rune-reward eq8feat eq8none eq8pro">
         <i class="endfeature-icon" aria-hidden="true"></i>
         <div class="endfeature-copy eq8copy">
           <small class="eq8kick">SILVER</small>
-          <b>CHOOSE YOUR RUNE</b>
-          <span>None comes with you yet</span>
+          <b>CHOOSE A RUNE</b>
+          <div class="eq8body">None comes with you yet</div>
         </div>
-        <button type="button" class="btn small endfeature-action">Choose</button>
+        <button type="button" class="btn small eq8action">Choose</button>
       </div>
-      <div class="eq8cap">Runes owned, none equipped — the empty tile is the state</div>
+      <div class="eq8cap"><span class="eq8tag pro">Proposed</span>Runes owned, none equipped — the empty tile is the state. A chevron alone could carry this one; the button is what makes it a prompt rather than a notice.</div>
     </div>
     <div class="eq8var">
       <!-- NO ACTION AT ALL. A SILVER player has had Rune Ritual access since
            IVORY, so a button that only says "go and win one" is a button that
-           cannot be pressed into anything. The third column of the grid simply
-           collapses; auto minmax(0,1fr) auto needs no variant rule. -->
-      <div class="endfeature rune-reward eq8feat eq8none">
+           cannot be pressed into anything. The third grid column simply
+           collapses; auto minmax(0,1fr) auto needs no variant rule. This is
+           the one deal with nowhere to send a tap either, which is why it
+           carries the body line rather than a door: a title reading NO RUNE
+           YET with a chevron would promise a screen that does not exist. -->
+      <div class="endfeature rune-reward eq8feat eq8none eq8pro">
         <i class="endfeature-icon eq8veil" aria-hidden="true">{{sico:pilfer:23}}</i>
         <div class="endfeature-copy eq8copy">
           <small class="eq8kick">SILVER</small>
           <b>NO RUNE YET</b>
-          <span>Win one in RUNE RITUAL and it comes with you</span>
+          <div class="eq8body">Win one in RUNE RITUAL and it comes with you</div>
         </div>
       </div>
-      <div class="eq8cap">Nothing owned — a sentence, not an offer</div>
-    </div>
-    <div class="eq8var">
-      <!-- THE FIRST RUNE IS NOT A THRESHOLD CARD. The shipped NEW RUNE feature
-           keeps its gold kicker, its icon, its name, its blurb and TRY IT, and
-           gains ONE line. Told inside the card that is already telling you —
-           nothing overlays it and nothing new animates on top of it, so the
-           pixel-gated visiblyPresented() acknowledgement
-           (rune-reward-presentation.ts:79-152) still fires exactly as today. -->
-      <div class="endfeature rune-reward eq8feat" style="--feature-hue:{{shue:fate}}">
-        <i class="endfeature-icon" aria-hidden="true">{{sico:fate:23}}</i>
-        <div class="endfeature-copy eq8copy">
-          <small>NEW RUNE</small>
-          <b>FATE</b>
-          <span>Throw your die back and draw another.</span>
-          <div class="eq8eq">Equipped.</div>
-        </div>
-        <button type="button" class="btn small endfeature-action">Try it</button>
-      </div>
-      <div class="eq8cap">The first rune ever won — one added line, no new card</div>
+      <div class="eq8cap"><span class="eq8tag pro">Proposed</span>Nothing owned — a sentence, not an offer. It has no destination to be a door to, so it is the deal that needs the body line most and can justify it least.</div>
     </div>
   </div>
 
@@ -364,8 +442,8 @@
   </div>
 
 </div></div>
-<div class="note"><b>What it says:</b> <b>SILVER is a moment, not a number.</b> The match that carries you over 1,260 deals one more card — the group as kicker, your rune in its own hue, and the line naming what changed. One action, <code>CHANGE</code>, opening the one equip control the app has. Before the crossing the profile says chosen-and-waiting through the frosted bar offline setup already uses for <i>your choice does not apply here</i>; after it nothing needs saying, because the rune is in play.<br>
-<b>Why it survives:</b> it announces rune news where the app already announces rune news. <code>#endFeature</code> is a typed slot with a shipped skin, grid and rise; this is one more caller, not one more screen. It is also the only card here where the threshold <em>happens to you</em> rather than being a dimmed icon you are expected to interrogate — and it keeps exactly one equip control, so the collection grid never grows the affordance the comment above <code>#accRunes</code> argues against.<br>
-<b>Cost, as arithmetic:</b> <code>#endFeature</code> is ONE slot and NEW RUNE already owns it. The collision is on this very screen — at 1,170 the player is IVORY, which is where Rune Ritual is dealt, so the same +90 that lands him on SILVER could also be the win that grants a rune he did not own. One card must lose the slot and be re-presented later, so the threshold needs its own durable <code>seen_at</code> row beside <code>player_runes</code>: a migration, not a stylesheet. And the larger cost — a promotion fires once. Equip a week after crossing and this card never deals at all, which is why the quiet profile reading is drawn here full size: it carries more of the design than the event it is named for.<br>
+<div class="note"><b>What it says:</b> <b>SILVER is a moment, not a number.</b> The match that carries you over 1,260 deals one more card — the group as kicker, your rune in its own hue, and the news that it now comes with you. Before the crossing the profile says chosen-and-waiting through the frosted bar offline setup already uses for <i>your choice does not apply here</i>; after it nothing needs saying, because the rune is in play. The card is drawn twice here on purpose: once as EQ8 asks for it, dashed, and once inside the spec the result screen actually has.<br>
+<b>Why it survives:</b> it announces rune news where the app already announces rune news. <code>#endFeature</code> is a typed slot with a shipped skin, grid and rise, so this is one more caller and not one more screen. And it got cheaper this week. <code>d42b869</code> made the reward card a <em>door</em>: its tap is now <code>openEntry('spells', id)</code> — the same sheet the in-game badge opens, the same sheet the profile collection opens, the same sheet EQ4's ring seat opens. One sheet, four ways in, which is the strongest evidence on this board that "the mark is a door" is the app's existing grammar rather than a new idea. The threshold news fits that shape without asking for anything: kicker <code>SILVER</code>, name <code>WARD</code>, chevron, and the "comes with you into every ranked match" line supplied as the sheet's <code>.mcmeta</code> through the <code>presentation()</code> override <code>account-runes.ts</code> already uses for a locked rune. That variant is drawn above, tagged <em>ships today</em>, and it is the one this study would actually ship.<br>
+<b>Cost, and it went up:</b> the hero card is no longer a small extension of <code>EndFeature</code> — it is a disagreement with it. Two commits ago <code>d42b869</code> deleted the blurb and the CTA from this exact row, on the reasoning that a printed explanation is a second copy of the sheet's own text and a button beside a tappable card is two targets for one destination. The interface is now <code>{ className, hue, icon, kicker, title, tap }</code> (<code>endscreen.ts:26</code>) with no body and no action, and <code>#endFeature</code> <em>is</em> the <code>&lt;button type="button"&gt;</code> (<code>markup.ts:330</code>), which a second button cannot legally sit inside. So <code>Change</code> and its line cost a reopened decision, a re-typed spec and a rebuilt element, not a stylesheet — and the same holds for <code>CHOOSE A RUNE</code> and <code>NO RUNE YET</code>, which is why all three are drawn dashed. The slot arithmetic is unchanged and still bites: at 1,170 the player is IVORY, which is where Rune Ritual is dealt, so the same +90 that lands him on SILVER can also be the win that grants a rune he did not own. One card must lose the single slot and be re-presented later, so the threshold needs its own durable <code>seen_at</code> row beside <code>player_runes</code>: a migration, not a stylesheet. And the largest cost is still that a promotion fires once — equip a week after crossing and this card never deals at all, which is why the quiet profile reading is drawn here full size and carries more of the design than the event it is named for.<br>
 <b>The state easiest to get wrong:</b> Rune Ritual. The threshold card never deals after a Ritual result — that result already owns the slot — and the profile ring does not move, because the server's three-rune loan was never an equip. <code>docs/SPELLS.md</code> is explicit that an equipped rune is ignored there and never overwritten, and a ring that flickered for one match would be the first thing to break that promise. Same answer for a demotion: the ring stays, the bar comes back.<br>
 <b>One reader, two moments:</b> the result screen is FrostLynx303 arriving — 1,170 + 90 = 1,260, <code>groupFill</code> exactly 0, which is why his own plate ring is empty. The profile still is the same account later, at the board's 1,412 / SILVER / #12 / peak 1,455.</div>
