@@ -7,7 +7,10 @@
 //     a bare scoreline that could not tell them which defeat this was. Their
 //     own plate now carries FORFEITED; the winner's screen is unchanged.
 //   · The away warning is the last turn auto play will cover. It wears the
-//     --orange heat .timer.warn already uses for a clock running out, and it
+//     player's own --p1 (user call, once the card went full-screen): it is the
+//     player's own moment, and --p1 is what means "you" on the plate, the
+//     scoreline and the active row. --orange stays with the clock that is
+//     actually running out underneath. It used to borrow the heat
 //     must be a warning rather than a gate: it may not touch input state, and a
 //     tap dismisses it without placing anything.
 //
@@ -83,7 +86,7 @@ async function awayWarningProbe(page) {
     /* Resolve --orange through the same element rather than parsing the token
        text, so this compares the colour actually painted. */
     const swatch = document.createElement('span');
-    swatch.style.color = 'var(--orange)';
+    swatch.style.color = 'var(--p1)';
     title.appendChild(swatch);
     const expected = getComputedStyle(swatch).color;
     swatch.remove();
@@ -137,7 +140,7 @@ export async function runAwayForfeitScenarios({ visit, out, check }) {
   check(seen?.title === COPY.play.awayWarnTitle && seen?.body === COPY.play.awayWarnBody,
     'the away warning did not render its localized copy', seen);
   check(!!seen && seen.titleColor === seen.expectedColor,
-    'the away warning is not wearing the --orange warning heat', seen);
+    'the away warning is not wearing the player\u2019s own colour', seen);
   check(!!seen && seen.ownsHit && seen.width > 0 && seen.height > 0,
     'the away warning is not on top of the board where a tap can reach it', seen);
   check(!!seen && seen.busyWhileShown === seen.busyBefore && seen.clockPresent,

@@ -8,7 +8,7 @@ import { startTimer, stopTimer, showClock } from '../../flow/timer.ts';
 import { clearSpells, renderSpells, resetSpells, resolveTimedOutSpellAim,
   setSpellTransport } from '../../flow/spells.ts';
 import { setLeaveInterceptor } from '../../flow/leave.ts';
-import { $, hide, show } from '../../ui/dom.ts';
+import { $, hide } from '../../ui/dom.ts';
 import { showBag, renderBag, BAG_SIZE } from '../../ui/bag.ts';
 import { buildBoards, renderAll } from '../../ui/game/board.ts';
 import { clearHints, showHints } from '../../ui/game/hints.ts';
@@ -25,7 +25,7 @@ import {
 } from '../api/match-api.ts';
 import { createInitialSyncBoundary, type InitialSyncBoundary } from './initial-sync.ts';
 import { newerMatchProjection } from './match-sync.ts';
-import { animateOnlineMove, cancelOnlineReveal, playBotReply, revealOnlineDie } from './play-motion.ts';
+import { animateOnlineMove, cancelOnlineReveal, playBotReply, revealOnlineDie, raiseAwayWarning } from './play-motion.ts';
 import { finishOnlineMatch } from './play-finish.ts';
 import { rankedBadge, reconnectingCopy, showAwayAutoPlayCountdown, turnCopy } from './play-copy.ts';
 import { createOnlineState } from './play-state.ts';
@@ -163,6 +163,7 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
 /* the bag: every move consumed one die, and the die on the stage is drawn too */
 function renderPool(): void { if (O?.limited) renderBag(BAG_SIZE - O.applied - (O.pendingDie ? 1 : 0)); }
 
+
 function refreshTurnUI(): void {
   if (!O || O.done) return;
   // BELT: re-lay both boards from state at every turn boundary. Animations
@@ -182,10 +183,8 @@ function refreshTurnUI(): void {
   setActivePlate(O.you);
   clearHints();
   if (mine) showHints();
-  /* One automatic placement left before the match is lost. A warning only —
-     the clock below keeps running, and its next expiry is what ends this. */
-  if (mine && O.autoStreak >= ONLINE_AUTO_FORFEIT_STREAK - 1) show('#ovAway');
-  else hide('#ovAway');
+  // One automatic placement left before the match is lost — a warning only.
+  raiseAwayWarning(O, mine && O.autoStreak >= ONLINE_AUTO_FORFEIT_STREAK - 1);
   // The 10s turn clock, both sides. Mine auto-places at zero (an honest
   // client never stalls); theirs just downgrades the status to "waiting" —
   // the 30s watchdog/forfeit handles an opponent who is truly gone.

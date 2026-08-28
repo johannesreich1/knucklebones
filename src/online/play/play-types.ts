@@ -35,6 +35,8 @@ export interface OnlineState {
   resigning: boolean;
   /** Automatic placements already spent by this player, from the match row. */
   autoStreak: number;
+  /** The away card has been raised for this streak; the tap retires it. */
+  awayWarned?: boolean;
   finalizing: boolean;
   done: boolean;
   limited: boolean;

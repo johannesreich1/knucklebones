@@ -26,6 +26,9 @@ export interface RollVisualSpec {
 /* One cancellable roll primitive. Cancellation is deliberately a predicate:
    local play owns a generation, ranked owns a generation + reveal sequence,
    and the animator does not need to know either flow's state vocabulary. */
+/* Which stage roll currently owns the `rolling` class. */
+let stageRollToken = 0;
+
 export function animateStageRoll(spec: RollVisualSpec): Promise<number | null> {
   const stage = $('#dieStage');
   const tickMs = spec.tickMs ?? 60;
@@ -36,6 +39,15 @@ export function animateStageRoll(spec: RollVisualSpec): Promise<number | null> {
   let timer: ReturnType<typeof setInterval> | null = null;
   let settled = false;
 
+  /* WHO OWNS THE SPIN. A superseded roll still runs one more tick before its
+     isCurrent predicate retires it, and settle() used to strip `rolling` off
+     the stage unconditionally — including when a LIVE successor had already
+     claimed it. Entering a ranked match reveals the first die twice (the first
+     sync's tail and onReady both refresh the turn; both are load-bearing), so
+     the dead roll cleared the class the second one was still using: the faces
+     kept changing every 60ms and nothing span (user report). Only the current
+     owner may take the class away. */
+  const token = ++stageRollToken;
   stage.classList.toggle('rolling', scramble);
   if (spec.playRollSound ?? true) Sfx.roll();
 
@@ -44,7 +56,7 @@ export function animateStageRoll(spec: RollVisualSpec): Promise<number | null> {
       if (settled) return;
       settled = true;
       if (timer !== null) clearInterval(timer);
-      stage.classList.remove('rolling');
+      if (stageRollToken === token) stage.classList.remove('rolling');
       if (die !== null) {
         setStageDie(die, spec.who);
         stage.classList.add('pop');
@@ -72,6 +84,7 @@ export function animateStageRoll(spec: RollVisualSpec): Promise<number | null> {
 /* Superseding a cosmetic ranked reveal removes its spin immediately; its
    isCurrent predicate clears the timer on the next scheduled tick. */
 export function clearStageRoll(): void {
+  stageRollToken++;   // or a roll still in flight takes the class back on settle
   $('#dieStage').classList.remove('rolling');
 }
 

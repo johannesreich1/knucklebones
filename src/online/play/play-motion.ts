@@ -4,7 +4,7 @@ import { ONLINE_TURN_SECS } from '../../config.ts';
 import type { CharmSt, Player } from '../../core/rules.ts';
 import { startTimer, stopTimer } from '../../flow/timer.ts';
 import { S } from '../../state.ts';
-import { $ } from '../../ui/dom.ts';
+import { $, show } from '../../ui/dom.ts';
 import { setStageDie } from '../../ui/die.ts';
 import { animateGameMove } from '../../ui/game/move-view.ts';
 import { animateStageRoll, clearStageRoll } from '../../ui/game/motion.ts';
@@ -82,4 +82,16 @@ export async function playBotReply(
   if (!options.isCurrent()) return;
   stopTimer();
   await animateOnlineMove(opponent, bot.col, bot.die, options.isCurrent);
+}
+
+/* THE AWAY WARNING, RAISED ONCE. The turn painter runs on every state change,
+   so showing and hiding it there took the card away a moment after it appeared
+   and the player only saw it flash past mid-game (user report). Its own copy
+   promises "tap anywhere to keep playing", so the tap retires it
+   (boot/menu-bindings.ts); the latch on the match state stops the next paint
+   putting back one the player has already dismissed, and being per-match it
+   needs no teardown. */
+export function raiseAwayWarning(state: { awayWarned?: boolean }, away: boolean): void {
+  if (away && !state.awayWarned) show('#ovAway');
+  state.awayWarned = away;
 }

@@ -50,8 +50,7 @@ export interface VirtualListSpec<T> {
   page?: number;
   /** Viewports of rows kept mounted on each side of the view. */
   keep?: number;
-  /** Where to open. Applied BEFORE the first paint, against measured heights —
-      see the priming pass in mountVirtualList. */
+  /** Where to open, applied before the first paint (see the priming pass). */
   focus?: { index: number; align: VirtualAlign } | null;
   /** True while this list is the view the reader is actually looking at. */
   alive?(): boolean;
@@ -59,16 +58,12 @@ export interface VirtualListSpec<T> {
 
 export interface VirtualList {
   readonly ready: Promise<void>;
-  reading(): { index: number; total: number };
   /** Re-render every mounted slot in place — locale, or new derived data. */
   repaint(): void;
   /** The box changed under us: re-measure and re-plan. */
   refresh(): void;
   setTotal(total: number | null): void;
   scrollToIndex(index: number, align?: VirtualAlign): void;
-  /** The same by identity, for when the position is not known — inside a tie
-      block `rank - 1` is not my row, but my key always is. */
-  scrollToKey(key: string, align?: VirtualAlign): void;
   /** Remember the reading place across a panel swap that collapses the box. */
   save(): VirtualPlace | null;
   restore(place: VirtualPlace | null): void;
@@ -292,18 +287,12 @@ export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
     return true;
   }
 
-  /* OPEN ON THE RIGHT ROW, IN ONE PAINT.
-     A jump computed before anything is measured uses the seed estimate for
-     every row above it, and that error compounds: on a 151-row board a 49px
-     guess against ~45px rows put the opening 704px out, so the reader saw the
-     panel appear empty, slide, and only then fill with rows (user report).
-     Measuring needs layout, and layout needs the panel visible — so the caller
-     reveals it first and this runs the whole mount/measure/re-aim cycle
-     SYNCHRONOUSLY, before the browser has a chance to paint the intermediate
-     state. Each pass re-aims with a ruler that knows more than the last; three
-     is enough to converge because the second already has real heights for the
-     rows around the target, and the estimate for everything else is then a
-     measured average rather than a guess. */
+  /* OPEN ON THE RIGHT ROW, IN ONE PAINT. Aimed before anything is measured, a
+     jump carries the seed estimate for every row above it — 704px out on a
+     151-row board, so the reader watched the panel appear empty and slide
+     (user report). Measuring needs layout and layout needs the panel visible,
+     so the caller reveals first and this mounts, measures and re-aims
+     SYNCHRONOUSLY, before the browser can paint the intermediate state. */
   if (spec.focus) {
     for (let pass = 0; pass < 3; pass++) {
       wanted = { index: spec.focus.index, align: spec.focus.align };
@@ -314,10 +303,6 @@ export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
 
   return {
     ready,
-    reading: () => ({
-      index: ruler.at(scroller.scrollTop - origin() - drift()),
-      total: cache.count(),
-    }),
     repaint(): void {
       mountedSlots.repaint();
       /* Translated copy changes heights, so nothing measured survives it. */
@@ -332,10 +317,6 @@ export function mountVirtualList<T>(spec: VirtualListSpec<T>): VirtualList {
     },
     setTotal(total: number | null): void { cache.setTotal(total); schedule(); },
     scrollToIndex(index, align = 'start') { target(index, align); },
-    scrollToKey(key, align = 'start') {
-      const position = cache.positionOf(key);
-      if (position !== undefined) target(position, align);
-    },
     save: () => mountedSlots.topmost(scroller.getBoundingClientRect().top),
     restore(place: VirtualPlace | null): void {
       if (!place) return;

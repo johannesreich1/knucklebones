@@ -147,7 +147,17 @@
    (delay 1.25s + 55% of .5s ≈ 1.53s) — and a thin shock ring blows out of the
    impact. The jolt rides WITH the entrance in one animation list: a second
    rule would replace it, and the foe's card would blink into place. */
-:where(#kbroot) .endplates .pplate.stamped{animation:plateIn .38s cubic-bezier(.2,.9,.3,1) .8s backwards,
+/* THE STAMPED PLATE RIDES ABOVE THE ONE BELOW IT. The stamp deliberately hangs
+   off its card's bottom edge, and its glow (::after, inset:-6px) and -8° tilt
+   reach further still — into the 9px gap and across the next plate's top edge.
+   Both plates are position:relative with z-index:auto, so the LATER one wins
+   the paint and clips the stamp from behind. That never showed while only the
+   beaten foe was stamped: theirs is the last plate, with nothing after it to
+   cover it. A forfeit is the case that puts a stamp on YOUR row — the first
+   one — and the opponent's row then paints straight over its lower edge
+   (user report). */
+:where(#kbroot) .endplates .pplate.stamped{z-index:1;
+  animation:plateIn .38s cubic-bezier(.2,.9,.3,1) .8s backwards,
   stampJolt .4s linear 1.53s}
 @keyframes stampJolt{0%{transform:none}20%{transform:translateY(4px) rotate(.65deg)}
   45%{transform:translateY(-2.4px) rotate(-.2deg)}70%{transform:translateY(1.2px)}100%{transform:none}}
