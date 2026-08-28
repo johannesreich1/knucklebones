@@ -99,6 +99,11 @@ export function createVirtualCache<T>(spec: VirtualCacheSpec<T>): VirtualCache<T
     if (touched.length && !seeding) spec.changed(touched);
   };
 
+  /* `from` is the first position the page will FILL, which is not always the
+     position that asked for it: a `before` cursor anchored at p+1 delivers
+     [p+1-PAGE, p], ending where the request began. Claiming the wrong span left
+     every row the page was already bringing unclaimed, so the next frame asked
+     for them again — measured at 11 requests for a board that needs 6. */
   const fetch = (kind: string, from: number, run: () => Promise<VirtualPage<T>>): void => {
     const id = `${kind}:${from}`;
     /* Identical requests share one promise, and the range they will fill is
@@ -106,13 +111,13 @@ export function createVirtualCache<T>(spec: VirtualCacheSpec<T>): VirtualCache<T
        Because writes are idempotent by position, an overlap that slips through
        costs a request and can never corrupt. */
     if (inFlight.has(id)) return;
-    for (let i = from; i < from + PAGE; i++) claimed.add(i);
+    for (let i = Math.max(0, from); i < from + PAGE; i++) claimed.add(i);
     const job = run()
       .then((result) => { if (!dead) remember(result); })
       .catch(() => { /* the slot stays a tombstone; a later frame retries */ })
       .finally(() => {
         inFlight.delete(id);
-        for (let i = from; i < from + PAGE; i++) claimed.delete(i);
+        for (let i = Math.max(0, from); i < from + PAGE; i++) claimed.delete(i);
         if (!dead) spec.changed([]);
       });
     inFlight.set(id, job);
@@ -134,7 +139,7 @@ export function createVirtualCache<T>(spec: VirtualCacheSpec<T>): VirtualCache<T
       }
       const below = rows.get(position + 1);
       if (below !== undefined && source.before) {
-        fetch('before', position, () =>
+        fetch('before', position + 1 - PAGE, () =>
           source.before!({ item: below, position: position + 1 }, PAGE));
         return;
       }

@@ -111,6 +111,39 @@ export async function runLadderScrollScenarios(suite) {
           moved: +window.__ref.getBoundingClientRect().top.toFixed(2) - was.top,
         }), before);
         const shortEnd = scrolled;
+        /* FRAME COST, REPORTED AND NOT ASSERTED. Chromium only (CPU throttling
+           is a CDP feature), and deliberately thresholdless: this gate runs one
+           worker on a two-core runner that practice-sheet-stability already
+           documents as sometimes stopping painting altogether, so a wall-clock
+           budget here would go red on contention alone. The number is recorded
+           so a regression is visible in `out` without being able to flake the
+           suite. */
+        let frames = null;
+        const cdp = page.context().browser()?.browserType().name() === 'chromium'
+          ? await page.context().newCDPSession(page).catch(() => null) : null;
+        if (cdp) {
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
+          await page.evaluate(() => {
+            window.__f = { spliced: [], last: performance.now(), dirty: false };
+            new MutationObserver(() => { window.__f.dirty = true; })
+              .observe(document.querySelector('#onLadderList'), { childList: true });
+            const tick = () => {
+              const now = performance.now();
+              const dt = now - window.__f.last;
+              window.__f.last = now;
+              if (window.__f.dirty) { window.__f.spliced.push(+dt.toFixed(1)); window.__f.dirty = false; }
+              requestAnimationFrame(tick);
+            };
+            requestAnimationFrame(tick);
+          });
+          for (let i = 0; i < 6; i++) await wheel(page, -600);
+          await page.waitForTimeout(300);
+          frames = await page.evaluate(() => {
+            const v = window.__f.spliced.slice().sort((a, b) => a - b);
+            return v.length ? { n: v.length, median: v[v.length >> 1], max: v[v.length - 1] } : null;
+          });
+          await cdp.send('Emulation.setCPUThrottlingRate', { rate: 1 });
+        }
         const grewAbove = requests > 0;
 
         /* …and now the long haul, for the structural claims: a bounded window,
@@ -127,7 +160,7 @@ export async function runLadderScrollScenarios(suite) {
         const backRequests = requests - upRequests;
         const meBack = await page.evaluate(() =>
           !!document.querySelector('#onLadderList .lrow.me'));
-        return { anchor, before, start, after, steps, shortEnd, grewAbove, top, home, scrolled,
+        return { anchor, before, start, after, steps, shortEnd, grewAbove, frames, top, home, scrolled,
                  upRequests, backRequests, meBack };
       },
     });
