@@ -3,6 +3,7 @@ import os from 'node:os';
 import { createCliRunner } from '../tools/database/cli-runner.mjs';
 import {
   BASE_PRODUCTION_TEST_DATA_AUDIT_SQL,
+  PRODUCTION_BOT_COUNT,
   PRODUCTION_HUMAN_WIPE_OPT_IN,
   PRODUCTION_TEST_DATA_CLI_VERSION,
   PRODUCTION_TEST_DATA_OPT_INS,
@@ -90,10 +91,11 @@ check('phases and phase-specific literal opt-ins are fail-closed', () => {
   guarded(() => assertProductionTestDataOptIn(
     'wipe', true, PRODUCTION_TEST_DATA_OPT_INS['seed-bots'].value,
   ), /WIPE_ALL_ACCOUNTS/);
-  guarded(() => assertProductionTestDataOptIn('seed-bots', true, '150'), /SEED_EXACTLY_150_BOTS/);
+  guarded(() => assertProductionTestDataOptIn('seed-bots', true, '150'),
+    new RegExp(`SEED_EXACTLY_${PRODUCTION_BOT_COUNT}_BOTS`));
   guarded(() => assertProductionTestDataOptIn(
     'refresh-bot-profiles', true, 'refresh',
-  ), /REFRESH_EXACT_150_UNPLAYED_BOTS/);
+  ), new RegExp(`REFRESH_EXACT_${PRODUCTION_BOT_COUNT}_UNPLAYED_BOTS`));
 });
 
 check('human-account ceiling admits only the second distinct literal opt-in', () => {
@@ -284,7 +286,7 @@ check('seed audit proves exact cardinality, no humans/orphans/data, unique point
   assertExactSeedAudit(guarded);
 });
 
-check('refresh audit accepts only the exact untouched or exact refreshed 150-bot states', () => {
+check('refresh audit accepts only the exact untouched or exact refreshed bot states', () => {
   assertRefreshAudit(guarded);
 });
 

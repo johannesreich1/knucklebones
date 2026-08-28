@@ -177,7 +177,7 @@ KB_ALLOW_PRODUCTION_HUMAN_ACCOUNT_WIPE=WIPE_REAL_HUMAN_ACCOUNTS \
 ```
 
 After the exact Rune Trial and streak-baseline migration audits pass, the seed
-phase requires the account/ranked graph to be empty and creates exactly 150
+phase requires the account/ranked graph to be empty and creates exactly 200
 bots with unique 0–4600 points. Their deterministic aggregate history is
 deliberately beatable: displayed win rates span about 41–54%, games span
 18–410, best streaks span 2–7, and exactly half have a modest prior peak above
@@ -186,17 +186,17 @@ later rating/record change, while a longer real winning run supersedes the
 private baseline.
 
 ```sh
-KB_ALLOW_PRODUCTION_BOT_SEED=SEED_EXACTLY_150_BOTS \
+KB_ALLOW_PRODUCTION_BOT_SEED=SEED_EXACTLY_200_BOTS \
   mise exec -- npm run db:production:test-data -- seed-bots --apply
 ```
 
-The update-only refresh phase exists for the exact original 150-bot seed. It
+The update-only refresh phase exists for the exact original bot seed (200 since 2026-08-28; the count is single-sourced from `PRODUCTION_BOT_COUNT`). It
 refuses any human, match, move, queue, rune, setting, session, token, or owned
 Storage data; matches the complete old or already-refreshed fixed plan; never
 deletes an account; and becomes permanently unavailable as soon as real play
 exists.
 
 ```sh
-KB_ALLOW_PRODUCTION_BOT_PROFILE_REFRESH=REFRESH_EXACT_150_UNPLAYED_BOTS \
+KB_ALLOW_PRODUCTION_BOT_PROFILE_REFRESH=REFRESH_EXACT_200_UNPLAYED_BOTS \
   mise exec -- npm run db:production:test-data -- refresh-bot-profiles --apply
 ```

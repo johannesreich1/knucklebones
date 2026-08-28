@@ -3,6 +3,8 @@ import {
   BASE_PRODUCTION_TEST_DATA_AUDIT_SQL,
   EMPTY_RUNE_TRIAL_DATA_AUDIT_SQL,
   LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL,
+  PRODUCTION_BOT_COUNT,
+  PRODUCTION_BOT_MAX_PEAK_GAP,
   PRODUCTION_BOT_SEED_PLAN,
   PRODUCTION_TEST_DATA_OPT_INS,
   REFRESH_PRODUCTION_BOT_PROFILES_AUDIT_SQL,
@@ -43,8 +45,8 @@ import {
 type GuardedAssertion = (run: () => unknown, pattern: RegExp) => void;
 
 export function assertRealisticBotSeedPlan() {
-  assert.equal(PRODUCTION_BOT_SEED_PLAN.length, 150);
-  assert.equal(new Set(PRODUCTION_BOT_SEED_PLAN.map(row => row.points)).size, 150);
+  assert.equal(PRODUCTION_BOT_SEED_PLAN.length, PRODUCTION_BOT_COUNT);
+  assert.equal(new Set(PRODUCTION_BOT_SEED_PLAN.map(row => row.points)).size, PRODUCTION_BOT_COUNT);
   assert.equal(PRODUCTION_BOT_SEED_PLAN[0].points, 0);
   assert.equal(PRODUCTION_BOT_SEED_PLAN.at(-1)?.points, 4600);
   assert.ok(PRODUCTION_BOT_SEED_PLAN.every((row, index) => row.ordinal === index + 1));
@@ -56,28 +58,60 @@ export function assertRealisticBotSeedPlan() {
       && row.peak >= row.points && row.peak - row.points <= 180
       && row.bestStreak >= 2 && row.bestStreak <= 7 && row.bestStreak <= row.wins;
   }));
-  assert.equal(Math.min(...PRODUCTION_BOT_SEED_PLAN.map(
+  /* The floor the plan GUARANTEES, not the minimum a particular population
+     happens to reach. This asserted exactly 18 while the population was 150;
+     at 200 the extra ordinals draw lower rolls and the formula's own
+     Math.max(16, ...) starts to bind, so 18 was describing the sample rather
+     than the rule. 16 is the rule. */
+  assert.ok(Math.min(...PRODUCTION_BOT_SEED_PLAN.map(
     row => row.wins + row.losses + row.draws,
-  )), 18);
-  assert.equal(Math.max(...PRODUCTION_BOT_SEED_PLAN.map(
+  )) >= 16);
+  /* Same reasoning as the floor above: the CEILING the formula allows, not the
+     figure one population reaches. games = 18 + round(points / 11.5) + pick(25)
+     - 12, so the richest bot (4600 points) can reach 406 + 24 = 430 and no
+     more. This read 410 at 150 bots and 419 at 200 — both are samples of the
+     same rule. */
+  assert.ok(Math.max(...PRODUCTION_BOT_SEED_PLAN.map(
     row => row.wins + row.losses + row.draws,
-  )), 410);
-  assert.equal(PRODUCTION_BOT_SEED_PLAN.reduce(
+  )) <= 430);
+  /* A total is population-sized by definition, so assert the SHAPE instead: an
+     average history in a band that stays a plausible ladder rather than either
+     a handful of games or a grind nobody would believe. */
+  const meanGames = PRODUCTION_BOT_SEED_PLAN.reduce(
     (sum, row) => sum + row.wins + row.losses + row.draws,
     0,
-  ), 32736);
-  assert.equal(PRODUCTION_BOT_SEED_PLAN.filter(row => row.peak === row.points).length, 75);
-  assert.equal(PRODUCTION_BOT_SEED_PLAN.filter(row => row.peak > row.points).length, 75);
-  assert.equal(Math.max(...PRODUCTION_BOT_SEED_PLAN.map(row => row.peak - row.points)), 170);
-  assert.equal(new Set(PRODUCTION_BOT_SEED_PLAN.map(row => row.wins)).size, 106);
-  assert.equal(new Set(PRODUCTION_BOT_SEED_PLAN.map(row => row.losses)).size, 105);
+  ) / PRODUCTION_BOT_SEED_PLAN.length;
+  assert.ok(meanGames > 150 && meanGames < 300, `mean games ${meanGames}`);
+  /* Exactly half the population sits at its peak and half is below it — the
+     plan alternates on ordinal parity, so this is the rule, expressed against
+     the count rather than re-typed as 75. */
+  assert.equal(PRODUCTION_BOT_SEED_PLAN.filter(row => row.peak === row.points).length,
+    PRODUCTION_BOT_COUNT / 2);
+  assert.equal(PRODUCTION_BOT_SEED_PLAN.filter(row => row.peak > row.points).length,
+    PRODUCTION_BOT_COUNT / 2);
+  /* The cap the plan enforces, not the largest gap this population happens to
+     draw (170 at 150 bots, 180 at 200). PRODUCTION_BOT_MAX_PEAK_GAP is the
+     contract, and the seed SQL asserts the same bound. */
+  assert.ok(Math.max(...PRODUCTION_BOT_SEED_PLAN.map(row => row.peak - row.points))
+    <= PRODUCTION_BOT_MAX_PEAK_GAP);
+  /* VARIETY is the point — histories must not repeat in blocks — so assert the
+     property rather than the tally (106 of 150, 130 of 200; both comfortably
+     over half the population). */
+  assert.ok(new Set(PRODUCTION_BOT_SEED_PLAN.map(row => row.wins)).size
+    > PRODUCTION_BOT_COUNT / 2);
+  assert.ok(new Set(PRODUCTION_BOT_SEED_PLAN.map(row => row.losses)).size
+    > PRODUCTION_BOT_COUNT / 2);
   assert.equal(new Set(PRODUCTION_BOT_SEED_PLAN.map(row => row.draws)).size, 11);
   assert.equal(new Set(PRODUCTION_BOT_SEED_PLAN.map(row => row.bestStreak)).size, 6);
   const rates = PRODUCTION_BOT_SEED_PLAN.map(
     row => row.wins / (row.wins + row.losses + row.draws),
   );
-  assert.equal(Math.min(...rates), 12 / 29);
-  assert.equal(Math.max(...rates), 208 / 387);
+  /* The BAND the plan targets — deliberately beatable, never a walkover — not
+     the extreme values one population lands on. buildProductionBotSeedPlan
+     clamps its target win rate to 0.42-0.55 before integer rounding, and the
+     seed SQL independently rejects any row outside 0.4-0.55. */
+  assert.ok(Math.min(...rates) >= 0.4);
+  assert.ok(Math.max(...rates) <= 0.55);
   for (const [min, max] of [[0, 300], [300, 720], [720, 1260], [1260, 2010],
     [2010, 3000], [3000, 4350], [4350, Number.POSITIVE_INFINITY]]) {
     assert.ok(PRODUCTION_BOT_SEED_PLAN.some(row => row.points >= min && row.points < max));
@@ -97,7 +131,8 @@ export function assertBotSeedSql() {
   assert.match(SEED_PRODUCTION_BOTS_SQL, /insert into private\.season_streak_baselines/);
   assert.match(SEED_PRODUCTION_BOTS_SQL, /20260826153000.*ladder_streak_baselines/s);
   assert.match(SEED_PRODUCTION_BOTS_SQL, /ranked_pool_tier = \(case/);
-  assert.match(SEED_PRODUCTION_BOTS_SQL, /count\(distinct points\).*<> 150/s);
+  assert.match(SEED_PRODUCTION_BOTS_SQL,
+    new RegExp(`count\\(distinct points\\).*<> ${PRODUCTION_BOT_COUNT}`, 's'));
   assert.match(SEED_PRODUCTION_BOTS_SQL, /max\(points\).*<> 4600/s);
   assert.match(SEED_PRODUCTION_BOTS_SQL, /seed created unexpected Auth or ranked rows/);
   assert.doesNotMatch(SEED_PRODUCTION_BOTS_SQL, /public\.current_season\(\)/);
@@ -105,7 +140,7 @@ export function assertBotSeedSql() {
   assert.doesNotMatch(SEED_PRODUCTION_BOTS_SQL, /generate_series|\btruncate\b/i);
   assert.equal((SEED_PRODUCTION_BOTS_SQL.match(
     /^\s*\(\d+, \d+, \d+, \d+, \d+, \d+, \d+\),?$/gm,
-  ) ?? []).length, 150);
+  ) ?? []).length, PRODUCTION_BOT_COUNT);
 }
 
 export function assertBotProfileRefreshSql() {
@@ -116,15 +151,17 @@ export function assertBotProfileRefreshSql() {
     REFRESH_PRODUCTION_BOT_PROFILES_SQL,
     /select (?:count\(\*\)|1) from public\.matches/,
   );
-  assert.match(REFRESH_PRODUCTION_BOT_PROFILES_SQL, /legacy_rows = 150/);
-  assert.match(REFRESH_PRODUCTION_BOT_PROFILES_SQL, /refreshed_rows = 150/);
+  assert.match(REFRESH_PRODUCTION_BOT_PROFILES_SQL,
+    new RegExp(`legacy_rows = ${PRODUCTION_BOT_COUNT}`));
+  assert.match(REFRESH_PRODUCTION_BOT_PROFILES_SQL,
+    new RegExp(`refreshed_rows = ${PRODUCTION_BOT_COUNT}`));
   assert.match(REFRESH_PRODUCTION_BOT_PROFILES_SQL, /update public\.season_ratings/);
   assert.match(REFRESH_PRODUCTION_BOT_PROFILES_SQL, /update public\.profiles/);
   assert.match(REFRESH_PRODUCTION_BOT_PROFILES_SQL, /on conflict \(season_id, player\) do update/);
   assert.doesNotMatch(REFRESH_PRODUCTION_BOT_PROFILES_SQL, /\bdelete\b|\btruncate\b/i);
   assert.equal((REFRESH_PRODUCTION_BOT_PROFILES_SQL.match(
     /^\s*\(\d+, \d+, \d+, \d+, \d+, \d+, \d+, \d+, \d+, \d+\)[,;]?$/gm,
-  ) ?? []).length, 150);
+  ) ?? []).length, PRODUCTION_BOT_COUNT);
   assert.match(REFRESH_PRODUCTION_BOT_PROFILES_AUDIT_SQL, /full join actual/);
   assert.match(REFRESH_PRODUCTION_BOT_PROFILES_AUDIT_SQL, /"actualDistinctPoints"/);
   assert.match(REFRESH_PRODUCTION_BOT_PROFILES_AUDIT_SQL, /"joinedRows"/);
@@ -155,7 +192,8 @@ export function assertExactSeedAudit(guarded: GuardedAssertion) {
 
 export function assertRefreshAudit(guarded: GuardedAssertion) {
   const base = validateBaseProductionTestDataAudit([baseAudit({
-    authUsers: 150, profiles: 150, bots: 150, seasonRatings: 150,
+    authUsers: PRODUCTION_BOT_COUNT, profiles: PRODUCTION_BOT_COUNT,
+    bots: PRODUCTION_BOT_COUNT, seasonRatings: PRODUCTION_BOT_COUNT,
   })]);
   const rune = validateEmptyRuneTrialDataAudit([emptyRune()]);
   const legacy = validateRefreshProductionBotProfilesAudit([refreshAudit('legacy')]);
@@ -235,7 +273,8 @@ export async function assertExactStreakBaselinePrerequisite() {
 
 export async function assertBotProfileRefreshOrchestration() {
   const populated = baseAudit({
-    authUsers: 150, profiles: 150, bots: 150, seasonRatings: 150,
+    authUsers: PRODUCTION_BOT_COUNT, profiles: PRODUCTION_BOT_COUNT,
+    bots: PRODUCTION_BOT_COUNT, seasonRatings: PRODUCTION_BOT_COUNT,
   });
   const readFor = (state: 'legacy' | 'refreshed') => async (query: string) => {
     if (query === RUNE_TRIAL_PRODUCTION_STAGE_SQL) return [runeStage(true)];

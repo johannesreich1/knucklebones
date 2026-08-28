@@ -362,6 +362,59 @@ re-mirrored from `season_ratings`).
 
 ---
 
+## 4b. Bot rune winnings and the equipped seat
+
+Decided 2026-08-28, with the equipped-rune feature. Owner: Johannes.
+
+**A bot's runes are winnings, not decoration.** The seed may only hand a bot
+what it could plausibly have won, so two limits apply and the smaller wins:
+
+1. **Standing.** Rune Trial is dealt from IVORY (720) up, so a bot below IVORY
+   has never been offered one and holds **nothing** — exactly what a human at
+   those points holds. From IVORY to NEON the roster fills in evenly, so the top
+   of the ladder carries all six and the bottom of IVORY carries none. This was
+   an explicit choice over seeding low bots with a rune "so lower players meet
+   one": a rune below IVORY is not reachable by real play, and a curious player
+   would rightly notice bots holding what they cannot yet win.
+2. **Record.** You cannot hold more runes than Trials you could have won:
+   `games x Trial's slice of the pool (1/8) x win rate`. Against the current
+   seed plan this never binds — the bots play enough — and it is kept so a
+   future plan with fewer games cannot mint runes out of nothing.
+
+**Which** runes is `points % 6` into the registry order, not a hash. Points are
+unique per bot (the seed postcheck pins `count(distinct points)`), so it is just
+as stable, and unlike a hash it is reproducible in SQL — which is what lets the
+whole grant be one reviewable statement instead of 11KB of literals.
+
+**The seat** is the first rune won, auto-equipped, exactly as a player's own
+first winning is. It is set even below SILVER: the rune is carried but not in
+play, so a bot that climbs arrives already holding it.
+
+The population as seeded (200 bots, 539 rune rows, 155 carrying a seat):
+
+| group | bots | runes each |
+|---|---|---|
+| STONE | 13 | 0 |
+| BONE | 19 | 0 |
+| IVORY | 23 | 0–1 |
+| SILVER | 32 | 1–2 |
+| GOLD | 43 | 2–4 |
+| OBSIDIAN | 59 | 4–6 |
+| NEON | 11 | 6 |
+
+No face dominates: 89–91 bots hold each of the six.
+
+**Bots keep what they win, with no code of their own.** `commit_match_*` grants
+the winner's selected rune with no `is_bot` check, so a bot that wins a Rune
+Trial collects it exactly as a player does. This was verified rather than
+assumed before the seed was designed around it.
+
+**Population size.** 150 → **200** on 2026-08-28 (Johannes). The count is
+single-sourced from `PRODUCTION_BOT_COUNT` in
+`tools/database/production-test-data-core.mjs` and interpolated into the guarded
+SQL, including the opt-in phrases and the half-population peak split — it was
+previously hardcoded in eleven places and a twelfth derived one (`75`).
+
 ## 5. The profile
 
 Design: card **92d** (`design/screens/product/92d-arc-season.html`). Built in

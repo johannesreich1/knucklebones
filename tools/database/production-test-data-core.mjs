@@ -6,7 +6,7 @@ import { RANKED_POOL_TIERS } from '../../src/core/ranked-outcomes.ts';
 
 export const PRODUCTION_TEST_DATA_PROJECT_REF = 'euzjcejbkxvqfrttgaxu';
 export const PRODUCTION_TEST_DATA_CLI_VERSION = '2.115.0';
-export const PRODUCTION_BOT_COUNT = 150;
+export const PRODUCTION_BOT_COUNT = 200;
 export const PRODUCTION_BOT_MAX_POINTS = 4600;
 export const PRODUCTION_BOT_MIN_WIN_RATE = 0.4;
 export const PRODUCTION_BOT_MAX_WIN_RATE = 0.55;
@@ -24,11 +24,11 @@ export const PRODUCTION_TEST_DATA_OPT_INS = Object.freeze({
   }),
   'seed-bots': Object.freeze({
     name: 'KB_ALLOW_PRODUCTION_BOT_SEED',
-    value: 'SEED_EXACTLY_150_BOTS',
+    value: `SEED_EXACTLY_${PRODUCTION_BOT_COUNT}_BOTS`,
   }),
   'refresh-bot-profiles': Object.freeze({
     name: 'KB_ALLOW_PRODUCTION_BOT_PROFILE_REFRESH',
-    value: 'REFRESH_EXACT_150_UNPLAYED_BOTS',
+    value: `REFRESH_EXACT_${PRODUCTION_BOT_COUNT}_UNPLAYED_BOTS`,
   }),
 });
 
@@ -565,6 +565,133 @@ function legacyProductionBotSeedPlan() {
   }));
 }
 
+/* THE SIX-RUNE ROSTER, in registry order. Duplicated here as plain strings
+   rather than imported from src/core/spells.ts: this tool runs against
+   production without a build step, and the migration's own CHECK constraint is
+   the authority both sides answer to. */
+export const PRODUCTION_RUNE_ROSTER = Object.freeze([
+  'fate', 'nudge', 'ward', 'sunder', 'pilfer', 'anvil',
+]);
+
+/* A bot's runes are WINNINGS, not decoration, so the seed may only hand out
+   what the bot could plausibly have won. Two rules, and the smaller wins:
+
+   1. STANDING. Rune Trial is dealt from IVORY (720) up, so a bot below it has
+      never been offered one and gets nothing — exactly what a human at those
+      points holds. From IVORY to NEON the roster fills in evenly, so the top of
+      the ladder carries all six and the bottom of IVORY carries none.
+   2. RECORD. You cannot hold more runes than Trials you could have won:
+      games x Trial's slice of the pool x win rate. This currently never binds
+      against the seeded records (they play enough), and it is kept anyway so a
+      future seed plan with fewer games cannot mint runes out of nothing.
+
+   Which runes, not just how many, is deterministic per bot: the same ordinal
+   always draws the same faces, so a reseed reproduces the population exactly
+   rather than reshuffling who carries what. */
+const IVORY_FLOOR = 720;
+const NEON_FLOOR = 4350;
+const TRIAL_POOL_SHARE = 1 / 8;
+
+export function buildProductionBotRunePlan(bot) {
+  const games = bot.wins + bot.losses + bot.draws;
+  if (bot.points < IVORY_FLOOR || games < 1) return Object.freeze([]);
+  const reach = Math.min(1, (bot.points - IVORY_FLOOR) / (NEON_FLOOR - IVORY_FLOOR));
+  const byStanding = Math.round(reach * PRODUCTION_RUNE_ROSTER.length);
+  const byRecord = Math.floor(games * TRIAL_POOL_SHARE * (bot.wins / games));
+  const count = Math.max(0, Math.min(PRODUCTION_RUNE_ROSTER.length, byStanding, byRecord));
+  /* Rotate the roster by a per-bot offset instead of slicing from the front,
+     so the population does not make FATE look universal and ANVIL rare. The
+     offset is POINTS-derived rather than hashed on purpose: points are unique
+     per bot (the seed's own postcheck pins count(distinct points)), so this is
+     just as stable, and unlike a JS hash it can be recomputed in SQL. That lets
+     the whole grant be one re-runnable statement instead of 11KB of literals
+     nobody can review. */
+  const offset = bot.points % PRODUCTION_RUNE_ROSTER.length;
+  return Object.freeze(Array.from({ length: count }, (_, index) =>
+    PRODUCTION_RUNE_ROSTER[(offset + index) % PRODUCTION_RUNE_ROSTER.length]));
+}
+
+/* The seat a bot carries into ranked. Its first winning is what a player's own
+   first winning becomes: auto-equipped, because a collection of one has no
+   decision in it. Below SILVER the rune is held but not in play, which the
+   client already says on the profile — the seat is set regardless, so a bot
+   that climbs into SILVER arrives already carrying what it won. */
+export function productionBotEquippedRune(bot) {
+  return buildProductionBotRunePlan(bot)[0] ?? null;
+}
+
+/**
+ * The rune winnings for a freshly seeded bot population, as one guarded
+ * statement. Bots are identified by their season points, which the seed plan
+ * makes unique per ordinal (the seed's own postcheck pins
+ * `count(distinct points)` to the population size), so no id has to be
+ * hardcoded or round-tripped.
+ *
+ * The equipped seat is set in the same statement and only ever to a rune the
+ * same statement just granted — the migration's composite foreign key would
+ * refuse anything else, which is the point of putting it there.
+ */
+export function buildProductionBotRuneSql(plan = buildProductionBotSeedPlan()) {
+  const rows = plan.flatMap((bot) => {
+    const runes = buildProductionBotRunePlan(bot);
+    return runes.map((rune, index) => `(${bot.points}, '${rune}', ${index === 0})`);
+  });
+  if (!rows.length) fail('Bot rune plan produced no rows.');
+  return String.raw`
+begin;
+set local lock_timeout = '10s';
+set local statement_timeout = '90s';
+
+do $runes$
+declare
+  granted integer;
+  seated integer;
+begin
+  if (select count(*) from public.profiles where not is_bot) <> 0 then
+    raise exception 'bot rune seeding expects a bot-only population';
+  end if;
+  if (select count(*) from public.player_runes) <> 0 then
+    raise exception 'bot rune seeding expects an empty collection table';
+  end if;
+
+  create temporary table kb_bot_rune_plan (points integer, rune_id text, seat boolean)
+    on commit drop;
+  insert into kb_bot_rune_plan (points, rune_id, seat) values
+    ${rows.join(',\n    ')};
+
+  insert into public.player_runes (player_id, rune_id, source_match_id)
+  select r.player, p.rune_id, null
+    from kb_bot_rune_plan p
+    join public.season_ratings r on r.points = p.points;
+  get diagnostics granted = row_count;
+
+  /* The seat is the FIRST rune the bot won, which is what a player's own first
+     winning becomes. Set even below SILVER: the rune is carried but not in
+     play, so a bot that climbs arrives already holding it. */
+  update public.profiles pr
+     set equipped_rune = p.rune_id
+    from kb_bot_rune_plan p
+    join public.season_ratings r on r.points = p.points
+   where pr.id = r.player and p.seat;
+  get diagnostics seated = row_count;
+
+  if granted <> ${rows.length} then
+    raise exception 'expected ${rows.length} rune grants, wrote %', granted;
+  end if;
+  if seated <> ${plan.filter((bot) => buildProductionBotRunePlan(bot).length > 0).length} then
+    raise exception 'expected ${plan.filter((bot) => buildProductionBotRunePlan(bot).length > 0).length} seated bots, wrote %', seated;
+  end if;
+  if exists (select 1 from public.profiles pr where pr.equipped_rune is not null
+               and not exists (select 1 from public.player_runes pl
+                                where pl.player_id = pr.id and pl.rune_id = pr.equipped_rune)) then
+    raise exception 'a bot was seated with a rune it does not hold';
+  end if;
+end
+$runes$;
+commit;
+`;
+}
+
 export function buildProductionBotSeedPlan() {
   const plan = Array.from({ length: PRODUCTION_BOT_COUNT }, (_, index) => {
     const ordinal = index + 1;
@@ -988,15 +1115,15 @@ begin
     if not found then raise exception 'minted bot profile is invalid at ordinal %', seed_row.ordinal; end if;
   end loop;
 
-  if (select count(*) from auth.users) <> 150
-     or (select count(*) from public.profiles) <> 150
-     or (select count(*) from public.profiles where is_bot) <> 150
+  if (select count(*) from auth.users) <> ${PRODUCTION_BOT_COUNT}
+     or (select count(*) from public.profiles) <> ${PRODUCTION_BOT_COUNT}
+     or (select count(*) from public.profiles where is_bot) <> ${PRODUCTION_BOT_COUNT}
      or exists (select 1 from public.profiles where not is_bot)
-     or (select count(*) from public.season_ratings where season_id = current_season_id) <> 150
-     or (select count(distinct points) from public.season_ratings where season_id = current_season_id) <> 150
+     or (select count(*) from public.season_ratings where season_id = current_season_id) <> ${PRODUCTION_BOT_COUNT}
+     or (select count(distinct points) from public.season_ratings where season_id = current_season_id) <> ${PRODUCTION_BOT_COUNT}
      or (select min(points) from public.season_ratings where season_id = current_season_id) <> 0
      or (select max(points) from public.season_ratings where season_id = current_season_id) <> 4600
-     or (select count(*) from private.season_streak_baselines where season_id = current_season_id) <> 150 then
+     or (select count(*) from private.season_streak_baselines where season_id = current_season_id) <> ${PRODUCTION_BOT_COUNT} then
     raise exception 'production bot seed cardinality or point spread is invalid';
   end if;
 
@@ -1069,8 +1196,8 @@ begin
     raise exception 'production bot seed misses a ladder group';
   end if;
 
-  if (select count(*) from public.season_ratings where peak = points) <> 75
-     or (select count(*) from public.season_ratings where peak > points) <> 75
+  if (select count(*) from public.season_ratings where peak = points) <> ${PRODUCTION_BOT_COUNT / 2}
+     or (select count(*) from public.season_ratings where peak > points) <> ${PRODUCTION_BOT_COUNT / 2}
      or (select max(peak - points) from public.season_ratings) > ${PRODUCTION_BOT_MAX_PEAK_GAP}
      or (select max(best_streak) from private.season_streak_baselines)
           > ${PRODUCTION_BOT_MAX_BEST_STREAK} then
@@ -1139,15 +1266,15 @@ begin
   current_season_id := ${CURRENT_SEASON_SQL};
   if current_season_id is null then raise exception 'production current season is missing'; end if;
 
-  if (select count(*) from kb_bot_profile_refresh_plan) <> 150
-     or (select count(*) from auth.users) <> 150
-     or (select count(*) from public.profiles) <> 150
-     or (select count(*) from public.profiles where is_bot) <> 150
+  if (select count(*) from kb_bot_profile_refresh_plan) <> ${PRODUCTION_BOT_COUNT}
+     or (select count(*) from auth.users) <> ${PRODUCTION_BOT_COUNT}
+     or (select count(*) from public.profiles) <> ${PRODUCTION_BOT_COUNT}
+     or (select count(*) from public.profiles where is_bot) <> ${PRODUCTION_BOT_COUNT}
      or exists (select 1 from public.profiles where not is_bot)
-     or (select count(*) from public.season_ratings) <> 150
-     or (select count(*) from public.season_ratings where season_id = current_season_id) <> 150
-     or (select count(distinct points) from public.season_ratings) <> 150 then
-    raise exception 'production bot-profile refresh requires the exact 150-bot population';
+     or (select count(*) from public.season_ratings) <> ${PRODUCTION_BOT_COUNT}
+     or (select count(*) from public.season_ratings where season_id = current_season_id) <> ${PRODUCTION_BOT_COUNT}
+     or (select count(distinct points) from public.season_ratings) <> ${PRODUCTION_BOT_COUNT} then
+    raise exception format('production bot-profile refresh requires the exact %s-bot population', ${PRODUCTION_BOT_COUNT});
   end if;
 
   if exists (select 1 from auth.identities)
@@ -1201,7 +1328,7 @@ begin
            'bot-' || account.id::text || '@internal.invalid'
      and profile.nickname ~ '^[A-Za-z0-9_]{3,16}$'
      and profile.avatar ~ '^die:[1-6]:(cy|mg|gold|green|violet|orange)$';
-  if canonical_rows <> 150 then
+  if canonical_rows <> ${PRODUCTION_BOT_COUNT} then
     raise exception 'production bot-profile refresh canonical identity or point plan is invalid';
   end if;
 
@@ -1233,10 +1360,10 @@ begin
      and profile.ranked_pool_tier is not distinct from ${rankedPoolTierSql('plan.new_peak')}
      and baseline.best_streak is not distinct from plan.new_best_streak;
 
-  if not ((legacy_rows = 150
+  if not ((legacy_rows = ${PRODUCTION_BOT_COUNT}
            and (select count(*) from private.season_streak_baselines) = 0)
-          or (refreshed_rows = 150
-              and (select count(*) from private.season_streak_baselines) = 150)) then
+          or (refreshed_rows = ${PRODUCTION_BOT_COUNT}
+              and (select count(*) from private.season_streak_baselines) = ${PRODUCTION_BOT_COUNT})) then
     raise exception 'production bot profiles are neither the exact legacy seed nor exact refreshed seed';
   end if;
 
@@ -1248,7 +1375,7 @@ begin
     from kb_bot_profile_refresh_plan plan
    where rating.season_id = current_season_id and rating.points = plan.points;
   get diagnostics affected_rows = row_count;
-  if affected_rows <> 150 then raise exception 'bot rating refresh touched % rows', affected_rows; end if;
+  if affected_rows <> ${PRODUCTION_BOT_COUNT} then raise exception 'bot rating refresh touched % rows', affected_rows; end if;
 
   update public.profiles profile
      set ranked_pool_tier = ${rankedPoolTierSql('plan.new_peak')}
@@ -1256,7 +1383,7 @@ begin
     join kb_bot_profile_refresh_plan plan on plan.points = rating.points
    where rating.season_id = current_season_id and profile.id = rating.player;
   get diagnostics affected_rows = row_count;
-  if affected_rows <> 150 then raise exception 'bot tier refresh touched % rows', affected_rows; end if;
+  if affected_rows <> ${PRODUCTION_BOT_COUNT} then raise exception 'bot tier refresh touched % rows', affected_rows; end if;
 
   insert into private.season_streak_baselines (season_id, player, best_streak)
   select rating.season_id, rating.player, plan.new_best_streak
@@ -1266,7 +1393,7 @@ begin
   on conflict (season_id, player) do update
     set best_streak = excluded.best_streak;
   get diagnostics affected_rows = row_count;
-  if affected_rows <> 150 then raise exception 'bot streak refresh touched % rows', affected_rows; end if;
+  if affected_rows <> ${PRODUCTION_BOT_COUNT} then raise exception 'bot streak refresh touched % rows', affected_rows; end if;
 
   if (select count(*)
         from kb_bot_profile_refresh_plan plan
@@ -1281,8 +1408,8 @@ begin
          and rating.draws is not distinct from plan.new_draws
          and profile.rating is not distinct from rating.points
          and profile.ranked_pool_tier is not distinct from ${rankedPoolTierSql('plan.new_peak')}
-         and baseline.best_streak is not distinct from plan.new_best_streak) <> 150
-     or (select count(*) from private.season_streak_baselines) <> 150
+         and baseline.best_streak is not distinct from plan.new_best_streak) <> ${PRODUCTION_BOT_COUNT}
+     or (select count(*) from private.season_streak_baselines) <> ${PRODUCTION_BOT_COUNT}
      or exists (select 1 from public.matches) then
     raise exception 'production bot-profile refresh postcheck failed';
   end if;
@@ -1395,7 +1522,7 @@ export function assertProductionBotProfilesRefreshable(baseAudit, runeAudit, ref
       || baseAudit.profiles !== PRODUCTION_BOT_COUNT
       || baseAudit.bots !== PRODUCTION_BOT_COUNT
       || baseAudit.seasonRatings !== PRODUCTION_BOT_COUNT) {
-    fail('Production bot-profile refresh requires exactly 150 Auth/profile/current-season bots.');
+    fail(`Production bot-profile refresh requires exactly ${PRODUCTION_BOT_COUNT} Auth/profile/current-season bots.`);
   }
   for (const field of ZERO_FOR_UNPLAYED_BOT_REFRESH) {
     if (baseAudit[field] !== 0) {
@@ -1413,7 +1540,7 @@ export function assertProductionBotProfilesRefreshable(baseAudit, runeAudit, ref
       || refreshAudit.joinedRows !== PRODUCTION_BOT_COUNT
       || refreshAudit.canonicalRows !== PRODUCTION_BOT_COUNT
       || refreshAudit.orphanBaselineRows !== 0) {
-    fail('Production bot-profile refresh does not match the canonical 150-point plan.');
+    fail(`Production bot-profile refresh does not match the canonical ${PRODUCTION_BOT_COUNT}-point plan.`);
   }
   if (refreshAudit.legacyRows === PRODUCTION_BOT_COUNT
       && refreshAudit.refreshedRows === 0
