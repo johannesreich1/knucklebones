@@ -93,6 +93,16 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
     };
 
     const PAGE = 25;
+    /* THE OPENING PAGE COVERS THE WHOLE MOUNTED WINDOW. Crawling wants small
+       pages — a 25-row splice is about one frame — but OPENING with one leaves
+       most of the window standing as tombstones until a second round trip
+       lands, and a tombstone is not the height of the row it stands in for
+       (your own row is half again as tall). The modelled total then moves as
+       they fill, and the bottom padding visibly resettles under the reader
+       (user report, at 132 of 153). Measured: 65 slots mounted, 40 of them
+       tombstones. 100 is the RPC's own ceiling and covers the window on any
+       phone; the rows are small and it is one request either way. */
+    const OPEN_PAGE = 100;
     const source = {
       after: async (anchor: { item: LadderRow; position: number } | null, count: number) =>
         positioned(
@@ -116,8 +126,8 @@ export function createLadderScreen(ports: LadderPorts): LadderScreen {
        so the ladder is revealed with rows already on it. Mounting first and
        letting the window fetch would show an empty board for a round trip. */
     const opening = standing?.rank
-      ? await source.seek(Math.max(0, standing.rank - 1 - (PAGE >> 1)), PAGE)
-      : await source.after(null, PAGE);
+      ? await source.seek(Math.max(0, standing.rank - 1 - (OPEN_PAGE >> 1)), OPEN_PAGE)
+      : await source.after(null, OPEN_PAGE);
     if (run !== showRevision || !isOnlinePanelCurrent('onLadder')) return;
 
     /* THE EXACT ROW, FROM THE SEED. standing.rank - 1 is the position of a tie

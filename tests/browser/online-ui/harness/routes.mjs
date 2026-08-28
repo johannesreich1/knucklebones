@@ -18,6 +18,7 @@ export async function installOnlineRoutes(
     ladderNearBottom = false,
     /* Extra season matches beyond the fixed three, so a test can reach page two.
        Zero by default: every existing probe sees exactly what it always saw. */
+    ladderBoard = null,
     historyDepth = 0,
     paginationRace = false,
     passwordAuth = 'error',
@@ -94,7 +95,7 @@ export async function installOnlineRoutes(
   const hold = (share = 1) => dataDelay > 0
     ? new Promise((resolve) => setTimeout(resolve, dataDelay * share))
     : Promise.resolve();
-  const nearBottomBoard = ladderBoardFixture(ladderNearBottom);
+  const nearBottomBoard = ladderBoardFixture(ladderBoard ?? ladderNearBottom);
   /* Kill the service worker before app code runs. Once it controls the page it
      re-issues requests from the worker, where page.route() cannot see them —
      and whether it has claimed the page by the time of the tap is a race, so a
@@ -236,8 +237,15 @@ export async function installOnlineRoutes(
     return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
       /* Rank 2 of 199 is just outside floor(1%): this must agree with the
          ladder row's apex:false so both surfaces resolve BONE. */
-      ladderNearBottom
-        ? { points: 465, rank: 145, population: 151, percentile: 96 }
+      /* Derived from the board rather than restated beside it: a hand-kept
+         copy of the rank and population silently disagrees with the rows the
+         moment a case names its own board. */
+      nearBottomBoard
+        ? (() => {
+          const me = nearBottomBoard.find((row) => row.nickname === 'TestGuest001');
+          return { points: me?.points ?? 465, rank: me?.rank ?? 1,
+                   population: nearBottomBoard.length, percentile: 96 };
+        })()
         : { points: 465, rank: 2, population: 199, percentile: 1 },
     ]) });
   });

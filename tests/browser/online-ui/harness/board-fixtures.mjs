@@ -7,11 +7,13 @@
     population added by 20260827203007. A mock that omits a field a migration
     added keeps a broken client green, and `pos` is load-bearing: the client
     places a page by it. */
-export function ladderBoardFixture(nearBottom) {
-  return !nearBottom ? null : Array.from({ length: 151 }, (_, index) => {
+export function ladderBoardFixture(spec) {
+  if (!spec) return null;
+  const { population, myRank } = spec === true ? { population: 151, myRank: 145 } : spec;
+  return Array.from({ length: population }, (_, index) => {
       const rank = index + 1;
       const points = 610 - rank;
-      const mine = rank === 145;
+      const mine = rank === myRank;
       return {
         nickname: mine ? 'TestGuest001' : `Player${String(rank).padStart(3, '0')}`,
         points,
@@ -25,7 +27,7 @@ export function ladderBoardFixture(nearBottom) {
            pos to place a page and would otherwise silently fall back to
            counting from a cursor. */
         pos: rank,
-        population: 151,
+        population,
         apex: rank === 1,
         avatar: mine ? 'die:5:cy' : null,
         peak: mine ? 700 : points + 20,

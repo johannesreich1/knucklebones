@@ -53,6 +53,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     locale = 'en-US',
     viewport = { width: 430, height: 932 },
     ladderNearBottom = false,
+    ladderBoard = null,
     historyDepth = 0,
     paginationRace = false,
     passwordAuth = 'error',
@@ -75,7 +76,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
     const routes = await installOnlineRoutes(page, {
       anonymous, attached, authDelay,
       dataDelay: inspectLoading ? 900 : dataDelay, markRunesSeenAfterFirstRead,
-      door, gameCenterBridge, identity, member, named, ladderNearBottom, historyDepth,
+      door, gameCenterBridge, identity, member, named, ladderNearBottom, ladderBoard, historyDepth,
       paginationRace,
       passwordAuth, runes, unseenRunes, SESSION, GUEST_ID,
     });

@@ -62,6 +62,11 @@ export async function runLadderScrollScenarios(suite) {
               window.__open.push({
                 top: Math.round(body.scrollTop),
                 slots: list.querySelectorAll('[data-slot]').length,
+                /* Tombstones standing in for rows the opening page did not
+                   cover. They are not the height of what replaces them — your
+                   own row is half again as tall — so any that survive the first
+                   frame resettle the content under the reader. */
+                ghosts: list.querySelectorAll('[data-pending]').length,
               });
             }
             if (window.__open.length < 40) requestAnimationFrame(tick);
@@ -86,6 +91,7 @@ export async function runLadderScrollScenarios(suite) {
             emptyFramesBeforeRows: seen.findIndex((f) => f.slots > 0),
             travelAfterFirstRows: painted.length
               ? Math.max(...painted.map((f) => Math.abs(f.top - painted[0].top))) : null,
+            ghostsWhenPainted: painted.length ? painted[0].ghosts : null,
           };
         });
         const anchor = await page.evaluate(() => ({
@@ -206,6 +212,10 @@ export async function runLadderScrollScenarios(suite) {
     /* Once rows are up the view must not travel. A few pixels is the estimate
        being replaced by measurement; hundreds is the opening aiming itself with
        a ruler that had measured nothing. */
+    check(r?.opening?.ghostsWhenPainted === 0,
+      `[${engine}] the ladder opened with tombstones in the window — they resettle the `
+      + 'content when the rows they stand in for arrive at a different height',
+      r?.opening);
     check((r?.opening?.travelAfterFirstRows ?? 1e9) <= 8,
       `[${engine}] the ladder slid after opening instead of arriving in place`,
       r?.opening);
