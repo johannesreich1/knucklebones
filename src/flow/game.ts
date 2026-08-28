@@ -42,7 +42,6 @@ import {
   resolveTimedOutSpellAim,
   type SpellDeal,
 } from './spells.ts';
-import { handTurnTo } from './turn.ts';
 import { aiChoose } from './game-ai.ts';
 import { showLocalResult } from './local-result.ts';
 import { hidePassCard, showPassCard } from './pass-card.ts';
@@ -137,11 +136,13 @@ export async function nextTurn(): Promise<void> {
   const gen=S.gen;
   if(S.phase==='over') return;
   renderAll(false);   // same repaint belt online uses: state wins every turn
-  handTurnTo(S.turn); // ...and the rail and plate belong to the turn: the seat
-                      // that just lost it dims here, through the same seam
-                      // ranked uses. sayChoose() repaints the rail again when a
-                      // HUMAN gets the choice; on the machine's turn nothing
-                      // else would, and the rune stayed lit through it.
+  renderSpells();     // ...and the rail belongs to the turn: the seat that just
+                      // lost it dims here. Deliberately the rail ONLY — the
+                      // plate is rollDice()'s beat, and painting it here made
+                      // the CPU's active card wear the standby treatment.
+                      // sayChoose() repaints the rail again when a HUMAN gets
+                      // the choice; on the machine's turn nothing else would,
+                      // and the rune stayed lit through it.
   if(S.mode==='duo' && S.seat==='pass' && S.turn!==S.bottom){
     const ok=await handOff(S.turn);           // face mode switches turns directly
     if(!ok || S.gen!==gen || gameOver()) return;
@@ -201,6 +202,13 @@ export async function place(who: Player, col: number): Promise<void> {
   if (result.interrupted || !result.placed) return;
   // LIMITED: the just-placed die may have been the bag's last — that ends it
   if (isOver(S.boards[who], S.pool ? S.pool.length : null)) { endGame(); return; }
+  /* Local play does NOT route this through flow/turn's handTurnTo. It never had
+     the bug that seam exists for: nextTurn() below already repaints the rail at
+     every boundary, and the plate is painted a beat later by rollDice(). Adding
+     the seam here paints both a step early and a second time, and the doubled
+     paint restarts the .25s swap — measured, it caught the standby card at ~0%
+     of its tween. The seam is for drivers that move the seat WITHOUT painting
+     it, which is exactly what the ranked Trial replay was doing. */
   S.turn = (1 - who) as Player; S.spellCastThisTurn = null; // placement closes the cast window
   S.busy = false;
   S.die = 0;

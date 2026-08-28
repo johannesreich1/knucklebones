@@ -6,6 +6,7 @@ import { projectRankedActions, type RankedActionRow } from '../../core/ranked-ac
 import { spellById } from '../../core/spells.ts';
 import { applyAimPresentation, disarm, renderSpells, spendChargePresentation } from '../../flow/spells.ts';
 import { runSpellEffect } from '../../flow/spell-effects.ts';
+import { handTurnTo } from '../../flow/turn.ts';
 import { S } from '../../state.ts';
 import { setStageDie } from '../../ui/die.ts';
 import { renderAll } from '../../ui/game/board.ts';
@@ -55,9 +56,13 @@ async function animateTrialAction(
   ports: OnlineSyncPorts,
 ): Promise<void> {
   if (!ports.isCurrent(online)) return;
-  S.turn = row.who;
   S.die = row.die_before;
   online.pendingDie = row.die_before;
+  /* The row's seat OWNS the beat that follows, including a bot's whole reply
+     inside the player's own action command. Hand the turn over through the
+     shared seam before any of it animates, or the rail and plate stay with
+     whoever moved last while the board plays for somebody else. */
+  handTurnTo(row.who, online.you);
   if (row.kind === 'place' && row.placed_col !== null) {
     await animateOnlineMove(row.who, row.placed_col, row.die_before,
       () => ports.isCurrent(online), S.charm);
@@ -110,7 +115,6 @@ function installTrialProjection(
     disarm(true);
     S.boards = [emptyBoard(), emptyBoard()];
     S.bounty = [0, 0];
-    S.turn = match.turn;
     S.die = 0;
     online.pendingDie = null;
     online.actionApplied = 0;
@@ -118,7 +122,7 @@ function installTrialProjection(
     online.applied = 0;
     online.lastMoveAt = Date.parse(match.last_move_at);
     renderAll(false);
-    renderSpells();
+    handTurnTo(match.turn, online.you);
     return true;
   }
   const projected = projectRankedActions(rows, S.scoring, online.trialRunes,
@@ -140,7 +144,6 @@ function installTrialProjection(
     S.spellArmed = projected.pendingAim;
     S.spellAimCommitted = { id: projected.pendingAim, who: projected.turn };
   }
-  S.turn = projected.turn;
   S.die = projected.nextDie ?? 0;
   online.pendingDie = projected.nextDie;
   online.actionApplied = projected.actionCount;
@@ -148,7 +151,7 @@ function installTrialProjection(
   online.applied = projected.moveCount;
   online.lastMoveAt = Date.parse(match.last_move_at);
   renderAll(false);
-  renderSpells();
+  handTurnTo(projected.turn, online.you);
   return true;
 }
 
