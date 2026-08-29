@@ -16,12 +16,15 @@ import {
 import { watchMatch } from '../api/match-realtime.ts';
 import { recoverIdempotentCommand } from '../api/idempotent-command.ts';
 import { randomUuid } from '../api/random-id.ts';
+import type { DialSide } from '../../ui/reveal-types.ts';
 
 type Matched = Extract<JoinResult, { status: 'matched' }>;
 
 export interface TrialSelectionPorts {
   owns: () => boolean;
   onWaiting: (deadline: string | null, opponentCommitted: boolean) => void;
+  /** The versus line this choice screen shows, from revealPairing(). */
+  pairing?: { me: DialSide; foe: DialSide };
 }
 
 const delay = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
@@ -33,6 +36,7 @@ type ChoiceRace =
 
 async function chooseBeforeDeadline(
   offer: readonly SpellSpec[],
+  pairing: { me: DialSide; foe: DialSide } | undefined,
   deadlineValue: string | null,
   wake: () => Promise<void>,
   onWake: () => Promise<boolean>,
@@ -45,6 +49,7 @@ async function chooseBeforeDeadline(
     /* The same stamp this function races below, so the number on screen is the
        one that will actually be acted on. */
     deadline: () => deadlineValue,
+    versus: pairing,
   }).then((value): ChoiceRace => ({ kind: 'choice', value }));
   const deadline = Date.parse(deadlineValue ?? '');
   while (true) {
@@ -126,6 +131,7 @@ export async function resolveRankedTrial(
         && !playing(current) && !trialSelectionSettled(current.match)) {
       const raced = await chooseBeforeDeadline(
         offer,
+        ports.pairing,
         current.trial?.deadline ?? current.match.selection_deadline ?? null,
         waitForWake,
         async () => await refresh()

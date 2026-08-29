@@ -8,6 +8,9 @@ import { Sfx } from './audio.ts';
 import { appRoot } from './embed.ts';
 import { hide, show } from './dom.ts';
 import { runeCardFaces } from './runedeal.ts';
+import { versus } from './reveal-answer.ts';
+import { paintAvatar } from './avatar.ts';
+import type { DialSide } from './reveal-types.ts';
 import { spellHue } from './spellicons.ts';
 
 export interface TrialChoicePlayer {
@@ -25,6 +28,11 @@ export interface TrialRuneChoiceSpec {
      passes nothing, so the lane stays hidden rather than counting down to an
      event that will not happen. */
   readonly deadline?: () => string | null;
+  /* Who is playing whom. This screen opens ON TOP of a reveal that is already
+     showing this line and paints its own opaque ground over it, so without this
+     the pairing simply vanishes for the length of the choice. Built by
+     revealPairing() so the two screens cannot disagree. */
+  readonly versus?: { readonly me: DialSide; readonly foe: DialSide };
 }
 
 export interface TrialHandoffSpec {
@@ -46,6 +54,7 @@ function build(): void {
   appRoot().insertAdjacentHTML('beforeend', `
 <div class="ov trial-select" id="ovTrialSelect" role="dialog" aria-modal="true"
   aria-labelledby="trialSelectTitle" aria-describedby="trialSelectPrompt">
+  <div class="dwho trial-select__who" id="trialSelectWho" hidden></div>
   <div class="trial-select__eyebrow" id="trialSelectOwner"></div>
   <h2 class="trial-select__title" id="trialSelectTitle"></h2>
   <p class="trial-select__prompt" id="trialSelectPrompt"></p>
@@ -116,6 +125,16 @@ export function requestTrialRuneChoice(spec: TrialRuneChoiceSpec): Promise<strin
      already races it in trial-offer.ts. If this counted the pick out itself
      the two would disagree the moment one of them was slow, so at zero it
      simply stops at zero and waits to be told. */
+  /* The avatar slot is filled AFTER the innerHTML write, exactly as the reveal
+     does it, so avatars keep one renderer (ui/avatar.ts). */
+  const who = root.querySelector<HTMLElement>('#trialSelectWho')!;
+  who.hidden = !spec.versus;
+  if (spec.versus) {
+    who.innerHTML = versus(spec.versus.me, spec.versus.foe);
+    paintAvatar(who.querySelector('.dside.me .dav') as HTMLElement, spec.versus.me.avatar, 44);
+    paintAvatar(who.querySelector('.dside.foe .dav') as HTMLElement, spec.versus.foe.avatar, 44);
+  }
+
   const clock = root.querySelector<HTMLElement>('#trialSelectClock')!;
   const clockCount = root.querySelector<HTMLElement>('#trialSelectCount')!;
   const clockHint = root.querySelector<HTMLElement>('#trialSelectClockHint')!;
@@ -203,3 +222,20 @@ export function cancelTrialSelection(): void {
 }
 
 subscribeLocale(() => active?.repaint());
+
+/* Presentation hook, the same idiom as __kbResult in online/screens/ui.ts: the
+   RANKED choice sheet cannot otherwise be reached from a test — it needs a live
+   match, a dealt offer and a server deadline — so the one shape that actually
+   ships (pairing above, cards centred, clock below) had no way to be measured.
+   Opens the sheet and resolves like a real pick. */
+if (typeof window !== 'undefined') {
+  (window as any).__kbTrialPick = (
+    runes: readonly string[],
+    rest: Omit<TrialRuneChoiceSpec, 'offer'>,
+  ): Promise<string | null> => requestTrialRuneChoice({
+    ...rest,
+    /* Ids in, specs out: a caller across the page boundary cannot hand over a
+       live SpellSpec, and the registry is the only thing that should build one. */
+    offer: runes.map((id) => spellById(id)).filter((spell): spell is SpellSpec => !!spell),
+  });
+}

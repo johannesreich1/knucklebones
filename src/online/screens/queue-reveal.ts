@@ -62,6 +62,20 @@ export function trialRevealSides(match: MatchedJoin): TrialRevealPair | null {
   ];
 }
 
+/** WHO IS PLAYING WHOM, as the reveal's versus line wants it. Exported because
+    the private Rune Trial choice opens on top of this reveal and shows the same
+    pairing: two builders would be two chances for the ratings or the avatars to
+    disagree across a screen boundary the player does not perceive. */
+export function revealPairing(match: MatchedJoin): { me: DialSide; foe: DialSide } {
+  const mine = mySeat(match);
+  const side = (seat: Seat): DialSide => ({
+    name: match.names[seat],
+    rating: match.names.ratings?.[seat] ?? null,
+    avatar: match.names.avatars?.[seat] ?? null,
+  });
+  return { me: side(mine), foe: side(facing(mine)) };
+}
+
 /** Run the reveal for one matched ranked row, resolving when the player is
     done with it. `trial` is passed unconditionally: only a Trial format has a
     private choice left to make, and deciding that here is what keeps the
@@ -71,20 +85,13 @@ export async function revealRankedMatch(
   trial: (note: (text: string | null) => void) => Promise<TrialRevealPair | null>,
 ): Promise<void> {
   hide('#ovOnline');
-  const mine = mySeat(match);
   const isTrial = match.match.format === RUNE_TRIAL_FORMAT;
-  const side = (seat: Seat): DialSide => ({
-    name: match.names[seat],
-    rating: match.names.ratings?.[seat] ?? null,
-    avatar: match.names.avatars?.[seat] ?? null,
-  });
   await reveal({
     mode: { id: isTrial ? RUNE_TRIAL_FORMAT : modeById(match.match.modifier).id },
     modeCandidates: revealCandidates(match),
     modeCopy: revealCopy,
     trial: isTrial ? { resolve: trial } : undefined,
-    me: side(mine),
-    foe: side(facing(mine)),
+    ...revealPairing(match),
     peer: readyPeer(match.match.id),
   });
 }

@@ -61,6 +61,38 @@ export async function verifyRitualLanding(page, out, check) {
     await page.click('#trialSelectReady');
     await page.waitForSelector('#ovTrialSelect.on:not(.handoff) #trialSelectCards button',
       { timeout: 20000 });
+    if (!seat) {
+      /* THE CARDS SIT IN THE MIDDLE OF THE SHEET, and the clock sits under them
+         rather than shoving them upwards. A child with margin-top:auto in this
+         centred column eats the free space and pins everything above it to the
+         top — which is what the countdown did when it was first added, and is
+         invisible to any assertion that only asks whether the cards exist. */
+      out.ritualChoiceLayout = await page.evaluate(() => {
+        const box = (selector) => {
+          const el = document.querySelector(selector);
+          if (!el || el.hidden) return null;
+          const r = el.getBoundingClientRect();
+          return r.height > 0 ? { top: r.top, bottom: r.bottom, mid: r.top + r.height / 2 } : null;
+        };
+        return {
+          viewportMid: window.innerHeight / 2,
+          cards: box('#trialSelectCards'),
+          clock: box('#trialSelectClock'),
+          who: box('#trialSelectWho'),
+        };
+      });
+      const layout = out.ritualChoiceLayout;
+      check(!!layout.cards, 'the Ritual choice painted no cards at all', layout);
+      /* Generous: this separates "centred" from "pinned to the top", and must
+         not become a pixel budget that fails on a taller phone. */
+      check(!!layout.cards
+        && Math.abs(layout.cards.mid - layout.viewportMid) < layout.viewportMid * 0.25,
+      'the Ritual choice is pinned to the top of the sheet instead of centred', layout);
+      check(!layout.clock || layout.clock.top >= layout.cards.bottom - 1,
+        'the pick countdown is not below the cards', layout);
+      /* Local play has no pairing to show — ranked passes one, this does not. */
+      check(!layout.who, 'the local Ritual choice printed a ranked versus line', layout);
+    }
     const card = await page.getAttribute('#trialSelectCards button', 'data-rune');
     await page.click(`#trialSelectCards button[data-rune="${card}"]`);
   }
@@ -141,4 +173,55 @@ export async function verifyRitualLanding(page, out, check) {
   });
   check(out.revealThrew.threw && !out.revealThrew.on && !out.revealThrew.hit,
     'a rejected act left the reveal on screen with nothing to dismiss it', out.revealThrew);
+
+  /* THE RANKED SHEET IS THE ONE THAT SHIPS, and it is the only one that carries
+     both a pairing and a clock — the two things that decide the layout. It
+     needs a live match to reach, so drive it through the presentation hook and
+     measure what the player would see. This is the shape the countdown broke:
+     a clock with margin-top:auto ate the free space and pinned the cards to the
+     top, which the local sheet above cannot reproduce because it has no clock. */
+  out.rankedChoiceLayout = await page.evaluate(async () => {
+    const done = window.__kbTrialPick(['fate', 'ward', 'sunder'], {
+      player: { name: () => 'YOU', hue: 'var(--p1)' },
+      deadline: () => new Date(Date.now() + 10_000).toISOString(),
+      versus: {
+        me: { name: 'BadRandolf', rating: 1200, avatar: 'die:3:cy' },
+        foe: { name: 'VelvetPixel129', rating: 1310, avatar: 'die:4:mg' },
+      },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 260));
+    const box = (selector) => {
+      const el = document.querySelector(selector);
+      if (!el || el.hidden) return null;
+      const r = el.getBoundingClientRect();
+      return r.height > 0 ? { top: r.top, bottom: r.bottom, mid: r.top + r.height / 2 } : null;
+    };
+    const read = {
+      viewportMid: window.innerHeight / 2,
+      who: box('#trialSelectWho'),
+      cards: box('#trialSelectCards'),
+      clock: box('#trialSelectClock'),
+      count: document.getElementById('trialSelectCount')?.textContent?.trim() ?? '',
+      names: [...document.querySelectorAll('#trialSelectWho .dnm')].map((n) => n.textContent),
+    };
+    document.querySelector('#trialSelectCards button')?.click();
+    await done;
+    return read;
+  });
+  const ranked = out.rankedChoiceLayout;
+  check(!!ranked.who && ranked.names.join('|') === 'BadRandolf|VelvetPixel129',
+    'the ranked choice sheet lost the pairing the reveal was showing', ranked);
+  check(!!ranked.cards && !!ranked.who && ranked.who.bottom <= ranked.cards.top,
+    'the pairing is not above the cards', ranked);
+  check(!!ranked.clock && !!ranked.cards && ranked.clock.top >= ranked.cards.bottom - 1,
+    'the pick countdown is not below the cards', ranked);
+  /* 15% of half the viewport. Measured at 52px here against a 466px half, and
+     the layout this replaced measured 139 — so the budget separates the two
+     rather than merely admitting the one that ships. The remaining offset is
+     the title and prompt sitting above the cards inside the centred column. */
+  check(!!ranked.cards
+    && Math.abs(ranked.cards.mid - ranked.viewportMid) < ranked.viewportMid * 0.15,
+  'THE RANKED CHOICE IS PINNED TO THE TOP INSTEAD OF CENTRED', ranked);
+  check(/^\d+$/.test(ranked.count) && Number(ranked.count) <= 10 && Number(ranked.count) > 0,
+    'the pick countdown is not showing a live number', ranked);
 }

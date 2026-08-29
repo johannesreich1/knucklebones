@@ -9,7 +9,7 @@ import { createQueueCancellation } from '../api/queue-cancellation.ts';
 import { leaveQueue } from '../api/queue-lifecycle.ts';
 import { createRunGeneration } from '../api/run-generation.ts';
 import { createQueueWaiting } from './queue-waiting.ts';
-import { revealRankedMatch, trialRevealSides } from './queue-reveal.ts';
+import { revealPairing, revealRankedMatch, trialRevealSides } from './queue-reveal.ts';
 import { resolveRankedTrial } from '../runes/trial-offer.ts';
 
 export interface QueueScreen {
@@ -121,6 +121,7 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
           const selected = await resolveRankedTrial(match, {
             owns: () => runs.owns(run),
             onWaiting: (deadline, committed) => waiting.trialWaiting(note, deadline, committed),
+            pairing: revealPairing(match),
           });
           waiting.clear();
           if (!selected || !runs.owns(run)) { abandoned = true; return null; }

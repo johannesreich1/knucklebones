@@ -33,15 +33,37 @@
    number over a small dim label is "time you have left" (.dhold, mode-dial.css).
    Tabular numerals so the digit does not shuffle the label as it counts. */
 :where(#kbroot) .trial-select__clock{display:flex;flex-direction:column;align-items:center;
-  gap:6px;margin-top:auto;padding-top:10px}
+  gap:6px;padding-top:10px}
 :where(#kbroot) .trial-select__clock b{font-size:26px;font-weight:900;color:var(--p1);
   line-height:1;text-shadow:0 0 18px rgba(var(--p1-rgb),.55);font-variant-numeric:tabular-nums}
 :where(#kbroot) .trial-select__clock span{font-size:9.5px;letter-spacing:.2em;
   color:var(--dim);text-transform:uppercase}
 
+
+/* THE PAIRING STAYS ON SCREEN THROUGH THE CHOICE. This sheet covers the reveal
+   that was showing it, so it carries its own copy of the same versus line —
+   built by revealPairing() and rendered by versus(), never re-typed.
+
+   AND THE CARDS SIT IN THE MIDDLE. .ov centres its column, but a child with
+   `margin-top:auto` eats the free space and pins everything above it to the top
+   — which is exactly what the countdown did when it was added. Giving the CARDS
+   the auto margins instead splits the free space evenly above and below them,
+   so the pairing rides at the top, the cards are centred, and the clock sits
+   under them without dictating the whole column. */
+/* The pairing rides at the top and the clock at the bottom, both OUT OF FLOW,
+   so neither votes on where the cards sit. In flow they do: `margin-block:auto`
+   centres the cards between whatever else is in the column, and there is more
+   above them (pairing, title, prompt) than below (clock), which left them 139px
+   low — centred by the box model, not to the eye. Out of flow, .ov's own
+   justify-content puts the choice where the player is looking. */
+:where(#kbroot) .trial-select__who{position:absolute;top:30px;left:var(--pad-x);right:var(--pad-x)}
+:where(#kbroot) .trial-select__clock{position:absolute;left:0;right:0;
+  bottom:calc(env(safe-area-inset-bottom,0px) + 30px)}
+
 @media (max-height:430px) and (orientation:landscape){
   :where(#kbroot) .trial-select{gap:6px;padding-block:12px}
   :where(#kbroot) .trial-select__cards{--card:44px;padding-block:4px 8px}
-  :where(#kbroot) .trial-select__clock{padding-top:2px;gap:2px}
+  :where(#kbroot) .trial-select__who{top:10px;transform:scale(.82);transform-origin:top center}
+  :where(#kbroot) .trial-select__clock{bottom:calc(env(safe-area-inset-bottom,0px) + 8px);gap:2px}
   :where(#kbroot) .trial-select__clock b{font-size:19px}
 }
