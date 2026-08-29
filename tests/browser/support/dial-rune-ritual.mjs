@@ -181,6 +181,16 @@ export async function verifyRitualLanding(page, out, check) {
      a clock with margin-top:auto ate the free space and pinned the cards to the
      top, which the local sheet above cannot reproduce because it has no clock. */
   out.rankedChoiceLayout = await page.evaluate(async () => {
+    /* Offline reveals carry no pairing (.dwho:empty is display:none), so give
+       the reveal one — that is the ranked condition the alignment exists for,
+       and the sheet aligns to whatever is actually beneath it. */
+    const beneath = document.getElementById('wheelWho');
+    beneath.innerHTML = '<span class="dside me"><span class="dav"></span>'
+      + '<span class="dnm">BadRandolf</span><span class="rt">462</span></span>'
+      + '<span class="dvs">VS</span>'
+      + '<span class="dside foe"><span class="dav"></span>'
+      + '<span class="dnm">BoldFox762</span><span class="rt">555</span></span>';
+    await new Promise((resolve) => requestAnimationFrame(() => resolve()));
     const done = window.__kbTrialPick(['fate', 'ward', 'sunder'], {
       player: { name: () => 'YOU', hue: 'var(--p1)' },
       deadline: () => new Date(Date.now() + 10_000).toISOString(),
@@ -198,6 +208,10 @@ export async function verifyRitualLanding(page, out, check) {
     };
     const read = {
       viewportMid: window.innerHeight / 2,
+      /* The reveal's OWN pairing, mounted underneath this sheet. The player
+         moves between these two screens without a transition, so a pairing
+         that jumps between them is the fault being pinned. */
+      revealWho: box('#wheelWho'),
       who: box('#trialSelectWho'),
       cards: box('#trialSelectCards'),
       clock: box('#trialSelectClock'),
@@ -211,6 +225,16 @@ export async function verifyRitualLanding(page, out, check) {
   const ranked = out.rankedChoiceLayout;
   check(!!ranked.who && ranked.names.join('|') === 'BadRandolf|VelvetPixel129',
     'the ranked choice sheet lost the pairing the reveal was showing', ranked);
+  /* SAME PLACE, not merely present. NOTE THIS IS A WEAK CHECK: the pairing
+     injected above sits where an offline reveal puts it, which is close to the
+     sheet's own fallback, so it passes with the alignment removed and does NOT
+     guard it — verified, not assumed. It still catches a gross jump. Proving
+     the alignment needs a reveal laid out as RANKED lays it out, which is the
+     same fixture gap tracked for the refused aim. */
+  check(!!ranked.who && !!ranked.revealWho
+    && Math.abs(ranked.who.top - ranked.revealWho.top) <= 1,
+  'THE PAIRING JUMPS BETWEEN THE REVEAL AND THE CHOICE SHEET',
+  { choice: ranked.who, reveal: ranked.revealWho });
   check(!!ranked.cards && !!ranked.who && ranked.who.bottom <= ranked.cards.top,
     'the pairing is not above the cards', ranked);
   check(!!ranked.clock && !!ranked.cards && ranked.clock.top >= ranked.cards.bottom - 1,

@@ -55,7 +55,7 @@ function build(): void {
 <div class="ov trial-select" id="ovTrialSelect" role="dialog" aria-modal="true"
   aria-labelledby="trialSelectTitle" aria-describedby="trialSelectPrompt">
   <div class="dwho trial-select__who" id="trialSelectWho" hidden></div>
-  <div class="trial-select__eyebrow" id="trialSelectOwner"></div>
+  <div class="trial-select__eyebrow" id="trialSelectOwner" hidden></div>
   <h2 class="trial-select__title" id="trialSelectTitle"></h2>
   <p class="trial-select__prompt" id="trialSelectPrompt"></p>
   <div class="trial-select__cards" id="trialSelectCards"></div>
@@ -87,7 +87,6 @@ export function requestTrialRuneChoice(spec: TrialRuneChoiceSpec): Promise<strin
   build();
   const root = appRoot();
   const overlay = root.querySelector<HTMLElement>('#ovTrialSelect')!;
-  const owner = root.querySelector<HTMLElement>('#trialSelectOwner')!;
   const title = root.querySelector<HTMLElement>('#trialSelectTitle')!;
   const prompt = root.querySelector<HTMLElement>('#trialSelectPrompt')!;
   const cards = root.querySelector<HTMLElement>('#trialSelectCards')!;
@@ -104,8 +103,6 @@ export function requestTrialRuneChoice(spec: TrialRuneChoiceSpec): Promise<strin
   }).join('');
 
   const repaint = (): void => {
-    owner.textContent = spec.player.name();
-    owner.style.color = spec.player.hue ?? '';
     title.textContent = spec.title?.() ?? runeTrialCopy().name;
     prompt.textContent = spec.prompt?.() ?? t('game', 'runeTrial.chooseFor', {
       player: spec.player.name(),
@@ -127,12 +124,24 @@ export function requestTrialRuneChoice(spec: TrialRuneChoiceSpec): Promise<strin
      simply stops at zero and waits to be told. */
   /* The avatar slot is filled AFTER the innerHTML write, exactly as the reveal
      does it, so avatars keep one renderer (ui/avatar.ts). */
+  /* The local handoff names the player here; the ranked choice does not need
+     it, because the pairing above already says which side you are. */
+  (root.querySelector<HTMLElement>('#trialSelectOwner')!).hidden = true;
   const who = root.querySelector<HTMLElement>('#trialSelectWho')!;
   who.hidden = !spec.versus;
   if (spec.versus) {
     who.innerHTML = versus(spec.versus.me, spec.versus.foe);
     paintAvatar(who.querySelector('.dside.me .dav') as HTMLElement, spec.versus.me.avatar, 44);
     paintAvatar(who.querySelector('.dside.foe .dav') as HTMLElement, spec.versus.foe.avatar, 44);
+    /* SAME PLACE ON EVERY SCREEN OF THE BEAT. This sheet opens on top of the
+       reveal, whose own pairing is mounted directly underneath it — so align to
+       THAT rather than to a guessed offset. A fixed `top` cannot stay level
+       with a line whose position comes from a centred column, and the two
+       reading a different height is exactly what put this one under the
+       notch. Falls back to the sheet's own padding when no reveal is behind. */
+    const beneath = root.querySelector<HTMLElement>('#wheelWho');
+    const box = beneath && !beneath.hidden ? beneath.getBoundingClientRect() : null;
+    who.style.top = box && box.height > 0 ? `${Math.round(box.top)}px` : '';
   }
 
   const clock = root.querySelector<HTMLElement>('#trialSelectClock')!;
@@ -184,6 +193,7 @@ export function awaitTrialHandoff(spec: TrialHandoffSpec): Promise<boolean> {
   const root = appRoot();
   const overlay = root.querySelector<HTMLElement>('#ovTrialSelect')!;
   const owner = root.querySelector<HTMLElement>('#trialSelectOwner')!;
+  owner.hidden = false;
   const title = root.querySelector<HTMLElement>('#trialSelectTitle')!;
   const prompt = root.querySelector<HTMLElement>('#trialSelectPrompt')!;
   const cards = root.querySelector<HTMLElement>('#trialSelectCards')!;
