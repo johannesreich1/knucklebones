@@ -45,6 +45,7 @@ export type { ImmediatePlacementOptions, MachineCastPlan } from './spell-policy.
    legality refuses the cast when nothing is left to draw. */
 const FATE: SpellSpec = {
   id: 'fate',
+  drawsFromSupply: true,
   target: 'self',
   uses: 2,
   /* The redraw reveals the live supply. Like every committed cast it cannot

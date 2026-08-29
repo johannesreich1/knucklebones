@@ -153,7 +153,11 @@ function markAim(spell: SpellSpec | null, ports: SpellRailPorts): void {
     die.classList.remove(...PREVIEW_CLASSES);
     (die as HTMLElement).style.removeProperty('--spell-hue');
   });
-  const who = ports.caster();
+  /* A COMMITTED AIM ALREADY NAMES ITS SEAT. caster() answers null while a
+     command is in flight (S.busy), and ranked commits its aim through one — so
+     asking only caster() threw away the rings and the hued preview die for the
+     whole round trip, on the one rune whose aim IS the information. */
+  const who = S.spellAimCommitted?.who ?? ports.caster();
   if (!spell || who === null || spell.target !== 'column') return;
   const side = (spell.side === 'foe' ? 1 - who : who) as Player;
   const context = ports.castContext();

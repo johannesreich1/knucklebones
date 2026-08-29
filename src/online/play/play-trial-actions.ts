@@ -10,6 +10,7 @@ import { rankedAction, type MatchRow } from '../api/match-api.ts';
 import { recoverIdempotentCommand } from '../api/idempotent-command.ts';
 import { newerMatchProjection } from './match-sync.ts';
 import { animateOnlineMove, cancelOnlineReveal } from './play-motion.ts';
+import { paintCastCharge, paintCastEffect } from './play-cast-paint.ts';
 import {
   completeProjectionRecovery,
   requireProjectionRecovery,
@@ -137,19 +138,78 @@ export function createTrialActionSubmitter(ports: TrialActionPorts) {
     return projected && online.actionApplied >= committedVersion;
   };
 
+  /* A cast tapped INSIDE an aim's round trip would be refused on S.busy and
+     swallowed silently by castArmed — a new way to lose a tap, opened by the
+     aim marks now appearing immediately. Chain it behind the aim instead. */
+  let aiming: Promise<boolean> | null = null;
+
   return {
     aim: async (id: string): Promise<boolean> => {
       const spell = spellById(id);
       if (!spell?.commitsOnAim) return false;
-      return submit({ kind: 'aim', rune_id: id });
-    },
-    cast: async (id: string, column: number): Promise<boolean> => {
       const online = ports.current();
-      if (!online?.trial || online.done || S.busy || S.turn !== online.you || !spellById(id)) {
+      /* flow/spell-aim already painted this aim — the charge, the rings and the
+         hued preview die — so the replay must not paint it a second time. */
+      if (online) {
+        online.painted = {
+          kind: 'aim', who: online.you, col: null, die: online.pendingDie ?? S.die,
+        };
+      }
+      aiming = submit({ kind: 'aim', rune_id: id });
+      let accepted = false;
+      /* Cleared in a finally: a rejected aim must not strand the chain below on
+         a promise that will never settle again, nor hand its rejection to the
+         next cast. */
+      try { accepted = await aiming; } finally { aiming = null; }
+      /* A refused aim never entered the log, so nothing will arrive to match
+         the marker; drop it or it would swallow a later real row. */
+      if (!accepted && online) online.painted = null;
+      return accepted;
+    },
+    /* A CAST IS NOT A PLACEMENT, EXCEPT WHERE IT IS. Its outcome belongs to the
+       server only when the rune reaches into the die supply — which is FATE
+       alone. Every other rune is a pure function of the board, the seat, the
+       column and the die in hand, all of which this client already holds, so it
+       computes the committed row exactly and can perform the whole rune at tap
+       time. Reported from a device 2026-08-29: "activating a rune still takes
+       some time... can't we validate runes on local too and make the animation
+       and play instantly, similar like game moves?"
+       FATE still gets its card out of the rail at tap time; only the die
+       exchange waits, because the face is genuinely not knowable here. */
+    cast: async (id: string, column: number): Promise<boolean> => {
+      if (aiming) await aiming.catch(() => false);
+      const online = ports.current();
+      const spell = spellById(id);
+      if (!online?.trial || online.done || S.busy || S.turn !== online.you || !spell) {
         return false;
       }
+      /* CAPTURED BEFORE THE DISARM, which clears S.spellAimCommitted: this is
+         the state the decision is actually about. With today's roster the
+         ordering is not yet observable — ANVIL is the only commitsOnAim rune
+         and carries one use, so a second spend finds no card left to fly and
+         clamps at zero (measured). It stops being free the day such a rune
+         carries two, which is why it is written the right way round now. */
+      const reserved = S.spellAimCommitted?.id === id && S.spellAimCommitted.who === online.you;
+      const faceUp = S.spellArmed === id && !reserved;
+      const dieBefore = online.pendingDie ?? S.die;
       disarm(true);
-      return submit({ kind: 'cast', rune_id: id, target_col: column });
+      online.painted = { kind: 'cast', who: online.you, col: column, die: dieBefore };
+      const accepted = await submit(
+        { kind: 'cast', rune_id: id, target_col: column },
+        async () => {
+          paintCastCharge(online.you, spell, { reserved, faceUp });
+          if (spell.drawsFromSupply) return;
+          /* The supply is unreachable here by construction. Throwing says the
+             registry's own declaration broke, rather than painting a face the
+             server never rolled. */
+          online.pendingDie = await paintCastEffect(
+            online.you, spell, column, dieBefore,
+            () => { throw new Error(`${spell.id} drew from the supply without declaring it`); },
+          );
+        },
+      );
+      if (!accepted) online.painted = null;
+      return accepted;
     },
     /* A PLACEMENT IS NOT A CAST. A cast's outcome belongs to the server — which
        dice SUNDER destroys, what FATE rerolls — so it must wait for the log. A
@@ -169,7 +229,7 @@ export function createTrialActionSubmitter(ports: TrialActionPorts) {
          would only be a second copy to drift. */
       const die = online?.pendingDie ?? 0;
       if (!online || die <= 0) return submit({ kind: 'place', placed_col: column });
-      online.optimisticPlace = { who: online.you, col: column, die };
+      online.painted = { kind: 'place', who: online.you, col: column, die };
       const placed = await submit(
         { kind: 'place', placed_col: column },
         () => animateOnlineMove(online.you, column, die,
@@ -177,7 +237,7 @@ export function createTrialActionSubmitter(ports: TrialActionPorts) {
       );
       /* A refused placement never entered the log, so nothing will arrive to
          match the marker; drop it or it would swallow a later real row. */
-      if (!placed) online.optimisticPlace = null;
+      if (!placed) online.painted = null;
       return placed;
     },
   };

@@ -2,7 +2,7 @@
 // more choreography than the ordinary stage-to-slot flight, but it still has
 // to obey the same standalone/widget coordinate boundary and generation
 // cleanup contract.
-import { fxRoot, pin } from '../fx.ts';
+import { adoptFx, pin } from '../fx.ts';
 import { PREVIEW_CLASSES } from '../spellicons.ts';
 
 export interface SpellMotionDelta {
@@ -43,7 +43,7 @@ export function pinDieGhost(
   ghost.removeAttribute('aria-label');
   ghost.setAttribute('aria-hidden', 'true');
   pin(ghost, sourceRect, options.zIndex ?? 64);
-  fxRoot().appendChild(ghost);
+  adoptFx(ghost);
 
   const previousVisibility = source.style.visibility;
   if (options.hideSource) source.style.visibility = 'hidden';

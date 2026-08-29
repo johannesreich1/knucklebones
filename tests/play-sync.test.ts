@@ -222,6 +222,55 @@ check(opponentBeats === 0,
   'a full-redraw projection performed an opponent turn instead of installing state',
   opponentBeats);
 
+/* ---- AN AUTO-PLAYED TURN STILL OWES THE OPPONENT THEIR BEAT ----
+   The turn clock ran out, the server placed for the player, and the bot's reply
+   rode along inside the same command. A TAPPED turn performs that reply through
+   playBotReply (play-move.ts): the seat changes hands, their die is rolled in
+   the open, the countdown runs in their colour and the think is drawn at
+   random. The auto path read only the Trial's `bot_actions` field, so ordinary
+   ranked set nothing, and the two fresh rows fell into the rebuild branch —
+   both dice repainted in one silent frame. Reported from a device 2026-08-29:
+   "when I get auto played, the opponents die if ai is placed instantly without
+   a delay/timer bar etc. looks wrong. Should be the same as for normal play."
+
+   Driven at fullRedraw=false, which is what the watchdog actually calls after a
+   nudge, so this enters the replay the player sees rather than a projection. */
+online = onlineState({ applied: 1, botBeatDue: true });
+S.boards = [emptyBoard(), emptyBoard()];
+S.turn = 1;
+routes = {
+  match_moves: () => ({ body: [
+    { idx: 0, who: 0, col: 0, die: 3 },
+    { idx: 1, who: 1, col: 1, die: 5 },   // placed FOR me by the clock
+    { idx: 2, who: 0, col: 1, die: 4 },   // the bot's reply, in the same command
+  ] }),
+  matches: () => ({ body: matchRow({ turn: 1, next_die: 6 }) }),
+};
+const beatsBefore = opponentBeats;
+check(await sync(false), 'the auto-played run did not sync');
+check(opponentBeats === beatsBefore + 1,
+  'AN AUTO-PLAYED TURN DROPPED THE OPPONENT\'S BEAT — their die lands with no '
+  + 'think and no clock, unlike the identical reply a tapped turn receives',
+  { opponentBeats, beatsBefore, applied: online.applied });
+/* ...and the run is fully claimed, so a later read cannot animate it twice. */
+check(online.applied === 3,
+  'the auto-played run left rows unclaimed, so they can animate a second time',
+  online.applied);
+/* The flag is spent by the batch that performed it: a refused read replays the
+   same rows, and nobody sits through a second think for a turn already seen. */
+check(online.botBeatDue === false,
+  'the bot-beat flag survived the batch that performed it', online.botBeatDue);
+
+/* THE NEGATIVE CONTROL. Without a committed bot reply the same two rows are an
+   ordinary catch-up and must NOT manufacture a turn that never happened. */
+online = onlineState({ applied: 1, botBeatDue: false });
+S.boards = [emptyBoard(), emptyBoard()];
+const quiet = opponentBeats;
+check(await sync(false), 'the catch-up run did not sync');
+check(opponentBeats === quiet,
+  'a catch-up with no committed bot reply still performed an opponent turn',
+  { opponentBeats, quiet });
+
 S.turn = savedGlobals.turn;
 S.die = savedGlobals.die;
 S.scoring = savedGlobals.scoring;

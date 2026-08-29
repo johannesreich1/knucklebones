@@ -39,6 +39,8 @@ export function fakeElement(): any {
     closest() { return null; }, contains() { return false; },
     getBoundingClientRect: rect,
     animate() { return { finished: Promise.resolve(), cancel() {}, onfinish: null }; },
+    /* The move animation clears whatever is still running on a node it reuses. */
+    getAnimations() { return [] as unknown[]; },
     focus() {}, blur() {}, click() {}, remove() {},
     /* <template> factory support: makeDie() reads .content.firstElementChild.
        Lazy getter — an eager child would recurse forever. */
@@ -71,6 +73,12 @@ export function installFakeDom(): void {
   });
   (globalThis as any).requestAnimationFrame =
     (callback: (time: number) => void) => setTimeout(() => callback(0), 0);
+  /* An owner test that enters the REPLAY rather than a projection runs the
+     shared move animation, and that reaches Sfx — which reads `window` before
+     it can decide there is no audio to make. A window with no AudioContext is
+     the honest stand-in: ac() returns null and every tone is skipped, exactly
+     as on a page whose context never unlocked. */
+  (globalThis as any).window ??= globalThis;
   (globalThis as any).matchMedia ??= () => ({
     matches: false, addEventListener() {}, removeEventListener() {},
     addListener() {}, removeListener() {},

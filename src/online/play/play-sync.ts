@@ -4,11 +4,10 @@
 import { BOUNTY, applyMove, emptyBoard, type Player } from '../../core/rules.ts';
 import { projectRankedActions, type RankedActionRow } from '../../core/ranked-actions.ts';
 import { spellById } from '../../core/spells.ts';
-import { applyAimPresentation, disarm, renderSpells, spendChargePresentation } from '../../flow/spells.ts';
-import { runSpellEffect } from '../../flow/spell-effects.ts';
+import { applyAimPresentation, disarm, renderSpells } from '../../flow/spells.ts';
+import { paintCastCharge, paintCastEffect } from './play-cast-paint.ts';
 import { handTurnTo } from '../../flow/turn.ts';
 import { S } from '../../state.ts';
-import { setStageDie } from '../../ui/die.ts';
 import { renderAll } from '../../ui/game/board.ts';
 import { supa } from '../api/client.ts';
 import type { MatchRow } from '../api/match-api.ts';
@@ -54,16 +53,17 @@ async function readTrialSnapshot(online: OnlineState): Promise<TrialSnapshot | n
   }, (attempt) => pause(60 * attempt));
 }
 
-/* Did this client already draw this exact row at tap time? Matched on seat,
-   column and die rather than an index, because the index the row lands at is
-   the server's answer and is not known when the paint starts. Consumed on the
-   first match: a later identical placement is a different tap and must animate. */
+/* Did this client already draw this exact row at tap time? Matched on kind,
+   seat, target and die rather than an index, because the index the row lands at
+   is the server's answer and is not known when the paint starts. Consumed on
+   the first match: a later identical action is a different tap and must play. */
 function alreadyPainted(online: OnlineState, row: RankedActionRow): boolean {
-  const painted = online.optimisticPlace;
-  if (!painted || row.kind !== 'place') return false;
-  if (painted.who !== row.who || painted.col !== row.placed_col
+  const painted = online.painted;
+  if (!painted || painted.kind !== row.kind || painted.who !== row.who
       || painted.die !== row.die_before) return false;
-  online.optimisticPlace = null;
+  const target = row.kind === 'place' ? row.placed_col : row.target_col;
+  if (painted.col !== target) return false;
+  online.painted = null;
   return true;
 }
 
@@ -86,6 +86,7 @@ async function animateTrialAction(
   if (row.kind === 'aim' && row.rune_id) {
     const spell = spellById(row.rune_id);
     if (!spell?.commitsOnAim) return;
+    if (alreadyPainted(online, row)) return;
     applyAimPresentation(row.who, spell, S.spellArmed === spell.id);
     renderSpells();
     return;
@@ -93,28 +94,20 @@ async function animateTrialAction(
   if (row.kind !== 'cast' || !row.rune_id || row.target_col === null) return;
   const spell = spellById(row.rune_id);
   if (!spell) return;
-  const reserved = S.spellAimCommitted?.id === spell.id
-    && S.spellAimCommitted.who === row.who;
-  if (!reserved) spendChargePresentation(row.who, spell, S.spellArmed === spell.id);
-  if (reserved) disarm(true);
-  S.spellCastThisTurn = row.who;
-  let die = row.die_before;
-  const context = {
-    mode: S.scoring,
-    die,
-    setDie(value: number) {
-      die = value;
-      this.die = value;
-      S.die = value;
-      setStageDie(value, row.who);
-    },
-    draw: () => row.die_after ?? row.die_before,
-    bagLeft: null,
-    charm: S.charm,
-  };
-  renderSpells();
-  await runSpellEffect(spell.id, row.who, row.target_col,
-    () => spell.apply(S.boards, row.who, row.target_col!, context));
+  /* A cast this client already performed at tap time. What is still owed
+     depends on the ONE flag that says whether the outcome was the server's:
+     nothing for a rune that cannot draw, and the die exchange for FATE, whose
+     charge beat covered the trip while the drawn face was still unknown. */
+  const painted = alreadyPainted(online, row);
+  if (!painted) {
+    paintCastCharge(row.who, spell, {
+      reserved: S.spellAimCommitted?.id === spell.id
+        && S.spellAimCommitted.who === row.who,
+      faceUp: S.spellArmed === spell.id,
+    });
+  } else if (!spell.drawsFromSupply) return;
+  await paintCastEffect(row.who, spell, row.target_col, row.die_before,
+    () => row.die_after ?? row.die_before);
 }
 
 function installTrialProjection(
@@ -237,7 +230,29 @@ async function syncStandard(
   });
   if (!ports.isCurrent(online) || !snapshot || online.animating) return false;
   const fresh = snapshot.moves.filter((row) => row.idx >= online.applied);
-  if (fresh.length === 1 && !fullRedraw && fresh[0].who !== online.you) {
+  /* Claimed once per batch, exactly as the Trial replay claims it: a refused
+     read replays the same rows, and nobody sits through a second think for a
+     turn they already watched. */
+  const botReply = online.botBeatDue;
+  online.botBeatDue = false;
+  /* THE AUTO-PLAYED TURN. The clock ran out, the server placed for the player
+     and the bot answered inside the same command — two fresh rows, mine then
+     theirs, which the rebuild below would paint in one silent frame. A tapped
+     turn performs that reply (play-move.ts -> playBotReply); so does this. */
+  if (botReply && !fullRedraw && fresh.length === 2
+      && fresh[0].who === online.you && fresh[1].who !== online.you) {
+    online.animating = true;
+    try {
+      for (const [index, row] of fresh.entries()) {
+        online.applied = row.idx + 1;
+        if (index === 1
+            && !await ports.openOpponentBeat(online, row.die)) return false;
+        await animateOnlineMove(row.who as Player, row.col, row.die,
+          () => ports.isCurrent(online));
+      }
+    } finally { online.animating = false; }
+    if (!ports.isCurrent(online)) return false;
+  } else if (fresh.length === 1 && !fullRedraw && fresh[0].who !== online.you) {
     online.applied = fresh[0].idx + 1;
     online.animating = true;
     try {

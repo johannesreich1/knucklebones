@@ -1,5 +1,6 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Player } from '../../core/rules.ts';
+import type { RankedActionKind } from '../../core/ranked-actions.ts';
 import type { JoinResult, MatchRow } from '../api/match-api.ts';
 import type { S } from '../../state.ts';
 
@@ -38,10 +39,18 @@ export interface OnlineState {
       opponent never sets it: their row arrives when they actually played, and
       a fake think would both lie and delay the player's own turn. */
   botBeatDue: boolean;
-  /* A placement this client already painted at tap time, so the authoritative
-     replay does not paint it a second time. Cleared as soon as it is matched,
-     or when the action is refused. */
-  optimisticPlace: { who: Player; col: number; die: number } | null;
+  /* A row this client already painted at tap time, so the authoritative replay
+     does not paint it a second time. Cleared as soon as it is matched, or when
+     the action is refused. Placements, casts and aims are one concept here —
+     same lifecycle, same consumption rule — so they share one marker rather
+     than three that could drift. `col` is the row's target: the placed column,
+     the cast column, or null for an aim, which chooses none. */
+  painted: {
+    kind: RankedActionKind;
+    who: Player;
+    col: number | null;
+    die: number;
+  } | null;
   /** Automatic placements already spent by this player, from the match row. */
   autoStreak: number;
   /** The away card has been raised for this streak; the tap retires it. */

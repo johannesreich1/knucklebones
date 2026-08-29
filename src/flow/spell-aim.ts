@@ -12,13 +12,10 @@ import { spellCopy } from '../i18n/index.ts';
 import { S } from '../state.ts';
 import { Sfx } from '../ui/audio.ts';
 import { setStatus } from '../ui/game/turn-state.ts';
-import {
-  hasSpellAimTransport,
-  transportSpellAim,
-} from './spell-cast-transport.ts';
+import { transportSpellAim } from './spell-cast-transport.ts';
 import { currentCastContext } from './spell-context.ts';
 import { clearSpellTargets } from './spell-gestures.ts';
-import { castable, caster, firstLegalColumn } from './spell-legality.ts';
+import { castable, caster, chargesOf, firstLegalColumn } from './spell-legality.ts';
 import { isAimedColumn } from './spell-rail.ts';
 import type { SpellInputTarget } from './spell-target.ts';
 
@@ -62,23 +59,30 @@ export function createSpellAim(ports: SpellAimPorts): SpellAim {
     if (who === null || !spell || !castable(id)) return false;
     S.spellArmed = id;
     if (spell.commitsOnAim) {
-      if (hasSpellAimTransport()) {
-        /* RANKED COMMITS THIS AIM ON THE SERVER, so nothing is painted here —
-           the die lights when the action log projects back. That makes the
-           refusal case load-bearing: the arm above is optimistic, and a
-           discarded result left the player holding a rune the server had
-           refused, unlit and uncastable, with no way back to a normal turn
-           short of restarting the app (reported from a device 2026-08-29,
-           against 5 real pvp-action 409s that day). Refusal disarms. */
-        void transportSpellAim(id)?.then((accepted) => {
-          if (accepted || S.spellArmed !== id || S.spellAimCommitted) return;
-          S.spellArmed = null;
-          clearSpellTargets();
-          ports.render();
-        });
-      } else {
-        applyAimPresentation(who, spell);
-      }
+      /* ONE PATH FOR BOTH DRIVERS. Ranked used to skip this and wait for the
+         action log to light the die, which cost it the marks entirely: the
+         transport below sets S.busy synchronously, caster() answers null while
+         it is set, and markAim then CLEARS every ring and preview rather than
+         drawing them. So a ranked ANVIL aim painted nothing at all until the
+         projection landed — and nothing ever, if it was refused. Reported from
+         a device 2026-08-29: "not even the dice got the effect color when
+         activating".
+         Painting first is safe because a refusal is fully recoverable: the
+         charge is put back here, and the resync that follows a refused action
+         reinstalls charges, board and aim from the log regardless. */
+      const held = chargesOf(who, id);
+      applyAimPresentation(who, spell);
+      void transportSpellAim(id)?.then((accepted) => {
+        if (accepted || S.spellAimCommitted?.id !== id) return;
+        /* A refused aim was never spent on the server. Hand the charge back
+           rather than leaving the player a rune they cannot cast and cannot
+           get rid of — the freeze reported the same day, against 5 real
+           pvp-action 409s. */
+        S.spellCharges[who][id] = held;
+        S.spellCastThisTurn = null;
+        clearAim();
+        ports.render();
+      });
     }
     ports.render();
     setStatus({ visible: () => spellCopy(spell.id).aimCompact,
@@ -146,8 +150,9 @@ export function createSpellAim(ports: SpellAimPorts): SpellAim {
     const id = S.spellArmed;
     if (!id) return false;
     const spell = spellById(id);
-    const committed = !!S.spellAimCommitted
-      || (hasSpellAimTransport() && !!spell?.commitsOnAim);
+    /* Every committed aim now says so in S, ranked included, so this is the
+       whole question — the transport no longer has to be asked separately. */
+    const committed = !!S.spellAimCommitted;
     if (!committed) {
       disarm(true);
       return false;

@@ -32,6 +32,20 @@ export interface SpellSpec {
      charge is not spent until a legal enemy column is selected. Lifecycle
      cleanup may still force the aim closed when the turn or game ends. */
   locksOnAim?: boolean;
+  /* Does this cast draw from the DIE SUPPLY? core holds no randomness of its
+     own — the supply arrives as CastCtx.draw, with offline handing it
+     Math.random and ranked handing it the authoritative one — so a spell that
+     never calls it is fully determined by (state, seat, column). A client
+     running this same registry can then compute the exact result, which is
+     what lets ranked paint the cast at tap time instead of waiting out the
+     round trip, exactly as an ordinary move already does.
+
+     DECLARED, NOT INFERRED. Whether a body happens to call draw() is a fact
+     that changes silently when the body changes, and every reader would have
+     to re-derive it. tests/spells.test.ts pins the two together by running
+     each apply() against a draw that throws, so a spell that starts drawing
+     without saying so fails rather than quietly becoming unpredictable. */
+  drawsFromSupply?: boolean;
   /* Optional die-level preview for a legal column target. The returned board
      index is semantic (centre-nearest first), never a rendered slot index. */
   previewDieIndex?(st: GameState, who: Player, col: number, ctx?: CastCtx): number | null;

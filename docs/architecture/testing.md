@@ -416,6 +416,27 @@ other — that is how the Trial kept the full server round trip on every placeme
 after ordinary ranked had stopped feeling it, and how a bot "think" reached one
 path months after the other. Change one, check the other.
 
+**A red run against a stale `dist/` is not a red run.** The browser suites serve
+the BUILT tree, and `npm run build` typechecks first — so removing a fix to watch
+its test fail can leave the build refusing (`error TS6133: declared but never
+read`, from the import the fix was the only user of) while the suite happily
+re-runs the PREVIOUS, fixed bundle and passes. That is the worst possible
+outcome: it reads as "the test does not detect this", which invites weakening the
+test. Measured 2026-08-29 on the flying-die colour fix, twice in a row. So
+disable a fix in a way that still compiles — an early return behind a
+`const OFF: boolean = true`, never a deleted call — and CHECK the build succeeded
+before believing the run. Confirming the marker actually reached `dist/` costs
+one `grep`.
+
+**A clamped counter cannot show a doubled action.** `spendChargePresentation`
+floors a charge at zero, so spending a one-use rune twice reads exactly like
+spending it once, and an assertion on `S.spellCharges` passes either way. What
+the player sees is the CARD leaving the rail — one `.rune-played` copy per spend
+— so count those. The same reasoning found that the ANVIL double-spend is not
+observable at all today (its single charge is already gone by cast time, so the
+second spend finds no card to fly): said plainly in the test rather than left as
+a green tick implying a guard that is not there.
+
 ## Change verification
 
 Run the narrow owner suite while iterating. Before handoff or deployment,

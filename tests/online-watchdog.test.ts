@@ -3,6 +3,7 @@ import {
 } from '../src/online/play/play-recovery.ts';
 import { runOnlineWatchdog } from '../src/online/play/play-watchdog.ts';
 import type { OnlineState } from '../src/online/play/play-types.ts';
+import type { MatchRow } from '../src/online/api/match-api.ts';
 import { S } from '../src/state.ts';
 
 const problems: string[] = [];
@@ -200,6 +201,48 @@ check(idleNudges === 1,
   'an expired turn clock never reached the server on a visible own turn', {
     idleNudges,
   });
+
+/* ---- THE AUTO PATH MUST CLAIM THE BOT'S REPLY IN BOTH PROTOCOLS ----
+   pvp-move answers an `auto` command with the same `bot_move` a tapped move
+   gets, and play-sync performs it only when this flag says one is owed. The
+   watchdog read the Trial's `bot_actions` field alone, so an ordinary ranked
+   auto-play claimed nothing and its two fresh rows were repainted in one
+   silent frame — no seat change, no rolled die, no clock. */
+recoveryOnline.trial = false;
+recoveryOnline.recoverySync = false;
+recoveryOnline.recoveryActionVersion = null;
+recoveryOnline.botBeatDue = false;
+recoveryOnline.selfAutoDue = true;
+recoveryOnline.done = false;
+S.turn = recoveryOnline.you;
+/* The stubbed sync never replays, so the flag is left exactly as the watchdog
+   set it — which is the thing under test. */
+const autoMatch = { id: 'recovery-match' } as unknown as MatchRow;
+const autoPorts = (bot: { col: number; die: number } | null) => ({
+  ...recoveryPorts,
+  sync: async () => true,
+  nudgeMove: async () => ({ status: 200, data: { match: autoMatch, bot_move: bot } }),
+});
+await runOnlineWatchdog(autoPorts({ col: 1, die: 4 }));
+/* Boolean() on purpose: the watchdog mutates this field through a call the
+   compiler cannot see into, so it still believes the literal `false` assigned
+   above and would reject the comparison as dead code. */
+const claimedWithBot = Boolean(recoveryOnline.botBeatDue);
+check(claimedWithBot,
+  'AN ORDINARY RANKED AUTO-PLAY DID NOT CLAIM THE BOT REPLY IT WAS HANDED — '
+  + 'the reply is in the response, but nothing marks it as owed, so the sync '
+  + 'repaints it with no think and no clock',
+  { botBeatDue: recoveryOnline.botBeatDue });
+
+/* ...and a bot-less answer (a human opponent, or a move that ended the game)
+   must not claim a beat that never happened. */
+recoveryOnline.selfAutoDue = true;
+recoveryOnline.botBeatDue = false;
+await runOnlineWatchdog(autoPorts(null));
+const claimedWithoutBot = Boolean(recoveryOnline.botBeatDue);
+check(!claimedWithoutBot,
+  'an auto-play with no bot reply still claimed an opponent beat',
+  { botBeatDue: recoveryOnline.botBeatDue });
 
 S.gen = savedOnlineGlobals.gen;
 S.turn = savedOnlineGlobals.turn;

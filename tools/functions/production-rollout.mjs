@@ -91,7 +91,10 @@ export const RUNE_TRIAL_MIGRATION_VERSION = '20260825205241';
 export const RUNE_TRIAL_MIGRATION_NAME = 'rune_trial_ranked_v2';
 export const SUPABASE_READBACK_OMISSION_HASHES = Object.freeze({
   '*:core/ranked-action-types.ts': 'b2876e639391167cda7cfd070955adcca63f2be5798cdff0f1576ae27aea198c',
-  '*:core/spell-types.ts': 'b56906dd5fc6c9ad56aaa7b8329a0365cc23c80f6d44814d04ebce9165ab35d6',
+  // Re-pinned 2026-08-29 for SpellSpec.drawsFromSupply — the flag ranked reads
+  // to decide whether it may paint a cast at tap time. Still two interfaces
+  // and no runtime export, so Supabase keeps pruning it from the readback.
+  '*:core/spell-types.ts': 'e0e61775ffd9f33e163ff13c16602a3ab397fbaeba6c5caa302a956ab879f367',
   // Re-pinned 2026-08-27 for the p{1,2}_auto_streak columns on MatchRow.
   'account-delete:_shared/types.ts': '81737b8348ca994d83f7a99f7b81902cdf33816d89ae5f126092301fda1ea833',
 });

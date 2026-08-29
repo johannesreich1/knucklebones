@@ -43,6 +43,31 @@ export function paintHuePair(
   }
 }
 
+/**
+ * Carry a painted pair onto an element that has LEFT the one wearing it.
+ *
+ * A die flying to its slot, a spell's travelling stack and the anvil's overlay
+ * are pieces of the TABLE, but they animate from the fx root — outside it, and
+ * therefore outside its pair. `.die.p1` resolves `--dc` from the inherited
+ * `--p1`, so a ranked table that swapped the pair for its viewer sent every
+ * such traveller out in the opponent's colour, landing it in the right one.
+ * Reported from a device 2026-08-29: "the dice that flies when placed is in the
+ * opposite color still".
+ *
+ * Copying whatever the source is CURRENTLY wearing keeps this ignorant of
+ * ranked seating: an unpainted table copies nothing and the traveller inherits
+ * the app root's pair exactly as before.
+ */
+export function copyHuePair(from: CSSStyleDeclaration, to: CSSStyleDeclaration): void {
+  for (const slot of ['p1', 'p2']) {
+    for (const suffix of SLOT_PROPERTIES) {
+      const name = `--${slot}${suffix}`;
+      const value = from.getPropertyValue(name);
+      if (value) to.setProperty(name, value);
+    }
+  }
+}
+
 /** Drop a locally painted pair so the element inherits the app root's again. */
 export function clearHuePair(style: CSSStyleDeclaration): void {
   for (const slot of ['p1', 'p2']) {

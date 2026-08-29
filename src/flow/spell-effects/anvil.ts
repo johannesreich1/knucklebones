@@ -4,7 +4,7 @@ import { anvilTargetIndex } from '../../core/spells.ts';
 import { S } from '../../state.ts';
 import { Sfx, vibrate } from '../../ui/audio.ts';
 import { faceRotated, slotEl, slotIdx } from '../../ui/dom.ts';
-import { REDUCED, fxRoot, pin } from '../../ui/fx.ts';
+import { REDUCED, adoptFx, pin } from '../../ui/fx.ts';
 import { renderSide } from '../../ui/game/board.ts';
 import {
   cancelSpellAnimations,
@@ -50,7 +50,7 @@ function makeWorkpiece(source: HTMLElement, who: 0 | 1): Workpiece {
   const ring = document.createElement('i');
   ring.className = 'anvil-recast-ring';
   root.append(face, heat, glow, ring);
-  fxRoot().appendChild(root);
+  adoptFx(root);
   return { root, face, heat, glow, ring };
 }
 

@@ -47,7 +47,7 @@ export function createOnlineState(
     selfAutoDue: false,
     resigning: false,
     botBeatDue: false,
-    optimisticPlace: null,
+    painted: null,
     autoStreak: 0,
     finalizing: false,
     done: false,

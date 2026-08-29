@@ -11,7 +11,7 @@ import { SPEC, emptyBoard, boardTotal, applyMove, openStrikes, freshCharm,
          type GameState, type Mode, AI, ME } from '../src/core/rules.ts';
 import { SPELLS, spellById, swingOf, bestTarget, machineCast,
          anvilTargetIndex, type CastCtx } from '../src/core/spells.ts';
-import { checkSpellRegistryContract } from './support/spell-registry-contract.ts';
+import { checkSpellRegistryContract, checkSpellDeclarations } from './support/spell-registry-contract.ts';
 import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
@@ -19,6 +19,7 @@ const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m 
 
 /* ---- registry and picker promises ---- */
 checkSpellRegistryContract(check);
+checkSpellDeclarations(check);
 
 /* every spell needs the cast context: a caller with no hand to offer (an
    ungated flow, a stray call) is refused before anything moves */
@@ -45,21 +46,6 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
   };
 }
 
-/* ---- AIM-TIME LOCKS ARE DECLARATIVE ----
-   Every completed cast is final. ANVIL is the one earlier commitment: its aim
-   marks reveal the exact die before a column is chosen, so the registry must
-   declare both the commitment and the die-level preview that explains it.
-   PILFER locks the question without spending its charge until it is answered. */
-{
-  for (const s of SPELLS) {
-    if (!s.commitsOnAim) continue;
-    check(s.target === 'column' && typeof s.previewDieIndex === 'function',
-      'a spell that commits while aiming must show the exact board target: ' + s.id);
-  }
-  check(spell('anvil').commitsOnAim === true, 'ANVIL markings commit before column selection');
-  check(spell('pilfer').locksOnAim === true && !spell('pilfer').commitsOnAim,
-    'PILFER aim locks until answered but spends only on a legal target');
-}
 
 /* ---- FATE: discard and draw ---- */
 {

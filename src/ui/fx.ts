@@ -5,6 +5,7 @@ import { SPEC, type Player } from '../core/rules.ts';
 import { S } from '../state.ts';
 import { $, colEl, slotEl, slotIdx, faceRotated } from './dom.ts';
 import { appRoot, isEmbed, rootRect } from './embed.ts';
+import { copyHuePair } from './hues.ts';
 import { setReducedMotionPresentation } from './game/root-state.ts';
 
 const SYSTEM_REDUCED: boolean = (() => {
@@ -29,6 +30,17 @@ export function setReducedMotion(override: boolean | null): void {
    which is its own containing block. One definition, so that difference is
    handled once. */
 export function fxRoot(): HTMLElement { return appRoot(); }
+
+/* Hand an element to the fx layer, WEARING THE TABLE'S COLOURS. The fx root is
+   the app root, which carries the player's own stored pair — a ranked table
+   that swapped the pair for its viewer does not reach it, so a traveller
+   appended raw resolves the wrong `--p1`. Every escapee goes through here, so
+   the rule is stated once instead of at each of the four sites. */
+export function adoptFx(el: HTMLElement): void {
+  const table = appRoot().querySelector<HTMLElement>('#tableEl');
+  if (table) copyHuePair(table.style, el.style);
+  fxRoot().appendChild(el);
+}
 
 export function pin(el: HTMLElement, r: DOMRect, z = 60): void {
   const off = isEmbed() ? rootRect() : { left: 0, top: 0 };

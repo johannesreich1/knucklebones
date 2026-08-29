@@ -5,7 +5,7 @@ import { S } from '../state.ts';
 import { appRoot, isEmbed, rootRect } from '../ui/embed.ts';
 import { Sfx } from '../ui/audio.ts';
 import { colEl, ownerOf } from '../ui/dom.ts';
-import { fxRoot } from '../ui/fx.ts';
+import { adoptFx } from '../ui/fx.ts';
 import { rootElementFromPoint } from '../ui/query.ts';
 import { PREVIEW_CLASSES, spellHue } from '../ui/spellicons.ts';
 import { runeCardFaces } from '../ui/runedeal.ts';
@@ -116,7 +116,7 @@ function showGhost(id: string): void {
   next.style.setProperty('--rune-hue', spellHue(id));
   next.style.position = isEmbed() ? 'absolute' : 'fixed';
   next.innerHTML = runeCardFaces(spell, 12, 24, false);
-  fxRoot().appendChild(next);
+  adoptFx(next);
   ghost = next;
 }
 

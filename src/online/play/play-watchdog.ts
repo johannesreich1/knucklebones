@@ -67,9 +67,17 @@ export async function runOnlineWatchdog(ports: OnlineWatchdogPorts): Promise<voi
       requireProjectionRecovery(online, online.trial
         ? response.data.action_version ?? response.data.match.action_version ?? null
         : null);
-      // A turn the clock took for the player still hands the bot its own, and
-      // that answer deserves the same beat a tapped turn gets.
-      online.botBeatDue = !!response.data.bot_actions?.length;
+      /* A turn the clock took for the player still hands the bot its own, and
+         that answer deserves the same beat a tapped turn gets. BOTH protocols
+         commit one: a Trial as extra action rows, ordinary ranked as the same
+         `bot_move` a tapped turn returns (pvp-move answers `auto` commands with
+         it too). Reading only the Trial field left the ordinary auto path with
+         nothing to perform, so its sync repainted both dice at once — reported
+         from a device 2026-08-29: "when I get auto played, the opponents die if
+         ai is placed instantly without a delay/timer bar". */
+      online.botBeatDue = online.trial
+        ? !!response.data.bot_actions?.length
+        : !!response.data.bot_move;
       const recovered = await recoverProjection(false);
       if (recovered) {
         ports.applyMatchRow(response.data.match);
