@@ -63,7 +63,19 @@ export function createSpellAim(ports: SpellAimPorts): SpellAim {
     S.spellArmed = id;
     if (spell.commitsOnAim) {
       if (hasSpellAimTransport()) {
-        void transportSpellAim(id);
+        /* RANKED COMMITS THIS AIM ON THE SERVER, so nothing is painted here —
+           the die lights when the action log projects back. That makes the
+           refusal case load-bearing: the arm above is optimistic, and a
+           discarded result left the player holding a rune the server had
+           refused, unlit and uncastable, with no way back to a normal turn
+           short of restarting the app (reported from a device 2026-08-29,
+           against 5 real pvp-action 409s that day). Refusal disarms. */
+        void transportSpellAim(id)?.then((accepted) => {
+          if (accepted || S.spellArmed !== id || S.spellAimCommitted) return;
+          S.spellArmed = null;
+          clearSpellTargets();
+          ports.render();
+        });
       } else {
         applyAimPresentation(who, spell);
       }

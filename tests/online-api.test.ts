@@ -131,6 +131,22 @@ check(readFileSync('src/online/runes/trial-offer.ts', 'utf8')
   .includes('deadline: () => deadlineValue'),
   'ranked does not hand the picker the deadline it races, so the two can disagree', null);
 
+/* A RANKED AIM IS OPTIMISTIC, so its refusal is load-bearing. arm() sets
+   S.spellArmed before the server has accepted anything and paints nothing —
+   ranked commits the aim server-side, so the die only lights when the log
+   projects back. Discarding the transport result therefore left the player
+   holding a rune the server had refused: unlit, uncastable, and unrecoverable
+   short of restarting the app (device report 2026-08-29, against 5 real
+   pvp-action 409s that day). This is a SOURCE pin, and a weaker thing than a
+   painted assertion: reaching a refused aim in the harness needs ANVIL
+   castable, which needs a full own column and a current die unlike the weakest
+   in it. Tracked separately. */
+const spellAimSource = readFileSync('src/flow/spell-aim.ts', 'utf8');
+check(/transportSpellAim\(id\)\?\.then\(/.test(spellAimSource)
+  && spellAimSource.includes('S.spellArmed = null;'),
+'a refused ranked aim no longer disarms — the player keeps a rune the server refused',
+null);
+
 const trialActionSource = readFileSync('src/online/play/play-trial-actions.ts', 'utf8');
 check(trialActionSource.includes('online.actionApplied >= committedVersion')
   && trialActionSource.includes('boundedAction(')

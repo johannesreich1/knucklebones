@@ -31,6 +31,10 @@ export async function installTrialMatchRoutes(page, {
   /* Hold the committed action back, so a probe can tell a board that filled
      at tap time apart from one that waited for the server. */
   actionDelay = 0,
+  /* Refuse the next committed action with this status. Any non-200 that is not
+     "uncertain" (status 0, 5xx, or a 200 with no match) takes submit()'s
+     refusal branch — 409 is what production actually returns. */
+  refuseWith = null,
 } = {}) {
   const boards = [emptyBoard(), emptyBoard()];
   const rows = [];
@@ -120,6 +124,10 @@ export async function installTrialMatchRoutes(page, {
   await page.route('**/functions/v1/pvp-action', async (route) => {
     actionCalls++;
     if (actionDelay) await new Promise((resolve) => setTimeout(resolve, actionDelay));
+    if (refuseWith) {
+      return route.fulfill({ status: refuseWith, contentType: 'application/json',
+        body: JSON.stringify({ error: 'refused' }) });
+    }
     const body = route.request().postDataJSON() ?? {};
     const action = body.action ?? {};
     if (action.kind !== 'place' || !legalCols(boards[match.turn]).includes(action.placed_col)) {
