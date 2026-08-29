@@ -18,6 +18,7 @@ import {
   EdgeOperationsService, edgeContext, jsonBody, materializeEdgeOperations, standardJoinInput,
 } from './support/edge-operations.ts';
 import { runTurnCommandTests } from './support/edge-turn-command.ts';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -50,5 +51,4 @@ try {
   operations.dispose();
 }
 
-console.log(JSON.stringify({ problems, errs }, null, 2));
-process.exit(problems.length || errs.length ? 1 : 0);
+emitReport({ problems, errs }, problems.length || errs.length);

@@ -17,6 +17,7 @@
 // computed pseudo-element pixels, per the rule single-strike-visibility exists
 // to enforce.
 import pkg from 'playwright';
+import { emitReport } from './support/emit-report.mjs';
 const { chromium, devices } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';   // the single-file build
 const browser = await chromium.launch();
@@ -166,6 +167,5 @@ try {
   check(out.heatsCb.botX2.mark !== out.heatsCb.botX3.mark,
     'ice and hot red collapsed into one bracket colour', out.heatsCb);
 
-  console.log(JSON.stringify({ out, problems }, null, 2));
 } finally { await browser.close(); }
-process.exit(problems.length ? 1 : 0);
+emitReport({ out, problems }, problems.length);

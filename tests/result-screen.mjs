@@ -20,6 +20,7 @@
 import pkg from 'playwright';
 import { RESOURCES } from '../src/i18n/catalogs.ts';
 import { LOCALE_REGISTRY } from '../src/i18n/locale.ts';
+import { emitReport } from './support/emit-report.mjs';
 const { chromium } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
 const browser = await chromium.launch();
@@ -327,6 +328,5 @@ try {
     await ctx.close();
   }
 
-  console.log(JSON.stringify({ out, problems }, null, 2));
 } finally { await browser.close(); }
-process.exit(problems.length ? 1 : 0);
+emitReport({ out, problems }, problems.length);

@@ -101,7 +101,8 @@ const SESSION = {
 };
 
 const browser = await webkit.launch();
-const visit = createVisit({ browser, URL, SESSION, GUEST_ID });
+const visit = createVisit({ browser, URL, SESSION, GUEST_ID,
+  onHarnessError: (message) => problems.push(message) });
 /* A SECOND ENGINE, LAUNCHED ONLY IF A SCENARIO ASKS FOR ONE. This suite is
    WebKit, and that is exactly why a Chromium scroll-anchoring bug shipped: the
    bug cannot exist in an engine that has not implemented the feature. One
@@ -111,7 +112,8 @@ let chrome = null;
 let chromeVisit = null;
 const visitChromium = async (options) => {
   chrome ??= await chromium.launch();
-  chromeVisit ??= createVisit({ browser: chrome, URL, SESSION, GUEST_ID });
+  chromeVisit ??= createVisit({ browser: chrome, URL, SESSION, GUEST_ID,
+    onHarnessError: (message) => problems.push(message) });
   return chromeVisit(options);
 };
 const suite = { visit, visitChromium, out, check };

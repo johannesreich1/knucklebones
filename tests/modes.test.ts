@@ -12,6 +12,7 @@ import { poolSequence, POOL_PER_FACE } from '../src/core/dice.ts';
 import { rebuild, matchTotal, type MatchState } from '../src/core/match.ts';
 import { searchRoot, riskOf } from '../src/core/ai.ts';
 import { MODES, pickMode, modeById } from '../src/core/modes.ts';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -187,5 +188,4 @@ check(riskOf(fullCol, AI, COLSHIELD) === riskOf(fullCol, AI, CLASSIC),
       'colshield risk must read classic — the shield skip lost games', riskOf(fullCol, AI, COLSHIELD));
 check(riskOf(fullCol, AI, CLASSIC) > 0, 'classic full column still at risk', riskOf(fullCol, AI, CLASSIC));
 
-console.log(JSON.stringify({ problems, errs: [] }, null, 2));
-process.exit(problems.length ? 1 : 0);
+emitReport({ problems, errs: [] }, problems.length);

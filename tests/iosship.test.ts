@@ -36,6 +36,7 @@ import { verifyIosPayloadContract } from './support/ios-payload-contract.ts';
 import { verifyIosPodContract, verifyPodParsersCouldFail } from './support/ios-pod-contract.ts';
 import { verifyIosShellContract } from './support/ios-shell-contract.ts';
 import { verifyNodeRuntimeContract } from './support/node-runtime-contract.ts';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -147,12 +148,11 @@ if (existsSync(CONFIG)) {
 
 verifyPodParsersCouldFail(check, pods);
 
-console.log(JSON.stringify({
+emitReport({
   nodePin, nodeRange,
   appId: APP_ID, xcodeIds, gcBundle, requireSynced: REQUIRE_SYNCED,
   gameCenterPackage: GC_PACKAGE,
   podfileSha: pods.podfileSha, stampedSha: pods.stamped,
   declared: Object.fromEntries(pods.declared), locked: Object.fromEntries(pods.locked),
   problems, errs,
-}, null, 2));
-process.exit(problems.length || errs.length ? 1 : 0);
+}, problems.length || errs.length);

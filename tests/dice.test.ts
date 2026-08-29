@@ -5,6 +5,7 @@
 // breaks — that is a red build, not a snapshot to update casually.
 // Run: mise exec -- node --experimental-strip-types tests/dice.test.ts
 import { diceStream } from '../src/core/dice.ts';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -37,5 +38,4 @@ for (let i = 0; i < 60_000; i++) {
 for (let f = 0; f < 6; f++)
   check(counts[f] > 8_500 && counts[f] < 11_500, 'face distribution skewed', { face: f + 1, n: counts[f] });
 
-console.log(JSON.stringify({ counts, problems, errs: [] }, null, 2));
-process.exit(problems.length ? 1 : 0);
+emitReport({ counts, problems, errs: [] }, problems.length);

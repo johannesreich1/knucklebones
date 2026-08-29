@@ -1,4 +1,5 @@
 import pkg from 'playwright';
+import { emitReport } from '../support/emit-report.mjs';
 
 const { chromium, devices } = pkg;
 const browser = await chromium.launch();
@@ -144,5 +145,4 @@ for (const scenario of scenarios) {
 }
 
 await browser.close();
-console.log(JSON.stringify({ observations, problems, errs }, null, 2));
-process.exit(problems.length || errs.length ? 1 : 0);
+emitReport({ observations, problems, errs }, problems.length || errs.length);

@@ -11,6 +11,7 @@ import { SUPABASE_AUTH_STORAGE_KEY } from '../src/config.ts';
 import { servedBase } from './serve.mjs';
 import { readLivePvpConfig } from './support/live-pvp-config.mjs';
 import { cleanupLivePvpState } from './support/live-pvp-cleanup.mjs';
+import { emitReport } from './support/emit-report.mjs';
 // its own origin, on a kernel-picked port: nothing to start by hand, nothing
 // for a peer session's gate to collide with (tests/serve.mjs)
 const liveConfig = readLivePvpConfig();
@@ -279,5 +280,4 @@ try {
     supabaseUrl: SUPA, publishableKey: ANON, participants,
   }));
 }
-console.log(JSON.stringify({ ...report, problems, errs }, null, 2));
-process.exit(problems.length || errs.length ? 1 : 0);
+emitReport({ ...report, problems, errs }, problems.length || errs.length);

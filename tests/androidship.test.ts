@@ -8,6 +8,7 @@ import { verifyAndroidBuiltArtifacts } from './support/android-artifact-contract
 import { verifyAndroidResourceContract } from './support/android-resource-contract.ts';
 import { filesUnder, sameBytes } from './support/ios-artifacts.ts';
 import { verifyNodeRuntimeContract } from './support/node-runtime-contract.ts';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -242,7 +243,7 @@ if (REQUIRE_BUILT) {
   errs.push(...verifyAndroidBuiltArtifacts(check, { aab: AAB, debugApk: DEBUG_APK }).errs);
 }
 
-console.log(JSON.stringify({
+emitReport({
   nodePin,
   nodeRange,
   appId: APP_ID,
@@ -254,5 +255,4 @@ console.log(JSON.stringify({
   splashRenditions,
   problems,
   errs,
-}, null, 2));
-process.exit(problems.length || errs.length ? 1 : 0);
+}, problems.length || errs.length);

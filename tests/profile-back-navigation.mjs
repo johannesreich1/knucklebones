@@ -32,6 +32,7 @@ const { chromium } = pkg;
 import { SUPABASE_AUTH_STORAGE_KEY } from '../src/config.ts';
 import { LOCALE_REGISTRY } from '../src/i18n/locale.ts';
 import { servedBase } from './serve.mjs';
+import { emitReport } from './support/emit-report.mjs';
 const URL = await servedBase();
 const problems = [], out = {};
 const check = (c, m, x) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -319,6 +320,5 @@ try {
   out.errs = errs;
   check(errs.length === 0, 'page errors', errs);
   await ctx.close();
-  console.log(JSON.stringify({ out, problems }, null, 2));
 } finally { await browser.close(); }
-process.exit(problems.length ? 1 : 0);
+emitReport({ out, problems }, problems.length);

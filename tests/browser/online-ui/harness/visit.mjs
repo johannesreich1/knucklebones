@@ -1,12 +1,13 @@
 import { installOnlineRoutes } from './routes.mjs';
 import { installTrialMatchRoutes } from './trial-match.mjs';
 import { readOnlineView } from './read-view.mjs';
+import { guardRoutes } from './guard-routes.mjs';
 import { probeFaceoff } from '../scenarios/faceoff-probe.mjs';
 import { probeAccountActions } from './account-probes.mjs';
 
 /* One harness: open the app with Supabase answering however this case wants,
    tap Account, and report what the player is looking at. */
-export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
+export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError }) {
   return async function visit({
     anonymous = 200,
     /* The Apple provider is reachable only where the Capacitor plugin is —
@@ -81,6 +82,10 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID }) {
                                            locale,
                                            ...(motion ? { reducedMotion: motion } : {}) });
     const page = await ctx.newPage();
+    /* Before ANY module installs a stub: a handler that throws must fail the
+       suite rather than leave a dead endpoint that reads as a missing
+       feature. */
+    if (onHarnessError) guardRoutes(page, onHarnessError);
     const errs = [];
     page.on('pageerror', (e) => errs.push(e.message));
 

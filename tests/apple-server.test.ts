@@ -6,6 +6,7 @@ import {
 } from '../supabase/functions/_shared/apple.ts';
 import { handleIdentityRequest } from '../cloudflare/identity-gateway/worker.ts';
 import { readFileSync } from 'node:fs';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const check = (ok: boolean, message: string, detail?: unknown) => {
@@ -125,5 +126,4 @@ try {
   globalThis.fetch = originalFetch;
 }
 
-console.log(JSON.stringify({ problems }, null, 2));
-process.exit(problems.length ? 1 : 0);
+emitReport({ problems }, problems.length);

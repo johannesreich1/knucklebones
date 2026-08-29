@@ -10,6 +10,7 @@
 // Hence the rule this suite exists to enforce: assert what the player can SEE
 // (computed opacity), never merely what the DOM contains.
 import pkg from 'playwright';
+import { emitReport } from './support/emit-report.mjs';
 const { chromium, devices } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';   // the single-file build
 const browser = await chromium.launch();
@@ -77,6 +78,5 @@ await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(lo
   out.classic = await strike([4, 4], 4);
   check(out.classic.state === '[]' && out.classic.visible === 0, 'classic destruction changed', out.classic);
 
-  console.log(JSON.stringify({ out, problems }, null, 2));
 } finally { await browser.close(); }
-process.exit(problems.length ? 1 : 0);
+emitReport({ out, problems }, problems.length);

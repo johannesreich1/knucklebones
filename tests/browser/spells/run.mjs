@@ -30,6 +30,7 @@ import { runPilferAnvilEffectScenarios } from './scenarios/pilfer-anvil-effects.
 import { runProtectionScenarios } from './scenarios/protections.mjs';
 import { runLayoutScenarios } from './scenarios/layout.mjs';
 import { runScoringWardScenarios } from './scenarios/scoring-ward.mjs';
+import { emitReport } from '../../support/emit-report.mjs';
 
 const SCENARIOS = Object.freeze([
   { id: 'picker', run: runPickerScenarios },
@@ -55,6 +56,9 @@ const SHARDS = Object.freeze({
 
 validateScenarioShards('spell browser', SCENARIOS, SHARDS);
 let scenarios;
+/* Assigned inside the run, read after it: the report is emitted once the
+   browser is closed, so it may not be scoped to the try that fills it. */
+let reportOut;
 try {
   scenarios = selectScenarios('spell browser', SCENARIOS, process.argv.slice(2), SHARDS);
 } catch (error) {
@@ -216,8 +220,7 @@ await ctx.addInitScript((snapshot) => localStorage.setItem('knucklebones.runes.v
      report tiny so the parent gate does not buffer and parse hundreds of KB;
      failures retain the full observations needed to diagnose the scenario.
      The no-argument diagnostic contract remains byte-for-shape unchanged. */
-  const reportOut = scenarios.length === SCENARIOS.length || problems.length
+  reportOut = scenarios.length === SCENARIOS.length || problems.length
     ? out : { scenarios: scenarios.map(({ id }) => id) };
-  console.log(JSON.stringify({ out: reportOut, problems }, null, 2));
 } finally { await browser.close(); }
-process.exit(problems.length ? 1 : 0);
+emitReport({ out: reportOut, problems }, problems.length);

@@ -5,6 +5,7 @@ import { ME, AI, type GameState, type Player, emptyBoard, legalCols, isFull, app
 import { diceStream } from '../src/core/dice.ts';
 import { rebuild, type MoveRow } from '../src/core/match.ts';
 import { delta } from '../src/core/ladder.ts';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -55,5 +56,4 @@ check(delta(1000, 1000, 1) + delta(1000, 1000, 0) > 0, 'the ladder no longer cli
 check(delta(4000, 0, 1) < delta(1000, 1000, 1), 'favourite win gains too much', delta(4000, 0, 1));
 check(delta(0, 4000, 1) > delta(1000, 1000, 1), 'underdog win gains too little', delta(0, 4000, 1));
 
-console.log(JSON.stringify({ movesInMatch: log.length, problems, errs: [] }, null, 2));
-process.exit(problems.length ? 1 : 0);
+emitReport({ movesInMatch: log.length, problems, errs: [] }, problems.length);

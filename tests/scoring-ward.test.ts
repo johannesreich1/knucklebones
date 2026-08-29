@@ -6,6 +6,7 @@ import {
   applyMove, boardTotalMode, distinctPipSum, freshCharm, openStrikes, totalOf,
   type GameState, type Mode,
 } from '../src/core/rules.ts';
+import { emitReport } from './support/emit-report.mjs';
 import {
   machineCast, spellById, swingOf, type CastCtx,
 } from '../src/core/spells.ts';
@@ -138,5 +139,4 @@ const context = (over: Partial<CastCtx> = {}): CastCtx => ({
     'an already-shielded target is legal but its 15-point score bonus alone does not force a cast');
 }
 
-console.log(JSON.stringify({ problems, errs: [] }, null, 2));
-process.exit(problems.length ? 1 : 0);
+emitReport({ problems, errs: [] }, problems.length);

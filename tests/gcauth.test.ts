@@ -17,6 +17,7 @@ import {
   trustedAppleGameCenterCertificate, verifiedPlayerId, payload, spkiFromCertificate,
 } from '../supabase/functions/gc-auth/verify.ts';
 import { runGcAuthOperationTests } from './support/gcauth-operation.ts';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -313,5 +314,4 @@ check(Buffer.from(p).toString('hex') === '41424344' + '0102030405060708' + 'ff',
 // deleted. The operation-owned fakes/cases live in their focused support file.
 await runGcAuthOperationTests(check, GAME_ID);
 
-console.log(JSON.stringify({ problems, errs: [] }, null, 2));
-process.exit(problems.length ? 1 : 0);
+emitReport({ problems, errs: [] }, problems.length);

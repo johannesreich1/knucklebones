@@ -12,6 +12,7 @@ import {
 } from '../src/core/ranked-actions.ts';
 import { AI, BOUNTY, CLASSIC, LIMITED, ME } from '../src/core/rules.ts';
 import { runRankedBotTurnCases } from './support/ranked-bot-turn-cases.ts';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -203,5 +204,4 @@ if (aimed) {
     CLASSIC, anvilDeal) === null, 'public replay accepted an aim that changed the die');
 }
 
-console.log(JSON.stringify({ problems, errs }, null, 2));
-process.exit(problems.length || errs.length ? 1 : 0);
+emitReport({ problems, errs }, problems.length || errs.length);

@@ -30,6 +30,7 @@ import {
   runAiSpellTurn,
 } from '../src/flow/spell-ai.ts';
 import { S, type Diff } from '../src/state.ts';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const check = (condition: boolean, message: string, detail?: unknown): void => {
@@ -333,5 +334,4 @@ try {
   Math.random = original.random;
 }
 
-console.log(JSON.stringify({ problems, errs: [] }, null, 2));
-process.exit(problems.length ? 1 : 0);
+emitReport({ problems, errs: [] }, problems.length);

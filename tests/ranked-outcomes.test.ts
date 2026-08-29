@@ -32,6 +32,7 @@ import {
   seededRuneTrialOffer,
 } from '../src/core/rune-trial-offer.ts';
 import { RUNE_TRIAL_TEST_SHARE } from '../src/core/rune-trial-test-share.ts';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -284,5 +285,4 @@ throws(() => seededRuneTrialOffer(''), 'empty offer seed was accepted');
 throws(() => seededRuneTrialAutoPick('', 'player-a', offerA), 'empty auto-pick seed was accepted');
 throws(() => seededRuneTrialAutoPick('seed', '', offerA), 'empty participant key was accepted');
 
-console.log(JSON.stringify({ problems, errs }, null, 2));
-process.exit(problems.length || errs.length ? 1 : 0);
+emitReport({ problems, errs }, problems.length || errs.length);

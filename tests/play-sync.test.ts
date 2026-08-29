@@ -12,6 +12,7 @@ import { createOnlineSynchronizer } from '../src/online/play/play-sync.ts';
 import type { OnlineState } from '../src/online/play/play-types.ts';
 import { S } from '../src/state.ts';
 import { installFakeDom } from './support/fake-dom.ts';
+import { emitReport } from './support/emit-report.mjs';
 
 installFakeDom();
 
@@ -225,5 +226,4 @@ S.turn = savedGlobals.turn;
 S.die = savedGlobals.die;
 S.scoring = savedGlobals.scoring;
 
-console.log(JSON.stringify({ problems, errs: [] }, null, 2));
-process.exit(problems.length ? 1 : 0);
+emitReport({ problems, errs: [] }, problems.length);

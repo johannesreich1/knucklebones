@@ -22,6 +22,7 @@
 //
 // Run: mise exec -- node --experimental-strip-types tests/identity-gateway-origins.test.ts
 import { readFileSync } from 'node:fs';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const errs: string[] = [];
@@ -166,7 +167,7 @@ if (envLines.length === 1) {
     + 'and no Game Center link, with nothing logged');
 }
 
-console.log(JSON.stringify({
+emitReport({
   config: CONFIG,
   schemes,
   derivedNativeOrigins: nativeOrigins,
@@ -174,6 +175,4 @@ console.log(JSON.stringify({
   deployedGatewayOrigins: deployed,
   problems,
   errs,
-}, null, 2));
-
-process.exit(problems.length || errs.length ? 1 : 0);
+}, problems.length || errs.length);

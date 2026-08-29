@@ -19,6 +19,7 @@ import { rankedBadge } from '../src/online/play/play-copy.ts';
 import { supportsRankedClientRules } from '../src/online/play/play-state.ts';
 import { trialSelectionSettled } from '../src/online/runes/trial-offer.ts';
 import { setLanguageOverride, t } from '../src/i18n/index.ts';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const check = (condition: boolean, message: string, detail?: unknown) => {
@@ -311,5 +312,4 @@ check(rankedChips.length === 1
   && !rankedChips[0]?.html.includes('ONLINE'),
   'the ranked HUD should keep the shared mode chip without a redundant ONLINE tag', rankedChips);
 
-console.log(JSON.stringify({ problems, errs: [] }, null, 2));
-process.exit(problems.length ? 1 : 0);
+emitReport({ problems, errs: [] }, problems.length);

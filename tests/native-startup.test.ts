@@ -4,6 +4,7 @@ import {
   NATIVE_SPLASH_FADE_MS,
   releaseNativeSplashAfter,
 } from '../src/boot/native-splash.ts';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const check = (condition: boolean, message: string, detail?: unknown) => {
@@ -98,10 +99,9 @@ check(!widgetSource.includes('native-splash') && widgetSource.includes('loadStat
 check(!/from\s+['"]@capacitor\//.test(helperSource),
   'native splash helper imports plugin code into the web bundle');
 
-console.log(JSON.stringify({
+emitReport({
   fadeMs: NATIVE_SPLASH_FADE_MS,
   startupOrder,
   failureOrder,
   problems,
-}, null, 2));
-process.exit(problems.length ? 1 : 0);
+}, problems.length);

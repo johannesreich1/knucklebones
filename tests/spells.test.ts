@@ -12,6 +12,7 @@ import { SPEC, emptyBoard, boardTotal, applyMove, openStrikes, freshCharm,
 import { SPELLS, spellById, swingOf, bestTarget, machineCast,
          anvilTargetIndex, type CastCtx } from '../src/core/spells.ts';
 import { checkSpellRegistryContract } from './support/spell-registry-contract.ts';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const check = (c: boolean, m: string, x?: unknown) => { if (!c) problems.push(m + ' :: ' + JSON.stringify(x)); };
@@ -354,5 +355,4 @@ function mkCtx(over: Partial<CastCtx> & { drawn?: number[] } = {}): CastCtx & { 
     'the strike probe is broken: it found nothing in classic either', { col: full[AI][0] });
 }
 
-console.log(JSON.stringify({ problems, errs: [] }, null, 2));
-process.exit(problems.length ? 1 : 0);
+emitReport({ problems, errs: [] }, problems.length);

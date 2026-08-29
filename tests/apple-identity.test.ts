@@ -10,6 +10,7 @@ import { registerAppleAuthorizationCode } from '../src/online/identity/apple-ide
 import { CORS_HEADERS } from '../supabase/functions/_shared/http.ts';
 import { runAccountProviderOfferTests } from './support/account-provider-offers.ts';
 import { runGameCenterClientContractTests } from './support/game-center-client-contract.ts';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const check = (condition: boolean, message: string, detail?: unknown) => {
@@ -229,5 +230,4 @@ check(!/result\.(?:user|email|givenName|familyName|realUserStatus)\b/.test(ident
   && !/decodeJwt/.test(identitySource),
 'client-decoded Apple claims are being trusted');
 
-console.log(JSON.stringify({ iosOptions, problems }, null, 2));
-process.exit(problems.length ? 1 : 0);
+emitReport({ iosOptions, problems }, problems.length);

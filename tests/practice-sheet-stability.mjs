@@ -11,6 +11,7 @@
 // differently on each (five of seven modes take two lines at 360 and one at
 // 430) and a reservation that only fits the phone in hand is not a fix.
 import pkg from 'playwright';
+import { emitReport } from './support/emit-report.mjs';
 const { webkit } = pkg;
 const F = 'file://' + process.cwd() + '/knucklebones-neon.html';
 const SIZES = [[360, 780, 'sm 360'], [390, 844, 'md 390'], [430, 932, 'max 430'], [768, 1024, 'tab 768']];
@@ -291,6 +292,5 @@ try {
     }
     await ctx.close();
   }
-  console.log(JSON.stringify({ out, problems }, null, 2));
 } finally { await browser.close(); }
-process.exit(problems.length ? 1 : 0);
+emitReport({ out, problems }, problems.length);

@@ -18,6 +18,7 @@ import {
 } from '../src/online/screens/account-provider-view.ts';
 import { runGameCenterRecoveryTests } from './support/game-center-recovery.ts';
 import { readFileSync } from 'node:fs';
+import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
 const check = (ok: boolean, message: string, detail?: unknown) => {
@@ -336,5 +337,4 @@ check(gameCenterCannotIdentify() === true,
 'the launch lifecycle did not carry the device\'s refusal to the profile');
 delete (globalThis as typeof globalThis & { Capacitor?: unknown }).Capacitor;
 
-console.log(JSON.stringify({ problems }, null, 2));
-process.exit(problems.length ? 1 : 0);
+emitReport({ problems }, problems.length);
