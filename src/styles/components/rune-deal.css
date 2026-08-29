@@ -68,6 +68,14 @@
   align-items:end;justify-items:center;gap:clamp(18px,8vw,54px);width:min(100%,390px);
   min-height:calc(var(--card)*2.35)}
 :where(#kbroot) .trial-reveal__side{display:flex;flex-direction:column;align-items:center;gap:9px}
-:where(#kbroot) .trial-reveal__owner{max-width:calc(var(--card)*1.7);overflow:hidden;text-overflow:ellipsis;
-  white-space:nowrap;font-size:9px;font-weight:900;letter-spacing:.15em;text-transform:uppercase}
+/* The name carries the player's dot, the same 8px lit disc the board plates use
+   (.plate .dot, game/shell.css), so a name means the same thing here as it does
+   on the table. --c is the side's own hue, set inline per side. The ellipsis
+   stays on the NAME, not the row, or a long name would clip the dot instead. */
+:where(#kbroot) .trial-reveal__owner{display:flex;align-items:center;gap:5px;
+  max-width:calc(var(--card)*1.7);
+  font-size:9px;font-weight:900;letter-spacing:.15em;text-transform:uppercase}
+:where(#kbroot) .trial-reveal__owner .dot{width:8px;height:8px;border-radius:50%;
+  background:var(--c);box-shadow:0 0 10px var(--c);flex:0 0 auto}
+:where(#kbroot) .trial-reveal__owner .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 :where(#kbroot) .trial-reveal__card{opacity:1}

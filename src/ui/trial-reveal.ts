@@ -22,7 +22,8 @@ const esc = (value: string): string => value.replace(/[&<>"']/g, (character) =>
 
 function sideMarkup(side: TrialRevealSide, index: number): string {
   return `<div class="trial-reveal__side" data-side="${index}">`
-    + `<small class="trial-reveal__owner" style="color:${side.hue}">${esc(side.name())}</small>`
+    + `<small class="trial-reveal__owner" style="--c:${side.hue};color:${side.hue}">`
+    + `<span class="dot"></span><span class="nm">${esc(side.name())}</span></small>`
     + `<div class="rdealt trial-reveal__card" data-rune="${side.spell.id}"`
     + ` style="color:${spellHue(side.spell.id)}">${runeCardFaces(side.spell)}</div></div>`;
 }
@@ -55,8 +56,11 @@ export function trialRuneRevealBeat(sides: readonly [TrialRevealSide, TrialRevea
   });
   return {
     get label() { return t('game', 'reveal.trialRunes'); },
+    /* Kept for assistive tech and for any surface that quotes a beat, but the
+       shell no longer prints them: see `bare`. */
     get name() { return t('game', 'runeTrial.revealed'); },
     get blurb() { return pairBlurb(); },
+    bare: true,
     hue: '#b18cff',
     icon: modeIcon('rune_trial', 17),
     cls: 'trial-revealing',
@@ -65,7 +69,7 @@ export function trialRuneRevealBeat(sides: readonly [TrialRevealSide, TrialRevea
       stage.querySelectorAll<HTMLElement>('.trial-reveal__side').forEach((element, index) => {
         const side = sides[index];
         if (!side) return;
-        const owner = element.querySelector<HTMLElement>('.trial-reveal__owner');
+        const owner = element.querySelector<HTMLElement>('.trial-reveal__owner .nm');
         const label = element.querySelector<HTMLElement>('.rlbl');
         if (owner) owner.textContent = side.name();
         if (label) label.textContent = spellCopy(side.spell.id).name;

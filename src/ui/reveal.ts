@@ -126,13 +126,22 @@ function repaintReveal(context: ActiveReveal): void {
   const stage = ov.querySelector<HTMLElement>('#wheelStage');
   if (stage) beat.repaintStage?.(stage);
 
-  if (context.landed) {
+  /* A bare beat prints neither line, and hides the elements rather than
+     emptying them: an empty .wname still holds its own height, which would
+     leave the cards floating above a gap that reads as a missing answer. */
+  const nameLine = ov.querySelector<HTMLElement>('#wheelName');
+  const blurbLine = ov.querySelector<HTMLElement>('#wheelBlurb');
+  if (nameLine) nameLine.hidden = !!beat.bare;
+  if (blurbLine) blurbLine.hidden = !!beat.bare;
+  if (context.landed && !beat.bare) {
     const currentName = ov.querySelector<HTMLElement>('#wheelName .wcopy');
     const currentBlurb = ov.querySelector<HTMLElement>('#wheelBlurb');
     if (currentName) currentName.textContent = beat.name;
     if (currentBlurb) currentBlurb.textContent = beat.blurb;
   }
 
+  const settledStrip = ov.querySelector<HTMLElement>('#wheelSettled');
+  if (settledStrip) settledStrip.hidden = !!beat.bare;
   ov.querySelectorAll<HTMLElement>('#wheelSettled .wsett').forEach((answer, index) => {
     const settledBeat = beats[index];
     if (!settledBeat) return;

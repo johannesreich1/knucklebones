@@ -66,17 +66,55 @@ export async function verifyRitualLanding(page, out, check) {
   }
   await page.waitForFunction(() => document.querySelector('#ovWheel')?.classList.contains('holding'),
     null, { timeout: 20000 });
-  out.ritualRevealed = await page.evaluate(() => ({
-    ...window.__ritualWatch,
-    settled: [...document.querySelectorAll('#wheelSettled .wsett .wpill b')].map((b) => b.textContent),
-    turned: [...document.querySelectorAll('#wheelStage .trial-reveal__card')]
-      .map((c) => c.classList.contains('up')),
-  }));
+  out.ritualRevealed = await page.evaluate(() => {
+    /* PAINTED, not present. The settled strip and the two readout lines are
+       still built — a beat still HAS a name and a blurb, and assistive tech
+       may quote them — so counting nodes would pass whether the player sees
+       them or not. Measure the box. */
+    const shown = (selector) => {
+      const el = document.querySelector(selector);
+      if (!el) return false;
+      const box = el.getBoundingClientRect();
+      return box.width > 0 && box.height > 0 && getComputedStyle(el).visibility !== 'hidden';
+    };
+    const owners = [...document.querySelectorAll('#wheelStage .trial-reveal__owner')];
+    return {
+      ...window.__ritualWatch,
+      turned: [...document.querySelectorAll('#wheelStage .trial-reveal__card')]
+        .map((c) => c.classList.contains('up')),
+      title: document.querySelector('#wheelTitle .wtitlecopy')?.textContent?.trim() ?? '',
+      settledShown: shown('#wheelSettled'),
+      nameShown: shown('#wheelName'),
+      blurbShown: shown('#wheelBlurb'),
+      owners: owners.map((owner) => ({
+        name: owner.querySelector('.nm')?.textContent?.trim() ?? '',
+        dot: getComputedStyle(owner.querySelector('.dot')).backgroundColor,
+      })),
+    };
+  });
   check(out.ritualRevealed.dials === 1 && out.ritualRevealed.opens === 1,
     'the Ritual reveal spun the dial or opened the overlay more than once', out.ritualRevealed);
-  check(out.ritualRevealed.settled.length === 1 && out.ritualRevealed.turned.length === 2
-      && out.ritualRevealed.turned.every(Boolean),
-    'both hands did not turn over under the mode the dial had settled', out.ritualRevealed);
+  check(out.ritualRevealed.turned.length === 2 && out.ritualRevealed.turned.every(Boolean),
+    'both hands did not turn over', out.ritualRevealed);
+
+  /* TITLE AND CARDS, NOTHING ELSE (owner call 2026-08-29). The stage already
+     names both players and both runes; the restated mode, the "revealed" line
+     and the pair sentence were three more things to read for something already
+     on screen. They are hidden rather than emptied — an empty line still holds
+     its height and reads as a missing answer. */
+  check(!!out.ritualRevealed.title,
+    'the Ritual reveal lost its title as well', out.ritualRevealed);
+  check(!out.ritualRevealed.settledShown && !out.ritualRevealed.nameShown
+      && !out.ritualRevealed.blurbShown,
+    'the Ritual reveal still prints the settled mode or its readout lines',
+    out.ritualRevealed);
+  /* Each name wears its own player dot, the board's idiom, in the side's hue —
+     two distinct colours, so a shared or unpainted dot cannot pass. */
+  check(out.ritualRevealed.owners.length === 2
+      && out.ritualRevealed.owners.every(({ name, dot }) => name
+        && dot && dot !== 'rgba(0, 0, 0, 0)')
+      && out.ritualRevealed.owners[0].dot !== out.ritualRevealed.owners[1].dot,
+    'the Ritual card owners are missing their coloured dots', out.ritualRevealed.owners);
 
   /* AND THE OVERLAY COMES OFF EVEN WHEN THE ACT THROWS. A deferred act does
      server work — ranked throws outright on a Trial offer this build cannot
