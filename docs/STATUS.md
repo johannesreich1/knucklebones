@@ -44,7 +44,8 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   temporarily suspended for IVORY by the Rune Trial test share below.
 - Rune Trial is `format='rune_trial'` with `modifier='classic'`, not an eighth
   mechanical core mode. Both seats receive the same uniform three-of-six loan,
-  choose privately, and reveal together; a 30-second deadline resolves a
+  choose privately, and reveal together; a 10-second deadline (owner call
+  2026-08-29, `RUNE_TRIAL_PICK_SECS`, counted down on the picker) resolves a
   missing choice deterministically. Equipment is ignored and left unchanged.
   Every settled Trial win awards the winner's selected rune once; loss/draw
   awards nothing and a duplicate is not replaced. Collections start empty.

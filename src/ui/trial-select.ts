@@ -3,7 +3,7 @@
 // the server. The controller never decides an offer, observes another choice,
 // or grants a rune.
 import { spellById, type SpellSpec } from '../core/spells.ts';
-import { runeTrialCopy, spellCopy, subscribeLocale, t } from '../i18n/index.ts';
+import { formatNumber, runeTrialCopy, spellCopy, subscribeLocale, t } from '../i18n/index.ts';
 import { Sfx } from './audio.ts';
 import { appRoot } from './embed.ts';
 import { hide, show } from './dom.ts';
@@ -20,6 +20,11 @@ export interface TrialRuneChoiceSpec {
   readonly player: TrialChoicePlayer;
   readonly title?: () => string;
   readonly prompt?: () => string;
+  /* When the server will choose for this player, as an ISO stamp. Ranked deals
+     one with the offer; local play has no authority to enforce a deadline and
+     passes nothing, so the lane stays hidden rather than counting down to an
+     event that will not happen. */
+  readonly deadline?: () => string | null;
 }
 
 export interface TrialHandoffSpec {
@@ -46,6 +51,8 @@ function build(): void {
   <p class="trial-select__prompt" id="trialSelectPrompt"></p>
   <div class="trial-select__cards" id="trialSelectCards"></div>
   <button type="button" class="btn primary trial-select__ready" id="trialSelectReady" hidden></button>
+  <div class="trial-select__clock" id="trialSelectClock" hidden>
+    <b id="trialSelectCount"></b><span id="trialSelectClockHint"></span></div>
 </div>`);
 }
 
@@ -101,13 +108,38 @@ export function requestTrialRuneChoice(spec: TrialRuneChoiceSpec): Promise<strin
       const label = button.querySelector<HTMLElement>('.rlbl');
       if (label) label.textContent = copy.name;
     });
+    paintClock();
+  };
+
+  /* THE CLOCK IS A READOUT, NOT AN AUTHORITY. Expiry belongs to the server —
+     it stamped the deadline and it resolves a missing choice — and ranked
+     already races it in trial-offer.ts. If this counted the pick out itself
+     the two would disagree the moment one of them was slow, so at zero it
+     simply stops at zero and waits to be told. */
+  const clock = root.querySelector<HTMLElement>('#trialSelectClock')!;
+  const clockCount = root.querySelector<HTMLElement>('#trialSelectCount')!;
+  const clockHint = root.querySelector<HTMLElement>('#trialSelectClockHint')!;
+  const endsAt = Date.parse(spec.deadline?.() ?? '');
+  const counting = Number.isFinite(endsAt);
+  clock.hidden = !counting;
+  const paintClock = (): void => {
+    if (!counting) return;
+    clockCount.textContent = formatNumber(
+      Math.max(0, Math.ceil((endsAt - Date.now()) / 1000)));
+    clockHint.textContent = t('game', 'runeTrial.pickClock');
   };
 
   return new Promise<string | null>((resolve) => {
     let settled = false;
+    let ticker = 0;
+    if (counting) {
+      paintClock();
+      ticker = setInterval(paintClock, 250) as unknown as number;
+    }
     const finish = (choice: string | null): void => {
       if (settled) return;
       settled = true;
+      clearInterval(ticker);
       clear();
       resolve(choice);
     };

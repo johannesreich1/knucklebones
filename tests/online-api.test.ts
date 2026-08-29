@@ -18,6 +18,7 @@ import { localizedAuthError } from '../src/online/identity/session.ts';
 import { rankedBadge } from '../src/online/play/play-copy.ts';
 import { supportsRankedClientRules } from '../src/online/play/play-state.ts';
 import { trialSelectionSettled } from '../src/online/runes/trial-offer.ts';
+import { RUNE_TRIAL_PICK_SECS } from '../src/core/rune-trial-offer.ts';
 import { setLanguageOverride, t } from '../src/i18n/index.ts';
 import { emitReport } from './support/emit-report.mjs';
 
@@ -110,6 +111,26 @@ const trialSelectionSource = readFileSync('src/online/runes/trial-offer.ts', 'ut
 check(trialSelectionSource.includes('readRuneTrialState(current.match.id)')
   && !trialSelectionSource.includes('join(false)'),
   'Rune Trial selection recovery can mutate matchmaking instead of reading its known match');
+/* THE PICK WINDOW IS ONE NUMBER. The server stamps selection_deadline from it,
+   the picker counts the same number down, and the queue's stall fallback waits
+   the same span — three places that disagree the moment any of them restates
+   it, so each must read the constant rather than carry a copy. */
+check(RUNE_TRIAL_PICK_SECS === 10,
+  'the Rune Trial pick window is no longer the documented 10 seconds', RUNE_TRIAL_PICK_SECS);
+const trialStartSource = readFileSync('supabase/functions/pvp-join/start.ts', 'utf8');
+check(trialStartSource.includes('RUNE_TRIAL_PICK_SECS * 1000')
+  && !/Date\.now\(\) \+ \d/.test(trialStartSource),
+  'the server stamps the selection deadline from its own number instead of the shared window',
+  trialStartSource.match(/const deadline[^;]*/)?.[0] ?? null);
+const trialPickerSource = readFileSync('src/ui/trial-select.ts', 'utf8');
+check(trialPickerSource.includes("t('game', 'runeTrial.pickClock')")
+  && trialPickerSource.includes('clock.hidden = !counting'),
+  'the picker either does not count down, or counts down without a deadline to count to',
+  null);
+check(readFileSync('src/online/runes/trial-offer.ts', 'utf8')
+  .includes('deadline: () => deadlineValue'),
+  'ranked does not hand the picker the deadline it races, so the two can disagree', null);
+
 const trialActionSource = readFileSync('src/online/play/play-trial-actions.ts', 'utf8');
 check(trialActionSource.includes('online.actionApplied >= committedVersion')
   && trialActionSource.includes('boundedAction(')

@@ -221,6 +221,7 @@ export const deGame = {
     lockWinRune: 'Gewinne mit dieser Rune im Runenritual, um sie gegen die KI zu nutzen.',
     revealPair: 'Beide Runen stehen fest',
     revealed: 'Runen aufgedeckt',
+    pickClock: 'SEKUNDEN ZUR WAHL',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Festgelegt — markierte Spalte wählen.',

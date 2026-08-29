@@ -9,7 +9,11 @@ import {
   type RankedParticipantAccess,
   type RankedPoolTier,
 } from "./core/ranked-outcomes.ts";
-import { seededRuneTrialAutoPick, seededRuneTrialOffer } from "./core/rune-trial-offer.ts";
+import {
+  RUNE_TRIAL_PICK_SECS,
+  seededRuneTrialAutoPick,
+  seededRuneTrialOffer,
+} from "./core/rune-trial-offer.ts";
 import type { EdgeClient } from "../_shared/http.ts";
 import type { MatchRow } from "../_shared/types.ts";
 import { negotiatedProtocolVersion, rankedSeatOrder } from "./matchmaking.ts";
@@ -73,7 +77,9 @@ export async function startProgressiveRankedMatch(
       <= tierIndex(input.favouriteAccess.tier)
     ? input.underdogAccess.tier : input.favouriteAccess.tier;
   const offer = spec.format === RUNE_TRIAL_FORMAT ? seededRuneTrialOffer(seed) : null;
-  const deadline = offer ? new Date(Date.now() + 30_000).toISOString() : null;
+  const deadline = offer
+    ? new Date(Date.now() + RUNE_TRIAL_PICK_SECS * 1000).toISOString()
+    : null;
   const { data: started, error } = await svc.rpc("start_ranked_match_v2", {
     p_requester: input.requester,
     p_p1: p1,

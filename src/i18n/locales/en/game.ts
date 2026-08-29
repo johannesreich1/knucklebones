@@ -218,6 +218,7 @@ export const enGame = {
     lockWinRune: 'Win with this rune in Rune Ritual to use it versus AI.',
     revealPair: 'Both choices are locked',
     revealed: 'Runes revealed',
+    pickClock: 'SECONDS TO CHOOSE',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Committed — choose a marked column.',

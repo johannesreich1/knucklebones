@@ -221,6 +221,7 @@ export const esGame = {
     lockWinRune: 'Gana con esta runa en el Ritual de Runas para usarla contra la IA.',
     revealPair: 'Las dos elecciones están confirmadas',
     revealed: 'Runas reveladas',
+    pickClock: 'SEGUNDOS PARA ELEGIR',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Activada; elige una columna marcada.',

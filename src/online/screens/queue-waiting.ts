@@ -7,6 +7,7 @@
 import { formatNumber, t } from '../../i18n/index.ts';
 import { $ } from '../../ui/dom.ts';
 import { showOnlinePanel } from './shell.ts';
+import { RUNE_TRIAL_PICK_SECS } from '../../core/rune-trial-offer.ts';
 
 export interface QueueWaitingPorts {
   goHome: () => void;
@@ -127,7 +128,8 @@ export function createQueueWaiting(ports: QueueWaitingPorts): QueueWaiting {
        refresh, and re-arming there would push the deadline out by a grace
        period roughly once a second and never fire. */
     stall ??= setTimeout(() => ports.goHome(),
-      Math.max(0, (Number.isFinite(at) ? at - Date.now() : 30000)) + TRIAL_STALL_GRACE_MS);
+      Math.max(0, (Number.isFinite(at) ? at - Date.now() : RUNE_TRIAL_PICK_SECS * 1000))
+        + TRIAL_STALL_GRACE_MS);
   }
 
   return { showSearching, trialWaiting, clear, reset };

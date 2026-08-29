@@ -36,6 +36,20 @@ export type RuneTrialOffer = readonly [string, string, string];
 /* Partial Fisher-Yates: each ordered three-rune sample is equally likely, so
    each unordered 3-of-N offer is equally likely too. It always terminates and
    cannot repeat a rune. */
+/**
+ * How long a player has to choose from the three-rune offer.
+ *
+ * The server stamps `selection_deadline` from this when it deals the offer, and
+ * the picker counts the same number down, so the bar a player watches is the
+ * one the server will actually act on. Lowered from 30s to 10s (owner call,
+ * 2026-08-29): thirty seconds of dead air is a long time to hold two players
+ * still, and the choice is between three cards already on screen.
+ *
+ * The database only bounds it — start_ranked_match_v2 refuses a deadline in the
+ * past or more than two minutes out — so this is the single place it is set.
+ */
+export const RUNE_TRIAL_PICK_SECS = 10;
+
 export function makeRuneTrialOffer(
   random: () => number,
   candidates: readonly string[] = RUNE_IDS,

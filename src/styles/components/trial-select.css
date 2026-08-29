@@ -27,7 +27,21 @@
 :where(#kbroot) .trial-select__card .rback{opacity:0}
 :where(#kbroot) .trial-select__ready{margin-top:12px}
 :where(#kbroot) .trial-select.handoff .trial-select__title{color:var(--txt);text-shadow:none}
+
+/* THE PICK CLOCK sits at the bottom of the sheet, and wears the reveal's hold
+   idiom on purpose: the player has already been taught that a big tabular
+   number over a small dim label is "time you have left" (.dhold, mode-dial.css).
+   Tabular numerals so the digit does not shuffle the label as it counts. */
+:where(#kbroot) .trial-select__clock{display:flex;flex-direction:column;align-items:center;
+  gap:6px;margin-top:auto;padding-top:10px}
+:where(#kbroot) .trial-select__clock b{font-size:26px;font-weight:900;color:var(--p1);
+  line-height:1;text-shadow:0 0 18px rgba(var(--p1-rgb),.55);font-variant-numeric:tabular-nums}
+:where(#kbroot) .trial-select__clock span{font-size:9.5px;letter-spacing:.2em;
+  color:var(--dim);text-transform:uppercase}
+
 @media (max-height:430px) and (orientation:landscape){
   :where(#kbroot) .trial-select{gap:6px;padding-block:12px}
   :where(#kbroot) .trial-select__cards{--card:44px;padding-block:4px 8px}
+  :where(#kbroot) .trial-select__clock{padding-top:2px;gap:2px}
+  :where(#kbroot) .trial-select__clock b{font-size:19px}
 }

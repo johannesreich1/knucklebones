@@ -42,6 +42,9 @@ async function chooseBeforeDeadline(
     player: { name: () => t('common', 'people.you'), hue: 'var(--p1)' },
     title: () => t('game', 'modes.runeTrial.name'),
     prompt: () => t('game', 'runeTrial.choosePrompt'),
+    /* The same stamp this function races below, so the number on screen is the
+       one that will actually be acted on. */
+    deadline: () => deadlineValue,
   }).then((value): ChoiceRace => ({ kind: 'choice', value }));
   const deadline = Date.parse(deadlineValue ?? '');
   while (true) {
