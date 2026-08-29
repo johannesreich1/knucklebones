@@ -3,6 +3,8 @@
 // BONE is the tier that hands over the last three ordinary modes. The picker
 // and the wheel read one roster, so proving they widen together is the whole
 // point: a ring built from its own list is how they drift.
+import { awaitHittable } from './hittable.mjs';
+
 export async function verifyPromotedRoster(page, out, check) {
   await page.evaluate(() => {
     localStorage.setItem('knucklebones.runes.v1', JSON.stringify({
@@ -15,6 +17,9 @@ export async function verifyPromotedRoster(page, out, check) {
     window.__kb.goHome(); window.__kb.openPractice();
   });
   await page.waitForTimeout(700);          // clear tap()'s global native-click guard
+  /* ...and wait for the leaving game's board to actually be off the control,
+     which a timeout cannot promise on a loaded machine. */
+  await awaitHittable(page, '#modeSeg button[data-m="cpu"]');
   /* DRIVE IT THE WAY A PLAYER DOES. In the app a confirmed collection arrives
      through writeRuneCollectionSnapshot, which publishes to the rows; a test
      that writes the cache key directly has skipped that, so it must activate
