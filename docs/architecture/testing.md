@@ -361,6 +361,61 @@ existed. Close the hole as well as the bug — cover both sides of whatever
 variable went untested — and name in the commit which test now fails without the
 change.
 
+## Traps this harness has already fallen into
+
+Each of these cost a real debugging session, and each looked like something else
+first. They are recorded with the measurement that settled them, because in
+every case reasoning harder produced a confident wrong answer and measuring
+produced the right one in minutes.
+
+**A report over 64KB loses its tail — but only under the gate.** A suite prints
+one JSON report and forces its own exit. Under `run-all` stdout is a PIPE, and
+pipe writes are asynchronous: `process.exit()` returns immediately and discards
+whatever the 64KB buffer has not taken. Run the same suite by hand and stdout is
+a file, the write is synchronous, and nothing is lost. `run-all` treats an
+unparseable report as FAILED, correctly — so the suite fails with no failing
+check anywhere in it. Measured: 65,536 bytes captured against a 79,714-byte
+report, after four green standalone runs of the same commit. Every suite emits
+through `tests/support/emit-report.mjs`, which drains before exiting. Reproduce
+the gate's condition with `node <suite> | cat > /tmp/x.log`, never a bare run.
+
+**An overlay's `hidden` attribute means nothing.** `.ov` gates on the `on`
+CLASS: without it the element is `visibility:hidden` and `pointer-events:none`,
+so a hit test lands on whatever is behind. `element.hidden` is always false on
+these, and a probe that reports it will state confidently that the sheet is open
+while the player cannot touch it. Report `className` and the computed
+`visibility` / `pointerEvents` instead.
+
+**Starting a game hides the setup sheet, and the start may still be pending.**
+`flow/local-start.ts` hides `#ovPractice` as part of starting. A test that
+dismisses a reveal and returns to setup can beat that hide: it reopens the
+sheet, the pending start lands, and the sheet closes again — leaving a control
+the board covers permanently, not for a frame, so no longer wait rescues it.
+Waiting for a live phase does not help either; the close was observed with
+`S.phase` already `roll`. Opening a sheet and pressing something on it must
+therefore retry as ONE unit — separating them just moves the failure into the
+gap, where it reappears as `element is not visible` on a control verified
+reachable moments earlier. `tests/browser/support/hittable.mjs` owns that.
+
+**The tapped column fills before anything is placed.** A probe timing a
+placement by watching the column's `.slot` elements is timing the PREVIEW. It
+will pass with the feature disabled — which is how an optimistic-move fix was
+nearly abandoned as unnecessary. Time `window.__kb.S.boards`, the state
+`renderSide` paints from: a die there is a placement and nothing else.
+
+**Counting nodes is not seeing.** A hidden element still answers
+`querySelectorAll`, and a beat still HAS a name for assistive tech even when the
+shell no longer prints it. An assertion that counts nodes passes whether the
+player sees them or not. Measure the box, as the assertion policy above already
+requires.
+
+**Ranked has two client paths and they drift.** Ordinary play goes through
+`pvp-move` and animates optimistically; a Rune Trial goes through `pvp-action`
+into an authoritative action log. Behaviour added to one silently misses the
+other — that is how the Trial kept the full server round trip on every placement
+after ordinary ranked had stopped feeling it, and how a bot "think" reached one
+path months after the other. Change one, check the other.
+
 ## Change verification
 
 Run the narrow owner suite while iterating. Before handoff or deployment,
