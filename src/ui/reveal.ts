@@ -314,3 +314,32 @@ export async function reveal(opts: {
     hide('#ovWheel');
   }
 }
+
+/* Presentation hook, the same idiom as __kbResult and __kbTrialPick: run the
+   reveal with the shape RANKED gives it — a mode dial settling on a format,
+   with a real pairing painted above it. Nothing else produces that layout: it
+   otherwise needs a live match, a dealt offer and a server deadline. That gap
+   is how two layout faults reached a device, and worse, how the probe written
+   to catch one of them could not — it injected a pairing into an OFFLINE
+   reveal, which has none, and that landed close enough to the choice sheet's
+   own fallback to pass with the fix removed. `sides` resolves the trial beat,
+   so a test can hold the screen open, measure it, and let it end. */
+if (typeof window !== 'undefined') {
+  (window as any).__kbRankedReveal = (opts: {
+    modeId: string;
+    pairing: { me: DialSide; foe: DialSide };
+    /* rune_trial is a FORMAT, not a mode, so the dial cannot name it on its
+       own — ranked passes copy for it too (queue-reveal's revealCopy). */
+    copy?: (id: string) => DialModeCopy;
+    candidates?: readonly DialModeChoice[];
+    sides: () => Promise<readonly [TrialRevealSide, TrialRevealSide] | null>;
+  }): Promise<void> => reveal({
+    mode: { id: opts.modeId },
+    modeCopy: opts.copy,
+    modeCandidates: opts.candidates,
+    trial: { resolve: () => opts.sides() },
+    me: opts.pairing.me,
+    foe: opts.pairing.foe,
+  });
+}
+

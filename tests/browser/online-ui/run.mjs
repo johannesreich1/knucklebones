@@ -43,6 +43,7 @@ import { runSeatColourScenarios } from './scenarios/seat-colours.mjs';
 import { runEquippedSeatScenarios } from './scenarios/equipped-seat.mjs';
 import { runTrialMoveLatencyScenarios } from './scenarios/trial-move-latency.mjs';
 import { runTrialRefusedActionScenarios } from './scenarios/trial-refused-action.mjs';
+import { runRankedRevealLayoutScenarios } from './scenarios/ranked-reveal-layout.mjs';
 import { emitReport } from '../../support/emit-report.mjs';
 
 const { webkit, chromium } = pkg;
@@ -70,6 +71,7 @@ const SCENARIOS = Object.freeze([
   { id: 'equipped-seat', run: runEquippedSeatScenarios },
   { id: 'trial-move-latency', run: runTrialMoveLatencyScenarios },
   { id: 'trial-refused-action', run: runTrialRefusedActionScenarios },
+  { id: 'ranked-reveal-layout', run: runRankedRevealLayoutScenarios },
   // Deliberately outside the no-argument gate run: the reward-race probes are
   // a focused investigation surface, reached only through an explicit --only.
   { id: 'rune-reward-races', run: runRuneRewardRaceScenarios, manual: true },

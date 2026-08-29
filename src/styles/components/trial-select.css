@@ -40,7 +40,16 @@
   color:var(--dim);text-transform:uppercase}
 
 
-/* THE PAIRING STAYS ON SCREEN THROUGH THE CHOICE. This sheet covers the reveal
+/* THE TOP INSET IS THIS SHEET'S OWN PROBLEM. .ov pads 30px at the top flat
+   while padding the BOTTOM with env(safe-area-inset-bottom) — an omission
+   rather than a policy, since the app reads safe-area-inset-top in a dozen
+   other places. Content in normal flow escapes it because a centred column
+   pushes it down; anything PINNED to the top does not, and lands under the
+   Dynamic Island (reported from a device). A harness cannot see this: its inset
+   is 0, so the flat 30px measures correctly there and every probe agrees with
+   the bug. Fixed here rather than in .ov, which every overlay would inherit.
+
+   THE PAIRING STAYS ON SCREEN THROUGH THE CHOICE. This sheet covers the reveal
    that was showing it, so it carries its own copy of the same versus line —
    built by revealPairing() and rendered by versus(), never re-typed.
 
@@ -56,14 +65,16 @@
    above them (pairing, title, prompt) than below (clock), which left them 139px
    low — centred by the box model, not to the eye. Out of flow, .ov's own
    justify-content puts the choice where the player is looking. */
-:where(#kbroot) .trial-select__who{position:absolute;top:30px;left:var(--pad-x);right:var(--pad-x)}
+:where(#kbroot) .trial-select__who{position:absolute;left:var(--pad-x);right:var(--pad-x);
+  top:calc(env(safe-area-inset-top,0px) + 30px)}
 :where(#kbroot) .trial-select__clock{position:absolute;left:0;right:0;
   bottom:calc(env(safe-area-inset-bottom,0px) + 30px)}
 
 @media (max-height:430px) and (orientation:landscape){
   :where(#kbroot) .trial-select{gap:6px;padding-block:12px}
   :where(#kbroot) .trial-select__cards{--card:44px;padding-block:4px 8px}
-  :where(#kbroot) .trial-select__who{top:10px;transform:scale(.82);transform-origin:top center}
+  :where(#kbroot) .trial-select__who{top:calc(env(safe-area-inset-top,0px) + 10px);
+    transform:scale(.82);transform-origin:top center}
   :where(#kbroot) .trial-select__clock{bottom:calc(env(safe-area-inset-bottom,0px) + 8px);gap:2px}
   :where(#kbroot) .trial-select__clock b{font-size:19px}
 }
