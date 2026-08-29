@@ -3,7 +3,7 @@
 // BONE is the tier that hands over the last three ordinary modes. The picker
 // and the wheel read one roster, so proving they widen together is the whole
 // point: a ring built from its own list is how they drift.
-import { awaitHittable } from './hittable.mjs';
+import { pressOnSetupSheet } from './hittable.mjs';
 
 export async function verifyPromotedRoster(page, out, check) {
   await page.evaluate(() => {
@@ -14,18 +14,16 @@ export async function verifyPromotedRoster(page, out, check) {
       collected: [],
       poolTier: 'bone',
     }));
-    window.__kb.goHome(); window.__kb.openPractice();
   });
+  /* Reopening is its own problem: the Ritual above left a game starting, and
+     starting one hides this sheet. openSetupSheet owns that race. */
   await page.waitForTimeout(700);          // clear tap()'s global native-click guard
-  /* ...and wait for the leaving game's board to actually be off the control,
-     which a timeout cannot promise on a loaded machine. */
-  await awaitHittable(page, '#modeSeg button[data-m="cpu"]');
   /* DRIVE IT THE WAY A PLAYER DOES. In the app a confirmed collection arrives
      through writeRuneCollectionSnapshot, which publishes to the rows; a test
      that writes the cache key directly has skipped that, so it must activate
      the choice slot with the real control. __kb.openPractice() only shows the
      sheet — it is a visibility hook, not the menu's openPractice. */
-  await page.click('#modeSeg button[data-m="cpu"]');
+  await pressOnSetupSheet(page, '#modeSeg button[data-m="cpu"]');
   await page.waitForTimeout(150);
   out.bonePicker = await page.evaluate(() => Object.fromEntries(
     [...document.querySelectorAll('#modePick button')].map((b) => [b.dataset.v,

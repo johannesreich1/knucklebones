@@ -11,7 +11,7 @@
 // main.css precisely so OFFLINE can reach it, and this suite runs against the
 // single-file build, which carries no online chunk at all.
 import pkg from 'playwright';
-import { awaitHittable } from './browser/support/hittable.mjs';
+import { pressOnSetupSheet } from './browser/support/hittable.mjs';
 import { verifyRitualLanding } from './browser/support/dial-rune-ritual.mjs';
 import { verifyPromotedRoster } from './browser/support/dial-promotion.mjs';
 import { emitReport } from './support/emit-report.mjs';
@@ -51,14 +51,10 @@ await ctx.addInitScript(() => { const k = 'knucklebones.v1', cur = JSON.parse(lo
     'a stale game-start timeout entered the replacement game', out.rapidRestart);
 
   // the picker's last chip is RANDOM, and it is not one of the seven modes
-  await page.evaluate(() => window.__kb.openPractice());
   await page.waitForTimeout(150);
-  /* The duel above leaves a board that unwinds over a frame or two; until it
-     has, its slots sit over this control and swallow the tap. */
-  await awaitHittable(page, '#modeSeg button[data-m="cpu"]');
   /* Rune Trial's selection lifecycle has its own owners. Keep this dial owner
      on the ordinary CPU pool (an empty collection cannot admit Trial). */
-  await page.click('#modeSeg button[data-m="cpu"]');
+  await pressOnSetupSheet(page, '#modeSeg button[data-m="cpu"]');
   await page.waitForTimeout(650); // clear tap()'s global native-click guard
   const picker = await page.evaluate(() => {
     const btns = [...document.querySelectorAll('#modePick button')];
