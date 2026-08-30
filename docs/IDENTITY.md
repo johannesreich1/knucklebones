@@ -22,8 +22,8 @@ takes the `authenticated` role and has a normal `auth.uid()`.
 
 | Piece | File |
 |---|---|
-| The rungs, and what each can do | `src/online/session.ts` (guest + email) and `src/online/identity.ts` (one-tap providers) |
-| The one modal sheet that serves attach *and* restore | `AUTH` in `src/online/auth-screen.ts` over the shared `src/ui/sheet.ts` |
+| The rungs, and what each can do | `src/online/identity/session.ts` (guest + email) and `src/online/identity/identity.ts` (one-tap providers) |
+| The one modal sheet that serves attach *and* restore | `AUTH` in `src/online/screens/auth-specs.ts`, driven by `auth-screen.ts` over the shared `src/ui/sheet.ts` |
 | Game Center → a session | `supabase/functions/gc-auth/` (`verify.ts` is the pure crypto) |
 | Game Center lifecycle + proof bridge | `src/native/game-center.ts` and `native/plugins/gamecenter/` |
 | Public rate-limit boundary | `cloudflare/identity-gateway/` |

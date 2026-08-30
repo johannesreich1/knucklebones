@@ -62,6 +62,8 @@ export interface SheetSpec {
 export interface Sheet {
   ov: HTMLElement;
   card: HTMLElement;
+  /** Temporarily close every player-operated exit while an owned action runs. */
+  setDismissible: (dismissible: boolean) => void;
   /** Close immediately. Successful transitions can suppress returning to the opener. */
   close: (restoreOpener?: boolean) => void;
 }
@@ -113,6 +115,7 @@ export function showSheet(spec: SheetSpec): Sheet {
   let unbindLocale = (): void => undefined;
   let interactiveLayout: InteractiveSheetLayout | null = null;
   let closed = false;
+  let dismissible = true;
   let background: readonly InertSnapshot[] = [];
   let backgroundRestored = false;
   const releaseBackground = (): void => {
@@ -157,19 +160,26 @@ export function showSheet(spec: SheetSpec): Sheet {
   };
 
   const grabber = ov.querySelector('.fograb') as HTMLButtonElement;
+  const setDismissible = (value: boolean): void => {
+    dismissible = value;
+    grabber.disabled = !value;
+  };
   const refreshInteractiveDragMode = (): void => interactiveLayout?.refresh();
   const flight = createSheetFlight(ov, card);
   /* ONE WAY OUT, THREE DOORS: the drag, the backdrop tap and Escape all end at
      `leave()`, which ends at the one close(). The flight owns how far and how
      fast the card travels; this owns what leaving MEANS for the room it covers,
      which is why the two steps below run inside the flight's own guard. */
-  const leave = (): void => flight.leave(() => {
-    spec.onDismiss?.();
-    /* The established sheet exit stops intercepting the room underneath on
-       frame one. Inert must leave on that same frame or the room still cannot
-       receive the tap the transparent exit deliberately passes through. */
-    releaseBackground();
-  }, close);
+  const leave = (): void => {
+    if (!dismissible) return;
+    flight.leave(() => {
+      spec.onDismiss?.();
+      /* The established sheet exit stops intercepting the room underneath on
+         frame one. Inert must leave on that same frame or the room still cannot
+         receive the tap the transparent exit deliberately passes through. */
+      releaseBackground();
+    }, close);
+  };
   bindSheetGestures({
     overlay: ov,
     card,
@@ -177,6 +187,7 @@ export function showSheet(spec: SheetSpec): Sheet {
     flight,
     interactive: !!spec.interactive,
     remeasure: refreshInteractiveDragMode,
+    dismissible: () => dismissible,
     dismiss: leave,
   });
   document.addEventListener('keydown', onKey);
@@ -188,7 +199,7 @@ export function showSheet(spec: SheetSpec): Sheet {
      covers the room and every sibling is inert, and closeOpenSheet() reaches
      the only way out through `live`. Registering last left a card nobody could
      dismiss standing over an inert app if the lines below ever threw. */
-  const sheet: Sheet = { ov, card, close };
+  const sheet: Sheet = { ov, card, setDismissible, close };
   live = sheet;
   if (spec.interactive && spec.content) {
     interactiveLayout = observeInteractiveSheetLayout(ov, card, spec.content);

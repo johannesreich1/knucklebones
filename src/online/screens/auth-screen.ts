@@ -7,43 +7,16 @@ import { ask } from '../../ui/askcard.ts';
 import { availableTaps } from '../identity/identity.ts';
 import {
   acknowledgeCurrentAccount,
-  attachEmail,
   currentUser,
-  forgetDeviceAccount,
   hadRealAccount,
   requireGameCenterAssertion,
-  signIn,
+  startFreshGuest,
 } from '../identity/session.ts';
 import type { OneTap } from '../identity/identity-provider.ts';
 import { onlineMessage, repaintOnlineMessage } from '../message-copy.ts';
+import { AUTH, type AuthMode, type AuthOrigin, type AuthPorts } from './auth-specs.ts';
 
-export type AuthMode = 'attach' | 'restore';
-export type AuthOrigin = 'account' | 'home';
-
-export interface AuthPorts {
-  entered(): Promise<void>;
-  showAccount(): Promise<void>;
-  dismiss(origin: AuthOrigin): void;
-}
-
-interface AuthSpec {
-  title: LocaleKey<'online'>;
-  lead: LocaleKey<'online'>;
-  tiny: LocaleKey<'online'>;
-  acts: {
-    label: LocaleKey<'online'>;
-    primary?: boolean;
-    run(email: string, password: string): Promise<string | null>;
-  }[];
-  swap?: { label: LocaleKey<'online'>; to: AuthMode };
-  fresh?: {
-    title: LocaleKey<'online'>;
-    lead: LocaleKey<'online'>;
-    tiny: LocaleKey<'online'>;
-    act: LocaleKey<'online'>;
-  };
-  after(ports: AuthPorts, origin: AuthOrigin): Promise<void>;
-}
+export type { AuthMode, AuthOrigin, AuthPorts } from './auth-specs.ts';
 
 let sessionless = false;
 let authMessage: string | null = null;
@@ -90,40 +63,6 @@ subscribeLocale(() => {
   $('#onAuthTitle').textContent = t('online', authTitle);
   refreshLegalUi(panel);
 });
-
-const AUTH: Record<AuthMode, AuthSpec> = {
-  attach: {
-    title: 'auth.keepTitle',
-    lead: 'auth.keepLead',
-    tiny: 'auth.keepDetail',
-    acts: [{ label: 'auth.keepAction', primary: true, run: attachEmail }],
-    swap: { label: 'auth.alreadyHaveAccount', to: 'restore' },
-    fresh: {
-      title: 'auth.createTitle',
-      lead: 'auth.rankedLead',
-      tiny: 'auth.createDetail',
-      act: 'auth.createAction',
-    },
-    after: async (ports, origin) => {
-      if (origin === 'home') {
-        sessionless = false;
-        await ports.entered();
-        return;
-      }
-      await ports.showAccount();
-    },
-  },
-  restore: {
-    title: 'auth.signInTitle',
-    lead: 'auth.rankedLead',
-    tiny: 'auth.signInDetail',
-    acts: [{ label: 'auth.signInAction', primary: true, run: signIn }],
-    swap: { label: 'auth.createAction', to: 'attach' },
-    after: (ports, origin) => origin === 'account'
-      ? ports.showAccount()
-      : ports.entered(),
-  },
-};
 
 export function setSessionless(value: boolean): void {
   sessionless = value;
@@ -253,8 +192,37 @@ export function showAuth(
         restoreFocus: guest,
       });
       if (!yes || revision !== authViewRevision) return;
-      forgetDeviceAccount();
+      /* The shared question is itself the one live sheet, so opening it
+         deliberately retires this auth sheet. Recreate the same view before
+         the network request: it is both the visible busy surface and the
+         ownership boundary that prevents a late response from navigating over
+         a newer auth attempt. A refusal now has somewhere honest to report. */
+      showAuth(mode, ports, origin);
+      const busyView = authViewRevision;
+      clearAuthError();
+      const operation = ++authOperationRevision;
+      setAuthBusy(true);
+      /* Unlike a password/provider attempt, this request changes which
+         account the device will use. Keep this one visible and single-flight
+         until Supabase has either stored the new guest or refused it. */
+      authSheet?.setDismissible(false);
+      authSheet?.card.setAttribute('aria-busy', 'true');
+      let message: string | null;
+      try {
+        message = await startFreshGuest();
+      } catch {
+        message = onlineMessage('errors.generic');
+      }
+      if (!ownsAuthOperation(busyView, operation)) return;
+      if (message) {
+        authSheet?.setDismissible(true);
+        authSheet?.card.removeAttribute('aria-busy');
+        setAuthBusy(false);
+        showAuthError(message);
+        return;
+      }
       sessionless = false;
+      requireGameCenterAssertion();
       closeAuthSheet(false);
       await ports.entered();
     };

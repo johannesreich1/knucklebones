@@ -4,7 +4,7 @@
    back in. So this reads as an OFFER, not a warning: it wears the gold of the
    rating it exists to protect, and sits above the account's own controls.
    The sign-in panel stacks the same way whether it is attaching an identity or
-   restoring one, because it is one panel (see AUTH in auth-screen.ts). */
+   restoring one, because it is one panel (see AUTH in screens/auth-specs.ts). */
 :where(#kbroot) #onAccount .guestbox,
 :where(#kbroot) #onAccount .warnbox{display:flex;flex-direction:column;gap:11px;padding:15px;border-radius:16px;
   background:rgba(255,209,102,.06);border:1px solid rgba(255,209,102,.22)}

@@ -157,7 +157,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
       }, { apple: appleBridge, gameCenter: !!gameCenterBridge, refusal: proofRefusal,
            persistent: gameCenterPersistent });
     }
-    if (door === 'play' || door === 'match') {
+    if (door === 'play' || door === 'match' || door === 'auth-play') {
       /* Ranked newcomers stop at the once-only tutorial offer. This probe is
          about the queue the returning player sees, so enter as a played device. */
       await page.addInitScript(() => localStorage.setItem(
@@ -169,7 +169,8 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     await page.goto(URL, { waitUntil: 'domcontentloaded' });
     // the home chip carrying the player's identity IS the door to the account view
     const entry = door === 'board' ? '#btnBoardHome'
-      : door === 'play' || door === 'match' ? '#btnOnline' : '#homeChip';
+      : door === 'play' || door === 'match' || door === 'auth-play'
+        ? '#btnOnline' : '#homeChip';
     await page.waitForSelector(entry);
     const homeSnapshot = () => page.evaluate(() => {
       const row = document.querySelector('#ovStart .hrow');
@@ -269,6 +270,10 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     const probeResult = probe ? await probe(page, routes) : null;
 
     if (door === 'match') {
+      await ctx.close();
+      return { probeResult, errs, rootLang: null };
+    }
+    if (door === 'auth-play') {
       await ctx.close();
       return { probeResult, errs, rootLang: null };
     }

@@ -23,6 +23,8 @@ export interface SheetGestureSpec {
   interactive: boolean;
   /** Re-read which surface owns the drag, so a press decides on fresh layout. */
   remeasure: () => void;
+  /** Whether a player gesture may currently begin or complete dismissal. */
+  dismissible: () => boolean;
   /** where all three doors lead */
   dismiss: () => void;
 }
@@ -55,7 +57,7 @@ export function bindSheetGestures(spec: SheetGestureSpec): void {
        NOT passed the slop holds nothing, and an uncaptured press released off
        the window never reports back at all, so a new press takes the gesture
        over rather than finding the card permanently undraggable. */
-    if (flight.leaving() || (id !== -1 && moved) || e.button > 0) return;
+    if (!spec.dismissible() || flight.leaving() || (id !== -1 && moved) || e.button > 0) return;
     spec.remeasure();
     const fromGrabber = e.target instanceof Node && grabber.contains(e.target);
     if (spec.interactive && !fromGrabber
@@ -96,6 +98,10 @@ export function bindSheetGestures(spec: SheetGestureSpec): void {
     ov.classList.remove('fodrag');
     try { captureSurface.releasePointerCapture(e.pointerId); } catch { /* never captured */ }
     if (!moved) return;
+    /* A caller may lock the sheet after a gesture began (for example when a
+       dragged control ultimately submits). Return the card home rather than
+       leaving it stranded at the release point. */
+    if (!spec.dismissible()) { flight.springBack(); return; }
     /* THE CHASING CLICK — after a real drag that really LIFTED, and only then.
        Where capture took, the click that follows the lift is handed to .focard
        and means nothing there. Where it did not (a synthetic pointer), the
@@ -149,8 +155,13 @@ export function bindSheetGestures(spec: SheetGestureSpec): void {
     swallow = false; e.stopPropagation(); e.preventDefault();
   }, true);
 
-  ov.addEventListener('click', (e) => { if (e.target === ov && fromWash) { Sfx.tap(); spec.dismiss(); } });
+  ov.addEventListener('click', (e) => {
+    if (e.target === ov && fromWash && spec.dismissible()) { Sfx.tap(); spec.dismiss(); }
+  });
   // the grabber is the announceable door: a screen reader and a keyboard both
   // reach it, and a plain tap on the bar dismisses like the drag it advertises
-  grabber.addEventListener('click', () => { Sfx.tap(); spec.dismiss(); });
+  grabber.addEventListener('click', () => {
+    if (!spec.dismissible()) return;
+    Sfx.tap(); spec.dismiss();
+  });
 }

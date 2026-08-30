@@ -23,6 +23,7 @@ import { runLadderFaceoffScenarios } from './scenarios/ladder-faceoff.mjs';
 import { runLadderScrollScenarios } from './scenarios/ladder-scroll.mjs';
 import { runHistoryCrawlScenarios } from './scenarios/history-crawl.mjs';
 import { runAccountLifecycleScenarios } from './scenarios/account-lifecycle.mjs';
+import { runExplicitGuestSessionScenarios } from './scenarios/explicit-guest-session.mjs';
 import { runOnlineMenuPressFeedbackScenarios } from './scenarios/menu-press-feedback.mjs';
 import { runOnlineLoadingPanelScenarios } from './scenarios/loading-panels.mjs';
 import { runEntryWithoutDieScenarios } from './scenarios/entry-without-die.mjs';
@@ -62,6 +63,7 @@ const SCENARIOS = Object.freeze([
   { id: 'ladder-scroll', run: runLadderScrollScenarios },
   { id: 'history-crawl', run: runHistoryCrawlScenarios },
   { id: 'account-lifecycle', run: runAccountLifecycleScenarios },
+  { id: 'explicit-guest-session', run: runExplicitGuestSessionScenarios },
   { id: 'menu-press-feedback', run: runOnlineMenuPressFeedbackScenarios },
   { id: 'loading-panels', run: runOnlineLoadingPanelScenarios },
   { id: 'entry-without-die', run: runEntryWithoutDieScenarios },

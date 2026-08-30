@@ -95,27 +95,35 @@ export const hadRealAccount = (): boolean => {
   try { return !!localStorage.getItem(KNOWN); } catch { return false; }
 };
 
-/**
- * Let this device be a newcomer again.
- *
- * The flag above turns the silent guest path off for good, which is right while
- * signing back in is possible and a TRAP when it is not: a player who signs out
- * of Apple has no working way back (the provider switches are still open), the
- * sign-in sheet offers no guest door, and ranked answers every tap with the
- * same sheet. Reported from a device 2026-08-30: "I logged out of my apple
- * account and it's impossible for me to play an anonymous game with a fresh
- * account."
- *
- * Deliberately NOT called by signOut: leaving after one tap is the case the
- * flag exists for. This is the escape hatch behind an explicit question, and it
- * destroys nothing — the old account keeps its rating, its runes and its
- * history on the server, and signing back in returns to it.
- */
-export function forgetDeviceAccount(): void {
+function forgetDeviceAccount(): void {
   try {
     localStorage.removeItem(KNOWN);
     localStorage.removeItem(MANUAL_AUTH);
   } catch { /* forgetful host */ }
+}
+
+/**
+ * Create the fresh guest the signed-out player explicitly requested.
+ *
+ * This deliberately bypasses ensureIdentity(): that silent ladder restores a
+ * Game Center account before it mints a guest, which would undo the player's
+ * choice to leave that account. The remembered-account guards are cleared only
+ * AFTER Supabase has stored a live anonymous session. A refused request must
+ * leave the sign-in door and the old account's recovery path exactly as they
+ * were, rather than painting a matchmaking clock that can never enqueue.
+ */
+export async function startFreshGuest(): Promise<string | null> {
+  const { data, error } = await supa().auth.signInAnonymously();
+  if (error) return localizedAuthError(error);
+  if (!data.user || !data.session) return onlineMessage('errors.generic');
+
+  invalidateRuneCollectionRefreshes();
+  clearRuneCollectionSnapshot();
+  acceptedGameCenterRevision = null;
+  resetGuestGameCenterLink();
+  clearProfileCache();
+  forgetDeviceAccount();
+  return null;
 }
 function remember(u: Me | null): Me | null {
   try {
@@ -244,7 +252,8 @@ export async function attachEmail(email: string, password: string): Promise<stri
      account never gets a silent guest (see ensureIdentity). "Keep account" is
      then simply "create account", which is what the player asked for either
      way: mint it here rather than answering their sign-up with a session
-     error. Sign-in panel's Create account lands here (auth-screen.ts AUTH). */
+     error. The sign-in panel's Create account action lands here through the
+     registry in screens/auth-specs.ts. */
   if (!(await currentUser())) {
     const { error, live } = await signUp(email, password);
     if (error) return error;
