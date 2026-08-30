@@ -129,11 +129,13 @@ stage; no partial or out-of-order catalog can pass.
 
 Both stages audit bot seat coverage and ownership without requiring a helper
 that the pending stage has not created. The durable and immediate postchecks
-also require every bot to stay out of RANDOM and every fixed bot seat to equal
-the stable owned-rune choice. Apply snapshots one deterministic
-count/fingerprint of every non-bot fixed seat **and** RANDOM flag immediately
-before and after the migration, and refuses success if either human setting
-changed.
+require every bot to stay out of RANDOM and retain an owned fixed seat. The
+initial fixed-seat backfill additionally proves its stable owned-rune choice;
+the RANDOM-only stage preserves any existing owned seat because later wins may
+have expanded that bot's inventory since the backfill. Apply snapshots one
+deterministic count/fingerprint of every non-bot fixed seat **and** RANDOM flag
+immediately before and after the migration, and refuses success if either human
+setting changed.
 
 The `ladder-streak-baselines` allow-list contains only
 `20260826153000_ladder_streak_baselines.sql`. Its validator pins the private

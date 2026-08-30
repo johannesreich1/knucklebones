@@ -2589,8 +2589,15 @@ export async function auditEquippedRanked(readProduction = productionRead) {
 
 export async function auditEquippedRankedPostApplyData(
   readProduction = productionRead,
+  { requireCanonicalBotSeats = true } = {},
 ) {
   const durable = await auditEquippedRankedBotData(readProduction);
+  /* The fixed-seat migration backfills an empty bot seat with its reviewed
+     stable choice, so that specific apply may prove convergence. RANDOM adds
+     no bot write and deliberately preserves any existing owned fixed seat. A
+     bot can have won another rune since the first migration, making a fresh
+     stable-choice calculation different without making its seat invalid. */
+  if (!requireCanonicalBotSeats) return durable;
   const rows = await readProduction(EQUIPPED_RANKED_BOT_CONVERGENCE);
   if (rows.length !== 1) {
     throw new Error('Production equipped-ranked bot convergence audit returned an unexpected shape.');
@@ -2600,6 +2607,14 @@ export async function auditEquippedRankedPostApplyData(
     throw new Error('Production equipped-ranked bot seats did not converge to the reviewed stable choice.');
   }
   return Object.freeze({ ...durable, botSeatNotCanonical });
+}
+
+/** Only the stage-one migration writes the reviewed initial bot-seat choice.
+ * A later suffix must preserve any still-owned seat after inventory growth. */
+export function requiresCanonicalEquippedBotSeats(pendingMigrations) {
+  return pendingMigrations.some(
+    migration => migration.version === RANKED_RUNES_MIGRATIONS[0].version,
+  );
 }
 
 export async function auditLadderStreakBaselineData(readProduction = productionRead) {
@@ -2902,7 +2917,11 @@ async function main() {
       const postApplyData = rollout.audit === 'rune-trial'
         ? await auditRuneTrialPostApplyData()
         : rollout.audit === 'equipped-ranked'
-          ? await auditEquippedRankedPostApplyData()
+          ? await auditEquippedRankedPostApplyData(productionRead, {
+              requireCanonicalBotSeats: requiresCanonicalEquippedBotSeats(
+                immediatelyBefore.plan.pending,
+              ),
+            })
           : rollout.audit === 'ladder-streak-baselines'
             ? await auditLadderStreakBaselinesPostApplyData()
             : undefined;

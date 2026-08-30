@@ -11,6 +11,7 @@ import {
   EQUIPPED_RANKED_HUMAN_DATA,
   EQUIPPED_RANKED_MIGRATION_SHA256,
   EQUIPPED_RANKED_SCHEMA,
+  RANKED_RUNES_MIGRATIONS,
   RUNE_TRIAL_FUNCTIONS,
   RUNE_TRIAL_JOB,
   RUNE_TRIAL_SCHEMA,
@@ -19,6 +20,7 @@ import {
   auditEquippedRankedPostApplyData,
   auditEquippedRankedHumanData,
   assertSameEquippedRankedHumanData,
+  requiresCanonicalEquippedBotSeats,
 } from '../../tools/database/production-rollout.mjs';
 import {
   EQUIPPED_RANKED_ABSENT,
@@ -273,17 +275,56 @@ export async function runEquippedRankedProductionMigrationCases(options: {
     );
   });
 
-  await checkAsync('immediate equipped-ranked post-apply audit requires canonical bot choices', async () => {
-    assert.equal(
-      (await auditEquippedRankedPostApplyData(productionRead())).botSeatNotCanonical,
-      0,
-    );
+  await checkAsync('initial fixed-seat post-apply audit requires canonical bot choices', async () => {
+    const evidence = await auditEquippedRankedPostApplyData(productionRead());
+    assert.ok('botSeatNotCanonical' in evidence,
+      'the initial fixed-seat audit skipped canonical convergence');
+    assert.equal(evidence.botSeatNotCanonical, 0);
     await assert.rejects(
       auditEquippedRankedPostApplyData(productionRead({
         convergence: { bot_seat_not_canonical: 1 },
       })),
       /did not converge/,
     );
+  });
+
+  await checkAsync('RANDOM-only post-apply preserves every valid owned bot seat', async () => {
+    const queries: string[] = [];
+    const read = productionRead({
+      convergence: { bot_seat_not_canonical: 7 },
+    });
+    assert.deepEqual(
+      await auditEquippedRankedPostApplyData(async (query, parameters = []) => {
+        queries.push(query);
+        return read(query, parameters);
+      }, { requireCanonicalBotSeats: false }),
+      {
+        botCount: 200,
+        botsWithRunes: 155,
+        botsEquipped: 155,
+        botsWithRunesWithoutSeat: 0,
+        botsWithoutRunesWithSeat: 0,
+        botSeatNotOwned: 0,
+        botsRandomMode: 0,
+      },
+    );
+    assert.ok(!queries.includes(EQUIPPED_RANKED_BOT_CONVERGENCE),
+      'stage two recomputed a canonical seat after later rune ownership changed');
+  });
+
+  check('ranked-rune apply routes convergence only through the fixed-seat stage', () => {
+    const [fixedSeat, randomMode] = RANKED_RUNES_MIGRATIONS;
+    assert.equal(requiresCanonicalEquippedBotSeats([]), false);
+    assert.equal(requiresCanonicalEquippedBotSeats([randomMode]), false);
+    assert.equal(requiresCanonicalEquippedBotSeats([fixedSeat]), true);
+    assert.equal(requiresCanonicalEquippedBotSeats([fixedSeat, randomMode]), true);
+    const source = readFileSync(
+      new URL('../../tools/database/production-rollout.mjs', import.meta.url),
+      'utf8',
+    );
+    assert.match(source,
+      /requireCanonicalBotSeats:\s*requiresCanonicalEquippedBotSeats\(\s*immediatelyBefore\.plan\.pending,?\s*\)/u,
+      'the production apply path bypasses the tested stage-routing predicate');
   });
 
   await checkAsync('equipped-ranked apply fingerprints human seats before and after', async () => {
