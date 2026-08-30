@@ -8,6 +8,11 @@ import type { RankedPoolTier } from './core/ranked-outcomes.ts';
 export const RUNE_COLLECTION_CACHE_KEY = 'knucklebones.runes.v1';
 export const RUNE_COLLECTION_CACHE_VERSION = 1 as const;
 
+export type EquippedRuneSelection =
+  | { readonly kind: 'none' }
+  | { readonly kind: 'fixed'; readonly runeId: string }
+  | { readonly kind: 'random' };
+
 export interface RuneCollectionSnapshot {
   readonly version: typeof RUNE_COLLECTION_CACHE_VERSION;
   readonly accountId: string;
@@ -15,11 +20,13 @@ export interface RuneCollectionSnapshot {
   readonly collected: readonly string[];
   /** Last server-confirmed permanent variety tier. Null means unknown/pre-v2. */
   readonly poolTier: RankedPoolTier | null;
-  /* The rune this account carries into ranked from SILVER up. Null is BOTH
-     "nothing equipped" (a deliberate choice) and "not known yet" — the seat
-     draws the same empty disc either way, so the UI needs no third state and
-     an account whose server has not grown the column simply shows none. */
+  /* The fixed rune, or the concrete owned fallback retained while RANDOM is
+     active so an installed pre-random client still carries a valid rune. */
   readonly equippedRune: string | null;
+  /** Each fresh SILVER+ ordinary match samples the owned collection. */
+  readonly randomRuneMode: boolean;
+  /** Semantic profile/UI view; never exposes the RANDOM compatibility fallback. */
+  readonly equipment: EquippedRuneSelection;
 }
 
 type Listener = (snapshot: RuneCollectionSnapshot | null) => void;
@@ -44,6 +51,14 @@ function normalizedIds(value: unknown): string[] | null {
   return ids;
 }
 
+export function selectionFromEquipment(
+  equippedRune: string | null,
+  randomRuneMode: boolean,
+): EquippedRuneSelection {
+  if (randomRuneMode) return { kind: 'random' };
+  return equippedRune === null ? { kind: 'none' } : { kind: 'fixed', runeId: equippedRune };
+}
+
 function parse(value: unknown): RuneCollectionSnapshot | null {
   if (!value || typeof value !== 'object') return null;
   const candidate = value as Record<string, unknown>;
@@ -52,6 +67,16 @@ function parse(value: unknown): RuneCollectionSnapshot | null {
       || typeof candidate.accountId !== 'string' || !UUID.test(candidate.accountId)
       || typeof candidate.verifiedAt !== 'number' || !Number.isSafeInteger(candidate.verifiedAt)
       || candidate.verifiedAt < 0 || !collected) return null;
+  const equippedRune = typeof candidate.equippedRune === 'string'
+      && knownRuneIds.has(candidate.equippedRune)
+      && collected.includes(candidate.equippedRune)
+    ? candidate.equippedRune
+    : null;
+  const randomRuneMode = candidate.randomRuneMode === true;
+  /* RANDOM must retain a concrete owned fallback. This is a database
+     invariant as well as stale-client compatibility, so a tampered cache
+     fails closed instead of silently changing modes. */
+  if (randomRuneMode && equippedRune === null) return null;
   return Object.freeze({
     version: RUNE_COLLECTION_CACHE_VERSION,
     accountId: candidate.accountId.toLowerCase(),
@@ -60,12 +85,11 @@ function parse(value: unknown): RuneCollectionSnapshot | null {
     poolTier: knownPoolTiers.has(candidate.poolTier as RankedPoolTier)
       ? candidate.poolTier as RankedPoolTier
       : null,
-    /* An id the registry retired must not survive in a cache and re-appear in
-       the seat; unknown reads as nothing equipped. */
-    equippedRune: typeof candidate.equippedRune === 'string'
-      && knownRuneIds.has(candidate.equippedRune)
-      ? candidate.equippedRune
-      : null,
+    /* An id the registry retired—or the collection no longer owns—must not
+       survive in a cache and re-appear in the seat. */
+    equippedRune,
+    randomRuneMode,
+    equipment: selectionFromEquipment(equippedRune, randomRuneMode),
   });
 }
 
@@ -97,6 +121,10 @@ export function equippedRuneId(): string | null {
   return readRuneCollectionSnapshot()?.equippedRune ?? null;
 }
 
+export function equippedRuneSelection(): EquippedRuneSelection {
+  return readRuneCollectionSnapshot()?.equipment ?? { kind: 'none' };
+}
+
 function publish(): void {
   const snapshot = readRuneCollectionSnapshot();
   listeners.forEach((listener) => listener(snapshot));
@@ -109,11 +137,17 @@ export function writeRuneCollectionSnapshot(
   verifiedAt: number = Date.now(),
   poolTier: RankedPoolTier | null = null,
   equippedRune: string | null = null,
+  randomRuneMode: boolean = false,
 ): boolean {
   const collected = normalizedIds(ids);
   if (!UUID.test(accountId) || !collected || !Number.isSafeInteger(verifiedAt) || verifiedAt < 0
       || (poolTier !== null && !knownPoolTiers.has(poolTier))
-      || (equippedRune !== null && !knownRuneIds.has(equippedRune))) return false;
+      || (equippedRune !== null && !knownRuneIds.has(equippedRune))
+      || typeof randomRuneMode !== 'boolean') return false;
+  const resolvedEquipped = equippedRune !== null && collected.includes(equippedRune)
+    ? equippedRune
+    : null;
+  if (randomRuneMode && resolvedEquipped === null) return false;
   const snapshot: RuneCollectionSnapshot = {
     version: RUNE_COLLECTION_CACHE_VERSION,
     accountId: accountId.toLowerCase(),
@@ -123,9 +157,9 @@ export function writeRuneCollectionSnapshot(
     /* A rune can only be carried once it is owned. Enforced in the database by
        the composite key on (id, equipped_rune); mirrored here so a stale cache
        cannot show a seat the account has no claim to. */
-    equippedRune: equippedRune !== null && collected.includes(equippedRune)
-      ? equippedRune
-      : null,
+    equippedRune: resolvedEquipped,
+    randomRuneMode,
+    equipment: selectionFromEquipment(resolvedEquipped, randomRuneMode),
   };
   const store = storage();
   if (!store) return false;

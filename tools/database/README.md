@@ -112,16 +112,28 @@ cron contract. Immediately after an apply it also proves the historical tier
 backfill, safe v1 defaults for live matches/queue rows, and that all five new
 tables are still empty before the v2 functions are deployed.
 
-The `ranked-runes` allow-list contains only
-`20260830155543_equipped_runes_ranked.sql`, pinned to its committed SHA-256.
-It composes the complete Rune Trial audit with the exact widened capability
-and match constraints, `start_ranked_match_v3`, the bot-choice helper, all
-replaced function bodies, and their service/helper ACLs. Both migration stages
-audit bot seat coverage and ownership without requiring the not-yet-created
-helper before apply; the immediate postcheck additionally requires every bot
-seat to equal the stable owned-rune choice. The apply snapshots a deterministic
-count/fingerprint of every non-bot `profiles.equipped_rune` row immediately
-before and after the migration and refuses success if any human seat changed.
+The `ranked-runes` allow-list has two ordered, SHA-256-pinned stages:
+`20260830155543_equipped_runes_ranked.sql` establishes fixed equipped seats,
+then `20260830160000_random_rune_mode.sql` adds the persisted RANDOM setting
+without changing the deployed `start_ranked_match_v3` signature. The combined
+validator composes the complete Rune Trial audit with the exact widened
+capability and match constraints, boolean column/default/check/comment, the
+existing owned/known equipment constraints, exact profile RLS, owner SELECT and
+UPDATE policies/grants, and the absence of broad table UPDATE. RANDOM has no
+direct column grant: the validator pins the authenticated-only
+`set_rune_equipment` function
+owner, body, search path, and exact execute ACL alongside the compatibility
+trigger, private deterministic chooser, every stored function body, and every
+service/helper ACL. It accepts only the absent, fixed-seat, or complete RANDOM
+stage; no partial or out-of-order catalog can pass.
+
+Both stages audit bot seat coverage and ownership without requiring a helper
+that the pending stage has not created. The durable and immediate postchecks
+also require every bot to stay out of RANDOM and every fixed bot seat to equal
+the stable owned-rune choice. Apply snapshots one deterministic
+count/fingerprint of every non-bot fixed seat **and** RANDOM flag immediately
+before and after the migration, and refuses success if either human setting
+changed.
 
 The `ladder-streak-baselines` allow-list contains only
 `20260826153000_ladder_streak_baselines.sql`. Its validator pins the private

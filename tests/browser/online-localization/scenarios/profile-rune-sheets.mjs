@@ -4,7 +4,7 @@
 // Owned separately from online-surfaces.mjs (which drives the panel tour and
 // calls this per viewport) so each file stays inside the test size budget.
 import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
-import { checkSurface, frame,
+import { checkReachableTargets, checkSurface, frame,
   inspectSurface } from '../../localization/harness/layout-inspection.mjs';
 
 export async function inspectRuneSheets(suite, page, label, locale) {
@@ -69,20 +69,34 @@ export async function inspectRuneSheets(suite, page, label, locale) {
   await page.click('#accSeat');
   await page.waitForSelector('.faceoff.libsheet .focard', { timeout: 5000 });
   await frame(page);
-  const seatSurface = await inspectSurface(page, '.faceoff.libsheet .focard', [
-    '.fograb', '.mcname', '.mcdetail', '.seatpick .accrune', '#accSeatClear',
+  const seatSurface = await inspectSurface(page, '.faceoff.libsheet .seatmode-content', [
+    '.mcname', '.mcdetail', '#accSeatEquip', '#accSeatRandom',
+    '#accSeatRandomDetail', '#accSeatClear',
   ]);
   checkSurface(suite.check, `profile-rune-seat-${label}`, seatSurface,
     { allowScrollable: true, targets: false });
+  const seatChrome = await inspectSurface(page, '.faceoff.libsheet .focard', ['.fograb']);
+  checkSurface(suite.check, `profile-rune-seat-${label}-chrome`, seatChrome, { targets: false });
+  await checkReachableTargets(page, suite.check, `profile-rune-seat-${label}`, [
+    '#accSeatEquip', '#accSeatRandom', '#accSeatClear',
+  ]);
   const seatCopy = await page.evaluate(() => ({
     title: document.querySelector('.faceoff.libsheet .mcname')?.textContent?.trim() ?? '',
     detail: document.querySelector('.faceoff.libsheet .mcdetail')?.textContent?.trim() ?? '',
+    runes: document.querySelectorAll('.faceoff.libsheet .accrune').length,
+    equip: document.querySelector('#accSeatEquip')?.textContent?.trim() ?? '',
+    random: document.querySelector('#accSeatRandom')?.textContent?.trim() ?? '',
+    randomDetail: document.querySelector('#accSeatRandomDetail')?.textContent?.trim() ?? '',
     clear: document.querySelector('#accSeatClear')?.textContent?.trim() ?? '',
   }));
   const expectedSeatLabel = `${catalog.game.runes.fate.name} — ${catalog.online.profile.equippedMeta}`;
   suite.check(seatLabel === expectedSeatLabel
       && seatCopy.title === catalog.online.profile.seatPick
       && seatCopy.detail === catalog.online.profile.seatPickDetail
+      && seatCopy.runes === 0
+      && seatCopy.equip === catalog.online.profile.equipRune
+      && seatCopy.random === catalog.online.profile.randomRuneMode
+      && seatCopy.randomDetail === catalog.online.profile.randomRuneModeDetail
       && seatCopy.clear === catalog.online.profile.unequipThis,
     `profile-rune-seat-${label} did not render the localized SILVER/Trial contract`,
     { seatLabel, expectedSeatLabel, seatCopy });

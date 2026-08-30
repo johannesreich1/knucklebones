@@ -386,14 +386,22 @@ unique per bot (the seed postcheck pins `count(distinct points)`), so it is just
 as stable, and unlike a hash it is reproducible in SQL — which is what lets the
 whole grant be one reviewable statement instead of 11KB of literals.
 
-**The seat** is one stable pseudo-random choice from that bot's actual
-inventory, persisted in the same `profiles.equipped_rune` column a player
-uses. `private.bot_owned_rune_choice(uuid)` orders owned rows by a salted hash
-of the bot UUID and rune id; it never calls volatile `random()`, so seed,
-backfill, settlement, and audit all agree. A bot's existing seat is not
-rerolled when it wins another rune. The seat is set even below SILVER: the rune
-is carried but not in play, so a bot that climbs arrives already carrying an
-owned choice.
+**The bot seat** is one stable pseudo-random choice from that bot's actual
+inventory, persisted in `profiles.equipped_rune`.
+`private.bot_owned_rune_choice(uuid)` orders owned rows by a salted hash of the
+bot UUID and rune id; it never calls volatile `random()`, so seed, backfill,
+settlement, and audit all agree. A bot's existing seat is not rerolled when it
+wins another rune. The seat is set even below SILVER: the rune is carried but
+not in play, so a bot that climbs arrives already carrying an owned choice.
+
+**A human may instead select RANDOM.** `profiles.random_rune_mode=true` keeps
+one concrete owned `equipped_rune` fallback for installed older clients, while
+each fresh ordinary ranked match derives its immutable rune from the match seed,
+participant id, and complete current collection. Retries reproduce the same
+snapshot; later equipment changes cannot rewrite it. RANDOM without an owned
+fallback is unrepresentable, below SILVER still snapshots no rune, and Rune
+Trial ignores the mode. Bots retain their stable fixed seat rather than silently
+changing product policy.
 
 The population as seeded (200 bots, 539 rune rows, 155 carrying a seat):
 

@@ -64,6 +64,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
        an empty seat is a valid state, and the two players' seats are
        independent — one may carry a rune while the other does not. */
     equippedRune = null,
+    randomRuneMode = false,
     /* Ladder points, which decide the GROUP — the equipped seat only goes live
        from SILVER up. Null keeps every existing probe on its BONE default. */
     standingPoints = null,
@@ -100,7 +101,8 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
       dataDelay: inspectLoading ? 900 : dataDelay, markRunesSeenAfterFirstRead,
       door, gameCenterBridge, identity, member, named, ladderNearBottom, ladderBoard, historyDepth,
       paginationRace,
-      passwordAuth, runes, unseenRunes, equippedRune, standingPoints, SESSION, GUEST_ID,
+      passwordAuth, runes, unseenRunes, equippedRune, randomRuneMode,
+      standingPoints, SESSION, GUEST_ID,
     });
     /* Registered AFTER the base stub on purpose: Playwright gives the most
        recent handler precedence, so the in-match fixture takes over pvp-join

@@ -6,7 +6,7 @@ you name the plan, and the plan names its functions.
 
 | Plan | Functions | Opt-in | Database prerequisite |
 |---|---|---|---|
-| `ranked-runes` | `pvp-rune-select`, `pvp-action`, `account-delete`, `pvp-claim`, `pvp-move`, `pvp-join` | `KB_ALLOW_PRODUCTION_RANKED_RUNE_FUNCTIONS` | migration `20260830155543_equipped_runes_ranked`, its exact ranked-rune audit, and the complete Rune Trial foundation |
+| `ranked-runes` | `pvp-rune-select`, `pvp-action`, `account-delete`, `pvp-claim`, `pvp-move`, `pvp-join` | `KB_ALLOW_PRODUCTION_RANKED_RUNE_FUNCTIONS` | both ordered migrations `20260830155543_equipped_runes_ranked` and `20260830160000_random_rune_mode`, the exact stage-2 catalog/data audit, and the complete Rune Trial foundation |
 | `identity-hardening` | `identity-status`, `apple-token-register`, `apple-revocation-retry` | `KB_ALLOW_PRODUCTION_IDENTITY_FUNCTIONS` | the Apple/Game Center audit at stage 3 or 4 |
 | `game-center` | `gc-auth`, and nothing else | `KB_ALLOW_PRODUCTION_GAME_CENTER_FUNCTIONS` | the Apple/Game Center audit at stage 2, 3 or 4 |
 
@@ -44,6 +44,9 @@ written to production:
 - **Its own database prerequisite** (apply only, never in preview). The
   functions' RPCs and tables must already exist in the reviewed shape; the
   database rollout's audits are the single implementation of that contract.
+  `ranked-runes` requires both exact migration-history identities and stage 2,
+  including the persisted RANDOM column/trigger/helpers, replaced v3 body and
+  the invariant that bots retain canonical fixed seats with RANDOM off.
 - **Readback of every deployed function.** Each function is deployed alone into
   a materialized temporary project, its row is re-read (`ACTIVE`, the reviewed
   `verify_jwt`, plausible metadata), then the deployed closure is downloaded and

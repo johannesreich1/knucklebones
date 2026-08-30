@@ -15,7 +15,9 @@ import { existsSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import {
   FUNCTION_ROLLOUT_SLUGS,
+  RANKED_RUNES_PRODUCTION_PREREQUISITE,
   assertRankedRunesProductionPrerequisite,
+  rolloutPlan,
   rolloutProductionFunctions,
 } from '../../tools/functions/production-rollout.mjs';
 import {
@@ -26,15 +28,30 @@ import {
 } from './production-functions-cases.ts';
 
 export async function assertRankedRunesPlanContract() {
+  const plan = rolloutPlan('ranked-runes');
+  assert.deepEqual(
+    plan.controlFiles.filter((file: string) => file.startsWith('supabase/migrations/')),
+    [
+      'supabase/migrations/20260825205241_rune_trial_ranked_v2.sql',
+      'supabase/migrations/20260830155543_equipped_runes_ranked.sql',
+      'supabase/migrations/20260830160000_random_rune_mode.sql',
+    ],
+    'ranked-runes function rollout did not pin its exact ordered migration controls',
+  );
+  assert.match(RANKED_RUNES_PRODUCTION_PREREQUISITE, /select count\(\*\) = 2/);
+  assert.match(RANKED_RUNES_PRODUCTION_PREREQUISITE,
+    /version = \$1::text and name = \$2::text/);
+  assert.match(RANKED_RUNES_PRODUCTION_PREREQUISITE,
+    /version = \$3::text and name = \$4::text/);
   /* What production must already prove before any ranked function is
-     deployed: the equipped forward migration applied exactly once, the Rune
-     Trial foundation remains complete, the replaced contracts are exact, and
-     bot seats are present and owned. */
+     deployed: both ordered equipment migrations applied exactly once, the
+     Rune Trial foundation remains complete, the replaced contracts are exact,
+     and bot seats are canonical, fixed, present, and owned. */
   assert.deepEqual(
     await assertRankedRunesProductionPrerequisite(readyProductionRead()),
     {
       migrationHistory: true,
-      schemaStage: 1,
+      schemaStage: 2,
       evidence: {
         queueCapabilityConstraint: true,
         matchConstraints: true,
@@ -42,6 +59,25 @@ export async function assertRankedRunesPlanContract() {
         functionBodies: true,
         serviceGrants: true,
         helperLockdown: true,
+        randomModeColumn: true,
+        randomModeConstraint: true,
+        randomModeComment: true,
+        randomModeGrant: true,
+        equipmentIntegrityConstraints: true,
+        profileSecurity: true,
+        compatibilityTrigger: true,
+        compatibilityFunctionContract: true,
+        compatibilityFunctionBody: true,
+        compatibilityFunctionLockdown: true,
+        randomHelperContract: true,
+        randomHelperBody: true,
+        randomHelperLockdown: true,
+        randomStartContract: true,
+        randomStartBody: true,
+        randomStartGrant: true,
+        equipmentRpcContract: true,
+        equipmentRpcBody: true,
+        equipmentRpcGrant: true,
       },
       data: {
         botCount: 200,
@@ -50,6 +86,7 @@ export async function assertRankedRunesPlanContract() {
         botsWithRunesWithoutSeat: 0,
         botsWithoutRunesWithSeat: 0,
         botSeatNotOwned: 0,
+        botsRandomMode: 0,
       },
     },
   );
@@ -57,7 +94,7 @@ export async function assertRankedRunesPlanContract() {
     () => assertRankedRunesProductionPrerequisite(
       readyProductionRead(undefined, { history: false }),
     ),
-    /migration must be exactly/,
+    /migrations must be exactly/,
   );
   await assert.rejects(
     () => assertRankedRunesProductionPrerequisite(
@@ -91,11 +128,23 @@ export async function assertRankedRunesPlanContract() {
   );
   await assert.rejects(
     () => assertRankedRunesProductionPrerequisite(
+      readyProductionRead(undefined, { equipped: { random_start_body: false } }),
+    ),
+    /Equipped-ranked.*partial/,
+  );
+  await assert.rejects(
+    () => assertRankedRunesProductionPrerequisite(
       readyProductionRead(undefined, {
         bots: { bots_equipped: 154, bots_with_runes_without_seat: 1 },
       }),
     ),
     /missing, unowned, or attached without inventory/,
+  );
+  await assert.rejects(
+    () => assertRankedRunesProductionPrerequisite(
+      readyProductionRead(undefined, { bots: { bots_random_mode: 1 } }),
+    ),
+    /random mode is not allowed for bots/,
   );
 
   {

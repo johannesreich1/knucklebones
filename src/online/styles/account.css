@@ -59,25 +59,27 @@
   font:inherit;text-align:left;-webkit-appearance:none;appearance:none;cursor:pointer}
 :where(#kbroot) #onAccount .accrune:focus-visible{outline:2px solid var(--rh);outline-offset:2px}
 :where(#kbroot) #onAccount .accrune:active{transform:translateY(1px)}
-/* THE SEAT'S PICKER wears the same squares the collection grid does, so nothing
-   new has to be learned to read it — but the one you are CARRYING has to be
-   obvious at a glance, hence the lit border and the ring's own hue. The grid on
-   the profile never marks a rune this way because there is nothing to mark
-   there: it lists what you own, not what you chose. */
-:where(#kbroot) .faceoff .accrunes-grid{display:grid;
-  grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:11px}
-:where(#kbroot) .faceoff .accrune{position:relative;display:flex;align-items:center;gap:6px;
-  min-width:0;padding:8px 9px;border-radius:11px;background:rgba(255,255,255,.04);
-  border:1px solid rgba(255,255,255,.09);color:var(--rh);font:inherit;font-size:10px;
-  font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
-:where(#kbroot) .faceoff .accrune .sico{flex:0 0 auto;filter:drop-shadow(0 0 7px currentColor)}
-:where(#kbroot) .faceoff .accrune span{min-width:0;overflow:hidden;text-overflow:ellipsis;
-  white-space:nowrap;color:var(--fg)}
-:where(#kbroot) .faceoff .accrune.on{border-color:var(--rh);
-  box-shadow:0 0 0 1px var(--rh) inset,0 0 14px -4px var(--rh)}
-:where(#kbroot) .faceoff .accrune:focus-visible{outline:2px solid var(--rh);outline-offset:2px}
-/* The dashed socket an EMPTY seat wears: the ring a rune would sit in, drawn
-   rather than left blank so the seat never reads as a rendering fault. */
+/* The seat sheet chooses a MODE, not a rune: its actions stack in the shared
+   card, while EQUIP hands selection to the existing profile grid below. Its
+   one content node also gives the shared interactive-sheet controller a real
+   bounded scrollport on short landscape devices; the grabber stays fixed. */
+:where(#kbroot) .faceoff .seatmode-content{display:flex;flex-direction:column;gap:9px;width:100%;
+  min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:2px 3px 8px;
+  -webkit-overflow-scrolling:touch}
+:where(#kbroot) .faceoff .seatmode-actions{display:flex;flex-direction:column;align-items:stretch;
+  gap:9px;margin-top:4px;width:100%}
+:where(#kbroot) .faceoff .seatmode-actions .btn{display:flex;align-items:center;justify-content:center;
+  gap:9px;width:100%;min-width:0}
+:where(#kbroot) .faceoff .seatmode-actions .btn .sico{flex:0 0 auto}
+:where(#kbroot) .faceoff .seatmode-random{display:flex;flex-direction:column;align-items:center;gap:5px}
+:where(#kbroot) .faceoff .seatmode-detail{font-size:9.5px;line-height:1.35;letter-spacing:.03em;
+  color:var(--dim);text-align:center}
+:where(#kbroot) .faceoff .seatmode-actions .btn:disabled{opacity:.36;cursor:not-allowed}
+:where(#kbroot) .faceoff .seatmode-actions .btn.on{color:var(--gold);border-color:rgba(255,209,102,.5);
+  background:rgba(255,209,102,.08);box-shadow:0 0 18px rgba(255,209,102,.11)}
+/* The empty seat needs only its PLUS. The 34px outer control already supplies
+   the socket and flex-centres this SVG, so an inner dashed ring would be a
+   duplicated boundary rather than useful detail. */
 :where(#kbroot) #onAccount .accseat .seatnone{color:var(--dim);filter:none}
 :where(#kbroot) #onAccount .accrune .sico{flex:0 0 auto;filter:drop-shadow(0 0 7px currentColor)}
 /* The name SPEAKS THE RUNE'S COLOUR, inheriting the slot's --rh like the frame,
@@ -92,6 +94,34 @@
 :where(#kbroot) #onAccount .accrune.locked::after{content:"";position:absolute;inset:0;border-radius:inherit;
   background:linear-gradient(135deg,rgba(255,255,255,.09),rgba(255,255,255,.015));
   backdrop-filter:blur(1.5px);-webkit-backdrop-filter:blur(1.5px);pointer-events:none}
+/* ---- THE PROFILE GRID BECOMES THE ONE RUNE PICKER -----------------------
+   The sheet leaves before this state arrives. Everything else in the profile
+   becomes inert and recedes, the instruction is a real visible row, and only
+   collected cards keep pointer events. Locked cards remain in their canonical
+   slots so the collection does not jump while the player chooses. */
+:where(#kbroot) #onAccount.rune-picking > :not(#accRunes){opacity:.16;filter:saturate(.35) blur(.35px);
+  transition:opacity .18s ease,filter .18s ease}
+:where(#kbroot) #onAccount #accRunes{border:1px solid transparent;border-radius:16px;
+  padding:0;transition:border-color .18s ease,background .18s ease,box-shadow .18s ease,padding .18s ease}
+:where(#kbroot) #onAccount #accRunes.choosing{padding:12px;
+  border-color:rgba(var(--p1-rgb),.48);background:rgba(var(--p1-rgb),.055);
+  box-shadow:0 0 0 1px rgba(var(--p1-rgb),.08) inset,0 0 30px rgba(var(--p1-rgb),.11)}
+:where(#kbroot) #onAccount .accpick{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  min-height:44px;padding:8px 10px;border-radius:11px;background:rgba(var(--p1-rgb),.08);
+  border:1px solid rgba(var(--p1-rgb),.25)}
+:where(#kbroot) #onAccount .accpick > div{display:flex;flex-direction:column;gap:3px;min-width:0}
+:where(#kbroot) #onAccount .accpick b{font-size:11px;line-height:1.2;letter-spacing:.18em;color:var(--p1);
+  text-transform:uppercase}
+:where(#kbroot) #onAccount .accpick span{font-size:9.5px;line-height:1.35;letter-spacing:.04em;color:#c6d3ee}
+:where(#kbroot) #onAccount .accpick .linkbtn{flex:0 0 auto;color:var(--txt)}
+:where(#kbroot) #onAccount #accRunes.choosing .accsec{gap:10px}
+:where(#kbroot) #onAccount #accRunes.choosing .accrune.collected{opacity:1;
+  border-color:color-mix(in srgb,var(--rh) 72%,transparent);
+  background:color-mix(in srgb,var(--rh) 13%,rgba(255,255,255,.025));
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--rh) 14%,transparent) inset,
+    0 0 18px color-mix(in srgb,var(--rh) 12%,transparent)}
+:where(#kbroot) #onAccount #accRunes.choosing .accrune.locked{opacity:.16;filter:grayscale(1);
+  pointer-events:none;cursor:default}
 :where(#kbroot) #onAuth{width:100%;min-height:0;max-width:var(--w-col);display:flex;flex-direction:column;gap:14px;
   overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:2px 3px 8px;
   -webkit-overflow-scrolling:touch}

@@ -1,0 +1,156 @@
+<!-- meta name="EQ4 — The ring socket" group="3k · The equipped rune" subtitle="SELECTED FOR PRODUCT · OWNER OVERRIDE 2026-08-30. The ladder ring keeps its measured 34px seat; tapping it opens a zero-tile action sheet, EQUIP hands the existing Profile collection one temporary choosing state, RANDOM is its own mode action, and the empty socket is one outer circle with a centred plus" width=412 height=2440 sizes="md" links="Profile, Match reveal, Rune Ritual" -->
+<style>
+  /* Card-local names only (eq4*). The Profile anatomy is the APP's: the ring
+     comes from styles/components/identity.css and the seat, action sheet and
+     choosing grid come from online/styles/account.css plus the shared sheet.
+     The collection below is accountRunesMarkup() through {{account-runes}};
+     every rune mark comes through a builder token. This card therefore records
+     the interaction decision without becoming another implementation of it.
+
+     SELECTED RING DIRECTION, 2026-08-28. The seat in the ring's mouth remains
+     the object, and card 52f (EQ6) carries the same disc on Home.
+
+     OWNER OVERRIDE, 2026-08-30. The earlier interaction evidence and its
+     rejection of a temporary choosing state are superseded. Tapping the
+     seat now opens an action sheet containing NO rune tiles. EQUIP closes the
+     sheet, then the existing Profile grid becomes the only rune picker until
+     an owned rune is chosen, CANCEL is tapped, or Escape is pressed. RANDOM
+     RUNE MODE is a separate action. UNEQUIP is the shared compact button. */
+
+  #ovOnline{display:flex;flex-direction:column;align-items:center;width:100%}
+  #onAccount{position:relative}
+  .shead{margin-bottom:10px}
+  .scr{gap:7px}
+
+  .eq4override{display:flex;align-items:center;justify-content:center;min-height:28px;
+    padding:6px 10px;border:1px solid rgba(255,209,102,.3);border-radius:999px;
+    background:rgba(255,209,102,.07);color:var(--gold);font-size:8px;font-weight:900;
+    letter-spacing:.16em;text-align:center;text-transform:uppercase}
+  .eq4phase{display:flex;align-items:center;gap:8px;width:100%;margin-top:10px;
+    color:var(--dim);font-size:8px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}
+  .eq4phase b{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;
+    border:1px solid rgba(var(--p1-rgb),.42);color:var(--p1);font-size:9px}
+  .eq4phase span{min-width:0}
+
+  /* The real sheet is flattened only so it can stand in the comparison card.
+     Its card, grabber, content and action classes remain the runtime's. */
+  .scr .faceoff{position:relative;inset:auto;z-index:auto;width:100%;padding:0;background:transparent}
+  .eq4sheet{display:flex;flex-direction:column;align-items:center;width:100%;margin-top:2px}
+  .eq4sheet .splbl{padding-top:0;margin-bottom:4px}
+
+  /* accountRunesMarkup emits the runtime prompt hidden because JS normally
+     reveals it after the sheet closes. This static card is that later frame;
+     unhide by its preview-only id, without restyling the shared .accpick. */
+  #previewRunePick[hidden]{display:flex!important}
+  .eq4pickread{margin-top:7px;color:#c6d3ee;font-size:8px;line-height:1.5;
+    letter-spacing:.09em;text-align:center;text-transform:uppercase}
+
+  /* Keep the selected geometry, not the superseded motion evidence.
+     At the md stage .ringwrap resolves to 206px. The 74px avatar's lower edge
+     is y=140 and .gname begins at y=190, leaving 50px. The production 34px
+     .accseat spans y=148–182: 8px clear above and below, with no layout shift.
+     Its x=86–120 footprint also clears the pencil at x=123–149. */
+  .eq4read{margin-top:8px}
+
+  /* EMPTY means the outer socket plus one centred invitation mark. There is
+     deliberately no inner dotted/dashed circle around the plus. The outer
+     dashed boundary is still the 34px seat itself, matching .accseat.none. */
+  .eq4emptyproof{display:flex;align-items:center;gap:13px;width:100%;margin-top:12px;
+    padding:12px 14px;border-radius:14px;background:rgba(255,255,255,.025);
+    border:1px solid rgba(255,255,255,.08)}
+  .eq4emptyseat{display:grid;place-items:center;width:34px;height:34px;flex:0 0 auto;
+    padding:0;border-radius:50%;background:radial-gradient(circle at 50% 35%,rgba(12,16,30,.96),rgba(6,8,16,.99));
+    border:1px dashed color-mix(in srgb,var(--dim) 72%,transparent);color:var(--dim);
+    box-shadow:none}
+  .eq4emptyseat svg{display:block}
+  .eq4emptycopy{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .eq4emptycopy b{font-size:9px;letter-spacing:.15em;color:var(--txt);text-transform:uppercase}
+  .eq4emptycopy span{font-size:9.5px;line-height:1.45;color:var(--dim)}
+
+  .eq4contract{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;margin-top:12px}
+  .eq4contract div{display:flex;flex-direction:column;gap:4px;min-height:75px;padding:10px;
+    border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(255,255,255,.022)}
+  .eq4contract b{font-size:8px;letter-spacing:.15em;color:var(--p1);text-transform:uppercase}
+  .eq4contract span{font-size:9px;line-height:1.48;color:#c6d3ee}
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr">
+  <div class="shead"><button class="ico">‹</button><span class="ttl">PROFILE</span><span class="pad"></span></div>
+
+  <div class="eq4override">Owner override · 30 August 2026</div>
+  <div class="cap2">The ring socket stays. What happens after the tap changes.</div>
+
+  <div class="eq4phase"><b>1</b><span>Tap the seat · choose an equipment action, not a rune tile</span></div>
+  <div class="eq4sheet">
+    <span class="splbl">The action sheet contains zero rune tiles</span>
+    <div class="faceoff libsheet">
+      <div class="focard">
+        <button class="fograb" aria-label="Close"><span class="fobar"></span></button>
+        <div class="seatmode-content">
+          <div class="mchead"><span class="mcname">EQUIPPED RUNE</span></div>
+          <div class="mcdetail">Equip one unlocked rune, or let RANDOM RUNE MODE draw a random owned rune for each ranked match from SILVER. Rune Ritual uses its own choice.</div>
+          <div class="seatmode-actions">
+            <button type="button" class="btn primary">Equip rune</button>
+            <div class="seatmode-random">
+              <button type="button" class="btn soft" aria-pressed="false">
+                {{mico:random:19}}<span>Random rune mode</span>
+              </button>
+              <span class="seatmode-detail">Draws a random owned rune for each ranked match.</span>
+            </div>
+            <button type="button" class="btn soft small">Unequip</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="eq4phase"><b>2</b><span>Equip closes the sheet · the existing collection becomes temporary choosing state</span></div>
+  <div id="ovOnline"><div class="panel" id="onAccount">
+    <!-- The selected ring geometry is unchanged. This frame is the moment
+         after EQUIP: WARD remains seated until the player chooses another
+         owned rune; equipment never changes merely because the grid opened. -->
+    <div class="ringwrap haspeak" style="--p:0.2027;--pk:0.26">
+      <i class="lring"></i><i class="lpeak"></i>
+      <button class="avwrap"><span class="dice-static">{{die:5:p1:74}}</span><span class="avedit">✎</span></button>
+      <button type="button" class="accseat" id="accSeat" style="--rh:{{shue:ward}}" aria-label="WARD — equipped">
+        {{sico:ward:19}}
+      </button>
+      <span class="gname" style="--gc:var(--g-silver)">SILVER</span>
+    </div>
+    <div class="accname">FrostLynx303</div>
+    <button class="ptv"><b>1,412</b><span>Ladder points</span></button>
+    <div class="facts">
+      <button class="fact" type="button"><b>#12</b><span>Rank</span></button>
+      <div class="fact"><b>3</b><span>Best streak</span></div>
+      <div class="fact pk"><b>1,455</b><span>Peak</span></div>
+    </div>
+    <!-- ONE runtime collection, now wearing its runtime .choosing state.
+         The emitted prompt owns CANCEL; application binding also owns Escape.
+         WARD and FATE stay vivid/actionable, while the four unowned positions
+         remain in registry order but recede and cannot be selected. -->
+    <div id="accRunes" class="choosing">{{account-runes:fate,ward}}</div>
+    <div class="accsince">Member since August 2026</div>
+  </div></div>
+  <div class="eq4pickread">Only owned runes answer · Cancel or Escape restores the ordinary profile</div>
+
+  <div class="eq4emptyproof">
+    <button type="button" class="eq4emptyseat" aria-label="Equip rune">
+      <svg class="sico seatnone" viewBox="0 0 20 20" width="19" height="19" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4">
+        <path d="M10 6.9v6.2M6.9 10h6.2" stroke-linecap="round"></path>
+      </svg>
+    </button>
+    <span class="eq4emptycopy"><b>Nothing equipped</b><span>The 34px outer socket remains the entire control. The plus is centred directly inside it, with no second dotted border.</span></span>
+  </div>
+
+  <div class="eq4contract">
+    <div><b>Random is a mode</b><span>It is answered in the action sheet and chooses from owned runes per ranked match; it is not another tile in the fixed-rune grid.</span></div>
+    <div><b>Unequip stays compact</b><span>It appears only when something is selected and uses the canonical <code>.btn.soft.small</code> action.</span></div>
+    <div><b>Picking is temporary</b><span>EQUIP dismisses the sheet first. The grid owns the visible prompt, choice highlight and CANCEL; Escape exits the same state.</span></div>
+    <div><b>The ring still carries rank</b><span>From SILVER the chosen fixed or random rune is live. Below SILVER the seat remains chosen but waits in the ring's track grey.</span></div>
+  </div>
+
+  <div class="splbl eq4read">Two of six collected · one seat · one existing grid · no duplicated rune roster</div>
+</div></div>
+<div class="note"><b>OWNER OVERRIDE — 2026-08-30:</b> tapping the ring seat opens one action sheet with actions only. It never lists rune tiles. <b>EQUIP RUNE</b> closes that sheet and promotes the Profile collection already on the page into a clearly bounded temporary picker. Only owned tiles can answer; the existing CANCEL button and Escape both leave without changing equipment. <b>RANDOM RUNE MODE</b> is a separate complete action, and <b>UNEQUIP</b> keeps the shared compact-button treatment instead of competing with EQUIP.<br>
+<b>The selected geometry remains:</b> at the 384px stage <code>.ringwrap</code> is 206px, the 74px avatar's lower edge lands at y=140 and <code>.gname</code> begins at y=190. The 34px seat spans y=148–182, leaving 8px above and below, and clears the pencil at x=123–149 by occupying x=86–120. The override changes interaction, not the ring, group name, profile spacing or ladder reading.<br>
+<b>One implementation:</b> the card wears the production <code>.accseat</code>, sheet, action and picker classes. Its grid comes from <code>accountRunesMarkup()</code>, and WARD/FATE/random marks come through builder tokens backed by the app registries. The sheet deliberately has no library entry and no copied rune roster: it chooses a mode; the existing grid chooses a fixed rune.<br>
+<b>Empty is an invitation, not a second control:</b> the outer 34px seat remains visible and its plus is centred vertically and horizontally inside it. The plus has no nested dotted border. The outer socket alone supplies the boundary and tap target.</div>

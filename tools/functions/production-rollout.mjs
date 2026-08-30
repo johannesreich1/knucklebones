@@ -92,6 +92,8 @@ export const RUNE_TRIAL_MIGRATION_VERSION = '20260825205241';
 export const RUNE_TRIAL_MIGRATION_NAME = 'rune_trial_ranked_v2';
 export const RANKED_RUNES_MIGRATION_VERSION = '20260830155543';
 export const RANKED_RUNES_MIGRATION_NAME = 'equipped_runes_ranked';
+export const RANDOM_RUNE_MODE_MIGRATION_VERSION = '20260830160000';
+export const RANDOM_RUNE_MODE_MIGRATION_NAME = 'random_rune_mode';
 export const SUPABASE_READBACK_OMISSION_HASHES = Object.freeze({
   '*:core/ranked-action-types.ts': 'add8dc5a605e30a7ad0be9a30655863c960acf25769f1a57412b15e329c99420',
   // Re-pinned 2026-08-29 for SpellSpec.drawsFromSupply — the flag ranked reads
@@ -171,9 +173,15 @@ select count(*) = 1 and bool_and(name = $2::text) as migration_history
 `;
 export const RANKED_RUNES_PRODUCTION_PREREQUISITE = String.raw`
 -- ranked-runes forward-migration identity
-select count(*) = 1 and bool_and(name = $2::text) as migration_history
+select count(*) = 2
+       and count(*) filter (
+         where version = $1::text and name = $2::text
+       ) = 1
+       and count(*) filter (
+         where version = $3::text and name = $4::text
+       ) = 1 as migration_history
   from supabase_migrations.schema_migrations
- where version = $1::text;
+ where version in ($1::text, $3::text);
 `;
 // identity-status, apple-token-register and apple-revocation-retry call
 // apple_revocation_ready, store_apple_revocation_credential,
@@ -241,10 +249,11 @@ export async function assertRuneTrialProductionPrerequisite(
 
 /**
  * The durable database gate for every ranked Edge Function closure. The
- * equipped-rune audit composes the complete Rune Trial foundation with the
- * exact widened constraints, function bodies, ACLs, and bot-seat invariants;
- * pinning the forward migration history additionally proves that state arrived
- * through the reviewed migration rather than an ad-hoc catalog edit.
+ * ranked-rune audit composes the complete Rune Trial foundation with both
+ * ordered forward migrations, exact constraints/triggers/function bodies,
+ * ACLs, and bot-seat invariants. Pinning both history identities additionally
+ * proves that state arrived through the reviewed migrations rather than an
+ * ad-hoc catalog edit.
  */
 export async function assertRankedRunesProductionPrerequisite(
   readProduction = productionRead,
@@ -255,17 +264,21 @@ export async function assertRankedRunesProductionPrerequisite(
   const historyRows = await readProduction(RANKED_RUNES_PRODUCTION_PREREQUISITE, [
     RANKED_RUNES_MIGRATION_VERSION,
     RANKED_RUNES_MIGRATION_NAME,
+    RANDOM_RUNE_MODE_MIGRATION_VERSION,
+    RANDOM_RUNE_MODE_MIGRATION_NAME,
   ]);
   if (!Array.isArray(historyRows) || historyRows.length !== 1
       || !isObject(historyRows[0])
       || Object.keys(historyRows[0]).length !== 1
       || historyRows[0].migration_history !== true) {
-    fail(`Production migration must be exactly ${RANKED_RUNES_MIGRATION_VERSION}/${RANKED_RUNES_MIGRATION_NAME}.`);
+    fail('Production migrations must be exactly '
+      + `${RANKED_RUNES_MIGRATION_VERSION}/${RANKED_RUNES_MIGRATION_NAME} and `
+      + `${RANDOM_RUNE_MODE_MIGRATION_VERSION}/${RANDOM_RUNE_MODE_MIGRATION_NAME}.`);
   }
 
   const { evidence, schemaStage, data } = await auditEquippedRanked(readProduction);
-  if (schemaStage !== 1) {
-    fail('Production ranked-runes schema prerequisite must be fully applied at stage 1.');
+  if (schemaStage !== 2) {
+    fail('Production ranked-runes schema prerequisite must be fully applied at stage 2.');
   }
   return Object.freeze({ migrationHistory: true, schemaStage, evidence, data });
 }
@@ -328,10 +341,11 @@ export const FUNCTION_ROLLOUT_PLANS = Object.freeze({
       ...SHARED_CONTROL_FILES,
       'supabase/migrations/20260825205241_rune_trial_ranked_v2.sql',
       'supabase/migrations/20260830155543_equipped_runes_ranked.sql',
+      'supabase/migrations/20260830160000_random_rune_mode.sql',
     ]),
     prerequisite: assertRankedRunesProductionPrerequisite,
     notes: Object.freeze([
-      `Set ${FUNCTION_DEPLOY_OPT_IN}=1 and pass --apply only after the ranked-runes database migration is verified.`,
+      `Set ${FUNCTION_DEPLOY_OPT_IN}=1 and pass --apply only after both ranked-runes database migrations are verified at stage 2.`,
     ]),
   }),
   'identity-hardening': Object.freeze({

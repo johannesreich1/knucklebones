@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
+import { resolveRuneEquipmentWrite } from '../src/online/runes/rune-equip.ts';
 import {
   RUNE_COLLECTION_CACHE_KEY,
   clearRuneCollectionSnapshot,
   collectedRuneCount,
   equippedRuneId,
+  equippedRuneSelection,
   collectedRuneIds,
   confirmedRankedPoolTier,
   hasCollectedRune,
@@ -21,6 +23,37 @@ const values = new Map<string, string>();
 
 const account = '11111111-2222-4333-8444-555555555555';
 const other = 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee';
+
+assert.deepEqual(
+  resolveRuneEquipmentWrite({ kind: 'fixed', runeId: 'ward' }, ['fate', 'ward'], null),
+  { equippedRune: 'ward', randomRuneMode: false },
+  'an owned fixed rune did not resolve to the canonical profile write',
+);
+assert.equal(
+  resolveRuneEquipmentWrite({ kind: 'fixed', runeId: 'ward' }, ['fate'], null),
+  null,
+  'an unowned fixed rune produced a profile write',
+);
+assert.deepEqual(
+  resolveRuneEquipmentWrite({ kind: 'random' }, ['fate', 'ward'], 'ward'),
+  { equippedRune: 'ward', randomRuneMode: true },
+  'RANDOM discarded the already owned stale-client fallback',
+);
+assert.deepEqual(
+  resolveRuneEquipmentWrite({ kind: 'random' }, ['fate', 'ward'], null),
+  { equippedRune: 'fate', randomRuneMode: true },
+  'RANDOM did not choose a concrete owned fallback when the seat was empty',
+);
+assert.equal(
+  resolveRuneEquipmentWrite({ kind: 'random' }, [], null),
+  null,
+  'RANDOM without an owned rune produced an invalid fallback-free write',
+);
+assert.deepEqual(
+  resolveRuneEquipmentWrite({ kind: 'none' }, ['fate'], 'fate'),
+  { equippedRune: null, randomRuneMode: false },
+  'clearing equipment did not clear both profile fields atomically',
+);
 assert.deepEqual(collectedRuneIds(), []);
 assert.equal(collectedRuneCount(), 0);
 assert.equal(writeRuneCollectionSnapshot('not-an-account', ['fate']), false);
@@ -32,6 +65,8 @@ assert.deepEqual(readRuneCollectionSnapshot(), {
   collected: ['fate', 'ward'],
   poolTier: 'bone',
   equippedRune: null,
+  randomRuneMode: false,
+  equipment: { kind: 'none' },
 });
 assert.equal(confirmedRankedPoolTier(), 'bone');
 assert.equal(hasCollectedRune('fate'), true);
@@ -44,6 +79,15 @@ assert.equal(collectedRuneCount(), 2);
    a seat that ranked would not honour. */
 assert.equal(writeRuneCollectionSnapshot(account, ['fate', 'ward'], 123, 'bone', 'ward'), true);
 assert.equal(equippedRuneId(), 'ward');
+assert.deepEqual(equippedRuneSelection(), { kind: 'fixed', runeId: 'ward' });
+assert.equal(
+  writeRuneCollectionSnapshot(account, ['fate', 'ward'], 123, 'bone', 'ward', true),
+  true,
+);
+assert.deepEqual(equippedRuneSelection(), { kind: 'random' },
+  'random mode did not retain its semantic state beside the fixed fallback');
+assert.equal(writeRuneCollectionSnapshot(account, ['fate'], 123, 'bone', null, true), false,
+  'random mode without an owned fallback entered the eager cache');
 assert.equal(writeRuneCollectionSnapshot(account, ['fate'], 123, 'bone', 'ward'), true);
 assert.equal(equippedRuneId(), null, 'a rune the account no longer owns cannot stay seated');
 assert.equal(writeRuneCollectionSnapshot(account, ['fate'], 123, 'bone', 'unknown'), false,
@@ -64,6 +108,14 @@ values.set(RUNE_COLLECTION_CACHE_KEY, JSON.stringify({
   version: 1, accountId: account, verifiedAt: 6, collected: [],
 }));
 assert.equal(confirmedRankedPoolTier(), null, 'a pre-v2 cache fabricated permanent tier access');
+assert.deepEqual(equippedRuneSelection(), { kind: 'none' },
+  'a pre-random cache did not default to the fixed/none compatibility contract');
+values.set(RUNE_COLLECTION_CACHE_KEY, JSON.stringify({
+  version: 1, accountId: account, verifiedAt: 6, collected: [],
+  equippedRune: null, randomRuneMode: true,
+}));
+assert.equal(readRuneCollectionSnapshot(), null,
+  'a tampered random cache without an owned fallback did not fail closed');
 assert.equal(writeRuneCollectionSnapshot(account, [], 6, 'silver' as any), false);
 
 assert.equal(writeRuneCollectionSnapshot(account, ['anvil'], 456), true);

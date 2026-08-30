@@ -18,10 +18,11 @@ RANDOM×2 is the explicit local chaos exception: the deck shuffles once per
 player and deals two distinct runes. A cast is **not a placement**, but each
 player may cast at most once per turn. The die still lands afterward unless
 the cast itself ends the game. FATE's two charges therefore belong to separate
-turns. In ordinary ranked, matchmaking snapshots each participant's equipped
-rune independently from SILVER upward; below SILVER or with an empty equipped
-seat, that participant has no rune. Rune Trial ignores equipment and uses its
-own private choices.
+turns. In ordinary ranked, matchmaking snapshots each participant's equipment
+independently from SILVER upward. A fixed seat carries that rune; RANDOM draws
+one owned rune from the fresh match seed. Below SILVER or with empty equipment,
+that participant has no rune. Rune Trial ignores equipment and uses its own
+private choices.
 
 ---
 
@@ -752,12 +753,25 @@ and runtime contract.
 
 ### Ranked boundary
 
-Ordinary ranked snapshots each participant's equipped rune from SILVER upward.
-The two seats are independent: a non-null snapshot receives that rune, while a
-participant below SILVER or with no equipped rune receives an empty hand. A
+Ordinary ranked snapshots each participant's equipment from SILVER upward. The
+two seats are independent: a fixed seat receives its owned rune, while RANDOM
+uses the fresh match seed plus participant identity to choose deterministically
+from that participant's current owned collection. The same start retry therefore
+returns the same choice, but a new match can deal another owned rune. A
+participant below SILVER or with empty equipment receives an empty hand. A
 fresh reveal shows both assignments, including explicit NONE; a rejoin does not
 replay that theatre. The immutable `matches.p1_rune` / `matches.p2_rune` values,
-not the viewer's profile cache, own gameplay.
+not the viewer's profile cache or a later equipment change, own gameplay.
+
+RANDOM retains one concrete owned fallback in `profiles.equipped_rune` beside
+`random_rune_mode=true`. That fallback lets an installed pre-RANDOM client read
+and play a valid fixed rune; a direct `equipped_rune` PATCH through that older
+client automatically exits RANDOM, even when it repeats the fallback. Enabling
+RANDOM with no owned fallback is rejected by both client and database. New
+clients persist fixed, RANDOM, or empty state through the authenticated-only
+`set_rune_equipment` RPC; they cannot update the RANDOM flag directly. The
+fallback is compatibility state, not the next deal, and matchmaking never
+rewrites it when a match starts.
 
 Rune Trial is stored as `format='rune_trial'` with `modifier='classic'`. It
 ignores equipped seats and uses its own private selection instead.
@@ -767,9 +781,8 @@ the complete six-rune roster, independent of collection. They choose privately
 and independently, may choose the same rune, and reveal together. A server
 deadline expires after 30 seconds. Any missing selection is filled by a
 deterministic participant-specific auto-pick before gameplay or any early
-resignation, deletion, timeout, or other settlement. A future/current equipped
-rune remains equipped, is ignored in Trial, and is never overwritten by the
-loan.
+resignation, deletion, timeout, or other settlement. Fixed or RANDOM equipment
+remains selected, is ignored in Trial, and is never overwritten by the loan.
 
 Protocol v2 gives aims, casts, and placements one authoritative total order. The
 client submits intent plus an idempotency key and expected action version; the

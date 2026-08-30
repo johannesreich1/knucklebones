@@ -7,8 +7,10 @@ import { SUPABASE_KEY, SUPABASE_URL } from '../../config.ts';
 import {
   clearRuneCollectionSnapshot,
   readRuneCollectionSnapshot,
+  selectionFromEquipment,
   writeRuneCollectionSnapshot,
 } from '../../rune-collection-cache.ts';
+import type { EquippedRuneSelection } from '../../rune-collection-cache.ts';
 import { supa } from '../api/client.ts';
 import { createCollectionRefreshGuard } from './rune-collection-guard.ts';
 import { usableEquippedRune } from './rune-equip.ts';
@@ -61,6 +63,9 @@ export interface RuneCollectionRefresh {
   poolTier: RankedPoolTier | null;
   /** The rune carried into ranked from SILVER up; null is nothing equipped. */
   equippedRune: string | null;
+  /** Concrete fixed equipment versus per-match RANDOM. */
+  randomRuneMode: boolean;
+  equipment: EquippedRuneSelection;
 }
 
 /** Recheck identity at the eventual paint/presentation boundary. */
@@ -119,6 +124,7 @@ export async function refreshRuneCollection(
     return {
       accountId: null, collected: [], rows: [], unseen: [],
       verified: false, poolTier: null, equippedRune: null,
+      randomRuneMode: false, equipment: { kind: 'none' },
     };
   }
   /* Own the refresh before entering the acknowledgement barrier. If A waits
@@ -141,6 +147,7 @@ export async function refreshRuneCollection(
     return {
       accountId: null, collected: [], rows: [], unseen: [],
       verified: false, poolTier: null, equippedRune: null,
+      randomRuneMode: false, equipment: { kind: 'none' },
     };
   }
 
@@ -154,7 +161,7 @@ export async function refreshRuneCollection(
      select fail on a server whose migration has not landed yet — taking the
      pool tier down with it and degrading ranked variety for every live player
      over a column nobody is using. Its own request fails alone. */
-  const [runeResult, profileResult, equippedResult] = await Promise.all([
+  const [runeResult, profileResult, equippedResult, randomModeResult] = await Promise.all([
     supa().from('player_runes')
       .select('rune_id, collected_at, source_match_id, seen_at')
       .eq('player_id', id)
@@ -165,6 +172,13 @@ export async function refreshRuneCollection(
       .maybeSingle(),
     supa().from('profiles')
       .select('equipped_rune')
+      .eq('id', id)
+      .maybeSingle(),
+    /* Keep this additive read isolated too: a database-first rollout, outage,
+       or rollback must not take the already-shipped fixed equipment read down
+       with an unknown random_rune_mode column. */
+    supa().from('profiles')
+      .select('random_rune_mode')
       .eq('id', id)
       .maybeSingle(),
   ]);
@@ -186,6 +200,8 @@ export async function refreshRuneCollection(
         verified: false,
         poolTier: null,
         equippedRune: null,
+        randomRuneMode: false,
+        equipment: { kind: 'none' },
       };
     }
     const sameAccount = retained?.accountId === id.toLowerCase() ? retained : null;
@@ -197,6 +213,8 @@ export async function refreshRuneCollection(
       verified: false,
       poolTier: sameAccount?.poolTier ?? null,
       equippedRune: sameAccount?.equippedRune ?? null,
+      randomRuneMode: sameAccount?.randomRuneMode ?? false,
+      equipment: sameAccount?.equipment ?? { kind: 'none' },
     };
   }
 
@@ -212,6 +230,11 @@ export async function refreshRuneCollection(
   const equippedRune = equippedResult.error
     ? cachedEquipped
     : usableEquippedRune(equippedResult.data?.equipped_rune, collected);
+  const cachedRandomMode = readRuneCollectionSnapshot()?.randomRuneMode ?? false;
+  const randomRuneMode = equippedRune !== null && (randomModeResult.error
+    ? cachedRandomMode
+    : randomModeResult.data?.random_rune_mode === true);
+  const equipment = selectionFromEquipment(equippedRune, randomRuneMode);
   const activeAccountId = await sessionAccountId();
   const retained = readRuneCollectionSnapshot();
   const ownership = refreshGuard.settle(token, activeAccountId, retained?.accountId ?? null);
@@ -225,9 +248,13 @@ export async function refreshRuneCollection(
       verified: false,
       poolTier: null,
       equippedRune: null,
+      randomRuneMode: false,
+      equipment: { kind: 'none' },
     };
   }
-  writeRuneCollectionSnapshot(id, collected, Date.now(), poolTier, equippedRune);
+  writeRuneCollectionSnapshot(
+    id, collected, Date.now(), poolTier, equippedRune, randomRuneMode,
+  );
   const refresh: RuneCollectionRefresh = {
     accountId: id,
     collected,
@@ -236,6 +263,8 @@ export async function refreshRuneCollection(
     verified: true,
     poolTier,
     equippedRune,
+    randomRuneMode,
+    equipment,
   };
   return refresh;
 }

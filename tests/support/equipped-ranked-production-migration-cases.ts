@@ -4,7 +4,6 @@ import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import {
   parseMigrationFilename,
-  validateEquippedRankedSchemaStage,
 } from '../../tools/database/production-rollout-core.mjs';
 import {
   EQUIPPED_RANKED_BOT_DATA,
@@ -21,19 +20,15 @@ import {
   auditEquippedRankedHumanData,
   assertSameEquippedRankedHumanData,
 } from '../../tools/database/production-rollout.mjs';
+import {
+  EQUIPPED_RANKED_ABSENT,
+  EQUIPPED_RANKED_COMPLETE_SCHEMA_ROW,
+  EQUIPPED_RANKED_STAGE_ONE,
+  EQUIPPED_RANKED_STAGE_ONE_SCHEMA_ROW,
+} from './random-rune-production-migration-cases.ts';
 
 type Check = (name: string, run: () => void) => void;
 type CheckAsync = (name: string, run: () => Promise<void>) => Promise<void>;
-type Guarded = (run: () => unknown, pattern: RegExp) => void;
-
-const ABSENT = Object.freeze({
-  queueCapabilityConstraint: false,
-  matchConstraints: false,
-  functionContracts: false,
-  functionBodies: false,
-  serviceGrants: false,
-  helperLockdown: false,
-});
 
 const FOUNDATION_SCHEMA = Object.freeze({
   profile_progression: true,
@@ -55,14 +50,6 @@ const FOUNDATION_FUNCTIONS = Object.freeze({
   function_grants: true,
 });
 const FOUNDATION_JOB = Object.freeze({ cron_job: true, cron_job_contract: true });
-const COMPLETE_SCHEMA = Object.freeze({
-  queue_capability_constraint: true,
-  match_constraints: true,
-  function_contracts: true,
-  function_bodies: true,
-  service_grants: true,
-  helper_lockdown: true,
-});
 const BOT_DATA = Object.freeze({
   bot_count: 200,
   bots_with_runes: 155,
@@ -70,6 +57,7 @@ const BOT_DATA = Object.freeze({
   bots_with_runes_without_seat: 0,
   bots_without_runes_with_seat: 0,
   bot_seat_not_owned: 0,
+  bots_random_mode: 0,
 });
 
 function productionRead(overrides: {
@@ -84,7 +72,7 @@ function productionRead(overrides: {
     if (query === RUNE_TRIAL_FUNCTIONS) return [FOUNDATION_FUNCTIONS];
     if (query === RUNE_TRIAL_JOB) return [FOUNDATION_JOB];
     if (query === EQUIPPED_RANKED_SCHEMA) {
-      return [{ ...COMPLETE_SCHEMA, ...overrides.schema }];
+      return [{ ...EQUIPPED_RANKED_COMPLETE_SCHEMA_ROW, ...overrides.schema }];
     }
     if (query === EQUIPPED_RANKED_BOT_DATA) {
       return [{ ...BOT_DATA, ...overrides.bots }];
@@ -106,9 +94,8 @@ function productionRead(overrides: {
 export async function runEquippedRankedProductionMigrationCases(options: {
   readonly check: Check;
   readonly checkAsync: CheckAsync;
-  readonly guarded: Guarded;
 }): Promise<void> {
-  const { check, checkAsync, guarded } = options;
+  const { check, checkAsync } = options;
   const migration = '20260830155543_equipped_runes_ranked.sql';
 
   check('equipped-ranked rollout pins the committed forward migration byte-for-byte', () => {
@@ -127,34 +114,6 @@ export async function runEquippedRankedProductionMigrationCases(options: {
     assert.equal(
       EQUIPPED_RANKED_MIGRATION_SHA256,
       'c41d5051fc1d6bbf522233ecaa469f83b12ee3efbdcfd237ff8841ed963d6f15',
-    );
-  });
-
-  check('equipped-ranked schema metadata accepts only absent or complete state', () => {
-    assert.equal(validateEquippedRankedSchemaStage(ABSENT), 0);
-    const complete = Object.fromEntries(Object.keys(ABSENT).map(key => [key, true]));
-    assert.equal(validateEquippedRankedSchemaStage(complete), 1);
-    guarded(
-      () => validateEquippedRankedSchemaStage({
-        ...ABSENT,
-        queueCapabilityConstraint: true,
-      }),
-      /partial/,
-    );
-    guarded(
-      () => validateEquippedRankedSchemaStage({ ...complete, helperLockdown: false }),
-      /partial/,
-    );
-    guarded(
-      () => validateEquippedRankedSchemaStage({ ...ABSENT, unexpected: false } as never),
-      /unexpected shape/,
-    );
-    guarded(
-      () => validateEquippedRankedSchemaStage({
-        ...ABSENT,
-        functionBodies: 'false',
-      } as never),
-      /must be boolean/,
     );
   });
 
@@ -207,7 +166,7 @@ export async function runEquippedRankedProductionMigrationCases(options: {
 
   await checkAsync('equipped-ranked audit composes the complete Rune Trial foundation', async () => {
     const complete = await auditEquippedRanked(productionRead());
-    assert.equal(complete.schemaStage, 1);
+    assert.equal(complete.schemaStage, 2);
     assert.ok(Object.values(complete.evidence).every(value => value === true));
     assert.deepEqual(complete.data, {
       botCount: 200,
@@ -216,12 +175,22 @@ export async function runEquippedRankedProductionMigrationCases(options: {
       botsWithRunesWithoutSeat: 0,
       botsWithoutRunesWithSeat: 0,
       botSeatNotOwned: 0,
+      botsRandomMode: 0,
     });
+
+    const fixedSeatStage = await auditEquippedRanked(productionRead({
+      schema: EQUIPPED_RANKED_STAGE_ONE_SCHEMA_ROW,
+    }));
+    assert.equal(fixedSeatStage.schemaStage, 1,
+      'the already-deployed fixed-seat migration must remain a valid prefix');
+    assert.deepEqual(fixedSeatStage.evidence, EQUIPPED_RANKED_STAGE_ONE);
 
     const absent = await auditEquippedRanked(async (query, parameters = []) => {
       if (query === EQUIPPED_RANKED_SCHEMA) {
         assert.deepEqual(parameters, []);
-        return [Object.fromEntries(Object.keys(COMPLETE_SCHEMA).map(key => [key, false]))];
+        return [Object.fromEntries(
+          Object.keys(EQUIPPED_RANKED_COMPLETE_SCHEMA_ROW).map(key => [key, false]),
+        )];
       }
       if (query === EQUIPPED_RANKED_BOT_DATA) {
         assert.deepEqual(parameters, []);
@@ -234,7 +203,7 @@ export async function runEquippedRankedProductionMigrationCases(options: {
       return productionRead()(query, parameters);
     });
     assert.deepEqual(absent, {
-      evidence: ABSENT,
+      evidence: EQUIPPED_RANKED_ABSENT,
       schemaStage: 0,
       data: {
         botCount: 200,
@@ -243,6 +212,7 @@ export async function runEquippedRankedProductionMigrationCases(options: {
         botsWithRunesWithoutSeat: 1,
         botsWithoutRunesWithSeat: 0,
         botSeatNotOwned: 0,
+        botsRandomMode: 0,
       },
     });
 
@@ -270,6 +240,7 @@ export async function runEquippedRankedProductionMigrationCases(options: {
         botsWithRunesWithoutSeat: 0,
         botsWithoutRunesWithSeat: 0,
         botSeatNotOwned: 0,
+        botsRandomMode: 0,
       },
     );
     await assert.rejects(
@@ -289,6 +260,7 @@ export async function runEquippedRankedProductionMigrationCases(options: {
         botsWithRunesWithoutSeat: 1,
         botsWithoutRunesWithSeat: 0,
         botSeatNotOwned: 0,
+        botsRandomMode: 0,
       },
     );
     await assert.rejects(

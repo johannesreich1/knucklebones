@@ -47,13 +47,38 @@ const RUNE_TRIAL_FIELDS = Object.freeze([
   'cronJob',
   'cronJobContract',
 ]);
-const EQUIPPED_RANKED_FIELDS = Object.freeze([
+const EQUIPPED_RANKED_STAGE_ONE_FIELDS = Object.freeze([
   'queueCapabilityConstraint',
   'matchConstraints',
   'functionContracts',
   'functionBodies',
   'serviceGrants',
   'helperLockdown',
+]);
+const RANDOM_RUNE_MODE_FIELDS = Object.freeze([
+  'randomModeColumn',
+  'randomModeConstraint',
+  'randomModeComment',
+  'randomModeGrant',
+  'equipmentIntegrityConstraints',
+  'profileSecurity',
+  'compatibilityTrigger',
+  'compatibilityFunctionContract',
+  'compatibilityFunctionBody',
+  'compatibilityFunctionLockdown',
+  'randomHelperContract',
+  'randomHelperBody',
+  'randomHelperLockdown',
+  'randomStartContract',
+  'randomStartBody',
+  'randomStartGrant',
+  'equipmentRpcContract',
+  'equipmentRpcBody',
+  'equipmentRpcGrant',
+]);
+const EQUIPPED_RANKED_FIELDS = Object.freeze([
+  ...EQUIPPED_RANKED_STAGE_ONE_FIELDS,
+  ...RANDOM_RUNE_MODE_FIELDS,
 ]);
 const LADDER_STREAK_BASELINE_FIELDS = Object.freeze([
   'tableColumns',
@@ -489,9 +514,9 @@ export function validateRuneTrialSchemaStage(metadata) {
 }
 
 /**
- * Validate the equipped-rune extension of ranked protocol v2 as absent or
- * complete. Its Rune Trial foundation is audited separately by the caller;
- * these fields are only the objects replaced or introduced by the extension.
+ * Validate the ordered ranked-rune database surface: absent, fixed equipment,
+ * or fixed plus RANDOM equipment. Its Rune Trial foundation is audited
+ * separately by the caller; a partially-applied stage always fails closed.
  */
 export function validateEquippedRankedSchemaStage(metadata) {
   if (!isObject(metadata)) fail('Equipped-ranked metadata must be an object.');
@@ -502,9 +527,14 @@ export function validateEquippedRankedSchemaStage(metadata) {
     }
   }
 
-  const values = EQUIPPED_RANKED_FIELDS.map(field => metadata[field]);
-  if (values.every(value => value === false)) return 0;
-  if (values.every(value => value === true)) return 1;
+  const stageOne = EQUIPPED_RANKED_STAGE_ONE_FIELDS.map(field => metadata[field]);
+  const stageTwo = RANDOM_RUNE_MODE_FIELDS.map(field => metadata[field]);
+  if (stageOne.every(value => value === false)
+      && stageTwo.every(value => value === false)) return 0;
+  if (stageOne.every(value => value === true)
+      && stageTwo.every(value => value === false)) return 1;
+  if (stageOne.every(value => value === true)
+      && stageTwo.every(value => value === true)) return 2;
   fail('Equipped-ranked capability, match constraints, functions, or grants are partial.');
 }
 

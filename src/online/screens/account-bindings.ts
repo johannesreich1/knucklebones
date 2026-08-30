@@ -10,10 +10,15 @@ import { ask } from '../../ui/askcard.ts';
 import { Sfx } from '../../ui/audio.ts';
 import { $ } from '../../ui/dom.ts';
 import { refreshHomeChip } from '../../ui/homechip.ts';
+import {
+  equippedRuneSelection,
+  readRuneCollectionSnapshot,
+} from '../../rune-collection-cache.ts';
 import { currentUser, signOut } from '../identity/session.ts';
 import { claimName } from '../identity/profile.ts';
 import { repaintOnlineMessage } from '../message-copy.ts';
 import { bindAccountRuneSheets, bindEquippedSeat } from './account-runes.ts';
+import { setRuneEquipment, type EquippedRuneSelection } from '../runes/rune-equip.ts';
 import { bindAccountAppleRepair } from './account-apple-repair.ts';
 import { bindAccountGameCenterLink } from './account-game-center-link.ts';
 import { bindAccountDelete } from './account-delete-flow.ts';
@@ -35,10 +40,23 @@ export interface AccountBindingPorts {
 }
 
 export function bindAccountScreen(ports: AccountBindingPorts): void {
-  /* Equipping from either door repaints the whole panel, so the seat, the
-     grid and the ring can never disagree about what is carried. */
-  bindAccountRuneSheets(() => ports.repaint());
-  bindEquippedSeat(() => ports.repaint());
+  /* The profile speaks one semantic equipment vocabulary. Persistence may
+     retain a fixed fallback under RANDOM for old clients, but neither this
+     screen nor its two doors is allowed to mistake that fallback for FIXED. */
+  const equipment = {
+    current: equippedRuneSelection,
+    persist: async (selection: EquippedRuneSelection): Promise<EquippedRuneSelection> => {
+      /* Read the session-bound account at the moment of the write. A sign-out
+         between opening the sheet and answering it must write nothing. */
+      const accountId = readRuneCollectionSnapshot()?.accountId ?? null;
+      return accountId ? setRuneEquipment(accountId, selection) : equippedRuneSelection();
+    },
+    changed: () => ports.repaint(),
+  };
+  /* Every equipment answer repaints the whole panel, so the seat, the grid
+     and the semantic mode can never disagree about what is carried. */
+  bindAccountRuneSheets();
+  bindEquippedSeat(equipment);
   $('#btnKeepAcc').addEventListener('click', () => {
     Sfx.tap();
     ports.showAuth('attach', 'account');

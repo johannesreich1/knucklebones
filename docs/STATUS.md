@@ -10,7 +10,7 @@ decisions, and externally owned actions only. Detailed sprint history lives in
 |---|---|---|
 | Web | Live at <https://knucklebones-asg.pages.dev>; pushes to `main` still deploy through the Cloudflare Pages dashboard build immediately, ahead of CI. The gated `deploy` job is merged but skipped until `DEPLOY_VIA_ACTIONS` is set | `build.mjs`, `.github/workflows/ci.yml` |
 | Game | Local solo and two-player play, tutorial, modes, optional offline spells, and shared local/ranked board rendering | `src/core/`, `src/flow/`, `src/ui/` |
-| Ranked | Production has server-authoritative play, matchmaking/bot backfill, ladder, history, profiles, deletion, permanent mode-pool progression, IVORY Rune Trial, authoritative casts, rune collection, and an equipped seat. The selected ordinary-ranked contract snapshots each participant's equipped rune from SILVER; a missing seat remains rune-free, while Rune Trial ignores equipment. The disposable test population has 200 bots spanning the ladder with deliberately beatable 41–54% aggregate win rates, streaks 2–7, and modest varied peaks; real play then updates the ordinary aggregates. Bots carry rune winnings and equipped seats scaled by standing and record — see `docs/LADDER.md` § Bot rune winnings | `src/online/`, `src/core/ranked-outcomes.ts`, `supabase/functions/`, `docs/LADDER.md` |
+| Ranked | Production has server-authoritative play, matchmaking/bot backfill, ladder, history, profiles, deletion, permanent mode-pool progression, IVORY Rune Trial, authoritative casts, rune collection, and an equipped seat. The selected ordinary-ranked contract snapshots each participant's fixed or per-match RANDOM owned rune from SILVER; a missing seat remains rune-free, while Rune Trial ignores equipment. The disposable test population has 200 bots spanning the ladder with deliberately beatable 41–54% aggregate win rates, streaks 2–7, and modest varied peaks; real play then updates the ordinary aggregates. Bots carry rune winnings and stable equipped seats scaled by standing and record — see `docs/LADDER.md` § Bot rune winnings | `src/online/`, `src/core/ranked-outcomes.ts`, `supabase/functions/`, `docs/LADDER.md` |
 | Localization | English, Brazilian Portuguese, Spanish, German, French, and Italian share one ordered registry, complete catalogs, native metadata, and measured eager/online mobile geometry | `src/i18n/`, `docs/architecture/localization.md` |
 | Database | Repository and production share the same canonical 57-migration timestamped prefix through `20260830155543_equipped_runes_ranked.sql`; `supabase/migration-history.json` and the migration-ledger test pin it. The former compact aliases, obsolete 12-bot seed, and two wrong-stamped equipped-rune files are preserved only in the non-executable archive. Production records Rune Trial, streak baselines, Apple/Game Center schema, command stall checks, auto-forfeit streaks, dense ladder positions, equipped-rune state, and the SILVER ordinary-ranked snapshots plus owned bot-seat backfill; guarded catalog, security, data, Realtime, and cron audits cover their owned surfaces. Ledger alignment does not establish deployed Edge Function bytes. | `supabase/migrations/`, `supabase/legacy-migrations/`, `supabase/migration-history.json` |
 | Builds | Hosted PWA, standalone HTML, widget, and Capacitor web assets come from the same source build | `build.mjs`, `docs/architecture/build.md` |
@@ -31,14 +31,15 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - Mechanical mode identities come from `src/core/modes.ts`; progressive ranked
   outcomes and odds come from `src/core/ranked-outcomes.ts`. Rune identity,
   legality, and charges come only from `src/core/spells.ts`.
-- Ordinary ranked snapshots each participant's equipped rune from SILVER. The
-  two seats are independent: below SILVER or without an equipped rune that
-  participant remains rune-free. Fresh matches reveal both immutable match-row
-  assignments, including NONE; rejoin is silent. These matches and Rune Trial
-  use authoritative replayable aim/cast/place actions, but separate capabilities
-  because Trial ignores equipment and loans its own private choices. The
-  additive v1 placement protocol remains only for legacy rune-free standard
-  rows.
+- Ordinary ranked snapshots each participant's fixed or per-match RANDOM owned
+  rune from SILVER. The two seats are independent: below SILVER or without
+  equipment that participant remains rune-free. Fresh matches reveal both
+  immutable match-row assignments, including NONE; rejoin is silent. Retrying
+  a start reproduces the same random snapshot, and later profile changes cannot
+  rewrite it. These matches and Rune Trial use authoritative replayable
+  aim/cast/place actions, but separate capabilities because Trial ignores both
+  equipment modes and loans its own private choices. The additive v1 placement
+  protocol remains only for legacy rune-free standard rows.
 - Ranked variety unlocks permanently from the player's historical peak:
   STONE has Classic, Single Strike, Column Shield, and Limited; BONE adds Row
   Switch, Row Multiply, and Bounty; IVORY adds Rune Trial. Demotion and season

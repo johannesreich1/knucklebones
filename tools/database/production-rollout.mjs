@@ -59,10 +59,27 @@ export const APPLE_GAME_CENTER_MIGRATION_SHA256 = Object.freeze({
 export const RUNE_TRIAL_MIGRATION_SHA256 = '930c4c52979df8e94bb0e59e033203c3973401f433f1d7ac3594cac20291cc33';
 export const EQUIPPED_RANKED_MIGRATION_SHA256 =
   'c41d5051fc1d6bbf522233ecaa469f83b12ee3efbdcfd237ff8841ed963d6f15';
+export const RANDOM_RUNE_MODE_MIGRATION_SHA256 =
+  'd27232fcf61165b4a0334e185b69818d0dd7c0cc172b9cc35e6d3360781d915f';
 export const LADDER_STREAK_BASELINES_MIGRATION_SHA256 =
   '1b132572fde4df5f451e0c1780077c0e07156300fbd91b24833614a8d2e6c827';
 export const MATCH_COMMAND_STALL_CHECK_MIGRATION_SHA256 =
   'ea067e3e3f63e94bed0ae4370317017b9530327697860f2fe961b52a42d295cd';
+
+export const RANKED_RUNES_MIGRATIONS = Object.freeze([
+  Object.freeze({
+    version: '20260830155543',
+    name: 'equipped_runes_ranked',
+    file: 'supabase/migrations/20260830155543_equipped_runes_ranked.sql',
+    sha256: EQUIPPED_RANKED_MIGRATION_SHA256,
+  }),
+  Object.freeze({
+    version: '20260830160000',
+    name: 'random_rune_mode',
+    file: 'supabase/migrations/20260830160000_random_rune_mode.sql',
+    sha256: RANDOM_RUNE_MODE_MIGRATION_SHA256,
+  }),
+]);
 
 const ROLLOUTS = Object.freeze({
   'settings-locale': Object.freeze({
@@ -112,14 +129,7 @@ const ROLLOUTS = Object.freeze({
   }),
   'ranked-runes': Object.freeze({
     audit: 'equipped-ranked',
-    migrations: Object.freeze([
-      Object.freeze({
-        version: '20260830155543',
-        name: 'equipped_runes_ranked',
-        file: 'supabase/migrations/20260830155543_equipped_runes_ranked.sql',
-        sha256: EQUIPPED_RANKED_MIGRATION_SHA256,
-      }),
-    ]),
+    migrations: RANKED_RUNES_MIGRATIONS,
   }),
   'ladder-streak-baselines': Object.freeze({
     audit: 'ladder-streak-baselines',
@@ -1448,24 +1458,25 @@ select
 export const EQUIPPED_RANKED_SCHEMA = String.raw`
 with expected(
   signature, schema_name, function_name, language_name, security_definer,
-  volatility, return_type, argument_defaults, body_md5
+  volatility, return_type, argument_defaults, body_md5, alternate_body_md5
 ) as (
   values
     ('public.enqueue_ranked_player_v2(uuid,smallint,text[])', 'public',
       'enqueue_ranked_player_v2', 'plpgsql', true, 'v', 'jsonb', 0,
-      '8d6c669dd740a64a1df872b3a6359944'),
+      '8d6c669dd740a64a1df872b3a6359944', null),
     ('public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)',
       'public', 'start_ranked_match_v3', 'plpgsql', true, 'v', 'jsonb', 0,
-      'b7b1b9e7899045936f4d6a246f1c9eee'),
+      'b7b1b9e7899045936f4d6a246f1c9eee',
+      'e6986a11de9d9efbf89467626ae9fb8f'),
     ('private.bot_owned_rune_choice(uuid)', 'private',
       'bot_owned_rune_choice', 'sql', false, 's', 'text', 0,
-      'b6cbfd6a8630c49653664bf554aa346a'),
+      'b6cbfd6a8630c49653664bf554aa346a', null),
     ('public.settle_match(uuid,text,uuid,integer,integer,integer,integer,jsonb,jsonb,jsonb,jsonb)',
       'public', 'settle_match', 'plpgsql', true, 'v', 'jsonb', 0,
-      '969ec904c8bce2bf1cfab78a90d8669b'),
+      '969ec904c8bce2bf1cfab78a90d8669b', null),
     ('public.commit_match_action(uuid,uuid,uuid,boolean,integer,smallint,smallint,timestamptz,jsonb,jsonb,smallint,smallint,jsonb,jsonb)',
       'public', 'commit_match_action', 'plpgsql', true, 'v', 'jsonb', 1,
-      'cb197365655531053efedc039ed84380')
+      'cb197365655531053efedc039ed84380', null)
 ), catalog as (
   select expected.*, procedure.oid, procedure.proowner, procedure.prosrc,
          procedure.proacl, procedure.prosecdef, procedure.provolatile,
@@ -1487,6 +1498,51 @@ with expected(
     ) privilege
     left join pg_roles role on role.oid = privilege.grantee
    where catalog.oid is not null and privilege.grantee <> catalog.proowner
+), random_expected(
+  signature, schema_name, function_name, language_name, security_definer,
+  volatility, return_type, strict, body_md5, comment_text
+) as (
+  values
+    ('private.normalize_rune_equipment_update()', 'private',
+      'normalize_rune_equipment_update', 'plpgsql', false, 'v', 'trigger', false,
+      '56fd0f92d36cc00fccc496a437c251ae',
+      'Compatibility trigger: authenticated direct equipped_rune writes and ownership SET NULL clear RANDOM; owner-executed equipment RPC preserves non-null one-statement v2 writes.'),
+    ('private.random_owned_rune_for_match(uuid,text)', 'private',
+      'random_owned_rune_for_match', 'sql', false, 's', 'text', true,
+      '5cf88a87f3cb5df762537a59238d5d56',
+      'Deterministic per-match choice from the participant current owned inventory; returns NULL for an empty inventory.'),
+    ('public.set_rune_equipment(text,boolean)', 'public',
+      'set_rune_equipment', 'plpgsql', true, 'v', 'jsonb', false,
+      '3dcdc059bb6068e2aaa8e36181f9549d',
+      'Authenticated-only atomic fixed, RANDOM, or empty equipment write for auth.uid(); RANDOM keeps an owned fallback and direct legacy equipped_rune writes remain fixed.'),
+    ('public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)',
+      'public', 'start_ranked_match_v3', 'plpgsql', true, 'v', 'jsonb', false,
+      'e6986a11de9d9efbf89467626ae9fb8f', null)
+), random_catalog as (
+  select expected.*, procedure.oid, procedure.proowner, procedure.prosrc,
+         procedure.proacl, procedure.prosecdef, procedure.provolatile,
+         procedure.prokind, procedure.pronargdefaults, procedure.prorettype,
+         procedure.proconfig, procedure.proname, procedure.proisstrict,
+         procedure.proretset, procedure.proleakproof, procedure.proparallel,
+         namespace.nspname, language.lanname,
+         owner_role.rolname as owner_name
+    from random_expected expected
+    left join pg_proc procedure
+      on procedure.oid = to_regprocedure(expected.signature)
+    left join pg_namespace namespace on namespace.oid = procedure.pronamespace
+    left join pg_language language on language.oid = procedure.prolang
+    left join pg_roles owner_role on owner_role.oid = procedure.proowner
+), random_access as (
+  select random_catalog.signature,
+         coalesce(role.rolname, 'PUBLIC') as role_name,
+         privilege.privilege_type, privilege.is_grantable
+    from random_catalog
+    cross join lateral aclexplode(
+      coalesce(random_catalog.proacl, acldefault('f', random_catalog.proowner))
+    ) privilege
+    left join pg_roles role on role.oid = privilege.grantee
+   where random_catalog.oid is not null
+     and privilege.grantee <> random_catalog.proowner
 )
 select
   (
@@ -1543,7 +1599,10 @@ select
      )
   ) as function_contracts,
   (
-    select count(*) = 5 and bool_and(md5(prosrc) = body_md5)
+    select count(*) = 5 and bool_and(
+      md5(prosrc) = body_md5
+      or coalesce(md5(prosrc) = alternate_body_md5, false)
+    )
       from catalog
   ) as function_bodies,
   (
@@ -1578,7 +1637,342 @@ select
       from catalog
      where signature = 'private.bot_owned_rune_choice(uuid)'
        and oid is not null
-  ), false) as helper_lockdown;
+  ), false) as helper_lockdown,
+  (
+    select count(*) = 1 and bool_and(
+      data_type = 'boolean' and is_nullable = 'NO'
+      and column_default = 'false'
+      and is_identity = 'NO' and is_generated = 'NEVER'
+    )
+      from information_schema.columns
+     where table_schema = 'public' and table_name = 'profiles'
+       and column_name = 'random_rune_mode'
+  ) as random_mode_column,
+  (
+    select count(*) = 1 and bool_and(
+      contype = 'c' and convalidated and not connoinherit
+      and pg_get_constraintdef(oid, true) =
+        'CHECK (NOT random_rune_mode OR equipped_rune IS NOT NULL)'
+    )
+      from pg_constraint
+     where conrelid = to_regclass('public.profiles')
+       and conname = 'profiles_random_rune_mode_has_fallback'
+  ) as random_mode_constraint,
+  coalesce((
+    select col_description(to_regclass('public.profiles'), attribute.attnum) =
+      'When true, ordinary ranked from SILVER snapshots a seed-derived random rune from the player collection. equipped_rune remains a concrete owned fallback for older clients. Rune Trial ignores both profile fields.'
+      from pg_attribute attribute
+     where attribute.attrelid = to_regclass('public.profiles')
+       and attribute.attname = 'random_rune_mode'
+       and attribute.attnum > 0 and not attribute.attisdropped
+  ), false) as random_mode_comment,
+  coalesce((
+    select attribute.attacl is null
+      from pg_attribute attribute
+     where attribute.attrelid = to_regclass('public.profiles')
+       and attribute.attname = 'random_rune_mode'
+       and attribute.attnum > 0 and not attribute.attisdropped
+  ), false) as random_mode_grant,
+  (
+    exists (
+      select 1 from pg_constraint
+       where conrelid = to_regclass('public.profiles')
+         and conname = 'profiles_random_rune_mode_has_fallback'
+         and contype = 'c' and convalidated
+    )
+    and (
+      select count(*) = 2
+        and count(*) filter (
+          where conname = 'profiles_equipped_rune_known'
+            and contype = 'c' and convalidated and not connoinherit
+            and md5(pg_get_constraintdef(oid, true)) =
+              'cadbea3be7238de9f895be698ccf9742'
+        ) = 1
+        and count(*) filter (
+          where conname = 'profiles_equipped_rune_owned'
+            and contype = 'f' and convalidated
+            and confrelid = to_regclass('public.player_runes')
+            and confupdtype = 'c' and confdeltype = 'n' and confmatchtype = 's'
+            and md5(pg_get_constraintdef(oid, true)) =
+              '5245e8c97f7710d59f9925987b2685c4'
+        ) = 1
+        from pg_constraint
+       where conrelid = to_regclass('public.profiles')
+         and conname in (
+           'profiles_equipped_rune_known',
+           'profiles_equipped_rune_owned'
+         )
+    )
+  ) as equipment_integrity_constraints,
+  (
+    exists (
+      select 1 from pg_attribute attribute
+       where attribute.attrelid = to_regclass('public.profiles')
+         and attribute.attname = 'random_rune_mode'
+         and attribute.attnum > 0 and not attribute.attisdropped
+    )
+    and coalesce((
+      select relation.relrowsecurity and not relation.relforcerowsecurity
+        from pg_class relation
+       where relation.oid = to_regclass('public.profiles')
+    ), false)
+    and (
+      select count(*) = 1 and bool_and(
+        policy.polname = 'profiles_update_own'
+        and policy.polcmd = 'w' and policy.polpermissive
+        and policy.polroles = array[(select oid from pg_roles where rolname = 'authenticated')]::oid[]
+        and md5(pg_get_expr(policy.polqual, policy.polrelid, true)) =
+          '7035f36bb692789e5d2feb46291a7a86'
+        and md5(pg_get_expr(policy.polwithcheck, policy.polrelid, true)) =
+          '7035f36bb692789e5d2feb46291a7a86'
+      )
+        from pg_policy policy
+       where policy.polrelid = to_regclass('public.profiles')
+         and policy.polcmd in ('w', '*')
+    )
+    and (
+      select count(*) = 1 and bool_and(
+        policy.polname = 'profiles_select_own'
+        and policy.polcmd = 'r' and policy.polpermissive
+        and policy.polroles = array[(select oid from pg_roles where rolname = 'authenticated')]::oid[]
+        and md5(pg_get_expr(policy.polqual, policy.polrelid, true)) =
+          '7035f36bb692789e5d2feb46291a7a86'
+        and policy.polwithcheck is null
+      )
+        from pg_policy policy
+       where policy.polrelid = to_regclass('public.profiles')
+         and policy.polcmd in ('r', '*')
+    )
+    and not has_table_privilege('authenticated', 'public.profiles', 'UPDATE')
+    and not has_table_privilege('anon', 'public.profiles', 'UPDATE')
+    and has_table_privilege('authenticated', 'public.profiles', 'SELECT')
+    and not has_table_privilege('anon', 'public.profiles', 'SELECT')
+    and (
+      select coalesce(
+               array_agg(
+                 coalesce(role.rolname, 'PUBLIC') || ':' || privilege.privilege_type
+                 || ':' || privilege.is_grantable::text
+                 order by coalesce(role.rolname, 'PUBLIC'), privilege.privilege_type,
+                          privilege.is_grantable
+               ) filter (
+                 where privilege.privilege_type = 'SELECT'
+                   and (
+                     privilege.grantee = 0
+                     or role.rolname in ('anon', 'authenticated')
+                   )
+               ),
+               array[]::text[]
+             ) = array['authenticated:SELECT:false']::text[]
+        from pg_class relation
+        cross join lateral aclexplode(
+          coalesce(relation.relacl, acldefault('r', relation.relowner))
+        ) privilege
+        left join pg_roles role on role.oid = privilege.grantee
+       where relation.oid = to_regclass('public.profiles')
+    )
+    and not exists (
+      select 1
+        from pg_class relation
+        cross join lateral aclexplode(
+          coalesce(relation.relacl, acldefault('r', relation.relowner))
+        ) privilege
+        left join pg_roles role on role.oid = privilege.grantee
+       where relation.oid = to_regclass('public.profiles')
+         and privilege.privilege_type = 'UPDATE'
+         and (
+           privilege.grantee = 0
+           or role.rolname in ('anon', 'authenticated')
+         )
+    )
+    and coalesce((
+      select coalesce(
+               array_agg(
+                 coalesce(role.rolname, 'PUBLIC') || ':' || privilege.privilege_type
+                 || ':' || privilege.is_grantable::text
+                 order by coalesce(role.rolname, 'PUBLIC'), privilege.privilege_type,
+                          privilege.is_grantable
+               ) filter (where privilege.privilege_type is not null),
+               array[]::text[]
+             ) = array['authenticated:UPDATE:false']::text[]
+        from pg_attribute attribute
+        left join lateral aclexplode(attribute.attacl) privilege on true
+        left join pg_roles role on role.oid = privilege.grantee
+       where attribute.attrelid = to_regclass('public.profiles')
+         and attribute.attname = 'equipped_rune'
+         and attribute.attnum > 0 and not attribute.attisdropped
+    ), false)
+    and coalesce((
+      select attribute.attacl is null
+        from pg_attribute attribute
+       where attribute.attrelid = to_regclass('public.profiles')
+         and attribute.attname = 'random_rune_mode'
+         and attribute.attnum > 0 and not attribute.attisdropped
+    ), false)
+  ) as profile_security,
+  (
+    select count(*) = 1 and bool_and(
+      not trigger_row.tgisinternal
+      and trigger_row.tgenabled = 'O'
+      and trigger_row.tgtype = 19
+      and trigger_row.tgfoid =
+        to_regprocedure('private.normalize_rune_equipment_update()')
+      and trigger_row.tgqual is null
+      and encode(trigger_row.tgargs, 'hex') = ''
+      and (
+        select array_agg(attribute.attname order by numbered.ordinality)
+          from unnest(trigger_row.tgattr::smallint[])
+               with ordinality numbered(attnum, ordinality)
+          join pg_attribute attribute
+            on attribute.attrelid = trigger_row.tgrelid
+           and attribute.attnum = numbered.attnum
+      ) = array['equipped_rune', 'random_rune_mode']::name[]
+    )
+      from pg_trigger trigger_row
+     where trigger_row.tgrelid = to_regclass('public.profiles')
+       and trigger_row.tgname = 'profiles_normalize_rune_equipment_update'
+  ) and (
+    select count(*) = 1
+      from pg_trigger trigger_row
+     where not trigger_row.tgisinternal
+       and trigger_row.tgfoid =
+         to_regprocedure('private.normalize_rune_equipment_update()')
+  ) as compatibility_trigger,
+  coalesce((
+    select oid is not null and owner_name = 'postgres'
+      and nspname = schema_name and proname = function_name
+      and lanname = language_name and prosecdef = security_definer
+      and provolatile = volatility::"char" and prokind = 'f'
+      and prorettype = to_regtype(return_type) and proisstrict = strict
+      and not proretset and not proleakproof and proparallel = 'u'
+      and pronargdefaults = 0 and proconfig = array['search_path=""']::text[]
+      from random_catalog
+     where signature = 'private.normalize_rune_equipment_update()'
+  ), false) and (
+    select count(*) = 1
+      from pg_proc procedure
+      join pg_namespace namespace on namespace.oid = procedure.pronamespace
+     where namespace.nspname = 'private'
+       and procedure.proname = 'normalize_rune_equipment_update'
+  ) as compatibility_function_contract,
+  coalesce((
+    select md5(prosrc) = body_md5
+      from random_catalog
+     where signature = 'private.normalize_rune_equipment_update()'
+  ), false) as compatibility_function_body,
+  coalesce((
+    select oid is not null and obj_description(oid, 'pg_proc') = comment_text
+      from random_catalog
+     where signature = 'private.normalize_rune_equipment_update()'
+  ), false) and not exists (
+    select 1 from random_access
+     where signature = 'private.normalize_rune_equipment_update()'
+  ) as compatibility_function_lockdown,
+  coalesce((
+    select oid is not null and owner_name = 'postgres'
+      and nspname = schema_name and proname = function_name
+      and lanname = language_name and prosecdef = security_definer
+      and provolatile = volatility::"char" and prokind = 'f'
+      and prorettype = to_regtype(return_type) and proisstrict = strict
+      and not proretset and not proleakproof and proparallel = 'u'
+      and pronargdefaults = 0 and proconfig = array['search_path=""']::text[]
+      from random_catalog
+     where signature = 'private.random_owned_rune_for_match(uuid,text)'
+  ), false) and (
+    select count(*) = 1
+      from pg_proc procedure
+      join pg_namespace namespace on namespace.oid = procedure.pronamespace
+     where namespace.nspname = 'private'
+       and procedure.proname = 'random_owned_rune_for_match'
+  ) as random_helper_contract,
+  coalesce((
+    select md5(prosrc) = body_md5
+      from random_catalog
+     where signature = 'private.random_owned_rune_for_match(uuid,text)'
+  ), false) as random_helper_body,
+  coalesce((
+    select oid is not null and obj_description(oid, 'pg_proc') = comment_text
+      from random_catalog
+     where signature = 'private.random_owned_rune_for_match(uuid,text)'
+  ), false) and not exists (
+    select 1 from random_access
+     where signature = 'private.random_owned_rune_for_match(uuid,text)'
+  ) as random_helper_lockdown,
+  coalesce((
+    select oid is not null and owner_name = 'postgres'
+      and nspname = schema_name and proname = function_name
+      and lanname = language_name and prosecdef = security_definer
+      and provolatile = volatility::"char" and prokind = 'f'
+      and prorettype = to_regtype(return_type) and proisstrict = strict
+      and not proretset and not proleakproof and proparallel = 'u'
+      and pronargdefaults = 0 and proconfig = array['search_path=""']::text[]
+      and md5(prosrc) = body_md5
+      from random_catalog
+     where signature = 'public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)'
+  ), false) and (
+    select count(*) = 1
+      from pg_proc procedure
+      join pg_namespace namespace on namespace.oid = procedure.pronamespace
+     where namespace.nspname = 'public'
+       and procedure.proname = 'start_ranked_match_v3'
+  ) as random_start_contract,
+  coalesce((
+    select md5(prosrc) = body_md5
+      from random_catalog
+     where signature = 'public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)'
+  ), false) as random_start_body,
+  coalesce((
+    select md5(prosrc) = body_md5
+      from random_catalog
+     where signature = 'public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)'
+  ), false) and (
+    select coalesce(
+             array_agg(
+               role_name || ':' || privilege_type || ':' || is_grantable::text
+               order by role_name, privilege_type, is_grantable
+             ),
+             array[]::text[]
+           ) = array['service_role:EXECUTE:false']::text[]
+      from random_access
+     where signature = 'public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)'
+  ) as random_start_grant,
+  coalesce((
+    select oid is not null and owner_name = 'postgres'
+      and nspname = schema_name and proname = function_name
+      and lanname = language_name and prosecdef = security_definer
+      and provolatile = volatility::"char" and prokind = 'f'
+      and prorettype = to_regtype(return_type) and proisstrict = strict
+      and not proretset and not proleakproof and proparallel = 'u'
+      and pronargdefaults = 0 and proconfig = array['search_path=""']::text[]
+      and obj_description(oid, 'pg_proc') = comment_text
+      from random_catalog
+     where signature = 'public.set_rune_equipment(text,boolean)'
+  ), false) and (
+    select count(*) = 1
+      from pg_proc procedure
+      join pg_namespace namespace on namespace.oid = procedure.pronamespace
+     where namespace.nspname = 'public'
+       and procedure.proname = 'set_rune_equipment'
+  ) as equipment_rpc_contract,
+  coalesce((
+    select md5(prosrc) = body_md5
+      from random_catalog
+     where signature = 'public.set_rune_equipment(text,boolean)'
+  ), false) as equipment_rpc_body,
+  coalesce((
+    select oid is not null
+      from random_catalog
+     where signature = 'public.set_rune_equipment(text,boolean)'
+  ), false) and (
+    select coalesce(
+             array_agg(
+               role_name || ':' || privilege_type || ':' || is_grantable::text
+               order by role_name, privilege_type, is_grantable
+             ),
+             array[]::text[]
+           ) = array['authenticated:EXECUTE:false']::text[]
+      from random_access
+     where signature = 'public.set_rune_equipment(text,boolean)'
+  ) as equipment_rpc_grant;
 `;
 
 export const EQUIPPED_RANKED_BOT_DATA = String.raw`
@@ -1606,7 +2000,13 @@ select
       and not exists (select 1 from public.player_runes owned
                        where owned.player_id = profile.id
                          and owned.rune_id = profile.equipped_rune))::integer
-    as bot_seat_not_owned;
+    as bot_seat_not_owned,
+  (select count(*) from public.profiles profile
+    where profile.is_bot
+      and coalesce(
+        (to_jsonb(profile)->>'random_rune_mode')::boolean,
+        false
+      ))::integer as bots_random_mode;
 `;
 
 export const EQUIPPED_RANKED_BOT_CONVERGENCE = String.raw`
@@ -1630,7 +2030,8 @@ select
   count(*)::integer as human_count,
   md5(coalesce(
     string_agg(
-      profile.id::text || ':' || coalesce(profile.equipped_rune, '<null>'),
+      profile.id::text || ':' || coalesce(profile.equipped_rune, '<null>')
+        || ':' || coalesce(to_jsonb(profile)->>'random_rune_mode', 'false'),
       '|' order by profile.id
     ),
     ''
@@ -2084,7 +2485,11 @@ export async function auditEquippedRankedBotData(
     botsWithRunesWithoutSeat: rankedBotCount(row, 'bots_with_runes_without_seat'),
     botsWithoutRunesWithSeat: rankedBotCount(row, 'bots_without_runes_with_seat'),
     botSeatNotOwned: rankedBotCount(row, 'bot_seat_not_owned'),
+    botsRandomMode: rankedBotCount(row, 'bots_random_mode'),
   });
+  if (evidence.botsRandomMode !== 0) {
+    throw new Error('Production random mode is not allowed for bots; they require canonical fixed seats.');
+  }
   const seatCoverageIsValid = allowMissingSeats
     ? evidence.botsEquipped + evidence.botsWithRunesWithoutSeat
         === evidence.botsWithRunes
@@ -2148,6 +2553,25 @@ export async function auditEquippedRanked(readProduction = productionRead) {
     functionBodies: row.function_bodies === true,
     serviceGrants: row.service_grants === true,
     helperLockdown: row.helper_lockdown === true,
+    randomModeColumn: row.random_mode_column === true,
+    randomModeConstraint: row.random_mode_constraint === true,
+    randomModeComment: row.random_mode_comment === true,
+    randomModeGrant: row.random_mode_grant === true,
+    equipmentIntegrityConstraints: row.equipment_integrity_constraints === true,
+    profileSecurity: row.profile_security === true,
+    compatibilityTrigger: row.compatibility_trigger === true,
+    compatibilityFunctionContract: row.compatibility_function_contract === true,
+    compatibilityFunctionBody: row.compatibility_function_body === true,
+    compatibilityFunctionLockdown: row.compatibility_function_lockdown === true,
+    randomHelperContract: row.random_helper_contract === true,
+    randomHelperBody: row.random_helper_body === true,
+    randomHelperLockdown: row.random_helper_lockdown === true,
+    randomStartContract: row.random_start_contract === true,
+    randomStartBody: row.random_start_body === true,
+    randomStartGrant: row.random_start_grant === true,
+    equipmentRpcContract: row.equipment_rpc_contract === true,
+    equipmentRpcBody: row.equipment_rpc_body === true,
+    equipmentRpcGrant: row.equipment_rpc_grant === true,
   };
   const schemaStage = validateEquippedRankedSchemaStage(evidence);
   /* This query deliberately does not call the migration-owned helper, so the

@@ -149,11 +149,12 @@ not need a framework store, event bus, or dependency-injection container.
   advertise the format-specific capability before matchmaking may choose Trial
   or snapshot equipped standard runes.
 - `matches.p1_rune` and `matches.p2_rune` are the sole gameplay authority. From
-  SILVER, matchmaking snapshots each profile's equipped seat independently;
-  below SILVER or with no equipped rune that participant gets no rune. Fresh
-  standard matches reveal both assignments together, including explicit NONE,
-  while rejoin skips the reveal. Rune Trial ignores equipment and resolves its
-  own private pair.
+  SILVER, matchmaking snapshots each profile's fixed or RANDOM equipped seat
+  independently; below SILVER or with no equipment that participant gets no
+  rune. RANDOM is resolved from the match seed and owned collection before the
+  immutable row reaches the client. Fresh standard matches reveal both
+  assignments together, including explicit NONE, while rejoin skips the reveal.
+  Rune Trial ignores equipment and resolves its own private pair.
 - Persist only through `src/persist.ts`; corrupt or outdated blobs must fail
   closed rather than become an alternate state model.
 - CPU and local-two-player setup preferences are separate persisted records.
@@ -161,10 +162,20 @@ not need a framework store, event bus, or dependency-injection container.
   active collection instead of trusting an older picker state. Trial may
   override a duel's resolved rune deal without overwriting either preference;
   restart preserves the resolved offer/choices and a new duel replaces them.
+- The profile equipment seat opens an action sheet, not an inventory copy. Its
+  normal state offers EQUIP RUNE and RANDOM without listing the collection.
+  EQUIP RUNE dismisses the sheet and enters one transient page-owned selection
+  state in which only the collected rune tiles are actionable and visibly
+  marked as choices; selecting one persists it and restores ordinary profile
+  navigation. The sheet owns mode actions, the existing collection grid owns
+  rune identity, and neither paints a second rune list.
 - `src/rune-collection-cache.ts` is the eager, Supabase-free collection seam.
-  It stores the last server-confirmed rune ids and permanent ranked-pool tier
-  with their account id. That cache paints offline/profile choices; it never
-  overrides a ranked match row's immutable rune assignments.
+  It stores the last server-confirmed rune ids, permanent ranked-pool tier, and
+  semantic equipment selection (`none`, `fixed`, or `random`) with their account
+  id. RANDOM also retains its server-owned concrete fallback, but UI consumers
+  read the semantic selection rather than presenting that fallback as fixed.
+  That cache paints offline/profile choices; it never overrides a ranked match
+  row's immutable rune assignments.
   Offline setup treats a missing snapshot as an empty collection, and sign-out
   or account change clears/swaps the active snapshot before another account can
   read it. Durable unseen/reward state remains server-owned.

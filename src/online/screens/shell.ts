@@ -83,8 +83,8 @@ const OVERLAY = `
            90deg opening already names your group, so a seat cut into it says
            "this comes with you into ranked" without a sentence under it: the
            rune and the standing that switches it on are one glance. The seat is
-           a DOOR, not a control — it opens the same library sheet the grid and
-           the in-game badge open, in whichever of three states it is in. -->
+           the equipment DOOR: it opens the action-only fixed/random/empty mode
+           sheet, and EQUIP promotes the existing profile grid into its picker. -->
       <button class="accseat" id="accSeat" type="button" hidden
         aria-label="Equipped rune"
         data-i18n-attr="aria-label=online:profile.equippedRune"></button>

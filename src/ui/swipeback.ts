@@ -26,7 +26,13 @@ function backControl(): HTMLElement | null {
   const top = open[open.length - 1];
   if (!top?.classList.contains('paged')) return null;
   const ico = top.querySelector<HTMLElement>('.shead .ico');
-  return ico && getComputedStyle(ico).visibility === 'visible' ? ico : null;
+  /* `press()` deliberately drives the real control programmatically, and a
+     synthetic click is not stopped by HTML's inert hit-testing. Respect the
+     same interaction boundary explicitly so a transient modal/page-owned mode
+     cannot be escaped through its inert header. */
+  return ico && !ico.closest('[inert]') && getComputedStyle(ico).visibility === 'visible'
+    ? ico
+    : null;
 }
 
 export function bindSwipeBack(): void {

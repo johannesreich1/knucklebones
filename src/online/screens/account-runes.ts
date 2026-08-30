@@ -1,4 +1,4 @@
-import { SPELLS, spellById } from '../../core/spells.ts';
+import { RANDOM_SPELL, SPELLS, spellById } from '../../core/spells.ts';
 import { formatDate, formatNumber, runeTrialCopy, spellCopy, t } from '../../i18n/index.ts';
 import { Sfx } from '../../ui/audio.ts';
 import { $ } from '../../ui/dom.ts';
@@ -6,11 +6,10 @@ import { openEntry } from '../../ui/library.ts';
 import { spellHue, spellIcon } from '../../ui/spellicons.ts';
 import { tap } from '../../ui/tap.ts';
 import { esc } from './format.ts';
-import { equipRune } from '../runes/rune-equip.ts';
+import type { EquippedRuneSelection } from '../runes/rune-equip.ts';
 import {
   collectedRuneIds,
-  equippedRuneId,
-  readRuneCollectionSnapshot,
+  equippedRuneSelection,
 } from '../../rune-collection-cache.ts';
 import { showSheet } from '../../ui/sheet.ts';
 import type { PlayerRuneRow } from '../runes/rune-collection.ts';
@@ -22,6 +21,18 @@ import type { PlayerRuneRow } from '../runes/rune-collection.ts';
    rune no longer seats it (removed 2026-08-28, owner call: the behaviour is
    to be solved differently), so 'none' is where every new collection starts. */
 export type SeatState = 'none' | 'live' | 'waiting';
+
+/**
+ * The profile owns the interaction, while the rune data owner decides how a
+ * fixed/random/empty answer is stored. Keeping that as one semantic port is
+ * what lets RANDOM remain a mode even though its backwards-compatible row
+ * also carries a concrete fallback rune.
+ */
+export interface RuneEquipmentPort {
+  current(): EquippedRuneSelection;
+  persist(selection: EquippedRuneSelection): Promise<EquippedRuneSelection>;
+  changed(): void;
+}
 
 /* The rune enters play from SILVER up. Below it the choice is made, saved and
    simply waiting — never "locked", which would name a deficit where there is
@@ -60,6 +71,11 @@ export function accountRunesMarkup(
   return `<section class="accsec" aria-labelledby="${titleId}">`
     + `<div class="acchead"><b id="${titleId}">${esc(t('online', 'profile.runes'))}</b>`
     + `<span id="${idPrefix}RuneCount">${esc(count)}</span></div>`
+    + `<div class="accpick" id="${idPrefix}RunePick" role="status" hidden>`
+    + `<div><b>${esc(t('online', 'profile.chooseRune'))}</b>`
+    + `<span id="${idPrefix}RunePickText">${esc(t('online', 'profile.chooseRuneDetail'))}</span></div>`
+    + `<button type="button" class="linkbtn" id="${idPrefix}RunePickCancel">`
+    + `${esc(t('common', 'actions.cancel'))}</button></div>`
     + `<div class="accrunes-grid" id="${idPrefix}RuneGrid" aria-label="${esc(gridLabel)}">`
     + `${slots}</div></section>`;
 }
@@ -68,7 +84,9 @@ export function paintAccountRunes(
   collected: readonly string[],
   rows: readonly PlayerRuneRow[] = [],
 ): void {
+  if (!collected.length && activeRuneSelection) leaveRuneSelection(false);
   $('#accRunes').innerHTML = accountRunesMarkup(collected, 'acc', rows);
+  if (activeRuneSelection) paintRuneSelectionState();
 }
 
 /**
@@ -76,30 +94,41 @@ export function paintAccountRunes(
  * hidden entirely for an account with nothing collected: a seat offered before
  * there is anything to put in it is a promise the profile cannot keep yet.
  */
-/* The socket itself, drawn rather than left blank: a dashed ring with a small
-   plus, sized to sit exactly where a rune icon would. */
+/* The outer seat already IS the socket. The empty mark is therefore only the
+   plus, centred in that circle — a second dotted circle inside it made the
+   invitation look like two nested controls. */
 const EMPTY_SEAT_ICON = '<svg class="sico seatnone" viewBox="0 0 20 20" width="19" height="19"'
   + ' aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4">'
-  + '<circle cx="10" cy="10" r="7.4" stroke-dasharray="2.6 2.4" opacity=".85"/>'
   + '<path d="M10 6.9v6.2M6.9 10h6.2" stroke-linecap="round"/></svg>';
 
 export function paintEquippedSeat(group: string | null): void {
   const seat = $('#accSeat');
-  const equipped = equippedRuneId();
+  const equipment = equippedRuneSelection();
+  const equipped = equipment.kind === 'fixed' ? equipment.runeId : null;
   const owned = collectedRuneIds();
   seat.hidden = owned.length === 0;
   if (seat.hidden) return;
-  const state = seatStateFor(equipped, group);
+  const state = equipment.kind === 'none'
+    ? 'none'
+    : group && SEAT_LIVE_GROUPS.has(group.toLowerCase()) ? 'live' : 'waiting';
   seat.classList.toggle('none', state === 'none');
   seat.classList.toggle('waiting', state === 'waiting');
+  seat.classList.toggle('random', equipment.kind === 'random');
   const spell = equipped ? spellById(equipped) : null;
-  seat.style.setProperty('--rh', spell ? spellHue(spell.id) : '');
+  seat.style.setProperty('--rh', spell
+    ? spellHue(spell.id)
+    : equipment.kind === 'random' ? spellHue(RANDOM_SPELL) : '');
   /* AN EMPTY SEAT STILL SHOWS SOMETHING. A bare socket reads as a rendering
      fault rather than an invitation, and the seat is a door in every state —
      so the empty one wears the ring the design draws around a rune, with no
      rune in it. */
-  seat.innerHTML = spell ? spellIcon(spell.id, 19) : EMPTY_SEAT_ICON;
-  seat.setAttribute('aria-label', spell
+  seat.innerHTML = spell
+    ? spellIcon(spell.id, 19)
+    : equipment.kind === 'random' ? spellIcon(RANDOM_SPELL, 19) : EMPTY_SEAT_ICON;
+  seat.setAttribute('aria-label', equipment.kind === 'random'
+    ? t('online', state === 'live'
+      ? 'profile.randomEquipped' : 'profile.randomEquippedWaiting')
+    : spell
     ? `${spellCopy(spell.id).name} — ${t('online', state === 'live'
       ? 'profile.equippedMeta' : 'profile.equippedWaiting')}`
     : t('online', 'profile.seatEmpty'));
@@ -114,15 +143,123 @@ function unlockedAt(value: string | undefined): string | null {
   });
 }
 
-/** Profile context for the shared in-game rune sheet. */
-export function bindAccountRuneSheets(onRuneEquipped?: () => void): void {
+let activeRuneSelection: RuneEquipmentPort | null = null;
+let selectionInert: Array<{ element: HTMLElement; inert: boolean }> = [];
+let equipmentWritePending = false;
+
+/* One equipment answer owns the seat until persistence settles. Both pickers
+   dismiss first, so disabling the still-visible door keeps answers ordered. */
+function setEquipmentWritePending(pending: boolean): void {
+  equipmentWritePending = pending;
+  const seat = $('#accSeat') as HTMLButtonElement;
+  seat.disabled = pending;
+  if (pending) seat.setAttribute('aria-busy', 'true');
+  else seat.removeAttribute('aria-busy');
+}
+
+function leaveRuneSelection(restoreSeat = true): void {
+  if (!activeRuneSelection) return;
+  activeRuneSelection = null;
+  document.removeEventListener('keydown', cancelRuneSelectionOnEscape);
+  const host = $('#accRunes');
+  host.classList.remove('choosing');
+  $('#onAccount').classList.remove('rune-picking');
+  selectionInert.forEach(({ element, inert }) => { element.inert = inert; });
+  selectionInert = [];
+  const prompt = host.querySelector<HTMLElement>('#accRunePick');
+  if (prompt) prompt.hidden = true;
+  host.querySelectorAll<HTMLButtonElement>('.accrune').forEach((button) => {
+    button.disabled = false;
+    button.removeAttribute('aria-disabled');
+    button.removeAttribute('aria-describedby');
+    button.setAttribute('aria-haspopup', 'dialog');
+    button.tabIndex = 0;
+  });
+  if (restoreSeat) requestAnimationFrame(() => $('#accSeat').focus({ preventScroll: true }));
+}
+
+function cancelRuneSelectionOnEscape(event: KeyboardEvent): void {
+  if (event.key !== 'Escape' || event.defaultPrevented) return;
+  event.preventDefault();
+  leaveRuneSelection();
+}
+
+function paintRuneSelectionState(): void {
+  const host = $('#accRunes');
+  const prompt = host.querySelector<HTMLElement>('#accRunePick');
+  host.classList.add('choosing');
+  $('#onAccount').classList.add('rune-picking');
+  if (prompt) prompt.hidden = false;
+  host.querySelectorAll<HTMLButtonElement>('.accrune').forEach((button) => {
+    const owned = button.classList.contains('collected');
+    button.disabled = !owned;
+    if (owned) button.removeAttribute('aria-disabled');
+    else button.setAttribute('aria-disabled', 'true');
+    button.tabIndex = owned ? 0 : -1;
+    button.setAttribute('aria-describedby', 'accRunePickText');
+    button.removeAttribute('aria-haspopup');
+  });
+}
+
+function enterRuneSelection(port: RuneEquipmentPort): void {
+  leaveRuneSelection(false);
+  activeRuneSelection = port;
+  const panel = $('#onAccount');
+  const host = $('#accRunes');
+  const onlineHead = $('#ovOnline').querySelector<HTMLElement>('.shead');
+  const blocks = [onlineHead,
+    ...[...panel.children]
+      .filter((element): element is HTMLElement => element instanceof HTMLElement && element !== host)];
+  selectionInert = blocks.filter((element): element is HTMLElement => !!element)
+    .map((element) => ({ element, inert: element.inert }));
+  selectionInert.forEach(({ element }) => { element.inert = true; });
+  paintRuneSelectionState();
+  document.addEventListener('keydown', cancelRuneSelectionOnEscape);
+  host.scrollIntoView({ block: 'center' });
+  requestAnimationFrame(() => host.querySelector<HTMLButtonElement>('.accrune.collected')
+    ?.focus({ preventScroll: true }));
+}
+
+async function persistEquipment(
+  port: RuneEquipmentPort,
+  selection: EquippedRuneSelection,
+): Promise<void> {
+  if (equipmentWritePending) return;
+  setEquipmentWritePending(true);
+  try {
+    await port.persist(selection);
+    port.changed();
+  } finally {
+    setEquipmentWritePending(false);
+    requestAnimationFrame(() => $('#accSeat').focus({ preventScroll: true }));
+  }
+}
+
+/** Profile context for the shared in-game rune sheet and the grid's pick mode. */
+export function bindAccountRuneSheets(): void {
   const host = $('#accRunes');
   tap(host, (event) => {
+    const cancel = event.target instanceof Element
+      ? event.target.closest<HTMLButtonElement>('#accRunePickCancel')
+      : null;
+    if (cancel && host.contains(cancel)) {
+      Sfx.tap();
+      leaveRuneSelection();
+      return;
+    }
     const button = event.target instanceof Element
       ? event.target.closest<HTMLButtonElement>('.accrune[data-rune]')
       : null;
     if (!button || !host.contains(button) || !button.dataset.rune) return;
     const runeId = button.dataset.rune;
+    if (activeRuneSelection) {
+      if (!button.classList.contains('collected')) return;
+      Sfx.tap();
+      const port = activeRuneSelection;
+      leaveRuneSelection(false);
+      void persistEquipment(port, { kind: 'fixed', runeId });
+      return;
+    }
     const collectedAt = button.dataset.collectedAt;
     const locked = button.classList.contains('locked');
     const opened = openEntry('spells', runeId, {
@@ -134,97 +271,78 @@ export function bindAccountRuneSheets(onRuneEquipped?: () => void): void {
       } : {
         meta: unlockedAt(collectedAt),
       },
-      /* EQUIPPING LIVES ON THE SHEET THAT ALREADY EXPLAINS THE RUNE, so the
-         grid keeps meaning collection and gains no second meaning. A locked
-         rune offers nothing — there is nothing to carry — and the one already
-         seated offers nothing here either, because its own seat is where you
-         put it down. */
-      action: locked || runeId === equippedRuneId() ? undefined : {
-        label: () => t('online', 'profile.equipThis'),
-        run: async () => { await equipForAccount(runeId); onRuneEquipped?.(); },
-      },
     });
     if (opened) Sfx.tap();
   });
 }
 
 /**
- * THE SEAT IS A DOOR, and every door on this screen opens the SAME sheet.
- * A collected rune's sheet gains one action — carry it, or stop carrying the
- * one already seated — so NONE stays reachable without inventing a second
- * control, and the collection grid keeps meaning exactly what it meant.
- *
- * `openEntry` cannot serve the empty seat: SPELL_LIB is built from the six
- * registry runes, so there is no NONE entry and it returns false on an id the
- * roster does not hold. That one case goes through showSheet directly, wearing
- * the same libsheet dress. It is the only new seam this feature needs, and it
- * is worth stating rather than hiding behind a pseudo-entry nobody expects.
+ * THE SEAT IS THE ONE EQUIPMENT DOOR. A collection card still means "read this
+ * rune" until EQUIP turns that same grid into a temporary picker. That keeps
+ * one grid and one selection implementation without making an ordinary tap
+ * silently change what the player carries.
  */
-/* The account id belongs to the session, not to the sheet. Reading it at the
-   moment of the write means a sign-out or an account switch between opening
-   the sheet and pressing the button writes nothing, instead of writing to
-   whoever the screen was painted for. */
-async function equipForAccount(runeId: string | null): Promise<void> {
-  const accountId = readRuneCollectionSnapshot()?.accountId ?? null;
-  if (accountId) await equipRune(accountId, runeId);
-}
-
-/* THE SEAT IS A PICKER, NOT A PLACARD. It used to be a one-way door: empty, it
-   explained itself and sent you to the grid; filled, it offered only to empty
-   itself. Neither state let you do the thing the seat is for — swap the rune
-   you carry — so choosing one meant leaving the seat and hunting the right
-   square (reported from a device 2026-08-30).
-   The runes it lists are the ones the account holds, which is the same set the
-   grid shows unveiled, so nothing here can seat a rune the database would
-   refuse. */
-function seatPickerBody(collected: readonly string[], equipped: string | null): string {
-  const slots = collected.map((id) => {
-    const copy = spellCopy(id);
-    const on = id === equipped;
-    return `<button type="button" class="accrune collected${on ? ' on' : ''}"`
-      + ` style="--rh:${esc(spellHue(id))}" data-rune="${esc(id)}"`
-      + ` aria-pressed="${on ? 'true' : 'false'}"`
-      + ` aria-label="${esc(copy.name)}">${spellIcon(id, 19)}`
-      + `<span>${esc(copy.compactName)}</span></button>`;
-  }).join('');
+/* The seat sheet presents the THREE equipment modes, never a second rune
+   roster. EQUIP closes the sheet and promotes the existing profile collection
+   into the picker; RANDOM and NONE are complete answers on this card. */
+function seatPickerBody(selection: EquippedRuneSelection, collectedCount: number): string {
+  const random = selection.kind === 'random';
+  const randomAvailable = collectedCount >= 2;
+  const randomDetail = t('online', randomAvailable
+    ? 'profile.randomRuneModeDetail' : 'profile.randomRuneModeLocked');
   return `<div class="mchead"><span class="mcname">`
     + `${esc(t('online', 'profile.seatPick'))}</span></div>`
     + `<div class="mcdetail">${esc(t('online', 'profile.seatPickDetail'))}</div>`
-    + `<div class="accrunes-grid seatpick">${slots}</div>`
-    + (equipped ? `<button type="button" class="mcact" id="accSeatClear">`
-      + `${esc(t('online', 'profile.unequipThis'))}</button>` : '');
+    + `<div class="seatmode-actions">`
+    + `<button type="button" class="btn primary" id="accSeatEquip">`
+    + `${esc(t('online', 'profile.equipRune'))}</button>`
+    + `<div class="seatmode-random">`
+    + `<button type="button" class="btn soft${random ? ' on' : ''}" id="accSeatRandom"`
+    + ` data-equipment-kind="random" aria-pressed="${random ? 'true' : 'false'}"`
+    + ` aria-describedby="accSeatRandomDetail"${randomAvailable ? '' : ' disabled aria-disabled="true"'}>`
+    + `${spellIcon(RANDOM_SPELL, 19)}<span>${esc(t('online', 'profile.randomRuneMode'))}</span></button>`
+    + `<span class="seatmode-detail" id="accSeatRandomDetail">${esc(randomDetail)}</span></div>`
+    + (selection.kind !== 'none'
+      ? `<button type="button" class="btn soft small" id="accSeatClear">`
+        + `${esc(t('online', 'profile.unequipThis'))}</button>` : '')
+    + `</div>`;
 }
 
-export function bindEquippedSeat(onChanged: () => void): void {
+export function bindEquippedSeat(equipment: RuneEquipmentPort): void {
   tap($('#accSeat'), () => {
+    if (equipmentWritePending) return;
     Sfx.tap();
     const collected = collectedRuneIds();
-    const equipped = equippedRuneId();
     /* Nothing collected is the one state with no choice to offer. The seat is
        hidden then anyway (paintEquippedSeat), so this is belt and braces. */
     if (!collected.length) return;
+    const content = document.createElement('div');
+    content.className = 'seatmode-content';
+    content.innerHTML = seatPickerBody(equipment.current(), collected.length);
     const sheet = showSheet({
       cls: 'libsheet',
       interactive: true,
       label: () => t('online', 'profile.seatPick'),
-      body: seatPickerBody(collected, equipped),
+      content,
       restoreFocus: $('#accSeat'),
     });
-    const choose = async (runeId: string | null): Promise<void> => {
+    const commit = async (selection: EquippedRuneSelection): Promise<void> => {
       Sfx.tap();
-      sheet.close(false);
-      await equipForAccount(runeId);
-      onChanged();
-    };
-    sheet.card.querySelectorAll<HTMLButtonElement>('.accrune').forEach((button) => {
-      button.addEventListener('click', () => {
-        const id = button.dataset.rune ?? null;
-        /* Pressing the one already seated is a no-op, not an unequip: the
-           player reached for the rune they are carrying, not for the exit. */
-        void choose(id === equipped ? equipped : id);
+      sheet.card.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+        button.disabled = true;
       });
-    });
+      sheet.close(false);
+      await persistEquipment(equipment, selection);
+    };
+    sheet.card.querySelector<HTMLButtonElement>('#accSeatEquip')
+      ?.addEventListener('click', () => {
+        Sfx.tap();
+        sheet.close(false);
+        enterRuneSelection(equipment);
+      });
+    sheet.card.querySelector<HTMLButtonElement>('#accSeatRandom')
+      ?.addEventListener('click', () => { void commit({ kind: 'random' }); });
     sheet.card.querySelector<HTMLButtonElement>('#accSeatClear')
-      ?.addEventListener('click', () => { void choose(null); });
+      ?.addEventListener('click', () => { void commit({ kind: 'none' }); });
   });
 }

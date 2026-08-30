@@ -7,9 +7,39 @@
 import { spellById } from '../../core/spells.ts';
 import {
   readRuneCollectionSnapshot,
+  selectionFromEquipment,
   writeRuneCollectionSnapshot,
 } from '../../rune-collection-cache.ts';
+import type { EquippedRuneSelection } from '../../rune-collection-cache.ts';
 import { supa } from '../api/client.ts';
+
+export type { EquippedRuneSelection } from '../../rune-collection-cache.ts';
+
+export interface RuneEquipmentWrite {
+  readonly equippedRune: string | null;
+  readonly randomRuneMode: boolean;
+}
+
+/** Pure profile-write resolver, kept separate so ownership and compatibility
+ * fallback rules stay pinned without an authenticated browser. */
+export function resolveRuneEquipmentWrite(
+  selection: EquippedRuneSelection,
+  owned: readonly string[],
+  previousEquippedRune: string | null,
+): RuneEquipmentWrite | null {
+  if (selection.kind === 'fixed') {
+    return owned.includes(selection.runeId)
+      ? { equippedRune: selection.runeId, randomRuneMode: false }
+      : null;
+  }
+  if (selection.kind === 'random') {
+    const equippedRune = previousEquippedRune && owned.includes(previousEquippedRune)
+      ? previousEquippedRune
+      : owned[0] ?? null;
+    return equippedRune === null ? null : { equippedRune, randomRuneMode: true };
+  }
+  return { equippedRune: null, randomRuneMode: false };
+}
 
 /* A seat may only hold a rune the account actually collected. The database
    guarantees it through the composite key on (id, equipped_rune); this is the
@@ -22,33 +52,49 @@ export function usableEquippedRune(value: unknown, collected: readonly string[])
 }
 
 /**
- * Seat a collected rune, or clear the seat with null. Returns the value the
- * server now holds, which is not always the one asked for: a refused write
- * leaves the previous seat standing rather than guessing.
- *
- * There is no RPC behind this and there does not need to be. `profiles` already
- * grants a player UPDATE on their own row, and the composite foreign key on
- * (id, equipped_rune) means the strongest possible forged request still cannot
- * name a rune the account does not own — the database refuses it. An RPC would
- * add a second place for that rule to live and be wrong in.
+ * Persist fixed, RANDOM, or empty equipment and return the resulting semantic
+ * selection. A refused write leaves the previous selection standing rather
+ * than guessing. The narrow authenticated RPC owns the atomic two-field write;
+ * ownership remains canonical in the profile foreign key.
  */
-export async function equipRune(accountId: string, runeId: string | null): Promise<string | null> {
+export async function setRuneEquipment(
+  accountId: string,
+  selection: EquippedRuneSelection,
+): Promise<EquippedRuneSelection> {
   const snapshot = readRuneCollectionSnapshot();
   const owned = snapshot?.accountId === accountId.toLowerCase() ? snapshot.collected : [];
-  /* Refuse locally what the database would refuse anyway, so an impossible
-     request never costs a round trip. */
-  if (runeId !== null && !owned.includes(runeId)) return snapshot?.equippedRune ?? null;
-  const { error } = await supa().from('profiles')
-    .update({ equipped_rune: runeId })
-    .eq('id', accountId);
-  if (error) return snapshot?.equippedRune ?? null;
+  const previous = snapshot?.accountId === accountId.toLowerCase()
+    ? snapshot.equipment
+    : { kind: 'none' } as const;
+  const write = resolveRuneEquipmentWrite(selection, owned, snapshot?.equippedRune ?? null);
+  if (!write) return previous;
+  const { equippedRune, randomRuneMode } = write;
+  /* The legacy direct profile grant means "fixed or clear" and its trigger
+     exits RANDOM. Only the RPC can change both v2 fields without that legacy
+     meaning; it derives the row from auth.uid(), so accountId never crosses
+     the trust boundary as a writable target. */
+  const { error } = await supa().rpc('set_rune_equipment', {
+    p_equipped_rune: equippedRune,
+    p_random_rune_mode: randomRuneMode,
+  });
+  if (error) return previous;
   const current = readRuneCollectionSnapshot();
   /* Only restamp a cache that still belongs to this account: a sign-out or an
      account switch may have landed while the write was in flight. */
   if (current?.accountId === accountId.toLowerCase()) {
     writeRuneCollectionSnapshot(
-      accountId, current.collected, current.verifiedAt, current.poolTier, runeId,
+      accountId, current.collected, current.verifiedAt, current.poolTier,
+      equippedRune, randomRuneMode,
     );
   }
-  return runeId;
+  return selectionFromEquipment(equippedRune, randomRuneMode);
+}
+
+/** Compatibility wrapper for callers that still speak fixed-or-empty only. */
+export async function equipRune(accountId: string, runeId: string | null): Promise<string | null> {
+  const result = await setRuneEquipment(
+    accountId,
+    runeId === null ? { kind: 'none' } : { kind: 'fixed', runeId },
+  );
+  return result.kind === 'fixed' ? result.runeId : null;
 }

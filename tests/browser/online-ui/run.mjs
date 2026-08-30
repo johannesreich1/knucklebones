@@ -41,6 +41,7 @@ import { runRuneRewardRaceScenarios } from './scenarios/rune-reward-races.mjs';
 import { runAwayForfeitScenarios } from './scenarios/away-forfeit.mjs';
 import { runSeatColourScenarios } from './scenarios/seat-colours.mjs';
 import { runEquippedSeatScenarios } from './scenarios/equipped-seat.mjs';
+import { runEquippedSeatInterlockScenarios } from './scenarios/equipped-seat-interlocks.mjs';
 import { runTrialMoveLatencyScenarios } from './scenarios/trial-move-latency.mjs';
 import { runTrialRefusedActionScenarios } from './scenarios/trial-refused-action.mjs';
 import { runRankedRevealLayoutScenarios } from './scenarios/ranked-reveal-layout.mjs';
@@ -72,6 +73,7 @@ const SCENARIOS = Object.freeze([
   { id: 'away-forfeit', run: runAwayForfeitScenarios },
   { id: 'seat-colours', run: runSeatColourScenarios },
   { id: 'equipped-seat', run: runEquippedSeatScenarios },
+  { id: 'equipped-seat-interlocks', run: runEquippedSeatInterlockScenarios },
   { id: 'trial-move-latency', run: runTrialMoveLatencyScenarios },
   { id: 'trial-refused-action', run: runTrialRefusedActionScenarios },
   { id: 'ranked-reveal-layout', run: runRankedRevealLayoutScenarios },

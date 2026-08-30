@@ -27,6 +27,9 @@ export async function installOnlineRoutes(
     runes = [],
     /* Which rune the account carries, as the profiles row reports it. */
     equippedRune = null,
+    /* Semantic RANDOM equipment is a separate column; equippedRune remains
+       its concrete compatibility fallback. */
+    randomRuneMode = false,
     standingPoints = null,
     unseenRunes = [],
     markRunesSeenAfterFirstRead = false,
@@ -42,6 +45,15 @@ export async function installOnlineRoutes(
   let profileCalls = 0;
   let tierProfileCalls = 0;
   let equippedProfileCalls = 0;
+  let randomModeProfileCalls = 0;
+  let failNextEquipmentWrite = false;
+  let deferNextEquipmentWrite = false;
+  let markEquipmentWriteStarted;
+  let releaseEquipmentWrite;
+  let markEquipmentWriteFinished;
+  const equipmentWriteStarted = new Promise((resolve) => { markEquipmentWriteStarted = resolve; });
+  const equipmentWriteRelease = new Promise((resolve) => { releaseEquipmentWrite = resolve; });
+  const equipmentWriteFinished = new Promise((resolve) => { markEquipmentWriteFinished = resolve; });
   let runeCalls = 0;
   let acknowledgeCalls = 0;
   let deferNextSignup = false;
@@ -135,12 +147,38 @@ export async function installOnlineRoutes(
      `20260820190459_0026_one_name_forever.sql` stamps it server-side), and
      every later GET tells the claimed truth — nickname included */
   let claimed = named;
+  let currentEquippedRune = equippedRune;
+  let currentRandomRuneMode = randomRuneMode;
+  await page.route('**/rest/v1/rpc/set_rune_equipment*', async (r) => {
+    const body = r.request().postDataJSON() ?? {};
+    const deferred = deferNextEquipmentWrite;
+    if (deferred) {
+      deferNextEquipmentWrite = false;
+      markEquipmentWriteStarted();
+      await equipmentWriteRelease;
+    }
+    if (failNextEquipmentWrite) {
+      failNextEquipmentWrite = false;
+      await r.fulfill({ status: 409, contentType: 'application/json',
+        body: JSON.stringify({ message: 'equipment write refused' }) });
+      if (deferred) markEquipmentWriteFinished();
+      return;
+    }
+    currentEquippedRune = body.p_equipped_rune ?? null;
+    currentRandomRuneMode = body.p_random_rune_mode === true;
+    await r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({
+      equipped_rune: currentEquippedRune,
+      random_rune_mode: currentRandomRuneMode,
+    }) });
+    if (deferred) markEquipmentWriteFinished();
+  });
   await page.route('**/rest/v1/profiles*', async (r) => {
     if (r.request().method() === 'PATCH') {
-      claimed = true;
+      const body = r.request().postDataJSON() ?? {};
+      if (Object.hasOwn(body, 'nickname')) claimed = true;
       return r.fulfill({ status: 204, body: '' });
     }
-    /* THREE different reads hit this one table, and they are told apart by the
+    /* FOUR different reads hit this one table, and they are told apart by the
        columns they ask for. "Not the tier read" stopped meaning "the account
        profile read" when `20260828192801_equipped_rune.sql` arrived: a third
        query appeared, and answering it as the account profile both miscounted
@@ -149,7 +187,8 @@ export async function installOnlineRoutes(
     const url = r.request().url();
     const tierRead = url.includes('ranked_pool_tier');
     const equipRead = url.includes('equipped_rune');
-    const accountRead = !tierRead && !equipRead;
+    const randomModeRead = url.includes('random_rune_mode');
+    const accountRead = !tierRead && !equipRead && !randomModeRead;
     const deferred = accountRead && deferNextAccountProfile;
     if (deferred) {
       deferNextAccountProfile = false;
@@ -165,7 +204,12 @@ export async function installOnlineRoutes(
     if (equipRead) {
       equippedProfileCalls++;
       return r.fulfill({ status: 200, contentType: 'application/json',
-        body: JSON.stringify({ equipped_rune: equippedRune }) });
+        body: JSON.stringify({ equipped_rune: currentEquippedRune }) });
+    }
+    if (randomModeRead) {
+      randomModeProfileCalls++;
+      return r.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify({ random_rune_mode: currentRandomRuneMode }) });
     }
     profileCalls++;
     const response = r.fulfill({ status: 200, contentType: 'application/json',
@@ -257,6 +301,12 @@ export async function installOnlineRoutes(
     profileCalls: () => profileCalls,
     tierProfileCalls: () => tierProfileCalls,
     equippedProfileCalls: () => equippedProfileCalls,
+    randomModeProfileCalls: () => randomModeProfileCalls,
+    failNextEquipmentWrite: () => { failNextEquipmentWrite = true; },
+    deferNextEquipmentWrite: () => { deferNextEquipmentWrite = true; },
+    equipmentWriteStarted,
+    releaseEquipmentWrite: () => releaseEquipmentWrite(),
+    equipmentWriteFinished,
     joinCalls: () => joinCalls,
     runeCalls: () => runeCalls,
     acknowledgeCalls: () => acknowledgeCalls,

@@ -16,6 +16,8 @@ import {
   FUNCTION_ROLLOUT_SLUGS,
   RANKED_RUNES_MIGRATION_NAME,
   RANKED_RUNES_MIGRATION_VERSION,
+  RANDOM_RUNE_MODE_MIGRATION_NAME,
+  RANDOM_RUNE_MODE_MIGRATION_VERSION,
   RANKED_RUNES_PRODUCTION_PREREQUISITE,
   RUNE_TRIAL_MIGRATION_NAME,
   RUNE_TRIAL_MIGRATION_VERSION,
@@ -110,6 +112,25 @@ export function readyProductionRead(
     function_bodies: true,
     service_grants: true,
     helper_lockdown: true,
+    random_mode_column: true,
+    random_mode_constraint: true,
+    random_mode_comment: true,
+    random_mode_grant: true,
+    equipment_integrity_constraints: true,
+    profile_security: true,
+    compatibility_trigger: true,
+    compatibility_function_contract: true,
+    compatibility_function_body: true,
+    compatibility_function_lockdown: true,
+    random_helper_contract: true,
+    random_helper_body: true,
+    random_helper_lockdown: true,
+    random_start_contract: true,
+    random_start_body: true,
+    random_start_grant: true,
+    equipment_rpc_contract: true,
+    equipment_rpc_body: true,
+    equipment_rpc_grant: true,
     ...overrides.equipped,
   };
   const bots = {
@@ -119,12 +140,18 @@ export function readyProductionRead(
     bots_with_runes_without_seat: 0,
     bots_without_runes_with_seat: 0,
     bot_seat_not_owned: 0,
+    bots_random_mode: 0,
     ...overrides.bots,
   };
   return async (query: string, parameters: unknown[] = []) => {
     if (query === RANKED_RUNES_PRODUCTION_PREREQUISITE) {
       events?.push('prerequisite:ranked-history');
-      assert.deepEqual(parameters, [RANKED_RUNES_MIGRATION_VERSION, RANKED_RUNES_MIGRATION_NAME]);
+      assert.deepEqual(parameters, [
+        RANKED_RUNES_MIGRATION_VERSION,
+        RANKED_RUNES_MIGRATION_NAME,
+        RANDOM_RUNE_MODE_MIGRATION_VERSION,
+        RANDOM_RUNE_MODE_MIGRATION_NAME,
+      ]);
       return [{ migration_history: overrides.history ?? true }];
     }
     if (query === RUNE_TRIAL_PRODUCTION_PREREQUISITE) {

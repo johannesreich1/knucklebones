@@ -101,6 +101,16 @@ applies, removes, or reverses schema changes.
   durable acknowledgement of a first-unlock reveal, not a client-only badge.
   The source-match foreign key is indexed and may become null when privacy
   deletion removes match history without deleting the earned rune.
+- Rune equipment lives on the owner-only profile row. `equipped_rune` remains
+  the concrete owned fixed seat and the stale-client fallback for RANDOM;
+  `random_rune_mode=true` requires that fallback. The compatibility trigger
+  treats any deployed-client direct `equipped_rune` PATCH, including the same
+  value, as a switch back to fixed mode. New clients use the authenticated-only
+  `set_rune_equipment` RPC for one atomic write; authenticated callers have no
+  direct grant on the RANDOM flag.
+  The ownership foreign key plus fallback check reject forged equipment
+  independently of client code. Removing an equipped ownership row applies the
+  foreign key's `SET NULL` action and clears RANDOM in the same profile update.
 - Unrevealed Trial choices live in the private schema. The participant-facing
   match row exposes the shared offer and, only after both choices resolve, both
   immutable assigned runes. RLS/grants must not let either participant inspect
@@ -195,6 +205,11 @@ grant either commit together or not at all.
   IVORY seven including Rune Trial. Trial persists as
   `format='rune_trial'`, `modifier='classic'`, with an immutable rune-rules
   version; strict readers reject an unknown format/modifier/version tuple.
+- Ordinary ranked from SILVER snapshots fixed equipment directly. RANDOM
+  equipment selects from current ownership with a salted hash of the fresh
+  match seed and participant id, so retries are deterministic while new matches
+  can differ. The match row remains immutable authority; below SILVER, empty
+  equipment, and Rune Trial preserve their existing rune-free/loaned boundaries.
 - Rune Trial begins in a private-selection phase with one uniform three-of-six
   offer and a 30-second server deadline. Submission is idempotent and reveals
   both assignments atomically when resolved. `selection_version` is the
