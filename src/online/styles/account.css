@@ -59,6 +59,26 @@
   font:inherit;text-align:left;-webkit-appearance:none;appearance:none;cursor:pointer}
 :where(#kbroot) #onAccount .accrune:focus-visible{outline:2px solid var(--rh);outline-offset:2px}
 :where(#kbroot) #onAccount .accrune:active{transform:translateY(1px)}
+/* THE SEAT'S PICKER wears the same squares the collection grid does, so nothing
+   new has to be learned to read it — but the one you are CARRYING has to be
+   obvious at a glance, hence the lit border and the ring's own hue. The grid on
+   the profile never marks a rune this way because there is nothing to mark
+   there: it lists what you own, not what you chose. */
+:where(#kbroot) .faceoff .accrunes-grid{display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:11px}
+:where(#kbroot) .faceoff .accrune{position:relative;display:flex;align-items:center;gap:6px;
+  min-width:0;padding:8px 9px;border-radius:11px;background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.09);color:var(--rh);font:inherit;font-size:10px;
+  font-weight:900;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}
+:where(#kbroot) .faceoff .accrune .sico{flex:0 0 auto;filter:drop-shadow(0 0 7px currentColor)}
+:where(#kbroot) .faceoff .accrune span{min-width:0;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;color:var(--fg)}
+:where(#kbroot) .faceoff .accrune.on{border-color:var(--rh);
+  box-shadow:0 0 0 1px var(--rh) inset,0 0 14px -4px var(--rh)}
+:where(#kbroot) .faceoff .accrune:focus-visible{outline:2px solid var(--rh);outline-offset:2px}
+/* The dashed socket an EMPTY seat wears: the ring a rune would sit in, drawn
+   rather than left blank so the seat never reads as a rendering fault. */
+:where(#kbroot) #onAccount .accseat .seatnone{color:var(--dim);filter:none}
 :where(#kbroot) #onAccount .accrune .sico{flex:0 0 auto;filter:drop-shadow(0 0 7px currentColor)}
 /* The name SPEAKS THE RUNE'S COLOUR, inheriting the slot's --rh like the frame,
    the fill and the sigil's glow around it — the same call the dealt card's

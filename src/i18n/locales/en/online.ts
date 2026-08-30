@@ -104,7 +104,8 @@ export const enOnline = {
     equippedMeta: 'Comes with you into every ranked match',
     equippedWaiting: 'Reach SILVER and it comes with you',
     seatEmpty: 'NO RUNE',
-    seatEmptyDetail: 'The seat is empty by choice and ranked plays fine without it. Open any rune you have collected and carry it there; it takes this seat from SILVER upward.',
+    seatPick: 'CARRY A RUNE',
+    seatPickDetail: 'Choose the rune that comes with you into ranked. From SILVER upward it enters play.',
   },
   avatar: {
     instruction: 'Pick a face and a colour',
@@ -118,6 +119,7 @@ export const enOnline = {
       green: 'green',
       violet: 'violet',
       orange: 'orange',
+      blue: 'blue',
     },
   },
   history: {

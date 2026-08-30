@@ -5,7 +5,15 @@
 :where(#kbroot) #onAccount{gap:11px}
 :where(#kbroot) #onAccount .avwrap{position:relative;display:grid;place-items:center;background:none;border:0;
   padding:0;cursor:pointer;font:inherit;z-index:2}
-:where(#kbroot) #onAccount .avwrap .avedit{position:absolute;right:-9px;bottom:-9px;width:26px;height:26px;border-radius:50%;
+/* THE EDIT BADGE RIDES THE TOP OF THE RING, CENTRED. It used to sit at the
+   bottom-right corner, which put it in the same quarter as the group name and
+   the equipped-rune seat that share the ring's bottom opening — three things
+   competing for one corner, and the one you press least often was on top of
+   them. The top of the ring is empty by construction (the 90deg gap is cut at
+   the BOTTOM), so centring it there gives it a quarter of its own and the same
+   place on every screen (user call 2026-08-30). */
+:where(#kbroot) #onAccount .avwrap .avedit{position:absolute;left:50%;top:-9px;
+  transform:translateX(-50%);width:26px;height:26px;border-radius:50%;
   display:grid;place-items:center;background:rgba(10,13,28,.95);
   border:1px solid rgba(var(--p1-rgb),.55);color:var(--p1);font-size:11px}
 /* a button since it opens the ladder — resets keep it reading as the number */

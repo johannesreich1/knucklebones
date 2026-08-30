@@ -96,7 +96,8 @@ export const frOnline = {
     equippedMeta: 'Vous accompagne dans chaque partie classée',
     equippedWaiting: 'Atteignez ARGENT et elle vous suivra',
     seatEmpty: 'AUCUNE RUNE',
-    seatEmptyDetail: "L'emplacement est vide par choix et le classé se joue très bien ainsi. Ouvrez une rune récoltée et emportez-la ; elle prendra cette place à partir d'ARGENT.",
+    seatPick: 'EMPORTER UNE RUNE',
+    seatPickDetail: "Choisissez la rune qui vous accompagne en classé. À partir d'ARGENT, elle entre en jeu.",
   },
   avatar: {
     instruction: 'Choisissez une face et une couleur',
@@ -110,6 +111,7 @@ export const frOnline = {
       green: 'vert',
       violet: 'violet',
       orange: 'orange',
+      blue: 'bleu',
     },
   },
   history: {

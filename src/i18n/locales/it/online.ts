@@ -96,7 +96,8 @@ export const itOnline = {
     equippedMeta: 'Ti accompagna in ogni partita classificata',
     equippedWaiting: 'Raggiungi ARGENTO e ti accompagnerà',
     seatEmpty: 'NESSUNA RUNA',
-    seatEmptyDetail: 'Il posto è vuoto per scelta e la classificata funziona lo stesso. Apri una runa raccolta e portala con te; occuperà questo posto da ARGENTO in su.',
+    seatPick: 'PORTA UNA RUNA',
+    seatPickDetail: 'Scegli la runa che ti accompagna in classificata. Da ARGENTO in su entra in gioco.',
   },
   avatar: {
     instruction: 'Scegli una faccia e un colore',
@@ -110,6 +111,7 @@ export const itOnline = {
       green: 'verde',
       violet: 'viola',
       orange: 'arancione',
+      blue: 'blu',
     },
   },
   history: {

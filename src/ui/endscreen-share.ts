@@ -8,6 +8,7 @@
 // "Copied" onto a verdict that did not earn it.
 import { $ } from './dom.ts';
 import { t } from '../i18n/index.ts';
+import { LEGAL_RELEASE } from '../legal/config.ts';
 
 let shareText = '';
 type ShareFeedback = 'idle' | 'copied' | 'copyFailed';
@@ -36,15 +37,66 @@ export function repaintShareLabel(): void {
   $('#btnShare').textContent = t('game', key);
 }
 
+/* WHERE A SHARED LINK HAS TO POINT. The native builds run the same bundle from
+   `https://localhost` (capacitor.config.json sets iosScheme/androidScheme), so
+   `location.origin` there is a private address that means nothing to whoever
+   receives it — the iOS share copied a link to the recipient's own machine.
+   The public origin already has exactly one home, the canonical origin the
+   legal pages build their URLs from, so this reads that rather than writing the
+   domain down a second time. On the web nothing changes: the page is already
+   served from it. */
+function shareUrl(): string {
+  const here = location.origin + location.pathname;
+  const local = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+    || location.protocol === 'capacitor:' || location.protocol === 'file:';
+  return local ? `${LEGAL_RELEASE.canonicalOrigin}/` : here;
+}
+
+/* THE COPY OF LAST RESORT. navigator.clipboard is not reliably reachable inside
+   a WKWebView — it is absent or refuses without a gesture it can see — and
+   navigator.share does not exist there at all, so the iOS button had nothing
+   left to try and reported failure. execCommand('copy') is deprecated and still
+   the one path that works in that shell; it is only ever reached after the
+   modern API has already refused. */
+function copyByExecCommand(text: string): boolean {
+  const field = document.createElement('textarea');
+  field.value = text;
+  field.setAttribute('readonly', '');
+  /* Off-screen but focusable: display:none cannot be selected, and a visible
+     field would flash a keyboard open on the device. */
+  field.style.cssText = 'position:fixed;top:0;left:-9999px;opacity:0';
+  document.body.appendChild(field);
+  try {
+    field.select();
+    field.setSelectionRange(0, text.length);
+    return document.execCommand('copy');
+  } catch {
+    return false;
+  } finally {
+    field.remove();
+  }
+}
+
 export async function shareResult(): Promise<void> {
   const revision = presentationRevision;
-  const url = location.origin + location.pathname;
+  const payload = `${shareText} ${shareUrl()}`;
   try {
-    if (navigator.share) { await navigator.share({ text: shareText, url }); return; }
-    await navigator.clipboard.writeText(shareText + ' ' + url);
-    if (presentationRevision === revision) showShareFeedback('copied');
+    if (navigator.share) {
+      await navigator.share({ text: shareText, url: shareUrl() });
+      return;
+    }
   } catch {
-    if (presentationRevision === revision) showShareFeedback('copyFailed');
+    /* A share sheet the player dismissed is not a failure to report. */
+    return;
+  }
+  let copied = false;
+  try {
+    await navigator.clipboard.writeText(payload);
+    copied = true;
+  } catch { /* fall through to the shell that WKWebView does answer */ }
+  if (!copied) copied = copyByExecCommand(payload);
+  if (presentationRevision === revision) {
+    showShareFeedback(copied ? 'copied' : 'copyFailed');
   }
 }
 

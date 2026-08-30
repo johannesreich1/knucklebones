@@ -13,7 +13,7 @@
 import type { ModeSpec } from '../core/modes.ts';
 import type { Player } from '../core/rules.ts';
 import type { SpellSpec } from '../core/spells.ts';
-import { formatNumber, subscribeLocale, t } from '../i18n/index.ts';
+import { subscribeLocale, t } from '../i18n/index.ts';
 import { dialBeat } from './modedial.ts';
 import type { DialModeChoice, DialModeCopy } from './modedial.ts';
 import { dealBeat } from './runedeal.ts';
@@ -24,7 +24,8 @@ import { appRoot } from './embed.ts';
 import { colorOf, nameOf } from './identity.ts';
 import { hold } from './reveal-hold.ts';
 import { ownerEyebrow, settledAnswer, versus } from './reveal-answer.ts';
-import type { Beat, DialPeer, DialSide } from './reveal-types.ts';
+import { repaintReveal, repaintTitle } from './reveal-repaint.ts';
+import type { ActiveReveal, Beat, DialPeer, DialSide } from './reveal-types.ts';
 
 const pause = (ms: number): Promise<void> => new Promise((r) => setTimeout(() => r(), ms));
 
@@ -74,90 +75,16 @@ function note(text: string | null): void {
   line.hidden = !text;
 }
 
-interface ActiveReveal {
-  readonly ov: HTMLElement;
-  readonly beats: Beat[];
-  readonly me?: DialSide;
-  readonly foe?: DialSide;
-  activeIndex: number;
-  landed: boolean;
-  repaintHold?: () => void;
-}
 
 let activeReveal: ActiveReveal | null = null;
 
-function repaintRating(side: Element | null, player?: DialSide): void {
-  const rating = side?.querySelector<HTMLElement>('.rt');
-  if (rating && player?.rating != null) rating.textContent = formatNumber(player.rating);
-}
-
-/** Paint the prompt and its optional recipient without replacing either node. */
-function repaintTitle(ov: HTMLElement, beat: Beat): void {
-  const title = ov.querySelector<HTMLElement>('#wheelTitle');
-  const copy = title?.querySelector<HTMLElement>('.wtitlecopy');
-  const owner = title?.querySelector<HTMLElement>('#wheelOwner');
-  const ownerName = owner?.querySelector<HTMLElement>('.wownername');
-  const context = beat.context;
-  if (copy) copy.textContent = beat.label;
-  if (!title || !owner || !ownerName) return;
-  title.classList.toggle('has-owner', !!context);
-  owner.hidden = !context;
-  ownerName.textContent = context ?? '';
-  if (context) owner.style.color = beat.contextHue ?? beat.hue;
-  else owner.style.removeProperty('color');
-}
-
-/**
- * Repaint only locale-owned text in the live reveal. Theatre markup, settled
- * cards, avatars, listeners, and WAAPI animations remain the exact same nodes.
- */
-function repaintReveal(context: ActiveReveal): void {
-  const { ov, beats } = context;
-  const beat = beats[context.activeIndex];
-  if (!beat) return;
-
-  const who = ov.querySelector<HTMLElement>('#wheelWho');
-  const versusLabel = who?.querySelector<HTMLElement>('.dvs');
-  if (versusLabel) versusLabel.textContent = t('common', 'versus');
-  repaintRating(who?.querySelector('.dside.me') ?? null, context.me);
-  repaintRating(who?.querySelector('.dside.foe') ?? null, context.foe);
-
-  repaintTitle(ov, beat);
-  const stage = ov.querySelector<HTMLElement>('#wheelStage');
-  if (stage) beat.repaintStage?.(stage);
-
-  /* A bare beat prints neither line, and hides the elements rather than
-     emptying them: an empty .wname still holds its own height, which would
-     leave the cards floating above a gap that reads as a missing answer. */
-  const nameLine = ov.querySelector<HTMLElement>('#wheelName');
-  const blurbLine = ov.querySelector<HTMLElement>('#wheelBlurb');
-  if (nameLine) nameLine.hidden = !!beat.bare;
-  if (blurbLine) blurbLine.hidden = !!beat.bare;
-  if (context.landed && !beat.bare) {
-    const currentName = ov.querySelector<HTMLElement>('#wheelName .wcopy');
-    const currentBlurb = ov.querySelector<HTMLElement>('#wheelBlurb');
-    if (currentName) currentName.textContent = beat.name;
-    if (currentBlurb) currentBlurb.textContent = beat.blurb;
-  }
-
-  const settledStrip = ov.querySelector<HTMLElement>('#wheelSettled');
-  if (settledStrip) settledStrip.hidden = !!beat.bare;
-  ov.querySelectorAll<HTMLElement>('#wheelSettled .wsett').forEach((answer, index) => {
-    const settledBeat = beats[index];
-    if (!settledBeat) return;
-    const name = answer.querySelector<HTMLElement>('.wpill b');
-    const owner = answer.querySelector<HTMLElement>('.wownername');
-    const blurb = answer.querySelector<HTMLElement>('.wblurb');
-    if (name) name.textContent = settledBeat.name;
-    if (owner && settledBeat.context) owner.textContent = settledBeat.context;
-    if (blurb) blurb.textContent = settledBeat.blurb;
-  });
-  context.repaintHold?.();
-}
-
+/* A LANGUAGE CHANGE MID-SEQUENCE REPAINTS, IT DOES NOT RESTART. The subscription
+   lives here because the live reveal does; what the words say belongs to
+   reveal-repaint. */
 subscribeLocale(() => {
   if (activeReveal?.ov.classList.contains('on')) repaintReveal(activeReveal);
 });
+
 
 /* WHAT THE OVERLAY IS WEARING, remembered by the shell that put it on.
    A beat dresses the overlay while it runs — the rune deal's `dealing` resizes
@@ -267,8 +194,13 @@ export async function reveal(opts: {
       if (!beat) return;                     // abandoned; the finally undresses
       if (k > 0) {
         note(null);
-        settled.insertAdjacentHTML('beforeend', settledAnswer(beats[k - 1]));
-        settled.dataset.count = String(settled.children.length);
+        /* A BARE BEAT LEAVES NOTHING BEHIND. It printed no name and no blurb,
+           so it has no answer to settle — writing one would put back, one beat
+           later, exactly the line the beat was declared bare to suppress. */
+        if (!beats[k - 1].bare) {
+          settled.insertAdjacentHTML('beforeend', settledAnswer(beats[k - 1]));
+          settled.dataset.count = String(settled.children.length);
+        }
         stage.classList.add('out');
         await pause(SWAP_MS);
         stage.classList.remove('out');
@@ -281,10 +213,26 @@ export async function reveal(opts: {
       ov.classList.remove('landed');
       ov.classList.add('hunting');
       wear(ov, beat.cls);
+      /* ...AND SHOWS NOTHING ABOVE IT. The strip is absolutely positioned near
+         the top of the screen, so an earlier beat's pill hangs over a bare one
+         — the Ritual's cards came up under a RUNE RITUAL tag that the beat had
+         already been stripped of (reported from a device: "the tag that is
+         positioned on top still flickers through in online mode"). `bare` means
+         this beat prints no shell copy at all, the settled strip included; the
+         locale repaint has always read it that way (repaintReveal), and this is
+         the run-time half that was missing. */
+      settled.hidden = !!beat.bare;
       repaintTitle(ov, beat);
+      /* The hunting placeholders are a NBSP each, because a truly empty line
+         collapses and the stage would jump when the answer lands. A bare beat
+         has no answer coming, so those two reserved lines are just a gap under
+         its cards — hidden here for the same reason the strip above is, and by
+         the same flag the locale repaint already honours. */
       $('#wheelName').innerHTML = '&nbsp;';
       $('#wheelName').style.color = '';
       $('#wheelBlurb').innerHTML = '&nbsp;';
+      $('#wheelName').hidden = !!beat.bare;
+      $('#wheelBlurb').hidden = !!beat.bare;
       stage.innerHTML = beat.stage;
       beat.repaintStage?.(stage);
 

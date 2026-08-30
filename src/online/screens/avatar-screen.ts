@@ -1,5 +1,5 @@
 import { ME } from '../../core/rules.ts';
-import { formatNumber, subscribeLocale, t } from '../../i18n/index.ts';
+import { formatNumber, subscribeLocale, t, type LocaleKey } from '../../i18n/index.ts';
 import { Sfx } from '../../ui/audio.ts';
 import { AV_HUES, DEFAULT_AVATAR, parseAvatar, paintAvatar } from '../../ui/avatar.ts';
 import { makeDie } from '../../ui/die.ts';
@@ -25,14 +25,11 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
     avatarError = render;
     $('#onAvErr').textContent = render();
   };
-  const colourKeys = {
-    cy: 'avatar.colours.cy',
-    mg: 'avatar.colours.mg',
-    gold: 'avatar.colours.gold',
-    green: 'avatar.colours.green',
-    violet: 'avatar.colours.violet',
-    orange: 'avatar.colours.orange',
-  } as const;
+  /* Derived from the same registry the swatches are, so a new hue cannot be
+     offered without a name to announce it — the second copy of this list is
+     how BLUE came to be missing from the picker entirely. */
+  const colourName = (id: string): string =>
+    t('online', `avatar.colours.${id}` as LocaleKey<'online'>);
 
   const paintLabels = (): void => {
     const panel = byId('onAvatar');
@@ -43,9 +40,8 @@ export function createAvatarScreen(showAccount: () => Promise<void>): AvatarScre
       }));
     });
     $('#avHues').querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
-      const hue = button.dataset.hue as keyof typeof colourKeys;
       button.setAttribute('aria-label', t('online', 'avatar.colourLabel', {
-        colour: t('online', colourKeys[hue]),
+        colour: colourName(button.dataset.hue ?? ''),
       }));
     });
   };

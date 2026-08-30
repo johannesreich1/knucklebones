@@ -7,9 +7,11 @@ import {
   type UserPreferences,
 } from '../src/preferences.ts';
 import { loadStats, saveStats } from '../src/persist.ts';
-import { S } from '../src/state.ts';
+import { HUE_IDS, S } from '../src/state.ts';
+import { AV_HUES } from '../src/ui/avatar.ts';
 import { createAccountPreferenceSync } from '../src/online/preferences.ts';
 import { SUPPORTED_LOCALES } from '../src/i18n/index.ts';
+import { enOnline } from '../src/i18n/locales/en/online.ts';
 
 const valid: UserPreferences = {
   localeOverride: null,
@@ -261,5 +263,21 @@ const signedOut = createAccountPreferenceSync({
 await signedOut.sync();
 await signedOut.save(captureUserPreferences());
 assert.equal(signedOutRemoteCalls, 0);
+
+/* EVERY DUEL HUE IS AN AVATAR HUE. The two lists were written out separately,
+   so BLUE — added to the duel palette on 2026-08-22 — never reached the avatar
+   picker and a player simply could not choose it (reported from a device
+   2026-08-30). Derived now; this is what stops them parting again, and it fails
+   on the NEXT hue too, not just on blue.
+   The locale name is checked with them: a swatch nobody can announce is not
+   offered, it is just unlabelled. */
+for (const id of HUE_IDS) {
+  assert.equal(AV_HUES[id], `var(--${id})`,
+    `the avatar picker does not offer the duel hue "${id}"`);
+  assert.ok(enOnline.avatar.colours[id as keyof typeof enOnline.avatar.colours],
+    `the avatar hue "${id}" has no name to announce`);
+}
+assert.equal(Object.keys(AV_HUES).length, HUE_IDS.length,
+  'the avatar picker offers a hue the duel registry does not have');
 
 console.log(JSON.stringify({ problems: [] }));

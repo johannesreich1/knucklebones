@@ -38,3 +38,17 @@ export interface DialPeer {
   announce(): void;
   onPeer(cb: () => void): () => void;
 }
+
+/* THE LIVE REVEAL, as both halves of the shell see it. It lives here rather
+   than in reveal.ts because reveal-repaint needs the same shape, and a type
+   imported back out of the module that sequences the beats would put a cycle
+   between the two — which the architecture gate refuses, correctly. */
+export interface ActiveReveal {
+  readonly ov: HTMLElement;
+  readonly beats: Beat[];
+  readonly me?: DialSide;
+  readonly foe?: DialSide;
+  activeIndex: number;
+  landed: boolean;
+  repaintHold?: () => void;
+}

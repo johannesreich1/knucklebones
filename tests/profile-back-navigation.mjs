@@ -295,6 +295,37 @@ try {
           '‹ from the avatar picker skipped the profile', out.oneLevel);
     check(out.oneLevel.result.id === 'ovEnd', '‹ from the profile lost the result screen', out.oneLevel);
 
+    /* 4b · THE SHARE LINK POINTS AT THE PUBLIC SITE, NOT AT THE DEVICE. The
+       native builds serve the same bundle from https://localhost, so
+       location.origin there is a private address; the iOS button shared a link
+       to the recipient's own machine (reported from a device 2026-08-30). The
+       harness serves from localhost too, which is exactly the shape that
+       reproduces it. */
+    const shared = await page.evaluate(async () => {
+      const button = document.getElementById('btnShare');
+      if (!button || button.hidden) return { skipped: true };
+      const seen = [];
+      const had = 'share' in navigator;
+      Object.defineProperty(navigator, 'share', {
+        configurable: true,
+        value: async (data) => { seen.push(data); },
+      });
+      button.click();
+      await new Promise((resolve) => setTimeout(resolve, 200));
+      if (!had) delete navigator.share;
+      return { skipped: false, host: location.hostname, seen };
+    });
+    out.shareLink = shared;
+    check(!shared.skipped, 'the result screen offered no share action to measure', shared);
+    check(shared.skipped || shared.host === 'localhost' || shared.host === '127.0.0.1',
+      'this probe only reproduces the defect when served from a local address', shared);
+    check(shared.skipped || (shared.seen.length === 1
+      && !/\/\/(localhost|127\.0\.0\.1)/.test(shared.seen[0].url ?? '')),
+      'THE SHARE LINK POINTS AT LOCALHOST — on a native build that is the '
+      + 'recipient\'s own machine, so the shared link goes nowhere', shared);
+    check(shared.skipped || /^https:\/\/[a-z0-9.-]+\//.test(shared.seen[0]?.url ?? ''),
+      'the shared link is not a public https URL', shared);
+
     /* 5 · Home means home: nothing may be left floating above the title screen. */
     await page.click('#btnEndQuiet');
     await page.waitForTimeout(700);

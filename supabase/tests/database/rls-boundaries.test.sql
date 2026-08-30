@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(17);
+select plan(18);
 
 select ok(
   not has_table_privilege('authenticated', 'public.match_seeds', 'select'),
@@ -20,6 +20,17 @@ select ok(
 select ok(
   has_column_privilege('authenticated', 'public.profiles', 'avatar', 'update'),
   'players can update their avatar column'
+);
+-- THE GRANT THE COLUMN'S OWN MIGRATION FORGOT. equipped_rune arrived with a
+-- composite key that makes seating an unowned rune unrepresentable, and a note
+-- that profiles_update_own was enough — which is true of ROW security and
+-- silent about COLUMN privilege. Every equip was refused by Postgres before RLS
+-- was consulted, and the client reads a refused write as "the previous seat
+-- stands", so the profile showed an empty socket and said nothing. Measured in
+-- production 2026-08-30: four collected runes, equipped_rune NULL.
+select ok(
+  has_column_privilege('authenticated', 'public.profiles', 'equipped_rune', 'update'),
+  'players can seat a collected rune'
 );
 
 insert into auth.users (id, email, created_at, updated_at)

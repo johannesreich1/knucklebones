@@ -96,7 +96,8 @@ export const ptOnline = {
     equippedMeta: 'Acompanha você em cada partida ranqueada',
     equippedWaiting: 'Chegue a PRATA e ela virá junto',
     seatEmpty: 'SEM RUNA',
-    seatEmptyDetail: 'O espaço está vazio por escolha e o ranqueado funciona bem assim. Abra uma runa coletada e leve-a; ela ocupa este espaço a partir de PRATA.',
+    seatPick: 'LEVE UMA RUNA',
+    seatPickDetail: 'Escolha a runa que vai com você no ranqueado. A partir de PRATA ela entra em jogo.',
   },
   avatar: {
     instruction: 'Escolha uma face e uma cor',
@@ -110,6 +111,7 @@ export const ptOnline = {
       green: 'verde',
       violet: 'violeta',
       orange: 'laranja',
+      blue: 'azul',
     },
   },
   history: {

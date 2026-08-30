@@ -96,7 +96,8 @@ export const esOnline = {
     equippedMeta: 'Te acompaña en cada partida clasificatoria',
     equippedWaiting: 'Llega a PLATA y te acompañará',
     seatEmpty: 'SIN RUNA',
-    seatEmptyDetail: 'El hueco está vacío por elección y la clasificatoria funciona igual. Abre una runa que hayas conseguido y llévala; ocupará este hueco desde PLATA.',
+    seatPick: 'LLEVA UNA RUNA',
+    seatPickDetail: 'Elige la runa que te acompaña en la clasificatoria. Desde PLATA entra en juego.',
   },
   avatar: {
     instruction: 'Elige una cara y un color',
@@ -110,6 +111,7 @@ export const esOnline = {
       green: 'verde',
       violet: 'violeta',
       orange: 'naranja',
+      blue: 'azul',
     },
   },
   history: {

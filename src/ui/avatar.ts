@@ -7,14 +7,20 @@
 // in the online chunk. The account panel and the avatar picker import from
 // here; there is exactly one reading of the avatar string.
 import { ME } from '../core/rules.ts';
+import { HUE_IDS } from '../state.ts';
 import { makeDie } from './die.ts';
 
 /* raw hue tokens, never --p1/--p2: a picked avatar keeps its colour whatever
    the Settings pickers do to the duel pair */
-export const AV_HUES: Record<string, string> = {
-  cy: 'var(--cy)', mg: 'var(--mg)', gold: 'var(--gold)',
-  green: 'var(--green)', violet: 'var(--violet)', orange: 'var(--orange)',
-};
+/* ONE HUE REGISTRY, NOT TWO. This list used to be written out here as well as
+   in state.ts, and the two drifted the moment a colour was added to only one of
+   them: BLUE joined the duel palette on 2026-08-22 and never reached the avatar
+   picker, because the picker kept its own copy (reported from a device). Derived
+   now, so a hue added to DUELHUES is offered here by construction. Every id has
+   a matching --<id> token in foundations/tokens.css; that pairing is what the
+   registry means. */
+export const AV_HUES: Record<string, string> =
+  Object.fromEntries(HUE_IDS.map((id) => [id, `var(--${id})`]));
 export const DEFAULT_AVATAR = 'die:5:cy';
 
 export function parseAvatar(v: string | null | undefined): { face: number; hue: string } {

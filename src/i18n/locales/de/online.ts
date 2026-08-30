@@ -96,7 +96,8 @@ export const deOnline = {
     equippedMeta: 'Kommt in jedem Ranglistenspiel mit',
     equippedWaiting: 'Erreiche SILBER, dann kommt sie mit',
     seatEmpty: 'KEINE RUNE',
-    seatEmptyDetail: 'Der Platz ist bewusst leer und die Rangliste spielt sich auch ohne. Öffne eine gesammelte Rune und nimm sie dort mit; ab SILBER besetzt sie diesen Platz.',
+    seatPick: 'RUNE MITNEHMEN',
+    seatPickDetail: 'Wähle die Rune, die dich in die Rangliste begleitet. Ab SILBER kommt sie ins Spiel.',
   },
   avatar: {
     instruction: 'Wähle eine Fläche und eine Farbe',
@@ -110,6 +111,7 @@ export const deOnline = {
       green: 'Grün',
       violet: 'Violett',
       orange: 'Orange',
+      blue: 'Blau',
     },
   },
   history: {
