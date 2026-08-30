@@ -28,9 +28,10 @@ import type { MatchMoveRow, MatchRow } from "./types.ts";
 /* The action columns a replay consumes, declared once for every caller.
    _shared/rune-trial-bot-opening.ts keeps its own list on purpose: it selects
    a superset (created_at) for a different job, and folding the two together
-   would widen this read. */
-const ACTION_COLUMNS = "idx, move_idx, who, kind, rune_id, target_col, placed_col, "
-  + "die_before, die_after";
+   would widen this read. Keep this as one literal: PostgREST's select parser
+   loses the row shape when concatenation widens the query to `string`. */
+const ACTION_COLUMNS =
+  "idx, move_idx, who, kind, rune_id, target_col, placed_col, die_before, die_after";
 
 /** Both seats scored from the log, and the move count they were read at. */
 export interface AuthoritativeReplay {
