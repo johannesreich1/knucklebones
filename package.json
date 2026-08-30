@@ -23,6 +23,7 @@
     "db:production:stall-check": "node --experimental-strip-types tools/database/production-rollout.mjs match-command-stall-check",
     "db:production:rune-trial": "node --experimental-strip-types tools/database/production-rollout.mjs rune-trial",
     "db:production:ranked-runes": "node --experimental-strip-types tools/database/production-rollout.mjs ranked-runes",
+    "db:production:ranked-progression-events": "node --experimental-strip-types tools/database/production-rollout.mjs ranked-progression-events",
     "db:production:streak-baselines": "node --experimental-strip-types tools/database/production-rollout.mjs ladder-streak-baselines",
     "db:production:apple-game-center": "node --experimental-strip-types tools/database/production-rollout.mjs apple-game-center",
     "db:production:test-data": "node --experimental-strip-types tools/database/production-test-data.mjs",

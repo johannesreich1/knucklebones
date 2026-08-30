@@ -1,8 +1,8 @@
 # Production database rollouts
 
 Production migrations are deliberately separate from the Cloudflare deploy.
-Since the 2026-08-30 reconciliation and equipped-ranked rollout,
-`supabase/migrations/` begins with the same canonical 57-file timestamped
+Since the 2026-08-30 reconciliation and ranked-rune rollouts,
+`supabase/migrations/` begins with the same canonical 58-file timestamped
 prefix as production, pinned by
 `supabase/migration-history.json` and `tests/migration-ledger.test.ts`. The
 former compact aliases, obsolete 12-bot seed, and two wrong-stamped files live
@@ -34,6 +34,9 @@ mise exec -- node --experimental-strip-types \
   tools/database/production-rollout.mjs ranked-runes
 
 mise exec -- node --experimental-strip-types \
+  tools/database/production-rollout.mjs ranked-progression-events
+
+mise exec -- node --experimental-strip-types \
   tools/database/production-rollout.mjs ladder-streak-baselines
 
 mise exec -- node --experimental-strip-types \
@@ -62,6 +65,10 @@ KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
 
 KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
   mise exec -- node --experimental-strip-types \
+  tools/database/production-rollout.mjs ranked-progression-events --apply
+
+KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
+  mise exec -- node --experimental-strip-types \
   tools/database/production-rollout.mjs ladder-streak-baselines --apply
 
 KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
@@ -71,8 +78,9 @@ KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
 
 `mise exec -- npm run db:production:settings`,
 `mise exec -- npm run db:production:commands`,
-`mise exec -- npm run db:production:rune-trial`, and
+`mise exec -- npm run db:production:rune-trial`,
 `mise exec -- npm run db:production:ranked-runes`,
+`mise exec -- npm run db:production:ranked-progression-events`, and
 `mise exec -- npm run db:production:streak-baselines` are the existing shorter
 preview commands. The identity database preview is
 `mise exec -- npm run db:production:apple-game-center`. Add `-- --apply` plus
@@ -136,6 +144,16 @@ have expanded that bot's inventory since the backfill. Apply snapshots one
 deterministic count/fingerprint of every non-bot fixed seat **and** RANDOM flag
 immediately before and after the migration, and refuses success if either human
 setting changed.
+
+The `ranked-progression-events` allow-list contains only
+`20260830182406_ranked_progression_events.sql`. Its exact catalog audit pins
+the 18-column event table, all constraints and indexes, comments, the sole
+authenticated owner-SELECT policy, the table's read-only authenticated ACL,
+and the authenticated-only owner acknowledgement function. It also requires
+`settle_match` to remain the single service-only eleven-argument RPC in both
+the absent and complete stages, then pins the reviewed event-writing body in
+the complete stage. Apply this database-first migration before deploying a
+client that reads or acknowledges ranked transition events.
 
 The `ladder-streak-baselines` allow-list contains only
 `20260826153000_ladder_streak_baselines.sql`. Its validator pins the private

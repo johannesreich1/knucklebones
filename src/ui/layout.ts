@@ -46,7 +46,7 @@ function inset(cs: CSSStyleDeclaration, land: boolean): { v: number; h: number }
 const LANDSCAPE_SCREENS = new Set(['ovPractice', 'ovEnd', 'ovPass', 'ovWheel']);
 /* …and these float over whatever is beneath without being a screen of their own,
    so they must not change its mind: a confirm over a menu is still a menu. */
-const PASSTHROUGH = new Set(['ovAsk', 'ovLoad', 'ovFirst']);
+const PASSTHROUGH = new Set(['ovAsk', 'ovLoad', 'ovFirst', 'ovGroupTransition']);
 /* Overlays STACK (home stays on beneath pages), and paint order is DOM order,
    so the last `.on` sibling is the one the player is looking at. */
 function landscapeScreen(): boolean {

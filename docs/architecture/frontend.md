@@ -184,6 +184,18 @@ not need a framework store, event bus, or dependency-injection container.
   the in-game badge and the profile collection open. It covers the result
   rather than leaving it, and the tap is explicit proof of presentation, so it
   acknowledges the durable unseen row.
+- Ranked settlement preloads its owner-only progression event during the final
+  board hold. `result-screen.ts` paints the ordinary result first and then
+  gives `group-transition-screen.ts` the foreground whenever the pure
+  `group-transition-model.ts` finds an actual crossing. The API derives both
+  display groups from the event's historical points/apex flags; presentation
+  derives permanent feature slides from the ranked outcome registry. Transport
+  timeout/error remains an explicit retryable state; only a successful zero-row
+  response means absent. Each ranked result also drains the owner's oldest
+  unseen rows, so a failed read or acknowledgement is recovered later. Continue
+  is the sole acknowledgement path for a displayed crossing, while same-group
+  rows are consumed silently. Cached profile state never fabricates or consumes
+  a transition.
 
 ## Size and context budget
 

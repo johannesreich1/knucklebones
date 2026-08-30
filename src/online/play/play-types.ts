@@ -3,6 +3,7 @@ import type { Player } from '../../core/rules.ts';
 import type { RankedActionKind } from '../../core/ranked-actions.ts';
 import type { RankedRuneDeal } from '../../core/ranked-action-types.ts';
 import type { JoinResult, MatchRow } from '../api/match-api.ts';
+import type { ProgressionLookup } from '../api/ranked-progression-api.ts';
 import type { S } from '../../state.ts';
 
 export type MatchNames = Extract<JoinResult, { status: 'matched' }>['names'];
@@ -66,6 +67,10 @@ export interface OnlineState {
 }
 
 export interface FinishReport {
+  /** Terminal match identity; older presentation fixtures may omit it. */
+  matchId?: string;
+  /** Tri-state preload: transport uncertainty must remain recoverable. */
+  progression?: ProgressionLookup;
   won: boolean;
   draw: boolean;
   forfeit: boolean;

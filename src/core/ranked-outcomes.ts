@@ -175,6 +175,23 @@ export function highestRankedPoolTier(
   return highest.id;
 }
 
+/** The permanent outcomes gained while moving between cumulative pool tiers.
+ * Presentation uses this rather than copying BONE/IVORY's current contents,
+ * so a future registry addition automatically becomes one teaching slide. */
+export function rankedPoolUnlocks(
+  before: RankedPoolTier,
+  after: RankedPoolTier,
+): readonly Readonly<RankedOutcomeSpec>[] {
+  const from = rankedPoolTierById(before);
+  const to = rankedPoolTierById(after);
+  if (to.floor < from.floor) {
+    throw new RangeError('Ranked pool tiers are permanent and cannot move backwards.');
+  }
+  const alreadyAvailable = new Set(from.outcomeIds);
+  return Object.freeze(RANKED_OUTCOMES.filter(({ id }) =>
+    to.outcomeIds.includes(id) && !alreadyAvailable.has(id)));
+}
+
 export interface RankedParticipantAccess {
   tier: RankedPoolTier;
   /* Unknown future strings are intentionally harmless: old code ignores a

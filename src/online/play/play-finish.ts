@@ -8,6 +8,7 @@ import { renderAll } from '../../ui/game/board.ts';
 import { setStatus, settleBoard } from '../../ui/game/turn-state.ts';
 import { supa } from '../api/client.ts';
 import type { MatchRow } from '../api/match-api.ts';
+import { rankedProgressionRecovery } from '../api/ranked-progression-api.ts';
 import type { FinishReport, OnlineState } from './play-types.ts';
 
 export function finishOnlineMatch(options: {
@@ -53,6 +54,7 @@ export function finishOnlineMatch(options: {
   settleBoard();
   const opponentJoinPoints = online.names.ratings?.[options.opponentSeat] ?? null;
   const report: FinishReport = {
+    matchId: match.id,
     won,
     draw: match.winner === null,
     forfeit: match.status === 'forfeit',
@@ -64,9 +66,16 @@ export function finishOnlineMatch(options: {
     oppAvatar: online.names.avatars?.[options.opponentSeat] ?? null,
     oppRating: opponentJoinPoints != null ? opponentJoinPoints + (opponentDelta ?? 0) : null,
   };
+  /* Settlement and this terminal row commit together. Spend the board's
+     existing 1.4s final hold loading the owner-only event. The recovery seam
+     bounds the wait but preserves timeout/error as retryable, never as proof
+     that no mandatory deck exists. */
+  const progression = rankedProgressionRecovery.preload(match.id);
   setTimeout(() => {
-    if (!options.isCurrent()) return;
-    options.teardown();
-    options.onFinished?.(report);
+    void progression.then((event) => {
+      if (!options.isCurrent()) return;
+      options.teardown();
+      options.onFinished?.({ ...report, progression: event });
+    });
   }, 1400);
 }

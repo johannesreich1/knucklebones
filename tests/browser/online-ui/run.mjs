@@ -48,6 +48,10 @@ import { runRankedRevealLayoutScenarios } from './scenarios/ranked-reveal-layout
 import { runFlyingDieColourScenarios } from './scenarios/flying-die-colour.mjs';
 import { runTrialCastLatencyScenarios } from './scenarios/trial-cast-latency.mjs';
 import { runBotOpeningBeatScenarios } from './scenarios/bot-opening-beat.mjs';
+import { runGroupTransitionScenarios } from './scenarios/group-transition.mjs';
+import {
+  runGroupTransitionDemotionScenarios,
+} from './scenarios/group-transition-demotion.mjs';
 import { emitReport } from '../../support/emit-report.mjs';
 
 const { webkit, chromium } = pkg;
@@ -80,6 +84,8 @@ const SCENARIOS = Object.freeze([
   { id: 'flying-die-colour', run: runFlyingDieColourScenarios },
   { id: 'trial-cast-latency', run: runTrialCastLatencyScenarios },
   { id: 'bot-opening-beat', run: runBotOpeningBeatScenarios },
+  { id: 'group-transition', run: runGroupTransitionScenarios },
+  { id: 'group-transition-demotion', run: runGroupTransitionDemotionScenarios },
   // Deliberately outside the no-argument gate run: the reward-race probes are
   // a focused investigation surface, reached only through an explicit --only.
   { id: 'rune-reward-races', run: runRuneRewardRaceScenarios, manual: true },

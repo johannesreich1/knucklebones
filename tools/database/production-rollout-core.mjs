@@ -93,6 +93,19 @@ const LADDER_STREAK_BASELINE_FIELDS = Object.freeze([
   'playerCardGrants',
   'bestStreakDelegate',
 ]);
+const RANKED_PROGRESSION_FIELDS = Object.freeze([
+  'tableContract',
+  'tableColumns',
+  'tableConstraints',
+  'tableIndexes',
+  'tableComments',
+  'tableRlsPolicy',
+  'tableGrants',
+  'ackFunctionContract',
+  'ackFunctionBody',
+  'ackFunctionGrants',
+  'settleMatchEventBody',
+]);
 
 export class ProductionRolloutGuardError extends Error {
   constructor(message) {
@@ -561,4 +574,29 @@ export function validateLadderStreakBaselineSchemaStage(metadata) {
   if (values.every(value => value === false)) return 0;
   if (values.every(value => value === true)) return 1;
   fail('Ladder-streak baseline table, function contract, or security boundary is partial.');
+}
+
+/**
+ * Validate the durable ranked-progression event surface as absent or complete.
+ * The caller separately requires the pre-existing settle_match RPC to retain
+ * its exact eleven-argument service boundary in both stages; only its reviewed
+ * event-writing body belongs to this migration-owned all-or-nothing surface.
+ */
+export function validateRankedProgressionSchemaStage(metadata) {
+  if (!isObject(metadata)) fail('Ranked-progression metadata must be an object.');
+  assertOnlyKeys(
+    metadata,
+    RANKED_PROGRESSION_FIELDS,
+    'Ranked-progression metadata',
+  );
+  for (const field of RANKED_PROGRESSION_FIELDS) {
+    if (typeof metadata[field] !== 'boolean') {
+      fail(`Ranked-progression metadata field ${field} must be boolean.`);
+    }
+  }
+
+  const values = RANKED_PROGRESSION_FIELDS.map(field => metadata[field]);
+  if (values.every(value => value === false)) return 0;
+  if (values.every(value => value === true)) return 1;
+  fail('Ranked-progression table, owner boundary, acknowledgement, or settlement body is partial.');
 }

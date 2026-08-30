@@ -181,6 +181,37 @@ the remaining 60% equally. IVORY's seventh addition is Rune Trial, a
 Classic-backed selection format rather than another ladder group or mechanical
 mode. See `docs/MODES.md §4` and `docs/SPELLS.md §8`.
 
+### Group transition presentation
+
+Design: card **54a** (`design/screens/product/54a-league-ring.html`). The ranked
+result appears first, then every real group crossing opens the mandatory LG1
+living-ladder deck above it. Its first slide is always the same ring and avatar
+settling into the new material: upward for promotion, downward for demotion.
+There is no close or backdrop dismissal; swipe, dots, Back/Next and the final
+Continue are the complete path, and reduced motion paints the same settled
+state without the rise/fall/orbit effects.
+
+Settlement writes one owner-only durable before/after event per human
+participant in the same transaction as the ladder step. The event carries
+points, permanent pool, equipment, and both historical apex flags. That last
+pair is essential: NEON is positional, so no later profile read or point
+threshold can reconstruct whether this particular result crossed its boundary.
+A crossing is acknowledged only after Continue; a same-group row is consumed
+without opening a deck. This keeps reconnect and non-settling participants from
+missing real transitions without turning every result into a modal. Network
+uncertainty is never treated as proof that no event exists: later ranked results
+recover the oldest owner-only unseen rows, including acknowledgements whose
+response was lost.
+
+The slide plan consumes the ranked outcome registry instead of copying feature
+names. The first STONE → BONE unlock adds Row Switch, Row Multiply and Bounty;
+the first BONE → IVORY unlock adds Rune Ritual. Each feature slide is exactly
+one owned icon, its localized title, and one localized sentence — no second
+teaching diagram. Already-earned pool features never repeat and never disappear
+after demotion. Crossing SILVER additionally explains an equipped fixed or
+RANDOM rune becoming active, or resting below SILVER while its choice and all
+permanent variety remain.
+
 ---
 
 ## 3. Seasons

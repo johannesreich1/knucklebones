@@ -30,6 +30,8 @@ import {
   type RuneRewardPresentation,
 } from '../runes/rune-reward-presentation.ts';
 import type { FinishReport } from '../play/play.ts';
+import { rankedProgressionRecovery } from '../api/ranked-progression-api.ts';
+import { createGroupTransitionScreen } from './group-transition-screen.ts';
 
 interface ResultPorts {
   goHome(): void;
@@ -44,9 +46,12 @@ export interface ResultScreen {
 
 export function createResultScreen(ports: ResultPorts): ResultScreen {
   let showRevision = 0;
+  const groupTransition = createGroupTransitionScreen();
   async function show(report: FinishReport): Promise<void> {
     const revision = ++showRevision;
+    groupTransition.cancel();
     hide('#ovOnline');
+    $('#ovEnd').inert = false;
     let reward: RuneRewardPresentation | null = null;
     let rewardAcknowledgement: RuneRewardAcknowledgement | null = null;
     let rewardExplicitlyAcknowledged = false;
@@ -54,6 +59,8 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
     const opponentName = (): string => report.opponentName?.() ?? report.opp;
     const depart = (run: () => void, before?: () => void) => (): void => {
       if (revision !== showRevision) return;
+      groupTransition.cancel();
+      $('#ovEnd').inert = false;
       before?.();
       foreground = false;
       rewardAcknowledgement?.cancel();
@@ -208,6 +215,39 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
       };
     };
     showLocalizedEnd(endSpec);
+
+    /* The preload is tri-state: only a successful zero-row read means absent.
+       Hold the result while retrying uncertainty and checking the owner-only
+       unseen queue, so a prior failed read/ACK is recovered on a later result.
+       One result drains at most eight rows; same-group rows acknowledge
+       silently, while every real crossing owns its mandatory deck. */
+    if (report.matchId) {
+      const initial = report.progression ?? { kind: 'retryable' as const };
+      $('#ovEnd').inert = true;
+      void (async () => {
+        const handled = new Set<string>();
+        let lookup = initial;
+        for (let count = 0; count < 8; count++) {
+          lookup = await rankedProgressionRecovery.recover(report.matchId!, lookup);
+          if (revision !== showRevision || lookup.kind !== 'event') return;
+          const { event } = lookup;
+          if (handled.has(event.eventId)) return;
+          handled.add(event.eventId);
+
+          /* present() makes its own background snapshot synchronously. It must
+             see the result enabled or closing the modal would restore a stale
+             inert=true value and strand the result controls. */
+          $('#ovEnd').inert = false;
+          const completed = await groupTransition.present(event, cache?.avatar);
+          if (!completed || revision !== showRevision) return;
+          $('#ovEnd').inert = true;
+          if (!await rankedProgressionRecovery.acknowledge(event.eventId)) return;
+          lookup = { kind: 'absent' };
+        }
+      })().catch(() => undefined).finally(() => {
+        if (revision === showRevision) $('#ovEnd').inert = false;
+      });
+    }
 
     void refreshRuneCollection().then(async (collection) => {
       if (revision !== showRevision) return;

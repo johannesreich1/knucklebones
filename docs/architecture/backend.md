@@ -54,9 +54,10 @@ production history or executing SQL. Thirty-one local-only files moved
 verbatim to `supabase/legacy-migrations/`; 34 canonical production-only files
 were fetched into the active ledger; and the 22 already matching versions were
 left untouched. That reconciliation baseline was the 56-file prefix ending at
-`20260830112653_equipped_rune_grant.sql`; the guarded equipped-ranked rollout
-then applied `20260830155543_equipped_runes_ranked.sql`, making the current
-production prefix 57 files. The archived `0007_bot_pool.sql` is an obsolete
+`20260830112653_equipped_rune_grant.sql`; the guarded ranked-rune rollout then
+applied `20260830155543_equipped_runes_ranked.sql` and
+`20260830160000_random_rune_mode.sql`, making the current production prefix 58
+files. The archived `0007_bot_pool.sql` is an obsolete
 one-off 12-account seed and must never become executable again.
 
 Normal linked history checks and dry runs can therefore use the repository
@@ -72,6 +73,9 @@ identity database selection uses `apple-game-center` (or
 `npm run db:production:apple-game-center`), never an arbitrary filename passed
 by a caller. Their committed hashes and post-deploy catalog/security contracts
 are fixed in the tool before the database owner opts in to an apply.
+The held ranked transition migration uses the equally fixed
+`ranked-progression-events` selection (or
+`npm run db:production:ranked-progression-events`).
 
 For a disposable local database, `supabase migration down --local --last 1`
 can step back and `supabase migration up --local` can reapply pending files;
@@ -194,6 +198,13 @@ grant either commit together or not at all.
   the greatest recorded ladder peak: STONE at 0, BONE at 300, IVORY at 720.
   Demotion or a new season never writes a lower tier. Promotion settlement may
   raise the tier, and the newly eligible pool applies to the next match.
+- Ranked settlement writes one owner-readable progression event for each human
+  participant in the same transaction as the rating and permanent-pool writes.
+  It snapshots points, positional apex/NEON membership, permanent pool tier,
+  fixed fallback, RANDOM mode, and whether that equipped seat is active before
+  and after settlement. Bots receive no event. The authenticated owner can
+  acknowledge presentation through `acknowledge_ranked_progression`; clients
+  cannot insert, update, delete, or read an opponent's event directly.
 - Seeded opponents can carry a private, season-scoped best-streak baseline
   without fabricated match rows. `player_card()` returns the greater of that
   baseline and the longest real current-season winning run; `best_streak()`
@@ -269,6 +280,13 @@ for both participant branches; do not claim advisor results that were not run.
 Apply ranked migrations before auto-deploying the corresponding web/function
 clients. The browser has a narrow missing-`leave_ranked_queue` fallback to the
 older RLS-protected own-row DELETE, but database-first remains the normal order.
+
+The held `20260830182406_ranked_progression_events.sql` migration preserves
+the deployed eleven-argument, service-only `settle_match` invocation and JSON
+response while adding its event write atomically. Apply it through the guarded
+`ranked-progression-events` operation before shipping a client that reads or
+acknowledges those rows; the operation accepts only the wholly absent or exact
+complete catalog and never a partial table/function/security state.
 
 The current locale expansion is the forward-only migration
 `20260825161016_expand_player_settings_locales.sql`. It widens the original

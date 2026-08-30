@@ -35,6 +35,7 @@ import {
   validateLadderStreakBaselineSchemaStage,
   validateMatchCommandRetentionSchemaStage,
   validatePlayerSettingsSchemaStage,
+  validateRankedProgressionSchemaStage,
   validateRuneTrialSchemaStage,
   withTemporaryWorkspace,
 } from './production-rollout-core.mjs';
@@ -65,6 +66,8 @@ export const LADDER_STREAK_BASELINES_MIGRATION_SHA256 =
   '1b132572fde4df5f451e0c1780077c0e07156300fbd91b24833614a8d2e6c827';
 export const MATCH_COMMAND_STALL_CHECK_MIGRATION_SHA256 =
   'ea067e3e3f63e94bed0ae4370317017b9530327697860f2fe961b52a42d295cd';
+export const RANKED_PROGRESSION_MIGRATION_SHA256 =
+  'b8364a0926261036a3623ddaa7ba5c1d0465ca3bf2214bc9622b2d763ab849f1';
 
 export const RANKED_RUNES_MIGRATIONS = Object.freeze([
   Object.freeze({
@@ -78,6 +81,14 @@ export const RANKED_RUNES_MIGRATIONS = Object.freeze([
     name: 'random_rune_mode',
     file: 'supabase/migrations/20260830160000_random_rune_mode.sql',
     sha256: RANDOM_RUNE_MODE_MIGRATION_SHA256,
+  }),
+]);
+export const RANKED_PROGRESSION_MIGRATIONS = Object.freeze([
+  Object.freeze({
+    version: '20260830182406',
+    name: 'ranked_progression_events',
+    file: 'supabase/migrations/20260830182406_ranked_progression_events.sql',
+    sha256: RANKED_PROGRESSION_MIGRATION_SHA256,
   }),
 ]);
 
@@ -181,6 +192,10 @@ const ROLLOUTS = Object.freeze({
         sha256: MATCH_COMMAND_STALL_CHECK_MIGRATION_SHA256,
       }),
     ]),
+  }),
+  'ranked-progression-events': Object.freeze({
+    audit: 'ranked-progression-events',
+    migrations: RANKED_PROGRESSION_MIGRATIONS,
   }),
 });
 
@@ -2258,9 +2273,292 @@ select
   from private.season_streak_baselines;
 `;
 
+export const RANKED_PROGRESSION_SCHEMA = String.raw`
+with event_table as (
+  select c.oid, c.relowner, c.relacl, c.relkind, c.relpersistence,
+         c.relispartition, c.relrowsecurity, c.relforcerowsecurity
+    from pg_class c
+    join pg_namespace n on n.oid = c.relnamespace
+   where n.nspname = 'public'
+     and c.relname = 'ranked_progression_events'
+), expected_event_columns(
+  ordinal_position, column_name, data_type, udt_schema, udt_name,
+  is_nullable, column_default, is_identity, is_generated
+) as (
+  values
+    (1, 'id', 'uuid', 'pg_catalog', 'uuid', 'NO', 'gen_random_uuid()', 'NO', 'NEVER'),
+    (2, 'player_id', 'uuid', 'pg_catalog', 'uuid', 'NO', null, 'NO', 'NEVER'),
+    (3, 'source_match_id', 'uuid', 'pg_catalog', 'uuid', 'YES', null, 'NO', 'NEVER'),
+    (4, 'season_id', 'smallint', 'pg_catalog', 'int2', 'NO', null, 'NO', 'NEVER'),
+    (5, 'points_before', 'integer', 'pg_catalog', 'int4', 'NO', null, 'NO', 'NEVER'),
+    (6, 'points_after', 'integer', 'pg_catalog', 'int4', 'NO', null, 'NO', 'NEVER'),
+    (7, 'apex_before', 'boolean', 'pg_catalog', 'bool', 'NO', null, 'NO', 'NEVER'),
+    (8, 'apex_after', 'boolean', 'pg_catalog', 'bool', 'NO', null, 'NO', 'NEVER'),
+    (9, 'pool_tier_before', 'text', 'pg_catalog', 'text', 'NO', null, 'NO', 'NEVER'),
+    (10, 'pool_tier_after', 'text', 'pg_catalog', 'text', 'NO', null, 'NO', 'NEVER'),
+    (11, 'equipped_rune_before', 'text', 'pg_catalog', 'text', 'YES', null, 'NO', 'NEVER'),
+    (12, 'equipped_rune_after', 'text', 'pg_catalog', 'text', 'YES', null, 'NO', 'NEVER'),
+    (13, 'random_rune_mode_before', 'boolean', 'pg_catalog', 'bool', 'NO', null, 'NO', 'NEVER'),
+    (14, 'random_rune_mode_after', 'boolean', 'pg_catalog', 'bool', 'NO', null, 'NO', 'NEVER'),
+    (15, 'rune_seat_active_before', 'boolean', 'pg_catalog', 'bool', 'NO', null, 'NO', 'NEVER'),
+    (16, 'rune_seat_active_after', 'boolean', 'pg_catalog', 'bool', 'NO', null, 'NO', 'NEVER'),
+    (17, 'created_at', 'timestamp with time zone', 'pg_catalog', 'timestamptz', 'NO', 'clock_timestamp()', 'NO', 'NEVER'),
+    (18, 'seen_at', 'timestamp with time zone', 'pg_catalog', 'timestamptz', 'YES', null, 'NO', 'NEVER')
+), event_columns as (
+  select ordinal_position, column_name, data_type, udt_schema, udt_name,
+         is_nullable, column_default, is_identity, is_generated
+    from information_schema.columns
+   where table_schema = 'public'
+     and table_name = 'ranked_progression_events'
+), expected_event_constraints(constraint_name, constraint_type, definition) as (
+  values
+    ('ranked_progression_events_equipped_after_check', 'c',
+      $check$CHECK (equipped_rune_after IS NULL OR (equipped_rune_after = ANY (ARRAY['fate'::text, 'nudge'::text, 'ward'::text, 'sunder'::text, 'pilfer'::text, 'anvil'::text])))$check$),
+    ('ranked_progression_events_equipped_before_check', 'c',
+      $check$CHECK (equipped_rune_before IS NULL OR (equipped_rune_before = ANY (ARRAY['fate'::text, 'nudge'::text, 'ward'::text, 'sunder'::text, 'pilfer'::text, 'anvil'::text])))$check$),
+    ('ranked_progression_events_match_player_key', 'u',
+      'UNIQUE (source_match_id, player_id)'),
+    ('ranked_progression_events_pkey', 'p', 'PRIMARY KEY (id)'),
+    ('ranked_progression_events_player_id_fkey', 'f',
+      'FOREIGN KEY (player_id) REFERENCES profiles(id) ON DELETE CASCADE'),
+    ('ranked_progression_events_points_check', 'c',
+      'CHECK (points_before >= 0 AND points_after >= 0)'),
+    ('ranked_progression_events_pool_after_check', 'c',
+      $check$CHECK (pool_tier_after = ANY (ARRAY['stone'::text, 'bone'::text, 'ivory'::text]))$check$),
+    ('ranked_progression_events_pool_before_check', 'c',
+      $check$CHECK (pool_tier_before = ANY (ARRAY['stone'::text, 'bone'::text, 'ivory'::text]))$check$),
+    ('ranked_progression_events_random_after_check', 'c',
+      'CHECK (NOT random_rune_mode_after OR equipped_rune_after IS NOT NULL)'),
+    ('ranked_progression_events_random_before_check', 'c',
+      'CHECK (NOT random_rune_mode_before OR equipped_rune_before IS NOT NULL)'),
+    ('ranked_progression_events_rune_live_after_check', 'c',
+      'CHECK (rune_seat_active_after = (equipped_rune_after IS NOT NULL AND points_after >= 1260))'),
+    ('ranked_progression_events_rune_live_before_check', 'c',
+      'CHECK (rune_seat_active_before = (equipped_rune_before IS NOT NULL AND points_before >= 1260))'),
+    ('ranked_progression_events_season_id_fkey', 'f',
+      'FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE CASCADE'),
+    ('ranked_progression_events_seen_check', 'c',
+      'CHECK (seen_at IS NULL OR seen_at >= created_at)'),
+    ('ranked_progression_events_source_match_id_fkey', 'f',
+      'FOREIGN KEY (source_match_id) REFERENCES matches(id) ON DELETE SET NULL')
+), event_constraints as (
+  select conname as constraint_name, contype::text as constraint_type,
+         pg_get_constraintdef(oid, true) as definition
+    from pg_constraint
+   where conrelid = to_regclass('public.ranked_progression_events')
+), expected_event_indexes(index_name, definition) as (
+  values
+    ('ranked_progression_events_match_player_key',
+      'CREATE UNIQUE INDEX ranked_progression_events_match_player_key ON public.ranked_progression_events USING btree (source_match_id, player_id)'),
+    ('ranked_progression_events_pkey',
+      'CREATE UNIQUE INDEX ranked_progression_events_pkey ON public.ranked_progression_events USING btree (id)'),
+    ('ranked_progression_events_player_created_idx',
+      'CREATE INDEX ranked_progression_events_player_created_idx ON public.ranked_progression_events USING btree (player_id, created_at, id)'),
+    ('ranked_progression_events_season_idx',
+      'CREATE INDEX ranked_progression_events_season_idx ON public.ranked_progression_events USING btree (season_id)')
+), event_indexes as (
+  select indexname as index_name, indexdef as definition
+    from pg_indexes
+   where schemaname = 'public'
+     and tablename = 'ranked_progression_events'
+), event_access as (
+  select coalesce(role.rolname, 'PUBLIC') as role_name,
+         acl.privilege_type, acl.is_grantable
+    from event_table c
+    cross join lateral aclexplode(
+      coalesce(c.relacl, acldefault('r', c.relowner))
+    ) acl
+    left join pg_roles role on role.oid = acl.grantee
+   where acl.grantee <> c.relowner
+), event_column_access as (
+  select attribute.attname, coalesce(role.rolname, 'PUBLIC') as role_name,
+         acl.privilege_type, acl.is_grantable
+    from pg_attribute attribute
+    cross join lateral aclexplode(attribute.attacl) acl
+    left join pg_roles role on role.oid = acl.grantee
+   where attribute.attrelid = to_regclass('public.ranked_progression_events')
+     and attribute.attnum > 0 and not attribute.attisdropped
+     and acl.grantee <> (select relowner from event_table)
+), ack_function as (
+  select procedure.*, namespace.nspname, language.lanname,
+         owner_role.rolname as owner_name
+    from pg_proc procedure
+    join pg_namespace namespace on namespace.oid = procedure.pronamespace
+    join pg_language language on language.oid = procedure.prolang
+    join pg_roles owner_role on owner_role.oid = procedure.proowner
+   where procedure.oid = to_regprocedure(
+     'public.acknowledge_ranked_progression(uuid)'
+   )
+), ack_access as (
+  select coalesce(role.rolname, 'PUBLIC') as role_name,
+         acl.privilege_type, acl.is_grantable
+    from ack_function procedure
+    cross join lateral aclexplode(
+      coalesce(procedure.proacl, acldefault('f', procedure.proowner))
+    ) acl
+    left join pg_roles role on role.oid = acl.grantee
+   where acl.grantee <> procedure.proowner
+), settle_function as (
+  select procedure.*, namespace.nspname, language.lanname,
+         owner_role.rolname as owner_name
+    from pg_proc procedure
+    join pg_namespace namespace on namespace.oid = procedure.pronamespace
+    join pg_language language on language.oid = procedure.prolang
+    join pg_roles owner_role on owner_role.oid = procedure.proowner
+   where procedure.oid = to_regprocedure(
+     'public.settle_match(uuid,text,uuid,integer,integer,integer,integer,jsonb,jsonb,jsonb,jsonb)'
+   )
+), settle_access as (
+  select coalesce(role.rolname, 'PUBLIC') as role_name,
+         acl.privilege_type, acl.is_grantable
+    from settle_function procedure
+    cross join lateral aclexplode(
+      coalesce(procedure.proacl, acldefault('f', procedure.proowner))
+    ) acl
+    left join pg_roles role on role.oid = acl.grantee
+   where acl.grantee <> procedure.proowner
+)
+select
+  coalesce((
+    select relkind = 'r' and relpersistence = 'p' and not relispartition
+           and pg_get_userbyid(relowner) = 'postgres'
+      from event_table
+  ), false) as table_contract,
+  exists (select 1 from event_table)
+    and not exists (
+      (select * from expected_event_columns except select * from event_columns)
+      union all
+      (select * from event_columns except select * from expected_event_columns)
+    ) as table_columns,
+  exists (select 1 from event_table)
+    and not exists (
+      (select * from expected_event_constraints except select * from event_constraints)
+      union all
+      (select * from event_constraints except select * from expected_event_constraints)
+    )
+    and (
+      select count(*) = 15
+             and bool_and(convalidated and not condeferrable and not condeferred)
+        from pg_constraint
+       where conrelid = to_regclass('public.ranked_progression_events')
+    ) as table_constraints,
+  exists (select 1 from event_table)
+    and not exists (
+      (select * from expected_event_indexes except select * from event_indexes)
+      union all
+      (select * from event_indexes except select * from expected_event_indexes)
+    ) as table_indexes,
+  exists (select 1 from event_table)
+    and obj_description(
+      to_regclass('public.ranked_progression_events'), 'pg_class'
+    ) = 'One owner-only before/after snapshot per settled human participant; drives mandatory ranked group transition presentation.'
+    and col_description(
+      to_regclass('public.ranked_progression_events'), 7
+    ) = 'Historical private.ladder_board apex result immediately before this settlement; required because NEON is positional.'
+    and col_description(
+      to_regclass('public.ranked_progression_events'), 18
+    ) = 'Stamped only by acknowledge_ranked_progression after the player reaches Continue.'
+    and (
+      select count(*) = 2
+        from pg_description description
+       where description.objoid = to_regclass('public.ranked_progression_events')
+         and description.objsubid > 0
+    ) as table_comments,
+  coalesce((
+    select relrowsecurity and not relforcerowsecurity
+      from event_table
+  ), false)
+    and (
+      select count(*) = 1 and bool_and(
+        policy.polname = 'ranked_progression_events_select_own'
+        and policy.polcmd = 'r' and policy.polpermissive
+        and policy.polroles = array[(
+          select oid from pg_roles where rolname = 'authenticated'
+        )]::oid[]
+        and md5(pg_get_expr(policy.polqual, policy.polrelid, true)) =
+          'c73f233b1e589b1bf262b92e38619649'
+        and policy.polwithcheck is null
+      )
+        from pg_policy policy
+       where policy.polrelid = to_regclass('public.ranked_progression_events')
+    ) as table_rls_policy,
+  exists (select 1 from event_table)
+    and (
+      select coalesce(array_agg(
+        role_name || ':' || privilege_type || ':' || is_grantable::text
+        order by role_name, privilege_type, is_grantable
+      ), array[]::text[]) = array['authenticated:SELECT:false']::text[]
+        from event_access
+    )
+    and not exists (select 1 from event_column_access)
+    as table_grants,
+  coalesce((
+    select owner_name = 'postgres' and nspname = 'public'
+           and proname = 'acknowledge_ranked_progression'
+           and lanname = 'plpgsql' and prosecdef and provolatile = 'v'
+           and prokind = 'f' and not proretset and not proisstrict
+           and not proleakproof and proparallel = 'u'
+           and pronargdefaults = 0
+           and proconfig = array['search_path=""']::text[]
+           and pg_get_function_identity_arguments(oid) = 'p_event_id uuid'
+           and pg_get_function_result(oid) = 'boolean'
+           and obj_description(oid, 'pg_proc') =
+             'Authenticated owner-only acknowledgement after the mandatory progression deck reaches Continue.'
+      from ack_function
+  ), false)
+    and (
+      select count(*) = 1
+        from pg_proc procedure
+        join pg_namespace namespace on namespace.oid = procedure.pronamespace
+       where namespace.nspname = 'public'
+         and procedure.proname = 'acknowledge_ranked_progression'
+    ) as ack_function_contract,
+  coalesce((
+    select md5(prosrc) = '3ed9e015de54a82049255e4cecc312ec'
+      from ack_function
+  ), false) as ack_function_body,
+  (
+    select coalesce(array_agg(
+      role_name || ':' || privilege_type || ':' || is_grantable::text
+      order by role_name, privilege_type, is_grantable
+    ), array[]::text[]) = array['authenticated:EXECUTE:false']::text[]
+      from ack_access
+  ) and exists (select 1 from ack_function) as ack_function_grants,
+  coalesce((
+    select md5(prosrc) = 'ec865febe67e1370a877459e4b89ec65'
+      from settle_function
+  ), false) as settle_match_event_body,
+  coalesce((
+    select owner_name = 'postgres' and nspname = 'public'
+           and proname = 'settle_match' and lanname = 'plpgsql'
+           and prosecdef and provolatile = 'v' and prokind = 'f'
+           and not proretset and not proisstrict and not proleakproof
+           and proparallel = 'u' and pronargdefaults = 0
+           and proconfig = array['search_path=""']::text[]
+           and pg_get_function_identity_arguments(oid) =
+             'p_match_id uuid, p_status text, p_winner uuid, p_p1_score integer, p_p2_score integer, p_p1_delta integer, p_p2_delta integer, p_expected_p1 jsonb, p_expected_p2 jsonb, p_next_p1 jsonb, p_next_p2 jsonb'
+           and pg_get_function_result(oid) = 'jsonb'
+      from settle_function
+  ), false)
+    and (
+      select count(*) = 1
+        from pg_proc procedure
+        join pg_namespace namespace on namespace.oid = procedure.pronamespace
+       where namespace.nspname = 'public'
+         and procedure.proname = 'settle_match'
+    )
+    and (
+      select coalesce(array_agg(
+        role_name || ':' || privilege_type || ':' || is_grantable::text
+        order by role_name, privilege_type, is_grantable
+      ), array[]::text[]) = array['service_role:EXECUTE:false']::text[]
+        from settle_access
+    ) as settle_match_contract;
+`;
+
 function usage(message, code = 64) {
   if (message) console.error(message);
-  console.error('Usage: mise exec -- node --experimental-strip-types tools/database/production-rollout.mjs <settings-locale|match-command-retention|match-command-stall-check|rune-trial|ranked-runes|ladder-streak-baselines|apple-game-center> [--apply]');
+  console.error('Usage: mise exec -- node --experimental-strip-types tools/database/production-rollout.mjs <settings-locale|match-command-retention|match-command-stall-check|rune-trial|ranked-runes|ranked-progression-events|ladder-streak-baselines|apple-game-center> [--apply]');
   console.error(`Apply requires ${PROD_OPT_IN}=1.`);
   process.exitCode = code;
 }
@@ -2676,6 +2974,34 @@ export async function auditLadderStreakBaselinesPostApplyData(
   return evidence;
 }
 
+export async function auditRankedProgression(readProduction = productionRead) {
+  const rows = await readProduction(RANKED_PROGRESSION_SCHEMA);
+  if (rows.length !== 1) {
+    throw new Error('Production ranked-progression schema audit returned an unexpected shape.');
+  }
+  const row = rows[0];
+  if (row.settle_match_contract !== true) {
+    throw new Error('Production settle_match no longer matches the reviewed eleven-argument service contract.');
+  }
+  const evidence = {
+    tableContract: row.table_contract === true,
+    tableColumns: row.table_columns === true,
+    tableConstraints: row.table_constraints === true,
+    tableIndexes: row.table_indexes === true,
+    tableComments: row.table_comments === true,
+    tableRlsPolicy: row.table_rls_policy === true,
+    tableGrants: row.table_grants === true,
+    ackFunctionContract: row.ack_function_contract === true,
+    ackFunctionBody: row.ack_function_body === true,
+    ackFunctionGrants: row.ack_function_grants === true,
+    settleMatchEventBody: row.settle_match_event_body === true,
+  };
+  return {
+    evidence,
+    schemaStage: validateRankedProgressionSchemaStage(evidence),
+  };
+}
+
 function sha256(value) {
   return createHash('sha256').update(value).digest('hex');
 }
@@ -2800,6 +3126,8 @@ async function auditProduction(rollout) {
     audited = await auditLadderStreakBaselines();
   } else if (rollout.audit === 'apple-game-center') {
     audited = await auditAppleGameCenter();
+  } else if (rollout.audit === 'ranked-progression-events') {
+    audited = await auditRankedProgression();
   } else {
     throw new Error(`Unknown production schema audit: ${String(rollout.audit)}.`);
   }

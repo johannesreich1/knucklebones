@@ -189,13 +189,15 @@ try {
   /* Lazy screen CSS must not be able to repaint eager Home by coincidence.
      The only class owners are deliberate cross-overlay components: faceoff is
      the shared sheet, online-queue is also worn by design card 21,
-     and pointschip remains for the active result study 36d. History uses an exact
-     two-screen :is() root because one row implementation serves both lists. */
-  const onlineIds = /^(?:#ovOnline|#onAuth|#onQueue|#onLadder|#onAccount|#onAvatar|#onHistory)(?:\b|[.#:[>+~ ])/;
+     and pointschip remains for the active result study 36d. The ranked group
+     transition is a lazy-owned modal with its own exact overlay root. History
+     uses an exact two-screen :is() root because one row serves both lists. */
+  const onlineIds = /^(?:#ovOnline|#ovGroupTransition|#onAuth|#onQueue|#onLadder|#onAccount|#onAvatar|#onHistory)(?:\b|[.#:[>+~ ])/;
   const classRoots = /^(?:\.faceoff|\.online-queue|\.pointschip)(?:\b|[.#:[>+~ ])/;
   const historyRoot = /^:is\(#onAccount,#onHistory\)\s+\.history-row(?:\b|[.#:[>+~ ])/;
   const withoutApplicationRoot = (selector: string): string => selector
     .replace(/^:where\(\s*#kbroot\s*\)\s*/, '')
+    .replace(/^#kbroot\.reduce-motion\s+/, '')
     .replace(/^#kbroot\s+/, '');
   const unrooted = lazySelectors.map(withoutApplicationRoot)
     .filter((selector) => !onlineIds.test(selector)

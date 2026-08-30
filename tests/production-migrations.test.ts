@@ -34,6 +34,9 @@ import {
 import {
   runRandomRuneProductionMigrationCases,
 } from './support/random-rune-production-migration-cases.ts';
+import {
+  runRankedProgressionProductionMigrationCases,
+} from './support/ranked-progression-production-migration-cases.ts';
 
 const BASE = '20260823192604_player_settings.sql';
 const LOCALE = '20260824133121_player_settings_locale.sql';
@@ -299,6 +302,7 @@ await runLadderStreakBaselineProductionMigrationCases({ check, checkAsync, guard
 
 await runRandomRuneProductionMigrationCases({ check, checkAsync, guarded });
 await runEquippedRankedProductionMigrationCases({ check, checkAsync });
+await runRankedProgressionProductionMigrationCases({ check, checkAsync, guarded });
 
 await checkAsync('temporary workspace cleanup runs after success and preparation failure', async () => {
   const removed: string[] = [];

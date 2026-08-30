@@ -26,7 +26,7 @@ styles/
   game/           board, dice, stage, effects, guards, modes, spells, layout
   screens/        home, reveal, tutorial, handoff, result, learn
 online/styles/    base, ladder, faceoff, matchmaking, account, result, profile,
-                  avatar, history
+                  avatar, history, group-transition
 ```
 
 One screen owns one stylesheet. The ladder was the counter-example — a

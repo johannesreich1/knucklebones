@@ -1,0 +1,123 @@
+/* LG1 — THE LIVING LADDER. A mandatory swipe deck over the ranked result:
+   one familiar ring changes material, then icon/title/text-only feature cards. */
+:where(#kbroot) #ovGroupTransition{z-index:100;overflow:hidden!important;justify-content:center!important;
+  padding:calc(env(safe-area-inset-top,0px) + 8px) 8px calc(env(safe-area-inset-bottom,0px) + 8px)!important;
+  background:rgba(3,5,12,.68)!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+:where(#kbroot) #ovGroupTransition .gt-deck{--gt-tier:var(--g-bone);--gt-old:var(--g-stone);position:relative;
+  display:flex;flex-direction:column;align-items:center;width:min(100%,414px);height:min(100%,608px);
+  min-height:0;box-sizing:border-box;padding:14px;overflow:hidden;border-radius:20px;
+  border:1px solid color-mix(in srgb,var(--gt-tier) 31%,transparent);
+  background:linear-gradient(165deg,rgba(18,21,39,.96),rgba(5,7,18,.985));
+  box-shadow:0 20px 60px rgba(0,0,0,.68),inset 0 1px 0 rgba(255,255,255,.10);
+  touch-action:pan-y;overscroll-behavior:contain}
+:where(#kbroot) #ovGroupTransition .gt-deck::before{content:"";position:absolute;inset:-18% -30% 42%;pointer-events:none;
+  background:radial-gradient(closest-side,color-mix(in srgb,var(--gt-tier) 23%,transparent),transparent 72%);filter:blur(20px)}
+:where(#kbroot) #ovGroupTransition .gt-head{position:relative;z-index:2;display:flex;align-items:center;justify-content:space-between;width:100%;min-height:24px}
+:where(#kbroot) #ovGroupTransition .gt-kicker{color:var(--gt-tier);font-size:8px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}
+:where(#kbroot) #ovGroupTransition .gt-page{color:var(--dim);font-size:8px;font-weight:900;letter-spacing:.14em}
+:where(#kbroot) #ovGroupTransition .gt-body{position:relative;z-index:1;display:flex;flex:1;min-height:0;width:100%;align-items:center;justify-content:center}
+:where(#kbroot) #ovGroupTransition .gt-group-body{flex-direction:column;padding-top:5px}
+:where(#kbroot) #ovGroupTransition .gt-overline{margin-top:9px;color:#c6d3ee;font-size:9px;font-weight:900;letter-spacing:.28em;text-transform:uppercase}
+:where(#kbroot) #ovGroupTransition .gt-group{margin:3px 0 0;padding-inline-start:.22em;color:var(--gt-tier);font-size:35px;font-weight:950;
+  line-height:1;letter-spacing:.22em;text-shadow:0 0 11px color-mix(in srgb,var(--gt-tier) 75%,transparent),
+  0 0 35px color-mix(in srgb,var(--gt-tier) 38%,transparent)}
+:where(#kbroot) #ovGroupTransition .gt-copy{max-width:292px;margin:9px auto 0;color:#c6d3ee;font-size:11px;line-height:1.5;text-align:center}
+:where(#kbroot) #ovGroupTransition .gt-step{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;color:var(--dim);
+  font-size:8.5px;font-weight:900;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+:where(#kbroot) #ovGroupTransition .gt-step b{color:var(--gt-tier);font-size:10px}
+:where(#kbroot) #ovGroupTransition .gt-step i{color:#8dffcf;font-style:normal}
+:where(#kbroot) #ovGroupTransition .gt-demotion .gt-step i{color:var(--mg)}
+
+:where(#kbroot) #ovGroupTransition .gt-ring{position:relative;width:min(52vw,196px);margin:4px auto 0;flex:0 0 auto;isolation:isolate}
+:where(#kbroot) #ovGroupTransition .gt-ring .lring{filter:drop-shadow(0 0 14px color-mix(in srgb,var(--gt-tier) 52%,transparent))}
+:where(#kbroot) #ovGroupTransition .gt-tierhalo,:where(#kbroot) #ovGroupTransition .gt-oldarc{position:absolute;inset:-8px;border-radius:50%;pointer-events:none;
+  -webkit-mask:radial-gradient(circle closest-side,transparent 84%,#000 85%);mask:radial-gradient(circle closest-side,transparent 84%,#000 85%)}
+:where(#kbroot) #ovGroupTransition .gt-tierhalo{z-index:-1;opacity:.2;background:conic-gradient(from 225deg,var(--gt-tier) 0 270deg,transparent 270deg);
+  filter:drop-shadow(0 0 18px color-mix(in srgb,var(--gt-tier) 48%,transparent))}
+:where(#kbroot) #ovGroupTransition .gt-oldarc{z-index:3;opacity:0;background:conic-gradient(from 225deg,var(--gt-old) 0 270deg,transparent 270deg);
+  filter:drop-shadow(0 0 13px color-mix(in srgb,var(--gt-old) 50%,transparent))}
+:where(#kbroot) #ovGroupTransition .gt-avatar{position:relative;z-index:2;display:grid;place-items:center;line-height:0}
+:where(#kbroot) #ovGroupTransition .gt-avatar .die{filter:drop-shadow(0 0 18px rgba(var(--p1-rgb),.34))}
+:where(#kbroot) #ovGroupTransition .gt-orbit{position:absolute;inset:13px;border-radius:50%;z-index:1;opacity:.32;
+  border:1px solid color-mix(in srgb,var(--gt-tier) 34%,transparent);border-left-color:transparent;border-bottom-color:transparent;transform:rotate(20deg)}
+:where(#kbroot) #ovGroupTransition .gt-mote{--gt-x:0px;--gt-y:0px;position:absolute;z-index:4;left:50%;top:50%;width:5px;height:5px;
+  margin:-2px;border-radius:50%;opacity:0;pointer-events:none;background:var(--gt-tier);box-shadow:0 0 10px var(--gt-tier);
+  transform:translate(var(--gt-x),var(--gt-y))}
+:where(#kbroot) #ovGroupTransition .gt-mote:nth-of-type(5){--gt-x:-78px;--gt-y:30px}
+:where(#kbroot) #ovGroupTransition .gt-mote:nth-of-type(6){--gt-x:-52px;--gt-y:-62px;width:4px;height:4px}
+:where(#kbroot) #ovGroupTransition .gt-mote:nth-of-type(7){--gt-x:63px;--gt-y:-51px;width:3px;height:3px}
+:where(#kbroot) #ovGroupTransition .gt-mote:nth-of-type(8){--gt-x:81px;--gt-y:25px;width:4px;height:4px}
+:where(#kbroot) #ovGroupTransition .gt-mote:nth-of-type(9){--gt-x:25px;--gt-y:80px;width:3px;height:3px}
+:where(#kbroot) #ovGroupTransition .gt-mote:nth-of-type(10){--gt-x:-31px;--gt-y:78px;width:4px;height:4px}
+
+/* One event, not a preview loop. Every base rule above is already the final
+   readable state, so reduced motion removes motion without losing information. */
+:where(#kbroot) #ovGroupTransition .gt-promotion .gt-oldarc{animation:gt-old-up 2.6s ease-out both}
+:where(#kbroot) #ovGroupTransition .gt-promotion .gt-tierhalo{animation:gt-halo-up 2.6s cubic-bezier(.2,1.15,.3,1) both}
+:where(#kbroot) #ovGroupTransition .gt-promotion .gt-avatar{animation:gt-avatar-up 2.6s cubic-bezier(.2,1.15,.3,1) both}
+:where(#kbroot) #ovGroupTransition .gt-promotion .gt-orbit{animation:gt-orbit-up 2.6s cubic-bezier(.2,1,.3,1) both}
+:where(#kbroot) #ovGroupTransition .gt-promotion .gt-mote{animation:gt-mote-up 2.6s ease-out both}
+@keyframes gt-old-up{0%,20%{opacity:.96;transform:none}70%{opacity:.18;transform:scale(1.14)}100%{opacity:0;transform:scale(1.22)}}
+@keyframes gt-halo-up{0%,26%{opacity:0;transform:scale(.72)}72%{opacity:.38;transform:scale(1.08)}100%{opacity:.2;transform:none}}
+@keyframes gt-avatar-up{0%,24%{opacity:.7;transform:translateY(18px) scale(.9)}72%{opacity:1;transform:translateY(-8px) scale(1.04)}100%{opacity:1;transform:none}}
+@keyframes gt-orbit-up{0%,26%{opacity:0;transform:rotate(-28deg) scale(.7)}78%{opacity:.58;transform:rotate(35deg) scale(1.04)}100%{opacity:.32;transform:rotate(20deg)}}
+@keyframes gt-mote-up{0%,24%{opacity:0;transform:translate(var(--gt-x),calc(var(--gt-y) + 18px)) scale(.4)}52%{opacity:.95}100%{opacity:0;transform:translate(var(--gt-x),calc(var(--gt-y) - 28px)) scale(1)}}
+:where(#kbroot) #ovGroupTransition .gt-demotion .gt-oldarc{animation:gt-old-down 2.6s ease-in both}
+:where(#kbroot) #ovGroupTransition .gt-demotion .gt-tierhalo{animation:gt-halo-down 2.6s cubic-bezier(.2,.9,.3,1) both}
+:where(#kbroot) #ovGroupTransition .gt-demotion .gt-avatar{animation:gt-avatar-down 2.6s cubic-bezier(.2,.9,.3,1) both}
+:where(#kbroot) #ovGroupTransition .gt-demotion .gt-orbit{animation:gt-orbit-down 2.6s cubic-bezier(.2,.9,.3,1) both}
+:where(#kbroot) #ovGroupTransition .gt-demotion .gt-mote{animation:gt-mote-down 2.6s ease-in both}
+@keyframes gt-old-down{0%,20%{opacity:.92;transform:none}68%{opacity:.3;transform:translateY(8px) scale(.93)}100%{opacity:0;transform:translateY(18px) scale(.88)}}
+@keyframes gt-halo-down{0%,26%{opacity:0;transform:translateY(-12px) scale(1.08)}74%{opacity:.34;transform:translateY(3px) scale(.98)}100%{opacity:.2;transform:none}}
+@keyframes gt-avatar-down{0%,24%{opacity:.76;transform:translateY(-15px) scale(1.04)}74%{opacity:1;transform:translateY(6px) scale(.98)}100%{opacity:1;transform:none}}
+@keyframes gt-orbit-down{0%,26%{opacity:.5;transform:rotate(62deg) scale(1.08)}78%{opacity:.22;transform:rotate(8deg) scale(.97)}100%{opacity:.32;transform:rotate(20deg)}}
+@keyframes gt-mote-down{0%,24%{opacity:0;transform:translate(var(--gt-x),calc(var(--gt-y) - 20px)) scale(.8)}52%{opacity:.72}100%{opacity:0;transform:translate(var(--gt-x),calc(var(--gt-y) + 30px)) scale(.35)}}
+
+:where(#kbroot) #ovGroupTransition .gt-feature-body{flex-direction:column;text-align:center}
+:where(#kbroot) #ovGroupTransition .gt-feature-icon{position:relative;display:grid;place-items:center;width:96px;height:96px;margin:10px 0 18px;
+  color:var(--gt-accent,var(--gt-tier));border-radius:50%;border:1px solid color-mix(in srgb,currentColor 44%,transparent);
+  background:radial-gradient(circle,color-mix(in srgb,currentColor 15%,transparent),transparent 70%);
+  box-shadow:0 0 30px color-mix(in srgb,currentColor 22%,transparent)}
+:where(#kbroot) #ovGroupTransition .gt-feature-icon::before,:where(#kbroot) #ovGroupTransition .gt-feature-icon::after{content:"";position:absolute;border-radius:50%;
+  border:1px dashed color-mix(in srgb,currentColor 25%,transparent)}
+:where(#kbroot) #ovGroupTransition .gt-feature-icon::before{inset:-8px}:where(#kbroot) #ovGroupTransition .gt-feature-icon::after{inset:10px}
+:where(#kbroot) #ovGroupTransition .gt-feature-icon svg{filter:drop-shadow(0 0 10px currentColor)}
+:where(#kbroot) #ovGroupTransition .gt-feature-body h2{margin:0;color:var(--txt);font-size:21px;font-weight:950;letter-spacing:.17em;text-align:center}
+:where(#kbroot) #ovGroupTransition .gt-feature-body p{max-width:306px;margin:12px auto;color:#c6d3ee;font-size:12px;line-height:1.58;text-align:center}
+:where(#kbroot) #ovGroupTransition .gt-swipe{display:flex;align-items:center;gap:8px;margin:5px 0;color:var(--dim);font-size:7.5px;
+  font-weight:900;letter-spacing:.18em;text-transform:uppercase;text-align:center}
+:where(#kbroot) #ovGroupTransition .gt-swipe::before,:where(#kbroot) #ovGroupTransition .gt-swipe::after{content:"";width:24px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.26))}
+:where(#kbroot) #ovGroupTransition .gt-swipe::after{transform:scaleX(-1)}
+:where(#kbroot) #ovGroupTransition .gt-dots{display:flex;align-items:center;justify-content:center;gap:6px;min-height:13px}
+:where(#kbroot) #ovGroupTransition .gt-dots i{display:block;width:5px;height:5px;border-radius:999px;background:#41485e;transition:width .2s,background .2s}
+:where(#kbroot) #ovGroupTransition .gt-dots i[aria-current="true"]{width:18px;background:var(--gt-tier);box-shadow:0 0 10px color-mix(in srgb,var(--gt-tier) 65%,transparent)}
+:where(#kbroot) #ovGroupTransition .gt-actions{display:flex;align-items:center;gap:8px;width:100%;margin-top:8px}
+:where(#kbroot) #ovGroupTransition .gt-actions .gt-button{display:flex;align-items:center;justify-content:center;flex:1;min-width:0;min-height:44px;padding:10px 12px;font-size:9px;letter-spacing:.13em}
+:where(#kbroot) #ovGroupTransition .gt-actions .gt-button[hidden] + .gt-button{margin-left:auto;max-width:152px}
+:where(#kbroot) #ovGroupTransition .gt-announcement{position:absolute;width:1px;height:1px;margin:-1px;padding:0;
+  overflow:hidden;border:0;clip-path:inset(50%);white-space:nowrap}
+
+#kbroot.reduce-motion #ovGroupTransition :is(.gt-oldarc,.gt-tierhalo,.gt-avatar,.gt-orbit,.gt-mote){animation:none!important}
+@media (prefers-reduced-motion:reduce){
+  :where(#kbroot) #ovGroupTransition :is(.gt-oldarc,.gt-tierhalo,.gt-avatar,.gt-orbit,.gt-mote){animation:none!important}
+}
+@media (max-height:430px){
+  :where(#kbroot) #ovGroupTransition .gt-deck{height:100%;padding:9px 12px;border-radius:17px}
+  :where(#kbroot) #ovGroupTransition .gt-head{min-height:18px}
+  :where(#kbroot) #ovGroupTransition .gt-group-body{display:grid;grid-template-columns:minmax(126px,38%) 1fr;grid-template-rows:auto auto auto;
+    column-gap:16px;align-content:center;justify-items:center;padding:0 8px}
+  :where(#kbroot) #ovGroupTransition .gt-ring{grid-row:1/4;width:min(34vh,146px);margin:0}
+  :where(#kbroot) #ovGroupTransition .gt-avatar .die{width:54px!important;height:54px!important;--cell:54px!important}
+  :where(#kbroot) #ovGroupTransition .gt-overline{align-self:end;margin-top:0;font-size:7px}
+  :where(#kbroot) #ovGroupTransition .gt-group{align-self:start;font-size:25px}
+  :where(#kbroot) #ovGroupTransition .gt-copy{margin:5px auto 0;font-size:9px;line-height:1.35}
+  :where(#kbroot) #ovGroupTransition .gt-step{grid-column:1/3;margin-top:5px;font-size:7px}
+  :where(#kbroot) #ovGroupTransition .gt-feature-icon{width:58px;height:58px;margin:2px 0 8px}
+  :where(#kbroot) #ovGroupTransition .gt-feature-icon svg{width:31px;height:31px}
+  :where(#kbroot) #ovGroupTransition .gt-feature-body h2{font-size:16px}
+  :where(#kbroot) #ovGroupTransition .gt-feature-body p{max-width:440px;margin:6px auto;font-size:9.5px;line-height:1.35}
+  :where(#kbroot) #ovGroupTransition .gt-swipe{margin:1px 0;font-size:6.5px}
+  :where(#kbroot) #ovGroupTransition .gt-dots{min-height:8px}
+  :where(#kbroot) #ovGroupTransition .gt-actions{margin-top:4px}
+  :where(#kbroot) #ovGroupTransition .gt-actions .gt-button{min-height:44px;padding:7px 10px}
+}
