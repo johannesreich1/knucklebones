@@ -1,0 +1,441 @@
+<!-- meta name="LG3 — Dice ascent" group="3m · Group transitions" subtitle="A real player die climbs or drops through the ladder's group-coloured horizons, then settles inside the new group's ring; the same no-close swipe deck explains BONE's three permanent mode unlocks and an IVORY demotion's resting equipped rune without ever implying permanent variety was lost" width=430 height=4210 sizes="md" links="Match result, Profile, Ladder, Game modes, Spells" -->
+<style>
+  /* Card-local names only (l54c*). Dice, mode marks and the waiting rune all
+     come through design/build.mjs tokens backed by the app's renderers. The
+     only new picture is the transition choreography: one player die crosses
+     the same group-coloured horizons the ladder already names, then lands in
+     the new group's continuous ring. */
+
+  .l54c-stage .scr{gap:11px;padding:15px 16px 17px}
+  .l54c-head{display:flex;flex-direction:column;align-items:center;gap:5px;padding:3px 10px 1px}
+  .l54c-eyebrow{font-size:8.5px;font-weight:900;letter-spacing:.24em;color:var(--gold);
+    text-transform:uppercase}
+  .l54c-head h1{font-size:19px;letter-spacing:.18em}
+  .l54c-head p{max-width:316px;margin:0;color:#c6d3ee;font-size:9.5px;line-height:1.52;
+    letter-spacing:.035em;text-align:center}
+  .l54c-section{display:flex;align-items:center;gap:8px;width:100%;margin-top:3px;
+    color:var(--dim);font-size:8px;font-weight:900;letter-spacing:.19em;text-transform:uppercase}
+  .l54c-section::before,.l54c-section::after{content:"";height:1px;flex:1;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.16))}
+  .l54c-section::after{transform:scaleX(-1)}
+
+  /* Every frame is the same full-screen modal deck over the settled result.
+     The dim result words deliberately remain barely legible behind it: this is
+     an interruption belonging to that settlement, not a new destination. */
+  .l54c-screen{position:relative;width:100%;overflow:hidden;border-radius:22px;
+    border:1px solid rgba(255,255,255,.13);background:#060812;
+    box-shadow:0 18px 45px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.04)}
+  .l54c-screen::before{content:"VICTORY   +82";position:absolute;inset:18px 0 auto;
+    color:rgba(255,255,255,.09);font-size:22px;font-weight:950;letter-spacing:.21em;
+    text-align:center;filter:blur(.35px)}
+  .l54c-screen::after{content:"";position:absolute;inset:0;background:
+    radial-gradient(74% 42% at 50% -4%,color-mix(in srgb,var(--l54c-new) 17%,transparent),transparent 74%),
+    linear-gradient(180deg,rgba(5,6,14,.86),rgba(5,6,14,.975) 34%,#05060e 100%)}
+  .l54c-modal{position:relative;z-index:1;display:flex;min-height:100%;flex-direction:column;
+    box-sizing:border-box;padding:14px 14px 13px}
+  .l54c-topline{display:flex;align-items:center;justify-content:space-between;min-height:18px;
+    color:var(--dim);font-size:7.5px;font-weight:900;letter-spacing:.16em;text-transform:uppercase}
+  .l54c-topline b{color:var(--l54c-new);font-weight:900}
+  .l54c-count{font-variant-numeric:tabular-nums}
+  .l54c-swipe{display:flex;align-items:center;gap:5px;color:#9aabc4}
+  .l54c-swipe i{display:block;width:24px;height:1px;position:relative;background:currentColor}
+  .l54c-swipe i::before,.l54c-swipe i::after{content:"";position:absolute;top:-2.5px;
+    width:5px;height:5px;border-top:1px solid currentColor}
+  .l54c-swipe i::before{left:0;border-left:1px solid currentColor;transform:rotate(-45deg)}
+  .l54c-swipe i::after{right:0;border-right:1px solid currentColor;transform:rotate(45deg)}
+
+  .l54c-kicker{margin-top:12px;color:var(--l54c-new);font-size:8px;font-weight:950;
+    letter-spacing:.23em;text-align:center;text-transform:uppercase;
+    text-shadow:0 0 14px color-mix(in srgb,var(--l54c-new) 55%,transparent)}
+  .l54c-title{margin:5px 0 0!important;background:none!important;color:var(--txt)!important;
+    font-size:24px!important;line-height:1.03;letter-spacing:.11em!important;
+    -webkit-text-fill-color:var(--txt);text-shadow:0 0 25px rgba(255,255,255,.12)}
+  .l54c-title strong{color:var(--l54c-new);font-weight:950;
+    text-shadow:0 0 22px color-mix(in srgb,var(--l54c-new) 46%,transparent)}
+  .l54c-sub{max-width:286px;margin:6px auto 0;color:#b9c8df;font-size:9.5px;line-height:1.5;
+    text-align:center}
+
+  /* The ladder is compressed to two truthful horizons: where the crossing
+     started and where it ended. The die is the player's avatar, not a new
+     medal or mascot, so the transition remains theirs at every group. */
+  .l54c-ladder{position:relative;height:244px;margin:7px 0 0;isolation:isolate}
+  .l54c-horizon{position:absolute;left:5px;right:5px;top:var(--l54c-y);height:1px;
+    color:var(--l54c-group);background:linear-gradient(90deg,transparent 0%,currentColor 16%,
+      currentColor 84%,transparent 100%);opacity:.56;
+    box-shadow:0 0 12px color-mix(in srgb,currentColor 32%,transparent)}
+  .l54c-horizon span{position:absolute;top:-13px;font-size:7.5px;font-weight:900;
+    letter-spacing:.18em;text-transform:uppercase}
+  .l54c-horizon .l54c-hname{left:4px;color:currentColor}
+  .l54c-horizon .l54c-floor{right:4px;color:#7e90aa;font-variant-numeric:tabular-nums}
+  .l54c-ring{position:absolute;left:50%;top:27px;width:148px;height:148px;
+    transform:translateX(-50%);border-radius:50%;background:
+      conic-gradient(from 105deg,var(--l54c-new) 0 314deg,rgba(255,255,255,.07) 314deg 360deg);
+    filter:drop-shadow(0 0 13px color-mix(in srgb,var(--l54c-new) 30%,transparent))}
+  .l54c-ring::before{content:"";position:absolute;inset:4px;border-radius:50%;background:
+    radial-gradient(circle at 50% 42%,color-mix(in srgb,var(--l54c-new) 10%,#0a0c18),#060812 70%);
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.055)}
+  .l54c-ring::after{content:"";position:absolute;inset:-10px;border:1px solid
+    color-mix(in srgb,var(--l54c-new) 20%,transparent);border-radius:50%;opacity:.45}
+  .l54c-ringname{position:absolute;left:50%;top:155px;z-index:3;min-width:74px;
+    transform:translateX(-50%);padding:3px 9px;border-radius:999px;background:#080a14;
+    border:1px solid color-mix(in srgb,var(--l54c-new) 48%,transparent);color:var(--l54c-new);
+    font-size:8px;font-weight:950;letter-spacing:.19em;text-align:center;text-transform:uppercase;
+    box-shadow:0 0 16px color-mix(in srgb,var(--l54c-new) 17%,transparent)}
+  .l54c-die{position:absolute;left:50%;top:174px;z-index:4;width:68px;height:68px;
+    transform-origin:50% 100%;filter:drop-shadow(0 10px 12px rgba(0,0,0,.55))}
+  .l54c-die .die{animation:none!important}
+  .l54c-spark{position:absolute;left:50%;top:204px;z-index:2;width:4px;height:4px;
+    margin-left:var(--l54c-x);border-radius:50%;background:var(--l54c-new);
+    box-shadow:0 0 9px var(--l54c-new)}
+
+  /* Promotion spends only its opening third in motion; the remaining two
+     thirds are the finished BONE portrait a still or a slow reader receives. */
+  .l54c-promodie{transform:translateX(-50%) translateY(-108px) scale(1);
+    animation:l54cAscend 6.6s cubic-bezier(.2,.72,.2,1) infinite}
+  @keyframes l54cAscend{
+    0%,5%{transform:translateX(-50%) translateY(0) scale(.78) rotate(-12deg)}
+    17%{transform:translateX(-50%) translateY(-55px) scale(.9) rotate(10deg)}
+    26%{transform:translateX(-50%) translateY(-112px) scale(1.04) rotate(-4deg)}
+    31%{transform:translateX(-50%) translateY(-104px) scale(.98,1.03) rotate(1deg)}
+    37%,100%{transform:translateX(-50%) translateY(-108px) scale(1) rotate(0)}}
+  .l54c-promo .l54c-ring{animation:l54cRingUp 6.6s ease-out infinite}
+  @keyframes l54cRingUp{0%,20%{opacity:.42;filter:drop-shadow(0 0 4px transparent)}
+    29%{opacity:1;filter:drop-shadow(0 0 25px var(--l54c-new))}
+    38%,100%{opacity:1;filter:drop-shadow(0 0 13px color-mix(in srgb,var(--l54c-new) 30%,transparent))}}
+  .l54c-promo .l54c-spark{animation:l54cSparkUp 6.6s ease-out infinite}
+  @keyframes l54cSparkUp{0%,13%{opacity:0;transform:translateY(0) scale(.5)}
+    20%{opacity:.9}33%{opacity:0;transform:translateY(-120px) scale(1.25)}
+    34%,100%{opacity:0;transform:translateY(-120px)}}
+
+  .l54c-crossing{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:-1px}
+  .l54c-groupchip{min-width:72px;padding:5px 8px;border-radius:999px;
+    border:1px solid color-mix(in srgb,var(--l54c-group) 42%,transparent);
+    background:color-mix(in srgb,var(--l54c-group) 7%,#070912);color:var(--l54c-group);
+    font-size:8px;font-weight:950;letter-spacing:.16em;text-align:center;text-transform:uppercase}
+  .l54c-arrow{color:var(--gold);font-size:15px;line-height:1}
+
+  .l54c-pager{display:grid;grid-template-columns:82px 1fr 82px;align-items:center;gap:8px;
+    margin-top:auto;padding-top:12px}
+  .l54c-dots{display:flex;align-items:center;justify-content:center;gap:6px}
+  .l54c-dot{width:5px;height:5px;border-radius:50%;background:#53617a}
+  .l54c-dot[aria-current="step"]{width:15px;border-radius:5px;background:var(--l54c-new);
+    box-shadow:0 0 9px color-mix(in srgb,var(--l54c-new) 60%,transparent)}
+  .l54c-nav{display:grid;place-items:center;min-height:44px;padding:0 10px;border-radius:12px;
+    appearance:none;border:1px solid rgba(255,255,255,.13);background:rgba(255,255,255,.045);
+    color:#d6e0ef;font:inherit;font-size:8.5px;font-weight:900;letter-spacing:.13em;
+    text-transform:uppercase}
+  .l54c-nav[disabled]{opacity:.28}
+  .l54c-nav.l54c-next{border-color:color-mix(in srgb,var(--l54c-new) 45%,transparent);
+    background:linear-gradient(135deg,color-mix(in srgb,var(--l54c-new) 22%,#090b16),#111426);
+    color:#fff;box-shadow:0 7px 18px color-mix(in srgb,var(--l54c-new) 13%,transparent)}
+  .l54c-noclose{margin:7px 0 0;color:#72839e;font-size:7px;letter-spacing:.14em;
+    text-align:center;text-transform:uppercase}
+
+  /* Each BONE unlock gets its own complete slide. The mode icon is the app's;
+     the tiny dice scene only demonstrates what the one-sentence rule buys. */
+  .l54c-feature{--l54c-new:var(--g-bone);min-height:431px}
+  .l54c-feature .l54c-modal{padding-top:13px}
+  .l54c-featurehead{display:flex;align-items:center;gap:13px;margin-top:17px}
+  .l54c-modeorb{display:grid;place-items:center;width:62px;height:62px;flex:0 0 auto;
+    border-radius:20px;color:var(--l54c-mode);border:1px solid
+    color-mix(in srgb,var(--l54c-mode) 42%,transparent);background:
+      radial-gradient(circle at 38% 30%,color-mix(in srgb,var(--l54c-mode) 20%,transparent),transparent 62%),
+      rgba(255,255,255,.035);box-shadow:0 0 24px color-mix(in srgb,var(--l54c-mode) 13%,transparent)}
+  .l54c-modeorb svg{filter:drop-shadow(0 0 8px currentColor)}
+  .l54c-modeorb svg .f{fill:currentColor;stroke:none}
+  .l54c-featuretitle{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .l54c-featuretitle b{color:var(--l54c-mode);font-size:15px;font-weight:950;
+    letter-spacing:.13em;text-transform:uppercase}
+  .l54c-featuretitle span{color:var(--dim);font-size:8px;font-weight:900;
+    letter-spacing:.18em;text-transform:uppercase}
+  .l54c-example{display:flex;min-height:156px;flex-direction:column;align-items:center;
+    justify-content:center;gap:10px;margin-top:15px;border:1px solid rgba(255,255,255,.08);
+    border-radius:17px;background:radial-gradient(circle at 50% 40%,
+      color-mix(in srgb,var(--l54c-mode) 10%,transparent),transparent 70%),rgba(255,255,255,.018)}
+  .l54c-dicerow{position:relative;display:flex;align-items:center;justify-content:center;gap:9px;
+    min-height:48px;padding:0 10px}
+  .l54c-dicerow::before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;
+    background:linear-gradient(90deg,transparent,var(--l54c-mode),transparent);opacity:.35;
+    box-shadow:0 0 10px var(--l54c-mode)}
+  .l54c-dicerow > span{position:relative;z-index:1;line-height:0}
+  .l54c-rowlabel{color:var(--l54c-mode);font-size:8px;font-weight:950;letter-spacing:.16em;
+    text-align:center;text-transform:uppercase}
+  .l54c-axis{display:flex;align-items:center;gap:8px;color:#91a4be;font-size:7.5px;
+    font-weight:900;letter-spacing:.15em;text-transform:uppercase}
+  .l54c-axis b{color:var(--l54c-mode);font-size:13px}
+  .l54c-rule{margin:12px 5px 0;color:#c9d5e8;font-size:10px;line-height:1.58;text-align:center}
+  .l54c-rule b{color:var(--l54c-mode)}
+  .l54c-multscore{display:flex;align-items:center;gap:8px;color:var(--l54c-mode);
+    font-size:18px;font-weight:950;letter-spacing:.06em}
+  .l54c-bountyrow{display:flex;align-items:center;gap:16px}
+  .l54c-victims{display:flex;gap:5px}
+  .l54c-victim{position:relative;display:block;line-height:0;filter:saturate(.5);opacity:.62}
+  .l54c-victim::after{content:"";position:absolute;left:-2px;right:-2px;top:50%;height:1.5px;
+    transform:rotate(-13deg);background:var(--l54c-mode);box-shadow:0 0 7px var(--l54c-mode)}
+  .l54c-bank{display:flex;align-items:center;gap:6px;color:var(--l54c-mode);font-size:18px;
+    font-weight:950;text-shadow:0 0 13px color-mix(in srgb,var(--l54c-mode) 56%,transparent)}
+  .l54c-bank svg{filter:drop-shadow(0 0 7px currentColor)}
+
+  /* Demotion reverses the same journey. The landing is deliberately heavier:
+     it falls fast, compresses once against IVORY, rebounds a few pixels, then
+     spends half the loop absolutely still. It is serious, not punitive. */
+  .l54c-demotion{--l54c-new:var(--g-ivory);min-height:555px}
+  .l54c-demotion::before{content:"DEFEAT   −71"}
+  .l54c-demotion .l54c-ring{top:78px}
+  .l54c-demotion .l54c-ringname{top:206px}
+  .l54c-demotion .l54c-die{top:47px}
+  .l54c-demodie{transform:translateX(-50%) translateY(99px) scale(1);
+    animation:l54cDescend 6.6s cubic-bezier(.28,.02,.22,1) infinite}
+  @keyframes l54cDescend{
+    0%,8%{transform:translateX(-50%) translateY(0) scale(.82) rotate(7deg)}
+    24%{transform:translateX(-50%) translateY(67px) scale(.94) rotate(-7deg)}
+    31%{transform:translateX(-50%) translateY(103px) scale(1.05,.87) rotate(2deg)}
+    36%{transform:translateX(-50%) translateY(95px) scale(.98,1.04) rotate(-1deg)}
+    43%,100%{transform:translateX(-50%) translateY(99px) scale(1) rotate(0)}}
+  .l54c-demotion .l54c-ring{animation:l54cRingDown 6.6s ease-out infinite}
+  @keyframes l54cRingDown{0%,25%{opacity:.42;filter:drop-shadow(0 0 4px transparent)}
+    31%{opacity:1;filter:drop-shadow(0 0 20px var(--l54c-new))}
+    43%,100%{opacity:1;filter:drop-shadow(0 0 13px color-mix(in srgb,var(--l54c-new) 30%,transparent))}}
+  .l54c-demotion .l54c-spark{top:74px;animation:l54cSparkDown 6.6s ease-out infinite}
+  @keyframes l54cSparkDown{0%,14%{opacity:0;transform:translateY(0) scale(.5)}
+    22%{opacity:.8}35%{opacity:0;transform:translateY(108px) scale(1.2)}
+    36%,100%{opacity:0;transform:translateY(108px)}}
+  .l54c-demotion .l54c-ladder{height:260px}
+
+  .l54c-explain{--l54c-new:var(--g-ivory);min-height:474px}
+  .l54c-explain::before{content:"DEFEAT   −71"}
+  .l54c-explaintitle{margin-top:14px;color:var(--txt);font-size:17px;font-weight:950;
+    letter-spacing:.12em;text-align:center;text-transform:uppercase}
+  .l54c-explainintro{margin:5px auto 0;max-width:285px;color:#aebdd2;font-size:9px;
+    line-height:1.5;text-align:center}
+  .l54c-change{display:grid;grid-template-columns:58px 1fr;gap:12px;align-items:center;
+    margin-top:13px;padding:12px;border-radius:15px;border:1px solid rgba(255,255,255,.085);
+    background:rgba(255,255,255,.025)}
+  .l54c-changeicon{display:grid;place-items:center;width:56px;height:56px;border-radius:50%;
+    color:var(--l54c-color);border:1px solid color-mix(in srgb,var(--l54c-color) 38%,transparent);
+    background:radial-gradient(circle,color-mix(in srgb,var(--l54c-color) 13%,transparent),transparent 70%)}
+  .l54c-changeicon svg{filter:drop-shadow(0 0 7px currentColor)}
+  .l54c-changeicon.l54c-rest{border-style:dashed;color:#7d8da4;filter:saturate(.25)}
+  .l54c-changecopy{display:flex;flex-direction:column;gap:4px;min-width:0}
+  .l54c-changecopy b{color:var(--l54c-color);font-size:9px;font-weight:950;
+    letter-spacing:.14em;text-transform:uppercase}
+  .l54c-changecopy span{color:#c4d0e2;font-size:9px;line-height:1.52}
+  .l54c-kept{display:flex;flex-wrap:wrap;gap:6px;margin-top:7px}
+  .l54c-kept span{display:flex;align-items:center;gap:4px;min-height:25px;padding:0 7px;
+    border-radius:999px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.025);
+    color:#b9c8dc;font-size:6.8px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}
+  .l54c-kept svg{width:13px;height:13px;color:var(--l54c-mode)}
+  .l54c-kept svg .f{fill:currentColor;stroke:none}
+  .l54c-ritual{display:flex;align-items:center;justify-content:center;width:13px;height:13px;
+    overflow:hidden;color:{{mhue:classic}}}
+  .l54c-ritual button{display:none!important}
+  .l54c-ritual button[data-v="-2"]{display:flex!important;align-items:center;justify-content:center;
+    width:13px!important;height:13px!important;min-width:13px!important;min-height:13px!important;
+    padding:0!important;border:0!important;background:none!important;color:#b18cff!important}
+  .l54c-ritual svg{width:13px!important;height:13px!important}
+
+  /* Reduced motion starts in each direction's completed state. The small
+     proof below is permanently static; the media query gives the live hero
+     frames the exact same geometry and removes every glow pulse and particle. */
+  .l54c-reduced{display:flex;flex-direction:column;gap:10px;width:100%;padding:12px 13px;
+    box-sizing:border-box;border:1px solid rgba(255,255,255,.09);border-radius:16px;
+    background:rgba(255,255,255,.024)}
+  .l54c-reducedhead{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .l54c-reducedhead b{color:var(--gold);font-size:8px;letter-spacing:.17em;text-transform:uppercase}
+  .l54c-reducedhead span{color:var(--dim);font-size:7px;letter-spacing:.09em;text-align:right}
+  .l54c-staticrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .l54c-static{display:flex;align-items:center;gap:9px;padding:9px;border-radius:12px;
+    border:1px solid color-mix(in srgb,var(--l54c-new) 28%,transparent);
+    background:color-mix(in srgb,var(--l54c-new) 5%,transparent)}
+  .l54c-staticring{display:grid;place-items:center;width:48px;height:48px;flex:0 0 auto;
+    border-radius:50%;border:2px solid var(--l54c-new);box-shadow:0 0 9px
+    color-mix(in srgb,var(--l54c-new) 24%,transparent)}
+  .l54c-staticcopy{display:flex;flex-direction:column;gap:3px}
+  .l54c-staticcopy b{color:var(--l54c-new);font-size:8px;letter-spacing:.12em;text-transform:uppercase}
+  .l54c-staticcopy span{color:#aebdd2;font-size:7px;line-height:1.4}
+
+  #kbroot.reduce-motion .l54c-promodie{animation:none!important;
+    transform:translateX(-50%) translateY(-108px) scale(1)}
+  #kbroot.reduce-motion .l54c-demodie{animation:none!important;
+    transform:translateX(-50%) translateY(99px) scale(1)}
+  #kbroot.reduce-motion .l54c-promo .l54c-ring,
+  #kbroot.reduce-motion .l54c-demotion .l54c-ring{animation:none!important;opacity:1}
+  #kbroot.reduce-motion .l54c-spark{display:none!important}
+  @media (prefers-reduced-motion:reduce){
+    .l54c-promodie{animation:none!important;transform:translateX(-50%) translateY(-108px) scale(1)}
+    .l54c-demodie{animation:none!important;transform:translateX(-50%) translateY(99px) scale(1)}
+    .l54c-promo .l54c-ring,.l54c-demotion .l54c-ring{animation:none!important;opacity:1}
+    .l54c-spark{display:none!important}}
+</style>
+
+<div class="stage l54c-stage"><div class="bgfx"></div><div class="scr">
+  <header class="l54c-head">
+    <span class="l54c-eyebrow">Group transition study · direction 03</span>
+    <h1>DICE ASCENT</h1>
+    <p>The avatar die travels through the ladder itself. It rises into a new group, or drops with weight into the one below; the ring is always where it comes to rest.</p>
+  </header>
+
+  <div class="l54c-section">Promotion · slide 1 of 4</div>
+  <section class="l54c-screen l54c-promo" style="--l54c-new:var(--g-bone);min-height:572px" aria-label="Promotion slide: promoted from Stone to Bone">
+    <div class="l54c-modal">
+      <div class="l54c-topline"><span class="l54c-count">1 / 4</span><span class="l54c-swipe"><i></i> Swipe</span><b>New group</b></div>
+      <div class="l54c-kicker">Promotion</div>
+      <h2 class="l54c-title">PROMOTED TO <strong>BONE</strong></h2>
+      <p class="l54c-sub">Your ranked wheel just grew. Meet the three new modes before your next match.</p>
+
+      <div class="l54c-ladder" aria-hidden="true">
+        <div class="l54c-horizon" style="--l54c-y:210px;--l54c-group:var(--g-stone)"><span class="l54c-hname">Stone</span><span class="l54c-floor">0</span></div>
+        <div class="l54c-horizon" style="--l54c-y:82px;--l54c-group:var(--g-bone)"><span class="l54c-hname">Bone</span><span class="l54c-floor">300</span></div>
+        <div class="l54c-ring"></div><span class="l54c-ringname">Bone</span>
+        <span class="l54c-spark" style="--l54c-x:-35px"></span><span class="l54c-spark" style="--l54c-x:28px;animation-delay:.08s"></span>
+        <span class="l54c-spark" style="--l54c-x:-10px;animation-delay:.16s"></span><span class="l54c-spark" style="--l54c-x:43px;animation-delay:.23s"></span>
+        <span class="l54c-die l54c-promodie dice-static">{{die:5:p1:68}}</span>
+      </div>
+
+      <div class="l54c-crossing"><span class="l54c-groupchip" style="--l54c-group:var(--g-stone)">Stone</span><span class="l54c-arrow">↑</span><span class="l54c-groupchip" style="--l54c-group:var(--g-bone)">Bone</span></div>
+      <div class="l54c-pager">
+        <button class="l54c-nav" type="button" disabled>Back</button>
+        <div class="l54c-dots" aria-label="Slide 1 of 4"><i class="l54c-dot" aria-current="step"></i><i class="l54c-dot"></i><i class="l54c-dot"></i><i class="l54c-dot"></i></div>
+        <button class="l54c-nav l54c-next" type="button">Next</button>
+      </div>
+      <div class="l54c-noclose">No close · this crossing is acknowledged once the deck is read</div>
+    </div>
+  </section>
+
+  <div class="l54c-section">Promotion · each unlock gets one slide</div>
+  <section class="l54c-screen l54c-feature" style="--l54c-mode:{{mhue:rowswitch}}" aria-label="Promotion slide explaining Row Switch">
+    <div class="l54c-modal">
+      <div class="l54c-topline"><span class="l54c-count">2 / 4</span><span class="l54c-swipe"><i></i> Swipe</span><b>New mode</b></div>
+      <div class="l54c-featurehead">
+        <span class="l54c-modeorb">{{mico:rowswitch:40}}</span>
+        <span class="l54c-featuretitle"><span>Unlocked forever</span><b>Row Switch</b></span>
+      </div>
+      <div class="l54c-example">
+        <div class="l54c-dicerow"><span class="dice-static">{{die:2:p1:42}}</span><span class="dice-static">{{die:5:p1:42}}</span><span class="dice-static">{{die:3:p1:42}}</span></div>
+        <div class="l54c-axis"><span>Columns</span><b>→</b><span style="color:var(--l54c-mode)">Rows score</span></div>
+        <span class="l54c-rowlabel">The whole board turns sideways</span>
+      </div>
+      <p class="l54c-rule"><b>Only rows score.</b> Matching dice still destroy down the column.</p>
+      <div class="l54c-pager">
+        <button class="l54c-nav" type="button">Back</button>
+        <div class="l54c-dots" aria-label="Slide 2 of 4"><i class="l54c-dot"></i><i class="l54c-dot" aria-current="step"></i><i class="l54c-dot"></i><i class="l54c-dot"></i></div>
+        <button class="l54c-nav l54c-next" type="button">Next</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="l54c-screen l54c-feature" style="--l54c-mode:{{mhue:rowmult}}" aria-label="Promotion slide explaining Row Multiply">
+    <div class="l54c-modal">
+      <div class="l54c-topline"><span class="l54c-count">3 / 4</span><span class="l54c-swipe"><i></i> Swipe</span><b>New mode</b></div>
+      <div class="l54c-featurehead">
+        <span class="l54c-modeorb">{{mico:rowmult:40}}</span>
+        <span class="l54c-featuretitle"><span>Unlocked forever</span><b>Row Multiply</b></span>
+      </div>
+      <div class="l54c-example">
+        <div class="l54c-dicerow"><span class="dice-static">{{die:4:p1 m2:42}}</span><span class="dice-static">{{die:4:p1 m2:42}}</span><span class="dice-static">{{die:4:p1 m2:42}}</span></div>
+        <div class="l54c-multscore"><span>12</span><span>+</span><span style="text-shadow:0 0 11px currentColor">12 ROW</span></div>
+        <span class="l54c-rowlabel">A matching row pays again on top</span>
+      </div>
+      <p class="l54c-rule"><b>Columns score as always.</b> Matching dice across a row add a second payout.</p>
+      <div class="l54c-pager">
+        <button class="l54c-nav" type="button">Back</button>
+        <div class="l54c-dots" aria-label="Slide 3 of 4"><i class="l54c-dot"></i><i class="l54c-dot"></i><i class="l54c-dot" aria-current="step"></i><i class="l54c-dot"></i></div>
+        <button class="l54c-nav l54c-next" type="button">Next</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="l54c-screen l54c-feature" style="--l54c-mode:{{mhue:bounty}}" aria-label="Promotion slide explaining Bounty">
+    <div class="l54c-modal">
+      <div class="l54c-topline"><span class="l54c-count">4 / 4</span><span class="l54c-swipe"><i></i> Swipe</span><b>New mode</b></div>
+      <div class="l54c-featurehead">
+        <span class="l54c-modeorb">{{mico:bounty:40}}</span>
+        <span class="l54c-featuretitle"><span>Unlocked forever</span><b>Bounty</b></span>
+      </div>
+      <div class="l54c-example">
+        <div class="l54c-bountyrow">
+          <span class="l54c-victims"><i class="l54c-victim dice-static">{{die:3:p2:38}}</i><i class="l54c-victim dice-static">{{die:3:p2:38}}</i><i class="l54c-victim dice-static">{{die:3:p2:38}}</i></span>
+          <span class="l54c-bank">{{mico:bounty:24}} +3</span>
+        </div>
+        <span class="l54c-rowlabel">Destroyed dice become permanent points</span>
+      </div>
+      <p class="l54c-rule"><b>Every die you destroy banks +1.</b> The bounty stays in your score for the rest of the duel.</p>
+      <div class="l54c-pager">
+        <button class="l54c-nav" type="button">Back</button>
+        <div class="l54c-dots" aria-label="Slide 4 of 4"><i class="l54c-dot"></i><i class="l54c-dot"></i><i class="l54c-dot"></i><i class="l54c-dot" aria-current="step"></i></div>
+        <button class="l54c-nav l54c-next" type="button">Continue</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="l54c-section">Demotion · the journey always plays again</div>
+  <section class="l54c-screen l54c-demotion" aria-label="Demotion slide: demoted from Silver to Ivory">
+    <div class="l54c-modal">
+      <div class="l54c-topline"><span class="l54c-count">1 / 2</span><span class="l54c-swipe"><i></i> Swipe</span><b>New group</b></div>
+      <div class="l54c-kicker">Demotion</div>
+      <h2 class="l54c-title">DEMOTED TO <strong>IVORY</strong></h2>
+      <p class="l54c-sub">The fall is real. What you earned on the climb is not erased.</p>
+
+      <div class="l54c-ladder" aria-hidden="true">
+        <div class="l54c-horizon" style="--l54c-y:55px;--l54c-group:var(--g-silver)"><span class="l54c-hname">Silver</span><span class="l54c-floor">1,260</span></div>
+        <div class="l54c-horizon" style="--l54c-y:190px;--l54c-group:var(--g-ivory)"><span class="l54c-hname">Ivory</span><span class="l54c-floor">720</span></div>
+        <div class="l54c-ring"></div><span class="l54c-ringname">Ivory</span>
+        <span class="l54c-spark" style="--l54c-x:-34px"></span><span class="l54c-spark" style="--l54c-x:28px;animation-delay:.1s"></span>
+        <span class="l54c-spark" style="--l54c-x:7px;animation-delay:.18s"></span>
+        <span class="l54c-die l54c-demodie dice-static">{{die:5:p1:68}}</span>
+      </div>
+
+      <div class="l54c-crossing"><span class="l54c-groupchip" style="--l54c-group:var(--g-silver)">Silver</span><span class="l54c-arrow">↓</span><span class="l54c-groupchip" style="--l54c-group:var(--g-ivory)">Ivory</span></div>
+      <div class="l54c-pager">
+        <button class="l54c-nav" type="button" disabled>Back</button>
+        <div class="l54c-dots" aria-label="Slide 1 of 2"><i class="l54c-dot" aria-current="step"></i><i class="l54c-dot"></i></div>
+        <button class="l54c-nav l54c-next" type="button">Next</button>
+      </div>
+      <div class="l54c-noclose">No close · every group crossing gets its arrival beat, including repeats</div>
+    </div>
+  </section>
+
+  <section class="l54c-screen l54c-explain" aria-label="Demotion slide explaining what rests and what remains unlocked">
+    <div class="l54c-modal">
+      <div class="l54c-topline"><span class="l54c-count">2 / 2</span><span class="l54c-swipe"><i></i> Swipe</span><b>What changes</b></div>
+      <div class="l54c-explaintitle">Your climb still counts</div>
+      <p class="l54c-explainintro">Current group changes access to equipped runes. Historical peak keeps the variety you earned.</p>
+
+      <div class="l54c-change" style="--l54c-color:var(--g-silver)">
+        <span class="l54c-changeicon l54c-rest">{{sico:ward:26}}</span>
+        <span class="l54c-changecopy"><b>Equipped rune rests</b><span>WARD stays selected, but ordinary ranked is rune-free below SILVER. It returns automatically when you climb back.</span></span>
+      </div>
+
+      <div class="l54c-change" style="--l54c-color:var(--gold)">
+        <span class="l54c-changeicon" style="--l54c-color:var(--gold)">{{mico:classic:28}}</span>
+        <span class="l54c-changecopy"><b>Permanent unlocks stay</b><span>Your earned mode pool and Rune Ritual remain available after demotion.</span>
+          <span class="l54c-kept">
+            <span style="--l54c-mode:{{mhue:rowswitch}}">{{mico:rowswitch:13}} Row Switch</span>
+            <span style="--l54c-mode:{{mhue:rowmult}}">{{mico:rowmult:13}} Row Multiply</span>
+            <span style="--l54c-mode:{{mhue:bounty}}">{{mico:bounty:13}} Bounty</span>
+            <span><i class="l54c-ritual">{{picker:modes:-2}}</i> Rune Ritual</span>
+          </span>
+        </span>
+      </div>
+
+      <div class="l54c-pager">
+        <button class="l54c-nav" type="button">Back</button>
+        <div class="l54c-dots" aria-label="Slide 2 of 2"><i class="l54c-dot"></i><i class="l54c-dot" aria-current="step"></i></div>
+        <button class="l54c-nav l54c-next" type="button">Continue</button>
+      </div>
+    </div>
+  </section>
+
+  <div class="l54c-section">Reduced motion · completed state first</div>
+  <div class="l54c-reduced">
+    <div class="l54c-reducedhead"><b>No travel, no pulse</b><span>Direction remains in words and order</span></div>
+    <div class="l54c-staticrow">
+      <div class="l54c-static" style="--l54c-new:var(--g-bone)"><span class="l54c-staticring dice-static">{{die:5:p1:34}}</span><span class="l54c-staticcopy"><b>↑ Bone</b><span>Promoted · three modes unlocked</span></span></div>
+      <div class="l54c-static" style="--l54c-new:var(--g-ivory)"><span class="l54c-staticring dice-static">{{die:5:p1:34}}</span><span class="l54c-staticcopy"><b>↓ Ivory</b><span>Demoted · earned variety kept</span></span></div>
+    </div>
+  </div>
+</div></div>
+
+<div class="note"><b>DICE ASCENT:</b> the player does not receive a trophy that could belong to anyone; their actual avatar die crosses the ladder's own group-coloured horizons and comes to rest in the new group's continuous ring. Promotion rises with a light settle. Demotion reverses the route, lands with one restrained compression and rebound, then becomes completely still. Both loops spend most of their time on the finished portrait, and reduced motion begins there immediately.<br>
+<b>One deck contract:</b> the result stays dimly present under the full-screen modal. Horizontal swipe, dots, Back/Next and the final Continue are all visible; there is deliberately no close control. BONE's hero is slide one, then Row Switch, Row Multiply and Bounty each receive a separate rule slide using the app's registry icon and real dice. Repeat promotion or demotion always gets the group visual; a permanent unlock explanation is only new once.<br>
+<b>Demotion says exactly what changed:</b> SILVER → IVORY rests the selected equipped rune because ordinary ranked below SILVER is rune-free. The selection is preserved for the climb back. The historical-peak pool never moves downward, so Row Switch, Row Multiply, Bounty and Rune Ritual remain unlocked. The fall has weight without pretending earned play was confiscated.</div>

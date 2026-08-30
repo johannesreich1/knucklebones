@@ -1,0 +1,452 @@
+<!-- meta name="LG2 — Material forge" group="3m · Group transitions" subtitle="The old group is broken down as material and forged into the new: BONE assembles from STONE fragments, while a SILVER demotion cools and sheds quietly into IVORY — one mandatory swipe deck for the group and every rule it changes" width=430 height=3860 sizes="md" links="Match result, Ladder, Profile, Game modes, Runes" -->
+<style>
+  /* Card-local names are f54b*. Dice, mode/rune icons and group hues are the
+     app's own tokens. Base declarations are the FINISHED frame; keyframes
+     rewind briefly, so removing motion reveals that same finished state. */
+  .f54b-stage .scr{padding:14px;gap:14px;min-height:0}
+  .f54b-stage{overflow:hidden}
+  .f54b-title{display:flex;flex-direction:column;align-items:center;gap:5px;padding-top:3px}
+  .f54b-title h1{font-size:20px;letter-spacing:.24em}
+  .f54b-title span{font-size:8.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;
+    text-align:center;line-height:1.45}
+  .f54b-kicker{font-size:8px;font-weight:900;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--f54b-accent,var(--gold));text-align:center}
+
+  /* The settled result remains underneath. A strong film makes clear that no
+     result action is available until this no-close deck is finished. */
+  .f54b-scene{position:relative;width:100%;height:636px;overflow:hidden;border-radius:22px;
+    border:1px solid rgba(255,255,255,.1);background:#05060e;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+  .f54b-result{position:absolute;inset:0;padding:28px 24px;display:flex;flex-direction:column;
+    align-items:center;gap:15px;opacity:.3;filter:blur(2px) saturate(.65);transform:scale(.985)}
+  .f54b-result-title{font-size:34px;font-weight:900;letter-spacing:.2em;color:var(--p1);
+    text-shadow:0 0 25px rgba(var(--p1-rgb),.65)}
+  .f54b-result-title.f54b-loss{color:var(--orange);text-shadow:0 0 25px rgba(var(--orange-rgb),.5)}
+  .f54b-result-score{display:flex;align-items:baseline;gap:14px;font-size:36px;font-weight:900}
+  .f54b-result-score b:first-child{color:var(--p1)}
+  .f54b-result-score b:last-child{color:var(--p2)}
+  .f54b-result-score i{font-size:9px;letter-spacing:.2em;color:var(--dim);font-style:normal}
+  .f54b-result-row{width:100%;display:grid;grid-template-columns:auto 1fr auto;align-items:center;
+    gap:10px;padding:11px;border-radius:14px;background:rgba(255,255,255,.04);
+    border:1px solid rgba(255,255,255,.09)}
+  .f54b-result-row span{font-size:10px;font-weight:900;letter-spacing:.08em}
+  .f54b-result-row b{font-size:13px;color:var(--gold)}
+  .f54b-film{position:absolute;inset:0;background:rgba(3,4,12,.78);backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px)}
+
+  /* One mandatory shell: progress at top, actions below, no X. Side ears are
+     neighbouring slides peeking from the horizontal swipe rail. */
+  .f54b-modal{--f54b-accent:var(--g-bone);position:absolute;inset:18px 10px;z-index:2;
+    display:flex;flex-direction:column;align-items:center;padding:14px 16px 15px;border-radius:22px;
+    border:1px solid color-mix(in srgb,var(--f54b-accent) 38%,transparent);
+    background:linear-gradient(155deg,color-mix(in srgb,var(--f54b-accent) 8%,#090b18),#070812 42%,#05060e);
+    box-shadow:0 24px 58px rgba(0,0,0,.72),inset 0 1px 0 rgba(255,255,255,.1),
+      0 0 34px color-mix(in srgb,var(--f54b-accent) 12%,transparent)}
+  .f54b-modal::before,.f54b-modal::after,.f54b-slide::before,.f54b-slide::after{
+    content:"";position:absolute;top:20%;bottom:20%;width:5px;border-radius:5px;
+    background:color-mix(in srgb,var(--f54b-accent) 35%,transparent);opacity:.45}
+  .f54b-modal::before,.f54b-slide::before{left:-8px}
+  .f54b-modal::after,.f54b-slide::after{right:-8px}
+  .f54b-step{align-self:stretch;display:flex;align-items:center;justify-content:space-between;
+    min-height:18px;font-size:7.5px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--dim)}
+  .f54b-step b{color:var(--f54b-accent);font-size:8px}
+  .f54b-step span:last-child{color:#a7b3cd}
+  .f54b-hero-copy{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:2px}
+  .f54b-hero-copy h2{font-size:26px;line-height:1.05;letter-spacing:.16em;color:var(--f54b-accent);
+    background:none;-webkit-text-fill-color:currentColor;text-shadow:0 0 22px color-mix(in srgb,var(--f54b-accent) 55%,transparent)}
+  .f54b-hero-copy p{margin:0;max-width:270px;text-align:center;font-size:10px;line-height:1.5;color:#bac7df}
+
+  /* PROMOTION — twelve fragments begin as a tight STONE collar, burst past
+     the mould, change material in the heat, then return as BONE plates. The
+     centre is a real player die: the group changes around the identity rather
+     than replacing it. 52–100% is the held, readable finished state. */
+  .f54b-forge{position:relative;width:204px;height:204px;display:grid;place-items:center;
+    margin:8px 0 4px;isolation:isolate}
+  .f54b-forge::before{content:"";position:absolute;inset:3px;border-radius:50%;z-index:-3;
+    background:radial-gradient(circle,rgba(var(--gold-rgb),.2),transparent 58%);
+    filter:blur(12px);opacity:.28;transform:scale(.92);animation:f54b-heat 6.4s ease-in-out infinite}
+  .f54b-mould{position:absolute;inset:17px;border-radius:50%;border:1px solid rgba(255,255,255,.08);
+    box-shadow:inset 0 0 24px rgba(0,0,0,.8),0 0 0 6px rgba(255,255,255,.018)}
+  .f54b-old-core{position:absolute;inset:39px;border-radius:47% 53% 45% 55%/53% 45% 55% 47%;
+    background:linear-gradient(145deg,#c2c7d1 0%,var(--g-stone) 38%,#586070 100%);
+    border:2px solid rgba(255,255,255,.18);box-shadow:inset 7px 8px 13px rgba(255,255,255,.12),
+      inset -9px -11px 16px rgba(0,0,0,.35),0 0 25px color-mix(in srgb,var(--g-stone) 45%,transparent);
+    opacity:0;animation:f54b-old-core 6.4s ease-in-out infinite}
+  .f54b-old-core::before,.f54b-old-core::after{content:"";position:absolute;background:rgba(28,32,42,.6);
+    height:1px;transform-origin:left center}
+  .f54b-old-core::before{width:54px;left:25px;top:36px;transform:rotate(29deg)}
+  .f54b-old-core::after{width:42px;left:56px;top:66px;transform:rotate(-54deg)}
+  .f54b-new-core{position:absolute;inset:39px;border-radius:50%;display:grid;place-items:center;
+    background:radial-gradient(circle at 38% 30%,#fff9e9 0%,var(--g-bone) 36%,#8f7d5f 100%);
+    border:2px solid color-mix(in srgb,var(--g-bone) 80%,white);
+    box-shadow:inset 0 0 0 5px rgba(56,44,25,.28),inset 8px 8px 17px rgba(255,255,255,.2),
+      inset -10px -12px 18px rgba(43,30,14,.38),0 0 31px color-mix(in srgb,var(--g-bone) 55%,transparent);
+    opacity:1;transform:scale(1);animation:f54b-new-core 6.4s cubic-bezier(.2,1.1,.35,1) infinite}
+  .f54b-new-core::before{content:"";position:absolute;inset:11px;border-radius:50%;
+    border:1px solid rgba(74,57,28,.38);box-shadow:0 0 0 2px rgba(255,255,255,.07)}
+  .f54b-avatar{position:relative;z-index:4;line-height:0;filter:drop-shadow(0 7px 8px rgba(0,0,0,.5));
+    opacity:1;transform:scale(1);animation:f54b-avatar-in 6.4s cubic-bezier(.2,1.3,.4,1) infinite}
+  .f54b-fragment{--f54b-a:0deg;--f54b-burst:0px;position:absolute;left:calc(50% - 10px);
+    top:calc(50% - 17px);width:20px;height:34px;transform-origin:10px 17px;z-index:2;
+    clip-path:polygon(18% 0,82% 6%,100% 72%,65% 100%,13% 87%,0 28%);
+    background:linear-gradient(90deg,#f8ecd2,var(--g-bone) 58%,#8d7957);
+    border-radius:7px;box-shadow:inset 1px 0 rgba(255,255,255,.35),0 0 10px rgba(216,197,160,.38);
+    transform:rotate(var(--f54b-a)) translateY(-79px) rotate(3deg) scale(1);
+    animation:f54b-fragment-build 6.4s cubic-bezier(.22,.82,.3,1) infinite}
+  .f54b-fragment:nth-child(2n){clip-path:polygon(7% 18%,72% 0,100% 39%,89% 100%,22% 91%,0 55%)}
+  .f54b-spark{--f54b-x:0px;--f54b-y:-80px;position:absolute;left:50%;top:50%;z-index:5;
+    width:3px;height:3px;border-radius:50%;background:var(--gold-hi);box-shadow:0 0 8px var(--gold);
+    opacity:0;animation:f54b-spark-flight 6.4s ease-out infinite}
+  .f54b-old-word{position:absolute;bottom:4px;font-size:8px;font-weight:900;letter-spacing:.28em;
+    color:var(--g-stone);opacity:0;animation:f54b-old-word 6.4s ease-in-out infinite}
+  .f54b-new-word{position:absolute;bottom:4px;font-size:9px;font-weight:900;letter-spacing:.3em;
+    color:var(--g-bone);text-shadow:0 0 13px rgba(216,197,160,.65);opacity:1;
+    animation:f54b-new-word 6.4s ease-in-out infinite}
+  @keyframes f54b-heat{0%,16%{opacity:.16;transform:scale(.74)}30%{opacity:1;transform:scale(1.08)}
+    50%{opacity:.55;transform:scale(1)}52%,100%{opacity:.28;transform:scale(.92)}}
+  @keyframes f54b-old-core{0%,17%{opacity:1;transform:scale(1)}27%{opacity:.75;transform:scale(.94)}
+    40%,100%{opacity:0;transform:scale(.58) rotate(-12deg)}}
+  @keyframes f54b-new-core{0%,32%{opacity:0;transform:scale(.48) rotate(20deg)}
+    47%{opacity:1;transform:scale(1.07) rotate(-2deg)}52%,100%{opacity:1;transform:scale(1) rotate(0)}}
+  @keyframes f54b-avatar-in{0%,37%{opacity:0;transform:scale(.68)}49%{opacity:1;transform:scale(1.08)}
+    54%,100%{opacity:1;transform:scale(1)}}
+  @keyframes f54b-fragment-build{0%,17%{background:linear-gradient(90deg,#c2c7d1,var(--g-stone),#626a78);
+      transform:rotate(var(--f54b-a)) translateY(-56px) rotate(-8deg) scale(1.18);opacity:.9}
+    30%{background:linear-gradient(90deg,#fff0c9,var(--gold),#b65f29);
+      transform:rotate(var(--f54b-a)) translateY(calc(-91px - var(--f54b-burst))) rotate(21deg) scale(.74);opacity:1}
+    46%{background:linear-gradient(90deg,#f8ecd2,var(--g-bone) 58%,#8d7957);
+      transform:rotate(var(--f54b-a)) translateY(-76px) rotate(-3deg) scale(1.06);opacity:1}
+    52%,100%{background:linear-gradient(90deg,#f8ecd2,var(--g-bone) 58%,#8d7957);
+      transform:rotate(var(--f54b-a)) translateY(-79px) rotate(3deg) scale(1);opacity:1}}
+  @keyframes f54b-spark-flight{0%,22%{opacity:0;transform:translate(0,0) scale(.4)}
+    28%{opacity:1;transform:translate(calc(var(--f54b-x)*.35),calc(var(--f54b-y)*.35)) scale(1)}
+    43%,100%{opacity:0;transform:translate(var(--f54b-x),var(--f54b-y)) scale(.25)}}
+  @keyframes f54b-old-word{0%,18%{opacity:1;transform:translateY(0)}32%,100%{opacity:0;transform:translateY(5px)}}
+  @keyframes f54b-new-word{0%,38%{opacity:0;transform:translateY(-4px)}52%,100%{opacity:1;transform:translateY(0)}}
+
+  .f54b-swipe{margin-top:auto;font-size:7px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;
+    color:#92a0bd;text-align:center}
+  .f54b-dots{display:flex;align-items:center;justify-content:center;gap:6px;height:18px}
+  .f54b-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.18);box-shadow:none}
+  .f54b-dot.f54b-on{width:18px;border-radius:5px;background:var(--f54b-accent);
+    box-shadow:0 0 10px color-mix(in srgb,var(--f54b-accent) 60%,transparent)}
+  .f54b-controls{width:100%;display:grid;grid-template-columns:1fr 1.35fr;gap:8px}
+  .f54b-controls .btn{width:100%;min-width:0;min-height:44px;margin:0;padding:8px 12px}
+  .f54b-controls .btn:disabled{opacity:.28}
+
+  /* Slides 2–4 keep one deck anatomy and give each registry entry a different
+     rule proof. {{libentry}} owns icon, name, blurb and detail; these scoped
+     rules only give that exact content a promotion-slide hierarchy. */
+  .f54b-deck-label{margin:1px 4px 0;display:flex;align-items:center;gap:8px;font-size:8px;
+    letter-spacing:.18em;text-transform:uppercase;color:var(--dim);text-align:center}
+  .f54b-deck-label::before,.f54b-deck-label::after{content:"";height:1px;flex:1;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent)}
+  .f54b-slide{--f54b-accent:var(--gold);position:relative;display:flex;flex-direction:column;
+    min-height:360px;padding:14px 16px;border-radius:20px;border:1px solid color-mix(in srgb,var(--f54b-accent) 38%,transparent);
+    background:linear-gradient(150deg,color-mix(in srgb,var(--f54b-accent) 8%,#0a0b18),#070812 48%,#05060e);
+    box-shadow:0 16px 38px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08)}
+  .f54b-feature .mchead{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:7px;
+    color:var(--f54b-accent)}
+  .f54b-feature .mchead svg{width:48px;height:48px;filter:drop-shadow(0 0 12px currentColor)}
+  .f54b-feature .mchead svg .f{fill:currentColor;stroke:none}
+  .f54b-feature .mcname{font-size:17px;font-weight:900;letter-spacing:.14em}
+  .f54b-feature .mcblurb{font-size:10px;font-weight:800;line-height:1.45;text-align:center;color:#e3ebfb;
+    margin-top:5px}
+  .f54b-feature .mcdetail{font-size:8.5px;line-height:1.48;text-align:center;color:#9eabc5;
+    margin:4px auto 0;max-width:300px}
+  .f54b-proof{height:72px;margin:9px 0 7px;display:flex;align-items:center;justify-content:center;
+    border-radius:14px;border:1px solid color-mix(in srgb,var(--f54b-accent) 25%,transparent);
+    background:color-mix(in srgb,var(--f54b-accent) 5%,rgba(255,255,255,.01));overflow:hidden}
+  .f54b-row-proof{gap:7px}
+  .f54b-row-dice{display:flex;gap:4px;padding:6px 8px;border-radius:10px;
+    border-top:1px solid color-mix(in srgb,var(--f54b-accent) 65%,transparent);
+    border-bottom:1px solid color-mix(in srgb,var(--f54b-accent) 65%,transparent)}
+  .f54b-row-score{display:flex;flex-direction:column;gap:2px;color:var(--f54b-accent)}
+  .f54b-row-score b{font-size:18px;line-height:1}
+  .f54b-row-score span{font-size:7px;letter-spacing:.17em;text-transform:uppercase;color:#aebad2}
+  .f54b-col-off{writing-mode:vertical-rl;transform:rotate(180deg);font-size:6.5px;letter-spacing:.16em;
+    color:#6e7892;text-transform:uppercase;padding:4px;border-left:1px dashed rgba(255,255,255,.18)}
+  .f54b-mult-proof{gap:8px}
+  .f54b-mult-dice{display:flex;gap:4px;line-height:0}
+  .f54b-equation{display:flex;align-items:center;gap:5px;font-size:8px;font-weight:900;color:#aebad2}
+  .f54b-equation span{padding:4px 6px;border-radius:7px;background:rgba(255,255,255,.04)}
+  .f54b-equation b{font-size:18px;color:var(--f54b-accent)}
+  .f54b-bounty-proof{gap:10px}
+  .f54b-fallen{display:flex;gap:4px;opacity:.42;filter:saturate(.5);transform:rotate(-7deg)}
+  .f54b-bank{display:flex;align-items:center;gap:6px;padding:8px 11px;border-radius:99px;color:var(--f54b-accent);
+    border:1px solid color-mix(in srgb,var(--f54b-accent) 55%,transparent);
+    background:color-mix(in srgb,var(--f54b-accent) 10%,transparent);
+    box-shadow:0 0 18px color-mix(in srgb,var(--f54b-accent) 18%,transparent)}
+  .f54b-bank svg{filter:drop-shadow(0 0 7px currentColor)}
+  .f54b-bank svg .f{fill:currentColor;stroke:none}
+  .f54b-bank b{font-size:15px;letter-spacing:.08em}
+  .f54b-slide .f54b-swipe{margin-top:auto}
+
+  /* DEMOTION — the SILVER skin is a thin coat, not the player's history. It
+     cools, crazes and sheds in six short flakes; the IVORY core underneath
+     does not fall. 48–100% rests completely still. */
+  .f54b-demote-modal{--f54b-accent:var(--g-ivory)}
+  .f54b-cool{position:relative;width:188px;height:188px;display:grid;place-items:center;margin:12px 0 5px}
+  .f54b-cool::before{content:"";position:absolute;inset:9px;border-radius:50%;
+    background:radial-gradient(circle,rgba(204,217,238,.28),transparent 62%);filter:blur(13px);
+    opacity:.24;transform:scale(.92);animation:f54b-cool-glow 6.4s ease-in-out infinite}
+  .f54b-ivory-core{position:absolute;inset:34px;border-radius:50%;display:grid;place-items:center;
+    background:radial-gradient(circle at 36% 28%,#fff 0%,var(--g-ivory) 43%,#b9ad95 100%);
+    border:2px solid rgba(255,255,255,.72);box-shadow:inset 0 0 0 5px rgba(92,78,52,.16),
+      inset -8px -10px 18px rgba(80,67,43,.2),0 0 24px rgba(241,233,215,.35)}
+  .f54b-silver-coat{position:absolute;inset:31px;border-radius:50%;opacity:0;
+    background:linear-gradient(145deg,#fbfdff 0%,var(--g-silver) 40%,#7d899d 100%);
+    border:2px solid #eef5ff;box-shadow:inset 8px 8px 14px rgba(255,255,255,.3),
+      inset -10px -12px 18px rgba(45,54,70,.3),0 0 29px rgba(204,217,238,.55);
+    animation:f54b-silver-shed 6.4s ease-in-out infinite}
+  .f54b-silver-coat::before,.f54b-silver-coat::after{content:"";position:absolute;height:1px;
+    background:rgba(72,81,98,.62);transform-origin:left center}
+  .f54b-silver-coat::before{width:54px;left:21px;top:33px;transform:rotate(41deg)}
+  .f54b-silver-coat::after{width:47px;left:53px;top:72px;transform:rotate(-65deg)}
+  .f54b-cool-avatar{position:relative;z-index:3;line-height:0;
+    filter:drop-shadow(0 6px 7px rgba(0,0,0,.42));animation:f54b-cool-avatar 6.4s ease-in-out infinite}
+  .f54b-flake{--f54b-fx:0px;--f54b-fy:24px;position:absolute;left:calc(50% - 8px);top:calc(50% - 11px);
+    width:16px;height:22px;clip-path:polygon(16% 0,100% 20%,78% 100%,0 73%);border-radius:4px;
+    background:linear-gradient(135deg,#fff,var(--g-silver),#768299);box-shadow:0 0 8px rgba(204,217,238,.45);
+    opacity:0;animation:f54b-flake-fall 6.4s ease-in infinite}
+  .f54b-cool-old{position:absolute;bottom:3px;color:var(--g-silver);font-size:8px;font-weight:900;
+    letter-spacing:.28em;opacity:0;animation:f54b-cool-old 6.4s ease-in-out infinite}
+  .f54b-cool-new{position:absolute;bottom:3px;color:var(--g-ivory);font-size:9px;font-weight:900;
+    letter-spacing:.28em;text-shadow:0 0 12px rgba(241,233,215,.55);animation:f54b-cool-new 6.4s ease-in-out infinite}
+  @keyframes f54b-cool-glow{0%,18%{opacity:1;transform:scale(1.06)}42%{opacity:.38;transform:scale(.96)}
+    48%,100%{opacity:.24;transform:scale(.92)}}
+  @keyframes f54b-silver-shed{0%,19%{opacity:1;transform:scale(1)}34%{opacity:.55;transform:scale(.985)}
+    48%,100%{opacity:0;transform:scale(.96)}}
+  @keyframes f54b-cool-avatar{0%,31%{filter:drop-shadow(0 0 12px rgba(204,217,238,.65))}
+    48%,100%{filter:drop-shadow(0 6px 7px rgba(0,0,0,.42))}}
+  @keyframes f54b-flake-fall{0%,21%{opacity:0;transform:translate(0,0) rotate(0)}
+    27%{opacity:.9;transform:translate(calc(var(--f54b-fx)*.25),calc(var(--f54b-fy)*.15)) rotate(4deg)}
+    46%,100%{opacity:0;transform:translate(var(--f54b-fx),var(--f54b-fy)) rotate(24deg)}}
+  @keyframes f54b-cool-old{0%,20%{opacity:1;transform:translateY(0)}40%,100%{opacity:0;transform:translateY(4px)}}
+  @keyframes f54b-cool-new{0%,34%{opacity:0;transform:translateY(-3px)}48%,100%{opacity:1;transform:translateY(0)}}
+
+  .f54b-state-slide{min-height:330px}
+  .f54b-state-hero{display:flex;flex-direction:column;align-items:center;gap:7px;margin:13px 0 8px;text-align:center}
+  .f54b-rune-seat{position:relative;width:84px;height:84px;border-radius:50%;display:grid;place-items:center;
+    color:{{shue:ward}};border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.025);
+    filter:saturate(.2);opacity:.58;box-shadow:inset 0 0 0 8px rgba(255,255,255,.02)}
+  .f54b-rune-seat::after{content:"RESTS";position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);
+    padding:3px 8px;border-radius:99px;background:#0a0b14;border:1px solid var(--g-silver);
+    color:var(--g-silver);font-size:6.5px;font-weight:900;letter-spacing:.16em}
+  .f54b-state-hero h3{margin:6px 0 0;font-size:16px;letter-spacing:.14em;color:var(--f54b-accent)}
+  .f54b-state-hero p{margin:0;max-width:286px;color:#aebad1;font-size:9.5px;line-height:1.55}
+  .f54b-threshold{display:flex;align-items:center;gap:8px;width:100%;margin:2px 0 8px;
+    font-size:7px;letter-spacing:.17em;text-transform:uppercase;color:var(--g-silver)}
+  .f54b-threshold::before,.f54b-threshold::after{content:"";height:1px;flex:1;
+    background:linear-gradient(90deg,transparent,var(--g-silver),transparent);opacity:.6}
+  .f54b-kept{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;width:100%;margin:12px 0 13px}
+  .f54b-kept-item{display:flex;min-width:0;flex-direction:column;align-items:center;gap:5px;padding:9px 2px;
+    border-radius:11px;color:var(--f54b-hue);border:1px solid color-mix(in srgb,var(--f54b-hue) 34%,transparent);
+    background:color-mix(in srgb,var(--f54b-hue) 7%,transparent)}
+  .f54b-kept-item svg{filter:drop-shadow(0 0 7px currentColor)}
+  .f54b-kept-item svg .f{fill:currentColor;stroke:none}
+  .f54b-kept-item span{font-size:6px;font-weight:900;letter-spacing:.06em;color:#c6d0e4;text-align:center}
+  .f54b-ritual-proof{display:flex;width:22px;height:22px;align-items:center;justify-content:center}
+  .f54b-ritual-proof button{display:none}
+  .f54b-ritual-proof button[data-v="-2"]{display:flex;width:22px;height:22px;align-items:center;justify-content:center;
+    padding:0;border:0;background:none;color:var(--f54b-hue)}
+  .f54b-kept-check{font-size:12px;color:var(--green);text-shadow:0 0 9px rgba(var(--green-rgb),.65)}
+  .f54b-static-proof{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px;border-radius:15px;
+    border:1px dashed rgba(255,255,255,.16);background:rgba(255,255,255,.018)}
+  .f54b-static-item{display:grid;grid-template-columns:38px 1fr;align-items:center;gap:8px;color:#afbad0}
+  .f54b-static-medal{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;
+    color:var(--f54b-material);border:3px solid var(--f54b-material);box-shadow:inset 0 0 0 3px rgba(0,0,0,.25),
+      0 0 10px color-mix(in srgb,var(--f54b-material) 38%,transparent)}
+  .f54b-static-item b{display:block;font-size:8px;letter-spacing:.12em;color:var(--f54b-material)}
+  .f54b-static-item span{font-size:7px;line-height:1.35}
+
+  /* Static proof and operating-system reduced motion share the same rule.
+     Because every base style above is the post-transition frame, this is a
+     freeze, not a jump to a halfway keyframe. */
+  .f54b-still *,.f54b-still *::before,.f54b-still *::after{animation:none!important;transition:none!important}
+  #kbroot.reduce-motion .f54b-stage *,#kbroot.reduce-motion .f54b-stage *::before,
+  #kbroot.reduce-motion .f54b-stage *::after{animation:none!important;transition:none!important}
+  @media (prefers-reduced-motion:reduce){
+    .f54b-stage *,.f54b-stage *::before,.f54b-stage *::after{animation:none!important;transition:none!important}
+  }
+</style>
+
+<div class="stage f54b-stage"><div class="bgfx"></div><div class="scr">
+  <div class="cap2">Group transition study · direction 02</div>
+  <div class="f54b-title">
+    <h1>MATERIAL FORGE</h1>
+    <span>Promotion · STONE → BONE · four mandatory slides</span>
+  </div>
+
+  <div class="f54b-scene">
+    <div class="f54b-result dice-static" aria-hidden="true">
+      <div class="f54b-result-title">VICTORY</div>
+      <div class="f54b-result-score"><b>41</b><i>VS</i><b>38</b></div>
+      <div class="f54b-result-row">{{die:5:p1:28}}<span>FrostLynx303</span><b>315 · +67</b></div>
+      <div class="f54b-result-row">{{die:3:p2:28}}<span>EmberCrow896</span><b>286</b></div>
+      <button class="btn primary">Next duel</button>
+    </div>
+    <div class="f54b-film"></div>
+    <section class="f54b-modal" aria-label="Promotion, slide one of four">
+      <div class="f54b-step"><b>NEW GROUP</b><span>1 / 4</span></div>
+
+      <div class="f54b-forge dice-static" aria-hidden="true">
+        <i class="f54b-mould"></i>
+        <i class="f54b-old-core"></i>
+        <i class="f54b-new-core"><span class="f54b-avatar">{{die:5:p1:66}}</span></i>
+        <span class="f54b-fragment" style="--f54b-a:0deg;--f54b-burst:8px"></span>
+        <span class="f54b-fragment" style="--f54b-a:30deg;--f54b-burst:3px"></span>
+        <span class="f54b-fragment" style="--f54b-a:60deg;--f54b-burst:11px"></span>
+        <span class="f54b-fragment" style="--f54b-a:90deg;--f54b-burst:5px"></span>
+        <span class="f54b-fragment" style="--f54b-a:120deg;--f54b-burst:9px"></span>
+        <span class="f54b-fragment" style="--f54b-a:150deg;--f54b-burst:2px"></span>
+        <span class="f54b-fragment" style="--f54b-a:180deg;--f54b-burst:10px"></span>
+        <span class="f54b-fragment" style="--f54b-a:210deg;--f54b-burst:4px"></span>
+        <span class="f54b-fragment" style="--f54b-a:240deg;--f54b-burst:12px"></span>
+        <span class="f54b-fragment" style="--f54b-a:270deg;--f54b-burst:6px"></span>
+        <span class="f54b-fragment" style="--f54b-a:300deg;--f54b-burst:9px"></span>
+        <span class="f54b-fragment" style="--f54b-a:330deg;--f54b-burst:3px"></span>
+        <i class="f54b-spark" style="--f54b-x:-72px;--f54b-y:-58px"></i>
+        <i class="f54b-spark" style="--f54b-x:78px;--f54b-y:-42px"></i>
+        <i class="f54b-spark" style="--f54b-x:-88px;--f54b-y:18px"></i>
+        <i class="f54b-spark" style="--f54b-x:82px;--f54b-y:35px"></i>
+        <i class="f54b-spark" style="--f54b-x:-35px;--f54b-y:-92px"></i>
+        <i class="f54b-spark" style="--f54b-x:29px;--f54b-y:-96px"></i>
+        <span class="f54b-old-word">STONE</span><span class="f54b-new-word">BONE</span>
+      </div>
+
+      <div class="f54b-hero-copy">
+        <div class="f54b-kicker">PROMOTED TO</div>
+        <h2>BONE</h2>
+        <p>Your new group is forged. Three new modes now join your permanent ranked and solo pools.</p>
+      </div>
+      <div class="f54b-swipe">Swipe to meet them · no close until the deck is read</div>
+      <div class="f54b-dots" aria-label="Slide one of four"><i class="f54b-dot f54b-on"></i><i class="f54b-dot"></i><i class="f54b-dot"></i><i class="f54b-dot"></i></div>
+      <div class="f54b-controls"><button class="btn small" disabled>Back</button><button class="btn primary">Next</button></div>
+    </section>
+  </div>
+
+  <div class="f54b-deck-label">Slides 2–4 · one new rule at a time</div>
+
+  <section class="f54b-slide f54b-feature" style="--f54b-accent:{{mhue:rowswitch}}" aria-label="Promotion, slide two of four">
+    <div class="f54b-step"><b>NEW MODE</b><span>2 / 4</span></div>
+    {{libentry:modes:rowswitch}}
+    <div class="f54b-proof f54b-row-proof dice-static" aria-hidden="true">
+      <span class="f54b-col-off">columns off</span>
+      <span class="f54b-row-dice">{{die:2:p1:31}}{{die:5:p1:31}}{{die:4:p1:31}}</span>
+      <span class="f54b-row-score"><span>row score</span><b>11</b></span>
+    </div>
+    <div class="f54b-swipe">Swipe or use the buttons</div>
+    <div class="f54b-dots"><i class="f54b-dot"></i><i class="f54b-dot f54b-on"></i><i class="f54b-dot"></i><i class="f54b-dot"></i></div>
+    <div class="f54b-controls"><button class="btn small">Back</button><button class="btn primary">Next</button></div>
+  </section>
+
+  <section class="f54b-slide f54b-feature" style="--f54b-accent:{{mhue:rowmult}}" aria-label="Promotion, slide three of four">
+    <div class="f54b-step"><b>NEW MODE</b><span>3 / 4</span></div>
+    {{libentry:modes:rowmult}}
+    <div class="f54b-proof f54b-mult-proof dice-static" aria-hidden="true">
+      <span class="f54b-mult-dice">{{die:4:p1 m2:36}}{{die:4:p1 m2:36}}</span>
+      <span class="f54b-equation"><span>16 column</span><span>+ 8 row</span><b>24</b></span>
+    </div>
+    <div class="f54b-swipe">Swipe or use the buttons</div>
+    <div class="f54b-dots"><i class="f54b-dot"></i><i class="f54b-dot"></i><i class="f54b-dot f54b-on"></i><i class="f54b-dot"></i></div>
+    <div class="f54b-controls"><button class="btn small">Back</button><button class="btn primary">Next</button></div>
+  </section>
+
+  <section class="f54b-slide f54b-feature" style="--f54b-accent:{{mhue:bounty}}" aria-label="Promotion, slide four of four">
+    <div class="f54b-step"><b>NEW MODE</b><span>4 / 4</span></div>
+    {{libentry:modes:bounty}}
+    <div class="f54b-proof f54b-bounty-proof dice-static" aria-hidden="true">
+      <span class="f54b-fallen">{{die:3:p2:34}}{{die:3:p2:34}}</span>
+      <span class="f54b-bank">{{mico:bounty:19}}<b>+2 BANKED</b></span>
+    </div>
+    <div class="f54b-swipe">Last slide · Continue returns to the result</div>
+    <div class="f54b-dots"><i class="f54b-dot"></i><i class="f54b-dot"></i><i class="f54b-dot"></i><i class="f54b-dot f54b-on"></i></div>
+    <div class="f54b-controls"><button class="btn small">Back</button><button class="btn primary">Continue</button></div>
+  </section>
+</div></div>
+
+<div class="stage f54b-stage"><div class="bgfx"></div><div class="scr">
+  <div class="f54b-title">
+    <h1>MATERIAL FORGE</h1>
+    <span>Demotion · SILVER → IVORY · two mandatory slides</span>
+  </div>
+
+  <div class="f54b-scene">
+    <div class="f54b-result dice-static" aria-hidden="true">
+      <div class="f54b-result-title f54b-loss">DEFEAT</div>
+      <div class="f54b-result-score"><b>30</b><i>VS</i><b>42</b></div>
+      <div class="f54b-result-row">{{die:5:p1:28}}<span>FrostLynx303</span><b>1,244 · −72</b></div>
+      <div class="f54b-result-row">{{die:3:p2:28}}<span>EmberCrow896</span><b>1,338</b></div>
+      <button class="btn primary">Next duel</button>
+    </div>
+    <div class="f54b-film"></div>
+    <section class="f54b-modal f54b-demote-modal" aria-label="Demotion, slide one of two">
+      <div class="f54b-step"><b>GROUP CHANGED</b><span>1 / 2</span></div>
+
+      <div class="f54b-cool dice-static" aria-hidden="true">
+        <i class="f54b-ivory-core"><span class="f54b-cool-avatar">{{die:5:p1:62}}</span></i>
+        <i class="f54b-silver-coat"></i>
+        <span class="f54b-flake" style="--f54b-fx:-52px;--f54b-fy:40px"></span>
+        <span class="f54b-flake" style="--f54b-fx:-27px;--f54b-fy:58px"></span>
+        <span class="f54b-flake" style="--f54b-fx:3px;--f54b-fy:63px"></span>
+        <span class="f54b-flake" style="--f54b-fx:31px;--f54b-fy:54px"></span>
+        <span class="f54b-flake" style="--f54b-fx:52px;--f54b-fy:38px"></span>
+        <span class="f54b-flake" style="--f54b-fx:17px;--f54b-fy:72px"></span>
+        <span class="f54b-cool-old">SILVER</span><span class="f54b-cool-new">IVORY</span>
+      </div>
+
+      <div class="f54b-hero-copy">
+        <div class="f54b-kicker">DEMOTED TO</div>
+        <h2>IVORY</h2>
+        <p>Your group moved down. The silver skin cools away; everything you permanently earned stays yours.</p>
+      </div>
+      <div class="f54b-swipe">Swipe to see what changes · no early close</div>
+      <div class="f54b-dots"><i class="f54b-dot f54b-on"></i><i class="f54b-dot"></i></div>
+      <div class="f54b-controls"><button class="btn small" disabled>Back</button><button class="btn primary">Next</button></div>
+    </section>
+  </div>
+
+  <div class="f54b-deck-label">Slide 2 · what rests versus what stays</div>
+
+  <section class="f54b-slide f54b-state-slide" style="--f54b-accent:var(--g-ivory)" aria-label="Demotion, slide two of two">
+    <div class="f54b-step"><b>WHAT CHANGES</b><span>2 / 2</span></div>
+    <div class="f54b-state-hero">
+      <div class="f54b-rune-seat">{{sico:ward:45}}</div>
+      <h3>YOUR EQUIPPED RUNE RESTS</h3>
+      <p>WARD stays equipped. Below SILVER it waits in your profile, then returns to ranked when you climb back.</p>
+    </div>
+    <div class="f54b-threshold">active from SILVER</div>
+    <div class="f54b-state-hero">
+      <div class="f54b-kept-check">✓</div>
+      <h3>EVERY UNLOCK STAYS</h3>
+      <p>Your peak already unlocked these outcomes. Demotion changes your group, never the mode pool you earned.</p>
+    </div>
+    <div class="f54b-kept" aria-label="Permanent unlocks retained">
+      <div class="f54b-kept-item" style="--f54b-hue:{{mhue:rowswitch}}">{{mico:rowswitch:22}}<span>ROW<br>SWITCH</span></div>
+      <div class="f54b-kept-item" style="--f54b-hue:{{mhue:rowmult}}">{{mico:rowmult:22}}<span>ROW<br>MULTIPLY</span></div>
+      <div class="f54b-kept-item" style="--f54b-hue:{{mhue:bounty}}">{{mico:bounty:22}}<span>BOUNTY</span></div>
+      <div class="f54b-kept-item" style="--f54b-hue:var(--violet)"><i class="f54b-ritual-proof">{{picker:modes:-2}}</i><span>RUNE<br>RITUAL</span></div>
+    </div>
+    <div class="f54b-swipe">Last slide · Continue returns to the result</div>
+    <div class="f54b-dots"><i class="f54b-dot"></i><i class="f54b-dot f54b-on"></i></div>
+    <div class="f54b-controls"><button class="btn small">Back</button><button class="btn primary">Continue</button></div>
+  </section>
+
+  <div class="f54b-static-proof f54b-still" aria-label="Reduced motion final states">
+    <div class="f54b-static-item" style="--f54b-material:var(--g-bone)">
+      <i class="f54b-static-medal">{{mico:rowswitch:17}}</i>
+      <span><b>BONE FORGED</b>Reduced motion opens on the complete new material.</span>
+    </div>
+    <div class="f54b-static-item" style="--f54b-material:var(--g-ivory)">
+      <i class="f54b-static-medal">{{sico:ward:17}}</i>
+      <span><b>IVORY SETTLED</b>No sparks, shatter, shed, or halfway frame.</span>
+    </div>
+  </div>
+</div></div>
+
+<div class="note"><b>The direction:</b> <b>a group is a material, not a badge swap.</b> Promotion spends one decisive forge beat: STONE fractures, heats and returns as twelve BONE plates around the same player die. Demotion deliberately refuses that triumphal violence — the thin SILVER coat cools and sheds, leaving the IVORY core and the player's identity untouched.<br>
+<b>The deck is mandatory but finite.</b> There is no close control on any frame. A swipe rail, numbered dots, Back/Next and the final Continue expose exactly one way through; the first frame always names the new group, then each promotion unlock gets one slide while demotion combines reversible and permanent consequences in one comparison. The result remains underneath and Continue returns to it.<br>
+<b>What repeats and what does not:</b> the material crossing plays on every promotion and every demotion. BONE's three mode explanations are first-unlock slides backed by the registry's own content. The SILVER boundary slide returns whenever equipped-rune access is lost or regained, while its permanent-unlocks section makes the non-loss explicit.<br>
+<b>Motion contract:</b> both 6.4-second studies complete by 52% and rest in the finished state for the remainder. Under <code>prefers-reduced-motion</code>, animations disappear and those same base styles render BONE fully assembled or IVORY fully settled — no alternate graphic, flash, or intermediate material.</div>

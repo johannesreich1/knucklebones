@@ -1,0 +1,399 @@
+<!-- meta name="LG1 — The living ladder ring" group="3m · Group transitions" subtitle="STONE becomes BONE by shedding one finished ring and growing the next; the same living object settles downward on demotion, while a mandatory swipe deck explains every first unlock and every reversible loss" width=430 height=4240 sizes="md" links="Match result, Ladder, Profile, Mode icons" -->
+<style>
+  /* Card-local names only (l54a*). The large progress object wears the app's
+     real .ringwrap/.lring geometry, while every die, mode mark and rune mark
+     comes through the builder tokens. This study adds only the transition
+     theatre and deck furniture around those owned pieces. */
+  .l54a-scr{gap:12px;padding-bottom:18px}
+  .l54a-title{font-size:25px!important;letter-spacing:.19em!important;margin-top:2px!important}
+  .l54a-lede{margin:0 auto 2px;max-width:326px;color:#c6d3ee;font-size:10.5px;
+    line-height:1.55;letter-spacing:.035em;text-align:center}
+  .l54a-phase{display:flex;align-items:center;justify-content:space-between;width:100%;
+    box-sizing:border-box;margin-top:5px;padding:8px 10px;border-radius:11px;
+    border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.035)}
+  .l54a-phase span{color:var(--dim);font-size:8px;font-weight:900;letter-spacing:.2em;
+    text-transform:uppercase}
+  .l54a-phase b{display:flex;align-items:center;gap:7px;color:var(--txt);font-size:10px;
+    letter-spacing:.14em}
+  .l54a-phase i{color:var(--dim);font-style:normal}
+
+  /* Each scene is the result screen with the deck laid over it. Keeping the
+     verdict legible only at the perimeter makes the trigger unambiguous
+     without asking a comparison card to repaint the whole shipped result. */
+  .l54a-scene{position:relative;width:100%;height:608px;overflow:hidden;border-radius:23px;
+    border:1px solid rgba(255,255,255,.12);background:#070914;box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),0 18px 42px rgba(0,0,0,.42)}
+  .l54a-underlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+    gap:10px;padding:22px 14px;box-sizing:border-box;color:var(--dim);opacity:.5;
+    background:radial-gradient(circle at 50% 17%,rgba(var(--p1-rgb),.19),transparent 34%),
+      radial-gradient(circle at 80% 88%,rgba(var(--p2-rgb),.16),transparent 34%)}
+  .l54a-underlay small{font-size:8px;font-weight:900;letter-spacing:.25em;text-transform:uppercase}
+  .l54a-underlay strong{color:var(--p1);font-size:32px;letter-spacing:.22em;
+    text-shadow:0 0 24px rgba(var(--p1-rgb),.45)}
+  .l54a-under-score{display:flex;align-items:center;gap:18px;font-size:20px;font-weight:900}
+  .l54a-under-score i{color:var(--dim);font-size:9px;font-style:normal;letter-spacing:.16em}
+  .l54a-under-row{width:100%;height:50px;border-radius:14px;border:1px solid rgba(255,255,255,.08);
+    background:rgba(255,255,255,.035)}
+  .l54a-under-row:last-child{margin-top:auto}
+
+  /* The modal is nearly the whole glass. There is deliberately no close mark:
+     a group crossing is acknowledged by reaching CONTINUE, through a swipe or
+     the equivalent buttons. */
+  .l54a-deck{--l54a-tier:var(--g-bone);position:absolute;inset:8px;display:flex;
+    flex-direction:column;align-items:center;box-sizing:border-box;padding:14px 14px 13px;
+    overflow:hidden;border-radius:20px;border:1px solid color-mix(in srgb,var(--l54a-tier) 29%,transparent);
+    background:linear-gradient(165deg,rgba(18,21,39,.93),rgba(5,7,18,.97));
+    box-shadow:0 20px 60px rgba(0,0,0,.68),inset 0 1px 0 rgba(255,255,255,.10);
+    backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+  .l54a-deck::before{content:"";position:absolute;inset:-18% -30% 42%;pointer-events:none;
+    background:radial-gradient(closest-side,color-mix(in srgb,var(--l54a-tier) 23%,transparent),transparent 72%);
+    filter:blur(20px)}
+  .l54a-slidehead{position:relative;z-index:2;display:flex;align-items:center;
+    justify-content:space-between;width:100%;min-height:24px}
+  .l54a-kicker{color:var(--l54a-tier);font-size:8px;font-weight:900;letter-spacing:.22em;
+    text-transform:uppercase}
+  .l54a-page{color:var(--dim);font-size:8px;font-weight:900;letter-spacing:.14em}
+  .l54a-hero{position:relative;z-index:1;display:flex;flex:1;flex-direction:column;
+    align-items:center;justify-content:center;width:100%;min-height:0;padding-top:5px}
+  .l54a-overline{margin-top:9px;color:#c6d3ee;font-size:9px;font-weight:900;
+    letter-spacing:.28em;text-transform:uppercase}
+  .l54a-group{margin-top:3px;color:var(--l54a-tier);font-size:35px;font-weight:950;
+    line-height:1;letter-spacing:.22em;padding-inline-start:.22em;text-shadow:
+    0 0 11px color-mix(in srgb,var(--l54a-tier) 75%,transparent),
+    0 0 35px color-mix(in srgb,var(--l54a-tier) 38%,transparent)}
+  .l54a-copy{max-width:280px;margin:9px auto 0;color:#c6d3ee;font-size:10.5px;
+    line-height:1.5;text-align:center}
+  .l54a-step{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;
+    color:var(--dim);font-size:8.5px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+  .l54a-step b{color:var(--l54a-tier);font-size:10px}
+  .l54a-step i{font-style:normal;color:#8dffcf}
+
+  /* The production ring is the visual anchor. Its progress stays truthful:
+     333 is 7.9% through BONE; 1,211 is 90.9% through IVORY. The extra outer
+     band is material identity, not another progress value. */
+  .l54a-ring{--p1:var(--l54a-tier);--p:0;position:relative;width:196px;margin:4px auto 0;
+    flex:0 0 auto;isolation:isolate}
+  .l54a-ring .lring{filter:drop-shadow(0 0 14px color-mix(in srgb,var(--l54a-tier) 52%,transparent))}
+  .l54a-tierhalo,.l54a-oldarc{position:absolute;inset:-8px;border-radius:50%;pointer-events:none;
+    background:conic-gradient(from 225deg,var(--l54a-tier) 0 270deg,transparent 270deg);
+    -webkit-mask:radial-gradient(circle closest-side,transparent 84%,#000 85%);
+    mask:radial-gradient(circle closest-side,transparent 84%,#000 85%)}
+  .l54a-tierhalo{z-index:-1;opacity:.2;filter:drop-shadow(0 0 18px color-mix(in srgb,var(--l54a-tier) 48%,transparent))}
+  .l54a-oldarc{--l54a-old:var(--g-stone);z-index:3;opacity:0;
+    background:conic-gradient(from 225deg,var(--l54a-old) 0 270deg,transparent 270deg);
+    filter:drop-shadow(0 0 13px color-mix(in srgb,var(--l54a-old) 50%,transparent))}
+  .l54a-avatar{position:relative;z-index:2;display:grid;place-items:center;line-height:0}
+  .l54a-avatar .die{filter:drop-shadow(0 0 18px rgba(var(--p1-rgb),.34))}
+  .l54a-orbit{position:absolute;inset:13px;border-radius:50%;z-index:1;opacity:.32;
+    border:1px solid color-mix(in srgb,var(--l54a-tier) 34%,transparent);border-left-color:transparent;
+    border-bottom-color:transparent;transform:rotate(20deg)}
+  .l54a-mote{--l54a-x:0px;--l54a-y:0px;position:absolute;z-index:4;left:50%;top:50%;
+    width:5px;height:5px;margin:-2px;border-radius:50%;opacity:0;pointer-events:none;
+    background:var(--l54a-tier);box-shadow:0 0 10px var(--l54a-tier);
+    transform:translate(var(--l54a-x),var(--l54a-y))}
+  .l54a-mote:nth-of-type(5){--l54a-x:-78px;--l54a-y:30px}
+  .l54a-mote:nth-of-type(6){--l54a-x:-52px;--l54a-y:-62px;width:4px;height:4px}
+  .l54a-mote:nth-of-type(7){--l54a-x:63px;--l54a-y:-51px;width:3px;height:3px}
+  .l54a-mote:nth-of-type(8){--l54a-x:81px;--l54a-y:25px;width:4px;height:4px}
+  .l54a-mote:nth-of-type(9){--l54a-x:25px;--l54a-y:80px;width:3px;height:3px}
+  .l54a-mote:nth-of-type(10){--l54a-x:-31px;--l54a-y:78px;width:4px;height:4px}
+
+  /* One event, then a long settled read: each 7.2s loop reaches the final
+     frame by 36% and rests there for the remaining 64%. Removing animation
+     therefore exposes the same finished state, not the opening pose. */
+  .l54a-promote .l54a-oldarc{--l54a-old:var(--g-stone);animation:l54a-old-up 7.2s ease-out infinite}
+  .l54a-promote .l54a-tierhalo{animation:l54a-halo-up 7.2s cubic-bezier(.2,1.15,.3,1) infinite}
+  .l54a-promote .l54a-avatar{animation:l54a-avatar-up 7.2s cubic-bezier(.2,1.15,.3,1) infinite}
+  .l54a-promote .l54a-orbit{animation:l54a-orbit-up 7.2s cubic-bezier(.2,1,.3,1) infinite}
+  .l54a-promote .l54a-mote{animation:l54a-mote-up 7.2s ease-out infinite}
+  @keyframes l54a-old-up{0%,8%{opacity:.96;transform:none}25%{opacity:.18;transform:scale(1.14)}
+    36%,100%{opacity:0;transform:scale(1.22)}}
+  @keyframes l54a-halo-up{0%,11%{opacity:0;transform:scale(.72)}25%{opacity:.38;transform:scale(1.08)}
+    36%,100%{opacity:.2;transform:none}}
+  @keyframes l54a-avatar-up{0%,10%{opacity:.7;transform:translateY(18px) scale(.9)}
+    25%{opacity:1;transform:translateY(-8px) scale(1.04)}36%,100%{opacity:1;transform:none}}
+  @keyframes l54a-orbit-up{0%,11%{opacity:0;transform:rotate(-28deg) scale(.7)}
+    29%{opacity:.58;transform:rotate(35deg) scale(1.04)}36%,100%{opacity:.32;transform:rotate(20deg)}}
+  @keyframes l54a-mote-up{0%,10%{opacity:0;transform:translate(var(--l54a-x),calc(var(--l54a-y) + 18px)) scale(.4)}
+    19%{opacity:.95}36%,100%{opacity:0;transform:translate(var(--l54a-x),calc(var(--l54a-y) - 28px)) scale(1)}}
+
+  .l54a-swipe{display:flex;align-items:center;gap:8px;margin:5px 0;color:var(--dim);
+    font-size:7.5px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}
+  .l54a-swipe::before,.l54a-swipe::after{content:"";width:24px;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.26))}
+  .l54a-swipe::after{transform:scaleX(-1)}
+  .l54a-dots{display:flex;align-items:center;justify-content:center;gap:6px;min-height:13px}
+  .l54a-dots i{display:block;width:5px;height:5px;border-radius:999px;background:#41485e;
+    transition:width .2s,background .2s}
+  .l54a-dots i[aria-current="true"]{width:18px;background:var(--l54a-tier);
+    box-shadow:0 0 10px color-mix(in srgb,var(--l54a-tier) 65%,transparent)}
+  .l54a-actions{display:flex;align-items:center;gap:8px;width:100%;margin-top:8px}
+  .l54a-actions .l54a-button{display:flex;align-items:center;justify-content:center;flex:1;
+    min-width:0;min-height:44px;padding:10px 12px;font-size:9px;letter-spacing:.13em}
+  .l54a-actions .l54a-button:only-child{margin-left:auto;max-width:152px}
+
+  /* Feature slides are the same deck after the group has landed. Each gets a
+     complete slide frame so hierarchy, illustration and navigation can be
+     compared rather than inferred from three thumbnails. */
+  .l54a-feature{--l54a-tier:var(--g-bone);--l54a-accent:var(--cy);position:relative;
+    display:flex;flex-direction:column;align-items:center;width:100%;min-height:472px;
+    box-sizing:border-box;padding:14px;border-radius:20px;overflow:hidden;
+    border:1px solid color-mix(in srgb,var(--l54a-accent) 30%,transparent);
+    background:linear-gradient(160deg,color-mix(in srgb,var(--l54a-accent) 8%,#11152a),#070914 72%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 14px 32px rgba(0,0,0,.32)}
+  .l54a-feature::before{content:"";position:absolute;width:230px;height:180px;left:50%;top:38px;
+    transform:translateX(-50%);border-radius:50%;pointer-events:none;
+    background:radial-gradient(closest-side,color-mix(in srgb,var(--l54a-accent) 19%,transparent),transparent 72%);
+    filter:blur(10px)}
+  .l54a-modecrest{position:relative;display:grid;place-items:center;width:82px;height:82px;
+    margin:11px 0 8px;border-radius:50%;color:var(--l54a-accent);
+    border:1px solid color-mix(in srgb,var(--l54a-accent) 44%,transparent);
+    background:radial-gradient(circle,color-mix(in srgb,var(--l54a-accent) 15%,transparent),transparent 70%);
+    box-shadow:0 0 26px color-mix(in srgb,var(--l54a-accent) 20%,transparent)}
+  .l54a-modecrest::before,.l54a-modecrest::after{content:"";position:absolute;border-radius:50%;
+    border:1px dashed color-mix(in srgb,var(--l54a-accent) 25%,transparent)}
+  .l54a-modecrest::before{inset:-7px}.l54a-modecrest::after{inset:9px}
+  .l54a-modecrest svg{filter:drop-shadow(0 0 9px currentColor)}
+  .l54a-feature h2{position:relative;margin:0;color:var(--txt);font-size:18px;font-weight:950;
+    letter-spacing:.17em;text-align:center}
+  .l54a-featurecopy{position:relative;max-width:286px;margin:7px auto 9px;color:#c6d3ee;
+    font-size:10px;line-height:1.45;text-align:center}
+  .l54a-modeviz{position:relative;display:flex;flex-direction:column;justify-content:center;
+    width:100%;max-width:278px;min-height:120px;margin:auto 0 5px;padding:10px 12px;
+    box-sizing:border-box;border-radius:15px;border:1px solid rgba(255,255,255,.08);
+    background:rgba(255,255,255,.025)}
+  .l54a-vizrow{display:grid;grid-template-columns:24px repeat(3,34px);gap:7px;
+    align-items:center;justify-content:center;min-height:39px;border-radius:10px}
+  .l54a-vizrow.l54a-hot{background:color-mix(in srgb,var(--l54a-accent) 10%,transparent);
+    box-shadow:inset 2px 0 0 var(--l54a-accent)}
+  .l54a-vizscore{color:var(--dim);font-size:8px;font-weight:950;text-align:center}
+  .l54a-hot .l54a-vizscore{color:var(--l54a-accent);text-shadow:0 0 9px currentColor}
+  .l54a-cell{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;
+    border:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025);line-height:0}
+  .l54a-cell .die{transform:scale(.84)}
+  .l54a-vizmath{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:7px;
+    color:var(--dim);font-size:8px;font-weight:900;letter-spacing:.12em;text-transform:uppercase}
+  .l54a-vizmath b{color:var(--l54a-accent);font-size:10px}
+  .l54a-bountyviz{display:grid;grid-template-columns:64px 44px 64px;align-items:center;
+    justify-content:center;gap:13px}
+  .l54a-bountyvictim{position:relative;display:grid;place-items:center;height:64px;opacity:.38}
+  .l54a-bountyvictim::after{content:"";position:absolute;left:8px;right:8px;top:50%;height:1px;
+    background:var(--l54a-accent);box-shadow:0 0 8px var(--l54a-accent);transform:rotate(-19deg)}
+  .l54a-bountycoin{display:grid;place-items:center;width:42px;height:42px;border-radius:50%;
+    color:var(--l54a-accent);border:1px solid color-mix(in srgb,var(--l54a-accent) 55%,transparent);
+    background:color-mix(in srgb,var(--l54a-accent) 12%,#07120f);box-shadow:0 0 18px color-mix(in srgb,var(--l54a-accent) 35%,transparent)}
+  .l54a-bountytally{display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--l54a-accent)}
+  .l54a-bountytally b{font-size:22px;letter-spacing:.05em;text-shadow:0 0 12px currentColor}
+  .l54a-bountytally small{color:var(--dim);font-size:7px;letter-spacing:.16em;text-transform:uppercase}
+  .l54a-feature .l54a-swipe{margin-top:auto}
+
+  /* Demotion uses the same ring and the same deck, but gravity reverses the
+     event: the SILVER skin sheds downward, IVORY catches the avatar, and the
+     final ring remains almost full at 1,211 points. No shatter or failure-red. */
+  .l54a-demote{--l54a-tier:var(--g-ivory)}
+  .l54a-demote .l54a-oldarc{--l54a-old:var(--g-silver);animation:l54a-old-down 7.2s ease-in infinite}
+  .l54a-demote .l54a-tierhalo{animation:l54a-halo-down 7.2s cubic-bezier(.2,.9,.3,1) infinite}
+  .l54a-demote .l54a-avatar{animation:l54a-avatar-down 7.2s cubic-bezier(.2,.9,.3,1) infinite}
+  .l54a-demote .l54a-orbit{animation:l54a-orbit-down 7.2s cubic-bezier(.2,.9,.3,1) infinite}
+  .l54a-demote .l54a-mote{animation:l54a-mote-down 7.2s ease-in infinite}
+  .l54a-demote .l54a-step i{color:var(--mg)}
+  @keyframes l54a-old-down{0%,8%{opacity:.92;transform:none}24%{opacity:.3;transform:translateY(8px) scale(.93)}
+    36%,100%{opacity:0;transform:translateY(18px) scale(.88)}}
+  @keyframes l54a-halo-down{0%,11%{opacity:0;transform:translateY(-12px) scale(1.08)}
+    27%{opacity:.34;transform:translateY(3px) scale(.98)}36%,100%{opacity:.2;transform:none}}
+  @keyframes l54a-avatar-down{0%,10%{opacity:.76;transform:translateY(-15px) scale(1.04)}
+    27%{opacity:1;transform:translateY(6px) scale(.98)}36%,100%{opacity:1;transform:none}}
+  @keyframes l54a-orbit-down{0%,11%{opacity:.5;transform:rotate(62deg) scale(1.08)}
+    29%{opacity:.22;transform:rotate(8deg) scale(.97)}36%,100%{opacity:.32;transform:rotate(20deg)}}
+  @keyframes l54a-mote-down{0%,10%{opacity:0;transform:translate(var(--l54a-x),calc(var(--l54a-y) - 20px)) scale(.8)}
+    19%{opacity:.72}36%,100%{opacity:0;transform:translate(var(--l54a-x),calc(var(--l54a-y) + 30px)) scale(.35)}}
+
+  .l54a-keep{--l54a-tier:var(--g-ivory);position:relative;display:flex;flex-direction:column;
+    width:100%;min-height:518px;box-sizing:border-box;padding:14px;border-radius:20px;
+    border:1px solid color-mix(in srgb,var(--g-ivory) 28%,transparent);
+    background:linear-gradient(165deg,rgba(25,25,37,.96),rgba(7,9,20,.98));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 14px 32px rgba(0,0,0,.34)}
+  .l54a-keepintro{display:flex;flex-direction:column;align-items:center;margin:12px 0 10px;text-align:center}
+  .l54a-keepintro b{color:var(--g-ivory);font-size:19px;letter-spacing:.18em}
+  .l54a-keepintro span{max-width:282px;margin-top:6px;color:#c6d3ee;font-size:10px;line-height:1.45}
+  .l54a-keepcard{display:flex;align-items:center;gap:12px;width:100%;box-sizing:border-box;
+    padding:12px;margin-top:8px;border-radius:14px;border:1px solid rgba(255,255,255,.09);
+    background:rgba(255,255,255,.03)}
+  .l54a-restseat{position:relative;display:grid;place-items:center;width:50px;height:50px;
+    flex:0 0 auto;border-radius:50%;color:var(--dim);border:1px solid #464c5c;
+    background:radial-gradient(circle at 50% 35%,rgba(20,24,38,.96),rgba(6,8,16,.99))}
+  .l54a-restseat::after{content:"Ⅱ";position:absolute;right:-4px;top:-5px;display:grid;
+    place-items:center;width:18px;height:18px;border-radius:50%;color:var(--g-ivory);
+    border:1px solid color-mix(in srgb,var(--g-ivory) 40%,transparent);background:#0b0e19;
+    font-size:8px;font-weight:950;letter-spacing:-.1em}
+  .l54a-keepcopy{display:flex;flex-direction:column;gap:3px;min-width:0}
+  .l54a-keepcopy b{color:var(--txt);font-size:10px;letter-spacing:.11em;text-transform:uppercase}
+  .l54a-keepcopy span{color:#c6d3ee;font-size:9.5px;line-height:1.42}
+  .l54a-keepcopy small{color:var(--g-silver);font-size:7.5px;font-weight:900;
+    letter-spacing:.12em;text-transform:uppercase}
+  .l54a-unlocks{display:flex;align-items:center;gap:7px;flex:0 0 auto;color:var(--g-bone)}
+  .l54a-unlocks i{display:grid;place-items:center;width:27px;height:27px;border-radius:9px;
+    font-style:normal;border:1px solid color-mix(in srgb,currentColor 30%,transparent);
+    background:color-mix(in srgb,currentColor 8%,transparent)}
+  .l54a-unlocks i:nth-child(1){color:{{mhue:rowswitch}}}
+  .l54a-unlocks i:nth-child(2){color:{{mhue:rowmult}}}
+  .l54a-unlocks i:nth-child(3){color:{{mhue:bounty}}}
+  .l54a-ritual{display:flex;align-items:flex-end;gap:0;margin-left:2px;color:{{shue:ward}}}
+  .l54a-ritual svg{margin-left:-5px;filter:drop-shadow(0 0 5px currentColor)}
+  .l54a-ritual svg:first-child{margin-left:0;color:{{shue:fate}}}
+  .l54a-ritual svg:last-child{color:{{shue:sunder}}}
+  .l54a-keep .l54a-swipe{margin-top:auto;align-self:center}
+
+  /* The visible accessibility proof freezes the exact same nodes. System and
+     in-app reduced-motion settings do the same everywhere in this card. */
+  .l54a-reduced{display:flex;align-items:center;gap:14px;width:100%;box-sizing:border-box;
+    padding:13px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.09);
+    background:rgba(255,255,255,.028)}
+  .l54a-proofring{--l54a-tier:var(--g-bone);--p1:var(--l54a-tier);--p:.079;
+    width:74px;margin:0;flex:0 0 auto}
+  .l54a-proofring .lring{filter:none}
+  .l54a-proofring .l54a-tierhalo{inset:-4px}
+  .l54a-reducedcopy{display:flex;flex-direction:column;gap:4px}
+  .l54a-reducedcopy b{color:var(--g-bone);font-size:9px;letter-spacing:.17em;text-transform:uppercase}
+  .l54a-reducedcopy span{color:#c6d3ee;font-size:9.5px;line-height:1.45}
+  .l54a-reduced *{animation:none!important}
+  #kbroot.reduce-motion .l54a-oldarc,#kbroot.reduce-motion .l54a-tierhalo,
+  #kbroot.reduce-motion .l54a-avatar,#kbroot.reduce-motion .l54a-orbit,
+  #kbroot.reduce-motion .l54a-mote{animation:none!important}
+  @media (prefers-reduced-motion:reduce){
+    .l54a-oldarc,.l54a-tierhalo,.l54a-avatar,.l54a-orbit,.l54a-mote{animation:none!important}
+  }
+</style>
+<div class="stage"><div class="bgfx"></div><div class="scr l54a-scr">
+  <div class="cap2">Group transition study · direction 01</div>
+  <h1 class="l54a-title">LIVING LADDER</h1>
+  <p class="l54a-lede">The ring the player already reads after every match becomes the transition itself: one group skin releases, the next catches, and the deck teaches only what changed.</p>
+
+  <div class="l54a-phase"><span>Promotion · slide 1 of 4</span><b>STONE <i>→</i> BONE</b></div>
+  <div class="l54a-scene">
+    <div class="l54a-underlay" aria-hidden="true">
+      <small>Ranked result</small><strong>VICTORY</strong>
+      <div class="l54a-under-score"><span>41</span><i>VS</i><span>38</span></div>
+      <div class="l54a-under-row"></div><div class="l54a-under-row"></div>
+    </div>
+    <section class="l54a-deck" style="--l54a-tier:var(--g-bone)" aria-label="Promotion deck, slide one of four">
+      <div class="l54a-slidehead"><span class="l54a-kicker">New group</span><span class="l54a-page">1 / 4</span></div>
+      <div class="l54a-hero">
+        <div class="ringwrap l54a-ring l54a-promote" style="--p:.079;--l54a-tier:var(--g-bone)">
+          <i class="lring"></i><i class="l54a-tierhalo"></i><i class="l54a-oldarc"></i><i class="l54a-orbit"></i>
+          <span class="l54a-avatar dice-static">{{die:5:p1:72}}</span>
+          <i class="l54a-mote"></i><i class="l54a-mote"></i><i class="l54a-mote"></i>
+          <i class="l54a-mote"></i><i class="l54a-mote"></i><i class="l54a-mote"></i>
+        </div>
+        <span class="l54a-overline">Promoted to</span><strong class="l54a-group">BONE</strong>
+        <p class="l54a-copy">A new material, a wider ring, and three new ways to duel. Your next ranked match can draw them.</p>
+        <div class="l54a-step"><span>287 STONE</span><i>+46</i><b>333 BONE</b></div>
+      </div>
+      <div class="l54a-swipe">Swipe to explore</div>
+      <div class="l54a-dots" aria-label="Slide one of four"><i aria-current="true"></i><i></i><i></i><i></i></div>
+      <div class="l54a-actions"><button type="button" class="btn primary l54a-button">Next</button></div>
+    </section>
+  </div>
+
+  <div class="l54a-phase"><span>First BONE visit · slides 2–4</span><b>Three permanent modes</b></div>
+
+  <section class="l54a-feature" style="--l54a-accent:{{mhue:rowswitch}}" aria-label="Promotion deck, Row Switch slide">
+    <div class="l54a-slidehead"><span class="l54a-kicker">New mode</span><span class="l54a-page">2 / 4</span></div>
+    <div class="l54a-modecrest">{{mico:rowswitch:42}}</div>
+    <h2>ROW SWITCH</h2>
+    <p class="l54a-featurecopy">Scoring turns sideways — only rows count. Destruction still strikes down the facing column.</p>
+    <div class="l54a-modeviz dice-static" aria-hidden="true">
+      <div class="l54a-vizrow"><span class="l54a-vizscore">5</span><span class="l54a-cell">{{die:2:p1:28}}</span><span class="l54a-cell"></span><span class="l54a-cell">{{die:3:p1:28}}</span></div>
+      <div class="l54a-vizrow l54a-hot"><span class="l54a-vizscore">16</span><span class="l54a-cell">{{die:4:p1:28}}</span><span class="l54a-cell">{{die:4:p1:28}}</span><span class="l54a-cell"></span></div>
+      <div class="l54a-vizrow"><span class="l54a-vizscore">6</span><span class="l54a-cell"></span><span class="l54a-cell">{{die:6:p1:28}}</span><span class="l54a-cell"></span></div>
+      <div class="l54a-vizmath"><span>Two 4s across a row</span><b>16</b></div>
+    </div>
+    <div class="l54a-swipe">Swipe or use buttons</div>
+    <div class="l54a-dots" aria-label="Slide two of four"><i></i><i aria-current="true"></i><i></i><i></i></div>
+    <div class="l54a-actions"><button type="button" class="btn soft l54a-button">Back</button><button type="button" class="btn primary l54a-button">Next</button></div>
+  </section>
+
+  <section class="l54a-feature" style="--l54a-accent:{{mhue:rowmult}}" aria-label="Promotion deck, Row Multiply slide">
+    <div class="l54a-slidehead"><span class="l54a-kicker">New mode</span><span class="l54a-page">3 / 4</span></div>
+    <div class="l54a-modecrest">{{mico:rowmult:42}}</div>
+    <h2>ROW MULTIPLY</h2>
+    <p class="l54a-featurecopy">Columns score as always — matching dice lined up in a row pay their sum again on top.</p>
+    <div class="l54a-modeviz dice-static" aria-hidden="true">
+      <div class="l54a-vizrow"><span class="l54a-vizscore">·</span><span class="l54a-cell">{{die:5:p1:28}}</span><span class="l54a-cell"></span><span class="l54a-cell">{{die:2:p1:28}}</span></div>
+      <div class="l54a-vizrow l54a-hot"><span class="l54a-vizscore">+6</span><span class="l54a-cell">{{die:3:p1:28}}</span><span class="l54a-cell">{{die:3:p1:28}}</span><span class="l54a-cell"></span></div>
+      <div class="l54a-vizrow"><span class="l54a-vizscore">·</span><span class="l54a-cell"></span><span class="l54a-cell">{{die:1:p1:28}}</span><span class="l54a-cell">{{die:6:p1:28}}</span></div>
+      <div class="l54a-vizmath"><span>Columns 24</span><b>+ row 6</b><span>= 30</span></div>
+    </div>
+    <div class="l54a-swipe">Swipe or use buttons</div>
+    <div class="l54a-dots" aria-label="Slide three of four"><i></i><i></i><i aria-current="true"></i><i></i></div>
+    <div class="l54a-actions"><button type="button" class="btn soft l54a-button">Back</button><button type="button" class="btn primary l54a-button">Next</button></div>
+  </section>
+
+  <section class="l54a-feature" style="--l54a-accent:{{mhue:bounty}}" aria-label="Promotion deck, Bounty slide">
+    <div class="l54a-slidehead"><span class="l54a-kicker">New mode</span><span class="l54a-page">4 / 4</span></div>
+    <div class="l54a-modecrest">{{mico:bounty:42}}</div>
+    <h2>BOUNTY</h2>
+    <p class="l54a-featurecopy">Every die you destroy banks a permanent +1 on your nameplate. The ✦ tally never resets during the duel.</p>
+    <div class="l54a-modeviz l54a-bountyviz dice-static" aria-hidden="true">
+      <span class="l54a-bountyvictim">{{die:4:p2:46}}</span>
+      <span class="l54a-bountycoin">{{mico:bounty:25}}</span>
+      <span class="l54a-bountytally"><b>✦3</b><small>Banked</small></span>
+    </div>
+    <div class="l54a-swipe">Last slide</div>
+    <div class="l54a-dots" aria-label="Slide four of four"><i></i><i></i><i></i><i aria-current="true"></i></div>
+    <div class="l54a-actions"><button type="button" class="btn soft l54a-button">Back</button><button type="button" class="btn primary l54a-button">Continue</button></div>
+  </section>
+
+  <div class="l54a-phase"><span>Demotion · slide 1 of 2</span><b>SILVER <i>→</i> IVORY</b></div>
+  <div class="l54a-scene">
+    <div class="l54a-underlay" aria-hidden="true">
+      <small>Ranked result</small><strong style="color:var(--p2);text-shadow:0 0 24px rgba(var(--p2-rgb),.4)">DEFEAT</strong>
+      <div class="l54a-under-score"><span>31</span><i>VS</i><span>39</span></div>
+      <div class="l54a-under-row"></div><div class="l54a-under-row"></div>
+    </div>
+    <section class="l54a-deck l54a-demote" aria-label="Demotion deck, slide one of two">
+      <div class="l54a-slidehead"><span class="l54a-kicker">Group changed</span><span class="l54a-page">1 / 2</span></div>
+      <div class="l54a-hero">
+        <div class="ringwrap l54a-ring l54a-demote" style="--p:.909;--l54a-tier:var(--g-ivory)">
+          <i class="lring"></i><i class="l54a-tierhalo"></i><i class="l54a-oldarc"></i><i class="l54a-orbit"></i>
+          <span class="l54a-avatar dice-static">{{die:5:p1:72}}</span>
+          <i class="l54a-mote"></i><i class="l54a-mote"></i><i class="l54a-mote"></i>
+          <i class="l54a-mote"></i><i class="l54a-mote"></i><i class="l54a-mote"></i>
+        </div>
+        <span class="l54a-overline">Demoted to</span><strong class="l54a-group">IVORY</strong>
+        <p class="l54a-copy">Your current place moved down. What you earned on the climb remains yours.</p>
+        <div class="l54a-step"><span>1,274 SILVER</span><i>−63</i><b>1,211 IVORY</b></div>
+      </div>
+      <div class="l54a-swipe">Swipe for what changes</div>
+      <div class="l54a-dots" aria-label="Slide one of two"><i aria-current="true"></i><i></i></div>
+      <div class="l54a-actions"><button type="button" class="btn primary l54a-button">Next</button></div>
+    </section>
+  </div>
+
+  <section class="l54a-keep" aria-label="Demotion deck, retained access slide">
+    <div class="l54a-slidehead"><span class="l54a-kicker">What changes</span><span class="l54a-page">2 / 2</span></div>
+    <div class="l54a-keepintro"><b>YOUR CLIMB STILL COUNTS</b><span>Current group controls the ring. Your highest reached group protects the variety you unlocked.</span></div>
+    <div class="l54a-keepcard">
+      <span class="l54a-restseat">{{sico:ward:25}}</span>
+      <span class="l54a-keepcopy"><small>Rests below SILVER</small><b>WARD stays equipped</b><span>Your chosen rune keeps its seat, but ordinary ranked matches use no equipped rune until you return to SILVER.</span></span>
+    </div>
+    <div class="l54a-keepcard">
+      <span class="l54a-unlocks" aria-hidden="true"><i>{{mico:rowswitch:16}}</i><i>{{mico:rowmult:16}}</i><i>{{mico:bounty:16}}</i><span class="l54a-ritual">{{sico:fate:13}}{{sico:ward:15}}{{sico:sunder:13}}</span></span>
+      <span class="l54a-keepcopy"><small>Permanent unlocks</small><b>Modes + Rune Ritual remain</b><span>Row Switch, Row Multiply, Bounty, and Rune Ritual stay in your ranked variety pool after demotion.</span></span>
+    </div>
+    <div class="l54a-swipe">Nothing was taken away</div>
+    <div class="l54a-dots" aria-label="Slide two of two"><i></i><i aria-current="true"></i></div>
+    <div class="l54a-actions"><button type="button" class="btn soft l54a-button">Back</button><button type="button" class="btn primary l54a-button">Continue</button></div>
+  </section>
+
+  <div class="l54a-phase"><span>Reduced motion</span><b>Same final truth</b></div>
+  <div class="l54a-reduced">
+    <div class="ringwrap l54a-proofring">
+      <i class="lring"></i><i class="l54a-tierhalo"></i><span class="l54a-avatar dice-static">{{die:5:p1:32}}</span>
+    </div>
+    <span class="l54a-reducedcopy"><b>BONE · 333 points</b><span>The settled material, group name, direction, dots, and feature copy all remain. Rise, fall, orbit and particles are removed.</span></span>
+  </div>
+</div></div>
+<div class="note"><b>One ring, two directions.</b> Promotion releases the completed STONE skin upward and grows BONE around the same avatar; demotion lets SILVER shed with gravity and settles into IVORY without failure-red or a shatter. Both 7.2-second previews finish by 36% and hold the readable final state for the remaining 64%. Reduced motion is that same final state with no movement.<br>
+<b>The deck cannot be dismissed early.</b> It opens above the ranked result after every group crossing, has no X, and exposes swipe, dots and Back/Next/Continue controls with 44px targets. The group hero always appears. Row Switch, Row Multiply and Bounty appear as individual slides only on the first BONE unlock; equivalent permanent features do not repeat once taught.<br>
+<b>Demotion explains the asymmetry every time it matters.</b> SILVER → IVORY says that the equipped rune remains chosen but rests below SILVER, while peak-earned modes and Rune Ritual stay permanently in the ranked pool. The visual group can fall; earned variety never does.</div>
