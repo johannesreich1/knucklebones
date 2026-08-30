@@ -84,8 +84,26 @@ export async function runTurnContextScenarios(suite) {
   out.turnViewerOwnership = await page.evaluate(async () => {
     const k = window.__kb;
     const root = document.getElementById('kbroot');
-    const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+    const frame = () => new Promise((resolve) => requestAnimationFrame(resolve));
     const cases = [];
+    const activeScale = () => {
+      const card = [...document.querySelectorAll('#spellBar .rune:not([hidden])')]
+        .filter((item) => !!item.offsetParent)
+        .find((item) => item.classList.contains('hand-active'));
+      if (!card) return Number.NaN;
+      const transform = getComputedStyle(card).transform;
+      const matrix = transform === 'none'
+        ? new DOMMatrixReadOnly()
+        : new DOMMatrixReadOnly(transform);
+      return Math.hypot(matrix.a, matrix.b);
+    };
+    const settleScale = async (expected) => {
+      const deadline = performance.now() + 1500;
+      do {
+        await frame();
+        if (Math.abs(activeScale() - expected) <= .002) return;
+      } while (performance.now() < deadline);
+    };
     const read = (kind, seat, viewer, turn) => {
       const cards = [...document.querySelectorAll('#spellBar .rune:not([hidden])')]
         .filter((card) => !!card.offsetParent);
@@ -101,7 +119,7 @@ export async function runTurnContextScenarios(suite) {
       k.S.mode = 'duo'; k.S.seat = 'pass'; k.S.turn = turn; k.S.bottom = viewer;
       k.S.phase = 'choose'; k.S.busy = false;
       k.applySides(); k.setActivePlate(viewer); k.spells.render();
-      await pause(280);
+      await settleScale(turn === viewer ? 1 : .95);
       cases.push(read('fixed-viewer', 'pass', viewer, turn));
     }
     for (const seat of ['pass', 'face']) for (const turn of [0, 1]) {
@@ -109,7 +127,7 @@ export async function runTurnContextScenarios(suite) {
       k.S.bottom = seat === 'pass' ? turn : 1;
       k.S.phase = 'choose'; k.S.busy = false;
       k.applySides(); k.setActivePlate(); k.spells.render();
-      await pause(280);
+      await settleScale(1);
       cases.push(read('shared-phone', seat, null, turn));
     }
     return cases;
