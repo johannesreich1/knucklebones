@@ -10,6 +10,7 @@ import {
   readRuneTrialState,
   selectRune,
   type JoinResult,
+  type MatchActionRow,
   type MatchRow,
   type RuneTrialState,
 } from '../api/match-api.ts';
@@ -80,9 +81,21 @@ function offerSpecs(trial: RuneTrialState | null | undefined): readonly SpellSpe
 
 function mergeTrial(
   current: Matched,
-  response: { match: MatchRow; trial: RuneTrialState },
+  response: { match: MatchRow; trial: RuneTrialState; bot_actions?: MatchActionRow[] },
 ): Matched {
-  return { ...current, match: response.match, trial: response.trial, rejoined: true };
+  return {
+    ...current,
+    match: response.match,
+    trial: response.trial,
+    rejoined: true,
+    /* CARRIED TO ENTRY, NOT DROPPED HERE. Only the response that actually
+       committed a bot's opening turn carries these rows, and this merge is the
+       one hop between that response and enterMatch — without it the board finds
+       the opener already in the log and paints it in a single silent frame.
+       A read/refresh carries none, and spreading `current` keeps an earlier
+       claim rather than clearing it. */
+    ...(response.bot_actions?.length ? { bot_actions: response.bot_actions } : {}),
+  };
 }
 
 function playing(result: Matched): boolean {

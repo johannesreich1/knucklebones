@@ -10,7 +10,8 @@ import { Sfx } from './audio.ts';
 import { fillPlate, repaintPlateLocale, type PlateSpec } from './plate.ts';
 
 /* an identity plate on the result (design 36f) — the home plate's spec plus
-   an optional door. With a tap the row is a <button> and grows its chevron. */
+   an optional door. With a tap the row is a <button> and grows its chevron;
+   `rankTap` gives the group pill inside it a SECOND door of its own. */
 export interface EndPlate extends PlateSpec { tap?: () => void }
 
 /* the last deal, kept so the theatre can run again on a screen that was only
@@ -46,6 +47,23 @@ export function setPlates(plates: EndPlate[]): void {
     // the result's plates wear the roomier cut by default; a spec may override
     fillPlate(el, { large: true, ...p, chev: p.chev ?? !!p.tap });
     if (p.tap) el.addEventListener('click', () => { Sfx.tap(); p.tap!(); });
+    /* The pill sits INSIDE the row's button, so its own press must not also
+       open the row's destination — one tap, one door. Keyboard gets the same
+       two keys a real button answers to, since role="button" does not bring
+       them with it. */
+    if (p.rankTap) {
+      const pill = el.querySelector<HTMLElement>('.gpill');
+      const open = (event: Event): void => {
+        event.stopPropagation();
+        event.preventDefault();
+        Sfx.tap();
+        p.rankTap!();
+      };
+      pill?.addEventListener('click', open);
+      pill?.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' || event.key === ' ') open(event);
+      });
+    }
     box.appendChild(el);
   }
 }

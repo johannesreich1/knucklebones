@@ -35,7 +35,7 @@ async function readMatch(service: EdgeClient, matchId: string): Promise<MatchRow
 export async function ensureRuneTrialBotOpening<T extends { match: MatchRow }>(
   context: AuthenticatedContext,
   payload: T,
-): Promise<T> {
+): Promise<T & { bot_actions?: MatchActionRow[] }> {
   const service = context.service();
   let match = await readMatch(service, payload.match.id);
   const current = (): T => ({ ...payload, match } as T);
@@ -114,7 +114,15 @@ export async function ensureRuneTrialBotOpening<T extends { match: MatchRow }>(
       },
     }, settle);
     match = response.match;
-    return current();
+    /* SAY THAT A BOT JUST MOVED INSIDE THIS REQUEST. The rows are already in the
+       command metadata above; the client needs them on the RESPONSE so its first
+       read can perform the opening turn instead of painting it in one silent
+       frame. It is the same `bot_actions` signal a mid-game reply carries, and
+       the client spends it the same way (online/play botBeatDue).
+       Only THIS branch emits it — the one that actually committed. Every early
+       return above (a rejoin, a human opening seat, a log that already has rows)
+       stays silent, which is what stops a reconnect replaying a whole match. */
+    return { ...current(), bot_actions: turn.actions as MatchActionRow[] };
   } catch (error) {
     match = await readMatch(service, match.id);
     if (match.status !== "active" || match.action_version > 0) return current();

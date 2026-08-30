@@ -39,6 +39,19 @@ export async function installTrialMatchRoutes(page, {
      "uncertain" (status 0, 5xx, or a 200 with no match) takes submit()'s
      refusal branch — 409 is what production actually returns. */
   refuseWith = null,
+  /* Make the READ that follows a refusal unable to recover, which is the only
+     state in which the client's own refusal handling is load-bearing. A refused
+     action resyncs, and installTrialProjection disarms and reopens the turn from
+     the log — so a fixture whose read is coherent hides every client-side
+     recovery behind the projection. Reporting one action_version more than the
+     log holds trips exactly the check that guards a two-read snapshot
+     (`projected.actionCount !== match.action_version`), so the projection is
+     refused and nothing downstream of it runs. */
+  desyncAfterRefusal = false,
+  /* Announce the seeded rows as a bot OPENING, the way the real pvp-join does
+     when it commits one inside the join/select request. Without this the client
+     cannot tell an opener from history and paints it in one silent frame. */
+  botOpened = false,
   /* The die the opening seat holds. projectRankedActions always starts at
      ME(1), so seat 1 opens no matter who the viewer is. */
   openingDie = FACE[1],
@@ -179,6 +192,7 @@ export async function installTrialMatchRoutes(page, {
       you,
       rejoined: true,
       match: { ...match },
+      ...(botOpened ? { bot_actions: rows.map((row) => ({ ...row })) } : {}),
       names: {
         p1: 'TestGuest001',
         p2: opponentName,
@@ -195,14 +209,20 @@ export async function installTrialMatchRoutes(page, {
   await page.route('**/rest/v1/match_actions*', (route) => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify(rows),
   }));
+  let refused = 0;
   await page.route('**/rest/v1/matches*', (route) => route.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify([match]),
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify([desyncAfterRefusal && refused
+      ? { ...match, action_version: match.action_version + 1 }
+      : match]),
   }));
 
   await page.route('**/functions/v1/pvp-action', async (route) => {
     actionCalls++;
     if (actionDelay) await new Promise((resolve) => setTimeout(resolve, actionDelay));
     if (refuseWith) {
+      refused++;
       return route.fulfill({ status: refuseWith, contentType: 'application/json',
         body: JSON.stringify({ error: 'refused' }) });
     }

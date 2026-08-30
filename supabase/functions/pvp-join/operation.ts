@@ -15,11 +15,11 @@ import {
   trialClientCompatibilityError,
   type QueueCandidate,
 } from "./matchmaking.ts";
-import { MatchStartFailure, startProgressiveRankedMatch } from "./start.ts";
+import { MatchStartFailure, startProgressiveRankedMatch, type StartedRankedMatch } from "./start.ts";
 import { settleAbandonedBotMatch } from "./stalled-bot-match.ts";
 import {
   MATCH_COLUMNS,
-  type JoinInput, type MatchRow, type ProfileSummary,
+  type JoinInput, type MatchActionRow, type MatchRow, type ProfileSummary,
 } from "../_shared/types.ts";
 
 const QUEUE_STALE_MS = 2 * 60 * 1000;
@@ -42,7 +42,16 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
              avatars: { p1: avatar(a), p2: avatar(b) } };
   };
 
-  const matched = async (match: MatchRow, rejoined?: boolean | null): Promise<Response> => {
+  /* `botMove` is ordinary ranked's opening, handed in by the start that baked it.
+     The Rune Trial's equivalent is produced inside this function instead, by
+     ensureRuneTrialBotOpening, because its opener is committed here. Either way
+     the client is told a bot moved inside THIS request, so its first read can
+     perform that turn rather than paint it in one silent frame. */
+  const matched = async (
+    match: MatchRow,
+    rejoined?: boolean | null,
+    botMove?: { col: number; die: number } | null,
+  ): Promise<Response> => {
     const compatibilityError = trialClientCompatibilityError(match, input);
     if (compatibilityError) return json({ error: compatibilityError }, 409);
     const myIdx: Player = match.p1 === uid ? ME : AI;
@@ -56,6 +65,7 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
       honestRejoin = (count ?? 0) > 0;
     }
     let privateMatch = match;
+    let openerActions: MatchActionRow[] | undefined;
     let trial: unknown;
     if (match.format === RUNE_TRIAL_FORMAT) {
       const { data: trialData, error: trialError } = await svc.rpc("rune_trial_state", {
@@ -67,7 +77,7 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
       }
       const payload = trialData as { match?: MatchRow; trial?: unknown };
       if (!payload.match) return json({ error: "match-read-failed" }, 500);
-      let opened: { match: MatchRow; trial?: unknown };
+      let opened: { match: MatchRow; trial?: unknown; bot_actions?: MatchActionRow[] };
       try {
         opened = await ensureRuneTrialBotOpening(context, {
           match: payload.match,
@@ -79,12 +89,15 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
       }
       privateMatch = opened.match;
       trial = opened.trial;
+      openerActions = opened.bot_actions;
     }
     return json({
       status: "matched",
       ...(honestRejoin === null ? {} : { rejoined: honestRejoin }),
       match: privateMatch,
       ...(trial === undefined ? {} : { trial }),
+      ...(openerActions?.length ? { bot_actions: openerActions } : {}),
+      ...(botMove ? { bot_move: botMove } : {}),
       you: privateMatch.p1 === uid ? 1 : 0,
       names: await names(privateMatch.p1, privateMatch.p2),
     });
@@ -146,7 +159,7 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
     underdogAccess: RankedParticipantAccess,
     favouriteAccess: RankedParticipantAccess,
     bot?: { id: string; rating: number },
-  ): Promise<MatchRow | null> => startProgressiveRankedMatch(svc, {
+  ): Promise<StartedRankedMatch | null> => startProgressiveRankedMatch(svc, {
     requester: uid, season, underdog, favourite, queuedOpponent,
     underdogAccess, favouriteAccess, bot,
   });
@@ -181,7 +194,7 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
         underdog === uid ? myAccess : partnerAccess,
         favourite === uid ? myAccess : partnerAccess,
       );
-      if (match) return matched(match, null);
+      if (match) return matched(match.match, null, match.botMove);
     } catch (error) {
       if (error instanceof MatchStartFailure) {
         console.error("pvp-join match start failed:", error);
@@ -216,7 +229,7 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
           favourite === uid ? humanAccess : botAccess,
           bot,
         );
-        if (match) return matched(match, null);
+        if (match) return matched(match.match, null, match.botMove);
       } catch (error) {
         if (error instanceof MatchStartFailure) {
           console.error("pvp-join match start failed:", error);

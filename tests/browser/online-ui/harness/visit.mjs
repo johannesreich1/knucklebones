@@ -75,6 +75,12 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     /* `door: 'match'` needs a match to enter. Pass `true` for the standard
        Rune Trial fixture, or an options object for trial-match.mjs. */
     trialMatch = null,
+    /* Run in the page BEFORE it loads, so a probe can watch something that
+       happens while a door is still opening. `door: 'match'` waits for
+       `phase === 'choose' && !busy` — the whole entry, animations included — so
+       anything measured from `probe` has already finished. A recorder installed
+       here is the only way to time entry itself. */
+    initScript = null,
   }) {
     // NO isMobile here: under WebKit it quietly disables page.route(), and a
     // stub that never fires would let this suite talk to the live backend.
@@ -157,6 +163,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
       ));
     }
 
+    if (initScript) await page.addInitScript(initScript);
     await page.goto(URL, { waitUntil: 'domcontentloaded' });
     // the home chip carrying the player's identity IS the door to the account view
     const entry = door === 'board' ? '#btnBoardHome'

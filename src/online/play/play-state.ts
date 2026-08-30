@@ -46,7 +46,15 @@ export function createOnlineState(
     pendingRow: null,
     selfAutoDue: false,
     resigning: false,
-    botBeatDue: false,
+    /* A BOT'S OPENING IS OWED A TURN, LIKE ANY OTHER BOT REPLY. The server bakes
+       it into the match before this client ever reads the board — as an action
+       batch in a Trial, as the opening move in ordinary ranked — so the first
+       read finds it already there and cannot tell it from history. The join
+       response says a bot moved inside THAT request, which is the same claim a
+       mid-game command response makes, and it is spent the same way.
+       Only the response that committed it carries either field: a rejoin has
+       neither, so reconnecting into a long match still paints silently. */
+    botBeatDue: !!result.bot_actions?.length || !!result.bot_move,
     painted: null,
     autoStreak: 0,
     finalizing: false,

@@ -35,6 +35,7 @@ interface ResultPorts {
   goHome(): void;
   nextDuel(): void;
   openProfile(onReturn: () => void): void;
+  openLadder(onReturn: () => void): void;
 }
 
 export interface ResultScreen {
@@ -140,7 +141,13 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
            the scoreline alone cannot say which happened. */
         stamp: !report.won && !report.draw && report.forfeit
           ? t('online', 'result.forfeitedStamp') : undefined,
-        tap: () => cover(ports.openProfile),
+        /* THE ROW IS THE LADDER'S DOOR; THE RANK PILL IS THE PROFILE'S. The
+           standing the row has just reported is a position among other people,
+           so the row leads to where those people are. The pill names the rank
+           itself, which is the player's own record. Both cover the result and
+           return to it. */
+        tap: () => cover(ports.openLadder),
+        rankTap: () => cover(ports.openProfile),
       },
       {
         name: opponentName(),

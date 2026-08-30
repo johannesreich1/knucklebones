@@ -182,7 +182,10 @@ async function accountSwitchAfterRuneProbe(page, routes) {
   await page.waitForSelector('#ovEnd.on #endFeature:not([hidden])', { timeout: 15000 });
   routes.deferNextAccountProfileResponse();
   const readsBeforeProfile = routes.runeCalls();
-  await page.$eval('#endPlates > button:first-child', (button) => button.click());
+  /* THE RANK PILL IS THE PROFILE'S DOOR on the result screen; the row itself
+     opens the LADDER. Invoked directly rather than tapped because a late
+     profile repaint can replace the plate between pointerdown and up. */
+  await page.$eval('#endPlates > button:first-child .gpill', (pill) => pill.click());
   await bounded(routes.accountProfileStarted, 'held A profile read never started');
   const deadline = Date.now() + 7000;
   while (routes.runeCalls() === readsBeforeProfile && Date.now() < deadline) {
@@ -218,8 +221,11 @@ async function accountSwitchAfterRuneProbe(page, routes) {
 
 async function profileExitProbe(page) {
   await showWinningResult(page);
-  await page.waitForSelector('#ovEnd.on #endPlates > button:first-child', { timeout: 15000 });
-  await page.$eval('#endPlates > button:first-child', (button) => button.click());
+  await page.waitForSelector('#ovEnd.on #endPlates > button:first-child .gpill', { timeout: 15000 });
+  /* THE RANK PILL IS THE PROFILE'S DOOR on the result screen; the row itself
+     opens the LADDER. Invoked directly rather than tapped because a late
+     profile repaint can replace the plate between pointerdown and up. */
+  await page.$eval('#endPlates > button:first-child .gpill', (pill) => pill.click());
   await page.waitForSelector('#ovOnline.on #onAccount:not([hidden])', { timeout: 15000 });
   await page.click('#btnOnlineBack');
   await page.waitForSelector('#ovEnd.on', { timeout: 15000 });

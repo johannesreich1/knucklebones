@@ -425,8 +425,16 @@ outcome: it reads as "the test does not detect this", which invites weakening th
 test. Measured 2026-08-29 on the flying-die colour fix, twice in a row. So
 disable a fix in a way that still compiles — an early return behind a
 `const OFF: boolean = true`, never a deleted call — and CHECK the build succeeded
-before believing the run. Confirming the marker actually reached `dist/` costs
-one `grep`.
+before believing the run.
+
+REBUILD AFTER THE RESTORE TOO. The trap has a second face, and it caught the same
+session twice: restoring the fix and re-running WITHOUT rebuilding measures the
+reverted bundle and reports the fix as broken. On 2026-08-29 that produced a
+"the fix does not work" reading of a refused ranked aim that was entirely an
+artefact of a stale `dist/`. Treat every source edit in a red/green pair —
+including the one that puts the code back — as requiring its own build. Do not
+grep `dist/` for a comment to confirm: minification strips them, so an absent
+marker proves nothing.
 
 **A clamped counter cannot show a doubled action.** `spendChargePresentation`
 floors a charge at zero, so spending a one-use rune twice reads exactly like

@@ -218,13 +218,36 @@ try {
     await page.waitForFunction(() => document.documentElement.lang === 'en'
       && document.getElementById('btnEndQuiet')?.textContent?.trim() === 'Home');
 
-    /* 3 · THE BUG: tap your own plate, then come back. */
-    await page.click('#endPlates > *:first-child');
+    /* 3 · TWO DOORS ON ONE ROW. The standing the result just reported is a
+       position among other people, so the ROW leads to the ladder; the pill
+       names the rank itself, which is the player's own record, so it leads to
+       the profile. Reported 2026-08-30: "clicking my user bar on finish screen
+       should open the ladder, when clicking on my rank the profile gets
+       opened". Both must come back HERE. */
+    const ownPlate = '#endPlates > *:first-child';
+    check(await page.$eval(`${ownPlate} .gpill`, (pill) => pill.getAttribute('role') === 'button'
+            && pill.tabIndex === 0 && !pill.hidden),
+          'the rank pill on the own plate is not a control, so it has no door', null);
+
+    await page.click(`${ownPlate} .gpill`);
     await page.waitForFunction(() => document.querySelector('#onAccount')?.hidden === false);
     await page.waitForTimeout(400);
-    out.profileFromResult = await room();
-    check(out.profileFromResult.id === 'ovOnline' && out.profileFromResult.title === 'PROFILE',
-          'the result screen\'s own plate did not open the profile', out.profileFromResult);
+    out.profileFromRank = await room();
+    check(out.profileFromRank.id === 'ovOnline' && out.profileFromRank.title === 'PROFILE',
+          'THE RANK PILL DID NOT OPEN THE PROFILE', out.profileFromRank);
+    await page.click('#btnOnlineBack');
+    await page.waitForTimeout(2400);
+    out.backFromRank = await room();
+    check(out.backFromRank.id === 'ovEnd',
+          'back from the profile lost the finish screen', out.backFromRank);
+
+    /* ...and the ROW, which used to be the profile's door too. */
+    await page.click(ownPlate);
+    await page.waitForFunction(() => document.querySelector('#onLadder')?.hidden === false);
+    await page.waitForTimeout(400);
+    out.ladderFromResult = await room();
+    check(out.ladderFromResult.id === 'ovOnline' && out.ladderFromResult.title === 'LADDER',
+          'THE OWN PLATE DID NOT OPEN THE LADDER', out.ladderFromResult);
 
     await page.click('#btnOnlineBack');
     /* the plates take their stage again the moment the screen is uncovered —
@@ -238,7 +261,9 @@ try {
     const back = await resultFace();
     out.backOnResult = { room: await room(), ...back };
     check(out.backOnResult.room.id === 'ovEnd',
-          'BACK FROM THE PROFILE LOST THE RESULT SCREEN', out.backOnResult);
+          'BACK FROM THE LADDER LOST THE RESULT SCREEN — the finish screen is '
+          + 'covered, not closed, and its return target is the one thing that '
+          + 'brings it back', out.backOnResult);
     check(back.title === dealt.title && String(back.scores) === String(dealt.scores)
           && String(back.names) === String(dealt.names),
           'the result came back saying something else', { back, dealt });
@@ -249,8 +274,10 @@ try {
     check(await theatre().then((t) => t.length === 0), 'the replayed plates never settled', out.replay);
 
     /* 4 · one level at a time: the avatar picker climbs to the profile, and only
-       the profile's own ‹ goes on to the result. */
-    await page.click('#endPlates > *:first-child');
+       the profile's own ‹ goes on to the result. Entered through the RANK PILL,
+       which is the profile's door on this screen now that the row is the
+       ladder's. */
+    await page.click(`${ownPlate} .gpill`);
     await page.waitForFunction(() => document.querySelector('#onAccount')?.hidden === false);
     await page.click('#btnAvatar');
     await page.waitForFunction(() => document.querySelector('#onAvatar')?.hidden === false);

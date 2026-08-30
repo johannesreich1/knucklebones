@@ -23,14 +23,25 @@
    whole game (#kbroot.clock, declared once on entry by flow/timer.showClock) —
    otherwise the board would bounce at every hand-off. A game with no clock at
    all gives the lane back rather than holding an empty strip that pushes the
-   die off centre. */
-:where(#kbroot) .timer{display:none;height:12px;align-items:center;gap:6px;--tc:var(--tcbase,var(--p1))}
+   die off centre.
+
+   THE BAR IS THE CENTRED THING, AND THE READOUT HANGS OFF IT. The seconds only
+   appear for the last five, but as an in-flow flex item the <b> reserved its
+   lane for the whole game — `gap:6px` plus `min-width:10px`, so the row measured
+   134px while the track measured 118. Centring the ROW therefore put the track
+   8px left of the die and status it sits under, which reads as a permanently
+   left-shifted bar (reported from a device). Out of flow, the centred box IS the
+   track and the number sits just past its right end, which is where it was
+   always meant to look like it was. */
+:where(#kbroot) .timer{display:none;height:12px;align-items:center;position:relative;
+  --tc:var(--tcbase,var(--p1))}
 #kbroot.clock .timer{display:flex;visibility:hidden}
 #kbroot.clock .timer.on{visibility:visible}
 :where(#kbroot) .timer .track{width:118px;height:3px;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
 :where(#kbroot) .timer .bar{display:block;height:100%;width:100%;border-radius:99px;background:var(--tc,var(--p1));
   box-shadow:0 0 8px var(--tc,var(--p1));transition:width .1s linear}
-:where(#kbroot) .timer b{font-size:10.5px;font-weight:900;color:var(--tc,var(--p1));min-width:10px;text-align:left}
+:where(#kbroot) .timer b{position:absolute;left:100%;margin-inline-start:6px;
+  font-size:10.5px;font-weight:900;color:var(--tc,var(--p1));text-align:left}
 :where(#kbroot) .timer.warn{--tc:var(--orange)}
 :where(#kbroot) .timer.warn .bar{box-shadow:0 0 10px var(--tc)}
 

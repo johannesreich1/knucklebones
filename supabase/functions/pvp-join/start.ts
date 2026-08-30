@@ -45,10 +45,22 @@ function matchPayload(value: unknown): MatchRow | null {
 }
 
 /** Pick the shared pool outcome and persist its complete atomic start record. */
+/** The started match, plus the bot opening this call baked into it (if any). */
+export interface StartedRankedMatch {
+  match: MatchRow;
+  /* THE OPENING THE BOT JUST PLAYED. Written into the match by the start RPC,
+     so the client's first read finds it already on the board and cannot tell it
+     apart from history — which is how a bot's opener came to appear in one
+     silent frame while its mid-game replies were performed. Saying so here is
+     the ordinary-ranked half of the same signal the Rune Trial sends as
+     `bot_actions`. Null whenever the human opens, or on a rejoin. */
+  botMove: { col: number; die: number } | null;
+}
+
 export async function startProgressiveRankedMatch(
   svc: EdgeClient,
   input: ProgressiveMatchStart,
-): Promise<MatchRow | null> {
+): Promise<StartedRankedMatch | null> {
   const seed = newSeed();
   const accesses = [input.underdogAccess, input.favouriteAccess] as const;
   const spec = pickRankedOutcome(seed, accesses);
@@ -105,5 +117,8 @@ export async function startProgressiveRankedMatch(
   if (error) throw new MatchStartFailure(error.message);
   const startedMatch = matchPayload(started);
   if (!startedMatch) throw new MatchStartFailure("invalid start_ranked_match_v2 payload");
-  return startedMatch;
+  return {
+    match: startedMatch,
+    botMove: openingCol === null ? null : { col: openingCol, die: firstDie },
+  };
 }

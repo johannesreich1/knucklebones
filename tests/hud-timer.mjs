@@ -115,6 +115,44 @@ const t0 = await p.evaluate(() => ({
   dice: window.__kb.S.boards[0].flat().length + window.__kb.S.boards[1].flat().length,
 }));
 check(t0.visible, 'timer not running on a duo turn', t0);
+
+/* THE BAR IS CENTRED ON THE STAGE AXIS, not on a row that reserves a lane for
+   digits it is not showing. The seconds appear only for the last five, but the
+   <b> used to hold `gap:6px` + `min-width:10px` as an in-flow flex item all
+   game — so the 118px track sat inside a 134px row and its centre landed 8px
+   left of the die and status above it. Reported from a device as a bar that
+   "always feels a little left placed even though no number is shown".
+   Measured as painted centres: the DOM said nothing was wrong. */
+const axis = await p.evaluate(() => {
+  const mid = (selector) => {
+    const box = document.querySelector(selector)?.getBoundingClientRect();
+    return box && box.width > 0 ? box.left + box.width / 2 : null;
+  };
+  const num = document.getElementById('timerNum');
+  return {
+    track: mid('#timerWrap .track'),
+    stage: mid('#dieStage'),
+    status: mid('#status'),
+    /* Empty right now — and that is the point: it must cost the track nothing. */
+    numText: num.textContent,
+    numLeft: num.getBoundingClientRect().left,
+    trackRight: document.querySelector('#timerWrap .track').getBoundingClientRect().right,
+  };
+});
+out.timerAxis = axis;
+check(axis.track !== null && axis.stage !== null,
+  'the clock or the die stage was not painted, so nothing below is measuring them', axis);
+check(axis.numText === '',
+  'the countdown number was showing, so this says nothing about the empty case', axis);
+/* One pixel for sub-pixel rounding. The defect was a fixed 8px. */
+check(axis.track !== null && axis.stage !== null && Math.abs(axis.track - axis.stage) <= 1,
+  'THE TURN-CLOCK BAR IS OFF THE STAGE AXIS — the empty countdown number still '
+  + 'reserves its lane, so centring the row leaves the bar visibly left of the '
+  + 'die it sits under', axis);
+/* ...and the readout still sits to the RIGHT of the bar rather than on top of
+   it, so taking it out of flow did not simply hide it. */
+check(axis.numLeft >= axis.trackRight,
+  'the countdown number no longer sits past the right end of the bar', axis);
 await p.waitForTimeout(3000);
 const t1 = await p.evaluate(() => ({ width: document.getElementById('timerBar').style.width }));
 check(parseFloat(t1.width) < 90 && parseFloat(t1.width) > 40, 'timer bar not draining as expected', { t0, t1 });

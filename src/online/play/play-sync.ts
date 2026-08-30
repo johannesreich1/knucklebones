@@ -199,7 +199,15 @@ async function syncTrial(
   const snapshot = await readTrialSnapshot(online);
   if (!ports.isCurrent(online) || !snapshot) return false;
   const fresh = snapshot.rows.filter(({ idx }) => idx >= online.actionApplied);
-  if (fresh.length && !fullRedraw) {
+  /* A FULL REDRAW STILL OWES A BOT ITS OPENING TURN. fullRedraw exists to stop
+     two things animating — reconnecting into a match already in progress, and
+     recovering after a refused or uncertain action — and neither ever carries
+     this flag: the join response sets it only when a bot moved inside THAT
+     request, and submit() clears it before every recovery resync. So the flag,
+     not the redraw mode, is what decides whether a batch is performed. Without
+     this the first read dropped the opener on the floor and installTrialProjection
+     painted it in one silent frame (reported from a device). */
+  if (fresh.length && (!fullRedraw || online.botBeatDue)) {
     online.animating = true;
     try {
       await replayTrialActions(online, fresh, ports);
@@ -235,6 +243,12 @@ async function syncStandard(
      turn they already watched. */
   const botReply = online.botBeatDue;
   online.botBeatDue = false;
+  /* THE BOT OPENED THIS MATCH. One row, theirs, and nothing of ours yet — the
+     start RPC wrote it before this client ever read the board. It arrives on a
+     full redraw (entry is one), so it needs the same exemption the Trial's
+     replay gate gets, and then the ordinary single-row branch below performs it. */
+  const opening = botReply && fresh.length === 1 && !online.applied
+    && fresh[0].who !== online.you;
   /* THE AUTO-PLAYED TURN. The clock ran out, the server placed for the player
      and the bot answered inside the same command — two fresh rows, mine then
      theirs, which the rebuild below would paint in one silent frame. A tapped
@@ -252,10 +266,13 @@ async function syncStandard(
       }
     } finally { online.animating = false; }
     if (!ports.isCurrent(online)) return false;
-  } else if (fresh.length === 1 && !fullRedraw && fresh[0].who !== online.you) {
+  } else if (fresh.length === 1 && (!fullRedraw || opening) && fresh[0].who !== online.you) {
     online.applied = fresh[0].idx + 1;
     online.animating = true;
     try {
+      /* An OPENING is a whole turn of theirs and gets the full beat; a mid-game
+         row that simply arrived is already a turn the player watched begin. */
+      if (opening && !await ports.openOpponentBeat(online, fresh[0].die)) return false;
       await animateOnlineMove(fresh[0].who as Player, fresh[0].col, fresh[0].die,
         () => ports.isCurrent(online));
     } finally { online.animating = false; }

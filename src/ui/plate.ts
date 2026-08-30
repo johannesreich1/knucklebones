@@ -23,6 +23,7 @@ export interface PlateSpec {
   lost?: boolean;          // dimmed — this row did not
   stamp?: string;          // 'BEATEN' / 'FORFEIT' — angled across the row (design 36d)
   chev?: boolean;          // reads as a door
+  rankTap?: () => void;    // the group pill is its own door (result screen)
   large?: boolean;         // the result screen's roomier cut; the chip stays slim
 }
 
@@ -40,6 +41,17 @@ export function repaintPlateLocale(el: HTMLElement, p: PlateSpec): void {
   }
   const group = el.querySelector<HTMLElement>('.gpill');
   if (group) {
+    /* A SECOND DOOR INSIDE THE ROW. The plate itself is a <button> when it has a
+       tap, so the pill cannot be one too — a button inside a button is not a
+       tree the HTML parser will keep. role="button" + tabindex is what the rest
+       of the app already treats as interactive (boot/input-bindings.ts,
+       ui/sheet-drag.ts), so the pill announces and focuses like a control while
+       staying phrasing content. Opt-in: a plate with no rankTap (the home chip)
+       renders exactly the inert span it always did. */
+    if (p.rankTap) {
+      group.setAttribute('role', 'button');
+      group.tabIndex = 0;
+    }
     group.hidden = p.points == null;
     if (p.points != null) {
       const resolved = boardGroup(pts, !!p.apex);

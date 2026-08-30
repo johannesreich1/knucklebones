@@ -55,9 +55,18 @@ export interface RuneTrialState {
 }
 
 export type JoinResult =
+  /* `bot_actions` / `bot_move` mean A BOT MOVED INSIDE THIS REQUEST, and no
+     client has ever painted those rows. The server bakes a bot's opening into
+     the match before the board is ever read (pvp-join/start.ts for ordinary
+     ranked, _shared/rune-trial-bot-opening.ts for a Trial), so without being
+     told, the client's first read cannot tell an opener from history and paints
+     it in one silent frame. Present only on the response that committed it — a
+     rejoin carries neither, which is what stops a reconnect replaying a match. */
   | { status: 'matched'; match: MatchRow; you: 0 | 1; rejoined?: boolean;
       names: { p1: string; p2: string; ratings?: { p1: number | null; p2: number | null };
                avatars?: { p1: string | null; p2: string | null } };
+      bot_actions?: MatchActionRow[];
+      bot_move?: { col: number; die: number } | null;
       trial?: RuneTrialState | null }
   | { status: 'queued' }
   | { status: 'incompatible'; reason: 'client' | 'rune-rules' };
@@ -161,11 +170,22 @@ export async function nudgeRankedAction(
   });
 }
 
+/* THE RESPONSE THAT COMMITS THE BOT'S OPENING. Finalizing a Trial selection is
+   what flips the phase to playing, and the same Edge invocation then commits a
+   bot opening seat's whole first turn — so this is where `bot_actions` arrives
+   in the ordinary flow, not on the join. Carrying it to entry is what lets the
+   board perform that turn instead of finding it already there. */
+export type RuneTrialSelection = {
+  match: MatchRow;
+  trial: RuneTrialState;
+  bot_actions?: MatchActionRow[];
+};
+
 export async function selectRune(
   matchId: string,
   runeId: string,
   commandId: string = randomUuid(),
-): Promise<{ status: number; data: { match: MatchRow; trial: RuneTrialState } | null }> {
+): Promise<{ status: number; data: RuneTrialSelection | null }> {
   return callFunction('pvp-rune-select', {
     match_id: matchId,
     rune_id: runeId,
@@ -175,7 +195,7 @@ export async function selectRune(
 
 export async function autoSelectRune(
   matchId: string,
-): Promise<{ status: number; data: { match: MatchRow; trial: RuneTrialState } | null }> {
+): Promise<{ status: number; data: RuneTrialSelection | null }> {
   return callFunction('pvp-rune-select', {
     match_id: matchId,
     command_id: randomUuid(),

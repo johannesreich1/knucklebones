@@ -76,7 +76,8 @@ const account = createAccountScreen({
 const result = createResultScreen({
   goHome,
   nextDuel,
-  openProfile: openProfileFromResult,
+  openProfile: (onReturn: () => void) => openFromResult('account', onReturn),
+  openLadder: (onReturn: () => void) => openFromResult('ladder', onReturn),
 });
 
 function showAuthPanel(mode: AuthMode, origin: AuthOrigin, notice: string | null = null): void {
@@ -155,7 +156,14 @@ function goHome(): void {
   exitOnline = goHome;
 }
 
-function openProfileFromResult(onReturn: () => void): void {
+/* ONE DOOR OUT OF THE FINISH SCREEN, TWO DESTINATIONS. The result is COVERED
+   rather than closed (#ovEnd stays up behind #ovOnline), so returning is a
+   one-shot closure in the single `exitOnline` slot that puts the slot back,
+   uncovers, and replays the plates' theatre. The player's own row opens the
+   LADDER and the rank pill on it opens the PROFILE; both come back HERE.
+   Written once with the view as its only parameter — two near-copies of this
+   closure is exactly how a return target comes to differ between two doors. */
+function openFromResult(view: OnlineView, onReturn: () => void): void {
   entryRevision++;
   closeRuneReward();
   exitOnline = () => {
@@ -165,7 +173,7 @@ function openProfileFromResult(onReturn: () => void): void {
     onReturn();
   };
   show('#ovOnline');
-  void route('account');
+  void route(view);
 }
 
 function nextDuel(): void {

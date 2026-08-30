@@ -25,7 +25,10 @@ export async function resultRewardProfileOcclusionProbe(page, routes) {
   /* Invoke immediately on the currently dealt plate: its late profile repaint
      can replace the button between pointerdown/up, which is unrelated to the
      reward-navigation race this probe owns. */
-  await page.$eval('#endPlates > button:first-child', (button) => button.click());
+  /* THE RANK PILL IS THE PROFILE'S DOOR on the result screen; the row itself
+     opens the LADDER. Invoked directly rather than tapped because a late
+     profile repaint can replace the plate between pointerdown and up. */
+  await page.$eval('#endPlates > button:first-child .gpill', (pill) => pill.click());
   await Promise.all([
     page.waitForSelector('#ovOnline.on #onLoading:not([hidden])', { timeout: 15000 }),
     Promise.race([

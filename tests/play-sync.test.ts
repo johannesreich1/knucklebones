@@ -261,6 +261,39 @@ check(online.applied === 3,
 check(online.botBeatDue === false,
   'the bot-beat flag survived the batch that performed it', online.botBeatDue);
 
+/* ---- A BOT'S OPENING ARRIVES ON A FULL REDRAW, AND IS STILL OWED A TURN ----
+   The start RPC writes the bot's opening move before this client ever reads the
+   board, so it is already in the log at entry — and entry is the one read that
+   refuses to animate (initial-sync calls sync(TRUE), and the branches below are
+   gated on !fullRedraw). The rows were dropped and the rebuild painted them in
+   one silent frame. Reported from a device 2026-08-30: "When ai opens, at least
+   In rune ritual it's instantly played."
+   The flag is what buys the beat, so the flag — not the redraw mode — decides. */
+online = onlineState({ applied: 0, botBeatDue: true });
+S.boards = [emptyBoard(), emptyBoard()];
+routes = {
+  match_moves: () => ({ body: [{ idx: 0, who: 0, col: 0, die: 3 }] }),
+  matches: () => ({ body: matchRow({ turn: 1, next_die: 5 }) }),
+};
+const openingBefore = opponentBeats;
+check(await sync(true), 'the bot-opening entry did not sync');
+check(opponentBeats === openingBefore + 1,
+  'A BOT OPENING WAS PAINTED SILENTLY — it is already in the log at entry, and '
+  + 'entry is a full redraw, so the row never reached the replay that performs it',
+  { opponentBeats, openingBefore, applied: online.applied });
+check(online.applied === 1,
+  'the performed opening left its row unclaimed, so a later read animates it twice',
+  online.applied);
+
+/* A REJOIN IS THE SAME ROWS WITHOUT THE CLAIM. It must stay silent, or
+   reconnecting into a long match would sit through every move of it. */
+online = onlineState({ applied: 0, botBeatDue: false });
+S.boards = [emptyBoard(), emptyBoard()];
+const rejoinBefore = opponentBeats;
+check(await sync(true), 'the rejoin did not sync');
+check(opponentBeats === rejoinBefore,
+  'a rejoin replayed the opponent\'s turn instead of projecting it', opponentBeats);
+
 /* THE NEGATIVE CONTROL. Without a committed bot reply the same two rows are an
    ordinary catch-up and must NOT manufacture a turn that never happened. */
 online = onlineState({ applied: 1, botBeatDue: false });
