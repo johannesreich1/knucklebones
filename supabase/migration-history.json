@@ -1,7 +1,7 @@
 {
   "projectRef": "euzjcejbkxvqfrttgaxu",
   "fetchedAt": "2026-08-30",
-  "productionPrefixSha256": "456b2a57f3d65db5256ad704ae0e78153eab18bfec3ec5e448fef57a1c54df99",
+  "productionPrefixSha256": "580ffad5f12a2fcdd601566ae030663d8846bc875dca134190e74275fc941397",
   "archivedLocalLedgerSha256": "6108831c38b14676a457739da748a11a863249dcda742e7081e59aeaacd974cc",
   "productionPrefix": [
     "20260816170758_stage3_ranked_v1.sql",
@@ -59,7 +59,8 @@
     "20260827160000_auto_forfeit_streak.sql",
     "20260827203007_ladder_dense_positions.sql",
     "20260828192801_equipped_rune.sql",
-    "20260830112653_equipped_rune_grant.sql"
+    "20260830112653_equipped_rune_grant.sql",
+    "20260830155543_equipped_runes_ranked.sql"
   ],
   "archivedLocalLedger": [
     "0001_stage3_ranked_v1.sql",

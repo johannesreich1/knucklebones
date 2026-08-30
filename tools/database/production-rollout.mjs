@@ -1616,7 +1616,12 @@ select
       and exists (select 1 from public.player_runes owned
                    where owned.player_id = profile.id)
       and profile.equipped_rune is distinct from
-            private.bot_owned_rune_choice(profile.id))::integer
+            (select owned.rune_id
+               from public.player_runes owned
+              where owned.player_id = profile.id
+              order by md5(profile.id::text || ':bot-equipped-v1:' || owned.rune_id),
+                       owned.rune_id
+              limit 1))::integer
     as bot_seat_not_canonical;
 `;
 

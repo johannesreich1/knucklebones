@@ -199,7 +199,10 @@ export async function runEquippedRankedProductionMigrationCases(options: {
         'missing bot audit marker ' + marker);
     }
     assert.match(EQUIPPED_RANKED_BOT_CONVERGENCE,
-      /private\.bot_owned_rune_choice\(profile\.id\)/);
+      /:bot-equipped-v1:/);
+    assert.doesNotMatch(EQUIPPED_RANKED_BOT_CONVERGENCE,
+      /private\.bot_owned_rune_choice/,
+      'the read-only post-apply audit cannot EXECUTE the deliberately locked helper');
   });
 
   await checkAsync('equipped-ranked audit composes the complete Rune Trial foundation', async () => {

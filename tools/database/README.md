@@ -1,8 +1,9 @@
 # Production database rollouts
 
 Production migrations are deliberately separate from the Cloudflare deploy.
-Since the 2026-08-30 reconciliation, `supabase/migrations/` begins with the
-same canonical 56-file timestamped prefix as production, pinned by
+Since the 2026-08-30 reconciliation and equipped-ranked rollout,
+`supabase/migrations/` begins with the same canonical 57-file timestamped
+prefix as production, pinned by
 `supabase/migration-history.json` and `tests/migration-ledger.test.ts`. The
 former compact aliases, obsolete 12-bot seed, and two wrong-stamped files live
 under `supabase/legacy-migrations/` and are never executable.

@@ -53,9 +53,11 @@ The legacy identifier mismatch was reconciled on 2026-08-30 without changing
 production history or executing SQL. Thirty-one local-only files moved
 verbatim to `supabase/legacy-migrations/`; 34 canonical production-only files
 were fetched into the active ledger; and the 22 already matching versions were
-left untouched. The resulting 56-file production prefix ends at
-`20260830112653_equipped_rune_grant.sql`. The archived `0007_bot_pool.sql` is
-an obsolete one-off 12-account seed and must never become executable again.
+left untouched. That reconciliation baseline was the 56-file prefix ending at
+`20260830112653_equipped_rune_grant.sql`; the guarded equipped-ranked rollout
+then applied `20260830155543_equipped_runes_ranked.sql`, making the current
+production prefix 57 files. The archived `0007_bot_pool.sql` is an obsolete
+one-off 12-account seed and must never become executable again.
 
 Normal linked history checks and dry runs can therefore use the repository
 root. Production applies remain explicit owner operations, and `--include-all`
