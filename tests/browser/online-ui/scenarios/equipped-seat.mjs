@@ -1,7 +1,8 @@
 // THE RUNE YOU CARRY, IN THE SEAT THAT GATES IT.
 //
-// The equipped rune shipped (20260828210000) with nothing able to watch it. The
-// client reads it with a THIRD query against `profiles` — `select=equipped_rune`
+// The equipped-rune migration (`20260828192801_equipped_rune.sql`) shipped with
+// nothing able to watch it. The client reads it with a THIRD query against
+// `profiles` — `select=equipped_rune`
 // — and the harness told its profile reads apart with a single
 // `url.includes('ranked_pool_tier')`. So the equipped read fell through to the
 // account-profile branch and was answered with `{id, nickname, rating,

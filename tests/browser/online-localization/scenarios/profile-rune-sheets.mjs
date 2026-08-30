@@ -64,5 +64,29 @@ export async function inspectRuneSheets(suite, page, label, locale) {
       && locked.copy.meta === '' && locked.copy.metaHidden,
     `profile-rune-locked-${label} exposed mechanics or lost localized unlock guidance`,
     { actual: locked.copy, expectedLockedDetail });
-  return { unlocked, locked };
+
+  const seatLabel = await page.locator('#accSeat').getAttribute('aria-label');
+  await page.click('#accSeat');
+  await page.waitForSelector('.faceoff.libsheet .focard', { timeout: 5000 });
+  await frame(page);
+  const seatSurface = await inspectSurface(page, '.faceoff.libsheet .focard', [
+    '.fograb', '.mcname', '.mcdetail', '.seatpick .accrune', '#accSeatClear',
+  ]);
+  checkSurface(suite.check, `profile-rune-seat-${label}`, seatSurface,
+    { allowScrollable: true, targets: false });
+  const seatCopy = await page.evaluate(() => ({
+    title: document.querySelector('.faceoff.libsheet .mcname')?.textContent?.trim() ?? '',
+    detail: document.querySelector('.faceoff.libsheet .mcdetail')?.textContent?.trim() ?? '',
+    clear: document.querySelector('#accSeatClear')?.textContent?.trim() ?? '',
+  }));
+  const expectedSeatLabel = `${catalog.game.runes.fate.name} — ${catalog.online.profile.equippedMeta}`;
+  suite.check(seatLabel === expectedSeatLabel
+      && seatCopy.title === catalog.online.profile.seatPick
+      && seatCopy.detail === catalog.online.profile.seatPickDetail
+      && seatCopy.clear === catalog.online.profile.unequipThis,
+    `profile-rune-seat-${label} did not render the localized SILVER/Trial contract`,
+    { seatLabel, expectedSeatLabel, seatCopy });
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.faceoff.libsheet', { state: 'detached', timeout: 5000 });
+  return { unlocked, locked, seat: { surface: seatSurface, copy: seatCopy } };
 }

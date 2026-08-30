@@ -24,7 +24,7 @@ export function finishOnlineMatch(options: {
   online.done = true;
   stopTimer();
 
-  if (!online.trial) void (async () => {
+  if (!online.actionProtocol) void (async () => {
     const { data: rows } = await supa().from('match_moves')
       .select('idx, who, col, die').eq('match_id', online.matchId).order('idx');
     if (!rows || !options.isCurrent()) return;

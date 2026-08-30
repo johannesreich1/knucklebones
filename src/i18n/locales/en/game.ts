@@ -97,6 +97,7 @@ export const enGame = {
     gameMode: 'GAME MODE',
     matchRune: 'MATCH RUNE',
     trialRunes: 'RITUAL RUNES',
+    rankedRunes: 'RANKED RUNES',
     runeFor: 'RUNE FOR',
     tapReady: 'Tap when you are ready',
     connecting: 'Connecting players…',
@@ -219,6 +220,10 @@ export const enGame = {
     revealPair: 'Both choices are locked',
     revealed: 'Runes revealed',
     pickClock: 'SECONDS TO CHOOSE',
+  },
+  rankedRunes: {
+    revealPair: '{{playerOne}}: {{runeOne}}. {{playerTwo}}: {{runeTwo}}.',
+    revealed: 'Ranked runes revealed',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Committed — choose a marked column.',

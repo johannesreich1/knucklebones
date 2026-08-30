@@ -69,9 +69,9 @@ export interface OpponentTurnOptions {
 
 /* THE OPPONENT'S TURN IS PERFORMED, NOT ANNOUNCED. A bot has no request loop,
    so the server commits its whole reply inside the human's own command — in
-   ordinary ranked as `bot_move`, in a Rune Trial as extra rows on the action
-   log. Replayed as they arrive, the machine answers in the same frame the
-   player taps, which is exactly what gives a bot away.
+   legacy standard play as `bot_move`, and in either action-protocol format as
+   extra action rows. Replayed as they arrive, the machine answers in the same
+   frame the player taps, which is exactly what gives a bot away.
    So the beat is shared rather than owned by one driver: the seat changes
    hands (the rune rail's forward card follows it), the status names who is
    thinking, their die is rolled in the open, the countdown runs in THEIR

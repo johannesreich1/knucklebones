@@ -1,6 +1,8 @@
 import {
   PRODUCTION_BOT_COUNT,
   PRODUCTION_BOT_MAX_POINTS,
+  PRODUCTION_BOT_RUNE_OWNER_COUNT,
+  PRODUCTION_BOT_RUNE_ROW_COUNT,
   PRODUCTION_BOT_SEED_PLAN,
 } from '../../tools/database/production-test-data-core.mjs';
 
@@ -87,7 +89,13 @@ export function seededAudit(overrides: Record<string, number> = {}) {
       bots: PRODUCTION_BOT_COUNT,
       seasonRatings: PRODUCTION_BOT_COUNT,
     }),
-    ...emptyRune(),
+    ...emptyRune({ playerRunes: PRODUCTION_BOT_RUNE_ROW_COUNT }),
+    botsWithRunes: PRODUCTION_BOT_RUNE_OWNER_COUNT,
+    botsEquipped: PRODUCTION_BOT_RUNE_OWNER_COUNT,
+    botsWithRunesWithoutEquipped: 0,
+    botsWithoutRunesWithEquipped: 0,
+    botsWithUnownedEquippedRune: 0,
+    botsWithUnexpectedEquippedRune: 0,
     invalidBotRows: 0,
     missingSeasonRows: 0,
     inconsistentRatingRows: 0,

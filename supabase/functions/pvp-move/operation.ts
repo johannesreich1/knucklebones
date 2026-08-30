@@ -75,7 +75,8 @@ export async function moveMatch(context: AuthenticatedContext, input: MoveInput)
   const match = data as MatchRow | null;
   if (!match || (match.p1 !== user.id && match.p2 !== user.id)) return json({ error: "no-match" }, 404);
   if (match.status !== "active") return json({ error: "match-over" }, 409);
-  if (match.format !== "standard" || match.phase !== "playing") {
+  if (match.format !== "standard" || match.phase !== "playing"
+      || match.rune_rules_version !== null) {
     return json({ error: "wrong-protocol" }, 409);
   }
   if (match.next_die == null) return json({ error: "corrupt-state" }, 500);

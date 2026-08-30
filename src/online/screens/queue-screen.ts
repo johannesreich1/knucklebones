@@ -2,6 +2,7 @@ import { Sfx } from '../../ui/audio.ts';
 import { $ } from '../../ui/dom.ts';
 import { cancelTrialSelection } from '../../ui/trial-select.ts';
 import { isNewcomer, offerTutorial } from '../../ui/firstrun.ts';
+import { RUNE_TRIAL_FORMAT } from '../../core/ranked-outcomes.ts';
 import { enterMatch } from '../play/play.ts';
 import { join, type JoinResult } from '../api/match-api.ts';
 import { resign, resignedOver } from '../api/match-resignation.ts';
@@ -9,7 +10,12 @@ import { createQueueCancellation } from '../api/queue-cancellation.ts';
 import { leaveQueue } from '../api/queue-lifecycle.ts';
 import { createRunGeneration } from '../api/run-generation.ts';
 import { createQueueWaiting } from './queue-waiting.ts';
-import { revealPairing, revealRankedMatch, trialRevealSides } from './queue-reveal.ts';
+import {
+  rankedRevealSides,
+  revealPairing,
+  revealRankedMatch,
+  trialRevealSides,
+} from './queue-reveal.ts';
 import { resolveRankedTrial } from '../runes/trial-offer.ts';
 
 export interface QueueScreen {
@@ -102,6 +108,16 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
         return;
       }
       if (result?.status === 'matched') {
+        /* Rejoins deliberately skip the fresh-match theatre, so the reveal
+           cannot be their validator. Reject an unknown non-null standard rune
+           here for BOTH entry paths; shortening it to an empty hand would make
+           this build replay a different match from the server. Legacy missing
+           fields and explicit null remain honest empty seats. */
+        if (result.match.format !== RUNE_TRIAL_FORMAT && !rankedRevealSides(result)) {
+          waiting.clear();
+          ports.goHome();
+          return;
+        }
         if (result.rejoined) {
           const over = await resignedOver(result.match.id);
           if (!runs.owns(run)) return;
@@ -135,7 +151,7 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
           return sides;
         };
         if (showReveal) {
-          await revealRankedMatch(match, trialChoice);
+          if (!await revealRankedMatch(match, trialChoice)) unreadable = true;
         } else {
           /* No reveal to run: a rejoin past the selection phase, where the
              resolver only confirms what the server already settled. */

@@ -20,6 +20,7 @@ const recoveryOnline = {
   you: 1,
   gen: 91_001,
   done: false,
+  actionProtocol: true,
   trial: true,
   lastMoveAt: 1_000,
   animating: false,
@@ -208,6 +209,7 @@ check(idleNudges === 1,
    watchdog read the Trial's `bot_actions` field alone, so an ordinary ranked
    auto-play claimed nothing and its two fresh rows were repainted in one
    silent frame — no seat change, no rolled die, no clock. */
+recoveryOnline.actionProtocol = false;
 recoveryOnline.trial = false;
 recoveryOnline.recoverySync = false;
 recoveryOnline.recoveryActionVersion = null;

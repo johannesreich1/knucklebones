@@ -1,6 +1,7 @@
-// Guarded, allow-listed production migrations. The repository migration
-// directory is intentionally not used as a db-push workdir: its compact local
-// history differs from the canonical timestamped production ledger.
+// Guarded, allow-listed production migrations. The repository's production
+// prefix now matches production; the fresh fetched workdir remains deliberate so its
+// migration directory is exactly the fixed allow-list and --include-all can
+// never cross an unrelated pending migration.
 import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import {
@@ -30,6 +31,7 @@ import {
   productionDbPushArgs,
   productionMigrationFetchArgs,
   validateAppleGameCenterSchemaStage,
+  validateEquippedRankedSchemaStage,
   validateLadderStreakBaselineSchemaStage,
   validateMatchCommandRetentionSchemaStage,
   validatePlayerSettingsSchemaStage,
@@ -55,6 +57,8 @@ export const APPLE_GAME_CENTER_MIGRATION_SHA256 = Object.freeze({
   appleRevocationUnstage: 'a3350911d5661e77bfa83045e5b52760d9114fc0dcd9c8522f27720f020f7f09',
 });
 export const RUNE_TRIAL_MIGRATION_SHA256 = '930c4c52979df8e94bb0e59e033203c3973401f433f1d7ac3594cac20291cc33';
+export const EQUIPPED_RANKED_MIGRATION_SHA256 =
+  'c41d5051fc1d6bbf522233ecaa469f83b12ee3efbdcfd237ff8841ed963d6f15';
 export const LADDER_STREAK_BASELINES_MIGRATION_SHA256 =
   '1b132572fde4df5f451e0c1780077c0e07156300fbd91b24833614a8d2e6c827';
 export const MATCH_COMMAND_STALL_CHECK_MIGRATION_SHA256 =
@@ -103,6 +107,17 @@ const ROLLOUTS = Object.freeze({
         name: 'rune_trial_ranked_v2',
         file: 'supabase/migrations/20260825205241_rune_trial_ranked_v2.sql',
         sha256: RUNE_TRIAL_MIGRATION_SHA256,
+      }),
+    ]),
+  }),
+  'ranked-runes': Object.freeze({
+    audit: 'equipped-ranked',
+    migrations: Object.freeze([
+      Object.freeze({
+        version: '20260830155543',
+        name: 'equipped_runes_ranked',
+        file: 'supabase/migrations/20260830155543_equipped_runes_ranked.sql',
+        sha256: EQUIPPED_RANKED_MIGRATION_SHA256,
       }),
     ]),
   }),
@@ -934,7 +949,11 @@ select
         and count(*) filter (
           where conname = 'matchmaking_queue_capabilities_check'
             and pg_get_constraintdef(oid, true) like '%rune_trial_v1%'
-            and pg_get_constraintdef(oid, true) like '%cardinality(capabilities) <= 1%'
+            and (
+              pg_get_constraintdef(oid, true) like '%cardinality(capabilities) <= 1%'
+              or md5(pg_get_constraintdef(oid, true)) =
+                '81f60e7c70ee6080403a93229cd4205a'
+            )
         ) = 1
         and count(*) filter (
           where conname = 'matchmaking_queue_pool_tier_check'
@@ -1229,48 +1248,51 @@ select
 export const RUNE_TRIAL_FUNCTIONS = String.raw`
 with expected(
   signature, schema_name, function_name, language_name, security_definer,
-  volatility, return_type, argument_defaults, body_md5
+  volatility, return_type, argument_defaults, body_md5s
 ) as (
   values
     ('private.ranked_pool_tier_for_peak(integer)', 'private',
       'ranked_pool_tier_for_peak', 'sql', false, 'i', 'text', 0,
-      'ff03a2512b40e447699b2ba4f8ca9625'),
+      array['ff03a2512b40e447699b2ba4f8ca9625']),
     ('public.acknowledge_rune_reward(text)', 'public',
       'acknowledge_rune_reward', 'plpgsql', true, 'v', 'boolean', 0,
-      'a66f2b1863080172a137f77f15f48e8c'),
+      array['a66f2b1863080172a137f77f15f48e8c']),
     ('public.enqueue_ranked_player_v2(uuid,smallint,text[])', 'public',
       'enqueue_ranked_player_v2', 'plpgsql', true, 'v', 'jsonb', 0,
-      '47d0f0d3803e4411a4ab72f88710da2c'),
+      array['47d0f0d3803e4411a4ab72f88710da2c',
+            '8d6c669dd740a64a1df872b3a6359944']),
     ('public.start_ranked_match_v2(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text)',
       'public', 'start_ranked_match_v2', 'plpgsql', true, 'v', 'jsonb', 0,
-      'a774ada104b131c0eefdc840d5a026d3'),
+      array['a774ada104b131c0eefdc840d5a026d3']),
     ('private.finalize_rune_trial_locked(uuid,boolean)', 'private',
       'finalize_rune_trial_locked', 'plpgsql', true, 'v', 'public.matches', 1,
-      '9a692011627169211f21317324015650'),
+      array['9a692011627169211f21317324015650']),
     ('private.rune_trial_payload(uuid,uuid)', 'private',
       'rune_trial_payload', 'plpgsql', true, 's', 'jsonb', 0,
-      '589c07689e57ac2ca17d847a2f91a709'),
+      array['589c07689e57ac2ca17d847a2f91a709']),
     ('public.rune_trial_state(uuid,uuid)', 'public',
       'rune_trial_state', 'plpgsql', true, 'v', 'jsonb', 0,
-      'f8d6ae222bb50b868d4d688f244da62e'),
+      array['f8d6ae222bb50b868d4d688f244da62e']),
     ('public.commit_rune_trial_choice(uuid,uuid,uuid,text,boolean)', 'public',
       'commit_rune_trial_choice', 'plpgsql', true, 'v', 'jsonb', 0,
-      'a622803213bf639775f8363a6c91c029'),
+      array['a622803213bf639775f8363a6c91c029']),
     ('public.settle_match(uuid,text,uuid,integer,integer,integer,integer,jsonb,jsonb,jsonb,jsonb)',
       'public', 'settle_match', 'plpgsql', true, 'v', 'jsonb', 0,
-      '2b34ae6429ae876839c20909e43cbf5a'),
+      array['2b34ae6429ae876839c20909e43cbf5a',
+            '969ec904c8bce2bf1cfab78a90d8669b']),
     ('public.match_action_result(uuid,uuid,uuid,boolean,integer,jsonb)', 'public',
       'match_action_result', 'plpgsql', true, 's', 'jsonb', 0,
-      'd12d6153ad37b7f50b89b1d550e8ab39'),
+      array['d12d6153ad37b7f50b89b1d550e8ab39']),
     -- Re-pinned 2026-08-27 by 20260827160000_auto_forfeit_streak: the action
     -- commit now maintains p{1,2}_auto_streak and admits an own-turn auto with
     -- a null stall precondition.
     ('public.commit_match_action(uuid,uuid,uuid,boolean,integer,smallint,smallint,timestamptz,jsonb,jsonb,smallint,smallint,jsonb,jsonb)',
       'public', 'commit_match_action', 'plpgsql', true, 'v', 'jsonb', 1,
-      '223f4df6134ba6fbce4487143933f4e8'),
+      array['223f4df6134ba6fbce4487143933f4e8',
+            'cb197365655531053efedc039ed84380']),
     ('private.purge_expired_rune_trial_commands(timestamptz,integer)', 'private',
       'purge_expired_rune_trial_commands', 'plpgsql', false, 'v', 'integer', 1,
-      '89732767ac693a980498119d66e77c95')
+      array['89732767ac693a980498119d66e77c95'])
 ),
 catalog as (
   select expected.*, p.oid, p.proowner, p.prosrc, p.proacl,
@@ -1329,7 +1351,7 @@ select
        ('private', 'purge_expired_rune_trial_commands')
      )
   ) as function_contracts,
-  (select count(*) = 12 and bool_and(md5(prosrc) = body_md5) from catalog)
+  (select count(*) = 12 and bool_and(md5(prosrc) = any(body_md5s)) from catalog)
     as function_bodies,
   (
     select count(*) = 8
@@ -1421,6 +1443,195 @@ select
     and (select count(*) from private.rune_trial_selection_commands) = 0
     and (select count(*) from private.match_action_commands) = 0
   ) as new_tables_empty;
+`;
+
+export const EQUIPPED_RANKED_SCHEMA = String.raw`
+with expected(
+  signature, schema_name, function_name, language_name, security_definer,
+  volatility, return_type, argument_defaults, body_md5
+) as (
+  values
+    ('public.enqueue_ranked_player_v2(uuid,smallint,text[])', 'public',
+      'enqueue_ranked_player_v2', 'plpgsql', true, 'v', 'jsonb', 0,
+      '8d6c669dd740a64a1df872b3a6359944'),
+    ('public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)',
+      'public', 'start_ranked_match_v3', 'plpgsql', true, 'v', 'jsonb', 0,
+      'b7b1b9e7899045936f4d6a246f1c9eee'),
+    ('private.bot_owned_rune_choice(uuid)', 'private',
+      'bot_owned_rune_choice', 'sql', false, 's', 'text', 0,
+      'b6cbfd6a8630c49653664bf554aa346a'),
+    ('public.settle_match(uuid,text,uuid,integer,integer,integer,integer,jsonb,jsonb,jsonb,jsonb)',
+      'public', 'settle_match', 'plpgsql', true, 'v', 'jsonb', 0,
+      '969ec904c8bce2bf1cfab78a90d8669b'),
+    ('public.commit_match_action(uuid,uuid,uuid,boolean,integer,smallint,smallint,timestamptz,jsonb,jsonb,smallint,smallint,jsonb,jsonb)',
+      'public', 'commit_match_action', 'plpgsql', true, 'v', 'jsonb', 1,
+      'cb197365655531053efedc039ed84380')
+), catalog as (
+  select expected.*, procedure.oid, procedure.proowner, procedure.prosrc,
+         procedure.proacl, procedure.prosecdef, procedure.provolatile,
+         procedure.prokind, procedure.pronargdefaults, procedure.prorettype,
+         procedure.proconfig, procedure.proname, namespace.nspname,
+         language.lanname, owner_role.rolname as owner_name
+    from expected
+    left join pg_proc procedure
+      on procedure.oid = to_regprocedure(expected.signature)
+    left join pg_namespace namespace on namespace.oid = procedure.pronamespace
+    left join pg_language language on language.oid = procedure.prolang
+    left join pg_roles owner_role on owner_role.oid = procedure.proowner
+), access as (
+  select catalog.signature, coalesce(role.rolname, 'PUBLIC') as role_name,
+         privilege.privilege_type, privilege.is_grantable
+    from catalog
+    cross join lateral aclexplode(
+      coalesce(catalog.proacl, acldefault('f', catalog.proowner))
+    ) privilege
+    left join pg_roles role on role.oid = privilege.grantee
+   where catalog.oid is not null and privilege.grantee <> catalog.proowner
+)
+select
+  (
+    select count(*) = 1 and bool_and(
+      contype = 'c' and convalidated
+      and md5(pg_get_constraintdef(oid, true)) =
+        '81f60e7c70ee6080403a93229cd4205a'
+    )
+      from pg_constraint
+     where conrelid = to_regclass('public.matchmaking_queue')
+       and conname = 'matchmaking_queue_capabilities_check'
+  ) as queue_capability_constraint,
+  (
+    select count(*) = 2 and bool_and(contype = 'c' and convalidated)
+      and count(*) filter (
+        where conname = 'matches_pending_aim_check'
+          and md5(pg_get_constraintdef(oid, true)) =
+            '3c1715e608652fbe8de401aeb31530dc'
+      ) = 1
+      and count(*) filter (
+        where conname = 'matches_format_state_check'
+          and md5(pg_get_constraintdef(oid, true)) =
+            '09bc02d0fc04f5b7a311fe29246774dd'
+      ) = 1
+      from pg_constraint
+     where conrelid = to_regclass('public.matches')
+       and conname in ('matches_pending_aim_check', 'matches_format_state_check')
+  ) as match_constraints,
+  (
+    select count(*) = 5 and bool_and(
+      oid is not null
+      and owner_name = 'postgres'
+      and nspname = schema_name
+      and proname = function_name
+      and lanname = language_name
+      and prosecdef = security_definer
+      and provolatile = volatility::"char"
+      and prokind = 'f'
+      and prorettype = to_regtype(return_type)
+      and pronargdefaults = argument_defaults
+      and proconfig = array['search_path=""']::text[]
+    )
+      from catalog
+  ) and (
+    select count(*) = 5
+      from pg_proc procedure
+      join pg_namespace namespace on namespace.oid = procedure.pronamespace
+     where (namespace.nspname, procedure.proname) in (
+       ('public', 'enqueue_ranked_player_v2'),
+       ('public', 'start_ranked_match_v3'),
+       ('private', 'bot_owned_rune_choice'),
+       ('public', 'settle_match'),
+       ('public', 'commit_match_action')
+     )
+  ) as function_contracts,
+  (
+    select count(*) = 5 and bool_and(md5(prosrc) = body_md5)
+      from catalog
+  ) as function_bodies,
+  (
+    select count(*) = 4
+      and count(*) filter (
+        where signature in (
+          'public.enqueue_ranked_player_v2(uuid,smallint,text[])',
+          'public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)',
+          'public.settle_match(uuid,text,uuid,integer,integer,integer,integer,jsonb,jsonb,jsonb,jsonb)',
+          'public.commit_match_action(uuid,uuid,uuid,boolean,integer,smallint,smallint,timestamptz,jsonb,jsonb,smallint,smallint,jsonb,jsonb)'
+        )
+          and role_name = 'service_role'
+          and privilege_type = 'EXECUTE'
+          and not is_grantable
+      ) = 4
+      and count(*) filter (
+        where signature = 'private.bot_owned_rune_choice(uuid)'
+      ) = 0
+      from access
+  ) as service_grants,
+  coalesce((
+    select not prosecdef
+      and provolatile = 's'
+      and lanname = 'sql'
+      and proconfig = array['search_path=""']::text[]
+      and obj_description(oid, 'pg_proc') =
+        'Stable pseudorandom selection from one player inventory; used only to persist a bot equipped seat.'
+      and not exists (
+        select 1 from access
+         where signature = 'private.bot_owned_rune_choice(uuid)'
+      )
+      from catalog
+     where signature = 'private.bot_owned_rune_choice(uuid)'
+       and oid is not null
+  ), false) as helper_lockdown;
+`;
+
+export const EQUIPPED_RANKED_BOT_DATA = String.raw`
+select
+  (select count(*) from public.profiles where is_bot)::integer as bot_count,
+  (select count(*) from public.profiles profile
+    where profile.is_bot
+      and exists (select 1 from public.player_runes owned
+                   where owned.player_id = profile.id))::integer
+    as bots_with_runes,
+  (select count(*) from public.profiles
+    where is_bot and equipped_rune is not null)::integer as bots_equipped,
+  (select count(*) from public.profiles profile
+    where profile.is_bot and profile.equipped_rune is null
+      and exists (select 1 from public.player_runes owned
+                   where owned.player_id = profile.id))::integer
+    as bots_with_runes_without_seat,
+  (select count(*) from public.profiles profile
+    where profile.is_bot and profile.equipped_rune is not null
+      and not exists (select 1 from public.player_runes owned
+                       where owned.player_id = profile.id))::integer
+    as bots_without_runes_with_seat,
+  (select count(*) from public.profiles profile
+    where profile.is_bot and profile.equipped_rune is not null
+      and not exists (select 1 from public.player_runes owned
+                       where owned.player_id = profile.id
+                         and owned.rune_id = profile.equipped_rune))::integer
+    as bot_seat_not_owned;
+`;
+
+export const EQUIPPED_RANKED_BOT_CONVERGENCE = String.raw`
+select
+  (select count(*) from public.profiles profile
+    where profile.is_bot
+      and exists (select 1 from public.player_runes owned
+                   where owned.player_id = profile.id)
+      and profile.equipped_rune is distinct from
+            private.bot_owned_rune_choice(profile.id))::integer
+    as bot_seat_not_canonical;
+`;
+
+export const EQUIPPED_RANKED_HUMAN_DATA = String.raw`
+select
+  count(*)::integer as human_count,
+  md5(coalesce(
+    string_agg(
+      profile.id::text || ':' || coalesce(profile.equipped_rune, '<null>'),
+      '|' order by profile.id
+    ),
+    ''
+  )) as equipped_rune_fingerprint
+  from public.profiles profile
+ where not profile.is_bot;
 `;
 
 export const LADDER_STREAK_BASELINES_SCHEMA = String.raw`
@@ -1643,7 +1854,7 @@ select
 
 function usage(message, code = 64) {
   if (message) console.error(message);
-  console.error('Usage: mise exec -- node --experimental-strip-types tools/database/production-rollout.mjs <settings-locale|match-command-retention|match-command-stall-check|rune-trial|ladder-streak-baselines|apple-game-center> [--apply]');
+  console.error('Usage: mise exec -- node --experimental-strip-types tools/database/production-rollout.mjs <settings-locale|match-command-retention|match-command-stall-check|rune-trial|ranked-runes|ladder-streak-baselines|apple-game-center> [--apply]');
   console.error(`Apply requires ${PROD_OPT_IN}=1.`);
   process.exitCode = code;
 }
@@ -1843,6 +2054,125 @@ export async function auditRuneTrialPostApplyData(readProduction = productionRea
   return evidence;
 }
 
+function rankedBotCount(row, field) {
+  const value = row[field];
+  const number = typeof value === 'number' ? value : Number(value);
+  if (!Number.isSafeInteger(number) || number < 0) {
+    throw new Error(`Production equipped-ranked bot audit returned invalid ${field}.`);
+  }
+  return number;
+}
+
+export async function auditEquippedRankedBotData(
+  readProduction = productionRead,
+  { allowMissingSeats = false } = {},
+) {
+  const rows = await readProduction(EQUIPPED_RANKED_BOT_DATA);
+  if (rows.length !== 1) {
+    throw new Error('Production equipped-ranked bot audit returned an unexpected shape.');
+  }
+  const row = rows[0];
+  const evidence = Object.freeze({
+    botCount: rankedBotCount(row, 'bot_count'),
+    botsWithRunes: rankedBotCount(row, 'bots_with_runes'),
+    botsEquipped: rankedBotCount(row, 'bots_equipped'),
+    botsWithRunesWithoutSeat: rankedBotCount(row, 'bots_with_runes_without_seat'),
+    botsWithoutRunesWithSeat: rankedBotCount(row, 'bots_without_runes_with_seat'),
+    botSeatNotOwned: rankedBotCount(row, 'bot_seat_not_owned'),
+  });
+  const seatCoverageIsValid = allowMissingSeats
+    ? evidence.botsEquipped + evidence.botsWithRunesWithoutSeat
+        === evidence.botsWithRunes
+    : evidence.botsWithRunes === evidence.botsEquipped
+      && evidence.botsWithRunesWithoutSeat === 0;
+  if (evidence.botsWithRunes > evidence.botCount
+      || evidence.botsEquipped > evidence.botCount
+      || !seatCoverageIsValid
+      || evidence.botsWithoutRunesWithSeat !== 0
+      || evidence.botSeatNotOwned !== 0) {
+    throw new Error('Production equipped-ranked bot seats are missing, unowned, or attached without inventory.');
+  }
+  return evidence;
+}
+
+export async function auditEquippedRankedHumanData(readProduction = productionRead) {
+  const rows = await readProduction(EQUIPPED_RANKED_HUMAN_DATA);
+  if (rows.length !== 1) {
+    throw new Error('Production equipped-ranked human audit returned an unexpected shape.');
+  }
+  const row = rows[0];
+  const humanCount = rankedBotCount(row, 'human_count');
+  if (typeof row.equipped_rune_fingerprint !== 'string'
+      || !/^[0-9a-f]{32}$/u.test(row.equipped_rune_fingerprint)) {
+    throw new Error('Production equipped-ranked human audit returned an invalid fingerprint.');
+  }
+  return Object.freeze({
+    humanCount,
+    equippedRuneFingerprint: row.equipped_rune_fingerprint,
+  });
+}
+
+export function assertSameEquippedRankedHumanData(before, after) {
+  if (!before || !after
+      || !Number.isSafeInteger(before.humanCount)
+      || !Number.isSafeInteger(after.humanCount)
+      || typeof before.equippedRuneFingerprint !== 'string'
+      || typeof after.equippedRuneFingerprint !== 'string'
+      || before.humanCount !== after.humanCount
+      || before.equippedRuneFingerprint !== after.equippedRuneFingerprint) {
+    throw new Error('Production human equipped-rune rows changed during the bot-only ranked rollout.');
+  }
+  return after;
+}
+
+export async function auditEquippedRanked(readProduction = productionRead) {
+  const foundation = await auditRuneTrial(readProduction);
+  if (foundation.schemaStage !== 1) {
+    throw new Error('Equipped-ranked rollout requires the complete Rune Trial foundation.');
+  }
+
+  const rows = await readProduction(EQUIPPED_RANKED_SCHEMA);
+  if (rows.length !== 1) {
+    throw new Error('Production equipped-ranked schema audit returned an unexpected shape.');
+  }
+  const row = rows[0];
+  const evidence = {
+    queueCapabilityConstraint: row.queue_capability_constraint === true,
+    matchConstraints: row.match_constraints === true,
+    functionContracts: row.function_contracts === true,
+    functionBodies: row.function_bodies === true,
+    serviceGrants: row.service_grants === true,
+    helperLockdown: row.helper_lockdown === true,
+  };
+  const schemaStage = validateEquippedRankedSchemaStage(evidence);
+  /* This query deliberately does not call the migration-owned helper, so the
+     pre-migration stage audits existing bot ownership without pretending the
+     new canonical choice function already exists. */
+  const data = await auditEquippedRankedBotData(readProduction, {
+    /* Empty owned seats are the exact data this migration backfills. Once any
+       schema byte is present, partial state is already rejected above; a
+       complete schema must therefore satisfy the durable post-migration seat
+       invariant before Edge Functions may deploy. */
+    allowMissingSeats: schemaStage === 0,
+  });
+  return { evidence, schemaStage, data };
+}
+
+export async function auditEquippedRankedPostApplyData(
+  readProduction = productionRead,
+) {
+  const durable = await auditEquippedRankedBotData(readProduction);
+  const rows = await readProduction(EQUIPPED_RANKED_BOT_CONVERGENCE);
+  if (rows.length !== 1) {
+    throw new Error('Production equipped-ranked bot convergence audit returned an unexpected shape.');
+  }
+  const botSeatNotCanonical = rankedBotCount(rows[0], 'bot_seat_not_canonical');
+  if (botSeatNotCanonical !== 0) {
+    throw new Error('Production equipped-ranked bot seats did not converge to the reviewed stable choice.');
+  }
+  return Object.freeze({ ...durable, botSeatNotCanonical });
+}
+
 export async function auditLadderStreakBaselineData(readProduction = productionRead) {
   const rows = await readProduction(LADDER_STREAK_BASELINES_DATA);
   if (rows.length !== 1) {
@@ -2020,6 +2350,8 @@ async function auditProduction(rollout) {
     audited = await auditMatchCommandStallCheck();
   } else if (rollout.audit === 'rune-trial') {
     audited = await auditRuneTrial();
+  } else if (rollout.audit === 'equipped-ranked') {
+    audited = await auditEquippedRanked();
   } else if (rollout.audit === 'ladder-streak-baselines') {
     audited = await auditLadderStreakBaselines();
   } else if (rollout.audit === 'apple-game-center') {
@@ -2129,6 +2461,9 @@ async function main() {
       const immediatelyBefore = await auditProduction(rollout);
       assertSameRolloutPlan(planSnapshot(before.plan), planSnapshot(immediatelyBefore.plan));
       dryRun(temp, immediatelyBefore.plan.pending);
+      const humanBefore = rollout.audit === 'equipped-ranked'
+        ? await auditEquippedRankedHumanData()
+        : undefined;
       apply(temp, immediatelyBefore.plan.pending);
 
       const after = await auditProduction(rollout);
@@ -2137,15 +2472,24 @@ async function main() {
       }
       const postApplyData = rollout.audit === 'rune-trial'
         ? await auditRuneTrialPostApplyData()
-        : rollout.audit === 'ladder-streak-baselines'
-          ? await auditLadderStreakBaselinesPostApplyData()
-          : undefined;
+        : rollout.audit === 'equipped-ranked'
+          ? await auditEquippedRankedPostApplyData()
+          : rollout.audit === 'ladder-streak-baselines'
+            ? await auditLadderStreakBaselinesPostApplyData()
+            : undefined;
+      const humanAfter = humanBefore
+        ? assertSameEquippedRankedHumanData(
+          humanBefore,
+          await auditEquippedRankedHumanData(),
+        )
+        : undefined;
       process.stdout.write(JSON.stringify({
         rollout: rolloutName,
         status: 'applied',
         migrations: immediatelyBefore.plan.pending.map(({ file }) => path.basename(file)),
         checks: after.evidence,
         ...(postApplyData ? { postApplyData } : {}),
+        ...(humanAfter ? { humanRowsPreserved: humanAfter.humanCount } : {}),
       }, null, 2) + '\n');
     },
   );

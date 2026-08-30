@@ -1,11 +1,19 @@
 # Production database rollouts
 
 Production migrations are deliberately separate from the Cloudflare deploy.
-The repository's historical local filenames and the production migration
-history are not identical, so never run `supabase db push --linked` directly
-from the working tree and never use `--include-all` there.
+Since the 2026-08-30 reconciliation, `supabase/migrations/` begins with the
+same canonical 56-file timestamped prefix as production, pinned by
+`supabase/migration-history.json` and `tests/migration-ledger.test.ts`. The
+former compact aliases, obsolete 12-bot seed, and two wrong-stamped files live
+under `supabase/legacy-migrations/` and are never executable.
 
-Use the guarded rollout command instead:
+It is now valid to run migration history checks and a linked dry run from the
+working tree. Production applies are still explicit owner operations. Never
+use `--include-all` from the repository root: the guarded helper uses it only
+inside a fresh temporary workdir whose entire migration directory is the fixed,
+hash-pinned allow-list.
+
+Use the guarded rollout command for its fixed selections:
 
 ```sh
 # Read production history/schema and prove the exact dry-run plan. No writes.
@@ -20,6 +28,9 @@ mise exec -- node --experimental-strip-types \
 
 mise exec -- node --experimental-strip-types \
   tools/database/production-rollout.mjs rune-trial
+
+mise exec -- node --experimental-strip-types \
+  tools/database/production-rollout.mjs ranked-runes
 
 mise exec -- node --experimental-strip-types \
   tools/database/production-rollout.mjs ladder-streak-baselines
@@ -46,6 +57,10 @@ KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
 
 KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
   mise exec -- node --experimental-strip-types \
+  tools/database/production-rollout.mjs ranked-runes --apply
+
+KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
+  mise exec -- node --experimental-strip-types \
   tools/database/production-rollout.mjs ladder-streak-baselines --apply
 
 KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
@@ -56,8 +71,9 @@ KB_ALLOW_PRODUCTION_DB_MIGRATIONS=1 \
 `mise exec -- npm run db:production:settings`,
 `mise exec -- npm run db:production:commands`,
 `mise exec -- npm run db:production:rune-trial`, and
+`mise exec -- npm run db:production:ranked-runes`,
 `mise exec -- npm run db:production:streak-baselines` are the existing shorter
-preview commands. The held identity preview is
+preview commands. The identity database preview is
 `mise exec -- npm run db:production:apple-game-center`. Add `-- --apply` plus
 the same environment opt-in to apply any selected rollout.
 
@@ -95,6 +111,17 @@ cron contract. Immediately after an apply it also proves the historical tier
 backfill, safe v1 defaults for live matches/queue rows, and that all five new
 tables are still empty before the v2 functions are deployed.
 
+The `ranked-runes` allow-list contains only
+`20260830155543_equipped_runes_ranked.sql`, pinned to its committed SHA-256.
+It composes the complete Rune Trial audit with the exact widened capability
+and match constraints, `start_ranked_match_v3`, the bot-choice helper, all
+replaced function bodies, and their service/helper ACLs. Both migration stages
+audit bot seat coverage and ownership without requiring the not-yet-created
+helper before apply; the immediate postcheck additionally requires every bot
+seat to equal the stable owned-rune choice. The apply snapshots a deterministic
+count/fingerprint of every non-bot `profiles.equipped_rune` row immediately
+before and after the migration and refuses success if any human seat changed.
+
 The `ladder-streak-baselines` allow-list contains only
 `20260826153000_ladder_streak_baselines.sql`. Its validator pins the private
 three-column table, composite cascade key, check and comment; proves that no
@@ -104,7 +131,7 @@ audit accepts non-empty baseline data only while every row still belongs to a
 season rating and does not exceed that row's wins. Only the immediate migration
 postcheck requires the new table to be empty.
 
-The held `apple-game-center` allow-list contains exactly
+The `apple-game-center` allow-list contains exactly
 `20260826153100_game_center_ids.sql`,
 `20260826153101_game_center_service_grants.sql`,
 `20260826153102_apple_identity_credentials.sql`, and
@@ -183,18 +210,24 @@ deliberately beatable: displayed win rates span about 41–54%, games span
 18–410, best streaks span 2–7, and exactly half have a modest prior peak above
 current points. It does not invent match rows; ordinary settlement owns every
 later rating/record change, while a longer real winning run supersedes the
-private baseline.
+private baseline. The same transaction grants the reviewed 539 plausible Rune
+Trial winnings to 155 bots and persists one stable pseudo-random owned choice
+through `private.bot_owned_rune_choice(uuid)`. It never calls volatile
+`random()`, so rerunning the exact fixture reproduces the database state.
 
 ```sh
 KB_ALLOW_PRODUCTION_BOT_SEED=SEED_EXACTLY_200_BOTS \
   mise exec -- npm run db:production:test-data -- seed-bots --apply
 ```
 
-The update-only refresh phase exists for the exact original bot seed (200 since 2026-08-28; the count is single-sourced from `PRODUCTION_BOT_COUNT`). It
-refuses any human, match, move, queue, rune, setting, session, token, or owned
-Storage data; matches the complete old or already-refreshed fixed plan; never
-deletes an account; and becomes permanently unavailable as soon as real play
-exists.
+The account-preserving refresh phase exists for the exact original bot seed
+(200 since 2026-08-28; the count is single-sourced from
+`PRODUCTION_BOT_COUNT`). It begins only from zero human, match, move, queue,
+rune, setting, session, token, and owned-Storage rows; matches the complete old
+or already-refreshed fixed profile plan; then converges the same transaction to
+the canonical 539 winnings and 155 stable owned seats described above. It
+never deletes an account. Once rune data or real play exists, the phase is
+deliberately and permanently unavailable.
 
 ```sh
 KB_ALLOW_PRODUCTION_BOT_PROFILE_REFRESH=REFRESH_EXACT_200_UNPLAYED_BOTS \

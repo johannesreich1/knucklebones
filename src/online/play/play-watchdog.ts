@@ -59,23 +59,23 @@ export async function runOnlineWatchdog(ports: OnlineWatchdogPorts): Promise<voi
   const now = (): number => ports.now?.() ?? Date.now();
   const stalled = now() - online.lastMoveAt > 13_000;
   const askForAuto = async (): Promise<void> => {
-    const response = online.trial
+    const response = online.actionProtocol
       ? await (ports.nudgeAction ?? nudgeRankedAction)(online.matchId, online.actionVersion)
       : await (ports.nudgeMove ?? nudge)(online.matchId, online.applied);
     if (!ports.isCurrent(online)) return;
     if (response.status === 200 && response.data?.match) {
-      requireProjectionRecovery(online, online.trial
+      requireProjectionRecovery(online, online.actionProtocol
         ? response.data.action_version ?? response.data.match.action_version ?? null
         : null);
       /* A turn the clock took for the player still hands the bot its own, and
          that answer deserves the same beat a tapped turn gets. BOTH protocols
-         commit one: a Trial as extra action rows, ordinary ranked as the same
-         `bot_move` a tapped turn returns (pvp-move answers `auto` commands with
-         it too). Reading only the Trial field left the ordinary auto path with
-         nothing to perform, so its sync repainted both dice at once — reported
-         from a device 2026-08-29: "when I get auto played, the opponents die if
-         ai is placed instantly without a delay/timer bar". */
-      online.botBeatDue = online.trial
+         commit one: the action protocol returns extra action rows; legacy
+         pvp-move returns the same `bot_move` a tapped turn gets. Reading only
+         the former left the legacy auto path with nothing to perform, so its
+         sync repainted both dice at once — reported from a device 2026-08-29:
+         "when I get auto played, the opponents die if ai is placed instantly
+         without a delay/timer bar". */
+      online.botBeatDue = online.actionProtocol
         ? !!response.data.bot_actions?.length
         : !!response.data.bot_move;
       const recovered = await recoverProjection(false);
@@ -119,7 +119,7 @@ export async function runOnlineWatchdog(ports: OnlineWatchdogPorts): Promise<voi
     if (now() - online.lastMoveAt > 35_000) {
       const fallback = await (ports.claim ?? claimMatch)(online.matchId);
       if (ports.isCurrent(online) && fallback.status === 200 && fallback.data?.match) {
-        requireProjectionRecovery(online, online.trial
+        requireProjectionRecovery(online, online.actionProtocol
           ? fallback.data.match.action_version ?? null : null);
         if (await recoverProjection(true)) {
           ports.applyMatchRow(fallback.data.match);

@@ -141,11 +141,19 @@ not need a framework store, event bus, or dependency-injection container.
 - Online synchronization has additional ordering rules documented beside the
   implementation in `src/online/play/play.ts`. Preserve the applied-log counter,
   animation gate, and teardown/generation checks when decomposing it.
-- Protocol-v1 standard matches continue to synchronize their placement log.
-  Rune Trial protocol v2 synchronizes the ordered aim/cast/place action log and
-  `action_version`; casts retain the turn, so placement count is not a valid v2
-  clock. Both clients must advertise the Trial capability before matchmaking
-  may choose that format.
+- Protocol-v1 standard matches continue to synchronize their placement log only
+  when both immutable rune seats are empty. Protocol v2 synchronizes the ordered
+  aim/cast/place action log and `action_version` for Rune Trial and equipped-rune
+  standard matches; either standard seat may still be null, and casts retain
+  the turn, so placement count is not a valid v2 clock. Both clients must
+  advertise the format-specific capability before matchmaking may choose Trial
+  or snapshot equipped standard runes.
+- `matches.p1_rune` and `matches.p2_rune` are the sole gameplay authority. From
+  SILVER, matchmaking snapshots each profile's equipped seat independently;
+  below SILVER or with no equipped rune that participant gets no rune. Fresh
+  standard matches reveal both assignments together, including explicit NONE,
+  while rejoin skips the reveal. Rune Trial ignores equipment and resolves its
+  own private pair.
 - Persist only through `src/persist.ts`; corrupt or outdated blobs must fail
   closed rather than become an alternate state model.
 - CPU and local-two-player setup preferences are separate persisted records.
@@ -155,7 +163,8 @@ not need a framework store, event bus, or dependency-injection container.
   restart preserves the resolved offer/choices and a new duel replaces them.
 - `src/rune-collection-cache.ts` is the eager, Supabase-free collection seam.
   It stores the last server-confirmed rune ids and permanent ranked-pool tier
-  with their account id.
+  with their account id. That cache paints offline/profile choices; it never
+  overrides a ranked match row's immutable rune assignments.
   Offline setup treats a missing snapshot as an empty collection, and sign-out
   or account change clears/swaps the active snapshot before another account can
   read it. Durable unseen/reward state remains server-owned.

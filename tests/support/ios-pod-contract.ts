@@ -63,6 +63,8 @@ export function verifyIosPodContract(check: Check): PodManifests {
     `${PODFILE} must declare the Capawesome Apple Sign-In pod from its installed package`);
   check(declared.get('CapacitorSplashScreen') === '../../node_modules/@capacitor/splash-screen',
     `${PODFILE} must declare CapacitorSplashScreen from its installed package`);
+  check(declared.get('CapacitorShare') === '../../node_modules/@capacitor/share',
+    `${PODFILE} must declare CapacitorShare from its installed package`);
   check(!declared.has('CapacitorCommunityAppleSignIn'),
     `${PODFILE} must not retain the replaced iOS-only community Apple Sign-In pod`);
   check(locked.get(GC_POD) === '../../plugins/gamecenter',

@@ -16,7 +16,7 @@ export function projectRankedActions(
   dealt: RankedRuneDeal,
   openingDie?: number,
 ): RankedActionState | null {
-  if (!spellById(dealt[0]) || !spellById(dealt[1])) return null;
+  if (dealt.some((id) => id !== null && !spellById(id))) return null;
   const ordered = [...rows].sort((a, b) => a.idx - b.idx);
   const firstDie = ordered[0]?.die_before ?? openingDie;
   if (!rankedDieOk(firstDie)) return null;

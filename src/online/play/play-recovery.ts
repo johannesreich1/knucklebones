@@ -24,7 +24,7 @@ export function completeProjectionRecovery(
   synced: boolean,
 ): boolean {
   const complete = synced
-    && (!online.trial || online.recoveryActionVersion === null
+    && (!online.actionProtocol || online.recoveryActionVersion === null
       || online.actionApplied >= online.recoveryActionVersion);
   if (complete) {
     online.recoverySync = false;

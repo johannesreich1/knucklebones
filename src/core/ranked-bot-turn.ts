@@ -1,6 +1,6 @@
 // One authoritative protocol-v2 bot turn. Ranked Edge Functions use this
-// helper both after a human placement and when a bot opens a Rune Trial
-// immediately after the private choices reveal.
+// helper after a human placement and when a bot opens either Rune Trial or
+// equipped ordinary ranked.
 import { botMove, botSlip } from './bot.ts';
 import {
   appendRankedAction,

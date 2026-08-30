@@ -1,6 +1,7 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import type { Player } from '../../core/rules.ts';
 import type { RankedActionKind } from '../../core/ranked-actions.ts';
+import type { RankedRuneDeal } from '../../core/ranked-action-types.ts';
 import type { JoinResult, MatchRow } from '../api/match-api.ts';
 import type { S } from '../../state.ts';
 
@@ -16,8 +17,12 @@ export interface OnlineState {
   applied: number;
   actionApplied: number;
   actionVersion: number;
+  /** The ordered action log owns every aim/cast/place in this match. */
+  actionProtocol: boolean;
+  /** Public rune snapshots in Player order. A bare seat is honestly null. */
+  rankedRunes: RankedRuneDeal | null;
+  /** Rune Trial remains a format/reward distinction, not a transport switch. */
   trial: boolean;
-  trialRunes: readonly [string, string] | null;
   gen: number;
   channel: RealtimeChannel | null;
   tick: ReturnType<typeof setInterval> | null;

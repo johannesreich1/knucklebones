@@ -6,6 +6,7 @@ import { MODES } from '../src/core/modes.ts';
 import { SPELLS } from '../src/core/spells.ts';
 import {
   ALL_RANKED_CAPABILITIES,
+  EQUIPPED_RUNE_CAPABILITY,
   RANKED_OUTCOMES,
   RANKED_POOL_TIERS,
   RUNE_TRIAL_CAPABILITY,
@@ -21,6 +22,7 @@ import {
   rankedOutcomeRoster,
   rankedPoolTierById,
   rankedPoolTierForPeak,
+  usesRankedActionProtocol,
   type RankedParticipantAccess,
   type RankedPoolTier,
 } from '../src/core/ranked-outcomes.ts';
@@ -64,6 +66,12 @@ const summarizedRoster = (participants: readonly RankedParticipantAccess[]) =>
   rankedOutcomeRoster(participants).map(({ id }) => id);
 
 /* ---- outcome registry: Trial is a format, not a mechanical mode -------- */
+eq(ALL_RANKED_CAPABILITIES, [RUNE_TRIAL_CAPABILITY, EQUIPPED_RUNE_CAPABILITY],
+  'ranked capability registry lost the distinct equipped-rune rollout gate');
+check(usesRankedActionProtocol({ protocol_version: 2, rune_rules_version: 1 })
+  && !usesRankedActionProtocol({ protocol_version: 2, rune_rules_version: null })
+  && !usesRankedActionProtocol({ protocol_version: 1, rune_rules_version: 1 }),
+  'action replay was inferred from only half of its persisted protocol tuple');
 eq(RANKED_OUTCOMES.filter(({ format }) => format === STANDARD_FORMAT).map(({ id }) => id),
   MODES.map(({ id }) => id), 'ordinary outcomes drifted from the mode registry');
 eq(RUNE_TRIAL_OUTCOME, {

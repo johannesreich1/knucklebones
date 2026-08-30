@@ -11,13 +11,17 @@ technical document, *spell* names the castable rules effect and its engine
 (`SpellSpec`, `SPELLS`, `spellCharges`). Keep that implementation vocabulary;
 do not expose it as a competing name for the player's rune.
 
-Runes are an **optional layer over offline play** and the IVORY Rune Trial
-ranked format. A named offline pick and RANDOM deal both seats the same rune.
+Runes are an **optional layer over offline play**, ordinary ranked from SILVER,
+and the IVORY Rune Trial ranked format. A named offline pick and RANDOM deal
+both seats the same rune.
 RANDOM×2 is the explicit local chaos exception: the deck shuffles once per
 player and deals two distinct runes. A cast is **not a placement**, but each
 player may cast at most once per turn. The die still lands afterward unless
 the cast itself ends the game. FATE's two charges therefore belong to separate
-turns. Ordinary ranked outcomes remain rune-free.
+turns. In ordinary ranked, matchmaking snapshots each participant's equipped
+rune independently from SILVER upward; below SILVER or with an empty equipped
+seat, that participant has no rune. Rune Trial ignores equipment and uses its
+own private choices.
 
 ---
 
@@ -206,9 +210,10 @@ same `16` before applying WARD's existing `×1.5` threshold; Hard's advantage
 comes from deeper placement search rather than accepting lower-value WARD
 casts. Persistent WARD state is scored and attacked through every search ply.
 
-This update first shipped offline. Ordinary ranked outcomes still deal empty
-hands; Rune Trial protocol v2 now replays the same scoring mark, interception,
-and break semantics authoritatively (§8).
+This update first shipped offline. Protocol-v2 ranked play now replays the same
+scoring mark, interception, and break semantics authoritatively for both Rune
+Trial and any ordinary participant whose immutable match row carries WARD
+(§8).
 
 ### ANVIL (added 2026-08-22)
 
@@ -582,8 +587,8 @@ The rail now keeps that card vocabulary in play.
   then returns to exactly 100% for the viewer's turn. It keeps full opacity and
   its rune colour while the opponent plays; depth and scale already communicate
   ownership without making an active rune look disabled. Online tracks the same
-  viewer-relative scale: standard ranked's empty hands keep the cue invisible,
-  while Rune Trial renders the revealed assigned hands. An own rune with
+  viewer-relative scale: each ranked seat renders its revealed match-row rune,
+  while an honest empty seat keeps that hand invisible during play. An own rune with
   no legal target uses the same mute but remains 100%, so every registry spell
   advertises whether it can be activated without pretending ownership changed.
   Brief busy or phase locks keep the stable pre-lock appearance at its current
@@ -739,7 +744,7 @@ replaced it.
 
 ---
 
-## 8. Offline collections and ranked Rune Trial
+## 8. Offline collections and ranked runes
 
 The comprehensive evidence record remains
 `docs/RUNE_MULTIPLAYER_INVESTIGATION.md`. This section owns the selected product
@@ -747,10 +752,15 @@ and runtime contract.
 
 ### Ranked boundary
 
-Ordinary ranked outcomes still deal empty hands. Rune Trial is the intentional
-exception and is stored as `format='rune_trial'` with
-`modifier='classic'`; it is not a personal-loadout mode and it does not enable
-an equipped rune in standard ranked play.
+Ordinary ranked snapshots each participant's equipped rune from SILVER upward.
+The two seats are independent: a non-null snapshot receives that rune, while a
+participant below SILVER or with no equipped rune receives an empty hand. A
+fresh reveal shows both assignments, including explicit NONE; a rejoin does not
+replay that theatre. The immutable `matches.p1_rune` / `matches.p2_rune` values,
+not the viewer's profile cache, own gameplay.
+
+Rune Trial is stored as `format='rune_trial'` with `modifier='classic'`. It
+ignores equipped seats and uses its own private selection instead.
 
 Both participants receive the same uniform offer of three distinct runes from
 the complete six-rune roster, independent of collection. They choose privately
@@ -766,9 +776,11 @@ client submits intent plus an idempotency key and expected action version; the
 server reconstructs the seeded die/supply stream, rune assignment, charges,
 one-cast-per-turn state, persistent charm, legality, and terminal score before
 committing an action. FATE draws from that seeded supply. A turn is
-`cast? → placement`, except that a legal cast may end the duel. Protocol v1
-remains placement-only for ordinary matches during rollout; capability
-intersection prevents a v1 client from entering Trial.
+`cast? → placement`, except that a legal cast may end the duel. Equipped-rune
+standard matches use this same action grammar with nullable per-seat hands.
+Protocol v1 remains placement-only for legacy rune-free standard matches;
+capability intersection prevents a v1 client from entering Trial or an
+equipped-rune standard match.
 
 ANVIL's information-bearing aim is itself an authoritative action: its `aim`
 row spends the charge and persists `pending_aim`, reconnect restores the locked
@@ -822,9 +834,9 @@ reach IVORY, then win it in Trial. After IVORY it says to win with that rune in
 Trial. Both RANDOM choices say to collect two runes; CPU Trial says to collect
 three.
 
-The frozen asymmetric-v1 study still matters as a warning about any future
-personal-equipped ranked format: under its blind Normal policy and historical
+The frozen asymmetric-v1 study remains a balance warning for the selected
+personal-equipped ranked contract: under its blind Normal policy and historical
 WARD rule, fixed PILFER dominated the other loadouts at the point estimate.
-Rune Trial deliberately avoids ownership inequality by loaning its offer. It
-does not claim the roster is perfectly balanced, and human choice telemetry
-remains required before standard ranked loadouts are reconsidered.
+Rune Trial deliberately avoids ownership inequality by loaning its offer. The
+SILVER floor and current bounded roster are product decisions, not proof of
+perfect balance; human choice and matchup telemetry still need monitoring.

@@ -386,12 +386,14 @@ unique per bot (the seed postcheck pins `count(distinct points)`), so it is just
 as stable, and unlike a hash it is reproducible in SQL — which is what lets the
 whole grant be one reviewable statement instead of 11KB of literals.
 
-**The seat** is the first rune won, seated by the seed itself. This is a
-FIXTURE, not shared behaviour: a human's first win no longer seats anything
-(the auto-equip was removed 2026-08-28, to be solved differently), so a seeded
-bot is deliberately further along than a new player of the same age. It is set
-even below SILVER: the rune is carried but not in play, so a bot that climbs
-arrives already holding it.
+**The seat** is one stable pseudo-random choice from that bot's actual
+inventory, persisted in the same `profiles.equipped_rune` column a player
+uses. `private.bot_owned_rune_choice(uuid)` orders owned rows by a salted hash
+of the bot UUID and rune id; it never calls volatile `random()`, so seed,
+backfill, settlement, and audit all agree. A bot's existing seat is not
+rerolled when it wins another rune. The seat is set even below SILVER: the rune
+is carried but not in play, so a bot that climbs arrives already carrying an
+owned choice.
 
 The population as seeded (200 bots, 539 rune rows, 155 carrying a seat):
 
@@ -407,10 +409,11 @@ The population as seeded (200 bots, 539 rune rows, 155 carrying a seat):
 
 No face dominates: 89–91 bots hold each of the six.
 
-**Bots keep what they win, with no code of their own.** `commit_match_*` grants
-the winner's selected rune with no `is_bot` check, so a bot that wins a Rune
-Trial collects it exactly as a player does. This was verified rather than
-assumed before the seed was designed around it.
+**Bots keep what they win through the same reward boundary.** `settle_match`
+grants the winner's selected Trial rune with no `is_bot` check. After that
+shared grant, a bot-specific branch fills only an empty seat from the owned
+collection; humans retain the deliberate choice to equip or clear their own
+seat.
 
 **Population size.** 150 → **200** on 2026-08-28 (Johannes). The count is
 single-sourced from `PRODUCTION_BOT_COUNT` in
@@ -517,11 +520,11 @@ out-rolled or simply left.
 Ordered so the app is never broken between steps. Steps 1–3 are additive and
 invisible; the ladder does not change behaviour until step 4.
 
-1. **`0016_seasons.sql`** — `seasons`, `season_ratings`, `matches.season_id`.
+1. **`20260820115628_seasons.sql`** — `seasons`, `season_ratings`, `matches.season_id`.
    Insert Season 1 with `ends_at = NULL`. Backfill: every existing match gets
    `season_id = 1`; every profile gets a `season_ratings` row seeded from its
    current rating. Nothing reads the new tables yet.
-2. **`0017_percentile.sql`** — a `player_percentile(uuid)` function and the
+2. **`20260820115713_percentile.sql`** — a `player_percentile(uuid)` function and the
    index behind it. Nothing calls it yet.
 3. **`core/ladder.ts`** — the pure module: `delta()`, `groupOf()`,
    `divisionOf()`, the band table. Pure, so it runs in the browser, in Node
@@ -534,12 +537,12 @@ invisible; the ladder does not change behaviour until step 4.
    being mirrored, so every existing reader survives untouched.
    **This is the step that changes what players see** and the one to verify
    live with throwaway guests before it goes near real accounts.
-5. **`0018_leaderboard_seasons.sql`** — `leaderboard()` takes an optional
+5. **`20260820115732_leaderboard_seasons.sql`** — `leaderboard()` takes an optional
    season and returns `points`, `group`, `division`. NEON is resolved from
    position, not from the band table.
 6. **Client** — the profile screen (card 92d), the avatar picker, match
    history, and the result screen showing the delta the match actually paid.
-7. **`0019_avatar.sql`** — `profiles.avatar text default 'die:5:cy'`.
+7. **`20260820115747_avatar.sql`** — `profiles.avatar text default 'die:5:cy'`.
 
 The implementation ledger later replaced the optional-season public overload
 with current-season `(rank, nickname)` windows in

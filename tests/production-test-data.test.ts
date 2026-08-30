@@ -247,7 +247,7 @@ check('seed SQL uses canonical minting and writes rating, season, tier, stats, a
   assertBotSeedSql();
 });
 
-check('profile refresh is update-only, exact, idempotent, and permanently blocks real play', () => {
+check('profile refresh is account-preserving, exact, convergent, and permanently blocks real play', () => {
   assertBotProfileRefreshSql();
 });
 
@@ -332,7 +332,7 @@ await checkAsync('seed orchestration hard-blocks absent migration and rechecks e
   await assertSeedOrchestration();
 });
 
-await checkAsync('profile refresh writes only the exact legacy seed and no-ops when already current', async () => {
+await checkAsync('profile refresh converges either accepted profile state once and blocks canonical rune data', async () => {
   await assertBotProfileRefreshOrchestration();
 });
 

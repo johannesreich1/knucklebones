@@ -9,10 +9,11 @@
 //
 // Pure, like the rest of core/: plain data in, plain data out. No DOM, no
 // timers, no randomness — the supply is handed in as behaviour (CastCtx.draw),
-// so offline brings Math.random and ranked Rune Trial brings the authoritative
-// seeded stream. Standard ranked formats still deal empty hands; Trial loans
-// each participant the privately selected rune and validates the ordered
-// cast/place action log with these same pure rules.
+// so offline brings Math.random and ranked protocol v2 brings the authoritative
+// seeded stream. From SILVER, standard ranked snapshots either participant's
+// equipped rune independently; Trial instead loans each participant the
+// privately selected rune. Both validate the ordered cast/place action log with
+// these same pure rules, and an empty standard seat simply receives no charges.
 //
 // The first roster (COLUMN SWAP) retired 2026-08-21: tools/spellsim.ts
 // measured a one-sided holder at 70.5% in classic and 81.8% under

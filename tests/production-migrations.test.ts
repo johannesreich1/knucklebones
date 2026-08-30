@@ -28,6 +28,9 @@ import {
 import {
   runLadderStreakBaselineProductionMigrationCases,
 } from './support/ladder-streak-baselines-production-migration-cases.ts';
+import {
+  runEquippedRankedProductionMigrationCases,
+} from './support/equipped-ranked-production-migration-cases.ts';
 
 const BASE = '20260823192604_player_settings.sql';
 const LOCALE = '20260824133121_player_settings_locale.sql';
@@ -290,6 +293,8 @@ runProductionMigrationSchemaCases({
 });
 
 await runLadderStreakBaselineProductionMigrationCases({ check, checkAsync, guarded });
+
+await runEquippedRankedProductionMigrationCases({ check, checkAsync, guarded });
 
 await checkAsync('temporary workspace cleanup runs after success and preparation failure', async () => {
   const removed: string[] = [];

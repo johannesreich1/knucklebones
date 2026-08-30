@@ -42,7 +42,8 @@ const onlineState = (overrides: Partial<OnlineState>): OnlineState => ({
   names: { p1: 'A', p2: 'B', ratings: { p1: null, p2: null }, avatars: { p1: null, p2: null } },
   namesAreFallback: false, restoreMode: 'cpu', pendingDie: null,
   applied: 0, actionApplied: 0, actionVersion: 0,
-  trial: false, trialRunes: null, gen: 90_001, channel: null, tick: null,
+  actionProtocol: false, rankedRunes: null, trial: false,
+  gen: 90_001, channel: null, tick: null,
   lastMoveAt: 0, busySync: false, animating: false,
   recoverySync: false, recoveryActionVersion: null,
   pendingRow: null, finalizing: false, done: false, limited: false,
@@ -116,7 +117,7 @@ check(!(await sync(true)) && appliedRows.length === 1 && online.applied === 2,
    between the two reads must be retried and, if it never converges, refused:
    the board from the wrong read pair must not install and input must not
    reopen on it. */
-online = onlineState({ trial: true, trialRunes: ['ward', 'ward'] });
+online = onlineState({ actionProtocol: true, trial: true, rankedRunes: ['ward', 'ward'] });
 S.boards = [emptyBoard(), emptyBoard()];
 const castRow = {
   idx: 0, move_idx: null, who: 1, kind: 'cast', rune_id: 'ward',
@@ -160,7 +161,7 @@ check(JSON.stringify(S.boards[1][0]) === '[4]' && S.charm.wards[1][0] === 1
    not reached yet. A coherent but version-behind snapshot may install, but it
    must not release the projection that reopens input; the confirmed version
    does. */
-online = onlineState({ trial: true, trialRunes: ['ward', 'ward'] });
+online = onlineState({ actionProtocol: true, trial: true, rankedRunes: ['ward', 'ward'] });
 S.boards = [emptyBoard(), emptyBoard()];
 S.spellCharges = [{ ward: 1 }, { ward: 1 }];
 requireProjectionRecovery(online, 3);
@@ -184,7 +185,13 @@ check(await sync(true) && online.actionApplied === 3
 /* A Trial settled during private selection has no actions and no die, but the
    empty terminal snapshot is complete: it must install and finish the match
    rather than wait for an opening action that will never exist. */
-online = onlineState({ trial: true, trialRunes: ['ward', 'ward'], pendingDie: 6, applied: 4 });
+online = onlineState({
+  actionProtocol: true,
+  trial: true,
+  rankedRunes: ['ward', 'ward'],
+  pendingDie: 6,
+  applied: 4,
+});
 S.boards = [[[2], [], []], [[3], [], []]];
 routes = {
   match_actions: () => ({ body: [] }),
@@ -303,6 +310,41 @@ check(await sync(false), 'the catch-up run did not sync');
 check(opponentBeats === quiet,
   'a catch-up with no committed bot reply still performed an opponent turn',
   { opponentBeats, quiet });
+
+/* Ordinary ranked uses this same action projection whenever equipped-rune
+   support was negotiated. One player may honestly have no rune: that null is
+   part of the deal, not a reason to fall back to the placement-only log. */
+online = onlineState({
+  actionProtocol: true,
+  trial: false,
+  rankedRunes: [null, 'ward'],
+});
+S.boards = [emptyBoard(), emptyBoard()];
+S.spellCharges = [{}, { ward: 1 }];
+routes = {
+  match_actions: () => ({ body: [castRow, placeRow] }),
+  matches: () => ({ body: matchRow({
+    turn: 0,
+    next_die: 3,
+    format: 'standard',
+    protocol_version: 2,
+    rune_rules_version: 1,
+    phase: 'playing',
+    p1_rune: 'ward',
+    p2_rune: null,
+    pending_aim: null,
+    action_version: 2,
+  }) }),
+};
+check(await sync(true)
+  && JSON.stringify(S.boards[1][0]) === '[4]'
+  && S.charm.wards[1][0] === 1
+  && online.actionApplied === 2,
+  'equipped ordinary ranked fell back from action replay when one seat had no rune', {
+    board: S.boards[1][0],
+    wards: S.charm.wards[1],
+    actionApplied: online.actionApplied,
+  });
 
 S.turn = savedGlobals.turn;
 S.die = savedGlobals.die;

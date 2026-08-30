@@ -23,8 +23,13 @@ deployed function versions are not inferred from repository prose.
 
 ## Repository layout
 
-- `supabase/migrations/` is the immutable imperative migration ledger.
-  Existing files describe history and are not rewritten after application.
+- `supabase/migrations/` is the immutable imperative migration ledger. Its
+  timestamped production prefix is pinned by `supabase/migration-history.json`
+  and `tests/migration-ledger.test.ts`; existing files are not rewritten after
+  application.
+- `supabase/legacy-migrations/` preserves the former compact local ledger and
+  two mis-timestamped files as non-executable evidence. Nothing there may be
+  copied back into the active ledger or applied to a linked database.
 - `supabase/functions/<name>/index.ts` is a thin HTTP adapter around shared
   authentication, match, and persistence operations.
 - `supabase/functions/_shared/` is the home for code reused by functions.
@@ -44,21 +49,27 @@ made remotely into a new local migration; it does not fetch application rows.
 Never delete or edit an already-applied migration to undo it—write and test a
 new forward migration that reverses the change.
 
-This repository's compact historical local filenames do not exactly match the
-timestamped production history, so the generic commands above describe the
-normal Supabase model but are not safe to run from this working tree today.
-Production allow-listed rollouts use `tools/database/production-rollout.mjs`:
-it fetches the canonical remote history into a fresh temporary project, adds
-only committed manifest files, requires an exact dry run, applies through the
-official pinned CLI, and validates history plus schema afterward. See
-`tools/database/README.md`. Never use `--include-all` from the repository root
-to work around a history mismatch; that can cross a deliberately held rollout.
-Rune Trial uses the explicit `rune-trial` selection (or
-`npm run db:production:rune-trial`), and the held identity rollout uses
-`apple-game-center` (or `npm run db:production:apple-game-center`), never an
-arbitrary filename passed by a caller. Their committed hashes and post-deploy
-catalog/security contracts are fixed in the tool before the database owner
-opts in to an apply.
+The legacy identifier mismatch was reconciled on 2026-08-30 without changing
+production history or executing SQL. Thirty-one local-only files moved
+verbatim to `supabase/legacy-migrations/`; 34 canonical production-only files
+were fetched into the active ledger; and the 22 already matching versions were
+left untouched. The resulting 56-file production prefix ends at
+`20260830112653_equipped_rune_grant.sql`. The archived `0007_bot_pool.sql` is
+an obsolete one-off 12-account seed and must never become executable again.
+
+Normal linked history checks and dry runs can therefore use the repository
+root. Production applies remain explicit owner operations, and `--include-all`
+is still forbidden there because it can cross an unrelated or deliberately
+held migration. Existing allow-listed rollouts use
+`tools/database/production-rollout.mjs`: it fetches the remote history into a
+fresh temporary project, adds only committed manifest files, requires an exact
+dry run, applies through the official pinned CLI, and validates history plus
+schema afterward. See `tools/database/README.md`. Rune Trial uses the explicit
+`rune-trial` selection (or `npm run db:production:rune-trial`), and the
+identity database selection uses `apple-game-center` (or
+`npm run db:production:apple-game-center`), never an arbitrary filename passed
+by a caller. Their committed hashes and post-deploy catalog/security contracts
+are fixed in the tool before the database owner opts in to an apply.
 
 For a disposable local database, `supabase migration down --local --last 1`
 can step back and `supabase migration up --local` can reapply pending files;
@@ -250,16 +261,17 @@ rewriting stored values. Production records it, and the allow-listed
 stored-value contract. The legal publication switch is a later, independent
 release step.
 
-Game Center and Apple credential lifecycle are a separate held rollout.
-The guarded `apple-game-center` selection applies
+The Game Center and Apple credential database lifecycle is recorded in
+production. The guarded `apple-game-center` selection audits the ordered set
 `20260826153100_game_center_ids.sql`,
 `20260826153101_game_center_service_grants.sql`, and
-`20260826153102_apple_identity_credentials.sql` as one strictly ordered,
-post-Rune-Trial allow-list. Sessionless Game Center restore crosses the
-strict-origin, durably rate-limited Cloudflare identity gateway; only that
-gateway knows the shared header required by `gc-auth`. Apple refresh tokens
-live in Vault, are staged before user deletion, and have a bounded retry
-lifecycle after the user row is gone.
+`20260826153102_apple_identity_credentials.sql`, followed by
+`20260826181000_apple_revocation_unstage.sql`, as one strictly ordered,
+post-Rune-Trial allow-list. The remaining runtime rollout stays separate:
+sessionless Game Center restore crosses the strict-origin, durably rate-limited
+Cloudflare identity gateway; only that gateway knows the shared header required
+by `gc-auth`. Apple refresh tokens live in Vault, are staged before user
+deletion, and have a bounded retry lifecycle after the user row is gone.
 
 Rune Trial is another database-first, forward-only rollout. Production records
 `20260825205241_rune_trial_ranked_v2.sql`; it repairs the complete

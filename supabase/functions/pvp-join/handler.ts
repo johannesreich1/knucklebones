@@ -1,6 +1,11 @@
 import { authenticatedPost, json, type Authenticate, type AuthenticatedContext } from "../_shared/http.ts";
 import type { JoinInput } from "../_shared/types.ts";
 
+/* Keep this runtime-free HTTP boundary directly importable under Node. The
+   same wire literals are asserted against the core registry by its owner test. */
+const RUNE_TRIAL_CAPABILITY = "rune_trial_v1";
+const EQUIPPED_RUNE_CAPABILITY = "equipped_rune_v1";
+
 export type JoinOperation = (context: AuthenticatedContext, input: JoinInput) => Promise<Response>;
 
 export interface JoinDependencies {
@@ -18,11 +23,17 @@ export function createPvpJoinHandler(dependencies: JoinDependencies) {
     const protocolVersion = suppliedProtocol === undefined ? 1 : suppliedProtocol;
     const suppliedCapabilities = body?.capabilities;
     const capabilities = suppliedCapabilities === undefined ? [] : suppliedCapabilities;
+    const knownCapabilities = new Set([RUNE_TRIAL_CAPABILITY, EQUIPPED_RUNE_CAPABILITY]);
     if ((protocolVersion !== 1 && protocolVersion !== 2)
         || !Array.isArray(capabilities)
-        || !capabilities.every((capability) => capability === "rune_trial_v1")
+        || !capabilities.every((capability) => knownCapabilities.has(capability))
         || new Set(capabilities).size !== capabilities.length
-        || (capabilities.includes("rune_trial_v1") && protocolVersion !== 2)) {
+        || (capabilities.length > 0 && protocolVersion !== 2)
+        /* Equipped standard play reuses the Trial action engine. Requiring the
+           older capability alongside the new one preserves the invariant that
+           protocol v2 still implies the reveal roster may include Trial. */
+        || (capabilities.includes(EQUIPPED_RUNE_CAPABILITY)
+          && !capabilities.includes(RUNE_TRIAL_CAPABILITY))) {
       return json({ error: "bad-request" }, 400);
     }
     return dependencies.operation(context, {

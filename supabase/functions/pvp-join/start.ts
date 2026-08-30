@@ -16,7 +16,11 @@ import {
 } from "./core/rune-trial-offer.ts";
 import type { EdgeClient } from "../_shared/http.ts";
 import type { MatchRow } from "../_shared/types.ts";
-import { negotiatedProtocolVersion, rankedSeatOrder } from "./matchmaking.ts";
+import {
+  negotiatedEquippedRuneProtocol,
+  negotiatedProtocolVersion,
+  rankedSeatOrder,
+} from "./matchmaking.ts";
 
 export class MatchStartFailure extends Error {}
 
@@ -52,8 +56,8 @@ export interface StartedRankedMatch {
      so the client's first read finds it already on the board and cannot tell it
      apart from history — which is how a bot's opener came to appear in one
      silent frame while its mid-game replies were performed. Saying so here is
-     the ordinary-ranked half of the same signal the Rune Trial sends as
-     `bot_actions`. Null whenever the human opens, or on a rejoin. */
+     the legacy-standard half of the `bot_actions` signal used by every action
+     match. Null whenever the human opens, or on a rejoin. */
   botMove: { col: number; die: number } | null;
 }
 
@@ -65,12 +69,18 @@ export async function startProgressiveRankedMatch(
   const accesses = [input.underdogAccess, input.favouriteAccess] as const;
   const spec = pickRankedOutcome(seed, accesses);
   const protocolVersion = negotiatedProtocolVersion(accesses);
+  const equippedRuneProtocol = negotiatedEquippedRuneProtocol(spec.format, accesses);
   const { p1, p2 } = rankedSeatOrder(input.underdog, input.favourite);
   const firstDie = spec.mode === LIMITED ? poolSequence(seed)[0] : diceStream(seed)();
   let openingCol: number | null = null;
   let afterTurn: Player | null = null;
   let afterDie: number | null = null;
-  if (input.bot && spec.format !== RUNE_TRIAL_FORMAT && p1 === input.bot.id) {
+  /* An equipped-capable standard match always uses the action log, including
+     when both server snapshots are bare. Its bot opening is committed through
+     the shared action opener after the database returns the locked snapshots;
+     only the legacy placement protocol can bake an opening move here. */
+  if (input.bot && spec.format !== RUNE_TRIAL_FORMAT
+      && !equippedRuneProtocol && p1 === input.bot.id) {
     const state0 = rebuild(seed, [], spec.mode);
     if (!state0) return null;
     openingCol = botMove(
@@ -92,7 +102,7 @@ export async function startProgressiveRankedMatch(
   const deadline = offer
     ? new Date(Date.now() + RUNE_TRIAL_PICK_SECS * 1000).toISOString()
     : null;
-  const { data: started, error } = await svc.rpc("start_ranked_match_v2", {
+  const { data: started, error } = await svc.rpc("start_ranked_match_v3", {
     p_requester: input.requester,
     p_p1: p1,
     p_p2: p2,
@@ -112,11 +122,12 @@ export async function startProgressiveRankedMatch(
     p_selection_deadline: deadline,
     p_p1_auto_rune: offer ? seededRuneTrialAutoPick(seed, p1, offer) : null,
     p_p2_auto_rune: offer ? seededRuneTrialAutoPick(seed, p2, offer) : null,
+    p_equipped_rune_protocol: equippedRuneProtocol,
   });
   if (error?.code === "P0001") return null;
   if (error) throw new MatchStartFailure(error.message);
   const startedMatch = matchPayload(started);
-  if (!startedMatch) throw new MatchStartFailure("invalid start_ranked_match_v2 payload");
+  if (!startedMatch) throw new MatchStartFailure("invalid start_ranked_match_v3 payload");
   return {
     match: startedMatch,
     botMove: openingCol === null ? null : { col: openingCol, die: firstDie },

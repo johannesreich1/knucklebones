@@ -8,7 +8,11 @@ import {
   type RankedRuneDeal,
 } from "./core/ranked-actions.ts";
 import { appendRankedBotTurn } from "./core/ranked-bot-turn.ts";
-import { rankedOutcomeByMatch } from "./core/ranked-outcomes.ts";
+import {
+  RUNE_TRIAL_FORMAT,
+  rankedOutcomeByMatch,
+  usesRankedActionProtocol,
+} from "./core/ranked-outcomes.ts";
 import { AI, ME, legalCols, type Player } from "./core/rules.ts";
 import { json, type AuthenticatedContext } from "../_shared/http.ts";
 import {
@@ -71,14 +75,15 @@ export async function actionMatch(context: AuthenticatedContext, input: ActionIn
     return json({ error: "no-match" }, 404);
   }
   if (match.status !== "active") return json({ error: "match-over" }, 409);
-  if (match.format === "rune_trial" && match.rune_rules_version !== 1) {
+  if ((match.format === RUNE_TRIAL_FORMAT && match.rune_rules_version !== 1)
+      || (match.rune_rules_version !== null && match.rune_rules_version !== 1)) {
     return json({ error: "unsupported-rune-rules" }, 409);
   }
-  if (match.format !== "rune_trial" || match.protocol_version !== 2) {
+  if (!usesRankedActionProtocol(match)) {
     return json({ error: "wrong-protocol" }, 409);
   }
   if (match.phase !== "playing") return json({ error: "selection-in-progress" }, 409);
-  if (match.next_die == null || !match.p1_rune || !match.p2_rune) {
+  if (match.next_die == null) {
     return json({ error: "corrupt-state" }, 500);
   }
 

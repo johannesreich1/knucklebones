@@ -6,7 +6,7 @@ import {
 } from "../core/ranked-actions.ts";
 import { rankedIntentOf } from "../core/ranked-action-validation.ts";
 import { appendRankedBotTurn } from "../core/ranked-bot-turn.ts";
-import { rankedOutcomeByMatch, RUNE_TRIAL_FORMAT } from "../core/ranked-outcomes.ts";
+import { rankedOutcomeByMatch, usesRankedActionProtocol } from "../core/ranked-outcomes.ts";
 import { ME } from "../core/rules.ts";
 import type { AuthenticatedContext, EdgeClient } from "./http.ts";
 import { commitMatchAction, MatchActionConflict } from "./match-action.ts";
@@ -23,35 +23,36 @@ const ACTION_COLUMNS = "idx, move_idx, who, kind, rune_id, target_col, placed_co
 async function readMatch(service: EdgeClient, matchId: string): Promise<MatchRow> {
   const { data, error } = await service.from("matches")
     .select(MATCH_COLUMNS).eq("id", matchId).maybeSingle();
-  if (error || !data) throw new Error("Rune Trial bot opener could not read its match");
+  if (error || !data) throw new Error("ranked action bot opener could not read its match");
   return data as unknown as MatchRow;
 }
 
 /**
- * If the underdog opening seat belongs to a bot, commit its first turn before
- * returning the revealed selection. Concurrent finalizers converge through
- * the action RPC's version check and then return the fresh projection.
+ * If the underdog opening seat belongs to a bot, commit its first action-log
+ * turn before returning the match. This owns both a revealed Rune Trial and
+ * ordinary equipped-rune play (including two honest bare hands). Concurrent
+ * finalizers converge through the action RPC's version check.
  */
-export async function ensureRuneTrialBotOpening<T extends { match: MatchRow }>(
+export async function ensureRankedActionBotOpening<T extends { match: MatchRow }>(
   context: AuthenticatedContext,
   payload: T,
 ): Promise<T & { bot_actions?: MatchActionRow[] }> {
   const service = context.service();
   let match = await readMatch(service, payload.match.id);
   const current = (): T => ({ ...payload, match } as T);
-  if (match.status !== "active" || match.format !== RUNE_TRIAL_FORMAT
+  if (match.status !== "active" || !usesRankedActionProtocol(match)
       || match.phase !== "playing" || match.action_version > 0) return current();
-  if (match.next_die === null || !match.p1_rune || !match.p2_rune) {
-    throw new Error("Rune Trial bot opener received an incomplete reveal");
+  if (match.next_die === null) {
+    throw new Error("ranked action bot opener received no opening die");
   }
 
   const { data: profileData, error: profileError } = await service.from("profiles")
     .select("id, is_bot, rating").eq("id", match.p1).single();
-  if (profileError) throw new Error("Rune Trial bot opener could not read p1");
+  if (profileError) throw new Error("ranked action bot opener could not read p1");
   const profile = profileData as ProfileSummary | null;
   if (!profile?.is_bot) return current();
   if (match.turn !== ME || match.action_version !== 0 || match.pending_aim !== null) {
-    throw new Error("Rune Trial bot opener found an invalid opening projection");
+    throw new Error("ranked action bot opener found an invalid opening projection");
   }
 
   const [{ data: actionData, error: actionError }, { data: seedData, error: seedError }] =
@@ -59,13 +60,13 @@ export async function ensureRuneTrialBotOpening<T extends { match: MatchRow }>(
       service.from("match_actions").select(ACTION_COLUMNS).eq("match_id", match.id).order("idx"),
       service.from("match_seeds").select("seed").eq("match_id", match.id).single(),
     ]);
-  if (actionError || seedError) throw new Error("Rune Trial bot opener could not read replay");
+  if (actionError || seedError) throw new Error("ranked action bot opener could not read replay");
   const rows = (actionData ?? []) as unknown as RankedActionRow[];
   const seed = (seedData as { seed?: string } | null)?.seed;
-  if (!seed) throw new Error("Rune Trial bot opener received no private seed");
+  if (!seed) throw new Error("ranked action bot opener received no private seed");
   let outcome: ReturnType<typeof rankedOutcomeByMatch>;
   try { outcome = rankedOutcomeByMatch(match.format, match.modifier); }
-  catch { throw new Error("Rune Trial bot opener found invalid match rules"); }
+  catch { throw new Error("ranked action bot opener found invalid match rules"); }
   const dealt: RankedRuneDeal = [match.p2_rune, match.p1_rune];
   const before = rebuildRankedActions(seed, rows, outcome.mode, dealt);
   if (!before || before.over || before.turn !== match.turn || before.nextDie !== match.next_die
@@ -77,7 +78,7 @@ export async function ensureRuneTrialBotOpening<T extends { match: MatchRow }>(
        500; a still-unopened projection remains a genuine replay failure. */
     match = await readMatch(service, match.id);
     if (match.status !== "active" || match.action_version > 0) return current();
-    throw new Error("Rune Trial bot opener found a mismatched replay");
+    throw new Error("ranked action bot opener found a mismatched replay");
   }
   const turn = appendRankedBotTurn({
     seed,
@@ -90,7 +91,7 @@ export async function ensureRuneTrialBotOpening<T extends { match: MatchRow }>(
   });
   const requestedAction = turn && rankedIntentOf(turn.actions[0]);
   if (!turn || !requestedAction || turn.state.over || turn.state.nextDie === null) {
-    throw new Error("Rune Trial bot opener could not build a legal turn");
+    throw new Error("ranked action bot opener could not build a legal turn");
   }
 
   try {
@@ -127,8 +128,12 @@ export async function ensureRuneTrialBotOpening<T extends { match: MatchRow }>(
     match = await readMatch(service, match.id);
     if (match.status !== "active" || match.action_version > 0) return current();
     if (error instanceof MatchActionConflict) {
-      throw new Error("Rune Trial bot opener lost its action race");
+      throw new Error("ranked action bot opener lost its action race");
     }
     throw error;
   }
 }
+
+/* Existing focused tests and the Trial selection function keep this narrow
+   name as an alias; there is still only one opener implementation. */
+export const ensureRuneTrialBotOpening = ensureRankedActionBotOpening;

@@ -47,7 +47,7 @@ export function createTurnClockHandlers(ports: TurnClockPorts): TurnClockHandler
     if (!online || online.done || S.busy || S.turn !== online.you) return;
     // A committed rune aim was the player's own choice; resolve it before the
     // turn is handed over. An armed-but-uncommitted one only disarms.
-    if (online.trial && await resolveTimedOutSpellAim()) return;
+    if (online.actionProtocol && await resolveTimedOutSpellAim()) return;
     if (!ports.isCurrent(online) || online.done || S.busy || S.turn !== online.you) return;
     online.selfAutoDue = true;
     await ports.watchdog();

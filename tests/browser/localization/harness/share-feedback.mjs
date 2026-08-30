@@ -6,7 +6,8 @@
  * same rule twice: the clipboard succeeding and the clipboard refusing must
  * each survive the repaint, translate, and expire back to Share.
  *
- * Stubbing navigator.share/clipboard is permanent for the page it runs on.
+ * Stubbing navigator.share/clipboard/execCommand is permanent for the page it
+ * runs on.
  */
 import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
 import { LOCALE_REGISTRY } from '../../../../src/i18n/locale.ts';
@@ -74,6 +75,11 @@ export async function verifyShareFeedbackRepaint(page, out, check) {
   out.localeShareFeedback);
   await page.evaluate(() => {
     navigator.clipboard.writeText = async () => { throw new Error('denied'); };
+    /* Deny the legacy fallback too. Chromium may report execCommand('copy') as
+       successful after a real button gesture even when the Clipboard API was
+       stubbed to refuse; this branch is specifically the all-copy-paths-failed
+       contract. */
+    document.execCommand = () => false;
   });
   await page.click('#btnShare');
   await page.waitForFunction((copyFailed) =>

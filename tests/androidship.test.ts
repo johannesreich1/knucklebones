@@ -49,6 +49,7 @@ const pins: Record<string, string> = {
   '@capacitor/android': '8.5.0',
   '@capacitor/core': '8.5.0',
   '@capacitor/ios': '8.5.0',
+  '@capacitor/share': '8.0.1',
   '@capacitor/splash-screen': '8.0.2',
   '@capawesome/capacitor-apple-sign-in': '0.1.3',
   '@capacitor/assets': '3.0.5',
@@ -232,9 +233,10 @@ if (REQUIRE_SYNCED) {
     const registrations = plugins.map((plugin: { pkg?: string; classpath?: string }) =>
       `${plugin.pkg}:${plugin.classpath}`).sort();
     check(JSON.stringify(registrations) === JSON.stringify([
+      '@capacitor/share:com.capacitorjs.plugins.share.SharePlugin',
       '@capacitor/splash-screen:com.capacitorjs.plugins.splashscreen.SplashScreenPlugin',
       '@capawesome/capacitor-apple-sign-in:io.capawesome.capacitorjs.plugins.applesignin.AppleSignInPlugin',
-    ].sort()), `${SYNCED_PLUGINS} does not register exactly Splash Screen and Apple Sign-In`);
+    ].sort()), `${SYNCED_PLUGINS} does not register exactly Share, Splash Screen, and Apple Sign-In`);
   }
 }
 

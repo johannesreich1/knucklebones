@@ -97,7 +97,9 @@ and Play listing name is **Knucklebones Neon**. The application id remains
 unchanged.
 
 `native/package.json` and its lock pin Capacitor core/CLI/iOS/Android 8.5.0,
-Splash Screen 8.0.2, Capawesome Apple Sign-In 0.1.3, and Capacitor Assets 3.0.5.
+Share 8.0.1, Splash Screen 8.0.2, Capawesome Apple Sign-In 0.1.3, and Capacitor
+Assets 3.0.5. Result sharing reads Capacitor's injected global Share bridge so
+the standalone, PWA, and widget entries do not import a native plugin.
 Native dependency upgrades change compiler input and require both platform
 contracts; they are not floating maintenance updates.
 

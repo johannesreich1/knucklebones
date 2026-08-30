@@ -1,4 +1,4 @@
-// EVERYTHING THE RUNE TRIAL ROLLOUT PLAN PROMISES THAT THE OTHER TWO DO NOT.
+// EVERYTHING THE RANKED-RUNES ROLLOUT PLAN PROMISES THAT THE OTHER TWO DO NOT.
 //
 // Same shape as its two siblings in ./production-identity-cases.ts: the
 // production evidence this plan's preflight demands before a single function
@@ -7,62 +7,95 @@
 // Unlike those two it still drives that lifecycle through its own makeRunner
 // fixture rather than the shared assertPlanRolloutFlows, and deliberately so:
 // every call below passes NO `selector`, which is the only coverage that
-// DEFAULT_FUNCTION_ROLLOUT is still 'rune-trial' — the plan an operator gets
+// DEFAULT_FUNCTION_ROLLOUT is still 'ranked-runes' — the plan a programmatic
+// caller gets
 // when they name none. assertPlanRolloutFlows always names one.
 import assert from 'node:assert/strict';
 import { existsSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import {
   FUNCTION_ROLLOUT_SLUGS,
-  assertRuneTrialProductionPrerequisite,
+  assertRankedRunesProductionPrerequisite,
   rolloutProductionFunctions,
 } from '../../tools/functions/production-rollout.mjs';
 import {
   CLI,
   makeRunner,
-  prerequisite,
   readyProductionRead,
   temp,
 } from './production-functions-cases.ts';
 
-export async function assertRuneTrialPlanContract() {
-  /* What production must already prove before any rune-trial function is
-     deployed: the pinned migration applied exactly once, and four all-or-
-     nothing evidence groups — a partial apply of any one of them is a refusal,
-     never a warning. */
+export async function assertRankedRunesPlanContract() {
+  /* What production must already prove before any ranked function is
+     deployed: the equipped forward migration applied exactly once, the Rune
+     Trial foundation remains complete, the replaced contracts are exact, and
+     bot seats are present and owned. */
   assert.deepEqual(
-    await assertRuneTrialProductionPrerequisite(readyProductionRead()),
-    { migrationHistory: true, schemaStage: 1, evidence: prerequisite() },
+    await assertRankedRunesProductionPrerequisite(readyProductionRead()),
+    {
+      migrationHistory: true,
+      schemaStage: 1,
+      evidence: {
+        queueCapabilityConstraint: true,
+        matchConstraints: true,
+        functionContracts: true,
+        functionBodies: true,
+        serviceGrants: true,
+        helperLockdown: true,
+      },
+      data: {
+        botCount: 200,
+        botsWithRunes: 155,
+        botsEquipped: 155,
+        botsWithRunesWithoutSeat: 0,
+        botsWithoutRunesWithSeat: 0,
+        botSeatNotOwned: 0,
+      },
+    },
   );
   await assert.rejects(
-    () => assertRuneTrialProductionPrerequisite(
+    () => assertRankedRunesProductionPrerequisite(
       readyProductionRead(undefined, { history: false }),
     ),
     /migration must be exactly/,
   );
   await assert.rejects(
-    () => assertRuneTrialProductionPrerequisite(
+    () => assertRankedRunesProductionPrerequisite(
       readyProductionRead(undefined, { schema: { policies: false } }),
     ),
     /security boundary.*partial/,
   );
   await assert.rejects(
-    () => assertRuneTrialProductionPrerequisite(
+    () => assertRankedRunesProductionPrerequisite(
       readyProductionRead(undefined, { functions: { function_bodies: false } }),
     ),
     /function contract.*partial/,
   );
   await assert.rejects(
-    () => assertRuneTrialProductionPrerequisite(
+    () => assertRankedRunesProductionPrerequisite(
       readyProductionRead(undefined, { job: { cron_job_contract: false } }),
     ),
     /cron job.*partial/,
   );
   await assert.rejects(
-    () => assertRuneTrialProductionPrerequisite(
+    () => assertRankedRunesProductionPrerequisite(
       readyProductionRead(undefined, { schema: { cron_extension: false } }),
     ),
     /reviewed pg_cron extension/,
+  );
+  await assert.rejects(
+    () => assertRankedRunesProductionPrerequisite(
+      readyProductionRead(undefined, { equipped: { helper_lockdown: false } }),
+    ),
+    /Equipped-ranked.*partial/,
+  );
+  await assert.rejects(
+    () => assertRankedRunesProductionPrerequisite(
+      readyProductionRead(undefined, {
+        bots: { bots_equipped: 154, bots_with_runes_without_seat: 1 },
+      }),
+    ),
+    /missing, unowned, or attached without inventory/,
   );
 
   {
@@ -81,7 +114,7 @@ export async function assertRuneTrialPlanContract() {
     });
     assert.deepEqual(result, {
       applied: false,
-      selector: 'rune-trial',
+      selector: 'ranked-runes',
       slugs: FUNCTION_ROLLOUT_SLUGS,
       current: FUNCTION_ROLLOUT_SLUGS.map(slug => ({ slug, version: 7 })),
     });
@@ -129,10 +162,12 @@ export async function assertRuneTrialPlanContract() {
     });
     assert.equal(result.applied, true);
     assert.deepEqual(events, [
-      'prerequisite:history',
+      'prerequisite:ranked-history',
       'prerequisite:schema',
       'prerequisite:functions',
       'prerequisite:cron',
+      'prerequisite:equipped-schema',
+      'prerequisite:bot-data',
       'create-temp',
       ...FUNCTION_ROLLOUT_SLUGS.flatMap(slug => [
         `deploy:${slug}`, `list:${slug}`, `download:${slug}`,

@@ -106,9 +106,9 @@ const OVERLAY = `
       <div class="fact"><b id="accStreak">0</b><span data-i18n="online:profile.bestStreak">BEST STREAK</span></div>
       <div class="fact pk"><b id="accPeak">0</b><span data-i18n="online:profile.peak">PEAK</span></div>
     </div>
-    <!-- The collection is account state, not a loadout. Six stable slots make
-         progress legible without suggesting that equipping a rune changes an
-         ordinary ranked match; Trial loans its full offer independently. -->
+    <!-- Collection and equipment are distinct account facts. Six stable slots
+         show what is owned; the equipped seat chooses what ordinary ranked
+         snapshots from SILVER. Trial loans its full offer independently. -->
     <div id="accRunes"></div>
     <!-- Identity offers lead the match history (user call): after the stable
          collection summary, so the account's next step is still seen before

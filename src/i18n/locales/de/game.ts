@@ -100,6 +100,7 @@ export const deGame = {
     gameMode: 'SPIELMODUS',
     matchRune: 'MATCH-RUNE',
     trialRunes: 'RITUAL-RUNEN',
+    rankedRunes: 'RANGLISTEN-RUNEN',
     runeFor: 'RUNE FÜR',
     tapReady: 'Antippen, wenn du bereit bist',
     connecting: 'Spieler werden verbunden …',
@@ -222,6 +223,10 @@ export const deGame = {
     revealPair: 'Beide Runen stehen fest',
     revealed: 'Runen aufgedeckt',
     pickClock: 'SEKUNDEN ZUR WAHL',
+  },
+  rankedRunes: {
+    revealPair: '{{playerOne}}: {{runeOne}}. {{playerTwo}}: {{runeTwo}}.',
+    revealed: 'Ranglisten-Runen aufgedeckt',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Festgelegt — markierte Spalte wählen.',

@@ -5,6 +5,8 @@ import {
   LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL,
   PRODUCTION_BOT_COUNT,
   PRODUCTION_BOT_MAX_PEAK_GAP,
+  PRODUCTION_BOT_RUNE_OWNER_COUNT,
+  PRODUCTION_BOT_RUNE_ROW_COUNT,
   PRODUCTION_BOT_SEED_PLAN,
   PRODUCTION_TEST_DATA_OPT_INS,
   REFRESH_PRODUCTION_BOT_PROFILES_AUDIT_SQL,
@@ -14,6 +16,7 @@ import {
   SEED_PRODUCTION_BOTS_SQL,
   assertProductionBotSeedComplete,
   assertProductionBotProfilesRefreshable,
+  buildProductionBotRunePlan,
   validateBaseProductionTestDataAudit,
   validateEmptyRuneTrialDataAudit,
   validateLadderStreakBaselineProductionStage,
@@ -116,6 +119,22 @@ export function assertRealisticBotSeedPlan() {
     [2010, 3000], [3000, 4350], [4350, Number.POSITIVE_INFINITY]]) {
     assert.ok(PRODUCTION_BOT_SEED_PLAN.some(row => row.points >= min && row.points < max));
   }
+
+  const runePlans = PRODUCTION_BOT_SEED_PLAN.map(bot => ({
+    bot,
+    owned: buildProductionBotRunePlan(bot),
+  }));
+  assert.equal(PRODUCTION_BOT_RUNE_ROW_COUNT, 539);
+  assert.equal(PRODUCTION_BOT_RUNE_OWNER_COUNT, 155);
+  assert.equal(
+    runePlans.reduce((total, row) => total + row.owned.length, 0),
+    PRODUCTION_BOT_RUNE_ROW_COUNT,
+  );
+  assert.equal(
+    runePlans.filter(row => row.owned.length > 0).length,
+    PRODUCTION_BOT_RUNE_OWNER_COUNT,
+  );
+  assert.ok(runePlans.every(row => new Set(row.owned).size === row.owned.length));
 }
 
 export function assertBotSeedSql() {
@@ -129,6 +148,13 @@ export function assertBotSeedSql() {
   assert.match(SEED_PRODUCTION_BOTS_SQL, /public\.mint_bot\(seed_row\.points\)/);
   assert.match(SEED_PRODUCTION_BOTS_SQL, /insert into public\.season_ratings/);
   assert.match(SEED_PRODUCTION_BOTS_SQL, /insert into private\.season_streak_baselines/);
+  assert.match(SEED_PRODUCTION_BOTS_SQL, /insert into public\.player_runes/);
+  assert.match(SEED_PRODUCTION_BOTS_SQL, /set equipped_rune =/);
+  assert.match(SEED_PRODUCTION_BOTS_SQL, /private\.bot_owned_rune_choice\(pr\.id\)/);
+  assert.match(SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL,
+    /private\.bot_owned_rune_choice\(profile\.id\)/);
+  assert.match(SEED_PRODUCTION_BOTS_SQL, /a bot was seated with a rune it does not hold/);
+  assert.doesNotMatch(SEED_PRODUCTION_BOTS_SQL, /\brandom\s*\(/i);
   assert.match(SEED_PRODUCTION_BOTS_SQL, /20260826153000.*ladder_streak_baselines/s);
   assert.match(SEED_PRODUCTION_BOTS_SQL, /ranked_pool_tier = \(case/);
   assert.match(SEED_PRODUCTION_BOTS_SQL,
@@ -141,6 +167,9 @@ export function assertBotSeedSql() {
   assert.equal((SEED_PRODUCTION_BOTS_SQL.match(
     /^\s*\(\d+, \d+, \d+, \d+, \d+, \d+, \d+\),?$/gm,
   ) ?? []).length, PRODUCTION_BOT_COUNT);
+  assert.equal((SEED_PRODUCTION_BOTS_SQL.match(
+    /^\s*\(\d+, '(?:fate|nudge|ward|sunder|pilfer|anvil)'\)[,;]?$/gm,
+  ) ?? []).length, PRODUCTION_BOT_RUNE_ROW_COUNT);
 }
 
 export function assertBotProfileRefreshSql() {
@@ -158,10 +187,17 @@ export function assertBotProfileRefreshSql() {
   assert.match(REFRESH_PRODUCTION_BOT_PROFILES_SQL, /update public\.season_ratings/);
   assert.match(REFRESH_PRODUCTION_BOT_PROFILES_SQL, /update public\.profiles/);
   assert.match(REFRESH_PRODUCTION_BOT_PROFILES_SQL, /on conflict \(season_id, player\) do update/);
+  assert.match(REFRESH_PRODUCTION_BOT_PROFILES_SQL, /insert into public\.player_runes/);
+  assert.match(REFRESH_PRODUCTION_BOT_PROFILES_SQL,
+    /private\.bot_owned_rune_choice\(pr\.id\)/);
+  assert.doesNotMatch(REFRESH_PRODUCTION_BOT_PROFILES_SQL, /\brandom\s*\(/i);
   assert.doesNotMatch(REFRESH_PRODUCTION_BOT_PROFILES_SQL, /\bdelete\b|\btruncate\b/i);
   assert.equal((REFRESH_PRODUCTION_BOT_PROFILES_SQL.match(
     /^\s*\(\d+, \d+, \d+, \d+, \d+, \d+, \d+, \d+, \d+, \d+\)[,;]?$/gm,
   ) ?? []).length, PRODUCTION_BOT_COUNT);
+  assert.equal((REFRESH_PRODUCTION_BOT_PROFILES_SQL.match(
+    /^\s*\(\d+, '(?:fate|nudge|ward|sunder|pilfer|anvil)'\)[,;]?$/gm,
+  ) ?? []).length, PRODUCTION_BOT_RUNE_ROW_COUNT);
   assert.match(REFRESH_PRODUCTION_BOT_PROFILES_AUDIT_SQL, /full join actual/);
   assert.match(REFRESH_PRODUCTION_BOT_PROFILES_AUDIT_SQL, /"actualDistinctPoints"/);
   assert.match(REFRESH_PRODUCTION_BOT_PROFILES_AUDIT_SQL, /"joinedRows"/);
@@ -186,6 +222,18 @@ export function assertExactSeedAudit(guarded: GuardedAssertion) {
   assert.equal(assertProductionBotSeedComplete(audit), audit);
   guarded(() => assertProductionBotSeedComplete({ ...audit, humans: 1, bots: 149 }), /bots=149|ownership graph/);
   guarded(() => assertProductionBotSeedComplete({ ...audit, playerRunes: 1 }), /playerRunes/);
+  guarded(() => assertProductionBotSeedComplete({
+    ...audit, botsWithRunesWithoutEquipped: 1,
+  }), /botsWithRunesWithoutEquipped/);
+  guarded(() => assertProductionBotSeedComplete({
+    ...audit, botsWithUnownedEquippedRune: 1,
+  }), /botsWithUnownedEquippedRune/);
+  guarded(() => assertProductionBotSeedComplete({
+    ...audit, botsWithoutRunesWithEquipped: 1,
+  }), /botsWithoutRunesWithEquipped/);
+  guarded(() => assertProductionBotSeedComplete({
+    ...audit, botsWithUnexpectedEquippedRune: 1,
+  }), /botsWithUnexpectedEquippedRune/);
   guarded(() => assertProductionBotSeedComplete({ ...audit, neonPointBots: 0 }), /neonPointBots/);
   guarded(() => assertProductionBotSeedComplete({ ...audit, maxWinRateBps: 5600 }), /maxWinRateBps/);
 }
@@ -276,13 +324,16 @@ export async function assertBotProfileRefreshOrchestration() {
     authUsers: PRODUCTION_BOT_COUNT, profiles: PRODUCTION_BOT_COUNT,
     bots: PRODUCTION_BOT_COUNT, seasonRatings: PRODUCTION_BOT_COUNT,
   });
-  const readFor = (state: 'legacy' | 'refreshed') => async (query: string) => {
+  const readFor = (
+    state: 'legacy' | 'refreshed',
+    runeBefore = emptyRune(),
+  ) => async (query: string) => {
     if (query === RUNE_TRIAL_PRODUCTION_STAGE_SQL) return [runeStage(true)];
     if (query === LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL) {
       return [streakBaselineStage(true)];
     }
     if (query === BASE_PRODUCTION_TEST_DATA_AUDIT_SQL) return [populated];
-    if (query === EMPTY_RUNE_TRIAL_DATA_AUDIT_SQL) return [emptyRune()];
+    if (query === EMPTY_RUNE_TRIAL_DATA_AUDIT_SQL) return [runeBefore];
     if (query === REFRESH_PRODUCTION_BOT_PROFILES_AUDIT_SQL) return [refreshAudit(state)];
     if (query === SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL) return [seededAudit()];
     throw new Error('unexpected query');
@@ -303,7 +354,7 @@ export async function assertBotProfileRefreshOrchestration() {
   assert.equal(exactChecks, 3);
   assert.deepEqual(executed, [REFRESH_PRODUCTION_BOT_PROFILES_SQL]);
 
-  const repeatWrites: string[] = [];
+  const refreshedProfileWrites: string[] = [];
   const already = await rolloutProductionTestData({
     phase: 'refresh-bot-profiles',
     apply: true,
@@ -311,10 +362,25 @@ export async function assertBotProfileRefreshOrchestration() {
     read: readFor('refreshed'),
     verifyEnvironment: () => {},
     exactBotSeedPrerequisite: async () => ({ ledgerStage: 1 }),
-    execute: (sql: string) => { repeatWrites.push(sql); },
+    execute: (sql: string) => { refreshedProfileWrites.push(sql); },
     log: () => {},
   } as never);
   assert.equal(already.applied, true);
   assert.equal((already as { refreshState?: string }).refreshState, 'refreshed');
-  assert.deepEqual(repeatWrites, [REFRESH_PRODUCTION_BOT_PROFILES_SQL]);
+  assert.deepEqual(refreshedProfileWrites, [REFRESH_PRODUCTION_BOT_PROFILES_SQL]);
+
+  let canonicalWrites = 0;
+  await assert.rejects(() => rolloutProductionTestData({
+    phase: 'refresh-bot-profiles',
+    apply: true,
+    optIn: PRODUCTION_TEST_DATA_OPT_INS['refresh-bot-profiles'].value,
+    read: readFor('refreshed', emptyRune({
+      playerRunes: PRODUCTION_BOT_RUNE_ROW_COUNT,
+    })),
+    verifyEnvironment: () => {},
+    exactBotSeedPrerequisite: async () => ({ ledgerStage: 1 }),
+    execute: () => { canonicalWrites++; },
+    log: () => {},
+  } as never), /not empty/);
+  assert.equal(canonicalWrites, 0);
 }

@@ -3,16 +3,17 @@ import { botPairBand, matchBand, SCALE } from "./core/ladder.ts";
 import {
   ALL_RANKED_CAPABILITIES,
   RUNE_TRIAL_FORMAT,
+  usesRankedActionProtocol,
   type RankedParticipantAccess,
   type RankedPoolTier,
 } from "./core/ranked-outcomes.ts";
 import { json, type AuthenticatedContext } from "../_shared/http.ts";
-import { ensureRuneTrialBotOpening } from "../_shared/rune-trial-bot-opening.ts";
+import { ensureRankedActionBotOpening } from "../_shared/rune-trial-bot-opening.ts";
 import {
   findOldestEligiblePartner,
   findRankedBotOpponent,
   rankedBotSides,
-  trialClientCompatibilityError,
+  rankedClientCompatibilityError,
   type QueueCandidate,
 } from "./matchmaking.ts";
 import { MatchStartFailure, startProgressiveRankedMatch, type StartedRankedMatch } from "./start.ts";
@@ -42,23 +43,23 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
              avatars: { p1: avatar(a), p2: avatar(b) } };
   };
 
-  /* `botMove` is ordinary ranked's opening, handed in by the start that baked it.
-     The Rune Trial's equivalent is produced inside this function instead, by
-     ensureRuneTrialBotOpening, because its opener is committed here. Either way
-     the client is told a bot moved inside THIS request, so its first read can
-     perform that turn rather than paint it in one silent frame. */
+  /* `botMove` is a legacy standard opening baked into the start RPC. Every
+     action-protocol opening — Rune Trial or equipped ordinary ranked — is
+     committed below by ensureRankedActionBotOpening. Either way the client is
+     told a bot moved inside THIS request, so its first read performs that turn
+     rather than painting it in one silent frame. */
   const matched = async (
     match: MatchRow,
     rejoined?: boolean | null,
     botMove?: { col: number; die: number } | null,
   ): Promise<Response> => {
-    const compatibilityError = trialClientCompatibilityError(match, input);
+    const compatibilityError = rankedClientCompatibilityError(match, input);
     if (compatibilityError) return json({ error: compatibilityError }, 409);
     const myIdx: Player = match.p1 === uid ? ME : AI;
     let honestRejoin = rejoined;
     if (honestRejoin === undefined) {
       const { count, error } = await svc.from(
-        match.format === RUNE_TRIAL_FORMAT ? "match_actions" : "match_moves",
+        usesRankedActionProtocol(match) ? "match_actions" : "match_moves",
       )
         .select("*", { count: "exact", head: true }).eq("match_id", match.id).eq("who", myIdx);
       if (error) return json({ error: "match-read-failed" }, 500);
@@ -77,14 +78,18 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
       }
       const payload = trialData as { match?: MatchRow; trial?: unknown };
       if (!payload.match) return json({ error: "match-read-failed" }, 500);
+      privateMatch = payload.match;
+      trial = payload.trial;
+    }
+    if (usesRankedActionProtocol(privateMatch)) {
       let opened: { match: MatchRow; trial?: unknown; bot_actions?: MatchActionRow[] };
       try {
-        opened = await ensureRuneTrialBotOpening(context, {
-          match: payload.match,
-          trial: payload.trial,
+        opened = await ensureRankedActionBotOpening(context, {
+          match: privateMatch,
+          ...(trial === undefined ? {} : { trial }),
         });
       } catch (error) {
-        console.error("pvp-join bot opening failed:", error);
+        console.error("pvp-join action bot opening failed:", error);
         return json({ error: "match-read-failed" }, 500);
       }
       privateMatch = opened.match;
@@ -108,7 +113,7 @@ export async function joinMatch(context: AuthenticatedContext, input: JoinInput)
     .or(`p1.eq.${uid},p2.eq.${uid}`).limit(1).maybeSingle();
   if (activeError) return json({ error: "match-read-failed" }, 500);
   const active = activeData as MatchRow | null;
-  const compatibilityError = active && trialClientCompatibilityError(active, input);
+  const compatibilityError = active && rankedClientCompatibilityError(active, input);
   if (compatibilityError) return json({ error: compatibilityError }, 409);
   if (active && !(await settleAbandonedBotMatch(svc, active, uid))) return matched(active);
 

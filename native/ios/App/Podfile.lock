@@ -2,6 +2,8 @@ PODS:
   - Capacitor (8.5.0):
     - CapacitorCordova
   - CapacitorCordova (8.5.0)
+  - CapacitorShare (8.0.1):
+    - Capacitor
   - CapacitorSplashScreen (8.0.2):
     - Capacitor
   - CapawesomeCapacitorAppleSignIn (0.1.3):
@@ -12,6 +14,7 @@ PODS:
 DEPENDENCIES:
   - "Capacitor (from `../../node_modules/@capacitor/ios`)"
   - "CapacitorCordova (from `../../node_modules/@capacitor/ios`)"
+  - "CapacitorShare (from `../../node_modules/@capacitor/share`)"
   - "CapacitorSplashScreen (from `../../node_modules/@capacitor/splash-screen`)"
   - "CapawesomeCapacitorAppleSignIn (from `../../node_modules/@capawesome/capacitor-apple-sign-in`)"
   - KnucklebonesGameCenter (from `../../plugins/gamecenter`)
@@ -21,6 +24,8 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/ios"
   CapacitorCordova:
     :path: "../../node_modules/@capacitor/ios"
+  CapacitorShare:
+    :path: "../../node_modules/@capacitor/share"
   CapacitorSplashScreen:
     :path: "../../node_modules/@capacitor/splash-screen"
   CapawesomeCapacitorAppleSignIn:
@@ -31,10 +36,11 @@ EXTERNAL SOURCES:
 SPEC CHECKSUMS:
   Capacitor: 00b87168591cc006ea6f5c0de681ec5c39a2c8eb
   CapacitorCordova: 9d3acbb574048e7167d2af127a0af2123e619f2f
+  CapacitorShare: 0c58305114538568059bfc07111f22dcb9cb2a82
   CapacitorSplashScreen: 7bf61c2001557ff9e195e601c6b87344480d3c65
   CapawesomeCapacitorAppleSignIn: dda027b9fa4d85f718583a945e0f1002a9eba644
   KnucklebonesGameCenter: e61d4ed230ca09a6fa9416e3d09439ed056067ba
 
-PODFILE CHECKSUM: 05a964a7980fa4232fb0afc7e1d04a616fb49ba4
+PODFILE CHECKSUM: 5c78aefde7df40909b0c0bc2fc31993ad0a6be22
 
 COCOAPODS: 1.16.2

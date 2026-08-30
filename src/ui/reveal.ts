@@ -7,8 +7,10 @@
 // A beat may also be DEFERRED — see `Act` below. Everything the player is asked
 // between two answers belongs inside this one overlay: the Rune Trial's private
 // choice opens over the mode the dial just found and turns both hands over on
-// the same stage. Closing the overlay to ask a question and opening it again to
-// answer it is the shape that was here before, and it read as a second spin.
+// the same stage. Ordinary ranked uses that same paired theatre for its two
+// immutable equipped-rune seats, including an honest NONE. Closing the overlay
+// to ask a question and opening it again to answer it is the shape that was
+// here before, and it read as a second spin.
 // `#ovWheel` stays stable because tests, CSS, and design cards already share it.
 import type { ModeSpec } from '../core/modes.ts';
 import type { Player } from '../core/rules.ts';
@@ -17,7 +19,12 @@ import { subscribeLocale, t } from '../i18n/index.ts';
 import { dialBeat } from './modedial.ts';
 import type { DialModeChoice, DialModeCopy } from './modedial.ts';
 import { dealBeat } from './runedeal.ts';
-import { trialRuneRevealBeat, type TrialRevealSide } from './trial-reveal.ts';
+import {
+  standardRuneRevealBeat,
+  trialRuneRevealBeat,
+  type RankedRuneRevealSide,
+  type TrialRevealSide,
+} from './trial-reveal.ts';
 import { paintAvatar } from './avatar.ts';
 import { $, show, hide } from './dom.ts';
 import { appRoot } from './embed.ts';
@@ -125,6 +132,7 @@ export async function reveal(opts: {
   modeCandidates?: readonly DialModeChoice[];
   modeCopy?: (id: string) => DialModeCopy;
   runes?: readonly RuneDeal[];
+  rankedRunes?: readonly [RankedRuneRevealSide, RankedRuneRevealSide];
   trial?: {
     /* Runs while the mode it belongs to is still on the stage. `note` writes
        one line under the readout — the opponent's clock — and is cleared for
@@ -148,6 +156,7 @@ export async function reveal(opts: {
       contextHue: colorOf(owner),
     }));
   }
+  if (opts.rankedRunes) acts.push(standardRuneRevealBeat(opts.rankedRunes));
   const trial = opts.trial;
   if (trial) acts.push(async () => {
     const sides = await trial.resolve(note);
@@ -266,12 +275,13 @@ export async function reveal(opts: {
 /* Presentation hook, the same idiom as __kbResult and __kbTrialPick: run the
    reveal with the shape RANKED gives it — a mode dial settling on a format,
    with a real pairing painted above it. Nothing else produces that layout: it
-   otherwise needs a live match, a dealt offer and a server deadline. That gap
-   is how two layout faults reached a device, and worse, how the probe written
-   to catch one of them could not — it injected a pairing into an OFFLINE
-   reveal, which has none, and that landed close enough to the choice sheet's
-   own fallback to pass with the fix removed. `sides` resolves the trial beat,
-   so a test can hold the screen open, measure it, and let it end. */
+   otherwise needs a live match and, for Trial, a dealt offer plus a server
+   deadline. That gap is how two layout faults reached a device, and worse, how
+   the probe written to catch one of them could not — it injected a pairing
+   into an OFFLINE reveal, which has none, and that landed close enough to the
+   choice sheet's own fallback to pass with the fix removed. `sides` resolves
+   the deferred Trial beat; `rankedSides` supplies an ordinary match's already
+   immutable pair, so tests can hold either screen open, measure it, and end. */
 if (typeof window !== 'undefined') {
   (window as any).__kbRankedReveal = (opts: {
     modeId: string;
@@ -280,14 +290,23 @@ if (typeof window !== 'undefined') {
        own — ranked passes copy for it too (queue-reveal's revealCopy). */
     copy?: (id: string) => DialModeCopy;
     candidates?: readonly DialModeChoice[];
-    sides: () => Promise<readonly [TrialRevealSide, TrialRevealSide] | null>;
+    sides?: () => Promise<readonly [TrialRevealSide, TrialRevealSide] | null>;
+    rankedSides?: readonly [{
+      spell: SpellSpec | null; name?: () => string; nameText?: string; hue: string;
+    }, {
+      spell: SpellSpec | null; name?: () => string; nameText?: string; hue: string;
+    }];
   }): Promise<void> => reveal({
     mode: { id: opts.modeId },
     modeCopy: opts.copy,
     modeCandidates: opts.candidates,
-    trial: { resolve: () => opts.sides() },
+    rankedRunes: opts.rankedSides?.map((side) => ({
+      spell: side.spell,
+      name: side.name ?? (() => side.nameText ?? ''),
+      hue: side.hue,
+    })) as readonly [RankedRuneRevealSide, RankedRuneRevealSide] | undefined,
+    trial: opts.sides ? { resolve: () => opts.sides!() } : undefined,
     me: opts.pairing.me,
     foe: opts.pairing.foe,
   });
 }
-

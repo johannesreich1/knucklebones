@@ -20,7 +20,7 @@ export async function drainTerminalProjection(
   online.pendingRow = newerMatchProjection(online.pendingRow, incoming);
   for (let attempt = 0; attempt < 30 && ports.isCurrent(online); attempt++) {
     const synced = await ports.sync(true);
-    const complete = !online.trial
+    const complete = !online.actionProtocol
       || online.actionApplied >= (incoming.action_version ?? online.actionApplied);
     if (synced && complete) break;
     await new Promise((resolve) => setTimeout(resolve, 75));

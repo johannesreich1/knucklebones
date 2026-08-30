@@ -100,14 +100,17 @@ function installHands(charges: [Record<string, number>, Record<string, number>])
   renderSpells();
 }
 
-export function resetSpells(dealt?: string | readonly [string, string]): void {
-  const ids: readonly [string, string] = S.tut ? ['', '']
+export function resetSpells(
+  dealt?: string | readonly [string | null, string | null],
+): void {
+  const ids: readonly [string | null, string | null] = S.tut ? [null, null]
     : typeof dealt === 'string' ? [dealt, dealt]
       : dealt ?? drawSpellDeal();
   installHands([freshCharges(ids[AI]), freshCharges(ids[ME])]);
 }
 
-/* Ranked play has no spell layer. */
+/* Clear both hands for a rune-free setup or legacy ranked row. Protocol-v2
+   ranked callers install their immutable nullable pair through resetSpells. */
 export function clearSpells(): void {
   installHands([{}, {}]);
 }

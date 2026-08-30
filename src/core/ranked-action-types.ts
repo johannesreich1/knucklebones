@@ -20,8 +20,10 @@ export type RankedActionIntent =
   | { kind: 'cast'; rune_id: string; target_col: number }
   | { kind: 'place'; placed_col: number };
 
-/** Tuple order follows core Player ids: [AI/p2, ME/p1]. */
-export type RankedRuneDeal = readonly [string, string];
+/** Tuple order follows core Player ids: [AI/p2, ME/p1]. Null is an honest bare
+    seat: from SILVER up a player may deliberately carry nothing, and below
+    SILVER every equipped profile value is ignored by matchmaking. */
+export type RankedRuneDeal = readonly [string | null, string | null];
 
 export interface RankedActionState {
   st: GameState;

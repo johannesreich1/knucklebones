@@ -1,11 +1,12 @@
-// Authoritative ranked action replay for protocol-v2 Rune Trial matches.
+// Authoritative ranked action replay for protocol-v2 rune matches.
 //
-// Ordinary ranked matches keep the compact placement-only replay in match.ts.
-// A Trial needs a richer log because a cast may mutate the board, the die in
-// hand, persistent charm state, and the finite LIMITED supply before the turn's
-// placement. This module derives all of that from the private seed, revealed
-// rune assignments, and participant-readable action rows. It is pure and is
-// uploaded verbatim with the Edge Function that validates actions.
+// Rune Trial and equipped ordinary ranked need the richer log because a cast
+// may mutate the board, the die in hand, persistent charm state, and the finite
+// LIMITED supply before the turn's placement. Legacy standard matches retain
+// compact placement-only replay in match.ts. This module derives its state from
+// the private seed, public rune snapshots (including honest bare seats), and
+// participant-readable action rows. It is pure and uploaded verbatim with the
+// Edge Function that validates actions.
 import { diceStream, poolSequence } from './dice.ts';
 import {
   BOUNTY,
@@ -45,7 +46,7 @@ interface Engine {
 
 function makeEngine(seed: string, mode: Mode, dealt: RankedRuneDeal): Engine | null {
   if (typeof seed !== 'string' || !seed.length) return null;
-  if (!spellById(dealt[0]) || !spellById(dealt[1])) return null;
+  if (dealt.some((id) => id !== null && !spellById(id))) return null;
 
   const bag = mode === LIMITED ? poolSequence(seed) : null;
   const stream = bag ? null : diceStream(seed);

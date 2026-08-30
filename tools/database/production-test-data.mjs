@@ -25,6 +25,7 @@ import {
   BASE_PRODUCTION_TEST_DATA_AUDIT_SQL,
   EMPTY_RUNE_TRIAL_DATA_AUDIT_SQL,
   LADDER_STREAK_BASELINE_PRODUCTION_STAGE_SQL,
+  PRODUCTION_BOT_COUNT,
   PRODUCTION_HUMAN_WIPE_OPT_IN,
   PRODUCTION_TEST_DATA_CLI_VERSION,
   PRODUCTION_TEST_DATA_OPT_INS,
@@ -263,7 +264,7 @@ export async function rolloutProductionTestData({
       refreshBefore,
     );
     if (!apply) {
-      log(`Preview only: ${refreshState === 'legacy' ? 'refresh' : 'retain'} the exact 150 unplayed bot profiles with toned-down records, varied peaks, and streak baselines.`);
+      log(`Preview only: ${refreshState === 'legacy' ? 'refresh' : 'retain'} the exact ${PRODUCTION_BOT_COUNT} unplayed bot profiles and converge them to toned-down records, varied peaks, streak baselines, and owned equipped runes.`);
       log(`Set ${optInContract.name}=${optInContract.value} and pass --apply to execute the fixed transaction.`);
       return Object.freeze({
         phase: selected,
@@ -288,7 +289,7 @@ export async function rolloutProductionTestData({
       await read(SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL),
     );
     assertProductionBotSeedComplete(after);
-    log('Production bot-profile refresh verified: 150 unplayed bots, 41–54% win rates, modest peaks, streaks 2–7, and no invented matches.');
+    log(`Production bot-profile refresh verified: ${PRODUCTION_BOT_COUNT} unplayed bots, 41–54% win rates, modest peaks, streaks 2–7, owned equipped runes, and no invented matches.`);
     return Object.freeze({
       phase: selected,
       applied: true,
@@ -302,7 +303,7 @@ export async function rolloutProductionTestData({
 
   assertProductionWipeComplete(before);
   if (!apply) {
-    log('Preview only: seed exactly 150 bots with toned-down records, varied peaks, and streak baselines across the complete ladder.');
+    log(`Preview only: seed exactly ${PRODUCTION_BOT_COUNT} bots with toned-down records, varied peaks, streak baselines, and owned equipped runes across the complete ladder.`);
     log(`Set ${optInContract.name}=${optInContract.value} and pass --apply to execute the fixed transaction.`);
     return Object.freeze({
       phase: selected, applied: false, runeStage, streakBaselineStage, before,
@@ -321,7 +322,7 @@ export async function rolloutProductionTestData({
     await read(SEEDED_PRODUCTION_TEST_DATA_AUDIT_SQL),
   );
   assertProductionBotSeedComplete(after);
-  log('Production bot seed verified: zero humans and exactly 150 toned-down bots with realistic aggregate histories across every ladder group.');
+  log(`Production bot seed verified: zero humans and exactly ${PRODUCTION_BOT_COUNT} toned-down bots with realistic aggregate histories and owned equipped runes across every ladder group.`);
   return Object.freeze({
     phase: selected,
     applied: true,

@@ -248,7 +248,7 @@ the Game Center row.
    `KB_ALLOW_PRODUCTION_IDENTITY_FUNCTIONS=1 … -- --apply`. It deploys
    `identity-status`, `apple-token-register` and `apple-revocation-retry`. The
    updated `account-delete` is **not** in that set — it belongs to the ranked
-   plan and ships through `functions:production:rune-trial`. Then schedule
+   plan and ships through `functions:production:ranked-runes`. Then schedule
    `apple-revocation-retry` with its cron secret.
 2. **The auth boundary, alone.** Preview
    `mise exec -- npm run functions:production:game-center`, then apply it with

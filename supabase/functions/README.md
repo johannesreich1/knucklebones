@@ -71,20 +71,20 @@ it still named `elo.ts` (deleted long before) and omitted `ladder.ts` and
 `modes.ts`, which every PvP function imports. `tests/fnsync.test.ts` now walks
 the same imports and fails when one resolves to nothing.
 
-The Rune Trial compatibility rollout uses the guarded whole-closure helper,
+The ranked-runes compatibility rollout uses the guarded whole-closure helper,
 not a sequence of hand-built deploy calls:
 
 ```bash
 # Preview the exact six-function plan. No production write.
-mise exec -- npm run functions:production:rune-trial
+mise exec -- npm run functions:production:ranked-runes
 
-# Apply only after the guarded Rune Trial database migration is exact.
-KB_ALLOW_PRODUCTION_RUNE_FUNCTIONS=1 \
-  mise exec -- npm run functions:production:rune-trial -- --apply
+# Apply only after both guarded ranked-rune database stages are exact.
+KB_ALLOW_PRODUCTION_RANKED_RUNE_FUNCTIONS=1 \
+  mise exec -- npm run functions:production:ranked-runes -- --apply
 ```
 
 The helper deploys `pvp-rune-select`, `pvp-action`, `account-delete`,
-`pvp-claim`, `pvp-move`, then `pvp-join` last so Trial matchmaking cannot
+`pvp-claim`, `pvp-move`, then `pvp-join` last so rune-aware matchmaking cannot
 activate before every authority endpoint is ready. It requires committed
 closures and the pinned CLI, reuses the database rollout's exact history,
 owner, RLS, ACL, function-body, Realtime, and cron audit, deploys every closure

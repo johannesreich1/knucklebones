@@ -139,7 +139,8 @@ export async function verifyRuneTrialBotOpening(check: Check): Promise<void> {
     const moduleUrl = pathToFileURL(path.join(
       functionDir, '_shared/rune-trial-bot-opening.ts',
     )).href;
-    const { ensureRuneTrialBotOpening } = await import(moduleUrl) as {
+    const { ensureRankedActionBotOpening, ensureRuneTrialBotOpening } = await import(moduleUrl) as {
+      ensureRankedActionBotOpening: EnsureBotOpening;
       ensureRuneTrialBotOpening: EnsureBotOpening;
     };
 
@@ -155,6 +156,30 @@ export async function verifyRuneTrialBotOpening(check: Check): Promise<void> {
         && command?.p_expected_action_version === 0 && actions?.at(-1)?.kind === 'place'
         && opened.match.action_version === actions?.length && opened.match.turn === 0,
       'lower-rated bot p1 did not atomically commit a complete opening turn');
+
+    const equippedStandardMatch: MatchRow = {
+      ...openingMatch,
+      id: 'equipped-standard-bot-opening',
+      format: 'standard',
+      pool_tier: 'bone',
+      trial_offer: null,
+      p1_rune: null,
+      p2_rune: 'ward',
+    };
+    const standardService = new BotOpeningService(equippedStandardMatch, seed, true);
+    const standardContext = {
+      user: { id: equippedStandardMatch.p2 }, authed: {}, service: () => standardService,
+    } as unknown as AuthenticatedContext;
+    const standardOpened = await ensureRankedActionBotOpening(
+      standardContext, { match: equippedStandardMatch },
+    );
+    const standardCommand = standardService.calls[0]?.input;
+    const standardActions = standardCommand?.p_actions as Array<{ kind?: string }> | undefined;
+    check(standardService.calls.length === 1
+        && standardActions?.length === 1
+        && standardActions[0].kind === 'place'
+        && standardOpened.match.action_version === 1,
+      'a bare bot could not open ordinary action-protocol ranked with a normal placement');
 
     const racedRows = (command?.p_actions ?? []) as Array<Record<string, unknown>>;
     const racedService = new BotOpeningService(

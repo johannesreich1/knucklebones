@@ -100,6 +100,7 @@ export const itGame = {
     gameMode: 'MODALITÀ DI GIOCO',
     matchRune: 'RUNA DELLA PARTITA',
     trialRunes: 'RUNE DEL RITUALE',
+    rankedRunes: 'RUNE CLASSIFICATE',
     runeFor: 'RUNA PER',
     tapReady: 'Tocca quando sei pronto',
     connecting: 'Collegamento dei giocatori…',
@@ -222,6 +223,10 @@ export const itGame = {
     revealPair: 'Entrambe le scelte sono confermate',
     revealed: 'Rune rivelate',
     pickClock: 'SECONDI PER SCEGLIERE',
+  },
+  rankedRunes: {
+    revealPair: '{{playerOne}}: {{runeOne}}. {{playerTwo}}: {{runeTwo}}.',
+    revealed: 'Rune classificate rivelate',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Attivata; scegli una colonna evidenziata.',

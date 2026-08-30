@@ -98,14 +98,14 @@ await joinHandler(new Request('https://edge.test', {
   method: 'POST', body: JSON.stringify({
     allow_bot: true,
     protocol_version: 2,
-    capabilities: ['rune_trial_v1'],
+    capabilities: ['rune_trial_v1', 'equipped_rune_v1'],
   }),
 }));
 check(joinInputs.length === 2
   && joinInputs[0].allowBot === false && joinInputs[0].protocolVersion === 1
   && joinInputs[0].capabilities.length === 0
   && joinInputs[1].allowBot === true && joinInputs[1].protocolVersion === 2
-  && joinInputs[1].capabilities[0] === 'rune_trial_v1',
+  && joinInputs[1].capabilities.join(',') === 'rune_trial_v1,equipped_rune_v1',
   'join handler changed legacy defaults or v2 capability parsing');
 check((await joinHandler(new Request('https://edge.test', {
   method: 'POST', body: JSON.stringify({
@@ -113,6 +113,12 @@ check((await joinHandler(new Request('https://edge.test', {
     capabilities: ['rune_trial_v1'],
   }),
 }))).status === 400, 'protocol v1 can advertise Rune Trial capability');
+check((await joinHandler(new Request('https://edge.test', {
+  method: 'POST', body: JSON.stringify({
+    protocol_version: 2,
+    capabilities: ['equipped_rune_v1'],
+  }),
+}))).status === 400, 'equipped-rune support can omit its required action/Trial base capability');
 
 const moveInputs: MoveInput[] = [];
 const moveHandler = createPvpMoveHandler({

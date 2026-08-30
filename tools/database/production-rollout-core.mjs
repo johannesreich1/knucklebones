@@ -47,6 +47,14 @@ const RUNE_TRIAL_FIELDS = Object.freeze([
   'cronJob',
   'cronJobContract',
 ]);
+const EQUIPPED_RANKED_FIELDS = Object.freeze([
+  'queueCapabilityConstraint',
+  'matchConstraints',
+  'functionContracts',
+  'functionBodies',
+  'serviceGrants',
+  'helperLockdown',
+]);
 const LADDER_STREAK_BASELINE_FIELDS = Object.freeze([
   'tableColumns',
   'tablePrimaryKey',
@@ -478,6 +486,26 @@ export function validateRuneTrialSchemaStage(metadata) {
   if (values.every(value => value === false)) return 0;
   if (values.every(value => value === true)) return 1;
   fail('Rune Trial schema, security boundary, function contract, or cron job is partial.');
+}
+
+/**
+ * Validate the equipped-rune extension of ranked protocol v2 as absent or
+ * complete. Its Rune Trial foundation is audited separately by the caller;
+ * these fields are only the objects replaced or introduced by the extension.
+ */
+export function validateEquippedRankedSchemaStage(metadata) {
+  if (!isObject(metadata)) fail('Equipped-ranked metadata must be an object.');
+  assertOnlyKeys(metadata, EQUIPPED_RANKED_FIELDS, 'Equipped-ranked metadata');
+  for (const field of EQUIPPED_RANKED_FIELDS) {
+    if (typeof metadata[field] !== 'boolean') {
+      fail(`Equipped-ranked metadata field ${field} must be boolean.`);
+    }
+  }
+
+  const values = EQUIPPED_RANKED_FIELDS.map(field => metadata[field]);
+  if (values.every(value => value === false)) return 0;
+  if (values.every(value => value === true)) return 1;
+  fail('Equipped-ranked capability, match constraints, functions, or grants are partial.');
 }
 
 /**

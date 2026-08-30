@@ -16,7 +16,8 @@ import {
 } from '../src/online/api/queue-lifecycle.ts';
 import { localizedAuthError } from '../src/online/identity/session.ts';
 import { rankedBadge } from '../src/online/play/play-copy.ts';
-import { supportsRankedClientRules } from '../src/online/play/play-state.ts';
+import { createOnlineState, supportsRankedClientRules } from '../src/online/play/play-state.ts';
+import { rankedRevealSides } from '../src/online/screens/queue-reveal.ts';
 import { trialSelectionSettled } from '../src/online/runes/trial-offer.ts';
 import { RUNE_TRIAL_PICK_SECS } from '../src/core/rune-trial-offer.ts';
 import { setLanguageOverride, t } from '../src/i18n/index.ts';
@@ -38,6 +39,41 @@ check(supportsRankedClientRules({ format: 'rune_trial', protocol_version: 2,
   && !supportsRankedClientRules({ format: 'rune_trial', protocol_version: 2,
     rune_rules_version: 2 } as never),
   'the client did not fail closed on incompatible Rune Trial replay rules');
+const equippedStandard = createOnlineState({
+  status: 'matched', you: 1, names: {
+    p1: 'SilverPlayer', p2: 'NoRuneOpponent',
+  },
+  match: {
+    id: 'equipped-standard', p1: 'silver-player', p2: 'no-rune-opponent',
+    status: 'active', turn: 1, winner: null, p1_score: null, p2_score: null,
+    next_die: 4, last_move_at: '2026-08-30T12:00:00.000Z', modifier: 'classic',
+    format: 'standard', protocol_version: 2, rune_rules_version: 1,
+    phase: 'playing', p1_rune: 'ward', p2_rune: null, action_version: 0,
+  },
+} as never, 1, 'cpu');
+check(equippedStandard.actionProtocol === true
+  && JSON.stringify(equippedStandard.rankedRunes) === JSON.stringify([null, 'ward'])
+  && equippedStandard.trial === false,
+  'ordinary ranked did not enter action replay with one honest empty rune seat', equippedStandard);
+const standardRevealMatch = {
+  status: 'matched', you: 1, names: { p1: 'SilverPlayer', p2: 'NoRuneOpponent' },
+  match: {
+    id: 'equipped-standard', p1: 'silver-player', p2: 'no-rune-opponent',
+    status: 'active', turn: 1, winner: null, p1_score: null, p2_score: null,
+    next_die: 4, last_move_at: '2026-08-30T12:00:00.000Z', modifier: 'classic',
+    format: 'standard', protocol_version: 2, rune_rules_version: 1,
+    phase: 'playing', p1_rune: 'ward', p2_rune: null, action_version: 0,
+  },
+} as const;
+const standardRevealSides = rankedRevealSides(standardRevealMatch as never);
+check(standardRevealSides?.[0].spell?.id === 'ward'
+  && standardRevealSides[1].spell === null,
+  'the ranked reveal did not preserve its real rune and honest empty seat', standardRevealSides);
+check(rankedRevealSides({
+  ...standardRevealMatch,
+  match: { ...standardRevealMatch.match, p2_rune: 'future-rune' },
+} as never) === null,
+'the ranked reveal silently shortened an unknown non-null server rune to NONE');
 check(!trialSelectionSettled({ status: 'active' })
   && trialSelectionSettled({ status: 'done' })
   && trialSelectionSettled({ status: 'forfeit' }),

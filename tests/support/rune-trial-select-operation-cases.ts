@@ -52,7 +52,7 @@ export async function verifyRuneTrialSelectOperation(check: Check): Promise<void
     'supabase/functions/_shared/rune-trial-bot-opening.ts', 'utf8',
   );
   check(selectIndex.includes('ensureRuneTrialBotOpening')
-      && joinOperation.includes('ensureRuneTrialBotOpening'),
+      && joinOperation.includes('ensureRankedActionBotOpening'),
     'selection finalization or reconnect no longer heals a missing ranked bot opener');
   check(botOpeningSource.includes('appendRankedBotTurn(')
       && botOpeningSource.includes('commitMatchAction(')

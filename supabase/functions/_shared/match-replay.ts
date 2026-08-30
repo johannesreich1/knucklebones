@@ -20,7 +20,7 @@ import {
   rebuildRankedActions,
   type RankedActionRow,
 } from "../core/ranked-actions.ts";
-import { RUNE_TRIAL_FORMAT } from "../core/ranked-outcomes.ts";
+import { usesRankedActionProtocol } from "../core/ranked-outcomes.ts";
 import { AI, ME, type Mode } from "../core/rules.ts";
 import type { EdgeClient } from "./http.ts";
 import type { MatchMoveRow, MatchRow } from "./types.ts";
@@ -43,8 +43,8 @@ export interface AuthoritativeReplay {
 /**
  * Why no trustworthy snapshot could be produced.
  * - `read-failed`: a table read errored, so nothing at all is known.
- * - `corrupt-state`: the stored rows contradict the schema (no seed row, a
- *   Trial match with no runes) and no retry can help.
+ * - `corrupt-state`: the stored rows contradict the schema (no seed row or an
+ *   unsupported action-rules tuple) and no retry can help.
  * - `stale`: the log no longer replays to the row it was read against, so
  *   someone committed underneath this request.
  */
@@ -88,8 +88,10 @@ export async function replayAuthoritativeMatch(
   if (match.phase !== "playing") {
     return { ok: true, p1Score: 0, p2Score: 0, moveCount: moves.length };
   }
-  if (match.format === RUNE_TRIAL_FORMAT) {
-    if (!match.p1_rune || !match.p2_rune) return { ok: false, reason: "corrupt-state" };
+  if (match.rune_rules_version !== null && !usesRankedActionProtocol(match)) {
+    return { ok: false, reason: "corrupt-state" };
+  }
+  if (usesRankedActionProtocol(match)) {
     const actions = (actionData ?? []) as RankedActionRow[];
     const state = rebuildRankedActions(
       seedRow.seed, actions, mode, [match.p2_rune, match.p1_rune],

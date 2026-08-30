@@ -19,8 +19,8 @@ export interface MovePorts {
   readonly sync: (reset: boolean) => Promise<unknown>;
   readonly applyMatchRow: (m: MatchRow) => void;
   readonly onOpponentStalled: () => void;
-  /** Rune Trial submits through the action log instead of a plain move. */
-  readonly trialPlace: (col: number) => Promise<unknown>;
+  /** Action-protocol matches submit through the ordered log, not pvp-move. */
+  readonly actionPlace: (col: number) => Promise<unknown>;
 }
 
 export async function submitOnlineMove(
@@ -28,8 +28,8 @@ export async function submitOnlineMove(
   col: number,
   ports: MovePorts,
 ): Promise<void> {
-  if (online.trial) {
-    await ports.trialPlace(col);
+  if (online.actionProtocol) {
+    await ports.actionPlace(col);
     return;
   }
   const die = online.pendingDie;

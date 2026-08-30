@@ -17,6 +17,45 @@ let shareFeedbackTimer: ReturnType<typeof setTimeout> | null = null;
 /* which result is on screen; an in-flight share compares against it */
 let presentationRevision = 0;
 
+interface NativeShareOptions {
+  readonly title?: string;
+  readonly text?: string;
+  readonly url?: string;
+  readonly dialogTitle?: string;
+}
+
+interface NativeShareBridge {
+  share(options: NativeShareOptions): Promise<unknown>;
+}
+
+interface CapacitorShareBridge {
+  getPlatform?(): string;
+  Plugins?: { Share?: NativeShareBridge };
+}
+
+/* The native package is compiler input, not a web dependency. Capacitor
+   publishes installed plugins on this injected bridge; reading it here keeps
+   the PWA, standalone page, and widget free of native package imports. */
+function nativeShareBridge(): NativeShareBridge | null {
+  const capacitor = (globalThis as typeof globalThis & { Capacitor?: CapacitorShareBridge })
+    .Capacitor;
+  const platform = capacitor?.getPlatform?.();
+  return platform === 'ios' || platform === 'android'
+    ? capacitor?.Plugins?.Share ?? null
+    : null;
+}
+
+function shareWasDismissed(error: unknown): boolean {
+  const record = error && typeof error === 'object'
+    ? error as { name?: unknown; message?: unknown }
+    : null;
+  const name = typeof record?.name === 'string' ? record.name : '';
+  const message = typeof record?.message === 'string'
+    ? record.message
+    : typeof error === 'string' ? error : '';
+  return name === 'AbortError' || /^share cancel(?:ed|led)$/i.test(message.trim());
+}
+
 /** What this result offers to share — absent hides the link. */
 export function setShareText(text?: string): void {
   shareText = text ?? '';
@@ -79,15 +118,28 @@ function copyByExecCommand(text: string): boolean {
 
 export async function shareResult(): Promise<void> {
   const revision = presentationRevision;
-  const payload = `${shareText} ${shareUrl()}`;
-  try {
-    if (navigator.share) {
-      await navigator.share({ text: shareText, url: shareUrl() });
+  const url = shareUrl();
+  const payload = `${shareText} ${url}`;
+  const title = t('game', 'result.shareResult');
+  const native = nativeShareBridge();
+  if (native) {
+    try {
+      await native.share({ title, text: shareText, url, dialogTitle: title });
       return;
+    } catch (error) {
+      /* Both official native implementations use this rejection for a sheet
+         the player closed. A missing/failed old-binary plugin is different:
+         keep going so the web or clipboard fallback can still deliver. */
+      if (shareWasDismissed(error)) return;
     }
-  } catch {
-    /* A share sheet the player dismissed is not a failure to report. */
-    return;
+  }
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text: shareText, url });
+      return;
+    } catch (error) {
+      if (shareWasDismissed(error)) return;
+    }
   }
   let copied = false;
   try {

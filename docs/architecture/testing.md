@@ -233,6 +233,11 @@ typed helper expresses the common action.
   current deal, durable unseen reward presentation, and the reward card's door
   into the shared rune entry. Pure outcome coverage owns RANDOM's Trial admission and odds;
   do not claim a browser workflow until it actually drives that workflow.
+- Equipped-standard coverage treats the two match-row seats independently:
+  pure replay accepts known rune/null, null/known, and null/null action deals
+  while rejecting unknown non-null ids. The ranked WebKit reveal turns both
+  immutable assignments over on a fresh match, names an empty seat as NONE,
+  and never derives either answer from profile cache. Rejoin remains silent.
 - Database Rune Trial contracts exercise grants/RLS and negative visibility,
   v1/v2 queue capability isolation, stale-claim rejection, idempotent
   selection/action retries, deadline auto-picks, atomic terminal action reward,
@@ -241,15 +246,16 @@ typed helper expresses the common action.
   LIMITED constraint. Resignation, timeout, deletion, draw/loss no-reward,
   historical backfill, and full bot-Trial settlement need explicit pgTAP cases
   before this page may describe them as database-covered.
-- Client idempotency coverage holds Rune Trial selection, aim, cast, and place
-  input closed across a lost response plus an unchanged authoritative read,
-  and proves every retry reuses the original command id until the delayed
-  commit is observed or the server returns a definitive rejection.
+- Client idempotency coverage holds Rune Trial selection and every protocol-v2
+  aim, cast, and place input—including equipped standard—closed across a lost
+  response plus an unchanged authoritative read, and proves every retry reuses
+  the original command id until the delayed commit is observed or the server
+  returns a definitive rejection.
 - Mocks match the authoritative API or migration result shape. A hand-written
   mock that omits a renamed field can keep a broken client green.
-- Test hooks such as `window.__kb`, `__kbOnline`, and `__kbResult` are stable
-  driver surfaces. Production modules must not import a lazy feature merely to
-  expose a test hook.
+- Test hooks such as `window.__kb`, `__kbOnline`, `__kbResult`, and
+  `__kbRankedReveal` are stable driver surfaces. Production modules must not
+  import a lazy feature merely to expose a test hook.
 - Architecture gates are ratchets: no new dependency cycle, unchecked file,
   unapproved oversized authored module, CSS graph cycle, or eager/lazy leak.
 
@@ -272,6 +278,12 @@ and rejection before Supabase on invalid results. A Playwright startup contract
 observes the real built Home when the native bridge receives its one splash
 hide call; the focused unit contract also verifies boot-error release and that
 widget/web startup remains independent of Capacitor.
+
+Native Share is statically gated for its exact package, pod, Gradle
+registration, and copied plugin manifests. Final device acceptance still opens
+the result sheet on iPhone/iPad and Android, dismisses it, returns to the app,
+and verifies the recipient receives the public URL; UIKit/chooser presentation
+cannot be proven by the web harness or an unsigned compiler build.
 
 The iOS contract also requires the App target's Debug and Release
 configurations to reference the exact Sign in with Apple and Game Center
@@ -409,12 +421,13 @@ shell no longer prints it. An assertion that counts nodes passes whether the
 player sees them or not. Measure the box, as the assertion policy above already
 requires.
 
-**Ranked has two client paths and they drift.** Ordinary play goes through
-`pvp-move` and animates optimistically; a Rune Trial goes through `pvp-action`
-into an authoritative action log. Behaviour added to one silently misses the
-other — that is how the Trial kept the full server round trip on every placement
-after ordinary ranked had stopped feeling it, and how a bot "think" reached one
-path months after the other. Change one, check the other.
+**Ranked has two protocol paths and they drift.** Legacy rune-free standard play
+goes through `pvp-move`; protocol-v2 Rune Trial and equipped standard play go
+through `pvp-action` into the authoritative action log. `trial` distinguishes
+the private-selection format, not the transport. Behaviour added to one path
+silently misses the other — that is how Trial once kept the full server round
+trip after v1 had stopped feeling it. Change one, check both, including a
+one-sided standard rune deal and an action-protocol null/null deal.
 
 **A red run against a stale `dist/` is not a red run.** The browser suites serve
 the BUILT tree, and `npm run build` typechecks first — so removing a fix to watch

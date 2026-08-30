@@ -24,7 +24,8 @@ export interface MatchRow {
   season_id: number | null;
   format: "standard" | "rune_trial";
   protocol_version: 1 | 2;
-  rune_rules_version: 1 | null;
+  /** Read as a number so unknown future versions can be refused at runtime. */
+  rune_rules_version: number | null;
   pool_tier: "stone" | "bone" | "ivory";
   phase: "selection" | "playing";
   trial_offer: string[] | null;

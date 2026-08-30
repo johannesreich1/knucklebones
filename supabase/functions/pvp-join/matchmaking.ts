@@ -1,6 +1,13 @@
 import type { EdgeClient } from "../_shared/http.ts";
 import type { JoinInput, MatchRow, ProfileSummary } from "../_shared/types.ts";
 
+/* This policy module is a pure Node-side test seam as well as deployed Edge
+   source, so its protocol wire literals stay local just as the v1 literal did. */
+const RUNE_TRIAL_CAPABILITY = "rune_trial_v1";
+const EQUIPPED_RUNE_CAPABILITY = "equipped_rune_v1";
+const usesRankedActionProtocol = (match: MatchRow): boolean =>
+  match.protocol_version === 2 && match.rune_rules_version === 1;
+
 export interface QueueCandidate {
   player_id: string;
   created_at: string;
@@ -39,18 +46,38 @@ export function rankedBotSides(
 export function negotiatedProtocolVersion(
   accesses: readonly { capabilities?: readonly string[] }[],
 ): 1 | 2 {
-  return accesses.every(({ capabilities }) => capabilities?.includes("rune_trial_v1")) ? 2 : 1;
+  return accesses.every(({ capabilities }) => capabilities?.includes(RUNE_TRIAL_CAPABILITY)) ? 2 : 1;
 }
 
-export function trialClientCompatibilityError(
+/** Both seats must explicitly understand equipped runes in standard matches.
+ * A bot advertises ALL_RANKED_CAPABILITIES, so its human controls this gate. */
+export function negotiatedEquippedRuneProtocol(
+  format: MatchRow["format"],
+  accesses: readonly { capabilities?: readonly string[] }[],
+): boolean {
+  return format === "standard"
+    && accesses.every(({ capabilities }) => capabilities?.includes(EQUIPPED_RUNE_CAPABILITY));
+}
+
+export function rankedClientCompatibilityError(
   match: MatchRow,
   input: JoinInput,
 ): "unsupported-rune-rules" | "incompatible-client" | null {
-  if (match.format !== "rune_trial") return null;
-  if (match.rune_rules_version !== 1) return "unsupported-rune-rules";
-  return input.protocolVersion === 2 && input.capabilities.includes("rune_trial_v1")
+  if (match.rune_rules_version != null && match.rune_rules_version !== 1) {
+    return "unsupported-rune-rules";
+  }
+  if (match.format === "rune_trial") {
+    if (!usesRankedActionProtocol(match)) return "unsupported-rune-rules";
+    return input.protocolVersion === 2 && input.capabilities.includes(RUNE_TRIAL_CAPABILITY)
+      ? null : "incompatible-client";
+  }
+  if (!usesRankedActionProtocol(match)) return null;
+  return input.protocolVersion === 2 && input.capabilities.includes(EQUIPPED_RUNE_CAPABILITY)
     ? null : "incompatible-client";
 }
+
+/* Compatibility export for focused callers while the wider name rolls out. */
+export const trialClientCompatibilityError = rankedClientCompatibilityError;
 
 /** Select the oldest queued player whose current rating is inside the band. */
 export function oldestEligibleCandidate(

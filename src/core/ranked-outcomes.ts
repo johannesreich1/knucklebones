@@ -23,9 +23,24 @@ export type RankedMatchFormat = typeof STANDARD_FORMAT | typeof RUNE_TRIAL_FORMA
    cast-action protocol a Trial needs. Both participants must advertise this
    capability before Rune Trial can enter their shared outcome pool. */
 export const RUNE_TRIAL_CAPABILITY = 'rune_trial_v1' as const;
-export type RankedCapability = typeof RUNE_TRIAL_CAPABILITY;
+/* Standard matches can only carry a profile's equipped rune when BOTH clients
+   understand that those matches use the ordered action log too. Keep this
+   distinct from Rune Trial: the already-deployed Trial client advertises the
+   older capability but routes every standard match through pvp-move. Treating
+   that as equipped-rune support would let a cached client bypass every cast. */
+export const EQUIPPED_RUNE_CAPABILITY = 'equipped_rune_v1' as const;
+export type RankedCapability = typeof RUNE_TRIAL_CAPABILITY
+  | typeof EQUIPPED_RUNE_CAPABILITY;
 export const ALL_RANKED_CAPABILITIES: readonly RankedCapability[] =
-  Object.freeze([RUNE_TRIAL_CAPABILITY]);
+  Object.freeze([RUNE_TRIAL_CAPABILITY, EQUIPPED_RUNE_CAPABILITY]);
+
+/** Does this persisted match use the ordered aim/cast/place action protocol? */
+export function usesRankedActionProtocol(match: {
+  protocol_version?: unknown;
+  rune_rules_version?: unknown;
+}): boolean {
+  return match.protocol_version === 2 && match.rune_rules_version === 1;
+}
 
 export interface RankedOutcomeSpec {
   id: string;                    // player-facing, stable outcome id

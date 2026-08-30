@@ -1,5 +1,5 @@
-// Manual Rune Trial casts and placements share one authoritative submission
-// seam. Local state is frozen until the committed action log is projected.
+// Manual ranked casts and placements share one authoritative submission seam.
+// Local state is frozen until the committed action log is projected.
 import type { RankedActionIntent } from '../../core/ranked-actions.ts';
 import { spellById } from '../../core/spells.ts';
 import { disarm, renderSpells } from '../../flow/spells.ts';
@@ -18,7 +18,7 @@ import {
 import type { OnlineState } from './play-types.ts';
 import { randomUuid } from '../api/random-id.ts';
 
-export interface TrialActionPorts {
+export interface RankedActionPorts {
   current(): OnlineState | null;
   isCurrent(online: OnlineState): boolean;
   sync(fullRedraw: boolean): Promise<boolean>;
@@ -29,7 +29,7 @@ export interface TrialActionPorts {
    abandon a still-running transport promise and reopen input underneath it. */
 const ACTION_TIMEOUT_MS = 16_000;
 
-async function safeSync(ports: TrialActionPorts, fullRedraw: boolean): Promise<boolean> {
+async function safeSync(ports: RankedActionPorts, fullRedraw: boolean): Promise<boolean> {
   try {
     return await ports.sync(fullRedraw);
   } catch {
@@ -53,7 +53,7 @@ async function boundedAction(
   }
 }
 
-export function createTrialActionSubmitter(ports: TrialActionPorts) {
+export function createRankedActionSubmitter(ports: RankedActionPorts) {
   /* `paint` is this client's own optimistic animation. It starts next to the
      request, exactly as the ordinary ranked path does with Promise.all, and is
      always awaited before anything syncs — the authoritative replay must never
@@ -63,7 +63,7 @@ export function createTrialActionSubmitter(ports: TrialActionPorts) {
     paint?: () => Promise<void>,
   ): Promise<boolean> => {
     const online = ports.current();
-    if (!online?.trial || online.done || online.recoverySync
+    if (!online?.actionProtocol || online.done || online.recoverySync
         || S.busy || S.turn !== online.you) return false;
     const submittedAtVersion = online.actionVersion;
     const commandId = randomUuid();
@@ -180,7 +180,7 @@ export function createTrialActionSubmitter(ports: TrialActionPorts) {
       if (aiming) await aiming.catch(() => false);
       const online = ports.current();
       const spell = spellById(id);
-      if (!online?.trial || online.done || S.busy || S.turn !== online.you || !spell) {
+      if (!online?.actionProtocol || online.done || S.busy || S.turn !== online.you || !spell) {
         return false;
       }
       /* CAPTURED BEFORE THE DISARM, which clears S.spellAimCommitted: this is

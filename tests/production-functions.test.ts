@@ -37,7 +37,7 @@ import {
   assertDistinctPlanOptIns,
   assertPlanEntryPoints,
 } from './support/production-plan-cases.ts';
-import { assertRuneTrialPlanContract } from './support/production-rune-trial-cases.ts';
+import { assertRankedRunesPlanContract } from './support/production-rune-trial-cases.ts';
 
 try {
   requireNode24('24.8.0');
@@ -204,9 +204,9 @@ try {
     assert.equal(removed, false, 'an unvalidated broad path was recursively removed');
   }
 
-  // The default plan, by name: what rune-trial alone demands of production
+  // The default plan, by name: what ranked-runes demands of production
   // before it deploys, and the guarded flows it then runs.
-  await assertRuneTrialPlanContract();
+  await assertRankedRunesPlanContract();
 
   // Every plan rolls out on its own selector, its own opt-in and its own
   // package.json entry point, so an operator who exports one variable can only

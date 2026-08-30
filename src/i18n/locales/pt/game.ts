@@ -100,6 +100,7 @@ export const ptGame = {
     gameMode: 'MODO DE JOGO',
     matchRune: 'RUNA DA PARTIDA',
     trialRunes: 'RUNAS DO RITUAL',
+    rankedRunes: 'RUNAS RANQUEADAS',
     runeFor: 'RUNA PARA',
     tapReady: 'Toque quando estiver pronto',
     connecting: 'Conectando jogadores…',
@@ -222,6 +223,10 @@ export const ptGame = {
     revealPair: 'As duas escolhas estão confirmadas',
     revealed: 'Runas reveladas',
     pickClock: 'SEGUNDOS PARA ESCOLHER',
+  },
+  rankedRunes: {
+    revealPair: '{{playerOne}}: {{runeOne}}. {{playerTwo}}: {{runeTwo}}.',
+    revealed: 'Runas ranqueadas reveladas',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Ativada — escolha uma coluna marcada.',

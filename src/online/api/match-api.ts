@@ -2,6 +2,7 @@
 // request in, its wire row out. Match lifecycle/rendering belongs to play.ts,
 // not this API seam; the push side lives in match-realtime.ts.
 import {
+  EQUIPPED_RUNE_CAPABILITY,
   RUNE_TRIAL_CAPABILITY,
   type RankedMatchFormat,
   type RankedPoolTier,
@@ -95,7 +96,7 @@ export async function join(allowBot: boolean): Promise<JoinResult | null> {
   const response = await callFunction<JoinResult | JoinErrorResult>('pvp-join', {
     allow_bot: allowBot,
     protocol_version: 2,
-    capabilities: [RUNE_TRIAL_CAPABILITY],
+    capabilities: [RUNE_TRIAL_CAPABILITY, EQUIPPED_RUNE_CAPABILITY],
   });
   return joinResultFromResponse(response.status, response.data);
 }

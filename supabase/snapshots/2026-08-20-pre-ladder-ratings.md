@@ -1,6 +1,6 @@
 # Ratings as they stood the moment before the ladder cutover
 
-Taken 2026-08-20, immediately before migration `0016_seasons.sql` reset
+Taken 2026-08-20, immediately before migration `20260820115628_seasons.sql` reset
 `profiles.rating` to 0. These are on the OLD scale (Elo, start 1000) and mean
 nothing under the new ladder — this file exists so the reset is reversible in
 practice and not only in principle. The per-match deltas in

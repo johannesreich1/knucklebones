@@ -26,7 +26,7 @@ import { finishOnlineMatch } from './play-finish.ts';
 import { rankedBadge, reconnectingCopy, turnCopy } from './play-copy.ts';
 import { createOnlineState } from './play-state.ts';
 import { createOnlineSynchronizer } from './play-sync.ts';
-import { createTrialActionSubmitter } from './play-trial-actions.ts';
+import { createRankedActionSubmitter } from './play-trial-actions.ts';
 import { createTurnClockHandlers } from './play-clock.ts';
 import { seatOnlineBoard, unseatOnlineBoard } from './play-seating.ts';
 import { submitOnlineMove } from './play-move.ts';
@@ -63,9 +63,9 @@ const sync = createOnlineSynchronizer({
   isCurrent: isCurrentOnline,
   applyMatchRow,
   renderPool,
-  // The Trial replay knows WHEN the opponent takes over; the status copy, the
-  // clock and this match's name live here. Bound to the match being replayed,
-  // never to the module global.
+  // Action replay knows WHEN the opponent takes over; the status copy, clock
+  // and this match's name live here. Bound to the match being replayed, never
+  // to the module global.
   openOpponentBeat: (online, die) => openOpponentTurn((1 - online.you) as Player, die, {
     you: online.you,
     isCurrent: () => isCurrentOnline(online),
@@ -92,7 +92,7 @@ const clock = createTurnClockHandlers({
   watchdog: () => watchdog(),
 });
 
-const trialActions = createTrialActionSubmitter({
+const rankedActions = createRankedActionSubmitter({
   current: () => O,
   isCurrent: isCurrentOnline,
   sync,
@@ -120,11 +120,11 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   releasePlayerNames = claimOnlinePlayerNames(() => O);
   const online = O;
 
-  if (online.trial && online.trialRunes) {
-    resetSpells(online.trialRunes);
+  if (online.actionProtocol && online.rankedRunes) {
+    resetSpells(online.rankedRunes);
     setSpellTransport({
-      aim: (id) => trialActions.aim(id),
-      cast: (id, column) => trialActions.cast(id, column),
+      aim: (id) => rankedActions.aim(id),
+      cast: (id, column) => rankedActions.cast(id, column),
       casterAllowed: (who) => O === online && who === online.you,
     });
   } else {
@@ -151,12 +151,14 @@ export async function enterMatch(res: Extract<JoinResult, { status: 'matched' }>
   $('#nameTop').textContent = oppName();
   ($('#tagTop') as HTMLElement).hidden = true;
   ($('#tagBot') as HTMLElement).hidden = true;
-  // Trial is a format chip plus one public rune per owner. Ordinary ranked
-  // remains the established single mechanical-mode chip.
-  if (O.trial && O.trialRunes) {
-    const p2 = spellById(O.trialRunes[0]);
-    const p1 = spellById(O.trialRunes[1]);
-    claimBadge(() => [runeTrialChip(),
+  // The format/mode chip remains first. Each non-empty public rune snapshot
+  // then belongs to its seat; a bare player simply has no rune chip.
+  if (O.actionProtocol && O.rankedRunes) {
+    const p2 = spellById(O.rankedRunes[0]);
+    const p1 = spellById(O.rankedRunes[1]);
+    const outcomeBadge = O.trial ? () => [runeTrialChip()] : rankedBadge(spec);
+    claimBadge(() => [
+      ...outcomeBadge(),
       ...(p1 ? [spellChip(p1, ME)] : []),
       ...(p2 ? [spellChip(p2, 0)] : []),
     ]);
@@ -220,7 +222,7 @@ async function onlinePlace(who: Player, col: number): Promise<void> {
     sync,
     applyMatchRow,
     onOpponentStalled: clock.opponentStalled,
-    trialPlace: (target) => trialActions.place(target),
+    actionPlace: (target) => rankedActions.place(target),
   });
 }
 
@@ -235,7 +237,7 @@ async function onMatchUpdate(m: MatchRow): Promise<void> {
     return;
   }
   const synced = await sync(false);
-  const complete = !online.trial
+  const complete = !online.actionProtocol
     || online.actionApplied >= (m.action_version ?? online.actionApplied);
   if (isCurrentOnline(online) && synced && complete) applyMatchRow(m);
   else if (isCurrentOnline(online)) online.pendingRow = newerMatchProjection(online.pendingRow, m);

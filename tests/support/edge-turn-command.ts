@@ -156,6 +156,23 @@ export async function runTurnCommandTests(
       `the database ${error} conflict did not map to ${status}`, { message });
   }
 
+  // Once ordinary ranked negotiated equipped-rune actions, pvp-move must not
+  // accept even a plain placement. A bare pair still belongs to pvp-action;
+  // transport is fixed by the match protocol, not by whether somebody casts.
+  const actionStandardForMove = standardMatch({
+    protocol_version: 2,
+    rune_rules_version: 1,
+  });
+  const wrongStandardTransport = new EdgeOperationsService(
+    moveTables(actionStandardForMove, [], { is_bot: false }),
+  );
+  const bypass = await operations.moveMatch(edgeContext('player-1', wrongStandardTransport), {
+    matchId: 'match-1', col: 0, auto: false, commandId: '', expectedMoveCount: null,
+  });
+  check(bypass.status === 409 && (await jsonBody(bypass)).error === 'wrong-protocol'
+    && wrongStandardTransport.tableReads('match_moves').length === 0,
+  'pvp-move accepted an action-protocol standard placement', { status: bypass.status });
+
   /* ---------------- actionMatch ---------------- */
   const dealt = ['nudge', 'ward'] as const;
   const trialOpen = rebuildRankedActions(SEED, [], EDGE_MODE, dealt)!;
@@ -225,4 +242,37 @@ export async function runTurnCommandTests(
   });
   check(raced.status === 409 && (await jsonBody(raced)).error === 'race-lost',
     'a stale expected action version was not refused as race-lost');
+
+  // Ordinary ranked shares the same action command even when one public rune
+  // snapshot is null. The bare seat remains a valid participant; it just has
+  // no cast to make.
+  const equippedDeal = [null, 'ward'] as const;
+  const equippedOpen = rebuildRankedActions(SEED, [], EDGE_MODE, equippedDeal)!;
+  const equippedRow = standardMatch({
+    protocol_version: 2,
+    rune_rules_version: 1,
+    p1_rune: 'ward',
+    p2_rune: null,
+    turn: equippedOpen.turn,
+    next_die: equippedOpen.nextDie,
+  });
+  const equippedAction = new EdgeOperationsService(actionTables(equippedRow), {
+    match_action_result: actionLookup,
+    commit_match_action: actionEcho(equippedRow),
+  });
+  const equippedPlacement = await operations.actionMatch(edgeContext('player-1', equippedAction), {
+    matchId: 'match-1', commandId: 'cmd-equipped', expectedActionVersion: 0,
+    auto: false, action: { kind: 'place', placed_col: 0 },
+  });
+  const equippedCommit = equippedAction.rpcCalls
+    .find((call) => call.name === 'commit_match_action')?.input;
+  const equippedRows = equippedCommit?.p_actions as Array<Record<string, unknown>>;
+  check(equippedPlacement.status === 200
+    && equippedRows?.length === 1
+    && equippedRows[0].kind === 'place'
+    && equippedRows[0].who === 1,
+  'ordinary ranked with one empty rune seat did not commit through pvp-action', {
+    status: equippedPlacement.status,
+    equippedRows,
+  });
 }

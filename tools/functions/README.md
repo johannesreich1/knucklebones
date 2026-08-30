@@ -6,13 +6,13 @@ you name the plan, and the plan names its functions.
 
 | Plan | Functions | Opt-in | Database prerequisite |
 |---|---|---|---|
-| `rune-trial` | `pvp-rune-select`, `pvp-action`, `account-delete`, `pvp-claim`, `pvp-move`, `pvp-join` | `KB_ALLOW_PRODUCTION_RUNE_FUNCTIONS` | migration `20260825205241_rune_trial_ranked_v2` plus the Rune Trial audit at stage 1 |
+| `ranked-runes` | `pvp-rune-select`, `pvp-action`, `account-delete`, `pvp-claim`, `pvp-move`, `pvp-join` | `KB_ALLOW_PRODUCTION_RANKED_RUNE_FUNCTIONS` | migration `20260830155543_equipped_runes_ranked`, its exact ranked-rune audit, and the complete Rune Trial foundation |
 | `identity-hardening` | `identity-status`, `apple-token-register`, `apple-revocation-retry` | `KB_ALLOW_PRODUCTION_IDENTITY_FUNCTIONS` | the Apple/Game Center audit at stage 3 or 4 |
 | `game-center` | `gc-auth`, and nothing else | `KB_ALLOW_PRODUCTION_GAME_CENTER_FUNCTIONS` | the Apple/Game Center audit at stage 2, 3 or 4 |
 
 ```bash
 # Preview: what would deploy, and what production runs right now. No write.
-mise exec -- npm run functions:production:rune-trial
+mise exec -- npm run functions:production:ranked-runes
 mise exec -- npm run functions:production:identity
 mise exec -- npm run functions:production:game-center
 

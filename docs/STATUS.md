@@ -1,6 +1,6 @@
 # Project status
 
-*Current as of 2026-08-28. Keep this page short: current state, unresolved
+*Current as of 2026-08-30. Keep this page short: current state, unresolved
 decisions, and externally owned actions only. Detailed sprint history lives in
 [`docs/history/2026-08-sprint.md`](history/2026-08-sprint.md).*
 
@@ -10,9 +10,9 @@ decisions, and externally owned actions only. Detailed sprint history lives in
 |---|---|---|
 | Web | Live at <https://knucklebones-asg.pages.dev>; pushes to `main` still deploy through the Cloudflare Pages dashboard build immediately, ahead of CI. The gated `deploy` job is merged but skipped until `DEPLOY_VIA_ACTIONS` is set | `build.mjs`, `.github/workflows/ci.yml` |
 | Game | Local solo and two-player play, tutorial, modes, optional offline spells, and shared local/ranked board rendering | `src/core/`, `src/flow/`, `src/ui/` |
-| Ranked | Production has server-authoritative play, matchmaking/bot backfill, ladder, history, profiles, deletion, permanent mode-pool progression, IVORY Rune Trial, authoritative casts, and rune collection. The disposable test population has 200 bots spanning the ladder with deliberately beatable 41–54% aggregate win rates, streaks 2–7, and modest varied peaks; real play then updates the ordinary aggregates. Bots also carry rune winnings and an equipped seat, scaled by standing and record — see `docs/LADDER.md` § Bot rune winnings | `src/online/`, `src/core/ranked-outcomes.ts`, `supabase/functions/`, `docs/LADDER.md` |
+| Ranked | Production has server-authoritative play, matchmaking/bot backfill, ladder, history, profiles, deletion, permanent mode-pool progression, IVORY Rune Trial, authoritative casts, rune collection, and an equipped seat. The selected ordinary-ranked contract snapshots each participant's equipped rune from SILVER; a missing seat remains rune-free, while Rune Trial ignores equipment. The disposable test population has 200 bots spanning the ladder with deliberately beatable 41–54% aggregate win rates, streaks 2–7, and modest varied peaks; real play then updates the ordinary aggregates. Bots carry rune winnings and equipped seats scaled by standing and record — see `docs/LADDER.md` § Bot rune winnings | `src/online/`, `src/core/ranked-outcomes.ts`, `supabase/functions/`, `docs/LADDER.md` |
 | Localization | English, Brazilian Portuguese, Spanish, German, French, and Italian share one ordered registry, complete catalogs, native metadata, and measured eager/online mobile geometry | `src/i18n/`, `docs/architecture/localization.md` |
-| Database | Production records the six-locale settings expansion, `20260825205241_rune_trial_ranked_v2.sql`, and the private `20260826153000_ladder_streak_baselines.sql`; guarded catalog, security, data, Realtime, and cron audits pass. Game Center remains separately held. `20260827203007_ladder_dense_positions.sql` is APPLIED to production (dense `pos` + `population` on both board RPCs, `from_pos` seek); the old 3-argument `leaderboard` signature is dropped, so exactly one overload exists and the pre-existing client still resolves by argument name. NOTE production also records `20260827160000_auto_forfeit_streak`, applied from another branch and not yet on `main` | `supabase/migrations/`, `supabase/tests/` |
+| Database | Repository and production share the same canonical 56-migration timestamped prefix through `20260830112653_equipped_rune_grant.sql`; `supabase/migration-history.json` and the migration-ledger test pin it. The former compact aliases, obsolete 12-bot seed, and two wrong-stamped equipped-rune files are preserved only in the non-executable archive. Production records Rune Trial, streak baselines, Apple/Game Center schema, command stall checks, auto-forfeit streaks, dense ladder positions, equipped-rune state and its column grant; guarded catalog, security, data, Realtime, and cron audits cover their owned surfaces. Ledger alignment does not establish deployed Edge Function bytes. | `supabase/migrations/`, `supabase/legacy-migrations/`, `supabase/migration-history.json` |
 | Builds | Hosted PWA, standalone HTML, widget, and Capacitor web assets come from the same source build | `build.mjs`, `docs/architecture/build.md` |
 | Native | Capacitor 8.5 iOS and Android projects are tracked; iOS supports 15+, Android installs on API 24+ while targeting API 36 | `native/`, `docs/architecture/build.md` |
 | Design | Product cards, open studies, and archived candidates are explicitly classified and recursively built from shared application CSS/renderers | `design/screens/`, `design/build.mjs` |
@@ -31,10 +31,14 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - Mechanical mode identities come from `src/core/modes.ts`; progressive ranked
   outcomes and odds come from `src/core/ranked-outcomes.ts`. Rune identity,
   legality, and charges come only from `src/core/spells.ts`.
-- Ordinary ranked outcomes remain rune-free. The v2 Rune Trial
-  path is the only ranked format that deals runes: it uses authoritative,
-  replayable aim/cast/place actions. The additive v1 placement protocol remains
-  available for old clients, which cannot advertise Trial capability or enter it.
+- Ordinary ranked snapshots each participant's equipped rune from SILVER. The
+  two seats are independent: below SILVER or without an equipped rune that
+  participant remains rune-free. Fresh matches reveal both immutable match-row
+  assignments, including NONE; rejoin is silent. These matches and Rune Trial
+  use authoritative replayable aim/cast/place actions, but separate capabilities
+  because Trial ignores equipment and loans its own private choices. The
+  additive v1 placement protocol remains only for legacy rune-free standard
+  rows.
 - Ranked variety unlocks permanently from the player's historical peak:
   STONE has Classic, Single Strike, Column Shield, and Limited; BONE adds Row
   Switch, Row Multiply, and Bounty; IVORY adds Rune Trial. Demotion and season
@@ -75,21 +79,15 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - Rotate/revoke any live-test credentials that were ever committed. Repository
   live tests must remain environment-only, fail closed, and require explicit
   production opt-in. Credential rotation is an owner action.
-- Reconcile the legacy local/production migration identifiers before any normal
-  linked push. Production already records the eight ranked dated migrations
-  through `20260823132602` plus
-  `20260823154719_matchmaking_read_grants.sql`; do not reapply them or use
-  `--include-all`. Confirm the ranked Edge Function closure state independently
-  because migration history does not establish function state.
-- Keep Apple/Game Center rollout separate: preview the guarded
-  `db:production:apple-game-center` selection for
-  `20260826153100_game_center_ids.sql`,
-  `20260826153101_game_center_service_grants.sql`, and
-  `20260826153102_apple_identity_credentials.sql`; then deploy the rate-limited
-  Cloudflare identity gateway plus the identity/revocation Edge Functions,
-  configure owner-held secrets and the retry schedule, and prove launch restore,
-  attach, account-change protection, deletion, and revocation with a signed device.
-  None of those production actions is recorded as complete here.
+- Confirm the ranked Edge Function closure state independently; the reconciled
+  migration history establishes database identity, not deployed function bytes.
+- The Apple/Game Center database migrations are recorded in the canonical
+  production ledger. Keep the remaining rollout separate: deploy the
+  rate-limited Cloudflare identity gateway plus the identity/revocation Edge
+  Functions, configure owner-held secrets and the retry schedule, and prove
+  launch restore, attach, account-change protection, deletion, and revocation
+  with a signed device. None of those non-database production actions is
+  recorded as complete here.
 - A fully suspended mobile client can still leave a bot match waiting until it
   returns. A server-side sweep is the honest remaining solution.
 
@@ -163,9 +161,10 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   runes must ship and every affected future-state preview must be regenerated
   from that shipping implementation; store-name clearance, localized public
   legal/support URLs, a signed archive and physical-device proof, Services ID
-  and Supabase switches, deletion-time token revocation, and the held Game
-  Center backend rollout also remain open. Android signing/upload remains
-  deferred. See `docs/IDENTITY.md` and `docs/architecture/build.md`.
+  and Supabase switches, deletion-time token revocation, and the remaining Game
+  Center gateway/function/device rollout also remain open. Android
+  signing/upload remains deferred. See `docs/IDENTITY.md` and
+  `docs/architecture/build.md`.
 - The first Android CI compile found an API-27 theme attribute in base API-24
   resources. It is now isolated in `values-v27` without raising minSdk, but the
   Android CI/AAB job must rerun green after these local changes are committed.

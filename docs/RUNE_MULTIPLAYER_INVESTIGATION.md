@@ -1,9 +1,9 @@
 # Multiplayer runes — balance and feasibility investigation
 
-Status: **DECISION COMPLETE; RUNE TRIAL AND PROTOCOL V2 IMPLEMENTED IN THE
-REPOSITORY BRANCH, PRODUCTION DEPLOYMENT PENDING.** The asymmetric baseline and
-WARD/SUNDER evidence remain historical balance context, not a claim that the
-new backend/functions are live.
+Status: **DECISION UPDATED 2026-08-30; ORDINARY RANKED EQUIPPED RUNES FROM
+SILVER AND RUNE TRIAL'S SEPARATE CHOICE ARE THE SELECTED CONTRACT.** The
+asymmetric baseline and WARD/SUNDER evidence remain historical balance context,
+not a claim that the latest backend/functions are live.
 
 Started: **2026-08-24**
 
@@ -32,6 +32,28 @@ the pre-v2 evidence that led to it.
 
 ## 0. Resolved implementation record (2026-08-25)
 
+### Superseding owner decision (2026-08-30)
+
+- Ordinary ranked uses personal equipped runes from SILVER upward. Matchmaking
+  snapshots `p1_rune` and `p2_rune` independently; no equipped rune means that
+  seat has no rune, and below SILVER both seats are rune-free. The match row is
+  gameplay authority, never a later profile/cache read.
+- A fresh standard reveal shows both immutable seat assignments together,
+  including explicit NONE for an empty seat. Rejoining an active match does not
+  replay that reveal.
+- Standard equipped-rune matches use the versioned ordered action protocol and
+  require a distinct client capability. The retained v1 placement path is only
+  compatible with rune-free standard rows; an older Trial-capable client does
+  not implicitly understand equipped standard play.
+- Rune Trial remains separate: it ignores equipment, loans its own offer, and
+  reveals the two private choices after both settle. Its acquisition rules are
+  unchanged.
+- This decision supersedes the 2026-08-25 deferral and the final recommendation
+  to keep ordinary ranked rune-free. The retained asymmetric measurements are
+  balance warnings for the selected format, not authority to silently undo it.
+
+### Earlier Rune Trial decision (2026-08-25)
+
 - **Progressive ranked outcomes:** permanent high-water pools are STONE
   (Classic, Single Strike, Column Shield, Limited), BONE (+ Row Switch, Row
   Multiply, Bounty), and IVORY (+ Rune Trial), at historical peak floors 0,
@@ -45,7 +67,8 @@ the pre-v2 evidence that led to it.
   same rune, and reveal together. The 30-second server deadline uses a
   deterministic participant-specific auto-pick for every missing choice,
   including before early-terminal settlement. Equipment is ignored and left
-  unchanged; ordinary ranked has no personal-rune loadout in v1.
+  unchanged. At that date ordinary ranked still used its rune-free v1 baseline;
+  the 2026-08-30 decision above supersedes that boundary.
 - **Acquisition:** new and existing collections start empty. Every settled
   Trial win—including bot, resignation, timeout, or deletion-forfeit—grants
   the winner's selected rune idempotently. Loss/draw grants nothing; a
@@ -103,8 +126,8 @@ rune-versus-no-rune result is not evidence that two different runes are balanced
 
 ## 2. Working definitions of the investigated formats
 
-Personal-rune modes remain an unselected future format. Rune Trial is selected
-and implemented in the repository branch under §0.
+Personal equipped runes are now selected for ordinary ranked from SILVER under
+§0. Rune Trial remains the separate selected format described below.
 
 ### 2.1 Personal-rune modes
 
@@ -162,18 +185,18 @@ about missing ranked state describe the production/v1 baseline inspected on
   intentionally retained for ordinary matches during the v2 rollout.
 - **HISTORICAL BASELINE:** `matches.modifier` stored one shared mode. No
   match-global or per-player rune field existed
-  (`supabase/migrations/0003_pvp_pivot_v2.sql:42-55`,
-  `supabase/migrations/0009_match_modifier_wheel.sql:1-7`).
+  (`supabase/migrations/20260816182912_pvp_pivot_v2.sql:53-67`,
+  `supabase/migrations/20260817164034_match_modifier_wheel.sql:1-7`).
 - **HISTORICAL DEFECT, CLOSED IN BRANCH:** the `MODES` registry could draw
   `limited`, but the latest repository definition of `matches_modifier_check`
   accepts only `classic`, `rowswitch`, `rowmult`, `colshield`, `singlestrike`,
   and `bounty` (`src/core/modes.ts:45-53`,
-  `supabase/migrations/0010_modifier_singlestrike_bounty.sql:4-7`). The Rune
+  `supabase/migrations/20260818064957_modifier_singlestrike_bounty.sql:1-4`). The Rune
   Trial migration first repairs that allow-list. Live production schema state
   remains unverified.
 - **HISTORICAL BASELINE:** `match_moves` records placements, not casts
-  (`supabase/migrations/0003_pvp_pivot_v2.sql:64-70`,
-  `supabase/migrations/0008_pvp_move_die.sql:1-6`). Protocol v2 adds an ordered
+  (`supabase/migrations/20260816182912_pvp_pivot_v2.sql:75-89`,
+  `supabase/migrations/20260816190251_pvp_move_die.sql:1-5`). Protocol v2 adds an ordered
   `match_actions` aim/cast/place stream instead of reinterpreting those rows.
 - **STILL REQUIRED:** the browser submits intent rather than dice, scores, or
   state; the server rebuilds from its seed and written log
@@ -1733,8 +1756,8 @@ Existing visibility boundaries also fit the proposed reveal timing:
 
 - **FACT:** a participant can read a match and its moves; a stranger cannot.
   Queue rows are owner-visible only. Match seeds are service-only
-  (`supabase/migrations/0003_pvp_pivot_v2.sql:59-84`,
-  `supabase/migrations/0005_pvp_seed_secrecy.sql:1-14`,
+  (`supabase/migrations/20260816182912_pvp_pivot_v2.sql:68-98`,
+  `supabase/migrations/20260816183036_pvp_seed_secrecy.sql:1-12`,
   `supabase/tests/database/rls-boundaries.test.sql`).
 - **INFERENCE:** a personal rune can therefore stay private while queued and
   become visible after pairing by copying an immutable snapshot onto the
@@ -1745,15 +1768,15 @@ Existing visibility boundaries also fit the proposed reveal timing:
 
 - **PRE-V2 FACT:** `matches` had participants, status, turn, result, clock,
   shared mode, and public next die. It had no match-format, offer, or per-seat rune
-  fields (`supabase/migrations/0003_pvp_pivot_v2.sql:42-55`,
-  `supabase/migrations/0009_match_modifier_wheel.sql:1-7`).
+  fields (`supabase/migrations/20260816182912_pvp_pivot_v2.sql:53-67`,
+  `supabase/migrations/20260817164034_match_modifier_wheel.sql:1-7`).
 - **PRE-V2 FACT:** `matchmaking_queue` stored only `player_id` and
   `created_at`; it could not advertise Trial capability or pool tier
-  (`supabase/migrations/0003_pvp_pivot_v2.sql:79-84`).
+  (`supabase/migrations/20260816182912_pvp_pivot_v2.sql:91-98`).
 - **PRE-V2 FACT:** `match_moves` stored ordered placements—player, column, and
   die—but no cast or selection event
-  (`supabase/migrations/0003_pvp_pivot_v2.sql:64-70`,
-  `supabase/migrations/0008_pvp_move_die.sql:1-6`).
+  (`supabase/migrations/20260816182912_pvp_pivot_v2.sql:75-89`,
+  `supabase/migrations/20260816190251_pvp_move_die.sql:1-5`).
 - **PRE-V2 FACT:** the owner-only `player_settings` row contained presentation
   settings, not rune equipment or ownership
   (`supabase/migrations/20260823192604_player_settings.sql`).
@@ -2048,9 +2071,9 @@ The remaining risks are rollout and evidence risks:
 - The branch data model starts collections empty and stores one idempotent
   owner-readable row per collected rune, including durable unseen state and an
   optional source match. There is no starter rune or grandfathered full roster.
-- Rune Trial loans all six online, so collection breadth does not change the
-  ranked choice set. Standard ranked remains rune-free; personal equipped-rune
-  loadouts are not part of this release.
+- Rune Trial loans all six online, so collection breadth does not change its
+  choice set. Ordinary ranked from SILVER uses each participant's equipped rune;
+  a missing equipped rune remains an empty hand for that seat.
 - The ladder already gives progression on every result and intentionally drifts
   upward at a 50% win rate (`docs/LADDER.md:20-74`).
 - Newcomer bot tuning intentionally targets a high early human win rate; the
@@ -2241,8 +2264,8 @@ normal repository gates and an explicit production rollout.
 ### Phase D — multiplayer feasibility contract
 
 - [x] Preserve the historical offline-only boundary until a versioned protocol,
-  then implement the same scoring-WARD contract in Rune Trial v2 without
-  enabling runes in ordinary ranked.
+  then implement the same scoring-WARD contract in Rune Trial v2. The later
+  2026-08-30 decision extends that grammar to equipped ordinary ranked.
 - [x] Trace how one-cast versus chained FATE and Classic-backed versus
   mechanically new Trial change action grammar, clock, bot, replay, and rollout
   scope (§7.3, §7.6).
@@ -2331,9 +2354,9 @@ evidence limits visible.
    replay, bot parity, private selection, collection, and settlement. Launch
    readiness still depends on repository/database gates, compatibility rollout,
    live verification, and the remaining balance evidence.
-10. **DECISION:** personal equipped runes are deferred. Ordinary ranked remains
-    rune-free, and any current/future equipped rune is ignored and unchanged in
-    Trial.
+10. **SUPERSEDED DECISION:** personal equipped runes were deferred on
+    2026-08-25. The 2026-08-30 owner decision selects them for ordinary ranked
+    from SILVER; Trial still ignores and preserves equipment.
 11. **IMPLEMENTATION:** Rune Trial's Classic-backed selection/liveness path is
     repository-ready and uses no cryptographic commit/reveal. The genuinely new
     mechanical branch is rejected, not an unresolved launch alternative.
@@ -2346,18 +2369,20 @@ evidence limits visible.
 
 ### 10.1 Evidence-bounded recommendation
 
-1. **Keep ranked access equal.** The selected Trial loans the complete roster;
-   wins build a finite collection without narrowing the next ranked Trial's
-   options. Do not reinterpret CPU collection locks as standard ranked
-   loadouts.
+1. **Keep Trial access equal.** Trial loans the complete roster; wins build a
+   finite collection without narrowing the next Trial's options. Ordinary
+   ranked is deliberately different: from SILVER it uses each player's equipped
+   collected rune, with an empty equipped seat remaining rune-free.
 2. **Keep the formats distinct.** Rune Trial ignores equipment, reveals one
    common three-rune loan after private choice, and stays Classic-backed.
-   Personal-rune matchmaking remains a separate future proposal.
-3. **Evaluate personal runes only in an unranked balance lab.** The v2 grammar
-   removes one engineering prerequisite, but it does not repair the asymmetric
-   balance evidence or authorize ownership-based ranked loadouts.
-4. **Keep one-hit scoring WARD identical wherever runes are played.** Branch
-   Trial v2 now replays it authoritatively; ordinary ranked remains rune-free.
+   Ordinary ranked snapshots equipped seats before revealing its mode and pair.
+3. **Monitor the selected personal-rune format.** The v2 grammar resolves the
+   authority prerequisite, but it does not erase the asymmetric balance
+   evidence. Track matchup and choice concentration rather than treating the
+   SILVER launch decision as balance proof.
+4. **Keep one-hit scoring WARD identical wherever runes are played.** The
+   ordered action protocol replays it authoritatively in Trial and equipped
+   ordinary ranked.
    The larger retained balance cohort and target-device performance checks are
    still worthwhile, and SUNDER's BOUNTY specialization still needs review.
 5. **Treat the 5% Normal SUNDER slip as flavour, not a difficulty control.** It
@@ -2411,9 +2436,9 @@ change ranked Trial access.
 7. **REMAINING EVIDENCE, NOT A BLOCKING RULE:** monitor weighted choice
    concentration and worst-cell frustration; equal loans prevent collection
    breadth from becoming an access imbalance.
-8. **RESOLVED FOR THIS RELEASE:** collection is horizontal in ranked because
-   Trial loans all offers and standard ranked is rune-free. Future stronger
-   runes or personal loadouts require a new decision.
+8. **SUPERSEDED 2026-08-30:** Trial still loans all offers, but ordinary ranked
+   now uses equipped collected runes from SILVER. The retained balance evidence
+   is therefore an active monitoring requirement rather than a future-only one.
 9. **RESOLVED:** at most one cast per turn; FATE's two charges belong to
    different turns.
 10. **RESOLVED:** persist `format='rune_trial'` plus

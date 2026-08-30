@@ -205,6 +205,35 @@ const RUNE_AUDIT_EXPRESSIONS = Object.freeze([
   `(select count(*) from private.rune_trial_choices)::integer as "runeTrialChoices"`,
   `(select count(*) from private.rune_trial_selection_commands)::integer as "runeSelectionCommands"`,
   `(select count(*) from private.match_action_commands)::integer as "matchActionCommands"`,
+  `(select count(*) from public.profiles profile
+     where profile.is_bot
+       and exists (select 1 from public.player_runes rune
+                    where rune.player_id = profile.id))::integer as "botsWithRunes"`,
+  `(select count(*) from public.profiles profile
+     where profile.is_bot and profile.equipped_rune is not null)::integer as "botsEquipped"`,
+  `(select count(*) from public.profiles profile
+     where profile.is_bot and profile.equipped_rune is null
+       and exists (select 1 from public.player_runes rune
+                    where rune.player_id = profile.id))::integer
+      as "botsWithRunesWithoutEquipped"`,
+  `(select count(*) from public.profiles profile
+     where profile.is_bot and profile.equipped_rune is not null
+       and not exists (select 1 from public.player_runes rune
+                        where rune.player_id = profile.id))::integer
+      as "botsWithoutRunesWithEquipped"`,
+  `(select count(*) from public.profiles profile
+     where profile.is_bot and profile.equipped_rune is not null
+       and not exists (select 1 from public.player_runes rune
+                        where rune.player_id = profile.id
+                          and rune.rune_id = profile.equipped_rune))::integer
+      as "botsWithUnownedEquippedRune"`,
+  `(select count(*) from public.profiles profile
+     where profile.is_bot
+       and exists (select 1 from public.player_runes rune
+                    where rune.player_id = profile.id)
+       and profile.equipped_rune is distinct from
+             private.bot_owned_rune_choice(profile.id))::integer
+      as "botsWithUnexpectedEquippedRune"`,
   `(select count(*)
       from public.profiles profile
       join auth.users account on account.id = profile.id
@@ -389,7 +418,10 @@ const LADDER_STREAK_BASELINE_STAGE_FIELDS = Object.freeze([
 
 const RUNE_AUDIT_FIELDS = Object.freeze([
   'playerRunes', 'matchActions', 'runeTrialChoices', 'runeSelectionCommands',
-  'matchActionCommands', 'invalidBotRows', 'missingSeasonRows',
+  'matchActionCommands', 'botsWithRunes', 'botsEquipped',
+  'botsWithRunesWithoutEquipped', 'botsWithoutRunesWithEquipped',
+  'botsWithUnownedEquippedRune', 'botsWithUnexpectedEquippedRune',
+  'invalidBotRows', 'missingSeasonRows',
   'inconsistentRatingRows', 'inconsistentTierRows', 'invalidStatsRows',
   'streakBaselines', 'orphanStreakBaselines',
   'distinctPoints', 'minPoints', 'maxPoints', 'distinctWins', 'distinctLosses',
@@ -611,38 +643,27 @@ export function buildProductionBotRunePlan(bot) {
     PRODUCTION_RUNE_ROSTER[(offset + index) % PRODUCTION_RUNE_ROSTER.length]));
 }
 
-/* The seat a bot carries into ranked. Its first winning is what a player's own
-   first winning becomes: auto-equipped, because a collection of one has no
-   decision in it. Below SILVER the rune is held but not in play, which the
-   client already says on the profile — the seat is set regardless, so a bot
-   that climbs into SILVER arrives already carrying what it won. */
-export function productionBotEquippedRune(bot) {
-  return buildProductionBotRunePlan(bot)[0] ?? null;
-}
-
 /**
- * The rune winnings for a freshly seeded bot population, as one guarded
- * statement. Bots are identified by their season points, which the seed plan
+ * The rune-winnings fragment for a freshly seeded bot population. The caller
+ * owns the surrounding transaction, so this can run atomically inside the
+ * guarded bot seed instead of surviving as an uncallable second operation.
+ * Bots are identified by their season points, which the seed plan
  * makes unique per ordinal (the seed's own postcheck pins
  * `count(distinct points)` to the population size), so no id has to be
  * hardcoded or round-tripped.
  *
  * The equipped seat is set in the same statement and only ever to a rune the
- * same statement just granted — the migration's composite foreign key would
- * refuse anything else, which is the point of putting it there.
+ * same statement just granted. The database's one private choice helper owns
+ * the stable pseudo-random selection for fixture backfill and live settlement;
+ * this JS plan cannot choose before `mint_bot` creates each UUID.
  */
 export function buildProductionBotRuneSql(plan = buildProductionBotSeedPlan()) {
   const rows = plan.flatMap((bot) => {
     const runes = buildProductionBotRunePlan(bot);
-    return runes.map((rune, index) => `(${bot.points}, '${rune}', ${index === 0})`);
+    return runes.map(rune => `(${bot.points}, '${rune}')`);
   });
   if (!rows.length) fail('Bot rune plan produced no rows.');
-  return String.raw`
-begin;
-set local lock_timeout = '10s';
-set local statement_timeout = '90s';
-
-do $runes$
+  return String.raw`do $runes$
 declare
   granted integer;
   seated integer;
@@ -654,9 +675,9 @@ begin
     raise exception 'bot rune seeding expects an empty collection table';
   end if;
 
-  create temporary table kb_bot_rune_plan (points integer, rune_id text, seat boolean)
+  create temporary table kb_bot_rune_plan (points integer, rune_id text)
     on commit drop;
-  insert into kb_bot_rune_plan (points, rune_id, seat) values
+  insert into kb_bot_rune_plan (points, rune_id) values
     ${rows.join(',\n    ')};
 
   /* JOIN THE BOTS, NOT WHOEVER SHARES THEIR SCORE. Points identify a bot only
@@ -672,14 +693,14 @@ begin
     join public.profiles bp on bp.id = r.player and bp.is_bot;
   get diagnostics granted = row_count;
 
-  /* The seat is the FIRST rune the bot won, which is what a player's own first
-     winning becomes. Set even below SILVER: the rune is carried but not in
-     play, so a bot that climbs arrives already holding it. */
+  /* One database helper owns the random-looking stable choice everywhere.
+     Set even below SILVER: the rune is carried but not in play, so a bot that
+     climbs arrives already holding it. */
   update public.profiles pr
-     set equipped_rune = p.rune_id
-    from kb_bot_rune_plan p
-    join public.season_ratings r on r.points = p.points
-   where pr.id = r.player and p.seat and pr.is_bot;
+     set equipped_rune = private.bot_owned_rune_choice(pr.id)
+   where pr.is_bot
+     and exists (select 1 from public.player_runes owned
+                  where owned.player_id = pr.id);
   get diagnostics seated = row_count;
 
   if granted <> ${rows.length} then
@@ -693,9 +714,25 @@ begin
                                 where pl.player_id = pr.id and pl.rune_id = pr.equipped_rune)) then
     raise exception 'a bot was seated with a rune it does not hold';
   end if;
+  if exists (
+    select 1 from public.profiles pr
+     where pr.is_bot
+       and exists (select 1 from public.player_runes owned
+                    where owned.player_id = pr.id)
+       and pr.equipped_rune is distinct from private.bot_owned_rune_choice(pr.id)
+  ) then
+    raise exception 'a bot was not seated with the canonical owned-rune choice';
+  end if;
+  if exists (
+    select 1 from public.profiles pr
+     where pr.is_bot and pr.equipped_rune is not null
+       and not exists (select 1 from public.player_runes owned
+                        where owned.player_id = pr.id)
+  ) then
+    raise exception 'a bot without rune winnings was given a seat';
+  end if;
 end
 $runes$;
-commit;
 `;
 }
 
@@ -766,6 +803,14 @@ export function buildProductionBotSeedPlan() {
 
 export const PRODUCTION_BOT_SEED_PLAN = buildProductionBotSeedPlan();
 const LEGACY_PRODUCTION_BOT_SEED_PLAN = legacyProductionBotSeedPlan();
+export const PRODUCTION_BOT_RUNE_ROW_COUNT = PRODUCTION_BOT_SEED_PLAN.reduce(
+  (total, bot) => total + buildProductionBotRunePlan(bot).length,
+  0,
+);
+export const PRODUCTION_BOT_RUNE_OWNER_COUNT = PRODUCTION_BOT_SEED_PLAN.filter(
+  bot => buildProductionBotRunePlan(bot).length > 0,
+).length;
+const SEED_BOT_RUNES_SQL = buildProductionBotRuneSql(PRODUCTION_BOT_SEED_PLAN);
 
 const SEED_VALUES = PRODUCTION_BOT_SEED_PLAN
   .map(({ ordinal, points, peak, wins, losses, draws, bestStreak }) =>
@@ -1042,6 +1087,7 @@ lock table auth.users in access exclusive mode;
 lock table public.profiles in access exclusive mode;
 lock table public.matches in access exclusive mode;
 lock table public.season_ratings in access exclusive mode;
+lock table public.player_runes in access exclusive mode;
 
 do $seed$
 declare
@@ -1063,8 +1109,9 @@ begin
      or to_regclass('private.rune_trial_selection_commands') is null
      or to_regclass('private.match_action_commands') is null
      or to_regclass('private.season_streak_baselines') is null
-     or to_regprocedure('private.ranked_pool_tier_for_peak(integer)') is null then
-    raise exception 'Rune Trial and streak-baseline migrations must be complete before bot seeding';
+     or to_regprocedure('private.ranked_pool_tier_for_peak(integer)') is null
+     or to_regprocedure('private.bot_owned_rune_choice(uuid)') is null then
+    raise exception 'Rune Trial, equipped-rune, and streak-baseline migrations must be complete before bot seeding';
   end if;
 
   if exists (select 1 from auth.users)
@@ -1213,6 +1260,8 @@ begin
 end;
 $seed$;
 
+${SEED_BOT_RUNES_SQL}
+
 commit;
 `;
 
@@ -1263,7 +1312,8 @@ begin
        select 1 from supabase_migrations.schema_migrations
         where version = '20260826153000' and name = 'ladder_streak_baselines'
      )
-     or to_regclass('private.season_streak_baselines') is null then
+     or to_regclass('private.season_streak_baselines') is null
+     or to_regprocedure('private.bot_owned_rune_choice(uuid)') is null then
     raise exception 'required production migrations are incomplete before bot-profile refresh';
   end if;
 
@@ -1423,6 +1473,8 @@ begin
 end;
 $refresh$;
 
+${SEED_BOT_RUNES_SQL}
+
 commit;
 `;
 
@@ -1461,11 +1513,17 @@ export function assertProductionBotSeedComplete(audit) {
     authOwnedStorageObjects: 0,
     authWithoutProfile: 0,
     profileWithoutAuth: 0,
-    playerRunes: 0,
+    playerRunes: PRODUCTION_BOT_RUNE_ROW_COUNT,
     matchActions: 0,
     runeTrialChoices: 0,
     runeSelectionCommands: 0,
     matchActionCommands: 0,
+    botsWithRunes: PRODUCTION_BOT_RUNE_OWNER_COUNT,
+    botsEquipped: PRODUCTION_BOT_RUNE_OWNER_COUNT,
+    botsWithRunesWithoutEquipped: 0,
+    botsWithoutRunesWithEquipped: 0,
+    botsWithUnownedEquippedRune: 0,
+    botsWithUnexpectedEquippedRune: 0,
     invalidBotRows: 0,
     missingSeasonRows: 0,
     inconsistentRatingRows: 0,

@@ -56,7 +56,8 @@ export async function claimMatch(context: AuthenticatedContext, input: ClaimInpu
   const match = data as MatchRow | null;
   if (!match || (match.p1 !== user.id && match.p2 !== user.id)) return json({ error: "no-match" }, 404);
   if (match.status !== "active") return json({ error: "match-over" }, 409);
-  if (match.format === RUNE_TRIAL_FORMAT && match.rune_rules_version !== 1) {
+  if ((match.format === RUNE_TRIAL_FORMAT && match.rune_rules_version !== 1)
+      || (match.rune_rules_version !== null && match.rune_rules_version !== 1)) {
     return json({ error: "unsupported-rune-rules" }, 409);
   }
   const myIdx: Player = match.p1 === user.id ? ME : AI;

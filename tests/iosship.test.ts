@@ -64,6 +64,7 @@ const nativePins: Record<string, string> = {
   '@capacitor/cli': '8.5.0',
   '@capacitor/ios': '8.5.0',
   '@capacitor/android': '8.5.0',
+  '@capacitor/share': '8.0.1',
   '@capacitor/splash-screen': '8.0.2',
   '@capawesome/capacitor-apple-sign-in': '0.1.3',
   '@capacitor/assets': '3.0.5',
@@ -139,9 +140,9 @@ if (existsSync(CONFIG)) {
     check(syncedCfg.server?.cleartext !== true,
       `the capacitor.config.json inside the Xcode project enables cleartext HTTP`);
     const registered = syncedCfg.packageClassList ?? [];
-    for (const plugin of ['AppleSignInPlugin', 'SplashScreenPlugin', 'GameCenterPlugin']) {
+    for (const plugin of ['AppleSignInPlugin', 'SplashScreenPlugin', 'SharePlugin', 'GameCenterPlugin']) {
       check(registered.includes(plugin),
-        `${syncedConfig} does not register ${plugin}; the native identity button would be inert`);
+        `${syncedConfig} does not register ${plugin}; the corresponding native capability would be inert`);
     }
   }
 }

@@ -88,6 +88,7 @@ export async function runRankedRevealLayoutScenarios({ visit, out, check }) {
   'the choice sheet is no longer centred once the pairing is on it', r);
 
   await runBareRitualScenarios({ visit, out, check });
+  await runStandardRuneRevealScenarios({ visit, out, check });
 }
 
 // NOTHING HANGS OVER THE TURNED-OVER RUNES.
@@ -176,4 +177,78 @@ async function runBareRitualScenarios({ visit, out, check }) {
      is not a blanket repaint that put the shell copy back. */
   check(!!r && !r.name?.visible && !r.blurb?.visible,
     'the bare beat printed its name or blurb after all', r);
+}
+
+// STANDARD RANKED REVEALS THE TWO IMMUTABLE SEATS TOO.
+//
+// Unlike Rune Ritual, these are not two mandatory private choices. Each side
+// is the snapshot matchmaking wrote from that profile's equipped seat: a real
+// rune or honest NONE, independently. The reveal must therefore keep two
+// owner-labelled cards even when only one rune exists, and it must not invent a
+// rune when both match-row fields are null.
+async function runStandardRuneRevealScenarios({ visit, out, check }) {
+  const seen = await visit({
+    named: true, skipStandardProbes: true,
+    probe: (page) => page.evaluate(async ({ pairing }) => {
+      const revealCase = async (sides) => {
+        const finished = window.__kbRankedReveal({
+          modeId: 'classic',
+          pairing,
+          candidates: [{ id: 'classic' }, { id: 'limited' }],
+          rankedSides: sides,
+        });
+        const deadline = Date.now() + 15000;
+        while (Date.now() < deadline && !document.querySelector('.trial-reveal')) {
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        const read = {
+          title: document.querySelector('#wheelTitle .wtitlecopy')?.textContent?.trim(),
+          owners: [...document.querySelectorAll('.trial-reveal__owner .nm')]
+            .map((element) => element.textContent?.trim()),
+          runes: [...document.querySelectorAll('.trial-reveal__card')]
+            .map((element) => element.dataset.rune),
+          labels: [...document.querySelectorAll('.trial-reveal__card .rlbl')]
+            .map((element) => element.textContent?.trim()),
+          visible: [...document.querySelectorAll('.trial-reveal__card')]
+            .every((element) => {
+              const box = element.getBoundingClientRect();
+              return box.width > 0 && box.height > 0 && getComputedStyle(element).opacity === '1';
+            }),
+        };
+        document.querySelector('#ovWheel')?.dispatchEvent(new PointerEvent(
+          'pointerdown', { bubbles: true },
+        ));
+        await finished;
+        return read;
+      };
+      return {
+        oneSided: await revealCase([
+          { spell: { id: 'ward' }, nameText: 'BadRandolf', hue: '#28e8ff' },
+          { spell: null, nameText: 'BoldFox762', hue: '#ff2fa0' },
+        ]),
+        empty: await revealCase([
+          { spell: null, nameText: 'BadRandolf', hue: '#28e8ff' },
+          { spell: null, nameText: 'BoldFox762', hue: '#ff2fa0' },
+        ]),
+      };
+    }, { pairing: PAIRING }),
+  });
+  out.standardRuneReveal = seen.probeResult;
+  const r = seen.probeResult;
+
+  check(r?.oneSided?.title === 'RANKED RUNES'
+      && r.oneSided.owners.join('|') === 'BadRandolf|BoldFox762'
+      && r.oneSided.runes.join('|') === 'ward|none'
+      && r.oneSided.labels.join('|') === 'WARD|NONE'
+      && r.oneSided.visible,
+    'a fresh standard match did not reveal its one equipped seat and one explicit NONE',
+    r?.oneSided);
+  check(r?.empty?.title === 'RANKED RUNES'
+      && r.empty.owners.join('|') === 'BadRandolf|BoldFox762'
+      && r.empty.runes.join('|') === 'none|none'
+      && r.empty.labels.join('|') === 'NONE|NONE'
+      && r.empty.visible,
+    'a fresh standard match invented or hid a rune when both immutable seats were empty',
+    r?.empty);
+  check(seen.errs.length === 0, 'page errors during standard ranked rune reveals', seen.errs);
 }

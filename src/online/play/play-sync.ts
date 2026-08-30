@@ -1,6 +1,6 @@
-// Ranked log synchronization. Standard matches project placement rows; Rune
-// Trial projects the richer cast/place action log and refuses incoherent
-// two-read snapshots before they can reopen input on the wrong board.
+// Ranked log synchronization. Legacy standard matches project placement rows;
+// every action-protocol match projects the richer aim/cast/place log and
+// refuses incoherent two-read snapshots before reopening input on a wrong board.
 import { BOUNTY, applyMove, emptyBoard, type Player } from '../../core/rules.ts';
 import { projectRankedActions, type RankedActionRow } from '../../core/ranked-actions.ts';
 import { spellById } from '../../core/spells.ts';
@@ -34,7 +34,7 @@ export interface OnlineSyncPorts {
 
 const pause = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function readTrialSnapshot(online: OnlineState): Promise<TrialSnapshot | null> {
+async function readActionSnapshot(online: OnlineState): Promise<TrialSnapshot | null> {
   return retryCoherentTrialSnapshot(async () => {
     const [actionsResult, matchResult] = await Promise.all([
       supa().from('match_actions')
@@ -67,7 +67,7 @@ function alreadyPainted(online: OnlineState, row: RankedActionRow): boolean {
   return true;
 }
 
-async function animateTrialAction(
+async function animateRankedAction(
   online: OnlineState,
   row: RankedActionRow,
   ports: OnlineSyncPorts,
@@ -110,12 +110,12 @@ async function animateTrialAction(
     () => row.die_after ?? row.die_before);
 }
 
-function installTrialProjection(
+function installActionProjection(
   online: OnlineState,
   rows: readonly RankedActionRow[],
   match: MatchRow,
 ): boolean {
-  if (!online.trialRunes) return false;
+  if (!online.rankedRunes) return false;
   /* A resignation/deletion can settle during private selection. There was no
      opening action (and therefore no public next die to seed replay), but the
      empty board is already the complete authoritative projection. */
@@ -133,7 +133,7 @@ function installTrialProjection(
     handTurnTo(match.turn, online.you);
     return true;
   }
-  const projected = projectRankedActions(rows, S.scoring, online.trialRunes,
+  const projected = projectRankedActions(rows, S.scoring, online.rankedRunes,
     rows.length ? undefined : match.next_die ?? online.pendingDie ?? undefined);
   if (!projected || projected.actionCount !== match.action_version) return false;
   if (match.status === 'active'
@@ -169,7 +169,7 @@ function installTrialProjection(
    A bot's whole reply is committed inside the player's own command, so it
    arrives in this same batch with nothing between it and the player's own
    placement. That crossing is the one that gets the full opponent turn. */
-async function replayTrialActions(
+async function replayRankedActions(
   online: OnlineState,
   fresh: readonly RankedActionRow[],
   ports: OnlineSyncPorts,
@@ -187,16 +187,16 @@ async function replayTrialActions(
         if (!await ports.openOpponentBeat(online, row.die_before)) return;
       } else handTurnTo(row.who, online.you);
     }
-    await animateTrialAction(online, row, ports);
+    await animateRankedAction(online, row, ports);
   }
 }
 
-async function syncTrial(
+async function syncActions(
   online: OnlineState,
   fullRedraw: boolean,
   ports: OnlineSyncPorts,
 ): Promise<boolean> {
-  const snapshot = await readTrialSnapshot(online);
+  const snapshot = await readActionSnapshot(online);
   if (!ports.isCurrent(online) || !snapshot) return false;
   const fresh = snapshot.rows.filter(({ idx }) => idx >= online.actionApplied);
   /* A FULL REDRAW STILL OWES A BOT ITS OPENING TURN. fullRedraw exists to stop
@@ -205,16 +205,16 @@ async function syncTrial(
      this flag: the join response sets it only when a bot moved inside THAT
      request, and submit() clears it before every recovery resync. So the flag,
      not the redraw mode, is what decides whether a batch is performed. Without
-     this the first read dropped the opener on the floor and installTrialProjection
+     this the first read dropped the opener on the floor and installActionProjection
      painted it in one silent frame (reported from a device). */
   if (fresh.length && (!fullRedraw || online.botBeatDue)) {
     online.animating = true;
     try {
-      await replayTrialActions(online, fresh, ports);
+      await replayRankedActions(online, fresh, ports);
     } finally { online.animating = false; }
     if (!ports.isCurrent(online)) return false;
   }
-  if (!installTrialProjection(online, snapshot.rows, snapshot.match)) return false;
+  if (!installActionProjection(online, snapshot.rows, snapshot.match)) return false;
   /* A command response can be newer than the first post-outage read. Keep the
      old input gate closed until the confirmed action version is visible. */
   if (!projectionRecoveryVersionReached(online)) return false;
@@ -238,14 +238,14 @@ async function syncStandard(
   });
   if (!ports.isCurrent(online) || !snapshot || online.animating) return false;
   const fresh = snapshot.moves.filter((row) => row.idx >= online.applied);
-  /* Claimed once per batch, exactly as the Trial replay claims it: a refused
+  /* Claimed once per batch, exactly as action replay claims it: a refused
      read replays the same rows, and nobody sits through a second think for a
      turn they already watched. */
   const botReply = online.botBeatDue;
   online.botBeatDue = false;
   /* THE BOT OPENED THIS MATCH. One row, theirs, and nothing of ours yet — the
      start RPC wrote it before this client ever read the board. It arrives on a
-     full redraw (entry is one), so it needs the same exemption the Trial's
+     full redraw (entry is one), so it needs the same exemption the action-log
      replay gate gets, and then the ordinary single-row branch below performs it. */
   const opening = botReply && fresh.length === 1 && !online.applied
     && fresh[0].who !== online.you;
@@ -299,8 +299,8 @@ export function createOnlineSynchronizer(ports: OnlineSyncPorts) {
     online.busySync = true;
     let synced = false;
     try {
-      synced = online.trial
-        ? await syncTrial(online, fullRedraw, ports)
+      synced = online.actionProtocol
+        ? await syncActions(online, fullRedraw, ports)
         : await syncStandard(online, fullRedraw, ports);
     } finally { online.busySync = false; }
     if (synced && ports.isCurrent(online) && online.pendingRow && !online.animating) {

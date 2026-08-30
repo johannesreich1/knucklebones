@@ -101,6 +101,45 @@ check(projectRankedActions([], CLASSIC, deal) === null,
 eq(projectRankedActions([], CLASSIC, deal, initial.nextDie), initial,
   'empty public projection did not accept the explicitly revealed opening die');
 
+/* Ordinary ranked is allowed to carry one equipped rune, two, or none. NULL
+   is a real empty hand, not corrupt replay state: the other seat can still cast
+   its own rune and both seats can always make the mandatory placement. */
+const oneSidedDeal: RankedRuneDeal = [null, 'nudge'];
+const oneSidedInitial = rebuildRankedActions('one-sided-equipped', [], CLASSIC, oneSidedDeal);
+check(oneSidedInitial !== null && Object.keys(oneSidedInitial.charges[AI]).length === 0
+  && oneSidedInitial.charges[ME].nudge === 1,
+  'a standard match with one unequipped seat was rejected or invented a hand', oneSidedInitial);
+const oneSidedCast = appendRankedAction('one-sided-equipped', [], CLASSIC, oneSidedDeal, {
+  kind: 'cast', rune_id: 'nudge', target_col: -1,
+});
+const oneSidedPlace = oneSidedCast && appendRankedAction(
+  'one-sided-equipped', [oneSidedCast.row], CLASSIC, oneSidedDeal,
+  { kind: 'place', placed_col: 0 },
+);
+check(oneSidedCast !== null && oneSidedPlace !== null,
+  'the equipped seat could not cast and place against an empty hand', { oneSidedCast, oneSidedPlace });
+if (oneSidedCast && oneSidedPlace) {
+  check(appendRankedAction(
+    'one-sided-equipped', [oneSidedCast.row, oneSidedPlace.row], CLASSIC, oneSidedDeal,
+    { kind: 'cast', rune_id: 'nudge', target_col: -1 },
+  ) === null, 'the unequipped opponent cast a rune it did not bring');
+  const emptySeatPlace = appendRankedAction(
+    'one-sided-equipped', [oneSidedCast.row, oneSidedPlace.row], CLASSIC, oneSidedDeal,
+    { kind: 'place', placed_col: 1 },
+  );
+  check(emptySeatPlace !== null, 'the unequipped opponent could not place normally');
+  if (emptySeatPlace) {
+    eq(projectRankedActions(
+      [oneSidedCast.row, oneSidedPlace.row, emptySeatPlace.row], CLASSIC, oneSidedDeal,
+    ), emptySeatPlace.state, 'one-sided public equipped-rune projection diverged');
+  }
+}
+const emptyDeal: RankedRuneDeal = [null, null];
+const emptyInitial = rebuildRankedActions('empty-equipped', [], CLASSIC, emptyDeal);
+check(emptyInitial !== null && Object.keys(emptyInitial.charges[AI]).length === 0
+  && Object.keys(emptyInitial.charges[ME]).length === 0,
+  'an action-protocol standard match with two empty hands was rejected', emptyInitial);
+
 // Every ranked bot commit — opener, reply, league slip, exhausted LIMITED bag
 // — is one shared builder's contract and is gated as one block.
 runRankedBotTurnCases({ check, eq, seed, dealt: deal, opening: initial });

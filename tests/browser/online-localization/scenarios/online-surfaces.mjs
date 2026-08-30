@@ -103,7 +103,9 @@ async function installFixtures(page, localeId) {
     attached: false,
     door: 'chip',
     named: false,
-    runes: ['fate'],
+    runes: ['fate', 'ward'],
+    equippedRune: 'fate',
+    standingPoints: 1400,
     SESSION: session(),
     GUEST_ID,
   });
@@ -112,7 +114,7 @@ async function installFixtures(page, localeId) {
 async function inspectAccount(suite, page, label) {
   const surface = await assertPanel(suite, page, `profile-${label}`, [
     '#accGroup', '#btnLadder', '#btnLadder span', '.fact span',
-    '#accRunesTitle', '#accRuneCount', '.accrune',
+    '#accSeat', '#accRunesTitle', '#accRuneCount', '.accrune',
     '#accClaim b', '#accClaim p', '#onNick', '#btnClaim',
     '#accGuest b', '#accGuest p', '#btnKeepAcc', '#btnHaveAcc',
     '#accRecentTitle',

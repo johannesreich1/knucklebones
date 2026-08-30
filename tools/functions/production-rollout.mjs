@@ -11,7 +11,7 @@
 // closed.
 //
 // Three plans exist and they never mix:
-//   rune-trial          the ranked PvP set, gated on the Rune Trial migration
+//   ranked-runes        the ranked PvP set, gated on both ranked-rune migrations
 //   identity-hardening  the account identity set, gated on the Apple/Game
 //                       Center credential lifecycle those functions call
 //   game-center         gc-auth alone, gated on the Game Center identity
@@ -21,7 +21,7 @@
 // its own slug order, and its own readback omissions, so the opt-in for one can
 // never deploy another:
 //
-//   mise exec -- npm run functions:production:rune-trial
+//   mise exec -- npm run functions:production:ranked-runes
 //   mise exec -- npm run functions:production:identity
 //   mise exec -- npm run functions:production:game-center
 //
@@ -43,6 +43,7 @@ import { SUPABASE_PROJECT_REF } from '../../src/config.ts';
 import { createCliRunner, readJson } from '../database/cli-runner.mjs';
 import {
   auditAppleGameCenter,
+  auditEquippedRanked,
   auditRuneTrial,
 } from '../database/production-rollout.mjs';
 import { productionRead } from '../debug/production-read.mjs';
@@ -83,20 +84,22 @@ export const IDENTITY_ROLLOUT_SLUGS = Object.freeze([
 export const GAME_CENTER_ROLLOUT_SELECTOR = 'game-center';
 export const GAME_CENTER_ROLLOUT_SLUGS = Object.freeze(['gc-auth']);
 export const FUNCTION_CLI_VERSION = '2.115.0';
-export const FUNCTION_DEPLOY_OPT_IN = 'KB_ALLOW_PRODUCTION_RUNE_FUNCTIONS';
+export const FUNCTION_DEPLOY_OPT_IN = 'KB_ALLOW_PRODUCTION_RANKED_RUNE_FUNCTIONS';
 export const IDENTITY_FUNCTION_DEPLOY_OPT_IN = 'KB_ALLOW_PRODUCTION_IDENTITY_FUNCTIONS';
 export const GAME_CENTER_FUNCTION_DEPLOY_OPT_IN = 'KB_ALLOW_PRODUCTION_GAME_CENTER_FUNCTIONS';
 export const PRODUCTION_PROJECT_REF = 'euzjcejbkxvqfrttgaxu';
 export const RUNE_TRIAL_MIGRATION_VERSION = '20260825205241';
 export const RUNE_TRIAL_MIGRATION_NAME = 'rune_trial_ranked_v2';
+export const RANKED_RUNES_MIGRATION_VERSION = '20260830155543';
+export const RANKED_RUNES_MIGRATION_NAME = 'equipped_runes_ranked';
 export const SUPABASE_READBACK_OMISSION_HASHES = Object.freeze({
-  '*:core/ranked-action-types.ts': 'b2876e639391167cda7cfd070955adcca63f2be5798cdff0f1576ae27aea198c',
+  '*:core/ranked-action-types.ts': 'add8dc5a605e30a7ad0be9a30655863c960acf25769f1a57412b15e329c99420',
   // Re-pinned 2026-08-29 for SpellSpec.drawsFromSupply — the flag ranked reads
   // to decide whether it may paint a cast at tap time. Still two interfaces
   // and no runtime export, so Supabase keeps pruning it from the readback.
   '*:core/spell-types.ts': 'e0e61775ffd9f33e163ff13c16602a3ab397fbaeba6c5caa302a956ab879f367',
-  // Re-pinned 2026-08-27 for the p{1,2}_auto_streak columns on MatchRow.
-  'account-delete:_shared/types.ts': '81737b8348ca994d83f7a99f7b81902cdf33816d89ae5f126092301fda1ea833',
+  // Re-pinned 2026-08-30 for nullable equipped-rune snapshots on MatchRow.
+  'account-delete:_shared/types.ts': 'aff87e0c31d8e66606763525936eea845b66a2b837bf27fc1cd670b5fbe69d86',
 });
 // Every identity closure file carries runtime code (tools/fnfiles.mjs prints
 // them), so Supabase prunes nothing on readback and an absent path is drift.
@@ -166,6 +169,12 @@ select count(*) = 1 and bool_and(name = $2::text) as migration_history
   from supabase_migrations.schema_migrations
  where version = $1::text;
 `;
+export const RANKED_RUNES_PRODUCTION_PREREQUISITE = String.raw`
+-- ranked-runes forward-migration identity
+select count(*) = 1 and bool_and(name = $2::text) as migration_history
+  from supabase_migrations.schema_migrations
+ where version = $1::text;
+`;
 // identity-status, apple-token-register and apple-revocation-retry call
 // apple_revocation_ready, store_apple_revocation_credential,
 // claim_apple_revocations and finish_apple_revocation, and read
@@ -231,6 +240,37 @@ export async function assertRuneTrialProductionPrerequisite(
 }
 
 /**
+ * The durable database gate for every ranked Edge Function closure. The
+ * equipped-rune audit composes the complete Rune Trial foundation with the
+ * exact widened constraints, function bodies, ACLs, and bot-seat invariants;
+ * pinning the forward migration history additionally proves that state arrived
+ * through the reviewed migration rather than an ad-hoc catalog edit.
+ */
+export async function assertRankedRunesProductionPrerequisite(
+  readProduction = productionRead,
+) {
+  if (typeof readProduction !== 'function') {
+    fail('Ranked-runes production prerequisite reader must be a function.');
+  }
+  const historyRows = await readProduction(RANKED_RUNES_PRODUCTION_PREREQUISITE, [
+    RANKED_RUNES_MIGRATION_VERSION,
+    RANKED_RUNES_MIGRATION_NAME,
+  ]);
+  if (!Array.isArray(historyRows) || historyRows.length !== 1
+      || !isObject(historyRows[0])
+      || Object.keys(historyRows[0]).length !== 1
+      || historyRows[0].migration_history !== true) {
+    fail(`Production migration must be exactly ${RANKED_RUNES_MIGRATION_VERSION}/${RANKED_RUNES_MIGRATION_NAME}.`);
+  }
+
+  const { evidence, schemaStage, data } = await auditEquippedRanked(readProduction);
+  if (schemaStage !== 1) {
+    fail('Production ranked-runes schema prerequisite must be fully applied at stage 1.');
+  }
+  return Object.freeze({ migrationHistory: true, schemaStage, evidence, data });
+}
+
+/**
  * The Apple/Game Center surface's durable prerequisite. Unlike the Rune Trial
  * plan there is no single migration version to pin: it arrives in four
  * migrations, so the reviewed catalog state — tables, owners, RLS, grants,
@@ -278,19 +318,20 @@ export async function assertGameCenterProductionPrerequisite(
 }
 
 export const FUNCTION_ROLLOUT_PLANS = Object.freeze({
-  'rune-trial': Object.freeze({
-    selector: 'rune-trial',
+  'ranked-runes': Object.freeze({
+    selector: 'ranked-runes',
     optIn: FUNCTION_DEPLOY_OPT_IN,
-    projectId: 'knucklebones-rune-trial-function-rollout',
+    projectId: 'knucklebones-ranked-runes-function-rollout',
     slugs: FUNCTION_ROLLOUT_SLUGS,
     readbackOmissions: SUPABASE_READBACK_OMISSION_HASHES,
     controlFiles: Object.freeze([
       ...SHARED_CONTROL_FILES,
       'supabase/migrations/20260825205241_rune_trial_ranked_v2.sql',
+      'supabase/migrations/20260830155543_equipped_runes_ranked.sql',
     ]),
-    prerequisite: assertRuneTrialProductionPrerequisite,
+    prerequisite: assertRankedRunesProductionPrerequisite,
     notes: Object.freeze([
-      `Set ${FUNCTION_DEPLOY_OPT_IN}=1 and pass --apply only after the Rune Trial migration is verified.`,
+      `Set ${FUNCTION_DEPLOY_OPT_IN}=1 and pass --apply only after the ranked-runes database migration is verified.`,
     ]),
   }),
   'identity-hardening': Object.freeze({
@@ -333,7 +374,7 @@ export const FUNCTION_ROLLOUT_PLANS = Object.freeze({
 });
 // The default for programmatic callers only. The CLI below refuses to run
 // without an explicit selector, so no operator ever deploys a plan by omission.
-export const DEFAULT_FUNCTION_ROLLOUT = 'rune-trial';
+export const DEFAULT_FUNCTION_ROLLOUT = 'ranked-runes';
 
 // One slug belongs to exactly one plan, so every per-slug rule below reads its
 // plan rather than taking a selector it could be handed wrongly. Building the

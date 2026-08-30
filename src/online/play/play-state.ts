@@ -1,5 +1,9 @@
 import type { JoinResult } from '../api/match-api.ts';
-import { RUNE_TRIAL_FORMAT } from '../../core/ranked-outcomes.ts';
+import {
+  RUNE_TRIAL_FORMAT,
+  STANDARD_FORMAT,
+  usesRankedActionProtocol,
+} from '../../core/ranked-outcomes.ts';
 import { defaultOnlineNames } from './play-copy.ts';
 import type { OnlineState } from './play-types.ts';
 import type { S } from '../../state.ts';
@@ -7,8 +11,12 @@ import type { S } from '../../state.ts';
 export function supportsRankedClientRules(
   match: Extract<JoinResult, { status: 'matched' }>['match'],
 ): boolean {
-  return match.format !== RUNE_TRIAL_FORMAT
-    || (match.protocol_version === 2 && match.rune_rules_version === 1);
+  const format = match.format ?? STANDARD_FORMAT;
+  if (format !== STANDARD_FORMAT && format !== RUNE_TRIAL_FORMAT) return false;
+  if (match.rune_rules_version !== null && match.rune_rules_version !== undefined
+      && match.rune_rules_version !== 1) return false;
+  if (format === RUNE_TRIAL_FORMAT) return usesRankedActionProtocol(match);
+  return match.rune_rules_version == null || usesRankedActionProtocol(match);
 }
 
 /** Construct the mutable client projection for one authoritative match run. */
@@ -18,8 +26,9 @@ export function createOnlineState(
   restoreMode: typeof S.mode,
 ): OnlineState {
   if (!supportsRankedClientRules(result.match)) {
-    throw new Error('Unsupported Rune Trial protocol or rules version.');
+    throw new Error('Unsupported ranked action protocol or rules version.');
   }
+  const actionProtocol = usesRankedActionProtocol(result.match);
   return {
     matchId: result.match.id,
     you: result.you,
@@ -30,11 +39,11 @@ export function createOnlineState(
     applied: 0,
     actionApplied: 0,
     actionVersion: result.match.action_version ?? 0,
-    trial: result.match.format === RUNE_TRIAL_FORMAT,
-    trialRunes: result.match.format === RUNE_TRIAL_FORMAT
-      && result.match.p2_rune && result.match.p1_rune
-      ? [result.match.p2_rune, result.match.p1_rune]
+    actionProtocol,
+    rankedRunes: actionProtocol
+      ? [result.match.p2_rune ?? null, result.match.p1_rune ?? null]
       : null,
+    trial: result.match.format === RUNE_TRIAL_FORMAT,
     gen: generation,
     channel: null,
     tick: null,
@@ -48,10 +57,10 @@ export function createOnlineState(
     resigning: false,
     /* A BOT'S OPENING IS OWED A TURN, LIKE ANY OTHER BOT REPLY. The server bakes
        it into the match before this client ever reads the board — as an action
-       batch in a Trial, as the opening move in ordinary ranked — so the first
-       read finds it already there and cannot tell it from history. The join
-       response says a bot moved inside THAT request, which is the same claim a
-       mid-game command response makes, and it is spent the same way.
+       batch under either action format, or as a move in legacy standard play —
+       so the first read finds it already there and cannot tell it from history.
+       The join response says a bot moved inside THAT request, which is the same
+       claim a mid-game command response makes, and it is spent the same way.
        Only the response that committed it carries either field: a rejoin has
        neither, so reconnecting into a long match still paints silently. */
     botBeatDue: !!result.bot_actions?.length || !!result.bot_move,

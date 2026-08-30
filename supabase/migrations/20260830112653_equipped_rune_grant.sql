@@ -1,0 +1,19 @@
+-- THE SEAT WAS UNWRITABLE. The equipped_rune migration added the column, the
+-- composite key that makes "equip a rune you do not own" unrepresentable, and a
+-- closing note that no RPC was needed because "profiles_update_own already lets
+-- a player update their own row". That is true of ROW security and says nothing
+-- about COLUMN privilege: `authenticated` held UPDATE on `nickname` and
+-- `avatar` only, each granted by the migration that introduced it (0006, 0019).
+-- `equipped_rune` never got its grant, so every equip was refused by Postgres
+-- before RLS was ever consulted.
+--
+-- It failed in the quietest possible way. online/runes/rune-equip.ts treats an
+-- error as "the previous seat stands" and returns it, so the profile simply
+-- went on showing an empty socket with no message — measured in production on
+-- 2026-08-30: one human account, four collected runes, equipped_rune NULL.
+--
+-- Granting the column is the whole fix, and it is safe for the reason the
+-- original migration already gave: profiles_equipped_rune_owned references
+-- player_runes(player_id, rune_id), so the strongest forged request still
+-- cannot name a rune the account does not hold. The database remains the check.
+grant update (equipped_rune) on public.profiles to authenticated;;

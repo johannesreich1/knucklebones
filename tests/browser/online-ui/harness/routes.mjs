@@ -132,8 +132,8 @@ export async function installOnlineRoutes(
                    body: JSON.stringify({ error_code: 'invalid_credentials', message: 'Invalid login credentials' }) });
   });
   /* stateful, like the live table: the claim PATCH flips named_at (migration
-     0026's trigger stamps it server-side), and every later GET tells the
-     claimed truth — nickname included */
+     `20260820190459_0026_one_name_forever.sql` stamps it server-side), and
+     every later GET tells the claimed truth — nickname included */
   let claimed = named;
   await page.route('**/rest/v1/profiles*', async (r) => {
     if (r.request().method() === 'PATCH') {
@@ -142,7 +142,7 @@ export async function installOnlineRoutes(
     }
     /* THREE different reads hit this one table, and they are told apart by the
        columns they ask for. "Not the tier read" stopped meaning "the account
-       profile read" when the equipped rune arrived (20260828210000): a third
+       profile read" when `20260828192801_equipped_rune.sql` arrived: a third
        query appeared, and answering it as the account profile both miscounted
        the account reads and handed the client a row with no equipped_rune in
        it — so nothing could see whether the seat worked. Name all three. */

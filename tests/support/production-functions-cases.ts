@@ -4,6 +4,8 @@ import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  EQUIPPED_RANKED_BOT_DATA,
+  EQUIPPED_RANKED_SCHEMA,
   RUNE_TRIAL_FUNCTIONS,
   RUNE_TRIAL_JOB,
   RUNE_TRIAL_SCHEMA,
@@ -12,6 +14,9 @@ import { uploadPayload } from '../../tools/fnfiles.mjs';
 import {
   FUNCTION_CLI_VERSION,
   FUNCTION_ROLLOUT_SLUGS,
+  RANKED_RUNES_MIGRATION_NAME,
+  RANKED_RUNES_MIGRATION_VERSION,
+  RANKED_RUNES_PRODUCTION_PREREQUISITE,
   RUNE_TRIAL_MIGRATION_NAME,
   RUNE_TRIAL_MIGRATION_VERSION,
   RUNE_TRIAL_PREREQUISITE_FIELDS,
@@ -81,6 +86,8 @@ export function readyProductionRead(
     schema?: Record<string, unknown>;
     functions?: Record<string, unknown>;
     job?: Record<string, unknown>;
+    equipped?: Record<string, unknown>;
+    bots?: Record<string, unknown>;
   } = {},
 ) {
   const schema = {
@@ -96,7 +103,30 @@ export function readyProductionRead(
     ...overrides.functions,
   };
   const job = { cron_job: true, cron_job_contract: true, ...overrides.job };
+  const equipped = {
+    queue_capability_constraint: true,
+    match_constraints: true,
+    function_contracts: true,
+    function_bodies: true,
+    service_grants: true,
+    helper_lockdown: true,
+    ...overrides.equipped,
+  };
+  const bots = {
+    bot_count: 200,
+    bots_with_runes: 155,
+    bots_equipped: 155,
+    bots_with_runes_without_seat: 0,
+    bots_without_runes_with_seat: 0,
+    bot_seat_not_owned: 0,
+    ...overrides.bots,
+  };
   return async (query: string, parameters: unknown[] = []) => {
+    if (query === RANKED_RUNES_PRODUCTION_PREREQUISITE) {
+      events?.push('prerequisite:ranked-history');
+      assert.deepEqual(parameters, [RANKED_RUNES_MIGRATION_VERSION, RANKED_RUNES_MIGRATION_NAME]);
+      return [{ migration_history: overrides.history ?? true }];
+    }
     if (query === RUNE_TRIAL_PRODUCTION_PREREQUISITE) {
       events?.push('prerequisite:history');
       assert.deepEqual(parameters, [RUNE_TRIAL_MIGRATION_VERSION, RUNE_TRIAL_MIGRATION_NAME]);
@@ -114,6 +144,14 @@ export function readyProductionRead(
     if (query === RUNE_TRIAL_JOB) {
       events?.push('prerequisite:cron');
       return [job];
+    }
+    if (query === EQUIPPED_RANKED_SCHEMA) {
+      events?.push('prerequisite:equipped-schema');
+      return [equipped];
+    }
+    if (query === EQUIPPED_RANKED_BOT_DATA) {
+      events?.push('prerequisite:bot-data');
+      return [bots];
     }
     return assert.fail('unexpected production prerequisite query');
   };
