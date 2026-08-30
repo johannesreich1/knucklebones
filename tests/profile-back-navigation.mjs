@@ -215,6 +215,41 @@ try {
     out.result.germanQuiet = await page.$eval('#btnEndQuiet', (button) => button.textContent?.trim());
     check(out.result.germanQuiet === 'Menü',
           'the German ranked-result Home action is ambiguous or mistranslated', out.result);
+    /* THE RANK IS A DOOR, BUT IT MUST NOT LOOK LIKE A DIFFERENT BADGE. The
+       player's pill alone has role=button; growing its real padding made the
+       SILBER badge taller and wider than the opponent's otherwise-identical
+       group treatment. Read the painted border boxes and resolved padding,
+       then sweep the invisible 44px tap band that must remain around the
+       compact artwork. elementFromPoint sees a pseudo-element as its owner,
+       so this proves the extra hit area belongs to the rank door rather than
+       the enclosing ladder door. */
+    out.result.rankPills = await page.evaluate(() => {
+      const mine = document.querySelector('#endPlates > *:first-child .gpill');
+      const theirs = document.querySelector('#endPlates > *:last-child .gpill');
+      if (!(mine instanceof HTMLElement) || !(theirs instanceof HTMLElement)) return null;
+      const read = (pill) => {
+        const box = pill.getBoundingClientRect();
+        const style = getComputedStyle(pill);
+        return {
+          text: pill.textContent?.trim() ?? '',
+          width: +box.width.toFixed(2),
+          height: +box.height.toFixed(2),
+          padding: [style.paddingTop, style.paddingRight, style.paddingBottom, style.paddingLeft],
+        };
+      };
+      const box = mine.getBoundingClientRect();
+      const x = box.left + box.width / 2;
+      const ownsTapBand = [-21, 21].every((offset) =>
+        document.elementFromPoint(x, box.top + box.height / 2 + offset)?.closest('.gpill') === mine);
+      return { mine: read(mine), theirs: read(theirs), ownsTapBand };
+    });
+    const rankPills = out.result.rankPills;
+    check(!!rankPills
+          && Math.abs(rankPills.mine.height - rankPills.theirs.height) <= .5
+          && String(rankPills.mine.padding) === String(rankPills.theirs.padding),
+          'THE OWN RANK PILL IS PAINTED LARGER THAN THE OPPONENT PILL', rankPills);
+    check(rankPills?.ownsTapBand,
+          'the compact own rank pill lost its 44px tap target', rankPills);
     await chooseLocale('en');
     await page.waitForFunction(() => document.documentElement.lang === 'en'
       && document.getElementById('btnEndQuiet')?.textContent?.trim() === 'Home');
@@ -230,7 +265,8 @@ try {
             && pill.tabIndex === 0 && !pill.hidden),
           'the rank pill on the own plate is not a control, so it has no door', null);
 
-    await page.click(`${ownPlate} .gpill`);
+    await page.focus(`${ownPlate} .gpill`);
+    await page.keyboard.press('Enter');
     await page.waitForFunction(() => document.querySelector('#onAccount')?.hidden === false);
     await page.waitForTimeout(400);
     out.profileFromRank = await room();

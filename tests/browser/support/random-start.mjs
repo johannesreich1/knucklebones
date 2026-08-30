@@ -5,9 +5,8 @@
 // goes back to chance — a previous duel's timer is exactly that thief, and a
 // Playwright click's round trip is all the room it needs.
 //
-// Both seeds below are verified under the permanent 40/60 mode weights AND the
-// temporary Rune Ritual test share (core/rune-trial-test-share.ts), because a
-// seed that lands on the wrong side of that split silently changes what the
+// Both seeds below are verified under the permanent 40/60 mode weights. A seed
+// that lands on the wrong side of the Ritual split silently changes what the
 // caller is measuring rather than failing.
 
 /** Lands on an ORDINARY mode. The Ritual answers RANDOM with a private choice

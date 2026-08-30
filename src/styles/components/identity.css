@@ -91,11 +91,15 @@
 :where(#kbroot) .pplate.lg .meta2 .gpill{order:0}
 /* THE PILL THAT IS ALSO A DOOR. On the result screen the row opens the ladder
    and the rank pill opens the profile, so the pill needs to read as pressable
-   without becoming a second chevron competing with the row's. It gets the hand,
-   a real focus ring, and a little room around the text so a thumb can find it —
-   and only when it actually carries a tap, so the home chip's inert pill is
-   untouched. */
-:where(#kbroot) .gpill[role="button"]{cursor:pointer;padding:5px 9px;margin:-5px -9px}
+   without becoming a second chevron competing with the row's. Its painted
+   badge stays identical to the opponent's; a transparent pseudo-element grows
+   only the hit area to the shared 44px floor. Widening the real padding made
+   the player's SILVER pill visibly larger than the opponent's (user report).
+   Only the pill that actually carries a tap gets this target, so the home
+   chip's inert pill is untouched. */
+:where(#kbroot) .gpill[role="button"]{position:relative;cursor:pointer}
+:where(#kbroot) .gpill[role="button"]::before{content:"";position:absolute;left:50%;top:50%;
+  width:max(100%,44px);height:44px;transform:translate(-50%,-50%)}
 :where(#kbroot) .gpill[role="button"]:focus-visible{outline:2px solid var(--p1);outline-offset:2px}
 @media (hover:hover){:where(#kbroot) .gpill[role="button"]:hover{filter:brightness(1.25)}}
 /* the group pill: ONE look for a player's group + rank wherever they appear —

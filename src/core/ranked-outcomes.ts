@@ -13,7 +13,6 @@ import { randStream, unitDraw } from './dice.ts';
 import { GROUPS } from './ladder.ts';
 import { MODES } from './modes.ts';
 import { CLASSIC, type Mode } from './rules.ts';
-import { runeTrialTestWeights } from './rune-trial-test-share.ts';
 
 export const STANDARD_FORMAT = 'standard' as const;
 export const RUNE_TRIAL_FORMAT = 'rune_trial' as const;
@@ -205,9 +204,8 @@ function gcd(a: number, b: number): number {
    If Rune Trial is filtered from an IVORY pairing by an older client, the
    same rule naturally produces the BONE 4:1 distribution.
 
-   These are the odds the game SHIPS with: a temporary Trial test share biases
-   the DRAW below and never this pool, so the bot bench measures the real
-   ladder. */
+   The draw below reads these weights directly, so matchmaking, offline RANDOM,
+   and the bot bench all use this one production distribution. */
 export function rankedOutcomePool(
   participants: readonly RankedParticipantAccess[],
 ): readonly WeightedRankedOutcome[] {
@@ -256,12 +254,10 @@ export function pickRankedOutcomeWithRandom(
   random: () => number,
 ): Readonly<RankedOutcomeSpec> {
   const pool = rankedOutcomePool(participants);
-  // TEMPORARY: a held Trial share biases the draw, never the shipped pool.
-  const weights = runeTrialTestWeights(pool, RUNE_TRIAL_FORMAT);
-  const total = weights.reduce((sum, weight) => sum + weight, 0);
+  const total = pool.reduce((sum, { weight }) => sum + weight, 0);
   let target = unitDraw(random, 'Ranked outcome') * total;
-  for (const [index, entry] of pool.entries()) {
-    target -= weights[index];
+  for (const entry of pool) {
+    target -= entry.weight;
     if (target < 0) return entry.outcome;
   }
   throw new Error('Ranked outcome draw did not resolve.');

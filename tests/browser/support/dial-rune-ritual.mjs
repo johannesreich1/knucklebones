@@ -31,7 +31,7 @@ export async function verifyRitualLanding(page, out, check) {
   await page.waitForTimeout(700);          // clear tap()'s global native-click guard
   /* Local multiplayer is the one setup always offered a Ritual, so this is
      where the seed can reach it. Why the prime and the press are one task, and
-     why the seed survives both mode-weight regimes, is random-start.mjs. */
+     why this fixed seed remains pinned to the Ritual, is random-start.mjs. */
   await page.evaluate(primeRandomStart, SEED_LANDS_ON_RITUAL);
   await page.waitForSelector('#ovWheel.landed', { timeout: 20000 });
   out.ritualDraw = await page.evaluate(() =>

@@ -33,7 +33,6 @@ import {
   seededRuneTrialAutoPick,
   seededRuneTrialOffer,
 } from '../src/core/rune-trial-offer.ts';
-import { RUNE_TRIAL_TEST_SHARE } from '../src/core/rune-trial-test-share.ts';
 import { emitReport } from './support/emit-report.mjs';
 
 const problems: string[] = [];
@@ -164,24 +163,26 @@ for (const tier of ['stone', 'bone', 'ivory'] as const) {
     `${tier} additions do not share the remaining 60%`, pool);
 }
 
-/* ---- the temporary Rune Trial test share ------------------------------- */
+/* ---- the permanent 40/60 draw ------------------------------------------ */
 
-/* It biases the DRAW and leaves the shipped pool above untouched, so the pool
-   assertions never move and tests/botbench.test.ts keeps calibrating the bots
-   against the real ladder. Deleting core/rune-trial-test-share.ts puts every
-   line below back on the permanent answer without an edit here.
-   IVORY's draw runs the registry order, so Rune Trial is last and owns the top
-   of [0, 1): its boundary IS its share. */
-check(RUNE_TRIAL_TEST_SHARE === null || RUNE_TRIAL_TEST_SHARE === 0.6,
-  'the temporary Rune Trial test share changed without its gate', RUNE_TRIAL_TEST_SHARE);
+/* The player-visible draw must read the permanent pool above without an
+   experimental override. Checking only rankedOutcomePool() missed the live
+   60% Rune Trial bias because that override was applied one layer later. */
 const ivory = [access('ivory')];
-const trialBoundary = 1 - (RUNE_TRIAL_TEST_SHARE ?? 3 / 35);
 eq([
-  pickRankedOutcomeWithRandom(ivory, () => trialBoundary).id,
-  pickRankedOutcomeWithRandom(ivory, () => trialBoundary - 1e-9).id,
+  pickRankedOutcomeWithRandom(ivory, () => 0.399999999).id,
+  pickRankedOutcomeWithRandom(ivory, () => 14 / 35).id,
+  pickRankedOutcomeWithRandom(ivory, () => 17 / 35).id,
+  pickRankedOutcomeWithRandom(ivory, () => 20 / 35).id,
+  pickRankedOutcomeWithRandom(ivory, () => 23 / 35).id,
+  pickRankedOutcomeWithRandom(ivory, () => 26 / 35).id,
+  pickRankedOutcomeWithRandom(ivory, () => 29 / 35).id,
+  pickRankedOutcomeWithRandom(ivory, () => 32 / 35).id,
   pickRankedOutcomeWithRandom(ivory, () => 0.999999999).id,
-], ['rune_trial', 'bounty', 'rune_trial'],
-  'the Rune Trial draw does not take exactly its share of IVORY');
+], [
+  'classic', 'singlestrike', 'colshield', 'limited', 'rowswitch',
+  'rowmult', 'bounty', 'rune_trial', 'rune_trial',
+], 'the IVORY draw is not Classic 40% plus seven equal 3/35 additions');
 eq(summarizedPool([access('bone')]).map(([id]) => id).includes(RUNE_TRIAL_FORMAT), false,
   'BONE gained a Trial to bias');
 
@@ -219,13 +220,10 @@ eq([
   pickRankedOutcomeWithRandom(stone, () => 0.999999999).id,
 ], ['classic', 'classic', 'singlestrike', 'colshield', 'limited', 'limited'],
   'STONE weighted boundaries drifted');
-/* BONE carries no Trial, so this pin is the override-independent one: it fails
-   only if the seeded draw itself drifts. IVORY's answer is a function of the
-   weights, and moves with the temporary share by design. */
+/* Seeded picks pin the deterministic stream as well as the permanent weights. */
 eq(pickRankedOutcome('ranked-pick-gate', [access('bone')]).id, 'classic',
   'seeded outcome pick drifted');
-eq(pickRankedOutcome('ranked-pick-gate', [access('ivory')]).id,
-  RUNE_TRIAL_TEST_SHARE === null ? 'classic' : 'rowmult',
+eq(pickRankedOutcome('ranked-pick-gate', [access('ivory')]).id, 'classic',
   'seeded IVORY pick drifted from its pool weights');
 throws(() => pickRankedOutcome('', stone), 'empty outcome seed was accepted');
 throws(() => pickRankedOutcomeWithRandom(stone, () => 1), 'random draw 1 was accepted');
