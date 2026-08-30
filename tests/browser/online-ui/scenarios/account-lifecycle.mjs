@@ -181,4 +181,44 @@ export async function runAccountLifecycleScenarios(suite) {
   out.afterSignOut = back.seen;
   check(back.seen.panel === 'auth', 'a signed-out player was re-minted as a guest', back.seen);
   check(back.signupCalls === 0, 'a guest was minted for a device that had a real account', back.signupCalls);
+
+  /* 4 · ...AND THERE IS STILL A WAY BACK IN. Refusing to mint a guest over a
+     returning player is right; leaving them with no other door is the trap it
+     became. `attached` is written once and never cleared inside the app
+     (session.ts clears it only in deleteAccount, which needs the session the
+     player no longer has), so a player who signs out of a provider that cannot
+     currently sign them back in met the same sheet on every ranked tap, for
+     good. Reported 2026-08-30: "I logged out of my apple account and it's
+     impossible for me to play an anonymous game with a fresh account."
+     The door is offered ONLY here — a device that never held an account still
+     gets its silent guest, and must not be asked a question about losing one. */
+  const stranded = await visit({
+    attached: true,
+    probe: (page) => page.evaluate(() => {
+      const door = document.getElementById('btnAuthGuest');
+      const box = door?.getBoundingClientRect();
+      return {
+        offered: !!door && !door.hidden && !!box && box.height > 0,
+        label: (door?.textContent ?? '').trim(),
+      };
+    }),
+  });
+  out.strandedDoor = stranded.probeResult;
+  check(!!stranded.probeResult?.offered,
+    'A DEVICE THAT SIGNED OUT HAS NO WAY BACK INTO RANKED — the guest path is '
+    + 'off for it and the sheet offers only a sign-in it cannot complete',
+    stranded.probeResult);
+  check(!!stranded.probeResult?.label,
+    'the way back in is unlabelled', stranded.probeResult);
+
+  const newcomer = await visit({
+    probe: (page) => page.evaluate(() => {
+      const door = document.getElementById('btnAuthGuest');
+      return { offered: !!door && !door.hidden };
+    }),
+  });
+  out.newcomerDoor = newcomer.probeResult;
+  check(newcomer.probeResult?.offered === false,
+    'a device that never held an account was offered a way to abandon one',
+    newcomer.probeResult);
 }

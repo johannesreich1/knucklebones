@@ -24,6 +24,9 @@ interface FakeAuthOptions {
   signError?: { code?: string } | null;
   linkError?: { code?: string } | null;
   appleAlreadyLinked?: boolean;
+  /* The session on this device belongs to a guest, so signing in REPLACES a run
+     that has rating, runes and history in it. */
+  guest?: boolean;
 }
 
 function fakeAppleAuth(options: FakeAuthOptions = {}) {
@@ -38,7 +41,10 @@ function fakeAppleAuth(options: FakeAuthOptions = {}) {
       getUser: async () => {
         calls.getUser++;
         return {
-          data: { user: { identities: options.appleAlreadyLinked ? [{ provider: 'apple' }] : [] } },
+          data: { user: {
+            is_anonymous: !!options.guest,
+            identities: options.appleAlreadyLinked ? [{ provider: 'apple' }] : [],
+          } },
           error: null,
         };
       },
@@ -62,10 +68,15 @@ function applePorts(
   // How the deletion-credential registration answers: stored, refused, or a
   // rejected promise. A refusal is a real outcome, not an absent one.
   registration: boolean | 'throws' = true,
+  /* Answered YES by default, so every case written before this port existed
+     behaves exactly as it did. The cases that care pass their own answer. */
+  confirmGuest: boolean = true,
 ) {
   const registered: string[] = [];
+  const asked: number[] = [];
   return {
     registered,
+    asked,
     ports: {
       getPlatform: () => platform,
       getPlugin: () => plugin,
@@ -83,6 +94,10 @@ function applePorts(
         if (registration === 'throws') throw new Error('registration transport failed');
         return registration;
       },
+      confirmGuestReplacement: async () => {
+        asked.push(1);
+        return confirmGuest;
+      },
     },
   };
 }
@@ -97,6 +112,8 @@ const iosPlugin: AppleSignInBridge = {
   signIn: async (options) => {
     iosOptions.push(options);
     return { idToken: 'ios-token', authorizationCode: 'single-use-code' };
+
+
   },
 };
 const iosAuth = fakeAppleAuth();
@@ -229,5 +246,35 @@ check(!/from\s+['"]@(?:capacitor|capawesome)\//.test(identitySource),
 check(!/result\.(?:user|email|givenName|familyName|realUserStatus)\b/.test(identitySource)
   && !/decodeJwt/.test(identitySource),
 'client-decoded Apple claims are being trusted');
+
+/* ---- A GUEST IS ASKED BEFORE THEY ARE REPLACED ----
+   `restore` signs in with the token outright, which swaps the session rather
+   than merging it — so a player who has been playing as a guest loses that run
+   the moment the token is accepted, including when the Apple identity already
+   belongs to another account of theirs. Requested 2026-08-30 as a modal to
+   confirm; the module asks through a port so it keeps no DOM. */
+{
+  const guestAuth = fakeAppleAuth({ guest: true });
+  const declined = applePorts('ios', iosPlugin, guestAuth.auth, ['n1'], true, false);
+  const cancelled = await createAppleIdentity(declined.ports).restore();
+  check(cancelled === null && declined.asked.length === 1
+    && guestAuth.calls.signIn.length === 0,
+  'a guest declining the warning was signed in anyway, losing the run they kept');
+
+  const guestAuth2 = fakeAppleAuth({ guest: true });
+  const accepted = applePorts('ios', iosPlugin, guestAuth2.auth, ['n2'], true, true);
+  await createAppleIdentity(accepted.ports).restore();
+  check(accepted.asked.length === 1 && guestAuth2.calls.signIn.length === 1,
+    'a guest who accepted the warning was not signed in');
+
+  /* A REAL ACCOUNT IS NOT QUESTIONED. There is nothing to lose signing back
+     into the account you already are, and a question there would read as a
+     threat to the very progress it is protecting. */
+  const memberAuth = fakeAppleAuth();
+  const member = applePorts('ios', iosPlugin, memberAuth.auth, ['n3']);
+  await createAppleIdentity(member.ports).restore();
+  check(member.asked.length === 0 && memberAuth.calls.signIn.length === 1,
+    'a returning account was warned about losing a guest run it does not have');
+}
 
 emitReport({ iosOptions, problems }, problems.length);

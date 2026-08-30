@@ -3,11 +3,14 @@ import { $, byId } from '../../ui/dom.ts';
 import { Sfx } from '../../ui/audio.ts';
 import { showSheet, type Sheet } from '../../ui/sheet.ts';
 import { refreshLegalUi } from '../../ui/legal.ts';
+import { ask } from '../../ui/askcard.ts';
 import { availableTaps } from '../identity/identity.ts';
 import {
   acknowledgeCurrentAccount,
   attachEmail,
   currentUser,
+  forgetDeviceAccount,
+  hadRealAccount,
   requireGameCenterAssertion,
   signIn,
 } from '../identity/session.ts';
@@ -223,6 +226,38 @@ export function showAuth(
       await spec.after(ports, origin);
     });
     acts.appendChild(button);
+  }
+  /* THE GUEST DOOR, offered only where it is the answer: this device has held a
+     real account (so the silent guest path is off) and holds no session now.
+     A player who can still sign in never sees it; a player who cannot would
+     otherwise have no way back into ranked at all. The question is asked before
+     anything changes, and what it promises is exactly what happens — the old
+     account is untouched on the server and signing in returns to it. */
+  const guest = $('#btnAuthGuest') as HTMLButtonElement;
+  const strandedDevice = mode === 'restore' && sessionless && hadRealAccount();
+  guest.hidden = !strandedDevice;
+  if (strandedDevice) {
+    guest.setAttribute('data-i18n', 'online:auth.guestAction');
+    guest.textContent = t('online', 'auth.guestAction');
+    guest.onclick = async () => {
+      Sfx.tap();
+      const revision = viewRevision;
+      const yes = await ask({
+        head: () => t('online', 'auth.guestTitle'),
+        body: () => t('online', 'auth.guestBody'),
+        confirm: () => t('online', 'auth.guestConfirm'),
+        cancel: () => t('common', 'actions.cancel'),
+        /* An invitation, not a demolition: nothing of the old account is lost,
+           so the yes carries the weight rather than the way out. */
+        loud: true,
+        restoreFocus: guest,
+      });
+      if (!yes || revision !== authViewRevision) return;
+      forgetDeviceAccount();
+      sessionless = false;
+      closeAuthSheet(false);
+      await ports.entered();
+    };
   }
   const swap = $('#btnAuthSwap') as HTMLButtonElement;
   swap.hidden = !spec.swap;

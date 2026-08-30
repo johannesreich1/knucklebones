@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { t } from '../../i18n/index.ts';
 import { callFunction, supa } from '../api/client.ts';
+import { ask } from '../../ui/askcard.ts';
 import { onlineMessage } from '../message-copy.ts';
 import { randomUuid } from '../api/random-id.ts';
 import type { OneTap } from './identity-provider.ts';
@@ -52,6 +53,16 @@ export interface AppleIdentityPorts {
      authorization code is the ONLY moment that credential can be obtained —
      so a refusal here is the player's business, never a swallowed detail. */
   registerAuthorizationCode(code: string): Promise<boolean>;
+  /* ASKED BEFORE A GUEST IS REPLACED, and only then. Signing in with Apple
+     REPLACES the session rather than merging it, so a player who has been
+     playing as a guest loses that run's rating, runes and history the moment
+     the token is accepted — including when the Apple identity already belongs
+     to another account of theirs, which is the case that prompted this
+     (requested 2026-08-30, as a modal to confirm).
+     A port rather than a call, so this module keeps no DOM and its owner test
+     goes on building it headlessly. Resolving false abandons the sign-in with
+     nothing changed. */
+  confirmGuestReplacement(): Promise<boolean>;
 }
 
 type AppleCredential = { token: string; rawNonce: string; authorizationCode?: string };
@@ -134,7 +145,18 @@ export function createAppleIdentity(ports: AppleIdentityPorts): AppleIdentity {
     const proof = { provider: 'apple' as const, token: credential.token, nonce: credential.rawNonce };
     try {
       let error: { code?: string } | null = null;
-      if (mode === 'restore') ({ error } = await auth.signInWithIdToken(proof));
+      if (mode === 'restore') {
+        /* A GUEST HAS SOMETHING TO LOSE HERE. `restore` signs in with the token
+           outright, which swaps the session — so ask first, and only when there
+           is a guest run standing. A signed-out device answers no user and is
+           never questioned; neither is a real account signing back in. */
+        const { data: who } = await auth.getUser();
+        if (who.user?.is_anonymous && !(await ports.confirmGuestReplacement())) {
+          /* Cancelled is not an error: the sheet stays as it was. */
+          return null;
+        }
+        ({ error } = await auth.signInWithIdToken(proof));
+      }
       else {
         const { data, error: sessionError } = await auth.getSession();
         if (sessionError) return APPLE_IDENTITY_MESSAGES.failed;
@@ -185,4 +207,14 @@ export const APPLE = createAppleIdentity({
   randomId: randomUuid,
   digest: sha256Hex,
   registerAuthorizationCode: registerAppleAuthorizationCode,
+  /* The one place this module meets the DOM, and it meets it through the app's
+     own question card rather than a confirm() the styling never reaches. */
+  confirmGuestReplacement: () => ask({
+    head: () => t('online', 'auth.replaceGuestTitle'),
+    body: () => t('online', 'auth.replaceGuestBody'),
+    confirm: () => t('online', 'auth.replaceGuestConfirm'),
+    cancel: () => t('common', 'actions.cancel'),
+    /* This one really does destroy something, so the way OUT keeps the weight. */
+    danger: true,
+  }),
 });

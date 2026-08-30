@@ -94,6 +94,29 @@ const KNOWN = 'knucklebones.online.attached';
 export const hadRealAccount = (): boolean => {
   try { return !!localStorage.getItem(KNOWN); } catch { return false; }
 };
+
+/**
+ * Let this device be a newcomer again.
+ *
+ * The flag above turns the silent guest path off for good, which is right while
+ * signing back in is possible and a TRAP when it is not: a player who signs out
+ * of Apple has no working way back (the provider switches are still open), the
+ * sign-in sheet offers no guest door, and ranked answers every tap with the
+ * same sheet. Reported from a device 2026-08-30: "I logged out of my apple
+ * account and it's impossible for me to play an anonymous game with a fresh
+ * account."
+ *
+ * Deliberately NOT called by signOut: leaving after one tap is the case the
+ * flag exists for. This is the escape hatch behind an explicit question, and it
+ * destroys nothing — the old account keeps its rating, its runes and its
+ * history on the server, and signing back in returns to it.
+ */
+export function forgetDeviceAccount(): void {
+  try {
+    localStorage.removeItem(KNOWN);
+    localStorage.removeItem(MANUAL_AUTH);
+  } catch { /* forgetful host */ }
+}
 function remember(u: Me | null): Me | null {
   try {
     if (u) localStorage.removeItem(MANUAL_AUTH);

@@ -42,6 +42,10 @@ const OVERLAY = `
     <div class="err" id="onAuthErr"></div>
     <div class="acts" id="onAuthActs"></div>
     <button type="button" class="btn ghost" id="btnAuthSwap" hidden></button>
+    <!-- THE WAY BACK IN. Shown only to a device that has held an account and
+         has no session now: without it, signing out of a provider that cannot
+         currently sign you back in leaves ranked unreachable for good. -->
+    <button type="button" class="btn ghost" id="btnAuthGuest" hidden></button>
     <div class="tiny" id="onAuthTiny"></div>
     ${LEGAL_AUTH_NAV_MARKUP}
   </div>

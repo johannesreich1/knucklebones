@@ -445,6 +445,18 @@ observable at all today (its single charge is already gone by cast time, so the
 second spend finds no card to fly): said plainly in the test rather than left as
 a green tick implying a guard that is not there.
 
+**A test block inserted after a `return` is green forever.** Adding a case by
+splicing text into a file can land it inside the nearest function rather than at
+top level — after that function's `return`, where it is unreachable. It compiles,
+the suite passes, the report looks normal, and the case has never run. Measured
+2026-08-30: a guest-replacement case landed inside a stub's `signIn` body and
+reported green with the guard under test both ON and OFF.
+The tell is cheap: a case that never runs leaves no trace in the report's own
+output (the stub's recorded calls did not grow). So when a new case passes on the
+FIRST run, disable the code it guards and watch it fail before believing it —
+and if it passes both ways, suspect placement before logic, then read the lines
+around it rather than the diff you thought you wrote.
+
 ## Change verification
 
 Run the narrow owner suite while iterating. Before handoff or deployment,
