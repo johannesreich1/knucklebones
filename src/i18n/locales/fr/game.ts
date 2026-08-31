@@ -204,7 +204,7 @@ export const frGame = {
     runeTrial: {
       name: 'RITUEL DES RUNES',
       compact: 'RITUEL',
-      blurb: 'Choisissez secrètement une rune parmi trois.',
+      blurb: 'Choisissez secrètement une rune parmi trois. Gagnez le duel avec elle pour la collecter. Utilisez les runes collectées en parties classées dès la ligue ARGENT.',
       detail: 'Les deux joueurs voient les mêmes trois runes et chacun en choisit une en secret. Les deux choix sont révélés simultanément ; le duel suit ensuite les règles du plateau Classique.',
     },
   },

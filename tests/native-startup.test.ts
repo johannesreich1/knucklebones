@@ -82,7 +82,10 @@ const helperSource = readFileSync('src/boot/native-splash.ts', 'utf8');
 const releaseAt = mainSource.indexOf('releaseNativeSplashAfter(() =>');
 const statsAt = mainSource.indexOf('loadStats()', releaseAt);
 const localeAt = mainSource.indexOf('setLanguageOverride(S.localeOverride)', statsAt);
-const markupAt = mainSource.indexOf("insertAdjacentHTML('afterbegin', MARKUP)", localeAt);
+const markupAt = mainSource.indexOf(
+  "insertAdjacentHTML('afterbegin', PORTRAIT_GATE_MARKUP + MARKUP)",
+  localeAt,
+);
 const localeRootAt = mainSource.indexOf("bindLocaleRoot(root, 'document')", markupAt);
 const languageChangesAt = mainSource.indexOf('bindSystemLanguageChanges()', localeRootAt);
 const bootAt = mainSource.indexOf('boot(false)', languageChangesAt);

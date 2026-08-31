@@ -109,6 +109,7 @@ async function hungAckProbe(page, routes) {
   const recovered = {
     ...await page.evaluate(() => ({
       title: document.querySelector('.rune-reward-sheet__title')?.textContent?.trim(),
+      action: document.querySelector('.rune-reward-sheet__continue')?.textContent?.trim(),
     })),
     // the searching panel is the entry's wait; the join is what must not start
     joins: routes.joinCalls(),
@@ -240,7 +241,7 @@ async function profileExitProbe(page) {
 }
 
 export async function runRuneRewardRaceScenarios({ visit, out, check }) {
-  const resume = await visit({ named: true, runes: ['fate'], skipStandardProbes: true,
+  const resume = await visit({ named: true, runes: ['ward', 'fate'], skipStandardProbes: true,
     probe: resumeCardProbe });
   out.runeRewardImmediateOpen = resume.probeResult;
   check(resume.probeResult?.acknowledgementsWhileCovered === 0
@@ -252,7 +253,7 @@ export async function runRuneRewardRaceScenarios({ visit, out, check }) {
     'opening the reward card during a resume refresh left the durable row unseen',
     resume.probeResult);
 
-  const inFlight = await visit({ named: true, runes: ['fate'], skipStandardProbes: true,
+  const inFlight = await visit({ named: true, runes: ['ward', 'fate'], skipStandardProbes: true,
     probe: inFlightAckProbe });
   out.runeRewardInFlightAck = inFlight.probeResult;
   check(inFlight.probeResult?.pending?.searching && !inFlight.probeResult.pending.loading
@@ -263,14 +264,16 @@ export async function runRuneRewardRaceScenarios({ visit, out, check }) {
       && inFlight.probeResult.settled?.queueVisible,
     'Next Duel raced an in-flight reward ACK and re-presented it', inFlight.probeResult);
 
-  const hung = await visit({ named: true, runes: ['fate'], skipStandardProbes: true,
+  const hung = await visit({ named: true, runes: ['ward', 'fate'], skipStandardProbes: true,
     probe: hungAckProbe });
   out.runeRewardHungAck = hung.probeResult;
   check(hung.probeResult?.recovered?.title === 'FATE'
-      && hung.probeResult.recovered.joins === 0 && hung.probeResult.acknowledgements === 2,
+      && hung.probeResult.recovered.action === 'Continue'
+      && hung.probeResult.recovered.joins === 0
+      && hung.probeResult.acknowledgements === 2,
     'a hung reward ACK froze navigation or lost durable recovery', hung.probeResult);
 
-  const retry = await visit({ named: true, runes: ['fate'], skipStandardProbes: true,
+  const retry = await visit({ named: true, runes: ['ward', 'fate'], skipStandardProbes: true,
     probe: failedAckRetryProbe });
   out.runeRewardFailedAckRetry = retry.probeResult;
   check(retry.probeResult?.readsBeforeReturn === retry.probeResult.readsWhileFirstHeld
@@ -287,7 +290,7 @@ export async function runRuneRewardRaceScenarios({ visit, out, check }) {
       && empty.probeResult.acknowledgements === 0 && empty.probeResult.runeReads >= 2,
     'an older unseen entry read overrode a newer verified-empty Profile read', empty.probeResult);
 
-  const switched = await visit({ named: true, runes: ['fate'], skipStandardProbes: true,
+  const switched = await visit({ named: true, runes: ['ward', 'fate'], skipStandardProbes: true,
     probe: accountSwitchAfterRuneProbe });
   out.runeRewardAccountSwitch = switched.probeResult;
   check(switched.probeResult?.switched && !switched.probeResult.accountVisible

@@ -132,6 +132,7 @@ are never translated.
 | computer player | AI | IA | IA | KI | IA | IA |
 | ranked match | ranked match | partida ranqueada | partida clasificatoria | Ranglistenspiel | partie classée | partita classificata |
 | ladder | ladder | ranking | clasificación | Rangliste | classement | classifica |
+| league | league | liga | liga | Liga | ligue | lega |
 | rune | rune | runa | runa | Rune | rune | runa |
 | game mode | game mode | modo de jogo | modo de juego | Spielmodus | mode de jeu | modalità di gioco |
 | draw (result) | draw | empate | empate | Unentschieden | égalité | pareggio |

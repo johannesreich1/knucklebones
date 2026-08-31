@@ -204,7 +204,7 @@ export const ptGame = {
     runeTrial: {
       name: 'RITUAL DAS RUNAS',
       compact: 'RITUAL',
-      blurb: 'Escolha uma de três runas em segredo.',
+      blurb: 'Escolha uma de três runas em segredo. Vença o duelo com ela para coletá-la. Use runas coletadas no ranqueado a partir da liga PRATA.',
       detail: 'Ambos os jogadores veem as mesmas três runas e cada um escolhe uma em segredo. As duas escolhas são reveladas ao mesmo tempo; depois, o duelo segue as regras do tabuleiro Clássico.',
     },
   },

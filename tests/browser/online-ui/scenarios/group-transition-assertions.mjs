@@ -23,6 +23,26 @@ export function assertPromotionTransition({ check, seen, errs, eventId, matchId 
       ].join('. '),
     'the first promotion page lost its dots, page label, or one-way Next action',
     seen?.opened);
+  check(seen?.opened?.kicker?.visible === false
+      && (!seen.opened.kicker.box
+        || (seen.opened.kicker.box.width === 0 && seen.opened.kicker.box.height === 0))
+      && seen.opened.points?.visible === false
+      && (!seen.opened.points.box
+        || (seen.opened.points.box.width === 0 && seen.opened.points.box.height === 0)),
+    'the group page still rendered its NEW GROUP kicker or before/delta/after points row',
+    { kicker: seen?.opened?.kicker, points: seen?.opened?.points });
+  check(seen?.opened?.page?.label === '1 / 4'
+      && seen.opened.page.box && seen.opened.page.headBox
+      && Math.abs(seen.opened.page.box.right - seen.opened.page.headBox.right) <= 1,
+    'the page count moved away from the fixed right edge when the left kicker was absent',
+    seen?.opened?.page);
+  check(seen?.opened?.layout?.deck?.height <= 560
+      && seen.opened.layout.paddingTop <= 10
+      && seen.opened.layout.paddingBottom <= 10
+      && seen.opened.layout.buttonHeights.length === 1
+      && seen.opened.layout.buttonHeights.every((height) => height >= 44),
+    'the group card did not become visibly shorter with tighter vertical padding and a 44px action',
+    seen?.opened?.layout);
   check(seen?.refusedDismissal?.open && seen.refusedDismissal.dots.current === 0
       && seen.acknowledgementsBeforeContinue === 0,
     'Escape or a backdrop tap dismissed/acknowledged the mandatory deck',
@@ -36,6 +56,8 @@ export function assertPromotionTransition({ check, seen, errs, eventId, matchId 
       && seen.rowSwitch.deck.primary.label === COPY.common.actions.next
       && seen.rowSwitch.shape.title === rowSwitchCopy.name
       && seen.rowSwitch.shape.text === rowSwitchCopy.blurb
+      && seen.rowSwitch.deck.kicker.visible
+      && seen.rowSwitch.deck.kicker.label === COPY.online.groupTransition.newMode
       && seen.rowSwitch.deck.announcement === [
         COPY.online.groupTransition.slideLabel
           .replace('{{current}}', '2').replace('{{total}}', '4'),

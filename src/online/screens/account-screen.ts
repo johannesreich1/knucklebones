@@ -20,10 +20,15 @@ import { myProfile } from '../identity/profile.ts';
 import { cacheStanding, readProfileCache } from '../../profile-cache.ts';
 import { historyRow } from './history-screen.ts';
 import {
+  acknowledgeRuneReward,
   refreshRuneCollection,
   runeCollectionMatchesActiveAccount,
   type RuneCollectionRefresh,
 } from '../runes/rune-collection.ts';
+import {
+  firstCollectedRuneReward,
+  type RuneRewardPresentation,
+} from '../runes/rune-reward-presentation.ts';
 import { fillAccountRing } from './account-ring.ts';
 import {
   paintAccountRunes,
@@ -36,18 +41,42 @@ import type { IdentityStatus, Me } from '../identity/session.ts';
 import type { Profile } from '../identity/profile.ts';
 import { paintAccountProviders } from './account-provider-view.ts';
 import { bindAccountScreen } from './account-bindings.ts';
+import {
+  cancelAccountRuneGuide,
+  repaintAccountRuneGuide,
+  startAccountRuneGuide,
+  type AccountRuneGuideRequest,
+} from './account-rune-guide.ts';
 
 interface AccountPorts {
   showAuth(mode: AuthMode, origin: AuthOrigin, notice?: string | null): void;
   showAvatar(): Promise<void>;
   showLadder(): Promise<void>;
   showHistory(): Promise<void>;
-  presentRuneReward(collection: RuneCollectionRefresh, owns: () => boolean): void;
+  presentRuneReward(
+    collection: RuneCollectionRefresh,
+    owns: () => boolean,
+    onContinue?: () => void,
+    actionLabel?: () => string,
+    deferAcknowledgement?: boolean,
+  ): boolean;
+}
+
+export interface AccountShowOptions {
+  readonly runeGuide?: AccountRuneGuideRequest;
+  /** A result-origin guide belongs to the account that owned that result. */
+  readonly expectedAccountId?: string;
+  /** The same first-rune sheet already handed this player to Profile. Keep
+      that durable row unseen and do not deal a duplicate sheet here. */
+  readonly deferredRuneReward?: RuneRewardPresentation;
+  /** Entry already verified this collection; use it only if Profile's own
+      immediately-following refresh is transiently unavailable. */
+  readonly verifiedRuneFallback?: RuneCollectionRefresh;
 }
 
 export interface AccountScreen {
   bind(): void;
-  show(): Promise<RuneCollectionRefresh | null>;
+  show(options?: AccountShowOptions): Promise<RuneCollectionRefresh | null>;
 }
 
 export function createAccountScreen(ports: AccountPorts): AccountScreen {
@@ -142,12 +171,14 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       $('#accPoints').textContent = formatNumber(pendingCachedRating);
       paintGroup(pendingCachedRating);
     }
+    repaintAccountRuneGuide();
     if (nickError) $('#onNickErr').textContent = nickError();
   });
 
-  async function show(): Promise<RuneCollectionRefresh | null> {
+  async function show(options: AccountShowOptions = {}): Promise<RuneCollectionRefresh | null> {
     const run = ++showRevision;
     const ownsRun = (): boolean => run === showRevision && isOnlinePanelCurrent('onAccount');
+    cancelAccountRuneGuide();
     showOnlineLoading('onAccount');
     lastAccount = null;
     pendingCachedRating = null;
@@ -184,7 +215,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     /* Nothing on the profile is useful half-painted. Fetch every independent
        answer together while the shared die holds the view, then reveal one
        coherent card (recent matches included) in a single rendering turn. */
-    const [profile, user, ladder, standing, streak, recent, identity, runeCollection]
+    const [profile, user, ladder, standing, streak, recent, identity, refreshedRunes]
       = await Promise.all([
       myProfile(),
       currentUser(),
@@ -195,12 +226,21 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       identityStatus(),
       refreshRuneCollection(),
     ]);
+    let runeCollection = refreshedRunes;
+    const fallback = options.verifiedRuneFallback;
+    if (!runeCollection.verified && fallback?.verified && fallback.accountId
+        && user?.id.toLowerCase() === fallback.accountId.toLowerCase()
+        && await runeCollectionMatchesActiveAccount(fallback)) {
+      runeCollection = fallback;
+    }
     const collectionAccountId = runeCollection.accountId?.toLowerCase() ?? null;
     if (!ownsRun() || !collectionAccountId
         || user?.id.toLowerCase() !== collectionAccountId
         || (profile && profile.id.toLowerCase() !== collectionAccountId)) return null;
     const ownsCollection = await runeCollectionMatchesActiveAccount(runeCollection);
     if (!ownsCollection || !ownsRun()) return null;
+    if (options.runeGuide && options.expectedAccountId
+        && collectionAccountId !== options.expectedAccountId.toLowerCase()) return null;
     refreshHomeChip();
     $('#accGuest').hidden = !user?.guest;
     ($('#btnSignOut') as HTMLElement).hidden = !!user?.guest;
@@ -237,7 +277,39 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     if (peakPosition.kind === 'ahead') ring.style.setProperty('--pk', String(peakPosition.fill));
     if (peakPosition.kind === 'above') ring.style.setProperty('--pk', '1');
     showOnlinePanel('onAccount');
-    ports.presentRuneReward(runeCollection, ownsRun);
+    const firstUnseenRune = firstCollectedRuneReward(runeCollection);
+    const guidedReward = options.deferredRuneReward ?? firstUnseenRune;
+    const requestedGuide = options.runeGuide ?? (firstUnseenRune ? {
+      complete: () => undefined,
+      cancel: () => undefined,
+    } : undefined);
+    const guideRequest = requestedGuide && guidedReward ? {
+      complete: () => {
+        /* The tutorial is mandatory through the real seat, not merely through
+           the arrival animation. Only this tap consumes the durable reward. */
+        void acknowledgeRuneReward(guidedReward.accountId, guidedReward.rune.id);
+        requestedGuide.complete();
+      },
+      cancel: () => requestedGuide.cancel(),
+    } : requestedGuide;
+    const beginGuide = (): void => {
+      if (!guideRequest || !ownsRun()) return;
+      if (!runeCollection.collected.length) {
+        guideRequest.cancel();
+        return;
+      }
+      startAccountRuneGuide(runeCollection.collected, guideRequest);
+    };
+    const handedOffReward = options.deferredRuneReward
+      && firstUnseenRune?.rune.id === options.deferredRuneReward.rune.id;
+    const rewardShown = handedOffReward ? false : ports.presentRuneReward(
+      runeCollection,
+      ownsRun,
+      beginGuide,
+      firstUnseenRune ? () => t('online', 'profile.equipRune') : undefined,
+      !!firstUnseenRune,
+    );
+    if (!rewardShown) beginGuide();
     return runeCollection;
   }
 

@@ -1,6 +1,7 @@
 // Lazy online composition and navigation. Screen markup/rendering lives with
 // its owner; this module owns only the shared overlay stack and route ports.
 import '../online.css';
+import { t } from '../../i18n/index.ts';
 import { Sfx } from '../../ui/audio.ts';
 import { $, hide, show } from '../../ui/dom.ts';
 import { closeEnd } from '../../ui/endscreen.ts';
@@ -9,7 +10,7 @@ import { isNewcomer } from '../../ui/firstrun.ts';
 import { refreshHomeChip } from '../../ui/homechip.ts';
 import { S } from '../../state.ts';
 import { saveStats } from '../../persist.ts';
-import { createAccountScreen } from './account-screen.ts';
+import { createAccountScreen, type AccountShowOptions } from './account-screen.ts';
 import {
   showAuth,
   setSessionless,
@@ -30,16 +31,14 @@ import {
   type RuneCollectionRefresh,
 } from '../runes/rune-collection.ts';
 import {
-  firstUnseenRuneReward,
-  showRuneRewardSheet,
-  type RuneRewardSheet,
+  firstCollectedRuneReward,
 } from '../runes/rune-reward-presentation.ts';
 import {
   installOnlineShell,
-  isOnlinePanelCurrent,
   showOnlineLoading,
 } from './shell.ts';
 import { setFinishHandler, type FinishReport } from '../play/play.ts';
+import { createEntryRuneRewardPresenter } from './entry-rune-reward.ts';
 
 export type OnlineView = 'play' | 'ladder' | 'account';
 export interface OnlinePorts {
@@ -49,9 +48,10 @@ export interface OnlinePorts {
 let bound = false;
 let pendingView: OnlineView | null = null;
 let entryRevision = 0;
+let accountRouteRevision = 0;
 let exitOnline: () => void = goHome;
 let onlinePorts: OnlinePorts | null = null;
-let activeRuneReward: RuneRewardSheet | null = null;
+const runeReward = createEntryRuneRewardPresenter();
 
 const queue = createQueueScreen({
   goHome,
@@ -76,7 +76,8 @@ const account = createAccountScreen({
 const result = createResultScreen({
   goHome,
   nextDuel,
-  openProfile: (onReturn: () => void) => openFromResult('account', onReturn),
+  openProfile: (onReturn: () => void, options?: AccountShowOptions) =>
+    openFromResult('account', onReturn, options),
   openLadder: (onReturn: () => void) => openFromResult('ladder', onReturn),
 });
 
@@ -87,9 +88,10 @@ function showAuthPanel(mode: AuthMode, origin: AuthOrigin, notice: string | null
        guest-only "keep this account" copy. A play entry may already be
        painting its searching queue; that search ends here, clock included. */
     setSessionless(true);
-    queue.stop();
-    hide('#ovOnline');
-    show('#ovStart');
+    /* Account may itself be a cover over a ranked result. Home-origin auth
+       retires that whole route: leaving the result mounted would expose it to
+       assistive technology after the auth sheet restores its inert snapshot. */
+    goHome();
   }
   showAuth(mode, { entered, showAccount, dismiss: dismissAuth }, origin, notice);
 }
@@ -105,52 +107,51 @@ function focusOnlineTitle(): void {
 }
 
 async function showAccount(): Promise<void> {
-  const showing = account.show();
+  const showing = routeAccount();
   focusOnlineTitle();
   await showing;
 }
 
-function closeRuneReward(): void {
-  const active = activeRuneReward;
-  activeRuneReward = null;
-  active?.close();
-}
-
-function presentRuneReward(
-  collection: RuneCollectionRefresh,
-  owns: () => boolean,
-  onContinue: () => void,
-): boolean {
-  const reward = firstUnseenRuneReward(collection);
-  if (!reward || !owns()) return false;
-  closeRuneReward();
-  let presentation!: RuneRewardSheet;
-  const release = (): void => {
-    if (activeRuneReward === presentation) activeRuneReward = null;
-  };
-  presentation = showRuneRewardSheet(reward, {
-    owns: () => activeRuneReward === presentation && owns(),
-    onContinue: () => { release(); onContinue(); },
-  });
-  activeRuneReward = presentation;
-  return true;
+async function routeAccount(options?: AccountShowOptions): Promise<void> {
+  const routeRevision = ++accountRouteRevision;
+  const navigationRevision = entryRevision;
+  const routeExit = exitOnline;
+  const shown = await account.show(options).catch(() => null);
+  if (shown) return;
+  /* Back may already have used the result-cover closure and replaced the
+     mutable exit slot with Home. A late abandoned Account load must not invoke
+     that newer meaning (or cancel a newer Account route) a second time. */
+  if (routeRevision !== accountRouteRevision || navigationRevision !== entryRevision
+      || routeExit !== exitOnline) return;
+  options?.runeGuide?.cancel();
+  routeExit();
 }
 
 function presentAccountRuneReward(
   collection: RuneCollectionRefresh,
   ownsAccount: () => boolean,
-): void {
+  onContinue: () => void = () => undefined,
+  actionLabel?: () => string,
+  deferAcknowledgement = false,
+): boolean {
   const revision = entryRevision;
   const stillCurrent = (): boolean => revision === entryRevision && ownsAccount();
   // the fully painted profile is already under the sheet
-  void presentRuneReward(collection, stillCurrent, () => undefined);
+  return runeReward.present(
+    collection,
+    stillCurrent,
+    onContinue,
+    actionLabel,
+    deferAcknowledgement,
+  );
 }
 
 function goHome(): void {
   entryRevision++;
-  closeRuneReward();
+  runeReward.close();
   queue.stop();
   closeEnd();
+  $('#ovEnd').inert = false;
   hide('#ovOnline');
   show('#ovStart');
   exitOnline = goHome;
@@ -163,23 +164,29 @@ function goHome(): void {
    LADDER and the rank pill on it opens the PROFILE; both come back HERE.
    Written once with the view as its only parameter — two near-copies of this
    closure is exactly how a return target comes to differ between two doors. */
-function openFromResult(view: OnlineView, onReturn: () => void): void {
+function openFromResult(
+  view: OnlineView,
+  onReturn: () => void,
+  accountOptions?: AccountShowOptions,
+): void {
   entryRevision++;
-  closeRuneReward();
+  runeReward.close();
+  $('#ovEnd').inert = true;
   exitOnline = () => {
     exitOnline = goHome;
     hide('#ovOnline');
+    $('#ovEnd').inert = false;
     replayPlates();
     onReturn();
   };
   show('#ovOnline');
-  void route(view);
+  void route(view, accountOptions);
 }
 
 function nextDuel(): void {
   const revision = ++entryRevision;
   exitOnline = goHome;
-  closeRuneReward();
+  runeReward.close();
   closeEnd();
   showEntryWait('play');
   show('#ovOnline');
@@ -201,12 +208,9 @@ function nextDuel(): void {
   });
 }
 
-async function route(view: OnlineView): Promise<void> {
+async function route(view: OnlineView, accountOptions?: AccountShowOptions): Promise<void> {
   if (view === 'ladder') return ladder.show();
-  if (view === 'account') {
-    await account.show();
-    return;
-  }
+  if (view === 'account') return routeAccount(accountOptions);
   const user = await ensureIdentity();
   if (!user) {
     pendingView = 'play';
@@ -222,28 +226,32 @@ async function routeWithRuneReward(
   revision: number,
 ): Promise<void> {
   /* Account paints one coherent profile first and presents from its own fresh
-     collection response. Queue/reconnect must not begin behind a modal reward,
-     so those destinations wait until Continue closes the reward. */
+     collection response. Entry's verified collection is a fail-closed backup
+     only when that immediate second read is unavailable. */
   if (view === 'account') {
-    const refreshed = await account.show();
-    /* Account normally presents its own freshest collection. If that second
-       refresh failed after entry already verified an unseen row, keep the
-       verified discovery instead of silently throwing it away. */
-    if (revision === entryRevision && !activeRuneReward
-        && refreshed && !refreshed.verified && refreshed.accountId
-        && refreshed.accountId.toLowerCase() === collection.accountId?.toLowerCase()) {
-      presentAccountRuneReward(collection, () => isOnlinePanelCurrent('onAccount'));
-    }
+    await routeAccount({ verifiedRuneFallback: collection });
     return;
   }
   const current = (): boolean => revision === entryRevision
     && $('#ovOnline').classList.contains('on');
+  const firstRune = firstCollectedRuneReward(collection);
+  const firstRuneGuide: AccountShowOptions = {
+    runeGuide: { complete: () => undefined, cancel: () => undefined },
+    ...(firstRune ? { expectedAccountId: firstRune.accountId } : {}),
+    ...(firstRune ? { deferredRuneReward: firstRune } : {}),
+  };
   const resume = (): void => {
     if (revision !== entryRevision) return;
     show('#ovOnline');
-    void route(view);
+    void route(firstRune ? 'account' : view, firstRune ? firstRuneGuide : undefined);
   };
-  if (presentRuneReward(collection, current, resume)) return;
+  if (runeReward.present(
+    collection,
+    current,
+    resume,
+    firstRune ? () => t('online', 'profile.equipRune') : undefined,
+    !!firstRune,
+  )) return;
   await route(view);
 }
 
@@ -282,7 +290,7 @@ function bind(): void {
   $('#btnOnlineBack').addEventListener('click', () => {
     Sfx.tap();
     const subpanel = !$('#onAvatar').hidden || !$('#onHistory').hidden;
-    if (subpanel) void account.show();
+    if (subpanel) void routeAccount();
     else exitOnline();
   });
   account.bind();
@@ -306,7 +314,7 @@ export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<
   onlinePorts = ports;
   bind();
   const revision = ++entryRevision;
-  closeRuneReward();
+  runeReward.close();
   exitOnline = goHome;
   if (view === 'ladder') {
     show('#ovOnline');

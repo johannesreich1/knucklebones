@@ -12,6 +12,8 @@ import {
   equippedRuneSelection,
 } from '../../rune-collection-cache.ts';
 import { showSheet } from '../../ui/sheet.ts';
+import { completeAccountRuneSeatGuide } from './account-rune-guide.ts';
+import { runeSeatPickerMarkup } from './account-rune-seat-markup.ts';
 import type { PlayerRuneRow } from '../runes/rune-collection.ts';
 
 /* THE SEAT IN THE RING'S MOUTH (design 52d, EQ4) — three states and no more.
@@ -282,32 +284,6 @@ export function bindAccountRuneSheets(): void {
  * one grid and one selection implementation without making an ordinary tap
  * silently change what the player carries.
  */
-/* The seat sheet presents the THREE equipment modes, never a second rune
-   roster. EQUIP closes the sheet and promotes the existing profile collection
-   into the picker; RANDOM and NONE are complete answers on this card. */
-function seatPickerBody(selection: EquippedRuneSelection, collectedCount: number): string {
-  const random = selection.kind === 'random';
-  const randomAvailable = collectedCount >= 2;
-  const randomDetail = t('online', randomAvailable
-    ? 'profile.randomRuneModeDetail' : 'profile.randomRuneModeLocked');
-  return `<div class="mchead"><span class="mcname">`
-    + `${esc(t('online', 'profile.seatPick'))}</span></div>`
-    + `<div class="mcdetail">${esc(t('online', 'profile.seatPickDetail'))}</div>`
-    + `<div class="seatmode-actions">`
-    + `<button type="button" class="btn primary" id="accSeatEquip">`
-    + `${esc(t('online', 'profile.equipRune'))}</button>`
-    + `<div class="seatmode-random">`
-    + `<button type="button" class="btn soft${random ? ' on' : ''}" id="accSeatRandom"`
-    + ` data-equipment-kind="random" aria-pressed="${random ? 'true' : 'false'}"`
-    + ` aria-describedby="accSeatRandomDetail"${randomAvailable ? '' : ' disabled aria-disabled="true"'}>`
-    + `${spellIcon(RANDOM_SPELL, 19)}<span>${esc(t('online', 'profile.randomRuneMode'))}</span></button>`
-    + `<span class="seatmode-detail" id="accSeatRandomDetail">${esc(randomDetail)}</span></div>`
-    + (selection.kind !== 'none'
-      ? `<button type="button" class="btn soft small" id="accSeatClear">`
-        + `${esc(t('online', 'profile.unequipThis'))}</button>` : '')
-    + `</div>`;
-}
-
 export function bindEquippedSeat(equipment: RuneEquipmentPort): void {
   tap($('#accSeat'), () => {
     if (equipmentWritePending) return;
@@ -316,9 +292,12 @@ export function bindEquippedSeat(equipment: RuneEquipmentPort): void {
     /* Nothing collected is the one state with no choice to offer. The seat is
        hidden then anyway (paintEquippedSeat), so this is belt and braces. */
     if (!collected.length) return;
+    /* A guided SILVER arrival completes only by using this real door. The
+       guide restores the profile before the canonical equipment sheet opens. */
+    completeAccountRuneSeatGuide();
     const content = document.createElement('div');
     content.className = 'seatmode-content';
-    content.innerHTML = seatPickerBody(equipment.current(), collected.length);
+    content.innerHTML = runeSeatPickerMarkup(equipment.current(), collected.length);
     const sheet = showSheet({
       cls: 'libsheet',
       interactive: true,

@@ -204,7 +204,7 @@ export const itGame = {
     runeTrial: {
       name: 'RITUALE DELLE RUNE',
       compact: 'RITUALE',
-      blurb: 'Scegli in segreto una runa tra tre.',
+      blurb: 'Scegli in segreto una runa tra tre. Vinci il duello con quella runa per ottenerla. Usa le rune raccolte nelle partite classificate dalla lega ARGENTO.',
       detail: 'Entrambi i giocatori vedono le stesse tre rune e ciascuno ne sceglie una in segreto. Le due scelte vengono rivelate contemporaneamente; poi il duello segue le regole del tabellone Classico.',
     },
   },

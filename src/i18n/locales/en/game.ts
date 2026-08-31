@@ -201,7 +201,7 @@ export const enGame = {
     runeTrial: {
       name: 'RUNE RITUAL',
       compact: 'RITUAL',
-      blurb: 'Choose one of three runes in secret.',
+      blurb: 'Secretly choose one of three runes. Win the duel with it to collect it. Use collected runes in ranked matches from the SILVER league.',
       detail: 'Both players see the same three runes and each secretly chooses one. Both choices are revealed together; then the duel uses Classic board rules.',
     },
   },

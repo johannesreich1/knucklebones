@@ -43,6 +43,7 @@ export async function installOnlineRoutes(
   let signupCalls = 0;
   let passwordCalls = 0;
   let profileCalls = 0;
+  let profileAccountId = GUEST_ID;
   let tierProfileCalls = 0;
   let equippedProfileCalls = 0;
   let randomModeProfileCalls = 0;
@@ -63,6 +64,7 @@ export async function installOnlineRoutes(
   const collectedRunes = [...runes];
   const seenRunes = new Set(runes.filter((runeId) => !unseenRunes.includes(runeId)));
   let deferNextRune = false;
+  let failRuneResponseOnCall = null;
   let markRuneRequestStarted;
   let releaseRuneRequest;
   let markRuneRequestFinished;
@@ -213,7 +215,7 @@ export async function installOnlineRoutes(
     }
     profileCalls++;
     const response = r.fulfill({ status: 200, contentType: 'application/json',
-      body: JSON.stringify([{ id: GUEST_ID, nickname: claimed && door === 'claim' ? 'NeonKing77' : 'TestGuest001',
+      body: JSON.stringify([{ id: profileAccountId, nickname: claimed && door === 'claim' ? 'NeonKing77' : 'TestGuest001',
                               rating: 1000, created_at: new Date().toISOString(),
                               named_at: claimed ? '2026-08-01T00:00:00Z' : null }]) });
     if (deferred) void response.then(markAccountProfileFinished);
@@ -229,6 +231,12 @@ export async function installOnlineRoutes(
       deferNextRune = false;
       markRuneRequestStarted();
       await runeRequestRelease;
+    }
+    if (runeCalls === failRuneResponseOnCall) {
+      failRuneResponseOnCall = null;
+      await r.fulfill({ status: 503, contentType: 'application/json', body: '[]' });
+      if (deferred) markRuneRequestFinished();
+      return;
     }
     const body = collectedRunes.map((runeId, index) => ({
       rune_id: runeId,
@@ -299,6 +307,7 @@ export async function installOnlineRoutes(
     signupRequestFinished,
     passwordCalls: () => passwordCalls,
     profileCalls: () => profileCalls,
+    setProfileAccountId: (accountId) => { profileAccountId = accountId; },
     tierProfileCalls: () => tierProfileCalls,
     equippedProfileCalls: () => equippedProfileCalls,
     randomModeProfileCalls: () => randomModeProfileCalls,
@@ -311,6 +320,7 @@ export async function installOnlineRoutes(
     runeCalls: () => runeCalls,
     acknowledgeCalls: () => acknowledgeCalls,
     deferNextRuneResponse: () => { deferNextRune = true; },
+    failRuneResponseOnCall: (call) => { failRuneResponseOnCall = call; },
     runeRequestStarted,
     releaseRuneResponse: () => releaseRuneRequest(),
     runeRequestFinished,

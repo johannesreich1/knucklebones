@@ -6,6 +6,8 @@ export const deCommon = {
     name: 'KNUCKLEBONES',
     edition: 'Neon-Edition',
     tagline: 'Ranglisten-Würfelduelle',
+    portraitOnly: 'NUR HOCHFORMAT',
+    rotatePortrait: 'Drehe dein Gerät ins Hochformat, um weiterzuspielen.',
   },
   actions: {
     back: 'Zurück',

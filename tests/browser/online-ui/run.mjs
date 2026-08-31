@@ -36,6 +36,9 @@ import {
 } from './scenarios/account-game-center-blocked.mjs';
 import { runAccountErrorSheetScenarios } from './scenarios/account-error-sheet.mjs';
 import { runProfileRuneSheetScenarios } from './scenarios/profile-rune-sheet.mjs';
+import {
+  runFirstRuneProfileRecoveryScenario,
+} from './scenarios/first-rune-profile-recovery.mjs';
 import { runRuneTrialUiScenarios } from './scenarios/rune-trial-ui.mjs';
 import { runRuneTrialRailScenarios } from './scenarios/rune-trial-rail.mjs';
 import { runRuneRewardRaceScenarios } from './scenarios/rune-reward-races.mjs';
@@ -53,6 +56,12 @@ import { runGroupTransitionScenarios } from './scenarios/group-transition.mjs';
 import {
   runGroupTransitionDemotionScenarios,
 } from './scenarios/group-transition-demotion.mjs';
+import {
+  runGroupTransitionResponsiveScenarios,
+} from './scenarios/group-transition-responsive.mjs';
+import {
+  runGroupTransitionAccountRaceScenarios,
+} from './scenarios/group-transition-account-race.mjs';
 import { emitReport } from '../../support/emit-report.mjs';
 
 const { webkit, chromium } = pkg;
@@ -74,6 +83,7 @@ const SCENARIOS = Object.freeze([
   { id: 'account-game-center-blocked', run: runAccountGameCenterBlockedScenarios },
   { id: 'account-error-sheet', run: runAccountErrorSheetScenarios },
   { id: 'profile-rune-sheet', run: runProfileRuneSheetScenarios },
+  { id: 'first-rune-profile-recovery', run: runFirstRuneProfileRecoveryScenario },
   { id: 'rune-trial', run: runRuneTrialUiScenarios },
   { id: 'rune-trial-rail', run: runRuneTrialRailScenarios },
   { id: 'away-forfeit', run: runAwayForfeitScenarios },
@@ -88,6 +98,8 @@ const SCENARIOS = Object.freeze([
   { id: 'bot-opening-beat', run: runBotOpeningBeatScenarios },
   { id: 'group-transition', run: runGroupTransitionScenarios },
   { id: 'group-transition-demotion', run: runGroupTransitionDemotionScenarios },
+  { id: 'group-transition-responsive', run: runGroupTransitionResponsiveScenarios },
+  { id: 'group-transition-account-race', run: runGroupTransitionAccountRaceScenarios },
   // Deliberately outside the no-argument gate run: the reward-race probes are
   // a focused investigation surface, reached only through an explicit --only.
   { id: 'rune-reward-races', run: runRuneRewardRaceScenarios, manual: true },

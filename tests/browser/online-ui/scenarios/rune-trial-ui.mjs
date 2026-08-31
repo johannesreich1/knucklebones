@@ -1,4 +1,5 @@
 import {
+  firstRuneFaceoffOcclusionProbe,
   resultRewardFaceoffOcclusionProbe,
   resultRewardProfileOcclusionProbe,
   runNextDuelRewardScenario,
@@ -155,6 +156,8 @@ async function resultRewardRecoveryProbe(page, routes) {
   const recoveredContinue = await page.evaluate(() => ({
     accountVisible: document.getElementById('onAccount')?.hidden === false,
     rewardSheetOpen: !!document.querySelector('.rune-reward-sheet'),
+    guideOpen: !!document.getElementById('accRuneGuide'),
+    equipmentSheet: !!document.querySelector('.faceoff #accSeatEquip'),
   }));
   return {
     pending,
@@ -190,20 +193,35 @@ async function entryRewardProbe(page, routes) {
   });
   const joinCallsBeforeClick = routes.joinCalls();
   const acknowledgementsBeforeClick = routes.acknowledgeCalls();
-  const joined = page.waitForRequest((request) => request.url().includes('/functions/v1/pvp-join'));
   await page.click('.rune-reward-sheet__continue');
+  await page.waitForSelector('#onAccount:not([hidden]) #accRuneGuide', { timeout: 15000 });
+  await page.waitForFunction(() => document.activeElement?.id === 'accSeat');
+  const acknowledgementsBeforeSeat = routes.acknowledgeCalls();
+  await page.click('#accSeat');
+  await page.waitForSelector('.faceoff #accSeatEquip', { timeout: 15000 });
   await Promise.race([
     routes.acknowledgeStarted,
     new Promise((_, reject) => setTimeout(() => reject(new Error(
-      'an explicit Continue did not acknowledge its rune reward',
+      'the entry first rune was not acknowledged after its seat opened',
     )), 5000)),
   ]);
-  await joined;
-  return {
+  const completed = {
     beforeClick, joinCallsBeforeClick, acknowledgementsBeforeClick,
-    acknowledgementsAfterClick: routes.acknowledgeCalls(),
-    queueVisible: await page.$eval('#onQueue', (element) => !element.hidden),
+    acknowledgementsBeforeSeat,
+    acknowledgementsAfterSeat: routes.acknowledgeCalls(),
+    joinsAfterSeat: routes.joinCalls(),
+    accountVisible: await page.$eval('#onAccount', (element) => !element.hidden),
+    equipmentSheet: await page.locator('.faceoff #accSeatEquip').count(),
   };
+  /* `door: play` owns a standard queue cleanup after this probe. Return there
+     only after capturing the tutorial's terminal equipment sheet. */
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.faceoff #accSeatEquip', { state: 'detached', timeout: 15000 });
+  await page.click('#btnOnlineBack');
+  await page.waitForSelector('#ovStart.on', { timeout: 15000 });
+  await page.click('#btnOnline');
+  await page.waitForSelector('#onQueue:not([hidden])', { timeout: 15000 });
+  return completed;
 }
 
 /* The profile rune collection grid and its shared detail sheet moved to
@@ -212,7 +230,7 @@ async function entryRewardProbe(page, routes) {
 export async function runRuneTrialUiScenarios({ visit, out, check }) {
   const result = await visit({
     named: true,
-    runes: ['fate'],
+    runes: ['ward', 'fate'],
     skipStandardProbes: true,
     probe: resultRewardRecoveryProbe,
   });
@@ -271,12 +289,14 @@ export async function runRuneTrialUiScenarios({ visit, out, check }) {
         state === 'pending' || state === 'running')
       && result.probeResult.recoveredPresented?.focusedInside
       && result.probeResult.acknowledgementsAfterSheetLanded === 1,
-    'profile recovery did not present the durable reward before acknowledging it',
+    'profile recovery did not present the durable later rune before acknowledging it',
     result.probeResult);
   check(result.probeResult?.recoveredContinue?.accountVisible
       && !result.probeResult.recoveredContinue.rewardSheetOpen
+      && !result.probeResult.recoveredContinue.guideOpen
+      && !result.probeResult.recoveredContinue.equipmentSheet
       && result.probeResult.acknowledgeCalls === 1,
-    'recovered Continue left the profile or acknowledged the reward twice',
+    'recovered later-rune Continue opened the first-rune equipment tutorial',
     result.probeResult);
   check(result.errs.length === 0, 'page errors during the delayed rune reward transition', result.errs);
 
@@ -294,19 +314,22 @@ export async function runRuneTrialUiScenarios({ visit, out, check }) {
       && entryReward.probeResult.beforeClick.loadingHidden
       && entryReward.probeResult.beforeClick.kicker === 'NEW RUNE'
       && entryReward.probeResult.beforeClick.title === 'WARD'
-      && entryReward.probeResult.beforeClick.continueLabel === 'Continue'
+      && entryReward.probeResult.beforeClick.continueLabel === 'Equip rune'
       && entryReward.probeResult.beforeClick.transformY > 0
       && entryReward.probeResult.joinCallsBeforeClick === 0
       && entryReward.probeResult.acknowledgementsBeforeClick === 0
-      && entryReward.probeResult.acknowledgementsAfterClick === 1
-      && entryReward.probeResult.queueVisible,
-    'authenticated entry discarded its unseen reward or Continue failed to acknowledge before queueing',
+      && entryReward.probeResult.acknowledgementsBeforeSeat === 0
+      && entryReward.probeResult.acknowledgementsAfterSeat === 1
+      && entryReward.probeResult.joinsAfterSeat === 0
+      && entryReward.probeResult.accountVisible
+      && entryReward.probeResult.equipmentSheet === 1,
+    'authenticated first-rune recovery skipped the mandatory equipment tutorial',
     entryReward.probeResult);
   check(entryReward.errs.length === 0, 'page errors during authenticated reward recovery', entryReward.errs);
 
   const profileOcclusion = await visit({
     named: true,
-    runes: ['fate'],
+    runes: ['ward', 'fate'],
     skipStandardProbes: true,
     probe: resultRewardProfileOcclusionProbe,
   });
@@ -316,7 +339,10 @@ export async function runRuneTrialUiScenarios({ visit, out, check }) {
       && profileOcclusion.probeResult.whileCovered.resultStillMounted
       && !profileOcclusion.probeResult.whileCovered.rewardOwnsHit
       && profileOcclusion.probeResult.acknowledgementsWhileCovered === 0
-      && profileOcclusion.probeResult.acknowledgementsAfterContinue === 1,
+      && profileOcclusion.probeResult.beforeContinue?.action === 'Continue'
+      && profileOcclusion.probeResult.beforeContinue.acknowledgements === 1
+      && profileOcclusion.probeResult.acknowledgementsAfterContinue === 1
+      && profileOcclusion.probeResult.guidePresent === 0,
     'a result reward was acknowledged underneath Profile instead of recovering on top',
     profileOcclusion.probeResult);
   check(profileOcclusion.errs.length === 0, 'page errors during Profile reward occlusion',
@@ -324,7 +350,7 @@ export async function runRuneTrialUiScenarios({ visit, out, check }) {
 
   const faceoffOcclusion = await visit({
     named: true,
-    runes: ['fate'],
+    runes: ['ward', 'fate'],
     skipStandardProbes: true,
     probe: resultRewardFaceoffOcclusionProbe,
   });
@@ -337,6 +363,26 @@ export async function runRuneTrialUiScenarios({ visit, out, check }) {
     faceoffOcclusion.probeResult);
   check(faceoffOcclusion.errs.length === 0, 'page errors during face-off reward occlusion',
     faceoffOcclusion.errs);
+
+  const firstRuneOcclusion = await visit({
+    named: true,
+    runes: [],
+    skipStandardProbes: true,
+    probe: firstRuneFaceoffOcclusionProbe,
+  });
+  out.firstRuneFaceoffOcclusion = firstRuneOcclusion.probeResult;
+  check(firstRuneOcclusion.probeResult?.whileCovered?.faceoffOpen
+      && !firstRuneOcclusion.probeResult.whileCovered.rewardSheetOpen
+      && firstRuneOcclusion.probeResult.whileCovered.acknowledgements === 0
+      && firstRuneOcclusion.probeResult.resumed?.title === 'FATE'
+      && firstRuneOcclusion.probeResult.resumed.action === 'Equip rune'
+      && firstRuneOcclusion.probeResult.resultInertDuringGuide
+      && firstRuneOcclusion.probeResult.acknowledgementsBeforeSeat === 0
+      && firstRuneOcclusion.probeResult.acknowledgementsAfterSeat === 1,
+    'a covered result discarded the delayed first-rune equipment tutorial',
+    firstRuneOcclusion.probeResult);
+  check(firstRuneOcclusion.errs.length === 0,
+    'page errors during covered first-rune recovery', firstRuneOcclusion.errs);
   await runNextDuelRewardScenario({ visit, out, check });
   await runRuneRewardRaceScenarios({ visit, out, check });
 }

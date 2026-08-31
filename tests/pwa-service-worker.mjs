@@ -44,13 +44,14 @@ const man = await page.evaluate(async () => {
     icons.push({ src: i.src, status: res.status, type: res.headers.get('content-type') });
   }
   return { status: r.status, ctype: r.headers.get('content-type'), name: j.name,
-           display: j.display, start: j.start_url, icons,
+           display: j.display, orientation: j.orientation, start: j.start_url, icons,
            hasMaskable: j.icons.some(i => (i.purpose || '').includes('maskable')),
            has192: j.icons.some(i => i.sizes === '192x192'),
            has512: j.icons.some(i => i.sizes === '512x512') };
 });
 check(man.status === 200, 'manifest not served', man);
 check(man.display === 'standalone', 'manifest display is not standalone', man);
+check(man.orientation === 'portrait', 'manifest does not request portrait orientation', man);
 check(man.has192 && man.has512 && man.hasMaskable, 'manifest icon set incomplete for install', man);
 check(man.icons.every(i => i.status === 200), 'a manifest icon 404s', man.icons);
 const appleIcon = await page.evaluate(async () => {

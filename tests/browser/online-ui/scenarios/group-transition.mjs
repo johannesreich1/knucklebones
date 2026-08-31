@@ -5,149 +5,22 @@
 // backdrop, and a touch-pointer swipe. It deliberately does not call a deck
 // method or mutate its index. The feature-slide shape also pins the owner's
 // simplification: icon, title, text — no second explanatory illustration.
-import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
 import { assertPromotionTransition } from './group-transition-assertions.mjs';
+import {
+  bounded,
+  EVENT_ID,
+  MATCH_ID,
+  PROGRESSION,
+  readDeck,
+  readModeShape,
+  REPORT,
+  swipe,
+} from './group-transition-fixtures.mjs';
 import {
   installProgressionRoutes,
   showTransitionResult,
 } from './group-transition-harness.mjs';
-
-const COPY = RESOURCES.en;
-const PLAYER_ID = '00000000-0000-4000-8000-00000000beef';
-const MATCH_ID = '90000000-0000-4000-8000-000000000001';
-const EVENT_ID = '91000000-0000-4000-8000-000000000001';
-const REPORT = {
-  matchId: MATCH_ID,
-  won: true,
-  draw: false,
-  forfeit: false,
-  my: 48,
-  their: 31,
-  delta: 46,
-  opp: 'NovaComet992',
-  oppAvatar: 'die:3:mg',
-  oppRating: 1072,
-};
-const PROGRESSION = {
-  id: EVENT_ID,
-  player_id: PLAYER_ID,
-  source_match_id: MATCH_ID,
-  points_before: 287,
-  points_after: 333,
-  apex_before: false,
-  apex_after: false,
-  pool_tier_before: 'stone',
-  pool_tier_after: 'bone',
-  equipped_rune_before: null,
-  equipped_rune_after: null,
-  random_rune_mode_before: false,
-  random_rune_mode_after: false,
-  rune_seat_active_before: false,
-  rune_seat_active_after: false,
-  seen_at: null,
-};
-
-const bounded = (promise, message, timeout = 7000) => Promise.race([
-  promise,
-  new Promise((_, reject) => setTimeout(() => reject(new Error(message)), timeout)),
-]);
-
-const readDeck = (page) => page.evaluate(() => {
-  const overlay = document.getElementById('ovGroupTransition');
-  const dialog = overlay?.querySelector('.gt-deck');
-  const body = document.getElementById('gtBody');
-  const dotsRoot = document.getElementById('gtDots');
-  const dots = [...(dotsRoot?.children ?? [])];
-  const visible = (element) => {
-    if (!element) return false;
-    const box = element.getBoundingClientRect();
-    const style = getComputedStyle(element);
-    return box.width > 0 && box.height > 0 && style.display !== 'none'
-      && style.visibility !== 'hidden' && Number(style.opacity) !== 0;
-  };
-  const result = document.getElementById('ovEnd');
-  const resultAction = document.getElementById('btnAgain');
-  const actionBox = resultAction?.getBoundingClientRect();
-  const actionHit = actionBox ? document.elementFromPoint(
-    actionBox.left + actionBox.width / 2,
-    actionBox.top + actionBox.height / 2,
-  ) : null;
-  return {
-    open: !!overlay?.classList.contains('on') && visible(dialog),
-    modal: dialog?.getAttribute('role') === 'dialog'
-      && dialog?.getAttribute('aria-modal') === 'true',
-    focusInside: !!dialog && dialog.contains(document.activeElement),
-    announcement: document.getElementById('gtAnnouncement')?.textContent?.trim() ?? '',
-    closeControls: dialog?.querySelectorAll(
-      '[data-close], [aria-label="Close"], .fograb, button.close',
-    ).length ?? -1,
-    result: {
-      open: !!result?.classList.contains('on'),
-      inert: !!result?.inert,
-      actionHitByTransition: !!actionHit && !!overlay?.contains(actionHit),
-    },
-    dots: {
-      count: dots.length,
-      current: dots.findIndex((dot) => dot.hasAttribute('aria-current')),
-      currentCount: dots.filter((dot) => dot.hasAttribute('aria-current')).length,
-      label: dotsRoot?.getAttribute('aria-label') ?? '',
-    },
-    back: {
-      visible: visible(document.getElementById('gtBack')),
-      label: document.getElementById('gtBack')?.textContent?.trim() ?? '',
-    },
-    primary: {
-      visible: visible(document.getElementById('gtNext')),
-      label: document.getElementById('gtNext')?.textContent?.trim() ?? '',
-    },
-    title: body?.querySelector('h1, h2, h3')?.textContent?.trim() ?? '',
-    paragraph: body?.querySelector('p')?.textContent?.trim() ?? '',
-  };
-});
-
-async function swipe(page, direction) {
-  await page.locator('#gtBody').evaluate(async (body, toward) => {
-    const box = body.getBoundingClientRect();
-    const fromX = toward === 'left' ? box.right - 34 : box.left + 34;
-    const toX = toward === 'left' ? box.left + 34 : box.right - 34;
-    const y = box.top + box.height * 0.55;
-    const fire = (type, x, buttons) => body.dispatchEvent(new PointerEvent(type, {
-      bubbles: true,
-      cancelable: true,
-      pointerId: 47,
-      pointerType: 'touch',
-      isPrimary: true,
-      clientX: x,
-      clientY: y,
-      button: 0,
-      buttons,
-    }));
-    fire('pointerdown', fromX, 1);
-    for (let step = 1; step <= 6; step++) {
-      fire('pointermove', fromX + ((toX - fromX) * step) / 6, 1);
-      await new Promise((resolve) => setTimeout(resolve, 12));
-    }
-    fire('pointerup', toX, 0);
-  }, direction);
-  await page.waitForTimeout(100);
-}
-
-const readModeShape = (page) => page.evaluate(() => {
-  const body = document.getElementById('gtBody');
-  const title = body?.querySelectorAll('h1, h2, h3') ?? [];
-  const paragraphs = body?.querySelectorAll('p') ?? [];
-  return {
-    title: title[0]?.textContent?.trim() ?? '',
-    text: paragraphs[0]?.textContent?.trim() ?? '',
-    titles: title.length,
-    paragraphs: paragraphs.length,
-    svgs: body?.querySelectorAll('svg').length ?? -1,
-    modeIcons: body?.querySelectorAll('svg.mico').length ?? -1,
-    extraMedia: body?.querySelectorAll(
-      'img, picture, canvas, video, .die, [class*="viz"], [class*="diagram"], svg:not(.mico)',
-    ).length ?? -1,
-  };
-});
+import { runGroupTransitionRuneScenarios } from './group-transition-rune-scenarios.mjs';
 
 async function promotionProbe(page) {
   const routes = await installProgressionRoutes(page, PROGRESSION);
@@ -201,7 +74,7 @@ async function promotionProbe(page) {
   const stillMandatory = await page.$eval('#ovGroupTransition', (overlay) =>
     overlay.classList.contains('on'));
 
-  await page.click('#gtNext');
+  await swipe(page, 'left');
   await bounded(routes.acknowledged,
     'Continue did not acknowledge the ranked progression event');
   await page.waitForFunction(() => {
@@ -328,7 +201,7 @@ export async function runGroupTransitionScenarios({ visit, out, check }) {
   const compact = await visit({
     named: true,
     locale: 'de-DE',
-    viewport: { width: 568, height: 320 },
+    viewport: { width: 320, height: 480 },
     skipStandardProbes: true,
     probe: compactLayoutProbe,
   });
@@ -340,11 +213,13 @@ export async function runGroupTransitionScenarios({ visit, out, check }) {
       && c.deckOverflow <= 1 && c.bodyOverflow <= 1
       && c.icon.top >= c.body.top && c.paragraph.bottom <= c.body.bottom
       && c.actions.bottom <= c.deck.bottom
-      && c.landscape
+      && !c.landscape
       && c.buttonHeights.length === 2
       && c.buttonHeights.every((height) => height >= 44),
-    'the German icon/title/text slide clipped or lost its 44px controls in a short landscape viewport',
+    'the German icon/title/text slide clipped or lost its 44px controls in a short portrait viewport',
     c);
   check(compact.errs.length === 0,
     'page errors during compact group transition', compact.errs);
+
+  await runGroupTransitionRuneScenarios({ visit, out, check });
 }

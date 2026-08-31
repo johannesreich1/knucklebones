@@ -217,3 +217,33 @@
    threshold beside it. */
 :where(#kbroot) #onAccount .accseat.waiting{border-color:#464c5c;box-shadow:none}
 :where(#kbroot) #onAccount .accseat.waiting .sico{color:var(--dim);filter:none}
+
+/* SILVER / FIRST-RUNE HANDOFF. The profile itself is the tutorial: every
+   unrelated block becomes inert and recedes, while the real seat grows to a
+   44px target and the instruction sits directly beneath the ring. Tapping it
+   removes this state before the existing equipment sheet opens. */
+:where(#kbroot) #onAccount.rune-guiding > :not(#accRing,#accRuneGuide){opacity:.16;
+  filter:saturate(.35) blur(.35px);transition:opacity .18s ease,filter .18s ease}
+:where(#kbroot) #onAccount .acc-rune-guide{position:relative;z-index:4;display:flex;
+  flex-direction:column;gap:6px;width:100%;padding:12px 14px;border-radius:14px;
+  border:1px solid rgba(177,140,255,.46);background:rgba(177,140,255,.075);
+  box-shadow:0 0 0 1px rgba(177,140,255,.07) inset,0 0 28px rgba(177,140,255,.12);
+  text-align:center}
+:where(#kbroot) #onAccount .acc-rune-guide::before{content:"";position:absolute;
+  left:50%;top:-7px;width:12px;height:12px;transform:translateX(-50%) rotate(45deg);
+  border-left:1px solid rgba(177,140,255,.46);border-top:1px solid rgba(177,140,255,.46);
+  background:rgb(15 15 29)}
+:where(#kbroot) #onAccount .acc-rune-guide-title{color:#cdb7ff;font-size:10px;
+  line-height:1.25;font-weight:950;letter-spacing:.2em;text-transform:uppercase}
+:where(#kbroot) #onAccount .acc-rune-guide-body{margin:0;color:#d5ddf0;font-size:11px;
+  line-height:1.5;letter-spacing:.02em}
+:where(#kbroot) #onAccount .accseat.acc-rune-guide-target{top:calc(50% + 17px);
+  width:44px;height:44px;margin-left:-22px;border-width:2px;border-color:#cdb7ff;
+  box-shadow:0 0 0 5px rgba(177,140,255,.12),0 0 30px rgba(177,140,255,.55),
+    inset 0 0 16px rgba(177,140,255,.18);animation:acc-rune-guide-pulse 1.45s ease-in-out infinite}
+@keyframes acc-rune-guide-pulse{50%{box-shadow:0 0 0 9px rgba(177,140,255,.04),
+  0 0 40px rgba(177,140,255,.72),inset 0 0 18px rgba(177,140,255,.23)}}
+#kbroot.reduce-motion #onAccount .accseat.acc-rune-guide-target{animation:none}
+@media (prefers-reduced-motion:reduce){
+  :where(#kbroot) #onAccount .accseat.acc-rune-guide-target{animation:none}
+}

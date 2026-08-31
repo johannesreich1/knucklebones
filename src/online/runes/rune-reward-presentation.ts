@@ -25,6 +25,10 @@ export interface RuneRewardPresentation {
 export interface RuneRewardSheetPorts {
   owns(): boolean;
   onContinue(): void;
+  actionLabel?(): string;
+  /** First-rune equipment tutorials keep the durable row unseen until the
+      player opens the real equipment seat. Their owner acknowledges later. */
+  acknowledgement?: 'presented' | 'deferred';
 }
 
 export interface RuneRewardSheet {
@@ -47,6 +51,15 @@ export function firstUnseenRuneReward(
     if (rune) return { accountId: collection.accountId, row, rune };
   }
   return null;
+}
+
+/** The collection's earliest rune has never completed its equipment lesson.
+ * Later collected/unseen runes remain ordinary reward cards. */
+export function firstCollectedRuneReward(
+  collection: RuneCollectionRefresh,
+): RuneRewardPresentation | null {
+  const unseen = firstUnseenRuneReward(collection);
+  return unseen && collection.rows[0]?.rune_id === unseen.rune.id ? unseen : null;
 }
 
 function copyFor(reward: RuneRewardPresentation) {
@@ -158,7 +171,10 @@ export function acknowledgeRuneRewardWhenPresented(
   };
 }
 
-function rewardSheetContent(reward: RuneRewardPresentation): {
+function rewardSheetContent(
+  reward: RuneRewardPresentation,
+  actionLabel?: () => string,
+): {
   content: HTMLElement;
   continueButton: HTMLButtonElement;
   repaint: () => void;
@@ -178,7 +194,7 @@ function rewardSheetContent(reward: RuneRewardPresentation): {
       spellIcon(reward.rune.id, 34);
     content.querySelector<HTMLElement>('.rune-reward-sheet__title')!.textContent = copy.title;
     content.querySelector<HTMLElement>('.rune-reward-sheet__body')!.textContent = copy.body;
-    continueButton.textContent = copy.continue;
+    continueButton.textContent = actionLabel?.() ?? copy.continue;
   };
   repaint();
   return { content, continueButton, repaint };
@@ -188,7 +204,7 @@ export function showRuneRewardSheet(
   reward: RuneRewardPresentation,
   ports: RuneRewardSheetPorts,
 ): RuneRewardSheet {
-  const view = rewardSheetContent(reward);
+  const view = rewardSheetContent(reward, ports.actionLabel);
   let settled = false;
   let acknowledgement: RuneRewardAcknowledgement = {
     acknowledge: () => null,
@@ -222,14 +238,19 @@ export function showRuneRewardSheet(
     tint: spellHue(reward.rune.id),
     label: () => `${t('online', 'result.newRune')}: ${spellCopy(reward.rune.id).name}`,
     repaintLocale: view.repaint,
-    onDismiss: dismissed,
+    /* onDismiss runs before the shared sheet restores its inert snapshot.
+       Cancel visibility there, but start the next cover only from onClose,
+       after that restoration, or it can re-enable the result behind Profile. */
+    onDismiss: () => acknowledgement.cancel(),
     onClose: dismissed,
   });
-  acknowledgement = acknowledgeRuneRewardWhenPresented(
-    reward,
-    sheet.card,
-    () => !settled && ports.owns(),
-  );
+  if (ports.acknowledgement !== 'deferred') {
+    acknowledgement = acknowledgeRuneRewardWhenPresented(
+      reward,
+      sheet.card,
+      () => !settled && ports.owns(),
+    );
+  }
   return {
     close(): void {
       if (!settled) settled = true;

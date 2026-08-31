@@ -18,10 +18,11 @@ export type GroupTransitionSlide =
     readonly to: LadderGroupId;
   }
   | { readonly kind: 'outcome'; readonly outcomeId: string }
-  | { readonly kind: 'equipped-rune'; readonly state: 'active' | 'resting' };
+  | { readonly kind: 'rune-seat'; readonly state: 'active' | 'resting' };
 
 const GROUP_IDS = GROUPS.map(({ id }) => id) as readonly LadderGroupId[];
 const POOL_IDS = RANKED_POOL_TIERS.map(({ id }) => id);
+const SILVER_GROUP_INDEX = GROUP_IDS.indexOf('silver');
 
 function indexOf<const Id extends string>(ids: readonly Id[], value: unknown): number {
   return typeof value === 'string' ? ids.indexOf(value as Id) : -1;
@@ -76,13 +77,18 @@ export function groupTransitionSlides(
     return [];
   }
 
-  /* Equipment is reversible, unlike the permanent pool. Only an actual saved
-     seat earns a slide; an impossible live flag on an empty historical seat
-     is ignored rather than turning a valid group crossing into no UI. */
-  if (event.equippedRune && event.runeLiveBefore !== event.runeLiveAfter) {
+  /* SILVER activates the rune seat as a league capability. This is deliberately
+     independent of historical equipment flags: a player with no collected or
+     equipped rune still needs to learn where the first one will go, without
+     the UI inventing a default rune. */
+  const crossedIntoSilver = beforeGroupIndex < SILVER_GROUP_INDEX
+    && afterGroupIndex >= SILVER_GROUP_INDEX;
+  const crossedBelowSilver = beforeGroupIndex >= SILVER_GROUP_INDEX
+    && afterGroupIndex < SILVER_GROUP_INDEX;
+  if (crossedIntoSilver || crossedBelowSilver) {
     slides.push({
-      kind: 'equipped-rune',
-      state: event.runeLiveAfter ? 'active' : 'resting',
+      kind: 'rune-seat',
+      state: crossedIntoSilver ? 'active' : 'resting',
     });
   }
   return slides;

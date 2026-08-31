@@ -49,6 +49,7 @@ const GC_SWIFT = 'native/plugins/gamecenter/ios/Sources/GameCenterPlugin/GameCen
 const ROOT_PKG = 'package.json';
 const CONFIG = 'native/capacitor.config.json';
 const SYNCED_CONFIG = 'native/ios/App/App/capacitor.config.json';
+const INFO_PLIST = 'native/ios/App/App/Info.plist';
 const REQUIRE_SYNCED = process.argv.includes('--require-synced');
 
 const pkg = JSON.parse(readFileSync(PKG, 'utf8'));
@@ -106,6 +107,11 @@ check(/@objc\(GameCenterPlugin\)/.test(gcSwift)
 /* ================= 1. APPLICATION IDENTITY + iOS SHELL ================= */
 
 const { xcodeIds, gcBundle } = verifyIosShellContract(check);
+const infoPlist = readFileSync(INFO_PLIST, 'utf8');
+check(!infoPlist.includes('UIInterfaceOrientationLandscape')
+  && /<key>UIRequiresFullScreen<\/key>\s*<true\s*\/>/.test(infoPlist)
+  && /<key>UISupportedInterfaceOrientations<\/key>\s*<array>\s*<string>UIInterfaceOrientationPortrait<\/string>\s*<\/array>/.test(infoPlist),
+`${INFO_PLIST} must explicitly opt the universal iPad target into portrait-only full screen`);
 
 /* ================= 2. PODS ================= */
 

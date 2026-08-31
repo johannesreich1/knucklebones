@@ -163,8 +163,10 @@ check(JSON.stringify(permissions) === JSON.stringify(['android.permission.INTERN
   `${MANIFEST} requests permissions beyond INTERNET: ${permissions.join(', ')}`);
 check(/android:exported="true"/.test(manifest)
   && /android:launchMode="singleTask"/.test(manifest)
+  && /android:screenOrientation="portrait"/.test(manifest)
+  && /<application[\s\S]*?android:appCategory="game"/.test(manifest)
   && /android:configChanges="[^"]*orientation[^"]*screenSize[^"]*uiMode[^"]*density[^"]*"/.test(manifest),
-`${MANIFEST} must retain standard launcher, resume, rotation, and configuration handling`);
+`${MANIFEST} must retain standard launcher/configuration handling and the Android 16 game portrait exception`);
 const extraction = read(`${RES}/xml/data_extraction_rules.xml`);
 check(/<cloud-backup>[\s\S]*?<exclude domain="root" path="\." \/>[\s\S]*?<\/cloud-backup>/.test(extraction)
   && /<device-transfer>[\s\S]*?<exclude domain="root" path="\." \/>[\s\S]*?<\/device-transfer>/.test(extraction),

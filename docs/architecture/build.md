@@ -109,6 +109,20 @@ Splash Screen bridge hides it on the next task with a 200 ms fade, while the
 native five-second auto-hide remains a crash/error watchdog. The web and widget
 entries do not import a native plugin.
 
+The release shell is portrait-only on iOS and Android. The universal iOS target
+explicitly requests the temporary full-screen compatibility mode so its
+portrait-only declaration remains App Store-valid until the post-release
+resizable/landscape pass; a pointer-independent in-app landscape fallback also
+covers windowed native scenes. Android declares
+the application as a game so its portrait request remains in the documented
+Android 16 large-screen game exception. The hosted manifest requests portrait,
+and the main app shows a localized rotate-device gate in landscape whenever
+the mobile device exposes any coarse pointer — both an ordinary browser and an
+installed PWA, including a touch tablet with a connected mouse. Desktop
+tabs/PWAs (including touch-enabled desktops) and the separately booted widget
+remain usable. The dormant landscape game layout remains source-only until a
+separate post-release review deliberately re-enables it.
+
 ### iOS signing and owner release
 
 The owner confirmed the paid team plus Sign in with Apple and Game Center on

@@ -6,6 +6,8 @@ export const itCommon = {
     name: 'KNUCKLEBONES',
     edition: 'Edizione Neon',
     tagline: 'Duelli di dadi classificati',
+    portraitOnly: 'SOLO VERTICALE',
+    rotatePortrait: 'Ruota il dispositivo in verticale per continuare.',
   },
   actions: {
     back: 'Torna',

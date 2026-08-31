@@ -6,6 +6,8 @@ export const frCommon = {
     name: 'KNUCKLEBONES',
     edition: 'Édition Néon',
     tagline: 'Duels de dés classés',
+    portraitOnly: 'MODE PORTRAIT',
+    rotatePortrait: 'Tournez votre appareil en mode portrait pour continuer.',
   },
   actions: {
     back: 'Retour',

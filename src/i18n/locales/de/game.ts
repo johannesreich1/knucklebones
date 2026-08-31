@@ -204,7 +204,7 @@ export const deGame = {
     runeTrial: {
       name: 'RUNENRITUAL',
       compact: 'RITUAL',
-      blurb: 'Wähle heimlich eine von drei Runen.',
+      blurb: 'Wähle heimlich eine von drei Runen. Gewinnst du das Duell mit ihr, gehört sie dir. Ab der SILBER-Liga kannst du gesammelte Runen in Ranglistenspielen einsetzen.',
       detail: 'Beide Spieler sehen dieselben drei Runen und wählen heimlich je eine aus. Beide gewählten Runen werden gleichzeitig aufgedeckt; danach gelten die Brettregeln des Klassik-Modus.',
     },
   },

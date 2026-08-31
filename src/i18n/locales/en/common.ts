@@ -3,6 +3,8 @@ export const enCommon = {
     name: 'KNUCKLEBONES',
     edition: 'Neon Edition',
     tagline: 'Ranked dice duels',
+    portraitOnly: 'PORTRAIT ONLY',
+    rotatePortrait: 'Rotate your device upright to keep playing.',
   },
   actions: {
     back: 'Back',

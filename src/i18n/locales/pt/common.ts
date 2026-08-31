@@ -6,6 +6,8 @@ export const ptCommon = {
     name: 'KNUCKLEBONES',
     edition: 'Edição Neon',
     tagline: 'Duelos de dados ranqueados',
+    portraitOnly: 'SOMENTE RETRATO',
+    rotatePortrait: 'Gire o dispositivo para a posição vertical para continuar jogando.',
   },
   actions: {
     back: 'Voltar',

@@ -1,4 +1,3 @@
-import { inApex } from '../../core/ladder.ts';
 import { formatNumber, t } from '../../i18n/index.ts';
 import { $, hide } from '../../ui/dom.ts';
 import {
@@ -6,17 +5,6 @@ import {
   showLocalizedEnd,
   type EndSpec,
 } from '../../ui/endscreen.ts';
-import { setPlates } from '../../ui/endscreen-plates.ts';
-import { refreshHomeChip } from '../../ui/homechip.ts';
-import {
-  myLadder,
-  myStanding,
-  playerCard,
-  type PlayerCard,
-} from '../api/ladder-api.ts';
-import { showFaceoff, type MySide } from './faceoff.ts';
-import { myProfile } from '../identity/profile.ts';
-import { cacheStanding, readProfileCache } from '../../profile-cache.ts';
 import {
   acknowledgeRuneReward,
   refreshRuneCollection,
@@ -24,21 +12,28 @@ import {
 } from '../runes/rune-collection.ts';
 import {
   acknowledgeRuneRewardWhenPresented,
+  firstCollectedRuneReward,
   firstUnseenRuneReward,
   runeRewardFeature,
+  showRuneRewardSheet,
   type RuneRewardAcknowledgement,
   type RuneRewardPresentation,
+  type RuneRewardSheet,
 } from '../runes/rune-reward-presentation.ts';
 import type { FinishReport } from '../play/play.ts';
 import { rankedProgressionRecovery } from '../api/ranked-progression-api.ts';
 import { createGroupTransitionScreen } from './group-transition-screen.ts';
+import type { AccountShowOptions } from './account-screen.ts';
+import { createResultPlayers } from './result-players.ts';
 
 interface ResultPorts {
   goHome(): void;
   nextDuel(): void;
-  openProfile(onReturn: () => void): void;
+  openProfile(onReturn: () => void, options?: AccountShowOptions): void;
   openLadder(onReturn: () => void): void;
 }
+
+const TRANSITION_RUNE_DECISION_MS = 1200;
 
 export interface ResultScreen {
   show(report: FinishReport): Promise<void>;
@@ -47,16 +42,19 @@ export interface ResultScreen {
 export function createResultScreen(ports: ResultPorts): ResultScreen {
   let showRevision = 0;
   const groupTransition = createGroupTransitionScreen();
+  let activeRewardSheet: RuneRewardSheet | null = null;
   async function show(report: FinishReport): Promise<void> {
     const revision = ++showRevision;
     groupTransition.cancel();
+    activeRewardSheet?.close();
+    activeRewardSheet = null;
     hide('#ovOnline');
     $('#ovEnd').inert = false;
     let reward: RuneRewardPresentation | null = null;
+    let pendingFirstRune: RuneRewardPresentation | null = null;
     let rewardAcknowledgement: RuneRewardAcknowledgement | null = null;
     let rewardExplicitlyAcknowledged = false;
     let foreground = true;
-    const opponentName = (): string => report.opponentName?.() ?? report.opp;
     const depart = (run: () => void, before?: () => void) => (): void => {
       if (revision !== showRevision) return;
       groupTransition.cancel();
@@ -65,6 +63,9 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
       foreground = false;
       rewardAcknowledgement?.cancel();
       rewardAcknowledgement = null;
+      activeRewardSheet?.close();
+      activeRewardSheet = null;
+      pendingFirstRune = null;
       showRevision++;
       run();
     };
@@ -102,6 +103,14 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
     const resumeReward = (): void => {
       if (revision !== showRevision) return;
       foreground = true;
+      if (pendingFirstRune) {
+        const waiting = pendingFirstRune;
+        pendingFirstRune = null;
+        void resumeFirstRuneReward(waiting).catch(() => {
+          if (revision === showRevision) pendingFirstRune = waiting;
+        });
+        return;
+      }
       const expectedRune = reward?.rune.id;
       if (!expectedRune) return;
       /* Profile may have presented/acknowledged the same durable row while it
@@ -123,63 +132,70 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
       rewardAcknowledgement = null;
       run(resumeReward);
     };
-    let cache = readProfileCache();
-    const cachedRating = typeof cache?.rating === 'number' && report.delta != null
-      ? cache.rating + report.delta : null;
-    let visiblePoints: number | null = cachedRating;
-    let visibleRank: number | null = cache?.rank ?? null;
-    let visibleApex = !!cache?.apex;
-    let visibleFoe: PlayerCard | null = null;
-    let visibleMine: MySide | null = null;
-
-    const plates = () => [
-      {
-        name: cache?.nickname ?? t('common', 'people.you'),
-        avatar: cache?.avatar ?? null,
-        points: visiblePoints,
-        rank: visibleRank,
-        apex: visibleApex,
-        delta: report.delta,
-        won: report.won,
-        lost: !report.won && !report.draw,
-        /* The winner's screen has always stamped the foe. A forfeit is the one
-           ending the loser needs named on their OWN plate too — quitting, or
-           being away too long, is not the same defeat as being out-rolled, and
-           the scoreline alone cannot say which happened. */
-        stamp: !report.won && !report.draw && report.forfeit
-          ? t('online', 'result.forfeitedStamp') : undefined,
-        /* THE ROW IS THE LADDER'S DOOR; THE RANK PILL IS THE PROFILE'S. The
-           standing the row has just reported is a position among other people,
-           so the row leads to where those people are. The pill names the rank
-           itself, which is the player's own record. Both cover the result and
-           return to it. */
-        tap: () => cover(ports.openLadder),
-        rankTap: () => cover(ports.openProfile),
-      },
-      {
-        name: opponentName(),
-        avatar: report.oppAvatar,
-        points: visibleFoe?.points ?? report.oppRating,
-        rank: visibleFoe?.rank ?? null,
-        apex: !!visibleFoe?.apex,
-        theirs: true,
-        won: !report.won && !report.draw,
-        lost: report.won,
-        stamp: report.won ? (report.forfeit
-          ? t('online', 'result.forfeitStamp') : t('online', 'result.beatenStamp')) : undefined,
-        tap: visibleFoe && visibleFoe.points != null && visibleFoe.rank != null ? () => cover((onReturn) => showFaceoff({
-          nickname: opponentName(),
-          points: visibleFoe!.points!,
-          wins: visibleFoe!.wins ?? 0,
-          losses: visibleFoe!.losses ?? 0,
-          games: visibleFoe!.games ?? 0,
-          rank: visibleFoe!.rank!,
-          apex: visibleFoe!.apex,
-          avatar: report.oppAvatar,
-          peak: visibleFoe!.peak ?? 0,
-        }, visibleMine, onReturn)) : undefined,
-      },
-    ];
+    const openRuneGuide = (
+      deferredRuneReward?: RuneRewardPresentation,
+      expectedAccountId: string | undefined = deferredRuneReward?.accountId,
+    ): Promise<boolean> => new Promise((resolve) => {
+      if (revision !== showRevision) {
+        resolve(false);
+        return;
+      }
+      cover((onReturn) => ports.openProfile(() => {
+        onReturn();
+        resolve(false);
+      }, {
+        runeGuide: {
+          complete: () => resolve(true),
+          cancel: () => resolve(false),
+        },
+        ...(expectedAccountId ? { expectedAccountId } : {}),
+        ...(deferredRuneReward ? { deferredRuneReward } : {}),
+      }));
+    });
+    const presentFirstRuneReward = (nextReward: RuneRewardPresentation): void => {
+      if (revision !== showRevision) return;
+      if (!foreground) {
+        pendingFirstRune = nextReward;
+        return;
+      }
+      let presentation!: RuneRewardSheet;
+      const release = (): void => {
+        if (activeRewardSheet === presentation) activeRewardSheet = null;
+      };
+      presentation = showRuneRewardSheet(nextReward, {
+        owns: () => activeRewardSheet === presentation && foreground
+          && revision === showRevision && $('#ovEnd').classList.contains('on'),
+        actionLabel: () => t('online', 'profile.equipRune'),
+        acknowledgement: 'deferred',
+        onContinue: () => {
+          release();
+          void openRuneGuide(nextReward);
+        },
+      });
+      activeRewardSheet = presentation;
+    };
+    const resumeFirstRuneReward = async (
+      expected: RuneRewardPresentation,
+    ): Promise<void> => {
+      const latest = await refreshRuneCollection();
+      if (!foreground || revision !== showRevision
+          || !await runeCollectionMatchesActiveAccount(latest)) {
+        if (revision === showRevision && !foreground) pendingFirstRune = expected;
+        return;
+      }
+      const unseen = firstCollectedRuneReward(latest);
+      if (unseen?.rune.id === expected.rune.id
+          && unseen.row.source_match_id === expected.row.source_match_id
+          && unseen.row.collected_at === expected.row.collected_at) {
+        presentFirstRuneReward(unseen);
+      }
+    };
+    const players = createResultPlayers(report, {
+      current: () => revision === showRevision,
+      cover,
+      openProfile: (onReturn) => ports.openProfile(onReturn),
+      openLadder: ports.openLadder,
+    });
     const endSpec = (): EndSpec => {
       const title = report.draw ? t('game', 'result.deadHeat')
         : report.won ? t('game', 'result.victory') : t('game', 'result.defeat');
@@ -192,14 +208,16 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
         outcome: report.draw ? 'draw' : report.won ? 'win' : 'lose',
         title,
         sub: report.forfeit ? (report.won
-          ? t('online', 'result.opponentForfeited', { opponent: opponentName() })
+          ? t('online', 'result.opponentForfeited', { opponent: players.opponentName() })
           : t('online', 'result.matchForfeited'))
           : report.draw ? t('online', 'result.lastDie')
-          : report.won ? t('online', 'result.outRolledOpponent', { opponent: opponentName() })
-          : t('online', 'result.opponentWins', { opponent: opponentName() }),
+          : report.won ? t('online', 'result.outRolledOpponent', {
+            opponent: players.opponentName(),
+          })
+          : t('online', 'result.opponentWins', { opponent: players.opponentName() }),
         you: { score: report.my, label: '' },
         them: { score: report.their, label: '' },
-        plates: plates(),
+        plates: players.plates(),
         /* The card opens the rune's own entry over this screen — a cover, not
            a departure, so the result is still here when the sheet closes. */
         feature: reward ? runeRewardFeature(reward, acknowledgeRewardForAction) : undefined,
@@ -209,22 +227,38 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
           title,
           mine: formatNumber(report.my),
           theirs: formatNumber(report.their),
-          opponent: opponentName(),
+          opponent: players.opponentName(),
           delta: deltaText,
         }),
       };
     };
     showLocalizedEnd(endSpec);
 
+    /* One verified collection read answers both decisions below: whether a
+       SILVER transition may honestly offer Profile, and whether this result
+       earned the player's first rune. Unknown fails closed to neither. */
+    const collectionLookup = refreshRuneCollection().then(async (collection) => {
+      if (revision !== showRevision) return null;
+      const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
+      return ownsCollection && revision === showRevision ? collection : null;
+    }).catch(() => null);
+    const transitionCollectionLookup = Promise.race([
+      collectionLookup,
+      new Promise<null>((resolve) => {
+        setTimeout(() => resolve(null), TRANSITION_RUNE_DECISION_MS);
+      }),
+    ]);
+
     /* The preload is tri-state: only a successful zero-row read means absent.
        Hold the result while retrying uncertainty and checking the owner-only
        unseen queue, so a prior failed read/ACK is recovered on a later result.
-       One result drains at most eight rows; same-group rows acknowledge
+       One result drains at most eight rows; same-league rows acknowledge
        silently, while every real crossing owns its mandatory deck. */
+    let progressionFlow: Promise<void> = Promise.resolve();
     if (report.matchId) {
       const initial = report.progression ?? { kind: 'retryable' as const };
       $('#ovEnd').inert = true;
-      void (async () => {
+      progressionFlow = (async () => {
         const handled = new Set<string>();
         let lookup = initial;
         for (let count = 0; count < 8; count++) {
@@ -237,52 +271,73 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
           /* present() makes its own background snapshot synchronously. It must
              see the result enabled or closing the modal would restore a stale
              inert=true value and strand the result controls. */
+          const collection = await transitionCollectionLookup;
+          const ownsTransitionCollection = collection
+            ? await runeCollectionMatchesActiveAccount(collection) : false;
+          if (revision !== showRevision || !foreground) return;
           $('#ovEnd').inert = false;
-          const completed = await groupTransition.present(event, cache?.avatar);
-          if (!completed || revision !== showRevision) return;
+          const action = await groupTransition.present(event, players.avatar(), {
+            /* A rune earned by this same result still belongs to the separate
+               NEW RUNE handoff below. Only an earlier collection turns the
+               SILVER slide itself into the Profile tutorial door. */
+            hasCollectedRune: ownsTransitionCollection && !!collection?.rows.some(
+              ({ source_match_id }) => source_match_id !== report.matchId,
+            ),
+          });
+          if (action === 'cancelled' || revision !== showRevision) return;
+          if (action === 'profile') {
+            /* Profile covers the result synchronously. Keep the result's true
+               background state non-inert before the equipment sheet takes its
+               modal snapshot; otherwise closing that nested sheet restores a
+               stale inert=true and strands the result after Profile returns. */
+            $('#ovEnd').inert = false;
+            if (!await openRuneGuide(undefined, collection?.accountId ?? undefined)
+                || revision !== showRevision) return;
+            if (!await rankedProgressionRecovery.acknowledge(event.eventId)) return;
+            /* Profile remains over this result. Never drain another transition
+               deck behind the tutorial the player is using. */
+            return;
+          }
           $('#ovEnd').inert = true;
           if (!await rankedProgressionRecovery.acknowledge(event.eventId)) return;
           lookup = { kind: 'absent' };
         }
-      })().catch(() => undefined).finally(() => {
-        if (revision === showRevision) $('#ovEnd').inert = false;
+      })();
+      void progressionFlow.catch(() => undefined).finally(() => {
+        /* Profile is a modal cover over this still-open result. Its route owns
+           the lock until Back/onReturn; finishing progression underneath must
+           not make the covered result interactive again. */
+        if (revision === showRevision && foreground) $('#ovEnd').inert = false;
       });
     }
 
-    void refreshRuneCollection().then(async (collection) => {
-      if (revision !== showRevision) return;
+    void (async () => {
+      const collection = await collectionLookup;
+      await progressionFlow.catch(() => undefined);
+      if (!collection || revision !== showRevision) return;
+      /* The mandatory deck may outlive an account replacement in another
+         context. Re-bind the captured collection at the actual paint boundary
+         so the new account never sees the old account's reward. */
       const ownsCollection = await runeCollectionMatchesActiveAccount(collection);
       if (!ownsCollection || revision !== showRevision) return;
       /* A durable reward may predate this result. Never label that older win
          as a reward for the loss/draw currently on screen; entry/profile owns
          recovery when this report itself is not a settled win. */
       if (!report.won) return;
-      reward = firstUnseenRuneReward(collection);
-      if (!reward) return;
+      const nextReward = firstUnseenRuneReward(collection);
+      if (!nextReward) return;
+      const firstRune = firstCollectedRuneReward(collection);
+      if (firstRune?.rune.id === nextReward.rune.id) {
+        presentFirstRuneReward(firstRune);
+        return;
+      }
+      if (!foreground) return;
+      reward = nextReward;
       repaintEndLocale();
       armRewardAcknowledgement();
-    }).catch(() => undefined);
+    })().catch(() => undefined);
 
-    void Promise.all([myProfile(), myStanding(), myLadder(), playerCard(opponentName())])
-      .then(([profile, standing, ladder, foe]) => {
-        if (revision !== showRevision) return;
-        if (profile) {
-          cache = { ...cache, nickname: profile.nickname, avatar: profile.avatar ?? null,
-            rating: profile.rating };
-        }
-        const points = standing?.points ?? profile?.rating ?? cachedRating;
-        const apex = standing ? inApex(points ?? 0, standing.rank, standing.population) : false;
-        cacheStanding(standing?.rank ?? null, apex);
-        refreshHomeChip();
-        visiblePoints = points;
-        visibleRank = standing?.rank ?? null;
-        visibleApex = apex;
-        visibleFoe = foe;
-        visibleMine = profile && ladder
-          ? { name: profile.nickname, avatar: profile.avatar ?? null, lad: ladder }
-          : null;
-        setPlates(plates());
-      }).catch(() => undefined);
+    players.hydrate();
   }
 
   return { show };

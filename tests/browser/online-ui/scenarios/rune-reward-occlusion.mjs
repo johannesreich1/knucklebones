@@ -1,3 +1,5 @@
+import { installProgressionRoutes } from './group-transition-harness.mjs';
+
 const REPORT = {
   won: true,
   draw: false,
@@ -60,17 +62,91 @@ export async function resultRewardProfileOcclusionProbe(page, routes) {
     )), 5000)),
   ]);
   await page.waitForSelector('.rune-reward-sheet .focard', { timeout: 15000 });
-  await page.click('.rune-reward-sheet__continue');
   await Promise.race([
     routes.acknowledgeStarted,
     new Promise((_, reject) => setTimeout(() => reject(new Error(
-      'Recovered Profile reward was not acknowledged by Continue',
+      'Recovered Profile reward was not acknowledged after its sheet landed',
+    )), 5000)),
+  ]);
+  const beforeContinue = {
+    action: await page.$eval('.rune-reward-sheet__continue', (button) => button.textContent?.trim()),
+    acknowledgements: routes.acknowledgeCalls(),
+  };
+  await page.click('.rune-reward-sheet__continue');
+  await page.waitForSelector('.rune-reward-sheet', { state: 'detached', timeout: 15000 });
+  return {
+    whileCovered,
+    acknowledgementsWhileCovered,
+    beforeContinue,
+    acknowledgementsAfterContinue: routes.acknowledgeCalls(),
+    guidePresent: await page.locator('#accRuneGuide').count(),
+  };
+}
+
+/** A first-rune collection read can finish while face-off covers the result.
+ * The verified reward must wait in memory, revalidate on return, and then
+ * finish its durable equipment tutorial rather than disappearing underneath. */
+export async function firstRuneFaceoffOcclusionProbe(page, routes) {
+  /* The unseen row belongs to fixture match 1111…; the result now on screen is
+     a later duel, so recovery cannot depend on same-match attribution. */
+  const resultMatchId = '22222222-2222-4222-8222-222222222222';
+  routes.makeRuneUnseen('fate');
+  routes.deferNextRuneResponse();
+  await installProgressionRoutes(page, null);
+  await page.evaluate((report) => {
+    window.__kb.S.played = true;
+    window.__kbResult(report);
+  }, { ...REPORT, matchId: resultMatchId });
+  await Promise.all([
+    page.waitForSelector('#ovEnd.on', { timeout: 15000 }),
+    Promise.race([
+      routes.runeRequestStarted,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(
+        'the delayed first-rune collection request never started',
+      )), 5000)),
+    ]),
+  ]);
+  await page.waitForFunction(() => !document.getElementById('ovEnd')?.inert);
+  await page.waitForSelector('#endPlates > button:nth-child(2)', { timeout: 15000 });
+  await page.$eval('#endPlates > button:nth-child(2)', (button) => button.click());
+  await page.waitForSelector('.faceoff:not(.rune-reward-sheet) .focard', { timeout: 15000 });
+  routes.releaseRuneResponse();
+  await Promise.race([
+    routes.runeRequestFinished,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(
+      'the delayed first-rune collection request did not finish',
+    )), 5000)),
+  ]);
+  await page.waitForTimeout(100);
+  const whileCovered = {
+    faceoffOpen: !!await page.$('.faceoff:not(.rune-reward-sheet) .focard'),
+    rewardSheetOpen: !!await page.$('.rune-reward-sheet'),
+    acknowledgements: routes.acknowledgeCalls(),
+  };
+  await page.click('.faceoff:not(.rune-reward-sheet) .fograb');
+  await page.waitForSelector('.rune-reward-sheet .focard', { timeout: 15000 });
+  const resumed = await page.evaluate(() => ({
+    title: document.querySelector('.rune-reward-sheet__title')?.textContent?.trim(),
+    action: document.querySelector('.rune-reward-sheet__continue')?.textContent?.trim(),
+  }));
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('#onAccount:not([hidden]) #accRuneGuide', { timeout: 15000 });
+  const resultInertDuringGuide = await page.$eval('#ovEnd', (element) => element.inert);
+  const acknowledgementsBeforeSeat = routes.acknowledgeCalls();
+  await page.click('#accSeat');
+  await page.waitForSelector('.faceoff #accSeatEquip', { timeout: 15000 });
+  await Promise.race([
+    routes.acknowledgeStarted,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(
+      'the resumed first rune was not acknowledged after the equipment seat',
     )), 5000)),
   ]);
   return {
     whileCovered,
-    acknowledgementsWhileCovered,
-    acknowledgementsAfterContinue: routes.acknowledgeCalls(),
+    resumed,
+    resultInertDuringGuide,
+    acknowledgementsBeforeSeat,
+    acknowledgementsAfterSeat: routes.acknowledgeCalls(),
   };
 }
 
@@ -136,15 +212,20 @@ async function nextDuelRewardProbe(page, routes) {
   }));
   const joinsBeforeContinue = routes.joinCalls();
   const acknowledgementsBeforeContinue = routes.acknowledgeCalls();
+  const action = await page.$eval(
+    '.rune-reward-sheet__continue',
+    (button) => button.textContent?.trim(),
+  );
   await page.click('.rune-reward-sheet__continue');
-  await Promise.all([
-    page.waitForSelector('#onQueue:not([hidden])', { timeout: 15000 }),
-    Promise.race([
-      routes.acknowledgeStarted,
-      new Promise((_, reject) => setTimeout(() => reject(new Error(
-        'Next Duel reward Continue did not acknowledge before queueing',
-      )), 5000)),
-    ]),
+  await page.waitForSelector('#onAccount:not([hidden]) #accRuneGuide', { timeout: 15000 });
+  const acknowledgementsBeforeSeat = routes.acknowledgeCalls();
+  await page.click('#accSeat');
+  await page.waitForSelector('.faceoff #accSeatEquip', { timeout: 15000 });
+  await Promise.race([
+    routes.acknowledgeStarted,
+    new Promise((_, reject) => setTimeout(() => reject(new Error(
+      'Next Duel first-rune recovery did not acknowledge after the equipment seat',
+    )), 5000)),
   ]);
   routes.releaseRuneResponse();
   await Promise.race([
@@ -159,8 +240,11 @@ async function nextDuelRewardProbe(page, routes) {
     joinsBeforeContinue,
     joinsAfterContinue: routes.joinCalls(),
     acknowledgementsBeforeContinue,
+    acknowledgementsBeforeSeat,
     acknowledgementsAfterContinue: routes.acknowledgeCalls(),
-    queueVisible: await page.$eval('#onQueue', (element) => !element.hidden),
+    action,
+    accountVisible: await page.$eval('#onAccount', (element) => !element.hidden),
+    equipmentSheet: await page.locator('.faceoff #accSeatEquip').count(),
     staleResultStayedClosed: await page.$eval('#ovEnd', (element) => !element.classList.contains('on')),
   };
 }
@@ -177,12 +261,15 @@ export async function runNextDuelRewardScenario({ visit, out, check }) {
       && !result.probeResult.beforeContinue.resultOpen
       && result.probeResult.beforeContinue.reward === 'FATE'
       && result.probeResult.joinsBeforeContinue === 0
-      && result.probeResult.joinsAfterContinue > 0
+      && result.probeResult.joinsAfterContinue === 0
       && result.probeResult.acknowledgementsBeforeContinue === 0
+      && result.probeResult.acknowledgementsBeforeSeat === 0
       && result.probeResult.acknowledgementsAfterContinue === 1
-      && result.probeResult.queueVisible
+      && result.probeResult.action === 'Equip rune'
+      && result.probeResult.accountVisible
+      && result.probeResult.equipmentSheet === 1
       && result.probeResult.staleResultStayedClosed,
-    'Next Duel started matchmaking before recovering its delayed rune reward',
+    'Next Duel skipped the delayed first-rune equipment tutorial',
     result.probeResult);
   check(result.errs.length === 0, 'page errors during Next Duel reward recovery', result.errs);
 }

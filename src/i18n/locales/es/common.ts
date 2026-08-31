@@ -6,6 +6,8 @@ export const esCommon = {
     name: 'KNUCKLEBONES',
     edition: 'Edición Neón',
     tagline: 'Duelos clasificatorios de dados',
+    portraitOnly: 'SOLO VERTICAL',
+    rotatePortrait: 'Gira el dispositivo a la posición vertical para seguir jugando.',
   },
   actions: {
     back: 'Atrás',

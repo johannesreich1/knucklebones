@@ -16,6 +16,40 @@ async function submitCredentials(page) {
   await page.click('#onAuthActs .primary');
 }
 
+const RESULT = {
+  won: true,
+  draw: false,
+  forfeit: false,
+  my: 48,
+  their: 31,
+  delta: 21,
+  opp: 'NovaComet992',
+  oppAvatar: 'die:3:mg',
+  oppRating: 1072,
+};
+
+async function showHydratedResult(page) {
+  const profileHydrated = page.waitForResponse((response) => {
+    const url = response.url();
+    return response.request().method() === 'GET'
+      && url.includes('/rest/v1/profiles')
+      && !url.includes('ranked_pool_tier')
+      && !url.includes('equipped_rune')
+      && !url.includes('random_rune_mode');
+  });
+  await page.evaluate((report) => {
+    window.__kb.S.played = true;
+    window.__kbResult(report);
+  }, RESULT);
+  await page.waitForSelector('#ovEnd.on', { timeout: 15000 });
+  await profileHydrated;
+  await page.waitForFunction(() => !document.getElementById('ovEnd')?.inert);
+}
+
+async function openResultProfile(page) {
+  await page.$eval('#endPlates > button:first-child .gpill', (pill) => pill.click());
+}
+
 async function probeCredentialError(page, routes) {
   await submitCredentials(page);
   await page.waitForFunction(() => document.getElementById('onAuthErr')?.textContent?.trim());
@@ -122,6 +156,74 @@ async function probeAccountCredentialSuccess(page, routes) {
   }), routes.passwordCalls());
 }
 
+/* Profile is a cover over the still-live result. If Back wins while Profile's
+   coherent account read is held, that abandoned read must not later call the
+   mutable global exit slot (which now means Home) and close the restored
+   result a second time. */
+async function probeResultProfileLoadingBack(page, routes) {
+  await showHydratedResult(page);
+  routes.deferNextAccountProfileResponse();
+  await openResultProfile(page);
+  await Promise.all([
+    page.waitForSelector('#ovOnline.on #onLoading:not([hidden])', { timeout: 15000 }),
+    routes.accountProfileStarted,
+  ]);
+  await page.click('#btnOnlineBack');
+  await page.waitForFunction(() => !document.getElementById('ovOnline')?.classList.contains('on'));
+  const restored = await page.evaluate(() => ({
+    resultOpen: document.getElementById('ovEnd')?.classList.contains('on'),
+    resultInert: document.getElementById('ovEnd')?.inert,
+  }));
+  routes.releaseAccountProfileResponse();
+  await routes.accountProfileFinished;
+  await page.waitForTimeout(100);
+  const settled = await page.evaluate(() => {
+    const result = document.getElementById('ovEnd');
+    const action = document.getElementById('btnAgain');
+    const box = action?.getBoundingClientRect();
+    const hit = box ? document.elementFromPoint(
+      box.left + box.width / 2,
+      box.top + box.height / 2,
+    ) : null;
+    return {
+      resultOpen: result?.classList.contains('on'),
+      resultInert: result?.inert,
+      resultActionOwnsHit: !!action && !!hit && action.contains(hit),
+      onlineOpen: document.getElementById('ovOnline')?.classList.contains('on'),
+    };
+  });
+  return { restored, settled };
+}
+
+/* Sign-out is a Home-origin auth transition even when Profile was opened from
+   a result. Successful re-auth must not leave that old result open and exposed
+   to assistive technology beneath the new queue. */
+async function probeResultProfileSignOut(page) {
+  await page.route('**/auth/v1/logout*', (route) => route.fulfill({
+    status: 204,
+    body: '',
+  }));
+  await showHydratedResult(page);
+  await openResultProfile(page);
+  await page.waitForSelector('#onAccount:not([hidden]) #btnSignOut:not([hidden])', {
+    timeout: 15000,
+  });
+  await page.click('#btnSignOut');
+  await page.waitForSelector('.authsheet:not(.foout) #onAuth', { timeout: 15000 });
+  await submitCredentials(page);
+  await page.waitForFunction(() => !document.querySelector('.authsheet'));
+  await page.waitForSelector('#ovOnline.on #onQueue:not([hidden])', { timeout: 15000 });
+  return page.evaluate(() => {
+    const queue = document.getElementById('onQueue');
+    const result = document.getElementById('ovEnd');
+    return {
+      queueVisible: queue?.hidden === false,
+      resultOpen: result?.classList.contains('on'),
+      resultInert: result?.inert,
+    };
+  });
+}
+
 export async function runAuthCredentialScenarios({ visit, out, check }) {
   const error = await visit({ anonymous: 422, passwordAuth: 'error', skipStandardProbes: true,
     probe: probeCredentialError });
@@ -159,4 +261,24 @@ export async function runAuthCredentialScenarios({ visit, out, check }) {
   check(p?.passwordCalls === 1 && p.onlineOn && p.accountVisible && !p.queueVisible
     && p.title === 'PROFILE' && p.focused === 'onTitle',
   'account-origin sign-in did not return to Profile', p);
+
+  const loadingBack = await visit({ named: true, skipStandardProbes: true,
+    probe: probeResultProfileLoadingBack });
+  out.resultProfileLoadingBack = loadingBack.probeResult;
+  const b = loadingBack.probeResult;
+  check(b?.restored.resultOpen && !b.restored.resultInert
+    && b.settled.resultOpen && !b.settled.resultInert
+    && b.settled.resultActionOwnsHit && !b.settled.onlineOpen,
+  'an abandoned Profile load closed the ranked result after Back had restored it', b);
+  check(loadingBack.errs.length === 0,
+    'page errors during result Profile loading Back race', loadingBack.errs);
+
+  const signedOut = await visit({ member: true, named: true, passwordAuth: 'success',
+    skipStandardProbes: true, probe: probeResultProfileSignOut });
+  out.resultProfileSignOut = signedOut.probeResult;
+  const s = signedOut.probeResult;
+  check(s?.queueVisible && !s.resultOpen && !s.resultInert,
+    'successful re-auth left the previous ranked result alive beneath matchmaking', s);
+  check(signedOut.errs.length === 0,
+    'page errors during result Profile sign-out transition', signedOut.errs);
 }

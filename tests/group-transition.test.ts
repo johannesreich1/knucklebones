@@ -118,9 +118,9 @@ assert.deepEqual(groupTransitionSlides(event({
   afterPoolTier: 'ivory',
 })), [group('demotion', 'ivory', 'bone')]);
 
-/* SILVER changes whether an equipped fixed or RANDOM rune enters ordinary
-   ranked matches. Unlike permanent outcome teaching, this slide returns each
-   time that reversible capability becomes active or rests. */
+/* SILVER changes whether runes CAN enter ordinary ranked matches. That league
+   capability belongs to every player, including somebody who has not won a
+   rune yet; the interactive profile handoff branches on the real collection. */
 assert.deepEqual(groupTransitionSlides(event({
   beforePoints: 1240,
   afterPoints: 1300,
@@ -133,7 +133,7 @@ assert.deepEqual(groupTransitionSlides(event({
   runeLiveAfter: true,
 })), [
   group('promotion', 'ivory', 'silver'),
-  { kind: 'equipped-rune', state: 'active' },
+  { kind: 'rune-seat', state: 'active' },
 ]);
 assert.deepEqual(groupTransitionSlides(event({
   beforePoints: 1274,
@@ -148,11 +148,12 @@ assert.deepEqual(groupTransitionSlides(event({
   runeLiveAfter: false,
 })), [
   group('demotion', 'silver', 'ivory'),
-  { kind: 'equipped-rune', state: 'resting' },
+  { kind: 'rune-seat', state: 'resting' },
 ]);
 
-/* With no equipment selected, crossing SILVER has no equipped-rune fact to
-   explain. Group identity still always gets its own slide. */
+/* An empty collection must never fabricate a default. The generic SILVER
+   capability slide still appears, while presentation keeps Continue and skips
+   the Profile tutorial until a first rune really exists. */
 assert.deepEqual(groupTransitionSlides(event({
   beforePoints: 1240,
   afterPoints: 1300,
@@ -163,8 +164,41 @@ assert.deepEqual(groupTransitionSlides(event({
   equippedRune: null,
   randomRuneMode: false,
   runeLiveBefore: false,
-  runeLiveAfter: true,
-})), [group('promotion', 'ivory', 'silver')]);
+  runeLiveAfter: false,
+})), [
+  group('promotion', 'ivory', 'silver'),
+  { kind: 'rune-seat', state: 'active' },
+]);
+
+assert.deepEqual(groupTransitionSlides(event({
+  beforePoints: 1274,
+  afterPoints: 1211,
+  beforeGroup: 'silver',
+  afterGroup: 'ivory',
+  beforePoolTier: 'ivory',
+  afterPoolTier: 'ivory',
+  equippedRune: null,
+  randomRuneMode: false,
+  runeLiveBefore: false,
+  runeLiveAfter: false,
+})), [
+  group('demotion', 'silver', 'ivory'),
+  { kind: 'rune-seat', state: 'resting' },
+]);
+
+/* A large authoritative step that crosses SILVER gets the same capability
+   slide once; it is the boundary, not an exact IVORY/SILVER pair, that owns it. */
+assert.deepEqual(groupTransitionSlides(event({
+  beforePoints: 1240,
+  afterPoints: 2100,
+  beforeGroup: 'ivory',
+  afterGroup: 'gold',
+  beforePoolTier: 'ivory',
+  afterPoolTier: 'ivory',
+})), [
+  group('promotion', 'ivory', 'gold'),
+  { kind: 'rune-seat', state: 'active' },
+]);
 
 /* Crossings which neither advance the permanent pool nor change rune
    availability remain a one-slide group acknowledgement. */

@@ -89,6 +89,9 @@ async function demotionProbe(page) {
     const ring = document.querySelector('.gt-ring');
     const lring = ring?.querySelector('.lring');
     const oldArc = ring?.querySelector('.gt-oldarc');
+    const kicker = document.getElementById('gtKicker');
+    const kickerBox = kicker?.getBoundingClientRect();
+    const kickerStyle = kicker ? getComputedStyle(kicker) : null;
     const color = (scope, variable) => {
       const chip = document.createElement('i');
       chip.style.color = `var(${variable})`;
@@ -105,7 +108,14 @@ async function demotionProbe(page) {
     return {
       demotionClass: !!deck?.classList.contains('gt-demotion'),
       title: document.querySelector('#gtBody h2')?.textContent?.trim() ?? '',
-      step: document.querySelector('#gtBody .gt-step')?.textContent?.trim() ?? '',
+      stepPresent: !!document.querySelector('#gtBody .gt-step'),
+      kicker: {
+        label: kicker?.textContent?.trim() ?? '',
+        visible: !!kickerBox && kickerBox.width > 0 && kickerBox.height > 0
+          && kickerStyle?.display !== 'none' && kickerStyle?.visibility !== 'hidden'
+          && Number(kickerStyle?.opacity) !== 0,
+        box: kickerBox ? { width: kickerBox.width, height: kickerBox.height } : null,
+      },
       dots: document.getElementById('gtDots')?.children.length ?? -1,
       tierColor: color(deck, '--gt-tier'),
       oldColor: color(deck, '--gt-old'),
@@ -136,6 +146,8 @@ async function demotionProbe(page) {
       title: body?.querySelector('h2')?.textContent?.trim() ?? '',
       text: body?.querySelector('p')?.textContent?.trim() ?? '',
       svgs: body?.querySelectorAll('svg').length ?? -1,
+      modeIcons: body?.querySelectorAll('svg.mico').length ?? -1,
+      spellIcons: body?.querySelectorAll('svg.sico').length ?? -1,
       icons: body?.querySelectorAll('.gt-feature-icon').length ?? -1,
       extraMedia: body?.querySelectorAll(
         'img, picture, canvas, video, .die, [class*="viz"], [class*="diagram"]',
@@ -212,22 +224,24 @@ export async function runGroupTransitionDemotionScenarios({ visit, out, check })
   out.groupTransitionDemotion = demotion.probeResult;
   const group = demotion.probeResult?.group;
   check(group?.demotionClass && group.title === 'IVORY'
-      && group.step.includes('SILVER') && group.step.includes('IVORY')
+      && !group.stepPresent
+      && group.kicker.visible === false
+      && (!group.kicker.box
+        || (group.kicker.box.width === 0 && group.kicker.box.height === 0))
       && group.dots === 2 && group.tierColor === group.ivory
       && group.oldColor === group.silver && group.ringVisible
       && group.ringUsesIvory && group.oldArcUsesSilver
       && group.names.includes('gt-avatar-down') && group.names.includes('gt-old-down'),
-    'SILVER did not visibly settle downward into the IVORY material', group);
+    'SILVER did not visibly settle downward into IVORY without a group kicker', group);
   const resting = demotion.probeResult?.resting;
-  const restingCopy = COPY.online.groupTransition.runeRestingBody
-    .replace('{{rune}}', COPY.game.runes.ward.name);
-  check(resting?.title === COPY.online.groupTransition.runeRestingTitle
-      && resting.text === restingCopy
-      && resting.text.includes('permanent modes') && resting.text.includes('Rune Ritual')
-      && resting.svgs === 1 && resting.icons === 1 && resting.extraMedia === 0
+  check(resting?.title === COPY.online.groupTransition.runesRestingTitle
+      && resting.text === COPY.online.groupTransition.runesRestingBody
+      && !`${resting.title} ${resting.text}`.includes(COPY.game.runes.ward.name)
+      && resting.svgs === 1 && resting.modeIcons === 1 && resting.spellIcons === 0
+      && resting.icons === 1 && resting.extraMedia === 0
       && resting.dots === 2 && resting.current === 1
       && resting.primary === COPY.common.actions.continue && resting.backVisible,
-    'the demotion did not explain the resting rune with icon, title, and retained-access text',
+    'the demotion named a specific rune instead of the generic SILVER capability',
     resting);
   check(demotion.errs.length === 0,
     'page errors during SILVER to IVORY demotion', demotion.errs);
