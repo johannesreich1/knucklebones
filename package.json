@@ -27,6 +27,7 @@
     "db:production:streak-baselines": "node --experimental-strip-types tools/database/production-rollout.mjs ladder-streak-baselines",
     "db:production:apple-game-center": "node --experimental-strip-types tools/database/production-rollout.mjs apple-game-center",
     "db:production:test-data": "node --experimental-strip-types tools/database/production-test-data.mjs",
+    "db:production:player-points": "node --experimental-strip-types tools/database/production-player-points.mjs",
     "functions:production:ranked-runes": "node --experimental-strip-types tools/functions/production-rollout.mjs ranked-runes",
     "functions:production:identity": "node --experimental-strip-types tools/functions/production-rollout.mjs identity-hardening",
     "functions:production:game-center": "node --experimental-strip-types tools/functions/production-rollout.mjs game-center",

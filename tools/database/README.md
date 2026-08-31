@@ -2,10 +2,12 @@
 
 Production migrations are deliberately separate from the Cloudflare deploy.
 Since the 2026-08-30 reconciliation and ranked-rune rollouts,
-`supabase/migrations/` begins with the same canonical 58-file timestamped
+`supabase/migrations/` begins with the same reconciled 59-file timestamped
 prefix as production, pinned by
 `supabase/migration-history.json` and `tests/migration-ledger.test.ts`. The
-former compact aliases, obsolete 12-bot seed, and two wrong-stamped files live
+guarded rollout manifest separately pins the applied 60th historical-SILVER
+stage.
+The former compact aliases, obsolete 12-bot seed, and two wrong-stamped files live
 under `supabase/legacy-migrations/` and are never executable.
 
 It is now valid to run migration history checks and a linked dry run from the
@@ -143,7 +145,7 @@ complete RANDOM, or historical-Silver stages; no partial or out-of-order
 catalog can pass.
 
 All three stages audit bot seat coverage and ownership without requiring a
-helper that the pending stage has not created. The durable and immediate
+helper that the historical stage does not create. The durable and immediate
 postchecks require every bot to stay out of RANDOM and retain an owned fixed seat. The
 initial fixed-seat backfill additionally proves its stable owned-rune choice;
 later stages preserve any existing owned seat because later wins may have
@@ -153,7 +155,7 @@ immediately before and after the migration, and refuses success if either human
 setting changed.
 
 The `ranked-progression-events` allow-list preserves the applied
-`20260830182406_ranked_progression_events.sql` bytes and adds the same pending
+`20260830182406_ranked_progression_events.sql` bytes and adds the same applied
 `20260831133000_historical_silver_ranked_runes.sql` used by ranked-runes. Its
 exact catalog audit pins
 the 18-column event table, all constraints and indexes, comments, the sole
@@ -213,6 +215,53 @@ apply the remaining validated suffix. Never use linked `migration down`,
 To add a future rollout, add a code-owned manifest with ordered migration
 filenames, their committed hashes, and a fixed read-only schema validator.
 Do not accept arbitrary SQL or arbitrary filenames from command-line input.
+
+## BadRandolf transition testing
+
+The guarded player-points helper sets an exact current-season point value for
+the single production human profile named `BadRandolf`. The presets below put
+that account immediately below a ladder boundary so the next ranked win can
+exercise the real promotion deck. Preview is read-only:
+
+```sh
+mise exec -- npm run db:production:player-points -- 1259
+```
+
+Apply the exact previewed value with a matching literal opt-in:
+
+```sh
+KB_ALLOW_PRODUCTION_PLAYER_POINTS=1259 \
+  mise exec -- npm run db:production:player-points -- 1259 --apply
+```
+
+Useful next-win positions are:
+
+| Points | Current group | Next boundary |
+|---:|---|---|
+| 299 | STONE | BONE |
+| 719 | BONE | IVORY |
+| 1,259 | IVORY | SILVER |
+| 2,009 | SILVER | GOLD |
+| 2,999 | GOLD | OBSIDIAN |
+
+The minimum win award is 30 points, so each value guarantees that any next win
+crosses the named points boundary. NEON is the season's top 1%, not a fixed
+points boundary, so no numeric preset can guarantee entry.
+
+This helper is deliberately narrower than an admin RPC: it accepts only a
+canonical integer and only `BadRandolf`, requires Node 24, clean committed
+local `main`, the exact linked production project, and the lockfile-pinned
+Supabase CLI. Apply rechecks the target, season, rating, peak and permanent
+ranked-pool tier inside one short transaction. It refuses an active match,
+ranked queue entry, account deletion, or unseen progression event. It updates
+the current season's points and profile rating mirror. If the new value exceeds
+the existing season peak, the same transaction permanently raises that peak
+and may permanently advance the ranked-pool tier; setting a lower point value
+later does not undo either high-water mark. Preview prints the exact peak and
+pool before/after values so this effect is visible before the opt-in. The helper
+does not rewrite match history, stats, runes, or progression events.
+Consequently, a previously earned SILVER rune unlock remains earned and is not
+replayed as a first-time unlock after repositioning.
 
 ## Test-account reset and bot population
 

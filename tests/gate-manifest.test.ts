@@ -41,7 +41,7 @@ try {
   check(GATE_SUITES.every(suite => ['node', 'suite', 'benchmark'].includes(suite.runner)),
     'the real manifest contains an unknown runner');
 
-  const full = createGatePlan(undefined);
+  const full = createGatePlan({});
   check(full.pooled.length + full.final.length === GATE_SUITES.length,
     'the complete plan dropped a registered suite');
   check(JSON.stringify([...full.pooled, ...full.final].map(suite => suite.name))
@@ -50,13 +50,22 @@ try {
   check(full.final.length === 1 && full.final[0].name === 'pwa-update',
     'the complete plan does not isolate pwa-update as its final batch');
   for (const shard of CI_SHARD_NAMES) {
-    const selected = createGatePlan(shard);
+    const selected = createGatePlan({ ciShard: shard });
     const actual = [...selected.pooled, ...selected.final].map(suite => suite.name);
     check(JSON.stringify(actual) === JSON.stringify(CI_SHARDS[shard as keyof typeof CI_SHARDS]),
       `${shard} selection changed its declared order or membership`);
     check(selected.final.length === 0 || selected.final[0].name === 'pwa-update',
       `${shard} selected a non-update suite as exclusive-final`);
   }
+  const focused = createGatePlan({
+    suiteNames: ['production-test-data', 'architecture', 'pwa-update'],
+  });
+  assert.deepEqual(focused.pooled.map((suite: { name: string }) => suite.name),
+    ['production-test-data', 'architecture']);
+  assert.deepEqual(focused.final.map((suite: { name: string }) => suite.name), ['pwa-update']);
+  assert.throws(() => createGatePlan({ suiteNames: ['not-a-suite'] }), /Unknown gate suite/);
+  assert.throws(() => createGatePlan({ suiteNames: ['architecture', 'architecture'] }),
+    /Duplicate gate suite/);
 
   const duplicateId = [...GATE_SUITES, GATE_SUITES[0]];
   expectInvalid('duplicate suite id', duplicateId as typeof GATE_SUITES,
@@ -75,6 +84,15 @@ try {
     ? { ...suite, file: 'tests/definitely-missing-gate-probe.mjs' } : suite);
   expectInvalid('missing suite file', missingFile as typeof GATE_SUITES,
     CI_SHARDS, /references missing file/);
+  assert.throws(
+    () => createGatePlan(
+      { suiteNames: ['architecture'] },
+      missingFile as typeof GATE_SUITES,
+      CI_SHARDS,
+    ),
+    /references missing file/,
+    'focused selection concealed an invalid unselected manifest owner',
+  );
 
   const unknownShards = mutableShards();
   unknownShards['ci-1'].push('unknown-probe');
@@ -101,17 +119,29 @@ try {
   expectInvalid('second exclusive-final suite', secondFinal as typeof GATE_SUITES,
     CI_SHARDS, /one server-backed exclusive-final/);
 
-  assert.deepEqual(parseGateArgs([], {}), { jobs: 4, ciShard: undefined });
-  assert.deepEqual(parseGateArgs([], { CI: 'true' }), { jobs: 1, ciShard: undefined });
+  assert.deepEqual(parseGateArgs([], {}),
+    { jobs: 4, ciShard: undefined, suiteNames: undefined });
+  assert.deepEqual(parseGateArgs([], { CI: 'true' }),
+    { jobs: 1, ciShard: undefined, suiteNames: undefined });
   assert.deepEqual(parseGateArgs(['--jobs', '3', '--ci-shard', 'ci-2'], {}),
-    { jobs: 3, ciShard: 'ci-2' });
+    { jobs: 3, ciShard: 'ci-2', suiteNames: undefined });
   assert.deepEqual(parseGateArgs(['--jobs', '3'], { KB_JOBS: 'invalid' }),
-    { jobs: 3, ciShard: undefined });
+    { jobs: 3, ciShard: undefined, suiteNames: undefined });
   assert.deepEqual(parseGateArgs(['--ci-shard', 'ci-4', '--jobs', '2'], {}),
-    { jobs: 2, ciShard: 'ci-4' });
+    { jobs: 2, ciShard: 'ci-4', suiteNames: undefined });
+  assert.deepEqual(parseGateArgs([
+    '--suite', 'production-test-data', '--jobs', '2', '--suite', 'typecheck-tests',
+  ], {}), {
+    jobs: 2,
+    ciShard: undefined,
+    suiteNames: ['production-test-data', 'typecheck-tests'],
+  });
   for (const args of [
     ['--jobs'], ['--jobs', '0'], ['--jobs', '2', '--jobs', '3'],
     ['--ci-shard'], ['--ci-shard', 'nope'], ['--ci-shard', 'ci-1', '--ci-shard', 'ci-2'],
+    ['--suite'], ['--suite', 'not-a-suite'],
+    ['--suite', 'architecture', '--suite', 'architecture'],
+    ['--ci-shard', 'ci-1', '--suite', 'architecture'],
     ['stray'],
   ]) {
     assert.throws(() => parseGateArgs(args, {}), /Usage:/,
@@ -141,6 +171,12 @@ try {
   check(invalidCli.status === 2 && /Unknown gate option/.test(invalidCli.stderr)
     && !/Building|gate complete/.test(invalidCli.stdout + invalidCli.stderr),
   'the public gate CLI did not reject an invalid option before lock/build work');
+  const invalidSuiteCli = spawnSync(process.execPath, [
+    'tests/run-all.mjs', '--suite', 'not-a-suite',
+  ], { encoding: 'utf8' });
+  check(invalidSuiteCli.status === 2 && /Unknown gate suite/.test(invalidSuiteCli.stderr)
+    && !/Building|gate complete/.test(invalidSuiteCli.stdout + invalidSuiteCli.stderr),
+  'the public gate CLI did not reject an unknown focused suite before lock/build work');
 
   let active = 0;
   const events: string[] = [];

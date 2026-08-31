@@ -4,7 +4,8 @@
 import {
   SCALE, K, DENOM, START, LOSS_MULT, MIN_GAIN, MAX_LOSS,
   delta, applyDelta, GROUPS, groupOf,
-  groupFill, toNext, peakState, inApex, botShapeAt, botPairBand, matchBand, APEX,
+  groupFill, groupRingFill, groupRingPeakState, toNext, peakState,
+  inApex, botShapeAt, botPairBand, matchBand, APEX,
   boardGroup, settle, type LadderRow,
 } from '../src/core/ladder.ts';
 
@@ -85,6 +86,10 @@ eq(Math.round(groupFill(2494) * 1000), 489, 'the worked example does not match t
 eq(Math.round(groupFill(2999) * 1000), 999, 'the top of a group should very nearly fill the ring');
 eq(groupFill(3000), 0, 'crossing into the next group must empty the ring');
 eq(groupFill(9999), 1, 'the apex reads as full — it is a position, not a distance');
+eq(groupRingFill(2494, false), groupFill(2494),
+   'a bounded league ring must keep its points-based progress');
+eq(groupRingFill(2494, true), 1,
+   'a positional NEON ring must be full even below the fallback points floor');
 /* the fill only ever RISES with points, and never leaves 0..1 — the property
    that lets the ring animate by tweening one number */
 let last = -1, lastGroup = groupOf(0);
@@ -125,6 +130,8 @@ const demoted = peakState(2494, 3200);
 eq(demoted.kind, 'above', 'a peak in a higher group should pin right');
 eq((demoted as { group: { id: string } }).group.id, 'obsidian',
    'the pinned notch must still name the group it really sits in');
+eq(groupRingPeakState(2494, 2610, true), { kind: 'at' },
+   'an unbounded NEON ring must not place a peak notch on a made-up scale');
 /* the invariant: never behind the fill, anywhere */
 for (let p = 0; p < 4350; p += 53) {
   for (const extra of [0, 40, 400, 2000]) {

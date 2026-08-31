@@ -24,11 +24,11 @@
     <div class="panel" id="onAccount">
       <!-- ONE continuous fill: how far through the current GROUP you are, so it
            moves on every match. --p is the fill, --pk the season peak; .haspeak
-           says the peak is far enough ahead to be worth drawing. The notch is
-           WHITE, not the gold study 92d used — colour means "live" here, and
-           the only live number is where you stand right now. -->
-      <div class="ringwrap haspeak" style="--p:.393;--pk:.505">
-        <i class="lring"></i><i class="lpeak"></i>
+           says the peak is far enough ahead to be worth drawing. The shared
+           halo/orbit name BONE through --lr-material while .lring keeps the
+           user's --p1 colour. The peak notch remains neutral white. -->
+      <div class="ringwrap haspeak" style="--p:.393;--pk:.505;--lr-material:var(--g-bone)">
+        <i class="lring"></i><i class="lhalo"></i><i class="lorbit"></i><i class="lpeak"></i>
         <!-- the avatar is a DOOR: tap it for the face-and-hue picker, which is
              why it is a button wearing a pencil badge. 74px is paintAvatar's own
              default — the size the app paints here, not a thumbnail beside a

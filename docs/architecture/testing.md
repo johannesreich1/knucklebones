@@ -15,6 +15,22 @@ propagates `process.execPath` to every child build, suite, and benchmark,
 preserving the validated Node 24 runtime for the whole gate even on a machine
 with another `node` earlier on `PATH`.
 
+During iteration, select one or more exact manifest owners without paying for
+unrelated suites:
+
+```text
+mise exec -- npm test -- --suite architecture
+mise exec -- npm test -- --suite production-test-data --suite typecheck-tests
+```
+
+The gate prints that command with the first failing suite id. Selection is not
+a cached resume: local suites run concurrently, and a fix changes the tree, so
+there is no truthful linear checkpoint. A focused run still validates the full
+manifest, builds once, takes the repository gate lock, starts a server only
+when a selected owner needs one, and preserves `pwa-update` as exclusive/final.
+It is for decisive iteration and contained handoff checks; the native-aware
+release helper deliberately invokes the unfiltered full gate before pushing.
+
 TypeScript under `tests/` and `tools/` executes through
 `node --experimental-strip-types`, which erases annotations without checking
 them, so the gate suite `typecheck-tests` runs the dedicated

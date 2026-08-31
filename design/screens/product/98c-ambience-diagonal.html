@@ -13,19 +13,8 @@
   .shead{margin-bottom:4px}
   .pane{display:flex;flex-direction:column;gap:11px;width:100%;max-width:var(--w-col);
     margin:0 auto;align-items:center;flex:1}
-  .ringwrap{position:relative;width:186px;height:186px;display:grid;place-items:center}
-  .ring3{position:absolute;inset:0;border-radius:50%;
-    background:conic-gradient(from 225deg,var(--cy) calc(var(--p) * 270deg),
-      rgba(255,255,255,.07) calc(var(--p) * 270deg) 270deg,transparent 270deg);
-    -webkit-mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
-    mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
-    filter:drop-shadow(0 0 14px rgba(40,232,255,.42))}
-  .pkmark{position:absolute;inset:0;border-radius:50%;
-    background:conic-gradient(from 225deg,transparent 0 calc(var(--pk) * 270deg - 1.3deg),
-      var(--gold) calc(var(--pk) * 270deg - 1.3deg) calc(var(--pk) * 270deg + 1.3deg),transparent 0);
-    -webkit-mask:radial-gradient(circle closest-side,transparent 77%,#000 78%);
-    mask:radial-gradient(circle closest-side,transparent 77%,#000 78%);
-    filter:drop-shadow(0 0 7px rgba(255,209,102,.9))}
+  /* The Profile subject wears the runtime full-size ring: GOLD is the
+     material halo/orbit, while the live fill follows the user's --p1 colour. */
   .avwrap{position:relative;display:grid;place-items:center}
   .avedit{position:absolute;right:-9px;bottom:-9px;width:26px;height:26px;border-radius:50%;
     display:grid;place-items:center;background:rgba(10,13,28,.95);
@@ -67,8 +56,8 @@
 <div class="stage"><div class="bgfx"></div><div class="scr">
   <div class="shead"><button class="ico">‹</button><span class="ttl">PROFILE</span><span class="pad"></span></div>
   <div class="pane">
-    <div class="ringwrap" style="--p:.489;--pk:.606">
-      <i class="ring3"></i><i class="pkmark"></i>
+    <div class="ringwrap haspeak" style="--p:.489;--pk:.606;--lr-material:var(--g-gold)">
+      <i class="lring"></i><i class="lhalo"></i><i class="lorbit"></i><i class="lpeak"></i>
       <div class="avwrap dice-static">{{die:5:p1:86}}<span class="avedit">✎</span></div>
       <span class="gname">GOLD</span>
     </div>

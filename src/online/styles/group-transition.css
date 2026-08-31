@@ -23,17 +23,8 @@
   0 0 35px color-mix(in srgb,var(--gt-tier) 38%,transparent)}
 :where(#kbroot) #ovGroupTransition .gt-copy{max-width:292px;margin:clamp(5px,1.2dvh,9px) auto 0;color:#c6d3ee;font-size:11px;line-height:1.5;text-align:center}
 :where(#kbroot) #ovGroupTransition .gt-ring{position:relative;width:min(52vw,31dvh,196px);margin:4px auto 0;flex:0 0 auto;isolation:isolate}
-:where(#kbroot) #ovGroupTransition .gt-ring .lring{filter:drop-shadow(0 0 14px color-mix(in srgb,var(--gt-tier) 52%,transparent))}
-:where(#kbroot) #ovGroupTransition .gt-tierhalo,:where(#kbroot) #ovGroupTransition .gt-oldarc{position:absolute;inset:-8px;border-radius:50%;pointer-events:none;
-  -webkit-mask:radial-gradient(circle closest-side,transparent 84%,#000 85%);mask:radial-gradient(circle closest-side,transparent 84%,#000 85%)}
-:where(#kbroot) #ovGroupTransition .gt-tierhalo{z-index:-1;opacity:.2;background:conic-gradient(from 225deg,var(--gt-tier) 0 270deg,transparent 270deg);
-  filter:drop-shadow(0 0 18px color-mix(in srgb,var(--gt-tier) 48%,transparent))}
-:where(#kbroot) #ovGroupTransition .gt-oldarc{z-index:3;opacity:0;background:conic-gradient(from 225deg,var(--gt-old) 0 270deg,transparent 270deg);
-  filter:drop-shadow(0 0 13px color-mix(in srgb,var(--gt-old) 50%,transparent))}
 :where(#kbroot) #ovGroupTransition .gt-avatar{position:relative;z-index:2;display:grid;place-items:center;line-height:0}
 :where(#kbroot) #ovGroupTransition .gt-avatar .die{filter:drop-shadow(0 0 18px rgba(var(--p1-rgb),.34))}
-:where(#kbroot) #ovGroupTransition .gt-orbit{position:absolute;inset:13px;border-radius:50%;z-index:1;opacity:.32;
-  border:1px solid color-mix(in srgb,var(--gt-tier) 34%,transparent);border-left-color:transparent;border-bottom-color:transparent;transform:rotate(20deg)}
 :where(#kbroot) #ovGroupTransition .gt-mote{--gt-x:0px;--gt-y:0px;position:absolute;z-index:4;left:50%;top:50%;width:5px;height:5px;
   margin:-2px;border-radius:50%;opacity:0;pointer-events:none;background:var(--gt-tier);box-shadow:0 0 10px var(--gt-tier);
   transform:translate(var(--gt-x),var(--gt-y))}
@@ -46,20 +37,20 @@
 
 /* One event, not a preview loop. Every base rule above is already the final
    readable state, so reduced motion removes motion without losing information. */
-:where(#kbroot) #ovGroupTransition .gt-promotion .gt-oldarc{animation:gt-old-up 2.6s ease-out both}
-:where(#kbroot) #ovGroupTransition .gt-promotion .gt-tierhalo{animation:gt-halo-up 2.6s cubic-bezier(.2,1.15,.3,1) both}
+:where(#kbroot) #ovGroupTransition .gt-promotion .loldarc{animation:gt-old-up 2.6s ease-out both}
+:where(#kbroot) #ovGroupTransition .gt-promotion .lhalo{animation:gt-halo-up 2.6s cubic-bezier(.2,1.15,.3,1) both}
 :where(#kbroot) #ovGroupTransition .gt-promotion .gt-avatar{animation:gt-avatar-up 2.6s cubic-bezier(.2,1.15,.3,1) both}
-:where(#kbroot) #ovGroupTransition .gt-promotion .gt-orbit{animation:gt-orbit-up 2.6s cubic-bezier(.2,1,.3,1) both}
+:where(#kbroot) #ovGroupTransition .gt-promotion .lorbit{animation:gt-orbit-up 2.6s cubic-bezier(.2,1,.3,1) both}
 :where(#kbroot) #ovGroupTransition .gt-promotion .gt-mote{animation:gt-mote-up 2.6s ease-out both}
 @keyframes gt-old-up{0%,20%{opacity:.96;transform:none}70%{opacity:.18;transform:scale(1.14)}100%{opacity:0;transform:scale(1.22)}}
 @keyframes gt-halo-up{0%,26%{opacity:0;transform:scale(.72)}72%{opacity:.38;transform:scale(1.08)}100%{opacity:.2;transform:none}}
 @keyframes gt-avatar-up{0%,24%{opacity:.7;transform:translateY(18px) scale(.9)}72%{opacity:1;transform:translateY(-8px) scale(1.04)}100%{opacity:1;transform:none}}
 @keyframes gt-orbit-up{0%,26%{opacity:0;transform:rotate(-28deg) scale(.7)}78%{opacity:.58;transform:rotate(35deg) scale(1.04)}100%{opacity:.32;transform:rotate(20deg)}}
 @keyframes gt-mote-up{0%,24%{opacity:0;transform:translate(var(--gt-x),calc(var(--gt-y) + 18px)) scale(.4)}52%{opacity:.95}100%{opacity:0;transform:translate(var(--gt-x),calc(var(--gt-y) - 28px)) scale(1)}}
-:where(#kbroot) #ovGroupTransition .gt-demotion .gt-oldarc{animation:gt-old-down 2.6s ease-in both}
-:where(#kbroot) #ovGroupTransition .gt-demotion .gt-tierhalo{animation:gt-halo-down 2.6s cubic-bezier(.2,.9,.3,1) both}
+:where(#kbroot) #ovGroupTransition .gt-demotion .loldarc{animation:gt-old-down 2.6s ease-in both}
+:where(#kbroot) #ovGroupTransition .gt-demotion .lhalo{animation:gt-halo-down 2.6s cubic-bezier(.2,.9,.3,1) both}
 :where(#kbroot) #ovGroupTransition .gt-demotion .gt-avatar{animation:gt-avatar-down 2.6s cubic-bezier(.2,.9,.3,1) both}
-:where(#kbroot) #ovGroupTransition .gt-demotion .gt-orbit{animation:gt-orbit-down 2.6s cubic-bezier(.2,.9,.3,1) both}
+:where(#kbroot) #ovGroupTransition .gt-demotion .lorbit{animation:gt-orbit-down 2.6s cubic-bezier(.2,.9,.3,1) both}
 :where(#kbroot) #ovGroupTransition .gt-demotion .gt-mote{animation:gt-mote-down 2.6s ease-in both}
 @keyframes gt-old-down{0%,20%{opacity:.92;transform:none}68%{opacity:.3;transform:translateY(8px) scale(.93)}100%{opacity:0;transform:translateY(18px) scale(.88)}}
 @keyframes gt-halo-down{0%,26%{opacity:0;transform:translateY(-12px) scale(1.08)}74%{opacity:.34;transform:translateY(3px) scale(.98)}100%{opacity:.2;transform:none}}
@@ -91,9 +82,9 @@
 :where(#kbroot) #ovGroupTransition .gt-announcement{position:absolute;width:1px;height:1px;margin:-1px;padding:0;
   overflow:hidden;border:0;clip-path:inset(50%);white-space:nowrap}
 
-#kbroot.reduce-motion #ovGroupTransition :is(.gt-oldarc,.gt-tierhalo,.gt-avatar,.gt-orbit,.gt-mote){animation:none!important}
+#kbroot.reduce-motion #ovGroupTransition :is(.loldarc,.lhalo,.gt-avatar,.lorbit,.gt-mote){animation:none!important}
 @media (prefers-reduced-motion:reduce){
-  :where(#kbroot) #ovGroupTransition :is(.gt-oldarc,.gt-tierhalo,.gt-avatar,.gt-orbit,.gt-mote){animation:none!important}
+  :where(#kbroot) #ovGroupTransition :is(.loldarc,.lhalo,.gt-avatar,.lorbit,.gt-mote){animation:none!important}
 }
 @media (max-width:300px){
   :where(#kbroot) #ovGroupTransition .gt-group{font-size:28px;letter-spacing:.15em}

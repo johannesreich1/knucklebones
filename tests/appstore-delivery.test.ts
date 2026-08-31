@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { APP_ID, NATIVE_STORE_NAME } from '../src/config.ts';
@@ -21,6 +21,7 @@ const APP_STORE_MANIFEST = `${APP_STORE_ROOT}/manifest.json`;
 const APP_STORE_METADATA = `${APP_STORE_ROOT}/metadata.json`;
 const APP_STORE_PROVENANCE = `${APP_STORE_ROOT}/capture-provenance.json`;
 const APP_STORE_CAPTURE = `${APP_STORE_ROOT}/capture.mjs`;
+const APP_STORE_SOURCE = `${APP_STORE_ROOT}/source.html`;
 const APP_STORE_FINALIZE = `${APP_STORE_ROOT}/finalize.mjs`;
 const APP_STORE_VERIFY = `${APP_STORE_ROOT}/verify-exports.mjs`;
 const FASTFILE = 'fastlane/Fastfile';
@@ -158,6 +159,7 @@ const fastfile = readRepositoryFile(FASTFILE);
 const screenshotSync = readRepositoryFile(SCREENSHOT_SYNC);
 const appStorePlan = readRepositoryFile(APP_STORE_PLAN);
 const captureSource = readRepositoryFile(APP_STORE_CAPTURE);
+const captureFixtureSource = readRepositoryFile(APP_STORE_SOURCE);
 const finalizeSource = readRepositoryFile(APP_STORE_FINALIZE);
 const verifySource = readRepositoryFile(APP_STORE_VERIFY);
 const deliverySources = `${fastfile}\n${screenshotSync}\n${appStorePlan}`;
@@ -173,6 +175,19 @@ check(/capture-provenance\.json/.test(captureSource)
   && /provenance\.files/.test(verifySource)
   && /createHash\(['"]sha256['"]\)/.test(verifySource),
   'capture, finalize, and verification must retain locale/target iteration, provenance, and checksums');
+
+const captureModulePaths = [...captureFixtureSource.matchAll(
+  /\bimport\((['"])\/(src\/[^'"]+)\1\)/g,
+)].map((match) => match[2]);
+const missingCaptureModules = [...new Set(captureModulePaths)]
+  .filter((modulePath) => !existsSync(repositoryPath(modulePath)));
+check(captureModulePaths.length > 0 && missingCaptureModules.length === 0,
+  `${APP_STORE_SOURCE} imports missing production modules: ${missingCaptureModules.join(', ')}`);
+check(/openOnline\(['"]ladder['"]/.test(captureFixtureSource)
+    && !/openOnline\(['"]board['"]/.test(captureFixtureSource),
+  `${APP_STORE_SOURCE} must open the production ladder through its current view id`);
+check(/onLadderList/.test(captureFixtureSource) && !/onBoardList/.test(captureFixtureSource),
+  `${APP_STORE_SOURCE} must wait for the current production ladder panel`);
 
 check(/REQUIRED_LOCALES\s*=\s*%w\[de-DE en-GB fr-FR\]/.test(screenshotSync)
   && /REQUIRED_DISPLAY_TYPES\s*=\s*%w\[APP_IPAD_PRO_3GEN_129 APP_IPHONE_67\]/.test(screenshotSync)

@@ -200,8 +200,6 @@ export const deOnline = {
     newMode: 'NEUER MODUS',
     whatChanges: 'WAS SICH ÄNDERT',
     swipeExplore: 'Wisch zum Entdecken',
-    swipeChanges: 'Wischen für Änderungen',
-    swipeOrButtons: 'Wischen oder Tasten nutzen',
     slideLabel: 'Seite {{current}} von {{total}}',
     runesUnlockedTitle: 'RUNEN FREIGESCHALTET',
     runesUnlockedBody: 'Mit dem Erreichen der SILBER-Liga bleiben ausgerüstete Runen dauerhaft für normale Ranglistenspiele freigeschaltet.',

@@ -200,8 +200,6 @@ export const frOnline = {
     newMode: 'NOUVEAU MODE',
     whatChanges: 'CE QUI CHANGE',
     swipeExplore: 'Balayez et explorez',
-    swipeChanges: 'Balayez pour la suite',
-    swipeOrButtons: 'Balayez ou appuyez',
     slideLabel: 'Écran {{current}} sur {{total}}',
     runesUnlockedTitle: 'RUNES DÉBLOQUÉES',
     runesUnlockedBody: 'Atteindre la ligue ARGENT débloque définitivement les runes équipées dans les parties classées normales.',

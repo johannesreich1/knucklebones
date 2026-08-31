@@ -20,7 +20,7 @@ try {
   // shard may never conceal a missing or duplicate suite elsewhere.
   validateGateManifest();
   options = parseGateArgs(process.argv.slice(2));
-  plan = createGatePlan(options.ciShard);
+  plan = createGatePlan(options);
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exit(2);
@@ -77,8 +77,8 @@ let ran = 0;
    verdict cannot improve, and `tools/release-main.mjs` throws on the first
    non-zero anyway, so everything after the first failure is time spent proving
    something already decided. Twice in one day that cost ten minutes apiece.
-   No flag — `parseGateArgs` keeps its exact shape, which gate-manifest.test.ts
-   asserts, and there is no mode in which finishing a doomed run is wanted. */
+   There is no mode in which finishing a doomed run is wanted. `--suite`
+   narrows the next invocation; it never makes a red invocation continue. */
 let aborted = null;
 export const gateAborted = () => aborted !== null;
 function judge(name, result, verdict) {
@@ -95,8 +95,8 @@ function judge(name, result, verdict) {
   console.log(result.out.trim().split('\n').map(line => `  | ${line}`).join('\n'));
   aborted = name;
   for (const child of live) child.kill('SIGKILL');
-  console.log(`\nSTOPPED at the first failure: ${name}. `
-    + 'Remaining suites were not run — fix this one and gate again.');
+  console.log(`\nSTOPPED at the first failure: ${name}. Remaining suites were not run.`
+    + `\nRerun this owner with: mise exec -- npm test -- --suite ${name}`);
 }
 
 const announce = name => console.log(`start ${name}`);
@@ -119,7 +119,8 @@ const runners = { node, suite, benchmark };
 const run = spec => runners[spec.runner](spec)();
 
 const selected = [...plan.pooled, ...plan.final];
-const label = options.ciShard ?? 'complete';
+const label = options.ciShard
+  ?? (options.suiteNames ? `focused:${options.suiteNames.join(',')}` : 'complete');
 const gateStarted = performance.now();
 console.log(`gate ${label}: ${selected.length} suites, ${options.jobs} worker(s)`);
 

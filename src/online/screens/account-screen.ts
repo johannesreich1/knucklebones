@@ -1,4 +1,10 @@
-import { boardGroup, groupFill, inApex, peakState } from '../../core/ladder.ts';
+import {
+  boardGroup,
+  groupFill,
+  groupRingFill,
+  groupRingPeakState,
+  inApex,
+} from '../../core/ladder.ts';
 import {
   formatDate,
   formatNumber,
@@ -114,8 +120,10 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
        NEON is positional and a high-points non-apex player stays OBSIDIAN. */
     const group = boardGroup(points, apex);
     const label = $('#accGroup') as HTMLElement;
+    const material = `var(--g-${group.id})`;
     label.textContent = ladderGroupName(group.id);
-    label.style.setProperty('--gc', `var(--g-${group.id})`);
+    label.style.setProperty('--gc', material);
+    ($('#accRing') as HTMLElement).style.setProperty('--lr-material', material);
   };
   const rankText = (standing: Standing | null, games: number, apex: boolean): string =>
     standing && games ? (apex ? ladderGroupName('neon') : '#' + formatNumber(standing.rank)) : '–';
@@ -272,8 +280,8 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     cacheStanding(standing?.rank ?? null, apex);
     refreshHomeChip();
 
-    const peakPosition = peakState(points, peak);
-    fillAccountRing(ring, groupFill(points));
+    const peakPosition = groupRingPeakState(points, peak, apex);
+    fillAccountRing(ring, groupRingFill(points, apex));
     ring.classList.toggle('haspeak', peakPosition.kind !== 'at');
     if (peakPosition.kind === 'ahead') ring.style.setProperty('--pk', String(peakPosition.fill));
     if (peakPosition.kind === 'above') ring.style.setProperty('--pk', '1');

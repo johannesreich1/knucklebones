@@ -52,6 +52,14 @@ import {
   assertRefreshAudit,
   assertStreakBaselineStage,
 } from './support/production-test-data-bot-profile-cases.ts';
+import {
+  assertProductionPlayerPointsAudit,
+  assertProductionPlayerPointsExecutor,
+  assertProductionPlayerPointsInput,
+  assertProductionPlayerPointsOrchestration,
+  assertProductionPlayerPointsPostcheck,
+  assertProductionPlayerPointsSql,
+} from './support/production-player-points-cases.ts';
 
 const checked: string[] = [];
 const problems: string[] = [];
@@ -187,6 +195,15 @@ check('database query argv is fixed to the linked production project and SQL fil
   guarded(() => productionTestDataQueryArgs('../bad.sql', 'aaaaaaaaaaaaaaaaaaaa'), /project ref mismatch/);
 });
 
+check('BadRandolf point input and apply opt-in are exact and injection-proof',
+  assertProductionPlayerPointsInput);
+check('BadRandolf production audit admits one idle human and rejects ambiguous or stale state',
+  assertProductionPlayerPointsAudit);
+check('BadRandolf point SQL is one short guarded transaction and preserves durable achievements',
+  assertProductionPlayerPointsSql);
+check('BadRandolf point postcheck pins the mirror, monotonic peak/pool, and clean next event',
+  assertProductionPlayerPointsPostcheck);
+
 check('canonical seed has toned-down realistic histories across every ladder group', () => {
   assertRealisticBotSeedPlan();
 });
@@ -312,6 +329,9 @@ check('executor rejects every SQL program outside the reviewed constants', () =>
   assert.equal(removed, false, 'an unvalidated broad path was recursively removed');
 });
 
+check('BadRandolf executor accepts only the exact generated program and a private temp directory',
+  assertProductionPlayerPointsExecutor);
+
 await checkAsync('exact Rune prerequisite reuses full schema, body, grant, RLS, publication, cron, and baseline audits', async () => {
   await assertExactRuneTrialPrerequisite();
 });
@@ -335,6 +355,11 @@ await checkAsync('seed orchestration hard-blocks absent migration and rechecks e
 await checkAsync('profile refresh converges either accepted profile state once and blocks canonical rune data', async () => {
   await assertBotProfileRefreshOrchestration();
 });
+
+await checkAsync(
+  'BadRandolf point orchestration previews read-only and applies one rechecked program',
+  assertProductionPlayerPointsOrchestration,
+);
 
 if (problems.length) {
   console.error(JSON.stringify({ out: { productionTestData: false }, checked, problems }, null, 2));

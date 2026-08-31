@@ -1,7 +1,7 @@
 // LG1 — the ranked result's mandatory living-ladder deck. The result remains
 // underneath; one animated group hero always leads, and registry-backed
 // feature slides contain only icon, title, and explanatory text.
-import { groupFill } from '../../core/ladder.ts';
+import { groupRingFill } from '../../core/ladder.ts';
 import { RUNE_TRIAL_FORMAT, rankedOutcomeById } from '../../core/ranked-outcomes.ts';
 import {
   formatNumber,
@@ -15,6 +15,7 @@ import { Sfx } from '../../ui/audio.ts';
 import { paintAvatar } from '../../ui/avatar.ts';
 import { appRoot, isEmbed } from '../../ui/embed.ts';
 import { fit } from '../../ui/layout.ts';
+import { ladderRingLayersMarkup } from '../../ui/ladder-ring.ts';
 import {
   makeModalBackgroundInert,
   restoreModalBackground,
@@ -144,7 +145,7 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
     kicker.textContent = '';
     body.className = 'gt-body gt-group-body';
     body.innerHTML = `<div class="ringwrap gt-ring">
-        <i class="lring"></i><i class="gt-tierhalo"></i><i class="gt-oldarc"></i><i class="gt-orbit"></i>
+        ${ladderRingLayersMarkup({ material: true, previousMaterial: true })}
         <span class="gt-avatar"></span>
         <i class="gt-mote"></i><i class="gt-mote"></i><i class="gt-mote"></i>
         <i class="gt-mote"></i><i class="gt-mote"></i><i class="gt-mote"></i>
@@ -152,16 +153,20 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
       <span class="gt-overline"></span><h2 class="gt-group" id="gtTitle"></h2>
       <p class="gt-copy" id="gtCopy"></p>`;
     const ring = required<HTMLElement>(body, '.gt-ring');
-    ring.style.setProperty('--p1', 'var(--gt-tier)');
-    ring.style.setProperty('--p', slide.to === 'neon' ? '1' : String(groupFill(event.afterPoints)));
+    ring.style.setProperty('--lr-fill', 'var(--gt-tier)');
+    ring.style.setProperty('--lr-material', 'var(--gt-tier)');
+    ring.style.setProperty('--lr-previous', 'var(--gt-old)');
+    ring.style.setProperty(
+      '--lr-fill-glow',
+      'color-mix(in srgb,var(--gt-tier) 52%,transparent)',
+    );
+    ring.style.setProperty('--p', String(groupRingFill(event.afterPoints, slide.to === 'neon')));
     paintAvatar(required<HTMLElement>(body, '.gt-avatar'), presentation.avatar, 72);
     required<HTMLElement>(body, '.gt-overline').textContent = t('online', promoted
       ? 'groupTransition.promotedTo' : 'groupTransition.demotedTo');
     required<HTMLElement>(body, '#gtTitle').textContent = ladderGroupName(slide.to);
     required<HTMLElement>(body, '#gtCopy').textContent = t('online', promoted
       ? 'groupTransition.promotionBody' : 'groupTransition.demotionBody');
-    swipe.textContent = t('online', promoted
-      ? 'groupTransition.swipeExplore' : 'groupTransition.swipeChanges');
   };
 
   const paintOutcome = (
@@ -183,7 +188,6 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
     icon.innerHTML = modeIcon(trial ? RUNE_TRIAL_FORMAT : outcome.id, 46);
     required<HTMLElement>(body, '#gtTitle').textContent = copy.name;
     required<HTMLElement>(body, '#gtCopy').textContent = copy.blurb;
-    swipe.textContent = t('online', 'groupTransition.swipeOrButtons');
   };
 
   const paintRuneSeat = (): void => {
@@ -204,7 +208,6 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
     required<HTMLElement>(body, '#gtCopy').textContent = t(
       'online', 'groupTransition.runesUnlockedBody',
     );
-    swipe.textContent = t('online', 'groupTransition.swipeOrButtons');
   };
 
   function paint(): void {
@@ -216,6 +219,7 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
 
     const current = active.index + 1;
     const total = active.slides.length;
+    swipe.textContent = t('online', 'groupTransition.swipeExplore');
     page.textContent = `${formatNumber(current)} / ${formatNumber(total)}`;
     const slideLabel = t('online', 'groupTransition.slideLabel', { current, total });
     dots.setAttribute('aria-label', slideLabel);

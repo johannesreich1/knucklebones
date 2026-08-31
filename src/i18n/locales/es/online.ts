@@ -200,8 +200,6 @@ export const esOnline = {
     newMode: 'NUEVO MODO',
     whatChanges: 'QUÉ CAMBIA',
     swipeExplore: 'Desliza y explora',
-    swipeChanges: 'Desliza para ver qué cambia',
-    swipeOrButtons: 'Desliza o usa los botones',
     slideLabel: 'Pantalla {{current}} de {{total}}',
     runesUnlockedTitle: 'RUNAS DESBLOQUEADAS',
     runesUnlockedBody: 'Alcanzar la liga PLATA desbloquea para siempre las runas equipadas en las partidas clasificatorias normales.',

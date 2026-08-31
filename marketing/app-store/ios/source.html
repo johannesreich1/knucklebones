@@ -875,11 +875,11 @@
       } else if (slide.scene === 'ladder') {
         installOnlineFixture(win, 'ladder');
         hideMenus(doc);
-        const online = await win.eval("import('/src/online/ui.ts')");
-        await online.openOnline('board', { startTutorial() {} });
-        await waitFor(() => !doc.getElementById('onBoard')?.hidden);
-        await waitFor(() => doc.querySelectorAll('#onBoardList .lrow').length >= 8);
-        await waitFor(() => doc.querySelector('#onBoardList .lrow.me .nm')?.textContent === 'FrostLynx303');
+        const online = await win.eval("import('/src/online/screens/ui.ts')");
+        await online.openOnline('ladder', { startTutorial() {} });
+        await waitFor(() => !doc.getElementById('onLadder')?.hidden);
+        await waitFor(() => doc.querySelectorAll('#onLadderList .lrow').length >= 8);
+        await waitFor(() => doc.querySelector('#onLadderList .lrow.me .nm')?.textContent === 'FrostLynx303');
         k.fit();
       }
 

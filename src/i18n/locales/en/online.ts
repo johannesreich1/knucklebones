@@ -208,8 +208,6 @@ export const enOnline = {
     newMode: 'NEW MODE',
     whatChanges: 'WHAT CHANGES',
     swipeExplore: 'Swipe to explore',
-    swipeChanges: 'Swipe for what changes',
-    swipeOrButtons: 'Swipe or use buttons',
     slideLabel: 'Slide {{current}} of {{total}}',
     runesUnlockedTitle: 'RUNES UNLOCKED',
     runesUnlockedBody: 'Reaching SILVER permanently unlocks equipped runes in ordinary ranked matches.',

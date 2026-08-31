@@ -78,6 +78,7 @@ export const readDeck = (page) => page.evaluate(() => {
   ) : null;
   const kicker = document.getElementById('gtKicker');
   const pageLabel = document.getElementById('gtPage');
+  const swipeHint = document.getElementById('gtSwipe');
   const head = dialog?.querySelector('.gt-head');
   const points = body?.querySelector('.gt-step');
   const deckStyle = dialog ? getComputedStyle(dialog) : null;
@@ -120,6 +121,11 @@ export const readDeck = (page) => page.evaluate(() => {
       box: rect(pageLabel),
       headBox: rect(head),
     },
+    swipe: {
+      visible: visible(swipeHint),
+      label: swipeHint?.textContent?.trim() ?? '',
+      box: rect(swipeHint),
+    },
     points: {
       visible: visible(points),
       label: points?.textContent?.trim() ?? '',
@@ -127,6 +133,9 @@ export const readDeck = (page) => page.evaluate(() => {
     },
     layout: {
       deck: rect(dialog),
+      body: rect(body),
+      dots: rect(dotsRoot),
+      actions: rect(actions),
       paddingTop: deckStyle ? Number.parseFloat(deckStyle.paddingTop) : null,
       paddingBottom: deckStyle ? Number.parseFloat(deckStyle.paddingBottom) : null,
       buttonHeights: [...(actions?.querySelectorAll('button') ?? [])]
@@ -135,6 +144,83 @@ export const readDeck = (page) => page.evaluate(() => {
     },
     title: body?.querySelector('h1, h2, h3')?.textContent?.trim() ?? '',
     paragraph: body?.querySelector('p')?.textContent?.trim() ?? '',
+  };
+});
+
+export const readLivingRing = (page, selector) => page.$eval(selector, (ring) => {
+  const fill = ring.querySelector('.lring');
+  const halo = ring.querySelector('.lhalo');
+  const orbit = ring.querySelector('.lorbit');
+  const box = (element) => {
+    const value = element?.getBoundingClientRect();
+    return value ? { width: value.width, height: value.height } : null;
+  };
+  const edges = (element) => {
+    if (!element) return null;
+    const style = getComputedStyle(element);
+    return [style.top, style.right, style.bottom, style.left];
+  };
+  const color = (scope, value) => {
+    const chip = document.createElement('i');
+    chip.style.color = value;
+    scope.appendChild(chip);
+    const resolved = getComputedStyle(chip).color;
+    chip.remove();
+    return resolved;
+  };
+  const compact = (value) => value.toLowerCase().replaceAll(' ', '');
+  const player = color(ring, 'var(--p1)');
+  const material = color(ring, 'var(--lr-material)');
+  const orbitMaterial = color(
+    ring,
+    'color-mix(in srgb,var(--lr-material) 34%,transparent)',
+  );
+  const fillStyle = fill ? getComputedStyle(fill) : null;
+  const haloStyle = halo ? getComputedStyle(halo) : null;
+  const orbitStyle = orbit ? getComputedStyle(orbit) : null;
+  const fillImage = fillStyle?.backgroundImage ?? '';
+  const haloImage = haloStyle?.backgroundImage ?? '';
+  const avatar = ring.querySelector('#btnAvatar');
+  const avatarBox = avatar?.getBoundingClientRect();
+  const avatarHit = avatarBox ? document.elementFromPoint(
+    avatarBox.left + avatarBox.width / 2,
+    avatarBox.top + avatarBox.height / 2,
+  ) : null;
+  return {
+    anatomy: ['lring', 'lhalo', 'lorbit'].filter((name) => ring.querySelector(`.${name}`)),
+    ring: box(ring),
+    fill: {
+      box: box(fill),
+      edges: edges(fill),
+      mask: fillStyle?.maskImage || fillStyle?.webkitMaskImage || '',
+      image: fillImage,
+      usesPlayer: compact(fillImage).includes(compact(player)),
+      usesMaterial: compact(fillImage).includes(compact(material)),
+    },
+    halo: {
+      box: box(halo),
+      edges: edges(halo),
+      mask: haloStyle?.maskImage || haloStyle?.webkitMaskImage || '',
+      usesMaterial: compact(haloImage).includes(compact(material)),
+      display: haloStyle?.display ?? '',
+      visibility: haloStyle?.visibility ?? '',
+      opacity: Number.parseFloat(haloStyle?.opacity ?? '0'),
+      pointerEvents: haloStyle?.pointerEvents ?? '',
+    },
+    orbit: {
+      box: box(orbit),
+      edges: edges(orbit),
+      borderColor: orbitStyle?.borderTopColor ?? '',
+      usesMaterial: compact(orbitStyle?.borderTopColor ?? '') === compact(orbitMaterial),
+      display: orbitStyle?.display ?? '',
+      visibility: orbitStyle?.visibility ?? '',
+      opacity: Number.parseFloat(orbitStyle?.opacity ?? '0'),
+      pointerEvents: orbitStyle?.pointerEvents ?? '',
+    },
+    player,
+    material,
+    playerAndMaterialDiffer: compact(player) !== compact(material),
+    avatarHit: !avatar || (!!avatarHit && avatar.contains(avatarHit)),
   };
 });
 

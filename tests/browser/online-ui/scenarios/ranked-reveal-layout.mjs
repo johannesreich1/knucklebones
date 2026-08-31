@@ -89,6 +89,7 @@ export async function runRankedRevealLayoutScenarios({ visit, out, check }) {
 
   await runBareRitualScenarios({ visit, out, check });
   await runStandardRuneRevealScenarios({ visit, out, check });
+  await runStandardRuneRejoinScenarios({ visit, out, check });
   await runUnreadableTrialRejoinScenario({ visit, out, check });
 }
 
@@ -268,6 +269,49 @@ async function runStandardRuneRevealScenarios({ visit, out, check }) {
     'the standard reveal was removed by dropping the immutable runes from the game', r);
   check(empty.errs.length === 0 && equipped.errs.length === 0,
     'page errors during fresh standard ranked entries', { empty: empty.errs, equipped: equipped.errs });
+}
+
+// A STANDARD REJOIN SKIPS THE REVEAL BUT KEEPS ITS NULLABLE RUNE SNAPSHOT.
+//
+// The ordinary ranked contract permits either seat to be empty. Rejoining a
+// playing match must therefore use the same nullable validation as a fresh
+// entry, then carry every non-empty immutable rune onto the shared table. It
+// must not tighten the row to Rune Trial's two-mandatory-runes contract merely
+// because both paths share the no-reveal queue branch.
+async function runStandardRuneRejoinScenarios({ visit, out, check }) {
+  const empty = await visit({
+    named: true, skipStandardProbes: true, door: 'match',
+    trialMatch: {
+      format: 'standard', rejoined: true, myRune: null, foeRune: null,
+    },
+    matchReadySelector: null,
+    initScript: STANDARD_REVEAL_RECORDER,
+    probe: readStandardEntry,
+  });
+  const equipped = await visit({
+    named: true, skipStandardProbes: true, door: 'match',
+    trialMatch: {
+      format: 'standard', rejoined: true, myRune: 'ward', foeRune: null,
+    },
+    matchReadySelector: null,
+    initScript: STANDARD_REVEAL_RECORDER,
+    probe: readStandardEntry,
+  });
+  out.standardRuneRejoin = {
+    empty: empty.probeResult,
+    equipped: equipped.probeResult,
+  };
+  const e = empty.probeResult;
+  const r = equipped.probeResult;
+
+  check(!!e && e.overlayFrames === 0 && e.pairedFrames === 0
+      && e.rankedTitleFrames === 0 && e.cards.length === 0,
+    'a valid empty-seat STANDARD rejoin was rejected or borrowed Rune Trial reveal UI', e);
+  check(!!r && r.overlayFrames === 0 && r.pairedFrames === 0
+      && r.rankedTitleFrames === 0 && r.cards.join('|') === '1:ward',
+    'a valid nullable STANDARD rejoin lost its equipped rune or borrowed Rune Trial reveal UI', r);
+  check(empty.errs.length === 0 && equipped.errs.length === 0,
+    'page errors during valid standard ranked rejoins', { empty: empty.errs, equipped: equipped.errs });
 }
 
 // A REJOIN HAS NO REVEAL TO VALIDATE ITS TWO SETTLED CHOICES.

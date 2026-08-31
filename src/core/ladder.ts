@@ -195,6 +195,13 @@ export function groupFill(points: number): number {
   return Math.min(1, Math.max(0, (points - g.floor) / g.width));
 }
 
+/* The ring paints the DISPLAY league, not merely the points fallback. NEON is
+   awarded by position once the season is large enough, so an apex player may
+   sit below 4,350 points and still has no bounded group left to traverse. */
+export function groupRingFill(points: number, apex: boolean): number {
+  return apex ? 1 : groupFill(points);
+}
+
 /* Points still owed to the next group. 0 in the apex, which has nothing above
    it — and which is a POSITION anyway, so no number could name the distance. */
 export function toNext(points: number): number {
@@ -224,6 +231,17 @@ export function peakState(points: number, peak: number): PeakState {
   const here = groupOf(points), there = groupOf(peak);
   if (there !== here) return { kind: 'above', group: there };
   return { kind: 'ahead', fill: groupFill(peak) };
+}
+
+/* An unbounded positional league has no honest scale on which to place the
+   peak. Profile keeps the exact number in its PEAK fact and omits the notch;
+   bounded leagues retain the ordinary current-group mapping above. */
+export function groupRingPeakState(
+  points: number,
+  peak: number,
+  apex: boolean,
+): PeakState {
+  return apex ? { kind: 'at' } : peakState(points, peak);
 }
 
 /* ---- the bot's group is its strength ------------------------------------ */

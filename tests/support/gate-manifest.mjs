@@ -187,7 +187,8 @@ export const CI_SHARDS = Object.freeze({
 });
 
 export const CI_SHARD_NAMES = Object.freeze(Object.keys(CI_SHARDS));
-export const GATE_USAGE = 'Usage: tests/run-all.mjs [--jobs N] [--ci-shard ci-1|ci-2|ci-3|ci-4]';
+export const GATE_USAGE = 'Usage: tests/run-all.mjs [--jobs N] '
+  + '[--ci-shard ci-1|ci-2|ci-3|ci-4 | --suite manifest-id [--suite manifest-id ...]]';
 
 function invocationSignature(suite) {
   return JSON.stringify([suite.file, ...(suite.args ?? [])]);
@@ -247,9 +248,11 @@ function positiveInteger(value, source) {
 export function parseGateArgs(argv, env = process.env) {
   let jobs;
   let ciShard;
+  const suiteNames = [];
+  const knownSuites = new Set(GATE_SUITES.map(suite => suite.name));
   for (let i = 0; i < argv.length; i++) {
     const flag = argv[i];
-    if (flag !== '--jobs' && flag !== '--ci-shard') {
+    if (flag !== '--jobs' && flag !== '--ci-shard' && flag !== '--suite') {
       throw new Error(`Unknown gate option "${flag}"\n${GATE_USAGE}`);
     }
     const value = argv[++i];
@@ -257,26 +260,46 @@ export function parseGateArgs(argv, env = process.env) {
     if (flag === '--jobs') {
       if (jobs !== undefined) throw new Error(`Repeated --jobs\n${GATE_USAGE}`);
       jobs = positiveInteger(value, '--jobs');
-    } else {
+    } else if (flag === '--ci-shard') {
       if (ciShard !== undefined) throw new Error(`Repeated --ci-shard\n${GATE_USAGE}`);
       if (!CI_SHARD_NAMES.includes(value)) throw new Error(`Unknown CI shard "${value}"\n${GATE_USAGE}`);
       ciShard = value;
+    } else {
+      if (!knownSuites.has(value)) throw new Error(`Unknown gate suite "${value}"\n${GATE_USAGE}`);
+      if (suiteNames.includes(value)) throw new Error(`Duplicate gate suite "${value}"\n${GATE_USAGE}`);
+      suiteNames.push(value);
     }
+  }
+  if (ciShard && suiteNames.length) {
+    throw new Error(`--ci-shard and --suite cannot be combined\n${GATE_USAGE}`);
   }
   const selectedJobs = jobs ?? env.KB_JOBS ?? (env.CI ? 1 : 4);
   return {
     jobs: positiveInteger(selectedJobs, jobs === undefined ? 'KB_JOBS' : '--jobs'),
     ciShard,
+    suiteNames: suiteNames.length ? suiteNames : undefined,
   };
 }
 
-export function createGatePlan(ciShard, suites = GATE_SUITES, shards = CI_SHARDS) {
+export function createGatePlan(options = {}, suites = GATE_SUITES, shards = CI_SHARDS) {
   validateGateManifest(suites, shards);
+  const { ciShard, suiteNames } = options;
+  if (ciShard && suiteNames?.length) {
+    throw new Error(`--ci-shard and --suite cannot be combined\n${GATE_USAGE}`);
+  }
   if (ciShard && !Object.hasOwn(shards, ciShard)) {
     throw new Error(`Unknown CI shard "${ciShard}"\n${GATE_USAGE}`);
   }
   const byName = new Map(suites.map(suite => [suite.name, suite]));
-  const selected = ciShard ? shards[ciShard].map(name => byName.get(name)) : [...suites];
+  const focused = [];
+  for (const name of suiteNames ?? []) {
+    if (!byName.has(name)) throw new Error(`Unknown gate suite "${name}"\n${GATE_USAGE}`);
+    if (focused.includes(name)) throw new Error(`Duplicate gate suite "${name}"\n${GATE_USAGE}`);
+    focused.push(name);
+  }
+  const selected = ciShard
+    ? shards[ciShard].map(name => byName.get(name))
+    : focused.length ? focused.map(name => byName.get(name)) : [...suites];
   return {
     pooled: selected.filter(suite => !suite.exclusiveFinal),
     final: selected.filter(suite => suite.exclusiveFinal),

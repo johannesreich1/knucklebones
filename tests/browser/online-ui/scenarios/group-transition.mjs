@@ -6,12 +6,14 @@
 // method or mutate its index. The feature-slide shape also pins the owner's
 // simplification: icon, title, text — no second explanatory illustration.
 import { assertPromotionTransition } from './group-transition-assertions.mjs';
+import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
 import {
   bounded,
   EVENT_ID,
   MATCH_ID,
   PROGRESSION,
   readDeck,
+  readLivingRing,
   readModeShape,
   REPORT,
   swipe,
@@ -106,6 +108,7 @@ async function promotionProbe(page) {
 
 async function reducedMotionProbe(page) {
   const matchId = '90000000-0000-4000-8000-000000000002';
+  const profileRing = await readLivingRing(page, '#accRing');
   await installProgressionRoutes(page, {
     ...PROGRESSION,
     id: '91000000-0000-4000-8000-000000000002',
@@ -114,7 +117,8 @@ async function reducedMotionProbe(page) {
   await showTransitionResult(page, { ...REPORT, matchId });
   await page.evaluate(() => new Promise((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  return page.evaluate(() => {
+  const transitionRing = await readLivingRing(page, '.gt-ring');
+  const state = await page.evaluate(() => {
     const overlay = document.getElementById('ovGroupTransition');
     const body = document.getElementById('gtBody');
     return {
@@ -124,6 +128,22 @@ async function reducedMotionProbe(page) {
         .filter((animation) => animation.playState === 'pending'
           || animation.playState === 'running')
         .map((animation) => animation.animationName || animation.transitionProperty) ?? [],
+    };
+  });
+  return { ...state, profileRing, transitionRing };
+}
+
+async function apexProfileProbe(page) {
+  return page.evaluate(() => {
+    const ring = document.getElementById('accRing');
+    const peak = ring?.querySelector('.lpeak');
+    return {
+      group: document.getElementById('accGroup')?.textContent?.trim() ?? '',
+      rank: document.getElementById('accRank')?.textContent?.trim() ?? '',
+      peak: document.getElementById('accPeak')?.textContent?.trim() ?? '',
+      fill: ring ? getComputedStyle(ring).getPropertyValue('--p').trim() : '',
+      hasPeakNotch: ring?.classList.contains('haspeak') ?? false,
+      peakOpacity: peak ? getComputedStyle(peak).opacity : '',
     };
   });
 }
@@ -150,6 +170,9 @@ async function compactLayoutProbe(page) {
     const deck = document.querySelector('.gt-deck');
     const body = document.getElementById('gtBody');
     const actions = document.querySelector('.gt-actions');
+    const swipe = document.getElementById('gtSwipe');
+    const swipeBox = rect(swipe);
+    const swipeStyle = swipe ? getComputedStyle(swipe) : null;
     return {
       viewport: { width: innerWidth, height: innerHeight },
       deck: rect(deck),
@@ -160,6 +183,12 @@ async function compactLayoutProbe(page) {
       title: rect(body?.querySelector('h2')),
       paragraph: rect(body?.querySelector('p')),
       actions: rect(actions),
+      swipe: {
+        label: swipe?.textContent?.trim() ?? '',
+        visible: !!swipeBox && swipeBox.width > 0 && swipeBox.height > 0
+          && swipeStyle?.display !== 'none' && swipeStyle?.visibility !== 'hidden'
+          && Number(swipeStyle?.opacity) !== 0,
+      },
       landscape: document.getElementById('kbroot')?.classList.contains('land') ?? false,
       buttonHeights: [...(actions?.querySelectorAll('button') ?? [])]
         .filter((button) => !button.hidden)
@@ -195,8 +224,68 @@ export async function runGroupTransitionScenarios({ visit, out, check }) {
       && reduced.probeResult.running.length === 0,
     'reduced motion did not paint the final group truth as an animation-free still',
     reduced.probeResult);
+  const profileRing = reduced.probeResult?.profileRing;
+  const transitionRing = reduced.probeResult?.transitionRing;
+  check(profileRing?.anatomy.join(',') === 'lring,lhalo,lorbit'
+      && transitionRing?.anatomy.join(',') === 'lring,lhalo,lorbit'
+      && JSON.stringify(profileRing.fill.edges) === JSON.stringify(transitionRing.fill.edges)
+      && JSON.stringify(profileRing.halo.edges) === JSON.stringify(transitionRing.halo.edges)
+      && JSON.stringify(profileRing.orbit.edges) === JSON.stringify(transitionRing.orbit.edges)
+      && profileRing.fill.mask === transitionRing.fill.mask
+      && profileRing.halo.mask === transitionRing.halo.mask
+      && profileRing.ring.width === profileRing.ring.height
+      && transitionRing.ring.width === transitionRing.ring.height
+      && profileRing.halo.pointerEvents === 'none'
+      && profileRing.orbit.pointerEvents === 'none'
+      && profileRing.halo.display !== 'none'
+      && profileRing.orbit.display !== 'none'
+      && profileRing.halo.visibility === 'visible'
+      && profileRing.orbit.visibility === 'visible'
+      && profileRing.halo.opacity > 0
+      && profileRing.orbit.opacity > 0
+      && transitionRing.halo.display !== 'none'
+      && transitionRing.orbit.display !== 'none'
+      && transitionRing.halo.visibility === 'visible'
+      && transitionRing.orbit.visibility === 'visible'
+      && transitionRing.halo.opacity > 0
+      && transitionRing.orbit.opacity > 0
+      && profileRing.avatarHit,
+    'Profile and the transition no longer share one non-blocking living-ring anatomy',
+    { profileRing, transitionRing });
+  check(profileRing?.playerAndMaterialDiffer && profileRing.fill.usesPlayer
+      && !profileRing.fill.usesMaterial
+      && profileRing.halo.usesMaterial && profileRing.orbit.usesMaterial
+      && transitionRing?.playerAndMaterialDiffer && !transitionRing.fill.usesPlayer
+      && transitionRing.fill.usesMaterial
+      && transitionRing.halo.usesMaterial && transitionRing.orbit.usesMaterial,
+    'Profile progress did not keep the user colour while the ring material kept its league colour',
+    { profileRing, transitionRing });
   check(reduced.errs.length === 0,
     'page errors during reduced-motion group transition', reduced.errs);
+
+  /* NEON is the top 1%, not the 4,350-point fallback. Rank two of two hundred
+     is therefore NEON even at GOLD points. With no upper cap, the living ring
+     is complete and cannot place a high-score notch on a made-up scale; the
+     exact season high score remains the right-most PEAK fact below it. */
+  const apex = await visit({
+    named: true,
+    motion: 'reduce',
+    ladderBoard: { population: 200, myRank: 2 },
+    standingPoints: 2494,
+    standingPeak: 2610,
+    skipStandardProbes: true,
+    probe: apexProfileProbe,
+  });
+  out.groupTransitionApexProfile = apex.probeResult;
+  check(apex.probeResult?.group === RESOURCES.en.online.ladder.groups.neon.name
+      && apex.probeResult.rank === RESOURCES.en.online.ladder.groups.neon.name
+      && apex.probeResult.fill === '1'
+      && !apex.probeResult.hasPeakNotch && apex.probeResult.peakOpacity === '0'
+      && apex.probeResult.peak === '2,610',
+    'second-place NEON did not show a full unbounded ring and a separate numeric season peak',
+    apex.probeResult);
+  check(apex.errs.length === 0,
+    'page errors during the second-place NEON Profile', apex.errs);
 
   const compact = await visit({
     named: true,
@@ -213,6 +302,8 @@ export async function runGroupTransitionScenarios({ visit, out, check }) {
       && c.deckOverflow <= 1 && c.bodyOverflow <= 1
       && c.icon.top >= c.body.top && c.paragraph.bottom <= c.body.bottom
       && c.actions.bottom <= c.deck.bottom
+      && c.swipe.visible
+      && c.swipe.label === RESOURCES.de.online.groupTransition.swipeExplore
       && !c.landscape
       && c.buttonHeights.length === 2
       && c.buttonHeights.every((height) => height >= 44),

@@ -165,7 +165,9 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
              Trial reveal's strict registry check itself. `resolveRankedTrial`
              only establishes that both server seats are strings; an unknown
              future id cannot be shortened to an empty hand at table entry. */
-          if (!trialRevealSides(match)) unreadable = true;
+          if (match.match.format === RUNE_TRIAL_FORMAT && !trialRevealSides(match)) {
+            unreadable = true;
+          }
         }
         if (unreadable) { ports.goHome(); return; }
         if (abandoned || !runs.owns(run)) return;

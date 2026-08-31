@@ -10,6 +10,7 @@ import { makeDie } from '../../ui/die.ts';
 import { appRoot } from '../../ui/embed.ts';
 import { loaderWait } from '../../ui/loader.ts';
 import { refreshLegalUi } from '../../ui/legal.ts';
+import { ladderRingLayersMarkup } from '../../ui/ladder-ring.ts';
 import { LEGAL_AUTH_NAV_MARKUP } from '../../markup/legal.ts';
 import { WARNING_NOTE_MARKUP } from './warning-note.ts';
 
@@ -70,7 +71,7 @@ const OVERLAY = `
          divisions are gone (docs/LADDER.md §5). --p is the fill, --pk the
          season peak; .haspeak says the peak is worth drawing at all. -->
     <div class="ringwrap" id="accRing" style="--p:0;--pk:0">
-      <i class="lring"></i><i class="lpeak"></i>
+      ${ladderRingLayersMarkup({ material: true, peak: true })}
       <button class="avwrap" id="btnAvatar" aria-label="Change avatar"
         data-i18n-attr="aria-label=online:profile.changeAvatar">
         <span id="accDie"></span><span class="avedit">✎</span>

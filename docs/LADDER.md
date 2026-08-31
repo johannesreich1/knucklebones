@@ -189,7 +189,10 @@ living-ladder deck above it. Its first slide is always the same ring and avatar
 settling into the new material: upward for promotion, downward for demotion.
 There is no close or backdrop dismissal; swipe, dots, Back/Next and the final
 Continue are the complete path, and reduced motion paints the same settled
-state without the rise/fall/orbit effects.
+state without the rise/fall/orbit effects. Every multi-slide page keeps the
+same localized **Swipe to explore** footer; the buttons are an equivalent
+control, not a reason to rename the gesture. A one-slide demotion hides the
+dead swipe hint.
 
 Settlement writes one owner-only durable before/after event per human
 participant in the same transaction as the ladder step. The event carries
@@ -477,6 +480,14 @@ tweened in JS rather than by a CSS transition, because a conic-gradient's angle
 stop does not interpolate reliably across engines; `REDUCED` motion skips
 straight to the value.
 
+Profile and the transition consume one full-size ring primitive: progress
+track, fill, outer league-material halo, and inner orbit. The transition alone
+adds its previous-material arc, particles, and rise/fall animation. In Profile,
+the fill remains the user's chosen `--p1` colour while the halo/orbit name the
+current league; the transition deliberately uses the league material for both.
+Mini identity rings keep the compact track/fill variant without full-size
+chrome.
+
 Its 270° sweep starts at **225°** — 225 + 270 = 495 = 135 — so it runs
 lower-left, up the left, over the top, down the right, to lower-right, leaving
 a 90° gap centred on six o'clock with both ends at the same height. **The group
@@ -498,6 +509,12 @@ with the live number while marking somewhere the player is no longer at.
 The invariant behind it: **the notch can never sit behind the fill**, because a
 peak is by definition at least the current score. A new peak is simply pushed
 along by the fill — one animation, no special case.
+
+NEON is positional and has no upper points cap, so its progress arc is fully
+filled rather than inventing a next threshold — including for a second-place
+player whose points sit below the small-population fallback floor. It draws no
+peak notch because an unbounded league has no honest scale on which to place
+one; the right-most **PEAK** fact remains the exact current-season high score.
 
 **Three facts, not four:** Rank · Best streak · Peak. The win/loss tally moved
 to the head of **match history**, which is the list it summarises. It is not

@@ -93,6 +93,20 @@ export function assertPromotionTransition({ check, seen, errs, eventId, matchId 
       && seen.bounty.shape.extraMedia === 0 && seen.stillMandatory,
     'the last mode page is not a simplified BOUNTY slide ending in Continue',
     seen?.bounty);
+  const explorePages = [
+    ['group', seen?.opened],
+    ['row switch', seen?.rowSwitch?.deck],
+    ['row multiply', seen?.rowMultiplySwipe?.deck],
+    ['bounty', seen?.bounty?.deck],
+  ];
+  check(explorePages.every(([, deck]) => deck?.swipe?.visible
+      && deck.swipe.label === COPY.online.groupTransition.swipeExplore
+      && deck.swipe.box && deck.layout?.body && deck.layout.dots && deck.layout.actions
+      && deck.layout.body.bottom <= deck.swipe.box.top + 1
+      && deck.swipe.box.bottom <= deck.layout.dots.top + 1
+      && deck.layout.dots.bottom <= deck.layout.actions.top + 1),
+  'every page did not keep the localized Swipe to explore hint in the footer',
+  Object.fromEntries(explorePages));
   check(seen?.continued && !seen.continued.transitionOpen
       && seen.continued.resultOpen && !seen.continued.resultInert
       && seen.continued.focus === 'btnAgain'

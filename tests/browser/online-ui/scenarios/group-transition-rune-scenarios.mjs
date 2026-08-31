@@ -169,6 +169,8 @@ export async function runGroupTransitionRuneScenarios({ visit, out, check }) {
   check(empty?.final?.title === COPY.online.groupTransition.runesUnlockedTitle
       && empty.final.paragraph === COPY.online.groupTransition.runesUnlockedBody
       && empty.final.primary.label === COPY.common.actions.continue
+      && empty.final.swipe.visible
+      && empty.final.swipe.label === COPY.online.groupTransition.swipeExplore
       && empty.shape.modeIcons === 1 && empty.shape.extraMedia === 0
       && !`${empty.shape.title} ${empty.shape.text}`.includes(COPY.game.runes.ward.name)
       && empty.acknowledgementsBeforeContinue === 0
@@ -192,6 +194,8 @@ export async function runGroupTransitionRuneScenarios({ visit, out, check }) {
   check(owned?.final?.title === COPY.online.groupTransition.runesUnlockedTitle
       && owned.final.paragraph === COPY.online.groupTransition.runesUnlockedBody
       && owned.final.primary.label === COPY.online.groupTransition.openProfile
+      && owned.final.swipe.visible
+      && owned.final.swipe.label === COPY.online.groupTransition.swipeExplore
       && owned.shape.modeIcons === 1 && owned.shape.extraMedia === 0
       && !`${owned.shape.title} ${owned.shape.text}`.includes(COPY.game.runes.ward.name)
       && owned.acknowledgementsBeforeSeat === 0,

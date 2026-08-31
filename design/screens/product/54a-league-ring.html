@@ -71,22 +71,12 @@
   /* The production ring is the visual anchor. Its progress stays truthful:
      333 is 7.9% through BONE; 1,211 is 90.9% through IVORY. The extra outer
      band is material identity, not another progress value. */
-  .l54a-ring{--p1:var(--l54a-tier);--p:0;position:relative;width:196px;margin:4px auto 0;
-    flex:0 0 auto;isolation:isolate}
-  .l54a-ring .lring{filter:drop-shadow(0 0 14px color-mix(in srgb,var(--l54a-tier) 52%,transparent))}
-  .l54a-tierhalo,.l54a-oldarc{position:absolute;inset:-8px;border-radius:50%;pointer-events:none;
-    background:conic-gradient(from 225deg,var(--l54a-tier) 0 270deg,transparent 270deg);
-    -webkit-mask:radial-gradient(circle closest-side,transparent 84%,#000 85%);
-    mask:radial-gradient(circle closest-side,transparent 84%,#000 85%)}
-  .l54a-tierhalo{z-index:-1;opacity:.2;filter:drop-shadow(0 0 18px color-mix(in srgb,var(--l54a-tier) 48%,transparent))}
-  .l54a-oldarc{--l54a-old:var(--g-stone);z-index:3;opacity:0;
-    background:conic-gradient(from 225deg,var(--l54a-old) 0 270deg,transparent 270deg);
-    filter:drop-shadow(0 0 13px color-mix(in srgb,var(--l54a-old) 50%,transparent))}
+  .l54a-ring{--p:0;--lr-fill:var(--l54a-tier);--lr-material:var(--l54a-tier);
+    --lr-previous:var(--g-stone);
+    --lr-fill-glow:color-mix(in srgb,var(--l54a-tier) 52%,transparent);
+    position:relative;width:196px;margin:4px auto 0;flex:0 0 auto;isolation:isolate}
   .l54a-avatar{position:relative;z-index:2;display:grid;place-items:center;line-height:0}
   .l54a-avatar .die{filter:drop-shadow(0 0 18px rgba(var(--p1-rgb),.34))}
-  .l54a-orbit{position:absolute;inset:13px;border-radius:50%;z-index:1;opacity:.32;
-    border:1px solid color-mix(in srgb,var(--l54a-tier) 34%,transparent);border-left-color:transparent;
-    border-bottom-color:transparent;transform:rotate(20deg)}
   .l54a-mote{--l54a-x:0px;--l54a-y:0px;position:absolute;z-index:4;left:50%;top:50%;
     width:5px;height:5px;margin:-2px;border-radius:50%;opacity:0;pointer-events:none;
     background:var(--l54a-tier);box-shadow:0 0 10px var(--l54a-tier);
@@ -101,7 +91,7 @@
   /* One event, then a long settled read: each 7.2s loop reaches the final
      frame by 36% and rests there for the remaining 64%. Removing animation
      therefore exposes the same finished state, not the opening pose. */
-  .l54a-promote .l54a-oldarc{--l54a-old:var(--g-stone);animation:l54a-old-up 7.2s ease-out infinite}
+  .l54a-promote .l54a-oldarc{--lr-previous:var(--g-stone);animation:l54a-old-up 7.2s ease-out infinite}
   .l54a-promote .l54a-tierhalo{animation:l54a-halo-up 7.2s cubic-bezier(.2,1.15,.3,1) infinite}
   .l54a-promote .l54a-avatar{animation:l54a-avatar-up 7.2s cubic-bezier(.2,1.15,.3,1) infinite}
   .l54a-promote .l54a-orbit{animation:l54a-orbit-up 7.2s cubic-bezier(.2,1,.3,1) infinite}
@@ -164,7 +154,7 @@
      event: the SILVER skin sheds downward, IVORY catches the avatar, and the
      final ring remains almost full at 1,211 points. No shatter or failure-red. */
   .l54a-demote{--l54a-tier:var(--g-ivory)}
-  .l54a-demote .l54a-oldarc{--l54a-old:var(--g-silver);animation:l54a-old-down 7.2s ease-in infinite}
+  .l54a-demote .l54a-oldarc{--lr-previous:var(--g-silver);animation:l54a-old-down 7.2s ease-in infinite}
   .l54a-demote .l54a-tierhalo{animation:l54a-halo-down 7.2s cubic-bezier(.2,.9,.3,1) infinite}
   .l54a-demote .l54a-avatar{animation:l54a-avatar-down 7.2s cubic-bezier(.2,.9,.3,1) infinite}
   .l54a-demote .l54a-orbit{animation:l54a-orbit-down 7.2s cubic-bezier(.2,.9,.3,1) infinite}
@@ -186,8 +176,8 @@
   .l54a-reduced{display:flex;align-items:center;gap:14px;width:100%;box-sizing:border-box;
     padding:13px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.09);
     background:rgba(255,255,255,.028)}
-  .l54a-proofring{--l54a-tier:var(--g-bone);--p1:var(--l54a-tier);--p:.079;
-    width:74px;margin:0;flex:0 0 auto}
+  .l54a-proofring{--l54a-tier:var(--g-bone);--p:.079;--lr-fill:var(--l54a-tier);
+    --lr-material:var(--l54a-tier);width:74px;margin:0;flex:0 0 auto}
   .l54a-proofring .lring{filter:none}
   .l54a-proofring .l54a-tierhalo{inset:-4px}
   .l54a-reducedcopy{display:flex;flex-direction:column;gap:4px}
@@ -217,7 +207,7 @@
       <div class="l54a-slidehead"><span class="l54a-kicker">New group</span><span class="l54a-page">1 / 4</span></div>
       <div class="l54a-hero">
         <div class="ringwrap l54a-ring l54a-promote" style="--p:.079;--l54a-tier:var(--g-bone)">
-          <i class="lring"></i><i class="l54a-tierhalo"></i><i class="l54a-oldarc"></i><i class="l54a-orbit"></i>
+          <i class="lring"></i><i class="lhalo l54a-tierhalo"></i><i class="loldarc l54a-oldarc"></i><i class="lorbit l54a-orbit"></i>
           <span class="l54a-avatar dice-static">{{die:5:p1:72}}</span>
           <i class="l54a-mote"></i><i class="l54a-mote"></i><i class="l54a-mote"></i>
           <i class="l54a-mote"></i><i class="l54a-mote"></i><i class="l54a-mote"></i>
@@ -239,7 +229,7 @@
     <div class="l54a-modecrest">{{mico:rowswitch:42}}</div>
     <h2>ROW SWITCH</h2>
     <p class="l54a-featurecopy">Scoring turns sideways — only rows count.</p>
-    <div class="l54a-swipe">Swipe or use buttons</div>
+    <div class="l54a-swipe">Swipe to explore</div>
     <div class="l54a-dots" aria-label="Slide two of four"><i></i><i aria-current="true"></i><i></i><i></i></div>
     <div class="l54a-actions"><button type="button" class="btn soft l54a-button">Back</button><button type="button" class="btn primary l54a-button">Next</button></div>
   </section>
@@ -249,7 +239,7 @@
     <div class="l54a-modecrest">{{mico:rowmult:42}}</div>
     <h2>ROW MULTIPLY</h2>
     <p class="l54a-featurecopy">Rows pay a bonus on top of columns.</p>
-    <div class="l54a-swipe">Swipe or use buttons</div>
+    <div class="l54a-swipe">Swipe to explore</div>
     <div class="l54a-dots" aria-label="Slide three of four"><i></i><i></i><i aria-current="true"></i><i></i></div>
     <div class="l54a-actions"><button type="button" class="btn soft l54a-button">Back</button><button type="button" class="btn primary l54a-button">Next</button></div>
   </section>
@@ -259,7 +249,7 @@
     <div class="l54a-modecrest">{{mico:bounty:42}}</div>
     <h2>BOUNTY</h2>
     <p class="l54a-featurecopy">Every die you destroy banks +1. Forever.</p>
-    <div class="l54a-swipe">Last slide</div>
+    <div class="l54a-swipe">Swipe to explore</div>
     <div class="l54a-dots" aria-label="Slide four of four"><i></i><i></i><i></i><i aria-current="true"></i></div>
     <div class="l54a-actions"><button type="button" class="btn soft l54a-button">Back</button><button type="button" class="btn primary l54a-button">Continue</button></div>
   </section>
@@ -275,7 +265,7 @@
       <div class="l54a-slidehead"><span class="l54a-kicker">Group changed</span><span class="l54a-page">1 / 1</span></div>
       <div class="l54a-hero">
         <div class="ringwrap l54a-ring l54a-demote" style="--p:.909;--l54a-tier:var(--g-ivory)">
-          <i class="lring"></i><i class="l54a-tierhalo"></i><i class="l54a-oldarc"></i><i class="l54a-orbit"></i>
+          <i class="lring"></i><i class="lhalo l54a-tierhalo"></i><i class="loldarc l54a-oldarc"></i><i class="lorbit l54a-orbit"></i>
           <span class="l54a-avatar dice-static">{{die:5:p1:72}}</span>
           <i class="l54a-mote"></i><i class="l54a-mote"></i><i class="l54a-mote"></i>
           <i class="l54a-mote"></i><i class="l54a-mote"></i><i class="l54a-mote"></i>
@@ -292,12 +282,12 @@
   <div class="l54a-phase"><span>Reduced motion</span><b>Same final truth</b></div>
   <div class="l54a-reduced">
     <div class="ringwrap l54a-proofring">
-      <i class="lring"></i><i class="l54a-tierhalo"></i><span class="l54a-avatar dice-static">{{die:5:p1:32}}</span>
+      <i class="lring"></i><i class="lhalo l54a-tierhalo"></i><i class="lorbit l54a-orbit"></i><span class="l54a-avatar dice-static">{{die:5:p1:32}}</span>
     </div>
-    <span class="l54a-reducedcopy"><b>BONE · 333 points</b><span>The settled material, group name, direction, dots, and feature copy all remain. Rise, fall, orbit and particles are removed.</span></span>
+    <span class="l54a-reducedcopy"><b>BONE · 333 points</b><span>Material, orbit, group, direction, dots and feature copy remain. Rise, fall, orbit motion and particles disappear.</span></span>
   </div>
 </div></div>
 <div class="note"><b>One ring, two directions.</b> Promotion releases the completed STONE skin upward and grows BONE around the same avatar; demotion lets SILVER shed with gravity and settles into IVORY without failure-red or a shatter. Both 7.2-second previews finish by 36% and hold the readable final state for the remaining 64%. Reduced motion is that same final state with no movement.<br>
-<b>The deck cannot be dismissed early.</b> It opens above the ranked result after every group crossing and has no X. Multi-slide promotions expose swipe and Back/Next; every deck exposes its dots and a 44px Continue target. The group hero always appears. Row Switch, Row Multiply and Bounty appear as individual slides only on the first BONE unlock; equivalent permanent features do not repeat once taught.<br>
+<b>The deck cannot be dismissed early.</b> It owns the ranked result, has no X, and keeps SWIPE TO EXPLORE on every multi-page slide beside Back/Next. Dots and a 44px Continue target remain. The group hero always appears. Row Switch, Row Multiply and Bounty are individual slides only on the first BONE unlock; permanent features do not repeat once taught.<br>
 <b>Mode slides stop at icon, title and text.</b> The second teaching diagrams were removed by the owner call on 30 August 2026; the registry sentence is enough before the buttons.<br>
 <b>Demotion is group-only.</b> SILVER → IVORY settles the current ring and group on the deck's only slide. Reaching SILVER once leaves the equipped-rune seat permanently active, while peak-earned modes and Rune Ritual remain in the ranked pool; there is no runes-resting or retained-access follow-up page.</div>

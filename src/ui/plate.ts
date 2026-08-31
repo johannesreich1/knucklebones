@@ -7,9 +7,10 @@
 // contexts is DATA in the spec, never a second markup.
 //
 // Lives in ui/ because home paints it at boot, before any online code loads.
-import { groupFill, boardGroup } from '../core/ladder.ts';
+import { groupRingFill, boardGroup } from '../core/ladder.ts';
 import { formatNumber, ladderGroupCompactName } from '../i18n/index.ts';
 import { paintAvatar } from './avatar.ts';
+import { ladderRingLayersMarkup } from './ladder-ring.ts';
 
 export interface PlateSpec {
   name: string;
@@ -75,7 +76,7 @@ export function fillPlate(el: HTMLElement, p: PlateSpec): void {
   el.classList.toggle('lg', !!p.large);
   el.classList.toggle('stamped', !!p.stamp);   // the jolt targets the hit row
   const pts = p.points ?? 0;
-  el.innerHTML = '<span class="ringwrap mini"><i class="lring"></i><span class="pav"></span></span>'
+  el.innerHTML = `<span class="ringwrap mini">${ladderRingLayersMarkup()}<span class="pav"></span></span>`
     + '<span class="nm2"></span>'
     + (p.stamp ? '<span class="pstamp"></span>' : '')
     + '<span class="meta2">'
@@ -84,7 +85,9 @@ export function fillPlate(el: HTMLElement, p: PlateSpec): void {
     + '<b></b></span>'
     + '<span class="gpill"></span></span>'
     + (p.chev ? '<span class="chev">›</span>' : '');
-  (el.querySelector('.ringwrap') as HTMLElement).style.setProperty('--p', String(groupFill(pts)));
+  (el.querySelector('.ringwrap') as HTMLElement).style.setProperty(
+    '--p', String(groupRingFill(pts, !!p.apex)),
+  );
   paintAvatar(el.querySelector('.pav') as HTMLElement, p.avatar, 18);
   /* The group pill, points, delta, name, and stamp all share the locale-only
      painter used by a live result repaint. */

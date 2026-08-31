@@ -88,7 +88,7 @@ async function demotionProbe(page) {
     const deck = overlay?.querySelector('.gt-deck');
     const ring = document.querySelector('.gt-ring');
     const lring = ring?.querySelector('.lring');
-    const oldArc = ring?.querySelector('.gt-oldarc');
+    const oldArc = ring?.querySelector('.loldarc');
     const kicker = document.getElementById('gtKicker');
     const kickerBox = kicker?.getBoundingClientRect();
     const kickerStyle = kicker ? getComputedStyle(kicker) : null;

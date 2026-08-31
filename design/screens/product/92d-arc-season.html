@@ -5,29 +5,18 @@
      segments, which existed to give a nearer milestone — but a bar already
      shows which part of a group you are in, so "GOLD II" beside a ring reading
      49% was a second, worse way of saying the same thing. Divisions are gone;
-     the group is the whole rank. --pk is the season peak. */
+     the group is the whole rank. --pk is the season peak. The full Profile
+     example wears the shared league-material halo/orbit while its fill stays
+     on the user's --p1 colour; compact proofs omit that full-size chrome. */
   .shead{margin-bottom:4px}
   .pane{display:flex;flex-direction:column;gap:13px;width:100%;max-width:var(--w-col);
     margin:0 auto;align-items:center}
-  .ringwrap{position:relative;width:206px;height:206px;display:grid;place-items:center}
   /* The sweep is 270deg and starts at 225deg, NOT 180deg: 225 + 270 = 495 = 135,
      so the ring runs lower-left -> up the left -> over the top -> down the
      right -> lower-right, and the 90deg gap it leaves is centred on 6 o'clock.
      Starting at 180 put one end at the bottom and the other out at 3 o'clock,
      which read as a ring somebody had knocked askew. Both ends now sit 45deg
      either side of the bottom, at the same height. */
-  .ring3{position:absolute;inset:0;border-radius:50%;
-    background:conic-gradient(from 225deg,var(--cy) calc(var(--p) * 270deg),
-      rgba(255,255,255,.07) calc(var(--p) * 270deg) 270deg,transparent 270deg);
-    -webkit-mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
-    mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
-    filter:drop-shadow(0 0 14px rgba(40,232,255,.42))}
-  .pkmark{position:absolute;inset:0;border-radius:50%;
-    background:conic-gradient(from 225deg,transparent 0 calc(var(--pk) * 270deg - 1.3deg),
-      var(--gold) calc(var(--pk) * 270deg - 1.3deg) calc(var(--pk) * 270deg + 1.3deg),transparent 0);
-    -webkit-mask:radial-gradient(circle closest-side,transparent 77%,#000 78%);
-    mask:radial-gradient(circle closest-side,transparent 77%,#000 78%);
-    filter:drop-shadow(0 0 7px rgba(255,209,102,.9))}
   .avwrap{position:relative;display:grid;place-items:center;cursor:pointer}
   .avedit{position:absolute;right:-9px;bottom:-9px;width:26px;height:26px;border-radius:50%;
     display:grid;place-items:center;background:rgba(10,13,28,.95);
@@ -48,7 +37,6 @@
     background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.08)}
   .fact b{display:block;font-size:14px;font-weight:900;color:var(--txt)}
   .fact span{font-size:7.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase}
-  .fact.pk b{color:var(--gold)}
   .hist{display:flex;align-items:center;width:100%;padding:12px 14px;border-radius:14px;
     background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);cursor:pointer;
     font-size:11px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase}
@@ -70,8 +58,8 @@
          or below it has to move. -->
     <div class="shelf" hidden><span class="scur">Season 1</span></div>
 
-    <div class="ringwrap" style="--p:.489;--pk:.606">
-      <i class="ring3"></i><i class="pkmark"></i>
+    <div class="ringwrap haspeak" style="--p:.489;--pk:.606;--lr-material:var(--g-gold)">
+      <i class="lring"></i><i class="lhalo"></i><i class="lorbit"></i><i class="lpeak"></i>
       <div class="avwrap dice-static">{{die:5:p1:86}}<span class="avedit">✎</span></div>
     </div>
     <button class="ptv"><b>2,494</b><span>Ladder points</span></button>
@@ -92,15 +80,15 @@
   <div class="cap2">What the ring does when you climb</div>
   <div class="mini">
     <div class="col">
-      <div class="ringwrap" style="--p:.489;--pk:.606">
-        <i class="ring3"></i><i class="pkmark"></i>
+      <div class="ringwrap haspeak" style="--p:.489;--pk:.606">
+        <i class="lring"></i><i class="lpeak"></i>
         <div class="avwrap dice-static">{{die:5:p1:52}}</div>
       </div>
       <div class="cl">Climbing<b>GOLD · 49%</b></div>
     </div>
     <div class="col">
       <div class="ringwrap" style="--p:0">
-        <i class="ring3"></i>
+        <i class="lring"></i>
         <div class="avwrap dice-static">{{die:5:p1:52}}</div>
       </div>
       <div class="cl">Group up — empty again<b>OBSIDIAN</b></div>
@@ -114,7 +102,7 @@
     percentile, the ladder on points and rank). What is left moves on EVERY match, which is
     better feedback than a promotion every twenty-five games, and the ring only starts from the
     left when the group changes.
-    <br><br><b>The gold notch is your season peak</b>, and it is drawn only while the peak still
+    <br><br><b>The white notch is your season peak</b>, and it is drawn only while the peak still
     falls inside this group — that is exactly when it means "you were here, get back". Demoted out of the group, it pins to the far right — your best is beyond this
     ring — and the fact row names the group it really sits in.
     <br><br>No predicted points anywhere: what a match is worth depends on the opponent, so the

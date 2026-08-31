@@ -200,8 +200,6 @@ export const ptOnline = {
     newMode: 'NOVO MODO',
     whatChanges: 'O QUE MUDA',
     swipeExplore: 'Deslize e explore',
-    swipeChanges: 'Deslize para ver o que muda',
-    swipeOrButtons: 'Deslize ou use os botões',
     slideLabel: 'Tela {{current}} de {{total}}',
     runesUnlockedTitle: 'RUNAS DESBLOQUEADAS',
     runesUnlockedBody: 'Alcançar a liga PRATA desbloqueia para sempre as runas equipadas nas partidas ranqueadas normais.',

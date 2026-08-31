@@ -200,8 +200,6 @@ export const itOnline = {
     newMode: 'NUOVA MODALITÀ',
     whatChanges: 'COSA CAMBIA',
     swipeExplore: 'Scorri per scoprire',
-    swipeChanges: 'Scorri: cosa cambia',
-    swipeOrButtons: 'Scorri o usa i pulsanti',
     slideLabel: 'Pagina {{current}} di {{total}}',
     runesUnlockedTitle: 'RUNE SBLOCCATE',
     runesUnlockedBody: 'Raggiungere la lega ARGENTO sblocca per sempre le rune equipaggiate nelle normali partite classificate.',

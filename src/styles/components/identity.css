@@ -14,7 +14,8 @@
    height. Starting at 180 puts one end at the bottom and the other out at
    three o'clock, which reads as a ring knocked askew. */
 :where(#kbroot) .ringwrap{position:relative;width:min(62vw,206px);aspect-ratio:1;display:grid;place-items:center;
-  margin:2px auto 0;--p:0;--pk:0}
+  margin:2px auto 0;isolation:isolate;--p:0;--pk:0;--lr-fill:var(--p1);--lr-material:var(--p1);
+  --lr-previous:var(--lr-material);--lr-fill-glow:rgba(var(--p1-rgb),.42)}
 /* TWO layers, so each arc casts its own light. drop-shadow() tints every
    pixel's halo one colour, so as long as fill and track shared an element the
    grey could only borrow the cyan bloom — invisible whenever the fill was
@@ -39,16 +40,33 @@
   mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
   filter:drop-shadow(0 0 12px rgba(255,255,255,.2))}
 :where(#kbroot) .lring{position:absolute;inset:0;border-radius:50%;
-  background:conic-gradient(from 225deg,var(--p1) calc(var(--p) * 270deg),transparent 0);
+  background:conic-gradient(from 225deg,var(--lr-fill) calc(var(--p) * 270deg),transparent 0);
   -webkit-mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
   mask:radial-gradient(circle closest-side,transparent 81%,#000 82%);
-  filter:drop-shadow(0 0 14px rgba(var(--p1-rgb),.42))}
+  filter:drop-shadow(0 0 14px var(--lr-fill-glow))}
+/* Full-size living material shared by Profile and the transition. The stable
+   halo/orbit belong to the ring; only shedding the previous material and its
+   particles belongs to the one-shot transition theatre. `--lr-fill` stays a
+   separate seam so Profile progress can wear the user's colour while this
+   material names the current league. */
+:where(#kbroot) .ringwrap .lhalo,:where(#kbroot) .ringwrap .loldarc{position:absolute;inset:-8px;
+  border-radius:50%;pointer-events:none;-webkit-mask:radial-gradient(circle closest-side,transparent 84%,#000 85%);
+  mask:radial-gradient(circle closest-side,transparent 84%,#000 85%)}
+:where(#kbroot) .ringwrap .lhalo{z-index:-1;opacity:.2;
+  background:conic-gradient(from 225deg,var(--lr-material) 0 270deg,transparent 270deg);
+  filter:drop-shadow(0 0 18px color-mix(in srgb,var(--lr-material) 48%,transparent))}
+:where(#kbroot) .ringwrap .loldarc{z-index:3;opacity:0;
+  background:conic-gradient(from 225deg,var(--lr-previous) 0 270deg,transparent 270deg);
+  filter:drop-shadow(0 0 13px color-mix(in srgb,var(--lr-previous) 50%,transparent))}
+:where(#kbroot) .ringwrap .lorbit{position:absolute;inset:13px;border-radius:50%;z-index:1;opacity:.32;
+  pointer-events:none;border:1px solid color-mix(in srgb,var(--lr-material) 34%,transparent);
+  border-left-color:transparent;border-bottom-color:transparent;transform:rotate(20deg)}
 /* The season peak, drawn only when it is AHEAD of you (LADDER.md §5). It is a
    NEUTRAL white mark, not gold: colour on these screens means "live", and the
    only live things are the fill showing your current percentage and the points
    number it belongs to. A gold notch competed with both while marking
    something you are no longer at. */
-:where(#kbroot) .lpeak{position:absolute;inset:0;border-radius:50%;opacity:0;
+:where(#kbroot) .lpeak{position:absolute;inset:0;border-radius:50%;z-index:2;opacity:0;pointer-events:none;
   background:conic-gradient(from 225deg,transparent 0 calc(var(--pk) * 270deg - 1.3deg),
     rgba(233,241,255,.85) calc(var(--pk) * 270deg - 1.3deg) calc(var(--pk) * 270deg + 1.3deg),transparent 0);
   -webkit-mask:radial-gradient(circle closest-side,transparent 77%,#000 78%);

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "generator": "marketing/app-store/ios/capture.mjs",
-  "runtimeBuild": "d9a02d1f",
+  "runtimeBuild": "b36671ff",
   "playwrightVersion": "1.62.1",
   "chromiumVersion": "151.0.7922.34",
   "locales": [
