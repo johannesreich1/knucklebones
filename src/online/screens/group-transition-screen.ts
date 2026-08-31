@@ -219,8 +219,11 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
 
     const current = active.index + 1;
     const total = active.slides.length;
+    const single = total === 1;
+    deck.classList.toggle('gt-single', single);
     swipe.textContent = t('online', 'groupTransition.swipeExplore');
     page.textContent = `${formatNumber(current)} / ${formatNumber(total)}`;
+    page.hidden = single;
     const slideLabel = t('online', 'groupTransition.slideLabel', { current, total });
     dots.setAttribute('aria-label', slideLabel);
     dots.replaceChildren(...active.slides.map((_, index) => {
@@ -236,7 +239,7 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
     next.textContent = opensProfile
       ? t('online', 'groupTransition.openProfile')
       : t('common', final ? 'actions.continue' : 'actions.next');
-    swipe.hidden = total === 1;
+    swipe.hidden = single;
     deck.setAttribute('aria-label', t('online', 'groupTransition.dialogLabel', {
       from: ladderGroupName(active.event.beforeGroup),
       to: ladderGroupName(active.event.afterGroup),

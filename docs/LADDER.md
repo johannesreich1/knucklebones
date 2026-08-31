@@ -191,8 +191,10 @@ There is no close or backdrop dismissal; swipe, dots, Back/Next and the final
 Continue are the complete path, and reduced motion paints the same settled
 state without the rise/fall/orbit effects. Every multi-slide page keeps the
 same localized **Swipe to explore** footer; the buttons are an equivalent
-control, not a reason to rename the gesture. A one-slide demotion hides the
-dead swipe hint.
+control, not a reason to rename the gesture. A one-slide crossing hides both
+the dead swipe hint and redundant `1 / 1`; its one dot sits directly above the
+centered Continue action. The slightly taller portrait card trims the empty
+space above and below that one-slide modal without changing the multi-page deck.
 
 Settlement writes one owner-only durable before/after event per human
 participant in the same transaction as the ladder step. The event carries

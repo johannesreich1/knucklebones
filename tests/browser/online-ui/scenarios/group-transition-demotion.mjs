@@ -2,8 +2,9 @@
 //
 // This scenario owns what the promotion deck cannot prove: SILVER settles
 // visibly into IVORY without retracting the permanent historical rune unlock,
-// and a one-page crossing does not invite a swipe to a page that does not
-// exist. It also pins a named normal-motion promotion animation; the
+// and BadRandolf's historical-SILVER re-promotion from 1,259 paints one
+// centered page without dead navigation. It also pins a named normal-motion
+// promotion animation; the
 // reduced-motion sibling alone would pass if all motion vanished.
 import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
 import {
@@ -150,30 +151,56 @@ async function singlePageProbe(page) {
   await open(page, progression({
     id: '91000000-0000-4000-8000-000000000103',
     matchId,
-    points_before: 2050,
-    points_after: 2000,
+    points_before: 1259,
+    points_after: 1300,
     equipped_rune_before: 'ward',
     equipped_rune_after: 'ward',
     rune_seat_active_before: true,
     rune_seat_active_after: true,
-  }));
+  }), { won: true, delta: 41 });
   await page.evaluate(() => new Promise((resolve) => {
     window.dispatchEvent(new Event('resize'));
     requestAnimationFrame(() => requestAnimationFrame(resolve));
   }));
   const opened = await page.evaluate(() => {
+    const rect = (element) => {
+      const box = element?.getBoundingClientRect();
+      return box ? {
+        top: box.top, right: box.right, bottom: box.bottom, left: box.left,
+        width: box.width, height: box.height,
+      } : null;
+    };
+    const visible = (element) => {
+      if (!element) return false;
+      const box = element.getBoundingClientRect();
+      const elementStyle = getComputedStyle(element);
+      return box.width > 0 && box.height > 0 && elementStyle.display !== 'none'
+        && elementStyle.visibility !== 'hidden' && Number(elementStyle.opacity) !== 0;
+    };
     const hint = document.getElementById('gtSwipe');
-    const style = hint ? getComputedStyle(hint) : null;
-    const box = hint?.getBoundingClientRect();
-    const visible = !!hint && !!box && box.width > 0 && box.height > 0
-      && style?.display !== 'none' && style?.visibility !== 'hidden'
-      && Number(style?.opacity) !== 0;
+    const pageLabel = document.getElementById('gtPage');
+    const deck = document.querySelector('.gt-deck');
+    const dots = document.getElementById('gtDots');
+    const activeDot = dots?.querySelector('i[aria-current="true"]');
+    const primary = document.getElementById('gtNext');
     return {
       title: document.querySelector('#gtBody h2')?.textContent?.trim() ?? '',
       dots: document.getElementById('gtDots')?.children.length ?? -1,
       primary: document.getElementById('gtNext')?.textContent?.trim() ?? '',
       hint: hint?.textContent?.trim() ?? '',
-      hintVisible: visible,
+      hintVisible: visible(hint),
+      page: {
+        label: pageLabel?.textContent?.trim() ?? '',
+        visible: visible(pageLabel),
+      },
+      layout: {
+        viewport: { width: innerWidth, height: innerHeight },
+        deck: rect(deck),
+        dots: rect(dots),
+        activeDot: rect(activeDot),
+        currentDots: dots?.querySelectorAll('i[aria-current="true"]').length ?? -1,
+        primary: rect(primary),
+      },
       landscape: document.getElementById('kbroot')?.classList.contains('land') ?? false,
     };
   });
@@ -236,8 +263,39 @@ export async function runGroupTransitionDemotionScenarios({ visit, out, check })
       && single.probeResult.closed?.focus === 'btnAgain'
       && single.probeResult.closed?.landscape
       && single.probeResult.closed?.resultOpen && !single.probeResult.closed?.resultInert,
-    'a one-page demotion kept a dead swipe hint or lost result focus/orientation on Continue',
+    'a historical-SILVER re-promotion kept a dead swipe hint or lost result focus/orientation on Continue',
     single.probeResult);
   check(single.errs.length === 0,
-    'page errors during one-page demotion', single.errs);
+    'page errors during historical-SILVER re-promotion', single.errs);
+
+  const portrait = await visit({ named: true, viewport: { width: 390, height: 844 },
+    skipStandardProbes: true,
+    probe: singlePageProbe });
+  out.groupTransitionSinglePagePortrait = portrait.probeResult;
+  const p = portrait.probeResult;
+  const deck = p?.layout?.deck;
+  const dot = p?.layout?.activeDot;
+  const primary = p?.layout?.primary;
+  const viewport = p?.layout?.viewport;
+  const primaryCenter = primary ? primary.left + primary.width / 2 : null;
+  const dotCenter = dot ? dot.left + dot.width / 2 : null;
+  const deckCenter = deck ? deck.left + deck.width / 2 : null;
+  check(p?.title === 'SILVER'
+      && p.dots === 1
+      && p.primary === COPY.common.actions.continue
+      && p.page.label === '1 / 1'
+      && !p.page.visible
+      && deck && dot && primary && viewport
+      && p.layout.currentDots === 1
+      && Math.abs(primaryCenter - deckCenter) <= 1
+      && Math.abs(dotCenter - primaryCenter) <= 1
+      && dot.bottom <= primary.top
+      && primary.height >= 44
+      && deck.height >= 579 && deck.height <= 581
+      && Math.abs(deck.top - (viewport.height - deck.bottom)) <= 1
+      && !p.landscape,
+    'a one-page portrait did not hide 1 / 1, align dot and action, or tighten the modal frame',
+    p);
+  check(portrait.errs.length === 0,
+    'page errors during one-page portrait transition', portrait.errs);
 }
