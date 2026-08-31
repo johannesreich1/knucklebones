@@ -36,11 +36,7 @@ const playerPointsAudit = (overrides: Record<string, unknown> = {}) => ({
   rankedPoolTier: 'ivory',
   activeMatches: 0,
   queueRows: 0,
-  deletingRows: 0,
   unseenEvents: 0,
-  rank: 41,
-  population: 201,
-  apex: false,
   ...overrides,
 });
 
@@ -66,6 +62,10 @@ export function assertProductionPlayerPointsInput() {
 
 export function assertProductionPlayerPointsAudit() {
   assert.match(PRODUCTION_PLAYER_POINTS_AUDIT_SQL, /lower\(profile\.nickname\) = lower\(\$1\)/);
+  assert.match(PRODUCTION_PLAYER_POINTS_AUDIT_SQL,
+    /from public\.matches ranked_match[\s\S]*ranked_match\.status = 'active'/);
+  assert.doesNotMatch(PRODUCTION_PLAYER_POINTS_AUDIT_SQL, /\bprivate\./,
+    'the management read-only preview cannot execute or inspect private-schema owners');
   const ready = validateProductionPlayerPointsAudit([playerPointsAudit()]);
   assert.equal(assertProductionPlayerPointsReady(ready), ready);
   for (const [overrides, pattern] of [
@@ -76,7 +76,6 @@ export function assertProductionPlayerPointsAudit() {
     [{ profileRating: 1200 }, /rating mirror/],
     [{ activeMatches: 1 }, /active match/],
     [{ queueRows: 1 }, /ranked queue/],
-    [{ deletingRows: 1 }, /being deleted/],
     [{ unseenEvents: 1 }, /unseen progression/],
   ] as const) {
     const audit = validateProductionPlayerPointsAudit([playerPointsAudit(overrides)]);

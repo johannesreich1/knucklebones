@@ -23,15 +23,15 @@ const fail = message => { throw new ProductionPlayerPointsGuardError(message); }
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const COUNT_FIELDS = Object.freeze([
   'openSeasons', 'profileMatches', 'humanMatches', 'seasonRows',
-  'activeMatches', 'queueRows', 'deletingRows', 'unseenEvents',
+  'activeMatches', 'queueRows', 'unseenEvents',
 ]);
 const NULLABLE_INTEGER_FIELDS = Object.freeze([
-  'currentSeason', 'profileRating', 'points', 'peak', 'rank', 'population',
+  'currentSeason', 'profileRating', 'points', 'peak',
 ]);
 const AUDIT_FIELDS = Object.freeze([
   ...COUNT_FIELDS,
   ...NULLABLE_INTEGER_FIELDS,
-  'playerId', 'nickname', 'rankedPoolTier', 'apex',
+  'playerId', 'nickname', 'rankedPoolTier',
 ].sort());
 const POOL_IDS = new Set(RANKED_POOL_TIERS.map(tier => tier.id));
 
@@ -48,15 +48,6 @@ with open_season as (
    where lower(profile.nickname) = lower($1)
 ), chosen as (
   select * from target order by id limit 1
-), board_rows as (
-  select standing.player, standing.rank, standing.apex
-    from private.ladder_board((select id from open_season limit 1)) standing
-), board as (
-  select standing.player, standing.rank,
-         (select count(*) from board_rows)::bigint as population,
-         standing.apex
-    from board_rows standing
-   where standing.player = (select id from chosen)
 )
 select
   (select count(*) from open_season)::integer as "openSeasons",
@@ -76,18 +67,15 @@ select
     where rating.season_id = (select id from open_season limit 1)
       and rating.player = (select id from chosen)) as peak,
   (select ranked_pool_tier from chosen) as "rankedPoolTier",
-  (select count(*) from private.active_match_players active
-    where active.player = (select id from chosen))::integer as "activeMatches",
+  (select count(*) from public.matches ranked_match
+    where ranked_match.status = 'active'
+      and ((ranked_match.p1 = (select id from chosen))
+        or (ranked_match.p2 = (select id from chosen))))::integer as "activeMatches",
   (select count(*) from public.matchmaking_queue queued
     where queued.player_id = (select id from chosen))::integer as "queueRows",
-  (select count(*) from private.deleting_accounts deleting
-    where deleting.player = (select id from chosen))::integer as "deletingRows",
   (select count(*) from public.ranked_progression_events event
     where event.player_id = (select id from chosen)
-      and event.seen_at is null)::integer as "unseenEvents",
-  (select rank::integer from board) as rank,
-  (select population::integer from board) as population,
-  (select apex from board) as apex;
+      and event.seen_at is null)::integer as "unseenEvents";
 `;
 
 export function parseProductionPlayerPoints(value) {
@@ -137,9 +125,6 @@ export function validateProductionPlayerPointsAudit(rows) {
       fail(`Production player-points audit field ${field} must be null or a string.`);
     }
   }
-  if (row.apex !== null && typeof row.apex !== 'boolean') {
-    fail('Production player-points audit field apex must be null or boolean.');
-  }
   return Object.freeze({ ...row });
 }
 
@@ -171,7 +156,6 @@ export function assertProductionPlayerPointsReady(audit) {
   }
   if (audit.activeMatches !== 0) fail(`${PRODUCTION_PLAYER_NICKNAME} has an active match.`);
   if (audit.queueRows !== 0) fail(`${PRODUCTION_PLAYER_NICKNAME} is in the ranked queue.`);
-  if (audit.deletingRows !== 0) fail(`${PRODUCTION_PLAYER_NICKNAME} is being deleted.`);
   if (audit.unseenEvents !== 0) {
     fail(`${PRODUCTION_PLAYER_NICKNAME} has unseen progression events; open and finish them before repositioning.`);
   }
