@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import {
   EQUIPPED_RANKED_BOT_DATA,
   EQUIPPED_RANKED_SCHEMA,
+  RANKED_PROGRESSION_SCHEMA,
   RUNE_TRIAL_FUNCTIONS,
   RUNE_TRIAL_JOB,
   RUNE_TRIAL_SCHEMA,
@@ -14,10 +15,14 @@ import { uploadPayload } from '../../tools/fnfiles.mjs';
 import {
   FUNCTION_CLI_VERSION,
   FUNCTION_ROLLOUT_SLUGS,
+  HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_NAME,
+  HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_VERSION,
   RANKED_RUNES_MIGRATION_NAME,
   RANKED_RUNES_MIGRATION_VERSION,
   RANDOM_RUNE_MODE_MIGRATION_NAME,
   RANDOM_RUNE_MODE_MIGRATION_VERSION,
+  RANKED_PROGRESSION_MIGRATION_NAME,
+  RANKED_PROGRESSION_MIGRATION_VERSION,
   RANKED_RUNES_PRODUCTION_PREREQUISITE,
   RUNE_TRIAL_MIGRATION_NAME,
   RUNE_TRIAL_MIGRATION_VERSION,
@@ -89,6 +94,7 @@ export function readyProductionRead(
     functions?: Record<string, unknown>;
     job?: Record<string, unknown>;
     equipped?: Record<string, unknown>;
+    progression?: Record<string, unknown>;
     bots?: Record<string, unknown>;
   } = {},
 ) {
@@ -131,6 +137,7 @@ export function readyProductionRead(
     equipment_rpc_contract: true,
     equipment_rpc_body: true,
     equipment_rpc_grant: true,
+    historical_silver_policy: true,
     ...overrides.equipped,
   };
   const bots = {
@@ -143,6 +150,26 @@ export function readyProductionRead(
     bots_random_mode: 0,
     ...overrides.bots,
   };
+  const progression = {
+    table_contract: true,
+    table_columns: true,
+    table_indexes: true,
+    base_table_comments: true,
+    table_rls_policy: true,
+    table_grants: true,
+    ack_function_contract: true,
+    ack_function_body: true,
+    ack_function_grants: true,
+    legacy_table_constraints: false,
+    legacy_rune_comments: false,
+    legacy_settle_match_event_body: false,
+    historical_table_constraints: true,
+    historical_rune_comments: true,
+    historical_rune_match_start_policy: true,
+    historical_settle_match_event_body: true,
+    settle_match_contract: true,
+    ...overrides.progression,
+  };
   return async (query: string, parameters: unknown[] = []) => {
     if (query === RANKED_RUNES_PRODUCTION_PREREQUISITE) {
       events?.push('prerequisite:ranked-history');
@@ -151,6 +178,10 @@ export function readyProductionRead(
         RANKED_RUNES_MIGRATION_NAME,
         RANDOM_RUNE_MODE_MIGRATION_VERSION,
         RANDOM_RUNE_MODE_MIGRATION_NAME,
+        RANKED_PROGRESSION_MIGRATION_VERSION,
+        RANKED_PROGRESSION_MIGRATION_NAME,
+        HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_VERSION,
+        HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_NAME,
       ]);
       return [{ migration_history: overrides.history ?? true }];
     }
@@ -175,6 +206,10 @@ export function readyProductionRead(
     if (query === EQUIPPED_RANKED_SCHEMA) {
       events?.push('prerequisite:equipped-schema');
       return [equipped];
+    }
+    if (query === RANKED_PROGRESSION_SCHEMA) {
+      events?.push('prerequisite:progression-schema');
+      return [progression];
     }
     if (query === EQUIPPED_RANKED_BOT_DATA) {
       events?.push('prerequisite:bot-data');

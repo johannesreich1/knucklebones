@@ -120,10 +120,13 @@ cron contract. Immediately after an apply it also proves the historical tier
 backfill, safe v1 defaults for live matches/queue rows, and that all five new
 tables are still empty before the v2 functions are deployed.
 
-The `ranked-runes` allow-list has two ordered, SHA-256-pinned stages:
+The `ranked-runes` allow-list has three ordered, SHA-256-pinned stages:
 `20260830155543_equipped_runes_ranked.sql` establishes fixed equipped seats,
 then `20260830160000_random_rune_mode.sql` adds the persisted RANDOM setting
-without changing the deployed `start_ranked_match_v3` signature. The combined
+without changing the deployed `start_ranked_match_v3` signature, and
+`20260831133000_historical_silver_ranked_runes.sql` makes a historical Silver
+peak the permanent match-start unlock for fixed and RANDOM seats and converts
+the already-deployed progression event contract in the same transaction. The combined
 validator composes the complete Rune Trial audit with the exact widened
 capability and match constraints, boolean column/default/check/comment, the
 existing owned/known equipment constraints, exact profile RLS, owner SELECT and
@@ -132,28 +135,39 @@ direct column grant: the validator pins the authenticated-only
 `set_rune_equipment` function
 owner, body, search path, and exact execute ACL alongside the compatibility
 trigger, private deterministic chooser, every stored function body, and every
-service/helper ACL. It accepts only the absent, fixed-seat, or complete RANDOM
-stage; no partial or out-of-order catalog can pass.
+service/helper ACL. The historical-Silver stage pins its exact replacement
+`start_ranked_match_v3` body and both permanent-unlock column comments while
+the shared function and RANDOM-comment audits continue to admit exact stage-1
+and stage-2 states. It accepts only absent, fixed-seat,
+complete RANDOM, or historical-Silver stages; no partial or out-of-order
+catalog can pass.
 
-Both stages audit bot seat coverage and ownership without requiring a helper
-that the pending stage has not created. The durable and immediate postchecks
-require every bot to stay out of RANDOM and retain an owned fixed seat. The
+All three stages audit bot seat coverage and ownership without requiring a
+helper that the pending stage has not created. The durable and immediate
+postchecks require every bot to stay out of RANDOM and retain an owned fixed seat. The
 initial fixed-seat backfill additionally proves its stable owned-rune choice;
-the RANDOM-only stage preserves any existing owned seat because later wins may
-have expanded that bot's inventory since the backfill. Apply snapshots one
+later stages preserve any existing owned seat because later wins may have
+expanded that bot's inventory since the backfill. Apply snapshots one
 deterministic count/fingerprint of every non-bot fixed seat **and** RANDOM flag
 immediately before and after the migration, and refuses success if either human
 setting changed.
 
-The `ranked-progression-events` allow-list contains only
-`20260830182406_ranked_progression_events.sql`. Its exact catalog audit pins
+The `ranked-progression-events` allow-list preserves the applied
+`20260830182406_ranked_progression_events.sql` bytes and adds the same pending
+`20260831133000_historical_silver_ranked_runes.sql` used by ranked-runes. Its
+exact catalog audit pins
 the 18-column event table, all constraints and indexes, comments, the sole
 authenticated owner-SELECT policy, the table's read-only authenticated ACL,
-and the authenticated-only owner acknowledgement function. It also requires
-`settle_match` to remain the single service-only eleven-argument RPC in both
-the absent and complete stages, then pins the reviewed event-writing body in
-the complete stage. Apply this database-first migration before deploying a
-client that reads or acknowledges ranked transition events.
+and the authenticated-only owner acknowledgement function. It recognizes the
+exact deployed live-rune stage and the exact corrected stage, including mutually
+exclusive constraints, comments, and settlement bodies. The correction
+normalizes existing rows to the current durable all-season truth—intentionally
+suppressing stale or duplicate unlock presentation—then validates the monotonic
+constraint; new settlements retain the genuine false-to-true first crossing.
+Both database selectors compose the companion audit, so match-start stage 3 and
+progression stage 2 must arrive together. The specialized
+`test:db:historical-silver-upgrade` gate exercises the real legacy-to-final
+migration boundary and restores the local database afterward.
 
 The `ladder-streak-baselines` allow-list contains only
 `20260826153000_ladder_streak_baselines.sql`. Its validator pins the private

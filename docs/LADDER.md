@@ -208,9 +208,9 @@ names. The first STONE → BONE unlock adds Row Switch, Row Multiply and Bounty;
 the first BONE → IVORY unlock adds Rune Ritual. Each feature slide is exactly
 one owned icon, its localized title, and one localized sentence — no second
 teaching diagram. Already-earned pool features never repeat and never disappear
-after demotion. Crossing SILVER additionally explains an equipped fixed or
-RANDOM rune becoming active, or resting below SILVER while its choice and all
-permanent variety remain.
+after demotion. Crossing SILVER additionally explains that the equipped fixed
+or RANDOM rune is now permanently active; later demotion does not rest or
+relock that seat.
 
 ---
 
@@ -422,17 +422,19 @@ inventory, persisted in `profiles.equipped_rune`.
 `private.bot_owned_rune_choice(uuid)` orders owned rows by a salted hash of the
 bot UUID and rune id; it never calls volatile `random()`, so seed, backfill,
 settlement, and audit all agree. A bot's existing seat is not rerolled when it
-wins another rune. The seat is set even below SILVER: the rune is carried but
-not in play, so a bot that climbs arrives already carrying an owned choice.
+wins another rune. The seat may be set before the bot has reached SILVER: the
+rune is carried but not in play until that one-time threshold is reached.
 
 **A human may instead select RANDOM.** `profiles.random_rune_mode=true` keeps
 one concrete owned `equipped_rune` fallback for installed older clients, while
 each fresh ordinary ranked match derives its immutable rune from the match seed,
 participant id, and complete current collection. Retries reproduce the same
 snapshot; later equipment changes cannot rewrite it. RANDOM without an owned
-fallback is unrepresentable, below SILVER still snapshots no rune, and Rune
-Trial ignores the mode. Bots retain their stable fixed seat rather than silently
-changing product policy.
+fallback is unrepresentable, and an eligible RANDOM seat always snapshots an
+owned rune rather than NONE. A player who has never reached SILVER still
+snapshots no rune; reaching it once keeps the seat active through demotion and
+season turnover. Rune Trial ignores the mode. Bots retain their stable fixed
+seat rather than silently changing product policy.
 
 The population as seeded (200 bots, 539 rune rows, 155 carrying a seat):
 

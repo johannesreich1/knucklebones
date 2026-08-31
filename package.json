@@ -31,6 +31,7 @@
     "functions:production:identity": "node --experimental-strip-types tools/functions/production-rollout.mjs identity-hardening",
     "functions:production:game-center": "node --experimental-strip-types tools/functions/production-rollout.mjs game-center",
     "test:db": "supabase test db --local",
+    "test:db:historical-silver-upgrade": "node tests/database/historical-silver-upgrade.mjs",
     "test:functions": "node tools/check-functions.mjs",
     "test:native": "node --experimental-strip-types tests/iosship.test.ts && node --experimental-strip-types tests/androidship.test.ts",
     "native:sync": "npm run build && npm --prefix native run sync",

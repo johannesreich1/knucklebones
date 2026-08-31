@@ -11,18 +11,19 @@ technical document, *spell* names the castable rules effect and its engine
 (`SpellSpec`, `SPELLS`, `spellCharges`). Keep that implementation vocabulary;
 do not expose it as a competing name for the player's rune.
 
-Runes are an **optional layer over offline play**, ordinary ranked from SILVER,
-and the IVORY Rune Trial ranked format. A named offline pick and RANDOM deal
-both seats the same rune.
+Runes are an **optional layer over offline play**, ordinary ranked after a
+participant has reached SILVER once, and the IVORY Rune Trial ranked format. A
+named offline pick and RANDOM deal both seats the same rune.
 RANDOM×2 is the explicit local chaos exception: the deck shuffles once per
 player and deals two distinct runes. A cast is **not a placement**, but each
 player may cast at most once per turn. The die still lands afterward unless
 the cast itself ends the game. FATE's two charges therefore belong to separate
 turns. In ordinary ranked, matchmaking snapshots each participant's equipment
-independently from SILVER upward. A fixed seat carries that rune; RANDOM draws
-one owned rune from the fresh match seed. Below SILVER or with empty equipment,
-that participant has no rune. Rune Trial ignores equipment and uses its own
-private choices.
+independently once each participant has reached SILVER. That access is
+permanent across demotion and season turnover. A fixed seat carries that rune;
+RANDOM always draws one owned rune from the fresh match seed. A participant
+who has never reached SILVER, or has empty equipment, has no rune. Rune Trial
+ignores equipment and uses its own private choices.
 
 ---
 
@@ -753,15 +754,17 @@ and runtime contract.
 
 ### Ranked boundary
 
-Ordinary ranked snapshots each participant's equipment from SILVER upward. The
-two seats are independent: a fixed seat receives its owned rune, while RANDOM
-uses the fresh match seed plus participant identity to choose deterministically
-from that participant's current owned collection. The same start retry therefore
-returns the same choice, but a new match can deal another owned rune. A
-participant below SILVER or with empty equipment receives an empty hand. A
-fresh reveal shows both assignments, including explicit NONE; a rejoin does not
-replay that theatre. The immutable `matches.p1_rune` / `matches.p2_rune` values,
-not the viewer's profile cache or a later equipment change, own gameplay.
+Reaching SILVER once permanently activates a participant's equipment in
+ordinary ranked, including after demotion or season turnover. The two seats are
+independent: a fixed seat receives its owned rune, while RANDOM uses the fresh
+match seed plus participant identity to choose deterministically from that
+participant's current owned collection. A RANDOM seat always resolves to an
+owned rune: the same start retry returns the same choice, while a new match can
+deal another owned rune. A participant who has never reached SILVER or has
+empty equipment receives an empty hand. Ordinary matches do not show a paired
+rune-reveal screen; their immutable `matches.p1_rune` / `matches.p2_rune`
+values still own gameplay rather than the viewer's profile cache or a later
+equipment change.
 
 RANDOM retains one concrete owned fallback in `profiles.equipped_rune` beside
 `random_rune_mode=true`. That fallback lets an installed pre-RANDOM client read
@@ -774,7 +777,8 @@ fallback is compatibility state, not the next deal, and matchmaking never
 rewrites it when a match starts.
 
 Rune Trial is stored as `format='rune_trial'` with `modifier='classic'`. It
-ignores equipped seats and uses its own private selection instead.
+ignores equipped seats and uses its own private selection instead. Its paired
+rune reveal is exclusive to this format.
 
 Both participants receive the same uniform offer of three distinct runes from
 the complete six-rune roster, independent of collection. They choose privately

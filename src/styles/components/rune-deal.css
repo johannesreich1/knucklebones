@@ -61,9 +61,9 @@
 :where(#kbroot) .rface svg{filter:drop-shadow(0 0 12px currentColor)}
 :where(#kbroot) .rlbl{font-size:calc(var(--card)*.145);letter-spacing:.2em;font-weight:900;text-align:center}
 
-/* Ranked turns both already-public rune seats in the same beat. Trial carries
-   two choices; ordinary ranked may carry NONE on either side. Cards share the
-   ordinary rune anatomy; only their paired resting layout lives here. */
+/* Rune Trial turns both already-public secret choices in the same beat. The
+   paired resting layout is Trial-only; ordinary ranked enters the table
+   directly even when either player carries an equipped rune. */
 :where(#kbroot) #ovWheel.trial-revealing{--stage:calc(var(--card)*2.45)}
 :where(#kbroot) .trial-reveal{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
   align-items:end;justify-items:center;gap:clamp(18px,8vw,54px);width:min(100%,390px);

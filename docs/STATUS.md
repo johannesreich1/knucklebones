@@ -1,6 +1,6 @@
 # Project status
 
-*Current as of 2026-08-30. Keep this page short: current state, unresolved
+*Current as of 2026-08-31. Keep this page short: current state, unresolved
 decisions, and externally owned actions only. Detailed sprint history lives in
 [`docs/history/2026-08-sprint.md`](history/2026-08-sprint.md).*
 
@@ -10,9 +10,9 @@ decisions, and externally owned actions only. Detailed sprint history lives in
 |---|---|---|
 | Web | Live at <https://knucklebones-asg.pages.dev>; pushes to `main` still deploy through the Cloudflare Pages dashboard build immediately, ahead of CI. The gated `deploy` job is merged but skipped until `DEPLOY_VIA_ACTIONS` is set | `build.mjs`, `.github/workflows/ci.yml` |
 | Game | Local solo and two-player play, tutorial, modes, optional offline spells, and shared local/ranked board rendering | `src/core/`, `src/flow/`, `src/ui/` |
-| Ranked | Production has server-authoritative play, matchmaking/bot backfill, ladder, history, profiles, deletion, permanent mode-pool progression, IVORY Rune Trial, authoritative casts, rune collection, and an equipped seat. The selected ordinary-ranked contract snapshots each participant's fixed or per-match RANDOM owned rune from SILVER; a missing seat remains rune-free, while Rune Trial ignores equipment. The disposable test population has 200 bots spanning the ladder with deliberately beatable 41–54% aggregate win rates, streaks 2–7, and modest varied peaks; real play then updates the ordinary aggregates. Bots carry rune winnings and stable equipped seats scaled by standing and record — see `docs/LADDER.md` § Bot rune winnings | `src/online/`, `src/core/ranked-outcomes.ts`, `supabase/functions/`, `docs/LADDER.md` |
+| Ranked | Production has server-authoritative play, matchmaking/bot backfill, ladder, history, profiles, deletion, permanent mode-pool progression, IVORY Rune Trial, authoritative casts, rune collection, and an equipped seat. The repository's selected next ordinary-ranked contract permanently activates each participant's fixed or per-match RANDOM owned rune after that participant has reached SILVER once; a never-SILVER or empty seat remains rune-free, while Rune Trial ignores equipment. Its guarded database stage remains an owner action below. The disposable test population has 200 bots spanning the ladder with deliberately beatable 41–54% aggregate win rates, streaks 2–7, and modest varied peaks; real play then updates the ordinary aggregates. Bots carry rune winnings and stable equipped seats scaled by standing and record — see `docs/LADDER.md` § Bot rune winnings | `src/online/`, `src/core/ranked-outcomes.ts`, `supabase/functions/`, `docs/LADDER.md` |
 | Localization | English, Brazilian Portuguese, Spanish, German, French, and Italian share one ordered registry, complete catalogs, native metadata, and measured eager/online mobile geometry | `src/i18n/`, `docs/architecture/localization.md` |
-| Database | Repository and production share the same canonical 58-migration timestamped prefix through `20260830160000_random_rune_mode.sql`; `supabase/migration-history.json` and the migration-ledger test pin it. The former compact aliases, obsolete 12-bot seed, and two wrong-stamped equipped-rune files are preserved only in the non-executable archive. Production records Rune Trial, streak baselines, Apple/Game Center schema, command stall checks, auto-forfeit streaks, dense ladder positions, fixed and RANDOM equipment state, SILVER ordinary-ranked snapshots, and owned bot seats; guarded catalog, security, data, Realtime, and cron audits cover their owned surfaces. Ledger alignment does not establish deployed Edge Function bytes. | `supabase/migrations/`, `supabase/legacy-migrations/`, `supabase/migration-history.json` |
+| Database | Repository and production share the same canonical 59-migration timestamped prefix through `20260830182406_ranked_progression_events.sql`; `supabase/migration-history.json` and the migration-ledger test pin it. The former compact aliases, obsolete 12-bot seed, and two wrong-stamped equipped-rune files are preserved only in the non-executable archive. Production records Rune Trial, streak baselines, Apple/Game Center schema, command stall checks, auto-forfeit streaks, dense ladder positions, fixed and RANDOM equipment state, current-SILVER ordinary-ranked snapshots, ranked progression events with the original live equipment/current-points rune flags, and owned bot seats. One guarded pending migration atomically converts both match start and progression events to permanent historical-SILVER semantics. Catalog, security, data, Realtime, cron, paired-stage, and legacy-upgrade audits cover the owned surfaces. Ledger alignment does not establish deployed Edge Function bytes. | `supabase/migrations/`, `supabase/legacy-migrations/`, `supabase/migration-history.json` |
 | Builds | Hosted PWA, standalone HTML, widget, and Capacitor web assets come from the same source build | `build.mjs`, `docs/architecture/build.md` |
 | Native | Capacitor 8.5 iOS and Android projects are tracked; iOS supports 15+, Android installs on API 24+ while targeting API 36 | `native/`, `docs/architecture/build.md` |
 | Design | Product cards, open studies, and archived candidates are explicitly classified and recursively built from shared application CSS/renderers | `design/screens/`, `design/build.mjs` |
@@ -31,12 +31,14 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - Mechanical mode identities come from `src/core/modes.ts`; progressive ranked
   outcomes and odds come from `src/core/ranked-outcomes.ts`. Rune identity,
   legality, and charges come only from `src/core/spells.ts`.
-- Ordinary ranked snapshots each participant's fixed or per-match RANDOM owned
-  rune from SILVER. The two seats are independent: below SILVER or without
-  equipment that participant remains rune-free. Fresh matches reveal both
-  immutable match-row assignments, including NONE; rejoin is silent. Retrying
-  a start reproduces the same random snapshot, and later profile changes cannot
-  rewrite it. These matches and Rune Trial use authoritative replayable
+- Reaching SILVER once permanently activates that participant's equipped rune
+  in ordinary ranked, across later demotion and season turnover. The two seats
+  are independent: a participant who has never reached SILVER or has no
+  equipment remains rune-free. RANDOM always resolves to one owned rune from
+  the fresh match seed; retrying a start reproduces that snapshot, and later
+  profile changes cannot rewrite it. Ordinary matches do not show a paired
+  rune-reveal screen; that presentation belongs exclusively to Rune Trial's
+  private choices. These matches and Rune Trial use authoritative replayable
   aim/cast/place actions, but separate capabilities because Trial ignores both
   equipment modes and loans its own private choices. The additive v1 placement
   protocol remains only for legacy rune-free standard rows.
@@ -81,6 +83,11 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   production opt-in. Credential rotation is an owner action.
 - Confirm the ranked Edge Function closure state independently; the reconciled
   migration history establishes database identity, not deployed function bytes.
+- Preview both guarded ranked selectors, then apply their shared
+  `20260831133000_historical_silver_ranked_runes.sql` stage through
+  `ranked-runes` before treating permanent historical-SILVER equipment as live.
+  The apply snapshots human equipment and proves ranked-rune stage 3 and
+  progression stage 2 together; re-preview both selectors afterward.
 - The Apple/Game Center database migrations are recorded in the canonical
   production ledger. Keep the remaining rollout separate: deploy the
   rate-limited Cloudflare identity gateway plus the identity/revocation Edge

@@ -100,7 +100,6 @@ export const itGame = {
     gameMode: 'MODALITÀ DI GIOCO',
     matchRune: 'RUNA DELLA PARTITA',
     trialRunes: 'RUNE DEL RITUALE',
-    rankedRunes: 'RUNE CLASSIFICATE',
     runeFor: 'RUNA PER',
     tapReady: 'Tocca quando sei pronto',
     connecting: 'Collegamento dei giocatori…',
@@ -204,7 +203,7 @@ export const itGame = {
     runeTrial: {
       name: 'RITUALE DELLE RUNE',
       compact: 'RITUALE',
-      blurb: 'Scegli in segreto una runa tra tre. Vinci il duello con quella runa per ottenerla. Usa le rune raccolte nelle partite classificate dalla lega ARGENTO.',
+      blurb: 'Scegli in segreto una runa tra tre; entrambe le scelte vengono rivelate insieme. Vinci con la tua per ottenerla. Raggiunto ARGENTO una volta, le rune equipaggiate restano utilizzabili nelle partite classificate normali.',
       detail: 'Entrambi i giocatori vedono le stesse tre rune e ciascuno ne sceglie una in segreto. Le due scelte vengono rivelate contemporaneamente; poi il duello segue le regole del tabellone Classico.',
     },
   },
@@ -223,10 +222,6 @@ export const itGame = {
     revealPair: 'Entrambe le scelte sono confermate',
     revealed: 'Rune rivelate',
     pickClock: 'SECONDI PER SCEGLIERE',
-  },
-  rankedRunes: {
-    revealPair: '{{playerOne}}: {{runeOne}}. {{playerTwo}}: {{runeTwo}}.',
-    revealed: 'Rune classificate rivelate',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Attivata; scegli una colonna evidenziata.',

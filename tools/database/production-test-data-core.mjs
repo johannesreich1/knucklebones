@@ -694,8 +694,9 @@ begin
   get diagnostics granted = row_count;
 
   /* One database helper owns the random-looking stable choice everywhere.
-     Set even below SILVER: the rune is carried but not in play, so a bot that
-     climbs arrives already holding it. */
+     Set even before SILVER: equipment can be carried while inactive. Match
+     start turns it on once a season peak proves SILVER was reached; later
+     demotion cannot turn it off. */
   update public.profiles pr
      set equipped_rune = private.bot_owned_rune_choice(pr.id)
    where pr.is_bot

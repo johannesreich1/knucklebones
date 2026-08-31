@@ -41,6 +41,7 @@ export const silverProgression = (id, matchId) => ({
   points_after: 1300,
   pool_tier_before: 'ivory',
   pool_tier_after: 'ivory',
+  rune_seat_active_after: true,
 });
 
 export const bounded = (promise, message, timeout = 7000) => Promise.race([

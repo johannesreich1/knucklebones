@@ -31,6 +31,8 @@ export async function installOnlineRoutes(
        its concrete compatibility fallback. */
     randomRuneMode = false,
     standingPoints = null,
+    standingPeak = null,
+    historicalSilverReached = null,
     unseenRunes = [],
     markRunesSeenAfterFirstRead = false,
     SESSION,
@@ -289,7 +291,10 @@ export async function installOnlineRoutes(
   }));
   /* Both read the same board: the standing is derived from the rows the
      leaderboard serves, never restated beside them. */
-  await installProfileRoutes(page, { hold, nearBottomBoard, historyDepth, standingPoints });
+  await installProfileRoutes(page, {
+    hold, nearBottomBoard, historyDepth, standingPoints, standingPeak,
+    historicalSilverReached,
+  });
   const ladder = await installLadderRoutes(page, { hold, nearBottomBoard, paginationRace });
   await page.route('**/auth/v1/.well-known/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '{"keys":[]}' }));
   await page.route('**/rest/v1/rpc/current_season*', async (r) => {

@@ -23,7 +23,7 @@ export interface RuneCollectionSnapshot {
   /* The fixed rune, or the concrete owned fallback retained while RANDOM is
      active so an installed pre-random client still carries a valid rune. */
   readonly equippedRune: string | null;
-  /** Each fresh SILVER+ ordinary match samples the owned collection. */
+  /** Each fresh ordinary match after SILVER was reached once samples the owned collection. */
   readonly randomRuneMode: boolean;
   /** Semantic profile/UI view; never exposes the RANDOM compatibility fallback. */
   readonly equipment: EquippedRuneSelection;
@@ -116,7 +116,7 @@ export function confirmedRankedPoolTier(): RankedPoolTier | null {
   return readRuneCollectionSnapshot()?.poolTier ?? null;
 }
 
-/** The rune carried into ranked from SILVER up, or null for nothing equipped. */
+/** The selected rune ordinary ranked can use after SILVER is reached once, or null. */
 export function equippedRuneId(): string | null {
   return readRuneCollectionSnapshot()?.equippedRune ?? null;
 }

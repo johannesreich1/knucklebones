@@ -39,6 +39,16 @@ update public.profiles
          when '98000000-0000-0000-0000-000000000012' then 1259
          else 0
        end;
+insert into public.season_ratings (season_id, player, points, peak)
+values
+  (1, '98000000-0000-0000-0000-000000000001', 1260, 1260),
+  (1, '98000000-0000-0000-0000-000000000002', 1600, 1600),
+  (1, '98000000-0000-0000-0000-000000000003', 1259, 1259),
+  (1, '98000000-0000-0000-0000-000000000004', 1260, 1260),
+  (1, '98000000-0000-0000-0000-000000000005', 2000, 2000),
+  (1, '98000000-0000-0000-0000-000000000006', 2100, 2100),
+  (1, '98000000-0000-0000-0000-000000000011', 0, 0),
+  (1, '98000000-0000-0000-0000-000000000012', 1259, 1259);
 update public.profiles
    set is_bot = true
  where id = '98000000-0000-0000-0000-000000000007';
@@ -234,7 +244,7 @@ select is(
     coalesce(payload->'match'->>'p2_rune', 'none')
   ) from below_start),
   '1/none/none',
-  'below SILVER both equipped profiles enter the game with empty hands'
+  'both never-SILVER equipped profiles enter the game with empty hands'
 );
 
 set local role service_role;

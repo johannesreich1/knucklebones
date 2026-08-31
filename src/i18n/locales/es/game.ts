@@ -100,7 +100,6 @@ export const esGame = {
     gameMode: 'MODO DE JUEGO',
     matchRune: 'RUNA DE LA PARTIDA',
     trialRunes: 'RUNAS DEL RITUAL',
-    rankedRunes: 'RUNAS CLASIFICATORIAS',
     runeFor: 'RUNA PARA',
     tapReady: 'Toca cuando estés listo',
     connecting: 'Conectando jugadores…',
@@ -204,7 +203,7 @@ export const esGame = {
     runeTrial: {
       name: 'RITUAL DE RUNAS',
       compact: 'RITUAL',
-      blurb: 'Elige una de tres runas en secreto. Gana el duelo con ella para conseguirla. Usa las runas conseguidas en partidas clasificatorias desde la liga PLATA.',
+      blurb: 'Elige una de tres runas en secreto; ambas elecciones se revelan juntas. Gana con la tuya para conseguirla. Alcanza PLATA una vez para usar siempre las runas equipadas en partidas clasificatorias normales.',
       detail: 'Ambos jugadores ven las mismas tres runas y cada uno elige una en secreto. Las dos elecciones se revelan a la vez; después, el duelo sigue las reglas del tablero Clásico.',
     },
   },
@@ -223,10 +222,6 @@ export const esGame = {
     revealPair: 'Las dos elecciones están confirmadas',
     revealed: 'Runas reveladas',
     pickClock: 'SEGUNDOS PARA ELEGIR',
-  },
-  rankedRunes: {
-    revealPair: '{{playerOne}}: {{runeOne}}. {{playerTwo}}: {{runeTwo}}.',
-    revealed: 'Runas clasificatorias reveladas',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Activada; elige una columna marcada.',

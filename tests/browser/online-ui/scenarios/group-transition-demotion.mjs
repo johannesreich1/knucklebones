@@ -1,10 +1,10 @@
 // DEMOTION MUST FEEL LIKE THE SAME LIVING LADDER MOVING DOWN.
 //
 // This scenario owns what the promotion deck cannot prove: SILVER settles
-// visibly into IVORY, the equipped rune rests without implying that permanent
-// variety was lost, and a one-page repeat crossing does not invite a swipe to
-// a page that does not exist. It also pins a named normal-motion promotion
-// animation; the reduced-motion sibling alone would pass if all motion vanished.
+// visibly into IVORY without retracting the permanent historical rune unlock,
+// and a one-page crossing does not invite a swipe to a page that does not
+// exist. It also pins a named normal-motion promotion animation; the
+// reduced-motion sibling alone would pass if all motion vanished.
 import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
 import {
   installProgressionRoutes,
@@ -40,7 +40,7 @@ const progression = ({ id, matchId, ...overrides }) => ({
   random_rune_mode_before: false,
   random_rune_mode_after: false,
   rune_seat_active_before: true,
-  rune_seat_active_after: false,
+  rune_seat_active_after: true,
   seen_at: null,
   ...overrides,
 });
@@ -133,33 +133,16 @@ async function demotionProbe(page) {
   });
 
   await page.click('#gtNext');
-  const resting = await page.evaluate(() => {
-    const body = document.getElementById('gtBody');
-    const visible = (element) => {
-      if (!element) return false;
-      const box = element.getBoundingClientRect();
-      const style = getComputedStyle(element);
-      return box.width > 0 && box.height > 0 && style.display !== 'none'
-        && style.visibility !== 'hidden' && Number(style.opacity) !== 0;
-    };
-    return {
-      title: body?.querySelector('h2')?.textContent?.trim() ?? '',
-      text: body?.querySelector('p')?.textContent?.trim() ?? '',
-      svgs: body?.querySelectorAll('svg').length ?? -1,
-      modeIcons: body?.querySelectorAll('svg.mico').length ?? -1,
-      spellIcons: body?.querySelectorAll('svg.sico').length ?? -1,
-      icons: body?.querySelectorAll('.gt-feature-icon').length ?? -1,
-      extraMedia: body?.querySelectorAll(
-        'img, picture, canvas, video, .die, [class*="viz"], [class*="diagram"]',
-      ).length ?? -1,
-      dots: document.getElementById('gtDots')?.children.length ?? -1,
-      current: [...(document.getElementById('gtDots')?.children ?? [])]
-        .findIndex((dot) => dot.hasAttribute('aria-current')),
-      primary: document.getElementById('gtNext')?.textContent?.trim() ?? '',
-      backVisible: visible(document.getElementById('gtBack')),
-    };
-  });
-  return { group, resting };
+  await page.evaluate(() => new Promise((resolve) =>
+    requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const closed = await page.evaluate(() => ({
+    transitionOpen: document.getElementById('ovGroupTransition')?.classList.contains('on') ?? false,
+    visibleTitle: document.querySelector('#gtBody h2')?.textContent?.trim() ?? '',
+    focus: document.activeElement?.id ?? '',
+    resultOpen: document.getElementById('ovEnd')?.classList.contains('on') ?? false,
+    resultInert: document.getElementById('ovEnd')?.inert ?? true,
+  }));
+  return { group, closed };
 }
 
 async function singlePageProbe(page) {
@@ -228,21 +211,16 @@ export async function runGroupTransitionDemotionScenarios({ visit, out, check })
       && group.kicker.visible === false
       && (!group.kicker.box
         || (group.kicker.box.width === 0 && group.kicker.box.height === 0))
-      && group.dots === 2 && group.tierColor === group.ivory
+      && group.dots === 1 && group.tierColor === group.ivory
       && group.oldColor === group.silver && group.ringVisible
       && group.ringUsesIvory && group.oldArcUsesSilver
       && group.names.includes('gt-avatar-down') && group.names.includes('gt-old-down'),
     'SILVER did not visibly settle downward into IVORY without a group kicker', group);
-  const resting = demotion.probeResult?.resting;
-  check(resting?.title === COPY.online.groupTransition.runesRestingTitle
-      && resting.text === COPY.online.groupTransition.runesRestingBody
-      && !`${resting.title} ${resting.text}`.includes(COPY.game.runes.ward.name)
-      && resting.svgs === 1 && resting.modeIcons === 1 && resting.spellIcons === 0
-      && resting.icons === 1 && resting.extraMedia === 0
-      && resting.dots === 2 && resting.current === 1
-      && resting.primary === COPY.common.actions.continue && resting.backVisible,
-    'the demotion named a specific rune instead of the generic SILVER capability',
-    resting);
+  const closed = demotion.probeResult?.closed;
+  check(!closed?.transitionOpen && closed.focus === 'btnAgain'
+      && closed.resultOpen && !closed.resultInert,
+    'the SILVER demotion opened a resting rune page instead of returning to the result',
+    closed);
   check(demotion.errs.length === 0,
     'page errors during SILVER to IVORY demotion', demotion.errs);
 

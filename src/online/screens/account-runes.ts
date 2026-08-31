@@ -36,9 +36,10 @@ export interface RuneEquipmentPort {
   changed(): void;
 }
 
-/* The rune enters play from SILVER up. Below it the choice is made, saved and
-   simply waiting — never "locked", which would name a deficit where there is
-   only a threshold. */
+/* Reaching SILVER once makes the rune seat live permanently. The caller passes
+   SILVER (or a higher live group) from its all-season achievement read, not
+   from the current ladder group: below a first SILVER peak the choice is saved
+   and waiting, while demotion or rollover cannot put an earned seat to sleep. */
 const SEAT_LIVE_GROUPS = new Set(['silver', 'gold', 'obsidian', 'neon']);
 
 export function seatStateFor(equipped: string | null, group: string | null): SeatState {

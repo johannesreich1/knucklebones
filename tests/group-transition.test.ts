@@ -22,8 +22,8 @@ type TransitionEvent = {
   afterPoolTier: RankedPoolTier;
   equippedRune: string | null;
   randomRuneMode: boolean;
-  runeLiveBefore: boolean;
-  runeLiveAfter: boolean;
+  runeSeatUnlockedBefore: boolean;
+  runeSeatUnlockedAfter: boolean;
   seenAt: string | null;
 };
 
@@ -38,8 +38,8 @@ const base: TransitionEvent = {
   afterPoolTier: 'bone',
   equippedRune: null,
   randomRuneMode: false,
-  runeLiveBefore: false,
-  runeLiveAfter: false,
+  runeSeatUnlockedBefore: false,
+  runeSeatUnlockedAfter: false,
   seenAt: null,
 };
 
@@ -118,9 +118,9 @@ assert.deepEqual(groupTransitionSlides(event({
   afterPoolTier: 'ivory',
 })), [group('demotion', 'ivory', 'bone')]);
 
-/* SILVER changes whether runes CAN enter ordinary ranked matches. That league
-   capability belongs to every player, including somebody who has not won a
-   rune yet; the interactive profile handoff branches on the real collection. */
+/* The first historical SILVER peak permanently unlocks the ranked rune seat.
+   Settlement owns that before/after fact; presentation must not infer it from
+   the current group because a demoted player keeps the capability. */
 assert.deepEqual(groupTransitionSlides(event({
   beforePoints: 1240,
   afterPoints: 1300,
@@ -129,12 +129,30 @@ assert.deepEqual(groupTransitionSlides(event({
   beforePoolTier: 'ivory',
   afterPoolTier: 'ivory',
   equippedRune: 'ward',
-  runeLiveBefore: false,
-  runeLiveAfter: true,
+  runeSeatUnlockedBefore: false,
+  runeSeatUnlockedAfter: true,
 })), [
   group('promotion', 'ivory', 'silver'),
-  { kind: 'rune-seat', state: 'active' },
+  { kind: 'rune-seat' },
 ]);
+
+/* A player who already reached SILVER must not be retaught the permanent
+   capability when returning there after a demotion. */
+assert.deepEqual(groupTransitionSlides(event({
+  beforePoints: 1211,
+  afterPoints: 1274,
+  beforeGroup: 'ivory',
+  afterGroup: 'silver',
+  beforePoolTier: 'ivory',
+  afterPoolTier: 'ivory',
+  equippedRune: 'ward',
+  randomRuneMode: true,
+  runeSeatUnlockedBefore: true,
+  runeSeatUnlockedAfter: true,
+})), [group('promotion', 'ivory', 'silver')]);
+
+/* Demotion never deactivates a historical unlock and therefore never creates
+   a resting slide. Fail closed even for an old/malformed falling flag pair. */
 assert.deepEqual(groupTransitionSlides(event({
   beforePoints: 1274,
   afterPoints: 1211,
@@ -144,12 +162,21 @@ assert.deepEqual(groupTransitionSlides(event({
   afterPoolTier: 'ivory',
   equippedRune: 'ward',
   randomRuneMode: true,
-  runeLiveBefore: true,
-  runeLiveAfter: false,
-})), [
-  group('demotion', 'silver', 'ivory'),
-  { kind: 'rune-seat', state: 'resting' },
-]);
+  runeSeatUnlockedBefore: true,
+  runeSeatUnlockedAfter: true,
+})), [group('demotion', 'silver', 'ivory')]);
+assert.deepEqual(groupTransitionSlides(event({
+  beforePoints: 1274,
+  afterPoints: 1211,
+  beforeGroup: 'silver',
+  afterGroup: 'ivory',
+  beforePoolTier: 'ivory',
+  afterPoolTier: 'ivory',
+  equippedRune: 'ward',
+  randomRuneMode: true,
+  runeSeatUnlockedBefore: true,
+  runeSeatUnlockedAfter: false,
+})), [group('demotion', 'silver', 'ivory')]);
 
 /* An empty collection must never fabricate a default. The generic SILVER
    capability slide still appears, while presentation keeps Continue and skips
@@ -163,11 +190,11 @@ assert.deepEqual(groupTransitionSlides(event({
   afterPoolTier: 'ivory',
   equippedRune: null,
   randomRuneMode: false,
-  runeLiveBefore: false,
-  runeLiveAfter: false,
+  runeSeatUnlockedBefore: false,
+  runeSeatUnlockedAfter: true,
 })), [
   group('promotion', 'ivory', 'silver'),
-  { kind: 'rune-seat', state: 'active' },
+  { kind: 'rune-seat' },
 ]);
 
 assert.deepEqual(groupTransitionSlides(event({
@@ -179,15 +206,12 @@ assert.deepEqual(groupTransitionSlides(event({
   afterPoolTier: 'ivory',
   equippedRune: null,
   randomRuneMode: false,
-  runeLiveBefore: false,
-  runeLiveAfter: false,
-})), [
-  group('demotion', 'silver', 'ivory'),
-  { kind: 'rune-seat', state: 'resting' },
-]);
+  runeSeatUnlockedBefore: true,
+  runeSeatUnlockedAfter: true,
+})), [group('demotion', 'silver', 'ivory')]);
 
-/* A large authoritative step that crosses SILVER gets the same capability
-   slide once; it is the boundary, not an exact IVORY/SILVER pair, that owns it. */
+/* A large authoritative step gets the same one-time capability slide when its
+   historical unlock fact changes, without requiring an exact group pair. */
 assert.deepEqual(groupTransitionSlides(event({
   beforePoints: 1240,
   afterPoints: 2100,
@@ -195,13 +219,15 @@ assert.deepEqual(groupTransitionSlides(event({
   afterGroup: 'gold',
   beforePoolTier: 'ivory',
   afterPoolTier: 'ivory',
+  runeSeatUnlockedBefore: false,
+  runeSeatUnlockedAfter: true,
 })), [
   group('promotion', 'ivory', 'gold'),
-  { kind: 'rune-seat', state: 'active' },
+  { kind: 'rune-seat' },
 ]);
 
-/* Crossings which neither advance the permanent pool nor change rune
-   availability remain a one-slide group acknowledgement. */
+/* Crossings which neither advance the permanent pool nor change the historical
+   rune unlock remain a one-slide group acknowledgement. */
 assert.deepEqual(groupTransitionSlides(event({
   beforePoints: 2040,
   afterPoints: 1980,
@@ -210,8 +236,8 @@ assert.deepEqual(groupTransitionSlides(event({
   beforePoolTier: 'ivory',
   afterPoolTier: 'ivory',
   equippedRune: 'ward',
-  runeLiveBefore: true,
-  runeLiveAfter: true,
+  runeSeatUnlockedBefore: true,
+  runeSeatUnlockedAfter: true,
 })), [group('demotion', 'gold', 'silver')]);
 
 /* NEON is positional. An authoritative top-one-percent change is real even
@@ -224,8 +250,8 @@ assert.deepEqual(groupTransitionSlides(event({
   afterGroup: 'neon',
   beforePoolTier: 'ivory',
   afterPoolTier: 'ivory',
-  runeLiveBefore: true,
-  runeLiveAfter: true,
+  runeSeatUnlockedBefore: true,
+  runeSeatUnlockedAfter: true,
 })), [group('promotion', 'obsidian', 'neon')]);
 assert.deepEqual(groupTransitionSlides(event({
   beforePoints: 5000,
@@ -234,8 +260,8 @@ assert.deepEqual(groupTransitionSlides(event({
   afterGroup: 'obsidian',
   beforePoolTier: 'ivory',
   afterPoolTier: 'ivory',
-  runeLiveBefore: true,
-  runeLiveAfter: true,
+  runeSeatUnlockedBefore: true,
+  runeSeatUnlockedAfter: true,
 })), [group('demotion', 'neon', 'obsidian')]);
 /* The positional fact also outranks point direction. Population/rank changes
    can move the 1% boundary independently of one player's own step; rejecting
@@ -334,8 +360,8 @@ assert.deepEqual(parsedApex, event({
   beforePoolTier: 'ivory',
   afterPoolTier: 'ivory',
   equippedRune: 'ward',
-  runeLiveBefore: true,
-  runeLiveAfter: true,
+  runeSeatUnlockedBefore: true,
+  runeSeatUnlockedAfter: true,
 }));
 assert.equal(rankedProgressionFromRow({ ...apexRow, source_match_id: null }), null);
 assert.equal(rankedProgressionFromRow({
@@ -357,7 +383,7 @@ assert.equal(rankedProgressionFromRow({
 }), null);
 
 console.log(JSON.stringify({
-  cases: 19 + invalidEvents.length,
+  cases: 21 + invalidEvents.length,
   boneAdditions,
   ivoryAdditions,
 }, null, 2));

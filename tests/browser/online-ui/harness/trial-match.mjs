@@ -31,6 +31,11 @@ export async function installTrialMatchRoutes(page, {
   you = 1,                       // ME(1) is p1: the player opens
   myRune = 'pilfer',
   foeRune = 'pilfer',
+  /* Most consumers exercise Rune Trial after its reveal. A fresh standard
+     match reuses the same authoritative projection fixture so a reveal probe
+     can cross the real queue boundary rather than invoking a UI hook. */
+  format = 'rune_trial',
+  rejoined = true,
   opponentName = 'NovaComet992',
   /* Hold the committed action back, so a probe can tell a board that filled
      at tap time apart from one that waited for the server. */
@@ -66,6 +71,7 @@ export async function installTrialMatchRoutes(page, {
   const charm = freshCharm();
   const rows = [];
   let moveCount = 0;
+  let joinCalls = 0;
   let actionCalls = 0;
   const match = {
     id: TRIAL_MATCH_ID,
@@ -81,7 +87,7 @@ export async function installTrialMatchRoutes(page, {
     next_die: openingDie,
     last_move_at: new Date().toISOString(),
     modifier: 'classic',
-    format: 'rune_trial',
+    format,
     protocol_version: 2,
     rune_rules_version: 1,
     pool_tier: 'bone',
@@ -181,30 +187,34 @@ export async function installTrialMatchRoutes(page, {
 
   for (const step of seedPlacements) place(step.who, step.col, step.nextDie);
 
-  await page.route('**/functions/v1/pvp-join', (route) => route.fulfill({
-    status: 200,
-    contentType: 'application/json',
-    /* rejoined + phase 'playing' is the door past the reveal and the private
-       selection: the server has already published both runes, so the queue
-       hands this straight to enterMatch. */
-    body: JSON.stringify({
-      status: 'matched',
-      you,
-      rejoined: true,
-      match: { ...match },
-      ...(botOpened ? { bot_actions: rows.map((row) => ({ ...row })) } : {}),
-      names: {
-        p1: 'TestGuest001',
-        p2: opponentName,
-        ratings: { p1: 1000, p2: 1010 },
-        avatars: { p1: null, p2: null },
-      },
-      trial: {
-        offer: [], phase: 'playing', deadline: null,
-        your_choice: myRune, opponent_committed: true,
-      },
-    }),
-  }));
+  await page.route('**/functions/v1/pvp-join', (route) => {
+    joinCalls++;
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      /* The fixture defaults to a rejoin past the reveal and private selection.
+         A reveal regression can explicitly make this a fresh match instead. */
+      body: JSON.stringify({
+        status: 'matched',
+        you,
+        rejoined,
+        match: { ...match },
+        ...(botOpened ? { bot_actions: rows.map((row) => ({ ...row })) } : {}),
+        names: {
+          p1: 'TestGuest001',
+          p2: opponentName,
+          ratings: { p1: 1000, p2: 1010 },
+          avatars: { p1: null, p2: null },
+        },
+        ...(format === 'rune_trial' ? {
+          trial: {
+            offer: [], phase: 'playing', deadline: null,
+            your_choice: myRune, opponent_committed: true,
+          },
+        } : {}),
+      }),
+    });
+  });
 
   await page.route('**/rest/v1/match_actions*', (route) => route.fulfill({
     status: 200, contentType: 'application/json', body: JSON.stringify(rows),
@@ -264,6 +274,7 @@ export async function installTrialMatchRoutes(page, {
 
   return {
     trialMatchId: TRIAL_MATCH_ID,
+    trialJoinCalls: () => joinCalls,
     trialActionCalls: () => actionCalls,
     trialRows: () => rows.map((row) => ({ ...row })),
     trialMatchRow: () => ({ ...match }),

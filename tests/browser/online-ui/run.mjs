@@ -132,9 +132,29 @@ const SESSION = {
           app_metadata: {}, user_metadata: {}, identities: [] },
 };
 
-const browser = await webkit.launch();
-const visit = createVisit({ browser, URL, SESSION, GUEST_ID,
+/* WebKit stops beginning navigations after roughly sixty create/close context
+   cycles on this machine: the next page.goto sits before domcontentloaded for
+   its full timeout, while the same scenario is green in a fresh process. This
+   tree is intentionally exhaustive and now crosses that lifetime. Recycle at
+   a measured margin BETWEEN visits, when createVisit has closed its context;
+   the stable wrapper means scenarios do not learn about browser lifetimes. */
+const WEBKIT_VISITS_PER_BROWSER = 48;
+let browser = await webkit.launch();
+let webkitVisits = 0;
+let visitOnBrowser = createVisit({ browser, URL, SESSION, GUEST_ID,
   onHarnessError: (message) => problems.push(message) });
+const visit = async (options) => {
+  if (webkitVisits >= WEBKIT_VISITS_PER_BROWSER) {
+    await browser.close();
+    browser = await webkit.launch();
+    visitOnBrowser = createVisit({ browser, URL, SESSION, GUEST_ID,
+      onHarnessError: (message) => problems.push(message) });
+    webkitVisits = 0;
+  }
+  const result = await visitOnBrowser(options);
+  webkitVisits++;
+  return result;
+};
 /* A SECOND ENGINE, LAUNCHED ONLY IF A SCENARIO ASKS FOR ONE. This suite is
    WebKit, and that is exactly why a Chromium scroll-anchoring bug shipped: the
    bug cannot exist in an engine that has not implemented the feature. One

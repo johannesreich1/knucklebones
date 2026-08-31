@@ -11,7 +11,7 @@
 // closed.
 //
 // Three plans exist and they never mix:
-//   ranked-runes        the ranked PvP set, gated on both ranked-rune migrations
+//   ranked-runes        the ranked PvP set, gated on all ranked-rune migrations
 //   identity-hardening  the account identity set, gated on the Apple/Game
 //                       Center credential lifecycle those functions call
 //   game-center         gc-auth alone, gated on the Game Center identity
@@ -94,8 +94,15 @@ export const RANKED_RUNES_MIGRATION_VERSION = '20260830155543';
 export const RANKED_RUNES_MIGRATION_NAME = 'equipped_runes_ranked';
 export const RANDOM_RUNE_MODE_MIGRATION_VERSION = '20260830160000';
 export const RANDOM_RUNE_MODE_MIGRATION_NAME = 'random_rune_mode';
+export const RANKED_PROGRESSION_MIGRATION_VERSION = '20260830182406';
+export const RANKED_PROGRESSION_MIGRATION_NAME = 'ranked_progression_events';
+export const HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_VERSION = '20260831133000';
+export const HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_NAME =
+  'historical_silver_ranked_runes';
 export const SUPABASE_READBACK_OMISSION_HASHES = Object.freeze({
-  '*:core/ranked-action-types.ts': 'add8dc5a605e30a7ad0be9a30655863c960acf25769f1a57412b15e329c99420',
+  // Re-pinned 2026-08-31 for the permanent historical-SILVER seat contract.
+  // This file remains type-only, so the API bundler still omits it.
+  '*:core/ranked-action-types.ts': '9dc5f9c5f85aaeb2c48ef26cf46a2deec6f33e71f110ed9db8e6e63865395000',
   // Re-pinned 2026-08-29 for SpellSpec.drawsFromSupply — the flag ranked reads
   // to decide whether it may paint a cast at tap time. Still two interfaces
   // and no runtime export, so Supabase keeps pruning it from the readback.
@@ -172,16 +179,22 @@ select count(*) = 1 and bool_and(name = $2::text) as migration_history
  where version = $1::text;
 `;
 export const RANKED_RUNES_PRODUCTION_PREREQUISITE = String.raw`
--- ranked-runes forward-migration identity
-select count(*) = 2
+-- ranked-runes and ranked-progression forward-migration identity
+select count(*) = 4
        and count(*) filter (
          where version = $1::text and name = $2::text
        ) = 1
        and count(*) filter (
          where version = $3::text and name = $4::text
+       ) = 1
+       and count(*) filter (
+         where version = $5::text and name = $6::text
+       ) = 1
+       and count(*) filter (
+         where version = $7::text and name = $8::text
        ) = 1 as migration_history
   from supabase_migrations.schema_migrations
- where version in ($1::text, $3::text);
+ where version in ($1::text, $3::text, $5::text, $7::text);
 `;
 // identity-status, apple-token-register and apple-revocation-retry call
 // apple_revocation_ready, store_apple_revocation_credential,
@@ -249,9 +262,10 @@ export async function assertRuneTrialProductionPrerequisite(
 
 /**
  * The durable database gate for every ranked Edge Function closure. The
- * ranked-rune audit composes the complete Rune Trial foundation with both
+ * ranked-rune audit composes the complete Rune Trial foundation with all three
  * ordered forward migrations, exact constraints/triggers/function bodies,
- * ACLs, and bot-seat invariants. Pinning both history identities additionally
+ * ACLs, bot-seat invariants, and the applied progression foundation. Pinning
+ * all four history identities also
  * proves that state arrived through the reviewed migrations rather than an
  * ad-hoc catalog edit.
  */
@@ -266,6 +280,10 @@ export async function assertRankedRunesProductionPrerequisite(
     RANKED_RUNES_MIGRATION_NAME,
     RANDOM_RUNE_MODE_MIGRATION_VERSION,
     RANDOM_RUNE_MODE_MIGRATION_NAME,
+    RANKED_PROGRESSION_MIGRATION_VERSION,
+    RANKED_PROGRESSION_MIGRATION_NAME,
+    HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_VERSION,
+    HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_NAME,
   ]);
   if (!Array.isArray(historyRows) || historyRows.length !== 1
       || !isObject(historyRows[0])
@@ -273,12 +291,15 @@ export async function assertRankedRunesProductionPrerequisite(
       || historyRows[0].migration_history !== true) {
     fail('Production migrations must be exactly '
       + `${RANKED_RUNES_MIGRATION_VERSION}/${RANKED_RUNES_MIGRATION_NAME} and `
-      + `${RANDOM_RUNE_MODE_MIGRATION_VERSION}/${RANDOM_RUNE_MODE_MIGRATION_NAME}.`);
+      + `${RANDOM_RUNE_MODE_MIGRATION_VERSION}/${RANDOM_RUNE_MODE_MIGRATION_NAME} and `
+      + `${RANKED_PROGRESSION_MIGRATION_VERSION}/${RANKED_PROGRESSION_MIGRATION_NAME} and `
+      + `${HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_VERSION}/`
+      + `${HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_NAME}.`);
   }
 
   const { evidence, schemaStage, data } = await auditEquippedRanked(readProduction);
-  if (schemaStage !== 2) {
-    fail('Production ranked-runes schema prerequisite must be fully applied at stage 2.');
+  if (schemaStage !== 3) {
+    fail('Production ranked-runes schema prerequisite must be fully applied at stage 3.');
   }
   return Object.freeze({ migrationHistory: true, schemaStage, evidence, data });
 }
@@ -342,10 +363,12 @@ export const FUNCTION_ROLLOUT_PLANS = Object.freeze({
       'supabase/migrations/20260825205241_rune_trial_ranked_v2.sql',
       'supabase/migrations/20260830155543_equipped_runes_ranked.sql',
       'supabase/migrations/20260830160000_random_rune_mode.sql',
+      'supabase/migrations/20260830182406_ranked_progression_events.sql',
+      'supabase/migrations/20260831133000_historical_silver_ranked_runes.sql',
     ]),
     prerequisite: assertRankedRunesProductionPrerequisite,
     notes: Object.freeze([
-      `Set ${FUNCTION_DEPLOY_OPT_IN}=1 and pass --apply only after both ranked-runes database migrations are verified at stage 2.`,
+      `Set ${FUNCTION_DEPLOY_OPT_IN}=1 and pass --apply only after the ranked-rune and progression migrations are verified together at stages 3 and 2.`,
     ]),
   }),
   'identity-hardening': Object.freeze({

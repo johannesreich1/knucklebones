@@ -61,7 +61,7 @@ export interface RuneCollectionRefresh {
   unseen: readonly PlayerRuneRow[];
   verified: boolean;
   poolTier: RankedPoolTier | null;
-  /** The rune carried into ranked from SILVER up; null is nothing equipped. */
+  /** Selected rune ordinary ranked can use after SILVER is reached once; null is empty. */
   equippedRune: string | null;
   /** Concrete fixed equipment versus per-match RANDOM. */
   randomRuneMode: boolean;

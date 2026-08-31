@@ -11,9 +11,9 @@ import {
   EQUIPPED_RANKED_HUMAN_DATA,
   EQUIPPED_RANKED_MIGRATION_SHA256,
   EQUIPPED_RANKED_SCHEMA,
+  RANKED_PROGRESSION_SCHEMA,
   RANKED_RUNES_MIGRATIONS,
   RUNE_TRIAL_FUNCTIONS,
-  RUNE_TRIAL_JOB,
   RUNE_TRIAL_SCHEMA,
   auditEquippedRanked,
   auditEquippedRankedBotData,
@@ -27,71 +27,21 @@ import {
   EQUIPPED_RANKED_COMPLETE_SCHEMA_ROW,
   EQUIPPED_RANKED_STAGE_ONE,
   EQUIPPED_RANKED_STAGE_ONE_SCHEMA_ROW,
+  EQUIPPED_RANKED_STAGE_TWO,
+  EQUIPPED_RANKED_STAGE_TWO_SCHEMA_ROW,
 } from './random-rune-production-migration-cases.ts';
+import {
+  RANKED_PROGRESSION_ABSENT_SCHEMA_ROW,
+  RANKED_PROGRESSION_LEGACY_SCHEMA_ROW,
+} from './ranked-progression-production-migration-cases.ts';
+import {
+  BOT_DATA,
+  FOUNDATION_FUNCTIONS,
+  productionRead,
+} from './equipped-ranked-production-fixtures.ts';
 
 type Check = (name: string, run: () => void) => void;
 type CheckAsync = (name: string, run: () => Promise<void>) => Promise<void>;
-
-const FOUNDATION_SCHEMA = Object.freeze({
-  profile_progression: true,
-  match_protocol: true,
-  queue_protocol: true,
-  player_runes_table: true,
-  match_actions_table: true,
-  private_tables: true,
-  indexes: true,
-  policies: true,
-  table_grants: true,
-  private_tables_locked: true,
-  realtime_publication: true,
-  cron_extension: true,
-});
-const FOUNDATION_FUNCTIONS = Object.freeze({
-  function_contracts: true,
-  function_bodies: true,
-  function_grants: true,
-});
-const FOUNDATION_JOB = Object.freeze({ cron_job: true, cron_job_contract: true });
-const BOT_DATA = Object.freeze({
-  bot_count: 200,
-  bots_with_runes: 155,
-  bots_equipped: 155,
-  bots_with_runes_without_seat: 0,
-  bots_without_runes_with_seat: 0,
-  bot_seat_not_owned: 0,
-  bots_random_mode: 0,
-});
-
-function productionRead(overrides: {
-  schema?: Record<string, unknown>;
-  bots?: Record<string, unknown>;
-  convergence?: Record<string, unknown>;
-  humans?: Record<string, unknown>;
-} = {}) {
-  return async (query: string, parameters: unknown[] = []) => {
-    assert.deepEqual(parameters, []);
-    if (query === RUNE_TRIAL_SCHEMA) return [FOUNDATION_SCHEMA];
-    if (query === RUNE_TRIAL_FUNCTIONS) return [FOUNDATION_FUNCTIONS];
-    if (query === RUNE_TRIAL_JOB) return [FOUNDATION_JOB];
-    if (query === EQUIPPED_RANKED_SCHEMA) {
-      return [{ ...EQUIPPED_RANKED_COMPLETE_SCHEMA_ROW, ...overrides.schema }];
-    }
-    if (query === EQUIPPED_RANKED_BOT_DATA) {
-      return [{ ...BOT_DATA, ...overrides.bots }];
-    }
-    if (query === EQUIPPED_RANKED_BOT_CONVERGENCE) {
-      return [{ bot_seat_not_canonical: 0, ...overrides.convergence }];
-    }
-    if (query === EQUIPPED_RANKED_HUMAN_DATA) {
-      return [{
-        human_count: 3,
-        equipped_rune_fingerprint: '0123456789abcdef0123456789abcdef',
-        ...overrides.humans,
-      }];
-    }
-    return assert.fail('equipped-ranked audit read an unreviewed query');
-  };
-}
 
 export async function runEquippedRankedProductionMigrationCases(options: {
   readonly check: Check;
@@ -130,6 +80,8 @@ export async function runEquippedRankedProductionMigrationCases(options: {
       'b7b1b9e7899045936f4d6a246f1c9eee',
       'b6cbfd6a8630c49653664bf554aa346a',
       '969ec904c8bce2bf1cfab78a90d8669b',
+      'ec865febe67e1370a877459e4b89ec65',
+      '2aabcbcd3ba8231de00843f4350924c9',
       'cb197365655531053efedc039ed84380',
       "role_name = 'service_role'",
       "proconfig = array['search_path=\"\"']::text[]",
@@ -142,6 +94,8 @@ export async function runEquippedRankedProductionMigrationCases(options: {
     for (const body of [
       '8d6c669dd740a64a1df872b3a6359944',
       '969ec904c8bce2bf1cfab78a90d8669b',
+      'ec865febe67e1370a877459e4b89ec65',
+      '2aabcbcd3ba8231de00843f4350924c9',
       'cb197365655531053efedc039ed84380',
     ]) {
       assert.ok(RUNE_TRIAL_FUNCTIONS.includes(body),
@@ -168,7 +122,7 @@ export async function runEquippedRankedProductionMigrationCases(options: {
 
   await checkAsync('equipped-ranked audit composes the complete Rune Trial foundation', async () => {
     const complete = await auditEquippedRanked(productionRead());
-    assert.equal(complete.schemaStage, 2);
+    assert.equal(complete.schemaStage, 3);
     assert.ok(Object.values(complete.evidence).every(value => value === true));
     assert.deepEqual(complete.data, {
       botCount: 200,
@@ -182,10 +136,19 @@ export async function runEquippedRankedProductionMigrationCases(options: {
 
     const fixedSeatStage = await auditEquippedRanked(productionRead({
       schema: EQUIPPED_RANKED_STAGE_ONE_SCHEMA_ROW,
+      progression: RANKED_PROGRESSION_ABSENT_SCHEMA_ROW,
     }));
     assert.equal(fixedSeatStage.schemaStage, 1,
       'the already-deployed fixed-seat migration must remain a valid prefix');
     assert.deepEqual(fixedSeatStage.evidence, EQUIPPED_RANKED_STAGE_ONE);
+
+    const randomModeStage = await auditEquippedRanked(productionRead({
+      schema: EQUIPPED_RANKED_STAGE_TWO_SCHEMA_ROW,
+      progression: RANKED_PROGRESSION_LEGACY_SCHEMA_ROW,
+    }));
+    assert.equal(randomModeStage.schemaStage, 2,
+      'the deployed RANDOM migration must remain a valid prefix');
+    assert.deepEqual(randomModeStage.evidence, EQUIPPED_RANKED_STAGE_TWO);
 
     const absent = await auditEquippedRanked(async (query, parameters = []) => {
       if (query === EQUIPPED_RANKED_SCHEMA) {
@@ -201,6 +164,10 @@ export async function runEquippedRankedProductionMigrationCases(options: {
           bots_equipped: 154,
           bots_with_runes_without_seat: 1,
         }];
+      }
+      if (query === RANKED_PROGRESSION_SCHEMA) {
+        assert.deepEqual(parameters, []);
+        return [RANKED_PROGRESSION_ABSENT_SCHEMA_ROW];
       }
       return productionRead()(query, parameters);
     });
@@ -221,6 +188,12 @@ export async function runEquippedRankedProductionMigrationCases(options: {
     await assert.rejects(
       auditEquippedRanked(productionRead({ schema: { helper_lockdown: false } })),
       /partial/,
+    );
+    await assert.rejects(
+      auditEquippedRanked(productionRead({
+        progression: RANKED_PROGRESSION_LEGACY_SCHEMA_ROW,
+      })),
+      /out of order/,
     );
     await assert.rejects(
       auditEquippedRanked(async (query, parameters = []) => (
@@ -288,7 +261,7 @@ export async function runEquippedRankedProductionMigrationCases(options: {
     );
   });
 
-  await checkAsync('RANDOM-only post-apply preserves every valid owned bot seat', async () => {
+  await checkAsync('later ranked-rune stages preserve every valid owned bot seat', async () => {
     const queries: string[] = [];
     const read = productionRead({
       convergence: { bot_seat_not_canonical: 7 },
@@ -309,15 +282,19 @@ export async function runEquippedRankedProductionMigrationCases(options: {
       },
     );
     assert.ok(!queries.includes(EQUIPPED_RANKED_BOT_CONVERGENCE),
-      'stage two recomputed a canonical seat after later rune ownership changed');
+      'a later stage recomputed a canonical seat after rune ownership changed');
   });
 
   check('ranked-rune apply routes convergence only through the fixed-seat stage', () => {
-    const [fixedSeat, randomMode] = RANKED_RUNES_MIGRATIONS;
+    const [fixedSeat, randomMode, historicalSilver] = RANKED_RUNES_MIGRATIONS;
     assert.equal(requiresCanonicalEquippedBotSeats([]), false);
     assert.equal(requiresCanonicalEquippedBotSeats([randomMode]), false);
+    assert.equal(requiresCanonicalEquippedBotSeats([historicalSilver]), false);
     assert.equal(requiresCanonicalEquippedBotSeats([fixedSeat]), true);
-    assert.equal(requiresCanonicalEquippedBotSeats([fixedSeat, randomMode]), true);
+    assert.equal(
+      requiresCanonicalEquippedBotSeats([fixedSeat, randomMode, historicalSilver]),
+      true,
+    );
     const source = readFileSync(
       new URL('../../tools/database/production-rollout.mjs', import.meta.url),
       'utf8',

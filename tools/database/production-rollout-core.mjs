@@ -76,9 +76,13 @@ const RANDOM_RUNE_MODE_FIELDS = Object.freeze([
   'equipmentRpcBody',
   'equipmentRpcGrant',
 ]);
+const HISTORICAL_SILVER_RANKED_RUNE_FIELDS = Object.freeze([
+  'historicalSilverPolicy',
+]);
 const EQUIPPED_RANKED_FIELDS = Object.freeze([
   ...EQUIPPED_RANKED_STAGE_ONE_FIELDS,
   ...RANDOM_RUNE_MODE_FIELDS,
+  ...HISTORICAL_SILVER_RANKED_RUNE_FIELDS,
 ]);
 const LADDER_STREAK_BASELINE_FIELDS = Object.freeze([
   'tableColumns',
@@ -93,18 +97,32 @@ const LADDER_STREAK_BASELINE_FIELDS = Object.freeze([
   'playerCardGrants',
   'bestStreakDelegate',
 ]);
-const RANKED_PROGRESSION_FIELDS = Object.freeze([
+const RANKED_PROGRESSION_BASE_FIELDS = Object.freeze([
   'tableContract',
   'tableColumns',
-  'tableConstraints',
   'tableIndexes',
-  'tableComments',
+  'baseTableComments',
   'tableRlsPolicy',
   'tableGrants',
   'ackFunctionContract',
   'ackFunctionBody',
   'ackFunctionGrants',
-  'settleMatchEventBody',
+]);
+const RANKED_PROGRESSION_LEGACY_FIELDS = Object.freeze([
+  'legacyTableConstraints',
+  'legacyRuneComments',
+  'legacySettleMatchEventBody',
+]);
+const RANKED_PROGRESSION_HISTORICAL_SILVER_FIELDS = Object.freeze([
+  'historicalTableConstraints',
+  'historicalRuneComments',
+  'historicalRuneMatchStartPolicy',
+  'historicalSettleMatchEventBody',
+]);
+const RANKED_PROGRESSION_FIELDS = Object.freeze([
+  ...RANKED_PROGRESSION_BASE_FIELDS,
+  ...RANKED_PROGRESSION_LEGACY_FIELDS,
+  ...RANKED_PROGRESSION_HISTORICAL_SILVER_FIELDS,
 ]);
 
 export class ProductionRolloutGuardError extends Error {
@@ -528,8 +546,9 @@ export function validateRuneTrialSchemaStage(metadata) {
 
 /**
  * Validate the ordered ranked-rune database surface: absent, fixed equipment,
- * or fixed plus RANDOM equipment. Its Rune Trial foundation is audited
- * separately by the caller; a partially-applied stage always fails closed.
+ * fixed plus RANDOM equipment, or the historical-Silver match-start policy.
+ * Its Rune Trial foundation is audited separately by the caller; a
+ * partially-applied stage always fails closed.
  */
 export function validateEquippedRankedSchemaStage(metadata) {
   if (!isObject(metadata)) fail('Equipped-ranked metadata must be an object.');
@@ -542,12 +561,21 @@ export function validateEquippedRankedSchemaStage(metadata) {
 
   const stageOne = EQUIPPED_RANKED_STAGE_ONE_FIELDS.map(field => metadata[field]);
   const stageTwo = RANDOM_RUNE_MODE_FIELDS.map(field => metadata[field]);
+  const stageThree = HISTORICAL_SILVER_RANKED_RUNE_FIELDS.map(
+    field => metadata[field],
+  );
   if (stageOne.every(value => value === false)
-      && stageTwo.every(value => value === false)) return 0;
+      && stageTwo.every(value => value === false)
+      && stageThree.every(value => value === false)) return 0;
   if (stageOne.every(value => value === true)
-      && stageTwo.every(value => value === false)) return 1;
+      && stageTwo.every(value => value === false)
+      && stageThree.every(value => value === false)) return 1;
   if (stageOne.every(value => value === true)
-      && stageTwo.every(value => value === true)) return 2;
+      && stageTwo.every(value => value === true)
+      && stageThree.every(value => value === false)) return 2;
+  if (stageOne.every(value => value === true)
+      && stageTwo.every(value => value === true)
+      && stageThree.every(value => value === true)) return 3;
   fail('Equipped-ranked capability, match constraints, functions, or grants are partial.');
 }
 
@@ -577,7 +605,8 @@ export function validateLadderStreakBaselineSchemaStage(metadata) {
 }
 
 /**
- * Validate the durable ranked-progression event surface as absent or complete.
+ * Validate the durable ranked-progression event surface as absent, deployed
+ * with its original live-rune facts, or corrected to historical SILVER.
  * The caller separately requires the pre-existing settle_match RPC to retain
  * its exact eleven-argument service boundary in both stages; only its reviewed
  * event-writing body belongs to this migration-owned all-or-nothing surface.
@@ -595,8 +624,19 @@ export function validateRankedProgressionSchemaStage(metadata) {
     }
   }
 
-  const values = RANKED_PROGRESSION_FIELDS.map(field => metadata[field]);
-  if (values.every(value => value === false)) return 0;
-  if (values.every(value => value === true)) return 1;
+  const base = RANKED_PROGRESSION_BASE_FIELDS.map(field => metadata[field]);
+  const legacy = RANKED_PROGRESSION_LEGACY_FIELDS.map(field => metadata[field]);
+  const historical = RANKED_PROGRESSION_HISTORICAL_SILVER_FIELDS.map(
+    field => metadata[field],
+  );
+  if (base.every(value => value === false)
+      && legacy.every(value => value === false)
+      && historical.every(value => value === false)) return 0;
+  if (base.every(value => value === true)
+      && legacy.every(value => value === true)
+      && historical.every(value => value === false)) return 1;
+  if (base.every(value => value === true)
+      && legacy.every(value => value === false)
+      && historical.every(value => value === true)) return 2;
   fail('Ranked-progression table, owner boundary, acknowledgement, or settlement body is partial.');
 }

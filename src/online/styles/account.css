@@ -210,7 +210,7 @@
    fault it argues with the premise that "none" is a legitimate choice. */
 :where(#kbroot) #onAccount .accseat.none{border-style:dashed;
   border-color:color-mix(in srgb,var(--dim) 72%,transparent);box-shadow:none}
-/* BELOW SILVER: chosen, saved, waiting. It must differ from live by SHAPE and
+/* BEFORE FIRST SILVER: chosen, saved, waiting. It must differ from live by SHAPE and
    CHROMA, not shade alone — a merely dimmed mark reads as a mark in shadow,
    never as one that is not in play yet. So the bloom is removed outright and
    the rim takes the ring track's own grey, with the group pill naming the

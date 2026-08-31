@@ -12,9 +12,9 @@
 // So this pins the read END TO END — the stub's column reaches the cache, the
 // cache reaches the seat, and the seat paints — rather than any one hop.
 //
-// The gate is `SEAT_LIVE_GROUPS` in account-runes.ts: an equipped rune is only
-// LIVE from SILVER up, and below that the seat says it is waiting. Both sides
-// are covered, because a threshold tested from one side is not tested.
+// The gate is the carried ladder peak: an equipped rune becomes permanently
+// LIVE after SILVER has been reached once, while a never-SILVER seat keeps
+// waiting. Current points alone cannot distinguish those accounts.
 
 import {
   measureEquippedSeat,
@@ -27,24 +27,42 @@ const isEquipmentWrite = (request) => request.method() === 'POST'
 export async function runEquippedSeatScenarios({ visit, out, check }) {
   const collected = ['fate', 'ward', 'pilfer'];
 
-  /* BONE (465 points) carries a rune but may not use it yet. */
+  /* A current 1,218 with a 1,259 peak has never crossed SILVER. RANDOM is
+     saved, but its seat is still waiting. This is deliberately paired with the
+     demoted case below: current points alone cannot distinguish the two. */
   const waiting = await visit({
     named: true, member: true, skipStandardProbes: true,
-    runes: collected, equippedRune: 'ward',
+    runes: collected, equippedRune: 'ward', randomRuneMode: true,
+    standingPoints: 1218, standingPeak: 1259,
     probe: readEquippedSeat,
   });
   out.equippedSeatWaiting = waiting.probeResult;
   const w = waiting.probeResult;
   check(!!w && !w.hidden && w.painted,
     'a player holding runes has no equipped seat on screen at all', w);
-  check(!!w && !w.none && w.hasRune,
+  check(!!w && !w.none && w.hasRune && w.random,
     'THE EQUIPPED RUNE NEVER REACHED THE SEAT — it painted as empty', w);
   check(!!w && w.waiting,
-    'below SILVER the seat did not say the carried rune is still waiting', w);
-  check(!!w && /WARD/i.test(w.label),
-    'the seat does not name the rune it is holding', w);
+    'a never-SILVER seat did not say the carried rune is still waiting', w);
+  check(!!w && /RANDOM RUNE MODE/i.test(w.label),
+    'the waiting seat does not name its RANDOM selection', w);
 
-  /* SILVER and above: the same rune, now in play. */
+  /* The exact same current 1,218 and current-season 1,259 peak can still
+     belong to a player who reached SILVER in a prior season. The permanent
+     all-season fact, not a rollover convention, must keep RANDOM live. */
+  const demoted = await visit({
+    named: true, member: true, skipStandardProbes: true,
+    runes: collected, equippedRune: 'ward', randomRuneMode: true,
+    standingPoints: 1218, standingPeak: 1259, historicalSilverReached: true,
+    probe: readEquippedSeat,
+  });
+  out.equippedSeatDemoted = demoted.probeResult;
+  const d = demoted.probeResult;
+  check(!!d && !d.hidden && d.painted && !d.none && d.hasRune && d.random
+      && !d.waiting && /RANDOM RUNE MODE/i.test(d.label),
+    'a prior-season SILVER player still paints RANDOM as waiting after rollover', d);
+
+  /* First SILVER crossing: the same rune is now permanently in play. */
   const live = await visit({
     named: true, member: true, skipStandardProbes: true,
     runes: collected, equippedRune: 'ward', standingPoints: 1400,
@@ -53,13 +71,13 @@ export async function runEquippedSeatScenarios({ visit, out, check }) {
   out.equippedSeatLive = live.probeResult;
   const l = live.probeResult;
   check(!!l && !l.none && l.hasRune && !l.waiting,
-    'from SILVER up the carried rune is still shown as waiting', l);
+    'a first-SILVER seat is still shown as waiting', l);
   check(!!l && /WARD/i.test(l.label),
     'the live seat does not name the rune it is holding', l);
   /* The hue is the rune's, not the panel's — the same rune from both sides of
      the threshold, so a seat that lost its colour cannot pass as gated. */
-  check(!!w && !!l && w.hue === l.hue && !!l.hue,
-    'the seat changed the rune\'s colour across the SILVER threshold', { w, l });
+  check(!!d && !!l && !!d.hue && !!l.hue,
+    'the live seat lost its painted rune colour', { d, l });
 
   /* Nothing equipped: the seat is present but empty, and says so. */
   const empty = await visit({

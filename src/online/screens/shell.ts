@@ -82,7 +82,8 @@ const OVERLAY = `
       <!-- THE EQUIPPED RUNE SITS IN THE RING'S MOUTH (design 52d, EQ4). The
            90deg opening already names your group, so a seat cut into it says
            "this comes with you into ranked" without a sentence under it: the
-           rune and the standing that switches it on are one glance. The seat is
+           rune and the permanent SILVER milestone that switches it on are one
+           glance. The seat is
            the equipment DOOR: it opens the action-only fixed/random/empty mode
            sheet, and EQUIP promotes the existing profile grid into its picker. -->
       <button class="accseat" id="accSeat" type="button" hidden
@@ -107,8 +108,9 @@ const OVERLAY = `
       <div class="fact pk"><b id="accPeak">0</b><span data-i18n="online:profile.peak">PEAK</span></div>
     </div>
     <!-- Collection and equipment are distinct account facts. Six stable slots
-         show what is owned; the equipped seat chooses what ordinary ranked
-         snapshots from SILVER. Trial loans its full offer independently. -->
+         show what is owned; after SILVER has been reached once, the equipped
+         seat chooses what ordinary ranked snapshots. Trial loans its full offer
+         and keeps its own choice/reveal independently. -->
     <div id="accRunes"></div>
     <!-- Identity offers lead the match history (user call): after the stable
          collection summary, so the account's next step is still seen before

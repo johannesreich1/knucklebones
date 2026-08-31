@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(34);
+select plan(35);
 
 select ok(
   has_column_privilege(
@@ -68,10 +68,29 @@ update public.profiles
        rating = case
          when id in (
            '9a000000-0000-0000-0000-000000000004',
-           '9a000000-0000-0000-0000-000000000005'
-         ) then 1259
+           '9a000000-0000-0000-0000-000000000005',
+           '9a000000-0000-0000-0000-000000000007',
+           '9a000000-0000-0000-0000-000000000008'
+         ) then 1218
          else 1600
        end;
+
+-- Current-season points and peak do not say whether a player ever earned
+-- SILVER. These two pairs deliberately share both; only the first pair has a
+-- qualifying peak in an earlier season.
+insert into public.season_ratings (season_id, player, points, peak)
+values
+  (1, '9a000000-0000-0000-0000-000000000001', 1600, 1600),
+  (1, '9a000000-0000-0000-0000-000000000002', 1600, 1600),
+  (1, '9a000000-0000-0000-0000-000000000003', 1600, 1600),
+  (0, '9a000000-0000-0000-0000-000000000004', 1300, 1300),
+  (0, '9a000000-0000-0000-0000-000000000005', 1300, 1300),
+  (1, '9a000000-0000-0000-0000-000000000004', 1218, 1259),
+  (1, '9a000000-0000-0000-0000-000000000005', 1218, 1259),
+  (1, '9a000000-0000-0000-0000-000000000007', 1218, 1259),
+  (1, '9a000000-0000-0000-0000-000000000008', 1218, 1259)
+on conflict (season_id, player) do update
+set points = excluded.points, peak = excluded.peak;
 
 insert into public.player_runes (player_id, rune_id, source_match_id)
 values
@@ -477,13 +496,61 @@ select is(
     coalesce(payload->'match'->>'p1_rune', 'none'), '/',
     coalesce(payload->'match'->>'p2_rune', 'none')
   ) from below_random_start),
-  'none/none',
-  'below SILVER both random and fixed equipment stay out of the game'
+  'sunder/pilfer',
+  'a prior-season SILVER peak keeps random and fixed equipment live after rollover'
 );
 
 update public.matches
    set status = 'forfeit', finished_at = clock_timestamp()
  where id = (select (payload->'match'->>'id')::uuid from below_random_start);
+
+-- The same current points without a SILVER peak remain gated. Give both seats
+-- real owned equipment so null/null can only come from the historical gate,
+-- not from an empty profile or inventory.
+update public.profiles
+   set equipped_rune = case id
+         when '9a000000-0000-0000-0000-000000000007' then 'ward'
+         when '9a000000-0000-0000-0000-000000000008' then 'fate'
+       end,
+       random_rune_mode = id = '9a000000-0000-0000-0000-000000000007',
+       /* A stale mirror cannot manufacture a historical achievement. */
+       rating = 1600
+ where id in (
+   '9a000000-0000-0000-0000-000000000007',
+   '9a000000-0000-0000-0000-000000000008'
+ );
+set local role service_role;
+select public.enqueue_ranked_player_v2(
+  player, 2::smallint, array['rune_trial_v1','equipped_rune_v1']
+)
+from unnest(array[
+  '9a000000-0000-0000-0000-000000000007'::uuid,
+  '9a000000-0000-0000-0000-000000000008'::uuid
+]) player;
+create temporary table never_silver_start as
+select public.start_ranked_match_v3(
+  '9a000000-0000-0000-0000-000000000007',
+  '9a000000-0000-0000-0000-000000000007',
+  '9a000000-0000-0000-0000-000000000008',
+  'never-silver-seed', 5::smallint, 'classic', 1::smallint,
+  '9a000000-0000-0000-0000-000000000008',
+  null::smallint, null::smallint, null::smallint, null::smallint,
+  2::smallint, 'ivory', 'standard', null::text[], null::timestamptz,
+  null::text, null::text, true
+) as payload;
+reset role;
+select is(
+  (select concat(
+    coalesce(payload->'match'->>'p1_rune', 'none'), '/',
+    coalesce(payload->'match'->>'p2_rune', 'none')
+  ) from never_silver_start),
+  'none/none',
+  'players who never reached SILVER stay rune-free even with a stale high profile rating'
+);
+
+update public.matches
+   set status = 'forfeit', finished_at = clock_timestamp()
+ where id = (select (payload->'match'->>'id')::uuid from never_silver_start);
 set local role service_role;
 select public.enqueue_ranked_player_v2(
   player, 2::smallint, array['rune_trial_v1','equipped_rune_v1']

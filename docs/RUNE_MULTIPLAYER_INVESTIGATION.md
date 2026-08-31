@@ -1,7 +1,8 @@
 # Multiplayer runes — balance and feasibility investigation
 
-Status: **DECISION UPDATED 2026-08-30; ORDINARY RANKED EQUIPPED RUNES FROM
-SILVER AND RUNE TRIAL'S SEPARATE CHOICE ARE THE SELECTED CONTRACT.** The
+Status: **DECISION UPDATED 2026-08-31; REACHING SILVER ONCE PERMANENTLY
+ACTIVATES ORDINARY-RANKED EQUIPMENT, AND THE PAIRED REVEAL BELONGS ONLY TO RUNE
+TRIAL.** The
 asymmetric baseline and WARD/SUNDER evidence remain historical balance context,
 not a claim that the latest backend/functions are live.
 
@@ -11,8 +12,8 @@ This document began by investigating two proposed ranked multiplayer formats:
 
 1. **Personal-rune modes** — all seven existing game modes still apply to both
    players, while each player brings an individually equipped rune. The rune is
-   locked before matchmaking and both runes become visible when the match is
-   revealed.
+   locked before matchmaking and remains visible during play; ordinary ranked
+   does not add a paired rune-card reveal.
 2. **Rune Trial** — an additional game-mode outcome in which equipped runes do
    not apply. Both players receive the same three randomly offered runes, choose
    secretly, and reveal their choices together.
@@ -32,15 +33,17 @@ the pre-v2 evidence that led to it.
 
 ## 0. Resolved implementation record (2026-08-25)
 
-### Superseding owner decision (2026-08-30)
+### Superseding owner decision (2026-08-31)
 
-- Ordinary ranked uses personal equipped runes from SILVER upward. Matchmaking
-  snapshots `p1_rune` and `p2_rune` independently; no equipped rune means that
-  seat has no rune, and below SILVER both seats are rune-free. The match row is
-  gameplay authority, never a later profile/cache read.
-- A fresh standard reveal shows both immutable seat assignments together,
-  including explicit NONE for an empty seat. Rejoining an active match does not
-  replay that reveal.
+- Reaching SILVER once permanently activates personal equipment in ordinary
+  ranked, including after demotion or season turnover. Matchmaking snapshots
+  `p1_rune` and `p2_rune` independently; no equipment or never reaching SILVER
+  leaves that seat rune-free. A RANDOM seat deterministically resolves to one
+  current owned rune, never NONE. The match row is gameplay authority, never a
+  later profile/cache read.
+- Ordinary ranked never shows the paired rune-reveal screen, whether its seats
+  are populated or empty. That paired reveal belongs exclusively to Rune Trial;
+  rejoining an active match remains silent.
 - Standard equipped-rune matches use the versioned ordered action protocol and
   require a distinct client capability. The retained v1 placement path is only
   compatible with rune-free standard rows; an older Trial-capable client does
@@ -68,7 +71,7 @@ the pre-v2 evidence that led to it.
   deterministic participant-specific auto-pick for every missing choice,
   including before early-terminal settlement. Equipment is ignored and left
   unchanged. At that date ordinary ranked still used its rune-free v1 baseline;
-  the 2026-08-30 decision above supersedes that boundary.
+  the 2026-08-31 decision above supersedes that boundary.
 - **Acquisition:** new and existing collections start empty. Every settled
   Trial win—including bot, resignation, timeout, or deletion-forfeit—grants
   the winner's selected rune idempotently. Loss/draw grants nothing; a
@@ -126,15 +129,16 @@ rune-versus-no-rune result is not evidence that two different runes are balanced
 
 ## 2. Working definitions of the investigated formats
 
-Personal equipped runes are now selected for ordinary ranked from SILVER under
-§0. Rune Trial remains the separate selected format described below.
+Personal equipped runes are now selected for ordinary ranked after each player
+has reached SILVER once under §0. Rune Trial remains the separate selected
+format described below.
 
 ### 2.1 Personal-rune modes
 
 - One shared game mode governs both players, as today.
 - Each player equips one owned rune before entering matchmaking.
 - Matchmaking locks the rune before the opponent and mode are known.
-- The match reveal shows the shared mode and both equipped runes.
+- The match reveal shows the shared mode without a paired rune-card beat.
 - Players may bring the same rune or different runes.
 - Rune identity and remaining charges stay visible during play.
 - All seven current modes use this personal-rune rule.
@@ -2072,8 +2076,9 @@ The remaining risks are rollout and evidence risks:
   owner-readable row per collected rune, including durable unseen state and an
   optional source match. There is no starter rune or grandfathered full roster.
 - Rune Trial loans all six online, so collection breadth does not change its
-  choice set. Ordinary ranked from SILVER uses each participant's equipped rune;
-  a missing equipped rune remains an empty hand for that seat.
+  choice set. Reaching SILVER once permanently activates each participant's
+  ordinary-ranked equipment; a never-SILVER or missing equipped seat remains an
+  empty hand, and RANDOM resolves to an owned rune rather than NONE.
 - The ladder already gives progression on every result and intentionally drifts
   upward at a 50% win rate (`docs/LADDER.md:20-74`).
 - Newcomer bot tuning intentionally targets a high early human win rate; the
@@ -2265,7 +2270,7 @@ normal repository gates and an explicit production rollout.
 
 - [x] Preserve the historical offline-only boundary until a versioned protocol,
   then implement the same scoring-WARD contract in Rune Trial v2. The later
-  2026-08-30 decision extends that grammar to equipped ordinary ranked.
+  2026-08-31 decision extends that grammar to equipped ordinary ranked.
 - [x] Trace how one-cast versus chained FATE and Classic-backed versus
   mechanically new Trial change action grammar, clock, bot, replay, and rollout
   scope (§7.3, §7.6).
@@ -2355,8 +2360,9 @@ evidence limits visible.
    readiness still depends on repository/database gates, compatibility rollout,
    live verification, and the remaining balance evidence.
 10. **SUPERSEDED DECISION:** personal equipped runes were deferred on
-    2026-08-25. The 2026-08-30 owner decision selects them for ordinary ranked
-    from SILVER; Trial still ignores and preserves equipment.
+    2026-08-25. The 2026-08-31 owner decision permanently activates them in
+    ordinary ranked after SILVER is reached once; Trial still ignores and
+    preserves equipment.
 11. **IMPLEMENTATION:** Rune Trial's Classic-backed selection/liveness path is
     repository-ready and uses no cryptographic commit/reveal. The genuinely new
     mechanical branch is rejected, not an unresolved launch alternative.
@@ -2371,15 +2377,17 @@ evidence limits visible.
 
 1. **Keep Trial access equal.** Trial loans the complete roster; wins build a
    finite collection without narrowing the next Trial's options. Ordinary
-   ranked is deliberately different: from SILVER it uses each player's equipped
-   collected rune, with an empty equipped seat remaining rune-free.
+   ranked is deliberately different: reaching SILVER once permanently
+   activates each player's equipped collected rune, with a never-SILVER or
+   empty equipped seat remaining rune-free.
 2. **Keep the formats distinct.** Rune Trial ignores equipment, reveals one
-   common three-rune loan after private choice, and stays Classic-backed.
-   Ordinary ranked snapshots equipped seats before revealing its mode and pair.
+   common three-rune loan after private choice, and stays Classic-backed. Its
+   paired reveal is exclusive to Trial; ordinary ranked snapshots equipped
+   seats for gameplay without showing that screen.
 3. **Monitor the selected personal-rune format.** The v2 grammar resolves the
    authority prerequisite, but it does not erase the asymmetric balance
    evidence. Track matchup and choice concentration rather than treating the
-   SILVER launch decision as balance proof.
+   permanent SILVER-unlock decision as balance proof.
 4. **Keep one-hit scoring WARD identical wherever runes are played.** The
    ordered action protocol replays it authoritatively in Trial and equipped
    ordinary ranked.
@@ -2436,9 +2444,10 @@ change ranked Trial access.
 7. **REMAINING EVIDENCE, NOT A BLOCKING RULE:** monitor weighted choice
    concentration and worst-cell frustration; equal loans prevent collection
    breadth from becoming an access imbalance.
-8. **SUPERSEDED 2026-08-30:** Trial still loans all offers, but ordinary ranked
-   now uses equipped collected runes from SILVER. The retained balance evidence
-   is therefore an active monitoring requirement rather than a future-only one.
+8. **SUPERSEDED 2026-08-31:** Trial still loans all offers, but ordinary ranked
+   permanently uses equipped collected runes after SILVER is reached once. The
+   retained balance evidence is therefore an active monitoring requirement
+   rather than a future-only one.
 9. **RESOLVED:** at most one cast per turn; FATE's two charges belong to
    different turns.
 10. **RESOLVED:** persist `format='rune_trial'` plus

@@ -55,9 +55,10 @@ verbatim to `supabase/legacy-migrations/`; 34 canonical production-only files
 were fetched into the active ledger; and the 22 already matching versions were
 left untouched. That reconciliation baseline was the 56-file prefix ending at
 `20260830112653_equipped_rune_grant.sql`; the guarded ranked-rune rollout then
-applied `20260830155543_equipped_runes_ranked.sql` and
-`20260830160000_random_rune_mode.sql`, making the current production prefix 58
-files. The archived `0007_bot_pool.sql` is an obsolete
+applied `20260830155543_equipped_runes_ranked.sql`,
+`20260830160000_random_rune_mode.sql`, and
+`20260830182406_ranked_progression_events.sql`, making the current production
+prefix 59 files. The archived `0007_bot_pool.sql` is an obsolete
 one-off 12-account seed and must never become executable again.
 
 Normal linked history checks and dry runs can therefore use the repository
@@ -73,9 +74,11 @@ identity database selection uses `apple-game-center` (or
 `npm run db:production:apple-game-center`), never an arbitrary filename passed
 by a caller. Their committed hashes and post-deploy catalog/security contracts
 are fixed in the tool before the database owner opts in to an apply.
-The held ranked transition migration uses the equally fixed
-`ranked-progression-events` selection (or
-`npm run db:production:ranked-progression-events`).
+The applied ranked transition foundation and its pending historical-SILVER
+correction use the equally fixed `ranked-progression-events` selection (or
+`npm run db:production:ranked-progression-events`). The correction is the same
+atomic migration used by the final `ranked-runes` stage, and both selectors
+audit the paired schema states.
 
 For a disposable local database, `supabase migration down --local --last 1`
 can step back and `supabase migration up --local` can reapply pending files;
@@ -216,11 +219,13 @@ grant either commit together or not at all.
   IVORY seven including Rune Trial. Trial persists as
   `format='rune_trial'`, `modifier='classic'`, with an immutable rune-rules
   version; strict readers reject an unknown format/modifier/version tuple.
-- Ordinary ranked from SILVER snapshots fixed equipment directly. RANDOM
-  equipment selects from current ownership with a salted hash of the fresh
-  match seed and participant id, so retries are deterministic while new matches
-  can differ. The match row remains immutable authority; below SILVER, empty
-  equipment, and Rune Trial preserve their existing rune-free/loaned boundaries.
+- Ordinary ranked activates equipment permanently after that participant has
+  reached SILVER in any season. Fixed equipment snapshots directly; RANDOM
+  selects one current owned rune with a salted hash of the fresh match seed and
+  participant id, so retries are deterministic while new matches can differ,
+  and an eligible RANDOM seat cannot resolve to null. The match row remains
+  immutable authority. A participant who has never reached SILVER or has empty
+  equipment stays rune-free; Rune Trial preserves its separate loaned boundary.
 - Rune Trial begins in a private-selection phase with one uniform three-of-six
   offer and a 30-second server deadline. Submission is idempotent and reveals
   both assignments atomically when resolved. `selection_version` is the
@@ -281,12 +286,15 @@ Apply ranked migrations before auto-deploying the corresponding web/function
 clients. The browser has a narrow missing-`leave_ranked_queue` fallback to the
 older RLS-protected own-row DELETE, but database-first remains the normal order.
 
-The held `20260830182406_ranked_progression_events.sql` migration preserves
-the deployed eleven-argument, service-only `settle_match` invocation and JSON
-response while adding its event write atomically. Apply it through the guarded
-`ranked-progression-events` operation before shipping a client that reads or
-acknowledges those rows; the operation accepts only the wholly absent or exact
-complete catalog and never a partial table/function/security state.
+Production already records `20260830182406_ranked_progression_events.sql` with
+the original live equipment/current-points rune flags. The pending
+`20260831133000_historical_silver_ranked_runes.sql` migration preserves the
+eleven-argument, service-only `settle_match` invocation and JSON response while
+converting existing events conservatively to the durable all-season unlock and
+writing exact before/after facts for new settlements. It also changes ordinary
+ranked match start in the same transaction. Preview both guarded ranked
+selectors and apply the shared migration through `ranked-runes` before shipping
+the dependent client; either mismatched companion stage fails closed.
 
 The current locale expansion is the forward-only migration
 `20260825161016_expand_player_settings_locales.sql`. It widens the original

@@ -1,22 +1,20 @@
 // How a matched ranked row describes itself to the shared reveal: the roster
 // the dial could have landed on, copy for a format core/modes does not name,
-// and the two immutable rune seats a settled match turns over. Rune Trial has
-// two mandatory choices; ordinary ranked may have a rune or NONE on either
-// side. The reveal itself is the same overlay local play uses; only this
-// translation is ranked-specific, and keeping it here is what lets the queue
-// run stay one control flow.
+// and (for Rune Trial only) the two mandatory choices a settled match turns
+// over. Ordinary ranked rune snapshots still pass through this boundary for
+// validation and gameplay, but they are not a pre-game reveal beat.
 import { modeById } from '../../core/modes.ts';
 import {
   RUNE_TRIAL_CAPABILITY,
   RUNE_TRIAL_FORMAT,
   rankedOutcomeRoster,
 } from '../../core/ranked-outcomes.ts';
-import { spellById } from '../../core/spells.ts';
+import { spellById, type SpellSpec } from '../../core/spells.ts';
 import { modeCopy, t } from '../../i18n/index.ts';
 import { hide } from '../../ui/dom.ts';
 import { reveal } from '../../ui/reveal.ts';
 import type { DialSide } from '../../ui/reveal-types.ts';
-import type { RankedRuneRevealSide, TrialRevealSide } from '../../ui/trial-reveal.ts';
+import type { TrialRevealSide } from '../../ui/trial-reveal.ts';
 import { type JoinResult } from '../api/match-api.ts';
 import { readyPeer } from '../api/match-realtime.ts';
 
@@ -26,7 +24,14 @@ export type MatchedJoin = Extract<JoinResult, { status: 'matched' }>;
     the reveal's side type so a drift in that contract fails here, at the
     boundary, rather than at the call that hands the pair over. */
 export type TrialRevealPair = readonly [TrialRevealSide, TrialRevealSide];
-export type RankedRuneRevealPair = readonly [RankedRuneRevealSide, RankedRuneRevealSide];
+
+interface RankedRuneSide {
+  readonly spell: SpellSpec | null;
+  readonly name: () => string;
+  readonly hue: string;
+}
+
+type RankedRunePair = readonly [RankedRuneSide, RankedRuneSide];
 
 type Seat = 'p1' | 'p2';
 
@@ -49,11 +54,12 @@ const revealCopy = (id: string) => id === RUNE_TRIAL_FORMAT
   }
   : modeCopy(id);
 
-/* Both immutable public seats, in the order the reveal reads: mine first, in
-   my colour. A null row value is a real empty seat and becomes NONE. A non-null
-   id this build cannot name makes the whole pair unreadable; shortening that
-   to NONE would lie about the match the server is about to replay. */
-export function rankedRevealSides(match: MatchedJoin): RankedRuneRevealPair | null {
+/* Validate and translate both immutable public seats, mine first. A null row
+   value is a real empty seat. A non-null id this build cannot name makes the
+   whole pair unreadable; shortening that to an empty hand would lie about the
+   match the server is about to replay. Only Rune Trial presents this pair as a
+   reveal, but standard matches still rely on the validation. */
+export function rankedRevealSides(match: MatchedJoin): RankedRunePair | null {
   const mine = mySeat(match);
   const theirs = facing(mine);
   const rune = (seat: Seat) => {
@@ -95,26 +101,19 @@ export function revealPairing(match: MatchedJoin): { me: DialSide; foe: DialSide
 }
 
 /** Run the reveal for one matched ranked row, resolving when the player is
-    done with it. `trial` is passed unconditionally: only a Trial format has a
-    private choice left to make, and deciding that here is what keeps the
-    format name out of the queue run. */
+    done with it. Only a Trial format has a private choice and paired rune beat;
+    deciding that here keeps the format name out of the queue run. */
 export async function revealRankedMatch(
   match: MatchedJoin,
   trial: (note: (text: string | null) => void) => Promise<TrialRevealPair | null>,
 ): Promise<boolean> {
   hide('#ovOnline');
   const isTrial = match.match.format === RUNE_TRIAL_FORMAT;
-  let rankedRunes: RankedRuneRevealPair | undefined;
-  if (!isTrial) {
-    const sides = rankedRevealSides(match);
-    if (!sides) return false;
-    rankedRunes = sides;
-  }
+  if (!isTrial && !rankedRevealSides(match)) return false;
   await reveal({
     mode: { id: isTrial ? RUNE_TRIAL_FORMAT : modeById(match.match.modifier).id },
     modeCandidates: revealCandidates(match),
     modeCopy: revealCopy,
-    rankedRunes,
     trial: isTrial ? { resolve: trial } : undefined,
     ...revealPairing(match),
     peer: readyPeer(match.match.id),

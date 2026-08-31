@@ -65,9 +65,17 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
        independent — one may carry a rune while the other does not. */
     equippedRune = null,
     randomRuneMode = false,
-    /* Ladder points, which decide the GROUP — the equipped seat only goes live
-       from SILVER up. Null keeps every existing probe on its BONE default. */
+    /* Ladder points decide the current GROUP. Null keeps every existing probe
+       on its BONE default. */
     standingPoints = null,
+    /* Historical season high-water mark. Null retains the route fixture's
+       ordinary max(700, points) default; an explicit value lets a profile
+       regression distinguish a demoted player from one never past SILVER. */
+    standingPeak = null,
+    /* Permanent equipment access may have been earned in an earlier season
+       even when this season's peak is still below SILVER. Null derives the
+       fact from standingPeak so existing scenarios retain their meaning. */
+    historicalSilverReached = null,
     unseenRunes = [],
     markRunesSeenAfterFirstRead = false,
     expectReward = false,
@@ -76,6 +84,14 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     /* `door: 'match'` needs a match to enter. Pass `true` for the standard
        Rune Trial fixture, or an options object for trial-match.mjs. */
     trialMatch = null,
+    /* A malformed authoritative row must be rejected at the queue boundary,
+       before the shared table is seated. These probes still enter through the
+       real match door, but wait for that door to return Home instead. */
+    expectMatchRejection = false,
+    /* Most in-match probes require both dealt rune cards. A standard match
+       with two honest empty seats has no live rail, so its entry probe may
+       disable this wait while retaining the authoritative-state wait below. */
+    matchReadySelector = '#spellBar.paired.live',
     /* Run in the page BEFORE it loads, so a probe can watch something that
        happens while a door is still opening. `door: 'match'` waits for
        `phase === 'choose' && !busy` — the whole entry, animations included — so
@@ -102,7 +118,7 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
       door, gameCenterBridge, identity, member, named, ladderNearBottom, ladderBoard, historyDepth,
       paginationRace,
       passwordAuth, runes, unseenRunes, equippedRune, randomRuneMode,
-      standingPoints, SESSION, GUEST_ID,
+      standingPoints, standingPeak, historicalSilverReached, SESSION, GUEST_ID,
     });
     /* Registered AFTER the base stub on purpose: Playwright gives the most
        recent handler precedence, so the in-match fixture takes over pvp-join
@@ -247,14 +263,31 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
         ? '.rune-reward-sheet .focard'
         : '#onQueue:not([hidden])', { timeout: 15000 });
     } else if (door === 'match') {
-      /* Past the queue and onto the ranked TABLE: the match exists, the rail
-         holds both dealt hands, and input has been opened by the first
-         authoritative projection. Anything earlier probes a half-dealt board. */
-      await page.waitForFunction(() => !!window.__kbOnline?.(), null, { timeout: 15000 });
-      await page.waitForSelector('#spellBar.paired.live', { timeout: 15000 });
-      await page.waitForFunction(
-        () => window.__kb.S.phase === 'choose' && !window.__kb.S.busy,
-        null, { timeout: 15000 });
+      if (expectMatchRejection) {
+        /* Home stays mounted under every online overlay and __kbOnline starts
+           empty, so neither is evidence that the queue actually handled the
+           row. First observe the Trial fixture serving pvp-join, then wait for
+           the online door to close with no shared-table state behind it. */
+        const deadline = Date.now() + 15000;
+        while ((routes.trialJoinCalls?.() ?? routes.joinCalls()) < 1) {
+          if (Date.now() >= deadline) throw new Error('the rejected match never reached pvp-join');
+          await page.waitForTimeout(25);
+        }
+        await page.waitForFunction(() =>
+          !document.getElementById('ovOnline')?.classList.contains('on')
+            && !window.__kbOnline?.(), null, { timeout: 15000 });
+      } else {
+        /* Past the queue and onto the ranked TABLE: the match exists, the rail
+           holds both dealt hands, and input has been opened by the first
+           authoritative projection. Anything earlier probes a half-dealt board. */
+        await page.waitForFunction(() => !!window.__kbOnline?.(), null, { timeout: 15000 });
+        if (matchReadySelector) {
+          await page.waitForSelector(matchReadySelector, { timeout: 15000 });
+        }
+        await page.waitForFunction(
+          () => window.__kb.S.phase === 'choose' && !window.__kb.S.busy,
+          null, { timeout: 15000 });
+      }
     } else if (door === 'board') {
       await page.waitForSelector('#ovOnline .lb .lrow', { timeout: 15000 });
     } else {

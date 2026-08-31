@@ -10,8 +10,8 @@
 // Pure, like the rest of core/: plain data in, plain data out. No DOM, no
 // timers, no randomness — the supply is handed in as behaviour (CastCtx.draw),
 // so offline brings Math.random and ranked protocol v2 brings the authoritative
-// seeded stream. From SILVER, standard ranked snapshots either participant's
-// equipped rune independently; Trial instead loans each participant the
+// seeded stream. After SILVER has been reached once, standard ranked snapshots
+// either participant's equipped rune independently; Trial instead loans each participant the
 // privately selected rune. Both validate the ordered cast/place action log with
 // these same pure rules, and an empty standard seat simply receives no charges.
 //

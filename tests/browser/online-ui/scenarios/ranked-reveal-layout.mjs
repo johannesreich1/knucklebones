@@ -89,6 +89,7 @@ export async function runRankedRevealLayoutScenarios({ visit, out, check }) {
 
   await runBareRitualScenarios({ visit, out, check });
   await runStandardRuneRevealScenarios({ visit, out, check });
+  await runUnreadableTrialRejoinScenario({ visit, out, check });
 }
 
 // NOTHING HANGS OVER THE TURNED-OVER RUNES.
@@ -179,76 +180,131 @@ async function runBareRitualScenarios({ visit, out, check }) {
     'the bare beat printed its name or blurb after all', r);
 }
 
-// STANDARD RANKED REVEALS THE TWO IMMUTABLE SEATS TOO.
+// STANDARD RANKED NEVER BORROWS RUNE TRIAL'S CARD-TURNOVER BEAT.
 //
-// Unlike Rune Ritual, these are not two mandatory private choices. Each side
-// is the snapshot matchmaking wrote from that profile's equipped seat: a real
-// rune or honest NONE, independently. The reveal must therefore keep two
-// owner-labelled cards even when only one rune exists, and it must not invent a
-// rune when both match-row fields are null.
-async function runStandardRuneRevealScenarios({ visit, out, check }) {
-  const seen = await visit({
-    named: true, skipStandardProbes: true,
-    probe: (page) => page.evaluate(async ({ pairing }) => {
-      const revealCase = async (sides) => {
-        const finished = window.__kbRankedReveal({
-          modeId: 'classic',
-          pairing,
-          candidates: [{ id: 'classic' }, { id: 'limited' }],
-          rankedSides: sides,
-        });
-        const deadline = Date.now() + 15000;
-        while (Date.now() < deadline && !document.querySelector('.trial-reveal')) {
-          await new Promise((resolve) => setTimeout(resolve, 50));
-        }
-        const read = {
-          title: document.querySelector('#wheelTitle .wtitlecopy')?.textContent?.trim(),
-          owners: [...document.querySelectorAll('.trial-reveal__owner .nm')]
-            .map((element) => element.textContent?.trim()),
-          runes: [...document.querySelectorAll('.trial-reveal__card')]
-            .map((element) => element.dataset.rune),
-          labels: [...document.querySelectorAll('.trial-reveal__card .rlbl')]
-            .map((element) => element.textContent?.trim()),
-          visible: [...document.querySelectorAll('.trial-reveal__card')]
-            .every((element) => {
-              const box = element.getBoundingClientRect();
-              return box.width > 0 && box.height > 0 && getComputedStyle(element).opacity === '1';
-            }),
-        };
-        document.querySelector('#ovWheel')?.dispatchEvent(new PointerEvent(
-          'pointerdown', { bubbles: true },
-        ));
-        await finished;
-        return read;
-      };
-      return {
-        oneSided: await revealCase([
-          { spell: { id: 'ward' }, nameText: 'BadRandolf', hue: '#28e8ff' },
-          { spell: null, nameText: 'BoldFox762', hue: '#ff2fa0' },
-        ]),
-        empty: await revealCase([
-          { spell: null, nameText: 'BadRandolf', hue: '#28e8ff' },
-          { spell: null, nameText: 'BoldFox762', hue: '#ff2fa0' },
-        ]),
-      };
-    }, { pairing: PAIRING }),
-  });
-  out.standardRuneReveal = seen.probeResult;
-  const r = seen.probeResult;
+// Immutable equipped seats still belong to the match and may paint on the
+// table, but only Rune Trial makes revealing both runes the game mode itself.
+// Watch a fresh match from before the queue opens: calling the shared reveal
+// hook directly would let the test construct a standard-only beat production
+// no real flow is meant to request.
+const STANDARD_REVEAL_RECORDER = () => {
+  const w = window;
+  w.__kbStandardReveal = {
+    overlayFrames: 0,
+    pairedFrames: 0,
+    rankedTitleFrames: 0,
+  };
+  const painted = (element) => {
+    if (!element || element.hidden) return false;
+    const box = element.getBoundingClientRect();
+    const style = getComputedStyle(element);
+    return box.width > 0 && box.height > 0
+      && style.display !== 'none' && style.visibility !== 'hidden'
+      && Number(style.opacity) > 0;
+  };
+  const tick = () => {
+    const read = w.__kbStandardReveal;
+    const overlay = document.getElementById('ovWheel');
+    if (painted(overlay)) {
+      read.overlayFrames++;
+      if (painted(overlay.querySelector('.trial-reveal'))) read.pairedFrames++;
+      if (painted(document.getElementById('wheelTitle'))
+          && document.querySelector('#wheelTitle .wtitlecopy')?.textContent?.trim()
+            === 'RANKED RUNES') {
+        read.rankedTitleFrames++;
+      }
+    }
+    if (!w.__kbOnline?.()) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+};
 
-  check(r?.oneSided?.title === 'RANKED RUNES'
-      && r.oneSided.owners.join('|') === 'BadRandolf|BoldFox762'
-      && r.oneSided.runes.join('|') === 'ward|none'
-      && r.oneSided.labels.join('|') === 'WARD|NONE'
-      && r.oneSided.visible,
-    'a fresh standard match did not reveal its one equipped seat and one explicit NONE',
-    r?.oneSided);
-  check(r?.empty?.title === 'RANKED RUNES'
-      && r.empty.owners.join('|') === 'BadRandolf|BoldFox762'
-      && r.empty.runes.join('|') === 'none|none'
-      && r.empty.labels.join('|') === 'NONE|NONE'
-      && r.empty.visible,
-    'a fresh standard match invented or hid a rune when both immutable seats were empty',
-    r?.empty);
-  check(seen.errs.length === 0, 'page errors during standard ranked rune reveals', seen.errs);
+const readStandardEntry = (page) => page.evaluate(() => {
+  const cards = [...document.querySelectorAll('#spellBar .rune')]
+    .filter((element) => !element.hidden && element.getBoundingClientRect().height > 0)
+    .map((element) => `${element.dataset.seat}:${element.dataset.spell}`)
+    .sort();
+  return { ...window.__kbStandardReveal, cards };
+});
+
+async function runStandardRuneRevealScenarios({ visit, out, check }) {
+  const empty = await visit({
+    named: true, skipStandardProbes: true, door: 'match',
+    trialMatch: {
+      format: 'standard', rejoined: false, myRune: null, foeRune: null,
+    },
+    matchReadySelector: null,
+    initScript: STANDARD_REVEAL_RECORDER,
+    probe: readStandardEntry,
+  });
+  const equipped = await visit({
+    named: true, skipStandardProbes: true, door: 'match',
+    trialMatch: {
+      format: 'standard', rejoined: false, myRune: 'ward', foeRune: 'pilfer',
+    },
+    initScript: STANDARD_REVEAL_RECORDER,
+    probe: readStandardEntry,
+  });
+  out.standardRuneReveal = {
+    empty: empty.probeResult,
+    equipped: equipped.probeResult,
+  };
+  const e = empty.probeResult;
+  const r = equipped.probeResult;
+
+  check(!!e && e.overlayFrames > 0,
+    'the empty-seat case never crossed a real fresh ranked reveal', e);
+  check(!!e && e.pairedFrames === 0 && e.rankedTitleFrames === 0,
+    'STANDARD RANKED PAINTED RUNE TRIAL\'S PAIRED CARD BEAT for two empty seats', e);
+  check(!!e && e.cards.length === 0,
+    'a standard match with two null snapshots invented a table rune', e);
+
+  check(!!r && r.overlayFrames > 0,
+    'the equipped-seat case never crossed a real fresh ranked reveal', r);
+  check(!!r && r.pairedFrames === 0 && r.rankedTitleFrames === 0,
+    'STANDARD RANKED PAINTED RUNE TRIAL\'S PAIRED CARD BEAT even though its '
+    + 'immutable runes belong only on the table', r);
+  check(!!r && r.cards.join('|') === '0:pilfer|1:ward',
+    'the standard reveal was removed by dropping the immutable runes from the game', r);
+  check(empty.errs.length === 0 && equipped.errs.length === 0,
+    'page errors during fresh standard ranked entries', { empty: empty.errs, equipped: equipped.errs });
+}
+
+// A REJOIN HAS NO REVEAL TO VALIDATE ITS TWO SETTLED CHOICES.
+//
+// An unknown server rune must therefore fail at the queue boundary just like
+// an unknown rune in a fresh reveal. Entering the shared table would silently
+// turn that seat into NONE because the local registry cannot make charges for
+// it, replaying a different match from the authoritative row.
+async function runUnreadableTrialRejoinScenario({ visit, out, check }) {
+  const rejected = await visit({
+    named: true,
+    skipStandardProbes: true,
+    door: 'match',
+    expectMatchRejection: true,
+    trialMatch: {
+      format: 'rune_trial', rejoined: true,
+      myRune: 'future-rune', foeRune: 'ward',
+    },
+    matchReadySelector: null,
+    probe: async (page, routes) => ({
+      ...await page.evaluate(() => ({
+        homeVisible: document.getElementById('ovStart')?.classList.contains('on'),
+        onlineOpen: document.getElementById('ovOnline')?.classList.contains('on'),
+        onlineMatch: window.__kbOnline?.() ?? null,
+        tableVisible: document.getElementById('game')?.hidden === false,
+      })),
+      joinCalls: routes.trialJoinCalls?.() ?? 0,
+    }),
+  });
+  out.unreadableTrialRejoin = rejected.probeResult;
+  check(rejected.probeResult?.homeVisible
+      && !rejected.probeResult.onlineOpen
+      && rejected.probeResult.onlineMatch === null
+      && !rejected.probeResult.tableVisible
+      && rejected.probeResult.joinCalls === 1,
+    'an unreadable settled Rune Trial rejoin entered the shared table instead of failing closed',
+    rejected.probeResult);
+  check(rejected.errs.length === 0,
+    'rejecting an unreadable settled Rune Trial raised a page error', rejected.errs);
 }

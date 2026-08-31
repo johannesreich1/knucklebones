@@ -7,6 +7,7 @@ import {
   validateRankedProgressionSchemaStage,
 } from '../../tools/database/production-rollout-core.mjs';
 import {
+  HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_SHA256,
   RANKED_PROGRESSION_MIGRATION_SHA256,
   RANKED_PROGRESSION_MIGRATIONS,
   RANKED_PROGRESSION_SCHEMA,
@@ -20,35 +21,80 @@ type Guarded = (run: () => unknown, pattern: RegExp) => void;
 const ABSENT = Object.freeze({
   tableContract: false,
   tableColumns: false,
-  tableConstraints: false,
   tableIndexes: false,
-  tableComments: false,
+  baseTableComments: false,
   tableRlsPolicy: false,
   tableGrants: false,
   ackFunctionContract: false,
   ackFunctionBody: false,
   ackFunctionGrants: false,
-  settleMatchEventBody: false,
+  legacyTableConstraints: false,
+  legacyRuneComments: false,
+  legacySettleMatchEventBody: false,
+  historicalTableConstraints: false,
+  historicalRuneComments: false,
+  historicalRuneMatchStartPolicy: false,
+  historicalSettleMatchEventBody: false,
 });
 
-const ABSENT_SCHEMA_ROW = Object.freeze({
+const BASE_COMPLETE = Object.freeze({
+  ...ABSENT,
+  tableContract: true,
+  tableColumns: true,
+  tableIndexes: true,
+  baseTableComments: true,
+  tableRlsPolicy: true,
+  tableGrants: true,
+  ackFunctionContract: true,
+  ackFunctionBody: true,
+  ackFunctionGrants: true,
+});
+
+const LEGACY = Object.freeze({
+  ...BASE_COMPLETE,
+  legacyTableConstraints: true,
+  legacyRuneComments: true,
+  legacySettleMatchEventBody: true,
+});
+
+const COMPLETE = Object.freeze({
+  ...BASE_COMPLETE,
+  historicalTableConstraints: true,
+  historicalRuneComments: true,
+  historicalRuneMatchStartPolicy: true,
+  historicalSettleMatchEventBody: true,
+});
+
+export const RANKED_PROGRESSION_ABSENT_SCHEMA_ROW = Object.freeze({
   table_contract: false,
   table_columns: false,
-  table_constraints: false,
   table_indexes: false,
-  table_comments: false,
+  base_table_comments: false,
   table_rls_policy: false,
   table_grants: false,
   ack_function_contract: false,
   ack_function_body: false,
   ack_function_grants: false,
-  settle_match_event_body: false,
+  legacy_table_constraints: false,
+  legacy_rune_comments: false,
+  legacy_settle_match_event_body: false,
+  historical_table_constraints: false,
+  historical_rune_comments: false,
+  historical_rune_match_start_policy: false,
+  historical_settle_match_event_body: false,
   settle_match_contract: true,
 });
 
-const COMPLETE_SCHEMA_ROW = Object.freeze(
-  Object.fromEntries(Object.keys(ABSENT_SCHEMA_ROW).map(key => [key, true])),
-);
+const schemaRow = (metadata: Readonly<Record<string, boolean>>) => Object.freeze({
+  ...Object.fromEntries(Object.entries(metadata).map(([key, value]) => [
+    key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`),
+    value,
+  ])),
+  settle_match_contract: true,
+});
+
+export const RANKED_PROGRESSION_LEGACY_SCHEMA_ROW = schemaRow(LEGACY);
+export const RANKED_PROGRESSION_COMPLETE_SCHEMA_ROW = schemaRow(COMPLETE);
 
 export async function runRankedProgressionProductionMigrationCases(options: {
   readonly check: Check;
@@ -58,7 +104,7 @@ export async function runRankedProgressionProductionMigrationCases(options: {
   const { check, checkAsync, guarded } = options;
   const migration = '20260830182406_ranked_progression_events.sql';
 
-  check('ranked-progression rollout pins the one committed migration byte-for-byte', () => {
+  check('ranked-progression rollout preserves the applied migration and pins the forward correction', () => {
     assert.deepEqual(parseMigrationFilename(migration), {
       filename: migration,
       version: '20260830182406',
@@ -75,18 +121,56 @@ export async function runRankedProgressionProductionMigrationCases(options: {
       RANKED_PROGRESSION_MIGRATION_SHA256,
       'b8364a0926261036a3623ddaa7ba5c1d0465ca3bf2214bc9622b2d763ab849f1',
     );
-    assert.deepEqual(RANKED_PROGRESSION_MIGRATIONS, [{
-      version: '20260830182406',
-      name: 'ranked_progression_events',
-      file: 'supabase/migrations/20260830182406_ranked_progression_events.sql',
-      sha256: RANKED_PROGRESSION_MIGRATION_SHA256,
-    }]);
+    const correction = '20260831133000_historical_silver_ranked_runes.sql';
+    assert.deepEqual(parseMigrationFilename(correction), {
+      filename: correction,
+      version: '20260831133000',
+      name: 'historical_silver_ranked_runes',
+    });
+    const correctionBytes = readFileSync(
+      new URL('../../supabase/migrations/' + correction, import.meta.url),
+    );
+    assert.equal(
+      createHash('sha256').update(correctionBytes).digest('hex'),
+      HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_SHA256,
+    );
+    assert.equal(
+      HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_SHA256,
+      '95b3cdfc1e584e3a5e3ea66d237a1a54e4d3eb78ac394a86850c98db39471e2a',
+    );
+    const correctionSql = correctionBytes.toString('utf8');
+    for (const marker of [
+      'with historical_unlocks as materialized',
+      'bool_or(event.rune_seat_active_before',
+      'rating.peak >= 1260',
+      'set rune_seat_active_before = unlock.unlocked',
+      'check (not rune_seat_active_before or rune_seat_active_after) not valid',
+      'validate constraint ranked_progression_events_rune_unlock_monotonic_check',
+      'stale or duplicate unlock screen',
+    ]) {
+      assert.ok(correctionSql.includes(marker),
+        'historical-Silver upgrade lost backfill marker ' + marker);
+    }
+    assert.deepEqual(RANKED_PROGRESSION_MIGRATIONS, [
+      {
+        version: '20260830182406',
+        name: 'ranked_progression_events',
+        file: 'supabase/migrations/20260830182406_ranked_progression_events.sql',
+        sha256: RANKED_PROGRESSION_MIGRATION_SHA256,
+      },
+      {
+        version: '20260831133000',
+        name: 'historical_silver_ranked_runes',
+        file: 'supabase/migrations/20260831133000_historical_silver_ranked_runes.sql',
+        sha256: HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_SHA256,
+      },
+    ]);
   });
 
-  check('ranked-progression metadata accepts only absent or complete state', () => {
+  check('ranked-progression metadata accepts only absent, applied, or corrected state', () => {
     assert.equal(validateRankedProgressionSchemaStage(ABSENT), 0);
-    const complete = Object.fromEntries(Object.keys(ABSENT).map(key => [key, true]));
-    assert.equal(validateRankedProgressionSchemaStage(complete), 1);
+    assert.equal(validateRankedProgressionSchemaStage(LEGACY), 1);
+    assert.equal(validateRankedProgressionSchemaStage(COMPLETE), 2);
     guarded(
       () => validateRankedProgressionSchemaStage({
         ...ABSENT,
@@ -96,8 +180,22 @@ export async function runRankedProgressionProductionMigrationCases(options: {
     );
     guarded(
       () => validateRankedProgressionSchemaStage({
-        ...complete,
+        ...COMPLETE,
         ackFunctionGrants: false,
+      }),
+      /partial/,
+    );
+    guarded(
+      () => validateRankedProgressionSchemaStage({
+        ...LEGACY,
+        historicalRuneComments: true,
+      }),
+      /partial/,
+    );
+    guarded(
+      () => validateRankedProgressionSchemaStage({
+        ...LEGACY,
+        legacyRuneComments: false,
       }),
       /partial/,
     );
@@ -126,10 +224,13 @@ export async function runRankedProgressionProductionMigrationCases(options: {
       "'ranked_progression_events_player_id_fkey'",
       "'ranked_progression_events_rune_live_before_check'",
       "'ranked_progression_events_rune_live_after_check'",
+      "'ranked_progression_events_rune_unlock_monotonic_check'",
       "'ranked_progression_events_player_created_idx'",
       "'ranked_progression_events_season_idx'",
       'One owner-only before/after snapshot per settled human participant',
       'Historical private.ladder_board apex result immediately before this settlement',
+      'Whether the player had ever reached SILVER before settlement',
+      'once true this permanent unlock never becomes false',
       'Stamped only by acknowledge_ranked_progression',
     ]) {
       assert.ok(
@@ -165,6 +266,7 @@ export async function runRankedProgressionProductionMigrationCases(options: {
       "pg_get_function_result(oid) = 'jsonb'",
       "array['service_role:EXECUTE:false']::text[]",
       "'ec865febe67e1370a877459e4b89ec65'",
+      "'2aabcbcd3ba8231de00843f4350924c9'",
     ]) {
       assert.ok(
         RANKED_PROGRESSION_SCHEMA.includes(marker),
@@ -173,32 +275,38 @@ export async function runRankedProgressionProductionMigrationCases(options: {
     }
   });
 
-  await checkAsync('ranked-progression audit distinguishes absent and complete states', async () => {
+  await checkAsync('ranked-progression audit distinguishes absent, applied, and corrected states', async () => {
     const absent = await auditRankedProgression(async (sql) => {
       assert.equal(sql, RANKED_PROGRESSION_SCHEMA);
-      return [ABSENT_SCHEMA_ROW];
+      return [RANKED_PROGRESSION_ABSENT_SCHEMA_ROW];
     });
     assert.deepEqual(absent, { evidence: ABSENT, schemaStage: 0 });
 
+    const legacy = await auditRankedProgression(async (sql) => {
+      assert.equal(sql, RANKED_PROGRESSION_SCHEMA);
+      return [RANKED_PROGRESSION_LEGACY_SCHEMA_ROW];
+    });
+    assert.deepEqual(legacy, { evidence: LEGACY, schemaStage: 1 });
+
     const complete = await auditRankedProgression(async (sql) => {
       assert.equal(sql, RANKED_PROGRESSION_SCHEMA);
-      return [COMPLETE_SCHEMA_ROW];
+      return [RANKED_PROGRESSION_COMPLETE_SCHEMA_ROW];
     });
-    assert.equal(complete.schemaStage, 1);
-    assert.ok(Object.values(complete.evidence).every(value => value === true));
+    assert.equal(complete.schemaStage, 2);
+    assert.deepEqual(complete.evidence, COMPLETE);
   });
 
   await checkAsync('ranked-progression audit fails closed on partial or changed settlement state', async () => {
     await assert.rejects(
       auditRankedProgression(async () => [{
-        ...COMPLETE_SCHEMA_ROW,
+        ...RANKED_PROGRESSION_COMPLETE_SCHEMA_ROW,
         table_rls_policy: false,
       }]),
       /partial/,
     );
     await assert.rejects(
       auditRankedProgression(async () => [{
-        ...ABSENT_SCHEMA_ROW,
+        ...RANKED_PROGRESSION_ABSENT_SCHEMA_ROW,
         settle_match_contract: false,
       }]),
       /eleven-argument service contract/,

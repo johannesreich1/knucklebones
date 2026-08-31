@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(27);
+select plan(28);
 
 -- A settlement can reach the player through a command response, Realtime, a
 -- reconnect, or the abandoned-bot cleanup path. The progression fact is
@@ -43,6 +43,17 @@ select ok(
      from information_schema.columns
     where table_schema = 'public' and table_name = 'ranked_progression_events'),
   'progression rows retain exact ladder, permanent-pool, and equipment snapshots'
+);
+select ok(
+  (select count(*) = 1 and bool_and(
+      contype = 'c' and convalidated and not connoinherit
+      and pg_get_constraintdef(oid, true) =
+        'CHECK (NOT rune_seat_active_before OR rune_seat_active_after)'
+    )
+     from pg_constraint
+    where conrelid = to_regclass('public.ranked_progression_events')
+      and conname = 'ranked_progression_events_rune_unlock_monotonic_check'),
+  'the carried SILVER unlock can activate once but can never become resting'
 );
 select ok(
   coalesce((select class.relrowsecurity
@@ -103,7 +114,7 @@ update public.profiles
    set rating = case id
          when '9b000000-0000-0000-0000-000000000001' then 299
          when '9b000000-0000-0000-0000-000000000002' then 100
-         when '9b000000-0000-0000-0000-000000000003' then 1260
+         when '9b000000-0000-0000-0000-000000000003' then 1218
          when '9b000000-0000-0000-0000-000000000004' then 1300
          when '9b000000-0000-0000-0000-000000000005' then 40
          else 30
@@ -120,7 +131,8 @@ insert into public.season_ratings
 values
   (1, '9b000000-0000-0000-0000-000000000001', 299, 299, 1, 0, 0),
   (1, '9b000000-0000-0000-0000-000000000002', 100, 100, 0, 1, 0),
-  (1, '9b000000-0000-0000-0000-000000000003', 1260, 1500, 2, 1, 0),
+  (0, '9b000000-0000-0000-0000-000000000003', 1300, 1500, 2, 1, 0),
+  (1, '9b000000-0000-0000-0000-000000000003', 1218, 1259, 2, 1, 0),
   (1, '9b000000-0000-0000-0000-000000000004', 1300, 1500, 2, 1, 0),
   (1, '9b000000-0000-0000-0000-000000000005', 40, 40, 1, 1, 0),
   (1, '9b000000-0000-0000-0000-000000000006', 30, 30, 1, 1, 0);
@@ -217,16 +229,16 @@ select public.settle_match(
   '9c000000-0000-0000-0000-000000000002',
   'done', '9b000000-0000-0000-0000-000000000004',
   8, 16, -1, 1,
-  '{"points":1260,"peak":1500,"wins":2,"losses":1,"draws":0}',
+  '{"points":1218,"peak":1259,"wins":2,"losses":1,"draws":0}',
   '{"points":1300,"peak":1500,"wins":2,"losses":1,"draws":0}',
-  '{"points":1259,"peak":1500,"wins":2,"losses":2,"draws":0}',
+  '{"points":1217,"peak":1259,"wins":2,"losses":2,"draws":0}',
   '{"points":1301,"peak":1500,"wins":3,"losses":1,"draws":0}'
 );
 reset role;
 
 select is(
   (select (payload->>'applied')::boolean from demotion_result), true,
-  'the SILVER to IVORY settlement is applied'
+  'the prior-season SILVER player settlement is applied'
 );
 select is(
   (select jsonb_build_object(
@@ -240,8 +252,8 @@ select is(
      from public.ranked_progression_events
     where source_match_id = '9c000000-0000-0000-0000-000000000002'
       and player_id = '9b000000-0000-0000-0000-000000000003'),
-  '{"points":[1260,1259],"apex":[false,false],"pool":["ivory","ivory"],"equipped":["ward","ward"],"random":[true,true],"rune_live":[true,false]}'::jsonb,
-  'SILVER demotion rests the equipped fallback while retaining RANDOM and permanent IVORY access'
+  '{"points":[1218,1217],"apex":[false,false],"pool":["ivory","ivory"],"equipped":["ward","ward"],"random":[true,true],"rune_live":[true,true]}'::jsonb,
+  'a prior-season SILVER peak keeps the permanent rune-seat unlock after rollover'
 );
 select is(
   (select concat(ranked_pool_tier, '/', equipped_rune, '/', random_rune_mode)
@@ -370,8 +382,8 @@ select is(
      from public.ranked_progression_events
     where source_match_id = '9c000000-0000-0000-0000-000000000004'
       and player_id = '9b000000-0000-0000-0000-000000000001'),
-  '{"points":[300,6000],"apex":[false,true],"pool":["bone","ivory"],"rune_live":[false,false]}'::jsonb,
-  'NEON entry snapshots the exact top-one-percent crossing and does not activate an empty rune seat'
+  '{"points":[300,6000],"apex":[false,true],"pool":["bone","ivory"],"rune_live":[false,true]}'::jsonb,
+  'crossing SILVER by peak unlocks the seat even when no rune is currently equipped'
 );
 
 insert into public.matches (id, p1, p2, status, turn, season_id)
@@ -410,8 +422,8 @@ select is(
      from public.ranked_progression_events
     where source_match_id = '9c000000-0000-0000-0000-000000000005'
       and player_id = '9b000000-0000-0000-0000-000000000001'),
-  '{"points":[6000,2500],"apex":[true,false],"pool":["ivory","ivory"],"rune_live":[false,false]}'::jsonb,
-  'NEON exit retains permanent IVORY access while recording the exact positional loss'
+  '{"points":[6000,2500],"apex":[true,false],"pool":["ivory","ivory"],"rune_live":[true,true]}'::jsonb,
+  'NEON exit retains permanent IVORY and rune-seat access while recording the positional loss'
 );
 
 create temporary table owner_progression_event as

@@ -97,7 +97,6 @@ export const enGame = {
     gameMode: 'GAME MODE',
     matchRune: 'MATCH RUNE',
     trialRunes: 'RITUAL RUNES',
-    rankedRunes: 'RANKED RUNES',
     runeFor: 'RUNE FOR',
     tapReady: 'Tap when you are ready',
     connecting: 'Connecting players…',
@@ -201,7 +200,7 @@ export const enGame = {
     runeTrial: {
       name: 'RUNE RITUAL',
       compact: 'RITUAL',
-      blurb: 'Secretly choose one of three runes. Win the duel with it to collect it. Use collected runes in ranked matches from the SILVER league.',
+      blurb: 'Secretly choose one of three runes; both choices reveal together. Win with yours to collect it. Reach SILVER once to use equipped runes in ordinary ranked forever.',
       detail: 'Both players see the same three runes and each secretly chooses one. Both choices are revealed together; then the duel uses Classic board rules.',
     },
   },
@@ -220,10 +219,6 @@ export const enGame = {
     revealPair: 'Both choices are locked',
     revealed: 'Runes revealed',
     pickClock: 'SECONDS TO CHOOSE',
-  },
-  rankedRunes: {
-    revealPair: '{{playerOne}}: {{runeOne}}. {{playerTwo}}: {{runeTwo}}.',
-    revealed: 'Ranked runes revealed',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Committed — choose a marked column.',

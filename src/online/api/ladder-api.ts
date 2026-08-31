@@ -1,7 +1,10 @@
 // Read-only seasonal ladder boundaries. Opponent-facing data comes through
 // narrow RPCs because raw profile and season rows remain own-row only.
+import { GROUPS } from '../../core/ladder.ts';
 import { supa } from './client.ts';
 import { currentUser } from '../identity/session.ts';
+
+const SILVER_FLOOR = GROUPS.find(({ id }) => id === 'silver')!.floor;
 
 export interface Standing {
   points: number;
@@ -29,17 +32,33 @@ export interface Ladder {
   wins: number;
   losses: number;
   draws: number;
+  /** Permanent equipment access is an all-season achievement, not a reading
+      of the current season's carried peak. */
+  runeSeatUnlocked: boolean;
 }
 
 export async function myLadder(): Promise<Ladder | null> {
   const user = await currentUser();
   if (!user) return null;
   const { data: season } = await supa().rpc('current_season');
-  const { data } = await supa().from('season_ratings')
-    .select('points, peak, wins, losses, draws')
-    .eq('season_id', season).eq('player', user.id).maybeSingle();
+  const [currentResult, historicalSilverResult] = await Promise.all([
+    supa().from('season_ratings')
+      .select('points, peak, wins, losses, draws')
+      .eq('season_id', season).eq('player', user.id).maybeSingle(),
+    /* Do not rely on a season rollover copying the previous peak. The match
+       authority uses the same all-season fact, and this indexed owner query
+       keeps Profile consistent with it after any future rollover policy. */
+    supa().from('season_ratings')
+      .select('peak')
+      .eq('player', user.id).gte('peak', SILVER_FLOOR).limit(1),
+  ]);
+  const data = currentResult.data;
+  const runeSeatUnlocked = (historicalSilverResult.data?.length ?? 0) > 0;
   // A season row is created at the first pairing; no row is an honest zero.
-  return data ?? { points: 0, peak: 0, wins: 0, losses: 0, draws: 0 };
+  return {
+    ...(data ?? { points: 0, peak: 0, wins: 0, losses: 0, draws: 0 }),
+    runeSeatUnlocked,
+  };
 }
 
 export async function bestStreak(): Promise<number> {

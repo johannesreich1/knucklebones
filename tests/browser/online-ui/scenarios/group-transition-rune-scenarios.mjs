@@ -1,5 +1,5 @@
-// SILVER equipment availability and the delayed first-rune tutorial share one
-// owner: the real Profile rune seat and its canonical equipment sheet.
+// The permanent SILVER equipment unlock and delayed first-rune tutorial share
+// one owner: the real Profile rune seat and its canonical equipment sheet.
 import { RESOURCES } from '../../../../src/i18n/catalogs.ts';
 import {
   bounded,
@@ -112,6 +112,7 @@ async function firstRuneRewardProbe(page, routes) {
     ...silverProgression('91000000-0000-4000-8000-000000000006', matchId),
     points_before: 1300,
     points_after: 1340,
+    rune_seat_active_before: true,
   });
   await page.evaluate((report) => {
     window.__kb.S.played = true;
@@ -165,8 +166,8 @@ export async function runGroupTransitionRuneScenarios({ visit, out, check }) {
   });
   out.groupTransitionSilverNoRune = silverNoRune.probeResult;
   const empty = silverNoRune.probeResult;
-  check(empty?.final?.title === COPY.online.groupTransition.runesActiveTitle
-      && empty.final.paragraph === COPY.online.groupTransition.runesActiveBody
+  check(empty?.final?.title === COPY.online.groupTransition.runesUnlockedTitle
+      && empty.final.paragraph === COPY.online.groupTransition.runesUnlockedBody
       && empty.final.primary.label === COPY.common.actions.continue
       && empty.shape.modeIcons === 1 && empty.shape.extraMedia === 0
       && !`${empty.shape.title} ${empty.shape.text}`.includes(COPY.game.runes.ward.name)
@@ -188,8 +189,8 @@ export async function runGroupTransitionRuneScenarios({ visit, out, check }) {
   });
   out.groupTransitionSilverOwnedRune = silverOwned.probeResult;
   const owned = silverOwned.probeResult;
-  check(owned?.final?.title === COPY.online.groupTransition.runesActiveTitle
-      && owned.final.paragraph === COPY.online.groupTransition.runesActiveBody
+  check(owned?.final?.title === COPY.online.groupTransition.runesUnlockedTitle
+      && owned.final.paragraph === COPY.online.groupTransition.runesUnlockedBody
       && owned.final.primary.label === COPY.online.groupTransition.openProfile
       && owned.shape.modeIcons === 1 && owned.shape.extraMedia === 0
       && !`${owned.shape.title} ${owned.shape.text}`.includes(COPY.game.runes.ward.name)

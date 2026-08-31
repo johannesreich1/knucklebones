@@ -129,8 +129,9 @@
     eases to 95% over 250ms, then returns to exactly 100% on the viewer's turn. It keeps
     full opacity and its rune colour while the opponent plays; depth and scale already
     communicate ownership without making an active rune look disabled. Online tracks the
-    same viewer-relative scale now, but ranked still deals NONE and hides the rail, so the
-    cue only becomes visible there if online runes are intentionally introduced.
+    same viewer-relative scale. Ordinary ranked shows each eligible immutable equipment
+    snapshot, Rune Ritual shows the private choices after they reveal, and an honest empty
+    seat alone has no rail.
     An unavailable own rune may share the mute but stays 100%, brief busy locks preserve
     the pre-lock size, and local pass-and-play or face-to-face never shrinks either human's
     active hand because there is no fixed viewer. A restrained player-colour offset edge
@@ -152,9 +153,11 @@
     mode — the same icon row, each rune slice wearing the mark it wears in the rail,
     <code>NONE</code> first and default, <code>RANDOM</code> last. RANDOM is not a seventh
     rune but the same promise the mode row makes, in that row's own mark: the deck then
-    deals it in front of both players (see Rune deal — dealt). Ranked matches (the server
-    replays a plain move log) and the tutorial (a scripted lesson) always deal NONE, and
-    NONE is exactly the table that shipped before spells existed.<br>
+    deals it in front of both players (see Rune deal — dealt). Ranked matches replay an
+    authoritative action log: ordinary ranked snapshots equipment after SILVER has been
+    reached once, Rune Ritual supplies its private choices, and only a never-SILVER or
+    deliberately empty seat deals NONE. The tutorial's scripted lesson still deals NONE,
+    exactly the table that shipped before spells existed.<br>
     <b>Adding one.</b> An object in <code>core/spells.ts</code> — id, name, blurb, detail,
     aim, target and side, uses, <code>commitsOnAim</code> only when the preview itself
     commits, <code>previewDieIndex()</code> when one exact die is marked,

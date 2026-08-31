@@ -148,13 +148,14 @@ not need a framework store, event bus, or dependency-injection container.
   the turn, so placement count is not a valid v2 clock. Both clients must
   advertise the format-specific capability before matchmaking may choose Trial
   or snapshot equipped standard runes.
-- `matches.p1_rune` and `matches.p2_rune` are the sole gameplay authority. From
-  SILVER, matchmaking snapshots each profile's fixed or RANDOM equipped seat
-  independently; below SILVER or with no equipment that participant gets no
-  rune. RANDOM is resolved from the match seed and owned collection before the
-  immutable row reaches the client. Fresh standard matches reveal both
-  assignments together, including explicit NONE, while rejoin skips the reveal.
-  Rune Trial ignores equipment and resolves its own private pair.
+- `matches.p1_rune` and `matches.p2_rune` are the sole gameplay authority.
+  Reaching SILVER once permanently activates that participant's fixed or RANDOM
+  equipped seat in ordinary ranked; a never-SILVER participant or empty seat
+  gets no rune. RANDOM resolves from the match seed to one owned rune before
+  the immutable row reaches the client. Standard matchmaking still validates
+  every non-null assignment, but it never paints the paired rune-reveal screen.
+  That screen belongs exclusively to Rune Trial, which ignores equipment and
+  resolves its own private pair; rejoin remains silent.
 - Persist only through `src/persist.ts`; corrupt or outdated blobs must fail
   closed rather than become an alternate state model.
 - CPU and local-two-player setup preferences are separate persisted records.
@@ -163,7 +164,9 @@ not need a framework store, event bus, or dependency-injection container.
   override a duel's resolved rune deal without overwriting either preference;
   restart preserves the resolved offer/choices and a new duel replaces them.
 - The profile equipment seat opens an action sheet, not an inventory copy. Its
-  normal state offers EQUIP RUNE and RANDOM without listing the collection.
+  waiting/live state follows the permanent historical-SILVER unlock, not the
+  participant's current group after demotion. Its normal state offers EQUIP
+  RUNE and RANDOM without listing the collection.
   EQUIP RUNE dismisses the sheet and enters one transient page-owned selection
   state in which only the collected rune tiles are actionable and visibly
   marked as choices; selecting one persists it and restores ordinary profile

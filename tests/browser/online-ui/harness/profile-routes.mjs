@@ -7,15 +7,37 @@
 // in the arrival order the loading probes assert, so the shares are contractual.
 import { historySeasonFixture, RUN_A_POPULATION } from './board-fixtures.mjs';
 
-export async function installProfileRoutes(page, { hold, nearBottomBoard, historyDepth, standingPoints }) {
+export async function installProfileRoutes(page, {
+  hold,
+  nearBottomBoard,
+  historyDepth,
+  standingPoints,
+  standingPeak,
+  historicalSilverReached,
+}) {
   /* BONE by default, which is what every existing probe has always seen. A
-     case that needs a different ladder GROUP — the equipped seat only goes
-     live from SILVER up — names its own points rather than editing this. */
+     case that needs a different current standing or historical equipment
+     unlock names its own points/peak rather than editing this. */
   const points = standingPoints ?? 465;
+  const currentPeak = standingPeak ?? Math.max(700, points);
+  const silverReached = historicalSilverReached ?? currentPeak >= 1260;
   await page.route('**/rest/v1/season_ratings*', async (r) => {
     await hold(.65);
+    /* myLadder issues a second, owner-scoped existence read for an all-season
+       SILVER peak. It is deliberately independent of the current-season row:
+       a rollover may start that row below the permanent unlock threshold. */
+    if (new URL(r.request().url()).searchParams.get('select') === 'peak') {
+      return r.fulfill({ status: 200, contentType: 'application/json',
+        body: JSON.stringify(silverReached ? [{ peak: 1260 }] : []) });
+    }
     return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify([
-      { points, peak: Math.max(700, points), wins: 42, losses: 61, draws: 0 },
+      {
+        points,
+        peak: currentPeak,
+        wins: 42,
+        losses: 61,
+        draws: 0,
+      },
     ]) });
   });
   await page.route('**/rest/v1/rpc/player_standing*', async (r) => {

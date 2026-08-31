@@ -19,8 +19,9 @@ export interface GroupTransitionEvent {
   /** Concrete fallback for both a fixed seat and RANDOM RUNE MODE. */
   readonly equippedRune: string | null;
   readonly randomRuneMode: boolean;
-  readonly runeLiveBefore: boolean;
-  readonly runeLiveAfter: boolean;
+  /** Whether this player had ever reached SILVER on either side of settlement. */
+  readonly runeSeatUnlockedBefore: boolean;
+  readonly runeSeatUnlockedAfter: boolean;
   readonly seenAt: string | null;
 }
 
@@ -137,8 +138,8 @@ export function rankedProgressionFromRow(value: unknown): GroupTransitionEvent |
     afterPoolTier,
     equippedRune: equippedAfter as string | null,
     randomRuneMode: row.random_rune_mode_after,
-    runeLiveBefore: row.rune_seat_active_before,
-    runeLiveAfter: row.rune_seat_active_after,
+    runeSeatUnlockedBefore: row.rune_seat_active_before,
+    runeSeatUnlockedAfter: row.rune_seat_active_after,
     seenAt: row.seen_at as string | null,
   };
 }

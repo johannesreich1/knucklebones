@@ -100,7 +100,6 @@ export const frGame = {
     gameMode: 'MODE DE JEU',
     matchRune: 'RUNE DU MATCH',
     trialRunes: 'RUNES DU RITUEL',
-    rankedRunes: 'RUNES CLASSÉES',
     runeFor: 'RUNE POUR',
     tapReady: 'Touchez quand vous êtes prêt',
     connecting: 'Connexion des joueurs…',
@@ -204,7 +203,7 @@ export const frGame = {
     runeTrial: {
       name: 'RITUEL DES RUNES',
       compact: 'RITUEL',
-      blurb: 'Choisissez secrètement une rune parmi trois. Gagnez le duel avec elle pour la collecter. Utilisez les runes collectées en parties classées dès la ligue ARGENT.',
+      blurb: 'Choisissez secrètement une rune parmi trois ; les deux choix sont révélés ensemble. Gagnez avec la vôtre pour la collecter. Une fois ARGENT atteint, les runes équipées restent utilisables dans les parties classées ordinaires.',
       detail: 'Les deux joueurs voient les mêmes trois runes et chacun en choisit une en secret. Les deux choix sont révélés simultanément ; le duel suit ensuite les règles du plateau Classique.',
     },
   },
@@ -223,10 +222,6 @@ export const frGame = {
     revealPair: 'Les deux choix sont confirmés',
     revealed: 'Runes révélées',
     pickClock: 'SECONDES POUR CHOISIR',
-  },
-  rankedRunes: {
-    revealPair: '{{playerOne}} : {{runeOne}}. {{playerTwo}} : {{runeTwo}}.',
-    revealed: 'Runes classées révélées',
   },
   runes: {
     ariaCommitted: '{{player}} : {{name}} — {{blurb}} Engagée — choisissez une colonne marquée.',

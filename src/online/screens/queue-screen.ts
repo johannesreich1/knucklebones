@@ -161,6 +161,11 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
           });
           if (!settled) return;
           match = settled;
+          /* This rejoin deliberately skips the reveal, so it must perform the
+             Trial reveal's strict registry check itself. `resolveRankedTrial`
+             only establishes that both server seats are strings; an unknown
+             future id cannot be shortened to an empty hand at table entry. */
+          if (!trialRevealSides(match)) unreadable = true;
         }
         if (unreadable) { ports.goHome(); return; }
         if (abandoned || !runs.owns(run)) return;

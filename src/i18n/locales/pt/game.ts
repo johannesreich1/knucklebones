@@ -100,7 +100,6 @@ export const ptGame = {
     gameMode: 'MODO DE JOGO',
     matchRune: 'RUNA DA PARTIDA',
     trialRunes: 'RUNAS DO RITUAL',
-    rankedRunes: 'RUNAS RANQUEADAS',
     runeFor: 'RUNA PARA',
     tapReady: 'Toque quando estiver pronto',
     connecting: 'Conectando jogadores…',
@@ -204,7 +203,7 @@ export const ptGame = {
     runeTrial: {
       name: 'RITUAL DAS RUNAS',
       compact: 'RITUAL',
-      blurb: 'Escolha uma de três runas em segredo. Vença o duelo com ela para coletá-la. Use runas coletadas no ranqueado a partir da liga PRATA.',
+      blurb: 'Escolha uma de três runas em segredo; ambas são reveladas juntas. Vença com a sua para coletá-la. Alcance PRATA uma vez para usar runas equipadas no ranqueado comum para sempre.',
       detail: 'Ambos os jogadores veem as mesmas três runas e cada um escolhe uma em segredo. As duas escolhas são reveladas ao mesmo tempo; depois, o duelo segue as regras do tabuleiro Clássico.',
     },
   },
@@ -223,10 +222,6 @@ export const ptGame = {
     revealPair: 'As duas escolhas estão confirmadas',
     revealed: 'Runas reveladas',
     pickClock: 'SEGUNDOS PARA ESCOLHER',
-  },
-  rankedRunes: {
-    revealPair: '{{playerOne}}: {{runeOne}}. {{playerTwo}}: {{runeTwo}}.',
-    revealed: 'Runas ranqueadas reveladas',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Ativada — escolha uma coluna marcada.',

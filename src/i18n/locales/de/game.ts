@@ -100,7 +100,6 @@ export const deGame = {
     gameMode: 'SPIELMODUS',
     matchRune: 'MATCH-RUNE',
     trialRunes: 'RITUAL-RUNEN',
-    rankedRunes: 'RANGLISTEN-RUNEN',
     runeFor: 'RUNE FÜR',
     tapReady: 'Antippen, wenn du bereit bist',
     connecting: 'Spieler werden verbunden …',
@@ -204,7 +203,7 @@ export const deGame = {
     runeTrial: {
       name: 'RUNENRITUAL',
       compact: 'RITUAL',
-      blurb: 'Wähle heimlich eine von drei Runen. Gewinnst du das Duell mit ihr, gehört sie dir. Ab der SILBER-Liga kannst du gesammelte Runen in Ranglistenspielen einsetzen.',
+      blurb: 'Wähle heimlich eine von drei Runen; beide werden zusammen aufgedeckt. Gewinne mit deiner, um sie zu sammeln. Erreiche einmal SILBER, um ausgerüstete Runen dauerhaft in normalen Ranglistenspielen einzusetzen.',
       detail: 'Beide Spieler sehen dieselben drei Runen und wählen heimlich je eine aus. Beide gewählten Runen werden gleichzeitig aufgedeckt; danach gelten die Brettregeln des Klassik-Modus.',
     },
   },
@@ -223,10 +222,6 @@ export const deGame = {
     revealPair: 'Beide Runen stehen fest',
     revealed: 'Runen aufgedeckt',
     pickClock: 'SEKUNDEN ZUR WAHL',
-  },
-  rankedRunes: {
-    revealPair: '{{playerOne}}: {{runeOne}}. {{playerTwo}}: {{runeTwo}}.',
-    revealed: 'Ranglisten-Runen aufgedeckt',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Festgelegt — markierte Spalte wählen.',

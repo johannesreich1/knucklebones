@@ -35,23 +35,29 @@ export async function assertRankedRunesPlanContract() {
       'supabase/migrations/20260825205241_rune_trial_ranked_v2.sql',
       'supabase/migrations/20260830155543_equipped_runes_ranked.sql',
       'supabase/migrations/20260830160000_random_rune_mode.sql',
+      'supabase/migrations/20260830182406_ranked_progression_events.sql',
+      'supabase/migrations/20260831133000_historical_silver_ranked_runes.sql',
     ],
     'ranked-runes function rollout did not pin its exact ordered migration controls',
   );
-  assert.match(RANKED_RUNES_PRODUCTION_PREREQUISITE, /select count\(\*\) = 2/);
+  assert.match(RANKED_RUNES_PRODUCTION_PREREQUISITE, /select count\(\*\) = 4/);
   assert.match(RANKED_RUNES_PRODUCTION_PREREQUISITE,
     /version = \$1::text and name = \$2::text/);
   assert.match(RANKED_RUNES_PRODUCTION_PREREQUISITE,
     /version = \$3::text and name = \$4::text/);
+  assert.match(RANKED_RUNES_PRODUCTION_PREREQUISITE,
+    /version = \$5::text and name = \$6::text/);
+  assert.match(RANKED_RUNES_PRODUCTION_PREREQUISITE,
+    /version = \$7::text and name = \$8::text/);
   /* What production must already prove before any ranked function is
-     deployed: both ordered equipment migrations applied exactly once, the
-     Rune Trial foundation remains complete, the replaced contracts are exact,
-     and bot seats are canonical, fixed, present, and owned. */
+     deployed: the ordered equipment and progression migrations applied exactly
+     once, the Rune Trial foundation remains complete, both final historical-
+     SILVER stages agree, and bot seats are fixed, present, and owned. */
   assert.deepEqual(
     await assertRankedRunesProductionPrerequisite(readyProductionRead()),
     {
       migrationHistory: true,
-      schemaStage: 2,
+      schemaStage: 3,
       evidence: {
         queueCapabilityConstraint: true,
         matchConstraints: true,
@@ -78,6 +84,7 @@ export async function assertRankedRunesPlanContract() {
         equipmentRpcContract: true,
         equipmentRpcBody: true,
         equipmentRpcGrant: true,
+        historicalSilverPolicy: true,
       },
       data: {
         botCount: 200,
@@ -131,6 +138,22 @@ export async function assertRankedRunesPlanContract() {
       readyProductionRead(undefined, { equipped: { random_start_body: false } }),
     ),
     /Equipped-ranked.*partial/,
+  );
+  await assert.rejects(
+    () => assertRankedRunesProductionPrerequisite(
+      readyProductionRead(undefined, {
+        equipped: { historical_silver_policy: false },
+      }),
+    ),
+    /out of order/,
+  );
+  await assert.rejects(
+    () => assertRankedRunesProductionPrerequisite(
+      readyProductionRead(undefined, {
+        progression: { historical_rune_comments: false },
+      }),
+    ),
+    /Ranked-progression.*partial/,
   );
   await assert.rejects(
     () => assertRankedRunesProductionPrerequisite(
@@ -216,6 +239,7 @@ export async function assertRankedRunesPlanContract() {
       'prerequisite:functions',
       'prerequisite:cron',
       'prerequisite:equipped-schema',
+      'prerequisite:progression-schema',
       'prerequisite:bot-data',
       'create-temp',
       ...FUNCTION_ROLLOUT_SLUGS.flatMap(slug => [

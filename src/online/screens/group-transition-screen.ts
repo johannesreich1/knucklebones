@@ -127,7 +127,7 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
     }
     Sfx.tap();
     const slide = active.slides[active.index];
-    close(slide.kind === 'rune-seat' && slide.state === 'active' && active.hasCollectedRune
+    close(slide.kind === 'rune-seat' && active.hasCollectedRune
       ? 'profile' : 'continue');
   };
 
@@ -186,10 +186,7 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
     swipe.textContent = t('online', 'groupTransition.swipeOrButtons');
   };
 
-  const paintRuneSeat = (
-    slide: Extract<GroupTransitionSlide, { kind: 'rune-seat' }>,
-  ): void => {
-    const activeNow = slide.state === 'active';
+  const paintRuneSeat = (): void => {
     const hue = modeHue(RUNE_TRIAL_FORMAT);
     deck.className = 'gt-deck gt-feature-deck gt-equipment-deck';
     deck.style.setProperty('--gt-tier', hue);
@@ -201,10 +198,12 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
     const icon = required<HTMLElement>(body, '.gt-feature-icon');
     icon.style.setProperty('--gt-accent', hue);
     icon.innerHTML = modeIcon(RUNE_TRIAL_FORMAT, 46);
-    required<HTMLElement>(body, '#gtTitle').textContent = t('online', activeNow
-      ? 'groupTransition.runesActiveTitle' : 'groupTransition.runesRestingTitle');
-    required<HTMLElement>(body, '#gtCopy').textContent = t('online', activeNow
-      ? 'groupTransition.runesActiveBody' : 'groupTransition.runesRestingBody');
+    required<HTMLElement>(body, '#gtTitle').textContent = t(
+      'online', 'groupTransition.runesUnlockedTitle',
+    );
+    required<HTMLElement>(body, '#gtCopy').textContent = t(
+      'online', 'groupTransition.runesUnlockedBody',
+    );
     swipe.textContent = t('online', 'groupTransition.swipeOrButtons');
   };
 
@@ -213,7 +212,7 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
     const slide = active.slides[active.index];
     if (slide.kind === 'group') paintGroup(active, slide);
     else if (slide.kind === 'outcome') paintOutcome(slide);
-    else paintRuneSeat(slide);
+    else paintRuneSeat();
 
     const current = active.index + 1;
     const total = active.slides.length;
@@ -229,8 +228,7 @@ export function createGroupTransitionScreen(): GroupTransitionScreen {
     back.hidden = active.index === 0;
     back.textContent = t('common', 'actions.back');
     const final = active.index === total - 1;
-    const opensProfile = final && slide.kind === 'rune-seat' && slide.state === 'active'
-      && active.hasCollectedRune;
+    const opensProfile = final && slide.kind === 'rune-seat' && active.hasCollectedRune;
     next.textContent = opensProfile
       ? t('online', 'groupTransition.openProfile')
       : t('common', final ? 'actions.continue' : 'actions.next');

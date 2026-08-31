@@ -235,9 +235,16 @@ typed helper expresses the common action.
   do not claim a browser workflow until it actually drives that workflow.
 - Equipped-standard coverage treats the two match-row seats independently:
   pure replay accepts known rune/null, null/known, and null/null action deals
-  while rejecting unknown non-null ids. The ranked WebKit reveal turns both
-  immutable assignments over on a fresh match, names an empty seat as NONE,
-  and never derives either answer from profile cache. Rejoin remains silent.
+  while rejecting unknown non-null ids. Ranked WebKit coverage proves an
+  ordinary fresh match never paints the paired rune-reveal screen, even when
+  immutable assignments are present; that reveal belongs only to Rune Trial.
+  Rejoin remains silent. Profile and database cases distinguish permanent
+  historical-SILVER activation from a never-SILVER waiting/null seat and prove
+  that eligible RANDOM resolves to an owned rune rather than NONE. The explicit
+  `mise exec -- npm run test:db:historical-silver-upgrade` gate resets only the
+  local database to the deployed progression version, exercises legacy
+  demotion/prior-Silver/never-Silver/old-crossing rows through the pending
+  migration, and always restores the latest local schema.
 - Database Rune Trial contracts exercise grants/RLS and negative visibility,
   v1/v2 queue capability isolation, stale-claim rejection, idempotent
   selection/action retries, deadline auto-picks, atomic terminal action reward,
@@ -390,6 +397,15 @@ check anywhere in it. Measured: 65,536 bytes captured against a 79,714-byte
 report, after four green standalone runs of the same commit. Every suite emits
 through `tests/support/emit-report.mjs`, which drains before exiting. Reproduce
 the gate's condition with `node <suite> | cat > /tmp/x.log`, never a bare run.
+
+**The online UI WebKit process is recycled at a measured context margin.** The
+tree opens and closes a fresh context for every visit, but on this development
+machine a single WebKit process stopped beginning navigations at about the
+sixtieth context: `page.goto` waited the full timeout before
+`domcontentloaded`, while the exact scenario passed in a fresh browser. The
+runner therefore recycles WebKit after 48 completed visit calls, between
+contexts. Keep the stable visit wrapper; removing the recycle makes the full
+tree red long before a focused scenario can reproduce the failure.
 
 **An overlay's `hidden` attribute means nothing.** `.ov` gates on the `on`
 CLASS: without it the element is `visibility:hidden` and `pointer-events:none`,

@@ -157,9 +157,10 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     $('#accStreak').textContent = formatNumber(streak);
     paintAccountProviders(user, identity);
     paintAccountRunes(runes, runeRows);
-    /* The seat reads the group the ring is already showing: one standing, one
-       answer to "is this in play yet". */
-    paintEquippedSeat(boardGroup(points, apex).id);
+    /* The ring and PEAK label stay current-season. The rune seat instead uses
+       the all-season SILVER fact; mutable profile rating is not evidence that
+       this permanent achievement happened. */
+    paintEquippedSeat(ladder?.runeSeatUnlocked ? 'silver' : null);
     paintRecent();
   };
 

@@ -18,11 +18,10 @@ export type GroupTransitionSlide =
     readonly to: LadderGroupId;
   }
   | { readonly kind: 'outcome'; readonly outcomeId: string }
-  | { readonly kind: 'rune-seat'; readonly state: 'active' | 'resting' };
+  | { readonly kind: 'rune-seat' };
 
 const GROUP_IDS = GROUPS.map(({ id }) => id) as readonly LadderGroupId[];
 const POOL_IDS = RANKED_POOL_TIERS.map(({ id }) => id);
-const SILVER_GROUP_INDEX = GROUP_IDS.indexOf('silver');
 
 function indexOf<const Id extends string>(ids: readonly Id[], value: unknown): number {
   return typeof value === 'string' ? ids.indexOf(value as Id) : -1;
@@ -39,8 +38,8 @@ function validEvent(value: GroupTransitionEvent): boolean {
       || indexOf(POOL_IDS, value.beforePoolTier) < 0
       || indexOf(POOL_IDS, value.afterPoolTier) < 0) return false;
   if (typeof value.randomRuneMode !== 'boolean'
-      || typeof value.runeLiveBefore !== 'boolean'
-      || typeof value.runeLiveAfter !== 'boolean') return false;
+      || typeof value.runeSeatUnlockedBefore !== 'boolean'
+      || typeof value.runeSeatUnlockedAfter !== 'boolean') return false;
   if (value.equippedRune !== null
       && (typeof value.equippedRune !== 'string' || !spellById(value.equippedRune))) return false;
   if (value.randomRuneMode && value.equippedRune === null) return false;
@@ -77,19 +76,11 @@ export function groupTransitionSlides(
     return [];
   }
 
-  /* SILVER activates the rune seat as a league capability. This is deliberately
-     independent of historical equipment flags: a player with no collected or
-     equipped rune still needs to learn where the first one will go, without
-     the UI inventing a default rune. */
-  const crossedIntoSilver = beforeGroupIndex < SILVER_GROUP_INDEX
-    && afterGroupIndex >= SILVER_GROUP_INDEX;
-  const crossedBelowSilver = beforeGroupIndex >= SILVER_GROUP_INDEX
-    && afterGroupIndex < SILVER_GROUP_INDEX;
-  if (crossedIntoSilver || crossedBelowSilver) {
-    slides.push({
-      kind: 'rune-seat',
-      state: crossedIntoSilver ? 'active' : 'resting',
-    });
+  /* Settlement owns the monotonic historical-SILVER fact. Teach the permanent
+     capability exactly once; current group and equipped-rune state cannot
+     reactivate, rest, or fabricate it. */
+  if (!event.runeSeatUnlockedBefore && event.runeSeatUnlockedAfter) {
+    slides.push({ kind: 'rune-seat' });
   }
   return slides;
 }

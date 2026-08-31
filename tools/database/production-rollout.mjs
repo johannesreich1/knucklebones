@@ -62,6 +62,8 @@ export const EQUIPPED_RANKED_MIGRATION_SHA256 =
   'c41d5051fc1d6bbf522233ecaa469f83b12ee3efbdcfd237ff8841ed963d6f15';
 export const RANDOM_RUNE_MODE_MIGRATION_SHA256 =
   'd27232fcf61165b4a0334e185b69818d0dd7c0cc172b9cc35e6d3360781d915f';
+export const HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_SHA256 =
+  '95b3cdfc1e584e3a5e3ea66d237a1a54e4d3eb78ac394a86850c98db39471e2a';
 export const LADDER_STREAK_BASELINES_MIGRATION_SHA256 =
   '1b132572fde4df5f451e0c1780077c0e07156300fbd91b24833614a8d2e6c827';
 export const MATCH_COMMAND_STALL_CHECK_MIGRATION_SHA256 =
@@ -82,6 +84,12 @@ export const RANKED_RUNES_MIGRATIONS = Object.freeze([
     file: 'supabase/migrations/20260830160000_random_rune_mode.sql',
     sha256: RANDOM_RUNE_MODE_MIGRATION_SHA256,
   }),
+  Object.freeze({
+    version: '20260831133000',
+    name: 'historical_silver_ranked_runes',
+    file: 'supabase/migrations/20260831133000_historical_silver_ranked_runes.sql',
+    sha256: HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_SHA256,
+  }),
 ]);
 export const RANKED_PROGRESSION_MIGRATIONS = Object.freeze([
   Object.freeze({
@@ -89,6 +97,12 @@ export const RANKED_PROGRESSION_MIGRATIONS = Object.freeze([
     name: 'ranked_progression_events',
     file: 'supabase/migrations/20260830182406_ranked_progression_events.sql',
     sha256: RANKED_PROGRESSION_MIGRATION_SHA256,
+  }),
+  Object.freeze({
+    version: '20260831133000',
+    name: 'historical_silver_ranked_runes',
+    file: 'supabase/migrations/20260831133000_historical_silver_ranked_runes.sql',
+    sha256: HISTORICAL_SILVER_RANKED_RUNES_MIGRATION_SHA256,
   }),
 ]);
 
@@ -1304,7 +1318,9 @@ with expected(
     ('public.settle_match(uuid,text,uuid,integer,integer,integer,integer,jsonb,jsonb,jsonb,jsonb)',
       'public', 'settle_match', 'plpgsql', true, 'v', 'jsonb', 0,
       array['2b34ae6429ae876839c20909e43cbf5a',
-            '969ec904c8bce2bf1cfab78a90d8669b']),
+            '969ec904c8bce2bf1cfab78a90d8669b',
+            'ec865febe67e1370a877459e4b89ec65',
+            '2aabcbcd3ba8231de00843f4350924c9']),
     ('public.match_action_result(uuid,uuid,uuid,boolean,integer,jsonb)', 'public',
       'match_action_result', 'plpgsql', true, 's', 'jsonb', 0,
       array['d12d6153ad37b7f50b89b1d550e8ab39']),
@@ -1473,25 +1489,29 @@ select
 export const EQUIPPED_RANKED_SCHEMA = String.raw`
 with expected(
   signature, schema_name, function_name, language_name, security_definer,
-  volatility, return_type, argument_defaults, body_md5, alternate_body_md5
+  volatility, return_type, argument_defaults, body_md5, alternate_body_md5,
+  historical_body_md5
 ) as (
   values
     ('public.enqueue_ranked_player_v2(uuid,smallint,text[])', 'public',
       'enqueue_ranked_player_v2', 'plpgsql', true, 'v', 'jsonb', 0,
-      '8d6c669dd740a64a1df872b3a6359944', null),
+      '8d6c669dd740a64a1df872b3a6359944', null, null),
     ('public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)',
       'public', 'start_ranked_match_v3', 'plpgsql', true, 'v', 'jsonb', 0,
       'b7b1b9e7899045936f4d6a246f1c9eee',
-      'e6986a11de9d9efbf89467626ae9fb8f'),
+      'e6986a11de9d9efbf89467626ae9fb8f',
+      '3fc7bb43af43ded3f11ec0f6d7b3dd96'),
     ('private.bot_owned_rune_choice(uuid)', 'private',
       'bot_owned_rune_choice', 'sql', false, 's', 'text', 0,
-      'b6cbfd6a8630c49653664bf554aa346a', null),
+      'b6cbfd6a8630c49653664bf554aa346a', null, null),
     ('public.settle_match(uuid,text,uuid,integer,integer,integer,integer,jsonb,jsonb,jsonb,jsonb)',
       'public', 'settle_match', 'plpgsql', true, 'v', 'jsonb', 0,
-      '969ec904c8bce2bf1cfab78a90d8669b', null),
+      '969ec904c8bce2bf1cfab78a90d8669b',
+      'ec865febe67e1370a877459e4b89ec65',
+      '2aabcbcd3ba8231de00843f4350924c9'),
     ('public.commit_match_action(uuid,uuid,uuid,boolean,integer,smallint,smallint,timestamptz,jsonb,jsonb,smallint,smallint,jsonb,jsonb)',
       'public', 'commit_match_action', 'plpgsql', true, 'v', 'jsonb', 1,
-      'cb197365655531053efedc039ed84380', null)
+      'cb197365655531053efedc039ed84380', null, null)
 ), catalog as (
   select expected.*, procedure.oid, procedure.proowner, procedure.prosrc,
          procedure.proacl, procedure.prosecdef, procedure.provolatile,
@@ -1515,24 +1535,25 @@ with expected(
    where catalog.oid is not null and privilege.grantee <> catalog.proowner
 ), random_expected(
   signature, schema_name, function_name, language_name, security_definer,
-  volatility, return_type, strict, body_md5, comment_text
+  volatility, return_type, strict, body_md5, alternate_body_md5, comment_text
 ) as (
   values
     ('private.normalize_rune_equipment_update()', 'private',
       'normalize_rune_equipment_update', 'plpgsql', false, 'v', 'trigger', false,
-      '56fd0f92d36cc00fccc496a437c251ae',
+      '56fd0f92d36cc00fccc496a437c251ae', null,
       'Compatibility trigger: authenticated direct equipped_rune writes and ownership SET NULL clear RANDOM; owner-executed equipment RPC preserves non-null one-statement v2 writes.'),
     ('private.random_owned_rune_for_match(uuid,text)', 'private',
       'random_owned_rune_for_match', 'sql', false, 's', 'text', true,
-      '5cf88a87f3cb5df762537a59238d5d56',
+      '5cf88a87f3cb5df762537a59238d5d56', null,
       'Deterministic per-match choice from the participant current owned inventory; returns NULL for an empty inventory.'),
     ('public.set_rune_equipment(text,boolean)', 'public',
       'set_rune_equipment', 'plpgsql', true, 'v', 'jsonb', false,
-      '3dcdc059bb6068e2aaa8e36181f9549d',
+      '3dcdc059bb6068e2aaa8e36181f9549d', null,
       'Authenticated-only atomic fixed, RANDOM, or empty equipment write for auth.uid(); RANDOM keeps an owned fallback and direct legacy equipped_rune writes remain fixed.'),
     ('public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)',
       'public', 'start_ranked_match_v3', 'plpgsql', true, 'v', 'jsonb', false,
-      'e6986a11de9d9efbf89467626ae9fb8f', null)
+      'e6986a11de9d9efbf89467626ae9fb8f',
+      '3fc7bb43af43ded3f11ec0f6d7b3dd96', null)
 ), random_catalog as (
   select expected.*, procedure.oid, procedure.proowner, procedure.prosrc,
          procedure.proacl, procedure.prosecdef, procedure.provolatile,
@@ -1617,6 +1638,7 @@ select
     select count(*) = 5 and bool_and(
       md5(prosrc) = body_md5
       or coalesce(md5(prosrc) = alternate_body_md5, false)
+      or coalesce(md5(prosrc) = historical_body_md5, false)
     )
       from catalog
   ) as function_bodies,
@@ -1674,8 +1696,10 @@ select
        and conname = 'profiles_random_rune_mode_has_fallback'
   ) as random_mode_constraint,
   coalesce((
-    select col_description(to_regclass('public.profiles'), attribute.attnum) =
-      'When true, ordinary ranked from SILVER snapshots a seed-derived random rune from the player collection. equipped_rune remains a concrete owned fallback for older clients. Rune Trial ignores both profile fields.'
+    select col_description(to_regclass('public.profiles'), attribute.attnum) in (
+      'When true, ordinary ranked from SILVER snapshots a seed-derived random rune from the player collection. equipped_rune remains a concrete owned fallback for older clients. Rune Trial ignores both profile fields.',
+      'When true, ordinary ranked after SILVER has been reached once snapshots a seed-derived random rune from the player collection. equipped_rune remains a concrete owned fallback for older clients. Rune Trial ignores both profile fields.'
+    )
       from pg_attribute attribute
      where attribute.attrelid = to_regclass('public.profiles')
        and attribute.attname = 'random_rune_mode'
@@ -1920,7 +1944,10 @@ select
       and prorettype = to_regtype(return_type) and proisstrict = strict
       and not proretset and not proleakproof and proparallel = 'u'
       and pronargdefaults = 0 and proconfig = array['search_path=""']::text[]
-      and md5(prosrc) = body_md5
+      and (
+        md5(prosrc) = body_md5
+        or coalesce(md5(prosrc) = alternate_body_md5, false)
+      )
       from random_catalog
      where signature = 'public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)'
   ), false) and (
@@ -1932,11 +1959,13 @@ select
   ) as random_start_contract,
   coalesce((
     select md5(prosrc) = body_md5
+      or coalesce(md5(prosrc) = alternate_body_md5, false)
       from random_catalog
      where signature = 'public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)'
   ), false) as random_start_body,
   coalesce((
     select md5(prosrc) = body_md5
+      or coalesce(md5(prosrc) = alternate_body_md5, false)
       from random_catalog
      where signature = 'public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)'
   ), false) and (
@@ -1950,6 +1979,25 @@ select
       from random_access
      where signature = 'public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)'
   ) as random_start_grant,
+  coalesce((
+    select md5(prosrc) = alternate_body_md5
+      from random_catalog
+     where signature = 'public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)'
+  ), false) and coalesce((
+    select col_description(to_regclass('public.profiles'), attribute.attnum) =
+      'The one collected rune carried into ordinary ranked after SILVER has been reached once. NULL means nothing equipped, which is a deliberate choice and not an error. Rune Trial ignores this and never overwrites it.'
+      from pg_attribute attribute
+     where attribute.attrelid = to_regclass('public.profiles')
+       and attribute.attname = 'equipped_rune'
+       and attribute.attnum > 0 and not attribute.attisdropped
+  ), false) and coalesce((
+    select col_description(to_regclass('public.profiles'), attribute.attnum) =
+      'When true, ordinary ranked after SILVER has been reached once snapshots a seed-derived random rune from the player collection. equipped_rune remains a concrete owned fallback for older clients. Rune Trial ignores both profile fields.'
+      from pg_attribute attribute
+     where attribute.attrelid = to_regclass('public.profiles')
+       and attribute.attname = 'random_rune_mode'
+       and attribute.attnum > 0 and not attribute.attisdropped
+  ), false) as historical_silver_policy,
   coalesce((
     select oid is not null and owner_name = 'postgres'
       and nspname = schema_name and proname = function_name
@@ -2310,7 +2358,9 @@ with event_table as (
     from information_schema.columns
    where table_schema = 'public'
      and table_name = 'ranked_progression_events'
-), expected_event_constraints(constraint_name, constraint_type, definition) as (
+), expected_historical_event_constraints(
+  constraint_name, constraint_type, definition
+) as (
   values
     ('ranked_progression_events_equipped_after_check', 'c',
       $check$CHECK (equipped_rune_after IS NULL OR (equipped_rune_after = ANY (ARRAY['fate'::text, 'nudge'::text, 'ward'::text, 'sunder'::text, 'pilfer'::text, 'anvil'::text])))$check$),
@@ -2331,16 +2381,27 @@ with event_table as (
       'CHECK (NOT random_rune_mode_after OR equipped_rune_after IS NOT NULL)'),
     ('ranked_progression_events_random_before_check', 'c',
       'CHECK (NOT random_rune_mode_before OR equipped_rune_before IS NOT NULL)'),
-    ('ranked_progression_events_rune_live_after_check', 'c',
-      'CHECK (rune_seat_active_after = (equipped_rune_after IS NOT NULL AND points_after >= 1260))'),
-    ('ranked_progression_events_rune_live_before_check', 'c',
-      'CHECK (rune_seat_active_before = (equipped_rune_before IS NOT NULL AND points_before >= 1260))'),
+    ('ranked_progression_events_rune_unlock_monotonic_check', 'c',
+      'CHECK (NOT rune_seat_active_before OR rune_seat_active_after)'),
     ('ranked_progression_events_season_id_fkey', 'f',
       'FOREIGN KEY (season_id) REFERENCES seasons(id) ON DELETE CASCADE'),
     ('ranked_progression_events_seen_check', 'c',
       'CHECK (seen_at IS NULL OR seen_at >= created_at)'),
     ('ranked_progression_events_source_match_id_fkey', 'f',
       'FOREIGN KEY (source_match_id) REFERENCES matches(id) ON DELETE SET NULL')
+), expected_legacy_event_constraints(
+  constraint_name, constraint_type, definition
+) as (
+  select constraint_name, constraint_type, definition
+    from expected_historical_event_constraints
+   where constraint_name <>
+     'ranked_progression_events_rune_unlock_monotonic_check'
+  union all
+  values
+    ('ranked_progression_events_rune_live_after_check', 'c',
+      'CHECK (rune_seat_active_after = (equipped_rune_after IS NOT NULL AND points_after >= 1260))'),
+    ('ranked_progression_events_rune_live_before_check', 'c',
+      'CHECK (rune_seat_active_before = (equipped_rune_before IS NOT NULL AND points_before >= 1260))')
 ), event_constraints as (
   select conname as constraint_name, contype::text as constraint_type,
          pg_get_constraintdef(oid, true) as definition
@@ -2417,6 +2478,25 @@ with event_table as (
     ) acl
     left join pg_roles role on role.oid = acl.grantee
    where acl.grantee <> procedure.proowner
+), ranked_start_function as (
+  select procedure.*, namespace.nspname, language.lanname,
+         owner_role.rolname as owner_name
+    from pg_proc procedure
+    join pg_namespace namespace on namespace.oid = procedure.pronamespace
+    join pg_language language on language.oid = procedure.prolang
+    join pg_roles owner_role on owner_role.oid = procedure.proowner
+   where procedure.oid = to_regprocedure(
+     'public.start_ranked_match_v3(uuid,uuid,uuid,text,smallint,text,smallint,uuid,smallint,smallint,smallint,smallint,smallint,text,text,text[],timestamptz,text,text,boolean)'
+   )
+), ranked_start_access as (
+  select coalesce(role.rolname, 'PUBLIC') as role_name,
+         acl.privilege_type, acl.is_grantable
+    from ranked_start_function procedure
+    cross join lateral aclexplode(
+      coalesce(procedure.proacl, acldefault('f', procedure.proowner))
+    ) acl
+    left join pg_roles role on role.oid = acl.grantee
+   where acl.grantee <> procedure.proowner
 )
 select
   coalesce((
@@ -2432,16 +2512,28 @@ select
     ) as table_columns,
   exists (select 1 from event_table)
     and not exists (
-      (select * from expected_event_constraints except select * from event_constraints)
+      (select * from expected_legacy_event_constraints except select * from event_constraints)
       union all
-      (select * from event_constraints except select * from expected_event_constraints)
+      (select * from event_constraints except select * from expected_legacy_event_constraints)
     )
     and (
       select count(*) = 15
              and bool_and(convalidated and not condeferrable and not condeferred)
         from pg_constraint
        where conrelid = to_regclass('public.ranked_progression_events')
-    ) as table_constraints,
+    ) as legacy_table_constraints,
+  exists (select 1 from event_table)
+    and not exists (
+      (select * from expected_historical_event_constraints except select * from event_constraints)
+      union all
+      (select * from event_constraints except select * from expected_historical_event_constraints)
+    )
+    and (
+      select count(*) = 14
+             and bool_and(convalidated and not condeferrable and not condeferred)
+        from pg_constraint
+       where conrelid = to_regclass('public.ranked_progression_events')
+    ) as historical_table_constraints,
   exists (select 1 from event_table)
     and not exists (
       (select * from expected_event_indexes except select * from event_indexes)
@@ -2458,12 +2550,74 @@ select
     and col_description(
       to_regclass('public.ranked_progression_events'), 18
     ) = 'Stamped only by acknowledge_ranked_progression after the player reaches Continue.'
+    as base_table_comments,
+  exists (select 1 from event_table)
+    and col_description(
+      to_regclass('public.ranked_progression_events'), 15
+    ) is null
+    and col_description(
+      to_regclass('public.ranked_progression_events'), 16
+    ) is null
     and (
       select count(*) = 2
         from pg_description description
        where description.objoid = to_regclass('public.ranked_progression_events')
          and description.objsubid > 0
-    ) as table_comments,
+    ) as legacy_rune_comments,
+  exists (select 1 from event_table)
+    and col_description(
+      to_regclass('public.ranked_progression_events'), 15
+    ) = 'Whether the player had ever reached SILVER before settlement; the legacy active name records a permanent unlock, independent of current points or equipment.'
+    and col_description(
+      to_regclass('public.ranked_progression_events'), 16
+    ) = 'Whether the player has ever reached SILVER after settlement; once true this permanent unlock never becomes false.'
+    and (
+      select count(*) = 4
+        from pg_description description
+       where description.objoid = to_regclass('public.ranked_progression_events')
+         and description.objsubid > 0
+    ) as historical_rune_comments,
+  coalesce((
+    select owner_name = 'postgres' and nspname = 'public'
+           and proname = 'start_ranked_match_v3' and lanname = 'plpgsql'
+           and prosecdef and provolatile = 'v' and prokind = 'f'
+           and not proretset and not proisstrict and not proleakproof
+           and proparallel = 'u' and pronargdefaults = 0
+           and proconfig = array['search_path=""']::text[]
+           and pg_get_function_result(oid) = 'jsonb'
+           and md5(prosrc) = '3fc7bb43af43ded3f11ec0f6d7b3dd96'
+      from ranked_start_function
+  ), false)
+    and (
+      select count(*) = 1
+        from pg_proc procedure
+        join pg_namespace namespace on namespace.oid = procedure.pronamespace
+       where namespace.nspname = 'public'
+         and procedure.proname = 'start_ranked_match_v3'
+    )
+    and (
+      select coalesce(array_agg(
+        role_name || ':' || privilege_type || ':' || is_grantable::text
+        order by role_name, privilege_type, is_grantable
+      ), array[]::text[]) = array['service_role:EXECUTE:false']::text[]
+        from ranked_start_access
+    )
+    and coalesce((
+      select col_description(to_regclass('public.profiles'), attribute.attnum) =
+        'The one collected rune carried into ordinary ranked after SILVER has been reached once. NULL means nothing equipped, which is a deliberate choice and not an error. Rune Trial ignores this and never overwrites it.'
+        from pg_attribute attribute
+       where attribute.attrelid = to_regclass('public.profiles')
+         and attribute.attname = 'equipped_rune'
+         and attribute.attnum > 0 and not attribute.attisdropped
+    ), false)
+    and coalesce((
+      select col_description(to_regclass('public.profiles'), attribute.attnum) =
+        'When true, ordinary ranked after SILVER has been reached once snapshots a seed-derived random rune from the player collection. equipped_rune remains a concrete owned fallback for older clients. Rune Trial ignores both profile fields.'
+        from pg_attribute attribute
+       where attribute.attrelid = to_regclass('public.profiles')
+         and attribute.attname = 'random_rune_mode'
+         and attribute.attnum > 0 and not attribute.attisdropped
+    ), false) as historical_rune_match_start_policy,
   coalesce((
     select relrowsecurity and not relforcerowsecurity
       from event_table
@@ -2527,7 +2681,11 @@ select
   coalesce((
     select md5(prosrc) = 'ec865febe67e1370a877459e4b89ec65'
       from settle_function
-  ), false) as settle_match_event_body,
+  ), false) as legacy_settle_match_event_body,
+  coalesce((
+    select md5(prosrc) = '2aabcbcd3ba8231de00843f4350924c9'
+      from settle_function
+  ), false) as historical_settle_match_event_body,
   coalesce((
     select owner_name = 'postgres' and nspname = 'public'
            and proname = 'settle_match' and lanname = 'plpgsql'
@@ -2870,8 +3028,22 @@ export async function auditEquippedRanked(readProduction = productionRead) {
     equipmentRpcContract: row.equipment_rpc_contract === true,
     equipmentRpcBody: row.equipment_rpc_body === true,
     equipmentRpcGrant: row.equipment_rpc_grant === true,
+    historicalSilverPolicy: row.historical_silver_policy === true,
   };
   const schemaStage = validateEquippedRankedSchemaStage(evidence);
+  const progression = await auditRankedProgression(readProduction);
+  const pairedStage = (
+    (schemaStage === 0 && progression.schemaStage === 0)
+    || (schemaStage === 1 && progression.schemaStage === 0)
+    || (schemaStage === 2 && progression.schemaStage === 0)
+    || (schemaStage === 2 && progression.schemaStage === 1)
+    || (schemaStage === 3 && progression.schemaStage === 2)
+  );
+  if (!pairedStage) {
+    throw new Error(
+      `Ranked-rune schema stage ${schemaStage} and progression stage ${progression.schemaStage} are out of order.`,
+    );
+  }
   /* This query deliberately does not call the migration-owned helper, so the
      pre-migration stage audits existing bot ownership without pretending the
      new canonical choice function already exists. */
@@ -2891,9 +3063,9 @@ export async function auditEquippedRankedPostApplyData(
 ) {
   const durable = await auditEquippedRankedBotData(readProduction);
   /* The fixed-seat migration backfills an empty bot seat with its reviewed
-     stable choice, so that specific apply may prove convergence. RANDOM adds
-     no bot write and deliberately preserves any existing owned fixed seat. A
-     bot can have won another rune since the first migration, making a fresh
+     stable choice, so that specific apply may prove convergence. Later stages
+     add no bot write and deliberately preserve any existing owned fixed seat.
+     A bot can have won another rune since the first migration, making a fresh
      stable-choice calculation different without making its seat invalid. */
   if (!requireCanonicalBotSeats) return durable;
   const rows = await readProduction(EQUIPPED_RANKED_BOT_CONVERGENCE);
@@ -2986,15 +3158,22 @@ export async function auditRankedProgression(readProduction = productionRead) {
   const evidence = {
     tableContract: row.table_contract === true,
     tableColumns: row.table_columns === true,
-    tableConstraints: row.table_constraints === true,
     tableIndexes: row.table_indexes === true,
-    tableComments: row.table_comments === true,
+    baseTableComments: row.base_table_comments === true,
     tableRlsPolicy: row.table_rls_policy === true,
     tableGrants: row.table_grants === true,
     ackFunctionContract: row.ack_function_contract === true,
     ackFunctionBody: row.ack_function_body === true,
     ackFunctionGrants: row.ack_function_grants === true,
-    settleMatchEventBody: row.settle_match_event_body === true,
+    legacyTableConstraints: row.legacy_table_constraints === true,
+    legacyRuneComments: row.legacy_rune_comments === true,
+    legacySettleMatchEventBody: row.legacy_settle_match_event_body === true,
+    historicalTableConstraints: row.historical_table_constraints === true,
+    historicalRuneComments: row.historical_rune_comments === true,
+    historicalRuneMatchStartPolicy:
+      row.historical_rune_match_start_policy === true,
+    historicalSettleMatchEventBody:
+      row.historical_settle_match_event_body === true,
   };
   return {
     evidence,
@@ -3128,6 +3307,10 @@ async function auditProduction(rollout) {
     audited = await auditAppleGameCenter();
   } else if (rollout.audit === 'ranked-progression-events') {
     audited = await auditRankedProgression();
+    /* The final progression and match-start policies share one migration.
+       Reuse the full ranked-rune audit so this selector cannot apply or report
+       success against a mismatched companion stage. */
+    await auditEquippedRanked();
   } else {
     throw new Error(`Unknown production schema audit: ${String(rollout.audit)}.`);
   }
