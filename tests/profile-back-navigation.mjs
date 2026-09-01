@@ -30,6 +30,7 @@
 import pkg from 'playwright';
 const { chromium } = pkg;
 import { SUPABASE_AUTH_STORAGE_KEY } from '../src/config.ts';
+import { legacyRankedOutcomeEntitlementsForPeak } from '../src/core/ranked-outcomes.ts';
 import { LOCALE_REGISTRY } from '../src/i18n/locale.ts';
 import { servedBase } from './serve.mjs';
 import { emitReport } from './support/emit-report.mjs';
@@ -65,6 +66,16 @@ const BOARD = [
    over a named opponent whose own row the RPC will fill in late */
 const REPORT = { won: true, draw: false, forfeit: false, my: 41, their: 29,
                  delta: 18, opp: 'NovaComet992', oppAvatar: 'die:3:mg', oppRating: 1104 };
+const PROGRESSION = {
+  curve_version: 1,
+  scoring_version: 1,
+  admission_paused: false,
+  outcomes: legacyRankedOutcomeEntitlementsForPeak(1080),
+  weekly_unlocked: false,
+  pending_bot_debuts: [],
+  neon_medal_seasons: [],
+  weekly: null,
+};
 
 const browser = await chromium.launch();
 try {
@@ -102,6 +113,8 @@ try {
   await page.route('**/rest/v1/**', (r) => {
     const u = r.request().url();
     const json = (body) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
+    if (u.includes('/rpc/active_ranked_curve_version')) return json(1);
+    if (u.includes('/rpc/ranked_progression_status')) return json(PROGRESSION);
     if (u.includes('/rpc/current_season')) return json('11111111-1111-4111-8111-111111111111');
     if (u.includes('/rpc/player_standing')) return json([{ points: 1012, rank: 3, population: 40, percentile: 7.5 }]);
     if (u.includes('/rpc/best_streak')) return json(4);
