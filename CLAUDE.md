@@ -128,6 +128,15 @@ differs. A second near-copy is a design failure, not a shortcut.
 - **External dashboards belong to Johannes** (Cloudflare, Supabase dashboard,
   registrars). Prepare repository changes and steps; he clicks. A connected
   Supabase tool is the sanctioned exception when the requested scope permits.
+- **BadRandolf point moves use the guarded fast path.** When Johannes explicitly
+  asks to set BadRandolf's current ladder points, immediately run
+  `KB_ALLOW_PRODUCTION_PLAYER_POINTS=<points> mise exec -- npm run db:production:player-points -- <points> --apply`
+  with his exact requested value. Do not add a separate docs/research pass,
+  preview-only run, or test run; the helper's environment audit, blockers,
+  locked transaction, compare-and-set, and post-apply verification are the
+  required checks and must not be bypassed. Preserve peak and permanent-pool
+  high water by default; use `--reset-high-water` only when Johannes explicitly
+  asks for that reset.
 
 ## Verification entry points
 
