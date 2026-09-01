@@ -9,6 +9,11 @@
 // so any assertion about "how many reads" has to pin WHEN the tap lands
 // relative to those. The probes below do that with the harness's own deferral
 // seam rather than with a pause.
+import {
+  probeAppleAskReplacement,
+  probeAppleExplicitCancellation,
+  probeAppleRestoreSuccess,
+} from './auth-apple-probes.mjs';
 
 async function submitCredentials(page) {
   await page.fill('#onEmail', 'player@example.test');
@@ -261,6 +266,47 @@ export async function runAuthCredentialScenarios({ visit, out, check }) {
   check(p?.passwordCalls === 1 && p.onlineOn && p.accountVisible && !p.queueVisible
     && p.title === 'PROFILE' && p.focused === 'onTitle',
   'account-origin sign-in did not return to Profile', p);
+
+  const apple = await visit({ appleBridge: true, appleAuth: 'success', deferAppleAuth: true,
+    skipStandardProbes: true, probe: probeAppleRestoreSuccess });
+  out.authAppleRestore = apple.probeResult;
+  const a = apple.probeResult;
+  check(a?.waiting.sheetOpen && a.waiting.ariaBusy === 'true'
+    && a.waiting.buttonsDisabled && a.waiting.onlineInert && a.waiting.hitOwned
+    && a.waiting.staleNickname === 'TestGuest001',
+  'native Apple exchange uncovered an interactive stale Profile while waiting', a?.waiting);
+  check(a?.appleCalls === 1 && a.appleTokenCalls === 1 && a.appleRegistrationCalls === 1
+    && a.profileCalls > a.beforeProfileCalls && a.sheets === 0 && a.authHidden
+    && a.accountVisible && a.nickname === 'ApplePlayer99'
+    && a.appleAccountId !== '00000000-0000-4000-8000-00000000beef'
+    && a.identity.appleLinked && a.identity.appleRevocationReady
+    && !a.providerBoxVisible && !a.claimVisible
+    && !a.guestOfferVisible && a.signOutVisible && a.focused === 'onTitle',
+  'successful native Apple restore left the auth flow stale instead of repainting Profile', a);
+  check(apple.errs.length === 0, 'page errors during native Apple restore', apple.errs);
+
+  const explicitCancel = await visit({ appleBridge: true, appleAuth: 'success',
+    skipStandardProbes: true, probe: probeAppleExplicitCancellation });
+  out.authAppleExplicitCancel = explicitCancel.probeResult;
+  const n = explicitCancel.probeResult;
+  check(n?.appleCalls === 2 && n.appleTokenCalls === 0
+    && n.cancelled.authOpen && !n.cancelled.askOpen && n.cancelled.buttonsEnabled
+    && n.cancelled.onlineInert && n.cancelled.hitOwned
+    && n.dismissed.authOpen && !n.dismissed.askOpen && n.dismissed.buttonsEnabled
+    && n.dismissed.onlineInert && n.dismissed.hitOwned,
+  'Apple warning cancel or Escape did not restore the owned auth form', n);
+  check(explicitCancel.errs.length === 0,
+    'page errors while cancelling or dismissing the Apple warning', explicitCancel.errs);
+
+  const replaced = await visit({ appleBridge: true, appleAuth: 'success',
+    skipStandardProbes: true, probe: probeAppleAskReplacement });
+  out.authAppleAskReplacement = replaced.probeResult;
+  const r = replaced.probeResult;
+  check(r?.askOpen && !r.authOpen && r.head === 'Delete your account?'
+    && r.deleteGuarded && r.onlineInert && r.hitOwned && r.appleTokenCalls === 0
+    && !r.identity.appleLinked && !r.identity.appleRevocationReady,
+  'a replaced Apple warning resurrected AUTH over the newer account sheet', r);
+  check(replaced.errs.length === 0, 'page errors while replacing the Apple warning', replaced.errs);
 
   const loadingBack = await visit({ named: true, skipStandardProbes: true,
     probe: probeResultProfileLoadingBack });

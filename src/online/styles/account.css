@@ -44,11 +44,10 @@
 :where(#kbroot) #onAccount .accsec{display:flex;flex-direction:column;gap:8px;width:100%}
 :where(#kbroot) #onAccount .acchead{display:flex;align-items:center;justify-content:space-between;
   padding:0 2px;color:var(--dim);font-size:var(--font-label-min);font-weight:900;letter-spacing:.2em}
-/* The title is the BRIGHT half of the head and the count beside it stays --dim
-   — the same "b is the bright one" idiom this panel already uses for .fact and
-   .histrow. It named `--fg`, a token this app never defines, so the heading
-   silently inherited the head's own --dim and the distinction was lost. */
-:where(#kbroot) #onAccount .acchead b{color:var(--txt)}
+/* Both section titles share the head's subdued --dim token with the rune
+   count. Their weight and tracking still name the sections without making
+   RUNES or PAST DUELS compete with the player's live profile facts. */
+:where(#kbroot) #onAccount .acchead b{color:inherit}
 /* Six fixed collection slots. Locked runes keep their identity and position;
    the veil communicates ownership, not mystery, and mirrors the per-option
    lock vocabulary in offline setup. */

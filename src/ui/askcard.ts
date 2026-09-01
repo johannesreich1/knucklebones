@@ -40,7 +40,8 @@ export interface Ask {
   /** Explicit opener for touch flows, where tapping a button need not focus it. */
   restoreFocus?: HTMLElement | null;
   /* an optional third path. It stays quiet like the trailing answer and runs
-     only after the card has dismissed and resolved as "no" to its caller. */
+     only after the card has dismissed and resolved as cancel (false through
+     the compatibility wrapper) to its caller. */
   alternate?: AskAction;
 }
 
@@ -65,7 +66,9 @@ function askElement<T extends HTMLElement = HTMLElement>(selector: string): T {
   return build().querySelector(selector) as T;
 }
 
-let settle: ((ok: boolean) => void) | null = null;
+export type AskOutcome = 'confirm' | 'cancel' | 'dismissed' | 'replaced';
+
+let settle: ((outcome: AskOutcome) => void) | null = null;
 let activeAsk: Ask | null = null;
 let activeSheet: Sheet | null = null;
 
@@ -84,26 +87,29 @@ function repaintAskCopy(spec: Ask): void {
   askElement('#askCheckText').textContent = spec.check !== undefined ? resolveText(spec.check) : '';
 }
 
-function resolveAsk(ok: boolean): void {
+function resolveAsk(outcome: AskOutcome): void {
   activeAsk = null;
   const finish = settle;
   settle = null;
-  finish?.(ok);
+  finish?.(outcome);
 }
 
-function answer(ok: boolean, restoreOpener = !ok): void {
+function answer(
+  outcome: AskOutcome,
+  restoreOpener = outcome === 'cancel' || outcome === 'dismissed',
+): void {
   const sheet = activeSheet;
   activeSheet = null;
-  resolveAsk(ok);
+  resolveAsk(outcome);
   sheet?.close(restoreOpener);
 }
 
-/* Resolves TRUE when the question is answered yes. Never rejects: a dismissed
-   question is a no, which is the answer that changes nothing. */
-export function ask(spec: Ask): Promise<boolean> {
-  /* a question already on screen is answered NO before the next one opens —
-     leaving a stale promise unsettled would hang whatever awaited it */
-  if (activeSheet || settle) answer(false);
+/** Detailed ownership result for callers that must distinguish a player's NO
+ * from another component replacing the one shared sheet. Never rejects. */
+export function askOutcome(spec: Ask): Promise<AskOutcome> {
+  /* A newer question owns the room. Resolve the retired caller distinctly so
+     it cannot mistake replacement for the player's cancel and reopen itself. */
+  if (activeSheet || settle) answer('replaced');
 
   const content = build();
   const yes = askElement<HTMLButtonElement>('#btnAskYes');
@@ -138,15 +144,15 @@ export function ask(spec: Ask): Promise<boolean> {
   yes.disabled = spec.check !== undefined;
   box.onchange = () => { yes.disabled = spec.check !== undefined && !box.checked; };
 
-  yes.onclick = () => { if (yes.disabled) return; Sfx.tap(); answer(true); };
+  yes.onclick = () => { if (yes.disabled) return; Sfx.tap(); answer('confirm'); };
   alternate.onclick = action ? () => {
     Sfx.tap();
-    answer(false);
+    answer('cancel');
     action.run();
   } : null;
-  no.onclick = () => { Sfx.tap(); answer(false); };
+  no.onclick = () => { Sfx.tap(); answer('cancel'); };
 
-  const pending = new Promise<boolean>((resolve) => { settle = resolve; });
+  const pending = new Promise<AskOutcome>((resolve) => { settle = resolve; });
   let sheet!: Sheet;
   sheet = showSheet({
     content,
@@ -157,14 +163,15 @@ export function ask(spec: Ask): Promise<boolean> {
     repaintLocale: () => {
       if (activeAsk === spec) repaintAskCopy(spec);
     },
-    /* A sheet gesture is a no. Let the shared sheet finish its own exit flight;
-       onClose is the final fallback for a sheet replaced by another caller. */
+    /* A sheet gesture is a player dismissal. Let the shared sheet finish its
+       own exit flight; onClose is the final fallback for programmatic
+       replacement by another caller. */
     onDismiss: () => {
-      if (activeSheet === sheet) resolveAsk(false);
+      if (activeSheet === sheet) resolveAsk('dismissed');
     },
     onClose: () => {
       if (activeSheet === sheet) activeSheet = null;
-      if (activeAsk === spec) resolveAsk(false);
+      if (activeAsk === spec) resolveAsk('replaced');
     },
   });
   /* Keep the stable public hook while changing its implementation. Existing
@@ -176,8 +183,16 @@ export function ask(spec: Ask): Promise<boolean> {
   return pending;
 }
 
-/* Escape and any other global dismissal answers no. */
+/* Boolean compatibility for ordinary questions: only the affirmative answer
+   is true; cancel, dismissal, and replacement all preserve existing callers'
+   established false result. */
+export async function ask(spec: Ask): Promise<boolean> {
+  return await askOutcome(spec) === 'confirm';
+}
+
+/* Escape and any other global dismissal are distinct in the detailed API and
+   remain false through the compatibility wrapper. */
 export function dismissAsk(): void {
   if (!activeSheet) return;
-  answer(false);
+  answer('dismissed');
 }

@@ -1,12 +1,13 @@
 async function probeIdentityOfferOrder(page) {
   await page.evaluate(() => new Promise((resolve) =>
     requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  return page.evaluate(() => {
+  const geometry = await page.evaluate(() => {
     const bounds = (selector) => {
       const element = document.querySelector(selector);
       if (!element || !element.getClientRects().length) return null;
       const box = element.getBoundingClientRect();
-      return { top: +box.top.toFixed(2), bottom: +box.bottom.toFixed(2) };
+      return { top: +box.top.toFixed(2), bottom: +box.bottom.toFixed(2),
+               height: +box.height.toFixed(2) };
     };
     return {
       facts: bounds('#onAccount .facts'),
@@ -18,10 +19,39 @@ async function probeIdentityOfferOrder(page) {
         .map((row) => {
           const box = row.getBoundingClientRect();
           return { top: +box.top.toFixed(2), bottom: +box.bottom.toFixed(2),
+                   height: +box.height.toFixed(2),
                    opponent: row.querySelector('.nm')?.textContent ?? '' };
         }),
     };
   });
+  await page.locator('#btnHistory').scrollIntoViewIfNeeded();
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(resolve)));
+  const hitArea = await page.evaluate(() => {
+    const history = document.getElementById('btnHistory');
+    if (!history) return null;
+    const box = history.getBoundingClientRect();
+    const ownsPoint = (y) => {
+      const target = document.elementFromPoint(box.left + box.width / 2, y);
+      return target === history || (!!target && history.contains(target));
+    };
+    let top = box.top;
+    let bottom = box.bottom;
+    for (let y = box.top - .5; y >= box.top - 10; y -= .5) {
+      if (!ownsPoint(y)) break;
+      top = y;
+    }
+    for (let y = box.bottom + .5; y <= box.bottom + 10; y += .5) {
+      if (!ownsPoint(y)) break;
+      bottom = y;
+    }
+    return {
+      effectiveHitHeight: +(bottom - top).toFixed(2),
+      hitAbove: ownsPoint(box.top - 2),
+      hitBelow: ownsPoint(box.bottom + 2),
+    };
+  });
+  return { ...geometry,
+    history: geometry.history && hitArea ? { ...geometry.history, ...hitArea } : geometry.history };
 }
 
 const precedes = (first, second) => !!first && !!second && first.bottom <= second.top;
@@ -31,6 +61,16 @@ const precedes = (first, second) => !!first && !!second && first.bottom <= secon
 const NEWEST_FIRST = ['NovaComet992', 'ZestyPixel950', 'BoldRaven393'];
 const dealsNewestFirst = (order) =>
   order?.recent.map((row) => row.opponent).join() === NEWEST_FIRST.join();
+const hasUnifiedHistoryGeometry = (order) => {
+  if (!order?.history || order.recent?.length !== 3) return false;
+  const rowGap = order.recent[1].top - order.recent[0].bottom;
+  const historyGap = order.history.top - order.recent[2].bottom;
+  return order.recent.every((row) => Math.abs(row.height - order.history.height) <= .5)
+    && Math.abs(historyGap - rowGap) <= .5
+    && order.history.effectiveHitHeight >= 44
+    && order.history.hitAbove
+    && order.history.hitBelow;
+};
 
 async function probeAccountFooter(page) {
   /* Exercise the member cut from the shared guest fixture: the backend/session
@@ -95,6 +135,9 @@ export async function runAccountLifecycleScenarios(suite) {
     && precedes(offerOrder.duels, offerOrder.recent[0])
     && precedes(offerOrder.recent[2], offerOrder.history),
   'profile identity offers, PAST DUELS and the history door are out of order', offerOrder);
+  check(hasUnifiedHistoryGeometry(offerOrder),
+    'the full-history door did not match the duel row height and gap with a larger invisible hit area',
+    offerOrder);
 
   /* THREE ON EVERY DEVICE (user call 2026-08-28). The strip used to be trimmed
      row by row against the page, so the shortest phone in the suite is exactly
@@ -106,6 +149,9 @@ export async function runAccountLifecycleScenarios(suite) {
     && dealsNewestFirst(shortDuels.probeResult)
     && precedes(shortDuels.probeResult.duels, shortDuels.probeResult.recent[0]),
   'a short device is served fewer than the three newest duels', shortDuels.probeResult);
+  check(hasUnifiedHistoryGeometry(shortDuels.probeResult),
+    'the compact profile history door lost the shared row geometry or invisible hit area',
+    shortDuels.probeResult);
 
   // 1c · the named player: the claim is spent, the card is GONE — not
   // disabled, not re-offered. The headline is all that remains of the name UI.

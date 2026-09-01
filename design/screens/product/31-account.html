@@ -78,7 +78,7 @@
            door it summarises rather than trailing it. The rows are showHistory's
            own (historyRow) — one row shape, so the list and this summary of it
            cannot drift. -->
-      <section class="accsec">
+      <section class="accsec" id="accRecentBox">
         <div class="acchead"><b>PAST DUELS</b></div>
         <div class="lb minihist">
           <div class="row history-row win"><span class="hres">W</span><span class="nm">NovaComet992</span><span class="hsc">47–31</span><span class="hd">+21</span><span class="hwhen">21 Aug</span></div>
@@ -86,7 +86,11 @@
           <div class="row history-row draw"><span class="hres">D</span><span class="nm">BoldRaven393</span><span class="hsc">29–29</span><span class="hd">+12</span><span class="hwhen">19 Aug</span></div>
         </div>
       </section>
-      <button class="histrow">Full match history <b>10 games ›</b></button>
+      <!-- The door is the FOURTH visual history row: the same 39px painted
+           height and 5px gap as the three summaries. Production grows only
+           its invisible hit area to 44px, so touch comfort does not make the
+           final row look heavier than the records above it. -->
+      <button class="histrow" id="btnHistory">Full match history <b>10 games ›</b></button>
       <!-- the full month, centred and low: "Member since August 2026". It is
            blank for a guest — their account lives on this device only, so the
            line would be a promise nobody made — which is why the app's rule

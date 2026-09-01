@@ -70,7 +70,7 @@ function applePorts(
   registration: boolean | 'throws' = true,
   /* Answered YES by default, so every case written before this port existed
      behaves exactly as it did. The cases that care pass their own answer. */
-  confirmGuest: boolean = true,
+  confirmGuest: boolean | null = true,
 ) {
   const registered: string[] = [];
   const asked: number[] = [];
@@ -256,24 +256,45 @@ check(!/result\.(?:user|email|givenName|familyName|realUserStatus)\b/.test(ident
 {
   const guestAuth = fakeAppleAuth({ guest: true });
   const declined = applePorts('ios', iosPlugin, guestAuth.auth, ['n1'], true, false);
-  const cancelled = await createAppleIdentity(declined.ports).restore();
-  check(cancelled === null && declined.asked.length === 1
-    && guestAuth.calls.signIn.length === 0,
+  const declinedSettled: boolean[] = [];
+  const cancelled = await createAppleIdentity(declined.ports).restore({
+    nestedSheetSettled: (accepted) => declinedSettled.push(accepted),
+  });
+  check(cancelled === '' && declined.asked.length === 1
+    && declinedSettled.join(',') === 'false' && guestAuth.calls.signIn.length === 0,
   'a guest declining the warning was signed in anyway, losing the run they kept');
 
   const guestAuth2 = fakeAppleAuth({ guest: true });
   const accepted = applePorts('ios', iosPlugin, guestAuth2.auth, ['n2'], true, true);
-  await createAppleIdentity(accepted.ports).restore();
-  check(accepted.asked.length === 1 && guestAuth2.calls.signIn.length === 1,
+  const acceptedSettled: boolean[] = [];
+  await createAppleIdentity(accepted.ports).restore({
+    nestedSheetSettled: (answer) => acceptedSettled.push(answer),
+  });
+  check(accepted.asked.length === 1 && acceptedSettled.join(',') === 'true'
+    && guestAuth2.calls.signIn.length === 1,
     'a guest who accepted the warning was not signed in');
+
+  const guestAuth3 = fakeAppleAuth({ guest: true });
+  const replaced = applePorts('ios', iosPlugin, guestAuth3.auth, ['n-replaced'], true, null);
+  const replacedSettled: boolean[] = [];
+  const abandoned = await createAppleIdentity(replaced.ports).restore({
+    nestedSheetSettled: (answer) => replacedSettled.push(answer),
+  });
+  check(abandoned === '' && replacedSettled.length === 0
+    && guestAuth3.calls.signIn.length === 0,
+  'a replaced guest warning continued or asked AUTH to reclaim the newer sheet');
 
   /* A REAL ACCOUNT IS NOT QUESTIONED. There is nothing to lose signing back
      into the account you already are, and a question there would read as a
      threat to the very progress it is protecting. */
   const memberAuth = fakeAppleAuth();
   const member = applePorts('ios', iosPlugin, memberAuth.auth, ['n3']);
-  await createAppleIdentity(member.ports).restore();
-  check(member.asked.length === 0 && memberAuth.calls.signIn.length === 1,
+  const memberSettled: boolean[] = [];
+  await createAppleIdentity(member.ports).restore({
+    nestedSheetSettled: (answer) => memberSettled.push(answer),
+  });
+  check(member.asked.length === 0 && memberSettled.length === 0
+    && memberAuth.calls.signIn.length === 1,
     'a returning account was warned about losing a guest run it does not have');
 }
 
