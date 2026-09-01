@@ -6,6 +6,13 @@
 // itself (design/build.mjs, the ico token) instead of carrying transcriptions —
 // the HUD's button had already been copied into three cards by hand.
 const PATHS: Record<string, string> = {
+  /* The selected play mark (design option 01): one canted die with three
+     pips. Unlike a generic triangle, it belongs to this game's language and
+     still reads as dice at the 25px size used by primary actions. */
+  play: '<g transform="rotate(-8 12 12)"><rect x="4.5" y="4.5" width="15" height="15" rx="3.4"/>'
+    + '<circle cx="8.5" cy="8.5" r="1.25" fill="currentColor" stroke="none"/>'
+    + '<circle cx="12" cy="12" r="1.25" fill="currentColor" stroke="none"/>'
+    + '<circle cx="15.5" cy="15.5" r="1.25" fill="currentColor" stroke="none"/></g>',
   /* A doorway with an arrow leaving it: the way OUT of the match. This was a
      sliders glyph while the button opened Settings, and it kept saying
      "adjust something" long after the button had become the one question the

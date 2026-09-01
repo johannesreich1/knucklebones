@@ -246,6 +246,18 @@ async function inspectRankedResult(suite, page, label) {
         clientWidth: element.clientWidth,
       }];
     }));
+  result.actions = await page.evaluate(() => ['btnAgain', 'btnEndQuiet'].map((id) => {
+    const button = document.getElementById(id);
+    const copy = button?.querySelector(':scope > .btn-label');
+    const icon = button?.querySelector(':scope > .btn-leading-icon:not([hidden])');
+    return {
+      id,
+      label: (copy?.textContent ?? button?.textContent ?? '').trim(),
+      icon: icon?.getAttribute('data-icon') ?? null,
+      iconBeforeLabel: !!icon && !!copy
+        && [...button.children].indexOf(icon) < [...button.children].indexOf(copy),
+    };
+  }));
   checkSurface(suite.check, `ranked-result-${label}`, result,
     { allowScrollable: true, targets: false });
   await checkReachableTargets(page, suite.check, `ranked-result-${label}`,
@@ -327,6 +339,12 @@ async function runViewport(suite, locale, viewport) {
   check(result.items.find(({ selector }) => selector === '#endTitle')?.text
     === RESOURCES[locale.id].game.result.victory,
   `${label} ranked result title did not use its locale`, result.items);
+  check(result.actions[0]?.label === RESOURCES[locale.id].online.result.nextDuel
+    && result.actions[0].icon === 'play' && result.actions[0].iconBeforeLabel,
+  `${label} ranked Next duel lost its selected leading die or localized label`, result.actions);
+  check(result.actions[1]?.label === RESOURCES[locale.id].common.actions.home
+    && result.actions[1].icon === null,
+  `${label} ranked Home changed label or received a play icon`, result.actions);
   await context.close();
   return {
     profileItems: account.content.items.length,

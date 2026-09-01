@@ -24,7 +24,13 @@ import {
 } from './endscreen-plates.ts';
 import { repaintShareLabel, resetShare, setShareText, shareResult } from './endscreen-share.ts';
 
-export interface EndAction { label: string; run: () => void }
+export interface EndAction {
+  label: string;
+  /* Semantic, never inferred from translated copy: #btnAgain is also the
+     tutorial's Finish action, which deliberately has no play die. */
+  icon?: 'play';
+  run: () => void;
+}
 
 export interface EndSpec {
   outcome: 'win' | 'lose' | 'draw';
@@ -205,7 +211,14 @@ export function closeEnd(): void {
 function label(sel: string, a?: EndAction): void {
   const b = $(sel) as HTMLButtonElement;
   b.hidden = !a;
-  if (a) b.textContent = a.label;
+  const play = a?.icon === 'play';
+  b.classList.toggle('play-cta', play);
+  const icon = b.querySelector<HTMLElement>(':scope > .btn-leading-icon');
+  if (icon) icon.hidden = !play;
+  if (!a) return;
+  const copy = b.querySelector<HTMLElement>(':scope > .btn-label');
+  if (copy) copy.textContent = a.label;
+  else b.textContent = a.label;
 }
 
 /* restart a CSS animation by removing the class and forcing a reflow */

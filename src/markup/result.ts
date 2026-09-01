@@ -1,3 +1,5 @@
+import { chromeIcon } from '../ui/chromeicons.ts';
+
 /* Its own module because ui/endscreen.ts is this skeleton's one driver, and
    markup.ts is left holding the menu screens and the order every screen
    sits in. What the slots below are FOR is the comment that ships with them. */
@@ -31,7 +33,7 @@ export const RESULT_MARKUP = `<!-- END — the ONE result screen, local and rank
        the action stack. The stack keeps its own anchor: #btnAgain's auto
        margin, so the cluster stays centered between title and actions. -->
   <button class="linkbtn" id="btnShare" hidden>Share result</button>
-  <button class="btn primary" id="btnAgain">Next duel</button>
+  <button class="btn primary" id="btnAgain"><span class="btn-leading-icon" data-icon="play" aria-hidden="true" hidden>${chromeIcon('play', 25)}</span><span class="btn-label">Next duel</span></button>
   <!-- ONE quiet way on, and a real button rather than a text link (user call)
        — in the small cut, because a way out shouldn't stand as tall as NEXT
        DUEL. What it says and where it goes come from the spec: Home after a

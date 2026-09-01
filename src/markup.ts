@@ -13,6 +13,7 @@ import {
 } from './markup/legal.ts';
 import { OVERLAY_CARDS_MARKUP } from './markup/overlay-cards.ts';
 import { RESULT_MARKUP } from './markup/result.ts';
+import { chromeIcon } from './ui/chromeicons.ts';
 
 export const MARKUP = `${BOARD_MARKUP}
 
@@ -29,7 +30,7 @@ export const MARKUP = `${BOARD_MARKUP}
     <!-- the plate IS the account: ring, avatar, name and points, docked on the
          button that moves them (design 13d). boot's refreshHomeChip fills it. -->
     <button class="pplate anon" id="homeChip">NOT SIGNED IN</button>
-    <button class="btn primary" id="btnOnline" data-i18n="game:home.playRanked">Play ranked match</button>
+    <button class="btn primary play-cta" id="btnOnline"><span class="btn-leading-icon" data-icon="play" aria-hidden="true">${chromeIcon('play', 25)}</span><span class="btn-label" data-i18n="game:home.playRanked">Play ranked match</span></button>
     <div class="hrow">
       <button class="btn" id="btnBoardHome" data-i18n="game:home.ladder">Ladder</button>
       <button class="btn" id="btnSettingsHome" data-i18n="game:home.settings">Settings</button>

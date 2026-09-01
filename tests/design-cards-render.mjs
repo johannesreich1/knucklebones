@@ -58,6 +58,19 @@ check(!font.problem,
 
 const clipped = [], unexpanded = [];
 let pilferStudy = null;
+const selectedPlayCards = new Map([
+  ['10-home-signed-in', 'Play ranked match'],
+  ['11-home-signed-out', 'Play ranked match'],
+  ['13d-homeid-plate', 'Play ranked match'],
+  ['52f-equip-lit-plate', 'Play ranked match'],
+  ['23-result', 'Next duel'],
+  ['23-result-defeat', 'Next duel'],
+  ['36d-endid-foe', 'Next duel'],
+  ['36f-endid-plates', 'Next duel'],
+  ['41-end-local', 'Next duel'],
+  ['52h-equip-threshold', 'Next duel'],
+]);
+const playCtas = [], plainCtas = [];
 for (const f of files) {
   const head = readFileSync(join(dist, f), 'utf8').split('\n', 1)[0];
   const w = +(head.match(/width=(\d+)/)?.[1] || 0);
@@ -78,6 +91,59 @@ for (const f of files) {
     .replace(/<!--[\s\S]*?-->/g, ' ').replace(/\/\*[\s\S]*?\*\//g, ' ');
   const left = body.match(/\{\{[^}\s]+\}\}/g);
   if (left) unexpanded.push({ card: f, tokens: [...new Set(left)] });
+
+  const basename = f.replace(/--(?:sm|max|tab)(?=\.html$)/u, '').replace(/\.html$/u, '');
+  const expectedLabel = selectedPlayCards.get(basename);
+  if (expectedLabel) {
+    playCtas.push(await page.evaluate(({ card, expected }) => {
+      const button = document.querySelector('.btn.primary.play-cta');
+      const icon = button?.querySelector(':scope > .btn-leading-icon:not([hidden])');
+      const label = button?.querySelector(':scope > .btn-label');
+      const svg = icon?.querySelector('svg');
+      const die = svg?.querySelector('rect');
+      const pips = [...(svg?.querySelectorAll('circle') ?? [])];
+      const glint = button?.getAnimations({ subtree: true })
+        .find((animation) => animation.animationName === 'primaryGlint');
+      const iconRect = icon?.getBoundingClientRect();
+      const labelRect = label?.getBoundingClientRect();
+      const buttonRect = button?.getBoundingClientRect();
+      return {
+        card,
+        expected,
+        label: label?.textContent?.trim() ?? '',
+        buttonText: button?.textContent?.trim() ?? '',
+        iconBeforeLabel: !!button && !!icon && !!label
+          && [...button.children].indexOf(icon) < [...button.children].indexOf(label),
+        viewBox: svg?.getAttribute('viewBox') ?? null,
+        cant: svg?.querySelector('g')?.getAttribute('transform') ?? null,
+        die: die ? [die.getAttribute('x'), die.getAttribute('y'), die.getAttribute('width'),
+          die.getAttribute('height'), die.getAttribute('rx')] : null,
+        pips: pips.map((pip) => [pip.getAttribute('cx'), pip.getAttribute('cy'), pip.getAttribute('r')]),
+        size: iconRect ? [iconRect.width, iconRect.height] : null,
+        gap: iconRect && labelRect ? +(labelRect.left - iconRect.right).toFixed(2) : null,
+        centreError: buttonRect && iconRect && labelRect
+          ? +((Math.min(iconRect.left, labelRect.left) + Math.max(iconRect.right, labelRect.right)) / 2
+            - (buttonRect.left + buttonRect.width / 2)).toFixed(2)
+          : null,
+        duration: glint?.effect?.getTiming().duration ?? null,
+        sheen: button ? getComputedStyle(button, '::after').backgroundImage : '',
+        secondaryIcons: document.querySelectorAll('.btn:not(.play-cta) > .btn-leading-icon:not([hidden])').length,
+      };
+    }, { card: f, expected: expectedLabel }));
+  } else if (f === '00-foundations.html' || f === '40-local-menu.html') {
+    plainCtas.push(await page.evaluate((card) => {
+      const button = document.querySelector('.btn.primary');
+      const glint = button?.getAnimations({ subtree: true })
+        .find((animation) => animation.animationName === 'primaryGlint');
+      return {
+        card,
+        playClass: button?.classList.contains('play-cta') ?? false,
+        icon: !!button?.querySelector(':scope > .btn-leading-icon:not([hidden])'),
+        duration: glint?.effect?.getTiming().duration ?? null,
+        sheen: button ? getComputedStyle(button, '::after').backgroundImage : '',
+      };
+    }, f));
+  }
 
   /* PI5's source-die visibility beat and waiting lean share one element. A
      more-specific animation shorthand once silently replaced the lean, so the
@@ -102,6 +168,8 @@ await browser.close();
 out.clipped = clipped;
 out.unexpanded = unexpanded;
 out.pilferStudy = pilferStudy;
+out.playCtas = playCtas;
+out.plainCtas = plainCtas;
 check(clipped.length === 0, 'design cards taller than the frame the pane gives them', clipped);
 check(unexpanded.length === 0, 'design cards shipping an unexpanded {{token}} as copy', unexpanded);
 check(pilferStudy?.targetAnimations.split(',').map((name) => name.trim()).join(',') === 'pigone,pi5lean'
@@ -109,5 +177,24 @@ check(pilferStudy?.targetAnimations.split(',').map((name) => name.trim()).join('
     && pilferStudy?.gripInsets.every((inset) => inset === '0px')
     && pilferStudy?.gripRadius === '14px' && pilferStudy?.releaseLines === 0,
   'PI5 rendered without its waiting lean or retained the removed crossing line', pilferStudy);
+/* Six responsive screen cards emit four device sizes; the four focused
+   identity/study cards have one deliberately fixed comparison frame. */
+check(playCtas.length === 28
+    && playCtas.every((cta) => cta.label === cta.expected && cta.buttonText === cta.expected
+      && cta.iconBeforeLabel && cta.viewBox === '0 0 24 24'
+      && cta.cant === 'rotate(-8 12 12)'
+      && JSON.stringify(cta.die) === JSON.stringify(['4.5', '4.5', '15', '15', '3.4'])
+      && JSON.stringify(cta.pips) === JSON.stringify([
+        ['8.5', '8.5', '1.25'], ['12', '12', '1.25'], ['15.5', '15.5', '1.25'],
+      ])
+      && cta.size?.every((size) => size === 25) && cta.gap === 11
+      && Math.abs(cta.centreError) <= .5 && cta.duration === 4600
+      && cta.sheen.includes('0.21') && cta.secondaryIcons === 0),
+  'an active Home/result card drifted from the selected option-01 CTA', playCtas);
+check(plainCtas.length === 2 && plainCtas.every((cta) => !cta.playClass && !cta.icon
+    && cta.sheen.includes('0.15'))
+    && plainCtas.find((cta) => cta.card === '00-foundations.html')?.duration === null
+    && plainCtas.find((cta) => cta.card === '40-local-menu.html')?.duration === 5200,
+  'a generic or Offline primary card inherited the selected play treatment', plainCtas);
 
 console.log(JSON.stringify({ out, problems, errs }, null, 2));

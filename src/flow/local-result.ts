@@ -44,7 +44,7 @@ function localResultSpec(result: LocalResultSummary, actions: LocalResultActions
     meta: tutorial ? t('game', 'result.tutorialCompleteMeta') : undefined,
     again: tutorial
       ? { label: t('game', 'action.finish'), run: actions.finishTutorial }
-      : { label: t('game', 'action.nextDuel'), run: actions.nextDuel },
+      : { label: t('game', 'action.nextDuel'), icon: 'play', run: actions.nextDuel },
     quiet: tutorial
       ? undefined
       : { label: t('game', 'action.changeSetup'), run: actions.changeSetup },
