@@ -14,7 +14,7 @@
 :where(#kbroot) #dieStage.pop .die{animation:popin .3s cubic-bezier(.2,1.5,.4,1)}
 @keyframes popin{0%{transform:scale(.5) rotate(-30deg)}100%{transform:scale(1) rotate(0)}}
 :where(#kbroot) .status{font-size:11px;letter-spacing:.16em;font-weight:700;color:var(--dim);text-transform:uppercase;
-  min-height:14px;text-align:center;transition:color .2s}
+  min-height:14px;line-height:14px;text-align:center;transition:color .2s}
 :where(#kbroot) .status.me{color:var(--p1);text-shadow:0 0 12px rgba(var(--p1-rgb),.5)}
 :where(#kbroot) .status.ai{color:var(--p2);text-shadow:0 0 12px rgba(var(--p2-rgb),.5)}
 

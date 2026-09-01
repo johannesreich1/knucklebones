@@ -167,6 +167,8 @@
     }
 
     h1 .wash {
+      margin-block: -.1em;
+      padding-block: .1em;
       background: linear-gradient(105deg, var(--cyan), #ffffff 50%, var(--magenta));
       -webkit-background-clip: text;
       background-clip: text;
@@ -296,6 +298,8 @@
   <div class="error" id="error">The production game rendering did not initialize.</div>
 
   <script type="module">
+    import { localeLanguageTag } from '/src/i18n/locale.ts';
+
     const failSource = (error) => {
       console.error(error);
       document.body.classList.add('failed');
@@ -378,7 +382,7 @@
       throw error;
     }
     const runtimeLocale = localization.runtimeLocale;
-    if (!['en', 'de', 'fr'].includes(runtimeLocale)) {
+    if (!['en', 'pt', 'es', 'de', 'fr', 'it', 'pl', 'tr', 'id', 'ja', 'ko'].includes(runtimeLocale)) {
       const error = new Error(`Unsupported runtime locale ${JSON.stringify(runtimeLocale)} for ${localeId}`);
       failSource(error);
       throw error;
@@ -391,7 +395,8 @@
     document.documentElement.style.setProperty('--canvas-height', `${target.height}px`);
     document.documentElement.style.setProperty('--runtime-width', `${runtimeViewport.width}px`);
     document.documentElement.style.setProperty('--runtime-height', `${runtimeViewport.height}px`);
-    document.documentElement.lang = runtimeLocale;
+    const runtimeLanguageTag = localeLanguageTag(runtimeLocale);
+    document.documentElement.lang = runtimeLanguageTag;
     document.documentElement.style.setProperty('--accent', presentation.accent);
     document.documentElement.style.setProperty('--accent-rgb', presentation.accentRgb);
     document.getElementById('count').textContent = `${String(slideNumber).padStart(2, '0')} / ${String(manifest.slides.length).padStart(2, '0')}`;
@@ -659,8 +664,8 @@
       if (win.innerWidth !== runtimeViewport.width || win.innerHeight !== runtimeViewport.height) {
         throw new Error(`Runtime viewport is ${win.innerWidth}x${win.innerHeight}; expected ${runtimeViewport.width}x${runtimeViewport.height}`);
       }
-      if (win.document.documentElement.lang !== runtimeLocale) {
-        throw new Error(`Runtime language is ${win.document.documentElement.lang}; expected ${runtimeLocale}`);
+      if (win.document.documentElement.lang !== runtimeLanguageTag) {
+        throw new Error(`Runtime language is ${win.document.documentElement.lang}; expected ${runtimeLanguageTag}`);
       }
       if (shell.left < 0 || shell.top < 0 || shell.right > target.width + 1 || shell.bottom > target.height + 1
           || lines.some((line) => line.scrollWidth > document.getElementById('headline').clientWidth + 1)) {
@@ -674,7 +679,7 @@
       const i18n = await win.eval("import('/src/i18n/index.ts')");
       i18n.setLanguageOverride(runtimeLocale);
       runtimeT = i18n.t;
-      await waitFor(() => doc.documentElement.lang === runtimeLocale);
+      await waitFor(() => doc.documentElement.lang === runtimeLanguageTag);
       await doc.fonts.ready;
       const captureOverrides = doc.createElement('style');
       captureOverrides.id = 'app-store-capture-overrides';
@@ -797,8 +802,9 @@
             || doc.querySelector('#botBoard .col[data-col="1"] .dying')) {
           throw new Error('WARD strike-contact fixture did not preserve the protected pair');
         }
-        if (doc.getElementById('tagTop').textContent.trim() !== 'NORMAL') {
-          throw new Error('WARD capture is not showing AI NORMAL');
+        if (doc.getElementById('tagTop').textContent.trim()
+            !== runtimeT('game', 'difficulty.normal')) {
+          throw new Error('WARD capture is not showing localized AI Normal');
         }
         k.fit();
       } else if (slide.scene === 'sunder') {
@@ -812,8 +818,9 @@
         });
         await k.spells.cast('sunder', -1);
         await waitFor(() => doc.querySelectorAll('.sunder-doomed').length === 4);
-        if (doc.getElementById('tagTop').textContent.trim() !== 'NORMAL') {
-          throw new Error('SUNDER capture is not showing AI NORMAL');
+        if (doc.getElementById('tagTop').textContent.trim()
+            !== runtimeT('game', 'difficulty.normal')) {
+          throw new Error('SUNDER capture is not showing localized AI Normal');
         }
         k.fit();
       } else if (slide.scene === 'bounty') {

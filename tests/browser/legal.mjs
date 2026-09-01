@@ -1,7 +1,7 @@
 // Draft keeps public routes and Home navigation closed while Settings/auth show
 // the owner-approved placeholder doors. This matrix supplies one synthetic
 // opener to drive all four real in-app documents; a complete test-only fixture
-// supplies the 24 static pages. Both paths run at every locale/page/mobile viewport.
+// supplies the 44 static pages. Both paths run at every locale/page/mobile viewport.
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
@@ -208,9 +208,11 @@ try {
           const article = overlay.querySelector('.legal-document');
           const title = overlay.querySelector('[data-legal-title]');
           const titleStyle = getComputedStyle(title);
-          const titleLineHeight = titleStyle.lineHeight === 'normal'
-            ? parseFloat(titleStyle.fontSize) * 1.2
-            : parseFloat(titleStyle.lineHeight);
+          const titleRange = document.createRange();
+          titleRange.selectNodeContents(title);
+          const titleLines = new Set([...titleRange.getClientRects()]
+            .filter((rect) => rect.width > .5)
+            .map((rect) => rect.top.toFixed(2))).size;
           const bodyRect = body.getBoundingClientRect();
           const textOverflow = [];
           for (const element of body.querySelectorAll('h1,h2,p,li,a,button')) {
@@ -247,7 +249,7 @@ try {
             legalPage,
             title: title.textContent,
             titleTransform: titleStyle.textTransform,
-            titleLines: title.getBoundingClientRect().height / titleLineHeight,
+            titleLines,
             titleFits: title.scrollWidth <= title.clientWidth + 1,
             horizontal: body.scrollWidth - body.clientWidth,
             textOverflow,

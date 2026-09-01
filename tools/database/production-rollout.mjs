@@ -128,6 +128,12 @@ const ROLLOUTS = Object.freeze({
         file: 'supabase/migrations/20260825161016_expand_player_settings_locales.sql',
         sha256: '48590f58f81fb75db0218da02dea18600564663d5a82275d51f5ab6c853482f3',
       }),
+      Object.freeze({
+        version: '20260901074059',
+        name: 'expand_player_settings_locales_11',
+        file: 'supabase/migrations/20260901074059_expand_player_settings_locales_11.sql',
+        sha256: '42ddfd5988f6589127a6c891f52d29db79236182366c1427ef8335eaa36beb24',
+      }),
     ]),
   }),
   'match-command-retention': Object.freeze({
@@ -342,12 +348,22 @@ select
   coalesce((select convalidated
                     and pg_get_constraintdef(oid, true) in (
                       $original$CHECK (locale IS NULL OR (locale = ANY (ARRAY['en'::text, 'de'::text, 'fr'::text])))$original$,
+                      $six$CHECK (locale IS NULL OR (locale = ANY (ARRAY['en'::text, 'pt'::text, 'es'::text, 'de'::text, 'fr'::text, 'it'::text])))$six$,
                       $expanded$CHECK (locale IS NULL OR (locale = ANY (ARRAY[${SQL_LOCALE_TEXT_VALUES}])))$expanded$
                     )
               from pg_constraint
              where conrelid = to_regclass('public.player_settings')
                and conname = 'player_settings_locale_check'
                and contype = 'c'), false) as locale_constraint,
+  coalesce((select convalidated
+                    and pg_get_constraintdef(oid, true) in (
+                      $six$CHECK (locale IS NULL OR (locale = ANY (ARRAY['en'::text, 'pt'::text, 'es'::text, 'de'::text, 'fr'::text, 'it'::text])))$six$,
+                      $expanded$CHECK (locale IS NULL OR (locale = ANY (ARRAY[${SQL_LOCALE_TEXT_VALUES}])))$expanded$
+                    )
+              from pg_constraint
+             where conrelid = to_regclass('public.player_settings')
+               and conname = 'player_settings_locale_check'
+               and contype = 'c'), false) as locale_six,
   coalesce((select convalidated
                     and pg_get_constraintdef(oid, true) =
                       $expanded$CHECK (locale IS NULL OR (locale = ANY (ARRAY[${SQL_LOCALE_TEXT_VALUES}])))$expanded$
@@ -2740,6 +2756,7 @@ async function auditPlayerSettings(plan, rollout) {
     ].every((value) => value === true),
     localeColumn: row.locale_column === true && row.locale_shape === true,
     localeConstraint: row.locale_constraint === true,
+    localeSix: row.locale_six === true,
     localeExpanded: row.locale_expanded === true,
     localeComment: row.locale_comment === true,
     localeValues: false,

@@ -1,0 +1,63 @@
+import type { CatalogShape } from '../../catalog-shape.ts';
+import { enCommon } from '../en/common.ts';
+
+export const idCommon = {
+  app: {
+    name: 'KNUCKLEBONES',
+    edition: 'Edisi Neon',
+    tagline: 'Duel dadu berperingkat',
+    portraitOnly: 'MODE POTRET SAJA',
+    rotatePortrait: 'Putar perangkat ke posisi tegak untuk melanjutkan permainan.',
+  },
+  actions: {
+    back: 'Kembali',
+    cancel: 'Batal',
+    close: 'Tutup',
+    continue: 'Lanjutkan',
+    done: 'Selesai',
+    finish: 'Akhiri',
+    home: 'Beranda',
+    next: 'Berikutnya',
+    notNow: 'Nanti saja',
+    retry: 'Coba lagi',
+    save: 'Simpan',
+  },
+  states: {
+    on: 'AKTIF',
+    off: 'NONAKTIF',
+    none: 'TANPA',
+    random: 'ACAK',
+    loading: 'Memuat…',
+    unavailable: 'Tidak tersedia',
+  },
+  people: {
+    you: 'ANDA',
+    opponent: 'LAWAN',
+    ai: 'AI',
+    playerOne: 'PEMAIN 1',
+    playerTwo: 'PEMAIN 2',
+    guest: 'TAMU',
+  },
+  record: {
+    win: 'M',
+    loss: 'K',
+    draw: 'S',
+    wins_one: '{{count}} menang',
+    wins_other: '{{count}} menang',
+    losses_one: '{{count}} kalah',
+    losses_other: '{{count}} kalah',
+    draws_one: '{{count}} seri',
+    draws_other: '{{count}} seri',
+  },
+  units: {
+    secondShort: 'DTK',
+    points_one: '{{count}} poin',
+    points_other: '{{count}} poin',
+    games_one: '{{count}} pertandingan',
+    games_other: '{{count}} pertandingan',
+    castsLeft_one: '{{count}} penggunaan tersisa',
+    castsLeft_other: '{{count}} penggunaan tersisa',
+  },
+  build: 'versi {{tag}}',
+  versus: 'VS',
+} satisfies CatalogShape<typeof enCommon>;

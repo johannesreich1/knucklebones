@@ -13,7 +13,10 @@ import {
   generateLegalPageFiles,
   generatedLegalPaths,
 } from '../src/legal/static-pages.ts';
-import { LEGAL_PAGE_IDS } from '../src/legal/types.ts';
+import {
+  LEGAL_PAGE_IDS,
+  type LocalizedLegalFact,
+} from '../src/legal/types.ts';
 import {
   LEGAL_AUTH_NAV_MARKUP,
   LEGAL_HOME_NAV_MARKUP,
@@ -44,6 +47,7 @@ check(navigationPages(LEGAL_SETTINGS_NAV_MARKUP).join() === 'imprint,privacy'
 const expectedGermanyNames = {
   en: 'Germany', pt: 'Alemanha', es: 'Alemania',
   de: 'Deutschland', fr: 'Allemagne', it: 'Germania',
+  pl: 'Niemcy', tr: 'Almanya', id: 'Jerman', ja: 'ドイツ', ko: '독일',
 } as const;
 for (const { id } of LOCALE_REGISTRY) {
   const imprint = renderLegalDocumentBody(legalDocument(id, 'imprint', LEGAL_RELEASE.facts));
@@ -60,6 +64,33 @@ check(draftRejected, 'ready assertion accepted the draft configuration');
 
 const fixture = completeLegalFixture();
 assertLegalPublicationReady(fixture);
+const unicodeEmailFixture = {
+  ...fixture,
+  facts: { ...fixture.facts, publicEmail: 'müller@example.test' },
+};
+check(legalPublicationProblems(unicodeEmailFixture).includes('publicEmail is missing or invalid'),
+  'ready gate accepted an email address the renderer cannot link exactly');
+const fixtureEmail = fixture.facts.publicEmail;
+check(typeof fixtureEmail === 'string', 'complete legal fixture has no public email');
+for (const { id } of LOCALE_REGISTRY) {
+  const mailtoTargets = LEGAL_PAGE_IDS.flatMap((page) =>
+    [...renderLegalDocumentBody(legalDocument(id, page, fixture.facts))
+      .matchAll(/href="mailto:([^"]+)"/gu)].map((match) => match[1]));
+  check(mailtoTargets.length > 0,
+    `${id} legal documents did not render the fixture email`);
+  check(mailtoTargets.every((target) => target === fixtureEmail),
+    `${id} legal documents absorbed localized prose into a mailto target`);
+}
+const fixtureUrl = 'https://privacy.example.test/account-deletion/ownership-verification';
+const localizedUrl = Object.fromEntries(LOCALE_REGISTRY.map(({ id }) => [id, fixtureUrl])) as LocalizedLegalFact;
+for (const { id } of LOCALE_REGISTRY) {
+  const privacy = renderLegalDocumentBody(legalDocument(id, 'privacy', {
+    ...fixture.facts,
+    cloudflareProcessingScope: localizedUrl,
+  }));
+  check(privacy.includes(`<a href="${fixtureUrl}">${fixtureUrl}</a>`),
+    `${id} privacy document absorbed localized prose into an HTTPS target`);
+}
 const homeNavigation = legalNavigationMarkup(fixture, {
   pages: LEGAL_PAGE_IDS,
   className: 'viewfoot legal-home-nav',
@@ -158,7 +189,7 @@ expectContentRejection({
 
 const files = generateLegalPageFiles(fixture);
 const expectedCount = LOCALE_REGISTRY.length * LEGAL_PAGE_IDS.length;
-check(expectedCount === 24, `supported locale/page matrix is ${expectedCount}, expected 24`);
+check(expectedCount === 44, `supported locale/page matrix is ${expectedCount}, expected 44`);
 check(files.size === expectedCount, `synthetic ready build emitted ${files.size} pages`);
 check(generatedLegalPaths(fixture).length === expectedCount,
   'service-worker route matrix differs from generated page matrix');

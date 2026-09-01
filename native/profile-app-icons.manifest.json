@@ -43,8 +43,8 @@
     },
     {
       "path": "src/styles/components/legal.css",
-      "bytes": 2040,
-      "sha256": "a4e3e4f980e063543b574ce74b131fc4d56ff3daa1c43f8e589b5ad241fa0c2f"
+      "bytes": 2088,
+      "sha256": "04be7e83d59d991878a68de6ccfd96c7a50f93c73c036c5a079ba208ff4c49b4"
     },
     {
       "path": "src/styles/components/library.css",
@@ -168,8 +168,8 @@
     },
     {
       "path": "src/styles/game/stage.css",
-      "bytes": 4771,
-      "sha256": "347e0289d5c23430296d510f9fc6c815ab12912bf1e86eadbc33b2cfd08079ed"
+      "bytes": 4788,
+      "sha256": "59194d654c5e178d5846f74f8e4d6d42bee0c339a6e023332a0283f38025d91e"
     },
     {
       "path": "src/styles/game/variants.css",
@@ -230,8 +230,8 @@
     },
     {
       "path": "native/ios/App/App/Info.plist",
-      "bytes": 2215,
-      "sha256": "6141e63be8cdb8b00857617098298f7c3699f40e5a992a9e51ccbac2e17e9e11"
+      "bytes": 2325,
+      "sha256": "70ea8d5d424c05b6a8b00512e1974c9c4a5848a0f495f58790c3d4d1e5af3b8f"
     },
     {
       "path": "native/plugins/appicon/ios/Sources/AppIconPlugin/AppIconPlugin.swift",

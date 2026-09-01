@@ -17,10 +17,11 @@
 :where(#kbroot) .legal-related{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 10px;
   width:100%;max-width:var(--w-col)}
 :where(#kbroot) .legal-related .linkbtn{display:inline-flex;align-items:center;justify-content:center;
-  min-height:44px;padding:8px}
+  min-width:44px;min-height:44px;padding:8px}
 :where(#kbroot) .legal-home-nav{flex-wrap:wrap;gap:2px 10px}
-:where(#kbroot) .legal-home-nav .linkbtn{display:inline-flex;align-items:center;min-height:44px;padding:8px}
+:where(#kbroot) .legal-home-nav .linkbtn{display:inline-flex;align-items:center;min-width:44px;min-height:44px;padding:8px}
 :where(#kbroot) .legal-page.on{z-index:100}
 :where(#kbroot) .legal-settings-nav,:where(#kbroot) .authlegal{display:flex;align-items:center;justify-content:center;
   flex-wrap:wrap;gap:2px 10px}
-:where(#kbroot) .legal-settings-nav .linkbtn,:where(#kbroot) .authlegal .linkbtn{padding:8px;min-height:44px}
+:where(#kbroot) .legal-settings-nav .linkbtn,:where(#kbroot) .authlegal .linkbtn{
+  min-width:44px;min-height:44px;padding:8px}

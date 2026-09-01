@@ -21,9 +21,10 @@ module KnucklebonesAppStore
       REJECTED
       DEVELOPER_REJECTED
     ].freeze
-    REQUIRED_LOCALES = %w[de-DE en-GB fr-FR].freeze
+    REQUIRED_LOCALES = %w[de-DE en-GB es-ES fr-FR id it ja ko pl pt-BR tr].freeze
     REQUIRED_DISPLAY_TYPES = %w[APP_IPAD_PRO_3GEN_129 APP_IPHONE_67].freeze
     AUTOMATIC_VERSION_LOCALIZATION_WAIT_SECONDS = 60
+    SCREENSHOT_PROCESSING_TIMEOUT_SECONDS = 900
 
     attr_reader :config, :manifest, :metadata
 
@@ -901,15 +902,15 @@ module KnucklebonesAppStore
       Spaceship::ConnectAPI::AppScreenshotSet.get(
         app_screenshot_set_id: id, includes: "appScreenshots"
       )
-    rescue Spaceship::UnexpectedResponse => error
-      raise error unless not_found_response?(error)
+    rescue StandardError => error
+      raise error unless not_found_response?(error) || transient_transport_error?(error)
       nil
     end
 
     def fetch_screenshot_if_visible(id)
       Spaceship::ConnectAPI.get_app_screenshot(app_screenshot_id: id).first
-    rescue Spaceship::UnexpectedResponse => error
-      raise error unless not_found_response?(error)
+    rescue StandardError => error
+      raise error unless not_found_response?(error) || transient_transport_error?(error)
       nil
     end
 
@@ -923,7 +924,22 @@ module KnucklebonesAppStore
       details.match?(/(?:\b409\b|CONFLICT)/i)
     end
 
-    def wait_complete!(id, seconds: 900)
+    def transient_transport_error?(error)
+      class_name = error.class.name.to_s
+      return true if %w[
+        EOFError
+        Errno::ECONNRESET
+        Errno::EPIPE
+        Faraday::ConnectionFailed
+        Net::OpenTimeout
+        Net::ReadTimeout
+      ].include?(class_name)
+      return false unless %w[Faraday::SSLError OpenSSL::SSL::SSLError].include?(class_name)
+
+      error.message.to_s.match?(/(?:unexpected eof|connection reset|closed connection|broken pipe)/i)
+    end
+
+    def wait_complete!(id, seconds: SCREENSHOT_PROCESSING_TIMEOUT_SECONDS)
       Timeout.timeout(seconds) do
         loop do
           shot = fetch_screenshot_if_visible(id)
@@ -952,7 +968,7 @@ module KnucklebonesAppStore
       raise SafetyError, "deleted screenshot #{id} is still visible after #{seconds} seconds"
     end
 
-    def wait_terminal_in_set!(set, id, seconds: 120)
+    def wait_terminal_in_set!(set, id, seconds: SCREENSHOT_PROCESSING_TIMEOUT_SECONDS)
       Timeout.timeout(seconds) do
         loop do
           fresh = wait_for_set!(set.id, "#{set.id}")

@@ -7,6 +7,11 @@ const GERMANY_NAMES: LocalizedLegalFact = Object.freeze({
   de: 'Deutschland',
   fr: 'Allemagne',
   it: 'Germania',
+  pl: 'Niemcy',
+  tr: 'Almanya',
+  id: 'Jerman',
+  ja: 'ドイツ',
+  ko: '독일',
 });
 
 /**

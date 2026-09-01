@@ -1,16 +1,18 @@
-# iOS App Store campaign — v5 decisions
+# iOS App Store campaign — v7 decisions
 
-**Decision date:** 2026-08-25
+**Decision date:** 2026-09-01
 **Status:** Approved for editable-draft synchronization; not approved for review submission
-**Output:** 36 localized portrait screenshots: 3 locales × 2 devices × 6 frames
-**Capture build:** `504c1c2f`
+**Output:** 132 localized portrait screenshots: 11 locales × 2 devices × 6 frames
+**Capture build:** `1873ec6d`
 
 This is the creative, fixture, localization, delivery, and truthfulness
-contract for the fifth campaign pass. It supersedes every earlier exported
+contract for the seventh campaign pass. It supersedes every earlier exported
 sequence. The order is deliberate: core play, mode variety, defensive rune,
 offensive rune, signature-mode spectacle, then ranked progression. The same
-six-frame story is rendered in English, German, and French for both required
-Apple device targets; it is not one English master duplicated across locales.
+six-frame story is rendered in English, Brazilian Portuguese, Spanish, German,
+French, Italian, Polish, Turkish, Indonesian, Japanese, and Korean for both
+required Apple device targets; it is not one English master duplicated across
+locales.
 
 ## Locked six-frame story
 
@@ -31,31 +33,46 @@ preview copy makes no availability claim.
 
 ## Locale and device matrix
 
-The campaign covers its three reviewed App Store localizations and both device
+The campaign covers its eleven AI-reviewed App Store localizations and both device
 classes declared by the universal iOS target:
 
 | App Store locale | Runtime locale | Runtime viewport | Final export | Frames |
 |---|---|---|---|---:|
 | `en-GB` | `en` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
 | `en-GB` | `en` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
+| `pt-BR` | `pt` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
+| `pt-BR` | `pt` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
+| `es-ES` | `es` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
+| `es-ES` | `es` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
 | `de-DE` | `de` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
 | `de-DE` | `de` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
 | `fr-FR` | `fr` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
 | `fr-FR` | `fr` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
+| `it` | `it` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
+| `it` | `it` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
+| `pl` | `pl` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
+| `pl` | `pl` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
+| `tr` | `tr` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
+| `tr` | `tr` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
+| `id` | `id` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
+| `id` | `id` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
+| `ja` | `ja` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
+| `ja` | `ja` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
+| `ko` | `ko` | iPhone 440 × 956 | 1320 × 2868 (`APP_IPHONE_67`) | 6 |
+| `ko` | `ko` | iPad 1032 × 1376 | 2064 × 2752 (`APP_IPAD_PRO_3GEN_129`) | 6 |
 
 Both the marketing overlay and every player-visible product string use the
 selected runtime locale. Localizing only the headline while leaving the game
 UI in English was rejected: it would look like a mockup and would not prove
-the actual German and French layouts. The runtime now supports six product
-languages, but adding Portuguese, Spanish, or Italian listing assets without
-reviewed metadata and captures remains outside this three-locale campaign.
+the actual localized layouts. The complete eleven-language product roster is
+represented in both the runtime and the reviewed App Store listing campaign.
 
 The iPad images come from a real 1032 × 1376 runtime layout with iPad safe
 areas, not an enlarged or cropped phone canvas. One deterministic capture
 pipeline owns both devices so fixture meaning stays identical while the real
-responsive product layout is allowed to differ. This produces six managed
-locale/device sets and 36 final PNGs. BOUNTY needs one extra authentic active
-source for every set, so a complete capture contains 42 raw frames.
+responsive product layout is allowed to differ. This produces twenty-two managed
+locale/device sets and 132 final PNGs. BOUNTY needs one extra authentic active
+source for every set, so a complete capture contains 154 raw frames.
 
 ## Exact deterministic fixtures
 
@@ -240,7 +257,7 @@ design; the obsolete exported PNG is intentionally not part of this set.
    before review submission.
 8. **Store-name clearance remains unresolved.** “Knucklebones Neon,” its
    lockup, and name-bearing metadata are provisional. A cleared name change
-   affects all 36 previews and three metadata localizations.
+   affects all 132 previews and eleven metadata localizations.
 9. **Listing ownership is narrow.** The campaign owns localized name,
    subtitle, promotional text, keywords, and description only. It does not
    invent support, privacy, privacy-choices, or marketing URLs while the
@@ -262,29 +279,29 @@ design; the obsolete exported PNG is intentionally not part of this set.
 4. Capture one full lossless raw frame for every locale/device/hero tuple.
    BOUNTY additionally requires complete `hero` and `active` frames for each
    tuple; the finalizer alone owns their manifest-ratio chronological
-   transition. A complete run therefore produces 42 raw frames and 36 finals.
+   transition. A complete run therefore produces 154 raw frames and 132 finals.
 5. Keep `source.html`, `manifest.json`, `metadata.json`, raw/export stems,
-   checksums, `capture-provenance.json`, six contact sheets, README, and this
+   checksums, `capture-provenance.json`, twenty-two contact sheets, README, and this
    decision log synchronized with the locked order and locale/device matrix.
 6. Any product or campaign design change that affects one scene requires that
-   scene to be regenerated in all three managed locales and both devices. Changes to
+   scene to be regenerated in all eleven managed locales and both devices. Changes to
    shared UI, layout, typography, localization plumbing, or capture/finalizer
    code require the complete matrix to be regenerated with
    `mise exec -- npm run appstore:screenshots:generate`. A BOUNTY change always
-   regenerates both sources in all six locale/device sets.
+   regenerates both sources in all twenty-two locale/device sets.
 7. Commit affected raw frames, final PNGs, checksums, provenance, and contact
    sheets in the same change as their source. A stale generated preview is a
    failing handoff even when source tests pass. This rule is mirrored in
    `AGENTS.md` and `CLAUDE.md` so future coding agents see it before handoff.
-8. Validate all 36 opaque PNGs at 1320 × 2868 or 2064 × 2752, then review the
-   six contact sheets and representative finals at full resolution for
+8. Validate all 132 opaque PNGs at 1320 × 2868 or 2064 × 2752, then review the
+   twenty-two contact sheets and representative finals at full resolution for
    clipping, seams, source-language leaks, stale scenes, colour drift,
    responsive defects, exit-button leakage, and AI/ranked mixing.
 
 ## Release acceptance
 
-The campaign is ready for editable-draft synchronization only when all 36
-exports and three metadata localizations match this contract, focused checks
+The campaign is ready for editable-draft synchronization only when all 132
+exports and eleven metadata localizations match this contract, focused checks
 are green, every input is committed, the owner has reviewed the remote plan,
 and the confirmation token matches. That permission does not authorize review
 submission. Submission additionally requires shipping ranked runes,
@@ -304,20 +321,21 @@ Fastlane 2.238.0 is locked because the targeted implementation uses its
 Spaceship App Store Connect models. Generic Deliver overwrite was rejected:
 this is a universal iPhone/iPad app, and that action can clear or reorder all
 screenshot sets in an included locale. The selected workflow reads the exact
-app and editable iOS version, manages only `en-GB`, `de-DE`, and `fr-FR` plus
+app and editable iOS version, manages only `en-GB`, `pt-BR`, `es-ES`, `de-DE`,
+`fr-FR`, `it`, `pl`, `tr`, `id`, `ja`, and `ko` plus
 their `APP_IPHONE_67` and `APP_IPAD_PRO_3GEN_129` sets, snapshots every unowned
 field and other locale/device set, and verifies that protected snapshot after
 the operation.
 
 The workflow separates local check, remote read-only plan, and mutation. A
 confirmation token binds the app id, version, all localized owned metadata,
-ordered checksums for six screenshot sets, and complete current remote
+ordered checksums for twenty-two screenshot sets, and complete current remote
 inventory; a changed file or remote edit invalidates it. A plan additionally
 requires the whole marketing input/export directory to be tracked and clean,
 along with the Fastlane implementation, package commands, Gemfile, and lock.
 An unreviewed local capture or uploader edit cannot run against the store.
 
-The mutation may create only missing localizations for the three managed
+The mutation may create only missing localizations for the eleven managed
 locales, patch only `name`, `subtitle`, `promotionalText`, `keywords`, and
 `description`, and synchronize six ordered screenshots per managed target.
 Because Apple's current create schema requires an App Info `name`, a missing

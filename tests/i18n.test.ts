@@ -41,6 +41,11 @@ assert.deepEqual(LOCALE_REGISTRY, [
   { id: 'de', languageTag: 'de', selfName: 'Deutsch' },
   { id: 'fr', languageTag: 'fr', selfName: 'Français' },
   { id: 'it', languageTag: 'it', selfName: 'Italiano' },
+  { id: 'pl', languageTag: 'pl', selfName: 'Polski' },
+  { id: 'tr', languageTag: 'tr', selfName: 'Türkçe' },
+  { id: 'id', languageTag: 'id', selfName: 'Bahasa Indonesia' },
+  { id: 'ja', languageTag: 'ja', selfName: '日本語' },
+  { id: 'ko', languageTag: 'ko', selfName: '한국어' },
 ]);
 assert.equal(localeSelfName('fr'), 'Français');
 assert.equal(localeLanguageTag('pt'), 'pt-BR');
@@ -56,6 +61,11 @@ assert.equal(resolveSystemLocale(['en-US']), 'en');
 assert.equal(resolveSystemLocale(['pt-BR']), 'pt');
 assert.equal(resolveSystemLocale(['pt-PT']), 'pt');
 assert.equal(resolveSystemLocale(['it-CH']), 'it');
+assert.equal(resolveSystemLocale(['pl-PL']), 'pl');
+assert.equal(resolveSystemLocale(['tr-TR']), 'tr');
+assert.equal(resolveSystemLocale(['id-ID']), 'id');
+assert.equal(resolveSystemLocale(['ja-JP']), 'ja');
+assert.equal(resolveSystemLocale(['ko-KR']), 'ko');
 assert.equal(resolveSystemLocale(['nl-NL']), 'en');
 assert.equal(resolveLocale('fr', ['de-DE']), 'fr');
 assert.equal(resolveLocale(null, ['de-DE']), 'de');
@@ -64,6 +74,11 @@ assert.equal(isLanguageOverride('en'), true);
 assert.equal(isLanguageOverride('pt'), true);
 assert.equal(isLanguageOverride('es'), true);
 assert.equal(isLanguageOverride('it'), true);
+assert.equal(isLanguageOverride('pl'), true);
+assert.equal(isLanguageOverride('tr'), true);
+assert.equal(isLanguageOverride('id'), true);
+assert.equal(isLanguageOverride('ja'), true);
+assert.equal(isLanguageOverride('ko'), true);
 assert.equal(isLanguageOverride('system'), false);
 assert.equal(isLanguageOverride('en-GB'), false);
 
@@ -88,6 +103,44 @@ assert.equal(t('common', 'record.wins', { count: 2 }), '2 victoires');
 assert.equal(refreshSystemLocale(['de-DE'])?.locale, 'de');
 assert.equal(changes.length, 3);
 unsubscribe();
+
+setLanguageOverride('pl');
+const polishPluralCases = [
+  [t('common', 'record.wins', { count: 2 }), '2 wygrane'],
+  [t('common', 'record.wins', { count: 5 }), '5 wygranych'],
+  [t('common', 'record.losses', { count: 2 }), '2 przegrane'],
+  [t('common', 'record.losses', { count: 5 }), '5 przegranych'],
+  [t('common', 'record.draws', { count: 2 }), '2 remisy'],
+  [t('common', 'record.draws', { count: 5 }), '5 remisów'],
+  [t('common', 'units.points', { count: 2 }), '2 punkty'],
+  [t('common', 'units.points', { count: 5 }), '5 punktów'],
+  [t('common', 'units.games', { count: 2 }), '2 gry'],
+  [t('common', 'units.games', { count: 5 }), '5 gier'],
+  [t('common', 'units.castsLeft', { count: 2 }), 'Pozostały 2 użycia'],
+  [t('common', 'units.castsLeft', { count: 5 }), 'Pozostało 5 użyć'],
+  [t('game', 'board.columnAvailable', {
+    player: 'GRACZ', column: 2, score: 12, count: 2,
+  }), 'GRACZ, kolumna 2, wynik 12, 2 wolne miejsca'],
+  [t('game', 'board.columnAvailable', {
+    player: 'GRACZ', column: 2, score: 12, count: 5,
+  }), 'GRACZ, kolumna 2, wynik 12, 5 wolnych miejsc'],
+  [t('game', 'runes.ariaAvailable', {
+    player: 'GRACZ', name: 'LOS', blurb: 'Test.', count: 2,
+  }), 'GRACZ: LOS — Test. Pozostały 2 użycia.'],
+  [t('game', 'runes.ariaUnavailable', {
+    player: 'GRACZ', name: 'LOS', blurb: 'Test.', count: 5,
+  }), 'GRACZ: LOS — Test. Pozostało 5 użyć. Teraz niedostępne.'],
+  [t('online', 'profile.gamesLink', { formatted: '2', count: 2 }), '2 gry ›'],
+  [t('online', 'profile.gamesLink', { formatted: '5', count: 5 }), '5 gier ›'],
+  [t('online', 'play.awayAutoPlay', { formatted: '2', count: 2 }),
+    'Nieobecność — automatyczny ruch za 2 s'],
+  [t('online', 'play.awayAutoPlayCompact', { formatted: '5', count: 5 }),
+    'Auto-ruch za 5 s'],
+  [t('online', 'result.delta', { points: 2, count: 2 }), ' · 2 punkty'],
+  [t('online', 'result.delta', { points: 5, count: 5 }), ' · 5 punktów'],
+] as const;
+for (const [actual, expected] of polishPluralCases) assert.equal(actual, expected);
+setLanguageOverride('de');
 
 const target = { textContent: null as string | null };
 assert.equal(text(target, 'settings', 'language'), 'Sprache');
