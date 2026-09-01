@@ -53,10 +53,12 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   turnover never relock a pool. A human pairing uses the lower shared pool and
   protocol-capability intersection; a bot uses its human's pool. Classic is
   exactly 40% and eligible additions split the remaining 60% equally.
-  A successor distribution and OBSIDIAN weekly challenge are approved but not
-  implemented: `docs/LADDER.md §7` owns the progression decision and
-  `docs/MODES.md §4` owns the mode and weekly rationale. Until that target
-  ships, the current mapping remains the runtime truth.
+  A successor distribution, late-weighted score curve, CLAIM collection
+  reward, and OBSIDIAN weekly challenge are approved but not implemented:
+  `docs/LADDER.md §7` owns progression/pacing, `docs/MODES.md §4` owns the mode
+  and weekly rationale, and `docs/SPELLS.md §8` owns the Trial interaction.
+  Until that target ships, the current mapping, floors, and selected-rune
+  reward remain runtime truth.
 - Rune Trial is `format='rune_trial'` with `modifier='classic'`, not an eighth
   mechanical core mode. Both seats receive the same uniform three-of-six loan,
   choose privately, and reveal together; a 10-second deadline (owner call
@@ -106,22 +108,30 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 
 - Implement the 2026-09-01 ranked progression decision in
   `docs/LADDER.md §7`: redistribute Bounty, Row Multiply, Row Switch, and
-  Limited; drive ranked-outcome ordering inside offline pickers, the ranked
-  spinner, the library, and outcome-unlock slides from one shared rank/helper;
-  add durable bot-debut guarantees; add the permanently unlocked OBSIDIAN
-  weekly feature; grandfather current entitlements; and update the client,
-  server, persistence, transitions, offline choices, locales, tests, the LG1
+  Limited; move the target floors to 0 / 300 / 750 / 1,400 / 2,400 / 3,800
+  with a 6,000 small-population NEON fallback; monotonically rescale current
+  and peak points without changing rank or progress inside a league; replace
+  the selected-rune Trial reward with the visible, selection-dependent CLAIM
+  reward while retaining every existing collection; drive ranked-outcome
+  ordering inside offline pickers, the ranked spinner, the library, and
+  outcome-unlock slides from one shared rank/helper; add durable bot-debut
+  guarantees; add the permanently unlocked OBSIDIAN weekly feature;
+  grandfather current entitlements; and update the client, server,
+  persistence, transitions, offline choices, locales, tests, the LG1
   transition card, and any other affected previews/exports. Keep presentation
-  sorting independent of the seed-sensitive weighted draw. This documentation
-  decision is not live, and the authoritative join function must be redeployed
-  when implementation ships.
+  sorting independent of the seed-sensitive weighted draw. Version-gate both
+  the score-curve cutover and CLAIM reward so an installed old client can
+  neither display the wrong league nor enter a Trial whose reward mark it
+  cannot see. This documentation decision is not live, and every affected
+  authoritative function must be redeployed when implementation ships.
 - Implement the separately decided 2026-09-01 finish-margin transfer in
-  `docs/LADDER.md §1`: retain the current floors and opponent-strength base,
-  request a normalized **2–7** loser-to-winner transfer (**0–7** applied at
-  boundaries), and persist versioned total/finish components. This is not live;
-  implementation requires every settlement/retry and result/history surface,
-  retained production-shaped evidence, tests, and redeployment of each affected
-  authoritative function closure.
+  `docs/LADDER.md §1`: retain the opponent-strength base, request a normalized
+  **2–7** loser-to-winner transfer (**0–7** applied at boundaries), and persist
+  versioned total/finish components. The current floors remain runtime truth;
+  the successor floor curve and cutover are the separate, coordinated target in
+  §7. Neither decision is live; implementation requires every settlement/retry
+  and result/history surface, retained production-shaped evidence, tests, and
+  redeployment of each affected authoritative function closure.
 - The `localization-browser` geometry matrix is manual-only since 2026-08-26
   (owner: Johannes): run
   `mise exec -- node tests/browser/localization/run.mjs` plus the manual
