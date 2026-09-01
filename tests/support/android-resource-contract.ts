@@ -105,14 +105,14 @@ export function verifyAndroidResourceContract(
     'the Android themed-icon layer must retain alpha around and inside the die');
   check(maskable.colorType === 2 && !maskable.hasTransparency,
     'the PWA maskable launcher icon must remain an opaque, full-bleed RGB image');
-  check(pixelAt(foreground, .03, .03).alpha === 0 && pixelAt(monochrome, .03, .03).alpha === 0,
-    'Android adaptive foregrounds must stay transparent outside the die');
+  check(pixelAt(foreground, .03, .03).alpha <= 32 && pixelAt(monochrome, .03, .03).alpha === 0,
+    'Android adaptive foregrounds must stay transparent outside the neon glow');
   const foregroundBounds = alphaBounds(foreground);
   const foregroundWidth = foregroundBounds
     ? (foregroundBounds.right - foregroundBounds.left + 1) / foreground.width
     : 0;
-  check(foregroundBounds !== null && foregroundWidth >= .59 && foregroundWidth <= .6,
-    `the Android adaptive die's visible rounded bounds should occupy about 59% of its layer, found ${foregroundWidth}`);
+  check(foregroundBounds !== null && foregroundWidth >= .74 && foregroundWidth <= .76,
+    `the restored larger Android neon die should occupy about 75% of its layer including glow, found ${foregroundWidth}`);
   const topInk = alphaRowBounds(foreground, .4);
   const bottomInk = alphaRowBounds(foreground, .6);
   const topCenter = topInk ? (topInk.left + topInk.right) / (2 * foreground.width) : 0;
@@ -124,39 +124,36 @@ export function verifyAndroidResourceContract(
   const maskableWidth = maskableBounds
     ? (maskableBounds.right - maskableBounds.left + 1) / maskable.width
     : 0;
-  check(maskableBounds !== null && maskableWidth >= .5 && maskableWidth <= .52,
+  check(maskableBounds !== null && maskableWidth >= .64 && maskableWidth <= .65,
     `the PWA maskable die's visible rounded bounds must stay inside its safe zone, found ${maskableWidth}`);
-  for (const [x, y] of [[.3997, .3716], [.6284, .3997], [.5, .5], [.3716, .6003], [.6003, .6284]]) {
-    check(rgbDistance(pixelAt(maskable, x, y), pixelAt(maskable, .1, y)) <= 3,
-      `the PWA maskable launcher pip at ${x},${y} must reveal its dark gradient`);
+  for (const [x, y] of [[.38, .346], [.654, .38], [.5, .5], [.346, .62], [.62, .654]]) {
+    const pip = pixelAt(maskable, x, y);
+    check(pip.red >= 150 && pip.green >= 240 && pip.blue >= 250,
+      `the PWA maskable launcher pip at ${x},${y} must be filled and luminous`);
   }
-  for (const [x, y] of [[.383, .3502], [.6498, .383], [.5, .5], [.3502, .617], [.617, .6498]]) {
+  const launcherPips = [[.36, .32], [.68, .36], [.5, .5], [.32, .64], [.64, .68]] as const;
+  for (const [x, y] of launcherPips) {
+    const adaptivePip = pixelAt(foreground, x, y);
+    check(adaptivePip.alpha >= 250
+      && adaptivePip.red >= 145 && adaptivePip.green >= 238 && adaptivePip.blue >= 248,
+      `the Android adaptive Home pip at ${x},${y} must be filled and luminous`);
     for (const dx of [-.018, 0, .018]) {
       for (const dy of [-.018, 0, .018]) {
-        check(pixelAt(foreground, x + dx, y + dy).alpha === 0,
-          `the Android adaptive pip around ${x},${y} must be a substantial transparent cutout`);
         check(pixelAt(monochrome, x + dx, y + dy).alpha === 0,
           `the Android themed-icon pip around ${x},${y} must be a substantial transparent cutout`);
       }
     }
     for (const raster of [legacy, legacyRound]) {
-      check(rgbDistance(pixelAt(raster, x, y), pixelAt(raster, .1, y)) <= 3,
-        `the Android legacy launcher pip at ${x},${y} must reveal its dark gradient`);
+      const pip = pixelAt(raster, x, y);
+      check(pip.red >= 110 && pip.green >= 235 && pip.blue >= 248,
+        `the Android legacy launcher pip at ${x},${y} must remain cyan-to-white and luminous`);
     }
   }
-  const dieMagenta = pixelAt(foreground, .39, .28);
-  const dieCyan = pixelAt(foreground, .61, .72);
-  check(dieMagenta.red - dieMagenta.green >= 100
-    && dieCyan.blue - dieCyan.red >= 100
-    && rgbDistance(dieMagenta, dieCyan) >= 100,
-  'the Android adaptive die must remain fully colored from its magenta edge to its cyan edge');
   for (const raster of [legacy, legacyRound]) {
-    const legacyMagenta = pixelAt(raster, .39, .28);
-    const legacyCyan = pixelAt(raster, .61, .72);
-    check(colorSpread(pixelAt(raster, .1, .5)) <= 3
-      && legacyMagenta.red - legacyMagenta.green >= 100
-      && legacyCyan.blue - legacyCyan.red >= 100,
-    'Android legacy launcher art must preserve the smaller full-color die on its dark ground');
+    const glassShadow = pixelAt(raster, .5, .78);
+    check(colorSpread(glassShadow) <= 5
+      && glassShadow.red <= 25 && glassShadow.green <= 30 && glassShadow.blue <= 32,
+    'Android legacy launcher art must preserve the Home die\'s neutral dark glass body');
   }
   const backgroundTop = pixelAt(background, .5, .04);
   const backgroundBottom = pixelAt(background, .5, .96);
@@ -170,6 +167,8 @@ export function verifyAndroidResourceContract(
   const capacitorAssetsIndex = androidAssetCommand.indexOf('npm --prefix native run assets:android');
   const finalizerIndex = androidAssetCommand.indexOf('node tools/appicon.mjs --android-finalize');
   check(iconGenerator.includes('ANDROID_ADAPTIVE_ICON_FILES')
+    && iconGenerator.includes('dieMarkup(5')
+    && iconGenerator.includes("inlineCssGraph(['src/styles/main.css']")
     && iconGenerator.includes('mipmap-anydpi-v26/ic_launcher.xml')
     && iconGenerator.includes('mipmap-anydpi-v33/ic_launcher.xml')
     && iconGenerator.includes('mipmap-anydpi-v33/ic_launcher_round.xml')
@@ -201,8 +200,13 @@ export function verifyAndroidResourceContract(
   const splashInkWidthByHeight = splashInkBounds
     ? (splashInkBounds.right - splashInkBounds.left + 1) / splashPixels.height
     : 0;
-  check(splashInkBounds !== null && splashInkWidthByHeight >= .14 && splashInkWidthByHeight <= .145,
-    `the Android loading-screen die's visible rounded bounds should occupy about 14.3% of its source height, found ${splashInkWidthByHeight}`);
+  check(splashInkBounds !== null && splashInkWidthByHeight >= .182 && splashInkWidthByHeight <= .186,
+    `the larger Android loading-screen neon die should occupy about 18.3% of its source height, found ${splashInkWidthByHeight}`);
+  for (const [x, y] of [[.4496, .4569], [.5646, .4664], [.5, .5], [.4354, .5336], [.5504, .5431]]) {
+    const pip = pixelAt(splashPixels, x, y);
+    check(pip.red >= 150 && pip.green >= 240 && pip.blue >= 250,
+      `the Android loading-screen pip at ${x},${y} must be filled and luminous`);
+  }
 
   return { splashRenditions: splashFiles.length };
 }

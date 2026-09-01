@@ -1,99 +1,85 @@
-// The app icon, generated rather than hand-drawn: one die face, five pips, the
-// game's own cyan/magenta diagonal. Every size the PWA, Android and iOS ask for
-// comes out of the SAME vector, so they can never drift apart.
+// The app icon is the Home screen's actual neon die, not a hand-drawn cousin:
+// dieMarkup supplies the five face and the app's own CSS supplies its glass,
+// cyan border, glow, and pips. Every PWA, Android, iOS, and loading-screen size
+// is rasterized from that one component so the identity cannot drift.
 //
-//   mise exec -- node tools/appicon.mjs           regenerate the shipped APP_ICON_VARIANT below
-//   mise exec -- node tools/appicon.mjs a         try another variant without editing anything
-//   mise exec -- node tools/appicon.mjs c --dry   render a side-by-side sheet, write nothing
+//   mise exec -- node tools/appicon.mjs           regenerate the shipped icon set
+//   mise exec -- node tools/appicon.mjs --dry     render one preview, write no shipped asset
 //   mise exec -- node tools/appicon.mjs --android render @capacitor/assets Android inputs only
 //   mise exec -- node tools/appicon.mjs --android-finalize restore adaptive XML after that CLI runs
-//
-// Variants are kept on purpose: the choice between them is a taste call that
-// gets revisited, and re-deriving the two not chosen is the annoying part.
-//   a  the DIE carries the gradient, pips are true cutouts — loudest at 60px
-//   b  dark die, the PIPS carry the gradient — closest to the in-game die
-//   c  dark body, gradient frame AND pips — the game's look, still colourful
 import { chromium } from 'playwright';
 import { writeFileSync, mkdirSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
+import { dieMarkup } from '../src/ui/die-markup.ts';
+import { inlineCssGraph } from './css-graph.mjs';
 
-export const APP_ICON_VARIANT = 'a';
-export const APP_ICON_PAD = .22;
-export const MASKABLE_ICON_PAD = .26;
+export const APP_ICON_PAD = .15;
+export const MASKABLE_ICON_PAD = .2;
 export const APP_ICON_TILT_DEG = 7;
 export const ANDROID_ADAPTIVE_INSET = '10%';
 export const SYSTEM_DARK_GRADIENT = Object.freeze({ top: '#313131', bottom: '#141414' });
 export const SYSTEM_LIGHT_GRADIENT = Object.freeze({ top: '#ffffff', bottom: '#e5e5e5' });
-const CY = '#28e8ff', MG = '#ff2fa0';
+const HERE = dirname(fileURLToPath(import.meta.url));
+const ROOT = resolve(HERE, '..');
+const HOME_DIE_SIZE = 74;
+const HOME_DIE_CSS = inlineCssGraph(['src/styles/main.css'], { rootDir: ROOT }).css;
 /* the 5 face: four corners and the centre, in a 0..1 square */
 const PIPS = [[.26, .26], [.74, .26], [.5, .5], [.26, .74], [.74, .74]];
 
 /* `pad` is the margin around the die as a fraction of the canvas. The shipped
-   22% makes the mark deliberately compact; maskable icons get 26% because an
-   unknown launcher shape can crop their outer fifth. The shared 7° clockwise
-   tilt keeps the face lively without changing its centered safe-zone radius. */
+   15% restores the slightly larger launcher mark selected before the compact
+   pass; maskable icons get 20% because an unknown launcher shape can crop
+   their outer fifth. The shared 7° clockwise tilt keeps the face lively. */
 /* iOS supplies its exact System Dark gradient behind the transparent Dark
    rendition. The opaque light fallback and platforms without appearance-aware
    backgrounds use quiet neutral equivalents: light from the top, dark below,
    matching the system lighting direction without copying another app's art. */
 const THEME = {
   dark:  {
-    body: '#0a0c16', bodyB: '#0f1220',
     canvasTop: SYSTEM_DARK_GRADIENT.top, canvasBottom: SYSTEM_DARK_GRADIENT.bottom,
   },
   light: {
-    body: '#ffffff', bodyB: '#f7f9fd',
     canvasTop: SYSTEM_LIGHT_GRADIENT.top, canvasBottom: SYSTEM_LIGHT_GRADIENT.bottom,
   },
 };
+const xmlText = (source) => source.replaceAll('&', '&amp;').replaceAll('<', '&lt;');
+
 export function iconSVG(
-  kind = APP_ICON_VARIANT,
   S = 512,
   pad = APP_ICON_PAD,
   theme = 'dark',
   transparent = false,
 ) {
   const T = THEME[theme] ?? THEME.dark;
-  const m = S * pad, box = S - m * 2, r = box * .235, pr = box * .092;
-  const pip = ([x, y], fill) =>
-    `<circle cx="${(m + x * box).toFixed(2)}" cy="${(m + y * box).toFixed(2)}" r="${pr.toFixed(2)}" fill="${fill}"/>`;
-  const defs = `
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="${T.canvasTop}"/><stop offset="1" stop-color="${T.canvasBottom}"/>
-    </linearGradient>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="${MG}"/><stop offset="1" stop-color="${CY}"/>
-    </linearGradient>
-    <mask id="die-cutouts" maskUnits="userSpaceOnUse" x="0" y="0" width="${S}" height="${S}">
-      <rect width="${S}" height="${S}" fill="#000"/>
-      <rect x="${m.toFixed(2)}" y="${m.toFixed(2)}" width="${box.toFixed(2)}" height="${box.toFixed(2)}"
-        rx="${r.toFixed(2)}" fill="#fff"/>
-      ${PIPS.map(p => pip(p, '#000')).join('')}
-    </mask>
-    <filter id="f" x="-40%" y="-40%" width="180%" height="180%">
-      <feGaussianBlur stdDeviation="${(S * .022).toFixed(2)}" result="b"/>
-      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-    </filter>`;
-  const face = (fill, stroke, sw) =>
-    `<rect x="${m.toFixed(2)}" y="${m.toFixed(2)}" width="${box.toFixed(2)}" height="${box.toFixed(2)}"` +
-    ` rx="${r.toFixed(2)}" fill="${fill}"` +
-    (stroke ? ` stroke="${stroke}" stroke-width="${sw.toFixed(2)}"` : '') + `/>`;
-  const glowPips = `<g filter="url(#f)">${PIPS.map(p => pip(p, 'url(#g)')).join('')}</g>`;
-  const body =
-    kind === 'a' ? `<g mask="url(#die-cutouts)">${face('url(#g)')}</g>`
-    : kind === 'b' ? face(T.bodyB, 'url(#g)', S * .012) + glowPips
-    : face(T.body, 'url(#g)', S * .026) + glowPips;
-  const tiltedBody = `<g transform="rotate(${APP_ICON_TILT_DEG} ${S / 2} ${S / 2})">${body}</g>`;
+  const dieSide = S * (1 - pad * 2);
+  const scale = dieSide / HOME_DIE_SIZE;
+  const die = dieMarkup(5, {
+    classes: 'p1 appicon-die',
+    size: HOME_DIE_SIZE,
+    inlineStyle: 'transform:none!important',
+  });
+  const background = transparent ? '' :
+    `<defs><linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">` +
+    `<stop offset="0" stop-color="${T.canvasTop}"/>` +
+    `<stop offset="1" stop-color="${T.canvasBottom}"/></linearGradient></defs>` +
+    `<rect width="${S}" height="${S}" fill="url(#bg)"/>`;
   return `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" xmlns="http://www.w3.org/2000/svg">` +
-    `<defs>${defs}</defs>${transparent ? '' : `<rect width="${S}" height="${S}" fill="url(#bg)"/>`}${tiltedBody}</svg>`;
+    background +
+    `<foreignObject x="0" y="0" width="${S}" height="${S}">` +
+    `<div xmlns="http://www.w3.org/1999/xhtml" id="kbroot" style="width:${S}px;height:${S}px">` +
+    `<style>${xmlText(HOME_DIE_CSS)}</style>` +
+    `<div class="duel appicon-canvas" style="width:${S}px;height:${S}px;margin:0;display:grid;place-items:center;overflow:hidden">` +
+    `<div style="width:${HOME_DIE_SIZE}px;height:${HOME_DIE_SIZE}px;line-height:0;transform-origin:50% 50%;` +
+    `transform:rotate(${APP_ICON_TILT_DEG}deg) scale(${scale})">${die}</div>` +
+    `</div></div></foreignObject></svg>`;
 }
 
 /* Adaptive foregrounds must carry alpha: Android supplies and independently
    masks the background layer. Keep the mark otherwise identical to the
    shipped icon so the adaptive, round and legacy launchers remain one design. */
-export function adaptiveForegroundSVG(kind = APP_ICON_VARIANT, S = 1024) {
-  return iconSVG(kind, S, APP_ICON_PAD, 'dark', true);
+export function adaptiveForegroundSVG(S = 1024) {
+  return iconSVG(S, APP_ICON_PAD, 'dark', true);
 }
 
 export function iconBackgroundSVG(S = 1024) {
@@ -142,7 +128,7 @@ const TARGETS = [
    generator also writes its density-specific tracked resources directly; the
    v33 adaptive-icon XML wires that layer into themed launchers. */
 const ANDROID_TARGETS = [
-  { file: 'native/assets/icon-only.png', size: 1024, svg: (kind) => iconSVG(kind, 1024) },
+  { file: 'native/assets/icon-only.png', size: 1024, svg: () => iconSVG(1024) },
   { file: 'native/assets/icon-foreground.png', size: 1024, transparent: true, svg: adaptiveForegroundSVG },
   { file: 'native/assets/icon-background.png', size: 1024, svg: () => iconBackgroundSVG() },
   { file: 'native/assets/icon-monochrome.png', size: 1024, transparent: true, svg: () => monochromeIconSVG() },
@@ -204,8 +190,6 @@ else await main();
 
 async function main() {
 const args = process.argv.slice(2);
-const argVariant = args.find((arg) => /^[abc]$/i.test(arg));
-const kind = argVariant ? argVariant.toLowerCase() : APP_ICON_VARIANT;
 const dry = args.includes('--dry');
 const android = args.includes('--android');
 const androidFinalize = args.includes('--android-finalize');
@@ -228,16 +212,15 @@ try {
     return buf;
   };
   if (dry) {
-    const row = ['a', 'b', 'c'].map((k) => iconSVG(k, 512)).join('');
-    const page = await browser.newPage({ viewport: { width: 1536, height: 512 } });
-    await page.setContent(`<body style="margin:0;display:flex">${row}</body>`);
-    await page.screenshot({ path: 'icon-variants.png' });
+    const page = await browser.newPage({ viewport: { width: 1024, height: 1024 } });
+    await page.setContent(`<body style="margin:0">${iconSVG(1024)}</body>`);
+    await page.screenshot({ path: 'icon-preview.png' });
     await page.close();
-    console.log('wrote icon-variants.png (a | b | c) — nothing else touched');
+    console.log('wrote icon-preview.png — no shipped asset touched');
   } else {
     const targets = android ? ANDROID_TARGETS : TARGETS;
     for (const t of targets) {
-      const svg = t.svg ? t.svg(kind) : iconSVG(kind, t.size, t.pad, t.theme, t.transparent);
+      const svg = t.svg ? t.svg() : iconSVG(t.size, t.pad, t.theme, t.transparent);
       const buf = await shot(svg, t.size, t.transparent);
       mkdirSync(dirname(t.file), { recursive: true });
       writeFileSync(t.file, buf);
@@ -248,7 +231,7 @@ try {
     if (android) {
       writeAndroidAdaptiveResources();
     }
-    console.log(`${android ? 'Android source icon set' : 'icon set'} regenerated from variant "${kind}"`);
+    console.log(`${android ? 'Android source icon set' : 'icon set'} regenerated from the Home neon die`);
   }
 } finally { await browser.close(); }
 }
