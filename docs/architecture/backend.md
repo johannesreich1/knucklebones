@@ -204,6 +204,7 @@ grant either commit together or not at all.
   the greatest recorded ladder peak: STONE at 0, BONE at 300, IVORY at 720.
   Demotion or a new season never writes a lower tier. Promotion settlement may
   raise the tier, and the newly eligible pool applies to the next match.
+
 - Ranked settlement writes one owner-readable progression event for each human
   participant in the same transaction as the rating and permanent-pool writes.
   It snapshots points, positional apex/NEON membership, permanent pool tier,
@@ -221,7 +222,12 @@ grant either commit together or not at all.
   the shared eligible additions. STONE has three additions, BONE six, and
   IVORY seven including Rune Trial. Trial persists as
   `format='rune_trial'`, `modifier='classic'`, with an immutable rune-rules
-  version; strict readers reject an unknown format/modifier/version tuple.
+  version; strict readers reject an unknown format/modifier/version tuple. This
+  is the implemented repository and production-schema three-tier contract;
+  deployed Edge Function bytes still require the independent confirmation in
+  `docs/STATUS.md`. The approved successor needs per-outcome grandfathered
+  entitlements and durable debut state; see `docs/LADDER.md §7`. Do not
+  reinterpret these current tier rows as the target design.
 - Ordinary ranked activates equipment permanently after that participant has
   reached SILVER in any season. Fixed equipment snapshots directly; RANDOM
   selects one current owned rune with a salted hash of the fresh match seed and
