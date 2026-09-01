@@ -221,7 +221,7 @@ export function createResultScreen(ports: ResultPorts): ResultScreen {
         /* The card opens the rune's own entry over this screen — a cover, not
            a departure, so the result is still here when the sheet closes. */
         feature: reward ? runeRewardFeature(reward, acknowledgeRewardForAction) : undefined,
-        again: { label: t('online', 'result.nextDuel'), run: depart(ports.nextDuel) },
+        again: { label: t('online', 'result.nextDuel'), icon: 'play', run: depart(ports.nextDuel) },
         quiet: { label: t('common', 'actions.home'), run: depart(ports.goHome) },
         share: t('online', 'result.share', {
           title,

@@ -1,6 +1,7 @@
 import pkg from 'playwright';
 const { chromium, devices } = pkg;
 import { serveTree } from './serve.mjs';
+import { RESOURCES } from '../src/i18n/catalogs.ts';
 /* Served over LOCAL HTTP, not file:// — this suite's graduation coda reloads
    the page and asserts the tutorial flag came back, and Chromium's file://
    DOMStorage can hydrate a reloaded document from a STALE disk commit no
@@ -174,6 +175,9 @@ out.end = await page.evaluate(() => ({
   shown: document.getElementById('ovEnd').classList.contains('on'),
   endRec: document.getElementById('endMeta').textContent,
   sub: document.getElementById('endSub').textContent,
+  primaryLabel: document.querySelector('#btnAgain > .btn-label')?.textContent ?? '',
+  primaryIcon: document.querySelector('#btnAgain > .btn-leading-icon:not([hidden])')
+    ?.getAttribute('data-icon') ?? null,
   rec: document.getElementById('rec').textContent.trim(),
   stats: (() => { const k = window.__kb.S; return k.wins + k.losses + k.draws + k.p1 + k.p2; })(),
   best: window.__kb.S.best,
@@ -181,6 +185,8 @@ out.end = await page.evaluate(() => ({
   tutCleared: !window.__kb.S.tut,
 }));
 check(out.end.shown && out.end.endRec === 'TUTORIAL COMPLETE', 'tutorial end screen wrong', out.end);
+check(out.end.primaryLabel === RESOURCES.en.game.action.finish && out.end.primaryIcon === null,
+      'tutorial Finish inherited the Next duel play icon or changed copy', out.end);
 check(out.end.stats === 0 && out.end.best === 0, 'tutorial polluted the record', out.end);
 check(out.end.tutDone && out.end.tutCleared, 'tutorial completion state wrong', out.end);
 

@@ -45,8 +45,14 @@
   text-transform:uppercase;cursor:pointer;transition:.15s;font-family:inherit}
 :where(#kbroot) .btn:active,:where(#kbroot) .btn.pressing{transform:scale(.96)}
 :where(#kbroot) .btn.primary{position:relative;isolation:isolate;
+  --primary-glint-cycle:5.2s;--primary-glint-alpha:.15;
   background:linear-gradient(100deg,var(--p1),var(--p1-hi) 40%,var(--p2));color:#04101a;border:none;
   box-shadow:0 10px 30px rgba(var(--p1-rgb),.28),0 0 0 1px rgba(255,255,255,.12) inset}
+:where(#kbroot) .btn.primary.play-cta{--primary-glint-cycle:4.6s;--primary-glint-alpha:.21;
+  display:flex;align-items:center;justify-content:center;gap:11px}
+:where(#kbroot) .btn-leading-icon,:where(#kbroot) .btn-label{position:relative;z-index:2}
+:where(#kbroot) .btn-leading-icon{width:25px;height:25px;display:grid;place-items:center;flex:0 0 auto}
+:where(#kbroot) .btn-leading-icon .cico{display:block;overflow:visible}
 /* The duel gradient is every primary action's identity. A quiet glass glint
    crosses that existing fill once per long beat (user pick: direction 02),
    without moving the label or the button itself. Only the topmost open room
@@ -55,10 +61,10 @@
    still. Disabled actions never advertise themselves. */
 :where(#kbroot) .btn.primary:enabled::after{content:"";position:absolute;z-index:1;inset:0;
   border-radius:inherit;pointer-events:none;opacity:0;
-  background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,.15) 50%,transparent 58%);
+  background:linear-gradient(105deg,transparent 42%,rgba(255,255,255,var(--primary-glint-alpha)) 50%,transparent 58%);
   background-repeat:no-repeat;background-size:260% 100%;background-position:100% 0}
 :where(#kbroot) .ov.on:not(:has(~ .ov.on)) .btn.primary:enabled::after{
-  animation:primaryGlint 5.2s ease-in-out infinite}
+  animation:primaryGlint var(--primary-glint-cycle) ease-in-out infinite}
 @keyframes primaryGlint{
   0%,72%{background-position:100% 0;opacity:0}
   76%{opacity:1}

@@ -194,7 +194,18 @@ try {
         /* the stack as the thumb meets it: every button the screen offers, in
            order, with the height that says which one is the quiet one */
         acts: [...ov.querySelectorAll('.btn')].filter(b => !b.hidden)
-          .map(b => ({ id: b.id, label: b.textContent, h: Math.round(b.getBoundingClientRect().height) })),
+          .map(b => {
+            const icon = b.querySelector(':scope > .btn-leading-icon:not([hidden])');
+            const copy = b.querySelector(':scope > .btn-label');
+            return {
+              id: b.id,
+              label: b.textContent,
+              h: Math.round(b.getBoundingClientRect().height),
+              icon: icon?.getAttribute('data-icon') ?? null,
+              iconBeforeLabel: !!icon && !!copy
+                && [...b.children].indexOf(icon) < [...b.children].indexOf(copy),
+            };
+          }),
       };
     });
     r.reducedFrames = reducedFrames;
@@ -207,7 +218,11 @@ try {
        there is one label rather than a duo/cpu pair. */
     check(r.acts.length === 2 && r.acts[0].id === 'btnAgain' && r.acts[1].id === 'btnEndQuiet',
           'the result screen is not offering exactly one primary and one quiet way on: ' + label, r.acts);
+    check(r.acts[0].label === 'Next duel' && r.acts[0].icon === 'play' && r.acts[0].iconBeforeLabel,
+          'NEXT DUEL LOST ITS SELECTED LEADING DIE: ' + label, r.acts);
     check(r.acts[1].label === 'Change setup', 'the quiet way on lost its label: ' + label, r.acts);
+    check(r.acts[1].icon === null,
+          'the quiet result action received the play icon: ' + label, r.acts);
     check(r.acts[1].h < r.acts[0].h, 'THE WAY OUT STANDS AS TALL AS NEXT DUEL: ' + label, r.acts);
     if (reduced) {
       check(r.reducedFrames.length === 3 && r.reducedFrames.every((f) => f.opacity > .95
@@ -244,6 +259,23 @@ try {
             `THE ${locale.toUpperCase()} PAINTED VERDICT IS NOT CENTRED/CONTAINED AT ${size.width}px: ${label}`, paint);
         }
       }
+      const lastLocale = LOCALE_REGISTRY.at(-1)?.id ?? 'en';
+      r.localizedActs = await page.evaluate(() => ['btnAgain', 'btnEndQuiet'].map((id) => {
+        const button = document.getElementById(id);
+        const icon = button.querySelector(':scope > .btn-leading-icon:not([hidden])');
+        const copy = button.querySelector(':scope > .btn-label');
+        return {
+          id,
+          label: (copy?.textContent ?? button.textContent ?? '').trim(),
+          icon: icon?.getAttribute('data-icon') ?? null,
+        };
+      }));
+      check(r.localizedActs[0]?.label === RESOURCES[lastLocale].game.action.nextDuel
+        && r.localizedActs[0].icon === 'play'
+        && r.localizedActs[1]?.label === RESOURCES[lastLocale].game.action.changeSetup
+        && r.localizedActs[1].icon === null,
+      `locale repaint changed the local result actions or their icon semantics: ${label}`,
+      r.localizedActs);
     }
     await ctx.close();
   }
