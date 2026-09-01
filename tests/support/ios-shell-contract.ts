@@ -8,7 +8,15 @@ import {
 } from '../../src/config.ts';
 import { LOCALE_REGISTRY } from '../../src/i18n/locale.ts';
 import { sameBytes } from './ios-artifacts.ts';
-import { alphaBounds, colorSpread, pixelAt, readPngPixels, rgbDistance } from './png-pixels.ts';
+import {
+  alphaBounds,
+  alphaRowBounds,
+  colorBounds,
+  colorSpread,
+  pixelAt,
+  readPngPixels,
+  rgbDistance,
+} from './png-pixels.ts';
 
 type Check = (ok: boolean, message: string) => void;
 
@@ -238,11 +246,18 @@ export function verifyIosShellContract(check: Check): {
   const darkInkWidth = darkInkBounds
     ? (darkInkBounds.right - darkInkBounds.left + 1) / darkPixels.width
     : 0;
-  check(darkInkBounds !== null && darkInkWidth >= .68 && darkInkWidth <= .72,
-    `the iOS die should occupy about 70% of the icon after the requested size reduction, found ${darkInkWidth}`);
-  for (const [x, y] of [[.332, .332], [.668, .332], [.5, .5], [.332, .668], [.668, .668]]) {
-    for (const dx of [-.025, 0, .025]) {
-      for (const dy of [-.025, 0, .025]) {
+  check(darkInkBounds !== null && darkInkWidth >= .59 && darkInkWidth <= .6,
+    `the iOS die's visible rounded bounds should occupy about 59% of the icon, found ${darkInkWidth}`);
+  const topInk = alphaRowBounds(darkPixels, .4);
+  const bottomInk = alphaRowBounds(darkPixels, .6);
+  const topCenter = topInk ? (topInk.left + topInk.right) / (2 * darkPixels.width) : 0;
+  const bottomCenter = bottomInk ? (bottomInk.left + bottomInk.right) / (2 * darkPixels.width) : 0;
+  check(topInk !== null && bottomInk !== null
+    && topCenter - bottomCenter >= .02 && topCenter - bottomCenter <= .03,
+    `the iOS die should have a subtle clockwise tilt, found row centers ${topCenter} and ${bottomCenter}`);
+  for (const [x, y] of [[.383, .3502], [.6498, .383], [.5, .5], [.3502, .617], [.617, .6498]]) {
+    for (const dx of [-.018, 0, .018]) {
+      for (const dy of [-.018, 0, .018]) {
         check(pixelAt(darkPixels, x + dx, y + dy).alpha === 0,
           `the iOS Dark die pip around ${x},${y} must be a substantial transparent cutout`);
         const lightPip = pixelAt(lightPixels, x + dx, y + dy);
@@ -252,8 +267,8 @@ export function verifyIosShellContract(check: Check): {
       }
     }
   }
-  const dieMagenta = pixelAt(darkPixels, .28, .2);
-  const dieCyan = pixelAt(darkPixels, .72, .8);
+  const dieMagenta = pixelAt(darkPixels, .39, .28);
+  const dieCyan = pixelAt(darkPixels, .61, .72);
   check(dieMagenta.red - dieMagenta.green >= 100
     && dieCyan.blue - dieCyan.red >= 100
     && rgbDistance(dieMagenta, dieCyan) >= 100,
@@ -270,14 +285,20 @@ export function verifyIosShellContract(check: Check): {
   check(rgbDistance(splashTop, splashBottom) <= 3
     && rgbDistance(splashTop, { red: 5, green: 6, blue: 14, alpha: 255 }) <= 3,
   'the iOS loading screen must preserve the app\'s #05060e first-frame continuity');
-  for (const [x, y] of [[.4714, .4714], [.5286, .4714], [.5, .5], [.4714, .5286], [.5286, .5286]]) {
+  const splashInkBounds = colorBounds(splashPixels);
+  const splashInkWidth = splashInkBounds
+    ? (splashInkBounds.right - splashInkBounds.left + 1) / splashPixels.width
+    : 0;
+  check(splashInkBounds !== null && splashInkWidth >= .14 && splashInkWidth <= .145,
+    `the iOS loading-screen die's visible rounded bounds should occupy about 14.3% of the canvas, found ${splashInkWidth}`);
+  for (const [x, y] of [[.4719, .4641], [.536, .4719], [.5, .5], [.4641, .5281], [.5281, .536]]) {
     const splashPip = pixelAt(splashPixels, x, y);
     const splashGround = pixelAt(splashPixels, .04, y);
     check(rgbDistance(splashPip, splashGround) <= 3,
       `the iOS loading-screen pip at ${x},${y} must reveal its #05060e ground`);
   }
-  check(colorSpread(pixelAt(splashPixels, .5, .445)) >= 80
-    && colorSpread(pixelAt(splashPixels, .5, .555)) >= 80,
+  check(colorSpread(pixelAt(splashPixels, .4736, .4472)) >= 80
+    && colorSpread(pixelAt(splashPixels, .5264, .5528)) >= 80,
   'the iOS loading-screen die must use the same full-color artwork as the app icon');
   const launchScreen = readFileSync(LAUNCH_SCREEN, 'utf8');
   check(/image="Splash"/.test(launchScreen) && /contentMode="scaleAspectFill"/.test(launchScreen)

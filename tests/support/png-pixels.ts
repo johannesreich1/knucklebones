@@ -155,3 +155,41 @@ export function alphaBounds(png: DecodedPng, threshold = 127): Readonly<{
   }
   return right < left ? null : { left, top, right, bottom };
 }
+
+export function alphaRowBounds(
+  png: DecodedPng,
+  normalizedY: number,
+  threshold = 127,
+): Readonly<{ left: number; right: number }> | null {
+  const y = Math.min(png.height - 1, Math.max(0, Math.round(normalizedY * (png.height - 1))));
+  let left = png.width;
+  let right = -1;
+  for (let x = 0; x < png.width; x++) {
+    if (png.pixel(x, y).alpha <= threshold) continue;
+    left = Math.min(left, x);
+    right = Math.max(right, x);
+  }
+  return right < left ? null : { left, right };
+}
+
+export function colorBounds(png: DecodedPng, minimumSpread = 40): Readonly<{
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}> | null {
+  let left = png.width;
+  let top = png.height;
+  let right = -1;
+  let bottom = -1;
+  for (let y = 0; y < png.height; y++) {
+    for (let x = 0; x < png.width; x++) {
+      if (colorSpread(png.pixel(x, y)) < minimumSpread) continue;
+      left = Math.min(left, x);
+      top = Math.min(top, y);
+      right = Math.max(right, x);
+      bottom = Math.max(bottom, y);
+    }
+  }
+  return right < left ? null : { left, top, right, bottom };
+}
