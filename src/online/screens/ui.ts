@@ -336,7 +336,7 @@ export async function openOnline(view: OnlineView, ports: OnlinePorts): Promise<
        the die otherwise; partial account data never paints either way. */
     const [, collection] = await Promise.all([
       syncAccountPreferences(),
-      refreshRuneCollection(user.id),
+      refreshRuneCollection(user.id), myProfile(),
     ]);
     if (revision !== entryRevision || !$('#ovOnline').classList.contains('on')) return;
     if (collection.accountId?.toLowerCase() !== user.id.toLowerCase()) return;

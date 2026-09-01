@@ -22,6 +22,9 @@ import { bindLegalPages } from './ui/legal.ts';
 import { subscribeLocale } from './i18n/index.ts';
 import { cancelPass, repaintPassLocale } from './flow/pass-card.ts';
 import { userPreferencesRevision } from './preferences.ts';
+import { isProfileAvatar } from './profile-avatar.ts';
+import { readProfileCache } from './profile-cache.ts';
+import { syncProfileAppIcon } from './native/app-icon.ts';
 import { initializeGameCenter } from './native/game-center.ts';
 
 export function boot(embed: boolean): void {
@@ -48,10 +51,19 @@ export function boot(embed: boolean): void {
   duel.appendChild(makeDie(3, AI));
   refreshHomeChip();
 
-  // GameKit owns device-level authentication and may already be signed in.
-  // Start it after the first Home paint, without waiting and without importing
-  // Supabase; widgets and non-iOS platforms resolve to a no-op.
-  if (!embed) void initializeGameCenter();
+  if (!embed) {
+    /* The OS retains an alternate launcher between runs. Reconcile only a
+       valid account-scoped cache here: absence is not evidence for resetting
+       a selection whose fresh server row has not arrived yet. */
+    const cached = readProfileCache();
+    if (cached?.accountId && isProfileAvatar(cached.avatar)) {
+      void syncProfileAppIcon(cached.avatar);
+    }
+    // GameKit owns device-level authentication and may already be signed in.
+    // Start it after the first Home paint, without waiting and without
+    // importing Supabase; widgets and non-iOS platforms resolve to a no-op.
+    void initializeGameCenter();
+  }
 
   bindBoardInput();
   bindMenus(root);
@@ -69,11 +81,18 @@ export function boot(embed: boolean): void {
     updateRecord();
     refreshHomeChip();
   });
-  // Standalone/PWA/native accounts get their private Settings row after the
-  // offline-first paint. Widgets neither own nor synchronize host preferences.
+  // Standalone/PWA/native accounts get their private Settings row and fresh
+  // profile avatar after the offline-first paint. Widgets own neither.
   // Capture before the lazy import can yield to a Settings tap: that tap must
   // count as newer than this hydration even if the online chunk has not loaded.
   const startupPreferenceRevision = userPreferencesRevision();
-  if (!embed) void import('./online/preferences.ts').then(({ syncAccountPreferences }) =>
-    syncAccountPreferences(startupPreferenceRevision));
+  if (!embed) void Promise.all([
+    import('./online/preferences.ts'),
+    import('./online/identity/profile.ts'),
+  ]).then(async ([{ syncAccountPreferences }, { myProfile }]) => {
+    await Promise.all([
+      syncAccountPreferences(startupPreferenceRevision),
+      myProfile(),
+    ]);
+  }).catch(() => undefined);
 }

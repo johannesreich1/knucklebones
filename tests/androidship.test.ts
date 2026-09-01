@@ -5,6 +5,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { APP_ID, GAME_NAME, NATIVE_APP_NAME, NATIVE_STORE_NAME } from '../src/config.ts';
 import { verifyAndroidBuiltArtifacts } from './support/android-artifact-contract.ts';
+import { verifyAndroidProfileIconShell } from './support/android-profile-icon-contract.ts';
 import { verifyAndroidResourceContract } from './support/android-resource-contract.ts';
 import { filesUnder, sameBytes } from './support/ios-artifacts.ts';
 import { verifyNodeRuntimeContract } from './support/node-runtime-contract.ts';
@@ -151,6 +152,7 @@ check(!filesUnder(`${APP}/src`).some((file) => file.includes('com/getcapacitor/m
 
 /* -------------------- platform security and lifecycle -------------------- */
 const manifest = read(MANIFEST);
+verifyAndroidProfileIconShell(check, pkg, lock, manifest, mainActivity);
 check(/android:allowBackup="false"/.test(manifest)
   && /android:fullBackupContent="false"/.test(manifest)
   && /android:dataExtractionRules="@xml\/data_extraction_rules"/.test(manifest),
@@ -238,7 +240,8 @@ if (REQUIRE_SYNCED) {
       '@capacitor/share:com.capacitorjs.plugins.share.SharePlugin',
       '@capacitor/splash-screen:com.capacitorjs.plugins.splashscreen.SplashScreenPlugin',
       '@capawesome/capacitor-apple-sign-in:io.capawesome.capacitorjs.plugins.applesignin.AppleSignInPlugin',
-    ].sort()), `${SYNCED_PLUGINS} does not register exactly Share, Splash Screen, and Apple Sign-In`);
+      'knucklebones-app-icon:com.appavaria.knucklebones.appicon.AppIconPlugin',
+    ].sort()), `${SYNCED_PLUGINS} does not register exactly Share, Splash Screen, Apple Sign-In, and AppIcon`);
   }
 }
 

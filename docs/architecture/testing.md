@@ -308,6 +308,18 @@ the result sheet on iPhone/iPad and Android, dismisses it, returns to the app,
 and verifies the recipient receives the public URL; UIKit/chooser presentation
 cannot be proven by the web harness or an unsigned compiler build.
 
+Profile launcher icons have three complementary owners. Pure contracts derive
+all 42 avatars from the face/hue registries and exercise account-scoped cache,
+successful-save ordering, stale-account rejection, latest-wins serialization,
+unavailable bridges, native failures, and primary reset. Native shell contracts
+pin the local plugin packages and registration, iOS's primary plus exact 41
+alternate catalogs/build settings, Android's exact 42 aliases and component
+state policy, light/dark and adaptive/legacy/monochrome resource contracts, and
+the timestamp-free `native/profile-app-icons.manifest.json` mappings and hashes.
+Regenerating twice must leave the manifest and representative assets
+byte-identical. None of those checks proves that SpringBoard or an OEM launcher
+has repainted its pixels.
+
 The iOS contract also requires the App target's Debug and Release
 configurations to reference the exact Sign in with Apple and Game Center
 entitlement request. App Store listing delivery stays a separate focused
@@ -341,6 +353,23 @@ Before a native release, run the full Node 24 `mise exec -- npm test` gate, the 
 native/identity/startup contracts, CocoaPods plus an unsigned iOS simulator
 build, and the Android Gradle/AAB job. Repository gates do not replace device
 acceptance:
+
+- On signed iPhone and iPad builds, select the primary, at least one value of
+  every face and every hue, and two successive alternates. Confirm the iOS
+  system alert appears only for a real change, relaunch/reconciliation of the
+  already-selected icon is silent, and returning to `die:5:cy` restores the
+  primary. Inspect authored Light/Dark plus system-derived Clear/Tinted Home,
+  Spotlight, Settings, and notification appearances.
+- On API 24 and API 33+ devices, exercise primary → alternate → alternate →
+  primary, then cold launch from the selected alias. Inspect legacy, adaptive,
+  round-masked, and themed monochrome presentations. Record launcher/OEM and
+  allow its cache to settle; PackageManager convergence is the assertion, not
+  an immediate claim that a Home-screen item repainted in place.
+- On both platforms, prove a failed avatar save leaves the launcher unchanged,
+  a native icon failure does not undo a successful profile save, the latest of
+  overlapping profile/reset requests wins, and sign-out or account replacement
+  restores primary before the next account reconciles. Throughout, native
+  splash, in-app loading, PWA, and widget art must remain the cyan five.
 
 Apple capability activation and repository entitlement wiring were completed
 on 2026-08-25, but profile uptake, signed archive/device acceptance, Game Center

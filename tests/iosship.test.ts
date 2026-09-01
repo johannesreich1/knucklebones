@@ -32,6 +32,7 @@
 // proves the repo's own iOS manifests agree with each other and with the build.
 import { existsSync, readFileSync } from 'node:fs';
 import { APP_ID } from '../src/config.ts';
+import { DEFAULT_AVATAR, PROFILE_AVATARS, appIconIdForAvatar } from '../src/profile-avatar.ts';
 import { verifyIosPayloadContract } from './support/ios-payload-contract.ts';
 import { verifyIosPodContract, verifyPodParsersCouldFail } from './support/ios-pod-contract.ts';
 import { verifyIosShellContract } from './support/ios-shell-contract.ts';
@@ -46,6 +47,9 @@ const PKG = 'native/package.json';
 const NATIVE_LOCK = 'native/package-lock.json';
 const GC_PKG = 'native/plugins/gamecenter/package.json';
 const GC_SWIFT = 'native/plugins/gamecenter/ios/Sources/GameCenterPlugin/GameCenterPlugin.swift';
+const APP_ICON_PKG = 'native/plugins/appicon/package.json';
+const APP_ICON_PODSPEC = 'native/plugins/appicon/KnucklebonesAppIcon.podspec';
+const APP_ICON_SWIFT = 'native/plugins/appicon/ios/Sources/AppIconPlugin/AppIconPlugin.swift';
 const ROOT_PKG = 'package.json';
 const CONFIG = 'native/capacitor.config.json';
 const SYNCED_CONFIG = 'native/ios/App/App/capacitor.config.json';
@@ -55,6 +59,7 @@ const REQUIRE_SYNCED = process.argv.includes('--require-synced');
 const pkg = JSON.parse(readFileSync(PKG, 'utf8'));
 const nativeLock = JSON.parse(readFileSync(NATIVE_LOCK, 'utf8'));
 const gcPkg = JSON.parse(readFileSync(GC_PKG, 'utf8'));
+const appIconPkg = JSON.parse(readFileSync(APP_ICON_PKG, 'utf8'));
 const rootPkg = JSON.parse(readFileSync(ROOT_PKG, 'utf8'));
 const capacitor = JSON.parse(readFileSync(CONFIG, 'utf8'));
 /* ================= 0. BUILD/NATIVE BOUNDARY ================= */
@@ -104,6 +109,75 @@ check(/@objc\(GameCenterPlugin\)/.test(gcSwift)
   && /player\.authenticateHandler\s*=/.test(gcSwift),
   `${GC_SWIFT} must provide the GameCenter bridge and Apple's signed identity payload`);
 
+const APP_ICON_PACKAGE = 'knucklebones-app-icon';
+check(pkg.dependencies?.[APP_ICON_PACKAGE] === 'file:plugins/appicon',
+  `${PKG} must install the tracked profile-icon bridge as ${APP_ICON_PACKAGE}=file:plugins/appicon`);
+check(nativeLock.packages?.['']?.dependencies?.[APP_ICON_PACKAGE] === 'file:plugins/appicon',
+  `${NATIVE_LOCK} does not mirror ${PKG}'s local profile-icon dependency`);
+check(nativeLock.packages?.[`node_modules/${APP_ICON_PACKAGE}`]?.link === true
+  && nativeLock.packages?.[`node_modules/${APP_ICON_PACKAGE}`]?.resolved === 'plugins/appicon'
+  && nativeLock.packages?.['plugins/appicon']?.name === APP_ICON_PACKAGE
+  && nativeLock.packages?.['plugins/appicon']?.version === appIconPkg.version,
+`${NATIVE_LOCK} does not lock ${APP_ICON_PACKAGE} to the tracked local plugin package`);
+check(appIconPkg.name === APP_ICON_PACKAGE && appIconPkg.capacitorPlugin === true
+  && appIconPkg.capacitor?.ios?.src === 'ios'
+  && appIconPkg.files?.includes('KnucklebonesAppIcon.podspec'),
+`${APP_ICON_PKG} must expose the tracked AppIcon Capacitor iOS package and podspec`);
+
+const appIconPodspec = readFileSync(APP_ICON_PODSPEC, 'utf8');
+check(/s\.name\s*=\s*['"]KnucklebonesAppIcon['"]/.test(appIconPodspec)
+  && /s\.source_files\s*=\s*['"]ios\/Sources\/\*\*\/\*\.\{swift,h,m\}['"]/.test(appIconPodspec)
+  && /s\.ios\.deployment_target\s*=\s*['"]15\.0['"]/.test(appIconPodspec)
+  && /s\.dependency\s+['"]Capacitor['"]/.test(appIconPodspec)
+  && /s\.frameworks\s*=\s*['"]UIKit['"]/.test(appIconPodspec),
+`${APP_ICON_PODSPEC} must compile the Swift bridge against Capacitor/UIKit for iOS 15`);
+
+const appIconSwift = readFileSync(APP_ICON_SWIFT, 'utf8');
+const profileHues = [...new Set(PROFILE_AVATARS.map((avatar) => avatar.split(':')[2]))];
+const swiftHueLiteral = (appIconSwift.match(/\bhues\s*=\s*\[([^\]]+)\]/) || [])[1] ?? '';
+const swiftHues = [...swiftHueLiteral.matchAll(/["']([^"']+)["']/g)].map((match) => match[1]);
+const expectedAlternates = PROFILE_AVATARS.map(appIconIdForAvatar).filter((icon) => icon !== 'primary');
+const getStateContract = appIconSwift.slice(
+  appIconSwift.indexOf('@objc func getState'),
+  appIconSwift.indexOf('@objc func setIcon'),
+);
+const setIconContract = appIconSwift.slice(appIconSwift.indexOf('@objc func setIcon'));
+const compareOffset = setIconContract.indexOf('if application.alternateIconName == desiredName');
+const mutationOffset = setIconContract.indexOf('application.setAlternateIconName(desiredName)');
+check(/@objc\(AppIconPlugin\)/.test(appIconSwift)
+  && /identifier\s*=\s*["']AppIconPlugin["']/.test(appIconSwift)
+  && /jsName\s*=\s*["']AppIcon["']/.test(appIconSwift)
+  && /CAPPluginMethod\(name:\s*["']getState["'],\s*returnType:\s*CAPPluginReturnPromise\)/.test(appIconSwift)
+  && /CAPPluginMethod\(name:\s*["']setIcon["'],\s*returnType:\s*CAPPluginReturnPromise\)/.test(appIconSwift),
+`${APP_ICON_SWIFT} must expose promise-based AppIcon.getState/setIcon bridge methods`);
+check(DEFAULT_AVATAR === 'die:5:cy' && expectedAlternates.length === 41
+  && /primaryID\s*=\s*["']primary["']/.test(appIconSwift)
+  && /profilePrimaryID\s*=\s*["']die-5-cy["']/.test(appIconSwift)
+  && JSON.stringify(swiftHues) === JSON.stringify(profileHues)
+  && /for face in 1\.\.\.6/.test(appIconSwift)
+  && /if id != profilePrimaryID/.test(appIconSwift),
+`${APP_ICON_SWIFT} allow-list must derive the exact 41 alternates while keeping die:5:cy primary`);
+check(/UIApplication\.shared/.test(getStateContract)
+  && /supportsAlternateIcons/.test(getStateContract)
+  && /alternateIconName/.test(getStateContract)
+  && /["']supported["']/.test(getStateContract) && /["']icon["']/.test(getStateContract)
+  && !/["']changed["']/.test(getStateContract),
+`${APP_ICON_SWIFT} getState must return only supported/current icon from UIKit`);
+check(/guard requested != Self\.profilePrimaryID/.test(setIconContract)
+  && /guard requested == Self\.primaryID \|\| Self\.alternateIDs\.contains\(requested\)/.test(setIconContract)
+  && /requested == Self\.primaryID \? nil : requested/.test(setIconContract)
+  && compareOffset >= 0 && mutationOffset > compareOffset
+  && /["']supported["']/.test(setIconContract) && /["']icon["']/.test(setIconContract)
+  && /["']changed["']/.test(setIconContract)
+  && (appIconSwift.match(/DispatchQueue\.main\.async/g) ?? []).length >= 3,
+`${APP_ICON_SWIFT} setIcon must validate, map primary to nil, compare first, mutate on main, and report changed`);
+for (const code of [
+  'invalid-icon', 'primary-as-alternate', 'unknown-current-icon',
+  'unsupported', 'icon-change-failed', 'icon-state-mismatch',
+]) {
+  check(appIconSwift.includes(`"${code}"`), `${APP_ICON_SWIFT} must retain stable ${code} errors`);
+}
+
 /* ================= 1. APPLICATION IDENTITY + iOS SHELL ================= */
 
 const { xcodeIds, gcBundle } = verifyIosShellContract(check);
@@ -146,7 +220,9 @@ if (existsSync(CONFIG)) {
     check(syncedCfg.server?.cleartext !== true,
       `the capacitor.config.json inside the Xcode project enables cleartext HTTP`);
     const registered = syncedCfg.packageClassList ?? [];
-    for (const plugin of ['AppleSignInPlugin', 'SplashScreenPlugin', 'SharePlugin', 'GameCenterPlugin']) {
+    for (const plugin of [
+      'AppleSignInPlugin', 'SplashScreenPlugin', 'SharePlugin', 'GameCenterPlugin', 'AppIconPlugin',
+    ]) {
       check(registered.includes(plugin),
         `${syncedConfig} does not register ${plugin}; the corresponding native capability would be inert`);
     }
@@ -158,7 +234,7 @@ verifyPodParsersCouldFail(check, pods);
 emitReport({
   nodePin, nodeRange,
   appId: APP_ID, xcodeIds, gcBundle, requireSynced: REQUIRE_SYNCED,
-  gameCenterPackage: GC_PACKAGE,
+  gameCenterPackage: GC_PACKAGE, appIconPackage: APP_ICON_PACKAGE,
   podfileSha: pods.podfileSha, stampedSha: pods.stamped,
   declared: Object.fromEntries(pods.declared), locked: Object.fromEntries(pods.locked),
   problems, errs,

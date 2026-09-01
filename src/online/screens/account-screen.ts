@@ -246,9 +246,9 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
       runeCollection = fallback;
     }
     const collectionAccountId = runeCollection.accountId?.toLowerCase() ?? null;
-    if (!ownsRun() || !collectionAccountId
+    if (!ownsRun() || !collectionAccountId || !profile
         || user?.id.toLowerCase() !== collectionAccountId
-        || (profile && profile.id.toLowerCase() !== collectionAccountId)) return null;
+        || profile.id.toLowerCase() !== collectionAccountId) return null;
     const ownsCollection = await runeCollectionMatchesActiveAccount(runeCollection);
     if (!ownsCollection || !ownsRun()) return null;
     if (options.runeGuide && options.expectedAccountId

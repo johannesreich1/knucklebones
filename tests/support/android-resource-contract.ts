@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
+import { verifyAndroidProfileIconResources } from './android-profile-icon-contract.ts';
 import { filesUnder } from './ios-artifacts.ts';
 import {
   alphaBounds,
@@ -66,6 +67,8 @@ export function verifyAndroidResourceContract(
     check(alpha === 4 || alpha === 6,
       `${res}/mipmap-${density}/ic_launcher_monochrome.png must retain an alpha channel`);
   }
+
+  verifyAndroidProfileIconResources(check, res);
   for (const [version, themed] of [['v26', false], ['v33', true]] as const) {
     for (const launcher of ['ic_launcher.xml', 'ic_launcher_round.xml']) {
       const file = `${res}/mipmap-anydpi-${version}/${launcher}`;
@@ -167,7 +170,7 @@ export function verifyAndroidResourceContract(
   const capacitorAssetsIndex = androidAssetCommand.indexOf('npm --prefix native run assets:android');
   const finalizerIndex = androidAssetCommand.indexOf('node tools/appicon.mjs --android-finalize');
   check(iconGenerator.includes('ANDROID_ADAPTIVE_ICON_FILES')
-    && iconGenerator.includes('dieMarkup(5')
+    && iconGenerator.includes('dieMarkup(face')
     && iconGenerator.includes("inlineCssGraph(['src/styles/main.css']")
     && iconGenerator.includes('mipmap-anydpi-v26/ic_launcher.xml')
     && iconGenerator.includes('mipmap-anydpi-v33/ic_launcher.xml')

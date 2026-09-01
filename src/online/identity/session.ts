@@ -15,7 +15,8 @@ import {
   readRuneCollectionSnapshot,
 } from '../../rune-collection-cache.ts';
 import { invalidateRuneCollectionRefreshes } from '../runes/rune-collection.ts';
-import { clearProfileCache } from '../../profile-cache.ts';
+import { resetProfileAppIcon } from '../../native/app-icon.ts';
+import { clearProfileCache, readProfileCache } from '../../profile-cache.ts';
 
 /* ---- auth ----
 
@@ -78,6 +79,12 @@ export async function signIn(email: string, password: string): Promise<string | 
   return localizedAuthError(error);
 }
 const MANUAL_AUTH = 'knucklebones.online.manual-auth';
+
+function resetProfilePresentation(): void {
+  clearProfileCache();
+  void resetProfileAppIcon();
+}
+
 export async function signOut(): Promise<void> {
   invalidateRuneCollectionRefreshes();
   clearRuneCollectionSnapshot();
@@ -85,7 +92,7 @@ export async function signOut(): Promise<void> {
   acceptedGameCenterRevision = null;
   resetGuestGameCenterLink();
   try { localStorage.setItem(MANUAL_AUTH, '1'); } catch { /* forgetful host */ }
-  clearProfileCache();
+  resetProfilePresentation();
 }
 /* Once a device has held a real account, silently minting a guest on the next
    tap would be a trap: the player signed out to sign back IN. Remembering that
@@ -121,7 +128,7 @@ export async function startFreshGuest(): Promise<string | null> {
   clearRuneCollectionSnapshot();
   acceptedGameCenterRevision = null;
   resetGuestGameCenterLink();
-  clearProfileCache();
+  resetProfilePresentation();
   forgetDeviceAccount();
   return null;
 }
@@ -143,6 +150,14 @@ export async function currentUser(): Promise<Me | null> {
   if (!user || (runes && runes.accountId !== user.id.toLowerCase())) {
     invalidateRuneCollectionRefreshes();
     clearRuneCollectionSnapshot();
+  }
+  /* A provider restore can replace the session without passing through the
+     explicit sign-out door. Account-scoped presentation from the previous
+     user must become primary while the new profile row is fetched. */
+  const profile = readProfileCache();
+  if (user && profile?.accountId
+      && profile.accountId.toLowerCase() !== user.id.toLowerCase()) {
+    resetProfilePresentation();
   }
   return user;
 }
@@ -239,7 +254,9 @@ export async function ensureIdentity(): Promise<Me | null> {
 
   const { data, error } = await supa().auth.signInAnonymously();
   if (error) return null;
-  return me(data.user);
+  const guest = me(data.user);
+  if (guest) resetProfilePresentation();
+  return guest;
 }
 
 /* The second rung: hang an email on the account the player already has, so the
@@ -279,7 +296,6 @@ export async function deleteAccount(): Promise<{
   }>('account-delete', {});
   if (r.status === 200 && r.data?.deleted) {
     await signOut();
-    clearProfileCache();
     // the account is gone, so the device is a newcomer again — next tap plays
     try { localStorage.removeItem(KNOWN); } catch { /* forgetful host */ }
     try { localStorage.removeItem(MANUAL_AUTH); } catch { /* forgetful host */ }

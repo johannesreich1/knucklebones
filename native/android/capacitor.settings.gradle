@@ -10,3 +10,6 @@ project(':capacitor-splash-screen').projectDir = new File('../node_modules/@capa
 
 include ':capawesome-capacitor-apple-sign-in'
 project(':capawesome-capacitor-apple-sign-in').projectDir = new File('../node_modules/@capawesome/capacitor-apple-sign-in/android')
+
+include ':knucklebones-app-icon'
+project(':knucklebones-app-icon').projectDir = new File('../plugins/appicon/android')

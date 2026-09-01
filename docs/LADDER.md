@@ -540,10 +540,24 @@ baseline, and deleting the season rating cascades it away.
 There is **no "N to the next group"** line. The ring already says how far
 along you are, and the exact remainder was a number nobody was going to act on.
 
-**Avatar.** `profiles.avatar`, e.g. `"die:5:cy"` — a die face 1–6 and a hue, 36
-identities, tap the avatar to change it. No storage bucket, no moderation, and
-no user-generated-image obligations at App Store review. The string format is
-the seam: a later value can be `"img:<storage-path>"` with no schema change.
+**Avatar.** `profiles.avatar`, e.g. `"die:5:cy"` — one of six faces in one of
+seven hues (`cy`, `mg`, `gold`, `green`, `violet`, `orange`, `blue`): **42
+identities**, all derived from the duel-hue registry. Tap the avatar to change
+it. No storage bucket, no moderation, and no user-generated-image obligations
+at App Store review. The string format is the seam: a later value can be
+`"img:<storage-path>"` with no schema change.
+
+In an installed native app, a server-confirmed avatar also selects the matching
+launcher icon on that device. `die:5:cy` is the primary icon; the other 41 are
+pre-bundled alternates. A picker preview changes nothing: only a successful
+save, or a successful account-scoped profile read, can reconcile the launcher.
+The latest confirmed request wins if profile reads, saves, sign-out, or an
+account switch overlap. Sign-out and account replacement restore the primary
+icon before another account's profile is allowed to select its own. Launcher
+failure is cosmetic and never rolls back the profile write. iOS presents its
+system confirmation alert for a real alternate-icon change; Android launcher
+refresh timing belongs to the installed launcher. The PWA/widget icon and every
+loading screen remain the fixed cyan five rather than becoming account state.
 
 **"Member since" is hidden for guests** — their account lives on this device
 only, so the line would be a promise nobody made.

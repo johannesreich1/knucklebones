@@ -7,6 +7,9 @@ import {
   NATIVE_STORE_NAME,
 } from '../../src/config.ts';
 import { LOCALE_REGISTRY } from '../../src/i18n/locale.ts';
+import {
+  verifyIosAppIconContract,
+} from './ios-app-icon-contract.ts';
 import { sameBytes } from './ios-artifacts.ts';
 import {
   alphaBounds,
@@ -55,6 +58,7 @@ export function verifyIosShellContract(check: Check): {
   check(NATIVE_APP_NAME === GAME_NAME && NATIVE_STORE_NAME === 'Knucklebones Neon',
     'installed native label must stay Knucklebones while the store listing stays Knucklebones Neon');
 
+  verifyIosAppIconContract(check);
   const xcode = readFileSync(XCODE, 'utf8');
   const xcodeIds = [...xcode.matchAll(/PRODUCT_BUNDLE_IDENTIFIER\s*=\s*([^;\s]+)\s*;/g)]
     .map((match) => match[1]);

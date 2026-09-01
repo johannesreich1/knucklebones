@@ -26,10 +26,12 @@ takes the `authenticated` role and has a normal `auth.uid()`.
 | The one modal sheet that serves attach *and* restore | `AUTH` in `src/online/screens/auth-specs.ts`, driven by `auth-screen.ts` over the shared `src/ui/sheet.ts` |
 | Game Center → a session | `supabase/functions/gc-auth/` (`verify.ts` is the pure crypto) |
 | Game Center lifecycle + proof bridge | `src/native/game-center.ts` and `native/plugins/gamecenter/` |
+| Profile avatar vocabulary and account-scoped presentation | `src/profile-avatar.ts`, `src/profile-cache.ts`, and `src/online/identity/profile.ts` |
+| Profile avatar → native launcher | `src/native/app-icon.ts` and `native/plugins/appicon/` |
 | Public rate-limit boundary | `cloudflare/identity-gateway/` |
 | Apple code exchange + deletion revocation | `supabase/functions/apple-token-register/`, `apple-revocation-retry/`, and `_shared/apple.ts` |
-| The native bridges | `@capawesome/capacitor-apple-sign-in` plus `native/plugins/gamecenter/` |
-| Tests | `tests/apple-identity.test.ts`, `tests/browser/online-ui/run.mjs`, and `tests/gcauth.test.ts` |
+| The native bridges | `@capawesome/capacitor-apple-sign-in`, `native/plugins/gamecenter/`, and `native/plugins/appicon/` |
+| Tests | `tests/apple-identity.test.ts`, `tests/app-icon.test.ts`, `tests/browser/online-ui/run.mjs`, and `tests/gcauth.test.ts` |
 
 A new provider is a registry entry in `identity.ts` with `available()`,
 `restore()` and `attach()`. The panel renders whatever is available and never
@@ -44,6 +46,34 @@ remain gated by `LEGAL_RELEASE.status`. On success the sheet retires before prof
 loading begins: Profile-origin restore refreshes Profile, while Home-origin
 auth continues the destination the player originally requested. Back cancels
 that pending destination rather than allowing it to route later under Home.
+
+## Profile identity on this device
+
+The profile avatar is presentation, not account proof. It has 42 server-owned
+values — six die faces crossed with seven hues — while authentication still
+depends only on the rung above. The default `die:5:cy` is also the native
+primary launcher icon; the other 41 profile values are pre-bundled native
+alternates. Public/PWA/standalone/widget icons and loading screens stay the
+cyan five.
+
+The eager profile cache includes the owning Supabase account id. Legacy cache
+without an owner may paint Home but cannot select a launcher, and a response
+that started under one session re-checks that session before it may publish.
+Only a successful avatar write or a successful owner-scoped profile read can
+request an icon; picker previews and refused writes cannot. The native
+coordinator serializes requests and lets only the latest revision settle the
+final presentation. Sign-out, deletion, fresh-guest creation, and a detected
+provider/account replacement clear profile presentation and request the
+primary before another account can reconcile its avatar.
+
+Launcher selection is deliberately failure-isolated. An unavailable native
+bridge, iOS rejection, Android component/configuration error, or delayed OEM
+launcher refresh never changes the Supabase result and never rolls back a
+successful profile save. A later confirmed profile read can retry. iOS owns the
+confirmation alert for a real `setAlternateIconName` change; Android can prove
+PackageManager alias state but cannot promise when a launcher redraws it. This
+side effect therefore conveys no authentication, ownership, or synchronization
+guarantee beyond the profile value itself.
 
 ## State, and what is left
 
@@ -187,10 +217,11 @@ mise exec -- npm run native:verify:android
 # or: mise exec -- npm run native:verify
 ```
 
-The native package installs `plugins/gamecenter` through its tracked local
-`knucklebones-game-center` dependency. Sync registers that Swift bridge and the
-Capawesome Apple plugin; verification fails unless the platform manifests,
-plugins, assets, ids, versions, and synced web bytes agree. The Apple button
+The native package installs `plugins/gamecenter` and `plugins/appicon` through
+its tracked local `knucklebones-game-center` and `knucklebones-app-icon`
+dependencies. Sync registers those native bridges and the Capawesome Apple
+plugin; verification fails unless the platform manifests, plugins, profile-icon
+provenance/assets, ids, versions, and synced web bytes agree. The Apple button
 appears in native builds only because `available()` looks for the global
 Capacitor bridge; web code imports no native plugin.
 

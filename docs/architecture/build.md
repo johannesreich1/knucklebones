@@ -79,9 +79,10 @@ The root scripts make the native mutation explicit:
 Every sync first rebuilds `native/www/`; failures are not swallowed. Verify
 then checks the platform's tracked manifests, plugins, assets, versions,
 security settings, and the exact web bytes copied by Capacitor. The tracked
-`knucklebones-game-center` file dependency is the native Game Center
-implementation; iOS verification requires Capacitor and CocoaPods to register
-it rather than accepting an unwired source directory.
+`knucklebones-game-center` and `knucklebones-app-icon` file dependencies are
+the native Game Center and profile-launcher implementations; verification
+requires Capacitor and the platform build to register them rather than
+accepting unwired source directories.
 
 `mise exec -- npm run native:assets:android` renders Android-only custom icon/splash inputs
 from the shared vector generators, runs Capacitor Assets 3.0.5, and writes the
@@ -108,6 +109,64 @@ launch screen stays up through synchronous Home composition; the global
 Splash Screen bridge hides it on the next task with a 200 ms fade, while the
 native five-second auto-hide remains a crash/error watchdog. The web and widget
 entries do not import a native plugin.
+
+### Profile-driven launcher icons
+
+`src/profile-avatar.ts` owns the canonical profile/avatar vocabulary: six die
+faces crossed with the seven `HUE_IDS` entries, for 42 values. `die:5:cy` is
+the installed app's primary cyan-five icon. Every other value maps mechanically
+from `die:<face>:<hue>` to the native id `die-<face>-<hue>`; native bridges
+accept no arbitrary catalog, component, or resource name.
+
+The icon set is generated compiler input, not 41 hand-maintained designs.
+`mise exec -- node tools/appicon.mjs` renders the fixed web icons plus iOS from
+the shared die markup and CSS. `mise exec -- npm run native:assets:android`
+renders Android and runs the Android finalizer. Both refresh the tracked
+`native/profile-app-icons.manifest.json`; after the Android finalizer it is the
+complete deterministic record of:
+
+- its schema version and generator/source components;
+- the primary avatar and launcher id;
+- all 42 avatar-to-iOS-catalog and avatar-to-Android-alias/resource mappings;
+- SHA-256 hashes for every generated profile-icon asset.
+
+The manifest contains no timestamp, so the same sources produce the same bytes
+and provenance. Verification derives the registry from source, checks complete
+coverage and mappings, and rejects a stale generated file or hash. Do not edit
+an alternate catalog, alias, or density resource by hand.
+
+On iOS, `AppIcon.appiconset` is the primary and the other 41 values each have
+an alternate app-icon catalog. Debug and Release list the exact alternates in
+`ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES`; Xcode then generates
+`CFBundlePrimaryIcon` and `CFBundleAlternateIcons`, so those keys do not belong
+as a second manual registry in source `Info.plist`. Every catalog has an
+authored opaque Any/Light rendition and a transparent Dark rendition. iOS
+derives Clear and Tinted appearances; because those pixels are system-owned,
+they require device visual acceptance rather than a checked-in raster claim.
+The Capacitor bridge compares `UIApplication.alternateIconName` before calling
+`setAlternateIconName`, keeping launch reconciliation silent when the correct
+icon is already selected. A real change uses the system API and therefore shows
+iOS's system confirmation alert. An OS error leaves the old launcher selected.
+
+On Android, 42 exported launcher `activity-alias` entries target the same
+`MainActivity`. Each alias carries its canonical `knucklebones.profileIcon`
+metadata and one generated icon resource; exactly one alias is enabled. Android
+13+ applies the complete component-state change atomically. On API 24–32 the
+bridge enables the requested alias before disabling the old one, preferring a
+temporary duplicate over making the installed app unreachable. The selected
+PackageManager state is synchronous and verifiable, but launcher rendering is
+owned by the installed launcher: pixels can refresh after a cache delay, and
+some OEM launchers may replace or remove an existing manually placed Home item
+instead of repainting it in place. The app must not claim that launcher pixels
+have refreshed. Aliases omit a separate `roundIcon`: adaptive masking supplies
+the round path on API 26+, while the legacy alias bitmap is round-safe. Android
+themed icons preserve the selected face and cut-out pip silhouette, but the OS
+owns their monochrome tint, so the profile hue is deliberately absent there.
+
+Only the native launcher is profile-driven. The primary public/PWA/standalone
+and widget art, plus iOS/Android splash and in-app loading art, remain the fixed
+cyan neon five. Startup never waits for icon reconciliation, and an icon error
+cannot become an account, profile, or navigation failure.
 
 The release shell is portrait-only on iOS and Android. The universal iOS target
 explicitly requests the temporary full-screen compatibility mode so its
@@ -303,5 +362,8 @@ A build change must prove:
   that platform is in scope;
 - branded native resources, names, ids, versions, SDKs, plugins, pods, and
   lifecycle manifests agree with the canonical source;
+- the profile-icon provenance manifest covers all 42 avatars, the primary plus
+  41 alternates agree with both native registries, and every generated hash
+  matches the asset that ships;
 - no live-reload URL, cleartext, backup/transfer path, committed signing
   secret, or debug release signing can enter a shipping artifact.
