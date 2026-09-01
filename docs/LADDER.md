@@ -1,14 +1,17 @@
 # The Ladder — points, groups, seasons
 
-*Spec, and as of 2026-08-20 the shipped design: ALL of §1–§6 are live —
-core/ladder.ts, migrations 0016–0024, pvp-move v13 / pvp-claim v10 /
-pvp-join v16, and the profile, avatar picker and match history in the client.
-§4 was reworked the same evening: bot strength moved from the human's
-percentile to the bot's own group.*
+*Spec. As of 2026-08-20, §1–§6 are live except for the explicitly marked
+finish-margin target added to §1 on 2026-09-01 — core/ladder.ts, migrations
+0016–0024, pvp-move v13 / pvp-claim v10 / pvp-join v16, and the profile,
+avatar picker and match history in the client. §4 was reworked the same
+evening: bot strength moved from the human's percentile to the bot's own
+group.*
 
-*This is the thing to argue with before more of it becomes code. Every number was measured, not chosen — the
-simulations are in `docs/LADDER.md`'s appendix and were run against 800–900
-simulated players with skill ~N(0, 180).*
+*This is the thing to argue with before more of it becomes code. The shipped
+ladder numbers were measured rather than chosen — the simulations are in this
+document's appendix and were run against 800–900 simulated players with skill
+~N(0, 180). Later unshipped product targets identify their evidence and any
+measurement still required.*
 
 The ladder replaces a plain Elo rating with a **ladder score**: one number,
 starting at zero, that a player climbs. It is not Elo any more — Elo is
@@ -49,7 +52,8 @@ with it.
 
 Never previewed anywhere in the UI — it depends on the opponent, so any number
 shown *before* a match is wrong about half the time. It appears after: on the
-result screen, and in match history.
+result screen, and in match history. The table is the **currently shipped base
+delta**. The decided finish-margin transfer below is not live yet.
 
 | opponent | win | loss | draw |
 |---|---|---|---|
@@ -60,6 +64,95 @@ result screen, and in match history.
 | 500 below you | +58 | −76 | 0 |
 | 1,000 below you | +38 | −91 | 0 |
 | 2,000 below you | +30 | −109 | 0 |
+
+### Decided finish-margin transfer — not shipped
+
+*Decided 2026-09-01.* Keep opponent strength as the primary signal, then move
+a small, equal number of additional points from the loser to the winner based
+on how decisive the final board was. For a normally completed decisive match:
+
+```
+score_gap          = abs(winner_score - loser_score)
+combined_score     = winner_score + loser_score
+requested_transfer = 2 + round(5 * score_gap / combined_score)  // 2…7
+winner_delta       = winner_base_delta + applied_transfer
+loser_delta        = loser_base_delta  - applied_transfer
+```
+
+The requested minimum **2** makes every decisive finish register whenever the
+loser has cap and floor room; the normalized margin can add up to five more. A
+raw score gap is deliberately not used. The modes operate at different score
+scales, so “won by 20” is not equally decisive in Classic and Row Multiply.
+Dividing by the two final scores' sum produces a dimensionless share and keeps
+the finish transfer comparable across modes. For a normal completion, only the
+server-authoritative final scores determine the requested transfer. Settlement
+status selects the forfeit rule, and the locked pre-settlement ladder rows plus
+base deltas limit what can actually be applied. The client submits none of
+those calculations.
+
+| both players at 1,000 points | requested transfer | final delta instead of +80 / −60 |
+|---|---:|---:|
+| 41–39 | 2 | **+82 / −62** |
+| 50–40 | 3 | **+83 / −63** |
+| 60–30 | 4 | **+84 / −64** |
+| 60–0 | 7 | **+87 / −67** |
+| draw | 0 | **0 / 0** |
+
+The applied transfer is antisymmetric: every extra point gained by the winner
+is taken from the loser, so it adds no ladder-wide points. For an equal-rated
+player whose win-margin and loss-margin distributions are symmetric, the
+expected 50% drift remains +10 points/game. A player who tends to win
+decisively and lose narrowly intentionally moves above that expectation, while
+the reverse pattern moves below it. The seven-point ceiling leaves opponent
+strength overwhelmingly dominant.
+
+Two protections reduce the **applied** transfer below the requested 2–7 when
+necessary:
+
+1. The final loser delta may never pass the existing **−120** maximum. For
+   example, a base upset loss of −118 has room for only a two-point transfer.
+2. The loser must still have the points to fund the transfer after the base
+   delta. If the zero-point floor would absorb some or all of it, that part is
+   not credited to the winner. The finish transfer must not manufacture points
+   at the floor.
+
+Formally, before the final zero clamp:
+
+```
+loss_cap_room = max(0, 120 - abs(loser_base_delta))
+floor_room    = max(0, loser_points_before + loser_base_delta)
+applied_transfer = min(requested_transfer, loss_cap_room, floor_room)
+```
+
+A resignation, forfeit, stall timeout, or account-deletion settlement uses the
+maximum requested transfer of **7**. Its partial board is not a trustworthy
+margin, and quitting must not become a way to obtain the close-loss transfer.
+The same loss-cap and floor protections still apply. A draw transfers zero.
+Bot and human matches use the same settlement rule; weekly entry and Rune
+Ritual do not create alternate ladder maths.
+
+The result screen must keep the signed final delta as its primary number and
+explain it with a compact base/finish breakdown—for example, **+83** with
+“base +80 · finish +3”. Match history may keep the total as its compact row
+value, but its authoritative record must retain enough information to reproduce
+the breakdown. Like the base delta, the finish transfer is never previewed
+before a match.
+
+The requested 2–7 range is a product-feel decision, not a claim of production
+calibration; the applied range is **0–7** because the two boundary protections
+may reduce it. Before implementation ships, retained production-shaped
+simulation must cover all seven modes, Rune Ritual, runes, realistic rating
+gaps, bot and human-shaped outcomes, forfeits, the loss cap, the zero floor,
+and promotion speed.
+
+Persistence is explicit rather than reconstructive: keep the existing signed
+total deltas, add a ladder-formula version, and store each seat's signed
+**applied finish delta**. The base component is then `total - finish`, while
+final scores plus status and formula version reproduce the requested transfer.
+This records a floor/cap reduction even though the pre-settlement ladder
+snapshot is not retained on every match. The total remains match history's
+settlement authority; every terminal path and serialization retry must produce
+the same versioned components exactly once.
 
 ### A draw pays nothing, to either side
 
@@ -745,6 +838,119 @@ already makes the point curve legible. The correction is to redistribute
 content so each early promotion has one clear teaching beat and the long later
 climbs still contain meaningful rewards.
 
+#### League-score decision: keep the current floors
+
+The successor content schedule does **not** change the league scores:
+
+| league | decided floor | width to next point-based league |
+|---|---:|---:|
+| STONE | 0 | 300 |
+| BONE | 300 | 420 |
+| IVORY | 720 | 540 |
+| SILVER | 1,260 | 750 |
+| GOLD | 2,010 | 990 |
+| OBSIDIAN | 3,000 | 1,350 to the small-population NEON fallback |
+| NEON | top 1% position; 4,350 fallback only below 100 rated players | unbounded |
+
+The observed roughly five-game STONE promotion is the desired fast opening,
+not evidence that every later league lasts five games. The tempting
+`420 / 80 ≈ 5` calculation for BONE → IVORY is only a rough perfect-run
+estimate: the quotient is **5.25**, so five equal-rated base wins produce 400
+and the sixth crosses the floor. Five wins can still suffice when stronger
+opponents raise the base payouts or the new applied finish transfers total at
+least 20—an average of four per win.
+
+At an equal-rated 50% record, five wins and five losses produce a base
+`5 × 80 - 5 × 60 = 100`, not 420. With symmetric win/loss finish margins,
+those transfers cancel in expectation, leaving +10 per match and about **42
+matches** for 420 points. Unequal finish margins intentionally shift that
+individual result: across those ten matches the transfer can move the +100
+base total down to +75 or up to +125. The coarse current bot-shaped estimate
+is faster—roughly 15 at the approximately 63% BONE human win share. Its
+base-only equal-rating simplification is
+`0.63 × 80 - 0.37 × 60 = 28.2` and `420 / 28.2 ≈ 15`; the complete expectation
+adds `0.63 × E[win transfer] - 0.37 × E[loss transfer]`. That is why the
+planning range above is 10–20 rather than treating either 5 or 42 as a
+forecast.
+
+##### Best-case traversal bounds
+
+“Best case” needs an opponent assumption because the base payout changes with
+rating gap. These are perfect all-win streaks with no draws or forfeits:
+
+| traversal | width | shipped: equal-rated wins at +80 | target: dominant equal-rated wins at +87* | target: cap-edge higher bot, dominant win | absolute traversal floor at the +160 payout ceiling** |
+|---|---:|---:|---:|---:|---:|
+| STONE → BONE | 300 | 4 | **4** | **3** at up to +101 | 2 |
+| BONE → IVORY | 420 | 6 | **5** | **4** at up to +106 | 3 |
+| IVORY → SILVER | 540 | 7 | **7** | **5** at up to +111 | 4 |
+| SILVER → GOLD | 750 | 10 | **9** | **7** at up to +120 | 5 |
+| GOLD → OBSIDIAN | 990 | 13 | **12** | **8** at up to +128 | 7 |
+| OBSIDIAN width → 4,350 fallback | 1,350 | 17 | **16** | **10** at up to +139 | 9 |
+| NEON in a populated season | positional | not finite | not finite | not finite | not finite |
+
+\* `+87 = +80` equal-rated base plus the maximum requested and applied seven.
+At the zero-point opening, an equal-zero loser cannot fund the finish transfer;
+STONE still takes four such equal-rated wins, so the table's count is unchanged.
+
+\** The absolute +160 is a maths ceiling, not a matchmaking forecast. Against
+an opponent thousands of points above, the base win approaches +160 but the
+opponent's base loss approaches the −120 cap, progressively removing finish
+transfer room. The combined payout therefore never exceeds +160. Current bot
+backfill is much tighter: its rating-gap cap is the player's current league
+width, which produces the preceding cap-edge column. That column itself assumes
+the highest allowed bot appears every time **and** loses every game by the
+maximum normalized margin; real streaks will almost always be slower.
+
+The target finish rule reduces the equal-rated perfect-run bound by at most one
+match in this table. That is deliberately enough to make a dominant result
+visible without turning the finish transfer into the progression engine. Fast perfect
+streaks are allowed to feel fast; the 5–8 STONE target and the later measured
+medians, not these compounded best cases, decide whether floors need review.
+For scale only, five independent wins at the approximate 63% BONE human share
+have a **9.9%** chance, while sixteen at a 52–54% late-league share have only a
+**0.0029–0.0052%** chance—before also requiring dominant margins. Those simple
+powers assume independence and are not telemetry or a progression forecast.
+
+Unlock distribution has **no direct arithmetic effect** on point speed. It
+changes when the player receives and reliably sees fresh content. It may later
+change measured progression indirectly because different mode mixes can change
+human win rates and normalized finish-margin distributions, but that must be
+measured after the target pool ships; it is not a reason to pretend the unlock
+table directly adds or removes ladder points.
+
+The decided finish-margin transfer in §1 also does not justify compensating
+league-floor changes. Its requested range is 2–7 and every applied point moves
+from loser to winner, so it keeps aggregate drift unchanged and is tiny beside
+the opponent-strength base delta. A player who wins big and loses narrowly may
+climb a little faster; that is the intended performance signal, not general
+inflation.
+
+Do not change league floors in the same release as the successor mode
+distribution. First ship and measure the target pool plus the finish-margin
+rule while the current floors remain the control. The desired band for a
+fresh-account, bot-only STONE → BONE climb is a median of **5–8 settled ranked
+matches**, including draws, across at least 30 distinct fresh-account climbs.
+If population remains too small for that cohort, use a deterministic
+clean-profile scenario matrix with varied match seeds and opponent draws rather
+than repeating one path.
+
+Only if the measured median is below five should the first fallback be
+considered: shift every later floor up by 50—BONE 350, IVORY 770, SILVER 1,310,
+GOLD 2,060, OBSIDIAN 3,050, and the tiny-population NEON fallback 4,400. Fifty
+points are about 0.57–0.61 of an equal-rated 82–87-point win; discreteness may
+still move the observed median by one match. Moving BONE alone to 350 while
+leaving IVORY at 720 is rejected because it silently shortens BONE from 420 to
+370. A median above eight triggers diagnosis of bot difficulty, opponent
+selection, mode-specific win/margin distributions, and onboarding
+comprehension before any proposal to lower floors; there is no automatic
+opposite adjustment.
+
+The +50 fallback is a review trigger, not pre-approved release policy. Raising
+floors can visibly demote existing players and moves the bot-strength group
+boundaries even when later widths are preserved. Any eventual change therefore
+needs a separate measured owner decision, must retain every historical unlock
+already earned, and must define the current-player transition explicitly.
+
 | league milestone | decided target reward |
 |---|---|
 | STONE start | Classic, Single Strike, Column Shield, **Bounty** |
@@ -767,8 +973,59 @@ equally across every eligible addition:
 | SILVER | unchanged from IVORY; equipped runes activate separately | Classic 40%; each addition 12% |
 | GOLD and above | SILVER + Row Switch; Limited | Classic 40%; each addition `60/7` (about 8.571%) |
 
+#### Presentation order follows unlock order
+
+All player-facing mode/outcome sequences use one canonical progression order:
+
+**Classic → Single Strike → Column Shield → Bounty → Row Multiply → Rune
+Ritual → Row Switch → Limited.**
+
+That order applies to ranked-outcome entries in the offline CPU picker, full
+local two-player picker, ranked mode spinner/dial, mode library, transition
+slides, and any compact mode list. One shared helper orders whatever
+ranked-outcome subset a caller supplies; each surface retains its own inclusion
+policy:
+
+- the CPU picker shows the full catalog with entitlement/capability locks;
+- local two-player and the library show the full catalog;
+- the ranked spinner shows only the eligible negotiated roster; and
+- a transition supplies only outcomes actually granted by that before/after
+  event.
+
+Every resulting subset preserves canonical relative order. Synthetic RANDOM is
+not an outcome and remains appended separately after the ordered picker
+entries. Non-outcome transition content—the league crossing, SILVER equipment,
+OBSIDIAN weekly access, and NEON medal—remains in explicit typed slots rather
+than being forced into the outcome sorter. A grandfathered mode stays at its
+canonical rank but does not become a newly granted transition slide merely
+because the target implementation ships. Nothing exposes registry
+implementation order or moves a mode to the date one account received it.
+
+Rune Ritual occupies its IVORY teaching position even though it is a format
+rather than a mechanical modifier. Within the shared STONE tier, the order
+walks from baseline through the two smallest rule changes to Bounty's more
+visible match-long reward. The GOLD pair follows its guaranteed debut order:
+Row Switch, then Limited.
+
+One shared outcome presentation registry must own this order. The target
+implementation adds one progression/display rank to the shared ranked-outcome
+spec (or equivalent registry metadata), and one shared roster-order helper
+orders caller-supplied subsets. The offline pickers, ranked spinner, library,
+outcome-unlock slides, and tests all consume that result; no screen owns an
+array, comparator, or second sorting switch of its own. This is a DRY
+presentation seam, not a reason to couple presentation order to the
+deterministic weighted draw.
+RANDOM keeps the exact probability weights above, and its seed-versioned draw
+order remains independent so a visual reorder cannot silently change outcomes.
+The implementation gate pins the full sequence, relative order after each
+supplied tier/capability subset (including grandfathered access), identical
+relative order for entries shared by offline and ranked surfaces, and unchanged
+seeded picks when display ranks are varied in a test fixture.
+
 The weekly OBSIDIAN challenge is a deliberate featured entry with known rules,
-not another node added to this ordinary random wheel.
+not another node added to this ordinary random wheel or canonical outcome
+sequence. It appears as its own clearly labelled entry after ordinary modes
+where those controls share a screen.
 
 The placement decisions are deliberate:
 

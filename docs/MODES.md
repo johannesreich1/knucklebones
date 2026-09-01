@@ -135,6 +135,24 @@ chosen weekly challenge are deliberate exceptions: they exist so a promoted
 player actually encounters the reward instead of waiting for a low-probability
 wheel result.
 
+The separately decided, unshipped finish-margin ladder transfer does not let a
+high-scoring mode pay more merely because its numbers are larger. It uses the
+final score gap divided by the two scores' sum, requests a **2–7** point
+transfer from loser to winner, and may apply **0–7** at the loss cap or
+zero-point floor; draws transfer zero. `docs/LADDER.md §1` owns the exact
+formula, boundary behavior, forfeits, authority, persistence, and release
+evidence.
+
+The successor's canonical player-facing outcome order is defined once in
+`docs/LADDER.md §7` and follows its unlock sequence. The implementation must
+put one progression/display rank on the shared ranked-outcome registry and
+reuse one roster-order helper for ranked-outcome entries in the offline pickers,
+ranked spinner, library, and outcome-unlock slides. Those surfaces must not copy
+arrays or comparators; their distinct inclusion/lock policies and non-outcome
+slots are defined in `docs/LADDER.md §7`. The deterministic weighted draw
+remains a separate concern: reordering the UI must never change a seeded RANDOM
+result.
+
 #### OBSIDIAN weekly featured challenge
 
 The weekly feature is a recurring use of the existing game, not a promise to
