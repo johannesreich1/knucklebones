@@ -2,7 +2,15 @@ import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { filesUnder } from './ios-artifacts.ts';
-import { alphaBounds, colorSpread, pixelAt, readPngPixels, rgbDistance } from './png-pixels.ts';
+import {
+  alphaBounds,
+  alphaRowBounds,
+  colorBounds,
+  colorSpread,
+  pixelAt,
+  readPngPixels,
+  rgbDistance,
+} from './png-pixels.ts';
 
 type Check = (ok: boolean, message: string) => void;
 
@@ -65,10 +73,10 @@ export function verifyAndroidResourceContract(
       check(xml.includes('<background android:drawable="@drawable/ic_launcher_background" />')
         && !/<background>[\s\S]*?<inset/.test(xml),
       `${file} must use the full-bleed adaptive gradient without an inset seam`);
-      check(xml.includes('<inset android:drawable="@mipmap/ic_launcher_foreground" android:inset="16.7%" />'),
+      check(xml.includes('<inset android:drawable="@mipmap/ic_launcher_foreground" android:inset="10%" />'),
         `${file} must keep the adaptive foreground inside the launcher safe zone`);
       check(!themed || (xml.includes('<monochrome>')
-        && xml.includes('<inset android:drawable="@mipmap/ic_launcher_monochrome" android:inset="16.7%" />')
+        && xml.includes('<inset android:drawable="@mipmap/ic_launcher_monochrome" android:inset="10%" />')
         && !xml.includes('<monochrome android:drawable=')),
       `${file} must keep the Android 13 monochrome layer inside the launcher safe zone`);
       check(!ignored(file), `${file} is ignored and would not ship`);
@@ -88,23 +96,43 @@ export function verifyAndroidResourceContract(
   const monochrome = readPngPixels(`${representative}/ic_launcher_monochrome.png`);
   const legacy = readPngPixels(`${representative}/ic_launcher.png`);
   const legacyRound = readPngPixels(`${representative}/ic_launcher_round.png`);
+  const maskable = readPngPixels('public/icon-maskable-512.png');
   check(foreground.colorType === 6,
     'the Android adaptive foreground must retain alpha around and inside the die');
   check(background.colorType === 2 && !background.hasTransparency,
     'the Android adaptive background must remain an opaque RGB layer');
   check(monochrome.colorType === 6,
     'the Android themed-icon layer must retain alpha around and inside the die');
+  check(maskable.colorType === 2 && !maskable.hasTransparency,
+    'the PWA maskable launcher icon must remain an opaque, full-bleed RGB image');
   check(pixelAt(foreground, .03, .03).alpha === 0 && pixelAt(monochrome, .03, .03).alpha === 0,
     'Android adaptive foregrounds must stay transparent outside the die');
   const foregroundBounds = alphaBounds(foreground);
   const foregroundWidth = foregroundBounds
     ? (foregroundBounds.right - foregroundBounds.left + 1) / foreground.width
     : 0;
-  check(foregroundBounds !== null && foregroundWidth >= .68 && foregroundWidth <= .72,
-    `the Android adaptive die should occupy about 70% of its layer, found ${foregroundWidth}`);
-  for (const [x, y] of [[.332, .332], [.668, .332], [.5, .5], [.332, .668], [.668, .668]]) {
-    for (const dx of [-.025, 0, .025]) {
-      for (const dy of [-.025, 0, .025]) {
+  check(foregroundBounds !== null && foregroundWidth >= .59 && foregroundWidth <= .6,
+    `the Android adaptive die's visible rounded bounds should occupy about 59% of its layer, found ${foregroundWidth}`);
+  const topInk = alphaRowBounds(foreground, .4);
+  const bottomInk = alphaRowBounds(foreground, .6);
+  const topCenter = topInk ? (topInk.left + topInk.right) / (2 * foreground.width) : 0;
+  const bottomCenter = bottomInk ? (bottomInk.left + bottomInk.right) / (2 * foreground.width) : 0;
+  check(topInk !== null && bottomInk !== null
+    && topCenter - bottomCenter >= .02 && topCenter - bottomCenter <= .03,
+    `the Android die should have a subtle clockwise tilt, found row centers ${topCenter} and ${bottomCenter}`);
+  const maskableBounds = colorBounds(maskable);
+  const maskableWidth = maskableBounds
+    ? (maskableBounds.right - maskableBounds.left + 1) / maskable.width
+    : 0;
+  check(maskableBounds !== null && maskableWidth >= .5 && maskableWidth <= .52,
+    `the PWA maskable die's visible rounded bounds must stay inside its safe zone, found ${maskableWidth}`);
+  for (const [x, y] of [[.3997, .3716], [.6284, .3997], [.5, .5], [.3716, .6003], [.6003, .6284]]) {
+    check(rgbDistance(pixelAt(maskable, x, y), pixelAt(maskable, .1, y)) <= 3,
+      `the PWA maskable launcher pip at ${x},${y} must reveal its dark gradient`);
+  }
+  for (const [x, y] of [[.383, .3502], [.6498, .383], [.5, .5], [.3502, .617], [.617, .6498]]) {
+    for (const dx of [-.018, 0, .018]) {
+      for (const dy of [-.018, 0, .018]) {
         check(pixelAt(foreground, x + dx, y + dy).alpha === 0,
           `the Android adaptive pip around ${x},${y} must be a substantial transparent cutout`);
         check(pixelAt(monochrome, x + dx, y + dy).alpha === 0,
@@ -116,15 +144,15 @@ export function verifyAndroidResourceContract(
         `the Android legacy launcher pip at ${x},${y} must reveal its dark gradient`);
     }
   }
-  const dieMagenta = pixelAt(foreground, .28, .2);
-  const dieCyan = pixelAt(foreground, .72, .8);
+  const dieMagenta = pixelAt(foreground, .39, .28);
+  const dieCyan = pixelAt(foreground, .61, .72);
   check(dieMagenta.red - dieMagenta.green >= 100
     && dieCyan.blue - dieCyan.red >= 100
     && rgbDistance(dieMagenta, dieCyan) >= 100,
   'the Android adaptive die must remain fully colored from its magenta edge to its cyan edge');
   for (const raster of [legacy, legacyRound]) {
-    const legacyMagenta = pixelAt(raster, .28, .2);
-    const legacyCyan = pixelAt(raster, .72, .8);
+    const legacyMagenta = pixelAt(raster, .39, .28);
+    const legacyCyan = pixelAt(raster, .61, .72);
     check(colorSpread(pixelAt(raster, .1, .5)) <= 3
       && legacyMagenta.red - legacyMagenta.green >= 100
       && legacyCyan.blue - legacyCyan.red >= 100,
@@ -169,6 +197,12 @@ export function verifyAndroidResourceContract(
   check(rgbDistance(splashTop, splashBottom) <= 3
     && rgbDistance(splashTop, { red: 5, green: 6, blue: 14, alpha: 255 }) <= 3,
   'the Android loading screen must preserve the app\'s #05060e first-frame continuity');
+  const splashInkBounds = colorBounds(splashPixels);
+  const splashInkWidthByHeight = splashInkBounds
+    ? (splashInkBounds.right - splashInkBounds.left + 1) / splashPixels.height
+    : 0;
+  check(splashInkBounds !== null && splashInkWidthByHeight >= .14 && splashInkWidthByHeight <= .145,
+    `the Android loading-screen die's visible rounded bounds should occupy about 14.3% of its source height, found ${splashInkWidthByHeight}`);
 
   return { splashRenditions: splashFiles.length };
 }

@@ -19,8 +19,10 @@ import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 export const APP_ICON_VARIANT = 'a';
-export const APP_ICON_PAD = .15;
-export const MASKABLE_ICON_PAD = .2;
+export const APP_ICON_PAD = .22;
+export const MASKABLE_ICON_PAD = .26;
+export const APP_ICON_TILT_DEG = 7;
+export const ANDROID_ADAPTIVE_INSET = '10%';
 export const SYSTEM_DARK_GRADIENT = Object.freeze({ top: '#313131', bottom: '#141414' });
 export const SYSTEM_LIGHT_GRADIENT = Object.freeze({ top: '#ffffff', bottom: '#e5e5e5' });
 const CY = '#28e8ff', MG = '#ff2fa0';
@@ -28,8 +30,9 @@ const CY = '#28e8ff', MG = '#ff2fa0';
 const PIPS = [[.26, .26], [.74, .26], [.5, .5], [.26, .74], [.74, .74]];
 
 /* `pad` is the margin around the die as a fraction of the canvas. The shipped
-   15% gives Apple's current grid more breathing room; maskable icons get 20%
-   because an unknown launcher shape can crop their outer fifth. */
+   22% makes the mark deliberately compact; maskable icons get 26% because an
+   unknown launcher shape can crop their outer fifth. The shared 7° clockwise
+   tilt keeps the face lively without changing its centered safe-zone radius. */
 /* iOS supplies its exact System Dark gradient behind the transparent Dark
    rendition. The opaque light fallback and platforms without appearance-aware
    backgrounds use quiet neutral equivalents: light from the top, dark below,
@@ -81,8 +84,9 @@ export function iconSVG(
     kind === 'a' ? `<g mask="url(#die-cutouts)">${face('url(#g)')}</g>`
     : kind === 'b' ? face(T.bodyB, 'url(#g)', S * .012) + glowPips
     : face(T.body, 'url(#g)', S * .026) + glowPips;
+  const tiltedBody = `<g transform="rotate(${APP_ICON_TILT_DEG} ${S / 2} ${S / 2})">${body}</g>`;
   return `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" xmlns="http://www.w3.org/2000/svg">` +
-    `<defs>${defs}</defs>${transparent ? '' : `<rect width="${S}" height="${S}" fill="url(#bg)"/>`}${body}</svg>`;
+    `<defs>${defs}</defs>${transparent ? '' : `<rect width="${S}" height="${S}" fill="url(#bg)"/>`}${tiltedBody}</svg>`;
 }
 
 /* Adaptive foregrounds must carry alpha: Android supplies and independently
@@ -113,7 +117,8 @@ export function monochromeIconSVG(S = 1024, pad = APP_ICON_PAD) {
     `<defs><mask id="die"><rect width="${S}" height="${S}" fill="#000"/>` +
     `<rect x="${m.toFixed(2)}" y="${m.toFixed(2)}" width="${box.toFixed(2)}" height="${box.toFixed(2)}"` +
     ` rx="${r.toFixed(2)}" fill="#fff"/>${holes}</mask></defs>` +
-    `<rect width="${S}" height="${S}" fill="#fff" mask="url(#die)"/></svg>`;
+    `<g transform="rotate(${APP_ICON_TILT_DEG} ${S / 2} ${S / 2})">` +
+    `<rect width="${S}" height="${S}" fill="#fff" mask="url(#die)"/></g></svg>`;
 }
 
 /* Every target that has to carry the icon. iOS reads the asset catalogue, the
@@ -156,10 +161,10 @@ const androidAdaptiveIconXML = (themed) => `<?xml version="1.0" encoding="utf-8"
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
     <background android:drawable="@drawable/ic_launcher_background" />
     <foreground>
-        <inset android:drawable="@mipmap/ic_launcher_foreground" android:inset="16.7%" />
+        <inset android:drawable="@mipmap/ic_launcher_foreground" android:inset="${ANDROID_ADAPTIVE_INSET}" />
     </foreground>
 ${themed ? `    <monochrome>
-        <inset android:drawable="@mipmap/ic_launcher_monochrome" android:inset="16.7%" />
+        <inset android:drawable="@mipmap/ic_launcher_monochrome" android:inset="${ANDROID_ADAPTIVE_INSET}" />
     </monochrome>
 ` : ''}</adaptive-icon>
 `;

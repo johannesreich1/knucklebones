@@ -28,12 +28,14 @@ import {
 
 const BG = '#05060e';
 const SIZE = 2732;
-/* The die is ~17% of the canvas: after aspect-fill on a phone that lands
-   around 140pt — a mark, not a poster. Rendered at its own 512 canvas and
-   embedded, so the icon's glow blur stays in proportion to the die instead
-   of scaling with the whole splash. */
+export const SPLASH_ICON_SCALE = .24;
+/* The icon canvas is 24% of the splash. Its deliberately smaller 56% die is
+   therefore about 13.4% before rotation (14.3% at its visible rounded bounds):
+   clearly larger than on the launcher, while still reading as a mark rather
+   than a poster. Rendering it at its own 512 canvas keeps the shared vector's
+   geometry in proportion instead of scaling effects with the whole splash. */
 export function splashSVG(S = SIZE) {
-  const die = Math.round(S * 0.17);
+  const die = Math.round(S * SPLASH_ICON_SCALE);
   const off = Math.round((S - die) / 2);
   /* Only the shared die mark is embedded. Its transparent outer canvas and
      pip cutouts reveal this launch screen's #05060e ground, so the splash
