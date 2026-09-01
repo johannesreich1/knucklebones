@@ -124,9 +124,12 @@ or repository state; they do not imply that a provisioning profile, signed
 archive, device authentication, or production backend rollout succeeded.
 
 - [x] **Anonymous sign-ins → ON** — done 2026-08-19.
-- [ ] **Confirm email → OFF**, or configure SMTP. Until then "Keep it forever"
-      can only get as far as *"confirm the link we sent"* — and no link is sent.
-      Guest play is unaffected.
+- [ ] **GO-LIVE BLOCKER — production SMTP:** configure Supabase Auth mail
+      delivery (planned provider: Resend), including DNS/sender identity,
+      credentials, rate limits, and the intended confirmation setting. Verify
+      attach-email, confirmation, and recovery end to end. Until then "Keep it
+      forever" can only get as far as *"confirm the link we sent"* — and no link
+      is sent. Guest play is unaffected, but the account rollout must not ship.
 - [x] **Paid Apple Developer Program membership** for team `4RKFC79X48` — owner
       confirmed active 2026-08-25.
 - [x] **Apple App ID capabilities:** Sign in with Apple is enabled and configured

@@ -130,9 +130,11 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   build. Rollback at any point is unsetting `DEPLOY_VIA_ACTIONS` and re-enabling
   the dashboard build. Not verifiable in the repository: no CI run can execute
   this job until the variable exists.
-- Configure production SMTP through Resend and verify the attach-email loop.
-  DNS, provider credentials, rate limits, and dashboard settings are owner
-  actions.
+- **Go-live blocker — production SMTP:** configure Supabase Auth mail delivery
+  through Resend and verify the complete attach-email, confirmation, and
+  recovery loops. DNS, sender identity, provider credentials, rate limits, and
+  dashboard settings are owner actions. Do not publish the account rollout or
+  mark the Legal release ready while this remains open.
 - Resolve the product name after a real trademark review. The current app id
   is `com.appavaria.knucklebones`; `tests/iosship.test.ts` consistency-gates
   the platform copies if a rename changes it.
@@ -142,8 +144,8 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   fail-closed at `draft`: no public routes or Home door ship yet. By owner
   decision, Settings/auth expose the localized placeholder Imprint/Privacy
   documents in-app while the public
-  support/privacy email, verified provider regions/retention/transfer facts,
-  deletion verification workflow, translation and German legal review, and
+  verified provider regions/retention/transfer facts, deletion verification
+  workflow, translation and German legal review, and
   territory review remain open. The interim development policy is all ages
   with no gate; mandatory
   child/privacy and store-audience reconsideration remains a release blocker

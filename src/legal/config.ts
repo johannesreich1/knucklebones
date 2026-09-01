@@ -26,7 +26,7 @@ export const LEGAL_RELEASE: LegalPublicationConfig = {
     controllerStreet: 'Krumpterstr. 4',
     controllerPostalCity: '81543 München',
     controllerCountry: GERMANY_NAMES,
-    publicEmail: null,
+    publicEmail: 'reichjohannes@icloud.com',
     authorityName: 'Bayerisches Landesamt für Datenschutzaufsicht (BayLDA)',
     authorityStreet: 'Promenade 18',
     authorityPostalCity: '91522 Ansbach',

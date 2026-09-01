@@ -41,6 +41,8 @@ for Vietnam. Add them only after those approvals actually exist.
 
 - Provider and GDPR controller: **Johannes Reich**, Krumpterstr. 4,
   81543 München, Germany.
+- Public support and privacy contact: **reichjohannes@icloud.com**. This address
+  is intentionally public and must remain monitored.
 - Federal state: **Bayern**. The competent private-sector data-protection
   authority is the **Bayerisches Landesamt für Datenschutzaufsicht (BayLDA)**,
   Promenade 18, 91522 Ansbach.
@@ -70,23 +72,17 @@ business connection reopens the assessment.
 
 Do not guess or publish missing values:
 
-1. Create a dedicated public support/privacy email address and set the typed
-   `publicEmail` legal fact, replacing the visible placeholder. A free mailbox
-   is acceptable;
-   a custom-domain mailbox is preferable but not legally necessary. It must be
-   monitored, and it will be public in the app, privacy policy, support page,
-   and Google Play developer profile.
-2. Record a reachable phone number privately in both store accounts. Google
+1. Record a reachable phone number privately in both store accounts. Google
    requires a verified contact phone for personal developer accounts, and
    Apple App Review requires a contact phone. Under the current personal,
    non-trader, free model the number does **not** need to be printed in the
    in-app Impressum or public Google developer profile. If Johannes literally
    has no reachable number, store submission remains blocked until he arranges
    one; do not invent or publish a number.
-3. Confirm the Apple DSA non-trader declaration in App Store Connect and the
+2. Confirm the Apple DSA non-trader declaration in App Store Connect and the
    personal account type in Play Console. Neither repository documentation nor
    the absence of a Gewerbe makes those dashboard declarations automatically.
-4. **Mandatory pre-release reconsideration:** before the first App Store or
+3. **Mandatory pre-release reconsideration:** before the first App Store or
    Play production submission, decide whether all-ages online/ranked play will
    remain. If it remains, complete the child-readable notices,
    parental-consent/age-assurance analysis, deletion handling, SDK/provider
@@ -95,15 +91,17 @@ Do not guess or publish missing values:
    inflating the game's content rating. The hosted PWA is already publicly
    reachable, so do not market it as child-directed or claim child-compliance
    clearance while this review is open.
-5. Verify the exact Supabase database/Function regions and plan, DPA and
-   subprocessors, log and backup retention; Cloudflare transfer/logging/DPA
-   settings; and any production SMTP provider before finalising the processor,
-   transfer, and retention paragraphs.
-6. The canonical public origin is
+4. Verify the exact Supabase database/Function regions and plan, DPA and
+   subprocessors, log and backup retention, and Cloudflare
+   transfer/logging/DPA settings. **Production SMTP is a go-live blocker:**
+   configure the selected provider, set the typed `smtpProvider` fact, and
+   verify attach-email, confirmation, and recovery delivery end to end before
+   the account rollout or Legal release can be marked ready.
+5. The canonical public origin is
    `https://knucklebones-asg.pages.dev`. Choose and document the
    identity-verification workflow for privacy/support/account-deletion requests
    received outside the app.
-7. Configure store availability for the intended broad release while excluding
+6. Configure store availability for the intended broad release while excluding
    mainland China and Vietnam until their game approvals are obtained. Review
    any other territory-specific store warnings rather than blindly selecting
    “all countries.”
