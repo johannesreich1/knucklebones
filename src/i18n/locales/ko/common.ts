@@ -1,0 +1,63 @@
+import type { CatalogShape } from '../../catalog-shape.ts';
+import { enCommon } from '../en/common.ts';
+
+export const koCommon = {
+  app: {
+    name: 'KNUCKLEBONES',
+    edition: '네온 에디션',
+    tagline: '랭크 주사위 대결',
+    portraitOnly: '세로 화면 전용',
+    rotatePortrait: '계속하려면 기기를 세로로 돌리세요.',
+  },
+  actions: {
+    back: '뒤로',
+    cancel: '취소',
+    close: '닫기',
+    continue: '계속',
+    done: '완료',
+    finish: '끝내기',
+    home: '홈',
+    next: '다음',
+    notNow: '나중에',
+    retry: '다시 시도',
+    save: '저장',
+  },
+  states: {
+    on: '켜짐',
+    off: '꺼짐',
+    none: '없음',
+    random: '무작위',
+    loading: '불러오는 중…',
+    unavailable: '사용 불가',
+  },
+  people: {
+    you: '나',
+    opponent: '상대',
+    ai: 'AI',
+    playerOne: '플레이어 1',
+    playerTwo: '플레이어 2',
+    guest: '게스트',
+  },
+  record: {
+    win: '승',
+    loss: '패',
+    draw: '무',
+    wins_one: '{{count}}승',
+    wins_other: '{{count}}승',
+    losses_one: '{{count}}패',
+    losses_other: '{{count}}패',
+    draws_one: '{{count}}무',
+    draws_other: '{{count}}무',
+  },
+  units: {
+    secondShort: '초',
+    points_one: '{{count}}포인트',
+    points_other: '{{count}}포인트',
+    games_one: '{{count}}게임',
+    games_other: '{{count}}게임',
+    castsLeft_one: '{{count}}회 남음',
+    castsLeft_other: '{{count}}회 남음',
+  },
+  build: '빌드 {{tag}}',
+  versus: 'VS',
+} satisfies CatalogShape<typeof enCommon>;

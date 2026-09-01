@@ -6,6 +6,11 @@ export const LOCALE_REGISTRY = [
   { id: 'de', languageTag: 'de', selfName: 'Deutsch' },
   { id: 'fr', languageTag: 'fr', selfName: 'Français' },
   { id: 'it', languageTag: 'it', selfName: 'Italiano' },
+  { id: 'pl', languageTag: 'pl', selfName: 'Polski' },
+  { id: 'tr', languageTag: 'tr', selfName: 'Türkçe' },
+  { id: 'id', languageTag: 'id', selfName: 'Bahasa Indonesia' },
+  { id: 'ja', languageTag: 'ja', selfName: '日本語' },
+  { id: 'ko', languageTag: 'ko', selfName: '한국어' },
 ] as const;
 
 export type SupportedLocale = typeof LOCALE_REGISTRY[number]['id'];

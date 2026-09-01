@@ -45,7 +45,9 @@ check(appStore.bundleId === APP_ID && appStore.storeName === NATIVE_STORE_NAME,
   `${APP_STORE_CONFIG} must use the canonical bundle id and store name`);
 check(appStore.platform === 'IOS', `${APP_STORE_CONFIG} must target only iOS`);
 
-const expectedLocaleOrder = ['en-GB', 'de-DE', 'fr-FR'];
+const expectedLocaleOrder = [
+  'en-GB', 'pt-BR', 'es-ES', 'de-DE', 'fr-FR', 'it', 'pl', 'tr', 'id', 'ja', 'ko',
+];
 const expectedLocales = sorted(expectedLocaleOrder);
 const configuredLocales = appStore.locales?.map((locale: { appStoreLocale: string }) =>
   locale.appStoreLocale) ?? [];
@@ -57,8 +59,16 @@ check(sameStrings(sorted(Object.keys(appStoreManifest.localizations ?? {})), exp
 
 const expectedRuntimeLocales = new Map([
   ['en-GB', 'en'],
+  ['pt-BR', 'pt'],
+  ['es-ES', 'es'],
   ['de-DE', 'de'],
   ['fr-FR', 'fr'],
+  ['it', 'it'],
+  ['pl', 'pl'],
+  ['tr', 'tr'],
+  ['id', 'id'],
+  ['ja', 'ja'],
+  ['ko', 'ko'],
 ]);
 for (const locale of appStore.locales ?? []) {
   check(locale.runtimeLocale === expectedRuntimeLocales.get(locale.appStoreLocale)
@@ -117,8 +127,8 @@ check(appStore.draftSyncApproved === true
 
 const slides = appStoreManifest.slides ?? [];
 const screenshotSets = configuredLocales.length * expectedTargets.length;
-check(Array.isArray(slides) && slides.length === 6 && screenshotSets === 6,
-  `${APP_STORE_MANIFEST} must define six slides across exactly six locale/device sets`);
+check(Array.isArray(slides) && slides.length === 6 && screenshotSets === 22,
+  `${APP_STORE_MANIFEST} must define six slides across exactly twenty-two locale/device sets`);
 check(captureProvenance.schemaVersion === 1
   && captureProvenance.generator === APP_STORE_CAPTURE
   && sameStrings(captureProvenance.locales ?? [], expectedLocaleOrder)
@@ -186,14 +196,18 @@ check(captureModulePaths.length > 0 && missingCaptureModules.length === 0,
 check(/openOnline\(['"]ladder['"]/.test(captureFixtureSource)
     && !/openOnline\(['"]board['"]/.test(captureFixtureSource),
   `${APP_STORE_SOURCE} must open the production ladder through its current view id`);
+check(/localeLanguageTag\(runtimeLocale\)/.test(captureFixtureSource),
+  `${APP_STORE_SOURCE} must distinguish stable locale ids from presentation language tags`);
 check(/onLadderList/.test(captureFixtureSource) && !/onBoardList/.test(captureFixtureSource),
   `${APP_STORE_SOURCE} must wait for the current production ladder panel`);
+check((captureFixtureSource.match(/runtimeT\(['"]game['"], ['"]difficulty\.normal['"]\)/g) ?? []).length === 2,
+  `${APP_STORE_SOURCE} must validate both AI Normal fixtures against localized runtime copy`);
 
-check(/REQUIRED_LOCALES\s*=\s*%w\[de-DE en-GB fr-FR\]/.test(screenshotSync)
+check(/REQUIRED_LOCALES\s*=\s*%w\[de-DE en-GB es-ES fr-FR id it ja ko pl pt-BR tr\]/.test(screenshotSync)
   && /REQUIRED_DISPLAY_TYPES\s*=\s*%w\[APP_IPAD_PRO_3GEN_129 APP_IPHONE_67\]/.test(screenshotSync)
   && /metadataFile must be metadata\.json/.test(screenshotSync)
   && /metadata ownedFields must be exactly/.test(screenshotSync),
-  'Fastlane sync must hard-bind the exact three locales, two display types, and owned metadata file');
+  'Fastlane sync must hard-bind the exact eleven locales, two display types, and owned metadata file');
 check(/ASC_APP_STORE_SYNC_CONFIRM/.test(fastfile)
   && /draftSyncApproved/.test(fastfile)
   && /reviewSubmissionApproved/.test(fastfile)

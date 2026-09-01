@@ -1,6 +1,6 @@
 # Project status
 
-*Current as of 2026-08-31. Keep this page short: current state, unresolved
+*Current as of 2026-09-01. Keep this page short: current state, unresolved
 decisions, and externally owned actions only. Detailed sprint history lives in
 [`docs/history/2026-08-sprint.md`](history/2026-08-sprint.md).*
 
@@ -11,8 +11,8 @@ decisions, and externally owned actions only. Detailed sprint history lives in
 | Web | Live at <https://knucklebones-asg.pages.dev>; pushes to `main` still deploy through the Cloudflare Pages dashboard build immediately, ahead of CI. The gated `deploy` job is merged but skipped until `DEPLOY_VIA_ACTIONS` is set | `build.mjs`, `.github/workflows/ci.yml` |
 | Game | Local solo and two-player play, tutorial, modes, optional offline spells, and shared local/ranked board rendering | `src/core/`, `src/flow/`, `src/ui/` |
 | Ranked | Production has server-authoritative play, matchmaking/bot backfill, ladder, history, profiles, deletion, permanent mode-pool progression, IVORY Rune Trial, authoritative casts, rune collection, and an equipped seat. Ordinary ranked permanently activates each participant's fixed or per-match RANDOM owned rune after that participant has reached SILVER once; a never-SILVER or empty seat remains rune-free, while Rune Trial ignores equipment. The disposable test population has 200 bots spanning the ladder with deliberately beatable 41–54% aggregate win rates, streaks 2–7, and modest varied peaks; real play then updates the ordinary aggregates. Bots carry rune winnings and stable equipped seats scaled by standing and record — see `docs/LADDER.md` § Bot rune winnings | `src/online/`, `src/core/ranked-outcomes.ts`, `supabase/functions/`, `docs/LADDER.md` |
-| Localization | English, Brazilian Portuguese, Spanish, German, French, and Italian share one ordered registry, complete catalogs, native metadata, and measured eager/online mobile geometry | `src/i18n/`, `docs/architecture/localization.md` |
-| Database | Repository and production share the reconciled 59-migration timestamped prefix through `20260830182406_ranked_progression_events.sql`; `supabase/migration-history.json` and the migration-ledger test pin that base. Production also records the guarded, hash-pinned `20260831133000_historical_silver_ranked_runes.sql` stage, making the live ledger 60 migrations and atomically converting match start plus progression events to permanent historical-SILVER semantics. The former compact aliases, obsolete 12-bot seed, and two wrong-stamped equipped-rune files are preserved only in the non-executable archive. Catalog, security, data, Realtime, cron, paired-stage, and legacy-upgrade audits cover the owned surfaces. Ledger alignment does not establish deployed Edge Function bytes. | `supabase/migrations/`, `supabase/legacy-migrations/`, `supabase/migration-history.json` |
+| Localization | English, Brazilian Portuguese, Spanish, German, French, Italian, Polish, Turkish, Indonesian, Japanese, and Korean share one ordered registry, complete catalogs, native metadata, and measured eager/online mobile geometry | `src/i18n/`, `docs/architecture/localization.md` |
+| Database | Repository and production share the reconciled 59-migration timestamped prefix through `20260830182406_ranked_progression_events.sql`; `supabase/migration-history.json` and the migration-ledger test pin that base. Production also records the guarded, hash-pinned `20260831133000_historical_silver_ranked_runes.sql` and `20260901074059_expand_player_settings_locales_11.sql` stages, making the live ledger 61 migrations. The former atomically converts match start plus progression events to permanent historical-SILVER semantics; the latter expands stored player-setting locale IDs to the complete 11-locale stable-ID roster. The former compact aliases, obsolete 12-bot seed, and two wrong-stamped equipped-rune files are preserved only in the non-executable archive. Catalog, security, data, Realtime, cron, paired-stage, and legacy-upgrade audits cover the owned surfaces. Ledger alignment does not establish deployed Edge Function bytes. | `supabase/migrations/`, `supabase/legacy-migrations/`, `supabase/migration-history.json` |
 | Builds | Hosted PWA, standalone HTML, widget, and Capacitor web assets come from the same source build | `build.mjs`, `docs/architecture/build.md` |
 | Native | Capacitor 8.5 iOS and Android projects are tracked; iOS supports 15+, Android installs on API 24+ while targeting API 36 | `native/`, `docs/architecture/build.md` |
 | Design | Product cards, open studies, and archived candidates are explicitly classified and recursively built from shared application CSS/renderers | `design/screens/`, `design/build.mjs` |
@@ -168,8 +168,8 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   is `com.appavaria.knucklebones`; `tests/iosship.test.ts` consistency-gates
   the platform copies if a rename changes it.
 - The shared legal system now contains draft provider, privacy, support, and
-  deletion documents in all six supported languages, plus a deterministic
-  24-page static generator and isolated service-worker routes. Publication is
+  deletion documents in all eleven supported languages, plus a deterministic
+  44-page static generator and isolated service-worker routes. Publication is
   fail-closed at `draft`: no public routes or Home door ship yet. By owner
   decision, Settings/auth expose the localized placeholder Imprint/Privacy
   documents in-app while the public
@@ -186,10 +186,11 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   Store Connect record exists as Apple app `6804966098`, and both Xcode
   configurations now reference the confirmed entitlement request; automatic
   signing and a Debug build work. The editable iOS 1.0 draft now contains the
-  exact owned listing copy and six screenshots for each `en-GB`, `de-DE`, and
-  `fr-FR` locale on both iPhone 6.9-inch and iPad 13-inch (36 images total), and
-  a post-sync read confirmed no remaining metadata, upload, deletion, or order
-  change. No binary or review submission was touched. Before review, ranked
+  exact owned listing copy and six screenshots for each `en-GB`, `pt-BR`,
+  `es-ES`, `de-DE`, `fr-FR`, `it`, `pl`, `tr`, `id`, `ja`, and `ko` locale on
+  both iPhone 6.9-inch and iPad 13-inch (132 images total), and a post-sync read
+  confirmed no remaining metadata, upload, deletion, or order change. No binary
+  or review submission was touched. Before review, ranked
   runes must ship and every affected future-state preview must be regenerated
   from that shipping implementation; store-name clearance, localized public
   legal/support URLs, a signed archive and physical-device proof, Services ID

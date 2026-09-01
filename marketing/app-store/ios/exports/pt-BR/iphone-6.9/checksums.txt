@@ -1,0 +1,6 @@
+9abaca3ef918b7a20a24dafa7560ee4c9feec980f6f7723978cd09e8822b77c5  01-ranked-row-multiply.png
+93e0500317a0b6648f340c1ae5adb20e4bc49572e5eec4bfef867bb27a8d6681  02-ranked-mode-dial.png
+26b3b7417acf92edf6cde60277f4a1c0d95696de7f5e67bd1b6caac8489a37d5  03-ward-runic-seal.png
+cedb20856f693828784102b0ed80d1af3a85739e0fc32c8890d2e2344c5c69cf  04-sunder-overload.png
+f4665c5ba63ae8dab85562b00ef8e1d2b9af70ecbfa26f3c7ed289ff8273b8c9  05-ranked-bounty.png
+fbabde4cc8bc0dfe8302ba32360e4401506b5363a96227f1a4321d30c8b727b0  06-neon-ladder.png

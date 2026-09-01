@@ -38,6 +38,11 @@ function richMarkup(value: string): string[] {
     .map((match) => match[0].replace(/\s+/gu, ' '));
 }
 
+const pluralBase = (key: string): string | null => {
+  const match = key.match(/^(.*)_(?:zero|one|two|few|many|other)$/u);
+  return match?.[1] ?? null;
+};
+
 assert.deepEqual(Object.keys(RESOURCES), [...SUPPORTED_LOCALES],
   'catalog aggregation must follow the locale registry exactly');
 
@@ -45,8 +50,22 @@ for (const namespace of LOCALE_NAMESPACES) {
   const english = flatten(RESOURCES.en[namespace]);
   for (const locale of SUPPORTED_LOCALES) {
     const translated = flatten(RESOURCES[locale][namespace]);
-    assert.deepEqual([...translated.keys()].sort(), [...english.keys()].sort(),
-      `${locale}:${namespace} must have exact English key parity`);
+    const missing = [...english.keys()].filter((key) => !translated.has(key));
+    const additional = [...translated.keys()].filter((key) => !english.has(key));
+    assert.deepEqual(missing, [], `${locale}:${namespace} is missing English catalog keys`);
+    for (const key of additional) {
+      const base = pluralBase(key);
+      const source = base
+        ? (english.get(`${base}_other`) ?? english.get(`${base}_one`))
+        : undefined;
+      assert.ok(source, `${locale}:${namespace}.${key} is not a locale-specific plural category`);
+      const value = translated.get(key)!;
+      assert.ok(value.trim(), `${locale}:${namespace}.${key} must not be blank`);
+      assert.deepEqual(placeholders(value), placeholders(source),
+        `${locale}:${namespace}.${key} must preserve plural interpolation placeholders`);
+      assert.deepEqual(richMarkup(value), richMarkup(source),
+        `${locale}:${namespace}.${key} must preserve plural rich-text markup`);
+    }
     for (const [key, source] of english) {
       const value = translated.get(key)!;
       assert.ok(value.trim(), `${locale}:${namespace}.${key} must not be blank`);

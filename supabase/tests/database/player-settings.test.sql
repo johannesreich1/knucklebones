@@ -3,7 +3,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set search_path = public, extensions;
 
-select plan(26);
+select plan(31);
 
 select ok(
   not has_table_privilege('anon', 'public.player_settings', 'select'),
@@ -79,6 +79,31 @@ select lives_ok(
   $$update public.player_settings set locale = 'it'
      where user_id = '61000000-0000-0000-0000-000000000001'$$,
   'Italian is a valid locale override'
+);
+select lives_ok(
+  $$update public.player_settings set locale = 'pl'
+     where user_id = '61000000-0000-0000-0000-000000000001'$$,
+  'Polish is a valid locale override'
+);
+select lives_ok(
+  $$update public.player_settings set locale = 'tr'
+     where user_id = '61000000-0000-0000-0000-000000000001'$$,
+  'Turkish is a valid locale override'
+);
+select lives_ok(
+  $$update public.player_settings set locale = 'id'
+     where user_id = '61000000-0000-0000-0000-000000000001'$$,
+  'Indonesian is a valid locale override'
+);
+select lives_ok(
+  $$update public.player_settings set locale = 'ja'
+     where user_id = '61000000-0000-0000-0000-000000000001'$$,
+  'Japanese is a valid locale override'
+);
+select lives_ok(
+  $$update public.player_settings set locale = 'ko'
+     where user_id = '61000000-0000-0000-0000-000000000001'$$,
+  'Korean is a valid locale override'
 );
 select throws_ok(
   $$update public.player_settings set locale = 'pt-BR'

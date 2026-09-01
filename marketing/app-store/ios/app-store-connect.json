@@ -14,6 +14,16 @@
       "screenshotExportRoot": "exports/en-GB"
     },
     {
+      "appStoreLocale": "pt-BR",
+      "runtimeLocale": "pt",
+      "screenshotExportRoot": "exports/pt-BR"
+    },
+    {
+      "appStoreLocale": "es-ES",
+      "runtimeLocale": "es",
+      "screenshotExportRoot": "exports/es-ES"
+    },
+    {
       "appStoreLocale": "de-DE",
       "runtimeLocale": "de",
       "screenshotExportRoot": "exports/de-DE"
@@ -22,6 +32,36 @@
       "appStoreLocale": "fr-FR",
       "runtimeLocale": "fr",
       "screenshotExportRoot": "exports/fr-FR"
+    },
+    {
+      "appStoreLocale": "it",
+      "runtimeLocale": "it",
+      "screenshotExportRoot": "exports/it"
+    },
+    {
+      "appStoreLocale": "pl",
+      "runtimeLocale": "pl",
+      "screenshotExportRoot": "exports/pl"
+    },
+    {
+      "appStoreLocale": "tr",
+      "runtimeLocale": "tr",
+      "screenshotExportRoot": "exports/tr"
+    },
+    {
+      "appStoreLocale": "id",
+      "runtimeLocale": "id",
+      "screenshotExportRoot": "exports/id"
+    },
+    {
+      "appStoreLocale": "ja",
+      "runtimeLocale": "ja",
+      "screenshotExportRoot": "exports/ja"
+    },
+    {
+      "appStoreLocale": "ko",
+      "runtimeLocale": "ko",
+      "screenshotExportRoot": "exports/ko"
     }
   ],
   "screenshotTargets": [

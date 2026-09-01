@@ -8,8 +8,9 @@ Frontend ownership and CSS rules remain in `frontend.md` and `styles.md`.
 
 `src/i18n/` owns locale vocabulary, catalogs, lookup, formatting, and DOM
 translation. The supported application locales are registered once, in picker
-order, as `en`, `pt`, `es`, `de`, `fr`, and `it`. Those stable IDs own catalogs,
-routes, and persisted settings. Each registry entry also owns the BCP-47 tag
+order, as `en`, `pt`, `es`, `de`, `fr`, `it`, `pl`, `tr`, `id`, `ja`, and
+`ko`. Those stable IDs own catalogs, routes, and persisted settings. Each
+registry entry also owns the BCP-47 tag
 used by HTML, `Intl`, and native metadata. Brazilian Portuguese therefore has
 the stable ID `pt` and presentation tag `pt-BR`; the other tags currently match
 their IDs. Region subtags do not select separate catalogs: for example,
@@ -29,7 +30,8 @@ policy. Locale resolution is synchronous at startup; all catalogs needed to
 start the app are bundled, so translation does not add a network or
 loading-screen dependency.
 
-The iOS shell declares `en`, `pt-BR`, `es`, `de`, `fr`, and `it` in
+The iOS shell declares `en`, `pt-BR`, `es`, `de`, `fr`, `it`, `pl`, `tr`,
+`id`, `ja`, and `ko` in
 `CFBundleLocalizations` because
 the WebView catalogs are localizations handled manually by the app rather than
 `.lproj` resources. Keep that declaration and the native shell contract in
@@ -99,13 +101,16 @@ locale ID (`pt`) while HTML `lang` and `hreflang` use the registry tag
 
 ## Catalog rules
 
-English is the complete source catalog, the catalog schema, and the per-key
-fallback. Every locale must have exactly the same keys and interpolation
-placeholder names as English; catalog tests reject missing, extra, blank, or
-placeholder-divergent entries. At runtime, a missing entry must resolve to the
-English value rather than a key name or blank string. Use placeholders for
-values inside a sentence and give translators the whole sentence. Do not
-concatenate translated fragments or encode grammar in CSS.
+English is the complete source catalog, the base catalog schema, and the
+per-key fallback. Every locale must contain every English key with identical
+interpolation placeholders. A locale may additionally define the CLDR plural
+category siblings its grammar requires, such as Polish `_few` and `_many`;
+those siblings must belong to an English plural family and preserve that
+family's placeholders and trusted markup. Catalog tests reject missing,
+unrelated extra, blank, or placeholder-divergent entries. At runtime, a missing
+entry must resolve to the English value rather than a key name or blank string.
+Use placeholders for values inside a sentence and give translators the whole
+sentence. Do not concatenate translated fragments or encode grammar in CSS.
 
 Use concise, natural copy rather than literal word-for-word translations. Keep
 language names self-named in the selector. Accessible names, live-region copy,
@@ -127,16 +132,16 @@ Keep these choices consistent in gameplay, help, online surfaces, and
 accessibility copy. `Knucklebones`, player nicknames, and player-entered values
 are never translated.
 
-| Concept | English | Portuguese (Brazil) | Spanish | German | French | Italian |
-|---|---|---|---|---|---|---|
-| computer player | AI | IA | IA | KI | IA | IA |
-| ranked match | ranked match | partida ranqueada | partida clasificatoria | Ranglistenspiel | partie classée | partita classificata |
-| ladder | ladder | ranking | clasificación | Rangliste | classement | classifica |
-| league | league | liga | liga | Liga | ligue | lega |
-| rune | rune | runa | runa | Rune | rune | runa |
-| game mode | game mode | modo de jogo | modo de juego | Spielmodus | mode de jeu | modalità di gioco |
-| draw (result) | draw | empate | empate | Unentschieden | égalité | pareggio |
-| ladder points | ladder points | pontos de ranking | puntos de clasificación | Ranglistenpunkte | points de classement | punti classifica |
+| Concept | English | Portuguese (Brazil) | Spanish | German | French | Italian | Polish | Turkish | Indonesian | Japanese | Korean |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| computer player | AI | IA | IA | KI | IA | IA | SI | YZ | AI | AI | AI |
+| ranked match | ranked match | partida ranqueada | partida clasificatoria | Ranglistenspiel | partie classée | partita classificata | mecz rankingowy | dereceli maç | pertandingan peringkat | ランク戦 | 랭크 매치 |
+| ladder | ladder | ranking | clasificación | Rangliste | classement | classifica | ranking | sıralama | papan peringkat | ランキング | 랭킹 |
+| league | league | liga | liga | Liga | ligue | lega | liga | lig | liga | リーグ | 리그 |
+| rune | rune | runa | runa | Rune | rune | runa | runa | rün | rune | ルーン | 룬 |
+| game mode | game mode | modo de jogo | modo de juego | Spielmodus | mode de jeu | modalità di gioco | tryb gry | oyun modu | mode permainan | ゲームモード | 게임 모드 |
+| draw (result) | draw | empate | empate | Unentschieden | égalité | pareggio | remis | beraberlik | seri | 引き分け | 무승부 |
+| ladder points | ladder points | pontos de ranking | puntos de clasificación | Ranglistenpunkte | points de classement | punti classifica | punkty rankingowe | sıralama puanları | poin peringkat | ランキングポイント | 랭킹 포인트 |
 
 Mode, rune, and ladder-group IDs are machine vocabulary. Their localized
 names and compact labels live in catalogs; portable core code must never use a
