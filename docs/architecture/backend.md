@@ -228,16 +228,17 @@ share its random consumption.
   Demotion or a new season never writes a lower tier. Promotion settlement may
   raise the tier, and the newly eligible pool applies to the next match.
 
-- The approved successor changes the score floors to 0 / 300 / 780 / 1,430 /
-  2,430 / 3,830, with 6,030 only as the small-population NEON fallback. This
-  makes BONE 480 points wide—about one additional average match versus the
-  preceding 450-point target—while shifting every later floor by the same 30
-  points so no later traversal is shortened.
+- The approved successor changes the score floors to 0 / 360 / 840 / 1,490 /
+  2,490 / 3,890, with 6,090 only as the small-population NEON fallback. The
+  360-point STONE band targets roughly six matches on the owner's observed
+  five-match bot path. Every later floor shifts by the same 60 points, keeping
+  BONE 480 points wide—about one additional average match versus the preceding
+  450-point target—and preserving every later traversal width.
   Cutover is one server-owned monotonic migration of every human and bot's
   current and peak points through the group-local mapping in
   `docs/LADDER.md §7`; clients do not calculate or submit the conversion.
-  Historical match deltas stay
-  immutable, positional NEON is recomputed normally, and outcome/rune/weekly
+  Historical match deltas stay immutable, positional NEON is recomputed
+  normally, and outcome/rune/weekly
   entitlements survive independently of the numeric mapping.
 
   The rollout first deploys a client/server contract that understands both
