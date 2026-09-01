@@ -44,6 +44,7 @@ check(navigationPages(LEGAL_SETTINGS_NAV_MARKUP).join() === 'imprint,privacy'
 const expectedGermanyNames = {
   en: 'Germany', pt: 'Alemanha', es: 'Alemania',
   de: 'Deutschland', fr: 'Allemagne', it: 'Germania',
+  pl: 'Niemcy', tr: 'Almanya', id: 'Jerman', ja: 'ドイツ', ko: '독일',
 } as const;
 for (const { id } of LOCALE_REGISTRY) {
   const imprint = renderLegalDocumentBody(legalDocument(id, 'imprint', LEGAL_RELEASE.facts));
@@ -158,7 +159,7 @@ expectContentRejection({
 
 const files = generateLegalPageFiles(fixture);
 const expectedCount = LOCALE_REGISTRY.length * LEGAL_PAGE_IDS.length;
-check(expectedCount === 24, `supported locale/page matrix is ${expectedCount}, expected 24`);
+check(expectedCount === 44, `supported locale/page matrix is ${expectedCount}, expected 44`);
 check(files.size === expectedCount, `synthetic ready build emitted ${files.size} pages`);
 check(generatedLegalPaths(fixture).length === expectedCount,
   'service-worker route matrix differs from generated page matrix');

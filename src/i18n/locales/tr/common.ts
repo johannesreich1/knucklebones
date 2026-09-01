@@ -1,0 +1,63 @@
+import type { CatalogShape } from '../../catalog-shape.ts';
+import { enCommon } from '../en/common.ts';
+
+export const trCommon = {
+  app: {
+    name: 'KNUCKLEBONES',
+    edition: 'Neon Sürümü',
+    tagline: 'Dereceli zar düelloları',
+    portraitOnly: 'YALNIZCA DİKEY',
+    rotatePortrait: 'Oynamaya devam etmek için cihazını dik konuma getir.',
+  },
+  actions: {
+    back: 'Geri',
+    cancel: 'İptal',
+    close: 'Kapat',
+    continue: 'Devam',
+    done: 'Bitti',
+    finish: 'Bitir',
+    home: 'Ana sayfa',
+    next: 'İleri',
+    notNow: 'Şimdi değil',
+    retry: 'Tekrar dene',
+    save: 'Kaydet',
+  },
+  states: {
+    on: 'AÇIK',
+    off: 'KAPALI',
+    none: 'YOK',
+    random: 'RASTGELE',
+    loading: 'Yükleniyor…',
+    unavailable: 'Kullanılamıyor',
+  },
+  people: {
+    you: 'SEN',
+    opponent: 'RAKİP',
+    ai: 'YZ',
+    playerOne: 'OYUNCU 1',
+    playerTwo: 'OYUNCU 2',
+    guest: 'MİSAFİR',
+  },
+  record: {
+    win: 'G',
+    loss: 'M',
+    draw: 'B',
+    wins_one: '{{count}} galibiyet',
+    wins_other: '{{count}} galibiyet',
+    losses_one: '{{count}} mağlubiyet',
+    losses_other: '{{count}} mağlubiyet',
+    draws_one: '{{count}} beraberlik',
+    draws_other: '{{count}} beraberlik',
+  },
+  units: {
+    secondShort: 'SN',
+    points_one: '{{count}} puan',
+    points_other: '{{count}} puan',
+    games_one: '{{count}} oyun',
+    games_other: '{{count}} oyun',
+    castsLeft_one: '{{count}} kullanım kaldı',
+    castsLeft_other: '{{count}} kullanım kaldı',
+  },
+  build: 'sürüm {{tag}}',
+  versus: 'VS',
+} satisfies CatalogShape<typeof enCommon>;

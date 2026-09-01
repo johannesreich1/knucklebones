@@ -41,7 +41,7 @@ requireFact(config.reviewSubmissionApproved === false,
 requireFact(manifest.status === 'approved for draft App Store Connect synchronization',
   `draftSyncApproved requires the reviewed draft-sync manifest status; found ${JSON.stringify(manifest.status)}`);
 
-const expectedLocales = ['de-DE', 'en-GB', 'fr-FR'];
+const expectedLocales = ['de-DE', 'en-GB', 'fr-FR', 'id', 'ja', 'ko', 'pl', 'tr'];
 const actualLocales = config.locales.map((locale) => locale.appStoreLocale);
 requireFact(JSON.stringify(sorted(actualLocales)) === JSON.stringify(expectedLocales),
   `config locales must be exactly ${expectedLocales.join(', ')}`);
@@ -53,7 +53,7 @@ requireFact(JSON.stringify(sorted(Object.keys(metadata.localizations))) === JSON
 
 const runtimeLocales = new Map(config.locales.map((locale) => [locale.appStoreLocale, locale.runtimeLocale]));
 for (const locale of expectedLocales) {
-  requireFact(['en', 'de', 'fr'].includes(runtimeLocales.get(locale)),
+  requireFact(['en', 'de', 'fr', 'pl', 'tr', 'id', 'ja', 'ko'].includes(runtimeLocales.get(locale)),
     `${locale} has unsupported runtime locale ${JSON.stringify(runtimeLocales.get(locale))}`);
   requireFact(manifest.localizations[locale].runtimeLocale === runtimeLocales.get(locale),
     `${locale} runtime locale differs between config and manifest`);

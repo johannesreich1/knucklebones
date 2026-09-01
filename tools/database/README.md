@@ -88,12 +88,13 @@ preview commands. The identity database preview is
 `mise exec -- npm run db:production:apple-game-center`. Add `-- --apply` plus
 the same environment opt-in to apply any selected rollout.
 
-The `settings-locale` allow-list currently has three ordered stages: the base
-settings table, the original `en`/`de`/`fr` locale column, and the forward-only
-expansion to stable IDs `en`, `pt`, `es`, `de`, `fr`, and `it`. Apply and
-validate that third stage before deploying a client that can persist the new
-IDs. Presentation tags such as `pt-BR` are intentionally rejected by the
-database and remain an HTML/`Intl`/native concern.
+The `settings-locale` allow-list currently has four ordered stages: the base
+settings table, the original `en`/`de`/`fr` locale column, the six-ID expansion,
+and the forward-only expansion to stable IDs `en`, `pt`, `es`, `de`, `fr`,
+`it`, `pl`, `tr`, `id`, `ja`, and `ko`. Apply and validate the fourth stage
+before deploying a client that can persist the new IDs. Presentation tags such
+as `pt-BR` are intentionally rejected by the database and remain an
+HTML/`Intl`/native concern.
 
 The command is fail-closed. It:
 

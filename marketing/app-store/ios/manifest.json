@@ -187,6 +187,181 @@
           "subhead": "Gagnez des points à chaque victoire, pourchassez vos rivaux et visez le top 1 %."
         }
       }
+    },
+    "pl": {
+      "runtimeLocale": "pl",
+      "slides": {
+        "ranked-row-multiply": {
+          "eyebrow": "Rankingowy Mnożnik Rzędów",
+          "headlineLines": ["ŁĄCZ KOŚCI.", "MNÓŻ."],
+          "subhead": "Zbuduj dwa punktujące rzędy, połącz mnożniki i odwróć losy gry."
+        },
+        "ranked-mode-dial": {
+          "eyebrow": "Siedem trybów gry",
+          "headlineLines": ["SIEDEM TRYBÓW.", "JEDEN OBRÓT."],
+          "subhead": "Każdy pojedynek rankingowy może zmienić zasady jeszcze przed pierwszym rzutem."
+        },
+        "ward-runic-seal": {
+          "eyebrow": "Sześć taktycznych run",
+          "headlineLines": ["JEDNA PIECZĘĆ.", "ZERO OBRAŻEŃ."],
+          "subhead": "Zabezpiecz kolumnę; następny cios rywala, który zniszczyłby jej kości, zamiast tego rozbije pieczęć."
+        },
+        "sunder-overload": {
+          "eyebrow": "Runa ROZŁAM",
+          "headlineLines": ["JEDNA KOŚĆ.", "KAŻDA KOLUMNA."],
+          "subhead": "Użyj ROZŁAMU, aby jednocześnie uderzyć we wszystkie kolumny rywala z pasującymi kośćmi."
+        },
+        "ranked-bounty": {
+          "eyebrow": "Tryb Nagroda",
+          "headlineLines": ["KAŻDY CIOS", "POPŁACA."],
+          "subhead": "Niszcz pasujące kości i za każdą zachowuj stałe +1."
+        },
+        "neon-ladder": {
+          "eyebrow": "Ranking Neon",
+          "headlineLines": ["WYGRAJ. PNIJ SIĘ.", "POWTÓRZ."],
+          "subhead": "Zdobywaj punkty za każde zwycięstwo, ścigaj upatrzonych rywali i walcz o najlepszy 1%."
+        }
+      }
+    },
+    "tr": {
+      "runtimeLocale": "tr",
+      "slides": {
+        "ranked-row-multiply": {
+          "eyebrow": "Dereceli Satır Çarpanı",
+          "headlineLines": ["ZARLARI EŞLE.", "PUANI KATLA."],
+          "subhead": "Puan getiren iki satır kur, çarpanları üst üste bindir ve oyunu tersine çevir."
+        },
+        "ranked-mode-dial": {
+          "eyebrow": "Yedi oyun modu",
+          "headlineLines": ["YEDİ MOD.", "TEK DÖNÜŞ."],
+          "subhead": "Her dereceli düello, ilk atıştan önce kuralları değiştirebilir."
+        },
+        "ward-runic-seal": {
+          "eyebrow": "Altı taktik rün",
+          "headlineLines": ["TEK MÜHÜR.", "SIFIR HASAR."],
+          "subhead": "Bir sütunu mühürle; zarlarını yok edecek sonraki rakip darbesi bunun yerine mührü kırar."
+        },
+        "sunder-overload": {
+          "eyebrow": "YARMA rünü",
+          "headlineLines": ["TEK ZAR.", "HER SÜTUN."],
+          "subhead": "YARMA’yı kuşan; eş zar bulunan tüm rakip sütunlarına aynı anda vur."
+        },
+        "ranked-bounty": {
+          "eyebrow": "Ödül modu",
+          "headlineLines": ["HER DARBE", "KAZANDIRIR."],
+          "subhead": "Eş zarları yok et; her biri için kalıcı +1 ödül biriktir."
+        },
+        "neon-ladder": {
+          "eyebrow": "Neon sıralaması",
+          "headlineLines": ["KAZAN. YÜKSEL.", "TEKRARLA."],
+          "subhead": "Her galibiyette puan kazan, rakiplerini kovala ve ilk %1 için savaş."
+        }
+      }
+    },
+    "id": {
+      "runtimeLocale": "id",
+      "slides": {
+        "ranked-row-multiply": {
+          "eyebrow": "Bonus Baris Berperingkat",
+          "headlineLines": ["SAMAKAN DADU.", "LIPATGANDAKAN."],
+          "subhead": "Bangun dua baris pencetak skor, tumpuk pengali, lalu balikkan keadaan."
+        },
+        "ranked-mode-dial": {
+          "eyebrow": "Tujuh mode permainan",
+          "headlineLines": ["TUJUH MODE.", "SATU PUTARAN."],
+          "subhead": "Setiap duel berperingkat dapat mengubah aturan sebelum lemparan pertama."
+        },
+        "ward-runic-seal": {
+          "eyebrow": "Enam rune taktis",
+          "headlineLines": ["SATU SEGEL.", "NOL KERUSAKAN."],
+          "subhead": "Segel satu kolom; serangan lawan berikutnya yang akan menghancurkan dadunya justru memecahkan segel."
+        },
+        "sunder-overload": {
+          "eyebrow": "Rune BELAH",
+          "headlineLines": ["SATU DADU.", "SEMUA KOLOM."],
+          "subhead": "Aktifkan BELAH untuk menyerang semua kolom lawan dengan dadu yang sama sekaligus."
+        },
+        "ranked-bounty": {
+          "eyebrow": "Mode Buruan",
+          "headlineLines": ["SETIAP SERANGAN", "BERI BONUS."],
+          "subhead": "Hancurkan dadu yang sama dan simpan bonus permanen untuk setiap dadu."
+        },
+        "neon-ladder": {
+          "eyebrow": "Papan peringkat Neon",
+          "headlineLines": ["MENANG. NAIK.", "ULANGI."],
+          "subhead": "Raih poin setiap kali menang, kejar para rival, dan berjuang masuk 1% teratas."
+        }
+      }
+    },
+    "ja": {
+      "runtimeLocale": "ja",
+      "slides": {
+        "ranked-row-multiply": {
+          "eyebrow": "ランク戦・行ボーナス",
+          "headlineLines": ["同じ目をそろえて。", "倍増。"],
+          "subhead": "2つの得点行を作り、倍率を重ねて戦況をひっくり返そう。"
+        },
+        "ranked-mode-dial": {
+          "eyebrow": "7つのゲームモード",
+          "headlineLines": ["7モード。", "1回転。"],
+          "subhead": "ランク戦では、最初のロール前にルールが変わることがあります。"
+        },
+        "ward-runic-seal": {
+          "eyebrow": "6つの戦術ルーン",
+          "headlineLines": ["1つの結界。", "ダメージゼロ。"],
+          "subhead": "列を1つ封印。次の敵の攻撃では、ダイスの代わりに結界が砕けます。"
+        },
+        "sunder-overload": {
+          "eyebrow": "粉砕ルーン",
+          "headlineLines": ["ダイス1個。", "すべての列へ。"],
+          "subhead": "粉砕を発動し、同じ目がある敵の全列を一度に攻撃しよう。"
+        },
+        "ranked-bounty": {
+          "eyebrow": "バウンティモード",
+          "headlineLines": ["攻撃するたび", "報酬。"],
+          "subhead": "同じ目を破壊し、1個ごとに永久ボーナスを獲得しよう。"
+        },
+        "neon-ladder": {
+          "eyebrow": "ネオンランキング",
+          "headlineLines": ["勝つ。上る。", "繰り返す。"],
+          "subhead": "勝つたびにポイントを獲得し、ライバルを追い抜き、上位1%を目指そう。"
+        }
+      }
+    },
+    "ko": {
+      "runtimeLocale": "ko",
+      "slides": {
+        "ranked-row-multiply": {
+          "eyebrow": "랭크 행 보너스",
+          "headlineLines": ["같은 눈을 맞춰라.", "배가하라."],
+          "subhead": "두 개의 득점 행을 만들고 배수를 쌓아 승부를 뒤집으세요."
+        },
+        "ranked-mode-dial": {
+          "eyebrow": "일곱 가지 게임 모드",
+          "headlineLines": ["일곱 모드.", "한 번의 회전."],
+          "subhead": "모든 랭크 대결은 첫 주사위를 굴리기 전에 규칙이 달라질 수 있습니다."
+        },
+        "ward-runic-seal": {
+          "eyebrow": "여섯 가지 전술 룬",
+          "headlineLines": ["하나의 수호.", "피해는 제로."],
+          "subhead": "열 하나를 봉인하세요. 주사위를 파괴할 다음 공격은 대신 수호를 깨뜨립니다."
+        },
+        "sunder-overload": {
+          "eyebrow": "분쇄 룬",
+          "headlineLines": ["주사위 하나.", "모든 열을 타격."],
+          "subhead": "분쇄를 발동해 같은 눈이 있는 상대의 모든 열을 한꺼번에 공격하세요."
+        },
+        "ranked-bounty": {
+          "eyebrow": "현상금 모드",
+          "headlineLines": ["타격할 때마다", "보상이 쌓인다."],
+          "subhead": "같은 눈을 파괴하고 주사위마다 영구 현상금을 쌓으세요."
+        },
+        "neon-ladder": {
+          "eyebrow": "네온 랭킹",
+          "headlineLines": ["승리. 상승.", "다시 도전."],
+          "subhead": "승리할 때마다 포인트를 얻고 라이벌을 추격해 상위 1%에 도전하세요."
+        }
+      }
     }
   }
 }

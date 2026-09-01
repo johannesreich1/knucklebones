@@ -102,9 +102,10 @@ applies, removes, or reverses schema changes.
   separate from the profile/avatar surface. The browser validates the complete
   shape before applying it; typed columns, hue constraints, and RLS enforce the
   same boundary independently in PostgreSQL. Its locale constraint stores only
-  the six stable catalog IDs (`en`, `pt`, `es`, `de`, `fr`, `it`), never BCP-47
-  presentation tags such as `pt-BR`; extend that allow-list with a forward
-  migration and deploy it before any client can save a newly registered locale.
+  the eleven stable catalog IDs (`en`, `pt`, `es`, `de`, `fr`, `it`, `pl`,
+  `tr`, `id`, `ja`, `ko`), never BCP-47 presentation tags such as `pt-BR`;
+  extend that allow-list with a forward migration and deploy it before any
+  client can save a newly registered locale.
 - Permanent rune ownership lives in owner-readable `player_runes`, not in
   `player_settings` or public profiles. New/existing players start with no
   rows. `(player_id, rune_id)` is the idempotent ownership key; `seen_at` is a
@@ -297,13 +298,15 @@ writing exact before/after facts for new settlements. It also changes ordinary
 ranked match start in the same transaction. Both guarded ranked selectors audit
 the live paired state; either mismatched companion stage fails closed.
 
-The current locale expansion is the forward-only migration
-`20260825161016_expand_player_settings_locales.sql`. It widens the original
-`en`/`de`/`fr` constraint to the registry-derived six stable IDs without
-rewriting stored values. Production records it, and the allow-listed
-`settings-locale` audit confirms its history, exact constraint, comment, and
-stored-value contract. The legal publication switch is a later, independent
-release step.
+The locale roster expands through two forward-only migrations. Production
+already records `20260825161016_expand_player_settings_locales.sql`, which
+widened the original `en`/`de`/`fr` constraint to six stable IDs. The current
+`20260901074059_expand_player_settings_locales_11.sql` stage installs and
+validates the registry-derived eleven-ID constraint before replacing the
+six-ID constraint, without rewriting stored values. The allow-listed
+`settings-locale` audit distinguishes and confirms both stages, their exact
+constraint, comment, and stored-value contract. The legal publication switch
+is a later, independent release step.
 
 The Game Center and Apple credential database lifecycle is recorded in
 production. The guarded `apple-game-center` selection audits the ordered set

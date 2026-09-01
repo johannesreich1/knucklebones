@@ -25,41 +25,49 @@ export interface ProductionSchemaCaseOptions {
 export function runProductionMigrationSchemaCases(options: ProductionSchemaCaseOptions): void {
   const { check, guarded, retentionMigration, expandedLocalesMigration } = options;
 
-  check('schema metadata accepts only complete stages zero through three', () => {
+  check('schema metadata accepts only complete stages zero through four', () => {
     assert.equal(validatePlayerSettingsSchemaStage({
       baseTable: false, baseContract: false, localeColumn: false, localeConstraint: false,
-      localeExpanded: false, localeComment: false, localeValues: false,
+      localeSix: false, localeExpanded: false, localeComment: false, localeValues: false,
     }), 0);
     assert.equal(validatePlayerSettingsSchemaStage({
       baseTable: true, baseContract: true, localeColumn: false, localeConstraint: false,
-      localeExpanded: false, localeComment: false, localeValues: false,
+      localeSix: false, localeExpanded: false, localeComment: false, localeValues: false,
     }), 1);
     assert.equal(validatePlayerSettingsSchemaStage({
       baseTable: true, baseContract: true, localeColumn: true, localeConstraint: true,
-      localeExpanded: false, localeComment: true, localeValues: true,
+      localeSix: false, localeExpanded: false, localeComment: true, localeValues: true,
     }), 2);
     assert.equal(validatePlayerSettingsSchemaStage({
       baseTable: true, baseContract: true, localeColumn: true, localeConstraint: true,
-      localeExpanded: true, localeComment: true, localeValues: true,
+      localeSix: true, localeExpanded: false, localeComment: true, localeValues: true,
     }), 3);
+    assert.equal(validatePlayerSettingsSchemaStage({
+      baseTable: true, baseContract: true, localeColumn: true, localeConstraint: true,
+      localeSix: true, localeExpanded: true, localeComment: true, localeValues: true,
+    }), 4);
   });
 
   check('schema metadata rejects partial, out-of-order, and mismatched postconditions', () => {
     guarded(() => validatePlayerSettingsSchemaStage({
       baseTable: true, baseContract: false, localeColumn: false, localeConstraint: false,
-      localeExpanded: false, localeComment: false, localeValues: false,
+      localeSix: false, localeExpanded: false, localeComment: false, localeValues: false,
     }), /base schema is partial/);
     guarded(() => validatePlayerSettingsSchemaStage({
       baseTable: false, baseContract: false, localeColumn: true, localeConstraint: true,
-      localeExpanded: true, localeComment: true, localeValues: true,
+      localeSix: true, localeExpanded: true, localeComment: true, localeValues: true,
     }), /out of order/);
     guarded(() => validatePlayerSettingsSchemaStage({
       baseTable: true, baseContract: true, localeColumn: true, localeConstraint: true,
-      localeExpanded: true, localeComment: true, localeValues: false,
+      localeSix: true, localeExpanded: true, localeComment: true, localeValues: false,
     }), /stored values/);
     guarded(() => validatePlayerSettingsSchemaStage({
       baseTable: true, baseContract: true, localeColumn: false, localeConstraint: false,
-      localeExpanded: true, localeComment: false, localeValues: false,
+      localeSix: true, localeExpanded: true, localeComment: false, localeValues: false,
+    }), /complete postcondition/);
+    guarded(() => validatePlayerSettingsSchemaStage({
+      baseTable: true, baseContract: true, localeColumn: true, localeConstraint: true,
+      localeSix: false, localeExpanded: true, localeComment: true, localeValues: true,
     }), /complete postcondition/);
   });
 
@@ -117,8 +125,8 @@ export function runProductionMigrationSchemaCases(options: ProductionSchemaCaseO
     assert.ok(VALID_LOCALE_VALUES.includes(`array[${valueRoster}]::text[]`));
     assert.deepEqual(parseMigrationFilename(expandedLocalesMigration), {
       filename: expandedLocalesMigration,
-      version: '20260825161016',
-      name: 'expand_player_settings_locales',
+      version: '20260901074059',
+      name: 'expand_player_settings_locales_11',
     });
   });
 }

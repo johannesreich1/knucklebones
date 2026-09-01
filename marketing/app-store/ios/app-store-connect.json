@@ -22,6 +22,31 @@
       "appStoreLocale": "fr-FR",
       "runtimeLocale": "fr",
       "screenshotExportRoot": "exports/fr-FR"
+    },
+    {
+      "appStoreLocale": "pl",
+      "runtimeLocale": "pl",
+      "screenshotExportRoot": "exports/pl"
+    },
+    {
+      "appStoreLocale": "tr",
+      "runtimeLocale": "tr",
+      "screenshotExportRoot": "exports/tr"
+    },
+    {
+      "appStoreLocale": "id",
+      "runtimeLocale": "id",
+      "screenshotExportRoot": "exports/id"
+    },
+    {
+      "appStoreLocale": "ja",
+      "runtimeLocale": "ja",
+      "screenshotExportRoot": "exports/ja"
+    },
+    {
+      "appStoreLocale": "ko",
+      "runtimeLocale": "ko",
+      "screenshotExportRoot": "exports/ko"
     }
   ],
   "screenshotTargets": [

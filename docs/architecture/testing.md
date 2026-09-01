@@ -143,14 +143,15 @@ checkout has completed, and the runner restores generated output afterward.
 Manifest and executor contracts prove it cannot overlap a reader or be
 followed by another suite.
 
-Pure localization contracts keep the registry, exact catalog keys,
-interpolation placeholders, trusted rich-copy shape, typed compact labels,
-regional-tag normalization, persistence, and fallback aligned across all six
-locales. `tests/i18n.test.ts`, `tests/i18n-catalog.test.ts`, and
+Pure localization contracts keep the registry, exact English/base catalog
+keys, validated locale-specific CLDR plural siblings, interpolation
+placeholders, trusted rich-copy shape, typed compact labels, regional-tag
+normalization, persistence, and fallback aligned across all eleven locales.
+`tests/i18n.test.ts`, `tests/i18n-catalog.test.ts`, and
 `tests/preferences.test.ts` own those checks. The iOS shell contract derives
 `CFBundleLocalizations` expectations from that same registry;
 `tests/production-migrations.test.ts` and
-`supabase/tests/database/player-settings.test.sql` require the six stable
+`supabase/tests/database/player-settings.test.sql` require the eleven stable
 database IDs and reject presentation/unsupported tags.
 
 Rendered localization has three complementary checks. The report-only grapheme audit is
@@ -169,7 +170,7 @@ cannot silently rot. The smoke never replaces the manual matrix or its visual
 pass. The automated gate retains
 `mise exec -- node tests/browser/online-localization/run.mjs`, which uses Chromium and
 stubbed Supabase routes to measure auth, profile, avatar, history, ladder,
-face-off, and ranked-result surfaces. Both browser matrices derive their six
+face-off, and ranked-result surfaces. Both browser matrices derive their eleven
 locales from the registry and cover 320 × 568, 390 × 844, 568 × 320, and
 667 × 375; the eager gate also measures widget widths 320, 390, and 520, and
 renders every registered mode/rune HUD combination at each widget width. It
@@ -180,16 +181,16 @@ its effective 44 px hit region.
 Legal delivery has two focused pure contracts. Run
 `mise exec -- node --experimental-strip-types tests/legal.test.ts` for draft
 public-route suppression, exact Settings/auth placeholder doors, ready-fact
-validation, all 24 synthetic static pages, canonical and
+validation, all 44 synthetic static pages, canonical and
 `hreflang` metadata, and shared in-app/static document parity. Run
 `mise exec -- node tests/service-worker.test.mjs` for exact root/legal cache
 keys, offline isolation, and rejection of unknown-page or missing-asset HTML
 fallback. `mise exec -- node tests/browser/legal.mjs` opens the real controller
 through a synthetic non-shipping opener so all four documents are covered;
 production draft exposes only Imprint/Privacy in Settings and Privacy in auth.
-The same run browser-renders the 24 pages generated from a complete synthetic
+The same run browser-renders the 44 pages generated from a complete synthetic
 ready fixture. Across 320 × 568, 390 × 844, 568 × 320, and 667 × 375 it covers
-192 in-app/static locale-page cases, shared-renderer parity, text ranges, full
+352 in-app/static locale-page cases, shared-renderer parity, text ranges, full
 scroll reachability, a deliberately long URL, one-line compact in-app headers,
 44 px navigation targets, active-overlay language repaint, background
 inertness, heading focus, and close-path focus restoration.

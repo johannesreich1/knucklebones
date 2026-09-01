@@ -92,16 +92,22 @@ sync = KnucklebonesAppStore::ScreenshotSync.new(
   repository_root: ROOT,
   screenshot_root: SCREENSHOT_ROOT
 )
-assert(sync.config.fetch("locales").length == 3, "the contract must own exactly three locales")
+assert(sync.config.fetch("locales").length == 8, "the contract must own exactly eight locales")
 assert(sync.config.fetch("screenshotTargets").length == 2, "the contract must own exactly two device targets")
 
 app_info_creator = LocalizationCreationRecorder.new
 version_creator = LocalizationCreationRecorder.new
+existing_version_locales = config.fetch("locales")
+  .reject { |locale| locale.fetch("appStoreLocale") == "fr-FR" }
+  .to_h do |locale|
+  code = locale.fetch("appStoreLocale")
+  [code, true]
+end
 creation_plan = {
   context: {
     app_info: app_info_creator,
     version: version_creator,
-    version_localizations: { "de-DE" => true, "en-GB" => true }
+    version_localizations: existing_version_locales
   },
   localizations: [{ locale: "fr-FR", create_app_info: true, create_version: true }]
 }
@@ -109,11 +115,7 @@ fr_metadata = metadata.fetch("localizations").fetch("fr-FR")
 auto_created_version = ContractLocalization.new
 auto_created_context = {
   version: version_creator,
-  version_localizations: {
-    "de-DE" => true,
-    "en-GB" => true,
-    "fr-FR" => auto_created_version
-  }
+  version_localizations: existing_version_locales.merge("fr-FR" => auto_created_version)
 }
 auto_created_plan = {
   context: auto_created_context,
@@ -295,7 +297,7 @@ assert(protected.fetch("appInfoLocalizations").first.keys.sort == %w[locale priv
 assert(protected.fetch("versionLocalizations").first.keys.sort == %w[locale supportUrl],
        "owned version values must be excluded from the protected snapshot")
 assert(protected.fetch("screenshotSets").map { |entry| entry.fetch("setId") } == %w[unmanaged italian],
-       "only the six exact managed screenshot targets may be excluded from preservation")
+       "only the sixteen exact managed screenshot targets may be excluded from preservation")
 
 with_whats_new = deep_copy(metadata)
 with_whats_new.fetch("localizations").fetch("en-GB")["whatsNew"] = "Initial release"

@@ -20,6 +20,11 @@ const DETECTION_CASES = [
   detectionCase('de-DE', ['de-DE'], 'de'),
   detectionCase('fr-FR', ['fr-FR'], 'fr'),
   detectionCase('it-CH', ['it-CH'], 'it'),
+  detectionCase('pl-PL', ['pl-PL'], 'pl'),
+  detectionCase('tr-TR', ['tr-TR'], 'tr'),
+  detectionCase('id-ID', ['id-ID'], 'id'),
+  detectionCase('ja-JP', ['ja-JP'], 'ja'),
+  detectionCase('ko-KR', ['ko-KR'], 'ko'),
   detectionCase('unsupported', ['nl-NL'], 'en'),
   detectionCase('mixed-order', ['nl-NL', 'fr-CA', 'de-DE'], 'fr'),
 ];

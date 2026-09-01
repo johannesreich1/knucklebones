@@ -1,0 +1,63 @@
+import type { CatalogShape } from '../../catalog-shape.ts';
+import { enCommon } from '../en/common.ts';
+
+export const jaCommon = {
+  app: {
+    name: 'KNUCKLEBONES',
+    edition: 'ネオンエディション',
+    tagline: 'ランク戦ダイス対決',
+    portraitOnly: '縦向き専用',
+    rotatePortrait: '続けるには、端末を縦向きにしてください。',
+  },
+  actions: {
+    back: '戻る',
+    cancel: 'キャンセル',
+    close: '閉じる',
+    continue: '続ける',
+    done: '完了',
+    finish: '終了',
+    home: 'ホーム',
+    next: '次へ',
+    notNow: '後で',
+    retry: 'もう一度',
+    save: '保存',
+  },
+  states: {
+    on: 'オン',
+    off: 'オフ',
+    none: 'なし',
+    random: 'ランダム',
+    loading: '読み込み中…',
+    unavailable: '利用不可',
+  },
+  people: {
+    you: 'あなた',
+    opponent: '対戦相手',
+    ai: 'AI',
+    playerOne: 'プレイヤー1',
+    playerTwo: 'プレイヤー2',
+    guest: 'ゲスト',
+  },
+  record: {
+    win: '勝',
+    loss: '敗',
+    draw: '分',
+    wins_one: '{{count}}勝',
+    wins_other: '{{count}}勝',
+    losses_one: '{{count}}敗',
+    losses_other: '{{count}}敗',
+    draws_one: '{{count}}分',
+    draws_other: '{{count}}分',
+  },
+  units: {
+    secondShort: '秒',
+    points_one: '{{count}}ポイント',
+    points_other: '{{count}}ポイント',
+    games_one: '{{count}}ゲーム',
+    games_other: '{{count}}ゲーム',
+    castsLeft_one: '残り{{count}}回',
+    castsLeft_other: '残り{{count}}回',
+  },
+  build: 'ビルド {{tag}}',
+  versus: 'VS',
+} satisfies CatalogShape<typeof enCommon>;

@@ -82,7 +82,8 @@ end
 def print_app_store_plan(result, version)
   UI.header("App Store localization, metadata, and screenshot plan")
   UI.message("App: #{APP_STORE_CONFIG.fetch('storeName')} (#{APP_STORE_CONFIG.fetch('appleAppId')})")
-  UI.message("Target: iOS #{version}; en-GB, de-DE, fr-FR; iPhone 6.9-inch and iPad 13-inch")
+  locales = APP_STORE_CONFIG.fetch("locales").map { |locale| locale.fetch("appStoreLocale") }.join(", ")
+  UI.message("Target: iOS #{version}; #{locales}; iPhone 6.9-inch and iPad 13-inch")
 
   result.fetch(:localizations).each do |entry|
     locale = entry.fetch(:locale)
@@ -134,7 +135,7 @@ platform :ios do
     UI.user_error!(error.message)
   end
 
-  desc "Apply one confirmed exact sync to owned metadata and six locale/device screenshot sets"
+  desc "Apply one confirmed exact sync to owned metadata and sixteen locale/device screenshot sets"
   lane :screenshots_upload do
     run_local_screenshot_check
     unless APP_STORE_CONFIG.fetch("reviewSubmissionApproved") == false

@@ -149,19 +149,20 @@ SKU `knucklebones-ios-001`, bundle id `com.appavaria.knucklebones`, and initial
 version `1.0`. Fastlane 2.238.0 is pinned by `Gemfile.lock`. This owner-local
 workflow is deliberately separate from Cloudflare deployment and from binary
 upload. It owns five listing fields and six screenshots for each combination
-of `en-GB`, `de-DE`, and `fr-FR` with iPhone 6.9-inch and iPad 13-inch: 36
-final images across six managed screenshot sets.
+of `en-GB`, `de-DE`, `fr-FR`, `pl`, `tr`, `id`, `ja`, and `ko` with iPhone
+6.9-inch and iPad 13-inch: 96 final images across sixteen managed screenshot
+sets.
 
 | Command | Effect |
 |---|---|
 | `mise exec -- npm run appstore:fastlane:install` | Install the locked Ruby dependencies into ignored `vendor/bundle/` |
-| `mise exec -- npm run appstore:screenshots:generate` | Rebuild the runtime, capture 42 real-runtime source frames, finalize 36 exports, and verify the complete locale/device matrix |
+| `mise exec -- npm run appstore:screenshots:generate` | Rebuild the runtime, capture 112 real-runtime source frames, finalize 96 exports, and verify the complete locale/device matrix |
 | `mise exec -- npm run appstore:screenshots:verify` | Read-only locale coverage, PNG, dimensions, alpha, provenance, metadata-limit, and SHA-256 validation |
 | `mise exec -- npm run appstore:screenshots:contract` | Focused listing identity, export, dependency-pin, and mutation-guard contract |
 | `mise exec -- npm run appstore:screenshots:test` | Pure planner safety cases, including duplicates and the ten-item capacity boundary |
 | `mise exec -- npm run appstore:screenshots:check` | Repeat local validation through pinned Fastlane and prove both Apple display-type mappings |
-| `mise exec -- npm run appstore:screenshots:plan` | Authenticate read-only and print exact localization, owned-metadata, and six-set changes plus an inventory-bound confirmation token |
-| `mise exec -- npm run appstore:screenshots:upload` | After exact draft-sync approval, create missing managed localizations, patch only owned fields, and synchronize all six screenshot sets |
+| `mise exec -- npm run appstore:screenshots:plan` | Authenticate read-only and print exact localization, owned-metadata, and sixteen-set changes plus an inventory-bound confirmation token |
+| `mise exec -- npm run appstore:screenshots:upload` | After exact draft-sync approval, create missing managed localizations, patch only owned fields, and synchronize all sixteen screenshot sets |
 
 The lane never uses generic Deliver overwrite/sync. It creates no app or app
 version, uploads no binary, and never submits for review. It owns only
@@ -184,9 +185,9 @@ plan, metadata-ownership, and approval procedure lives in
 
 Generated marketing images are compiler-like outputs for this workflow. If a
 product/design/localization change affects one screenshot state, regenerate
-that state for all three managed campaign locales and both devices in the same change; shared
-layout, typography, framing, or pipeline changes require the complete 42-raw /
-36-final matrix. Updated raw frames, exports, checksums, provenance, and contact
+that state for all eight managed campaign locales and both devices in the same change; shared
+layout, typography, framing, or pipeline changes require the complete 112-raw /
+96-final matrix. Updated raw frames, exports, checksums, provenance, and contact
 sheets must ship beside the source change. A stale preview is a failed handoff.
 
 Android uses `com.appavaria.knucklebones` for both namespace and application

@@ -7,6 +7,7 @@ import { startCaptureServer } from './capture-server.mjs';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = path.resolve(here, '../../..');
 const manifest = JSON.parse(await readFile(path.join(here, 'manifest.json'), 'utf8'));
+const appStoreConfig = JSON.parse(await readFile(path.join(here, 'app-store-connect.json'), 'utf8'));
 const playwrightPackage = JSON.parse(await readFile(path.join(repositoryRoot, 'node_modules/playwright/package.json'), 'utf8'));
 
 const requireFact = (condition, message) => {
@@ -21,6 +22,10 @@ requireFact(manifest.localizations && typeof manifest.localizations === 'object'
 requireFact(Array.isArray(manifest.slides) && manifest.slides.length > 0,
   'Screenshot manifest has no slides');
 
+const configuredLocales = appStoreConfig.locales?.map((locale) => locale.appStoreLocale) ?? [];
+requireFact(JSON.stringify(Object.keys(manifest.localizations)) === JSON.stringify(configuredLocales),
+  'Screenshot manifest locales must exactly match app-store-connect.json in campaign order');
+
 for (const target of manifest.targets) {
   requireFact(Number.isInteger(target.width) && Number.isInteger(target.height),
     `${target.id} has invalid canvas dimensions`);
@@ -30,9 +35,10 @@ for (const target of manifest.targets) {
 }
 
 for (const [appStoreLocale, localization] of Object.entries(manifest.localizations)) {
-  requireFact(/^[a-z]{2}-[A-Z]{2}$/.test(appStoreLocale),
-    `Invalid App Store locale ${JSON.stringify(appStoreLocale)}`);
-  requireFact(['en', 'de', 'fr'].includes(localization.runtimeLocale),
+  const configured = appStoreConfig.locales.find((locale) => locale.appStoreLocale === appStoreLocale);
+  requireFact(configured?.runtimeLocale === localization.runtimeLocale,
+    `${appStoreLocale} runtime locale differs from app-store-connect.json`);
+  requireFact(['en', 'de', 'fr', 'pl', 'tr', 'id', 'ja', 'ko'].includes(localization.runtimeLocale),
     `${appStoreLocale} has unsupported runtime locale ${JSON.stringify(localization.runtimeLocale)}`);
   const copySlugs = Object.keys(localization.slides ?? {}).sort();
   const slideSlugs = manifest.slides.map((slide) => slide.slug).sort();

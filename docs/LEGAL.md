@@ -1,6 +1,6 @@
 # Legal and privacy release checklist
 
-*Current as of 2026-08-25. This is an engineering/completeness checklist, not
+*Current as of 2026-09-01. This is an engineering/completeness checklist, not
 individual legal advice. Final publication should receive a German legal
 review.*
 
@@ -9,7 +9,8 @@ review.*
 Johannes's legal name, physical address, federal state, private/hobby status,
 and v1 business model are recorded. One typed legal document system now covers
 provider information, privacy, support, and account deletion in English,
-Brazilian Portuguese, Spanish, German, French, and Italian. Its checked-in
+Brazilian Portuguese, Spanish, German, French, Italian, Polish, Turkish,
+Indonesian, Japanese, and Korean. Its checked-in
 publication status is deliberately **draft**. By owner decision, Settings now
 shows Imprint and Privacy and the attach/sign-in modal shows Privacy using the
 localized placeholder document. The build still emits no public legal routes
@@ -21,7 +22,7 @@ Neither store requires a
 separate translation merely because the app is downloadable in a country, but
 GDPR information must be concise, intelligible, easily accessible, and written
 in clear language for the people addressed. V1 therefore prepares one
-factually identical notice in all **six supported product languages**. A
+factually identical notice in all **eleven supported product languages**. A
 translation into every store-territory language is not planned. Every later
 actively supported or marketed language adds a matching legal translation
 before that localization launches. Apple metadata can point each localization
@@ -49,7 +50,8 @@ for Vietnam. Add them only after those approvals actually exist.
 - V1 is entirely free, with no paid download, in-app purchases, subscriptions,
   donations, advertising, or other monetisation.
 - Planned distribution is worldwide. Supported languages are English,
-  Brazilian Portuguese, Spanish, German, French, and Italian.
+  Brazilian Portuguese, Spanish, German, French, Italian, Polish, Turkish,
+  Indonesian, Japanese, and Korean.
 - The game contains no adult-only material. Store content ratings must come
   from truthful answers about the actual dice game and must not be raised merely
   to simplify privacy/account compliance.
@@ -167,7 +169,7 @@ store privacy/Data Safety answers must be derived from the same inventory.
 - Confirm whether a consumer-dispute statement is needed under the current
   business model and VSBG employee exception; omit it until that is confirmed
   and do not use a generic generator.
-- Publish accessible, non-geofenced HTML in all six supported languages for
+- Publish accessible, non-geofenced HTML in all eleven supported languages for
   every one of these resources when the publication gate becomes ready:
   - Impressum/provider details;
   - privacy policy;
@@ -201,14 +203,14 @@ partially translated legal page.
 The intended route matrix is:
 
 ```text
-/legal/{en,pt,es,de,fr,it}/imprint/
-/legal/{en,pt,es,de,fr,it}/privacy/
-/legal/{en,pt,es,de,fr,it}/support/
-/legal/{en,pt,es,de,fr,it}/delete-account/
+/legal/{en,pt,es,de,fr,it,pl,tr,id,ja,ko}/imprint/
+/legal/{en,pt,es,de,fr,it,pl,tr,id,ja,ko}/privacy/
+/legal/{en,pt,es,de,fr,it,pl,tr,id,ja,ko}/support/
+/legal/{en,pt,es,de,fr,it,pl,tr,id,ja,ko}/delete-account/
 ```
 
-The generator creates exactly 24 JavaScript-free, semantic HTML pages with a
-self-canonical link, six locale alternates plus English `x-default`, page and
+The generator creates exactly 44 JavaScript-free, semantic HTML pages with a
+self-canonical link, eleven locale alternates plus English `x-default`, page and
 language navigation, and the correct BCP-47 `lang` (`pt-BR` while the URL uses
 stable ID `pt`). It runs before the PWA file snapshot and content hash, so ready
 pages participate in versioning and precaching.
@@ -244,9 +246,9 @@ its full title.
 
 ### Release sequence
 
-1. Apply and validate the six-ID `player_settings.locale` expansion in
+1. Apply and validate the eleven-ID `player_settings.locale` expansion in
    production before deploying a client that can persist `pt`, `es`, or `it`.
-2. Deploy the six-language client while `LEGAL_RELEASE.status` remains `draft`;
+2. Deploy the eleven-language client while `LEGAL_RELEASE.status` remains `draft`;
    this release has neither public legal routes nor production legal links.
 3. Complete the public contact channel, provider/processor/retention/transfer
    facts, deletion workflow, territory review, all translations, and German

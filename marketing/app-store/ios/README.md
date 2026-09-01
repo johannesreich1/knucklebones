@@ -9,15 +9,20 @@ screenshots for each campaign locale and required Apple device class:
 | `en-GB` | English (`en`) | 6 | 6 | 12 |
 | `de-DE` | German (`de`) | 6 | 6 | 12 |
 | `fr-FR` | French (`fr`) | 6 | 6 | 12 |
-| **Campaign** | **3 locales** | **18** | **18** | **36** |
+| `pl` | Polish (`pl`) | 6 | 6 | 12 |
+| `tr` | Turkish (`tr`) | 6 | 6 | 12 |
+| `id` | Indonesian (`id`) | 6 | 6 | 12 |
+| `ja` | Japanese (`ja`) | 6 | 6 | 12 |
+| `ko` | Korean (`ko`) | 6 | 6 | 12 |
+| **Campaign** | **8 locales** | **48** | **48** | **96** |
 
 The output matrix and App Store identifiers are declared in
 `app-store-connect.json`; creative fixtures and localized overlay copy are in
 `manifest.json`; App Store listing fields are in `metadata.json`. These are
-the campaign's three reviewed listing locales. The product runtime separately
-supports six languages (`en`, `pt`, `es`, `de`, `fr`, `it`); that registry does
-not authorize this uploader to create unreviewed Portuguese, Spanish, or
-Italian store copy or screenshots.
+the campaign's eight AI-reviewed listing locales. The product runtime supports
+eleven languages (`en`, `pt`, `es`, `de`, `fr`, `it`, `pl`, `tr`, `id`, `ja`,
+`ko`); that registry does not authorize this uploader to create unreviewed
+Portuguese, Spanish, or Italian store copy or screenshots.
 
 Each app panel comes from the current production single-file runtime
 (`knucklebones-neon.html`) and production renderers. The capture uses a real
@@ -33,12 +38,12 @@ Apple's current format reference is
 
 ## Output layout
 
-- `raw/{locale}/{target}/` contains 42 lossless runtime captures: six hero
-  states plus BOUNTY's separate active state, across three managed locales and two
+- `raw/{locale}/{target}/` contains 112 lossless runtime captures: six hero
+  states plus BOUNTY's separate active state, across eight managed locales and two
   devices.
-- `exports/{locale}/{target}/` contains the 36 opaque final PNGs and one
+- `exports/{locale}/{target}/` contains the 96 opaque final PNGs and one
   `checksums.txt` for each locale/device set. These are the upload assets.
-- `contact-sheets/{locale}-{target}.jpg` contains six review aids. Contact
+- `contact-sheets/{locale}-{target}.jpg` contains sixteen review aids. Contact
   sheets are never uploaded.
 - `capture-provenance.json` records the runtime build, browser versions,
   viewports, raw paths, and capture count. It is written only after a complete
@@ -53,8 +58,8 @@ mise exec -- npm run appstore:screenshots:generate
 ```
 
 It rebuilds the product runtime, starts the loopback-only capture server,
-captures all 42 real-runtime source frames with Playwright, finalizes all 36
-App Store PNGs, rebuilds six contact sheets and checksum files, and verifies
+captures all 112 real-runtime source frames with Playwright, finalizes all 96
+App Store PNGs, rebuilds sixteen contact sheets and checksum files, and verifies
 dimensions, opacity, provenance, locale coverage, metadata limits, and file
 order. The individual stages remain available for diagnosis:
 
@@ -80,13 +85,13 @@ Preview impact is part of the definition of done for every future agent:
    modes, runes, online identity, ladder, localized product copy, screenshot
    overlay copy, fixtures, capture code, finalization code, or campaign
    geometry must be checked for affected previews before handoff.
-2. If one product state changes, regenerate that state in **all three managed locales
-   and both device targets**: six final previews, their raw sources, all six
+2. If one product state changes, regenerate that state in **all eight managed locales
+   and both device targets**: sixteen final previews, their raw sources, all sixteen
    affected checksum/contact-sheet entries, and capture provenance. A BOUNTY
-   change also regenerates both chronological sources for all six targets.
+   change also regenerates both chronological sources for all sixteen targets.
 3. If shared layout, typography, runtime framing, localization plumbing, or
    the capture/finalization pipeline changes, run the canonical full generation
-   command and replace the complete 42-raw/36-export campaign.
+   command and replace the complete 112-raw/96-export campaign.
 4. Commit every affected generated file in the same change as its source.
    Passing source tests with a stale preview, checksum, contact sheet, or
    provenance file is a failing handoff, not deferred follow-up work.
@@ -121,8 +126,8 @@ labels runes as offline-only, and no frame shows the exit button.
 
 ## Localized listing ownership
 
-`metadata.json` deliberately owns only these fields for `en-GB`, `de-DE`, and
-`fr-FR`:
+`metadata.json` deliberately owns only these fields for `en-GB`, `de-DE`,
+`fr-FR`, `pl`, `tr`, `id`, `ja`, and `ko`:
 
 - App Info: `name`, `subtitle`
 - iOS version: `promotionalText`, `keywords`, `description`
@@ -156,21 +161,22 @@ mise exec -- npm run appstore:fastlane:install
 Then use the three safety levels:
 
 1. `mise exec -- npm run appstore:screenshots:check` is credential-free. It
-   runs the focused repository contract and validates all 36 local exports,
+   runs the focused repository contract and validates all 96 local exports,
    metadata, target mappings, and pure sync-planner cases.
 2. Copy `.env.appstore.example` to ignored `.env.appstore`, fill the API-key
    fields and version, and run
    `mise exec -- npm run appstore:screenshots:plan`. The lane reads the exact
    editable app/version and the complete remote localization, metadata, and
    screenshot inventory. It prints the create/keep/update/upload/delete/order
-   plan for all three managed locales and six locale/device sets plus a confirmation
+   plan for all eight managed locales and sixteen locale/device sets plus a confirmation
    token bound to both desired files and that remote snapshot.
 3. After reviewing the plan and machine-readable campaign approval, paste the
    token as `ASC_APP_STORE_SYNC_CONFIRM` and run
    `mise exec -- npm run appstore:screenshots:upload`. It re-reads under a
-   local lock, creates only missing `en-GB`, `de-DE`, or `fr-FR`
+   local lock, creates only missing `en-GB`, `de-DE`, `fr-FR`, `pl`, `tr`,
+   `id`, `ja`, or `ko`
    localizations/target sets, patches only the five owned metadata fields, and
-   synchronizes exactly six ordered images in each of the six managed sets.
+   synchronizes exactly six ordered images in each of the sixteen managed sets.
 
 Apple requires `name` in the create request for a new App Info localization.
 The lane therefore creates a missing App Info locale with its already confirmed
