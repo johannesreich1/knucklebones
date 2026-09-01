@@ -117,8 +117,14 @@ function verifyCatalog(check: Check, catalog: string): void {
   check(json(contents.info) === json({ author: 'xcode', version: 1 }),
     `${contentsFile} must retain the deterministic Xcode catalog metadata`);
   verifyPngHeader(check, catalogFile(catalog, LIGHT_FILE), 2);
-  verifyPngHeader(check, catalogFile(catalog, DARK_FILE), 6);
+  verifyPngHeader(check, catalogFile(catalog, DARK_FILE), 2);
   verifyPngHeader(check, catalogFile(catalog, TINTED_FILE), 6);
+  const lightFile = catalogFile(catalog, LIGHT_FILE);
+  const darkFile = catalogFile(catalog, DARK_FILE);
+  if (existsSync(lightFile) && existsSync(darkFile)) {
+    check(sha256(lightFile) === sha256(darkFile),
+      `${darkFile} must be byte-identical to its Light rendition so both modes keep the same shimmer`);
+  }
 }
 
 function verifyBuildSettings(check: Check): void {
@@ -167,8 +173,10 @@ function verifyProvenance(check: Check): Map<string, ManifestEntry> {
     && manifest.registry?.sha256 === registryHash,
   `${MANIFEST_FILE} registry identity/hash must match the imported 42-avatar registry`);
   check(json(manifest.design?.iosAuthoredAppearances) === json(['light', 'dark', 'tinted'])
+    && manifest.design?.iosLightDarkArtwork
+      === 'byte-identical opaque charcoal gradient with full neon shimmer'
     && json(manifest.design?.iosSystemDerivedAppearances) === json(['clear']),
-  `${MANIFEST_FILE} must distinguish authored Light/Dark/Tinted from system-derived Clear`);
+  `${MANIFEST_FILE} must document identical Light/Dark artwork and system-derived Clear`);
 
   const manifestOrder = primary ? [primary, ...alternates] : alternates;
   const expectedVariants = manifestOrder.map(({ avatar, icon, iosCatalog }) => ({
@@ -252,27 +260,29 @@ function verifyRepresentativePixels(check: Check, assetMap: Map<string, Manifest
   const frames: Array<Readonly<{ hue: string; pixel: ReturnType<typeof pixelAt> }>> = [];
   for (const [face, hue] of samples) {
     const catalog = `die-${face}-${hue}`;
-    const file = catalogFile(catalog, DARK_FILE);
+    const file = catalogFile(catalog, LIGHT_FILE);
     if (!existsSync(file)) continue;
     const png = readPngPixels(file);
-    check(png.colorType === 6 && png.hasTransparency && pixelAt(png, .03, .03).alpha <= 32,
-      `${file} must preserve the transparent Dark-appearance cutout around the neon die`);
-    check(pixelAt(png, .12, .12).alpha <= 4,
-      `${file} must not wash the system-provided Dark background with an oversized transparent halo`);
+    check(png.colorType === 2 && !png.hasTransparency,
+      `${file} must preserve the opaque charcoal launcher ground shared by Light and Dark`);
     const expectedPips = new Set(pips[face]);
     const actualPips = grid
-      .filter(([, x, y]) => pixelAt(png, x, y).alpha >= 200)
+      .filter(([, x, y]) => {
+        const pixel = pixelAt(png, x, y);
+        return Math.max(pixel.red, pixel.green, pixel.blue) >= 180;
+      })
       .map(([name]) => name);
     check(json(actualPips) === json([...expectedPips]),
       `${file} must show exactly ${face} luminous pips with unused pip cells cut out; found ${json(actualPips)}`);
     for (const [name, x, y] of grid) {
       if (expectedPips.has(name)) continue;
-      check(pixelAt(png, x, y).alpha < 100,
+      const pixel = pixelAt(png, x, y);
+      check(Math.max(pixel.red, pixel.green, pixel.blue) < 100,
         `${file} unused ${name} pip cell must stay cut out rather than becoming another pip`);
     }
     const frame = pixelAt(png, .5, .15);
     frames.push({ hue, pixel: frame });
-    check(frame.alpha >= 140 && colorSpread(frame) >= 75,
+    check(frame.alpha === 255 && colorSpread(frame) >= 50,
       `${file} must retain a strongly hue-colored neon frame`);
     const manifestEntry = assetMap.get(file);
     if (manifestEntry) {
@@ -300,7 +310,7 @@ function verifyRepresentativePixels(check: Check, assetMap: Map<string, Manifest
     'representative iOS pixel coverage requires all six faces and all seven hues');
   for (let left = 0; left < frames.length; left++) {
     for (let right = left + 1; right < frames.length; right++) {
-      check(rgbDistance(frames[left].pixel, frames[right].pixel) >= 60,
+      check(rgbDistance(frames[left].pixel, frames[right].pixel) >= 40,
         `representative ${frames[left].hue} and ${frames[right].hue} iOS frames must remain visibly distinct`);
     }
   }

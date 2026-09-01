@@ -144,13 +144,14 @@ On iOS, `AppIcon.appiconset` is the primary and the other 41 values each have
 an alternate app-icon catalog. Debug and Release list the exact alternates in
 `ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES`; Xcode then generates
 `CFBundlePrimaryIcon` and `CFBundleAlternateIcons`, so those keys do not belong
-as a second manual registry in source `Info.plist`. Every catalog has an
-authored opaque Any/Light rendition on the requested charcoal gradient, a
-transparent Dark rendition with a compact halo for Apple's system background,
-and a grayscale Tinted rendition whose pips are transparent cutouts. iOS
-derives Clear from that authored monochrome source; the final Clear and Tinted
-pixels remain system-owned and therefore require device visual acceptance
-rather than a checked-in color claim.
+as a second manual registry in source `Info.plist`. Every catalog gives its
+Any/Light and Dark entries byte-identical opaque artwork: the requested
+charcoal gradient, the same full neon shimmer, and no appearance-specific
+change to die size, tilt, hue, or pips. A separate grayscale Tinted rendition
+keeps its pips as transparent cutouts. iOS derives Clear from that authored
+monochrome source; the final Clear and Tinted pixels remain system-owned and
+therefore require device visual acceptance rather than a checked-in color
+claim.
 The Capacitor bridge compares `UIApplication.alternateIconName` before calling
 `setAlternateIconName`, keeping launch reconciliation silent when the correct
 icon is already selected. A real change uses the system API and therefore shows

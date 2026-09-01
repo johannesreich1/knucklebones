@@ -12,9 +12,8 @@ import {
 } from './ios-app-icon-contract.ts';
 import { sameBytes } from './ios-artifacts.ts';
 import {
-  alphaBounds,
-  alphaRowBounds,
   colorBounds,
+  colorRowBounds,
   colorSpread,
   pixelAt,
   readPngPixels,
@@ -240,33 +239,28 @@ export function verifyIosShellContract(check: Check): {
   for (const name of ['splash-2732x2732-2.png', 'splash-2732x2732-1.png', 'splash-2732x2732.png']) {
     check(splashNames.has(name), `${SPLASH_CATALOG} does not reference ${name}`);
   }
-  check(!sameBytes(nativeAssets[0].path, nativeAssets[1].path),
-    'the iOS light and dark app-icon appearances must remain distinct');
+  check(sameBytes(nativeAssets[0].path, nativeAssets[1].path),
+    'the iOS Dark app icon must be byte-identical to Light so both modes keep the same shimmer');
 
   const lightPixels = readPngPixels(nativeAssets[0].path);
   const darkPixels = readPngPixels(nativeAssets[1].path);
   const tintedPixels = existsSync(nativeAssets[2].path) ? readPngPixels(nativeAssets[2].path) : null;
   check(lightPixels.colorType === 2 && !lightPixels.hasTransparency,
     'the iOS Any/light app icon must remain an opaque RGB PNG');
-  check(darkPixels.colorType === 6 && darkPixels.hasTransparency,
-    'the iOS Dark app icon must carry alpha so the system-provided background can show through');
+  check(darkPixels.colorType === 2 && !darkPixels.hasTransparency,
+    'the iOS Dark app icon must use the same opaque charcoal rendition as Light');
   check(tintedPixels?.colorType === 6 && tintedPixels.hasTransparency,
     'the iOS Tinted app icon must carry a transparent grayscale die for system tinting');
-  check(pixelAt(darkPixels, .03, .03).alpha <= 32,
-    'the iOS Dark app icon corners must remain transparent enough for Apple\'s System Dark background');
-  check(pixelAt(darkPixels, .12, .12).alpha <= 4,
-    'the iOS Dark app icon must not flood Apple\'s transparent system background with a broad cyan halo');
-
-  const darkInkBounds = alphaBounds(darkPixels);
-  const darkInkWidth = darkInkBounds
-    ? (darkInkBounds.right - darkInkBounds.left + 1) / darkPixels.width
+  const launcherInkBounds = colorBounds(lightPixels);
+  const launcherInkWidth = launcherInkBounds
+    ? (launcherInkBounds.right - launcherInkBounds.left + 1) / lightPixels.width
     : 0;
-  check(darkInkBounds !== null && darkInkWidth >= .74 && darkInkWidth <= .76,
-    `the restored larger iOS neon die should occupy about 75% of the icon including its glow, found ${darkInkWidth}`);
-  const topInk = alphaRowBounds(darkPixels, .4);
-  const bottomInk = alphaRowBounds(darkPixels, .6);
-  const topCenter = topInk ? (topInk.left + topInk.right) / (2 * darkPixels.width) : 0;
-  const bottomCenter = bottomInk ? (bottomInk.left + bottomInk.right) / (2 * darkPixels.width) : 0;
+  check(launcherInkBounds !== null && launcherInkWidth >= .74 && launcherInkWidth <= .76,
+    `the restored larger iOS neon die should occupy about 75% of the icon including its glow, found ${launcherInkWidth}`);
+  const topInk = colorRowBounds(lightPixels, .4);
+  const bottomInk = colorRowBounds(lightPixels, .6);
+  const topCenter = topInk ? (topInk.left + topInk.right) / (2 * lightPixels.width) : 0;
+  const bottomCenter = bottomInk ? (bottomInk.left + bottomInk.right) / (2 * lightPixels.width) : 0;
   check(topInk !== null && bottomInk !== null
     && topCenter - bottomCenter >= .02 && topCenter - bottomCenter <= .03,
     `the iOS die should have a subtle clockwise tilt, found row centers ${topCenter} and ${bottomCenter}`);

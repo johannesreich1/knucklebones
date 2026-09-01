@@ -8,7 +8,7 @@
 //   mise exec -- node tools/appicon.mjs --android render @capacitor/assets Android inputs only
 //   mise exec -- node tools/appicon.mjs --android-finalize restore adaptive XML after that CLI runs
 import { chromium } from 'playwright';
-import { writeFileSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { dieMarkup, diePipCells } from '../src/ui/die-markup.ts';
@@ -28,10 +28,9 @@ const HOME_DIE_CSS = inlineCssGraph(['src/styles/main.css'], { rootDir: ROOT }).
    15% restores the slightly larger launcher mark selected before the compact
    pass; maskable icons get 20% because an unknown launcher shape can crop
    their outer fifth. The shared 7° clockwise tilt keeps the face lively. */
-/* iOS supplies its exact System Dark gradient behind the transparent Dark
-   rendition. The opaque Any/Light fallback and platforms without an
-   appearance-aware ground use the same quiet charcoal direction; this keeps
-   the requested dark identity stable instead of washing the glass out. */
+/* The authored iOS Light and Dark renditions deliberately share this quiet
+   charcoal ground and the complete Home-die shimmer. Tinted stays a separate
+   monochrome source because iOS owns that material and tint. */
 const THEME = {
   dark:  {
     canvasTop: SYSTEM_DARK_GRADIENT.top, canvasBottom: SYSTEM_DARK_GRADIENT.bottom,
@@ -121,12 +120,16 @@ const TARGETS = [
   { file: 'public/icon-192.png', size: 192 },
   { file: 'public/icon-512.png', size: 512 },
   { file: 'public/icon-maskable-512.png', size: 512, pad: MASKABLE_ICON_PAD },
-  /* Any/Light deliberately keeps the requested dark system-style ground;
-     Dark supplies the crisp transparent mark Apple asks for; Tinted supplies
-     an authored grayscale face so Clear/Tinted need not derive from neon RGB.
-     The primary trio remains die:5:cy and alternates mirror it mechanically. */
+  /* Light and Dark deliberately use the exact same authored pixels, including
+     the dark system-style ground and full shimmer. Copying the completed PNG
+     makes that identity byte-exact instead of trusting two raster passes.
+     Tinted remains an authored grayscale source for iOS-owned appearances. */
   { file: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png', size: 1024, theme: 'light' },
-  { file: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Dark-512@2x.png', size: 1024, theme: 'dark', transparent: true, renderOuterGlow: false },
+  {
+    file: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Dark-512@2x.png',
+    size: 1024,
+    copyFrom: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png',
+  },
   {
     file: 'native/ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Tinted-512@2x.png',
     size: 1024,
@@ -237,13 +240,17 @@ try {
   } else {
     const targets = android ? ANDROID_TARGETS : TARGETS;
     for (const t of targets) {
-      const svg = t.svg ? t.svg()
-        : iconSVG(t.size, t.pad, t.theme, t.transparent, 5, 'cy', t.renderOuterGlow);
-      const buf = await shot(svg, t.size, t.transparent);
+      const buf = t.copyFrom ? readFileSync(t.copyFrom) : await shot(
+        t.svg ? t.svg()
+          : iconSVG(t.size, t.pad, t.theme, t.transparent, 5, 'cy', t.renderOuterGlow),
+        t.size,
+        t.transparent,
+      );
       mkdirSync(dirname(t.file), { recursive: true });
       writeFileSync(t.file, buf);
       console.log(`${t.file}  ${t.size}x${t.size}` +
         `${t.pad ? '  (maskable safe zone)' : ''}${t.theme === 'light' ? '  (light appearance)' : ''}` +
+        `${t.copyFrom ? '  (matches light appearance)' : ''}` +
         `${t.transparent ? '  (transparent)' : ''}`);
     }
     if (android) {

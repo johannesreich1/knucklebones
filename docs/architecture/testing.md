@@ -322,8 +322,9 @@ registration, iOS's primary plus exact 41 alternate catalogs/build settings,
 Android's exact 42 aliases and component state policy, iOS Any/Dark/Tinted and
 Android adaptive/legacy/monochrome resource contracts, and the timestamp-free
 `native/profile-app-icons.manifest.json` mappings and hashes. Pixel contracts
-also reject a washed-out Any icon, a broad transparent Dark halo, a non-cutout
-Tinted face, and any hard seam in the full-canvas native splash glow.
+require every Dark rendition to be byte-identical to its opaque, shimmering
+Light partner; they also reject a washed-out neon die, a non-cutout Tinted
+face, and any hard seam in the full-canvas native splash glow.
 Regenerating twice must leave the manifest and representative assets
 byte-identical. None of those checks proves that SpringBoard or an OEM launcher
 has repainted its pixels.

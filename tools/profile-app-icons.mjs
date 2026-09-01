@@ -242,6 +242,7 @@ function writeProvenanceManifest({ appIconPad, appIconTiltDeg, adaptiveInset, da
       androidAdaptiveInset: adaptiveInset,
       darkGradient,
       iosAuthoredAppearances: ['light', 'dark', 'tinted'],
+      iosLightDarkArtwork: 'byte-identical opaque charcoal gradient with full neon shimmer',
       iosSystemDerivedAppearances: ['clear'],
       androidMonochrome: 'system-tinted face cutout; hue and glow intentionally omitted',
     },
@@ -278,10 +279,7 @@ export async function generateIosProfileIcons({
       iconSVG(1024, appIconPad, 'light', false, spec.face, spec.hue), 1024, false,
     );
     write(iosLightFile(spec), light);
-    const dark = await shot(
-      iconSVG(1024, appIconPad, 'dark', true, spec.face, spec.hue, false), 1024, true,
-    );
-    write(iosDarkFile(spec), dark);
+    write(iosDarkFile(spec), light);
     const tinted = await shot(monochromeIconSVG(1024, appIconPad, spec.face), 1024, true);
     write(iosTintedFile(spec), tinted);
   }
