@@ -157,11 +157,12 @@ fixed-price, one-rune tail escape as an unapproved example—not launch scope.
 
 The separately decided, unshipped finish-margin ladder transfer does not let a
 high-scoring mode pay more merely because its numbers are larger. It uses the
-final score gap divided by the two scores' sum, requests a **2–7** point
-transfer from loser to winner, and may apply **0–7** at the loss cap or
-zero-point floor; draws transfer zero. `docs/LADDER.md §1` owns the exact
-formula, boundary behavior, forfeits, authority, persistence, and release
-evidence.
+final score gap divided by the winner's score, requests a **2–7** point transfer
+from loser to winner, and may apply **0–7** at the loss cap or zero-point floor;
+draws transfer zero. Winner-relative normalization makes a result at most one
+point more expressive than the superseded combined-score denominator while
+keeping the same ceiling. `docs/LADDER.md §1` owns the exact formula, boundary
+behavior, evidence, progression impact, forfeits, authority, and persistence.
 
 The successor's canonical player-facing outcome order is defined once in
 `docs/LADDER.md §7` and follows its unlock sequence. The implementation must
