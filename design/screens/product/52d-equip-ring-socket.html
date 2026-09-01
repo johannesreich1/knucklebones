@@ -1,4 +1,4 @@
-<!-- meta name="EQ4 — The ring socket" group="3k · The equipped rune" subtitle="SELECTED FOR PRODUCT · OWNER OVERRIDE 2026-08-30. The ladder ring keeps its measured 34px seat; tapping it opens a zero-tile action sheet, EQUIP hands the existing Profile collection one temporary choosing state, RANDOM is its own mode action, and the empty socket is one outer circle with a centred plus" width=412 height=2440 sizes="md" links="Profile, Ranked match, Rune Ritual" -->
+<!-- meta name="EQ4 — The ring socket" group="3k · The equipped rune" subtitle="SELECTED FOR PRODUCT · OWNER OVERRIDES 2026-08-30 / 2026-09-01. The ladder ring keeps its measured 34px seat; the action sheet gives its primary glow real bleed room, keeps its intro concise, and offers RANDOM in the opponent colour only while that mode is inactive" width=412 height=2440 sizes="md" links="Profile, Ranked match, Rune Ritual" -->
 <style>
   /* Card-local names only (eq4*). The Profile anatomy is the APP's: the ring
      comes from styles/components/identity.css and the seat, action sheet and
@@ -15,7 +15,14 @@
      seat now opens an action sheet containing NO rune tiles. EQUIP closes the
      sheet, then the existing Profile grid becomes the only rune picker until
      an owned rune is chosen, CANCEL is tapped, or Escape is pressed. RANDOM
-     RUNE MODE is a separate action. UNEQUIP is the shared compact button. */
+     RUNE MODE is a separate action. UNEQUIP is the shared compact button.
+
+     OWNER OVERRIDE, 2026-09-01. The sheet intro explains only fixed-rune
+     choice; RANDOM's explanation already lives beneath its own action, and
+     Rune Ritual needs no disclaimer here. RANDOM wears --p2 and disappears
+     while already selected. A fitting content body stays overflow-visible so
+     the primary button's coloured shadow fades instead of ending at a hard
+     three-pixel clip. */
 
   #ovOnline{display:flex;flex-direction:column;align-items:center;width:100%}
   #onAccount{position:relative}
@@ -87,11 +94,11 @@
         <button class="fograb" aria-label="Close"><span class="fobar"></span></button>
         <div class="seatmode-content">
           <div class="mchead"><span class="mcname">EQUIPPED RUNE</span></div>
-          <div class="mcdetail">Equip one unlocked rune, or let RANDOM RUNE MODE draw a random owned rune for each ranked match after you reach SILVER once. Rune Ritual uses its own choice.</div>
+          <div class="mcdetail">Choose one unlocked rune for ranked matches.</div>
           <div class="seatmode-actions">
             <button type="button" class="btn primary">Equip rune</button>
             <div class="seatmode-random">
-              <button type="button" class="btn soft" aria-pressed="false">
+              <button type="button" class="btn soft seatmode-random-action" aria-pressed="false">
                 {{mico:random:19}}<span>Random rune mode</span>
               </button>
               <span class="seatmode-detail">Draws a random owned rune for each ranked match.</span>
@@ -144,7 +151,7 @@
   </div>
 
   <div class="eq4contract">
-    <div><b>Random is a mode</b><span>It is answered in the action sheet and chooses from owned runes per ranked match; it is not another tile in the fixed-rune grid.</span></div>
+    <div><b>Random is the other side</b><span>Its action always wears the opponent colour and chooses from owned runes per ranked match. Once active, that redundant action is hidden.</span></div>
     <div><b>Unequip stays compact</b><span>It appears only when something is selected and uses the canonical <code>.btn.soft.small</code> action.</span></div>
     <div><b>Picking is temporary</b><span>EQUIP dismisses the sheet first. The grid owns the visible prompt, choice highlight and CANCEL; Escape exits the same state.</span></div>
     <div><b>Silver stays unlocked</b><span>Reaching SILVER once permanently activates the chosen fixed or random rune. Later demotion changes the visible group, not the seat.</span></div>
@@ -152,8 +159,8 @@
 
   <div class="splbl eq4read">Two of six collected · one seat · one existing grid · no duplicated rune roster</div>
 </div></div>
-<div class="note"><b>OWNER OVERRIDE — 2026-08-30:</b> tapping the ring seat opens one action sheet with actions only. It never lists rune tiles. <b>EQUIP RUNE</b> closes that sheet and promotes the Profile collection already on the page into a clearly bounded temporary picker. Only owned tiles can answer; the existing CANCEL button and Escape both leave without changing equipment. <b>RANDOM RUNE MODE</b> is a separate complete action, and <b>UNEQUIP</b> keeps the shared compact-button treatment instead of competing with EQUIP.<br>
+<div class="note"><b>OWNER OVERRIDES — 2026-08-30 / 2026-09-01:</b> tapping the ring seat opens one action sheet with actions only. It never lists rune tiles. <b>EQUIP RUNE</b> closes that sheet and promotes the Profile collection already on the page into a clearly bounded temporary picker. Only owned tiles can answer; the existing CANCEL button and Escape both leave without changing equipment. <b>RANDOM RUNE MODE</b> is a separate opponent-coloured action while inactive, disappears once selected, and keeps its explanation only beneath that button. The top description is one short fixed-rune sentence with no repeated RANDOM or Rune Ritual explanation. <b>UNEQUIP</b> keeps the shared compact-button treatment instead of competing with EQUIP. A fitting sheet body remains overflow-visible so the primary glow fades on both sides; only a genuinely constrained body becomes a scrollport, with an explicit effect gutter.<br>
 <b>The selected geometry remains:</b> at the 384px stage <code>.ringwrap</code> is 206px, the 74px avatar's lower edge lands at y=140 and <code>.gname</code> begins at y=190. The 34px seat spans y=148–182, leaving 8px above and below, and clears the pencil at x=123–149 by occupying x=86–120. The override changes interaction, not the ring, group name, profile spacing or ladder reading.<br>
 <b>One implementation:</b> the card wears the production <code>.accseat</code>, sheet, action and picker classes. Its grid comes from <code>accountRunesMarkup()</code>, and WARD/FATE/random marks come through builder tokens backed by the app registries. The sheet deliberately has no library entry and no copied rune roster: it chooses a mode; the existing grid chooses a fixed rune.<br>
-<b>The SILVER threshold is historical:</b> reaching SILVER once permanently activates the selected fixed rune or RANDOM RUNE MODE for ordinary ranked matches. RANDOM always draws an owned rune for each match; Rune Ritual makes its own choice instead.<br>
+<b>The SILVER threshold is historical:</b> reaching SILVER once permanently activates the selected fixed rune or RANDOM RUNE MODE for ordinary ranked matches. RANDOM draws an owned rune for each ordinary ranked match.<br>
 <b>Empty is an invitation, not a second control:</b> the outer 34px seat remains visible and its plus is centred vertically and horizontally inside it. The plus has no nested dotted border. The outer socket alone supplies the boundary and tap target.</div>

@@ -20,6 +20,7 @@ import {
 import { productionRead } from '../debug/production-read.mjs';
 import { createCliRunner } from './cli-runner.mjs';
 import {
+  PRODUCTION_PLAYER_HIGH_WATER_RESET_OPT_IN,
   PRODUCTION_PLAYER_NICKNAME,
   PRODUCTION_PLAYER_POINTS_AUDIT_SQL,
   PRODUCTION_PLAYER_POINTS_OPT_IN,
@@ -28,6 +29,7 @@ import {
   assertProductionPlayerPointsReady,
   buildProductionPlayerPointsSql,
   parseProductionPlayerPoints,
+  productionPlayerHighWaterResetOptInValue,
   validateProductionPlayerPointsAudit,
 } from './production-player-points-core.mjs';
 import {
@@ -72,12 +74,15 @@ export function verifyProductionPlayerPointsEnvironment({
 }
 
 export function executeProductionPlayerPointsSql(sql, before, requestedPoints, {
+  resetHighWater = false,
   cli = CLI,
   runner = createCliRunner(),
   createTemp = () => mkdtempSync(path.join(os.tmpdir(), TEMP_PREFIX)),
   removeTemp = directory => rmSync(directory, { recursive: true, force: true }),
 } = {}) {
-  const expectedSql = buildProductionPlayerPointsSql(before, requestedPoints);
+  const expectedSql = buildProductionPlayerPointsSql(before, requestedPoints, {
+    resetHighWater,
+  });
   if (typeof expectedSql !== 'string' || sql !== expectedSql) {
     throw new Error('Production player-points executor accepts only its exact generated SQL.');
   }
@@ -125,16 +130,18 @@ async function readPlayerAudit(read) {
  * @param {{
  *   points?: string | number,
  *   apply?: boolean,
+ *   resetHighWater?: boolean,
  *   optIn?: string,
  *   read?: (sql: string, parameters?: readonly unknown[]) => Promise<unknown[]>,
  *   verifyEnvironment?: () => unknown,
- *   execute?: (sql: string, before: ReturnType<typeof assertProductionPlayerPointsReady>, requestedPoints: number) => void,
+ *   execute?: (sql: string, before: ReturnType<typeof assertProductionPlayerPointsReady>, requestedPoints: number, options: { readonly resetHighWater: boolean }) => void,
  *   log?: (message: string) => void,
  * }} [options]
  */
 export async function rolloutProductionPlayerPoints({
   points,
   apply = false,
+  resetHighWater = false,
   optIn,
   read = productionRead,
   verifyEnvironment = () => { verifyProductionPlayerPointsEnvironment(); },
@@ -147,20 +154,30 @@ export async function rolloutProductionPlayerPoints({
   assertProductionPlayerPointsOptIn(
     requested,
     apply,
-    optIn ?? process.env[PRODUCTION_PLAYER_POINTS_OPT_IN],
+    optIn ?? process.env[resetHighWater
+      ? PRODUCTION_PLAYER_HIGH_WATER_RESET_OPT_IN
+      : PRODUCTION_PLAYER_POINTS_OPT_IN],
+    { resetHighWater },
   );
   verifyEnvironment();
 
   const before = assertProductionPlayerPointsReady(await readPlayerAudit(read));
-  const preservedPeak = Math.max(before.peak, requested);
-  const preservedPool = highestRankedPoolTier(
-    before.rankedPoolTier,
-    rankedPoolTierForPeak(preservedPeak),
-  );
-  log(`${PRODUCTION_PLAYER_NICKNAME}: season ${before.currentSeason}, ${before.points} → ${requested} points; peak ${before.peak} → ${preservedPeak}; permanent pool ${before.rankedPoolTier} → ${preservedPool}.`);
+  const nextPeak = resetHighWater ? requested : Math.max(before.peak, requested);
+  const nextPool = resetHighWater
+    ? rankedPoolTierForPeak(nextPeak)
+    : highestRankedPoolTier(
+      before.rankedPoolTier,
+      rankedPoolTierForPeak(nextPeak),
+    );
+  const operation = resetHighWater ? ' HIGH-WATER RESET:' : ':';
+  log(`${PRODUCTION_PLAYER_NICKNAME}${operation} season ${before.currentSeason}, ${before.points} → ${requested} points; peak ${before.peak} → ${nextPeak}; permanent pool ${before.rankedPoolTier} → ${nextPool}.`);
   log(transitionGuidance(requested));
   if (!apply) {
-    log(`Preview only. Apply with ${PRODUCTION_PLAYER_POINTS_OPT_IN}=${requested} and --apply.`);
+    if (resetHighWater) {
+      log(`Preview only. Apply with ${PRODUCTION_PLAYER_HIGH_WATER_RESET_OPT_IN}=${productionPlayerHighWaterResetOptInValue(requested)} and --reset-high-water --apply.`);
+    } else {
+      log(`Preview only. Apply with ${PRODUCTION_PLAYER_POINTS_OPT_IN}=${requested} and --apply.`);
+    }
     return Object.freeze({ applied: false, points: requested, before });
   }
 
@@ -172,25 +189,44 @@ export async function rolloutProductionPlayerPoints({
       || immediatelyBefore.currentSeason !== before.currentSeason) {
     throw new Error('Production player-points target or season changed after preview.');
   }
-  const sql = buildProductionPlayerPointsSql(immediatelyBefore, requested);
-  execute(sql, immediatelyBefore, requested);
+  const sql = buildProductionPlayerPointsSql(immediatelyBefore, requested, {
+    resetHighWater,
+  });
+  execute(sql, immediatelyBefore, requested, { resetHighWater });
   const after = await readPlayerAudit(read);
-  assertProductionPlayerPointsApplied(immediatelyBefore, after, requested);
+  assertProductionPlayerPointsApplied(immediatelyBefore, after, requested, {
+    resetHighWater,
+  });
   log(`Production player-points apply verified: ${PRODUCTION_PLAYER_NICKNAME} is at ${requested}; no pending transition predates the next match.`);
   return Object.freeze({ applied: true, points: requested, before: immediatelyBefore, after });
 }
 
 function usage() {
-  console.error('Usage: production-player-points.mjs <points> [--apply]');
+  console.error('Usage: production-player-points.mjs <points> [--reset-high-water] [--apply]');
   console.error(`  apply: ${PRODUCTION_PLAYER_POINTS_OPT_IN}=<same points> ... <points> --apply`);
+  console.error(`  reset: ${PRODUCTION_PLAYER_HIGH_WATER_RESET_OPT_IN}=RESET_BADRANDOLF_HIGH_WATER_TO_<same points> ... <points> --reset-high-water --apply`);
 }
 
 export function parseArgs(argv) {
   if (argv.length === 1 && (argv[0] === '--help' || argv[0] === '-h')) return { help: true };
-  if (argv.length < 1 || argv.length > 2) throw new Error('Expected points and optional --apply.');
-  const [value, flag] = argv;
-  if (flag !== undefined && flag !== '--apply') throw new Error(`Unknown argument: ${flag}`);
-  return { help: false, points: parseProductionPlayerPoints(value), apply: flag === '--apply' };
+  if (argv.length < 1 || argv.length > 3) {
+    throw new Error('Expected points and optional --reset-high-water/--apply flags.');
+  }
+  const [value, ...flags] = argv;
+  const seen = new Set();
+  for (const flag of flags) {
+    if (flag !== '--apply' && flag !== '--reset-high-water') {
+      throw new Error(`Unknown argument: ${flag}`);
+    }
+    if (seen.has(flag)) throw new Error(`Duplicate argument: ${flag}`);
+    seen.add(flag);
+  }
+  return {
+    help: false,
+    points: parseProductionPlayerPoints(value),
+    apply: seen.has('--apply'),
+    resetHighWater: seen.has('--reset-high-water'),
+  };
 }
 
 async function main() {

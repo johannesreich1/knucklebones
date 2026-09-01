@@ -136,6 +136,11 @@ each *group* costs more points than the last.
 **NEON = the top 1% of the current season.** Everything below it is a point
 threshold; the apex is not.
 
+NEON changes the displayed **league**, never the meaning of **rank**. Profile
+shows NEON above the player name and keeps the RANK fact as the exact numeric
+ladder position (`#1`, `#2`, …); substituting the league name there would hide
+the positional fact that awarded NEON in the first place.
+
 This is not decoration. An always-climbing ladder with a floor is a ratchet:
 given enough games *everyone* arrives at the top. Simulated over 600 games,
 **735 of 900 players** ended above a fixed NEON threshold — at which point

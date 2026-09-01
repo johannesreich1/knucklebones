@@ -111,7 +111,7 @@ export const itOnline = {
     equippedWaiting: 'Raggiungi ARGENTO per usarla in classificata · non nel Rituale delle Rune',
     seatEmpty: 'NESSUNA RUNA',
     seatPick: 'RUNA EQUIPAGGIATA',
-    seatPickDetail: 'Equipaggia una runa sbloccata o lascia che la MODALITÀ RUNA CASUALE scelga una runa posseduta casuale per ogni partita classificata dopo aver raggiunto ARGENTO una volta. Il Rituale delle Rune usa una scelta propria.',
+    seatPickDetail: 'Scegli una runa sbloccata per le partite classificate.',
     runeGuideSeatTitle: 'SCEGLI LA TUA RUNA',
     runeGuideSeatBody: 'Tocca lo spazio runa nell’anello della lega per scegliere una runa raccolta.',
   },

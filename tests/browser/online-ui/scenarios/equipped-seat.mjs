@@ -18,7 +18,9 @@
 
 import {
   measureEquippedSeat,
+  readEquipmentSheet,
   readEquippedSeat,
+  readRandomChoice,
 } from '../harness/equipped-seat-probes.mjs';
 
 const isEquipmentWrite = (request) => request.method() === 'POST'
@@ -108,17 +110,7 @@ export async function runEquippedSeatScenarios({ visit, out, check }) {
       const seat = await page.evaluate(measureEquippedSeat);
       await page.click('#accSeat');
       await page.waitForSelector('#accSeatRandom', { timeout: 5000 });
-      const randomChoice = await page.evaluate(() => {
-        const button = document.getElementById('accSeatRandom');
-        const detail = document.getElementById('accSeatRandomDetail');
-        return {
-          disabled: button?.disabled ?? null,
-          ariaDisabled: button?.getAttribute('aria-disabled') ?? null,
-          detail: detail?.textContent?.trim() ?? '',
-          describedBy: button?.getAttribute('aria-describedby') ?? null,
-          visible: !!button && button.getBoundingClientRect().height >= 44,
-        };
-      });
+      const randomChoice = await readRandomChoice(page);
       await page.keyboard.press('Escape');
       return { ...seat, randomChoice };
     },
@@ -130,6 +122,7 @@ export async function runEquippedSeatScenarios({ visit, out, check }) {
   check(!!f && f.randomChoice.visible && f.randomChoice.disabled
       && f.randomChoice.ariaDisabled === 'true'
       && f.randomChoice.describedBy === 'accSeatRandomDetail'
+      && f.randomChoice.color === f.randomChoice.opponentColor
       && /at least two runes/i.test(f.randomChoice.detail),
     'RANDOM RUNE MODE was hidden, enabled for one owned rune, or gave no visible reason', f);
 
@@ -154,28 +147,7 @@ export async function runEquippedSeatScenarios({ visit, out, check }) {
       /* Sample after the shared sheet's arrival transform. Mid-flight the
          visual button and its hit-test point intentionally do not yet agree. */
       await page.waitForTimeout(380);
-      const sheet = await page.evaluate(() => {
-        const inspectButton = (selector) => {
-          const button = document.querySelector(selector);
-          if (!button) return null;
-          const box = button.getBoundingClientRect();
-          const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
-          return {
-            text: button.textContent?.trim() ?? '',
-            equipmentKind: button.dataset.equipmentKind ?? null,
-            disabled: button.disabled,
-            ariaDisabled: button.getAttribute('aria-disabled'),
-            height: box.height,
-            centreHit: button === hit || button.contains(hit),
-          };
-        };
-        return {
-          runes: [...document.querySelectorAll('.faceoff .accrune')]
-            .map((button) => button.dataset.rune),
-          equip: inspectButton('#accSeatEquip'),
-          random: inspectButton('#accSeatRandom'),
-        };
-      });
+      const sheet = await readEquipmentSheet(page);
       await page.click('#accSeatEquip', { timeout: 4000 }).catch(() => undefined);
       await page.waitForSelector('.faceoff', { state: 'detached', timeout: 4000 })
         .catch(() => undefined);
@@ -233,13 +205,18 @@ export async function runEquippedSeatScenarios({ visit, out, check }) {
     'the picker probe did not start from an empty seat', p);
   check(!!p && p.sheet.runes.length === 0,
     'the equipped-seat sheet duplicated the rune collection instead of presenting actions', p);
+  check(!!p && p.sheet.detail === 'Choose one unlocked rune for ranked matches.'
+      && !/\b[A-Z]{2,}\b/.test(p.sheet.detail),
+    'the equipped-seat intro repeated RANDOM/Ritual guidance or retained all-caps prose', p);
   check(!!p && /^equip rune$/i.test(p.sheet.equip?.text ?? '')
-      && p.sheet.equip.height >= 44 && p.sheet.equip.centreHit,
+      && p.sheet.equip.height >= 44 && p.sheet.equip.centreHit
+      && p.sheet.primaryShadow.left >= 8 && p.sheet.primaryShadow.right >= 8,
     'the empty seat sheet did not offer a reachable EQUIP RUNE action', p);
   check(!!p && /random rune mode/i.test(p.sheet.random?.text ?? '')
       && p.sheet.random.equipmentKind === 'random'
       && !p.sheet.random.disabled && p.sheet.random.ariaDisabled === null
-      && p.sheet.random.height >= 44 && p.sheet.random.centreHit,
+      && p.sheet.random.height >= 44 && p.sheet.random.centreHit
+      && p.sheet.random.color === p.sheet.random.opponentColor,
     'the seat sheet has no explicit, reachable RANDOM RUNE MODE choice seam', p);
   const ownedCards = p?.choosing.cards.filter((card) => card.collected) ?? [];
   const lockedCards = p?.choosing.cards.filter((card) => !card.collected) ?? [];
@@ -322,8 +299,16 @@ export async function runEquippedSeatScenarios({ visit, out, check }) {
       await page.click('#accSeat');
       await page.click('#accSeatRandom');
       await page.waitForTimeout(700);
+      await page.click('#accSeat');
+      await page.waitForSelector('.faceoff .focard', { timeout: 8000 });
+      const selectedSheet = await page.evaluate(() => ({
+        randomChoices: document.querySelectorAll('#accSeatRandom').length,
+        equipChoices: document.querySelectorAll('#accSeatEquip').length,
+        clearChoices: document.querySelectorAll('#accSeatClear').length,
+      }));
+      await page.keyboard.press('Escape');
       page.off('request', recordWrite);
-      return { writes, seat: await page.evaluate(measureEquippedSeat) };
+      return { writes, selectedSheet, seat: await page.evaluate(measureEquippedSeat) };
     },
   });
   out.equippedSeatRandom = randomized.probeResult;
@@ -334,6 +319,9 @@ export async function runEquippedSeatScenarios({ visit, out, check }) {
   check(!!r && r.seat.random && !r.seat.none && r.seat.hasRune
       && /RANDOM RUNE MODE/i.test(r.seat.label) && !/WARD/i.test(r.seat.label),
     'RANDOM RUNE MODE repainted as the fixed compatibility rune instead of a random seat', r);
+  check(!!r && r.selectedSheet.randomChoices === 0
+      && r.selectedSheet.equipChoices === 1 && r.selectedSheet.clearChoices === 1,
+    'the already-selected RANDOM action was still offered in its own equipment sheet', r);
 
   /* All three answers share one persistence seam. A refusal must therefore
      retain the last confirmed semantic mode whichever answer was attempted,

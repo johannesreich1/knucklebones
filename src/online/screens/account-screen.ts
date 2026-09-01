@@ -125,8 +125,11 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     label.style.setProperty('--gc', material);
     ($('#accRing') as HTMLElement).style.setProperty('--lr-material', material);
   };
-  const rankText = (standing: Standing | null, games: number, apex: boolean): string =>
-    standing && games ? (apex ? ladderGroupName('neon') : '#' + formatNumber(standing.rank)) : '–';
+  /* League and ladder position are different facts. NEON already names the
+     positional league above the player; the RANK tile keeps the exact ordinal
+     just as it does for every bounded league. */
+  const rankText = (standing: Standing | null, games: number): string =>
+    standing && games ? '#' + formatNumber(standing.rank) : '–';
 
   /* THREE, NEWEST FIRST, ON EVERY DEVICE (user call 2026-08-28). The strip used
      to paint three rows and then remove them one at a time while the shared
@@ -161,7 +164,7 @@ export function createAccountScreen(ports: AccountPorts): AccountScreen {
     $('#accGames').textContent = games
       ? t('online', 'profile.gamesLink', { count: games, formatted: formatNumber(games) })
       : t('online', 'profile.noneYet');
-    $('#accRank').textContent = rankText(standing, games, apex);
+    $('#accRank').textContent = rankText(standing, games);
     $('#accStreak').textContent = formatNumber(streak);
     paintAccountProviders(user, identity);
     paintAccountRunes(runes, runeRows);

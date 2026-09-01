@@ -64,8 +64,13 @@
    one content node also gives the shared interactive-sheet controller a real
    bounded scrollport on short landscape devices; the grabber stays fixed. */
 :where(#kbroot) .faceoff .seatmode-content{display:flex;flex-direction:column;gap:9px;width:100%;
-  min-height:0;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;padding:2px 3px 8px;
+  min-height:0;overflow:visible;overscroll-behavior:contain;touch-action:pan-y;padding:2px 3px 8px;
   -webkit-overflow-scrolling:touch}
+/* A fitting sheet is not a scrollport: overflow-y:auto also computes the
+   horizontal axis to auto and hard-cuts every coloured button glow at the
+   body's 3px edge. Only the shared measured overflow state earns clipping;
+   its wider inline gutter lets the same effects fade before that boundary. */
+:where(#kbroot) .faceoff.fooverflow .seatmode-content{overflow-y:auto;padding-inline:14px}
 :where(#kbroot) .faceoff .seatmode-actions{display:flex;flex-direction:column;align-items:stretch;
   gap:9px;margin-top:4px;width:100%}
 :where(#kbroot) .faceoff .seatmode-actions .btn{display:flex;align-items:center;justify-content:center;
@@ -75,8 +80,12 @@
 :where(#kbroot) .faceoff .seatmode-detail{font-size:9.5px;line-height:1.35;letter-spacing:.03em;
   color:var(--dim);text-align:center}
 :where(#kbroot) .faceoff .seatmode-actions .btn:disabled{opacity:.36;cursor:not-allowed}
-:where(#kbroot) .faceoff .seatmode-actions .btn.on{color:var(--gold);border-color:rgba(255,209,102,.5);
-  background:rgba(255,209,102,.08);box-shadow:0 0 18px rgba(255,209,102,.11)}
+/* RANDOM is the other-seat alternative to the user's duel-gradient fixed-rune
+   door. It always wears the configured opponent colour while it is offered;
+   when already selected, markup omits the redundant action altogether. */
+:where(#kbroot) .faceoff .seatmode-random-action{color:var(--p2);
+  border-color:rgba(var(--p2-rgb),.5);background:rgba(var(--p2-rgb),.08);
+  box-shadow:0 0 18px rgba(var(--p2-rgb),.18)}
 /* The empty seat needs only its PLUS. The 34px outer control already supplies
    the socket and flex-centres this SVG, so an inner dashed ring would be a
    duplicated boundary rather than useful detail. */

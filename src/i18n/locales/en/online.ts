@@ -119,7 +119,7 @@ export const enOnline = {
     equippedWaiting: 'Reach SILVER to use it in ranked · not in Rune Ritual',
     seatEmpty: 'NO RUNE',
     seatPick: 'EQUIPPED RUNE',
-    seatPickDetail: 'Equip one unlocked rune, or let RANDOM RUNE MODE draw a random owned rune for each ranked match after you reach SILVER once. Rune Ritual uses its own choice.',
+    seatPickDetail: 'Choose one unlocked rune for ranked matches.',
     runeGuideSeatTitle: 'CHOOSE YOUR RUNE',
     runeGuideSeatBody: 'Tap the rune seat in your league ring to choose a collected rune.',
   },

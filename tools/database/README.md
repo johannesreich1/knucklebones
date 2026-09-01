@@ -234,6 +234,29 @@ KB_ALLOW_PRODUCTION_PLAYER_POINTS=1259 \
   mise exec -- npm run db:production:player-points -- 1259 --apply
 ```
 
+Ordinary mode preserves the season peak and permanent pool. To exercise a
+genuine first-time pool unlock after this test account has already climbed
+higher, add the explicit high-water reset flag. Preview remains read-only:
+
+```sh
+mise exec -- npm run db:production:player-points -- 299 --reset-high-water
+```
+
+Reset apply has a separate point-specific phrase; the ordinary points opt-in
+is deliberately insufficient:
+
+```sh
+KB_ALLOW_PRODUCTION_PLAYER_HIGH_WATER_RESET=RESET_BADRANDOLF_HIGH_WATER_TO_299 \
+  mise exec -- npm run db:production:player-points -- \
+  299 --reset-high-water --apply
+```
+
+For that exact BONE setup, the transaction writes current-season points and
+peak to 299, the profile rating mirror to 299, and the permanent pool to
+STONE. Every win earns at least 30 points, so the next win crosses BONE and
+the settlement records the STONE → BONE pool advance needed for the promotion
+card plus all three newly unlocked outcome cards.
+
 Useful next-win positions are:
 
 | Points | Current group | Next boundary |
@@ -259,9 +282,18 @@ the existing season peak, the same transaction permanently raises that peak
 and may permanently advance the ranked-pool tier; setting a lower point value
 later does not undo either high-water mark. Preview prints the exact peak and
 pool before/after values so this effect is visible before the opt-in. The helper
-does not rewrite match history, stats, runes, or progression events.
-Consequently, a previously earned SILVER rune unlock remains earned and is not
-replayed as a first-time unlock after repositioning.
+does not rewrite match history, stats, runes, equipment, or progression events.
+In ordinary mode, a previously earned SILVER rune unlock therefore remains
+earned and is not replayed as a first-time unlock after repositioning.
+
+`--reset-high-water` is the deliberate test-only exception to monotonic peak
+and pool behavior. It sets the current season's points and peak to the same
+requested value and derives the exact pool tier from that value, in the same
+short locked/CAS transaction. It still preserves wins, losses, draws, matches,
+runes, equipment, and event history, and it keeps every ordinary blocker. It
+does not rewrite a prior season's peak, so a SILVER achievement from another
+season remains valid; that distinction matters when testing the separate
+historical-SILVER rune-seat card.
 
 ## Test-account reset and bot population
 

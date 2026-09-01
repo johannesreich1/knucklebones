@@ -111,7 +111,7 @@ export const esOnline = {
     equippedWaiting: 'Llega a PLATA para usarla en clasificatoria · no en el Ritual de Runas',
     seatEmpty: 'SIN RUNA',
     seatPick: 'RUNA EQUIPADA',
-    seatPickDetail: 'Equipa una runa desbloqueada o deja que el MODO DE RUNA ALEATORIA elija una runa propia al azar para cada partida clasificatoria tras llegar a PLATA una vez. El Ritual de Runas usa su propia elección.',
+    seatPickDetail: 'Elige una runa desbloqueada para partidas clasificatorias.',
     runeGuideSeatTitle: 'ELIGE TU RUNA',
     runeGuideSeatBody: 'Toca el espacio de runa del anillo de liga para elegir una runa conseguida.',
   },

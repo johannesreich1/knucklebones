@@ -45,6 +45,137 @@ export async function readEquippedSeat(page) {
   return page.evaluate(measureEquippedSeat);
 }
 
+/* The failure is paint outside the button's border, not a missing box-shadow
+   declaration. Capture the same settled lane with and without that one shadow
+   and scan the changed pixels on both horizontal sides. A scrollport clipping
+   the glow at its 3px content padding reports only ~3px here even though the
+   computed shadow still says 30px. */
+export async function primaryShadowBleed(page) {
+  const geometry = await page.$eval('#accSeatEquip', (button) => {
+    const box = button.getBoundingClientRect();
+    const body = button.closest('.seatmode-content')?.getBoundingClientRect() ?? null;
+    const viewportWidth = document.documentElement.clientWidth;
+    const viewportHeight = document.documentElement.clientHeight;
+    const left = Math.max(0, Math.floor(box.left - 24));
+    const top = Math.max(0, Math.floor(box.top - 8));
+    const right = Math.min(viewportWidth, Math.ceil(box.right + 24));
+    const bottom = Math.min(viewportHeight, Math.ceil(box.bottom + 24));
+    return {
+      button: { left: box.left, right: box.right },
+      body: body ? { left: body.left, right: body.right } : null,
+      clip: { x: left, y: top, width: right - left, height: bottom - top },
+      overflowX: getComputedStyle(button.closest('.seatmode-content')).overflowX,
+    };
+  });
+  const capture = () => page.screenshot({ clip: geometry.clip, animations: 'disabled' });
+  const withShadow = await capture();
+  await page.$eval('#accSeatEquip', (button) => {
+    button.style.setProperty('box-shadow', 'none', 'important');
+  });
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => resolve())));
+  const withoutShadow = await capture();
+  await page.$eval('#accSeatEquip', (button) => button.style.removeProperty('box-shadow'));
+
+  const pixels = await page.evaluate(async ({ withSource, withoutSource, geometry: measured }) => {
+    const decode = async (source) => {
+      const image = new Image();
+      image.src = source;
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext('2d');
+      context.drawImage(image, 0, 0);
+      return { width: image.width, height: image.height,
+        data: context.getImageData(0, 0, image.width, image.height).data };
+    };
+    const before = await decode(withSource);
+    const after = await decode(withoutSource);
+    const scale = before.width / measured.clip.width;
+    const buttonLeft = (measured.button.left - measured.clip.x) * scale;
+    const buttonRight = (measured.button.right - measured.clip.x) * scale;
+    let leftmost = before.width;
+    let rightmost = -1;
+    for (let y = 0; y < before.height; y++) for (let x = 0; x < before.width; x++) {
+      if (x >= buttonLeft && x < buttonRight) continue;
+      const offset = (y * before.width + x) * 4;
+      const delta = Math.abs(before.data[offset] - after.data[offset])
+        + Math.abs(before.data[offset + 1] - after.data[offset + 1])
+        + Math.abs(before.data[offset + 2] - after.data[offset + 2]);
+      if (delta < 8) continue;
+      leftmost = Math.min(leftmost, x);
+      rightmost = Math.max(rightmost, x);
+    }
+    return {
+      left: leftmost < buttonLeft ? (buttonLeft - leftmost) / scale : 0,
+      right: rightmost >= buttonRight ? (rightmost + 1 - buttonRight) / scale : 0,
+    };
+  }, {
+    withSource: `data:image/png;base64,${withShadow.toString('base64')}`,
+    withoutSource: `data:image/png;base64,${withoutShadow.toString('base64')}`,
+    geometry,
+  });
+  return { ...geometry, ...pixels };
+}
+
+/** The disabled one-rune RANDOM action still owns its opponent-colour identity. */
+export async function readRandomChoice(page) {
+  return page.evaluate(() => {
+    const button = document.getElementById('accSeatRandom');
+    const detail = document.getElementById('accSeatRandomDetail');
+    const probe = document.createElement('span');
+    probe.style.color = 'var(--p2)';
+    document.getElementById('kbroot').appendChild(probe);
+    const opponentColor = getComputedStyle(probe).color;
+    probe.remove();
+    return {
+      disabled: button?.disabled ?? null,
+      ariaDisabled: button?.getAttribute('aria-disabled') ?? null,
+      detail: detail?.textContent?.trim() ?? '',
+      describedBy: button?.getAttribute('aria-describedby') ?? null,
+      visible: !!button && button.getBoundingClientRect().height >= 44,
+      color: button ? getComputedStyle(button).color : '',
+      opponentColor,
+    };
+  });
+}
+
+/** Computed action-sheet semantics plus the painted primary-glow reach. */
+export async function readEquipmentSheet(page) {
+  const sheet = await page.evaluate(() => {
+    const inspectButton = (selector) => {
+      const button = document.querySelector(selector);
+      if (!button) return null;
+      const box = button.getBoundingClientRect();
+      const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+      const hueProbe = document.createElement('span');
+      hueProbe.style.color = 'var(--p2)';
+      button.appendChild(hueProbe);
+      const opponentColor = getComputedStyle(hueProbe).color;
+      hueProbe.remove();
+      return {
+        text: button.textContent?.trim() ?? '',
+        equipmentKind: button.dataset.equipmentKind ?? null,
+        disabled: button.disabled,
+        ariaDisabled: button.getAttribute('aria-disabled'),
+        height: box.height,
+        centreHit: button === hit || button.contains(hit),
+        color: getComputedStyle(button).color,
+        opponentColor,
+      };
+    };
+    return {
+      runes: [...document.querySelectorAll('.faceoff .accrune')]
+        .map((button) => button.dataset.rune),
+      detail: document.querySelector('.seatmode-content > .mcdetail')?.textContent?.trim() ?? '',
+      equip: inspectButton('#accSeatEquip'),
+      random: inspectButton('#accSeatRandom'),
+    };
+  });
+  sheet.primaryShadow = await primaryShadowBleed(page);
+  return sheet;
+}
+
 /** The whole transient picker boundary, including what must stay inert. */
 export const measureRunePickerState = () => {
   const panel = document.getElementById('onAccount');

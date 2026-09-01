@@ -111,7 +111,7 @@ export const frOnline = {
     equippedWaiting: 'Atteignez ARGENT pour l’utiliser en classé · pas dans le Rituel des runes',
     seatEmpty: 'AUCUNE RUNE',
     seatPick: 'RUNE ÉQUIPÉE',
-    seatPickDetail: 'Équipez une rune déverrouillée ou laissez le MODE RUNE ALÉATOIRE choisir une rune possédée au hasard pour chaque partie classée après avoir atteint ARGENT une fois. Le Rituel des runes utilise son propre choix.',
+    seatPickDetail: 'Choisissez une rune déverrouillée pour les parties classées.',
     runeGuideSeatTitle: 'CHOISISSEZ UNE RUNE',
     runeGuideSeatBody: 'Touchez l’emplacement de rune dans l’anneau de ligue pour choisir une rune obtenue.',
   },

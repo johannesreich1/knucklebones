@@ -98,7 +98,7 @@ export async function inspectRuneSheets(suite, page, label, locale) {
       && seatCopy.random === catalog.online.profile.randomRuneMode
       && seatCopy.randomDetail === catalog.online.profile.randomRuneModeDetail
       && seatCopy.clear === catalog.online.profile.unequipThis,
-    `profile-rune-seat-${label} did not render the localized SILVER/Trial contract`,
+    `profile-rune-seat-${label} did not render the localized equipment action contract`,
     { seatLabel, expectedSeatLabel, seatCopy });
   await page.keyboard.press('Escape');
   await page.waitForSelector('.faceoff.libsheet', { state: 'detached', timeout: 5000 });

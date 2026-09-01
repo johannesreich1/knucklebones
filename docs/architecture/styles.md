@@ -83,6 +83,16 @@ result bloom may be clipped at the viewport edge; translated text may not be.
 Use text ranges and container scroll geometry together so a hidden horizontal
 scroller or an ellipsis cannot masquerade as a passing layout.
 
+Painted effects need room inside every clipping ancestor. In particular,
+`overflow-y: auto` does not leave the other axis visibly open: when one axis is
+scrolling, a nominal `overflow-x: visible` computes to a clipping value too.
+Do not make a fitting sheet body a permanent scrollport. Let the measured
+overflow state enable scrolling only when the body is actually constrained,
+and give that constrained state enough inline effect gutter for button shadows,
+focus rings, and glows to fade before the boundary. Verify the painted pixels
+on both sides of the control; a non-`none` computed `box-shadow` can still be
+visually cut off and is not proof that the effect reached the player.
+
 The shared compact-label floor is `--font-label-min` (10 px). `.lbl` consumers,
 including Settings control labels, and the Profile rune heading/count may not
 compute below it across their localization viewport matrices. This is scoped,

@@ -111,7 +111,7 @@ export const ptOnline = {
     equippedWaiting: 'Chegue a PRATA para usá-la no ranqueado · não no Ritual das Runas',
     seatEmpty: 'SEM RUNA',
     seatPick: 'RUNA EQUIPADA',
-    seatPickDetail: 'Equipe uma runa desbloqueada ou deixe o MODO DE RUNA ALEATÓRIA escolher uma runa própria aleatória para cada partida ranqueada após chegar a PRATA uma vez. O Ritual das Runas usa uma escolha própria.',
+    seatPickDetail: 'Escolha uma runa desbloqueada para partidas ranqueadas.',
     runeGuideSeatTitle: 'ESCOLHA SUA RUNA',
     runeGuideSeatBody: 'Toque no espaço de runa do anel da liga para escolher uma runa coletada.',
   },

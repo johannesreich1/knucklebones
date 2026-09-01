@@ -264,9 +264,11 @@ export async function runGroupTransitionScenarios({ visit, out, check }) {
     'page errors during reduced-motion group transition', reduced.errs);
 
   /* NEON is the top 1%, not the 4,350-point fallback. Rank two of two hundred
-     is therefore NEON even at GOLD points. With no upper cap, the living ring
-     is complete and cannot place a high-score notch on a made-up scale; the
-     exact season high score remains the right-most PEAK fact below it. */
+     is therefore NEON even at GOLD points. The league name already sits above
+     the player name; the RANK fact keeps the real numeric ladder position.
+     With no upper cap, the living ring is complete and cannot place a
+     high-score notch on a made-up scale; the exact season high score remains
+     the right-most PEAK fact below it. */
   const apex = await visit({
     named: true,
     motion: 'reduce',
@@ -278,7 +280,7 @@ export async function runGroupTransitionScenarios({ visit, out, check }) {
   });
   out.groupTransitionApexProfile = apex.probeResult;
   check(apex.probeResult?.group === RESOURCES.en.online.ladder.groups.neon.name
-      && apex.probeResult.rank === RESOURCES.en.online.ladder.groups.neon.name
+      && apex.probeResult.rank === '#2'
       && apex.probeResult.fill === '1'
       && !apex.probeResult.hasPeakNotch && apex.probeResult.peakOpacity === '0'
       && apex.probeResult.peak === '2,610',

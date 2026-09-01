@@ -111,7 +111,7 @@ export const deOnline = {
     equippedWaiting: 'Erreiche SILBER, um sie in der Rangliste zu nutzen · nicht im Runenritual',
     seatEmpty: 'KEINE RUNE',
     seatPick: 'AUSGERÜSTETE RUNE',
-    seatPickDetail: 'Rüste eine freigeschaltete Rune aus oder lasse den ZUFALLSRUNEN-MODUS nach dem ersten Erreichen von SILBER für jedes Ranglistenspiel eine zufällige eigene Rune ziehen. Das Runenritual nutzt eine eigene Wahl.',
+    seatPickDetail: 'Wähle eine freigeschaltete Rune für Ranglistenspiele.',
     runeGuideSeatTitle: 'WÄHLE DEINE RUNE',
     runeGuideSeatBody: 'Tippe auf den Runenplatz in deinem Liga-Ring, um eine gesammelte Rune auszuwählen.',
   },

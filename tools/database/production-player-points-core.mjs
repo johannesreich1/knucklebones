@@ -10,6 +10,8 @@ import {
 
 export const PRODUCTION_PLAYER_NICKNAME = 'BadRandolf';
 export const PRODUCTION_PLAYER_POINTS_OPT_IN = 'KB_ALLOW_PRODUCTION_PLAYER_POINTS';
+export const PRODUCTION_PLAYER_HIGH_WATER_RESET_OPT_IN =
+  'KB_ALLOW_PRODUCTION_PLAYER_HIGH_WATER_RESET';
 export const PRODUCTION_PLAYER_POINTS_MAX = 100_000;
 
 export class ProductionPlayerPointsGuardError extends Error {
@@ -89,13 +91,40 @@ export function parseProductionPlayerPoints(value) {
   return points;
 }
 
-export function assertProductionPlayerPointsOptIn(points, apply, value) {
+export function productionPlayerHighWaterResetOptInValue(points) {
+  const parsed = typeof points === 'number'
+    ? parseProductionPlayerPoints(String(points))
+    : parseProductionPlayerPoints(points);
+  return `RESET_BADRANDOLF_HIGH_WATER_TO_${parsed}`;
+}
+
+function assertResetHighWater(resetHighWater) {
+  if (typeof resetHighWater !== 'boolean') {
+    fail('Production player high-water reset intent must be boolean.');
+  }
+  return resetHighWater;
+}
+
+export function assertProductionPlayerPointsOptIn(
+  points,
+  apply,
+  value,
+  { resetHighWater = false } = {},
+) {
   if (!Number.isSafeInteger(points) || points < 0 || points > PRODUCTION_PLAYER_POINTS_MAX) {
     fail('Production player points are outside the reviewed range.');
   }
   if (typeof apply !== 'boolean') fail('Production player-points apply intent must be boolean.');
-  if (apply && value !== String(points)) {
-    fail(`Applying ${PRODUCTION_PLAYER_NICKNAME}=${points} requires ${PRODUCTION_PLAYER_POINTS_OPT_IN}=${points} and --apply.`);
+  assertResetHighWater(resetHighWater);
+  const optInName = resetHighWater
+    ? PRODUCTION_PLAYER_HIGH_WATER_RESET_OPT_IN
+    : PRODUCTION_PLAYER_POINTS_OPT_IN;
+  const optInValue = resetHighWater
+    ? productionPlayerHighWaterResetOptInValue(points)
+    : String(points);
+  if (apply && value !== optInValue) {
+    const flag = resetHighWater ? ' --reset-high-water' : '';
+    fail(`Applying ${PRODUCTION_PLAYER_NICKNAME}=${points} requires ${optInName}=${optInValue} and${flag} --apply.`);
   }
   return apply;
 }
@@ -173,12 +202,25 @@ ${descending.slice(0, -1).map(tier =>
      end`;
 };
 
-export function buildProductionPlayerPointsSql(before, requestedPoints) {
+export function buildProductionPlayerPointsSql(
+  before,
+  requestedPoints,
+  { resetHighWater = false } = {},
+) {
   const audit = assertProductionPlayerPointsReady(before);
   const points = typeof requestedPoints === 'number'
     ? parseProductionPlayerPoints(String(requestedPoints))
     : parseProductionPlayerPoints(requestedPoints);
+  assertResetHighWater(resetHighWater);
   const playerId = audit.playerId.toLowerCase();
+  const peakAssignment = resetHighWater ? String(points) : `greatest(rating.peak, ${points})`;
+  const poolAssignment = resetHighWater
+    ? `'${rankedPoolTierForPeak(points)}'`
+    : poolTierCase();
+  const poolPostcheck = resetHighWater
+    ? `
+       and profile.ranked_pool_tier = ${poolAssignment}`
+    : '';
   return `begin;
 set local lock_timeout = '5s';
 set local statement_timeout = '30s';
@@ -234,13 +276,13 @@ begin
 
   update public.season_ratings rating
      set points = ${points},
-         peak = greatest(rating.peak, ${points})
+         peak = ${peakAssignment}
    where rating.season_id = v_season and rating.player = v_player
    returning rating.peak into strict v_peak;
 
   update public.profiles profile
      set rating = ${points},
-         ranked_pool_tier = ${poolTierCase()}
+         ranked_pool_tier = ${poolAssignment}
    where profile.id = v_player;
   if not found then raise exception 'production player-points profile disappeared'; end if;
 
@@ -252,7 +294,7 @@ begin
      where profile.id = v_player
        and profile.rating = ${points}
        and rating.points = ${points}
-       and rating.peak = v_peak
+       and rating.peak = v_peak${poolPostcheck}
   ) then
     raise exception 'production player-points postcheck failed';
   end if;
@@ -263,26 +305,40 @@ commit;
 `;
 }
 
-export function assertProductionPlayerPointsApplied(before, after, requestedPoints) {
+export function assertProductionPlayerPointsApplied(
+  before,
+  after,
+  requestedPoints,
+  { resetHighWater = false } = {},
+) {
   const initial = assertProductionPlayerPointsReady(before);
   const final = assertProductionPlayerPointsReady(after);
   const points = typeof requestedPoints === 'number'
     ? parseProductionPlayerPoints(String(requestedPoints))
     : parseProductionPlayerPoints(requestedPoints);
+  assertResetHighWater(resetHighWater);
   if (final.playerId !== initial.playerId || final.currentSeason !== initial.currentSeason) {
     fail('Production player-points target or season changed during apply.');
   }
   if (final.points !== points || final.profileRating !== points) {
     fail('Production player-points value or profile rating mirror did not apply exactly.');
   }
-  const expectedPeak = Math.max(initial.peak, points);
-  if (final.peak !== expectedPeak) fail('Production player-points peak was not preserved monotonically.');
-  const expectedPool = highestRankedPoolTier(
-    initial.rankedPoolTier,
-    rankedPoolTierForPeak(expectedPeak),
-  );
+  const expectedPeak = resetHighWater ? points : Math.max(initial.peak, points);
+  if (final.peak !== expectedPeak) {
+    fail(resetHighWater
+      ? 'Production player-points peak did not reset exactly.'
+      : 'Production player-points peak was not preserved monotonically.');
+  }
+  const expectedPool = resetHighWater
+    ? rankedPoolTierForPeak(expectedPeak)
+    : highestRankedPoolTier(
+      initial.rankedPoolTier,
+      rankedPoolTierForPeak(expectedPeak),
+    );
   if (final.rankedPoolTier !== expectedPool) {
-    fail('Production player-points permanent pool tier moved backwards or failed to advance.');
+    fail(resetHighWater
+      ? 'Production player-points permanent pool tier did not reset exactly.'
+      : 'Production player-points permanent pool tier moved backwards or failed to advance.');
   }
   if (final.unseenEvents !== 0) {
     fail('Production player-points apply left an unseen progression event before the test match.');
