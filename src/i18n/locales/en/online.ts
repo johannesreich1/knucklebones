@@ -8,6 +8,16 @@ export const enOnline = {
     avatar: 'AVATAR',
     matchHistory: 'MATCH HISTORY',
   },
+  connection: {
+    offline: {
+      title: 'YOU’RE OFFLINE',
+      body: 'Online play needs an internet connection. Check your connection, then try again.',
+    },
+    unavailable: {
+      title: 'CAN’T CONNECT',
+      body: 'Online play is unavailable right now. Check your connection, then try again.',
+    },
+  },
   auth: {
     emailPlaceholder: 'email',
     passwordPlaceholder: 'password (8+)',

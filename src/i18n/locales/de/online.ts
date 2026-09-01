@@ -11,6 +11,16 @@ export const deOnline = {
     avatar: 'AVATAR',
     matchHistory: 'SPIELVERLAUF',
   },
+  connection: {
+    offline: {
+      title: 'DU BIST OFFLINE',
+      body: 'Für Online-Spiele brauchst du eine Internetverbindung. Prüfe deine Verbindung und versuche es erneut.',
+    },
+    unavailable: {
+      title: 'VERBINDUNG NICHT MÖGLICH',
+      body: 'Online-Spiele sind gerade nicht erreichbar. Prüfe deine Verbindung und versuche es erneut.',
+    },
+  },
   auth: {
     emailPlaceholder: 'E-Mail',
     passwordPlaceholder: 'Passwort (8+)',

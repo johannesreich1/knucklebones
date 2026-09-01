@@ -4,7 +4,7 @@ import { cancelTrialSelection } from '../../ui/trial-select.ts';
 import { isNewcomer, offerTutorial } from '../../ui/firstrun.ts';
 import { RUNE_TRIAL_FORMAT } from '../../core/ranked-outcomes.ts';
 import { enterMatch } from '../play/play.ts';
-import { join, type JoinResult } from '../api/match-api.ts';
+import { join, type JoinAttempt } from '../api/match-api.ts';
 import { resign, resignedOver } from '../api/match-resignation.ts';
 import { createQueueCancellation } from '../api/queue-cancellation.ts';
 import { leaveQueue } from '../api/queue-lifecycle.ts';
@@ -28,13 +28,14 @@ export interface QueueScreen {
 export interface QueueScreenPorts {
   goHome: () => void;
   startTutorial: () => void;
+  connectionUnavailable: () => void;
 }
 
 export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
   const runs = createRunGeneration();
   const cancellation = createQueueCancellation({ leaveQueue, resign, resignedOver });
   const waiting = createQueueWaiting({ goHome: () => ports.goHome() });
-  let pendingJoin: Promise<JoinResult | null> | null = null;
+  let pendingJoin: Promise<JoinAttempt | null> | null = null;
   let queueMayExist = false;
 
   function stop(): void {
@@ -75,7 +76,7 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
     while (runs.owns(run)) {
       const waited = Date.now() - joinStarted;
       queueMayExist = true;
-      const request = (async (): Promise<JoinResult | null> => {
+      const request = (async (): Promise<JoinAttempt | null> => {
         try {
           const settled = await join(waited > 7000);
           if (!runs.owns(run)) {
@@ -94,13 +95,18 @@ export function createQueueScreen(ports: QueueScreenPorts): QueueScreen {
         }
       })();
       pendingJoin = request;
-      let result: JoinResult | null;
+      let result: JoinAttempt | null;
       try {
         result = await request;
       } finally {
         if (pendingJoin === request) pendingJoin = null;
       }
       if (!runs.owns(run)) return;
+      if (result?.status === 'unavailable') {
+        waiting.clear();
+        ports.connectionUnavailable();
+        return;
+      }
       if (result?.status === 'incompatible') {
         queueMayExist = false;
         waiting.clear();

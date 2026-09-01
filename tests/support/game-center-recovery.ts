@@ -120,9 +120,10 @@ export async function runGameCenterRecoveryTests(check: Check): Promise<void> {
   { second, created: firstTime.created });
 
   /* ---- only a genuinely unresolved answer may hold a player back ----
-     'retry' reaches ensureIdentity as null, which shows the sign-in panel. It
-     must therefore mean a real failure and nothing else; every state GameKit
-     reports as not-authenticated falls through to the silent guest instead. */
+     'retry' reaches ensureIdentity as temporarily unavailable, which shows the
+     connection sheet without discarding the stored account. It must therefore
+     mean a real failure and nothing else; every state GameKit reports as
+     not-authenticated falls through to the silent guest instead. */
   const held: Array<[string, GameCenterAuthState['status'], string | null, string]> = [
     ['a network or gateway failure', 'authenticated', GAME_CENTER_IDENTITY_MESSAGES.failed, 'retry'],
     ['a refused verification', 'authenticated', GAME_CENTER_IDENTITY_MESSAGES.invalid, 'retry'],

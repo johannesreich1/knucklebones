@@ -295,8 +295,12 @@ export async function installOnlineRoutes(
   }));
   await page.route('**/rest/v1/matches*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: '[]' }));
   let joinCalls = 0;
+  let joinUnavailable = false;
   await page.route('**/functions/v1/pvp-join', (r) => {
     joinCalls++;
+    if (joinUnavailable) {
+      return r.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+    }
     return r.fulfill({ status: 200, contentType: 'application/json', body: '{"status":"queued"}' });
   });
   await page.route('**/rest/v1/rpc/leave_ranked_queue', (r) => r.fulfill({
@@ -336,6 +340,7 @@ export async function installOnlineRoutes(
     releaseEquipmentWrite: () => releaseEquipmentWrite(),
     equipmentWriteFinished,
     joinCalls: () => joinCalls,
+    setJoinUnavailable: (value) => { joinUnavailable = value; },
     runeCalls: () => runeCalls,
     acknowledgeCalls: () => acknowledgeCalls,
     deferNextRuneResponse: () => { deferNextRune = true; },

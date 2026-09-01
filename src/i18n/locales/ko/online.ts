@@ -11,6 +11,16 @@ export const koOnline = {
     avatar: '아바타',
     matchHistory: '매치 기록',
   },
+  connection: {
+    offline: {
+      title: '오프라인 상태입니다',
+      body: '온라인 플레이에는 인터넷 연결이 필요합니다. 연결 상태를 확인한 뒤 다시 시도해 주세요.',
+    },
+    unavailable: {
+      title: '연결할 수 없습니다',
+      body: '현재 온라인 플레이를 이용할 수 없습니다. 연결 상태를 확인한 뒤 다시 시도해 주세요.',
+    },
+  },
   auth: {
     emailPlaceholder: '이메일',
     passwordPlaceholder: '비밀번호(8자 이상)',

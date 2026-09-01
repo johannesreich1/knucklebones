@@ -4,6 +4,7 @@ import { installOnlineRoutes } from '../../online-ui/harness/routes.mjs';
 import { checkReachableTargets, checkSurface, frame,
   inspectSurface } from '../../localization/harness/layout-inspection.mjs';
 import { inspectRuneSheets } from './profile-rune-sheets.mjs';
+import { inspectOfflineSheet } from './connection-sheet.mjs';
 
 const VIEWPORTS = [
   { name: '320x568', width: 320, height: 568 },
@@ -345,6 +346,7 @@ async function runViewport(suite, locale, viewport) {
   check(result.actions[1]?.label === RESOURCES[locale.id].common.actions.home
     && result.actions[1].icon === null,
   `${label} ranked Home changed label or received a play icon`, result.actions);
+  const offline = await inspectOfflineSheet(suite, page, label, locale.id);
   await context.close();
   return {
     profileItems: account.content.items.length,
@@ -352,6 +354,8 @@ async function runViewport(suite, locale, viewport) {
     authItems: auth.content.items.length,
     ladderItems: ladder.content.items.length,
     resultItems: result.items.length,
+    offlineItems: offline.offline.items.length,
+    unavailableItems: offline.unavailable.items.length,
   };
 }
 

@@ -11,6 +11,16 @@ export const idOnline = {
     avatar: 'AVATAR',
     matchHistory: 'RIWAYAT PERTANDINGAN',
   },
+  connection: {
+    offline: {
+      title: 'ANDA SEDANG OFFLINE',
+      body: 'Permainan online memerlukan koneksi internet. Periksa koneksi Anda, lalu coba lagi.',
+    },
+    unavailable: {
+      title: 'TIDAK DAPAT TERHUBUNG',
+      body: 'Permainan online sedang tidak tersedia. Periksa koneksi Anda, lalu coba lagi.',
+    },
+  },
   auth: {
     emailPlaceholder: 'email',
     passwordPlaceholder: 'kata sandi (8+)',

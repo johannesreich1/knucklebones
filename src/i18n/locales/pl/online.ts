@@ -11,6 +11,16 @@ export const plOnline = {
     avatar: 'AWATAR',
     matchHistory: 'HISTORIA MECZÓW',
   },
+  connection: {
+    offline: {
+      title: 'JESTEŚ OFFLINE',
+      body: 'Gra online wymaga połączenia z internetem. Sprawdź połączenie i spróbuj ponownie.',
+    },
+    unavailable: {
+      title: 'BRAK POŁĄCZENIA',
+      body: 'Gra online jest teraz niedostępna. Sprawdź połączenie i spróbuj ponownie.',
+    },
+  },
   auth: {
     emailPlaceholder: 'e-mail',
     passwordPlaceholder: 'hasło (min. 8)',

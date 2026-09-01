@@ -11,6 +11,16 @@ export const frOnline = {
     avatar: 'AVATAR',
     matchHistory: 'HISTORIQUE',
   },
+  connection: {
+    offline: {
+      title: 'VOUS ÊTES HORS LIGNE',
+      body: 'Une connexion Internet est nécessaire pour jouer en ligne. Vérifiez votre connexion, puis réessayez.',
+    },
+    unavailable: {
+      title: 'CONNEXION IMPOSSIBLE',
+      body: 'Le jeu en ligne est indisponible pour le moment. Vérifiez votre connexion, puis réessayez.',
+    },
+  },
   auth: {
     emailPlaceholder: 'e-mail',
     passwordPlaceholder: 'mot de passe (8+)',

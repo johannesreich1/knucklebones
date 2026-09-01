@@ -11,6 +11,16 @@ export const ptOnline = {
     avatar: 'AVATAR',
     matchHistory: 'HISTÓRICO',
   },
+  connection: {
+    offline: {
+      title: 'VOCÊ ESTÁ OFFLINE',
+      body: 'Para jogar online, é preciso ter conexão com a internet. Verifique sua conexão e tente novamente.',
+    },
+    unavailable: {
+      title: 'NÃO FOI POSSÍVEL CONECTAR',
+      body: 'O jogo online está indisponível no momento. Verifique sua conexão e tente novamente.',
+    },
+  },
   auth: {
     emailPlaceholder: 'e-mail',
     passwordPlaceholder: 'senha (8+)',

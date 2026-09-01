@@ -11,6 +11,16 @@ export const jaOnline = {
     avatar: 'アバター',
     matchHistory: '対戦履歴',
   },
+  connection: {
+    offline: {
+      title: 'オフラインです',
+      body: 'オンラインプレイにはインターネット接続が必要です。接続を確認して、もう一度お試しください。',
+    },
+    unavailable: {
+      title: '接続できません',
+      body: 'オンラインプレイは現在利用できません。接続を確認して、もう一度お試しください。',
+    },
+  },
   auth: {
     emailPlaceholder: 'メールアドレス',
     passwordPlaceholder: 'パスワード（8文字以上）',

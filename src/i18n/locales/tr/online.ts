@@ -11,6 +11,16 @@ export const trOnline = {
     avatar: 'AVATAR',
     matchHistory: 'MAÇ GEÇMİŞİ',
   },
+  connection: {
+    offline: {
+      title: 'ÇEVRİMDIŞISIN',
+      body: 'Çevrimiçi oynamak için internet bağlantısı gerekir. Bağlantını kontrol edip tekrar dene.',
+    },
+    unavailable: {
+      title: 'BAĞLANTI KURULAMIYOR',
+      body: 'Çevrimiçi oyun şu anda kullanılamıyor. Bağlantını kontrol edip tekrar dene.',
+    },
+  },
   auth: {
     emailPlaceholder: 'e-posta',
     passwordPlaceholder: 'parola (8+)',

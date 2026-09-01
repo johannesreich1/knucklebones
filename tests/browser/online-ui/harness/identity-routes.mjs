@@ -13,17 +13,24 @@
 export async function installIdentityRoutes(page, { identity, gameCenter, session }) {
   const state = { ...identity };
   const modes = [];
+  let statusUnavailable = false;
   const readers = {
     gameCenterModes: () => [...modes],
     identityState: () => ({ ...state }),
+    setIdentityStatusUnavailable: (value) => { statusUnavailable = value; },
     setAppleIdentity: (linked, revocationReady) => {
       state.appleLinked = linked;
       state.appleRevocationReady = revocationReady;
     },
   };
-  await page.route('**/functions/v1/identity-status', (r) => r.fulfill({
-    status: 200, contentType: 'application/json', body: JSON.stringify(state),
-  }));
+  await page.route('**/functions/v1/identity-status', (r) => {
+    if (statusUnavailable) {
+      return r.fulfill({ status: 503, contentType: 'application/json', body: '{}' });
+    }
+    return r.fulfill({
+      status: 200, contentType: 'application/json', body: JSON.stringify(state),
+    });
+  });
   if (!gameCenter) return readers;
   /* Reached only where Game Center can run: the launch sign-in exchanges its
      verified token for a session, and a completed attach refreshes the JWT the

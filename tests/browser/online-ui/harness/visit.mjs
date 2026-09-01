@@ -85,6 +85,11 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     markRunesSeenAfterFirstRead = false,
     expectReward = false,
     probe = null,
+    /* A focused transition probe may deliberately finish somewhere the
+       standard door reader cannot consume (for example a connection sheet).
+       Close after its own assertions instead of imposing the door's ordinary
+       queue/account cleanup. */
+    returnAfterProbe = false,
     skipStandardProbes = false,
     /* `door: 'match'` needs a match to enter. Pass `true` for the standard
        Rune Trial fixture, or an options object for trial-match.mjs. */
@@ -309,6 +314,11 @@ export function createVisit({ browser, URL, SESSION, GUEST_ID, onHarnessError })
     // body-level sheets, but must not repaint the eager Home hiding underneath.
     const homeAfterOnline = await homeSnapshot();
     const probeResult = probe ? await probe(page, routes) : null;
+
+    if (returnAfterProbe) {
+      await ctx.close();
+      return { probeResult, errs, rootLang: null };
+    }
 
     if (door === 'match') {
       await ctx.close();
