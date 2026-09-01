@@ -39,6 +39,8 @@ export const koGame = {
   home: {
     notSignedIn: '로그인하지 않음',
     playRanked: '랭크 매치 플레이',
+    weeklyChallenge: '주간 도전 · {{mode}}',
+    weeklyChallengeComplete: '주간 도전 완료 ✓ · {{mode}}',
     ladder: '랭킹',
     settings: '설정',
     practiceOffline: '오프라인 연습',
@@ -209,6 +211,7 @@ export const koGame = {
   },
   modeLock: {
     reachBone: '본에 도달하면 AI전에서 이 모드를 사용할 수 있습니다.',
+    reachGold: '골드에 도달하면 AI전에서 이 모드를 사용할 수 있습니다.',
   },
   runeTrial: {
     choosePrompt: '룬 하나를 선택하세요 — 상대에게는 보이지 않습니다',
@@ -222,6 +225,9 @@ export const koGame = {
     revealPair: '두 선택이 확정되었습니다',
     revealed: '룬 공개',
     pickClock: '선택까지 남은 초',
+    claim: 'CLAIM',
+    claimOwned: '보유 중',
+    claimNew: '신규',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} 발동됨. 표시된 열을 선택하세요.',

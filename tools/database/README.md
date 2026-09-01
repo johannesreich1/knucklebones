@@ -6,7 +6,10 @@ Since the 2026-08-30 reconciliation and ranked-rune rollouts,
 prefix as production, pinned by
 `supabase/migration-history.json` and `tests/migration-ledger.test.ts`. The
 guarded rollout manifest separately pins the applied 60th historical-SILVER
-and 61st eleven-locale player-settings stages.
+and 61st eleven-locale player-settings stages. The repository's 62nd migration,
+`20260901162456_progression_v2.sql`, is the sole pending production stage; it
+installs a dormant, version-1-default contract and does not itself activate or
+remap the ladder.
 The former compact aliases, obsolete 12-bot seed, and two wrong-stamped files live
 under `supabase/legacy-migrations/` and are never executable.
 
@@ -15,6 +18,38 @@ working tree. Production applies are still explicit owner operations. Never
 use `--include-all` from the repository root: the guarded helper uses it only
 inside a fresh temporary workdir whose entire migration directory is the fixed,
 hash-pinned allow-list.
+
+## Progression-v2 owner cutover
+
+Progression v2 deliberately uses the normal linked history/dry-run/apply path:
+the migration is a single forward-only suffix after the pinned live 61-file
+ledger, while the irreversible numeric remap lives behind a separate
+database-owner-only function. Do not combine these steps or infer activation
+from migration history.
+
+1. Run `supabase migration list --linked`, then
+   `supabase db push --linked --dry-run`. Stop unless the exact pending plan is
+   only `20260901162456_progression_v2.sql`; never add `--include-all`.
+2. Run `supabase db push --linked`. The public active curve must still read 1.
+3. Preview and apply the authoritative closure:
+   `mise exec -- npm run functions:production:ranked-runes`, then
+   `KB_ALLOW_PRODUCTION_RANKED_RUNE_FUNCTIONS=1 mise exec -- npm run
+   functions:production:ranked-runes -- --apply`.
+4. With service-role/database-owner authority, call
+   `public.set_ranked_admission_paused(true)`. Drain all active matches and
+   queue entries, then read `public.preview_ranked_curve_v2_activation()`.
+5. As database owner (`postgres`), call
+   `private.activate_progression_v2(p_expected_profiles => <players>,
+   p_expected_season_rows => <season_rows>)` using the exact preview counts.
+   The function locks and rechecks them and aborts atomically on any mismatch or
+   remaining v1 work.
+6. Verify `public.active_ranked_curve_version()` returns 2 and inspect the
+   activation result before calling `public.set_ranked_admission_paused(false)`.
+
+Keep admission paused on any uncertain result. The activation cannot be rolled
+back by editing migration history: repair forward with a reviewed migration.
+The detailed remap/grandfathering invariants are in
+`docs/architecture/backend.md` and `docs/LADDER.md §7`.
 
 Use the guarded rollout command for its fixed selections:
 
@@ -219,6 +254,11 @@ Do not accept arbitrary SQL or arbitrary filenames from command-line input.
 
 ## BadRandolf transition testing
 
+This helper is curve-v1-only and fails closed when
+`public.active_ranked_curve_version()` returns 2. Its numeric presets and
+`ranked_pool_tier` mutations do not describe durable v2 outcome entitlements;
+do not bypass that refusal after activation.
+
 The guarded player-points helper sets an exact current-season point value for
 the single production human profile named `BadRandolf`. The presets below put
 that account immediately below a ladder boundary so the next ranked win can
@@ -297,6 +337,11 @@ season remains valid; that distinction matters when testing the separate
 historical-SILVER rune-seat card.
 
 ## Test-account reset and bot population
+
+All three phases are curve-v1-only and fail closed after progression-v2
+activation. The fixed point spread, pool tiers, and seed invariants belong to
+the v1 fixture. A future v2 population tool needs a separately reviewed plan;
+do not weaken this guard to reuse the old one.
 
 The pre-launch production test population has its own three-phase guarded helper.
 Every phase requires committed clean `main`, the exact linked/configured project,

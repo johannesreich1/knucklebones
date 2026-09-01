@@ -1,6 +1,5 @@
-// Focused contracts for the guarded BadRandolf transition-testing helper.
-// Kept beside the existing production test-data cases so the owner runner
-// stays within the repository's architecture size budget.
+// Focused contracts for the guarded BadRandolf transition-testing helper, kept
+// beside the production test-data cases to preserve the architecture budget.
 import assert from 'node:assert/strict';
 import os from 'node:os';
 import {

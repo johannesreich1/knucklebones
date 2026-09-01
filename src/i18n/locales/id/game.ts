@@ -39,6 +39,8 @@ export const idGame = {
   home: {
     notSignedIn: 'BELUM MASUK',
     playRanked: 'Main peringkat',
+    weeklyChallenge: 'Tantangan mingguan · {{mode}}',
+    weeklyChallengeComplete: 'Mingguan tuntas ✓ · {{mode}}',
     ladder: 'Papan peringkat',
     settings: 'Pengaturan',
     practiceOffline: 'Latihan offline',
@@ -209,6 +211,7 @@ export const idGame = {
   },
   modeLock: {
     reachBone: 'Capai TULANG untuk membuka mode ini melawan AI.',
+    reachGold: 'Capai EMAS untuk membuka mode ini melawan AI.',
   },
   runeTrial: {
     choosePrompt: 'Pilih satu rune — lawan tidak dapat melihatnya',
@@ -222,6 +225,9 @@ export const idGame = {
     revealPair: 'Kedua pilihan telah dikunci',
     revealed: 'Rune dibuka',
     pickClock: 'DETIK UNTUK MEMILIH',
+    claim: 'CLAIM',
+    claimOwned: 'DIMILIKI',
+    claimNew: 'BARU',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Diaktifkan — pilih kolom bertanda.',

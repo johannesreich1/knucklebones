@@ -10,9 +10,9 @@ decisions, and externally owned actions only. Detailed sprint history lives in
 |---|---|---|
 | Web | Live at <https://knucklebones-asg.pages.dev>; pushes to `main` still deploy through the Cloudflare Pages dashboard build immediately, ahead of CI. The gated `deploy` job is merged but skipped until `DEPLOY_VIA_ACTIONS` is set | `build.mjs`, `.github/workflows/ci.yml` |
 | Game | Local solo and two-player play, tutorial, modes, optional offline spells, and shared local/ranked board rendering | `src/core/`, `src/flow/`, `src/ui/` |
-| Ranked | Production has server-authoritative play, matchmaking/bot backfill, ladder, history, profiles, deletion, permanent mode-pool progression, IVORY Rune Trial, authoritative casts, rune collection, and an equipped seat. Ordinary ranked permanently activates each participant's fixed or per-match RANDOM owned rune after that participant has reached SILVER once; a never-SILVER or empty seat remains rune-free, while Rune Trial ignores equipment. The disposable test population has 200 bots spanning the ladder with deliberately beatable 41–54% aggregate win rates, streaks 2–7, and modest varied peaks; real play then updates the ordinary aggregates. Bots carry rune winnings and stable equipped seats scaled by standing and record — see `docs/LADDER.md` § Bot rune winnings | `src/online/`, `src/core/ranked-outcomes.ts`, `supabase/functions/`, `docs/LADDER.md` |
+| Ranked | Production currently runs curve v1: server-authoritative play, matchmaking/bot backfill, ladder, history, profiles, deletion, permanent mode-pool progression, IVORY Rune Trial, authoritative casts, rune collection, and historical-SILVER equipped seats. The repository implements version-gated progression v2—new floors, 2–7 finish-margin transfer, redistributed unlocks, CLAIM, debuts, OBSIDIAN weekly challenge, NEON medals, durable entitlements, and old-client refusal—but production remains v1 until the owner applies the dormant migration, deploys the authoritative closure, drains v1 work, and activates the curve. The disposable test population has 200 deliberately beatable bots with rune winnings and stable equipment — see `docs/LADDER.md` §7 | `src/online/`, `src/core/ranked-outcomes.ts`, `supabase/functions/`, `docs/LADDER.md` |
 | Localization | English, Brazilian Portuguese, Spanish, German, French, Italian, Polish, Turkish, Indonesian, Japanese, and Korean share one ordered registry, complete catalogs, native metadata, and measured eager/online mobile geometry | `src/i18n/`, `docs/architecture/localization.md` |
-| Database | Repository and production share the reconciled 59-migration timestamped prefix through `20260830182406_ranked_progression_events.sql`; `supabase/migration-history.json` and the migration-ledger test pin that base. Production also records the guarded, hash-pinned `20260831133000_historical_silver_ranked_runes.sql` and `20260901074059_expand_player_settings_locales_11.sql` stages, making the live ledger 61 migrations. The former atomically converts match start plus progression events to permanent historical-SILVER semantics; the latter expands stored player-setting locale IDs to the complete 11-locale stable-ID roster. The former compact aliases, obsolete 12-bot seed, and two wrong-stamped equipped-rune files are preserved only in the non-executable archive. Catalog, security, data, Realtime, cron, paired-stage, and legacy-upgrade audits cover the owned surfaces. Ledger alignment does not establish deployed Edge Function bytes. | `supabase/migrations/`, `supabase/legacy-migrations/`, `supabase/migration-history.json` |
+| Database | Repository and production share the reconciled 59-migration timestamped prefix through `20260830182406_ranked_progression_events.sql`; `supabase/migration-history.json` and the migration-ledger test pin that base. Production also records the guarded, hash-pinned historical-SILVER and eleven-locale stages, making the live ledger 61 migrations. The repository adds `20260901162456_progression_v2.sql` as the sole pending stage: it installs an audited dormant v2 contract but changes no live score until the database owner invokes its count-guarded activation transaction. The former compact aliases, obsolete 12-bot seed, and two wrong-stamped equipped-rune files are preserved only in the non-executable archive. Catalog, security, data, Realtime, cron, paired-stage, legacy-upgrade, and exact v2 schema/function audits cover the owned surfaces. Ledger alignment does not establish deployed Edge Function bytes. | `supabase/migrations/`, `supabase/legacy-migrations/`, `supabase/migration-history.json` |
 | Builds | Hosted PWA, standalone HTML, widget, and Capacitor web assets come from the same source build | `build.mjs`, `docs/architecture/build.md` |
 | Native | Capacitor 8.5 iOS and Android projects are tracked; iOS supports 15+, Android installs on API 24+ while targeting API 36 | `native/`, `docs/architecture/build.md` |
 | Design | Product cards, open studies, and archived candidates are explicitly classified and recursively built from shared application CSS/renderers | `design/screens/`, `design/build.mjs` |
@@ -53,12 +53,14 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   turnover never relock a pool. A human pairing uses the lower shared pool and
   protocol-capability intersection; a bot uses its human's pool. Classic is
   exactly 40% and eligible additions split the remaining 60% equally.
-  A successor distribution, late-weighted score curve, CLAIM collection
-  reward, and OBSIDIAN weekly challenge are approved but not implemented:
+  The implemented, dormant v2 successor redistributes those outcomes, applies
+  the late-weighted score curve and finish transfer, replaces the Trial reward
+  with CLAIM, and adds debuts, weekly challenges, medals, and durable per-outcome
+  entitlements:
   `docs/LADDER.md §7` owns progression/pacing, `docs/MODES.md §4` owns the mode
   and weekly rationale, and `docs/SPELLS.md §8` owns the Trial interaction.
-  Until that target ships, the current mapping, floors, and selected-rune
-  reward remain runtime truth.
+  Until the owner completes the activation sequence, the production-v1 mapping,
+  floors, and selected-rune reward remain runtime truth.
 - Rune Trial is `format='rune_trial'` with `modifier='classic'`, not an eighth
   mechanical core mode. Both seats receive the same uniform three-of-six loan,
   choose privately, and reveal together; a 10-second deadline (owner call
@@ -106,39 +108,21 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 
 ### Product and release decisions
 
-- Implement the 2026-09-01 ranked progression decision in
-  `docs/LADDER.md §7`: redistribute Bounty, Row Multiply, Row Switch, and
-  Limited; move the target floors to 0 / 360 / 840 / 1,490 / 2,490 / 3,890
-  with a 6,090 small-population NEON fallback—the 360-point STONE band targets
-  roughly six games on the owner's observed five-game bot path, while the
-  480-point BONE band remains one average game longer than its preceding
-  450-point target and every later traversal width stays unchanged;
-  monotonically rescale current and peak points without changing rank or
-  progress inside a league; replace the selected-rune Trial reward with the
-  visible, selection-dependent CLAIM reward while retaining every existing
-  collection; drive ranked-outcome
-  ordering inside offline pickers, the ranked spinner, the library, and
-  outcome-unlock slides from one shared rank/helper; add durable bot-debut
-  guarantees; add the permanently unlocked OBSIDIAN weekly feature;
-  grandfather current entitlements; and update the client, server,
-  persistence, transitions, offline choices, locales, tests, the LG1
-  transition card, and any other affected previews/exports. Keep presentation
-  sorting independent of the seed-sensitive weighted draw. Version-gate both
-  the score-curve cutover and CLAIM reward so an installed old client can
-  neither display the wrong league nor enter a Trial whose reward mark it
-  cannot see. This documentation decision is not live, and every affected
-  authoritative function must be redeployed when implementation ships.
-- Implement the separately decided 2026-09-01 finish-margin transfer in
-  `docs/LADDER.md §1`: retain the opponent-strength base, request a
-  winner-score-normalized **2–7** loser-to-winner transfer (**0–7** applied at
-  boundaries), and persist versioned total/finish components. The refinement
-  changes a decisive result by at most one point versus the earlier
-  combined-score target and leaves the target cadence projection unchanged.
-  The current floors remain runtime truth; the successor floor curve and
-  cutover are the separate, coordinated target in §7. Neither decision is live;
-  implementation requires every settlement/retry and result/history surface,
-  retained production-shaped evidence, tests, and redeployment of each affected
-  authoritative function closure.
+- Activate the implemented 2026-09-01 progression-v2 contract in production
+  (owner: Johannes). First confirm linked history and require the dry run to
+  contain only `20260901162456_progression_v2.sql`; apply it while curve v1 is
+  still active. Then deploy the guarded `ranked-runes` function plan, pause
+  ranked admission, drain every active v1 match and queue row, and inspect
+  `preview_ranked_curve_v2_activation()`. As database owner, pass its exact
+  profile/season-row counts to `private.activate_progression_v2(bigint,
+  bigint)`, verify the public curve reads 2, then resume admission. The
+  transaction monotonically remaps current/peak points, preserves league/ring
+  position and current entitlements, grants durable v2 outcomes/features,
+  records positional NEON medals, and switches scoring/curve versions together.
+  Do not activate with active v1 work or a mismatched count, and do not use the
+  legacy player-points/test-population helpers afterward. The exact commands,
+  authority boundaries, and failure behavior are in
+  `docs/architecture/backend.md` and `tools/database/README.md`.
 - The `localization-browser` geometry matrix is manual-only since 2026-08-26
   (owner: Johannes): run
   `mise exec -- node tests/browser/localization/run.mjs` plus the manual
@@ -190,9 +174,10 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   `es-ES`, `de-DE`, `fr-FR`, `it`, `pl`, `tr`, `id`, `ja`, and `ko` locale on
   both iPhone 6.9-inch and iPad 13-inch (132 images total), and a post-sync read
   confirmed no remaining metadata, upload, deletion, or order change. No binary
-  or review submission was touched. Before review, ranked
-  runes must ship and every affected future-state preview must be regenerated
-  from that shipping implementation; store-name clearance, localized public
+  or review submission was touched. The local campaign is regenerated from the
+  progression-v2 implementation, but before review the owner must activate v2
+  in production and confirm the campaign still matches that released runtime;
+  store-name clearance, localized public
   legal/support URLs, a signed archive and physical-device proof, Services ID
   and Supabase switches, deletion-time token revocation, and the remaining Game
   Center gateway/function/device rollout also remain open. Android

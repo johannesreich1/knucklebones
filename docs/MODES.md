@@ -103,13 +103,14 @@ additions *are* the game's variety, and half of all matches seeing none of them
 made them feel rarer than intended. Any change here must be redeployed to the
 join function, which owns the real pick.
 
-### Decided successor progression — not shipped
+### Implemented progression v2 — staged for production activation
 
-The selected future schedule, pace evidence, exact target odds, one-time debut
-matches, grandfathering rule, and implementation dependencies are authoritative
-in `docs/LADDER.md §7`. It is intentionally separate from the shipped table
-above: documentation alone does not change the client registry, persistence, or
-the authoritative join function.
+The v2 schedule, pace evidence, exact target odds, one-time debut matches,
+grandfathering rule, and rollout dependencies are authoritative in
+`docs/LADDER.md §7`. The repository now implements them in the shared registry,
+client, persistence, migration, and authoritative functions. Production remains
+on the table above until the guarded database/function rollout and explicit
+curve activation complete.
 
 From the mode-design side, the order is fixed:
 
@@ -150,7 +151,7 @@ chosen weekly challenge are deliberate exceptions: they exist so a promoted
 player actually encounters the reward instead of waiting for a low-probability
 wheel result.
 
-Ranked Rune Ritual's successor collection reward also becomes deliberately
+Ranked Rune Ritual's v2 collection reward also becomes deliberately
 non-completing for most climbers. One of its three common offered cards is
 visibly marked CLAIM before either private choice; only a winner who selected
 that card collects it, and a duplicate has no replacement. The mark changes
@@ -161,7 +162,7 @@ checklist. `docs/SPELLS.md §8` owns the interaction contract and
 `docs/LADDER.md §7` owns the pacing model and records a possible later
 fixed-price, one-rune tail escape as an unapproved example—not launch scope.
 
-The separately decided, unshipped finish-margin ladder transfer does not let a
+The implemented, curve-v2 finish-margin ladder transfer does not let a
 high-scoring mode pay more merely because its numbers are larger. It uses the
 final score gap divided by the winner's score, requests a **2–7** point transfer
 from loser to winner, and may apply **0–7** at the loss cap or zero-point floor;
@@ -170,10 +171,10 @@ point more expressive than the superseded combined-score denominator while
 keeping the same ceiling. `docs/LADDER.md §1` owns the exact formula, boundary
 behavior, evidence, progression impact, forfeits, authority, and persistence.
 
-The successor's canonical player-facing outcome order is defined once in
-`docs/LADDER.md §7` and follows its unlock sequence. The implementation must
-put one progression/display rank on the shared ranked-outcome registry and
-reuse one roster-order helper for ranked-outcome entries in the offline pickers,
+The v2 canonical player-facing outcome order is defined once in
+`docs/LADDER.md §7` and follows its unlock sequence. The implementation puts
+one progression/display rank on the shared ranked-outcome registry and reuses
+one roster-order helper for ranked-outcome entries in the offline pickers,
 ranked spinner, library, and outcome-unlock slides. Those surfaces must not copy
 arrays or comparators; their distinct inclusion/lock policies and non-outcome
 slots are defined in `docs/LADDER.md §7`. The deterministic weighted draw
@@ -194,27 +195,31 @@ week boundary, entry and matchmaking behavior, ladder settlement, the
 idempotent cosmetic completion mark, replay, and the release bar for eventual
 experimental rules.
 
-### Shipped offline draws from the current pool
+### Offline draws during the versioned rollout
 
-This subsection remains a description of shipped behavior; the successor
-schedule above does not apply offline until its entitlement work ships.
+An account with a server-confirmed v2 progression snapshot uses the same durable
+outcome entitlements offline. Until production activates v2, confirmed v1
+accounts continue to use the compatibility pool below; missing or malformed
+cache state still fails closed.
 
-**What a player may currently pick offline versus the AI is the pool their
-ladder peak has already unlocked** — the shipped table at the start of §4,
-read through `confirmedRankedPoolTier()`. A device with no confirmed tier
-(signed out, never online, fresh install) is treated as STONE: it fails closed,
-exactly as its
-rune collection reads empty rather than complete. Local pass-and-play (`duo`)
-is the one setup that exposes the whole game, the same exception
-`availableRuneSpecs` already makes for runes.
+**What a player may pick offline versus the AI is the last server-confirmed
+permanent access for that account.** Under v2 this is the exact durable outcome
+list, including grandfathered combinations no clean league tier represents.
+Under v1 it is the compatibility pool derived from the confirmed historical
+peak. A device with no confirmed account fact (signed out, never online, fresh
+install) fails closed to the appropriate STONE roster, exactly as its rune
+collection reads empty rather than complete. Local pass-and-play (`duo`) is the
+one setup that exposes the whole game, the same exception `availableRuneSpecs`
+already makes for runes.
 
 One function decides it — `localPoolAccess()` in `src/local-options.ts` returns
-the ranked pool's own `RankedParticipantAccess` record, and the picker's locks,
-the RANDOM dial's ring, and the RANDOM draw all read that one roster through
-`rankedOutcomeRoster()` / `pickRankedOutcome()`. This is not decoration: a ring
-built from its own list is how a wheel comes to spin across a mode its own
-picker locks. Rune Trial keeps both of its conditions — the IVORY tier *and*
-three collected runes, since offline has to be able to deal the Trial's offer.
+the ranked pool's own `RankedParticipantAccess` record from exact v2 grants or
+the v1 compatibility tier. The picker's locks, the RANDOM dial's ring, and the
+RANDOM draw all read that one roster through `rankedOutcomeRoster()` /
+`pickRankedOutcome()`. This is not decoration: a ring built from its own list is
+how a wheel avoids spinning across a mode its own picker locks. Rune Trial keeps
+both of its conditions — its durable outcome entitlement *and* three collected
+runes, since offline has to be able to deal the Trial's offer.
 
 A pick the ladder has taken back resets to Classic (`normalizeLocalChoice`),
 which is in every tier.
@@ -246,9 +251,10 @@ before early resignation, timeout, deletion, or other settlement. Trial loans
 the complete roster regardless of ownership. An equipped rune is ignored for
 the duel and remains equipped and unmodified afterward.
 
-Offline RANDOM follows the same 40/60 rule. Without an eligible Trial it spins
-the seven ordinary outcomes at 40/10. With Trial eligible it keeps Classic at
-40% and splits 60% equally across the six ordinary additions and Trial. Local
+Offline RANDOM follows the same 40/60 rule: Classic remains 40%, and every
+other outcome in that player's exact eligible roster splits the remaining 60%
+equally. The complete seven-mode roster without Trial is therefore 40/10; the
+complete roster with Trial is 40% plus `60/7` for each addition. Local
 two-player is always eligible; CPU play becomes eligible after three collected
 runes and offers three distinct collected runes.
 

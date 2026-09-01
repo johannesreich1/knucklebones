@@ -205,11 +205,12 @@ manifest status must be exactly
 upload or review-submission operation, and successful synchronization does not
 make the app public.
 
-Ranked runes are not shipped yet, so the BOUNTY image remains a future-state
-preview: it may be staged in the draft, but the app must not be submitted until
-ranked runes ship and every affected preview is regenerated from that shipping
-implementation. Store-name clearance and localized legal/support URLs are
-independent submission blockers as recorded in `docs/STATUS.md`.
+The ranked-rune implementation is staged with progression v2, but that curve is
+not active in production yet. The BOUNTY image may be staged in the editable
+draft, but the app must not be submitted until the production database and
+authoritative functions activate v2 and the campaign still matches that exact
+released implementation. Store-name clearance and localized legal/support URLs
+are independent submission blockers as recorded in `docs/STATUS.md`.
 
 For credentials, keep the one-time `.p8` download outside this repository and
 point `ASC_KEY_PATH` at its absolute path. Set `ASC_KEY_ID`; set

@@ -39,6 +39,8 @@ export const plGame = {
   home: {
     notSignedIn: 'NIE ZALOGOWANO',
     playRanked: 'Graj rankingowo',
+    weeklyChallenge: 'Wyzwanie tygodnia · {{mode}}',
+    weeklyChallengeComplete: 'Tydzień zaliczony ✓ · {{mode}}',
     ladder: 'Ranking',
     settings: 'Ustawienia',
     practiceOffline: 'Trening offline',
@@ -211,6 +213,7 @@ export const plGame = {
   },
   modeLock: {
     reachBone: 'Osiągnij KOŚĆ, aby odblokować ten tryb przeciw SI.',
+    reachGold: 'Osiągnij ZŁOTO, aby odblokować ten tryb przeciw SI.',
   },
   runeTrial: {
     choosePrompt: 'Wybierz jedną runę — rywal jej nie zobaczy',
@@ -224,6 +227,9 @@ export const plGame = {
     revealPair: 'Oba wybory są zatwierdzone',
     revealed: 'Runy odkryte',
     pickClock: 'SEKUNDY NA WYBÓR',
+    claim: 'CLAIM',
+    claimOwned: 'POSIADANA',
+    claimNew: 'NOWA',
   },
   runes: {
     ariaCommitted: '{{player}}: {{name}} — {{blurb}} Zatwierdzono — wybierz oznaczoną kolumnę.',

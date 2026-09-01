@@ -3,7 +3,7 @@
 **Decision date:** 2026-09-01
 **Status:** Approved for editable-draft synchronization; not approved for review submission
 **Output:** 132 localized portrait screenshots: 11 locales × 2 devices × 6 frames
-**Capture build:** `1873ec6d`
+**Capture build:** `4e5d7d9b`
 
 This is the creative, fixture, localization, delivery, and truthfulness
 contract for the seventh campaign pass. It supersedes every earlier exported
@@ -19,7 +19,7 @@ locales.
 | # | Product state | Visible context | Creative purpose |
 |---|---|---|---|
 | 1 | ROW MULTIPLY board | `FrostLynx303` vs `EmberCrow896` | Lead with one `×2` row and one `×3` row so both multiplier tiers are visible. |
-| 2 | Orbit dial landed on COLUMN SHIELD | Named ranked opponents and ratings | Show all seven modes through the game's distinctive pre-match theatre. |
+| 2 | Orbit dial landed on COLUMN SHIELD | Named ranked opponents and ratings | Show all seven core modes in canonical unlock order through the game's distinctive pre-match theatre. |
 | 3 | WARD absorbing a real strike | `AI · NORMAL` | Make protection instantly readable: one mint seal, one incoming die, no lost dice. |
 | 4 | SUNDER committed against four victims | `AI · NORMAL` | Counter WARD's precision with the widest and most explosive rune preview. |
 | 5 | BOUNTY two-die strike + later active turn | Named ranked opponents | Align two shipped coin impacts with the visible `✦2`, then add an enlarged face-up WARD, die, and clock from a second production moment. |
@@ -27,9 +27,10 @@ locales.
 
 Four of six frames visibly belong to the named ranked experience. The two
 rune-led frames use the real `AI · NORMAL` presentation. The BOUNTY composite
-also previews the planned ranked rune rail through the production armed-card
-pose; that is why the entire campaign remains gated on ranked-rune launch. The
-preview copy makes no availability claim.
+also shows the implemented ranked rune rail through the production armed-card
+pose. Progression v2 is staged in the repository but is not yet active in
+production, so the entire campaign remains gated on that owner-controlled
+activation. The preview copy makes no availability claim.
 
 ## Locale and device matrix
 
@@ -99,8 +100,10 @@ production components must render every product pixel.
 ### 2 — COLUMN SHIELD orbit dial
 
 - Use the production mode-reveal overlay, not the mode library or a recreated
-  wheel. Show all seven registry-provided nodes and hold the landed state on
-  COLUMN SHIELD.
+  wheel. Show all seven registry-provided nodes in the shared canonical unlock
+  order—CLASSIC, SINGLE STRIKE, COLUMN SHIELD, BOUNTY, ROW MULTIPLY, ROW
+  SWITCH, LIMITED—and hold the landed state on COLUMN SHIELD. This presentation
+  order is deliberately independent of the seed-sensitive weighted draw.
 - Present `FrostLynx303 · 2,494` against `EmberCrow896 · 2,468` in the real
   ranked face-off.
 - The selected node, centre icon, and `COLUMN SHIELD` answer use the production
@@ -178,10 +181,12 @@ production components must render every product pixel.
 
 - Use the production online ladder renderer with deterministic fictional rows.
   Mock transport only; do not paint the list or league horizons by hand.
-- Use a population of 199. `PrismWolf771` is the only `NEON`/apex row at #1;
-  `NovaComet992` is #2; `CipherMoth440` is `GOLD · #3` at 2,550;
-  `FrostLynx303` is highlighted at `GOLD · #4` with 2,510; and
-  `EmberCrow896` follows at `GOLD · #5` with 2,431.
+- Use curve v2 and a population of 199. `PrismWolf771` is the only
+  `NEON`/apex row at #1 with 6,673; `NovaComet992` is `OBSIDIAN · #2` at
+  4,900; `CipherMoth440` is `GOLD · #3` at 3,240; `FrostLynx303` is
+  highlighted at `GOLD · #4` with 3,200; and `EmberCrow896` follows at
+  `GOLD · #5` with 3,085. `LunarFox118` and `OrbitHare662` are SILVER at
+  2,397 and 1,863; `GlitchRaven37` is IVORY at 1,394.
 - FrostLynx303's record is 35 wins, 18 losses, and 2 draws: 55 games in total.
   The next named rival is only 40 points ahead, so the visible `+40 on you`
   gap gives `WIN. CLIMB. REPEAT.` a concrete target rather than an abstract
@@ -223,10 +228,12 @@ production components must render every product pixel.
 | Local victory | Replaced in v2 by the production online result with identity plates and BEATEN stamp. |
 | Standalone ranked victory | Removed in v3 at the owner's direction; transfer `WIN. CLIMB. REPEAT.` to the ladder and use the freed slot for WARD. |
 
-The retired online-result fixture remains a documented alternate: a non-forfeit
-47–30 win by FrostLynx303 over EmberCrow896, `+83`, settled `GOLD · #3` and
-`GOLD · #5` plates, and the production `BEATEN` stamp. If revived, it must be
-regenerated from the current online result component and current product
+The retired online-result fixture is historical v1 evidence only: it used a
+non-forfeit 47–30 win by FrostLynx303 over EmberCrow896, a `+83` v1 delta,
+settled `GOLD · #3` and `GOLD · #5` plates, and the production `BEATEN` stamp.
+It is not a valid curve-v2 fixture because v2 derives a visible base plus
+finish-margin component. If revived, it needs a newly settled v2 result and
+must be regenerated from the current online result component and product
 design; the obsolete exported PNG is intentionally not part of this set.
 
 ## Truthfulness and draft caveats
@@ -241,8 +248,8 @@ design; the obsolete exported PNG is intentionally not part of this set.
    endorsements, or claimed leaderboard positions.
 4. **Rune contexts are explicit.** WARD and SUNDER visibly use `AI · NORMAL`;
    they carry no ranked names, ratings, or clock furniture. The armed,
-   face-up WARD in BOUNTY is planned ranked-rune artwork and keeps the whole
-   campaign in draft until that implementation ships.
+   face-up WARD in BOUNTY comes from the implemented ranked-rune flow. The
+   campaign remains a draft until progression v2 is activated in production.
 5. **The leave control is intentionally suppressed.** `#btnLeave` is hidden by
    the capture fixture in every preview so store art contains no exit affordance.
    No product stylesheet or runtime behavior is changed.
@@ -252,9 +259,10 @@ design; the obsolete exported PNG is intentionally not part of this set.
    visible `4` is a later legal roll; it is not restored inside the resolving
    move.
 7. **Draft synchronization is not release approval.** The exact campaign may
-   be staged in the editable App Store Connect draft. Ranked runes must ship
-   and the BOUNTY preview must be regenerated from that shipping implementation
-   before review submission.
+   be staged in the editable App Store Connect draft. The production database
+   and authoritative functions must activate progression v2 before review
+   submission; this campaign must remain generated from the exact released
+   implementation.
 8. **Store-name clearance remains unresolved.** “Knucklebones Neon,” its
    lockup, and name-bearing metadata are provisional. A cleared name change
    affects all 132 previews and eleven metadata localizations.

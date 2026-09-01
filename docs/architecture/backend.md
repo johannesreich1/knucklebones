@@ -13,20 +13,21 @@ deployed function versions are not inferred from repository prose.
   never committed, logged, returned, or bundled into a client.
 - The server owns match seeds, validates requested moves by replaying the
   server-written log, and computes final scores and ladder changes.
-- The decided finish-margin ladder transfer is not shipped. When implemented,
-  shared TypeScript must derive its winner-score-normalized 2–7 request from
-  authoritative terminal scores/status, using the pinned non-negative half-up
-  rounding convention, and limit the 0–7 applied value against the locked
-  ladder snapshot. Persist versioned signed finish components beside the total,
-  with the exact contract in `docs/LADDER.md §1`. The browser must not submit
-  any of it, and SQL or individual Edge Function adapters must not grow copied
-  versions of the formula.
+- The curve-v2 finish-margin transfer is implemented once in shared TypeScript.
+  It derives its winner-score-normalized 2–7 request from authoritative terminal
+  scores/status, uses the pinned non-negative half-up rounding convention, and
+  limits the 0–7 applied value against the locked ladder snapshot. Settlement
+  persists versioned signed base and finish components beside the total. The
+  browser submits none of it, and SQL or individual Edge Function adapters do
+  not carry copied versions of the formula. Production keeps the v1 settlement
+  path until the curve-v2 activation described below.
 - For Rune Trial, the server also owns the common offer, private choices,
   deterministic deadline auto-picks, revealed rune snapshots, and idempotent
-  collection reward. The unshipped successor also makes the server snapshot the
-  offer first, choose one of its three slots uniformly with a domain-separated
-  deterministic stream, and snapshot that visible CLAIM rune; a client never
-  chooses an offer or mark, or claims ownership.
+  collection reward. Reward version 2 snapshots the offer first, chooses one of
+  its three slots uniformly with a domain-separated deterministic stream, and
+  snapshots that visible CLAIM rune; a client never chooses an offer or mark,
+  or claims ownership. Existing v1 matches retain their immutable selected-rune
+  reward version across deployment and activation.
 - A normal client action describes intent; it does not submit authoritative
   scores, dice, ratings, player identity, or match state.
 - `src/core/` is imported by Edge Functions as the same source used by the
@@ -70,10 +71,16 @@ applied `20260830155543_equipped_runes_ranked.sql`,
 `20260830160000_random_rune_mode.sql`, and
 `20260830182406_ranked_progression_events.sql`, making the reconciled production
 prefix 59 files. The guarded rollout subsequently applied
-`20260831133000_historical_silver_ranked_runes.sql`, so the live ledger has 60
-files; `migration-history.json` pins the reconciled base and the rollout
-manifest pins that final stage's exact bytes. The archived `0007_bot_pool.sql`
-is an obsolete one-off 12-account seed and must never become executable again.
+`20260831133000_historical_silver_ranked_runes.sql` and
+`20260901074059_expand_player_settings_locales_11.sql`, so the live ledger has
+61 files; `migration-history.json` pins the reconciled base and the rollout
+manifest pins those final stages' exact bytes. The repository's next migration,
+`20260901162456_progression_v2.sql`, is deliberately safe to apply while the
+runtime contract remains on curve/scoring version 1. It adds the v2 catalog,
+durable entitlements, weekly/medal state, versioned settlement fields, and the
+owner-only activation transaction without remapping a player until that
+transaction is called. The archived `0007_bot_pool.sql` is an obsolete one-off
+12-account seed and must never become executable again.
 
 Normal linked history checks and dry runs can therefore use the repository
 root. Production applies remain explicit owner operations, and `--include-all`
@@ -93,6 +100,42 @@ the equally fixed `ranked-progression-events` selection (or
 `npm run db:production:ranked-progression-events`). The correction is the same
 atomic migration used by the final `ranked-runes` stage, and both selectors
 audit the paired schema states.
+
+### Progression-v2 production activation
+
+This is an explicit owner cutover, not part of the web release and not something
+an agent infers from merged code. Keep the order exact:
+
+1. Run `supabase migration list --linked`, then
+   `supabase db push --linked --dry-run`. The only pending migration may be
+   `20260901162456_progression_v2.sql`; stop if the plan contains anything else.
+2. Apply that exact suffix with `supabase db push --linked`. This creates the v2
+   contract in its dormant version-1 state and does not remap points.
+3. Preview, then deploy the complete authoritative closure with
+   `mise exec -- npm run functions:production:ranked-runes` and
+   `KB_ALLOW_PRODUCTION_RANKED_RUNE_FUNCTIONS=1 mise exec -- npm run
+   functions:production:ranked-runes -- --apply`. The guarded helper requires
+   the exact five-migration database prerequisite and reads every deployed
+   function back byte-for-byte.
+4. Through a service-role or database-owner session, call
+   `public.set_ranked_admission_paused(true)`. Let every active v1 match settle
+   and clear all remaining queue entries through the normal owner path.
+5. Read `public.preview_ranked_curve_v2_activation()`. It must report
+   `admission_paused=true`, `active_matches=0`, and `queue_entries=0`. Record its
+   exact `players` and `season_rows` counts.
+6. As the database owner (`postgres`, not `service_role`), call
+   `private.activate_progression_v2(p_expected_profiles => <players>,
+   p_expected_season_rows => <season_rows>)` with those recorded counts. The
+   transaction locks and rechecks the contract, queues, active-match players,
+   row counts, remap, grandfathering, entitlements, medals, and version switch;
+   any disagreement aborts the entire cutover.
+7. Verify `public.active_ranked_curve_version()` returns `2`, inspect the
+   activation result, then call `public.set_ranked_admission_paused(false)`.
+   Keep admission paused if either verification is unclear.
+
+After step 6, legacy point-edit, bot-seed/refresh, and wipe helpers intentionally
+refuse to run. Do not work around that guard; their fixtures and boundary
+presets describe curve v1 and cannot safely mutate a v2 ladder.
 
 For a disposable local database, `supabase migration down --local --last 1`
 can step back and `supabase migration up --local` can reapply pending files;
