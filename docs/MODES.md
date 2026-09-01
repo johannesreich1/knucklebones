@@ -357,3 +357,178 @@ animation and the count, the shells and the column still land on the truth.
 `design/screens/product/47j-limited-gutter.html` is the design reference for
 both beats; `design/screens/studies/open/47a`–`47l` retain the rival proposals
 and suppress the shipped gauge so each shows its own channel alone.
+
+---
+
+## 10. Future mode notebook — hypotheses, not roadmap
+
+The following are active design ideas, not selected modes. None has a stable
+id, registry entry, wheel weight, progression position, implementation
+commitment, or balance evidence. Names, values, interaction rules, and even
+mode status remain provisional. Recording them here preserves the reasoning;
+it does not add them to the seven in §7 or to any unlock schedule.
+
+**CROWN is only a working mode label.** It already names a different archived
+rune candidate in `docs/RUNE_CANDIDATE_STUDY.md`; resolve that collision before
+assigning any persisted id or localized identity.
+
+| Candidate | Leading rule hypothesis | Why it is interesting |
+|---|---|---|
+| **FUSION** | Each player gets one fusion: their first own placement that creates an ordinary matching pair compresses it into one marked `×2` die. | Preserves familiar match scoring while reopening one cell; extraordinary concentration remains vulnerable to one ordinary matching strike. |
+| **CROWN** | After ordinary column scoring, the exposed die in each nonempty column adds its raw face once. | Makes stack order matter with no remembered state; destruction can reveal a different crown and the maximum live bonus is +18. |
+| **SIX CYCLE / SIXFOLD** | The shared seeded supply repeats shuffled sets containing one each of 1–6, while the board shows which faces remain in the current set. | Replaces streak randomness with visible, shrinking uncertainty rather than eliminating chance. SIXFOLD is a presentation/name variant, not a second rule. |
+| **FULL HOUSE** | Each player owns one live `+10` House token. Their first newly completed column claims it; if that column is opened, their next future completion inherits it. | Creates one visible, attackable commitment without awarding three automatic bonuses to the player who fills the board. |
+| **GATEHOUSE** | Each board begins with capacities `2 / 3 / 2`; completing the centre column permanently unlocks both outer crown cells. | Adds a build objective and attackable delay without creating a no-legal-move state or withdrawing an unlocked cell later. |
+
+CROWN and FULL HOUSE fit the current scoring charter, and SIX CYCLE fits
+supply. GATEHOUSE and FUSION do **not** fit §1 as written: one changes cell
+access and the other changes physical occupancy. Keeping them in this notebook
+permits study, not implementation. Promoting either requires an explicit
+decision to expand the mode charter and a typed replay-safe representation for
+its persistent state; neither may be hidden in UI state or encoded as a magic
+die value.
+
+### FUSION — bounded compression
+
+The leading contract gives **one entitlement per player**, not one shared
+prize and not one fusion per column:
+
+1. A normal placement and its ordinary strike resolve first.
+2. If that placement created the player's first pair of ordinary matching dice,
+   the newer die merges into the older, centre-nearest match. The survivor is
+   marked `×2`, one physical cell reopens, and that player's entitlement is
+   permanently spent.
+3. The `×2` die counts as two copies of its face for the existing
+   `face × count²` formula. It cannot fuse again.
+4. End-of-game evaluation happens after fusion, so filling the ninth physical
+   cell with the triggering pair reopens the cell rather than ending the duel.
+5. A hostile placement matching its face destroys the composite whole.
+
+Thus a fused six alone scores `6 × 2² = 24`, exactly what the original pair
+scored. Adding one ordinary six produces the familiar triple score `54`; two
+ordinary sixes beside it produce effective multiplicity four and score `96`.
+That ceiling is intentionally dramatic, but it requires four matching rolls
+committed to one facing column and can disappear to one enemy six. A recursive
+`1 + 1 → 2`, `2 + 2 → 4` ladder is a different, substantially wilder idea
+and is not the leading ranked hypothesis.
+
+The open rune questions are part of the candidate, not implementation trivia.
+WARD must treat `×2` as a duplicate for its distinct-column score. SUNDER can
+reach and shatter it through the ordinary strike plan. PILFER must retain its
+one-die ceiling, which suggests peeling one unit rather than carrying a `×2`
+composite intact; ANVIL must either retain the composite's multiplicity when
+recasting it or refuse that target. Those choices require matchup measurement
+before any rule is selected.
+
+### FULL HOUSE — one deed per player
+
+The ranked hypothesis is **not** a shared race. Each player has one independent
+House entitlement:
+
+- The first own column to transition from incomplete to full claims the
+  player's `+10` token.
+- The bonus is derived and live only while that marked column remains full; it
+  is never banked.
+- When any committed action opens the marked column, the token returns to its
+  owner's rail. It does not teleport to another column that was already full.
+- The next own transition from incomplete to full claims it, including a
+  repair of the original column.
+- Claims and losses settle after the complete cast/placement/destruction action
+  and before terminal scoring.
+
+One shared token would make the opening seat the legal first claimant: absent
+destruction, it can complete a column on global move five while the replying
+seat first can on move six. Since the prize itself encourages both players to
+rush, that structural advantage is not suitable as the ranked hypothesis. A
+shared **King of the House** version may still be a deliberately volatile local
+experiment. Awarding `+N` to every full column is also rejected here: the
+player ending the match necessarily owns three full columns, so the largest
+bonus would be coupled automatically to terminal tempo. The single live `+10`
+is a starting test value, not a balanced decision.
+
+### CROWN, SIX CYCLE, and GATEHOUSE
+
+**CROWN** adds the exposed die's raw face once after Classic column scoring;
+it does not multiply the whole match group. A crown moves automatically when a
+new die covers the old one or destruction exposes the die beneath. The score
+therefore remains derived entirely from the board. The central question is
+whether a maximum of 18 extra points changes enough placements without
+overweighting high outer dice.
+
+**SIX CYCLE** repeatedly shuffles a seeded `[1,2,3,4,5,6]` mini-bag. The next
+cycle begins only when the current six are exhausted. Players see the faces
+remaining in the current cycle, not their order. FATE consumes the next live
+supply entry exactly as it does in LIMITED, making its pairing a mandatory
+study: late-cycle knowledge may turn a redraw into denial of a predictable
+opponent roll. Seat-swapped measurement must also establish that alternating
+positions inside short cycles do not create an unacceptable opening edge.
+
+**GATEHOUSE** starts both outer columns with their third, outermost cells
+locked. The centre column remains fully available. The first time a player
+fills their centre column, both own locks open permanently, even if that centre
+column is later attacked. Initial capacity is seven, so using every available
+cell necessarily completes the centre and opens the gates before deadlock.
+Promotion would expand the mode charter from scoring/destruction/supply to
+**board access**, and therefore needs legal-placement, fullness, replay, AI,
+PILFER, ANVIL, WARD, and reconnect contracts rather than only CSS locks.
+
+### Retained lower-priority scoring sketches
+
+These remain useful comparison points, but none currently outranks the five
+concepts above:
+
+- **ALIGNMENT** — faces `1–2`, `3–4`, and `5–6` each have a visibly marked home
+  column; a die in its home adds its raw face once. It creates a match-versus-
+  lane choice on every roll.
+- **ASCENT** — a die higher than the die beneath it adds its raw face once.
+  This makes placement order matter across an entire stack, but needs an exact
+  answer for score changes when destruction reconnects surviving dice.
+- **SPAN** — a face present in all three columns earns one fixed cross-board
+  bonus. It rewards distribution against Classic's concentration, but sits
+  close enough to ROW MULTIPLY that it needs stronger proof of a distinct feel.
+- **ROYAL ENDS** — in a full column, the centre-nearest die is Queen and the
+  exposed die is King; if their faces total seven, the column earns `+7` while
+  full. This is the cleanest King-and-Queen *mode* sketch, but the ordered
+  two-card rune in `docs/SPELLS.md` currently owns the stronger version of that
+  theme.
+
+### Variants deliberately bounded or rejected
+
+- **LOCKDOWN is not a mode.** A completed column already rejects placement;
+  making it immune to destruction is COLUMN SHIELD under another name.
+- CITADEL's fully locked centre until an outer column fills is a more dramatic
+  GATEHOUSE presentation, but reduces the opening to two lanes and risks a
+  scripted flank-first game.
+- FUSION does not grant repeated or per-column fusions in the leading rule.
+  Those variants extend matches and multiply catastrophic score states.
+- A fused die losing only one layer when struck is built-in WARD/COLUMN SHIELD;
+  whole-composite destruction is what gives compression its risk.
+- Unlocks earned by destroying enemy dice compound an attack with additional
+  capacity. Unlocks earned by losing dice teach the opponent to avoid ordinary
+  destruction. Both are rejected reward loops.
+- Double-roll-and-choose supply modes reproduce FATE; widened or remote attacks
+  reproduce SUNDER/PILFER; kill rewards reproduce BOUNTY; permanent defensive
+  marks reproduce WARD or COLUMN SHIELD.
+
+### Evidence required before any promotion
+
+Symmetric wording is not proof of fair play. Every candidate must first exist
+in a reproducible pure-rules experiment with a candidate-aware search policy,
+then clear:
+
+- paired seeded games with seats swapped, reporting first-mover win/draw rate
+  against Classic's baseline; no candidate may depend on restoring a
+  mode-specific seating rule;
+- score distribution, match duration, trigger/claim frequency, and whether the
+  mechanic materially changes placement decisions rather than only totals;
+- the complete current rune cross-table, with particular scrutiny on FATE and
+  SIX CYCLE, and on PILFER/ANVIL/WARD/SUNDER around FUSION or persistent
+  House/Gatehouse state;
+- deterministic client/server replay, reconnect reconstruction, legal-move and
+  no-deadlock cases, AI risk behavior, and proof that CLASSIC remains
+  bit-identical; and
+- visible board-state assertions for every crown, remaining-face tracker, lock,
+  composite, and House transfer.
+
+Open interaction choices must be selected and measured before implementation,
+not inferred independently by flow, AI, replay, or presentation code.

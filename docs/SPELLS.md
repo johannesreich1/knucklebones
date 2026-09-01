@@ -280,6 +280,81 @@ Seven unshipped concepts and their temporary estimates are recorded in the
 [2026-08-25 rune candidate study](RUNE_CANDIDATE_STUDY.md); none is part of
 the current registry.
 
+#### KING & QUEEN / ROYAL PROCESSION — unmeasured 2026-09-01 candidate
+
+KING & QUEEN is a later design hypothesis and **was not one of the seven
+candidates measured in that dated study**. It is one rune identity represented
+by two ordered cards, never two separately owned/equipped spells and never a
+RANDOM×2 deal hidden inside one choice. Its proposed player-facing sequence is:
+
+> **QUEEN** — Mark one of your nonempty columns.
+>
+> **KING** — Later, move that column's crown die to another of your columns.
+
+The exact provisional contract is:
+
+1. The hand begins in phase `queen`, with QUEEN face-up and KING visibly
+   locked beneath it.
+2. QUEEN targets one nonempty own column and leaves a persistent Queen seal on
+   that **column**, not on its current die. Nothing moves, the cast commits, and
+   the held die must still be placed normally. The hand advances to `king`;
+   the universal one-cast-per-turn limit makes KING a later-turn action.
+3. KING targets a different own column with room. It moves the Queen column's
+   currently exposed die onto that destination, spends the sequence, and then
+   the held die must still be placed normally.
+4. The relocation is not a throw: it causes no strike, consumes no enemy WARD,
+   and earns no BOUNTY. It preserves total board occupancy and therefore is
+   not a second placement or a tempo gain.
+5. If attacks or the caster's placements change the Queen column between the
+   two cards, KING moves the new exposed die. If the column becomes empty, its
+   seal remains visible and KING is temporarily illegal until it is nonempty
+   again; the committed QUEEN is never refunded.
+
+WARD remains attached to its column rather than following the relocated die.
+A die moved out of a full COLUMN SHIELD column naturally removes that derived
+shield because the source is no longer full. The source cell opened by KING
+guarantees at least one legal destination for the mandatory ordinary placement,
+so the cast cannot strand the turn. Score is always recomputed from the live
+boards. Replay needs only the ordered phase and Queen-column index in addition
+to the ordinary action log; no timer, hidden randomness, or inverse snapshot
+belongs in core.
+
+The shape fits the roster principles provisionally: it changes only the
+caster's board, moves exactly one existing die, and makes value depend on a
+source committed at least one opponent turn before the destination is chosen.
+The opponent may alter the exposed payload through ordinary play, while the
+caster may deliberately cover it; waiting is therefore not automatically
+better. Exhaustive Classic column arithmetic puts the direct relocation gain
+at a provisional maximum of +24, not the retired swap's two-sided 108-point
+ceiling, but that bound is **not** balance or timing evidence.
+
+Before implementation it needs a sequenced-spell seam owned by one registry
+entry, authoritative phase/reconnect tests, exact aim/cancel semantics for both
+cards, and the complete measurement in §5. Particular pairing questions are:
+
+- whether the QUEEN setup participates often enough to justify a cast that has
+  no immediate material effect;
+- whether KING is hoarded late, becomes temporarily unavailable too often, or
+  repairs high-value columns beyond the current roster's power band;
+- how a future FUSION composite obeys KING's one-die bound, and how a future
+  GATEHOUSE lock or FULL HOUSE claim settles around the relocation; and
+- whether the two-card hand remains legible in the shared deal, RANDOM,
+  RANDOM×2, equipment, and Rune Trial reveal surfaces without reading as two
+  independently owned runes.
+
+Rejected alternatives remain recorded so the theme does not silently drift:
+
+- Swapping the two exposed own dice repairs two columns at once, reaches a much
+  larger swing, and repeats the retired swap/BARTER design family.
+- A persistent double-scoring Queen/King couple overlaps scoring WARD and the
+  proposed FUSION mode, while a destroyed QUEEN can brick the second card.
+- QUEEN opening a fourth throne cell changes board access and lets KING wait
+  for a six; that is a mode-sized topology experiment, not a bounded roster
+  addition without a strict deadline.
+- Splitting protection and widened attack between the cards merely repackages
+  WARD and SUNDER. Storing or transforming a die between cards repackages FATE,
+  NUDGE, or ANVIL.
+
 ### Known pairing evidence
 
 Both notable measurements involve COLUMN SHIELD:

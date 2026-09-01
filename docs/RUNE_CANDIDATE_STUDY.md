@@ -15,6 +15,13 @@ score bonus and persistent search behavior. CROWN's recorded rows are retained
 as provenance, but they do not estimate the rule stated below and must not be
 used for balance ranking.
 
+**Post-study candidate note (2026-09-01):** the ordered two-card KING & QUEEN /
+ROYAL PROCESSION hypothesis is recorded in `docs/SPELLS.md` under Candidate
+explorations. It was conceived after this experiment, has no row in the tables
+below, and must not inherit their estimates. The working CROWN *mode* label in
+`docs/MODES.md` is also unrelated to the CROWN rune tested here; that naming
+collision must be resolved before either could receive a stable id.
+
 The live cast rule applied throughout: a cast is not a move, the die still
 lands afterward, and a player may cast at most once per turn. Every candidate
 below was tested with one charge.
