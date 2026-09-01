@@ -31,6 +31,10 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 - Mechanical mode identities come from `src/core/modes.ts`; progressive ranked
   outcomes and odds come from `src/core/ranked-outcomes.ts`. Rune identity,
   legality, and charges come only from `src/core/spells.ts`.
+- The 2026-09-01 future-mode notebook in `docs/MODES.md §10` and ordered
+  KING & QUEEN candidate in `docs/SPELLS.md §4` are unmeasured brainstorms,
+  not registry entries, progression assignments, roadmap commitments, or
+  authorization to implement. Their working names and rules remain provisional.
 - Reaching SILVER once permanently activates that participant's equipped rune
   in ordinary ranked, across later demotion and season turnover. The two seats
   are independent: a participant who has never reached SILVER or has no
