@@ -42,12 +42,17 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
   aim/cast/place actions, but separate capabilities because Trial ignores both
   equipment modes and loans its own private choices. The additive v1 placement
   protocol remains only for legacy rune-free standard rows.
-- Ranked variety unlocks permanently from the player's historical peak:
+- Current production ranked variety unlocks permanently from the player's
+  historical peak:
   STONE has Classic, Single Strike, Column Shield, and Limited; BONE adds Row
   Switch, Row Multiply, and Bounty; IVORY adds Rune Trial. Demotion and season
   turnover never relock a pool. A human pairing uses the lower shared pool and
   protocol-capability intersection; a bot uses its human's pool. Classic is
   exactly 40% and eligible additions split the remaining 60% equally.
+  A successor distribution and OBSIDIAN weekly challenge are approved but not
+  implemented: `docs/LADDER.md §7` owns the progression decision and
+  `docs/MODES.md §4` owns the mode and weekly rationale. Until that target
+  ships, the current mapping remains the runtime truth.
 - Rune Trial is `format='rune_trial'` with `modifier='classic'`, not an eighth
   mechanical core mode. Both seats receive the same uniform three-of-six loan,
   choose privately, and reveal together; a 10-second deadline (owner call
@@ -95,6 +100,14 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 
 ### Product and release decisions
 
+- Implement the 2026-09-01 ranked progression decision in
+  `docs/LADDER.md §7`: redistribute Bounty, Row Multiply, Row Switch, and
+  Limited; add durable bot-debut guarantees; add the permanently unlocked
+  OBSIDIAN weekly feature; grandfather current entitlements; and update the
+  client, server, persistence, transitions, offline choices, locales, tests,
+  the LG1 transition card, and any other affected previews/exports. This
+  documentation decision is not live, and the authoritative join function
+  must be redeployed when implementation ships.
 - The `localization-browser` geometry matrix is manual-only since 2026-08-26
   (owner: Johannes): run
   `mise exec -- node tests/browser/localization/run.mjs` plus the manual

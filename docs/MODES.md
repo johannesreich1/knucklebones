@@ -71,16 +71,19 @@ heuristic in `core/ai.ts riskOf` if the loss maths differ, and its gate cases.
 Then update the ranked-outcome registry and **redeploy the join function** —
 the server owns the real outcome draw.
 
-## 4. Ranked odds
+## 4. Ranked odds and progression
+
+### Shipped pool — current behavior
 
 The seven mechanical identities live in `core/modes.ts`; progressive ranked
 outcomes and exact weights live in `core/ranked-outcomes.ts`. Weights are wheel
 odds, not segment sizes (the dial draws eligible outcomes as equal nodes and
 weights the pick).
 
-**Classic is always exactly 40%; every eligible addition shares the other 60%
-equally.** Access is a permanent high-water mark derived from the player's
-historical ladder peak:
+**In the ordinary shipped ranked pool, Classic is exactly 40%; every eligible
+addition shares the other 60% equally.** Access is a permanent high-water mark
+derived from the player's historical ladder peak. As of 2026-09-01, the current
+source registry is:
 
 | Permanent pool | Peak floor | Eligible outcomes | Odds |
 |---|---:|---|---|
@@ -100,12 +103,62 @@ additions *are* the game's variety, and half of all matches seeing none of them
 made them feel rarer than intended. Any change here must be redeployed to the
 join function, which owns the real pick.
 
-### Offline draws from the same pool
+### Decided successor progression — not shipped
 
-**What a player may pick offline versus the AI is the pool their ladder peak
-has already unlocked** — the table above, read through
-`confirmedRankedPoolTier()`. A device with no confirmed tier (signed out, never
-online, fresh install) is treated as STONE: it fails closed, exactly as its
+The selected future schedule, pace evidence, exact target odds, one-time debut
+matches, grandfathering rule, and implementation dependencies are authoritative
+in `docs/LADDER.md §7`. It is intentionally separate from the shipped table
+above: documentation alone does not change the client registry, persistence, or
+the authoritative join function.
+
+From the mode-design side, the order is fixed:
+
+- Bounty replaces Limited in the STONE starting pool;
+- Row Multiply is the sole BONE outcome unlock;
+- Rune Ritual remains the IVORY format unlock;
+- SILVER teaches equipped runes without adding a mode;
+- Row Switch and Limited unlock together at GOLD;
+- OBSIDIAN unlocks a weekly featured challenge; and
+- NEON grants prestige and cosmetics, never exclusive mechanics or power.
+
+This ordering is a teaching curve, not a fun ranking alone. Bounty has the
+best excitement-to-rule-cost ratio. Row Multiply adds a second scoring axis
+without invalidating the familiar column score. Row Switch and Limited demand
+the most relearning of the mechanical modes, so they wait until the player has
+crossed the long middle ladder. A two-mode bundle is acceptable there; it is
+the five-game BONE bundle, not bundling in the abstract, that overloads current
+onboarding.
+
+The target's **steady-state ordinary** wheel retains Classic at 40% and splits
+the remaining 60% equally. Guaranteed first bot exposures and an explicitly
+chosen weekly challenge are deliberate exceptions: they exist so a promoted
+player actually encounters the reward instead of waiting for a low-probability
+wheel result.
+
+#### OBSIDIAN weekly featured challenge
+
+The weekly feature is a recurring use of the existing game, not a promise to
+author and validate a new mechanical mode every Monday. Version one deliberately
+features an existing mechanical mode instead of forcing a curated rune pairing:
+that preserves the mode's normal readable identity and avoids adding ownership
+and balance questions to the first weekly release. Personal equipped runes may
+still operate under the ordinary ranked rules.
+
+`docs/LADDER.md §7` is the single authoritative contract for access, the global
+week boundary, entry and matchmaking behavior, ladder settlement, the
+idempotent cosmetic completion mark, replay, and the release bar for eventual
+experimental rules.
+
+### Shipped offline draws from the current pool
+
+This subsection remains a description of shipped behavior; the successor
+schedule above does not apply offline until its entitlement work ships.
+
+**What a player may currently pick offline versus the AI is the pool their
+ladder peak has already unlocked** — the shipped table at the start of §4,
+read through `confirmedRankedPoolTier()`. A device with no confirmed tier
+(signed out, never online, fresh install) is treated as STONE: it fails closed,
+exactly as its
 rune collection reads empty rather than complete. Local pass-and-play (`duo`)
 is the one setup that exposes the whole game, the same exception
 `availableRuneSpecs` already makes for runes.
@@ -227,6 +280,32 @@ real cost).
 | SINGLE STRIKE | ☓ | a hit removes ONE die — the closest to the centre |
 | BOUNTY | ✦ | every die you destroy banks a permanent +1 |
 | LIMITED | ▦ | one shared bag of 24; the bag ends the match |
+
+### Product hypothesis: fun and learning load
+
+The table below is subjective product judgment used to sequence unlocks. It is
+not player telemetry, a bot benchmark, or a measured win-rate claim. Fun is
+expected excitement and replay appeal (1–5); rules complexity is the extra rule
+burden above Classic (0–5); mastery difficulty is how hard optimal play is
+(1–5), not how strong the opponent is. Rune Ritual is included because players
+encounter it beside modes, even though it is a Classic-backed format rather
+than an eighth mechanical modifier.
+
+| Fun rank | Outcome | Fun | Rules complexity | Mastery difficulty | Product assessment |
+|---:|---|---:|---:|---:|---|
+| 1 | Bounty | 5/5 | 1/5 | 3/5 | Best excitement-to-rule-cost ratio: every destruction produces an immediate, visible bonus that lasts for the duel. |
+| 2 | Row Multiply | 5/5 | 3/5 | 5/5 | Big combo payoffs and rich two-axis planning, while familiar column scoring remains intact. |
+| 3 | Rune Ritual | 5/5 | 5/5 | 5/5 | Private choice, simultaneous reveal, rune matchups, and collection create the most variety; Classic board rules keep that complexity out of scoring and replay. |
+| 4 | Limited | 4/5 | 3/5 | 5/5 | The dwindling shared supply and alternate ending create tension, but face counting and tempo make it demanding. |
+| 5 | Single Strike | 4/5 | 1/5 | 3/5 | Surgical destruction is immediately legible, preserves valuable stacks, and shifts tactics without much teaching. |
+| 6 | Classic | 4/5 | 0/5 | 3/5 | Cleanest and most replayable baseline, but familiarity means it is not a promotion reward. |
+| 7 | Column Shield | 3/5 | 1/5 | 4/5 | The rule is simple and lock timing is subtle, but defensive closure can suppress the interaction that makes the duel exciting. |
+| 8 | Row Switch | 3/5 | 2/5 | 5/5 | Deep, but scoring horizontally while destruction still attacks vertically is cognitively dissonant and least suitable for onboarding. |
+
+Equal fun scores do not mean equal placement. Sequencing also weighs teaching
+load and conceptual continuity: Bounty belongs at the start, additive Row
+Multiply is the first unlock, and the high-mastery Row Switch/Limited pair
+waits until GOLD.
 
 ## 8. BOUNTY's struck-coin presentation
 

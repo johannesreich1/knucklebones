@@ -105,14 +105,13 @@ was a second, worse way of saying the same fact. Nothing functional ever read
 them: matchmaking pairs on points, the bots on their own group (§4), the ladder and
 the apex on points and rank. They are gone.
 
-What that costs is promotion *frequency* — group to group is 37 games at the
-bottom and ~120 at OBSIDIAN, and that is now the only "you levelled up"
-moment. What replaces it is better: the ring moves on **every single match**,
-visibly, which is more feedback than a promotion every twenty-five games. It
-does mean the ring has to earn it — it should animate when points land.
+In the original populated-ladder simulation, what removing divisions costs is
+promotion *frequency*: STONE took 37 games to traverse and the OBSIDIAN width
+took about 120. In that environment the continuously moving ring supplied the
+near feedback between distant crossings, so it has to animate when points land.
 
-| group | floor | width | games to clear* |
-|---|---|---|---|
+| group | floor | width | simulated games to traverse* |
+|---|---:|---:|---:|
 | STONE | 0 | 300 | 37 |
 | BONE | 300 | 420 | 36 |
 | IVORY | 720 | 540 | 53 |
@@ -121,9 +120,11 @@ does mean the ring has to earn it — it should animate when points land.
 | OBSIDIAN | 3,000 | 1,350 | 120 |
 | NEON | — | — | positional, see below |
 
-\* measured with real matchmaking, so the win rate slides toward 50% as you
-climb — that slide is why the later groups cost more than the widths alone
-suggest.
+\* simulated with the production matchmaking rules in an 800–900-player,
+near-even population; these are not production telemetry. The current
+bot-heavy product produces much faster early climbs — including an
+owner-observed STONE promotion after about five bot games — so these values
+must not be used as the content-exposure budget. See §7.
 
 Widths grow **×1.35** per group, and no longer need to divide by three. Equal widths were the first proposal and the
 measurement killed them: every group took 64–77 games, so leaving STONE cost
@@ -186,6 +187,10 @@ the remaining 60% equally. IVORY's seventh addition is Rune Trial, a
 Classic-backed selection format rather than another ladder group or mechanical
 mode. See `docs/MODES.md §4` and `docs/SPELLS.md §8`.
 
+This table is the current runtime contract. The redistributed progression
+approved for a future release is recorded separately in §7; until that work
+ships, this table and its 40/60 weights remain authoritative.
+
 ### Group transition presentation
 
 Design: card **54a** (`design/screens/product/54a-league-ring.html`). The ranked
@@ -221,6 +226,10 @@ teaching diagram. Already-earned pool features never repeat and never disappear
 after demotion. Crossing SILVER additionally explains that the equipped fixed
 or RANDOM rune is now permanently active; later demotion does not rest or
 relock that seat.
+
+Those are the slides the shipped registry produces today. Section 7 records
+the future presentation contract separately; it must not be described as live
+until the entitlement, transition-event, and debut guarantees exist.
 
 ---
 
@@ -480,9 +489,10 @@ Design: card **92d** (`design/screens/product/92d-arc-season.html`). Built in
 
 **The ring is the screen.** ONE continuous fill — the percentage of the way
 through your current group — and it **sweeps up to its value when the profile
-opens**. That animation is load-bearing, not decoration: group promotions are
-37 to ~120 games apart, so this fill is the ladder's only continuous feedback,
-and a number that is simply *there* on arrival never reads as progress. It is
+opens**. That animation is load-bearing, not decoration: group promotions were
+37 to ~120 games apart in the populated design simulation, and the ring remains
+the continuous feedback even when bot-heavy play crosses earlier. A number
+that is simply *there* on arrival never reads as progress. It is
 tweened in JS rather than by a CSS transition, because a conic-gradient's angle
 stop does not interpolate reliably across engines; `REDUCED` motion skips
 straight to the value.
@@ -677,6 +687,282 @@ worse lie than a populated one.
 
 STONE · BONE · IVORY · SILVER · GOLD · OBSIDIAN · NEON — dice and bone
 materials climbing toward the game's own neon. **Agreed 2026-08-20.**
+
+## 7. Decided progression target — not shipped
+
+*Decided 2026-09-01. Owner: Johannes. After selecting the broad league
+placement and delegating the remaining choice with “You decide”, the owner
+accepted this section as the complete product contract, including bot debuts,
+weekly cadence/rewards, and cutover behavior. It is not a description of current
+runtime. The shipped pool and transition deck remain the ones in §2 until the
+entitlement, draw, presentation, and persistence work below is implemented and
+verified.*
+
+### Why the populated estimate is not today's content cadence
+
+The original **37 / 36 / 53** early-group figures came from a populated,
+near-even matchmaking simulation. The current product has bots and effectively
+no human matchmaking population, and those deliberately beatable bots make the
+ladder climb much faster. The owner currently reaches BONE in about **five bot
+games**. That observation is the evidence that matters for onboarding: it is
+not valid to assume a new player spends 37 games sampling STONE before the next
+bundle arrives.
+
+| climb | populated simulation | current bot-heavy planning range* |
+|---|---:|---:|
+| STONE → BONE | 37 | about **5 observed**; order of 5–10 games |
+| BONE → IVORY | 36 | order of 10–20 games |
+| IVORY → SILVER | 53 | order of 20–30 games |
+| SILVER → GOLD | 74 | order of 35–45 games |
+| GOLD → OBSIDIAN | 99 | order of 55–65 games |
+| OBSIDIAN → NEON | 120 width traversal | not predictable: NEON is positional |
+
+\* Only the approximately five-game STONE climb is an owner observation. The
+later ranges are a coarse planning exercise using the current 200-bot point spread,
+uniform in-band bot selection, measured per-group and per-seat human outcome
+shares, and current ladder deltas. They assume no draws, fixed bot ratings, and
+a simple-builder human. No reproducible model artifact is retained, so these
+ranges indicate scale only; they are not telemetry, forecasts, or a release
+gate. Instrumented production cohorts must replace them before tuning league
+widths.
+
+The shipped wheel makes the exposure problem concrete. In STONE, Classic is
+40% and the three additions are 20% each. After five ordinary independent
+wheel draws, the expected number of distinct outcomes is
+`4 - 0.6^5 - 3 × 0.8^5 = 2.9392`; the chance of having seen all four is only
+**19.2%**. Thus **80.8%** of five-match runs still miss at least one starting
+outcome. The shipped BONE promotion then adds three outcomes at once. With each
+of those new outcomes at 10%, the chance of seeing all three is only **34.5%
+after 12** BONE games and **48.3% after 15**. An unlock can therefore arrive
+before the old pool has been sampled and still remain unseen for most of the
+next league.
+
+### Decision: keep the fast promotion and spread the content
+
+Do **not** slow the ladder merely to create room for its unlocks. Reaching a new
+league after a short first run is satisfying, and the continuously moving ring
+already makes the point curve legible. The correction is to redistribute
+content so each early promotion has one clear teaching beat and the long later
+climbs still contain meaningful rewards.
+
+| league milestone | decided target reward |
+|---|---|
+| STONE start | Classic, Single Strike, Column Shield, **Bounty** |
+| first historical BONE peak | **Row Multiply** |
+| first historical IVORY peak | **Rune Ritual** (`rune_trial`, Classic-backed) |
+| first historical SILVER peak | Equipped fixed or RANDOM runes become permanently active in ordinary ranked |
+| first historical GOLD peak | **Row Switch and Limited** |
+| first historical OBSIDIAN peak | Permanent access to the weekly featured challenge |
+| first NEON position in a season | Live apex presentation plus a permanent cosmetic season medal; no NEON-exclusive gameplay |
+
+For a new account governed only by the successor schedule, the target ordinary
+outcome wheel still keeps Classic at exactly 40% and splits the other 60%
+equally across every eligible addition:
+
+| historical peak | cumulative new-account outcomes | steady-state odds |
+|---|---|---|
+| STONE | Classic; Single Strike; Column Shield; Bounty | Classic 40%; each addition 20% |
+| BONE | STONE + Row Multiply | Classic 40%; each addition 15% |
+| IVORY | BONE + Rune Ritual | Classic 40%; each addition 12% |
+| SILVER | unchanged from IVORY; equipped runes activate separately | Classic 40%; each addition 12% |
+| GOLD and above | SILVER + Row Switch; Limited | Classic 40%; each addition `60/7` (about 8.571%) |
+
+The weekly OBSIDIAN challenge is a deliberate featured entry with known rules,
+not another node added to this ordinary random wheel.
+
+The placement decisions are deliberate:
+
+- **Bounty replaces Limited in STONE.** Its match-long +1 bank is direct,
+  aggressive, visible on the board, and easy to understand while the player is
+  still learning the base duel. The bank persists only for the rest of that
+  duel; it is not account progression. Limited asks the player to track a
+  shared supply and an alternate ending, so it is poor onboarding material even
+  though both rules fit in one sentence.
+- **Row Multiply stands alone at BONE.** It adds an exciting second scoring
+  axis while preserving normal column scoring. That makes it a meaningful first
+  unlock without making the five-game promotion a three-mode lesson.
+- **Rune Ritual remains IVORY.** It is the deepest early format and starts rune
+  collection. Keeping it one league before SILVER gives the player time to win
+  and understand runes before equipment starts affecting ordinary matches.
+- **SILVER needs no additional mode.** Permanently activating the equipped
+  fixed or RANDOM rune changes every eligible ordinary ranked match and is a
+  complete progression reward by itself.
+- **Row Switch and Limited belong together at GOLD.** Both are advanced: Row
+  Switch changes the scoring axis while interaction still reads through
+  columns, and Limited changes supply and the end condition. GOLD arrives only
+  after many dozens of bot-heavy games, so a two-outcome bundle is substantial
+  there rather than overwhelming as it was at BONE.
+- **OBSIDIAN should refresh, not merely add one finite unlock.** Its weekly
+  featured challenge supplies a recurring reason to return during the long
+  late climb. The mode-design rationale is also recorded in
+  `docs/MODES.md §4`; the complete feature contract is below. Access is a
+  permanent historical-peak reward, so demotion and season turnover do not
+  remove it.
+- **NEON never gates an exclusive mechanic.** NEON is the current season's top
+  1%, can be entered or lost positionally, and must remain scarce. Its live
+  league material follows the current position, while the first entry in each
+  season records a permanent cosmetic season medal. If an unusual population
+  lets a player become positional NEON before crossing a lower point floor,
+  that settlement also grants every still-missing lower-league entitlement,
+  including OBSIDIAN weekly access; the apex must not display above a feature
+  it leaves locked. None of those mechanics is exclusive to NEON.
+
+Alternatives considered and rejected:
+
+| alternative | why it lost |
+|---|---|
+| Keep all three shipped BONE additions together | A roughly five-game first promotion can arrive while 80.8% of players still lack at least one STONE exposure, and the three new outcomes themselves take too long to sample. |
+| Slow STONE or widen every league | It fixes content cadence by removing the satisfying early promotion and changes the ladder for a problem caused by unlock packaging. |
+| Put Limited at SILVER and Row Switch at GOLD | SILVER already changes every eligible ordinary match by activating equipment; adding a new supply/end-condition lesson competes with the rune lesson, while GOLD can comfortably carry two advanced outcomes. |
+| Put one advanced mode at GOLD and the other at OBSIDIAN | OBSIDIAN's long climb benefits more from a renewable weekly reason to return than from one more finite wheel node. |
+| Add the weekly challenge to the ordinary OBSIDIAN wheel | A featured challenge should be chosen knowingly and reliably; another low-probability random node would recreate the invisibility problem this decision fixes. |
+| Require a brand-new rule every week | Weekly calendar pressure is incompatible with measured AI balance, deterministic replay, localization, protocol safety, and the normal release gate. |
+
+### Guaranteed debut matches against bots
+
+A promotion slide is not an unlock experience if normal randomness can hide the
+new outcome. Under the target steady-state weights, Row Multiply has only a
+**55.6%** chance to appear within five BONE matches, Rune Ritual only **47.2%**
+within five IVORY matches, and each GOLD addition only **36.1%** within five
+GOLD matches. The chance of seeing both GOLD additions within five normal draws
+is just **11.3%**. Respectively, those are
+`1 - 0.85^5`, `1 - 0.88^5`, `1 - (32/35)^5`, and
+`1 - 2 × (32/35)^5 + (29/35)^5`.
+
+The first historical unlock therefore creates a one-time durable debut promise:
+
+| unlock | guaranteed bot exposure |
+|---|---|
+| BONE — Row Multiply | the first eligible bot match after the unlock |
+| IVORY — Rune Ritual | the first eligible bot match after the unlock |
+| GOLD — Row Switch + Limited | Row Switch in the first eligible bot match, then Limited in the second |
+
+The same anti-hidden-unlock rule applies at BONE and IVORY, not only to GOLD:
+a 55.6% or 47.2% five-match sighting chance is not a dependable promotion
+reward. At GOLD, Row Switch comes first because it changes one scoring axis but
+keeps ordinary supply and ending; Limited follows because its shared bag and
+alternate ending are the larger teaching break.
+
+If one settlement grants several lower milestones at once — possible when an
+unusually low-points player first enters positional NEON — pending bot debuts
+run one per eligible bot match in teaching order: Row Multiply, Rune Ritual,
+Row Switch, then Limited. Already-owned or already-completed outcomes are
+skipped rather than replayed.
+
+“Eligible” means the account owns the outcome and the current client/protocol
+can play it. A human match must continue to use the lower shared entitlement
+and negotiated capabilities; it neither forces nor consumes this bot-only
+promise. The promise is intentionally a controlled bot practice debut, not a
+mere “seen” flag: a random human exposure may involve a far stronger opponent
+and cannot guarantee the same safe first practice. Repeating the mode once
+against a bot is acceptable and predictable. An incompatible client or a start
+that never creates a match leaves the promise pending. Demotion, re-promotion,
+and season turnover neither erase a pending debut nor create a second one.
+After the promised outcome or pair has appeared, bot matches return to the
+steady-state 40/60 wheel above.
+
+STONE is a starting pool rather than a promotion unlock, so this decision does
+not prescribe a forced four-match onboarding rotation. Its normal wheel remains
+probabilistic.
+
+### OBSIDIAN weekly featured challenge
+
+The OBSIDIAN feature is an optional weekly entry, not a promise that a new
+mechanical mode will be authored every seven days. Version one rotates one of
+the seven existing mechanical modes; Rune Ritual remains its own format, and
+ordinary equipped-rune eligibility continues to apply. The featured mode is
+stated before matchmaking and is guaranteed for that entry rather than hidden
+behind another wheel draw.
+
+Version one deliberately selects only the mechanical mode; it does not force a
+curated rune. A prescribed mode/rune pair would introduce ownership and
+equipment fairness questions plus a separate balance matrix before the weekly
+loop has proved itself. This supersedes the earlier curated mode/rune-combination
+idea for v1; such combinations may return only as a later deliberate release.
+Existing personal equipment can still interact with the featured mode under the
+ordinary ranked rules.
+
+One shared server-defined rotation runs from **Monday 00:00 UTC** through the
+next boundary, so every eligible player sees the same challenge and reconnects
+cannot reroll it. A single global UTC boundary is chosen over player-local
+midnight so opponents, history, and idempotent rewards agree on the same
+rotation. The feature reuses the ordinary ranked game view,
+authoritative replay, bot AI, settlement, and matchmaking service. Compatible
+weekly entrants occupy a tagged weekly lane inside that service and may meet
+each other; ordinary entrants are never pulled into a featured match they did
+not choose. The lane retains bot fallback and has no separate rating or
+permanent isolated ladder, so the scarce population is not stranded waiting for
+another human.
+
+A weekly match settles the ordinary ladder delta. The first weekly win grants
+one profile-facing completion mark for that rotation; replays remain available
+but grant neither bonus points nor power. Weekly recognition is cosmetic only:
+no extra ladder delta, rune, collection advantage, or gameplay entitlement.
+The normal delta keeps the match meaningful without inventing a second rating;
+the idempotent cosmetic mark creates a weekly goal without competitive power;
+and replay keeps the feature playable after that goal is complete. The concrete
+mark art and first rotation are release content, not new policy.
+
+An occasional experimental rule may enter only as a deliberate product release,
+not as calendar filler. It still needs a one-line rule, visible board feedback,
+bot support, deterministic authoritative replay, protocol/capability handling,
+measurement, and the normal gates before it can be featured.
+
+### Cutover and presentation invariants
+
+The shipped permanent pool has already made a player promise. Existing STONE
+accounts were entitled to Limited; existing BONE and IVORY accounts were
+entitled to Limited, Row Switch, Row Multiply, and Bounty whether or not a wheel
+actually exposed each one. The target migration must **grandfather every
+outcome already granted**. It may add target entitlements, but it may not relock
+an outcome merely because its new milestone is later. A simple rewrite of the
+current `stone | bone | ivory` tier mapping is therefore insufficient; the
+future entitlement state must distinguish the target schedule from legacy
+per-outcome ownership.
+
+The cutover rule is an entitlement union: **everything granted by the shipped
+pool at the account's pre-cutover historical peak, plus everything granted by
+the successor schedule at that peak**. Consequently, grandfathered ordinary
+wheels deliberately differ from the clean new-account table above:
+
+| pre-cutover permanent pool | cumulative post-cutover ordinary outcomes | steady-state odds |
+|---|---|---|
+| STONE | Classic; Single Strike; Column Shield; Bounty; Limited | Classic 40%; each addition 15% |
+| BONE | Classic; all six mechanical additions | Classic 40%; each addition 10% |
+| IVORY | Classic; all six mechanical additions; Rune Ritual | Classic 40%; each addition `60/7` (about 8.571%) |
+
+This asymmetry is intentional and finite: accounts created after the cutover
+follow the successor schedule, while accounts that received the old permanent
+promise keep it. Bounty joins every grandfathered STONE account's ordinary
+wheel because it is part of the new starting set; that migration is not a
+league promotion and does not manufacture a promotion deck or forced debut.
+
+The same rule applies to teaching and debut state: grandfathered ownership does
+not fabricate a fresh GOLD unlock, repeat a feature slide, or enqueue a debut
+that the account did not newly earn. The transition deck should teach only
+actual before/after grants:
+
+- BONE: Row Multiply;
+- IVORY: Rune Ritual;
+- SILVER: equipped runes;
+- GOLD: one slide each for Row Switch and Limited;
+- OBSIDIAN: the weekly challenge entry;
+- NEON: live apex presentation plus the cosmetic season medal, with no
+  NEON-exclusive gameplay-unlock slide. If that same settlement catches up
+  missing lower entitlements, their normal feature slides follow in ascending
+  BONE → IVORY → SILVER → GOLD → OBSIDIAN order and their bot debuts use the
+  order defined above.
+
+The current transition event, cached tier, and registry-derived slide plan do
+not yet represent all of those facts. Shipping the target requires durable
+per-outcome entitlements, one-time pending debut state, GOLD and OBSIDIAN
+transition facts, and a server-owned bot draw override that still respects
+capability negotiation. It also requires outcome-aware offline locks and cache,
+all eleven locale catalogs, the ranked outcome and transition gates, random
+dial and local-option gates, browser transition coverage, production-weighted
+bot balance measurement, a redesigned/regenerated LG1 card, and an authoritative
+join-function deployment. Those are implementation dependencies, not claims
+that the target is already live.
 
 ---
 
