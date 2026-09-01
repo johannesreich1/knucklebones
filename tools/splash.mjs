@@ -20,7 +20,11 @@ import { chromium } from 'playwright';
 import { mkdirSync, writeFileSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { iconSVG } from './appicon.mjs';
+import {
+  APP_ICON_PAD,
+  APP_ICON_VARIANT,
+  iconSVG,
+} from './appicon.mjs';
 
 const BG = '#05060e';
 const SIZE = 2732;
@@ -28,13 +32,13 @@ const SIZE = 2732;
    around 140pt — a mark, not a poster. Rendered at its own 512 canvas and
    embedded, so the icon's glow blur stays in proportion to the die instead
    of scaling with the whole splash. */
-const DIE = Math.round(SIZE * 0.17);
-
 export function splashSVG(S = SIZE) {
   const die = Math.round(S * 0.17);
   const off = Math.round((S - die) / 2);
-  /* the icon carries its own #05060e canvas — same ground, seamless */
-  const mark = iconSVG('c', 512, 0.085, 'dark')
+  /* Only the shared die mark is embedded. Its transparent outer canvas and
+     pip cutouts reveal this launch screen's #05060e ground, so the splash
+     stays seamless while using the exact shipped icon geometry. */
+  const mark = iconSVG(APP_ICON_VARIANT, 512, APP_ICON_PAD, 'dark', true)
     .replace('<svg ', `<svg x="${off}" y="${off}" `)
     .replace(`width="512" height="512"`, `width="${die}" height="${die}"`);
   return `<svg width="${S}" height="${S}" viewBox="0 0 ${S} ${S}" xmlns="http://www.w3.org/2000/svg">` +

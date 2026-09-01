@@ -1,4 +1,4 @@
-<!-- meta name="iOS launch" group="3c · Loading" subtitle="The launch screen is static by platform law, so it is the app's first frame: the icon's die alone on the night — and the same #05060e under everything that follows it, so nothing between the storyboard and Home ever flashes white" width=412 height=1030 links="Home" -->
+<!-- meta name="iOS launch" group="3c · Loading" subtitle="The launch screen is static by platform law, so it is the app's first frame: the smaller full-color icon die with true pip cutouts, on the same #05060e canvas the game reveals underneath it" width=412 height=1030 links="Home" -->
 <style>
   .ldwrap{display:flex;flex-direction:column;align-items:center;gap:22px;margin:auto 0;padding:10px 0}
   .ldcap{font-size:9.5px;letter-spacing:.2em;color:var(--dim);text-transform:uppercase;text-align:center}
@@ -9,18 +9,7 @@
   .ldphone{width:200px;height:412px;border-radius:28px;background:#05060e;
     border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;
     position:relative;overflow:hidden}
-  .ldphone .mark{width:64px;height:64px;border-radius:16px;background:#0a0c16;
-    border:2px solid transparent;position:relative;
-    background-image:linear-gradient(#0a0c16,#0a0c16),linear-gradient(135deg,var(--mg),var(--cy));
-    background-origin:border-box;background-clip:padding-box,border-box}
-  .ldphone .mark i{position:absolute;width:11px;height:11px;border-radius:50%;
-    background:linear-gradient(135deg,var(--mg),var(--cy));
-    box-shadow:0 0 8px rgba(40,232,255,.5)}
-  .ldphone .mark i:nth-child(1){left:19%;top:19%}
-  .ldphone .mark i:nth-child(2){right:19%;top:19%}
-  .ldphone .mark i:nth-child(3){left:50%;top:50%;transform:translate(-50%,-50%)}
-  .ldphone .mark i:nth-child(4){left:19%;bottom:19%}
-  .ldphone .mark i:nth-child(5){right:19%;bottom:19%}
+  .ldphone .appicon-mark{width:64px;height:64px;display:block}
 
   /* the three beats of the handoff, told as a strip */
   .ldbeats{display:flex;gap:10px;align-items:stretch;width:100%;max-width:var(--w-col);margin:0 auto;justify-content:center}
@@ -30,8 +19,7 @@
   .ldbeat .n{font-size:9px;font-weight:900;letter-spacing:.2em;color:var(--cy)}
   .ldbeat .mini{width:40px;height:82px;border-radius:8px;background:#05060e;
     border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center}
-  .ldbeat .d{width:16px;height:16px;border-radius:4px;border:1px solid var(--cy);
-    box-shadow:0 0 6px rgba(40,232,255,.4)}
+  .ldbeat .appicon-mark{width:16px;height:16px;display:block}
   /* beat 3 is the only one showing the APP: its mini holds Home's own two dice
      (the token, so they are the real component), which is why it needs a gap
      the single-mark minis do not. Beat 2 used to wobble its mark — the launch
@@ -45,16 +33,16 @@
   <div class="shead"><button class="ico">‹</button><span class="ttl">IOS LAUNCH</span><span class="pad"></span></div>
   <div class="ldwrap">
     <div class="lbl">The static frame · every iPhone</div>
-    <div class="ldphone"><div class="mark"><i></i><i></i><i></i><i></i><i></i></div></div>
+    <div class="ldphone">{{appicon:64}}</div>
     <div class="ldcap">No text, no wordmark — text on a launch screen reads as slow</div>
     <div class="ldbeats">
-      <div class="ldbeat"><span class="n">1</span><div class="mini"><div class="d"></div></div>
+      <div class="ldbeat"><span class="n">1</span><div class="mini">{{appicon:16}}</div>
         <span class="t">Storyboard — static, before any code runs</span></div>
-      <div class="ldbeat"><span class="n">2</span><div class="mini"><div class="d"></div></div>
+      <div class="ldbeat"><span class="n">2</span><div class="mini">{{appicon:16}}</div>
         <span class="t">Webview boots on the same night — #05060e under both</span></div>
       <div class="ldbeat"><span class="n">3</span><div class="mini pair dice-static">{{die:5:p1:15}}{{die:3:p2:15}}</div>
         <span class="t">Home is simply there — its own dice, no frame between them</span></div>
     </div>
-    <div class="ldnote">Generated from the app icon's own vector (tools/splash.mjs) · ground #05060e everywhere — capacitor.config backgroundColor, index.html theme-color, main.css --bg — so no frame ever flashes white</div>
+    <div class="ldnote">Generated from the app icon's own vector (tools/splash.mjs) · the smaller colored die and transparent pips are baked into every native rendition · ground #05060e stays continuous into the app</div>
   </div>
 </div></div>

@@ -8,6 +8,7 @@ import {
 } from '../../src/config.ts';
 import { LOCALE_REGISTRY } from '../../src/i18n/locale.ts';
 import { sameBytes } from './ios-artifacts.ts';
+import { alphaBounds, colorSpread, pixelAt, readPngPixels, rgbDistance } from './png-pixels.ts';
 
 type Check = (ok: boolean, message: string) => void;
 
@@ -208,11 +209,76 @@ export function verifyIosShellContract(check: Check): {
   for (const name of ['AppIcon-512@2x.png', 'AppIcon-Dark-512@2x.png']) {
     check(iconNames.has(name), `${APP_ICON_CATALOG} does not reference ${name}`);
   }
+  const anyIcon = iconCatalog.images?.find(
+    (image: { filename?: string }) => image.filename === 'AppIcon-512@2x.png',
+  );
+  const darkIcon = iconCatalog.images?.find(
+    (image: { filename?: string }) => image.filename === 'AppIcon-Dark-512@2x.png',
+  );
+  check(Array.isArray(anyIcon?.appearances) === false,
+    `${APP_ICON_CATALOG} Any icon must remain the unqualified light/fallback rendition`);
+  check(JSON.stringify(darkIcon?.appearances) === JSON.stringify([{ appearance: 'luminosity', value: 'dark' }]),
+    `${APP_ICON_CATALOG} dark icon must be the luminosity=dark rendition`);
   for (const name of ['splash-2732x2732-2.png', 'splash-2732x2732-1.png', 'splash-2732x2732.png']) {
     check(splashNames.has(name), `${SPLASH_CATALOG} does not reference ${name}`);
   }
   check(!sameBytes(nativeAssets[0].path, nativeAssets[1].path),
     'the iOS light and dark app-icon appearances must remain distinct');
+
+  const lightPixels = readPngPixels(nativeAssets[0].path);
+  const darkPixels = readPngPixels(nativeAssets[1].path);
+  check(lightPixels.colorType === 2 && !lightPixels.hasTransparency,
+    'the iOS Any/light app icon must remain an opaque RGB PNG');
+  check(darkPixels.colorType === 6 && darkPixels.hasTransparency,
+    'the iOS Dark app icon must carry alpha so the system-provided background can show through');
+  check(pixelAt(darkPixels, .03, .03).alpha === 0,
+    'the iOS Dark app icon canvas must be transparent for Apple\'s System Dark background');
+
+  const darkInkBounds = alphaBounds(darkPixels);
+  const darkInkWidth = darkInkBounds
+    ? (darkInkBounds.right - darkInkBounds.left + 1) / darkPixels.width
+    : 0;
+  check(darkInkBounds !== null && darkInkWidth >= .68 && darkInkWidth <= .72,
+    `the iOS die should occupy about 70% of the icon after the requested size reduction, found ${darkInkWidth}`);
+  for (const [x, y] of [[.332, .332], [.668, .332], [.5, .5], [.332, .668], [.668, .668]]) {
+    for (const dx of [-.025, 0, .025]) {
+      for (const dy of [-.025, 0, .025]) {
+        check(pixelAt(darkPixels, x + dx, y + dy).alpha === 0,
+          `the iOS Dark die pip around ${x},${y} must be a substantial transparent cutout`);
+        const lightPip = pixelAt(lightPixels, x + dx, y + dy);
+        const lightGround = pixelAt(lightPixels, .04, y + dy);
+        check(rgbDistance(lightPip, lightGround) <= 3,
+          `the iOS Any/light die pip around ${x},${y} must reveal its background gradient`);
+      }
+    }
+  }
+  const dieMagenta = pixelAt(darkPixels, .28, .2);
+  const dieCyan = pixelAt(darkPixels, .72, .8);
+  check(dieMagenta.red - dieMagenta.green >= 100
+    && dieCyan.blue - dieCyan.red >= 100
+    && rgbDistance(dieMagenta, dieCyan) >= 100,
+  'the smaller iOS die must remain fully colored from its magenta edge to its cyan edge');
+  const lightGroundTop = pixelAt(lightPixels, .04, .04);
+  const lightGroundBottom = pixelAt(lightPixels, .04, .96);
+  check(rgbDistance(lightGroundTop, lightGroundBottom) >= 10
+    && Math.min(lightGroundTop.red, lightGroundTop.green, lightGroundTop.blue) >= 225
+    && Math.min(lightGroundBottom.red, lightGroundBottom.green, lightGroundBottom.blue) >= 210,
+  'the iOS Any/light icon must use a subtle light system-style gradient rather than a flat canvas');
+  const splashPixels = readPngPixels(nativeAssets[2].path);
+  const splashTop = pixelAt(splashPixels, .04, .04);
+  const splashBottom = pixelAt(splashPixels, .04, .96);
+  check(rgbDistance(splashTop, splashBottom) <= 3
+    && rgbDistance(splashTop, { red: 5, green: 6, blue: 14, alpha: 255 }) <= 3,
+  'the iOS loading screen must preserve the app\'s #05060e first-frame continuity');
+  for (const [x, y] of [[.4714, .4714], [.5286, .4714], [.5, .5], [.4714, .5286], [.5286, .5286]]) {
+    const splashPip = pixelAt(splashPixels, x, y);
+    const splashGround = pixelAt(splashPixels, .04, y);
+    check(rgbDistance(splashPip, splashGround) <= 3,
+      `the iOS loading-screen pip at ${x},${y} must reveal its #05060e ground`);
+  }
+  check(colorSpread(pixelAt(splashPixels, .5, .445)) >= 80
+    && colorSpread(pixelAt(splashPixels, .5, .555)) >= 80,
+  'the iOS loading-screen die must use the same full-color artwork as the app icon');
   const launchScreen = readFileSync(LAUNCH_SCREEN, 'utf8');
   check(/image="Splash"/.test(launchScreen) && /contentMode="scaleAspectFill"/.test(launchScreen)
     && /<image name="Splash" width="2732" height="2732"\/>/.test(launchScreen),
