@@ -920,7 +920,7 @@ The correction therefore has two parts: redistribute modes so early leagues
 teach one idea at a time, and preserve the fast opening while widening the
 middle and late point bands.
 
-#### League-score decision: a late-weighted 3,800-point curve
+#### League-score decision: a late-weighted 3,830-point curve
 
 The current runtime floors in §2 remain shipped until implementation. The
 successor target is:
@@ -928,26 +928,29 @@ successor target is:
 | league | target floor | target width to next point-based league |
 |---|---:|---:|
 | STONE | 0 | 300 |
-| BONE | 300 | 450 |
-| IVORY | 750 | 650 |
-| SILVER | 1,400 | 1,000 |
-| GOLD | 2,400 | 1,400 |
-| OBSIDIAN | 3,800 | 2,200 to the small-population NEON fallback |
-| NEON | top 1% position; 6,000 fallback only below 100 rated players | unbounded |
+| BONE | 300 | 480 |
+| IVORY | 780 | 650 |
+| SILVER | 1,430 | 1,000 |
+| GOLD | 2,430 | 1,400 |
+| OBSIDIAN | 3,830 | 2,200 to the small-population NEON fallback |
+| NEON | top 1% position; 6,030 fallback only below 100 rated players | unbounded |
 
 The widening is deliberately late. STONE stays exactly 300, BONE's width grows
-only 30 points, and the larger additions land where the player already has a
-wider mode/rune vocabulary. Applying width ratios to the same coarse bot-heavy
-model gives this planning comparison:
+60 points over the shipped width, and the larger additions land where the
+player already has a wider mode/rune vocabulary. The last 30 points of that
+BONE widening are a deliberate one-average-match nudge: IVORY and every later
+floor move forward by the same 30 points, so the adjustment delays every later
+unlock without changing any later traversal width. Applying width ratios to
+the same coarse bot-heavy model gives this planning comparison:
 
 | traversal | current width | target width | current median / mean | scaled target median / mean* |
 |---|---:|---:|---:|---:|
 | STONE → BONE | 300 | 300 | 7.0 / 7.5 | **7.0 / 7.5** |
-| BONE → IVORY | 420 | 450 | 12.0 / 14.8 | **12.9 / 15.9** |
+| BONE → IVORY | 420 | 480 | 12.0 / 14.8 | **13.7 / 16.9** |
 | IVORY → SILVER | 540 | 650 | 21.0 / 24.9 | **25.3 / 30.0** |
 | SILVER → GOLD | 750 | 1,000 | 36.0 / 42.5 | **48.0 / 56.7** |
 | GOLD → OBSIDIAN | 990 | 1,400 | 54.0 / 62.2 | **76.4 / 88.0** |
-| **total to OBSIDIAN** | **3,000** | **3,800** | **130.0 / 151.9** | **169.5 / 198.0** |
+| **total to OBSIDIAN** | **3,000** | **3,830** | **130.0 / 151.9** | **170.4 / 199.0** |
 
 \* This is a linear planning extrapolation, not a retained simulation or
 telemetry. Widening a group also widens `botPairBand`; in a sparse population
@@ -964,20 +967,30 @@ at a **5–8 settled-match median** and no individual late band becoming longer
 than its reward can carry. If measurement misses, tune SILVER/GOLD widths—not
 STONE—until it lands inside that product target.
 
-The 4,000-point alternative was rejected. It projected about 180 median / 211
-mean overall but made GOLD alone roughly 87 median / 101 mean matches, too long
-between visible promotions even with two modes at entry. The 3,800 curve still
-adds about 30% to the full climb without creating that wall.
+The historical 4,000-point alternative was rejected before the final BONE
+nudge. Its then-current model projected about 180 median / 211 mean overall but
+made GOLD alone roughly 87 median / 101 mean matches, too long between visible
+promotions even with two modes at entry. It remains decision history, not a
+like-for-like recalculation against the final floors. The 3,830 curve still adds
+about 30% to the full climb without creating that wall.
 
 The new BONE width also makes the earlier division explicit. At an equal-rated
-base payout, `450 / 80 = 5.625`, so a perfect base-only run takes six wins. Six
+base payout, `480 / 80 = 6`, so a perfect base-only run takes six wins. Six
 dominant target-rule wins also cross it; only repeatedly beating higher-rated
 bots can reduce that to five. At an equal-rated 50% decisive record with
-symmetric finish margins and no draws, +10 per match would take about 45
-matches. The coarse
-approximately 63% BONE human share is much faster: its base-only expectation is
-`0.63 × 80 - 0.37 × 60 = 28.2`, or about 16 matches for 450 points, before the
-small finish signal.
+symmetric finish margins and no draws, +10 per match would take about 48
+matches. The coarse approximately 63% BONE human share is much faster: its
+base-only expectation is `0.63 × 80 - 0.37 × 60 = 28.2`, or about 17 matches
+for 480 points, before the small finish signal.
+
+The one-game adjustment has two independent coarse checks. Width-scaling the
+existing BONE mean adds `30 × 14.8 / 420 = 1.06` matches. If the 63% share is
+combined with the measured target-wheel mean finish transfer under symmetric
+decisive margins, its illustrative drift is
+`28.2 + (2 × 0.63 - 1) × 3.753 = 29.176` points per match; the extra 30 points
+then add `30 / 29.176 = 1.03` matches. Neither calculation is telemetry or a
+substitute for the retained target simulation, but both support calling this
+**one more BONE game on average**, not a new pacing wall.
 
 ##### Best-case traversal bounds
 
@@ -987,17 +1000,17 @@ rating gap. These are target-width perfect streaks with no draws or forfeits:
 | traversal | width | equal-rated base wins at +80 | dominant equal-rated wins at +87* | cap-edge higher bot, dominant win | absolute traversal floor at the +160 payout ceiling** |
 |---|---:|---:|---:|---:|---:|
 | STONE → BONE | 300 | 4 | **4** | **3** at up to +101 | 2 |
-| BONE → IVORY | 450 | 6 | **6** | **5** at up to +107 | 3 |
+| BONE → IVORY | 480 | 6 | **6** | **5** at up to +109 | 3 |
 | IVORY → SILVER | 650 | 9 | **8** | **6** at up to +116 | 5 |
 | SILVER → GOLD | 1,000 | 13 | **12** | **8** at up to +129 | 7 |
 | GOLD → OBSIDIAN | 1,400 | 18 | **17** | **10** at up to +140 | 9 |
-| OBSIDIAN width → 6,000 fallback | 2,200 | 28 | **26** | **15** at up to +155 | 14 |
+| OBSIDIAN width → 6,030 fallback | 2,200 | 28 | **26** | **15** at up to +155 | 14 |
 | NEON in a populated season | positional | not finite | not finite | not finite | not finite |
 
 \* `+87 = +80` equal-rated base plus the maximum requested and applied seven.
 At the zero-point opening, an equal-zero loser cannot fund the finish transfer;
 STONE still takes four such equal-rated wins, so the table's count is unchanged.
-A continuous dominant equal-rated streak reaches target OBSIDIAN in 44 matches;
+A continuous dominant equal-rated streak reaches target OBSIDIAN in 45 matches;
 a cap-edge maximum bot streak does it in about 31. Both are compounded extremes,
 not cadence estimates.
 
@@ -1024,7 +1037,7 @@ total permanent-progression cadence.
 
 ##### Effect of the refinement on progression speed
 
-The more responsive denominator does **not** revise the 169.5 median / 198.0
+The more responsive denominator does **not** revise the 170.4 median / 199.0
 mean planning estimate or the 160–185 / 185–215 release bands above. Relative
 to the preceding sum-based target, a decisive result changes by zero or one
 additional transferred point. Pair-wide inflation remains exactly zero. With
@@ -1053,9 +1066,10 @@ equal-rated, no-draw base-only expectation. With draw fraction `q`, that base
 comparison becomes `28.2 - 10q`. Across the whole target climb the no-draw
 estimate suggests roughly zero to a couple fewer games, inside the planning
 model's uncertainty; floor/loss-cap clipping makes the practical change smaller.
-Even the perfect-streak bounds do not move because their dominant result already
-requests the unchanged maximum seven: 44 continuous equal-rated dominant wins
-and about 31 cap-edge bot wins still reach OBSIDIAN. The retained target
+The BONE floor adjustment moves the continuous equal-rated dominant bound from
+44 to 45 matches; the finish refinement itself does not move that bound because
+the dominant result already requests the unchanged maximum seven. About 31
+cap-edge bot wins still reach OBSIDIAN. The retained target
 simulation, not this estimate, owns the eventual cadence verdict because real
 margin increments may correlate with win/loss, rating gap, mode, and player
 skill.
@@ -1071,7 +1085,7 @@ progress   = (old_points - old_group_floor) / old_group_width
 new_points = new_group_floor + round(progress * new_group_width)
 ```
 
-Use the old OBSIDIAN segment `3,000…4,350` and new segment `3,800…6,000` for
+Use the old OBSIDIAN segment `3,000…4,350` and new segment `3,830…6,030` for
 all points at or above old OBSIDIAN, allowing the formula to extrapolate beyond
 either fallback. Apply the same mapping to current points and historical peaks.
 This preserves rank order, displayed non-apex league, and ring progress; NEON's
@@ -1160,10 +1174,10 @@ results for a fresh account:
 
 | collection behavior | expected Trial matches to all six | expected total ranked matches to all six* |
 |---|---:|---:|
-| always select CLAIM; win every Trial | 14.7 | about **153–154** |
-| always select CLAIM; win 50% of Trials | 29.4 | about **322–324** |
+| always select CLAIM; win every Trial | 14.7 | about **154–155** |
+| always select CLAIM; win 50% of Trials | 29.4 | about **323–324** |
 
-\* Includes roughly 20 median / 23 mean matches to reach IVORY. The two
+\* Includes roughly 21 median / 24 mean matches to reach IVORY. The two
 discrete scenarios then use 73 IVORY/SILVER + 77 GOLD matches and 87
 IVORY/SILVER + 88 GOLD matches respectively, with one immediate guaranteed bot
 Trial, 12% Trial odds for the rest of IVORY/SILVER, and `3/35` in GOLD. These
@@ -1174,7 +1188,15 @@ ineligible Trial lengthens collection under the same schedule. Human
 shared-entitlement matches may instead raise the Trial slice to 12% or remove
 Trial through capability/entitlement intersection, so retained implementation
 simulation must model those correlations rather than infer them from this
-bot/own-pool estimate.
+bot/own-pool estimate. Before display rounding, the two perfect-win endpoints
+are 154.50 and 154.65 matches; the 50%-win endpoints are 322.69 and 324.39.
+That is why the displayed ranges are 154–155 and 323–324 rather than blindly
+adding one to both ends of the preceding rounded ranges.
+
+The added 30 BONE points occur before Rune Ritual unlocks. They add about one
+fresh-account match to the completion timelines above but create no extra Trial
+chance; every rune-eligible phase length and therefore every collection
+distribution at OBSIDIAN below remains unchanged.
 
 At the target OBSIDIAN timing, the same model produces the intended partial
 collection for a collection-focused player who always selects CLAIM and wins
@@ -1338,7 +1360,7 @@ Alternatives considered and rejected:
 | Keep all three shipped BONE additions together | A roughly five-game first promotion can arrive while 80.8% of players still lack at least one STONE exposure, and the three new outcomes themselves take too long to sample. |
 | Keep the current 3,000-point OBSIDIAN curve | Unlock redistribution fixes teaching cadence but leaves the entire permanent climb at roughly 130 median / 152 mean matches, too short for the long-term collection and weekly loop. |
 | Slow STONE or stretch every league uniformly | It removes the satisfying early promotion. The selected curve keeps STONE at 300 and places almost all extra distance in the content-rich middle and late game. |
-| Stretch OBSIDIAN to 4,000 and fallback NEON to 6,400 | It raises the overall estimate to about 180 median / 211 mean, but GOLD alone becomes roughly 87 median / 101 mean matches between promotions. The 3,800 / 6,000 compromise avoids that wall. |
+| Historical pre-nudge stretch to OBSIDIAN 4,000 and fallback NEON 6,400 | Its then-current estimate was about 180 median / 211 mean, but GOLD alone became roughly 87 median / 101 mean matches between promotions. It is retained as decision history, not a like-for-like final-floor model; the 3,830 / 6,030 choice avoids that wall. |
 | Put Limited at SILVER and Row Switch at GOLD | SILVER already changes every eligible ordinary match by activating equipment; adding a new supply/end-condition lesson competes with the rune lesson, while GOLD can comfortably carry two advanced outcomes. |
 | Put one advanced mode at GOLD and the other at OBSIDIAN | OBSIDIAN's long climb benefits more from a renewable weekly reason to return than from one more finite wheel node. |
 | Add the weekly challenge to the ordinary OBSIDIAN wheel | A featured challenge should be chosen knowingly and reliably; another low-probability random node would recreate the invisibility problem this decision fixes. |
@@ -1451,7 +1473,7 @@ pool at the account's pre-cutover historical peak, plus everything granted by
 the successor schedule at the account's mapped historical peak**—equivalently,
 its preserved historical league. Compute the old entitlement side before point
 conversion and the target side after conversion. Thus an old 3,000-point
-OBSIDIAN peak maps to target 3,800 and receives weekly access; treating raw
+OBSIDIAN peak maps to target 3,830 and receives weekly access; treating raw
 3,000 as target GOLD would violate the preservation rule. Consequently,
 grandfathered ordinary wheels deliberately differ from the clean new-account
 table above:

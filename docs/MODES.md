@@ -121,11 +121,16 @@ From the mode-design side, the order is fixed:
 - OBSIDIAN unlocks a weekly featured challenge; and
 - NEON grants prestige and cosmetics, never exclusive mechanics or power.
 
-The accompanying target score floors are **0 / 300 / 750 / 1,400 / 2,400 /
-3,800**, with **6,000** used only as NEON's fallback below 100 rated players.
+The accompanying target score floors are **0 / 300 / 780 / 1,430 / 2,430 /
+3,830**, with **6,030** used only as NEON's fallback below 100 rated players.
+The 480-point BONE band adds about one average game versus the preceding
+450-point target; shifting every later floor by the same 30 points preserves
+all later band widths rather than paying for that extra teaching time by
+shortening IVORY.
+
 This preserves the fast STONE opening but stretches the permanent climb from
 the current coarse 130 median / 152 mean projection to about **170 median /
-198 mean** before retained target-rule simulation. Existing current and peak
+199 mean** before retained target-rule simulation. Existing current and peak
 points are rescaled within their old league segment so cutover preserves rank,
 displayed league, and ring progress; `docs/LADDER.md §7` owns the exact mapping
 and release evidence.
