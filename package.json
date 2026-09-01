@@ -38,7 +38,7 @@
     "native:sync": "npm run build && npm --prefix native run sync",
     "native:sync:ios": "npm run build && npm --prefix native run sync:ios",
     "native:sync:android": "npm run build && npm --prefix native run sync:android",
-    "native:assets:android": "node tools/appicon.mjs --android && node tools/splash.mjs --android && npm --prefix native run assets:android",
+    "native:assets:android": "node tools/appicon.mjs --android && node tools/splash.mjs --android && npm --prefix native run assets:android && node tools/appicon.mjs --android-finalize",
     "native:open:ios": "npm --prefix native run open:ios",
     "native:open:android": "npm --prefix native run open:android",
     "native:verify": "npm run native:sync && node --experimental-strip-types tests/iosship.test.ts --require-synced && node --experimental-strip-types tests/androidship.test.ts --require-synced",

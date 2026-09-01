@@ -15,8 +15,8 @@
                     <imageView key="view" userInteractionEnabled="NO" contentMode="scaleAspectFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="Splash" id="snD-IY-ifK">
                         <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
                         <autoresizingMask key="autoresizingMask"/>
-                        <!-- the app's own night (#05060e) — any letterbox around the
-                             splash must be the same ground the webview boots on -->
+                        <!-- fallback stays on the app's own night (#05060e) until
+                             the full-bleed gradient Splash image has painted -->
                         <color key="backgroundColor" red="0.0196" green="0.0235" blue="0.0549" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     </imageView>
                 </viewController>

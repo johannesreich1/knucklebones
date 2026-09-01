@@ -15,6 +15,8 @@
 //                              app's own die classes, space-separated, so a card
 //                              can picture a MULTIPLIED die (`p2 m2`) instead of
 //                              restating the shared dice CSS's gold in card CSS
+//   {{appicon[:px]}}             the shipped full-color die mark, including its
+//                              current scale and transparent pip cutouts
 //   {{mico:MODE[:px]}}          a mode icon — the APP's, imported below
 //   {{mhue:MODE}}               a mode's hue — likewise
 //   {{sico:SPELL[:px]}}         a rune icon — the APP's (ui/spellicons.ts)
@@ -56,6 +58,7 @@ import { spellById } from '../src/core/spells.ts';
 import { modeById } from '../src/core/modes.ts';
 import { libraryBody, libraryCards, pickerButtons, pickInfo, MODE_LIB, SPELL_LIB, MODE_PICKS, SPELL_PICKS } from '../src/ui/library.ts';
 import { inlineCssGraph } from '../tools/css-graph.mjs';
+import { APP_ICON_PAD, APP_ICON_VARIANT, iconSVG } from '../tools/appicon.mjs';
 import { discoverDesignScreens } from './screen-library.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -219,6 +222,12 @@ function avatarHtml(spec, size) {
   return dieMarkup(face, { classes: 'p1', size, inlineStyle: `--dc:${AV_HUES[hue]}` });
 }
 
+function appIconMarkup(size) {
+  const svg = iconSVG(APP_ICON_VARIANT, 512, APP_ICON_PAD, 'dark', true);
+  const source = `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+  return `<img class="appicon-mark" src="${source}" width="${size}" height="${size}" alt="">`;
+}
+
 /* Device sizes: every screen ships at each of these. The stage is the phone
    screen; on tablet the app keeps its real max-width column, centered — that
    is honestly how it renders there today. Foundations skips variants. */
@@ -301,6 +310,7 @@ for (const screen of screens) {
   }
 
   let body = src.slice(meta[0].length)
+    .replace(/\{\{appicon(?::(\d+))?\}\}/g, (_, size) => appIconMarkup(size ? +size : 44))
     /* The class slot is a LIST, not one name: a die in play is `p2 m2` when its
        column holds a pair (ui/game/board.ts toggles m2/m3 on that count), and a
        card that could only ask for `p2` had to restate the shared dice CSS to show
