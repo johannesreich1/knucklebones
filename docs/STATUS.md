@@ -104,10 +104,13 @@ here. Confirm those in Cloudflare or Supabase when a task depends on them.
 
 - Implement the 2026-09-01 ranked progression decision in
   `docs/LADDER.md §7`: redistribute Bounty, Row Multiply, Row Switch, and
-  Limited; move the target floors to 0 / 300 / 750 / 1,400 / 2,400 / 3,800
-  with a 6,000 small-population NEON fallback; monotonically rescale current
-  and peak points without changing rank or progress inside a league; replace
-  the selected-rune Trial reward with the visible, selection-dependent CLAIM
+  Limited; move the target floors to 0 / 300 / 780 / 1,430 / 2,430 / 3,830
+  with a 6,030 small-population NEON fallback—the 480-point BONE band is one
+  average game longer than the preceding 450-point target while every later
+  traversal width stays unchanged;
+  monotonically rescale current and peak points without changing rank or
+  progress inside a league; replace the selected-rune Trial reward with the
+  visible, selection-dependent CLAIM
   reward while retaining every existing collection; drive ranked-outcome
   ordering inside offline pickers, the ranked spinner, the library, and
   outcome-unlock slides from one shared rank/helper; add durable bot-debut
